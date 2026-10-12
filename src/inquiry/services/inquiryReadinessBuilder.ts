@@ -31,6 +31,7 @@ import { BUILTIN_MODELS } from '../../ai/registry/builtinModels';
 import { INQUIRY_MAX_OUTPUT_TOKENS } from '../constants';
 import { PROVIDER_MAX_OUTPUT_TOKENS } from '../../constants/tokenLimits';
 import { buildRTCorpusEstimate } from './buildRTCorpusEstimate';
+import { t } from '../../i18n';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -253,7 +254,7 @@ export function buildReadinessUiState(input: BuildReadinessUiStateInput): Inquir
             hasCredential,
             provider,
             providerLabel,
-            reason: resolvedEngine.blockReason || 'No model satisfies capability floor.',
+            reason: resolvedEngine.blockReason || t('ui.inquiryReadinessBuilder.noModelSatisfiesFloor'),
             runScopeLabel: buildRunScopeLabel(payloadStats, selectedSceneOverrideCount, scope, scopeLabel),
             canSwitchToSummaries: false,
             canUseSelectedScenesOnly: false
@@ -282,7 +283,7 @@ export function buildReadinessUiState(input: BuildReadinessUiStateInput): Inquir
             hasCredential,
             provider,
             providerLabel,
-            reason: 'Estimating…',
+            reason: t('ui.inquiryReadinessBuilder.estimating'),
             runScopeLabel: buildRunScopeLabel(payloadStats, selectedSceneOverrideCount, scope, scopeLabel),
             canSwitchToSummaries: false,
             canUseSelectedScenesOnly: false
@@ -327,7 +328,7 @@ export function buildReadinessUiState(input: BuildReadinessUiStateInput): Inquir
     // Model lookup — for metadata only, not for recomputing budgets.
     const model = BUILTIN_MODELS.find(m => m.id === resolvedEngine.modelId);
     const hasEligibleModel = safeInputBudget > 0;
-    let reason = 'Fits safely - single pass.';
+    let reason = t('ui.inquiryReadinessBuilder.fitsSinglePass');
 
     const readiness = evaluateInquiryReadiness({
         hasEligibleModel,
@@ -345,11 +346,11 @@ export function buildReadinessUiState(input: BuildReadinessUiStateInput): Inquir
         && selectedSceneOverrideCount < Math.max(1, payloadStats.sceneTotal);
 
     if (readiness.cause === 'missing_key') {
-        reason = `${providerLabel} key is missing. Add a saved key in AI settings.`;
+        reason = t('ui.inquiryReadinessBuilder.keyMissing', { provider: providerLabel });
     } else if (readiness.cause === 'capability_floor') {
-        reason = `${providerLabel} cannot satisfy this Inquiry setup. Update Provider, Thinking Style, or Access level.`;
+        reason = t('ui.inquiryReadinessBuilder.capabilityFloor', { provider: providerLabel });
     } else if (readiness.state === 'large') {
-        reason = 'Automatic analysis will run multiple structured passes.';
+        reason = t('ui.inquiryReadinessBuilder.multiplePasses');
     }
 
     return {

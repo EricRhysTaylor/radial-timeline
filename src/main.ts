@@ -80,6 +80,7 @@ import { seedProEntitlement } from './settings/proEntitlementSeed';
 import { detectBetaFeatures, hasProFeatureAccess } from './settings/featureGate';
 import { DisposableRegistry } from './core/disposable';
 import { systemFolderPath } from './utils/systemFolder';
+import { t, tCount } from './i18n';
 
 // Import the new scene analysis function <<< UPDATED IMPORT
 
@@ -472,7 +473,7 @@ export default class RadialTimelinePlugin extends Plugin {
         if (!result.changed) return false;
         void this.saveSettings();
         if (result.activatedName) {
-            new Notice(`Adopted "${result.activatedName}" beats from your manuscript.`);
+            new Notice(t('ui.main.adoptedBeats', { name: result.activatedName }));
         }
         return true;
     }
@@ -480,11 +481,11 @@ export default class RadialTimelinePlugin extends Plugin {
     public async setTimelineScope(scope: 'book' | 'saga'): Promise<void> {
         if (scope === 'saga') {
             if (!isSagaScopeAvailable(this.settings)) {
-                new Notice('Add at least two books in Book Manager to use Saga Timeline.');
+                new Notice(t('ui.main.sagaNeedsTwoBooks'));
                 return;
             }
             if (!hasProFeatureAccess(this)) {
-                new Notice('Saga Timeline is a Pro workflow.');
+                new Notice(t('ui.main.sagaIsPro'));
                 return;
             }
             this.settings.timelineScope = 'saga';
@@ -595,7 +596,7 @@ export default class RadialTimelinePlugin extends Plugin {
             void (async () => {
                 const sceneIdsMigrated = await migrateSceneFrontmatterIds(this);
                 if (sceneIdsMigrated > 0) {
-                    new Notice(`🔑 Scene IDs added to ${sceneIdsMigrated} scene${sceneIdsMigrated === 1 ? '' : 's'}. No action required.`);
+                    new Notice(t('ui.main.sceneIdsAdded', { scenes: tCount('scene', sceneIdsMigrated) }));
                 }
                 // Fresh-vault beat adoption: load+activate beats already present in
                 // the manuscript. Safe here — metadata cache is populated at layout-ready.
@@ -920,8 +921,7 @@ export default class RadialTimelinePlugin extends Plugin {
             this.settings = Object.assign({}, DEFAULT_SETTINGS);
             console.error('[Radial Timeline] Could not parse settings file:', read.error);
             new Notice(
-                'Radial Timeline could not read its settings file (data.json). Your settings have NOT been loaded '
-                + `and nothing has been overwritten. Rename or repair ${this.getSettingsFilePath()}, then reload Obsidian.`,
+                t('ui.main.settingsUnreadable', { path: this.getSettingsFilePath() }),
                 0
             );
             return;
@@ -1312,8 +1312,7 @@ export default class RadialTimelinePlugin extends Plugin {
             if (!this.settingsBlockedNoticeShown) {
                 this.settingsBlockedNoticeShown = true;
                 new Notice(
-                    'Radial Timeline is not saving settings this session: its settings file (data.json) could not be read. '
-                    + 'Repair or rename the file and reload Obsidian — any changes you make now will be lost.',
+                    t('ui.main.settingsSaveBlocked'),
                     0
                 );
             }
@@ -1365,8 +1364,7 @@ export default class RadialTimelinePlugin extends Plugin {
         console.error('[Radial Timeline] Settings save failed:', error);
         const reason = error instanceof Error ? error.message : String(error);
         new Notice(
-            `Radial Timeline could not save settings: ${reason}. Your last change was NOT written to disk. `
-            + 'Check that the vault is writable and has free space, then make the change again.',
+            t('ui.main.settingsSaveFailed', { reason }),
             0
         );
     }

@@ -127,4 +127,19 @@ describe('parseDescriptionParts', () => {
         expect(parts.body).toHaveLength(1);
         expect(parts.fields).toHaveLength(2);
     });
+
+    it('keeps label/value rows in translated descriptions', () => {
+        const de = parseDescriptionParts('Zusammenfassung.\n\nIdeal für: Unterhaltungsliteratur\nDynamikprofil: Aufbau -> Auflösung');
+        expect(de.fields).toEqual([
+            { label: 'Ideal für', value: 'Unterhaltungsliteratur' },
+            { label: 'Dynamikprofil', value: 'Aufbau -> Auflösung' }
+        ]);
+        const ja = parseDescriptionParts('概要。\n\n最適な用途：エンタメ小説');
+        expect(ja.fields).toEqual([{ label: '最適な用途', value: 'エンタメ小説' }]);
+    });
+
+    it('does not read a sentence or a URL as a label', () => {
+        const parts = parseDescriptionParts('Summary.\n\nUse it when you want this. Then: that.\nhttps://example.com');
+        expect(parts.fields).toEqual([]);
+    });
 });

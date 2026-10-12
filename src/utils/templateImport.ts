@@ -17,6 +17,7 @@ import type { DetectedTemplateProfile } from '../publishing/templateDetection';
 import { detectImportedTemplateStyle } from '../publishing/templateDetection';
 import { describeRtPartArityIssue } from '../publishing/rttsValidation';
 import { basename } from './paths';
+import { t } from '../i18n';
 
 export interface ImportedTemplateCandidate {
     layout: PandocLayoutTemplate;
@@ -122,7 +123,7 @@ export async function buildImportedTemplateCandidate(
         issues.push({
             code: 'import_missing_path',
             level: 'error',
-            message: 'Choose a .tex file to import.',
+            message: t('ui.templateImport.chooseTexFile'),
             scope: 'asset',
             actionable: true,
             field: 'path',
@@ -151,7 +152,7 @@ export async function buildImportedTemplateCandidate(
         issues.push({
             code: 'import_layout_invalid',
             level: 'error',
-            message: layoutValidation.error || 'Template file is not valid.',
+            message: layoutValidation.error || t('ui.templateImport.templateFileInvalid'),
             scope: 'asset',
             field: 'path',
             actionable: true,
@@ -168,7 +169,7 @@ export async function buildImportedTemplateCandidate(
         issues.push({
             code: 'import_missing_body',
             level: 'error',
-            message: 'The template must include a $body$ placeholder.',
+            message: t('ui.templateImport.missingBodyPlaceholder'),
             scope: 'asset',
             actionable: true,
         });
@@ -193,7 +194,7 @@ export async function buildImportedTemplateCandidate(
             issues.push({
                 code: 'import_missing_unicode_engine',
                 level: 'warning',
-                message: 'This template uses fontspec, but no XeLaTeX or LuaLaTeX engine was detected.',
+                message: t('ui.templateImport.unicodeEngineMissing'),
                 scope: 'asset',
                 actionable: true,
             });

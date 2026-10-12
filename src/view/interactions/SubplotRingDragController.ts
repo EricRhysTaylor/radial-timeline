@@ -13,6 +13,7 @@ import { getActiveFrontmatterMappings } from '../../utils/frontmatter';
 import { sleep } from '../../utils/sleep';
 import { resolveSubplotColorFromGroup } from './dragGeometry';
 import { membershipOfRing } from './subplotRings';
+import { t } from '../../i18n';
 
 /**
  * Drag a scene from one subplot ring to another to change its subplots
@@ -64,7 +65,9 @@ export function describeSceneFile(basename: string): string {
     const match = basename.match(/^\s*(\d+(?:\.\d+)?)\s+(.*)$/);
     if (!match) return basename;
     const label = match[2].trim();
-    return label && label !== 'Scene' ? `Scene ${match[1]} ${label}` : `Scene ${match[1]}`;
+    return label && label !== 'Scene'
+        ? t('ui.subplotRingDragController.sceneNumberLabel', { number: match[1], label })
+        : t('ui.subplotRingDragController.sceneNumber', { number: match[1] });
 }
 
 export class SubplotRingDragController {
@@ -269,10 +272,12 @@ export class SubplotRingDragController {
             return;
         }
         const after = planSubplotMembership(current.before, change);
-        const action = after ? describeSubplotMembershipChange(change) : `Already in ${change.to}`;
+        const action = after ? describeSubplotMembershipChange(change) : t('ui.subplotRingDragController.alreadyIn', { subplot: change.to });
         const detail = after
-            ? `Subplots: ${formatMemberships(after)} · ${this.shiftHeld ? 'release Shift to move' : 'hold Shift to add'}`
-            : 'No change';
+            ? (this.shiftHeld
+                ? t('ui.subplotRingDragController.detailReleaseToMove', { subplots: formatMemberships(after) })
+                : t('ui.subplotRingDragController.detailHoldToAdd', { subplots: formatMemberships(after) }))
+            : t('ui.subplotRingDragController.noChange');
         if (!this.previewEl) {
             this.previewEl = body.createDiv({ cls: 'rt-drag-membership-preview' });
             this.previewEl.createDiv({ cls: 'rt-drag-membership-preview-action' });
@@ -312,10 +317,10 @@ export class SubplotRingDragController {
                 actionSummary: `${itemLabel}: ${describeSubplotMembershipChange(change)}`,
                 renameCount: 0,
                 showRenameImpact: false,
-                contextLabel: 'Subplots',
+                contextLabel: t('ui.subplotRingDragController.contextLabel'),
                 contextChange: `${formatMemberships(before)} → ${formatMemberships(after)}`,
-                badge: change.kind === 'add' ? 'Add Subplot' : 'Move Scene',
-                title: 'Confirm subplot change',
+                badge: change.kind === 'add' ? t('ui.subplotRingDragController.badgeAdd') : t('ui.subplotRingDragController.badgeMove'),
+                title: t('ui.subplotRingDragController.confirmTitle'),
             },
             [],
             undefined,
@@ -337,7 +342,7 @@ export class SubplotRingDragController {
             modal.close();
         } catch (error) {
             console.error('Subplot membership change failed:', error);
-            await modal.finishWithDismiss('Subplot change failed. Check console for details, then dismiss.', true);
+            await modal.finishWithDismiss(t('ui.subplotRingDragController.changeFailed'), true);
         } finally {
             this.confirming = false;
             this.reset();

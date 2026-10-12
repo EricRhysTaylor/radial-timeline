@@ -4,6 +4,7 @@ import {
     detectRtPartArity,
     validateRttsTemplateContent,
 } from './rttsValidation';
+import { t } from '../i18n';
 
 describe('\\rtPart arity', () => {
     it('reads the declared argument count from a definition', () => {
@@ -27,10 +28,9 @@ describe('\\rtPart arity', () => {
     it('flags a legacy 3-argument definition with a repair path', () => {
         const issue = describeRtPartArityIssue('\\newcommand{\\rtPart}[3]{%\n}');
         expect(issue?.arity).toBe(3);
-        expect(issue?.message).toContain('3 arguments');
-        expect(issue?.message).toContain('4');
-        // The message has to tell the author what to do, not just what is wrong.
-        expect(issue?.message).toMatch(/re-import|update the macro/i);
+        // The message names both arities and tells the author what to do
+        // (re-import or update the macro), not just what is wrong.
+        expect(issue?.message).toBe(t('ui.rttsValidation.partArityMismatch', { arity: 3, required: 4 }));
     });
 
     it('accepts the arity the export actually emits', () => {

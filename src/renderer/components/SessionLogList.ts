@@ -17,6 +17,7 @@
 import { setIcon } from 'obsidian';
 import type { PrivateSessionLogRow } from '../../services/WritingSessionLog';
 import type { WritingSessionMode, WritingSessionStage } from '../../types/settings';
+import { t } from '../../i18n';
 
 export type SessionLogListMode = 'preview' | 'compact';
 
@@ -30,11 +31,12 @@ export interface SessionLogListOptions {
     emptyMessage?: string;
 }
 
+// Getters so labels resolve in the current language when read.
 const MODE_LABEL: Record<WritingSessionMode, string> = {
-    drafting: 'Drafting',
-    revising: 'Revising',
-    editing: 'Editing',
-    planning: 'Planning',
+    get drafting() { return t('ui.sessionLogList.modeDrafting'); },
+    get revising() { return t('ui.sessionLogList.modeRevising'); },
+    get editing() { return t('ui.sessionLogList.modeEditing'); },
+    get planning() { return t('ui.sessionLogList.modePlanning'); },
 };
 
 const STAGE_LABEL: Record<WritingSessionStage, string> = {
@@ -56,10 +58,12 @@ function basenameNoExt(path: string): string {
 
 function formatDurationMs(ms: number): string {
     const totalMin = Math.max(0, Math.round(ms / 60000));
-    if (totalMin < 60) return `${totalMin}m`;
+    if (totalMin < 60) return t('ui.sessionLogList.durationMinutes', { minutes: totalMin });
     const hours = Math.floor(totalMin / 60);
     const mins = totalMin % 60;
-    return mins === 0 ? `${hours}h` : `${hours}h ${mins}m`;
+    return mins === 0
+        ? t('ui.sessionLogList.durationHours', { hours })
+        : t('ui.sessionLogList.durationHoursMinutes', { hours, minutes: mins });
 }
 
 function formatTime(iso: string): string {
@@ -67,9 +71,10 @@ function formatTime(iso: string): string {
     if (Number.isNaN(parsed.getTime())) return '';
     const hh = parsed.getHours();
     const mm = String(parsed.getMinutes()).padStart(2, '0');
-    const ampm = hh < 12 ? 'am' : 'pm';
     const display = hh % 12 === 0 ? 12 : hh % 12;
-    return `${display}:${mm}${ampm}`;
+    return hh < 12
+        ? t('ui.sessionLogList.timeAm', { hour: display, minute: mm })
+        : t('ui.sessionLogList.timePm', { hour: display, minute: mm });
 }
 
 function startOfLocalDay(date: Date): Date {
@@ -103,8 +108,8 @@ function formatRelativeDateHeader(row: PrivateSessionLogRow, reference: Date): s
     const parsed = rowDayDate(row);
     if (!parsed) return '';
     const delta = daysBetween(reference, parsed);
-    if (delta === 0) return 'Today';
-    if (delta === 1) return 'Yesterday';
+    if (delta === 0) return t('ui.sessionLogList.today');
+    if (delta === 1) return t('ui.sessionLogList.yesterday');
     if (delta > 1 && delta < 7) {
         return parsed.toLocaleDateString(undefined, { weekday: 'long' });
     }
@@ -115,8 +120,8 @@ function formatCompactDate(row: PrivateSessionLogRow, reference: Date): string {
     const parsed = rowDayDate(row);
     if (!parsed) return '';
     const delta = daysBetween(reference, parsed);
-    if (delta === 0) return 'Today';
-    if (delta === 1) return 'Yesterday';
+    if (delta === 0) return t('ui.sessionLogList.today');
+    if (delta === 1) return t('ui.sessionLogList.yesterday');
     if (delta > 1 && delta < 7) {
         return parsed.toLocaleDateString(undefined, { weekday: 'short' });
     }
@@ -184,7 +189,7 @@ function renderPreviewRow(parent: HTMLElement, row: PrivateSessionLogRow, option
         });
     }
     if (typeof row.wordsAdded === 'number' && row.wordsAdded > 0) {
-        head.createSpan({ cls: 'ert-session-log-row__words', text: `+${row.wordsAdded.toLocaleString()} w` });
+        head.createSpan({ cls: 'ert-session-log-row__words', text: t('ui.sessionLogList.wordsAdded', { words: row.wordsAdded.toLocaleString() }) });
     }
 
     const allChipPaths = [
@@ -237,7 +242,7 @@ function renderCompactRow(parent: HTMLElement, row: PrivateSessionLogRow, option
         li.classList.add('ert-session-log-row--clickable');
         li.setAttribute('role', 'button');
         li.setAttribute('tabindex', '0');
-        li.setAttribute('aria-label', `Open ${primaryPath}`);
+        li.setAttribute('aria-label', t('ui.sessionLogList.openSceneAria', { path: primaryPath }));
         li.onclick = (event: MouseEvent) => {
             event.preventDefault();
             event.stopPropagation();
@@ -269,7 +274,7 @@ export function renderSessionLogList(
         const empty = container.createDiv({ cls: 'ert-session-log-list__empty' });
         const iconEl = empty.createSpan({ cls: 'ert-session-log-list__empty-icon' });
         setIcon(iconEl, 'timer-off');
-        empty.createSpan({ text: options.emptyMessage ?? 'No sessions in this window yet.' });
+        empty.createSpan({ text: options.emptyMessage ?? t('ui.sessionLogList.emptyMessage') });
         return;
     }
 

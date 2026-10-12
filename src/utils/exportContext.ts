@@ -11,15 +11,16 @@ import type { ManuscriptSceneSelection } from './manuscript';
 import { isPathInFolderScope } from './pathScope';
 import { ExportFailure } from './exportErrors';
 import type { ManuscriptSource } from '../types';
+import { t } from '../i18n';
 export type { ManuscriptSource } from '../types';
 
 export function getManuscriptSourceFiles(app: App, kind: 'folder' | 'file', sourcePath: string): TFile[] {
     const entry = app.vault.getAbstractFileByPath(sourcePath);
     if (kind === 'file') {
-        if (!(entry instanceof TFile) || entry.extension !== 'md') throw new Error('Choose a Markdown manuscript file.');
+        if (!(entry instanceof TFile) || entry.extension !== 'md') throw new Error(t('ui.exportContext.chooseMarkdownFile'));
         return [entry];
     }
-    if (!(entry instanceof TFolder) || !sourcePath) throw new Error('Choose an existing manuscript folder.');
+    if (!(entry instanceof TFolder) || !sourcePath) throw new Error(t('ui.exportContext.chooseExistingFolder'));
     return app.vault.getMarkdownFiles()
         .filter(file => isPathInFolderScope(file.path, sourcePath))
         .sort((a, b) => a.path.localeCompare(b.path, 'en', { numeric: true, sensitivity: 'variant' }));
@@ -27,14 +28,14 @@ export function getManuscriptSourceFiles(app: App, kind: 'folder' | 'file', sour
 
 /** Resolve exactly the reviewed paths, in the author's order; never rescan at export. */
 export function getReviewedManuscriptSelection(app: App, source: Exclude<ManuscriptSource, { kind: 'book' }>): ManuscriptSceneSelection {
-    if (!source.paths.length) throw new ExportFailure({ category: 'missing_files', message: 'Include at least one manuscript note.' });
-    if (new Set(source.paths).size !== source.paths.length) throw new ExportFailure({ category: 'missing_files', message: 'The manuscript selection contains a duplicate note.' });
+    if (!source.paths.length) throw new ExportFailure({ category: 'missing_files', message: t('ui.exportContext.includeAtLeastOneNote') });
+    if (new Set(source.paths).size !== source.paths.length) throw new ExportFailure({ category: 'missing_files', message: t('ui.exportContext.duplicateNote') });
     const files = source.paths.map(sourcePath => {
         if (source.kind === 'file' ? sourcePath !== source.path : !isPathInFolderScope(sourcePath, source.path)) {
-            throw new ExportFailure({ category: 'missing_files', message: `Selected note is outside the manuscript source: ${sourcePath}` });
+            throw new ExportFailure({ category: 'missing_files', message: t('ui.exportContext.noteOutsideSource', { path: sourcePath }) });
         }
         const file = app.vault.getAbstractFileByPath(sourcePath);
-        if (!(file instanceof TFile) || file.extension !== 'md') throw new ExportFailure({ category: 'missing_files', message: `Selected manuscript note is missing: ${sourcePath}` });
+        if (!(file instanceof TFile) || file.extension !== 'md') throw new ExportFailure({ category: 'missing_files', message: t('ui.exportContext.noteMissing', { path: sourcePath }) });
         return file;
     });
     return {

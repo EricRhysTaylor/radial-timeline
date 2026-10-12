@@ -7,6 +7,7 @@ import { getActivePlanetaryProfile } from '../../utils/planetaryTime';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { IMPACT_FULL } from '../SettingImpact';
 import { ERT_CLASSES } from '../../ui/classes';
+import { t, tCount } from '../../i18n';
 
 interface DurationCapOption {
     key: string;
@@ -67,10 +68,10 @@ async function collectDurationCapOptions(
 export function renderChronologueSection(params: { app: App; plugin: RadialTimelinePlugin; containerEl: HTMLElement; }): void {
     const { plugin, containerEl } = params;
     containerEl.classList.add(ERT_CLASSES.STACK);
-    const activePlanetaryLabel = getActivePlanetaryProfile(plugin.settings)?.label?.trim() || 'Planetary';
+    const activePlanetaryLabel = getActivePlanetaryProfile(plugin.settings)?.label?.trim() || t('ui.chronologueSection.planetaryFallback');
 
     const chronoHeading = new Settings(containerEl)
-        .setName('Chronologue mode discontinuity & duration')
+        .setName(t('ui.chronologueSection.heading'))
         .setHeading();
     addHeadingIcon(chronoHeading, 'clock-8');
     addWikiLink(chronoHeading, 'Settings-Core#chronologue-mode-settings');
@@ -79,14 +80,14 @@ export function renderChronologueSection(params: { app: App; plugin: RadialTimel
     const stackEl = containerEl.createDiv({ cls: ERT_CLASSES.STACK });
 
     new Settings(stackEl)
-        .setName('Default calendar view')
-        .setDesc('Choose what Chronologue shows first. Earth remains the source date; Planetary displays the active valid planetary profile immediately when Chronologue opens.')
+        .setName(t('ui.chronologueSection.defaultCalendarName'))
+        .setDesc(t('ui.chronologueSection.defaultCalendarDesc'))
         .addDropdown(dropdown => {
             dropdown.selectEl.addClass('ert-input', 'ert-input--md');
             dropdown
-                .addOption('earth', 'Earth')
+                .addOption('earth', t('ui.chronologueSection.optionEarth'))
                 .addOption('planetary', activePlanetaryLabel)
-                .addOption('remember', 'Remember last')
+                .addOption('remember', t('ui.chronologueSection.optionRememberLast'))
                 .setValue(plugin.settings.chronologueCalendarDefault ?? 'earth')
                 .onChange(async (value) => {
                     plugin.settings.chronologueCalendarDefault = value as ChronologueCalendarDefault;
@@ -96,10 +97,10 @@ export function renderChronologueSection(params: { app: App; plugin: RadialTimel
         });
 
     // 1. Chronologue duration arc cap
-    const baseDurationDesc = 'Scenes with durations at or above the selected value fill the entire segment. All other durations below this are proportionally scaled.';
+    const baseDurationDesc = t('ui.chronologueSection.durationCapDesc');
 
     const durationSetting = new Settings(stackEl)
-        .setName('Chronologue duration arc cap')
+        .setName(t('ui.chronologueSection.durationCapName'))
         .setDesc(baseDurationDesc);
 
     const savedCapSelection = plugin.settings.chronologueDurationCapSelection ?? 'auto';
@@ -113,13 +114,13 @@ export function renderChronologueSection(params: { app: App; plugin: RadialTimel
         if (!dropdown) return;
         if (options === null) {
             if (!durationOptionsLoaded) {
-                durationSetting.setDesc(`${baseDurationDesc} Open the timeline to load duration data.`);
+                durationSetting.setDesc(t('ui.chronologueSection.durationCapDescOpenTimeline', { desc: baseDurationDesc }));
             }
             return;
         }
         durationOptionsLoaded = true;
         if (options.length === 0) {
-            durationSetting.setDesc(`${baseDurationDesc} No scene durations detected yet.`);
+            durationSetting.setDesc(t('ui.chronologueSection.durationCapDescNoDurations', { desc: baseDurationDesc }));
         } else {
             options.forEach(opt => {
                 if (!dropdown.selectEl.querySelector(`option[value="${opt.key}"]`)) {
@@ -140,7 +141,7 @@ export function renderChronologueSection(params: { app: App; plugin: RadialTimel
 
     durationSetting.addDropdown(dropdown => {
         durationDropdown = dropdown;
-        dropdown.addOption('auto', 'Longest observed duration (auto)');
+        dropdown.addOption('auto', t('ui.chronologueSection.durationCapAuto'));
         dropdown.setValue(savedCapSelection);
         dropdown.onChange(async (value) => {
             plugin.settings.chronologueDurationCapSelection = value;
@@ -179,14 +180,14 @@ export function renderChronologueSection(params: { app: App; plugin: RadialTimel
         try {
             const scenes = await getScenesForThreshold(allowFetch);
             if (!scenes) {
-                return { display: 'Open timeline to calculate', days: null, loaded: false };
+                return { display: t('ui.chronologueSection.openTimelineToCalculate'), days: null, loaded: false };
             }
 
             // Use single source of truth helper
             const thresholdMs = calculateAutoDiscontinuityThreshold(scenes);
 
             if (thresholdMs === null) {
-                return { display: 'not yet calculated', days: null, loaded: true };
+                return { display: t('ui.chronologueSection.notYetCalculated'), days: null, loaded: true };
             }
 
             // Convert to appropriate time unit for display
@@ -196,22 +197,22 @@ export function renderChronologueSection(params: { app: App; plugin: RadialTimel
 
             let display: string;
             if (days >= 1) {
-                display = `${Math.round(days)} ${Math.round(days) === 1 ? 'day' : 'days'}`;
+                display = tCount('day', Math.round(days));
             } else if (hours >= 1) {
-                display = `${Math.round(hours)} ${Math.round(hours) === 1 ? 'hour' : 'hours'}`;
+                display = tCount('hour', Math.round(hours));
             } else {
-                display = `${Math.round(minutes)} ${Math.round(minutes) === 1 ? 'minute' : 'minutes'}`;
+                display = tCount('minute', Math.round(minutes));
             }
 
             return { display, days: Math.round(days * 100) / 100, loaded: true };
         } catch (err) {
             console.error('[Settings] Error calculating threshold:', err);
-            return { display: 'not yet calculated', days: null, loaded: false };
+            return { display: t('ui.chronologueSection.notYetCalculated'), days: null, loaded: false };
         }
     };
 
     const discontinuitySetting = new Settings(stackEl)
-        .setName('Discontinuity gap threshold');
+        .setName(t('ui.chronologueSection.discontinuityName'));
     discontinuitySetting.settingEl.addClass('ert-setting-two-row', 'ert-chronologue-discontinuity-setting');
 
     // Declare the text component reference first (before updateDescriptionAndPlaceholder uses it)
@@ -222,10 +223,10 @@ export function renderChronologueSection(params: { app: App; plugin: RadialTimel
     const updateDescriptionAndPlaceholder = async (allowFetch: boolean) => {
         const autoThreshold = await calculateAutoThreshold(allowFetch);
         if (autoThreshold.loaded) autoThresholdLoaded = true;
-        discontinuitySetting.setDesc(`In shift mode, the ∞ symbol marks large time gaps between scenes. By default, this is auto-calculated as 3× the median gap between scenes. Current auto value: ${autoThreshold.display}. You can override this with a custom gap threshold (e.g., "4 days", "1 week", "30 minutes").`);
+        discontinuitySetting.setDesc(t('ui.chronologueSection.discontinuityDesc', { value: autoThreshold.display }));
         if (discontinuityText) {
             const currentValue = plugin.settings.discontinuityThreshold || '';
-            discontinuityText.setPlaceholder(`${autoThreshold.display} (auto)`);
+            discontinuityText.setPlaceholder(t('ui.chronologueSection.autoPlaceholder', { value: autoThreshold.display }));
             if (!currentValue) {
                 discontinuityText.setValue('');
             }
@@ -238,12 +239,12 @@ export function renderChronologueSection(params: { app: App; plugin: RadialTimel
     discontinuitySetting.addText(text => {
         discontinuityText = text;
         const currentValue = plugin.settings.discontinuityThreshold || '';
-        text.setPlaceholder('Calculating…')
+        text.setPlaceholder(t('ui.chronologueSection.calculatingPlaceholder'))
             .setValue(currentValue);
         text.inputEl.addClass('ert-input--md');
 
         void calculateAutoThreshold(false).then(autoThreshold => {
-            text.setPlaceholder(`${autoThreshold.display} (auto)`);
+            text.setPlaceholder(t('ui.chronologueSection.autoPlaceholder', { value: autoThreshold.display }));
             if (!currentValue) {
                 text.setValue('');
             }
@@ -268,7 +269,7 @@ export function renderChronologueSection(params: { app: App; plugin: RadialTimel
             const parsed = parseDurationDetail(trimmed);
             if (!parsed) {
                 text.inputEl.addClass('ert-setting-input-error');
-                new Notice('Invalid gap threshold format. Examples: "4 days", "1 week", "2 months"');
+                new Notice(t('ui.chronologueSection.invalidThresholdNotice'));
                 return;
             }
 
@@ -297,7 +298,7 @@ export function renderChronologueSection(params: { app: App; plugin: RadialTimel
     // Add a reset button
     discontinuitySetting.addExtraButton(button => button
         .setIcon('reset')
-        .setTooltip('Reset to auto-calculated threshold')
+        .setTooltip(t('ui.chronologueSection.resetTooltip'))
         .onClick(async () => {
             plugin.settings.discontinuityThreshold = undefined;
             await plugin.saveSettings();
@@ -307,7 +308,7 @@ export function renderChronologueSection(params: { app: App; plugin: RadialTimel
                 discontinuityText.inputEl.removeClass('ert-setting-input-error');
                 discontinuityText.inputEl.removeClass('ert-setting-input-success');
             }
-            new Notice('Discontinuity threshold reset to auto-calculated value');
+            new Notice(t('ui.chronologueSection.resetNotice'));
         }));
 
 }

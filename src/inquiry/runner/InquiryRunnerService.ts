@@ -667,7 +667,7 @@ export class InquiryRunnerService implements InquiryRunner {
             const sceneLabel = scene.title ? `${scene.title} (${scene.label})` : scene.label;
             const sceneMeta: EvidenceDocumentMeta = { title: scene.title || scene.label, path: scene.path, sceneId: scene.sceneId, evidenceClass: 'scene' };
             if (mode === 'summary') {
-                if (!scene.summary) throw new Error(`Selected Inquiry Summary is missing: "${scene.path}". Choose Full explicitly or exclude this note.`);
+                if (!scene.summary) throw new Error(t('ui.inquiryRunnerService.summaryMissing', { path: scene.path }));
                 blocks.push({ label: `Scene ${sceneLabel} (${scene.sceneId}) (Summary)`, content: scene.summary, meta: sceneMeta });
                 continue;
             }
@@ -687,7 +687,7 @@ export class InquiryRunnerService implements InquiryRunner {
             dedupedBlocks.push(block);
         });
 
-        if (!dedupedBlocks.length) throw new Error('No evidence is selected for this Inquiry. Choose source material before running analysis.');
+        if (!dedupedBlocks.length) throw new Error(t('ui.inquiryRunnerService.noEvidenceSelected'));
 
         // Hard guard: Inquiry corpus must never include Synopsis-sourced content.
         // Catches accidental reintroduction of Synopsis semantics in future changes.
@@ -714,7 +714,7 @@ export class InquiryRunnerService implements InquiryRunner {
             if (!normalizedPath || seenPaths.has(normalizedPath)) return;
             seenPaths.add(normalizedPath);
             const file = this.vault.getAbstractFileByPath(entry.path);
-            if (!file || !this.isTFile(file)) throw new Error(`Selected Inquiry scene is missing: "${entry.path}".`);
+            if (!file || !this.isTFile(file)) throw new Error(t('ui.inquiryRunnerService.sceneMissing', { path: entry.path }));
             const frontmatter = this.getFrontmatter(file);
             const summary = cleanEvidenceBody(extractSummary(frontmatter));
             const sceneNumber = this.extractSceneNumber(frontmatter) ?? this.extractSceneNumberFromText(file.basename);
@@ -828,19 +828,19 @@ export class InquiryRunnerService implements InquiryRunner {
 
     private async readFileContent(path: string): Promise<string> {
         const file = this.vault.getAbstractFileByPath(path);
-        if (!file || !this.isTFile(file)) throw new Error(`Selected Inquiry source is missing: "${path}".`);
+        if (!file || !this.isTFile(file)) throw new Error(t('ui.inquiryRunnerService.sourceMissing', { path }));
         const raw = await this.vault.read(file);
         const content = cleanEvidenceBody(raw);
-        if (!content) throw new Error(`Selected Inquiry source has no public body text: "${path}". Exclude this note or supply the selected material.`);
+        if (!content) throw new Error(t('ui.inquiryRunnerService.sourceNoBody', { path }));
         return content;
     }
 
     private getSummaryForPath(path: string): string {
         const file = this.vault.getAbstractFileByPath(path);
-        if (!file || !this.isTFile(file)) throw new Error(`Selected Inquiry source is missing: "${path}".`);
+        if (!file || !this.isTFile(file)) throw new Error(t('ui.inquiryRunnerService.sourceMissing', { path }));
         const frontmatter = this.getFrontmatter(file);
         const summary = cleanEvidenceBody(extractSummary(frontmatter));
-        if (!summary) throw new Error(`Selected Inquiry Summary is missing: "${path}". Choose Full explicitly or exclude this note.`);
+        if (!summary) throw new Error(t('ui.inquiryRunnerService.summaryMissing', { path }));
         return summary;
     }
 
@@ -1147,8 +1147,11 @@ export class InquiryRunnerService implements InquiryRunner {
                 });
             }
             const reason = precheck.onePassFit === 'overflows'
-                ? `Automatic mode routed to multi-pass because estimated input ${Math.round(precheck.inputTokens).toLocaleString()} exceeded safe input budget ${Math.round(precheck.safeInputTokens).toLocaleString()}, but chunking/synthesis did not complete.`
-                : 'Automatic mode preferred multi-pass because one-pass fit was unknown, but chunking/synthesis did not complete.';
+                ? t('inquiry.runner.multiPassNotComplete', {
+                    inputTokens: Math.round(precheck.inputTokens).toLocaleString(),
+                    safeInputTokens: Math.round(precheck.safeInputTokens).toLocaleString()
+                })
+                : t('inquiry.runner.multiPassUnknownNotComplete');
             const reasonWithStage = `${reason} ${multiPass.failureReason}`.trim();
             return this.buildMultiPassFailedResult(
                 ai,
@@ -1219,7 +1222,7 @@ export class InquiryRunnerService implements InquiryRunner {
                 } else {
                     return this.buildMultiPassFailedResult(
                         ai,
-                        `Single-pass response was truncated, and fallback multi-pass analysis did not complete. ${multiPass.failureReason}`.trim(),
+                        t('inquiry.runner.multiPassNotCompleteFallback', { reason: multiPass.failureReason }).trim(),
                         multiPass.failureStage,
                         multiPass.tokenUsageKnown,
                         multiPass.usage,
@@ -1511,10 +1514,10 @@ export class InquiryRunnerService implements InquiryRunner {
         tokenUsageScope?: InquiryTokenUsageScope
     ): ProviderResult {
         const stageLabel = failureStage === 'chunk_execution'
-            ? 'chunk execution'
+            ? t('ui.inquiryRunnerService.stageChunkExecution')
             : failureStage === 'synthesis'
-                ? 'synthesis'
-                : 'preflight estimation';
+                ? t('ui.inquiryRunnerService.stageSynthesis')
+                : t('ui.inquiryRunnerService.stagePreflight');
         return {
             success: false,
             content: null,
@@ -1526,7 +1529,7 @@ export class InquiryRunnerService implements InquiryRunner {
             aiModelResolved: ai.modelId,
             aiStatus: 'rejected',
             aiReason: 'multi_pass_failed',
-            error: `The run failed during multi-pass ${stageLabel}. RT did not receive valid structured output for a required pass. This is a multi-pass/parsing failure in the current Inquiry path. Open Inquiry Log for details.`,
+            error: t('inquiry.runner.multiPassFailureGeneric', { stageLabel }),
             executionPassCount: 1,
             multiPassTriggerReason: reason,
             executionState: 'multi_pass_failed',
@@ -1657,7 +1660,7 @@ export class InquiryRunnerService implements InquiryRunner {
                 totalPasses,
                 chunkIndex: i + 1,
                 chunkTotal: chunkPlan.prompts.length,
-                detail: `Waiting for pass ${i + 1} of ${totalPasses}.`
+                detail: t('ui.inquiryRunnerService.waitingForPass', { current: i + 1, total: totalPasses })
             });
             const chunkRun = await this.runInquiryRequest(aiClient, {
                 task: `AnalyzeCorpusChunk${i + 1}`,
@@ -1741,7 +1744,7 @@ export class InquiryRunnerService implements InquiryRunner {
             currentPass: totalPasses,
             totalPasses,
             chunkTotal: chunkPlan.prompts.length,
-            detail: `Waiting for pass ${totalPasses} of ${totalPasses}.`
+            detail: t('ui.inquiryRunnerService.waitingForPass', { current: totalPasses, total: totalPasses })
         });
         let synthesisRun = await this.runInquiryRequest(aiClient, {
             task: 'SynthesizeChunkAnalyses',
@@ -1783,10 +1786,10 @@ export class InquiryRunnerService implements InquiryRunner {
             usage: usageSummary.usage,
             run: this.withExecutionContext({
                 ...synthesisRun,
-                warnings: [...(synthesisRun.warnings || []), `Inquiry chunked execution used ${chunkPlan.prompts.length} chunks before synthesis.`]
+                warnings: [...(synthesisRun.warnings || []), t('inquiry.runner.inquiryRunFooter', { count: chunkPlan.prompts.length })]
             }, {
                     executionPassCount: passCount,
-                multiPassTriggerReason: 'Single-pass request exceeded the planning budget, so structured multi-pass analysis and synthesis were used.'
+                multiPassTriggerReason: t('inquiry.runner.multiPassTriggerReason')
             })
         };
     }
@@ -2279,7 +2282,7 @@ export class InquiryRunnerService implements InquiryRunner {
             aiStatus: 'rejected' as InquiryAiStatus,
             aiReason: 'invalid_response'
         };
-        return this.buildStubResult(input, fallbackMeta, new Error('Omnibus response missing this question.'));
+        return this.buildStubResult(input, fallbackMeta, new Error(t('ui.inquiryRunnerService.omnibusMissingQuestion')));
     }
 
     private buildOmnibusQuestionInput(
@@ -2372,9 +2375,9 @@ export class InquiryRunnerService implements InquiryRunner {
             const span = typeof raw.span === 'string' ? raw.span.trim() : '';
 
             if (normalized.unresolved) {
-                const offendingRef = rawRefId || rawRefLabel || rawRefPath || '(missing ref)';
+                const offendingRef = rawRefId || rawRefLabel || rawRefPath || t('ui.inquiryRunnerService.missingRef');
                 const warningMessage = normalized.warning
-                    || `AI citation "${offendingRef}" could not be matched to a scene in the active corpus.`;
+                    || t('inquiry.runner.integrityNoVerified', { ref: offendingRef });
                 if (normalized.warning) {
                     console.warn(`[Inquiry] ${normalized.warning}`);
                 }
@@ -2391,7 +2394,7 @@ export class InquiryRunnerService implements InquiryRunner {
                 });
                 warnings.push({
                     stage: 'unresolved_ref',
-                    message: `AI citation "${offendingRef}" could not be matched to the active corpus.`
+                    message: t('inquiry.runner.integrityUnverified', { ref: offendingRef })
                 });
                 return;
             }
@@ -2506,10 +2509,10 @@ export class InquiryRunnerService implements InquiryRunner {
                 return;
             }
 
-            const offendingRef = rawRefId || rawRefLabel || rawRefPath || '(missing supporting ref)';
+            const offendingRef = rawRefId || rawRefLabel || rawRefPath || t('ui.inquiryRunnerService.missingSupportingRef');
             warnings.push({
                 stage: 'unresolved_ref',
-                message: `AI supporting citation "${offendingRef}" could not be matched to the active corpus. Keeping the primary finding bound.`
+                message: t('ui.inquiryRunnerService.supportingCitationUnmatched', { ref: offendingRef })
             });
         });
         return supportingRefs.length ? { supportingRefs } : {};
@@ -2539,7 +2542,7 @@ export class InquiryRunnerService implements InquiryRunner {
         const descriptor = [labelDesc, pathDesc].filter(Boolean).join(' / ');
         return {
             stage: 'ref_label_mismatch',
-            message: `AI returned a valid scene id with mismatched label/path metadata: ref_id ${resolvedRefId}, but ${descriptor} points to ${nonIdResolved.ref.ref_id}. Trusting ref_id.`
+            message: t('ui.inquiryRunnerService.sceneRefMismatch', { refId: resolvedRefId, descriptor, otherRefId: nonIdResolved.ref.ref_id })
         };
     }
 
@@ -2561,7 +2564,7 @@ export class InquiryRunnerService implements InquiryRunner {
         const descriptor = [labelDesc, pathDesc].filter(Boolean).join(' / ');
         return {
             stage: 'ref_label_mismatch',
-            message: `AI returned a valid book id with mismatched label/path metadata: ref_id ${resolvedRefId}, but ${descriptor} points to ${nonIdResolved.ref.ref_id}. Trusting ref_id.`
+            message: t('ui.inquiryRunnerService.bookRefMismatch', { refId: resolvedRefId, descriptor, otherRefId: nonIdResolved.ref.ref_id })
         };
     }
 
@@ -2710,7 +2713,7 @@ export class InquiryRunnerService implements InquiryRunner {
                     },
                     normalizedFromLegacy: true,
                     unresolved: false,
-                    warning: `Normalized book reference "${candidate}" to ${resolved.bookId}.`
+                    warning: t('ui.inquiryRunnerService.bookRefNormalized', { candidate, bookId: resolved.bookId })
                 };
             }
         }
@@ -2719,8 +2722,8 @@ export class InquiryRunnerService implements InquiryRunner {
             normalizedFromLegacy: true,
             unresolved: true,
             warning: rawRefId
-                ? `Could not resolve "${rawRefId}" to a canonical book id; leaving finding unbound.`
-                : 'Missing book reference id; leaving finding unbound.'
+                ? t('ui.inquiryRunnerService.bookRefUnresolved', { refId: rawRefId })
+                : t('ui.inquiryRunnerService.bookRefMissing')
         };
     }
 

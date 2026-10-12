@@ -1,5 +1,6 @@
 import { PRIDE_AND_PREJUDICE_THUMB } from '../branding/bonusVaultThumbs';
 import type { SampleBookDefinition } from '../utils/sampleVault';
+import { t } from '../i18n';
 
 export interface DemoArchive {
     /** Direct archive transfer for Obsidian's downloader. */
@@ -29,10 +30,10 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         id: 'pride-and-prejudice',
         title: 'Pride & Prejudice',
         author: 'Austen',
-        countLabel: '61 chapters',
+        get countLabel() { return t('ui.bonusVaults.prideCountLabel'); },
         status: 'available',
         thumb: PRIDE_AND_PREJUDICE_THUMB,
-        description: 'Recommended first demo. Saved Pulse, four Gossamer signals, and three Inquiry briefings.',
+        get description() { return t('ui.bonusVaults.prideDescription'); },
         books: [{ title: 'Pride & Prejudice', sourceFolder: 'Pride & Prejudice' }],
         archive: {
             url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/pride-and-prejudice-demo-vault.zip',
@@ -46,9 +47,9 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         id: 'odyssey',
         title: 'The Odyssey',
         author: 'Homer',
-        countLabel: '89 scenes',
+        get countLabel() { return t('ui.bonusVaults.odysseyCountLabel'); },
         status: 'available',
-        description: 'Explore the complete journey with saved Pulse, four Gossamer signals, and three Inquiry briefings.',
+        get description() { return t('ui.bonusVaults.odysseyDescription'); },
         books: [{ title: 'The Odyssey', sourceFolder: 'The Odyssey' }],
         archive: {
             url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/odyssey-demo-vault.zip',
@@ -62,9 +63,9 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         id: 'sherlock-holmes',
         title: 'Sherlock Holmes',
         author: 'Doyle',
-        countLabel: '4 novels · 56 chapters',
+        get countLabel() { return t('ui.bonusVaults.sherlockCountLabel'); },
         status: 'available',
-        description: 'Our first collection: switch between four complete novels and their saved analyses.',
+        get description() { return t('ui.bonusVaults.sherlockDescription'); },
         books: [
             { title: 'A Study in Scarlet', sourceFolder: '01 A Study in Scarlet' },
             { title: 'The Sign of the Four', sourceFolder: '02 The Sign of the Four' },
@@ -83,7 +84,7 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         id: 'faerie-queene',
         title: 'The Faerie Queene',
         author: 'Spenser',
-        countLabel: 'In preparation',
+        get countLabel() { return t('ui.bonusVaults.inPreparation'); },
         status: 'coming-soon'
     }
 ];

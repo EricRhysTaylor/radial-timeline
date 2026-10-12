@@ -3,6 +3,7 @@ import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { DemoLibraryModal } from '../../modals/DemoLibraryModal';
 import { ERT_CLASSES } from '../../ui/classes';
+import { t } from '../../i18n';
 import {
     BONUS_VAULTS,
     type BonusVaultDef
@@ -68,14 +69,11 @@ export function renderBonusVaultsSection({
     });
     const pillIcon = pill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
     setIcon(pillIcon, 'sparkles');
-    pill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'FREE DEMOS' });
-    header.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: 'Demo vaults' });
+    pill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.bonusVaultsSection.freeDemosBadge') });
+    header.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: t('ui.bonusVaultsSection.heading') });
     header.createEl('p', {
         cls: ERT_CLASSES.SECTION_DESC,
-        text:
-            'Explore complete worked examples with saved analysis. Start with the free ' +
-            'Pride & Prejudice, Odyssey, or Sherlock Holmes project; no API key is needed to browse saved results. ' +
-            'Add a demo directly to this vault, or download a separate vault as a ZIP.'
+        text: t('ui.bonusVaultsSection.description')
     });
 
     // ── Card grid ────────────────────────────────────────────
@@ -119,7 +117,7 @@ function renderCard(
     if (isComingSoon) {
         const btn = action.createEl('button', {
             cls: 'ert-bonus-card__btn',
-            text: 'Coming soon',
+            text: t('ui.bonusVaultsSection.comingSoon'),
             attr: { type: 'button', disabled: 'true' }
         });
         btn.disabled = true;
@@ -130,8 +128,8 @@ function renderCard(
         });
         const btnIcon = btn.createSpan({ cls: 'ert-bonus-card__btn-icon' });
         setIcon(btnIcon, 'folder-plus');
-        btn.createSpan({ text: 'Explore demo' });
-        btn.setAttr('aria-label', `Explore ${vault.title} demo`);
+        btn.createSpan({ text: t('ui.bonusVaultsSection.exploreDemo') });
+        btn.setAttr('aria-label', t('ui.bonusVaultsSection.exploreDemoAria', { title: vault.title }));
         plugin.registerDomEvent(btn, 'click', () => {
             new DemoLibraryModal(plugin.app, plugin).open();
         });

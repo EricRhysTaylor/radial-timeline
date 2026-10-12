@@ -141,7 +141,7 @@ function validateStageOrder(plugin: RadialTimelinePlugin, stage: Stage, newDate:
         if (earlierDateStr) {
             const earlierDate = new Date(earlierDateStr + 'T00:00:00');
             if (!isNaN(earlierDate.getTime()) && newDateObj <= earlierDate) {
-                return `${stage} target must be after ${earlierStage} target (${earlierDateStr})`;
+                return t('ui.progressSection.stageMustBeAfter', { stage, otherStage: earlierStage, date: earlierDateStr });
             }
         }
     }
@@ -153,7 +153,7 @@ function validateStageOrder(plugin: RadialTimelinePlugin, stage: Stage, newDate:
         if (laterDateStr) {
             const laterDate = new Date(laterDateStr + 'T00:00:00');
             if (!isNaN(laterDate.getTime()) && newDateObj >= laterDate) {
-                return `${stage} target must be before ${laterStage} target (${laterDateStr})`;
+                return t('ui.progressSection.stageMustBeBefore', { stage, otherStage: laterStage, date: laterDateStr });
             }
         }
     }
@@ -182,21 +182,21 @@ export function renderCompletionEstimatePreview(params: {
 
     // Quotes for different states
     const startingQuotes: Quote[] = [
-        { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
-        { text: "Start writing, no matter what. The water does not flow until the faucet is turned on.", author: "Louis L'Amour" },
-        { text: "You don't start out writing good stuff. You start out writing crap and thinking it's good stuff, and then gradually you get better at it.", author: "Octavia E. Butler" },
-        { text: "The first draft is just you telling yourself the story.", author: "Terry Pratchett" },
-        { text: "Begin at the beginning and go on till you come to the end; then stop.", author: "Lewis Carroll" },
+        { text: t('ui.progressSection.quoteStart1'), author: "Mark Twain" },
+        { text: t('ui.progressSection.quoteStart2'), author: "Louis L'Amour" },
+        { text: t('ui.progressSection.quoteStart3'), author: "Octavia E. Butler" },
+        { text: t('ui.progressSection.quoteStart4'), author: "Terry Pratchett" },
+        { text: t('ui.progressSection.quoteStart5'), author: "Lewis Carroll" },
     ];
 
     const perseveranceQuotes: Quote[] = [
-        { text: "You can always edit a bad page. You can't edit a blank page.", author: "Jodi Picoult" },
-        { text: "I write only when inspiration strikes. Fortunately it strikes every morning at nine o'clock sharp.", author: "W. Somerset Maugham" },
-        { text: "The hard part about writing a novel is finishing it.", author: "Ernest Hemingway" },
-        { text: "A writer is someone for whom writing is more difficult than it is for other people.", author: "Thomas Mann" },
-        { text: "Almost all good writing begins with terrible first efforts.", author: "Anne Lamott" },
-        { text: "Don't get it right, get it written.", author: "James Thurber" },
-        { text: "Writing a book is a horrible, exhausting struggle. One would never undertake such a thing if one were not driven.", author: "George Orwell" },
+        { text: t('ui.progressSection.quotePersevere1'), author: "Jodi Picoult" },
+        { text: t('ui.progressSection.quotePersevere2'), author: "W. Somerset Maugham" },
+        { text: t('ui.progressSection.quotePersevere3'), author: "Ernest Hemingway" },
+        { text: t('ui.progressSection.quotePersevere4'), author: "Thomas Mann" },
+        { text: t('ui.progressSection.quotePersevere5'), author: "Anne Lamott" },
+        { text: t('ui.progressSection.quotePersevere6'), author: "James Thurber" },
+        { text: t('ui.progressSection.quotePersevere7'), author: "George Orwell" },
     ];
 
     function getRandomQuote(quotes: Quote[]): Quote {
@@ -237,12 +237,12 @@ export function renderCompletionEstimatePreview(params: {
             cls: 'ert-iconBtn ert-completion-summary-toggle',
             attr: {
                 type: 'button',
-                'aria-label': isExpanded ? 'Collapse progress preview' : 'Expand progress preview',
+                'aria-label': isExpanded ? t('ui.progressSection.collapsePreview') : t('ui.progressSection.expandPreview'),
                 'aria-expanded': String(isExpanded)
             }
         });
         setIcon(toggleButton, isExpanded ? 'chevron-down' : 'chevron-right');
-        setTooltip(toggleButton, isExpanded ? 'Collapse progress preview' : 'Expand progress preview');
+        setTooltip(toggleButton, isExpanded ? t('ui.progressSection.collapsePreview') : t('ui.progressSection.expandPreview'));
         toggleButton.addEventListener('click', () => {
             isExpanded = !isExpanded;
             saveExpandedState(isExpanded);
@@ -277,9 +277,9 @@ export function renderCompletionEstimatePreview(params: {
                 plugin.lastSceneData = scenes;
             }
             if (!scenes) {
-                const loadingMessage = 'Loading progress estimates...';
+                const loadingMessage = t('ui.progressSection.loadingEstimates');
                 renderSummaryRow({
-                    title: 'Completion estimate',
+                    title: t('ui.progressSection.completionEstimateTitle'),
                     subtitle: loadingMessage
                 });
                 if (!isExpanded) {
@@ -289,7 +289,7 @@ export function renderCompletionEstimatePreview(params: {
                 }
                 previewContainer.addClass('ert-completion-preview-empty');
                 const heading = previewContainer.createDiv({ cls: 'ert-planetary-preview-heading' });
-                heading.setText('Completion estimate');
+                heading.setText(t('ui.progressSection.completionEstimateTitle'));
                 const body = previewContainer.createDiv({ cls: 'ert-planetary-preview-body ert-completion-preview-body' });
                 body.createDiv({ cls: 'ert-completion-no-data', text: loadingMessage });
                 schedulePreviewFetch();
@@ -308,9 +308,9 @@ export function renderCompletionEstimatePreview(params: {
                 }
                 previewContainer.addClass('ert-completion-preview-empty');
                 const heading = previewContainer.createDiv({ cls: 'ert-planetary-preview-heading' });
-                heading.setText('Completion estimate');
+                heading.setText(t('ui.progressSection.completionEstimateTitle'));
                 const body = previewContainer.createDiv({ cls: 'ert-planetary-preview-body ert-completion-preview-body' });
-                body.createDiv({ cls: 'ert-completion-empty-hint', text: 'Create scenes to see progress calculations.' });
+                body.createDiv({ cls: 'ert-completion-empty-hint', text: t('ui.progressSection.createScenesHint') });
                 return;
             }
 
@@ -327,8 +327,8 @@ export function renderCompletionEstimatePreview(params: {
 
                 if (!milestone || !milestone.type.includes('complete')) {
                     renderSummaryRow({
-                        title: 'Completion estimate',
-                        subtitle: 'Complete some scenes to see progress calculations.'
+                        title: t('ui.progressSection.completionEstimateTitle'),
+                        subtitle: t('ui.progressSection.completeScenesHint')
                     });
                     if (!isExpanded) {
                         previewContainer.addClass('ert-completion-preview-collapsed');
@@ -336,9 +336,9 @@ export function renderCompletionEstimatePreview(params: {
                     }
                     // Not actually complete - show a simple "no estimate available" message
                     const heading = previewContainer.createDiv({ cls: 'ert-planetary-preview-heading' });
-                    heading.setText('Completion estimate');
+                    heading.setText(t('ui.progressSection.completionEstimateTitle'));
                     const body = previewContainer.createDiv({ cls: 'ert-planetary-preview-body ert-completion-preview-body' });
-                    body.createDiv({ cls: 'ert-completion-no-data', text: 'Complete some scenes to see progress calculations.' });
+                    body.createDiv({ cls: 'ert-completion-no-data', text: t('ui.progressSection.completeScenesHint') });
                     return;
                 }
 
@@ -353,17 +353,17 @@ export function renderCompletionEstimatePreview(params: {
                     setIcon(bgIcon, 'shell');
 
                     const heading = previewContainer.createDiv({ cls: 'ert-planetary-preview-heading' });
-                    heading.setText('Book complete');
+                    heading.setText(t('ui.progressSection.bookCompleteHeading'));
 
                     const pressCelebrations = [
-                        { title: "You wrote a book.", subtitle: "Let that sink in." },
-                        { title: "It's done.", subtitle: "You actually did it. A whole book." },
-                        { title: "Author status: confirmed.", subtitle: "Press stage complete. This is a real book now." },
-                        { title: "CHAMPION", subtitle: "From zero draft to press-ready. Incredible." },
-                        { title: "The manuscript is complete.", subtitle: "Time to uncork something." },
-                        { title: "Release awaits.", subtitle: "You've done your part. Every. Single. Scene." },
-                        { title: "Final boss defeated.", subtitle: "The book is finished. You win." },
-                        { title: "Standing ovation.", subtitle: "From first word to final scene — you did this." },
+                        { title: t('ui.progressSection.pressCelebration1Title'), subtitle: t('ui.progressSection.pressCelebration1Subtitle') },
+                        { title: t('ui.progressSection.pressCelebration2Title'), subtitle: t('ui.progressSection.pressCelebration2Subtitle') },
+                        { title: t('ui.progressSection.pressCelebration3Title'), subtitle: t('ui.progressSection.pressCelebration3Subtitle') },
+                        { title: t('ui.progressSection.pressCelebration4Title'), subtitle: t('ui.progressSection.pressCelebration4Subtitle') },
+                        { title: t('ui.progressSection.pressCelebration5Title'), subtitle: t('ui.progressSection.pressCelebration5Subtitle') },
+                        { title: t('ui.progressSection.pressCelebration6Title'), subtitle: t('ui.progressSection.pressCelebration6Subtitle') },
+                        { title: t('ui.progressSection.pressCelebration7Title'), subtitle: t('ui.progressSection.pressCelebration7Subtitle') },
+                        { title: t('ui.progressSection.pressCelebration8Title'), subtitle: t('ui.progressSection.pressCelebration8Subtitle') },
                     ];
                     const celebration = pressCelebrations[Math.floor(Math.random() * pressCelebrations.length)];
 
@@ -373,8 +373,8 @@ export function renderCompletionEstimatePreview(params: {
                     completeContent.createDiv({ cls: 'ert-completion-complete-subtitle', text: celebration.subtitle });
                 } else if (milestone.type === 'stage-zero-complete') {
                     renderSummaryRow({
-                        title: 'Zero draft complete',
-                        subtitle: 'The first full draft exists.'
+                        title: t('ui.progressSection.zeroCompleteTitle'),
+                        subtitle: t('ui.progressSection.zeroCompleteSubtitle')
                     });
                     if (!isExpanded) {
                         previewContainer.addClass('ert-completion-preview-collapsed');
@@ -387,17 +387,17 @@ export function renderCompletionEstimatePreview(params: {
                     setIcon(bgIcon, 'sprout');
 
                     const heading = previewContainer.createDiv({ cls: 'ert-planetary-preview-heading' });
-                    heading.setText('Zero draft complete');
+                    heading.setText(t('ui.progressSection.zeroCompleteTitle'));
 
                     const zeroCelebrations = [
-                        { title: "The seed is planted.", subtitle: "A complete zero draft. That's the hardest part." },
-                        { title: "First draft done.", subtitle: "You told yourself the whole story." },
-                        { title: "From nothing to something.", subtitle: "Every book starts exactly like this." },
-                        { title: "The foundation is laid.", subtitle: "Zero draft complete. Now the real work begins." },
-                        { title: "You did it.", subtitle: "A whole draft exists. Most writers never get here." },
-                        { title: "Something from nothing.", subtitle: "The hardest gap to cross is now behind you." },
-                        { title: "Draft one: complete.", subtitle: "It doesn't have to be good. It just has to exist. And it does." },
-                        { title: "The clay is on the wheel.", subtitle: "Now you can shape it." },
+                        { title: t('ui.progressSection.zeroCelebration1Title'), subtitle: t('ui.progressSection.zeroCelebration1Subtitle') },
+                        { title: t('ui.progressSection.zeroCelebration2Title'), subtitle: t('ui.progressSection.zeroCelebration2Subtitle') },
+                        { title: t('ui.progressSection.zeroCelebration3Title'), subtitle: t('ui.progressSection.zeroCelebration3Subtitle') },
+                        { title: t('ui.progressSection.zeroCelebration4Title'), subtitle: t('ui.progressSection.zeroCelebration4Subtitle') },
+                        { title: t('ui.progressSection.zeroCelebration5Title'), subtitle: t('ui.progressSection.zeroCelebration5Subtitle') },
+                        { title: t('ui.progressSection.zeroCelebration6Title'), subtitle: t('ui.progressSection.zeroCelebration6Subtitle') },
+                        { title: t('ui.progressSection.zeroCelebration7Title'), subtitle: t('ui.progressSection.zeroCelebration7Subtitle') },
+                        { title: t('ui.progressSection.zeroCelebration8Title'), subtitle: t('ui.progressSection.zeroCelebration8Subtitle') },
                     ];
                     const celebration = zeroCelebrations[Math.floor(Math.random() * zeroCelebrations.length)];
 
@@ -407,8 +407,8 @@ export function renderCompletionEstimatePreview(params: {
                     completeContent.createDiv({ cls: 'ert-completion-complete-subtitle', text: celebration.subtitle });
                 } else if (milestone.type === 'stage-author-complete') {
                     renderSummaryRow({
-                        title: 'Author stage complete',
-                        subtitle: 'Your author revision stage is complete.'
+                        title: t('ui.progressSection.authorCompleteTitle'),
+                        subtitle: t('ui.progressSection.authorCompleteSubtitle')
                     });
                     if (!isExpanded) {
                         previewContainer.addClass('ert-completion-preview-collapsed');
@@ -421,17 +421,17 @@ export function renderCompletionEstimatePreview(params: {
                     setIcon(bgIcon, 'tree-pine');
 
                     const heading = previewContainer.createDiv({ cls: 'ert-planetary-preview-heading' });
-                    heading.setText('Author stage complete');
+                    heading.setText(t('ui.progressSection.authorCompleteTitle'));
 
                     const authorCelebrations = [
-                        { title: "The sapling stands.", subtitle: "Author revisions complete. Your vision is taking shape." },
-                        { title: "Revision one: done.", subtitle: "You've refined your raw material into something real." },
-                        { title: "Author's cut complete.", subtitle: "This is your version. Now it goes to the editors." },
-                        { title: "Self-edit: conquered.", subtitle: "The hardest critic has approved. Time for fresh eyes." },
-                        { title: "Your draft, realized.", subtitle: "From zero to author-ready. That's growth." },
-                        { title: "The tree takes root.", subtitle: "Solid foundation. Ready for the next stage." },
-                        { title: "Personal best achieved.", subtitle: "You've done everything you can alone. Time to collaborate." },
-                        { title: "Manuscript shaped.", subtitle: "Author stage complete. Onward to the house." },
+                        { title: t('ui.progressSection.authorCelebration1Title'), subtitle: t('ui.progressSection.authorCelebration1Subtitle') },
+                        { title: t('ui.progressSection.authorCelebration2Title'), subtitle: t('ui.progressSection.authorCelebration2Subtitle') },
+                        { title: t('ui.progressSection.authorCelebration3Title'), subtitle: t('ui.progressSection.authorCelebration3Subtitle') },
+                        { title: t('ui.progressSection.authorCelebration4Title'), subtitle: t('ui.progressSection.authorCelebration4Subtitle') },
+                        { title: t('ui.progressSection.authorCelebration5Title'), subtitle: t('ui.progressSection.authorCelebration5Subtitle') },
+                        { title: t('ui.progressSection.authorCelebration6Title'), subtitle: t('ui.progressSection.authorCelebration6Subtitle') },
+                        { title: t('ui.progressSection.authorCelebration7Title'), subtitle: t('ui.progressSection.authorCelebration7Subtitle') },
+                        { title: t('ui.progressSection.authorCelebration8Title'), subtitle: t('ui.progressSection.authorCelebration8Subtitle') },
                     ];
                     const celebration = authorCelebrations[Math.floor(Math.random() * authorCelebrations.length)];
 
@@ -441,8 +441,8 @@ export function renderCompletionEstimatePreview(params: {
                     completeContent.createDiv({ cls: 'ert-completion-complete-subtitle', text: celebration.subtitle });
                 } else if (milestone.type === 'stage-house-complete') {
                     renderSummaryRow({
-                        title: 'House stage complete',
-                        subtitle: 'Editorial revision is complete.'
+                        title: t('ui.progressSection.houseCompleteTitle'),
+                        subtitle: t('ui.progressSection.houseCompleteSubtitle')
                     });
                     if (!isExpanded) {
                         previewContainer.addClass('ert-completion-preview-collapsed');
@@ -455,17 +455,17 @@ export function renderCompletionEstimatePreview(params: {
                     setIcon(bgIcon, 'trees');
 
                     const heading = previewContainer.createDiv({ cls: 'ert-planetary-preview-heading' });
-                    heading.setText('House stage complete');
+                    heading.setText(t('ui.progressSection.houseCompleteTitle'));
 
                     const houseCelebrations = [
-                        { title: "The forest grows.", subtitle: "House edits complete. The manuscript is maturing." },
-                        { title: "Editor approved.", subtitle: "You've incorporated professional feedback. Almost there." },
-                        { title: "House stage: done.", subtitle: "One more push to the finish line." },
-                        { title: "Professionally polished.", subtitle: "The collaboration has paid off. Press stage awaits." },
-                        { title: "Editorial gauntlet: cleared.", subtitle: "The hard conversations are behind you." },
-                        { title: "Refined and ready.", subtitle: "House complete. The press beckons." },
-                        { title: "From rough to refined.", subtitle: "The editorial process has shaped something special." },
-                        { title: "Almost there.", subtitle: "House stage complete. One final stage remains." },
+                        { title: t('ui.progressSection.houseCelebration1Title'), subtitle: t('ui.progressSection.houseCelebration1Subtitle') },
+                        { title: t('ui.progressSection.houseCelebration2Title'), subtitle: t('ui.progressSection.houseCelebration2Subtitle') },
+                        { title: t('ui.progressSection.houseCelebration3Title'), subtitle: t('ui.progressSection.houseCelebration3Subtitle') },
+                        { title: t('ui.progressSection.houseCelebration4Title'), subtitle: t('ui.progressSection.houseCelebration4Subtitle') },
+                        { title: t('ui.progressSection.houseCelebration5Title'), subtitle: t('ui.progressSection.houseCelebration5Subtitle') },
+                        { title: t('ui.progressSection.houseCelebration6Title'), subtitle: t('ui.progressSection.houseCelebration6Subtitle') },
+                        { title: t('ui.progressSection.houseCelebration7Title'), subtitle: t('ui.progressSection.houseCelebration7Subtitle') },
+                        { title: t('ui.progressSection.houseCelebration8Title'), subtitle: t('ui.progressSection.houseCelebration8Subtitle') },
                     ];
                     const celebration = houseCelebrations[Math.floor(Math.random() * houseCelebrations.length)];
 
@@ -496,8 +496,8 @@ export function renderCompletionEstimatePreview(params: {
                         quote: summaryQuote
                     }
                     : {
-                        title: `Completion Estimate • ${estimate.stage} Stage`,
-                        subtitle: `${estimate.total - estimate.remaining}/${estimate.total} scenes complete`
+                        title: t('settings.progress.completionEstimate.heading', { stage: estimate.stage }),
+                        subtitle: t('ui.progressSection.scenesCompleteSubtitle', { completed: estimate.total - estimate.remaining, total: estimate.total })
                     }
             );
             if (!isExpanded) {
@@ -585,9 +585,9 @@ export function renderCompletionEstimatePreview(params: {
         } catch (e) {
             previewContainer.empty();
             const heading = previewContainer.createDiv({ cls: 'ert-planetary-preview-heading' });
-            heading.setText('Completion estimate');
+            heading.setText(t('ui.progressSection.completionEstimateTitle'));
             const body = previewContainer.createDiv({ cls: 'ert-planetary-preview-body ert-completion-preview-body' });
-            body.createDiv({ cls: 'ert-completion-error', text: 'Error calculating estimate.' });
+            body.createDiv({ cls: 'ert-completion-error', text: t('ui.progressSection.estimateError') });
             console.error('Completion estimate preview error:', e);
         }
     }
@@ -602,12 +602,12 @@ export function renderCompletionEstimatePreview(params: {
     }
 
     function getStalenessMessage(estimate: CompletionEstimate): string {
-        if (!estimate.lastProgressDate) return 'No recent progress recorded';
+        if (!estimate.lastProgressDate) return t('ui.progressSection.noRecentProgress');
         const daysSince = Math.floor((Date.now() - estimate.lastProgressDate.getTime()) / (24 * 60 * 60 * 1000));
         switch (estimate.staleness) {
-            case 'warn': return `Progress slowing (${daysSince} days since last completion)`;
-            case 'late': return `Falling behind (${daysSince} days since last completion)`;
-            case 'stalled': return `Stalled — no progress in ${daysSince} days`;
+            case 'warn': return t('ui.progressSection.progressSlowing', { days: daysSince });
+            case 'late': return t('ui.progressSection.fallingBehind', { days: daysSince });
+            case 'stalled': return t('ui.progressSection.stalled', { days: daysSince });
             default: return '';
         }
     }
@@ -695,10 +695,10 @@ export function renderCompletionEstimatePreview(params: {
         if (months.length === 0) return;
 
         const headerRow = container.createDiv({ cls: 'ert-completion-projection-header' });
-        headerRow.createSpan({ text: 'Month' });
-        headerRow.createSpan({ text: '+Scenes' });
-        headerRow.createSpan({ text: 'Total' });
-        headerRow.createSpan({ text: 'Progress' });
+        headerRow.createSpan({ text: t('ui.progressSection.projectionMonth') });
+        headerRow.createSpan({ text: t('ui.progressSection.projectionAdded') });
+        headerRow.createSpan({ text: t('ui.progressSection.projectionTotal') });
+        headerRow.createSpan({ text: t('ui.progressSection.projectionProgress') });
 
         const dateFormatter = new Intl.DateTimeFormat(getFormattingLocale(), { month: 'short', day: 'numeric' });
 
@@ -730,8 +730,8 @@ export function renderCompletionEstimatePreview(params: {
 
                     // Tooltip with stage and date (Obsidian's styled tooltip)
                     const tooltipText = target.isOverdue
-                        ? `${target.stage} target: ${dateFormatter.format(target.date)} (OVERDUE)`
-                        : `${target.stage} target: ${dateFormatter.format(target.date)}`;
+                        ? t('ui.progressSection.stageTargetOverdueTooltip', { stage: target.stage, date: dateFormatter.format(target.date) })
+                        : t('ui.progressSection.stageTargetTooltip', { stage: target.stage, date: dateFormatter.format(target.date) });
                     setTooltip(marker, tooltipText, { placement: 'top' });
                 }
             }
@@ -767,7 +767,7 @@ export function renderProgressSection(params: {
     containerEl.classList.add(ERT_CLASSES.STACK);
 
     const progressHeading = new ObsidianSetting(containerEl)
-        .setName('Progress and status')
+        .setName(t('settings.progress.heading'))
         .setHeading();
     addHeadingIcon(progressHeading, 'activity');
     addWikiLink(progressHeading, 'Settings-Core#progress-and-status');
@@ -778,15 +778,15 @@ export function renderProgressSection(params: {
     // --- Stage Target Dates (per book: read/write the ACTIVE book's profile) ---
     // Create target date settings for each progress stage (Zero, Author, House, Press)
     const stageDescriptions: Record<Stage, string> = {
-        Zero: 'All scenes written, continuity intact, no prose polishing beyond clarity. Consider using Zero draft mode to discourage never-ending revision loops.',
-        Author: 'Let sit two weeks or more. Self-edited for structure, character intent, and pacing. Alpha readers engaged, story questions resolved, ready for professional feedback.',
-        House: 'Professional editor feedback incorporated; structural and tonal notes addressed, ready for press.',
-        Press: 'Line edited, copy edited, proofread. No open queries. No tracked changes. Release-ready manuscript.'
+        Zero: t('ui.progressSection.stageDescZero'),
+        Author: t('ui.progressSection.stageDescAuthor'),
+        House: t('ui.progressSection.stageDescHouse'),
+        Press: t('ui.progressSection.stageDescPress')
     };
 
     stackEl.createDiv({
         cls: 'setting-item-description',
-        text: `Target dates are per book — editing “${getActiveBookTitle(plugin.settings)}”. Switch the active book in Book Manager to set another book's targets.`
+        text: t('ui.progressSection.targetDatesPerBook', { title: getActiveBookTitle(plugin.settings) })
     });
 
     for (const stage of STAGE_ORDER) {
@@ -889,7 +889,7 @@ export function renderProgressSection(params: {
         setting.nameEl.empty();
         const icon = createTargetTickIcon(displayColor);
         setting.nameEl.appendChild(icon);
-        setting.nameEl.appendText(` ${stage} target date`);
+        setting.nameEl.appendText(` ${t('ui.progressSection.stageTargetDateName', { stage })}`);
 
         // Add stage color indicator class
         setting.settingEl.addClass(`ert-stage-target-${stage.toLowerCase()}`);
@@ -919,8 +919,8 @@ export function renderProgressSection(params: {
     // --- Zero draft mode toggle ---
     const zeroStageColor = getStageColor(plugin, 'Zero');
     const zeroDraftSetting = new ObsidianSetting(stackEl)
-        .setName('Zero draft mode')
-        .setDesc('Intercept clicks on scenes with Progress Stage = Zero and Status = Complete to capture Pending Edits without opening the scene.')
+        .setName(t('ui.progressSection.zeroDraftModeName'))
+        .setDesc(t('ui.progressSection.zeroDraftModeDesc'))
         .addToggle(toggle => toggle
             .setValue(plugin.settings.enableZeroDraftMode ?? false)
             .onChange(async (value) => {

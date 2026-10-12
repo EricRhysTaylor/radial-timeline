@@ -11,6 +11,7 @@ import type RadialTimelinePlugin from '../main';
 import { getAIClient } from '../ai/runtime/aiClient';
 import type { AIProviderId, Capability } from '../ai/types';
 import { parseWhenField, formatLocalDateKey } from '../utils/date';
+import { t, tCount } from '../i18n';
 import { buildChronologyEntries, buildChronologyPositionMap } from './chronology';
 import { loadScopedSceneNotes } from '../timeline/sharedSceneNotes';
 import type {
@@ -156,17 +157,17 @@ function adjustDateToBucket(date: Date, bucket: TimelineAuditTimeBucket): Date {
  */
 function formatGapDuration(ms: number): string {
     const minutes = Math.round(Math.abs(ms) / 60000);
-    if (minutes < 2) return 'about a minute';
-    if (minutes < 60) return `about ${minutes} minutes`;
+    if (minutes < 2) return t('ui.auditPipeline.aboutAMinute');
+    if (minutes < 60) return t('ui.auditPipeline.aboutSpan', { span: tCount('minute', minutes) });
     const hours = Math.round(minutes / 60);
-    if (hours < 2) return 'about an hour';
-    if (hours < 48) return `about ${hours} hours`;
+    if (hours < 2) return t('ui.auditPipeline.aboutAnHour');
+    if (hours < 48) return t('ui.auditPipeline.aboutSpan', { span: tCount('hour', hours) });
     const days = Math.round(hours / 24);
-    if (days < 60) return `about ${days} days`;
+    if (days < 60) return t('ui.auditPipeline.aboutSpan', { span: tCount('day', days) });
     const months = Math.round(days / 30.44);
-    if (months < 24) return `about ${months} months`;
+    if (months < 24) return t('ui.auditPipeline.aboutSpan', { span: tCount('month', months) });
     const years = Math.round(days / 365.25);
-    return `about ${years} years`;
+    return t('ui.auditPipeline.aboutSpan', { span: tCount('year', years) });
 }
 
 function roundDays(ms: number): number {
@@ -260,16 +261,16 @@ function createWorkingFinding(
     const notes: string[] = [];
 
     if (input.whenParseIssue === 'missing_when') {
-        notes.push('Undated. Chronologue preserves narrative placement within the book; no calendar date is assumed. Leaving When blank is valid.');
+        notes.push(t('ui.auditPipeline.undatedNote'));
     } else if (input.whenParseIssue === 'invalid_when') {
         issues.push({
             type: 'invalid_when',
             severity: 'warning',
             tier: 'direct',
             detectionSource: 'deterministic',
-            summary: 'Scene has an invalid YAML When value.'
+            summary: t('ui.auditPipeline.invalidWhenSummary')
         });
-        notes.push('Invalid When prevents reliable chronology placement.');
+        notes.push(t('ui.auditPipeline.invalidWhenNote'));
     }
 
     return {
@@ -377,7 +378,7 @@ function compareSummaryAndBodyCues(
         'summary_body_disagree',
         'deterministic',
         summaryPrimary.tier === 'direct' && bodyPrimary.tier === 'direct' ? 'direct' : 'strong_inference',
-        'Summary and body imply different timeline signals.'
+        t('ui.auditPipeline.summaryBodyDisagree')
     );
     addEvidence(finding, cueToEvidence(summaryPrimary, 'deterministic'));
     addEvidence(finding, cueToEvidence(bodyPrimary, 'deterministic'));
@@ -402,7 +403,7 @@ function compareWhenAgainstCue(
                 'relative_order_conflict',
                 'deterministic',
                 cue.tier,
-                `Body evidence points to ${formatLocalDateKey(cue.absoluteWhen)}, but YAML says ${finding.currentWhenRaw}.`
+                t('ui.auditPipeline.bodyDateDiffers', { date: formatLocalDateKey(cue.absoluteWhen), yaml: String(finding.currentWhenRaw) })
             );
             addEvidence(finding, cueToEvidence(cue, 'deterministic'));
             setSuggestion(finding, {
@@ -410,7 +411,7 @@ function compareWhenAgainstCue(
                 dateOnly: !hasAuthoredClock,
                 confidence: 'high',
                 provenance: 'keyword',
-                reason: 'Direct date evidence suggests a different calendar day.',
+                reason: t('ui.auditPipeline.directDateReason'),
                 source: 'deterministic',
                 safeApply: true
             });
@@ -426,7 +427,7 @@ function compareWhenAgainstCue(
                 cue.tier === 'ambiguous' ? 'ambiguous_time_signal' : 'time_of_day_conflict',
                 'deterministic',
                 cue.tier,
-                `Text implies ${cue.bucket}, but YAML When is ${yamlBucket}.`
+                t('ui.auditPipeline.textImpliesBucket', { cue: cue.bucket, yaml: yamlBucket })
             );
             addEvidence(finding, cueToEvidence(cue, 'deterministic'));
             if (cue.tier !== 'ambiguous') {
@@ -434,7 +435,7 @@ function compareWhenAgainstCue(
                     when: adjustDateToBucket(finding.currentWhen, cue.bucket),
                     confidence: cue.tier === 'direct' ? 'high' : 'med',
                     provenance: 'keyword',
-                    reason: `Direct ${cue.source} time-of-day evidence suggests ${cue.bucket}.`,
+                    reason: t('ui.auditPipeline.directTimeOfDayReason', { source: cue.source, bucket: cue.bucket }),
                     source: 'deterministic',
                     safeApply: cue.tier === 'direct'
                 });
@@ -455,7 +456,7 @@ function detectInsufficientEvidence(
             'insufficient_evidence',
             'deterministic',
             'ambiguous',
-            'No usable scene text was available for timeline auditing.'
+            t('ui.auditPipeline.noUsableText')
         );
         return;
     }
@@ -466,7 +467,7 @@ function detectInsufficientEvidence(
             'insufficient_evidence',
             'deterministic',
             'ambiguous',
-            'No clear temporal evidence was found to replace the missing or invalid When.'
+            t('ui.auditPipeline.noClearEvidence')
         );
     }
 }
@@ -495,7 +496,7 @@ function detectDeterministicFindings(inputs: TimelineAuditSceneInput[], findingM
                     'ambiguous_time_signal',
                     'deterministic',
                     ambiguousCue.tier,
-                    `Temporal evidence is suggestive but not decisive: ${ambiguousCue.label}.`
+                    t('ui.auditPipeline.ambiguousEvidence', { cue: ambiguousCue.label })
                 );
                 addEvidence(finding, cueToEvidence(ambiguousCue, 'deterministic'));
             }
@@ -516,9 +517,9 @@ function findingHasLargeJumpCue(finding: WorkingFinding): boolean {
 
 function continuityIssueSummary(currentTitle: string, previousTitle: string, deltaMs: number): string {
     if (deltaMs < 0) {
-        return `${currentTitle} lands ${formatGapDuration(deltaMs)} before ${previousTitle}, earlier than its chronological neighbor.`;
+        return t('ui.auditPipeline.landsBefore', { current: currentTitle, gap: formatGapDuration(deltaMs), previous: previousTitle });
     }
-    return `${currentTitle} lands ${formatGapDuration(deltaMs)} after ${previousTitle} in chronology.`;
+    return t('ui.auditPipeline.landsAfter', { current: currentTitle, gap: formatGapDuration(deltaMs), previous: previousTitle });
 }
 
 function applyRelativeCueAgainstAnchor(
@@ -547,7 +548,7 @@ function applyRelativeCueAgainstAnchor(
             issueType,
             'continuity',
             cue.tier,
-            `${cue.label} conflicts with the ${anchorLabel.toLowerCase()} gap from ${anchorInput.title}.`
+            t('ui.auditPipeline.cueConflictsWithAnchorGap', { cue: cue.label, anchor: anchorLabel.toLowerCase(), title: anchorInput.title })
         );
         addEvidence(finding, {
             source: 'neighbor',
@@ -566,14 +567,14 @@ function applyRelativeCueAgainstAnchor(
                 dateOnly: !/\d{1,2}:\d{2}|\d\s*(?:am|pm)\b/i.test(currentInput.rawWhen ?? ''),
                 confidence: cue.tier === 'direct' ? 'high' : 'med',
                 provenance: 'keyword',
-                reason: `Relative cue "${cue.label}" is anchored against ${anchorInput.title}.`,
+                reason: t('ui.auditPipeline.relativeCueAnchored', { cue: cue.label, title: anchorInput.title }),
                 source: 'continuity',
                 safeApply: cue.tier === 'direct'
             });
         }
 
         finding.inferredWrittenTimelinePosition = {
-            label: `After ${anchorInput.title} by about ${cue.label}`,
+            label: t('ui.auditPipeline.positionAfterBy', { title: anchorInput.title, cue: cue.label }),
             basis: cue.tier === 'direct' ? 'explicit' : 'inferred'
         };
         return;
@@ -587,7 +588,7 @@ function applyRelativeCueAgainstAnchor(
             'impossible_sequence',
             'continuity',
             cue.tier,
-            `${cue.label} conflicts with the ${anchorLabel.toLowerCase()} gap from ${anchorInput.title}.`
+            t('ui.auditPipeline.cueConflictsWithAnchorGap', { cue: cue.label, anchor: anchorLabel.toLowerCase(), title: anchorInput.title })
         );
         addEvidence(finding, {
             source: 'neighbor',
@@ -644,7 +645,7 @@ function detectContinuityFindings(inputs: TimelineAuditSceneInput[], findingMap:
                         issueType,
                         'continuity',
                         currentRelativeCue.tier,
-                        `${currentRelativeCue.label} conflicts with the current chronological gap from ${previousEntry.input.title}.`
+                        t('ui.auditPipeline.cueConflictsWithCurrentGap', { cue: currentRelativeCue.label, title: previousEntry.input.title })
                     );
                     addEvidence(currentFinding, {
                         source: 'neighbor',
@@ -663,13 +664,13 @@ function detectContinuityFindings(inputs: TimelineAuditSceneInput[], findingMap:
                             dateOnly: !/\d{1,2}:\d{2}|\d\s*(?:am|pm)\b/i.test(currentEntry.input.rawWhen ?? ''),
                             confidence: currentRelativeCue.tier === 'direct' ? 'high' : 'med',
                             provenance: 'keyword',
-                            reason: `Relative cue "${currentRelativeCue.label}" is anchored against the previous chronological scene.`,
+                            reason: t('ui.auditPipeline.relativeCueAnchoredPrevious', { cue: currentRelativeCue.label }),
                             source: 'continuity',
                             safeApply: currentRelativeCue.tier === 'direct'
                         });
                     }
                     currentFinding.inferredWrittenTimelinePosition = {
-                        label: `After ${previousEntry.input.title} by about ${currentRelativeCue.label}`,
+                        label: t('ui.auditPipeline.positionAfterBy', { title: previousEntry.input.title, cue: currentRelativeCue.label }),
                         basis: currentRelativeCue.tier === 'direct' ? 'explicit' : 'inferred'
                     };
                 }
@@ -681,7 +682,7 @@ function detectContinuityFindings(inputs: TimelineAuditSceneInput[], findingMap:
                         'impossible_sequence',
                         'continuity',
                         currentRelativeCue.tier,
-                        `${currentRelativeCue.label} conflicts with the much larger chronology gap from ${previousEntry.input.title}.`
+                        t('ui.auditPipeline.cueConflictsWithLargerGap', { cue: currentRelativeCue.label, title: previousEntry.input.title })
                     );
                     addEvidence(currentFinding, {
                         source: 'neighbor',
@@ -700,7 +701,7 @@ function detectContinuityFindings(inputs: TimelineAuditSceneInput[], findingMap:
                         'continuity_conflict',
                         'continuity',
                         'strong_inference',
-                        `Large chronology jump from ${previousEntry.input.title} is not clearly justified in nearby text.`
+                        t('ui.auditPipeline.largeJumpUnjustified', { title: previousEntry.input.title })
                     );
                     addEvidence(currentFinding, {
                         source: 'neighbor',
@@ -727,7 +728,7 @@ function detectContinuityFindings(inputs: TimelineAuditSceneInput[], findingMap:
                 currentEntry.input,
                 currentRelativeCue,
                 previousNarrative,
-                'Narrative neighbor'
+                t('ui.auditPipeline.narrativeNeighbor')
             );
         }
 
@@ -741,7 +742,7 @@ function detectContinuityFindings(inputs: TimelineAuditSceneInput[], findingMap:
             const cue = strongestCue(currentFinding.cues.filter((item) => item.kind === 'relative_offset' || item.kind === 'continuity'));
             if (cue) {
                 currentFinding.inferredWrittenTimelinePosition = {
-                    label: `${cue.label} relative to nearby chronology (${localTitles[0]})`,
+                    label: t('ui.auditPipeline.positionRelativeToNearby', { cue: cue.label, title: localTitles[0] }),
                     basis: cue.tier === 'direct' ? 'explicit' : 'inferred'
                 };
             }
@@ -964,7 +965,7 @@ async function runAiInference(
     const aiClient = getAIClient(plugin);
     const aiSettings = plugin.settings.aiSettings;
     if (!aiSettings) {
-        throw new Error('Timeline Audit AI requires configured AI settings.');
+        throw new Error(t('ui.auditPipeline.aiSettingsRequired'));
     }
 
     for (let index = 0; index < aiCandidates.length; index += 1) {

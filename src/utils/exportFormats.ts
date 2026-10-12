@@ -22,6 +22,7 @@ import { FONT_REGISTRY, vaultDirHasFont } from '../publishing/fontResolver';
 import { assertNever } from './assertNever';
 import { ExportFailure, categorizeExportError } from './exportErrors';
 import { buildPandocLuaFilter } from './pandocLuaFilters';
+import { t } from '../i18n';
 
 export type ExportType = 'manuscript' | 'outline';
 export type ManuscriptPreset = 'screenplay' | 'podcast' | 'novel';
@@ -50,16 +51,16 @@ export function getPandocFolder(plugin: RadialTimelinePlugin): string {
 }
 
 export function readResolvedTemplateText(templatePath: string): { text: string; error?: string } {
-    if (!templatePath.trim()) return { text: '', error: 'No template path configured.' };
+    if (!templatePath.trim()) return { text: '', error: t('ui.exportFormats.noTemplatePath') };
     if (!path.isAbsolute(templatePath) || !fs.existsSync(templatePath)) {
-        return { text: '', error: `Template file not found: ${templatePath}` };
+        return { text: '', error: t('ui.exportFormats.templateFileNotFound', { path: templatePath }) };
     }
     try {
         return { text: fs.readFileSync(templatePath, 'utf8') };
     } catch (error) {
         return {
             text: '',
-            error: (error as Error)?.message || `Unable to read template: ${templatePath}`,
+            error: (error as Error)?.message || t('ui.exportFormats.unableToReadTemplate', { path: templatePath }),
         };
     }
 }
@@ -90,12 +91,12 @@ export function validatePandocLayout(
     layout: PandocLayoutTemplate
 ): { valid: boolean; error?: string } {
     if (!layout.path || !layout.path.trim()) {
-        return { valid: false, error: 'No template path configured.' };
+        return { valid: false, error: t('ui.exportFormats.noTemplatePath') };
     }
     const trimmed = layout.path.trim();
     const ext = path.extname(trimmed).toLowerCase();
     if (ext !== '.tex') {
-        return { valid: false, error: 'Template file must use a .tex extension.' };
+        return { valid: false, error: t('ui.exportFormats.templateMustBeTex') };
     }
 
     // Absolute path: check via Node fs
@@ -104,7 +105,7 @@ export function validatePandocLayout(
             fs.accessSync(trimmed, fs.constants.R_OK);
             return { valid: true };
         } catch {
-            return { valid: false, error: `File not found: ${trimmed}` };
+            return { valid: false, error: t('ui.exportFormats.fileNotFound', { path: trimmed }) };
         }
     }
 
@@ -117,9 +118,9 @@ export function validatePandocLayout(
     }
     const fallbackCandidate = candidates.find(candidate => candidate !== trimmed);
     if (fallbackCandidate) {
-        return { valid: false, error: `File not found in vault: ${trimmed} (also checked ${fallbackCandidate})` };
+        return { valid: false, error: t('ui.exportFormats.fileNotFoundInVaultAlsoChecked', { path: trimmed, fallback: fallbackCandidate }) };
     }
-    return { valid: false, error: `File not found in vault: ${trimmed}` };
+    return { valid: false, error: t('ui.exportFormats.fileNotFoundInVault', { path: trimmed }) };
 }
 
 /**
@@ -828,12 +829,12 @@ export function buildGoogleFontsHint(
         return {
             source: 'google-fonts',
             url,
-            message: `Install ${primaryFontName} via Font Book.`,
+            message: t('ui.exportFormats.installViaFontBook', { font: primaryFontName }),
             steps: [
-                'Download from Google Fonts (link below)',
-                'Open the downloaded ZIP',
-                'Drag the .ttf files onto Font Book to install',
-                'Re-export this PDF',
+                t('ui.exportFormats.stepDownloadFromGoogleFonts'),
+                t('ui.exportFormats.stepOpenZip'),
+                t('ui.exportFormats.stepDragToFontBook'),
+                t('ui.exportFormats.stepReExport'),
             ],
         };
     }
@@ -841,23 +842,23 @@ export function buildGoogleFontsHint(
         return {
             source: 'google-fonts',
             url,
-            message: `Install ${primaryFontName} from Google Fonts.`,
+            message: t('ui.exportFormats.installFromGoogleFonts', { font: primaryFontName }),
             steps: [
-                'Download the ZIP from Google Fonts',
-                'Right-click each .ttf file → "Install for all users"',
-                'Re-export this PDF',
+                t('ui.exportFormats.stepDownloadZip'),
+                t('ui.exportFormats.stepWindowsInstallAllUsers'),
+                t('ui.exportFormats.stepReExport'),
             ],
         };
     }
     return {
         source: 'google-fonts',
         url,
-        message: `Install ${primaryFontName} from Google Fonts.`,
+        message: t('ui.exportFormats.installFromGoogleFonts', { font: primaryFontName }),
         steps: [
-            'Download the ZIP from Google Fonts',
-            'Copy .ttf files to ~/.fonts/ or /usr/share/fonts/',
-            'Run "fc-cache -f" to refresh',
-            'Re-export this PDF',
+            t('ui.exportFormats.stepDownloadZip'),
+            t('ui.exportFormats.stepLinuxCopyFonts'),
+            t('ui.exportFormats.stepLinuxFcCache'),
+            t('ui.exportFormats.stepReExport'),
         ],
     };
 }
@@ -869,7 +870,7 @@ export function buildCtanHint(primaryFontName: string): FontDiagnosticInstallHin
     // already have a working TeX install if they're exporting PDFs.
     return {
         source: 'ctan',
-        message: `Install ${primaryFontName} for the intended look.`,
+        message: t('ui.exportFormats.installForIntendedLook', { font: primaryFontName }),
     };
 }
 
@@ -1002,7 +1003,7 @@ function resolveFontDiagnosticForKey(
     if (!fontKey) {
         // No spec on this layout — nothing was resolved, so callers must not
         // read this 'ok' as a font verdict.
-        return { state: 'ok', primaryFontName: 'Default serif', resolvedFontName: 'Default serif', specDriven: false };
+        return { state: 'ok', primaryFontName: t('ui.exportFormats.defaultSerif'), resolvedFontName: t('ui.exportFormats.defaultSerif'), specDriven: false };
     }
 
     // Custom: the display name IS the user's own text, not a registry
@@ -1012,11 +1013,11 @@ function resolveFontDiagnosticForKey(
         if (!name) {
             return {
                 state: 'missing-system',
-                primaryFontName: 'Custom font',
-                resolvedFontName: 'Custom font',
+                primaryFontName: t('ui.exportFormats.customFont'),
+                resolvedFontName: t('ui.exportFormats.customFont'),
                 installHint: {
                     source: 'ctan',
-                    message: 'Enter the exact font family name as installed on your system (e.g. via Font Book, Windows Fonts, or fontconfig).',
+                    message: t('ui.exportFormats.enterCustomFontName'),
                 },
                 specDriven: true,
             };
@@ -1094,7 +1095,7 @@ function resolveFontDiagnosticForKey(
             specDriven: true,
             installHint: {
                 source: 'bundled',
-                message: `${primaryFontName} files are missing from Radial Timeline/Pandoc/fonts/${entry.files.slug}. Click Install fonts in Settings → Publish.`,
+                message: t('ui.exportFormats.bundledFontFilesMissing', { font: primaryFontName, slug: entry.files.slug }),
             },
         };
     }
@@ -1121,9 +1122,9 @@ export function getStructuredFontDiagnostic(
 export function renderFontDiagnosticLine(diag: FontDiagnostic): string | null {
     if (diag.state === 'ok') return null;
     if (diag.state === 'missing-bundled') {
-        return diag.installHint?.message || `Font: ${diag.primaryFontName} bundled asset missing.`;
+        return diag.installHint?.message || t('ui.exportFormats.fontBundledAssetMissing', { font: diag.primaryFontName });
     }
-    return diag.installHint?.message || `Font: ${diag.primaryFontName} is not installed. Install it before exporting.`;
+    return diag.installHint?.message || t('ui.exportFormats.fontNotInstalled', { font: diag.primaryFontName });
 }
 
 function templateNeedsUnicodeEngine(templatePath?: string): boolean {
@@ -1236,7 +1237,7 @@ export async function runPandocOnContent(
         if (isPdf) {
             const pdfEngineSelection = getAutoPdfEngineSelection(options.templatePath);
             if (!pdfEngineSelection.path) {
-                throw new ExportFailure({ category: 'missing_dependency', message: 'No compatible LaTeX PDF engine was detected for this style. Use Auto locate in Publish.' });
+                throw new ExportFailure({ category: 'missing_dependency', message: t('ui.exportFormats.noPdfEngine') });
             }
             args.push('--pdf-engine', pdfEngineSelection.path);
             if (options.templatePath && options.templatePath.trim()) {
@@ -1269,7 +1270,7 @@ export async function runPandocOnContent(
                 if (error) {
                     const failure = categorizeExportError(new Error(stderr || error.message));
                     if (!isPdf && failure.category === 'pandoc_compile_failure') {
-                        failure.message = 'Pandoc could not create the Word document.';
+                        failure.message = t('ui.exportFormats.wordDocumentFailed');
                     }
                     reject(failure);
                     return;
@@ -1296,7 +1297,7 @@ async function publishRenderedExport(stagedPath: string, requestedPath: string, 
         const valid = format === 'pdf'
             ? header.toString('ascii') === '%PDF-'
             : header.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
-        if (!valid) throw new ExportFailure({ category: 'write_failure', message: `The rendered ${format.toUpperCase()} is empty or invalid. No output file was saved.` });
+        if (!valid) throw new ExportFailure({ category: 'write_failure', message: t('ui.exportFormats.renderedOutputInvalid', { format: format.toUpperCase() }) });
     } finally {
         await file.close();
     }
@@ -1310,7 +1311,7 @@ async function publishRenderedExport(stagedPath: string, requestedPath: string, 
             return destination;
         } catch (error) {
             if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
-                throw new ExportFailure({ category: 'write_failure', message: 'The rendered document could not be saved to the export folder.', detail: (error as Error).message });
+                throw new ExportFailure({ category: 'write_failure', message: t('ui.exportFormats.renderedSaveFailed'), detail: (error as Error).message });
             }
         }
     }

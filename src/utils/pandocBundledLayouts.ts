@@ -10,6 +10,7 @@ import { BUNDLED_FICTION_SPECS, type BundledFictionId } from '../publishing/bund
 import { getPandocFolder } from './exportFormats';
 import { getEmbeddedAssetBytes, getEmbeddedAssetByteLength, type EmbeddedAssetKey } from './embeddedAssets';
 import { basename } from './paths';
+import { t } from '../i18n';
 
 interface BundledPandocLayoutTemplate extends PandocLayoutTemplate {
     bundled: true;
@@ -522,7 +523,7 @@ export function ensureManuscriptReferenceDocxInstalled(
 ): { path?: string; error?: string } {
     const target = getManuscriptReferenceDocxAbsolutePath(plugin);
     if (!target) {
-        return { error: 'Pandoc asset paths are not available in this environment.' };
+        return { error: t('ui.pandocBundledLayouts.assetPathsUnavailable') };
     }
     try {
         fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -534,7 +535,7 @@ export function ensureManuscriptReferenceDocxInstalled(
         }
         const finalSize = fs.existsSync(target) ? fs.statSync(target).size : 0;
         if (finalSize === 0 || finalSize !== expectedSize) {
-            return { error: `Reference document verification failed after write: ${target} (expected ${expectedSize} bytes, found ${finalSize})` };
+            return { error: t('ui.pandocBundledLayouts.referenceDocVerificationFailed', { path: target, expected: expectedSize, found: finalSize }) };
         }
         return { path: target };
     } catch (e) {

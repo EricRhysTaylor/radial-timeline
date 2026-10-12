@@ -7,6 +7,7 @@
 import { App, ButtonComponent, Notice } from 'obsidian';
 import { ErtModal, type ErtModalShellOptions } from './ErtModal';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
+import { t } from '../i18n';
 
 export interface NamePromptModalOptions {
     title: string;
@@ -67,7 +68,7 @@ export class NamePromptModal extends ErtModal {
 
         const actions = this.mountActions();
         new ButtonComponent(actions).setButtonText(this.options.actionLabel).setCta().onClick(() => { void submit(); });
-        new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
+        new ButtonComponent(actions).setButtonText(t('common.cancel')).onClick(() => this.close());
 
         inputEl.addEventListener('keydown', (evt: KeyboardEvent) => { // SAFE: direct addEventListener; Modal lifecycle manages cleanup
             if (evt.key === 'Enter') {

@@ -1,4 +1,5 @@
 import type { App, TFile } from 'obsidian';
+import { t } from '../i18n';
 
 export type EditableBookMetaFieldKey =
     | 'title'
@@ -29,87 +30,87 @@ const BOOK_META_FIELD_DEFINITIONS: Record<EditableBookMetaFieldKey, EditableBook
     title: {
         path: ['Book', 'title'],
         required: true,
-        label: 'Title',
+        get label() { return t('ui.bookMetaEditing.titleLabel'); },
     },
     subtitle: {
         path: ['Book', 'subtitle'],
         required: false,
-        label: 'Subtitle',
+        get label() { return t('ui.bookMetaEditing.subtitleLabel'); },
     },
     author: {
         path: ['Book', 'author'],
         required: true,
-        label: 'Author',
+        get label() { return t('ui.bookMetaEditing.authorLabel'); },
     },
     'copyright-holder': {
         path: ['Rights', 'copyright_holder'],
         required: true,
-        label: 'Copyright holder',
+        get label() { return t('ui.bookMetaEditing.copyrightHolderLabel'); },
     },
     'rights-year': {
         path: ['Rights', 'year'],
         required: true,
-        label: 'Rights year',
+        get label() { return t('ui.bookMetaEditing.rightsYearLabel'); },
     },
     isbn: {
         path: ['Identifiers', 'isbn_paperback'],
         required: false,
-        label: 'ISBN',
+        get label() { return t('ui.bookMetaEditing.isbnLabel'); },
     },
     publisher: {
         path: ['Publisher', 'name'],
         required: false,
-        label: 'Publisher',
+        get label() { return t('ui.bookMetaEditing.publisherLabel'); },
     },
     imprint: {
         path: ['Publisher', 'imprint'],
         required: false,
-        label: 'Imprint',
+        get label() { return t('ui.bookMetaEditing.imprintLabel'); },
     },
     edition: {
         path: ['Publisher', 'edition'],
         required: false,
-        label: 'Edition',
+        get label() { return t('ui.bookMetaEditing.editionLabel'); },
     },
     'title-page-note': {
         path: ['Frontmatter', 'title_page_note'],
         required: false,
-        label: 'Title page note',
+        get label() { return t('ui.bookMetaEditing.titlePageNoteLabel'); },
     },
     dedication: {
         path: ['Frontmatter', 'dedication'],
         required: false,
-        label: 'Dedication',
+        get label() { return t('ui.bookMetaEditing.dedicationLabel'); },
     },
     'epigraph-quote': {
         path: ['Frontmatter', 'epigraph_quote'],
         required: false,
-        label: 'Epigraph quote',
+        get label() { return t('ui.bookMetaEditing.epigraphQuoteLabel'); },
     },
     'epigraph-attribution': {
         path: ['Frontmatter', 'epigraph_attribution'],
         required: false,
-        label: 'Epigraph attribution',
+        get label() { return t('ui.bookMetaEditing.epigraphAttributionLabel'); },
     },
     acknowledgments: {
         path: ['Backmatter', 'acknowledgments'],
         required: false,
-        label: 'Acknowledgments',
+        get label() { return t('ui.bookMetaEditing.acknowledgmentsLabel'); },
     },
     'about-author': {
         path: ['Backmatter', 'about_author'],
         required: false,
-        label: 'About the author',
+        get label() { return t('ui.bookMetaEditing.aboutAuthorLabel'); },
     },
     'author-note': {
         path: ['Backmatter', 'author_note'],
         required: false,
-        label: 'Author note',
+        get label() { return t('ui.bookMetaEditing.authorNoteLabel'); },
     },
     'other-works': {
         path: ['Backmatter', 'other_works'],
         required: false,
-        label: 'Other works',
+        get label() { return t('ui.bookMetaEditing.otherWorksLabel'); },
     },
 };
 
@@ -141,18 +142,18 @@ export function normalizeBookMetaEditValue(
     if (field === 'rights-year') {
         if (!trimmed) {
             return definition.required
-                ? { ok: false, normalizedValue: null, error: 'Rights year is required.' }
+                ? { ok: false, normalizedValue: null, error: t('ui.bookMetaEditing.fieldRequired', { field: definition.label }) }
                 : { ok: true, normalizedValue: null };
         }
         if (!/^\d{4}$/.test(trimmed)) {
-            return { ok: false, normalizedValue: null, error: 'Enter a 4-digit year.' };
+            return { ok: false, normalizedValue: null, error: t('ui.bookMetaEditing.enterFourDigitYear') };
         }
         return { ok: true, normalizedValue: Number(trimmed) };
     }
 
     if (!trimmed) {
         return definition.required
-            ? { ok: false, normalizedValue: null, error: `${definition.label} is required.` }
+            ? { ok: false, normalizedValue: null, error: t('ui.bookMetaEditing.fieldRequired', { field: definition.label }) }
             : { ok: true, normalizedValue: null };
     }
 

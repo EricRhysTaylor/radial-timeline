@@ -15,7 +15,8 @@
  * =============================================================================
  */
 
-import { formatNumber } from '../../utils/svg';
+import { escapeXml, formatNumber } from '../../utils/svg';
+import { t } from '../../i18n';
 import {
     HELP_ICON_X,
     HELP_ICON_Y,
@@ -55,7 +56,7 @@ export function renderHelpIcon(): string {
                 fill="white" fill-opacity="0" stroke="none" pointer-events="all" />
 
             <!-- Text: positioned above icon center -->
-            <text class="rt-help-text" x="0" y="${STATUS_TEXT_ABOVE_ICON}" text-anchor="middle" dominant-baseline="baseline">GET HELP</text>
+            <text class="rt-help-text" x="0" y="${STATUS_TEXT_ABOVE_ICON}" text-anchor="middle" dominant-baseline="baseline">${escapeXml(t('ui.helpIcon.getHelp'))}</text>
 
             <!-- Icon: centered at origin. pointer-events="none" so the rect
                  hitarea is the sole click target — without this, the cursor

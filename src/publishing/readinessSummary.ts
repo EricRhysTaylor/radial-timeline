@@ -17,6 +17,7 @@ import { getSceneFilesByOrder } from '../utils/manuscript';
 import { getActiveBookMatterNoteSummaries, getActiveBookMetaStatus, type ActiveBookMetaStatus } from './activeBookNotes';
 import { isPandocAvailable } from '../utils/exportFormats';
 import { getExportValidationIssues } from '../services/PublishingValidationService';
+import { t } from '../i18n';
 
 export interface PdfLayoutSummary {
     validCount: number;
@@ -74,7 +75,7 @@ function getPdfLayoutSummary(plugin: RadialTimelinePlugin, validation: Publishin
             scope: 'profile',
             level: 'error',
             code: 'pdf_layout_missing',
-            message: 'No PDF styles are configured.',
+            message: t('ui.readinessSummary.noPdfStyles'),
         });
     }
     const summary = plugin.getPublishingValidationService().summarize(relevantIssues);
@@ -102,7 +103,7 @@ export function getPublishingProgressContext(plugin: RadialTimelinePlugin): Publ
             scope: 'book-meta',
             level: 'error',
             code: 'book_meta_missing',
-            message: 'Book Details not found for active book.'
+            message: t('ui.readinessSummary.bookMetaMissing')
         });
     }
     const resolvedBookPageCount = resolveBookPages(

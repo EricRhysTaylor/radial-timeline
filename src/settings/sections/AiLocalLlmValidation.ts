@@ -68,13 +68,13 @@ export function renderAiLocalLlmValidation(options: ValidationOptions) {
                 state.report = report;
                 state.error = null;
                 state.lastValidatedAt = new Date().toISOString();
-                if (!quiet) new Notice('Local LLM validation complete.');
+                if (!quiet) new Notice(t('ui.aiLocalLlmValidation.completeNotice'));
             } catch (error) {
                 if (disposed || revision !== runRevision) return;
                 state.report = null;
                 state.error = error instanceof Error ? error.message : String(error);
                 state.lastValidatedAt = new Date().toISOString();
-                if (!quiet) new Notice(`Local LLM validation failed: ${state.error}`);
+                if (!quiet) new Notice(t('ui.aiLocalLlmValidation.failedNotice', { error: state.error }));
             } finally {
                 active = false;
                 state.pending = false;

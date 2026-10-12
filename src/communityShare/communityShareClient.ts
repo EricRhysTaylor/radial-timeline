@@ -1,5 +1,6 @@
 import { apiVersion, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
+import { t } from '../i18n';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
 import { canShareAprToCommunity, deriveCommunityShareMode, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
 import {
@@ -206,11 +207,11 @@ function latestPublishId(settings: CommunityShareSettings): string | null {
 
 async function getConnectedSecret(plugin: RadialTimelinePlugin, settings: CommunityShareSettings): Promise<string> {
     if (!settings.connection.connectionId || !settings.connection.secretId) {
-        throw new CommunityShareError('connection_required', 'Connect Community Share first.');
+        throw new CommunityShareError('connection_required', t('ui.communityShareClient.connectFirst'));
     }
     const secret = await getSecret(plugin.app, settings.connection.secretId);
     if (!secret) {
-        throw new CommunityShareError('connection_secret_missing', 'The private connection secret is missing. Reconnect Community Share.');
+        throw new CommunityShareError('connection_secret_missing', t('ui.communityShareClient.secretMissing'));
     }
     return secret;
 }
@@ -248,7 +249,7 @@ async function getOrCreateInstallationId(plugin: RadialTimelinePlugin): Promise<
     const next = `rtpi_${randomBase64Url(24)}`;
     const stored = await setSecret(plugin.app, INSTALLATION_SECRET_ID, next);
     if (!stored) {
-        throw new CommunityShareError('secret_storage_unavailable', 'Private secret storage is unavailable, so Community Share cannot connect safely.');
+        throw new CommunityShareError('secret_storage_unavailable', t('ui.communityShareClient.secretStorageUnavailable'));
     }
     return next;
 }
@@ -278,10 +279,10 @@ export async function confirmCommunityShareActivation(
 ): Promise<ActivationConfirmSuccess> {
     const token = activationToken.trim();
     if (token.length < 16) {
-        throw new CommunityShareError('invalid_activation_token', 'Paste the full connection code from the website.');
+        throw new CommunityShareError('invalid_activation_token', t('ui.communityShareClient.pasteFullCode'));
     }
     if (!isSecretStorageAvailable(plugin.app)) {
-        throw new CommunityShareError('secret_storage_unavailable', 'Private secret storage is unavailable, so Community Share cannot connect safely.');
+        throw new CommunityShareError('secret_storage_unavailable', t('ui.communityShareClient.secretStorageUnavailable'));
     }
 
     const installationId = await getOrCreateInstallationId(plugin);
@@ -298,8 +299,8 @@ export async function confirmCommunityShareActivation(
             supports_projectless_activation: true
         },
         isActivationConfirmSuccess,
-        { code: 'activation_failed', message: 'Community connection failed. Generate a new code and try again.' },
-        'Community connection returned an unexpected response.'
+        { code: 'activation_failed', message: t('ui.communityShareClient.activationFailed') },
+        t('ui.communityShareClient.activationUnexpected')
     );
 
     const secretId = connectionSecretId();
@@ -318,7 +319,7 @@ export async function confirmCommunityShareActivation(
         await cleanupUnstoredConnection(plugin, parsed.connection_id, parsed.connection_secret);
         throw new CommunityShareError(
             'secret_storage_failed',
-            'The website connection was confirmed, but RT could not save it locally. Generate a new connection code and try again.'
+            t('ui.communityShareClient.secretSaveFailed')
         );
     }
 
@@ -350,7 +351,7 @@ export async function confirmCommunityShareActivation(
 function assertReportPublishAllowed(settings: CommunityShareSettings, mode: 'manual' | 'scheduled'): void {
     if (settings.audience !== 'public' || settings.tier < 1 || settings.tier > 4
         || !settings.manualPublishEnabled || (mode === 'scheduled' && !settings.scheduledPublishEnabled)) {
-        throw new CommunityShareError('publish_locked', 'Sharing requires an enabled public sharing level.');
+        throw new CommunityShareError('publish_locked', t('ui.communityShareClient.publishLocked'));
     }
 }
 
@@ -364,31 +365,31 @@ export async function publishCommunityShareReport(
     // still stop the payload from leaving. Resume clears the flag before it
     // syncs, so the explicit resume path is unaffected.
     if (current.sharingPaused) {
-        throw new CommunityShareError('sharing_paused', 'Sharing is paused. Resume sharing before publishing.');
+        throw new CommunityShareError('sharing_paused', t('ui.communityShareClient.pausedResumeFirst'));
     }
     if (!hasActiveCommunityConnection(current)) {
-        throw new CommunityShareError('connection_required', 'Connect Community Share before sharing.');
+        throw new CommunityShareError('connection_required', t('ui.communityShareClient.connectBeforeSharing'));
     }
     assertReportPublishAllowed(current, mode);
     if (current.preview.status !== 'ready' || !current.preview.previewHash || !current.preview.payloadHash) {
-        throw new CommunityShareError('preview_required', 'Review the complete preview in the sharing settings before sharing.');
+        throw new CommunityShareError('preview_required', t('ui.communityShareClient.previewRequired'));
     }
 
     const currentSecret = await getSecret(plugin.app, current.connection.secretId);
     if (!currentSecret) {
-        throw new CommunityShareError('connection_secret_missing', 'The private connection secret is missing. Reconnect Community Share.');
+        throw new CommunityShareError('connection_secret_missing', t('ui.communityShareClient.secretMissing'));
     }
 
     const preview = await buildCommunitySharePreview(plugin);
     if (preview.previewHash !== current.preview.previewHash || preview.payloadHash !== current.preview.payloadHash) {
-        throw new CommunityShareError('preview_stale', 'The complete preview is out of date. Reopen the sharing settings to refresh it, then try again.');
+        throw new CommunityShareError('preview_stale', t('ui.communityShareClient.previewOutOfDate'));
     }
     const live = assertStillSendable(plugin, current.connection);
     assertReportPublishAllowed(live, mode);
     const fieldsChanged = Object.entries(current.fieldPolicy).some(([key, enabled]) => live.fieldPolicy[key as CommunityShareFieldKey] !== enabled);
     if (fieldsChanged || live.tier !== current.tier || live.preview.status !== 'ready'
         || live.preview.previewHash !== preview.previewHash || live.preview.payloadHash !== preview.payloadHash) {
-        throw new CommunityShareError('preview_stale', 'Sharing changed while preparing the report. Review the preview before sharing.');
+        throw new CommunityShareError('preview_stale', t('ui.communityShareClient.sharingChangedWhilePreparing'));
     }
 
     const parsed = await postCommunityFunction(
@@ -408,8 +409,8 @@ export async function publishCommunityShareReport(
             report_period: preview.reportPeriod
         },
         isPublishSuccess,
-        { code: 'publish_failed', message: 'Community sharing failed. Review the preview and try again.' },
-        'Community sharing returned an unexpected response.'
+        { code: 'publish_failed', message: t('ui.communityShareClient.publishFailed') },
+        t('ui.communityShareClient.publishUnexpected')
     );
 
     // The payload has left; record that against the live state so a Pause or
@@ -534,13 +535,13 @@ function isSameConnection(live: CommunityShareConnectionSettings, expected: Comm
 function assertStillSendable(plugin: RadialTimelinePlugin, expected: CommunityShareConnectionSettings, allowPaused = false, anyLevel = false): CommunityShareSettings {
     const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
     if ((!live.enabled && !anyLevel) || live.connection.status !== 'connected' || !live.connection.connectionId) {
-        throw new CommunityShareError('connection_required', 'Community Share was disconnected before the request could be sent.');
+        throw new CommunityShareError('connection_required', t('ui.communityShareClient.disconnectedBeforeSend'));
     }
     if (!allowPaused && live.sharingPaused) {
-        throw new CommunityShareError('sharing_paused', 'Sharing was paused before the request could be sent.');
+        throw new CommunityShareError('sharing_paused', t('ui.communityShareClient.pausedBeforeSend'));
     }
     if (!isSameConnection(live.connection, expected)) {
-        throw new CommunityShareError('connection_changed', 'The Community connection changed before the request could be sent. Try again.');
+        throw new CommunityShareError('connection_changed', t('ui.communityShareClient.connectionChangedBeforeSend'));
     }
     return live;
 }
@@ -561,11 +562,11 @@ async function requireActiveConnection(plugin: RadialTimelinePlugin, anyLevel = 
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
     // hasActiveCommunityConnection is hasCommunityConnection plus Community on.
     if (!hasCommunityConnection(current) || (!anyLevel && !current.enabled)) {
-        throw new CommunityShareError('connection_required', 'Connect Community Share before syncing with the website.');
+        throw new CommunityShareError('connection_required', t('ui.communityShareClient.connectBeforeSync'));
     }
     const currentSecret = await getSecret(plugin.app, current.connection.secretId);
     if (!currentSecret) {
-        throw new CommunityShareError('connection_secret_missing', 'The private connection secret is missing. Reconnect Community Share.');
+        throw new CommunityShareError('connection_secret_missing', t('ui.communityShareClient.secretMissing'));
     }
     return {
         connectionId: current.connection.connectionId,
@@ -582,7 +583,7 @@ async function requireActiveConnection(plugin: RadialTimelinePlugin, anyLevel = 
  */
 function requireBoundProject(connection: CommunityShareConnectionSettings): string {
     if (!connection.projectId) {
-        throw new CommunityShareError('project_required', 'Sync a book from Book Manager before sharing progress.');
+        throw new CommunityShareError('project_required', t('ui.communityShareClient.syncBookFirst'));
     }
     return connection.projectId;
 }
@@ -608,18 +609,18 @@ export async function uploadAprToCommunity(
     if (!canShareAprToCommunity(current)) {
         throw new CommunityShareError(
             'sharing_level_required',
-            'Sending an APR to Community requires Level 2 (Profile, books + APR) or Level 3 (Writing activity).'
+            t('ui.communityShareClient.aprLevelRequired')
         );
     }
     const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
     requireBoundProject(connection);
     const bookKey = args.bookKey.trim();
     if (!bookKey) {
-        throw new CommunityShareError('project_mapping_required', 'Choose a campaign book before sending its APR to Community.');
+        throw new CommunityShareError('project_mapping_required', t('ui.communityShareClient.aprBookRequired'));
     }
     const live = assertStillSendable(plugin, connection);
     if (!canShareAprToCommunity(live)) {
-        throw new CommunityShareError('sharing_level_required', 'The sharing level changed before the APR could be sent.');
+        throw new CommunityShareError('sharing_level_required', t('ui.communityShareClient.aprLevelChanged'));
     }
 
     const parsed = await postCommunityFunction(
@@ -637,8 +638,8 @@ export async function uploadAprToCommunity(
             campaign_label: args.campaignLabel?.slice(0, 60)
         },
         isAprUploadSuccess,
-        { code: 'apr_upload_failed', message: 'Could not send the progress report to the community site.' },
-        'The progress report upload returned an unexpected response.'
+        { code: 'apr_upload_failed', message: t('ui.communityShareClient.aprUploadFailed') },
+        t('ui.communityShareClient.aprUploadUnexpected')
     );
     return parsed;
 }
@@ -662,8 +663,8 @@ export async function fetchCommunityShareContext(plugin: RadialTimelinePlugin): 
             current_secret: currentSecret
         },
         isCommunityShareContext,
-        { code: 'share_context_failed', message: 'Could not load your public profile from the website.' },
-        'The website profile lookup returned an unexpected response.'
+        { code: 'share_context_failed', message: t('ui.communityShareClient.shareContextFailed') },
+        t('ui.communityShareClient.shareContextUnexpected')
     );
     return parsed;
 }
@@ -721,8 +722,8 @@ export async function fetchCommunityMailbox(plugin: RadialTimelinePlugin): Promi
             current_secret: currentSecret
         },
         isCommunityMailboxAnswer,
-        { code: 'mailbox_failed', message: 'Could not check your Community mailbox.' },
-        'The Community mailbox returned an unexpected response.'
+        { code: 'mailbox_failed', message: t('ui.communityShareClient.mailboxFailed') },
+        t('ui.communityShareClient.mailboxUnexpected')
     );
 }
 
@@ -821,8 +822,8 @@ export async function syncDeskLamps(plugin: RadialTimelinePlugin, light?: DeskLa
         'community-desk-lamps',
         body,
         isDeskLampsAnswer,
-        { code: 'desk_lamps_failed', message: 'Could not check Desk Lamps.' },
-        'Desk Lamps returned an unexpected response.'
+        { code: 'desk_lamps_failed', message: t('ui.communityShareClient.deskLampsFailed') },
+        t('ui.communityShareClient.deskLampsUnexpected')
     );
 }
 
@@ -871,8 +872,8 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
             }))
         },
         isProjectSyncSuccess,
-        { code: 'project_sync_failed', message: 'Could not sync books to the community site.' },
-        'The project sync returned an unexpected response.'
+        { code: 'project_sync_failed', message: t('ui.communityShareClient.projectSyncFailed') },
+        t('ui.communityShareClient.projectSyncUnexpected')
     );
 
     // The server's binding is authoritative on every sync. A connection
@@ -1103,8 +1104,8 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
                     hour_mode_mix: hourModeMix
                 },
                 isOkResponse,
-                { code: 'daily_sync_failed', message: 'Daily activity sync failed.' },
-                'Daily activity sync returned an unexpected response.'
+                { code: 'daily_sync_failed', message: t('ui.communityShareClient.dailySyncFailed') },
+                t('ui.communityShareClient.dailySyncUnexpected')
             );
             // Truth from the payload itself, not from settings that may have
             // changed while the entries were building.
@@ -1146,7 +1147,7 @@ export async function syncCommunityDailyIfEligible(plugin: RadialTimelinePlugin)
         await plugin.saveSettings();
     } catch (error) {
         const code = error instanceof CommunityShareError ? error.code : 'daily_sync_failed';
-        const message = error instanceof Error ? error.message : 'Daily activity sync failed.';
+        const message = error instanceof Error ? error.message : t('ui.communityShareClient.dailySyncFailed');
         if (SYNC_STOP_CODES.has(code)) {
             const at = new Date().toISOString();
             commitCommunityShare(plugin, live => ({
@@ -1232,7 +1233,7 @@ async function runShareSync(plugin: RadialTimelinePlugin): Promise<'synced' | 's
         return 'synced';
     } catch (error) {
         const code = error instanceof CommunityShareError ? error.code : 'sync_failed';
-        const message = error instanceof Error ? error.message : 'Community sharing sync failed.';
+        const message = error instanceof Error ? error.message : t('ui.communityShareClient.shareSyncFailed');
         const stopped = SYNC_STOP_CODES.has(code);
         const at = new Date().toISOString();
         commitCommunityShare(plugin, live => ({
@@ -1262,15 +1263,15 @@ async function callReportAction(
         endpoint,
         body,
         isReportActionSuccess,
-        { code: 'community_share_action_failed', message: 'Community Share action failed. Try again.' },
-        'Community Share returned an unexpected response.'
+        { code: 'community_share_action_failed', message: t('ui.communityShareClient.actionFailed') },
+        t('ui.communityShareClient.actionUnexpected')
     );
 }
 
 export async function revokeCommunityShareReport(plugin: RadialTimelinePlugin): Promise<ReportActionSuccess> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
     const publishId = latestPublishId(current);
-    if (!publishId) throw new CommunityShareError('publish_required', 'Publish a report before revoking it.');
+    if (!publishId) throw new CommunityShareError('publish_required', t('ui.communityShareClient.publishBeforeRevoke'));
     const secret = await getConnectedSecret(plugin, current);
     assertStillSendable(plugin, current.connection, true);
     const result = await callReportAction(plugin, 'community-share-revoke', {
@@ -1401,13 +1402,13 @@ export async function postSessionToCommunityFeed(
 ): Promise<void> {
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
     if (!canPostSessionsToFeed(plugin)) {
-        throw new CommunityShareError('sharing_level_required', 'Posting to the community feed requires Level 3 (writing activity).');
+        throw new CommunityShareError('sharing_level_required', t('ui.communityShareClient.feedLevelRequired'));
     }
     requireBoundProject(current.connection);
     const secret = await getConnectedSecret(plugin, current);
     assertStillSendable(plugin, current.connection);
     if (!canPostSessionsToFeed(plugin)) {
-        throw new CommunityShareError('sharing_level_required', 'The sharing level changed before the session could be posted.');
+        throw new CommunityShareError('sharing_level_required', t('ui.communityShareClient.feedLevelChanged'));
     }
     await postCommunityFunction(
         plugin,
@@ -1419,7 +1420,7 @@ export async function postSessionToCommunityFeed(
             session: post.stats
         },
         isOkResponse,
-        { code: 'post_failed', message: 'Could not post this session to the community feed.' },
-        'The session post returned an unexpected response.'
+        { code: 'post_failed', message: t('ui.communityShareClient.postFailed') },
+        t('ui.communityShareClient.postUnexpected')
     );
 }

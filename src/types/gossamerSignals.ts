@@ -10,6 +10,8 @@
  * read as `momentum`.
  */
 
+import { t } from '../i18n';
+
 export type GossamerSignalType = 'momentum' | 'tension' | 'activity' | 'interiority';
 
 export const GOSSAMER_SIGNAL_TYPES: readonly GossamerSignalType[] = [
@@ -82,7 +84,7 @@ export const GOSSAMER_SIGNAL_METADATA: Record<GossamerSignalType, GossamerSignal
     label: 'Momentum',
     short: 'MOMENTUM',
     icon: 'trending-up',
-    tooltip: 'Momentum\n\nMeasures how strongly the story moves forward—how much each beat pulls the reader toward what happens next. Focuses on pacing and consequence, not just event count.',
+    get tooltip() { return t('ui.gossamerSignals.momentumTooltip'); },
     promptBlock: MOMENTUM_BLOCK
   },
   tension: {
@@ -96,7 +98,7 @@ export const GOSSAMER_SIGNAL_METADATA: Record<GossamerSignalType, GossamerSignal
     // `svg-icon lucide-flame` — those classes leak into Obsidian's global
     // icon styling and its internals may re-render anything matching them.
     inlineIconPath: 'M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4',
-    tooltip: 'Tension\n\nMeasures the pressure the reader feels—how much strain, uncertainty, or unresolved conflict is carried forward. A quiet scene can be highly tense if the stakes are clear.',
+    get tooltip() { return t('ui.gossamerSignals.tensionTooltip'); },
     promptBlock: TENSION_BLOCK
   },
   activity: {
@@ -104,7 +106,7 @@ export const GOSSAMER_SIGNAL_METADATA: Record<GossamerSignalType, GossamerSignal
     label: 'Activity',
     short: 'ACTIVITY',
     icon: 'zap',
-    tooltip: 'Activity\n\nMeasures how much is physically or visibly happening on the page—actions, events, and external change. High activity doesn\u2019t imply high tension or emotion.',
+    get tooltip() { return t('ui.gossamerSignals.activityTooltip'); },
     promptBlock: ACTIVITY_BLOCK
   },
   interiority: {
@@ -112,7 +114,7 @@ export const GOSSAMER_SIGNAL_METADATA: Record<GossamerSignalType, GossamerSignal
     label: 'Interiority',
     short: 'INTERIORITY',
     icon: 'brain',
-    tooltip: 'Interiority\n\nMeasures the intensity of the character\u2019s inner experience—thoughts, emotions, and psychological conflict. A subtle realization can be more intense than a dramatic outburst.',
+    get tooltip() { return t('ui.gossamerSignals.interiorityTooltip'); },
     promptBlock: INTERIORITY_BLOCK
   }
 };

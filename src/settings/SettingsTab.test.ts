@@ -27,19 +27,19 @@ describe('settings section navigation anchors', () => {
         const anchorsSource = readFileSync(resolve(process.cwd(), 'src/settings/settingsAnchors.ts'), 'utf8');
 
         expect(anchorsSource.includes("'community'")).toBe(true);
-        expect(settingsSource.indexOf("socialTab.createSpan({ text: 'Soc'")).toBeLessThan(
-            settingsSource.indexOf("communityTab.createSpan({ text: 'Com'")
-        );
-        expect(settingsSource.indexOf("communityTab.createSpan({ text: 'Com'")).toBeLessThan(
-            settingsSource.indexOf("inquiryTab.createSpan({ text: 'Inq'")
-        );
+        const socialIndex = settingsSource.indexOf("socialTab.createSpan({ text: t('ui.settingsTab.tabSocial')");
+        const communityIndex = settingsSource.indexOf("communityTab.createSpan({ text: t('ui.settingsTab.tabCommunity')");
+        const inquiryIndex = settingsSource.indexOf("inquiryTab.createSpan({ text: t('ui.settingsTab.tabInquiry')");
+        expect(socialIndex).toBeGreaterThan(-1);
+        expect(socialIndex).toBeLessThan(communityIndex);
+        expect(communityIndex).toBeLessThan(inquiryIndex);
         expect(settingsSource.includes("renderCommunityShareSection({ app: this.app, plugin: this.plugin, containerEl: communityContent })")).toBe(true);
     });
 
     it('uses concise Core quick-link labels', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/SettingsTab.ts'), 'utf8');
-        expect(source.includes("{ label: 'Beats', target: beatsStorySection }")).toBe(true);
-        expect(source.includes("{ label: 'Properties', target: scenePropertiesSection }")).toBe(true);
+        expect(source.includes("{ label: t('ui.settingsTab.quickLinkBeats'), target: beatsStorySection }")).toBe(true);
+        expect(source.includes("{ label: t('ui.settingsTab.quickLinkProperties'), target: scenePropertiesSection }")).toBe(true);
         // The README is no longer rendered in settings — it lives on GitHub and
         // the Obsidian directory only.
         expect(source.includes('readmeSection')).toBe(false);

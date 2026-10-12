@@ -81,6 +81,7 @@ export const APR_CENTER_METRIC = {
 // =============================================================================
 
 import type { TeaserThresholds, TeaserPreset, TeaserRevealLevel } from '../../types/settings';
+import { t } from '../../i18n';
 
 /**
  * Preset thresholds for Teaser Reveal (4 stages)
@@ -114,27 +115,30 @@ export const TEASER_PRESETS: Record<Exclude<TeaserPreset, 'custom'>, TeaserThres
  * - Scenes: Scene structure visible
  * - Color: Publish stage colors visible
  * - Complete: All subplot rings visible
+ *
+ * Label and description are getters so they resolve in the current language
+ * when read, not once at module load.
  */
 export const TEASER_LEVEL_INFO: Record<TeaserRevealLevel, { label: string; icon: string; description: string }> = {
     ring: {
-        label: 'Ring',
+        get label() { return t('settings.authorProgress.preview.teaserRing'); },
         icon: 'circle',        // Minimal: just a ring
-        description: 'Progress ring only — maximum mystery',
+        get description() { return t('ui.aprConstants.ringDesc'); },
     },
     scenes: {
-        label: 'Scenes',
+        get label() { return t('settings.authorProgress.preview.teaserScenes'); },
         icon: 'sprout',        // First sign of life
-        description: 'Scene structure in grayscale with patterns',
+        get description() { return t('ui.aprConstants.scenesDesc'); },
     },
     colors: {
-        label: 'Color',
+        get label() { return t('settings.authorProgress.preview.teaserColor'); },
         icon: 'tree-pine',     // Growing
-        description: 'Publish stage colors revealed',
+        get description() { return t('ui.aprConstants.colorsDesc'); },
     },
     full: {
-        label: 'Complete',
+        get label() { return t('settings.authorProgress.preview.teaserComplete'); },
         icon: 'shell',         // Complete
-        description: 'All subplot rings visible — complete picture',
+        get description() { return t('ui.aprConstants.fullDesc'); },
     },
 };
 

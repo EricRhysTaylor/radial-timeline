@@ -4,6 +4,7 @@ import { resolveBookTitle } from '../../renderer/apr/aprHelpers';
 import { AuthorProgressRenderService } from './AuthorProgressRenderService';
 import { writeManagedOutput } from '../../utils/logVaultOps';
 import { systemFolderPath } from '../../utils/systemFolder';
+import { t } from '../../i18n';
 
 export class AuthorProgressPublishService {
     constructor(
@@ -72,14 +73,14 @@ export class AuthorProgressPublishService {
         const writeResult = await writeManagedOutput(this.app, notePath, noteContent, {
             operation: 'author-progress-note',
             managedMarker: '<!-- Radial Timeline Managed Output: author-progress-note -->',
-            unmanagedOverwritePrompt: (file) => `Overwrite existing author progress note "${file.path}"? RT will archive the current contents to a log snapshot first. Manual edits may be replaced.`
+            unmanagedOverwritePrompt: (file) => t('ui.authorProgressPublishService.overwritePrompt', { path: file.path })
         });
         if (writeResult.skipped) {
-            new Notice('Author progress note publish cancelled before overwriting the existing note.');
+            new Notice(t('ui.authorProgressPublishService.publishCancelled'));
             return null;
         }
         if (writeResult.snapshotPath) {
-            new Notice(`Archived existing author progress note before overwrite: ${writeResult.snapshotPath}`);
+            new Notice(t('ui.authorProgressPublishService.archivedBeforeOverwrite', { path: writeResult.snapshotPath }));
         }
 
         settings.lastPublishedDate = new Date().toISOString();

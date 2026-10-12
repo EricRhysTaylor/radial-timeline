@@ -12,6 +12,7 @@
 
 import { validatePlacement } from './validatePlacement';
 import type { PlacementCandidate, PlacementInterval } from './types';
+import { t } from '../../i18n';
 
 /**
  * Build the candidate list for a drop interval.
@@ -95,14 +96,14 @@ function describeKeepTime(lowerBound: Date, attempt: Date): string {
     const sameDay = lowerBound.getFullYear() === attempt.getFullYear()
         && lowerBound.getMonth() === attempt.getMonth()
         && lowerBound.getDate() === attempt.getDate();
-    return sameDay ? 'Same time, same day' : 'Same time, next day';
+    return sameDay ? t('ui.generateCandidates.sameTimeSameDay') : t('ui.generateCandidates.sameTimeNextDay');
 }
 
 /** The centre of the interval — always available when there is any room at all. */
 function midpoint(interval: PlacementInterval): CandidateProposal {
     return {
         id: 'midpoint',
-        label: 'Midway between the two scenes',
+        label: t('ui.generateCandidates.midway'),
         when: new Date(Math.floor((interval.lowerMs + interval.upperMs) / 2))
     };
 }

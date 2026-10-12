@@ -17,6 +17,7 @@ import {
     type PictogramSpread,
 } from './layoutVisuals';
 import { BUNDLED_FICTION_SPECS } from './bundledStyleSpecs';
+import { t, tCount } from '../i18n';
 
 function layout(overrides: Partial<PandocLayoutTemplate>): PandocLayoutTemplate {
     return {
@@ -220,7 +221,7 @@ describe('getLayoutPictogramRows', () => {
 
     it('gives the generic variant a labeled body spread instead of nothing', () => {
         const rows = getLayoutPictogramRows('generic');
-        expect(rows.body.label).toBe('BODY');
+        expect(rows.body.label).toBe(t('ui.layoutVisuals.spreadBody'));
         expect(rows.scene).toBeNull();
         expect(rows.special).toEqual([]);
     });
@@ -264,7 +265,7 @@ describe('applySpreadValidation', () => {
         });
         const part = findSpread(rows, 'PART');
         expect(part?.warningLevel).toBe('warning');
-        expect(part?.warningTooltip).toMatch(/no scenes have a Part field/);
+        expect(part?.warningTooltip).toBe(t('ui.layoutVisuals.partWarningTooltip'));
     });
 
     it('does NOT stamp the PART spread when actCount >= 2', () => {
@@ -284,7 +285,7 @@ describe('applySpreadValidation', () => {
         });
         const chapter = findSpread(rows, 'CHAPTER');
         expect(chapter?.warningLevel).toBe('warning');
-        expect(chapter?.warningTooltip).toMatch(/no scenes have a Chapter field/);
+        expect(chapter?.warningTooltip).toBe(t('ui.layoutVisuals.chapterWarningTooltip'));
     });
 
     it('does NOT stamp the CHAPTER spread when chapterFieldCount >= 1', () => {
@@ -352,7 +353,7 @@ describe('applySpreadValidation', () => {
             });
             const part = findSpread(rows, 'PART');
             expect(part?.warningLevel).toBe('warning');
-            expect(part?.warningTooltip).toMatch(/epigraph/i);
+            expect(part?.warningTooltip).toBe(t('ui.layoutVisuals.partEpigraphsEmptyTooltip'));
         });
 
         it('does NOT stamp PART when every marked Part has an epigraph quote', () => {
@@ -374,10 +375,8 @@ describe('applySpreadValidation', () => {
             });
             const part = findSpread(rows, 'PART');
             expect(part?.warningLevel).toBe('warning');
-            // Tooltip should mention both populated and total counts.
-            expect(part?.warningTooltip).toMatch(/2/);
-            expect(part?.warningTooltip).toMatch(/3/);
-            expect(part?.warningTooltip).toMatch(/partial/i);
+            // Tooltip should carry both populated and total counts.
+            expect(part?.warningTooltip).toBe(t('ui.layoutVisuals.partEpigraphsPartialTooltip', { populated: 2, total: 3 }));
         });
 
         it('stamps PART with the zero-population tooltip when nothing has been written', () => {
@@ -389,7 +388,7 @@ describe('applySpreadValidation', () => {
             const part = findSpread(rows, 'PART');
             expect(part?.warningLevel).toBe('warning');
             // Zero phrasing — nothing has been written.
-            expect(part?.warningTooltip).toMatch(/none has been written/i);
+            expect(part?.warningTooltip).toBe(t('ui.layoutVisuals.partEpigraphsEmptyTooltip'));
         });
 
         it('warns when there is more epigraph text than marked Parts', () => {
@@ -403,8 +402,11 @@ describe('applySpreadValidation', () => {
             });
             const part = findSpread(rows, 'PART');
             expect(part?.warningLevel).toBe('warning');
-            expect(part?.warningTooltip).toMatch(/2 Part epigraphs will not print/);
-            expect(part?.warningTooltip).toMatch(/only 2 scenes carry a Part field/);
+            expect(part?.warningTooltip).toBe(t('ui.layoutVisuals.surplusEpigraphsTooltip', {
+                epigraphs: tCount('partEpigraph', 2),
+                written: 4,
+                scenes: tCount('scene', 2),
+            }));
         });
 
         it('does not warn when epigraph text matches the marked Parts exactly', () => {
@@ -440,7 +442,7 @@ describe('applySpreadValidation', () => {
             });
             const chapter = findSpread(rows, 'CHAPTER');
             expect(chapter?.warningLevel).toBe('warning');
-            expect(chapter?.warningTooltip).toMatch(/title/i);
+            expect(chapter?.warningTooltip).toBe(t('ui.layoutVisuals.chapterTitlesEmptyTooltip'));
         });
 
         it('does NOT stamp CHAPTER when every chapter has a title', () => {
@@ -462,9 +464,7 @@ describe('applySpreadValidation', () => {
             });
             const chapter = findSpread(rows, 'CHAPTER');
             expect(chapter?.warningLevel).toBe('warning');
-            expect(chapter?.warningTooltip).toMatch(/3/);
-            expect(chapter?.warningTooltip).toMatch(/5/);
-            expect(chapter?.warningTooltip).toMatch(/partial/i);
+            expect(chapter?.warningTooltip).toBe(t('ui.layoutVisuals.chapterTitlesPartialTooltip', { populated: 3, total: 5 }));
         });
 
         it('does NOT fire on templates that advertise chapters but not TITLES', () => {
@@ -492,7 +492,7 @@ describe('applySpreadValidation', () => {
             });
             const titleOnly = rows.special.find(s => s.sceneMode === 'title-only');
             expect(titleOnly?.warningLevel).toBe('warning');
-            expect(titleOnly?.warningTooltip).toMatch(/title/i);
+            expect(titleOnly?.warningTooltip).toBe(t('ui.layoutVisuals.sceneTitleWarningTooltip'));
             // Sibling sceneMode spreads (scene-number / scene-number-title) are unaffected.
             const sceneNumber = rows.special.find(s => s.sceneMode === 'scene-number');
             expect(sceneNumber?.warningLevel).toBeUndefined();
@@ -557,8 +557,8 @@ describe('getPictogramRowsFromSpec — spec-driven pictograms', () => {
     it('Standard Manuscript spec → classic-shaped rows', () => {
         const rows = getPictogramRowsFromSpec(BUNDLED_FICTION_SPECS['bundled-fiction-classic-manuscript']);
         // Centered title header on both pages.
-        expect(rows.body.leftPage?.headerCenter).toBe('TITLE');
-        expect(rows.body.rightPage?.headerCenter).toBe('TITLE');
+        expect(rows.body.leftPage?.headerCenter).toBe(t('ui.layoutVisuals.pictoHeaderTitle'));
+        expect(rows.body.rightPage?.headerCenter).toBe(t('ui.layoutVisuals.pictoHeaderTitle'));
         // Bottom-center folio.
         expect(rows.body.leftPage?.folioBottom).toBe('12');
         expect(rows.body.rightPage?.folioBottom).toBe('13');
@@ -574,8 +574,8 @@ describe('getPictogramRowsFromSpec — spec-driven pictograms', () => {
     it('Contemporary Literary spec → CHAPTER spread with bodyLines === 0', () => {
         const rows = getPictogramRowsFromSpec(BUNDLED_FICTION_SPECS['bundled-fiction-contemporary-literary']);
         // Sans-styled split header (left=title, right=scene title).
-        expect(rows.body.leftPage?.headerLeft).toBe('title');
-        expect(rows.body.rightPage?.headerRight).toBe('scene title');
+        expect(rows.body.leftPage?.headerLeft).toBe(t('ui.layoutVisuals.pictoHeaderBookTitle'));
+        expect(rows.body.rightPage?.headerRight).toBe(t('ui.layoutVisuals.pictoHeaderSceneTitle'));
         // Bottom-center folio.
         expect(rows.body.leftPage?.folioBottom).toBe('12');
         expect(rows.body.rightPage?.folioBottom).toBe('13');
@@ -586,14 +586,14 @@ describe('getPictogramRowsFromSpec — spec-driven pictograms', () => {
         expect(page.bodyLines).toBe(0);
         expect(page.suppressHeader).toBe(true);
         expect(page.suppressFooter).toBe(true);
-        expect(page.specialText).toBe('Chapter');
+        expect(page.specialText).toBe(t('ui.layoutVisuals.pictoChapter'));
     });
 
     it('Signature Literary spec → three scene-mode opener spreads, no PART/CHAPTER', () => {
         const rows = getPictogramRowsFromSpec(BUNDLED_FICTION_SPECS['bundled-fiction-signature-literary']);
         // Split-author headers.
-        expect(rows.body.leftPage?.headerCenter).toMatch(/\|/);
-        expect(rows.body.rightPage?.headerCenter).toMatch(/\|/);
+        expect(rows.body.leftPage?.headerCenter).toBe(t('ui.layoutVisuals.pictoHeaderEvenSplit'));
+        expect(rows.body.rightPage?.headerCenter).toBe(t('ui.layoutVisuals.pictoHeaderOddSplit'));
         // No bottom folio — folio lives in header.
         expect(rows.body.leftPage?.folioBottom).toBeUndefined();
         expect(rows.body.rightPage?.folioBottom).toBeUndefined();
@@ -606,20 +606,20 @@ describe('getPictogramRowsFromSpec — spec-driven pictograms', () => {
     it('Modern Classic spec → PART (with epigraph), CHAPTER, and roman-rule scene', () => {
         const rows = getPictogramRowsFromSpec(BUNDLED_FICTION_SPECS['bundled-fiction-modern-classic']);
         // Split-author headers; no bottom folio.
-        expect(rows.body.leftPage?.headerCenter).toMatch(/\|/);
-        expect(rows.body.rightPage?.headerCenter).toMatch(/\|/);
+        expect(rows.body.leftPage?.headerCenter).toBe(t('ui.layoutVisuals.pictoHeaderEvenSplit'));
+        expect(rows.body.rightPage?.headerCenter).toBe(t('ui.layoutVisuals.pictoHeaderOddSplit'));
         // Top-row scene spread is the lowercase Roman rule.
         expect(rows.scene?.rightPage?.separatorText).toBe('ii.');
         // PART spread with an epigraph.
         const part = rows.special.find(s => s.label === 'PART');
         expect(part).toBeDefined();
         expect(part!.rightPage?.specialText).toBe('I');
-        expect(part!.rightPage?.epigraphText).toBe('a quote');
+        expect(part!.rightPage?.epigraphText).toBe(t('ui.layoutVisuals.pictoEpigraphQuote'));
         // CHAPTER spread with subtext (numbered-titled).
         const chapter = rows.special.find(s => s.label === 'CHAPTER');
         expect(chapter).toBeDefined();
-        expect(chapter!.rightPage?.specialText).toBe('Chapter 1');
-        expect(chapter!.rightPage?.specialSubtext).toBe('Boy with a Skull');
+        expect(chapter!.rightPage?.specialText).toBe(t('ui.layoutVisuals.pictoChapterNumbered'));
+        expect(chapter!.rightPage?.specialSubtext).toBe(t('ui.layoutVisuals.pictoChapterTitle'));
     });
 
     it('getLayoutPictogramRows uses the spec when a bundled layout is supplied', () => {
@@ -679,8 +679,7 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         const ch = statuses.find(s => s.id === 'chapters-count');
         expect(ch).toBeDefined();
         expect(ch?.tone).toBe('info');
-        expect(ch?.text).toMatch(/5 Chapters configured/);
-        expect(ch?.text).not.toMatch(/all titled/i);
+        expect(ch?.text).toBe(t('ui.layoutVisuals.chaptersConfiguredStatus', { count: 5 }));
     });
 
     it('emits separate chapter count and title-populated statuses for a titled layout with full population', () => {
@@ -697,10 +696,10 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         const titled = statuses.find(s => s.id === 'chapter-titles-count');
         expect(ch).toBeDefined();
         expect(ch?.tone).toBe('info');
-        expect(ch?.text).toMatch(/5 Chapters configured/i);
+        expect(ch?.text).toBe(t('ui.layoutVisuals.chaptersConfiguredStatus', { count: 5 }));
         expect(titled).toBeDefined();
         expect(titled?.tone).toBe('success');
-        expect(titled?.text).toMatch(/Chapter titles populated/i);
+        expect(titled?.text).toBe(t('ui.layoutVisuals.chapterTitlesPopulatedStatus'));
     });
 
     it('orders Modern Classic readiness facts as separate export-check lines', () => {
@@ -714,10 +713,10 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         const rows = applySpreadValidation(getLayoutPictogramRows('modernClassic'), ctx);
         const statuses = collectSpreadStatuses(rows, ctx);
         expect(statuses.map(s => s.text)).toEqual([
-            '3 Parts marked.',
-            'Epigraphs populated.',
-            '5 Chapters configured.',
-            'Chapter titles populated.',
+            t('ui.layoutVisuals.partsMarkedStatus', { parts: tCount('bookPart', 3) }),
+            t('ui.layoutVisuals.epigraphsPopulatedStatus'),
+            t('ui.layoutVisuals.chaptersConfiguredStatus', { count: 5 }),
+            t('ui.layoutVisuals.chapterTitlesPopulatedStatus'),
         ]);
     });
 
@@ -771,7 +770,6 @@ describe('collectSpreadStatuses — always-emit base counts', () => {
         const parts = statuses.find(s => s.id === 'parts-count');
         expect(parts).toBeDefined();
         expect(parts?.tone).toBe('info');
-        expect(parts?.text).toMatch(/4 Parts marked/);
-        expect(parts?.text).not.toMatch(/all epigraphs/i);
+        expect(parts?.text).toBe(t('ui.layoutVisuals.partsMarkedStatus', { parts: tCount('bookPart', 4) }));
     });
 });

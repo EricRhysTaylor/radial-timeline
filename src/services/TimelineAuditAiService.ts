@@ -8,6 +8,7 @@
 
 import type RadialTimelinePlugin from '../main';
 import { runAuditPipeline } from '../timelineAudit/AuditPipeline';
+import { t } from '../i18n';
 import type {
     TimelineAuditAiScope,
     TimelineAuditAiScopeMode,
@@ -185,7 +186,7 @@ export class TimelineAuditAiService {
             startedAt,
             scopeMode: frozenScope.mode,
             scopeLabel: config.aiScopeLabel,
-            message: 'Preparing AI chronology scan…'
+            message: t('ui.timelineAuditAiService.preparing')
         });
         this.emit();
 
@@ -201,13 +202,13 @@ export class TimelineAuditAiService {
                 abortSignal: this.abortController.signal,
                 onStageChange: (stage) => {
                     if (stage === 'deterministic') {
-                        this.state = { ...this.state, message: 'Refreshing audit context…' };
+                        this.state = { ...this.state, message: t('ui.timelineAuditAiService.refreshingAudit') };
                     } else if (stage === 'continuity') {
-                        this.state = { ...this.state, message: 'Refreshing continuity context…' };
+                        this.state = { ...this.state, message: t('ui.timelineAuditAiService.refreshingContinuity') };
                     } else if (stage === 'ai') {
-                        this.state = { ...this.state, message: 'Running AI chronology scan…' };
+                        this.state = { ...this.state, message: t('timelineAuditModal.aiCard.actionRunning') };
                     } else if (stage === 'complete') {
-                        this.state = { ...this.state, message: 'AI chronology scan complete' };
+                        this.state = { ...this.state, message: t('timelineAuditModal.aiStatus.complete') };
                     }
                     this.emit();
                 },
@@ -222,7 +223,7 @@ export class TimelineAuditAiService {
                 onAiProgress: (current, total, sceneName) => {
                     this.state = {
                         ...this.state,
-                        message: 'Running AI chronology scan…',
+                        message: t('timelineAuditModal.aiCard.actionRunning'),
                         progressCurrent: current,
                         progressTotal: total,
                         currentSceneName: sceneName
@@ -237,7 +238,7 @@ export class TimelineAuditAiService {
 
             const aiRunSummary = result.aiRunSummary;
             if (!aiRunSummary) {
-                throw new Error('Timeline Audit AI completed without a run summary.');
+                throw new Error(t('ui.timelineAuditAiService.noRunSummary'));
             }
 
             this.state = createTimelineAuditAiJobState({
@@ -256,7 +257,7 @@ export class TimelineAuditAiService {
                 checkedSceneCount: aiRunSummary.checked,
                 suggestionCount: aiRunSummary.suggestions,
                 failedSceneCount: aiRunSummary.failed,
-                message: 'AI chronology scan complete',
+                message: t('timelineAuditModal.aiStatus.complete'),
                 result
             });
             this.emit();
@@ -274,7 +275,7 @@ export class TimelineAuditAiService {
                 completedAt: Date.now(),
                 scopeMode: frozenScope.mode,
                 scopeLabel: config.aiScopeLabel,
-                message: 'AI chronology scan failed',
+                message: t('timelineAuditModal.aiStatus.failed'),
                 error: error instanceof Error ? error.message : String(error)
             });
             this.emit();

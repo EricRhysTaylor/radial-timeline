@@ -69,6 +69,7 @@ import { getActiveBookMatterNoteSummaries, getActiveBookMetaStatus } from '../..
 import { getMatterPreviewSummary, getPublishingProgressContext, getPublishingValidationSnapshot, type MatterPreviewItem } from '../../publishing/readinessSummary';
 import { createBookMetaOnly, ensurePublishingEnvironment, generateSampleTemplates, maybeRenameTemplateFileForPathChange } from '../../publishing/starterSetup';
 import { compactTemplatePathForStorage } from '../../utils/templateImport';
+import { t, tCount } from '../../i18n';
 
 // Example shown in the Custom Pandoc metadata field. This is literal Pandoc
 // metadata syntax (case-sensitive keys), not sentence-case UI copy, so it must
@@ -87,12 +88,12 @@ function revealAbsolutePathInFileManager(absolutePath: string): void {
         const electron = (window as unknown as { require?: (name: string) => { shell?: { showItemInFolder: (p: string) => void } } }).require?.('electron'); // SAFE: Electron shell reveal is the standard desktop-only way to open Finder/Explorer at a file.
         const shell = electron?.shell;
         if (!shell) {
-            new Notice(`Could not open file manager. Path: ${absolutePath}`);
+            new Notice(t('ui.publishSection.fileManagerUnavailable', { path: absolutePath }));
             return;
         }
         shell.showItemInFolder(absolutePath);
     } catch {
-        new Notice(`Could not open file manager. Path: ${absolutePath}`);
+        new Notice(t('ui.publishSection.fileManagerUnavailable', { path: absolutePath }));
     }
 }
 
@@ -117,17 +118,12 @@ function buildFontPillsNotice(ownerDoc: Document, headline: string, fonts: Bundl
             const pill = row.createEl('button', { cls: 'ert-font-pill', attr: { type: 'button' } });
             pill.createSpan({ cls: 'ert-font-pill-name', text: file.file });
             pill.createSpan({ cls: 'ert-font-pill-meta', text: `fonts/${family} · ${formatFontFileSize(file.sizeBytes)}` });
-            pill.setAttribute('title', `${file.absolutePath}\nClick to reveal in file manager.`);
+            pill.setAttribute('title', t('ui.publishSection.fontPillTooltip', { path: file.absolutePath }));
             pill.addEventListener('click', () => revealAbsolutePathInFileManager(file.absolutePath));
         }
     }
     return fragment;
 }
-
-const STARTER_PUBLISHING_SETUP_ALREADY_EXISTS = 'Starter publishing files already exist.';
-
-const AUTO_CONFIGURE_BUTTON = 'Auto configure publishing';
-const AUTO_CONFIGURE_BUSY = 'Configuring publishing…';
 
 class StarterPublishingSetupModal extends Modal {
     private readonly onConfirm: (confirmed: boolean) => void;
@@ -151,24 +147,24 @@ class StarterPublishingSetupModal extends Modal {
         const badge = header.createSpan({ cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_NEUTRAL}` });
         const badgeIcon = badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
         setIcon(badgeIcon, 'book-open-text');
-        badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'CORE' });
-        header.createDiv({ cls: 'ert-modal-title', text: AUTO_CONFIGURE_BUTTON });
+        badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.publishSection.starterModalBadge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.publishSection.autoConfigureButton') });
         header.createDiv({
             cls: 'ert-modal-subtitle',
-            text: 'Detects Pandoc and LaTeX, installs bundled templates/fonts into your vault, and creates starter publishing notes. External apps are not downloaded.'
+            text: t('ui.publishSection.starterModalSubtitle')
         });
 
         const createdBlock = contentEl.createDiv({ cls: 'ert-template-pack-created ert-stack--tight' });
         const createdHeading = createdBlock.createDiv({ cls: 'ert-template-pack-subtitle' });
         const createdHeadingIcon = createdHeading.createSpan({ cls: 'ert-template-pack-subtitle-icon' });
         setIcon(createdHeadingIcon, 'list-checks');
-        createdHeading.createSpan({ text: 'What this setup creates' });
+        createdHeading.createSpan({ text: t('ui.publishSection.starterModalCreatesHeading') });
         const createdList = createdBlock.createEl('ol', { cls: 'ert-template-pack-list ert-template-pack-list--ordered' });
         const items = [
-            'Pandoc and LaTeX detection',
-            'Bundled templates and vault-local fonts',
-            'Book Details note',
-            'Inline LaTeX front/back matter examples',
+            t('ui.publishSection.starterModalItemDetection'),
+            t('ui.publishSection.starterModalItemTemplates'),
+            t('ui.publishSection.starterModalItemBookDetails'),
+            t('ui.publishSection.starterModalItemMatterExamples'),
         ];
         items.forEach(item => {
             const listItem = createdList.createEl('li', { cls: 'ert-template-pack-list-item' });
@@ -177,7 +173,7 @@ class StarterPublishingSetupModal extends Modal {
 
         const actions = contentEl.createDiv({ cls: 'ert-modal-actions ert-template-pack-actions' });
         const generateButton = new ButtonComponent(actions)
-            .setButtonText(AUTO_CONFIGURE_BUTTON);
+            .setButtonText(t('ui.publishSection.autoConfigureButton'));
         generateButton.setCta();
         generateButton.buttonEl.addClass('ert-btn');
         generateButton.onClick(() => {
@@ -186,7 +182,7 @@ class StarterPublishingSetupModal extends Modal {
                 this.onConfirm(true);
             });
         new ButtonComponent(actions)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => {
                 this.resolved = true;
                 this.close();
@@ -252,8 +248,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     const pandocIntroPanel = section.createDiv({ cls: ERT_CLASSES.STACK });
     pandocIntroPanel.addClass('ert-publish-order--pandoc-intro');
     const pandocHeading = addProRow(new Setting(pandocIntroPanel))
-        .setName('Export & publishing')
-        .setDesc('Export your manuscript in the format you need. Word and PDF use Pandoc; PDF also needs LaTeX. Markdown needs no publishing tools. Configure Book Details, optional pages, and styles below.')
+        .setName(t('ui.publishSection.exportPublishingHeading'))
+        .setDesc(t('ui.publishSection.exportPublishingDesc'))
         .setHeading();
     addHeadingIcon(pandocHeading, 'book-open-text');
     addWikiLink(pandocHeading, 'Publishing');
@@ -271,17 +267,17 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         systemConfigPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
     const systemConfigHeading = addProRow(new Setting(systemConfigPanel))
-        .setName('Export tools')
-        .setDesc('Word export uses Pandoc. PDF export also needs a compatible LaTeX engine.')
+        .setName(t('ui.publishSection.exportToolsHeading'))
+        .setDesc(t('ui.publishSection.exportToolsDesc'))
         .setHeading();
     addHeadingIcon(systemConfigHeading, 'settings');
     applyErtHeaderLayout(systemConfigHeading);
 
     // Settings
     let pandocPathInputEl: HTMLInputElement | null = null;
-    const defaultDesc = 'Path to Pandoc, used for Word and PDF. Leave blank to use your system PATH, or click Auto locate.';
+    const defaultDesc = t('ui.publishSection.pandocPathDesc');
     const pandocSetting = addProRow(new Setting(systemConfigPanel))
-        .setName('Pandoc & LaTeX')
+        .setName(t('ui.publishSection.pandocPathName'))
         .setDesc(defaultDesc)
         .addText(text => {
             text.inputEl.addClass('ert-input--lg');
@@ -296,16 +292,16 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             });
         })
         .addButton(button => {
-            button.setButtonText('Auto locate');
+            button.setButtonText(t('ui.publishSection.autoLocateButton'));
             button.onClick(async () => {
                 button.setDisabled(true);
-                button.setButtonText('Locating…');
+                button.setButtonText(t('ui.publishSection.autoLocateBusy'));
                 try {
                     const scan = await scanSystemPaths();
                     const msgs: string[] = [];
 
                     if (scan.pandocPath) {
-                        msgs.push(`✓ Pandoc found at ${scan.pandocPath}`);
+                        msgs.push(t('ui.publishSection.pandocFoundAt', { path: scan.pandocPath }));
                         // Fill when empty — and also repair a configured path
                         // that no longer exists on disk (e.g. a Homebrew
                         // install that was removed). Auto locate is the
@@ -317,7 +313,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                             && !existsSync(configured);
                         if (!configured || configuredIsStale) {
                             if (configuredIsStale) {
-                                msgs.push(`Replaced missing path ${configured}`);
+                                msgs.push(t('ui.publishSection.replacedMissingPath', { path: configured }));
                             }
                             plugin.settings.pandocPath = scan.pandocPath;
                             await plugin.saveSettings();
@@ -329,18 +325,18 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                             }
                         }
                     } else {
-                        msgs.push('⚠ Pandoc not found — install from pandoc.org');
+                        msgs.push(t('ui.publishSection.pandocNotFound'));
                     }
 
                     if (scan.latexPath) {
-                        msgs.push(`✓ LaTeX found (${scan.latexEngine})`);
+                        msgs.push(t('ui.publishSection.latexFound', { engine: String(scan.latexEngine) }));
                         const availableEngines = listAvailableLatexEngines();
                         if (availableEngines.length > 0) {
-                            msgs.push(`Available engines: ${availableEngines.map(item => item.engine).join(', ')}`);
+                            msgs.push(t('ui.publishSection.availableEngines', { engines: availableEngines.map(item => item.engine).join(', ') }));
                         }
-                        msgs.push('Auto PDF engine: xelatex/lualatex for fontspec templates, otherwise pdflatex.');
+                        msgs.push(t('ui.publishSection.autoPdfEngine'));
                     } else {
-                        msgs.push('⚠ LaTeX not found — needed for PDF export');
+                        msgs.push(t('ui.publishSection.latexNotFound'));
                     }
 
                     pandocSetting.setDesc(msgs.join(' · '));
@@ -352,13 +348,13 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     }, 8000);
                 } catch (e) {
                     const msg = (e as Error).message || String(e);
-                    pandocSetting.setDesc(`Error: ${msg}`);
+                    pandocSetting.setDesc(t('ui.publishSection.autoLocateError', { error: msg }));
                     window.setTimeout(() => {
                         pandocSetting.setDesc(defaultDesc);
                     }, 5000);
                 } finally {
                     button.setDisabled(false);
-                    button.setButtonText('Auto locate');
+                    button.setButtonText(t('ui.publishSection.autoLocateButton'));
                 }
             });
         });
@@ -386,8 +382,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     };
 
     const pandocFolderSetting = addProRow(new Setting(systemConfigPanel))
-        .setName('Pandoc folder')
-        .setDesc('Global folder for PDF layout templates (.tex) and compile helpers. Used during PDF rendering. Final exports are saved to the Export folder.')
+        .setName(t('ui.publishSection.pandocFolderName'))
+        .setDesc(t('ui.publishSection.pandocFolderDesc'))
         .addText(text => {
             pandocFolderText = text;
             pandocFolderInputEl = text.inputEl;
@@ -404,7 +400,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         });
     pandocFolderSetting.addExtraButton(button => {
         button.setIcon('rotate-ccw');
-        button.setTooltip('Reset to default (Radial Timeline/Pandoc)');
+        button.setTooltip(t('ui.publishSection.pandocFolderResetTooltip'));
         button.extraSettingsEl.addClass('ert-iconBtn');
         button.onClick(async () => {
             if (pandocFolderText) {
@@ -433,15 +429,15 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         attr: { [ERT_DATA.SECTION]: 'pandoc-advanced' }
     });
     const advancedHeading = addProRow(new Setting(advancedPanel))
-        .setName('Advanced Pandoc')
-        .setDesc('A Pro workflow. Carry an existing Pandoc/LaTeX setup into exports. Applies to PDF export only.')
+        .setName(t('ui.publishSection.advancedPandocHeading'))
+        .setDesc(t('ui.publishSection.advancedPandocDesc'))
         .setHeading();
     addHeadingIcon(advancedHeading, 'wrench');
     applyErtHeaderLayout(advancedHeading);
 
     addProRow(new Setting(advancedPanel))
-        .setName('Custom Pandoc metadata')
-        .setDesc('One "key: value" per line, passed to Pandoc as metadata for custom/imported templates. Title and author always come from Book Details. Lines starting with # are ignored.')
+        .setName(t('ui.publishSection.customMetadataName'))
+        .setDesc(t('ui.publishSection.customMetadataDesc'))
         .addTextArea(text => {
             text.inputEl.rows = 4;
             text.inputEl.addClass('ert-input--lg');
@@ -463,14 +459,14 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     .filter(line => line && !line.startsWith('#'));
                 const skipped = meaningful.length - Object.keys(accepted).length;
                 if (skipped > 0) {
-                    new Notice(`Custom Pandoc metadata: ${skipped} line${skipped === 1 ? '' : 's'} will be ignored (need "key: value" with a plain identifier key).`);
+                    new Notice(t('ui.publishSection.customMetadataSkipped', { lines: tCount('line', skipped) }));
                 }
             });
         });
 
     addProRow(new Setting(advancedPanel))
-        .setName('Custom LaTeX preamble')
-        .setDesc('Raw LaTeX injected into the PDF preamble after the layout\'s own setup (your definitions win). For migrated macros and packages, e.g. \\usepackage or \\newcommand lines. Invalid LaTeX will fail the export with Pandoc\'s error.')
+        .setName(t('ui.publishSection.customPreambleName'))
+        .setDesc(t('ui.publishSection.customPreambleDesc'))
         .addTextArea(text => {
             text.inputEl.rows = 6;
             text.inputEl.addClass('ert-input--lg');
@@ -490,8 +486,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     });
     layoutPanel.addClass('ert-publish-order--pdf-style');
     const layoutHeading = addProRow(new Setting(layoutPanel))
-        .setName('PDF style')
-        .setDesc('Choose the style used for exported PDFs. Built-in and custom styles are listed below.')
+        .setName(t('ui.publishSection.pdfStyleHeading'))
+        .setDesc(t('ui.publishSection.pdfStyleDesc'))
         .setHeading();
     addHeadingIcon(layoutHeading, 'book-open');
     applyErtHeaderLayout(layoutHeading);
@@ -504,13 +500,13 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     const getLayoutDisplayName = (layout: PandocLayoutTemplate): string => {
         if (layout.preset === 'novel' && layout.bundled) {
             const variant = getFictionVariantForLayout(layout);
-            if (variant === 'classic') return 'Basic';
-            if (variant === 'contemporary') return 'Standard';
-            if (variant === 'signature') return 'Professional';
-            if (variant === 'modernClassic') return 'Signature';
+            if (variant === 'classic') return t('ui.publishSection.layoutNameBasic');
+            if (variant === 'contemporary') return t('ui.publishSection.layoutNameStandard');
+            if (variant === 'signature') return t('ui.publishSection.layoutNameProfessional');
+            if (variant === 'modernClassic') return t('ui.publishSection.layoutNameSignature');
         }
-        if (layout.preset === 'screenplay' && layout.bundled) return 'Screenplay';
-        return normalizeVersionLabels(layout.name || 'Custom Layout');
+        if (layout.preset === 'screenplay' && layout.bundled) return t('ui.publishSection.layoutNameScreenplay');
+        return normalizeVersionLabels(layout.name || t('ui.publishSection.layoutNameCustom'));
     };
     // Single source of truth: descriptions are authored on the template itself.
     // Bundled templates carry their description in pandocBundledLayouts.ts.
@@ -541,8 +537,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         });
         display.setAttr('role', 'button');
         display.setAttr('tabindex', '0');
-        display.setAttr('aria-label', 'Click to edit');
-        display.setAttr('title', 'Click to edit');
+        display.setAttr('aria-label', t('ui.publishSection.clickToEdit'));
+        display.setAttr('title', t('ui.publishSection.clickToEdit'));
 
         const swapToEditor = () => {
             const current = display.textContent || '';
@@ -571,7 +567,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 if (next !== current.trim()) {
                     try { await options.onSave(next); } catch (err) {
                         const msg = err instanceof Error ? err.message : String(err);
-                        new Notice(`Update failed: ${msg}`);
+                        new Notice(t('ui.publishSection.updateFailed', { error: msg }));
                     }
                 }
             };
@@ -642,7 +638,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             const descRow = featureCol.createDiv({ cls: 'ert-layout-feature-description' });
             if (options.editableDescription) {
                 renderInlineEditable(descRow, options.description || '', {
-                    placeholder: 'Describe this layout…',
+                    placeholder: t('ui.publishSection.layoutDescriptionPlaceholder'),
                     multiline: true,
                     onSave: options.editableDescription.onSave,
                     displayClass: 'ert-layout-feature-description-display',
@@ -750,7 +746,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 layout.path = candidateStored;
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
-                new Notice(`Could not rename template file: ${message}`);
+                new Notice(t('ui.publishSection.renameTemplateFailed', { error: message }));
             }
         }
 
@@ -833,7 +829,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             markers = resolveTimelinePartMarkers(buildTimelineChapterResolverItems(scenes));
         } catch (error) {
             console.error('[Publish] Failed to load Part markers for epigraphs:', error);
-            rows.createDiv({ cls: 'ert-layout-special-empty', text: 'Could not read this book’s Part markers.' });
+            rows.createDiv({ cls: 'ert-layout-special-empty', text: t('ui.publishSection.partMarkersUnreadable') });
             return;
         }
 
@@ -842,7 +838,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         const partEpigraphAttributions = scopedOptions.partEpigraphAttributions || [];
         const rowCount = Math.max(markers.length, partEpigraphs.length, partEpigraphAttributions.length);
         if (rowCount === 0) {
-            rows.createDiv({ cls: 'ert-layout-special-empty', text: 'No Part markers yet. Right-click a scene and choose Set part… to add one.' });
+            rows.createDiv({ cls: 'ert-layout-special-empty', text: t('ui.publishSection.partMarkersEmpty') });
             return;
         }
 
@@ -850,15 +846,15 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             const marker = markers[partIndex];
             const numeral = toRomanNumeral(partIndex + 1) || String(partIndex + 1);
             const partLabel = !marker
-                ? `Part ${numeral} (no marker)`
-                : marker.titled && marker.title ? `Part ${numeral} · ${marker.title}` : `Part ${numeral}`;
+                ? t('ui.publishSection.partLabelNoMarker', { numeral })
+                : marker.titled && marker.title ? t('ui.publishSection.partLabelTitled', { numeral, title: marker.title }) : t('ui.publishSection.partLabel', { numeral });
 
             const epigraphRow = rows.createDiv({ cls: 'ert-layout-epigraph-row' });
             epigraphRow.createDiv({ cls: 'ert-layout-epigraph-act', text: partLabel });
 
             const fields = epigraphRow.createDiv({ cls: 'ert-layout-epigraph-fields' });
 
-            const quoteLabel = fields.createDiv({ cls: 'ert-layout-epigraph-label', text: 'Quote' });
+            const quoteLabel = fields.createDiv({ cls: 'ert-layout-epigraph-label', text: t('ui.publishSection.epigraphQuoteLabel') });
             quoteLabel.setAttr('role', 'note');
             const quoteInput = fields.createEl('textarea', {
                 cls: 'ert-input ert-layout-epigraph-quote',
@@ -875,7 +871,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 });
             });
 
-            const attributionLabel = fields.createDiv({ cls: 'ert-layout-epigraph-label', text: 'Attribution' });
+            const attributionLabel = fields.createDiv({ cls: 'ert-layout-epigraph-label', text: t('ui.publishSection.epigraphAttributionLabel') });
             attributionLabel.setAttr('role', 'note');
             const attributionInput = fields.createEl('input', {
                 type: 'text',
@@ -973,7 +969,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
         if (layouts.length === 0) {
             const emptyEl = layoutRowsContainer.createDiv({ cls: 'ert-layout-row setting-item' });
-            emptyEl.createSpan({ text: 'No layouts configured yet.', cls: 'setting-item-description' });
+            emptyEl.createSpan({ text: t('ui.publishSection.noLayouts'), cls: 'setting-item-description' });
             return;
         }
 
@@ -1030,10 +1026,10 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 if (isEditableLayout) {
                     const titleHost = s.nameEl.createSpan({ cls: 'ert-layout-row-title' });
                     renderInlineEditable(titleHost, displayName, {
-                        placeholder: 'Layout name',
+                        placeholder: t('ui.publishSection.layoutNamePlaceholder'),
                         onSave: async (nextName) => {
                             if (!nextName) {
-                                new Notice('Layout name is required.');
+                                new Notice(t('ui.publishSection.layoutNameRequired'));
                                 return;
                             }
                             await renameLayoutAndFile(layout, nextName);
@@ -1049,15 +1045,15 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 }
                 const pill = s.nameEl.createSpan({
                     cls: `ert-layout-status-pill ${installed ? 'is-installed' : 'is-not-installed'}`,
-                    text: installed ? 'Installed' : 'Not installed'
+                    text: installed ? t('ui.publishSection.installed') : t('ui.publishSection.notInstalled')
                 });
-                pill.setAttr('aria-label', installed ? 'Installed' : 'Not installed');
+                pill.setAttr('aria-label', installed ? t('ui.publishSection.installed') : t('ui.publishSection.notInstalled'));
                 const tierPill = s.nameEl.createSpan({
                     cls: `ert-badgePill ert-badgePill--sm ${isProLayout ? ERT_CLASSES.BADGE_PILL_PRO : ERT_CLASSES.BADGE_PILL_NEUTRAL}`,
                 });
                 tierPill.createSpan({
                     cls: 'ert-badgePill__text',
-                    text: isProLayout ? 'Pro' : 'Core',
+                    text: isProLayout ? t('ui.publishSection.tierPro') : t('ui.publishSection.tierCore'),
                 });
             }
 
@@ -1105,7 +1101,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     const row = s.descEl.createDiv({ cls: 'ert-layout-font-status ert-layout-font-status--pending' });
                     row.createSpan({
                         cls: 'ert-layout-font-status-badge',
-                        text: 'Fonts install with setup',
+                        text: t('ui.publishSection.fontsInstallWithSetup'),
                     });
                 } else if (fontDiag.state === 'missing-system') {
                     // A system font the author must install on their own OS —
@@ -1114,11 +1110,11 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     const row = s.descEl.createDiv({ cls: 'ert-layout-font-status ert-layout-font-status--needs-system' });
                     row.createSpan({
                         cls: 'ert-layout-font-status-badge',
-                        text: `Needs font: ${fontDiag.primaryFontName}`,
+                        text: t('ui.publishSection.needsFont', { font: fontDiag.primaryFontName }),
                     });
                     const installBtn = row.createEl('button', {
                         cls: 'ert-layout-font-install ert-link-accent',
-                        text: 'How to install',
+                        text: t('ui.publishSection.howToInstall'),
                     });
                     installBtn.type = 'button';
                     installBtn.addEventListener('click', (ev) => {
@@ -1127,7 +1123,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         const fragment = installBtn.ownerDocument.win.createFragment();
                         const wrapper = fragment.createDiv();
                         wrapper.createDiv({
-                            text: `${fontDiag.primaryFontName}: ${hint?.message ?? 'Install instructions unavailable.'}`,
+                            text: `${fontDiag.primaryFontName}: ${hint?.message ?? t('ui.publishSection.installInstructionsUnavailable')}`,
                         });
                         if (hint?.url) {
                             const link = wrapper.createEl('a', { href: hint.url, text: hint.url });
@@ -1139,7 +1135,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                             for (const step of hint.steps) ul.createEl('li', { text: step });
                         }
                         wrapper.createDiv({
-                            text: 'After installing, re-open Settings to refresh status.',
+                            text: t('ui.publishSection.reopenSettingsAfterInstall'),
                         });
                         new Notice(fragment, 12000);
                     });
@@ -1148,11 +1144,11 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
             if (isBundled && !installed) {
                 s.addButton(btn => {
-                    btn.setButtonText('Install');
-                    btn.setTooltip('Install bundled layout');
+                    btn.setButtonText(t('ui.publishSection.installButton'));
+                    btn.setTooltip(t('ui.publishSection.installLayoutTooltip'));
                     btn.onClick(async () => {
                         btn.setDisabled(true);
-                        btn.setButtonText('Installing...');
+                        btn.setButtonText(t('ui.publishSection.installingBusy'));
                         try {
                             const result = await installBundledPandocLayouts(plugin, [layout.id]);
                             const refresh = await ensureBundledLayoutInstalledForExport(plugin, layout);
@@ -1164,22 +1160,22 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                             }
                             const failedFontFamilies = [...new Set([...result.fonts.failed, ...refresh.fonts.failed])];
                             if (result.failed.length > 0 || refresh.failed) {
-                                new Notice(`Failed to install bundled layout: ${getLayoutDisplayName(layout)}`);
+                                new Notice(t('ui.publishSection.installLayoutFailed', { name: getLayoutDisplayName(layout) }));
                             } else if (failedFontFamilies.length > 0) {
-                                new Notice(`Installed layout template for ${getLayoutDisplayName(layout)}, but required fonts failed to copy (${failedFontFamilies.join(', ')}). PDF export will fall back to system fonts where available.`);
+                                new Notice(t('ui.publishSection.installLayoutFontsFailed', { name: getLayoutDisplayName(layout), fonts: failedFontFamilies.join(', ') }));
                             } else if (result.installed.length > 0) {
-                                new Notice(buildFontPillsNotice(btn.buttonEl.ownerDocument, `Installed bundled layout and required fonts: ${getLayoutDisplayName(layout)}`, result.fonts), 12000);
+                                new Notice(buildFontPillsNotice(btn.buttonEl.ownerDocument, t('ui.publishSection.installLayoutDone', { name: getLayoutDisplayName(layout) }), result.fonts), 12000);
                             } else {
-                                new Notice(buildFontPillsNotice(btn.buttonEl.ownerDocument, `Bundled layout and required fonts are already installed: ${getLayoutDisplayName(layout)}`, result.fonts), 12000);
+                                new Notice(buildFontPillsNotice(btn.buttonEl.ownerDocument, t('ui.publishSection.installLayoutAlreadyDone', { name: getLayoutDisplayName(layout) }), result.fonts), 12000);
                             }
                             renderLayoutRows();
                             refreshPublishingStatusCard();
                             refreshInstallAllButtonState();
                         } catch (error) {
-                            new Notice(error instanceof Error ? error.message : `Failed to install bundled layout: ${getLayoutDisplayName(layout)}`);
+                            new Notice(error instanceof Error ? error.message : t('ui.publishSection.installLayoutFailed', { name: getLayoutDisplayName(layout) }));
                         } finally {
                             btn.setDisabled(false);
-                            btn.setButtonText('Install');
+                            btn.setButtonText(t('ui.publishSection.installButton'));
                         }
                     });
                 });
@@ -1189,7 +1185,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 s.addExtraButton(btn => {
                     btn.extraSettingsEl.addClass('ert-iconBtn', 'ert-layout-special-toggle');
                     btn.setIcon(expanded ? 'minus' : 'plus');
-                    btn.setTooltip(expanded ? 'Hide special features' : 'Show special features');
+                    btn.setTooltip(expanded ? t('ui.publishSection.hideSpecialFeatures') : t('ui.publishSection.showSpecialFeatures'));
                     btn.onClick(() => {
                         expandedSpecialLayoutId = expandedSpecialLayoutId === layout.id ? null : layout.id;
                         renderLayoutRows();
@@ -1216,16 +1212,16 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     );
                     btn.setIcon('pencil');
                     btn.setTooltip(isCustomizingBundled
-                        ? `Customize ${layout.name} — opens the wizard pre-filled with this template's settings; saving creates a new editable copy.`
-                        : 'Edit designed style');
+                        ? t('ui.publishSection.customizeBundledTooltip', { name: layout.name })
+                        : t('ui.publishSection.editDesignedTooltip'));
                     if (!isActive) {
                         btn.extraSettingsEl.addClass('ert-pro-locked');
                     }
                     btn.onClick(() => {
                         if (!isActive) {
                             new Notice(isCustomizingBundled
-                                ? 'Customizing PDF styles is a Pro workflow.'
-                                : 'Editing designed styles is a Pro workflow.');
+                                ? t('ui.publishSection.customizeProOnly')
+                                : t('ui.publishSection.editDesignedProOnly'));
                             return;
                         }
                         new DesignedStyleWizardModal(app, plugin, {
@@ -1233,7 +1229,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                             // Bundled fork: seed the name with "<Bundled> Copy"
                             // so the user gets a clear default they can rename.
                             initialName: isCustomizingBundled
-                                ? `${layout.name} Copy`
+                                ? t('ui.publishSection.layoutCopyName', { name: layout.name })
                                 : layout.name,
                             initialDescription: layout.description ?? '',
                             // Critical: omit layoutId for bundled fork so
@@ -1255,7 +1251,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         btn.extraSettingsEl.addClass('ert-iconBtn', 'ert-layout-imported-trash');
                     }
                     btn.setIcon('trash');
-                    btn.setTooltip('Remove layout');
+                    btn.setTooltip(t('ui.publishSection.removeLayoutTooltip'));
                     btn.onClick(async () => {
                         plugin.settings.pandocLayouts = (plugin.settings.pandocLayouts || []).filter(item => item.id !== layout.id);
                         await plugin.saveSettings();
@@ -1272,13 +1268,13 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 // One row per Part marker in the active book, paired by position
                 // exactly as export prints them.
                 if (specialCapabilities.hasEpigraphs) {
-                    const epigraphTitle = panel.createDiv({ cls: 'ert-layout-special-title', text: 'Part epigraphs (optional)' });
+                    const epigraphTitle = panel.createDiv({ cls: 'ert-layout-special-title', text: t('ui.publishSection.partEpigraphsTitle') });
                     epigraphTitle.setAttr('role', 'heading');
-                    panel.createDiv({ cls: 'ert-layout-special-helper', text: 'Printed after PART pages.' });
+                    panel.createDiv({ cls: 'ert-layout-special-helper', text: t('ui.publishSection.partEpigraphsHelper') });
 
                     const activeBook = getActiveBookReference();
                     if (!activeBook) {
-                        panel.createDiv({ cls: 'ert-layout-special-empty', text: 'Select an active book to edit layout-specific options.' });
+                        panel.createDiv({ cls: 'ert-layout-special-empty', text: t('ui.publishSection.selectActiveBook') });
                     } else {
                         const rows = panel.createDiv({ cls: 'ert-layout-epigraph-rows' });
                         void renderPartEpigraphRows(rows, layout.id, activeBook);
@@ -1289,16 +1285,16 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 // each scene's dedicated opener page renders its heading.
                 if (specialCapabilities.hasSceneOpenerHeadingOptions) {
                     const headingPanel = panel.createDiv({ cls: 'ert-layout-special-mode' });
-                    const headingTitle = headingPanel.createDiv({ cls: 'ert-layout-special-title', text: 'Opener scene heading' });
+                    const headingTitle = headingPanel.createDiv({ cls: 'ert-layout-special-title', text: t('ui.publishSection.openerHeadingTitle') });
                     headingTitle.setAttr('role', 'heading');
                     const modeRow = headingPanel.createDiv({ cls: 'ert-layout-special-mode-row' });
-                    modeRow.createDiv({ cls: 'ert-layout-epigraph-label', text: 'Style' });
+                    modeRow.createDiv({ cls: 'ert-layout-epigraph-label', text: t('ui.publishSection.openerHeadingStyleLabel') });
                     const modeSelect = modeRow.createEl('select', { cls: 'ert-input ert-input--xl ert-layout-special-mode-select' });
 
                     const options: Array<{ value: ManuscriptSceneHeadingMode; label: string }> = [
-                        { value: 'scene-number', label: 'Scene number only' },
-                        { value: 'scene-number-title', label: 'Scene number + title (title in parentheses)' },
-                        { value: 'title-only', label: 'Title only' }
+                        { value: 'scene-number', label: t('ui.publishSection.openerModeNumber') },
+                        { value: 'scene-number-title', label: t('ui.publishSection.openerModeNumberTitle') },
+                        { value: 'title-only', label: t('ui.publishSection.openerModeTitle') }
                     ];
                     options.forEach(option => {
                         modeSelect.createEl('option', { value: option.value, text: option.label });
@@ -1358,8 +1354,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         plugin.settings.pandocLayouts = existing;
         await plugin.saveSettings();
         new Notice(commit.activate
-            ? `Activated template '${nextLayout.name}'.`
-            : `Saved draft template '${nextLayout.name}'.`);
+            ? t('ui.publishSection.templateActivated', { name: nextLayout.name })
+            : t('ui.publishSection.templateDraftSaved', { name: nextLayout.name }));
         renderLayoutRows();
         refreshPublishingStatusCard();
     };
@@ -1383,19 +1379,19 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         installAllButtonEl.toggleClass('ert-layout-install-all-button--attention', needsAttention);
         if (installAllButton) {
             installAllButton.setButtonText(
-                hasFontIssue ? 'Install fonts'
-                : hasUnacknowledgedTemplateUpdate ? 'Update templates'
-                : needsInstall ? 'Install all'
-                : 'Installed'
+                hasFontIssue ? t('ui.publishSection.installFontsButton')
+                : hasUnacknowledgedTemplateUpdate ? t('ui.publishSection.updateTemplatesButton')
+                : needsInstall ? t('ui.publishSection.installAllButton')
+                : t('ui.publishSection.installed')
             );
             installAllButton.setTooltip(
                 hasFontIssue
-                    ? 'Install required bundled font files into your Pandoc folder.'
+                    ? t('ui.publishSection.installFontsTooltip')
                     : hasUnacknowledgedTemplateUpdate
-                        ? 'Bundled PDF templates were updated. Click to refresh templates and fonts in your Pandoc folder.'
+                        ? t('ui.publishSection.updateTemplatesTooltip')
                         : needsInstall
-                            ? 'Install bundled PDF templates and their required font files to your Pandoc folder.'
-                            : 'Bundled PDF templates and required font files are installed.'
+                            ? t('ui.publishSection.installAllNeededTooltip')
+                            : t('ui.publishSection.installAllDoneTooltip')
             );
         }
     };
@@ -1416,22 +1412,22 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     // of the four bundled archetypes). The .tex file is generated from the
     // spec on save.
     layoutHeading.addButton(button => {
-        button.setButtonText('Design your own…');
-        button.setTooltip('Design a new PDF style from scratch with a live preview.');
+        button.setButtonText(t('ui.publishSection.designOwnButton'));
+        button.setTooltip(t('ui.publishSection.designOwnTooltip'));
         button.buttonEl.addClass(ERT_CLASSES.PILL_BTN, ERT_CLASSES.PILL_BTN_PRO);
         if (!plugin.betaFeatures) {
             button.setDisabled(true);
-            button.setTooltip('BETA release pending—design a new PDF style from scratch with a live preview.');
+            button.setTooltip(t('ui.publishSection.designOwnBetaTooltip'));
             button.onClick(() => { /* no-op: BETA release pending */ });
             return;
         }
         if (!isActive) {
             button.buttonEl.addClass('ert-pro-locked');
-            button.setTooltip('A Pro workflow.');
+            button.setTooltip(t('ui.publishSection.proWorkflowTooltip'));
         }
         button.onClick(() => {
             if (!isActive) {
-                new Notice('Designing custom styles is a Pro workflow.');
+                new Notice(t('ui.publishSection.designOwnProOnly'));
                 return;
             }
             new DesignedStyleWizardModal(app, plugin, {
@@ -1449,22 +1445,22 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     // LaTeX, third-party template, custom packages the spec can't express).
     // Imported layouts are static — they don't open in the wizard.
     layoutHeading.addButton(button => {
-        button.setButtonText('Import template…');
-        button.setTooltip('Bring an existing .tex template into Publishing. For from-scratch design with a live preview, use "Design your own…" instead.');
+        button.setButtonText(t('ui.publishSection.importTemplateButton'));
+        button.setTooltip(t('ui.publishSection.importTemplateTooltip'));
         button.buttonEl.addClass(ERT_CLASSES.PILL_BTN, ERT_CLASSES.PILL_BTN_PRO);
         if (!plugin.betaFeatures) {
             button.setDisabled(true);
-            button.setTooltip('BETA release pending—Bring an existing .tex template into Publishing.');
+            button.setTooltip(t('ui.publishSection.importTemplateBetaTooltip'));
             button.onClick(() => { /* no-op: BETA release pending */ });
             return;
         }
         if (!isActive) {
             button.buttonEl.addClass('ert-pro-locked');
-            button.setTooltip('A Pro workflow.');
+            button.setTooltip(t('ui.publishSection.proWorkflowTooltip'));
         }
         button.onClick(() => {
             if (!isActive) {
-                new Notice('Importing custom templates is a Pro workflow.');
+                new Notice(t('ui.publishSection.importTemplateProOnly'));
                 return;
             }
             new ImportTemplateModal(app, plugin, commitImportedTemplate).open();
@@ -1472,14 +1468,14 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     });
     layoutHeading.addButton(button => {
         installAllButton = button;
-        button.setButtonText('Install all');
-        button.setTooltip('Install bundled PDF templates and their required font files to your Pandoc folder. Does not seed Book Details or Book Pages.');
+        button.setButtonText(t('ui.publishSection.installAllButton'));
+        button.setTooltip(t('ui.publishSection.installAllInitialTooltip'));
         installAllButtonEl = button.buttonEl;
         installAllButtonEl.addClass('ert-layout-install-all-button');
         refreshInstallAllButtonState();
         button.onClick(async () => {
             button.setDisabled(true);
-            button.setButtonText('Installing...');
+            button.setButtonText(t('ui.publishSection.installingBusy'));
             try {
                 const bundledLayouts = getVisibleBundledLayouts();
                 const bundledIds = bundledLayouts.map(layout => layout.id);
@@ -1501,7 +1497,9 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     ...refreshResults.flatMap(item => item.fonts.failed)
                 ])];
                 if (refreshFailures > 0 || result.failed.length > 0 || failedFontFamilies.length > 0) {
-                    new Notice(`Some bundled layouts or required fonts failed to install${failedFontFamilies.length > 0 ? ` (fonts: ${failedFontFamilies.join(', ')})` : ''}.`);
+                    new Notice(failedFontFamilies.length > 0
+                        ? t('ui.publishSection.installAllFontsFailed', { fonts: failedFontFamilies.join(', ') })
+                        : t('ui.publishSection.installAllFailed'));
                 } else {
                     // Templates and fonts are now current on disk, so clear the
                     // "Update templates" nudge by acknowledging the hotfix
@@ -1512,16 +1510,16 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     );
                     await plugin.saveSettings();
                     if (result.installed.length > 0) {
-                        new Notice(buildFontPillsNotice(button.buttonEl.ownerDocument, `Installed ${result.installed.length} bundled layout template(s) and required fonts in ${getPandocFolder(plugin)}/.`, result.fonts), 12000);
+                        new Notice(buildFontPillsNotice(button.buttonEl.ownerDocument, t('ui.publishSection.installAllDone', { count: result.installed.length, folder: getPandocFolder(plugin) }), result.fonts), 12000);
                     } else {
-                        new Notice(buildFontPillsNotice(button.buttonEl.ownerDocument, 'Bundled layouts and required fonts are installed and refreshed.', result.fonts), 12000);
+                        new Notice(buildFontPillsNotice(button.buttonEl.ownerDocument, t('ui.publishSection.installAllRefreshed'), result.fonts), 12000);
                     }
                 }
                 renderLayoutRows();
                 refreshPublishingStatusCard();
                 refreshInstallAllButtonState();
             } catch (error) {
-                new Notice(error instanceof Error ? error.message : 'Could not install bundled layouts and fonts.');
+                new Notice(error instanceof Error ? error.message : t('ui.publishSection.installAllError'));
             } finally {
                 button.setDisabled(false);
                 refreshInstallAllButtonState();
@@ -1535,7 +1533,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     const setSetupButtonState = (busy: boolean) => {
         if (!setupButtonComponent) return;
         setupButtonComponent.setDisabled(busy);
-        setupButtonComponent.setButtonText(busy ? AUTO_CONFIGURE_BUSY : AUTO_CONFIGURE_BUTTON);
+        setupButtonComponent.setButtonText(busy ? t('ui.publishSection.autoConfigureBusy') : t('ui.publishSection.autoConfigureButton'));
         if (exportOptionsButtonComponent) {
             exportOptionsButtonComponent.setDisabled(busy);
         }
@@ -1560,7 +1558,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             const blockingIssues = envResult.issues.filter(i => i.startsWith('Pandoc not found'));
             if (blockingIssues.length > 0) {
                 // Pandoc missing — cannot proceed with full setup
-                new Notice(`${blockingIssues[0]}. Radial Timeline can install bundled templates/fonts into your vault, but Pandoc itself must be installed on your computer first.`);
+                new Notice(t('ui.publishSection.pandocRequiredNotice', { issue: blockingIssues[0] }));
                 revealSystemConfig();
                 return;
             }
@@ -1578,25 +1576,26 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             const sourceFolder = getActiveBookExportContext(plugin).sourceFolder.trim();
             const matterTargetLabel = sourceFolder || resolveManuscriptOutputFolder(plugin);
             if (setup.created.length > 0) {
-                new Notice(`Publishing configured. Created ${setup.created.length} starter setup files. Book Details + inline LaTeX examples → ${matterTargetLabel}, PDF styles → ${getPandocFolder(plugin)}/.`);
+                new Notice(t('ui.publishSection.setupCreated', { count: setup.created.length, matterFolder: matterTargetLabel, pandocFolder: getPandocFolder(plugin) }));
             } else if (setup.updatedGenerated.length > 0) {
-                new Notice(`Publishing configured. Refreshed ${setup.updatedGenerated.length} generated inline LaTeX example file(s).`);
+                new Notice(t('ui.publishSection.setupRefreshedOnly', { count: setup.updatedGenerated.length }));
             } else {
-                new Notice(`${STARTER_PUBLISHING_SETUP_ALREADY_EXISTS} Existing author files were left untouched.`);
+                new Notice(t('ui.publishSection.starterSetupAlreadyExists'));
             }
             if (setup.updatedGenerated.length > 0 && setup.created.length > 0) {
-                new Notice(`Refreshed ${setup.updatedGenerated.length} generated inline LaTeX example file(s).`);
+                new Notice(t('ui.publishSection.setupRefreshed', { count: setup.updatedGenerated.length }));
             }
             if (setup.skippedExisting.length > 0) {
                 const preview = setup.skippedExisting.slice(0, 5).join(', ');
-                const suffix = setup.skippedExisting.length > 5 ? `, +${setup.skippedExisting.length - 5} more` : '';
-                new Notice(`Skipped existing author file(s): ${preview}${suffix}.`);
+                new Notice(setup.skippedExisting.length > 5
+                    ? t('ui.publishSection.setupSkippedMore', { files: preview, more: setup.skippedExisting.length - 5 })
+                    : t('ui.publishSection.setupSkipped', { files: preview }));
             }
             renderLayoutRows();
             rerender();
         } catch (e) {
             const msg = (e as Error).message || String(e);
-            new Notice(`Error configuring publishing: ${msg}`);
+            new Notice(t('ui.publishSection.setupError', { error: msg }));
         } finally {
             setupInFlight = false;
             setSetupButtonState(false);
@@ -1643,7 +1642,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             if (created.created && created.path) {
                 void plugin.app.workspace.openLinkText(created.path, '', false);
             } else {
-                new Notice(created.reason || 'Book Details note was not created.');
+                new Notice(created.reason || t('ui.publishSection.bookMetaNotCreated'));
             }
             rerender();
         };
@@ -1655,7 +1654,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 activeBookMetaEditSourcePath = created.path;
                 return created.path;
             }
-            new Notice(created.reason || 'Book Details note was not created.');
+            new Notice(created.reason || t('ui.publishSection.bookMetaNotCreated'));
             return null;
         };
 
@@ -1788,7 +1787,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             const editPath = sourcePath || activeBookMetaEditSourcePath || '';
             const file = plugin.app.vault.getAbstractFileByPath(editPath);
             if (!(file instanceof TFile)) {
-                new Notice('Book Details note could not be found.');
+                new Notice(t('ui.publishSection.bookMetaNotFound'));
                 cancelBookMetaFieldEdit();
                 return;
             }
@@ -1820,7 +1819,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             if (!editPath) return;
             const file = plugin.app.vault.getAbstractFileByPath(editPath);
             if (!(file instanceof TFile)) {
-                new Notice('Book Details note could not be found.');
+                new Notice(t('ui.publishSection.bookMetaNotFound'));
                 return;
             }
 
@@ -1919,8 +1918,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 attr: {
                     role: 'button',
                     tabindex: '0',
-                    'aria-label': `${normalized ? 'Edit' : 'Add'} ${label.toLowerCase()}`,
-                    title: `${normalized ? 'Edit' : 'Add'} ${label.toLowerCase()}`
+                    'aria-label': normalized ? t('ui.publishSection.editFieldAria', { field: label.toLowerCase() }) : t('ui.publishSection.addFieldAria', { field: label.toLowerCase() }),
+                    title: normalized ? t('ui.publishSection.editFieldAria', { field: label.toLowerCase() }) : t('ui.publishSection.addFieldAria', { field: label.toLowerCase() })
                 }
             });
 
@@ -1965,10 +1964,10 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         const bookDetailsIcon = bookDetailsHeaderLeft.createSpan({ cls: 'ert-bookmeta-module-icon' });
         bookDetailsIcon.setAttr('aria-hidden', 'true');
         setIcon(bookDetailsIcon, 'file-text');
-        bookDetailsHeaderLeft.createSpan({ cls: 'ert-bookmeta-module-title', text: 'Book Details' });
+        bookDetailsHeaderLeft.createSpan({ cls: 'ert-bookmeta-module-title', text: t('ui.publishSection.bookDetailsTitle') });
         bookDetailsHeader.createDiv({
             cls: 'ert-bookmeta-module-count',
-            text: hasSourcePath ? 'Connected' : 'Not set up'
+            text: hasSourcePath ? t('ui.publishSection.bookDetailsConnected') : t('ui.publishSection.bookDetailsNotSetUp')
         });
 
         const primary = bookDetailsPanel.createDiv({ cls: 'ert-bookmeta-primary' });
@@ -1992,9 +1991,9 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             );
             field.createDiv({ cls: 'ert-bookmeta-primary-label', text: label });
         };
-        addPrimaryField('Title', 'title', meta?.title, 'Add title', true, 'title');
-        addPrimaryField('Subtitle', 'subtitle', meta?.subtitle, 'Add subtitle', false, 'subtitle');
-        addPrimaryField('Author', 'author', meta?.author, 'Add author', true, 'author');
+        addPrimaryField(t('ui.publishSection.fieldTitle'), 'title', meta?.title, t('ui.publishSection.fieldTitlePlaceholder'), true, 'title');
+        addPrimaryField(t('ui.publishSection.fieldSubtitle'), 'subtitle', meta?.subtitle, t('ui.publishSection.fieldSubtitlePlaceholder'), false, 'subtitle');
+        addPrimaryField(t('ui.publishSection.fieldAuthor'), 'author', meta?.author, t('ui.publishSection.fieldAuthorPlaceholder'), true, 'author');
 
         const details = bookDetailsPanel.createDiv({ cls: 'ert-bookmeta-detail-grid' });
         const leftCol = details.createDiv({ cls: 'ert-bookmeta-detail-col ert-bookmeta-detail-col--left' });
@@ -2022,12 +2021,12 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             renderBookMetaValue(field, fieldKey, label, value, placeholder, required, 'ert-bookmeta-detail-value');
             field.createDiv({ cls: 'ert-bookmeta-detail-label', text: label });
         };
-        addDetailField(leftCol, 'Copyright holder', meta?.rights?.copyright_holder, 'Add copyright', true);
-        addDetailField(leftCol, 'ISBN', meta?.identifiers?.isbn_paperback, 'Add ISBN (optional)', false);
-        addDetailField(leftCol, 'Imprint', meta?.publisher?.imprint, 'Add imprint', false);
-        addDetailField(rightCol, 'Rights year', meta?.rights?.year, 'Add year', true);
-        addDetailField(rightCol, 'Publisher', meta?.publisher?.name, 'Add publisher', false);
-        addDetailField(rightCol, 'Edition', meta?.publisher?.edition, 'Add edition', false);
+        addDetailField(leftCol, 'Copyright holder', meta?.rights?.copyright_holder, t('ui.publishSection.fieldCopyrightPlaceholder'), true);
+        addDetailField(leftCol, 'ISBN', meta?.identifiers?.isbn_paperback, t('ui.publishSection.fieldIsbnPlaceholder'), false);
+        addDetailField(leftCol, 'Imprint', meta?.publisher?.imprint, t('ui.publishSection.fieldImprintPlaceholder'), false);
+        addDetailField(rightCol, 'Rights year', meta?.rights?.year, t('ui.publishSection.fieldYearPlaceholder'), true);
+        addDetailField(rightCol, 'Publisher', meta?.publisher?.name, t('ui.publishSection.fieldPublisherPlaceholder'), false);
+        addDetailField(rightCol, 'Edition', meta?.publisher?.edition, t('ui.publishSection.fieldEditionPlaceholder'), false);
 
         type MatterBookMetaField = {
             field: EditableBookMetaFieldKey;
@@ -2066,7 +2065,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     role: 'button',
                     tabindex: '0',
                     'aria-expanded': String(expanded),
-                    'aria-label': `${expanded ? 'Collapse' : 'Expand'} ${title}`
+                    'aria-label': expanded ? t('ui.publishSection.collapseSectionAria', { section: title }) : t('ui.publishSection.expandSectionAria', { section: title })
                 }
             });
             const headerLeft = header.createDiv({ cls: 'ert-bookmeta-module-header-left' });
@@ -2076,7 +2075,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             const copy = headerLeft.createDiv({ cls: 'ert-bookmeta-module-copy' });
             copy.createDiv({ cls: 'ert-bookmeta-module-title', text: title });
             copy.createDiv({ cls: 'ert-bookmeta-module-description', text: description });
-            header.createDiv({ cls: 'ert-bookmeta-module-count', text: `${count} page${count === 1 ? '' : 's'}` });
+            header.createDiv({ cls: 'ert-bookmeta-module-count', text: tCount('page', count) });
 
             const getScrollParent = (el: HTMLElement): HTMLElement | null => {
                 let current = el.parentElement;
@@ -2123,7 +2122,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             if (!expanded) {
                 panel.createDiv({
                     cls: 'ert-bookmeta-module-summary',
-                    text: count > 0 ? filledPageLabels.join(', ') : 'No pages added'
+                    text: count > 0 ? filledPageLabels.join(', ') : t('ui.publishSection.noPagesAdded')
                 });
                 return;
             }
@@ -2147,12 +2146,12 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 textCol.createDiv({ cls: 'ert-bookmeta-matter-guidance', text: fieldDef.guidance });
                 textCol.createDiv({
                     cls: 'ert-bookmeta-matter-state',
-                    text: hasValue ? 'BookMeta value set' : 'No BookMeta value'
+                    text: hasValue ? t('ui.publishSection.bookMetaValueSet') : t('ui.publishSection.bookMetaValueMissing')
                 });
                 if (isOverridden) {
                     textCol.createDiv({
                         cls: 'ert-bookmeta-matter-state',
-                        text: 'Overridden by custom page'
+                        text: t('ui.publishSection.overriddenByCustomPage')
                     });
                 }
                 const metaRow = textCol.createDiv({ cls: 'ert-bookmeta-matter-meta-row' });
@@ -2163,8 +2162,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         cls: 'ert-iconBtn ert-bookmeta-matter-clear',
                         attr: {
                             type: 'button',
-                            'aria-label': `Reset ${fieldDef.label.toLowerCase()}`,
-                            title: `Reset ${fieldDef.label.toLowerCase()}`
+                            'aria-label': t('ui.publishSection.resetFieldAria', { field: fieldDef.label.toLowerCase() }),
+                            title: t('ui.publishSection.resetFieldAria', { field: fieldDef.label.toLowerCase() })
                         }
                     });
                     setIcon(clearButton, 'rotate-ccw');
@@ -2179,98 +2178,98 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             });
         };
 
-        renderMatterBookMetaSection('frontmatter', 'Frontmatter book pages', 'Pages before the manuscript — title page, dedication, epigraph. All optional.', [
+        renderMatterBookMetaSection('frontmatter', t('ui.publishSection.frontmatterSectionTitle'), t('ui.publishSection.frontmatterSectionDesc'), [
             {
                 field: 'title-page-note',
-                label: 'Title page note',
-                pageLabel: 'Title page',
+                label: t('ui.publishSection.matterTitlePageNoteLabel'),
+                pageLabel: t('ui.publishSection.matterTitlePageName'),
                 value: meta?.frontmatter?.title_page_note,
-                placeholder: 'Title page note',
+                placeholder: t('ui.publishSection.matterTitlePageNoteLabel'),
                 kind: 'title',
-                caption: 'Centered title page',
-                guidance: 'Optional note beneath the title page block.',
+                caption: t('ui.publishSection.matterTitlePageCaption'),
+                guidance: t('ui.publishSection.matterTitlePageGuidance'),
                 role: 'title-page',
             },
             {
                 field: 'dedication',
-                label: 'Dedication',
-                pageLabel: 'Dedication',
+                label: t('ui.publishSection.matterDedicationLabel'),
+                pageLabel: t('ui.publishSection.matterDedicationLabel'),
                 value: meta?.frontmatter?.dedication,
-                placeholder: 'Dedication',
+                placeholder: t('ui.publishSection.matterDedicationLabel'),
                 kind: 'dedication',
-                caption: 'Centered one-third down',
-                guidance: 'A brief dedication, usually sparse and centered.',
+                caption: t('ui.publishSection.matterDedicationCaption'),
+                guidance: t('ui.publishSection.matterDedicationGuidance'),
                 role: 'dedication',
             },
             {
                 field: 'epigraph-quote',
-                label: 'Epigraph quote',
-                pageLabel: 'Epigraph',
+                label: t('ui.publishSection.matterEpigraphQuoteLabel'),
+                pageLabel: t('ui.publishSection.matterEpigraphPage'),
                 value: meta?.frontmatter?.epigraph_quote,
-                placeholder: 'Epigraph quote',
+                placeholder: t('ui.publishSection.matterEpigraphQuoteLabel'),
                 kind: 'epigraph',
-                caption: 'Centered quote block',
-                guidance: 'A short quoted passage before the manuscript.',
+                caption: t('ui.publishSection.matterEpigraphQuoteCaption'),
+                guidance: t('ui.publishSection.matterEpigraphQuoteGuidance'),
                 tone: 'quote',
                 role: 'epigraph',
             },
             {
                 field: 'epigraph-attribution',
-                label: 'Epigraph attribution',
-                pageLabel: 'Epigraph',
+                label: t('ui.publishSection.matterEpigraphAttributionLabel'),
+                pageLabel: t('ui.publishSection.matterEpigraphPage'),
                 value: meta?.frontmatter?.epigraph_attribution,
-                placeholder: 'Epigraph attribution',
+                placeholder: t('ui.publishSection.matterEpigraphAttributionLabel'),
                 kind: 'epigraph',
-                caption: 'Right-aligned attribution',
-                guidance: 'The author, source, or context for the epigraph.',
+                caption: t('ui.publishSection.matterEpigraphAttributionCaption'),
+                guidance: t('ui.publishSection.matterEpigraphAttributionGuidance'),
                 tone: 'attribution',
                 role: 'epigraph',
             },
         ]);
 
-        renderMatterBookMetaSection('backmatter', 'Backmatter book pages', 'Pages after the manuscript — acknowledgments, about the author. All optional.', [
+        renderMatterBookMetaSection('backmatter', t('ui.publishSection.backmatterSectionTitle'), t('ui.publishSection.backmatterSectionDesc'), [
             {
                 field: 'acknowledgments',
-                label: 'Acknowledgments',
-                pageLabel: 'Acknowledgments',
+                label: t('ui.publishSection.matterAcknowledgmentsLabel'),
+                pageLabel: t('ui.publishSection.matterAcknowledgmentsLabel'),
                 value: meta?.backmatter?.acknowledgments,
-                placeholder: 'Acknowledgments',
+                placeholder: t('ui.publishSection.matterAcknowledgmentsLabel'),
                 kind: 'prose',
-                caption: 'Heading + prose',
-                guidance: 'Thanks to readers, editors, supporters, or contributors.',
+                caption: t('ui.publishSection.matterCaptionHeadingProse'),
+                guidance: t('ui.publishSection.matterAcknowledgmentsGuidance'),
                 role: 'acknowledgments',
             },
             {
                 field: 'about-author',
-                label: 'About the author',
-                pageLabel: 'About the author',
+                label: t('ui.publishSection.matterAboutAuthorLabel'),
+                pageLabel: t('ui.publishSection.matterAboutAuthorLabel'),
                 value: meta?.backmatter?.about_author,
-                placeholder: 'About the author',
+                placeholder: t('ui.publishSection.matterAboutAuthorLabel'),
                 kind: 'prose',
-                caption: 'Bio paragraph',
-                guidance: 'A short author bio for the final pages.',
+                caption: t('ui.publishSection.matterAboutAuthorCaption'),
+                guidance: t('ui.publishSection.matterAboutAuthorGuidance'),
                 role: 'about-author',
             },
             {
                 field: 'author-note',
-                label: 'Author note',
-                pageLabel: 'Author note',
+                label: t('ui.publishSection.matterAuthorNoteLabel'),
+                pageLabel: t('ui.publishSection.matterAuthorNoteLabel'),
                 value: meta?.backmatter?.author_note,
-                placeholder: 'Author note',
+                placeholder: t('ui.publishSection.matterAuthorNoteLabel'),
                 kind: 'prose',
-                caption: 'Heading + prose',
-                guidance: 'A closing note to readers after the manuscript.',
+                caption: t('ui.publishSection.matterCaptionHeadingProse'),
+                guidance: t('ui.publishSection.matterAuthorNoteGuidance'),
                 role: 'author-note',
             },
             {
                 field: 'other-works',
-                label: 'Other works',
-                pageLabel: 'Other works',
+                label: t('ui.publishSection.matterOtherWorksLabel'),
+                pageLabel: t('ui.publishSection.matterOtherWorksLabel'),
                 value: meta?.backmatter?.other_works,
-                placeholder: 'Other works',
+                placeholder: t('ui.publishSection.matterOtherWorksLabel'),
                 kind: 'list',
-                caption: 'Heading + list',
-                guidance: 'Related titles, series entries, or selected works.',
+                caption: t('ui.publishSection.matterOtherWorksCaption'),
+                guidance: t('ui.publishSection.matterOtherWorksGuidance'),
                 role: 'other-works',
             },
         ]);
@@ -2280,9 +2279,9 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             const infoIcon = previewActions.createSpan({ cls: 'ert-bookmeta-preview-actions-icon' });
             infoIcon.setAttr('aria-hidden', 'true');
             setIcon(infoIcon, 'info');
-            previewActions.createSpan({ cls: 'ert-bookmeta-preview-actions-text', text: 'Click any field to edit.' });
+            previewActions.createSpan({ cls: 'ert-bookmeta-preview-actions-text', text: t('ui.publishSection.clickAnyFieldToEdit') });
             const sourceRow = bookDetailsPanel.createDiv({ cls: 'ert-bookmeta-source-row' });
-            sourceRow.createSpan({ cls: 'ert-bookmeta-source-label', text: 'Source' });
+            sourceRow.createSpan({ cls: 'ert-bookmeta-source-label', text: t('ui.publishSection.sourceLabel') });
             const sourceLink = sourceRow.createEl('a', {
                 cls: 'ert-bookmeta-source-link',
                 text: sourcePath,
@@ -2297,13 +2296,13 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         if (!meta) {
             const actions = bookDetailsPanel.createDiv({ cls: 'ert-bookmeta-preview-empty-actions' });
             new ButtonComponent(actions)
-                .setButtonText('Create Book Details')
+                .setButtonText(t('ui.publishSection.createBookDetailsButton'))
                 .setCta()
                 .onClick(async () => {
                     await openOrCreateBookMetaNote();
                 });
             new ButtonComponent(actions)
-                .setButtonText('Jump to Book Pages')
+                .setButtonText(t('ui.publishSection.jumpToBookPages'))
                 .onClick(() => {
                     matterPreviewFrame?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 });
@@ -2318,8 +2317,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     });
     publishingSetupPanel.addClass('ert-publish-order--book-pages');
     const publishingHeading = addProRow(new Setting(publishingSetupPanel))
-        .setName('Book Pages')
-        .setDesc('Review and reorder the pages that will be included in your manuscript.')
+        .setName(t('ui.publishSection.bookPagesHeading'))
+        .setDesc(t('ui.publishSection.bookPagesDesc'))
         .setHeading();
     addHeadingIcon(publishingHeading, 'book-open-text');
     applyErtHeaderLayout(publishingHeading);
@@ -2338,7 +2337,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     ): void => {
         const col = statusGrid.createDiv({ cls: `ert-publishing-status-col ert-publishing-status-col--${statusKey}${quickStart ? ' is-quick-start' : ''}` });
         if (quickStart) {
-            col.createSpan({ cls: 'ert-publishing-status-col-quickstart', text: 'Start here' });
+            col.createSpan({ cls: 'ert-publishing-status-col-quickstart', text: t('ui.publishSection.startHere') });
         }
         if (onClick) {
             col.setAttr('role', 'button');
@@ -2359,7 +2358,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         icon.setAttr('aria-hidden', 'true');
         setIcon(icon, iconName);
         const heading = header.createDiv({ cls: 'ert-publishing-status-col-heading' });
-        heading.createSpan({ cls: 'ert-publishing-status-col-kicker', text: `Form ${String(stageNumber).padStart(2, '0')}` });
+        heading.createSpan({ cls: 'ert-publishing-status-col-kicker', text: t('ui.publishSection.stageKicker', { number: String(stageNumber).padStart(2, '0') }) });
         heading.createSpan({ cls: 'ert-publishing-status-col-title', text: title });
         col.createDiv({ cls: 'ert-publishing-status-col-value', text: value });
         col.createDiv({ cls: 'ert-publishing-status-col-desc', text: desc });
@@ -2383,8 +2382,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
         // Auto configure — rendered first (left position)
         setupButtonComponent = new ButtonComponent(setupActionRow)
-            .setButtonText(AUTO_CONFIGURE_BUTTON)
-            .setTooltip('One-shot setup: detects Pandoc, installs templates, and seeds Book Details + optional inline LaTeX front/back matter examples.')
+            .setButtonText(t('ui.publishSection.autoConfigureButton'))
+            .setTooltip(t('ui.publishSection.autoConfigureTooltip'))
             .onClick(() => {
                 void runAutoConfigurePublishing();
             });
@@ -2404,7 +2403,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
         // Export manuscript — rendered second (right position)
         exportOptionsButtonComponent = new ButtonComponent(setupActionRow)
-            .setButtonText('Export manuscript')
+            .setButtonText(t('ui.publishSection.exportManuscriptButton'))
             .onClick(() => {
                 plugin.openManuscriptExportModal();
             });
@@ -2415,7 +2414,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         exportOptionsButtonComponent.buttonEl.empty();
         exportOptionsButtonComponent.buttonEl.createSpan({
             cls: ERT_CLASSES.PILL_BTN_LABEL,
-            text: 'Export manuscript'
+            text: t('ui.publishSection.exportManuscriptButton')
         });
         const exportIcon = exportOptionsButtonComponent.buttonEl.createSpan({ cls: ERT_CLASSES.PILL_BTN_ICON });
         setIcon(exportIcon, 'arrow-right');
@@ -2447,10 +2446,10 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             'export-check': 'check-circle-2'
         };
         const pressLabelByStage: Record<PublishingStageId, string> = {
-            'book-details': 'Copy deck',
-            'book-pages': 'Imposition',
-            'pdf-style': 'Type form',
-            'export-check': 'Press proof'
+            'book-details': t('ui.publishSection.pressLabelBookDetails'),
+            'book-pages': t('ui.publishSection.pressLabelBookPages'),
+            'pdf-style': t('ui.publishSection.pressLabelPdfStyle'),
+            'export-check': t('ui.publishSection.pressLabelExportCheck')
         };
 
         stages.forEach((stage, index) => {
@@ -2480,7 +2479,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
     matterPreviewFrame = publishingSetupPanel.createDiv({ cls: `${ERT_CLASSES.PREVIEW_FRAME} ert-previewFrame--flush` });
     const matterPreviewHeader = matterPreviewFrame.createDiv({ cls: 'ert-previewFrame__header' });
-    matterPreviewHeader.createDiv({ cls: 'ert-planetary-preview-heading ert-previewFrame__title', text: 'Book Pages preview' });
+    matterPreviewHeader.createDiv({ cls: 'ert-planetary-preview-heading ert-previewFrame__title', text: t('ui.publishSection.bookPagesPreviewTitle') });
     const matterPreviewBody = matterPreviewFrame.createDiv({ cls: 'ert-matter-preview-body' });
     const formatRoleLabel = (role: string): string => role.replace(/[_-]+/g, ' ').trim();
 
@@ -2532,19 +2531,19 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             // matter-note walk or BookMeta hero would surface in their own panels.
             if (resolvedPages.length === 0) {
                 const empty = matterPreviewBody.createDiv({ cls: 'ert-matter-preview-empty' });
-                empty.createDiv({ cls: 'ert-matter-preview-empty-title', text: 'No Book Pages found yet' });
+                empty.createDiv({ cls: 'ert-matter-preview-empty-title', text: t('ui.publishSection.bookPagesEmptyTitle') });
                 empty.createDiv({
                     cls: 'ert-matter-preview-empty-desc',
-                    text: 'Create Book Details first, then add the pages you need.'
+                    text: t('ui.publishSection.bookPagesEmptyDesc')
                 });
                 const actions = empty.createDiv({ cls: 'ert-matter-preview-empty-actions' });
                 new ButtonComponent(actions)
-                    .setButtonText('Jump to Publishing Setup')
+                    .setButtonText(t('ui.publishSection.jumpToPublishingSetup'))
                     .onClick(() => {
                         publishingStagesPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     });
                 new ButtonComponent(actions)
-                    .setButtonText('Jump to Book Details')
+                    .setButtonText(t('ui.publishSection.jumpToBookDetails'))
                     .onClick(() => {
                         bookMetaPreviewPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     });
@@ -2634,7 +2633,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             const renderRow = (page: ResolvedPage) => {
                 // Visual separator between frontmatter and backmatter.
                 if (lastSide && lastSide !== page.side) {
-                    list.createDiv({ cls: 'ert-matter-preview-divider', text: 'Manuscript' });
+                    list.createDiv({ cls: 'ert-matter-preview-divider', text: t('ui.publishSection.manuscriptDivider') });
                 }
                 lastSide = page.side;
 
@@ -2647,7 +2646,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 // Drag handle (visual affordance — entire row is draggable).
                 const handle = row.createDiv({ cls: 'ert-drag-handle ert-matter-preview-handle' });
                 setIcon(handle, 'grip-vertical');
-                handle.setAttr('aria-label', 'Drag to reorder');
+                handle.setAttr('aria-label', t('ui.publishSection.dragToReorder'));
 
                 if (page.source === 'note' && page.path) {
                     // Enable/disable toggle — only note-backed pages have a
@@ -2659,7 +2658,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     const notePath = page.path;
                     const toggle = row.createEl('input', {
                         cls: 'ert-matter-preview-enable',
-                        attr: { type: 'checkbox', title: 'Enabled — uncheck to exclude this page from export without deleting the note' },
+                        attr: { type: 'checkbox', title: t('ui.publishSection.pageEnabledTooltip') },
                     });
                     toggle.checked = true;
                     plugin.registerDomEvent(toggle, 'click', (e: MouseEvent) => {
@@ -2690,7 +2689,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     const modeTone = page.bodyMode === 'latex' ? 'latex' : 'plain';
                     badges.createSpan({
                         cls: `ert-matter-preview-badge ert-matter-preview-badge--${modeTone}`,
-                        text: modeTone === 'latex' ? 'LATEX' : 'PLAIN'
+                        text: modeTone === 'latex' ? t('ui.publishSection.badgeLatex') : t('ui.publishSection.badgePlain')
                     });
 
                     if (item) {
@@ -2725,7 +2724,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     main.createSpan({ cls: 'ert-matter-preview-link', text: page.title });
                     const badges = main.createDiv({ cls: 'ert-matter-preview-badges' });
                     badges.createSpan({ cls: 'ert-matter-preview-badge ert-matter-preview-badge--source', text: 'BOOKMETA' });
-                    badges.createSpan({ cls: 'ert-matter-preview-badge ert-matter-preview-badge--state', text: 'GENERATED' });
+                    badges.createSpan({ cls: 'ert-matter-preview-badge ert-matter-preview-badge--state', text: t('ui.publishSection.badgeGenerated') });
                     if (page.role) {
                         badges.createSpan({
                             cls: 'ert-matter-preview-badge ert-matter-preview-badge--role',
@@ -2794,7 +2793,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             if (disabledNotes.length > 0) {
                 list.createDiv({
                     cls: 'ert-matter-preview-divider ert-matter-preview-divider--disabled',
-                    text: 'Disabled — excluded from export',
+                    text: t('ui.publishSection.disabledPagesDivider'),
                 });
                 for (const note of disabledNotes) {
                     const drow = list.createDiv({ cls: 'ert-matter-preview-row is-disabled' });
@@ -2804,7 +2803,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     });
                     const dToggle = drow.createEl('input', {
                         cls: 'ert-matter-preview-enable',
-                        attr: { type: 'checkbox', title: 'Disabled — check to include this page in export again' },
+                        attr: { type: 'checkbox', title: t('ui.publishSection.pageDisabledTooltip') },
                     });
                     dToggle.checked = false;
                     const dNotePath = note.path;
@@ -2825,7 +2824,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     const dTone = note.bodyMode === 'latex' ? 'latex' : 'plain';
                     dBadges.createSpan({
                         cls: `ert-matter-preview-badge ert-matter-preview-badge--${dTone}`,
-                        text: dTone === 'latex' ? 'LATEX' : 'PLAIN',
+                        text: dTone === 'latex' ? t('ui.publishSection.badgeLatex') : t('ui.publishSection.badgePlain'),
                     });
                     // Show the role this note WOULD claim if re-enabled, so
                     // the user can see what it's currently suppressing.
@@ -2841,7 +2840,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             }
         } catch (e) {
             const message = (e as Error).message || String(e);
-            matterPreviewBody.createDiv({ cls: 'ert-matter-preview-empty-line', text: `Matter preview unavailable: ${message}` });
+            matterPreviewBody.createDiv({ cls: 'ert-matter-preview-empty-line', text: t('ui.publishSection.matterPreviewUnavailable', { error: message }) });
         }
     };
     void renderMatterPreview();
@@ -2858,7 +2857,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     advancedToggle.addClass('ert-publish-order--advanced-toggle');
     const advancedLink = advancedToggle.createEl('a', {
         cls: 'ert-advanced-config-link',
-        text: 'Advanced configuration',
+        text: t('ui.publishSection.advancedConfigurationLink'),
         attr: { href: '#' }
     });
     const advancedIcon = advancedToggle.createSpan({ cls: 'ert-advanced-config-icon' });
@@ -2878,18 +2877,18 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     const repairPlan = buildMatterRepairPlan(plugin);
     if (repairPlan.issues.length > 0) {
         const repairHeading = addProRow(new Setting(systemConfigPanel))
-            .setName('Repair tools')
-            .setDesc('Repair detected metadata mismatches for matter notes in the active book.')
+            .setName(t('ui.publishSection.repairToolsHeading'))
+            .setDesc(t('ui.publishSection.repairToolsDesc'))
             .setHeading();
         addHeadingIcon(repairHeading, 'wrench');
         applyErtHeaderLayout(repairHeading);
 
         const repairSetting = addProRow(new Setting(systemConfigPanel))
-            .setName('Repair matter metadata')
-            .setDesc('Updates frontmatter only on detected matter notes. No file moves. No note body edits.');
+            .setName(t('ui.publishSection.repairMatterName'))
+            .setDesc(t('ui.publishSection.repairMatterDesc'));
         repairSetting.addButton(button => {
-            button.setButtonText('Repair active book');
-            button.setTooltip('Repairs metadata mismatches and removes legacy Matter/matter fields.');
+            button.setButtonText(t('ui.publishSection.repairActiveBookButton'));
+            button.setTooltip(t('ui.publishSection.repairActiveBookTooltip'));
             if (repairPlan.repairableIssues.length === 0) {
                 button.setDisabled(true);
             }
@@ -2897,44 +2896,44 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 const currentPlan = buildMatterRepairPlan(plugin);
                 const targetCount = currentPlan.repairableIssues.length;
                 if (targetCount === 0) {
-                    new Notice('No repairable matter metadata mismatches found.');
+                    new Notice(t('ui.publishSection.repairNothingFound'));
                     return;
                 }
                 const proceed = await confirmWithErtModal(plugin.app, {
-                    title: 'Repair matter metadata',
-                    message: `This will update frontmatter on ${targetCount} note${targetCount === 1 ? '' : 's'} in the active book. Note bodies and filenames are not changed.`,
-                    confirmText: 'Repair now',
-                    cancelText: 'Cancel',
-                    badge: { text: 'Repair', icon: 'wrench' }
+                    title: t('ui.publishSection.repairMatterName'),
+                    message: t('ui.publishSection.repairConfirmMessage', { notes: tCount('note', targetCount) }),
+                    confirmText: t('ui.publishSection.repairConfirmButton'),
+                    cancelText: t('common.cancel'),
+                    badge: { text: t('ui.publishSection.repairBadge'), icon: 'wrench' }
                 });
                 if (!proceed) return;
 
                 button.setDisabled(true);
-                button.setButtonText('Repairing…');
+                button.setButtonText(t('ui.publishSection.repairingBusy'));
                 try {
                     const result = await applyMatterRepairPlan(plugin, currentPlan);
-                    new Notice(`Repaired ${result.updated} notes.`);
+                    new Notice(t('ui.publishSection.repairDone', { count: result.updated }));
                     rerender();
                 } catch (e) {
                     const msg = (e as Error).message || String(e);
-                    new Notice(`Failed to repair matter metadata: ${msg}`);
+                    new Notice(t('ui.publishSection.repairFailed', { error: msg }));
                 } finally {
                     button.setDisabled(false);
-                    button.setButtonText('Repair active book');
+                    button.setButtonText(t('ui.publishSection.repairActiveBookButton'));
                 }
             });
         });
 
         const changeList = repairSetting.settingEl.createEl('ul', { cls: 'ert-migration-change-list' });
         changeList.createEl('li', {
-            text: `Detected on ${repairPlan.issues.length} note${repairPlan.issues.length === 1 ? '' : 's'} in the active book.`
+            text: t('ui.publishSection.repairDetectedOn', { notes: tCount('note', repairPlan.issues.length) })
         });
         changeList.createEl('li', {
-            text: `Repairable now: ${repairPlan.repairableIssues.length}`
+            text: t('ui.publishSection.repairableNow', { count: repairPlan.repairableIssues.length })
         });
         if (repairPlan.unresolvedIssues.length > 0) {
             changeList.createEl('li', {
-                text: `${repairPlan.unresolvedIssues.length} note${repairPlan.unresolvedIssues.length === 1 ? '' : 's'} require Class to be set to Frontmatter or Backmatter.`
+                text: t('ui.publishSection.repairUnresolved', { notes: tCount('note', repairPlan.unresolvedIssues.length) })
             });
         }
     }

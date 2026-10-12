@@ -12,6 +12,7 @@
 
 import type { HotfixHistoryEntry, RadialTimelineSettings } from '../types';
 import { getActiveFrontmatterMappings } from '../utils/frontmatter';
+import { t } from '../i18n';
 
 // ============================================================================
 // Types
@@ -47,35 +48,35 @@ export const BASE_BEAT_FIELDS = [
     'Status', 'Due', 'Summary Update', 'Pulse Update'
 ];
 
-// Edit alert wording here (title/description). Settings notifications read from this list.
+// Alert wording (title/description) lives in the ui.refactorAlerts.* i18n keys. Settings notifications read from this list.
 // Severity: info (blue), warning (orange), critical (red).
 export const REFACTOR_ALERTS: RefactorAlert[] = [
     {
         id: 'ai-model-system-migration-v8',
         severity: 'info',
         icon: 'bot',
-        title: 'AI Model System Updated',
-        description: 'AI models are being migrated to a new system. No action is required. See Settings → AI for details, and adjust settings to match your personal preferences.',
+        get title() { return t('ui.refactorAlerts.aiModelSystemTitle'); },
+        get description() { return t('ui.refactorAlerts.aiModelSystemDescription'); },
     },
     {
         id: 'base-advanced-template-separation-v7',
         severity: 'info',
         icon: 'file-check',
-        title: 'YAML Structure Updated',
-        description: 'Base and property YAML sets are now cleanly separated. The base set defines core fields; the properties set adds optional fields. Commands and Book Designer now merge these automatically. Your field sets have been updated to the latest structure.',
+        get title() { return t('ui.refactorAlerts.yamlStructureTitle'); },
+        get description() { return t('ui.refactorAlerts.yamlStructureDescription'); },
     },
     {
         id: 'yaml-revision-to-iteration-v6',
         severity: 'warning',
         icon: 'alert-triangle',
-        title: 'YAML Field Update Required',
-        description: 'The "Revision" field has been renamed to "Iteration". Update your YAML properties. Existing notes with "Revision:" will continue to work.',
+        get title() { return t('ui.refactorAlerts.revisionToIterationTitle'); },
+        get description() { return t('ui.refactorAlerts.revisionToIterationDescription'); },
         migrations: [
             {
                 alertId: 'yaml-revision-to-iteration-v6',
                 oldKey: 'Revision',
                 newKey: 'Iteration',
-                tooltip: 'Renaming YAML field "Revision" to "Iteration" to avoid confusion and improve codebase stability.',
+                get tooltip() { return t('ui.refactorAlerts.revisionToIterationTooltip'); },
             }
         ]
     },
@@ -83,36 +84,36 @@ export const REFACTOR_ALERTS: RefactorAlert[] = [
         id: 'change-type-pulse-update',
         severity: 'info',
         icon: 'info',
-        title: 'YAML Type Change: Pending Edits & Summary Update',
-        description: '"Pending Edits" is no longer a boolean. It is now a string so it can act as both a yes/no flag and record the last AI API hit (timestamp and AI used). The YAML field "Summary Update" (formerly "Synopsis Update") works identically: string value with timestamp and AI used.',
+        get title() { return t('ui.refactorAlerts.pendingEditsTypeTitle'); },
+        get description() { return t('ui.refactorAlerts.pendingEditsTypeDescription'); },
     },
     {
         id: 'radial-timeline-folder-structure',
         severity: 'info',
         icon: 'folder-plus',
-        title: 'New Radial Timeline Folder',
-        description: 'A new Radial Timeline folder has been created in your Obsidian vault to organize files under the updated structure, including AI API logs, Inquiry Briefs, Social APR exports and campaigns, and other related assets.',
+        get title() { return t('ui.refactorAlerts.newFolderTitle'); },
+        get description() { return t('ui.refactorAlerts.newFolderDescription'); },
     },
     {
         id: 'logs-folder-structure-v1',
         severity: 'info',
         icon: 'folder-tree',
-        title: 'Log folders reorganized',
-        description: 'Logs now live under Radial Timeline/Logs with dedicated folders for Inquiry, Gossamer, Pulse, Moves, Snapshots, and Gossamer Archive. Full AI content logs are stored inside Content subfolders for the matching feature.',
+        get title() { return t('ui.refactorAlerts.logFoldersTitle'); },
+        get description() { return t('ui.refactorAlerts.logFoldersDescription'); },
     },
     {
         id: 'recovery-folder-relocation-v1',
         severity: 'warning',
         icon: 'archive-restore',
-        title: 'Recovery files moved out of Logs',
-        description: 'Snapshots and the Gossamer Archive — the files used to recover deleted or overwritten note data — now live under Radial Timeline/Recover instead of Radial Timeline/Logs. The Logs folder now holds only disposable run logs, so you can purge it at any time without losing recovery data. If a folder still exists at Radial Timeline/Logs/Snapshots or Radial Timeline/Logs/Gossamer Archive from before this update, move that specific folder into Radial Timeline/Recover to preserve the earlier recovery data. Warning: do NOT move Radial Timeline/Snapshots — that is a different, currently-live folder that Timeline Repair reads from to restore your timeline, and moving it will break that restore feature.',
+        get title() { return t('ui.refactorAlerts.recoveryFilesTitle'); },
+        get description() { return t('ui.refactorAlerts.recoveryFilesDescription'); },
     },
     {
         id: 'inquiry-pro-button-design-v1',
         severity: 'info',
         icon: 'sparkles',
-        title: 'Inquiry Pro buttons restyled',
-        description: 'In the Inquiry View, Pro-generated questions are now marked by a magenta number instead of an inner ring. The dot circle alone carries run status (ready, run, stale), so each button is simpler to read at a glance. Purely cosmetic — no action required.',
+        get title() { return t('ui.refactorAlerts.inquiryProButtonsTitle'); },
+        get description() { return t('ui.refactorAlerts.inquiryProButtonsDescription'); },
     }
 ];
 
@@ -233,8 +234,8 @@ export function getTemplateHotfixAlert(settings: RadialTimelineSettings): Refact
         id: TEMPLATE_HOTFIX_ALERT_ID,
         severity: 'info',
         icon: 'file-check',
-        title: 'PDF templates and Book Pages examples updated',
-        description: 'Bundled PDF style templates and inline LaTeX Book Pages examples were upgraded to the latest format. Re-export to apply the new formatting.',
+        title: t('ui.refactorAlerts.templateHotfixTitle'),
+        description: t('ui.refactorAlerts.templateHotfixDescription'),
     };
 }
 

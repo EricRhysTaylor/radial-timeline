@@ -1,6 +1,7 @@
 import { App, TAbstractFile, TFile, Vault, getFrontMatterInfo, normalizePath, parseYaml } from 'obsidian';
 import { confirmWithErtModal } from '../modals/ErtConfirmModal';
 import { resolveRecoverSnapshotsRoot } from '../ai/log';
+import { t } from '../i18n';
 
 export interface SnapshotFrontmatterFieldsOptions {
     operation: string;
@@ -300,11 +301,11 @@ export async function writeManagedOutput(
         const prompt = typeof options.unmanagedOverwritePrompt === 'function'
             ? options.unmanagedOverwritePrompt(existing)
             : options.unmanagedOverwritePrompt
-                ?? `Overwrite existing output "${existing.path}"? Existing content will be archived to a log snapshot first.`;
+                ?? t('ui.logVaultOps.overwritePrompt', { path: existing.path });
         const confirmed = await confirmWithErtModal(app, {
-            title: 'Overwrite existing output?',
+            title: t('ui.logVaultOps.overwriteTitle'),
             message: prompt,
-            confirmText: 'Overwrite'
+            confirmText: t('ui.logVaultOps.overwriteConfirm')
         });
         if (!confirmed) {
             return {

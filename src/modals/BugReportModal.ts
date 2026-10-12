@@ -15,6 +15,7 @@ import {
     gatherEnv,
     type BugReportSource,
 } from '../utils/bugReport';
+import { t } from '../i18n';
 
 const PREVIEW_MAX_BYTES = 8 * 1024 * 1024;
 
@@ -81,34 +82,34 @@ export class BugReportModal extends ErtModal {
 
     private mountHeaderText(): void {
         const header = this.contentEl.createDiv({ cls: 'ert-modal-header ert-bug-report-header' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Report a bug' });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.bugReportModal.title') });
         header.createDiv({
             cls: 'ert-modal-subtitle',
-            text: 'The more specific, the easier it is to track down. Mention what you were doing right before, anything that looked off, and steps to reproduce.',
+            text: t('ui.bugReportModal.subtitle'),
         });
     }
 
     private mountBody(): void {
         const body = this.contentEl.createDiv({ cls: 'ert-bug-report-body ert-stack' });
 
-        body.createDiv({ cls: 'ert-bug-report-label', text: 'What went wrong? (required)' });
+        body.createDiv({ cls: 'ert-bug-report-label', text: t('ui.bugReportModal.descriptionLabel') });
         const description = body.createEl('textarea', {
             cls: 'ert-bug-report-textarea',
-            attr: { rows: '3', placeholder: 'Briefly describe the problem and what you were doing.' },
+            attr: { rows: '3', placeholder: t('ui.bugReportModal.descriptionPlaceholder') },
         });
         this.descriptionEl = description;
         description.addEventListener('input', () => this.updateSendEnabled());
 
-        body.createDiv({ cls: 'ert-bug-report-label', text: 'Error text or log (optional)' });
+        body.createDiv({ cls: 'ert-bug-report-label', text: t('ui.bugReportModal.errorLabel') });
         const errorBox = body.createEl('textarea', {
             cls: 'ert-bug-report-textarea ert-bug-report-textarea--mono',
-            attr: { rows: '4', placeholder: 'Paste any error message, stack trace, or console output here.' },
+            attr: { rows: '4', placeholder: t('ui.bugReportModal.errorPlaceholder') },
         });
         this.errorEl = errorBox;
 
         const screenshotRow = body.createDiv({ cls: 'ert-bug-report-row' });
         const captureBtn = new ButtonComponent(screenshotRow)
-            .setButtonText('Capture window')
+            .setButtonText(t('ui.bugReportModal.captureButton'))
             .onClick(() => void this.handleCapture());
         captureBtn.buttonEl.addClass('ert-btn', 'ert-btn--standard-pro');
         const captureIcon = captureBtn.buttonEl.createSpan({ cls: 'ert-bug-report-btn-icon' });
@@ -116,11 +117,11 @@ export class BugReportModal extends ErtModal {
         captureBtn.buttonEl.prepend(captureIcon);
         if (Platform.isMobile) {
             captureBtn.buttonEl.disabled = true;
-            captureBtn.buttonEl.setAttr('title', 'Window capture is desktop-only. Use Attach image.');
+            captureBtn.buttonEl.setAttr('title', t('ui.bugReportModal.captureDesktopOnlyTooltip'));
         }
 
         const attachBtn = new ButtonComponent(screenshotRow)
-            .setButtonText('Attach image')
+            .setButtonText(t('ui.bugReportModal.attachButton'))
             .onClick(() => fileInput.click());
         attachBtn.buttonEl.addClass('ert-btn', 'ert-btn--standard-pro');
         const attachIcon = attachBtn.buttonEl.createSpan({ cls: 'ert-bug-report-btn-icon' });
@@ -135,7 +136,7 @@ export class BugReportModal extends ErtModal {
             const file = fileInput.files?.[0];
             if (!file) return;
             if (file.size > PREVIEW_MAX_BYTES) {
-                this.setStatus('Image is larger than 8 MB — try a smaller capture.', 'error');
+                this.setStatus(t('ui.bugReportModal.imageTooLargeStatus'), 'error');
                 fileInput.value = '';
                 return;
             }
@@ -145,7 +146,7 @@ export class BugReportModal extends ErtModal {
 
         this.previewEl = body.createDiv({ cls: 'ert-bug-report-preview' });
         this.previewEl.toggleClass('ert-bug-report-preview--empty', true);
-        this.previewEl.setText('No screenshot attached. Capture, attach, or paste an image with ⌘V.');
+        this.previewEl.setText(t('ui.bugReportModal.previewEmptyHint'));
 
         this.statusEl = body.createDiv({ cls: 'ert-bug-report-status' });
     }
@@ -154,20 +155,20 @@ export class BugReportModal extends ErtModal {
         const actions = this.contentEl.createDiv({ cls: 'ert-modal-actions ert-bug-report-actions' });
 
         const send = new ButtonComponent(actions)
-            .setButtonText('Post on GitHub')
+            .setButtonText(t('ui.bugReportModal.postGithubButton'))
             .setCta()
             .onClick(() => void this.handleSend('github'));
         this.sendButton = send;
         this.updateSendEnabled();
 
         const emailBtn = new ButtonComponent(actions)
-            .setButtonText('Email client')
-            .setTooltip('Open your default mail app with the report prefilled — no GitHub account needed.')
+            .setButtonText(t('ui.bugReportModal.emailButton'))
+            .setTooltip(t('ui.bugReportModal.emailTooltip'))
             .onClick(() => void this.handleSend('email'));
         emailBtn.buttonEl.addClass('ert-btn', 'ert-btn--standard-pro', 'ert-bug-report-secondary');
 
         const cancelBtn = new ButtonComponent(actions)
-            .setButtonText('Close')
+            .setButtonText(t('ui.bugReportModal.closeButton'))
             .onClick(() => this.close());
         cancelBtn.buttonEl.addClass('ert-btn', 'ert-btn--standard-pro');
 
@@ -182,19 +183,19 @@ export class BugReportModal extends ErtModal {
     }
 
     private async handleCapture(): Promise<void> {
-        this.setStatus('Capturing the Obsidian window…', 'info');
+        this.setStatus(t('ui.bugReportModal.capturingStatus'), 'info');
         const result = await captureScreenshot();
         if (!result.blob) {
             const message = result.failure === 'cancelled'
-                ? 'Capture cancelled.'
+                ? t('ui.bugReportModal.captureCancelledStatus')
                 : result.failure === 'unavailable'
-                    ? 'Window capture is not available in this build of Obsidian. Take a screenshot with your OS (⌘⇧4 / Win+Shift+S) and paste it here with ⌘V.'
-                    : 'Capture failed. Take a screenshot with your OS shortcut and paste it here with ⌘V instead.';
+                    ? t('ui.bugReportModal.captureUnavailableStatus')
+                    : t('ui.bugReportModal.captureFailedStatus');
             this.setStatus(message, 'error');
             return;
         }
         await this.setScreenshot(result.blob);
-        this.setStatus('Screenshot ready.', 'success');
+        this.setStatus(t('ui.bugReportModal.screenshotReadyStatus'), 'success');
     }
 
     private async setScreenshot(blob: Blob): Promise<void> {
@@ -209,12 +210,12 @@ export class BugReportModal extends ErtModal {
             this.previewEl.toggleClass('ert-bug-report-preview--empty', false);
             const img = this.previewEl.createEl('img', {
                 cls: 'ert-bug-report-preview-img',
-                attr: { src: this.screenshotPreviewUrl, alt: 'Bug report screenshot preview' },
+                attr: { src: this.screenshotPreviewUrl, alt: t('ui.bugReportModal.previewAlt') },
             });
             void img;
             const clear = this.previewEl.createEl('button', {
                 cls: 'ert-bug-report-preview-clear',
-                text: 'Remove',
+                text: t('ui.bugReportModal.removeButton'),
             });
             clear.addEventListener('click', () => this.clearScreenshot());
         }
@@ -229,9 +230,9 @@ export class BugReportModal extends ErtModal {
         if (this.previewEl) {
             this.previewEl.empty();
             this.previewEl.toggleClass('ert-bug-report-preview--empty', true);
-            this.previewEl.setText('No screenshot attached.');
+            this.previewEl.setText(t('ui.bugReportModal.previewEmpty'));
         }
-        this.setStatus('Screenshot removed.', 'info');
+        this.setStatus(t('ui.bugReportModal.screenshotRemovedStatus'), 'info');
     }
 
     private handlePaste = (ev: ClipboardEvent): void => {
@@ -243,11 +244,11 @@ export class BugReportModal extends ErtModal {
                 if (file) {
                     ev.preventDefault();
                     if (file.size > PREVIEW_MAX_BYTES) {
-                        this.setStatus('Pasted image is larger than 8 MB.', 'error');
+                        this.setStatus(t('ui.bugReportModal.pastedTooLargeStatus'), 'error');
                         return;
                     }
                     void this.setScreenshot(file);
-                    this.setStatus('Pasted image attached.', 'success');
+                    this.setStatus(t('ui.bugReportModal.pastedAttachedStatus'), 'success');
                 }
                 return;
             }
@@ -258,7 +259,7 @@ export class BugReportModal extends ErtModal {
         const description = this.descriptionEl?.value ?? '';
         const errorText = this.errorEl?.value ?? '';
         if (!description.trim()) {
-            this.setStatus('Please describe the problem first.', 'error');
+            this.setStatus(t('ui.bugReportModal.describeFirstStatus'), 'error');
             return;
         }
 
@@ -276,20 +277,20 @@ export class BugReportModal extends ErtModal {
         };
 
         const url = transport === 'email' ? buildMailtoUrl(payload) : buildIssueUrl(payload);
-        const destLabel = transport === 'email' ? 'Email' : 'GitHub';
+        const isEmail = transport === 'email';
         window.open(url, '_blank');
 
         if (this.screenshotBlob) {
             if (clipboardOk) {
-                new Notice(`${destLabel} opened. Paste your screenshot with ⌘V / Ctrl+V.`);
-                this.setStatus(`Sent. Screenshot is on your clipboard — paste it into the ${destLabel.toLowerCase()} window.`, 'success');
+                new Notice(isEmail ? t('ui.bugReportModal.emailOpenedPasteNotice') : t('ui.bugReportModal.githubOpenedPasteNotice'));
+                this.setStatus(isEmail ? t('ui.bugReportModal.emailSentClipboardStatus') : t('ui.bugReportModal.githubSentClipboardStatus'), 'success');
             } else {
-                new Notice(`${destLabel} opened. Drag the image from this modal into the window.`);
-                this.setStatus(`Sent. Clipboard write failed — drag the preview image into ${destLabel.toLowerCase()}.`, 'info');
+                new Notice(isEmail ? t('ui.bugReportModal.emailOpenedDragNotice') : t('ui.bugReportModal.githubOpenedDragNotice'));
+                this.setStatus(isEmail ? t('ui.bugReportModal.emailSentDragStatus') : t('ui.bugReportModal.githubSentDragStatus'), 'info');
             }
         } else {
-            new Notice(`${destLabel} opened with your report prefilled.`);
-            this.setStatus('Sent.', 'success');
+            new Notice(isEmail ? t('ui.bugReportModal.emailOpenedNotice') : t('ui.bugReportModal.githubOpenedNotice'));
+            this.setStatus(t('ui.bugReportModal.sentStatus'), 'success');
         }
     }
 

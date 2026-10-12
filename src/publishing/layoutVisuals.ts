@@ -24,6 +24,7 @@ import type { ManuscriptSceneHeadingMode } from '../utils/manuscript';
 import { SHARED_CHAPTER_FIELD_SOURCE_LABEL_TITLE } from '../utils/timelineChapters';
 import { getVariantForArchetype, type DesignedStyleSpec } from './designedStyle';
 import { BUNDLED_FICTION_SPECS, isBundledFictionId } from './bundledStyleSpecs';
+import { t, tCount } from '../i18n';
 
 // ── Variant identification ────────────────────────────────────────────
 export type FictionLayoutVariant = 'classic' | 'modernClassic' | 'signature' | 'contemporary' | 'generic';
@@ -158,51 +159,51 @@ export const LAYOUT_PREVIEW_BODY_LINES = 14;
 /** Headers row — derived from runningHeader.mode + runningHeader.font. */
 function describeHeaders(spec: DesignedStyleSpec): string {
     const rh = spec.runningHeader;
-    const sansSuffix = rh.font === 'sans' ? ', sans' : '';
+    const sans = rh.font === 'sans';
     switch (rh.mode) {
-        case 'none': return 'No running headers';
-        case 'centered-title': return `Title centered (both pages)${sansSuffix}`;
+        case 'none': return t('ui.layoutVisuals.headersNone');
+        case 'centered-title': return sans ? t('ui.layoutVisuals.headersCenteredTitleSans') : t('ui.layoutVisuals.headersCenteredTitle');
         case 'split-author-page-title-page':
             return rh.letterSpacing && rh.letterSpacing > 0
-                ? 'Centered: Page|Author (even) · Title|Page (odd), letter-spaced caps'
-                : 'Centered: Page|Author (even) · Title|Page (odd)';
+                ? t('ui.layoutVisuals.headersSplitLetterSpaced')
+                : t('ui.layoutVisuals.headersSplit');
         case 'left-title-right-context':
-            return `Book title (left) · Scene title (right)${sansSuffix}`;
-        default: return 'Running headers';
+            return sans ? t('ui.layoutVisuals.headersBookSceneTitleSans') : t('ui.layoutVisuals.headersBookSceneTitle');
+        default: return t('ui.layoutVisuals.headersDefault');
     }
 }
 
 /** Folios row — derived from folio.position. */
 function describeFolios(spec: DesignedStyleSpec): string {
     switch (spec.folio.position) {
-        case 'bottom-center': return 'Bottom center';
-        case 'header': return 'In headers';
-        case 'none': return 'No folios';
-        default: return 'Folios';
+        case 'bottom-center': return t('ui.layoutVisuals.foliosBottomCenter');
+        case 'header': return t('ui.layoutVisuals.foliosInHeaders');
+        case 'none': return t('ui.layoutVisuals.foliosNone');
+        default: return t('ui.layoutVisuals.foliosDefault');
     }
 }
 
 /** Body font row — derived from body.font. */
 function describeFont(spec: DesignedStyleSpec): string {
     switch (spec.body.font) {
-        case 'sorts-mill-goudy': return 'Sorts Mill Goudy (serif)';
-        case 'latin-modern':     return 'Latin Modern (serif)';
-        case 'source-serif':     return 'Source Serif 4 (serif)';
-        case 'eb-garamond':      return 'EB Garamond (serif)';
-        case 'crimson':          return 'Crimson Text (serif)';
-        case 'system-serif':     return 'TeX Gyre Pagella (serif)';
-        case 'system-sans':      return 'Arial (sans)';
-        case 'custom':           return spec.body.customFontName ? `${spec.body.customFontName} (custom)` : 'Custom font';
-        default:                 return 'Serif';
+        case 'sorts-mill-goudy': return t('ui.layoutVisuals.fontSerif', { font: 'Sorts Mill Goudy' });
+        case 'latin-modern':     return t('ui.layoutVisuals.fontSerif', { font: 'Latin Modern' });
+        case 'source-serif':     return t('ui.layoutVisuals.fontSerif', { font: 'Source Serif 4' });
+        case 'eb-garamond':      return t('ui.layoutVisuals.fontSerif', { font: 'EB Garamond' });
+        case 'crimson':          return t('ui.layoutVisuals.fontSerif', { font: 'Crimson Text' });
+        case 'system-serif':     return t('ui.layoutVisuals.fontSerif', { font: 'TeX Gyre Pagella' });
+        case 'system-sans':      return t('ui.layoutVisuals.fontSans', { font: 'Arial' });
+        case 'custom':           return spec.body.customFontName ? t('ui.layoutVisuals.fontCustomNamed', { font: spec.body.customFontName }) : t('ui.layoutVisuals.fontCustom');
+        default:                 return t('ui.layoutVisuals.fontDefault');
     }
 }
 
 /** Spacing row — derived from body.lineSpacing. */
 function describeSpacing(spec: DesignedStyleSpec): string {
     const ls = spec.body.lineSpacing;
-    if (Math.abs(ls - 1.5) < 0.001) return '1.5 lines';
-    if (Math.abs(ls - 2.0) < 0.001) return 'Double-spaced';
-    if (Math.abs(ls - 1.0) < 0.001) return 'Single-spaced';
+    if (Math.abs(ls - 1.5) < 0.001) return t('ui.layoutVisuals.spacingOneAndHalf');
+    if (Math.abs(ls - 2.0) < 0.001) return t('ui.layoutVisuals.spacingDouble');
+    if (Math.abs(ls - 1.0) < 0.001) return t('ui.layoutVisuals.spacingSingle');
     return `${ls}×`;
 }
 
@@ -211,13 +212,13 @@ function describePaper(spec: DesignedStyleSpec): string {
     const ps = spec.paperSize;
     if (typeof ps === 'string') {
         switch (ps) {
-            case 'us-trade-6x9': return '6×9 in (trade)';
-            case 'us-letter':    return '8.5×11 in (US Letter)';
-            case 'a4':           return 'A4 (210×297 mm)';
+            case 'us-trade-6x9': return t('ui.layoutVisuals.paperTrade');
+            case 'us-letter':    return t('ui.layoutVisuals.paperUsLetter');
+            case 'a4':           return t('ui.layoutVisuals.paperA4');
             default:             return ps;
         }
     }
-    return `${ps.widthIn}×${ps.heightIn} in (custom)`;
+    return t('ui.layoutVisuals.paperCustom', { width: ps.widthIn, height: ps.heightIn });
 }
 
 /** Margins row — uniform vs. mirrored vs. asymmetric. */
@@ -225,11 +226,12 @@ function describeMargins(spec: DesignedStyleSpec): string {
     const m = spec.margins;
     const fmt = (n: number) => Number.isInteger(n) ? `${n}` : `${n}`;
     const allEqual = m.topIn === m.bottomIn && m.topIn === m.leftIn && m.topIn === m.rightIn;
-    if (allEqual) return `${fmt(m.topIn)} in (uniform)`;
+    if (allEqual) return t('ui.layoutVisuals.marginsUniform', { margin: fmt(m.topIn) });
+    const sides = { top: fmt(m.topIn), right: fmt(m.rightIn), bottom: fmt(m.bottomIn), left: fmt(m.leftIn) };
     if (m.mirrored) {
-        return `${fmt(m.topIn)} / ${fmt(m.rightIn)} / ${fmt(m.bottomIn)} / ${fmt(m.leftIn)} in (T/Outer/B/Inner, mirrored)`;
+        return t('ui.layoutVisuals.marginsMirrored', sides);
     }
-    return `${fmt(m.topIn)} / ${fmt(m.rightIn)} / ${fmt(m.bottomIn)} / ${fmt(m.leftIn)} in (T/R/B/L)`;
+    return t('ui.layoutVisuals.marginsSides', sides);
 }
 
 /**
@@ -242,52 +244,53 @@ function describeMargins(spec: DesignedStyleSpec): string {
  */
 export function describeParts(spec: DesignedStyleSpec): string | null {
     if (spec.parts.mode === 'off') return null;
-    const numbering = spec.parts.mode === 'roman' ? 'Roman numeral'
-        : spec.parts.mode === 'arabic' ? 'Arabic number'
-        : spec.parts.mode === 'word' ? 'Word'
-        : 'Numbered';
+    const numbering = spec.parts.mode === 'roman' ? t('ui.layoutVisuals.partsNumberingRoman')
+        : spec.parts.mode === 'arabic' ? t('ui.layoutVisuals.partsNumberingArabic')
+        : spec.parts.mode === 'word' ? t('ui.layoutVisuals.partsNumberingWord')
+        : t('ui.layoutVisuals.partsNumberingDefault');
     const flags: string[] = [];
     // Stated either way: "numeral only" is the answer to "why isn't my part
     // title printing?", so silence on the negative case is the unhelpful choice.
-    flags.push(spec.parts.title ? 'with title' : 'numeral only');
+    flags.push(spec.parts.title ? t('ui.layoutVisuals.partsFlagWithTitle') : t('ui.layoutVisuals.partsFlagNumeralOnly'));
     if (spec.parts.epigraph) {
         flags.push(spec.parts.epigraphPlacement === 'own-page'
-            ? 'epigraph on own page'
-            : 'inline epigraph');
+            ? t('ui.layoutVisuals.partsFlagEpigraphOwnPage')
+            : t('ui.layoutVisuals.partsFlagEpigraphInline'));
     }
+    // `openany` is the LaTeX class option name, shown verbatim.
     if (spec.parts.openAny) flags.push('openany');
-    if (!spec.parts.pageBreak) flags.push('no page break');
-    const tail = flags.length ? ` — ${flags.join(', ')}` : '';
-    return `Part opener — ${numbering}${tail}`;
+    if (!spec.parts.pageBreak) flags.push(t('ui.layoutVisuals.partsFlagNoPageBreak'));
+    return flags.length
+        ? t('ui.layoutVisuals.partOpenerWithFlags', { numbering, flags: flags.join(', ') })
+        : t('ui.layoutVisuals.partOpener', { numbering });
 }
 
 /** Chapters row — derived from chapters.mode. Returns null when off. */
 function describeChapters(spec: DesignedStyleSpec): string | null {
     if (spec.chapters.mode === 'off') return null;
-    if (spec.chapters.mode === 'numbered') return 'Numbered chapter pages';
-    if (spec.chapters.mode === 'titled')   return 'Titled chapter pages';
+    if (spec.chapters.mode === 'numbered') return t('ui.layoutVisuals.chaptersNumbered');
+    if (spec.chapters.mode === 'titled')   return t('ui.layoutVisuals.chaptersTitled');
     if (spec.chapters.mode === 'numbered-titled') return SHARED_CHAPTER_FIELD_SOURCE_LABEL_TITLE;
-    return 'Chapters';
+    return t('ui.layoutVisuals.chaptersDefault');
 }
 
 /** Scenes row — derived from scene.opener + scene.headingMode + scene.firstWordEmphasisOnOpener. */
 function describeScenes(spec: DesignedStyleSpec): string {
     const sc = spec.scene;
-    if (sc.opener === 'inline-separator') return 'Inline scene separator';
-    if (sc.opener === 'roman-with-rule') return 'Lowercase Roman numeral (i. ii.) with short rule';
+    if (sc.opener === 'inline-separator') return t('ui.layoutVisuals.scenesInlineSeparator');
+    if (sc.opener === 'roman-with-rule') return t('ui.layoutVisuals.scenesRomanWithRule');
 
     // dedicated-page openers — the heading content depends on headingMode.
     if (sc.openerHeadingModes && sc.openerHeadingModes.length > 0) {
-        return 'Opener page — bold, suppresses headers';
+        return t('ui.layoutVisuals.scenesOpenerPage');
     }
     // Standard / Contemporary dedicated-page openers: the heading sits at the
     // top of a new page and the body text continues below on the same page.
     // Phrasing must convey both axes (heading content + body presence) so the
     // user understands this isn't a heading-only page.
-    const headingDesc = sc.headingMode === 'scene-number' ? 'scene number'
-        : sc.headingMode === 'title-only' ? 'scene title'
-        : 'scene number and title';
-    return `New page — ${headingDesc} above body text`;
+    return sc.headingMode === 'scene-number' ? t('ui.layoutVisuals.scenesNewPageNumber')
+        : sc.headingMode === 'title-only' ? t('ui.layoutVisuals.scenesNewPageTitle')
+        : t('ui.layoutVisuals.scenesNewPageNumberTitle');
 }
 
 /**
@@ -297,28 +300,28 @@ function describeScenes(spec: DesignedStyleSpec): string {
  */
 export function getLayoutFeaturesFromSpec(spec: DesignedStyleSpec): LayoutFeatureRow[] {
     const rows: LayoutFeatureRow[] = [];
-    rows.push({ label: 'Paper',        value: describePaper(spec) });
-    rows.push({ label: 'Margins',      value: describeMargins(spec) });
-    rows.push({ label: 'Headers',      value: describeHeaders(spec) });
-    rows.push({ label: 'Folios',       value: describeFolios(spec) });
-    rows.push({ label: 'Font',         value: describeFont(spec) });
-    rows.push({ label: 'Line space', value: describeSpacing(spec) });
+    rows.push({ label: t('ui.layoutVisuals.labelPaper'),     value: describePaper(spec) });
+    rows.push({ label: t('ui.layoutVisuals.labelMargins'),   value: describeMargins(spec) });
+    rows.push({ label: t('ui.layoutVisuals.labelHeaders'),   value: describeHeaders(spec) });
+    rows.push({ label: t('ui.layoutVisuals.labelFolios'),    value: describeFolios(spec) });
+    rows.push({ label: t('ui.layoutVisuals.labelFont'),      value: describeFont(spec) });
+    rows.push({ label: t('ui.layoutVisuals.labelLineSpace'), value: describeSpacing(spec) });
 
     const partsRow = describeParts(spec);
-    if (partsRow) rows.push({ label: 'Parts', value: partsRow });
+    if (partsRow) rows.push({ label: t('ui.layoutVisuals.labelParts'), value: partsRow });
 
     const chaptersRow = describeChapters(spec);
-    if (chaptersRow) rows.push({ label: 'Chapters', value: chaptersRow });
+    if (chaptersRow) rows.push({ label: t('ui.layoutVisuals.labelChapters'), value: chaptersRow });
 
-    rows.push({ label: 'Scenes', value: describeScenes(spec) });
+    rows.push({ label: t('ui.layoutVisuals.labelScenes'), value: describeScenes(spec) });
 
     // Signature Literary's three scene-opener heading modes — each gets its
     // own row mirroring the pictogram spreads (SCENE #, #+TITLE, TITLE).
     if (spec.scene.openerHeadingModes && spec.scene.openerHeadingModes.length > 0) {
         const labelByMode: Record<string, [string, string]> = {
-            'scene-number':       ['Scene #',   'Number only'],
-            'scene-number-title': ['Scene #+T', 'Number + title (in parentheses)'],
-            'title-only':         ['Scene T',   'Title only'],
+            'scene-number':       [t('ui.layoutVisuals.labelSceneNumber'),      t('ui.layoutVisuals.sceneModeNumberOnly')],
+            'scene-number-title': [t('ui.layoutVisuals.labelSceneNumberTitle'), t('ui.layoutVisuals.sceneModeNumberTitle')],
+            'title-only':         [t('ui.layoutVisuals.labelSceneTitle'),       t('ui.layoutVisuals.sceneModeTitleOnly')],
         };
         for (const mode of spec.scene.openerHeadingModes) {
             const entry = labelByMode[mode];
@@ -338,46 +341,46 @@ export function getLayoutFeatures(variant: FictionLayoutVariant): LayoutFeatureR
     switch (variant) {
         case 'classic':
             return [
-                { label: 'Headers', value: 'Title centered (both pages)' },
-                { label: 'Folios', value: 'Bottom center' },
-                { label: 'Font', value: 'Arial (sans)' },
-                { label: 'Spacing', value: '1.5 lines' },
-                { label: 'Scenes', value: 'New page — centered scene number only' },
+                { label: t('ui.layoutVisuals.labelHeaders'), value: t('ui.layoutVisuals.headersCenteredTitle') },
+                { label: t('ui.layoutVisuals.labelFolios'), value: t('ui.layoutVisuals.foliosBottomCenter') },
+                { label: t('ui.layoutVisuals.labelFont'), value: t('ui.layoutVisuals.fontSans', { font: 'Arial' }) },
+                { label: t('ui.layoutVisuals.labelSpacing'), value: t('ui.layoutVisuals.spacingOneAndHalf') },
+                { label: t('ui.layoutVisuals.labelScenes'), value: t('ui.layoutVisuals.scenesNewPageCenteredNumber') },
             ];
         case 'modernClassic':
             return [
-                { label: 'Headers', value: 'Centered: Page|Author (even) · Title|Page (odd)' },
-                { label: 'Folios', value: 'In headers' },
-                { label: 'Font', value: 'Latin Modern (serif)' },
-                { label: 'Spacing', value: '1.18×' },
-                { label: 'Parts', value: 'Act opener — Roman numeral with optional epigraph' },
-                { label: 'Chapters', value: SHARED_CHAPTER_FIELD_SOURCE_LABEL_TITLE },
-                { label: 'Scenes', value: 'Lowercase Roman numeral (i. ii.) with short rule' },
+                { label: t('ui.layoutVisuals.labelHeaders'), value: t('ui.layoutVisuals.headersSplit') },
+                { label: t('ui.layoutVisuals.labelFolios'), value: t('ui.layoutVisuals.foliosInHeaders') },
+                { label: t('ui.layoutVisuals.labelFont'), value: t('ui.layoutVisuals.fontSerif', { font: 'Latin Modern' }) },
+                { label: t('ui.layoutVisuals.labelSpacing'), value: '1.18×' },
+                { label: t('ui.layoutVisuals.labelParts'), value: t('ui.layoutVisuals.partsActOpener') },
+                { label: t('ui.layoutVisuals.labelChapters'), value: SHARED_CHAPTER_FIELD_SOURCE_LABEL_TITLE },
+                { label: t('ui.layoutVisuals.labelScenes'), value: t('ui.layoutVisuals.scenesRomanWithRule') },
             ];
         case 'signature':
             return [
-                { label: 'Headers', value: 'Centered: Page|Author (even) · Title|Page (odd)' },
-                { label: 'Folios', value: 'Header-only, letter-spaced' },
-                { label: 'Font', value: 'Sorts Mill Goudy (serif)' },
-                { label: 'Spacing', value: '1.5 lines' },
-                { label: 'Scenes', value: 'Opener page — 30pt bold, suppresses headers' },
-                { label: 'Scene #', value: 'Number only' },
-                { label: 'Scene #+T', value: 'Number + title (in parentheses)' },
-                { label: 'Scene T', value: 'Title only' },
+                { label: t('ui.layoutVisuals.labelHeaders'), value: t('ui.layoutVisuals.headersSplit') },
+                { label: t('ui.layoutVisuals.labelFolios'), value: t('ui.layoutVisuals.foliosHeaderOnly') },
+                { label: t('ui.layoutVisuals.labelFont'), value: t('ui.layoutVisuals.fontSerif', { font: 'Sorts Mill Goudy' }) },
+                { label: t('ui.layoutVisuals.labelSpacing'), value: t('ui.layoutVisuals.spacingOneAndHalf') },
+                { label: t('ui.layoutVisuals.labelScenes'), value: t('ui.layoutVisuals.scenesOpenerPageBold30') },
+                { label: t('ui.layoutVisuals.labelSceneNumber'), value: t('ui.layoutVisuals.sceneModeNumberOnly') },
+                { label: t('ui.layoutVisuals.labelSceneNumberTitle'), value: t('ui.layoutVisuals.sceneModeNumberTitle') },
+                { label: t('ui.layoutVisuals.labelSceneTitle'), value: t('ui.layoutVisuals.sceneModeTitleOnly') },
             ];
         case 'contemporary':
             return [
-                { label: 'Headers', value: 'Book title (left) · Scene title (right)' },
-                { label: 'Folios', value: 'Bottom center' },
-                { label: 'Font', value: 'Source Serif 4 (serif)' },
-                { label: 'Spacing', value: '1.5 lines' },
-                { label: 'Scenes', value: 'New page — centered scene number only' },
-                { label: 'Chapters', value: SHARED_CHAPTER_FIELD_SOURCE_LABEL_TITLE },
+                { label: t('ui.layoutVisuals.labelHeaders'), value: t('ui.layoutVisuals.headersBookSceneTitle') },
+                { label: t('ui.layoutVisuals.labelFolios'), value: t('ui.layoutVisuals.foliosBottomCenter') },
+                { label: t('ui.layoutVisuals.labelFont'), value: t('ui.layoutVisuals.fontSerif', { font: 'Source Serif 4' }) },
+                { label: t('ui.layoutVisuals.labelSpacing'), value: t('ui.layoutVisuals.spacingOneAndHalf') },
+                { label: t('ui.layoutVisuals.labelScenes'), value: t('ui.layoutVisuals.scenesNewPageCenteredNumber') },
+                { label: t('ui.layoutVisuals.labelChapters'), value: SHARED_CHAPTER_FIELD_SOURCE_LABEL_TITLE },
             ];
         default:
             return [
-                { label: 'Layout', value: 'Custom template' },
-                { label: 'Preview', value: 'Two-page body spread' },
+                { label: t('ui.layoutVisuals.labelLayout'), value: t('ui.layoutVisuals.layoutCustomTemplate') },
+                { label: t('ui.layoutVisuals.labelPreview'), value: t('ui.layoutVisuals.previewTwoPageSpread') },
             ];
     }
 }
@@ -406,13 +409,13 @@ export function getPictogramRowsFromSpec(spec: DesignedStyleSpec): LayoutPictogr
     const headerByMode = (): { left?: string; right?: string; center?: string } => {
         const rh = spec.runningHeader;
         switch (rh.mode) {
-            case 'centered-title':                 return { center: 'TITLE' };
-            case 'split-author-page-title-page':   return { center: '12 | AUTH' };
-            case 'left-title-right-context':       return { left: 'title', right: 'scene title' };
+            case 'centered-title':                 return { center: t('ui.layoutVisuals.pictoHeaderTitle') };
+            case 'split-author-page-title-page':   return { center: t('ui.layoutVisuals.pictoHeaderEvenSplit') };
+            case 'left-title-right-context':       return { left: t('ui.layoutVisuals.pictoHeaderBookTitle'), right: t('ui.layoutVisuals.pictoHeaderSceneTitle') };
             default:                               return {};
         }
     };
-    const oddCenter = spec.runningHeader.mode === 'split-author-page-title-page' ? 'TITLE | 13' : undefined;
+    const oddCenter = spec.runningHeader.mode === 'split-author-page-title-page' ? t('ui.layoutVisuals.pictoHeaderOddSplit') : undefined;
     const folioBottom = spec.folio.position === 'bottom-center' ? '12' : undefined;
     const folioBottomRight = spec.folio.position === 'bottom-center' ? '13' : undefined;
 
@@ -446,8 +449,8 @@ export function getPictogramRowsFromSpec(spec: DesignedStyleSpec): LayoutPictogr
             specialRule: showsEpigraph,
         };
         if (showsEpigraph) {
-            partPage.epigraphText = 'a quote';
-            partPage.epigraphAttribution = '—J. Name';
+            partPage.epigraphText = t('ui.layoutVisuals.pictoEpigraphQuote');
+            partPage.epigraphAttribution = t('ui.layoutVisuals.pictoEpigraphAttribution');
             partPage.epigraphItalic = !!spec.epigraph.italic;
         }
         special.push({ label: 'PART', leftPage: null, rightPage: partPage });
@@ -460,8 +463,8 @@ export function getPictogramRowsFromSpec(spec: DesignedStyleSpec): LayoutPictogr
             bodyLines: 0,
             suppressHeader: true,
             suppressFooter: true,
-            specialText: 'Chapter 1',
-            ...(isTitled ? { specialSubtext: 'Boy with a Skull' } : {}),
+            specialText: t('ui.layoutVisuals.pictoChapterNumbered'),
+            ...(isTitled ? { specialSubtext: t('ui.layoutVisuals.pictoChapterTitle') } : {}),
         };
         // Mirror the spec's vertical offset (Contemporary's deep top-padding,
         // user-driven slider value, etc.) so the pictogram tracks the slider
@@ -470,7 +473,7 @@ export function getPictogramRowsFromSpec(spec: DesignedStyleSpec): LayoutPictogr
         chapterPage.headingTopFraction = spec.chapters.spacing?.topFraction ?? 0.5;
         // Contemporary's chapter-only page (no chapter title) — drop subtext.
         if (spec.chapters.mode === 'numbered' && spec.chapters.spacing) {
-            chapterPage.specialText = 'Chapter';
+            chapterPage.specialText = t('ui.layoutVisuals.pictoChapter');
             delete chapterPage.specialSubtext;
         }
         special.push({ label: 'CHAPTER', leftPage: null, rightPage: chapterPage });
@@ -491,15 +494,15 @@ export function getPictogramRowsFromSpec(spec: DesignedStyleSpec): LayoutPictogr
             };
             let label: string;
             if (mode === 'scene-number') {
-                label = 'SCENE #';
+                label = t('ui.layoutVisuals.spreadSceneNumber');
                 page.specialText = '3';
             } else if (mode === 'scene-number-title') {
-                label = '#+TITLE';
+                label = t('ui.layoutVisuals.spreadSceneNumberTitle');
                 page.specialText = '3';
-                page.specialSubtext = '(The Escape)';
+                page.specialSubtext = t('ui.layoutVisuals.pictoSceneTitleParenthesized');
             } else {
-                label = 'TITLE';
-                page.specialText = 'The Escape';
+                label = t('ui.layoutVisuals.spreadSceneTitle');
+                page.specialText = t('ui.layoutVisuals.pictoSceneTitle');
             }
             special.push({ label, sceneMode: mode, leftPage: null, rightPage: page });
         }
@@ -510,7 +513,7 @@ export function getPictogramRowsFromSpec(spec: DesignedStyleSpec): LayoutPictogr
     let scene: PictogramSpread | null = null;
     if (spec.scene.opener === 'inline-separator') {
         scene = {
-            label: 'SCENE',
+            label: t('ui.layoutVisuals.spreadScene'),
             leftPage: null,
             rightPage: {
                 bodyLines: 0,
@@ -523,7 +526,7 @@ export function getPictogramRowsFromSpec(spec: DesignedStyleSpec): LayoutPictogr
     } else if (spec.scene.opener === 'dedicated-page' && (!spec.scene.openerHeadingModes || spec.scene.openerHeadingModes.length === 0)) {
         const sceneOpenerSpacing = spec.scene.openerSpacing;
         scene = {
-            label: 'SCENE',
+            label: t('ui.layoutVisuals.spreadScene'),
             leftPage: null,
             rightPage: {
                 bodyLines: 5,
@@ -548,7 +551,7 @@ export function getPictogramRowsFromSpec(spec: DesignedStyleSpec): LayoutPictogr
         };
     } else if (spec.scene.opener === 'roman-with-rule') {
         scene = {
-            label: 'SCENE',
+            label: t('ui.layoutVisuals.spreadScene'),
             leftPage: null,
             rightPage: {
                 bodyLines: 0,
@@ -561,7 +564,7 @@ export function getPictogramRowsFromSpec(spec: DesignedStyleSpec): LayoutPictogr
 
     return {
         scene,
-        body: { label: 'BODY', leftPage: bodyLeft, rightPage: bodyRight },
+        body: { label: t('ui.layoutVisuals.spreadBody'), leftPage: bodyLeft, rightPage: bodyRight },
         special,
     };
 }
@@ -592,7 +595,7 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
             return {
                 // Scene opener: suppresses headers/footers (\thispagestyle{empty})
                 scene: {
-                    label: 'SCENE',
+                    label: t('ui.layoutVisuals.spreadScene'),
                     leftPage: null,
                     rightPage: {
                         bodyLines: 5,
@@ -602,16 +605,16 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
                     },
                 },
                 body: {
-                    label: 'BODY',
-                    leftPage: { headerCenter: 'TITLE', folioBottom: '12', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
-                    rightPage: { headerCenter: 'TITLE', folioBottom: '13', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
+                    label: t('ui.layoutVisuals.spreadBody'),
+                    leftPage: { headerCenter: t('ui.layoutVisuals.pictoHeaderTitle'), folioBottom: '12', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
+                    rightPage: { headerCenter: t('ui.layoutVisuals.pictoHeaderTitle'), folioBottom: '13', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
                 },
                 special: [],
             };
         case 'modernClassic':
             return {
                 scene: {
-                    label: 'SCENE',
+                    label: t('ui.layoutVisuals.spreadScene'),
                     leftPage: null,
                     rightPage: {
                         bodyLines: 0,
@@ -621,9 +624,9 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
                     },
                 },
                 body: {
-                    label: 'BODY',
-                    leftPage: { headerCenter: '12 | AUTH', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
-                    rightPage: { headerCenter: 'TITLE | 13', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
+                    label: t('ui.layoutVisuals.spreadBody'),
+                    leftPage: { headerCenter: t('ui.layoutVisuals.pictoHeaderEvenSplit'), bodyLines: LAYOUT_PREVIEW_BODY_LINES },
+                    rightPage: { headerCenter: t('ui.layoutVisuals.pictoHeaderOddSplit'), bodyLines: LAYOUT_PREVIEW_BODY_LINES },
                 },
                 special: [
                     {
@@ -635,8 +638,8 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
                             suppressFooter: true,
                             specialText: 'I',
                             specialRule: true,
-                            epigraphText: 'a quote',
-                            epigraphAttribution: '—J. Name',
+                            epigraphText: t('ui.layoutVisuals.pictoEpigraphQuote'),
+                            epigraphAttribution: t('ui.layoutVisuals.pictoEpigraphAttribution'),
                         },
                     },
                     {
@@ -646,8 +649,8 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
                             bodyLines: 0,
                             suppressHeader: true,
                             suppressFooter: true,
-                            specialText: 'Chapter 1',
-                            specialSubtext: 'Boy with a Skull',
+                            specialText: t('ui.layoutVisuals.pictoChapterNumbered'),
+                            specialSubtext: t('ui.layoutVisuals.pictoChapterTitle'),
                         },
                     },
                 ],
@@ -656,13 +659,13 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
             return {
                 scene: null,
                 body: {
-                    label: 'BODY',
-                    leftPage: { headerCenter: '12 | AUTH', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
-                    rightPage: { headerCenter: 'TITLE | 13', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
+                    label: t('ui.layoutVisuals.spreadBody'),
+                    leftPage: { headerCenter: t('ui.layoutVisuals.pictoHeaderEvenSplit'), bodyLines: LAYOUT_PREVIEW_BODY_LINES },
+                    rightPage: { headerCenter: t('ui.layoutVisuals.pictoHeaderOddSplit'), bodyLines: LAYOUT_PREVIEW_BODY_LINES },
                 },
                 special: [
                     {
-                        label: 'SCENE #',
+                        label: t('ui.layoutVisuals.spreadSceneNumber'),
                         sceneMode: 'scene-number',
                         leftPage: null,
                         rightPage: {
@@ -674,7 +677,7 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
                         },
                     },
                     {
-                        label: '#+TITLE',
+                        label: t('ui.layoutVisuals.spreadSceneNumberTitle'),
                         sceneMode: 'scene-number-title',
                         leftPage: null,
                         rightPage: {
@@ -682,19 +685,19 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
                             suppressHeader: true,
                             suppressFooter: true,
                             specialText: '3',
-                            specialSubtext: '(The Escape)',
+                            specialSubtext: t('ui.layoutVisuals.pictoSceneTitleParenthesized'),
                             headingPosition: 'top',
                         },
                     },
                     {
-                        label: 'TITLE',
+                        label: t('ui.layoutVisuals.spreadSceneTitle'),
                         sceneMode: 'title-only',
                         leftPage: null,
                         rightPage: {
                             bodyLines: 5,
                             suppressHeader: true,
                             suppressFooter: true,
-                            specialText: 'The Escape',
+                            specialText: t('ui.layoutVisuals.pictoSceneTitle'),
                             headingPosition: 'top',
                         },
                     },
@@ -703,7 +706,7 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
         case 'contemporary':
             return {
                 scene: {
-                    label: 'SCENE',
+                    label: t('ui.layoutVisuals.spreadScene'),
                     leftPage: null,
                     rightPage: {
                         bodyLines: 5,
@@ -713,9 +716,9 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
                     },
                 },
                 body: {
-                    label: 'BODY',
-                    leftPage: { headerLeft: 'title', folioBottom: '12', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
-                    rightPage: { headerRight: 'scene', folioBottom: '13', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
+                    label: t('ui.layoutVisuals.spreadBody'),
+                    leftPage: { headerLeft: t('ui.layoutVisuals.pictoHeaderBookTitle'), folioBottom: '12', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
+                    rightPage: { headerRight: t('ui.layoutVisuals.pictoHeaderScene'), folioBottom: '13', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
                 },
                 special: [
                     {
@@ -732,7 +735,7 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
                             bodyLines: 0,
                             suppressHeader: true,
                             suppressFooter: true,
-                            specialText: 'Chapter',
+                            specialText: t('ui.layoutVisuals.pictoChapter'),
                         },
                     },
                 ],
@@ -743,7 +746,7 @@ function getLayoutPictogramRowsByVariant(variant: FictionLayoutVariant): LayoutP
             return {
                 scene: null,
                 body: {
-                    label: 'BODY',
+                    label: t('ui.layoutVisuals.spreadBody'),
                     leftPage: { folioBottom: '12', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
                     rightPage: { folioBottom: '13', bodyLines: LAYOUT_PREVIEW_BODY_LINES },
                 },
@@ -781,12 +784,9 @@ export type SpreadValidationContext = {
     sceneTitlePopulatedRatio?: number;
 };
 
-const PART_WARNING_TOOLTIP =
-    'No Parts will render — no scenes have a Part field set.';
-const CHAPTER_WARNING_TOOLTIP =
-    'No chapter pages will render — no scenes have a Chapter field set.';
-const SCENE_TITLE_WARNING_TOOLTIP =
-    'Scene title heading mode configured but scenes have no titles.';
+const partWarningTooltip = (): string => t('ui.layoutVisuals.partWarningTooltip');
+const chapterWarningTooltip = (): string => t('ui.layoutVisuals.chapterWarningTooltip');
+const sceneTitleWarningTooltip = (): string => t('ui.layoutVisuals.sceneTitleWarningTooltip');
 
 /**
  * Part-epigraph tooltip — switches phrasing between zero-population and
@@ -795,9 +795,9 @@ const SCENE_TITLE_WARNING_TOOLTIP =
  */
 function partEpigraphTooltip(populated: number, total: number): string {
     if (populated <= 0) {
-        return 'Part epigraphs configured but none has been written.';
+        return t('ui.layoutVisuals.partEpigraphsEmptyTooltip');
     }
-    return `Part epigraphs partially populated — ${populated} of ${total} marked Parts have a quote.`;
+    return t('ui.layoutVisuals.partEpigraphsPartialTooltip', { populated, total });
 }
 
 /**
@@ -809,17 +809,19 @@ function partEpigraphTooltip(populated: number, total: number): string {
  */
 function surplusEpigraphTooltip(populated: number, markers: number): string {
     const surplus = populated - markers;
-    return `${surplus} Part epigraph${surplus === 1 ? '' : 's'} will not print — `
-        + `${populated} written but only ${markers} scene${markers === 1 ? '' : 's'} `
-        + 'carry a Part field.';
+    return t('ui.layoutVisuals.surplusEpigraphsTooltip', {
+        epigraphs: tCount('partEpigraph', surplus),
+        written: populated,
+        scenes: tCount('scene', markers),
+    });
 }
 
 /** Chapter-title tooltip — same dual-state shape as partEpigraphTooltip. */
 function chapterTitleTooltip(populated: number, total: number): string {
     if (populated <= 0) {
-        return 'Chapter titles configured but no chapter has a title set.';
+        return t('ui.layoutVisuals.chapterTitlesEmptyTooltip');
     }
-    return `Chapter titles partially populated — ${populated} of ${total} chapters have a title.`;
+    return t('ui.layoutVisuals.chapterTitlesPartialTooltip', { populated, total });
 }
 
 /** Heuristic threshold: if fewer than 5% of selected scenes have titles,
@@ -839,14 +841,14 @@ export function applySpreadValidation(
                 && typeof ctx.sceneTitlePopulatedRatio === 'number'
                 && ctx.sceneTitlePopulatedRatio <= SCENE_TITLE_RATIO_FLOOR
             ) {
-                return { ...spread, warningLevel: 'warning', warningTooltip: SCENE_TITLE_WARNING_TOOLTIP };
+                return { ...spread, warningLevel: 'warning', warningTooltip: sceneTitleWarningTooltip() };
             }
             return spread;
         }
 
         if (spread.label === 'PART') {
             if (Number.isFinite(ctx.partMarkerCount) && ctx.partMarkerCount < 1) {
-                return { ...spread, warningLevel: 'warning', warningTooltip: PART_WARNING_TOOLTIP };
+                return { ...spread, warningLevel: 'warning', warningTooltip: partWarningTooltip() };
             }
             // Part-epigraph check fires only when the spread itself advertises
             // the feature (presence of epigraphText) AND the caller has opted
@@ -893,7 +895,7 @@ export function applySpreadValidation(
 
         if (spread.label === 'CHAPTER') {
             if (ctx.chapterFieldCount === 0) {
-                return { ...spread, warningLevel: 'warning', warningTooltip: CHAPTER_WARNING_TOOLTIP };
+                return { ...spread, warningLevel: 'warning', warningTooltip: chapterWarningTooltip() };
             }
             // Chapter-title check fires only when the spread advertises a
             // titled chapter (presence of specialSubtext) AND the caller
@@ -930,7 +932,7 @@ export function applySpreadValidation(
             stampedScene = {
                 ...rows.scene,
                 warningLevel: 'warning',
-                warningTooltip: SCENE_TITLE_WARNING_TOOLTIP,
+                warningTooltip: sceneTitleWarningTooltip(),
             };
         }
     }
@@ -998,13 +1000,13 @@ export function collectSpreadStatuses(
         out.push({
             id: 'parts-count',
             tone: 'info',
-            text: `${ctx.partMarkerCount} Part${ctx.partMarkerCount === 1 ? '' : 's'} marked.`,
+            text: t('ui.layoutVisuals.partsMarkedStatus', { parts: tCount('bookPart', ctx.partMarkerCount) }),
         });
         if (allEpigraphsPopulated) {
             out.push({
                 id: 'epigraphs-populated',
                 tone: 'success',
-                text: 'Epigraphs populated.',
+                text: t('ui.layoutVisuals.epigraphsPopulatedStatus'),
             });
         }
     }
@@ -1028,13 +1030,13 @@ export function collectSpreadStatuses(
         out.push({
             id: 'chapters-count',
             tone: 'info',
-            text: `${ctx.chapterFieldCount} Chapters configured.`,
+            text: t('ui.layoutVisuals.chaptersConfiguredStatus', { count: ctx.chapterFieldCount }),
         });
         if (allTitled) {
             out.push({
                 id: 'chapter-titles-count',
                 tone: 'success',
-                text: 'Chapter titles populated.',
+                text: t('ui.layoutVisuals.chapterTitlesPopulatedStatus'),
             });
         }
     }
@@ -1050,7 +1052,7 @@ export function collectSpreadStatuses(
         out.push({
             id: 'scene-titles-count',
             tone: 'success',
-            text: 'All selected scenes have titles.',
+            text: t('ui.layoutVisuals.sceneTitlesPopulatedStatus'),
         });
     }
 
@@ -1239,9 +1241,9 @@ export function renderLayoutPictograms(
                 spreadEl.setAttribute('role', 'button');
                 spreadEl.setAttribute('tabindex', '0');
                 spreadEl.setAttribute('aria-pressed', selected ? 'true' : 'false');
-                spreadEl.setAttribute('aria-label', `Use ${spread.label} scene opener heading`);
+                spreadEl.setAttribute('aria-label', t('ui.layoutVisuals.useSceneOpenerHeading', { label: spread.label }));
                 if (!spread.warningTooltip) {
-                    spreadEl.setAttribute('title', `Use ${spread.label} scene opener heading`);
+                    spreadEl.setAttribute('title', t('ui.layoutVisuals.useSceneOpenerHeading', { label: spread.label }));
                 }
                 spreadEl.addEventListener('click', () => options.onSceneModeSelect?.(mode));
                 spreadEl.addEventListener('keydown', (event: KeyboardEvent) => {

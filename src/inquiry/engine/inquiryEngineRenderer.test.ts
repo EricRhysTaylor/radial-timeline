@@ -6,10 +6,10 @@ import { computeActualCostPillState, computeCachePillState, computeCitationPillS
 describe('inquiryEngineRenderer wording', () => {
     it('uses eligible/validation wording for blocked Local LLM Inquiry state', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/inquiry/engine/inquiryEngineRenderer.ts'), 'utf8');
-        expect(source.includes('No eligible model for Inquiry')).toBe(true);
-        expect(source.includes('Local LLM is connected')).toBe(true);
-        expect(source.includes('Selected model passes basic validation')).toBe(true);
-        expect(source.includes('This model does not meet Inquiry requirements for the current corpus')).toBe(true);
+        expect(source.includes("t('ui.inquiryEngineRenderer.statusNoEligibleModel')")).toBe(true);
+        expect(source.includes("t('ui.inquiryEngineRenderer.localLlmConnected')")).toBe(true);
+        expect(source.includes("t('ui.inquiryEngineRenderer.localLlmBasicValidation')")).toBe(true);
+        expect(source.includes("t('ui.inquiryEngineRenderer.localLlmNotEligible')")).toBe(true);
         expect(source.includes('No working model')).toBe(false);
     });
 });

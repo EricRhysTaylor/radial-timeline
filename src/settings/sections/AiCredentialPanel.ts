@@ -35,25 +35,24 @@ export function renderAiCredentialPanel(options: CredentialPanelOptions): { refr
         inputEl.autocomplete = 'new-password';
         inputEl.spellcheck = false;
     };
-    const SAVED_KEY_ENTRY_COPY = 'Saved privately on this device. Paste a key, then click outside this field or press Enter/Return to save or replace it. Keys are never written to your settings file.';
     const doc = options.section.ownerDocument;
     // Descriptions are composed straight into Setting.descEl. A
     // DocumentFragment handed to setDesc() rendered as the literal text
     // "[object DocumentFragment]" in the live plugin, so no fragment is
     // built here at all.
     const secretIdSetting = new Settings(options.section)
-        .setName(`Obsidian secret name (${options.providerName})`);
+        .setName(t('ui.aiCredentialPanel.secretNameName', { provider: options.providerName }));
     secretIdSetting.descEl.createSpan({
-        text: `The name this vault's Obsidian secret storage files your ${options.providerName} API key under. `
+        text: t('ui.aiCredentialPanel.secretNameDesc', { provider: options.providerName })
     });
     secretIdSetting.descEl.createEl('a', {
-        text: 'Get key',
+        text: t('ui.aiCredentialPanel.getKeyLink'),
         href: options.docsUrl,
         attr: { target: '_blank', rel: 'noopener' }
     });
-    secretIdSetting.descEl.appendText(' Obsidian secret keys are shared across the plugins in this vault.');
+    secretIdSetting.descEl.appendText(t('ui.aiCredentialPanel.secretSharedNote'));
     const keyStatusSetting = new Settings(options.section)
-        .setName(`${options.providerName} API key status`);
+        .setName(t('ui.aiCredentialPanel.keyStatusName', { provider: options.providerName }));
     keyStatusSetting.settingEl.addClass('ert-ai-provider-key-status-row');
 
     let providerState: ProviderKeyUiState = 'checking';
@@ -222,7 +221,7 @@ export function renderAiCredentialPanel(options: CredentialPanelOptions): { refr
                 setCredentialSecretId(ai, options.provider, nextId);
                 await persistCanonical();
                 await refresh();
-            })().catch(() => { if (!disposed) new Notice(`Unable to save ${options.providerName} secret name.`); });
+            })().catch(() => { if (!disposed) new Notice(t('ui.aiCredentialPanel.saveSecretNameFailedNotice', { provider: options.providerName })); });
         });
     });
     secretIdSetting.settingEl.addClass('ert-setting-full-width-input');
@@ -232,8 +231,8 @@ export function renderAiCredentialPanel(options: CredentialPanelOptions): { refr
 
     if (secretStorageAvailable) {
         secureKeySetting = new Settings(options.section)
-            .setName(`${options.providerName} API key`)
-            .setDesc(SAVED_KEY_ENTRY_COPY);
+            .setName(t('ui.aiCredentialPanel.apiKeyName', { provider: options.providerName }))
+            .setDesc(t('ui.aiCredentialPanel.apiKeyDesc'));
         secureKeySetting.addText(text => {
             text.inputEl.addClass('ert-input--full');
             configureSensitiveInput(text.inputEl);
@@ -253,7 +252,7 @@ export function renderAiCredentialPanel(options: CredentialPanelOptions): { refr
                 if (!value) return;
                 const secretId = getCredentialSecretId(ensureCanonicalAiSettings(), options.provider);
                 if (!secretId) {
-                    new Notice(`Set a ${options.providerName} saved key name first.`);
+                    new Notice(t('ui.aiCredentialPanel.setKeyNameFirstNotice', { provider: options.providerName }));
                     return;
                 }
                 invalidate();
@@ -267,14 +266,14 @@ export function renderAiCredentialPanel(options: CredentialPanelOptions): { refr
                             failedSaveRevision = saveRevision;
                             text.setValue(value);
                             replaceRequested = true;
-                            new Notice(`Unable to save ${options.providerName} key privately.`);
+                            new Notice(t('ui.aiCredentialPanel.saveKeyFailedNotice', { provider: options.providerName }));
                         }
                         return;
                     }
                     // Presence belongs to the plugin even if this pane closed during the save.
                     await plugin.refreshCredentialPresence();
                 }).catch(() => {
-                    if (!disposed) new Notice(`Unable to refresh ${options.providerName} credential status.`);
+                    if (!disposed) new Notice(t('ui.aiCredentialPanel.refreshStatusFailedNotice', { provider: options.providerName }));
                 });
                 void refresh();
             });
@@ -289,7 +288,7 @@ export function renderAiCredentialPanel(options: CredentialPanelOptions): { refr
     if (!secretStorageAvailable) {
         options.section.createDiv({
             cls: 'ert-field-note',
-            text: `${options.providerName} requires Obsidian secret storage. Older plaintext key fields are no longer supported.`
+            text: t('ui.aiCredentialPanel.requiresSecretStorage', { provider: options.providerName })
         });
     }
     return { refresh };

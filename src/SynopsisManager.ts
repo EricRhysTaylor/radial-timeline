@@ -798,7 +798,7 @@ export default class SynopsisManager {
     if (!profile) return null;
     const conversion = convertFromEarth(scene.when, profile);
     if (!conversion) return null;
-    const label = (profile.label || 'LOCAL').toUpperCase();
+    const label = (profile.label || t('ui.synopsisManager.planetaryFallbackLabel')).toUpperCase();
     return `${label}: ${conversion.formatted}`;
   }
 
@@ -1012,9 +1012,9 @@ export default class SynopsisManager {
     if (isBackdrop && scene.End) {
       const endDate = parseWhenField(scene.End);
       if (endDate) {
-        duration = `to ${formatDateForDisplay(endDate)}`;
+        duration = t('ui.synopsisManager.backdropEnd', { end: formatDateForDisplay(endDate) });
       } else {
-        duration = `to ${scene.End}`;
+        duration = t('ui.synopsisManager.backdropEnd', { end: scene.End });
       }
     }
 

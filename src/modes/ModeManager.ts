@@ -18,6 +18,7 @@ import { TimelineMode, isTimelineMode } from './ModeDefinition';
 import { getModeDefinition } from './ModeRegistry';
 import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
 import { getTimelineScope } from '../utils/books';
+import { t } from '../i18n';
 
 /**
  * Mode Manager - Handles all mode transitions and lifecycle
@@ -57,7 +58,7 @@ export class ModeManager {
         }
 
         if (getTimelineScope(this.plugin.settings) === 'saga' && newMode !== TimelineMode.NARRATIVE) {
-            new Notice('Saga Timeline is currently available in Narrative mode only.', 5000);
+            new Notice(t('ui.modeManager.sagaNarrativeOnly'), 5000);
             return;
         }
 
@@ -70,9 +71,9 @@ export class ModeManager {
                 if (beatNotes.length === 0) {
                     const selectedSystem = resolveSelectedBeatModelFromSettings(this.plugin.settings) ?? '';
                     const systemHint = selectedSystem
-                        ? `No "${selectedSystem}" beat notes found. Ensure beat notes have "Class: Beat" and "Beat Model: ${selectedSystem}" in frontmatter.`
-                        : 'No story beats found. Create notes with frontmatter "Class: Beat".';
-                    new Notice(`Cannot enter Gossamer mode. ${systemHint}`, 8000);
+                        ? t('ui.modeManager.systemHintWithModel', { system: selectedSystem })
+                        : t('gossamer.notices.systemHintNoModel');
+                    new Notice(t('gossamer.notices.cannotEnterMode', { hint: systemHint }), 8000);
                     return; // Stay in the current mode without triggering lifecycle changes
                 }
             }
@@ -107,7 +108,7 @@ export class ModeManager {
                     // Show a notice — the onEnter hook may have already shown one
                     const msg = error instanceof Error ? error.message : String(error);
                     if (!msg.includes('Cannot enter Gossamer')) {
-                        new Notice(`Could not switch to ${newMode} mode. ${msg}`, 6000);
+                        new Notice(t('ui.modeManager.couldNotSwitchMode', { mode: newMode, message: msg }), 6000);
                     }
                     
                     return;
@@ -123,7 +124,7 @@ export class ModeManager {
             this.view.currentMode = currentMode;
             this.plugin.settings.currentMode = currentMode;
             try { await this.plugin.saveSettings(); } catch { /* best effort */ }
-            new Notice(`Could not enter ${newMode} mode. Check the developer console for details.`, 6000);
+            new Notice(t('ui.modeManager.couldNotEnterMode', { mode: newMode }), 6000);
         }
     }
     

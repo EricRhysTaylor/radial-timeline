@@ -8,8 +8,11 @@
  * verbatim. Doctrine reminder — `CACHE_ARMED_PILL_TEXT` is a
  * static capability statement, NOT a claim of realized reuse.
  *
- * No DOM, no timers, no plugin/state access, no i18n, no Obsidian APIs.
+ * No DOM, no timers, no plugin/state access, no Obsidian APIs beyond the
+ * i18n lookup that supplies the author-facing copy.
  */
+
+import { t, tCount } from '../../i18n';
 
 /**
  * Author-facing pill text for "the active model's provider supports
@@ -79,7 +82,7 @@ export const buildTokenCapacityLine = (label: string, tokens: number | null): st
 
 /** `Scenes (<count>) — full text (<tokens-shorthand>)` */
 export const buildScenesCapacityLine = (sceneCount: number | null, scenesTokens: number | null): string =>
-    `Scenes (${formatInquiryCount(sceneCount)}) — full text (${formatCorpusBreakdownToken(scenesTokens)})`;
+    t('ui.aiSettingsPreview.scenesCapacityLine', { count: formatInquiryCount(sceneCount), tokens: formatCorpusBreakdownToken(scenesTokens) });
 
 /**
  * Outline line: `Outline (?) — unavailable (...)` for null count;
@@ -87,10 +90,10 @@ export const buildScenesCapacityLine = (sceneCount: number | null, scenesTokens:
  */
 export const buildOutlineCapacityLine = (outlineCount: number | null, outlineTokens: number | null): string => (
     outlineCount === null
-        ? `Outline (?) — unavailable (${formatCorpusBreakdownToken(outlineTokens)})`
+        ? t('ui.aiSettingsPreview.outlineUnavailableLine', { tokens: formatCorpusBreakdownToken(outlineTokens) })
         : outlineCount > 0
-            ? `Outline (${formatInquiryCount(outlineCount)}) — full text (${formatCorpusBreakdownToken(outlineTokens)})`
-            : 'Outline — none'
+            ? t('ui.aiSettingsPreview.outlineFullTextLine', { count: formatInquiryCount(outlineCount), tokens: formatCorpusBreakdownToken(outlineTokens) })
+            : t('ui.aiSettingsPreview.outlineNone')
 );
 
 /**
@@ -100,10 +103,10 @@ export const buildOutlineCapacityLine = (outlineCount: number | null, outlineTok
  */
 export const buildReferenceCapacityLine = (referenceCount: number | null, referenceTokens: number | null): string => (
     referenceCount === null
-        ? `References (?) — unavailable (${formatCorpusBreakdownToken(referenceTokens)})`
+        ? t('ui.aiSettingsPreview.referenceUnavailableLine', { tokens: formatCorpusBreakdownToken(referenceTokens) })
         : referenceCount > 0
-            ? `References (${formatInquiryCount(referenceCount)}) — included (${formatCorpusBreakdownToken(referenceTokens)})`
-            : 'References — none'
+            ? t('ui.aiSettingsPreview.referenceIncludedLine', { count: formatInquiryCount(referenceCount), tokens: formatCorpusBreakdownToken(referenceTokens) })
+            : t('ui.aiSettingsPreview.referenceNone')
 );
 
 /**
@@ -113,7 +116,7 @@ export const buildReferenceCapacityLine = (referenceCount: number | null, refere
  * otherwise.
  */
 export const formatApproxTokens = (value: number): string => {
-    if (!Number.isFinite(value) || value <= 0) return 'n/a';
+    if (!Number.isFinite(value) || value <= 0) return t('ui.aiSettingsPreview.notAvailable');
     if (value >= 1_000_000) {
         const millions = value / 1_000_000;
         const formatted = millions >= 10 ? millions.toFixed(1) : millions.toFixed(2);
@@ -133,17 +136,17 @@ export const formatApproxTokens = (value: number): string => {
 export const formatCorpusStructureSummary = (sceneCount: number, outlineCount: number): string => {
     const parts: string[] = [];
     if (sceneCount > 0 || outlineCount <= 0) {
-        parts.push(`${sceneCount} ${sceneCount === 1 ? 'scene' : 'scenes'}`);
+        parts.push(tCount('scene', sceneCount));
     }
     if (outlineCount > 0) {
-        parts.push(`${outlineCount} ${outlineCount === 1 ? 'outline' : 'outlines'}`);
+        parts.push(tCount('outline', outlineCount));
     }
-    return parts.length ? parts.join(' + ') : 'No scenes or outlines';
+    return parts.length ? parts.join(' + ') : t('ui.aiSettingsPreview.noScenesOrOutlines');
 };
 
 /** `${formatCorpusBreakdownToken(tokens)} tokens` */
 export const formatCorpusTokenSummary = (tokens: number): string =>
-    `${formatCorpusBreakdownToken(tokens)} tokens`;
+    t('ui.aiSettingsPreview.corpusTokens', { tokens: formatCorpusBreakdownToken(tokens) });
 
 /**
  * Preview-failure reason label. Special-cases `quota_exceeded` and
@@ -152,13 +155,13 @@ export const formatCorpusTokenSummary = (tokens: number): string =>
  * `'issue detected'` when both reason and status are empty.
  */
 export const formatPreviewReasonLabel = (status?: string, reason?: string): string => {
-    if (reason === 'quota_exceeded') return 'Quota exceeded';
-    if (reason === 'spend_cap') return 'Spend cap reached';
+    if (reason === 'quota_exceeded') return t('ui.aiSettingsPreview.reasonQuotaExceeded');
+    if (reason === 'spend_cap') return t('ui.aiSettingsPreview.reasonSpendCap');
     const normalizedReason = (reason ?? status ?? '')
         .trim()
         .replace(/_/g, ' ')
         .replace(/\s+/g, ' ');
-    if (!normalizedReason) return 'issue detected';
+    if (!normalizedReason) return t('ui.aiSettingsPreview.reasonIssueDetected');
     return normalizedReason.charAt(0).toUpperCase() + normalizedReason.slice(1);
 };
 
@@ -172,9 +175,11 @@ export const formatPreviewCacheRemaining = (remainingMs: number): string => {
     if (totalMinutes >= 60) {
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
-        return minutes > 0 ? `${hours}h ${minutes}m remaining` : `${hours}h remaining`;
+        return minutes > 0
+            ? t('ui.aiSettingsPreview.cacheRemainingHoursMinutes', { hours, minutes })
+            : t('ui.aiSettingsPreview.cacheRemainingHours', { hours });
     }
-    return `${totalMinutes}m remaining`;
+    return t('ui.aiSettingsPreview.cacheRemainingMinutes', { minutes: totalMinutes });
 };
 
 /**
@@ -307,21 +312,21 @@ export const buildKeyBlockedPreviewCopy = (
 ): KeyBlockedPreviewCopy => {
     if (state === 'rejected') {
         return {
-            title: 'Key rejected',
-            detail: `${providerLabel} · replace the saved key under API keys to run`,
-            forecastReason: `${providerLabel} rejected the saved key. Replace it under API keys to forecast.`
+            title: t('ui.aiSettingsPreview.keyRejectedTitle'),
+            detail: t('ui.aiSettingsPreview.keyRejectedDetail', { provider: providerLabel }),
+            forecastReason: t('ui.aiSettingsPreview.keyRejectedForecast', { provider: providerLabel })
         };
     }
     if (state === 'network_blocked') {
         return {
-            title: 'Provider unreachable',
-            detail: `${providerLabel} · key validation could not reach the provider`,
-            forecastReason: `${providerLabel} could not be reached to validate the key. Forecasts resume once it validates.`
+            title: t('ui.aiSettingsPreview.unreachableTitle'),
+            detail: t('ui.aiSettingsPreview.unreachableDetail', { provider: providerLabel }),
+            forecastReason: t('ui.aiSettingsPreview.unreachableForecast', { provider: providerLabel })
         };
     }
     return {
-        title: 'No API key',
-        detail: `${providerLabel} · paste a key under API keys to run`,
-        forecastReason: `No ${providerLabel} key is saved. Paste one under API keys to forecast.`
+        title: t('ui.aiSettingsPreview.noKeyTitle'),
+        detail: t('ui.aiSettingsPreview.noKeyDetail', { provider: providerLabel }),
+        forecastReason: t('ui.aiSettingsPreview.noKeyForecast', { provider: providerLabel })
     };
 };

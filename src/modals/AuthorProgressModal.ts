@@ -19,6 +19,7 @@ import {
 import { resolveBookTitle, resolveProjectPath } from '../renderer/apr/aprHelpers';
 import { isSceneItem } from '../utils/sceneHelpers';
 import { systemFolderPath } from '../utils/systemFolder';
+import { t, tCount } from '../i18n';
 
 export class AuthorProgressModal extends Modal {
     private plugin: RadialTimelinePlugin;
@@ -125,10 +126,10 @@ export class AuthorProgressModal extends Modal {
         const badge = header.createSpan({ cls: ERT_CLASSES.MODAL_BADGE });
         const badgeIcon = badge.createSpan({ cls: ERT_CLASSES.MODAL_BADGE_ICON });
         setIcon(badgeIcon, 'radio');
-        badge.createSpan({ text: 'Share' });
+        badge.createSpan({ text: t('ui.authorProgressModal.badge') });
 
-        header.createDiv({ text: 'Author progress report', cls: 'ert-modal-title' });
-        header.createDiv({ text: 'Public, spoiler-safe progress view for fans and backers', cls: 'ert-modal-subtitle' });
+        header.createDiv({ text: t('ui.authorProgressModal.title'), cls: 'ert-modal-title' });
+        header.createDiv({ text: t('ui.authorProgressModal.subtitle'), cls: 'ert-modal-subtitle' });
 
         // Target selection + dynamic sections
         const campaigns = this.plugin.settings.authorProgress?.campaigns || [];
@@ -169,7 +170,7 @@ export class AuthorProgressModal extends Modal {
         const actionsTitleRow = actionsHeaderMain.createDiv({ cls: ERT_CLASSES.INLINE });
         const actionsIcon = actionsTitleRow.createSpan({ cls: ERT_CLASSES.SECTION_ICON });
         setIcon(actionsIcon, 'share-2');
-        actionsTitleRow.createEl('h4', { text: 'Actions', cls: ERT_CLASSES.SECTION_TITLE });
+        actionsTitleRow.createEl('h4', { text: t('ui.authorProgressModal.actionsHeading'), cls: ERT_CLASSES.SECTION_TITLE });
         this.actionsSectionEl = actionsSection;
 
         this.actionsBodyEl = actionsSection.createDiv({ cls: `${ERT_CLASSES.STACK} ${ERT_CLASSES.STACK_TIGHT}` });
@@ -178,7 +179,7 @@ export class AuthorProgressModal extends Modal {
         const footer = contentEl.createDiv({ cls: 'ert-modal-actions' });
         const settingsBtn = new ButtonComponent(footer)
             .setIcon('settings')
-            .setTooltip('Open APR settings')
+            .setTooltip(t('ui.authorProgressModal.settingsTooltip'))
             .onClick(() => {
                 this.close();
                 this.plugin.settingsTab?.setActiveTab('social');
@@ -186,11 +187,11 @@ export class AuthorProgressModal extends Modal {
             });
         settingsBtn.buttonEl.addClass('ert-modal-settings-btn');
         new ButtonComponent(footer)
-            .setButtonText('Publish')
+            .setButtonText(t('ui.authorProgressModal.publishButton'))
             .setCta()
             .onClick(() => this.publish('dynamic'));
         new ButtonComponent(footer)
-            .setButtonText('Close')
+            .setButtonText(t('ui.authorProgressModal.closeButton'))
             .onClick(() => this.close());
 
         await this.loadData();
@@ -226,8 +227,9 @@ export class AuthorProgressModal extends Modal {
 
         // Empty project feedback - show Notice when valid path has no scenes
         if (this.cachedScenes.length === 0) {
-            const targetLabel = campaign ? `Campaign "${campaign.name}"` : 'Default Report';
-            new Notice(`${targetLabel}: Project path "${projectPath}" contains no scenes.`);
+            new Notice(campaign
+                ? t('ui.authorProgressModal.campaignNoScenesNotice', { name: campaign.name, path: projectPath })
+                : t('ui.authorProgressModal.defaultNoScenesNotice', { path: projectPath }));
         }
     }
 
@@ -246,7 +248,7 @@ export class AuthorProgressModal extends Modal {
         const headerRow = headerMain.createDiv({ cls: ERT_CLASSES.INLINE });
         const headerIcon = headerRow.createSpan({ cls: ERT_CLASSES.SECTION_ICON });
         setIcon(headerIcon, 'radio');
-        headerRow.createEl('h4', { text: 'Status', cls: ERT_CLASSES.SECTION_TITLE });
+        headerRow.createEl('h4', { text: t('ui.authorProgressModal.statusHeading'), cls: ERT_CLASSES.SECTION_TITLE });
 
         const headerActions = header.createDiv({ cls: ERT_CLASSES.SECTION_ACTIONS });
         const statusPill = headerActions.createSpan({
@@ -254,7 +256,7 @@ export class AuthorProgressModal extends Modal {
         });
         const statusIcon = statusPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
         setIcon(statusIcon, 'share-2');
-        statusPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'Sharing output' });
+        statusPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.authorProgressModal.sharingOutputPill') });
 
         this.renderRefreshAlert(this.statusSectionEl);
 
@@ -271,7 +273,7 @@ export class AuthorProgressModal extends Modal {
         const headerRow = headerMain.createDiv({ cls: ERT_CLASSES.INLINE });
         const headerIcon = headerRow.createSpan({ cls: ERT_CLASSES.SECTION_ICON });
         setIcon(headerIcon, 'layers');
-        headerRow.createEl('h4', { text: 'Campaign status', cls: ERT_CLASSES.SECTION_TITLE });
+        headerRow.createEl('h4', { text: t('ui.authorProgressModal.campaignStatusHeading'), cls: ERT_CLASSES.SECTION_TITLE });
 
         const headerActions = header.createDiv({ cls: ERT_CLASSES.SECTION_ACTIONS });
         const proPill = headerActions.createSpan({
@@ -279,11 +281,11 @@ export class AuthorProgressModal extends Modal {
         });
         const proIcon = proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
         setIcon(proIcon, 'signature');
-        proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'Pro' });
+        proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.authorProgressModal.proPill') });
 
         const campaignTargets = this.getAprStatusTargets().filter(target => target.campaign);
         if (campaignTargets.length === 0) {
-            this.campaignsSectionEl.createDiv({ text: 'No campaigns yet.', cls: ERT_CLASSES.FIELD_NOTE });
+            this.campaignsSectionEl.createDiv({ text: t('ui.authorProgressModal.noCampaigns'), cls: ERT_CLASSES.FIELD_NOTE });
             return;
         }
 
@@ -305,16 +307,21 @@ export class AuthorProgressModal extends Modal {
         const settings = this.plugin.settings.authorProgress?.defaults;
         const statusGrid = container.createDiv({ cls: `ert-apr-status-grid${includeFormatColumn ? ' ert-apr-status-grid--with-format' : ''}` });
         const statusHeaderRow = statusGrid.createDiv({ cls: 'ert-apr-status-row ert-apr-status-row--header' });
+        const aprHeaderLabel = t('ui.authorProgressModal.columnApr');
+        const bookTitleHeaderLabel = t('ui.authorProgressModal.columnBookTitle');
+        const exportHeaderLabel = t('ui.authorProgressModal.columnExport');
+        const stageHeaderLabel = t('ui.authorProgressModal.columnStage');
+        const updateInHeaderLabel = t('ui.authorProgressModal.columnUpdateIn');
         const headerLabels = includeFormatColumn
-            ? ['APR', 'Book Title', 'Format', 'Export', 'Stage', 'Update In']
-            : ['APR', 'Book Title', 'Export', 'Stage', 'Update In'];
-        headerLabels.forEach(label => {
+            ? [aprHeaderLabel, bookTitleHeaderLabel, t('ui.authorProgressModal.formatLabel'), exportHeaderLabel, stageHeaderLabel, updateInHeaderLabel]
+            : [aprHeaderLabel, bookTitleHeaderLabel, exportHeaderLabel, stageHeaderLabel, updateInHeaderLabel];
+        headerLabels.forEach((label, index) => {
             const headerCell = statusHeaderRow.createDiv({
                 text: label,
                 cls: 'ert-apr-status-cell ert-apr-status-cell--header'
             });
-            if (label === 'APR') {
-                setTooltip(headerCell, 'APR = Author Progress Report (the generated export output).');
+            if (index === 0) {
+                setTooltip(headerCell, t('ui.authorProgressModal.aprColumnTooltip'));
             }
         });
 
@@ -334,7 +341,7 @@ export class AuthorProgressModal extends Modal {
                 cls: `${ERT_CLASSES.FIELD_NOTE} ert-apr-status-book`
             });
             if (target.projectPath) {
-                bookLabel.setAttr('title', `Project: ${target.projectPath}`);
+                bookLabel.setAttr('title', t('ui.authorProgressModal.projectTooltip', { path: target.projectPath }));
             }
 
             if (includeFormatColumn) {
@@ -375,11 +382,11 @@ export class AuthorProgressModal extends Modal {
             const isUnpublished = !lastPublishedDate?.trim();
             const isAuto = !!frequency && frequency !== 'manual';
             const updateInfo = isUnpublished
-                ? { label: 'Unpublished', reminder: undefined }
+                ? { label: t('ui.authorProgressModal.updateUnpublished'), reminder: undefined }
                 : target.campaign && !target.campaign.isActive
-                    ? { label: 'Paused', reminder: undefined }
+                    ? { label: t('ui.authorProgressModal.updatePaused'), reminder: undefined }
                     : (isAuto && !lastPublishedDate)
-                        ? { label: 'Auto update due', reminder: undefined }
+                        ? { label: t('ui.authorProgressModal.updateAutoDue'), reminder: undefined }
                         : this.getNextUpdateInfo({
                             frequency,
                             lastPublishedDate,
@@ -423,11 +430,11 @@ export class AuthorProgressModal extends Modal {
         // === TARGET ROW (two-column: label left, dropdown right) ===
         if (isProActive && campaigns.length > 0) {
             const targetRow = container.createDiv({ cls: 'ert-apr-target-row' });
-            targetRow.createSpan({ text: 'Target', cls: ERT_CLASSES.LABEL });
+            targetRow.createSpan({ text: t('ui.authorProgressModal.targetLabel'), cls: ERT_CLASSES.LABEL });
             const targetSelect = targetRow.createEl('select', { cls: 'dropdown ert-input' });
-            targetSelect.createEl('option', { value: 'default', text: 'Default report' });
+            targetSelect.createEl('option', { value: 'default', text: t('ui.authorProgressModal.defaultReportOption') });
             campaigns.forEach(campaign => {
-                targetSelect.createEl('option', { value: campaign.id, text: `Campaign: ${campaign.name}` });
+                targetSelect.createEl('option', { value: campaign.id, text: t('ui.authorProgressModal.campaignOption', { name: campaign.name }) });
             });
             targetSelect.value = this.selectedTargetId;
             targetSelect.onchange = async () => {
@@ -441,7 +448,7 @@ export class AuthorProgressModal extends Modal {
 
         // === FORMAT ROW (two-column: label left, dropdown right) ===
         const formatRow = container.createDiv({ cls: 'ert-apr-target-row' });
-        formatRow.createSpan({ text: 'Format', cls: ERT_CLASSES.LABEL });
+        formatRow.createSpan({ text: t('ui.authorProgressModal.formatLabel'), cls: ERT_CLASSES.LABEL });
         const formatSelect = formatRow.createEl('select', { cls: 'dropdown ert-input' });
         formatSelect.createEl('option', { value: 'png', text: 'PNG' });
         formatSelect.createEl('option', { value: 'svg', text: 'SVG' });
@@ -454,12 +461,12 @@ export class AuthorProgressModal extends Modal {
 
         // === EXPORT QUALITY ROW (two-column: label left, buttons right) ===
         const exportRow = container.createDiv({ cls: 'ert-apr-target-row' });
-        exportRow.createSpan({ text: 'Export quality', cls: ERT_CLASSES.LABEL });
+        exportRow.createSpan({ text: t('ui.authorProgressModal.exportQualityLabel'), cls: ERT_CLASSES.LABEL });
 
         const qualityOptions: Array<{ quality: AprExportQuality; label: string; detail: string }> = [
-            { quality: 'standard', label: 'Standard', detail: '1200px · ~150 KB' },
-            { quality: 'ultra', label: 'Ultra', detail: '2400px · ~400 KB' },
-            { quality: 'print', label: 'Print', detail: '4800px · ~1.2 MB' }
+            { quality: 'standard', label: t('ui.authorProgressModal.qualityStandard'), detail: '1200px · ~150 KB' },
+            { quality: 'ultra', label: t('ui.authorProgressModal.qualityUltra'), detail: '2400px · ~400 KB' },
+            { quality: 'print', label: t('ui.authorProgressModal.qualityPrint'), detail: '4800px · ~1.2 MB' }
         ];
 
         const qualityButtonRow = exportRow.createDiv({ cls: `ert-apr-size-buttons ${ERT_CLASSES.INLINE}` });
@@ -484,7 +491,7 @@ export class AuthorProgressModal extends Modal {
 
         // === OUTPUT FILE ===
         const pathRow = container.createDiv({ cls: 'ert-apr-target-row' });
-        pathRow.createSpan({ text: 'Output file', cls: ERT_CLASSES.LABEL });
+        pathRow.createSpan({ text: t('ui.authorProgressModal.outputFileLabel'), cls: ERT_CLASSES.LABEL });
         const defaultPath = buildDefaultEmbedPath({
             bookTitle: this.plugin.getActiveBookTitle(),
             updateFrequency: settings?.updateFrequency,
@@ -501,7 +508,7 @@ export class AuthorProgressModal extends Modal {
             attr: {
                 href: '#',
                 role: 'button',
-                title: `${defaultPath} — click to reveal in system file manager`
+                title: t('ui.authorProgressModal.revealTooltip', { path: defaultPath })
             }
         });
         pathDisplay.setText(this.summarizePath(defaultPath));
@@ -518,11 +525,11 @@ export class AuthorProgressModal extends Modal {
 
         // === TARGET ROW (two-column: label left, dropdown right) ===
         const targetRow = container.createDiv({ cls: 'ert-apr-target-row' });
-        targetRow.createSpan({ text: 'Target', cls: ERT_CLASSES.LABEL });
+        targetRow.createSpan({ text: t('ui.authorProgressModal.targetLabel'), cls: ERT_CLASSES.LABEL });
         const targetSelect = targetRow.createEl('select', { cls: 'dropdown ert-input' });
-        targetSelect.createEl('option', { value: 'default', text: 'Default report' });
+        targetSelect.createEl('option', { value: 'default', text: t('ui.authorProgressModal.defaultReportOption') });
         campaigns.forEach(campaign => {
-            targetSelect.createEl('option', { value: campaign.id, text: `Campaign: ${campaign.name}` });
+            targetSelect.createEl('option', { value: campaign.id, text: t('ui.authorProgressModal.campaignOption', { name: campaign.name }) });
         });
         targetSelect.value = this.selectedTargetId;
         targetSelect.onchange = async () => {
@@ -535,12 +542,12 @@ export class AuthorProgressModal extends Modal {
 
         const campaign = this.getSelectedCampaign() ?? campaigns.find(c => c.id === this.selectedTargetId);
         if (!campaign) {
-            container.createDiv({ text: 'Select a campaign to publish.', cls: ERT_CLASSES.FIELD_NOTE });
+            container.createDiv({ text: t('ui.authorProgressModal.selectCampaign'), cls: ERT_CLASSES.FIELD_NOTE });
             return;
         }
 
         const campaignFormatRow = container.createDiv({ cls: 'ert-apr-target-row' });
-        campaignFormatRow.createSpan({ text: 'Format', cls: ERT_CLASSES.LABEL });
+        campaignFormatRow.createSpan({ text: t('ui.authorProgressModal.formatLabel'), cls: ERT_CLASSES.LABEL });
         const campaignFormatSelect = campaignFormatRow.createEl('select', { cls: 'dropdown ert-input' });
         campaignFormatSelect.createEl('option', { value: 'png', text: 'PNG' });
         campaignFormatSelect.createEl('option', { value: 'svg', text: 'SVG' });
@@ -588,7 +595,7 @@ export class AuthorProgressModal extends Modal {
             text: bookTitle,
             cls: `${ERT_CLASSES.FIELD_NOTE} ert-apr-status-book`
         });
-        bookLabel.setAttr('title', `Project: ${projectPath}`);
+        bookLabel.setAttr('title', t('ui.authorProgressModal.projectTooltip', { path: projectPath }));
 
         const formatCell = statusRow.createDiv({ cls: 'ert-apr-status-cell' });
         const formatPill = formatCell.createSpan({
@@ -624,7 +631,7 @@ export class AuthorProgressModal extends Modal {
         const pathRow = container.createDiv({
             cls: `${ERT_CLASSES.ROW} ${ERT_CLASSES.ROW_COMPACT} ${ERT_CLASSES.ROW_MIDDLE_ALIGN}`
         });
-        pathRow.createSpan({ text: 'Output file', cls: ERT_CLASSES.LABEL });
+        pathRow.createSpan({ text: t('ui.authorProgressModal.outputFileLabel'), cls: ERT_CLASSES.LABEL });
         const pathValue = pathRow.createDiv({ cls: ERT_CLASSES.INLINE });
         const pathText = pathValue.createEl('a', {
             cls: `${ERT_CLASSES.FIELD_NOTE} ert-mono ert-truncate ert-apr-output-link`,
@@ -632,7 +639,7 @@ export class AuthorProgressModal extends Modal {
             attr: {
                 href: '#',
                 role: 'button',
-                title: `${campaign.exportPath} — click to reveal in system file manager`
+                title: t('ui.authorProgressModal.revealTooltip', { path: campaign.exportPath })
             }
         });
         pathText.addEventListener('click', (evt) => {
@@ -648,12 +655,13 @@ export class AuthorProgressModal extends Modal {
             if (!campaign) return;
             if (!this.service.campaignNeedsRefresh(campaign)) return;
             const daysSince = this.getDaysSince(campaign.lastPublishedDate);
-            const ageLabel = daysSince === null ? 'many' : `${daysSince}`;
             const alert = container.createDiv({ cls: ERT_CLASSES.INLINE });
             const alertIcon = alert.createSpan({ cls: ERT_CLASSES.ICON_BADGE });
             setIcon(alertIcon, 'alert-triangle');
             alert.createSpan({
-                text: `Campaign "${campaign.name}" is ${ageLabel} days old. Time to refresh!`,
+                text: daysSince === null
+                    ? t('ui.authorProgressModal.campaignStaleAlertUnknown', { name: campaign.name })
+                    : t('ui.authorProgressModal.campaignStaleAlert', { name: campaign.name, days: daysSince }),
                 cls: 'ert-section-desc ert-section-desc--alert'
             });
             return;
@@ -661,12 +669,13 @@ export class AuthorProgressModal extends Modal {
 
         if (!this.service.isStale()) return;
         const daysSince = this.getDaysSince(this.plugin.settings.authorProgress?.defaults.lastPublishedDate);
-        const ageLabel = daysSince === null ? 'many' : `${daysSince}`;
         const alert = container.createDiv({ cls: ERT_CLASSES.INLINE });
         const alertIcon = alert.createSpan({ cls: ERT_CLASSES.ICON_BADGE });
         setIcon(alertIcon, 'alert-triangle');
         alert.createSpan({
-            text: `Your report is ${ageLabel} days old. Time to refresh!`,
+            text: daysSince === null
+                ? t('ui.authorProgressModal.reportStaleAlertUnknown')
+                : t('ui.authorProgressModal.reportStaleAlert', { days: daysSince }),
             cls: 'ert-section-desc ert-section-desc--alert'
         });
     }
@@ -674,7 +683,7 @@ export class AuthorProgressModal extends Modal {
     private getTeaserScheduleLabel(campaign?: AuthorProgressCampaign): string {
         if (!campaign) return '—';
         const teaserSettings = campaign.teaserReveal ?? { enabled: true, preset: 'standard' as const };
-        if (!teaserSettings.enabled) return 'OFF';
+        if (!teaserSettings.enabled) return t('ui.authorProgressModal.teaserOff');
         const thresholds = getTeaserThresholds(teaserSettings.preset ?? 'standard', teaserSettings.customThresholds);
         return `${Math.round(thresholds.scenes)}/${Math.round(thresholds.colors)}/${Math.round(thresholds.full)}%`;
     }
@@ -717,7 +726,7 @@ export class AuthorProgressModal extends Modal {
         const defaultQuality = settings.aprExportQuality ?? 'standard';
         targets.push({
             id: 'default',
-            label: 'Default Report',
+            label: t('ui.authorProgressModal.defaultReportLabel'),
             bookTitle: defaultBookTitle,
             projectPath: defaultProjectPath,
             path: settings.exportPath || defaultPath,
@@ -746,8 +755,8 @@ export class AuthorProgressModal extends Modal {
     }
 
     private getQualityLabel(quality: AprExportQuality): string {
-        if (quality === 'print') return '4800px Prt';
-        return quality === 'ultra' ? '2400px Ult' : '1200px Std';
+        if (quality === 'print') return t('ui.authorProgressModal.qualityPrintShort');
+        return quality === 'ultra' ? t('ui.authorProgressModal.qualityUltraShort') : t('ui.authorProgressModal.qualityStandardShort');
     }
 
     private summarizePath(filePath: string, maxLength = 42): string {
@@ -777,29 +786,29 @@ export class AuthorProgressModal extends Modal {
      */
     private revealOutputFileInOS(vaultPath: string): void {
         if (!vaultPath) {
-            new Notice('No output file to reveal yet.');
+            new Notice(t('ui.authorProgressModal.noOutputFileNotice'));
             return;
         }
         const absolute = this.resolveAbsolutePath(vaultPath);
         if (!absolute) {
-            new Notice('Revealing files is not supported on this platform.');
+            new Notice(t('ui.authorProgressModal.revealUnsupportedNotice'));
             return;
         }
         const existing = this.app.vault.getAbstractFileByPath(normalizePath(vaultPath));
         if (!existing) {
-            new Notice('Output file not generated yet. Click Publish to create it.');
+            new Notice(t('ui.authorProgressModal.outputNotGeneratedNotice'));
             return;
         }
         try {
             const electron = (window as unknown as { require?: (name: string) => { shell?: { showItemInFolder: (p: string) => void } } }).require?.('electron');
             const shell = electron?.shell;
             if (!shell) {
-                new Notice('Cannot reveal file: system shell unavailable.');
+                new Notice(t('ui.authorProgressModal.shellUnavailableNotice'));
                 return;
             }
             shell.showItemInFolder(absolute);
         } catch {
-            new Notice('Could not reveal file in system file manager.');
+            new Notice(t('ui.authorProgressModal.revealFailedNotice'));
         }
     }
 
@@ -812,7 +821,7 @@ export class AuthorProgressModal extends Modal {
 
     private formatDays(value: number): string {
         const safe = Math.max(0, Math.round(value));
-        return safe === 1 ? '1 day' : `${safe} days`;
+        return tCount('day', safe);
     }
 
     private getNextUpdateInfo(opts: {
@@ -828,7 +837,7 @@ export class AuthorProgressModal extends Modal {
             const reminder = (opts.remindersEnabled && reminderDays > 0)
                 ? this.formatDays(Math.max(0, reminderDays - daysSince))
                 : undefined;
-            return { label: 'Manual', reminder };
+            return { label: t('ui.authorProgressModal.manualLabel'), reminder };
         }
 
         const intervalDays = frequency === 'daily' ? 1 : frequency === 'weekly' ? 7 : 30;
@@ -853,9 +862,9 @@ export class AuthorProgressModal extends Modal {
             const inheritedLevel = (defaultViewMode && defaultViewMode !== 'auto') ? defaultViewMode : 'full';
             const info = TEASER_LEVEL_INFO[inheritedLevel];
             return {
-                label: `DEFAULT · ${info.label.toUpperCase()}`,
+                label: t('ui.authorProgressModal.stageDefaultInherited', { stage: info.label.toUpperCase() }),
                 icon: info.icon,
-                tooltip: 'Teaser off — this campaign publishes the current Default Report view (set in social settings preview).'
+                tooltip: t('ui.authorProgressModal.teaserOffTooltip')
             };
         }
 
@@ -882,8 +891,8 @@ export class AuthorProgressModal extends Modal {
             ? `${info.label.toUpperCase()} ${progress}/${Math.round(nextThreshold)}`
             : info.label.toUpperCase();
         const tooltip = nextThreshold
-            ? `${progress}% complete. Next stage at ${Math.round(nextThreshold)}%. Adjust ranges in the Campaign Manager.`
-            : `${progress}% complete.`;
+            ? t('ui.authorProgressModal.stageTooltipNext', { progress, next: Math.round(nextThreshold) })
+            : t('ui.authorProgressModal.stageTooltipProgress', { progress });
 
         return { label, icon: info.icon, tooltip };
     }
@@ -968,32 +977,32 @@ export class AuthorProgressModal extends Modal {
         if (this.isCampaignTarget()) {
             const campaign = this.getSelectedCampaign();
             if (!campaign) {
-                new Notice('Campaign not found.');
+                new Notice(t('ui.authorProgressModal.campaignNotFoundNotice'));
                 return;
             }
             if (mode === 'dynamic') {
                 const result = await this.service.generateCampaignReport(campaign.id);
                 if (result) {
-                    new Notice(`Campaign "${campaign.name}" updated!`);
+                    new Notice(t('ui.authorProgressModal.campaignUpdatedNotice', { name: campaign.name }));
                 } else {
-                    new Notice('Failed to publish campaign.');
+                    new Notice(t('ui.authorProgressModal.campaignPublishFailedNotice'));
                 }
                 return;
             }
             const result = await this.service.generateCampaignSnapshot(campaign.id);
             if (result) {
-                new Notice(`Snapshot saved to ${result}`);
+                new Notice(t('ui.authorProgressModal.snapshotSavedNotice', { path: result }));
             } else {
-                new Notice('Failed to create campaign snapshot.');
+                new Notice(t('ui.authorProgressModal.campaignSnapshotFailedNotice'));
             }
             return;
         }
 
         const result = await this.service.generateReport(mode);
         if (result) {
-            new Notice(mode === 'dynamic' ? 'Live file updated!' : `Snapshot saved to ${result}`);
+            new Notice(mode === 'dynamic' ? t('ui.authorProgressModal.liveFileUpdatedNotice') : t('ui.authorProgressModal.snapshotSavedNotice', { path: result }));
         } else {
-            new Notice('Failed to generate report.');
+            new Notice(t('ui.authorProgressModal.reportFailedNotice'));
         }
     }
 

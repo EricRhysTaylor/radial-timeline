@@ -1,5 +1,5 @@
 import { App, ButtonComponent, Component, Modal, normalizePath, Notice, setIcon, Setting as Settings, setTooltip, TFile } from 'obsidian';
-import { t } from '../../../i18n';
+import { t, tCount } from '../../../i18n';
 import type RadialTimelinePlugin from '../../../main';
 import { describeStructuralStatus } from '../../../storyBeats/beatSystemStatus';
 import type { BeatSystemStructuralStatus } from '../../../storyBeats/types';
@@ -39,6 +39,16 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
 } & ({ noteType: 'Beat'; workspace: BeatAuditWorkspace }
     | { noteType: Exclude<NoteType, 'Beat'>; workspace?: never })): YamlAuditPanelControls {
     const { app, plugin, scope, noteType, beatSystemKey, workspace } = options;
+    const noteTypeWord = noteType === 'Beat'
+        ? t('ui.yamlAuditPanel.typeBeat')
+        : noteType === 'Backdrop' ? t('ui.yamlAuditPanel.typeBackdrop') : t('ui.yamlAuditPanel.typeScene');
+    const auditBadge = noteType === 'Beat'
+        ? t('ui.yamlAuditPanel.beatAuditBadge')
+        : noteType === 'Backdrop' ? t('ui.yamlAuditPanel.backdropAuditBadge') : t('ui.yamlAuditPanel.sceneAuditBadge');
+    /** Counted phrase for this panel's note type, e.g. "3 beat notes". */
+    const countTypeNotes = (count: number): string => noteType === 'Beat'
+        ? tCount('beatNote', count)
+        : noteType === 'Backdrop' ? tCount('backdropNote', count) : tCount('sceneNote', count);
     const panelScope = scope.addChild(new Component());
     let disposed = false;
     let auditRevision = 0;
@@ -107,11 +117,11 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
 
     // ─── Header row: two-column Setting layout (title+desc left, audit button right) ──
     const auditSetting = new Settings(parentEl)
-        .setName(`Check ${noteType.toLowerCase()} properties`)
+        .setName(t('ui.yamlAuditPanel.checkPropertiesName', { type: noteTypeWord }))
         .setDesc(
             isCustomBeatAudit()
-                ? 'Check beat notes for missing properties, empty custom-field values, IDs, and property order issues.'
-                : `Check ${noteType.toLowerCase()} notes for missing properties, unused fields, IDs, and property order issues.`
+                ? t('ui.yamlAuditPanel.checkCustomBeatDesc')
+                : t('ui.yamlAuditPanel.checkNotesDesc', { type: noteTypeWord })
         );
     auditSetting.settingEl.addClass('ert-audit-setting');
     auditSetting.infoEl.addClass('ert-audit-setting-info');
@@ -229,11 +239,11 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         } else if (preCheckScope.files.length === 0) {
             auditBtn.setDisabled(true);
             auditBtn.setButtonText(t('settings.beats.audit.checkNotesText'));
-            auditBtn.setTooltip(`No ${noteType.toLowerCase()} notes found. Create beat notes first.`);
+            auditBtn.setTooltip(t('ui.yamlAuditPanel.noNotesCreateFirst', { type: noteTypeWord }));
         } else {
             auditBtn.setDisabled(false);
             auditBtn.setButtonText(t('settings.beats.audit.checkNotesText'));
-            auditBtn.setTooltip(`Check ${preCheckScope.scopeSummary} for missing properties, unused fields, IDs, and layout issues`);
+            auditBtn.setTooltip(t('ui.yamlAuditPanel.checkScopeTooltip', { scope: preCheckScope.scopeSummary }));
         }
         auditPrimaryAction = () => runAudit();
     };
@@ -241,7 +251,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         auditBtn = button;
         button
             .setButtonText(t('settings.beats.audit.checkNotesText'))
-            .setTooltip(`Check all ${noteType.toLowerCase()} notes for missing properties, unused fields, IDs, and layout issues`)
+            .setTooltip(t('ui.yamlAuditPanel.checkAllTooltip', { type: noteTypeWord }))
             .onClick(() => auditPrimaryAction?.());
     });
 
@@ -299,10 +309,10 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             resultsEl.empty();
             resultsEl.classList.remove('ert-settings-hidden');
             resultsEl.createDiv({
-                text: `No ${noteType.toLowerCase()} notes found in the active book scope.`,
+                text: t('ui.yamlAuditPanel.noNotesInBookScope', { type: noteTypeWord }),
                 cls: 'ert-audit-clean'
             });
-            new Notice(`No ${noteType.toLowerCase()} notes found in scope: ${auditScopeSummary}`);
+            new Notice(t('ui.yamlAuditPanel.noNotesInScopeNotice', { type: noteTypeWord, scope: auditScopeSummary }));
             return;
         }
         structuralStatus = noteType === 'Beat'
@@ -341,7 +351,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             fillEmptyBtn?.classList.remove('ert-settings-hidden');
             fillEmptyBtn?.setAttribute(
                 'aria-label',
-                `Fill ${fillEmptyPlan.filledFields} empty value${fillEmptyPlan.filledFields !== 1 ? 's' : ''} in ${fillEmptyPlan.files.length} note${fillEmptyPlan.files.length !== 1 ? 's' : ''}`
+                t('ui.yamlAuditPanel.fillEmptyAria', { values: tCount('emptyValue', fillEmptyPlan.filledFields), notes: tCount('note', fillEmptyPlan.files.length) })
             );
         } else {
             fillEmptyBtn?.classList.add('ert-settings-hidden');
@@ -351,9 +361,10 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         if (deprecatedMigrationPlan) {
             const actionable = deprecatedMigrationPlan.moveCount + deprecatedMigrationPlan.removeEmptyCount;
             migrateDeprecatedBtn?.classList.remove('ert-settings-hidden');
+            const migrateVars = { count: actionable, legacyKey: deprecatedMigrationPlan.legacyKey, canonicalKey: deprecatedMigrationPlan.canonicalKey };
             migrateDeprecatedBtn?.setAttribute(
                 'aria-label',
-                `Migrate ${actionable} deprecated ${deprecatedMigrationPlan.legacyKey} field${actionable !== 1 ? 's' : ''} to ${deprecatedMigrationPlan.canonicalKey}`
+                actionable !== 1 ? t('ui.yamlAuditPanel.migrateAriaOther', migrateVars) : t('ui.yamlAuditPanel.migrateAriaOne', migrateVars)
             );
         } else {
             migrateDeprecatedBtn?.classList.add('ert-settings-hidden');
@@ -373,7 +384,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
                 deleteAdvancedBtn?.classList.remove('ert-settings-hidden');
                 deleteAdvancedBtn?.setAttribute(
                     'aria-label',
-                    `Delete custom fields from ${notesWithAdvKeys.length} note${notesWithAdvKeys.length !== 1 ? 's' : ''}`
+                    t('ui.yamlAuditPanel.deleteCustomAria', { notes: tCount('note', notesWithAdvKeys.length) })
                 );
             } else {
                 deleteAdvancedBtn?.classList.add('ert-settings-hidden');
@@ -390,7 +401,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             reorderBtn?.classList.remove('ert-settings-hidden');
             reorderBtn?.setAttribute(
                 'aria-label',
-                `Reorder properties in ${safeDriftNotes.length} note${safeDriftNotes.length !== 1 ? 's' : ''}`
+                t('ui.yamlAuditPanel.reorderAria', { notes: tCount('note', safeDriftNotes.length) })
             );
         } else {
             reorderBtn?.classList.add('ert-settings-hidden');
@@ -453,7 +464,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             'unsafe': t('settings.beats.audit.healthUnsafe'),
         };
         const headerEl = resultsEl.createDiv({ cls: 'ert-audit-result-header' });
-        headerEl.createSpan({ text: `Scope: ${getAuditScopeDisplay()}`, cls: 'ert-audit-summary' });
+        headerEl.createSpan({ text: t('ui.yamlAuditPanel.scopeLine', { scope: getAuditScopeDisplay() }), cls: 'ert-audit-summary' });
 
         const propertiesLine = resultsEl.createDiv({
             cls: healthLevel === 'clean'
@@ -461,8 +472,8 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
                 : `ert-audit-health ert-audit-health--${healthLevel}`
         });
         propertiesLine.textContent = healthLevel === 'clean'
-            ? 'Note properties: Clean — all notes match the current property rules.'
-            : `Note properties: ${healthLabels[healthLevel]}.`;
+            ? t('ui.yamlAuditPanel.propertiesClean')
+            : t('ui.yamlAuditPanel.propertiesHealth', { health: healthLabels[healthLevel] });
 
         for (const line of buildStructureStatusLines()) {
             resultsEl.createDiv({
@@ -473,13 +484,13 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
 
         if (s.notesMissingIds > 0) {
             resultsEl.createDiv({
-                text: `Critical: Missing IDs (${s.notesMissingIds})`,
+                text: t('ui.yamlAuditPanel.criticalMissingIds', { count: s.notesMissingIds }),
                 cls: 'ert-audit-critical-summary'
             });
         }
         if (s.notesDuplicateIds > 0) {
             resultsEl.createDiv({
-                text: `Critical: Duplicate IDs (${s.notesDuplicateIds})`,
+                text: t('ui.yamlAuditPanel.criticalDuplicateIds', { count: s.notesDuplicateIds }),
                 cls: 'ert-audit-critical-summary'
             });
         }
@@ -488,7 +499,9 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         if (s.notesUnsafe > 0) {
             const unsafeBanner = resultsEl.createDiv({ cls: 'ert-audit-safety-banner ert-audit-safety-banner--danger' });
             unsafeBanner.createSpan({
-                text: `${s.notesUnsafe} note${s.notesUnsafe !== 1 ? 's have' : ' has'} dangerous frontmatter (broken YAML, code injection, or suspicious content). These notes are excluded from all batch operations. Open each file to inspect and fix manually.`
+                text: s.notesUnsafe !== 1
+                    ? t('ui.yamlAuditPanel.unsafeBannerOther', { count: s.notesUnsafe })
+                    : t('ui.yamlAuditPanel.unsafeBannerOne', { count: s.notesUnsafe })
             });
         }
 
@@ -496,19 +509,21 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         if (s.notesSuspicious > 0) {
             const suspectBanner = resultsEl.createDiv({ cls: 'ert-audit-safety-banner ert-audit-safety-banner--warning' });
             suspectBanner.createSpan({
-                text: `${s.notesSuspicious} note${s.notesSuspicious !== 1 ? 's have' : ' has'} suspicious frontmatter — review before running batch operations.`
+                text: s.notesSuspicious !== 1
+                    ? t('ui.yamlAuditPanel.suspiciousBannerOther', { count: s.notesSuspicious })
+                    : t('ui.yamlAuditPanel.suspiciousBannerOne', { count: s.notesSuspicious })
             });
         }
 
         // Unread warning
         if (s.unreadNotes > 0) {
             const unreadEl = resultsEl.createDiv({ cls: 'ert-audit-unread-warn' });
-            unreadEl.textContent = `${s.unreadNotes} note${s.unreadNotes !== 1 ? 's' : ''} not yet indexed — rerun audit after Obsidian finishes indexing.`;
+            unreadEl.textContent = t('ui.yamlAuditPanel.unreadWarning', { notes: tCount('note', s.unreadNotes) });
         }
 
         if (emptyValueNotes > 0) {
             const emptyEl = resultsEl.createDiv({ cls: 'ert-audit-unread-warn' });
-            emptyEl.textContent = `${emptyValueNotes} note${emptyValueNotes !== 1 ? 's' : ''} have ${emptyValueFields} empty custom field value${emptyValueFields !== 1 ? 's' : ''}.`;
+            emptyEl.textContent = t('ui.yamlAuditPanel.emptyValuesWarning', { notes: tCount('note', emptyValueNotes), values: tCount('emptyCustomFieldValue', emptyValueFields) });
 
             const emptyDetails = resultsEl.createDiv({ cls: 'ert-audit-note-pills' });
             for (const entry of fillEmptyPlan!.entries.slice(0, AUDIT_OPEN_ALL_MAX)) {
@@ -518,11 +533,11 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
                     attr: { type: 'button' }
                 });
                 pillEl.createSpan({ text: entry.file.basename, cls: 'ert-audit-note-pill-name' });
-                pillEl.createSpan({ text: ` — empty: ${keys}`, cls: 'ert-audit-note-pill-reason' });
-                setTooltip(pillEl, `${entry.file.basename}: empty values in ${keys}`);
+                pillEl.createSpan({ text: ` — ${t('ui.yamlAuditPanel.emptyKeysPill', { keys })}`, cls: 'ert-audit-note-pill-reason' });
+                setTooltip(pillEl, t('ui.yamlAuditPanel.emptyValuesTooltip', { name: entry.file.basename, keys }));
                 pillEl.addEventListener('click', () => { void (async () => {
                     await openOrRevealFile(app, entry.file, false);
-                    new Notice(`Empty values: ${keys}`);
+                    new Notice(t('ui.yamlAuditPanel.emptyValuesNotice', { keys }));
                 })(); });
             }
         }
@@ -562,19 +577,19 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             entries: group.entries,
         }));
         const chips: ChipConfig[] = [
-            { key: 'missing-ids', label: 'Critical: Missing IDs', count: s.notesMissingIds, kind: 'critical',
+            { key: 'missing-ids', label: 'Critical: Missing IDs', displayText: t('ui.yamlAuditPanel.chipMissingIds', { count: s.notesMissingIds }), count: s.notesMissingIds, kind: 'critical',
               entries: auditResult.notes.filter(n => n.missingReferenceId) },
-            { key: 'duplicate-ids', label: 'Critical: Duplicate IDs', count: s.notesDuplicateIds, kind: 'duplicate',
+            { key: 'duplicate-ids', label: 'Critical: Duplicate IDs', displayText: t('ui.yamlAuditPanel.chipDuplicateIds', { count: s.notesDuplicateIds }), count: s.notesDuplicateIds, kind: 'duplicate',
               entries: auditResult.notes.filter(n => !!n.duplicateReferenceId) },
-            { key: 'unsafe', label: 'Unsafe', count: s.notesUnsafe, kind: 'unsafe',
+            { key: 'unsafe', label: 'Unsafe', displayText: t('ui.yamlAuditPanel.chipUnsafe', { count: s.notesUnsafe }), count: s.notesUnsafe, kind: 'unsafe',
               entries: auditResult.notes.filter(n => n.safetyResult?.status === 'dangerous') },
-            { key: 'suspicious', label: 'Suspicious', count: s.notesSuspicious, kind: 'suspicious',
+            { key: 'suspicious', label: 'Suspicious', displayText: t('ui.yamlAuditPanel.chipSuspicious', { count: s.notesSuspicious }), count: s.notesSuspicious, kind: 'suspicious',
               entries: auditResult.notes.filter(n => n.safetyResult?.status === 'suspicious') },
-            { key: 'missing', label: 'Missing properties', count: s.notesWithMissing, kind: 'missing',
+            { key: 'missing', label: 'Missing properties', displayText: t('ui.yamlAuditPanel.chipMissingProperties', { count: s.notesWithMissing }), count: s.notesWithMissing, kind: 'missing',
               entries: auditResult.notes.filter(n => n.missingFields.length > 0) },
-            { key: 'extra', label: 'Other plugin keys (read-only)', count: s.notesWithExtra, kind: 'extra',
+            { key: 'extra', label: 'Other plugin keys (read-only)', displayText: t('ui.yamlAuditPanel.chipOtherKeys', { count: s.notesWithExtra }), count: s.notesWithExtra, kind: 'extra',
               entries: auditResult.notes.filter(n => n.extraKeys.length > 0) },
-            { key: 'drift', label: 'Layout cleanup', count: s.notesWithDrift, kind: 'drift',
+            { key: 'drift', label: 'Layout cleanup', displayText: t('ui.yamlAuditPanel.chipLayoutCleanup', { count: s.notesWithDrift }), count: s.notesWithDrift, kind: 'drift',
               entries: auditResult.notes.filter(n => n.orderDrift) },
             ...warningChips,
         ];
@@ -602,7 +617,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
                 });
             }
             if (effectiveClean > 0) {
-                chipsEl.createSpan({ text: `${effectiveClean} clean`, cls: 'ert-chip ert-audit-chip ert-audit-chip--clean' });
+                chipsEl.createSpan({ text: t('ui.yamlAuditPanel.cleanChip', { count: effectiveClean }), cls: 'ert-chip ert-audit-chip ert-audit-chip--clean' });
             }
         };
 
@@ -627,18 +642,18 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
                 let reason: string;
                 switch (activeChip.kind) {
                     case 'critical':
-                        reason = 'Missing reference ID';
+                        reason = t('ui.yamlAuditPanel.missingReferenceId');
                         break;
                     case 'duplicate':
                         reason = entry.duplicateReferenceId
-                            ? `Duplicate Reference ID: ${entry.duplicateReferenceId}`
-                            : 'Duplicate Reference ID';
+                            ? t('ui.yamlAuditPanel.duplicateReferenceIdValue', { id: entry.duplicateReferenceId })
+                            : t('ui.yamlAuditPanel.duplicateReferenceId');
                         break;
                     case 'missing':
                         reason = entry.missingFields.join(', ');
                         break;
                     case 'extra':
-                        reason = `Not managed by Radial Timeline: ${entry.extraKeys.join(', ')}`;
+                        reason = t('ui.yamlAuditPanel.notManagedReason', { keys: entry.extraKeys.join(', ') });
                         break;
                     case 'warning':
                         reason = formatSemanticWarningReason(activeChip.warningType
@@ -649,10 +664,10 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
                     case 'suspicious':
                         reason = entry.safetyResult
                             ? entry.safetyResult.issues.map(i => i.message).join(' | ')
-                            : 'safety issue';
+                            : t('ui.yamlAuditPanel.safetyIssueReason');
                         break;
                     default:
-                        reason = 'layout cleanup needed';
+                        reason = t('ui.yamlAuditPanel.layoutCleanupReason');
                 }
                 const reasonShort = reason.length > 40 ? reason.slice(0, 39) + '…' : reason;
                 const pillStyleKind = activeChip.kind === 'duplicate' ? 'critical' : activeChip.kind;
@@ -680,15 +695,15 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
                 pillEl.addEventListener('click', () => { void (async () => {
                     await openOrRevealFile(app, entry.file, false);
                     if (activeChip.kind === 'critical') {
-                        new Notice('Missing reference ID');
+                        new Notice(t('ui.yamlAuditPanel.missingReferenceId'));
                     } else if (activeChip.kind === 'duplicate') {
                         new Notice(reason);
                     } else if (activeChip.kind === 'unsafe' || activeChip.kind === 'suspicious') {
-                        new Notice(`Review note: ${reason}`);
+                        new Notice(t('ui.yamlAuditPanel.reviewNoteNotice', { reason }));
                     } else if (entry.missingFields.length > 0) {
-                        new Notice(`Missing properties: ${entry.missingFields.join(', ')}`);
+                        new Notice(t('ui.yamlAuditPanel.missingPropertiesNotice', { fields: entry.missingFields.join(', ') }));
                     } else if (entry.semanticWarnings.length > 0) {
-                        new Notice(`Warnings: ${entry.semanticWarnings.join(' | ')}`);
+                        new Notice(t('ui.yamlAuditPanel.warningsNotice', { warnings: entry.semanticWarnings.join(' | ') }));
                     }
                 })(); });
             }
@@ -696,11 +711,11 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             // Pagination + Open all row
             const navEl = detailsEl.createDiv({ cls: 'ert-audit-pagination' });
             const paginationLabel = navEl.createSpan({ cls: 'ert-audit-pagination-label' });
-            paginationLabel.textContent = `${start + 1}–${end} of ${total}`;
+            paginationLabel.textContent = t('ui.yamlAuditPanel.paginationLabel', { start: start + 1, end, total });
 
             if (page > 0) {
                 const prevBtn = navEl.createEl('button', {
-                    text: '← Prev',
+                    text: t('ui.yamlAuditPanel.prevButton'),
                     cls: 'ert-audit-nav-btn',
                     attr: { type: 'button' }
                 });
@@ -708,7 +723,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             }
             if (end < total) {
                 const nextBtn = navEl.createEl('button', {
-                    text: `Next ${Math.min(AUDIT_PAGE_SIZE, total - end)} →`,
+                    text: t('ui.yamlAuditPanel.nextButton', { count: Math.min(AUDIT_PAGE_SIZE, total - end) }),
                     cls: 'ert-audit-nav-btn',
                     attr: { type: 'button' }
                 });
@@ -716,7 +731,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             }
             if (total <= AUDIT_OPEN_ALL_MAX && total > 1) {
                 const openAllBtn = navEl.createEl('button', {
-                    text: `Open all ${total}`,
+                    text: t('ui.yamlAuditPanel.openAllButton', { count: total }),
                     cls: 'ert-audit-nav-btn',
                     attr: { type: 'button' }
                 });
@@ -742,13 +757,13 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         if (targetFiles.length === 0) return;
 
         const confirmed = await confirmAudit(app, {
-            badge: `${noteType.toUpperCase()} AUDIT`,
-            title: 'Insert missing IDs',
-            subtitle: `Insert Reference IDs into ${targetFiles.length} ${noteType.toLowerCase()} note${targetFiles.length !== 1 ? 's' : ''}.`,
+            badge: auditBadge,
+            title: t('settings.beats.audit.insertIdsText'),
+            subtitle: t('ui.yamlAuditPanel.insertIdsSubtitle', { notes: countTypeNotes(targetFiles.length) }),
             scope: auditScopeSummary,
-            action: 'Insert IDs',
+            action: t('ui.yamlAuditPanel.insertIdsAction'),
             renderBody: body => {
-                body.createDiv({ text: 'Only notes missing a Reference ID will be updated. Existing IDs are preserved.' });
+                body.createDiv({ text: t('ui.yamlAuditPanel.insertIdsBody') });
             }
         });
 
@@ -761,10 +776,10 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         });
 
         const parts: string[] = [];
-        if (result.updated > 0) parts.push(`Updated ${result.updated} note${result.updated !== 1 ? 's' : ''}`);
-        if (result.skipped > 0) parts.push(`${result.skipped} already had IDs`);
-        if (result.failed > 0) parts.push(`${result.failed} failed`);
-        new Notice(parts.join(', ') || 'No changes made.');
+        if (result.updated > 0) parts.push(t('ui.yamlAuditPanel.updatedNotes', { notes: tCount('note', result.updated) }));
+        if (result.skipped > 0) parts.push(t('ui.yamlAuditPanel.alreadyHadIds', { count: result.skipped }));
+        if (result.failed > 0) parts.push(t('ui.yamlAuditPanel.failedCount', { count: result.failed }));
+        new Notice(parts.join(', ') || t('ui.yamlAuditPanel.noChangesMade'));
 
         scheduleAuditRefresh(runAudit);
     };
@@ -783,13 +798,13 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         ).size;
 
         const confirmed = await confirmAudit(app, {
-            badge: `${noteType.toUpperCase()} AUDIT`,
-            title: 'Fix duplicate IDs within this book',
-            subtitle: `Resolve ${duplicateIdCount} duplicate Reference ID group${duplicateIdCount !== 1 ? 's' : ''} across ${targetFiles.length} ${noteType.toLowerCase()} note${targetFiles.length !== 1 ? 's' : ''}.`,
+            badge: auditBadge,
+            title: t('settings.beats.audit.fixDuplicateIdsText'),
+            subtitle: t('ui.yamlAuditPanel.fixDuplicatesSubtitle', { groups: tCount('duplicateIdGroup', duplicateIdCount), notes: countTypeNotes(targetFiles.length) }),
             scope: auditScopeSummary,
-            action: 'Fix duplicates',
+            action: t('ui.yamlAuditPanel.fixDuplicatesAction'),
             renderBody: body => {
-                body.createDiv({ text: 'For each duplicate ID, one note keeps the existing ID and the others receive new IDs.' });
+                body.createDiv({ text: t('ui.yamlAuditPanel.fixDuplicatesBody') });
             }
         });
 
@@ -802,10 +817,10 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         });
 
         const parts: string[] = [];
-        if (result.updated > 0) parts.push(`Updated ${result.updated} note${result.updated !== 1 ? 's' : ''}`);
-        if (result.skipped > 0) parts.push(`${result.skipped} unchanged`);
-        if (result.failed > 0) parts.push(`${result.failed} failed`);
-        new Notice(parts.join(', ') || 'No changes made.');
+        if (result.updated > 0) parts.push(t('ui.yamlAuditPanel.updatedNotes', { notes: tCount('note', result.updated) }));
+        if (result.skipped > 0) parts.push(t('ui.yamlAuditPanel.unchangedCount', { count: result.skipped }));
+        if (result.failed > 0) parts.push(t('ui.yamlAuditPanel.failedCount', { count: result.failed }));
+        new Notice(parts.join(', ') || t('ui.yamlAuditPanel.noChangesMade'));
 
         scheduleAuditRefresh(runAudit);
     };
@@ -830,17 +845,17 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
 
         // Confirmation modal
         const confirmed = await confirmAudit(app, {
-            badge: `${noteType.toUpperCase()} AUDIT`,
-            title: 'Insert missing fields',
-            subtitle: `Insert fields into ${targetFiles.length} ${noteType.toLowerCase()} note${targetFiles.length !== 1 ? 's' : ''}.`,
+            badge: auditBadge,
+            title: t('settings.beats.audit.insertFieldsText'),
+            subtitle: t('ui.yamlAuditPanel.insertFieldsSubtitle', { notes: countTypeNotes(targetFiles.length) }),
             scope: auditScopeSummary,
-            action: 'Insert',
+            action: t('ui.yamlAuditPanel.insertFieldsAction'),
             renderBody: body => {
-                body.createDiv({ text: 'The following fields will be added (existing values are never overwritten):' });
+                body.createDiv({ text: t('ui.yamlAuditPanel.insertFieldsBody') });
                 const fieldListEl = body.createEl('ul');
                 for (const [key, val] of Object.entries(fieldsToInsert)) {
                     const valStr = Array.isArray(val) ? val.join(', ') : val;
-                    fieldListEl.createEl('li', { text: valStr ? `${key}: ${valStr}` : `${key}: (empty)` });
+                    fieldListEl.createEl('li', { text: valStr ? `${key}: ${valStr}` : t('ui.yamlAuditPanel.emptyFieldValue', { key }) });
                 }
             }
         });
@@ -863,15 +878,17 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
 
         const parts: string[] = [];
         if (beatPurposeMigration && beatPurposeMigration.movedToPurpose > 0) {
-            parts.push(`Migrated ${beatPurposeMigration.movedToPurpose} Description→Purpose`);
+            parts.push(t('ui.yamlAuditPanel.migratedDescriptionToPurpose', { count: beatPurposeMigration.movedToPurpose }));
         }
         if (beatPurposeMigration && beatPurposeMigration.removedDescription > 0) {
-            parts.push(`Removed ${beatPurposeMigration.removedDescription} Description key${beatPurposeMigration.removedDescription !== 1 ? 's' : ''}`);
+            parts.push(beatPurposeMigration.removedDescription !== 1
+                ? t('ui.yamlAuditPanel.removedDescriptionKeysOther', { count: beatPurposeMigration.removedDescription })
+                : t('ui.yamlAuditPanel.removedDescriptionKeysOne', { count: beatPurposeMigration.removedDescription }));
         }
-        if (result.updated > 0) parts.push(`Updated ${result.updated} note${result.updated !== 1 ? 's' : ''}`);
-        if (result.skipped > 0) parts.push(`${result.skipped} already had all fields`);
-        if (result.failed > 0) parts.push(`${result.failed} failed`);
-        new Notice(parts.join(', ') || 'No changes made.');
+        if (result.updated > 0) parts.push(t('ui.yamlAuditPanel.updatedNotes', { notes: tCount('note', result.updated) }));
+        if (result.skipped > 0) parts.push(t('ui.yamlAuditPanel.alreadyHadAllFields', { count: result.skipped }));
+        if (result.failed > 0) parts.push(t('ui.yamlAuditPanel.failedCount', { count: result.failed }));
+        new Notice(parts.join(', ') || t('ui.yamlAuditPanel.noChangesMade'));
 
         // Wait for Obsidian metadata cache to re-index before refreshing audit
         scheduleAuditRefresh(runAudit);
@@ -879,22 +896,22 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
 
     const handleFillEmptyValues = async () => {
         if (!isBeatAuditWriteReady()) {
-            new Notice('Save the active custom set before filling empty values.');
+            new Notice(t('ui.yamlAuditPanel.saveSetBeforeFillNotice'));
             return;
         }
         if (!fillEmptyPlan) {
-            new Notice('No empty beat fields with defaults found in the active book folder.');
+            new Notice(t('ui.yamlAuditPanel.noEmptyFieldsNotice'));
             return;
         }
 
         const confirmed = await confirmAudit(app, {
-            badge: 'BEAT AUDIT',
-            title: 'Fill empty values',
-            subtitle: `Fill ${fillEmptyPlan.filledFields} empty value${fillEmptyPlan.filledFields !== 1 ? 's' : ''} in ${fillEmptyPlan.files.length} beat note${fillEmptyPlan.files.length !== 1 ? 's' : ''}.`,
+            badge: t('ui.yamlAuditPanel.beatAuditBadge'),
+            title: t('settings.beats.audit.fillEmptyText'),
+            subtitle: t('ui.yamlAuditPanel.fillEmptySubtitle', { values: tCount('emptyValue', fillEmptyPlan.filledFields), notes: tCount('beatNote', fillEmptyPlan.files.length) }),
             scope: fillEmptyPlan.sourcePath,
-            action: 'Fill',
+            action: t('ui.yamlAuditPanel.fillAction'),
             renderBody: body => {
-                body.createDiv({ text: 'Only existing empty keys are filled. No keys are added, removed, or overwritten.' });
+                body.createDiv({ text: t('ui.yamlAuditPanel.fillEmptyBody') });
                 const fieldListEl = body.createEl('ul');
                 fillEmptyPlan!.touchedKeys.forEach((key) => {
                     const val = fillEmptyPlan!.fieldsToInsert[key];
@@ -913,11 +930,11 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         });
 
         const parts: string[] = [];
-        if (result.updated > 0) parts.push(`Updated ${result.updated} note${result.updated !== 1 ? 's' : ''}`);
-        if (result.filledFields > 0) parts.push(`Filled ${result.filledFields} value${result.filledFields !== 1 ? 's' : ''}`);
-        if (result.skipped > 0) parts.push(`${result.skipped} unchanged`);
-        if (result.failed > 0) parts.push(`${result.failed} failed`);
-        new Notice(parts.join(', ') || 'No changes made.');
+        if (result.updated > 0) parts.push(t('ui.yamlAuditPanel.updatedNotes', { notes: tCount('note', result.updated) }));
+        if (result.filledFields > 0) parts.push(t('ui.yamlAuditPanel.filledValues', { values: tCount('value', result.filledFields) }));
+        if (result.skipped > 0) parts.push(t('ui.yamlAuditPanel.unchangedCount', { count: result.skipped }));
+        if (result.failed > 0) parts.push(t('ui.yamlAuditPanel.failedCount', { count: result.failed }));
+        new Notice(parts.join(', ') || t('ui.yamlAuditPanel.noChangesMade'));
 
         // Wait for Obsidian metadata cache to re-index before refreshing audit
         scheduleAuditRefresh(runAudit);
@@ -925,7 +942,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
 
     const handleMigrateDeprecatedFields = async () => {
         if (!deprecatedMigrationPlan) {
-            new Notice('No deprecated field migrations available.');
+            new Notice(t('ui.yamlAuditPanel.noMigrationsNotice'));
             return;
         }
 
@@ -933,25 +950,27 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         const actionableCount = moveCount + removeEmptyCount;
 
         const confirmed = await confirmAudit(app, {
-            badge: 'YAML MANAGER',
-            title: 'Migrate deprecated fields',
-            subtitle: `Migrate ${actionableCount} deprecated field value${actionableCount !== 1 ? 's' : ''} from ${legacyKey} to ${canonicalKey}.`,
+            badge: t('ui.yamlAuditPanel.yamlManagerBadge'),
+            title: t('settings.beats.audit.migrateDeprecatedText'),
+            subtitle: t('ui.yamlAuditPanel.migrateSubtitle', { values: tCount('deprecatedFieldValue', actionableCount), legacyKey, canonicalKey }),
             scope: auditScopeSummary,
-            action: 'Migrate',
+            action: t('ui.yamlAuditPanel.migrateAction'),
             renderBody: body => {
                 if (moveCount > 0) {
                     body.createDiv({
-                        text: `${moveCount} note${moveCount !== 1 ? 's' : ''}: copy ${legacyKey} content into ${canonicalKey}, then remove ${legacyKey}.`
+                        text: t('ui.yamlAuditPanel.migrateMoveLine', { notes: tCount('note', moveCount), legacyKey, canonicalKey })
                     });
                 }
                 if (removeEmptyCount > 0) {
                     body.createDiv({
-                        text: `${removeEmptyCount} note${removeEmptyCount !== 1 ? 's' : ''}: remove empty ${legacyKey} key${removeEmptyCount !== 1 ? 's' : ''}.`
+                        text: removeEmptyCount !== 1
+                            ? t('ui.yamlAuditPanel.migrateRemoveEmptyLineOther', { count: removeEmptyCount, legacyKey })
+                            : t('ui.yamlAuditPanel.migrateRemoveEmptyLineOne', { count: removeEmptyCount, legacyKey })
                     });
                 }
                 if (preservedCount > 0) {
                     body.createDiv({
-                        text: `${preservedCount} note${preservedCount !== 1 ? 's' : ''}: ${legacyKey} preserved because ${canonicalKey} already has content.`
+                        text: t('ui.yamlAuditPanel.migratePreservedLine', { notes: tCount('note', preservedCount), legacyKey, canonicalKey })
                     });
                 }
             }
@@ -962,17 +981,21 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         if (noteType === 'Beat') {
             const migrated = await runBeatDescriptionToPurposeMigration({ app, files });
             const parts: string[] = [];
-            if (migrated.movedToPurpose > 0) parts.push(`Migrated ${migrated.movedToPurpose} ${legacyKey}→${canonicalKey}`);
-            if (migrated.removedDescription > 0) parts.push(`Removed ${migrated.removedDescription} ${legacyKey} key${migrated.removedDescription !== 1 ? 's' : ''}`);
-            if (migrated.failed > 0) parts.push(`${migrated.failed} failed`);
-            new Notice(parts.join(', ') || 'No changes made.');
+            if (migrated.movedToPurpose > 0) parts.push(t('ui.yamlAuditPanel.migratedKeys', { count: migrated.movedToPurpose, legacyKey, canonicalKey }));
+            if (migrated.removedDescription > 0) parts.push(migrated.removedDescription !== 1
+                ? t('ui.yamlAuditPanel.removedKeysOther', { count: migrated.removedDescription, legacyKey })
+                : t('ui.yamlAuditPanel.removedKeysOne', { count: migrated.removedDescription, legacyKey }));
+            if (migrated.failed > 0) parts.push(t('ui.yamlAuditPanel.failedCount', { count: migrated.failed }));
+            new Notice(parts.join(', ') || t('ui.yamlAuditPanel.noChangesMade'));
         } else if (noteType === 'Backdrop') {
             const migrated = await runBackdropSynopsisToContextMigration({ app, files });
             const parts: string[] = [];
-            if (migrated.movedToContext > 0) parts.push(`Migrated ${migrated.movedToContext} ${legacyKey}→${canonicalKey}`);
-            if (migrated.removedSynopsis > 0) parts.push(`Removed ${migrated.removedSynopsis} ${legacyKey} key${migrated.removedSynopsis !== 1 ? 's' : ''}`);
-            if (migrated.failed > 0) parts.push(`${migrated.failed} failed`);
-            new Notice(parts.join(', ') || 'No changes made.');
+            if (migrated.movedToContext > 0) parts.push(t('ui.yamlAuditPanel.migratedKeys', { count: migrated.movedToContext, legacyKey, canonicalKey }));
+            if (migrated.removedSynopsis > 0) parts.push(migrated.removedSynopsis !== 1
+                ? t('ui.yamlAuditPanel.removedKeysOther', { count: migrated.removedSynopsis, legacyKey })
+                : t('ui.yamlAuditPanel.removedKeysOne', { count: migrated.removedSynopsis, legacyKey }));
+            if (migrated.failed > 0) parts.push(t('ui.yamlAuditPanel.failedCount', { count: migrated.failed }));
+            new Notice(parts.join(', ') || t('ui.yamlAuditPanel.noChangesMade'));
         }
 
         scheduleAuditRefresh(runAudit);
@@ -1036,50 +1059,52 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             modal.contentEl.addClass('ert-modal-container', 'ert-stack');
 
             const header = modal.contentEl.createDiv({ cls: 'ert-modal-header' });
-            header.createSpan({ cls: 'ert-modal-badge', text: 'YAML MANAGER' });
-            header.createDiv({ cls: 'ert-modal-title', text: 'Delete custom fields' });
+            header.createSpan({ cls: 'ert-modal-badge', text: t('ui.yamlAuditPanel.yamlManagerBadge') });
+            header.createDiv({ cls: 'ert-modal-title', text: t('settings.beats.audit.deleteCustomText') });
             header.createDiv({
                 cls: 'ert-modal-subtitle',
-                text: `Remove ${totalFieldCount} custom field${totalFieldCount !== 1 ? 's' : ''} from ${targetNotes.length} ${noteType.toLowerCase()} note${targetNotes.length !== 1 ? 's' : ''}. Base fields are never touched.`
+                text: t('ui.yamlAuditPanel.deleteSubtitle', { fields: tCount('customField', totalFieldCount), notes: countTypeNotes(targetNotes.length) })
             });
 
             if (unsafeSkippedCount > 0) {
                 const banner = modal.contentEl.createDiv({ cls: 'ert-audit-safety-banner ert-audit-safety-banner--danger' });
-                banner.createSpan({ text: `${unsafeSkippedCount} note${unsafeSkippedCount !== 1 ? 's' : ''} with unsafe frontmatter excluded from this operation.` });
+                banner.createSpan({ text: t('ui.yamlAuditPanel.unsafeExcluded', { notes: tCount('note', unsafeSkippedCount) }) });
             }
 
             const suspiciousCount = targetNotes.filter(n => n.safetyResult?.status === 'suspicious').length;
             if (suspiciousCount > 0) {
                 const banner = modal.contentEl.createDiv({ cls: 'ert-audit-safety-banner ert-audit-safety-banner--warning' });
-                banner.createSpan({ text: `${suspiciousCount} note${suspiciousCount !== 1 ? 's have' : ' has'} suspicious frontmatter — review carefully.` });
+                banner.createSpan({ text: suspiciousCount !== 1
+                    ? t('ui.yamlAuditPanel.suspiciousReviewOther', { count: suspiciousCount })
+                    : t('ui.yamlAuditPanel.suspiciousReviewOne', { count: suspiciousCount }) });
             }
 
             const body = modal.contentEl.createDiv({ cls: ['ert-panel', 'ert-panel--glass'] });
-            body.createDiv({ text: `Scope: ${auditScopeSummary}`, cls: 'ert-modal-subtitle' });
+            body.createDiv({ text: t('ui.yamlAuditPanel.scopeLine', { scope: auditScopeSummary }), cls: 'ert-modal-subtitle' });
 
             if (emptyFieldCount > 0) {
-                body.createDiv({ text: `${emptyFieldCount} empty field${emptyFieldCount !== 1 ? 's' : ''} will be removed (no data loss).` });
+                body.createDiv({ text: t('ui.yamlAuditPanel.emptyFieldsRemoved', { fields: tCount('emptyField', emptyFieldCount) }) });
             }
 
             if (hasValuedFields) {
                 const warningEl = body.createDiv({ cls: 'ert-audit-safety-banner ert-audit-safety-banner--warning' });
                 warningEl.createDiv({
-                    text: `${valuedFieldCount} field${valuedFieldCount !== 1 ? 's' : ''} contain values that will be permanently deleted:`
+                    text: t('ui.yamlAuditPanel.valuedFieldsWarning', { fields: tCount('field', valuedFieldCount) })
                 });
                 const sampleList = warningEl.createEl('ul');
                 for (const sample of valuedFieldSamples) {
                     sampleList.createEl('li', { text: `${sample.key}: ${sample.value}` });
                 }
                 if (valuedFieldCount > valuedFieldSamples.length) {
-                    sampleList.createEl('li', { text: `... and ${valuedFieldCount - valuedFieldSamples.length} more` });
+                    sampleList.createEl('li', { text: t('ui.yamlAuditPanel.andMore', { count: valuedFieldCount - valuedFieldSamples.length }) });
                 }
                 body.createDiv({
-                    text: 'A deletion snapshot file will be created before this destructive step.'
+                    text: t('ui.yamlAuditPanel.snapshotNote')
                 });
             }
 
             const fieldListEl = body.createDiv();
-            fieldListEl.createDiv({ text: 'Custom fields to delete:', cls: 'ert-modal-subtitle' });
+            fieldListEl.createDiv({ text: t('ui.yamlAuditPanel.fieldsToDelete'), cls: 'ert-modal-subtitle' });
             const ul = fieldListEl.createEl('ul');
             for (const key of deletableAdvKeys) {
                 ul.createEl('li', { text: key });
@@ -1087,24 +1112,24 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
 
             // Base fields preserved notice
             const preserveNotice = body.createDiv({ cls: 'ert-modal-subtitle ert-modal-subtitle--quiet' });
-            preserveNotice.setText(`Base fields preserved: ${[...baseKeySet].join(', ')}`);
+            preserveNotice.setText(t('ui.yamlAuditPanel.baseFieldsPreserved', { keys: [...baseKeySet].join(', ') }));
 
             // Typed confirmation for valued fields
             let confirmInput: HTMLInputElement | undefined;
             let acknowledgeInput: HTMLInputElement | undefined;
             if (hasValuedFields) {
                 const confirmEl = body.createDiv({ cls: 'ert-modal-confirm-type' });
-                confirmEl.createDiv({ text: `Type ${deletePhrase} to confirm:`, cls: 'ert-modal-subtitle' });
+                confirmEl.createDiv({ text: t('ui.yamlAuditPanel.typeToConfirm', { phrase: deletePhrase }), cls: 'ert-modal-subtitle' });
                 confirmInput = confirmEl.createEl('input', { type: 'text', attr: { placeholder: deletePhrase } });
                 const acknowledgeEl = body.createDiv({ cls: 'ert-modal-confirm-type' });
                 const acknowledgeLabel = acknowledgeEl.createEl('label');
                 acknowledgeInput = acknowledgeLabel.createEl('input', { type: 'checkbox' });
-                acknowledgeLabel.appendText(' I understand non-empty values will be permanently deleted.');
+                acknowledgeLabel.appendText(` ${t('ui.yamlAuditPanel.acknowledgeDelete')}`);
             }
 
             const footer = modal.contentEl.createDiv({ cls: 'ert-modal-actions' });
             const deleteBtn = new ButtonComponent(footer)
-                .setButtonText('Delete custom fields')
+                .setButtonText(t('settings.beats.audit.deleteCustomText'))
                 .setDestructive()
                 .onClick(() => {
                     if (hasValuedFields) {
@@ -1131,7 +1156,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
                 confirmInput?.addEventListener('input', updateDeleteState);
                 acknowledgeInput?.addEventListener('change', updateDeleteState);
             }
-            new ButtonComponent(footer).setButtonText('Cancel').onClick(() => { resolve(false); modal.close(); });
+            new ButtonComponent(footer).setButtonText(t('common.cancel')).onClick(() => { resolve(false); modal.close(); });
 
             modal.onClose = () => resolve(false);
             modal.open();
@@ -1150,11 +1175,11 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
                 });
             } catch (error) {
                 console.error('[YamlManager] yaml_delete_advanced_snapshot_failed', error);
-                new Notice('Delete cancelled: could not create deletion snapshot.');
+                new Notice(t('ui.yamlAuditPanel.deleteCancelledSnapshotFailed'));
                 return;
             }
             if (!deletionSnapshotPath) {
-                new Notice('Delete cancelled: no valued deletion snapshot was generated.');
+                new Notice(t('ui.yamlAuditPanel.deleteCancelledNoSnapshot'));
                 return;
             }
         }
@@ -1169,11 +1194,11 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
 
 
         const msgParts: string[] = [];
-        if (result.deleted > 0) msgParts.push(`Cleaned ${result.deleted} note${result.deleted !== 1 ? 's' : ''}`);
-        if (deletionSnapshotPath) msgParts.push(`Snapshot: ${deletionSnapshotPath}`);
-        if (result.safetySkipped > 0) msgParts.push(`${result.safetySkipped} skipped (unsafe)`);
-        if (result.failed > 0) msgParts.push(`${result.failed} failed`);
-        new Notice(msgParts.join(', ') || 'No changes made.');
+        if (result.deleted > 0) msgParts.push(t('ui.yamlAuditPanel.cleanedNotes', { notes: tCount('note', result.deleted) }));
+        if (deletionSnapshotPath) msgParts.push(t('ui.yamlAuditPanel.snapshotPath', { path: deletionSnapshotPath }));
+        if (result.safetySkipped > 0) msgParts.push(t('ui.yamlAuditPanel.skippedUnsafe', { count: result.safetySkipped }));
+        if (result.failed > 0) msgParts.push(t('ui.yamlAuditPanel.failedCount', { count: result.failed }));
+        new Notice(msgParts.join(', ') || t('ui.yamlAuditPanel.noChangesMade'));
 
         scheduleAuditRefresh(runAudit);
     };
@@ -1208,42 +1233,44 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             modal.contentEl.addClass('ert-modal-container', 'ert-stack');
 
             const header = modal.contentEl.createDiv({ cls: 'ert-modal-header' });
-            header.createSpan({ cls: 'ert-modal-badge', text: 'YAML MANAGER' });
-            header.createDiv({ cls: 'ert-modal-title', text: 'Reorder properties' });
+            header.createSpan({ cls: 'ert-modal-badge', text: t('ui.yamlAuditPanel.yamlManagerBadge') });
+            header.createDiv({ cls: 'ert-modal-title', text: t('settings.beats.audit.reorderText') });
             header.createDiv({
                 cls: 'ert-modal-subtitle',
-                text: `Reorder properties in ${notesWithDrift.length} ${noteType.toLowerCase()} note${notesWithDrift.length !== 1 ? 's' : ''} to match the canonical template order.`
+                text: t('ui.yamlAuditPanel.reorderSubtitle', { notes: countTypeNotes(notesWithDrift.length) })
             });
 
             if (unsafeSkippedCount > 0) {
                 const banner = modal.contentEl.createDiv({ cls: 'ert-audit-safety-banner ert-audit-safety-banner--danger' });
-                banner.createSpan({ text: `${unsafeSkippedCount} note${unsafeSkippedCount !== 1 ? 's' : ''} with unsafe frontmatter excluded from this operation.` });
+                banner.createSpan({ text: t('ui.yamlAuditPanel.unsafeExcluded', { notes: tCount('note', unsafeSkippedCount) }) });
             }
 
             const suspiciousCount = notesWithDrift.filter(n => n.safetyResult?.status === 'suspicious').length;
             if (suspiciousCount > 0) {
                 const banner = modal.contentEl.createDiv({ cls: 'ert-audit-safety-banner ert-audit-safety-banner--warning' });
-                banner.createSpan({ text: `${suspiciousCount} note${suspiciousCount !== 1 ? 's have' : ' has'} suspicious frontmatter — proceed with caution.` });
+                banner.createSpan({ text: suspiciousCount !== 1
+                    ? t('ui.yamlAuditPanel.suspiciousCautionOther', { count: suspiciousCount })
+                    : t('ui.yamlAuditPanel.suspiciousCautionOne', { count: suspiciousCount }) });
             }
 
             const body = modal.contentEl.createDiv({ cls: ['ert-panel', 'ert-panel--glass'] });
-            body.createDiv({ text: `Scope: ${auditScopeSummary}`, cls: 'ert-modal-subtitle' });
-            body.createDiv({ text: 'Only field order changes — all values are preserved exactly.' });
+            body.createDiv({ text: t('ui.yamlAuditPanel.scopeLine', { scope: auditScopeSummary }), cls: 'ert-modal-subtitle' });
+            body.createDiv({ text: t('ui.yamlAuditPanel.reorderBody') });
 
             // Show before/after preview
             if (reorderPreview) {
-                body.createDiv({ text: `Preview (${previewNote.file.basename}):`, cls: 'ert-modal-subtitle' });
+                body.createDiv({ text: t('ui.yamlAuditPanel.reorderPreviewLabel', { name: previewNote.file.basename }), cls: 'ert-modal-subtitle' });
                 const previewRow = body.createDiv({ cls: 'ert-reorder-preview' });
 
                 const beforeCol = previewRow.createDiv({ cls: 'ert-reorder-preview-col' });
-                beforeCol.createDiv({ text: 'Before:', cls: 'ert-reorder-preview-label' });
+                beforeCol.createDiv({ text: t('ui.yamlAuditPanel.beforeLabel'), cls: 'ert-reorder-preview-label' });
                 const beforeList = beforeCol.createEl('ol');
                 for (const key of reorderPreview.before) {
                     beforeList.createEl('li', { text: key });
                 }
 
                 const afterCol = previewRow.createDiv({ cls: 'ert-reorder-preview-col' });
-                afterCol.createDiv({ text: 'After:', cls: 'ert-reorder-preview-label' });
+                afterCol.createDiv({ text: t('ui.yamlAuditPanel.afterLabel'), cls: 'ert-reorder-preview-label' });
                 const afterList = afterCol.createEl('ol');
                 for (const key of reorderPreview.after) {
                     const li = afterList.createEl('li', { text: key });
@@ -1255,12 +1282,12 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
 
             // Typed confirmation
             const confirmEl = body.createDiv({ cls: 'ert-modal-confirm-type' });
-            confirmEl.createDiv({ text: 'Type REORDER to confirm:', cls: 'ert-modal-subtitle' });
+            confirmEl.createDiv({ text: t('ui.yamlAuditPanel.typeToConfirm', { phrase: 'REORDER' }), cls: 'ert-modal-subtitle' });
             const confirmInput = confirmEl.createEl('input', { type: 'text', attr: { placeholder: 'REORDER' } });
 
             const footer = modal.contentEl.createDiv({ cls: 'ert-modal-actions' });
             const reorderConfirmBtn = new ButtonComponent(footer)
-                .setButtonText('Reorder')
+                .setButtonText(t('ui.yamlAuditPanel.reorderButton'))
                 .setCta()
                 .setDisabled(true)
                 .onClick(() => {
@@ -1276,7 +1303,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
                 reorderConfirmBtn.setDisabled(confirmInput.value.trim() !== 'REORDER');
                 confirmInput.classList.remove('ert-input-error');
             });
-            new ButtonComponent(footer).setButtonText('Cancel').onClick(() => { resolve(false); modal.close(); });
+            new ButtonComponent(footer).setButtonText(t('common.cancel')).onClick(() => { resolve(false); modal.close(); });
 
             modal.onClose = () => resolve(false);
             modal.open();
@@ -1293,10 +1320,10 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         });
 
         const parts: string[] = [];
-        if (result.reordered > 0) parts.push(`Reordered ${result.reordered} note${result.reordered !== 1 ? 's' : ''}`);
-        if (result.safetySkipped > 0) parts.push(`${result.safetySkipped} skipped (unsafe)`);
-        if (result.failed > 0) parts.push(`${result.failed} failed`);
-        new Notice(parts.join(', ') || 'No changes made.');
+        if (result.reordered > 0) parts.push(t('ui.yamlAuditPanel.reorderedNotes', { notes: tCount('note', result.reordered) }));
+        if (result.safetySkipped > 0) parts.push(t('ui.yamlAuditPanel.skippedUnsafe', { count: result.safetySkipped }));
+        if (result.failed > 0) parts.push(t('ui.yamlAuditPanel.failedCount', { count: result.failed }));
+        new Notice(parts.join(', ') || t('ui.yamlAuditPanel.noChangesMade'));
 
         scheduleAuditRefresh(runAudit);
     };
@@ -1311,7 +1338,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             fillEmptyBtn?.classList.remove('ert-settings-hidden');
             fillEmptyBtn?.setAttribute(
                 'aria-label',
-                `Fill ${fillEmptyPlan.filledFields} empty value${fillEmptyPlan.filledFields !== 1 ? 's' : ''} in ${fillEmptyPlan.files.length} note${fillEmptyPlan.files.length !== 1 ? 's' : ''}`
+                t('ui.yamlAuditPanel.fillEmptyAria', { values: tCount('emptyValue', fillEmptyPlan.filledFields), notes: tCount('note', fillEmptyPlan.files.length) })
             );
         } else {
             fillEmptyBtn?.classList.add('ert-settings-hidden');

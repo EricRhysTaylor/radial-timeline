@@ -31,6 +31,7 @@
 
 import { Menu } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
+import { t } from '../i18n';
 import { tooltip as applyTooltip } from '../utils/tooltip';
 import { fetchCommunityMailbox, type CommunityMailboxAnswer } from './communityShareClient';
 import { hasCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
@@ -97,14 +98,14 @@ export interface MailboxMenuEntry {
  */
 export function mailboxMenuEntries(answer: CommunityMailboxAnswer | null): MailboxMenuEntry[] {
     const entries: MailboxMenuEntry[] = [{
-        label: 'Requests',
+        label: t('ui.communityMailbox.menuRequests'),
         icon: 'mail',
         url: `${COMMUNITY_SITE_URL}/requests`,
         badge: answer && answer.support_unread > 0 ? { tone: 'new', count: answer.support_unread } : null
     }];
     if (answer && answer.replies.count > 0 && answer.replies.latest_post_id) {
         entries.push({
-            label: 'New replies',
+            label: t('ui.communityMailbox.menuNewReplies'),
             icon: 'reply',
             url: `${COMMUNITY_SITE_URL}/posts/${answer.replies.latest_post_id}`,
             badge: { tone: 'new', count: answer.replies.count }
@@ -112,33 +113,33 @@ export function mailboxMenuEntries(answer: CommunityMailboxAnswer | null): Mailb
     }
     if (answer && answer.desk_lamp_invites > 0) {
         entries.push({
-            label: 'Desk Lamp invites',
+            label: t('ui.communityMailbox.menuDeskLampInvites'),
             icon: 'lamp-ceiling',
             url: COMMUNITY_DESK_LAMPS_URL,
             badge: { tone: 'new', count: answer.desk_lamp_invites }
         });
     }
     if (answer?.admin) {
-        entries.push({ label: 'Support inbox', icon: 'inbox', url: `${COMMUNITY_SITE_URL}/admin/support`, badge: inboxBadge(answer) });
+        entries.push({ label: t('ui.communityMailbox.menuSupportInbox'), icon: 'inbox', url: `${COMMUNITY_SITE_URL}/admin/support`, badge: inboxBadge(answer) });
     }
     return entries;
 }
 
 export function mailboxTooltip(view: MailboxView): string {
-    if (view.error) return `Mailbox: couldn't check for new replies (${view.error}).`;
+    if (view.error) return t('ui.communityMailbox.tooltipError', { error: view.error });
     const answer = view.answer;
-    if (!answer) return 'Mailbox';
+    if (!answer) return t('ui.communityMailbox.tooltipTitle');
     const notes: string[] = [];
     const inbox = inboxBadge(answer);
-    if (inbox?.tone === 'unread') notes.push(`${inbox.count} unread in the support inbox`);
-    if (inbox?.tone === 'awaiting') notes.push(`${inbox.count} awaiting a reply in the support inbox`);
-    if (answer.support_unread === 1) notes.push('a new reply in Requests');
-    else if (answer.support_unread > 1) notes.push(`new replies on ${answer.support_unread} requests`);
-    if (answer.replies.count === 1) notes.push('new replies to your question');
-    else if (answer.replies.count > 1) notes.push(`new replies to ${answer.replies.count} of your questions`);
-    if (answer.desk_lamp_invites === 1) notes.push('a Desk Lamp invite waiting');
-    else if (answer.desk_lamp_invites > 1) notes.push(`${answer.desk_lamp_invites} Desk Lamp invites waiting`);
-    return notes.length ? `Mailbox: ${notes.join(' · ')}` : 'Mailbox: nothing new';
+    if (inbox?.tone === 'unread') notes.push(t('ui.communityMailbox.inboxUnread', { count: inbox.count }));
+    if (inbox?.tone === 'awaiting') notes.push(t('ui.communityMailbox.inboxAwaiting', { count: inbox.count }));
+    if (answer.support_unread === 1) notes.push(t('ui.communityMailbox.newReplyInRequests'));
+    else if (answer.support_unread > 1) notes.push(t('ui.communityMailbox.newRepliesOnRequests', { count: answer.support_unread }));
+    if (answer.replies.count === 1) notes.push(t('ui.communityMailbox.newRepliesToQuestion'));
+    else if (answer.replies.count > 1) notes.push(t('ui.communityMailbox.newRepliesToQuestions', { count: answer.replies.count }));
+    if (answer.desk_lamp_invites === 1) notes.push(t('ui.communityMailbox.deskLampInviteWaiting'));
+    else if (answer.desk_lamp_invites > 1) notes.push(t('ui.communityMailbox.deskLampInvitesWaiting', { count: answer.desk_lamp_invites }));
+    return notes.length ? t('ui.communityMailbox.tooltip', { notes: notes.join(' · ') }) : t('ui.communityMailbox.nothingNew');
 }
 
 /** Paint a badge element (the pill's corner, or a menu item). */

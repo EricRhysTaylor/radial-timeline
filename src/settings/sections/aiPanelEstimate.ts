@@ -27,6 +27,7 @@ import {
     pickBestTokenEstimate,
     formatTokenShorthand
 } from '../../ai/estimates';
+import { t, tCount } from '../../i18n';
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -165,7 +166,7 @@ function buildCorpusSection(
         {
             kind: 'token_row',
             row: makeRow(
-                `Scenes (${sceneCount}) — full text`,
+                t('ui.aiPanelEstimate.corpusScenesRow', { count: sceneCount }),
                 corpusBreakdown.scenesTokens,
                 'local_estimate'
             )
@@ -178,30 +179,30 @@ function buildCorpusSection(
             ? {
                   kind: 'token_row',
                   row: makeRow(
-                      `Outline (${outlineCount}) — full text`,
+                      t('ui.aiPanelEstimate.corpusOutlineRow', { count: outlineCount }),
                       corpusBreakdown.outlineTokens,
                       'local_estimate'
                   )
               }
-            : { kind: 'plain_text', text: 'Outline — none' }
+            : { kind: 'plain_text', text: t('ui.aiPanelEstimate.corpusOutlineNone') }
     );
     items.push(
         referenceCount > 0
             ? {
                   kind: 'token_row',
                   row: makeRow(
-                      `References (${referenceCount}) — included`,
+                      t('ui.aiPanelEstimate.corpusReferencesRow', { count: referenceCount }),
                       corpusBreakdown.referenceTokens,
                       'local_estimate'
                   )
               }
-            : { kind: 'plain_text', text: 'References — none' }
+            : { kind: 'plain_text', text: t('ui.aiPanelEstimate.corpusReferencesNone') }
     );
     // Gossamer doesn't compute outline/reference participation, but render
     // the "none" lines consistently so the two panels match. (Caller can
     // ensure counts are 0 for Gossamer.)
     void feature;
-    return { title: 'Corpus', items };
+    return { title: t('ui.aiPanelEstimate.corpusTitle'), items };
 }
 
 function buildPromptSection(
@@ -211,20 +212,20 @@ function buildPromptSection(
     const { promptBreakdown } = input;
     if (feature === 'gossamer') {
         return {
-            title: 'Prompt',
+            title: t('ui.aiPanelEstimate.promptTitle'),
             items: [
-                { kind: 'token_row', row: makeRow('Beat scoring request', promptBreakdown.requestTokens, 'local_estimate') },
-                { kind: 'token_row', row: makeRow('AI role template (author-defined)', promptBreakdown.roleTemplateTokens, 'local_estimate') },
-                { kind: 'token_row', row: makeRow('Beat scoring instructions', promptBreakdown.instructionTokens, 'local_estimate') }
+                { kind: 'token_row', row: makeRow(t('ui.aiPanelEstimate.beatScoringRequest'), promptBreakdown.requestTokens, 'local_estimate') },
+                { kind: 'token_row', row: makeRow(t('ui.aiPanelEstimate.roleTemplate'), promptBreakdown.roleTemplateTokens, 'local_estimate') },
+                { kind: 'token_row', row: makeRow(t('ui.aiPanelEstimate.beatScoringInstructions'), promptBreakdown.instructionTokens, 'local_estimate') }
             ]
         };
     }
     return {
-        title: 'Prompt',
+        title: t('ui.aiPanelEstimate.promptTitle'),
         items: [
-            { kind: 'token_row', row: makeRow('Zone question', promptBreakdown.requestTokens, 'local_estimate') },
-            { kind: 'token_row', row: makeRow('AI role template (author-defined)', promptBreakdown.roleTemplateTokens, 'local_estimate') },
-            { kind: 'token_row', row: makeRow('Editorial analysis instructions', promptBreakdown.instructionTokens, 'local_estimate') }
+            { kind: 'token_row', row: makeRow(t('ui.aiPanelEstimate.zoneQuestion'), promptBreakdown.requestTokens, 'local_estimate') },
+            { kind: 'token_row', row: makeRow(t('ui.aiPanelEstimate.roleTemplate'), promptBreakdown.roleTemplateTokens, 'local_estimate') },
+            { kind: 'token_row', row: makeRow(t('ui.aiPanelEstimate.editorialInstructions'), promptBreakdown.instructionTokens, 'local_estimate') }
         ]
     };
 }
@@ -235,8 +236,8 @@ function buildTransformSection(
     const tokens = input.promptBreakdown.transformTokens;
     if (tokens <= 0) return null;
     return {
-        title: 'Transform',
-        items: [{ kind: 'token_row', row: makeRow('Beat overlay (ordered sequence)', tokens, 'local_estimate') }]
+        title: t('ui.aiPanelEstimate.transformTitle'),
+        items: [{ kind: 'token_row', row: makeRow(t('ui.aiPanelEstimate.beatOverlay'), tokens, 'local_estimate') }]
     };
 }
 
@@ -245,12 +246,12 @@ function buildOutputSection(
     feature: FeatureKind
 ): PanelSection {
     const { promptBreakdown } = input;
-    const finalLabel = feature === 'gossamer' ? 'Per-beat scores' : 'Scene-linked findings';
+    const finalLabel = feature === 'gossamer' ? t('ui.aiPanelEstimate.perBeatScores') : t('ui.aiPanelEstimate.sceneLinkedFindings');
     return {
-        title: 'Output',
+        title: t('ui.aiPanelEstimate.outputTitle'),
         items: [
             { kind: 'plain_text', text: finalLabel },
-            { kind: 'token_row', row: makeRow('Strict JSON structure', promptBreakdown.outputContractTokens, 'local_estimate') }
+            { kind: 'token_row', row: makeRow(t('ui.aiPanelEstimate.strictJson'), promptBreakdown.outputContractTokens, 'local_estimate') }
         ]
     };
 }
@@ -281,8 +282,8 @@ function buildProcessingSection(
 ): PanelSection {
     const passes = computePassesFromHeadline(headline, input.safeInputBudget, input.providerKnownPassCount);
     const passesText = passes.kind === 'known'
-        ? `Execution: ${passes.passes} ${passes.passes === 1 ? 'pass' : 'passes'}`
-        : 'Execution: unavailable';
+        ? t('ui.aiPanelEstimate.execution', { passes: tCount('pass', passes.passes) })
+        : t('ui.aiPanelEstimate.executionUnavailable');
     const items: PanelSectionItem[] = [{ kind: 'plain_text', text: passesText }];
     // Overhead row only when the headline is known AND the headline exceeds
     // the visible local sum (i.e. provider wrappers/overhead are genuinely
@@ -292,12 +293,12 @@ function buildProcessingSection(
         if (overhead > 0 && Number.isFinite(overhead)) {
             items.push({
                 kind: 'token_row',
-                row: { label: 'Provider overhead', estimate: { source: headline.source, tokens: overhead } }
+                row: { label: t('ui.aiPanelEstimate.providerOverhead'), estimate: { source: headline.source, tokens: overhead } }
             });
         }
     }
     items.push({ kind: 'total_row', estimate: headline });
-    return { title: 'Processing', items };
+    return { title: t('ui.aiPanelEstimate.processingTitle'), items };
 }
 
 function computePassesFromHeadline(
@@ -374,20 +375,20 @@ export function buildPanelViewModel(input: BuildPanelInput): PanelViewModel {
 // ── Render helpers (string-level, still pure) ───────────────────────
 
 export function formatExpectedPassesLabel(label: ExpectedPassesLabel): string {
-    if (label.kind === 'unavailable') return 'Expected structured passes · unavailable';
+    if (label.kind === 'unavailable') return t('ui.aiPanelEstimate.expectedPassesUnavailable');
     if (label.source === 'provider_count') {
-        return `Expected structured passes · ${label.passes}`;
+        return t('ui.aiPanelEstimate.expectedPasses', { passes: label.passes });
     }
-    return `Expected structured passes · ${label.passes} (local estimate)`;
+    return t('ui.aiPanelEstimate.expectedPassesLocal', { passes: label.passes });
 }
 
 export function formatProviderInputSummary(summary: ProviderInputSummary): string {
-    if (summary.kind === 'unavailable') return 'Estimated provider input · unavailable';
+    if (summary.kind === 'unavailable') return t('ui.aiPanelEstimate.providerInputUnavailable');
     const tokens = formatTokenShorthand({ source: summary.source, tokens: summary.tokens });
     if (summary.source === 'provider_count') {
-        return `Estimated provider input · ${tokens}`;
+        return t('ui.aiPanelEstimate.providerInput', { tokens });
     }
-    return `Estimated provider input · ${tokens} (local estimate)`;
+    return t('ui.aiPanelEstimate.providerInputLocal', { tokens });
 }
 
 /**
@@ -403,6 +404,6 @@ export function formatTokenRowText(row: PanelRowItem): string {
 }
 
 export function formatTotalRowText(estimate: PanelTokenEstimate): string {
-    if (estimate.source === 'unavailable') return 'Total · unavailable';
-    return `Total ${formatTokenShorthand(estimate)}`;
+    if (estimate.source === 'unavailable') return t('ui.aiPanelEstimate.totalUnavailable');
+    return t('ui.aiPanelEstimate.total', { tokens: formatTokenShorthand(estimate) });
 }

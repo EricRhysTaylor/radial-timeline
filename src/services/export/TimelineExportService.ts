@@ -28,6 +28,7 @@ import type RadialTimelinePlugin from '../../main';
 import type { App } from 'obsidian';
 import { resolveExportOutputFolder } from '../../utils/aiOutput';
 import { systemFolderPath } from '../../utils/systemFolder';
+import { t } from '../../i18n';
 import type {
     BookMeta,
     BookProfile,
@@ -654,7 +655,7 @@ export class TimelineExportService {
         const doc = liveSvg.ownerDocument;
         const view = doc.defaultView;
         if (!view) {
-            throw new Error('Timeline export requires a live document window.');
+            throw new Error(t('ui.timelineExportService.liveWindowRequired'));
         }
 
         const clone = liveSvg.cloneNode(true) as SVGSVGElement;
@@ -743,13 +744,13 @@ export class TimelineExportService {
         // "Timeline image export failed: <reason>".
         const viewBox = liveSvg.getAttribute('viewBox');
         if (!viewBox) {
-            throw new Error('The timeline SVG has no viewBox, so its export dimensions cannot be determined. Re-render the timeline and try again.');
+            throw new Error(t('ui.timelineExportService.missingViewBox'));
         }
         const vbParts = viewBox.split(/[\s,]+/).map(Number);
         const width = vbParts[2];
         const height = vbParts[3];
         if (!Number.isFinite(width) || width <= 0 || !Number.isFinite(height) || height <= 0) {
-            throw new Error(`The timeline SVG viewBox ("${viewBox}") does not describe a positive width and height, so the export size cannot be determined.`);
+            throw new Error(t('ui.timelineExportService.invalidViewBox', { viewBox }));
         }
 
         clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
@@ -792,10 +793,7 @@ export class TimelineExportService {
         this.plugin.settings.timelineExportRelocationNoticed = true;
         await this.plugin.saveSettings();
         new Notice(
-            `Timeline exports now live under ${TIMELINE_COMMUNITY_EXPORT_FOLDER} (data) and `
-            + `${resolveTimelineImageExportFolder(this.plugin)} (images). The old `
-            + `"${LEGACY_TIMELINE_EXPORT_FOLDER}" folder is no longer used — its files are `
-            + `yours to keep, move, or delete.`,
+            t('ui.timelineExportService.exportsRelocated', { dataFolder: TIMELINE_COMMUNITY_EXPORT_FOLDER, imageFolder: resolveTimelineImageExportFolder(this.plugin), legacyFolder: LEGACY_TIMELINE_EXPORT_FOLDER }),
             12000
         );
     }
@@ -811,7 +809,7 @@ export class TimelineExportService {
     public async exportImage(format: TimelineImageFormat, scale: number = 1): Promise<void> {
         const active = this.getActiveTimelineSvg();
         if (!active) {
-            new Notice('Open the Radial Timeline view before exporting an image.');
+            new Notice(t('ui.timelineExportService.openViewFirst'));
             return;
         }
 
@@ -826,7 +824,7 @@ export class TimelineExportService {
             if (format === 'svg') {
                 const path = `${folder}/${this.buildFileName(active.mode, 'svg')}`;
                 await this.app.vault.create(path, svgString);
-                new Notice(`Timeline SVG exported to ${path}`);
+                new Notice(t('ui.timelineExportService.svgExported', { path }));
                 await this.noticeLegacyFolderOnce();
                 return;
             }
@@ -840,11 +838,11 @@ export class TimelineExportService {
             const existing = this.app.vault.getFileByPath(path);
             if (existing) await this.app.vault.modifyBinary(existing, png);
             else await this.app.vault.createBinary(path, png);
-            new Notice(`Timeline PNG (${scale}x) exported to ${path}`);
+            new Notice(t('ui.timelineExportService.pngExported', { scale, path }));
             await this.noticeLegacyFolderOnce();
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            new Notice(`Timeline image export failed: ${message}`);
+            new Notice(t('ui.timelineExportService.imageExportFailed', { message }));
             console.error('[TimelineExport] Image export failed:', error);
         }
     }
@@ -854,7 +852,7 @@ export class TimelineExportService {
         try {
             const items = await this.plugin.getSceneData();
             if (!items || items.length === 0) {
-                new Notice('No timeline data to export. Create scenes first.');
+                new Notice(t('ui.timelineExportService.noDataToExport'));
                 return;
             }
 
@@ -874,11 +872,11 @@ export class TimelineExportService {
             const mode = doc.context.mode ?? 'timeline'; // SAFE: filename slug only; 'timeline' names an export whose document recorded no mode
             const path = `${TIMELINE_COMMUNITY_EXPORT_FOLDER}/${this.buildFileName(mode, 'json')}`;
             await this.app.vault.create(path, JSON.stringify(doc, null, 2));
-            new Notice(`Timeline data exported to ${path}`);
+            new Notice(t('ui.timelineExportService.dataExported', { path }));
             await this.noticeLegacyFolderOnce();
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            new Notice(`Timeline data export failed: ${message}`);
+            new Notice(t('ui.timelineExportService.dataExportFailed', { message }));
             console.error('[TimelineExport] Data export failed:', error);
         }
     }

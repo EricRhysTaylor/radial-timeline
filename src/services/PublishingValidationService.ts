@@ -22,6 +22,7 @@ import { BOOK_META_BACKED_ROLES } from '../utils/manuscript';
 import { validateRttsTemplateContent } from '../publishing/rttsValidation';
 import { getPandocLayoutSortRank, getPandocLayoutTier, resolveTemplateAccess } from '../publishing/templateTiering';
 import { hasProFeatureAccess } from '../settings/featureGate';
+import { t } from '../i18n';
 
 type ValidationScope = ValidationIssue['scope'];
 
@@ -66,21 +67,21 @@ export function describeMatterReadiness(params: {
     if (issueCodes.has('matter_book_meta_missing') || issueCodes.has('book_meta_required_missing')) {
         return {
             label: 'Needs metadata',
-            detail: 'This page is configured to use Book Details, but the Book Details note is missing or incomplete.',
+            detail: t('ui.publishingValidationService.matterBookMetaIncomplete'),
             tone: 'error',
         };
     }
     if (issueCodes.has('matter_role_unsupported')) {
         return {
             label: 'Excluded by layout',
-            detail: 'This page is not styled by the selected PDF style.',
+            detail: t('ui.publishingValidationService.matterNotStyled'),
             tone: 'warning',
         };
     }
     if (issueCodes.has('matter_role_duplicate')) {
         return {
             label: 'Needs repair',
-            detail: 'Multiple notes share this matter role. Filename order may be ambiguous.',
+            detail: t('ui.publishingValidationService.matterRoleShared'),
             tone: 'warning',
         };
     }
@@ -88,19 +89,19 @@ export function describeMatterReadiness(params: {
         if (!bookMetaAvailable) {
             return {
                 label: 'Needs metadata',
-                detail: 'This page is configured to use Book Details, but no Book Details note is currently available.',
+                detail: t('ui.publishingValidationService.matterBookMetaUnavailable'),
                 tone: 'error',
             };
         }
         return {
             label: 'Ready',
-            detail: 'Ready for export. Pulls from Book Details.',
+            detail: t('ui.publishingValidationService.matterReadyFromBookDetails'),
             tone: 'success',
         };
     }
     return {
         label: 'Uses page content',
-        detail: 'This page uses the content written in the note.',
+        detail: t('ui.publishingValidationService.matterUsesPageContent'),
         tone: 'success',
     };
 }
@@ -423,20 +424,20 @@ export class PublishingValidationService {
             const issues: ValidationIssue[] = [];
             const layout = layouts.find(item => item.id === asset.id.replace(/::asset$/, ''));
             if (!layout) {
-                pushIssue(issues, 'asset', 'error', 'asset_layout_missing', 'Template asset is missing its source layout record.');
+                pushIssue(issues, 'asset', 'error', 'asset_layout_missing', t('ui.publishingValidationService.assetLayoutMissing'));
                 snapshot.assetIssues[asset.id] = issues;
                 return;
             }
 
             const layoutValidation = validatePandocLayout(this.plugin, layout);
             if (!layoutValidation.valid) {
-                pushIssue(issues, 'asset', 'error', 'asset_invalid', layoutValidation.error || 'Template asset is invalid.', {
+                pushIssue(issues, 'asset', 'error', 'asset_invalid', layoutValidation.error || t('ui.publishingValidationService.assetInvalid'), {
                     actionable: true,
                     field: 'path',
                 });
             }
             if (!layout.path.trim().toLowerCase().endsWith('.tex')) {
-                pushIssue(issues, 'asset', 'error', 'asset_extension_invalid', 'Template assets must use a .tex extension.', {
+                pushIssue(issues, 'asset', 'error', 'asset_extension_invalid', t('ui.publishingValidationService.assetExtensionInvalid'), {
                     actionable: true,
                     field: 'path',
                 });
@@ -451,7 +452,7 @@ export class PublishingValidationService {
                 });
             }
             if (templateRead.text && !/\$body\$/i.test(templateRead.text)) {
-                pushIssue(issues, 'asset', 'error', 'asset_missing_body', 'Template is missing the required $body$ placeholder.', {
+                pushIssue(issues, 'asset', 'error', 'asset_missing_body', t('ui.publishingValidationService.assetMissingBody'), {
                     actionable: true,
                 });
             }
@@ -463,7 +464,7 @@ export class PublishingValidationService {
                         'asset',
                         'warning',
                         'asset_unicode_engine_missing',
-                        'Template uses fontspec, but no XeLaTeX or LuaLaTeX engine was detected.',
+                        t('ui.publishingValidationService.assetUnicodeEngineMissing'),
                         { actionable: true }
                     );
                 }
@@ -478,22 +479,22 @@ export class PublishingValidationService {
             const outputIntentAllowed = this.isOutputIntentAllowed(profile.outputIntent, profile.usageContexts[0]);
 
             if (!outputIntentAllowed) {
-                pushIssue(issues, 'profile', 'error', 'profile_output_intent_invalid', 'Template profile declares an incompatible output intent.');
+                pushIssue(issues, 'profile', 'error', 'profile_output_intent_invalid', t('ui.publishingValidationService.profileOutputIntentInvalid'));
             }
             if (profile.status === 'draft') {
-                pushIssue(issues, 'profile', 'warning', 'profile_status_draft', 'Template profile is saved as a draft and has not been activated yet.');
+                pushIssue(issues, 'profile', 'warning', 'profile_status_draft', t('ui.publishingValidationService.profileStatusDraft'));
             }
             if (profile.status === 'invalid') {
-                pushIssue(issues, 'profile', 'error', 'profile_status_invalid', 'Template profile is not ready for export.');
+                pushIssue(issues, 'profile', 'error', 'profile_status_invalid', t('ui.publishingValidationService.profileStatusInvalid'));
             }
             if (profile.capabilities.some(capability => capability.key === 'semanticMatter') && profile.usageContexts[0] !== 'novel') {
-                pushIssue(issues, 'profile', 'warning', 'profile_semantic_matter_scope', 'Semantic matter support is only expected on novel profiles.');
+                pushIssue(issues, 'profile', 'warning', 'profile_semantic_matter_scope', t('ui.publishingValidationService.profileSemanticMatterScope'));
             }
             if (profile.supportedMatterRoles.some(role => !role.trim())) {
-                pushIssue(issues, 'profile', 'warning', 'profile_matter_role_blank', 'Template profile contains a blank matter role mapping.');
+                pushIssue(issues, 'profile', 'warning', 'profile_matter_role_blank', t('ui.publishingValidationService.profileMatterRoleBlank'));
             }
             if (assetIssues.some(issue => issue.level === 'error')) {
-                pushIssue(issues, 'profile', 'warning', 'profile_blocked_by_asset', 'Template profile depends on an invalid template asset.');
+                pushIssue(issues, 'profile', 'warning', 'profile_blocked_by_asset', t('ui.publishingValidationService.profileBlockedByAsset'));
             }
 
             snapshot.profileIssues[profile.id] = issues;
@@ -514,9 +515,11 @@ export class PublishingValidationService {
             }
             const missingRequired = this.collectMissingBookMetaFields(bookMetaResolution.bookMeta, requiredFields);
             missingRequired.forEach(field => {
-                const label = field === 'Book.title' ? 'Title' : field === 'Book.author' ? 'Author' : field === 'Rights.year' ? 'Rights year' : field;
-                const location = context.manuscriptMetadata ? 'the manuscript details above' : 'Publish → Book details';
-                pushIssue(snapshot.activeBookMetaIssues, 'book-meta', 'error', 'book_meta_required_missing', `Add ${label.toLowerCase()} in ${location} before exporting.`, {
+                const fieldName = field === 'Book.title' ? t('ui.publishingValidationService.requiredFieldTitle') : field === 'Book.author' ? t('ui.publishingValidationService.requiredFieldAuthor') : field === 'Rights.year' ? t('ui.publishingValidationService.requiredFieldRightsYear') : field.toLowerCase();
+                const message = context.manuscriptMetadata
+                    ? t('ui.publishingValidationService.addFieldInManuscriptDetails', { field: fieldName })
+                    : t('ui.publishingValidationService.addFieldInBookDetails', { field: fieldName });
+                pushIssue(snapshot.activeBookMetaIssues, 'book-meta', 'error', 'book_meta_required_missing', message, {
                     actionable: true,
                     field,
                 });
@@ -524,7 +527,7 @@ export class PublishingValidationService {
 
             const missingRecommended = this.collectMissingBookMetaFields(bookMetaResolution.bookMeta, selectedProfile?.recommendedBookMetaFields || []);
             missingRecommended.forEach(field => {
-                pushIssue(snapshot.activeBookMetaIssues, 'book-meta', 'warning', 'book_meta_recommended_missing', `Recommended publishing metadata is missing: ${field}.`, {
+                pushIssue(snapshot.activeBookMetaIssues, 'book-meta', 'warning', 'book_meta_recommended_missing', t('ui.publishingValidationService.recommendedMetadataMissing', { field }), {
                     actionable: true,
                     field,
                 });
@@ -545,7 +548,7 @@ export class PublishingValidationService {
 
             const isBookMetaBacked = role && BOOK_META_BACKED_ROLES.has(role);
             if (parsedMeta.usesBookMeta && isBookMetaBacked && !bookMetaResolution.bookMeta) {
-                pushIssue(snapshot.matterIssues, 'matter', 'error', 'matter_book_meta_missing', `Matter note "${file.path}" expects Book Details, but no Book Details note was found.`, {
+                pushIssue(snapshot.matterIssues, 'matter', 'error', 'matter_book_meta_missing', t('ui.publishingValidationService.matterNoteExpectsBookDetails', { path: file.path }), {
                     actionable: true,
                     field: role || file.path,
                 });
@@ -557,7 +560,7 @@ export class PublishingValidationService {
                 selectedProfile.supportedMatterRoles.length > 0 &&
                 !selectedProfile.supportedMatterRoles.includes(role)
             ) {
-                pushIssue(snapshot.matterIssues, 'matter', 'warning', 'matter_role_unsupported', `This page is excluded by the selected layout.`, {
+                pushIssue(snapshot.matterIssues, 'matter', 'warning', 'matter_role_unsupported', t('ui.publishingValidationService.matterRoleUnsupported'), {
                     field: role,
                 });
             }
@@ -565,7 +568,7 @@ export class PublishingValidationService {
 
         for (const [role, paths] of seenRoles.entries()) {
             if (BOOK_META_BACKED_ROLES.has(role) && paths.length > 1) {
-                pushIssue(snapshot.matterIssues, 'matter', 'warning', 'matter_role_duplicate', `Multiple "${role}" matter notes found. Filename order may be ambiguous.`, {
+                pushIssue(snapshot.matterIssues, 'matter', 'warning', 'matter_role_duplicate', t('ui.publishingValidationService.matterRoleDuplicate', { role }), {
                     detail: paths.join('\n'),
                     field: role,
                     actionable: true,
@@ -574,26 +577,26 @@ export class PublishingValidationService {
         }
 
         if (formattedExport && !isPandocAvailable(this.plugin.settings.pandocPath)) {
-            pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_pandoc_missing', 'Locate Pandoc in Publish → Export tools before exporting PDF or Word.', {
+            pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_pandoc_missing', t('ui.publishingValidationService.exportPandocMissing'), {
                 actionable: true,
                 field: 'pandocPath',
             });
         }
         if (context.exportType === 'manuscript' && context.outputFormat === 'pdf') {
             if (!selectedLayout) {
-                pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_layout_missing', 'Select a PDF layout before exporting.', {
+                pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_layout_missing', t('ui.publishingValidationService.exportLayoutMissing'), {
                     actionable: true,
                 });
             }
             if (selectedProfile && snapshot.profileIssues[selectedProfile.id]?.some(issue => issue.level === 'error')) {
-                pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_profile_invalid', 'Selected publishing profile is not valid for export.', {
+                pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_profile_invalid', t('ui.publishingValidationService.exportProfileInvalid'), {
                     actionable: true,
                 });
             }
             if (selectedLayout) {
                 const assetIssues = snapshot.assetIssues[`${selectedLayout.id}::asset`] || [];
                 if (assetIssues.some(issue => issue.level === 'error')) {
-                    pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_template_invalid', 'Selected PDF template is not valid for export.', {
+                    pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_template_invalid', t('ui.publishingValidationService.exportTemplateInvalid'), {
                         actionable: true,
                     });
                 }
@@ -606,7 +609,7 @@ export class PublishingValidationService {
                     readError: templateRead.error,
                 });
                 snapshot.templateCompatibility = {
-                    templateName: selectedProfile?.name || selectedLayout.name || 'Selected template',
+                    templateName: selectedProfile?.name || selectedLayout.name || t('ui.publishingValidationService.selectedTemplateFallback'),
                     templateId: selectedLayout.id,
                     level: rtts.level,
                     variables: rtts.variables,
@@ -625,7 +628,7 @@ export class PublishingValidationService {
                         'export',
                         'error',
                         'export_template_compatibility_invalid',
-                        blocking?.message || 'Selected PDF template is not compatible with manuscript export.',
+                        blocking?.message || t('ui.publishingValidationService.exportTemplateIncompatible'),
                         {
                             actionable: true,
                             field: selectedLayout.id,
@@ -637,11 +640,11 @@ export class PublishingValidationService {
             if (selectedLayout) {
                 const font = getStructuredFontDiagnostic(selectedLayout);
                 if (font.state !== 'ok') {
-                    pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_font_missing', font.installHint?.message || `Install ${font.primaryFontName} before exporting this PDF style.`, { actionable: true });
+                    pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_font_missing', font.installHint?.message || t('ui.publishingValidationService.exportFontMissing', { font: font.primaryFontName }), { actionable: true });
                 }
                 const engineSelection = getAutoPdfEngineSelection(resolveTemplatePath(this.plugin, selectedLayout.path));
                 if (!engineSelection.path) {
-                    pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_latex_engine_missing', 'Install a supported LaTeX PDF engine, then use Auto locate in Publish → Export tools.', {
+                    pushIssue(snapshot.preflightIssues, 'export', 'error', 'export_latex_engine_missing', t('ui.publishingValidationService.exportLatexEngineMissing'), {
                         actionable: true,
                     });
                 }
@@ -776,7 +779,7 @@ export class PublishingValidationService {
         if (candidates.length > 1) {
             return {
                 bookMeta: null,
-                warning: 'Multiple Book Details notes found. Keep exactly one in the manuscript folder before exporting PDF or Word.',
+                warning: t('ui.publishingValidationService.multipleBookDetailsNotes'),
             };
         }
 

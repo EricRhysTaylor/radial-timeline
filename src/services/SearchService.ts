@@ -17,6 +17,7 @@ import {
 import { getLocalLlmAvailability } from '../ai/localLlm/availability';
 import { getCanonicalLocalLlmSettings } from '../ai/localLlm/settings';
 import type { TimelineSearchOptions } from './searchState';
+import { t } from '../i18n';
 
 export interface TimelineSearchMatchOptions {
     planetaryLine?: string;
@@ -161,7 +162,7 @@ export class SearchService {
         const activeTimelineView = this.app.workspace.getActiveViewOfType(RadialTimelineView);
         const targetView = views.find(view => view === activeTimelineView) || views[0];
         if (!targetView) {
-            new Notice('Open the timeline view to search scenes.');
+            new Notice(t('ui.searchService.openTimelineToSearch'));
             return;
         }
 
@@ -303,7 +304,7 @@ export class SearchService {
         const availability = await getLocalLlmAvailability(this.plugin, { force: true });
         if (myRun !== this.runId) return;
         if (!availability.available) {
-            this.fail(availability.reason ?? 'No local model is available.');
+            this.fail(availability.reason ?? t('ui.searchService.noLocalModel'));
             return;
         }
 

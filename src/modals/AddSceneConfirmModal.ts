@@ -2,6 +2,7 @@ import { App, setIcon } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import type { SceneInsertionPlan } from '../services/SceneInsertService';
 import { basename } from '../utils/paths';
+import { t } from '../i18n';
 
 export class AddSceneConfirmModal extends ErtModal {
     private phase: 'confirm' | 'running' | 'done' = 'confirm';
@@ -53,34 +54,39 @@ export class AddSceneConfirmModal extends ErtModal {
         }
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Add Scene' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Confirm scene insert' });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.addSceneConfirmModal.badge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.addSceneConfirmModal.title') });
 
         const listDiv = contentEl.createDiv({ cls: 'ert-drag-confirm-list' });
         const summarySection = listDiv.createDiv({ cls: 'ert-drag-confirm-section' });
-        summarySection.createDiv({ cls: 'ert-drag-confirm-section-title', text: 'Scene insert summary' });
+        summarySection.createDiv({ cls: 'ert-drag-confirm-section-title', text: t('ui.addSceneConfirmModal.summaryTitle') });
 
-        this.addSummaryRow(summarySection, 'file-plus-2', `Add ${basename(this.plan.path)} after ${this.plan.anchorBasename}`);
+        this.addSummaryRow(summarySection, 'file-plus-2', t('ui.addSceneConfirmModal.addAfter', { scene: basename(this.plan.path), anchor: this.plan.anchorBasename }));
 
         const impactGrid = summarySection.createDiv({ cls: 'ert-drag-confirm-impact-grid' });
-        this.createImpactCard(impactGrid, 'When', this.plan.when || 'Blank', 'calendar-clock');
-        this.createImpactCard(impactGrid, 'Subplot', this.plan.subplotLabel, 'orbit');
-        this.createImpactCard(impactGrid, 'YAML', this.plan.yamlMode, 'braces');
+        this.createImpactCard(impactGrid, t('ui.addSceneConfirmModal.whenLabel'), this.plan.when || t('ui.addSceneConfirmModal.whenBlank'), 'calendar-clock');
+        this.createImpactCard(impactGrid, t('ui.addSceneConfirmModal.subplotLabel'), this.plan.subplotLabel, 'orbit');
+        this.createImpactCard(
+            impactGrid,
+            'YAML',
+            this.plan.yamlMode === 'Advanced' ? t('ui.addSceneConfirmModal.yamlAdvanced') : t('ui.addSceneConfirmModal.yamlBasic'),
+            'braces'
+        );
 
         // The new scene takes a decimal between its neighbours, so no other
         // scene or beat filename changes.
-        this.addSummaryRow(summarySection, 'list-ordered', 'No existing scene or beat filenames will be renamed.');
+        this.addSummaryRow(summarySection, 'list-ordered', t('ui.addSceneConfirmModal.noRenames'));
 
         const statusRow = listDiv.createDiv({ cls: 'ert-drag-confirm-row is-status-row is-hidden' });
         const statusIcon = statusRow.createDiv({ cls: 'ert-drag-confirm-row-icon' });
         setIcon(statusIcon, 'list-ordered');
         this.statusTextEl = statusRow.createDiv({ cls: 'ert-drag-confirm-row-text ert-drag-confirm-status-text' });
-        this.statusTextEl.setText('Preparing scene insert...');
+        this.statusTextEl.setText(t('ui.addSceneConfirmModal.preparingStatus'));
         this.statusRowEl = statusRow;
 
         const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-        const confirmButton = actions.createEl('button', { text: 'Add scene', cls: 'ert-mod-cta' });
-        const cancelButton = actions.createEl('button', { text: 'Cancel' });
+        const confirmButton = actions.createEl('button', { text: t('ui.addSceneConfirmModal.addButton'), cls: 'ert-mod-cta' });
+        const cancelButton = actions.createEl('button', { text: t('common.cancel') });
         this.primaryButtonEl = confirmButton;
         this.cancelButtonEl = cancelButton;
 
@@ -91,7 +97,7 @@ export class AddSceneConfirmModal extends ErtModal {
                 this.showStatusRow('is-live');
                 if (this.primaryButtonEl) {
                     this.primaryButtonEl.disabled = true;
-                    this.primaryButtonEl.textContent = 'Working...';
+                    this.primaryButtonEl.textContent = t('ui.addSceneConfirmModal.workingButton');
                 }
                 if (this.cancelButtonEl) {
                     this.cancelButtonEl.classList.add('is-hidden-action');
@@ -155,7 +161,7 @@ export class AddSceneConfirmModal extends ErtModal {
         }
         if (this.primaryButtonEl) {
             this.primaryButtonEl.disabled = false;
-            this.primaryButtonEl.textContent = 'Done';
+            this.primaryButtonEl.textContent = t('ui.addSceneConfirmModal.doneButton');
         }
 
         await new Promise<void>((resolve) => {

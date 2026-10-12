@@ -79,7 +79,7 @@ export const resolveGossamerEvidence = async (params: {
     metadataCache: params.plugin.app.metadataCache,
     frontmatterMappings: getActiveFrontmatterMappings(params.plugin.settings)
   });
-  return { evidenceDocument: document, label: 'Scene bodies' };
+  return { evidenceDocument: document, label: t('ui.gossamerCommands.evidenceSceneBodies') };
 };
 
 type GossamerLogPayload = {
@@ -831,7 +831,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
 
       if (plotBeats.length === 0) {
         modal.addError(t('gossamer.notices.noStoryBeats'));
-        modal.completeProcessing(false, 'No beats found');
+        modal.completeProcessing(false, t('ui.gossamerCommands.noBeatsFound'));
         new Notice(t('gossamer.notices.noStoryBeats'));
         return;
       }
@@ -843,7 +843,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
 
     if (sceneFiles.length === 0) {
       modal.addError(t('gossamer.notices.noScenesInBook'));
-      modal.completeProcessing(false, 'No scenes found');
+      modal.completeProcessing(false, t('ui.gossamerCommands.noScenesFound'));
       new Notice(t('gossamer.notices.noScenesInBook'));
       return;
     }
@@ -858,7 +858,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
 
     if (!evidenceDocument.text || evidenceDocument.text.trim().length === 0 || evidenceDocument.includedScenes === 0) {
       modal.addError(t('gossamer.notices.noSceneBodyContent'));
-      modal.completeProcessing(false, 'Empty manuscript');
+      modal.completeProcessing(false, t('ui.gossamerCommands.emptyManuscript'));
       new Notice(t('gossamer.notices.noSceneBodyContent'));
       return;
     }
@@ -947,7 +947,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
 
     if (result.aiStatus !== 'success' || !result.content) {
       modal.apiCallError(result.error || t('gossamer.notices.aiResponseError'));
-      modal.completeProcessing(false, 'API call failed');
+      modal.completeProcessing(false, t('ui.gossamerCommands.apiCallFailed'));
 
       // Check for rate limit
       if (result.error?.toLowerCase().includes('rate limit')) {
@@ -982,7 +982,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
     }
 
     modal.apiCallSuccess();
-    modal.setStatus('Parsing AI response...');
+    modal.setStatus(t('ui.gossamerCommands.parsingResponse'));
 
     // Arm the provider-cache window when the provider proved a cache write or
     // read on this run, independent of whether our downstream validation
@@ -1082,9 +1082,9 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
         schemaWarnings: [...providerNormalizationWarnings, `JSON parse error: ${detail}`]
       });
       modal.apiCallError(t('gossamer.notices.validationFailed', { count: 1 }));
-      modal.addError(`JSON parse error: ${detail}`);
+      modal.addError(t('ui.gossamerCommands.jsonParseError', { detail }));
       if (failureLog) modal.addErrorLogLink(failureLog);
-      modal.completeProcessing(false, 'Validation failed');
+      modal.completeProcessing(false, t('ui.gossamerCommands.validationFailed'));
       throw new Error(t('gossamer.notices.validationFailed', { count: 1 }));
     }
 
@@ -1129,7 +1129,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
       modal.apiCallError(t('gossamer.notices.validationFailed', { count: validation.failures.length }));
       for (const detail of failureDetails) modal.addError(detail);
       if (failureLog) modal.addErrorLogLink(failureLog);
-      modal.completeProcessing(false, 'Validation failed');
+      modal.completeProcessing(false, t('ui.gossamerCommands.validationFailed'));
       throw new Error(t('gossamer.notices.validationFailed', { count: validation.failures.length }));
     }
 
@@ -1251,9 +1251,9 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
     new Notice(logMessage);
 
     } catch (e) {
-      const errorMsg = (e as Error)?.message || 'Unknown error';
+      const errorMsg = (e as Error)?.message || t('ui.gossamerCommands.unknownError');
       modal.addError(t('gossamer.notices.processingFailed', { error: errorMsg }));
-      modal.completeProcessing(false, 'Processing failed');
+      modal.completeProcessing(false, t('ui.gossamerCommands.processingFailed'));
       new Notice(t('gossamer.notices.aiAnalysisFailed', { error: errorMsg }));
       console.error('[Gossamer AI]', sanitizeLogPayload(e).sanitized);
     }
@@ -1336,7 +1336,7 @@ export async function runGossamerAiAnalysis(plugin: RadialTimelinePlugin): Promi
     modal.setPriorReading(priorReadingAt);
     
   } catch (e) {
-    const errorMsg = (e as Error)?.message || 'Unknown error';
+    const errorMsg = (e as Error)?.message || t('ui.gossamerCommands.unknownError');
     new Notice(t('gossamer.notices.prepareFailed', { error: errorMsg }));
     console.error('[Gossamer AI Pre-check]', sanitizeLogPayload(e).sanitized);
   }

@@ -22,6 +22,7 @@ import { fnv1a32Hex } from '../utils/hash';
 import { buildAiJob, ensureAiJobMailbox, writeAiJob, type AiJob, type PreparedAiJob } from '../ai/jobs/aiJobStore';
 import type { AiJobHandler } from '../ai/jobs/aiJobIngest';
 import type { InquiryJobBatch, InquiryJobRun, InquiryQuestion } from './types/inquiryViewTypes';
+import { t } from '../i18n';
 
 const JOB_ID_PATTERN = /^inquiry-([0-9a-f]{8})-([0-9a-f]{8})$/;
 
@@ -57,7 +58,7 @@ export function createInquiryJobHandler(plugin: RadialTimelinePlugin): AiJobHand
             if (contextHash(batch) !== jobContext) {
                 // Not an error in the answer, and not a reason to discard it:
                 // Inquiry is on another book, scope or target selection now.
-                throw new Error(`This job is for ${job.target.label}. Switch Inquiry back to that scope and target selection, then run Check for AI job results.`);
+                throw new Error(t('ui.inquiryJobs.wrongScopeError', { target: job.target.label }));
             }
             const [jobRun] = batch.runs;
             if (!jobRun) return null; // the question was removed or turned off

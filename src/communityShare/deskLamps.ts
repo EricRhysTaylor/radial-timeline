@@ -40,6 +40,7 @@
 
 import { Menu } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
+import { t, tCount } from '../i18n';
 import type { ActiveWritingSession, WritingSessionMode } from '../types/settings';
 import { tooltip as applyTooltip } from '../utils/tooltip';
 import { COMMUNITY_DESK_LAMPS_URL, COMMUNITY_SITE_URL } from './communityMailbox';
@@ -49,7 +50,7 @@ import { deskLampChoices, hasCommunityConnection, normalizeCommunityShareSetting
 /** The popover's row limit (D15). */
 const DESK_LAMP_MAX_ROWS = 12;
 /** Session panel first-use line (plan "Session panel"). */
-export const DESK_LAMP_PANEL_NOTE = 'Ticked friends see that you\'re writing, your city, the kind of writing, and how long, until you save or end the session.';
+export const DESK_LAMP_PANEL_NOTE = t('ui.deskLamps.panelNote');
 
 const FIVE_MINUTES_MS = 5 * 60e3;
 const LAMP_REFRESH_MS = 60e3;
@@ -62,12 +63,14 @@ const BULLETIN_FRESH_MS = 10 * 60e3;
 const BULLETIN_TTL_MS = 30 * 60e3;
 const OFF = 'off';
 
-const MODE_LABELS: Record<WritingSessionMode, string> = {
-    drafting: 'Drafting',
-    revising: 'Revising',
-    editing: 'Editing',
-    planning: 'Planning'
-};
+function modeLabel(mode: WritingSessionMode): string {
+    switch (mode) {
+        case 'drafting': return t('ui.deskLamps.modeDrafting');
+        case 'revising': return t('ui.deskLamps.modeRevising');
+        case 'editing': return t('ui.deskLamps.modeEditing');
+        case 'planning': return t('ui.deskLamps.modePlanning');
+    }
+}
 
 // ---------------------------------------------------------------------------
 // 1. The exit point
@@ -178,8 +181,8 @@ export function formatLampDuration(ms: number): string | null {
     if (minutes < 5) return null;
     const hours = Math.floor(minutes / 60);
     const rest = minutes % 60;
-    if (hours === 0) return `${rest} min`;
-    return rest ? `${hours} h ${rest} min` : `${hours} h`;
+    if (hours === 0) return t('ui.deskLamps.durationMinutes', { minutes: rest });
+    return rest ? t('ui.deskLamps.durationHoursMinutes', { hours, minutes: rest }) : t('ui.deskLamps.durationHours', { hours });
 }
 
 function dotJoin(parts: Array<string | null>): string {
@@ -190,13 +193,13 @@ function dotJoin(parts: Array<string | null>): string {
 export function deskLampRowLabel(row: DeskLampRow, now: number): string {
     if (row.kind === 'bulletin') {
         const { bulletin } = row;
-        return dotJoin([bulletin.display_name, bulletin.place, `lamp off after ${formatLampDuration(bulletin.on_for_ms) ?? 'a few minutes'}`]); // SAFE: D7 — under 5 minutes has no 5-minute figure
+        return dotJoin([bulletin.display_name, bulletin.place, t('ui.deskLamps.lampOffAfter', { duration: formatLampDuration(bulletin.on_for_ms) ?? t('ui.deskLamps.aFewMinutes') })]); // SAFE: D7 — under 5 minutes has no 5-minute figure
     }
     const { lamp } = row;
     const status = lamp.state === 'break'
-        ? 'on a break'
-        : formatLampDuration(now - Date.parse(lamp.lit_at)) ?? 'just started'; // SAFE: D7 — a lamp under 5 minutes old reads "just started"
-    return dotJoin([lamp.display_name, lamp.place, MODE_LABELS[lamp.mode], status]);
+        ? t('ui.deskLamps.onABreak')
+        : formatLampDuration(now - Date.parse(lamp.lit_at)) ?? t('ui.deskLamps.justStarted'); // SAFE: D7 — a lamp under 5 minutes old reads "just started"
+    return dotJoin([lamp.display_name, lamp.place, modeLabel(lamp.mode), status]);
 }
 
 /** The badge: friends whose lamp is lit. Breaks and bulletins never count. */
@@ -208,9 +211,10 @@ function litDeskLampCount(answer: DeskLampsAnswer | null): number {
 export function joinFirstNames(names: readonly string[]): string {
     const first = names.map(name => name.trim().split(/\s+/)[0] || name);
     if (first.length <= 1) return first.join('');
-    if (first.length === 2) return `${first[0]} and ${first[1]}`;
-    if (first.length === 3) return `${first[0]}, ${first[1]} and ${first[2]}`;
-    return `${first[0]}, ${first[1]} and ${first.length - 2} others`;
+    if (first.length === 2) return t('ui.deskLamps.namesTwo', { first: first[0], second: first[1] });
+    if (first.length === 3) return t('ui.deskLamps.namesThree', { first: first[0], second: first[1], third: first[2] });
+    // Four or more names: the count of the rest is always 2 or higher.
+    return t('ui.deskLamps.namesMore', { first: first[0], second: first[1], count: first.length - 2 });
 }
 
 /**
@@ -229,19 +233,21 @@ export type OwnDeskLamp =
 function sharedWith(own: { names: string[]; count: number }): string {
     return own.names.length === own.count
         ? joinFirstNames(own.names)
-        : `${own.count} Desk Lamp${own.count === 1 ? '' : 's'}`;
+        : tCount('deskLamp', own.count);
 }
 
 export function ownDeskLampLine(own: OwnDeskLamp): string {
     switch (own.kind) {
-        case 'no_session': return 'Your lamp is off. Start a session to light it.';
-        case 'not_shared': return 'Your lamp is off for this session.';
-        case 'sharing_paused': return 'Your lamp is off while sharing is paused.';
-        case 'lighting': return `Lighting your lamp for ${sharedWith(own)}…`;
-        case 'refused': return `Your lamp isn't lit: ${own.reason}`;
+        case 'no_session': return t('ui.deskLamps.ownOffNoSession');
+        case 'not_shared': return t('ui.deskLamps.ownOffNotShared');
+        case 'sharing_paused': return t('ui.deskLamps.ownOffPaused');
+        case 'lighting': return t('ui.deskLamps.ownLighting', { names: sharedWith(own) });
+        case 'refused': return t('ui.deskLamps.ownRefused', { reason: own.reason });
         case 'on': return own.state === 'break'
-            ? `${sharedWith(own)} ${own.count === 1 ? 'sees' : 'see'} you on a break.`
-            : `Your lamp is lit for ${sharedWith(own)}.`;
+            ? (own.count === 1
+                ? t('ui.deskLamps.ownOnBreakOne', { names: sharedWith(own) })
+                : t('ui.deskLamps.ownOnBreakOther', { names: sharedWith(own) }))
+            : t('ui.deskLamps.ownLit', { names: sharedWith(own) });
     }
 }
 
@@ -249,16 +255,16 @@ export function ownDeskLampLine(own: OwnDeskLamp): string {
 export function sessionDeskLampLine(own: OwnDeskLamp): string | null {
     switch (own.kind) {
         case 'no_session': return null;
-        case 'not_shared': return 'Lamp off';
-        case 'sharing_paused': return 'Lamp off while sharing is paused';
-        case 'lighting': return `Lighting lamp for ${sharedWith(own)}…`;
-        case 'refused': return `Lamp not lit: ${own.reason}`;
-        case 'on': return `Lamp lit for ${sharedWith(own)}`;
+        case 'not_shared': return t('ui.deskLamps.sessionOff');
+        case 'sharing_paused': return t('ui.deskLamps.sessionOffPaused');
+        case 'lighting': return t('ui.deskLamps.sessionLighting', { names: sharedWith(own) });
+        case 'refused': return t('ui.deskLamps.sessionRefused', { reason: own.reason });
+        case 'on': return t('ui.deskLamps.sessionLit', { names: sharedWith(own) });
     }
 }
 
 function invitesWaitingLine(count: number): string {
-    return count === 1 ? '1 Desk Lamp invite waiting' : `${count} Desk Lamp invites waiting`;
+    return t('ui.deskLamps.invitesWaiting', { invites: tCount('deskLampInvite', count) });
 }
 
 export interface DeskLampsView {
@@ -273,12 +279,12 @@ export interface DeskLampsView {
 }
 
 export function deskLampsTooltip(view: DeskLampsView): string {
-    if (view.error) return `Desk Lamps: couldn't check (${view.error}).`;
+    if (view.error) return t('ui.deskLamps.tooltipError', { error: view.error });
     const lit = litDeskLampCount(view.answer);
-    const notes = [lit === 0 ? 'nobody at their desk' : lit === 1 ? '1 friend at their desk' : `${lit} friends at their desks`];
+    const notes = [lit === 0 ? t('ui.deskLamps.nobodyAtDesk') : tCount('friendAtDesk', lit)];
     const invites = view.answer?.invites_received ?? 0; // SAFE: before the first answer no invite is known
     if (invites > 0) notes.push(invitesWaitingLine(invites));
-    return `Desk Lamps: ${notes.join(' · ')}`;
+    return t('ui.deskLamps.tooltip', { notes: notes.join(' · ') });
 }
 
 function profileUrl(handle: string): string {
@@ -313,11 +319,12 @@ export function openDeskLampsMenu(anchor: HTMLElement, deskLamps: DeskLamps, sho
     const now = Date.now();
     const menu = new Menu();
     if (view.error) {
-        menu.addItem(item => item.setTitle(`Couldn't check Desk Lamps: ${view.error}`).setIcon('circle-alert').setDisabled(true));
+        const menuError = t('ui.deskLamps.menuError', { error: view.error });
+        menu.addItem(item => item.setTitle(menuError).setIcon('circle-alert').setDisabled(true));
     } else {
         const list = deskLampList(view.answer?.lit ?? [], view.bulletins, now, showAll ? Number.POSITIVE_INFINITY : DESK_LAMP_MAX_ROWS); // SAFE: before the first answer no lamp is known
         if (list.rows.length === 0) {
-            menu.addItem(item => item.setTitle('No Desk Lamps lit right now').setIcon('lamp').setDisabled(true));
+            menu.addItem(item => item.setTitle(t('ui.deskLamps.menuNoneLit')).setIcon('lamp').setDisabled(true));
         }
         for (const row of list.rows) {
             const off = row.kind === 'bulletin';
@@ -335,7 +342,7 @@ export function openDeskLampsMenu(anchor: HTMLElement, deskLamps: DeskLamps, sho
         }
         if (list.hiddenLamps > 0) {
             menu.addItem(item => item
-                .setTitle(`${list.hiddenLamps} more at their desks`)
+                .setTitle(t('ui.deskLamps.menuMoreAtDesks', { count: list.hiddenLamps }))
                 .setIcon('chevrons-down')
                 // The menu closes on click; reopen in place with every row.
                 .onClick(() => { window.setTimeout(() => openDeskLampsMenu(anchor, deskLamps, true), 0); }));
@@ -347,7 +354,7 @@ export function openDeskLampsMenu(anchor: HTMLElement, deskLamps: DeskLamps, sho
     if (invites > 0) {
         menu.addItem(item => item.setTitle(invitesWaitingLine(invites)).setIcon('mail-plus').onClick(() => openUrl(COMMUNITY_DESK_LAMPS_URL)));
     }
-    menu.addItem(item => item.setTitle('Manage Desk Lamps…').setIcon('users').onClick(() => openUrl(COMMUNITY_DESK_LAMPS_URL)));
+    menu.addItem(item => item.setTitle(t('ui.deskLamps.menuManage')).setIcon('users').onClick(() => openUrl(COMMUNITY_DESK_LAMPS_URL)));
     const rect = anchor.getBoundingClientRect();
     menu.showAtPosition({ x: rect.left, y: rect.bottom }, doc);
 }
@@ -374,7 +381,7 @@ export function openSessionDeskLampMenu(anchor: HTMLElement, deskLamps: DeskLamp
     }
     if (chosen.size > 0) {
         menu.addSeparator();
-        menu.addItem(item => item.setTitle('Turn lamp off').setIcon('lamp').onClick(() => { void deskLamps.setSessionAudience([]); }));
+        menu.addItem(item => item.setTitle(t('ui.deskLamps.menuTurnOff')).setIcon('lamp').onClick(() => { void deskLamps.setSessionAudience([]); }));
     }
     const rect = anchor.getBoundingClientRect();
     menu.showAtPosition({ x: rect.left, y: rect.bottom }, doc);

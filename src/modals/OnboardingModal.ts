@@ -41,7 +41,7 @@ import { refreshOnboardingPrompt } from '../onboarding/promptSync';
 import { proposeScrivenerAutomap, type ScrivenerFieldTarget } from '../onboarding/adapters/scrivenerAdapter';
 import { createBookId, normalizeBookProfile } from '../utils/books';
 import { discoverOnboardingCandidates } from '../onboarding/discovery';
-import { MISSING_OUTLINE_TEXT, renderScrivenerExportHelp, renderScrivenerProblems, renderScrivenerReview, renderSourceParts, type ScrivenerReviewState } from './OnboardingScrivenerReview';
+import { missingOutlineText, renderScrivenerExportHelp, renderScrivenerProblems, renderScrivenerReview, renderSourceParts, type ScrivenerReviewState } from './OnboardingScrivenerReview';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
 import type { AIProviderId } from '../ai/types';
 import { forecastOnboardingTokens, forecastOnboardingCost } from '../onboarding/costForecast';
@@ -61,6 +61,7 @@ import { resolveSpendLabel } from '../onboarding/spendLabel';
 import { captureSpendFields, applySpendFields } from '../onboarding/sessionSpend';
 import type { EntityKind } from '../utils/entityNotes';
 import type { BookProfile } from '../types/settings';
+import { t, tCount } from '../i18n';
 
 /** Narrow an unknown frontmatter value to a list of non-empty strings. */
 function asStringList(value: unknown): string[] {
@@ -74,11 +75,11 @@ function stripWikiLink(value: string): string {
 }
 
 /** Author-facing names for the import lanes shown on the Prepare screen. */
-const FLOW_LABELS: Record<ImportFlow, string> = {
-  single: 'Single manuscript file',
-  docx: 'Word manuscript (.docx)',
-  scrivener: 'Scrivener export',
-  folder: 'Folder of notes',
+const FLOW_LABELS: Record<ImportFlow, () => string> = {
+  single: () => t('ui.onboardingModal.flowSingle'),
+  docx: () => t('ui.onboardingModal.flowDocx'),
+  scrivener: () => t('ui.onboardingModal.flowScrivener'),
+  folder: () => t('ui.onboardingModal.flowFolder'),
 };
 
 /**
@@ -310,56 +311,56 @@ export class OnboardingModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
     const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-    header.createSpan({ cls: 'ert-modal-badge', text: 'Import' });
-    header.createDiv({ cls: 'ert-modal-title', text: 'Import a manuscript' });
-    header.createDiv({ cls: 'ert-modal-subtitle', text: 'Choose your Scrivener export or Word document.' });
+    header.createSpan({ cls: 'ert-modal-badge', text: t('ui.onboardingModal.importBadge') });
+    header.createDiv({ cls: 'ert-modal-title', text: t('ui.onboardingModal.importTitle') });
+    header.createDiv({ cls: 'ert-modal-subtitle', text: t('ui.onboardingModal.importSubtitle') });
 
     const panel = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     const found = panel.createDiv({ cls: 'ert-stack' });
-    found.createDiv({ cls: 'ert-section-desc', text: 'Looking for exports in this vault…' });
+    found.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingModal.lookingForExports') });
 
     const other = panel.createDiv({ cls: 'ert-onb-bookrow' });
-    const input = other.createEl('input', { type: 'text', cls: 'ert-input', attr: { placeholder: 'Or type a folder in this vault', 'aria-label': 'Manuscript folder' } });
+    const input = other.createEl('input', { type: 'text', cls: 'ert-input', attr: { placeholder: t('ui.onboardingModal.folderInputPlaceholder'), 'aria-label': t('ui.onboardingModal.folderInputAria') } });
     const error = panel.createDiv({ cls: 'ert-section-desc ert-section-desc--alert' });
     const selectFolder = async (path: string) => {
       const folder = normalizePath(path.trim());
       if (!folder || folder === '/' || !(this.app.vault.getAbstractFileByPath(folder) instanceof TFolder)) {
-        error.setText('Choose a folder inside this vault.');
+        error.setText(t('ui.onboardingModal.chooseFolderInVault'));
         return;
       }
       await this.selectSourceFolder(folder);
     };
-    new ButtonComponent(other).setButtonText('Open').onClick(() => void selectFolder(input.value));
+    new ButtonComponent(other).setButtonText(t('ui.onboardingModal.openFolder')).onClick(() => void selectFolder(input.value));
     const { ModalFolderSuggest } = await import('../settings/FolderSuggest');
     new ModalFolderSuggest(this.app, input, () => error.setText(''));
     renderScrivenerExportHelp(panel);
 
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-    new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
+    new ButtonComponent(actions).setButtonText(t('common.cancel')).onClick(() => this.close());
 
     try {
       const candidates = await discoverOnboardingCandidates(this.app, (this.plugin.settings.books ?? []).map(book => book.sourceFolder)); // SAFE: new vaults have no registered books
       if (!found.isConnected) return;
       found.empty();
       if (candidates.length === 0) {
-        found.createDiv({ cls: 'ert-section-desc', text: 'No exports found in this vault yet. Copy your export in, or type its folder below.' });
+        found.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingModal.noExportsFound') });
       }
       for (const candidate of candidates) {
         const row = found.createEl('button', { cls: 'ert-modal-choice', attr: { type: 'button' } });
         const name = row.createDiv({ cls: 'ert-onb-source__name', text: basename(candidate.folder) });
         if (candidate.folder !== basename(candidate.folder)) name.createSpan({ cls: 'ert-section-desc', text: `  ${candidate.folder}` });
         renderSourceParts(row, candidate.kind === 'word'
-          ? [{ label: 'Document', value: candidate.document }]
+          ? [{ label: t('ui.onboardingModal.sourceDocument'), value: candidate.document }]
           : [
-            { label: 'Scenes', value: `${candidate.sceneCount} text file${candidate.sceneCount === 1 ? '' : 's'}` },
+            { label: t('ui.onboardingScrivenerReview.sourceScenes'), value: tCount('textFile', candidate.sceneCount) },
             candidate.outline
-              ? { label: 'Properties', value: `${candidate.outline} (Scrivener outline)` }
-              : { label: 'Properties', value: MISSING_OUTLINE_TEXT, warn: true },
+              ? { label: t('ui.onboardingScrivenerReview.sourceProperties'), value: t('ui.onboardingModal.scrivenerOutlineValue', { outline: candidate.outline }) }
+              : { label: t('ui.onboardingScrivenerReview.sourceProperties'), value: missingOutlineText(), warn: true },
           ]);
         row.addEventListener('click', () => void selectFolder(candidate.folder));
       }
     } catch (failure) {
-      if (found.isConnected) found.setText(`Cannot scan this vault: ${failure instanceof Error ? failure.message : String(failure)}`);
+      if (found.isConnected) found.setText(t('ui.onboardingModal.cannotScanVault', { message: failure instanceof Error ? failure.message : String(failure) }));
     }
   }
 
@@ -392,7 +393,7 @@ export class OnboardingModal extends Modal {
   private async showScrivenerReview(): Promise<void> {
     const book = this.book;
     if (!book) return;
-    this.renderBusy('Reading the export…');
+    this.renderBusy(t('ui.onboardingModal.readingExport'));
     const result = await this.service.ingestScrivener(book.sourceFolder, { importAnyway: this.importAnyway });
     if (result.kind !== 'ok') {
       const recheck = (): void => {
@@ -455,7 +456,7 @@ export class OnboardingModal extends Modal {
   private async importScrivener(proposals: SceneProposal[]): Promise<void> {
     const book = this.book;
     if (!book) return;
-    this.renderBusy('Creating scene notes…');
+    this.renderBusy(t('ui.onboardingModal.creatingSceneNotes'));
     let report: MaterializeReport;
     try {
       const kinds: EntityKind[] = [];
@@ -464,7 +465,7 @@ export class OnboardingModal extends Modal {
       const entities = await this.service.enrichEntities(proposals, { kinds, generateSummaries: false });
       report = await this.service.materialize(book, proposals, entities);
     } catch (error) {
-      this.renderMessage('Import failed', error instanceof Error ? error.message : String(error), true);
+      this.renderMessage(t('ui.onboardingModal.importFailed'), error instanceof Error ? error.message : String(error), true);
       return;
     }
     if (report.errors.length > 0) {
@@ -473,12 +474,12 @@ export class OnboardingModal extends Modal {
     }
     activeSession = null;
     this.close();
-    new Notice(`Imported ${report.notesCreated} scenes into “${report.bookFolder}”.`);
+    new Notice(t('ui.onboardingModal.importedNotice', { count: report.notesCreated, folder: report.bookFolder }));
     await this.plugin.getTimelineService().activateView();
   }
 
   private async showPreflight(): Promise<void> {
-    this.renderBusy(this.useAi ? 'Checking AI and reading the book folder…' : 'Reading the book folder…');
+    this.renderBusy(this.useAi ? t('ui.onboardingModal.checkingAiAndReading') : t('ui.onboardingModal.readingBookFolder'));
 
     const book = this.book;
     if (!book) {
@@ -549,43 +550,43 @@ export class OnboardingModal extends Modal {
     // author whether they are about to spend a dollar or ten, and the pill sits
     // right beside a figure derived from that exact model.
     this.modelLabel = this.engine === 'cloud' && cloud.ok
-        ? (cloud.modelLabel ? `${cloud.label} ${cloud.modelLabel}` : `${cloud.label} cloud`)
+        ? (cloud.modelLabel ? `${cloud.label} ${cloud.modelLabel}` : t('ui.onboardingModal.providerCloudLabel', { provider: cloud.label }))
         : this.modelLabel;
     this.costSubstitutedFrom = cloud.ok ? (cloud.substitutedFromAlias ?? null) : null;
     this.service.setEngine(this.engine);
 
     const { contentEl } = this;
     contentEl.empty();
-    this.renderStageHeader(1, 'Prepare', `Onboard "${book.sourceFolder}"`);
+    this.renderStageHeader(1, t('ui.onboardingModal.prepareTitle'), t('ui.onboardingModal.prepareSubtitle', { folder: book.sourceFolder }));
 
     const status = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     // Raw diagnostics text ("Structured JSON path not tested") is engineer-speak
     // — authors get a plain state; the tier reason stays since it is actionable.
-    const notAvailable = /tier/i.test(preflightReason)
-      ? `Not available — ${preflightReason}`
-      : 'Not connected.';
+    const localUnavailable = /tier/i.test(preflightReason)
+      ? t('ui.onboardingModal.localModelNotAvailable', { reason: preflightReason.toLowerCase() })
+      : t('ui.onboardingModal.localModelNotConnected');
     const engineValue = this.engine === 'cloud'
-      ? `${cloud.label} (cloud, your API key)`
-      : preflightOk ? `Local model — ready, tier ${tier}` : `Local model — ${notAvailable.toLowerCase()}`;
+      ? t('ui.onboardingModal.cloudEngine', { provider: cloud.label })
+      : preflightOk ? t('ui.onboardingModal.localModelReady', { tier }) : localUnavailable;
     const modeRow = status.createDiv({ cls: 'ert-row ert-onb-stagerow' });
-    modeRow.createSpan({ text: 'Import mode: ', cls: 'ert-section-desc' });
+    modeRow.createSpan({ text: t('ui.onboardingModal.importModeLabel'), cls: 'ert-section-desc' });
     new DropdownComponent(modeRow)
-      .addOptions({ structure: 'Structure only — no AI', ai: 'AI assisted' })
+      .addOptions({ structure: t('ui.onboardingModal.modeStructureOnly'), ai: t('ui.onboardingModal.modeAiAssisted') })
       .setValue(this.useAi ? 'ai' : 'structure')
-      .then((dropdown) => dropdown.selectEl.setAttribute('aria-label', 'Import mode'))
+      .then((dropdown) => dropdown.selectEl.setAttribute('aria-label', t('ui.onboardingModal.importModeAria')))
       .onChange((value) => {
         this.useAi = value === 'ai';
         void this.showPreflight();
       });
-    if (this.useAi) this.renderStatusRow(status, 'AI engine', engineValue, this.aiAvailable);
+    if (this.useAi) this.renderStatusRow(status, t('ui.onboardingModal.aiEngineLabel'), engineValue, this.aiAvailable);
 
     // Offer the switch whenever the OTHER engine is also viable.
     const engineChoices: Array<['local' | 'cloud', string]> = [];
-    if (preflightOk) engineChoices.push(['local', 'Local model (free)']);
-    if (cloud.ok) engineChoices.push(['cloud', `${cloud.label} (cloud, your API key)`]);
+    if (preflightOk) engineChoices.push(['local', t('ui.onboardingModal.engineLocalFree')]);
+    if (cloud.ok) engineChoices.push(['cloud', t('ui.onboardingModal.cloudEngine', { provider: cloud.label })]);
     if (engineChoices.length > 1) {
       const engineRow = status.createDiv({ cls: 'ert-row ert-onb-stagerow' });
-      engineRow.createSpan({ text: 'Run AI with: ', cls: 'ert-section-desc' });
+      engineRow.createSpan({ text: t('ui.onboardingModal.runAiWithLabel'), cls: 'ert-section-desc' });
       new DropdownComponent(engineRow)
         .addOptions(Object.fromEntries(engineChoices))
         .setValue(this.engine)
@@ -597,15 +598,17 @@ export class OnboardingModal extends Modal {
     if (this.engine === 'cloud' && this.costSubstitutedFrom) {
       status.createDiv({
         cls: 'ert-onb-warn',
-        text: `Your settings pin "${this.costSubstitutedFrom}", which this provider does not offer. Onboarding will run ${cloud.modelLabel ?? 'a different model'} instead — the estimate below prices that model, not the pinned one.`,
+        text: cloud.modelLabel !== undefined
+          ? t('ui.onboardingModal.pinnedModelSubstituted', { pinned: this.costSubstitutedFrom, model: cloud.modelLabel })
+          : t('ui.onboardingModal.pinnedModelSubstitutedUnknown', { pinned: this.costSubstitutedFrom }),
       });
     }
     if (!this.aiAvailable) {
       status.createDiv({
         cls: 'ert-section-desc',
         text: this.useAi
-          ? 'AI is not available. Choose Structure only to import without AI, or configure a provider in Settings → AI.'
-          : 'Imports scenes and titles without AI. Missing details stay empty for you to fill.',
+          ? t('ui.onboardingModal.aiNotAvailable')
+          : t('ui.onboardingModal.structureOnlyDesc'),
       });
     }
 
@@ -615,16 +618,18 @@ export class OnboardingModal extends Modal {
       const overridden = this.flowOverride !== null && this.flowOverride !== detection.flow;
       this.renderStatusRow(
         status,
-        'Import flow',
-        `${FLOW_LABELS[activeFlow]} — ${detection.evidence}${overridden ? ' (your choice)' : ''}`,
+        t('ui.onboardingModal.importFlowLabel'),
+        overridden
+          ? t('ui.onboardingModal.importFlowValueOverridden', { flow: FLOW_LABELS[activeFlow](), evidence: detection.evidence })
+          : t('ui.onboardingModal.importFlowValue', { flow: FLOW_LABELS[activeFlow](), evidence: detection.evidence }),
         true
       );
       const choices = [detection.flow, ...detection.alternatives];
       if (choices.length > 1) {
         const switchRow = status.createDiv({ cls: 'ert-row' });
-        switchRow.createSpan({ text: 'Treat this folder as: ', cls: 'ert-section-desc' });
+        switchRow.createSpan({ text: t('ui.onboardingModal.treatFolderAsLabel'), cls: 'ert-section-desc' });
         new DropdownComponent(switchRow)
-          .addOptions(Object.fromEntries(choices.map((flow) => [flow, FLOW_LABELS[flow]])))
+          .addOptions(Object.fromEntries(choices.map((flow) => [flow, FLOW_LABELS[flow]()])))
           .setValue(activeFlow)
           .onChange((value) => {
             this.flowOverride = value as ImportFlow; // SAFE: options are exactly ImportFlow values
@@ -640,30 +645,32 @@ export class OnboardingModal extends Modal {
     }
 
     if (ingestReason) {
-      this.renderStatusRow(status, 'Book folder', ingestReason, false);
+      this.renderStatusRow(status, t('ui.onboardingModal.bookFolderLabel'), ingestReason, false);
     } else {
-      const skipNote = skippedCount > 0 ? ` (${skippedCount} already onboarded, skipped)` : '';
-      this.renderStatusRow(status, 'Chapters found', `${candidateCount}${skipNote}`, candidateCount > 0);
+      const chaptersValue = skippedCount > 0
+        ? t('ui.onboardingModal.chaptersFoundSkipped', { count: candidateCount, skipped: skippedCount })
+        : String(candidateCount);
+      this.renderStatusRow(status, t('ui.onboardingModal.chaptersFoundLabel'), chaptersValue, candidateCount > 0);
     }
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-    new ButtonComponent(actions).setButtonText('Choose another manuscript').onClick(() => void this.showSourceSelection());
-    new ButtonComponent(actions).setButtonText('Check again').onClick(() => void this.showPreflight());
+    new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.chooseAnotherManuscript')).onClick(() => void this.showSourceSelection());
+    new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.checkAgain')).onClick(() => void this.showPreflight());
     const canStart = !ingestReason && candidateCount > 0 && this.model !== null;
     new ButtonComponent(actions)
-      .setButtonText(this.useAi ? 'Continue with AI' : 'Continue without AI')
+      .setButtonText(this.useAi ? t('ui.onboardingModal.continueWithAi') : t('ui.onboardingModal.continueWithoutAi'))
       .setCta()
       .setDisabled(!canStart || (this.useAi && !this.aiAvailable))
       .onClick(() => this.showSplitCheckpoint());
     // Show AI setup only when the author requested AI assistance.
     if (this.useAi && !this.aiAvailable) {
       new ButtonComponent(actions)
-        .setButtonText('Set up AI')
+        .setButtonText(t('ui.onboardingModal.setUpAi'))
         .onClick(() => {
           this.close();
           openAiSettings(this.plugin);
         });
     }
-    new ButtonComponent(actions).setButtonText('Close').onClick(() => this.close());
+    new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.close')).onClick(() => this.close());
   }
 
   /** Checkpoint 1 — confirm the scene split and reading order before any AI runs. */
@@ -673,10 +680,10 @@ export class OnboardingModal extends Modal {
     contentEl.empty();
     this.renderStageHeader(
       2,
-      'Confirm scenes',
+      t('ui.onboardingModal.confirmScenesTitle'),
       this.aiAvailable
-        ? 'Each chapter is split into its scenes. Marker breaks split automatically; Auto-split proposes the rest, then you adjust.'
-        : 'Each chapter is split into its scenes. Marker breaks split automatically; place any others by hand.'
+        ? t('ui.onboardingModal.confirmScenesSubtitleAi')
+        : t('ui.onboardingModal.confirmScenesSubtitleManual')
     );
 
     // One split plan per source file (built once; edits persist across re-render).
@@ -698,7 +705,7 @@ export class OnboardingModal extends Modal {
       ).length;
       if (this.aiAvailable && !this.splitOutcomes && undecided > 0) {
         totalLine.setText(
-          `${plans.length} chapter${plans.length === 1 ? '' : 's'} found. Auto-split with AI detects the scenes inside them.`
+          t('ui.onboardingModal.chaptersFoundAutoSplit', { chapters: tCount('chapter', plans.length) })
         );
         return;
       }
@@ -710,7 +717,7 @@ export class OnboardingModal extends Modal {
       this.forecastSceneCount = total;
       this.refreshSpendLabel();
       totalLine.setText(
-        `Will create ${total} scene note${total === 1 ? '' : 's'} from ${plans.length} chapter${plans.length === 1 ? '' : 's'}.`
+        t('ui.onboardingModal.willCreateSceneNotes', { notes: tCount('sceneNote', total), chapters: tCount('chapter', plans.length) })
       );
     };
 
@@ -719,11 +726,11 @@ export class OnboardingModal extends Modal {
     const tip = contentEl.createDiv({ cls: 'ert-onb-tip' });
     tip.createSpan({ cls: 'ert-onb-tip__icon', text: '💡' });
     const tipBody = tip.createSpan();
-    for (const marker of ['***', '---', '⁂', '# heading']) {
+    for (const marker of ['***', '---', '⁂', t('ui.onboardingModal.headingMarker')]) {
       tipBody.createEl('code', { cls: 'ert-onb-tip__marker', text: marker });
     }
     tipBody.createSpan({
-      text: ' on its own line in your manuscript forces a scene break there. It’s exact, survives re-runs, and the AI won’t override it.',
+      text: t('ui.onboardingModal.markerTip'),
     });
 
     // After an auto-split run, say plainly what just happened — the author
@@ -738,8 +745,9 @@ export class OnboardingModal extends Modal {
       const done = contentEl.createDiv({ cls: 'ert-onb-splitdone' });
       done.createSpan({ cls: 'ert-onb-splitdone__icon', text: '✓' });
       done.createSpan({
-        text: `Auto-split done — ${scenes.length} chapter${scenes.length === 1 ? '' : 's'} → ${sceneTotal} scenes.`
-          + (failed > 0 ? ` ${failed} chapter${failed === 1 ? '' : 's'} need${failed === 1 ? 's' : ''} attention below.` : ' Review the rows below, then continue.'),
+        text: failed > 0
+          ? t('ui.onboardingModal.autoSplitDoneAttention', { chapters: tCount('chapter', scenes.length), count: sceneTotal, attention: tCount('chapterNeedsAttention', failed) })
+          : t('ui.onboardingModal.autoSplitDoneReview', { chapters: tCount('chapter', scenes.length), count: sceneTotal }),
       });
     }
 
@@ -751,7 +759,7 @@ export class OnboardingModal extends Modal {
     updateTotal();
 
     const stageRow = contentEl.createDiv({ cls: 'ert-row ert-onb-stagerow' });
-    stageRow.createSpan({ text: 'Publish stage: ', cls: 'ert-section-desc' });
+    stageRow.createSpan({ text: t('ui.onboardingModal.publishStageLabel'), cls: 'ert-section-desc' });
     new DropdownComponent(stageRow)
       .addOptions(Object.fromEntries(STAGE_ORDER.map((stage) => [stage, stage])))
       .setValue(this.publishStage)
@@ -760,7 +768,7 @@ export class OnboardingModal extends Modal {
       });
     stageRow.createSpan({
       cls: 'ert-section-desc',
-      text: 'Set first draft to Zero; a finished, published book is Press.',
+      text: t('ui.onboardingModal.publishStageHint'),
     });
 
 
@@ -774,22 +782,22 @@ export class OnboardingModal extends Modal {
     if (offerAutoSplit) {
       contentEl.createDiv({
         cls: 'ert-section-desc',
-        text: 'Auto-split proposes scene breaks for every file that has none — you can adjust after.',
+        text: t('ui.onboardingModal.autoSplitHint'),
       });
     }
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     if (offerAutoSplit) {
       new ButtonComponent(actions)
-        .setButtonText('Auto-split with AI')
+        .setButtonText(t('ui.onboardingModal.autoSplitButton'))
         .setCta()
         .onClick(() => void this.runSplitProposal());
     }
     const doneCount = this.proposals.filter((proposal) => proposal.frontmatter).length;
     const continueBtn = new ButtonComponent(actions)
-      .setButtonText(doneCount > 0 ? `Resume extraction (${doneCount} done)` : 'Continue')
+      .setButtonText(doneCount > 0 ? t('ui.onboardingModal.resumeExtraction', { count: doneCount }) : t('ui.onboardingModal.continue'))
       .onClick(() => void this.runExtraction());
     if (!offerAutoSplit) continueBtn.setCta();
-    new ButtonComponent(actions).setButtonText('Cancel').onClick(() => {
+    new ButtonComponent(actions).setButtonText(t('common.cancel')).onClick(() => {
       activeSession = null; // explicit cancel discards the run
       this.close();
     });
@@ -825,16 +833,16 @@ export class OnboardingModal extends Modal {
     let statusText = '';
     if (plan.paragraphs.length === 0 && !plan.alreadyOnboarded) {
       card.addClass('is-failed');
-      statusText = 'No prose found in this file.';
+      statusText = t('ui.onboardingModal.noProse');
     } else if (plan.alreadyOnboarded) {
       card.addClass('is-warn');
-      statusText = 'Already onboarded — this file will be skipped.';
+      statusText = t('ui.onboardingModal.alreadyOnboardedSkipped');
     } else if (this.splitOutcomes?.get(plan.sourceRef) === 'fallback') {
       card.addClass('is-warn');
-      statusText = 'AI couldn’t find clean breaks, so this was split into even parts — open the row to adjust.';
+      statusText = t('ui.onboardingModal.splitFallback');
     } else if (this.splitOutcomes?.get(plan.sourceRef) === 'failed') {
       card.addClass('is-warn');
-      statusText = 'Couldn’t split this file — open the row to place breaks by hand.';
+      statusText = t('ui.onboardingModal.splitFailed');
     } else if (this.splitOutcomes) {
       card.addClass('is-ok');
     }
@@ -847,7 +855,7 @@ export class OnboardingModal extends Modal {
     // (Save the Cat etc.) elsewhere in RT; these are TOC-style titles parsed
     // from the chapter's argument line that become scene titles on split.
     // Titles sit left of the scene-count pill (the count is the primary status).
-    if (plan.labels.length > 0) meta.createSpan({ cls: 'ert-onb-flag', text: `❖ ${plan.labels.length} title${plan.labels.length === 1 ? '' : 's'}` });
+    if (plan.labels.length > 0) meta.createSpan({ cls: 'ert-onb-flag', text: t('ui.onboardingModal.sectionTitlesFlag', { titles: tCount('title', plan.labels.length) }) });
     const countPill = meta.createSpan({ cls: 'ert-badgePill ert-onb-pill--act' });
     const refreshCount = (): void => {
       // Language model: a row is a CHAPTER; scenes are what splitting produces.
@@ -862,7 +870,7 @@ export class OnboardingModal extends Modal {
         plan.breaks.length === 0 &&
         !this.splitOutcomes;
       const n = segmentCount(plan);
-      countPill.setText(plan.alreadyOnboarded ? 'skip' : undecided ? 'unsplit' : `${n} scene${n === 1 ? '' : 's'}`);
+      countPill.setText(plan.alreadyOnboarded ? t('ui.onboardingModal.pillSkip') : undecided ? t('ui.onboardingModal.pillUnsplit') : tCount('scene', n));
       countPill.toggleClass('ert-onb-pill--undecided', undecided);
     };
     refreshCount();
@@ -895,21 +903,21 @@ export class OnboardingModal extends Modal {
   /** The break editor: section titles (if any) + paragraphs with clickable break dividers. */
   private buildSplitEditor(body: HTMLElement, plan: ScenePlan, onChange: () => void): void {
     if (plan.alreadyOnboarded) {
-      body.createDiv({ cls: 'ert-onb-error', text: 'Already onboarded — this file is skipped, not split.' });
+      body.createDiv({ cls: 'ert-onb-error', text: t('ui.onboardingModal.alreadyOnboardedNotSplit') });
       return;
     }
     if (plan.paragraphs.length === 0) {
-      body.createDiv({ cls: 'ert-onb-error', text: 'No prose found in this file.' });
+      body.createDiv({ cls: 'ert-onb-error', text: t('ui.onboardingModal.noProse') });
       return;
     }
     if (plan.labels.length > 0) {
       const hint = body.createDiv({ cls: 'ert-onb-split-hint' });
-      hint.createDiv({ cls: 'ert-onb-synopsis__label', text: `Section titles (${plan.labels.length})` });
+      hint.createDiv({ cls: 'ert-onb-synopsis__label', text: t('ui.onboardingModal.sectionTitlesLabel', { count: plan.labels.length }) });
       const chips = hint.createDiv({ cls: 'ert-onb-fm__val' });
       plan.labels.forEach((label) => this.pill(chips, label, 'ert-onb-pill--subplot', true));
       hint.createDiv({
         cls: 'ert-onb-split-note',
-        text: 'No scene markers in this text — use “Auto-split with AI” below, or click a break to place one by hand.',
+        text: t('ui.onboardingModal.noSceneMarkers'),
       });
     }
     const editor = body.createDiv({ cls: 'ert-onb-para-list' });
@@ -925,7 +933,7 @@ export class OnboardingModal extends Modal {
         const divider = editor.createDiv({ cls: 'ert-onb-break' });
         divider.toggleClass('is-break', isBreak);
         const btn = divider.createEl('button', { cls: 'ert-onb-break__btn', attr: { type: 'button' } });
-        btn.setText(isBreak ? '✕ remove break' : '＋ scene break');
+        btn.setText(isBreak ? t('ui.onboardingModal.removeBreak') : t('ui.onboardingModal.addBreak'));
         btn.addEventListener('click', () => {
           plan.breaks = toggleBreak(plan, i);
           this.renderParagraphs(editor, plan, onChange);
@@ -935,7 +943,7 @@ export class OnboardingModal extends Modal {
       if (i === 0 || plan.breaks.includes(i)) {
         const segIndex = plan.breaks.filter((b) => b <= i).length;
         const segHead = editor.createDiv({ cls: 'ert-onb-seg-head' });
-        segHead.createSpan({ cls: 'ert-onb-seg-num', text: `Scene ${segIndex + 1}` });
+        segHead.createSpan({ cls: 'ert-onb-seg-num', text: t('ui.onboardingModal.sceneNumber', { number: segIndex + 1 }) });
         const label = plan.labels[segIndex];
         if (label) segHead.createSpan({ cls: 'ert-onb-seg-label', text: label });
       }
@@ -951,22 +959,22 @@ export class OnboardingModal extends Modal {
     this.abortController = new AbortController();
     const { contentEl } = this;
     contentEl.empty();
-    this.renderStageHeader(2, 'Auto-splitting', 'Proposing scene boundaries with the local model…');
+    this.renderStageHeader(2, t('ui.onboardingModal.autoSplittingTitle'), t('ui.onboardingModal.autoSplittingSubtitle'));
 
     const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-    const statusEl = progressWrap.createDiv({ cls: 'ert-section-desc', text: 'Reading each file…' });
+    const statusEl = progressWrap.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingModal.readingEachFile') });
     const barTrack = progressWrap.createDiv({ cls: 'ert-progress-track' });
     barTrack.setCssStyles({ height: '6px', background: 'var(--background-modifier-border)', borderRadius: '3px' }); // SAFE: progress track
     const barFill = barTrack.createDiv();
     barFill.setCssStyles({ height: '100%', width: '0%', background: 'var(--interactive-accent)', borderRadius: '3px' }); // SAFE: progress fill
 
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-    new ButtonComponent(actions).setButtonText('Abort').setDestructive().onClick(() => this.abortController?.abort());
+    new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.abort')).setDestructive().onClick(() => this.abortController?.abort());
 
     this.splitOutcomes = await this.service.proposeSplits(plans, {
       signal: this.abortController.signal,
       onProgress: (current, total, title) => {
-        statusEl.setText(`Splitting ${current} / ${total} — ${title}`);
+        statusEl.setText(t('ui.onboardingModal.splittingProgress', { current, total, title }));
         barFill.setCssStyles({ width: `${total > 0 ? Math.round((current / total) * 100) : 0}%` }); // SAFE: progress width
       },
     });
@@ -1000,17 +1008,17 @@ export class OnboardingModal extends Modal {
     this.abortController = new AbortController();
     const { contentEl } = this;
     contentEl.empty();
-    this.renderStageHeader(2, 'Reading scenes', 'Filling in each scene’s details — synopsis, characters, places, timing.');
+    this.renderStageHeader(2, t('ui.onboardingModal.readingScenesTitle'), t('ui.onboardingModal.readingScenesSubtitle'));
 
     const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-    const statusEl = progressWrap.createDiv({ cls: 'ert-section-desc', text: 'Surveying the whole book…' });
+    const statusEl = progressWrap.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingModal.surveyingBook') });
     const barTrack = progressWrap.createDiv({ cls: 'ert-progress-track' });
     barTrack.setCssStyles({ height: '6px', background: 'var(--background-modifier-border)', borderRadius: '3px' }); // SAFE: progress track
     const barFill = barTrack.createDiv();
     barFill.setCssStyles({ height: '100%', width: '0%', background: 'var(--interactive-accent)', borderRadius: '3px' }); // SAFE: progress fill
 
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-    new ButtonComponent(actions).setButtonText('Abort').setDestructive().onClick(() => this.abortController?.abort());
+    new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.abort')).setDestructive().onClick(() => this.abortController?.abort());
     // (setDestructive is the Obsidian ButtonComponent API for the muted-danger style.)
 
     // Survey is skipped on resume when one already exists.
@@ -1027,7 +1035,7 @@ export class OnboardingModal extends Modal {
       publishStage: this.publishStage,
       reuse,
       onProgress: (current, total, title) => {
-        statusEl.setText(`Extracting ${current} / ${total} — ${title}`);
+        statusEl.setText(t('ui.onboardingModal.extractingProgress', { current, total, title }));
         barFill.setCssStyles({ width: `${total > 0 ? Math.round((current / total) * 100) : 0}%` }); // SAFE: progress width
       },
     });
@@ -1036,8 +1044,8 @@ export class OnboardingModal extends Modal {
       // Keep the partial work — reopening the command resumes from here.
       this.persistSession('confirm');
       this.renderMessage(
-        'Extraction paused',
-        'Progress is kept — run the onboarding command again to resume where you left off.',
+        t('ui.onboardingModal.extractionPausedTitle'),
+        t('ui.onboardingModal.extractionPausedBody'),
         true
       );
       return;
@@ -1061,8 +1069,14 @@ export class OnboardingModal extends Modal {
     const flagged = ok.filter((p) => p.flags.length > 0);
     this.renderStageHeader(
       3,
-      'Review',
-      `${ok.length} scenes ready${flagged.length ? `, ${flagged.length} with flagged guesses` : ''}${failed.length ? `, ${failed.length} failed` : ''}. Expand a scene to see how it maps into the Radial Timeline template — Apply writes the book.`
+      t('ui.onboardingModal.reviewTitle'),
+      flagged.length && failed.length
+        ? t('ui.onboardingModal.reviewSubtitleFlaggedFailed', { ready: ok.length, flagged: flagged.length, failed: failed.length })
+        : flagged.length
+          ? t('ui.onboardingModal.reviewSubtitleFlagged', { ready: ok.length, flagged: flagged.length })
+          : failed.length
+            ? t('ui.onboardingModal.reviewSubtitleFailed', { ready: ok.length, failed: failed.length })
+            : t('ui.onboardingModal.reviewSubtitle', { ready: ok.length })
     );
 
     // An all-Main-Plot book is almost always a failed structure survey, not a
@@ -1071,7 +1085,7 @@ export class OnboardingModal extends Modal {
     if (this.aiAvailable && (!this.survey || this.survey.subplots.length === 0)) {
       contentEl.createDiv({
         cls: 'ert-onb-error',
-        text: 'The structure survey failed, so every scene is on Main Plot. You can re-run onboarding for another pass, or layer subplots later.',
+        text: t('ui.onboardingModal.surveyFailed'),
       });
     }
 
@@ -1088,7 +1102,7 @@ export class OnboardingModal extends Modal {
     const destName = this.book ? this.service.destinationFor(this.book) : '';
     contentEl.createDiv({
       cls: 'ert-section-desc',
-      text: `Creates ${destName} · Publish Stage: ${this.publishStage}.`,
+      text: t('ui.onboardingModal.createsDestination', { destination: destName, stage: this.publishStage }),
     });
 
     // Optional extras, decided here — after the narrative is settled. Built at
@@ -1107,20 +1121,20 @@ export class OnboardingModal extends Modal {
       return;
     }
     const optionsPanel = contentEl.createDiv({ cls: 'ert-onb-options ert-stack' });
-    optionsPanel.createDiv({ cls: 'ert-onb-synopsis__label', text: 'Also create (optional)' });
-    this.renderCheckbox(optionsPanel, 'Create Character profiles', this.createCharacters, (checked) => {
+    optionsPanel.createDiv({ cls: 'ert-onb-synopsis__label', text: t('ui.onboardingModal.alsoCreate') });
+    this.renderCheckbox(optionsPanel, t('ui.onboardingModal.createCharacterProfiles'), this.createCharacters, (checked) => {
       this.createCharacters = checked;
       syncSummaryToggle();
       this.refreshSpendLabel();
     });
-    this.renderCheckbox(optionsPanel, 'Create Place profiles', this.createPlaces, (checked) => {
+    this.renderCheckbox(optionsPanel, t('ui.onboardingModal.createPlaceProfiles'), this.createPlaces, (checked) => {
       this.createPlaces = checked;
       syncSummaryToggle();
       this.refreshSpendLabel();
     });
     const summaryToggle = this.renderCheckbox(
       optionsPanel,
-      'Generate AI summaries for profiles (slow — one call per character/place)',
+      t('ui.onboardingModal.generateSummaries'),
       this.generateSummaries,
       (checked) => {
         this.generateSummaries = checked;
@@ -1147,11 +1161,11 @@ export class OnboardingModal extends Modal {
   private renderReviewActions(contentEl: HTMLElement, okCount: number): void {
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     new ButtonComponent(actions)
-      .setButtonText(`Apply — write ${okCount} scenes`)
+      .setButtonText(t('ui.onboardingModal.applyWriteScenes', { count: okCount }))
       .setCta()
       .setDisabled(okCount === 0)
       .onClick(() => void this.applyProposals());
-    new ButtonComponent(actions).setButtonText('Cancel').onClick(() => {
+    new ButtonComponent(actions).setButtonText(t('common.cancel')).onClick(() => {
       activeSession = null; // explicit cancel discards the run
       this.close();
     });
@@ -1173,14 +1187,14 @@ export class OnboardingModal extends Modal {
     head.createSpan({ cls: 'ert-onb-scene__title', text: proposal.title || proposal.sourceRef });
     const meta = head.createDiv({ cls: 'ert-onb-scene__meta' });
     if (fm) {
-      this.pill(meta, `Act ${frontmatterValueToText(fm.Act) || '?'}`, 'ert-onb-pill--act'); // SAFE: pill label — the question mark marks an unknown Act instead of asserting one
+      this.pill(meta, t('ui.onboardingModal.actPill', { act: frontmatterValueToText(fm.Act) || '?' }), 'ert-onb-pill--act'); // SAFE: pill label — the question mark marks an unknown Act instead of asserting one
       const chars = Array.isArray(fm.Character) ? fm.Character.length : 0;
       const places = Array.isArray(fm.Place) ? fm.Place.length : 0;
-      this.pill(meta, `${chars} chars`, 'ert-onb-pill--count', true);
-      this.pill(meta, `${places} places`, 'ert-onb-pill--count', true);
+      this.pill(meta, t('ui.onboardingModal.charsPill', { count: chars }), 'ert-onb-pill--count', true);
+      this.pill(meta, t('ui.onboardingModal.placesPill', { count: places }), 'ert-onb-pill--count', true);
       if (proposal.flags.length > 0) meta.createSpan({ cls: 'ert-onb-flag', text: '⚑' });
     } else {
-      this.pill(meta, 'failed', 'ert-onb-pill--warn', true);
+      this.pill(meta, t('ui.onboardingModal.failedPill'), 'ert-onb-pill--warn', true);
     }
     const caret = meta.createSpan({ cls: 'ert-onb-caret' });
     setIcon(caret, 'chevron-right');
@@ -1212,7 +1226,7 @@ export class OnboardingModal extends Modal {
     if (!fm) {
       body.createDiv({
         cls: 'ert-onb-error',
-        text: proposal.error ? `Extraction failed: ${proposal.error}` : 'Extraction failed — this scene will be skipped.',
+        text: proposal.error ? t('ui.onboardingModal.extractionFailedReason', { error: proposal.error }) : t('ui.onboardingModal.extractionFailedSkipped'),
       });
       return;
     }
@@ -1237,7 +1251,7 @@ export class OnboardingModal extends Modal {
 
     if (proposal.flags.length > 0) {
       const flags = body.createDiv({ cls: 'ert-onb-fm__val' });
-      proposal.flags.forEach((flag) => this.pill(flags, `guessed: ${flag}`, 'ert-onb-pill--warn', true));
+      proposal.flags.forEach((flag) => this.pill(flags, t('ui.onboardingModal.guessedPill', { flag }), 'ert-onb-pill--warn', true));
     }
   }
 
@@ -1283,22 +1297,22 @@ export class OnboardingModal extends Modal {
       this.abortController = new AbortController();
       const { contentEl } = this;
       contentEl.empty();
-      this.renderStageHeader(3, 'Creating profiles', 'Summarizing characters and places with the local model…');
+      this.renderStageHeader(3, t('ui.onboardingModal.creatingProfilesTitle'), t('ui.onboardingModal.creatingProfilesSubtitle'));
       const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-      const statusEl = progressWrap.createDiv({ cls: 'ert-section-desc', text: 'Gathering characters and places…' });
+      const statusEl = progressWrap.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingModal.gatheringEntities') });
       const barTrack = progressWrap.createDiv({ cls: 'ert-progress-track' });
       barTrack.setCssStyles({ height: '6px', background: 'var(--background-modifier-border)', borderRadius: '3px' }); // SAFE: progress track
       const barFill = barTrack.createDiv();
       barFill.setCssStyles({ height: '100%', width: '0%', background: 'var(--interactive-accent)', borderRadius: '3px' }); // SAFE: progress fill
       const abortRow = contentEl.createDiv({ cls: 'ert-modal-actions' });
-      new ButtonComponent(abortRow).setButtonText('Abort').setDestructive().onClick(() => this.abortController?.abort());
+      new ButtonComponent(abortRow).setButtonText(t('ui.onboardingModal.abort')).setDestructive().onClick(() => this.abortController?.abort());
 
       this.entityProposals = await this.service.enrichEntities(this.proposals, {
         kinds,
         generateSummaries: true,
         signal: this.abortController.signal,
         onProgress: (current, total, name) => {
-          statusEl.setText(`Summarizing ${current} / ${total} — ${name}`);
+          statusEl.setText(t('ui.onboardingModal.summarizingProgress', { current, total, name }));
           barFill.setCssStyles({ width: `${total > 0 ? Math.round((current / total) * 100) : 0}%` }); // SAFE: progress width
         },
       });
@@ -1315,12 +1329,12 @@ export class OnboardingModal extends Modal {
     }
 
     if (!this.book) return;
-    this.renderBusy('Writing scene notes…');
+    this.renderBusy(t('ui.onboardingModal.writingSceneNotes'));
     let report: MaterializeReport;
     try {
       report = await this.service.materialize(this.book, this.proposals, this.entityProposals);
     } catch (error) {
-      this.renderMessage('Onboarding failed', error instanceof Error ? error.message : String(error), true);
+      this.renderMessage(t('ui.onboardingModal.onboardingFailed'), error instanceof Error ? error.message : String(error), true);
       return;
     }
     this.showReport(report);
@@ -1330,11 +1344,11 @@ export class OnboardingModal extends Modal {
     activeSession = null; // the run is written — nothing left to resume
     const { contentEl } = this;
     contentEl.empty();
-    this.renderStageHeader(4, 'Complete', report.bookFolder);
+    this.renderStageHeader(4, t('ui.onboardingModal.completeTitle'), report.bookFolder);
 
     const panel = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
-    this.renderStatusRow(panel, 'Scenes written', String(report.notesCreated), report.notesCreated > 0);
-    this.renderStatusRow(panel, 'Character & Place notes created', String(report.stubsCreated), true);
+    this.renderStatusRow(panel, t('ui.onboardingModal.scenesWritten'), String(report.notesCreated), report.notesCreated > 0);
+    this.renderStatusRow(panel, t('ui.onboardingModal.entityNotesCreated'), String(report.stubsCreated), true);
     // Roll guesses up to counts (at 106 scenes a per-scene list is noise — most
     // flags are the expected "Act guessed" for a manuscript without explicit
     // structure). Failures are rare and important: list those individually.
@@ -1347,30 +1361,35 @@ export class OnboardingModal extends Modal {
       }
       const rollup = [...counts.entries()]
         .sort((a, b) => b[1] - a[1])
-        .map(([flag, count]) => `${flag} on ${count}`)
+        .map(([flag, count]) => t('ui.onboardingModal.guessedFlagCount', { flag, count }))
         .join(' · ');
-      this.renderStatusRow(panel, 'Guessed fields', `${rollup} scene${flagged.length === 1 ? '' : 's'}`, true);
+      this.renderStatusRow(
+        panel,
+        t('ui.onboardingModal.guessedFieldsLabel'),
+        flagged.length === 1 ? t('ui.onboardingModal.guessedRollupOne', { rollup }) : t('ui.onboardingModal.guessedRollupOther', { rollup }),
+        true
+      );
       panel.createDiv({
         cls: 'ert-section-desc',
-        text: 'Expected when the text has no explicit dates or act marks — spot-check on the timeline.',
+        text: t('ui.onboardingModal.guessedFieldsHint'),
       });
     }
     if (failures.length > 0) {
-      this.renderStatusRow(panel, 'Failed', String(failures.length), false);
+      this.renderStatusRow(panel, t('ui.onboardingModal.failedLabel'), String(failures.length), false);
       const reviewList = panel.createDiv({ cls: 'ert-onb-review-list ert-stack' });
       for (const proposal of failures) {
         const item = reviewList.createDiv({ cls: 'ert-onb-review-item' });
         item.createSpan({ cls: 'ert-onb-review-item__name', text: proposal.title || proposal.sourceRef });
-        item.createSpan({ cls: 'ert-onb-review-item__reason', text: proposal.error ?? 'failed' }); // SAFE: the proposal already failed; this labels it when the extractor recorded no reason
+        item.createSpan({ cls: 'ert-onb-review-item__reason', text: proposal.error ?? t('ui.onboardingModal.failedPill') }); // SAFE: the proposal already failed; this labels it when the extractor recorded no reason
       }
     }
     for (const err of report.errors) {
       panel.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: err });
     }
 
-    new Notice(`Onboarded ${report.notesCreated} scenes into ${report.bookFolder}.`);
+    new Notice(t('ui.onboardingModal.onboardedNotice', { count: report.notesCreated, folder: report.bookFolder }));
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-    new ButtonComponent(actions).setButtonText('Done').setCta().onClick(() => this.close());
+    new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.done')).setCta().onClick(() => this.close());
   }
 
   // ---- Rendering helpers -------------------------------------------------
@@ -1503,7 +1522,7 @@ export class OnboardingModal extends Modal {
     // Top bar: canonical modal pill (modal name · local model) on the left,
     // stage step indicator on the right, same line.
     const topbar = this.contentEl.createDiv({ cls: 'ert-onb-topbar' });
-    const badgeText = this.modelLabel ? `Onboarding · ${this.modelLabel}` : 'Onboarding';
+    const badgeText = this.modelLabel ? t('ui.onboardingModal.badgeWithModel', { model: this.modelLabel }) : t('ui.onboardingModal.badge');
     topbar.createSpan({ cls: 'ert-modal-badge', text: badgeText });
     const spend = this.buildSpendLabel();
     this.spendEl = spend
@@ -1513,7 +1532,7 @@ export class OnboardingModal extends Modal {
         attr: { 'aria-label': spend.ariaLabel }
       })
       : null;
-    const steps = topbar.createDiv({ cls: 'ert-onb-steps', attr: { 'aria-label': `Step ${stage} of ${total}` } });
+    const steps = topbar.createDiv({ cls: 'ert-onb-steps', attr: { 'aria-label': t('ui.onboardingModal.stepAria', { stage, total }) } });
     for (let i = 1; i <= total; i++) {
       const pip = steps.createSpan({ cls: 'ert-onb-step' });
       if (i < stage) pip.addClass('is-done');
@@ -1542,7 +1561,7 @@ export class OnboardingModal extends Modal {
     contentEl.createDiv({ cls: 'ert-section-desc', text: body });
     if (showClose) {
       const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-      new ButtonComponent(actions).setButtonText('Close').setCta().onClick(() => this.close());
+      new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.close')).setCta().onClick(() => this.close());
     }
   }
 

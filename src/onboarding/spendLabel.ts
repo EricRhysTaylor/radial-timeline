@@ -17,6 +17,8 @@
  * The rendering half stays in the modal; this returns what to say, not how.
  */
 
+import { t } from '../i18n';
+
 export interface SpendLabelState {
     /** False in structure-only mode — no AI runs, so no spend to report. */
     aiAvailable: boolean;
@@ -54,8 +56,8 @@ export function resolveSpendLabel(
     if (state.engine === 'local') {
         return {
             kind: 'free',
-            text: 'Free · local model',
-            ariaLabel: 'Estimated cost: free, this run uses your local model'
+            text: t('ui.spendLabel.freeLocal'),
+            ariaLabel: t('ui.spendLabel.freeLocalAria')
         };
     }
 
@@ -70,8 +72,8 @@ export function resolveSpendLabel(
         if (exact === null) return { kind: 'hidden' };
         return {
             kind: 'estimate',
-            text: `Est. ${formatUsd(exact)}`,
-            ariaLabel: `Estimated cost for this run: ${formatUsd(exact)}`
+            text: t('ui.spendLabel.estimate', { cost: formatUsd(exact) }),
+            ariaLabel: t('ui.spendLabel.estimateAria', { cost: formatUsd(exact) })
         };
     }
 
@@ -81,7 +83,7 @@ export function resolveSpendLabel(
     if (floor === null) return { kind: 'hidden' };
     return {
         kind: 'floor',
-        text: `Est. from ${formatUsd(floor)}`,
-        ariaLabel: `Estimated cost for this run: from ${formatUsd(floor)}. The figure narrows once scenes are confirmed.`
+        text: t('ui.spendLabel.floor', { cost: formatUsd(floor) }),
+        ariaLabel: t('ui.spendLabel.floorAria', { cost: formatUsd(floor) })
     };
 }

@@ -606,7 +606,7 @@ export class InquiryView extends ItemView {
     constructor(leaf: WorkspaceLeaf, plugin: RadialTimelinePlugin) {
         super(leaf);
         this.plugin = plugin;
-        this.addAction('bug', 'Report a bug', () => {
+        this.addAction('bug', t('ui.inquiryView.reportBug'), () => {
             new BugReportModal(this.app, this.plugin, 'inquiry').open();
         });
         // Slice 2a controller — must be constructed before any mode hydration
@@ -679,8 +679,8 @@ export class InquiryView extends ItemView {
             const labels = (this.corpus?.books ?? []) // SAFE: corpus not loaded yet — tab title omits book labels
                 .map(book => book.displayLabel)
                 .filter((label): label is string => !!label && label !== '?');
-            if (labels.length) return `${base}: Saga · ${labels.join(' · ')}`;
-            return `${base}: Saga`;
+            if (labels.length) return t('ui.inquiryView.tabTitleSagaBooks', { base, books: labels.join(' · ') });
+            return t('ui.inquiryView.tabTitleSaga', { base });
         }
         const bookTitle = this.getActiveBookTitleForMessages();
         if (bookTitle) return `${base}: ${bookTitle}`;
@@ -1173,7 +1173,7 @@ export class InquiryView extends ItemView {
             // Saved-result browsing does not claim that an AI engine is configured.
             this.enginePanelMetaEl.setText(
                 this.isInquiryDemoMode()
-                    ? `Saved briefings · Demo Vault: ${this.getDemoVaultLabel()}`
+                    ? t('ui.inquiryView.engineMetaDemo', { vault: this.getDemoVaultLabel() })
                     : `${engine.providerLabel} · ${engine.modelLabel}`
             );
         }
@@ -1283,7 +1283,7 @@ export class InquiryView extends ItemView {
             const hero = formatAuthorFacingErrorHero(result);
             const detail = result.aiErrorDetail ? `\n${result.aiErrorDetail}` : '';
             return {
-                message: `${hero}${detail}\nOpen Inquiry Log for detailed error report.`
+                message: `${hero}${detail}\n${t('inquiry.preview.footerOpenLog')}`
             };
         }
         // No active error — but if the most recent pre-flight token
@@ -1297,9 +1297,9 @@ export class InquiryView extends ItemView {
         const corpus = this.getCurrentCorpusContext();
         if (corpus.requestEstimateMethod === 'unavailable' && corpus.requestEstimateFailureMessage && !this.isInquiryReadOnly()) {
             const reason = formatTokenCountFailureReason(corpus.requestEstimateFailureMessage)
-                || 'provider token count failed'; // SAFE: UX default — formatter may yield an empty reason; generic text keeps the error readable
+                || t('ui.inquiryView.tokenCountFailedReason'); // SAFE: UX default — formatter may yield an empty reason; generic text keeps the error readable
             return {
-                message: `Couldn't reach the AI provider to size this Inquiry — ${reason}.\nYou can still run it; the estimate and cost just won't show until the provider responds.`
+                message: t('ui.inquiryView.tokenCountFailedGuidance', { reason })
             };
         }
         return null;
@@ -1312,11 +1312,11 @@ export class InquiryView extends ItemView {
     } {
         const currentCorpus = this.getCurrentCorpusContext();
         const fallbackText = currentCorpus.requestEstimateMethod === 'unavailable'
-            ? 'Full Request: unavailable'
-            : 'Full Request: Estimating…';
+            ? t('ui.inquiryView.fullRequestUnavailable')
+            : t('ui.inquiryView.fullRequestEstimating');
         return {
             text: currentCorpus.requestTokens > 0
-                ? `Full Request: ~${formatTokenEstimate(currentCorpus.requestTokens)}`
+                ? t('ui.inquiryView.fullRequestTokens', { tokens: formatTokenEstimate(currentCorpus.requestTokens) })
                 : fallbackText,
             inputTokens: currentCorpus.requestTokens,
             tier: getTokenTier(currentCorpus.requestTokens)
@@ -1557,11 +1557,11 @@ export class InquiryView extends ItemView {
         const autoPopulateEnabled = this.settingsAccessor.getActionNotesAutoPopulate() ?? false; // SAFE: optional setting unset — auto-populate defaults off
         const fieldLabel = this.resolveInquiryActionNotesFieldLabel();
         const pendingEditsTooltip = blocked
-            ? 'Inquiry is blocked'
+            ? t('ui.inquiryView.pendingEditsBlockedTooltip')
             : pendingEditsApplied
                 ? formatPendingEditsSuccessMessage(pendingPlan.targetLabels).replace(/\.$/, '')
                 : status === 'error'
-                    ? 'No pending edits (run failed)'
+                    ? t('ui.inquiryView.pendingEditsRunFailedTooltip')
                     : formatPendingEditsTargetsTooltip(pendingPlan.targetLabels);
         const refs = renderInquiryBriefingSessionItem({
             container,
@@ -1711,7 +1711,7 @@ export class InquiryView extends ItemView {
         const targetLabels = Array.from(notesByMaterial.keys()).map(path => {
             const sceneLabel = sceneLabelsByPath.get(path);
             if (sceneLabel) return sceneLabel;
-            if (outlinePath && path === outlinePath) return 'Outline';
+            if (outlinePath && path === outlinePath) return t('ui.inquiryView.outlineTargetLabel');
             return path.split('/').pop()?.replace(/\.md$/i, '').trim() || path;
         });
         targetLabels.sort((a, b) => {
@@ -1810,7 +1810,7 @@ export class InquiryView extends ItemView {
     private async handleBriefingSaveStateClick(): Promise<void> {
         await this.sessionStore.flush();
         const count = this.sessionStore.getSessionCount();
-        this.notifyInteraction(`${count} session${count === 1 ? '' : 's'} saved`);
+        this.notifyInteraction(t('ui.inquiryView.sessionsSaved', { sessions: tCount('session', count) }));
     }
 
     /**
@@ -1828,7 +1828,7 @@ export class InquiryView extends ItemView {
         const sidecarSessions = await readInquirySessionsFromVault(this.app);
         const found = sidecarSessions.length;
         if (found === 0) {
-            this.notifyInteraction('No saved session state found in this vault.');
+            this.notifyInteraction(t('ui.inquiryView.noSavedSessionState'));
             return;
         }
         let restored = 0;
@@ -1849,9 +1849,13 @@ export class InquiryView extends ItemView {
         }
         await this.sessionStore.flush();
         this.refreshUI({ reason: 'inquiry sessions restored from vault' });
-        const parts = [`${found} found`, `${restored} restored`, `${skipped} skipped`];
+        const parts = [
+            t('ui.inquiryView.restoreFound', { count: found }),
+            t('ui.inquiryView.restoreRestored', { count: restored }),
+            t('ui.inquiryView.restoreSkipped', { count: skipped })
+        ];
         if (missingBriefs > 0) {
-            parts.push(`⚠ ${missingBriefs} brief${missingBriefs === 1 ? '' : 's'} missing`);
+            parts.push(t('ui.inquiryView.restoreBriefsMissing', { briefs: tCount('brief', missingBriefs) }));
         }
         this.notifyInteraction(parts.join(' · '));
     }
@@ -3287,7 +3291,7 @@ export class InquiryView extends ItemView {
         const providerLabel = engine.providerLabel;
         if (this.enginePanelMetaEl) {
             const payloadSummary = this.buildEnginePayloadSummary();
-            this.enginePanelMetaEl.setText(`Active: ${providerLabel} · ${modelLabel} · ${payloadSummary.text}`);
+            this.enginePanelMetaEl.setText(t('ui.inquiryView.engineMetaActive', { provider: providerLabel, model: modelLabel, payload: payloadSummary.text }));
         }
         this.syncEngineBadgePulse();
         this.refreshEnginePanel();
@@ -3653,9 +3657,9 @@ export class InquiryView extends ItemView {
 
     private describeRunningPassPlan(progress: InquiryRunProgressEvent): string {
         if (progress.phase === 'finalizing') {
-            return `Finalizing after pass ${progress.totalPasses} of ${progress.totalPasses}.`;
+            return t('ui.inquiryView.finalizingAfterPass', { total: progress.totalPasses });
         }
-        return `Pass ${progress.currentPass} of ${progress.totalPasses} is in progress.`;
+        return t('ui.inquiryView.passInProgress', { current: progress.currentPass, total: progress.totalPasses });
     }
 
     private updateMinimapReuseStatus(): void {
@@ -3742,9 +3746,9 @@ export class InquiryView extends ItemView {
     private getCorpusCcScopeLabel(): string {
         const scopeLabel = this.getScopeLabel();
         if (this.state.scope === 'saga') {
-            return `Saga ${scopeLabel}`;
+            return t('ui.inquiryView.corpusScopeSaga', { label: scopeLabel });
         }
-        return `Book ${scopeLabel}`;
+        return t('ui.inquiryView.corpusScopeBook', { label: scopeLabel });
     }
 
     private getCorpusGroupKey(className: string, scope?: InquiryScope): string {
@@ -3952,7 +3956,7 @@ export class InquiryView extends ItemView {
         this.refreshUI();
 
         if (options?.announce) {
-            this.notifyInteraction(isTarget ? 'Removed from Target Scenes.' : 'Added to Target Scenes.');
+            this.notifyInteraction(isTarget ? t('inquiry.interaction.targetSceneRemoved') : t('inquiry.interaction.targetSceneAdded'));
         }
     }
 
@@ -4032,7 +4036,7 @@ export class InquiryView extends ItemView {
     }): void {
         const menu = new Menu();
         menu.addItem(menuItem => {
-            const sceneTitle = options.hasCitation ? t('inquiry.menu.openScene') : this.menuTitleWithKeys(t('inquiry.menu.openScene'), ['Click']);
+            const sceneTitle = options.hasCitation ? t('inquiry.menu.openScene') : this.menuTitleWithKeys(t('inquiry.menu.openScene'), [t('ui.inquiryView.clickKey')]);
             menuItem.setTitle(sceneTitle);
             menuItem.onClick(() => {
                 const file = this.app.vault.getAbstractFileByPath(options.filePath);
@@ -4045,7 +4049,7 @@ export class InquiryView extends ItemView {
             menu.addItem(menuItem => {
                 menuItem.setTitle(this.menuTitleWithKeys(
                     options.hasCitation ? t('inquiry.menu.openCitationBriefing') : t('inquiry.menu.openBriefingArticle'),
-                    ['⌥', 'Click']
+                    ['⌥', t('ui.inquiryView.clickKey')]
                 ));
                 menuItem.onClick(() => {
                     if (options.hasCitation) {
@@ -4058,7 +4062,7 @@ export class InquiryView extends ItemView {
             menu.addItem(menuItem => {
                 menuItem.setTitle(this.menuTitleWithKeys(
                     options.hasCitation ? t('inquiry.menu.openCitationMarkdown') : t('inquiry.menu.openBriefMarkdown'),
-                    ['Click']
+                    [t('ui.inquiryView.clickKey')]
                 ));
                 menuItem.onClick(() => {
                     void (options.hasCitation ? this.openActiveBriefForItem(options.item) : this.openActiveBrief());
@@ -4068,7 +4072,7 @@ export class InquiryView extends ItemView {
         menu.addSeparator();
         menu.addItem(menuItem => {
             const focusLabel = options.isTarget ? t('inquiry.menu.removeFocus') : t('inquiry.menu.setFocus');
-            menuItem.setTitle(this.menuTitleWithKeys(focusLabel, ['⇧', 'Click']));
+            menuItem.setTitle(this.menuTitleWithKeys(focusLabel, ['⇧', t('ui.inquiryView.clickKey')]));
             if (!options.item.sceneId) {
                 menuItem.setDisabled(true);
                 return;
@@ -4102,7 +4106,7 @@ export class InquiryView extends ItemView {
             ['full', t('inquiry.menu.corpusFullScene')]
         ] as const).forEach(([mode, title]) => {
             menu.addItem(item => {
-                item.setTitle(this.menuTitleWithKeys(title, ['Click']));
+                item.setTitle(this.menuTitleWithKeys(title, [t('ui.inquiryView.clickKey')]));
                 item.onClick(() => this.setCorpusItemInclusion(options.entryKey, mode));
             });
         });
@@ -4110,7 +4114,7 @@ export class InquiryView extends ItemView {
         menu.addItem(item => {
             const bookOnly = this.state.scope !== 'book';
             const targetLabel = options.isTarget ? t('inquiry.menu.removeFromTargetScenes') : t('inquiry.menu.addToTargetScenes');
-            item.setTitle(this.menuTitleWithKeys(targetLabel, ['⇧', 'Click']));
+            item.setTitle(this.menuTitleWithKeys(targetLabel, ['⇧', t('ui.inquiryView.clickKey')]));
             if (bookOnly || !options.sceneId) {
                 item.setDisabled(true);
                 return;
@@ -4301,7 +4305,7 @@ export class InquiryView extends ItemView {
                 count: value.items.length,
                 mode: this.getSceneBookDisplayMode(value.items),
                 headerLabel: value.label,
-                headerTooltipLabel: `${value.label} Scenes`,
+                headerTooltipLabel: t('ui.inquiryView.sceneGroupTooltip', { label: value.label }),
                 order: value.order
             }))
             .sort((a, b) => {
@@ -4346,7 +4350,7 @@ export class InquiryView extends ItemView {
                         count: sagaItems.length,
                         mode: sagaMode,
                         headerLabel: `${SIGMA_CHAR}`,
-                        headerTooltipLabel: 'Saga Outline'
+                        headerTooltipLabel: t('ui.inquiryCorpusStripMinimap.classSagaOutline')
                     });
                 }
                 return;
@@ -4727,7 +4731,7 @@ export class InquiryView extends ItemView {
     }
 
     private withCitationBindingFailure(result: InquiryResult): InquiryResult {
-        const message = 'Inquiry completed its passes, but no finding could be matched to this corpus. No minimap findings were available.';
+        const message = t('ui.inquiryView.citationBindingFailed');
         return {
             ...result,
             aiStatus: 'rejected',
@@ -4876,10 +4880,10 @@ export class InquiryView extends ItemView {
         const prevBook = hasPrev ? books[current - 1] : undefined;
         const nextBook = hasNext ? books[current + 1] : undefined;
         const prevTooltip = prevBook
-            ? `Previous book: ${this.getBookTitleForId(prevBook.id) || prevBook.displayLabel || 'Book'}` // SAFE: display fallback chain for the book tooltip label
+            ? t('ui.inquiryView.previousBookTooltip', { book: this.getBookTitleForId(prevBook.id) || prevBook.displayLabel || t('ui.inquiryView.bookFallback') }) // SAFE: display fallback chain for the book tooltip label
             : t('inquiry.nav.noPreviousBook');
         const nextTooltip = nextBook
-            ? `Next book: ${this.getBookTitleForId(nextBook.id) || nextBook.displayLabel || 'Book'}` // SAFE: display fallback chain for the book tooltip label
+            ? t('ui.inquiryView.nextBookTooltip', { book: this.getBookTitleForId(nextBook.id) || nextBook.displayLabel || t('ui.inquiryView.bookFallback') }) // SAFE: display fallback chain for the book tooltip label
             : t('inquiry.nav.noNextBook');
 
         addTooltipData(this.navPrevButton, balanceTooltipText(prevTooltip), 'top');
@@ -5056,7 +5060,7 @@ export class InquiryView extends ItemView {
     private getInquiryReadOnlyMessage(): string {
         if (!this.plugin.settings.enableAiSceneAnalysis) return t('notices.aiTurnedOff');
         if (this.isInquiryApiKeyMissing()) return t('inquiry.interaction.noApiKey');
-        return 'Configure an available AI provider and model in Settings → AI to run new analyses.';
+        return t('ui.inquiryView.readOnlyEngineUnavailable');
     }
 
     /** Saved briefings remain browsable while AI is off or the engine is unavailable. */
@@ -5065,7 +5069,7 @@ export class InquiryView extends ItemView {
     }
 
     private getDemoVaultLabel(): string {
-        return this.demoVaultName?.trim() || 'Demo Vault'; // SAFE: UX default — unnamed demo vault shows the generic label
+        return this.demoVaultName?.trim() || t('ui.inquiryView.demoVaultFallback'); // SAFE: UX default — unnamed demo vault shows the generic label
     }
 
     private isInquiryConfigured(): boolean {
@@ -5189,8 +5193,8 @@ export class InquiryView extends ItemView {
             this.hoverTextEl.setAttribute('text-anchor', 'middle');
             this.setGuidanceTextLines(
                 this.isInquiryDemoMode()
-                    ? [`Demo Vault — ${this.getDemoVaultLabel()}`, 'Select a Briefing to begin.']
-                    : ['Inquiry is available for browsing.', this.getInquiryReadOnlyMessage()],
+                    ? [t('ui.inquiryView.guidanceDemoVault', { vault: this.getDemoVaultLabel() }), t('ui.inquiryView.guidanceSelectBriefing')]
+                    : [t('ui.inquiryView.guidanceBrowsing'), this.getInquiryReadOnlyMessage()],
                 GUIDANCE_LINE_HEIGHT
             );
             return;
@@ -5207,7 +5211,7 @@ export class InquiryView extends ItemView {
 
         const guidanceLines = state === 'not-configured'
             ? [t('inquiry.preview.inquiryNotConfiguredHero'), t('inquiry.preview.inquiryNotConfiguredHelp')]
-            : ['No Scenes Found', 'Check scan roots and class scope in Settings → Radial Timeline → Inquiry.'];
+            : [t('ui.inquiryView.guidanceNoScenesHero'), t('ui.inquiryView.guidanceNoScenesHelp')];
         const lineHeight = isAlert
             ? (isNoScenes ? GUIDANCE_ALERT_LINE_HEIGHT + 14 : GUIDANCE_ALERT_LINE_HEIGHT)
             : GUIDANCE_LINE_HEIGHT;
@@ -5273,7 +5277,7 @@ export class InquiryView extends ItemView {
                 ? t('inquiry.help.corpusTooltip')
                 : (state === 'read-only'
                     ? (this.isInquiryDemoMode()
-                        ? 'Demo Vault Active. Select a Briefing to begin.'
+                        ? t('ui.inquiryView.demoVaultActiveTooltip')
                         : this.getInquiryReadOnlyMessage())
                     : (isAlert
                         ? (state === 'not-configured' ? t('inquiry.help.configTooltip') : t('inquiry.help.noScenesTooltip'))
@@ -5402,7 +5406,7 @@ export class InquiryView extends ItemView {
             if (this.isResultsState() && this.state.activeResult) {
                 this.showResultsPreview(this.state.activeResult);
             }
-            this.notifyInteraction(t('inquiry.interaction.lensAlreadyActive', { lens: mode === 'flow' ? 'Flow' : 'Depth' }));
+            this.notifyInteraction(t('inquiry.interaction.lensAlreadyActive', { lens: mode === 'flow' ? t('ui.inquiryView.lensFlow') : t('ui.inquiryView.lensDepth') }));
             return;
         }
         this.setActiveLens(mode);
@@ -5424,8 +5428,9 @@ export class InquiryView extends ItemView {
     }
 
     private buildModeToggleHoverText(): string {
-        const nextMode = this.state.mode === 'flow' ? 'Depth' : 'Flow';
-        return `Switch to ${nextMode} lens.`;
+        return this.state.mode === 'flow'
+            ? t('inquiry.navTooltip.depthLens')
+            : t('inquiry.navTooltip.flowLens');
     }
 
     private handleGlyphClick(): void {
@@ -5700,7 +5705,7 @@ export class InquiryView extends ItemView {
                     phase: 'finalizing',
                     currentPass: finalPassCount,
                     totalPasses: finalPassCount,
-                    detail: 'Provider response received. Saving the result.'
+                    detail: t('ui.inquiryView.savingResult')
                 });
             } catch (error) {
                 result = this.buildErrorFallback(question, questionText, questionPromptForm, scopeLabel, manifest, error);
@@ -5937,7 +5942,7 @@ export class InquiryView extends ItemView {
 
         const nextProviderPlan = this.buildOmnibusProviderPlan();
         if (!nextProviderPlan.choice) {
-            const reason = nextProviderPlan.disabledReason || 'Provider unavailable'; // SAFE: UX default when the provider plan carries no specific reason
+            const reason = nextProviderPlan.disabledReason || t('ui.inquiryView.providerUnavailable'); // SAFE: UX default when the provider plan carries no specific reason
             new Notice(t('inquiry.notice.omnibusUnavailable', { reason }));
             return;
         }
@@ -6055,7 +6060,7 @@ export class InquiryView extends ItemView {
         this.refreshUI({ skipCorpus: true });
 
         const modal = this.activeOmnibusModal;
-        if (modal) modal.updateProgress(1, total, '', 'Combined run in progress...', 'Processing all questions in a single pass...');
+        if (modal) modal.updateProgress(1, total, '', t('ui.inquiryView.combinedRunInProgress'), t('ui.inquiryView.processingAllQuestions'));
 
         const briefPaths: string[] = [];
         const completedIds: string[] = [];
@@ -6097,8 +6102,10 @@ export class InquiryView extends ItemView {
                 if (!question) continue;
 
                 if (modal) {
-                    const zoneLabel = question.zone === 'setup' ? 'Setup' : question.zone === 'pressure' ? 'Pressure' : 'Payoff';
-                    modal.updateProgress(i + 1, total, zoneLabel, question.label, 'Writing brief/log...');
+                    const zoneLabel = question.zone === 'setup'
+                        ? t('settings.inquiry.zone.setup')
+                        : question.zone === 'pressure' ? t('settings.inquiry.zone.pressure') : t('settings.inquiry.zone.payoff');
+                    modal.updateProgress(i + 1, total, zoneLabel, question.label, t('ui.inquiryView.writingBriefLog'));
                 }
 
                 const questionManifest = this.buildCorpusManifest(question.id, {
@@ -6233,7 +6240,9 @@ export class InquiryView extends ItemView {
 
                 const question = questions[qi];
                 const questionIndex = qi + 1;
-                const zoneLabel = question.zone === 'setup' ? 'Setup' : question.zone === 'pressure' ? 'Pressure' : 'Payoff';
+                const zoneLabel = question.zone === 'setup'
+                    ? t('settings.inquiry.zone.setup')
+                    : question.zone === 'pressure' ? t('settings.inquiry.zone.pressure') : t('settings.inquiry.zone.payoff');
 
                 if (modal) modal.updateProgress(questionIndex, total, zoneLabel, question.label);
 
@@ -6310,7 +6319,7 @@ export class InquiryView extends ItemView {
                 if (modal) {
                     modal.notePassResult(questionIndex, total, probe, cacheDecision.health);
                     modal.noteRunningCost(costAcc);
-                    modal.updateProgress(questionIndex, total, zoneLabel, question.label, 'Writing brief/log...');
+                    modal.updateProgress(questionIndex, total, zoneLabel, question.label, t('ui.inquiryView.writingBriefLog'));
                 }
 
                 const completedAt = new Date();
@@ -6556,9 +6565,9 @@ export class InquiryView extends ItemView {
     private showPluginActiveBook(): void {
         const active = getActiveBook(this.plugin.settings);
         const [candidate] = resolveBookManagerInquiryBooks(active ? [active] : [], 'book').candidates;
-        if (!active || !candidate) throw new Error('Inquiry jobs need an active book with a source folder in Book Manager.');
+        if (!active || !candidate) throw new Error(t('ui.inquiryView.aiJobsNeedActiveBook'));
         if (!this.corpus?.books.some(book => book.id === candidate.id)) {
-            throw new Error(`The active book "${active.title}" is not one of Inquiry's books. Check Inquiry's sources in Settings.`);
+            throw new Error(t('ui.inquiryView.aiJobsBookNotInInquiry', { title: active.title }));
         }
         if (this.state.activeBookId !== candidate.id) this.drillIntoBook(candidate.id);
     }
@@ -6741,8 +6750,8 @@ export class InquiryView extends ItemView {
             return {
                 choice: null,
                 summary: engine.blockReason || t('inquiry.runner.inquiryAiUnavailable'),
-                label: 'Unavailable',
-                disabledReason: engine.blockReason || 'Canonical Inquiry engine unavailable' // SAFE: UX default when the engine carries no specific block reason
+                label: t('ui.inquiryView.omnibusProviderUnavailableLabel'),
+                disabledReason: engine.blockReason || t('ui.inquiryView.omnibusEngineUnavailable') // SAFE: UX default when the engine carries no specific block reason
             };
         }
 
@@ -6757,13 +6766,15 @@ export class InquiryView extends ItemView {
                 modelId: engine.modelId,
                 modelLabel: engine.modelLabel,
                 useOmnibus,
-                reason: useOmnibus ? undefined : 'Combined omnibus is reserved for the canonical Google Inquiry path.'
+                reason: useOmnibus ? undefined : t('inquiry.runner.omnibusReservedForGoogle')
             },
             summary: (useOmnibus
-                ? `Using canonical Inquiry engine ${engine.providerLabel} · ${engine.modelLabel} for a combined omnibus run.`
-                : `Using canonical Inquiry engine ${engine.providerLabel} · ${engine.modelLabel}. This provider will execute omnibus sequentially.`)
+                ? t('ui.inquiryView.omnibusSummaryCombined', { provider: engine.providerLabel, model: engine.modelLabel })
+                : t('ui.inquiryView.omnibusSummarySequential', { provider: engine.providerLabel, model: engine.modelLabel }))
                 + substitutionNotice,
-            label: useOmnibus ? `${engine.providerLabel} omnibus` : `Sequential · ${engine.providerLabel}`
+            label: useOmnibus
+                ? t('ui.inquiryView.omnibusLabelCombined', { provider: engine.providerLabel })
+                : t('ui.inquiryView.omnibusLabelSequential', { provider: engine.providerLabel })
         };
     }
 
@@ -6885,7 +6896,7 @@ export class InquiryView extends ItemView {
         if (this.guidanceState === 'no-scenes') return t('inquiry.runner.noScenesAvailable');
         if (this.isInquiryReadOnly()) return this.getInquiryReadOnlyMessage();
         if (!questions.length) return t('inquiry.runner.noEnabledQuestions');
-        if (!providerPlan.choice) return providerPlan.disabledReason || 'Provider unavailable'; // SAFE: UX default when the provider plan carries no specific reason
+        if (!providerPlan.choice) return providerPlan.disabledReason || t('ui.inquiryView.providerUnavailable'); // SAFE: UX default when the provider plan carries no specific reason
         return null;
     }
 
@@ -7156,7 +7167,7 @@ export class InquiryView extends ItemView {
                 this.sessionStore.updateSession(session.key, { pendingEditsEmpty: true });
             }
             if (options?.notify) {
-                this.notifyInteraction('No action items met the writeback threshold.');
+                this.notifyInteraction(t('inquiry.interaction.noActionItemsThreshold'));
             }
             this.refreshBriefingPanel();
             return false;
@@ -7597,7 +7608,7 @@ export class InquiryView extends ItemView {
         manifest: CorpusManifest,
         error: unknown
     ): InquiryResult {
-        const message = error instanceof Error ? error.message : 'Runner error';
+        const message = error instanceof Error ? error.message : t('ui.inquiryView.runnerErrorFallback');
         return {
             runId: `run-${Date.now()}`,
             scope: this.state.scope,
@@ -7609,9 +7620,9 @@ export class InquiryView extends ItemView {
             questionText,
             questionPromptForm,
             questionZone: question.zone,
-            summary: 'Inquiry failed before results were produced.',
-            summaryFlow: 'Inquiry failed before results were produced.',
-            summaryDepth: 'Inquiry failed before results were produced.',
+            summary: t('ui.inquiryView.runFailedBeforeResults'),
+            summaryFlow: t('ui.inquiryView.runFailedBeforeResults'),
+            summaryDepth: t('ui.inquiryView.runFailedBeforeResults'),
             verdict: {
                 flow: 0,
                 depth: 0
@@ -7621,7 +7632,7 @@ export class InquiryView extends ItemView {
             findings: [{
                 refId: scopeLabel,
                 kind: 'error',
-                headline: 'Inquiry runner error.',
+                headline: t('ui.inquiryView.runnerErrorHeadline'),
                 bullets: [message],
                 related: [],
                 evidenceType: 'mixed',
@@ -7651,9 +7662,9 @@ export class InquiryView extends ItemView {
             questionText,
             questionPromptForm,
             questionZone: question.zone,
-            summary: 'Simulated inquiry session.',
-            summaryFlow: 'Simulated inquiry session.',
-            summaryDepth: 'Simulated inquiry session.',
+            summary: t('ui.inquiryView.simulatedSession'),
+            summaryFlow: t('ui.inquiryView.simulatedSession'),
+            summaryDepth: t('ui.inquiryView.simulatedSession'),
             verdict: {
                 flow: GLYPH_PLACEHOLDER_FLOW,
                 depth: GLYPH_PLACEHOLDER_DEPTH
@@ -8054,7 +8065,7 @@ export class InquiryView extends ItemView {
         if (this.state.isRunning) return;
         event.preventDefault();
         if (this.state.scope !== 'book') {
-            this.notifyInteraction('Target Scenes are available only in Book scope.');
+            this.notifyInteraction(t('inquiry.interaction.targetScenesBookOnly'));
             return;
         }
         const filePath = getMinimapItemFilePath(item);
@@ -8185,14 +8196,14 @@ export class InquiryView extends ItemView {
         const count = this.state.scope === 'book' ? activeTargetCount : storedTargetCount;
         if (!count) {
             return this.state.scope === 'saga'
-                ? 'Discover · Target Scenes available only in Book scope'
-                : 'Discover';
+                ? t('ui.inquiryView.targetStatusDiscoverSaga')
+                : t('ui.inquiryView.targetStatusDiscover');
         }
-        const noun = count === 1 ? 'Target Scene' : 'Target Scenes';
+        const targets = count === 1 ? t('inquiry.findings.oneTargetScene') : t('inquiry.findings.multipleTargetScenes', { count });
         if (this.state.scope === 'saga') {
-            return `${count} ${noun} saved · Book-only`;
+            return t('ui.inquiryView.targetStatusSavedBookOnly', { targets });
         }
-        return `${count} ${noun}`;
+        return targets;
     }
 
     private getScopeKey(): string {
@@ -8203,33 +8214,34 @@ export class InquiryView extends ItemView {
 
     private buildScopeHoverText(): string {
         const label = this.getScopeLabel();
-        const scopeLabel = this.state.scope === 'saga' ? 'Saga scope' : 'Book scope';
+        const scopeLabel = this.state.scope === 'saga' ? t('ui.inquiryView.scopeHoverSaga') : t('ui.inquiryView.scopeHoverBook');
+        const hoverVars = { scope: scopeLabel, label, status: this.getTargetSceneStatusLabel() };
         if (this.state.activeResult) {
             const targetNote = this.state.scope === 'saga' && this.state.targetSceneIds.length
-                ? ' Target Scenes are saved for Book scope and inactive here.'
+                ? ` ${t('ui.inquiryView.scopeHoverTargetsInactive')}`
                 : '';
-            return `${scopeLabel}: ${label}. ${this.getTargetSceneStatusLabel()}.${targetNote}`;
+            return `${t('ui.inquiryView.scopeHoverResult', hoverVars)}${targetNote}`;
         }
         const glyphSeed = this.resolveGlyphSeed();
         if (glyphSeed.source === 'session') {
-            return `${scopeLabel}: ${label}. ${this.getTargetSceneStatusLabel()}. Rings seeded from the latest saved inquiry for this selection.`;
+            return t('ui.inquiryView.scopeHoverSeeded', hoverVars);
         }
-        return `${scopeLabel}: ${label}. ${this.getTargetSceneStatusLabel()}. No inquiry run yet.`;
+        return t('ui.inquiryView.scopeHoverNoRun', hoverVars);
     }
 
     private buildRingHoverText(ring: InquiryLens): string {
-        const label = ring === 'flow' ? 'Flow' : 'Depth';
+        const lens = ring === 'flow' ? t('ui.inquiryView.lensFlow') : t('ui.inquiryView.lensDepth');
         if (this.state.activeResult) {
             const verdict = this.state.activeResult.verdict;
             const score = ring === 'flow' ? verdict.flow : verdict.depth;
-            return `${label} score ${this.formatMetricDisplay(score)}.`;
+            return t('ui.inquiryView.ringScore', { lens, score: this.formatMetricDisplay(score) });
         }
         const glyphSeed = this.resolveGlyphSeed();
         if (glyphSeed.source === 'session') {
             const score = ring === 'flow' ? glyphSeed.flowValue : glyphSeed.depthValue;
-            return `${label} score ${this.formatMetricDisplay(score)} from the latest saved inquiry for this selection. Run an inquiry to refresh it.`;
+            return t('ui.inquiryView.ringScoreSeeded', { lens, score: this.formatMetricDisplay(score) });
         }
-        return `${label} verdict unavailable. Run an inquiry.`;
+        return t('ui.inquiryView.ringVerdictUnavailable', { lens });
     }
 
     private resolveGlyphSeed(): InquiryGlyphSeed {
@@ -8894,7 +8906,7 @@ export class InquiryView extends ItemView {
 
     private buildRunningProgressLabel(progress: InquiryRunProgressEvent | null): string {
         if (!progress || progress.totalPasses <= 1) return '';
-        return `Pass ${progress.currentPass} of ${progress.totalPasses}.`;
+        return t('ui.inquiryView.runningPassLabel', { current: progress.currentPass, total: progress.totalPasses });
     }
 
     private buildRunningStageLabel(progress: InquiryRunProgressEvent | null): string {
@@ -9231,10 +9243,10 @@ export class InquiryView extends ItemView {
         const stats = this.getPayloadStats();
         const summaryCount = stats.sceneSynopsisUsed + stats.bookOutlineSummaryCount + stats.sagaOutlineSummaryCount;
         const bodyCount = stats.sceneFullTextCount + stats.bookOutlineFullCount + stats.sagaOutlineFullCount;
-        if (summaryCount > 0 && bodyCount === 0) return 'Summary evidence';
-        if (bodyCount > 0 && summaryCount === 0) return 'Full Scene evidence';
-        if (summaryCount > 0 && bodyCount > 0) return 'Mixed evidence';
-        return 'Corpus evidence';
+        if (summaryCount > 0 && bodyCount === 0) return t('ui.inquiryView.evidenceSummary');
+        if (bodyCount > 0 && summaryCount === 0) return t('ui.inquiryView.evidenceFullScene');
+        if (summaryCount > 0 && bodyCount > 0) return t('ui.inquiryView.evidenceMixed');
+        return t('ui.inquiryView.evidenceCorpus');
     }
 
     private async promptCancelInquiryRun(): Promise<boolean> {
@@ -9346,7 +9358,7 @@ export class InquiryView extends ItemView {
         this.resetPreviewRowLabels();
         this.updatePromptPreview(zone, mode, hero, emptyRows, meta, { hideEmpty: true });
         this.setPreviewHeroNormalizationTooltip(result);
-        const scopeTypeLabel = result.scope === 'saga' ? 'Saga' : 'Book';
+        const scopeTypeLabel = result.scope === 'saga' ? t('settings.inquiry.classTable.saga') : t('settings.inquiry.classTable.book');
         const resultScopeLabel = result.scopeLabel || this.getScopeLabel();
         this.setPreviewFooterText(t('inquiry.findings.previewFooterDismiss', { scopeTypeLabel, resultScopeLabel }));
         this.updateResultsFooterPosition();
@@ -9777,10 +9789,10 @@ export class InquiryView extends ItemView {
                 historyRow.group.classList.add('is-token-amber');
                 const detail = staleState.diagnosis?.tooltipLines.length
                     ? staleState.diagnosis.tooltipLines.join('\n')
-                    : 'Corpus has changed since this run.';
+                    : t('ui.inquiryView.staleCorpusChanged');
                 addTooltipData(
                     historyRow.group,
-                    balanceTooltipText(`Stale - corpus changed.\n${detail}\nClick to run fresh.`),
+                    balanceTooltipText(t('ui.inquiryView.staleTooltip', { detail })),
                     'top'
                 );
             }
@@ -9795,9 +9807,9 @@ export class InquiryView extends ItemView {
         if (!historyRow) return;
         const defaultLabel = this.previewRowDefaultLabels.find((_, idx) =>
             this.previewRows[idx]?.group.classList.contains('is-history-slot')
-        ) ?? 'Prior result ·'; // SAFE: UX default row label when no default label matches the history slot
+        ) ?? t('ui.inquiryDomFactory.priorResultRowLabel'); // SAFE: UX default row label when no default label matches the history slot
         const staleState = this.getHoveredQuestionStaleState();
-        historyRow.label = staleState.isStale ? 'Stale - corpus changed ·' : defaultLabel;
+        historyRow.label = staleState.isStale ? t('ui.inquiryView.staleRowLabel') : defaultLabel;
     }
 
     private getHoveredQuestionStaleState(): { isStale: boolean; diagnosis: InquiryStaleDiagnosis | null } {
@@ -10280,17 +10292,17 @@ export class InquiryView extends ItemView {
     }
 
     private getPreviewScopeValue(): string {
-        if (this.state.scope === 'saga') return `${SIGMA_CHAR} Saga`;
-        return `Book ${this.getScopeLabel()}`;
+        if (this.state.scope === 'saga') return t('ui.inquiryView.previewScopeSaga', { sigma: SIGMA_CHAR });
+        return t('ui.inquiryView.previewScopeBook', { label: this.getScopeLabel() });
     }
 
     private getPreviewScenesValue(): string {
         const stats = this.getPayloadStats();
         if (stats.sceneFullTextCount > 0) {
-            return `Scenes · ${stats.sceneFullTextCount} (Full Scene)`;
+            return t('ui.inquiryView.previewScenesFull', { count: stats.sceneFullTextCount });
         }
         if (stats.sceneSynopsisUsed > 0) {
-            return `Scenes · ${stats.sceneSynopsisUsed} (Summary)`;
+            return t('ui.inquiryView.previewScenesSummary', { count: stats.sceneSynopsisUsed });
         }
         return '';
     }
@@ -10300,16 +10312,16 @@ export class InquiryView extends ItemView {
         const summaryCount = stats.bookOutlineSummaryCount + stats.sagaOutlineSummaryCount;
         const fullCount = stats.bookOutlineFullCount + stats.sagaOutlineFullCount;
         if (fullCount > 0) {
-            return `Outline · ${fullCount} (Full)`;
+            return t('ui.inquiryView.previewOutlineFull', { count: fullCount });
         }
         if (summaryCount > 0) {
-            return `Outline · ${summaryCount} (Summary)`;
+            return t('ui.inquiryView.previewOutlineSummary', { count: summaryCount });
         }
         return '';
     }
 
     private getPreviewModelValue(): string {
-        return `Model · ${this.getResolvedEngine().modelLabel}`;
+        return t('ui.inquiryView.previewModel', { model: this.getResolvedEngine().modelLabel });
     }
 
     private getPreviewTokensValue(): string {
@@ -10319,14 +10331,14 @@ export class InquiryView extends ItemView {
             // Engine popover (the canonical error surface), NOT here.
             // See `getEngineFailureGuidance`.
             return context.requestEstimateMethod === 'unavailable'
-                ? 'Full request · unavailable'
-                : 'Full request · Estimating…';
+                ? t('ui.inquiryView.previewRequestUnavailable')
+                : t('ui.inquiryView.previewRequestEstimating');
         }
         const requestLabel = formatTokenEstimate(context.requestTokens);
         if (context.corpus.estimatedTokens <= 0) {
-            return `Full request · ~${requestLabel}`;
+            return t('ui.inquiryView.previewRequest', { tokens: requestLabel });
         }
-        return `Full request · ~${requestLabel} (Corpus ~${formatTokenEstimate(context.corpus.estimatedTokens)})`;
+        return t('ui.inquiryView.previewRequestWithCorpus', { tokens: requestLabel, corpus: formatTokenEstimate(context.corpus.estimatedTokens) });
     }
 
     private getLatestPreviewQuestionActualCost(zone?: InquiryZone, questionId?: string): number | null {
@@ -10375,16 +10387,16 @@ export class InquiryView extends ItemView {
         const snapshot = this.plugin.getInquiryEstimateService().getSnapshot();
         const engine = this.getResolvedEngine();
         if (engine.blocked || !snapshot) {
-            return 'Cost · Estimating…';
+            return t('ui.inquiryView.previewCostEstimating');
         }
         try {
             const previewQuestionActualCost = this.getLatestPreviewQuestionActualCost(zone, questionId);
             if (previewQuestionActualCost !== null) {
-                return `Prior cost · ${formatExactUsdCost(previewQuestionActualCost)}`;
+                return t('ui.inquiryView.previewPriorCost', { cost: formatExactUsdCost(previewQuestionActualCost) });
             }
             const sameCorpusActualCost = this.getLatestSameCorpusActualCostForResolvedEngine();
             if (sameCorpusActualCost !== null) {
-                return `Recent cost · ${formatExactUsdCost(sameCorpusActualCost)}`;
+                return t('ui.inquiryView.previewRecentCost', { cost: formatExactUsdCost(sameCorpusActualCost) });
             }
             // Refuse to compute a cost estimate when the input token count
             // is unavailable. Without this guard the pricing math runs
@@ -10401,8 +10413,8 @@ export class InquiryView extends ItemView {
                 // Engine popover (the canonical error surface), NOT here.
                 // See `getEngineFailureGuidance`.
                 return inputEstimate.source === 'pending'
-                    ? 'Cost · Estimating…'
-                    : 'Cost · unavailable';
+                    ? t('ui.inquiryView.previewCostEstimating')
+                    : t('ui.inquiryView.previewCostUnavailable');
             }
             const learnedOutputTokens = this.plugin.getOutputProfileStore().predictExpectedOutput(
                 engine.provider,
@@ -10410,7 +10422,7 @@ export class InquiryView extends ItemView {
                 inputEstimate.tokens
             );
             if (learnedOutputTokens === null) {
-                return 'Cost · Estimate pending';
+                return t('ui.inquiryView.previewCostPending');
             }
             const cacheSession = this.getLatestCacheSessionForResolvedEngine();
             const nextRunCanReuseCache = !!cacheSession?.cacheWindowExpiresAt
@@ -10438,16 +10450,16 @@ export class InquiryView extends ItemView {
             // Disclosure suffix when the underlying input was a local
             // heuristic (not the authoritative provider count). Keeps the
             // user from mistaking the estimate for an exact figure.
-            const provenanceSuffix = inputEstimate.source === 'local_estimate' ? ' (local input)' : '';
+            const provenanceSuffix = inputEstimate.source === 'local_estimate' ? ` ${t('ui.inquiryView.previewLocalInputSuffix')}` : '';
             const corpusWasRun = snapshot.corpus.corpusFingerprint === this.state.corpusFingerprint;
             if (nextRunCanReuseCache) {
-                return `Cached est · ${cachedLabel}${provenanceSuffix}`;
+                return `${t('ui.inquiryView.previewCachedEst', { cached: cachedLabel })}${provenanceSuffix}`;
             }
             return (corpusWasRun
-                ? `Fresh est · ${freshLabel} / ${cachedLabel} cached`
-                : `Fresh est · ${freshLabel}`) + provenanceSuffix;
+                ? t('ui.inquiryView.previewFreshEstWithCached', { fresh: freshLabel, cached: cachedLabel })
+                : t('ui.inquiryView.previewFreshEst', { fresh: freshLabel })) + provenanceSuffix;
         } catch {
-            return 'Cost · Estimate unavailable';
+            return t('ui.inquiryView.previewCostEstimateUnavailable');
         }
     }
 
@@ -10778,7 +10790,7 @@ export class InquiryView extends ItemView {
             label: fallbackLabel || item.displayLabel || item.id,
             itemDisplayLabel: item.displayLabel,
             itemTitle: this.getMinimapItemTitle(item),
-            hoverLabel: fallbackLabel || item.displayLabel || item.id || 'Scene' // SAFE: display fallback chain for the scene hover label
+            hoverLabel: fallbackLabel || item.displayLabel || item.id || t('ui.inquiryView.sceneFallbackLabel') // SAFE: display fallback chain for the scene hover label
         });
     }
 

@@ -9,6 +9,7 @@ import type { Component } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { EmbeddedReleaseNotesEntry } from '../types';
 import { parseReleaseVersion, formatPublishedDate } from './releases';
+import { t } from '../i18n';
 
 export { formatPublishedDate };
 
@@ -80,7 +81,7 @@ export async function renderReleaseNotesList(
 
         if (isFeatured) {
             summaryEl.createSpan({
-                text: 'Latest',
+                text: t('ui.releaseNotesRenderer.latestBadge'),
                 cls: `${cssPrefix}-details-summary-badge`
             });
         }

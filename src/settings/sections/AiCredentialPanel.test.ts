@@ -33,6 +33,12 @@ class ElementStub extends EventTarget {
     find(text: string): ElementStub | undefined { return this.textContent === text ? this : this.children.map(child => child.find(text)).find(Boolean); }
 }
 vi.mock('../../ai/credentials/keyValidation', () => ({ validateProviderKeyQuick: vi.fn() }));
+// New ui.* keys resolve to their key (plus vars) so assertions can name them; existing keys keep their English.
+vi.mock('../../i18n', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../i18n')>();
+    return { ...actual, t: (key: string, vars?: Record<string, string | number>) => key.startsWith('ui.')
+        ? (vars ? `${key} ${JSON.stringify(vars)}` : key) : actual.t(key, vars) };
+});
 vi.mock('../../../tests/mocks/obsidian.ts', async importOriginal => ({
     ...await importOriginal<typeof import('obsidian')>(), setIcon: vi.fn(),
     Notice: class { constructor(message: string) { ui.notices.push(message); } },
@@ -73,7 +79,7 @@ describe('AI credential panel', () => {
         expect(p.changed).toHaveBeenLastCalledWith(state);
         expect(p.status.descEl.allText()).toContain('Obsidian secret storage');
         expect(p.status.descEl.allText()).not.toMatch(/\{secret\}|\{provider\}|DocumentFragment/);
-        expect(p.name.descEl.allText()).toContain('Get key');
+        expect(p.name.descEl.allText()).toContain('ui.aiCredentialPanel.getKeyLink');
         expect(p.key.text!.inputEl).toMatchObject({ type: 'password', autocomplete: 'new-password', spellcheck: false });
         expect(p.key.settingEl.attributes.has('hidden')).toBe(state !== 'rejected');
         p.scope.unload();
@@ -142,7 +148,7 @@ describe('AI credential panel', () => {
         p.key.text!.setValue('test-retry-key'); p.key.text!.inputEl.blur(); await p.panel.refresh();
         expect(p.key.text!.getValue()).toBe('test-retry-key');
         expect(p.key.settingEl.attributes.has('hidden')).toBe(false);
-        expect(ui.notices).toContain('Unable to save OpenAI key privately.'); p.scope.unload();
+        expect(ui.notices).toContain('ui.aiCredentialPanel.saveKeyFailedNotice {"provider":"OpenAI"}'); p.scope.unload();
     });
     it('removes status action listeners and ignores validation after disposal', async () => {
         const p = render(); await p.panel.refresh();

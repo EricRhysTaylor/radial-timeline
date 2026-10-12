@@ -9,6 +9,7 @@
 import { App, ButtonComponent, Setting, TextComponent } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import { colorSwatch } from '../ui/ui';
+import { t } from '../i18n';
 
 export interface CustomBgPreset {
     label: string;
@@ -39,15 +40,15 @@ export class CustomBgPresetModal extends ErtModal {
         const isEdit = !!this.opts.existing;
         const initialColor = this.opts.existing?.color ?? this.opts.currentBg;
         const initialLabel = this.opts.existing?.label ?? '';
-        this.mountHeader({ title: isEdit ? 'Edit custom preset' : 'Save custom preset' });
+        this.mountHeader({ title: isEdit ? t('ui.customBgPresetModal.editTitle') : t('ui.customBgPresetModal.saveTitle') });
 
-        const colorRow = new Setting(contentEl).setName('Color');
+        const colorRow = new Setting(contentEl).setName(t('ui.customBgPresetModal.colorLabel'));
         colorRow.settingEl.addClass('ert-settingRow');
         let pickedColor = initialColor;
         let hexInput: TextComponent | null = null;
         const swatch = colorSwatch(colorRow.controlEl, {
             value: initialColor,
-            ariaLabel: 'Preset color',
+            ariaLabel: t('ui.customBgPresetModal.colorAriaLabel'),
             onChange: (val) => {
                 pickedColor = val;
                 hexInput?.setValue(val);
@@ -65,18 +66,18 @@ export class CustomBgPresetModal extends ErtModal {
             });
         });
 
-        const nameRow = new Setting(contentEl).setName('Name');
+        const nameRow = new Setting(contentEl).setName(t('ui.customBgPresetModal.nameLabel'));
         nameRow.settingEl.addClass('ert-settingRow');
         let pickedLabel = initialLabel;
         nameRow.addText(text => {
-            text.setPlaceholder('e.g. My Blog').setValue(initialLabel);
+            text.setPlaceholder(t('ui.customBgPresetModal.namePlaceholder')).setValue(initialLabel);
             text.onChange((val) => { pickedLabel = val.trim(); });
             window.setTimeout(() => text.inputEl.focus(), 50);
         });
 
         const actions = this.mountActions();
         if (isEdit) {
-            const deleteBtn = new ButtonComponent(actions).setButtonText('Delete').setDestructive();
+            const deleteBtn = new ButtonComponent(actions).setButtonText(t('ui.customBgPresetModal.deleteButton')).setDestructive();
             deleteBtn.buttonEl.addClass('ert-btn--fit');
             deleteBtn.onClick(async () => {
                 await this.opts.onDelete();
@@ -84,13 +85,13 @@ export class CustomBgPresetModal extends ErtModal {
             });
         }
         actions.createDiv({ cls: 'ert-modal-actions-spacer' });
-        const cancelBtn = new ButtonComponent(actions).setButtonText('Cancel');
+        const cancelBtn = new ButtonComponent(actions).setButtonText(t('common.cancel'));
         cancelBtn.buttonEl.addClass('ert-btn--fit');
         cancelBtn.onClick(() => this.close());
-        const saveBtn = new ButtonComponent(actions).setButtonText('Save').setCta();
+        const saveBtn = new ButtonComponent(actions).setButtonText(t('common.save')).setCta();
         saveBtn.buttonEl.addClass('ert-btn--fit');
         saveBtn.onClick(async () => {
-            await this.opts.onSave({ label: pickedLabel || `Custom ${this.opts.index + 1}`, color: pickedColor });
+            await this.opts.onSave({ label: pickedLabel || t('ui.customBgPresetModal.defaultLabel', { number: this.opts.index + 1 }), color: pickedColor });
             this.close();
         });
     }

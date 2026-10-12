@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GossamerProcessingModal } from './GossamerProcessingModal';
 import type { GossamerRunTiming } from '../gossamer/runTiming';
+import { formatGossamerCacheClock } from '../gossamer/cacheWindow';
+import { t } from '../i18n';
 
 function timingModal(saveSettings = vi.fn().mockResolvedValue(undefined)) {
     const settings: { gossamerLastRunTiming?: GossamerRunTiming } = {};
@@ -96,7 +98,7 @@ describe('Gossamer modal cache display', () => {
             cacheWindow: null
         }) as GossamerProcessingModal;
         modal.setCacheWindow(warm);
-        expect(element.setText).toHaveBeenCalledWith(expect.stringContaining('unchanged input may reuse it'));
+        expect(element.setText).toHaveBeenCalledWith(t('ui.gossamerProcessingModal.cacheConfirmed', { clock: formatGossamerCacheClock(warm, 100) ?? '' }));
         expect(vi.getTimerCount()).toBe(1);
         modal.setCacheWindow(null);
         expect(element.addClass).toHaveBeenCalledWith('ert-hidden');

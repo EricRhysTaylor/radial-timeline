@@ -2,6 +2,7 @@ import { App, ButtonComponent, Modal, Notice, TFile, setIcon, setTooltip, Settin
 import { ERT_CLASSES } from '../../../ui/classes';
 import { confirmWithErtModal } from '../../../modals/ErtConfirmModal';
 import type RadialTimelinePlugin from '../../../main';
+import { t, tCount } from '../../../i18n';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../../wikiLink';
 import {
     collectFilesForAuditWithScope,
@@ -112,25 +113,19 @@ function formatBatchNotice(params: {
     updated: number;
     skipped?: number;
     failed?: number;
-    unit: string;
-    updatedVerb?: string;
-    skippedLabel?: string;
-    noChangeText?: string;
+    skippedText?: (count: number) => string;
 }): string {
     const {
         updated,
         skipped = 0,
         failed = 0,
-        unit,
-        updatedVerb = 'Updated',
-        skippedLabel = 'unchanged',
-        noChangeText = 'No changes made.',
+        skippedText = (count: number) => t('ui.sceneNormalizerSection.unchangedCount', { count }),
     } = params;
     const parts: string[] = [];
-    if (updated > 0) parts.push(`${updatedVerb} ${updated} ${unit}${updated !== 1 ? 's' : ''}`);
-    if (skipped > 0) parts.push(`${skipped} ${skippedLabel}`);
-    if (failed > 0) parts.push(`${failed} failed`);
-    return parts.join(', ') || noChangeText;
+    if (updated > 0) parts.push(t('ui.sceneNormalizerSection.updatedScenesPart', { scenes: tCount('scene', updated) }));
+    if (skipped > 0) parts.push(skippedText(skipped));
+    if (failed > 0) parts.push(t('ui.sceneNormalizerSection.failedCount', { count: failed }));
+    return parts.join(', ') || t('ui.sceneNormalizerSection.noChangesMade');
 }
 
 export function renderSceneNormalizerSection(params: {
@@ -146,11 +141,11 @@ export function renderSceneNormalizerSection(params: {
     let hasCheckedScenes = false;
     let checkedSceneFiles: TFile[] = [];
     const buildPolicyBadge = (): string => (
-        getAdvancedMode(plugin.settings) === 'enabled' ? 'Core + advanced' : 'Core only'
+        getAdvancedMode(plugin.settings) === 'enabled' ? t('ui.sceneNormalizerSection.policyCoreAdvanced') : t('ui.sceneNormalizerSection.policyCoreOnly')
     );
 
     const headerRow = new Settings(parentEl)
-        .setName('Scene note maintenance');
+        .setName(t('ui.sceneNormalizerSection.heading'));
     headerRow.settingEl.addClass('ert-scene-properties-row', 'ert-scene-maintenance-row');
     addHeadingIcon(headerRow, 'shield-check');
     addWikiLink(headerRow, 'Settings-Core#scene-properties');
@@ -158,13 +153,13 @@ export function renderSceneNormalizerSection(params: {
     const policyBadgeEl = createBadge(headerRow.controlEl, buildPolicyBadge());
     const panel = parentEl.createDiv({ cls: ['ert-panel', 'ert-stack', 'ert-scene-maintenance-panel', 'ert-settings-hidden'] });
     const maintenanceSection = panel.createDiv({ cls: ['ert-stack', 'ert-scene-maintenance-section'] });
-    maintenanceSection.createDiv({ cls: 'ert-scene-maintenance-group-label', text: 'Maintenance' });
+    maintenanceSection.createDiv({ cls: 'ert-scene-maintenance-group-label', text: t('ui.sceneNormalizerSection.maintenanceGroup') });
     const maintenanceGroup = maintenanceSection.createDiv({ cls: ['ert-inline-actions', 'ert-scene-maintenance-actions'] });
     const cleanupSection = panel.createDiv({ cls: ['ert-stack', 'ert-scene-maintenance-section', 'ert-scene-maintenance-section--cleanup'] });
-    cleanupSection.createDiv({ cls: 'ert-scene-maintenance-group-label', text: 'Cleanup' });
+    cleanupSection.createDiv({ cls: 'ert-scene-maintenance-group-label', text: t('ui.sceneNormalizerSection.cleanupGroup') });
     const cleanupGroup = cleanupSection.createDiv({ cls: ['ert-inline-actions', 'ert-inline-actions--end', 'ert-scene-maintenance-actions', 'ert-scene-maintenance-actions--cleanup'] });
     const resultsSection = panel.createDiv({ cls: ['ert-stack', 'ert-scene-maintenance-section', 'ert-scene-maintenance-section--results', 'ert-settings-hidden'] });
-    resultsSection.createDiv({ cls: 'ert-scene-maintenance-group-label', text: 'Scene status' });
+    resultsSection.createDiv({ cls: 'ert-scene-maintenance-group-label', text: t('ui.sceneNormalizerSection.resultsGroup') });
     const resultsEl = resultsSection.createDiv({ cls: 'ert-audit-results-row' });
     const refreshResultsVisibility = () => {
         resultsSection.toggleClass('ert-settings-hidden', resultsEl.childElementCount === 0);
@@ -177,7 +172,7 @@ export function renderSceneNormalizerSection(params: {
     parentEl.addEventListener('ert:scene-advanced-maintenance-changed', refreshMaintenanceCopy);
 
     new ButtonComponent(headerRow.controlEl)
-        .setButtonText('Check notes')
+        .setButtonText(t('ui.sceneNormalizerSection.checkNotesButton'))
         .onClick(() => void runCheckScenes());
 
     let copyBtn: HTMLButtonElement | undefined;
@@ -208,54 +203,52 @@ export function renderSceneNormalizerSection(params: {
         const actionableDrift = notes.filter((n) => n.orderDrift && isSafe(n)).length;
         const driftBlockedByUnsafe = (summary?.scenesWithDrift ?? 0) - actionableDrift;
         const driftBlockedSuffix = driftBlockedByUnsafe > 0
-            ? ` (${driftBlockedByUnsafe} UNSAFE note${driftBlockedByUnsafe !== 1 ? 's' : ''} blocked — review manually)`
+            ? ` ${t('ui.sceneNormalizerSection.driftBlockedSuffix', { notes: tCount('unsafeNote', driftBlockedByUnsafe) })}`
             : '';
 
         const uncheckedHint = hasCheckedScenes
             ? undefined
-            : 'Check Scenes to review what needs maintenance.';
+            : t('ui.sceneNormalizerSection.uncheckedHint');
 
-        const plural = (n: number, noun: string) => `${n} ${noun}${n !== 1 ? 's' : ''}`;
-
-        setIconButtonDisabled(copyBtn, !sceneAudit, sceneAudit ? undefined : 'Check Scenes to generate a status report.');
+        setIconButtonDisabled(copyBtn, !sceneAudit, sceneAudit ? undefined : t('ui.sceneNormalizerSection.copyUncheckedHint'));
         setButtonDisabled(
             addCoreBtn,
             !summary || summary.scenesWithMissingCore === 0,
-            uncheckedHint || 'All scenes already contain core properties.',
-            `Add core properties to ${plural(summary?.scenesWithMissingCore ?? 0, 'scene')}.`
+            uncheckedHint || t('ui.sceneNormalizerSection.coreCompleteTooltip'),
+            t('ui.sceneNormalizerSection.addCoreTooltip', { scenes: tCount('scene', summary?.scenesWithMissingCore ?? 0) })
         );
         setButtonDisabled(
             addAdvancedBtn,
             !advancedEnabled || !summary || summary.scenesWithMissingAdvanced === 0,
             !advancedEnabled
-                ? 'Advanced properties are disabled.'
-                : (uncheckedHint || 'All maintained advanced properties are already present.'),
-            `Add advanced properties to ${plural(summary?.scenesWithMissingAdvanced ?? 0, 'scene')}.`
+                ? t('ui.sceneNormalizerSection.advancedDisabledTooltip')
+                : (uncheckedHint || t('ui.sceneNormalizerSection.advancedCompleteTooltip')),
+            t('ui.sceneNormalizerSection.addAdvancedTooltip', { scenes: tCount('scene', summary?.scenesWithMissingAdvanced ?? 0) })
         );
         setButtonDisabled(
             addIdsBtn,
             !summary || summary.scenesMissingIds === 0,
-            uncheckedHint || 'All scenes already have IDs.',
-            `Add missing IDs to ${plural(summary?.scenesMissingIds ?? 0, 'scene')}.`
+            uncheckedHint || t('ui.sceneNormalizerSection.idsCompleteTooltip'),
+            t('ui.sceneNormalizerSection.addIdsTooltip', { scenes: tCount('scene', summary?.scenesMissingIds ?? 0) })
         );
         setButtonDisabled(
             reorderBtn,
             !summary || actionableDrift === 0,
-            uncheckedHint || `Scene property order already matches the current layout.${driftBlockedSuffix}`,
-            `Reorder properties in ${plural(actionableDrift, 'scene')}.${driftBlockedSuffix}`
+            uncheckedHint || `${t('ui.sceneNormalizerSection.orderCompleteTooltip')}${driftBlockedSuffix}`,
+            `${t('ui.sceneNormalizerSection.reorderTooltip', { scenes: tCount('scene', actionableDrift) })}${driftBlockedSuffix}`
         );
         setButtonDisabled(
             removeAdvancedBtn,
             !removableAdvanced,
             advancedMode === 'enabled'
-                ? 'Advanced properties are currently maintained, so removal is disabled.'
-                : (uncheckedHint || 'No scenes currently contain advanced properties to remove.')
+                ? t('ui.sceneNormalizerSection.removeMaintainedTooltip')
+                : (uncheckedHint || t('ui.sceneNormalizerSection.removeNothingTooltip'))
         );
         setButtonDisabled(
             fixDuplicateBtn,
             !summary || summary.scenesDuplicateIds === 0,
-            uncheckedHint || 'No duplicate scene IDs were detected.',
-            `Fix ${plural(summary?.scenesDuplicateIds ?? 0, 'duplicate scene ID')}.`
+            uncheckedHint || t('ui.sceneNormalizerSection.noDuplicatesTooltip'),
+            t('ui.sceneNormalizerSection.fixDuplicatesTooltip', { ids: tCount('duplicateSceneId', summary?.scenesDuplicateIds ?? 0) })
         );
     };
 
@@ -278,11 +271,11 @@ export function renderSceneNormalizerSection(params: {
                         ? 'mixed'
                         : 'clean';
         const healthLabels: Record<string, string> = {
-            clean: 'Clean',
-            mixed: 'Some scenes need attention',
-            'needs-attention': 'Needs attention',
-            critical: 'Critical issues detected',
-            unsafe: 'Unsafe notes detected',
+            clean: t('ui.sceneNormalizerSection.healthClean'),
+            mixed: t('ui.sceneNormalizerSection.healthMixed'),
+            'needs-attention': t('ui.sceneNormalizerSection.healthNeedsAttention'),
+            critical: t('ui.sceneNormalizerSection.healthCritical'),
+            unsafe: t('ui.sceneNormalizerSection.healthUnsafe'),
         };
         const warningsOnly = healthLevel === 'mixed'
             && summary.notesWithWarnings > 0
@@ -297,8 +290,8 @@ export function renderSceneNormalizerSection(params: {
 
         const headerEl = resultsEl.createDiv({ cls: 'ert-audit-result-header' });
         const statusEl = headerEl.createSpan({ cls: `ert-audit-health ert-audit-health--${healthLevel}` });
-        statusEl.textContent = `Scene Status: ${warningsOnly ? 'Warnings to review' : healthLabels[healthLevel]}`;
-        headerEl.createSpan({ text: ` · Scope: ${auditScopeSummary}`, cls: 'ert-audit-summary' });
+        statusEl.textContent = t('ui.sceneNormalizerSection.statusLine', { status: warningsOnly ? t('ui.sceneNormalizerSection.warningsToReview') : healthLabels[healthLevel] });
+        headerEl.createSpan({ text: ` · ${t('ui.sceneNormalizerSection.scopeLine', { scope: auditScopeSummary })}`, cls: 'ert-audit-summary' });
 
         if (
             summary.clean === summary.totalNotes
@@ -310,7 +303,7 @@ export function renderSceneNormalizerSection(params: {
             && summary.notesDuplicateIds === 0
         ) {
             resultsEl.createDiv({
-                text: `All ${summary.totalNotes} scenes match the current scene property rules.`,
+                text: t('ui.sceneNormalizerSection.allScenesClean', { count: summary.totalNotes }),
                 cls: 'ert-audit-clean'
             });
             return;
@@ -332,14 +325,31 @@ export function renderSceneNormalizerSection(params: {
             warningType: group.label,
             entries: group.entries,
         }));
+        /** A fixed audit category; its chip reads as a count plus the category, e.g. "3 missing ids". */
+        const staticChip = (
+            key: string,
+            label: string,
+            kind: ChipConfig['kind'],
+            entries: NoteAuditEntry[],
+            displayText: (count: number) => string
+        ): ChipConfig => ({ key, label, kind, entries, displayText: displayText(entries.length) });
         const chips: ChipConfig[] = [
-            { key: 'missing-ids', label: 'Missing IDs', kind: 'critical', entries: auditResult.notes.filter((note) => note.missingReferenceId) },
-            { key: 'duplicate-ids', label: 'Duplicate IDs', kind: 'duplicate', entries: auditResult.notes.filter((note) => !!note.duplicateReferenceId) },
-            { key: 'unsafe', label: 'Unsafe', kind: 'unsafe', entries: auditResult.notes.filter((note) => note.safetyResult?.status === 'dangerous') },
-            { key: 'suspicious', label: 'Needs review', kind: 'suspicious', entries: auditResult.notes.filter((note) => note.safetyResult?.status === 'suspicious') },
-            { key: 'missing', label: advancedEnabled ? 'Missing properties' : 'Missing core properties', kind: 'missing', entries: auditResult.notes.filter((note) => note.missingFields.length > 0) },
-            { key: 'extra', label: 'Other plugin keys (read-only)', kind: 'extra', entries: auditResult.notes.filter((note) => note.extraKeys.length > 0) },
-            { key: 'drift', label: 'Layout cleanup', kind: 'drift', entries: auditResult.notes.filter((note) => note.orderDrift) },
+            staticChip('missing-ids', 'Missing IDs', 'critical', auditResult.notes.filter((note) => note.missingReferenceId),
+                (count) => t('ui.sceneNormalizerSection.chipMissingIds', { count })),
+            staticChip('duplicate-ids', 'Duplicate IDs', 'duplicate', auditResult.notes.filter((note) => !!note.duplicateReferenceId),
+                (count) => t('ui.sceneNormalizerSection.chipDuplicateIds', { count })),
+            staticChip('unsafe', 'Unsafe', 'unsafe', auditResult.notes.filter((note) => note.safetyResult?.status === 'dangerous'),
+                (count) => t('ui.sceneNormalizerSection.chipUnsafe', { count })),
+            staticChip('suspicious', 'Needs review', 'suspicious', auditResult.notes.filter((note) => note.safetyResult?.status === 'suspicious'),
+                (count) => t('ui.sceneNormalizerSection.chipNeedsReview', { count })),
+            staticChip('missing', advancedEnabled ? 'Missing properties' : 'Missing core properties', 'missing', auditResult.notes.filter((note) => note.missingFields.length > 0),
+                (count) => advancedEnabled
+                    ? t('ui.sceneNormalizerSection.chipMissingProperties', { count })
+                    : t('ui.sceneNormalizerSection.chipMissingCoreProperties', { count })),
+            staticChip('extra', 'Other plugin keys (read-only)', 'extra', auditResult.notes.filter((note) => note.extraKeys.length > 0),
+                (count) => t('ui.sceneNormalizerSection.chipOtherKeys', { count })),
+            staticChip('drift', 'Layout cleanup', 'drift', auditResult.notes.filter((note) => note.orderDrift),
+                (count) => t('ui.sceneNormalizerSection.chipLayoutCleanup', { count })),
             ...warningChips,
         ];
         const visibleChips = chips.filter((chip) => chip.entries.length > 0);
@@ -366,7 +376,7 @@ export function renderSceneNormalizerSection(params: {
                 });
             });
             if (summary.clean > 0) {
-                chipsEl.createSpan({ text: `${summary.clean} clean`, cls: 'ert-chip ert-audit-chip ert-audit-chip--clean' });
+                chipsEl.createSpan({ text: t('ui.sceneNormalizerSection.cleanChip', { count: summary.clean }), cls: 'ert-chip ert-audit-chip ert-audit-chip--clean' });
             }
         };
 
@@ -386,15 +396,15 @@ export function renderSceneNormalizerSection(params: {
             for (const entry of pageEntries) {
                 let reason = entry.reason;
                 if (activeChip.kind === 'extra') {
-                    reason = `Not managed by Radial Timeline: ${entry.extraKeys.join(', ')}`;
+                    reason = t('ui.sceneNormalizerSection.notManagedReason', { keys: entry.extraKeys.join(', ') });
                 } else if (activeChip.kind === 'drift') {
-                    reason = 'Property order differs from the current scene layout';
+                    reason = t('ui.sceneNormalizerSection.orderDiffersReason');
                 } else if (activeChip.kind === 'critical') {
-                    reason = 'Missing scene ID';
+                    reason = t('ui.sceneNormalizerSection.missingSceneIdReason');
                 } else if (activeChip.kind === 'duplicate') {
                     reason = entry.duplicateReferenceId
-                        ? `Duplicate scene ID: ${entry.duplicateReferenceId}`
-                        : 'Duplicate scene ID';
+                        ? t('ui.sceneNormalizerSection.duplicateSceneIdValue', { id: entry.duplicateReferenceId })
+                        : t('ui.sceneNormalizerSection.duplicateSceneIdReason');
                 } else if (activeChip.kind === 'warning') {
                     const warnings = activeChip.warningType
                         ? entry.semanticWarnings.filter((warning) => getSemanticWarningType(warning) === activeChip.warningType)
@@ -426,16 +436,16 @@ export function renderSceneNormalizerSection(params: {
             }
 
             const navEl = detailsEl.createDiv({ cls: 'ert-audit-pagination' });
-            navEl.createSpan({ cls: 'ert-audit-pagination-label', text: `${start + 1}–${end} of ${total}` });
+            navEl.createSpan({ cls: 'ert-audit-pagination-label', text: t('ui.sceneNormalizerSection.paginationLabel', { start: start + 1, end, total }) });
             if (page > 0) {
-                const prevBtn = navEl.createEl('button', { text: '← Prev', cls: 'ert-audit-nav-btn', attr: { type: 'button' } });
+                const prevBtn = navEl.createEl('button', { text: t('ui.sceneNormalizerSection.prevButton'), cls: 'ert-audit-nav-btn', attr: { type: 'button' } });
                 prevBtn.addEventListener('click', () => {
                     page -= 1;
                     renderNoteList();
                 });
             }
             if (end < total) {
-                const nextBtn = navEl.createEl('button', { text: `Next ${Math.min(pageSize, total - end)} →`, cls: 'ert-audit-nav-btn', attr: { type: 'button' } });
+                const nextBtn = navEl.createEl('button', { text: t('ui.sceneNormalizerSection.nextButton', { count: Math.min(pageSize, total - end) }), cls: 'ert-audit-nav-btn', attr: { type: 'button' } });
                 nextBtn.addEventListener('click', () => {
                     page += 1;
                     renderNoteList();
@@ -468,7 +478,7 @@ export function renderSceneNormalizerSection(params: {
         }
         if (auditScope.files.length === 0) {
             resultsEl.empty();
-            resultsEl.createDiv({ text: 'No scene notes found in the active book scope.', cls: 'ert-audit-clean' });
+            resultsEl.createDiv({ text: t('ui.sceneNormalizerSection.noScenesInScope'), cls: 'ert-audit-clean' });
             refreshResultsVisibility();
             sceneAudit = null;
             auditResult = null;
@@ -490,40 +500,40 @@ export function renderSceneNormalizerSection(params: {
 
     copyBtn = cleanupGroup.createEl('button', {
         cls: [ERT_CLASSES.ICON_BTN],
-        attr: { type: 'button', 'aria-label': 'Copy status report to clipboard' }
+        attr: { type: 'button', 'aria-label': t('ui.sceneNormalizerSection.copyReportTooltip') }
     });
     setIcon(copyBtn, 'clipboard-copy');
-    setTooltip(copyBtn, 'Copy status report to clipboard');
+    setTooltip(copyBtn, t('ui.sceneNormalizerSection.copyReportTooltip'));
     copyBtn.addEventListener('click', () => {
         if (!auditResult) return;
         const report = formatAuditReport(auditResult, 'Scene');
-        void navigator.clipboard.writeText(report).then(() => new Notice('Scene status report copied to clipboard.'));
+        void navigator.clipboard.writeText(report).then(() => new Notice(t('ui.sceneNormalizerSection.reportCopiedNotice')));
     });
 
     addCoreBtn = new ButtonComponent(maintenanceGroup)
-        .setButtonText('Add core properties')
+        .setButtonText(t('ui.sceneNormalizerSection.addCoreButton'))
         .onClick(async () => {
             if (!sceneAudit) return;
             const targetFiles = sceneAudit.notes.filter((note) => note.missingCoreKeys.length > 0).map((note) => note.file);
             if (targetFiles.length === 0) return;
             const result = await insertMissingCoreFields({ app, settings: plugin.settings, files: targetFiles, audit: sceneAudit });
-            new Notice(result.updated > 0 ? `Updated ${result.updated} scene${result.updated !== 1 ? 's' : ''}.` : 'No changes made.');
+            new Notice(result.updated > 0 ? t('ui.sceneNormalizerSection.updatedScenesNotice', { scenes: tCount('scene', result.updated) }) : t('ui.sceneNormalizerSection.noChangesMade'));
             window.setTimeout(() => { void runCheckScenes(); }, 750);
         });
 
     addAdvancedBtn = new ButtonComponent(maintenanceGroup)
-        .setButtonText('Add advanced properties')
+        .setButtonText(t('ui.sceneNormalizerSection.addAdvancedButton'))
         .onClick(async () => {
             if (!sceneAudit) return;
             const targetFiles = sceneAudit.notes.filter((note) => note.missingAdvancedKeys.length > 0).map((note) => note.file);
             if (targetFiles.length === 0) return;
             const result = await insertMissingAdvancedFields({ app, settings: plugin.settings, files: targetFiles, audit: sceneAudit });
-            new Notice(result.updated > 0 ? `Updated ${result.updated} scene${result.updated !== 1 ? 's' : ''}.` : 'No changes made.');
+            new Notice(result.updated > 0 ? t('ui.sceneNormalizerSection.updatedScenesNotice', { scenes: tCount('scene', result.updated) }) : t('ui.sceneNormalizerSection.noChangesMade'));
             window.setTimeout(() => { void runCheckScenes(); }, 750);
         });
 
     addIdsBtn = new ButtonComponent(maintenanceGroup)
-        .setButtonText('Add missing IDs')
+        .setButtonText(t('ui.sceneNormalizerSection.addIdsButton'))
         .onClick(async () => {
             if (!sceneAudit) return;
             const result = await ensureSceneIds({
@@ -538,14 +548,13 @@ export function renderSceneNormalizerSection(params: {
                 updated: result.updated,
                 skipped: result.skipped,
                 failed: result.failed,
-                unit: 'scene',
-                skippedLabel: 'already had IDs',
+                skippedText: (count) => t('ui.sceneNormalizerSection.alreadyHadIds', { count }),
             }));
             window.setTimeout(() => { void runCheckScenes(); }, 750);
         });
 
     reorderBtn = new ButtonComponent(maintenanceGroup)
-        .setButtonText('Reorder properties')
+        .setButtonText(t('ui.sceneNormalizerSection.reorderButton'))
         .onClick(async () => {
             if (!sceneAudit || !auditResult) return;
             const notesWithDrift = sceneAudit.notes.filter((note) => note.orderDrift && note.safetyResult?.status !== 'dangerous');
@@ -569,27 +578,27 @@ export function renderSceneNormalizerSection(params: {
                 modal.modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal-shell--md');
                 modal.contentEl.addClass('ert-modal-container', 'ert-stack');
                 const header = modal.contentEl.createDiv({ cls: 'ert-modal-header' });
-                header.createSpan({ cls: 'ert-modal-badge', text: 'SCENE MAINTENANCE' });
-                header.createDiv({ cls: 'ert-modal-title', text: 'Reorder properties' });
-                header.createDiv({ cls: 'ert-modal-subtitle', text: `Reorder properties in ${notesWithDrift.length} scene${notesWithDrift.length !== 1 ? 's' : ''} to match the current scene layout.` });
+                header.createSpan({ cls: 'ert-modal-badge', text: t('ui.sceneNormalizerSection.reorderModalBadge') });
+                header.createDiv({ cls: 'ert-modal-title', text: t('ui.sceneNormalizerSection.reorderButton') });
+                header.createDiv({ cls: 'ert-modal-subtitle', text: t('ui.sceneNormalizerSection.reorderModalSubtitle', { scenes: tCount('scene', notesWithDrift.length) }) });
                 const body = modal.contentEl.createDiv({ cls: ['ert-panel', 'ert-panel--glass'] });
-                body.createDiv({ text: `Scope: ${auditScopeSummary}`, cls: 'ert-modal-subtitle' });
-                body.createDiv({ text: 'Only property order changes. All values stay exactly the same.' });
+                body.createDiv({ text: t('ui.sceneNormalizerSection.scopeLine', { scope: auditScopeSummary }), cls: 'ert-modal-subtitle' });
+                body.createDiv({ text: t('ui.sceneNormalizerSection.reorderModalBody') });
                 if (preview) {
-                    body.createDiv({ text: `Preview (${notesWithDrift[0].file.basename}):`, cls: 'ert-modal-subtitle' });
+                    body.createDiv({ text: t('ui.sceneNormalizerSection.reorderPreviewLabel', { name: notesWithDrift[0].file.basename }), cls: 'ert-modal-subtitle' });
                     const beforeAfter = body.createDiv({ cls: 'ert-reorder-preview' });
                     const beforeCol = beforeAfter.createDiv({ cls: 'ert-reorder-preview-col' });
-                    beforeCol.createDiv({ text: 'Before:', cls: 'ert-reorder-preview-label' });
+                    beforeCol.createDiv({ text: t('ui.sceneNormalizerSection.beforeLabel'), cls: 'ert-reorder-preview-label' });
                     const beforeList = beforeCol.createEl('ol');
                     preview.before.forEach((key) => beforeList.createEl('li', { text: key }));
                     const afterCol = beforeAfter.createDiv({ cls: 'ert-reorder-preview-col' });
-                    afterCol.createDiv({ text: 'After:', cls: 'ert-reorder-preview-label' });
+                    afterCol.createDiv({ text: t('ui.sceneNormalizerSection.afterLabel'), cls: 'ert-reorder-preview-label' });
                     const afterList = afterCol.createEl('ol');
                     preview.after.forEach((key) => afterList.createEl('li', { text: key }));
                 }
                 const footer = modal.contentEl.createDiv({ cls: 'ert-modal-actions' });
-                new ButtonComponent(footer).setButtonText('Reorder').setCta().onClick(() => { resolve(true); modal.close(); });
-                new ButtonComponent(footer).setButtonText('Cancel').onClick(() => { resolve(false); modal.close(); });
+                new ButtonComponent(footer).setButtonText(t('ui.sceneNormalizerSection.reorderConfirmButton')).setCta().onClick(() => { resolve(true); modal.close(); });
+                new ButtonComponent(footer).setButtonText(t('common.cancel')).onClick(() => { resolve(false); modal.close(); });
                 modal.onClose = () => resolve(false);
                 modal.open();
             });
@@ -601,12 +610,12 @@ export function renderSceneNormalizerSection(params: {
                 files: notesWithDrift.map((note) => note.file),
                 audit: sceneAudit,
             });
-            new Notice(result.reordered > 0 ? `Reordered ${result.reordered} scene${result.reordered !== 1 ? 's' : ''}.` : 'No changes made.');
+            new Notice(result.reordered > 0 ? t('ui.sceneNormalizerSection.reorderedScenesNotice', { scenes: tCount('scene', result.reordered) }) : t('ui.sceneNormalizerSection.noChangesMade'));
             window.setTimeout(() => { void runCheckScenes(); }, 750);
         });
 
     removeAdvancedBtn = new ButtonComponent(cleanupGroup)
-        .setButtonText('Remove advanced properties')
+        .setButtonText(t('ui.sceneNormalizerSection.removeAdvancedButton'))
         .setDestructive()
         .onClick(async () => {
             if (!sceneAudit) return;
@@ -645,14 +654,14 @@ export function renderSceneNormalizerSection(params: {
                 audit: sceneAudit,
             });
             const parts = [];
-            if (result.deleted > 0) parts.push(`Cleaned ${result.deleted} scene${result.deleted !== 1 ? 's' : ''}`);
-            if (deletionSnapshotPath) parts.push(`Snapshot: ${deletionSnapshotPath}`);
-            new Notice(parts.join(', ') || 'No changes made.');
+            if (result.deleted > 0) parts.push(t('ui.sceneNormalizerSection.cleanedScenes', { scenes: tCount('scene', result.deleted) }));
+            if (deletionSnapshotPath) parts.push(t('ui.sceneNormalizerSection.snapshotPath', { path: deletionSnapshotPath }));
+            new Notice(parts.join(', ') || t('ui.sceneNormalizerSection.noChangesMade'));
             window.setTimeout(() => { void runCheckScenes(); }, 750);
         });
 
     fixDuplicateBtn = new ButtonComponent(cleanupGroup)
-        .setButtonText('Fix duplicate IDs within this book')
+        .setButtonText(t('ui.sceneNormalizerSection.fixDuplicatesButton'))
         .setDestructive()
         .onClick(async () => {
             if (!sceneAudit) return;
@@ -669,15 +678,15 @@ export function renderSceneNormalizerSection(params: {
             }
             const preview = [...groups].map(([id, paths]) => {
                 paths.sort((a, b) => a.localeCompare(b));
-                return `${id}: keep ${paths[0]}; assign new IDs to ${paths.slice(1).join(', ')}.`;
+                return t('ui.sceneNormalizerSection.duplicatePreviewLine', { id, path: paths[0], paths: paths.slice(1).join(', ') });
             }).join('\n');
             if (!await confirmWithErtModal(app, {
-                title: 'Fix duplicate IDs within this book',
-                message: `Shared IDs across related book copies are expected and are not changed. ${preview}`,
-                confirmText: 'Fix IDs',
+                title: t('ui.sceneNormalizerSection.fixDuplicatesButton'),
+                message: t('ui.sceneNormalizerSection.fixDuplicatesMessage', { preview }),
+                confirmText: t('ui.sceneNormalizerSection.fixIdsConfirm'),
             })) return;
             if (sourceBookId !== plugin.settings.activeBookId || sourcePath !== plugin.settings.sourcePath) {
-                new Notice('The active book changed. Check scenes again before fixing IDs.');
+                new Notice(t('ui.sceneNormalizerSection.bookChangedNotice'));
                 return;
             }
             const result = await fixDuplicateSceneIds({
@@ -692,7 +701,6 @@ export function renderSceneNormalizerSection(params: {
                 updated: result.updated,
                 skipped: result.skipped,
                 failed: result.failed,
-                unit: 'scene',
             }));
             window.setTimeout(() => { void runCheckScenes(); }, 750);
         });

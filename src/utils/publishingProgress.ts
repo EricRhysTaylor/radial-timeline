@@ -1,4 +1,5 @@
 import type { ValidationSummary } from '../types';
+import { t } from '../i18n';
 
 // Book Details are required for formatted output; Book Pages remain optional.
 export type PublishingStageStatus = 'Ready' | 'Optional' | 'Setup' | 'Needs attention' | 'Blocked';
@@ -83,54 +84,54 @@ export function buildPublishingProgressStages(inputs: PublishingProgressInputs):
     return [
         {
             id: 'book-details',
-            title: 'Book Details',
-            description: 'Title, author, and publishing info.',
+            title: t('ui.publishingProgress.bookDetailsTitle'),
+            description: t('ui.publishingProgress.bookDetailsDesc'),
             statusLabel: bookDetailsStatus,
             statusKey: getStatusKey(bookDetailsStatus),
             detail: !inputs.hasBookMeta
-                ? 'Add title and author for PDF and Word. Markdown needs no Book Details.'
-                : inputs.bookMetaSummary.topMessage || 'Your details are in place.',
-            actionLabel: !inputs.hasBookMeta ? 'Add details' : 'Open details',
+                ? t('ui.publishingProgress.bookDetailsSetupDetail')
+                : inputs.bookMetaSummary.topMessage || t('ui.publishingProgress.bookDetailsReadyDetail'),
+            actionLabel: !inputs.hasBookMeta ? t('ui.publishingProgress.addDetailsAction') : t('ui.publishingProgress.openDetailsAction'),
         },
         {
             id: 'book-pages',
-            title: 'Book Pages',
-            description: 'Front and back matter pages.',
+            title: t('ui.publishingProgress.bookPagesTitle'),
+            description: t('ui.publishingProgress.bookPagesDesc'),
             statusLabel: bookPagesStatus,
             statusKey: getStatusKey(bookPagesStatus),
             detail: inputs.matterCount === 0
-                ? 'Optional — front & back matter (title page, dedication…). Export works without them.'
-                : inputs.matterSummary.topMessage || 'Your book pages are ready.',
-            actionLabel: inputs.matterCount === 0 ? 'Add pages' : 'Review pages',
+                ? t('ui.publishingProgress.bookPagesOptionalDetail')
+                : inputs.matterSummary.topMessage || t('ui.publishingProgress.bookPagesReadyDetail'),
+            actionLabel: inputs.matterCount === 0 ? t('ui.publishingProgress.addPagesAction') : t('ui.publishingProgress.reviewPagesAction'),
         },
         {
             id: 'pdf-style',
-            title: 'PDF Style',
-            description: 'Choose the layout for your PDF.',
+            title: t('ui.publishingProgress.pdfStyleTitle'),
+            description: t('ui.publishingProgress.pdfStyleDesc'),
             statusLabel: pdfStyleStatus,
             statusKey: getStatusKey(pdfStyleStatus),
             quickStart: true,
             detail: inputs.layoutSummary.totalCount === 0
-                ? 'Choose a PDF style before exporting.'
+                ? t('ui.publishingProgress.pdfStyleSetupDetail')
                 : inputs.layoutSummary.state === 'ready' && inputs.layoutSummary.validCount >= inputs.layoutSummary.totalCount
-                    ? 'Two styles free with Core · two more with Pro.'
-                    : inputs.layoutSummary.topMessage || `${inputs.layoutSummary.validCount} of ${inputs.layoutSummary.totalCount} styles are ready.`,
-            actionLabel: inputs.layoutSummary.totalCount === 0 ? 'Choose style' : 'Review styles',
+                    ? t('ui.publishingProgress.pdfStyleReadyDetail')
+                    : inputs.layoutSummary.topMessage || t('ui.publishingProgress.stylesReadyCount', { valid: inputs.layoutSummary.validCount, total: inputs.layoutSummary.totalCount }),
+            actionLabel: inputs.layoutSummary.totalCount === 0 ? t('ui.publishingProgress.chooseStyleAction') : t('ui.publishingProgress.reviewStylesAction'),
         },
         {
             id: 'export-check',
-            title: 'Export Check',
-            description: 'Make sure export is ready.',
+            title: t('ui.publishingProgress.exportCheckTitle'),
+            description: t('ui.publishingProgress.exportCheckDesc'),
             statusLabel: exportCheckStatus,
             statusKey: getStatusKey(exportCheckStatus),
             detail: exportCheckReady
-                ? 'Ready to export. Generate your PDF.'
+                ? t('ui.publishingProgress.exportCheckReadyDetail')
                 : !inputs.pandocPathValid
-                    ? 'One-time setup: install export tools for PDF.'
+                    ? t('ui.publishingProgress.exportCheckToolsDetail')
                     : inputs.layoutSummary.validCount === 0
-                        ? 'Pick a working PDF style first.'
-                        : inputs.exportSummary.topMessage || 'Finish the remaining setup.', // SAFE: generic next-step prompt when validation has no message.
-            actionLabel: exportCheckReady ? 'Review export' : !inputs.pandocPathValid ? 'Set up tools' : 'Review export',
+                        ? t('ui.publishingProgress.exportCheckStyleDetail')
+                        : inputs.exportSummary.topMessage || t('ui.publishingProgress.exportCheckRemainingDetail'), // SAFE: generic next-step prompt when validation has no message.
+            actionLabel: exportCheckReady ? t('ui.publishingProgress.reviewExportAction') : !inputs.pandocPathValid ? t('ui.publishingProgress.setUpToolsAction') : t('ui.publishingProgress.reviewExportAction'),
         },
     ];
 }

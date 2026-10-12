@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TFile } from 'obsidian';
 import type { DragConfirmCurrentMoveSummary } from '../../modals/DragConfirmModal';
 import type { SceneUpdate } from '../../services/SceneReorderService';
-import type { SubplotMembershipChange } from '../../services/SubplotMembership';
+import { describeSubplotMembershipChange, type SubplotMembershipChange } from '../../services/SubplotMembership';
+import { t } from '../../i18n';
 import { OuterRingDragController } from './OuterRingDragController';
 import { describeSceneFile, SubplotRingDragController } from './SubplotRingDragController';
 
@@ -204,12 +205,12 @@ describe('subplot ring drag — the membership contract', () => {
         expect(memberships).toEqual([{ path: path('14 Scene'), change: { kind: 'move', from: SHIPWRECK, to: KEEPERS } }]);
         expect(renumbered).toHaveLength(0);
         expect(shown[0]).toMatchObject({
-            actionSummary: `Scene 14: Move ${SHIPWRECK} → ${KEEPERS}`,
+            actionSummary: `${t('ui.subplotRingDragController.sceneNumber', { number: '14' })}: ${describeSubplotMembershipChange({ kind: 'move', from: SHIPWRECK, to: KEEPERS })}`,
             showRenameImpact: false,
-            contextLabel: 'Subplots',
+            contextLabel: t('ui.subplotRingDragController.contextLabel'),
             contextChange: `${SHIPWRECK} → ${KEEPERS}`,
-            badge: 'Move Scene',
-            title: 'Confirm subplot change',
+            badge: t('ui.subplotRingDragController.badgeMove'),
+            title: t('ui.subplotRingDragController.confirmTitle'),
         });
     });
 
@@ -218,7 +219,7 @@ describe('subplot ring drag — the membership contract', () => {
         await drag('14 Scene', SHIPWRECK_RING, KEEPERS_RING, true);
 
         expect(memberships[0].change).toEqual({ kind: 'add', to: KEEPERS });
-        expect(shown[0]).toMatchObject({ contextChange: `${SHIPWRECK} → ${SHIPWRECK}, ${KEEPERS}`, badge: 'Add Subplot' });
+        expect(shown[0]).toMatchObject({ contextChange: `${SHIPWRECK} → ${SHIPWRECK}, ${KEEPERS}`, badge: t('ui.subplotRingDragController.badgeAdd') });
     });
 
     it('Shift onto a subplot the scene already has asks nothing and changes nothing', async () => {
@@ -265,8 +266,8 @@ describe('which rings are subplots', () => {
 
 describe('describeSceneFile', () => {
     it('names a scene the way the timeline does', () => {
-        expect(describeSceneFile('14 Scene')).toBe('Scene 14');
-        expect(describeSceneFile('3 The Wreck')).toBe('Scene 3 The Wreck');
+        expect(describeSceneFile('14 Scene')).toBe(t('ui.subplotRingDragController.sceneNumber', { number: '14' }));
+        expect(describeSceneFile('3 The Wreck')).toBe(t('ui.subplotRingDragController.sceneNumberLabel', { number: '3', label: 'The Wreck' }));
         expect(describeSceneFile('Untitled')).toBe('Untitled');
     });
 });
@@ -316,7 +317,7 @@ describe('the All Scenes ring reorders and never edits subplots', () => {
         internals.currentTarget = { type: 'scene', group: target, sceneId: target.querySelector('.rt-scene-path')!.id, act: 1, ring: OUTER };
         await internals.finishDrag();
 
-        expect(shown[0].actionSummary).toBe('Move Scene 14 before Scene 12');
+        expect(shown[0].actionSummary).toBe(`${t('ui.outerRingDragController.sceneNumber', { number: '14' })} | ${t('ui.outerRingDragController.sceneNumber', { number: '12' })}`);
         expect(renumbered[0].length).toBeGreaterThan(0);
         expect(renumbered[0].every((update) => update.subplots === undefined)).toBe(true);
         expect(memberships).toHaveLength(0);

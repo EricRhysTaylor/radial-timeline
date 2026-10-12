@@ -3,12 +3,13 @@
  * extracted from InquiryView. DOM construction, SVG, classList
  * toggles, vault/file resolution, and the impure `corpusService` /
  * `app.vault` reads all stay in the view or the existing renderer
- * modules — this module is i18n-free and side-effect-free.
+ * modules — this module is side-effect-free.
  */
 import type { InquiryCorpusItem } from '../services/InquiryCorpusResolver';
 import type { SceneInclusion } from '../../types/settings';
 import { getCorpusClassShort } from './inquiryViewText';
 import { SIGMA_CHAR } from '../constants/inquiryUi';
+import { t } from '../../i18n';
 
 /**
  * File path for a corpus item, used by the minimap to look up
@@ -36,12 +37,12 @@ export function getCorpusCcModeMeta(mode: SceneInclusion): {
     isActive: boolean;
 } {
     if (mode === 'summary') {
-        return { label: 'Summary', short: 'SUM', icon: 'circle-dot', isActive: true };
+        return { label: t('inquiry.menu.corpusSummary'), short: 'SUM', icon: 'circle-dot', isActive: true };
     }
     if (mode === 'full') {
-        return { label: 'Full Scene', short: 'FULL', icon: 'disc', isActive: true };
+        return { label: t('inquiry.menu.corpusFullScene'), short: 'FULL', icon: 'disc', isActive: true };
     }
-    return { label: 'Exclude', short: 'EXCL', icon: 'circle', isActive: false };
+    return { label: t('inquiry.menu.corpusExclude'), short: 'EXCL', icon: 'circle', isActive: false };
 }
 
 /**
@@ -69,11 +70,11 @@ export function getCorpusCcHeaderLabel(
  * corpus-strip tooltip when no override label is supplied.
  */
 export function getCorpusCcHeaderDisplayLabel(className: string): string {
-    if (className === 'outline-saga') return 'Saga Outline';
-    if (className === 'character') return 'Character';
-    if (className === 'scene') return 'Scene';
-    if (className === 'outline') return 'Outline';
-    return 'Class';
+    if (className === 'outline-saga') return t('ui.inquiryCorpusStripMinimap.classSagaOutline');
+    if (className === 'character') return t('ui.inquiryCorpusStripMinimap.classCharacter');
+    if (className === 'scene') return t('ui.inquiryCorpusStripMinimap.classScene');
+    if (className === 'outline') return t('ui.inquiryCorpusStripMinimap.classOutline');
+    return t('ui.inquiryCorpusStripMinimap.classFallback');
 }
 
 /**

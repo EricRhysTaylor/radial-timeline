@@ -1,6 +1,7 @@
 import { App } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import type { StructuralMoveHistoryEntry } from '../types/settings';
+import { t, tCount } from '../i18n';
 
 const ICON_SHUFFLE = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shuffle-icon lucide-shuffle"><path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/></svg>`;
 const ICON_LIST_ORDERED = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-ordered-icon lucide-list-ordered"><path d="M11 5h10"/><path d="M11 12h10"/><path d="M11 19h10"/><path d="M4 4h1v5"/><path d="M4 9h2"/><path d="M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02"/></svg>`;
@@ -88,15 +89,21 @@ export class DragConfirmModal extends ErtModal {
         }
 
         // Header — differentiates between scene and beat moves
-        const capitalLabel = this.itemLabel.charAt(0).toUpperCase() + this.itemLabel.slice(1);
+        const isBeat = this.itemLabel === 'beat';
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: this.currentMove.badge ?? `Reorder ${capitalLabel}` });
-        header.createDiv({ cls: 'ert-modal-title', text: this.currentMove.title ?? `Confirm ${this.itemLabel} reorder` });
+        header.createSpan({
+            cls: 'ert-modal-badge',
+            text: this.currentMove.badge ?? (isBeat ? t('ui.dragConfirmModal.reorderBeatBadge') : t('ui.dragConfirmModal.reorderSceneBadge'))
+        });
+        header.createDiv({
+            cls: 'ert-modal-title',
+            text: this.currentMove.title ?? (isBeat ? t('ui.dragConfirmModal.confirmBeatReorder') : t('ui.dragConfirmModal.confirmSceneReorder'))
+        });
 
         const listDiv = contentEl.createDiv({ cls: 'ert-drag-confirm-list' });
 
         const currentMoveSection = listDiv.createDiv({ cls: 'ert-drag-confirm-section' });
-        currentMoveSection.createDiv({ cls: 'ert-drag-confirm-section-title', text: 'Current move summary' });
+        currentMoveSection.createDiv({ cls: 'ert-drag-confirm-section-title', text: t('ui.dragConfirmModal.currentMoveTitle') });
 
         const actionRow = currentMoveSection.createDiv({ cls: 'ert-drag-confirm-row' });
         const actionIcon = actionRow.createDiv({ cls: 'ert-drag-confirm-row-icon' });
@@ -106,18 +113,18 @@ export class DragConfirmModal extends ErtModal {
 
         const impactGrid = currentMoveSection.createDiv({ cls: 'ert-drag-confirm-impact-grid' });
         if (this.currentMove.showRenameImpact !== false) {
-            this.createImpactCard(impactGrid, 'Rename impact', this.formatRenameImpact(this.currentMove.renameCount), ICON_LIST_ORDERED);
+            this.createImpactCard(impactGrid, t('ui.dragConfirmModal.renameImpactLabel'), this.formatRenameImpact(this.currentMove.renameCount), ICON_LIST_ORDERED);
         }
         if (this.currentMove.contextChange) {
-            this.createImpactCard(impactGrid, this.currentMove.contextLabel ?? 'Context change', this.currentMove.contextChange, ICON_BLOCKS);
+            this.createImpactCard(impactGrid, this.currentMove.contextLabel ?? t('ui.dragConfirmModal.contextChangeLabel'), this.currentMove.contextChange, ICON_BLOCKS);
         }
         if (this.currentMove.rippleRename) {
-            this.createImpactCard(impactGrid, 'Extra effect', 'Ripple rename enabled', ICON_WAVES);
+            this.createImpactCard(impactGrid, t('ui.dragConfirmModal.extraEffectLabel'), t('ui.dragConfirmModal.rippleRenameEnabled'), ICON_WAVES);
         }
 
         if (this.recentMoves.length > 0) {
             const historySection = listDiv.createDiv({ cls: 'ert-drag-confirm-section' });
-            historySection.createDiv({ cls: 'ert-drag-confirm-section-title', text: 'Recent moves' });
+            historySection.createDiv({ cls: 'ert-drag-confirm-section-title', text: t('ui.dragConfirmModal.recentMovesTitle') });
             const historyFrame = historySection.createDiv({ cls: 'ert-drag-confirm-history-frame' });
             const historyList = historyFrame.createDiv({ cls: 'ert-drag-confirm-history-list' });
             this.recentMoves.forEach((entry) => {
@@ -132,8 +139,8 @@ export class DragConfirmModal extends ErtModal {
                 this.renderMoveSummary(rowSummary, entry.summary);
 
                 const metaParts = [this.formatRenameImpact(entry.renameCount ?? 0)];
-                if (entry.crossedActs) metaParts.push('Crossed Acts');
-                if (entry.rippleRename) metaParts.push('Ripple rename');
+                if (entry.crossedActs) metaParts.push(t('ui.dragConfirmModal.crossedActs'));
+                if (entry.rippleRename) metaParts.push(t('ui.dragConfirmModal.rippleRename'));
                 row.createDiv({ cls: 'ert-drag-confirm-history-meta', text: metaParts.join(' • ') });
                 row.addEventListener('click', () => {
                     void this.onHistoryClick?.(entry);
@@ -145,12 +152,12 @@ export class DragConfirmModal extends ErtModal {
         const statusIcon = statusRow.createDiv({ cls: 'ert-drag-confirm-row-icon' });
         this.setIcon(statusIcon, ICON_LIST_ORDERED);
         this.statusTextEl = statusRow.createDiv({ cls: 'ert-drag-confirm-row-text ert-drag-confirm-status-text' });
-        this.statusTextEl.setText('Preparing reorder...');
+        this.statusTextEl.setText(t('ui.dragConfirmModal.preparingStatus'));
         this.statusRowEl = statusRow;
 
         const buttons = contentEl.createDiv({ cls: 'ert-modal-actions' });
-        const primaryBtn = buttons.createEl('button', { text: 'Begin', cls: 'ert-mod-cta' });
-        const cancelBtn = buttons.createEl('button', { text: 'Cancel' });
+        const primaryBtn = buttons.createEl('button', { text: t('ui.dragConfirmModal.beginButton'), cls: 'ert-mod-cta' });
+        const cancelBtn = buttons.createEl('button', { text: t('common.cancel') });
         this.primaryButtonEl = primaryBtn;
         this.cancelButtonEl = cancelBtn;
 
@@ -161,7 +168,7 @@ export class DragConfirmModal extends ErtModal {
                 this.showStatusRow('is-live');
                 if (this.primaryButtonEl) {
                     this.primaryButtonEl.disabled = true;
-                    this.primaryButtonEl.textContent = 'Working...';
+                    this.primaryButtonEl.textContent = t('ui.dragConfirmModal.workingButton');
                 }
                 if (this.cancelButtonEl) {
                     this.cancelButtonEl.classList.add('is-hidden-action');
@@ -224,8 +231,8 @@ export class DragConfirmModal extends ErtModal {
     }
 
     private formatRenameImpact(renameCount: number): string {
-        if (!renameCount || renameCount <= 0) return 'No note renames';
-        return `Renames ${renameCount} note${renameCount === 1 ? '' : 's'}`;
+        if (!renameCount || renameCount <= 0) return t('ui.dragConfirmModal.noRenames');
+        return t('ui.dragConfirmModal.renamesNotes', { notes: tCount('note', renameCount) });
     }
 
     onClose(): void {
@@ -265,7 +272,7 @@ export class DragConfirmModal extends ErtModal {
         }
         if (this.primaryButtonEl) {
             this.primaryButtonEl.disabled = false;
-            this.primaryButtonEl.textContent = 'Dismiss';
+            this.primaryButtonEl.textContent = t('ui.dragConfirmModal.dismissButton');
         }
 
         await new Promise<void>((resolve) => {

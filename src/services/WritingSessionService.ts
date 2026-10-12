@@ -20,6 +20,7 @@ import { buildPrivateSessionLog, type PrivateSessionLogRow } from './WritingSess
 import { extractBodyText } from '../utils/manuscript';
 import { RT_SYSTEM_FOLDER } from '../utils/systemFolder';
 import { formatLocalDateKey, parseLocalDateKey } from '../utils/date';
+import { t } from '../i18n';
 
 const MAX_SESSION_RECORDS = 500;
 
@@ -1056,7 +1057,7 @@ export class WritingSessionService {
     async start(options: WritingSessionMode | WritingSessionStartOptions = {}): Promise<ActiveWritingSession> {
         const settings = this.getSettings();
         if (settings.active) {
-            throw new Error('A writing session is already active.');
+            throw new Error(t('ui.writingSessionService.alreadyActive'));
         }
         const startOptions: WritingSessionStartOptions = typeof options === 'string'
             ? { mode: options }
@@ -1099,7 +1100,7 @@ export class WritingSessionService {
     async pause(): Promise<ActiveWritingSession> {
         const settings = this.getSettings();
         const active = settings.active;
-        if (!active) throw new Error('No writing session is active.');
+        if (!active) throw new Error(t('ui.writingSessionService.noActiveSession'));
         if (active.pausedAt) return active;
         const pausedAt = new Date();
         active.elapsedMsBeforePause = activeElapsedMs(active, pausedAt);
@@ -1113,7 +1114,7 @@ export class WritingSessionService {
     async resume(): Promise<ActiveWritingSession> {
         const settings = this.getSettings();
         const active = settings.active;
-        if (!active) throw new Error('No writing session is active.');
+        if (!active) throw new Error(t('ui.writingSessionService.noActiveSession'));
         if (!active.pausedAt) return active;
         active.pausedAt = undefined;
         active.idleAuto = false;
@@ -1128,8 +1129,8 @@ export class WritingSessionService {
     async continueCountdown(): Promise<ActiveWritingSession> {
         const settings = this.getSettings();
         const active = settings.active;
-        if (!active) throw new Error('No writing session is active.');
-        if (!active.goalMinutes) throw new Error('Only countdown sessions can be continued.');
+        if (!active) throw new Error(t('ui.writingSessionService.noActiveSession'));
+        if (!active.goalMinutes) throw new Error(t('ui.writingSessionService.onlyCountdownContinues'));
         const now = new Date();
         const elapsedBeforeNextSegment = activeElapsedMs(active, now);
         active.elapsedMsBeforePause = elapsedBeforeNextSegment;
@@ -1147,7 +1148,7 @@ export class WritingSessionService {
     async stop(completion: WritingSessionCompletionInput = {}): Promise<WritingSessionRecord> {
         const settings = this.getSettings();
         const active = settings.active;
-        if (!active) throw new Error('No writing session is active.');
+        if (!active) throw new Error(t('ui.writingSessionService.noActiveSession'));
         const endedAt = new Date();
         const record: WritingSessionRecord = {
             id: active.id,
@@ -1207,8 +1208,7 @@ export class WritingSessionService {
                     await vault.rename(existing, quarantinePath);
                     existing = null;
                     new Notice(
-                        `Could not read ${PORTABLE_LOG_PATH} (${read.reason}). Your history was NOT overwritten — `
-                        + `the damaged file is now ${quarantinePath} and a fresh log has been started.`,
+                        t('ui.writingSessionService.sessionLogUnreadable', { path: PORTABLE_LOG_PATH, reason: read.reason, quarantinePath }),
                         0
                     );
                 } else {
@@ -1277,7 +1277,7 @@ export class WritingSessionService {
 
     async discard(): Promise<void> {
         const settings = this.getSettings();
-        if (!settings.active) throw new Error('No writing session is active.');
+        if (!settings.active) throw new Error(t('ui.writingSessionService.noActiveSession'));
         settings.active = undefined;
         await this.plugin.saveSettings();
     }

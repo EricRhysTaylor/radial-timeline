@@ -1,7 +1,8 @@
 import type { InquirySession } from '../sessionTypes';
+import { t } from '../../i18n';
 
 export type InquiryBriefingSection = {
-    label: 'Today' | 'Yesterday' | 'Earlier';
+    label: string;
     sessions: InquirySession[];
 };
 
@@ -12,9 +13,9 @@ export function buildInquiryBriefingSections(
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const yesterdayStart = todayStart - 86_400_000;
     const sections: InquiryBriefingSection[] = [
-        { label: 'Today', sessions: [] },
-        { label: 'Yesterday', sessions: [] },
-        { label: 'Earlier', sessions: [] }
+        { label: t('ui.inquiryBriefingGrouping.today'), sessions: [] },
+        { label: t('ui.inquiryBriefingGrouping.yesterday'), sessions: [] },
+        { label: t('ui.inquiryBriefingGrouping.earlier'), sessions: [] }
     ];
 
     sessions.forEach(session => {

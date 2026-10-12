@@ -1,4 +1,5 @@
 import type RadialTimelinePlugin from '../main';
+import { t } from '../i18n';
 
 export class StatusBarService {
     private beatsStatusBarItem: HTMLElement | null = null;
@@ -15,10 +16,10 @@ export class StatusBarService {
                 }
             });
             this.beatsStatusBarItem.addClass('ert-cursor-pointer');
-            this.beatsStatusBarItem.title = 'Click to view progress';
+            this.beatsStatusBarItem.title = t('ui.statusBarService.clickToViewProgress');
         }
         const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
-        this.beatsStatusBarItem.setText(`Scene beats: ${current}/${total} (${percentage}%)`);
+        this.beatsStatusBarItem.setText(t('ui.statusBarService.sceneBeatsProgress', { current, total, percentage }));
     }
 
     hideBeatsStatus(): void {

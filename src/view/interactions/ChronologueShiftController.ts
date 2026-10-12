@@ -15,6 +15,7 @@ import { getActivePlanetaryProfile, validatePlanetaryProfile, convertFromEarth, 
 import { parseWhenField, formatElapsedTime } from '../../utils/date';
 import { parseRuntimeField, formatRuntimeValue } from '../../utils/runtimeEstimator';
 import { addTooltipData } from '../../utils/tooltip';
+import { t } from '../../i18n';
 import { normalizeAngleSigned, normalizeAngleUnsigned } from '../../renderer/utils/angles';
 import {
     ELAPSED_ARC_RADIUS,
@@ -388,7 +389,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                 if (!label.getAttribute('data-earth-label')) {
                     const tspans = textPath.querySelectorAll('tspan');
                     if (tspans.length > 0) {
-                        const lines = Array.from(tspans).map(t => t.textContent || '');
+                        const lines = Array.from(tspans).map(span => span.textContent || '');
                         label.setAttribute('data-earth-label', lines.join('\n'));
                     } else {
                         label.setAttribute('data-earth-label', textPath.textContent || '');
@@ -410,8 +411,8 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                         // four-line label either hits the scene title or clips
                         // above the SVG when moved outside the ring.
                         const yearLabel = profile.epochLabel
-                            ? `${profile.epochLabel} YEAR ${conversion.localYear}`
-                            : `YEAR ${conversion.localYear}`;
+                            ? t('ui.chronologueShiftController.epochYear', { epoch: profile.epochLabel, year: conversion.localYear })
+                            : t('ui.chronologueShiftController.year', { year: conversion.localYear });
                         let dateLabel = `${monthName} ${conversion.localDayOfMonth}`;
                         if (includeTimeInLabel(earthLabel)) {
                             dateLabel += ` ${padTime(conversion.localHours)}:${padTime(conversion.localMinutes)}`;
@@ -517,7 +518,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                 if (!label.getAttribute('data-earth-label')) {
                     const tspans = textPath.querySelectorAll('tspan');
                     if (tspans.length > 0) {
-                        const lines = Array.from(tspans).map(t => t.textContent || '');
+                        const lines = Array.from(tspans).map(span => span.textContent || '');
                         label.setAttribute('data-earth-label', lines.join('\n'));
                     } else {
                         label.setAttribute('data-earth-label', textPath.textContent || '');
@@ -1101,11 +1102,11 @@ function createShiftButton(): SVGGElement {
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('dominant-baseline', 'middle');
     text.setAttribute('class', 'rt-shift-button-text');
-    text.textContent = '↑ SHIFT';
+    text.textContent = t('ui.chronologueShiftController.shiftButton');
 
     // Add tooltip data attributes for Obsidian setTooltip
     button.classList.add('rt-tooltip-target');
-    button.setAttribute('data-tooltip', 'Elapsed scene time comparison & gap visualization');
+    button.setAttribute('data-tooltip', t('ui.chronologueShiftController.shiftTooltip'));
     button.setAttribute('data-tooltip-placement', 'bottom');
 
     button.appendChild(path);
@@ -1167,11 +1168,11 @@ function createAltButton(): SVGGElement {
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('dominant-baseline', 'middle');
     text.setAttribute('class', 'rt-shift-button-text');
-    text.textContent = 'ALT';
+    text.textContent = t('ui.chronologueShiftController.altButton');
 
     // Add tooltip data attributes for Obsidian setTooltip
     button.classList.add('rt-tooltip-target');
-    button.setAttribute('data-tooltip', 'Toggle Planetary Calendar');
+    button.setAttribute('data-tooltip', t('ui.chronologueShiftController.altTooltip'));
     button.setAttribute('data-tooltip-placement', 'bottom');
 
     button.appendChild(path);
@@ -1318,11 +1319,11 @@ function createRtButton(contentType: RuntimeContentType, noData: boolean = false
     // Add tooltip based on content type and data availability
     let tooltipText: string;
     if (noData) {
-        tooltipText = 'No Runtime data found. Run "Estimate Runtime" from Command Palette to seed scene runtimes.';
+        tooltipText = t('ui.chronologueShiftController.runtimeNoData');
     } else {
-        tooltipText = contentType === 'screenplay' 
-            ? 'Toggle Runtime Mode (Screenplay)' 
-            : 'Toggle Runtime Mode (Audiobook/Novel)';
+        tooltipText = contentType === 'screenplay'
+            ? t('ui.chronologueShiftController.runtimeScreenplay')
+            : t('ui.chronologueShiftController.runtimeNovel');
     }
     addTooltipData(button, tooltipText, 'bottom');
     button.setAttribute('data-content-type', contentType);

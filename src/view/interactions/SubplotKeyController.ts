@@ -29,6 +29,7 @@
 
 import { RadialTimelineView } from '../TimeLineView';
 import { isTypingInField } from '../../utils/domFocus';
+import { t } from '../../i18n';
 
 interface SubplotKeyEntry {
     ring: number;
@@ -101,10 +102,10 @@ export function setupSubplotKeyController(
 
     const header = doc.win.createDiv();
     header.className = 'ert-timeline-subplot-key__header';
-    header.textContent = 'Ring key';
+    header.textContent = t('ui.subplotKeyController.ringKey');
     const headerHint = doc.win.createSpan();
     headerHint.className = 'ert-timeline-subplot-key__hint';
-    headerHint.textContent = 'Outer → inner';
+    headerHint.textContent = t('ui.subplotKeyController.outerToInner');
     header.appendChild(headerHint);
     surface.appendChild(header);
 

@@ -3,6 +3,7 @@ import { ErtModal } from '../ui/ErtModal';
 import type { TimelineItem } from '../types';
 import { buildTimelineChapterResolverItems } from '../utils/timelineChapters';
 import { readPartMarker } from '../utils/timelineParts';
+import { t, tCount } from '../i18n';
 
 /**
  * Set part… — the Part twin of Set chapter….
@@ -32,7 +33,9 @@ export interface SetPartResult {
 }
 
 function sceneLabel(start: number, end: number): string {
-    return start === end ? `Scene ${start}` : `Scenes ${start}-${end}`;
+    return start === end
+        ? t('ui.setPartModal.sceneSingle', { number: start })
+        : t('ui.setPartModal.sceneRange', { start, end });
 }
 
 function toRomanNumeral(value: number): string {
@@ -132,8 +135,8 @@ export class SetPartModal extends ErtModal {
         });
 
         this.mountHeader({
-            badge: { text: `Part · starts at ${this.targetSceneTitle}` },
-            title: 'Set part marker',
+            badge: { text: t('ui.setPartModal.badge', { scene: this.targetSceneTitle }) },
+            title: t('ui.setPartModal.title'),
         });
 
         const form = contentEl.createDiv({ cls: 'ert-stack' });
@@ -152,7 +155,7 @@ export class SetPartModal extends ErtModal {
             }
             const title = nextTitle.trim();
             if (!title) {
-                new Notice('Enter a part title, or switch to numeral only.');
+                new Notice(t('ui.setPartModal.titleRequiredNotice'));
                 return;
             }
             this.resolve({ value: title, clear: false });
@@ -160,11 +163,11 @@ export class SetPartModal extends ErtModal {
         };
 
         new Setting(form)
-            .setName('Part name')
-            .setDesc('This scene becomes the part start.')
+            .setName(t('ui.setPartModal.partNameName'))
+            .setDesc(t('ui.setPartModal.partNameDesc'))
             .addDropdown(dropdown => {
-                dropdown.addOption('untitled', 'Numeral only');
-                dropdown.addOption('titled', 'Numeral and title');
+                dropdown.addOption('untitled', t('ui.setPartModal.numeralOnlyOption'));
+                dropdown.addOption('titled', t('ui.setPartModal.numeralAndTitleOption'));
                 dropdown.setValue(titled ? 'titled' : 'untitled');
                 dropdown.onChange(value => {
                     titled = value === 'titled';
@@ -173,12 +176,12 @@ export class SetPartModal extends ErtModal {
             });
 
         new Setting(form)
-            .setName('Title')
-            .setDesc('Printed under the numeral, when the layout prints titles.')
+            .setName(t('ui.setPartModal.titleName'))
+            .setDesc(t('ui.setPartModal.titleDesc'))
             .addText((text: TextComponent) => {
                 titleInput = text;
                 text.inputEl.addClass('ert-input', 'ert-input--lg');
-                text.setPlaceholder('Part title');
+                text.setPlaceholder(t('ui.setPartModal.titlePlaceholder'));
                 text.setValue(nextTitle);
                 text.inputEl.toggleClass('is-hidden', !titled);
                 text.onChange(value => { nextTitle = value; });
@@ -190,10 +193,10 @@ export class SetPartModal extends ErtModal {
             });
 
         const listSection = form.createDiv({ cls: 'ert-set-part-modal__list-section' });
-        listSection.createDiv({ cls: 'ert-set-part-modal__list-title', text: 'Current parts' });
+        listSection.createDiv({ cls: 'ert-set-part-modal__list-title', text: t('ui.setPartModal.currentParts') });
         const list = listSection.createDiv({ cls: 'ert-set-part-modal__list' });
         if (this.parts.length === 0) {
-            list.createDiv({ cls: 'ert-set-part-modal__empty', text: 'No scenes available.' });
+            list.createDiv({ cls: 'ert-set-part-modal__empty', text: t('ui.setPartModal.noScenes') });
         } else {
             this.parts.forEach(part => {
                 const row = list.createDiv({ cls: 'ert-set-part-modal__part-row' });
@@ -203,12 +206,14 @@ export class SetPartModal extends ErtModal {
                 body.createDiv({
                     cls: 'ert-set-part-modal__part-name',
                     text: part.isUnparted
-                        ? 'Before Part I'
-                        : `Part ${part.numeral}${part.title ? ` · ${part.title}` : ''}`,
+                        ? t('ui.setPartModal.beforePartOne')
+                        : part.title
+                            ? t('ui.setPartModal.partNumeralTitled', { numeral: part.numeral, title: part.title })
+                            : t('ui.setPartModal.partNumeral', { numeral: part.numeral }),
                 });
                 body.createDiv({
                     cls: 'ert-set-part-modal__part-range',
-                    text: `${sceneLabel(part.start, part.end)} · ${part.sceneCount} scene${part.sceneCount === 1 ? '' : 's'}`,
+                    text: `${sceneLabel(part.start, part.end)} · ${tCount('scene', part.sceneCount)}`,
                 });
             });
         }
@@ -220,17 +225,17 @@ export class SetPartModal extends ErtModal {
         if (!this.layoutName) {
             layoutSection.createDiv({
                 cls: 'ert-set-part-modal__layout-note',
-                text: 'No PDF layout is selected. The marker is saved and shows on the timeline.',
+                text: t('ui.setPartModal.noLayoutNote'),
             });
         } else if (!this.layoutDescription) {
             layoutSection.createDiv({
                 cls: 'ert-set-part-modal__layout-note',
-                text: `${this.layoutName} does not print Parts. The marker is saved and shows on the timeline; select a layout that prints Parts to see it in the PDF.`,
+                text: t('ui.setPartModal.layoutSkipsPartsNote', { layout: this.layoutName }),
             });
         } else {
             layoutSection.createDiv({
                 cls: 'ert-set-part-modal__layout-title',
-                text: `How ${this.layoutName} prints parts`,
+                text: t('ui.setPartModal.layoutPrintsTitle', { layout: this.layoutName }),
             });
             layoutSection.createDiv({
                 cls: 'ert-set-part-modal__layout-note',
@@ -240,19 +245,19 @@ export class SetPartModal extends ErtModal {
 
         const actions = this.mountActions();
         new ButtonComponent(actions)
-            .setButtonText('Save part')
+            .setButtonText(t('ui.setPartModal.saveButton'))
             .setCta()
             .onClick(save);
         if (this.currentValue !== undefined) {
             new ButtonComponent(actions)
-                .setButtonText('Clear part')
+                .setButtonText(t('ui.setPartModal.clearButton'))
                 .onClick(() => {
                     this.resolve({ clear: true });
                     this.close();
                 });
         }
         new ButtonComponent(actions)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => {
                 this.resolve(null);
                 this.close();

@@ -79,10 +79,7 @@ export function renderAiConfiguration(aiConfigBody: HTMLElement, plugin: RadialT
             // verbatim quote per finding in the Sources block.
             setting.addToggle(toggle => {
                 toggle.setValue(false).setDisabled(true);
-                toggle.toggleEl.setAttr(
-                    'title',
-                    'Temporarily disabled — provider citations conflict with strict-JSON output across all providers. Findings still surface verbatim quotes via the per-finding evidence_quote field.'
-                );
+                toggle.toggleEl.setAttr('title', t('ui.aiConfiguration.citationsDisabledTooltip'));
             });
         }
     });
@@ -114,15 +111,15 @@ export function renderAiConfiguration(aiConfigBody: HTMLElement, plugin: RadialT
         cls: 'ert-config-group-modal-link',
         attr: {
             type: 'button',
-            'aria-label': 'Open summary refresh modal'
+            'aria-label': t('ui.aiConfiguration.openSummaryRefreshLabel')
         }
     });
     setIcon(summaryRefreshOpenButton, 'panel-top-open');
-    setTooltip(summaryRefreshOpenButton, 'Open summary refresh modal');
+    setTooltip(summaryRefreshOpenButton, t('ui.aiConfiguration.openSummaryRefreshLabel'));
     scope.registerDomEvent(summaryRefreshOpenButton, 'click', (evt: MouseEvent) => {
         evt.preventDefault();
         if (!executeCommandById(plugin.app, 'radial-timeline:refresh-scene-synopses-ai')) {
-            new Notice('Summary refresh command is not available.');
+            new Notice(t('ui.aiConfiguration.summaryRefreshUnavailableNotice'));
         }
     });
 

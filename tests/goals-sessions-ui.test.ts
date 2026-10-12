@@ -36,10 +36,10 @@ describe('Goals & Sessions settings UI', () => {
         expect(source).toContain("return `${hours}:${String(remainder).padStart(2, '0')}`");
         expect(source).toContain("metric.createDiv({ cls: 'ert-goals-stat__label', text: label })");
         expect(source).toContain("if (unit) head.createDiv({ cls: 'ert-goals-stat__unit', text: unit })");
-        expect(source).toContain("'written', String(stats.wordsDrafted), 'draft', 'w'");
-        expect(source).toContain("targetDays ? 'd' : undefined");
-        expect(source).toContain("'draft', String(stats.freshScenesCompleted), 'fresh', 's'");
-        expect(source).toContain("'revisions', String(stats.revisionScenesCompleted), 'revision', 's'");
+        expect(source).toContain("t('ui.goalsSessionsSection.metricWritten'), String(stats.wordsDrafted), 'draft', t('ui.goalsSessionsSection.unitWords')");
+        expect(source).toContain("targetDays ? t('ui.goalsSessionsSection.unitDays') : undefined");
+        expect(source).toContain("t('ui.goalsSessionsSection.metricDraft'), String(stats.freshScenesCompleted), 'fresh', t('ui.goalsSessionsSection.unitScenes')");
+        expect(source).toContain("t('ui.goalsSessionsSection.metricRevisions'), String(stats.revisionScenesCompleted), 'revision', t('ui.goalsSessionsSection.unitScenes')");
         expect(statBlock).toContain('grid-template-rows: auto auto');
         expect(headBlock).toContain('align-items: flex-start');
         expect(valueBlock).toContain('font-size: var(--font-ui-medium)');

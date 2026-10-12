@@ -14,6 +14,7 @@
  */
 
 import { formatWhenForYaml, parseWhenField } from '../../utils/date';
+import { t } from '../../i18n';
 import type { OverlapWarning, PlacementInterval, PlacementVerdict } from './types';
 
 /**
@@ -38,7 +39,7 @@ export function validatePlacement(
         return {
             kind: 'rejected',
             reason: 'unparsable',
-            message: 'That is not a date Radial Timeline can read.'
+            message: t('ui.validatePlacement.unparsableDate')
         };
     }
 
@@ -46,7 +47,7 @@ export function validatePlacement(
         return {
             kind: 'rejected',
             reason: 'no_room',
-            message: 'These scenes are less than two minutes apart — there is no room between them.'
+            message: t('ui.validatePlacement.noRoom')
         };
     }
 
@@ -57,7 +58,7 @@ export function validatePlacement(
         return {
             kind: 'rejected',
             reason: 'unparsable',
-            message: 'That date cannot be stored in the When field.'
+            message: t('ui.validatePlacement.cannotStore')
         };
     }
 
@@ -83,10 +84,10 @@ function describeOutOfBounds(storedMs: number, interval: PlacementInterval): str
     const atUpper = storedMs === interval.upperMs;
     if (atLower || atUpper) {
         const twin = atLower ? interval.lowerNeighbor : interval.upperNeighbor;
-        const twinLabel = twin ? `"${twin.title}"` : 'a neighbouring scene'; // SAFE: an open bound has no scene to name
-        return `Stored to the minute this matches ${twinLabel} exactly, so the scene would not land where you dropped it.`;
+        if (!twin) return t('ui.validatePlacement.matchesNeighbourExactly'); // SAFE: an open bound has no scene to name
+        return t('ui.validatePlacement.matchesSceneExactly', { title: twin.title });
     }
-    return 'That date falls outside the two scenes you dropped between.';
+    return t('ui.validatePlacement.outsideBounds');
 }
 
 /**

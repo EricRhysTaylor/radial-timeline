@@ -2,6 +2,7 @@ import { App, Notice, TFile } from 'obsidian';
 import { frontmatterValueToText, normalizeFrontmatterKeys } from '../../utils/frontmatter';
 import { normalizeStatus } from '../../utils/text';
 import { prepareFrontmatterRewrite, verifyFrontmatterRewrite } from '../../utils/frontmatterWriteSafety';
+import { t } from '../../i18n';
 
 type ZeroDraftOptions = {
     app: App;
@@ -51,17 +52,17 @@ export async function maybeHandleZeroDraftClick(options: ZeroDraftOptions): Prom
     }
 
     const pendingEdits = normalizeYamlValue(frontmatter['Pending Edits']) ?? '';
-    const title = sceneTitle || file.basename || 'Scene';
+    const title = sceneTitle || file.basename || t('ui.zeroDraftHandler.sceneFallback');
     const { default: ZeroDraftModal } = await import('../../modals/ZeroDraftModal');
     const modal = new ZeroDraftModal(app, {
-        titleText: `Pending Edits — ${title}`,
+        titleText: t('ui.zeroDraftHandler.modalTitle', { title }),
         initialText: pendingEdits,
         onOk: async (nextText: string) => {
             try {
                 const originalContent = await app.vault.read(file);
                 const prepared = prepareFrontmatterRewrite(originalContent);
                 if (!prepared || prepared.aliasConflicts.length > 0) {
-                    new Notice('Pending Edits could not be safely updated due to unexpected structure. Please review or reset the Pending Edits section.', 7000);
+                    new Notice(t('ui.zeroDraftHandler.unsafeStructureNotice'), 7000);
                     return false;
                 }
                 await app.fileManager.processFrontMatter(file, (yaml: Record<string, unknown>) => {
@@ -77,12 +78,12 @@ export async function maybeHandleZeroDraftClick(options: ZeroDraftOptions): Prom
                     }
                 });
                 if (!verification.ok) {
-                    new Notice('RT detected a potential issue after this operation. Please review the affected note. If needed, use backup or sync/version history to restore.', 8000);
+                    new Notice(t('ui.zeroDraftHandler.potentialIssueNotice'), 8000);
                     return false;
                 }
                 return true;
             } catch {
-                new Notice('Pending Edits could not be safely updated due to unexpected structure. Please review or reset the Pending Edits section.', 7000);
+                new Notice(t('ui.zeroDraftHandler.unsafeStructureNotice'), 7000);
                 return false;
             }
         },

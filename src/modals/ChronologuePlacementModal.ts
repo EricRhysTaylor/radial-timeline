@@ -15,6 +15,7 @@ import { App, ToggleComponent } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import { formatElapsedTime, formatWhenForYaml, parseWhenField } from '../utils/date';
 import { validatePlacement } from '../chronologue/placement/validatePlacement';
+import { t, tCount } from '../i18n';
 import type {
     OverlapWarning,
     PlacementCandidate,
@@ -116,8 +117,8 @@ export class ChronologuePlacementModal extends ErtModal {
         this.containerEl.addEventListener('click', this.backdropGuard, true);
 
         this.mountHeader({
-            badge: { text: 'Chronologue' },
-            title: 'Place scene in time',
+            badge: { text: t('timeline.modes.chronologue.name') },
+            title: t('ui.chronologuePlacementModal.title'),
             subtitle: this.context.sceneTitle
         });
 
@@ -128,8 +129,8 @@ export class ChronologuePlacementModal extends ErtModal {
         this.statusRowEl = statusRow;
 
         const actions = this.mountActions();
-        this.placeButtonEl = actions.createEl('button', { text: 'Place', cls: 'ert-mod-cta' });
-        this.cancelButtonEl = actions.createEl('button', { text: 'Cancel' });
+        this.placeButtonEl = actions.createEl('button', { text: t('ui.chronologuePlacementModal.placeButton'), cls: 'ert-mod-cta' });
+        this.cancelButtonEl = actions.createEl('button', { text: t('common.cancel') });
 
         this.placeButtonEl.addEventListener('click', () => this.onPrimaryClick());
         this.cancelButtonEl.addEventListener('click', () => {
@@ -176,14 +177,14 @@ export class ChronologuePlacementModal extends ErtModal {
         if (this.options.length === 1) {
             container
                 .createDiv({ cls: 'ert-place-section' })
-                .createDiv({ cls: 'ert-place-seam-note', text: `Placing: ${this.options[0].label.toLowerCase()}.` });
+                .createDiv({ cls: 'ert-place-seam-note', text: t('ui.chronologuePlacementModal.placingNote', { option: this.options[0].label.toLowerCase() }) });
             return;
         }
 
         const section = container.createDiv({ cls: 'ert-place-section' });
         section.createDiv({
             cls: 'ert-drag-confirm-section-title',
-            text: 'This is the top of the circle — which end did you mean?'
+            text: t('ui.chronologuePlacementModal.seamQuestion')
         });
         const group = section.createDiv({ cls: 'ert-place-seam-group' });
         this.options.forEach(option => {
@@ -210,7 +211,7 @@ export class ChronologuePlacementModal extends ErtModal {
             cls: 'ert-place-context-cell',
             text: interval.lowerNeighbor
                 ? `${interval.lowerNeighbor.title} · ${formatWhenForYaml(interval.lowerNeighbor.when)}`
-                : 'Nothing before'
+                : t('ui.chronologuePlacementModal.nothingBefore')
         });
         strip.createDiv({ cls: 'ert-place-context-arrow', text: '→' });
         strip.createDiv({
@@ -222,12 +223,12 @@ export class ChronologuePlacementModal extends ErtModal {
             cls: 'ert-place-context-cell',
             text: interval.upperNeighbor
                 ? `${interval.upperNeighbor.title} · ${formatWhenForYaml(interval.upperNeighbor.when)}`
-                : 'Nothing after'
+                : t('ui.chronologuePlacementModal.nothingAfter')
         });
 
         section.createDiv({
             cls: 'ert-place-room',
-            text: `${formatElapsedTime(interval.upperMs - interval.lowerMs)} of room`
+            text: t('ui.chronologuePlacementModal.room', { elapsed: formatElapsedTime(interval.upperMs - interval.lowerMs) })
         });
     }
 
@@ -255,14 +256,14 @@ export class ChronologuePlacementModal extends ErtModal {
             section.createDiv({
                 cls: 'ert-place-followers-note',
                 text: followers.length === 1
-                    ? 'Give it a When date first to leave it where it is.'
-                    : 'Give them When dates first to leave them where they are.'
+                    ? t('ui.chronologuePlacementModal.followerNeedsDateOne')
+                    : t('ui.chronologuePlacementModal.followerNeedsDateMany')
             });
             return;
         }
 
         const row = section.createDiv({ cls: 'ert-place-keep' });
-        const label = followers.length === 1 ? 'Keep it where it is' : 'Keep them where they are';
+        const label = followers.length === 1 ? t('ui.chronologuePlacementModal.keepOne') : t('ui.chronologuePlacementModal.keepMany');
         new ToggleComponent(row)
             .setValue(this.keepFollowers)
             .then(toggle => toggle.toggleEl.setAttribute('aria-label', label))
@@ -278,12 +279,12 @@ export class ChronologuePlacementModal extends ErtModal {
     private renderCandidates(container: HTMLElement): void {
         const { candidates } = this.activeOption;
         const section = container.createDiv({ cls: 'ert-place-section' });
-        section.createDiv({ cls: 'ert-drag-confirm-section-title', text: 'When does it happen?' });
+        section.createDiv({ cls: 'ert-drag-confirm-section-title', text: t('ui.chronologuePlacementModal.whenQuestion') });
 
         if (candidates.length === 0) {
             section.createDiv({
                 cls: 'ert-place-empty',
-                text: 'No suggestion fits this gap. Enter a date below.'
+                text: t('ui.chronologuePlacementModal.noSuggestion')
             });
             return;
         }
@@ -329,7 +330,7 @@ export class ChronologuePlacementModal extends ErtModal {
         const row = section.createDiv({ cls: 'ert-place-row is-custom' });
         row.toggleClass('is-selected', this.selectedCandidateId === CUSTOM_ROW_ID);
 
-        row.createDiv({ cls: 'ert-place-row-label', text: 'A specific date and time' });
+        row.createDiv({ cls: 'ert-place-row-label', text: t('ui.chronologuePlacementModal.customRowLabel') });
         const input = row.createEl('input', {
             cls: 'ert-place-custom-input',
             attr: { type: 'text', placeholder: 'YYYY-MM-DD HH:MM', spellcheck: 'false' }
@@ -409,10 +410,10 @@ export class ChronologuePlacementModal extends ErtModal {
         const { interval } = this.activeOption;
         const parts: string[] = [];
         if (interval.lowerNeighbor) {
-            parts.push(`${formatElapsedTime(when.getTime() - interval.lowerNeighbor.when.getTime())} after ${interval.lowerNeighbor.title}`);
+            parts.push(t('ui.chronologuePlacementModal.elapsedAfter', { elapsed: formatElapsedTime(when.getTime() - interval.lowerNeighbor.when.getTime()), title: interval.lowerNeighbor.title }));
         }
         if (interval.upperNeighbor) {
-            parts.push(`${formatElapsedTime(interval.upperNeighbor.when.getTime() - when.getTime())} before ${interval.upperNeighbor.title}`);
+            parts.push(t('ui.chronologuePlacementModal.elapsedBefore', { elapsed: formatElapsedTime(interval.upperNeighbor.when.getTime() - when.getTime()), title: interval.upperNeighbor.title }));
         }
         return parts.join(' · ');
     }
@@ -426,10 +427,10 @@ export class ChronologuePlacementModal extends ErtModal {
             this.phase = 'running';
             this.bodyEl?.addClass('is-committing');
             this.showStatusRow('is-live');
-            this.statusTextEl?.setText('Writing When…');
+            this.statusTextEl?.setText(t('ui.chronologuePlacementModal.writingStatus'));
             if (this.placeButtonEl) {
                 this.placeButtonEl.disabled = true;
-                this.placeButtonEl.textContent = 'Working...';
+                this.placeButtonEl.textContent = t('ui.chronologuePlacementModal.workingButton');
             }
             this.cancelButtonEl?.classList.add('is-hidden-action');
             this.resolveResult(selection);
@@ -463,7 +464,7 @@ export class ChronologuePlacementModal extends ErtModal {
         this.cancelButtonEl?.classList.add('is-hidden-action');
         if (this.placeButtonEl) {
             this.placeButtonEl.disabled = false;
-            this.placeButtonEl.textContent = 'Dismiss';
+            this.placeButtonEl.textContent = t('ui.chronologuePlacementModal.dismissButton');
         }
         await new Promise<void>((resolve) => {
             this.dismissResolver = resolve;
@@ -503,28 +504,33 @@ export class ChronologuePlacementModal extends ErtModal {
 
 function describeUndatedFollowers(titles: string[], kept: boolean): string {
     if (titles.length === 1) {
-        const consequence = kept ? '' : ' — it moves too';
-        return `“${titles[0]}” has no When date, so Chronologue shows it beside this scene${consequence}.`;
+        return kept
+            ? t('ui.chronologuePlacementModal.followerOneKept', { title: titles[0] })
+            : t('ui.chronologuePlacementModal.followerOneMoves', { title: titles[0] });
     }
-    const named = titles.slice(0, MAX_NAMED_FOLLOWERS).map(title => `“${title}”`);
+    const named = titles.slice(0, MAX_NAMED_FOLLOWERS).map(title => t('ui.chronologuePlacementModal.quotedTitle', { title }));
     const unnamed = titles.length - named.length;
-    const list = unnamed > 0 ? `${named.join(', ')} and ${unnamed} more` : named.join(', ');
-    const consequence = kept ? '' : ' — they move too';
-    return `${titles.length} scenes have no When date, so Chronologue shows them beside this scene${consequence}: ${list}.`;
+    const list = unnamed > 0
+        ? t('ui.chronologuePlacementModal.namesAndMore', { names: named.join(', '), count: unnamed })
+        : named.join(', ');
+    const scenes = tCount('scene', titles.length);
+    return kept
+        ? t('ui.chronologuePlacementModal.followersManyKept', { scenes, list })
+        : t('ui.chronologuePlacementModal.followersManyMove', { scenes, list });
 }
 
 function describeKeepWrite(keepDates: string[]): string {
     const distinct = new Set(keepDates);
-    if (distinct.size > 1) return 'Writes each the When it shows at now.';
+    if (distinct.size > 1) return t('ui.chronologuePlacementModal.keepWriteEachOwn');
     const [storedWhen] = distinct;
     return keepDates.length === 1
-        ? `Writes When ${storedWhen} to it — the time it shows at now.`
-        : `Writes When ${storedWhen} to each — the time they show at now.`;
+        ? t('ui.chronologuePlacementModal.keepWriteOne', { when: storedWhen })
+        : t('ui.chronologuePlacementModal.keepWriteMany', { when: storedWhen });
 }
 
 function describeOverlap(warning: OverlapWarning): string {
     const span = formatElapsedTime(warning.overlapMs);
     return warning.kind === 'previous_runs_past'
-        ? `“${warning.neighborTitle}” is still running ${span} into this scene.`
-        : `This scene runs ${span} past the start of “${warning.neighborTitle}”.`;
+        ? t('ui.chronologuePlacementModal.overlapPreviousRunsPast', { title: warning.neighborTitle, span })
+        : t('ui.chronologuePlacementModal.overlapRunsPastNext', { title: warning.neighborTitle, span });
 }

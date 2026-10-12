@@ -25,6 +25,7 @@ import {
     installBundledPandocLayouts
 } from '../utils/pandocBundledLayouts';
 import { scanSystemPaths } from './toolchainScan';
+import { t } from '../i18n';
 
 // ── Vault folders ────────────────────────────────────────────────────────────
 
@@ -37,7 +38,7 @@ export async function ensureVaultFolderPath(plugin: RadialTimelinePlugin, folder
         current = current ? `${current}/${segment}` : segment;
         const existing = plugin.app.vault.getAbstractFileByPath(current);
         if (existing instanceof TFolder) continue;
-        if (existing) throw new Error(`Cannot create folder "${current}" because a file exists at that path.`);
+        if (existing) throw new Error(t('ui.starterSetup.folderBlockedByFile', { path: current }));
         await plugin.app.vault.createFolder(current);
     }
 }
@@ -142,7 +143,7 @@ export async function ensurePublishingEnvironment(plugin: RadialTimelinePlugin):
     if (scan.latexPath) {
         latexFound = true;
     } else {
-        issues.push('LaTeX not found — install to enable PDF export');
+        issues.push(t('ui.starterSetup.latexNotFound'));
     }
 
     const pandocFolder = getPandocFolder(plugin);
@@ -150,21 +151,21 @@ export async function ensurePublishingEnvironment(plugin: RadialTimelinePlugin):
         await ensureVaultFolderPath(plugin, pandocFolder);
         folderReady = true;
     } catch (e) {
-        issues.push(`Could not create Pandoc folder: ${(e as Error).message}`);
+        issues.push(t('ui.starterSetup.pandocFolderFailed', { error: (e as Error).message }));
     }
 
     if (folderReady) {
         const result = await installBundledPandocLayouts(plugin);
         templatesInstalled = result.installed.length;
         if (result.failed.length > 0) {
-            issues.push(`Failed to install templates: ${result.failed.join(', ')}`);
+            issues.push(t('ui.starterSetup.templatesFailed', { templates: result.failed.join(', ') }));
         }
         if (result.fonts.failed.length > 0) {
-            issues.push(`Failed to install bundled fonts: ${result.fonts.failed.join(', ')}. PDF export will fall back to system fonts where available.`);
+            issues.push(t('ui.starterSetup.fontsFailed', { fonts: result.fonts.failed.join(', ') }));
         }
         for (const layout of getBundledPandocLayouts()) {
             const refresh = await ensureBundledLayoutInstalledForExport(plugin, layout);
-            if (refresh.failed) issues.push(`Failed to refresh template: ${layout.name}`);
+            if (refresh.failed) issues.push(t('ui.starterSetup.templateRefreshFailed', { name: layout.name }));
         }
     }
 
@@ -223,7 +224,7 @@ export interface CreateBookMetaResult {
 /** Create the starter Book Details note in the active book's source folder unless one is already there. */
 export async function createBookMetaOnly(plugin: RadialTimelinePlugin): Promise<CreateBookMetaResult> {
     const sourceFolder = getActiveBookExportContext(plugin).sourceFolder.trim();
-    if (!sourceFolder) return { created: false, reason: 'Active book source folder is not set.' };
+    if (!sourceFolder) return { created: false, reason: t('ui.starterSetup.sourceFolderNotSet') };
 
     const vault = plugin.app.vault;
     const normalizedFolder = normalizePath(sourceFolder);
@@ -231,7 +232,7 @@ export async function createBookMetaOnly(plugin: RadialTimelinePlugin): Promise<
 
     const bookMetaPath = normalizePath(`${normalizedFolder}/${BOOK_META_NOTE_NAME}`);
     if (vault.getAbstractFileByPath(bookMetaPath)) {
-        return { created: false, path: bookMetaPath, reason: 'Book Details already exists.' };
+        return { created: false, path: bookMetaPath, reason: t('ui.starterSetup.bookMetaExists') };
     }
     await vault.create(bookMetaPath, buildBookMetaSampleContent(new Date().getFullYear()));
     return { created: true, path: bookMetaPath };

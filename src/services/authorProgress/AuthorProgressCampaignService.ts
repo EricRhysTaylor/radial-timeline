@@ -7,6 +7,7 @@ import { uploadAprToCommunity } from '../../communityShare/communityShareClient'
 import { findCommunityBookConflict, resolveCampaignBookId } from '../../authorProgress/campaignCommunityBinding';
 import { AuthorProgressRenderService, type AuthorProgressCampaignBuildResult } from './AuthorProgressRenderService';
 import { AuthorProgressPublishService } from './AuthorProgressPublishService';
+import { t, tCount } from '../../i18n';
 
 export class AuthorProgressCampaignService {
     constructor(
@@ -78,7 +79,7 @@ export class AuthorProgressCampaignService {
             if (diffMs > thresholdMs && diffMs > cooldown) {
                 try {
                     await this.publishService.generateReport('dynamic');
-                    new Notice('Author Progress Report updated automatically.');
+                    new Notice(t('ui.authorProgressCampaignService.reportUpdatedAutomatically'));
                 } catch {
                     // Silent failure; user can refresh manually.
                 }
@@ -119,7 +120,7 @@ export class AuthorProgressCampaignService {
         }
 
         if (!options?.silent) {
-            new Notice(`Campaign "${campaign.name}" published!\nFormat: ${format.toUpperCase()} | Size: ${result.meta.size} | Stage: ${result.meta.stage} | Progress: ${result.meta.percent.toFixed(1)}%`);
+            new Notice(t('ui.authorProgressCampaignService.campaignPublished', { name: campaign.name, format: format.toUpperCase(), size: result.meta.size, stage: result.meta.stage, percent: result.meta.percent.toFixed(1) }));
         }
 
         // Community share surface: send the portable APR to the website.
@@ -128,10 +129,10 @@ export class AuthorProgressCampaignService {
             try {
                 await this.uploadCampaignReport(result, options);
             } catch (error) {
-                const message = error instanceof Error ? error.message : 'Unknown error';
+                const message = error instanceof Error ? error.message : t('ui.authorProgressCampaignService.unknownError');
                 console.error(`Community APR upload failed for campaign ${campaign.name}:`, message);
                 if (!options?.silent) {
-                    new Notice(`Could not send the progress report to Community: ${message}`);
+                    new Notice(t('ui.authorProgressCampaignService.communitySendFailed', { message }));
                 }
             }
         }
@@ -140,7 +141,7 @@ export class AuthorProgressCampaignService {
 
     public async sendCampaignToCommunity(campaignId: string, options?: { silent?: boolean }): Promise<'private' | 'active' | null> {
         if (!hasProFeatureAccess(this.plugin)) {
-            throw new Error('Sharing an APR campaign to Community is a Pro workflow.');
+            throw new Error(t('ui.authorProgressCampaignService.communityShareRequiresPro'));
         }
         const result = await this.renderService.buildCampaignReport(campaignId);
         if (!result) return null;
@@ -169,7 +170,7 @@ export class AuthorProgressCampaignService {
         }
 
         if (count > 0) {
-            new Notice(`Published ${count} campaign${count > 1 ? 's' : ''}`);
+            new Notice(t('ui.authorProgressCampaignService.publishedCampaigns', { campaigns: tCount('campaign', count) }));
         }
 
         return count;
@@ -220,7 +221,7 @@ export class AuthorProgressCampaignService {
         }
 
         if (updatedCount > 0) {
-            new Notice(`Updated ${updatedCount} campaign${updatedCount > 1 ? 's' : ''} automatically.`);
+            new Notice(t('ui.authorProgressCampaignService.updatedCampaignsAutomatically', { campaigns: tCount('campaign', updatedCount) }));
         }
     }
 
@@ -231,13 +232,13 @@ export class AuthorProgressCampaignService {
         const authorProgress = this.plugin.settings.authorProgress;
         const campaignIndex = authorProgress?.campaigns?.findIndex(campaign => campaign.id === result.campaign.id) ?? -1; // SAFE: -1 is findIndex's own "not found" value, so an absent campaign list takes the same not-found branch
         if (!authorProgress?.campaigns || campaignIndex < 0) {
-            throw new Error('Campaign not found.');
+            throw new Error(t('ui.authorProgressCampaignService.campaignNotFound'));
         }
 
         const campaign = authorProgress.campaigns[campaignIndex];
         const bookKey = resolveCampaignBookId(this.plugin.settings, campaign);
         if (!bookKey) {
-            throw new Error('Choose a campaign book before sending its APR to Community.');
+            throw new Error(t('ui.authorProgressCampaignService.chooseCampaignBook'));
         }
         // My Share keeps one APR per book, so a second campaign on the same
         // book would overwrite the first instead of publishing alongside it.
@@ -245,7 +246,7 @@ export class AuthorProgressCampaignService {
         // that pair, so refuse here rather than let the newer upload win.
         const conflict = findCommunityBookConflict(this.plugin.settings, campaign);
         if (conflict) {
-            throw new Error(`"${conflict.name}" also sends this book's APR to Community, and My Share keeps one APR per book. Turn off Send to Community on "${conflict.name}" or point one campaign at a different book.`);
+            throw new Error(t('ui.authorProgressCampaignService.communityBookConflict', { name: conflict.name }));
         }
 
         const attemptedAt = new Date().toISOString();
@@ -277,8 +278,8 @@ export class AuthorProgressCampaignService {
             await this.plugin.saveSettings();
             if (!options?.silent) {
                 new Notice(uploaded.status === 'active'
-                    ? 'Progress report refreshed on your public Community card.'
-                    : 'Progress report sent to Community — activate it on your My Share page.');
+                    ? t('ui.authorProgressCampaignService.reportRefreshedOnCard')
+                    : t('ui.authorProgressCampaignService.reportSentToCommunity'));
             }
             return uploaded.status;
         } catch (error) {

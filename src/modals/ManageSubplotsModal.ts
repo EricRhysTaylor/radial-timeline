@@ -8,7 +8,7 @@
 import { App, Modal, ButtonComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { SubplotManagementService, SubplotStats } from '../services/SubplotManagementService';
-import { t } from '../i18n';
+import { t, tCount } from '../i18n';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
 
 export class ManageSubplotsModal extends Modal {
@@ -37,9 +37,9 @@ export class ManageSubplotsModal extends Modal {
 
         // Hero Section (generic header)
         const hero = contentEl.createDiv({ cls: 'ert-modal-header' });
-        hero.createSpan({ text: 'Configuration', cls: 'ert-modal-badge' });
+        hero.createSpan({ text: t('ui.manageSubplotsModal.badge'), cls: 'ert-modal-badge' });
         hero.createDiv({ text: t('commands.subplotManager'), cls: 'ert-modal-title' });
-        hero.createDiv({ text: 'Rename or remove subplots across the timeline. Orphaned scenes will be moved to Main Plot.', cls: 'ert-modal-subtitle' });
+        hero.createDiv({ text: t('ui.manageSubplotsModal.subtitle'), cls: 'ert-modal-subtitle' });
 
         // Single card container (avoid extra nesting)
         const card = contentEl.createDiv({ cls: 'ert-manage-subplots-card ert-glass-card' });
@@ -47,7 +47,7 @@ export class ManageSubplotsModal extends Modal {
 
         const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
         new ButtonComponent(actions)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => this.close());
         
         // Initial load
@@ -75,7 +75,7 @@ export class ManageSubplotsModal extends Modal {
         
         // Header
         const header = this.listContainer.createDiv({ cls: 'ert-manage-subplots-header' });
-        header.setText(`Active Subplots · ${sorted.length}`);
+        header.setText(t('ui.manageSubplotsModal.activeSubplots', { count: sorted.length }));
 
         // List Scroll Area
         const scrollArea = this.listContainer.createDiv({ cls: 'ert-manage-subplots-scroll' });
@@ -90,7 +90,7 @@ export class ManageSubplotsModal extends Modal {
             nameEl.setText(subplot.name);
 
             const countEl = info.createDiv({ cls: 'ert-manage-subplots-count' });
-            countEl.setText(`${subplot.count} scenes`);
+            countEl.setText(tCount('scene', subplot.count));
 
             // Right: Actions
             const actions = row.createDiv({ cls: 'ert-manage-subplots-actions' });
@@ -98,7 +98,7 @@ export class ManageSubplotsModal extends Modal {
             // Rename Button
             const renameBtn = new ButtonComponent(actions)
                 .setIcon('pencil-line')
-                .setTooltip('Rename')
+                .setTooltip(t('ui.manageSubplotsModal.renameTooltip'))
                 .setDisabled(subplot.name === "Main Plot")
                 .onClick(() => this.handleRename(subplot.name));
 
@@ -108,7 +108,7 @@ export class ManageSubplotsModal extends Modal {
             const isMainPlot = subplot.name === "Main Plot";
             const deleteBtn = new ButtonComponent(actions)
                 .setIcon('eraser')
-                .setTooltip(isMainPlot ? 'Main Plot cannot be deleted' : 'Delete')
+                .setTooltip(isMainPlot ? t('ui.manageSubplotsModal.mainPlotCannotDelete') : t('ui.manageSubplotsModal.deleteTooltip'))
                 .setDisabled(isMainPlot)
                 .onClick(() => this.handleDelete(subplot.name));
 
@@ -169,22 +169,22 @@ class SubplotDeletionConfirmModal extends Modal {
 
         // Header
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Warning' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Remove subplot?' });
-        header.createDiv({ cls: 'ert-modal-subtitle', text: 'This action cannot be undone.' });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.manageSubplotsModal.removeBadge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.manageSubplotsModal.removeTitle') });
+        header.createDiv({ cls: 'ert-modal-subtitle', text: t('ui.manageSubplotsModal.removeSubtitle') });
         const meta = header.createDiv({ cls: 'ert-modal-meta' });
-        meta.createSpan({ cls: 'ert-modal-meta-item', text: 'Scenes in only this subplot will be moved to Main Plot' });
+        meta.createSpan({ cls: 'ert-modal-meta-item', text: t('ui.manageSubplotsModal.removeMeta') });
 
         // Warning card
         const card = contentEl.createDiv({ cls: 'ert-panel ert-panel--glass' });
         const warningEl = card.createDiv({ cls: 'ert-pulse-warning' });
-        warningEl.setText(`Are you sure you want to remove "${this.subplotName}" from the timeline?`);
+        warningEl.setText(t('ui.manageSubplotsModal.removeConfirm', { subplot: this.subplotName }));
 
         // Actions
         const buttonRow = contentEl.createDiv({ cls: 'ert-modal-actions' });
 
         new ButtonComponent(buttonRow)
-            .setButtonText('Remove subplot')
+            .setButtonText(t('ui.manageSubplotsModal.removeButton'))
             .setDestructive()
             .onClick(async () => {
                 await this.onConfirm();
@@ -192,7 +192,7 @@ class SubplotDeletionConfirmModal extends Modal {
             });
 
         new ButtonComponent(buttonRow)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => this.close());
     }
 
@@ -224,9 +224,9 @@ class RenameSubplotModal extends Modal {
 
         // Header (matching PlanetaryTimeModal)
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Edit' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Rename subplot' });
-        header.createDiv({ cls: 'ert-modal-subtitle', text: `Enter a new name for "${this.oldName}"` });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.manageSubplotsModal.renameBadge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.manageSubplotsModal.renameTitle') });
+        header.createDiv({ cls: 'ert-modal-subtitle', text: t('ui.manageSubplotsModal.renameSubtitle', { subplot: this.oldName }) });
 
         // Input Field (Large template input field style)
         // Container with border
@@ -256,12 +256,12 @@ class RenameSubplotModal extends Modal {
         };
 
         new ButtonComponent(buttonRow)
-            .setButtonText('Rename')
+            .setButtonText(t('ui.manageSubplotsModal.renameButton'))
             .setCta()
             .onClick(save);
 
         new ButtonComponent(buttonRow)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => this.close());
         
         // Handle Enter key

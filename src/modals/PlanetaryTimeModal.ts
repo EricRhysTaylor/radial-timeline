@@ -73,7 +73,7 @@ export class PlanetaryTimeModal extends Modal {
         profileSetting.addDropdown(drop => {
             this.profileDropdown = drop;
             drop.addOption('', t('planetary.active.disabled'));
-            this.profiles.forEach(p => { drop.addOption(p.id, p.label || 'Unnamed'); });
+            this.profiles.forEach(p => { drop.addOption(p.id, p.label || t('ui.planetaryTimeModal.unnamedProfile')); });
             drop.setValue(this.activeId || '');
             drop.onChange((value) => { void (async () => {
                 this.activeId = value;
@@ -109,7 +109,7 @@ export class PlanetaryTimeModal extends Modal {
         this.resultTextEl = this.resultEl.createDiv({ cls: 'ert-planetary-result-text' });
         const copyButton = new ExtraButtonComponent(resultRow)
             .setIcon('copy')
-            .setTooltip('Copy YAML')
+            .setTooltip(t('ui.planetaryTimeModal.copyYamlTooltip'))
             .onClick(() => this.copyYaml());
         copyButton.extraSettingsEl.addClass('ert-iconBtn', 'ert-planetary-copy-button');
         this.renderResult();
@@ -447,7 +447,7 @@ export class PlanetaryTimeModal extends Modal {
             `  local: "${conversion.formatted}"`,
             `  earth: "${earthFormatted}"`,
         ].join('\n');
-        resultTextEl.setText(`Earth ${earthFormatted}`);
+        resultTextEl.setText(t('ui.planetaryTimeModal.earthResult', { date: earthFormatted }));
     }
 
     private getActiveProfile(): PlanetaryProfile | null {

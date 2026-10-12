@@ -325,7 +325,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 
     const stageCell = progressModeGrid.createDiv({ cls: ERT_CLASSES.GRID_FORM_CELL });
     const stageBadgeRow = stageCell.createDiv({ cls: `${ERT_CLASSES.INLINE} ert-apr-stageBadgeRow` });
-    const stageBadge = stageBadgeRow.createSpan({ cls: ERT_CLASSES.CHIP, text: 'TRACKING STAGE' });
+    const stageBadge = stageBadgeRow.createSpan({ cls: ERT_CLASSES.CHIP, text: t('ui.authorProgressSection.trackingStageBadge') });
     const stageNote = stageCell.createDiv({ cls: ERT_CLASSES.FIELD_NOTE });
     const stageSubNote = stageCell.createDiv({ cls: `${ERT_CLASSES.FIELD_NOTE} ert-apr-stageSubNote` });
 
@@ -349,17 +349,17 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     targetCountInput.inputEl.step = '1';
     targetCountInput.inputEl.addClass('ert-input', 'ert-input--xs');
     targetCountInput.setPlaceholder('—');
-    setTooltip(targetCountInput.inputEl, 'Scene goal');
+    setTooltip(targetCountInput.inputEl, t('ui.authorProgressSection.sceneGoalTooltip'));
     const targetCountResetBtn = targetCountGroup.createEl('button', {
         cls: ERT_CLASSES.ICON_BTN,
-        attr: { type: 'button', 'aria-label': 'Match target to current scene count' }
+        attr: { type: 'button', 'aria-label': t('ui.authorProgressSection.matchTargetLabel') }
     });
     setIcon(targetCountResetBtn, 'refresh-cw');
-    setTooltip(targetCountResetBtn, 'Match target to current scene count');
+    setTooltip(targetCountResetBtn, t('ui.authorProgressSection.matchTargetLabel'));
 
     // Date range input sits inline with the mode dropdown (shown only in Date Goal mode).
     const dateRangeInput = new TextComponent(modeControlRow);
-    dateRangeInput.setPlaceholder('YYYY-MM-DD to YYYY-MM-DD');
+    dateRangeInput.setPlaceholder(t('settings.authorProgress.progressMode.dateRangePlaceholder'));
     dateRangeInput.inputEl.addClass('ert-input', 'ert-input--lg', 'ert-hidden');
 
     // Manuscript Flow bar — full-width, rendered at the bottom of the card.
@@ -423,10 +423,10 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
         note: string
     ) => {
         const badgeText = mode === 'stage'
-            ? `TRACKING ${trackedStage.toUpperCase()}`
+            ? t('ui.authorProgressSection.trackingStageNamed', { stage: trackedStage.toUpperCase() })
             : mode === 'date'
-                ? 'DATE RANGE'
-                : 'FULL MANUSCRIPT';
+                ? t('ui.authorProgressSection.dateRangeBadge')
+                : t('ui.authorProgressSection.fullManuscriptBadge');
         stageBadge.setText(badgeText);
         applyStageBadgeTone(displayStage);
         stageNote.setText(note);
@@ -546,12 +546,12 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 
     const composeStageNote = (mode: AprProgressMode): string => {
         if (mode === 'date') {
-            return 'Track progress against a timeline. Measure how far you’ve moved between a start and target date.';
+            return t('ui.authorProgressSection.noteDateMode');
         }
         if (mode === 'full') {
-            return 'Track all scenes across Zero → Press. See how your entire manuscript is progressing end to end.';
+            return t('ui.authorProgressSection.noteFullMode');
         }
-        return 'Track progress within a single stage using a scene goal. Focus on drafting, revision, or publishing — one stage at a time.';
+        return t('ui.authorProgressSection.noteStageMode');
     };
 
     const renderFlowBar = (
@@ -587,7 +587,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             const storedTarget = plugin.settings.authorProgress?.defaults.aprTargetSceneCount;
             const note = composeStageNote(progressState.mode);
             updateStageUI(progressState.mode, progressState.displayStage, progressState.trackedStage, note);
-            stageSubNote.setText(progressState.mode === 'stage' ? `Currently tracking: ${progressState.trackedStage} stage` : '');
+            stageSubNote.setText(progressState.mode === 'stage' ? t('ui.authorProgressSection.currentlyTracking', { stage: progressState.trackedStage }) : '');
             stageSubNote.toggleClass('ert-hidden', progressState.mode !== 'stage');
             seedTargetCount(progressState.sceneCount, storedTarget);
             renderFlowBar(progressState.stageBreakdown, progressState.percent);
@@ -598,7 +598,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             lastKnownSceneCount = 0;
             const storedTarget = plugin.settings.authorProgress?.defaults.aprTargetSceneCount;
             updateStageUI(mode, trackedStage, trackedStage, composeStageNote(mode));
-            stageSubNote.setText(mode === 'stage' ? `Currently tracking: ${trackedStage} stage` : '');
+            stageSubNote.setText(mode === 'stage' ? t('ui.authorProgressSection.currentlyTracking', { stage: trackedStage }) : '');
             stageSubNote.toggleClass('ert-hidden', mode !== 'stage');
             seedTargetCount(0, storedTarget);
             renderFlowBar({ Zero: 0, Author: 0, House: 0, Press: 0 }, 0);
@@ -606,9 +606,9 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
         }
     };
 
-    modeDropdown.addOption('stage', 'Stage tracking');
-    modeDropdown.addOption('full', 'Full manuscript');
-    modeDropdown.addOption('date', 'Date goal');
+    modeDropdown.addOption('stage', t('ui.authorProgressSection.modeStage'));
+    modeDropdown.addOption('full', t('ui.authorProgressSection.modeFull'));
+    modeDropdown.addOption('date', t('ui.authorProgressSection.modeDate'));
     void refreshTrackingState();
 
     const getActiveStyleSettings = (): AprStyleSettings => aprStyleService.resolveDesignerStyle();
@@ -683,13 +683,13 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     // Collapse / expand toggle for the styling body
     const stylingToggleBtn = themeControl.createEl('button', {
         cls: ERT_CLASSES.ICON_BTN,
-        attr: { type: 'button', 'aria-label': 'Show styling controls' }
+        attr: { type: 'button', 'aria-label': t('ui.authorProgressSection.showStyling') }
     });
     const refreshStylingToggle = () => {
         const expanded = plugin.settings.authorProgress?.defaults.aprStylingExpanded ?? false;
         setIcon(stylingToggleBtn, expanded ? 'chevron-down' : 'chevron-right');
-        setTooltip(stylingToggleBtn, expanded ? 'Hide styling controls' : 'Show styling controls');
-        stylingToggleBtn.setAttribute('aria-label', expanded ? 'Hide styling controls' : 'Show styling controls');
+        setTooltip(stylingToggleBtn, expanded ? t('ui.authorProgressSection.hideStyling') : t('ui.authorProgressSection.showStyling'));
+        stylingToggleBtn.setAttribute('aria-label', expanded ? t('ui.authorProgressSection.hideStyling') : t('ui.authorProgressSection.showStyling'));
         themeBody.toggleClass('ert-settings-hidden', !expanded);
     };
     refreshStylingToggle();
@@ -902,7 +902,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             const showWarning = isCustomFont(normalized) && !isFontLoaded(normalized);
             drop.selectEl.classList.toggle('ert-typography-select--warning', showWarning);
             if (showWarning) {
-                drop.selectEl.title = `Font not loaded: ${normalized}. Check spelling or install the font.`;
+                drop.selectEl.title = t('ui.authorProgressSection.fontNotLoaded', { font: normalized });
             } else {
                 drop.selectEl.removeAttribute('title');
             }
@@ -917,7 +917,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             const normalized = value === 'Inter' ? 'default' : value;
             const hasOption = FONT_OPTIONS.some(opt => opt.value === normalized);
             if (!hasOption) {
-                drop.addOption(normalized, `Custom: ${normalized}`);
+                drop.addOption(normalized, t('ui.authorProgressSection.customFontOption', { font: normalized }));
             }
             drop.addOption(customValue, t('settings.authorProgress.styling.customFontModal.customOption'));
             drop.setValue(normalized);
@@ -1164,7 +1164,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             const colorConfig = opts.color;
             colorPicker = colorSwatch(rowSecondary, {
                 value: colorConfig.value,
-                ariaLabel: `${opts.label} color`,
+                ariaLabel: t('ui.authorProgressSection.elementColorAriaLabel', { label: opts.label }),
                 plugin,
                 onChange: (val) => { void (async () => {
                     if (isSyncing) return;
@@ -1266,7 +1266,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             weightKey: 'aprBookTitleFontWeight',
             italicKey: 'aprBookTitleFontItalic',
             sizeKeys: ['aprBookTitleFontSize'],
-            sizePlaceholders: ['Auto'],
+            sizePlaceholders: [t('settings.authorProgress.styling.autoButton')],
             showSizeControls: false,
             weightDefault: 400
         }
@@ -1305,7 +1305,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             weightKey: 'aprAuthorNameFontWeight',
             italicKey: 'aprAuthorNameFontItalic',
             sizeKeys: ['aprAuthorNameFontSize'],
-            sizePlaceholders: ['Auto'],
+            sizePlaceholders: [t('settings.authorProgress.styling.autoButton')],
             showSizeControls: false,
             weightDefault: 400
         }
@@ -1347,7 +1347,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             weightKey: 'aprRtBadgeFontWeight',
             italicKey: 'aprRtBadgeFontItalic',
             sizeKeys: ['aprRtBadgeFontSize'],
-            sizePlaceholders: ['Auto'],
+            sizePlaceholders: [t('settings.authorProgress.styling.autoButton')],
             showSizeControls: false,
             weightDefault: 700
         }
@@ -1413,7 +1413,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
         { label: 'Patreon', color: '#141518' },
         { label: 'Substack', color: '#121212' },
         // — Light backgrounds —
-        { label: 'White', color: '#FFFFFF' },
+        { label: t('ui.authorProgressSection.presetWhite'), color: '#FFFFFF' },
     ];
 
     // Custom presets (user-saved colors with custom names)
@@ -1445,7 +1445,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 
     const bgSwatch = colorSwatch(bgSetting.controlEl, {
         value: currentBg,
-        ariaLabel: 'Background color',
+        ariaLabel: t('settings.authorProgress.styling.backgroundColor.name'),
         plugin,
         onChange: (val) => { void (async () => {
             const next = val || '#0d0d0f';
@@ -1477,7 +1477,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 
     // ── Platform preset pills ────────────────────────────────────────────
     const platformRow = themeBody.createDiv({ cls: 'ert-platform-presets' });
-    platformRow.createSpan({ text: 'Platform backgrounds', cls: 'ert-platform-presets__label' });
+    platformRow.createSpan({ text: t('ui.authorProgressSection.platformBackgrounds'), cls: 'ert-platform-presets__label' });
     const platformSwatches = platformRow.createDiv({ cls: 'ert-platform-presets__swatches' });
 
     const applyPreset = async (color: string) => {
@@ -1514,7 +1514,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             const btn = customSwatchContainer.createEl('button', {
                 cls: `ert-platform-swatch${saved ? '' : ' ert-platform-swatch--empty'}`,
                 attr: {
-                    'aria-label': saved ? `${saved.label} (${saved.color})` : `Custom ${i + 1} — click to set`,
+                    'aria-label': saved ? `${saved.label} (${saved.color})` : t('ui.authorProgressSection.customSlotEmptyAriaLabel', { number: i + 1 }),
                     type: 'button'
                 }
             });
@@ -1535,7 +1535,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             } else {
                 const icon = btn.createSpan({ cls: 'ert-platform-swatch__icon' });
                 setIcon(icon, 'plus');
-                btn.createSpan({ cls: 'ert-platform-swatch__name', text: `Custom ${i + 1}` });
+                btn.createSpan({ cls: 'ert-platform-swatch__name', text: t('ui.authorProgressSection.customSlotName', { number: i + 1 }) });
                 btn.addEventListener('click', () => openCustomPresetModal(i, null));
             }
         }
@@ -1599,7 +1599,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     const spokeControlRow = spokeColorSetting.controlEl;
     const spokeColorPicker = colorSwatch(spokeControlRow, {
         value: initialEffective,
-        ariaLabel: 'Spoke color',
+        ariaLabel: t('ui.authorProgressSection.spokeColorAriaLabel'),
         plugin,
         onChange: (val) => { void (async () => {
             if (/^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(val)) {
@@ -1839,7 +1839,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 
             exportPathSetting.addExtraButton(button => {
                 button.setIcon('rotate-ccw');
-                button.setTooltip(`Reset to ${defaultPath}`);
+                button.setTooltip(t('ui.authorProgressSection.resetToPath', { path: defaultPath }));
                 button.onClick(async () => {
                     text.setValue(defaultPath);
                     if (!plugin.settings.authorProgress) {

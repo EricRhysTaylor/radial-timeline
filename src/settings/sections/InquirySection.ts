@@ -551,7 +551,7 @@ export function renderInquirySection(params: SectionParams): void {
                 const sourceLabel = Array.from(sources).sort().join(', ');
                 nameCell.createSpan({
                     cls: 'ert-controlGroup__cell--meta ert-controlGroup__cell--faint',
-                    text: `from ${sourceLabel}`
+                    text: t('ui.inquirySection.classSourceMeta', { sources: sourceLabel })
                 });
             }
 
@@ -698,7 +698,7 @@ export function renderInquirySection(params: SectionParams): void {
                 const sequenceCell = row.createDiv({ cls: 'ert-controlGroup__cell' });
                 sequenceCell.createSpan({
                     cls: 'ert-controlGroup__sequenceBadge',
-                    text: `B${book.bookNumber ?? '?'}`
+                    text: t('ui.inquirySection.bookSequenceBadge', { number: book.bookNumber ?? '?' })
                 });
 
                 const managerMatch = (plugin.settings.books || []).find(entry =>

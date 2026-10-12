@@ -21,6 +21,7 @@ import { addHeadingIcon, applyErtHeaderLayout } from '../wikiLink';
 import { consumeBookManagerAutoloadHighlight } from '../bookManagerAutoloadHighlight';
 import { extractCountableBodyText } from '../../utils/manuscript';
 import { countWords } from '../../utils/text';
+import { t, tCount } from '../../i18n';
 
 class BookMetadataModal extends Modal {
     constructor(
@@ -42,11 +43,11 @@ class BookMetadataModal extends Modal {
         contentEl.addClass('ert-modal-container', 'ert-stack');
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Book' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Project metadata' });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.generalSection.metadataBadge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.generalSection.metadataTitle') });
         header.createDiv({
             cls: 'ert-modal-subtitle',
-            text: 'Optional local metadata for future stats, cohorts, and public sharing.'
+            text: t('ui.generalSection.metadataSubtitle')
         });
 
         const form = contentEl.createDiv({ cls: 'ert-stack' });
@@ -66,13 +67,13 @@ class BookMetadataModal extends Modal {
                 });
         };
 
-        addText('Genre', 'Optional grouping such as sci-fi, romance, mystery, or memoir.', genre, value => { genre = value; });
-        addText('Project stage', 'Optional author-facing stage such as first book, querying, published, or revision.', projectStage, value => { projectStage = value; });
-        addText('Public label', 'Optional public-facing label. Private book title remains separate.', publicLabel, value => { publicLabel = value; });
+        addText(t('ui.generalSection.genreName'), t('ui.generalSection.genreDesc'), genre, value => { genre = value; });
+        addText(t('ui.generalSection.projectStageName'), t('ui.generalSection.projectStageDesc'), projectStage, value => { projectStage = value; });
+        addText(t('ui.generalSection.publicLabelName'), t('ui.generalSection.publicLabelDesc'), publicLabel, value => { publicLabel = value; });
 
         new ObsidianSetting(form)
-            .setName('Description')
-            .setDesc('Optional author-facing or future public description.')
+            .setName(t('ui.generalSection.descriptionName'))
+            .setDesc(t('ui.generalSection.descriptionDesc'))
             .addTextArea(text => {
                 text.setValue(publicDescription);
                 text.inputEl.addClass('ert-input--full');
@@ -85,8 +86,8 @@ class BookMetadataModal extends Modal {
             await this.onSubmit({ genre, projectStage, publicLabel, publicDescription });
             this.close();
         };
-        new ButtonComponent(actions).setButtonText('Save').setCta().onClick(() => { void save(); });
-        new ButtonComponent(actions).setButtonText('Cancel').onClick(() => this.close());
+        new ButtonComponent(actions).setButtonText(t('common.save')).setCta().onClick(() => { void save(); });
+        new ButtonComponent(actions).setButtonText(t('common.cancel')).onClick(() => this.close());
     }
 
     onClose() {
@@ -105,8 +106,8 @@ export function renderGeneralSection(params: {
 
     // --- Books Manager ---
     const booksHeading = new ObsidianSetting(containerEl)
-        .setName('Books')
-        .setDesc('The active book drives the timeline view, title and exports.')
+        .setName(t('ui.generalSection.booksName'))
+        .setDesc(t('ui.generalSection.booksDesc'))
         .setHeading();
     addHeadingIcon(booksHeading, 'library-big');
     applyErtHeaderLayout(booksHeading);
@@ -116,29 +117,29 @@ export function renderGeneralSection(params: {
     // "+" add-book button in the setting row's control column (far right)
     const addBookBtn = booksHeading.controlEl.createEl('button', {
         cls: 'ert-iconBtn ert-mod-cta ert-books-add-btn',
-        attr: { 'aria-label': 'Add book', type: 'button' }
+        attr: { 'aria-label': t('ui.generalSection.addBook'), type: 'button' }
     });
     setIcon(addBookBtn, 'plus');
 
     const discoveryPanel = containerEl.createDiv({ cls: 'ert-panel ert-stack' });
     const scanSetting = new ObsidianSetting(discoveryPanel)
-        .setName('Import an existing manuscript')
-        .setDesc('Find manuscript exports already copied into this vault. Review the source before creating a book.')
-        .addButton(button => button.setButtonText('Choose manuscript').onClick(() => new OnboardingModal(app, plugin, () => renderBooksManager()).open()));
+        .setName(t('ui.generalSection.importName'))
+        .setDesc(t('ui.generalSection.importDesc'))
+        .addButton(button => button.setButtonText(t('ui.generalSection.chooseManuscript')).onClick(() => new OnboardingModal(app, plugin, () => renderBooksManager()).open()));
     const candidatesEl = discoveryPanel.createDiv({ cls: 'ert-stack' });
     const scan = async () => {
-        candidatesEl.setText('Checking for manuscript exports…');
+        candidatesEl.setText(t('ui.generalSection.checkingExports'));
         try {
             const candidates = await discoverOnboardingCandidates(app, (plugin.settings.books ?? []).map(book => book.sourceFolder)); // SAFE: a new vault has no registered books
             if (!candidatesEl.isConnected) return;
             candidatesEl.empty();
-            candidatesEl.createDiv({ cls: 'ert-section-desc', text: candidates.length ? `${candidates.length} potential manuscript folders found. Choose manuscript to inspect and import.` : 'No unregistered export detected. Copy your Scrivener export into this vault, then scan again.' });
+            candidatesEl.createDiv({ cls: 'ert-section-desc', text: candidates.length ? t('ui.generalSection.candidatesFound', { count: candidates.length }) : t('ui.generalSection.noExportsFound') });
             for (const candidate of candidates) candidatesEl.createDiv({ cls: 'ert-section-desc', text: `${candidate.folder} — ${describeOnboardingCandidate(candidate)}` });
         } catch (error) {
-            if (candidatesEl.isConnected) candidatesEl.setText(`Cannot scan exports: ${error instanceof Error ? error.message : String(error)}`);
+            if (candidatesEl.isConnected) candidatesEl.setText(t('ui.generalSection.scanFailed', { error: error instanceof Error ? error.message : String(error) }));
         }
     };
-    scanSetting.addButton(button => button.setButtonText('Scan for exports').onClick(() => void scan()));
+    scanSetting.addButton(button => button.setButtonText(t('ui.generalSection.scanForExports')).onClick(() => void scan()));
     if (!(plugin.settings.books ?? []).some(book => book.sourceFolder && app.vault.getAbstractFileByPath(book.sourceFolder) instanceof TFolder)) void scan(); // SAFE: only first-run or unconfigured vaults scan automatically
 
     const booksPanel = containerEl.createDiv({ cls: `${ERT_CLASSES.STACK} ert-books-panel` });
@@ -221,14 +222,14 @@ export function renderGeneralSection(params: {
 
         if (books.length === 0) {
             const empty = booksPanel.createDiv({ cls: 'ert-bookmeta-preview-empty' });
-            empty.createDiv({ cls: 'ert-bookmeta-preview-empty-title', text: 'No books configured' });
+            empty.createDiv({ cls: 'ert-bookmeta-preview-empty-title', text: t('ui.generalSection.noBooksTitle') });
             empty.createDiv({
                 cls: 'ert-bookmeta-preview-empty-desc',
-                text: 'Add a book profile and set the title and folder.'
+                text: t('ui.generalSection.noBooksDesc')
             });
             const actions = empty.createDiv({ cls: 'ert-bookmeta-preview-empty-actions' });
             new ButtonComponent(actions)
-                .setButtonText('Add book')
+                .setButtonText(t('ui.generalSection.addBook'))
                 .setCta()
                 .onClick(() => { void addNewBook(); });
             updateAddBtnPulse();
@@ -249,11 +250,11 @@ export function renderGeneralSection(params: {
             const hasBrokenFolderLink = hasConfiguredFolder && !hasResolvedFolder;
 
             // ── Scene count (only Class: Scene files) ────────────────
-            let sceneStatText = 'No folder';
+            let sceneStatText = t('ui.generalSection.noFolder');
             let sceneStatWarn = true;
             const sceneFiles: TFile[] = [];
             if (hasBrokenFolderLink) {
-                sceneStatText = 'Folder missing';
+                sceneStatText = t('ui.generalSection.folderMissing');
             } else if (hasResolvedFolder) {
                 const children = abstractFolder.children;
                 for (const child of children) {
@@ -266,7 +267,7 @@ export function renderGeneralSection(params: {
                     }
                 }
                 const sceneCount = sceneFiles.length;
-                sceneStatText = sceneCount === 1 ? '1 scene' : `${sceneCount} scenes`;
+                sceneStatText = tCount('scene', sceneCount);
                 sceneStatWarn = false;
             }
 
@@ -285,7 +286,7 @@ export function renderGeneralSection(params: {
             const dragHandle = row.settingEl.createDiv({ cls: 'ert-book-card__drag ert-drag-handle' });
             row.settingEl.insertBefore(dragHandle, row.infoEl);
             setIcon(dragHandle, 'grip-vertical');
-            setTooltip(dragHandle, 'Drag to reorder books');
+            setTooltip(dragHandle, t('ui.generalSection.dragToReorder'));
             dragHandle.draggable = books.length > 1;
 
             // Name: status icon + clickable title
@@ -300,10 +301,10 @@ export function renderGeneralSection(params: {
             setTooltip(
                 statusIcon,
                 hasBrokenFolderLink
-                    ? `Folder not found: ${normalizedFolder}`
+                    ? t('ui.generalSection.folderNotFound', { folder: normalizedFolder })
                     : hasResolvedFolder
-                        ? `Linked folder: ${normalizedFolder}`
-                        : 'No folder linked'
+                        ? t('ui.generalSection.linkedFolder', { folder: normalizedFolder })
+                        : t('ui.generalSection.noFolderLinked')
             );
 
             const titleSpan = nameEl.createSpan({
@@ -312,16 +313,16 @@ export function renderGeneralSection(params: {
             });
             titleSpan.setAttr('role', 'button');
             titleSpan.setAttr('tabindex', '0');
-            titleSpan.setAttr('aria-label', `Rename "${label}"`);
+            titleSpan.setAttr('aria-label', t('ui.generalSection.renameAria', { title: label }));
             const openRename = () => {
                 new NamePromptModal(app, {
-                    badge: 'Edit',
-                    title: 'Rename book',
-                    subtitle: 'This name appears in the timeline header, tab, and exports.',
+                    badge: t('ui.generalSection.renameBadge'),
+                    title: t('ui.generalSection.renameTitle'),
+                    subtitle: t('ui.generalSection.renameSubtitle'),
                     initialValue: label,
                     placeholder: DEFAULT_BOOK_TITLE,
-                    actionLabel: 'Rename',
-                    emptyNotice: 'Please enter a book title.',
+                    actionLabel: t('ui.generalSection.renameAction'),
+                    emptyNotice: t('ui.generalSection.renameEmptyNotice'),
                     onSubmit: async (newTitle) => {
                         const trimmed = newTitle.trim();
                         if (!trimmed) return false;
@@ -338,13 +339,13 @@ export function renderGeneralSection(params: {
             });
 
             if (book.copy) {
-                nameEl.createSpan({ cls: ERT_CLASSES.BADGE_PILL, text: book.copy.kind === 'submission-snapshot' ? 'Submission snapshot' : 'Working draft' });
+                nameEl.createSpan({ cls: ERT_CLASSES.BADGE_PILL, text: book.copy.kind === 'submission-snapshot' ? t('ui.generalSection.submissionSnapshot') : t('ui.generalSection.workingDraft') });
             }
-            row.controlEl.createSpan({ cls: 'setting-item-description', text: 'Include in saga' });
+            row.controlEl.createSpan({ cls: 'setting-item-description', text: t('ui.generalSection.includeInSaga') });
             row.addToggle(toggle => {
                 toggle.setValue(isBookIncludedInSaga(book));
-                toggle.toggleEl.setAttr('aria-label', `Include ${label} in saga`);
-                setTooltip(toggle.toggleEl, 'Include in saga');
+                toggle.toggleEl.setAttr('aria-label', t('ui.generalSection.includeInSagaAria', { title: label }));
+                setTooltip(toggle.toggleEl, t('ui.generalSection.includeInSaga'));
                 toggle.onChange(async value => {
                     book.includeInSaga = value;
                     await plugin.persistBookSettings();
@@ -353,14 +354,14 @@ export function renderGeneralSection(params: {
             });
 
             // Desc: scene count stat
-            row.setDesc(`BOOK ${sequenceNumber} — ${sceneStatText}`);
+            row.setDesc(t('ui.generalSection.bookMeta', { number: sequenceNumber, stat: sceneStatText }));
             row.descEl.addClass('ert-book-card__meta');
             if (book.id === autoloadHighlightedBookId) {
-                row.descEl.setText(`BOOK ${sequenceNumber} — demo autoloaded · ${sceneStatText}`);
+                row.descEl.setText(t('ui.generalSection.bookMetaAutoloaded', { number: sequenceNumber, stat: sceneStatText }));
             }
             if (hasResolvedFolder) {
                 const description = row.descEl.textContent;
-                row.descEl.setText(`${description} — counting words…`);
+                row.descEl.setText(t('ui.generalSection.countingWords', { desc: description }));
                 void (async () => {
                     try {
                         let totalWords = 0;
@@ -368,12 +369,12 @@ export function renderGeneralSection(params: {
                             totalWords += countWords(extractCountableBodyText(await app.vault.cachedRead(file)));
                         }
                         const wordCountText = totalWords < 1000
-                            ? String(totalWords)
-                            : `${Math.round(totalWords / 1000)}k`;
-                        row.descEl.setText(`${description} — ${wordCountText} ${totalWords === 1 ? 'word' : 'words'}`);
-                        setTooltip(row.descEl, `${totalWords.toLocaleString()} words in scene bodies (excluding frontmatter and comments)`);
+                            ? tCount('word', totalWords)
+                            : t('ui.generalSection.thousandsOfWords', { count: Math.round(totalWords / 1000) });
+                        row.descEl.setText(t('ui.generalSection.wordCountMeta', { desc: description, words: wordCountText }));
+                        setTooltip(row.descEl, t('ui.generalSection.wordCountTooltip', { count: totalWords.toLocaleString() }));
                     } catch (error) {
-                        row.descEl.setText(`${description} — word count unavailable`);
+                        row.descEl.setText(t('ui.generalSection.wordCountUnavailable', { desc: description }));
                         console.error('[Radial Timeline] Could not count book words', error);
                     }
                 })();
@@ -456,22 +457,22 @@ export function renderGeneralSection(params: {
                 draftButtonRef = button;
                 button.buttonEl.empty();
                 button.buttonEl.addClass('ert-iconBtn');
-                button.buttonEl.setAttr('aria-label', 'Create book copy…');
+                button.buttonEl.setAttr('aria-label', t('ui.generalSection.createCopyAria'));
                 setIcon(button.buttonEl, 'book-dashed');
-                button.setTooltip('Create a submission snapshot or working draft in a sibling folder.');
+                button.setTooltip(t('ui.generalSection.createCopyTooltip'));
                 button.onClick(() => {
                     if (creatingDraft) return;
 
                     const sourceFolder = (book.sourceFolder || '').trim();
                     if (isFolderPathMissingOrRoot(sourceFolder)) {
-                        new Notice('Book copy requires a book folder (vault root is not supported).');
+                        new Notice(t('ui.generalSection.copyNeedsFolderNotice'));
                         return;
                     }
 
                     const normalizedSource = normalizePath(sourceFolder);
                     const sourceAbstract = app.vault.getAbstractFileByPath(normalizedSource);
                     if (!isValidBookSourceFolder(sourceAbstract)) {
-                        new Notice(`Source folder not found: ${normalizedSource}`);
+                        new Notice(t('ui.generalSection.sourceFolderNotFoundNotice', { folder: normalizedSource }));
                         return;
                     }
 
@@ -491,7 +492,7 @@ export function renderGeneralSection(params: {
                         try {
                             const assertSourceUnchanged = () => {
                                 if (!plugin.settings.books?.includes(book) || normalizePath(book.sourceFolder.trim()) !== normalizedSource) {
-                                    throw new Error('The source book changed. Reopen Create book copy and try again.');
+                                    throw new Error(t('ui.generalSection.sourceChangedError'));
                                 }
                             };
                             assertSourceUnchanged();
@@ -514,7 +515,7 @@ export function renderGeneralSection(params: {
                             }
                             await plugin.persistBookSettings();
                             renderBooksManager();
-                            new Notice(`Book copy created: ${destinationPath}`);
+                            new Notice(t('ui.generalSection.copyCreatedNotice', { path: destinationPath }));
                             return true;
                         } catch (error) {
                             if (registeredBookId) {
@@ -526,7 +527,9 @@ export function renderGeneralSection(params: {
                                 }
                             }
                             const msg = error instanceof Error ? error.message : String(error);
-                            new Notice(`Book copy failed: ${msg}${destinationPath ? ` Inspect ${destinationPath} before retrying; copied files are retained.` : ''}`);
+                            new Notice(destinationPath
+                                ? t('ui.generalSection.copyFailedRetainedNotice', { error: msg, path: destinationPath })
+                                : t('ui.generalSection.copyFailedNotice', { error: msg }));
                             return false;
                         } finally {
                             setDraftButtonState(false);
@@ -538,9 +541,9 @@ export function renderGeneralSection(params: {
             row.addButton(button => {
                 button.buttonEl.empty();
                 button.buttonEl.addClass('ert-iconBtn');
-                button.buttonEl.setAttr('aria-label', 'Project metadata');
+                button.buttonEl.setAttr('aria-label', t('ui.generalSection.metadataTitle'));
                 setIcon(button.buttonEl, 'tags');
-                button.setTooltip('Edit optional genre, project stage, public label, and description.');
+                button.setTooltip(t('ui.generalSection.metadataTooltip'));
                 button.onClick(() => {
                     new BookMetadataModal(app, book, async metadata => {
                         book.genre = metadata.genre?.trim() || undefined;
@@ -554,7 +557,7 @@ export function renderGeneralSection(params: {
             });
 
             const text = new TextComponent(folderRow);
-            text.setPlaceholder('Source folder').setValue(book.sourceFolder || '');
+            text.setPlaceholder(t('ui.generalSection.sourceFolderPlaceholder')).setValue(book.sourceFolder || '');
             text.inputEl.addClass('ert-input--full');
 
             const inputEl = text.inputEl;
@@ -624,7 +627,7 @@ export function renderGeneralSection(params: {
 
             const trashButton = new ExtraButtonComponent(folderRow);
             trashButton.setIcon('trash-2');
-            trashButton.setTooltip('Remove profile (files are not deleted)');
+            trashButton.setTooltip(t('ui.generalSection.removeProfileTooltip'));
             trashButton.extraSettingsEl.addClass('ert-book-card__trash');
             trashButton.onClick(async () => {
                 plugin.settings.books = books.filter(b => b.id !== book.id);

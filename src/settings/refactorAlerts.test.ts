@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS } from './defaults';
 import {
     getActiveRefactorAlerts,
     getAllNotificationsForHistory,
     getAllRefactorAlertIds,
 } from './refactorAlerts';
+
+vi.mock('../i18n', () => ({ t: (key: string) => key }));
 
 describe('settings notification center log-folder alert', () => {
     it('shows the log folder structure notification as the lowest-priority info alert', () => {
@@ -15,15 +17,9 @@ describe('settings notification center log-folder alert', () => {
         expect(alert).toMatchObject({
             severity: 'info',
             icon: 'folder-tree',
-            title: 'Log folders reorganized'
+            title: 'ui.refactorAlerts.logFoldersTitle'
         });
-        expect(alert?.description).toContain('Radial Timeline/Logs');
-        expect(alert?.description).toContain('Inquiry');
-        expect(alert?.description).toContain('Gossamer');
-        expect(alert?.description).toContain('Pulse');
-        expect(alert?.description).toContain('Moves');
-        expect(alert?.description).toContain('Snapshots');
-        expect(alert?.description).toContain('Gossamer Archive');
+        expect(alert?.description).toBe('ui.refactorAlerts.logFoldersDescription');
     });
 
     it('shows the recovery-folder relocation notification as a moderate (warning) alert', () => {
@@ -33,11 +29,9 @@ describe('settings notification center log-folder alert', () => {
         expect(alert).toMatchObject({
             severity: 'warning',
             icon: 'archive-restore',
-            title: 'Recovery files moved out of Logs'
+            title: 'ui.refactorAlerts.recoveryFilesTitle'
         });
-        expect(alert?.description).toContain('Radial Timeline/Recover');
-        expect(alert?.description).toContain('Snapshots');
-        expect(alert?.description).toContain('Gossamer Archive');
+        expect(alert?.description).toBe('ui.refactorAlerts.recoveryFilesDescription');
     });
 
     it('shows the Inquiry Pro-button restyle as a low-priority (info) notice, newest last', () => {
@@ -48,10 +42,9 @@ describe('settings notification center log-folder alert', () => {
         expect(alert).toMatchObject({
             severity: 'info',
             icon: 'sparkles',
-            title: 'Inquiry Pro buttons restyled'
+            title: 'ui.refactorAlerts.inquiryProButtonsTitle'
         });
-        expect(alert?.description).toContain('magenta number');
-        expect(alert?.description).toContain('inner ring');
+        expect(alert?.description).toBe('ui.refactorAlerts.inquiryProButtonsDescription');
         // Newest notification sorts last in the active list.
         expect(ids.at(-1)).toBe('inquiry-pro-button-design-v1');
     });

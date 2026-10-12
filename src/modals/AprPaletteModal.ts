@@ -8,6 +8,7 @@ import { App, Modal, Setting, ButtonComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { AuthorProgressDefaults } from '../types/settings';
 import { getPresetPalettes, generatePaletteFromColor, type AprPalette } from '../utils/aprPaletteGenerator';
+import { t } from '../i18n';
 
 export class AprPaletteModal extends Modal {
     private plugin: RadialTimelinePlugin;
@@ -41,8 +42,8 @@ export class AprPaletteModal extends Modal {
         contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-apr-palette-modal');
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Palette' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Color palette' });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.aprPaletteModal.badge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.aprPaletteModal.title') });
 
         const applyPalette = async (palette: AprPalette) => {
             if (!this.plugin.settings.authorProgress) return;
@@ -57,14 +58,14 @@ export class AprPaletteModal extends Modal {
 
         // Generate from Color Section (moved to top)
         const generateCard = contentEl.createDiv({ cls: 'ert-panel ert-panel--glass ert-apr-palette-generate' });
-        generateCard.createEl('h4', { text: 'Generate from book title color', cls: 'ert-section-title' });
+        generateCard.createEl('h4', { text: t('ui.aprPaletteModal.generateHeading'), cls: 'ert-section-title' });
 
         const currentBookColor = this.seedColor?.trim() || this.defaults?.aprBookAuthorColor || '#6FB971';
         const schemes: Array<{ value: 'analogous' | 'complementary' | 'triadic' | 'monochromatic'; label: string }> = [
-            { value: 'analogous', label: 'Analogous (adjacent colors)' },
-            { value: 'complementary', label: 'Complementary (opposite colors)' },
-            { value: 'triadic', label: 'Triadic (three-way split)' },
-            { value: 'monochromatic', label: 'Monochromatic (tints & shades)' }
+            { value: 'analogous', label: t('ui.aprPaletteModal.schemeAnalogous') },
+            { value: 'complementary', label: t('ui.aprPaletteModal.schemeComplementary') },
+            { value: 'triadic', label: t('ui.aprPaletteModal.schemeTriadic') },
+            { value: 'monochromatic', label: t('ui.aprPaletteModal.schemeMonochromatic') }
         ];
 
         schemes.forEach(({ value, label }) => {
@@ -84,7 +85,7 @@ export class AprPaletteModal extends Modal {
             });
             
             schemeSetting.addButton(button => {
-                button.setButtonText('Apply');
+                button.setButtonText(t('ui.aprPaletteModal.applyButton'));
                 button.setCta();
                 button.onClick(() => applyPalette(generated));
             });
@@ -92,8 +93,8 @@ export class AprPaletteModal extends Modal {
 
         // Preset Palettes Section
         const presetsCard = contentEl.createDiv({ cls: 'ert-panel ert-panel--glass ert-apr-palette-presets' });
-        presetsCard.createEl('h4', { text: 'Preset palettes', cls: 'ert-section-title' });
-        presetsCard.createDiv({ text: 'Choose from curated color combinations.', cls: 'ert-section-desc' });
+        presetsCard.createEl('h4', { text: t('ui.aprPaletteModal.presetsHeading'), cls: 'ert-section-title' });
+        presetsCard.createDiv({ text: t('ui.aprPaletteModal.presetsDesc'), cls: 'ert-section-desc' });
 
         const presets = getPresetPalettes();
         const presetsGrid = presetsCard.createDiv({ cls: 'ert-gridForm ert-apr-palette-grid' });
@@ -109,7 +110,7 @@ export class AprPaletteModal extends Modal {
             });
             
             new ButtonComponent(paletteCard)
-                .setButtonText('Apply')
+                .setButtonText(t('ui.aprPaletteModal.applyButton'))
                 .setCta()
                 .onClick(() => applyPalette(palette));
         });

@@ -22,6 +22,7 @@ import type {
     InquiryPurgePreviewItem
 } from '../types/inquiryViewTypes';
 import type { InquiryScope, InquiryZone } from '../state';
+import { t, tCount } from '../../i18n';
 
 function formatCacheTokens(tokens: number): string {
     if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}k`;
@@ -50,11 +51,11 @@ export class InquiryPurgeConfirmationModal extends Modal {
         contentEl.addClass('ert-modal-container', 'ert-stack');
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Inquiry' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Purge Action Items' });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.inquiryViewModals.badge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.inquiryViewModals.purgeTitle') });
         header.createDiv({
             cls: 'ert-modal-subtitle',
-            text: 'Removes Inquiry-generated action items from scene frontmatter.'
+            text: t('ui.inquiryViewModals.purgeSubtitle')
         });
 
         const panel = contentEl.createDiv({ cls: 'ert-panel ert-panel--glass ert-stack' });
@@ -63,12 +64,12 @@ export class InquiryPurgeConfirmationModal extends Modal {
         if (affectedCount === 0) {
             panel.createDiv({
                 cls: 'ert-inquiry-purge-message',
-                text: `No Inquiry action items found in ${this.totalScenes} scene${this.totalScenes !== 1 ? 's' : ''} in ${this.scopeLabel}.`
+                text: t('ui.inquiryViewModals.purgeNoneFound', { scenes: tCount('scene', this.totalScenes), scope: this.scopeLabel })
             });
         } else {
             panel.createDiv({
                 cls: 'ert-inquiry-purge-message',
-                text: `Found Inquiry action items in ${affectedCount} of ${this.totalScenes} scene${this.totalScenes !== 1 ? 's' : ''} in ${this.scopeLabel}:`
+                text: t('ui.inquiryViewModals.purgeFound', { affected: affectedCount, scenes: tCount('scene', this.totalScenes), scope: this.scopeLabel })
             });
 
             const listContainer = panel.createDiv({ cls: 'ert-inquiry-purge-list-container' });
@@ -78,24 +79,24 @@ export class InquiryPurgeConfirmationModal extends Modal {
                 li.createSpan({ cls: 'ert-inquiry-purge-list-label', text: item.label });
                 li.createSpan({
                     cls: 'ert-inquiry-purge-list-count',
-                    text: `${item.lineCount} item${item.lineCount !== 1 ? 's' : ''}`
+                    text: tCount('item', item.lineCount)
                 });
             });
 
             panel.createDiv({
                 cls: 'ert-inquiry-purge-details',
-                text: 'User-written notes in Pending Edits are preserved.'
+                text: t('ui.inquiryViewModals.purgeNotesPreserved')
             });
             panel.createDiv({
                 cls: 'ert-inquiry-purge-warning',
-                text: 'This cannot be undone.'
+                text: t('ui.inquiryViewModals.purgeCannotUndo')
             });
         }
 
         const buttonRow = contentEl.createDiv({ cls: 'ert-modal-actions' });
         if (affectedCount > 0) {
             new ButtonComponent(buttonRow)
-                .setButtonText(`Purge ${affectedCount} scene${affectedCount !== 1 ? 's' : ''}`)
+                .setButtonText(t('ui.inquiryViewModals.purgeButton', { scenes: tCount('scene', affectedCount) }))
                 .setDestructive()
                 .onClick(async () => {
                     this.close();
@@ -103,7 +104,7 @@ export class InquiryPurgeConfirmationModal extends Modal {
                 });
         }
         new ButtonComponent(buttonRow)
-            .setButtonText(affectedCount > 0 ? 'Cancel' : 'Close')
+            .setButtonText(affectedCount > 0 ? t('common.cancel') : t('ui.inquiryViewModals.close'))
             .onClick(() => this.close());
     }
 
@@ -135,33 +136,33 @@ export class InquiryCancelRunModal extends Modal {
         contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-inquiry-cancel-modal');
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Inquiry' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Cancel Inquiry Run?' });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.inquiryViewModals.badge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.inquiryViewModals.cancelRunTitle') });
         header.createDiv({
             cls: 'ert-modal-subtitle',
-            text: 'Canceling discards this run after the current pass returns.'
+            text: t('ui.inquiryViewModals.cancelRunSubtitle')
         });
 
         if (this.estimateLabel.trim()) {
             contentEl.createDiv({
                 cls: 'ert-inquiry-cancel-modal-estimate',
-                text: `ETA: ${this.estimateLabel}.`
+                text: t('ui.inquiryViewModals.cancelRunEta', { estimate: this.estimateLabel })
             });
         }
         contentEl.createDiv({
             cls: 'ert-inquiry-cancel-modal-copy',
-            text: 'You can work in another note if this Inquiry tab stays open. Cancel means start over. No resume.'
+            text: t('ui.inquiryViewModals.cancelRunCopy')
         });
 
         const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
         new ButtonComponent(actions)
-            .setButtonText('Keep running')
+            .setButtonText(t('ui.inquiryViewModals.keepRunning'))
             .onClick(() => {
                 this.resolveOnce(false);
                 this.close();
             });
         new ButtonComponent(actions)
-            .setButtonText('Cancel run')
+            .setButtonText(t('ui.inquiryViewModals.cancelRunButton'))
             .setDestructive()
             .onClick(() => {
                 this.resolveOnce(true);
@@ -269,8 +270,8 @@ export class InquiryOmnibusModal extends Modal {
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
         this.badgeEl = header.createSpan({ cls: 'ert-modal-badge' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Run Omnibus Pass' });
-        header.createDiv({ cls: 'ert-modal-subtitle', text: 'Runs all enabled Inquiry questions for the selected scope.' });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.inquiryViewModals.omnibusTitle') });
+        header.createDiv({ cls: 'ert-modal-subtitle', text: t('ui.inquiryViewModals.omnibusSubtitle') });
 
         this.configPanel = contentEl.createDiv({ cls: 'ert-omnibus-config-panel ert-stack' });
         this.renderConfigPanel();
@@ -292,20 +293,20 @@ export class InquiryOmnibusModal extends Modal {
 
         const howSection = this.configPanel.createDiv({ cls: 'ert-omnibus-how-section' });
         this.howSectionEl = howSection;
-        howSection.createDiv({ cls: 'ert-omnibus-how-title', text: 'How this run works' });
+        howSection.createDiv({ cls: 'ert-omnibus-how-title', text: t('ui.inquiryViewModals.howTitle') });
         const howList = howSection.createEl('ul', { cls: 'ert-omnibus-how-list' });
-        howList.createEl('li', { text: 'Load corpus once for the selected scope' });
-        howList.createEl('li', { text: 'Run questions sequentially against that shared context' });
-        howList.createEl('li', { text: 'Save results incrementally (Brief + Log per question)' });
-        howList.createEl('li', { text: 'Safe to stop: abort at any time; completed results remain saved' });
+        howList.createEl('li', { text: t('ui.inquiryViewModals.howLoadCorpus') });
+        howList.createEl('li', { text: t('ui.inquiryViewModals.howSequential') });
+        howList.createEl('li', { text: t('ui.inquiryViewModals.howSaveIncrementally') });
+        howList.createEl('li', { text: t('ui.inquiryViewModals.howSafeToStop') });
 
         const prior = this.options.priorProgress;
         if (prior) {
             const resumeNote = this.configPanel.createDiv({ cls: 'ert-omnibus-resume-note' });
-            resumeNote.setText(`Last run stopped after question ${prior.completedQuestionIds.length} of ${prior.totalQuestions}.`);
+            resumeNote.setText(t('ui.inquiryViewModals.lastRunStopped', { completed: prior.completedQuestionIds.length, total: prior.totalQuestions }));
             if (this.options.resumeUnavailableReason) {
                 const configNote = resumeNote.createDiv({ cls: 'ert-field-note' });
-                configNote.setText(`Resume unavailable: ${this.options.resumeUnavailableReason}`);
+                configNote.setText(t('ui.inquiryViewModals.resumeUnavailable', { reason: this.options.resumeUnavailableReason }));
             }
         }
 
@@ -317,7 +318,7 @@ export class InquiryOmnibusModal extends Modal {
 
         const summaryGrid = panel.createDiv({ cls: 'ert-apr-status-grid ert-omnibus-summary-grid' });
         const summaryHeaderRow = summaryGrid.createDiv({ cls: 'ert-apr-status-row ert-apr-status-row--header' });
-        ['Scope', 'Questions', 'Provider'].forEach(label => {
+        [t('ui.inquiryViewModals.headerScope'), t('ui.inquiryViewModals.headerQuestions'), t('ui.inquiryViewModals.headerProvider')].forEach(label => {
             summaryHeaderRow.createDiv({
                 text: label,
                 cls: 'ert-apr-status-cell ert-apr-status-cell--header'
@@ -325,11 +326,11 @@ export class InquiryOmnibusModal extends Modal {
         });
         const indexHeader = summaryHeaderRow.createDiv({ cls: 'ert-apr-status-cell ert-apr-status-cell--header' });
         const indexHeaderInline = indexHeader.createDiv({ cls: 'ert-inline' });
-        indexHeaderInline.createSpan({ text: 'Index' });
+        indexHeaderInline.createSpan({ text: t('ui.inquiryViewModals.headerIndex') });
         const indexHelp = indexHeaderInline.createSpan({ cls: 'ert-help-dot', text: '?' });
         setTooltip(
             indexHelp,
-            'Creates an omnibus index note so the full pass can be reopened and reviewed from one place.'
+            t('ui.inquiryViewModals.indexHelpTooltip')
         );
 
         const summaryRow = summaryGrid.createDiv({ cls: 'ert-apr-status-row ert-apr-status-row--data' });
@@ -337,19 +338,19 @@ export class InquiryOmnibusModal extends Modal {
         const scopePillRow = scopeCell.createDiv({ cls: 'ert-inline' });
         const bookPill = scopePillRow.createEl('button', {
             cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-pill ert-omnibus-table-pill',
-            text: `Book (${this.options.bookLabel})`,
+            text: t('ui.inquiryViewModals.scopeBook', { book: this.options.bookLabel }),
             type: 'button'
         });
         const sagaPill = scopePillRow.createEl('button', {
             cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-pill ert-omnibus-table-pill',
-            text: `Saga (${SIGMA_CHAR})`,
+            text: t('ui.inquiryViewModals.scopeSaga', { sigma: SIGMA_CHAR }),
             type: 'button'
         });
 
         const totalCell = summaryRow.createDiv({ cls: 'ert-apr-status-cell' });
         this.questionsCountPillEl = totalCell.createSpan({
             cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-table-pill ert-omnibus-flashable',
-            text: `${this.options.questions.length} questions`
+            text: tCount('question', this.options.questions.length)
         });
 
         const providerCell = summaryRow.createDiv({ cls: 'ert-apr-status-cell' });
@@ -367,14 +368,20 @@ export class InquiryOmnibusModal extends Modal {
         indexToggle.onChange(value => {
             this.createIndex = value;
         });
-        indexRow.createSpan({ text: 'Index note' });
+        indexRow.createSpan({ text: t('ui.inquiryViewModals.indexNote') });
         this.scopePillButtons.push(bookPill, sagaPill);
 
         panel.createDiv({ cls: 'ert-divider' });
 
         const questionGrid = panel.createDiv({ cls: 'ert-apr-status-grid ert-omnibus-question-grid' });
         const questionHeaderRow = questionGrid.createDiv({ cls: 'ert-apr-status-row ert-apr-status-row--header' });
-        ['Zone', 'Question', 'Lens', 'Scope', 'Status'].forEach(label => {
+        [
+            t('ui.inquiryViewModals.headerZone'),
+            t('ui.inquiryViewModals.headerQuestion'),
+            t('ui.inquiryViewModals.headerLens'),
+            t('ui.inquiryViewModals.headerScope'),
+            t('ui.inquiryViewModals.headerStatus')
+        ].forEach(label => {
             questionHeaderRow.createDiv({
                 text: label,
                 cls: 'ert-apr-status-cell ert-apr-status-cell--header'
@@ -383,10 +390,14 @@ export class InquiryOmnibusModal extends Modal {
 
         const scopePills: HTMLSpanElement[] = [];
         const getScopeLabel = (scope: InquiryScope): string =>
-            scope === 'saga' ? `Saga (${SIGMA_CHAR})` : `Book (${this.options.bookLabel})`;
+            scope === 'saga'
+                ? t('ui.inquiryViewModals.scopeSaga', { sigma: SIGMA_CHAR })
+                : t('ui.inquiryViewModals.scopeBook', { book: this.options.bookLabel });
         const badgeBookName = this.options.bookTitle?.trim() || this.options.bookLabel;
         const getBadgeLabel = (scope: InquiryScope): string =>
-            scope === 'saga' ? `Beta · Inquiry · Saga (${SIGMA_CHAR})` : `Beta · Inquiry · ${badgeBookName}`;
+            scope === 'saga'
+                ? t('ui.inquiryViewModals.badgeSaga', { sigma: SIGMA_CHAR })
+                : t('ui.inquiryViewModals.badgeBook', { book: badgeBookName });
 
         const updateScopeSelection = (scope: InquiryScope): void => {
             this.selectedScope = scope;
@@ -413,12 +424,14 @@ export class InquiryOmnibusModal extends Modal {
         sagaPill.addEventListener('click', () => updateScopeSelection('saga'));
         updateScopeSelection(this.selectedScope);
 
-        const lensLabel = 'Flow + Depth';
+        const lensLabel = t('ui.inquiryViewModals.lensFlowDepth');
         const zoneOrder: InquiryZone[] = ['setup', 'pressure', 'payoff'];
         zoneOrder.forEach(zone => {
             const zoneQuestions = this.options.questions.filter(question => question.zone === zone);
             if (!zoneQuestions.length) return;
-            const zoneLabel = zone === 'setup' ? 'Setup' : zone === 'pressure' ? 'Pressure' : 'Payoff';
+            const zoneLabel = zone === 'setup'
+                ? t('settings.inquiry.zone.setup')
+                : zone === 'pressure' ? t('settings.inquiry.zone.pressure') : t('settings.inquiry.zone.payoff');
             const groupRow = questionGrid.createDiv({ cls: 'ert-apr-status-row' });
             groupRow.createDiv({ cls: 'ert-apr-status-cell ert-omnibus-group', text: zoneLabel });
 
@@ -446,7 +459,7 @@ export class InquiryOmnibusModal extends Modal {
                 scopePills.push(scopePill);
 
                 const statusCell = dataRow.createDiv({ cls: 'ert-apr-status-cell' });
-                const plainStatus = statusCell.createSpan({ cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-table-pill ert-omnibus-status-pill', text: 'Brief + Log' });
+                const plainStatus = statusCell.createSpan({ cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-table-pill ert-omnibus-status-pill', text: t('ui.inquiryViewModals.statusBriefLog') });
                 this.statusPills.set(question.id, plainStatus);
                 const recent = this.options.recentResults?.[question.id];
                 if (recent) {
@@ -456,7 +469,7 @@ export class InquiryOmnibusModal extends Modal {
                     });
                     setTooltip(
                         skipBtn,
-                        `This engine already answered this question on the current corpus ${formatOmnibusResultAge(recent.completedAt, Date.now())}. Click to toggle between skipping it and rerunning it.`
+                        t('ui.inquiryViewModals.skipTooltip', { age: formatOmnibusResultAge(recent.completedAt, Date.now()) })
                     );
                     skipBtn.addEventListener('click', () => {
                         if (!this.suggestionEligible || this.reviewMode) return;
@@ -474,17 +487,14 @@ export class InquiryOmnibusModal extends Modal {
 
         if (this.runDisabledReason) {
             const reason = this.configPanel.createDiv({ cls: 'ert-field-note' });
-            reason.setText(`Run disabled: ${this.runDisabledReason}`);
+            reason.setText(t('ui.inquiryViewModals.runDisabled', { reason: this.runDisabledReason }));
         }
 
         if (this.options.warmCacheExpiresAt && this.options.warmCacheExpiresAt > Date.now()) {
             const remainingMin = Math.max(1, Math.round((this.options.warmCacheExpiresAt - Date.now()) / 60_000));
             const warmNote = this.configPanel.createDiv({ cls: 'ert-field-note ert-omnibus-warm-note' });
             this.warmNoteEl = warmNote;
-            warmNote.setText(
-                `Provider cache is still warm from a recent run (~${remainingMin}m left) — this pass piggybacks on it: `
-                + `question 1 reads the cached corpus instead of re-priming it at write price.`
-            );
+            warmNote.setText(t('ui.inquiryViewModals.warmCacheNote', { minutes: remainingMin }));
         }
 
         this.volumeLineEl = this.configPanel.createDiv({ cls: 'ert-field-note ert-omnibus-flashable' });
@@ -514,7 +524,9 @@ export class InquiryOmnibusModal extends Modal {
             plain.classList.add('is-hidden');
             const excluded = this.excludedIds.has(questionId);
             const age = formatOmnibusResultAge(recent.completedAt, now);
-            btn.setText(excluded ? `Skip · answered ${age}` : `Rerun · answered ${age}`);
+            btn.setText(excluded
+                ? t('ui.inquiryViewModals.skipAnswered', { age })
+                : t('ui.inquiryViewModals.rerunAnswered', { age }));
             btn.classList.toggle('is-skip', excluded);
             btn.setAttribute('aria-pressed', excluded ? 'true' : 'false');
         });
@@ -524,13 +536,18 @@ export class InquiryOmnibusModal extends Modal {
                 this.suggestionNoteEl.classList.remove('is-hidden');
                 const answeredCount = Object.keys(this.options.recentResults ?? {}).length; // SAFE: no prior results yet means zero questions answered
                 const skipCount = this.excludedIds.size;
-                const lead = skipCount > 0
-                    ? `${skipCount} of ${answeredCount} already-answered question${answeredCount === 1 ? '' : 's'} ${skipCount === 1 ? 'is' : 'are'} set to skip`
-                    : `${answeredCount} question${answeredCount === 1 ? ' was' : 's were'} already answered by this engine, but every row is set to rerun`;
-                this.suggestionNoteEl.setText(
-                    `${lead} — this engine already produced a brief for ${answeredCount === 1 ? 'it' : 'them'} on the current corpus. `
-                    + `Click a status pill to toggle a row between Skip and Rerun.`
-                );
+                const skipCounts = { skipped: skipCount, answered: answeredCount };
+                const rerunCounts = { answered: answeredCount };
+                const note = skipCount > 0
+                    ? (skipCount === 1
+                        ? (answeredCount === 1
+                            ? t('ui.inquiryViewModals.suggestionSkipOneOfOne', skipCounts)
+                            : t('ui.inquiryViewModals.suggestionSkipOneOfMany', skipCounts))
+                        : t('ui.inquiryViewModals.suggestionSkipManyOfMany', skipCounts))
+                    : (answeredCount === 1
+                        ? t('ui.inquiryViewModals.suggestionRerunOne', rerunCounts)
+                        : t('ui.inquiryViewModals.suggestionRerunMany', rerunCounts));
+                this.suggestionNoteEl.setText(note);
             } else {
                 this.suggestionNoteEl.classList.add('is-hidden');
             }
@@ -539,22 +556,24 @@ export class InquiryOmnibusModal extends Modal {
         if (this.questionsCountPillEl) {
             this.questionsCountPillEl.setText(
                 effectiveQuestions === totalQuestions
-                    ? `${totalQuestions} questions`
-                    : `${effectiveQuestions} of ${totalQuestions} questions`
+                    ? tCount('question', totalQuestions)
+                    : t('ui.inquiryViewModals.questionsOfTotal', { effective: effectiveQuestions, questions: tCount('question', totalQuestions) })
             );
         }
 
         if (this.volumeLineEl) {
-            const briefLabel = effectiveQuestions === 1 ? 'Brief' : 'Briefs';
-            const logLabel = effectiveQuestions === 1 ? 'Log' : 'Logs';
-            const logsDisabledNote = this.options.logsEnabled ? '' : ' Logs are disabled in settings.';
+            const logsDisabledNote = this.options.logsEnabled ? '' : ` ${t('ui.inquiryViewModals.logsDisabledNote')}`;
             const skippedNote = effectiveQuestions === totalQuestions
                 ? ''
-                : ` (${totalQuestions - effectiveQuestions} skipped as already answered.)`;
+                : ` ${t('ui.inquiryViewModals.skippedAsAnswered', { count: totalQuestions - effectiveQuestions })}`;
+            const volumeText = t('ui.inquiryViewModals.volumeGenerate', {
+                briefs: tCount('inquiryBrief', effectiveQuestions),
+                logs: tCount('inquiryLog', effectiveQuestions)
+            });
             this.volumeLineEl.setText(
                 effectiveQuestions === 0
-                    ? 'Every question is set to skip — nothing to run.'
-                    : `This will generate ${effectiveQuestions} Inquiry ${briefLabel} and ${effectiveQuestions} ${logLabel}.${logsDisabledNote}${skippedNote}`
+                    ? t('ui.inquiryViewModals.volumeNothing')
+                    : `${volumeText}${logsDisabledNote}${skippedNote}`
             );
         }
 
@@ -577,11 +596,11 @@ export class InquiryOmnibusModal extends Modal {
         if (!this.costLineEl) return;
         const costRange = this.options.costRange;
         if (!costRange) {
-            this.costLineEl.setText('Estimated cost: unavailable (no corpus token estimate or model pricing yet).');
+            this.costLineEl.setText(t('ui.inquiryViewModals.costUnavailable'));
             return;
         }
         if (effectiveQuestions === 0) {
-            this.costLineEl.setText('Estimated cost: $0 — every question is set to skip.');
+            this.costLineEl.setText(t('ui.inquiryViewModals.costZero'));
             return;
         }
         // Recompute the band for the effective question count through the same
@@ -597,26 +616,30 @@ export class InquiryOmnibusModal extends Modal {
             cacheAlreadyWarm: costRange.cacheAlreadyWarm
         });
         const corpusTokens = Math.max(0, Math.round(costRange.corpusInputTokens)).toLocaleString();
-        const questionsLabel = `${effectiveQuestions} question${effectiveQuestions === 1 ? '' : 's'}`;
+        const questionsLabel = tCount('question', effectiveQuestions);
         if (costRange.combined) {
-            this.costLineEl.setText(
-                `Estimated cost: ~${formatExactUsdCost(range.uncachedUSD)} for one combined call answering ${questionsLabel}, `
-                + `which sends the ~${corpusTokens}-token corpus once.`
-            );
+            this.costLineEl.setText(t('ui.inquiryViewModals.costCombined', {
+                cost: formatExactUsdCost(range.uncachedUSD),
+                questions: questionsLabel,
+                tokens: corpusTokens
+            }));
             return;
         }
-        const reuseLabel = costRange.cacheAlreadyWarm ? 'warm — piggybacking on your recent run' : 'healthy';
+        const reuseLabel = costRange.cacheAlreadyWarm ? t('ui.inquiryViewModals.reuseWarm') : t('ui.inquiryViewModals.reuseHealthy');
         if (typeof range.cachedUSD === 'number') {
-            this.costLineEl.setText(
-                `Estimated cost: ~${formatExactUsdCost(range.cachedUSD)} with cache reuse (${reuseLabel}) vs ~${formatExactUsdCost(range.uncachedUSD)} uncached, `
-                + `over ${questionsLabel} against ~${corpusTokens} corpus input tokens. `
-                + `The run aborts automatically if the cache is not reused after question 1.`
-            );
+            this.costLineEl.setText(t('ui.inquiryViewModals.costCached', {
+                cachedCost: formatExactUsdCost(range.cachedUSD),
+                reuse: reuseLabel,
+                uncachedCost: formatExactUsdCost(range.uncachedUSD),
+                questions: questionsLabel,
+                tokens: corpusTokens
+            }));
         } else {
-            this.costLineEl.setText(
-                `Estimated cost: ~${formatExactUsdCost(range.uncachedUSD)} (this model has no cache-read price to model reuse), `
-                + `over ${questionsLabel} against ~${corpusTokens} corpus input tokens.`
-            );
+            this.costLineEl.setText(t('ui.inquiryViewModals.costNoCachePrice', {
+                cost: formatExactUsdCost(range.uncachedUSD),
+                questions: questionsLabel,
+                tokens: corpusTokens
+            }));
         }
     }
 
@@ -627,7 +650,7 @@ export class InquiryOmnibusModal extends Modal {
         const prior = this.options.priorProgress;
         if (prior && this.options.resumeAvailable) {
             const resumeBtn = new ButtonComponent(this.actionsEl)
-                .setButtonText('Resume Omnibus')
+                .setButtonText(t('ui.inquiryViewModals.resumeOmnibus'))
                 .setCta();
             if (this.runDisabledReason) {
                 resumeBtn.setDisabled(true);
@@ -643,11 +666,11 @@ export class InquiryOmnibusModal extends Modal {
                 });
                 this.switchToRunning();
             });
-            setTooltip(resumeBtn.buttonEl, 'Resends corpus and runs remaining questions.');
+            setTooltip(resumeBtn.buttonEl, t('ui.inquiryViewModals.resumeTooltip'));
         }
 
         const runButton = new ButtonComponent(this.actionsEl)
-            .setButtonText(prior && this.options.resumeAvailable ? 'Restart Omnibus' : 'Run Omnibus')
+            .setButtonText(prior && this.options.resumeAvailable ? t('ui.inquiryViewModals.restartOmnibus') : t('ui.inquiryViewModals.runOmnibus'))
             .setCta();
         this.runButton = runButton;
         if (this.runDisabledReason || this.getEffectiveQuestionCount() === 0) {
@@ -664,7 +687,7 @@ export class InquiryOmnibusModal extends Modal {
         });
 
         new ButtonComponent(this.actionsEl)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => {
                 this.resolveOnce(null);
                 this.close();
@@ -677,7 +700,7 @@ export class InquiryOmnibusModal extends Modal {
         if (this.progressEl) {
             this.setHidden(this.progressEl, false);
             this.progressEl.empty();
-            this.progressEl.createDiv({ cls: 'ert-omnibus-progress-title', text: 'Running Omnibus Pass...' });
+            this.progressEl.createDiv({ cls: 'ert-omnibus-progress-title', text: t('ui.inquiryViewModals.runningTitle') });
 
             const statusRow = this.progressEl.createDiv({ cls: 'ert-omnibus-status-row ert-inline' });
             statusRow.createSpan({
@@ -687,33 +710,33 @@ export class InquiryOmnibusModal extends Modal {
             this.cachePillEl = statusRow.createSpan({
                 cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-cache-pill is-pending'
             });
-            this.cachePillEl.createSpan({ cls: 'ert-omnibus-cache-pill-label', text: 'Cache' });
-            this.cachePillDetailEl = this.cachePillEl.createSpan({ cls: 'ert-omnibus-cache-pill-detail', text: 'pending' });
-            setTooltip(this.cachePillEl, 'Cache reuse is confirmed only when the provider reports cache_read tokens. Pass 1 primes the cache; pass 2+ should report a read.');
+            this.cachePillEl.createSpan({ cls: 'ert-omnibus-cache-pill-label', text: t('ui.inquiryViewModals.cachePillLabel') });
+            this.cachePillDetailEl = this.cachePillEl.createSpan({ cls: 'ert-omnibus-cache-pill-detail', text: t('ui.inquiryViewModals.pending') });
+            setTooltip(this.cachePillEl, t('ui.inquiryViewModals.cachePillTooltip'));
 
             this.costPillEl = statusRow.createSpan({
                 cls: 'ert-badgePill ert-badgePill--sm ert-omnibus-cost-pill is-pending'
             });
-            this.costPillEl.createSpan({ cls: 'ert-omnibus-cost-pill-label', text: 'Cost' });
-            this.costPillDetailEl = this.costPillEl.createSpan({ cls: 'ert-omnibus-cost-pill-detail', text: 'pending' });
-            setTooltip(this.costPillEl, 'Running total billed so far, computed from each response’s actual token usage (input, output, cache-write, cache-read).');
+            this.costPillEl.createSpan({ cls: 'ert-omnibus-cost-pill-label', text: t('ui.inquiryViewModals.costPillLabel') });
+            this.costPillDetailEl = this.costPillEl.createSpan({ cls: 'ert-omnibus-cost-pill-detail', text: t('ui.inquiryViewModals.pending') });
+            setTooltip(this.costPillEl, t('ui.inquiryViewModals.costPillTooltip'));
 
             this.progressTextEl = this.progressEl.createDiv({ cls: 'ert-omnibus-progress-text' });
-            this.progressTextEl.setText('Preparing...');
+            this.progressTextEl.setText(t('ui.inquiryViewModals.preparing'));
             this.progressMicroEl = this.progressEl.createDiv({ cls: 'ert-omnibus-progress-micro ert-field-note' });
             const advancedDetails = this.progressEl.createEl('details', { cls: 'ert-ai-advanced-details' });
-            advancedDetails.createEl('summary', { text: 'AI prompt & context' });
+            advancedDetails.createEl('summary', { text: t('ui.inquiryViewModals.aiAdvancedSummary') });
             this.aiAdvancedPreEl = advancedDetails.createEl('pre', { cls: 'ert-ai-advanced-pre' });
             this.renderAiAdvancedContext();
         }
         if (this.actionsEl) {
             this.actionsEl.empty();
             new ButtonComponent(this.actionsEl)
-                .setButtonText('Abort run')
+                .setButtonText(t('ui.inquiryViewModals.abortRun'))
                 .onClick(() => {
                     this.abortRequested = true;
                     if (this.progressMicroEl) {
-                        this.progressMicroEl.setText('Stopping after current question...');
+                        this.progressMicroEl.setText(t('ui.inquiryViewModals.stoppingAfterCurrent'));
                     }
                 });
         }
@@ -721,7 +744,7 @@ export class InquiryOmnibusModal extends Modal {
 
     updateProgress(current: number, total: number, zone: string, questionLabel: string, micro?: string): void {
         if (this.progressTextEl) {
-            this.progressTextEl.setText(`Question ${current} of ${total}`);
+            this.progressTextEl.setText(t('ui.inquiryViewModals.progressQuestion', { current, total }));
         }
         if (this.progressMicroEl && !this.abortRequested) {
             this.progressMicroEl.setText(micro ?? `${zone} · ${questionLabel}`);
@@ -758,19 +781,19 @@ export class InquiryOmnibusModal extends Modal {
 
         switch (health) {
             case 'reused':
-                setState('confirmed', `confirmed · read ${formatCacheTokens(this.cacheReadCumulative)} tok (pass ${passIndex}/${total})`);
+                setState('confirmed', t('ui.inquiryViewModals.cacheConfirmed', { tokens: formatCacheTokens(this.cacheReadCumulative), pass: passIndex, total }));
                 return;
             case 'armed':
-                setState('primed', `primed · wrote ${formatCacheTokens(probe.cacheCreatedTokens)} tok (pass ${passIndex})`);
+                setState('primed', t('ui.inquiryViewModals.cachePrimed', { tokens: formatCacheTokens(probe.cacheCreatedTokens), pass: passIndex }));
                 return;
             case 'miss':
-                setState('miss', `miss on pass ${passIndex} · terminating run`);
+                setState('miss', t('ui.inquiryViewModals.cacheMiss', { pass: passIndex }));
                 return;
             case 'below_minimum':
-                setState('none', 'corpus below minimum cacheable size');
+                setState('none', t('ui.inquiryViewModals.cacheBelowMinimum'));
                 return;
             case 'unknown':
-                setState('none', 'cache status unknown (no provider signal)');
+                setState('none', t('ui.inquiryViewModals.cacheUnknown'));
                 return;
         }
     }
@@ -778,39 +801,45 @@ export class InquiryOmnibusModal extends Modal {
     noteRunningCost(acc: OmnibusCostAccumulator): void {
         if (!this.costPillEl || !this.costPillDetailEl) return;
         if (acc.pricedPasses === 0) {
-            this.costPillDetailEl.setText(acc.unpricedPasses > 0 ? 'unpriced' : 'pending');
+            this.costPillDetailEl.setText(acc.unpricedPasses > 0 ? t('ui.inquiryViewModals.costUnpriced') : t('ui.inquiryViewModals.pending'));
             return;
         }
-        const unpricedNote = acc.unpricedPasses > 0
-            ? ` (+${acc.unpricedPasses} unpriced)`
-            : '';
+        const costText = acc.unpricedPasses > 0
+            ? t('ui.inquiryViewModals.costSoFarUnpriced', { cost: formatExactUsdCost(acc.totalCostUSD), count: acc.unpricedPasses })
+            : t('ui.inquiryViewModals.costSoFar', { cost: formatExactUsdCost(acc.totalCostUSD) });
         this.costPillEl.classList.remove('is-pending');
-        this.costPillDetailEl.setText(`${formatExactUsdCost(acc.totalCostUSD)} so far${unpricedNote}`);
+        this.costPillDetailEl.setText(costText);
     }
 
     private renderAiAdvancedContext(): void {
         if (!this.aiAdvancedPreEl) return;
         if (!this.aiAdvancedContext) {
-            this.aiAdvancedPreEl.setText('Waiting for first AI request...');
+            this.aiAdvancedPreEl.setText(t('ui.inquiryViewModals.aiAdvancedWaiting'));
             return;
         }
         const ctx = this.aiAdvancedContext;
         const lines = [
-            `Role template: ${ctx.roleTemplateName}`,
-            `Resolved model: ${ctx.provider} -> ${ctx.modelAlias} (${ctx.modelLabel})`,
-            `Model selection reason: ${redactSensitiveValue(ctx.modelSelectionReason)}`,
-            `Availability: ${ctx.availabilityStatus === 'visible' ? 'Visible to your key ✅' : ctx.availabilityStatus === 'not_visible' ? 'Not visible ⚠️' : 'Unknown (snapshot unavailable)'}`,
-            `Applied caps: input=${ctx.maxInputTokens}, output=${ctx.maxOutputTokens}`,
-            `Packaging: Automatic`,
+            t('ui.inquiryViewModals.aiAdvancedRoleTemplate', { name: ctx.roleTemplateName }),
+            t('ui.inquiryViewModals.aiAdvancedResolvedModel', { provider: ctx.provider, alias: ctx.modelAlias, label: ctx.modelLabel }),
+            t('ui.inquiryViewModals.aiAdvancedModelSelectionReason', { reason: redactSensitiveValue(ctx.modelSelectionReason) }),
+            t('ui.inquiryViewModals.aiAdvancedAvailability', {
+                status: ctx.availabilityStatus === 'visible'
+                    ? t('ui.inquiryViewModals.aiAdvancedAvailabilityVisible')
+                    : ctx.availabilityStatus === 'not_visible'
+                        ? t('ui.inquiryViewModals.aiAdvancedAvailabilityNotVisible')
+                        : t('ui.inquiryViewModals.aiAdvancedAvailabilityUnknown')
+            }),
+            t('ui.inquiryViewModals.aiAdvancedAppliedCaps', { input: ctx.maxInputTokens, output: ctx.maxOutputTokens }),
+            t('ui.inquiryViewModals.aiAdvancedPackaging'),
             '',
-            'Final composed prompt:',
-            redactSensitiveValue(ctx.finalPrompt || '(none)')
+            t('ui.inquiryViewModals.aiAdvancedFinalPrompt'),
+            redactSensitiveValue(ctx.finalPrompt || t('ui.inquiryViewModals.aiAdvancedNone'))
         ];
         if (typeof ctx.executionPassCount === 'number' && ctx.executionPassCount > 1) {
-            lines.splice(6, 0, `Pass count: ${ctx.executionPassCount}`);
+            lines.splice(6, 0, t('ui.inquiryViewModals.aiAdvancedPassCount', { count: ctx.executionPassCount }));
         }
         if (ctx.multiPassTriggerReason) {
-            lines.splice(7, 0, `Multi-pass trigger: ${redactSensitiveValue(ctx.multiPassTriggerReason)}`);
+            lines.splice(7, 0, t('ui.inquiryViewModals.aiAdvancedMultiPassTrigger', { reason: redactSensitiveValue(ctx.multiPassTriggerReason) }));
         }
         this.aiAdvancedPreEl.setText(lines.join('\n'));
     }
@@ -844,16 +873,16 @@ export class InquiryOmnibusModal extends Modal {
             this.skipControls.get(questionId)?.btn.classList.add('is-hidden');
             pill.classList.remove('is-hidden');
             if (this.completedRunIds.has(questionId)) {
-                pill.setText('Done ✓');
+                pill.setText(t('ui.inquiryViewModals.statusDone'));
                 pill.classList.add('is-done');
             } else if (priorCompleted.has(questionId)) {
-                pill.setText('Done · earlier');
+                pill.setText(t('ui.inquiryViewModals.statusDoneEarlier'));
                 pill.classList.add('is-done');
             } else if (this.suggestionEligible && this.excludedIds.has(questionId)) {
-                pill.setText('Skipped');
+                pill.setText(t('ui.inquiryViewModals.statusSkipped'));
                 pill.classList.add('is-skipped');
             } else {
-                pill.setText('Not run');
+                pill.setText(t('ui.inquiryViewModals.statusNotRun'));
                 pill.classList.add('is-skipped');
             }
         });
@@ -869,35 +898,33 @@ export class InquiryOmnibusModal extends Modal {
         if (this.resultEl) {
             this.setHidden(this.resultEl, false);
             this.resultEl.empty();
-            const briefLabel = completed === 1 ? 'Brief' : 'Briefs';
-            const logLabel = completed === 1 ? 'Log' : 'Logs';
             if (cacheMissDetail) {
                 const errorBlock = this.resultEl.createDiv({ cls: 'ert-omnibus-result-error' });
                 errorBlock.createDiv({
                     cls: 'ert-omnibus-result-error-title',
-                    text: 'Run terminated to prevent uncached (full-price) billing'
+                    text: t('ui.inquiryViewModals.resultTerminatedTitle')
                 });
                 errorBlock.createDiv({ cls: 'ert-omnibus-result-error-detail', text: cacheMissDetail });
                 errorBlock.createDiv({
                     cls: 'ert-omnibus-result-text',
-                    text: `${completed} of ${total} completed and saved before termination.`
+                    text: t('ui.inquiryViewModals.resultTerminatedDetail', { completed, total })
                 });
             } else if (aborted) {
                 this.resultEl.createDiv({
                     cls: 'ert-omnibus-result-text',
-                    text: `Omnibus pass stopped. ${completed} of ${total} completed.`
+                    text: t('ui.inquiryViewModals.resultStopped', { completed, total })
                 });
             } else {
                 this.resultEl.createDiv({
                     cls: 'ert-omnibus-result-text',
-                    text: `Omnibus pass complete. ${completed} Inquiry ${briefLabel} and ${completed} ${logLabel} created.`
+                    text: t('ui.inquiryViewModals.resultComplete', { briefs: tCount('inquiryBrief', completed), logs: tCount('inquiryLog', completed) })
                 });
             }
         }
         if (this.actionsEl) {
             this.actionsEl.empty();
             new ButtonComponent(this.actionsEl)
-                .setButtonText('Close')
+                .setButtonText(t('ui.inquiryViewModals.close'))
                 .setCta()
                 .onClick(() => this.close());
         }

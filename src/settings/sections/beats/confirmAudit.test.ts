@@ -5,6 +5,7 @@ vi.mock('../../../../tests/mocks/obsidian.ts', () => {
     const element = () => ({ setText() {}, empty() {}, addClass() {}, classList: { add() {} },
         createDiv: element, createSpan: element });
     return {
+        moment: { locale: () => 'en' },
         App: class {},
         Modal: class {
             titleEl = element(); contentEl = element(); modalEl = element();

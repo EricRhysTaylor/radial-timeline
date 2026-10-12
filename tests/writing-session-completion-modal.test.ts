@@ -41,12 +41,12 @@ describe('writing session completion modal', () => {
         expect(dateInputBlock).toContain('width: 13.5ch');
         expect(source).toContain('private formatHeaderMeta()');
         expect(source).toContain("const badge = header.createSpan({ cls: 'ert-modal-badge', text: badgeBaseText })");
-        expect(source).toContain('Review word counts, confirm touched scenes, choose the writing day, then save this session record.');
+        expect(source).toContain("text: t('ui.writingSessionCompletionModal.subtitle')");
         expect(source).toContain("cls: 'ert-writing-session-section ert-writing-session-section--words'");
         expect(source).toContain("cls: 'ert-writing-session-grid ert-writing-session-grid--words'");
         expect(source).toContain("cls: 'ert-writing-session-grid ert-writing-session-grid--work'");
         expect(source).toContain("cls: 'ert-writing-session-grid ert-writing-session-grid--session'");
-        expect(source).toContain(".setName('Session date')");
+        expect(source).toContain(".setName(t('ui.writingSessionCompletionModal.sessionDateName'))");
         expect(source).toContain("text.inputEl.type = 'date'");
         expect(source).toContain("text.inputEl.addClass('ert-input--md', 'ert-writing-session-date-input')");
         expect(source).toContain('sessionDateFromStartedAt(this.active.startedAt)');

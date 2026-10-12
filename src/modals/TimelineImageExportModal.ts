@@ -21,28 +21,31 @@ interface ExportOption {
     choice: TimelineImageExportChoice;
 }
 
-const EXPORT_OPTIONS: ExportOption[] = [
-    {
-        title: 'SVG (vector)',
-        description: 'Self-contained vector file — sharp at any size, styles inlined.',
-        choice: { format: 'svg', scale: 1 },
-    },
-    {
-        title: 'PNG · 1x',
-        description: 'Raster image at the on-screen resolution.',
-        choice: { format: 'png', scale: 1 },
-    },
-    {
-        title: 'PNG · 2x',
-        description: 'Double-resolution raster for crisp display and social posts.',
-        choice: { format: 'png', scale: 2 },
-    },
-    {
-        title: 'PNG · 4x',
-        description: 'High-resolution raster for print or large marketing stills.',
-        choice: { format: 'png', scale: 4 },
-    },
-];
+// Built when the modal opens so the text follows the current language.
+function getExportOptions(): ExportOption[] {
+    return [
+        {
+            title: t('ui.timelineImageExportModal.svgTitle'),
+            description: t('ui.timelineImageExportModal.svgDesc'),
+            choice: { format: 'svg', scale: 1 },
+        },
+        {
+            title: t('ui.timelineImageExportModal.png1xTitle'),
+            description: t('ui.timelineImageExportModal.png1xDesc'),
+            choice: { format: 'png', scale: 1 },
+        },
+        {
+            title: t('ui.timelineImageExportModal.png2xTitle'),
+            description: t('ui.timelineImageExportModal.png2xDesc'),
+            choice: { format: 'png', scale: 2 },
+        },
+        {
+            title: t('ui.timelineImageExportModal.png4xTitle'),
+            description: t('ui.timelineImageExportModal.png4xDesc'),
+            choice: { format: 'png', scale: 4 },
+        },
+    ];
+}
 
 export class TimelineImageExportModal extends Modal {
     constructor(app: App, private readonly onChoose: (choice: TimelineImageExportChoice) => Promise<void> | void) {
@@ -61,16 +64,16 @@ export class TimelineImageExportModal extends Modal {
 
         contentEl.addClass('ert-modal-container', 'ert-stack');
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Export' });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.timelineImageExportModal.badge') });
         header.createDiv({ cls: 'ert-modal-title', text: t('commands.exportTimelineImage') });
         header.createDiv({
             cls: 'ert-modal-subtitle',
-            text: 'Exports the currently rendered timeline. Choose a format and resolution.',
+            text: t('ui.timelineImageExportModal.subtitle'),
         });
 
         const panel = contentEl.createDiv({ cls: 'ert-panel ert-panel--glass ert-stack' });
         const grid = panel.createDiv({ cls: 'ert-note-creator-grid' });
-        for (const option of EXPORT_OPTIONS) {
+        for (const option of getExportOptions()) {
             const button = grid.ownerDocument.win.createEl('button');
             button.className = 'ert-modal-choice ert-note-creator-option';
             button.type = 'button';
@@ -85,7 +88,7 @@ export class TimelineImageExportModal extends Modal {
 
         const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
         new ButtonComponent(actions)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => this.close());
 
         const firstOption = grid.querySelector<HTMLButtonElement>('.ert-note-creator-option');

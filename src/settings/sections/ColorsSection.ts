@@ -11,6 +11,7 @@ import { HERO_PATTERNS, DEFAULT_WORKING_PATTERN_ID, CUSTOM_PATTERN_ID_PREFIX, ge
 import { validateSvgPattern } from '../../renderer/components/heroPatternValidator';
 import { hasProFeatureAccess } from '../featureGate';
 import { IMPACT_FULL } from '../SettingImpact';
+import { t } from '../../i18n';
 
 /**
  * Return the subplot name trimmed of surrounding whitespace.
@@ -120,15 +121,15 @@ function renderCustomPatternsCard(
     const titleWrap = headerRow.createDiv({ cls: 'ert-custom-patterns-title' });
     const proPill = titleWrap.createSpan({ cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_PRO}` });
     setIcon(proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON }), 'signature');
-    proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'PRO' });
-    titleWrap.createSpan({ text: 'Custom patterns', cls: 'ert-custom-patterns-title-text' });
+    proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.colorsSection.proBadge') });
+    titleWrap.createSpan({ text: t('ui.colorsSection.customPatternsTitle'), cls: 'ert-custom-patterns-title-text' });
 
     const desc = card.createEl('p', { cls: 'ert-color-section-desc' });
-    desc.appendText('Paste any pattern from ');
+    desc.appendText(t('ui.colorsSection.customPatternsDescLead'));
     const link = desc.createEl('a', { text: 'heropatterns.com', href: 'https://heropatterns.com' });
     link.setAttr('target', '_blank');
     link.setAttr('rel', 'noopener');
-    desc.appendText(' and use it as your Working scene fill. Patterns from Hero Patterns are free under the Creative Commons 4.0 license.');
+    desc.appendText(t('ui.colorsSection.customPatternsDescTail'));
 
     // --- Existing custom patterns list ---
     const list = card.createDiv({ cls: 'ert-custom-patterns-list' });
@@ -136,7 +137,7 @@ function renderCustomPatternsCard(
         while (list.firstChild) list.removeChild(list.firstChild);
         const customs = plugin.settings.customWorkingPatterns ?? [];
         if (customs.length === 0) {
-            list.createEl('p', { cls: 'ert-custom-patterns-empty', text: 'No custom patterns yet.' });
+            list.createEl('p', { cls: 'ert-custom-patterns-empty', text: t('ui.colorsSection.noCustomPatterns') });
             return;
         }
         for (const p of customs) {
@@ -147,7 +148,7 @@ function renderCustomPatternsCard(
             item.createSpan({ cls: 'ert-custom-patterns-item-name', text: p.name });
             const removeBtn = item.createEl('button', { cls: 'clickable-icon ert-custom-patterns-remove' });
             setIcon(removeBtn, 'trash-2');
-            removeBtn.setAttr('aria-label', `Remove ${p.name}`);
+            removeBtn.setAttr('aria-label', t('ui.colorsSection.removePatternAriaLabel', { name: p.name }));
             plugin.registerDomEvent(removeBtn, 'click', async () => {
                 const next = (plugin.settings.customWorkingPatterns ?? []).filter(x => x.id !== p.id);
                 plugin.settings.customWorkingPatterns = next;
@@ -167,11 +168,11 @@ function renderCustomPatternsCard(
     // --- Paste / validate / save ---
     const form = card.createDiv({ cls: 'ert-custom-patterns-form' });
     const nameInputWrap = form.createDiv({ cls: 'ert-custom-patterns-field' });
-    nameInputWrap.createEl('label', { text: 'Name', cls: 'ert-custom-patterns-label' });
-    const nameInput = nameInputWrap.createEl('input', { cls: 'ert-input', attr: { type: 'text', placeholder: 'My pattern' } });
+    nameInputWrap.createEl('label', { text: t('ui.colorsSection.nameLabel'), cls: 'ert-custom-patterns-label' });
+    const nameInput = nameInputWrap.createEl('input', { cls: 'ert-input', attr: { type: 'text', placeholder: t('ui.colorsSection.namePlaceholder') } });
 
     const svgInputWrap = form.createDiv({ cls: 'ert-custom-patterns-field' });
-    svgInputWrap.createEl('label', { text: 'SVG markup', cls: 'ert-custom-patterns-label' });
+    svgInputWrap.createEl('label', { text: t('ui.colorsSection.svgMarkupLabel'), cls: 'ert-custom-patterns-label' });
     const svgInput = svgInputWrap.createEl('textarea', {
         cls: 'ert-input ert-custom-patterns-textarea',
         attr: { rows: '6', placeholder: '<svg viewBox="0 0 20 20" ...>...</svg>', spellcheck: 'false' }
@@ -184,8 +185,8 @@ function renderCustomPatternsCard(
 
     let validated: ReturnType<typeof validateSvgPattern> | null = null;
     const buttonRow = form.createDiv({ cls: 'ert-custom-patterns-buttons' });
-    const validateBtn = buttonRow.createEl('button', { cls: 'ert-mod-cta', text: 'Validate' });
-    const saveBtn = buttonRow.createEl('button', { text: 'Save pattern' });
+    const validateBtn = buttonRow.createEl('button', { cls: 'ert-mod-cta', text: t('ui.colorsSection.validateButton') });
+    const saveBtn = buttonRow.createEl('button', { text: t('ui.colorsSection.savePatternButton') });
     saveBtn.setAttribute('disabled', 'true');
 
     const setFeedback = (msg: string, ok: boolean) => {
@@ -214,14 +215,14 @@ function renderCustomPatternsCard(
         };
         renderPatternIntoSvg(previewSvg, tentative, previewStageColor);
         saveBtn.removeAttribute('disabled');
-        setFeedback('Valid. Preview rendered.', true);
+        setFeedback(t('ui.colorsSection.validFeedback'), true);
     });
 
     plugin.registerDomEvent(saveBtn, 'click', async () => {
         if (!validated || !validated.ok) return;
         const name = (nameInput.value || '').trim();
         if (!name) {
-            setFeedback('Name required.', false);
+            setFeedback(t('ui.colorsSection.nameRequiredFeedback'), false);
             return;
         }
         const id = `${CUSTOM_PATTERN_ID_PREFIX}${Date.now().toString(36)}`;
@@ -234,7 +235,7 @@ function renderCustomPatternsCard(
         while (previewSvg.firstChild) previewSvg.removeChild(previewSvg.firstChild);
         validated = null;
         saveBtn.setAttribute('disabled', 'true');
-        setFeedback(`Saved "${name}".`, true);
+        setFeedback(t('ui.colorsSection.savedFeedback', { name }), true);
         renderList();
         onListChanged();
         // No timeline refresh needed yet — only the dropdown gains an option.
@@ -254,7 +255,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
     // --- Working Patterns (Hero Patterns motif for Working-status scenes) ---
     const patternSection = containerEl.createDiv({ attr: { [ERT_DATA.SECTION]: 'colors-working-pattern' } });
     const patternHeading = new Settings(patternSection)
-        .setName('Working patterns')
+        .setName(t('ui.colorsSection.workingPatternsHeading'))
         .setHeading();
     addHeadingIcon(patternHeading, 'paintbrush-vertical');
     // Populate descEl BEFORE applyErtHeaderLayout: that helper detaches the
@@ -263,14 +264,14 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
     const patternDesc = patternHeading.descEl;
     if (patternDesc) {
         patternDesc.addClass('ert-color-section-desc');
-        patternDesc.setText('Patterns are used for ');
+        patternDesc.setText(t('ui.colorsSection.workingPatternsDescLead'));
         const pill = patternDesc.createSpan({ cls: 'ert-yaml-pill', text: '"Working"' });
-        pill.setAttr('aria-label', 'Working status');
-        patternDesc.appendText(' scenes. Thanks to ');
+        pill.setAttr('aria-label', t('ui.colorsSection.workingStatusAriaLabel'));
+        patternDesc.appendText(t('ui.colorsSection.workingPatternsDescMiddle'));
         const link = patternDesc.createEl('a', { text: 'heropatterns.com', href: 'https://heropatterns.com' });
         link.setAttr('target', '_blank');
         link.setAttr('rel', 'noopener');
-        patternDesc.appendText('.');
+        patternDesc.appendText(t('ui.colorsSection.workingPatternsDescTail'));
     }
     applyErtHeaderLayout(patternHeading);
 
@@ -283,8 +284,8 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
     // controls on right). The preview swatch sits inside `controlEl`
     // alongside the dropdown + reset so they cluster on the right.
     const innerRow = new Settings(patternSection)
-        .setName('Working pattern')
-        .setDesc('Choose the motif used for "Working" scenes. Changes apply live.');
+        .setName(t('ui.colorsSection.workingPatternName'))
+        .setDesc(t('ui.colorsSection.workingPatternDesc'));
     innerRow.settingEl.addClass('ert-working-pattern-row');
 
     const previewSvg = innerRow.controlEl.createSvg('svg', { attr: { viewBox: '0 0 120 30', width: '120', height: '30', preserveAspectRatio: 'none' } });
@@ -308,7 +309,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
         // Pro-only: special sentinel option opens the custom-pattern editor.
         // Picking it does not change the saved pattern — it just reveals the
         // paste/validate card below.
-        if (isPro) dd.addOption(CUSTOM_EDITOR_SENTINEL_ID, 'Custom…');
+        if (isPro) dd.addOption(CUSTOM_EDITOR_SENTINEL_ID, t('ui.colorsSection.customOption'));
         // Falls back to the first option when the saved id no longer exists.
         const known = HERO_PATTERNS.some(p => p.id === selectedId) || customs.some(p => p.id === selectedId);
         dd.setValue(known ? selectedId : DEFAULT_WORKING_PATTERN_ID);
@@ -339,7 +340,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
     });
     innerRow.addExtraButton(button => {
         button.setIcon('reset')
-            .setTooltip('Reset to default')
+            .setTooltip(t('ui.colorsSection.resetTooltip'))
             .onClick(async () => {
                 plugin.settings.workingPatternId = DEFAULT_WORKING_PATTERN_ID;
                 await plugin.saveSettings();
@@ -360,8 +361,8 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
     // --- Publishing Stage Colors ---
     const pubSection = containerEl.createDiv({ attr: { [ERT_DATA.SECTION]: 'colors-publish' } });
     const pubHeading = new Settings(pubSection)
-        .setName('Publishing stage colors')
-        .setDesc('Used for completed scenes, stage matrix, act labels and more.')
+        .setName(t('ui.colorsSection.stageColorsHeading'))
+        .setDesc(t('ui.colorsSection.stageColorsDesc'))
         .setHeading();
     addHeadingIcon(pubHeading, 'paintbrush-vertical');
     addWikiLink(pubHeading, 'Settings-Core#progress-stage-colors');
@@ -379,7 +380,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
 
         const swatchHandle: ColorSwatchHandle = colorSwatch(control, {
             value: color,
-            ariaLabel: `${stage} stage color`,
+            ariaLabel: t('ui.colorsSection.stageColorAriaLabel', { stage }),
             swatchClass: `ert-stage-${stage}`,
             plugin,
             onChange: (value) => { void (async () => {
@@ -410,7 +411,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
             })
             .addExtraButton(button => {
                 button.setIcon('reset')
-                    .setTooltip('Reset to default')
+                    .setTooltip(t('ui.colorsSection.resetTooltip'))
                     .onClick(async () => {
                         const defaultColor = DEFAULT_SETTINGS.publishStageColors[stage as keyof typeof DEFAULT_SETTINGS.publishStageColors];
                         (plugin.settings.publishStageColors as Record<string, string>)[stage] = defaultColor;
@@ -426,8 +427,8 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
     // --- Subplot palette (16 colors) ---
     const subplotSection = containerEl.createDiv({ attr: { [ERT_DATA.SECTION]: 'colors-subplot' } });
     const subplotHeading = new Settings(subplotSection)
-        .setName('Subplot ring colors')
-        .setDesc('Subplot ring colors used for rings 1 through 16 moving inward.')
+        .setName(t('ui.colorsSection.subplotColorsHeading'))
+        .setDesc(t('ui.colorsSection.subplotColorsDesc'))
         .setHeading();
     addHeadingIcon(subplotHeading, 'paintbrush-vertical');
     addWikiLink(subplotHeading, 'Settings-Core#subplot-ring-colors');
@@ -438,7 +439,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
     const subplotColors = ensureArray(plugin.settings.subplotColors);
     const subplotLabels: HTMLDivElement[] = [];
     for (let i = 0; i < 16; i++) {
-        const labelText = i === 0 ? 'MAIN PLOT' : `Ring ${i + 1}`;
+        const labelText = i === 0 ? t('ui.colorsSection.mainPlotLabel') : t('ui.colorsSection.ringLabel', { number: i + 1 });
         const current = subplotColors[i] || DEFAULT_SETTINGS.subplotColors[i];
         const cell = subplotGrid.createDiv({ cls: 'ert-color-grid-item' });
         const label = cell.createDiv({ cls: 'ert-color-grid-label' });
@@ -450,7 +451,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
 
         const swatchHandle: ColorSwatchHandle = colorSwatch(control, {
             value: current,
-            ariaLabel: `Subplot ring ${i + 1} color`,
+            ariaLabel: t('ui.colorsSection.subplotColorAriaLabel', { number: i + 1 }),
             swatchClass: `ert-subplot-${i}`,
             plugin,
             onChange: (value) => { void (async () => {
@@ -485,7 +486,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
             })
             .addExtraButton(button => {
                 button.setIcon('reset')
-                    .setTooltip('Reset to default')
+                    .setTooltip(t('ui.colorsSection.resetTooltip'))
                     .onClick(async () => {
                         const value = DEFAULT_SETTINGS.subplotColors[i];
                         const next = [...(plugin.settings.subplotColors || DEFAULT_SETTINGS.subplotColors)];

@@ -28,6 +28,7 @@ import { estimateTokensFromText } from '../ai/tokens/inputTokenEstimate';
 import { PROVIDER_CAPS } from '../ai/caps/providerCaps';
 import type { LocalLlmSettings } from '../ai/types';
 import type { SearchHitSource, TimelineSearchHit } from './searchState';
+import { t, tCount } from '../i18n';
 
 /** A scene as it will be shown to the model, with the pieces kept separable. */
 export interface ConceptSearchScene {
@@ -464,7 +465,7 @@ export class ConceptSearchService {
             userPrompt: `Request: ${query}`
         });
         if (!elementsCall.ok) {
-            throw new Error(`Local model could not read the request: ${elementsCall.error}`);
+            throw new Error(t('ui.conceptSearchService.requestUnreadable', { error: elementsCall.error }));
         }
         const parsedElements = (elementsCall.value as { elements?: unknown }).elements;
         const elements = Array.isArray(parsedElements)
@@ -516,7 +517,7 @@ export class ConceptSearchService {
                 // beats timing out once per remaining scene.
                 if (consecutiveFailures >= CONSECUTIVE_FAILURE_LIMIT) {
                     throw new Error(
-                        `Local model failed on ${consecutiveFailures} scenes in a row: ${verdictCall.error}`
+                        t('ui.conceptSearchService.consecutiveFailures', { scenes: tCount('scene', consecutiveFailures), error: verdictCall.error })
                     );
                 }
                 continue;

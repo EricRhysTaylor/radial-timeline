@@ -23,6 +23,7 @@ import { renderBonusVaultsSection } from './sections/BonusVaultsSection';
 import { getProEntitlement } from './proEntitlement';
 import { renderPublishSection } from './sections/PublishSection';
 import { FolderSuggest } from './FolderSuggest';
+import { t, tCount } from '../i18n';
 import { ERT_CLASSES, ERT_DATA } from '../ui/classes';
 import {
     getActiveRefactorAlerts,
@@ -420,7 +421,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         // Reassurance text inside alert - for migration and cleanup alerts
         if (alert.migrations?.length || alert.id === 'advanced-template-cleanup-v7') {
             const reassurance = contentSide.createDiv({ cls: 'ert-refactor-alert__reassurance' });
-            reassurance.setText('These updates help keep your YAML consistent with the latest features. You can review or dismiss any change.');
+            reassurance.setText(t('ui.settingsTab.alertReassurance'));
         }
 
         // Right side: Action buttons (stacked vertically)
@@ -430,7 +431,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         if (alert.severity !== 'critical') {
             const dismissBtn = actionSide.createEl('button', {
                 cls: 'ert-iconBtn ert-refactor-alert__btn--dismiss',
-                attr: { 'aria-label': 'Dismiss alert' }
+                attr: { 'aria-label': t('ui.settingsTab.dismissAlert') }
             });
             setIcon(dismissBtn, 'x');
             this.plugin.registerDomEvent(dismissBtn, 'click', async () => {
@@ -459,7 +460,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         if (alert.migrations?.length) {
             const autoUpdateBtn = actionSide.createEl('button', {
                 cls: 'ert-iconBtn ert-refactor-alert__btn--update',
-                attr: { 'aria-label': 'Apply update automatically' }
+                attr: { 'aria-label': t('ui.settingsTab.applyUpdate') }
             });
             setIcon(autoUpdateBtn, 'check');
             this.plugin.registerDomEvent(autoUpdateBtn, 'click', async () => {
@@ -492,14 +493,14 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
                     panelParent.empty();
                     this.renderRefactorAlerts(panelParent);
                 }
-                new Notice('Template updated successfully');
+                new Notice(t('ui.settingsTab.templateUpdatedNotice'));
             });
 
             // View YAML button (↓)
             {
                 const viewBtn = actionSide.createEl('button', {
                     cls: 'ert-iconBtn ert-refactor-alert__btn--view',
-                    attr: { 'aria-label': 'View in YAML editor' }
+                    attr: { 'aria-label': t('ui.settingsTab.viewInYamlEditor') }
                 });
                 setIcon(viewBtn, 'chevron-down');
                 this.plugin.registerDomEvent(viewBtn, 'click', async () => {
@@ -539,13 +540,13 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
         const toggleBtn = headerRow.createEl('button', {
             cls: 'ert-iconBtn ert-notification-history__toggle',
-            attr: { 'aria-label': 'Toggle notification history' }
+            attr: { 'aria-label': t('ui.settingsTab.toggleHistory') }
         });
         setIcon(toggleBtn, startCollapsed ? 'chevron-right' : 'chevron-down');
 
         const headerText = headerRow.createSpan({
             cls: 'ert-notification-history__label',
-            text: `${alerts.length} notification${alerts.length !== 1 ? 's' : ''} processed`
+            text: t('ui.settingsTab.notificationsProcessed', { notifications: tCount('notification', alerts.length) })
         });
 
         // Content area (collapsible)
@@ -632,7 +633,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             href: options.wikiHref,
             cls: ERT_CLASSES.BADGE_PILL_WIKI,
             attr: {
-                'aria-label': 'Read more in the wiki',
+                'aria-label': t('ui.settingsTab.wikiAria'),
                 'target': '_blank',
                 'rel': 'noopener'
             }
@@ -672,7 +673,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
                 if (feature.targetSection) {
                     li.setAttr('role', 'button');
                     li.setAttr('tabindex', '0');
-                    li.setAttr('aria-label', `Jump to ${feature.text}`);
+                    li.setAttr('aria-label', t('ui.settingsTab.jumpToAria', { section: feature.text }));
                     this.plugin.registerDomEvent(li, 'click', () => this.scrollToSettingsSection(feature.targetSection!));
                     this.plugin.registerDomEvent(li, 'keydown', (evt: KeyboardEvent) => {
                         if (evt.key !== 'Enter' && evt.key !== ' ') return;
@@ -725,71 +726,71 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
     private renderPublishingHero(containerEl: HTMLElement): void {
         this.renderSettingsHero(containerEl, {
-            badgeLabel: 'PUBLISH',
+            badgeLabel: t('ui.settingsTab.publishBadge'),
             badgeIcon: 'book-open-text',
             badgeVariant: ERT_CLASSES.BADGE_PILL_PRO,
             wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Publishing',
-            title: 'Prepare your manuscript for export and publication.',
-            subtitle: 'Markdown export is always available with no setup — export your manuscript anytime. Prepare PDF and Word exports with book details, optional pages, and the settings below.',
-            helperLine: 'PDF export is powered by Pandoc and LaTeX — industry-standard formatting tools, handled for you behind the scenes. PDF and Word use your title and author from Book Details. Front and back matter pages are optional.',
-            kicker: 'WHAT YOU CAN DO',
+            title: t('ui.settingsTab.publishTitle'),
+            subtitle: t('ui.settingsTab.publishSubtitle'),
+            helperLine: t('ui.settingsTab.publishHelper'),
+            kicker: t('ui.settingsTab.publishKicker'),
             features: [
-                { icon: 'layout-template', text: 'PDF Style — Start here. Two styles on the Core surface, two more with Pro, or import your own' },
-                { icon: 'file-output', text: 'Export — Markdown, Word, or PDF with clear checks for the selected format' },
-                { icon: 'file-text', text: 'Book Details — Title and author for formatted exports; optional publishing info' },
-                { icon: 'book-open-text', text: 'Book Pages (optional) — Front & back matter: title page, dedication, epigraph, and more' }
+                { icon: 'layout-template', text: t('ui.settingsTab.publishFeatureStyle') },
+                { icon: 'file-output', text: t('ui.settingsTab.publishFeatureExport') },
+                { icon: 'file-text', text: t('ui.settingsTab.publishFeatureDetails') },
+                { icon: 'book-open-text', text: t('ui.settingsTab.publishFeaturePages') }
             ]
         });
     }
 
     private renderAdvancedHero(containerEl: HTMLElement): void {
         this.renderSettingsHero(containerEl, {
-            badgeLabel: 'Advanced · configuration',
+            badgeLabel: t('ui.settingsTab.advancedBadge'),
             badgeIcon: 'pyramid',
             badgeVariant: ERT_CLASSES.BADGE_PILL_NEUTRAL,
             wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Advanced#configuration',
-            title: 'Configuration and system controls.',
-            subtitle: 'Configuration now lives here. Use this tab for timeline display controls, metadata remapping, logs, output folders, and other system-level behavior.',
-            kicker: 'Currently here:',
+            title: t('ui.settingsTab.advancedTitle'),
+            subtitle: t('ui.settingsTab.advancedSubtitle'),
+            kicker: t('ui.settingsTab.advancedKicker'),
             features: [
-                { icon: 'monitor', text: 'Timeline display controls and marker overlays' },
-                { icon: 'folder-cog', text: 'Logs, output folders, and generated file locations' },
-                { icon: 'waypoints', text: 'Metadata remapping and manuscript behavior controls' },
+                { icon: 'monitor', text: t('ui.settingsTab.advancedFeatureDisplay') },
+                { icon: 'folder-cog', text: t('ui.settingsTab.advancedFeatureLogs') },
+                { icon: 'waypoints', text: t('ui.settingsTab.advancedFeatureMetadata') },
             ]
         });
     }
 
     private renderInquiryHero(containerEl: HTMLElement): void {
         this.renderSettingsHero(containerEl, {
-            badgeLabel: 'Inquiry · Signals',
+            badgeLabel: t('ui.settingsTab.inquiryBadge'),
             badgeIcon: 'ri-logo',
             badgeVariant: ERT_CLASSES.BADGE_PILL_NEUTRAL,
             wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Inquiry',
-            title: 'Analyze your story as a complete system.',
-            subtitle: 'Evaluate how scenes, books, and entire sagas work together. Inquiry uses your manuscript(s), outlines, characters, and worldbuilding to surface structural weak points, missing or underdeveloped material, and momentum issues—all in a single view with clear visual signals and quantifiers.',
-            helperLine: 'Inquiry runs on the provider key you add in Settings → AI. Your key, your models.',
-            kicker: 'Inquiry Focus Areas:',
+            title: t('ui.settingsTab.inquiryTitle'),
+            subtitle: t('ui.settingsTab.inquirySubtitle'),
+            helperLine: t('ui.settingsTab.inquiryHelper'),
+            kicker: t('ui.settingsTab.inquiryKicker'),
             features: [
-                { icon: 'search', text: 'Source Scans — Choose scan locations, class scopes, and source types to include.' },
-                { icon: 'list', text: 'Prompt Slots — Draft reusable inquiry questions' },
-                { icon: 'layout-grid', text: 'Corpus Tiers — Calibrate source quality thresholds from sketchy → substantive depth' },
+                { icon: 'search', text: t('ui.settingsTab.inquiryFeatureScans') },
+                { icon: 'list', text: t('ui.settingsTab.inquiryFeaturePrompts') },
+                { icon: 'layout-grid', text: t('ui.settingsTab.inquiryFeatureCorpus') },
             ]
         });
     }
 
     private renderCoreHero(containerEl: HTMLElement): void {
         this.renderSettingsHero(containerEl, {
-            badgeLabel: 'Core · Foundation',
+            badgeLabel: t('ui.settingsTab.coreBadge'),
             badgeIcon: 'settings',
             badgeVariant: ERT_CLASSES.BADGE_PILL_NEUTRAL,
             wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Core',
-            title: 'Build the core of your writing workflow.',
-            subtitle: 'The Radial Timeline is designed to empower you, the author, toward greater productivity and accountability. Use Core settings to align the timeline with your manuscript’s structure, sharpen your workflow, and move faster with clarity.',
-            kicker: 'Core Highlights:',
+            title: t('ui.settingsTab.coreTitle'),
+            subtitle: t('ui.settingsTab.coreSubtitle'),
+            kicker: t('ui.settingsTab.coreKicker'),
             features: [
-                { icon: 'layout-grid', text: 'Story structure — manage scenes, beats, profiles, and advanced fields.' },
-                { icon: 'orbit', text: 'Chronologue & time — align chronologue, backdrop, and planetary clocks' },
-                { icon: 'timer', text: 'Sessions — calibrate drafting pace, daily targets, and completion estimates.' },
+                { icon: 'layout-grid', text: t('ui.settingsTab.coreFeatureStructure') },
+                { icon: 'orbit', text: t('ui.settingsTab.coreFeatureChronologue') },
+                { icon: 'timer', text: t('ui.settingsTab.coreFeatureSessions') },
             ]
         });
     }
@@ -807,7 +808,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const buildRow = (entries: Array<{ label: string; target: HTMLElement }>, withLabel: boolean): void => {
             const row = root.createDiv({ cls: `${ERT_CLASSES.INLINE} ert-coreQuickLinks__row` });
             if (withLabel) {
-                row.createSpan({ cls: 'ert-coreQuickLinks__label', text: 'Quick Links' });
+                row.createSpan({ cls: 'ert-coreQuickLinks__label', text: t('ui.settingsTab.quickLinksLabel') });
             }
             entries.forEach(({ label: text, target }) => {
                 const button = row.createEl('button', {
@@ -836,10 +837,10 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         } catch (error) {
             console.error(`[Settings] Failed to render ${label}:`, error);
             const fallback = containerEl.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.STACK}` });
-            fallback.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: `${label} unavailable` });
+            fallback.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: t('ui.settingsTab.sectionUnavailable', { label }) });
             fallback.createDiv({
                 cls: ERT_CLASSES.SECTION_DESC,
-                text: 'This settings section could not be rendered. The rest of Settings is still available.'
+                text: t('ui.settingsTab.sectionUnavailableDesc')
             });
             return false;
         }
@@ -869,36 +870,36 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const coreTab = tabBar.createDiv({ cls: 'ert-settings-tab' });
         const coreIcon = coreTab.createSpan({ cls: 'ert-settings-tab-icon' });
         setIcon(coreIcon, 'settings');
-        coreTab.createSpan({ text: 'Cor', cls: 'ert-settings-tab-label' });
+        coreTab.createSpan({ text: t('ui.settingsTab.tabCore'), cls: 'ert-settings-tab-label' });
 
         const socialTab = tabBar.createDiv({ cls: 'ert-settings-tab ert-settings-tab-social' });
         const socialIcon = socialTab.createSpan({ cls: 'ert-settings-tab-icon' });
         setIcon(socialIcon, 'radio');
-        socialTab.createSpan({ text: 'Soc', cls: 'ert-settings-tab-label' });
+        socialTab.createSpan({ text: t('ui.settingsTab.tabSocial'), cls: 'ert-settings-tab-label' });
         const communityTab = tabBar.createDiv({ cls: 'ert-settings-tab ert-settings-tab-community' });
         const communityIcon = communityTab.createSpan({ cls: 'ert-settings-tab-icon' });
         setIcon(communityIcon, 'users');
-        communityTab.createSpan({ text: 'Com', cls: 'ert-settings-tab-label' });
+        communityTab.createSpan({ text: t('ui.settingsTab.tabCommunity'), cls: 'ert-settings-tab-label' });
         const inquiryTab = tabBar.createDiv({ cls: 'ert-settings-tab' });
         const inquiryIcon = inquiryTab.createSpan({ cls: 'ert-settings-tab-icon' });
         setIcon(inquiryIcon, 'ri-logo');
-        inquiryTab.createSpan({ text: 'Inq', cls: 'ert-settings-tab-label' });
+        inquiryTab.createSpan({ text: t('ui.settingsTab.tabInquiry'), cls: 'ert-settings-tab-label' });
         const publishingTab = tabBar.createDiv({ cls: 'ert-settings-tab ert-settings-tab-publishing' });
         const publishingIcon = publishingTab.createSpan({ cls: 'ert-settings-tab-icon' });
         setIcon(publishingIcon, 'book-open-text');
-        publishingTab.createSpan({ text: 'Pub', cls: 'ert-settings-tab-label' });
+        publishingTab.createSpan({ text: t('ui.settingsTab.tabPublishing'), cls: 'ert-settings-tab-label' });
         const aiTab = tabBar.createDiv({ cls: 'ert-settings-tab' });
         const aiIcon = aiTab.createSpan({ cls: 'ert-settings-tab-icon' });
         setIcon(aiIcon, 'cpu');
-        aiTab.createSpan({ text: 'AI', cls: 'ert-settings-tab-label' });
+        aiTab.createSpan({ text: t('ui.settingsTab.tabAi'), cls: 'ert-settings-tab-label' });
         const advancedTab = tabBar.createDiv({ cls: 'ert-settings-tab' });
         const advancedIcon = advancedTab.createSpan({ cls: 'ert-settings-tab-icon' });
         setIcon(advancedIcon, 'pyramid');
-        advancedTab.createSpan({ text: 'Adv', cls: 'ert-settings-tab-label' });
+        advancedTab.createSpan({ text: t('ui.settingsTab.tabAdvanced'), cls: 'ert-settings-tab-label' });
         const proTab = tabBar.createDiv({ cls: 'ert-settings-tab ert-settings-tab-pro' });
         const proIcon = proTab.createSpan({ cls: 'ert-settings-tab-icon' });
         setIcon(proIcon, 'signature');
-        proTab.createSpan({ text: 'PRO', cls: 'ert-settings-tab-label' });
+        proTab.createSpan({ text: t('ui.settingsTab.tabPro'), cls: 'ert-settings-tab-label' });
 
         const coreContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-settings-core-content ert-scope--settings' });
         const socialContent = containerEl.createDiv({
@@ -985,7 +986,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const quickLinksRow = coreStack.createDiv();
 
         const completionRow = coreStack.createDiv();
-        this.renderGuarded('Completion estimate', completionRow, () => {
+        this.renderGuarded(t('ui.settingsTab.guardCompletionEstimate'), completionRow, () => {
             renderCompletionEstimatePreview({
                 app: this.app,
                 plugin: this.plugin,
@@ -1002,11 +1003,11 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             attr: { [ERT_DATA.SECTION]: 'general' }
         });
         const generalStack = generalSection.createDiv({ cls: ERT_CLASSES.STACK });
-        this.renderGuarded('General settings', generalStack, () => {
+        this.renderGuarded(t('ui.settingsTab.guardGeneral'), generalStack, () => {
             renderGeneralSection({
                 app: this.app,
                 plugin: this.plugin,
-                attachFolderSuggest: (t) => this.attachFolderSuggest(t),
+                attachFolderSuggest: (text) => this.attachFolderSuggest(text),
                 containerEl: generalStack,
                 addAiRelatedElement: (el) => this._aiRelatedElements.push(el)
             });
@@ -1017,7 +1018,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
         const progressStatusSection = progressStack.createDiv({ attr: { [ERT_DATA.SECTION]: 'progress-status' } });
         const progressStatusStack = progressStatusSection.createDiv({ cls: ERT_CLASSES.STACK });
-        this.renderGuarded('Progress status', progressStatusStack, () => {
+        this.renderGuarded(t('ui.settingsTab.guardProgress'), progressStatusStack, () => {
             renderProgressSection({
                 plugin: this.plugin,
                 containerEl: progressStatusStack
@@ -1028,7 +1029,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             attr: { [ERT_DATA.SECTION]: 'goals-sessions' }
         });
         const goalsSessionsTarget = goalsSessionsSection;
-        this.renderGuarded('Goals and sessions', goalsSessionsTarget, () => {
+        this.renderGuarded(t('ui.settingsTab.guardGoalsSessions'), goalsSessionsTarget, () => {
             renderGoalsSessionsSection({ plugin: this.plugin, containerEl: goalsSessionsTarget });
         });
 
@@ -1036,7 +1037,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             cls: `${ERT_CLASSES.ROOT} ${ERT_CLASSES.SKIN_PRO} ${ERT_CLASSES.STACK}`,
             attr: { [ERT_DATA.SECTION]: 'runtime' }
         });
-        this.renderGuarded('Runtime profiles', runtimeSection, () => {
+        this.renderGuarded(t('ui.settingsTab.guardRuntime'), runtimeSection, () => {
             renderRuntimeSection({ app: this.app, plugin: this.plugin, containerEl: runtimeSection });
         });
 
@@ -1044,7 +1045,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const backdropYamlTarget = createDiv();
         this._beatsWrapper = beatsWrapper;
         this._backdropYamlTarget = backdropYamlTarget;
-        this.renderGuarded('Story and scene properties', beatsWrapper, () => {
+        this.renderGuarded(t('ui.settingsTab.guardStoryProperties'), beatsWrapper, () => {
             renderBeatPropertiesSection({ app: this.app, plugin: this.plugin, containerEl: beatsWrapper, backdropYamlTargetEl: backdropYamlTarget, scope: this.resetBeatSectionScope() });
             beatsStorySection = beatsWrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="beats-story"]`);
             const beatsActsSection = beatsWrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="beats-acts"]`);
@@ -1057,29 +1058,29 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
         chronologueSection = searchableContent.createDiv({ attr: { [ERT_DATA.SECTION]: 'chronologue' } });
         const chronologueTarget = chronologueSection;
-        this.renderGuarded('Chronologue settings', chronologueTarget, () => {
+        this.renderGuarded(t('ui.settingsTab.guardChronologue'), chronologueTarget, () => {
             renderChronologueSection({ app: this.app, plugin: this.plugin, containerEl: chronologueTarget });
         });
 
         const povSection = searchableContent.createDiv({ attr: { [ERT_DATA.SECTION]: 'pov' } });
-        this.renderGuarded('POV settings', povSection, () => {
+        this.renderGuarded(t('ui.settingsTab.guardPov'), povSection, () => {
             renderPovSection({ plugin: this.plugin, containerEl: povSection });
         });
 
         const planetarySection = searchableContent.createDiv({ attr: { [ERT_DATA.SECTION]: 'planetary' } });
-        this.renderGuarded('Planet calendar settings', planetarySection, () => {
+        this.renderGuarded(t('ui.settingsTab.guardPlanetary'), planetarySection, () => {
             renderPlanetaryTimeSection({ app: this.app, plugin: this.plugin, containerEl: planetarySection });
         });
 
         backdropSection = searchableContent.createDiv({ attr: { [ERT_DATA.SECTION]: 'backdrop' } });
         const backdropTarget = backdropSection;
-        this.renderGuarded('Backdrop settings', backdropTarget, () => {
+        this.renderGuarded(t('ui.settingsTab.guardBackdrop'), backdropTarget, () => {
             renderBackdropSection({ app: this.app, plugin: this.plugin, containerEl: backdropTarget });
             backdropTarget.appendChild(backdropYamlTarget);
         });
 
         const colorsWrapper = searchableContent.createDiv();
-        this.renderGuarded('Color settings', colorsWrapper, () => {
+        this.renderGuarded(t('ui.settingsTab.guardColors'), colorsWrapper, () => {
             renderColorsSection(colorsWrapper, this.plugin);
             colorsWorkingPatternSection = colorsWrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="colors-working-pattern"]`);
         });
@@ -1088,29 +1089,29 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         this.releaseNotesComponent?.unload();
         this.releaseNotesComponent = new Component();
         this.releaseNotesComponent.load();
-        this.renderGuarded('Release notes', releaseNotesSection, () => {
+        this.renderGuarded(t('ui.settingsTab.guardReleaseNotes'), releaseNotesSection, () => {
             void renderReleaseNotesSection({ plugin: this.plugin, containerEl: releaseNotesSection, component: this.releaseNotesComponent! });
         });
 
         // Order mirrors the on-page section order so the links read top-to-bottom.
         this.renderCoreQuickLinks(quickLinksRow, [
-            { label: 'Books', target: generalSection },
-            { label: 'Sessions', target: goalsSessionsSection },
-            { label: 'Beats', target: beatsStorySection },
-            { label: 'Properties', target: scenePropertiesSection },
-            { label: 'Chronology', target: chronologueSection },
-            { label: 'POV', target: povSection },
-            { label: 'Planet Calendar', target: planetarySection },
-            { label: 'Backdrop', target: backdropSection },
-            { label: 'Colors', target: colorsWorkingPatternSection },
-            { label: 'Release Notes', target: releaseNotesSection }
+            { label: t('ui.settingsTab.quickLinkBooks'), target: generalSection },
+            { label: t('ui.settingsTab.quickLinkSessions'), target: goalsSessionsSection },
+            { label: t('ui.settingsTab.quickLinkBeats'), target: beatsStorySection },
+            { label: t('ui.settingsTab.quickLinkProperties'), target: scenePropertiesSection },
+            { label: t('ui.settingsTab.quickLinkChronology'), target: chronologueSection },
+            { label: t('ui.settingsTab.quickLinkPov'), target: povSection },
+            { label: t('ui.settingsTab.quickLinkPlanetary'), target: planetarySection },
+            { label: t('ui.settingsTab.quickLinkBackdrop'), target: backdropSection },
+            { label: t('ui.settingsTab.quickLinkColors'), target: colorsWorkingPatternSection },
+            { label: t('ui.settingsTab.quickLinkReleaseNotes'), target: releaseNotesSection }
         ]);
 
-        this.renderGuarded('Social settings', socialContent, () => {
+        this.renderGuarded(t('ui.settingsTab.guardSocial'), socialContent, () => {
             renderAuthorProgressSection({ app: this.app, plugin: this.plugin, containerEl: socialContent });
         });
 
-        this.renderGuarded('Community settings', communityContent, () => {
+        this.renderGuarded(t('ui.settingsTab.guardCommunity'), communityContent, () => {
             renderCommunityShareSection({ app: this.app, plugin: this.plugin, containerEl: communityContent });
         });
 
@@ -1121,19 +1122,19 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             cls: ERT_CLASSES.STACK,
             attr: { [ERT_DATA.SECTION]: 'inquiry' }
         });
-        this.renderGuarded('Inquiry settings', inquirySection, () => {
+        this.renderGuarded(t('ui.settingsTab.guardInquiry'), inquirySection, () => {
             renderInquirySection({
                 app: this.app,
                 plugin: this.plugin,
                 containerEl: inquirySection,
-                attachFolderSuggest: (t) => this.attachFolderSuggest(t)
+                attachFolderSuggest: (text) => this.attachFolderSuggest(text)
             });
         });
 
         const publishingStack = publishingContent.createDiv({ cls: ERT_CLASSES.STACK });
         this.renderPublishingHero(publishingStack);
         const publishingPanels = publishingStack.createDiv({ cls: ERT_CLASSES.STACK });
-        this.renderGuarded('Publish settings', publishingPanels, () => {
+        this.renderGuarded(t('ui.settingsTab.guardPublish'), publishingPanels, () => {
             renderPublishSection({
                 app: this.app,
                 plugin: this.plugin,
@@ -1167,10 +1168,10 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         } catch (error) {
             console.error('[Settings] Failed to render AI tab content:', error);
             const fallback = aiSection.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.STACK}` });
-            fallback.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: 'AI settings unavailable' });
+            fallback.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: t('ui.settingsTab.aiUnavailableTitle') });
             fallback.createDiv({
                 cls: ERT_CLASSES.SECTION_DESC,
-                text: 'AI settings could not be fully rendered. Reopen settings after updating your configuration.'
+                text: t('ui.settingsTab.aiUnavailableDesc')
             });
         }
 
@@ -1178,7 +1179,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const advancedIntro = advancedStack.createDiv({ cls: ERT_CLASSES.STACK });
         this.renderAdvancedHero(advancedIntro);
         const advancedConfigurationSection = advancedStack.createDiv({ attr: { [ERT_DATA.SECTION]: 'configuration' } });
-        this.renderGuarded('Advanced settings', advancedConfigurationSection, () => {
+        this.renderGuarded(t('ui.settingsTab.guardAdvanced'), advancedConfigurationSection, () => {
             renderConfigurationSection({
                 app: this.app,
                 plugin: this.plugin,
@@ -1187,7 +1188,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         });
 
         const proStack = proContent.createDiv({ cls: ERT_CLASSES.STACK });
-        this.renderGuarded('PRO settings', proStack, () => {
+        this.renderGuarded(t('ui.settingsTab.guardPro'), proStack, () => {
             renderProEntitlementPanel({
                 app: this.app,
                 plugin: this.plugin,
@@ -1196,7 +1197,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             });
         });
 
-        this.renderGuarded('Bonus vaults', proStack, () => {
+        this.renderGuarded(t('ui.settingsTab.guardBonusVaults'), proStack, () => {
             renderBonusVaultsSection({
                 app: this.app,
                 plugin: this.plugin,

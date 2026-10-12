@@ -34,7 +34,7 @@ import { computeCanonicalOrder, getBaseKeys, getCustomKeys, getTemplateParts, RE
 import { IconSuggest } from '../IconSuggest';
 import { IMPACT_FULL } from '../SettingImpact';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
-import { BEAT_SYSTEM_COPY } from './beats/beatSystemCopy';
+import { getBeatSystemCopy as getBuiltInBeatSystemCopy } from './beats/beatSystemCopy';
 import { dirtyState, type InnerStage } from './beats/dirtyState';
 import type { BeatNoteCustomContentSummary, BeatRow, FieldEntry } from './beats/types';
 import { buildYamlFromEntries, extractKeysInOrder, safeParseYaml, } from './beats/yamlHelpers';
@@ -110,7 +110,7 @@ export function renderBeatPropertiesSection(params: {
 
     const updateActPreview = () => {
         const previewLabels = getActPreviewLabels();
-        actsPreviewHeading.setText(`Preview (${previewLabels.length} acts)`);
+        actsPreviewHeading.setText(t('ui.beatPropertiesSection.actsPreviewHeading', { count: previewLabels.length }));
         actsPreviewBody.setText(previewLabels.join(' · '));
     };
 
@@ -278,7 +278,7 @@ export function renderBeatPropertiesSection(params: {
             return {
                 icon: 'circle-alert',
                 statusClass: 'ert-beat-health-icon--modified',
-                tooltip: 'Loaded system has unsaved changes.'
+                tooltip: t('ui.beatPropertiesSection.loadedSystemUnsaved')
             };
         }
         return getStructuralHealthState(statusTab.name, statusTab);
@@ -376,7 +376,7 @@ export function renderBeatPropertiesSection(params: {
             .map((beat) => {
                 const reason = beat.issues.find((issue) => issue.code === 'wrong_model')?.message
                     ?? beat.issues.find((issue) => issue.code === 'non_beat_class')?.message
-                    ?? 'No matching title note.';
+                    ?? t('ui.beatPropertiesSection.noMatchingTitleNote');
                 return {
                     name: beat.expected.name,
                     reason,
@@ -391,15 +391,15 @@ export function renderBeatPropertiesSection(params: {
             return {
                 icon: 'circle-dashed',
                 statusClass: '',
-                tooltip: 'No beats defined for this system yet.'
+                tooltip: t('ui.beatPropertiesSection.noBeatsDefinedTooltip')
             };
         }
         if (summary.matchedCount === 0) {
             const collisionTooltip = summary.wrongModelBeatCount > 0
-                ? 'No beat notes are attributed to this system. Matching titles belong to other Beat Models.'
+                ? t('ui.beatPropertiesSection.noNotesWrongModelTooltip')
                 : summary.missingModelNoteCount > 0
-                    ? 'No beat notes are attributed to this system yet. Matching titles are missing Beat Model.'
-                    : 'This system is not yet deployed in the manuscript.';
+                    ? t('ui.beatPropertiesSection.noNotesMissingModelTooltip')
+                    : t('ui.beatPropertiesSection.notDeployedTooltip');
             return {
                 icon: 'circle-dashed',
                 statusClass: '',
@@ -410,34 +410,36 @@ export function renderBeatPropertiesSection(params: {
             return {
                 icon: 'alert-circle',
                 statusClass: 'ert-beat-health-icon--critical',
-                tooltip: `${summary.duplicateCount} duplicate beat note${summary.duplicateCount !== 1 ? 's' : ''} found. Manually delete duplicate notes to resolve.`
+                tooltip: t('ui.beatPropertiesSection.duplicateNotesTooltip', { notes: tCount('duplicateBeatNote', summary.duplicateCount) })
             };
         }
         if (summary.missingModelBeatCount > 0) {
             return {
                 icon: 'alert-triangle',
                 statusClass: 'ert-beat-health-icon--warning',
-                tooltip: `${summary.missingModelBeatCount} beat${summary.missingModelBeatCount !== 1 ? 's are' : ' is'} missing Beat Model.`
+                tooltip: summary.missingModelBeatCount === 1
+                    ? t('ui.beatPropertiesSection.missingModelBeatsOne', { count: summary.missingModelBeatCount })
+                    : t('ui.beatPropertiesSection.missingModelBeatsOther', { count: summary.missingModelBeatCount })
             };
         }
         if (summary.missingCreateableCount > 0) {
             return {
                 icon: 'alert-triangle',
                 statusClass: 'ert-beat-health-icon--warning',
-                tooltip: `${summary.missingCreateableCount} beat note${summary.missingCreateableCount !== 1 ? 's' : ''} not yet created.`
+                tooltip: t('ui.beatPropertiesSection.notesNotCreatedTooltip', { notes: tCount('beatNote', summary.missingCreateableCount) })
             };
         }
         if (previewIssues.length === 0) {
             return {
                 icon: 'check-circle',
                 statusClass: 'ert-beat-health-icon--success',
-                tooltip: 'System is active in the manuscript and structurally aligned.'
+                tooltip: t('ui.beatPropertiesSection.systemAlignedTooltip')
             };
         }
         return {
             icon: 'alert-triangle',
             statusClass: 'ert-beat-health-icon--warning',
-            tooltip: `System is active in the manuscript but has ${previewIssues.length} structural issue${previewIssues.length !== 1 ? 's' : ''}.`
+            tooltip: t('ui.beatPropertiesSection.systemIssuesTooltip', { issues: tCount('structuralIssue', previewIssues.length) })
         };
     };
 
@@ -505,9 +507,10 @@ export function renderBeatPropertiesSection(params: {
         if (!usurper || usurper.beatKey === beatKey) return null;
 
         const selfComesAfter = comparePrefixTokens(self.prefix, usurper.prefix) > 0;
-        const actual = selfComesAfter ? 'AFTER' : 'BEFORE';
-        const expected = selfComesAfter ? 'BEFORE' : 'AFTER';
-        return `Out of manuscript sequence. File prefix ${self.prefix} places it ${actual} ${usurper.beatName} (${usurper.prefix}), but the template puts it ${expected}.`;
+        const vars = { prefix: String(self.prefix), beat: usurper.beatName, otherPrefix: String(usurper.prefix) };
+        return selfComesAfter
+            ? t('ui.beatPropertiesSection.outOfSequenceAfter', vars)
+            : t('ui.beatPropertiesSection.outOfSequenceBefore', vars);
     };
 
     const getManuscriptAdvisoryState = (system: string, loadedTab?: LoadedBeatTab | null): ManuscriptAdvisoryState | null => {
@@ -516,7 +519,7 @@ export function renderBeatPropertiesSection(params: {
         if (summary.expectedCount === 0) return null;
         if (summary.matchedCount === 0) {
             return {
-                text: 'Inactive in manuscript',
+                text: t('ui.beatPropertiesSection.inactiveInManuscript'),
                 tone: 'muted',
                 icon: null,
             };
@@ -525,13 +528,13 @@ export function renderBeatPropertiesSection(params: {
         issueLabels.push(...getPreviewIssueSummaryLabel(getPreviewIssueEntries(structuralStatus)));
         if (issueLabels.length > 0) {
             return {
-                text: `Active in manuscript — ${issueLabels.join(' • ')}`,
+                text: t('ui.beatPropertiesSection.activeWithIssues', { issues: issueLabels.join(' • ') }),
                 tone: 'warning',
                 icon: 'circle-alert',
             };
         }
         return {
-            text: 'Active in manuscript — Structure aligned',
+            text: t('ui.beatPropertiesSection.activeAligned'),
             tone: 'success',
             icon: 'check',
         };
@@ -614,7 +617,7 @@ export function renderBeatPropertiesSection(params: {
         if (overview.totalBeats > 0) {
             wrapper.createDiv({
                 cls: 'ert-desc-meta',
-                text: `${overview.totalBeats} beats · ${overview.totalActs} acts`
+                text: t('ui.beatPropertiesSection.overviewMeta', { beatCount: overview.totalBeats, actCount: overview.totalActs })
             });
         }
     };
@@ -660,7 +663,7 @@ export function renderBeatPropertiesSection(params: {
         cls: ['ert-previewFrame', 'ert-previewFrame--center', 'ert-previewFrame--flush'],
         attr: { 'data-preview': 'acts' }
     });
-    const actsPreviewHeading = actsPreview.createDiv({ cls: 'ert-planetary-preview-heading', text: 'Preview' });
+    const actsPreviewHeading = actsPreview.createDiv({ cls: 'ert-planetary-preview-heading', text: t('settings.beats.stages.preview') });
     const actsPreviewBody = actsPreview.createDiv({ cls: 'ert-planetary-preview-body' });
 
     updateActPreview();
@@ -782,7 +785,7 @@ export function renderBeatPropertiesSection(params: {
             });
             nameLink.setAttr('role', 'button');
             nameLink.setAttr('tabindex', '0');
-            nameLink.setAttr('aria-label', `Edit "${customSystemName}"`);
+            nameLink.setAttr('aria-label', t('ui.beatPropertiesSection.editSystemAria', { name: customSystemName }));
             const openSystemEdit = () => openCustomSystemDetailsModal(activeId);
             nameLink.addEventListener('click', (e) => { e.stopPropagation(); openSystemEdit(); }); // SAFE: direct addEventListener; Settings lifecycle manages cleanup
             nameLink.addEventListener('keydown', (e: KeyboardEvent) => { // SAFE: direct addEventListener; Settings lifecycle manages cleanup
@@ -803,7 +806,7 @@ export function renderBeatPropertiesSection(params: {
         const actSet = new Set(getActiveCustomBeats().map(b => b.act));
         const beatCount = getActiveCustomBeats().length;
         const countSummary = beatCount > 0
-            ? `${beatCount} beats · ${actSet.size} act${actSet.size !== 1 ? 's' : ''}`
+            ? t('ui.beatPropertiesSection.designCountSummary', { count: beatCount, acts: tCount('act', actSet.size) })
             : '';
         const designContext = getCurrentDesignContext();
         const designManuscriptState = getManuscriptAdvisoryState(designContext.systemName, designContext.loadedTab);
@@ -814,7 +817,7 @@ export function renderBeatPropertiesSection(params: {
             appendPreviewStatus(statusLine, {
                 ...designManuscriptState,
                 text: countSummary.length > 0
-                    ? `${countSummary} — ${designManuscriptState.text}`
+                    ? t('ui.beatPropertiesSection.countWithState', { summary: countSummary, state: designManuscriptState.text })
                     : designManuscriptState.text,
             });
             const structuralStatus = getBeatStructuralStatus(designContext.systemName, { loadedTab: designContext.loadedTab });
@@ -823,7 +826,9 @@ export function renderBeatPropertiesSection(params: {
                     cls: 'ert-preview-status-line ert-preview-status-line--warning ert-beat-template-status'
                 });
                 appendPreviewStatus(placementLine, {
-                    text: `${structuralStatus.summary.misalignedCount} beat${structuralStatus.summary.misalignedCount !== 1 ? 's are' : ' is'} placed in a different act in the manuscript.`,
+                    text: structuralStatus.summary.misalignedCount === 1
+                        ? t('ui.beatPropertiesSection.misalignedBeatsOne', { count: structuralStatus.summary.misalignedCount })
+                        : t('ui.beatPropertiesSection.misalignedBeatsOther', { count: structuralStatus.summary.misalignedCount }),
                     tone: 'warning',
                     icon: 'circle-alert',
                 });
@@ -833,7 +838,9 @@ export function renderBeatPropertiesSection(params: {
                     cls: 'ert-preview-status-line ert-preview-status-line--warning ert-beat-template-status'
                 });
                 appendPreviewStatus(sequenceLine, {
-                    text: `${structuralStatus.summary.outOfSequenceCount} beat${structuralStatus.summary.outOfSequenceCount !== 1 ? 's are' : ' is'} out of manuscript sequence (filename prefix ordering does not match the template).`,
+                    text: structuralStatus.summary.outOfSequenceCount === 1
+                        ? t('ui.beatPropertiesSection.outOfSequenceBeatsOne', { count: structuralStatus.summary.outOfSequenceCount })
+                        : t('ui.beatPropertiesSection.outOfSequenceBeatsOther', { count: structuralStatus.summary.outOfSequenceCount }),
                     tone: 'warning',
                     icon: 'circle-alert',
                 });
@@ -878,7 +885,7 @@ export function renderBeatPropertiesSection(params: {
                 if (dirty) {
                     hIcon.className = 'ert-beat-health-icon ert-beat-health-icon--modified';
                     setIcon(hIcon, 'circle-alert');
-                    setTooltip(hIcon, 'Set has been modified since last save.');
+                    setTooltip(hIcon, t('ui.beatPropertiesSection.setModifiedTooltip'));
                 } else {
                     // Delegate to updateHealthIcon which handles all audit states
                     // (success/warning/critical/neutral) based on current counters.
@@ -1044,7 +1051,7 @@ export function renderBeatPropertiesSection(params: {
                     placeholder.createDiv({ cls: 'ert-beat-row-info ert-beat-row-info--empty' });
                     placeholder.createDiv({ cls: 'ert-beat-ordinal ert-beat-ordinal--empty', text: '' });
                     placeholder.createDiv({ cls: 'ert-beat-index ert-beat-add-index', text: '' });
-                    placeholder.createDiv({ cls: 'ert-custom-beat-placeholder-text', text: `Drop beat into ${actLabels[actIdx]}` });
+                    placeholder.createDiv({ cls: 'ert-custom-beat-placeholder-text', text: t('ui.beatPropertiesSection.dropBeatInto', { act: actLabels[actIdx] }) });
 
                     plugin.registerDomEvent(placeholder, 'dragover', (e) => {
                         e.preventDefault();
@@ -1114,14 +1121,14 @@ export function renderBeatPropertiesSection(params: {
                     // Duplicate title in settings list takes highest priority
                     if (dupKey && duplicateKeys.has(dupKey)) {
                         rowState = 'duplicate';
-                        rowNotices.push('Duplicate beat title. Manually delete duplicate beat notes (or rename one title) to resolve.');
+                        rowNotices.push(t('ui.beatPropertiesSection.duplicateTitleNotice'));
                     }
 
                     // Check for existing files
                     if (dupKey && activeMatches.length > 0) {
                         if (activeMatches.length > 1) {
                             rowState = 'duplicate';
-                            rowNotices.push('Multiple beat notes match this title. Manually delete duplicate beat notes to resolve.');
+                            rowNotices.push(t('ui.beatPropertiesSection.multipleMatchesNotice'));
                         } else if (rowState !== 'duplicate') {
                             const match = activeMatches[0];
                             const existingActRaw = typeof match.actNumber === 'number'
@@ -1137,7 +1144,7 @@ export function renderBeatPropertiesSection(params: {
                                 rowState = 'synced';
                             } else {
                                 rowState = 'misaligned';
-                                rowNotices.push(`Placed in Act ${existingAct} in the manuscript. Template suggests ${actLabels[expectedAct - 1]}.`);
+                                rowNotices.push(t('ui.beatPropertiesSection.placedInActNotice', { actNumber: existingAct, act: actLabels[expectedAct - 1] }));
                             }
                         }
                     }
@@ -1187,7 +1194,7 @@ export function renderBeatPropertiesSection(params: {
                     // Range input
                     const rangeInput = row.createEl('input', { type: 'text', cls: 'ert-beat-range-input ert-input' });
                     rangeInput.value = beatLine.range ?? '';
-                    rangeInput.placeholder = 'e.g. 10-20';
+                    rangeInput.placeholder = t('ui.beatPropertiesSection.rangePlaceholder');
                     setTooltip(rangeInput, t('settings.beats.design.rangeTooltip'));
                     plugin.registerDomEvent(rangeInput, 'change', () => {
                         const rangeVal = rangeInput.value.trim();
@@ -1262,7 +1269,7 @@ export function renderBeatPropertiesSection(params: {
             addRow.createDiv({ cls: 'ert-beat-index ert-beat-add-index', text: '' });
 
             const addNameInput = addRow.createEl('input', { type: 'text', cls: 'ert-beat-name-input ert-input', placeholder: t('settings.beats.design.newBeatPlaceholder') });
-            const addRangeInput = addRow.createEl('input', { type: 'text', cls: 'ert-beat-range-input ert-input', placeholder: 'e.g. 10-20' });
+            const addRangeInput = addRow.createEl('input', { type: 'text', cls: 'ert-beat-range-input ert-input', placeholder: t('ui.beatPropertiesSection.rangePlaceholder') });
             setTooltip(addRangeInput, t('settings.beats.design.rangeTooltip'));
             const addActSelect = addRow.createEl('select', { cls: 'ert-beat-act-select ert-input' });
             Array.from({ length: maxActs }, (_, i) => i + 1).forEach(n => {
@@ -1274,7 +1281,7 @@ export function renderBeatPropertiesSection(params: {
             setIcon(addBtn, 'plus');
 
             const commitAdd = () => {
-                const name = normalizeBeatNameInput(addNameInput.value || 'New Beat', 'New Beat');
+                const name = normalizeBeatNameInput(addNameInput.value || t('ui.beatPropertiesSection.newBeatDefaultName'), t('ui.beatPropertiesSection.newBeatDefaultName'));
                 if (!hasBeatReadableText(name)) {
                     new Notice(t('settings.beats.design.beatNameNotice'));
                     return;
@@ -1320,9 +1327,9 @@ export function renderBeatPropertiesSection(params: {
     // --------------------------------------------------------
 
     const getBeatSystemCopy = (system: string) => {
-        return BEAT_SYSTEM_COPY[system] ?? {
+        return getBuiltInBeatSystemCopy()[system] ?? {
             title: system,
-            description: 'Select a beat system to configure set notes and story beat behavior.'
+            description: t('ui.beatPropertiesSection.selectSystemDesc')
         };
     };
 
@@ -1353,7 +1360,7 @@ export function renderBeatPropertiesSection(params: {
                 const actNum = Math.max(1, Math.round(rawAct));
                 const key = `act:${actNum}`;
                 if (!grouped.has(key)) {
-                    grouped.set(key, { label: `Act ${actNum}`, beats: [], rank: actNum, isNumericAct: true });
+                    grouped.set(key, { label: t('timeline.acts.actFallback', { number: actNum }), beats: [], rank: actNum, isNumericAct: true });
                 }
                 grouped.get(key)!.beats.push({ name: cleanedBeat, key: normalizeBeatTitle(beatName) });
                 return;
@@ -1366,7 +1373,7 @@ export function renderBeatPropertiesSection(params: {
                     const actNum = Math.round(parsedAct);
                     const key = `act:${actNum}`;
                     if (!grouped.has(key)) {
-                        grouped.set(key, { label: `Act ${actNum}`, beats: [], rank: actNum, isNumericAct: true });
+                        grouped.set(key, { label: t('timeline.acts.actFallback', { number: actNum }), beats: [], rank: actNum, isNumericAct: true });
                     }
                     grouped.get(key)!.beats.push({ name: cleanedBeat, key: normalizeBeatTitle(beatName) });
                 } else {
@@ -1383,7 +1390,7 @@ export function renderBeatPropertiesSection(params: {
                 const inferred = inferActForIndex(index, total);
                 const key = `act:${inferred}`;
                 if (!grouped.has(key)) {
-                    grouped.set(key, { label: `Act ${inferred}`, beats: [], rank: inferred, isNumericAct: true });
+                    grouped.set(key, { label: t('timeline.acts.actFallback', { number: inferred }), beats: [], rank: inferred, isNumericAct: true });
                 }
                 grouped.get(key)!.beats.push({ name: cleanedBeat, key: normalizeBeatTitle(beatName) });
                 return;
@@ -1399,7 +1406,7 @@ export function renderBeatPropertiesSection(params: {
 
         if (other.length > 0) {
             columns.push({
-                label: 'Other',
+                label: t('ui.beatPropertiesSection.otherColumn'),
                 beats: other.map((beat) => ({ name: beat, key: normalizeBeatTitle(beat) })),
                 rank: Number.MAX_SAFE_INTEGER,
                 isNumericAct: false
@@ -1417,14 +1424,14 @@ export function renderBeatPropertiesSection(params: {
         status: BeatStructuralBeatStatus | null
     ): { text: string; tone: PreviewStatusTone; icon: 'check' | 'circle-alert' | null } => {
         if (!status) {
-            return { text: 'Checking…', tone: 'muted', icon: null };
+            return { text: t('ui.beatPropertiesSection.checkingStatus'), tone: 'muted', icon: null };
         }
         const issueKind = getPreviewIssueKind(status);
         if (issueKind === 'missing') {
-            return { text: 'Missing', tone: 'warning', icon: 'circle-alert' };
+            return { text: t('ui.beatPropertiesSection.missingStatus'), tone: 'warning', icon: 'circle-alert' };
         }
         if (issueKind === 'incomplete') {
-            return { text: 'Incomplete', tone: 'warning', icon: 'circle-alert' };
+            return { text: t('ui.beatPropertiesSection.incompleteStatus'), tone: 'warning', icon: 'circle-alert' };
         }
         return { text: '', tone: 'success', icon: 'check' };
     };
@@ -1506,8 +1513,8 @@ export function renderBeatPropertiesSection(params: {
             templateActGrid.createDiv({
                 cls: 'ert-beat-act-empty',
                 text: (activeTab?.sourceKind === 'builtin' || (!activeTab && isBuiltinSystem))
-                    ? 'No beats found for this set.'
-                    : 'No beats yet. Go to Design to add them.'
+                    ? t('ui.beatPropertiesSection.noBeatsInSet')
+                    : t('ui.beatPropertiesSection.noBeatsYet')
             });
             return;
         }
@@ -1537,8 +1544,8 @@ export function renderBeatPropertiesSection(params: {
                 appendPreviewStatus(
                     header,
                     columnIssueCount === 0
-                        ? { text: 'Complete', tone: 'success', icon: 'check' }
-                        : { text: `${columnIssueCount} issue${columnIssueCount !== 1 ? 's' : ''}`, tone: 'warning', icon: 'circle-alert' },
+                        ? { text: t('ui.beatPropertiesSection.completeStatus'), tone: 'success', icon: 'check' }
+                        : { text: tCount('issue', columnIssueCount), tone: 'warning', icon: 'circle-alert' },
                     'ert-preview-status--compact'
                 );
             }
@@ -1560,7 +1567,7 @@ export function renderBeatPropertiesSection(params: {
                 if (isActiveInManuscript && hasPreviewTemplateActMismatch(status)) {
                     const hintEl = row.createSpan({ cls: 'ert-beat-act-template-hint' });
                     setIcon(hintEl, 'circle-alert');
-                    setTooltip(hintEl, `Template suggests ${status?.expected.actLabel ?? `Act ${status?.expected.actNumber ?? 1}`}`);
+                    setTooltip(hintEl, t('ui.beatPropertiesSection.templateSuggests', { act: status?.expected.actLabel ?? t('timeline.acts.actFallback', { number: status?.expected.actNumber ?? 1 }) }));
                 }
             });
         });
@@ -1797,7 +1804,7 @@ export function renderBeatPropertiesSection(params: {
             const confirmed = await openDeleteBeatNotesModal({
                 title: targetTab.name,
                 noteFiles,
-                actionLabel: 'Delete beat notes',
+                actionLabel: t('ui.beatPropertiesSection.deleteBeatNotesAction'),
                 systemTag: targetTab.name,
             });
             if (!confirmed) return;
@@ -1808,9 +1815,9 @@ export function renderBeatPropertiesSection(params: {
             }
             await closeBeatTab(targetTab);
             const parts: string[] = [];
-            if (result.trashed > 0) parts.push(`Moved ${result.trashed} beat note${result.trashed !== 1 ? 's' : ''} to trash.`);
-            if (result.failed > 0) parts.push(`${result.failed} failed.`);
-            parts.push(`"${targetTab.name}" removed.`);
+            if (result.trashed > 0) parts.push(t('ui.beatPropertiesSection.movedToTrash', { notes: tCount('beatNote', result.trashed) }));
+            if (result.failed > 0) parts.push(t('ui.beatPropertiesSection.failedCount', { count: result.failed }));
+            parts.push(t('ui.beatPropertiesSection.systemRemoved', { name: targetTab.name }));
             new Notice(parts.join(' '));
         } else {
             await closeBeatTab(targetTab);
@@ -1861,9 +1868,9 @@ export function renderBeatPropertiesSection(params: {
             setTooltip(iconEl, status.tooltip);
             btn.createSpan({ cls: 'ert-mini-tab-label', text: tab.name });
             tabBtnByIndex.push(btn);
-            const closeEl = btn.createSpan({ cls: 'ert-mini-tab-close', attr: { role: 'button', 'aria-label': `Remove ${tab.name}` } });
+            const closeEl = btn.createSpan({ cls: 'ert-mini-tab-close', attr: { role: 'button', 'aria-label': t('ui.beatPropertiesSection.removeTabAria', { name: tab.name }) } });
             setIcon(closeEl, 'x');
-            setTooltip(closeEl, `Remove "${tab.name}"`);
+            setTooltip(closeEl, t('ui.beatPropertiesSection.removeTabTooltip', { name: tab.name }));
             closeEl.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -1880,7 +1887,7 @@ export function renderBeatPropertiesSection(params: {
         // Opens a Menu listing tabs that didn't fit; updated by recomputeOverflow().
         const overflowBtn = beatSystemTabs.createEl('button', {
             cls: 'ert-mini-tab ert-mini-tab--custom ert-mini-tab--overflow',
-            attr: { type: 'button', 'aria-label': 'More beat systems', 'aria-haspopup': 'menu' }
+            attr: { type: 'button', 'aria-label': t('ui.beatPropertiesSection.moreBeatSystemsAria'), 'aria-haspopup': 'menu' }
         });
         const overflowLabel = overflowBtn.createSpan({ cls: 'ert-mini-tab-label', text: '+0' });
         overflowBtn.classList.add('ert-settings-hidden');
@@ -1902,7 +1909,7 @@ export function renderBeatPropertiesSection(params: {
                 type: 'button',
                 role: 'tab',
                 'aria-selected': libraryMode ? 'true' : 'false',
-                'aria-label': 'Add system'
+                'aria-label': t('settings.beats.library.addSystemLabel')
             }
         });
         const addIcon = addBtn.createSpan({ cls: 'ert-mini-tab-icon ert-beat-health-icon' });
@@ -1934,7 +1941,7 @@ export function renderBeatPropertiesSection(params: {
             // Preserve original tab order in the menu (we walked the row end-to-start).
             hiddenTabs = hiddenIndices.slice().reverse().map((i) => loadedTabs[i]).filter(Boolean);
             overflowLabel.setText(`+${hiddenTabs.length}`);
-            setTooltip(overflowBtn, `${hiddenTabs.length} more ${hiddenTabs.length === 1 ? 'system' : 'systems'}`);
+            setTooltip(overflowBtn, tCount('moreSystem', hiddenTabs.length));
         };
 
         const frameId = window.requestAnimationFrame(() => recomputeOverflow());
@@ -2170,7 +2177,7 @@ export function renderBeatPropertiesSection(params: {
                         return;
                     }
                     if (list.some((e, i) => i !== idx && e.key === newKey)) {
-                        new Notice(`${t('settings.beats.beatFields.keyExistsNotice').replace('{{key}}', newKey)}`);
+                        new Notice(t('settings.beats.beatFields.keyExistsNotice', { key: newKey }));
                         keyInput.value = entry.key;
                         return;
                     }
@@ -2312,7 +2319,7 @@ export function renderBeatPropertiesSection(params: {
                     return;
                 }
                 if (data.some(e => e.key === newKey)) {
-                    new Notice(`${t('settings.beats.beatFields.keyExistsNotice').replace('{{key}}', newKey)}`);
+                    new Notice(t('settings.beats.beatFields.keyExistsNotice', { key: newKey }));
                     return;
                 }
                 // Save hover metadata for new key
@@ -2411,7 +2418,7 @@ export function renderBeatPropertiesSection(params: {
             return;
         }
         beatHoverPreviewContainer.removeClass('ert-settings-hidden');
-        beatHoverPreviewHeading.setText(`Beat Hover Metadata Preview (${enabledFields.length} field${enabledFields.length > 1 ? 's' : ''})`);
+        beatHoverPreviewHeading.setText(t('ui.beatPropertiesSection.hoverPreviewHeadingCount', { fields: tCount('field', enabledFields.length) }));
 
         enabledFields.forEach(field => {
             const lineEl = beatHoverPreviewBody.createDiv({ cls: 'ert-hover-preview-line' });
@@ -2459,7 +2466,7 @@ export function renderBeatPropertiesSection(params: {
             void plugin.saveSettings().then(() => {
                 plugin.onSettingChanged(IMPACT_FULL);
             });
-        new Notice(`Loaded "${loadedTab.name}".`);
+        new Notice(t('ui.beatPropertiesSection.loadedSystemNotice', { name: loadedTab.name }));
         invalidateBeatStructuralStatus();
         renderCustomConfig();
         renderBeatYamlEditor();
@@ -2678,14 +2685,14 @@ export function renderBeatPropertiesSection(params: {
         const openBuiltInResetModal = async (entry: LoadableEntry) => {
             const noteFiles = getSelectedEntryBeatNoteFiles(entry);
             if (noteFiles.length === 0) {
-                new Notice(`No beat notes found for "${entry.name}".`);
+                new Notice(t('ui.beatPropertiesSection.noBeatNotesFoundFor', { name: entry.name }));
                 return;
             }
             const confirmed = await openDeleteBeatNotesModal({
                 title: entry.name,
                 noteFiles,
-                actionLabel: 'Reset to default',
-                systemTag: 'BEAT SET',
+                actionLabel: t('settings.beats.library.resetToDefaultText'),
+                systemTag: t('ui.beatPropertiesSection.beatSetBadge'),
             });
 
             if (!confirmed) return;
@@ -2702,8 +2709,8 @@ export function renderBeatPropertiesSection(params: {
             renderSavedBeatSystems();
             renderStageSwitcher();
             updateStageVisibility();
-            const parts = [`Moved ${result.trashed} beat note${result.trashed !== 1 ? 's' : ''} to trash.`];
-            if (result.failed > 0) parts.push(`${result.failed} failed`);
+            const parts = [t('ui.beatPropertiesSection.movedToTrash', { notes: tCount('beatNote', result.trashed) })];
+            if (result.failed > 0) parts.push(t('ui.beatPropertiesSection.failedCountShort', { count: result.failed }));
             new Notice(parts.join(' '));
         };
 
@@ -2774,7 +2781,7 @@ export function renderBeatPropertiesSection(params: {
         selectorRow.createSpan({ text: t('settings.beats.library.selectLabel'), cls: 'ert-set-preview-title' });
         const selectEl = selectorRow.createEl('select', {
             cls: 'ert-input ert-input--lg',
-            attr: { 'aria-label': 'Select a beat system set' }
+            attr: { 'aria-label': t('ui.beatPropertiesSection.selectSetAria') }
         });
 
         const appendOptionGroup = (label: string, items: LoadableEntry[]) => {
@@ -2901,7 +2908,7 @@ export function renderBeatPropertiesSection(params: {
             }
             const activeConfig = getBeatConfigForSystem(plugin.settings);
             const currentName = getActiveCustomName('Custom');
-            const defaultName = opts.isCopy ? `${currentName} (Copy)` : currentName;
+            const defaultName = opts.isCopy ? t('ui.beatPropertiesSection.copyName', { name: currentName }) : currentName;
             const modalTitle = opts.isCopy ? t('settings.beats.saveModal.copyTitle') : t('settings.beats.saveModal.saveTitle');
             const modalSubtitle = opts.isCopy
                 ? t('settings.beats.saveModal.copySubtitle')
@@ -2998,8 +3005,11 @@ export function renderBeatPropertiesSection(params: {
             await plugin.saveSettings();
             // Re-capture baseline so the saved state becomes the new "clean" reference
             captureSetBaseline(getActiveDirtyKey());
-            const verb = opts.isCopy ? 'copied' : (existingIdx >= 0 ? 'updated' : 'saved');
-            new Notice(`Set "${saveName}" ${verb}.`);
+            new Notice(opts.isCopy
+                ? t('ui.beatPropertiesSection.setCopiedNotice', { name: saveName })
+                : existingIdx >= 0
+                    ? t('ui.beatPropertiesSection.setUpdatedNotice', { name: saveName })
+                    : t('ui.beatPropertiesSection.setSavedNotice', { name: saveName }));
             // Targeted refresh — no full re-render needed
             if (opts.isCopy) {
                 _currentInnerStage = 'design';
@@ -3252,7 +3262,7 @@ export function renderBeatPropertiesSection(params: {
                 const keyInput = row.createEl('input', {
                     type: 'text',
                     cls: 'ert-input ert-input--md',
-                    attr: { placeholder: 'Key' }
+                    attr: { placeholder: t('settings.beats.beatFields.keyPlaceholder') }
                 });
                 keyInput.value = entry.key;
 
@@ -3260,7 +3270,7 @@ export function renderBeatPropertiesSection(params: {
                 const valInput = row.createEl('input', {
                     type: 'text',
                     cls: 'ert-input ert-input--md',
-                    attr: { placeholder: 'Value' }
+                    attr: { placeholder: t('settings.beats.beatFields.valuePlaceholder') }
                 });
                 valInput.value = Array.isArray(entry.value) ? entry.value.join(', ') : (entry.value ?? '');
 
@@ -3304,7 +3314,7 @@ export function renderBeatPropertiesSection(params: {
                         return;
                     }
                     if (backdropHasCustomKey(list, newKey, idx)) {
-                        new Notice(`${t('settings.beats.beatFields.keyExistsNotice').replace('{{key}}', newKey)}`);
+                        new Notice(t('settings.beats.beatFields.keyExistsNotice', { key: newKey }));
                         keyInput.value = entry.key;
                         return;
                     }
@@ -3426,7 +3436,7 @@ export function renderBeatPropertiesSection(params: {
                     return;
                 }
                 if (backdropHasCustomKey(data, k)) {
-                    new Notice(`${t('settings.beats.beatFields.keyExistsNotice').replace('{{key}}', k)}`);
+                    new Notice(t('settings.beats.beatFields.keyExistsNotice', { key: k }));
                     return;
                 }
                 const iconName = addIconInput.value.trim() || DEFAULT_HOVER_ICON;
@@ -3491,7 +3501,7 @@ export function renderBeatPropertiesSection(params: {
             return;
         }
         backdropHoverPreviewContainer.removeClass('ert-settings-hidden');
-        backdropHoverPreviewHeading.setText(`Backdrop Hover Metadata Preview (${enabledFields.length} field${enabledFields.length > 1 ? 's' : ''})`);
+        backdropHoverPreviewHeading.setText(t('ui.beatPropertiesSection.backdropHoverPreviewHeadingCount', { fields: tCount('field', enabledFields.length) }));
 
         enabledFields.forEach(field => {
             const lineEl = backdropHoverPreviewBody.createDiv({ cls: 'ert-hover-preview-line' });
@@ -3548,14 +3558,14 @@ export function renderBeatPropertiesSection(params: {
         const detail = missingDiagnostics
             .map((entry) => `${entry.name} (${entry.reason})`)
             .join(' · ');
-        return `Missing details: ${detail}`;
+        return t('ui.beatPropertiesSection.missingDetails', { detail });
     }
 
     function buildMissingBeatTooltip(structuralStatus: BeatSystemStructuralStatus): string | null {
         const missingDiagnostics = buildMissingBeatDiagnostics(structuralStatus);
         if (missingDiagnostics.length === 0) return null;
         const lines = missingDiagnostics.map((entry) => `- ${entry.name}\n  ${entry.reason}`);
-        return `Why these beats are marked missing:\n${lines.join('\n')}`;
+        return t('ui.beatPropertiesSection.missingTooltipHeader', { lines: lines.join('\n') });
     }
 
     function updateTemplateButton(setting: Settings, selectedSystem: string): void {
@@ -3581,7 +3591,7 @@ export function renderBeatPropertiesSection(params: {
             createTemplatesButton.setDisabled(disabled);
             createTemplatesButton.buttonEl.classList.toggle(
                 'ert-save-changes-btn--attention',
-                text === 'Save changes' && !disabled
+                text === t('settings.beats.audit.saveChangesText') && !disabled
             );
         };
         const syncDesignRowMutedState = () => {
@@ -3603,18 +3613,18 @@ export function renderBeatPropertiesSection(params: {
             hasBeats = beats.some(b => b.length > 0);
 
             if (hasBeats) {
-                setting.setName(`Beat notes in your vault for ${displayName}`);
-                baseDesc = `Create ${beats.length} beat note files for your custom system.`;
+                setting.setName(t('ui.beatPropertiesSection.beatNotesForSystem', { name: displayName }));
+                baseDesc = t('ui.beatPropertiesSection.createCustomNotesDesc', { count: beats.length });
                 setting.setDesc(baseDesc);
             } else {
-                setting.setName('Beat notes');
-                baseDesc = 'Add at least one beat above to create beat notes.';
+                setting.setName(t('settings.beats.beatNotes.name'));
+                baseDesc = t('ui.beatPropertiesSection.addBeatFirstDesc');
                 setting.setDesc(baseDesc);
                 setting.settingEl.addClass('ert-setting-dimmed');
             }
         } else {
-            setting.setName(`Beat notes in your vault for ${selectedSystem}`);
-            baseDesc = `Create ${selectedSystem} beat note files in your vault matching this system's structure.`;
+            setting.setName(t('ui.beatPropertiesSection.beatNotesForSystem', { name: selectedSystem }));
+            baseDesc = t('ui.beatPropertiesSection.createSystemNotesDesc', { system: selectedSystem });
             setting.setDesc(baseDesc);
         }
 
@@ -3623,22 +3633,22 @@ export function renderBeatPropertiesSection(params: {
         // Reset action affordances before async lookup to avoid stale "Repair" UI.
         if (isDirtyCustom) {
             setPrimaryDesignButton(
-                'Save changes',
-                'Save this set before creating or repairing beat notes',
+                t('settings.beats.audit.saveChangesText'),
+                t('ui.beatPropertiesSection.saveSetFirstTooltip'),
                 false,
                 async () => { await saveCurrentCustomSet('design'); }
             );
         } else if (isTemplateMode) {
             setPrimaryDesignButton(
-                'Create missing beat notes',
-                'Create missing beat notes in the active book folder',
+                t('ui.beatPropertiesSection.createMissingNotesButton'),
+                t('ui.beatPropertiesSection.createMissingNotesTooltip'),
                 !hasBeats,
                 async () => { await createBeatTemplates(); }
             );
         } else {
             setPrimaryDesignButton(
-                'Create beat notes',
-                'Create beat note files in the active book folder',
+                t('settings.beats.beatNotes.createText'),
+                t('settings.beats.beatNotes.createTooltip'),
                 !hasBeats,
                 async () => { await createBeatTemplates(); }
             );
@@ -3649,7 +3659,7 @@ export function renderBeatPropertiesSection(params: {
         }
         syncDesignRowMutedState();
         if (isDirtyCustom) {
-            setting.setDesc(`${baseDesc} Save changes before creating or repairing beat notes.`);
+            setting.setDesc(t('ui.beatPropertiesSection.saveBeforeCreateDesc', { desc: baseDesc }));
             return;
         }
         if (!hasBeats) return;
@@ -3677,31 +3687,31 @@ export function renderBeatPropertiesSection(params: {
                     // No beat notes found yet
                     setting.setDesc(baseDesc);
                     setPrimaryDesignButton(
-                        'Create missing beat notes',
-                        `Create ${expectedCount} beat notes for ${selectedSystem}`,
+                        t('ui.beatPropertiesSection.createMissingNotesButton'),
+                        t('ui.beatPropertiesSection.createNotesForSystem', { count: expectedCount, system: selectedSystem }),
                         false,
                         async () => { await createBeatTemplates(); }
                     );
                 } else if (hasNew) {
                     // Some exist, some missing
-                    const statusDesc = `${foundCount} of ${expectedCount} beat notes found.`;
+                    const statusDesc = t('ui.beatPropertiesSection.notesFoundStatus', { found: foundCount, expected: expectedCount });
                     const details = missingInlineSummary ? ` ${missingInlineSummary}` : '';
                     setting.setDesc(`${baseDesc} ${statusDesc}${details}`);
                     setPrimaryDesignButton(
-                        `Create ${newBeats} missing beat note${newBeats > 1 ? 's' : ''}`,
+                        t('ui.beatPropertiesSection.createMissingCountButton', { notes: tCount('missingBeatNote', newBeats) }),
                         missingTooltip
-                            ? `${missingTooltip}\n\nCreate the remaining ${newBeats} beat note${newBeats > 1 ? 's' : ''} for ${selectedSystem}`
-                            : `Create the remaining ${newBeats} beat note${newBeats > 1 ? 's' : ''} for ${selectedSystem}`,
+                            ? t('ui.beatPropertiesSection.createRemainingWithDetails', { details: missingTooltip, notes: tCount('beatNote', newBeats), system: selectedSystem })
+                            : t('ui.beatPropertiesSection.createRemaining', { notes: tCount('beatNote', newBeats), system: selectedSystem }),
                         false,
                         async () => { await createBeatTemplates(); }
                     );
                 } else {
                     // All beat notes exist
-                    const statusDesc = `All ${expectedCount} beat notes created.`;
+                    const statusDesc = t('ui.beatPropertiesSection.allNotesCreated', { count: expectedCount });
                     setting.setDesc(`${baseDesc} ${statusDesc}`);
                     setPrimaryDesignButton(
-                        'Create missing beat notes',
-                        'All beat notes already exist',
+                        t('ui.beatPropertiesSection.createMissingNotesButton'),
+                        t('ui.beatPropertiesSection.allNotesExistTooltip'),
                         true,
                         async () => { await createBeatTemplates(); }
                     );
@@ -3723,8 +3733,8 @@ export function renderBeatPropertiesSection(params: {
                 // Scenario A: Fresh — no existing files
                 setting.setDesc(baseDesc);
                 setPrimaryDesignButton(
-                    'Create beat notes',
-                    `Create ${summary.expectedCount} beat note files`,
+                    t('settings.beats.beatNotes.createText'),
+                    t('ui.beatPropertiesSection.createNoteFilesTooltip', { count: summary.expectedCount }),
                     false,
                     async () => { await createBeatTemplates(); }
                 );
@@ -3734,20 +3744,20 @@ export function renderBeatPropertiesSection(params: {
 
             // Build concise status description from non-zero counts
             const parts: string[] = [];
-            if (synced > 0) parts.push(`${synced} synced`);
-            if (misaligned > 0) parts.push(`${misaligned} misaligned`);
-            if (newBeats > 0) parts.push(`${newBeats} missing`);
-            if (duplicates > 0) parts.push(`${duplicates} duplicate${duplicates > 1 ? 's' : ''}`);
-            if (missingModel > 0) parts.push(`Missing Beat Model (${missingModel})`);
+            if (synced > 0) parts.push(t('ui.beatPropertiesSection.syncedPart', { count: synced }));
+            if (misaligned > 0) parts.push(t('ui.beatPropertiesSection.misalignedPart', { count: misaligned }));
+            if (newBeats > 0) parts.push(t('ui.beatPropertiesSection.missingPart', { count: newBeats }));
+            if (duplicates > 0) parts.push(tCount('duplicate', duplicates));
+            if (missingModel > 0) parts.push(t('ui.beatPropertiesSection.missingModelPart', { count: missingModel }));
             let statusDesc = parts.join(', ') + '.';
 
             if (allSynced) {
                 // Scenario B: All synced — nothing to do
-                statusDesc = `All ${summary.expectedCount} beat notes are synced.`;
+                statusDesc = t('ui.beatPropertiesSection.allNotesSynced', { count: summary.expectedCount });
                 if (createTemplatesButton) {
                     setPrimaryDesignButton(
-                        createTemplatesButton.buttonEl.textContent || 'Create beat notes',
-                        'All beats already have aligned files',
+                        createTemplatesButton.buttonEl.textContent || t('settings.beats.beatNotes.createText'),
+                        t('ui.beatPropertiesSection.allAlignedTooltip'),
                         true,
                         async () => { await createBeatTemplates(); }
                     );
@@ -3759,10 +3769,10 @@ export function renderBeatPropertiesSection(params: {
                 }
                 if (createTemplatesButton) {
                     setPrimaryDesignButton(
-                        `Create ${newBeats} missing beat note${newBeats > 1 ? 's' : ''}`,
+                        t('ui.beatPropertiesSection.createMissingCountButton', { notes: tCount('missingBeatNote', newBeats) }),
                         missingTooltip
-                            ? `${missingTooltip}\n\nCreate missing beat notes for ${newBeats} beat${newBeats > 1 ? 's' : ''} without files`
-                            : `Create missing beat notes for ${newBeats} beat${newBeats > 1 ? 's' : ''} without files`,
+                            ? t('ui.beatPropertiesSection.createMissingForBeatsWithDetails', { details: missingTooltip, beats: tCount('beat', newBeats) })
+                            : t('ui.beatPropertiesSection.createMissingForBeats', { beats: tCount('beat', newBeats) }),
                         false,
                         async () => { await createBeatTemplates(); }
                     );
@@ -3771,10 +3781,10 @@ export function renderBeatPropertiesSection(params: {
                 // Scenario C: All matched, some misaligned — no new beats
                 if (createTemplatesButton) {
                     setPrimaryDesignButton(
-                        createTemplatesButton.buttonEl.textContent || 'Create beat notes',
+                        createTemplatesButton.buttonEl.textContent || t('settings.beats.beatNotes.createText'),
                         hasMissingModel
-                            ? 'All beats have files. Use Repair to set missing Beat Model values.'
-                            : 'All beats have files. Use Repair to fix Act and Beat Model.',
+                            ? t('ui.beatPropertiesSection.allHaveFilesRepairModel')
+                            : t('ui.beatPropertiesSection.allHaveFilesRepairAct'),
                         true,
                         async () => { await createBeatTemplates(); }
                     );
@@ -3786,16 +3796,22 @@ export function renderBeatPropertiesSection(params: {
                 repairBeatNotesButton.buttonEl.removeClass('ert-hidden');
                 repairBeatNotesButton.setDisabled(false);
                 const repairCount = misaligned + missingModel;
-                repairBeatNotesButton.setButtonText(`Repair ${repairCount} beat note${repairCount > 1 ? 's' : ''}`);
-                const repairBits: string[] = [];
-                if (misaligned > 0) repairBits.push(`${misaligned} misaligned`);
-                if (missingModel > 0) repairBits.push(`${missingModel} missing Beat Model`);
-                repairBeatNotesButton.setTooltip(`Update Act and Beat Model for ${repairBits.join(' and ')} beat note${repairCount > 1 ? 's' : ''}. Prefix numbers are not changed.`);
+                repairBeatNotesButton.setButtonText(t('ui.beatPropertiesSection.repairButton', { notes: tCount('beatNote', repairCount) }));
+                const repairTooltip = misaligned > 0 && missingModel > 0
+                    ? t('ui.beatPropertiesSection.repairTooltipBoth', { misaligned, missing: missingModel })
+                    : misaligned > 0
+                        ? (repairCount > 1
+                            ? t('ui.beatPropertiesSection.repairTooltipMisalignedOther', { count: misaligned })
+                            : t('ui.beatPropertiesSection.repairTooltipMisalignedOne', { count: misaligned }))
+                        : (repairCount > 1
+                            ? t('ui.beatPropertiesSection.repairTooltipMissingModelOther', { count: missingModel })
+                            : t('ui.beatPropertiesSection.repairTooltipMissingModelOne', { count: missingModel }));
+                repairBeatNotesButton.setTooltip(repairTooltip);
             }
 
 
             if (hasDuplicates) {
-                statusDesc += ` Resolve duplicate${duplicates > 1 ? 's' : ''} before merging. Manually delete duplicate beat notes.`;
+                statusDesc += ` ${duplicates > 1 ? t('ui.beatPropertiesSection.resolveDuplicatesOther') : t('ui.beatPropertiesSection.resolveDuplicatesOne')}`;
             }
 
             setting.setDesc(`${baseDesc} ${statusDesc}`);
@@ -3811,7 +3827,7 @@ export function renderBeatPropertiesSection(params: {
     async function mergeExistingBeatNotes(): Promise<void> {
         const activeTab = getActiveBeatWorkspaceTab();
         if (!activeTab || activeTab.sourceKind === 'builtin') {
-            new Notice('Merge is available for custom beat systems only.');
+            new Notice(t('ui.beatPropertiesSection.mergeCustomOnlyNotice'));
             return;
         }
         const storyStructureName = activeTab.name;
@@ -3824,20 +3840,21 @@ export function renderBeatPropertiesSection(params: {
             maxActs
         );
         if (beats.length === 0) {
-            new Notice('No custom beats defined. Add beats in the list above.');
+            new Notice(t('ui.beatPropertiesSection.noCustomBeatsNotice'));
             return;
         }
 
         const structuralStatus = getBeatStructuralStatus(storyStructureName, { refresh: true, loadedTab: activeTab });
         if (structuralStatus.summary.matchedCount === 0 && structuralStatus.summary.missingModelNoteCount === 0) {
-            new Notice('No existing beat notes found to merge.');
+            new Notice(t('ui.beatPropertiesSection.noNotesToMergeNotice'));
             return;
         }
 
         const { updates, duplicates } = planBeatNoteMerge(beats, structuralStatus);
         if (updates.length === 0) {
-            const duplicateHint = duplicates.length > 0 ? ` Duplicates: ${duplicates.length}. Manually delete duplicate beat notes.` : '';
-            new Notice(`No beat notes could be merged.${duplicateHint}`);
+            new Notice(duplicates.length > 0
+                ? t('ui.beatPropertiesSection.noMergeWithDuplicatesNotice', { count: duplicates.length })
+                : t('ui.beatPropertiesSection.noMergeNotice'));
             return;
         }
 
@@ -3853,9 +3870,9 @@ export function renderBeatPropertiesSection(params: {
 
         const updatedCount = updates.length;
         const modelFixedCount = updates.filter(update => update.needsBeatModelFix).length;
-        const duplicateHint = duplicates.length > 0 ? ` ${duplicates.length} duplicate title${duplicates.length > 1 ? 's' : ''} skipped (manually delete duplicate beat notes).` : '';
-        const modelHint = modelFixedCount > 0 ? ` Set Beat Model on ${modelFixedCount} note${modelFixedCount > 1 ? 's' : ''}.` : '';
-        new Notice(`Repaired ${updatedCount} beat note${updatedCount > 1 ? 's' : ''} (Act, Beat Model).${modelHint}${duplicateHint}`);
+        const duplicateHint = duplicates.length > 0 ? ` ${t('ui.beatPropertiesSection.duplicateTitlesSkipped', { titles: tCount('duplicateTitle', duplicates.length) })}` : '';
+        const modelHint = modelFixedCount > 0 ? ` ${t('ui.beatPropertiesSection.setModelOnNotes', { notes: tCount('note', modelFixedCount) })}` : '';
+        new Notice(`${t('ui.beatPropertiesSection.repairedNotice', { notes: tCount('beatNote', updatedCount) })}${modelHint}${duplicateHint}`);
     }
 
     async function createBeatTemplates(): Promise<void> {
@@ -3866,13 +3883,13 @@ export function renderBeatPropertiesSection(params: {
         if (!storyStructure && activeTab) {
             storyStructure = buildPlotSystemFromLoadedTab(activeTab);
             if (!storyStructure) {
-                new Notice('No custom beats defined. Add beats in the list above.');
+                new Notice(t('ui.beatPropertiesSection.noCustomBeatsNotice'));
                 return;
             }
         }
 
         if (!storyStructure) {
-            new Notice(`Unknown story structure: ${storyStructureName}`);
+            new Notice(t('ui.beatPropertiesSection.unknownStructureNotice', { name: storyStructureName }));
             return;
         }
 
@@ -3903,12 +3920,12 @@ export function renderBeatPropertiesSection(params: {
                 { actSceneNumbers: actSceneNumbers.size > 0 ? actSceneNumbers : undefined, beatTemplate }
             );
             if (errors.length > 0) {
-                new Notice(`Created ${created} notes. ${skipped} skipped. ${errors.length} errors. Check console.`);
+                new Notice(t('ui.beatPropertiesSection.createdWithErrorsNotice', { created, skipped, errors: errors.length }));
                 console.error('[Beat Templates] Errors:', errors);
             } else if (created === 0 && skipped > 0) {
-                new Notice(`All ${skipped} Beat notes already exist. No new notes created.`);
+                new Notice(t('ui.beatPropertiesSection.allExistNotice', { count: skipped }));
             } else {
-                new Notice(`✓ Successfully created ${created} Beat set notes!`);
+                new Notice(t('ui.beatPropertiesSection.createdNotice', { count: created }));
             }
             invalidateBeatStructuralStatus();
             // Every new beat file must be in the metadata cache before the row state is read,
@@ -3921,7 +3938,7 @@ export function renderBeatPropertiesSection(params: {
             renderBeatSystemTabs();
         } catch (error) {
             console.error('[Beat Templates] Failed:', error);
-            new Notice(`Failed to create story beat sets: ${error instanceof Error ? error.message : String(error)}`);
+            new Notice(t('ui.beatPropertiesSection.createFailedNotice', { error: error instanceof Error ? error.message : String(error) }));
         }
     }
 }

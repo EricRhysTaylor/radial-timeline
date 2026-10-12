@@ -5,6 +5,7 @@ import type { InquiryStaleDiagnosis } from '../state';
 import { openOrRevealFile, openOrRevealFileAtSubpath, openOrRevealFileByPath } from '../../utils/fileUtils';
 import { getEmbeddedAssetDataUri } from '../../utils/embeddedAssets';
 import { escapeRegExp } from '../../utils/regex';
+import { t, tCount } from '../../i18n';
 
 type InquiryBriefingModalOptions = {
     brief: InquiryBriefModel;
@@ -95,12 +96,12 @@ export class InquiryBriefingModal extends Modal {
 
         const brandText = brand.createDiv({ cls: 'ert-briefing-brand-text' });
         brandText.createDiv({ cls: 'ert-briefing-brand-name', text: 'Radial Timeline' });
-        brandText.createDiv({ cls: 'ert-briefing-brand-subline', text: 'Inquiry Briefing' });
+        brandText.createDiv({ cls: 'ert-briefing-brand-subline', text: t('ui.inquiryBriefingModal.brandSubline') });
 
         const actions = header.createDiv({ cls: 'ert-briefing-actions' });
         const pdfAction = actions.createEl('button', {
             cls: 'ert-briefing-action',
-            text: 'Save PDF'
+            text: t('ui.inquiryBriefingModal.savePdf')
         });
         pdfAction.addEventListener('click', () => {
             this.printBriefing();
@@ -109,7 +110,7 @@ export class InquiryBriefingModal extends Modal {
         if (briefFile) {
             const noteAction = actions.createEl('button', {
                 cls: 'ert-briefing-action',
-                text: 'Open Markdown'
+                text: t('ui.inquiryBriefingModal.openMarkdown')
             });
             noteAction.addEventListener('click', () => {
                 void this.openFileAndClose(briefFile);
@@ -119,31 +120,31 @@ export class InquiryBriefingModal extends Modal {
 
     private renderHero(container: HTMLElement): void {
         const hero = container.createEl('section', { cls: 'ert-briefing-hero' });
-        hero.createDiv({ cls: 'ert-briefing-kicker', text: 'Briefing' });
+        hero.createDiv({ cls: 'ert-briefing-kicker', text: t('ui.inquiryBriefingModal.kicker') });
         const context = this.brief.questionTitle?.trim();
         if (context && context.toLowerCase() !== 'briefing') {
             hero.createDiv({ cls: 'ert-briefing-context', text: context });
         }
         hero.createEl('h1', {
             cls: 'ert-briefing-title',
-            text: this.brief.questionText?.trim() || 'Inquiry question unavailable.'
+            text: this.brief.questionText?.trim() || t('ui.inquiryBriefingModal.questionUnavailable')
         });
 
         const meta = hero.createDiv({ cls: 'ert-briefing-meta' });
         const primaryMeta = [
             this.formatGeneratedAt(),
-            this.brief.scopeIndicator ? `Scope ${this.brief.scopeIndicator}` : '',
+            this.brief.scopeIndicator ? t('ui.inquiryBriefingModal.scopeIndicator', { scope: this.brief.scopeIndicator }) : '',
         ].filter(Boolean);
         if (primaryMeta.length) {
             const primaryLine = meta.createDiv({ cls: 'ert-briefing-meta-line', text: primaryMeta.join(' · ') });
             if (this.isCorpusStale) {
                 primaryLine.appendText(' · ');
                 const labelText = this.staleDiagnosis
-                    ? `STALE — ${this.staleDiagnosis.shortLabel.toUpperCase()}`
-                    : 'STALE';
+                    ? t('ui.inquiryBriefingModal.staleBadgeWithLabel', { label: this.staleDiagnosis.shortLabel.toUpperCase() })
+                    : t('ui.inquiryBriefingModal.staleBadge');
                 const tooltip = this.staleDiagnosis?.tooltipLines.length
-                    ? `Corpus has changed since this briefing was generated:\n${this.staleDiagnosis.tooltipLines.join('\n')}\nRe-run to refresh.`
-                    : 'Corpus has changed since this briefing was generated. Re-run to refresh.';
+                    ? t('ui.inquiryBriefingModal.staleTooltipWithLines', { lines: this.staleDiagnosis.tooltipLines.join('\n') })
+                    : t('ui.inquiryBriefingModal.staleTooltip');
                 primaryLine.createSpan({
                     cls: 'ert-briefing-stale-badge',
                     text: labelText,
@@ -161,17 +162,17 @@ export class InquiryBriefingModal extends Modal {
     }
 
     private renderSummary(container: HTMLElement): void {
-        const section = this.createSection(container, 'Summary');
+        const section = this.createSection(container, t('ui.inquiryBriefingModal.summarySection'));
         const summaryStack = section.createDiv({ cls: 'ert-briefing-summary-stack' });
 
         const summaryEntries = this.brief.mode === 'depth'
             ? [
-                { label: 'Depth', text: this.brief.depthSummary || 'No depth summary available.' },
-                { label: 'Flow', text: this.brief.flowSummary || 'No flow summary available.' }
+                { label: t('ui.inquiryBriefingModal.depthLabel'), text: this.brief.depthSummary || t('ui.inquiryBriefingModal.noDepthSummary') },
+                { label: t('ui.inquiryBriefingModal.flowLabel'), text: this.brief.flowSummary || t('ui.inquiryBriefingModal.noFlowSummary') }
             ]
             : [
-                { label: 'Flow', text: this.brief.flowSummary || 'No flow summary available.' },
-                { label: 'Depth', text: this.brief.depthSummary || 'No depth summary available.' }
+                { label: t('ui.inquiryBriefingModal.flowLabel'), text: this.brief.flowSummary || t('ui.inquiryBriefingModal.noFlowSummary') },
+                { label: t('ui.inquiryBriefingModal.depthLabel'), text: this.brief.depthSummary || t('ui.inquiryBriefingModal.noDepthSummary') }
             ];
 
         summaryEntries
@@ -194,18 +195,18 @@ export class InquiryBriefingModal extends Modal {
         const targetFindings = this.brief.findings.filter(finding => finding.role === 'target');
         const contextFindings = this.brief.findings.filter(finding => finding.role !== 'target');
 
-        this.renderFindingGroup(section, 'Primary Findings', targetFindings);
-        this.renderFindingGroup(section, 'Context Findings', contextFindings);
+        this.renderFindingGroup(section, t('inquiry.findings.targetSection'), targetFindings);
+        this.renderFindingGroup(section, t('inquiry.findings.contextSection'), contextFindings);
     }
 
     private renderSources(container: HTMLElement): void {
         if (!this.brief.sources.length) return;
-        const section = this.createSection(container, 'Sources');
+        const section = this.createSection(container, t('ui.inquiryBriefingModal.sourcesSection'));
         const list = section.createDiv({ cls: 'ert-briefing-stack' });
         this.brief.sources.forEach(source => {
             const item = list.createEl('article', { cls: 'ert-briefing-block ert-briefing-source' });
             const titleRow = item.createDiv({ cls: 'ert-briefing-source-header' });
-            const title = source.title?.trim() || 'Untitled source';
+            const title = source.title?.trim() || t('ui.inquiryBriefingModal.untitledSource');
 
             if (source.path) {
                 const link = titleRow.createEl('a', {
@@ -234,7 +235,7 @@ export class InquiryBriefingModal extends Modal {
             const metaParts = [
                 source.classLabel?.trim() || '',
                 Number.isFinite(source.citationCount) && (source.citationCount ?? 0) > 0
-                    ? `${source.citationCount} citation${source.citationCount === 1 ? '' : 's'}`
+                    ? tCount('citation', source.citationCount ?? 0)
                     : ''
             ].filter(Boolean);
             if (metaParts.length) {
@@ -248,7 +249,7 @@ export class InquiryBriefingModal extends Modal {
 
     private renderSceneNotes(container: HTMLElement): void {
         if (!this.brief.sceneNotes.length) return;
-        const section = this.createSection(container, 'Scene Notes');
+        const section = this.createSection(container, t('ui.inquiryBriefingModal.sceneNotesSection'));
         const notes = section.createDiv({ cls: 'ert-briefing-stack' });
 
         this.brief.sceneNotes.forEach(note => {
@@ -265,8 +266,8 @@ export class InquiryBriefingModal extends Modal {
                     text: '↗',
                     attr: {
                         href: '#',
-                        'aria-label': `Open ${note.header} in Markdown brief`,
-                        title: 'Open in Markdown brief'
+                        'aria-label': t('ui.inquiryBriefingModal.openNoteInBriefAria', { header: note.header }),
+                        title: t('ui.inquiryBriefingModal.openInBriefTitle')
                     }
                 });
                 anchorAction.addEventListener('click', (event) => {
@@ -293,7 +294,7 @@ export class InquiryBriefingModal extends Modal {
 
     private renderPendingActions(container: HTMLElement): void {
         if (!this.brief.pendingActions.length) return;
-        const section = this.createSection(container, 'Action Items');
+        const section = this.createSection(container, t('ui.inquiryBriefingModal.actionItemsSection'));
         const list = section.createEl('ol', { cls: 'ert-briefing-action-list' });
         this.brief.pendingActions.forEach(action => {
             const item = list.createEl('li', { cls: 'ert-briefing-action-item' });
@@ -306,7 +307,7 @@ export class InquiryBriefingModal extends Modal {
 
     private renderRawResponse(container: HTMLElement): void {
         if (!this.brief.rawResponse?.trim()) return;
-        const section = this.createSection(container, 'Provider Response');
+        const section = this.createSection(container, t('ui.inquiryBriefingModal.providerResponseSection'));
         section.createEl('pre', {
             cls: 'ert-briefing-raw',
             text: this.brief.rawResponse.trim()
@@ -354,7 +355,7 @@ export class InquiryBriefingModal extends Modal {
     private formatGeneratedAt(): string {
         const normalized = this.resolveGeneratedAt();
         if (!normalized) return '';
-        return `Generated ${ARTICLE_DATE_FORMAT.format(normalized)}`;
+        return t('ui.inquiryBriefingModal.generatedAt', { date: ARTICLE_DATE_FORMAT.format(normalized) });
     }
 
     private resolveGeneratedAt(): Date | null {
@@ -481,7 +482,7 @@ export class InquiryBriefingModal extends Modal {
                 event.preventDefault();
                 this.scrollToSceneReference(anchorId);
             });
-            el.setAttribute('aria-label', `Jump to ${label}`);
+            el.setAttribute('aria-label', t('ui.inquiryBriefingModal.jumpToAria', { label }));
         }
         const numberEl = doc.win.createSpan();
         numberEl.className = 'ert-briefing-scene-ref-num';

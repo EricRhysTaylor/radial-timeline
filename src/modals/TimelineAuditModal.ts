@@ -275,7 +275,7 @@ export class TimelineAuditModal extends Modal {
             });
         } catch (error) {
             if (!this.abortController.signal.aborted) {
-                new Notice(`Timeline audit failed: ${error instanceof Error ? error.message : String(error)}`);
+                new Notice(t('ui.timelineAuditModal.auditFailedNotice', { message: error instanceof Error ? error.message : String(error) }));
             }
         } finally {
             this.running = false;
@@ -789,17 +789,17 @@ export class TimelineAuditModal extends Modal {
 
         const strip = overviewCard.createDiv({ cls: 'ert-timeline-audit-overview-strip' });
         for (const entry of buildTimelineOverviewEntries(findings)) {
-            const sceneLabel = `Scene ${entry.finding.manuscriptOrderIndex + 1}`;
+            const sceneNumber = entry.finding.manuscriptOrderIndex + 1;
             const sceneTitle = getAuditDisplayTitle(entry.finding.title);
             const block = strip.createEl('button', {
                 cls: `ert-timeline-audit-overview-block ert-timeline-audit-overview-block--${entry.severity}`,
-                text: `S${entry.finding.manuscriptOrderIndex + 1}`
+                text: t('ui.timelineAuditModal.sceneShortLabel', { number: sceneNumber })
             });
             if (entry.finding.path === this.expandedFindingPath) {
                 block.addClass('ert-is-active');
             }
             block.type = 'button';
-            block.setAttr('aria-label', `${sceneLabel}, ${sceneTitle}. ${entry.issueSummary}`);
+            block.setAttr('aria-label', t('ui.timelineAuditModal.overviewBlockAria', { number: sceneNumber, title: sceneTitle, summary: entry.issueSummary }));
             block.addEventListener('click', () => {
                 this.expandFinding(entry.finding.path, true);
             });
@@ -1115,7 +1115,7 @@ export class TimelineAuditModal extends Modal {
 
     private describeCurrentWhen(finding: TimelineAuditFinding): string {
         if (finding.whenParseIssue === 'missing_when') return t('timelineAuditModal.detail.whenMissing');
-        if (finding.whenParseIssue === 'invalid_when') return t('timelineAuditModal.detail.whenInvalid', { raw: finding.currentWhenRaw ?? 'unknown' });
+        if (finding.whenParseIssue === 'invalid_when') return t('timelineAuditModal.detail.whenInvalid', { raw: finding.currentWhenRaw ?? t('ui.timelineAuditModal.unknownWhen') });
         return t('timelineAuditModal.detail.whenCurrent', { when: finding.currentWhenRaw ?? this.formatWhen(finding.currentWhen) });
     }
 
@@ -1195,7 +1195,7 @@ export class TimelineAuditModal extends Modal {
             this.clearActiveAiScope();
             this.close();
         } catch (error) {
-            new Notice(`Failed to apply timeline audit decisions: ${error instanceof Error ? error.message : String(error)}`);
+            new Notice(t('ui.timelineAuditModal.applyFailedNotice', { message: error instanceof Error ? error.message : String(error) }));
         }
     }
 }

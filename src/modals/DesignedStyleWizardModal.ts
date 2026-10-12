@@ -49,6 +49,7 @@ import { clearFontAvailabilityCache, getFontDiagnosticForFontKey, getPandocFolde
 import { assertNever } from '../utils/assertNever';
 import { LatexPreviewModal } from './LatexPreviewModal';
 import { slugifyToFileStem } from '../utils/slug';
+import { t } from '../i18n';
 
 type WizardCategory =
     | 'page'
@@ -63,16 +64,19 @@ type WizardCategory =
 // Icons chosen for legibility at 16px and so each one reads distinctly from
 // its neighbours. `panel-top` was visually ambiguous (rendered as a thin top
 // bar) — `heading-1` makes Headers immediately recognisable, etc.
-const WIZARD_CATEGORIES: ReadonlyArray<{ value: WizardCategory; label: string; icon: string }> = [
-    { value: 'page',     label: 'Page',     icon: 'file-text' },
-    { value: 'body',     label: 'Body',     icon: 'align-left' },
-    { value: 'headers',  label: 'Headers',  icon: 'heading-1' },
-    { value: 'folio',    label: 'Folio',    icon: 'hash' },
-    { value: 'parts',    label: 'Parts',    icon: 'bookmark' },
-    { value: 'chapters', label: 'Chapters', icon: 'book-open' },
-    { value: 'scenes',   label: 'Scenes',   icon: 'clapperboard' },
-    { value: 'epigraph', label: 'Epigraph', icon: 'quote' },
-];
+// Built on demand so labels follow the current language.
+function getWizardCategories(): ReadonlyArray<{ value: WizardCategory; label: string; icon: string }> {
+    return [
+        { value: 'page',     label: t('ui.designedStyleWizardModal.categoryPage'),     icon: 'file-text' },
+        { value: 'body',     label: t('ui.designedStyleWizardModal.categoryBody'),     icon: 'align-left' },
+        { value: 'headers',  label: t('ui.designedStyleWizardModal.categoryHeaders'),  icon: 'heading-1' },
+        { value: 'folio',    label: t('ui.designedStyleWizardModal.categoryFolio'),    icon: 'hash' },
+        { value: 'parts',    label: t('ui.designedStyleWizardModal.categoryParts'),    icon: 'bookmark' },
+        { value: 'chapters', label: t('ui.designedStyleWizardModal.categoryChapters'), icon: 'book-open' },
+        { value: 'scenes',   label: t('ui.designedStyleWizardModal.categoryScenes'),   icon: 'clapperboard' },
+        { value: 'epigraph', label: t('ui.designedStyleWizardModal.categoryEpigraph'), icon: 'quote' },
+    ];
+}
 
 // ──────────────────────────────────────────────────────────────────────────
 // Visual-preset state model (Wizard UX v1.2)
@@ -205,12 +209,14 @@ const ARCHETYPE_TO_BUNDLED: Record<DesignArchetype, BundledFictionId> = {
     'structured':    'bundled-fiction-modern-classic',
 };
 
-const ARCHETYPE_INFO: Record<DesignArchetype, { name: string; tagline: string }> = {
-    'submission':    { name: 'Basic',        tagline: 'Plain reading draft with scene opener pages.' },
-    'reading-draft': { name: 'Standard',     tagline: 'Clean, modern reading draft with chapter breaks.' },
-    'literary':      { name: 'Professional', tagline: 'Refined typesetting with letter-spaced running heads.' },
-    'structured':    { name: 'Signature',    tagline: 'Roman parts, numbered chapters, section breaks.' },
-};
+function getArchetypeInfo(): Record<DesignArchetype, { name: string; tagline: string }> {
+    return {
+        'submission':    { name: t('ui.designedStyleWizardModal.archetypeBasicName'),        tagline: t('ui.designedStyleWizardModal.archetypeBasicTagline') },
+        'reading-draft': { name: t('ui.designedStyleWizardModal.archetypeStandardName'),     tagline: t('ui.designedStyleWizardModal.archetypeStandardTagline') },
+        'literary':      { name: t('ui.designedStyleWizardModal.archetypeProfessionalName'), tagline: t('ui.designedStyleWizardModal.archetypeProfessionalTagline') },
+        'structured':    { name: t('ui.designedStyleWizardModal.archetypeSignatureName'),    tagline: t('ui.designedStyleWizardModal.archetypeSignatureTagline') },
+    };
+}
 
 /**
  * Per-template "what this style is for" copy. Shown in the wizard subtitle
@@ -219,12 +225,14 @@ const ARCHETYPE_INFO: Record<DesignArchetype, { name: string; tagline: string }>
  * across both the from-scratch flow (user picks an archetype) and the
  * bundled-fork flow (the bundled spec carries the archetype).
  */
-const TEMPLATE_BLURB_BY_ARCHETYPE: Record<DesignArchetype, string> = {
-    'submission':    'A plain reading draft on 6×9 pages, with sans-serif type, 1.5 line spacing, and separate scene openers. Customize its geometry and typography for your reader.',
-    'reading-draft': 'A polished reading draft for beta readers and proofers. Clean enough to feel like a finished book without committing to a final aesthetic. Contemporary serif body type, comfortable spacing, and restrained structure that stays familiar to modern commercial fiction.',
-    'literary':      'Refined and publication-minded — the feel of a professionally typeset trade novel. Running heads, structured chapter presentation, and stronger visual rhythm create a more immersive reading experience while remaining restrained and highly readable.',
-    'structured':    'Architectural and literary. Built for ambitious fiction that benefits from deliberate pacing, structural breathing room, act openers, epigraphs, and distinctive scene presentation. Evokes the considered craftsmanship of boutique literary editions and mid-century print design traditions.',
-};
+function getTemplateBlurbByArchetype(): Record<DesignArchetype, string> {
+    return {
+        'submission':    t('ui.designedStyleWizardModal.blurbSubmission'),
+        'reading-draft': t('ui.designedStyleWizardModal.blurbReadingDraft'),
+        'literary':      t('ui.designedStyleWizardModal.blurbLiterary'),
+        'structured':    t('ui.designedStyleWizardModal.blurbStructured'),
+    };
+}
 
 /**
  * Per-category "Publishing note" — short editorial framing shown at the top
@@ -232,32 +240,37 @@ const TEMPLATE_BLURB_BY_ARCHETYPE: Record<DesignArchetype, string> = {
  * below so authors understand the publishing trade-offs they're tuning, not
  * just the mechanics.
  */
-const CATEGORY_PUBLISHING_NOTES: Record<WizardCategory, string> = {
-    'page':     'Page dimensions and margins shape the reading experience more than most authors realize. Tighter layouts increase density and pace, while wider margins create visual breathing room and a more literary feel. Most trade fiction balances readability with efficient page count.',
-    'body':     'Body typography determines long-form reading comfort. Serif fonts remain dominant in printed fiction because they guide the eye naturally across dense pages of text. Line spacing subtly affects pacing: tighter layouts feel faster and more urgent, while open spacing slows the reader and creates reflection.',
-    'headers':  'Running headers help readers maintain orientation in longer works and are common in finished print editions. Draft manuscripts often omit them entirely, while polished trade and literary layouts frequently use restrained headers to reinforce structure without distracting from the prose.',
-    'folio':    'Page numbers quietly anchor the reader inside the manuscript. Traditional drafts often place folios at the bottom center, while published fiction commonly integrates them into the running header system for a more refined presentation.',
-    'parts':    'Part pages divide major narrative movements and create structural breathing room between acts or phases of the story. Literary and large-scale commercial fiction often use dedicated Part openers, Roman numerals, or epigraphs to reinforce thematic transitions and long-form momentum.',
-    'chapters': 'Chapter presentation shapes narrative rhythm. Minimal chapter pages keep pacing invisible and fast, while larger openers create pause, emphasis, and anticipation. Shared chapter titles and opener spacing can subtly reinforce tone and genre expectations.',
-    'scenes':   'Scene breaks control momentum at the micro level. Invisible transitions create speed and continuity, while dedicated scene openers give emotional or structural weight to each sequence. Numbering, titles, and ornamental rules help readers orient themselves inside complex narratives.',
-    'epigraph': 'Epigraphs frame the emotional or thematic lens of a section before the prose begins. Some novels use them sparingly for emphasis, while literary and structural fiction may use recurring epigraphs to create resonance across acts, chapters, or character arcs.',
-};
+function getCategoryPublishingNotes(): Record<WizardCategory, string> {
+    return {
+        'page':     t('ui.designedStyleWizardModal.notePage'),
+        'body':     t('ui.designedStyleWizardModal.noteBody'),
+        'headers':  t('ui.designedStyleWizardModal.noteHeaders'),
+        'folio':    t('ui.designedStyleWizardModal.noteFolio'),
+        'parts':    t('ui.designedStyleWizardModal.noteParts'),
+        'chapters': t('ui.designedStyleWizardModal.noteChapters'),
+        'scenes':   t('ui.designedStyleWizardModal.noteScenes'),
+        'epigraph': t('ui.designedStyleWizardModal.noteEpigraph'),
+    };
+}
 
 // Labels name the font the option actually produces. "System serif" and
 // "System sans" were opaque — and in the serif case wrong, since that option
 // resolves to TeX Gyre Pagella from the TeX distribution, not an OS font.
 // The `familyHint` column was removed: nothing ever read it, and its values
 // ('Times', 'Helvetica') had drifted from what the resolver emits.
-const FONT_OPTIONS: Array<{ value: DesignedStyleSpec['body']['font']; label: string }> = [
-    { value: 'sorts-mill-goudy', label: 'Sorts Mill Goudy' },
-    { value: 'latin-modern',     label: 'Latin Modern' },
-    { value: 'source-serif',     label: 'Source Serif 4' },
-    { value: 'eb-garamond',      label: 'EB Garamond' },
-    { value: 'crimson',          label: 'Crimson Text' },
-    { value: 'system-serif',     label: 'TeX Gyre Pagella' },
-    { value: 'system-sans',      label: 'Arial' },
-    { value: 'custom',           label: 'Custom (system font)' },
-];
+// Font names are proper names and stay as-is; only the custom option is translated.
+function getFontOptions(): Array<{ value: DesignedStyleSpec['body']['font']; label: string }> {
+    return [
+        { value: 'sorts-mill-goudy', label: 'Sorts Mill Goudy' },
+        { value: 'latin-modern',     label: 'Latin Modern' },
+        { value: 'source-serif',     label: 'Source Serif 4' },
+        { value: 'eb-garamond',      label: 'EB Garamond' },
+        { value: 'crimson',          label: 'Crimson Text' },
+        { value: 'system-serif',     label: 'TeX Gyre Pagella' },
+        { value: 'system-sans',      label: 'Arial' },
+        { value: 'custom',           label: t('ui.designedStyleWizardModal.fontCustomSystem') },
+    ];
+}
 
 // ──────────────────────────────────────────────────────────────────────────
 // Pure helpers (exported for unit testing)
@@ -304,7 +317,7 @@ export function validateDesignedStyleSpec(
     const warnings: string[] = [];
 
     if (!name.trim()) {
-        errors.push('Style name is required.');
+        errors.push(t('ui.designedStyleWizardModal.errStyleNameRequired'));
     }
 
     // Resolve paper dimensions for cross-checks.
@@ -317,53 +330,52 @@ export function validateDesignedStyleSpec(
     } else {
         paperWidthIn = spec.paperSize.widthIn;
         paperHeightIn = spec.paperSize.heightIn;
-        if (paperWidthIn <= 0) errors.push('Custom paper width must be greater than 0.');
-        if (paperHeightIn <= 0) errors.push('Custom paper height must be greater than 0.');
+        if (paperWidthIn <= 0) errors.push(t('ui.designedStyleWizardModal.errCustomWidthPositive'));
+        if (paperHeightIn <= 0) errors.push(t('ui.designedStyleWizardModal.errCustomHeightPositive'));
         if (paperWidthIn > 0 && (paperWidthIn < 4 || paperWidthIn > 12)) {
-            warnings.push(`Custom paper width (${paperWidthIn} in) is outside the common print range (4–12 in).`);
+            warnings.push(t('ui.designedStyleWizardModal.warnCustomWidthRange', { width: paperWidthIn }));
         }
         if (paperHeightIn > 0 && (paperHeightIn < 6 || paperHeightIn > 14)) {
-            warnings.push(`Custom paper height (${paperHeightIn} in) is outside the common print range (6–14 in).`);
+            warnings.push(t('ui.designedStyleWizardModal.warnCustomHeightRange', { height: paperHeightIn }));
         }
         // Aspect ratio sanity — most novels and trade books are taller than
         // they are wide, with H/W between ~1.3 and ~1.7. Flag extreme cases.
         if (paperWidthIn > 0 && paperHeightIn > 0) {
             const ratio = paperHeightIn / paperWidthIn;
             if (ratio < 1.0) {
-                warnings.push('Custom paper is wider than tall (landscape) — unusual for prose books.');
+                warnings.push(t('ui.designedStyleWizardModal.warnLandscape'));
             } else if (ratio > 2.0) {
-                warnings.push('Custom paper is more than twice as tall as wide — unusual proportion.');
+                warnings.push(t('ui.designedStyleWizardModal.warnTooTall'));
             }
         }
     }
 
     const m = spec.margins;
     if (paperHeightIn > 0 && (m.topIn + m.bottomIn) >= paperHeightIn) {
-        errors.push('Top + bottom margins leave no room for body text.');
+        errors.push(t('ui.designedStyleWizardModal.errTopBottomMargins'));
     }
     if (paperWidthIn > 0 && (m.leftIn + m.rightIn) >= paperWidthIn) {
-        errors.push('Left + right margins leave no room for body text.');
+        errors.push(t('ui.designedStyleWizardModal.errLeftRightMargins'));
     }
     // Mirrored books: convention is that the inner (binding) margin is wider
     // than the outer to compensate for the spine. When mirrored is on, leftIn
     // is the inner edge — flagging when it's narrower than rightIn.
     if (m.mirrored && m.leftIn < m.rightIn) {
         warnings.push(
-            `Inner margin (${m.leftIn} in) is narrower than outer (${m.rightIn} in). ` +
-            `Print convention is the opposite — the binding edge usually has more space.`,
+            t('ui.designedStyleWizardModal.warnInnerNarrower', { inner: m.leftIn, outer: m.rightIn }),
         );
     }
 
     if (spec.body.sizePt < 6 || spec.body.sizePt > 24) {
-        errors.push(`Body size ${spec.body.sizePt}pt is outside the supported range (6–24pt).`);
+        errors.push(t('ui.designedStyleWizardModal.errBodySizeRange', { size: spec.body.sizePt }));
     }
 
     if (spec.folio.position === 'header' && spec.runningHeader.mode === 'none') {
-        warnings.push('Folio is in headers but headers are off — page numbers will not render.');
+        warnings.push(t('ui.designedStyleWizardModal.warnFolioHeadersOff'));
     }
 
     if (spec.parts.mode === 'off' && spec.parts.epigraph) {
-        warnings.push('Part epigraphs are enabled but parts are off — no epigraphs will render.');
+        warnings.push(t('ui.designedStyleWizardModal.warnPartEpigraphsOff'));
     }
 
     if (
@@ -371,7 +383,7 @@ export function validateDesignedStyleSpec(
         && spec.scene.openerHeadingModes.length > 0
         && spec.scene.opener !== 'dedicated-page'
     ) {
-        warnings.push('Multiple scene heading modes only apply to dedicated-page openers.');
+        warnings.push(t('ui.designedStyleWizardModal.warnMultiHeadingModes'));
     }
 
     // Header / Folio conflict detection. The page number can be emitted
@@ -396,16 +408,14 @@ export function validateDesignedStyleSpec(
     const cornerWithPage = cornerKeys.find(k => spec.runningHeader[k] === 'page');
     const namedModeAlreadyEmitsPage = spec.runningHeader.mode === 'split-author-page-title-page';
     if (cornerWithPage && (spec.folio.position === 'bottom-center' || namedModeAlreadyEmitsPage)) {
-        const otherSource = namedModeAlreadyEmitsPage
-            ? 'the active header preset already emits the page number'
-            : 'the folio is shown at the bottom of the page';
-        warnings.push(
-            `Header corner ${cornerWithPage} uses "Page #" but ${otherSource} — the page number will appear twice. Select a non-page field for that corner, or change the conflicting setting.`,
+        warnings.push(namedModeAlreadyEmitsPage
+            ? t('ui.designedStyleWizardModal.warnPageTwicePreset', { corner: cornerWithPage })
+            : t('ui.designedStyleWizardModal.warnPageTwiceFolio', { corner: cornerWithPage }),
         );
     }
 
     if (options.existingDesignedNames && options.existingDesignedNames.has(name.trim().toLowerCase())) {
-        warnings.push('A style with this name already exists; the saved name will be suffixed (e.g. "-2").');
+        warnings.push(t('ui.designedStyleWizardModal.warnNameExists'));
     }
 
     // Strict font policy (Phase 1): when the body font isn't installed (or the
@@ -415,7 +425,7 @@ export function validateDesignedStyleSpec(
     try {
         const fontDiag = getFontDiagnosticForFontKey(spec.body.font, undefined, spec.body.customFontName);
         if (fontDiag.state !== 'ok') {
-            warnings.push(`${fontDiag.primaryFontName} is not installed. Click Install next to the Font row, or select a different font — the export will fail until this is resolved.`);
+            warnings.push(t('ui.designedStyleWizardModal.warnFontNotInstalled', { font: fontDiag.primaryFontName }));
         }
     } catch {
         // Probing the font catalog can fail in headless / sandboxed
@@ -513,7 +523,7 @@ export class DesignedStyleWizardModal extends Modal {
         });
         const proPillIcon = proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
         setIcon(proPillIcon, 'signature');
-        proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'PRO' });
+        proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.designedStyleWizardModal.proBadge') });
         // Two modes:
         //   • Updating an existing designed-origin layout (layoutId set) → EDIT
         //   • Forking from a bundled spec OR designing from an archetype → DESIGN
@@ -547,7 +557,7 @@ export class DesignedStyleWizardModal extends Modal {
         const footerRight = footer.createDiv({ cls: 'ert-style-wizard__actions-right' });
 
         new ButtonComponent(footerLeft)
-            .setButtonText('View LaTeX')
+            .setButtonText(t('ui.designedStyleWizardModal.viewLatex'))
             .onClick(() => { this.openLatexPreview(); });
 
         // "Update" only when we're modifying an existing designed-origin
@@ -555,11 +565,11 @@ export class DesignedStyleWizardModal extends Modal {
         // creates a new designed layout, so it reads "Save" like archetype mode.
         const isUpdatingExistingForFooter = this.isEditMode && !!this.layoutId;
         this.saveButton = new ButtonComponent(footerRight)
-            .setButtonText(isUpdatingExistingForFooter ? 'Update style' : 'Save style')
+            .setButtonText(isUpdatingExistingForFooter ? t('ui.designedStyleWizardModal.updateStyle') : t('ui.designedStyleWizardModal.saveStyle'))
             .setCta()
             .onClick(() => { void this.handleSave(); });
         new ButtonComponent(footerRight)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => this.close());
 
         // Initial preview render — runs after saveButton is constructed so
@@ -584,11 +594,11 @@ export class DesignedStyleWizardModal extends Modal {
             latex = generateDesignedStyleTex(this.spec);
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
-            new Notice(`Generator error: ${msg}`);
+            new Notice(t('ui.designedStyleWizardModal.generatorError', { message: msg }));
             return;
         }
         const trimmed = this.styleName.trim();
-        const title = trimmed.length > 0 ? trimmed : 'Untitled style';
+        const title = trimmed.length > 0 ? trimmed : t('ui.designedStyleWizardModal.untitledStyle');
         new LatexPreviewModal(this.app, { latex, title }).open();
     }
 
@@ -596,10 +606,10 @@ export class DesignedStyleWizardModal extends Modal {
         parent.empty();
 
         const nameRow = parent.createDiv({ cls: 'ert-style-wizard__meta-row' });
-        nameRow.createEl('label', { cls: 'ert-style-wizard__meta-label', text: 'Style name' });
+        nameRow.createEl('label', { cls: 'ert-style-wizard__meta-label', text: t('ui.designedStyleWizardModal.styleNameLabel') });
         const nameInput = new TextComponent(nameRow);
         nameInput.inputEl.addClass('ert-input', 'ert-input--full', 'ert-style-wizard__meta-input');
-        nameInput.setPlaceholder('My custom style');
+        nameInput.setPlaceholder(t('ui.designedStyleWizardModal.styleNamePlaceholder'));
         nameInput.setValue(this.styleName);
         nameInput.onChange((value) => {
             this.styleName = value;
@@ -607,10 +617,10 @@ export class DesignedStyleWizardModal extends Modal {
         });
 
         const descRow = parent.createDiv({ cls: 'ert-style-wizard__meta-row' });
-        descRow.createEl('label', { cls: 'ert-style-wizard__meta-label', text: 'Description (optional)' });
+        descRow.createEl('label', { cls: 'ert-style-wizard__meta-label', text: t('ui.designedStyleWizardModal.descriptionLabel') });
         const descInput = descRow.createEl('textarea', {
             cls: 'ert-input ert-style-wizard__meta-textarea',
-            attr: { rows: '2', placeholder: 'Short description shown on the layout card.' },
+            attr: { rows: '2', placeholder: t('ui.designedStyleWizardModal.descriptionPlaceholder') },
         });
         descInput.value = this.description;
         descInput.addEventListener('input', () => {
@@ -623,15 +633,16 @@ export class DesignedStyleWizardModal extends Modal {
         const overlay = parent.createDiv({ cls: 'ert-style-wizard__archetype' });
         overlay.createDiv({
             cls: 'ert-style-wizard__archetype-title',
-            text: 'Start from an archetype',
+            text: t('ui.designedStyleWizardModal.archetypeTitle'),
         });
         overlay.createDiv({
             cls: 'ert-style-wizard__archetype-subtitle',
-            text: 'Select a starting point — every value is editable afterward.',
+            text: t('ui.designedStyleWizardModal.archetypeSubtitle'),
         });
         const grid = overlay.createDiv({ cls: 'ert-style-wizard__archetype-grid' });
-        (Object.keys(ARCHETYPE_INFO) as DesignArchetype[]).forEach((archetype) => {
-            const info = ARCHETYPE_INFO[archetype];
+        const archetypeInfo = getArchetypeInfo();
+        (Object.keys(archetypeInfo) as DesignArchetype[]).forEach((archetype) => {
+            const info = archetypeInfo[archetype];
             const card = grid.createDiv({ cls: 'ert-style-wizard__archetype-card' });
             card.createDiv({ cls: 'ert-style-wizard__archetype-card-name', text: info.name });
             card.createDiv({ cls: 'ert-style-wizard__archetype-card-tagline', text: info.tagline });
@@ -644,7 +655,7 @@ export class DesignedStyleWizardModal extends Modal {
                 // this newly-chosen archetype's defaults (not the previous one).
                 this.originalSpec = structuredClone(this.spec);
                 if (!this.styleName) {
-                    this.styleName = `${ARCHETYPE_INFO[archetype].name} Custom`;
+                    this.styleName = t('ui.designedStyleWizardModal.defaultStyleName', { name: archetypeInfo[archetype].name });
                 }
                 this.archetypePicked = true;
                 this.refreshFromArchetype();
@@ -697,21 +708,23 @@ export class DesignedStyleWizardModal extends Modal {
         if (!this.wizardModeBadgeLabelEl || !this.wizardTitleEl || !this.wizardSubtitleEl) return;
         const isUpdatingExisting = this.isEditMode && !!this.layoutId;
         const archetype = this.spec.archetype;
-        const archetypeInfo = ARCHETYPE_INFO[archetype];
-        const blurb = TEMPLATE_BLURB_BY_ARCHETYPE[archetype];
+        const archetypeInfo = getArchetypeInfo()[archetype];
+        const blurb = getTemplateBlurbByArchetype()[archetype];
 
-        const badge = isUpdatingExisting ? 'EDIT' : 'DESIGN';
+        const badge = isUpdatingExisting ? t('ui.designedStyleWizardModal.badgeEdit') : t('ui.designedStyleWizardModal.badgeDesign');
         let title: string;
         let subtitle: string;
         if (isUpdatingExisting) {
-            title = 'Edit designed style';
+            title = t('ui.designedStyleWizardModal.editTitle');
             subtitle = blurb;
         } else if (this.archetypePicked) {
-            title = `Customize ${archetypeInfo?.name ?? 'style'}`;
+            title = archetypeInfo
+                ? t('ui.designedStyleWizardModal.customizeTitle', { name: archetypeInfo.name })
+                : t('ui.designedStyleWizardModal.customizeStyleTitle');
             subtitle = blurb;
         } else {
-            title = 'Design your own style';
-            subtitle = 'Configure page, body, headers, folio, parts, chapters, scenes, and epigraph. The preview updates live.';
+            title = t('ui.designedStyleWizardModal.designTitle');
+            subtitle = t('ui.designedStyleWizardModal.designSubtitle');
         }
 
         this.wizardModeBadgeLabelEl.setText(badge);
@@ -753,7 +766,7 @@ export class DesignedStyleWizardModal extends Modal {
         // The space-between layout is enforced by .category-row CSS.
         parent.createEl('label', {
             cls: 'ert-style-wizard__field-label',
-            text: 'Category',
+            text: t('ui.designedStyleWizardModal.categoryLabel'),
         });
         const right = parent.createDiv({ cls: 'ert-style-wizard__category-control' });
 
@@ -761,13 +774,14 @@ export class DesignedStyleWizardModal extends Modal {
         // doesn't affect the dropdown's internal width.
         const iconWrap = right.createSpan({ cls: 'ert-style-wizard__category-icon' });
         this.categoryIconEl = iconWrap;
-        const activeMeta = WIZARD_CATEGORIES.find(c => c.value === this.activeCategory);
+        const categories = getWizardCategories();
+        const activeMeta = categories.find(c => c.value === this.activeCategory);
         try { setIcon(iconWrap, activeMeta?.icon ?? 'square'); } catch { /* test env */ }
 
         const select = right.createEl('select', {
             cls: 'ert-input ert-input--sm',
         });
-        WIZARD_CATEGORIES.forEach(({ value, label }) => {
+        categories.forEach(({ value, label }) => {
             const opt = select.createEl('option', { value, text: label });
             if (value === this.activeCategory) opt.selected = true;
         });
@@ -788,7 +802,7 @@ export class DesignedStyleWizardModal extends Modal {
         const iconEl = this.categoryIconEl;
         if (iconEl) {
             iconEl.empty();
-            const meta = WIZARD_CATEGORIES.find(c => c.value === category);
+            const meta = getWizardCategories().find(c => c.value === category);
             if (!meta) throw new Error(`Unknown wizard category: ${category}`);
             setIcon(iconEl, meta.icon);
         }
@@ -829,12 +843,12 @@ export class DesignedStyleWizardModal extends Modal {
      * spec field controls mechanically.
      */
     private renderPublishingNote(parent: HTMLElement, category: WizardCategory): void {
-        const note = CATEGORY_PUBLISHING_NOTES[category];
+        const note = getCategoryPublishingNotes()[category];
         if (!note) return;
         const wrap = parent.createDiv({ cls: 'ert-style-wizard__publishing-note' });
         wrap.createDiv({
             cls: 'ert-style-wizard__publishing-note-label',
-            text: 'Publishing note',
+            text: t('ui.designedStyleWizardModal.publishingNoteLabel'),
         });
         wrap.createDiv({
             cls: 'ert-style-wizard__publishing-note-body',
@@ -866,23 +880,24 @@ export class DesignedStyleWizardModal extends Modal {
             cls: `${ERT_CLASSES.ICON_BTN} ert-style-wizard__reset-btn`,
         });
         resetBtn.type = 'button';
-        resetBtn.setAttribute('aria-label', 'Reset to template');
-        resetBtn.setAttribute('title', 'Restore this category to the template\'s starting values. Other categories are unchanged.');
+        resetBtn.setAttribute('aria-label', t('ui.designedStyleWizardModal.resetAria'));
+        resetBtn.setAttribute('title', t('ui.designedStyleWizardModal.resetTitle'));
         try { setIcon(resetBtn, 'rotate-ccw'); } catch { /* test env */ }
         resetBtn.addEventListener('click', () => this.resetActiveCategory());
 
-        const activeIndex = WIZARD_CATEGORIES.findIndex(c => c.value === this.activeCategory);
-        const prevCategory = activeIndex > 0 ? WIZARD_CATEGORIES[activeIndex - 1] : null;
-        const nextCategory = activeIndex >= 0 && activeIndex < WIZARD_CATEGORIES.length - 1
-            ? WIZARD_CATEGORIES[activeIndex + 1]
+        const categories = getWizardCategories();
+        const activeIndex = categories.findIndex(c => c.value === this.activeCategory);
+        const prevCategory = activeIndex > 0 ? categories[activeIndex - 1] : null;
+        const nextCategory = activeIndex >= 0 && activeIndex < categories.length - 1
+            ? categories[activeIndex + 1]
             : null;
 
         const prevBtn = nav.createEl('button', {
             cls: `${ERT_CLASSES.ICON_BTN} ert-style-wizard__category-nav-btn`,
         });
         prevBtn.type = 'button';
-        prevBtn.setAttribute('aria-label', 'Previous category');
-        prevBtn.setAttribute('title', prevCategory ? `Previous category — ${prevCategory.label}` : 'Already at the first category');
+        prevBtn.setAttribute('aria-label', t('ui.designedStyleWizardModal.prevCategoryAria'));
+        prevBtn.setAttribute('title', prevCategory ? t('ui.designedStyleWizardModal.prevCategoryTitle', { category: prevCategory.label }) : t('ui.designedStyleWizardModal.atFirstCategory'));
         try { setIcon(prevBtn, 'chevron-left'); } catch { /* test env */ }
         if (!prevCategory) {
             prevBtn.disabled = true;
@@ -894,8 +909,8 @@ export class DesignedStyleWizardModal extends Modal {
             cls: `${ERT_CLASSES.ICON_BTN} ert-style-wizard__category-nav-btn`,
         });
         nextBtn.type = 'button';
-        nextBtn.setAttribute('aria-label', 'Next category');
-        nextBtn.setAttribute('title', nextCategory ? `Next category — ${nextCategory.label}` : 'Already at the last category');
+        nextBtn.setAttribute('aria-label', t('ui.designedStyleWizardModal.nextCategoryAria'));
+        nextBtn.setAttribute('title', nextCategory ? t('ui.designedStyleWizardModal.nextCategoryTitle', { category: nextCategory.label }) : t('ui.designedStyleWizardModal.atLastCategory'));
         try { setIcon(nextBtn, 'chevron-right'); } catch { /* test env */ }
         if (!nextCategory) {
             nextBtn.disabled = true;
@@ -963,7 +978,7 @@ export class DesignedStyleWizardModal extends Modal {
         if (resetBar) {
             const titleSpan = createSpan({
                 cls: 'ert-style-wizard__panel-title',
-                text: 'Paper size',
+                text: t('ui.designedStyleWizardModal.paperSizeLabel'),
             });
             resetBar.insertBefore(titleSpan, resetBar.firstChild);
         }
@@ -973,10 +988,10 @@ export class DesignedStyleWizardModal extends Modal {
         // header so all four sit side-by-side on a single line.
         const paperRow = body.createDiv({ cls: 'ert-style-wizard__paper-row' });
         const paperOptions: Array<{ value: string; label: string }> = [
-            { value: 'us-trade-6x9', label: '6x9 trade' },
-            { value: 'us-letter', label: 'US Letter' },
-            { value: 'a4', label: 'A4' },
-            { value: 'custom', label: 'Custom' },
+            { value: 'us-trade-6x9', label: t('ui.designedStyleWizardModal.paper6x9') },
+            { value: 'us-letter', label: t('ui.designedStyleWizardModal.paperUsLetter') },
+            { value: 'a4', label: t('ui.designedStyleWizardModal.paperA4') },
+            { value: 'custom', label: t('ui.designedStyleWizardModal.custom') },
         ];
         const currentPaperKey = typeof this.spec.paperSize === 'string' ? this.spec.paperSize : 'custom';
         this.makeRadioGroup(paperRow, paperOptions, currentPaperKey, (value) => {
@@ -991,13 +1006,13 @@ export class DesignedStyleWizardModal extends Modal {
         });
 
         if (typeof this.spec.paperSize !== 'string') {
-            const widthRow = this.fieldRow(body, 'Custom width (in)');
+            const widthRow = this.fieldRow(body, t('ui.designedStyleWizardModal.customWidth'));
             this.numberInput(widthRow, this.spec.paperSize.widthIn, 0, 30, 0.1, (n) => {
                 this.mutateSpec((s) => {
                     if (typeof s.paperSize !== 'string') s.paperSize.widthIn = n;
                 });
             });
-            const heightRow = this.fieldRow(body, 'Custom height (in)');
+            const heightRow = this.fieldRow(body, t('ui.designedStyleWizardModal.customHeight'));
             this.numberInput(heightRow, this.spec.paperSize.heightIn, 0, 30, 0.1, (n) => {
                 this.mutateSpec((s) => {
                     if (typeof s.paperSize !== 'string') s.paperSize.heightIn = n;
@@ -1013,7 +1028,7 @@ export class DesignedStyleWizardModal extends Modal {
         // Cross widget for margins (T / L · center · R / B).
         this.renderMarginCross(body);
 
-        const mirroredRow = this.fieldRow(body, 'Mirrored margins (book binding)');
+        const mirroredRow = this.fieldRow(body, t('ui.designedStyleWizardModal.mirroredMarginsLabel'));
         this.toggleInput(mirroredRow, !!this.spec.margins.mirrored, (v) => {
             this.mutateSpec((s) => { s.margins.mirrored = v; });
             // Cross widget relabels L/R → Inner/Outer; re-render the panel so
@@ -1022,9 +1037,9 @@ export class DesignedStyleWizardModal extends Modal {
         });
 
         this.renderPanelGlossary(body, [
-            { term: 'Paper size',         definition: 'The trim size of the printed page. 6×9 trade is standard for novels; A4 / US Letter are typical for manuscripts; Custom unlocks free width/height.' },
-            { term: 'Margins',            definition: 'White space around the text block. Compact / Balanced / Airy snap all four to a uniform value; the cross widget below sets each side individually.' },
-            { term: 'Mirrored margins',   definition: 'When on, the L value becomes the inner (binding/gutter) margin and R becomes the outer; the cross relabels to Inner/Outer. Values stay the same — geometry just flips on facing pages so the gutter is always toward the spine.' },
+            { term: t('ui.designedStyleWizardModal.paperSizeLabel'),         definition: t('ui.designedStyleWizardModal.glossaryPaperSizeDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryMarginsTerm'),            definition: t('ui.designedStyleWizardModal.glossaryMarginsDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryMirroredTerm'),   definition: t('ui.designedStyleWizardModal.glossaryMirroredDef') },
         ]);
     }
 
@@ -1039,15 +1054,15 @@ export class DesignedStyleWizardModal extends Modal {
         const current = derivePageFeel(this.spec);
         const row = parent.createDiv({ cls: 'ert-style-wizard__preset-row' });
         const presets: Array<{ value: Exclude<PageFeel, 'custom'>; label: string }> = [
-            { value: 'compact',  label: 'Compact'  },
-            { value: 'balanced', label: 'Balanced' },
-            { value: 'airy',     label: 'Airy'     },
+            { value: 'compact',  label: t('ui.designedStyleWizardModal.presetCompact')  },
+            { value: 'balanced', label: t('ui.designedStyleWizardModal.presetBalanced') },
+            { value: 'airy',     label: t('ui.designedStyleWizardModal.presetAiry')     },
         ];
         presets.forEach(({ value, label }) => {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', `${label} margins`);
+            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.marginsPresetAria', { preset: label }));
             if (current === value) card.addClass('is-active');
             // Mini page diagram: outer page rectangle (paper) + inner bordered
             // block (text frame). Four measurement ticks span each margin so the
@@ -1086,7 +1101,7 @@ export class DesignedStyleWizardModal extends Modal {
             diagram.createDiv({ cls: 'ert-style-wizard__preset-page-tick ert-style-wizard__preset-page-tick--bottom' });
             diagram.createDiv({ cls: 'ert-style-wizard__preset-page-tick ert-style-wizard__preset-page-tick--left' });
             diagram.createDiv({ cls: 'ert-style-wizard__preset-page-block' });
-            card.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: 'Custom' });
+            card.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: t('ui.designedStyleWizardModal.custom') });
         }
     }
 
@@ -1099,15 +1114,15 @@ export class DesignedStyleWizardModal extends Modal {
         const current = deriveSpacingPreset(this.spec);
         const row = parent.createDiv({ cls: 'ert-style-wizard__preset-row' });
         const presets: Array<{ value: Exclude<LineSpacingPreset, 'custom'>; label: string; lineCount: number }> = [
-            { value: 'tight',    label: 'Tight',    lineCount: 6 },
-            { value: 'standard', label: 'Standard', lineCount: 5 },
-            { value: 'airy',     label: 'Airy',     lineCount: 4 },
+            { value: 'tight',    label: t('ui.designedStyleWizardModal.presetTight'),    lineCount: 6 },
+            { value: 'standard', label: t('ui.designedStyleWizardModal.presetStandard'), lineCount: 5 },
+            { value: 'airy',     label: t('ui.designedStyleWizardModal.presetAiry'),     lineCount: 4 },
         ];
         presets.forEach(({ value, label, lineCount }) => {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', `${label} line spacing`);
+            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.lineSpacingPresetAria', { preset: label }));
             if (current === value) card.addClass('is-active');
             const stack = card.createDiv({ cls: `ert-style-wizard__preset-lines ert-style-wizard__preset-lines--${value}` });
             for (let i = 0; i < lineCount; i += 1) {
@@ -1134,13 +1149,13 @@ export class DesignedStyleWizardModal extends Modal {
         const customCard = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
         customCard.tabIndex = 0;
         customCard.setAttribute('role', 'button');
-        customCard.setAttribute('aria-label', 'Custom line spacing');
+        customCard.setAttribute('aria-label', t('ui.designedStyleWizardModal.customLineSpacing'));
         if (current === 'custom') customCard.addClass('is-active');
         const customStack = customCard.createDiv({ cls: 'ert-style-wizard__preset-lines ert-style-wizard__preset-lines--standard' });
         for (let i = 0; i < 5; i += 1) {
             customStack.createDiv({ cls: 'ert-style-wizard__preset-line-bar' });
         }
-        customCard.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: 'Custom' });
+        customCard.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: t('ui.designedStyleWizardModal.custom') });
         const applyCustom = () => {
             // If we're already custom, no-op — the input below is the editor.
             if (deriveSpacingPreset(this.spec) === 'custom') return;
@@ -1167,30 +1182,30 @@ export class DesignedStyleWizardModal extends Modal {
         const modified = current !== 'custom' && isHeaderPresetModified(this.spec);
         // Heading above the row so it's clear what these cards control.
         const headingRow = parent.createDiv({ cls: 'ert-style-wizard__preset-heading-row' });
-        headingRow.createDiv({ cls: 'ert-style-wizard__preset-row-label', text: 'Header style' });
+        headingRow.createDiv({ cls: 'ert-style-wizard__preset-row-label', text: t('ui.designedStyleWizardModal.headerStyleLabel') });
         if (modified) {
             headingRow.createSpan({
                 cls: 'ert-style-wizard__preset-modified-badge',
-                text: '✱ modified — corners customized below',
+                text: t('ui.designedStyleWizardModal.headerModifiedBadge'),
             });
         }
         const row = parent.createDiv({ cls: 'ert-style-wizard__preset-row' });
         const presets: Array<{ value: Exclude<HeaderStyle, 'custom'>; label: string; render: (strip: HTMLElement) => void }> = [
             {
-                value: 'none', label: 'None',
+                value: 'none', label: t('ui.designedStyleWizardModal.none'),
                 render: (strip) => {
                     strip.addClass('ert-style-wizard__preset-header--none');
                 },
             },
             {
-                value: 'minimal', label: 'Minimal',
+                value: 'minimal', label: t('ui.designedStyleWizardModal.headerMinimal'),
                 render: (strip) => {
                     const center = strip.createDiv({ cls: 'ert-style-wizard__preset-header-cell ert-style-wizard__preset-header-cell--center' });
                     center.createDiv({ cls: 'ert-style-wizard__preset-header-text' });
                 },
             },
             {
-                value: 'literary', label: 'Literary',
+                value: 'literary', label: t('ui.designedStyleWizardModal.headerLiterary'),
                 render: (strip) => {
                     const left = strip.createDiv({ cls: 'ert-style-wizard__preset-header-cell ert-style-wizard__preset-header-cell--left' });
                     left.createDiv({ cls: 'ert-style-wizard__preset-header-text ert-style-wizard__preset-header-text--short' });
@@ -1202,7 +1217,7 @@ export class DesignedStyleWizardModal extends Modal {
                 // Contemporary — book title flush left on even pages, scene
                 // context flush right on odd pages. The strip mocks just one
                 // page (no two-page split) since each side is asymmetric.
-                value: 'contemporary', label: 'Contemporary',
+                value: 'contemporary', label: t('ui.designedStyleWizardModal.headerContemporary'),
                 render: (strip) => {
                     const left = strip.createDiv({ cls: 'ert-style-wizard__preset-header-cell ert-style-wizard__preset-header-cell--left' });
                     left.createDiv({ cls: 'ert-style-wizard__preset-header-text' });
@@ -1213,7 +1228,7 @@ export class DesignedStyleWizardModal extends Modal {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', `${label} header`);
+            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.headerPresetAria', { preset: label }));
             if (current === value) {
                 card.addClass('is-active');
                 if (modified) card.addClass('is-modified');
@@ -1256,7 +1271,7 @@ export class DesignedStyleWizardModal extends Modal {
             for (let i = 0; i < 4; i += 1) {
                 stack.createDiv({ cls: 'ert-style-wizard__preset-line-bar' });
             }
-            card.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: 'Custom' });
+            card.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: t('ui.designedStyleWizardModal.custom') });
         }
     }
 
@@ -1265,15 +1280,15 @@ export class DesignedStyleWizardModal extends Modal {
      *  `geometry` semantics (leftIn → inner=, rightIn → outer=). */
     private renderMarginCross(parent: HTMLElement): void {
         const mirrored = !!this.spec.margins.mirrored;
-        const leftLabel  = mirrored ? 'Inner' : 'L';
-        const rightLabel = mirrored ? 'Outer' : 'R';
+        const leftLabel  = mirrored ? t('ui.designedStyleWizardModal.marginInner') : t('ui.designedStyleWizardModal.marginLeftShort');
+        const rightLabel = mirrored ? t('ui.designedStyleWizardModal.marginOuter') : t('ui.designedStyleWizardModal.marginRightShort');
         const cross = parent.createDiv({ cls: 'ert-style-wizard__margin-cross' });
 
         const cellTop = cross.createDiv({ cls: 'ert-style-wizard__margin-cell ert-style-wizard__margin-cell--top' });
         this.marginInput(cellTop, this.spec.margins.topIn, (n) => {
             this.mutateSpec((s) => { s.margins.topIn = n; });
         });
-        cellTop.createSpan({ cls: 'ert-style-wizard__margin-axis', text: 'T' });
+        cellTop.createSpan({ cls: 'ert-style-wizard__margin-axis', text: t('ui.designedStyleWizardModal.marginTopShort') });
 
         const cellLeft = cross.createDiv({ cls: 'ert-style-wizard__margin-cell ert-style-wizard__margin-cell--left' });
         this.marginInput(cellLeft, this.spec.margins.leftIn, (n) => {
@@ -1297,7 +1312,7 @@ export class DesignedStyleWizardModal extends Modal {
         this.marginInput(cellBot, this.spec.margins.bottomIn, (n) => {
             this.mutateSpec((s) => { s.margins.bottomIn = n; });
         });
-        cellBot.createSpan({ cls: 'ert-style-wizard__margin-axis', text: 'B' });
+        cellBot.createSpan({ cls: 'ert-style-wizard__margin-axis', text: t('ui.designedStyleWizardModal.marginBottomShort') });
     }
 
     private marginInput(
@@ -1319,7 +1334,7 @@ export class DesignedStyleWizardModal extends Modal {
     private renderBodySection(parent: HTMLElement): void {
         const body = this.createPanelBody(parent);
 
-        const fontRow = this.fieldRow(body, 'Font');
+        const fontRow = this.fieldRow(body, t('ui.designedStyleWizardModal.fontLabel'));
         // The missing-font warning replaces the label text rather than
         // appending to it. "Font — Missing: EB Garamond" is long enough to
         // wrap the label onto two lines, which in turn pushes the Install
@@ -1328,7 +1343,8 @@ export class DesignedStyleWizardModal extends Modal {
         fontRowEl?.addClass('ert-style-wizard__field-row--font');
         const fontLabelEl = fontRowEl?.querySelector('.ert-style-wizard__field-label') as HTMLElement | null;
         const fontSelect = fontRow.createEl('select', { cls: 'ert-input ert-input--md' });
-        FONT_OPTIONS.forEach((option) => {
+        const fontOptions = getFontOptions();
+        fontOptions.forEach((option) => {
             const opt = fontSelect.createEl('option', { value: option.value, text: option.label });
             if (option.value === this.spec.body.font) opt.selected = true;
         });
@@ -1337,7 +1353,7 @@ export class DesignedStyleWizardModal extends Modal {
             if (!fontLabelEl) return;
             fontLabelEl.empty();
             fontLabelEl.removeClass('is-missing');
-            fontLabelEl.setText('Font');
+            fontLabelEl.setText(t('ui.designedStyleWizardModal.fontLabel'));
         };
         const setLabelMissing = (fontName: string) => {
             if (!fontLabelEl) return;
@@ -1345,12 +1361,12 @@ export class DesignedStyleWizardModal extends Modal {
             fontLabelEl.addClass('is-missing');
             fontLabelEl.createSpan({
                 cls: 'ert-style-wizard__font-status is-missing',
-                text: `Missing — ${fontName}`,
+                text: t('ui.designedStyleWizardModal.fontMissing', { font: fontName }),
             });
         };
         const refreshFontStatus = () => {
             setLabelDefault();
-            const selected = FONT_OPTIONS.find(o => o.value === this.spec.body.font);
+            const selected = fontOptions.find(o => o.value === this.spec.body.font);
             if (!selected) return;
             // Strict font policy (Phase 1): per-font precise status. There is
             // NO fallback — a missing font is a hard export blocker. We only
@@ -1367,7 +1383,7 @@ export class DesignedStyleWizardModal extends Modal {
                 // is available. Phase 2 will perform an actual download.
                 const installBtn = fontRow.createEl('button', {
                     cls: 'ert-style-wizard__font-install ert-link-accent',
-                    text: 'Install',
+                    text: t('ui.designedStyleWizardModal.installButton'),
                 });
                 installBtn.type = 'button';
                 installBtn.addEventListener('click', (ev) => {
@@ -1379,7 +1395,7 @@ export class DesignedStyleWizardModal extends Modal {
                     const fragment = installBtn.ownerDocument.win.createFragment();
                     const wrapper = fragment.createDiv();
                     wrapper.createDiv({
-                        text: `${diag.primaryFontName}: ${hint?.message ?? 'Install instructions unavailable.'}`,
+                        text: t('ui.designedStyleWizardModal.installHintLine', { font: diag.primaryFontName, message: hint?.message ?? t('ui.designedStyleWizardModal.installInstructionsUnavailable') }),
                     });
                     if (hint?.url) {
                         const link = wrapper.createEl('a', { href: hint.url, text: hint.url });
@@ -1391,7 +1407,7 @@ export class DesignedStyleWizardModal extends Modal {
                         for (const step of hint.steps) ul.createEl('li', { text: step });
                     }
                     wrapper.createDiv({
-                        text: 'After installing, re-open the wizard to refresh status.',
+                        text: t('ui.designedStyleWizardModal.installReopenHint'),
                     });
                     new Notice(fragment, 12000);
                 });
@@ -1415,10 +1431,10 @@ export class DesignedStyleWizardModal extends Modal {
         // exact system font family name; resolved purely via OS font
         // activation (fontResolver's system path), no vault bundling.
         if (this.spec.body.font === 'custom') {
-            const customNameRow = this.fieldRow(body, 'Font name');
+            const customNameRow = this.fieldRow(body, t('ui.designedStyleWizardModal.fontNameLabel'));
             const nameInput = customNameRow.createEl('input', {
                 cls: 'ert-input ert-input--md',
-                attr: { type: 'text', placeholder: 'e.g. Palatino Linotype' },
+                attr: { type: 'text', placeholder: t('ui.designedStyleWizardModal.fontNamePlaceholder') },
             });
             nameInput.value = this.spec.body.customFontName ?? '';
             nameInput.addEventListener('change', () => {
@@ -1439,18 +1455,18 @@ export class DesignedStyleWizardModal extends Modal {
 
         // Custom spacing input — appears below the cards only when current is custom.
         if (deriveSpacingPreset(this.spec) === 'custom') {
-            const customRow = this.fieldRow(body, 'Custom line spacing');
+            const customRow = this.fieldRow(body, t('ui.designedStyleWizardModal.customLineSpacing'));
             this.numberInput(customRow, this.spec.body.lineSpacing, 0.8, 3, 0.05, (n) => {
                 this.mutateSpec((s) => { s.body.lineSpacing = n; });
             });
         }
 
-        const sizeRow = this.fieldRow(body, 'Size (pt)');
+        const sizeRow = this.fieldRow(body, t('ui.designedStyleWizardModal.sizeLabel'));
         this.numberInput(sizeRow, this.spec.body.sizePt, 8, 14, 1, (n) => {
             this.mutateSpec((s) => { s.body.sizePt = n; });
         });
 
-        const indentRow = this.fieldRow(body, 'Paragraph indent (em — typical 1.0–1.5)');
+        const indentRow = this.fieldRow(body, t('ui.designedStyleWizardModal.paragraphIndentLabel'));
         this.numberInput(indentRow, this.spec.body.paragraphIndentEm ?? 0, 0, 3, 0.1, (n) => {
             this.mutateSpec((s) => {
                 if (n === 0) delete s.body.paragraphIndentEm;
@@ -1458,7 +1474,7 @@ export class DesignedStyleWizardModal extends Modal {
             });
         });
 
-        const suppressRow = this.fieldRow(body, 'Suppress indent after break');
+        const suppressRow = this.fieldRow(body, t('ui.designedStyleWizardModal.suppressIndentLabel'));
         this.toggleInput(suppressRow, !!this.spec.body.firstLineIndentSuppressedAfterBreak, (v) => {
             this.mutateSpec((s) => { s.body.firstLineIndentSuppressedAfterBreak = v; });
         });
@@ -1466,10 +1482,10 @@ export class DesignedStyleWizardModal extends Modal {
         // Microtype is universally good — always emit, no toggle.
 
         this.renderPanelGlossary(body, [
-            { term: 'Body font',          definition: 'The typeface used for paragraph text. Each option is a real font you must have installed; the wizard reports missing fonts in red.' },
-            { term: 'Line space',         definition: 'Vertical space between baselines. Tight (1.0) is single-spaced; Standard (1.5) reads cleanly in print; Airy (2.0) is the editor-friendly double-space; Custom lets you dial in any value 0.8–3.' },
-            { term: 'Paragraph indent',   definition: 'First-line indent on every paragraph, measured in `em` (the width of a capital M). Typical book setting: 1.0–1.5 em; 0 disables indent.' },
-            { term: 'Suppress indent after break', definition: 'When on, the very first paragraph after a scene break or chapter heading does NOT get an indent — a print convention.' },
+            { term: t('ui.designedStyleWizardModal.glossaryBodyFontTerm'),          definition: t('ui.designedStyleWizardModal.glossaryBodyFontDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryLineSpaceTerm'),         definition: t('ui.designedStyleWizardModal.glossaryLineSpaceDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryParagraphIndentTerm'),   definition: t('ui.designedStyleWizardModal.glossaryParagraphIndentDef') },
+            { term: t('ui.designedStyleWizardModal.suppressIndentLabel'), definition: t('ui.designedStyleWizardModal.glossarySuppressIndentDef') },
         ]);
     }
 
@@ -1489,7 +1505,7 @@ export class DesignedStyleWizardModal extends Modal {
         const cornerSection = body.createDiv({ cls: 'ert-style-wizard__subsection' });
         cornerSection.createDiv({
             cls: 'ert-style-wizard__subsection-heading',
-            text: 'Customize per corner',
+            text: t('ui.designedStyleWizardModal.customizePerCorner'),
         });
         const cornerBody = cornerSection.createDiv({ cls: 'ert-style-wizard__corner-grid' });
 
@@ -1499,20 +1515,15 @@ export class DesignedStyleWizardModal extends Modal {
         // of an open spread; odd numbers fall on the RIGHT (recto). Page 1
         // is always recto. Reflected in label text and tooltips so users
         // don't have to remember verso/recto vocabulary.
-        const slotName: Record<CornerSlot, string> = { left: 'Left', center: 'Center', right: 'Right' };
-        const pageDesc: Record<'even' | 'odd', string> = {
-            even: 'left page (verso, even page numbers)',
-            odd:  'right page (recto, odd page numbers)',
-        };
-        const cornerCards: Array<{ key: CornerKey; label: string; page: 'even' | 'odd'; slot: CornerSlot }> = [
-            { key: 'evenLeft',   label: 'Even L', page: 'even', slot: 'left'   },
-            { key: 'evenCenter', label: 'Even C', page: 'even', slot: 'center' },
-            { key: 'evenRight',  label: 'Even R', page: 'even', slot: 'right'  },
-            { key: 'oddLeft',    label: 'Odd L',  page: 'odd',  slot: 'left'   },
-            { key: 'oddCenter',  label: 'Odd C',  page: 'odd',  slot: 'center' },
-            { key: 'oddRight',   label: 'Odd R',  page: 'odd',  slot: 'right'  },
+        const cornerCards: Array<{ key: CornerKey; label: string; tooltip: string; page: 'even' | 'odd'; slot: CornerSlot }> = [
+            { key: 'evenLeft',   label: t('ui.designedStyleWizardModal.cornerEvenLeft'), tooltip: t('ui.designedStyleWizardModal.cornerEvenLeftTooltip'), page: 'even', slot: 'left'   },
+            { key: 'evenCenter', label: t('ui.designedStyleWizardModal.cornerEvenCenter'), tooltip: t('ui.designedStyleWizardModal.cornerEvenCenterTooltip'), page: 'even', slot: 'center' },
+            { key: 'evenRight',  label: t('ui.designedStyleWizardModal.cornerEvenRight'), tooltip: t('ui.designedStyleWizardModal.cornerEvenRightTooltip'), page: 'even', slot: 'right'  },
+            { key: 'oddLeft',    label: t('ui.designedStyleWizardModal.cornerOddLeft'),  tooltip: t('ui.designedStyleWizardModal.cornerOddLeftTooltip'), page: 'odd',  slot: 'left'   },
+            { key: 'oddCenter',  label: t('ui.designedStyleWizardModal.cornerOddCenter'),  tooltip: t('ui.designedStyleWizardModal.cornerOddCenterTooltip'), page: 'odd',  slot: 'center' },
+            { key: 'oddRight',   label: t('ui.designedStyleWizardModal.cornerOddRight'),  tooltip: t('ui.designedStyleWizardModal.cornerOddRightTooltip'), page: 'odd',  slot: 'right'  },
         ];
-        cornerCards.forEach(({ key, label, page, slot }) => {
+        cornerCards.forEach(({ key, label, tooltip, page, slot }) => {
             // Corner cards reuse the same chrome as the None/Minimal/Literary
             // header preset cards above: header strip + body lines + label.
             // The active slot (L/C/R) gets a header-text mark; other slots
@@ -1521,7 +1532,6 @@ export class DesignedStyleWizardModal extends Modal {
             const card = cornerBody.createDiv({ cls: 'ert-style-wizard__preset-card ert-style-wizard__corner-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            const tooltip = `${slotName[slot]} corner of the ${pageDesc[page]}`;
             card.setAttribute('aria-label', tooltip);
             card.setAttribute('title', tooltip);
             if (this.activeCornerKey === key) card.addClass('is-active');
@@ -1558,13 +1568,11 @@ export class DesignedStyleWizardModal extends Modal {
         // Short form so the label fits in the panel without forcing horizontal
         // scroll — full verso/recto explanation lives in the per-card tooltip
         // and the panel glossary at the bottom.
-        const pageShort: Record<'even' | 'odd', string> = {
-            even: 'left page',
-            odd:  'right page',
-        };
         const activeText = activeMeta
-            ? `Editing: ${activeMeta.label} (${pageShort[activeMeta.page]})`
-            : 'Editing:';
+            ? (activeMeta.page === 'even'
+                ? t('ui.designedStyleWizardModal.editingCornerLeftPage', { corner: activeMeta.label })
+                : t('ui.designedStyleWizardModal.editingCornerRightPage', { corner: activeMeta.label }))
+            : t('ui.designedStyleWizardModal.editingEmpty');
         editorLabel.setText(activeText);
         this.headerFieldDropdown(
             editorRow,
@@ -1581,10 +1589,10 @@ export class DesignedStyleWizardModal extends Modal {
             },
         );
 
-        const fontRow = this.fieldRow(body, 'Header font');
+        const fontRow = this.fieldRow(body, t('ui.designedStyleWizardModal.headerFontLabel'));
         this.makeRadioGroup(fontRow, [
-            { value: 'inherit', label: 'Inherit body' },
-            { value: 'sans',    label: 'Sans' },
+            { value: 'inherit', label: t('ui.designedStyleWizardModal.headerFontInherit') },
+            { value: 'sans',    label: t('ui.designedStyleWizardModal.headerFontSans') },
         ], this.spec.runningHeader.font ?? 'inherit', (v) => {
             this.mutateSpec((s) => {
                 if (v === 'inherit') delete s.runningHeader.font;
@@ -1592,7 +1600,7 @@ export class DesignedStyleWizardModal extends Modal {
             });
         });
 
-        const lsRow = this.fieldRow(body, 'Letter spacing');
+        const lsRow = this.fieldRow(body, t('ui.designedStyleWizardModal.letterSpacingLabel'));
         this.numberInput(lsRow, this.spec.runningHeader.letterSpacing ?? 0, 0, 25, 0.5, (n) => {
             this.mutateSpec((s) => {
                 if (n === 0) delete s.runningHeader.letterSpacing;
@@ -1601,11 +1609,11 @@ export class DesignedStyleWizardModal extends Modal {
         });
 
         this.renderPanelGlossary(body, [
-            { term: 'Running header',     definition: 'The repeating text at the top of every interior page (book title, author, scene context, page number, etc.). Even and odd pages can carry different content on facing-page books.' },
-            { term: 'Even vs Odd page',   definition: 'Print convention: EVEN page numbers (2, 4, 6 …) sit on the LEFT (verso) side of an open spread; ODD numbers (1, 3, 5 …) sit on the RIGHT (recto). Page 1 is always recto. Hover any corner card for its specific page side.' },
-            { term: 'Preset',             definition: 'Common header layouts wired up in one click. Use Customize per corner below to override individual slots — overrides layer on top of the preset.' },
-            { term: 'Header font',        definition: '"Inherit body" reuses the body typeface. "Sans" switches headers to a sans-serif (a Standard layout convention).' },
-            { term: 'Letter spacing',     definition: 'Extra tracking between letters in running heads, in fontspec units (e.g. 15.0 produces the wide-set caps in the Professional layout). 0 means default tracking.' },
+            { term: t('ui.designedStyleWizardModal.glossaryRunningHeaderTerm'),     definition: t('ui.designedStyleWizardModal.glossaryRunningHeaderDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryEvenOddTerm'),   definition: t('ui.designedStyleWizardModal.glossaryEvenOddDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryPresetTerm'),             definition: t('ui.designedStyleWizardModal.glossaryPresetDef') },
+            { term: t('ui.designedStyleWizardModal.headerFontLabel'),        definition: t('ui.designedStyleWizardModal.glossaryHeaderFontDef') },
+            { term: t('ui.designedStyleWizardModal.letterSpacingLabel'),     definition: t('ui.designedStyleWizardModal.glossaryLetterSpacingDef') },
         ]);
     }
 
@@ -1616,13 +1624,13 @@ export class DesignedStyleWizardModal extends Modal {
     ): void {
         const select = parent.createEl('select', { cls: 'ert-input ert-input--md' });
         const options: Array<{ value: string; label: string }> = [
-            { value: 'empty',         label: '(empty)' },
-            { value: 'page',          label: 'Page #' },
-            { value: 'author',        label: 'Author' },
-            { value: 'title',         label: 'Title' },
-            { value: 'scene-context', label: 'Scene context' },
-            { value: 'chapter',       label: 'Chapter' },
-            { value: '__literal__',   label: 'Custom literal…' },
+            { value: 'empty',         label: t('ui.designedStyleWizardModal.fieldEmpty') },
+            { value: 'page',          label: t('ui.designedStyleWizardModal.fieldPage') },
+            { value: 'author',        label: t('ui.designedStyleWizardModal.fieldAuthor') },
+            { value: 'title',         label: t('ui.designedStyleWizardModal.fieldTitle') },
+            { value: 'scene-context', label: t('ui.designedStyleWizardModal.fieldSceneContext') },
+            { value: 'chapter',       label: t('ui.designedStyleWizardModal.fieldChapter') },
+            { value: '__literal__',   label: t('ui.designedStyleWizardModal.fieldCustomLiteral') },
         ];
         options.forEach((o) => select.createEl('option', { value: o.value, text: o.label }));
 
@@ -1638,7 +1646,7 @@ export class DesignedStyleWizardModal extends Modal {
 
         const literalInput = parent.createEl('input', {
             cls: 'ert-input ert-style-wizard__corner-literal',
-            attr: { type: 'text', placeholder: 'Literal text' },
+            attr: { type: 'text', placeholder: t('ui.designedStyleWizardModal.literalPlaceholder') },
         });
         literalInput.value = literalValue;
         literalInput.toggleClass('ert-hidden', currentValue !== '__literal__');
@@ -1672,17 +1680,17 @@ export class DesignedStyleWizardModal extends Modal {
         // Format radio (Arabic / Roman frontmatter) — labels include sample
         // numerals so the user sees the actual glyph style on the button.
         const formatRow = this.compactRow(body);
-        const formatCell = this.compactCell(formatRow, 'Format');
+        const formatCell = this.compactCell(formatRow, t('ui.designedStyleWizardModal.folioFormatLabel'));
         this.makeRadioGroup(formatCell, [
-            { value: 'arabic',            label: 'Arabic  1  2  3' },
-            { value: 'roman-frontmatter', label: 'Roman  i  ii  iii  (frontmatter only)' },
+            { value: 'arabic',            label: t('ui.designedStyleWizardModal.numeralArabic') },
+            { value: 'roman-frontmatter', label: t('ui.designedStyleWizardModal.numeralRomanFrontmatter') },
         ], this.spec.folio.format ?? 'arabic', (v) => {
             this.mutateSpec((s) => { s.folio.format = v as DesignedStyleSpec['folio']['format']; });
         });
 
         this.renderPanelGlossary(body, [
-            { term: 'Folio',       definition: 'The printed page number that runs on each interior page.' },
-            { term: 'Frontmatter', definition: 'Pages before the main text (title page, copyright, dedication). Often numbered with Roman numerals (i, ii, iii) before switching to Arabic at chapter 1.' },
+            { term: t('ui.designedStyleWizardModal.categoryFolio'),       definition: t('ui.designedStyleWizardModal.glossaryFolioDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryFrontmatterTerm'), definition: t('ui.designedStyleWizardModal.glossaryFrontmatterDef') },
         ]);
     }
 
@@ -1695,7 +1703,7 @@ export class DesignedStyleWizardModal extends Modal {
             render: (card: HTMLElement) => void;
         }> = [
             {
-                value: 'bottom-center', label: 'Bottom center',
+                value: 'bottom-center', label: t('ui.designedStyleWizardModal.folioBottomCenter'),
                 render: (card) => {
                     card.createDiv({ cls: 'ert-style-wizard__preset-folio-strip' });
                     const stack = card.createDiv({ cls: 'ert-style-wizard__preset-folio-body' });
@@ -1705,7 +1713,7 @@ export class DesignedStyleWizardModal extends Modal {
                 },
             },
             {
-                value: 'header', label: 'In headers',
+                value: 'header', label: t('ui.designedStyleWizardModal.folioInHeaders'),
                 render: (card) => {
                     const strip = card.createDiv({ cls: 'ert-style-wizard__preset-folio-strip ert-style-wizard__preset-folio-strip--with-num' });
                     strip.createSpan({ cls: 'ert-style-wizard__preset-folio-num', text: '12' });
@@ -1715,7 +1723,7 @@ export class DesignedStyleWizardModal extends Modal {
                 },
             },
             {
-                value: 'none', label: 'None',
+                value: 'none', label: t('ui.designedStyleWizardModal.none'),
                 render: (card) => {
                     card.createDiv({ cls: 'ert-style-wizard__preset-folio-strip' });
                     const stack = card.createDiv({ cls: 'ert-style-wizard__preset-folio-body' });
@@ -1728,7 +1736,7 @@ export class DesignedStyleWizardModal extends Modal {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', `Folio position: ${label}`);
+            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.folioPositionAria', { position: label }));
             if (current === value) card.addClass('is-active');
             render(card);
             card.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: label });
@@ -1764,7 +1772,7 @@ export class DesignedStyleWizardModal extends Modal {
         const body = this.createPanelBody(parent);
         // Compact row: Render toggle + (when on) Numeral style radio inline.
         const headerRow = this.compactRow(body);
-        const renderCell = this.compactCell(headerRow, 'Render Part / Act pages');
+        const renderCell = this.compactCell(headerRow, t('ui.designedStyleWizardModal.renderPartPages'));
         const partsOn = this.spec.parts.mode !== 'off';
         this.toggleInput(renderCell, partsOn, (v) => {
             this.mutateSpec((s) => {
@@ -1775,11 +1783,11 @@ export class DesignedStyleWizardModal extends Modal {
         });
 
         if (partsOn) {
-            const numeralCell = this.compactCell(headerRow, 'Numeral style');
+            const numeralCell = this.compactCell(headerRow, t('ui.designedStyleWizardModal.numeralStyleLabel'));
             this.makeRadioGroup(numeralCell, [
-                { value: 'roman',  label: 'Roman   I  II  III' },
-                { value: 'arabic', label: 'Arabic  1  2  3' },
-                { value: 'word',   label: 'Word  One Two' },
+                { value: 'roman',  label: t('ui.designedStyleWizardModal.numeralRoman') },
+                { value: 'arabic', label: t('ui.designedStyleWizardModal.numeralArabic') },
+                { value: 'word',   label: t('ui.designedStyleWizardModal.numeralWord') },
             ], this.spec.parts.mode, (v) => {
                 this.mutateSpec((s) => { s.parts.mode = v as DesignedStyleSpec['parts']['mode']; });
             });
@@ -1787,30 +1795,30 @@ export class DesignedStyleWizardModal extends Modal {
 
         // Compact row: page-break, epigraph, openAny toggles + placement radio.
         const togglesRow = this.compactRow(body);
-        const breakCell = this.compactCell(togglesRow, 'Page break before part');
+        const breakCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.pageBreakBeforePart'));
         this.toggleInput(breakCell, this.spec.parts.pageBreak, (v) => {
             this.mutateSpec((s) => { s.parts.pageBreak = v; });
         });
 
-        const titleCell = this.compactCell(togglesRow, 'Print part title');
+        const titleCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.printPartTitle'));
         this.toggleInput(titleCell, !!this.spec.parts.title, (v) => {
             this.mutateSpec((s) => { s.parts.title = v; });
         });
 
-        const epCell = this.compactCell(togglesRow, 'Epigraph after part');
+        const epCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.epigraphAfterPart'));
         this.toggleInput(epCell, this.spec.parts.epigraph, (v) => {
             this.mutateSpec((s) => { s.parts.epigraph = v; });
         });
 
-        const openAnyCell = this.compactCell(togglesRow, 'Allow openany');
+        const openAnyCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.allowOpenAny'));
         this.toggleInput(openAnyCell, !!this.spec.parts.openAny, (v) => {
             this.mutateSpec((s) => { s.parts.openAny = v; });
         });
 
-        const placementCell = this.compactCell(togglesRow, 'Epigraph placement');
+        const placementCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.epigraphPlacement'));
         this.makeRadioGroup(placementCell, [
-            { value: 'inline',   label: 'Inline' },
-            { value: 'own-page', label: 'Own page' },
+            { value: 'inline',   label: t('ui.designedStyleWizardModal.placementInline') },
+            { value: 'own-page', label: t('ui.designedStyleWizardModal.placementOwnPage') },
         ], this.spec.parts.epigraphPlacement ?? 'inline', (v) => {
             this.mutateSpec((s) => {
                 s.parts.epigraphPlacement = v as 'inline' | 'own-page';
@@ -1818,12 +1826,12 @@ export class DesignedStyleWizardModal extends Modal {
         });
 
         this.renderPanelGlossary(body, [
-            { term: 'Part / Act',         definition: 'A top-level division grouping multiple chapters or scenes (e.g. Part I, Part II). Often introduced with a dedicated opener page.' },
-            { term: 'Numeral style',      definition: 'How the part number is rendered: I II III (Roman), 1 2 3 (Arabic), or One Two (Word).' },
-            { term: 'Part title',         definition: 'Prints the name you gave a part under its numeral, so "Part I" becomes "Part I / The Crossing". Off prints the numeral alone. Parts without a name print the numeral either way.' },
-            { term: 'Page break',         definition: 'When on, every Part heading starts on a fresh page (`\\cleardoublepage`). Off keeps Parts inline in the running text.' },
-            { term: 'Epigraph',           definition: 'A short quote (with optional attribution) printed under the Part heading. Inline keeps it on the Part page; Own page floats it onto a dedicated leaf.' },
-            { term: 'openany',            definition: 'LaTeX `book[openany]` — chapters can start on either left or right pages instead of always recto. Saves blank pages in shorter books.' },
+            { term: t('ui.designedStyleWizardModal.glossaryPartActTerm'),         definition: t('ui.designedStyleWizardModal.glossaryPartActDef') },
+            { term: t('ui.designedStyleWizardModal.numeralStyleLabel'),      definition: t('ui.designedStyleWizardModal.glossaryNumeralStyleDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryPartTitleTerm'),         definition: t('ui.designedStyleWizardModal.glossaryPartTitleDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryPageBreakTerm'),         definition: t('ui.designedStyleWizardModal.glossaryPageBreakDef') },
+            { term: t('ui.designedStyleWizardModal.categoryEpigraph'),           definition: t('ui.designedStyleWizardModal.glossaryPartEpigraphDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryOpenAnyTerm'),            definition: t('ui.designedStyleWizardModal.glossaryOpenAnyDef') },
         ]);
     }
 
@@ -1833,12 +1841,12 @@ export class DesignedStyleWizardModal extends Modal {
         // Visual chapter-style preset cards (replaces the radio).
         this.renderChapterStylePresets(body);
 
-        const breakRow = this.fieldRow(body, 'Page break before chapter');
+        const breakRow = this.fieldRow(body, t('ui.designedStyleWizardModal.pageBreakBeforeChapter'));
         this.toggleInput(breakRow, this.spec.chapters.pageBreak, (v) => {
             this.mutateSpec((s) => { s.chapters.pageBreak = v; });
         });
 
-        const resetRow = this.fieldRow(body, 'Reset scene counter at chapter');
+        const resetRow = this.fieldRow(body, t('ui.designedStyleWizardModal.resetSceneCounterLabel'));
         this.toggleInput(resetRow, this.spec.chapters.resetSceneCounter, (v) => {
             this.mutateSpec((s) => { s.chapters.resetSceneCounter = v; });
         });
@@ -1847,7 +1855,7 @@ export class DesignedStyleWizardModal extends Modal {
         // sensible default), 100% = near bottom. When the spec hasn't set
         // an explicit topFraction, default the slider to 50% so the user
         // sees the centered baseline rather than a 0% snap-to-top reading.
-        const topRow = this.fieldRow(body, 'Heading top position (% page)');
+        const topRow = this.fieldRow(body, t('ui.designedStyleWizardModal.headingTopPositionLabel'));
         const currentTop = this.spec.chapters.spacing?.topFraction ?? 0.5;
         this.sliderInput(topRow, currentTop, 0, 1, 0.02, (n) => {
             this.mutateSpec((s) => {
@@ -1856,10 +1864,10 @@ export class DesignedStyleWizardModal extends Modal {
         }, (v) => `${Math.round(v * 100)}%`);
 
         this.renderPanelGlossary(body, [
-            { term: 'Chapter style',           definition: 'Whether each chapter heading shows a number, a title, both, or nothing.' },
-            { term: 'Heading top position',    definition: 'Where the chapter heading sits on the page, as a percentage from the top. 0% = top edge, 50% = centered (default), 100% = bottom edge. Contemporary uses ~46% for a deep-on-page feel.' },
-            { term: 'Page break before chapter', definition: 'When on, every chapter heading starts on a fresh page. Off keeps chapters running inline.' },
-            { term: 'Reset scene counter',     definition: 'When on, the scene number resets to 1 at every chapter boundary; otherwise scenes number continuously through the book.' },
+            { term: t('ui.designedStyleWizardModal.glossaryChapterStyleTerm'),           definition: t('ui.designedStyleWizardModal.glossaryChapterStyleDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryHeadingTopTerm'),    definition: t('ui.designedStyleWizardModal.glossaryHeadingTopDef') },
+            { term: t('ui.designedStyleWizardModal.pageBreakBeforeChapter'), definition: t('ui.designedStyleWizardModal.glossaryChapterPageBreakDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryResetSceneCounterTerm'),     definition: t('ui.designedStyleWizardModal.glossaryResetSceneCounterDef') },
         ]);
     }
 
@@ -1872,32 +1880,32 @@ export class DesignedStyleWizardModal extends Modal {
             render: (card: HTMLElement) => void;
         }> = [
             {
-                value: 'off', label: 'Off',
+                value: 'off', label: t('ui.designedStyleWizardModal.chapterOff'),
                 render: (card) => {
                     const stack = card.createDiv({ cls: 'ert-style-wizard__preset-chapter-body' });
                     for (let i = 0; i < 5; i += 1) stack.createDiv({ cls: 'ert-style-wizard__preset-line-bar' });
                 },
             },
             {
-                value: 'numbered', label: 'Numbered',
+                value: 'numbered', label: t('ui.designedStyleWizardModal.chapterNumbered'),
                 render: (card) => {
                     const stack = card.createDiv({ cls: 'ert-style-wizard__preset-chapter-body ert-style-wizard__preset-chapter-body--heading' });
-                    stack.createSpan({ cls: 'ert-style-wizard__preset-chapter-num', text: 'Chapter 1' });
+                    stack.createSpan({ cls: 'ert-style-wizard__preset-chapter-num', text: t('ui.designedStyleWizardModal.sampleChapterNumber') });
                 },
             },
             {
-                value: 'titled', label: 'Titled',
+                value: 'titled', label: t('ui.designedStyleWizardModal.chapterTitled'),
                 render: (card) => {
                     const stack = card.createDiv({ cls: 'ert-style-wizard__preset-chapter-body ert-style-wizard__preset-chapter-body--heading' });
-                    stack.createSpan({ cls: 'ert-style-wizard__preset-chapter-title', text: 'Boy with a Skull' });
+                    stack.createSpan({ cls: 'ert-style-wizard__preset-chapter-title', text: t('ui.designedStyleWizardModal.sampleChapterTitle') });
                 },
             },
             {
-                value: 'numbered-titled', label: 'Numbered + titled',
+                value: 'numbered-titled', label: t('ui.designedStyleWizardModal.chapterNumberedTitled'),
                 render: (card) => {
                     const stack = card.createDiv({ cls: 'ert-style-wizard__preset-chapter-body ert-style-wizard__preset-chapter-body--heading' });
-                    stack.createSpan({ cls: 'ert-style-wizard__preset-chapter-num', text: 'Chapter 1' });
-                    stack.createSpan({ cls: 'ert-style-wizard__preset-chapter-title', text: 'Boy with a Skull' });
+                    stack.createSpan({ cls: 'ert-style-wizard__preset-chapter-num', text: t('ui.designedStyleWizardModal.sampleChapterNumber') });
+                    stack.createSpan({ cls: 'ert-style-wizard__preset-chapter-title', text: t('ui.designedStyleWizardModal.sampleChapterTitle') });
                 },
             },
         ];
@@ -1905,7 +1913,7 @@ export class DesignedStyleWizardModal extends Modal {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', `Chapter style: ${label}`);
+            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.chapterStyleAria', { style: label }));
             if (current === value) card.addClass('is-active');
             render(card);
             card.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: label });
@@ -1930,7 +1938,7 @@ export class DesignedStyleWizardModal extends Modal {
         this.renderOpenerStylePresets(body);
 
         if (this.spec.scene.opener === 'inline-separator') {
-            const sepRow = this.fieldRow(body, 'Separator glyph');
+            const sepRow = this.fieldRow(body, t('ui.designedStyleWizardModal.separatorGlyphLabel'));
             const input = sepRow.createEl('input', {
                 cls: 'ert-input ert-style-wizard__text-input',
                 attr: { type: 'text' },
@@ -1944,12 +1952,12 @@ export class DesignedStyleWizardModal extends Modal {
         // Visual heading-mode preset cards.
         this.renderHeadingModePresets(body);
 
-        const suppressRow = this.fieldRow(body, 'Suppress headers/footers on opener');
+        const suppressRow = this.fieldRow(body, t('ui.designedStyleWizardModal.suppressHeaderFooterLabel'));
         this.toggleInput(suppressRow, this.spec.scene.suppressHeaderFooterOnOpener, (v) => {
             this.mutateSpec((s) => { s.scene.suppressHeaderFooterOnOpener = v; });
         });
 
-        const firstWordRow = this.fieldRow(body, 'First-word emphasis on opener');
+        const firstWordRow = this.fieldRow(body, t('ui.designedStyleWizardModal.firstWordEmphasisLabel'));
         this.toggleInput(firstWordRow, !!this.spec.scene.firstWordEmphasisOnOpener, (v) => {
             this.mutateSpec((s) => { s.scene.firstWordEmphasisOnOpener = v; });
         });
@@ -1967,14 +1975,14 @@ export class DesignedStyleWizardModal extends Modal {
         // Slider defaults match the .tex generator's fallback (0.2 above,
         // 0.2 below). Templates can override; the slider now reads the
         // template's actual value rather than snapping to 0%.
-        const topRow = this.fieldRow(body, 'Space above opener');
+        const topRow = this.fieldRow(body, t('ui.designedStyleWizardModal.spaceAboveOpener'));
         const currentOpenerTop = this.spec.scene.openerSpacing?.topFraction ?? 0.2;
         this.sliderInput(topRow, currentOpenerTop, 0, 0.5, 0.02, (n) => {
             this.mutateSpec((s) => {
                 s.scene.openerSpacing = { ...(s.scene.openerSpacing ?? {}), topFraction: n };
             });
         }, (v) => `${Math.round(v * 100)}%`);
-        const botRow = this.fieldRow(body, 'Space below opener');
+        const botRow = this.fieldRow(body, t('ui.designedStyleWizardModal.spaceBelowOpener'));
         const currentOpenerBottom = this.spec.scene.openerSpacing?.bottomFraction ?? 0.2;
         this.sliderInput(botRow, currentOpenerBottom, 0, 0.5, 0.02, (n) => {
             this.mutateSpec((s) => {
@@ -1983,21 +1991,21 @@ export class DesignedStyleWizardModal extends Modal {
         }, (v) => `${Math.round(v * 100)}%`);
 
         this.renderPanelGlossary(body, [
-            { term: 'Opener',             definition: 'How a new scene begins on the page — either inline (a separator inside the page) or on its own dedicated page.' },
-            { term: 'Heading mode',       definition: 'What the scene heading shows: a number, a title, or both. Only applies when openers use a dedicated page.' },
-            { term: 'Space above opener', definition: 'Vertical space ABOVE the scene heading on its dedicated page. Pushes the heading down from the top — and because body text follows the heading, body shifts down with it.' },
-            { term: 'Space below opener', definition: 'Vertical gap BELOW the scene heading, before the body text starts. Only the body moves down; the heading stays put.' },
+            { term: t('ui.designedStyleWizardModal.glossaryOpenerTerm'),             definition: t('ui.designedStyleWizardModal.glossaryOpenerDef') },
+            { term: t('ui.designedStyleWizardModal.headingModeLabel'),       definition: t('ui.designedStyleWizardModal.glossaryHeadingModeDef') },
+            { term: t('ui.designedStyleWizardModal.spaceAboveOpener'), definition: t('ui.designedStyleWizardModal.glossarySpaceAboveDef') },
+            { term: t('ui.designedStyleWizardModal.spaceBelowOpener'), definition: t('ui.designedStyleWizardModal.glossarySpaceBelowDef') },
         ]);
     }
 
     private renderOpenerStylePresets(parent: HTMLElement): void {
         const current = this.spec.scene.opener;
-        parent.createDiv({ cls: 'ert-style-wizard__preset-row-label', text: 'Opener style' });
+        parent.createDiv({ cls: 'ert-style-wizard__preset-row-label', text: t('ui.designedStyleWizardModal.openerStyleLabel') });
         const row = parent.createDiv({ cls: 'ert-style-wizard__preset-row' });
         type Opener = DesignedStyleSpec['scene']['opener'];
         const presets: Array<{ value: Opener; label: string; render: (card: HTMLElement) => void }> = [
             {
-                value: 'inline-separator', label: 'Inline separator',
+                value: 'inline-separator', label: t('ui.designedStyleWizardModal.openerInlineSeparator'),
                 render: (card) => {
                     const stack = card.createDiv({ cls: 'ert-style-wizard__preset-scene-body' });
                     for (let i = 0; i < 2; i += 1) stack.createDiv({ cls: 'ert-style-wizard__preset-line-bar' });
@@ -2007,7 +2015,7 @@ export class DesignedStyleWizardModal extends Modal {
                 },
             },
             {
-                value: 'dedicated-page', label: 'Dedicated page',
+                value: 'dedicated-page', label: t('ui.designedStyleWizardModal.openerDedicatedPage'),
                 render: (card) => {
                     const stack = card.createDiv({ cls: 'ert-style-wizard__preset-scene-body ert-style-wizard__preset-scene-body--heading' });
                     stack.createSpan({ cls: 'ert-style-wizard__preset-scene-num', text: '3' });
@@ -2016,7 +2024,7 @@ export class DesignedStyleWizardModal extends Modal {
                 },
             },
             {
-                value: 'roman-with-rule', label: 'Roman with rule',
+                value: 'roman-with-rule', label: t('ui.designedStyleWizardModal.openerRomanWithRule'),
                 render: (card) => {
                     const stack = card.createDiv({ cls: 'ert-style-wizard__preset-scene-body' });
                     for (let i = 0; i < 2; i += 1) stack.createDiv({ cls: 'ert-style-wizard__preset-line-bar' });
@@ -2031,7 +2039,7 @@ export class DesignedStyleWizardModal extends Modal {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', `Opener style: ${label}`);
+            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.openerStyleAria', { style: label }));
             if (current === value) card.addClass('is-active');
             render(card);
             card.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: label });
@@ -2051,29 +2059,29 @@ export class DesignedStyleWizardModal extends Modal {
 
     private renderHeadingModePresets(parent: HTMLElement): void {
         const current = this.spec.scene.headingMode;
-        parent.createDiv({ cls: 'ert-style-wizard__preset-row-label', text: 'Heading mode' });
+        parent.createDiv({ cls: 'ert-style-wizard__preset-row-label', text: t('ui.designedStyleWizardModal.headingModeLabel') });
         const row = parent.createDiv({ cls: 'ert-style-wizard__preset-row' });
         const presets: Array<{ value: ManuscriptSceneHeadingMode; label: string; render: (card: HTMLElement) => void }> = [
             {
-                value: 'scene-number', label: 'Number only',
+                value: 'scene-number', label: t('ui.designedStyleWizardModal.headingNumberOnly'),
                 render: (card) => {
                     const stack = card.createDiv({ cls: 'ert-style-wizard__preset-scene-body ert-style-wizard__preset-scene-body--heading' });
                     stack.createSpan({ cls: 'ert-style-wizard__preset-scene-num', text: '3' });
                 },
             },
             {
-                value: 'scene-number-title', label: 'Number + title',
+                value: 'scene-number-title', label: t('ui.designedStyleWizardModal.headingNumberTitle'),
                 render: (card) => {
                     const stack = card.createDiv({ cls: 'ert-style-wizard__preset-scene-body ert-style-wizard__preset-scene-body--heading' });
                     stack.createSpan({ cls: 'ert-style-wizard__preset-scene-num', text: '3' });
-                    stack.createSpan({ cls: 'ert-style-wizard__preset-scene-title', text: '(The Escape)' });
+                    stack.createSpan({ cls: 'ert-style-wizard__preset-scene-title', text: t('ui.designedStyleWizardModal.sampleSceneTitleParen') });
                 },
             },
             {
-                value: 'title-only', label: 'Title only',
+                value: 'title-only', label: t('ui.designedStyleWizardModal.headingTitleOnly'),
                 render: (card) => {
                     const stack = card.createDiv({ cls: 'ert-style-wizard__preset-scene-body ert-style-wizard__preset-scene-body--heading' });
-                    stack.createSpan({ cls: 'ert-style-wizard__preset-scene-title', text: 'The Escape' });
+                    stack.createSpan({ cls: 'ert-style-wizard__preset-scene-title', text: t('ui.designedStyleWizardModal.sampleSceneTitle') });
                 },
             },
         ];
@@ -2081,7 +2089,7 @@ export class DesignedStyleWizardModal extends Modal {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', `Heading mode: ${label}`);
+            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.headingModeAria', { mode: label }));
             if (current === value) card.addClass('is-active');
             render(card);
             card.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: label });
@@ -2102,28 +2110,28 @@ export class DesignedStyleWizardModal extends Modal {
     private renderEpigraphSection(parent: HTMLElement): void {
         const body = this.createPanelBody(parent);
 
-        const enabledRow = this.fieldRow(body, 'Enabled');
+        const enabledRow = this.fieldRow(body, t('ui.designedStyleWizardModal.enabledLabel'));
         this.toggleInput(enabledRow, this.spec.epigraph.enabled, (v) => {
             this.mutateSpec((s) => { s.epigraph.enabled = v; });
         });
 
-        const italicRow = this.fieldRow(body, 'Italic');
+        const italicRow = this.fieldRow(body, t('ui.designedStyleWizardModal.italicLabel'));
         this.toggleInput(italicRow, this.spec.epigraph.italic, (v) => {
             this.mutateSpec((s) => { s.epigraph.italic = v; });
         });
 
-        const attrRow = this.fieldRow(body, 'Attribution style');
+        const attrRow = this.fieldRow(body, t('ui.designedStyleWizardModal.attributionStyleLabel'));
         this.makeRadioGroup(attrRow, [
-            { value: 'em-dash-caps', label: 'Em-dash + caps' },
-            { value: 'plain',        label: 'Plain' },
+            { value: 'em-dash-caps', label: t('ui.designedStyleWizardModal.attributionEmDashCaps') },
+            { value: 'plain',        label: t('ui.designedStyleWizardModal.attributionPlain') },
         ], this.spec.epigraph.attributionStyle, (v) => {
             this.mutateSpec((s) => { s.epigraph.attributionStyle = v as DesignedStyleSpec['epigraph']['attributionStyle']; });
         });
 
         this.renderPanelGlossary(body, [
-            { term: 'Epigraph',        definition: 'A short quotation placed under a Part or Chapter heading, typically italicized, with an attribution below.' },
-            { term: 'Italic',          definition: 'When on, the quote body is set in italics — the standard print convention for epigraphs.' },
-            { term: 'Em-dash + caps',  definition: 'Attribution rendered as `—NAME` in small/all caps. Plain renders the name as-is, no dash, no case change.' },
+            { term: t('ui.designedStyleWizardModal.categoryEpigraph'),        definition: t('ui.designedStyleWizardModal.glossaryEpigraphDef') },
+            { term: t('ui.designedStyleWizardModal.italicLabel'),          definition: t('ui.designedStyleWizardModal.glossaryItalicDef') },
+            { term: t('ui.designedStyleWizardModal.attributionEmDashCaps'),  definition: t('ui.designedStyleWizardModal.glossaryEmDashCapsDef') },
         ]);
     }
 
@@ -2271,16 +2279,16 @@ export class DesignedStyleWizardModal extends Modal {
 
         if (!this.archetypePicked) {
             const empty = this.previewColumn.createDiv({ cls: 'ert-style-wizard__preview-empty' });
-            empty.setText('Select an archetype to begin previewing.');
+            empty.setText(t('ui.designedStyleWizardModal.previewEmpty'));
             return;
         }
 
         const headerEl = this.previewColumn.createDiv({ cls: 'ert-style-wizard__preview-header' });
         headerEl.createSpan({
             cls: 'ert-style-wizard__preview-title',
-            text: this.styleName.trim() || 'Untitled style',
+            text: this.styleName.trim() || t('ui.designedStyleWizardModal.untitledStyle'),
         });
-        headerEl.createSpan({ cls: 'ert-style-wizard__preview-meta', text: 'Preview' });
+        headerEl.createSpan({ cls: 'ert-style-wizard__preview-meta', text: t('ui.designedStyleWizardModal.previewLabel') });
 
         // Side-by-side: features on the left (specs), pictograms on the right.
         // Mirrors the settings PDF Style card pattern; preview never scrolls.
@@ -2301,7 +2309,7 @@ export class DesignedStyleWizardModal extends Modal {
             renderLayoutPictograms(visual, rows, this.spec.scene.headingMode);
         } catch (err) {
             visual.createDiv({ cls: 'ert-style-wizard__preview-error' }).setText(
-                `Could not render preview: ${(err as Error).message ?? String(err)}`,
+                t('ui.designedStyleWizardModal.previewRenderError', { message: (err as Error).message ?? String(err) }),
             );
         }
 
@@ -2332,7 +2340,7 @@ export class DesignedStyleWizardModal extends Modal {
             generateDesignedStyleTex(this.spec);
         } catch (err) {
             const errBox = this.previewColumn.createDiv({ cls: 'ert-style-wizard__validation ert-warning-warning' });
-            errBox.setText(`Generator error: ${(err as Error).message ?? String(err)}`);
+            errBox.setText(t('ui.designedStyleWizardModal.generatorError', { message: (err as Error).message ?? String(err) }));
         }
 
         // Disable save when there are errors.
@@ -2344,18 +2352,18 @@ export class DesignedStyleWizardModal extends Modal {
     private async handleSave(): Promise<void> {
         const validation = validateDesignedStyleSpec(this.spec, this.styleName);
         if (validation.errors.length > 0) {
-            new Notice(`Cannot save: ${validation.errors[0]}`);
+            new Notice(t('ui.designedStyleWizardModal.cannotSave', { error: validation.errors[0] }));
             return;
         }
 
         try {
             const result = await this.persistLayout();
             await this.options.onSave(result);
-            new Notice(this.isEditMode && this.layoutId ? 'Style updated.' : 'Style saved.');
+            new Notice(this.isEditMode && this.layoutId ? t('ui.designedStyleWizardModal.styleUpdated') : t('ui.designedStyleWizardModal.styleSaved'));
             this.close();
         } catch (err) {
             const msg = (err as Error)?.message ?? String(err);
-            new Notice(`Failed to save style: ${msg}`);
+            new Notice(t('ui.designedStyleWizardModal.saveFailed', { message: msg }));
         }
     }
 

@@ -1,6 +1,7 @@
 import { App, ButtonComponent, Modal } from 'obsidian';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
 import { scheduleClassAfterPaint } from '../utils/domClassEffects';
+import { t, tCount } from '../i18n';
 
 export type RtNoteFamilyId = 'scene' | 'manuscript-matter' | 'story-world';
 export type RtNoteSubtypeId =
@@ -29,44 +30,45 @@ interface RtNoteFamilyOption {
     subtypes: RtNoteSubtypeOption[];
 }
 
-const RT_NOTE_FAMILIES: RtNoteFamilyOption[] = [
+// Built on demand so titles and descriptions resolve in the current locale.
+const getRtNoteFamilies = (): RtNoteFamilyOption[] => [
     {
         id: 'scene',
-        title: 'Scene',
-        description: 'Start a new story scene in prose, screenplay, or podcast format.',
+        title: t('ui.createRtNoteModal.familySceneTitle'),
+        description: t('ui.createRtNoteModal.familySceneDesc'),
         subtypes: [
-            { id: 'basic-scene', title: 'Core scene', description: 'Core scene properties for straightforward drafting.' },
-            { id: 'advanced-scene', title: 'Scene with advanced properties', description: 'Core scene properties plus optional advanced scene metadata.' },
-            { id: 'screenplay-scene', title: 'Screenplay scene', description: 'Screenplay-oriented scaffold with runtime defaults.' },
-            { id: 'podcast-scene', title: 'Podcast scene', description: 'Podcast script scaffold with host and guest defaults.' },
+            { id: 'basic-scene', title: t('ui.createRtNoteModal.basicSceneTitle'), description: t('ui.createRtNoteModal.basicSceneDesc') },
+            { id: 'advanced-scene', title: t('ui.createRtNoteModal.advancedSceneTitle'), description: t('ui.createRtNoteModal.advancedSceneDesc') },
+            { id: 'screenplay-scene', title: t('ui.createRtNoteModal.screenplaySceneTitle'), description: t('ui.createRtNoteModal.screenplaySceneDesc') },
+            { id: 'podcast-scene', title: t('ui.createRtNoteModal.podcastSceneTitle'), description: t('ui.createRtNoteModal.podcastSceneDesc') },
         ],
     },
     {
         id: 'manuscript-matter',
-        title: 'Manuscript matter',
-        description: 'Add book-end notes and project-level metadata.',
+        title: t('ui.createRtNoteModal.familyManuscriptMatterTitle'),
+        description: t('ui.createRtNoteModal.familyManuscriptMatterDesc'),
         subtypes: [
-            { id: 'front-matter', title: 'Front matter', description: 'Preface, title page, dedication, or opening matter.' },
-            { id: 'back-matter', title: 'Back matter', description: 'Appendix, acknowledgments, notes, or ending matter.' },
-            { id: 'bookmeta', title: 'BookMeta', description: 'Publication and rights metadata for the active book.' },
+            { id: 'front-matter', title: t('ui.createRtNoteModal.frontMatterTitle'), description: t('ui.createRtNoteModal.frontMatterDesc') },
+            { id: 'back-matter', title: t('ui.createRtNoteModal.backMatterTitle'), description: t('ui.createRtNoteModal.backMatterDesc') },
+            { id: 'bookmeta', title: t('ui.createRtNoteModal.bookMetaTitle'), description: t('ui.createRtNoteModal.bookMetaDesc') },
         ],
     },
     {
         id: 'story-world',
-        title: 'Story world',
-        description: 'Create contextual notes that shape time, place, or surrounding events.',
+        title: t('ui.createRtNoteModal.familyStoryWorldTitle'),
+        description: t('ui.createRtNoteModal.familyStoryWorldDesc'),
         subtypes: [
-            { id: 'beat', title: 'Beat', description: 'A single story beat note with act and purpose fields.' },
-            { id: 'backdrop', title: 'Backdrop', description: 'Timeline context note with start and end dates.' },
-            { id: 'character', title: 'Character', description: 'Character profile: description, motivations, change arc, summary.' },
-            { id: 'place', title: 'Place', description: 'Setting profile: description, layout, role in story, history.' },
+            { id: 'beat', title: t('ui.createRtNoteModal.beatTitle'), description: t('ui.createRtNoteModal.beatDesc') },
+            { id: 'backdrop', title: t('ui.createRtNoteModal.backdropTitle'), description: t('ui.createRtNoteModal.backdropDesc') },
+            { id: 'character', title: t('ui.createRtNoteModal.characterTitle'), description: t('ui.createRtNoteModal.characterDesc') },
+            { id: 'place', title: t('ui.createRtNoteModal.placeTitle'), description: t('ui.createRtNoteModal.placeDesc') },
         ],
     },
 ];
 
 const findFamily = (familyId: RtNoteFamilyId | null): RtNoteFamilyOption | null => {
     if (!familyId) return null;
-    return RT_NOTE_FAMILIES.find((family) => family.id === familyId) ?? null;
+    return getRtNoteFamilies().find((family) => family.id === familyId) ?? null;
 };
 
 export class CreateRtNoteModal extends Modal {
@@ -96,8 +98,8 @@ export class CreateRtNoteModal extends Modal {
 
         contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-note-creator-modal');
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Create' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Create RT note' });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.createRtNoteModal.badge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.createRtNoteModal.title') });
         this.headerSubtitleEl = header.createDiv({ cls: 'ert-modal-subtitle' });
         this.headerMetaEl = header.createDiv({ cls: 'ert-modal-meta' });
 
@@ -108,13 +110,13 @@ export class CreateRtNoteModal extends Modal {
         this.actionsEl = contentEl.createDiv({ cls: 'ert-modal-actions' });
         // Back sits immediately left of Cancel — both right-aligned via justify-content
         this.backButton = new ButtonComponent(this.actionsEl)
-            .setButtonText('Back')
+            .setButtonText(t('ui.createRtNoteModal.backButton'))
             .onClick(() => {
                 this.selectedFamilyId = null;
                 this.render();
             });
         new ButtonComponent(this.actionsEl)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => this.close());
         this.render();
     }
@@ -138,22 +140,22 @@ export class CreateRtNoteModal extends Modal {
 
         this.headerSubtitleEl.setText(
             activeFamily
-                ? 'Choose the exact note type you want to create.'
-                : 'Select a note family first, then choose the specific note type.'
+                ? t('ui.createRtNoteModal.subtitleSubtype')
+                : t('ui.createRtNoteModal.subtitleFamily')
         );
         this.headerMetaEl.empty();
         if (activeFamily) {
-            this.headerMetaEl.createSpan({ cls: 'ert-modal-meta-item', text: 'Step 2 of 2' });
+            this.headerMetaEl.createSpan({ cls: 'ert-modal-meta-item', text: t('ui.createRtNoteModal.stepTwoOfTwo') });
             this.headerMetaEl.createSpan({ cls: 'ert-modal-meta-item', text: activeFamily.title });
         }
 
         this.panelDescEl.setText(
-            activeFamily ? activeFamily.description : 'These groups match the main note categories used across Radial Timeline.'
+            activeFamily ? activeFamily.description : t('ui.createRtNoteModal.familyPanelDesc')
         );
         const grid = this.gridEl;
         const nextButtons = activeFamily
             ? activeFamily.subtypes.map((subtype) => this.getSubtypeButton(subtype))
-            : RT_NOTE_FAMILIES.map((family) => this.getFamilyButton(family));
+            : getRtNoteFamilies().map((family) => this.getFamilyButton(family));
         grid.replaceChildren(...nextButtons);
 
         if (this.backButton?.buttonEl) {
@@ -178,7 +180,7 @@ export class CreateRtNoteModal extends Modal {
         const { button, optionBody } = this.createOptionButton(family.title, family.description);
         optionBody.createDiv({
             cls: 'ert-note-creator-option__meta',
-            text: `${family.subtypes.length} type${family.subtypes.length === 1 ? '' : 's'}`,
+            text: tCount('noteType', family.subtypes.length),
         });
         button.addEventListener('click', () => {
             this.selectedFamilyId = family.id;

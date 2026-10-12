@@ -11,6 +11,7 @@
  * Pure read-only analysis — NEVER modifies files.
  */
 import type { App, TFile, CachedMetadata } from 'obsidian';
+import { t } from '../i18n';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -58,24 +59,24 @@ interface InjectionPattern {
 
 const INJECTION_PATTERNS: InjectionPattern[] = [
     // Templater
-    { regex: /<%[\s\S]*?%>/, label: 'Templater syntax', severity: 'danger' },
+    { regex: /<%[\s\S]*?%>/, get label() { return t('ui.yamlSafety.templaterSyntax'); }, severity: 'danger' },
     // Dataview inline
-    { regex: /`=\s*[^`]/, label: 'Dataview inline query', severity: 'warning' },
-    { regex: /\bdv\.\w+/, label: 'Dataview JS API call', severity: 'warning' },
+    { regex: /`=\s*[^`]/, get label() { return t('ui.yamlSafety.dataviewInlineQuery'); }, severity: 'warning' },
+    { regex: /\bdv\.\w+/, get label() { return t('ui.yamlSafety.dataviewJsApiCall'); }, severity: 'warning' },
     // JavaScript execution
-    { regex: /\beval\s*\(/, label: 'dynamic eval invocation', severity: 'danger' },
-    { regex: /\bFunction\s*\(/, label: 'dynamic Function constructor', severity: 'danger' },
-    { regex: /\bnew\s+Function\b/, label: 'dynamic Function constructor (new form)', severity: 'danger' },
+    { regex: /\beval\s*\(/, get label() { return t('ui.yamlSafety.dynamicEval'); }, severity: 'danger' },
+    { regex: /\bFunction\s*\(/, get label() { return t('ui.yamlSafety.dynamicFunctionConstructor'); }, severity: 'danger' },
+    { regex: /\bnew\s+Function\b/, get label() { return t('ui.yamlSafety.dynamicFunctionConstructorNew'); }, severity: 'danger' },
     // Script / HTML embeds
-    { regex: /<script[\s>]/i, label: '<script> tag', severity: 'danger' },
-    { regex: /<iframe[\s>]/i, label: '<iframe> tag', severity: 'danger' },
-    { regex: /<object[\s>]/i, label: '<object> tag', severity: 'danger' },
-    { regex: /<embed[\s>]/i, label: '<embed> tag', severity: 'danger' },
+    { regex: /<script[\s>]/i, get label() { return t('ui.yamlSafety.scriptTag'); }, severity: 'danger' },
+    { regex: /<iframe[\s>]/i, get label() { return t('ui.yamlSafety.iframeTag'); }, severity: 'danger' },
+    { regex: /<object[\s>]/i, get label() { return t('ui.yamlSafety.objectTag'); }, severity: 'danger' },
+    { regex: /<embed[\s>]/i, get label() { return t('ui.yamlSafety.embedTag'); }, severity: 'danger' },
     // URI handlers
-    { regex: /javascript\s*:/i, label: 'javascript: URI', severity: 'danger' },
-    { regex: /obsidian:\/\//, label: 'obsidian:// URI', severity: 'warning' },
+    { regex: /javascript\s*:/i, get label() { return t('ui.yamlSafety.javascriptUri'); }, severity: 'danger' },
+    { regex: /obsidian:\/\//, get label() { return t('ui.yamlSafety.obsidianUri'); }, severity: 'warning' },
     // Event handlers in HTML attributes
-    { regex: /\bon\w+\s*=\s*["']/i, label: 'HTML event handler attribute', severity: 'danger' },
+    { regex: /\bon\w+\s*=\s*["']/i, get label() { return t('ui.yamlSafety.htmlEventHandler'); }, severity: 'danger' },
 ];
 
 // ─── Foreign plugin key patterns ────────────────────────────────────────
@@ -162,7 +163,7 @@ export async function detectBrokenYaml(
         return {
             severity: 'danger',
             category: 'broken_yaml',
-            message: 'File could not be read — possible encoding or permission issue.',
+            message: t('ui.yamlSafety.fileUnreadable'),
         };
     }
 
@@ -173,14 +174,14 @@ export async function detectBrokenYaml(
         return {
             severity: 'danger',
             category: 'broken_yaml',
-            message: 'Opening `---` fence found but no closing fence — YAML block is unterminated.',
+            message: t('ui.yamlSafety.unterminatedFence'),
         };
     }
 
     return {
         severity: 'danger',
         category: 'broken_yaml',
-        message: 'YAML frontmatter block exists but Obsidian could not parse it — likely malformed syntax.',
+        message: t('ui.yamlSafety.unparseableYaml'),
     };
 }
 
@@ -242,7 +243,7 @@ export async function scanFrontmatterSafety(
                     severity: 'warning',
                     category: 'foreign_plugin',
                     field: key,
-                    message: `Key "${key}" appears to be injected by the "${plugin}" plugin.`,
+                    message: t('ui.yamlSafety.foreignPluginKey', { key, plugin }),
                     pattern: plugin,
                 });
             }
@@ -255,7 +256,7 @@ export async function scanFrontmatterSafety(
                 severity: 'warning',
                 category: 'type_mismatch',
                 field: key,
-                message: `Value for "${key}" is nested ${depth} levels deep — unexpected for frontmatter.`,
+                message: t('ui.yamlSafety.nestedTooDeep', { key, depth }),
             });
         }
 
@@ -266,14 +267,14 @@ export async function scanFrontmatterSafety(
                 severity: 'danger',
                 category: 'oversized_value',
                 field: key,
-                message: `Value for "${key}" is ${strValue.length.toLocaleString()} chars — exceeds safe limit (${VALUE_SIZE_HARD_LIMIT.toLocaleString()}).`,
+                message: t('ui.yamlSafety.valueExceedsLimit', { key, length: strValue.length.toLocaleString(), limit: VALUE_SIZE_HARD_LIMIT.toLocaleString() }),
             });
         } else if (strValue.length > VALUE_SIZE_SOFT_LIMIT) {
             issues.push({
                 severity: 'warning',
                 category: 'oversized_value',
                 field: key,
-                message: `Value for "${key}" is ${strValue.length.toLocaleString()} chars — unusually large for frontmatter.`,
+                message: t('ui.yamlSafety.valueUnusuallyLarge', { key, length: strValue.length.toLocaleString() }),
             });
         }
 
@@ -284,7 +285,7 @@ export async function scanFrontmatterSafety(
                     severity: pat.severity,
                     category: 'code_injection',
                     field: key,
-                    message: `${pat.label} detected in "${key}".`,
+                    message: t('ui.yamlSafety.patternDetected', { pattern: pat.label, key }),
                     pattern: pat.label,
                 });
             }
@@ -308,8 +309,8 @@ function deriveStatus(issues: SafetyIssue[]): SafetyStatus {
  * Build a human-readable summary of safety issues for a single file.
  */
 export function formatSafetyIssues(result: FrontmatterSafetyResult): string {
-    if (result.issues.length === 0) return 'No issues detected.';
+    if (result.issues.length === 0) return t('ui.yamlSafety.noIssues');
     return result.issues
-        .map(i => `[${i.severity.toUpperCase()}] ${i.message}`)
+        .map(i => `[${i.severity === 'danger' ? t('ui.yamlSafety.severityDanger') : t('ui.yamlSafety.severityWarning')}] ${i.message}`)
         .join('\n');
 }

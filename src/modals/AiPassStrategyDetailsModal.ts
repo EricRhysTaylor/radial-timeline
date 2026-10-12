@@ -5,6 +5,7 @@
  * strategies. The system chooses automatically based on manuscript size.
  */
 import { App, Modal, setIcon } from 'obsidian';
+import { t } from '../i18n';
 
 export class AiPassStrategyDetailsModal extends Modal {
     constructor(app: App) {
@@ -21,22 +22,22 @@ export class AiPassStrategyDetailsModal extends Modal {
 
         // Hero header
         const hero = contentEl.createDiv({ cls: 'ert-modal-header' });
-        hero.createDiv({ cls: 'ert-modal-title', text: 'Analysis pass strategies' });
+        hero.createDiv({ cls: 'ert-modal-title', text: t('ui.aiPassStrategyDetailsModal.title') });
         hero.createDiv({
             cls: 'ert-modal-subtitle',
-            text: 'How manuscript analysis is structured based on size.'
+            text: t('ui.aiPassStrategyDetailsModal.subtitle')
         });
 
         // ── Single-Pass section ──
         this.createStrategySection(contentEl, {
             icon: 'git-commit-vertical',
-            title: 'Single-Pass Analysis',
-            body: 'Entire manuscript analyzed in one request. Best suited for deeply global thematic questions that depend on the full manuscript being considered at once.',
+            title: t('ui.aiPassStrategyDetailsModal.singlePassTitle'),
+            body: t('ui.aiPassStrategyDetailsModal.singlePassBody'),
             questions: [
-                'What is the central moral argument of this book?',
-                'Does the ending fulfill the thematic promise of the opening?',
-                'Is the protagonist\u2019s transformation coherent across all acts?',
-                'How does the midpoint reframe the final resolution?'
+                t('ui.aiPassStrategyDetailsModal.singlePassQuestion1'),
+                t('ui.aiPassStrategyDetailsModal.singlePassQuestion2'),
+                t('ui.aiPassStrategyDetailsModal.singlePassQuestion3'),
+                t('ui.aiPassStrategyDetailsModal.singlePassQuestion4')
             ]
         });
 
@@ -46,13 +47,13 @@ export class AiPassStrategyDetailsModal extends Modal {
         // ── Multi-Pass section ──
         this.createStrategySection(contentEl, {
             icon: 'git-fork',
-            title: 'Multi-Pass Analysis',
-            body: 'Large manuscripts are split into structured segments. Each segment is evaluated independently, and the findings are combined into one unified response. Best for structural patterns that can be analyzed segment by segment.',
+            title: t('ui.aiPassStrategyDetailsModal.multiPassTitle'),
+            body: t('ui.aiPassStrategyDetailsModal.multiPassBody'),
             questions: [
-                'Identify unresolved character arcs across the manuscript.',
-                'Where does tension stall or repeat structurally?',
-                'Detect timeline inconsistencies or continuity errors.',
-                'Compare scene-level pacing patterns across acts.'
+                t('ui.aiPassStrategyDetailsModal.multiPassQuestion1'),
+                t('ui.aiPassStrategyDetailsModal.multiPassQuestion2'),
+                t('ui.aiPassStrategyDetailsModal.multiPassQuestion3'),
+                t('ui.aiPassStrategyDetailsModal.multiPassQuestion4')
             ]
         });
 
@@ -79,7 +80,7 @@ export class AiPassStrategyDetailsModal extends Modal {
         // Example questions
         if (config.questions.length > 0) {
             const questionList = section.createDiv({ cls: 'ert-stack ert-stack--tight ert-ai-strategy-questions' });
-            questionList.createDiv({ cls: 'ert-ai-strategy-questions-label', text: 'Example questions:' });
+            questionList.createDiv({ cls: 'ert-ai-strategy-questions-label', text: t('ui.aiPassStrategyDetailsModal.exampleQuestionsLabel') });
             config.questions.forEach(question => {
                 const row = questionList.createDiv({ cls: 'ert-ai-strategy-question' });
                 const qIcon = row.createSpan({ cls: 'ert-ai-strategy-question-icon' });

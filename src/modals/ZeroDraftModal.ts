@@ -4,6 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 import { App, Modal, ButtonComponent } from 'obsidian';
+import { t } from '../i18n';
 
 /**
  * ZeroDraftModal presents a large textarea for editing the "Pending Edits" field.
@@ -74,7 +75,7 @@ export class ZeroDraftModal extends Modal {
             });
 
             new ButtonComponent(actionsRow)
-                .setButtonText('Cancel')
+                .setButtonText(t('common.cancel'))
                 .onClick(() => {
                     modal.close();
                     resolve(false);
@@ -96,17 +97,17 @@ export class ZeroDraftModal extends Modal {
 
         // Header
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Zero Draft' });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.zeroDraftModal.badge') });
         header.createDiv({ cls: 'ert-modal-title', text: this.titleText });
-        header.createDiv({ cls: 'ert-modal-subtitle', text: 'Enter Pending Edits below, or click Override to open the note directly.' });
+        header.createDiv({ cls: 'ert-modal-subtitle', text: t('ui.zeroDraftModal.subtitle') });
 
         // Info note
         const infoEl = contentEl.createDiv({ cls: 'ert-field-note' });
-        infoEl.setText('Zero draft mode is enabled. This scene has Progress Stage = Zero and Status = Complete. You can turn this off in Settings → Zero draft mode.');
+        infoEl.setText(t('ui.zeroDraftModal.infoNote'));
 
         // Textarea
         const textareaRow = contentEl.createDiv({ cls: 'ert-row ert-row--stack' });
-        textareaRow.createDiv({ cls: 'ert-label', text: 'Pending edits' });
+        textareaRow.createDiv({ cls: 'ert-label', text: t('ui.zeroDraftModal.pendingEditsLabel') });
         const textareaControl = textareaRow.createDiv({ cls: 'ert-control' });
         this.textareaEl = textareaControl.createEl('textarea', { cls: 'ert-textarea' });
         this.textareaEl.value = this.originalText;
@@ -116,17 +117,17 @@ export class ZeroDraftModal extends Modal {
 
         // OK button
         new ButtonComponent(buttonRow)
-            .setButtonText('Save')
+            .setButtonText(t('common.save'))
             .setCta()
             .onClick(async () => {
                 const next = (this.textareaEl.value || '').trim();
                 // If we are clearing existing non-empty content, confirm deletion
                 if (this.originalText.length > 0 && next.length === 0) {
                     const confirmed = await this.confirmAction({
-                        badge: 'Warning',
-                        title: 'Delete pending edits?',
-                        subtitle: 'This will remove all previous text.',
-                        confirmText: 'Delete',
+                        badge: t('ui.zeroDraftModal.warningBadge'),
+                        title: t('ui.zeroDraftModal.deleteTitle'),
+                        subtitle: t('ui.zeroDraftModal.deleteSubtitle'),
+                        confirmText: t('ui.zeroDraftModal.deleteButton'),
                         confirmWarning: true
                     });
                     if (!confirmed) return; // Do not close or write
@@ -140,17 +141,17 @@ export class ZeroDraftModal extends Modal {
 
         // Override button
         new ButtonComponent(buttonRow)
-            .setButtonText('Override')
+            .setButtonText(t('ui.zeroDraftModal.overrideButton'))
             .setDestructive()
             .onClick(async () => {
                 const current = (this.textareaEl.value || '').trim();
                 const isDirty = current !== this.originalText;
                 if (isDirty) {
                     const discard = await this.confirmAction({
-                        badge: 'Warning',
-                        title: 'Discard changes?',
-                        subtitle: 'Unsaved edits will be lost.',
-                        confirmText: 'Discard',
+                        badge: t('ui.zeroDraftModal.warningBadge'),
+                        title: t('ui.zeroDraftModal.discardTitle'),
+                        subtitle: t('ui.zeroDraftModal.discardSubtitle'),
+                        confirmText: t('ui.zeroDraftModal.discardButton'),
                         confirmWarning: true
                     });
                     if (!discard) return;
@@ -162,16 +163,16 @@ export class ZeroDraftModal extends Modal {
 
         // Cancel button
         new ButtonComponent(buttonRow)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(async () => {
                 const current = (this.textareaEl.value || '').trim();
                 const isDirty = current !== this.originalText;
                 if (isDirty) {
                     const discard = await this.confirmAction({
-                        badge: 'Warning',
-                        title: 'Discard changes?',
-                        subtitle: 'Unsaved edits will be lost.',
-                        confirmText: 'Discard',
+                        badge: t('ui.zeroDraftModal.warningBadge'),
+                        title: t('ui.zeroDraftModal.discardTitle'),
+                        subtitle: t('ui.zeroDraftModal.discardSubtitle'),
+                        confirmText: t('ui.zeroDraftModal.discardButton'),
                         confirmWarning: true
                     });
                     if (!discard) return;

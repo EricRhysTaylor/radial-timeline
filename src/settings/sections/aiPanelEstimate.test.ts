@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
     buildPanelViewModel,
     formatExpectedPassesLabel,
@@ -12,6 +12,17 @@ import {
     type PanelTokenEstimate
 } from './aiPanelEstimate';
 import { formatTokenHeadline, pickBestTokenEstimate } from '../../ai/estimates';
+
+// New ui.* keys resolve to their key (plus vars) so assertions can name them; existing keys keep their English.
+vi.mock('../../i18n', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../i18n')>();
+    return {
+        ...actual,
+        t: (key: string, vars?: Record<string, string | number>) => key.startsWith('ui.')
+            ? (vars ? `${key} ${JSON.stringify(vars)}` : key) : actual.t(key, vars),
+        tCount: (noun: string, count: number) => `${noun}:${count}`
+    };
+});
 
 // ── Test fixtures ──────────────────────────────────────────────────
 
@@ -62,7 +73,7 @@ describe('aiPanelEstimate — invariants', () => {
         // still compatible — the constraint is just: known total ≥ visible sum,
         // and the delta surfaces as the Provider overhead row in the same source.
         const vm = buildPanelViewModel(buildInput({ providerCount: { source: 'unavailable' } }));
-        const processing = vm.sections.find(s => s.title === 'Processing');
+        const processing = vm.sections.find(s => s.title === 'ui.aiPanelEstimate.processingTitle');
         expect(processing).toBeDefined();
         const totalItem = processing!.items.find(item => item.kind === 'total_row');
         expect(totalItem?.kind).toBe('total_row');
@@ -80,7 +91,7 @@ describe('aiPanelEstimate — invariants', () => {
             expect(vm.header.providerInputSummary.source).toBe('local_estimate');
         }
         const summary = formatProviderInputSummary(vm.header.providerInputSummary);
-        expect(summary).toContain('local estimate');
+        expect(summary).toContain('ui.aiPanelEstimate.providerInputLocal');
     });
 
     it('truly empty forecast (no corpus + no prompt + no provider count) renders unavailable header and no token unit', () => {
@@ -94,7 +105,7 @@ describe('aiPanelEstimate — invariants', () => {
         expect(headlineFmt.unitText).toBeNull();
         expect(headlineFmt.numericText).toBe('Unavailable');
         // Passes label discloses unavailable instead of "n/a".
-        expect(formatExpectedPassesLabel(vm.header.expectedPasses)).toContain('unavailable');
+        expect(formatExpectedPassesLabel(vm.header.expectedPasses)).toBe('ui.aiPanelEstimate.expectedPassesUnavailable');
     });
 
     it('expected passes discloses source — provider_count is authoritative, local_estimate is disclosed', () => {
@@ -107,7 +118,7 @@ describe('aiPanelEstimate — invariants', () => {
             expect(providerVm.header.expectedPasses.source).toBe('provider_count');
         }
         expect(formatExpectedPassesLabel(providerVm.header.expectedPasses))
-            .toBe('Expected structured passes · 1');
+            .toBe('ui.aiPanelEstimate.expectedPasses {"passes":1}');
 
         const localVm = buildPanelViewModel(buildInput({ providerCount: { source: 'unavailable' } }));
         expect(localVm.header.expectedPasses.kind).toBe('known');
@@ -115,7 +126,7 @@ describe('aiPanelEstimate — invariants', () => {
             expect(localVm.header.expectedPasses.source).toBe('local_estimate');
         }
         expect(formatExpectedPassesLabel(localVm.header.expectedPasses))
-            .toContain('local estimate');
+            .toContain('ui.aiPanelEstimate.expectedPassesLocal');
     });
 
     it('overhead row is omitted unless known and positive', () => {
@@ -124,24 +135,24 @@ describe('aiPanelEstimate — invariants', () => {
         const vm1 = buildPanelViewModel(buildInput({
             providerCount: { source: 'provider_count', tokens: localSum }
         }));
-        const processing1 = vm1.sections.find(s => s.title === 'Processing')!;
-        expect(processing1.items.some(item => item.kind === 'token_row' && item.row.label === 'Provider overhead'))
+        const processing1 = vm1.sections.find(s => s.title === 'ui.aiPanelEstimate.processingTitle')!;
+        expect(processing1.items.some(item => item.kind === 'token_row' && item.row.label === 'ui.aiPanelEstimate.providerOverhead'))
             .toBe(false);
 
         // Case 2: provider count exceeds local sum → overhead row present.
         const vm2 = buildPanelViewModel(buildInput({
             providerCount: { source: 'provider_count', tokens: localSum + 5000 }
         }));
-        const processing2 = vm2.sections.find(s => s.title === 'Processing')!;
+        const processing2 = vm2.sections.find(s => s.title === 'ui.aiPanelEstimate.processingTitle')!;
         const overheadRow = processing2.items.find(
-            item => item.kind === 'token_row' && item.row.label === 'Provider overhead'
+            item => item.kind === 'token_row' && item.row.label === 'ui.aiPanelEstimate.providerOverhead'
         );
         expect(overheadRow?.kind).toBe('token_row');
 
         // Case 3: provider count unavailable → no overhead row at all.
         const vm3 = buildPanelViewModel(buildInput({ providerCount: { source: 'unavailable' } }));
-        const processing3 = vm3.sections.find(s => s.title === 'Processing')!;
-        expect(processing3.items.some(item => item.kind === 'token_row' && item.row.label === 'Provider overhead'))
+        const processing3 = vm3.sections.find(s => s.title === 'ui.aiPanelEstimate.processingTitle')!;
+        expect(processing3.items.some(item => item.kind === 'token_row' && item.row.label === 'ui.aiPanelEstimate.providerOverhead'))
             .toBe(false);
     });
 
@@ -218,11 +229,11 @@ describe('aiPanelEstimate — cosmetic cleanups', () => {
             sections.find(s => s.title === title)?.items
                 .filter(item => item.kind === 'plain_text')
                 .map(item => (item as { text: string }).text) ?? [];
-        const inquiryCorpus = findPlainTexts(inquiryVm.sections, 'Corpus');
-        const gossamerCorpus = findPlainTexts(gossamerVm.sections, 'Corpus');
+        const inquiryCorpus = findPlainTexts(inquiryVm.sections, 'ui.aiPanelEstimate.corpusTitle');
+        const gossamerCorpus = findPlainTexts(gossamerVm.sections, 'ui.aiPanelEstimate.corpusTitle');
         expect(inquiryCorpus).toEqual(gossamerCorpus);
-        expect(inquiryCorpus).toContain('Outline — none');
-        expect(inquiryCorpus).toContain('References — none');
+        expect(inquiryCorpus).toContain('ui.aiPanelEstimate.corpusOutlineNone');
+        expect(inquiryCorpus).toContain('ui.aiPanelEstimate.corpusReferencesNone');
     });
 
     it('Inquiry and Gossamer both render Execution: 1 pass (no Single-pass wording)', () => {
@@ -232,11 +243,11 @@ describe('aiPanelEstimate — cosmetic cleanups', () => {
             modelId: 'gemini-3.5-flash',
             forecast: { ...baseAvailableForecast, providerCount: { source: 'provider_count', tokens: 140_000 }, providerKnownPassCount: 1 }
         });
-        const processing = vm.sections.find(s => s.title === 'Processing')!;
+        const processing = vm.sections.find(s => s.title === 'ui.aiPanelEstimate.processingTitle')!;
         const execLine = processing.items.find(item => item.kind === 'plain_text');
         expect(execLine?.kind).toBe('plain_text');
         if (execLine?.kind === 'plain_text') {
-            expect(execLine.text).toBe('Execution: 1 pass');
+            expect(execLine.text).toBe('ui.aiPanelEstimate.execution {"passes":"pass:1"}');
         }
     });
 
@@ -248,7 +259,7 @@ describe('aiPanelEstimate — cosmetic cleanups', () => {
         // bug (provider count of 0 + visible local parts producing a
         // contradictory ~0k total).
         const vm = buildPanelViewModel(buildInput({ providerCount: { source: 'unavailable' } }));
-        const processing = vm.sections.find(s => s.title === 'Processing')!;
+        const processing = vm.sections.find(s => s.title === 'ui.aiPanelEstimate.processingTitle')!;
         const totalItem = processing.items.find(item => item.kind === 'total_row');
         expect(totalItem?.kind).toBe('total_row');
         if (totalItem?.kind === 'total_row') {

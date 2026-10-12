@@ -1,5 +1,6 @@
 import { App, Notice, Setting, TAbstractFile, TFolder, normalizePath, setIcon } from 'obsidian';
 import { RT_SYSTEM_FOLDER } from '../utils/systemFolder';
+import { t } from '../i18n';
 
 const VAULT_ROOT_PREFIX = `${RT_SYSTEM_FOLDER}/`;
 
@@ -15,21 +16,21 @@ export function revealFolderInExplorer(app: App, vaultPath: string): void {
     const normalized = normalizePath(vaultPath);
     const folder: TAbstractFile | null = app.vault.getAbstractFileByPath(normalized);
     if (!folder) {
-        new Notice(`Folder not found yet: ${normalized}`);
+        new Notice(t('ui.pathChip.folderNotFoundNotice', { path: normalized }));
         return;
     }
     if (!(folder instanceof TFolder)) {
-        new Notice(`Path is not a folder: ${normalized}`);
+        new Notice(t('ui.pathChip.notAFolderNotice', { path: normalized }));
         return;
     }
     const explorerLeaf = app.workspace.getLeavesOfType('file-explorer')[0];
     if (!explorerLeaf?.view) {
-        new Notice('File explorer is not available.');
+        new Notice(t('ui.pathChip.explorerUnavailableNotice'));
         return;
     }
     const explorerView = explorerLeaf.view as unknown as { revealInFolder?: (target: TAbstractFile) => void }; // SAFE: the file explorer's revealInFolder is not in Obsidian's public typings
     if (!explorerView.revealInFolder) {
-        new Notice('Could not reveal folder.');
+        new Notice(t('ui.pathChip.revealFailedNotice'));
         return;
     }
     explorerView.revealInFolder(folder);
@@ -75,8 +76,8 @@ export function addPathChip(
             href: '#',
             role: 'button',
             'aria-label': options?.onClick
-                ? `Change ${vaultPath}`
-                : `Reveal ${vaultPath} in file explorer`,
+                ? t('ui.pathChip.changeAriaLabel', { path: vaultPath })
+                : t('ui.pathChip.revealAriaLabel', { path: vaultPath }),
             title: vaultPath
         }
     });

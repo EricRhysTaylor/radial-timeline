@@ -9,7 +9,7 @@ import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Notice, setIcon, Menu, Co
 import { TimelineScaffoldModal } from '../modals/TimelineScaffoldModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import RadialTimelinePlugin from '../main';
-import { t } from '../i18n';
+import { t, tCount } from '../i18n';
 import type { SubplotAlignment, TimelineItem } from '../types';
 import { renderSvgFromString } from '../utils/svgDom';
 import { openOrRevealFileByPath } from '../utils/fileUtils';
@@ -311,7 +311,7 @@ export class RadialTimelineView extends ItemView {
     onPaneMenu(menu: Menu, source: string): void {
         super.onPaneMenu(menu, source);
         menu.addItem(item => item
-            .setTitle(t('commands.timelineOrder'))
+            .setTitle(t('commands.timelineDateScaffold'))
             .setIcon('calendar-plus')
             .setSection('pane')
             .onClick(() => new TimelineScaffoldModal(this.app, this.plugin).open()));
@@ -342,10 +342,10 @@ export class RadialTimelineView extends ItemView {
             const searchInput = doc.win.createEl('input');
             searchInput.className = 'ert-timeline-search__input';
             searchInput.type = 'search';
-            searchInput.placeholder = 'Search timeline';
+            searchInput.placeholder = t('timeline.search.placeholder');
             searchInput.autocomplete = 'off';
             searchInput.spellcheck = false;
-            searchInput.setAttribute('aria-label', 'Search timeline');
+            searchInput.setAttribute('aria-label', t('timeline.search.inputLabel'));
 
             this.registerDomEvent(searchBtn, 'mousedown', (evt: MouseEvent) => {
                 evt.preventDefault();
@@ -404,7 +404,7 @@ export class RadialTimelineView extends ItemView {
 
             const select = doc.win.createEl('select');
             select.className = 'rt-book-switcher__select';
-            select.setAttribute('aria-label', 'Book selector');
+            select.setAttribute('aria-label', t('ui.timeLineView.bookSelector'));
             this.registerDomEvent(select, 'change', async () => {
                 const nextId = select.value;
                 if (nextId === SAGA_SCOPE_OPTION) {
@@ -425,13 +425,13 @@ export class RadialTimelineView extends ItemView {
             // an icon button; on a bar too narrow for the full row, TitleBarFit
             // folds them into one menu built from this same list.
             const titleActions: Array<{ label: string; icon: string; run: () => void }> = [
-                { label: 'Radial Timeline commands', icon: 'command', run: () => this.openRadialTimelineCommands() },
-                { label: 'Manuscript export', icon: 'printer', run: () => this.plugin.openManuscriptExportModal() },
+                { label: t('ui.timeLineView.radialTimelineCommands'), icon: 'command', run: () => this.openRadialTimelineCommands() },
+                { label: t('commands.manuscriptExport'), icon: 'printer', run: () => this.plugin.openManuscriptExportModal() },
                 // Same action as the version-indicator fallback; only the
                 // trigger is duplicated here.
-                { label: 'Report a bug', icon: 'bug', run: () => new BugReportModal(this.app, this.plugin, 'rt').open() },
+                { label: t('ui.timeLineView.reportBug'), icon: 'bug', run: () => new BugReportModal(this.app, this.plugin, 'rt').open() },
                 {
-                    label: 'Manage books',
+                    label: t('ui.timeLineView.manageBooks'),
                     icon: 'settings',
                     run: () => {
                         if (this.plugin.settingsTab) {
@@ -459,10 +459,10 @@ export class RadialTimelineView extends ItemView {
             const actionsMenuBtn = doc.win.createEl('button');
             actionsMenuBtn.className = 'ert-timeline-title-menu clickable-icon';
             actionsMenuBtn.type = 'button';
-            actionsMenuBtn.setAttribute('aria-label', 'Timeline actions');
+            actionsMenuBtn.setAttribute('aria-label', t('ui.timeLineView.timelineActions'));
             actionsMenuBtn.setAttribute('aria-haspopup', 'menu');
             setIcon(actionsMenuBtn, 'menu');
-            applyTooltip(actionsMenuBtn, 'Timeline actions', 'bottom');
+            applyTooltip(actionsMenuBtn, t('ui.timeLineView.timelineActions'), 'bottom');
             this.registerDomEvent(actionsMenuBtn, 'click', (evt: MouseEvent) => {
                 evt.preventDefault();
                 evt.stopPropagation();
@@ -478,7 +478,7 @@ export class RadialTimelineView extends ItemView {
             const sessionBtn = doc.win.createEl('button');
             sessionBtn.className = 'ert-timeline-session clickable-icon';
             sessionBtn.type = 'button';
-            sessionBtn.setAttribute('aria-label', 'Start writing session');
+            sessionBtn.setAttribute('aria-label', t('ui.timeLineView.startWritingSession'));
             const sessionLabel = doc.win.createSpan();
             sessionLabel.className = 'ert-timeline-session__label';
             this.renderWritingSessionIdleIcon(sessionLabel);
@@ -595,7 +595,7 @@ export class RadialTimelineView extends ItemView {
             // Named like the Discord pill it replaced: icon + "Mailbox".
             const mailboxLabel = doc.win.createSpan();
             mailboxLabel.className = 'ert-timeline-mailbox__label';
-            mailboxLabel.setText('Mailbox');
+            mailboxLabel.setText(t('ui.timeLineView.mailbox'));
             mailboxBtn.appendChild(mailboxLabel);
             const mailboxBadgeEl = doc.win.createSpan();
             mailboxBtn.appendChild(mailboxBadgeEl);
@@ -664,7 +664,7 @@ export class RadialTimelineView extends ItemView {
             const modeNav = doc.win.createDiv();
             modeNav.className = 'ert-timeline-mode-nav';
             modeNav.setAttribute('role', 'tablist');
-            modeNav.setAttribute('aria-label', 'Timeline mode');
+            modeNav.setAttribute('aria-label', t('ui.timeLineView.timelineModeNav'));
             const modeButtons = new Map<string, HTMLButtonElement>();
             let chronologueModeBtn: HTMLButtonElement | undefined;
             getToggleableModes().forEach((mode, index) => {
@@ -689,8 +689,8 @@ export class RadialTimelineView extends ItemView {
                 labelSpan.textContent = label;
                 btn.appendChild(num);
                 btn.appendChild(labelSpan);
-                btn.setAttribute('aria-label', `${label} mode (${index + 1})`);
-                applyTooltip(btn, `${label} — press ${index + 1}`, 'bottom');
+                btn.setAttribute('aria-label', t('ui.timeLineView.modeNavAria', { mode: label, number: index + 1 }));
+                applyTooltip(btn, t('ui.timeLineView.modeNavTooltip', { mode: label, number: index + 1 }), 'bottom');
                 this.registerDomEvent(btn, 'click', (evt: MouseEvent) => {
                     evt.preventDefault();
                     evt.stopPropagation();
@@ -892,7 +892,7 @@ export class RadialTimelineView extends ItemView {
         const subNav = doc.win.createDiv();
         subNav.className = 'ert-timeline-subnav';
         subNav.setAttribute('role', 'group');
-        subNav.setAttribute('aria-label', 'Chronologue sub-modes');
+        subNav.setAttribute('aria-label', t('ui.timeLineView.chronologueSubModes'));
         subNav.hidden = true;
 
         const makeBtn = (submode: 'shift' | 'alt' | 'runtime', label: string, glyph: string, aria: string): HTMLButtonElement => {
@@ -915,9 +915,9 @@ export class RadialTimelineView extends ItemView {
             return btn;
         };
 
-        const shift = makeBtn('shift', 'Shift', '⇧', 'Shift — elapsed time comparison');
-        const alt = makeBtn('alt', 'Alt', '⌥', 'Alt — planetary calendar');
-        const runtime = makeBtn('runtime', 'Runtime', 'RT', 'Runtime overlay');
+        const shift = makeBtn('shift', t('ui.timeLineView.subNavShift'), '⇧', t('ui.timeLineView.subNavShiftAria'));
+        const alt = makeBtn('alt', t('ui.timeLineView.subNavAlt'), '⌥', t('ui.timeLineView.subNavAltAria'));
+        const runtime = makeBtn('runtime', t('ui.timeLineView.subNavRuntime'), 'RT', t('ui.timeLineView.subNavRuntimeAria'));
 
         this.registerDomEvent(shift, 'click', (evt: MouseEvent) => {
             evt.preventDefault();
@@ -1024,14 +1024,14 @@ export class RadialTimelineView extends ItemView {
     }
 
     private formatWritingSessionMode(mode: WritingSessionMode): string {
-        if (mode === 'drafting') return 'fresh drafting';
-        if (mode === 'revising') return 'revision';
-        if (mode === 'editing') return 'line edit';
-        return 'planning';
+        if (mode === 'drafting') return t('ui.timeLineView.modeFreshDraftingLower');
+        if (mode === 'revising') return t('ui.timeLineView.modeRevisionLower');
+        if (mode === 'editing') return t('ui.timeLineView.modeLineEditLower');
+        return t('ui.timeLineView.modePlanningLower');
     }
 
     private formatWritingSessionStage(stage: WritingSessionStage | WritingSessionStagePreference | undefined): string {
-        if (!stage || stage === 'auto') return 'Auto';
+        if (!stage || stage === 'auto') return t('ui.timeLineView.stageAuto');
         return stage;
     }
 
@@ -1066,7 +1066,7 @@ export class RadialTimelineView extends ItemView {
     }
 
     private formatWordCount(value: number): string {
-        return `${value} ${value === 1 ? 'word' : 'words'}`;
+        return tCount('word', value);
     }
 
     private formatIdleWritingSessionMeta(
@@ -1077,10 +1077,10 @@ export class RadialTimelineView extends ItemView {
         stage: WritingSessionStagePreference
     ): string {
         const target = targetMode === 'time'
-            ? `${goalMinutes} min target`
+            ? t('ui.timeLineView.minTarget', { minutes: goalMinutes })
             : targetMode === 'words'
-                ? `${goalWords} word target`
-                : `${goalWords} words + ${goalMinutes} min`;
+                ? t('ui.timeLineView.wordTarget', { words: goalWords })
+                : t('ui.timeLineView.wordsPlusMinutes', { words: goalWords, minutes: goalMinutes });
         return [
             target,
             this.formatWritingSessionMode(mode),
@@ -1091,11 +1091,11 @@ export class RadialTimelineView extends ItemView {
     private formatCompletedSessionSummary(active: ActiveWritingSession, elapsedMs: number): string {
         const minutes = Math.max(1, Math.round(elapsedMs / 60000));
         const details = [
-            `${minutes} min`,
+            t('ui.timeLineView.minutesShort', { minutes }),
             this.formatWritingSessionMode(active.mode),
             active.bookTitle,
         ].filter(Boolean).join(' ');
-        return `Save ${details}?`;
+        return t('ui.timeLineView.saveSessionPrompt', { details });
     }
 
     private getCountdownSegmentElapsedMs(active: ActiveWritingSession, elapsedMs: number): number {
@@ -1110,22 +1110,25 @@ export class RadialTimelineView extends ItemView {
             : safeMs < 60000;
         if (showSeconds) {
             const value = String(Math.max(0, Math.ceil(safeMs / 1000)));
-            return { value, unit: 'sec', label: `${value} sec` };
+            return { value, unit: 'sec', label: t('ui.timeLineView.secondsShort', { seconds: value }) };
         }
         const minutes = mode === 'countdown'
             ? Math.ceil(safeMs / 60000)
             : Math.floor(safeMs / 60000);
         const value = String(Math.max(0, minutes));
-        return { value, unit: 'min', label: `${value} min` };
+        return { value, unit: 'min', label: t('ui.timeLineView.minutesShort', { minutes: value }) };
     }
 
     private getSessionStatusDisplay(active: ActiveWritingSession, elapsedMs: number): SessionStatusDisplay {
         if (this.sessionUsesWordRing(active)) {
             const typedWords = Math.max(0, Math.round(active.typedWords || 0));
             const goalWords = Math.max(1, Math.round(active.goalWords || 1));
-            const detail = `${typedWords}/${goalWords} words typed · ${this.formatSessionClockHms(elapsedMs)} elapsed`;
+            const detail = [
+                t('ui.timeLineView.wordsTyped', { typed: typedWords, goal: goalWords }),
+                t('ui.timeLineView.clockElapsed', { clock: this.formatSessionClockHms(elapsedMs) }),
+            ].join(' · ');
             if (active.pausedAt) {
-                return { headline: active.idleAuto ? 'Idle' : 'Paused', detail, tone: 'paused' };
+                return { headline: active.idleAuto ? t('ui.timeLineView.idle') : t('ui.timeLineView.paused'), detail, tone: 'paused' };
             }
             return { headline: String(typedWords), detail, tone: 'running' };
         }
@@ -1133,26 +1136,31 @@ export class RadialTimelineView extends ItemView {
         const countdownElapsedMs = this.getCountdownSegmentElapsedMs(active, elapsedMs);
         const remainingMs = goalMs ? Math.max(0, goalMs - countdownElapsedMs) : undefined;
         const clockDisplay = this.formatSessionClockDisplay(remainingMs ?? elapsedMs, goalMs ? 'countdown' : 'elapsed');
-        const wordsSuffix = this.sessionHasWordGoal(active)
-            ? ` · ${Math.max(0, Math.round(active.typedWords || 0))}/${Math.max(1, Math.round(active.goalWords || 1))} words typed` // SAFE: live session readout — an unstarted session shows 0 typed, and the 1-word floor keeps the denominator non-zero
+        const wordsTyped = this.sessionHasWordGoal(active)
+            ? t('ui.timeLineView.wordsTyped', { typed: Math.max(0, Math.round(active.typedWords || 0)), goal: Math.max(1, Math.round(active.goalWords || 1)) }) // SAFE: live session readout — an unstarted session shows 0 typed, and the 1-word floor keeps the denominator non-zero
             : '';
+        const withWordsTyped = (clockText: string): string => [clockText, wordsTyped].filter(Boolean).join(' · ');
         if (goalMs && remainingMs === 0) {
             return {
-                headline: 'Session Complete',
-                detail: 'Good work. Continue the timer or save this session.',
+                headline: t('ui.timeLineView.sessionComplete'),
+                detail: t('ui.timeLineView.sessionCompleteDetail'),
                 tone: 'complete',
             };
         }
         if (active.pausedAt) {
             return {
-                headline: active.idleAuto ? 'Idle' : 'Paused',
-                detail: `${clockDisplay.label} ${goalMs ? 'left' : 'elapsed'}${wordsSuffix}`,
+                headline: active.idleAuto ? t('ui.timeLineView.idle') : t('ui.timeLineView.paused'),
+                detail: withWordsTyped(goalMs
+                    ? t('ui.timeLineView.clockLeft', { clock: clockDisplay.label })
+                    : t('ui.timeLineView.clockElapsed', { clock: clockDisplay.label })),
                 tone: 'paused',
             };
         }
         return {
             headline: clockDisplay.value,
-            detail: `${clockDisplay.label} ${goalMs ? 'remaining' : 'elapsed'}${wordsSuffix}`,
+            detail: withWordsTyped(goalMs
+                ? t('ui.timeLineView.clockRemaining', { clock: clockDisplay.label })
+                : t('ui.timeLineView.clockElapsed', { clock: clockDisplay.label })),
             tone: 'running',
         };
     }
@@ -1190,21 +1198,21 @@ export class RadialTimelineView extends ItemView {
             if (!dailyProgress.dailyTargetWords) {
                 return {
                     label: String(defaultGoalWords),
-                    detail: `Start writing session, ${this.formatWordCount(defaultGoalWords)} target`,
+                    detail: t('ui.timeLineView.idleStartWordTarget', { words: this.formatWordCount(defaultGoalWords) }),
                     state: 'idle',
                 };
             }
             if (dailyProgress.remainingWords && dailyProgress.remainingWords > 0) {
                 return {
                     label: String(dailyProgress.remainingWords),
-                    detail: `Start writing session, ${this.formatWordCount(dailyProgress.remainingWords)} left today`,
+                    detail: t('ui.timeLineView.idleStartWordsLeft', { words: this.formatWordCount(dailyProgress.remainingWords) }),
                     state: 'idle',
                 };
             }
             if (dailyProgress.sessionsCompleted > 0) {
                 return {
                     label: '',
-                    detail: `Daily word goal complete, ${this.formatWordCount(dailyProgress.wordsLogged)} logged today`,
+                    detail: t('ui.timeLineView.idleWordGoalComplete', { words: this.formatWordCount(dailyProgress.wordsLogged) }),
                     state: 'idle',
                     renderIcon: true,
                     goalMet: true,
@@ -1212,28 +1220,28 @@ export class RadialTimelineView extends ItemView {
             }
             return {
                 label: String(dailyProgress.dailyTargetWords),
-                detail: `Start writing session, ${this.formatWordCount(dailyProgress.dailyTargetWords)} target`,
+                detail: t('ui.timeLineView.idleStartWordTarget', { words: this.formatWordCount(dailyProgress.dailyTargetWords) }),
                 state: 'idle',
             };
         }
         if (!dailyProgress.dailyTargetMinutes) {
             return {
                 label: String(defaultGoalMinutes),
-                detail: `Start writing session, ${defaultGoalMinutes} min target`,
+                detail: t('ui.timeLineView.idleStartMinuteTarget', { minutes: defaultGoalMinutes }),
                 state: 'idle',
             };
         }
         if (dailyProgress.remainingMinutes && dailyProgress.remainingMinutes > 0) {
             return {
                 label: String(dailyProgress.remainingMinutes),
-                detail: `Start writing session, ${dailyProgress.remainingMinutes} min left today`,
+                detail: t('ui.timeLineView.idleStartMinutesLeft', { minutes: dailyProgress.remainingMinutes }),
                 state: 'idle',
             };
         }
         if (dailyProgress.sessionsCompleted > 0) {
             return {
                 label: '',
-                detail: `Daily writing goal complete, ${dailyProgress.minutesLogged} min logged today`,
+                detail: t('ui.timeLineView.idleTimeGoalComplete', { minutes: dailyProgress.minutesLogged }),
                 state: 'idle',
                 renderIcon: true,
                 goalMet: true,
@@ -1241,7 +1249,7 @@ export class RadialTimelineView extends ItemView {
         }
         return {
             label: String(dailyProgress.dailyTargetMinutes),
-            detail: `Start writing session, ${dailyProgress.dailyTargetMinutes} min target`,
+            detail: t('ui.timeLineView.idleStartMinuteTarget', { minutes: dailyProgress.dailyTargetMinutes }),
             state: 'idle',
         };
     }
@@ -1253,10 +1261,12 @@ export class RadialTimelineView extends ItemView {
         const elapsedMs = service.getActiveElapsedMs();
         const display = this.getSessionStatusDisplay(active, elapsedMs);
         return {
-            label: display.tone === 'complete' ? 'Complete' : display.headline,
+            label: display.tone === 'complete' ? t('ui.timeLineView.completeLabel') : display.headline,
             detail: active.pausedAt
-                ? `${active.idleAuto ? 'Idle' : 'Paused'} ${this.formatWritingSessionMode(active.mode)} session, ${display.detail}`
-                : `Active ${this.formatWritingSessionMode(active.mode)} session, ${display.detail}`,
+                ? (active.idleAuto
+                    ? t('ui.timeLineView.idleSessionDetail', { mode: this.formatWritingSessionMode(active.mode), detail: display.detail })
+                    : t('ui.timeLineView.pausedSessionDetail', { mode: this.formatWritingSessionMode(active.mode), detail: display.detail }))
+                : t('ui.timeLineView.activeSessionDetail', { mode: this.formatWritingSessionMode(active.mode), detail: display.detail }),
             state: active.pausedAt ? 'paused' : 'active',
             progressStep: this.getActiveSessionProgressStep(active, elapsedMs),
             pulseKey: display.tone === 'running' ? this.getSessionTitlePulseKey(active, elapsedMs) : undefined,
@@ -1562,16 +1572,16 @@ export class RadialTimelineView extends ItemView {
         const feedArmed = this.isSessionFeedShareArmed();
         panel.classList.toggle('is-community-shared', feedArmed);
         const header = panel.createDiv({ cls: 'ert-timeline-session-panel__header' });
-        header.createDiv({ cls: 'ert-timeline-session-panel__title', text: 'Writing Session' });
+        header.createDiv({ cls: 'ert-timeline-session-panel__title', text: t('ui.timeLineView.writingSessionTitle') });
         if (feedArmed) {
-            const sharedBadge = header.createSpan({ cls: 'ert-timeline-session-panel__shared-badge', text: 'Shared' });
-            applyTooltip(sharedBadge, 'Saved sessions post a progress summary to your community feed', 'bottom');
+            const sharedBadge = header.createSpan({ cls: 'ert-timeline-session-panel__shared-badge', text: t('ui.timeLineView.sharedBadge') });
+            applyTooltip(sharedBadge, t('ui.timeLineView.sharedTooltip'), 'bottom');
         }
         const settingsBtn = header.createEl('button', { cls: 'ert-timeline-session-panel__icon clickable-icon' });
         settingsBtn.type = 'button';
         setIcon(settingsBtn, 'settings');
-        settingsBtn.setAttribute('aria-label', 'Goals & Sessions settings');
-        applyTooltip(settingsBtn, 'Goals & Sessions settings', 'bottom');
+        settingsBtn.setAttribute('aria-label', t('ui.timeLineView.goalsSessionsSettings'));
+        applyTooltip(settingsBtn, t('ui.timeLineView.goalsSessionsSettings'), 'bottom');
         settingsBtn.onclick = (event: MouseEvent) => {
             event.preventDefault();
             event.stopPropagation();
@@ -1603,10 +1613,10 @@ export class RadialTimelineView extends ItemView {
         const header = strip.createDiv({ cls: 'ert-timeline-session-panel__recent-header' });
         const iconEl = header.createSpan({ cls: 'ert-timeline-session-panel__recent-header-icon' });
         setIcon(iconEl, 'history');
-        header.createSpan({ text: 'Recent · last 7 days' });
+        header.createSpan({ text: t('ui.timeLineView.recentLast7Days') });
         header.createSpan({
             cls: 'ert-timeline-session-panel__recent-meta',
-            text: rows.length === 1 ? '1 session' : `${rows.length} sessions`,
+            text: tCount('session', rows.length),
         });
 
         const list = strip.createDiv();
@@ -1633,7 +1643,7 @@ export class RadialTimelineView extends ItemView {
         const defaultTargetMode = service.getDefaultTargetMode();
         introText.createDiv({
             cls: 'ert-timeline-session-panel__idle-title',
-            text: service.getDailySessionProgress().sessionsCompleted > 0 ? 'Resume today' : 'Ready to write',
+            text: service.getDailySessionProgress().sessionsCompleted > 0 ? t('ui.timeLineView.resumeToday') : t('ui.timeLineView.readyToWrite'),
         });
         const idleMeta = introText.createDiv({
             cls: 'ert-timeline-session-panel__idle-meta',
@@ -1686,27 +1696,30 @@ export class RadialTimelineView extends ItemView {
                 }
                 const targets = [
                     session.goalWords ? this.formatWordCount(session.goalWords) : undefined,
-                    session.goalMinutes ? `${session.goalMinutes} min` : undefined,
+                    session.goalMinutes ? t('ui.timeLineView.minutesShort', { minutes: session.goalMinutes }) : undefined,
                 ].filter(Boolean).join(' + ');
-                new Notice(`Started ${this.formatWritingSessionMode(session.mode)} session${targets ? ` for ${targets}` : ''}.`);
+                const modeLabel = this.formatWritingSessionMode(session.mode);
+                new Notice(targets
+                    ? t('ui.timeLineView.startedSessionFor', { mode: modeLabel, targets })
+                    : t('ui.timeLineView.startedSession', { mode: modeLabel }));
                 this.refreshWritingSessionControl();
             } catch (error) {
-                new Notice(error instanceof Error ? error.message : 'Could not start writing session.');
+                new Notice(error instanceof Error ? error.message : t('ui.timeLineView.startFailed'));
             }
         };
 
         // Target leads the form: what this session is aiming at is the decision
         // the author makes every time. Mode/stage below are set-and-forget.
         const sprintSection = form.createDiv({ cls: 'ert-timeline-session-panel__section' });
-        this.createSessionSectionTitle(sprintSection, 'target', 'Target');
+        this.createSessionSectionTitle(sprintSection, 'target', t('ui.timeLineView.targetSection'));
 
         const targetModeRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
-        targetModeRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Type' });
+        targetModeRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: t('ui.timeLineView.typeLabel') });
         targetModeSelect = targetModeRow.createEl('select', { cls: 'ert-input ert-input--md ert-timeline-session-panel__select' });
         const targetModeOptions: Array<{ value: WritingSessionTargetMode; label: string }> = [
-            { value: 'time', label: 'Time' },
-            { value: 'words', label: 'Words' },
-            { value: 'both', label: 'Words + time' },
+            { value: 'time', label: t('settings.goalsSessions.targetMode.time') },
+            { value: 'words', label: t('settings.goalsSessions.targetMode.words') },
+            { value: 'both', label: t('settings.goalsSessions.targetMode.both') },
         ];
         targetModeOptions.forEach(option => {
             const opt = targetModeSelect.createEl('option', { text: option.label });
@@ -1720,11 +1733,11 @@ export class RadialTimelineView extends ItemView {
         countdownToggle = countdownLabel.createEl('input', { cls: 'ert-timeline-session-panel__toggle' });
         countdownToggle.type = 'checkbox';
         countdownToggle.checked = service.isCountdownSprintEnabled();
-        countdownLabel.createSpan({ text: 'Countdown sprint' });
+        countdownLabel.createSpan({ text: t('ui.timeLineView.countdownSprint') });
         this.isolateSessionPanelControl(countdownToggle);
 
         const goalRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
-        goalRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Minutes' });
+        goalRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: t('ui.timeLineView.minutesLabel') });
         const goalControls = goalRow.createDiv({ cls: 'ert-timeline-session-panel__goal-controls' });
         goalInput = goalControls.createEl('input', { cls: 'ert-input ert-input--xs ert-timeline-session-panel__number' });
         goalInput.type = 'number';
@@ -1735,7 +1748,7 @@ export class RadialTimelineView extends ItemView {
         this.isolateSessionPanelControl(goalInput);
 
         const wordGoalRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
-        wordGoalRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Words' });
+        wordGoalRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: t('settings.goalsSessions.targetMode.words') });
         const wordGoalControls = wordGoalRow.createDiv({ cls: 'ert-timeline-session-panel__goal-controls' });
         wordGoalInput = wordGoalControls.createEl('input', { cls: 'ert-input ert-input--sm ert-timeline-session-panel__number' });
         wordGoalInput.type = 'number';
@@ -1748,20 +1761,20 @@ export class RadialTimelineView extends ItemView {
         // The one action in the panel, spelled out: a centered accent button
         // closing the Target block, not an icon the author has to decode.
         const beginRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__begin-row' });
-        const beginButton = this.createSessionButton(beginRow, 'Begin Session', 'ert-timeline-session-panel__begin', startSession);
+        const beginButton = this.createSessionButton(beginRow, t('ui.timeLineView.beginSession'), 'ert-timeline-session-panel__begin', startSession);
         this.isolateSessionPanelControl(beginButton);
 
         const sessionSection = form.createDiv({ cls: 'ert-timeline-session-panel__section' });
-        this.createSessionSectionTitle(sessionSection, 'pen-line', 'Session');
+        this.createSessionSectionTitle(sessionSection, 'pen-line', t('ui.timeLineView.sessionSection'));
 
         const modeRow = sessionSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
-        modeRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Mode' });
+        modeRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: t('ui.timeLineView.modeLabel') });
         modeSelect = modeRow.createEl('select', { cls: 'ert-input ert-input--md ert-timeline-session-panel__select' });
         const modeOptions: Array<{ value: WritingSessionMode; label: string }> = [
-            { value: 'drafting', label: 'Fresh drafting' },
-            { value: 'revising', label: 'Revision' },
-            { value: 'editing', label: 'Line edit' },
-            { value: 'planning', label: 'Planning' },
+            { value: 'drafting', label: t('ui.timeLineView.modeFreshDrafting') },
+            { value: 'revising', label: t('ui.timeLineView.modeRevision') },
+            { value: 'editing', label: t('ui.timeLineView.modeLineEdit') },
+            { value: 'planning', label: t('ui.timeLineView.modePlanning') },
         ];
         modeOptions.forEach(option => {
             const opt = modeSelect.createEl('option', { text: option.label });
@@ -1779,15 +1792,15 @@ export class RadialTimelineView extends ItemView {
                 service.setDefaultMode(mode),
                 mode === 'drafting' ? service.setDefaultStage('Zero') : Promise.resolve(),
             ]).catch(error => {
-                new Notice(error instanceof Error ? error.message : 'Could not save writing session defaults.');
+                new Notice(error instanceof Error ? error.message : t('ui.timeLineView.saveDefaultsFailed'));
             });
         });
 
         const stageRow = sessionSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
-        stageRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: 'Stage' });
+        stageRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: t('ui.timeLineView.stageLabel') });
         stageSelect = stageRow.createEl('select', { cls: 'ert-input ert-input--sm ert-timeline-session-panel__select' });
         const stageOptions: Array<{ value: WritingSessionStagePreference; label: string }> = [
-            { value: 'auto', label: 'Auto' },
+            { value: 'auto', label: t('ui.timeLineView.stageAuto') },
             { value: 'Zero', label: 'Zero' },
             { value: 'Author', label: 'Author' },
             { value: 'House', label: 'House' },
@@ -1804,18 +1817,18 @@ export class RadialTimelineView extends ItemView {
             const stage = (stageSelect.value as WritingSessionStagePreference) || 'auto';
             updateIdleMeta();
             void service.setDefaultStage(stage).catch(error => {
-                new Notice(error instanceof Error ? error.message : 'Could not save writing session stage.');
+                new Notice(error instanceof Error ? error.message : t('ui.timeLineView.saveStageFailed'));
             });
         });
 
         if (lampFriends.length > 0) {
             const lampSection = form.createDiv({ cls: 'ert-timeline-session-panel__section' });
-            this.createSessionSectionTitle(lampSection, 'lamp-ceiling', 'Desk Lamps');
+            this.createSessionSectionTitle(lampSection, 'lamp-ceiling', t('ui.timeLineView.deskLamps'));
             const remembered = new Set(deskLamps.rememberedAudience());
             const allLabel = lampSection.createEl('label', { cls: 'ert-timeline-session-panel__toggle-label' });
             const allBox = allLabel.createEl('input', { cls: 'ert-timeline-session-panel__toggle' });
             allBox.type = 'checkbox';
-            allLabel.createSpan({ text: 'All' });
+            allLabel.createSpan({ text: t('ui.timeLineView.allLamps') });
             this.isolateSessionPanelControl(allBox);
             const lampList = lampSection.createDiv({ cls: 'ert-timeline-session-panel__lamp-list' });
             for (const friend of lampFriends) {
@@ -1867,7 +1880,7 @@ export class RadialTimelineView extends ItemView {
         this.sessionPanelScope.registerDomEvent(targetModeSelect, 'change', () => {
             syncTargetControls();
             void service.setDefaultTargetMode((targetModeSelect.value as WritingSessionTargetMode) || 'time').catch(error => {
-                new Notice(error instanceof Error ? error.message : 'Could not save writing session target.');
+                new Notice(error instanceof Error ? error.message : t('ui.timeLineView.saveTargetFailed'));
             });
         });
         this.sessionPanelScope.registerDomEvent(goalInput, 'change', updateIdleMeta);
@@ -1876,7 +1889,7 @@ export class RadialTimelineView extends ItemView {
         countdownToggle.onchange = () => {
             syncTargetControls();
             void service.setCountdownSprint(countdownToggle.checked).catch(error => {
-                new Notice(error instanceof Error ? error.message : 'Could not save the countdown sprint setting.');
+                new Notice(error instanceof Error ? error.message : t('ui.timeLineView.saveCountdownFailed'));
             });
         };
         syncTargetControls();
@@ -1913,34 +1926,34 @@ export class RadialTimelineView extends ItemView {
 
         const actions = panel.createDiv({ cls: 'ert-timeline-session-panel__actions' });
         if (statusDisplay.tone === 'complete' && active.goalMinutes) {
-            this.createSessionIconButton(actions, 'play', 'Continue', 'ert-timeline-session-panel__primary ert-timeline-session-panel__icon-action', async () => {
+            this.createSessionIconButton(actions, 'play', t('ui.timeLineView.continue'), 'ert-timeline-session-panel__primary ert-timeline-session-panel__icon-action', async () => {
                 try {
                     await service.continueCountdown();
                     this.refreshWritingSessionControl();
                 } catch (error) {
-                    new Notice(error instanceof Error ? error.message : 'Could not continue writing session.');
+                    new Notice(error instanceof Error ? error.message : t('ui.timeLineView.continueFailed'));
                 }
             });
         } else if (active.pausedAt) {
-            this.createSessionIconButton(actions, 'play', 'Resume', 'ert-timeline-session-panel__primary ert-timeline-session-panel__icon-action', async () => {
+            this.createSessionIconButton(actions, 'play', t('ui.timeLineView.resume'), 'ert-timeline-session-panel__primary ert-timeline-session-panel__icon-action', async () => {
                 try {
                     await service.resume();
                     this.refreshWritingSessionControl();
                 } catch (error) {
-                    new Notice(error instanceof Error ? error.message : 'Could not resume writing session.');
+                    new Notice(error instanceof Error ? error.message : t('ui.timeLineView.resumeFailed'));
                 }
             });
         } else {
-            this.createSessionIconButton(actions, 'pause', 'Pause', 'ert-timeline-session-panel__secondary ert-timeline-session-panel__icon-action', async () => {
+            this.createSessionIconButton(actions, 'pause', t('ui.timeLineView.pause'), 'ert-timeline-session-panel__secondary ert-timeline-session-panel__icon-action', async () => {
                 try {
                     await service.pause();
                     this.refreshWritingSessionControl();
                 } catch (error) {
-                    new Notice(error instanceof Error ? error.message : 'Could not pause writing session.');
+                    new Notice(error instanceof Error ? error.message : t('ui.timeLineView.pauseFailed'));
                 }
             });
         }
-        this.createSessionIconButton(actions, 'save', 'Save', `ert-timeline-session-panel__primary ert-timeline-session-panel__icon-action${statusDisplay.tone === 'complete' ? ' is-save-ready' : ''}`, async () => {
+        this.createSessionIconButton(actions, 'save', t('common.save'), `ert-timeline-session-panel__primary ert-timeline-session-panel__icon-action${statusDisplay.tone === 'complete' ? ' is-save-ready' : ''}`, async () => {
             const sceneSuggestions = await service.collectTouchedSceneSuggestions(active).catch(() => []);
             const netWordDelta = await service.getActiveNetWordDelta(active).catch(() => undefined);
             const titleByPath = new Map<string, string>();
@@ -1964,7 +1977,7 @@ export class RadialTimelineView extends ItemView {
             }, sceneActivity, feedShare, async (completion) => {
                 try {
                     const record = await service.stop(completion);
-                    new Notice(`Saved ${this.formatWritingSessionMode(record.mode)} session (${this.formatSessionClock(record.elapsedMs)}).`);
+                    new Notice(t('ui.timeLineView.savedSession', { mode: this.formatWritingSessionMode(record.mode), clock: this.formatSessionClock(record.elapsedMs) }));
                     if (feedShare.eligible && completion.postToFeed !== undefined) {
                         // Remember the toggle for the next save, then post.
                         // Posting is best-effort: the session is already saved.
@@ -1972,25 +1985,25 @@ export class RadialTimelineView extends ItemView {
                         if (completion.postToFeed) {
                             try {
                                 await postSessionToCommunityFeed(this.plugin, projectSessionFeedPost(record));
-                                new Notice('Posted to your community feed.');
+                                new Notice(t('ui.timeLineView.postedToFeed'));
                             } catch (postError) {
-                                new Notice(postError instanceof Error ? postError.message : 'Could not post to the community feed.');
+                                new Notice(postError instanceof Error ? postError.message : t('ui.timeLineView.postFailed'));
                             }
                         }
                     }
                     this.refreshWritingSessionControl();
                 } catch (error) {
-                    new Notice(error instanceof Error ? error.message : 'Could not stop writing session.');
+                    new Notice(error instanceof Error ? error.message : t('ui.timeLineView.stopFailed'));
                 }
             }).open();
         });
-        this.createSessionIconButton(actions, 'trash-2', 'Cancel', 'ert-timeline-session-panel__ghost ert-timeline-session-panel__icon-action', async () => {
+        this.createSessionIconButton(actions, 'trash-2', t('common.cancel'), 'ert-timeline-session-panel__ghost ert-timeline-session-panel__icon-action', async () => {
             try {
                 await service.discard();
-                new Notice('Cancelled writing session.');
+                new Notice(t('ui.timeLineView.cancelledSession'));
                 this.refreshWritingSessionControl();
             } catch (error) {
-                new Notice(error instanceof Error ? error.message : 'Could not cancel writing session.');
+                new Notice(error instanceof Error ? error.message : t('ui.timeLineView.cancelFailed'));
             }
         });
 
@@ -2002,7 +2015,7 @@ export class RadialTimelineView extends ItemView {
             const lampIcon = lampRow.createSpan({ cls: 'ert-timeline-session-panel__lamp-icon' });
             setIcon(lampIcon, 'lamp-ceiling');
             lampRow.createSpan({ text: lampLine });
-            const lampEdit: HTMLButtonElement = this.createSessionIconButton(lampRow, 'pencil', 'Change who sees your lamp', 'ert-timeline-session-panel__ghost ert-timeline-session-panel__lamp-edit', () => {
+            const lampEdit: HTMLButtonElement = this.createSessionIconButton(lampRow, 'pencil', t('ui.timeLineView.changeLampAudience'), 'ert-timeline-session-panel__ghost ert-timeline-session-panel__lamp-edit', () => {
                 openSessionDeskLampMenu(lampEdit, this.plugin.deskLamps);
             });
         }
@@ -2041,7 +2054,7 @@ export class RadialTimelineView extends ItemView {
             const minutes = remainingMs !== undefined
                 ? Math.ceil(remainingMs / 60000)
                 : Math.floor(elapsedMs / 60000);
-            return `${typedWords}/${goalWords}w ${minutes}m`;
+            return t('ui.timeLineView.compactWordClock', { typed: typedWords, goal: goalWords, minutes });
         }
         return this.formatSessionClockHms(remainingMs ?? elapsedMs);
     }
@@ -2270,8 +2283,9 @@ export class RadialTimelineView extends ItemView {
         this.timelineSearchButtonMode = mode;
         this.timelineSearchButton.empty();
         setIcon(this.timelineSearchButton, mode === 'clear' ? 'search-x' : 'search');
-        this.timelineSearchButton.setAttribute('aria-label', mode === 'clear' ? 'Clear timeline search' : 'Search timeline');
-        this.timelineSearchButton.setAttribute('title', mode === 'clear' ? 'Clear timeline search' : 'Search timeline');
+        const buttonLabel = mode === 'clear' ? t('timeline.search.clearAction') : t('timeline.search.searchAction');
+        this.timelineSearchButton.setAttribute('aria-label', buttonLabel);
+        this.timelineSearchButton.setAttribute('title', buttonLabel);
         this.timelineSearchButton.classList.toggle('is-clear', mode === 'clear');
     }
 
@@ -2329,7 +2343,7 @@ export class RadialTimelineView extends ItemView {
 
     private openRadialTimelineCommands(): void {
         if (!executeCommandById(this.app, 'command-palette:open')) {
-            new Notice('Command palette is not available.');
+            new Notice(t('ui.timeLineView.commandPaletteUnavailable'));
             return;
         }
         this.seedCommandPaletteQuery('Radial Timeline');
@@ -2342,7 +2356,7 @@ export class RadialTimelineView extends ItemView {
                 window.setTimeout(() => this.seedCommandPaletteQuery(query, attempt + 1), 25);
                 return;
             }
-            new Notice('Command palette opened, but the search box was not found.');
+            new Notice(t('ui.timeLineView.commandPaletteSearchMissing'));
             return;
         }
 
@@ -2373,7 +2387,7 @@ export class RadialTimelineView extends ItemView {
         header.className = 'ert-timeline-legend__header';
         const title = doc.win.createDiv();
         title.className = 'ert-timeline-legend__title';
-        title.textContent = 'Timeline keys';
+        title.textContent = t('ui.timeLineView.legendTitle');
         const badge = doc.win.createDiv();
         badge.className = 'ert-timeline-legend__mode';
         badge.textContent = this.getTimelineLegendModeLabel(mode);
@@ -2455,9 +2469,9 @@ export class RadialTimelineView extends ItemView {
     }
 
     private getTimelineLegendModeLabel(mode: string): string {
-        if (mode === 'progress') return 'Progress';
-        if (mode === 'chronologue') return 'Chronologue';
-        return 'Narrative';
+        if (mode === 'progress') return t('timeline.modes.progress.name');
+        if (mode === 'chronologue') return t('timeline.modes.chronologue.name');
+        return t('timeline.modes.narrative.name');
     }
 
     private randomSceneNumber(): string {
@@ -2467,88 +2481,95 @@ export class RadialTimelineView extends ItemView {
     private getTimelineLegendSections(mode: string): TimelineLegendSection[] {
         const sections: TimelineLegendSection[] = [
             {
-                title: 'Scene Actions',
+                title: t('ui.timeLineView.legendSceneActions'),
                 rows: [
-                    { icon: 'square-mouse-pointer', label: 'Hover scene', detail: mode === 'chronologue' ? 'show property fields and matching scenes' : 'show property fields and expand title *' },
-                    { icon: 'mouse-pointer-click', label: 'Click scene', detail: 'open scene note' },
-                    { icon: 'mouse', label: 'Right click scene', detail: 'Add scene, set status, stage or flag pulse' },
+                    {
+                        icon: 'square-mouse-pointer',
+                        label: t('ui.timeLineView.legendHoverScene'),
+                        detail: mode === 'chronologue'
+                            ? t('ui.timeLineView.legendHoverChronologueDetail')
+                            : t('ui.timeLineView.legendHoverDetail'),
+                    },
+                    { icon: 'mouse-pointer-click', label: t('ui.timeLineView.legendClickScene'), detail: t('ui.timeLineView.legendClickSceneDetail') },
+                    { icon: 'mouse', label: t('ui.timeLineView.legendRightClickScene'), detail: t('ui.timeLineView.legendRightClickSceneDetail') },
                 ],
             },
         ];
 
         if (mode === 'narrative') {
             sections.push({
-                title: 'Narrative Only',
+                title: t('ui.timeLineView.legendNarrativeOnly'),
                 rows: [
-                    { icon: 'move-horizontal', label: 'Drag outer ring', detail: 'move scene or beat in manuscript order' },
-                    { icon: 'layers', label: 'Hold Shift', detail: 'show subplot ring key and In This Book beat names' },
+                    { icon: 'move-horizontal', label: t('ui.timeLineView.legendDragOuterRing'), detail: t('ui.timeLineView.legendDragOuterRingDetail') },
+                    { icon: 'layers', label: t('ui.timeLineView.legendHoldShift'), detail: t('ui.timeLineView.legendHoldShiftDetail') },
                 ],
             });
         }
 
         if (mode === 'chronologue') {
             sections.push({
-                title: 'Chronologue Only',
+                title: t('ui.timeLineView.legendChronologueOnly'),
                 rows: [
-                    { icon: 'arrow-left-right', label: 'Shift / Caps Lock', detail: 'compare elapsed time between scenes' },
-                    { icon: 'crosshair', label: 'Click while comparing', detail: 'choose the scene pair' },
+                    { icon: 'arrow-left-right', label: t('ui.timeLineView.legendShiftCapsLock'), detail: t('ui.timeLineView.legendShiftCapsLockDetail') },
+                    { icon: 'crosshair', label: t('ui.timeLineView.legendClickWhileComparing'), detail: t('ui.timeLineView.legendClickWhileComparingDetail') },
                 ],
             });
         }
 
         sections.push({
-            title: 'Number Square States',
+            title: t('ui.timeLineView.legendNumberSquareStates'),
             rows: [
                 {
                     swatch: { fill: 'var(--rt-color-due)', stroke: 'var(--rt-color-due)', text: this.randomSceneNumber(), textColor: 'var(--rt-color-empty)' },
-                    label: 'Missing date',
-                    detail: 'marked Complete but missing WHEN',
+                    label: t('ui.timeLineView.legendMissingDate'),
+                    detail: t('ui.timeLineView.legendMissingDateDetail'),
                 },
                 {
                     swatch: { fill: 'var(--interactive-accent)', text: this.randomSceneNumber(), textColor: 'var(--rt-color-empty)' },
-                    label: 'Open in tab',
-                    detail: 'scene is currently open',
+                    label: t('ui.timeLineView.legendOpenInTab'),
+                    detail: t('ui.timeLineView.legendOpenInTabDetail'),
                 },
                 {
                     swatch: { fill: 'var(--rt-color-search)', text: this.randomSceneNumber(), textColor: 'var(--rt-legacy-black)' },
-                    label: 'Search match',
-                    detail: 'matches active search',
+                    label: t('ui.timeLineView.legendSearchMatch'),
+                    detail: t('ui.timeLineView.legendSearchMatchDetail'),
                 },
                 {
                     swatch: { fill: 'var(--rt-color-muted-gray)', text: this.randomSceneNumber(), textColor: 'var(--rt-legacy-black)' },
-                    label: 'Pending edits',
-                    detail: 'AI edits awaiting review',
+                    label: t('ui.timeLineView.legendPendingEdits'),
+                    detail: t('ui.timeLineView.legendPendingEditsDetail'),
                 },
                 {
                     swatch: { fill: 'var(--rt-color-empty)', text: this.randomSceneNumber(), textColor: 'var(--rt-grade-a-color)' },
-                    label: 'Pulse AI grade A',
-                    detail: 'strong scene',
+                    label: t('ui.timeLineView.legendGradeA'),
+                    detail: t('ui.timeLineView.legendGradeADetail'),
                 },
                 {
                     swatch: { fill: 'var(--rt-color-empty)', text: this.randomSceneNumber(), textColor: 'var(--rt-grade-b-color)' },
-                    label: 'Pulse AI grade B',
-                    detail: 'acceptable',
+                    label: t('ui.timeLineView.legendGradeB'),
+                    detail: t('ui.timeLineView.legendGradeBDetail'),
                 },
                 {
                     swatch: { fill: 'var(--rt-color-empty)', text: this.randomSceneNumber(), textColor: 'var(--rt-grade-c-color)' },
-                    label: 'Pulse AI grade C',
-                    detail: 'needs revision',
+                    label: t('ui.timeLineView.legendGradeC'),
+                    detail: t('ui.timeLineView.legendGradeCDetail'),
                 },
             ],
         });
 
         sections.push({
-            title: 'Right Click Menu',
+            title: t('ui.timeLineView.legendRightClickMenu'),
             rows: [
                 {
                     icon: 'circle-dot',
-                    label: 'Set Status',
+                    label: t('ui.timeLineView.legendSetStatus'),
+                    // Status values are the author's YAML values, shown as written.
                     detail: 'Todo, Working, Complete',
                     detailIcon: 'calendar-check',
-                    detailIconLabel: 'Complete updates Due Date to today',
+                    detailIconLabel: t('ui.timeLineView.legendCompleteUpdatesDue'),
                 },
-                { icon: 'component', label: 'Change Stage', detail: 'Zero, Author, House, Press', detailSegments: this.getStageLegendDetailSegments() },
-                { icon: 'flag', label: 'Misc', detail: 'Flag Triplet Pulse' },
+                { icon: 'component', label: t('ui.timeLineView.legendChangeStage'), detail: 'Zero, Author, House, Press', detailSegments: this.getStageLegendDetailSegments() },
+                { icon: 'flag', label: t('ui.timeLineView.legendMisc'), detail: t('ui.timeLineView.legendFlagTripletPulse') },
             ],
         });
 
@@ -2581,7 +2602,7 @@ export class RadialTimelineView extends ItemView {
         if (sagaAvailable) {
             const sagaOption = doc.win.createEl('option');
             sagaOption.value = SAGA_SCOPE_OPTION;
-            sagaOption.textContent = 'Saga';
+            sagaOption.textContent = t('ui.timeLineView.sagaOption');
             select.appendChild(sagaOption);
         }
 
@@ -2900,7 +2921,7 @@ export class RadialTimelineView extends ItemView {
             .catch(error => {
                 container.createDiv({
                     cls: "rt-error-message",
-                    text: `Error: ${error instanceof Error ? error.message : String(error)}`
+                    text: t('ui.timeLineView.loadError', { message: error instanceof Error ? error.message : String(error) })
                 });
                 console.error("Failed to load timeline data", error);
             });
@@ -2990,7 +3011,7 @@ export class RadialTimelineView extends ItemView {
                     this._currentMode = 'narrative';
                     this.plugin.settings.currentMode = 'narrative';
                     try { await this.plugin.saveSettings(); } catch { /* best effort */ }
-                    new Notice('Gossamer mode could not load. Returning to Narrative mode.', 6000);
+                    new Notice(t('ui.timeLineView.gossamerLoadFailed'), 6000);
                 }
             }
         }
@@ -3395,7 +3416,7 @@ export class RadialTimelineView extends ItemView {
 
         const header = doc.createElementNS(xhtmlNs, 'div');
         header.className = 'ert-recent-moves__header';
-        header.textContent = 'Recent moves';
+        header.textContent = t('ui.timeLineView.recentMoves');
         panel.appendChild(header);
 
         const list = doc.createElementNS(xhtmlNs, 'div');
@@ -3433,11 +3454,11 @@ export class RadialTimelineView extends ItemView {
             return;
         }
         pill.setAttribute('data-state', 'open');
-        pill.textContent = `Recent cache ${clock}`;
+        pill.textContent = t('ui.timeLineView.recentCache', { clock });
         // Re-bind whenever the text changes: each signal run (or reused
         // result) replaces the window and its last-run cost.
         const costHint = formatGossamerCacheCostHint(window_);
-        const baseTip = `Cache last confirmed for this book on ${window_.provider}. Reuse requires unchanged manuscript, beats, and model.`;
+        const baseTip = t('ui.timeLineView.cacheTooltip', { provider: window_.provider });
         const tip = costHint ? `${baseTip} (${costHint})` : baseTip;
         if (pill.getAttribute('data-tooltip-text') !== tip) {
             applyTooltip(pill, tip, 'bottom');
@@ -3490,16 +3511,16 @@ export class RadialTimelineView extends ItemView {
         button.setAttribute('data-state', this.plugin.gossamerLatestOnly ? 'latest' : 'all');
         applyTooltip(
             button,
-            this.plugin.gossamerLatestOnly ? 'Click to show all traces' : 'Click to show latest only',
+            this.plugin.gossamerLatestOnly ? t('ui.timeLineView.showAllTraces') : t('ui.timeLineView.showLatestOnly'),
             'bottom'
         );
         const buttonLabel = doc.createElementNS(xhtmlNs, 'span');
         if (runs.length === 0) {
-            buttonLabel.textContent = '0 TRACES';
+            buttonLabel.textContent = t('ui.timeLineView.tracesCount', { count: 0 });
         } else if (this.plugin.gossamerLatestOnly) {
-            buttonLabel.textContent = 'LATEST';
+            buttonLabel.textContent = t('ui.timeLineView.latest');
         } else {
-            buttonLabel.textContent = `${runs.length} TRACES`;
+            buttonLabel.textContent = t('ui.timeLineView.tracesCount', { count: runs.length });
         }
         button.appendChild(buttonLabel);
         controlsRow.appendChild(button);
@@ -3581,7 +3602,7 @@ export class RadialTimelineView extends ItemView {
         } else {
             const empty = doc.createElementNS(xhtmlNs, 'div') as HTMLDivElement;
             empty.className = 'rt-gossamer-runs__empty';
-            empty.textContent = `No ${GOSSAMER_SIGNAL_METADATA[activeSignal].label.toLowerCase()} traces yet.`;
+            empty.textContent = t('ui.timeLineView.noTraces', { signal: GOSSAMER_SIGNAL_METADATA[activeSignal].label.toLowerCase() });
             panel.appendChild(empty);
         }
 
@@ -3765,17 +3786,17 @@ export class RadialTimelineView extends ItemView {
 
     private formatRecentMoveAge(timestamp: string): string {
         const parsed = Date.parse(timestamp);
-        if (!Number.isFinite(parsed)) return 'Recently';
+        if (!Number.isFinite(parsed)) return t('ui.timeLineView.recently');
 
         const elapsedMs = Date.now() - parsed;
-        if (elapsedMs < 60_000) return 'Just now';
-        if (elapsedMs < 3_600_000) return `${Math.max(1, Math.floor(elapsedMs / 60_000))}m ago`;
-        if (elapsedMs < 86_400_000) return `${Math.max(1, Math.floor(elapsedMs / 3_600_000))}h ago`;
+        if (elapsedMs < 60_000) return t('ui.timeLineView.justNow');
+        if (elapsedMs < 3_600_000) return t('ui.timeLineView.minutesAgo', { minutes: Math.max(1, Math.floor(elapsedMs / 60_000)) });
+        if (elapsedMs < 86_400_000) return t('ui.timeLineView.hoursAgo', { hours: Math.max(1, Math.floor(elapsedMs / 3_600_000)) });
 
         try {
             return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(parsed));
         } catch {
-            return 'Recently';
+            return t('ui.timeLineView.recently');
         }
     }
 

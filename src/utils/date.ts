@@ -4,6 +4,9 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
+import { t, tCount } from '../i18n';
+import { escapeXml } from './svg';
+
 /**
  * Time span information for determining appropriate time labels
  */
@@ -366,17 +369,20 @@ const MS_PER_WEEK = 7 * MS_PER_DAY;
 const MS_PER_MONTH = 30.44 * MS_PER_DAY; // Average month
 const MS_PER_YEAR = 365.25 * MS_PER_DAY; // Average year
 
-const ELAPSED_TIME_UNIT_LABELS: Record<string, { singular: string; plural: string }> = {
-    second: { singular: 'second', plural: 'seconds' },
-    minute: { singular: 'minute', plural: 'minutes' },
-    hour: { singular: 'hour', plural: 'hours' },
-    day: { singular: 'day', plural: 'days' },
-    week: { singular: 'week', plural: 'weeks' },
-    month: { singular: 'month', plural: 'months' },
-    year: { singular: 'year', plural: 'years' },
-};
-
 type ElapsedDisplayUnit = 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year';
+
+/** "3 days", "1 hour" — the counted phrase for an elapsed unit in the current language. */
+function formatUnitCount(unit: ElapsedDisplayUnit, value: number): string {
+    switch (unit) {
+        case 'second': return tCount('second', value);
+        case 'minute': return tCount('minute', value);
+        case 'hour': return tCount('hour', value);
+        case 'day': return tCount('day', value);
+        case 'week': return tCount('week', value);
+        case 'month': return tCount('month', value);
+        case 'year': return tCount('year', value);
+    }
+}
 
 const ELAPSED_UNIT_SEQUENCE: Record<ElapsedDisplayUnit, { ms: number; next?: ElapsedDisplayUnit }> = {
     year: { ms: MS_PER_YEAR, next: 'month' },
@@ -388,15 +394,6 @@ const ELAPSED_UNIT_SEQUENCE: Record<ElapsedDisplayUnit, { ms: number; next?: Ela
     second: { ms: MS_PER_SECOND },
 };
 
-function formatUnitLabel(value: number, unitKey: ElapsedDisplayUnit): string {
-    const unit = ELAPSED_TIME_UNIT_LABELS[unitKey] ?? {
-        singular: unitKey,
-        plural: `${unitKey}s`
-    };
-    const isSingular = Math.abs(Math.abs(value) - 1) < 1e-9;
-    return isSingular ? unit.singular : unit.plural;
-}
-
 interface ElapsedPrimaryPart {
     text: string;
     remainderMs: number;
@@ -407,7 +404,7 @@ function buildPrimaryComponent(ms: number, requestedUnit: ElapsedDisplayUnit): E
     const unitDef = ELAPSED_UNIT_SEQUENCE[requestedUnit];
     if (!unitDef || ms <= 0) {
         return {
-            text: `0 ${formatUnitLabel(0, requestedUnit)}`,
+            text: formatUnitCount(requestedUnit, 0),
             remainderMs: 0,
             usedUnit: requestedUnit
         };
@@ -420,7 +417,7 @@ function buildPrimaryComponent(ms: number, requestedUnit: ElapsedDisplayUnit): E
         }
         const secondsValue = Math.max(1, Math.round(ms / MS_PER_SECOND));
         return {
-            text: `${secondsValue} ${formatUnitLabel(secondsValue, 'second')}`,
+            text: formatUnitCount('second', secondsValue),
             remainderMs: 0,
             usedUnit: 'second'
         };
@@ -428,7 +425,7 @@ function buildPrimaryComponent(ms: number, requestedUnit: ElapsedDisplayUnit): E
 
     const consumed = wholeValue * unitDef.ms;
     return {
-        text: `${wholeValue} ${formatUnitLabel(wholeValue, requestedUnit)}`,
+        text: formatUnitCount(requestedUnit, wholeValue),
         remainderMs: Math.max(0, ms - consumed),
         usedUnit: requestedUnit
     };
@@ -442,7 +439,7 @@ function buildSecondaryComponent(remainderMs: number, startUnit?: ElapsedDisplay
     const wholeValue = Math.floor(remainderMs / unitDef.ms);
     if (wholeValue > 0) {
         return {
-            text: `${wholeValue} ${formatUnitLabel(wholeValue, startUnit)}`,
+            text: formatUnitCount(startUnit, wholeValue),
             usedUnit: startUnit
         };
     }
@@ -453,7 +450,7 @@ function buildSecondaryComponent(remainderMs: number, startUnit?: ElapsedDisplay
     const secondsValue = Math.round(remainderMs / MS_PER_SECOND);
     if (secondsValue > 0) {
         return {
-            text: `${secondsValue} ${formatUnitLabel(secondsValue, 'second')}`,
+            text: formatUnitCount('second', secondsValue),
             usedUnit: 'second'
         };
     }
@@ -498,12 +495,12 @@ function pickAutoElapsedUnit(ms: number): ElapsedDisplayUnit {
 
 export function formatElapsedTime(ms: number, clickCount: number = 0): string {
     if (!Number.isFinite(ms)) {
-        return '0 minutes';
+        return formatUnitCount('minute', 0);
     }
 
     const safeMs = Math.max(0, Math.abs(ms));
     if (safeMs === 0) {
-        return '0 minutes';
+        return formatUnitCount('minute', 0);
     }
 
     const unitIndex = ((clickCount % 5) + 5) % 5;
@@ -989,9 +986,9 @@ export function generateChronologicalTicks(
 
             // Special cases for noon and midnight (elegant, matches synopsis treatment)
             if (hour === 12 && minute === 0) {
-                return 'noon';
+                return escapeXml(t('ui.date.noon'));
             } else if (hour === 0 && minute === 0) {
-                return 'midnight';
+                return escapeXml(t('ui.date.midnight'));
             }
 
             // Regular time formatting

@@ -4,7 +4,14 @@
  * formatted layouts across loaded and library views.
  */
 
-export const KNOWN_LABELS = ['Best for', 'Momentum profile', 'Momentum', 'Start with'];
+/**
+ * A field line is a short label, a colon (ASCII or full-width, for Japanese and
+ * Chinese) and a value: "Best for: …", "Ideal für: …", "最適な用途：…". Matched by
+ * shape rather than by English label words, so translated descriptions keep
+ * their label/value rows. Labels are at most 40 characters with no sentence
+ * punctuation, and a URL's "https://" is never read as a label.
+ */
+const FIELD_LINE = /^([^:：.!?。！？]{1,40})[:：](?!\/\/)\s*(\S.*)$/;
 
 export interface DescriptionParts {
     summary: string;
@@ -34,9 +41,9 @@ export function parseDescriptionParts(description: string): DescriptionParts {
         const plainLines: string[] = [];
         let sawField = false;
         for (const line of lines) {
-            const labelMatch = KNOWN_LABELS.find((label) => line.startsWith(`${label}:`));
-            if (labelMatch) {
-                fieldLines.push({ label: labelMatch, value: line.slice(labelMatch.length + 1).trim() });
+            const fieldMatch = FIELD_LINE.exec(line);
+            if (fieldMatch) {
+                fieldLines.push({ label: fieldMatch[1].trim(), value: fieldMatch[2].trim() });
                 sawField = true;
             } else if (sawField) {
                 // Continuation line after a field

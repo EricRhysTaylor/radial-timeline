@@ -1,5 +1,6 @@
 import type { ValidationIssue } from '../types';
 import { escapeRegExp } from '../utils/regex';
+import { t } from '../i18n';
 
 export type RttsValidationLevel = 'invalid' | 'legacy' | 'compatible';
 
@@ -74,9 +75,7 @@ export function describeRtPartArityIssue(content: string): { arity: number; mess
     if (arity === null || arity === RT_PART_REQUIRED_ARITY) return null;
     return {
         arity,
-        message: `This template defines \\rtPart with ${arity} arguments, but the export emits ${RT_PART_REQUIRED_ARITY} `
-            + `(numeral, title, quote, attribution). Re-import the bundled layout, or update the macro to take `
-            + `${RT_PART_REQUIRED_ARITY} arguments.`,
+        message: t('ui.rttsValidation.partArityMismatch', { arity, required: RT_PART_REQUIRED_ARITY }),
     };
 }
 
@@ -148,7 +147,7 @@ export function validateRttsTemplateContent(
             issues,
             'error',
             'rtts_missing_body',
-            'Template is missing $body$; Pandoc has nowhere to place the manuscript.'
+            t('ui.rttsValidation.missingBody')
         );
     }
 

@@ -5,6 +5,7 @@ import { AiContextTemplate } from '../types/settings';
 import { buildDefaultAiSettings } from '../ai/settings/aiSettings';
 import { validateAiSettings } from '../ai/settings/validateAiSettings';
 import { confirmWithErtModal } from '../modals/ErtConfirmModal';
+import { t } from '../i18n';
 
 /**
  * AiContextModal allows users to manage AI context templates for story analysis.
@@ -50,19 +51,19 @@ export class AiContextModal extends Modal {
         contentEl.addClass('ert-modal-container', 'ert-modal--aiContext', 'ert-stack');
 
         const hero = contentEl.createDiv({ cls: 'ert-modal-header' });
-        hero.createDiv({ cls: 'ert-modal-title', text: 'AI context templates' });
+        hero.createDiv({ cls: 'ert-modal-title', text: t('ui.aiContextModal.title') });
         hero.createDiv({
             cls: 'ert-modal-subtitle',
-            text: 'Define context prepended to AI prompts and Gossamer scoring.'
+            text: t('ui.aiContextModal.subtitle')
         });
 
         // Info section
         const infoEl = contentEl.createDiv({ cls: 'ert-field-note ert-ai-context-info' });
-        infoEl.setText('Define context for AI LLM analysis and pulse triplet editorial feedback. This text prepends select prompts to establish role and context and is used for the copy template button to generate Gossamer scores.');
+        infoEl.setText(t('ui.aiContextModal.info'));
 
         // Template selector row
         const selectorRow = contentEl.createDiv({ cls: 'ert-row' });
-        selectorRow.createDiv({ cls: 'ert-label', text: 'Template' });
+        selectorRow.createDiv({ cls: 'ert-label', text: t('ui.aiContextModal.templateLabel') });
         const selectorControl = selectorRow.createDiv({ cls: 'ert-control' });
         const selectorInputRow = selectorControl.createDiv({ cls: 'ert-ai-context-selector-row' });
         
@@ -74,9 +75,9 @@ export class AiContextModal extends Modal {
         this.dropdownComponent.onChange(async (value) => {
             if (this.isDirty) {
                 const discard = await confirmWithErtModal(this.app, {
-                    title: 'Discard changes?',
-                    message: 'You have unsaved changes. Discard them?',
-                    confirmText: 'Discard'
+                    title: t('ui.aiContextModal.discardTitle'),
+                    message: t('ui.aiContextModal.discardMessage'),
+                    confirmText: t('ui.aiContextModal.discardConfirm')
                 });
                 if (!discard) {
                     // Revert dropdown to previous selection
@@ -97,33 +98,33 @@ export class AiContextModal extends Modal {
         
         // New Template button
         new ButtonComponent(buttonRow)
-            .setButtonText('New')
+            .setButtonText(t('ui.aiContextModal.newButton'))
             .onClick(() => this.createNewTemplate());
         
         // Rename button
         this.renameButton = new ButtonComponent(buttonRow)
-            .setButtonText('Rename')
+            .setButtonText(t('ui.aiContextModal.renameButton'))
             .onClick(() => this.renameTemplate());
         
         // Copy button (for built-in templates)
         this.copyButton = new ButtonComponent(buttonRow)
-            .setButtonText('Copy')
+            .setButtonText(t('ui.aiContextModal.copyButton'))
             .onClick(() => this.copyTemplate());
         
         // Delete button
         this.deleteButton = new ButtonComponent(buttonRow)
-            .setButtonText('Delete')
+            .setButtonText(t('ui.aiContextModal.deleteButton'))
             .setDestructive()
             .onClick(() => { void this.deleteTemplate(); });
 
         // Editor row
         const editorRow = contentEl.createDiv({ cls: 'ert-row ert-row--wideControl' });
-        editorRow.createDiv({ cls: 'ert-label', text: 'Prompt' });
+        editorRow.createDiv({ cls: 'ert-label', text: t('ui.aiContextModal.promptLabel') });
         const editorControl = editorRow.createDiv({ cls: 'ert-control' });
 
         // Textarea for editing prompt
         this.textareaEl = editorControl.createEl('textarea', { cls: 'ert-textarea ert-ai-context-textarea' });
-        this.textareaEl.placeholder = 'Enter your AI context prompt here...';
+        this.textareaEl.placeholder = t('ui.aiContextModal.promptPlaceholder');
         
         // Track changes
         const handleInput = () => {
@@ -145,24 +146,24 @@ export class AiContextModal extends Modal {
         
         // Save button
         this.saveButton = new ButtonComponent(actionRow)
-            .setButtonText('Save changes')
+            .setButtonText(t('ui.aiContextModal.saveChangesButton'))
             .setCta()
             .onClick(() => { void this.saveChanges(); });
         
         // Set Active button
         new ButtonComponent(actionRow)
-            .setButtonText('Set as active & close')
+            .setButtonText(t('ui.aiContextModal.setActiveButton'))
             .onClick(() => { void this.setActiveAndClose(); });
         
         // Close button
         new ButtonComponent(actionRow)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(async () => {
                 if (this.isDirty) {
                     const discard = await confirmWithErtModal(this.app, {
-                        title: 'Discard changes?',
-                        message: 'You have unsaved changes. Discard them?',
-                        confirmText: 'Discard'
+                        title: t('ui.aiContextModal.discardTitle'),
+                        message: t('ui.aiContextModal.discardMessage'),
+                        confirmText: t('ui.aiContextModal.discardConfirm')
                     });
                     if (!discard) return;
                 }
@@ -190,13 +191,13 @@ export class AiContextModal extends Modal {
         
         // Add all templates
         this.templates.forEach(template => {
-            const label = template.isBuiltIn ? `${template.name} (Built-in)` : template.name;
+            const label = template.isBuiltIn ? t('ui.aiContextModal.builtInLabel', { name: template.name }) : template.name;
             this.dropdownComponent!.addOption(template.id, label);
         });
     }
 
     private getCurrentTemplate(): AiContextTemplate | undefined {
-        return this.templates.find(t => t.id === this.currentTemplateId);
+        return this.templates.find(template => template.id === this.currentTemplateId);
     }
 
     private updateEditorSection(): void {
@@ -243,10 +244,10 @@ export class AiContextModal extends Modal {
         const basePrompt = currentTemplate?.prompt || '';
         
         const modal = new NamePromptModal(this.app, {
-            title: 'Enter template name',
+            title: t('ui.aiContextModal.newTemplateTitle'),
             initialValue: '',
-            actionLabel: 'OK',
-            emptyNotice: 'Please enter a template name',
+            actionLabel: t('ui.aiContextModal.okButton'),
+            emptyNotice: t('ui.aiContextModal.emptyNameNotice'),
             shell: { width: '480px' },
             onSubmit: (name) => {
                 // Generate unique ID
@@ -266,7 +267,7 @@ export class AiContextModal extends Modal {
                 this.currentTemplateId = id;
                 this.updateEditorSection();
                 
-                void this.persistTemplates(`Created template: ${name}`);
+                void this.persistTemplates(t('ui.aiContextModal.createdNotice', { name }));
             }
         });
         modal.open();
@@ -277,16 +278,16 @@ export class AiContextModal extends Modal {
         if (!currentTemplate || currentTemplate.isBuiltIn) return;
         
         const modal = new NamePromptModal(this.app, {
-            title: 'Enter new name',
+            title: t('ui.aiContextModal.renameTitle'),
             initialValue: currentTemplate.name,
-            actionLabel: 'OK',
-            emptyNotice: 'Please enter a template name',
+            actionLabel: t('ui.aiContextModal.okButton'),
+            emptyNotice: t('ui.aiContextModal.emptyNameNotice'),
             shell: { width: '480px' },
             onSubmit: (newName) => {
                 currentTemplate.name = newName;
                 this.updateDropdownOptions();
                 this.dropdownComponent?.setValue(this.currentTemplateId);
-                void this.persistTemplates(`Renamed to: ${newName}`);
+                void this.persistTemplates(t('ui.aiContextModal.renamedNotice', { name: newName }));
             }
         });
         modal.open();
@@ -297,10 +298,10 @@ export class AiContextModal extends Modal {
         if (!currentTemplate) return;
         
         const modal = new NamePromptModal(this.app, {
-            title: 'Enter name for copy',
-            initialValue: `${currentTemplate.name} (Copy)`,
-            actionLabel: 'OK',
-            emptyNotice: 'Please enter a template name',
+            title: t('ui.aiContextModal.copyTitle'),
+            initialValue: t('ui.aiContextModal.copyDefaultName', { name: currentTemplate.name }),
+            actionLabel: t('ui.aiContextModal.okButton'),
+            emptyNotice: t('ui.aiContextModal.emptyNameNotice'),
             shell: { width: '480px' },
             onSubmit: (name) => {
                 // Generate unique ID
@@ -319,7 +320,7 @@ export class AiContextModal extends Modal {
                 this.currentTemplateId = id;
                 this.updateEditorSection();
                 
-                void this.persistTemplates(`Created copy: ${name}`);
+                void this.persistTemplates(t('ui.aiContextModal.copiedNotice', { name }));
             }
         });
         modal.open();
@@ -330,14 +331,14 @@ export class AiContextModal extends Modal {
         if (!currentTemplate || currentTemplate.isBuiltIn) return;
         
         const confirmed = await confirmWithErtModal(this.app, {
-            title: `Delete template "${currentTemplate.name}"?`,
-            message: 'This cannot be undone.',
-            confirmText: 'Delete'
+            title: t('ui.aiContextModal.deleteTitle', { name: currentTemplate.name }),
+            message: t('ui.aiContextModal.deleteMessage'),
+            confirmText: t('ui.aiContextModal.deleteButton')
         });
         if (!confirmed) return;
         
         // Remove template
-        this.templates = this.templates.filter(t => t.id !== this.currentTemplateId);
+        this.templates = this.templates.filter(template => template.id !== this.currentTemplateId);
         
         // Switch to first available template
         if (this.templates.length > 0) {
@@ -351,7 +352,7 @@ export class AiContextModal extends Modal {
         this.dropdownComponent?.setValue(this.currentTemplateId);
         this.updateEditorSection();
         
-        await this.persistTemplates(`Deleted template: ${currentTemplate.name}`);
+        await this.persistTemplates(t('ui.aiContextModal.deletedNotice', { name: currentTemplate.name }));
     }
 
     /**
@@ -370,7 +371,7 @@ export class AiContextModal extends Modal {
         try {
             await this.plugin.saveSettings();
         } catch (error) {
-            new Notice(`Could not save AI context templates: ${error instanceof Error ? error.message : String(error)}`, 0);
+            new Notice(t('ui.aiContextModal.saveFailedNotice', { error: error instanceof Error ? error.message : String(error) }), 0);
             return false;
         }
         new Notice(successMessage);
@@ -387,7 +388,7 @@ export class AiContextModal extends Modal {
         
         // isDirty stays true when the write failed, so the discard guard keeps
         // warning about work that is still only in this modal.
-        if (!await this.persistTemplates('Template saved')) return;
+        if (!await this.persistTemplates(t('ui.aiContextModal.savedNotice'))) return;
         
         this.isDirty = false;
         this.updateButtonStates();
@@ -400,7 +401,7 @@ export class AiContextModal extends Modal {
 
         const currentTemplate = this.getCurrentTemplate();
         if (!await this.persistTemplates(
-            `Active template: ${currentTemplate?.name || 'Unknown'}`, // SAFE: UX default — placeholder label when the active template was just deleted
+            t('ui.aiContextModal.activeNotice', { name: currentTemplate?.name || t('ui.aiContextModal.unknownTemplate') }), // SAFE: UX default — placeholder label when the active template was just deleted
             this.currentTemplateId
         )) return;
         

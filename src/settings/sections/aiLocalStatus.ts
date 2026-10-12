@@ -1,4 +1,5 @@
 import type { LocalLlmDiagnosticsReport } from '../../ai/localLlm/diagnostics';
+import { t } from '../../i18n';
 
 interface LocalStatusInput {
     enabled: boolean;
@@ -13,28 +14,30 @@ interface LocalStatusInput {
 interface LocalStatus {
     label: string;
     providerState: '' | 'not_configured' | 'checking' | 'network_blocked' | 'rejected' | 'ready';
+    /** All four checks passed. Callers test this, never the (translated) label. */
+    validated: boolean;
 }
 
 /** Shared interpretation for the local status card, active preview, and provider dropdown. */
 export function buildLocalStatus(input: LocalStatusInput): LocalStatus {
-    if (!input.enabled) return { label: 'Local LLM disabled', providerState: 'not_configured' };
-    if (input.discovering || input.loadingModels) return { label: 'Checking local server', providerState: 'checking' };
-    if (input.validating) return { label: 'Validating', providerState: 'checking' };
+    if (!input.enabled) return { label: t('ui.aiLocalStatus.disabled'), providerState: 'not_configured', validated: false };
+    if (input.discovering || input.loadingModels) return { label: t('ui.aiLocalStatus.checkingServer'), providerState: 'checking', validated: false };
+    if (input.validating) return { label: t('ui.aiLocalStatus.validating'), providerState: 'checking', validated: false };
     // An unchecked server is not a failed server. Keep the dropdown neutral until discovery fails.
-    if (!input.hasServers) return { label: 'No local server detected', providerState: input.detectionError ? 'network_blocked' : '' };
-    if (input.validationError) return { label: 'Needs review', providerState: 'rejected' };
+    if (!input.hasServers) return { label: t('ui.aiLocalStatus.noServerDetected'), providerState: input.detectionError ? 'network_blocked' : '', validated: false };
+    if (input.validationError) return { label: t('ui.aiLocalStatus.needsReview'), providerState: 'rejected', validated: false };
     const report = input.report;
-    if (report && !report.reachable.ok) return { label: 'Local server offline', providerState: 'network_blocked' };
-    const validated = report?.reachable.ok && report.modelAvailable.ok && report.basicCompletion.ok && report.structuredJson.ok;
-    return { label: validated ? 'Connected & validated' : 'Connected', providerState: 'ready' };
+    if (report && !report.reachable.ok) return { label: t('ui.aiLocalStatus.serverOffline'), providerState: 'network_blocked', validated: false };
+    const validated = !!(report?.reachable.ok && report.modelAvailable.ok && report.basicCompletion.ok && report.structuredJson.ok);
+    return { label: validated ? t('ui.aiLocalStatus.connectedValidated') : t('ui.aiLocalStatus.connected'), providerState: 'ready', validated };
 }
 
 export function formatLocalLlmUiError(message: string | null | undefined): string {
     const normalized = (message ?? '').trim();
-    if (!normalized) return 'Unknown local server error.';
-    if (/ERR_CONNECTION_REFUSED/i.test(normalized)) return 'Connection refused. The local server is not running.';
-    if (/timed?\s*out/i.test(normalized)) return 'Timed out while contacting the local server.';
-    if (/No models reported by this local server/i.test(normalized)) return 'A local server responded, but no models are loaded.';
+    if (!normalized) return t('ui.aiLocalStatus.unknownError');
+    if (/ERR_CONNECTION_REFUSED/i.test(normalized)) return t('ui.aiLocalStatus.connectionRefused');
+    if (/timed?\s*out/i.test(normalized)) return t('ui.aiLocalStatus.timedOut');
+    if (/No models reported by this local server/i.test(normalized)) return t('ui.aiLocalStatus.noModelsLoaded');
     return normalized;
 }
 

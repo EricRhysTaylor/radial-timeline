@@ -2,7 +2,7 @@ import { App, Setting as Settings } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { ReadabilityScale } from '../../types/settings';
 import { clearFontMetricsCaches } from '../../renderer/utils/FontMetricsCache';
-import { t } from '../../i18n';
+import { t, tCount } from '../../i18n';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { addPathChip } from '../pathChip';
 import { FolderLocationModal } from '../../modals/FolderLocationModal';
@@ -49,13 +49,13 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     };
 
     const displayContainer = configurationBody.createDiv({ cls: 'ert-config-group' });
-    displayContainer.createDiv({ cls: 'ert-config-group-title', text: 'Timeline Display' });
+    displayContainer.createDiv({ cls: 'ert-config-group-title', text: t('ui.configurationSection.timelineDisplayTitle') });
 
     const schemaContainer = configurationBody.createDiv({ cls: 'ert-config-group' });
-    schemaContainer.createDiv({ cls: 'ert-config-group-title', text: 'Schema & Manuscript' });
+    schemaContainer.createDiv({ cls: 'ert-config-group-title', text: t('ui.configurationSection.schemaManuscriptTitle') });
 
     const logsContainer = configurationBody.createDiv({ cls: 'ert-config-group' });
-    logsContainer.createDiv({ cls: 'ert-config-group-title', text: 'Logs' });
+    logsContainer.createDiv({ cls: 'ert-config-group-title', text: t('settings.configuration.aiOutputFolder.name') });
 
     const outputFolder = resolveLogsRoot();
     const exportFolderDefault = DEFAULT_SETTINGS.manuscriptOutputFolder || systemFolderPath('Export');
@@ -84,7 +84,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
             value: plugin.settings.manuscriptOutputFolder || '',
             placeholder: exportFolderDefault,
             validate: (normalized) => escapesVaultRoot(normalized)
-                ? 'Folder must stay inside your vault.'
+                ? t('ui.configurationSection.folderInsideVaultError')
                 : null,
             onSave: async (normalized) => {
                 const nextFolder = normalized || exportFolderDefault;
@@ -102,8 +102,8 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     refreshExportChip(resolveExportOutputFolder(plugin));
 
     const apiLoggingSetting = createDenseRow(logsContainer, {
-        title: 'Enable AI content logs',
-        description: 'When enabled, full prompts, materials, and API responses are written to feature content folders under Logs. Concise logs, archives, snapshots, and move history are always written regardless of this toggle.',
+        title: t('ui.configurationSection.contentLogsName'),
+        description: t('ui.configurationSection.contentLogsDesc'),
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.logApiInteractions)
@@ -113,7 +113,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
                 }));
         }
     });
-    const contentChip = addPathChip(apiLoggingSetting, app, outputFolder, { label: 'Content logs' });
+    const contentChip = addPathChip(apiLoggingSetting, app, outputFolder, { label: t('ui.configurationSection.contentLogsChip') });
 
     const scheduleLogCount = () => {
         const runCount = () => {
@@ -143,8 +143,8 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
 
     // Timeline Display
     createDenseRow(displayContainer, {
-        title: 'Show scene time cue bar',
-        description: 'Show time-phrase markers beside Scene notes in editing and Reading views. Turn off to hide the vertical bar; scene timing in the note title bar stays visible.',
+        title: t('ui.configurationSection.sceneTimeCueBarName'),
+        description: t('ui.configurationSection.sceneTimeCueBarDesc'),
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.showSceneTimeCueBar !== false)
@@ -155,8 +155,8 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
         }
     });
     createDenseRow(displayContainer, {
-        title: 'Show Community mailbox',
-        description: 'When this vault is connected to the Community, a Mailbox button beside the writing-session control marks new replies to your requests and questions. It checks the website about once an hour and when Obsidian regains focus.',
+        title: t('ui.configurationSection.communityMailboxName'),
+        description: t('ui.configurationSection.communityMailboxDesc'),
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.showCommunityMailbox !== false)
@@ -167,8 +167,8 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
         }
     });
     createDenseRow(displayContainer, {
-        title: 'Show Desk Lamps',
-        description: 'When this vault is connected to the Community, a lamp beside the Mailbox shows which of your Desk Lamps are at their desks, and the session panel lets you share a session with them. Turn off to hide both and keep your own lamp off.',
+        title: t('ui.configurationSection.deskLampsName'),
+        description: t('ui.configurationSection.deskLampsDesc'),
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.showDeskLamps !== false)
@@ -180,7 +180,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     });
     const buildChapterMarkerDescription = (status?: string): string => {
         const base = t('settings.configuration.chapterMarkers.desc');
-        return status ? `${base} ${status}` : base;
+        return status ? t('ui.configurationSection.chapterMarkersDescWithStatus', { desc: base, status }) : base;
     };
 
     createDenseRow(displayContainer, {
@@ -211,8 +211,8 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     });
 
     createDenseRow(displayContainer, {
-        title: 'Recent drag move overlay in narrative mode',
-        description: 'Shows the last committed scene and beat drag moves in narrative timeline.',
+        title: t('ui.configurationSection.recentMovesName'),
+        description: t('ui.configurationSection.recentMovesDesc'),
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.showRecentMovesOverlay ?? true)
@@ -251,11 +251,11 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
             ).length;
             chapterMarkerSetting.setDesc(buildChapterMarkerDescription(
                 chapterCount > 0
-                    ? `${chapterCount} active chapter marker${chapterCount === 1 ? '' : 's'} in the current active book.`
-                    : 'No active chapter markers.'
+                    ? t('ui.configurationSection.chapterMarkersActive', { markers: tCount('activeChapterMarker', chapterCount) })
+                    : t('ui.configurationSection.chapterMarkersNone')
             ));
         } catch {
-            chapterMarkerSetting.setDesc(buildChapterMarkerDescription('No active chapter markers.'));
+            chapterMarkerSetting.setDesc(buildChapterMarkerDescription(t('ui.configurationSection.chapterMarkersNone')));
         }
     };
     void refreshChapterMarkerStatus();

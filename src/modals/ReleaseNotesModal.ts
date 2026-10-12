@@ -9,6 +9,7 @@ import type RadialTimelinePlugin from '../main';
 import type { EmbeddedReleaseNotesEntry } from '../types';
 import { DEFAULT_RELEASES_URL, parseReleaseVersion } from '../utils/releases';
 import { formatPublishedDate, renderReleaseNotesList } from '../utils/releaseNotesRenderer';
+import { t } from '../i18n';
 
 const HERO_PREVIEW_LIMIT = 260;
 
@@ -67,14 +68,14 @@ export class ReleaseNotesModal extends Modal {
         contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-release-notes');
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Release notes' });
-        header.createDiv({ cls: 'ert-modal-title', text: "What's New" });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.releaseNotesModal.badge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.releaseNotesModal.title') });
 
         const versionLabel = parseReleaseVersion(this.featuredEntry.version)?.fullLabel ?? this.featuredEntry.version;
         const releaseDate = formatPublishedDate(this.featuredEntry.publishedAt);
 
         const heroEl = contentEl.createDiv({ cls: 'ert-card ert-card--hero ert-stack ert-release-notes-hero' });
-        heroEl.createSpan({ text: 'Latest release', cls: 'ert-badgePill ert-badgePill--sm ert-release-notes-hero-badge' });
+        heroEl.createSpan({ text: t('ui.releaseNotesModal.latestRelease'), cls: 'ert-badgePill ert-badgePill--sm ert-release-notes-hero-badge' });
         heroEl.createEl('h3', {
             text: this.featuredEntry.title || versionLabel,
             cls: 'ert-hero-title ert-release-notes-hero-title'
@@ -94,14 +95,14 @@ export class ReleaseNotesModal extends Modal {
         const releaseUrl = this.featuredEntry.url ?? DEFAULT_RELEASES_URL;
         const heroActions = heroEl.createDiv({ cls: 'ert-inline ert-release-notes-hero-actions' });
         const changelogLink = heroActions.createEl('a', {
-            text: 'View full changelog',
+            text: t('ui.releaseNotesModal.viewChangelog'),
             cls: 'ert-release-notes-hero-link',
             href: releaseUrl
         });
         changelogLink.setAttr('target', '_blank');
         changelogLink.setAttr('rel', 'noopener');
         heroActions.createSpan({
-            text: 'Scroll to explore the rest of the updates',
+            text: t('ui.releaseNotesModal.scrollHint'),
             cls: 'ert-release-notes-hero-hint'
         });
 
@@ -120,7 +121,7 @@ export class ReleaseNotesModal extends Modal {
         );
 
         const footerEl = contentEl.createDiv({ cls: 'ert-modal-actions ert-release-notes-actions' });
-        const closeButton = footerEl.createEl('button', { text: 'Close' });
+        const closeButton = footerEl.createEl('button', { text: t('ui.releaseNotesModal.close') });
         closeButton.addEventListener('click', () => this.close());
     }
 

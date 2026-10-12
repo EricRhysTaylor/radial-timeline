@@ -44,7 +44,7 @@ import { resolveActiveRoleTemplate } from '../../ai/roleTemplate';
 import { INQUIRY_CANONICAL_ESTIMATE_QUESTION } from '../../inquiry/constants';
 import {getActiveFrontmatterMappings } from '../../utils/frontmatter';
 import { InquirySessionStore } from '../../inquiry/InquirySessionStore';
-import { t } from '../../i18n';
+import { t, tCount } from '../../i18n';
 import { getResolvedModelId } from '../../utils/modelResolver';
 import {
     buildLocalLlmModelIdentity,
@@ -214,14 +214,14 @@ export function renderAiSection(params: {
                 : promo.provider;
             const isFree = promo.inputPer1M === 0 && promo.outputPer1M === 0;
             const title = isFree
-                ? `${modelLabel} — free to use`
+                ? t('ui.aiSection.promoFreeTitle', { model: modelLabel })
                 : `${modelLabel} — ${promo.promo.label}`;
             const expiry = promo.promo.expiresAt
-                ? `Until ${new Date(promo.promo.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`
+                ? t('ui.aiSection.promoUntil', { date: new Date(promo.promo.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) })
                 : '';
             const body = isFree
-                ? `${providerLabel} — no cost for Inquiry runs. ${expiry}`
-                : `${providerLabel} — promotional pricing. ${expiry}`;
+                ? t('ui.aiSection.promoFreeBody', { provider: providerLabel, expiry })
+                : t('ui.aiSection.promoPricingBody', { provider: providerLabel, expiry });
 
             const alertEl = promoBannerContainer.createDiv({
                 cls: 'ert-refactor-alert ert-refactor-alert--promo'
@@ -303,12 +303,12 @@ export function renderAiSection(params: {
     const costEstimateTable = costEstimateSection.createDiv({ cls: 'ert-ai-models-table' });
     const costEstimateFreshness = costEstimateSection.createDiv({ cls: 'ert-ai-cost-freshness' });
     const costEstimateFootnote = costEstimateSection.createDiv({ cls: 'ert-ai-cost-footnote' });
-    costEstimateFootnote.appendText('* Based on published provider pricing. Actual charges may differ due to caching, credits, or account-level adjustments. ');
-    costEstimateFootnote.createSpan({ text: 'See provider pricing: ' });
+    costEstimateFootnote.appendText(t('ui.aiSection.costFootnotePricing'));
+    costEstimateFootnote.createSpan({ text: t('ui.aiSection.costFootnoteSeePricing') });
     [
-        { label: 'OpenAI', href: 'https://openai.com/api/pricing/' },
-        { label: 'Anthropic', href: 'https://platform.claude.com/docs/en/about-claude/pricing' },
-        { label: 'Google', href: 'https://ai.google.dev/gemini-api/docs/pricing' }
+        { label: t('settings.ai.provider.optionOpenai'), href: 'https://openai.com/api/pricing/' },
+        { label: t('settings.ai.provider.optionAnthropic'), href: 'https://platform.claude.com/docs/en/about-claude/pricing' },
+        { label: t('settings.ai.provider.optionGoogle'), href: 'https://ai.google.dev/gemini-api/docs/pricing' }
     ].forEach((link, index, list) => {
         const anchor = costEstimateFootnote.createEl('a', {
             href: link.href,
@@ -324,17 +324,13 @@ export function renderAiSection(params: {
         }
     });
     costEstimateFootnote.appendText('. ');
-    costEstimateFootnote.createEl('strong', { text: 'Local LLM' });
-    costEstimateFootnote.appendText(' runs on your machine with no API charges.');
+    costEstimateFootnote.createEl('strong', { text: t('settings.ai.provider.optionLocalLlm') });
+    costEstimateFootnote.appendText(t('ui.aiSection.costFootnoteLocal'));
     costEstimateFootnote.createEl('br');
-    costEstimateFootnote.createEl('strong', { text: '** Gemini cache note: ' });
-    costEstimateFootnote.appendText(
-        'explicit cache may add storage fees for cached corpus tokens during the active cache window; Gemini cache windows default to 15m, and cache usually only pays off when you run another question before the window expires.'
-    );
+    costEstimateFootnote.createEl('strong', { text: t('ui.aiSection.costFootnoteGeminiLabel') });
+    costEstimateFootnote.appendText(t('ui.aiSection.costFootnoteGeminiBody'));
     costEstimateFootnote.createEl('br');
-    costEstimateFootnote.appendText(
-        'Estimates assume a response size learned from your past runs (or a safe default until a few runs have completed). They get more accurate the more you use Inquiry.'
-    );
+    costEstimateFootnote.appendText(t('ui.aiSection.costFootnoteOutputEstimate'));
 
     const ensureCanonicalAiSettings = () => {
         if (!plugin.settings.aiSettings) {
@@ -422,7 +418,7 @@ export function renderAiSection(params: {
             options.unshift({
                 value: selectedModelId,
                 label: localLlmLoadedModels.length
-                    ? `${abbreviateLocalModelId(selectedModelId)} (configured)`
+                    ? t('ui.aiSection.localModelConfigured', { model: abbreviateLocalModelId(selectedModelId) })
                     : abbreviateLocalModelId(selectedModelId)
             });
         }
@@ -430,7 +426,7 @@ export function renderAiSection(params: {
         if (!options.length) {
             options.push({
                 value: selectedModelId ? selectedModelId : 'local-model',
-                label: selectedModelId ? abbreviateLocalModelId(selectedModelId) : 'Local model'
+                label: selectedModelId ? abbreviateLocalModelId(selectedModelId) : t('ui.aiSection.localModelFallback')
             });
         }
 
@@ -539,39 +535,39 @@ export function renderAiSection(params: {
             setTooltip(providerInputEl, viewModel.header.headlineDisclosure);
         }
     };
-    const capacityInquiry = createCapacityCell('Inquiry');
+    const capacityInquiry = createCapacityCell(t('settings.ai.config.inquiryTitle'));
     capacityInquiry.labelEl.addClass('ert-ai-capacity-label--forecast');
     const capacityInquiryToken = capacityInquiry.valueEl.createDiv({
         cls: 'ert-ai-capacity-meta',
-        text: 'Calculating...'
+        text: t('ui.aiSection.calculating')
     });
     const capacityInquiryExpected = capacityInquiry.valueEl.createDiv({
         cls: 'ert-ai-capacity-meta',
-        text: 'Calculating...'
+        text: t('ui.aiSection.calculating')
     });
     const capacityInquiryProvider = capacityInquiry.valueEl.createDiv({
         cls: 'ert-ai-capacity-meta',
-        text: 'Calculating...'
+        text: t('ui.aiSection.calculating')
     });
     const capacityInquirySections = capacityInquiry.valueEl.createDiv({ cls: 'ert-ai-capacity-composition' });
     renderPanelViewModelSections(capacityInquirySections, buildPanelViewModel({
         feature: 'inquiry',
-        forecast: { kind: 'pending', reason: 'Calculating…' }
+        forecast: { kind: 'pending', reason: t('ui.aiSection.calculatingReason') }
     }));
 
-    const capacityGossamer = createCapacityCell('Gossamer');
+    const capacityGossamer = createCapacityCell(t('ui.aiSection.gossamerLabel'));
     capacityGossamer.labelEl.addClass('ert-ai-capacity-label--forecast');
     const capacityGossamerToken = capacityGossamer.valueEl.createDiv({
         cls: 'ert-ai-capacity-meta',
-        text: 'Calculating...'
+        text: t('ui.aiSection.calculating')
     });
     const capacityGossamerExpected = capacityGossamer.valueEl.createDiv({
         cls: 'ert-ai-capacity-meta',
-        text: 'Calculating...'
+        text: t('ui.aiSection.calculating')
     });
     const capacityGossamerProvider = capacityGossamer.valueEl.createDiv({
         cls: 'ert-ai-capacity-meta',
-        text: 'Calculating...'
+        text: t('ui.aiSection.calculating')
     });
     // Live cache-window line — hidden unless a prior Gossamer run armed a still-open
     // provider-cache window the remaining signals can reuse. Ticked by the preview interval.
@@ -581,11 +577,11 @@ export function renderAiSection(params: {
     const capacityGossamerSections = capacityGossamer.valueEl.createDiv({ cls: 'ert-ai-capacity-composition' });
     renderPanelViewModelSections(capacityGossamerSections, buildPanelViewModel({
         feature: 'gossamer',
-        forecast: { kind: 'pending', reason: 'Calculating…' }
+        forecast: { kind: 'pending', reason: t('ui.aiSection.calculatingReason') }
     }));
     // ── Details link → modal ──
     const detailsBtn = aiSettingsGroup.createDiv({ cls: 'ert-ai-details-link' });
-    detailsBtn.createSpan({ text: 'How analysis passes work \u2192' });
+    detailsBtn.createSpan({ text: t('ui.aiSection.passesDetailsLink') });
     detailsBtn.addEventListener('click', () => {
         void import('../../modals/AiPassStrategyDetailsModal').then(({ AiPassStrategyDetailsModal }) => {
             new AiPassStrategyDetailsModal(plugin.app).open();
@@ -627,13 +623,13 @@ export function renderAiSection(params: {
 
     const contextTemplateSetting = new Settings(roleContextSection)
         .setName(t('settings.ai.contextTemplate.name'))
-        .setDesc(`Active: ${getActiveTemplateName()}`)
+        .setDesc(t('ui.aiSection.activeTemplate', { name: getActiveTemplateName() }))
         .addExtraButton(button => button
             .setIcon('gear')
             .setTooltip(t('settings.ai.contextTemplate.tooltip'))
             .onClick(() => {
                 const modal = new AiContextModal(app, plugin, () => {
-                    contextTemplateSetting.setDesc(`Active: ${getActiveTemplateName()}`);
+                    contextTemplateSetting.setDesc(t('ui.aiSection.activeTemplate', { name: getActiveTemplateName() }));
                 });
                 modal.open();
             }));
@@ -645,7 +641,7 @@ export function renderAiSection(params: {
         openai: t('settings.ai.provider.optionOpenai'),
         google: t('settings.ai.provider.optionGoogle'),
         ollama: t('settings.ai.provider.optionLocalLlm'),
-        none: 'Disabled'
+        none: t('ui.aiSection.providerDisabled')
     };
 
     // formatApproxTokens, PreviewPill / PreviewSignal types,
@@ -702,16 +698,16 @@ export function renderAiSection(params: {
 
     const formatOpenAiInternalPinnedLabel = (alias: string): string => {
         const model = BUILTIN_MODELS.find(entry => entry.provider === 'openai' && entry.alias === alias);
-        if (!model) return 'Pinned internal model';
+        if (!model) return t('ui.aiSection.pinnedInternalModel');
         if (model.rollout?.datedVariantOf) {
             const canonical = BUILTIN_MODELS.find(entry => entry.alias === model.rollout?.datedVariantOf);
             const canonicalLabel = canonical?.label || model.label;
             const dated = model.id.match(/(\d{4}-\d{2}-\d{2})$/)?.[1];
             return dated
-                ? `${canonicalLabel} Snapshot (${dated}, pinned)`
-                : `${canonicalLabel} Snapshot (pinned)`;
+                ? t('ui.aiSection.snapshotPinnedDated', { model: canonicalLabel, date: dated })
+                : t('ui.aiSection.snapshotPinned', { model: canonicalLabel });
         }
-        return `${model.label} (Pinned internal)`;
+        return t('ui.aiSection.pinnedInternalLabel', { model: model.label });
     };
 
     const getProviderDefaultAlias = (provider: AIProviderId): string | undefined =>
@@ -789,17 +785,17 @@ export function renderAiSection(params: {
      */
     const PROVIDER_KEY_SUFFIX: Record<string, string> = {
         ready: '',
-        not_configured: ' (No key)',
-        rejected: ' (Key rejected)',
-        network_blocked: ' (Network blocked)',
-        checking: ' (Checking…)'
+        not_configured: t('ui.aiSection.keySuffixNoKey'),
+        rejected: t('ui.aiSection.keySuffixRejected'),
+        network_blocked: t('ui.aiSection.keySuffixNetworkBlocked'),
+        checking: t('ui.aiSection.keySuffixChecking')
     };
     const LOCAL_KEY_SUFFIX: Record<string, string> = {
         ready: '',
-        not_configured: ' (Not connected)',
-        rejected: ' (Not connected)',
-        network_blocked: ' (Not reachable)',
-        checking: ' (Checking…)'
+        not_configured: t('ui.aiSection.localSuffixNotConnected'),
+        rejected: t('ui.aiSection.localSuffixNotConnected'),
+        network_blocked: t('ui.aiSection.localSuffixNotReachable'),
+        checking: t('ui.aiSection.keySuffixChecking')
     };
     const providerOptionBaseLabels: Record<string, string> = {
         anthropic: t('settings.ai.provider.optionAnthropic'),
@@ -865,7 +861,7 @@ export function renderAiSection(params: {
         providerSetting.setDesc(
             provider === 'ollama'
                 ? t('settings.ai.provider.disclosureLocal')
-                : t('settings.ai.provider.disclosureCloud', { provider: label }) + (provider === 'google' ? ' Gemini unpaid services may use content for product improvement and human review; paid treatment depends on your Cloud project billing, with regional exceptions. All estimates stay local.' : ' All estimates stay local.')
+                : t('settings.ai.provider.disclosureCloud', { provider: label }) + (provider === 'google' ? t('ui.aiSection.disclosureGoogleNote') : t('ui.aiSection.disclosureEstimatesLocal'))
         );
     };
     let providerDropdown: DropdownComponent | null = null;
@@ -937,8 +933,8 @@ export function renderAiSection(params: {
 
     // Do not rewrite this copy as generic: it reflects limits specifically granted to the author/user by their provider.
     const ACCESS_TIER_COPY = t('settings.ai.accessTier.desc');
-    const LOCAL_MODEL_STRATEGY_COPY = 'Select the active local model here. If discovery fails, use the manual fallback in Local LLM Configuration below.';
-    const LOCAL_OVERRIDE_COPY = 'Use Auto for standard Local LLM setup. Switch to Custom only when you need to override backend or transport settings.';
+    const LOCAL_MODEL_STRATEGY_COPY = t('ui.aiSection.localModelStrategyCopy');
+    const LOCAL_OVERRIDE_COPY = t('ui.aiSection.localOverrideCopy');
 
     const accessTierSetting = new Settings(quickSetupGrid)
         .setName(t('settings.ai.accessTier.name'))
@@ -1076,8 +1072,8 @@ export function renderAiSection(params: {
     let localLlmConfigSectionEl: HTMLElement | null = null;
     let localLlmStatusSectionEl: HTMLElement | null = null;
 
-    applyStrategyRowCopyLayout(providerSetting, 'Select the AI service or Local LLM runtime that powers structural analysis and editorial insight.');
-    applyStrategyRowCopyLayout(modelOverrideSetting, 'Use Auto for deterministic latest-stable selection, or pin a specific model.');
+    applyStrategyRowCopyLayout(providerSetting, t('ui.aiSection.providerStrategyCopy'));
+    applyStrategyRowCopyLayout(modelOverrideSetting, t('ui.aiSection.modelStrategyCopy'));
     applyStrategyRowCopyLayout(accessTierSetting, ACCESS_TIER_COPY);
 
     applyQuickSetupLayoutOrder();
@@ -1246,7 +1242,7 @@ export function renderAiSection(params: {
         const cacheSession = activeCacheSession;
         const hasCurrentCorpusMatch = !!activeCacheSession;
         const latestScope = latestSession.scope ?? latestSession.result.scope;
-        const latestScopeLabel = latestScope === 'saga' ? 'Saga' : 'Book';
+        const latestScopeLabel = latestScope === 'saga' ? t('ui.aiSection.scopeSaga') : t('ui.aiSection.scopeBook');
         const resultStatus = latestSession.result.aiStatus;
         const reasonLabel = formatPreviewReasonLabel(resultStatus, latestSession.result.aiReason);
         const extraPills: PreviewPill[] = [];
@@ -1293,14 +1289,14 @@ export function renderAiSection(params: {
             const quotaFailure = latestSession.result.aiReason === 'quota_exceeded';
             return {
                 tone: isWarning ? 'warning' : 'error',
-                comparatorLabel: 'Last run',
-                comparatorValue: isWarning ? `Degraded · ${reasonLabel}` : `Failed · ${reasonLabel}`,
+                comparatorLabel: t('ui.aiSection.lastRunLabel'),
+                comparatorValue: isWarning ? t('ui.aiSection.lastRunDegraded', { reason: reasonLabel }) : t('ui.aiSection.lastRunFailed', { reason: reasonLabel }),
                 statusIcon: isWarning ? 'alert-triangle' : 'x-circle',
                 statusText: isWarning
-                    ? `Validation surfaced issues on the latest ${latestScopeLabel} Inquiry run.`
+                    ? t('ui.aiSection.runValidationIssues', { scope: latestScopeLabel })
                     : quotaFailure
-                        ? `Latest ${latestScopeLabel} Inquiry run failed because API quota was exceeded.`
-                        : `Latest ${latestScopeLabel} Inquiry run failed and needs attention.`,
+                        ? t('ui.aiSection.runQuotaFailed', { scope: latestScopeLabel })
+                        : t('ui.aiSection.runFailed', { scope: latestScopeLabel }),
                 extraPills
             };
         }
@@ -1337,8 +1333,8 @@ export function renderAiSection(params: {
                 comparatorValue: null,
                 statusIcon: 'badge-check',
                 statusText: hasCurrentCorpusMatch
-                    ? `Warm cache confirmed for current corpus${warmTimeSuffix}`
-                    : `Warm cache confirmed on last Inquiry corpus${warmTimeSuffix}`,
+                    ? t('ui.aiSection.warmCacheCurrent', { suffix: warmTimeSuffix })
+                    : t('ui.aiSection.warmCacheLast', { suffix: warmTimeSuffix }),
                 extraPills,
                 cacheArmed: true,
                 cacheRatio,
@@ -1364,8 +1360,8 @@ export function renderAiSection(params: {
                 comparatorValue: null,
                 statusIcon: 'shield-check',
                 statusText: hasCurrentCorpusMatch
-                    ? `Cache armed for next run on current corpus${armedTimeSuffix}`
-                    : `Cache armed on last Inquiry corpus${armedTimeSuffix}`,
+                    ? t('ui.aiSection.cacheArmedCurrent', { suffix: armedTimeSuffix })
+                    : t('ui.aiSection.cacheArmedLast', { suffix: armedTimeSuffix }),
                 // The single cache pill is shaped by the assembler from
                 // `cacheArmed`; no per-branch pill injection here.
                 extraPills,
@@ -1378,7 +1374,7 @@ export function renderAiSection(params: {
             comparatorLabel: null,
             comparatorValue: null,
             statusIcon: 'check-circle-2',
-            statusText: `Latest ${latestScopeLabel} Inquiry run completed at ${formatPreviewRunCompletedAt(latestSession.createdAt || latestSession.lastAccessed)}.`,
+            statusText: t('ui.aiSection.runCompletedAt', { scope: latestScopeLabel, date: formatPreviewRunCompletedAt(latestSession.createdAt || latestSession.lastAccessed) }),
             extraPills
         };
     };
@@ -1489,12 +1485,14 @@ export function renderAiSection(params: {
         }
         const costHint = formatGossamerCacheCostHint(win);
         resolvedPreviewGossamerCacheEl.toggleClass('ert-settings-hidden', false);
-        resolvedPreviewGossamerCacheEl.setText(costHint ? `Recent Gossamer cache ${clock} · ${costHint}` : `Recent Gossamer cache ${clock}`);
+        resolvedPreviewGossamerCacheEl.setText(costHint
+            ? t('ui.aiSection.recentGossamerCacheHint', { clock, hint: costHint })
+            : t('ui.aiSection.recentGossamerCache', { clock }));
         capacityGossamerCache.toggleClass('ert-settings-hidden', false);
         capacityGossamerCache.setText(
             costHint
-                ? `Last confirmed cache window ${clock} (${win.provider}) — ${costHint}`
-                : `Last confirmed cache window ${clock} (${win.provider}) — reuse requires unchanged input`
+                ? t('ui.aiSection.lastCacheWindowHint', { clock, provider: win.provider, hint: costHint })
+                : t('ui.aiSection.lastCacheWindowUnchanged', { clock, provider: win.provider })
         );
     };
     updateGossamerCacheSettingsUi();
@@ -1536,12 +1534,13 @@ export function renderAiSection(params: {
         const capability = getLocalCapabilityAssessment(selectedModelId, liveEntry);
 
         resolvedPreviewKicker.setText(t('settings.ai.preview.kicker'));
-        resolvedPreviewModel.setText(abbreviateLocalModelId(selectedModelId) || 'Local model'); // SAFE: preview caption only — a model id that abbreviates to nothing still needs a readable label
+        resolvedPreviewModel.setText(abbreviateLocalModelId(selectedModelId) || t('ui.aiSection.localModelFallback')); // SAFE: preview caption only — a model id that abbreviates to nothing still needs a readable label
         resolvedPreviewProvider.setText(`${LOCAL_LLM_BACKEND_LABELS[localLlm.backend]} · ${getOllamaBaseUrl()}`);
 
-        const statusValue = getLocalStatus().label;
+        const localStatus = getLocalStatus();
+        const statusValue = localStatus.label;
         const statusStamp = localValidation.state.pending ? null : formatLocalTimestamp(localValidation.state.lastValidatedAt);
-        const validated = statusValue === 'Connected & validated';
+        const validated = localStatus.validated;
 
         const pills: PreviewPill[] = [{
             text: `${capability.tierSummary} (${capability.tierName})`,
@@ -1553,15 +1552,17 @@ export function renderAiSection(params: {
             .forEach(feature => pills.push({ text: feature }));
         const contextWindow = liveEntry?.contextWindow;
         if (typeof contextWindow === 'number' && Number.isFinite(contextWindow) && contextWindow > 0) {
-            pills.push({ text: `Context · ${Math.round(contextWindow / 1000)}k tokens` });
+            pills.push({ text: t('ui.aiSection.localContextPill', { count: Math.round(contextWindow / 1000) }) });
         }
-        pills.push({ text: 'On-device · no API cost' });
+        pills.push({ text: t('ui.aiSection.onDevicePill') });
 
         lastLocalPreviewCertificate = {
             tone: validated ? 'success' : 'warning',
             statusIcon: validated ? 'shield-check' : 'alert-triangle',
             statusText: validated
-                ? `Connected & validated${statusStamp ? ` · ${statusStamp}` : ''} — all checks passed`
+                ? (statusStamp
+                    ? t('ui.aiSection.localValidatedStamped', { stamp: statusStamp })
+                    : t('ui.aiSection.localValidated'))
                 : `${statusValue}${statusStamp ? ` · ${statusStamp}` : ''}`,
             pills
         };
@@ -1599,13 +1600,13 @@ export function renderAiSection(params: {
             : state.modelLabel;
         resolvedPreviewModel.setText(previewModelLabel);
         const labelAlreadySaysPreview = state.modelLabel.toLowerCase().includes('preview');
-        const previewSuffix = state.isPreview && !labelAlreadySaysPreview ? ' (Preview)' : '';
+        const previewSuffix = state.isPreview && !labelAlreadySaysPreview ? t('ui.aiSection.previewSuffix') : '';
         const providerDetail = state.provider === 'ollama'
             ? (state.idPending
-                ? `ID pending (${state.modelAlias})`
+                ? t('ui.aiSection.idPending', { alias: state.modelAlias })
                 : `${state.modelId || previewModelLabel}${previewSuffix}`)
             : (state.idPending
-                ? `${providerLabel[state.provider]} · ID pending (${state.modelAlias})`
+                ? t('ui.aiSection.providerIdPending', { provider: providerLabel[state.provider], alias: state.modelAlias })
                 : `${providerLabel[state.provider]} · ${(state.modelId || state.modelLabel)}${previewSuffix}`);
         resolvedPreviewProvider.setText(providerDetail);
         applyResolvedPreviewCertificate();
@@ -1630,7 +1631,7 @@ export function renderAiSection(params: {
         costEstimateCorpusSize.setText(options.sizeText);
         costEstimateCorpusStructure.setText(options.structureText);
     };
-    const COST_ESTIMATE_CORPUS_UNAVAILABLE = 'Open Inquiry View to update cost estimates.';
+    const COST_ESTIMATE_CORPUS_UNAVAILABLE = t('ui.aiSection.costCorpusUnavailable');
 
     const renderCostComparisonFailure = (message: string): void => {
         lastCostComparisonRows = [];
@@ -1638,7 +1639,7 @@ export function renderAiSection(params: {
         const isCorpusUnavailable = message === COST_ESTIMATE_CORPUS_UNAVAILABLE;
         costEstimateTable.createDiv({
             cls: isCorpusUnavailable ? 'ert-completion-no-data' : 'ert-completion-error',
-            text: isCorpusUnavailable ? message : `Cost estimate unavailable: ${message}`
+            text: isCorpusUnavailable ? message : t('ui.aiSection.costEstimateUnavailableReason', { message })
         });
     };
 
@@ -1680,7 +1681,7 @@ export function renderAiSection(params: {
     }) => {
         const currentCorpus = getCurrentCorpusContext();
         if (!currentCorpus) {
-            throw new Error('Inquiry corpus is not available yet. Open Inquiry View to populate estimates.');
+            throw new Error(t('ui.aiSection.corpusNotAvailableError'));
         }
         return await buildCanonicalExecutionEstimate({
             plugin,
@@ -1708,7 +1709,13 @@ export function renderAiSection(params: {
         const activeCacheRowKey = getActiveCostComparisonCacheRowKey();
 
         const headerRow = costEstimateTable.createDiv({ cls: 'ert-ai-models-row ert-ai-models-row--header' });
-        ['Provider', 'Model', 'Fresh local estimate*', 'Cached local estimate**', 'Expected Passes'].forEach(text => {
+        [
+            t('settings.ai.provider.name'),
+            t('settings.ai.modelOverride.name'),
+            t('ui.aiSection.costHeaderFresh'),
+            t('ui.aiSection.costHeaderCached'),
+            t('ui.aiSection.costHeaderPasses')
+        ].forEach(text => {
             createCostTableCell(headerRow, text);
         });
 
@@ -1770,9 +1777,9 @@ export function renderAiSection(params: {
 
     const buildLoadingCostRows = (): CostComparisonRow[] => listCostComparisonModels().map(model => ({
         model,
-        freshText: 'Calculating...',
-        cachedText: 'Calculating...',
-        passesText: 'Calculating...'
+        freshText: t('ui.aiSection.calculating'),
+        cachedText: t('ui.aiSection.calculating'),
+        passesText: t('ui.aiSection.calculating')
     }));
 
     let costComparisonRequestId = 0;
@@ -1793,7 +1800,7 @@ export function renderAiSection(params: {
                 ensureCanonicalAiSettings().citationsEnabled !== false
             )
             : false;
-        const citationsSuffix = citationsOn ? ' (includes citation wrappers)' : '';
+        const citationsSuffix = citationsOn ? t('ui.aiSection.citationsSuffix') : '';
         // Three states for the Full Request label:
         //   1. requestTokens > 0 → provider/local count succeeded; show it.
         //   2. method === 'unavailable' → snapshot completed but the
@@ -1805,13 +1812,13 @@ export function renderAiSection(params: {
         //   3. method is undefined → snapshot truly still building.
         //      "Estimating..." is the honest label.
         const requestText = currentCorpus.requestTokens > 0
-            ? `Full Request: ${formatCorpusTokenSummary(currentCorpus.requestTokens)}${citationsSuffix}`
+            ? t('ui.aiSection.fullRequestTokens', { tokens: formatCorpusTokenSummary(currentCorpus.requestTokens), suffix: citationsSuffix })
             : currentCorpus.requestEstimateMethod === 'unavailable'
-                ? `Full Request: unavailable — provider token count failed${citationsSuffix}`
-                : `Full Request: Estimating...${citationsSuffix}`;
+                ? t('ui.aiSection.fullRequestUnavailable', { suffix: citationsSuffix })
+                : t('ui.aiSection.fullRequestEstimating', { suffix: citationsSuffix });
         const corpusText = currentCorpus.corpus.estimatedTokens > 0
-            ? `Corpus: ${formatCorpusTokenSummary(currentCorpus.corpus.estimatedTokens)}`
-            : 'Corpus: Estimating...';
+            ? t('ui.aiSection.corpusTokens', { tokens: formatCorpusTokenSummary(currentCorpus.corpus.estimatedTokens) })
+            : t('ui.aiSection.corpusEstimating');
         return {
             sizeText: requestText,
             structureText: [
@@ -1848,8 +1855,8 @@ export function renderAiSection(params: {
     const refreshCostComparisonTable = async (): Promise<void> => {
         const requestId = ++costComparisonRequestId;
         renderCostEstimateCorpusSummary({
-            sizeText: 'Full Request: Calculating...',
-            structureText: 'Scanning corpus...'
+            sizeText: t('ui.aiSection.fullRequestCalculating'),
+            structureText: t('settings.ai.costEstimate.corpusScanning')
         });
         setActiveCostComparisonRow(null, null);
         renderCostComparisonRows(buildLoadingCostRows());
@@ -1870,12 +1877,12 @@ export function renderAiSection(params: {
             const message = error instanceof Error ? error.message : String(error);
             const isCorpusUnavailable = message === COST_ESTIMATE_CORPUS_UNAVAILABLE;
             renderCostEstimateCorpusSummary({
-                sizeText: isCorpusUnavailable ? 'Cost estimates unavailable.' : 'Cost estimate unavailable.',
+                sizeText: isCorpusUnavailable ? t('ui.aiSection.costEstimatesUnavailable') : t('ui.aiSection.costEstimateUnavailable'),
                 structureText: isCorpusUnavailable ? COST_ESTIMATE_CORPUS_UNAVAILABLE : message
             });
             setActiveCostComparisonRow(null, null);
             renderCostComparisonFailure(message);
-            costEstimateFreshness.setText(isCorpusUnavailable ? '' : 'Pricing load unavailable');
+            costEstimateFreshness.setText(isCorpusUnavailable ? '' : t('ui.aiSection.pricingLoadUnavailable'));
             promoBannerContainer.empty();
         }
     };
@@ -1942,7 +1949,7 @@ export function renderAiSection(params: {
                     setDropdownValueSafe(modelOverrideDropdown, getOllamaModelId().trim(), fallbackLocalModel);
                 } else {
                     modelOverrideDropdown.selectEl.disabled = false;
-                    modelOverrideDropdown.addOption('auto', 'Auto');
+                    modelOverrideDropdown.addOption('auto', t('ui.aiSection.autoOption'));
                     getProviderPickerModels(provider).forEach(model => {
                         modelOverrideDropdown?.addOption(model.alias, model.label);
                     });
@@ -1966,8 +1973,8 @@ export function renderAiSection(params: {
             if (accessTierDropdown) {
                 if (isOllama) {
                     accessTierDropdown.selectEl.empty();
-                    accessTierDropdown.addOption('auto', 'Auto');
-                    accessTierDropdown.addOption('custom', 'Custom');
+                    accessTierDropdown.addOption('auto', t('ui.aiSection.autoOption'));
+                    accessTierDropdown.addOption('custom', t('ui.aiSection.customOption'));
                     accessTierDropdown.selectEl.disabled = false;
                     setDropdownValueSafe(accessTierDropdown, getLocalLlmConfigurationMode(), 'auto');
                 } else {
@@ -1975,10 +1982,10 @@ export function renderAiSection(params: {
                     // Restore tier options if they were replaced by "—"
                     if (!Array.from(accessTierDropdown.selectEl.options).some(o => o.value === '1')) {
                         accessTierDropdown.selectEl.empty();
-                        accessTierDropdown.addOption('1', 'Tier 1');
-                        accessTierDropdown.addOption('2', 'Tier 2');
-                        accessTierDropdown.addOption('3', 'Tier 3');
-                        accessTierDropdown.addOption('4', 'Tier 4');
+                        accessTierDropdown.addOption('1', t('settings.ai.accessTier.tier1'));
+                        accessTierDropdown.addOption('2', t('settings.ai.accessTier.tier2'));
+                        accessTierDropdown.addOption('3', t('settings.ai.accessTier.tier3'));
+                        accessTierDropdown.addOption('4', t('settings.ai.accessTier.tier4'));
                     }
                 }
             }
@@ -1997,7 +2004,7 @@ export function renderAiSection(params: {
 
         const modelStrategyDesc = modelOverrideSetting.settingEl.querySelector('.ert-ai-strategy-row__desc');
         if (modelStrategyDesc instanceof HTMLElement) {
-            modelStrategyDesc.textContent = isOllama ? LOCAL_MODEL_STRATEGY_COPY : 'Use Auto for deterministic latest-stable selection, or pin a specific model.';
+            modelStrategyDesc.textContent = isOllama ? LOCAL_MODEL_STRATEGY_COPY : t('ui.aiSection.modelStrategyCopy');
         }
         const accessTierDesc = accessTierSetting.settingEl.querySelector('.ert-ai-strategy-row__desc');
         if (accessTierDesc instanceof HTMLElement) {
@@ -2005,7 +2012,7 @@ export function renderAiSection(params: {
         }
         const accessTierName = accessTierSetting.settingEl.querySelector('.setting-item-name');
         if (accessTierName instanceof HTMLElement) {
-            accessTierName.textContent = isOllama ? 'Setup' : 'Access';
+            accessTierName.textContent = isOllama ? t('ui.aiSection.setupName') : t('settings.ai.accessTier.name');
         }
 
         if (!isOllama) {
@@ -2059,28 +2066,28 @@ export function renderAiSection(params: {
             return;
         }
 
-        capacityInquiryToken.setText('Calculating...');
-        capacityInquiryExpected.setText('Calculating...');
+        capacityInquiryToken.setText(t('ui.aiSection.calculating'));
+        capacityInquiryExpected.setText(t('ui.aiSection.calculating'));
         renderPanelViewModelSections(capacityInquirySections, buildPanelViewModel({
             feature: 'inquiry',
-            forecast: { kind: 'pending', reason: 'Calculating…' }
+            forecast: { kind: 'pending', reason: t('ui.aiSection.calculatingReason') }
         }));
-        capacityGossamerToken.setText('Calculating...');
-        capacityGossamerExpected.setText('Calculating...');
+        capacityGossamerToken.setText(t('ui.aiSection.calculating'));
+        capacityGossamerExpected.setText(t('ui.aiSection.calculating'));
         renderPanelViewModelSections(capacityGossamerSections, buildPanelViewModel({
             feature: 'gossamer',
-            forecast: { kind: 'pending', reason: 'Calculating…' }
+            forecast: { kind: 'pending', reason: t('ui.aiSection.calculatingReason') }
         }));
         void refreshCostComparisonTable();
 
         if (isOllama) {
             if (localDiscovery.discovering || localDiscovery.loading) {
-                renderPreviewUnavailable('Checking Local Server...', 'Looking for a reachable local server and available models.');
+                renderPreviewUnavailable(t('ui.aiSection.checkingServerTitle'), t('ui.aiSection.checkingServerDetail'));
                 setActiveCostComparisonRow(null, null);
                 return;
             }
             if (!localLlmDetectedServers.length) {
-                renderPreviewUnavailable('No Local Server Detected', 'Start a local server or switch Setup to Custom.');
+                renderPreviewUnavailable(t('ui.aiSection.noServerTitle'), t('ui.aiSection.noServerDetail'));
                 setActiveCostComparisonRow(null, null);
                 return;
             }
@@ -2101,7 +2108,7 @@ export function renderAiSection(params: {
                 overrides: aiSettings.overrides
             });
             if (!prepared.ok) {
-                throw new Error(prepared.result.error || prepared.result.reason || 'Unable to resolve AI capacity.');
+                throw new Error(prepared.result.error || prepared.result.reason || t('ui.aiSection.capacityUnresolved'));
             }
             const estimate = prepared.estimate;
             const registryModels = await getAIClient(plugin).getRegistryModels();
@@ -2163,7 +2170,7 @@ export function renderAiSection(params: {
                           ? forecasts.inquiry.expectedPassCount
                           : undefined
                   }
-                : { kind: 'pending', reason: 'Open Inquiry View — corpus context is not loaded.' };
+                : { kind: 'pending', reason: t('ui.aiSection.corpusContextNotLoaded') };
             const inquiryViewModel = buildPanelViewModel({
                 feature: 'inquiry',
                 provider,
@@ -2216,7 +2223,7 @@ export function renderAiSection(params: {
             renderResolvedPreview({
                 provider,
                 modelId: '',
-                modelLabel: 'No eligible model',
+                modelLabel: t('ui.aiSection.noEligibleModel'),
                 modelAlias: providerLabel[provider],
                 idPending: false,
                 contextWindow: null,
@@ -2228,19 +2235,19 @@ export function renderAiSection(params: {
                 isPreview: false
             });
             setActiveCostComparisonRow(null, null);
-            capacityInquiryToken.setText('Failed');
-            capacityInquiryExpected.setText('Forecast failed');
+            capacityInquiryToken.setText(t('ui.aiSection.forecastFailedShort'));
+            capacityInquiryExpected.setText(t('ui.aiSection.forecastFailed'));
             capacityInquiryProvider.setText(message);
             renderCapacitySections(capacityInquirySections, [{
-                title: 'Failure',
-                items: [`Inquiry transparency forecast failed: ${message}`]
+                title: t('ui.aiSection.failureTitle'),
+                items: [t('ui.aiSection.inquiryForecastFailed', { message })]
             }]);
-            capacityGossamerToken.setText('Failed');
-            capacityGossamerExpected.setText('Forecast failed');
+            capacityGossamerToken.setText(t('ui.aiSection.forecastFailedShort'));
+            capacityGossamerExpected.setText(t('ui.aiSection.forecastFailed'));
             capacityGossamerProvider.setText(message);
             renderCapacitySections(capacityGossamerSections, [{
-                title: 'Failure',
-                items: [`Gossamer transparency forecast failed: ${message}`]
+                title: t('ui.aiSection.failureTitle'),
+                items: [t('ui.aiSection.gossamerForecastFailed', { message })]
             }]);
         }
 
@@ -2296,7 +2303,7 @@ export function renderAiSection(params: {
                 try {
                     const migration = await migrateLegacyKeysToSecretStorage(plugin);
                     if (migration.migratedProviders.length) {
-                        new Notice(`Secured ${migration.migratedProviders.length} provider key(s).`);
+                        new Notice(t('ui.aiSection.securedKeysNotice', { count: migration.migratedProviders.length }));
                     } else {
                         new Notice(t('settings.ai.secureKey.noLegacyKeysNotice'));
                     }
@@ -2306,7 +2313,7 @@ export function renderAiSection(params: {
                     void refreshRoutingUi();
                 } catch (error) {
                     const message = error instanceof Error ? error.message : String(error);
-                    new Notice(`Key migration failed: ${message}`);
+                    new Notice(t('ui.aiSection.keyMigrationFailed', { message }));
                 } finally {
                     button.setDisabled(false);
                 }
@@ -2461,7 +2468,7 @@ export function renderAiSection(params: {
     const localLlmStatusHeaderSummary = localLlmStatusHeader.createDiv({ cls: 'ert-ai-local-llm-status-header-summary' });
     const localLlmStatusChevron = localLlmStatusHeader.createEl('button', {
         cls: 'clickable-icon ert-ai-local-llm-status-chevron',
-        attr: { type: 'button', 'aria-label': 'Toggle local LLM status details' }
+        attr: { type: 'button', 'aria-label': t('ui.aiSection.toggleStatusDetails') }
     });
     let localLlmStatusManuallyExpanded = false;
     localLlmScope.registerDomEvent(localLlmStatusHeader, 'click', () => {
@@ -2553,7 +2560,7 @@ export function renderAiSection(params: {
             localLlmDetectedServers = detectedServers;
             localLlmServerDetectionError = localLlmDetectedServers.length
                 ? null
-                : 'No healthy local servers were detected automatically.';
+                : t('ui.aiSection.noHealthyServersDetected');
 
             if (!localLlmDetectedServers.length) {
                 clearLocalLlmModelLoadState();
@@ -2589,8 +2596,8 @@ export function renderAiSection(params: {
             if (!options.quiet) {
                 new Notice(
                     localLlmDetectedServers.length
-                        ? `Detected ${localLlmDetectedServers.length} healthy local server${localLlmDetectedServers.length === 1 ? '' : 's'}.`
-                        : 'No healthy local servers detected automatically.'
+                        ? t('ui.aiSection.detectedServersNotice', { servers: tCount('healthyLocalServer', localLlmDetectedServers.length) })
+                        : t('ui.aiSection.noHealthyServersNotice')
                 );
             }
         } catch (error: unknown) {
@@ -2835,7 +2842,7 @@ export function renderAiSection(params: {
         }
 
         if (localLlmModelLoadError) {
-            localLlmModelsSummary.setText(`Local model list unavailable. ${formatLocalLlmUiError(localLlmModelLoadError)}`);
+            localLlmModelsSummary.setText(t('ui.aiSection.modelListUnavailable', { error: formatLocalLlmUiError(localLlmModelLoadError) }));
             return;
         }
 
@@ -2849,7 +2856,7 @@ export function renderAiSection(params: {
         }
 
         // The healthy state is already covered by the status grid and the pills; only surface the mismatch warning.
-        localLlmModelsSummary.setText(selectedExists ? '' : 'Selected model is missing from the loaded list.');
+        localLlmModelsSummary.setText(selectedExists ? '' : t('ui.aiSection.selectedModelMissing'));
         localLlmModelsSummary.toggleClass('ert-settings-hidden', selectedExists);
         modelPills.render(localLlmLoadedModels.map(model => ({
             id: model.id, capability: getLocalCapabilityAssessment(model.id, model)
@@ -2874,33 +2881,33 @@ export function renderAiSection(params: {
     ): string => {
         const hasHealthyServer = localLlmDetectedServers.length > 0;
         if (localValidation.state.pending) {
-            if (label === 'Connection') return 'Checking local server...';
-            return 'Validation in progress.';
+            if (label === 'Connection') return t('ui.aiSection.checkCheckingServer');
+            return t('ui.aiSection.checkValidationInProgress');
         }
         if (!hasHealthyServer) {
-            if (label === 'Connection') return 'No local server detected.';
-            return 'Waiting for a local server.';
+            if (label === 'Connection') return t('ui.aiSection.checkNoServer');
+            return t('ui.aiSection.checkWaitingForServer');
         }
         if (label === 'Model availability') {
-            if (localDiscovery.loading) return 'Loading available models...';
+            if (localDiscovery.loading) return t('ui.aiSection.checkLoadingModels');
             if (localLlmModelLoadError) return formatLocalLlmUiError(localLlmModelLoadError);
-            if (!localLlmLoadedModels.length) return 'No models are loaded on this local server.';
-            if (!getOllamaModelId().trim()) return 'Choose a local model.';
-            return selectedExists ? 'Selected model is ready.' : 'Selected model is unavailable on this local server.';
+            if (!localLlmLoadedModels.length) return t('ui.aiSection.checkNoModels');
+            if (!getOllamaModelId().trim()) return t('ui.aiSection.checkChooseModel');
+            return selectedExists ? t('ui.aiSection.checkModelReady') : t('ui.aiSection.checkModelUnavailable');
         }
         if (!check) {
             if (label === 'Basic validation' || label === 'Structured validation') {
-                return selectedExists ? 'Not checked yet.' : 'Waiting for an available model.';
+                return selectedExists ? t('ui.aiSection.checkNotChecked') : t('ui.aiSection.checkWaitingForModel');
             }
-            return 'Not checked yet.';
+            return t('ui.aiSection.checkNotChecked');
         }
         if (label === 'Connection') {
-            return check.ok ? 'Connected.' : formatLocalLlmUiError(check.message);
+            return check.ok ? t('ui.aiSection.checkConnected') : formatLocalLlmUiError(check.message);
         }
         if (!check.ok) {
             return formatLocalLlmUiError(check.message);
         }
-        return 'Passed.';
+        return t('ui.aiSection.checkPassed');
     };
 
     const renderLocalLlmStatus = (): void => {
@@ -2942,13 +2949,13 @@ export function renderAiSection(params: {
             item.createDiv({ cls: 'ert-ai-local-llm-status-value', text: value });
         };
 
-        appendStatusItem(localLlmStatusSummaryCol, 'Status', statusStamp ? `${statusValue} · ${statusStamp}` : statusValue);
-        appendStatusItem(localLlmStatusServerCol, 'Local server', localLlmDetectedServers.length
+        appendStatusItem(localLlmStatusSummaryCol, t('ui.aiSection.statusLabel'), statusStamp ? `${statusValue} · ${statusStamp}` : statusValue);
+        appendStatusItem(localLlmStatusServerCol, t('settings.ai.localLlm.serverName'), localLlmDetectedServers.length
             ? `${LOCAL_LLM_BACKEND_LABELS[localLlm.backend]} · ${getOllamaBaseUrl()}`
-            : 'No local server detected');
-        appendStatusItem(localLlmStatusCapabilityCol, 'Capability', selectedModelId
-            ? `${selectedCapability.tierSummary} (${selectedCapability.tierName})${selectedCapability.confidence === 'heuristic' ? ' (heuristic)' : ''} — ${buildLocalFeatureSummary(selectedCapability)}`
-            : 'No local model selected');
+            : t('ui.aiSection.noServerDetectedValue'));
+        appendStatusItem(localLlmStatusCapabilityCol, t('ui.aiSection.capabilityLabel'), selectedModelId
+            ? `${selectedCapability.tierSummary} (${selectedCapability.tierName})${selectedCapability.confidence === 'heuristic' ? t('ui.aiSection.heuristicSuffix') : ''} — ${buildLocalFeatureSummary(selectedCapability)}`
+            : t('ui.aiSection.noLocalModelSelected'));
 
         const checks: Array<[string, { ok: boolean; message: string } | null]> = [
             ['Connection', localValidation.state.report?.reachable ?? null],
@@ -2977,9 +2984,9 @@ export function renderAiSection(params: {
         };
 
         if (localValidation.state.pending) {
-            appendChecksRollup('Running validation checks...', true);
+            appendChecksRollup(t('ui.aiSection.runningChecks'), true);
         } else if (allChecksPassed) {
-            appendChecksRollup('All checks passed — connection · model availability · basic · structured.');
+            appendChecksRollup(t('ui.aiSection.allChecksPassed'));
             // The one finding that matters BECAUSE nothing is broken. Collapsing
             // it with the rest of the detail would hide the only actionable
             // result of a green run.
@@ -2988,26 +2995,26 @@ export function renderAiSection(params: {
                 const note = localLlmChecksDetail.createDiv({
                     cls: 'ert-field-note ert-ai-local-llm-checks-rollup is-actionable'
                 });
-                note.setText(
-                    `Structured JSON mode: ${timing.label} took ${(timing.ms / 1000).toFixed(1)}s here. `
-                    + `${timing.alternateLabel} is usually much faster on local servers, and Radial Timeline `
-                    + 'validates every reply either way — worth trying if runs feel slow.'
-                );
+                note.setText(t('ui.aiSection.jsonModeTimingNote', {
+                    mode: timing.label,
+                    seconds: (timing.ms / 1000).toFixed(1),
+                    alternate: timing.alternateLabel
+                }));
             }
         } else if (!hasHealthyServer) {
             appendChecksRollup(localLlmServerDetectionError
-                ? 'No healthy local servers were detected automatically.'
-                : 'Checks run once a local server is detected.');
+                ? t('ui.aiSection.noHealthyServersDetected')
+                : t('ui.aiSection.checksRunWhenDetected'));
         } else {
             checks.forEach(([label, check]) => {
                 const value = buildLocalCheckValue(label as 'Connection' | 'Model availability' | 'Basic validation' | 'Structured validation', check, selectedExists);
                 appendStatusItem(localLlmChecksDetail, label, value);
             });
             if (localValidation.state.error) {
-                appendStatusItem(localLlmChecksDetail, 'Validation', formatLocalLlmUiError(localValidation.state.error));
+                appendStatusItem(localLlmChecksDetail, t('ui.aiSection.validationLabel'), formatLocalLlmUiError(localValidation.state.error));
             }
             if (localLlmServerDetectionError) {
-                appendStatusItem(localLlmChecksDetail, 'Server detection', 'No healthy local servers were detected automatically.');
+                appendStatusItem(localLlmChecksDetail, t('ui.aiSection.serverDetectionLabel'), t('ui.aiSection.noHealthyServersDetected'));
             }
         }
         const showActions = shouldRevealLocalLlmActionRow();
@@ -3040,7 +3047,7 @@ export function renderAiSection(params: {
                 localLlmModelLoadError = null;
                 localLlmLastLoadedAt = detectedServer.detectedAt;
                 if (!options.quiet) {
-                    new Notice(`Loaded ${localLlmLoadedModels.length} local model${localLlmLoadedModels.length === 1 ? '' : 's'} from ${detectedServer.label}.`);
+                    new Notice(t('ui.aiSection.loadedModelsFromServer', { models: tCount('localModel', localLlmLoadedModels.length), server: detectedServer.label }));
                 }
                 return;
             }
@@ -3054,14 +3061,14 @@ export function renderAiSection(params: {
             localLlmLastLoadedAt = new Date().toISOString();
             if (!options.quiet) {
                 new Notice(localLlmLoadedModels.length
-                    ? `Loaded ${localLlmLoadedModels.length} local model${localLlmLoadedModels.length === 1 ? '' : 's'}.`
-                    : 'No models reported by the Local LLM backend.');
+                    ? t('ui.aiSection.loadedModels', { models: tCount('localModel', localLlmLoadedModels.length) })
+                    : t('ui.aiSection.noModelsReported'));
             }
         } catch (error) {
             localLlmLoadedModels = [];
             localLlmModelLoadError = error instanceof Error ? error.message : String(error);
             if (!options.quiet) {
-                new Notice(`Unable to load local models: ${localLlmModelLoadError}`);
+                new Notice(t('ui.aiSection.loadModelsFailed', { error: localLlmModelLoadError }));
             }
         }
         finally {

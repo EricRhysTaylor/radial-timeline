@@ -51,22 +51,22 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
 
     const visibilitySetting = new Settings(containerEl)
         .setName(t('planetary.enable.name'))
-        .setDesc('Keep Earth as the planning source, use the profile label to match your planet or setting calendar. Set epoch offset to align Year 1 to a story milestone, and combine with the backdrop notes for complete context. Viewable in scene hover metadata and a compehensive parallel timeline in the Chronologue mode ALT sub-mode.')
+        .setDesc(t('ui.planetaryTimeSection.enableDesc'))
     visibilitySetting.settingEl.addClass('ert-settingRow');
 
     const visibilityToggle = visibilitySetting.controlEl.createEl('button', {
         cls: ERT_CLASSES.ICON_BTN,
         attr: {
             type: 'button',
-            'aria-label': sectionExpanded ? 'Hide planetary calendar details' : 'Show planetary calendar details',
+            'aria-label': sectionExpanded ? t('ui.planetaryTimeSection.hideDetails') : t('ui.planetaryTimeSection.showDetails'),
             'aria-expanded': sectionExpanded ? 'true' : 'false'
         }
     });
 
     const refreshVisibilityButton = () => {
         setIcon(visibilityToggle, sectionExpanded ? 'chevron-down' : 'chevron-right');
-        setTooltip(visibilityToggle, sectionExpanded ? 'Hide planetary calendar details' : 'Show planetary calendar details');
-        visibilityToggle.setAttribute('aria-label', sectionExpanded ? 'Hide planetary calendar details' : 'Show planetary calendar details');
+        setTooltip(visibilityToggle, sectionExpanded ? t('ui.planetaryTimeSection.hideDetails') : t('ui.planetaryTimeSection.showDetails'));
+        visibilityToggle.setAttribute('aria-label', sectionExpanded ? t('ui.planetaryTimeSection.hideDetails') : t('ui.planetaryTimeSection.showDetails'));
         visibilityToggle.setAttribute('aria-expanded', sectionExpanded ? 'true' : 'false');
     };
 
@@ -108,7 +108,7 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
         activeIcon.classList.remove('ert-settings-hidden');
         activeIcon.classList.add('is-valid'); // Always show as active/valid
         
-        setTooltip(activeIcon, `${profile.label} Calendar Active`, { placement: 'bottom' });
+        setTooltip(activeIcon, t('ui.planetaryTimeSection.calendarActiveTooltip', { planet: profile.label }), { placement: 'bottom' });
     };
 
     const renderSelector = () => {
@@ -120,10 +120,10 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
             // Add Mars template option
             const hasMars = profiles.some(p => p.id === MARS_TEMPLATE_ID);
             if (!hasMars) {
-                dropdown.addOption(MARS_TEMPLATE_ID, 'Mars (template)');
+                dropdown.addOption(MARS_TEMPLATE_ID, t('ui.planetaryTimeSection.marsTemplateOption'));
             }
             // Add user profiles
-            profiles.forEach(p => { dropdown.addOption(p.id, p.label || 'Unnamed'); });
+            profiles.forEach(p => { dropdown.addOption(p.id, p.label || t('ui.planetaryTimeSection.unnamedProfile')); });
             dropdown.setValue(activeProfileId || '');
             dropdown.onChange(async (value) => {
                 // Handle Mars template selection
@@ -153,12 +153,12 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
             btn.setTooltip(t('planetary.actions.add'));
             btn.onClick(() => {
                 new NamePromptModal(app, {
-                    title: 'Create a new planet',
-                    subtitle: 'Choose the label shown in the active profile selector and preview.',
+                    title: t('ui.planetaryTimeSection.createTitle'),
+                    subtitle: t('ui.planetaryTimeSection.nameSubtitle'),
                     initialValue: '',
-                    placeholder: 'Planet name',
-                    actionLabel: 'Create',
-                    emptyNotice: 'Please enter a profile name.',
+                    placeholder: t('ui.planetaryTimeSection.namePlaceholder'),
+                    actionLabel: t('ui.planetaryTimeSection.createAction'),
+                    emptyNotice: t('ui.planetaryTimeSection.emptyNameNotice'),
                     shell: { size: 'sm' },
                     onSubmit: async (value) => {
                         const profile = DEFAULT_PROFILE();
@@ -178,18 +178,18 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
         });
         selectorSetting.addExtraButton(btn => {
             btn.setIcon('pencil');
-            btn.setTooltip('Rename profile');
+            btn.setTooltip(t('ui.planetaryTimeSection.renameProfile'));
             btn.setDisabled(!activeProfileId);
             btn.onClick(() => {
                 const profile = getActiveProfile();
                 if (!profile) return;
                 new NamePromptModal(app, {
-                    title: 'Rename profile',
-                    subtitle: 'Choose the label shown in the active profile selector and preview.',
+                    title: t('ui.planetaryTimeSection.renameProfile'),
+                    subtitle: t('ui.planetaryTimeSection.nameSubtitle'),
                     initialValue: profile.label || '',
-                    placeholder: 'Planet name',
-                    actionLabel: 'Rename',
-                    emptyNotice: 'Please enter a profile name.',
+                    placeholder: t('ui.planetaryTimeSection.namePlaceholder'),
+                    actionLabel: t('ui.planetaryTimeSection.renameAction'),
+                    emptyNotice: t('ui.planetaryTimeSection.emptyNameNotice'),
                     shell: { size: 'sm' },
                     onSubmit: async (value) => {
                         profile.label = value;
@@ -322,19 +322,19 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
             });
         };
 
-        addNumberField(t('planetary.fields.hoursPerDay'), 'hoursPerDay', 'Length of a local day in Earth hours (Earth = 24).');
-        addNumberField(t('planetary.fields.daysPerWeek'), 'daysPerWeek', 'Local days in a week (Earth = 7).');
-        addNumberField(t('planetary.fields.daysPerYear'), 'daysPerYear', 'Local days in a year (Earth = 365).');
+        addNumberField(t('planetary.fields.hoursPerDay'), 'hoursPerDay', t('ui.planetaryTimeSection.hoursPerDayHint'));
+        addNumberField(t('planetary.fields.daysPerWeek'), 'daysPerWeek', t('ui.planetaryTimeSection.daysPerWeekHint'));
+        addNumberField(t('planetary.fields.daysPerYear'), 'daysPerYear', t('ui.planetaryTimeSection.daysPerYearHint'));
         addNumberField(
             t('planetary.fields.epochOffset'),
             'epochOffsetDays',
-            'Move your calendar\'s Year 1, Day 1 forward or back. Example: +18,000 starts your story\'s Year 1 around modern day. Leave at 0 if you don\'t need a real-world anchor.'
+            t('ui.planetaryTimeSection.epochOffsetHint')
         );
-        addTextField(t('planetary.fields.epochLabel'), 'epochLabel', 'Shown before YEAR (e.g., "AD", "CE", "Sol").');
+        addTextField(t('planetary.fields.epochLabel'), 'epochLabel', t('ui.planetaryTimeSection.epochLabelHint'));
 
         new Settings(fieldsContainer)
             .setName(t('planetary.fields.monthNames'))
-            .setDesc('Optional. Determines how the year is divided. Enter one name per line, or comma separated. Leave blank for 12 numbered months.')
+            .setDesc(t('ui.planetaryTimeSection.monthNamesDesc'))
             .addTextArea((text: TextAreaComponent) => {
                 text.inputEl.addClass('ert-textarea', 'ert-textarea--wide');
                 text.inputEl.rows = 6;
@@ -351,7 +351,7 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
 
         new Settings(fieldsContainer)
             .setName(t('planetary.fields.weekdayNames'))
-            .setDesc('Optional. Sets weekday labels. Enter one name per line, or comma separated. The first name is weekday 1, so Year 1 Day 1 starts there.')
+            .setDesc(t('ui.planetaryTimeSection.weekdayNamesDesc'))
             .addTextArea((text: TextAreaComponent) => {
                 text.inputEl.addClass('ert-textarea', 'ert-textarea--wide');
                 text.inputEl.rows = 3;
@@ -380,7 +380,9 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
             return;
         }
         const result = convertFromEarth(new Date(), profile);
-        header.setText(`Quick preview (Earth → ${profile.label || 'local'})`);
+        header.setText(profile.label
+            ? t('ui.planetaryTimeSection.previewHeadingNamed', { planet: profile.label })
+            : t('planetary.preview.heading'));
         if (!result) {
             body.setText(t('planetary.preview.invalid'));
             return;

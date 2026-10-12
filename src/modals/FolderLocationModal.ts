@@ -8,6 +8,7 @@ import { ErtModal } from '../ui/ErtModal';
 import { ModalFolderSuggest } from '../settings/FolderSuggest';
 import { revealFolderInExplorer } from '../settings/pathChip';
 import { replayTransientClass } from '../utils/domClassEffects';
+import { t } from '../i18n';
 
 export interface FolderLocationOptions {
     title: string;
@@ -84,7 +85,7 @@ export class FolderLocationModal extends ErtModal {
         const actions = this.mountActions();
 
         const revealButton = new ButtonComponent(actions)
-            .setButtonText('Reveal in file explorer')
+            .setButtonText(t('ui.folderLocationModal.revealInExplorer'))
             .onClick(() => {
                 this.close();
                 revealFolderInExplorer(this.app, this.options.value || this.options.placeholder);
@@ -92,12 +93,12 @@ export class FolderLocationModal extends ErtModal {
         revealButton.buttonEl.addClass('ert-btn', 'ert-btn--standard-pro');
 
         const cancelButton = new ButtonComponent(actions)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => this.close());
         cancelButton.buttonEl.addClass('ert-btn', 'ert-btn--standard-pro');
 
         new ButtonComponent(actions)
-            .setButtonText('Save')
+            .setButtonText(t('common.save'))
             .setCta()
             .onClick(() => { void save(); });
 

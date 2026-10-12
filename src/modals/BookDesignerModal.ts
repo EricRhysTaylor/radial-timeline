@@ -613,7 +613,10 @@ export class BookDesignerModal extends Modal {
             await this.saveTemplate(tpl.name, selectedId);
             return;
         }
-        const defaultName = `Scene Layout ${this.templateType === 'base' ? 'Basic' : 'Advanced'} ${new Date().toLocaleDateString()}`;
+        const date = new Date().toLocaleDateString();
+        const defaultName = this.templateType === 'base'
+            ? t('ui.bookDesignerModal.defaultLayoutNameBasic', { date })
+            : t('ui.bookDesignerModal.defaultLayoutNameAdvanced', { date });
         new SaveTemplateModal(this.app, (name) => {
             void this.saveTemplate(name);
         }, defaultName).open();

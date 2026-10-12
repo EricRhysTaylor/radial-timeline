@@ -436,7 +436,7 @@ export class GossamerProcessingModal extends ErtModal {
         const seconds = elapsed % 60;
         const timeStr = minutes > 0
             ? `${minutes}:${seconds.toString().padStart(2, '0')}`
-            : `${seconds}s`;
+            : t('ui.gossamerProcessingModal.elapsedSeconds', { seconds });
 
         // Show elapsed time only. The previous "running longer than
         // expected (est. ~Ns)" framing read as anxious/lame UX — the
@@ -532,9 +532,10 @@ export class GossamerProcessingModal extends ErtModal {
             return;
         }
         const costHint = formatGossamerCacheCostHint(window_);
-        const base = `Cache confirmed for this manuscript · ${clock} — unchanged input may reuse it`;
         el.removeClass('ert-hidden');
-        el.setText(costHint ? `${base} (${costHint})` : base);
+        el.setText(costHint
+            ? t('ui.gossamerProcessingModal.cacheConfirmedWithCost', { clock, costHint })
+            : t('ui.gossamerProcessingModal.cacheConfirmed', { clock }));
     }
 
     /**
@@ -633,8 +634,9 @@ export class GossamerProcessingModal extends ErtModal {
         this.isProcessing = false;
 
         if (this.statusTextEl) {
-            const elapsedSuffix = success && this.lastElapsedSeconds ? ` (${this.lastElapsedSeconds}s)` : '';
-            this.statusTextEl.setText(`${message}${elapsedSuffix}`);
+            this.statusTextEl.setText(success && this.lastElapsedSeconds
+                ? t('ui.gossamerProcessingModal.statusWithElapsed', { seconds: this.lastElapsedSeconds, message })
+                : message);
         }
 
         // Modal subtitle stays as the original setup description for the

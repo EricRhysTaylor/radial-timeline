@@ -14,6 +14,7 @@
  */
 
 import { sleep } from '../../utils/sleep';
+import { t } from '../../i18n';
 import { Notice, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { TimelineItem } from '../../types';
@@ -279,7 +280,7 @@ export class ChronologueDragController {
             return;
         }
         if (resolution.kind === 'undated') {
-            new Notice(`Give "${resolution.sceneTitle}" a When date before placing a scene next to it.`, 6000);
+            new Notice(t('ui.chronologueDragController.undatedNeighborNotice', { title: resolution.sceneTitle }), 6000);
             this.reset();
             return;
         }
@@ -287,7 +288,7 @@ export class ChronologueDragController {
         const draggedScene = sequence.find(scene => scene.path === sourcePath);
         const file = this.view.plugin.app.vault.getAbstractFileByPath(sourcePath);
         if (!draggedScene || !(file instanceof TFile)) {
-            new Notice('That scene note could not be found in the vault.', 6000);
+            new Notice(t('ui.chronologueDragController.sceneNotFound'), 6000);
             this.reset();
             return;
         }
@@ -296,7 +297,7 @@ export class ChronologueDragController {
         const currentWhen = draggedScene.when instanceof Date ? draggedScene.when : null; // SAFE: an undated scene simply gets no keep-the-time candidate
         const placementOptions = this.buildOptions(resolution, sequence, sourcePath, currentWhen, draggedDurationMs);
         if (placementOptions.length === 0) {
-            new Notice('There is no room between those two scenes for another date.', 6000);
+            new Notice(t('ui.chronologueDragController.noRoom'), 6000);
             this.reset();
             return;
         }
@@ -324,11 +325,11 @@ export class ChronologueDragController {
 
         try {
             if (placement.keepFollowers) {
-                modal.updateProgress('Dating the scenes that stay...');
+                modal.updateProgress(t('ui.chronologueDragController.datingFollowers'));
                 const keepError = await this.keepFollowersInPlace(followers);
                 if (keepError) {
                     await modal.finishWithDismiss(
-                        `${keepError} ${draggedScene.title || file.basename} was not moved.`, // SAFE: filename identity, same rule as the modal title
+                        t('ui.chronologueDragController.notMoved', { error: keepError, title: draggedScene.title || file.basename }), // SAFE: filename identity, same rule as the modal title
                         true
                     );
                     return;
@@ -345,21 +346,21 @@ export class ChronologueDragController {
                 { logTool: 'chronologue' }
             );
             if (writeResult.success === 0) {
-                const detail = writeResult.errors[0]?.error ?? 'the note could not be updated'; // SAFE: a zero-success write with no recorded error still needs author-facing wording
+                const detail = writeResult.errors[0]?.error ?? t('ui.chronologueDragController.noteNotUpdatedDetail'); // SAFE: a zero-success write with no recorded error still needs author-facing wording
                 console.error('Chronologue placement write failed:', writeResult.errors);
-                await modal.finishWithDismiss(`Could not write the When field: ${detail}`, true);
+                await modal.finishWithDismiss(t('ui.chronologueDragController.writeWhenFailed', { detail }), true);
                 return;
             }
             new Notice(`${draggedScene.title || file.basename} → ${placement.storedWhen}`, 2000); // SAFE: filename identity again, same rule as the modal title
-            modal.updateProgress('Refreshing timeline...');
+            modal.updateProgress(t('ui.chronologueDragController.refreshing'));
             // Let Obsidian's metadata cache catch up before the re-render reads it.
             await sleep(100);
             this.options.onRefresh();
-            await modal.finishWithDismiss('Placed.');
+            await modal.finishWithDismiss(t('ui.chronologueDragController.placed'));
         } catch (error) {
             console.error('Chronologue placement failed:', error);
             await modal.finishWithDismiss(
-                `Could not write the When field: ${error instanceof Error ? error.message : String(error)}`,
+                t('ui.chronologueDragController.writeWhenFailed', { detail: error instanceof Error ? error.message : String(error) }),
                 true
             );
         } finally {
@@ -381,7 +382,7 @@ export class ChronologueDragController {
         for (const follower of followers) {
             const file = this.view.plugin.app.vault.getAbstractFileByPath(follower.scene.path ?? '');
             if (!(file instanceof TFile) || !follower.keepWhen) {
-                return `Could not keep “${describeScene(follower.scene)}” in place.`;
+                return t('ui.chronologueDragController.keepFailed', { title: describeScene(follower.scene) });
             }
             updates.push({ file, when: follower.keepWhen.when, whenSource: 'manual' });
         }
@@ -391,8 +392,8 @@ export class ChronologueDragController {
         console.error('Chronologue placement: dating undated followers failed:', result.errors);
         const first = result.errors[0];
         return first
-            ? `Could not write When to “${first.file.basename}”: ${first.error}.`
-            : 'Could not write When to the scenes that stay.';
+            ? t('ui.chronologueDragController.writeFollowerFailed', { file: first.file.basename, error: first.error })
+            : t('ui.chronologueDragController.writeFollowersFailed');
     }
 
     /**
@@ -422,14 +423,14 @@ export class ChronologueDragController {
         };
 
         if (resolution.kind === 'ok') {
-            const option = toOption('default', 'Placement', resolution);
+            const option = toOption('default', t('ui.chronologueDragController.placementLabel'), resolution);
             return option ? [option] : [];
         }
 
         const seams = resolveSeamIntervals(sequence, sourcePath);
         const labels: Record<SeamChoice, string> = {
-            'before-first': 'Before the opening scene',
-            'after-last': 'After the closing scene'
+            'before-first': t('ui.chronologueDragController.beforeOpening'),
+            'after-last': t('ui.chronologueDragController.afterClosing')
         };
         return [
             toOption('before-first', labels['before-first'], seams.beforeFirst),

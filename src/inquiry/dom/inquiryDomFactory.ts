@@ -16,6 +16,7 @@ import {
 import { MINIMAP_GROUP_Y } from '../minimap/InquiryMinimapRenderer';
 import { createSvgElement, createSvgGroup, createSvgText } from '../minimap/svgUtils';
 import type { InquiryPreviewRow } from '../types/inquiryViewTypes';
+import { t } from '../../i18n';
 
 export type InquiryDesktopShellRefs = {
     rootSvg: SVGSVGElement;
@@ -144,13 +145,13 @@ export function createInquiryDesktopShell(args: {
     const scopeToggleButton = args.createIconButton(hudGroup, 0, 0, iconSize, 'columns-2', 'Toggle scope');
     const scopeToggleIcon = scopeToggleButton.querySelector('.ert-inquiry-icon') as SVGUseElement | undefined;
     scopeToggleButton.querySelector('title')?.remove();
-    addTooltipData(scopeToggleButton, balanceTooltipText('Toggle scope'), 'left');
+    addTooltipData(scopeToggleButton, balanceTooltipText(t('ui.inquiryDomFactory.toggleScopeTooltip')), 'left');
 
     const artifactX = (VIEWBOX_MAX - hudMargin - iconSize) - hudOffsetX;
     const helpX = artifactX - (iconSize + iconGap);
     const simulateX = helpX - (iconSize + iconGap);
     const apiSimulationButton = args.createIconButton(hudGroup, simulateX, 0, iconSize, 'activity', 'Simulate API run');
-    addTooltipData(apiSimulationButton, balanceTooltipText('Simulate API run'), 'left');
+    addTooltipData(apiSimulationButton, balanceTooltipText(t('ui.inquiryDomFactory.simulateApiRunTooltip')), 'left');
 
     const helpToggleButton = args.createIconButton(
         hudGroup,
@@ -254,7 +255,7 @@ export function createInquiryPromptPreviewPanel(args: {
     meta.setAttribute('text-anchor', 'middle');
     meta.setAttribute('dominant-baseline', 'hanging');
 
-    const rowLabels = ['', '', '', '', '', '', 'Prior result ·'];
+    const rowLabels = ['', '', '', '', '', '', t('ui.inquiryDomFactory.priorResultRowLabel')];
     const previewRowDefaultLabels = rowLabels.slice();
     const tokensRowIndex = 4;
     const historyRowIndex = 6;
@@ -313,35 +314,35 @@ export function createInquiryPromptPreviewPanel(args: {
 export function createInquiryBriefingPanel(contentEl: HTMLElement): InquiryBriefingPanelRefs {
     const briefingPanelEl = contentEl.createDiv({ cls: 'ert-inquiry-briefing-panel ert-hidden ert-ui' });
     const header = briefingPanelEl.createDiv({ cls: 'ert-inquiry-briefing-header' });
-    header.createDiv({ cls: 'ert-inquiry-briefing-title', text: 'Recent Inquiry Sessions' });
+    header.createDiv({ cls: 'ert-inquiry-briefing-title', text: t('ui.inquiryDomFactory.briefingTitle') });
     const briefingListEl = briefingPanelEl.createDiv({ cls: 'ert-inquiry-briefing-list' });
-    const briefingEmptyEl = briefingPanelEl.createDiv({ cls: 'ert-inquiry-briefing-empty', text: 'No recent inquiries yet.' });
+    const briefingEmptyEl = briefingPanelEl.createDiv({ cls: 'ert-inquiry-briefing-empty', text: t('ui.inquiryDomFactory.briefingEmpty') });
     const briefingFooterEl = briefingPanelEl.createDiv({ cls: 'ert-inquiry-briefing-footer' });
     const briefingClearButton = briefingFooterEl.createEl('button', {
         cls: 'ert-inquiry-briefing-clear',
-        text: 'Clear recent sessions'
+        text: t('ui.inquiryDomFactory.clearRecentSessions')
     });
     const briefingResetButton = briefingFooterEl.createEl('button', {
         cls: 'ert-inquiry-briefing-reset',
-        text: 'Reset corpus to default'
+        text: t('ui.inquiryDomFactory.resetCorpus')
     });
     addTooltipData(
         briefingResetButton,
-        balanceTooltipText('Resets live corpus overrides only.'),
+        balanceTooltipText(t('ui.inquiryDomFactory.resetCorpusTooltip')),
         'top'
     );
     const briefingPurgeButton = briefingFooterEl.createEl('button', {
         cls: 'ert-inquiry-briefing-purge',
-        text: 'Purge action items'
+        text: t('ui.inquiryDomFactory.purgeActionItems')
     });
     addTooltipData(
         briefingPurgeButton,
-        balanceTooltipText('Removes Inquiry-generated action items from scene frontmatter. User notes are preserved.'),
+        balanceTooltipText(t('ui.inquiryDomFactory.purgeActionItemsTooltip')),
         'top'
     );
     briefingFooterEl.createDiv({
         cls: 'ert-inquiry-briefing-note',
-        text: 'Does not delete briefs.'
+        text: t('ui.inquiryDomFactory.doesNotDeleteBriefs')
     });
 
     // Session State — turn the hidden sidecar into an explicit, visible
@@ -351,24 +352,24 @@ export function createInquiryBriefingPanel(contentEl: HTMLElement): InquiryBrief
     const briefingSessionStateEl = briefingFooterEl.createDiv({ cls: 'ert-inquiry-briefing-session-state' });
     briefingSessionStateEl.createDiv({
         cls: 'ert-inquiry-briefing-session-state-title',
-        text: 'Session State'
+        text: t('ui.inquiryDomFactory.sessionStateTitle')
     });
     const briefingSaveStateButton = briefingSessionStateEl.createEl('button', {
         cls: 'ert-inquiry-briefing-save-state',
-        text: 'Save session state'
+        text: t('ui.inquiryDomFactory.saveSessionState')
     });
     addTooltipData(
         briefingSaveStateButton,
-        balanceTooltipText('Flushes the current Inquiry sessions to the vault sidecar (Radial Timeline/Inquiry/Sessions/sessions.json). Use this before packaging or sharing this vault.'),
+        balanceTooltipText(t('ui.inquiryDomFactory.saveSessionStateTooltip')),
         'top'
     );
     const briefingRestoreButton = briefingSessionStateEl.createEl('button', {
         cls: 'ert-inquiry-briefing-restore',
-        text: 'Restore sessions'
+        text: t('ui.inquiryDomFactory.restoreSessions')
     });
     addTooltipData(
         briefingRestoreButton,
-        balanceTooltipText('Reads the vault sidecar and rehydrates the session list. Merges by key (sidecar wins on conflicts); never clobbers unsaved current work.'),
+        balanceTooltipText(t('ui.inquiryDomFactory.restoreSessionsTooltip')),
         'top'
     );
 
@@ -388,13 +389,13 @@ export function createInquiryBriefingPanel(contentEl: HTMLElement): InquiryBrief
 export function createInquiryEnginePanel(contentEl: HTMLElement): InquiryEnginePanelRefs {
     const enginePanelEl = contentEl.createDiv({ cls: 'ert-inquiry-engine-panel ert-hidden ert-ui' });
     const header = enginePanelEl.createDiv({ cls: 'ert-inquiry-engine-header' });
-    header.createDiv({ cls: 'ert-inquiry-engine-title', text: 'AI Engine' });
+    header.createDiv({ cls: 'ert-inquiry-engine-title', text: t('ui.inquiryDomFactory.engineTitle') });
     const enginePanelMetaEl = header.createDiv({ cls: 'ert-inquiry-engine-meta', text: '' });
 
     const enginePanelReadinessEl = enginePanelEl.createDiv({ cls: 'ert-inquiry-engine-readiness' });
     const enginePanelReadinessStatusEl = enginePanelReadinessEl.createDiv({
         cls: 'ert-inquiry-engine-readiness-status',
-        text: 'Ready'
+        text: t('ui.inquiryDomFactory.engineReady')
     });
     const enginePanelReadinessCorpusEl = enginePanelReadinessEl.createDiv({
         cls: 'ert-inquiry-engine-readiness-message',
@@ -416,7 +417,7 @@ export function createInquiryEnginePanel(contentEl: HTMLElement): InquiryEngineP
     const enginePanelGuardNoteEl = enginePanelGuardEl.createDiv({
         cls: 'ert-inquiry-engine-guard-note'
     });
-    enginePanelGuardNoteEl.setText('Adjust settings to continue.');
+    enginePanelGuardNoteEl.setText(t('ui.inquiryDomFactory.engineGuardNote'));
 
     const enginePanelListEl = enginePanelEl.createDiv({ cls: 'ert-inquiry-engine-list' });
 

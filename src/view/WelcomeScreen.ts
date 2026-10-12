@@ -20,6 +20,7 @@ import {
     getActiveBook
 } from '../utils/books';
 import { readSampleVaultManifest, registerSampleBookProfiles, type SampleVaultConfig } from '../utils/sampleVault';
+import { t } from '../i18n';
 
 interface WelcomeScreenParams {
     container: HTMLElement;
@@ -27,57 +28,59 @@ interface WelcomeScreenParams {
     refreshTimeline: () => void;
 }
 
-const WELCOME_COPY = {
-    intro: 'Radial Timeline turns long-form narratives into a single, navigable story map. Track scenes, subplots, characters, beats, and timelines across novels, sagas, memoirs, and other sustained fiction or nonfiction projects. Pick a starting point below.',
+// A function, not a constant: the copy resolves in the current language each
+// time the screen renders. [Bracketed] phrases become links and `backticked`
+// phrases become command chips, so translations keep those markers.
+const getWelcomeCopy = () => ({
+    intro: t('ui.welcomeScreen.intro'),
     cards: {
         website: {
-            title: 'Visit the website',
-            desc: 'Join the community and share your journey at your own comfort level. Learn about the features available using the Radial Timeline & Editorialist ecosystem and get help.',
-            cta: 'Open Website'
+            title: t('ui.welcomeScreen.websiteTitle'),
+            desc: t('ui.welcomeScreen.websiteDesc'),
+            cta: t('ui.welcomeScreen.websiteCta')
         },
         sampleChecking: {
-            title: 'Explore a sample vault',
-            desc: 'Checking this vault for saved sample books and analysis.',
-            cta: 'Checking vault...'
+            title: t('ui.welcomeScreen.sampleCheckingTitle'),
+            desc: t('ui.welcomeScreen.sampleCheckingDesc'),
+            cta: t('ui.welcomeScreen.sampleCheckingCta')
         },
         sampleGet: {
-            title: 'Explore a finished book',
-            desc: 'Add a complete demo project to this vault. Explore the scenes, beats, Pulse, Gossamer, and saved Inquiry briefings. No API key needed.',
-            cta: 'Choose a demo project'
+            title: t('ui.welcomeScreen.sampleGetTitle'),
+            desc: t('ui.welcomeScreen.sampleGetDesc'),
+            cta: t('ui.welcomeScreen.sampleGetCta')
         },
         sampleOpen: {
-            title: (name: string) => `${name} detected`,
-            desc: (name: string) => `This vault ships a ready-to-explore ${name}. Open it to drop straight into a finished story on the timeline.`,
-            cta: 'Open the sample vault'
+            title: (name: string) => t('ui.welcomeScreen.sampleOpenTitle', { name }),
+            desc: (name: string) => t('ui.welcomeScreen.sampleOpenDesc', { name }),
+            cta: t('ui.welcomeScreen.sampleOpenCta')
         },
         design: {
-            title: 'Set Book Project',
-            desc: 'Choose the manuscript folder that drives the timeline, exports, Inquiry scope, and Book Manager.',
-            cta: 'Open Book Manager',
-            secondary: '→ or open Book Designer'
+            title: t('ui.welcomeScreen.designTitle'),
+            desc: t('ui.welcomeScreen.designDesc'),
+            cta: t('ui.welcomeScreen.designCta'),
+            secondary: t('ui.welcomeScreen.designSecondary')
         },
         onboard: {
-            title: 'Import a manuscript',
-            desc: 'Bring in a Scrivener export or a Word document. Scenes, order, synopses and metadata come with it.',
-            cta: 'Import manuscript'
+            title: t('ui.welcomeScreen.onboardTitle'),
+            desc: t('ui.welcomeScreen.onboardDesc'),
+            cta: t('commands.onboardManuscript')
         }
     },
     workflow: {
-        lead: 'Starting a new vault?',
+        lead: t('ui.welcomeScreen.workflowLead'),
         steps: [
-            { icon: 'compass', text: 'Set your novel folder inside the vault with [Book Manager].', link: 'book-manager' },
-            { icon: 'file-plus', text: 'Open the Command Palette `⌘ + P` and run `Create note`, or scaffold quickly with `Book Designer`.' },
-            { icon: 'layers', text: 'Populate scenes and then expand with subplots, beat systems and more.' },
-            { icon: 'map-pin', text: 'Decide early: How many acts? What is the span of time? Consider helpful context markers with backdrop notes or micro-backdrops.' },
-            { icon: 'target', text: "Once you get in the rhythm, don't forget to track your writing session time and word count and set due dates for scenes or publish stages." }
+            { icon: 'compass', text: t('ui.welcomeScreen.workflowStepBookManager'), link: 'book-manager' },
+            { icon: 'file-plus', text: t('ui.welcomeScreen.workflowStepCreateNote') },
+            { icon: 'layers', text: t('ui.welcomeScreen.workflowStepPopulate') },
+            { icon: 'map-pin', text: t('ui.welcomeScreen.workflowStepDecide') },
+            { icon: 'target', text: t('ui.welcomeScreen.workflowStepTrack') }
         ]
     },
-    feedback: 'Take a moment to [share your feedback] about Radial Timeline and the features you would like to see next to smooth your writing workflow. Radial Timeline is expanding in every direction, and your feedback helps guide it.',
-    feedbackContactLead: ' Community feedback requires sign-in. Without a Community account, use our ',
-    feedbackContactLabel: 'contact form',
-    feedbackClosing: '. Happy Writing!',
-    updateNote: 'The Community is live — connect from Radial Timeline plugin settings → Community and share your writing journey.'
-} as const;
+    feedback: t('ui.welcomeScreen.feedback'),
+    feedbackContact: t('ui.welcomeScreen.feedbackContact'),
+    updateNote: t('ui.welcomeScreen.updateNote'),
+    backupNotice: t('ui.welcomeScreen.backupNotice')
+} as const);
 
 // Discovery links go through the Community's counted redirector
 // (community.radialtimeline.com/go/<slug>). Each slug must exist in the
@@ -110,6 +113,22 @@ const openRadialTimelineSettings = (
         plugin.settingsTab.setActiveTab(tab);
     }
     openSettingsTab(plugin.app);
+};
+
+/**
+ * Append `text` to `parent`, turning each [bracketed] phrase into a link to
+ * the next href in `hrefs`, so a sentence with links stays one translatable
+ * string.
+ */
+const appendTextWithLinks = (parent: HTMLElement, text: string, hrefs: readonly string[], linkCls?: string): void => {
+    let linkIndex = 0;
+    for (const part of text.split(/(\[[^\]]+\])/g)) {
+        if (part.startsWith('[') && part.endsWith(']')) {
+            parent.createEl('a', { cls: linkCls, text: part.slice(1, -1), href: hrefs[linkIndex++] });
+        } else if (part) {
+            parent.appendText(part);
+        }
+    }
 };
 
 const appendWelcomeBackgroundLogo = (parent: HTMLElement): void => {
@@ -293,7 +312,7 @@ const ensureSampleBookProject = async (
     }];
     for (const book of definitions) {
         if (!(plugin.app.vault.getAbstractFileByPath(book.sourceFolder) instanceof TFolder)) {
-            throw new Error(`Sample manuscript folder missing: ${book.sourceFolder}`);
+            throw new Error(t('ui.welcomeScreen.sampleFolderMissing', { folder: book.sourceFolder }));
         }
     }
     const registration = registerSampleBookProfiles(books, definitions, normalizedBookFolder);
@@ -326,7 +345,7 @@ const openSampleVault = async (
     try {
         targetId = await ensureSampleBookProject(plugin, config);
     } catch (error) {
-        new Notice(error instanceof Error ? error.message : 'Unable to open the sample vault.');
+        new Notice(error instanceof Error ? error.message : t('ui.welcomeScreen.unableToOpenSample'));
         return;
     }
 
@@ -351,7 +370,7 @@ const openBookManagerFromWelcome = async (plugin: RadialTimelinePlugin): Promise
                 await plugin.setActiveBookId(targetId);
             }
         } catch (error) {
-            new Notice(error instanceof Error ? error.message : 'Unable to open the sample vault.');
+            new Notice(error instanceof Error ? error.message : t('ui.welcomeScreen.unableToOpenSample'));
         }
     }
     openRadialTimelineSettings(plugin, 'core');
@@ -376,6 +395,7 @@ const hydrateSampleVaultCard = async (
     onDetected: () => void
 ): Promise<void> => {
     const hasSidecar = await hasInquirySessionSidecarInVault(plugin.app);
+    const WELCOME_COPY = getWelcomeCopy();
     if (!hasSidecar) {
         refs.root.removeClass('rt-welcome-card-pending');
         refs.title.setText(WELCOME_COPY.cards.sampleGet.title);
@@ -393,9 +413,9 @@ const hydrateSampleVaultCard = async (
         fallback = resolveSampleVaultConfig(plugin);
     } catch (error) {
         refs.root.removeClass('rt-welcome-card-pending');
-        refs.title.setText('Sample vault needs attention');
-        refs.desc.setText(error instanceof Error ? error.message : 'Invalid sample vault configuration.');
-        refs.cta.setText('Open Book Manager');
+        refs.title.setText(t('ui.welcomeScreen.sampleNeedsAttention'));
+        refs.desc.setText(error instanceof Error ? error.message : t('ui.welcomeScreen.invalidSampleConfig'));
+        refs.cta.setText(WELCOME_COPY.cards.design.cta);
         refs.setActivate(() => openRadialTimelineSettings(plugin, 'core'));
         return;
     }
@@ -407,7 +427,7 @@ const hydrateSampleVaultCard = async (
         }
         : null;
     const name = displayNameToBookTitle(config?.displayName, config?.bookFolder).toLowerCase() === DEFAULT_BOOK_TITLE.toLowerCase()
-        ? 'sample vault'
+        ? t('ui.welcomeScreen.sampleVaultName')
         : displayNameToBookTitle(config?.displayName, config?.bookFolder);
 
     refs.root.removeClass('rt-welcome-card-pending');
@@ -417,7 +437,7 @@ const hydrateSampleVaultCard = async (
     const titleName = name.charAt(0).toUpperCase() + name.slice(1);
     refs.title.setText(WELCOME_COPY.cards.sampleOpen.title(titleName));
     refs.desc.setText(config?.books && config.books.length > 1
-        ? `Explore all ${config.books.length} books in ${name}. Choose a novel with the book selector, or explore them together in Saga view.`
+        ? t('ui.welcomeScreen.exploreAllBooks', { count: config.books.length, name })
         : WELCOME_COPY.cards.sampleOpen.desc(name));
     refs.cta.setText(WELCOME_COPY.cards.sampleOpen.cta);
     refs.setActivate(() => { void openSampleVault(plugin, config, refreshTimeline); });
@@ -435,13 +455,14 @@ const applyWelcomeCardOrder = (
 
 export function renderWelcomeScreen({ container, plugin, refreshTimeline }: WelcomeScreenParams): void {
     container.addClass('rt-welcome-view');
+    const WELCOME_COPY = getWelcomeCopy();
 
     // Background RT logo - large and faint
     const bgIcon = container.createDiv({ cls: 'rt-welcome-bg-icon' });
     appendWelcomeBackgroundLogo(bgIcon);
 
     // Huge Welcome Title (custom styled block, not an H1)
-    container.createDiv({ cls: 'rt-welcome-title', text: 'Welcome' });
+    container.createDiv({ cls: 'rt-welcome-title', text: t('ui.welcomeScreen.welcomeTitle') });
 
     const body = container.createDiv({ cls: 'rt-welcome-body' });
 
@@ -449,24 +470,9 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
     // feedback line's [bracketed] phrase links to Community Help.
     body.createEl('p', { cls: 'rt-welcome-paragraph', text: WELCOME_COPY.intro });
     const feedbackP = body.createEl('p', { cls: 'rt-welcome-paragraph' });
-    for (const part of WELCOME_COPY.feedback.split(/(\[[^\]]+\])/g)) {
-        if (part.startsWith('[') && part.endsWith(']')) {
-            feedbackP.createEl('a', {
-                cls: 'ert-welcome-step-link',
-                text: part.slice(1, -1),
-                href: WELCOME_URLS.feedback
-            });
-        } else if (part) {
-            feedbackP.appendText(part);
-        }
-    }
-    feedbackP.appendText(WELCOME_COPY.feedbackContactLead);
-    feedbackP.createEl('a', {
-        cls: 'ert-welcome-step-link',
-        text: WELCOME_COPY.feedbackContactLabel,
-        href: WELCOME_URLS.contact
-    });
-    feedbackP.appendText(WELCOME_COPY.feedbackClosing);
+    appendTextWithLinks(feedbackP, WELCOME_COPY.feedback, [WELCOME_URLS.feedback], 'ert-welcome-step-link');
+    feedbackP.appendText(' ');
+    appendTextWithLinks(feedbackP, WELCOME_COPY.feedbackContact, [WELCOME_URLS.contact], 'ert-welcome-step-link');
 
     // Starting points: a finished demo, a new book, or an imported manuscript.
     const cards = body.createDiv({ cls: 'rt-welcome-cards' });
@@ -483,7 +489,7 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
         desc: WELCOME_COPY.cards.sampleChecking.desc,
         ctaLabel: WELCOME_COPY.cards.sampleChecking.cta,
         onActivate: () => undefined,
-        secondaryLabel: 'Browse demo projects',
+        secondaryLabel: t('ui.welcomeScreen.browseDemoProjects'),
         onSecondaryActivate: () => new DemoLibraryModal(plugin.app, plugin).open()
     });
     sampleRefs.root.addClass('rt-welcome-card-pending');
@@ -572,10 +578,10 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
         const row = col.createDiv({ cls: 'rt-welcome-link-row' });
         row.createEl('a', { href, text: label });
     };
-    makeLinkRow(linksColLeft, 'YouTube videos', WELCOME_URLS.youtube);
-    makeLinkRow(linksColLeft, 'Wiki — full documentation', WELCOME_URLS.wiki);
-    makeLinkRow(linksColRight, 'Community', WELCOME_URLS.community);
-    makeLinkRow(linksColRight, 'Bug reports / feature requests', WELCOME_URLS.issues);
+    makeLinkRow(linksColLeft, t('ui.welcomeScreen.linkYoutube'), WELCOME_URLS.youtube);
+    makeLinkRow(linksColLeft, t('ui.welcomeScreen.linkWiki'), WELCOME_URLS.wiki);
+    makeLinkRow(linksColRight, t('ui.welcomeScreen.linkCommunity'), WELCOME_URLS.community);
+    makeLinkRow(linksColRight, t('ui.welcomeScreen.linkIssues'), WELCOME_URLS.issues);
 
     // Backup Notice
     const backupNotice = body.createDiv({ cls: 'rt-welcome-backup-notice' });
@@ -584,10 +590,9 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline }: Welc
 
     const backupText = backupNotice.createDiv({ cls: 'rt-welcome-backup-text' });
     const backupPara = backupText.createDiv();
-    backupPara.createSpan({ text: 'Back up your Obsidian vault regularly to protect against data loss. Learn more at ' });
-    backupPara.createEl('a', { text: 'Obsidian backup guide', href: 'https://help.obsidian.md/backup' });
-    backupPara.createSpan({ text: '. Sync does not protect against all forms of data loss. Sync options include ' });
-    backupPara.createEl('a', { text: 'Obsidian Sync', href: 'https://obsidian.md/sync' });
-    backupPara.createSpan({ text: ' or ' });
-    backupPara.createEl('a', { text: 'Obsidian Git', href: 'https://obsidian.md/plugins?id=obsidian-git' });
+    appendTextWithLinks(backupPara, WELCOME_COPY.backupNotice, [
+        'https://help.obsidian.md/backup',
+        'https://obsidian.md/sync',
+        'https://obsidian.md/plugins?id=obsidian-git'
+    ]);
 }

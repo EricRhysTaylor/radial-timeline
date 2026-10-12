@@ -37,9 +37,9 @@ describe('AI settings models table', () => {
         expect(source.includes('GossamerEvidencePreference')).toBe(false);
         expect(source.includes('getGossamerEvidencePreference')).toBe(false);
         // Composition copy confirms bodies-only (helpers extracted to aiSettingsPreview.ts)
-        expect(previewSource.includes('Scenes (${formatInquiryCount(sceneCount)}) — full text')).toBe(true);
-        expect(previewSource.includes("'Outline — none'")).toBe(true);
-        expect(previewSource.includes("'References — none'")).toBe(true);
+        expect(previewSource.includes("t('ui.aiSettingsPreview.scenesCapacityLine', { count: formatInquiryCount(sceneCount)")).toBe(true);
+        expect(previewSource.includes("t('ui.aiSettingsPreview.outlineNone')")).toBe(true);
+        expect(previewSource.includes("t('ui.aiSettingsPreview.referenceNone')")).toBe(true);
     });
 
     it('pulses the preview card for exactly as long as a check is in flight', () => {
@@ -66,7 +66,7 @@ describe('AI settings models table', () => {
         expect(source.includes('resolveDisplayModelForLatestAlias')).toBe(true);
         expect(source.includes('displayModel: selected')).toBe(true);
         expect(source.includes('getResolvedModelId')).toBe(true);
-        expect(source.includes('ID pending')).toBe(true);
+        expect(source.includes("t('ui.aiSection.idPending'")).toBe(true);
         expect(source.includes('Context · Single-pass at this corpus')).toBe(true);
         expect(source.includes('Automatic Packaging')).toBe(false);
         expect(source.includes('Manual Selection')).toBe(false);
@@ -82,7 +82,7 @@ describe('AI settings models table', () => {
         expect(source.includes('const getInquirySessionStoreSnapshot = (): InquirySessionStore => new InquirySessionStore(plugin);')).toBe(true);
         expect(source.includes('getLatestSessionForEngineInScope(context.provider, context.modelId, currentCorpus.scope)')).toBe(true);
         expect(source.includes('scope: currentCorpus?.scope')).toBe(true);
-        expect(source.includes('Latest ${latestScopeLabel} Inquiry run completed at')).toBe(true);
+        expect(source.includes("t('ui.aiSection.runCompletedAt', { scope: latestScopeLabel")).toBe(true);
         expect(source.includes('Latest Inquiry run completed at')).toBe(false);
     });
 
@@ -162,15 +162,13 @@ describe('AI settings models table', () => {
     it('renders cloud transparency sections while hiding them for the Local provider path', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         expect(source.includes("setName(t('settings.ai.largeHandling.name'))")).toBe(true);
-        expect(source.includes('Fresh local estimate*')).toBe(true);
-        expect(source.includes('Cached local estimate**')).toBe(true);
-        expect(source.includes('* Based on published provider pricing. Actual charges may differ due to caching, credits, or account-level adjustments.')).toBe(true);
-        expect(source.includes("createSpan({ text: 'See provider pricing: ' })")).toBe(true);
-        expect(source.includes("appendText(' runs on your machine with no API charges.')")).toBe(true);
-        expect(source.includes("createEl('strong', { text: '** Gemini cache note: ' })")).toBe(true);
-        expect(source.includes('explicit cache may add storage fees for cached corpus tokens during the active cache window')).toBe(true);
-        expect(source.includes('Gemini cache windows default to 15m')).toBe(true);
-        expect(source.includes('cache usually only pays off when you run another question before the window expires')).toBe(true);
+        expect(source.includes("t('ui.aiSection.costHeaderFresh')")).toBe(true);
+        expect(source.includes("t('ui.aiSection.costHeaderCached')")).toBe(true);
+        expect(source.includes("appendText(t('ui.aiSection.costFootnotePricing'))")).toBe(true);
+        expect(source.includes("createSpan({ text: t('ui.aiSection.costFootnoteSeePricing') })")).toBe(true);
+        expect(source.includes("appendText(t('ui.aiSection.costFootnoteLocal'))")).toBe(true);
+        expect(source.includes("createEl('strong', { text: t('ui.aiSection.costFootnoteGeminiLabel') })")).toBe(true);
+        expect(source.includes("appendText(t('ui.aiSection.costFootnoteGeminiBody'))")).toBe(true);
         expect(source.includes('https://openai.com/api/pricing/')).toBe(true);
         expect(source.includes('https://platform.claude.com/docs/en/about-claude/pricing')).toBe(true);
         expect(source.includes('https://ai.google.dev/gemini-api/docs/pricing')).toBe(true);
@@ -186,10 +184,10 @@ describe('AI settings models table', () => {
         expect(source.includes("createEl('details', { cls: 'ert-ai-fold ert-ai-large-handling' }")).toBe(false);
         expect(source.includes('attachAiCollapseButton(largeHandling')).toBe(false);
         expect(source.includes('ert-ai-capacity-grid')).toBe(true);
-        expect(source.includes('Expected Passes')).toBe(true);
+        expect(source.includes("t('ui.aiSection.costHeaderPasses')")).toBe(true);
         // 'Estimated provider input' moved into the pure panel view-model.
         const panelEstimateSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/aiPanelEstimate.ts'), 'utf8');
-        expect(panelEstimateSource.includes('Estimated provider input')).toBe(true);
+        expect(panelEstimateSource.includes("t('ui.aiPanelEstimate.providerInput'")).toBe(true);
         expect(source.includes("largeHandlingSection.toggleClass('ert-settings-hidden', isOllama || cloudKeyBlocked);")).toBe(true);
     });
 
@@ -197,21 +195,21 @@ describe('AI settings models table', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         const panelSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/aiPanelEstimate.ts'), 'utf8');
         // Section titles now live in the pure view-model builder.
-        expect(panelSource.includes("title: 'Corpus'")).toBe(true);
-        expect(panelSource.includes("title: 'Transform'")).toBe(true);
-        expect(panelSource.includes("title: 'Prompt'")).toBe(true);
-        expect(panelSource.includes("title: 'Output'")).toBe(true);
-        expect(panelSource.includes("title: 'Processing'")).toBe(true);
+        expect(panelSource.includes("title: t('ui.aiPanelEstimate.corpusTitle')")).toBe(true);
+        expect(panelSource.includes("title: t('ui.aiPanelEstimate.transformTitle')")).toBe(true);
+        expect(panelSource.includes("title: t('ui.aiPanelEstimate.promptTitle')")).toBe(true);
+        expect(panelSource.includes("title: t('ui.aiPanelEstimate.outputTitle')")).toBe(true);
+        expect(panelSource.includes("title: t('ui.aiPanelEstimate.processingTitle')")).toBe(true);
         // Row labels live in the pure module.
-        expect(panelSource.includes('Editorial analysis instructions')).toBe(true);
-        expect(panelSource.includes('Strict JSON structure')).toBe(true);
-        expect(panelSource.includes('AI role template (author-defined)')).toBe(true);
-        expect(panelSource.includes('Beat overlay (ordered sequence)')).toBe(true);
-        expect(panelSource.includes('Beat scoring instructions')).toBe(true);
-        expect(panelSource.includes('Per-beat scores')).toBe(true);
+        expect(panelSource.includes("t('ui.aiPanelEstimate.editorialInstructions')")).toBe(true);
+        expect(panelSource.includes("t('ui.aiPanelEstimate.strictJson')")).toBe(true);
+        expect(panelSource.includes("t('ui.aiPanelEstimate.roleTemplate')")).toBe(true);
+        expect(panelSource.includes("t('ui.aiPanelEstimate.beatOverlay')")).toBe(true);
+        expect(panelSource.includes("t('ui.aiPanelEstimate.beatScoringInstructions')")).toBe(true);
+        expect(panelSource.includes("t('ui.aiPanelEstimate.perBeatScores')")).toBe(true);
         // 'Scenes (' literal moved into aiSettingsPreview.ts (legacy formatter).
         const previewSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/aiSettingsPreview.ts'), 'utf8');
-        expect(previewSource.includes('Scenes (')).toBe(true);
+        expect(previewSource.includes("t('ui.aiSettingsPreview.scenesCapacityLine'")).toBe(true);
         // AiSection.ts now wires the typed view-model through the renderer
         // and uses the typed providerCount estimate (not raw ExecutionTokens).
         expect(source.includes('buildPanelViewModel')).toBe(true);
@@ -271,22 +269,22 @@ describe('AI settings models table', () => {
         expect(source.includes('formatProviderCacheWindowLabel(provider, ensureCanonicalAiSettings())')).toBe(true);
         expect(cacheWindowSource.includes('export function formatProviderCacheWindowLabel')).toBe(true);
         expect(cacheWindowSource.includes('normalizeGeminiCacheTtlSeconds(windows.googleTtlSeconds)')).toBe(true);
-        expect(source.includes("'Fresh local estimate*', 'Cached local estimate**'")).toBe(true);
+        expect(source.includes("t('ui.aiSection.costHeaderFresh'),\n            t('ui.aiSection.costHeaderCached')")).toBe(true);
     });
 
     it('shows pending Inquiry corpus estimates as estimating instead of a real zero-token request', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         expect(source.includes('const requestText = currentCorpus.requestTokens > 0')).toBe(true);
-        expect(source.includes("`Full Request: Estimating...${citationsSuffix}`")).toBe(true);
+        expect(source.includes("t('ui.aiSection.fullRequestEstimating', { suffix: citationsSuffix })")).toBe(true);
         expect(source.includes('const corpusText = currentCorpus.corpus.estimatedTokens > 0')).toBe(true);
-        expect(source.includes("'Corpus: Estimating...'")).toBe(true);
+        expect(source.includes("t('ui.aiSection.corpusEstimating')")).toBe(true);
         expect(source.includes('sizeText: requestText')).toBe(true);
         // Distinct "unavailable" branch protects against the stall bug
         // where provider count failure (e.g. Gemini countTokens throws)
         // left the Cost Estimate header on "Estimating..." forever. We
         // surface failure honestly instead.
         expect(source.includes("currentCorpus.requestEstimateMethod === 'unavailable'")).toBe(true);
-        expect(source.includes("`Full Request: unavailable — provider token count failed${citationsSuffix}`")).toBe(true);
+        expect(source.includes("t('ui.aiSection.fullRequestUnavailable', { suffix: citationsSuffix })")).toBe(true);
     });
 
     it('cost comparison rows are built by the shared engine, not re-implemented in the section', () => {
@@ -302,9 +300,9 @@ describe('AI settings models table', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         // formatPreviewReasonLabel quota branch moved into aiSettingsPreview.ts.
         const previewSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/aiSettingsPreview.ts'), 'utf8');
-        expect(previewSource.includes("if (reason === 'quota_exceeded') return 'Quota exceeded';")).toBe(true);
+        expect(previewSource.includes("if (reason === 'quota_exceeded') return t('ui.aiSettingsPreview.reasonQuotaExceeded');")).toBe(true);
         expect(source.includes("const quotaFailure = latestSession.result.aiReason === 'quota_exceeded';")).toBe(true);
-        expect(source.includes('Latest ${latestScopeLabel} Inquiry run failed because API quota was exceeded.')).toBe(true);
+        expect(source.includes("t('ui.aiSection.runQuotaFailed', { scope: latestScopeLabel })")).toBe(true);
     });
 
     it('lets observed provider cache hits override static cache-off preview copy', () => {
@@ -403,9 +401,9 @@ describe('AI settings models table', () => {
         expect(source.includes("const localLlmServerSetting = new Settings(localLlmStatusSection)")).toBe(true);
         expect(source.includes("setName(t('settings.ai.localLlm.serverName'))")).toBe(true);
         expect(source.includes('shouldRevealLocalLlmActionRow')).toBe(true);
-        expect(source.includes('All checks passed — connection · model availability · basic · structured.')).toBe(true);
+        expect(source.includes("t('ui.aiSection.allChecksPassed')")).toBe(true);
         expect(source.includes('getLocalStrategyModelOptions')).toBe(true);
-        expect(source.includes("appendStatusItem(localLlmStatusCapabilityCol, 'Capability', selectedModelId")).toBe(true);
+        expect(source.includes("appendStatusItem(localLlmStatusCapabilityCol, t('ui.aiSection.capabilityLabel'), selectedModelId")).toBe(true);
         expect(source.includes(' — ${buildLocalFeatureSummary(selectedCapability)}')).toBe(true);
         expect(source.includes('Likely fit for Radial Timeline tasks.')).toBe(false);
         expect(source.includes('const allChecksPassed = modelReady')).toBe(true);
@@ -413,18 +411,18 @@ describe('AI settings models table', () => {
         expect(source.includes('buildLocalFeatureSummary')).toBe(true);
         expect(source.includes('if (localLlmModelText) localLlmModelText.setValue(value);')).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.modelsLoading')")).toBe(true);
-        expect(source.includes('Selected model is missing from the loaded list.')).toBe(true);
-        expect(source.includes('No healthy local servers were detected automatically.')).toBe(true);
-        expect(source.includes('No Local Server Detected')).toBe(true);
-        expect(source.includes('Checking Local Server...')).toBe(true);
-        expect(source.includes('No local server detected')).toBe(true);
+        expect(source.includes("t('ui.aiSection.selectedModelMissing')")).toBe(true);
+        expect(source.includes("t('ui.aiSection.noHealthyServersDetected')")).toBe(true);
+        expect(source.includes("t('ui.aiSection.noServerTitle')")).toBe(true);
+        expect(source.includes("t('ui.aiSection.checkingServerTitle')")).toBe(true);
+        expect(source.includes("t('ui.aiSection.noServerDetectedValue')")).toBe(true);
         expect(source.includes("t('settings.ai.localLlm.noModelsAuto')")).toBe(true);
         expect(source.includes("const localLlmStatusGrid = localLlmStatusSection.createDiv({ cls: 'ert-ai-local-llm-status-grid' });")).toBe(true);
         expect(source.includes('const buildLocalCheckValue = (')).toBe(true);
         expect(source.includes("const appendStatusItem = (container: HTMLElement, label: string, value: string): void => {")).toBe(true);
-        expect(source.includes("appendStatusItem(localLlmStatusSummaryCol, 'Status', statusStamp ? `${statusValue} · ${statusStamp}` : statusValue);")).toBe(true);
-        expect(source.includes("'Connected & validated'")).toBe(true);
-        expect(source.includes("'Waiting for a local server.'")).toBe(true);
+        expect(source.includes("appendStatusItem(localLlmStatusSummaryCol, t('ui.aiSection.statusLabel'), statusStamp ? `${statusValue} · ${statusStamp}` : statusValue);")).toBe(true);
+        expect(source.includes('const validated = localStatus.validated;')).toBe(true);
+        expect(source.includes("t('ui.aiSection.checkWaitingForServer')")).toBe(true);
     });
 
     it('auto-runs guarded Local LLM checks when Local LLM is selected or reconfigured', () => {
@@ -441,7 +439,7 @@ describe('AI settings models table', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
         const css = readFileSync(resolve(process.cwd(), 'src/styles/rt-ui.css'), 'utf8');
 
-        expect(source.includes("appendChecksRollup('Running validation checks...', true)")).toBe(true);
+        expect(source.includes("appendChecksRollup(t('ui.aiSection.runningChecks'), true)")).toBe(true);
         expect(source.includes("cls: 'ert-ai-local-validation-dots'")).toBe(true);
         expect(source.includes('dispose: () => {')).toBe(true);
         expect(css.includes('.ert-ai-local-validation-dot:nth-child(3)')).toBe(true);
@@ -460,10 +458,10 @@ describe('AI settings models table', () => {
 
     it('repurposes the third Local LLM strategy card into Auto vs Custom setup mode', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
-        expect(source.includes("accessTierDropdown.addOption('auto', 'Auto');")).toBe(true);
-        expect(source.includes("accessTierDropdown.addOption('custom', 'Custom');")).toBe(true);
-        expect(source.includes("accessTierName.textContent = isOllama ? 'Setup' : 'Access';")).toBe(true);
-        expect(source.includes('Use Auto for standard Local LLM setup. Switch to Custom only when you need to override backend or transport settings.')).toBe(true);
+        expect(source.includes("accessTierDropdown.addOption('auto', t('ui.aiSection.autoOption'));")).toBe(true);
+        expect(source.includes("accessTierDropdown.addOption('custom', t('ui.aiSection.customOption'));")).toBe(true);
+        expect(source.includes("accessTierName.textContent = isOllama ? t('ui.aiSection.setupName') : t('settings.ai.accessTier.name');")).toBe(true);
+        expect(source.includes("t('ui.aiSection.localOverrideCopy')")).toBe(true);
         expect(source.includes('shouldRevealLocalLlmTransportSettings')).toBe(true);
     });
 

@@ -49,7 +49,7 @@ function jobId(signal: GossamerSignalType, bookFolder: string): string {
 
 function signalOf(job: AiJob): GossamerSignalType {
     const signal = GOSSAMER_SIGNAL_TYPES.find(candidate => job.id.startsWith(`gossamer-${candidate}-`));
-    if (!signal) throw new Error(`Gossamer job "${job.id}" names no known signal`);
+    if (!signal) throw new Error(t('ui.gossamerJobs.unknownSignal', { id: job.id }));
     return signal;
 }
 
@@ -100,7 +100,7 @@ export function createGossamerJobHandler(plugin: RadialTimelinePlugin): AiJobHan
                 // Not an error in the answer, and not a reason to discard it:
                 // the scores belong to another book. Left in place until that
                 // book is active again.
-                throw new Error(`This Gossamer job is for the book in "${job.target.path}". Make that the active book, then run Check for AI job results.`);
+                throw new Error(t('ui.gossamerJobs.otherBook', { path: job.target.path }));
             }
             const source = await loadGossamerSource(plugin);
             return {

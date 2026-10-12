@@ -2,6 +2,7 @@ import { App, Setting as Settings, Notice } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { ERT_CLASSES } from '../../ui/classes';
 import { getSupportedFrontmatterRemapTargets } from '../../utils/frontmatter';
+import { t } from '../../i18n';
 
 const ALL_CANONICAL_KEYS = getSupportedFrontmatterRemapTargets();
 const CANONICAL_KEY_LABELS: Record<string, string> = {
@@ -16,8 +17,8 @@ export function renderMetadataSection(params: { app: App; plugin: RadialTimeline
 
     // Single toggle that both enables the feature and controls visibility
     const remapSetting = new Settings(remapPanel)
-        .setName('Remap frontmatter field keys')
-        .setDesc('Map custom frontmatter keys to Radial Timeline scene core fields.')
+        .setName(t('ui.metadataSection.remapName'))
+        .setDesc(t('ui.metadataSection.remapDesc'))
         .addToggle(toggle => {
             toggle
                 .setValue(plugin.settings.enableCustomMetadataMapping ?? false)
@@ -57,7 +58,7 @@ export function renderMetadataSection(params: { app: App; plugin: RadialTimeline
             // Text input for User Key
             setting.addText(text => {
                 text.inputEl.addClass('ert-input--lg');
-                text.setPlaceholder('Your key (e.g. StoryLine)')
+                text.setPlaceholder(t('ui.metadataSection.userKeyPlaceholder'))
                     .setValue(userKey)
                     .onChange(async (_newValue) => {
                         // We defer saving until blur to avoid partial state
@@ -134,7 +135,7 @@ export function renderMetadataSection(params: { app: App; plugin: RadialTimeline
             // Delete button
             setting.addButton(button => button
                 .setIcon('trash')
-                .setTooltip('Delete mapping')
+                .setTooltip(t('ui.metadataSection.deleteMappingTooltip'))
                 .onClick(async () => {
                     if (plugin.settings.frontmatterMappings) {
                         delete plugin.settings.frontmatterMappings[userKey];
@@ -151,7 +152,7 @@ export function renderMetadataSection(params: { app: App; plugin: RadialTimeline
             // Text input for User Key (starts empty; required to persist)
             setting.addText(text => {
                 text.inputEl.addClass('ert-input--lg');
-                text.setPlaceholder('Your key (required to save)');
+                text.setPlaceholder(t('ui.metadataSection.draftKeyPlaceholder'));
                 text.setValue('');
                 
                 const handleBlur = async () => {
@@ -220,7 +221,7 @@ export function renderMetadataSection(params: { app: App; plugin: RadialTimeline
             // Delete draft button
             setting.addButton(button => button
                 .setIcon('trash')
-                .setTooltip('Discard draft')
+                .setTooltip(t('ui.metadataSection.discardDraftTooltip'))
                 .onClick(() => {
                     const idx = pendingMappings.indexOf(pending);
                     if (idx >= 0) pendingMappings.splice(idx, 1);
@@ -231,7 +232,7 @@ export function renderMetadataSection(params: { app: App; plugin: RadialTimeline
         // Add New Mapping Button
         new Settings(mappingListContainer)
             .addButton(button => button
-                .setButtonText('Add new mapping')
+                .setButtonText(t('ui.metadataSection.addMappingButton'))
                 .onClick(async () => {
                     // Find first available canonical key (includes drafts to avoid duplicate suggestions)
                     const currentUsed = new Set([
@@ -241,7 +242,7 @@ export function renderMetadataSection(params: { app: App; plugin: RadialTimeline
                     const firstAvailable = ALL_CANONICAL_KEYS.find(k => !currentUsed.has(k));
 
                     if (!firstAvailable) {
-                        new Notice('All supported system keys are already mapped.');
+                        new Notice(t('ui.metadataSection.allKeysMappedNotice'));
                         return;
                     }
 

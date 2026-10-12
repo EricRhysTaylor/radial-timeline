@@ -360,7 +360,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
                     const copy: RuntimeRateProfile = {
                         ...base,
                         id: generateProfileId(),
-                        label: `${base.label} copy`,
+                        label: t('ui.runtimeSection.profileCopyLabel', { label: base.label }),
                     };
                     plugin.settings.runtimeRateProfiles = [...currentProfiles, copy];
                     selectedProfileId = copy.id;

@@ -22,6 +22,7 @@ import {
 } from '../../services/SubplotMembership';
 import { SubplotPickerModal } from '../../modals/SubplotPickerModal';
 import { formatLocalDateKey } from '../../utils/date';
+import { t } from '../../i18n';
 
 type SceneContextMenuView = {
     plugin: {
@@ -122,7 +123,7 @@ async function updateSceneFrontmatter(
         new Notice(successMessage);
     } catch (error) {
         console.error('[SceneContextMenu] Failed to update scene frontmatter:', error);
-        new Notice(`Could not update ${file.basename}. Review the note frontmatter and try again.`, 7000);
+        new Notice(t('ui.sceneContextMenu.updateFailed', { name: file.basename }), 7000);
     }
 }
 
@@ -304,7 +305,7 @@ async function setPartAtScene(
     currentValue: string | true | undefined
 ): Promise<void> {
     if (typeof view.plugin.getSceneData !== 'function') {
-        new Notice('Could not set part because timeline scene data is unavailable.', 5000);
+        new Notice(t('ui.sceneContextMenu.partDataUnavailable'), 5000);
         return;
     }
 
@@ -322,15 +323,15 @@ async function setPartAtScene(
         if (!result) return;
 
         if (result.clear) {
-            await clearPartMarker(view, file, `Cleared part marker from ${file.basename}.`);
+            await clearPartMarker(view, file, t('ui.sceneContextMenu.partCleared', { name: file.basename }));
             return;
         }
         if (result.value !== undefined) {
-            await writePartMarker(view, file, result.value, `Set part marker on ${file.basename}.`);
+            await writePartMarker(view, file, result.value, t('ui.sceneContextMenu.partSet', { name: file.basename }));
         }
     } catch (error) {
         console.error('[SceneContextMenu] Failed to set part:', error);
-        new Notice(`Could not set part for ${file.basename}. Review the console for details.`, 7000);
+        new Notice(t('ui.sceneContextMenu.partFailed', { name: file.basename }), 7000);
     }
 }
 
@@ -372,16 +373,16 @@ async function changeSubplotMembership(view: SceneContextMenuView, file: TFile, 
             itemLabel: file.basename,
             onChanged: () => refreshTimelineView(view, file),
         });
-        if (!after) new Notice(`${file.basename}: no subplot change.`);
+        if (!after) new Notice(t('ui.sceneContextMenu.noSubplotChange', { name: file.basename }));
     } catch (error) {
         console.error('[SceneContextMenu] Failed to change subplot membership:', error);
-        new Notice(`Could not update ${file.basename}. Review the note frontmatter and try again.`, 7000);
+        new Notice(t('ui.sceneContextMenu.updateFailed', { name: file.basename }), 7000);
     }
 }
 
 function pickSubplot(view: SceneContextMenuView, names: string[], placeholder: string, onChoose: (name: string) => void): void {
     if (names.length === 0) {
-        new Notice('No other subplot to choose.');
+        new Notice(t('ui.sceneContextMenu.noOtherSubplot'));
         return;
     }
     new SubplotPickerModal(view.plugin.app, names, placeholder, onChoose).open();
@@ -393,7 +394,7 @@ function addSubplotMenuItems(menu: Menu, view: SceneContextMenuView, group: Elem
     const effective = current.length > 0 ? current : ['Main Plot'];
     const known = knownSubplots(group);
     const ringSubplot = ringSubplotForGroup(view, group);
-    const moveFrom = (from: string): void => pickSubplot(view, known.filter(name => name !== from), `Move ${file.basename} from ${from} to…`,
+    const moveFrom = (from: string): void => pickSubplot(view, known.filter(name => name !== from), t('ui.sceneContextMenu.moveSceneFromToPlaceholder', { name: file.basename, from }),
         to => { void changeSubplotMembership(view, file, { kind: 'move', from, to }); });
 
     // On a subplot ring the ring is the source. On a ring that lists every
@@ -403,20 +404,20 @@ function addSubplotMenuItems(menu: Menu, view: SceneContextMenuView, group: Elem
         const from = sources[0];
         menu.addItem(item => {
             item.setIcon('arrow-right-left');
-            item.setTitle(`Move from ${from} to…`);
+            item.setTitle(t('ui.sceneContextMenu.moveFromTo', { from }));
             item.onClick(() => moveFrom(from));
         });
     } else {
         menu.addItem(item => {
             item.setIcon('arrow-right-left');
-            item.setTitle('Move from subplot…');
-            item.onClick(() => pickSubplot(view, sources, `Move ${file.basename} from…`, moveFrom));
+            item.setTitle(t('ui.sceneContextMenu.moveFromSubplot'));
+            item.onClick(() => pickSubplot(view, sources, t('ui.sceneContextMenu.moveSceneFromPlaceholder', { name: file.basename }), moveFrom));
         });
     }
     menu.addItem(item => {
         item.setIcon('plus-circle');
-        item.setTitle('Add to subplot…');
-        item.onClick(() => pickSubplot(view, known.filter(name => !effective.includes(name)), `Add ${file.basename} to…`,
+        item.setTitle(t('ui.sceneContextMenu.addToSubplot'));
+        item.onClick(() => pickSubplot(view, known.filter(name => !effective.includes(name)), t('ui.sceneContextMenu.addSceneToPlaceholder', { name: file.basename }),
             to => { void changeSubplotMembership(view, file, { kind: 'add', to }); }));
     });
     const removable = (ringSubplot ? [ringSubplot] : effective)
@@ -425,14 +426,14 @@ function addSubplotMenuItems(menu: Menu, view: SceneContextMenuView, group: Elem
         const from = removable[0];
         menu.addItem(item => {
             item.setIcon('minus-circle');
-            item.setTitle(`Remove from ${from}`);
+            item.setTitle(t('ui.sceneContextMenu.removeFrom', { from }));
             item.onClick(() => { void changeSubplotMembership(view, file, { kind: 'remove', from }); });
         });
     } else if (removable.length > 1) {
         menu.addItem(item => {
             item.setIcon('minus-circle');
-            item.setTitle('Remove from subplot…');
-            item.onClick(() => pickSubplot(view, removable, `Remove ${file.basename} from…`,
+            item.setTitle(t('ui.sceneContextMenu.removeFromSubplot'));
+            item.onClick(() => pickSubplot(view, removable, t('ui.sceneContextMenu.removeSceneFromPlaceholder', { name: file.basename }),
                 from => { void changeSubplotMembership(view, file, { kind: 'remove', from }); }));
         });
     }
@@ -440,7 +441,7 @@ function addSubplotMenuItems(menu: Menu, view: SceneContextMenuView, group: Elem
 
 async function addSceneAfterAnchor(view: SceneContextMenuView, group: Element, file: TFile): Promise<void> {
     if (typeof view.plugin.getSceneData !== 'function') {
-        new Notice('Could not add scene because timeline scene data is unavailable.', 5000);
+        new Notice(t('ui.sceneContextMenu.addDataUnavailable'), 5000);
         return;
     }
 
@@ -453,7 +454,7 @@ async function addSceneAfterAnchor(view: SceneContextMenuView, group: Element, f
         beatModel: resolveSelectedBeatModelFromSettings(view.plugin.settings)
     }).catch((error) => {
         console.error('[SceneContextMenu] Failed to plan scene insert:', error);
-        new Notice(`Could not add a scene after ${file.basename}. Review the console for details.`, 7000);
+        new Notice(t('ui.sceneContextMenu.addFailed', { name: file.basename }), 7000);
         return null;
     });
     if (!plan) return;
@@ -472,7 +473,7 @@ async function addSceneAfterAnchor(view: SceneContextMenuView, group: Element, f
     // Progress and the final summary live in the modal.
     try {
         const result = await applySceneInsertionPlan(view.plugin.app, plan);
-        modal.updateProgress('Refreshing timeline...');
+        modal.updateProgress(t('ui.sceneContextMenu.refreshing'));
         await new Promise((resolve) => window.setTimeout(resolve, 100));
         const createdFile = view.plugin.app.vault.getAbstractFileByPath(result.path);
         if (createdFile instanceof TFile) {
@@ -481,16 +482,16 @@ async function addSceneAfterAnchor(view: SceneContextMenuView, group: Element, f
         } else {
             refreshTimelineView(view, file);
         }
-        await modal.finishWithDismiss(`Added scene after ${file.basename}.`);
+        await modal.finishWithDismiss(t('ui.sceneContextMenu.addedAfter', { name: file.basename }));
     } catch (error) {
         console.error('[SceneContextMenu] Failed to add scene:', error);
-        await modal.finishWithDismiss(`Could not add a scene after ${file.basename}. Review the console for details, then dismiss.`, true);
+        await modal.finishWithDismiss(t('ui.sceneContextMenu.addFailedDismiss', { name: file.basename }), true);
     }
 }
 
 async function setChapterAtScene(view: SceneContextMenuView, file: TFile, currentChapterTitle: string | undefined): Promise<void> {
     if (typeof view.plugin.getSceneData !== 'function') {
-        new Notice('Could not set chapter because timeline scene data is unavailable.', 5000);
+        new Notice(t('ui.sceneContextMenu.chapterDataUnavailable'), 5000);
         return;
     }
 
@@ -505,24 +506,24 @@ async function setChapterAtScene(view: SceneContextMenuView, file: TFile, curren
         if (!result) return;
 
         if (result.clear) {
-            await clearChapterMarker(view, file, `Cleared chapter marker from ${file.basename}.`);
+            await clearChapterMarker(view, file, t('ui.sceneContextMenu.chapterCleared', { name: file.basename }));
             return;
         }
 
         const title = result.title?.trim();
         if (title) {
-            await writeChapterMarker(view, file, title, `Set chapter marker on ${file.basename}.`);
+            await writeChapterMarker(view, file, title, t('ui.sceneContextMenu.chapterSet', { name: file.basename }));
         }
     } catch (error) {
         console.error('[SceneContextMenu] Failed to set chapter:', error);
-        new Notice(`Could not set chapter for ${file.basename}. Review the console for details.`, 7000);
+        new Notice(t('ui.sceneContextMenu.chapterFailed', { name: file.basename }), 7000);
     }
 }
 
 function showSceneContextMenu(view: SceneContextMenuView, group: Element, event: MouseEvent): void {
     const file = getSceneFile(view, group);
     if (!file) {
-        new Notice('Could not find the scene note for this timeline segment.', 5000);
+        new Notice(t('ui.sceneContextMenu.sceneNoteNotFound'), 5000);
         return;
     }
 
@@ -536,7 +537,7 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
         ? (currentPartMarker.titled && currentPartMarker.title ? currentPartMarker.title : true)
         : undefined;
     const currentPartLabel = currentPartMarker
-        ? (currentPartMarker.title ?? 'numeral only')
+        ? (currentPartMarker.title ?? t('ui.sceneContextMenu.partNumeralOnly'))
         : undefined;
     const pulseFlag = normalizeScalar(frontmatter['Pulse Update']);
     const pulseAlreadyFlagged = /^(yes|true|1)$/i.test(pulseFlag);
@@ -547,21 +548,25 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
     if (itemType === 'Scene') {
         menu.addItem(item => {
             item.setIcon('file-plus-2');
-            item.setTitle('Add scene');
+            item.setTitle(t('ui.sceneContextMenu.addScene'));
             item.onClick(() => {
                 void addSceneAfterAnchor(view, group, file);
             });
         });
         menu.addItem(item => {
             item.setIcon('book-marked');
-            item.setTitle(currentChapterTitle ? `Set chapter… (${currentChapterTitle})` : 'Set chapter…');
+            item.setTitle(currentChapterTitle
+                ? t('ui.sceneContextMenu.setChapterCurrent', { chapter: currentChapterTitle })
+                : t('ui.sceneContextMenu.setChapter'));
             item.onClick(() => {
                 void setChapterAtScene(view, file, currentChapterTitle);
             });
         });
         menu.addItem(item => {
             item.setIcon('bookmark');
-            item.setTitle(currentPartLabel ? `Set part… (${currentPartLabel})` : 'Set part…');
+            item.setTitle(currentPartLabel
+                ? t('ui.sceneContextMenu.setPartCurrent', { part: currentPartLabel })
+                : t('ui.sceneContextMenu.setPart'));
             item.onClick(() => {
                 void setPartAtScene(view, file, currentPartValue);
             });
@@ -586,8 +591,8 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
                         }
                     },
                     option.value === 'Complete'
-                        ? `Marked ${file.basename} complete and set Due to today.`
-                        : `Set ${file.basename} status to ${option.label}.`
+                        ? t('ui.sceneContextMenu.markedComplete', { name: file.basename })
+                        : t('ui.sceneContextMenu.statusSet', { name: file.basename, status: option.label })
                 );
             });
         });
@@ -606,7 +611,7 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
                     (fm) => {
                         fm['Publish Stage'] = option.value;
                     },
-                    `Set ${file.basename} publish stage to ${option.label}.`
+                    t('ui.sceneContextMenu.stageSet', { name: file.basename, stage: option.label })
                 );
             });
         });
@@ -616,7 +621,7 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
 
     menu.addItem(item => {
         item.setIcon('sparkles');
-        item.setTitle(menuTitle('Flag Triplet Pulse', pulseAlreadyFlagged));
+        item.setTitle(menuTitle(t('ui.sceneContextMenu.flagTripletPulse'), pulseAlreadyFlagged));
         item.onClick(() => {
             void updateSceneFrontmatter(
                 view,
@@ -624,7 +629,7 @@ function showSceneContextMenu(view: SceneContextMenuView, group: Element, event:
                 (fm) => {
                     fm['Pulse Update'] = 'Yes';
                 },
-                `Flagged ${file.basename} for triplet pulse.`
+                t('ui.sceneContextMenu.flaggedTripletPulse', { name: file.basename })
             );
         });
     });

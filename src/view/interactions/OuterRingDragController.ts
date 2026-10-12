@@ -23,6 +23,7 @@ import { openStructuralMoveHistoryLog } from '../../utils/recentStructuralMoveLo
 import type { RadialTimelineSettings } from '../../types/settings';
 import { fileStem } from '../../utils/paths';
 import { DRAG_DROP_ARC_RADIUS } from '../../renderer/layout/LayoutConstants';
+import { t } from '../../i18n';
 
 export interface OuterRingViewAdapter {
     plugin: RadialTimelinePlugin;
@@ -139,7 +140,7 @@ function describeFollowUpIssue(error: unknown): string {
     if (typeof error === 'string' && error.trim()) {
         return error.trim();
     }
-    return 'Unknown follow-up issue';
+    return t('ui.outerRingDragController.unknownFollowUpIssue');
 }
 
 /**
@@ -308,23 +309,25 @@ export class OuterRingDragController {
         const label = this.getLabelFromBasename(entry.basename, entry.itemType);
         if (entry.itemType === 'Scene') {
             if (entry.numberText && label && label !== 'Scene') {
-                return `Scene ${entry.numberText} ${label}`;
+                return t('ui.outerRingDragController.sceneNumberLabel', { number: entry.numberText, label });
             }
-            return entry.numberText ? `Scene ${entry.numberText}` : label;
+            return entry.numberText ? t('ui.outerRingDragController.sceneNumber', { number: entry.numberText }) : label;
         }
         if (entry.numberText && label && label !== 'Beat') {
-            return `Beat ${entry.numberText} ${label}`;
+            return t('ui.outerRingDragController.beatNumberLabel', { number: entry.numberText, label });
         }
         if (label && label !== 'Beat') {
-            return `${label} beat`;
+            return t('ui.outerRingDragController.labelBeat', { label });
         }
-        return entry.numberText ? `Beat ${entry.numberText}` : 'Beat';
+        return entry.numberText
+            ? t('ui.outerRingDragController.beatNumber', { number: entry.numberText })
+            : t('ui.outerRingDragController.beatFallback');
     }
 
     private formatContext(actNumber?: number, subplot?: string): string | undefined {
         const parts: string[] = [];
         if (actNumber !== undefined && Number.isFinite(actNumber)) {
-            parts.push(`Act ${actNumber}`);
+            parts.push(t('timeline.acts.actFallback', { number: actNumber }));
         }
         if (subplot && subplot.trim().length > 0) {
             parts.push(subplot.trim());
@@ -684,7 +687,6 @@ export class OuterRingDragController {
         const moved = order[fromIdx];
         const sourceSceneId = this.sourceSceneId;
         const targetEntry = order[toIdx];
-        const insertionRelation = 'before' as const;
         let reordered = [...order];
         let isNoOpReorder = false;
         if (moved.itemType === 'Scene' && targetEntry?.itemType === 'Scene') {
@@ -750,7 +752,8 @@ export class OuterRingDragController {
         const modal = new DragConfirmModal(
             this.view.plugin.app,
             {
-                actionSummary: `Move ${sourceDescriptor} ${insertionRelation} ${targetDescriptor}`,
+                // "source | target": DragConfirmModal draws the arrow between the two parts in any language.
+                actionSummary: `${sourceDescriptor} | ${targetDescriptor}`,
                 renameCount: renumberUpdates.length,
                 ...(contextChange ? { contextChange } : {}),
                 rippleRename,
@@ -793,7 +796,7 @@ export class OuterRingDragController {
             this.log('apply updates', { count: updates.length, from: fromIdx, to: toIdx, itemType: sourceType });
             await applySceneNumberUpdates(this.view.plugin.app, updates, {
                 onProgress: (progress) => {
-                    modal.updateProgress(this.formatRenameProgressLine('Reorder', progress));
+                    modal.updateProgress(this.formatRenameProgressLine(t('ui.outerRingDragController.reorderPrefix'), progress));
                 },
                 verification: {
                     expectedOrderedPaths,
@@ -802,12 +805,12 @@ export class OuterRingDragController {
                     expectedMovedIndex: reordered.findIndex(entry => entry.path === sourcePath),
                 },
                 onWarning: () => {
-                    new Notice('RT detected a potential issue after this operation. Please review the affected note. If needed, use backup or sync/version history to restore.', 8000);
+                    new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
                 },
             });
             reorderApplied = true;
             const historySummary = `${sourceDescriptor} | ${targetDescriptor}`;
-            const noticeText = `${sourceDescriptor} before ${targetDescriptor}`;
+            const noticeText = t('ui.outerRingDragController.movedBefore', { source: sourceDescriptor, target: targetDescriptor });
             await this.recordRecentMove({
                 itemType: sourceType,
                 filePath: sourcePath,
@@ -822,31 +825,31 @@ export class OuterRingDragController {
             });
             new Notice(noticeText, 2000);
             await this.runRippleRenameIfEnabled((message) => modal.updateProgress(message));
-            modal.updateProgress('Refreshing timeline...');
+            modal.updateProgress(t('ui.outerRingDragController.refreshing'));
             // Small delay to allow Obsidian's metadata cache to update before refresh
             await sleep(100);
             this.options.onRefresh();
-            await modal.finishWithDismiss('Reorder complete.');
+            await modal.finishWithDismiss(t('ui.outerRingDragController.reorderComplete'));
         } catch (error) {
             if (error instanceof SceneReorderVerificationError) {
                 console.error('Drag reorder verification warning:', error);
-                modal.updateProgress('Refreshing timeline...');
+                modal.updateProgress(t('ui.outerRingDragController.refreshing'));
                 await sleep(100);
                 this.options.onRefresh();
-                await modal.finishWithDismiss(`Reorder applied, but RT detected a potential issue: ${describeFollowUpIssue(error)}. Please review the affected notes, then dismiss.`, true);
+                await modal.finishWithDismiss(t('ui.outerRingDragController.reorderVerificationIssue', { issue: describeFollowUpIssue(error) }), true);
             } else if (reorderApplied) {
                 console.error('Drag reorder post-apply warning:', error);
                 try {
-                    modal.updateProgress('Refreshing timeline...');
+                    modal.updateProgress(t('ui.outerRingDragController.refreshing'));
                     await sleep(100);
                     this.options.onRefresh();
                 } catch (refreshError) {
                     console.error('Drag reorder refresh after post-apply warning failed:', refreshError);
                 }
-                await modal.finishWithDismiss(`Reorder applied, but a follow-up step reported an issue: ${describeFollowUpIssue(error)}. Please review the affected notes, then dismiss.`, true);
+                await modal.finishWithDismiss(t('ui.outerRingDragController.reorderFollowUpIssue', { issue: describeFollowUpIssue(error) }), true);
             } else {
                 console.error('Drag reorder failed:', error);
-                await modal.finishWithDismiss('Reorder failed. Check console for details, then dismiss.', true);
+                await modal.finishWithDismiss(t('ui.outerRingDragController.reorderFailed'), true);
             }
         } finally {
             this.confirming = false;
@@ -908,13 +911,13 @@ export class OuterRingDragController {
         const contextChange = this.buildContextChangeSummary(sourceContext, actChanged ? destinationContext : sourceContext);
         const rippleRename = this.isRippleRenameEnabled();
         const recentMoves = getActiveRecentStructuralMoves(this.view.plugin.settings);
-        const destinationLabel = `Act ${targetActNumber}`;
+        const destinationLabel = t('timeline.acts.actFallback', { number: targetActNumber });
 
         this.confirming = true;
         const modal = new DragConfirmModal(
             this.view.plugin.app,
             {
-                actionSummary: `Move ${sourceDescriptor} to ${destinationLabel}`,
+                actionSummary: t('ui.outerRingDragController.moveTo', { source: sourceDescriptor, destination: destinationLabel }),
                 renameCount: renumberUpdates.length,
                 ...(contextChange ? { contextChange } : {}),
                 rippleRename,
@@ -935,7 +938,7 @@ export class OuterRingDragController {
             this.log('apply empty-act drop', { targetAct: targetActNumber, path: sourcePath, itemType: sourceType, renames: renumberUpdates.length });
             await applySceneNumberUpdates(this.view.plugin.app, updates, {
                 onProgress: (progress) => {
-                    modal.updateProgress(this.formatRenameProgressLine('Reorder', progress));
+                    modal.updateProgress(this.formatRenameProgressLine(t('ui.outerRingDragController.reorderPrefix'), progress));
                 },
                 verification: {
                     expectedOrderedPaths,
@@ -944,7 +947,7 @@ export class OuterRingDragController {
                     expectedMovedIndex: reordered.findIndex(entry => entry.path === sourcePath),
                 },
                 onWarning: () => {
-                    new Notice('RT detected a potential issue after this operation. Please review the affected note. If needed, use backup or sync/version history to restore.', 8000);
+                    new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
                 },
             });
             reorderApplied = true;
@@ -960,33 +963,33 @@ export class OuterRingDragController {
                 crossedActs: actChanged,
                 rippleRename,
             });
-            new Notice(`Moved ${sourceDescriptor} to ${destinationLabel}`, 2000);
+            new Notice(t('ui.outerRingDragController.movedTo', { source: sourceDescriptor, destination: destinationLabel }), 2000);
             await this.runRippleRenameIfEnabled((message) => modal.updateProgress(message));
-            modal.updateProgress('Refreshing timeline...');
+            modal.updateProgress(t('ui.outerRingDragController.refreshing'));
             // Small delay to allow Obsidian's metadata cache to update before refresh
             await sleep(100);
             this.options.onRefresh();
-            await modal.finishWithDismiss('Reorder complete.');
+            await modal.finishWithDismiss(t('ui.outerRingDragController.reorderComplete'));
         } catch (error) {
             if (error instanceof SceneReorderVerificationError) {
                 console.error('Drag reorder verification warning:', error);
-                modal.updateProgress('Refreshing timeline...');
+                modal.updateProgress(t('ui.outerRingDragController.refreshing'));
                 await sleep(100);
                 this.options.onRefresh();
-                await modal.finishWithDismiss(`Reorder applied, but RT detected a potential issue: ${describeFollowUpIssue(error)}. Please review the affected notes, then dismiss.`, true);
+                await modal.finishWithDismiss(t('ui.outerRingDragController.reorderVerificationIssue', { issue: describeFollowUpIssue(error) }), true);
             } else if (reorderApplied) {
                 console.error('Drag reorder post-apply warning:', error);
                 try {
-                    modal.updateProgress('Refreshing timeline...');
+                    modal.updateProgress(t('ui.outerRingDragController.refreshing'));
                     await sleep(100);
                     this.options.onRefresh();
                 } catch (refreshError) {
                     console.error('Drag reorder refresh after post-apply warning failed:', refreshError);
                 }
-                await modal.finishWithDismiss(`Reorder applied, but a follow-up step reported an issue: ${describeFollowUpIssue(error)}. Please review the affected notes, then dismiss.`, true);
+                await modal.finishWithDismiss(t('ui.outerRingDragController.reorderFollowUpIssue', { issue: describeFollowUpIssue(error) }), true);
             } else {
                 console.error('Drag reorder failed:', error);
-                await modal.finishWithDismiss('Reorder failed. Check console for details, then dismiss.', true);
+                await modal.finishWithDismiss(t('ui.outerRingDragController.reorderFailed'), true);
             }
         } finally {
             this.confirming = false;
@@ -996,19 +999,19 @@ export class OuterRingDragController {
 
     private formatRenameProgressLine(prefix: string, progress: SceneReorderProgress): string {
         if (progress.phase === 'scan') {
-            if (progress.totalFiles === 0) return `${prefix}: no filename renames needed.`;
-            return `${prefix}: planning ${progress.totalFiles} file rename(s)...`;
+            if (progress.totalFiles === 0) return t('ui.outerRingDragController.progressNoRenames', { prefix });
+            return t('ui.outerRingDragController.progressPlanning', { prefix, count: progress.totalFiles });
         }
         if (progress.phase === 'stage') {
-            return `${prefix}: staging ${progress.stagedFiles}/${progress.totalFiles} files...`;
+            return t('ui.outerRingDragController.progressStaging', { prefix, staged: progress.stagedFiles, total: progress.totalFiles });
         }
         if (progress.phase === 'rename') {
-            return `${prefix}: renamed ${progress.renamedFiles}/${progress.totalFiles} files.`;
+            return t('ui.outerRingDragController.progressRenamed', { prefix, renamed: progress.renamedFiles, total: progress.totalFiles });
         }
         if (progress.totalFiles === 0) {
-            return `${prefix}: no filename renames needed.`;
+            return t('ui.outerRingDragController.progressNoRenames', { prefix });
         }
-        return `${prefix}: renamed ${progress.totalFiles}/${progress.totalFiles} files.`;
+        return t('ui.outerRingDragController.progressRenamed', { prefix, renamed: progress.totalFiles, total: progress.totalFiles });
     }
 
     private async runRippleRenameIfEnabled(onStatus?: (message: string) => void): Promise<void> {
@@ -1021,36 +1024,37 @@ export class OuterRingDragController {
                 beatModel: resolveSelectedBeatModelFromSettings(this.view.plugin.settings)
             });
             if (plan.needRename === 0) {
-                if (onStatus) onStatus('Ripple rename: already normalized (filenames only; no content edits).');
-                else new Notice('Ripple rename: already normalized (filenames only; no content edits).', 2600);
+                if (onStatus) onStatus(t('ui.outerRingDragController.rippleAlreadyNormalized'));
+                else new Notice(t('ui.outerRingDragController.rippleAlreadyNormalized'), 2600);
                 return;
             }
 
-            if (onStatus) onStatus(`Ripple rename: ${plan.needRename} file(s) need renaming (${plan.checked} checked, filenames only).`);
-            else new Notice(`Ripple rename: ${plan.needRename} file(s) need renaming (${plan.checked} checked, filenames only).`, 3200);
+            const needRenameMessage = t('ui.outerRingDragController.rippleNeedRename', { count: plan.needRename, checked: plan.checked });
+            if (onStatus) onStatus(needRenameMessage);
+            else new Notice(needRenameMessage, 3200);
 
             await applySceneNumberUpdates(this.view.plugin.app, plan.updates, {
                 onProgress: (progress) => {
                     if (!onStatus) return;
-                    onStatus(this.formatRenameProgressLine('Ripple rename', progress));
+                    onStatus(this.formatRenameProgressLine(t('ui.outerRingDragController.rippleRenamePrefix'), progress));
                 },
                 verification: {
                     expectedOrderedPaths: plan.orderedPaths,
                     expectedNumbersByPath: plan.expectedNumbersByPath,
                 },
                 onWarning: () => {
-                    new Notice('RT detected a potential issue after this operation. Please review the affected note. If needed, use backup or sync/version history to restore.', 8000);
+                    new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
                 },
             });
         } catch (error) {
             if (error instanceof SceneReorderVerificationError) {
                 console.warn('Ripple rename verification warning:', error);
-                if (onStatus) onStatus('Ripple rename applied, but RT detected a potential issue. Review affected notes.');
-                else new Notice('Ripple rename applied, but RT detected a potential issue. Review affected notes.', 5000);
+                if (onStatus) onStatus(t('ui.outerRingDragController.rippleVerificationIssue'));
+                else new Notice(t('ui.outerRingDragController.rippleVerificationIssue'), 5000);
             } else {
                 console.error('Ripple rename failed:', error);
-                if (onStatus) onStatus('Ripple rename failed. See console for details.');
-                else new Notice('Ripple rename failed. See console for details.', 3500);
+                if (onStatus) onStatus(t('ui.outerRingDragController.rippleFailed'));
+                else new Notice(t('ui.outerRingDragController.rippleFailed'), 3500);
             }
         }
     }

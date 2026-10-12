@@ -4,6 +4,7 @@ import type RadialTimelinePlugin from '../../main';
 import { ERT_CLASSES } from '../../ui/classes';
 import { getProEntitlement } from '../proEntitlement';
 import { RT_LOGO_PATHS } from '../../branding/rtLogo';
+import { t } from '../../i18n';
 
 interface ProEntitlementPanelParams {
     app: App;
@@ -104,7 +105,7 @@ export function renderProEntitlementPanel({
         plugin.settings.proAccessEnabled = enabled;
         await plugin.saveSettings();
         if (!enabled) {
-            new Notice('Pro workflows hidden — Core surface only.');
+            new Notice(t('ui.proEntitlementPanel.proHiddenNotice'));
         }
         onEntitlementChanged?.();
     };
@@ -124,10 +125,10 @@ export function renderProEntitlementPanel({
     });
     const collapsedPillIcon = collapsedPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
     setIcon(collapsedPillIcon, 'signature');
-    collapsedPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'PRO' });
+    collapsedPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.proEntitlementPanel.proBadge') });
     // No title text: the PRO pill already names the surface, and with the toggle
     // hidden there is no mode for "Pro mode" to describe.
-    const collapsedToggle = createToggle(collapsedRow, 'Toggle Pro workflows');
+    const collapsedToggle = createToggle(collapsedRow, t('ui.proEntitlementPanel.toggleAriaLabel'));
     // Toggle hidden for now: Pro mode stays on for every install, so there is no
     // state for the reader to manage. The control and its wiring are left intact —
     // unhide this line to bring the switch back.
@@ -139,10 +140,8 @@ export function renderProEntitlementPanel({
     // this tab reads as a prompt to buy something. Unhide to restore.
     keyContainer.hide();
     const keySetting = new Setting(keyContainer)
-        .setName('Pro access key')
-        .setDesc(
-            'Nothing to enter. Pro is on for every install and needs no key \u2014 this field is inactive.'
-        )
+        .setName(t('ui.proEntitlementPanel.accessKeyName'))
+        .setDesc(t('ui.proEntitlementPanel.accessKeyDesc'))
         .addText(text => {
             text.setPlaceholder('XXXX-XXXX-XXXX-XXXX');
             text.inputEl.addClass('ert-input--lg');
@@ -150,13 +149,13 @@ export function renderProEntitlementPanel({
         })
         .addButton(button => {
             button
-                .setButtonText('Validate')
-                .setTooltip('Nothing to validate — Pro needs no key')
+                .setButtonText(t('ui.proEntitlementPanel.validateButton'))
+                .setTooltip(t('ui.proEntitlementPanel.validateTooltip'))
                 .setDisabled(true);
         });
 
     keySetting.nameEl.createEl('a', {
-        text: ' Learn more \u2192',
+        text: t('ui.proEntitlementPanel.learnMoreLink'),
         href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Pro',
         cls: 'ert-link-accent',
         attr: { target: '_blank', rel: 'noopener' }
@@ -165,21 +164,21 @@ export function renderProEntitlementPanel({
     const heroContent = collapsed.createDiv({ cls: `${ERT_CLASSES.STACK} ert-pro-hero-content` });
     buildProHeroLogo(heroContent);
     const proNote = heroContent.createDiv({ cls: 'ert-pro-hero-notePill' });
-    proNote.createSpan({ text: 'Pro workflows appear throughout RT in magenta.' });
+    proNote.createSpan({ text: t('ui.proEntitlementPanel.magentaNote') });
     const heroCopy = heroContent.createEl('p', { cls: `${ERT_CLASSES.SECTION_DESC} ert-hero-subtitle ert-pro-hero-body` });
-    heroCopy.appendText('Pro is a collection of ');
-    heroCopy.createEl('strong', { text: 'Pro workflows' });
-    heroCopy.appendText(' — the deeper end of Radial Timeline. Evaluate your story with deeper INQUIRY+ questions, track structure and momentum across scenes, and generate polished manuscripts with PANDOC PDF EXPORTS and custom LaTeX templates. Share progress through APR CAMPAIGNS, and explore free demo vaults such as ');
+    heroCopy.appendText(t('ui.proEntitlementPanel.heroBodyLead'));
+    heroCopy.createEl('strong', { text: t('ui.proEntitlementPanel.heroBodyStrong') });
+    heroCopy.appendText(t('ui.proEntitlementPanel.heroBodyMiddle'));
     heroCopy.createSpan({ cls: 'ert-mono-inline', text: 'Pride & Prejudice' });
-    heroCopy.appendText(' with saved Pulse, Gossamer, and Inquiry examples. More classics are in preparation.');
+    heroCopy.appendText(t('ui.proEntitlementPanel.heroBodyTail'));
 
     const featureStrip = heroContent.createDiv({ cls: 'ert-pro-hero-pillStrip' });
     const featureItems = [
-        { icon: 'file-text', label: 'Publishing' },
-        { icon: 'share-2', label: 'APR Campaigns' },
-        { icon: 'ri-logo', label: 'Inquiry+' },
-        { icon: 'waypoints', label: 'Structure' },
-        { icon: 'sparkles', label: 'Free demo vaults' }
+        { icon: 'file-text', label: t('ui.proEntitlementPanel.featurePublishing') },
+        { icon: 'share-2', label: t('ui.proEntitlementPanel.featureAprCampaigns') },
+        { icon: 'ri-logo', label: t('ui.proEntitlementPanel.featureInquiryPlus') },
+        { icon: 'waypoints', label: t('ui.proEntitlementPanel.featureStructure') },
+        { icon: 'sparkles', label: t('ui.proEntitlementPanel.featureDemoVaults') }
     ];
     featureItems.forEach(({ icon, label }) => {
         const item = featureStrip.createDiv({ cls: 'ert-pro-hero-pill' });

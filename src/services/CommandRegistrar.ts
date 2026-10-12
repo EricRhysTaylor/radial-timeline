@@ -152,7 +152,7 @@ export class CommandRegistrar {
                     }
                     await navigator.clipboard.writeText(lines.join('\n'));
                     resetPerfMeasurements(this.plugin);
-                    new Notice('Performance report copied. Sample buffer reset for the next window.');
+                    new Notice(t('ui.commandRegistrar.perfReportCopied'));
                 },
             });
         }
@@ -317,14 +317,14 @@ export class CommandRegistrar {
         const paths = assembled.readFailures.map(failure => failure.path);
         throw new ExportFailure({
             category: 'missing_files',
-            message: `Export blocked: ${paths.length} scene file(s) could not be read.`,
+            message: t('ui.commandRegistrar.exportBlockedReadFailures', { count: paths.length }),
             detail: paths.join('\n'),
         });
     }
 
     private async handleManuscriptExport(result: ManuscriptModalResult): Promise<ManuscriptExportOutcome> {
         if (this.isUnsupportedExportConfig(result)) {
-            new Notice('This export configuration is not available.');
+            new Notice(t('ui.commandRegistrar.exportConfigUnavailable'));
             return {};
         }
 
@@ -334,8 +334,8 @@ export class CommandRegistrar {
         const activeBookAtStart = source
             ? source.kind === 'book' ? this.plugin.settings.books.find(book => book.id === source.bookId) || null : null
             : getActiveBook(this.plugin.settings);
-        if (source?.kind === 'book' && !activeBookAtStart) throw new Error('The selected RT book is no longer available.');
-        if (plainSource && result.exportType !== 'manuscript') throw new Error('Choose manuscript export for a folder or file.');
+        if (source?.kind === 'book' && !activeBookAtStart) throw new Error(t('ui.commandRegistrar.selectedBookUnavailable'));
+        if (plainSource && result.exportType !== 'manuscript') throw new Error(t('ui.commandRegistrar.chooseManuscriptExport'));
         const ctx = plainSource
             ? { sourceFolder: plainSource.path, title: plainSource.title, fileStem: slugifyToFileStem(plainSource.title || plainSource.path.split('/').pop() || 'Manuscript') }
             : activeBookAtStart
@@ -344,17 +344,17 @@ export class CommandRegistrar {
         const bookSnapshot = activeBookAtStart ? structuredClone(activeBookAtStart) : null;
         const folder = ctx.sourceFolder.trim();
         if (!folder || !this.app.vault.getAbstractFileByPath(folder)) {
-            if (plainSource) throw new ExportFailure({ category: 'missing_files', message: `Manuscript source is missing: ${folder}` });
+            if (plainSource) throw new ExportFailure({ category: 'missing_files', message: t('ui.commandRegistrar.manuscriptSourceMissing', { folder }) });
             const activeBook = getActiveBook(this.plugin.settings);
             if (activeBook) {
                 console.warn(`[RT Export] Source folder missing or invalid for book "${activeBook.title}" (id=${activeBook.id}), folder="${folder}"`);
             }
-            new Notice('Active book has no valid source folder. Open Settings → Core → Books.');
+            new Notice(t('ui.commandRegistrar.noValidSourceFolder'));
             return {};
         }
 
         const isProof = result.intent === 'proof';
-        if (isProof && (result.exportType !== 'manuscript' || result.outputFormat !== 'pdf')) throw new Error('Document proof requires PDF manuscript output.');
+        if (isProof && (result.exportType !== 'manuscript' || result.outputFormat !== 'pdf')) throw new Error(t('ui.commandRegistrar.proofRequiresPdf'));
         const dependencies = new Map<string, ManuscriptProofDependency>();
         const proofWordCounts: Record<string, number> = {};
         const capturedText = new Map<string, string>();
@@ -379,13 +379,13 @@ export class CommandRegistrar {
         let checkingDelivery = false;
         let protectedSourcePaths = new Set<string>();
         const writeOutput = async (vaultPath: string, content: string, operation: string): Promise<boolean> => {
-            if (protectedSourcePaths.has(vaultPath)) throw new ExportFailure({ category: 'write_failure', message: 'This destination would overwrite a manuscript source note. Choose another export folder.' });
+            if (protectedSourcePaths.has(vaultPath)) throw new ExportFailure({ category: 'write_failure', message: t('ui.commandRegistrar.wouldOverwriteSource') });
             return this.writeVaultTextFile(vaultPath, content, operation);
         };
         const finish = async (outcome: ManuscriptExportOutcome): Promise<ManuscriptExportOutcome> => {
             checkingDelivery = true;
             const delivery = await checkExportDelivery(this.plugin, result, outcome, ctx.title, sourcePaths);
-            new Notice(delivery.problems.length ? 'Export created files; delivery checks need attention.' : 'Export file checks passed. Review content and formatting before sharing.');
+            new Notice(delivery.problems.length ? t('ui.commandRegistrar.deliveryNeedsAttention') : t('ui.commandRegistrar.deliveryChecksPassed'));
             return { ...outcome, delivery };
         };
         try {
@@ -462,10 +462,10 @@ export class CommandRegistrar {
             sourcePaths = slicedSelection.files.map(file => file.path);
             const selectedScenePaths = sourcePaths.filter(path => !slicedSelection.matterMetaByPath?.has(path));
             if (result.reviewedSourcePaths && JSON.stringify(result.reviewedSourcePaths) !== JSON.stringify(selectedScenePaths)) {
-                throw new ExportFailure({ category: 'missing_files', message: 'The manuscript selection changed. Review the source contents and order before exporting again.' });
+                throw new ExportFailure({ category: 'missing_files', message: t('ui.commandRegistrar.selectionChanged') });
             }
             if (slicedSelection.files.length === 0) {
-                new Notice('Selected range is empty.');
+                new Notice(t('manuscriptModal.rangeEmpty'));
                 return {};
             }
 
@@ -474,7 +474,7 @@ export class CommandRegistrar {
                 : 1;
 
             if (requestedParts > slicedSelection.files.length) {
-                new Notice(`Not enough scenes selected to split into ${requestedParts} parts.`);
+                new Notice(t('ui.commandRegistrar.notEnoughScenesToSplit', { count: requestedParts }));
                 return {};
             }
 
@@ -498,7 +498,7 @@ export class CommandRegistrar {
             if (isProof) {
                 for (const file of slicedSelection.files) {
                     try { await manuscriptVault.read(file); }
-                    catch (error) { throw new ExportFailure({ category: 'missing_files', message: `Proof input could not be read: ${file.path}`, detail: error instanceof Error ? error.message : String(error) }); }
+                    catch (error) { throw new ExportFailure({ category: 'missing_files', message: t('ui.commandRegistrar.proofInputUnreadable', { path: file.path }), detail: error instanceof Error ? error.message : String(error) }); }
                 }
             }
             const partRanges = requestedParts > 1
@@ -543,7 +543,7 @@ export class CommandRegistrar {
                 }
 
                 if (savedPaths.length === 0) {
-                    new Notice('Outline export cancelled before any existing outputs were overwritten.');
+                    new Notice(t('ui.commandRegistrar.outlineExportCancelled'));
                     return { messages: statusMessages };
                 }
                 return await finish({
@@ -574,7 +574,7 @@ export class CommandRegistrar {
             });
             const selectedBookPageCount = resolveBookPages(bookMetaResolution.bookMeta || undefined, selectedMatterSummaries).length;
             if (includeMatter && selectedMatterCount === 0 && selectedBookPageCount === 0) {
-                statusMessages.push('Include front & back matter is enabled, but no Book Pages were found for the active book.');
+                statusMessages.push(t('ui.commandRegistrar.noBookPagesFound'));
             }
 
             const extension = getExportFormatExtension(result.outputFormat);
@@ -640,7 +640,7 @@ export class CommandRegistrar {
                 }
 
                 if (savedPaths.length === 0) {
-                    new Notice('Manuscript export cancelled before any existing outputs were overwritten.');
+                    new Notice(t('ui.commandRegistrar.manuscriptExportCancelled'));
                     return { messages: statusMessages };
                 }
                 return await finish({
@@ -658,12 +658,12 @@ export class CommandRegistrar {
                 // (standard manuscript format: TNR 12pt, double-spaced).
                 const absoluteOutputFolder = getVaultAbsolutePath(this.plugin, outputFolder);
                 if (!absoluteOutputFolder) {
-                    new Notice('Word export is not supported in this environment.');
+                    new Notice(t('ui.commandRegistrar.wordExportUnsupported'));
                     return {};
                 }
                 const referenceDoc = ensureManuscriptReferenceDocxInstalled(this.plugin);
                 if (!referenceDoc.path) {
-                    const message = `Cannot export DOCX: Word reference document unavailable. ${referenceDoc.error ?? ''}`.trim(); // SAFE: the failure is already stated; the trailing detail is appended only when there is one
+                    const message = t('ui.commandRegistrar.docxReferenceUnavailable', { error: referenceDoc.error ?? '' }).trim(); // SAFE: the failure is already stated; the trailing detail is appended only when there is one
                     new Notice(message, 8000);
                     throw new Error(message);
                 }
@@ -675,7 +675,7 @@ export class CommandRegistrar {
                     author: bookMetaResolution.bookMeta?.author,
                 };
 
-                new Notice('Running Pandoc...');
+                new Notice(t('ui.commandRegistrar.runningPandoc'));
                 for (const range of partRanges) {
                     const partSelection = this.sliceSelection(slicedSelection, range.start, range.end);
                     const assembled = await assembleManuscript(
@@ -745,31 +745,31 @@ export class CommandRegistrar {
 
             const layout = getLayoutById(this.plugin, selectedLayoutIdForExport);
             if (!layout) {
-                new Notice('No Pandoc layout selected. Configure layouts in Publish settings.');
+                new Notice(t('ui.commandRegistrar.noPandocLayout'));
                 return {};
             }
             if (layout.bundled) {
                 const bundledInstall = await ensureBundledLayoutInstalledForExport(this.plugin, layout);
                 if (bundledInstall.installed) {
-                    new Notice(`Installed bundled layout '${layout.name}' to Pandoc folder.`);
+                    new Notice(t('ui.commandRegistrar.installedBundledLayout', { name: layout.name }));
                 }
             }
             let layoutValidation = validatePandocLayout(this.plugin, layout);
             if (!layoutValidation.valid && layout.bundled) {
                 const bundledInstall = await ensureBundledLayoutInstalledForExport(this.plugin, layout);
                 if (bundledInstall.installed) {
-                    new Notice(`Installed bundled layout '${layout.name}' to Pandoc folder.`);
+                    new Notice(t('ui.commandRegistrar.installedBundledLayout', { name: layout.name }));
                     layoutValidation = validatePandocLayout(this.plugin, layout);
                 }
             }
             if (!layoutValidation.valid) {
-                new Notice(`Layout "${layout.name}" is invalid: ${layoutValidation.error}`);
+                new Notice(t('ui.commandRegistrar.layoutInvalid', { name: layout.name, error: String(layoutValidation.error) }));
                 return {};
             }
 
             const absoluteOutputFolder = getVaultAbsolutePath(this.plugin, outputFolder);
             if (!absoluteOutputFolder) {
-                new Notice('Pandoc export not supported in this environment.');
+                new Notice(t('ui.commandRegistrar.pandocExportUnsupported'));
                 return {};
             }
 
@@ -819,10 +819,10 @@ export class CommandRegistrar {
                 : undefined;
             const fontDiagnostics = getTemplateFontDiagnostics(templatePath);
             if (fontDiagnostics.fontsEmbeddedInPdf) {
-                statusMessages.push('Font embedding: XeLaTeX/LuaLaTeX embed resolved OpenType/TrueType fonts in the exported PDF.');
+                statusMessages.push(t('ui.commandRegistrar.fontEmbedding'));
             }
             if (fontDiagnostics.missingRequiredFonts.length > 0) {
-                const fontWarning = `Missing required system font(s): ${fontDiagnostics.missingRequiredFonts.join(', ')}. Install them or switch layouts before exporting.`;
+                const fontWarning = t('ui.commandRegistrar.missingSystemFonts', { fonts: fontDiagnostics.missingRequiredFonts.join(', ') });
                 statusMessages.push(fontWarning);
                 new Notice(fontWarning);
             }
@@ -841,14 +841,14 @@ export class CommandRegistrar {
             if (structuredFontDiag.state !== 'ok') {
                 const primary = structuredFontDiag.primaryFontName;
                 const hint = structuredFontDiag.installHint?.message
-                    ?? 'Install the font and try again.';
-                const blockMessage = `Cannot export PDF: required font '${primary}' is not installed. ${hint}`;
+                    ?? t('ui.commandRegistrar.installFontHint');
+                const blockMessage = t('ui.commandRegistrar.requiredFontMissing', { font: primary, hint });
                 new Notice(blockMessage, 8000);
                 statusMessages.push(blockMessage);
                 throw new Error(blockMessage);
             }
 
-            new Notice('Running Pandoc...');
+            new Notice(t('ui.commandRegistrar.runningPandoc'));
             for (const range of partRanges) {
                 const partSelection = this.sliceSelection(slicedSelection, range.start, range.end);
                 const assembled = await assembleManuscript(
@@ -998,7 +998,7 @@ export class CommandRegistrar {
                 try {
                     failure.delivery = await checkExportDelivery(this.plugin, result, { savedPaths, renderedPaths, outputFolder: actualOutputFolder }, ctx.title, sourcePaths, failure.message);
                 } catch (receiptError) {
-                    failure.detail = `${failure.detail || ''}\nDelivery record could not be saved: ${receiptError instanceof Error ? receiptError.message : String(receiptError)}`.trim();
+                    failure.detail = `${failure.detail || ''}\n${t('ui.commandRegistrar.deliveryRecordNotSaved', { error: receiptError instanceof Error ? receiptError.message : String(receiptError) })}`.trim();
                 }
             }
             new Notice(failure.message);
@@ -1110,13 +1110,13 @@ export class CommandRegistrar {
         const result = await writeManagedOutput(this.app, vaultPath, content, {
             operation,
             managedMarker,
-            unmanagedOverwritePrompt: (file) => `Overwrite existing output "${file.path}"? RT will archive the current contents to a log snapshot first. Manual edits may be replaced.`
+            unmanagedOverwritePrompt: (file) => t('ui.commandRegistrar.overwriteOutputPrompt', { path: file.path })
         });
         if (result.skipped) {
             return false;
         }
         if (result.snapshotPath) {
-            new Notice(`Archived existing output before overwrite: ${result.snapshotPath}`);
+            new Notice(t('ui.commandRegistrar.archivedBeforeOverwrite', { path: result.snapshotPath }));
         }
         return true;
     }
@@ -1232,10 +1232,15 @@ export class CommandRegistrar {
             const newFile = await this.app.vault.create(path, content);
             const leaf = this.app.workspace.getLeaf(true);
             await leaf.openFile(newFile);
-            new Notice(`Created ${label.toLowerCase()} note: ${path.split('/').pop()}`);
+            const createdName = String(path.split('/').pop());
+            new Notice(kind === 'character'
+                ? t('ui.commandRegistrar.createdCharacterNote', { name: createdName })
+                : t('ui.commandRegistrar.createdPlaceNote', { name: createdName }));
         } catch (error) {
             const msg = (error as Error)?.message || String(error);
-            new Notice(`Failed to create ${kind} note: ` + msg);
+            new Notice(kind === 'character'
+                ? t('ui.commandRegistrar.characterNoteFailed', { error: msg })
+                : t('ui.commandRegistrar.placeNoteFailed', { error: msg }));
         }
     }
 
@@ -1309,13 +1314,16 @@ export class CommandRegistrar {
             const leaf = this.app.workspace.getLeaf(true);
             await leaf.openFile(newFile);
 
-            const labelMap: Record<string, string> = {
-                base: 'core', advanced: 'advanced properties', screenplay: 'screenplay', podcast: 'podcast'
+            const createdMessages: Record<typeof type, string> = {
+                base: t('ui.commandRegistrar.createdCoreSceneNote', { name: filename }),
+                advanced: t('ui.commandRegistrar.createdAdvancedSceneNote', { name: filename }),
+                screenplay: t('ui.commandRegistrar.createdScreenplaySceneNote', { name: filename }),
+                podcast: t('ui.commandRegistrar.createdPodcastSceneNote', { name: filename })
             };
-            new Notice(`Created ${labelMap[type]} scene note: ${filename}`);
+            new Notice(createdMessages[type]);
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            new Notice('Failed to create scene note: ' + msg);
+            new Notice(t('ui.commandRegistrar.sceneNoteFailed', { error: msg }));
         }
     }
 
@@ -1348,10 +1356,14 @@ export class CommandRegistrar {
             const newFile = await this.app.vault.create(filePath, fileContent);
             const leaf = this.app.workspace.getLeaf(true);
             await leaf.openFile(newFile);
-            new Notice(`Created ${defaultLabel.toLowerCase()} note: ${filename}`);
+            new Notice(isFront
+                ? t('ui.commandRegistrar.createdFrontMatterNote', { name: filename })
+                : t('ui.commandRegistrar.createdBackMatterNote', { name: filename }));
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            new Notice(`Failed to create ${classValue.toLowerCase()} note: ${msg}`);
+            new Notice(classValue === 'Frontmatter'
+                ? t('ui.commandRegistrar.frontmatterNoteFailed', { error: msg })
+                : t('ui.commandRegistrar.backmatterNoteFailed', { error: msg }));
         }
     }
 
@@ -1401,10 +1413,10 @@ export class CommandRegistrar {
             const newFile = await this.app.vault.create(filePath, fileContent);
             const leaf = this.app.workspace.getLeaf(true);
             await leaf.openFile(newFile);
-            new Notice(`Created BookMeta note: ${newFile.name}`);
+            new Notice(t('ui.commandRegistrar.createdBookMetaNote', { name: newFile.name }));
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            new Notice(`Failed to create BookMeta note: ${msg}`);
+            new Notice(t('ui.commandRegistrar.bookMetaNoteFailed', { error: msg }));
         }
     }
 
@@ -1471,10 +1483,10 @@ export class CommandRegistrar {
             const newFile = await this.app.vault.create(path, fileContent);
             const leaf = this.app.workspace.getLeaf(true);
             await leaf.openFile(newFile);
-            new Notice(`Created backdrop note: ${filename}`);
+            new Notice(t('ui.commandRegistrar.createdBackdropNote', { name: filename }));
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            new Notice('Failed to create backdrop note: ' + msg);
+            new Notice(t('ui.commandRegistrar.backdropNoteFailed', { error: msg }));
         }
     }
 
@@ -1508,10 +1520,10 @@ export class CommandRegistrar {
             const newFile = await this.app.vault.create(filePath, fileContent);
             const leaf = this.app.workspace.getLeaf(true);
             await leaf.openFile(newFile);
-            new Notice('Created beat note.');
+            new Notice(t('ui.commandRegistrar.createdBeatNote'));
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
-            new Notice('Failed to create beat note: ' + msg);
+            new Notice(t('ui.commandRegistrar.beatNoteFailed', { error: msg }));
         }
     }
 

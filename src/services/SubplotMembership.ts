@@ -17,6 +17,7 @@
 
 import { Notice, type App, type TFile } from 'obsidian';
 import { canonicalizeFrontmatterKey, frontmatterValueToText } from '../utils/frontmatter';
+import { t } from '../i18n';
 
 export const MAIN_PLOT = 'Main Plot';
 
@@ -66,9 +67,9 @@ export function planSubplotMembership(current: string[], change: SubplotMembersh
 
 /** "Move The Shipwreck → The Keeper's Letters", "Add The Keeper's Letters", "Remove The Shipwreck". */
 export function describeSubplotMembershipChange(change: SubplotMembershipChange): string {
-    if (change.kind === 'move') return `Move ${change.from} → ${change.to}`;
-    if (change.kind === 'add') return `Add ${change.to}`;
-    return `Remove ${change.from}`;
+    if (change.kind === 'move') return t('ui.subplotMembership.moveChange', { from: change.from, to: change.to });
+    if (change.kind === 'add') return t('ui.subplotMembership.addChange', { to: change.to });
+    return t('ui.subplotMembership.removeChange', { from: change.from });
 }
 
 export function formatMemberships(memberships: string[]): string {
@@ -190,22 +191,22 @@ export async function applySubplotMembershipChange(
     options.onChanged?.();
 
     const fragment = activeWindow.createFragment();
-    fragment.createSpan({ text: `${options.itemLabel}: ${formatMemberships(before)} → ${formatMemberships(after)}. ` });
-    const undo = fragment.createEl('a', { text: 'Undo', href: '#' });
+    fragment.createSpan({ text: t('ui.subplotMembership.changedNotice', { item: options.itemLabel, before: formatMemberships(before), after: formatMemberships(after) }) });
+    const undo = fragment.createEl('a', { text: t('ui.subplotMembership.undo'), href: '#' });
     const notice = new Notice(fragment, 8000);
     undo.onClickEvent((event) => {
         event.preventDefault();
         notice.hide();
         void restoreSubplotField(app, file, undoSnapshot).then((restored) => {
             if (!restored) {
-                new Notice(`${options.itemLabel}: Undo skipped because its subplots changed after this operation.`, 5000);
+                new Notice(t('ui.subplotMembership.undoSkipped', { item: options.itemLabel }), 5000);
                 return;
             }
             options.onChanged?.();
-            new Notice(`${options.itemLabel}: back to ${formatMemberships(before)}.`, 3000);
+            new Notice(t('ui.subplotMembership.undoRestored', { item: options.itemLabel, memberships: formatMemberships(before) }), 3000);
         }).catch((error: unknown) => {
             console.error('Subplot Undo failed:', error);
-            new Notice(`${options.itemLabel}: Undo failed. Check the scene's subplots before continuing.`, 5000);
+            new Notice(t('ui.subplotMembership.undoFailed', { item: options.itemLabel }), 5000);
         });
     });
     return after;

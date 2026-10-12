@@ -151,11 +151,11 @@ describe('writing session timer font loading', () => {
         const timelineCss = readTimelineCss();
 
         expect(timelineViewSource).not.toContain("'square', 'Stop and save session'");
-        expect(timelineViewSource).toContain("'save', 'Save'");
-        expect(timelineViewSource).toContain("'pause', 'Pause'");
-        expect(timelineViewSource).toContain("'play', 'Continue'");
-        expect(timelineViewSource).toContain("'trash-2', 'Cancel'");
-        expect(timelineViewSource).toContain('return `Save ${details}?`');
+        expect(timelineViewSource).toContain("'save', t('common.save')");
+        expect(timelineViewSource).toContain("'pause', t('ui.timeLineView.pause')");
+        expect(timelineViewSource).toContain("'play', t('ui.timeLineView.continue')");
+        expect(timelineViewSource).toContain("'trash-2', t('common.cancel')");
+        expect(timelineViewSource).toContain("return t('ui.timeLineView.saveSessionPrompt', { details })");
         expect(timelineViewSource).toContain('const countdownElapsedMs = this.getCountdownSegmentElapsedMs(active, elapsedMs)');
         expect(timelineViewSource).toContain('await service.continueCountdown()');
         expect(timelineViewSource).toContain('is-save-ready');
@@ -166,7 +166,7 @@ describe('writing session timer font loading', () => {
         expect(timelineViewSource).toContain('formatCompletedSessionSummary');
         // Live tracking is a single compact clock line ("0/400w 31m") with no
         // meta paragraph under it; only the complete summary may wrap.
-        expect(timelineViewSource).toContain('${typedWords}/${goalWords}w ${minutes}m');
+        expect(timelineViewSource).toContain("t('ui.timeLineView.compactWordClock', { typed: typedWords, goal: goalWords, minutes })");
         expect(timelineViewSource).not.toContain("cls: 'ert-timeline-session-panel__meta'");
         expect(readRuleBlock(timelineCss, '.ert-timeline-session-panel__clock:not(.is-complete) .ert-timeline-session-panel__clock-value')).toContain('white-space: nowrap');
         expect(timelineViewSource).not.toContain("? 'Session Complete'");

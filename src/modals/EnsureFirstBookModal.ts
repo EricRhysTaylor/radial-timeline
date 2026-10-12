@@ -9,6 +9,7 @@ import type { BookProfile } from '../types/settings';
 import { DEFAULT_BOOK_TITLE, createBookId, getActiveBook, normalizeBookProfile } from '../utils/books';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
 import { ErtModal } from '../ui/ErtModal';
+import { t } from '../i18n';
 
 class FirstBookSetupModal extends ErtModal {
     private resolvePromise: (book: BookProfile | null) => void = () => undefined;
@@ -34,11 +35,11 @@ class FirstBookSetupModal extends ErtModal {
         }
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'Setup' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Create your first book' });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.ensureFirstBookModal.badge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.ensureFirstBookModal.title') });
         header.createDiv({
             cls: 'ert-modal-subtitle',
-            text: 'Choose a name. A folder of the same name will be created in your vault to hold this book’s scenes. You can rename either later in Settings.'
+            text: t('ui.ensureFirstBookModal.subtitle')
         });
 
         const inputContainer = contentEl.createDiv({ cls: 'ert-search-input-container' });
@@ -52,7 +53,7 @@ class FirstBookSetupModal extends ErtModal {
         const preview = contentEl.createDiv({ cls: 'setting-item-description' });
         const updatePreview = () => {
             const name = inputEl.value.trim();
-            preview.setText(name ? `Folder: ${name}` : 'Enter a name to continue.');
+            preview.setText(name ? t('ui.ensureFirstBookModal.folderPreview', { name }) : t('ui.ensureFirstBookModal.enterName'));
         };
         updatePreview();
         inputEl.addEventListener('input', updatePreview); // SAFE: direct addEventListener; Modal lifecycle manages cleanup
@@ -62,7 +63,7 @@ class FirstBookSetupModal extends ErtModal {
         const submit = async () => {
             const name = inputEl.value.trim();
             if (!name) {
-                new Notice('Please enter a book name.');
+                new Notice(t('ui.ensureFirstBookModal.nameRequired'));
                 return;
             }
             const book = await this.applyAndCreate(name);
@@ -72,8 +73,8 @@ class FirstBookSetupModal extends ErtModal {
         };
 
         const buttonRow = contentEl.createDiv({ cls: 'ert-modal-actions' });
-        new ButtonComponent(buttonRow).setButtonText('Create book').setCta().onClick(() => { void submit(); });
-        new ButtonComponent(buttonRow).setButtonText('Cancel').onClick(() => this.close());
+        new ButtonComponent(buttonRow).setButtonText(t('ui.ensureFirstBookModal.createBook')).setCta().onClick(() => { void submit(); });
+        new ButtonComponent(buttonRow).setButtonText(t('common.cancel')).onClick(() => this.close());
 
         inputEl.addEventListener('keydown', (evt: KeyboardEvent) => { // SAFE: direct addEventListener; Modal lifecycle manages cleanup
             if (evt.key === 'Enter') { evt.preventDefault(); void submit(); }
@@ -93,7 +94,7 @@ class FirstBookSetupModal extends ErtModal {
             const folderPath = normalizePath(name);
             const fileOrFolder = this.app.vault.getAbstractFileByPath(folderPath);
             if (fileOrFolder && !(fileOrFolder instanceof TFolder)) {
-                new Notice(`A file already exists at "${folderPath}". Please choose a different name.`);
+                new Notice(t('ui.ensureFirstBookModal.fileExists', { path: folderPath }));
                 return null;
             }
 
@@ -115,7 +116,7 @@ class FirstBookSetupModal extends ErtModal {
             return next;
         } catch (error) {
             const msg = (error as { message?: string } | undefined)?.message || String(error);
-            new Notice(`Failed to create book: ${msg}`);
+            new Notice(t('ui.ensureFirstBookModal.createFailed', { message: msg }));
             return null;
         }
     }

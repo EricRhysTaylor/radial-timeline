@@ -1,4 +1,5 @@
 import type RadialTimelinePlugin from '../../main';
+import { t, tCount } from '../../i18n';
 import { getCredential } from '../credentials/credentials';
 import { getLocalLlmBackend } from './backends';
 import { getCanonicalLocalLlmSettings, LOCAL_LLM_BACKEND_LABELS } from './settings';
@@ -82,10 +83,10 @@ export async function runLocalLlmDiagnostics(
         apiKey
     };
 
-    let reachable: LocalLlmDiagnosticCheck = { ok: false, message: 'Connection not tested.' };
-    let modelAvailable: LocalLlmDiagnosticCheck = { ok: false, message: 'Model availability not tested.' };
-    let basicCompletion: LocalLlmDiagnosticCheck = { ok: false, message: 'Basic completion not tested.' };
-    let structuredJson: LocalLlmDiagnosticCheck = { ok: false, message: 'Structured JSON path not tested.' };
+    let reachable: LocalLlmDiagnosticCheck = { ok: false, message: t('ui.diagnostics.connectionNotTested') };
+    let modelAvailable: LocalLlmDiagnosticCheck = { ok: false, message: t('ui.diagnostics.modelNotTested') };
+    let basicCompletion: LocalLlmDiagnosticCheck = { ok: false, message: t('ui.diagnostics.basicNotTested') };
+    let structuredJson: LocalLlmDiagnosticCheck = { ok: false, message: t('ui.diagnostics.structuredNotTested') };
     let jsonModeTiming: LocalLlmDiagnosticsReport['jsonModeTiming'];
 
     // Reachability and model presence come from the shared probe, so this panel
@@ -102,13 +103,13 @@ export async function runLocalLlmDiagnostics(
 
     if (probe.availableModelIds) {
         const models = probe.availableModelIds;
-        reachable = { ok: true, message: `${LOCAL_LLM_BACKEND_LABELS[localLlm.backend]} responded with ${models.length} models.` };
+        reachable = { ok: true, message: t('ui.diagnostics.serverResponded', { backend: LOCAL_LLM_BACKEND_LABELS[localLlm.backend], models: tCount('model', models.length) }) };
         modelAvailable = probe.available
-            ? { ok: true, message: `Model "${localLlm.defaultModelId}" is available.` }
-            : { ok: false, message: `Model "${localLlm.defaultModelId}" is not available.` };
+            ? { ok: true, message: t('ui.diagnostics.modelAvailable', { model: localLlm.defaultModelId }) }
+            : { ok: false, message: t('ui.diagnostics.modelNotAvailable', { model: localLlm.defaultModelId }) };
     } else {
-        reachable = { ok: false, message: probe.reason ?? 'Connection failed.' };
-        modelAvailable = { ok: false, message: 'Model check skipped because backend is unreachable.' };
+        reachable = { ok: false, message: probe.reason ?? t('ui.diagnostics.connectionFailed') };
+        modelAvailable = { ok: false, message: t('ui.diagnostics.modelCheckSkipped') };
         return {
             backend: LOCAL_LLM_BACKEND_LABELS[localLlm.backend],
             baseUrl: localLlm.baseUrl,
@@ -163,21 +164,21 @@ export async function runLocalLlmDiagnostics(
 
     const generationAttempt = generation.attempt;
     basicCompletion = generationAttempt && !generationAttempt.error && generationAttempt.content
-        ? { ok: true, message: 'Basic completion succeeded.' }
+        ? { ok: true, message: t('ui.diagnostics.basicSucceeded') }
         : {
             ok: false,
-            message: generationAttempt?.error || 'Backend did not return completion content.'
+            message: generationAttempt?.error || t('ui.diagnostics.noCompletion')
         };
 
     const modeLabel = (mode: LocalLlmJsonMode) =>
-        mode === 'response_format' ? 'Response format' : 'Prompt only';
+        mode === 'response_format' ? t('ui.diagnostics.modeResponseFormat') : t('ui.diagnostics.modePromptOnly');
     const alternate: LocalLlmJsonMode =
         localLlm.jsonMode === 'response_format' ? 'prompt_only' : 'response_format';
 
     structuredJson = structured.ok
         ? {
             ok: true,
-            message: `Structured JSON path succeeded in ${(elapsedMs / 1000).toFixed(1)}s using ${modeLabel(localLlm.jsonMode)}.`
+            message: t('ui.diagnostics.structuredSucceeded', { seconds: (elapsedMs / 1000).toFixed(1), mode: modeLabel(localLlm.jsonMode) })
         }
         : { ok: false, message: structured.error };
 

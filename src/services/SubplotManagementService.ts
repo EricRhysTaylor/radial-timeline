@@ -8,6 +8,7 @@ import { App, TFile, Notice, getFrontMatterInfo, parseYaml } from 'obsidian';
 import { SceneDataService } from './SceneDataService';
 import { frontmatterValueToText, normalizeFrontmatterKeys } from '../utils/frontmatter';
 import { isPathInFolderScope } from '../utils/pathScope';
+import { t, tCount } from '../i18n';
 
 export interface SubplotStats {
     name: string;
@@ -61,7 +62,7 @@ export class SubplotManagementService {
      */
     async deleteSubplot(subplotToDelete: string): Promise<void> {
         if (subplotToDelete === "Main Plot") {
-            new Notice("Cannot delete Main Plot.");
+            new Notice(t('ui.subplotManagementService.cannotDeleteMainPlot'));
             return;
         }
 
@@ -123,7 +124,7 @@ export class SubplotManagementService {
             if (processed) modifiedCount++;
         }
 
-        new Notice(`Removed "${subplotToDelete}" from ${modifiedCount} scenes.`);
+        new Notice(t('ui.subplotManagementService.removedFromScenes', { name: subplotToDelete, scenes: tCount('scene', modifiedCount) }));
     }
 
     /**
@@ -186,7 +187,7 @@ export class SubplotManagementService {
         // Also update settings if necessary (dominant subplots)
         await this.renameSubplotInSettings(oldName, newName);
 
-        new Notice(`Renamed "${oldName}" to "${newName}" in ${modifiedCount} scenes.`);
+        new Notice(t('ui.subplotManagementService.renamedInScenes', { oldName, newName, scenes: tCount('scene', modifiedCount) }));
     }
 
     /**

@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 export type InquiryEngineActionButtons = {
     settingsButton: HTMLButtonElement;
     logButton: HTMLButtonElement;
@@ -8,13 +10,13 @@ export function createInquiryEngineActionButtons(container: HTMLElement): Inquir
 
     const settingsButton = actionsRow.createEl('button', {
         cls: 'ert-inquiry-engine-action-button',
-        text: 'Open AI settings',
+        text: t('ui.inquiryEngineDom.openAiSettings'),
         attr: { type: 'button' }
     });
 
     const logButton = actionsRow.createEl('button', {
         cls: 'ert-inquiry-engine-action-button',
-        text: 'Open Inquiry Log',
+        text: t('ui.inquiryEngineDom.openInquiryLog'),
         attr: { type: 'button' }
     });
 

@@ -8,6 +8,7 @@
 
 import type { TFile } from 'obsidian';
 import type { TimelineItem } from '../types';
+import { getFormattingLocale, t, tCount } from '../i18n';
 
 // ============================================================================
 // Pattern Presets
@@ -32,39 +33,32 @@ export interface CyclePattern {
 
 export type ScaffoldPattern = IntervalPattern | CyclePattern;
 
+/** A cycle preset is labelled by its beat count and described by its bucket sequence ("Morning → Evening"). */
+function cyclePattern(id: PatternPresetId, sequence: TimeBucket[]): CyclePattern {
+    return {
+        type: 'cycle',
+        id,
+        get label() { return tCount('beat', sequence.length); },
+        get description() { return sequence.map(bucket => TIME_BUCKET_LABELS[bucket]).join(' \u2192 '); },
+        sequence
+    };
+}
+
 export const SCAFFOLD_PATTERNS: Record<PatternPresetId, ScaffoldPattern> = {
     daily: {
         type: 'interval',
         id: 'daily',
-        label: 'Daily',
-        description: '1 scene per day'
+        get label() { return t('ui.types.patternDailyLabel'); },
+        get description() { return t('ui.types.patternDailyDesc'); }
     },
-    beats2: {
-        type: 'cycle',
-        id: 'beats2',
-        label: '2 beats',
-        description: 'Morning \u2192 Evening',
-        sequence: ['morning', 'evening']
-    },
-    beats3: {
-        type: 'cycle',
-        id: 'beats3',
-        label: '3 beats',
-        description: 'Morning \u2192 Afternoon \u2192 Evening',
-        sequence: ['morning', 'afternoon', 'evening']
-    },
-    beats4: {
-        type: 'cycle',
-        id: 'beats4',
-        label: '4 beats',
-        description: 'Morning \u2192 Afternoon \u2192 Evening \u2192 Night',
-        sequence: ['morning', 'afternoon', 'evening', 'night']
-    },
+    beats2: cyclePattern('beats2', ['morning', 'evening']),
+    beats3: cyclePattern('beats3', ['morning', 'afternoon', 'evening']),
+    beats4: cyclePattern('beats4', ['morning', 'afternoon', 'evening', 'night']),
     weekly: {
         type: 'interval',
         id: 'weekly',
-        label: 'Weekly',
-        description: '1 scene per week'
+        get label() { return t('ui.types.patternWeeklyLabel'); },
+        get description() { return t('ui.types.patternWeeklyDesc'); }
     }
 };
 
@@ -86,13 +80,11 @@ export const TIME_BUCKET_HOURS: Record<TimeBucket, number> = {
 };
 
 export const TIME_BUCKET_LABELS: Record<TimeBucket, string> = {
-    morning: 'Morning',
-    afternoon: 'Afternoon',
-    evening: 'Evening',
-    night: 'Night'
+    get morning() { return t('ui.types.bucketMorning'); },
+    get afternoon() { return t('ui.types.bucketAfternoon'); },
+    get evening() { return t('ui.types.bucketEvening'); },
+    get night() { return t('ui.types.bucketNight'); }
 };
-
-const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 
 /**
  * Human-readable elapsed time for a flashback / flash-forward row, expressed
@@ -105,20 +97,17 @@ const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', '
  *   otherwise  → "N days earlier/later"
  */
 export function formatFlashbackDelta(deltaMs: number): string {
-    const direction = deltaMs < 0 ? 'earlier' : 'later';
     const absDays = Math.abs(deltaMs) / (1000 * 60 * 60 * 24);
     const years = absDays / 365.25;
-    if (years >= 1) {
-        const n = Math.round(years);
-        return `${n} year${n === 1 ? '' : 's'} ${direction}`;
-    }
     const months = absDays / 30.44;
-    if (months >= 1) {
-        const n = Math.round(months);
-        return `${n} month${n === 1 ? '' : 's'} ${direction}`;
-    }
-    const n = Math.max(1, Math.round(absDays));
-    return `${n} day${n === 1 ? '' : 's'} ${direction}`;
+    const span = years >= 1
+        ? tCount('year', Math.round(years))
+        : months >= 1
+            ? tCount('month', Math.round(months))
+            : tCount('day', Math.max(1, Math.round(absDays)));
+    return deltaMs < 0
+        ? t('ui.types.flashbackEarlier', { span })
+        : t('ui.types.flashbackLater', { span });
 }
 
 /**
@@ -130,18 +119,18 @@ export function formatFlashbackDelta(deltaMs: number): string {
 export function describeWhenLabel(date: Date, bucket: TimeBucket): string {
     const h = date.getHours();
     const m = date.getMinutes();
-    const weekday = WEEKDAY_NAMES[date.getDay()];
+    const weekday = new Intl.DateTimeFormat(getFormattingLocale(), { weekday: 'long' }).format(date);
 
     let timeOfDay: string;
     if (m === 0 && h === 12) {
-        timeOfDay = 'Noon';
+        timeOfDay = t('ui.types.noon');
     } else if (m === 0 && h === 0) {
-        timeOfDay = 'Midnight';
+        timeOfDay = t('ui.types.midnight');
     } else {
         timeOfDay = TIME_BUCKET_LABELS[bucket];
     }
 
-    return `${weekday} ${timeOfDay}`;
+    return t('ui.types.whenLabel', { weekday, timeOfDay });
 }
 
 // ============================================================================

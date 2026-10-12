@@ -347,7 +347,7 @@ export class GossamerScoreModal extends Modal {
 
     const selectedBeatModel = resolveSelectedBeatModelFromSettings(this.plugin.settings);
     const settingsSystem = selectedBeatModel ?? '';
-    const beatModelLabel = selectedBeatModel ?? 'No active beat system selected';
+    const beatModelLabel = selectedBeatModel ?? t('ui.gossamerScoreModal.noBeatSystemLabel');
     
     // ... filtering logic ...
 
@@ -474,7 +474,7 @@ export class GossamerScoreModal extends Modal {
       }
       if (entry.currentJustification) {
         const currentNote = justificationContainer.createDiv('ert-gossamer-current-justification');
-        currentNote.setText(`Latest: ${entry.currentJustification}`);
+        currentNote.setText(t('ui.gossamerScoreModal.latestJustification', { justification: entry.currentJustification }));
       }
 
       // 3. Right side: New score input
@@ -693,7 +693,7 @@ export class GossamerScoreModal extends Modal {
       new Notice(t('gossamer.scoreModal.pasteSuccess', { matched: result.matchCount }));
     } else {
       btnEl.classList.add('ert-gossamer-paste-error');
-      new Notice(t('gossamer.scoreModal.pasteError', { reason: result.reason ?? 'Clipboard format not recognized.' }));
+      new Notice(t('gossamer.scoreModal.pasteError', { reason: result.reason ?? t('ui.gossamerScoreModal.clipboardUnrecognized') }));
     }
     window.setTimeout(() => {
       btnEl.classList.remove('ert-gossamer-paste-success', 'ert-gossamer-paste-error');
@@ -1287,7 +1287,7 @@ export class GossamerScoreModal extends Modal {
 
   private showMetadataWarning(field: string, beats: string[]): void {
     const preview = beats.slice(0, 3).join(', ');
-    const remainder = beats.length > 3 ? `, +${beats.length - 3} more` : '';
+    const remainder = beats.length > 3 ? t('ui.gossamerScoreModal.metadataMoreSuffix', { count: beats.length - 3 }) : '';
     new Notice(t('gossamer.scoreModal.missingMetadata', { field, preview, remainder }));
   }
 

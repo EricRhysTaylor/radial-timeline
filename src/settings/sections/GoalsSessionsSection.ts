@@ -3,7 +3,7 @@ import type RadialTimelinePlugin from '../../main';
 import type { RuntimeRateProfile } from '../../types';
 import type { WritingSessionTargetMode } from '../../types/settings';
 import { ERT_CLASSES } from '../../ui/classes';
-import { t } from '../../i18n';
+import { t, tCount } from '../../i18n';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import type { WritingRangeStats } from '../../services/WritingSessionService';
 import { renderSessionLogList } from '../../renderer/components/SessionLogList';
@@ -96,7 +96,7 @@ function wireNumberInput(params: {
 }
 
 function formatMinutes(minutes: number): string {
-    if (minutes < 60) return `${minutes}m`;
+    if (minutes < 60) return t('ui.goalsSessionsSection.minutesShort', { minutes });
     const hours = Math.floor(minutes / 60);
     const remainder = minutes % 60;
     return `${hours}:${String(remainder).padStart(2, '0')}`;
@@ -129,9 +129,9 @@ function formatRangeDate(stats: WritingRangeStats): string {
 }
 
 function formatRangeLabel(stats: WritingRangeStats): string {
-    if (stats.days === 1) return 'Today';
-    if (isYearToDateRange(stats)) return 'Year';
-    return `${stats.days} days`;
+    if (stats.days === 1) return t('ui.goalsSessionsSection.rangeToday');
+    if (isYearToDateRange(stats)) return t('ui.goalsSessionsSection.rangeYear');
+    return tCount('day', stats.days);
 }
 
 function goalDayTarget(stats: WritingRangeStats, weeklyGoalDays: number): number | undefined {
@@ -171,16 +171,16 @@ function createRangeCard(plugin: RadialTimelinePlugin, container: HTMLElement, s
     const statusWrap = header.createDiv({ cls: 'ert-goals-stat-card__status' });
     const statusIcon = statusWrap.createSpan({ cls: 'ert-goals-stat-card__status-icon' });
     setIcon(statusIcon, status === 'met' ? 'check-circle-2' : status === 'missed' ? 'alert-triangle' : 'circle');
-    statusWrap.createSpan({ text: targetDays ? goalValue : 'No goal' });
+    statusWrap.createSpan({ text: targetDays ? goalValue : t('ui.goalsSessionsSection.noGoal') });
     card.createDiv({ cls: 'ert-goals-stat-card__date', text: formatRangeDate(stats) });
 
     const metrics = card.createDiv({ cls: 'ert-goals-stat-grid' });
-    createMetric(metrics, 'timer', 'logged', formatMinutes(stats.minutesLogged), 'time');
-    createMetric(metrics, 'list-checks', 'sessions', String(stats.sessionsCompleted), 'sessions');
-    createMetric(metrics, status === 'met' ? 'check-circle-2' : 'alert-triangle', 'goal', goalValue, status === 'missed' ? 'warning' : 'goal', targetDays ? 'd' : undefined);
-    createMetric(metrics, 'pencil', 'written', String(stats.wordsDrafted), 'draft', 'w');
-    createMetric(metrics, 'book-open-text', 'draft', String(stats.freshScenesCompleted), 'fresh', 's');
-    createMetric(metrics, 'refresh-cw', 'revisions', String(stats.revisionScenesCompleted), 'revision', 's');
+    createMetric(metrics, 'timer', t('ui.goalsSessionsSection.metricLogged'), formatMinutes(stats.minutesLogged), 'time');
+    createMetric(metrics, 'list-checks', t('ui.goalsSessionsSection.metricSessions'), String(stats.sessionsCompleted), 'sessions');
+    createMetric(metrics, status === 'met' ? 'check-circle-2' : 'alert-triangle', t('ui.goalsSessionsSection.metricGoal'), goalValue, status === 'missed' ? 'warning' : 'goal', targetDays ? t('ui.goalsSessionsSection.unitDays') : undefined);
+    createMetric(metrics, 'pencil', t('ui.goalsSessionsSection.metricWritten'), String(stats.wordsDrafted), 'draft', t('ui.goalsSessionsSection.unitWords'));
+    createMetric(metrics, 'book-open-text', t('ui.goalsSessionsSection.metricDraft'), String(stats.freshScenesCompleted), 'fresh', t('ui.goalsSessionsSection.unitScenes'));
+    createMetric(metrics, 'refresh-cw', t('ui.goalsSessionsSection.metricRevisions'), String(stats.revisionScenesCompleted), 'revision', t('ui.goalsSessionsSection.unitScenes'));
 
     const stages = card.createDiv({ cls: 'ert-goals-stage-line' });
     (['Zero', 'Author', 'House', 'Press'] as const).forEach(stage => {
@@ -208,10 +208,10 @@ function renderSessionLogPreview(plugin: RadialTimelinePlugin, card: HTMLElement
 
     const chev = summary.createSpan({ cls: 'ert-goals-stat-card__log-chevron' });
     setIcon(chev, details.open ? 'chevron-down' : 'chevron-right');
-    summary.createSpan({ cls: 'ert-goals-stat-card__log-label', text: 'Session log' });
+    summary.createSpan({ cls: 'ert-goals-stat-card__log-label', text: t('ui.goalsSessionsSection.sessionLog') });
     const count = summary.createSpan({
         cls: 'ert-goals-stat-card__log-count',
-        text: stats.sessionsCompleted === 1 ? '1 session' : `${stats.sessionsCompleted} sessions`,
+        text: tCount('session', stats.sessionsCompleted),
     });
     count.setAttribute('aria-hidden', 'true');
 
@@ -231,8 +231,8 @@ function renderSessionLogPreview(plugin: RadialTimelinePlugin, card: HTMLElement
                 void openOrRevealFileByPath(plugin.app, path);
             },
             emptyMessage: stats.days === 1
-                ? 'No sessions logged today yet.'
-                : `No sessions logged in this ${stats.days}-day window.`,
+                ? t('ui.goalsSessionsSection.noSessionsToday')
+                : t('ui.goalsSessionsSection.noSessionsInWindow', { days: stats.days }),
         });
     };
 
@@ -263,23 +263,23 @@ function renderWritingStatsPanel(plugin: RadialTimelinePlugin, containerEl: HTML
     const headingIcon = summary.createSpan({ cls: 'ert-goals-stats-summary__icon ert-setting-heading-icon' });
     setIcon(headingIcon, 'chart-column');
     const titleWrap = summary.createSpan({ cls: 'ert-goals-stats-summary__copy' });
-    titleWrap.createSpan({ cls: 'ert-goals-stats-summary__title', text: 'Writing stats' });
+    titleWrap.createSpan({ cls: 'ert-goals-stats-summary__title', text: t('ui.goalsSessionsSection.writingStatsTitle') });
     titleWrap.createSpan({
         cls: 'ert-goals-stats-summary__desc',
-        text: 'Timer records and completed scenes.',
+        text: t('ui.goalsSessionsSection.writingStatsDesc'),
     });
     const community = summary.createSpan({ cls: 'ert-goals-stats-summary__community' });
     const communityOnline = community.createSpan({ cls: 'ert-goals-stats-summary__community-pill' });
     setIcon(communityOnline.createSpan(), 'radio');
-    communityOnline.createSpan({ text: 'Community 34' });
+    communityOnline.createSpan({ text: t('ui.goalsSessionsSection.communityPill', { count: 34 }) });
     const friendsOnline = community.createSpan({ cls: 'ert-goals-stats-summary__community-pill' });
     setIcon(friendsOnline.createSpan(), 'users');
-    friendsOnline.createSpan({ text: 'Friends 3' });
+    friendsOnline.createSpan({ text: t('ui.goalsSessionsSection.friendsPill', { count: 3 }) });
     const chevron = summary.createEl('button', {
         cls: 'ert-iconBtn ert-goals-stats-summary__chevron',
         attr: {
             type: 'button',
-            'aria-label': 'Expand writing stats',
+            'aria-label': t('ui.goalsSessionsSection.expandStats'),
             'aria-expanded': details.open ? 'true' : 'false',
         },
     });
@@ -290,7 +290,7 @@ function renderWritingStatsPanel(plugin: RadialTimelinePlugin, containerEl: HTML
         details.open = !details.open;
     };
     details.ontoggle = () => {
-        chevron.setAttribute('aria-label', details.open ? 'Collapse writing stats' : 'Expand writing stats');
+        chevron.setAttribute('aria-label', details.open ? t('ui.goalsSessionsSection.collapseStats') : t('ui.goalsSessionsSection.expandStats'));
         chevron.setAttribute('aria-expanded', details.open ? 'true' : 'false');
         setIcon(chevron, details.open ? 'chevron-down' : 'chevron-right');
         const settings = plugin.getWritingSessionService().getSettings();
@@ -298,7 +298,7 @@ function renderWritingStatsPanel(plugin: RadialTimelinePlugin, containerEl: HTML
         void plugin.saveSettings();
     };
     const body = details.createDiv({ cls: 'ert-goals-stats-body' });
-    body.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: 'Loading writing stats…' });
+    body.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.goalsSessionsSection.loadingStats') });
 
     const refresh = async () => {
         try {
@@ -311,7 +311,7 @@ function renderWritingStatsPanel(plugin: RadialTimelinePlugin, containerEl: HTML
             ]);
             renderStatsBody(plugin, body, stats);
         } catch (error) {
-            renderStatsError(body, error instanceof Error ? error.message : 'Could not build writing stats.');
+            renderStatsError(body, error instanceof Error ? error.message : t('ui.goalsSessionsSection.statsError'));
         }
     };
 

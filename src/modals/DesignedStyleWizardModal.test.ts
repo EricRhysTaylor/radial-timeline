@@ -19,6 +19,7 @@ import {
 import type { DesignedStyleSpec } from '../publishing/designedStyle';
 import { DESIGNED_STYLE_SPEC_VERSION } from '../publishing/designedStyle';
 import { BUNDLED_FICTION_SPECS } from '../publishing/bundledStyleSpecs';
+import { t } from '../i18n';
 
 function freshSubmissionSpec(): DesignedStyleSpec {
     return cloneArchetypeSpec('submission');
@@ -96,14 +97,14 @@ describe('validateDesignedStyleSpec', () => {
     it('reports an error when the name is empty', () => {
         const spec = freshSubmissionSpec();
         const result = validateDesignedStyleSpec(spec, '   ');
-        expect(result.errors.some(e => e.toLowerCase().includes('name'))).toBe(true);
+        expect(result.errors).toContain(t('ui.designedStyleWizardModal.errStyleNameRequired'));
     });
 
     it('errors when custom paper has zero dimensions', () => {
         const spec = freshSubmissionSpec();
         spec.paperSize = { widthIn: 0, heightIn: 9 };
         const result = validateDesignedStyleSpec(spec, 'Test');
-        expect(result.errors.some(e => e.toLowerCase().includes('width'))).toBe(true);
+        expect(result.errors).toContain(t('ui.designedStyleWizardModal.errCustomWidthPositive'));
     });
 
     it('errors when margins consume the full page height', () => {
@@ -111,14 +112,14 @@ describe('validateDesignedStyleSpec', () => {
         spec.margins.topIn = 5;
         spec.margins.bottomIn = 5; // 10 inches >= 9-inch page height
         const result = validateDesignedStyleSpec(spec, 'Test');
-        expect(result.errors.some(e => e.toLowerCase().includes('top + bottom'))).toBe(true);
+        expect(result.errors).toContain(t('ui.designedStyleWizardModal.errTopBottomMargins'));
     });
 
     it('errors when body size is out of range', () => {
         const spec = freshSubmissionSpec();
         spec.body.sizePt = 30;
         const result = validateDesignedStyleSpec(spec, 'Test');
-        expect(result.errors.some(e => e.includes('30'))).toBe(true);
+        expect(result.errors).toContain(t('ui.designedStyleWizardModal.errBodySizeRange', { size: 30 }));
     });
 
     it('warns when folio is in headers but headers are off', () => {
@@ -127,7 +128,7 @@ describe('validateDesignedStyleSpec', () => {
         spec.runningHeader.mode = 'none';
         const result = validateDesignedStyleSpec(spec, 'Test');
         expect(result.errors).toEqual([]);
-        expect(result.warnings.some(w => w.toLowerCase().includes('folio'))).toBe(true);
+        expect(result.warnings).toContain(t('ui.designedStyleWizardModal.warnFolioHeadersOff'));
     });
 
     it('warns when part epigraphs are enabled but parts are off', () => {
@@ -135,7 +136,7 @@ describe('validateDesignedStyleSpec', () => {
         spec.parts.mode = 'off';
         spec.parts.epigraph = true;
         const result = validateDesignedStyleSpec(spec, 'Test');
-        expect(result.warnings.some(w => w.toLowerCase().includes('parts are off'))).toBe(true);
+        expect(result.warnings).toContain(t('ui.designedStyleWizardModal.warnPartEpigraphsOff'));
     });
 
     it('warns when openerHeadingModes is set but opener is not dedicated-page', () => {
@@ -143,14 +144,14 @@ describe('validateDesignedStyleSpec', () => {
         spec.scene.opener = 'inline-separator';
         spec.scene.openerHeadingModes = ['scene-number', 'title-only'];
         const result = validateDesignedStyleSpec(spec, 'Test');
-        expect(result.warnings.some(w => w.toLowerCase().includes('dedicated-page'))).toBe(true);
+        expect(result.warnings).toContain(t('ui.designedStyleWizardModal.warnMultiHeadingModes'));
     });
 
     it('warns when custom paper width is outside common print range', () => {
         const spec = freshSubmissionSpec();
         spec.paperSize = { widthIn: 2, heightIn: 9 };
         const result = validateDesignedStyleSpec(spec, 'Test');
-        expect(result.warnings.some(w => w.toLowerCase().includes('paper width'))).toBe(true);
+        expect(result.warnings).toContain(t('ui.designedStyleWizardModal.warnCustomWidthRange', { width: 2 }));
     });
 
     // Strict font policy (Phase 1): the validation banner surfaces a warning
@@ -166,10 +167,7 @@ describe('validateDesignedStyleSpec', () => {
         const spec = freshSubmissionSpec();
         spec.body.font = 'sorts-mill-goudy';
         const result = validateDesignedStyleSpec(spec, 'Test');
-        const hasFontWarning = result.warnings.some(w =>
-            w.includes('Sorts Mill Goudy') && w.toLowerCase().includes('not installed')
-        );
-        expect(hasFontWarning).toBe(true);
+        expect(result.warnings).toContain(t('ui.designedStyleWizardModal.warnFontNotInstalled', { font: 'Sorts Mill Goudy' }));
     });
 
     // Complement to the above: a TeX-distribution font must NOT warn. Before
@@ -180,7 +178,7 @@ describe('validateDesignedStyleSpec', () => {
         const spec = freshSubmissionSpec();
         spec.body.font = 'latin-modern';
         const result = validateDesignedStyleSpec(spec, 'Test');
-        expect(result.warnings.some(w => w.includes('Latin Modern Roman'))).toBe(false);
+        expect(result.warnings).not.toContain(t('ui.designedStyleWizardModal.warnFontNotInstalled', { font: 'Latin Modern Roman' }));
     });
 });
 

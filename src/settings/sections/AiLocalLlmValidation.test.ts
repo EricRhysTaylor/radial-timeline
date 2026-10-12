@@ -22,6 +22,9 @@ vi.mock('../../../tests/mocks/obsidian.ts', async original => ({
         }
     }
 }));
+vi.mock('../../i18n', () => ({
+    t: (key: string, vars?: Record<string, string | number>) => (vars ? `${key} ${JSON.stringify(vars)}` : key)
+}));
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>(done => { resolve = done; }); return { promise, resolve }; }
 const report: LocalLlmDiagnosticsReport = {
     backend: 'openaiCompatible', baseUrl: 'http://localhost:8080/v1', modelId: 'test-model',

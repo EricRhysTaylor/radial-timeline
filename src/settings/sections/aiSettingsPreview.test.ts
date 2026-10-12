@@ -23,6 +23,7 @@ import {
     resolvePreviewSignals
 } from './aiSettingsPreview';
 import type { PreviewPill } from './aiSettingsPreview';
+import { t, tCount } from '../../i18n';
 
 describe('aiSettingsPreview constants', () => {
     it('locks CACHE_ARMED_PILL_TEXT to the static-capability wording (doctrine)', () => {
@@ -108,54 +109,54 @@ describe('buildTokenCapacityLine', () => {
 describe('buildScenesCapacityLine', () => {
     it('always uses full-text branch', () => {
         expect(buildScenesCapacityLine(42, 16_000))
-            .toBe(`Scenes (${(42).toLocaleString()}) — full text (~16k)`);
+            .toBe(t('ui.aiSettingsPreview.scenesCapacityLine', { count: (42).toLocaleString(), tokens: '~16k' }));
     });
 
     it('passes ? for null count', () => {
-        expect(buildScenesCapacityLine(null, null)).toBe('Scenes (?) — full text (—)');
+        expect(buildScenesCapacityLine(null, null)).toBe(t('ui.aiSettingsPreview.scenesCapacityLine', { count: '?', tokens: '—' }));
     });
 });
 
 describe('buildOutlineCapacityLine', () => {
     it('returns unavailable for null count', () => {
-        expect(buildOutlineCapacityLine(null, null)).toBe('Outline (?) — unavailable (—)');
-        expect(buildOutlineCapacityLine(null, 2000)).toBe('Outline (?) — unavailable (~2k)');
+        expect(buildOutlineCapacityLine(null, null)).toBe(t('ui.aiSettingsPreview.outlineUnavailableLine', { tokens: '—' }));
+        expect(buildOutlineCapacityLine(null, 2000)).toBe(t('ui.aiSettingsPreview.outlineUnavailableLine', { tokens: '~2k' }));
     });
 
     it('returns full-text for positive count', () => {
         expect(buildOutlineCapacityLine(3, 1500))
-            .toBe(`Outline (${(3).toLocaleString()}) — full text (~1.5k)`);
+            .toBe(t('ui.aiSettingsPreview.outlineFullTextLine', { count: (3).toLocaleString(), tokens: '~1.5k' }));
     });
 
     it('returns Outline — none for zero count', () => {
-        expect(buildOutlineCapacityLine(0, 0)).toBe('Outline — none');
-        expect(buildOutlineCapacityLine(0, 1000)).toBe('Outline — none');
+        expect(buildOutlineCapacityLine(0, 0)).toBe(t('ui.aiSettingsPreview.outlineNone'));
+        expect(buildOutlineCapacityLine(0, 1000)).toBe(t('ui.aiSettingsPreview.outlineNone'));
     });
 });
 
 describe('buildReferenceCapacityLine', () => {
     it('returns unavailable for null count', () => {
-        expect(buildReferenceCapacityLine(null, null)).toBe('References (?) — unavailable (—)');
-        expect(buildReferenceCapacityLine(null, 500)).toBe('References (?) — unavailable (~0.5k)');
+        expect(buildReferenceCapacityLine(null, null)).toBe(t('ui.aiSettingsPreview.referenceUnavailableLine', { tokens: '—' }));
+        expect(buildReferenceCapacityLine(null, 500)).toBe(t('ui.aiSettingsPreview.referenceUnavailableLine', { tokens: '~0.5k' }));
     });
 
     it('returns included for positive count (uses "included" not "full text")', () => {
         expect(buildReferenceCapacityLine(2, 1200))
-            .toBe(`References (${(2).toLocaleString()}) — included (~1.2k)`);
+            .toBe(t('ui.aiSettingsPreview.referenceIncludedLine', { count: (2).toLocaleString(), tokens: '~1.2k' }));
     });
 
     it('returns References — none for zero count', () => {
-        expect(buildReferenceCapacityLine(0, 0)).toBe('References — none');
-        expect(buildReferenceCapacityLine(0, 5000)).toBe('References — none');
+        expect(buildReferenceCapacityLine(0, 0)).toBe(t('ui.aiSettingsPreview.referenceNone'));
+        expect(buildReferenceCapacityLine(0, 5000)).toBe(t('ui.aiSettingsPreview.referenceNone'));
     });
 });
 
 describe('formatApproxTokens', () => {
     it('returns n/a for non-finite / non-positive', () => {
-        expect(formatApproxTokens(NaN)).toBe('n/a');
-        expect(formatApproxTokens(Infinity)).toBe('n/a');
-        expect(formatApproxTokens(0)).toBe('n/a');
-        expect(formatApproxTokens(-1)).toBe('n/a');
+        expect(formatApproxTokens(NaN)).toBe(t('ui.aiSettingsPreview.notAvailable'));
+        expect(formatApproxTokens(Infinity)).toBe(t('ui.aiSettingsPreview.notAvailable'));
+        expect(formatApproxTokens(0)).toBe(t('ui.aiSettingsPreview.notAvailable'));
+        expect(formatApproxTokens(-1)).toBe(t('ui.aiSettingsPreview.notAvailable'));
     });
 
     it('rounds sub-1000 to ~<int>', () => {
@@ -180,40 +181,40 @@ describe('formatApproxTokens', () => {
 
 describe('formatCorpusStructureSummary', () => {
     it('returns "0 scenes" when both zero (the "No scenes or outlines" fallback is unreachable with current branch ordering — locking the actual preserved behavior, not the dead fallback)', () => {
-        expect(formatCorpusStructureSummary(0, 0)).toBe('0 scenes');
+        expect(formatCorpusStructureSummary(0, 0)).toBe(tCount('scene', 0));
     });
 
     it('pluralizes scenes alone', () => {
-        expect(formatCorpusStructureSummary(1, 0)).toBe('1 scene');
-        expect(formatCorpusStructureSummary(5, 0)).toBe('5 scenes');
-        expect(formatCorpusStructureSummary(0, 0)).toBe('0 scenes');
+        expect(formatCorpusStructureSummary(1, 0)).toBe(tCount('scene', 1));
+        expect(formatCorpusStructureSummary(5, 0)).toBe(tCount('scene', 5));
+        expect(formatCorpusStructureSummary(0, 0)).toBe(tCount('scene', 0));
     });
 
     it('omits scenes part when scene count is 0 and outline count > 0', () => {
-        expect(formatCorpusStructureSummary(0, 3)).toBe('3 outlines');
-        expect(formatCorpusStructureSummary(0, 1)).toBe('1 outline');
+        expect(formatCorpusStructureSummary(0, 3)).toBe(tCount('outline', 3));
+        expect(formatCorpusStructureSummary(0, 1)).toBe(tCount('outline', 1));
     });
 
     it('joins scenes + outlines when both positive', () => {
-        expect(formatCorpusStructureSummary(4, 2)).toBe('4 scenes + 2 outlines');
-        expect(formatCorpusStructureSummary(1, 1)).toBe('1 scene + 1 outline');
+        expect(formatCorpusStructureSummary(4, 2)).toBe(`${tCount('scene', 4)} + ${tCount('outline', 2)}`);
+        expect(formatCorpusStructureSummary(1, 1)).toBe(`${tCount('scene', 1)} + ${tCount('outline', 1)}`);
     });
 });
 
 describe('formatCorpusTokenSummary', () => {
     it('appends " tokens" to corpus shorthand', () => {
-        expect(formatCorpusTokenSummary(1500)).toBe('~1.5k tokens');
-        expect(formatCorpusTokenSummary(125_000)).toBe('~125k tokens');
+        expect(formatCorpusTokenSummary(1500)).toBe(t('ui.aiSettingsPreview.corpusTokens', { tokens: '~1.5k' }));
+        expect(formatCorpusTokenSummary(125_000)).toBe(t('ui.aiSettingsPreview.corpusTokens', { tokens: '~125k' }));
     });
 });
 
 describe('formatPreviewReasonLabel', () => {
     it('special-cases quota_exceeded', () => {
-        expect(formatPreviewReasonLabel('error', 'quota_exceeded')).toBe('Quota exceeded');
+        expect(formatPreviewReasonLabel('error', 'quota_exceeded')).toBe(t('ui.aiSettingsPreview.reasonQuotaExceeded'));
     });
 
     it('special-cases spend_cap', () => {
-        expect(formatPreviewReasonLabel(undefined, 'spend_cap')).toBe('Spend cap reached');
+        expect(formatPreviewReasonLabel(undefined, 'spend_cap')).toBe(t('ui.aiSettingsPreview.reasonSpendCap'));
     });
 
     it('normalizes underscores → spaces and title-cases first char of reason', () => {
@@ -227,31 +228,31 @@ describe('formatPreviewReasonLabel', () => {
     });
 
     it('returns "issue detected" when both are empty', () => {
-        expect(formatPreviewReasonLabel(undefined, undefined)).toBe('issue detected');
-        expect(formatPreviewReasonLabel('', '')).toBe('issue detected');
-        expect(formatPreviewReasonLabel('   ', '   ')).toBe('issue detected');
+        expect(formatPreviewReasonLabel(undefined, undefined)).toBe(t('ui.aiSettingsPreview.reasonIssueDetected'));
+        expect(formatPreviewReasonLabel('', '')).toBe(t('ui.aiSettingsPreview.reasonIssueDetected'));
+        expect(formatPreviewReasonLabel('   ', '   ')).toBe(t('ui.aiSettingsPreview.reasonIssueDetected'));
     });
 });
 
 describe('formatPreviewCacheRemaining', () => {
     it('floor-rounds to at least 1 minute', () => {
-        expect(formatPreviewCacheRemaining(0)).toBe('1m remaining');
-        expect(formatPreviewCacheRemaining(1)).toBe('1m remaining');
-        expect(formatPreviewCacheRemaining(30_000)).toBe('1m remaining');
-        expect(formatPreviewCacheRemaining(60_000)).toBe('1m remaining');
+        expect(formatPreviewCacheRemaining(0)).toBe(t('ui.aiSettingsPreview.cacheRemainingMinutes', { minutes: 1 }));
+        expect(formatPreviewCacheRemaining(1)).toBe(t('ui.aiSettingsPreview.cacheRemainingMinutes', { minutes: 1 }));
+        expect(formatPreviewCacheRemaining(30_000)).toBe(t('ui.aiSettingsPreview.cacheRemainingMinutes', { minutes: 1 }));
+        expect(formatPreviewCacheRemaining(60_000)).toBe(t('ui.aiSettingsPreview.cacheRemainingMinutes', { minutes: 1 }));
     });
 
     it('uses Nm remaining below 1 hour', () => {
-        expect(formatPreviewCacheRemaining(60_001)).toBe('2m remaining');
-        expect(formatPreviewCacheRemaining(15 * 60_000)).toBe('15m remaining');
-        expect(formatPreviewCacheRemaining(59 * 60_000)).toBe('59m remaining');
+        expect(formatPreviewCacheRemaining(60_001)).toBe(t('ui.aiSettingsPreview.cacheRemainingMinutes', { minutes: 2 }));
+        expect(formatPreviewCacheRemaining(15 * 60_000)).toBe(t('ui.aiSettingsPreview.cacheRemainingMinutes', { minutes: 15 }));
+        expect(formatPreviewCacheRemaining(59 * 60_000)).toBe(t('ui.aiSettingsPreview.cacheRemainingMinutes', { minutes: 59 }));
     });
 
     it('uses Xh Ym remaining past 60 minutes', () => {
-        expect(formatPreviewCacheRemaining(60 * 60_000)).toBe('1h remaining');
-        expect(formatPreviewCacheRemaining(90 * 60_000)).toBe('1h 30m remaining');
-        expect(formatPreviewCacheRemaining(2 * 60 * 60_000)).toBe('2h remaining');
-        expect(formatPreviewCacheRemaining((2 * 60 + 45) * 60_000)).toBe('2h 45m remaining');
+        expect(formatPreviewCacheRemaining(60 * 60_000)).toBe(t('ui.aiSettingsPreview.cacheRemainingHours', { hours: 1 }));
+        expect(formatPreviewCacheRemaining(90 * 60_000)).toBe(t('ui.aiSettingsPreview.cacheRemainingHoursMinutes', { hours: 1, minutes: 30 }));
+        expect(formatPreviewCacheRemaining(2 * 60 * 60_000)).toBe(t('ui.aiSettingsPreview.cacheRemainingHours', { hours: 2 }));
+        expect(formatPreviewCacheRemaining((2 * 60 + 45) * 60_000)).toBe(t('ui.aiSettingsPreview.cacheRemainingHoursMinutes', { hours: 2, minutes: 45 }));
     });
 });
 
@@ -394,17 +395,16 @@ describe('cloud key gating for the preview card', () => {
 
     it('names the provider and points at the API keys fold in every blocked state', () => {
         const noKey = buildKeyBlockedPreviewCopy('OpenAI', 'not_configured');
-        expect(noKey.title).toBe('No API key');
-        expect(noKey.detail).toContain('OpenAI');
-        expect(noKey.detail).toContain('API keys');
-        expect(noKey.forecastReason).toContain('API keys');
+        expect(noKey.title).toBe(t('ui.aiSettingsPreview.noKeyTitle'));
+        expect(noKey.detail).toBe(t('ui.aiSettingsPreview.noKeyDetail', { provider: 'OpenAI' }));
+        expect(noKey.forecastReason).toBe(t('ui.aiSettingsPreview.noKeyForecast', { provider: 'OpenAI' }));
 
         const rejected = buildKeyBlockedPreviewCopy('Anthropic', 'rejected');
-        expect(rejected.title).toBe('Key rejected');
-        expect(rejected.detail).toContain('Anthropic');
+        expect(rejected.title).toBe(t('ui.aiSettingsPreview.keyRejectedTitle'));
+        expect(rejected.detail).toBe(t('ui.aiSettingsPreview.keyRejectedDetail', { provider: 'Anthropic' }));
 
         const blocked = buildKeyBlockedPreviewCopy('Google', 'network_blocked');
-        expect(blocked.title).toBe('Provider unreachable');
-        expect(blocked.forecastReason).toContain('Google');
+        expect(blocked.title).toBe(t('ui.aiSettingsPreview.unreachableTitle'));
+        expect(blocked.forecastReason).toBe(t('ui.aiSettingsPreview.unreachableForecast', { provider: 'Google' }));
     });
 });

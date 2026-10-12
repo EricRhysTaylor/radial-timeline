@@ -29,6 +29,7 @@ import { getActiveBook } from '../../utils/books';
 import { AuthorProgressService } from '../../services/AuthorProgressService';
 import { canShareAprToCommunity, normalizeCommunityShareSettings } from '../../communityShare/communityShareSettings';
 import { findCommunityBookConflict, resolveCampaignBookId } from '../../authorProgress/campaignCommunityBinding';
+import { t } from '../../i18n';
 
 export interface CampaignManagerProps {
     app: App;
@@ -58,23 +59,23 @@ function getDaysSince(date?: string): number | null {
 }
 
 function getNextUpdateLabel(campaign: AuthorProgressCampaign): string {
-    if (!campaign.isActive) return 'Paused';
+    if (!campaign.isActive) return t('ui.campaignManagerSection.statusPaused');
     const hasPublished = !!campaign.lastPublishedDate?.trim();
-    if (!hasPublished) return 'Unpublished';
+    if (!hasPublished) return t('ui.campaignManagerSection.unpublished');
 
     const frequency = campaign.updateFrequency ?? 'manual';
     const daysSince = getDaysSince(campaign.lastPublishedDate) ?? 0;
 
     if (frequency === 'manual') {
         const reminderDays = campaign.refreshThresholdDays ?? 0;
-        if (reminderDays <= 0) return 'Manual (no reminder)';
+        if (reminderDays <= 0) return t('ui.campaignManagerSection.manualNoReminder');
         const remaining = Math.max(0, reminderDays - daysSince);
-        return remaining === 0 ? 'Reminder due' : `Reminder in ${remaining}d`;
+        return remaining === 0 ? t('ui.campaignManagerSection.reminderDue') : t('ui.campaignManagerSection.reminderIn', { days: remaining });
     }
 
     const intervalDays = frequency === 'daily' ? 1 : frequency === 'weekly' ? 7 : 30;
     const remaining = Math.max(0, intervalDays - daysSince);
-    return remaining === 0 ? 'Auto update due' : `Auto update in ${remaining}d`;
+    return remaining === 0 ? t('ui.campaignManagerSection.autoUpdateDue') : t('ui.campaignManagerSection.autoUpdateIn', { days: remaining });
 }
 
 function resolveCampaignExportFormat(campaign: AuthorProgressCampaign | undefined): AprExportFormat {
@@ -192,12 +193,12 @@ export function renderCampaignManagerSection({ app, plugin, containerEl, onCampa
     const titleRow = titleArea.createEl('h4', { cls: `${ERT_CLASSES.SECTION_TITLE} ${ERT_CLASSES.INLINE} ert-campaign-title` });
     const proPill = titleRow.createSpan({ cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_PRO}` });
     setIcon(proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON }), 'signature');
-    proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: 'PRO' });
-    titleRow.createSpan({ text: 'Campaign Manager' });
+    proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.campaignManagerSection.proBadge') });
+    titleRow.createSpan({ text: t('ui.campaignManagerSection.title') });
 
     // Description
     card.createEl('p', {
-        text: 'Create multiple export destinations with independent refresh schedules. Perfect for managing Kickstarter, Patreon, newsletter, and website exports separately.',
+        text: t('ui.campaignManagerSection.desc'),
         cls: `${ERT_CLASSES.SECTION_DESC} ert-campaign-desc`
     });
 
@@ -208,7 +209,7 @@ export function renderCampaignManagerSection({ app, plugin, containerEl, onCampa
 
     if (campaigns.length === 0) {
         const emptyState = listContainer.createDiv({ cls: 'ert-campaign-empty-state' });
-        emptyState.createEl('p', { text: 'No campaigns yet. Create your first campaign to track multiple export destinations.' });
+        emptyState.createEl('p', { text: t('ui.campaignManagerSection.emptyState') });
     } else {
         campaigns.forEach((campaign, index) => {
             renderCampaignRow(listContainer, campaign, index, plugin, () => {
@@ -226,24 +227,24 @@ export function renderCampaignManagerSection({ app, plugin, containerEl, onCampa
     const addRow = addSection.createDiv({ cls: 'ert-campaign-add-row' });
 
     new Setting(addRow)
-        .setName('New campaign')
-        .setDesc('Create a new campaign that targets a specific platform or audience.')
+        .setName(t('ui.campaignManagerSection.newCampaignTitle'))
+        .setDesc(t('ui.campaignManagerSection.newCampaignDesc'))
         .addButton(button => {
-            button.setButtonText('Add campaign');
+            button.setButtonText(t('ui.campaignManagerSection.addCampaignButton'));
             button.buttonEl.addClass('ert-btn', 'ert-btn--standard-pro');
             button.onClick(async () => {
                 const modal = new NamePromptModal(app, {
-                    badge: 'New',
-                    placeholder: 'Campaign name',
-                    emptyNotice: 'Please enter a campaign name',
-                    title: 'New campaign',
-                    subtitle: 'Give your campaign a name (e.g., "Website Hero Page", "Kickstarter Campaign", "Newsletter")',
+                    badge: t('ui.campaignManagerSection.newBadge'),
+                    placeholder: t('ui.campaignManagerSection.campaignNamePlaceholder'),
+                    emptyNotice: t('ui.campaignManagerSection.emptyNameNotice'),
+                    title: t('ui.campaignManagerSection.newCampaignTitle'),
+                    subtitle: t('ui.campaignManagerSection.newCampaignSubtitle'),
                     initialValue: '',
-                    actionLabel: 'Create',
+                    actionLabel: t('ui.campaignManagerSection.createAction'),
                     onSubmit: async (name) => {
                         const existing = campaigns.find(c => c.name.toLowerCase() === name.toLowerCase());
                         if (existing) {
-                            new Notice('A campaign with this name already exists');
+                            new Notice(t('ui.campaignManagerSection.duplicateNameNotice'));
                             return false;
                         }
 
@@ -263,7 +264,7 @@ export function renderCampaignManagerSection({ app, plugin, containerEl, onCampa
                         plugin.settings.authorProgress.campaigns.push(newCampaign);
                         await plugin.saveSettings();
 
-                        new Notice(`Campaign "${name}" created!`);
+                        new Notice(t('ui.campaignManagerSection.createdNotice', { name }));
                         rerenderCampaignList();
                         onCampaignChange?.();
                         return true;
@@ -278,7 +279,7 @@ export function renderCampaignManagerSection({ app, plugin, containerEl, onCampa
     // QUICK TEMPLATES
     // ─────────────────────────────────────────────────────────────────────────
     const templatesSection = card.createDiv({ cls: 'ert-campaign-templates' });
-    templatesSection.createEl('h5', { text: 'Campaign presets', cls: 'ert-kicker' });
+    templatesSection.createEl('h5', { text: t('ui.campaignManagerSection.presetsKicker'), cls: 'ert-kicker' });
 
     const templateRow = templatesSection.createDiv({ cls: ERT_CLASSES.INLINE });
 
@@ -323,7 +324,7 @@ export function renderCampaignManagerSection({ app, plugin, containerEl, onCampa
             plugin.settings.authorProgress.campaigns.push(newCampaign);
             await plugin.saveSettings();
 
-            new Notice(`Campaign "${template.name}" created!`);
+            new Notice(t('ui.campaignManagerSection.createdNotice', { name: template.name }));
             rerenderCampaignList();
             onCampaignChange?.();
         };
@@ -337,7 +338,7 @@ export function renderCampaignManagerSection({ app, plugin, containerEl, onCampa
 
         if (updatedCampaigns.length === 0) {
             const emptyState = listContainer.createDiv({ cls: 'ert-campaign-empty-state' });
-            emptyState.createEl('p', { text: 'No campaigns yet. Create your first campaign to track multiple export destinations.' });
+            emptyState.createEl('p', { text: t('ui.campaignManagerSection.emptyState') });
         } else {
             const campaignIds = new Set(updatedCampaigns.map(campaign => campaign.id));
             expandedCampaigns.forEach((id) => {
@@ -388,7 +389,7 @@ export function renderCampaignManagerSection({ app, plugin, containerEl, onCampa
                 plugin.settings.authorProgress.campaigns.push(newCampaign);
                 await plugin.saveSettings();
 
-                new Notice(`Campaign "${template.name}" created!`);
+                new Notice(t('ui.campaignManagerSection.createdNotice', { name: template.name }));
                 rerenderCampaignList();
                 onCampaignChange?.();
             };
@@ -428,13 +429,13 @@ function renderCampaignRow(
     const statusIndicator = titleRow.createDiv({ cls: 'ert-campaign-status' });
     if (needsRefresh) {
         setIcon(statusIndicator, 'alert-triangle');
-        setTooltip(statusIndicator, 'Refresh needed');
+        setTooltip(statusIndicator, t('ui.campaignManagerSection.refreshNeededTooltip'));
     } else if (campaign.isActive) {
         setIcon(statusIndicator, 'check-circle');
-        setTooltip(statusIndicator, 'Up to date (no refresh needed)');
+        setTooltip(statusIndicator, t('ui.campaignManagerSection.upToDateTooltip'));
     } else {
         setIcon(statusIndicator, 'pause-circle');
-        setTooltip(statusIndicator, 'Paused');
+        setTooltip(statusIndicator, t('ui.campaignManagerSection.statusPaused'));
     }
 
     // Campaign info
@@ -442,23 +443,23 @@ function renderCampaignRow(
         text: campaign.name,
         cls: `ert-campaign-name ert-campaign-name--clickable ${campaign.isActive ? 'is-active' : 'is-paused'}`
     });
-    setTooltip(nameEl, 'Click to rename campaign');
+    setTooltip(nameEl, t('ui.campaignManagerSection.renameTooltip'));
     nameEl.setAttr('role', 'button');
     nameEl.setAttr('tabindex', '0');
-    nameEl.setAttr('aria-label', `Rename campaign ${campaign.name}`);
+    nameEl.setAttr('aria-label', t('ui.campaignManagerSection.renameAriaLabel', { name: campaign.name }));
     const openRenameModal = () => {
         const modal = new NamePromptModal(plugin.app, {
-            badge: 'Edit',
-            placeholder: 'Campaign name',
-            emptyNotice: 'Please enter a campaign name',
-            title: 'Rename Campaign',
-            subtitle: `Enter a new name for "${campaign.name}"`,
+            badge: t('ui.campaignManagerSection.editBadge'),
+            placeholder: t('ui.campaignManagerSection.campaignNamePlaceholder'),
+            emptyNotice: t('ui.campaignManagerSection.emptyNameNotice'),
+            title: t('ui.campaignManagerSection.renameTitle'),
+            subtitle: t('ui.campaignManagerSection.renameSubtitle', { name: campaign.name }),
             initialValue: campaign.name,
-            actionLabel: 'Rename',
+            actionLabel: t('ui.campaignManagerSection.renameAction'),
             onSubmit: async (nextName) => {
                 const newName = nextName.trim();
                 if (!newName) {
-                    new Notice('Please enter a campaign name');
+                    new Notice(t('ui.campaignManagerSection.emptyNameNotice'));
                     return false;
                 }
                 if (newName.toLowerCase() === campaign.name.toLowerCase()) {
@@ -467,7 +468,7 @@ function renderCampaignRow(
                 if (!plugin.settings.authorProgress?.campaigns) return false;
                 const existing = plugin.settings.authorProgress.campaigns.find(c => c.name.toLowerCase() === newName.toLowerCase());
                 if (existing) {
-                    new Notice('A campaign with this name already exists');
+                    new Notice(t('ui.campaignManagerSection.duplicateNameNotice'));
                     return false;
                 }
 
@@ -522,8 +523,8 @@ function renderCampaignRow(
 
     // Last published info
     const lastPublished = campaign.lastPublishedDate
-        ? `Updated ${new Date(campaign.lastPublishedDate).toLocaleDateString()}`
-        : 'Never published';
+        ? t('ui.campaignManagerSection.updatedOn', { date: new Date(campaign.lastPublishedDate).toLocaleDateString() })
+        : t('ui.campaignManagerSection.neverPublished');
     rowLeft.createSpan({ text: lastPublished, cls: `${ERT_CLASSES.OBJECT_ROW_META} ert-campaign-last-published` });
     rowLeft.createSpan({
         text: getNextUpdateLabel(campaign),
@@ -543,7 +544,7 @@ function renderCampaignRow(
     const toggleBtn = actionGroup.createEl('button', { cls: ERT_CLASSES.ICON_BTN });
     setIcon(toggleBtn, campaign.isActive ? 'pause' : 'play');
     toggleBtn.addClass(campaign.isActive ? 'ert-iconBtn--active' : 'ert-iconBtn--paused');
-    setTooltip(toggleBtn, campaign.isActive ? 'Pause campaign' : 'Resume campaign');
+    setTooltip(toggleBtn, campaign.isActive ? t('ui.campaignManagerSection.pauseTooltip') : t('ui.campaignManagerSection.resumeTooltip'));
     toggleBtn.onclick = async () => {
         if (!plugin.settings.authorProgress?.campaigns) return;
         plugin.settings.authorProgress.campaigns[index].isActive = !campaign.isActive;
@@ -554,7 +555,7 @@ function renderCampaignRow(
     // Edit (expand to show more options)
     const editBtn = actionGroup.createEl('button', { cls: ERT_CLASSES.ICON_BTN });
     setIcon(editBtn, 'settings');
-    setTooltip(editBtn, 'Edit campaign settings');
+    setTooltip(editBtn, t('ui.campaignManagerSection.editTooltip'));
     editBtn.onclick = async () => {
         // Toggle expanded state - add details to wrapper, not row
         const existingDetails = wrapper.querySelector('.ert-campaign-details');
@@ -584,7 +585,7 @@ function renderCampaignRow(
     // Delete
     const deleteBtn = actionGroup.createEl('button', { cls: `${ERT_CLASSES.ICON_BTN} ert-iconBtn--danger` });
     setIcon(deleteBtn, 'trash-2');
-    setTooltip(deleteBtn, 'Delete campaign');
+    setTooltip(deleteBtn, t('ui.campaignManagerSection.deleteTooltip'));
     deleteBtn.onclick = async () => {
         if (!plugin.settings.authorProgress?.campaigns) return;
         if (styleService.isDesignerCampaignActive(campaignKey)) {
@@ -592,7 +593,7 @@ function renderCampaignRow(
         }
         plugin.settings.authorProgress.campaigns.splice(index, 1);
         await plugin.saveSettings();
-        new Notice(`Campaign "${campaign.name}" deleted`);
+        new Notice(t('ui.campaignManagerSection.deletedNotice', { name: campaign.name }));
         if (onDesignerContextChange) onDesignerContextChange();
         else onUpdate();
     };
@@ -620,18 +621,18 @@ function renderCampaignDetails(
     const isPro = hasProFeatureAccess(plugin);
     const books = plugin.settings.books ?? [];
     const activeBook = getActiveBook(plugin.settings);
-    const activeLabel = activeBook?.title?.trim() || 'Untitled';
+    const activeLabel = activeBook?.title?.trim() || t('ui.campaignManagerSection.untitled');
 
     if (isPro && books.length > 1) {
         const bookSetting = new Setting(details)
-            .setName('Book')
-            .setDesc('Which book this campaign tracks.');
+            .setName(t('ui.campaignManagerSection.bookName'))
+            .setDesc(t('ui.campaignManagerSection.bookDesc'));
 
         const bookDropdown = new DropdownComponent(bookSetting.controlEl);
         bookDropdown.selectEl.addClass('ert-input', 'ert-input--lg');
-        bookDropdown.addOption('', `Active book (${activeLabel})`);
+        bookDropdown.addOption('', t('ui.campaignManagerSection.activeBookOption', { title: activeLabel }));
         for (const book of books) {
-            bookDropdown.addOption(book.id, book.title?.trim() || 'Untitled');
+            bookDropdown.addOption(book.id, book.title?.trim() || t('ui.campaignManagerSection.untitled'));
         }
         bookDropdown.setValue(campaign.targetBookId ?? '');
         bookDropdown.onChange(async (val) => {
@@ -642,13 +643,13 @@ function renderCampaignDetails(
                 // publishes, and a book already claimed by another sharing
                 // campaign would overwrite its APR on My Share.
                 if (!val) {
-                    new Notice('A campaign that sends to Community needs an explicit book, so switching your active book cannot change what publishes.');
+                    new Notice(t('ui.campaignManagerSection.explicitBookNotice'));
                     bookDropdown.setValue(target.targetBookId ?? '');
                     return;
                 }
                 const conflict = findCommunityBookConflict(plugin.settings, { id: target.id, targetBookId: val });
                 if (conflict) {
-                    new Notice(`"${conflict.name}" already sends that book's APR to Community. My Share keeps one APR per book.`);
+                    new Notice(t('ui.campaignManagerSection.bookConflictNotice', { name: conflict.name }));
                     bookDropdown.setValue(target.targetBookId ?? '');
                     return;
                 }
@@ -676,15 +677,15 @@ function renderCampaignDetails(
         const hasUnsavedStyleChanges = styleDiffers || qualityDiffers;
 
         const openSaveStyleModal = () => {
-            const suggestedName = selectedProfile?.name ?? `${campaign.name} Style`;
+            const suggestedName = selectedProfile?.name ?? t('ui.campaignManagerSection.suggestedStyleName', { name: campaign.name });
             const modal = new NamePromptModal(plugin.app, {
-                badge: 'Style',
-                placeholder: 'Style name',
-                emptyNotice: 'Please enter a style name',
-                title: 'Save APR Style',
-                subtitle: 'Save the current APR preview as a reusable style preset. Using an existing name will update that preset.',
+                badge: t('ui.campaignManagerSection.styleBadge'),
+                placeholder: t('ui.campaignManagerSection.styleNamePlaceholder'),
+                emptyNotice: t('ui.campaignManagerSection.emptyStyleNameNotice'),
+                title: t('ui.campaignManagerSection.saveStyleTitle'),
+                subtitle: t('ui.campaignManagerSection.saveStyleSubtitle'),
                 initialValue: suggestedName,
-                actionLabel: 'Save',
+                actionLabel: t('common.save'),
                 onSubmit: async (value) => {
                     const nextName = value.trim();
                     if (!nextName) return false;
@@ -698,8 +699,8 @@ function renderCampaignDetails(
                     await plugin.saveSettings();
                     new Notice(
                         overwritten || existingProfile
-                            ? `Updated style "${profile.name}"`
-                            : `Saved style "${profile.name}"`
+                            ? t('ui.campaignManagerSection.updatedStyleNotice', { name: profile.name })
+                            : t('ui.campaignManagerSection.savedStyleNotice', { name: profile.name })
                     );
                     if (onDesignerContextChange) onDesignerContextChange();
                     else onUpdate();
@@ -717,7 +718,7 @@ function renderCampaignDetails(
             targetCampaign.styleProfileId = profile.id;
             styleService.loadCampaignIntoDesigner(targetCampaign.id);
             await plugin.saveSettings();
-            new Notice(`Updated style "${profile.name}"`);
+            new Notice(t('ui.campaignManagerSection.updatedStyleNotice', { name: profile.name }));
             if (onDesignerContextChange) onDesignerContextChange();
             else onUpdate();
         };
@@ -735,21 +736,21 @@ function renderCampaignDetails(
 
                 contentEl.addClass('ert-modal-container', 'ert-stack');
                 const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-                header.createSpan({ cls: 'ert-modal-badge', text: 'Style' });
-                header.createDiv({ cls: 'ert-modal-title', text: 'Delete APR Style' });
+                header.createSpan({ cls: 'ert-modal-badge', text: t('ui.campaignManagerSection.styleBadge') });
+                header.createDiv({ cls: 'ert-modal-title', text: t('ui.campaignManagerSection.deleteStyleTitle') });
                 header.createDiv({
                     cls: 'ert-modal-subtitle',
-                    text: `Delete "${profile.name}"? Campaigns using it will fall back to the live APR style.`
+                    text: t('ui.campaignManagerSection.deleteStyleMessage', { name: profile.name })
                 });
 
                 const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
                 new ButtonComponent(actions)
-                    .setButtonText('Delete')
+                    .setButtonText(t('ui.campaignManagerSection.deleteButton'))
                     .setDestructive()
                     .onClick(async () => {
                         const deletedProfile = styleService.deleteProfile(profile.id);
                         if (!deletedProfile) {
-                            new Notice('Saved style not found');
+                            new Notice(t('ui.campaignManagerSection.styleNotFoundNotice'));
                             modal.close();
                             return;
                         }
@@ -758,13 +759,13 @@ function renderCampaignDetails(
                             styleService.loadCampaignIntoDesigner(targetCampaign.id);
                         }
                         await plugin.saveSettings();
-                        new Notice(`Deleted style "${deletedProfile.name}"`);
+                        new Notice(t('ui.campaignManagerSection.deletedStyleNotice', { name: deletedProfile.name }));
                         modal.close();
                         if (onDesignerContextChange) onDesignerContextChange();
                         else onUpdate();
                     });
                 new ButtonComponent(actions)
-                    .setButtonText('Cancel')
+                    .setButtonText(t('common.cancel'))
                     .onClick(() => modal.close());
             };
             modal.onClose = () => modal.contentEl.empty();
@@ -782,14 +783,14 @@ function renderCampaignDetails(
         };
 
         const profileCard = createStyleCard(
-            'APR style',
-            'Load a saved style into the APR preview, edit it above, then save or update presets.'
+            t('ui.campaignManagerSection.aprStyleCardTitle'),
+            t('ui.campaignManagerSection.aprStyleCardDesc')
         );
         if (selectedProfile) profileCard.addClass('is-active');
         const profileControl = profileCard.createDiv({ cls: 'ert-campaign-style-card__control' });
         const profileDropdown = new DropdownComponent(profileControl);
         profileDropdown.selectEl.addClass('ert-input', 'ert-input--fit-selected', 'ert-typography-select');
-        profileDropdown.addOption('', 'Current APR preview');
+        profileDropdown.addOption('', t('ui.campaignManagerSection.currentPreviewOption'));
         styleProfiles.forEach((profile) => {
             profileDropdown.addOption(profile.id, profile.name);
         });
@@ -812,16 +813,16 @@ function renderCampaignDetails(
         profileCard.createDiv({
             cls: ERT_CLASSES.FIELD_NOTE,
             text: selectedProfile
-                ? 'Selecting a preset loads it into the APR preview.'
-                : 'Choose a saved style, or keep working from the current APR preview.'
+                ? t('ui.campaignManagerSection.presetLoadsNote')
+                : t('ui.campaignManagerSection.chooseStyleNote')
         });
 
         const actionsCard = createStyleCard(
-            'Preset actions',
-            'Save the current APR preview as a new preset, update the loaded preset, or delete it.'
+            t('ui.campaignManagerSection.presetActionsTitle'),
+            t('ui.campaignManagerSection.presetActionsDesc')
         );
         const actionsRow = actionsCard.createDiv({ cls: `${ERT_CLASSES.INLINE} ert-campaign-style-card__actions` });
-        const primaryLabel = selectedProfile && hasUnsavedStyleChanges ? 'Update' : 'Save';
+        const primaryLabel = selectedProfile && hasUnsavedStyleChanges ? t('ui.campaignManagerSection.updateButton') : t('common.save');
         const primaryAction = new ButtonComponent(actionsRow)
             .setButtonText(primaryLabel)
             .setCta()
@@ -839,17 +840,17 @@ function renderCampaignDetails(
 
         if (selectedProfile) {
             const saveNewBtn = new ButtonComponent(actionsRow)
-                .setButtonText('Save as new')
+                .setButtonText(t('ui.campaignManagerSection.saveAsNewButton'))
                 .onClick(() => openSaveStyleModal());
             saveNewBtn.buttonEl.addClass('ert-apr-presetBtn');
         }
 
         const deleteStyleBtn = actionsRow.createEl('button', {
             cls: `${ERT_CLASSES.ICON_BTN} ert-iconBtn--danger`,
-            attr: { type: 'button', 'aria-label': 'Delete preset' }
+            attr: { type: 'button', 'aria-label': t('ui.campaignManagerSection.deletePreset') }
         });
         setIcon(deleteStyleBtn, 'trash-2');
-        setTooltip(deleteStyleBtn, selectedProfile ? `Delete preset "${selectedProfile.name}"` : 'Delete preset');
+        setTooltip(deleteStyleBtn, selectedProfile ? t('ui.campaignManagerSection.deletePresetNamed', { name: selectedProfile.name }) : t('ui.campaignManagerSection.deletePreset'));
         deleteStyleBtn.disabled = !selectedProfile;
         deleteStyleBtn.onclick = () => {
             if (!selectedProfile) return;
@@ -857,11 +858,11 @@ function renderCampaignDetails(
         };
         const actionsNote = hasUnsavedStyleChanges
             ? selectedProfile
-                ? `Unsaved changes in "${selectedProfile.name}".`
+                ? t('ui.campaignManagerSection.unsavedChanges', { name: selectedProfile.name })
                 : null
             : selectedProfile
                 ? null
-                : 'Save the current preview if you want to reuse it across campaigns.';
+                : t('ui.campaignManagerSection.saveCurrentPreviewNote');
         if (actionsNote) {
             actionsCard.createDiv({
                 cls: `${ERT_CLASSES.FIELD_NOTE}${hasUnsavedStyleChanges ? ' ert-apr-presetNote--alert' : ''}`,
@@ -876,15 +877,15 @@ function renderCampaignDetails(
 
     // Export Quality
     const exportQualitySetting = new Setting(details)
-        .setName('Export quality')
+        .setName(t('ui.campaignManagerSection.exportQualityName'))
         .addDropdown(drop => {
             drop.selectEl.addClass('ert-input', 'ert-input--md');
             const globalQuality = plugin.settings.authorProgress?.defaults.aprExportQuality ?? 'standard';
             const latestCampaign = plugin.settings.authorProgress?.campaigns?.[index];
             const campaignQuality = latestCampaign?.aprExportQuality ?? campaign.aprExportQuality;
-            drop.addOption('standard', 'Standard');
-            drop.addOption('ultra', 'Ultra');
-            drop.addOption('print', 'Print');
+            drop.addOption('standard', t('ui.campaignManagerSection.qualityStandard'));
+            drop.addOption('ultra', t('ui.campaignManagerSection.qualityUltra'));
+            drop.addOption('print', t('ui.campaignManagerSection.qualityPrint'));
             drop.setValue(campaignQuality ?? globalQuality);
             drop.onChange(async (val) => {
                 if (!plugin.settings.authorProgress?.campaigns) return;
@@ -895,9 +896,9 @@ function renderCampaignDetails(
         });
     exportQualitySetting.descEl.empty();
     [
-        'Standard: 1200px · clean',
-        'Ultra: 2400px · crisp',
-        'Print: 4800px · posters & print'
+        t('ui.campaignManagerSection.qualityStandardDesc'),
+        t('ui.campaignManagerSection.qualityUltraDesc'),
+        t('ui.campaignManagerSection.qualityPrintDesc')
     ].forEach(line => {
         exportQualitySetting.descEl.createDiv({ text: line });
     });
@@ -905,19 +906,19 @@ function renderCampaignDetails(
     const freqSetting = details.createDiv({ cls: ['setting-item', 'ert-elementBlock', 'ert-campaign-frequency-setting'] });
     const freqRow = freqSetting.createDiv({ cls: 'ert-campaign-frequency-setting__row' });
     const freqInfo = freqRow.createDiv({ cls: 'ert-settingComposite__info' });
-    freqInfo.createDiv({ cls: 'setting-item-name', text: 'Posting mode' });
+    freqInfo.createDiv({ cls: 'setting-item-name', text: t('ui.campaignManagerSection.postingModeName') });
     freqInfo.createDiv({
         cls: 'setting-item-description',
-        text: 'How you share updates.'
+        text: t('ui.campaignManagerSection.postingModeDesc')
     });
     const freqControl = freqRow.createDiv({ cls: 'ert-settingComposite__control' });
     const frequencyDropdown = new DropdownComponent(freqControl);
     frequencyDropdown.selectEl.addClass('ert-input', 'ert-input--fit-selected'); // SAFE: removed unprefixed 'dropdown' class
     frequencyDropdown
-        .addOption('manual', 'Manual')
-        .addOption('daily', 'Daily')
-        .addOption('weekly', 'Weekly')
-        .addOption('monthly', 'Monthly')
+        .addOption('manual', t('ui.campaignManagerSection.frequencyManual'))
+        .addOption('daily', t('settings.authorProgress.publishing.frequencyDaily'))
+        .addOption('weekly', t('settings.authorProgress.publishing.frequencyWeekly'))
+        .addOption('monthly', t('settings.authorProgress.publishing.frequencyMonthly'))
         .setValue(campaign.updateFrequency || 'manual')
         .onChange(async (val) => {
             fitSelectToSelectedLabel(frequencyDropdown.selectEl, { minPx: 72, extraPx: 16 });
@@ -933,15 +934,17 @@ function renderCampaignDetails(
     const communitySettings = normalizeCommunityShareSettings(plugin.settings.communityShare);
     const canSendToCommunity = canShareAprToCommunity(communitySettings);
     const communityStatus = campaign.lastCommunityUploadError
-        ? `Last send failed: ${campaign.lastCommunityUploadError}`
+        ? t('ui.campaignManagerSection.lastSendFailed', { error: campaign.lastCommunityUploadError })
         : campaign.lastCommunityUploadedAt
-            ? `${campaign.lastCommunityUploadStatus === 'active' ? 'Public APR refreshed' : 'Private APR sent'} ${new Date(campaign.lastCommunityUploadedAt).toLocaleString()}.`
-            : 'No APR has been sent for this campaign.';
+            ? (campaign.lastCommunityUploadStatus === 'active'
+                ? t('ui.campaignManagerSection.publicAprRefreshed', { date: new Date(campaign.lastCommunityUploadedAt).toLocaleString() })
+                : t('ui.campaignManagerSection.privateAprSent', { date: new Date(campaign.lastCommunityUploadedAt).toLocaleString() }))
+            : t('ui.campaignManagerSection.noAprSent');
     new Setting(details)
-        .setName('Send to Community')
+        .setName(t('ui.campaignManagerSection.sendToCommunityName'))
         .setDesc(canSendToCommunity
-            ? `Adds this APR to campaign publishes and scheduled updates. It lands privately on My Share until you activate it there. ${communityStatus}`
-            : 'Choose Level 2 (Profile, books + APR) or Level 3 (Writing activity) in Community settings before sending an APR.')
+            ? t('ui.campaignManagerSection.sendToCommunityDesc', { status: communityStatus })
+            : t('ui.campaignManagerSection.sendToCommunityLocked'))
         .addToggle((toggle) => toggle
             .setValue(campaign.sendToCommunity ?? false) // SAFE: fail-closed privacy default — the toggle renders off until the author opts in
             // A lower sharing level blocks enabling this destination, but an
@@ -954,13 +957,13 @@ function renderCampaignDetails(
                 if (value) {
                     const bookId = resolveCampaignBookId(plugin.settings, target);
                     if (!bookId) {
-                        new Notice('Choose a book for this campaign before sending its APR to Community.');
+                        new Notice(t('ui.campaignManagerSection.chooseBookNotice'));
                         toggle.setValue(false);
                         return;
                     }
                     const conflict = findCommunityBookConflict(plugin.settings, target);
                     if (conflict) {
-                        new Notice(`"${conflict.name}" already sends this book's APR to Community. My Share keeps one APR per book — turn off Send to Community on "${conflict.name}" first.`);
+                        new Notice(t('ui.campaignManagerSection.toggleConflictNotice', { name: conflict.name }));
                         toggle.setValue(false);
                         return;
                     }
@@ -973,17 +976,17 @@ function renderCampaignDetails(
                 onUpdate();
             }))
         .addButton(button => button
-            .setButtonText('Send now')
+            .setButtonText(t('ui.campaignManagerSection.sendNowButton'))
             .setDisabled(!canSendToCommunity || !(campaign.sendToCommunity ?? false)) // SAFE: fail-closed privacy default — a campaign that never opted in counts as not sharing
             .onClick(async () => {
                 button.setDisabled(true);
-                button.setButtonText('Sending...');
+                button.setButtonText(t('ui.campaignManagerSection.sendingButton'));
                 try {
                     const service = new AuthorProgressService(plugin, plugin.app);
                     const status = await service.sendCampaignToCommunity(campaign.id);
-                    if (!status) throw new Error('Campaign could not be rendered.');
+                    if (!status) throw new Error(t('ui.campaignManagerSection.renderFailed'));
                 } catch (error) {
-                    new Notice(error instanceof Error ? error.message : 'Could not send the APR to Community.');
+                    new Notice(error instanceof Error ? error.message : t('ui.campaignManagerSection.sendFailed'));
                 }
                 onUpdate();
             }));
@@ -999,9 +1002,9 @@ function renderCampaignDetails(
     const clampRefreshValue = (value: number) => Math.min(refreshMax, Math.max(refreshMin, Math.round(value)));
 
     const refreshInfo = refreshWrap.createDiv({ cls: 'ert-settingComposite__info' });
-    refreshInfo.createDiv({ cls: 'setting-item-name', text: 'Reminder' });
+    refreshInfo.createDiv({ cls: 'setting-item-name', text: t('ui.campaignManagerSection.reminderName') });
     const refreshNote = refreshInfo.createDiv({ cls: 'setting-item-description' });
-    refreshNote.setText('Remind me to post updates.');
+    refreshNote.setText(t('ui.campaignManagerSection.reminderDesc'));
 
     const refreshControl = refreshWrap.createDiv({ cls: 'ert-settingComposite__control ert-campaign-refresh-controls' });
     const sliderEl = refreshControl.createEl('input', {
@@ -1012,7 +1015,7 @@ function renderCampaignDetails(
         type: 'number',
         cls: 'ert-input ert-input--2digit',
         value: String(getRefreshValue()),
-        attr: { min: String(refreshMin), max: String(refreshMax), step: '1', 'aria-label': 'Refresh alert threshold (days)' }
+        attr: { min: String(refreshMin), max: String(refreshMax), step: '1', 'aria-label': t('ui.campaignManagerSection.refreshThresholdAriaLabel') }
     });
 
     const syncRefreshDisplay = (val: number) => {
@@ -1101,8 +1104,8 @@ function renderCampaignDetails(
 
         // Combined header with toggle
         const teaserToggleSetting = new Setting(teaserContentContainer)
-            .setName('Teaser reveal')
-            .setDesc('Reveal more detail as your book progresses.')
+            .setName(t('ui.campaignManagerSection.teaserRevealName'))
+            .setDesc(t('ui.campaignManagerSection.teaserRevealDesc'))
             .addToggle(toggle => {
                 toggle.setValue(teaserSettings.enabled)
                     .onChange(async (val) => {
@@ -1136,14 +1139,14 @@ function renderCampaignDetails(
 
             // Row 1: Label + Dropdown (always shown)
             const scheduleRow = scheduleContainer.createDiv({ cls: `${ERT_CLASSES.INLINE} ert-teaser__scheduleRow` });
-            scheduleRow.createSpan({ text: 'Reveal Schedule', cls: 'ert-teaser__scheduleLabel' });
+            scheduleRow.createSpan({ text: t('ui.campaignManagerSection.revealScheduleLabel'), cls: 'ert-teaser__scheduleLabel' });
 
             const dropdown = scheduleRow.createEl('select', { cls: 'ert-teaser__preset ert-input ert-input--lg' });
             const options = [
-                { value: 'slow', label: 'Slow (15/40/70%)' },
-                { value: 'standard', label: 'Standard (10/30/60%)' },
-                { value: 'fast', label: 'Fast (5/20/45%)' },
-                { value: 'custom', label: 'Custom' },
+                { value: 'slow', label: t('ui.campaignManagerSection.presetSlow') },
+                { value: 'standard', label: t('ui.campaignManagerSection.presetStandard') },
+                { value: 'fast', label: t('ui.campaignManagerSection.presetFast') },
+                { value: 'custom', label: t('ui.campaignManagerSection.presetCustom') },
             ];
             options.forEach(opt => {
                 const optEl = dropdown.createEl('option', { value: opt.value, text: opt.label });
@@ -1174,15 +1177,15 @@ function renderCampaignDetails(
                 // Column 1: Save button (aligns with TEASER preview)
                 const saveCell = customRow.createDiv({ cls: 'ert-teaser__saveCell' });
                 const saveBtn = saveCell.createEl('button', {
-                    text: 'Save',
+                    text: t('common.save'),
                     cls: 'ert-btn ert-btn--standard-pro'
                 });
 
                 // Columns 2-4: Input fields (align with SCENES, COLORS, FULL)
                 const fields: { key: 'scenes' | 'colors' | 'full'; label: string }[] = [
-                    { key: 'scenes', label: 'Scenes' },
-                    { key: 'colors', label: 'Colors' },
-                    { key: 'full', label: 'Full' },
+                    { key: 'scenes', label: t('settings.authorProgress.preview.teaserScenes') },
+                    { key: 'colors', label: t('ui.campaignManagerSection.fieldColors') },
+                    { key: 'full', label: t('ui.campaignManagerSection.fieldFull') },
                 ];
 
                 const inputs: Record<string, HTMLInputElement> = {};
@@ -1209,14 +1212,14 @@ function renderCampaignDetails(
                     // Validate range (1-99)
                     for (const [k, v] of Object.entries(vals)) {
                         if (v < 1 || v > 99) {
-                            new Notice(`${k} must be between 1 and 99`);
+                            new Notice(t('ui.campaignManagerSection.thresholdRangeNotice', { field: k }));
                             return;
                         }
                     }
 
                     // Validate order: scenes < colors < full
                     if (vals.scenes >= vals.colors || vals.colors >= vals.full) {
-                        new Notice('Thresholds must be in ascending order');
+                        new Notice(t('ui.campaignManagerSection.thresholdOrderNotice'));
                         return;
                     }
 
@@ -1228,7 +1231,7 @@ function renderCampaignDetails(
                     }
                     target.teaserReveal.customThresholds = vals;
                     await plugin.saveSettings();
-                    new Notice('Custom thresholds saved');
+                    new Notice(t('ui.campaignManagerSection.thresholdsSavedNotice'));
                     renderTeaserContent();
                 };
 
@@ -1279,7 +1282,7 @@ async function renderTeaserStagesPreviews(
     const scenes = await getAllScenes(plugin.app, plugin);
     if (scenes.length === 0) {
         container.createEl('p', {
-            text: 'No scenes to preview. Add scenes to see teaser stages.',
+            text: t('ui.campaignManagerSection.noScenesPreview'),
             cls: 'ert-teaser__empty'
         });
         return;
@@ -1330,7 +1333,7 @@ async function renderTeaserStagesPreviews(
         // Click to toggle for middle stages
         if (stage.canDisable && stage.disableKey) {
             const key = stage.disableKey;
-            setTooltip(card, stage.isDisabled ? 'Click to enable this stage' : 'Click to skip this stage');
+            setTooltip(card, stage.isDisabled ? t('ui.campaignManagerSection.enableStageTooltip') : t('ui.campaignManagerSection.skipStageTooltip'));
             card.onclick = async () => {
                 if (!plugin.settings.authorProgress?.campaigns) return;
                 const targetCampaign = plugin.settings.authorProgress.campaigns[campaignIndex];
@@ -1355,7 +1358,7 @@ async function renderTeaserStagesPreviews(
                 campaign,
                 plugin.settings.books,
                 plugin.getActiveBookTitle()
-            ) ?? 'Book';
+            ) ?? t('ui.campaignManagerSection.bookFallback');
             const isRingOnly = stage.level === 'ring';
             const previewStageLabel = progressService.getDisplayStageForPercent(stage.progress);
             const { svgString } = createAprSVG(scenes, {
@@ -1394,7 +1397,7 @@ async function renderTeaserStagesPreviews(
         // Disabled overlay
         if (stage.isDisabled) {
             const overlay = card.createDiv({ cls: 'ert-stageCard__overlay' });
-            overlay.setText('SKIPPED');
+            overlay.setText(t('ui.campaignManagerSection.skippedOverlay'));
         }
 
         // Label row

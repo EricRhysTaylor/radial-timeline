@@ -8,6 +8,7 @@ import { readPdfPageCount } from './ManuscriptProofPreview';
 import { isPathInFolderScope } from '../utils/pathScope';
 import { ExportFailure } from '../utils/exportErrors';
 import { clampSplitParts } from '../utils/exportProfileModel';
+import { t } from '../i18n';
 
 export type DeliveryFormat = 'pdf' | 'docx' | 'markdown' | 'csv' | 'json';
 export interface DeliveryFile {
@@ -39,7 +40,7 @@ export function validateExportDestination(raw: string, app?: App): string {
     const value = raw.trim().replace(/\\/g, '/');
     if (!value || value.startsWith('/') || /^[A-Za-z]:/.test(value) || /[<>:"|?*]/.test(value) || Array.from(value).some(char => char.charCodeAt(0) < 32)
         || value.split('/').some(part => part === '..' || part === '.' || part.startsWith('.'))) {
-        throw new ExportFailure({ category: 'write_failure', message: 'Choose a visible folder inside this vault using a relative path.' });
+        throw new ExportFailure({ category: 'write_failure', message: t('ui.exportDelivery.invalidDestination') });
     }
     const folder = normalizePath(value);
     if (app) {
@@ -47,7 +48,7 @@ export function validateExportDestination(raw: string, app?: App): string {
         for (const part of folder.split('/')) {
             prefix = prefix ? `${prefix}/${part}` : part;
             const entry = app.vault.getAbstractFileByPath(prefix);
-            if (entry && !(entry instanceof TFolder)) throw new ExportFailure({ category: 'write_failure', message: `The export destination contains a file where a folder is required: ${prefix}` });
+            if (entry && !(entry instanceof TFolder)) throw new ExportFailure({ category: 'write_failure', message: t('ui.exportDelivery.fileBlocksFolder', { path: prefix }) });
         }
     }
     return folder;
@@ -59,7 +60,7 @@ export async function ensureExportDestination(app: App, raw: string): Promise<st
     for (const part of folder.split('/')) {
         current = current ? `${current}/${part}` : part;
         const entry = app.vault.getAbstractFileByPath(current);
-        if (entry && !(entry instanceof TFolder)) throw new ExportFailure({ category: 'write_failure', message: `The export destination contains a file where a folder is required: ${current}` });
+        if (entry && !(entry instanceof TFolder)) throw new ExportFailure({ category: 'write_failure', message: t('ui.exportDelivery.fileBlocksFolder', { path: current }) });
         if (!entry) await app.vault.createFolder(current);
     }
     return folder;
@@ -81,27 +82,27 @@ async function checkFile(app: App, path: string, primary: boolean, format: Deliv
         file.available = true;
         file.bytes = bytes.byteLength;
         file.sha256 = hashProofInput(bytes);
-        if (!bytes.length) throw new Error('The file is empty.');
+        if (!bytes.length) throw new Error(t('ui.exportDelivery.fileEmpty'));
         const extension = format === 'markdown' ? 'md' : format;
-        if (primary && !path.toLowerCase().endsWith(`.${extension}`)) throw new Error(`Expected a .${extension} export file.`);
+        if (primary && !path.toLowerCase().endsWith(`.${extension}`)) throw new Error(t('ui.exportDelivery.wrongExtension', { extension }));
         if (primary && format === 'pdf') file.pages = await readPdfPageCount(bytes);
         else if (primary && format === 'docx') {
             const parts = unzipSync(bytes, { filter: entry => ['word/document.xml', '[Content_Types].xml', '_rels/.rels'].includes(entry.name) });
             const document = parts['word/document.xml'] && strFromU8(parts['word/document.xml']);
             if (!document || !parts['[Content_Types].xml']?.length || !parts['_rels/.rels']?.length
                 || !/<w:document\b/.test(document) || !/<w:body\b/.test(document) || !document.includes('</w:body>') || !document.includes('</w:document>')) {
-                throw new Error('The Word package is missing its document body or required package parts.');
+                throw new Error(t('ui.exportDelivery.wordPackageIncomplete'));
             }
         } else {
             const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-            if (!text.trim()) throw new Error('The text file has no content.');
+            if (!text.trim()) throw new Error(t('ui.exportDelivery.textFileEmpty'));
             if (primary && format === 'json') JSON.parse(text);
         }
     } catch (error) {
         const code = (error as { code?: string } | null)?.code;
-        file.error = code === 'ENOENT' ? 'The file is missing at its exported path.'
-            : code === 'EACCES' || code === 'EPERM' ? 'Access to this exported file was denied.'
-            : error instanceof Error ? error.message : 'The output could not be read.';
+        file.error = code === 'ENOENT' ? t('ui.exportDelivery.fileMissing')
+            : code === 'EACCES' || code === 'EPERM' ? t('ui.exportDelivery.accessDenied')
+            : error instanceof Error ? error.message : t('ui.exportDelivery.outputUnreadable');
     }
     return file;
 }
@@ -110,10 +111,10 @@ function deliveryProblems(receipt: ExportDeliveryReceipt): string[] {
     const primary = receipt.files.filter(file => file.primary);
     const working = receipt.files.filter(file => !file.primary);
     const problems: string[] = [];
-    if (primary.length !== receipt.expectedFiles) problems.push(`Expected ${receipt.expectedFiles} final files; the export returned ${primary.length}.`);
-    if (working.length !== receipt.expectedWorkingFiles) problems.push(`Expected ${receipt.expectedWorkingFiles} working Markdown files; the export returned ${working.length}.`);
-    if (new Set(receipt.files.map(file => file.path)).size !== receipt.files.length) problems.push('The export returned duplicate output paths.');
-    if (receipt.generationFailure) problems.push(`Generation did not finish: ${receipt.generationFailure}`);
+    if (primary.length !== receipt.expectedFiles) problems.push(t('ui.exportDelivery.finalFileCountMismatch', { expected: receipt.expectedFiles, returned: primary.length }));
+    if (working.length !== receipt.expectedWorkingFiles) problems.push(t('ui.exportDelivery.workingFileCountMismatch', { expected: receipt.expectedWorkingFiles, returned: working.length }));
+    if (new Set(receipt.files.map(file => file.path)).size !== receipt.files.length) problems.push(t('ui.exportDelivery.duplicateOutputPaths'));
+    if (receipt.generationFailure) problems.push(t('ui.exportDelivery.generationUnfinished', { error: receipt.generationFailure }));
     for (const file of receipt.files) if (file.error) problems.push(`${file.path}: ${file.error}`);
     return problems;
 }
@@ -127,7 +128,7 @@ export async function writeDeliveryReceipt(app: App, receipt: ExportDeliveryRece
 export async function checkExportDelivery(plugin: RadialTimelinePlugin, result: ManuscriptModalResult, outcome: ManuscriptExportOutcome, sourceTitle: string, sourcePaths: string[], generationFailure?: string): Promise<ExportDeliveryReceipt> {
     const destination = validateExportDestination(result.outputFolder || outcome.outputFolder || '');
     const folder = validateExportDestination(outcome.outputFolder || destination);
-    if (folder !== destination && !isPathInFolderScope(folder, destination)) throw new Error('The generated output folder differs from the reviewed destination.');
+    if (folder !== destination && !isPathInFolderScope(folder, destination)) throw new Error(t('ui.exportDelivery.outputFolderMismatch'));
     const format = deliveryFormat(result);
     const count = result.splitMode === 'parts' ? clampSplitParts(result.splitParts ?? 2) : 1;
     const rendered = outcome.renderedPaths || (outcome.renderedPath ? [outcome.renderedPath] : []);
@@ -137,7 +138,7 @@ export async function checkExportDelivery(plugin: RadialTimelinePlugin, result: 
     const files: DeliveryFile[] = [];
     for (const [paths, primary] of [[primaryPaths, true], [workingPaths, false]] as const) {
         for (const path of paths) {
-            if (validateExportDestination(path) !== path || !isPathInFolderScope(path, folder)) throw new Error('An export returned an output path outside its destination.');
+            if (validateExportDestination(path) !== path || !isPathInFolderScope(path, folder)) throw new Error(t('ui.exportDelivery.outputOutsideDestination'));
             files.push(await checkFile(plugin.app, path, primary, format));
         }
     }
@@ -177,9 +178,9 @@ export function isDeliveryReviewed(receipt: ExportDeliveryReceipt): boolean {
 }
 
 export async function readDeliveryReceipt(app: App, path: string): Promise<ExportDeliveryReceipt> {
-    if (validateExportDestination(path) !== path) throw new Error('Invalid delivery record path.');
+    if (validateExportDestination(path) !== path) throw new Error(t('ui.exportDelivery.invalidRecordPath'));
     const value: unknown = JSON.parse(await app.vault.adapter.read(path)); // SAFE: exact local receipt, validated before any contained path is used.
-    if (!value || typeof value !== 'object') throw new Error('Invalid export delivery record.');
+    if (!value || typeof value !== 'object') throw new Error(t('ui.exportDelivery.invalidRecord'));
     const receipt = value as ExportDeliveryReceipt;
     if (receipt.schemaVersion !== 1 || receipt.receiptPath !== path || !['pdf', 'docx', 'markdown', 'csv', 'json'].includes(receipt.format)
         || typeof receipt.outputFolder !== 'string' || typeof receipt.destination !== 'string' || typeof receipt.sourceTitle !== 'string'
@@ -189,19 +190,19 @@ export async function readDeliveryReceipt(app: App, path: string): Promise<Expor
         || (receipt.reviewedSourcePaths !== undefined && (!Array.isArray(receipt.reviewedSourcePaths) || !receipt.reviewedSourcePaths.every(p => typeof p === 'string')))
         || (receipt.generationFailure !== undefined && typeof receipt.generationFailure !== 'string')
         || [receipt.createdAt, receipt.checkedAt].some(date => typeof date !== 'string' || !Number.isFinite(Date.parse(date)))
-        || (receipt.reviewedAt !== undefined && (typeof receipt.reviewedAt !== 'string' || !Number.isFinite(Date.parse(receipt.reviewedAt))))) throw new Error('Unsupported or invalid export delivery record.');
-    if (validateExportDestination(receipt.outputFolder) !== receipt.outputFolder || validateExportDestination(receipt.destination) !== receipt.destination) throw new Error('Invalid delivery record destination.');
+        || (receipt.reviewedAt !== undefined && (typeof receipt.reviewedAt !== 'string' || !Number.isFinite(Date.parse(receipt.reviewedAt))))) throw new Error(t('ui.exportDelivery.unsupportedRecord'));
+    if (validateExportDestination(receipt.outputFolder) !== receipt.outputFolder || validateExportDestination(receipt.destination) !== receipt.destination) throw new Error(t('ui.exportDelivery.invalidRecordDestination'));
     if (receipt.options && (typeof receipt.options !== 'object' || !['manuscript', 'outline'].includes(receipt.options.exportType)
         || !['narrative', 'reverse-narrative', 'chronological', 'reverse-chronological'].includes(receipt.options.order)
         || (receipt.options.includeMatter !== undefined && typeof receipt.options.includeMatter !== 'boolean')
-        || (receipt.options.source !== undefined && (!receipt.options.source || !['book', 'folder', 'file'].includes(receipt.options.source.kind))))) throw new Error('Invalid export choices in the delivery record.');
-    if (!isPathInFolderScope(path, receipt.outputFolder) || (receipt.outputFolder !== receipt.destination && !isPathInFolderScope(receipt.outputFolder, receipt.destination))) throw new Error('Invalid delivery record destination.');
+        || (receipt.options.source !== undefined && (!receipt.options.source || !['book', 'folder', 'file'].includes(receipt.options.source.kind))))) throw new Error(t('ui.exportDelivery.invalidRecordChoices'));
+    if (!isPathInFolderScope(path, receipt.outputFolder) || (receipt.outputFolder !== receipt.destination && !isPathInFolderScope(receipt.outputFolder, receipt.destination))) throw new Error(t('ui.exportDelivery.invalidRecordDestination'));
     for (const file of receipt.files) {
         if (!file || typeof file.path !== 'string' || typeof file.primary !== 'boolean' || typeof file.available !== 'boolean' || !Number.isFinite(file.bytes) || file.bytes < 0
             || (file.sha256 !== undefined && !/^[a-f0-9]{64}$/.test(file.sha256))
             || (file.reviewedSha256 !== undefined && !/^[a-f0-9]{64}$/.test(file.reviewedSha256))
             || (file.error !== undefined && typeof file.error !== 'string')
-            || validateExportDestination(file.path) !== file.path || !isPathInFolderScope(file.path, receipt.outputFolder)) throw new Error('Invalid file in the delivery record.');
+            || validateExportDestination(file.path) !== file.path || !isPathInFolderScope(file.path, receipt.outputFolder)) throw new Error(t('ui.exportDelivery.invalidRecordFile'));
     }
     return receipt;
 }

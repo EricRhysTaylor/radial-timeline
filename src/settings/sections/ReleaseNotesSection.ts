@@ -8,6 +8,7 @@ import type { Component } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { DEFAULT_RELEASES_URL } from '../../utils/releases';
 import { renderReleaseNotesList } from '../../utils/releaseNotesRenderer';
+import { t } from '../../i18n';
 
 interface ReleaseNotesSectionArgs {
     plugin: RadialTimelinePlugin;
@@ -19,12 +20,12 @@ export async function renderReleaseNotesSection({ plugin, containerEl, component
     const entries = plugin.getReleaseNotesEntries();
     containerEl.createEl('hr', { cls: 'ert-settings-separator' });
     const section = containerEl.createDiv({ cls: 'ert-settings-release-notes' });
-    section.createEl('h2', { text: "What's new" });
+    section.createEl('h2', { text: t('ui.releaseNotesSection.heading') });
 
     if (!entries || entries.length === 0) {
         const fallback = section.createEl('p');
-        fallback.setText('Release notes are not available in this build. ');
-        const link = fallback.createEl('a', { text: 'View releases on GitHub.', href: DEFAULT_RELEASES_URL });
+        fallback.setText(t('ui.releaseNotesSection.unavailable'));
+        const link = fallback.createEl('a', { text: t('ui.releaseNotesSection.viewOnGithub'), href: DEFAULT_RELEASES_URL });
         link.setAttr('target', '_blank');
         return;
     }

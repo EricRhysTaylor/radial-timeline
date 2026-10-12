@@ -41,7 +41,7 @@ describe('InquiryView payload accounting', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
         expect(source.includes('const activeTargetKey = this.getTargetSceneKey(this.getActiveTargetSceneIds());')).toBe(true);
         expect(source.includes('return this.getTargetSceneKey(session.targetSceneIds) === activeTargetKey;')).toBe(true);
-        expect(source.includes('latest saved inquiry for this selection')).toBe(true);
+        expect(source.includes("t('ui.inquiryView.scopeHoverSeeded', hoverVars)")).toBe(true);
     });
 
     it('makes saga-scope minimap target authoring explicit instead of silently returning', () => {
@@ -337,7 +337,7 @@ describe('InquiryView payload accounting', () => {
 
     it('does not describe hard Inquiry failures as fallback results', () => {
         const viewSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquiryView.ts'), 'utf8');
-        expect(viewSource.includes('Inquiry failed before results were produced.')).toBe(true);
+        expect(viewSource.includes("t('ui.inquiryView.runFailedBeforeResults')")).toBe(true);
         expect(viewSource.includes('Inquiry failed; fallback result returned.')).toBe(false);
     });
 
@@ -433,14 +433,14 @@ describe('InquiryView payload accounting', () => {
         expect(viewSource.includes('this.getPreviewCostValue(zone, questionId)')).toBe(true);
         expect(viewSource.includes('const currentReuseFingerprint = currentContext.cacheReuseFingerprint.trim();')).toBe(true);
         expect(viewSource.includes("const sessionReuseFingerprint = (session.cacheReuseFingerprint || session.result.cacheReuseFingerprint || '').trim();")).toBe(true);
-        expect(viewSource.includes('return `Prior cost · ${formatExactUsdCost(previewQuestionActualCost)}`;')).toBe(true);
-        expect(viewSource.includes('return `Recent cost · ${formatExactUsdCost(sameCorpusActualCost)}`;')).toBe(true);
+        expect(viewSource.includes("return t('ui.inquiryView.previewPriorCost', { cost: formatExactUsdCost(previewQuestionActualCost) });")).toBe(true);
+        expect(viewSource.includes("return t('ui.inquiryView.previewRecentCost', { cost: formatExactUsdCost(sameCorpusActualCost) });")).toBe(true);
         // Estimate strings now carry a `${provenanceSuffix}` so the user
         // can distinguish provider-count-backed estimates from local
         // heuristic ones. See src/ai/estimates contract.
-        expect(viewSource.includes('return `Cached est · ${cachedLabel}${provenanceSuffix}`;')).toBe(true);
-        expect(viewSource.includes('`Fresh est · ${freshLabel} / ${cachedLabel} cached`')).toBe(true);
-        expect(viewSource.includes('`Fresh est · ${freshLabel}`')).toBe(true);
+        expect(viewSource.includes("return `${t('ui.inquiryView.previewCachedEst', { cached: cachedLabel })}${provenanceSuffix}`;")).toBe(true);
+        expect(viewSource.includes("t('ui.inquiryView.previewFreshEstWithCached', { fresh: freshLabel, cached: cachedLabel })")).toBe(true);
+        expect(viewSource.includes("t('ui.inquiryView.previewFreshEst', { fresh: freshLabel })")).toBe(true);
         const questionCostIndex = viewSource.indexOf('const previewQuestionActualCost = this.getLatestPreviewQuestionActualCost(zone, questionId);');
         const sessionCostIndex = viewSource.indexOf('const sameCorpusActualCost = this.getLatestSameCorpusActualCostForResolvedEngine();');
         const outputProfileIndex = viewSource.indexOf('const learnedOutputTokens = this.plugin.getOutputProfileStore().predictExpectedOutput(');
@@ -462,14 +462,14 @@ describe('InquiryView payload accounting', () => {
         expect(viewSource.includes('const inputEstimate = tokenEstimateFromMethod(')).toBe(true);
         // Pill text stays clean; failure detail is surfaced via the AI
         // Engine popover (getEngineFailureGuidance), not the pill.
-        expect(viewSource.includes("'Cost · unavailable'")).toBe(true);
+        expect(viewSource.includes("t('ui.inquiryView.previewCostUnavailable')")).toBe(true);
         // The engine guidance surfaces the actual provider error.
         expect(viewSource.includes('requestEstimateFailureMessage')).toBe(true);
         expect(viewSource.includes("from '../ai/estimates'")).toBe(true);
         // Pin: estimate strings disclose source provenance via
         // `${provenanceSuffix}` so local-heuristic-backed costs are not
         // confused with provider-count-backed ones.
-        expect(viewSource.includes("const provenanceSuffix = inputEstimate.source === 'local_estimate' ? ' (local input)' : '';")).toBe(true);
+        expect(viewSource.includes("const provenanceSuffix = inputEstimate.source === 'local_estimate' ? ` ${t('ui.inquiryView.previewLocalInputSuffix')}` : '';")).toBe(true);
         // Pin: the raw transport field is documented as unsafe for
         // direct UI gating — future code must read provenance first.
         expect(typesSrc.includes('Raw transport field — DO NOT gate UI labels on')).toBe(true);
@@ -540,7 +540,7 @@ describe('InquiryView payload accounting', () => {
         // still apply to the cached-cost label path. Estimate strings now
         // carry the canonical provenance suffix.
         expect(viewSource.includes('const nextRunCanReuseCache = !!cacheSession?.cacheWindowExpiresAt')).toBe(true);
-        expect(viewSource.includes("return `Cached est · ${cachedLabel}${provenanceSuffix}`;")).toBe(true);
+        expect(viewSource.includes("return `${t('ui.inquiryView.previewCachedEst', { cached: cachedLabel })}${provenanceSuffix}`;")).toBe(true);
     });
 
     it('formats Inquiry engine cache TTL labels from canonical settings instead of hard-coding Gemini to 24h', () => {

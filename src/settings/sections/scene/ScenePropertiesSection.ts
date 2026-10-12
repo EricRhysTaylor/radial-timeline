@@ -1,5 +1,6 @@
 import { App, ButtonComponent, Modal, Notice, Setting as Settings, getIconIds, setIcon, setTooltip } from 'obsidian';
 import type RadialTimelinePlugin from '../../../main';
+import { t, tCount } from '../../../i18n';
 import { DEFAULT_SETTINGS } from '../../defaults';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../../wikiLink';
 import { IconSuggest } from '../../IconSuggest';
@@ -80,7 +81,7 @@ export function renderScenePropertiesSection(params: {
     parentEl.setAttr(ERT_DATA.SECTION, 'scene-properties');
 
     const sectionHeading = new Settings(parentEl)
-        .setName('Scene properties')
+        .setName(t('ui.scenePropertiesSection.heading'))
         .setHeading();
     addHeadingIcon(sectionHeading, 'form');
     addWikiLink(sectionHeading, 'Settings-Core#scene-properties');
@@ -95,25 +96,25 @@ export function renderScenePropertiesSection(params: {
     };
 
     const coreSetting = new Settings(sectionStack)
-        .setName('Core properties')
-        .setDesc('Always included in scene notes. Required by Radial Timeline and maintained automatically.');
+        .setName(t('ui.scenePropertiesSection.coreName'))
+        .setDesc(t('ui.scenePropertiesSection.coreDesc'));
     coreSetting.settingEl.addClass('ert-scene-properties-row', 'ert-scene-properties-row--locked');
     coreSetting.descEl.createDiv({
         cls: 'ert-scene-properties-inline-list',
         text: buildScenePropertyDefinitions(plugin.settings).core.map((definition) => definition.key).join(', ')
     });
-    createBadge(coreSetting.controlEl, 'Always on');
+    createBadge(coreSetting.controlEl, t('ui.scenePropertiesSection.alwaysOnBadge'));
 
     const advancedSetting = new Settings(sectionStack)
-        .setName('Advanced properties')
-        .setDesc('Optional scene metadata. Edit these fields here, reveal them in hover, and choose whether Radial Timeline maintains them in scenes.');
+        .setName(t('ui.scenePropertiesSection.advancedName'))
+        .setDesc(t('ui.scenePropertiesSection.advancedDesc'));
     advancedSetting.settingEl.addClass('ert-scene-properties-row', 'ert-scene-properties-row--advanced');
     const advancedStatusEl = advancedSetting.nameEl.createSpan({ cls: 'ert-scene-properties-status' });
     advancedSetting.nameEl.prepend(advancedStatusEl);
     const advancedStateEl = advancedSetting.controlEl.createSpan({ cls: 'ert-scene-properties-state' });
     advancedSetting.addToggle((toggle) => {
         toggle
-            .setTooltip('Maintain advanced properties in scene notes')
+            .setTooltip(t('ui.scenePropertiesSection.maintainToggleTooltip'))
             .setValue(plugin.settings.sceneAdvancedPropertiesEnabled ?? true)
             .onChange(async (value) => {
                 plugin.settings.sceneAdvancedPropertiesEnabled = value;
@@ -137,7 +138,7 @@ export function renderScenePropertiesSection(params: {
         cls: ERT_CLASSES.ICON_BTN,
         attr: {
             type: 'button',
-            'aria-label': 'Show advanced properties editor'
+            'aria-label': t('ui.scenePropertiesSection.showEditor')
         }
     });
     const advancedPanel = sectionStack.createDiv({ cls: ['ert-panel', 'ert-advanced-template-card', 'ert-scene-properties-panel', 'ert-scene-properties-subordinate'] });
@@ -145,7 +146,7 @@ export function renderScenePropertiesSection(params: {
         cls: ['ert-previewFrame', 'ert-previewFrame--center', 'ert-previewFrame--flush', 'ert-scene-properties-subordinate'],
         attr: { 'data-preview': 'metadata' }
     });
-    const hoverPreviewHeading = hoverPreviewContainer.createDiv({ cls: 'ert-planetary-preview-heading', text: 'Scene Hover Preview' });
+    const hoverPreviewHeading = hoverPreviewContainer.createDiv({ cls: 'ert-planetary-preview-heading', text: t('ui.scenePropertiesSection.hoverPreviewHeading') });
     const hoverPreviewBody = hoverPreviewContainer.createDiv({ cls: ['ert-hover-preview-body', 'ert-stack'] });
 
     const getHoverMetadata = (key: string): HoverMetadataField | undefined => {
@@ -198,7 +199,7 @@ export function renderScenePropertiesSection(params: {
         advancedStatusEl.toggleClass('ert-scene-properties-status--active', maintained);
         setIcon(advancedStatusEl, maintained ? 'check-circle-2' : 'circle');
         advancedStateEl.setText('');
-        const tooltip = maintained ? 'Advanced properties are enabled' : 'Advanced properties are disabled';
+        const tooltip = maintained ? t('ui.scenePropertiesSection.advancedEnabledTooltip') : t('ui.scenePropertiesSection.advancedDisabledTooltip');
         setTooltip(advancedSetting.settingEl, tooltip);
         setTooltip(advancedStatusEl, tooltip);
     };
@@ -206,8 +207,8 @@ export function renderScenePropertiesSection(params: {
     const refreshAdvancedToggle = () => {
         const expanded = plugin.settings.enableAdvancedYamlEditor ?? false;
         setIcon(advancedToggleButton, expanded ? 'chevron-down' : 'chevron-right');
-        setTooltip(advancedToggleButton, expanded ? 'Hide advanced properties editor' : 'Show advanced properties editor');
-        advancedToggleButton.setAttribute('aria-label', expanded ? 'Hide advanced properties editor' : 'Show advanced properties editor');
+        setTooltip(advancedToggleButton, expanded ? t('ui.scenePropertiesSection.hideEditor') : t('ui.scenePropertiesSection.showEditor'));
+        advancedToggleButton.setAttribute('aria-label', expanded ? t('ui.scenePropertiesSection.hideEditor') : t('ui.scenePropertiesSection.showEditor'));
     };
     refreshAdvancedRowState();
     refreshAdvancedToggle();
@@ -231,15 +232,15 @@ export function renderScenePropertiesSection(params: {
         const templateObj = safeParseYaml(currentTemplate);
 
         if (enabledFields.length === 0) {
-            hoverPreviewHeading.setText('Scene hover preview (none enabled)');
+            hoverPreviewHeading.setText(t('ui.scenePropertiesSection.hoverPreviewNoneEnabled'));
             hoverPreviewBody.createDiv({
-                text: 'Enable fields in advanced properties to preview what scene hover reveals will look like.',
+                text: t('ui.scenePropertiesSection.hoverPreviewEnableHint'),
                 cls: 'ert-hover-preview-empty'
             });
             return;
         }
 
-        hoverPreviewHeading.setText(`Scene Hover Preview (${enabledFields.length} field${enabledFields.length !== 1 ? 's' : ''})`);
+        hoverPreviewHeading.setText(t('ui.scenePropertiesSection.hoverPreviewHeadingCount', { fields: tCount('field', enabledFields.length) }));
         enabledFields.forEach((field) => {
             const lineEl = hoverPreviewBody.createDiv({ cls: 'ert-hover-preview-line' });
             const iconEl = lineEl.createSpan({ cls: 'ert-hover-preview-icon' });
@@ -333,7 +334,7 @@ export function renderScenePropertiesSection(params: {
                 const dragHandle = row.createDiv({ cls: 'ert-drag-handle' });
                 dragHandle.draggable = true;
                 setIcon(dragHandle, 'grip-vertical');
-                setTooltip(dragHandle, 'Drag to reorder property');
+                setTooltip(dragHandle, t('ui.scenePropertiesSection.dragTooltip'));
 
                 row.createDiv({ cls: 'ert-grid-spacer' });
 
@@ -343,10 +344,10 @@ export function renderScenePropertiesSection(params: {
                 const iconInput = iconWrapper.createEl('input', {
                     type: 'text',
                     cls: 'ert-input ert-input--md ert-icon-input',
-                    attr: { placeholder: 'Icon name...' }
+                    attr: { placeholder: t('ui.scenePropertiesSection.iconPlaceholder') }
                 });
                 iconInput.value = currentIcon;
-                setTooltip(iconInput, 'Lucide icon name for scene hover');
+                setTooltip(iconInput, t('ui.scenePropertiesSection.iconTooltip'));
 
                 const checkboxWrapper = row.createDiv({ cls: 'ert-hover-checkbox-wrapper' });
                 const checkbox = checkboxWrapper.createEl('input', {
@@ -354,7 +355,7 @@ export function renderScenePropertiesSection(params: {
                     cls: 'ert-hover-checkbox'
                 });
                 checkbox.checked = currentEnabled;
-                setTooltip(checkbox, 'Reveal in scene hover');
+                setTooltip(checkbox, t('ui.scenePropertiesSection.revealTooltip'));
 
                 new IconSuggest(app, iconInput, (selectedIcon) => {
                     iconInput.value = selectedIcon;
@@ -382,7 +383,7 @@ export function renderScenePropertiesSection(params: {
 
                 const keyInput = row.createEl('input', { type: 'text', cls: 'ert-input ert-input--md' });
                 keyInput.value = entry.key;
-                keyInput.placeholder = 'Property';
+                keyInput.placeholder = t('ui.scenePropertiesSection.propertyPlaceholder');
                 keyInput.onchange = () => {
                     const newKey = keyInput.value.trim();
                     if (!newKey) {
@@ -390,12 +391,12 @@ export function renderScenePropertiesSection(params: {
                         return;
                     }
                     if (requiredOrder.includes(newKey)) {
-                        new Notice(`"${newKey}" is already part of Core Properties. Choose another name.`);
+                        new Notice(t('ui.scenePropertiesSection.corePropertyNameNotice', { key: newKey }));
                         keyInput.value = entry.key;
                         return;
                     }
                     if (list.some((item, itemIdx) => itemIdx !== idx && item.key === newKey)) {
-                        new Notice(`Property "${newKey}" already exists.`);
+                        new Notice(t('ui.scenePropertiesSection.propertyExistsNotice', { key: newKey }));
                         keyInput.value = entry.key;
                         return;
                     }
@@ -410,7 +411,7 @@ export function renderScenePropertiesSection(params: {
                 const valueInput = row.createEl('input', { type: 'text', cls: 'ert-input ert-input--md' });
                 if (Array.isArray(entry.value)) {
                     valueInput.value = entry.value.join(', ');
-                    valueInput.placeholder = 'Comma-separated values';
+                    valueInput.placeholder = t('ui.scenePropertiesSection.commaSeparatedPlaceholder');
                     valueInput.onchange = () => {
                         const nextList = [...list];
                         nextList[idx] = {
@@ -422,7 +423,7 @@ export function renderScenePropertiesSection(params: {
                     };
                 } else {
                     valueInput.value = entry.value ?? '';
-                    valueInput.placeholder = 'Value';
+                    valueInput.placeholder = t('ui.scenePropertiesSection.valuePlaceholder');
                     valueInput.onchange = () => {
                         const nextList = [...list];
                         nextList[idx] = { ...entry, value: valueInput.value };
@@ -450,7 +451,7 @@ export function renderScenePropertiesSection(params: {
                             await plugin.saveSettings();
                             const alertEl = migrateBtn.ownerDocument.querySelector(`[data-alert-id="${migration.alertId}"]`);
                             if (alertEl) alertEl.remove();
-                            new Notice('Migration complete. Alert dismissed.');
+                            new Notice(t('ui.scenePropertiesSection.migrationCompleteNotice'));
                         }
                         rerender(list);
                         renderHoverPreview();
@@ -458,7 +459,7 @@ export function renderScenePropertiesSection(params: {
                 } else {
                     const deleteBtn = row.createEl('button', { cls: 'ert-iconBtn' });
                     setIcon(deleteBtn, 'trash');
-                    setTooltip(deleteBtn, 'Remove property');
+                    setTooltip(deleteBtn, t('ui.scenePropertiesSection.removeTooltip'));
                     deleteBtn.onclick = () => {
                         removeHoverMetadata(entry.key);
                         const nextList = list.filter((_, itemIdx) => itemIdx !== idx);
@@ -517,10 +518,10 @@ export function renderScenePropertiesSection(params: {
             const addIconInput = addIconWrapper.createEl('input', {
                 type: 'text',
                 cls: 'ert-input ert-input--md ert-icon-input',
-                attr: { placeholder: 'Icon name...' }
+                attr: { placeholder: t('ui.scenePropertiesSection.iconPlaceholder') }
             });
             addIconInput.value = DEFAULT_HOVER_ICON;
-            setTooltip(addIconInput, 'Lucide icon name for scene hover');
+            setTooltip(addIconInput, t('ui.scenePropertiesSection.iconTooltip'));
             new IconSuggest(app, addIconInput, (selectedIcon) => {
                 addIconInput.value = selectedIcon;
                 addIconPreview.empty();
@@ -540,24 +541,24 @@ export function renderScenePropertiesSection(params: {
                 cls: 'ert-hover-checkbox'
             });
             addCheckbox.checked = false;
-            setTooltip(addCheckbox, 'Reveal in scene hover');
+            setTooltip(addCheckbox, t('ui.scenePropertiesSection.revealTooltip'));
 
-            const keyInput = addRow.createEl('input', { type: 'text', cls: 'ert-input ert-input--full', attr: { placeholder: 'New property' } });
-            const valueInput = addRow.createEl('input', { type: 'text', cls: 'ert-input ert-input--full', attr: { placeholder: 'Value' } });
+            const keyInput = addRow.createEl('input', { type: 'text', cls: 'ert-input ert-input--full', attr: { placeholder: t('ui.scenePropertiesSection.newPropertyPlaceholder') } });
+            const valueInput = addRow.createEl('input', { type: 'text', cls: 'ert-input ert-input--full', attr: { placeholder: t('ui.scenePropertiesSection.valuePlaceholder') } });
             const buttonWrap = addRow.createDiv({ cls: ['ert-iconBtnGroup', 'ert-template-actions'] });
 
             const addBtn = buttonWrap.createEl('button', { cls: ['ert-iconBtn', 'ert-mod-cta'] });
             setIcon(addBtn, 'plus');
-            setTooltip(addBtn, 'Add property');
+            setTooltip(addBtn, t('ui.scenePropertiesSection.addTooltip'));
             addBtn.onclick = () => {
                 const key = keyInput.value.trim();
                 if (!key) return;
                 if (requiredOrder.includes(key)) {
-                    new Notice(`"${key}" already exists in Core Properties.`);
+                    new Notice(t('ui.scenePropertiesSection.inCorePropertiesNotice', { key }));
                     return;
                 }
                 if (data.some((item) => item.key === key)) {
-                    new Notice(`Property "${key}" already exists.`);
+                    new Notice(t('ui.scenePropertiesSection.propertyExistsNotice', { key }));
                     return;
                 }
                 const iconName = addIconInput.value.trim() || DEFAULT_HOVER_ICON;
@@ -572,7 +573,7 @@ export function renderScenePropertiesSection(params: {
 
             const resetBtn = buttonWrap.createEl('button', { cls: ['ert-iconBtn', 'ert-template-reset-btn'] });
             setIcon(resetBtn, 'rotate-ccw');
-            setTooltip(resetBtn, 'Reset advanced properties to the default built-in set');
+            setTooltip(resetBtn, t('ui.scenePropertiesSection.resetTooltip'));
             resetBtn.onclick = async () => {
                 const confirmed = await new Promise<boolean>((resolve) => {
                     const modal = new Modal(app);
@@ -582,22 +583,22 @@ export function renderScenePropertiesSection(params: {
                     modal.contentEl.addClass('ert-modal-container', 'ert-stack');
 
                     const header = modal.contentEl.createDiv({ cls: 'ert-modal-header' });
-                    header.createSpan({ text: 'SCENE PROPERTIES', cls: 'ert-modal-badge' });
-                    header.createDiv({ text: 'Reset advanced properties', cls: 'ert-modal-title' });
+                    header.createSpan({ text: t('ui.scenePropertiesSection.resetModalBadge'), cls: 'ert-modal-badge' });
+                    header.createDiv({ text: t('ui.scenePropertiesSection.resetModalTitle'), cls: 'ert-modal-title' });
                     header.createDiv({
-                        text: 'Resetting will remove renamed and custom advanced properties, clear hover icons, and restore the built-in advanced properties.',
+                        text: t('ui.scenePropertiesSection.resetModalSubtitle'),
                         cls: 'ert-modal-subtitle'
                     });
 
                     const body = modal.contentEl.createDiv({ cls: ['ert-panel', 'ert-panel--glass'] });
-                    body.createDiv({ text: 'This cannot be undone.', cls: 'ert-purge-warning' });
+                    body.createDiv({ text: t('ui.scenePropertiesSection.resetModalWarning'), cls: 'ert-purge-warning' });
 
                     const footer = modal.contentEl.createDiv({ cls: ['ert-modal-actions', 'ert-inline-actions'] });
-                    new ButtonComponent(footer).setButtonText('Reset to default').setDestructive().onClick(() => {
+                    new ButtonComponent(footer).setButtonText(t('ui.scenePropertiesSection.resetButton')).setDestructive().onClick(() => {
                         modal.close();
                         resolve(true);
                     });
-                    new ButtonComponent(footer).setButtonText('Cancel').onClick(() => {
+                    new ButtonComponent(footer).setButtonText(t('common.cancel')).onClick(() => {
                         modal.close();
                         resolve(false);
                     });

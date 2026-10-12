@@ -6,6 +6,7 @@ import { ERT_CLASSES } from '../../ui/classes';
 import { colorSwatch, type ColorSwatchHandle } from '../../ui/ui';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { IMPACT_FULL } from '../SettingImpact';
+import { t } from '../../i18n';
 
 type MicroBackdropConfig = {
     title: string;
@@ -20,7 +21,7 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
     containerEl.classList.add(ERT_CLASSES.STACK);
 
     const backdropHeading = new Settings(containerEl)
-        .setName('Backdrop & micro context rings')
+        .setName(t('ui.backdropSection.heading'))
         .setHeading();
     addHeadingIcon(backdropHeading, 'layers-3');
     addWikiLink(backdropHeading, 'Settings-Core#backdrop-and-micro-backdrops');
@@ -29,8 +30,8 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
     const stackEl = containerEl.createDiv({ cls: ERT_CLASSES.STACK });
 
     const showBackdropSetting = new Settings(stackEl)
-        .setName('Show backdrop ring')
-        .setDesc('Display the backdrop ring in Chronologue mode. When disabled, the ring space is reclaimed for subplot rings. ')
+        .setName(t('ui.backdropSection.showRingName'))
+        .setDesc(t('ui.backdropSection.showRingDesc'))
         .addToggle(toggle => toggle
             .setValue(plugin.settings.showBackdropRing ?? true)
             .onChange(async (value) => {
@@ -42,12 +43,12 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
 
     // Inline command-palette hint woven into the description copy
     const descEl = showBackdropSetting.descEl;
-    descEl.appendText('Use the Command palette ');
+    descEl.appendText(t('ui.backdropSection.commandPaletteHintLead'));
     const keycaps = descEl.createSpan({ cls: 'ert-welcome-keycaps' });
-    keycaps.createEl('kbd', { cls: 'ert-welcome-keycap', text: Platform.isMacOS ? '⌘' : 'Ctrl' });
+    keycaps.createEl('kbd', { cls: 'ert-welcome-keycap', text: Platform.isMacOS ? '⌘' : t('ui.backdropSection.ctrlKey') });
     keycaps.createSpan({ cls: 'ert-welcome-keycaps-sep', text: ' + ' });
     keycaps.createEl('kbd', { cls: 'ert-welcome-keycap', text: 'P' });
-    descEl.appendText('. Or create a backdrop note using the \'class=Backdrop\'.');
+    descEl.appendText(t('ui.backdropSection.commandPaletteHintTail'));
 
     const listContainer = stackEl.createDiv({ cls: `${ERT_CLASSES.PANEL} ert-micro-backdrop-body ert-micro-backdrop-list` });
     const list = listContainer;
@@ -75,10 +76,14 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
     const renderMicroBackdropRow = (config: MicroBackdropConfig, index: number) => {
         const wrapper = list.createDiv({ cls: 'ert-micro-backdrop-wrapper ert-stack' });
         const rawTitle = config.title?.trim();
-        const title = rawTitle ? `${rawTitle} microring` : `Micro backdrop ${index + 1}`;
+        const title = rawTitle
+            ? t('ui.backdropSection.microringTitle', { title: rawTitle })
+            : t('ui.backdropSection.microBackdropNumbered', { number: index + 1 });
         const rangeValue = config.range?.trim() ?? '';
         const parsedRange = rangeValue ? parseDateRangeInput(rangeValue) : null;
-        const rangeSummary = parsedRange?.start && parsedRange?.end ? `Range: ${rangeValue}` : 'No date range set.';
+        const rangeSummary = parsedRange?.start && parsedRange?.end
+            ? t('ui.backdropSection.rangeSummary', { range: rangeValue })
+            : t('ui.backdropSection.noRangeSet');
 
         const row = new Settings(wrapper)
             .setName(title)
@@ -89,7 +94,7 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
         row.addButton(button => {
             button
                 .setIcon(isExpanded ? 'chevron-down' : 'chevron-right')
-                .setTooltip(isExpanded ? 'Collapse' : 'Edit micro-backdrop')
+                .setTooltip(isExpanded ? t('ui.backdropSection.collapseTooltip') : t('ui.backdropSection.editTooltip'))
                 .onClick(() => {
                     expandedIndex = isExpanded ? null : index;
                     renderMicroBackdrops();
@@ -99,7 +104,7 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
         row.addButton(button => {
             button
                 .setIcon('trash')
-                .setTooltip('Delete micro-backdrop')
+                .setTooltip(t('ui.backdropSection.deleteTooltip'))
                 .onClick(async () => {
                     const current = getMicroBackdrops();
                     const next = current.filter((_, idx) => idx !== index);
@@ -114,12 +119,12 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
         const details = wrapper.createDiv({ cls: 'ert-micro-backdrop-details ert-stack' });
 
         const titleColorSetting = new Settings(details)
-            .setName('Title + color')
-            .setDesc('Name the microring and set its color.');
+            .setName(t('ui.backdropSection.titleColorName'))
+            .setDesc(t('ui.backdropSection.titleColorDesc'));
         titleColorSetting.controlEl.classList.add('ert-micro-backdrop-title-row');
 
         titleColorSetting.addText(text => {
-            text.setPlaceholder('Title')
+            text.setPlaceholder(t('ui.backdropSection.titlePlaceholder'))
                 .setValue(config.title || '');
             text.inputEl.classList.add('ert-input--md');
             text.onChange(async (value) => {
@@ -146,7 +151,7 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
 
         const swatchHandle: ColorSwatchHandle = colorSwatch(colorControls, {
             value: colorValue,
-            ariaLabel: `${config.title || 'Micro backdrop'} color`,
+            ariaLabel: t('ui.backdropSection.colorAriaLabel', { title: config.title || t('ui.backdropSection.microBackdropFallback') }),
             plugin,
             onChange: (value) => { void (async () => {
                 if (!isValidHexColor(value)) return;
@@ -168,8 +173,8 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
             });
 
         const rangeSetting = new Settings(details)
-            .setName('Date range')
-            .setDesc('Example formats: "4/24/2024 - 4/25/2025 1:45pm" or "2024-04-24 - 2024-04-25 13:45".');
+            .setName(t('ui.backdropSection.dateRangeName'))
+            .setDesc(t('ui.backdropSection.dateRangeDesc'));
         rangeSetting.addText(text => {
             text.setPlaceholder('4/24/2024 - 4/25/2025 1:45pm')
                 .setValue(config.range || '');
@@ -226,14 +231,14 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
         });
 
         const emptyHint = microBackdrops.length === 0
-            ? ' No micro-backdrops yet. Add one to get started.'
+            ? t('ui.backdropSection.emptyHint')
             : '';
 
         const addSetting = new Settings(list)
-            .setName('Add micro-backdrop')
-            .setDesc(`Creates a new ring configuration. Micro-backdrops are slender custom bands tucked under the backdrop ring (Chronologue mode only). Micro-backdrops will coexist on one ring unless there is a date range overlap, in which case they will be placed on separate rings. ${emptyHint}`);
+            .setName(t('ui.backdropSection.addName'))
+            .setDesc(t('ui.backdropSection.addDesc', { emptyHint }));
         addSetting.addButton(button => button
-            .setButtonText('Add')
+            .setButtonText(t('ui.backdropSection.addButton'))
             .onClick(async () => {
                 const current = getMicroBackdrops();
                 const palette = DEFAULT_SETTINGS.subplotColors || ['#ffffff'];

@@ -1,4 +1,5 @@
 import { App, ButtonComponent, Modal } from 'obsidian';
+import { t } from '../../../i18n';
 
 /** Shared confirmation lifecycle; closing via Escape or the window always cancels. */
 export function confirmAudit(app: App, options: {
@@ -20,11 +21,11 @@ export function confirmAudit(app: App, options: {
         header.createDiv({ cls: 'ert-modal-title', text: options.title });
         header.createDiv({ cls: 'ert-modal-subtitle', text: options.subtitle });
         const body = modal.contentEl.createDiv({ cls: ['ert-panel', 'ert-panel--glass'] });
-        body.createDiv({ text: `Scope: ${options.scope}`, cls: 'ert-modal-subtitle' });
+        body.createDiv({ text: t('ui.confirmAudit.scopeLine', { scope: options.scope }), cls: 'ert-modal-subtitle' });
         options.renderBody(body);
         const footer = modal.contentEl.createDiv({ cls: 'ert-modal-actions' });
         new ButtonComponent(footer).setButtonText(options.action).setCta().onClick(() => { resolve(true); modal.close(); });
-        new ButtonComponent(footer).setButtonText('Cancel').onClick(() => { resolve(false); modal.close(); });
+        new ButtonComponent(footer).setButtonText(t('common.cancel')).onClick(() => { resolve(false); modal.close(); });
         modal.onClose = () => resolve(false);
         modal.open();
     });

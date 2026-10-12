@@ -471,7 +471,7 @@ export function renderInquiryCorpusStrip(args: {
 
     // ── "CORPUS" title line (clickable → opens Inquiry Sources settings) ──
     if (!refs.ccCorpusLabel) {
-        refs.ccCorpusLabel = createSvgText(refs.ccGroup, 'ert-inquiry-cc-corpus-title', 'CORPUS', 0, 0);
+        refs.ccCorpusLabel = createSvgText(refs.ccGroup, 'ert-inquiry-cc-corpus-title', t('ui.inquiryCorpusStripRenderer.corpusTitle'), 0, 0);
         // Use text-anchor: start and manually center — avoids browser inconsistencies
         // between text-anchor: middle and CSS letter-spacing when computing anchor offsets.
         refs.ccCorpusLabel.setAttribute('text-anchor', 'start');
@@ -586,7 +586,7 @@ export function renderInquiryCorpusStrip(args: {
     refs.ccLabel.setAttribute('x', String(stripCenterX));
     refs.ccLabel.setAttribute('y', '0');
     if (refs.ccLabelGroup) {
-        addTooltipData(refs.ccLabelGroup, balanceTooltipText('Cycle all corpus scopes.'), 'top');
+        addTooltipData(refs.ccLabelGroup, balanceTooltipText(t('ui.inquiryCorpusStripRenderer.cycleAllScopesTooltip')), 'top');
     }
     if (refs.ccLabelHit) {
         const scopeW = refs.ccLabel?.getComputedTextLength?.() ?? 0;
@@ -601,14 +601,14 @@ export function renderInquiryCorpusStrip(args: {
     }
 
     if (!refs.ccEmptyText) {
-        refs.ccEmptyText = createSvgText(refs.ccGroup, 'ert-inquiry-cc-empty ert-hidden', 'No corpus data', 0, 0);
+        refs.ccEmptyText = createSvgText(refs.ccGroup, 'ert-inquiry-cc-empty ert-hidden', t('ui.inquiryCorpusStripRenderer.noCorpusData'), 0, 0);
         refs.ccEmptyText.setAttribute('text-anchor', 'start');
         refs.ccEmptyText.setAttribute('dominant-baseline', 'middle');
     }
     refs.ccEmptyText.setAttribute('x', String(Math.round(layout.anchorRightX)));
     refs.ccEmptyText.setAttribute('y', String(Math.round(layout.docStartY + (layout.pageHeight / 2))));
     if (showWarning) {
-        refs.ccEmptyText.textContent = 'Corpus too large';
+        refs.ccEmptyText.textContent = t('ui.inquiryCorpusStripRenderer.corpusTooLarge');
         refs.ccEmptyText.classList.remove('ert-hidden');
     } else {
         refs.ccEmptyText.classList.add('ert-hidden');

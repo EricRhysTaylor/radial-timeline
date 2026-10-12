@@ -1,6 +1,7 @@
 import { orderBeatsByAct, parseBeatRow } from '../../../storyBeats/beatRows';
 import { clampBeatAct, normalizeBeatTitle } from '../../../storyBeats/beatSystemStatus';
 import { hasBeatReadableText } from '../../../utils/beatsInputNormalize';
+import { t } from '../../../i18n';
 
 export type ActGridBeat = { name: string; key: string };
 export type ActGridColumn = { label: string; beats: ActGridBeat[]; rank: number; isNumericAct: boolean };
@@ -21,7 +22,7 @@ export const buildBeatActColumns = (definitions: readonly unknown[], maxActs: nu
         const actNum = clampBeatAct(beatLine.act, maxActs);
         const key = `act:${actNum}`;
         if (!grouped.has(key)) {
-            grouped.set(key, { label: `Act ${actNum}`, beats: [], rank: actNum, isNumericAct: true });
+            grouped.set(key, { label: t('timeline.acts.actFallback', { number: actNum }), beats: [], rank: actNum, isNumericAct: true });
         }
         grouped.get(key)!.beats.push({
             name: stripActPrefix(beatLine.name),

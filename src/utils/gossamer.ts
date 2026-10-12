@@ -10,6 +10,7 @@ import { comparePrefixTokens, extractPrefixToken } from './prefixOrder';
 import { coerceGossamerSignal, DEFAULT_GOSSAMER_SIGNAL, type GossamerSignalType } from '../types/gossamerSignals';
 import type { TimelineItem } from '../types';
 import { AI_JOB_PROVIDER, getModelDisplayName } from './modelResolver';
+import { t } from '../i18n';
 
 export type GossamerBeatStatus = 'present' | 'outlineOnly' | 'missing';
 
@@ -216,10 +217,10 @@ function readGossamerSlotMetadata(source: Record<string, unknown>, index: number
 }
 
 function formatGossamerRunTimestamp(value: string | undefined, fallbackIndex: number): string {
-  if (!value) return `Trace ${fallbackIndex}`;
+  if (!value) return t('ui.gossamer.traceFallback', { index: fallbackIndex });
 
   const parsed = Date.parse(value);
-  if (!Number.isFinite(parsed)) return `Trace ${fallbackIndex}`;
+  if (!Number.isFinite(parsed)) return t('ui.gossamer.traceFallback', { index: fallbackIndex });
 
   try {
     return new Intl.DateTimeFormat(undefined, {
@@ -229,7 +230,7 @@ function formatGossamerRunTimestamp(value: string | undefined, fallbackIndex: nu
       minute: '2-digit'
     }).format(new Date(parsed));
   } catch {
-    return `Trace ${fallbackIndex}`;
+    return t('ui.gossamer.traceFallback', { index: fallbackIndex });
   }
 }
 
@@ -238,9 +239,9 @@ function buildGossamerRunModelLabel(metadata: GossamerSlotMetadata): string {
   // rather than read as a model id.
   if (metadata.provider === AI_JOB_PROVIDER && metadata.model) return metadata.model;
   if (metadata.model) return getModelDisplayName(metadata.model);
-  if (metadata.provider === 'manual') return 'Manual entry';
+  if (metadata.provider === 'manual') return t('ui.gossamer.manualEntry');
   if (metadata.provider) return metadata.provider;
-  return 'Legacy trace';
+  return t('ui.gossamer.legacyTrace');
 }
 
 function parseGossamerRunIndex(fieldName: string): number {

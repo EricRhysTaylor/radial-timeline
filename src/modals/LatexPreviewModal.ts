@@ -5,6 +5,7 @@
  * focus to the wizard.
  */
 import { App, ButtonComponent, Modal, Notice } from 'obsidian';
+import { t } from '../i18n';
 
 export interface LatexPreviewModalOptions {
     latex: string;
@@ -37,7 +38,7 @@ export class LatexPreviewModal extends Modal {
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
         header.createDiv({
             cls: 'ert-modal-title',
-            text: 'Generated LaTeX',
+            text: t('ui.latexPreviewModal.title'),
         });
         header.createDiv({
             cls: 'ert-modal-subtitle',
@@ -50,24 +51,24 @@ export class LatexPreviewModal extends Modal {
         const actions = contentEl.createDiv({ cls: 'ert-modal-actions ert-latex-preview__actions' });
 
         new ButtonComponent(actions)
-            .setButtonText('Copy')
+            .setButtonText(t('ui.latexPreviewModal.copyButton'))
             .onClick(() => {
                 const writer = navigator.clipboard;
                 if (!writer) {
-                    new Notice('Clipboard unavailable in this environment.');
+                    new Notice(t('ui.latexPreviewModal.clipboardUnavailable'));
                     return;
                 }
                 writer.writeText(this.options.latex).then(
-                    () => { new Notice('LaTeX copied to clipboard.'); },
+                    () => { new Notice(t('ui.latexPreviewModal.copied')); },
                     (err: unknown) => {
                         const msg = err instanceof Error ? err.message : String(err);
-                        new Notice(`Copy failed: ${msg}`);
+                        new Notice(t('ui.latexPreviewModal.copyFailed', { error: msg }));
                     },
                 );
             });
 
         new ButtonComponent(actions)
-            .setButtonText('Close')
+            .setButtonText(t('ui.latexPreviewModal.closeButton'))
             .setCta()
             .onClick(() => this.close());
     }

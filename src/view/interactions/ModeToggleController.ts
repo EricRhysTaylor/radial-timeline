@@ -199,7 +199,7 @@ async function switchToMode(view: RadialTimelineView, modeId: string, modeSelect
         const fallbackMode = modeManager.getCurrentMode();
         updateModeSelectorState(modeSelector, fallbackMode);
         console.error(`[ModeToggle] Failed to switch to ${modeId}:`, error);
-        new Notice(`Could not switch to ${modeId} mode. Check the developer console for details.`, 6000);
+        new Notice(t('ui.modeToggleController.switchFailedNotice', { mode: modeId }), 6000);
     }
 }
 

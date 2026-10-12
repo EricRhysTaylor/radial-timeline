@@ -16,6 +16,7 @@ import { updateSynopsisTitleColor } from '../interactions/SynopsisTitleColorMana
 import { maybeHandleZeroDraftClick } from '../interactions/ZeroDraftHandler';
 import { setupSceneContextMenu } from '../interactions/SceneContextMenu';
 import type { RadialTimelineView } from '../TimeLineView';
+import { t } from '../../i18n';
 
 /**
  * Setup Chronologue Mode interactions
@@ -417,7 +418,7 @@ function setupSceneClickInteractions(view: RadialTimelineView, svg: SVGSVGElemen
                     app: view.plugin.app,
                     file,
                     enableZeroDraftMode: view.plugin.settings.enableZeroDraftMode,
-                    sceneTitle: file.basename || 'Scene',
+                    sceneTitle: file.basename || t('ui.chronologueMode.sceneFallback'),
                     onOverrideOpen: async () => openOrRevealFile(view.plugin.app, file, false, highlight)
                 });
                 if (zeroDraftHandled) {
@@ -467,7 +468,7 @@ function showWhenFieldWarning(svg: SVGSVGElement, sceneGroup: Element, event: Mo
     text.setAttribute('font-size', '10');
     text.setAttribute('font-weight', '600');
     text.setAttribute('fill', 'var(--text-error)');
-    text.textContent = 'Missing When field';
+    text.textContent = t('ui.chronologueMode.missingWhenField');
     warning.appendChild(text);
 
     svg.appendChild(warning);

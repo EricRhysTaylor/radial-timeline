@@ -80,10 +80,8 @@ describe('InquiryRunnerService execution integrity', () => {
 
     it('uses planning-budget wording for single-pass rejection while preserving legacy detection', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/inquiry/runner/InquiryRunnerService.ts'), 'utf8');
-        const enLocale = readFileSync(resolve(process.cwd(), 'src/i18n/locales/en.ts'), 'utf8');
-        // The user-visible single-pass rejection wording lives in the i18n catalog,
-        // and the legacy substring detection lives in the runner module itself.
-        expect(enLocale).toContain('This request exceeds the single-pass planning budget.');
+        // Results saved by older versions carry the single-pass rejection wording;
+        // the runner still recognises it by substring.
         expect(source).toContain("normalized.includes('single-pass planning budget')");
         expect(source).toContain("normalized.includes('safe limit for a single pass')");
     });

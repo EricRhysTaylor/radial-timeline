@@ -24,6 +24,7 @@ import type { StructureOnlyImport } from '../onboarding/OnboardingService';
 import { summarizeImport } from '../onboarding/importSummary';
 import { basename } from '../onboarding/paths';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
+import { t, tCount } from '../i18n';
 
 export interface ScrivenerReviewState {
   /** The import's book; the author edits its title here. */
@@ -52,22 +53,24 @@ export interface ScrivenerReviewHost {
 /** Short Scrivener export instructions, collapsed until asked for. */
 export function renderScrivenerExportHelp(parent: HTMLElement): void {
   const help = parent.createEl('details', { cls: 'ert-onb-help' });
-  help.createEl('summary', { text: 'How to export from Scrivener' });
+  help.createEl('summary', { text: t('ui.onboardingScrivenerReview.exportHelpSummary') });
   const steps = help.createEl('ol');
-  steps.createEl('li', { text: 'Select your manuscript in the binder, then File → Export → Files… as plain text, with numbered files.' });
-  steps.createEl('li', { text: 'File → Export → Outliner Contents as CSV…, with Title, Synopsis and the columns you want to bring.' });
-  steps.createEl('li', { text: 'Put both in this vault. The CSV can sit next to the exported folder.' });
+  steps.createEl('li', { text: t('ui.onboardingScrivenerReview.exportHelpStepFiles') });
+  steps.createEl('li', { text: t('ui.onboardingScrivenerReview.exportHelpStepOutline') });
+  steps.createEl('li', { text: t('ui.onboardingScrivenerReview.exportHelpStepVault') });
 }
 
 function renderHeader(container: HTMLElement, title: string, subtitle?: string): void {
   const header = container.createDiv({ cls: 'ert-modal-header' });
-  header.createSpan({ cls: 'ert-modal-badge', text: 'Scrivener import' });
+  header.createSpan({ cls: 'ert-modal-badge', text: t('ui.onboardingScrivenerReview.badge') });
   header.createDiv({ cls: 'ert-modal-title', text: title });
   if (subtitle) header.createDiv({ cls: 'ert-modal-subtitle', text: subtitle });
 }
 
 /** What an import without an outline CSV loses, and how to include it. */
-export const MISSING_OUTLINE_TEXT = 'No outline CSV found. Scenes will import without synopses or properties. To include them, export Outliner Contents as CSV next to the scene folder.';
+export function missingOutlineText(): string {
+  return t('ui.onboardingScrivenerReview.missingOutline');
+}
 
 /**
  * The parts of a manuscript, one labeled line each: a Scrivener export is its
@@ -85,7 +88,7 @@ export function renderSourceParts(parent: HTMLElement, parts: Array<{ label: str
 /** A name list short enough to read at a glance. */
 function nameList(names: string[]): string {
   const shown = names.slice(0, 8).join(', ');
-  return names.length > 8 ? `${shown} and ${names.length - 8} more` : shown;
+  return names.length > 8 ? t('ui.onboardingScrivenerReview.nameListMore', { names: shown, count: names.length - 8 }) : shown;
 }
 
 /**
@@ -102,26 +105,26 @@ export function renderScrivenerProblems(
   container.empty();
   const name = basename(folder);
   if (actions.onContinue) {
-    renderHeader(container, 'Check this export', `Some of “${name}” doesn’t line up. Fix it in Scrivener, or continue anyway.`);
+    renderHeader(container, t('ui.onboardingScrivenerReview.checkExportTitle'), t('ui.onboardingScrivenerReview.checkExportSubtitle', { name }));
   } else {
-    renderHeader(container, 'Nothing to import', `“${name}” has no scene text.`);
+    renderHeader(container, t('ui.onboardingScrivenerReview.nothingToImportTitle'), t('ui.onboardingScrivenerReview.nothingToImportSubtitle', { name }));
   }
   const panel = container.createDiv({ cls: 'ert-panel ert-stack' });
   for (const item of problems) {
     const entry = panel.createDiv({ cls: 'ert-stack ert-onb-cast' });
     entry.createDiv({ cls: 'ert-onb-warn', text: item.problem });
-    if (actions.onContinue) entry.createDiv({ cls: 'ert-section-desc', text: `If you continue: ${item.ifImported}` });
+    if (actions.onContinue) entry.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingScrivenerReview.ifYouContinue', { consequence: item.ifImported }) });
   }
   if (actions.onContinue) {
     panel.createEl('hr', { cls: 'ert-onb-divider' });
-    panel.createDiv({ cls: 'ert-section-desc', text: 'To fix it, select the same documents in Scrivener, export Files and Outliner Contents again, then choose Check again.' });
+    panel.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingScrivenerReview.fixHint') });
   }
   renderScrivenerExportHelp(panel);
   const row = container.createDiv({ cls: 'ert-modal-actions' });
-  new ButtonComponent(row).setButtonText('Choose another export').onClick(actions.onChangeSource);
-  const recheck = new ButtonComponent(row).setButtonText('Check again').onClick(actions.onRecheck);
+  new ButtonComponent(row).setButtonText(t('ui.onboardingScrivenerReview.chooseAnotherExport')).onClick(actions.onChangeSource);
+  const recheck = new ButtonComponent(row).setButtonText(t('ui.onboardingScrivenerReview.checkAgain')).onClick(actions.onRecheck);
   if (actions.onContinue) {
-    new ButtonComponent(row).setButtonText('Continue anyway').setCta().onClick(actions.onContinue);
+    new ButtonComponent(row).setButtonText(t('ui.onboardingScrivenerReview.continueAnyway')).setCta().onClick(actions.onContinue);
   } else {
     recheck.setCta();
   }
@@ -140,21 +143,21 @@ function decode(value: string): ScrivenerFieldTarget {
 function renderTargetSelect(parent: HTMLElement, field: string, decision: ScrivenerFieldTarget, onPick: (decision: ScrivenerFieldTarget) => void): void {
   const dropdown = new DropdownComponent(parent);
   const select = dropdown.selectEl;
-  select.setAttribute('aria-label', `Where “${bareFieldName(field)}” goes`);
+  select.setAttribute('aria-label', t('ui.onboardingScrivenerReview.targetAria', { field: bareFieldName(field) }));
   const group = (label: string, options: Array<[value: string, text: string]>): void => {
     const optgroup = select.createEl('optgroup', { attr: { label } });
     for (const [value, text] of options) optgroup.createEl('option', { value, text });
   };
   const fieldOptions = (keys: readonly string[]): Array<[string, string]> => keys.map((key) => [`rt:${key}`, key]);
-  group('Scene field', [
+  group(t('ui.onboardingScrivenerReview.groupSceneField'), [
     ...fieldOptions(SCRIVENER_FIELD_TARGETS.timeline),
-    ['pov-character', 'POV character (listed first in Character)'],
+    ['pov-character', t('ui.onboardingScrivenerReview.optionPovCharacter')],
   ]);
-  group('More scene fields', fieldOptions(SCRIVENER_FIELD_TARGETS.other));
-  group('This column', [
-    ['subplot-flag', `Subplot “${bareFieldName(field)}” for filled cells`],
-    ['custom', `Keep as “${field}”`],
-    ['ignore', 'Skip'],
+  group(t('ui.onboardingScrivenerReview.groupMoreSceneFields'), fieldOptions(SCRIVENER_FIELD_TARGETS.other));
+  group(t('ui.onboardingScrivenerReview.groupThisColumn'), [
+    ['subplot-flag', t('ui.onboardingScrivenerReview.optionSubplotFlag', { field: bareFieldName(field) })],
+    ['custom', t('ui.onboardingScrivenerReview.optionKeepAs', { field })],
+    ['ignore', t('ui.onboardingScrivenerReview.optionSkip')],
   ]);
   dropdown.setValue(encode(decision)).onChange((value) => onPick(decode(value)));
 }
@@ -167,13 +170,13 @@ function truncate(text: string, max: number): string {
 export function renderScrivenerReview(container: HTMLElement, state: ScrivenerReviewState, host: ScrivenerReviewHost): void {
   container.empty();
   const scenes = flattenScenes(state.model);
-  renderHeader(container, 'Review your import');
+  renderHeader(container, t('ui.onboardingScrivenerReview.reviewTitle'));
   renderSourceParts(container, [
-    { label: 'Scenes', value: `${scenes.length} text file${scenes.length === 1 ? '' : 's'} in “${basename(state.book.sourceFolder)}”` },
+    { label: t('ui.onboardingScrivenerReview.sourceScenes'), value: t('ui.onboardingScrivenerReview.sourceScenesValue', { files: tCount('textFile', scenes.length), folder: basename(state.book.sourceFolder) }) },
     state.outlineName
-      ? { label: 'Properties', value: `${state.outlineName}, the outline exported from your Scrivener project` }
-      : { label: 'Properties', value: MISSING_OUTLINE_TEXT, warn: true },
-    { label: 'Order', value: state.outlineName ? 'From the outline' : 'From the numbered file names' },
+      ? { label: t('ui.onboardingScrivenerReview.sourceProperties'), value: t('ui.onboardingScrivenerReview.sourcePropertiesValue', { outline: state.outlineName }) }
+      : { label: t('ui.onboardingScrivenerReview.sourceProperties'), value: missingOutlineText(), warn: true },
+    { label: t('ui.onboardingScrivenerReview.sourceOrder'), value: state.outlineName ? t('ui.onboardingScrivenerReview.orderFromOutline') : t('ui.onboardingScrivenerReview.orderFromFileNames') },
   ]);
   for (const warning of state.warnings) container.createDiv({ cls: 'ert-onb-warn', text: warning });
 
@@ -181,7 +184,7 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
   const bookPanel = container.createDiv({ cls: 'ert-panel ert-stack' });
   const bookRow = bookPanel.createDiv({ cls: 'ert-onb-bookrow' });
   const titleLabel = bookRow.createEl('label', { cls: 'ert-onb-field' });
-  titleLabel.createSpan({ cls: 'ert-section-desc', text: 'Book title' });
+  titleLabel.createSpan({ cls: 'ert-section-desc', text: t('ui.onboardingScrivenerReview.bookTitle') });
   new TextComponent(titleLabel)
     .setValue(state.book.title)
     .then((text) => text.inputEl.addClass('ert-input'))
@@ -190,7 +193,7 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
       edited();
     });
   const stageLabel = bookRow.createEl('label', { cls: 'ert-onb-field' });
-  stageLabel.createSpan({ cls: 'ert-section-desc', text: 'Stage' });
+  stageLabel.createSpan({ cls: 'ert-section-desc', text: t('ui.onboardingScrivenerReview.stage') });
   new DropdownComponent(stageLabel)
     .addOptions(Object.fromEntries(STAGE_ORDER.map((stage) => [stage, stage])))
     .setValue(state.publishStage)
@@ -206,8 +209,13 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
   let conflictsEl: HTMLElement | null = null;
   if (fields.length > 0) {
     const fieldPanel = container.createDiv({ cls: 'ert-panel ert-stack' });
-    fieldPanel.createDiv({ cls: 'ert-section-title', text: 'Scene properties' });
-    fieldPanel.createDiv({ cls: 'ert-section-desc', text: `Each column of ${state.outlineName ?? 'the outline'}, and where it goes in Radial Timeline.` });
+    fieldPanel.createDiv({ cls: 'ert-section-title', text: t('ui.onboardingScrivenerReview.scenePropertiesTitle') });
+    fieldPanel.createDiv({
+      cls: 'ert-section-desc',
+      text: state.outlineName
+        ? t('ui.onboardingScrivenerReview.scenePropertiesDesc', { outline: state.outlineName })
+        : t('ui.onboardingScrivenerReview.scenePropertiesDescNoOutline'),
+    });
     const grid = fieldPanel.createDiv({ cls: 'ert-onb-map' });
     for (const field of fields) {
       const cell = grid.createDiv({ cls: 'ert-onb-map__field' });
@@ -221,15 +229,15 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
     }
     conflictsEl = fieldPanel.createDiv({ cls: 'ert-stack' });
     if (skipped.length) {
-      fieldPanel.createDiv({ cls: 'ert-section-desc', text: `Not imported: ${skipped.map(bareFieldName).join(', ')} (Scrivener bookkeeping).` });
+      fieldPanel.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingScrivenerReview.notImported', { fields: skipped.map(bareFieldName).join(', ') }) });
     }
   }
 
   // --- Result (live) ---------------------------------------------------------
   const resultPanel = container.createDiv({ cls: 'ert-panel ert-stack' });
   const actions = container.createDiv({ cls: 'ert-modal-actions' });
-  new ButtonComponent(actions).setButtonText('Choose another export').onClick(host.onChangeSource);
-  new ButtonComponent(actions).setButtonText('Cancel').onClick(host.onCancel);
+  new ButtonComponent(actions).setButtonText(t('ui.onboardingScrivenerReview.chooseAnotherExport')).onClick(host.onChangeSource);
+  new ButtonComponent(actions).setButtonText(t('common.cancel')).onClick(host.onCancel);
   const importButton = new ButtonComponent(actions).setCta();
   let current: StructureOnlyImport | null = null;
   importButton.onClick(() => { if (current) host.onImport(current); });
@@ -247,43 +255,57 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
     const taken = host.destinationExists(state.book);
     destinationEl.toggleClass('ert-section-desc--alert', taken || !state.book.title);
     destinationEl.setText(
-      !state.book.title ? 'Give the book a title.'
-        : taken ? `A folder named “${basename(destination)}” already exists. Choose another title.`
-          : `Creates “${destination}”.`
+      !state.book.title ? t('ui.onboardingScrivenerReview.needTitle')
+        : taken ? t('ui.onboardingScrivenerReview.folderTaken', { name: basename(destination) })
+          : t('ui.onboardingScrivenerReview.createsDestination', { destination })
     );
 
     if (conflictsEl) {
       conflictsEl.empty();
       for (const key of mappingConflicts(state.mapping)) {
-        conflictsEl.createDiv({ cls: 'ert-onb-warn', text: `More than one column goes to ${key}; each scene keeps the first filled one.` });
+        conflictsEl.createDiv({ cls: 'ert-onb-warn', text: t('ui.onboardingScrivenerReview.mappingConflict', { field: key }) });
       }
     }
 
     const listWasOpen = resultPanel.querySelector('details')?.open === true;
     resultPanel.empty();
-    resultPanel.createDiv({ cls: 'ert-section-title', text: 'Your timeline' });
+    resultPanel.createDiv({ cls: 'ert-section-title', text: t('ui.onboardingScrivenerReview.yourTimeline') });
     const subplotRow = resultPanel.createDiv({ cls: 'ert-onb-resultrow' });
-    subplotRow.createSpan({ cls: 'ert-section-desc', text: 'Subplots' });
+    subplotRow.createSpan({ cls: 'ert-section-desc', text: t('ui.onboardingScrivenerReview.subplots') });
     const pills = subplotRow.createDiv({ cls: 'ert-onb-pills' });
     for (const subplot of summary.subplots) {
       pills.createSpan({ cls: 'ert-badgePill ert-badgePill--sm ert-onb-pill--subplot', text: `${subplot.name} ${subplot.scenes}` });
     }
     const actRow = resultPanel.createDiv({ cls: 'ert-onb-resultrow' });
-    actRow.createSpan({ cls: 'ert-section-desc', text: 'Acts' });
+    actRow.createSpan({ cls: 'ert-section-desc', text: t('ui.onboardingScrivenerReview.acts') });
     actRow.createSpan({
-      text: result.actSource === 'column' ? 'From your Act column'
-        : result.actSource === 'folders' ? 'From your ACT folders'
-          : `${result.actCount}, split evenly by scene order`,
+      text: result.actSource === 'column' ? t('ui.onboardingScrivenerReview.actsFromColumn')
+        : result.actSource === 'folders' ? t('ui.onboardingScrivenerReview.actsFromFolders')
+          : t('ui.onboardingScrivenerReview.actsSplitEvenly', { count: result.actCount }),
     });
     if (result.highestSourceAct > result.actCount) {
       resultPanel.createDiv({
         cls: 'ert-onb-warn',
-        text: `Your export names ${result.highestSourceAct} acts but the timeline has ${result.actCount}; later acts are placed in Act ${result.actCount}. Raise the act count in Settings first to keep them.`,
+        text: t('ui.onboardingScrivenerReview.actOverflow', { highest: result.highestSourceAct, count: result.actCount }),
       });
     }
-    const cast: Array<{ label: string; names: string[]; noun: string; on: boolean; set: (on: boolean) => void }> = [
-      { label: 'Characters', names: summary.characters, noun: 'character', on: state.createCharacterNotes, set: (on) => { state.createCharacterNotes = on; } },
-      { label: 'Places', names: summary.places, noun: 'place', on: state.createPlaceNotes, set: (on) => { state.createPlaceNotes = on; } },
+    const cast: Array<{ label: string; names: string[]; toggleAria: string; toggleText: string; on: boolean; set: (on: boolean) => void }> = [
+      {
+        label: t('ui.onboardingScrivenerReview.characters'),
+        names: summary.characters,
+        toggleAria: t('ui.onboardingScrivenerReview.createCharacterNotes'),
+        toggleText: t('ui.onboardingScrivenerReview.createCharacterNotesCount', { count: summary.characters.length }),
+        on: state.createCharacterNotes,
+        set: (on) => { state.createCharacterNotes = on; },
+      },
+      {
+        label: t('ui.onboardingScrivenerReview.places'),
+        names: summary.places,
+        toggleAria: t('ui.onboardingScrivenerReview.createPlaceNotes'),
+        toggleText: t('ui.onboardingScrivenerReview.createPlaceNotesCount', { count: summary.places.length }),
+        on: state.createPlaceNotes,
+        set: (on) => { state.createPlaceNotes = on; },
+      },
     ];
     const named = cast.filter((item) => item.names.length > 0);
     if (named.length > 0) resultPanel.createEl('hr', { cls: 'ert-onb-divider' });
@@ -295,18 +317,18 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
       const toggleRow = value.createDiv({ cls: 'ert-onb-check' });
       new ToggleComponent(toggleRow)
         .setValue(entry.on)
-        .then((toggle) => toggle.toggleEl.setAttribute('aria-label', `Create a note for each ${entry.noun}`))
+        .then((toggle) => toggle.toggleEl.setAttribute('aria-label', entry.toggleAria))
         .onChange((on) => {
           entry.set(on);
           host.onEdit();
         });
-      toggleRow.createSpan({ cls: 'ert-section-desc', text: `Create a note for each ${entry.noun} (${entry.names.length})` });
+      toggleRow.createSpan({ cls: 'ert-section-desc', text: entry.toggleText });
     }
 
     resultPanel.createEl('hr', { cls: 'ert-onb-divider' });
     const list = resultPanel.createEl('details', { cls: 'ert-onb-help' });
     list.open = listWasOpen;
-    list.createEl('summary', { text: `Show all ${summary.scenes} scenes` });
+    list.createEl('summary', { text: t('ui.onboardingScrivenerReview.showAllScenes', { count: summary.scenes }) });
     const rows = list.createDiv({ cls: 'ert-onb-scenelist' });
     result.proposals.forEach((proposal, index) => {
       const row = rows.createDiv({ cls: 'ert-onb-scenelist__row' });
@@ -315,11 +337,11 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
       const subplots = proposal.frontmatter?.Subplot;
       row.createSpan({
         cls: 'ert-section-desc',
-        text: `Act ${String(proposal.frontmatter?.Act)} · ${Array.isArray(subplots) ? subplots.join(', ') : ''}`,
+        text: t('ui.onboardingScrivenerReview.sceneRowMeta', { act: String(proposal.frontmatter?.Act), subplots: Array.isArray(subplots) ? subplots.join(', ') : '' }),
       });
     });
 
-    importButton.setButtonText(`Import ${summary.scenes} scene${summary.scenes === 1 ? '' : 's'}`);
+    importButton.setButtonText(t('ui.onboardingScrivenerReview.importScenes', { scenes: tCount('scene', summary.scenes) }));
     importButton.setDisabled(summary.scenes === 0 || taken || !state.book.title);
   }
 

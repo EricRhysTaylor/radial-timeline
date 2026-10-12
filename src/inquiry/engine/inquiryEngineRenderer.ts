@@ -2,6 +2,7 @@ import type { InquiryAdvisoryContext } from '../services/inquiryAdvisory';
 import type { InquiryEnginePopoverState, InquiryReadinessUiState, PassPlanResult } from '../types';
 import type { TokenUsage } from '../../ai/usage/providerUsage';
 import { formatExactUsdCost } from '../../ai/cost/estimateCorpusCost';
+import { t, tCount } from '../../i18n';
 
 export type EngineRecentRunSnapshot = {
     /** Whether the last run requested citation anchors. */
@@ -35,7 +36,7 @@ export function renderInquiryEngineAdvisoryCard(
     container.empty();
 
     const card = container.createDiv({ cls: 'ert-inquiry-engine-advisor-card' });
-    card.createDiv({ cls: 'ert-inquiry-engine-advisor-title', text: 'INQUIRY ADVISOR' });
+    card.createDiv({ cls: 'ert-inquiry-engine-advisor-title', text: t('ui.inquiryEngineRenderer.advisorTitle') });
     card.createDiv({
         cls: 'ert-inquiry-engine-advisor-message',
         text: advisory.recommendation.message
@@ -105,10 +106,10 @@ export function renderInquiryEngineReadinessStrip(args: {
     // Browsing has no run cost/cache status. Explain the separate opt-in/setup
     // requirement while keeping saved results available.
     if (args.readOnly) {
-        args.readinessStatusEl.setText('Read-only');
+        args.readinessStatusEl.setText(t('ui.inquiryEngineRenderer.statusReadOnly'));
         args.readinessCorpusEl.setText(args.corpusSummary);
         args.readinessMessageEl.setText(args.hasSavedBriefings
-            ? `Saved briefings are ready to explore. ${args.readOnlyReason}`
+            ? t('ui.inquiryEngineRenderer.savedBriefingsReady', { reason: args.readOnlyReason })
             : args.readOnlyReason);
         args.readinessScopeEl.setText(args.runScopeLabel);
         args.readinessActionsEl.empty();
@@ -117,34 +118,36 @@ export function renderInquiryEngineReadinessStrip(args: {
 
     const isLocalLlm = args.providerLabel === 'Ollama' || args.providerLabel === 'Local LLM';
     const statusText = args.blocked
-        ? 'No eligible model for Inquiry'
+        ? t('ui.inquiryEngineRenderer.statusNoEligibleModel')
         : args.popoverState === 'ready'
-            ? 'Ready'
+            ? t('ui.inquiryEngineRenderer.statusReady')
             : args.popoverState === 'multi-pass'
-                ? 'Multi-pass'
-                : 'Exceeds limits';
+                ? t('ui.inquiryEngineRenderer.statusMultiPass')
+                : t('ui.inquiryEngineRenderer.statusExceedsLimits');
     args.readinessStatusEl.setText(statusText);
     args.readinessCorpusEl.setText(args.corpusSummary);
 
-    const cacheSuffix = args.cacheTtlLabel ? ` Provider cache · ${args.cacheTtlLabel}.` : '';
+    const cacheSuffix = args.cacheTtlLabel ? ` ${t('ui.inquiryEngineRenderer.providerCacheTtl', { ttl: args.cacheTtlLabel })}` : '';
 
     if (args.blocked && isLocalLlm) {
-        args.readinessCorpusEl.setText('Local LLM is connected');
-        args.readinessMessageEl.setText('Selected model passes basic validation');
-        args.readinessScopeEl.setText('This model does not meet Inquiry requirements for the current corpus');
+        args.readinessCorpusEl.setText(t('ui.inquiryEngineRenderer.localLlmConnected'));
+        args.readinessMessageEl.setText(t('ui.inquiryEngineRenderer.localLlmBasicValidation'));
+        args.readinessScopeEl.setText(t('ui.inquiryEngineRenderer.localLlmNotEligible'));
     } else if (args.popoverState === 'ready') {
-        args.readinessMessageEl.setText(`Execution: 1 pass.${cacheSuffix}`);
+        args.readinessMessageEl.setText(`${t('ui.inquiryEngineRenderer.executionOnePass')}${cacheSuffix}`);
         args.readinessScopeEl.setText(args.runScopeLabel);
     } else if (args.popoverState === 'multi-pass') {
         const estimateLabel = args.passPlan.estimatedPassCount ?? args.passPlan.displayPassCount;
         const recentRunSuffix = args.passPlan.recentExactPassCount
-            ? ` Recent run used ${args.passPlan.recentExactPassCount} passes.`
+            ? ` ${t('ui.inquiryEngineRenderer.recentRunPasses', { passes: tCount('pass', args.passPlan.recentExactPassCount) })}`
             : '';
         const reason = args.passPlan.multiPassTriggerReason
-            ?? 'Manuscript exceeds the per-pass planning budget.';
-        args.readinessMessageEl.setText(
-            `Estimated execution: ${estimateLabel} ${estimateLabel === 1 ? 'pass' : 'passes'} — ${reason.replace(/\.$/, '')}.${recentRunSuffix}${cacheSuffix}`
-        );
+            ?? t('ui.inquiryEngineRenderer.multiPassDefaultReason');
+        const estimatedExecution = t('ui.inquiryEngineRenderer.estimatedExecution', {
+            passes: tCount('pass', estimateLabel),
+            reason: reason.replace(/\.$/, '')
+        });
+        args.readinessMessageEl.setText(`${estimatedExecution}${recentRunSuffix}${cacheSuffix}`);
         args.readinessScopeEl.setText(args.runScopeLabel);
     } else {
         args.readinessMessageEl.setText(args.readinessReason);
@@ -234,18 +237,20 @@ export function computeCachePillState(
             ? Math.round((cacheRead / totalInput) * 100)
             : 0;
         return {
-            label: cacheRead > 0 ? `Cache reused · ${reusePct}%` : 'Cache reused',
+            label: cacheRead > 0
+                ? t('ui.inquiryEngineRenderer.cacheReusedPct', { pct: reusePct })
+                : t('ui.inquiryEngineRenderer.cacheReused'),
             state: 'confirmed',
             tooltip: cacheRead > 0
-                ? `Cache manager reused a prior resource. Provider payload reported ${cacheRead.toLocaleString()} cached input tokens (${reusePct}% of input).`
-                : 'Cache manager reused a prior resource for this run.'
+                ? t('ui.inquiryEngineRenderer.cacheReusedManagerTooltip', { tokens: cacheRead.toLocaleString(), pct: reusePct })
+                : t('ui.inquiryEngineRenderer.cacheReusedManagerNoReadTooltip')
         };
     }
     if (cacheStatus === 'created') {
         return {
-            label: 'Cache armed',
+            label: t('ui.inquiryEngineRenderer.cacheArmed'),
             state: 'primed',
-            tooltip: 'A new cache resource was created and armed by this run. The next run on the same prefix can reuse it. This run did NOT reuse a prior cache.'
+            tooltip: t('ui.inquiryEngineRenderer.cacheArmedTooltip')
         };
     }
 
@@ -256,23 +261,23 @@ export function computeCachePillState(
     if (cacheRead > 0) {
         const reusePct = totalInput > 0 ? Math.round((cacheRead / totalInput) * 100) : 0;
         return {
-            label: `Cache reused · ${reusePct}%`,
+            label: t('ui.inquiryEngineRenderer.cacheReusedPct', { pct: reusePct }),
             state: 'confirmed',
-            tooltip: `Provider payload reported ${cacheRead.toLocaleString()} cached input tokens reused (${reusePct}% of input).`
+            tooltip: t('ui.inquiryEngineRenderer.cacheReusedPayloadTooltip', { tokens: cacheRead.toLocaleString(), pct: reusePct })
         };
     }
     if (cacheCreation > 0) {
         return {
-            label: 'Cache created',
+            label: t('ui.inquiryEngineRenderer.cacheCreated'),
             state: 'primed',
-            tooltip: `Provider payload reported a cache write of ${cacheCreation.toLocaleString()} tokens (Anthropic cache_creation). A subsequent run on the same prefix can reuse it.`
+            tooltip: t('ui.inquiryEngineRenderer.cacheCreatedTooltip', { tokens: cacheCreation.toLocaleString() })
         };
     }
     if (totalInput > 0) {
         return {
-            label: 'No cache reuse',
+            label: t('ui.inquiryEngineRenderer.noCacheReuse'),
             state: 'none',
-            tooltip: 'The provider response reported no cache reuse for this run (cached input tokens = 0).'
+            tooltip: t('ui.inquiryEngineRenderer.noCacheReuseTooltip')
         };
     }
     return null;
@@ -281,8 +286,8 @@ export function computeCachePillState(
 export function computeActualCostPillState(actualCostUSD: number | undefined): ActualCostPillState | null {
     if (typeof actualCostUSD !== 'number' || !Number.isFinite(actualCostUSD) || actualCostUSD < 0) return null;
     return {
-        label: `Last run cost · ${formatExactUsdCost(actualCostUSD)}`,
-        tooltip: 'Usage-based cost from the provider token report for the last completed run.'
+        label: t('ui.inquiryEngineRenderer.lastRunCost', { cost: formatExactUsdCost(actualCostUSD) }),
+        tooltip: t('ui.inquiryEngineRenderer.lastRunCostTooltip')
     };
 }
 
@@ -306,36 +311,36 @@ export function computeCitationPillState(
 ): CitationPillState {
     if (!citationsRequested) {
         return {
-            label: 'Citations off',
+            label: t('ui.inquiryEngineRenderer.citationsOff'),
             state: 'off',
-            tooltip: 'Findings will not be anchored to specific source passages.'
+            tooltip: t('ui.inquiryEngineRenderer.citationsOffTooltip')
         };
     }
     if (!providerSupportsCitations) {
         return {
-            label: 'Citations unavailable',
+            label: t('ui.inquiryEngineRenderer.citationsUnavailable'),
             state: 'on-unavailable',
-            tooltip: 'The selected provider does not return inline document citations for Inquiry. Switch providers (see the Inquiry Advisor) to get verbatim source quotes.'
+            tooltip: t('ui.inquiryEngineRenderer.citationsUnavailableTooltip')
         };
     }
     if (!recentRun) {
         return {
-            label: 'Citations on',
+            label: t('ui.inquiryEngineRenderer.citationsOn'),
             state: 'on-pending',
-            tooltip: 'Findings will be anchored to source passages. Anchor count appears here after the next run.'
+            tooltip: t('ui.inquiryEngineRenderer.citationsOnTooltip')
         };
     }
     if (recentRun.citationCount > 0) {
         return {
-            label: `Citations · ${recentRun.citationCount}`,
+            label: t('ui.inquiryEngineRenderer.citationsCount', { count: recentRun.citationCount }),
             state: 'on-confirmed',
-            tooltip: `Last run produced ${recentRun.citationCount} anchored source${recentRun.citationCount === 1 ? '' : 's'} (inline citation blocks plus scene-anchored findings).`
+            tooltip: t('ui.inquiryEngineRenderer.citationsCountTooltip', { sources: tCount('anchoredSource', recentRun.citationCount) })
         };
     }
     return {
-        label: 'Citations missing',
+        label: t('ui.inquiryEngineRenderer.citationsMissing'),
         state: 'on-missing',
-        tooltip: 'Citations were enabled but no anchored sources came back — neither inline citation blocks nor findings with valid scene refs. Check provider/model support or the request payload.'
+        tooltip: t('ui.inquiryEngineRenderer.citationsMissingTooltip')
     };
 }
 
@@ -360,30 +365,30 @@ export function computeTtlPillState(
     if (remainingMs <= 0) return null;
 
     const remainingSeconds = Math.floor(remainingMs / 1000);
-    let label: string;
+    let duration: string;
     let state: TtlPillState['state'];
 
     if (remainingSeconds < 30) {
-        label = `Cache: ${remainingSeconds}s left`;
+        duration = `${remainingSeconds}s`;
         state = 'expiring';
     } else if (remainingSeconds < 120) {
-        label = `Cache: ${remainingSeconds}s left`;
+        duration = `${remainingSeconds}s`;
         state = 'soon';
     } else if (remainingSeconds < 3600) {
         const minutes = Math.floor(remainingSeconds / 60);
-        label = `Cache: ${minutes}m left`;
+        duration = `${minutes}m`;
         state = 'fresh';
     } else {
         const hours = Math.floor(remainingSeconds / 3600);
         const minutes = Math.floor((remainingSeconds % 3600) / 60);
-        label = minutes > 0 ? `Cache: ${hours}h ${minutes}m left` : `Cache: ${hours}h left`;
+        duration = minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
         state = 'fresh';
     }
 
-    const cachedDetail = cacheWindow.cachedTokens && cacheWindow.cachedTokens > 0
-        ? ` (${cacheWindow.cachedTokens.toLocaleString()} tokens primed)`
-        : '';
-    const tooltip = `Provider cache window expires in ${label.replace('Cache: ', '').replace(' left', '')}${cachedDetail}. A run started before that window expires should benefit from cache reuse.`;
+    const label = t('ui.inquiryEngineRenderer.cacheTimeLeft', { duration });
+    const tooltip = cacheWindow.cachedTokens && cacheWindow.cachedTokens > 0
+        ? t('ui.inquiryEngineRenderer.ttlTooltipPrimed', { duration, tokens: cacheWindow.cachedTokens.toLocaleString() })
+        : t('ui.inquiryEngineRenderer.ttlTooltip', { duration });
 
     return { label, state, tooltip };
 }

@@ -11,7 +11,7 @@ import { App, Modal, Menu, ButtonComponent, Notice, debounce, setIcon, setToolti
 import type RadialTimelinePlugin from '../main';
 import type { EventRef, TFile, WorkspaceLeaf } from 'obsidian';
 import type { TimelineItem } from '../types';
-import { t } from '../i18n';
+import { t, tCount } from '../i18n';
 import {
     type RepairPipelineConfig,
     type RepairPipelineResult,
@@ -301,7 +301,7 @@ export class TimelineScaffoldModal extends Modal {
 
     private buildConfigBadgeText(): string {
         const scenesWithWhen = this.scenes.filter(s => s.when instanceof Date).length;
-        return `Beta · ${this.scenes.length} scenes • ${scenesWithWhen} dated`;
+        return t('ui.timelineScaffoldModal.configBadge', { scenes: tCount('scene', this.scenes.length), dated: scenesWithWhen });
     }
 
     // ========================================================================
@@ -577,7 +577,7 @@ export class TimelineScaffoldModal extends Modal {
             this.result = await runRepairPipeline(this.scenes, this.files, this.plugin, config);
             this.session = createSession(this.result);
         } catch (error) {
-            new Notice(`Scaffold failed: ${error instanceof Error ? error.message : String(error)}`);
+            new Notice(t('ui.timelineScaffoldModal.scaffoldFailedNotice', { error: error instanceof Error ? error.message : String(error) }));
             return;
         }
 
@@ -642,7 +642,7 @@ export class TimelineScaffoldModal extends Modal {
             this.updateSummaryBar();
             this.updateAuditFooter();
         } catch (error) {
-            new Notice(`Rescaffold failed: ${error instanceof Error ? error.message : String(error)}`);
+            new Notice(t('ui.timelineScaffoldModal.rescaffoldFailedNotice', { error: error instanceof Error ? error.message : String(error) }));
         }
     }
 
@@ -718,7 +718,7 @@ export class TimelineScaffoldModal extends Modal {
 
         } catch (error) {
             if (!this.abortController.signal.aborted) {
-                new Notice(`Scaffold failed: ${error instanceof Error ? error.message : String(error)}`);
+                new Notice(t('ui.timelineScaffoldModal.scaffoldFailedNotice', { error: error instanceof Error ? error.message : String(error) }));
                 this.showConfigPhase();
             }
         }
@@ -1148,7 +1148,7 @@ export class TimelineScaffoldModal extends Modal {
 
         const narrativePill = line1.createSpan({
             cls: 'ert-timeline-repair-narrative-pill',
-            text: `N${idx + 1}`
+            text: t('ui.timelineScaffoldModal.narrativePill', { number: idx + 1 })
         });
         setTooltip(narrativePill, t('timelineScaffoldModal.review.narrativePlacement', { count: idx + 1 }));
 
@@ -1196,7 +1196,7 @@ export class TimelineScaffoldModal extends Modal {
             for (const cue of entry.cues) {
                 const cueChip = line1.createEl('a', { cls: 'ert-timeline-repair-cue-chip' });
                 cueChip.setText(`"${cue.match}"`);
-                cueChip.setAttribute('aria-label', `Open note and search for "${cue.match}"`);
+                cueChip.setAttribute('aria-label', t('ui.timelineScaffoldModal.cueChipAria', { match: cue.match }));
                 cueChip.addEventListener('click', (e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -1231,7 +1231,7 @@ export class TimelineScaffoldModal extends Modal {
 
             if (originalDisplay !== proposedDisplay || originalBucket !== currentBucket) {
                 const comparisonLine = whenArea.createDiv({ cls: 'ert-timeline-repair-original-when' });
-                comparisonLine.setText(`was ${originalDisplay} · ${describeWhenLabel(entry.originalWhen, originalBucket)}`);
+                comparisonLine.setText(t('ui.timelineScaffoldModal.originalWhen', { date: originalDisplay, label: describeWhenLabel(entry.originalWhen, originalBucket) }));
             }
         }
 
@@ -1380,18 +1380,18 @@ export class TimelineScaffoldModal extends Modal {
 
     private getComplianceState(entry: RepairSceneEntry): { label: string; className: string } {
         if (entry.isFlashback) {
-            return { label: entry.flashbackLabel ?? 'flashback', className: 'flashback' };
+            return { label: entry.flashbackLabel ?? t('ui.timelineScaffoldModal.complianceFlashback'), className: 'flashback' };
         }
-        if (entry.needsReview) return { label: 'needs review', className: 'needs-review' };
+        if (entry.needsReview) return { label: t('ui.timelineScaffoldModal.complianceNeedsReview'), className: 'needs-review' };
         if (entry.source === 'authored') {
             // A date stamped by a previous scaffold apply is machine-made and
             // still ripple-shiftable — labeling it "authored" would tell the
             // author they've anchored everything when they haven't.
-            if (entry.stampedWhenSource) return { label: 'scaffolded', className: 'scaffolded' };
-            return { label: 'authored', className: 'authored' };
+            if (entry.stampedWhenSource) return { label: t('ui.timelineScaffoldModal.complianceScaffolded'), className: 'scaffolded' };
+            return { label: t('timelineScaffoldModal.anchor.pillAuthored'), className: 'authored' };
         }
-        if (entry.source === 'keyword' || entry.source === 'ai') return { label: 'cue-adjusted', className: 'cue-adjusted' };
-        return { label: 'pattern-based', className: 'pattern-based' };
+        if (entry.source === 'keyword' || entry.source === 'ai') return { label: t('ui.timelineScaffoldModal.complianceCueAdjusted'), className: 'cue-adjusted' };
+        return { label: t('ui.timelineScaffoldModal.compliancePatternBased'), className: 'pattern-based' };
     }
 
     private captureRippledIndices(sceneIndex: number): void {
@@ -1623,7 +1623,7 @@ export class TimelineScaffoldModal extends Modal {
             }
             return result;
         } catch (error) {
-            new Notice(`Failed to apply changes: ${error instanceof Error ? error.message : String(error)}`);
+            new Notice(t('ui.timelineScaffoldModal.applyFailedNotice', { error: error instanceof Error ? error.message : String(error) }));
             return null;
         }
     }
@@ -1641,7 +1641,7 @@ export class TimelineScaffoldModal extends Modal {
         try {
             await clearWhenChangeLog(this.app);
         } catch (error) {
-            new Notice(`Reset failed: ${error instanceof Error ? error.message : String(error)}`);
+            new Notice(t('ui.timelineScaffoldModal.resetFailedNotice', { error: error instanceof Error ? error.message : String(error) }));
             return;
         }
         new Notice(t('timelineScaffoldModal.reset.successNotice'));
@@ -1734,7 +1734,7 @@ export class TimelineScaffoldModal extends Modal {
             }
             this.close();
         } catch (error) {
-            new Notice(`Restore failed: ${error instanceof Error ? error.message : String(error)}`);
+            new Notice(t('ui.timelineScaffoldModal.restoreFailedNotice', { error: error instanceof Error ? error.message : String(error) }));
         }
     }
 

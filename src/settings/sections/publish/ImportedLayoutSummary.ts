@@ -1,4 +1,5 @@
 import type { PandocLayoutTemplate } from '../../../types';
+import { t } from '../../../i18n';
 
 const getImportedLayoutTraits = (layout: PandocLayoutTemplate): string[] => {
     const traits = layout.importDetection?.traits
@@ -16,13 +17,13 @@ const getImportedLayoutTraits = (layout: PandocLayoutTemplate): string[] => {
 
 const getImportedLayoutTraitLabel = (trait: string): string => {
     const normalized = trait.toLowerCase();
-    if (normalized.includes('header')) return 'Headers';
-    if (normalized.includes('chapter') || normalized.includes('structure') || normalized.includes('part')) return 'Structure';
-    if (normalized.includes('typography') || normalized.includes('font')) return 'Font';
-    if (normalized.includes('metadata') || normalized.includes('front-page')) return 'Metadata';
-    if (normalized.includes('spacing')) return 'Spacing';
-    if (normalized.includes('dialogue') || normalized.includes('scene')) return 'Scenes';
-    return 'Format';
+    if (normalized.includes('header')) return t('ui.importedLayoutSummary.labelHeaders');
+    if (normalized.includes('chapter') || normalized.includes('structure') || normalized.includes('part')) return t('ui.importedLayoutSummary.labelStructure');
+    if (normalized.includes('typography') || normalized.includes('font')) return t('ui.importedLayoutSummary.labelFont');
+    if (normalized.includes('metadata') || normalized.includes('front-page')) return t('ui.importedLayoutSummary.labelMetadata');
+    if (normalized.includes('spacing')) return t('ui.importedLayoutSummary.labelSpacing');
+    if (normalized.includes('dialogue') || normalized.includes('scene')) return t('ui.importedLayoutSummary.labelScenes');
+    return t('ui.importedLayoutSummary.labelFormat');
 };
 
 const getImportedLayoutPreviewKind = (layout: PandocLayoutTemplate): 'manuscript' | 'book' | 'literary' | 'chaptered' | 'generic' => {
@@ -41,31 +42,31 @@ const renderImportedLayoutMockPreview = (
     page.createDiv({
         cls: 'ert-import-template-mock-kicker',
         text: kind === 'chaptered'
-            ? 'Chapter opener'
+            ? t('ui.importedLayoutSummary.kickerChaptered')
             : kind === 'literary'
-                ? 'Literary layout'
+                ? t('ui.importedLayoutSummary.kickerLiterary')
                 : kind === 'manuscript'
-                    ? 'Submission format'
+                    ? t('ui.importedLayoutSummary.kickerManuscript')
                     : kind === 'book'
-                        ? 'Book layout'
-                        : 'Custom layout',
+                        ? t('ui.importedLayoutSummary.kickerBook')
+                        : t('ui.importedLayoutSummary.kickerCustom'),
     });
 
     page.createDiv({
         cls: `ert-import-template-mock-title ert-import-template-mock-title--${kind}`,
         text: kind === 'chaptered'
-            ? 'Chapter One'
+            ? t('ui.importedLayoutSummary.titleChaptered')
             : kind === 'literary'
-                ? 'Winter Light'
+                ? t('ui.importedLayoutSummary.titleLiterary')
                 : kind === 'manuscript'
-                    ? 'Manuscript Page'
+                    ? t('ui.importedLayoutSummary.titleManuscript')
                     : kind === 'book'
-                        ? 'Book Page'
-                        : 'Template Preview',
+                        ? t('ui.importedLayoutSummary.titleBook')
+                        : t('ui.importedLayoutSummary.titleGeneric'),
     });
 
     if (kind === 'literary') {
-        page.createDiv({ cls: 'ert-import-template-mock-subtitle', text: 'A quiet opening line' });
+        page.createDiv({ cls: 'ert-import-template-mock-subtitle', text: t('ui.importedLayoutSummary.subtitleLiterary') });
     }
 
     const lines = page.createDiv({ cls: 'ert-import-template-mock-lines' });

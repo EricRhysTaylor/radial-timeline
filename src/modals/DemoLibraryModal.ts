@@ -4,6 +4,7 @@ import { ErtModal } from '../ui/ErtModal';
 import { BONUS_VAULTS, type BonusVaultDef } from '../settings/bonusVaults';
 import { DEMO_PROJECTS_FOLDER, demoProjectFolder } from '../demoVaults/demoImportPlan';
 import { importDemoVault } from '../demoVaults/importDemoVault';
+import { t } from '../i18n';
 
 /** A direct route from an empty vault to a finished, browsable project. */
 export class DemoLibraryModal extends ErtModal {
@@ -21,8 +22,8 @@ export class DemoLibraryModal extends ErtModal {
         this.buttons = [];
         this.applyShell({ size: 'lg', width: 'min(960px, 92vw)', containerClasses: ['ert-demo-library'] });
         this.mountHeader({
-            title: 'Explore a finished book',
-            subtitle: 'Add a free demo to this vault. Browse the scenes, beats, Pulse, Gossamer, and saved Inquiry briefings without an API key.'
+            title: t('ui.demoLibraryModal.title'),
+            subtitle: t('ui.demoLibraryModal.subtitle')
         });
         const statusRow = this.contentEl.createEl('p', {
             cls: 'ert-modal-subtitle ert-demo-library__status',
@@ -32,10 +33,10 @@ export class DemoLibraryModal extends ErtModal {
         this.busyIndicator.toggleClass('ert-hidden', !this.busy);
         for (let index = 0; index < 3; index++) this.busyIndicator.createSpan({ cls: 'ert-demo-library__busy-dot' });
         this.status = statusRow.createSpan();
-        this.status.setText(`Demos are added under ${DEMO_PROJECTS_FOLDER}. Existing files are preserved.`);
+        this.status.setText(t('ui.demoLibraryModal.addedUnder', { folder: DEMO_PROJECTS_FOLDER }));
         const grid = this.contentEl.createDiv({ cls: 'ert-demo-library__grid' });
         BONUS_VAULTS.filter(demo => demo.books?.length).forEach(demo => this.mountDemo(grid, demo));
-        const close = this.mountActions().createEl('button', { cls: 'ert-btn', text: 'Close', attr: { type: 'button' } });
+        const close = this.mountActions().createEl('button', { cls: 'ert-btn', text: t('ui.demoLibraryModal.close'), attr: { type: 'button' } });
         close.addEventListener('click', () => this.close());
     }
 
@@ -50,7 +51,7 @@ export class DemoLibraryModal extends ErtModal {
         card.createEl('p', { text: demo.description });
         const button = card.createEl('button', {
             cls: 'ert-btn ert-btn--standard-pro',
-            text: installed ? 'Open demo' : available ? 'Add demo to this vault' : 'Coming soon',
+            text: installed ? t('ui.demoLibraryModal.openDemo') : available ? t('ui.demoLibraryModal.addDemo') : t('ui.demoLibraryModal.comingSoon'),
             attr: { type: 'button' }
         });
         button.disabled = !installed && !available;
@@ -59,11 +60,11 @@ export class DemoLibraryModal extends ErtModal {
         button.addEventListener('click', () => { void this.addDemo(demo); });
         if (available && demo.archive) {
             const download = card.createEl('a', {
-                text: `Download ZIP (${(demo.archive.bytes / 1048576).toFixed(1)} MB)`,
+                text: t('ui.demoLibraryModal.downloadZip', { size: (demo.archive.bytes / 1048576).toFixed(1) }),
                 href: demo.archive.downloadUrl,
                 attr: { target: '_blank', rel: 'noopener noreferrer' }
             });
-            download.setAttr('aria-label', `Download ${demo.title} as a separate vault`);
+            download.setAttr('aria-label', t('ui.demoLibraryModal.downloadAria', { title: demo.title }));
         }
     }
 
@@ -71,13 +72,13 @@ export class DemoLibraryModal extends ErtModal {
         if (this.busy) return;
         this.busy = true;
         this.busyIndicator.removeClass('ert-hidden');
-        this.status.setText(`Preparing ${demo.title}…`);
+        this.status.setText(t('ui.demoLibraryModal.preparing', { title: demo.title }));
         this.buttons.forEach(button => { button.disabled = true; });
         try {
             await importDemoVault(this.plugin, demo, text => { if (this.visible) this.status.setText(text); });
             this.close();
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'The demo could not be added.';
+            const message = error instanceof Error ? error.message : t('ui.demoLibraryModal.addFailed');
             if (this.visible) this.status.setText(message);
             else new Notice(message);
         } finally {

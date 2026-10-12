@@ -6,6 +6,7 @@ import type { PandocLayoutTemplate, UsageContext } from '../types';
 import type { DetectedTemplateConfidence, DetectedTemplateMockPreviewKind, DetectedTemplateStyleHint } from '../publishing/templateDetection';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
 import { scheduleClassAfterPaint } from '../utils/domClassEffects';
+import { t } from '../i18n';
 
 type ImportTemplateStep = 1 | 2 | 3 | 4;
 
@@ -24,7 +25,7 @@ class TemplateFileSuggestModal extends SuggestModal<TFile> {
         super(app);
         this.onChooseFile = onChooseFile;
         this.limit = 40;
-        this.emptyStateText = 'No LaTeX templates found.';
+        this.emptyStateText = t('ui.importTemplateModal.noTemplatesFound');
     }
 
     onOpen(): void {
@@ -34,7 +35,7 @@ class TemplateFileSuggestModal extends SuggestModal<TFile> {
         scheduleClassAfterPaint(this.modalEl, 'is-ui-settled');
         this.contentEl.addClass('ert-modal-container', 'ert-search-modal', 'ert-search-modal--with-results', 'ert-stack', 'ert-template-search-modal');
         this.resultContainerEl.addClass('ert-template-search-results');
-        this.setPlaceholder('Search LaTeX templates');
+        this.setPlaceholder(t('ui.importTemplateModal.searchPlaceholder'));
         scheduleFocusAfterPaint(this.inputEl, { selectText: true });
     }
 
@@ -122,11 +123,11 @@ export class ImportTemplateModal extends Modal {
         }
         contentEl.addClass('ert-modal-container', 'ert-stack');
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: 'IMPORT' });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Import template' });
+        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.importTemplateModal.badge') });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.importTemplateModal.title') });
         header.createDiv({
             cls: 'ert-modal-subtitle',
-            text: 'Bring an existing LaTeX template (.tex) into Publishing as a static custom layout. Use this when you have hand-tuned LaTeX or a third-party template the wizard\'s spec can\'t express. For visual, wizard-editable styles, close this and use "Design your own…" instead.',
+            text: t('ui.importTemplateModal.subtitle'),
         });
         const meta = header.createDiv({ cls: 'ert-modal-meta' });
         this.stepMetaEl = meta.createSpan({ cls: 'ert-modal-meta-item' });
@@ -230,11 +231,11 @@ export class ImportTemplateModal extends Modal {
         const filePath = (dropped as File & { path?: string }).path?.trim() || '';
         const fileName = dropped.name || filePath.split(/[\\/]/).pop() || '';
         if (!/\.(tex|ltx|latex)$/i.test(fileName)) {
-            new Notice('Drop a .tex template file to import.');
+            new Notice(t('ui.importTemplateModal.dropTexNotice'));
             return;
         }
         if (!filePath) {
-            new Notice('Could not read the dropped file path.');
+            new Notice(t('ui.importTemplateModal.droppedPathUnreadable'));
             return;
         }
 
@@ -286,7 +287,7 @@ export class ImportTemplateModal extends Modal {
 
     private render(): void {
         if (!this.stepMetaEl || !this.railEl || !this.panelEl || !this.actionsEl) return;
-        this.stepMetaEl.setText(`Step ${this.step} of 4`);
+        this.stepMetaEl.setText(t('ui.importTemplateModal.stepMeta', { step: this.step }));
         this.panelEl.empty();
         this.updateStepRail();
 
@@ -294,8 +295,8 @@ export class ImportTemplateModal extends Modal {
         if (this.candidateLoading) {
             this.renderStepHero(panel, {
                 icon: 'loader-circle',
-                title: 'Checking template',
-                description: 'Reviewing the file and gathering a quick profile.',
+                title: t('ui.importTemplateModal.checkingTitle'),
+                description: t('ui.importTemplateModal.checkingDesc'),
             });
         } else {
             switch (this.step) {
@@ -326,7 +327,7 @@ export class ImportTemplateModal extends Modal {
 
     private createStepRail(): void {
         if (!this.railEl) return;
-        const steps = ['Choose', 'Check', 'Set up', 'Save'];
+        const steps = [t('ui.importTemplateModal.stepChoose'), t('ui.importTemplateModal.stepCheck'), t('ui.importTemplateModal.stepSetUp'), t('common.save')];
         this.stepItemEls = steps.map((label, index) => {
             const item = this.railEl!.createDiv({ cls: `ert-import-template-step ert-import-template-step--${index + 1}` });
             const bg = item.createDiv({ cls: 'ert-import-template-step-bg' });
@@ -358,7 +359,7 @@ export class ImportTemplateModal extends Modal {
     private createActionButtons(): void {
         if (!this.actionsEl) return;
         this.backButton = new ButtonComponent(this.actionsEl)
-            .setButtonText('Back')
+            .setButtonText(t('ui.importTemplateModal.back'))
             .onClick(() => {
                 if (this.step > 1) {
                     this.step = (this.step - 1) as ImportTemplateStep;
@@ -366,7 +367,7 @@ export class ImportTemplateModal extends Modal {
                 }
             });
         this.nextButton = new ButtonComponent(this.actionsEl)
-            .setButtonText('Next')
+            .setButtonText(t('ui.importTemplateModal.next'))
             .onClick(() => {
                 if (this.step < 4) {
                     this.step = (this.step + 1) as ImportTemplateStep;
@@ -375,11 +376,11 @@ export class ImportTemplateModal extends Modal {
             });
         this.nextButton.buttonEl.addClass('ert-import-template-nextBtn');
         this.saveButton = new ButtonComponent(this.actionsEl)
-            .setButtonText('Save template')
+            .setButtonText(t('ui.importTemplateModal.saveTemplate'))
             .setCta()
             .onClick(() => void this.commit());
         this.cancelButton = new ButtonComponent(this.actionsEl)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => this.close());
     }
 
@@ -476,7 +477,7 @@ export class ImportTemplateModal extends Modal {
         });
         picker.createDiv({
             cls: 'ert-import-template-picker-desc',
-            text: this.getCandidatePath() ? 'LaTeX template' : 'Choose a LaTeX template',
+            text: this.getCandidatePath() ? t('ui.importTemplateModal.latexTemplate') : t('ui.importTemplateModal.chooseLatexTemplate'),
         });
 
         if (this.getCandidatePath()) {
@@ -491,16 +492,16 @@ export class ImportTemplateModal extends Modal {
         const status = this.candidate?.summary.state || 'ready';
         this.renderStepHero(panel, {
             icon: status === 'blocked' ? 'octagon-alert' : status === 'warning' ? 'triangle-alert' : 'badge-check',
-            title: 'Check template',
+            title: t('ui.importTemplateModal.checkTitle'),
             description: this.candidate
                 ? this.getCheckStatusMessage(this.candidate)
-                : 'Choose a template file first.',
+                : t('ui.importTemplateModal.chooseFileFirst'),
             tone: status === 'blocked' ? 'blocked' : status === 'warning' ? 'attention' : 'ready',
             statusLabel: status === 'blocked'
-                ? 'Blocked'
+                ? t('ui.importTemplateModal.statusBlocked')
                 : status === 'warning'
-                    ? 'Needs attention'
-                    : 'Ready',
+                    ? t('ui.importTemplateModal.statusNeedsAttention')
+                    : t('ui.importTemplateModal.statusReady'),
             notes: (this.candidate?.issues || []).slice(0, 4).map(issue => this.formatIssueMessage(issue.message)),
         });
 
@@ -510,14 +511,14 @@ export class ImportTemplateModal extends Modal {
     private renderSetupStep(panel: HTMLElement): void {
         this.renderStepHero(panel, {
             previewKind: this.candidate?.detectedTemplate.mockPreviewKind || 'generic',
-            title: 'Set up template',
-            description: 'Name the template and choose where you want to use it.',
+            title: t('ui.importTemplateModal.setupTitle'),
+            description: t('ui.importTemplateModal.setupDesc'),
         });
 
         const grid = panel.createDiv({ cls: 'ert-gridForm ert-gridForm--2' });
 
         const nameCell = grid.createDiv({ cls: 'ert-gridForm__cell' });
-        nameCell.createDiv({ cls: 'ert-label', text: 'Name' });
+        nameCell.createDiv({ cls: 'ert-label', text: t('ui.importTemplateModal.nameLabel') });
         const nameInput = nameCell.createEl('input', {
             cls: 'ert-input ert-input--full',
             attr: { type: 'text', value: this.templateName },
@@ -528,11 +529,11 @@ export class ImportTemplateModal extends Modal {
         });
 
         const usageCell = grid.createDiv({ cls: 'ert-gridForm__cell' });
-        usageCell.createDiv({ cls: 'ert-label', text: 'Usage context' });
+        usageCell.createDiv({ cls: 'ert-label', text: t('ui.importTemplateModal.usageContextLabel') });
         this.usageDropdown = new DropdownComponent(usageCell);
-        this.usageDropdown.addOption('novel', 'Novel');
-        this.usageDropdown.addOption('screenplay', 'Screenplay');
-        this.usageDropdown.addOption('podcast', 'Podcast');
+        this.usageDropdown.addOption('novel', t('ui.importTemplateModal.usageNovel'));
+        this.usageDropdown.addOption('screenplay', t('ui.importTemplateModal.usageScreenplay'));
+        this.usageDropdown.addOption('podcast', t('ui.importTemplateModal.usagePodcast'));
         this.usageDropdown.setValue(this.usageContext);
         this.usageDropdown.onChange((value) => {
             this.usageContextTouched = true;
@@ -540,7 +541,7 @@ export class ImportTemplateModal extends Modal {
         });
 
         const descriptionCell = panel.createDiv({ cls: 'ert-import-template-descriptionCell' });
-        descriptionCell.createDiv({ cls: 'ert-label', text: 'Description' });
+        descriptionCell.createDiv({ cls: 'ert-label', text: t('ui.importTemplateModal.descriptionLabel') });
         const descriptionInput = descriptionCell.createEl('textarea', {
             cls: 'ert-textarea ert-textarea--compact ert-import-template-descriptionInput',
             attr: { rows: '2' },
@@ -555,7 +556,7 @@ export class ImportTemplateModal extends Modal {
     private renderSaveStep(panel: HTMLElement): void {
         const candidate = this.candidate;
         const summary = panel.createDiv({ cls: 'ert-card ert-import-template-summary ert-stack ert-stack--tight' });
-        summary.createDiv({ cls: 'ert-card__header', text: 'Final summary' });
+        summary.createDiv({ cls: 'ert-card__header', text: t('ui.importTemplateModal.finalSummary') });
 
         const top = summary.createDiv({ cls: 'ert-import-template-summary-top' });
         const details = top.createDiv({ cls: 'ert-import-template-summary-details' });
@@ -567,12 +568,12 @@ export class ImportTemplateModal extends Modal {
         });
 
         const rows = [
-            { label: 'Name', value: candidate?.profile.name || this.templateName || 'Template' },
-            { label: 'Usage', value: this.formatUsageContext(this.usageContext) },
-            { label: 'File', value: this.getCandidatePath() || candidate?.layout.path || 'No file selected' },
-            { label: 'Description', value: this.templateDescription.trim() || candidate?.layout.description || 'No description added' },
-            { label: 'Detected layout', value: candidate ? this.getLikelyLayoutLabel(candidate.detectedTemplate.styleHint) : 'Custom / unknown layout' },
-            { label: 'Confidence', value: candidate ? this.formatConfidence(candidate.detectedTemplate.confidence) : 'Low' },
+            { label: t('ui.importTemplateModal.nameLabel'), value: candidate?.profile.name || this.templateName || t('ui.importTemplateModal.templateFallbackName') },
+            { label: t('ui.importTemplateModal.usageLabel'), value: this.formatUsageContext(this.usageContext) },
+            { label: t('ui.importTemplateModal.fileLabel'), value: this.getCandidatePath() || candidate?.layout.path || t('ui.importTemplateModal.noFileSelected') },
+            { label: t('ui.importTemplateModal.descriptionLabel'), value: this.templateDescription.trim() || candidate?.layout.description || t('ui.importTemplateModal.noDescriptionAdded') },
+            { label: t('ui.importTemplateModal.detectedLayoutLabel'), value: candidate ? this.getLikelyLayoutLabel(candidate.detectedTemplate.styleHint) : t('ui.importTemplateModal.layoutCustomUnknown') },
+            { label: t('ui.importTemplateModal.confidenceLabel'), value: candidate ? this.formatConfidence(candidate.detectedTemplate.confidence) : t('ui.importTemplateModal.confidenceLow') },
         ];
         rows.forEach((row) => {
             const item = details.createDiv({ cls: 'ert-import-template-summary-row' });
@@ -582,7 +583,7 @@ export class ImportTemplateModal extends Modal {
 
         if ((candidate?.detectedTemplate.traits.length || 0) > 0) {
             const traitSection = summary.createDiv({ cls: 'ert-import-template-summary-traits' });
-            traitSection.createDiv({ cls: 'ert-import-template-summary-subtitle', text: 'Detected formatting' });
+            traitSection.createDiv({ cls: 'ert-import-template-summary-subtitle', text: t('ui.importTemplateModal.detectedFormatting') });
             const traits = traitSection.createDiv({ cls: 'ert-import-template-traitGrid ert-import-template-traitGrid--summary' });
             this.getVisibleTraitEntries(candidate?.detectedTemplate.traits || []).forEach(({ trait, visual }) => {
                 const item = traits.createDiv({ cls: 'ert-import-template-traitTile ert-import-template-traitTile--summary' });
@@ -595,7 +596,7 @@ export class ImportTemplateModal extends Modal {
 
         if ((candidate?.issues.length || 0) > 0) {
             const issueSection = summary.createDiv({ cls: 'ert-import-template-summary-issues' });
-            issueSection.createDiv({ cls: 'ert-import-template-summary-subtitle', text: 'Open items' });
+            issueSection.createDiv({ cls: 'ert-import-template-summary-subtitle', text: t('ui.importTemplateModal.openItems') });
             candidate?.issues.slice(0, 3).forEach(issue => {
                 issueSection.createDiv({ cls: 'ert-field-note', text: this.formatIssueMessage(issue.message) });
             });
@@ -610,11 +611,11 @@ export class ImportTemplateModal extends Modal {
         const meta = card.createDiv({ cls: 'ert-import-template-detected-meta' });
         meta.createDiv({
             cls: 'ert-import-template-detected-line',
-            text: `Detected layout: ${this.getLikelyLayoutShortLabel(candidate.detectedTemplate.styleHint)}`,
+            text: t('ui.importTemplateModal.detectedLayoutLine', { layout: this.getLikelyLayoutShortLabel(candidate.detectedTemplate.styleHint) }),
         });
         meta.createDiv({
             cls: 'ert-import-template-detected-line ert-import-template-detected-line--confidence',
-            text: `Confidence: ${this.formatConfidence(candidate.detectedTemplate.confidence)}`,
+            text: t('ui.importTemplateModal.confidenceLine', { confidence: this.formatConfidence(candidate.detectedTemplate.confidence) }),
         });
 
         if (candidate.detectedTemplate.traits.length > 0) {
@@ -639,7 +640,7 @@ export class ImportTemplateModal extends Modal {
             wrap.addClass('is-compact');
         }
         if (options.showLabel !== false) {
-            wrap.createDiv({ cls: 'ert-import-template-mock-label', text: 'Approximate preview' });
+            wrap.createDiv({ cls: 'ert-import-template-mock-label', text: t('ui.importTemplateModal.approximatePreview') });
         }
 
         const mock = wrap.createDiv({ cls: `ert-import-template-mock ert-import-template-mock--${kind}${options.compact ? ' is-compact' : ''}` });
@@ -649,15 +650,15 @@ export class ImportTemplateModal extends Modal {
         }
 
         const kicker = page.createDiv({ cls: 'ert-import-template-mock-kicker' });
-        kicker.setText(kind === 'chaptered' ? 'Chapter opener' : kind === 'literary' ? 'Literary layout' : kind === 'manuscript' ? 'Submission format' : kind === 'book' ? 'Book layout' : 'Custom layout');
+        kicker.setText(kind === 'chaptered' ? t('ui.importTemplateModal.mockKickerChapterOpener') : kind === 'literary' ? t('ui.importTemplateModal.mockKickerLiterary') : kind === 'manuscript' ? t('ui.importTemplateModal.mockKickerSubmission') : kind === 'book' ? t('ui.importTemplateModal.layoutBook') : t('ui.importTemplateModal.mockKickerCustom'));
 
         page.createDiv({
             cls: `ert-import-template-mock-title ert-import-template-mock-title--${kind}`,
-            text: kind === 'chaptered' ? 'Chapter One' : kind === 'literary' ? 'Winter Light' : kind === 'manuscript' ? 'Manuscript Page' : kind === 'book' ? 'Book Page' : 'Template Preview',
+            text: kind === 'chaptered' ? t('ui.importTemplateModal.mockTitleChapterOne') : kind === 'literary' ? t('ui.importTemplateModal.mockTitleWinterLight') : kind === 'manuscript' ? t('ui.importTemplateModal.mockTitleManuscriptPage') : kind === 'book' ? t('ui.importTemplateModal.mockTitleBookPage') : t('ui.importTemplateModal.mockTitleTemplatePreview'),
         });
 
         if (kind === 'literary') {
-            page.createDiv({ cls: 'ert-import-template-mock-subtitle', text: 'A quiet opening line' });
+            page.createDiv({ cls: 'ert-import-template-mock-subtitle', text: t('ui.importTemplateModal.mockSubtitleOpeningLine') });
         }
 
         const lines = page.createDiv({ cls: 'ert-import-template-mock-lines' });
@@ -669,78 +670,80 @@ export class ImportTemplateModal extends Modal {
     private getLikelyLayoutLabel(styleHint: DetectedTemplateStyleHint): string {
         switch (styleHint) {
             case 'chaptered':
-                return 'Chaptered book layout';
+                return t('ui.importTemplateModal.layoutChapteredBook');
             case 'book':
-                return 'Book layout';
+                return t('ui.importTemplateModal.layoutBook');
             case 'literary':
-                return 'Literary book layout';
+                return t('ui.importTemplateModal.layoutLiteraryBook');
             case 'manuscript':
-                return 'Submission manuscript';
+                return t('ui.importTemplateModal.layoutSubmissionManuscript');
             default:
-                return 'Custom / unknown layout';
+                return t('ui.importTemplateModal.layoutCustomUnknown');
         }
     }
 
     private getLikelyLayoutShortLabel(styleHint: DetectedTemplateStyleHint): string {
         switch (styleHint) {
             case 'chaptered':
-                return 'Chaptered';
+                return t('ui.importTemplateModal.layoutShortChaptered');
             case 'book':
-                return 'Book';
+                return t('ui.importTemplateModal.layoutShortBook');
             case 'literary':
-                return 'Literary';
+                return t('ui.importTemplateModal.layoutShortLiterary');
             case 'manuscript':
-                return 'Manuscript';
+                return t('ui.importTemplateModal.layoutShortManuscript');
             default:
-                return 'Custom';
+                return t('ui.importTemplateModal.layoutShortCustom');
         }
     }
 
     private describeTraitVisual(trait: string): { icon: string; label: string } {
         const normalized = trait.toLowerCase();
         if (normalized.includes('body hook') || normalized.includes('manuscript')) {
-            return { icon: 'book-open-text', label: 'Manuscript' };
+            return { icon: 'book-open-text', label: t('ui.importTemplateModal.traitManuscript') };
         }
         if (normalized.includes('header')) {
-            return { icon: 'panel-top', label: 'Header' };
+            return { icon: 'panel-top', label: t('ui.importTemplateModal.traitHeader') };
         }
         if (normalized.includes('chapter') || normalized.includes('page structure') || normalized.includes('part')) {
-            return { icon: 'book-open', label: 'Structure' };
+            return { icon: 'book-open', label: t('ui.importTemplateModal.traitStructure') };
         }
         if (normalized.includes('typography') || normalized.includes('font')) {
-            return { icon: 'type', label: 'Type' };
+            return { icon: 'type', label: t('ui.importTemplateModal.traitType') };
         }
         if (normalized.includes('margin') || normalized.includes('print layout')) {
-            return { icon: 'scan-line', label: 'Layout' };
+            return { icon: 'scan-line', label: t('ui.importTemplateModal.traitLayout') };
         }
         if (normalized.includes('metadata') || normalized.includes('front-page')) {
-            return { icon: 'badge-info', label: 'Metadata' };
+            return { icon: 'badge-info', label: t('ui.importTemplateModal.traitMetadata') };
         }
         if (normalized.includes('contents')) {
-            return { icon: 'list', label: 'Contents' };
+            return { icon: 'list', label: t('ui.importTemplateModal.traitContents') };
         }
         if (normalized.includes('spacing')) {
-            return { icon: 'move-horizontal', label: 'Spacing' };
+            return { icon: 'move-horizontal', label: t('ui.importTemplateModal.traitSpacing') };
         }
         if (normalized.includes('scene break')) {
-            return { icon: 'separator-horizontal', label: 'Breaks' };
+            return { icon: 'separator-horizontal', label: t('ui.importTemplateModal.traitBreaks') };
         }
         if (normalized.includes('heading')) {
-            return { icon: 'heading', label: 'Headings' };
+            return { icon: 'heading', label: t('ui.importTemplateModal.traitHeadings') };
         }
         if (normalized.includes('dialogue') || normalized.includes('scene')) {
-            return { icon: 'message-square', label: 'Dialogue' };
+            return { icon: 'message-square', label: t('ui.importTemplateModal.traitDialogue') };
         }
-        return { icon: 'file-text', label: 'Custom' };
+        return { icon: 'file-text', label: t('ui.importTemplateModal.traitCustom') };
     }
 
     private getVisibleTraitEntries(traits: string[]): Array<{ trait: string; visual: { icon: string; label: string } }> {
         const entries: Array<{ trait: string; visual: { icon: string; label: string } }> = [];
-        const seenLabels = new Set<string>();
+        // Dedupe on the icon: it maps 1:1 to a trait category, and unlike the
+        // label it does not depend on the current language.
+        const seenIcons = new Set<string>();
         for (const trait of traits) {
             const visual = this.describeTraitVisual(trait);
-            if (seenLabels.has(visual.label)) continue;
-            seenLabels.add(visual.label);
+            if (seenIcons.has(visual.icon)) continue;
+            seenIcons.add(visual.icon);
             entries.push({ trait, visual });
             if (entries.length >= 5) break;
         }
@@ -748,17 +751,24 @@ export class ImportTemplateModal extends Modal {
     }
 
     private formatConfidence(confidence: DetectedTemplateConfidence): string {
-        return confidence.charAt(0).toUpperCase() + confidence.slice(1);
+        switch (confidence) {
+            case 'high':
+                return t('ui.importTemplateModal.confidenceHigh');
+            case 'medium':
+                return t('ui.importTemplateModal.confidenceMedium');
+            default:
+                return t('ui.importTemplateModal.confidenceLow');
+        }
     }
 
     private formatUsageContext(context: UsageContext): string {
         switch (context) {
             case 'screenplay':
-                return 'Screenplay';
+                return t('ui.importTemplateModal.usageScreenplay');
             case 'podcast':
-                return 'Podcast';
+                return t('ui.importTemplateModal.usagePodcast');
             default:
-                return 'Novel';
+                return t('ui.importTemplateModal.usageNovel');
         }
     }
 
@@ -779,30 +789,30 @@ export class ImportTemplateModal extends Modal {
 
     private getSelectedTemplateTitle(): string {
         const targetPath = this.getCandidatePath().trim();
-        if (!targetPath) return 'Choose template';
+        if (!targetPath) return t('ui.importTemplateModal.chooseTemplate');
         const segments = targetPath.split(/[\\/]/).filter(Boolean);
         return segments.length > 0 ? segments[segments.length - 1] : targetPath;
     }
 
     private getCheckStatusMessage(candidate: ImportedTemplateCandidate): string {
         if (candidate.summary.state === 'blocked') {
-            return 'This template needs fixes before it can be activated.';
+            return t('ui.importTemplateModal.checkStatusBlocked');
         }
         if (candidate.summary.state === 'warning') {
-            return 'This template can be saved now, but it needs a quick review.';
+            return t('ui.importTemplateModal.checkStatusWarning');
         }
-        return 'This template looks ready to use.';
+        return t('ui.importTemplateModal.checkStatusReady');
     }
 
     private formatIssueMessage(message: string): string {
         if (/\$body\$/i.test(message)) {
-            return 'The template is missing the main manuscript placeholder.';
+            return t('ui.importTemplateModal.issueMissingBody');
         }
         if (/fontspec|xelatex|lualatex/i.test(message)) {
-            return 'This template expects a Unicode PDF engine.';
+            return t('ui.importTemplateModal.issueUnicodeEngine');
         }
         if (/\.tex/i.test(message) && /import/i.test(message)) {
-            return 'Choose a valid .tex template file.';
+            return t('ui.importTemplateModal.issueChooseValidTex');
         }
         return message;
     }

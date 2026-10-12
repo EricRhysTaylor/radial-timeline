@@ -8,6 +8,7 @@
  */
 import type { ManuscriptExportCleanupOptions } from '../types';
 import type { ModalExportProfile } from './exportProfileModel';
+import { t } from '../i18n';
 
 export type ExportPurposeId = 'editor-round' | 'ai-review' | 'readers';
 
@@ -20,18 +21,18 @@ export interface ExportPurpose {
 export const EXPORT_PURPOSES: readonly ExportPurpose[] = [
     {
         id: 'editor-round',
-        label: 'Editor round',
-        description: 'A Word file for your editor: scene IDs in headings, your questions as margin comments, your private notes stripped.',
+        get label() { return t('ui.exportPurposes.editorRoundLabel'); },
+        get description() { return t('ui.exportPurposes.editorRoundDesc'); },
     },
     {
         id: 'ai-review',
-        label: 'AI review',
-        description: 'Markdown for an AI reviewer: scene IDs, your questions and formatting kept, your private notes stripped.',
+        get label() { return t('ui.exportPurposes.aiReviewLabel'); },
+        get description() { return t('ui.exportPurposes.aiReviewDesc'); },
     },
     {
         id: 'readers',
-        label: 'Readers',
-        description: 'A clean Word or PDF file for readers and submissions: no scene IDs, questions or notes.',
+        get label() { return t('ui.exportPurposes.readersLabel'); },
+        get description() { return t('ui.exportPurposes.readersDesc'); },
     },
 ];
 

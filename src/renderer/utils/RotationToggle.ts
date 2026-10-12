@@ -1,4 +1,5 @@
-import { formatNumber } from '../../utils/svg';
+import { escapeXml, formatNumber } from '../../utils/svg';
+import { t } from '../../i18n';
 
 type RotationToggleOptions = {
     numActs: number;
@@ -19,7 +20,7 @@ export function renderRotationToggle({ numActs, actualOuterRadius }: RotationTog
             <use id="rotation-arrow-up" class="arrow-icon" href="#icon-arrow-up-from-line" x="-14.4" y="-14.4" width="26" height="26" />
             <use id="rotation-arrow-down" class="arrow-icon is-hidden" href="#icon-arrow-down-from-line" x="-14.4" y="-14.4" width="26" height="26" />
             <rect x="-18" y="-18" width="36" height="36" fill="transparent" pointer-events="all">
-                <title>Rotate timeline</title>
+                <title>${escapeXml(t('ui.rotationToggle.rotateTimeline'))}</title>
             </rect>
         </g>
     `;

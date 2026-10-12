@@ -2,6 +2,7 @@ import { App, ButtonComponent, Notice, Setting, TextComponent, setIcon } from 'o
 import { ErtModal } from '../ui/ErtModal';
 import type { TimelineItem } from '../types';
 import { buildTimelineChapterResolverItems, readSharedChapterTitle } from '../utils/timelineChapters';
+import { t, tCount } from '../i18n';
 
 export interface ChapterContainerSummary {
     title: string;
@@ -18,7 +19,9 @@ export interface SetChapterResult {
 }
 
 function sceneLabel(start: number, end: number): string {
-    return start === end ? `Scene ${start}` : `Scenes ${start}-${end}`;
+    return start === end
+        ? t('ui.setChapterModal.sceneSingle', { number: start })
+        : t('ui.setChapterModal.sceneRange', { start, end });
 }
 
 export function buildChapterContainerSummaries(scenes: TimelineItem[]): ChapterContainerSummary[] {
@@ -41,7 +44,7 @@ export function buildChapterContainerSummaries(scenes: TimelineItem[]): ChapterC
             summaries.push(current);
         } else if (!current) {
             current = {
-                title: 'Unchaptered',
+                title: t('ui.setChapterModal.unchaptered'),
                 start: position,
                 end: position,
                 sceneCount: 0,
@@ -87,8 +90,8 @@ export class SetChapterModal extends ErtModal {
         });
 
         this.mountHeader({
-            badge: { text: `Chapter · starts at ${this.targetSceneTitle}` },
-            title: 'Set chapter marker',
+            badge: { text: t('ui.setChapterModal.badge', { scene: this.targetSceneTitle }) },
+            title: t('ui.setChapterModal.title'),
         });
 
         const form = contentEl.createDiv({ cls: 'ert-stack' });
@@ -96,7 +99,7 @@ export class SetChapterModal extends ErtModal {
         const saveChapter = () => {
             const title = nextTitle.trim();
             if (!title) {
-                new Notice('Enter a chapter title, or use Clear chapter to remove the marker.');
+                new Notice(t('ui.setChapterModal.titleRequiredNotice'));
                 return;
             }
             this.resolve({ title, clear: false });
@@ -104,11 +107,11 @@ export class SetChapterModal extends ErtModal {
         };
 
         new Setting(form)
-            .setName('Chapter title')
-            .setDesc('This scene becomes the chapter start marker.')
+            .setName(t('ui.setChapterModal.chapterTitleName'))
+            .setDesc(t('ui.setChapterModal.chapterTitleDesc'))
             .addText((text: TextComponent) => {
                 text.inputEl.addClass('ert-input', 'ert-input--lg');
-                text.setPlaceholder('Chapter title');
+                text.setPlaceholder(t('ui.setChapterModal.chapterTitlePlaceholder'));
                 text.setValue(nextTitle);
                 text.onChange(value => { nextTitle = value; });
                 text.inputEl.addEventListener('keydown', (event: KeyboardEvent) => {
@@ -119,10 +122,10 @@ export class SetChapterModal extends ErtModal {
             });
 
         const listSection = form.createDiv({ cls: 'ert-set-chapter-modal__list-section' });
-        listSection.createDiv({ cls: 'ert-set-chapter-modal__list-title', text: 'Current chapter containers' });
+        listSection.createDiv({ cls: 'ert-set-chapter-modal__list-title', text: t('ui.setChapterModal.currentChapters') });
         const list = listSection.createDiv({ cls: 'ert-set-chapter-modal__list' });
         if (this.chapters.length === 0) {
-            list.createDiv({ cls: 'ert-set-chapter-modal__empty', text: 'No scenes available.' });
+            list.createDiv({ cls: 'ert-set-chapter-modal__empty', text: t('ui.setChapterModal.noScenes') });
         } else {
             this.chapters.forEach(chapter => {
                 const row = list.createDiv({ cls: 'ert-set-chapter-modal__chapter-row' });
@@ -132,26 +135,26 @@ export class SetChapterModal extends ErtModal {
                 body.createDiv({ cls: 'ert-set-chapter-modal__chapter-name', text: chapter.title });
                 body.createDiv({
                     cls: 'ert-set-chapter-modal__chapter-range',
-                    text: `${sceneLabel(chapter.start, chapter.end)} · ${chapter.sceneCount} scene${chapter.sceneCount === 1 ? '' : 's'}`,
+                    text: `${sceneLabel(chapter.start, chapter.end)} · ${tCount('scene', chapter.sceneCount)}`,
                 });
             });
         }
 
         const actions = this.mountActions();
         new ButtonComponent(actions)
-            .setButtonText('Save chapter')
+            .setButtonText(t('ui.setChapterModal.saveButton'))
             .setCta()
             .onClick(saveChapter);
         if (this.currentChapterTitle) {
             new ButtonComponent(actions)
-                .setButtonText('Clear chapter')
+                .setButtonText(t('ui.setChapterModal.clearButton'))
                 .onClick(() => {
                     this.resolve({ clear: true });
                     this.close();
                 });
         }
         new ButtonComponent(actions)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => {
                 this.resolve(null);
                 this.close();

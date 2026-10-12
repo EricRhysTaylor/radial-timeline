@@ -12,7 +12,7 @@ describe('AI settings cache preview signals', () => {
         // DOCTRINE: only payload-proven 'warm' may show success/TTL copy.
         // 'Cache ready …' (derived from an unproven cacheWindowExpiresAt) is
         // a fabrication and must not exist in the source.
-        expect(source.includes('Warm cache confirmed for current corpus')).toBe(true);
+        expect(source.includes("t('ui.aiSection.warmCacheCurrent', { suffix: warmTimeSuffix })")).toBe(true);
         expect(source.includes('Cache ready for current corpus')).toBe(false);
         expect(source.includes('Cache ready on last Inquiry corpus')).toBe(false);
         expect(source.includes("cacheSession?.cacheReuseState === 'warm'")).toBe(true);
@@ -31,8 +31,8 @@ describe('AI settings cache preview signals', () => {
         // Pin: the status text uses "Cache armed" wording (matches the
         // AI Engine popover). The remaining-time label is appended only when
         // the cache is payload-proven (see proof gate below).
-        expect(source.includes('Cache armed for next run on current corpus')).toBe(true);
-        expect(source.includes('Cache armed on last Inquiry corpus')).toBe(true);
+        expect(source.includes("t('ui.aiSection.cacheArmedCurrent', { suffix: armedTimeSuffix })")).toBe(true);
+        expect(source.includes("t('ui.aiSection.cacheArmedLast', { suffix: armedTimeSuffix })")).toBe(true);
         // Pin: the armed/warm branches flag `cacheArmed: true`; the assembler
         // turns that into exactly ONE cache pill labelled "Cache armed",
         // otherwise "Provider cache supported". No per-branch pill injection.

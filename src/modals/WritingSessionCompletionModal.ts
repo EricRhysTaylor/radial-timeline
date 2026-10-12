@@ -3,6 +3,7 @@ import type { App } from 'obsidian';
 import type { ActiveWritingSession } from '../types/settings';
 import type { WritingSessionCompletionInput, WritingSessionSceneSuggestion } from '../services/WritingSessionService';
 import { formatLocalDateKey } from '../utils/date';
+import { t } from '../i18n';
 
 export interface WritingSessionCompletionResult extends WritingSessionCompletionInput {
     elapsedMinutes: number;
@@ -39,11 +40,13 @@ function minutesFromElapsed(elapsedMs: number): number {
 
 function formatActiveDuration(ms: number): string {
     const minutes = Math.round(Math.max(0, ms) / 60000);
-    if (minutes < 1) return '<1m';
-    if (minutes < 60) return `${minutes}m`;
+    if (minutes < 1) return t('ui.writingSessionCompletionModal.durationUnderMinute');
+    if (minutes < 60) return t('ui.writingSessionCompletionModal.durationMinutes', { minutes });
     const hours = Math.floor(minutes / 60);
     const rest = minutes % 60;
-    return rest > 0 ? `${hours}h ${rest}m` : `${hours}h`;
+    return rest > 0
+        ? t('ui.writingSessionCompletionModal.durationHoursMinutes', { hours, minutes: rest })
+        : t('ui.writingSessionCompletionModal.durationHours', { hours });
 }
 
 function sessionDateFromStartedAt(startedAt: string): string {
@@ -79,26 +82,26 @@ export class WritingSessionCompletionModal extends Modal {
     }
 
     private formatMode(): string {
-        if (this.active.mode === 'drafting') return 'fresh drafting';
-        if (this.active.mode === 'revising') return 'revision';
-        if (this.active.mode === 'editing') return 'line edit';
-        return 'planning';
+        if (this.active.mode === 'drafting') return t('ui.writingSessionCompletionModal.modeFreshDrafting');
+        if (this.active.mode === 'revising') return t('ui.writingSessionCompletionModal.modeRevision');
+        if (this.active.mode === 'editing') return t('ui.writingSessionCompletionModal.modeLineEdit');
+        return t('ui.writingSessionCompletionModal.modePlanning');
     }
 
     private formatHeaderMeta(): string {
         const mode = this.formatMode();
         const modeLabel = mode ? mode.charAt(0).toUpperCase() + mode.slice(1) : '';
-        return [modeLabel, this.active.stage, this.active.bookTitle].filter(Boolean).join(' · ') || 'Session';
+        return [modeLabel, this.active.stage, this.active.bookTitle].filter(Boolean).join(' · ') || t('ui.writingSessionCompletionModal.sessionFallback');
     }
 
     private formatSceneSuggestionDetail(suggestion: WritingSessionSceneSuggestion): string {
         const reasonLabel = suggestion.reason === 'active'
-            ? 'active tab'
+            ? t('ui.writingSessionCompletionModal.reasonActiveTab')
             : suggestion.reason === 'open'
-                ? 'open tab'
+                ? t('ui.writingSessionCompletionModal.reasonOpenTab')
                 : suggestion.reason === 'working'
-                    ? 'marked Working'
-                    : 'modified during session';
+                    ? t('ui.writingSessionCompletionModal.reasonMarkedWorking')
+                    : t('ui.writingSessionCompletionModal.reasonModified');
         return [
             suggestion.stage,
             suggestion.status,
@@ -117,10 +120,10 @@ export class WritingSessionCompletionModal extends Modal {
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
         const badgeBaseText = this.formatHeaderMeta();
         const badge = header.createSpan({ cls: 'ert-modal-badge', text: badgeBaseText });
-        header.createDiv({ cls: 'ert-modal-title', text: 'Save writing session' });
+        header.createDiv({ cls: 'ert-modal-title', text: t('ui.writingSessionCompletionModal.title') });
         header.createDiv({
             cls: 'ert-modal-subtitle',
-            text: 'Review word counts, confirm touched scenes, choose the writing day, then save this session record.',
+            text: t('ui.writingSessionCompletionModal.subtitle'),
         });
 
         const form = contentEl.createDiv({ cls: 'ert-writing-session-form ert-stack' });
@@ -176,14 +179,14 @@ export class WritingSessionCompletionModal extends Modal {
         const wordsSection = form.createDiv({ cls: 'ert-writing-session-section ert-writing-session-section--words' });
         const wordSummary = wordsSection.createDiv({ cls: 'ert-writing-session-grid ert-writing-session-grid--words' });
         const typedWordsSetting = new Setting(wordSummary)
-            .setName('Typed during session')
-            .setDesc('Additive live count from keyboard typing only. Paste, cut, deletion, and undo do not subtract from this meter.');
-        addStatPill(typedWordsSetting, `${hasTypedWords ? typedWords : 0} words`);
+            .setName(t('ui.writingSessionCompletionModal.typedName'))
+            .setDesc(t('ui.writingSessionCompletionModal.typedDesc'));
+        addStatPill(typedWordsSetting, t('ui.writingSessionCompletionModal.wordsValue', { count: hasTypedWords ? typedWords : 0 }));
         typedWordsSetting.settingEl.addClass('ert-writing-session-compact-setting');
         wireNumber(
             new Setting(wordSummary)
-                .setName('Words to save')
-                .setDesc('Defaults to typed words when available. Edit if the saved drafting count should differ.'),
+                .setName(t('ui.writingSessionCompletionModal.wordsToSaveName'))
+                .setDesc(t('ui.writingSessionCompletionModal.wordsToSaveDesc')),
             wordsAdded === undefined ? '' : String(wordsAdded),
             value => { wordsAdded = parseOptionalInteger(value); },
             'ert-writing-session-compact-setting'
@@ -191,18 +194,20 @@ export class WritingSessionCompletionModal extends Modal {
 
         const workSummary = wordsSection.createDiv({ cls: 'ert-writing-session-grid ert-writing-session-grid--work' });
         const netWordSetting = new Setting(workSummary)
-            .setName('Net manuscript change')
-            .setDesc('Snapshot difference for the open scene notes captured at session start. This can be negative after cuts or revision.');
+            .setName(t('ui.writingSessionCompletionModal.netChangeName'))
+            .setDesc(t('ui.writingSessionCompletionModal.netChangeDesc'));
         addStatPill(
             netWordSetting,
-            netWordDelta === undefined ? 'Unavailable' : `${netWordDelta > 0 ? '+' : ''}${netWordDelta} words`,
+            netWordDelta === undefined
+                ? t('ui.writingSessionCompletionModal.unavailable')
+                : t('ui.writingSessionCompletionModal.wordsValue', { count: `${netWordDelta > 0 ? '+' : ''}${netWordDelta}` }),
             netWordDelta === undefined ? 'muted' : netWordDelta >= 0 ? 'positive' : 'negative'
         );
         netWordSetting.settingEl.addClass('ert-writing-session-compact-setting');
         wireNumber(
             new Setting(workSummary)
-                .setName('Scenes completed')
-                .setDesc('Optional manual count. Scene Due dates remain the system source of truth.'),
+                .setName(t('ui.writingSessionCompletionModal.scenesCompletedName'))
+                .setDesc(t('ui.writingSessionCompletionModal.scenesCompletedDesc')),
             '',
             value => { scenesCompleted = parseOptionalInteger(value); },
             'ert-writing-session-compact-setting'
@@ -210,23 +215,23 @@ export class WritingSessionCompletionModal extends Modal {
 
         if (this.sceneActivity.length > 0) {
             const activitySection = form.createDiv({ cls: 'ert-writing-session-scenes ert-writing-session-activity' });
-            activitySection.createDiv({ cls: 'ert-writing-session-scenes__title', text: 'Today by scene' });
+            activitySection.createDiv({ cls: 'ert-writing-session-scenes__title', text: t('ui.writingSessionCompletionModal.todayByScene') });
             activitySection.createDiv({
                 cls: 'ert-writing-session-activity__hint',
-                text: 'Approximate time and typed words to jog your memory — adjust the totals above as needed.',
+                text: t('ui.writingSessionCompletionModal.activityHint'),
             });
             const activityList = activitySection.createDiv({ cls: 'ert-writing-session-activity__list' });
             this.sceneActivity.forEach(entry => {
                 const row = activityList.createDiv({ cls: 'ert-writing-session-activity__row' });
                 row.createSpan({ cls: 'ert-writing-session-activity__scene', text: entry.title });
                 row.createSpan({ cls: 'ert-writing-session-activity__metric', text: formatActiveDuration(entry.activeMs) });
-                row.createSpan({ cls: 'ert-writing-session-activity__metric', text: `${entry.typedWords} w` });
+                row.createSpan({ cls: 'ert-writing-session-activity__metric', text: t('ui.writingSessionCompletionModal.activityWords', { count: entry.typedWords }) });
             });
         }
 
         if (this.sceneSuggestions.length > 0) {
             const sceneSection = form.createDiv({ cls: 'ert-writing-session-scenes' });
-            sceneSection.createDiv({ cls: 'ert-writing-session-scenes__title', text: 'Select scenes you worked on' });
+            sceneSection.createDiv({ cls: 'ert-writing-session-scenes__title', text: t('ui.writingSessionCompletionModal.selectScenes') });
             const sceneList = sceneSection.createDiv({ cls: 'ert-writing-session-scenes__list' });
             this.sceneSuggestions.forEach(suggestion => {
                 new Setting(sceneList)
@@ -244,8 +249,8 @@ export class WritingSessionCompletionModal extends Modal {
 
         const sessionMeta = form.createDiv({ cls: 'ert-writing-session-grid ert-writing-session-grid--session' });
         const sessionDateSetting = new Setting(sessionMeta)
-            .setName('Session date')
-            .setDesc('Writing day credited in stats. Defaults to the day this session started.')
+            .setName(t('ui.writingSessionCompletionModal.sessionDateName'))
+            .setDesc(t('ui.writingSessionCompletionModal.sessionDateDesc'))
             .addText((text: TextComponent) => {
                 text.inputEl.type = 'date';
                 text.inputEl.addClass('ert-input--md', 'ert-writing-session-date-input');
@@ -258,8 +263,8 @@ export class WritingSessionCompletionModal extends Modal {
 
         wireNumber(
             new Setting(sessionMeta)
-                .setName('Minutes')
-                .setDesc('Adjust if the timer does not match the real session.'),
+                .setName(t('ui.writingSessionCompletionModal.minutesName'))
+                .setDesc(t('ui.writingSessionCompletionModal.minutesDesc')),
             String(minutes),
             value => {
                 const parsed = Number(value);
@@ -274,7 +279,7 @@ export class WritingSessionCompletionModal extends Modal {
             // go community-yellow so it is unmistakable the note is public.
             modalEl?.classList.toggle('is-feed-shared', postToFeed);
             badge.classList.toggle('is-community-sharing', postToFeed);
-            badge.setText(postToFeed ? `${badgeBaseText} · Community sharing` : badgeBaseText);
+            badge.setText(postToFeed ? t('ui.writingSessionCompletionModal.badgeCommunitySharing', { meta: badgeBaseText }) : badgeBaseText);
         };
 
         // Note and the community-feed toggle live in one bordered group so it is
@@ -283,10 +288,10 @@ export class WritingSessionCompletionModal extends Modal {
         const shareGroup = form.createDiv({ cls: 'ert-writing-session-share' });
 
         const noteSetting = new Setting(shareGroup)
-            .setName('Note')
+            .setName(t('ui.writingSessionCompletionModal.noteName'))
             .setDesc(this.feedShare.eligible
-                ? 'Note about what you worked on. Posted with your progress when the feed toggle is on; otherwise private.'
-                : 'Optional private note about what you worked on.')
+                ? t('ui.writingSessionCompletionModal.noteDescShared')
+                : t('ui.writingSessionCompletionModal.noteDescPrivate'))
             .addTextArea((text: TextAreaComponent) => {
                 text.inputEl.addClass('ert-input--full');
                 text.inputEl.rows = 6;
@@ -296,8 +301,8 @@ export class WritingSessionCompletionModal extends Modal {
 
         if (this.feedShare.eligible) {
             const feedSetting = new Setting(shareGroup)
-                .setName('Post to community feed')
-                .setDesc('Share this progress summary and note on your public feed. Turn off to keep the note private.')
+                .setName(t('ui.writingSessionCompletionModal.postToFeedName'))
+                .setDesc(t('ui.writingSessionCompletionModal.postToFeedDesc'))
                 .addToggle(toggle => {
                     toggle.setValue(postToFeed);
                     toggle.onChange(value => {
@@ -329,11 +334,11 @@ export class WritingSessionCompletionModal extends Modal {
         };
 
         new ButtonComponent(actions)
-            .setButtonText('Save')
+            .setButtonText(t('common.save'))
             .setCta()
             .onClick(() => { void save(); });
         new ButtonComponent(actions)
-            .setButtonText('Cancel')
+            .setButtonText(t('common.cancel'))
             .onClick(() => this.close());
     }
 

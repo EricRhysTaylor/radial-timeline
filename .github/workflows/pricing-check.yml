@@ -7,10 +7,11 @@ on:
   #   - cron: '0 8 * * *'
   workflow_dispatch:
 
-# Auto-commit verified price corrections and open/update the report issue.
+# Auto-commit verified price corrections. The report goes to the run's job
+# summary; this workflow never opens GitHub issues (the tracker is for user
+# reports only).
 permissions:
   contents: write
-  issues: write
 
 concurrency:
   group: model-pricing-watch
@@ -47,38 +48,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # Only pricing.json is committed: the model-snapshot files re-stamp their
           # own timestamp every run and would churn; their drift is surfaced in the
-          # issue and acknowledged by curating registry.json, not auto-committed.
+          # job summary and acknowledged by curating registry.json, not auto-committed.
           git add scripts/models/pricing.json
           if git diff --cached --quiet; then
             echo "No staged changes to commit."
           else
-            git commit -m "chore(pricing): nightly model & pricing watch — verified updates [skip ci]"
+            git commit -m "chore(pricing): model & pricing watch — verified updates [skip ci]"
             git push origin HEAD:${GITHUB_REF_NAME}
-          fi
-
-      - name: Open / update report issue
-        if: steps.watch.outputs.actionable == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPORT_FILE: ${{ steps.watch.outputs.report_file }}
-        run: |
-          TITLE="📊 Model & Pricing Watch"
-          EXISTING=$(gh issue list --search "$TITLE in:title" --state open --json number --jq '.[0].number' || echo "")
-          if [ -n "$EXISTING" ]; then
-            # Refresh the body silently; the open issue is itself the persistent
-            # signal. A daily comment would be notification spam.
-            gh issue edit "$EXISTING" --body-file "$REPORT_FILE"
-          else
-            gh issue create --title "$TITLE" --body-file "$REPORT_FILE"
-          fi
-
-      - name: Close report issue when all clear
-        if: steps.watch.outputs.actionable != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TITLE="📊 Model & Pricing Watch"
-          EXISTING=$(gh issue list --search "$TITLE in:title" --state open --json number --jq '.[0].number' || echo "")
-          if [ -n "$EXISTING" ]; then
-            gh issue close "$EXISTING" --comment "All clear as of $(date -u +%Y-%m-%d) — closing. Watch will reopen if new action items appear."
           fi

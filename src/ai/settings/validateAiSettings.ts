@@ -1,5 +1,5 @@
 import type { AiSettingsV1, AIProviderId, AnthropicCacheTtl, DeclarableLocalCapability, LocalLlmBackendId, LocalLlmConfigurationMode, LocalLlmJsonMode } from '../types';
-import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings, cloneBuiltInRoleTemplates, DECLARABLE_LOCAL_CAPABILITIES } from './aiSettings';
+import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings, cloneBuiltInRoleTemplates, DECLARABLE_LOCAL_CAPABILITIES, isValidLocalContextWindow } from './aiSettings';
 import { BUILTIN_MODELS } from '../registry/builtinModels';
 import { buildLocalLlmModelIdentity } from '../localLlm/identity';
 import {
@@ -202,6 +202,17 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
             value.localLlm.defaultModelId
         );
         value.localLlm.capabilitiesByModel[identity] = [...value.localLlm.declaredCapabilities];
+    }
+
+    if (!value.localLlm.contextWindowByModel || typeof value.localLlm.contextWindowByModel !== 'object'
+        || Array.isArray(value.localLlm.contextWindowByModel)) {
+        value.localLlm.contextWindowByModel = {};
+    }
+    for (const [identity, tokens] of Object.entries(value.localLlm.contextWindowByModel)) {
+        if (!isValidLocalContextWindow(tokens)) {
+            delete value.localLlm.contextWindowByModel[identity];
+            warnings.push(`Ignoring invalid Local LLM context window for ${identity}.`);
+        }
     }
 
     if (typeof value.roleTemplateId !== 'string' || !value.roleTemplateId.trim()) {

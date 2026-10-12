@@ -42,6 +42,17 @@ export const DECLARABLE_LOCAL_CAPABILITIES: DeclarableLocalCapability[] = [
     'longContext',
     'highOutputCap'
 ];
+/** Bounds for an operator-declared local context window, in tokens. */
+export const LOCAL_CONTEXT_WINDOW_MIN = 2048;
+export const LOCAL_CONTEXT_WINDOW_MAX = 2_000_000;
+
+export function isValidLocalContextWindow(value: unknown): value is number {
+    return typeof value === 'number'
+        && Number.isInteger(value)
+        && value >= LOCAL_CONTEXT_WINDOW_MIN
+        && value <= LOCAL_CONTEXT_WINDOW_MAX;
+}
+
 export const DEFAULT_LOCAL_LLM_SETTINGS: LocalLlmSettings = {
     enabled: true,
     configurationMode: 'auto',
@@ -52,7 +63,8 @@ export const DEFAULT_LOCAL_LLM_SETTINGS: LocalLlmSettings = {
     maxRetries: 1,
     jsonMode: 'response_format',
     declaredCapabilities: [],
-    capabilitiesByModel: {}
+    capabilitiesByModel: {},
+    contextWindowByModel: {}
 };
 export const BUILTIN_ROLE_TEMPLATES: AIRoleTemplate[] = [
     {
@@ -101,7 +113,8 @@ export function cloneDefaultLocalLlmSettings(): LocalLlmSettings {
     return {
         ...DEFAULT_LOCAL_LLM_SETTINGS,
         declaredCapabilities: [...DEFAULT_LOCAL_LLM_SETTINGS.declaredCapabilities],
-        capabilitiesByModel: { ...DEFAULT_LOCAL_LLM_SETTINGS.capabilitiesByModel }
+        capabilitiesByModel: { ...DEFAULT_LOCAL_LLM_SETTINGS.capabilitiesByModel },
+        contextWindowByModel: { ...DEFAULT_LOCAL_LLM_SETTINGS.contextWindowByModel }
     };
 }
 

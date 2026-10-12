@@ -116,13 +116,30 @@ function applyDeclaredCapabilities(model: ModelInfo, declared: DeclarableLocalCa
     return { ...model, capabilities: [...merged] };
 }
 
+/** The context window the operator declared for the ACTIVE model, if any. */
+export function getDeclaredContextWindowForActiveModel(localLlm: LocalLlmSettings): number | null {
+    const identity = buildLocalLlmModelIdentity(localLlm.backend, localLlm.baseUrl, localLlm.defaultModelId);
+    return localLlm.contextWindowByModel[identity] ?? null;
+}
+
+/** Record (or clear, with null) the context window for the ACTIVE model identity. */
+export function withContextWindowForActiveModel(localLlm: LocalLlmSettings, tokens: number | null): LocalLlmSettings {
+    const identity = buildLocalLlmModelIdentity(localLlm.backend, localLlm.baseUrl, localLlm.defaultModelId);
+    const contextWindowByModel = { ...localLlm.contextWindowByModel };
+    if (tokens === null) delete contextWindowByModel[identity];
+    else contextWindowByModel[identity] = tokens;
+    return { ...localLlm, contextWindowByModel };
+}
+
 export function resolveLocalLlmModelInfo(aiSettings: AiSettingsV1): ModelInfo {
     const localLlm = getLocalLlmSettings(aiSettings);
     const target = localLlm.defaultModelId.trim() || cloneDefaultLocalLlmSettings().defaultModelId;
     const matched = BUILTIN_MODELS.find(model =>
         model.provider === 'ollama' && (model.id === target || model.alias === target)
     );
-    return applyDeclaredCapabilities(matched ?? buildCustomLocalModelInfo(target), localLlm.declaredCapabilities);
+    const model = applyDeclaredCapabilities(matched ?? buildCustomLocalModelInfo(target), localLlm.declaredCapabilities);
+    const declaredContextWindow = getDeclaredContextWindowForActiveModel(localLlm);
+    return declaredContextWindow === null ? model : { ...model, contextWindow: declaredContextWindow };
 }
 
 export function resolveLocalLlmSelection(aiSettings: AiSettingsV1): ModelSelectionResult {

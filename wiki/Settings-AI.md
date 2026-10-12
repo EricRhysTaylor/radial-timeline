@@ -83,6 +83,7 @@ A server on the same machine keeps manuscript text on-device and uses your own h
 *   **Base URL**: Endpoint for the selected server. Defaults differ per runtime — see the setup blocks below.
 *   **Manual model ID (fallback)**: Enter a model ID when automatic discovery misses it.
 *   **Structured JSON mode**: Choose server-enforced **Response format** or **Prompt only**. Radial Timeline validates replies in both modes.
+*   **Context window (tokens)**: How many tokens your server holds for the selected model. Local servers don't report this reliably, so Radial Timeline plans for 32,000 until you set it; each model keeps its own value. Match your server's setting. Ollama uses a small window unless you raise `OLLAMA_CONTEXT_LENGTH` or the model's `num_ctx`, and a number above what the server actually uses gets prompts cut off without warning. A larger window lets Gossamer and Inquiry send a manuscript in one pass instead of several.
 *   **Model capabilities**: Declare **Extended reasoning**, **Long context**, and **High output ceiling** to match your model; these settings determine feature eligibility.
 
 ### Local LLM Status And Validation

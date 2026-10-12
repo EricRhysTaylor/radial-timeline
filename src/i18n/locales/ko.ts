@@ -273,6 +273,9 @@ export const ko: DeepPartial<TranslationKeys> = {
                 capabilityLongContextDesc: '모델이 원고 규모의 프롬프트를 잘림 없이 받아들이는 데 그치지 않고, 전체 컨텍스트 창에 걸쳐 일관성 있게 유지합니다. Gossamer에 필요합니다.',
                 capabilityHighOutputCapName: '높은 출력 한도',
                 capabilityHighOutputCapDesc: '모델이 객체 중간에서 잘리지 않고 긴 구조화된 응답을 출력할 수 있습니다. Gossamer에 필요합니다.',
+                contextWindowName: '컨텍스트 창(토큰)',
+                contextWindowDesc: '로컬 서버가 이 모델에 실제로 유지하는 토큰 수입니다. 로컬 서버는 이 값을 정확히 보고하지 않으므로, 값을 설정하기 전까지 Radial Timeline은 32,000을 기준으로 계획합니다. 서버 설정에 맞추세요. Ollama는 OLLAMA_CONTEXT_LENGTH 또는 모델의 num_ctx를 늘리지 않으면 작은 창으로 동작하며, 서버보다 큰 값을 입력하면 프롬프트가 경고 없이 잘립니다. 기본값을 쓰려면 비워 두세요.',
+                contextWindowInvalid: '{{min}}에서 {{max}} 사이의 정수를 입력하거나 비워 두세요.',
             },
             config: {
                 inquiryTitle: 'Inquiry',

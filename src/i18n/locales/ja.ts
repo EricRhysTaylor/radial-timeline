@@ -274,6 +274,9 @@ export const ja: DeepPartial<TranslationKeys> = {
                 capabilityLongContextDesc: '原稿規模のプロンプトを切り捨てずに受け付けるだけでなく、コンテキストウィンドウ全体にわたって一貫して保持できます。Gossamer に必要です。',
                 capabilityHighOutputCapName: '高い出力上限',
                 capabilityHighOutputCapDesc: 'オブジェクトの途中で切り捨てることなく、長い構造化レスポンスを出力できます。Gossamer に必要です。',
+                contextWindowName: 'コンテキストウィンドウ（トークン）',
+                contextWindowDesc: 'ローカルサーバーがこのモデルに実際に確保しているトークン数です。ローカルサーバーはこれを正確に報告しないため、値を設定するまで Radial Timeline は 32,000 を前提にします。サーバーの設定に合わせてください。Ollama は OLLAMA_CONTEXT_LENGTH またはモデルの num_ctx を上げない限り小さなウィンドウで動作し、サーバーより大きな値を指定すると、プロンプトが警告なしに切り捨てられます。既定値を使う場合は空欄のままにしてください。',
+                contextWindowInvalid: '{{min}}〜{{max}} の整数を入力するか、空欄のままにしてください。',
             },
             config: {
                 inquiryTitle: 'Inquiry',

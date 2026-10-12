@@ -243,6 +243,16 @@ export interface LocalLlmSettings {
      * getLocalLlmSettings() and should never trust the stored array directly.
      */
     capabilitiesByModel: Record<string, DeclarableLocalCapability[]>;
+    /**
+     * Operator-declared context window (tokens), scoped like capabilitiesByModel.
+     *
+     * Local servers don't report the window they actually run with: Ollama's
+     * metadata gives the model's trained maximum while the server truncates at
+     * its own (much smaller) setting, and LM Studio and MLX report nothing on
+     * the OpenAI-compatible endpoint. So the author states it. Absent means the
+     * registry default (32k).
+     */
+    contextWindowByModel: Record<string, number>;
 }
 
 export interface AIRoleTemplate {

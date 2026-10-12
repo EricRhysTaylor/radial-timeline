@@ -275,6 +275,9 @@ export const zh: DeepPartial<TranslationKeys> = {
                 capabilityLongContextDesc: '模型能在整个上下文窗口中保持手稿规模提示的连贯性，而不仅仅是接受它而不截断。Gossamer 需要此能力。',
                 capabilityHighOutputCapName: '高输出上限',
                 capabilityHighOutputCapDesc: '模型能输出较长的结构化响应，而不会在对象中途被截断。Gossamer 需要此能力。',
+                contextWindowName: '上下文窗口（token）',
+                contextWindowDesc: '本地服务器实际为此模型保留的 token 数量。本地服务器无法可靠地报告这一数值，因此在您设置之前，Radial Timeline 按 32,000 进行规划。请与服务器保持一致：除非调高 OLLAMA_CONTEXT_LENGTH 或模型的 num_ctx，Ollama 只使用较小的窗口；若此处数值大于服务器实际使用的窗口，提示会在没有任何警告的情况下被截断。留空则使用默认值。',
+                contextWindowInvalid: '请输入 {{min}} 到 {{max}} 之间的整数，或留空。',
             },
             config: {
                 inquiryTitle: 'Inquiry',

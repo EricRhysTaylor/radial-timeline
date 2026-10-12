@@ -273,6 +273,9 @@ export const de: DeepPartial<TranslationKeys> = {
                 capabilityLongContextDesc: 'Das Modell verarbeitet einen manuskriptgroßen Prompt über sein gesamtes Kontextfenster hinweg kohärent, statt ihn lediglich ohne Abschneiden anzunehmen. Erforderlich für Gossamer.',
                 capabilityHighOutputCapName: 'Hohes Ausgabelimit',
                 capabilityHighOutputCapDesc: 'Das Modell kann lange strukturierte Antworten ausgeben, ohne mitten in einem Objekt abzubrechen. Erforderlich für Gossamer.',
+                contextWindowName: 'Kontextfenster (Tokens)',
+                contextWindowDesc: 'Wie viele Tokens Ihr lokaler Server für dieses Modell tatsächlich vorhält. Lokale Server melden das nicht zuverlässig, daher plant Radial Timeline mit 32.000, bis Sie einen Wert eintragen. Passen Sie ihn an den Server an: Ollama arbeitet mit einem kleinen Fenster, solange Sie OLLAMA_CONTEXT_LENGTH oder num_ctx des Modells nicht erhöhen, und ein größerer Wert, als der Server nutzt, schneidet Prompts ohne Warnung ab. Leer lassen für den Standardwert.',
+                contextWindowInvalid: 'Geben Sie eine ganze Zahl zwischen {{min}} und {{max}} ein oder lassen Sie das Feld leer.',
             },
             config: {
                 inquiryTitle: 'Inquiry',

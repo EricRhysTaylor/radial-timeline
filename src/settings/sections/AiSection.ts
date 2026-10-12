@@ -14,7 +14,7 @@ import { AiContextModal } from '../AiContextModal';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { ERT_CLASSES } from '../../ui/classes';
 import { IMPACT_FULL } from '../SettingImpact';
-import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings, DECLARABLE_LOCAL_CAPABILITIES } from '../../ai/settings/aiSettings';
+import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings, DECLARABLE_LOCAL_CAPABILITIES, isValidLocalContextWindow, LOCAL_CONTEXT_WINDOW_MAX, LOCAL_CONTEXT_WINDOW_MIN } from '../../ai/settings/aiSettings';
 import { formatProviderCacheWindowLabel } from '../../ai/settings/cacheWindows';
 import { formatGossamerCacheClock, formatGossamerCacheCostHint, getGossamerCacheContext, resolveGossamerCacheWindow } from '../../gossamer/cacheWindow';
 import { validateAiSettings } from '../../ai/settings/validateAiSettings';
@@ -54,7 +54,9 @@ import {
     LOCAL_LLM_CAPABILITY_LABEL_KEYS,
     LOCAL_LLM_JSON_MODE_LABEL_KEYS,
     withDeclaredCapabilitiesForActiveModel,
-    normalizeLocalLlmServerBaseUrl
+    normalizeLocalLlmServerBaseUrl,
+    getDeclaredContextWindowForActiveModel,
+    withContextWindowForActiveModel
 } from '../../ai/localLlm/settings';
 import { inferLocalLlmCapability } from '../../ai/localLlm/capabilityInference';
 import type { LocalLlmCapabilityAssessment } from '../../ai/localLlm/capabilityInference';
@@ -2733,6 +2735,43 @@ export function renderAiSection(params: {
         cls: 'ert-section-desc',
         text: t('settings.ai.localLlmConfig.capabilitiesDesc')
     });
+
+    // Scoped to the active model like the capability toggles below. Empty means
+    // the registry default; an invalid entry is flagged and not saved.
+    const contextWindowSetting = new Settings(localLlmConfigSection)
+        .setName(t('settings.ai.localLlmConfig.contextWindowName'))
+        .setDesc(t('settings.ai.localLlmConfig.contextWindowDesc'))
+        .addText(text => {
+            text.inputEl.addClass('ert-input--md');
+            text.inputEl.inputMode = 'numeric';
+            const declared = getDeclaredContextWindowForActiveModel(getLocalLlmSettings(ensureCanonicalAiSettings()));
+            text.setPlaceholder('32000').setValue(declared === null ? '' : String(declared));
+            text.onChange(() => {
+                text.inputEl.removeClass('ert-setting-input-success');
+                text.inputEl.removeClass('ert-setting-input-error');
+            });
+            localLlmScope.registerDomEvent(text.inputEl, 'blur', () => {
+                void (async () => {
+                    const raw = text.getValue().replace(/[,_\s]/g, '');
+                    const tokens = raw === '' ? null : Number(raw);
+                    if (tokens !== null && !isValidLocalContextWindow(tokens)) {
+                        text.inputEl.addClass('ert-setting-input-error');
+                        new Notice(t('settings.ai.localLlmConfig.contextWindowInvalid', {
+                            min: LOCAL_CONTEXT_WINDOW_MIN,
+                            max: LOCAL_CONTEXT_WINDOW_MAX
+                        }));
+                        return;
+                    }
+                    const aiSettings = ensureCanonicalAiSettings();
+                    aiSettings.localLlm = withContextWindowForActiveModel(getLocalLlmSettings(aiSettings), tokens);
+                    await persistCanonical();
+                    text.inputEl.addClass('ert-setting-input-success');
+                    renderLocalLlmStatus();
+                    void refreshRoutingUi();
+                })();
+            });
+        });
+    contextWindowSetting.settingEl.addClass(ERT_CLASSES.ROW);
 
     // One toggle per capability, deliberately NOT collapsed. longContext and
     // highOutputCap look interchangeable in the requiredCapabilities gates, but

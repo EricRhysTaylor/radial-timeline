@@ -33,6 +33,8 @@ export interface MigrationResult {
     aiSettings: AiSettingsV1;
     changed: boolean;
     warnings: string[];
+    /** A pin on a retired model moved to its same-lane successor; main.ts tells the author. */
+    retiredPinSwap?: { from: string; to: string; toLabel: string };
 }
 
 export const LEGACY_AI_SETTING_FIELDS = [
@@ -218,7 +220,8 @@ export function migrateAiSettings(settings: RadialTimelineSettings): MigrationRe
             // main.ts persists on `changed`, so a migration that does not
             // report one would be applied in memory and lost on every load.
             changed: JSON.stringify(migrated.aiSettings) !== JSON.stringify(existing),
-            warnings: validated.warnings
+            warnings: validated.warnings,
+            ...(validated.retiredPinSwap ? { retiredPinSwap: validated.retiredPinSwap } : {})
         };
     }
 

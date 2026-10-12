@@ -22,6 +22,7 @@ import type {
     ModelPolicy
 } from '../../ai/types';
 import { selectModel } from '../../ai/router/selectModel';
+import { resolveRetiredAlias } from '../../ai/registry/retiredModels';
 import { buildDefaultAiSettings } from '../../ai/settings/aiSettings';
 import { validateAiSettings } from '../../ai/settings/validateAiSettings';
 import { getLocalLlmSettings } from '../../ai/localLlm/settings';
@@ -231,7 +232,9 @@ export function resolveInquiryEngine(
             ? {
                 requestedAlias: pinnedAlias,
                 runningLabel: selection.model.label,
-                notice: pinnedModel
+                notice: resolveRetiredAlias(pinnedAlias) === selection.model.alias
+                    ? `Pinned model "${pinnedAlias}" has retired. Inquiry is using its successor, ${selection.model.label}.`
+                    : pinnedModel
                     ? `${pinnedModel.label} cannot run Inquiry — it does not meet the capability floor (long context, strict JSON, strong reasoning, high output cap). Inquiry is using ${selection.model.label} instead, which costs more per run.`
                     : `Pinned model "${pinnedAlias}" is unavailable. Inquiry is using ${selection.model.label} instead, which may cost more per run.`
             }

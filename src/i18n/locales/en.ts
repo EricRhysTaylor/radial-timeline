@@ -1195,6 +1195,7 @@ export const en = {
     },
     notices: {
         aiTurnedOff: 'AI features are turned off. Turn on "Enable AI LLM features" in Settings → AI to use this.',
+        retiredPinSwapped: 'Your pinned AI model "{{from}}" has retired. Radial Timeline switched the pin to its successor, {{to}}.',
     },
     manuscriptModal: {
         exportTypeManuscript: 'Manuscript',

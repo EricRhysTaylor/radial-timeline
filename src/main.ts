@@ -1073,6 +1073,12 @@ export default class RadialTimelinePlugin extends Plugin {
         const aiValidation = validateAiSettings(this.settings.aiSettings);
         this.settings.aiSettings = aiValidation.value;
         const aiSettingsMigrated = aiMigration.changed || aiValidation.warnings.length > 0;
+        if (aiMigration.retiredPinSwap) {
+            new Notice(t('notices.retiredPinSwapped', {
+                from: aiMigration.retiredPinSwap.from,
+                to: aiMigration.retiredPinSwap.toLabel
+            }), 12000);
+        }
         if (aiValidation.warnings.length) {
             const prior = new Set(this.settings.aiSettings.migrationWarnings || []);
             aiValidation.warnings.forEach(warning => prior.add(warning));

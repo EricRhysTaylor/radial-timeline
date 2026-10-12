@@ -23,6 +23,27 @@ describe('selectModel', () => {
         expect(result.warnings.some(w => w.includes('missing-alias'))).toBe(true);
     });
 
+    it('moves a retired pin to its same-lane successor, not to the latest-stable default', () => {
+        const result = selectModel(BUILTIN_MODELS, {
+            provider: 'anthropic',
+            policy: { type: 'pinned', pinnedAlias: 'claude-haiku-4-5' },
+            requiredCapabilities: ['jsonStrict']
+        });
+        expect(result.model.alias).toBe('claude-haiku-5-5');
+        expect(result.warnings.some(w => w.includes('retired'))).toBe(true);
+    });
+
+    it('falls back to latest stable when the retired pin\'s successor cannot meet the floor', () => {
+        // Haiku is FAST: no reasoningStrong, so an Inquiry-grade request
+        // still needs the default model.
+        const result = selectModel(BUILTIN_MODELS, {
+            provider: 'anthropic',
+            policy: { type: 'pinned', pinnedAlias: 'claude-haiku-4-5' },
+            requiredCapabilities: ['longContext', 'jsonStrict', 'reasoningStrong']
+        });
+        expect(result.model.alias).toBe('claude-opus-5-5');
+    });
+
     it('auto policy chooses the latest stable Anthropic model', () => {
         const result = selectModel(BUILTIN_MODELS, {
             provider: 'anthropic',

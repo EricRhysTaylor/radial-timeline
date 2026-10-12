@@ -1,6 +1,7 @@
 import type { AiSettingsV1, AIProviderId, AnthropicCacheTtl, DeclarableLocalCapability, LocalLlmBackendId, LocalLlmConfigurationMode, LocalLlmJsonMode } from '../types';
 import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings, cloneBuiltInRoleTemplates, DECLARABLE_LOCAL_CAPABILITIES, isValidLocalContextWindow } from './aiSettings';
 import { BUILTIN_MODELS } from '../registry/builtinModels';
+import { resolveRetiredAlias } from '../registry/retiredModels';
 import { buildLocalLlmModelIdentity } from '../localLlm/identity';
 import {
     GEMINI_CACHE_TTL_DEFAULT_SECONDS,
@@ -10,6 +11,8 @@ import {
 export interface AiSettingsValidationResult {
     value: AiSettingsV1;
     warnings: string[];
+    /** Set when a pin on a retired model moved to its same-lane successor. */
+    retiredPinSwap?: { from: string; to: string; toLabel: string };
 }
 
 const VALID_PROVIDERS: AIProviderId[] = ['openai', 'anthropic', 'google', 'ollama', 'none'];
@@ -231,8 +234,17 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
     value.aiAccessProfile.openaiTier = sanitizeTier(value.aiAccessProfile.openaiTier);
     value.aiAccessProfile.googleTier = sanitizeTier(value.aiAccessProfile.googleTier);
 
+    let retiredPinSwap: AiSettingsValidationResult['retiredPinSwap'];
     if (value.modelPolicy.type === 'pinned') {
-        if (!hasAlias(value.modelPolicy.pinnedAlias)) {
+        const pinnedAlias = value.modelPolicy.pinnedAlias;
+        const successor = hasAlias(pinnedAlias)
+            ? undefined
+            : BUILTIN_MODELS.find(model => model.alias === resolveRetiredAlias(pinnedAlias));
+        if (pinnedAlias && successor) {
+            warnings.push(`Pinned model "${pinnedAlias}" has retired; switched to its successor, ${successor.label}.`);
+            value.modelPolicy = { ...value.modelPolicy, pinnedAlias: successor.alias };
+            retiredPinSwap = { from: pinnedAlias, to: successor.alias, toLabel: successor.label };
+        } else if (!hasAlias(pinnedAlias)) {
             warnings.push(`Pinned alias "${value.modelPolicy.pinnedAlias || 'unknown'}" was not found; switching to latestStable.`);
             value.modelPolicy = { type: 'latestStable' };
         }
@@ -340,5 +352,5 @@ export function validateAiSettings(input?: AiSettingsV1 | null): AiSettingsValid
 
     value.migrationWarnings = [...new Set([...(value.migrationWarnings || []), ...warnings])];
 
-    return { value, warnings };
+    return { value, warnings, ...(retiredPinSwap ? { retiredPinSwap } : {}) };
 }

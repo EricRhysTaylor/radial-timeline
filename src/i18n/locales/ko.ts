@@ -1513,6 +1513,7 @@ export const ko: DeepPartial<TranslationKeys> = {
     },
     notices: {
         aiTurnedOff: 'AI 기능이 꺼져 있습니다. 사용하려면 설정 → AI에서 "AI LLM 기능 활성화"를 켜세요.',
+        retiredPinSwapped: '고정해 둔 AI 모델 "{{from}}"이(가) 지원 종료되었습니다. Radial Timeline이 고정 모델을 후속 모델 {{to}}(으)로 바꿨습니다.',
     },
     manuscriptModal: {
         exportTypeManuscript: '원고',

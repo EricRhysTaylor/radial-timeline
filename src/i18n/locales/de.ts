@@ -1513,6 +1513,7 @@ export const de: DeepPartial<TranslationKeys> = {
     },
     notices: {
         aiTurnedOff: 'KI-Funktionen sind ausgeschaltet. Schalten Sie "KI-LLM-Funktionen aktivieren" unter Einstellungen → AI ein, um dies zu nutzen.',
+        retiredPinSwapped: 'Ihr fest gewähltes KI-Modell "{{from}}" wurde eingestellt. Radial Timeline hat die Auswahl auf den Nachfolger {{to}} umgestellt.',
     },
     manuscriptModal: {
         exportTypeManuscript: 'Manuskript',

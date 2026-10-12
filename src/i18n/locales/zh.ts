@@ -1515,6 +1515,7 @@ export const zh: DeepPartial<TranslationKeys> = {
     },
     notices: {
         aiTurnedOff: 'AI 功能已关闭。如需使用，请在设置 → AI 中开启「启用 AI LLM 功能」。',
+        retiredPinSwapped: '你固定的 AI 模型「{{from}}」已停用。Radial Timeline 已将固定模型切换为其后继模型 {{to}}。',
     },
     manuscriptModal: {
         exportTypeManuscript: '原稿',

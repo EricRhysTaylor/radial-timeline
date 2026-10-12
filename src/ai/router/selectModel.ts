@@ -1,5 +1,6 @@
 import type { Capability, ModelInfo, ModelSelectionRequest, ModelSelectionResult } from '../types';
 import { compareNewestModels, selectLatestModelByReleaseChannel } from '../registry/releaseChannels';
+import { resolveRetiredAlias } from '../registry/retiredModels';
 
 function hasCapabilities(model: ModelInfo, required: Capability[]): boolean {
     return required.every(cap => model.capabilities.includes(cap));
@@ -71,6 +72,21 @@ export function selectModel(models: ModelInfo[], request: ModelSelectionRequest)
                     model: pinned,
                     warnings,
                     reason: `Pinned alias selected: ${pinned.alias}.`
+                };
+            }
+            // A retired pin moves to its same-lane successor, never up to the
+            // latest-stable default: a cost-chosen pin must stay cheap.
+            const successorAlias = resolveRetiredAlias(pinnedAlias);
+            const successor = successorAlias
+                ? eligible.find(model => model.alias === successorAlias)
+                : undefined;
+            if (successor) {
+                warnings.push(`Pinned alias "${pinnedAlias}" has retired; using its successor ${successor.label}.`);
+                return {
+                    provider: request.provider,
+                    model: successor,
+                    warnings,
+                    reason: `Pinned alias retired; using its successor: ${successor.alias}.`
                 };
             }
             warnings.push(`Pinned alias "${pinnedAlias}" unavailable; fallback to ${fallback.label}.`);

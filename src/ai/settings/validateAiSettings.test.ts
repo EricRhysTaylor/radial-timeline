@@ -19,6 +19,26 @@ describe('validateAiSettings', () => {
         expect(result.warnings.length).toBeGreaterThan(0);
     });
 
+    it('moves a pin on a retired model to its same-lane successor and reports it', () => {
+        const result = validateAiSettings({
+            schemaVersion: 1,
+            provider: 'anthropic',
+            modelPolicy: { type: 'pinned', pinnedAlias: 'claude-haiku-4-5' },
+            overrides: {},
+            aiAccessProfile: {},
+            privacy: { allowTelemetry: false, allowProviderSnapshot: false }
+        } as unknown as AiSettingsV1);
+
+        expect(result.value.modelPolicy).toEqual({ type: 'pinned', pinnedAlias: 'claude-haiku-5-5' });
+        expect(result.retiredPinSwap).toEqual({
+            from: 'claude-haiku-4-5',
+            to: 'claude-haiku-5-5',
+            toLabel: 'Claude Haiku 5.5'
+        });
+        // Idempotent: the rewritten settings report no further swap.
+        expect(validateAiSettings(result.value).retiredPinSwap).toBeUndefined();
+    });
+
     /*
      * Local backends publish no capability manifest, so anything above the
      * `jsonStrict` baseline is an operator assertion persisted here. It must

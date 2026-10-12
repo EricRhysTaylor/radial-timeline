@@ -71,6 +71,7 @@ When you retire a model, the cleanup pass covers:
 - `scripts/models/pricing.json` — remove the pricing entry (the only price table; the plugin bundles it and fetches its live copy)
 - `src/data/aiModels.ts` — remove the curated picker entry
 - `scripts/models/registry.json` — remove from the drift snapshot
+- `src/ai/registry/retiredModels.ts` — if the retired model is NOT on its provider's default lane (a FAST, BALANCED or pro-channel model), map its alias to the same-lane successor. Otherwise an author's pin falls through to latest-stable, usually the most expensive model
 - `src/utils/modelResolver.ts` — leave the LATEST_ALIAS_DISPLAY_NAMES entry if historic logs reference the model (for display only)
 - Any test files that pin the model id specifically (rewrite using a surviving model or delete)
 - `scripts/check-model-coverage.mjs` — review allowlists for retired references

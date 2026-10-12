@@ -1514,6 +1514,7 @@ export const ja: DeepPartial<TranslationKeys> = {
     },
     notices: {
         aiTurnedOff: 'AI 機能はオフになっています。使用するには、設定 → AI で「AI LLM 機能を有効にする」をオンにしてください。',
+        retiredPinSwapped: '固定していた AI モデル「{{from}}」は提供終了になりました。Radial Timeline は固定先を後継モデル {{to}} に切り替えました。',
     },
     manuscriptModal: {
         exportTypeManuscript: '原稿',

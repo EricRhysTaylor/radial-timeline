@@ -8,7 +8,7 @@ const CLOUD: SpendLabelState = {
     aiAvailable: true,
     engine: 'cloud',
     costProvider: 'anthropic',
-    costModelId: 'claude-haiku-4-5',
+    costModelId: 'claude-haiku-5-5',
     manuscriptChars: 699_512,
     forecastSceneCount: null
 };
@@ -50,7 +50,7 @@ describe('resolveSpendLabel', () => {
             aiAvailable: true,
             engine: 'cloud',
             costProvider: 'anthropic',
-            costModelId: 'claude-haiku-4-5',
+            costModelId: 'claude-haiku-5-5',
             manuscriptChars: 699_512,
             forecastSceneCount: 95
         };

@@ -140,6 +140,9 @@ function createPlugin(app: ReturnType<typeof createInMemoryApp>) {
         getOutputProfileStore: () => outputProfileStore,
         settings: {
             ...structuredClone(DEFAULT_SETTINGS),
+            // AIClient.run refuses every request while the AI master switch is
+            // off (170313b5); a certification run is the explicit opt-in.
+            enableAiSceneAnalysis: true,
             sourcePath: BOOK_FOLDER,
             aiSettings,
             aiPricingCacheJson: null,

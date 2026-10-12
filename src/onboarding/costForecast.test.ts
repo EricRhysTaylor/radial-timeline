@@ -73,17 +73,17 @@ describe('forecastOnboardingTokens', () => {
 describe('forecastOnboardingCost — single-source discipline', () => {
     it('produces a real, bounded figure for a whole book on the economy model', () => {
         const f = forecastOnboardingTokens(ODYSSEY);
-        const cost = forecastOnboardingCost('anthropic', 'claude-haiku-4-5', f);
-        // Calibration guard, not a golden value: a 133k-word book on Haiku is
-        // a couple of dollars. If this ever reads like a research bill, the
+        const cost = forecastOnboardingCost('anthropic', 'claude-haiku-5-5', f);
+        // Calibration guard, not a golden value: a 133k-word book on Haiku 5.5
+        // is under a dollar. If this ever reads like a research bill, the
         // pass/reuse arguments have regressed.
-        expect(cost.freshCostUSD).toBeGreaterThan(0.5);
+        expect(cost.freshCostUSD).toBeGreaterThan(0.05);
         expect(cost.freshCostUSD).toBeLessThan(6);
     });
 
     it('prices the depth model above the economy model for identical work', () => {
         const f = forecastOnboardingTokens(ODYSSEY);
-        const haiku = forecastOnboardingCost('anthropic', 'claude-haiku-4-5', f);
+        const haiku = forecastOnboardingCost('anthropic', 'claude-haiku-5-5', f);
         const opus = forecastOnboardingCost('anthropic', 'claude-opus-5', f);
         expect(opus.freshCostUSD).toBeGreaterThan(haiku.freshCostUSD * 3);
     });

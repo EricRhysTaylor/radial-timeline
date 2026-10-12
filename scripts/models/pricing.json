@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T00:00:00.000Z",
+  "generatedAt": "2026-10-12T18:00:00.000Z",
   "models": [
     {
       "provider": "anthropic",
@@ -28,18 +28,26 @@
       "outputPer1M": 10,
       "cacheWrite5mPer1M": 2.5,
       "cacheWrite1hPer1M": 4,
-      "cacheReadPer1M": 0.2,
-      "note": "Mid tier; same price as Sonnet 5. Standard multipliers on $2: write 1.25x/2x, read 0.1x. Verified against platform.claude.com/docs/en/about-claude/pricing on 2026-10-01."
+      "cacheReadPer1M": 0.1,
+      "note": "Mid tier; input/output as Sonnet 5. Multipliers on $2: write 5m 1.25x, 1h 2x; cache hits and refreshes 0.05x (Opus 5.5 / Sonnet 5.5 rate). Verified against platform.claude.com/docs/en/about-claude/pricing on 2026-10-12."
     },
     {
       "provider": "anthropic",
-      "modelId": "claude-haiku-4-5",
-      "inputPer1M": 1,
-      "outputPer1M": 5,
-      "cacheWrite5mPer1M": 1.25,
-      "cacheWrite1hPer1M": 2,
-      "cacheReadPer1M": 0.1,
-      "note": "Economy tier. Standard Anthropic cache multipliers on $1 input: write 5m 1.25x, 1h 2x, read 0.1x."
+      "modelId": "claude-haiku-5-5",
+      "inputPer1M": 0.1,
+      "outputPer1M": 0.5,
+      "cacheWrite5mPer1M": 0.125,
+      "cacheWrite1hPer1M": 0.2,
+      "cacheReadPer1M": 0.01,
+      "longContext": {
+        "thresholdInputTokens": 100000,
+        "inputPer1M": 0.5,
+        "outputPer1M": 2.5,
+        "cacheWrite5mPer1M": 0.625,
+        "cacheWrite1hPer1M": 1,
+        "cacheReadPer1M": 0.05
+      },
+      "note": "Economy tier. Standard multipliers (write 5m 1.25x, 1h 2x, read 0.1x) on $0.10 input; prompts over 100,000 input tokens bill the whole request at $0.50/$2.50 with the same multipliers. Verified against platform.claude.com/docs/en/about-claude/pricing on 2026-10-12."
     },
     {
       "provider": "anthropic",

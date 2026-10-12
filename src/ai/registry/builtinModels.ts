@@ -169,9 +169,9 @@ export const BUILTIN_MODELS: ModelInfo[] = [
     },
     {
         // Mid-tier Anthropic model: Claude Sonnet 5.5 (released 2026-09-28,
-        // promoted 2026-10-01, replacing Sonnet 5). Same price as Sonnet 5 —
-        // $2/$10 per MTok, cache write 5m $2.50 / 1h $4, cache read $0.20 —
-        // with 1M context / 128K output. BALANCED: strong enough for Inquiry,
+        // promoted 2026-10-01, replacing Sonnet 5). $2/$10 per MTok, cache
+        // write 5m $2.50 / 1h $4, cache read $0.10 (0.05x input on Sonnet 5.5)
+        // — with 1M context / 128K output. BALANCED: strong enough for Inquiry,
         // and the default recommendation for whole-manuscript onboarding.
         // Request contract moved to the always-on path (Fable 5.1 / Opus 5.5),
         // NOT Sonnet 5's:
@@ -210,27 +210,42 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
-        // Economy tier — the cheapest route through a bounded whole-manuscript
-        // job such as onboarding ($1/$5 per MTok). Deliberately NOT given
-        // `reasoningStrong`: its 200K context and lighter reasoning make it
-        // unfit for Inquiry's whole-manuscript analysis, and the UI must say
-        // so wherever it can be picked. FAST tier is the signal that carries
-        // that warning.
-        // Context window, max output and pricing are per Anthropic's published
-        // model overview (200K / 64K / $1 / $5). Not yet exercised by a live
-        // onboarding run, so runtime behaviour under this plugin's strict-JSON
-        // path is unproven — the numbers themselves are not in doubt.
+        // Economy tier: Claude Haiku 5.5 (released 2026-10-07, promoted
+        // 2026-10-12, replacing Haiku 4.5; no continuity slot on this lane).
+        // The cheapest route through a bounded whole-manuscript job such as
+        // onboarding: $0.10/$0.50 per MTok, cache write 5m $0.125 / 1h $0.20,
+        // cache read $0.01; above 100K input tokens $0.50/$2.50. 1M context /
+        // 128K output. Deliberately NOT given `longContext` or
+        // `reasoningStrong` until a full Gossamer + Inquiry certification
+        // proves them; FAST tier is the signal that carries that warning.
+        // Request contract is Opus 5's, not Sonnet 5.5's (verified against
+        // platform.claude.com/docs/en/models/haiku-5-5 and a live
+        // GET /v1/models/claude-haiku-5-5, 2026-10-12):
+        //   - Adaptive thinking is ON by default when `thinking` is omitted;
+        //     thinking:{type:'disabled'} is accepted, so RT's non-thinking
+        //     paths send it explicitly (thinkingDefaultsOn). {type:'enabled'}
+        //     with budget_tokens → 400.
+        //   - Forced tool_choice ('any'/'tool') IS accepted (the response
+        //     opens with the tool call, no thinking block), so structured
+        //     output keeps the forced-tool path.
+        //   - temperature/top_p/top_k at non-default values → 400; assistant
+        //     prefill → 400 even with thinking off (RT never prefills).
+        //   - Refusals return stop_reason 'refusal' with no server-side
+        //     fallback. Prompt-cache minimum prefix is 512 tokens.
+        // No releasedAt, deliberately (as Sonnet 5.5): latest-stable
+        // auto-selection sorts the 'stable' channel newest-first, and Haiku
+        // 5.5 (2026-10-07) postdates Opus 5.5 (2026-09-21), so dating it would
+        // make Haiku the silent Anthropic default. Haiku is an explicit pick.
         provider: 'anthropic',
-        id: 'claude-haiku-4-5',
-        alias: 'claude-haiku-4-5',
-        label: 'Claude Haiku 4.5',
+        id: 'claude-haiku-5-5',
+        alias: 'claude-haiku-5-5',
+        label: 'Claude Haiku 5.5',
         line: 'claude-haiku',
         tier: 'FAST',
         capabilities: [...FAST_CAPS],
-        personality: { reasoning: 6, writing: 7, determinism: 8 },
-        contextWindow: 200_000,
-        maxOutput: 64_000,
-        releasedAt: '2025-10-01',
+        personality: { reasoning: 7, writing: 7, determinism: 8 },
+        contextWindow: 1_000_000,
+        maxOutput: 128_000,
         status: 'stable',
         rollout: {
             channel: 'stable',
@@ -238,10 +253,10 @@ export const BUILTIN_MODELS: ModelInfo[] = [
             lane: 'default'
         },
         constraints: {
-            supportsTemperature: true,
-            supportsTopP: true,
-            supportsAdaptiveThinking: false,
-            supportsReasoningEffort: false
+            supportsTemperature: false,
+            supportsTopP: false,
+            supportsAdaptiveThinking: true,
+            thinkingDefaultsOn: true
         }
     },
     {
@@ -318,7 +333,7 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // $0.10/$0.50, cached input $0.01, 1.05M context, 128K output,
         // reasoning effort, structured outputs, prompt caching — the same
         // request contract as Sol. FAST tier is the signal that it is the
-        // economy choice, as Haiku 4.5 and Gemini Flash are for their
+        // economy choice, as Haiku 5.5 and Gemini Flash are for their
         // providers. Auto-selection resolves to Sol; Luna is an explicit pick.
         // Dated before Sol (6.1 Sol: 2026-09-27) so the newest-on-line sort
         // always resolves to Sol.

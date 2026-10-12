@@ -1,0 +1,160 @@
+{
+  "provider": "anthropic",
+  "modelId": "claude-haiku-5-5",
+  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault AI Certification",
+  "book": "Pride & Prejudice",
+  "generatedAt": "2026-10-12T17:31:35.095Z",
+  "cases": [
+    {
+      "id": "pulse:16 Wickham's Story",
+      "feature": "pulse",
+      "durationMs": 11213,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 16265,
+        "outputTokens": 1166,
+        "totalTokens": 17431,
+        "rawInputTokens": 16265,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.0022095000000000005,
+      "sample": {
+        "previousSceneAnalysis": "- 15 Darcy-Wickham street encounter + / Visible mystery primes Wickham's revelation; excellent hook.\n- Philips invitation setup + / Efficiently engineers next evening's venue and cast.\n- Collins redirects to Elizabeth + / Quiet pivot plants proposal tension paying off later.\n- Collins character exposition - / Front-loaded summary stalls momentum before Wickham arrives.\n- Jane cannot explain ? / Brief sister beat; question left open deliberately.",
+        "currentSceneAnalysis": "- 16 A / Trim Collins's Rosings opening; reach Wickham faster to sharpen anticipation.\n- Wickham's seductive testimony + / Masterful manipulation; reader complicit with Elizabeth's bias.\n- Elizabeth's confirmation bias + / Her prejudice fuels acceptance; core thematic engine.\n- Planted inconsistencies + / 'Won't expose him' then does; rewarding reread subtext.\n- De Bourgh engagement reveal + / Raises romantic stakes; links Collins plot to Darcy.\n- Collins comic relief ? / Funny contrast, but whist losses slightly dilute tension.",
+        "nextSceneAnalysis": "- 17 Jane as counterweight + / Jane's doubt subtly questions Wickham; reader warning.\n- 'Truth in his looks' + / Elizabeth's certainty sets up later humiliating reversal.\n- Netherfield ball stakes + / Converges Wickham, Darcy, Collins threads into showdown.\n- Collins claims first dances + / Comic frustration blocks Wickham; escalates proposal threat.\n- Rain interlude ? / Summary delay builds anticipation but slackens pace.",
+        "sceneGrade": "A"
+      }
+    },
+    {
+      "id": "pulse:30 Bingley Returns",
+      "feature": "pulse",
+      "durationMs": 12286,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 13959,
+        "outputTokens": 1172,
+        "totalTokens": 15131,
+        "rawInputTokens": 13959,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.0019819,
+      "sample": {
+        "previousSceneAnalysis": "- 29 Lady Catherine's dominance + / Establishes meddling authority Scene 30 shows becoming routine.\n- Elizabeth's composure + / Her unflappable poise primes the cool Darcy reunion.\n- Darcy resemblance planted + / Family likeness noted; his arrival now feels inevitable.\n- Wickham's account confirmed ? / Reinforces Elizabeth's bias, quietly sharpening the coming Darcy friction.\n- Collins comic excess - / Satire repeats; little forward pressure carried into Scene 30.",
+        "currentSceneAnalysis": "- 30 B / Compress the routine summary; reach Darcy's arrival sooner to sustain momentum.\n- Charlotte's room strategy + / Sly subtext reveals marriage terms without exposition.\n- Static parish summary - / Repetitive daily-life narration stalls tension for pages.\n- Private grove walk + / Plants solitary path for later chance encounters.\n- Jane probe + / Elizabeth's pointed question injects conflict; Darcy's confusion hooks.\n- Fitzwilliam introduced + / Easy foil heightens Darcy's stiffness efficiently.",
+        "nextSceneAnalysis": "- 31 Fitzwilliam's charm pays off + / Colonel's ease draws Darcy's attention and jealousy.\n- Pianoforte sparring + / Escalates Scene 30's silent tension into witty open combat.\n- Anne match dismantled + / Resolves Elizabeth's speculation about Darcy's destined cousin.\n- Lady Catherine's interruptions ? / Comic intrusions echo earlier dinners; risk repetition.\n- Jane thread dropped - / Darcy's guilty confusion goes unexplored here; momentum lost.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:44 Invitation and Visit",
+      "feature": "pulse",
+      "durationMs": 12652,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 20995,
+        "outputTokens": 1190,
+        "totalTokens": 22185,
+        "rawInputTokens": 20995,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.0026945000000000003,
+      "sample": {
+        "previousSceneAnalysis": "- 43 Sister introduction promise + / Darcy's request directly triggers Georgiana's visit in 44\n- Housekeeper testimony + / Mrs. Reynolds' praise underpins Gardiners' reassessment in 44\n- Bingley arrival flagged + / Seeds Jane subplot hope paid off in 44\n- Wickham debts disclosed ? / Elizabeth's vindication echoed by Lambton gossip; slightly redundant\n- Altered manners mystery + / Question 'why changed?' sustains tension into 44",
+        "currentSceneAnalysis": "- 44 B / Trim Gardiners' summarizing passage; dramatize Elizabeth's night reflection with sharper internal conflict.\n- Georgiana shy, not proud + / Reversal mirrors Darcy's misjudged pride; thematic echo\n- Bingley remembers Jane + / Exact date detail revives romance subplot with subtext\n- Gardiners detect love + / Outside observers raise stakes and public pressure\n- Gratitude self-analysis ? / Key turn, but long exposition dilutes emotional punch\n- Low external conflict - / Visit lacks antagonist friction; momentum relies on interiority",
+        "nextSceneAnalysis": "- 45 Return visit payoff + / Planned Pemberley call delivers promised escalation\n- Miss Bingley antagonism + / Supplies friction scene 44 lacked; sharp jealousy\n- Wickham jab and Georgiana + / Hidden Ramsgate secret creates potent dramatic irony\n- Darcy's declared admiration + / 'Handsomest women' line confirms love Elizabeth surmised\n- Aunt-niece silence ? / Echoes 44's unspoken curiosity; risks repetition",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "gossamer:momentum",
+      "feature": "gossamer",
+      "durationMs": 23273,
+      "passed": true,
+      "summary": "All 15 beats scored and validated (61 scenes, 121693 words).",
+      "usage": {
+        "inputTokens": 239579,
+        "outputTokens": 1279,
+        "totalTokens": 240858,
+        "rawInputTokens": 249,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 239330,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 239330
+      },
+      "costUSD": 0.24265199999999998,
+      "sample": [
+        {
+          "beatName": "Opening Image",
+          "signal": "momentum",
+          "score": 45,
+          "justification": "Bingley's arrival and Mrs. Bennet's urgency set a clear marital question in motion, though mostly through comic dialogue."
+        },
+        {
+          "beatName": "Theme Stated",
+          "signal": "momentum",
+          "score": 40,
+          "justification": "Jane and Elizabeth's talk and Bingley/Darcy character exposition deepen setup but advance little plot."
+        },
+        {
+          "beatName": "Setup",
+          "signal": "momentum",
+          "score": 50,
+          "justification": "The Netherfield dinner sharpens the Darcy-Elizabeth friction and Miss Bingley's jealousy, building steady interest."
+        }
+      ]
+    },
+    {
+      "id": "inquiry:setup-core",
+      "feature": "inquiry",
+      "durationMs": 102379,
+      "passed": true,
+      "summary": "Inquiry returned 24 finding(s) over 61 scenes; verdict and refs passed the production result builder.",
+      "usage": {
+        "inputTokens": 244857,
+        "outputTokens": 10616,
+        "totalTokens": 255473,
+        "rawInputTokens": 33,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 244824,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 244824
+      },
+      "costUSD": 0.2713805,
+      "sample": {
+        "verdict": {
+          "flow": 0.84,
+          "depth": 0.92
+        },
+        "summary": "The story moves quickly because pressure is set up early: the entail, Mrs. Bennet's marriage campaign, the militia's arrival, Darcy's slight, and Wickham's grievance are all in place by S16. Later turns, such as Darcy's letter (S35), Lydia's elopement (S46) and Darcy's rescue (S52), can then release stored tension in a few beats instead of stopping to explain. The main timing cost is the long Hunsford middle (S27-S31), and several file labels that misname scene content, which slows navigation without harming the story.",
+        "firstFinding": {
+          "refId": "scn_a25045e5",
+          "kind": "strength",
+          "headline": "The marriage-market engine and the Bennet marriage dynamic must be true from page one",
+          "bullets": [
+            "Mrs. Bennet's single-minded goal drives most of the plot's social collisions.",
+            "Mr. Bennet's detached sarcasm and his preference for Lizzy explain his later failure to restrain Lydia and his closeness to Elizabeth."
+          ],
+          "subject": "Premise and family pressure",
+          "span": "S1",
+          "related": [],
+          "evidenceType": "mixed",
+          "lens": "both",
+          "role": "target",
+          "evidenceQuote": "The business of her life was to get her daughters married: its solace was visiting and news."
+        }
+      }
+    }
+  ]
+}

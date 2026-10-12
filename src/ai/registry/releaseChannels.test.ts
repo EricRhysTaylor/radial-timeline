@@ -45,10 +45,11 @@ describe('release channel curation', () => {
         // product decision.
         expect(picker.slice(0, 2)).toEqual(['claude-opus-5-5', 'claude-fable-5-1']);
         //   - Opus 5: continuity opt-in so in-flight authors aren't force-migrated.
-        //   - Sonnet 5 / Haiku 4.5: the BALANCED and FAST task-fit lanes added
-        //     2026-08-21. Neither may displace Opus 5.5 as the default.
+        //   - Sonnet 5.5 / Haiku 5.5: the BALANCED and FAST task-fit lanes (added
+        //     2026-08-21; current models promoted 2026-10-01 / 2026-10-12).
+        //     Neither may displace Opus 5.5 as the default.
         expect(picker.slice(2).sort()).toEqual(
-            ['claude-haiku-4-5', 'claude-opus-5', 'claude-sonnet-5-5'].sort()
+            ['claude-haiku-5-5', 'claude-opus-5', 'claude-sonnet-5-5'].sort()
         );
     });
 

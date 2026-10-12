@@ -59,8 +59,8 @@ export interface ResolvedInquiryEngine {
      *
      * This is NOT cosmetic. `selectModel` substitutes silently and the
      * substitute is, by definition, a more capable — and therefore more
-     * expensive — model. An author who pins Haiku 4.5 to control cost and is
-     * quietly upgraded to Opus 5 finds out from their invoice. Every Inquiry
+     * expensive — model. An author who pins Haiku 5.5 to control cost and is
+     * quietly upgraded to Opus 5.5 finds out from their invoice. Every Inquiry
      * surface that displays the engine MUST display this too.
      */
     substitution?: {

@@ -37,8 +37,8 @@
  * content overlap. Leaving the ratio to default would apply 0.75 and
  * understate the bill roughly 3x. If onboarding ever starts sending cache
  * control, revisit this — and note that the repeated instruction block would
- * still have to clear the provider's minimum cacheable prefix (4,096 tokens on
- * Haiku 4.5) before any of it is billable as a cache read.
+ * still have to clear the provider's minimum cacheable prefix (512 tokens on
+ * Haiku 5.5) before any of it is billable as a cache read.
  *
  * Where the estimate is deliberately conservative, it errs HIGH. A spend
  * forecast that undershoots is worse than useless.

@@ -147,7 +147,7 @@ describe('BUILTIN_MODELS — catalog policy invariants', () => {
     it('keeps the catalog small enough to be deliberately curated (one top model per provider, plus deliberate splits)', () => {
         const cloud = BUILTIN_MODELS.filter(m => m.provider !== 'none' && m.provider !== 'ollama');
         // Anthropic 5 (Opus 5 + 4.8 continuity + Fable 5 premium pro lane
-        // + Sonnet 5 BALANCED + Haiku 4.5 FAST) + OpenAI 2 (5.5 + 5.4 economy)
+        // + Sonnet 5 BALANCED + Haiku FAST, Haiku 5.5 since 2026-10-12) + OpenAI 2 (5.5 + 5.4 economy)
         // + Google 2 (3.1 Pro depth / 3.5 Flash speed) = 9 cloud models.
         //
         // Fable 5 was promoted as an explicit-choice premium model (2× Opus

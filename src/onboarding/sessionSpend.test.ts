@@ -12,7 +12,7 @@ const LIVE: SpendSessionFields = {
     chapterCount: 24,
     forecastSceneCount: 95,
     costProvider: 'anthropic' as const,
-    costModelId: 'claude-haiku-4-5',
+    costModelId: 'claude-haiku-5-5',
     costSubstitutedFrom: null
 };
 

@@ -77,7 +77,7 @@ One row per scene, a page you scroll down, and columns you can rearrange. That's
 - **Not a property.** The column is rendered by the view from `Subplot`. A view option (`BasesViewRegistration.options`) turns it on or off.
 - **Beat rows** run across the full width as quiet dividers. **Sketch rows** show planned memberships as hollow squares.
 - **Read-only.** The squares are too small to click reliably, so membership changes stay in the row's context menu (*Add to subplot*, *Remove from*).
-- **Many rings.** Past about ten rings, the squares shrink, then the strip shows the first rings plus a "+N" count that expands on hover.
+- **Wrapping** (Eric, 2026-10-12). Past a set number of squares per line (a view option, 3 to 5 by default), the grid wraps onto more lines. Every row wraps at the same point, so each ring keeps its slot and a plotline still reads straight down the page; the column just gets taller.
 
 **Visuals: the same color language as the wheel**
 - **Status in the number cell.** The scene number sits in a square filled by `getFillForScene`, the same fill the wheel gives the scene's cell: the publish-stage color for completed scenes, the Todo plaid and the author's Working pattern (`workingPatternId`, including custom Pro patterns) for the scene's stage, and the Due color when overdue. The patterns reuse the timeline's SVG pattern defs, so the table never invents its own status colors. A sketch's cell is an outlined square with a dash; a note not on the timeline gets a grey outline. (The wheel's own number squares are tinted by subplot through `numberSquareVisualResolver`; the table deliberately uses status there, because the Rings column already carries the subplot.)
@@ -108,7 +108,15 @@ An author-facing note type, `Class: Sketch`, for story material that has a place
 - **Shown only in the Timeline table** (decided 2026-10-11). The wheel needs no change: it renders `class === 'scene'` only, so sketches already stay off it. They are also excluded from exports, numbering, word counts and targets, Pulse, Summary and Gossamer.
 - **Feeds Inquiry** as outline context (decided 2026-10-11), and no other AI pass.
 - **Creating a sketch.** A **+ New sketch** button in the Timeline table calls `createFileForView(baseFileName, frontmatterProcessor)`; the API has had it since 1.10.2. The processor sets `Class: Sketch` and prefills Act and Subplot from the group or the selected row. This is the "add a row and get a timeline entry" flow. The sketch stays in the table until it is promoted.
-- **Commitment.** Promote (§1) turns a sketch into a scene. That is the moment it appears on the wheel, and the deliberate moment an idea enters the manuscript.
+- **The sketch drawer** (Eric, 2026-10-12) is how a sketch gets room to be written:
+  - **Collapsed,** a sketch row is one line, and its Synopsis cell shows the Synopsis property, or the first line of the note's text when that's empty.
+  - **Open,** by clicking the row or its chevron (or Enter), a full-width drawer opens beneath the row, spanning every column. The scene rows around it stay compact. Esc or the chevron closes it. Several drawers can be open at once, and a view option opens all sketches.
+  - **The editor is the sketch note's own body,** never a YAML field, so long writing stays out of frontmatter. It's an auto-growing text area of the Markdown source. Past about 60% of the viewport it scrolls inside the drawer. When it isn't focused, it renders with `MarkdownRenderer`, so links work; click to edit.
+  - **Saving.** Writes are debounced and go through `app.vault.process`, touching only the body below the frontmatter. If the file changes elsewhere while a drawer is open, an unedited drawer refreshes, and an edited one shows a conflict notice. It never silently overwrites (`fallback-policy.md`).
+  - **Properties in the drawer:** small editable Act and When chips, and the rings as named toggles. In the drawer they're big enough to click safely, and they write `Subplot` through the same membership helpers as the context menu. Then come **Promote to scene** and **Open note**.
+  - **Open and closed state** is view state, kept in memory or `config.set`, never in YAML.
+  - **Scenes don't get a body editor.** Manuscript prose is never editable from the table. A later, optional scene drawer would edit Synopsis only.
+- **Commitment.** Promote (§1) turns a sketch into a scene. That is the moment it appears on the wheel, and the deliberate moment an idea enters the manuscript. Promote never touches the body, so the sketch's text becomes the new scene's starting notes.
 - **Open questions** don't need a class. Editorialist's `%%query: …%%` author queries already exist, and RT handles them on export (`src/utils/authorQueryComments.ts`). The Timeline table can show a count of open queries on any scene or sketch row, so spine questions show up where they live. No new YAML is needed.
 - **Later, only if wanted:** ghost cells for numbered sketches on the wheel, and **Add sketch** in the wheel's right-click menu.
 
@@ -125,7 +133,7 @@ The Rings column in the Timeline table delivers the rhythm benefit and the reque
 ## Phases
 
 1. **Promote to scene:** the command, file menu and bulk preview. It's the smallest piece and is useful on its own.
-2. **Timeline table and sketches:** data, status number cells, the Rings column, row context menu, the Promote button, **+ New sketch**, query counts, cross-highlighting, and Create book base.
+2. **Timeline table and sketches:** data, status number cells, the Rings column (with wrapping), the sketch drawer, row context menu, the Promote button, **+ New sketch**, query counts, cross-highlighting, and Create book base.
 3. **Spikes, only if wanted:**
    - action links in Obsidian's built-in Table view, through a formula such as `link("obsidian://radial-timeline-…")` handled by an RT protocol handler (precedent: `AI_JOBS_PROTOCOL_ACTION`); it's unverified that Bases renders these as clickable;
    - "Follow timeline filters," so the table mirrors the search panel's filter;
@@ -140,6 +148,8 @@ The Rings column in the Timeline table delivers the rhythm benefit and the reque
   - Number cells match the wheel's status fills, including the author's Working pattern.
   - Changing Status from a row's context menu updates the wheel without a reload, and hovering highlights across views.
   - **+ New sketch** creates a note that appears in the table but not on the wheel or in a manuscript export. Promoting it puts it on the wheel and in the export.
+  - Typing in a sketch drawer saves to the note's body and leaves its frontmatter byte-identical. Editing the same note elsewhere while its drawer is open, with unsaved drawer text, raises a conflict notice instead of overwriting.
+  - With more rings than fit on a line, the Rings grid wraps identically in every row.
 - Verification follows the feature-audit playbook (`build-only`, `tsc --noEmit`, `vitest`), plus an Obsidian reload check.
 
 ## Decisions for Eric
@@ -147,4 +157,5 @@ The Rings column in the Timeline table delivers the rhythm benefit and the reque
 Settled on 2026-10-11 (see the top of this doc): the Sketch name, table-only sketches, Inquiry only, the Timeline table name with lanes set aside, no gating (Pro-page label only), Promote following the template setting, and the compact layout (status in the number cell, a single read-only Rings column).
 
 Still open:
-1. **Built-in Table support** through protocol links (phase 3), or the Timeline table only?
+1. **Where a sketch's long text lives.** The note body (recommended: it's where writing belongs, and it carries into the scene on Promote), or a YAML field?
+2. **Built-in Table support** through protocol links (phase 3), or the Timeline table only?

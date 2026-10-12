@@ -10,6 +10,11 @@ Status: proposed (Eric, 2026-10-11). Design only; nothing here is built.
 - The feature is called the **Timeline table**. Its compact **Rings column** (§2) is the linear view users asked for. The separate lanes layout ("Unwrapped") was dropped; see *Considered and set aside*.
 - **No gating.** Pro is free for everyone; the Timeline table and sketches are listed on the website's Pro page as Pro features for fun.
 - **Promote's template** follows the Core/Advanced setting by default and shows it as a preselected toggle in the dialog. This was Claude's recommendation, since Eric was unsure; it's easy to revisit.
+**Decided 2026-10-12 (Eric):**
+- **One When formatter** for the hover, the Timeline table and (proposed) the title bar. It keeps the current hover format with the weekday added and the `@` kept: `Wed Jan 3, 2085 @ 2:20PM`. A date-only When shows no time; it no longer reads "@ Noon". See §4.
+- **A sketch's text stays in the note body**, never in YAML.
+- **Promote is a Lucide icon button**, and Promote in Obsidian's built-in Table view is wanted (still a spike, phase 3).
+
 - **Compact layout** (Eric, from the mockups): status lives in the scene-number cell, using the stage color and the Working and Todo patterns from settings; subplot membership is one narrow Rings column, not a column per ring. The width goes to the author's other properties.
 
 ## Problem
@@ -83,7 +88,8 @@ One row per scene, a page you scroll down, and columns you can rearrange. That's
 - **Status in the number cell.** The scene number sits in a square filled by `getFillForScene`, the same fill the wheel gives the scene's cell: the publish-stage color for completed scenes, the Todo plaid and the author's Working pattern (`workingPatternId`, including custom Pro patterns) for the scene's stage, and the Due color when overdue. The patterns reuse the timeline's SVG pattern defs, so the table never invents its own status colors. A sketch's cell is an outlined square with a dash; a note not on the timeline gets a grey outline. (The wheel's own number squares are tinted by subplot through `numberSquareVisualResolver`; the table deliberately uses status there, because the Rings column already carries the subplot.)
 - **Beat rows** are white, as on the wheel, and show the beat model and Purpose (read through `readBeatPurpose`).
 - **Sketch rows** (§3) are ghosted: dashed border and a translucent tint.
-- **Notes the timeline can't see** get a muted row and a **Promote** button (§1).
+- **Notes the timeline can't see** get a muted row and a **Promote** button (§1): a Lucide icon button, `file-up` proposed so it pairs with `file-plus-2` (right-click Add scene), with the tooltip "Promote to scene."
+- **When** cells use the shared formatter (§4). **Duration** keeps its own column, because it's its own template key.
 
 **Editing, two ways at once**
 - **Right-click a row** to get the same menu as right-clicking the scene on the wheel: Add scene, Set chapter, Set part, Status, Publish Stage, and subplot move, add or remove. There's no new editing UI to build or keep in step.
@@ -113,12 +119,31 @@ An author-facing note type, `Class: Sketch`, for story material that has a place
   - **Open,** by clicking the row or its chevron (or Enter), a full-width drawer opens beneath the row, spanning every column. The scene rows around it stay compact. Esc or the chevron closes it. Several drawers can be open at once, and a view option opens all sketches.
   - **The editor is the sketch note's own body,** never a YAML field, so long writing stays out of frontmatter. It's an auto-growing text area of the Markdown source. Past about 60% of the viewport it scrolls inside the drawer. When it isn't focused, it renders with `MarkdownRenderer`, so links work; click to edit.
   - **Saving.** Writes are debounced and go through `app.vault.process`, touching only the body below the frontmatter. If the file changes elsewhere while a drawer is open, an unedited drawer refreshes, and an edited one shows a conflict notice. It never silently overwrites (`fallback-policy.md`).
-  - **Properties in the drawer:** small editable Act and When chips, and the rings as named toggles. In the drawer they're big enough to click safely, and they write `Subplot` through the same membership helpers as the context menu. Then come **Promote to scene** and **Open note**.
+  - **Properties in the drawer:** small editable Act and When chips, and the rings as named toggles. In the drawer they're big enough to click safely, and they write `Subplot` through the same membership helpers as the context menu. Then come **Promote to scene** (the `file-up` icon button with its label) and **Open note**.
   - **Open and closed state** is view state, kept in memory or `config.set`, never in YAML.
   - **Scenes don't get a body editor.** Manuscript prose is never editable from the table. A later, optional scene drawer would edit Synopsis only.
 - **Commitment.** Promote (§1) turns a sketch into a scene. That is the moment it appears on the wheel, and the deliberate moment an idea enters the manuscript. Promote never touches the body, so the sketch's text becomes the new scene's starting notes.
 - **Open questions** don't need a class. Editorialist's `%%query: …%%` author queries already exist, and RT handles them on export (`src/utils/authorQueryComments.ts`). The Timeline table can show a count of open queries on any scene or sketch row, so spine questions show up where they live. No new YAML is needed.
 - **Later, only if wanted:** ghost cells for numbered sketches on the wheel, and **Add sketch** in the wheel's right-click menu.
+
+## 4. One When formatter
+
+Today RT formats a scene's When in two different ways:
+- **Hover synopsis:** `formatDateForDisplay` (`src/utils/hoverMetadata.ts`) gives "May 10, 2085 @ 2:20PM", with Duration on its own line.
+- **Title bar** (the scene-time badge in a markdown view header): `sceneTimeLabel` (`src/utils/sceneTimeLabel.ts`) gives "☀ 2:20 PM Wed · 2 hours → 4:20 PM", and repeats the raw YAML (`2085-05-10`) for a date-only When.
+
+**Decided 2026-10-12: one formatter.**
+- **Format.** The current hover format with the weekday added and the `@` kept: `Wed Jan 3, 2085 @ 2:20PM`.
+- **The year always shows**, as it does in the hover today.
+- **A date-only When shows no time:** `Thu May 10, 2085`. `parseWhenField` reads date-only values as local noon, so `formatDateForDisplay` currently prints "@ Noon" for a time the author never set. The formatter needs the has-clock signal that `sceneTimeLabel` already computes from the raw string (or an equivalent flag carried on the item). "@ Noon" and "@ Midnight" appear only when the YAML actually says 12:00 or 00:00.
+- **Planetary calendars:** when the planetary calendar is active, the same `convertFromEarth` conversion the hover uses.
+- **Language:** month and weekday names follow the plugin's language. The current formatter hardcodes English month names, while the rest of RT now has four translations.
+- **Search** keeps matching the displayed string. `formatHoverMetadataValue` routes Dates through the same formatter.
+- **Sorting** in the table uses the real date, never the text.
+
+**Title bar (proposed; Eric to confirm).** The badge keeps its extras (sun or moon, end time, elapsed, cues), but its date and clock come from the same formatter. For example `☀ Wed Jan 3, 2085 @ 2:20PM · 2 hours → 4:20PM`, and `Thu May 10, 2085 · 2 hours` instead of the raw `2085-05-10`.
+
+This change is independent of the table and can ship first.
 
 ## Considered and set aside: a lanes layout ("Unwrapped")
 
@@ -132,10 +157,10 @@ The Rings column in the Timeline table delivers the rhythm benefit and the reque
 
 ## Phases
 
-1. **Promote to scene:** the command, file menu and bulk preview. It's the smallest piece and is useful on its own.
+1. **Promote to scene:** the command, file menu and bulk preview. It's the smallest piece and is useful on its own. The **one When formatter** (§4) is equally independent and can ship alongside it.
 2. **Timeline table and sketches:** data, status number cells, the Rings column (with wrapping), the sketch drawer, row context menu, the Promote button, **+ New sketch**, query counts, cross-highlighting, and Create book base.
 3. **Spikes, only if wanted:**
-   - action links in Obsidian's built-in Table view, through a formula such as `link("obsidian://radial-timeline-…")` handled by an RT protocol handler (precedent: `AI_JOBS_PROTOCOL_ACTION`); it's unverified that Bases renders these as clickable;
+   - **Promote in Obsidian's built-in Table view** (wanted, Eric 2026-10-12): a formula column such as `link("obsidian://radial-timeline-…")` handled by an RT protocol handler (precedent: `AI_JOBS_PROTOCOL_ACTION`), shown as the `file-up` icon if Bases allows an icon as link text. It's unverified that Bases renders these as clickable;
    - "Follow timeline filters," so the table mirrors the search panel's filter;
    - sketches on the wheel.
 
@@ -150,12 +175,15 @@ The Rings column in the Timeline table delivers the rhythm benefit and the reque
   - **+ New sketch** creates a note that appears in the table but not on the wheel or in a manuscript export. Promoting it puts it on the wheel and in the export.
   - Typing in a sketch drawer saves to the note's body and leaves its frontmatter byte-identical. Editing the same note elsewhere while its drawer is open, with unsaved drawer text, raises a conflict notice instead of overwriting.
   - With more rings than fit on a line, the Rings grid wraps identically in every row.
+- **When formatter:** a date-only When (67.4's `2085-05-10`) shows `Thu May 10, 2085` in both the hover and the table, with no "@ Noon". A When with a clock shows `Wed Jan 3, 2085 @ 2:20PM`, and switching the plugin's language changes the month and weekday names.
 - Verification follows the feature-audit playbook (`build-only`, `tsc --noEmit`, `vitest`), plus an Obsidian reload check.
 
 ## Decisions for Eric
 
 Settled on 2026-10-11 (see the top of this doc): the Sketch name, table-only sketches, Inquiry only, the Timeline table name with lanes set aside, no gating (Pro-page label only), Promote following the template setting, and the compact layout (status in the number cell, a single read-only Rings column).
 
+Settled on 2026-10-12: one When formatter, no "@ Noon" for date-only values, sketch text in the note body, and Lucide icon Promote buttons, with built-in Table support wanted.
+
 Still open:
-1. **Where a sketch's long text lives.** The note body (recommended: it's where writing belongs, and it carries into the scene on Promote), or a YAML field?
-2. **Built-in Table support** through protocol links (phase 3), or the Timeline table only?
+1. **Title bar format.** Should the scene-time badge's date and clock also come from the shared formatter (§4)?
+2. **Icon choice:** `file-up` for Promote, or another Lucide icon?

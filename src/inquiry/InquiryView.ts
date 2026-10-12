@@ -14,7 +14,7 @@ import {
 } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { BugReportModal } from '../modals/BugReportModal';
-import { t } from '../i18n';
+import { t, tCount } from '../i18n';
 import {
     INQUIRY_MAX_OUTPUT_TOKENS,
     INQUIRY_SCHEMA_VERSION,
@@ -1896,17 +1896,11 @@ export class InquiryView extends ItemView {
                 this.refreshBriefingPanel();
                 void this.briefingPurgeScanner.refresh();
                 if (result.purgedCount > 0) {
-                    const rearmSuffix = rearmedSessions > 0
-                        ? ` Re-armed ${rearmedSessions} session${rearmedSessions !== 1 ? 's' : ''} for fresh writeback.`
-                        : '';
-                    const sceneWord = result.purgedCount !== 1 ? 'scenes' : 'scene';
-                    if (rearmSuffix) {
-                        const rearmMatch = rearmSuffix.match(/Re-armed (\d+) session/);
-                        const rearmCount = rearmMatch ? Number(rearmMatch[1]) : 0;
-                        const sessionWord = rearmCount !== 1 ? 'sessions' : 'session';
-                        new Notice(t('inquiry.notice.purgedScenesWithRearm', { count: result.purgedCount, sceneWord, rearmCount, sessionWord }));
+                    const scenes = tCount('scene', result.purgedCount);
+                    if (rearmedSessions > 0) {
+                        new Notice(t('inquiry.notice.purgedScenesWithRearm', { scenes, sessions: tCount('session', rearmedSessions) }));
                     } else {
-                        new Notice(t('inquiry.notice.purgedScenes', { count: result.purgedCount, sceneWord }));
+                        new Notice(t('inquiry.notice.purgedScenes', { scenes }));
                     }
                 } else {
                     new Notice(t('inquiry.notice.purgedNothing'));
@@ -9444,11 +9438,11 @@ export class InquiryView extends ItemView {
             ? ` · ${t('inquiry.findings.scopeNoteTargetBookOnly')}`
             : '';
         const integrity = computeCitationIntegritySummary(result);
-        const citationWord = integrity.unverifiedCount === 1 ? 'citation' : 'citations';
+        const citations = tCount('aiCitation', integrity.unverifiedCount);
         const integrityNote = integrity.evidenceCompromised
-            ? ` · ${t('inquiry.findings.integrityCompromised', { count: integrity.unverifiedCount, citationWord })}`
+            ? ` · ${t('inquiry.findings.integrityCompromised', { citations })}`
             : integrity.unverifiedCount > 0
-                ? ` · ${t('inquiry.findings.integrityWarning', { count: integrity.unverifiedCount, citationWord })}`
+                ? ` · ${t('inquiry.findings.integrityWarning', { citations })}`
                 : '';
         this.verdictEl.textContent = `${selectionText}${validationNote}${scopeNote}${integrityNote}`;
         this.verdictEl.classList.toggle('is-citation-integrity-warning', integrity.unverifiedCount > 0 && !integrity.evidenceCompromised);

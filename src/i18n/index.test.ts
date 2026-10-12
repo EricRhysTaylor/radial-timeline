@@ -6,6 +6,7 @@ import {
     getLocale,
     SUPPORTED_LOCALES,
     t,
+    tCount,
 } from './index';
 
 function setMomentLocale(locale: string): void {
@@ -51,10 +52,20 @@ describe('i18n locale resolution', () => {
         expect(getFormattingLocale()).toBe('de-AT');
     });
 
-    it('preserves English fallback and interpolation for missing partial-locale keys', () => {
+    it('uses the locale string and interpolates it', () => {
         setMomentLocale('de');
 
-        expect(t('settings.configuration.synopsisMaxLines.error')).toBe('Please enter a valid number between 10 and 300.');
+        expect(t('settings.configuration.synopsisMaxLines.error')).toBe('Bitte geben Sie eine gültige Zahl zwischen 10 und 300 ein.');
         expect(t('timeline.acts.actFallback', { number: 7 })).toBe('Akt 7');
+    });
+
+    it('builds counted phrases per language instead of appending an English plural', () => {
+        setMomentLocale('de');
+        expect(tCount('scene', 1)).toBe('1 Szene');
+        expect(tCount('scene', 3)).toBe('3 Szenen');
+
+        setMomentLocale('en');
+        expect(tCount('scene', 1)).toBe('1 scene');
+        expect(tCount('scene', 0)).toBe('0 scenes');
     });
 });

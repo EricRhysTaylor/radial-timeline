@@ -296,7 +296,6 @@ export interface TranslationKeys {
             deleteModal: {
                 subtitleWithNotes: string;
                 scopePrefix: string;
-                beatNote: string;
                 warningExtra: string;
                 warningTemplate: string;
                 typeDeletePrompt: string;
@@ -628,6 +627,19 @@ export interface TranslationKeys {
         loading: string;
         error: string;
         success: string;
+        /**
+         * Counted noun phrases, chosen by count through tCount(). Sentences
+         * take the whole phrase as one placeholder so each language can
+         * inflect it; never build a plural by appending a letter.
+         */
+        counts: {
+            scene: { one: string; other: string };
+            session: { one: string; other: string };
+            beat: { one: string; other: string };
+            moreBeat: { one: string; other: string };
+            aiCitation: { one: string; other: string };
+            beatNote: { one: string; other: string };
+        };
     };
     notices: {
         settingsSaved: string;
@@ -2296,7 +2308,6 @@ export const en: TranslationKeys = {
             deleteModal: {
                 subtitleWithNotes: 'This moves beat notes to trash. The set definition remains available in Add system.',
                 scopePrefix: 'Scope: ',
-                beatNote: 'beat note',
                 warningExtra: 'Any custom properties with values will be lost, including all data entry in non-template fields.',
                 warningTemplate: 'Any custom properties with values will be lost, including all data entry.',
                 typeDeletePrompt: 'Type DELETE to confirm:',
@@ -3066,6 +3077,14 @@ export const en: TranslationKeys = {
         loading: 'Loading...',
         error: 'Error',
         success: 'Success',
+        counts: {
+            scene: { one: '{{count}} scene', other: '{{count}} scenes' },
+            session: { one: '{{count}} session', other: '{{count}} sessions' },
+            beat: { one: '{{count}} beat', other: '{{count}} beats' },
+            moreBeat: { one: '{{count}} more beat', other: '{{count}} more beats' },
+            aiCitation: { one: '{{count}} AI citation', other: '{{count}} AI citations' },
+            beatNote: { one: '{{count}} beat note', other: '{{count}} beat notes' },
+        },
     },
     notices: {
         settingsSaved: 'Settings saved.',
@@ -3321,8 +3340,8 @@ export const en: TranslationKeys = {
             fileExplorerUnavailable: 'File explorer not available.',
             revealFolderFailed: 'Unable to reveal folder.',
             purgedNothing: 'No Inquiry action items found to purge.',
-            purgedScenes: 'Purged Inquiry action items from {{count}} {{sceneWord}}.',
-            purgedScenesWithRearm: 'Purged Inquiry action items from {{count}} {{sceneWord}}. Re-armed {{rearmCount}} {{sessionWord}}.',
+            purgedScenes: 'Purged Inquiry action items from {{scenes}}.',
+            purgedScenesWithRearm: 'Purged Inquiry action items from {{scenes}}. Re-armed {{sessions}}.',
             coreSetLoaded: '{{label}} loaded.',
         },
         interaction: {
@@ -3390,8 +3409,8 @@ export const en: TranslationKeys = {
             selectionDiscover: 'Selection Mode · Discover',
             validationMissingTargetRoles: 'Warning: Focused run returned no target-specific findings.',
             scopeNoteTargetBookOnly: 'Target Scenes are book-only and inactive in Saga scope.',
-            integrityCompromised: '⚠ Evidence compromised — no verified findings; {{count}} AI {{citationWord}} could not be matched to your manuscript.',
-            integrityWarning: '⚠ {{count}} AI {{citationWord}} could not be matched to your manuscript.',
+            integrityCompromised: '⚠ Evidence compromised — no verified findings; {{citations}} could not be matched to your manuscript.',
+            integrityWarning: '⚠ {{citations}} could not be matched to your manuscript.',
             targetSection: 'Primary Findings',
             contextSection: 'Context Findings',
             unverifiedSection: '⚠ Unverified AI Citations ({{count}})',
@@ -3662,8 +3681,8 @@ export const en: TranslationKeys = {
             tooltipPaste: 'Check the AI\'s JSON reply the same way the AI run does, then save in one step',
             tooltipSave: 'Save manually entered scores',
             tooltipCancel: 'Close without saving',
-            normalizeConfirmMessage: 'Will renumber and clean {{count}} beat{{plural}} with gaps or orphaned justifications. RT will archive removed Gossamer fields before cleanup.',
-            normalizedDone: 'Normalized Gossamer scores in {{count}} beat{{plural}}.',
+            normalizeConfirmMessage: 'Will renumber and clean {{beats}} with gaps or orphaned justifications. RT will archive removed Gossamer fields before cleanup.',
+            normalizedDone: 'Normalized Gossamer scores in {{beats}}.',
             normalizeArchive: 'Archived removed fields: {{path}}',
             normalizeNothing: 'No Gossamer history to normalize.',
             normalizeNoFragments: 'No fragmented scores detected.',
@@ -3714,7 +3733,7 @@ export const en: TranslationKeys = {
             normalizeOrphanLabel: 'Orphaned justification',
             normalizeOrphansLabel: 'Orphaned justifications',
             normalizeWillCompact: 'Will compact numbering',
-            normalizeMoreSuffix: '+{{count}} more beat{{plural}} will be cleaned.',
+            normalizeMoreSuffix: '+{{moreBeats}} will be cleaned.',
             normalizeConfirmButton: 'Normalize',
             normalizeConfirmCancel: 'Cancel',
         },
@@ -4154,15 +4173,15 @@ export const en: TranslationKeys = {
                 buttonPurge: 'Purge beats',
                 buttonCancel: 'Cancel',
                 noScenes: 'No scenes found in manuscript.',
-                confirmManuscript: 'Purge ALL beats from {{count}} scene{{plural}} in your manuscript?',
-                confirmSubplot: 'Purge beats from {{count}} scene{{plural}} in subplot "{{name}}"?',
+                confirmManuscript: 'Purge ALL beats from {{scenes}} in your manuscript?',
+                confirmSubplot: 'Purge beats from {{scenes}} in subplot "{{name}}"?',
                 detailFields: '`previousSceneAnalysis`, `currentSceneAnalysis`, `nextSceneAnalysis` fields',
                 detailPulseUpdate: '`Pulse Update` timestamp',
                 detailPulseLastUpdated: '`Pulse Last Updated` timestamps',
                 noticeStart: 'Purging beats from all scenes...',
                 noticeStartSubplot: 'Purging beats from "{{name}}"...',
-                resultManuscript: 'Purged beats from {{purged}} of {{total}} scene{{plural}}.',
-                resultSubplot: 'Purged beats from {{purged}} of {{total}} scene{{plural}} in subplot "{{name}}".',
+                resultManuscript: 'Purged beats from {{purged}} of {{scenes}}.',
+                resultSubplot: 'Purged beats from {{purged}} of {{scenes}} in subplot "{{name}}".',
                 archived: 'Archived removed fields: {{path}}',
                 errorGeneric: 'Error purging beats. Check console for details.',
             },

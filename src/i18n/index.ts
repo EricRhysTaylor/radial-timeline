@@ -184,6 +184,17 @@ export function t(key: string, vars?: Record<string, string | number>): string {
     return value;
 }
 
+export type CountedNoun = keyof TranslationKeys['common']['counts'];
+
+/**
+ * A counted noun phrase in the current language, e.g. "1 scene" / "3 scenes".
+ * Pass the result into a sentence as one placeholder rather than appending
+ * a plural ending, which only works in English.
+ */
+export function tCount(noun: CountedNoun, count: number): string {
+    return t(`common.counts.${noun}.${count === 1 ? 'one' : 'other'}`, { count });
+}
+
 /**
  * Clear the locale cache (call when locale might have changed)
  */

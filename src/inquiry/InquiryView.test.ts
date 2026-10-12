@@ -485,7 +485,7 @@ describe('InquiryView payload accounting', () => {
         const storeSource = readFileSync(resolve(process.cwd(), 'src/inquiry/InquirySessionStore.ts'), 'utf8');
         expect(viewSource.includes('this.sessionStore.clearPendingEditsAppliedFlags({')).toBe(true);
         expect(viewSource.includes("statuses: ['saved', 'unsaved']")).toBe(true);
-        expect(viewSource.includes('Re-armed')).toBe(true);
+        expect(viewSource.includes("t('inquiry.notice.purgedScenesWithRearm'")).toBe(true);
         expect(storeSource.includes('clearPendingEditsAppliedFlags(options?: {')).toBe(true);
         expect(storeSource.includes("session.pendingEditsApplied = false;")).toBe(true);
     });

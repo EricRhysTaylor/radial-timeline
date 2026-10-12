@@ -10,7 +10,7 @@ import { getAllSceneData, getSubplotNamesFromFM } from './data';
 import type { SceneData, ParsedSceneAnalysis } from './types';
 import { parsePulseAnalysisResponse } from './responseParsing';
 import { snapshotFrontmatterFields } from '../utils/logVaultOps';
-import { t } from '../i18n';
+import { t, tCount } from '../i18n';
 
 type FMInfo = {
     exists: boolean;
@@ -321,7 +321,7 @@ export async function purgeBeatsByManuscriptOrder(
 
         const modal = new PurgeConfirmationModal(
             plugin.app,
-            t('sceneAnalysis.maintenance.purge.confirmManuscript', { count: allScenes.length, plural: allScenes.length !== 1 ? 's' : '' }),
+            t('sceneAnalysis.maintenance.purge.confirmManuscript', { scenes: tCount('scene', allScenes.length) }),
             [
                 t('sceneAnalysis.maintenance.purge.detailFields'),
                 t('sceneAnalysis.maintenance.purge.detailPulseUpdate')
@@ -333,7 +333,7 @@ export async function purgeBeatsByManuscriptOrder(
                 notice.hide();
                 await plugin.saveSettings();
                 plugin.refreshTimelineIfNeeded(null);
-                const parts = [t('sceneAnalysis.maintenance.purge.resultManuscript', { purged: result.purgedCount, total: allScenes.length, plural: allScenes.length !== 1 ? 's' : '' })];
+                const parts = [t('sceneAnalysis.maintenance.purge.resultManuscript', { purged: result.purgedCount, scenes: tCount('scene', allScenes.length) })];
                 if (result.snapshotPath) {
                     parts.push(t('sceneAnalysis.maintenance.purge.archived', { path: result.snapshotPath }));
                 }
@@ -364,7 +364,7 @@ export async function purgeBeatsBySubplotName(
 
         const modal = new PurgeConfirmationModal(
             plugin.app,
-            t('sceneAnalysis.maintenance.purge.confirmSubplot', { count: filtered.length, plural: filtered.length !== 1 ? 's' : '', name: subplotName }),
+            t('sceneAnalysis.maintenance.purge.confirmSubplot', { scenes: tCount('scene', filtered.length), name: subplotName }),
             [
                 t('sceneAnalysis.maintenance.purge.detailFields'),
                 t('sceneAnalysis.maintenance.purge.detailPulseLastUpdated')
@@ -376,7 +376,7 @@ export async function purgeBeatsBySubplotName(
                 notice.hide();
                 await plugin.saveSettings();
                 plugin.refreshTimelineIfNeeded(null);
-                const parts = [t('sceneAnalysis.maintenance.purge.resultSubplot', { purged: result.purgedCount, total: filtered.length, plural: filtered.length !== 1 ? 's' : '', name: subplotName })];
+                const parts = [t('sceneAnalysis.maintenance.purge.resultSubplot', { purged: result.purgedCount, scenes: tCount('scene', filtered.length), name: subplotName })];
                 if (result.snapshotPath) {
                     parts.push(t('sceneAnalysis.maintenance.purge.archived', { path: result.snapshotPath }));
                 }

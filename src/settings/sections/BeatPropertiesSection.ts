@@ -1,6 +1,6 @@
 import { buildBeatActColumns, stripActPrefix, type ActGridColumn } from './beats/actGrid';
 import { App, ButtonComponent, Component, getIconIds, Menu, Modal, normalizePath, Notice, setIcon, Setting as Settings, setTooltip, TFile } from 'obsidian';
-import { t } from '../../i18n';
+import { t, tCount } from '../../i18n';
 import type RadialTimelinePlugin from '../../main';
 import { CreateBeatSetModal } from '../../modals/CreateBeatsTemplatesModal';
 import { orderBeatsByAct, parseBeatRow } from '../../storyBeats/beatRows';
@@ -2586,7 +2586,7 @@ export function renderBeatPropertiesSection(params: {
             const body = modal.contentEl.createDiv({ cls: ['ert-panel', 'ert-panel--glass'] });
             body.createDiv({
                 cls: 'ert-modal-subtitle',
-                text: `${t('settings.beats.deleteModal.scopePrefix')}${noteFiles.length} ${t('settings.beats.deleteModal.beatNote')}${noteFiles.length !== 1 ? 's' : ''}`
+                text: `${t('settings.beats.deleteModal.scopePrefix')}${tCount('beatNote', noteFiles.length)}`
             });
             if (customContent.notesWithTemplateCustomContent > 0 || customContent.notesWithExtraCustomContent > 0) {
                 const warnText = customContent.notesWithExtraCustomContent > 0

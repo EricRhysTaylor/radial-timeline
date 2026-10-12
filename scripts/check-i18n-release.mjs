@@ -8,13 +8,6 @@ const localesDir = path.join(root, 'src/i18n/locales');
 const i18nIndexPath = path.join(root, 'src/i18n/index.ts');
 const releaseBundlePath = path.join(root, 'release/main.js');
 
-const minTranslatedKeys = {
-  ja: 937,
-  zh: 937,
-  ko: 937,
-  de: 937,
-};
-
 const bundleSentinels = {
   en: 'Legacy: source path (deprecated)',
   ja: 'ソースパス',
@@ -123,12 +116,14 @@ console.log(`[i18n-release] English source keys: ${englishKeys.length}`);
 
 for (const locale of supportedLocales.filter(locale => locale !== 'en')) {
   const localeObj = parseLocaleFile(path.join(localesDir, `${locale}.ts`));
-  const translatedCount = englishKeys.filter(key => hasKey(localeObj, key)).length;
-  const floor = minTranslatedKeys[locale] ?? 1;
+  // Every English key must be translated before a release, so the gap
+  // between English and the other languages can't reopen.
+  const missingKeys = englishKeys.filter(key => !hasKey(localeObj, key));
+  const translatedCount = englishKeys.length - missingKeys.length;
   const percentage = ((translatedCount / englishKeys.length) * 100).toFixed(1);
   console.log(`[i18n-release] ${locale}: ${translatedCount}/${englishKeys.length} (${percentage}%)`);
-  if (translatedCount < floor) {
-    fail(`${locale} translated key count regressed below ${floor}: ${translatedCount}.`);
+  if (missingKeys.length > 0) {
+    fail(`${locale} is missing ${missingKeys.length} translation(s), e.g. ${missingKeys.slice(0, 5).join(', ')}.`);
   }
 }
 
@@ -152,4 +147,4 @@ if (process.exitCode) {
   process.exit(process.exitCode);
 }
 
-console.log('[i18n-release] Locale source, coverage floors, and release bundle checks passed.');
+console.log('[i18n-release] Locale source, full coverage, and release bundle checks passed.');

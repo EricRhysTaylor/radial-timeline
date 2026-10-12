@@ -4,7 +4,7 @@
 import { Modal, App, ButtonComponent, Notice, TextComponent, TFile, TAbstractFile } from 'obsidian';
 import { tooltip, tooltipForComponent } from '../utils/tooltip';
 import type RadialTimelinePlugin from '../main';
-import { t } from '../i18n';
+import { t, tCount } from '../i18n';
 import type { TimelineItem } from '../types';
 import { clearAllGossamerData, clearGossamerRunSlot, collectGossamerManagedSnapshot, filterBeatsBySystem, GOSSAMER_LEGACY_FIELDS, normalizeBeatName, normalizeGossamerHistory } from '../utils/gossamer';
 import { DEFAULT_GOSSAMER_SIGNAL, GOSSAMER_SIGNAL_METADATA, type GossamerSignalType } from '../types/gossamerSignals';
@@ -247,8 +247,7 @@ export class GossamerScoreModal extends Modal {
     }
 
     const confirmMessage = t('gossamer.scoreModal.normalizeConfirmMessage', {
-      count: normalizationIssues.length,
-      plural: normalizationIssues.length === 1 ? '' : 's'
+      beats: tCount('beat', normalizationIssues.length)
     });
 
     new NormalizeConfirmationModal(
@@ -283,7 +282,7 @@ export class GossamerScoreModal extends Modal {
         }
 
         if (changedCount > 0) {
-          const parts = [t('gossamer.scoreModal.normalizedDone', { count: changedCount, plural: changedCount === 1 ? '' : 's' })];
+          const parts = [t('gossamer.scoreModal.normalizedDone', { beats: tCount('beat', changedCount) })];
           if (snapshotPath) parts.push(t('gossamer.scoreModal.normalizeArchive', { path: snapshotPath }));
           new Notice(parts.join(' '));
           this.close();
@@ -1370,8 +1369,7 @@ class NormalizeConfirmationModal extends Modal {
         issuesEl.createDiv({
           cls: 'ert-purge-issues-footnote',
           text: t('gossamer.scoreModal.normalizeMoreSuffix', {
-            count: this.issues.length - preview.length,
-            plural: this.issues.length - preview.length === 1 ? '' : 's'
+            moreBeats: tCount('moreBeat', this.issues.length - preview.length)
           })
         });
       }

@@ -93,6 +93,26 @@ Two things need saying in the PR itself, because they can't be reconstructed lat
   reconstructible, and you're the only one who knows. Review what you submit, and
   don't submit output you have reason to think reproduces someone else's code.
 
+## Translations
+
+Radial Timeline ships in English, German (`de`), Japanese (`ja`), Korean (`ko`),
+and Simplified Chinese (`zh`), following Obsidian’s language setting. Most of the
+non-English text is machine-translated and has not been reviewed by native
+speakers, so corrections from people who read the language natively are
+especially welcome.
+
+To correct or improve a translation:
+
+1. Edit `src/i18n/locales/<code>.ts`. `en.ts` is the source of truth for every
+   key; keep each `{{placeholder}}` exactly as it appears there.
+2. Keep product names (Radial Timeline, Gossamer, Inquiry, Pulse, Chronologue)
+   and YAML field names such as `Act` or `Subplot` in English.
+3. Run `npm run i18n:coverage` to confirm nothing went missing.
+4. Open a pull request. A small PR fixing a handful of phrases is ideal. The
+   CLA below applies to translations too.
+
+To propose a new language, open an issue first.
+
 ## What isn't permitted
 
 Radial Timeline is not for redistribution. Without written permission, you may

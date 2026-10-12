@@ -114,7 +114,7 @@ async function main() {
     console.log(`${colors.dim}Locales directory: ${localesDir}${colors.reset}\n`);
     
     // Get all locale files
-    const files = fs.readdirSync(localesDir).filter(f => f.endsWith('.ts'));
+    const files = fs.readdirSync(localesDir).filter(f => f.endsWith('.ts') && !f.endsWith('.test.ts'));
     
     if (!files.includes('en.ts')) {
         console.error(`${colors.red}Error: en.ts (source of truth) not found!${colors.reset}`);

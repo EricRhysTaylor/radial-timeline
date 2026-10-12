@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T18:00:00.000Z",
+  "generatedAt": "2026-10-12T00:00:00.000Z",
   "models": [
     {
       "provider": "anthropic",
@@ -8,7 +8,8 @@
       "outputPer1M": 20,
       "cacheWrite5mPer1M": 5,
       "cacheWrite1hPer1M": 8,
-      "cacheReadPer1M": 0.2
+      "cacheReadPer1M": 0.2,
+      "note": "Current depth model. Cache writes 1.25x (5m) / 2x (1h) input; cache reads 0.05x input. Verified against platform.claude.com/docs/en/about-claude/pricing on 2026-09-25."
     },
     {
       "provider": "anthropic",
@@ -17,7 +18,8 @@
       "outputPer1M": 25,
       "cacheWrite5mPer1M": 6.25,
       "cacheWrite1hPer1M": 10,
-      "cacheReadPer1M": 0.5
+      "cacheReadPer1M": 0.5,
+      "note": "Continuity model (one generation back). Cache write 1.25x (5m) / 2x (1h), cache read 0.1x."
     },
     {
       "provider": "anthropic",
@@ -26,7 +28,8 @@
       "outputPer1M": 10,
       "cacheWrite5mPer1M": 2.5,
       "cacheWrite1hPer1M": 4,
-      "cacheReadPer1M": 0.2
+      "cacheReadPer1M": 0.2,
+      "note": "Mid tier; same price as Sonnet 5. Standard multipliers on $2: write 1.25x/2x, read 0.1x. Verified against platform.claude.com/docs/en/about-claude/pricing on 2026-10-01."
     },
     {
       "provider": "anthropic",
@@ -35,7 +38,8 @@
       "outputPer1M": 5,
       "cacheWrite5mPer1M": 1.25,
       "cacheWrite1hPer1M": 2,
-      "cacheReadPer1M": 0.1
+      "cacheReadPer1M": 0.1,
+      "note": "Economy tier. Standard Anthropic cache multipliers on $1 input: write 5m 1.25x, 1h 2x, read 0.1x."
     },
     {
       "provider": "anthropic",
@@ -44,7 +48,8 @@
       "outputPer1M": 50,
       "cacheWrite5mPer1M": 12.5,
       "cacheWrite1hPer1M": 20,
-      "cacheReadPer1M": 0.25
+      "cacheReadPer1M": 0.25,
+      "note": "Premium always-on-thinking model. 2x Opus on input/output; cache writes 5m $12.50, 1h $20.00; cache reads $0.25 (0.025x input)."
     },
     {
       "provider": "openai",
@@ -59,7 +64,8 @@
         "outputPer1M": 15,
         "cacheWritePer1M": 5.0,
         "cacheReadPer1M": 0.2
-      }
+      },
+      "note": "Verified against developers.openai.com/api/docs/models on 2026-10-01. Permanent price. Cache writes 1.25x uncached input (developers.openai.com/api/docs/guides/prompt-caching). Long context above 272K: 2x input and cache read, 1.5x output; long-context write 1.25x long-context input."
     },
     {
       "provider": "openai",
@@ -74,7 +80,8 @@
         "outputPer1M": 75,
         "cacheWritePer1M": 25.0,
         "cacheReadPer1M": 2
-      }
+      },
+      "note": "GPT-6 Astra, 'pro' channel. Same cache and long-context rules as GPT-6.1 Sol."
     },
     {
       "provider": "openai",
@@ -89,7 +96,8 @@
         "outputPer1M": 0.75,
         "cacheWritePer1M": 0.25,
         "cacheReadPer1M": 0.02
-      }
+      },
+      "note": "Economy model on the gpt-6 line. Same cache and long-context rules as GPT-6.1 Sol."
     },
     {
       "provider": "google",
@@ -97,12 +105,14 @@
       "inputPer1M": 2,
       "outputPer1M": 12,
       "cacheReadPer1M": 0.2,
+      "cacheStoragePer1MPerHour": 4.5,
       "longContext": {
         "thresholdInputTokens": 200000,
         "inputPer1M": 4,
         "outputPer1M": 18,
         "cacheReadPer1M": 0.4
-      }
+      },
+      "note": "Verified against ai.google.dev/gemini-api/docs/pricing on 2026-09-05. Cache storage billed per MTok per hour."
     },
     {
       "provider": "google",
@@ -110,6 +120,7 @@
       "inputPer1M": 0.75,
       "outputPer1M": 3.75,
       "cacheReadPer1M": 0.075,
+      "cacheStoragePer1MPerHour": 0.5,
       "promo": {
         "label": "Launch pricing through Dec 31, 2026",
         "expiresAt": "2027-01-01T00:00:00Z",
@@ -117,7 +128,8 @@
         "standardOutputPer1M": 7.5,
         "standardCacheReadPer1M": 0.15,
         "standardCacheStoragePer1MPerHour": 1
-      }
+      },
+      "note": "Launch pricing through 2026-12-31; the promo entry switches every rate to standard on 2027-01-01. No long-context tier. Verified against ai.google.dev/gemini-api/docs/pricing on 2026-09-25."
     }
   ]
 }

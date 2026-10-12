@@ -7,7 +7,9 @@ import {
     resetPricingToBuiltin,
     getActivePricingMeta,
     getPricingFreshnessLabel,
+    parsePricingFile,
 } from './providerPricing';
+import pricingFile from '../../../scripts/models/pricing.json';
 
 describe('providerPricing', () => {
     afterEach(() => {
@@ -337,5 +339,43 @@ describe('providerPricing', () => {
         expect(getPricingFreshnessLabel({ source: 'cache', fetchedAt: fourDaysAgo })).toMatch(/^Using cached pricing from /);
 
         expect(getPricingFreshnessLabel({ source: 'cache' })).toBe('Using cached pricing');
+    });
+
+    // pricing.json is the only price table: the plugin bundles it and fetches
+    // its live copy, and both go through parsePricingFile.
+    it('parses every entry in the bundled pricing.json', () => {
+        const { table, rejected } = parsePricingFile(pricingFile);
+        expect(rejected).toBe(0);
+        const parsedCount = Object.values(table).reduce((sum, models) => sum + Object.keys(models ?? {}).length, 0);
+        expect(parsedCount).toBe(pricingFile.models.length);
+    });
+
+    it('reads cache storage rates at the top level and under long context', () => {
+        const { table } = parsePricingFile({
+            models: [{
+                provider: 'google',
+                modelId: 'test-model',
+                inputPer1M: 1,
+                outputPer1M: 2,
+                cacheStoragePer1MPerHour: 0.5,
+                note: 'ignored by the parser',
+                longContext: { thresholdInputTokens: 1000, inputPer1M: 2, outputPer1M: 4, cacheStoragePer1MPerHour: 1 }
+            }]
+        });
+        expect(table.google?.['test-model']?.cacheStoragePer1MPerHour).toBe(0.5);
+        expect(table.google?.['test-model']?.longContext?.cacheStoragePer1MPerHour).toBe(1);
+        expect(table.google?.['test-model']).not.toHaveProperty('note');
+    });
+
+    it('counts invalid entries as rejected', () => {
+        const { table, rejected } = parsePricingFile({
+            models: [
+                { provider: 'anthropic', modelId: 'ok', inputPer1M: 1, outputPer1M: 2 },
+                { provider: 'nobody', modelId: 'bad-provider', inputPer1M: 1, outputPer1M: 2 },
+                { provider: 'openai', modelId: 'bad-rate', inputPer1M: -1, outputPer1M: 2 }
+            ]
+        });
+        expect(rejected).toBe(2);
+        expect(Object.keys(table.anthropic ?? {})).toEqual(['ok']);
     });
 });

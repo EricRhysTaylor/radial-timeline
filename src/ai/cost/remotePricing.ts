@@ -1,5 +1,4 @@
-import type { AIProviderId } from '../types';
-import type { ProviderModelPricing, ProviderPricingTable, PromoPricing } from './providerPricing';
+import { parsePricingFile, type ProviderPricingTable } from './providerPricing';
 import { requestJson } from '../../utils/requestUrlJson';
 
 export interface RemotePricingCache {
@@ -24,104 +23,9 @@ export interface RemotePricingLoadResult {
 }
 
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
-const VALID_PROVIDERS = new Set<string>(['openai', 'anthropic', 'google']);
-
-function isFinitePositiveOrZero(value: unknown): value is number {
-    return typeof value === 'number' && Number.isFinite(value) && value >= 0;
-}
-
-function isValidPromo(value: unknown): value is PromoPricing {
-    if (!value || typeof value !== 'object') return false;
-    const v = value as Record<string, unknown>;
-    if (typeof v.label !== 'string' || !v.label.trim()) return false;
-    if (v.expiresAt !== undefined && typeof v.expiresAt !== 'string') return false;
-    if (v.standardInputPer1M !== undefined && !isFinitePositiveOrZero(v.standardInputPer1M)) return false;
-    if (v.standardOutputPer1M !== undefined && !isFinitePositiveOrZero(v.standardOutputPer1M)) return false;
-    if (v.standardCacheReadPer1M !== undefined && !isFinitePositiveOrZero(v.standardCacheReadPer1M)) return false;
-    if (v.standardCacheStoragePer1MPerHour !== undefined && !isFinitePositiveOrZero(v.standardCacheStoragePer1MPerHour)) return false;
-    return true;
-}
-
-interface RawPricingEntry {
-    provider: string;
-    modelId: string;
-    inputPer1M: number;
-    outputPer1M: number;
-    cacheWrite5mPer1M?: number;
-    cacheWrite1hPer1M?: number;
-    cacheWritePer1M?: number;
-    cacheReadPer1M?: number;
-    longContext?: {
-        thresholdInputTokens: number;
-        inputPer1M: number;
-        outputPer1M: number;
-        cacheWrite5mPer1M?: number;
-        cacheWrite1hPer1M?: number;
-        cacheWritePer1M?: number;
-        cacheReadPer1M?: number;
-    };
-    promo?: unknown;
-}
-
-type LongContextPricing = NonNullable<ProviderModelPricing['longContext']>;
-
-function isValidLongContext(value: unknown): value is LongContextPricing {
-    if (!value || typeof value !== 'object') return false;
-    const v = value as Record<string, unknown>;
-    return isFinitePositiveOrZero(v.thresholdInputTokens)
-        && isFinitePositiveOrZero(v.inputPer1M)
-        && isFinitePositiveOrZero(v.outputPer1M);
-}
-
-function isValidPricingEntry(value: unknown): value is RawPricingEntry {
-    if (!value || typeof value !== 'object') return false;
-    const v = value as Record<string, unknown>;
-    if (typeof v.provider !== 'string' || !VALID_PROVIDERS.has(v.provider)) return false;
-    if (typeof v.modelId !== 'string' || !v.modelId.trim()) return false;
-    if (!isFinitePositiveOrZero(v.inputPer1M)) return false;
-    if (!isFinitePositiveOrZero(v.outputPer1M)) return false;
-    return true;
-}
-
-function toModelPricing(entry: RawPricingEntry): ProviderModelPricing {
-    const pricing: ProviderModelPricing = {
-        inputPer1M: entry.inputPer1M,
-        outputPer1M: entry.outputPer1M
-    };
-    if (isFinitePositiveOrZero(entry.cacheWrite5mPer1M)) pricing.cacheWrite5mPer1M = entry.cacheWrite5mPer1M;
-    if (isFinitePositiveOrZero(entry.cacheWrite1hPer1M)) pricing.cacheWrite1hPer1M = entry.cacheWrite1hPer1M;
-    if (isFinitePositiveOrZero(entry.cacheWritePer1M)) pricing.cacheWritePer1M = entry.cacheWritePer1M;
-    if (isFinitePositiveOrZero(entry.cacheReadPer1M)) pricing.cacheReadPer1M = entry.cacheReadPer1M;
-    const lc = entry.longContext;
-    if (isValidLongContext(lc)) {
-        pricing.longContext = {
-            thresholdInputTokens: lc.thresholdInputTokens,
-            inputPer1M: lc.inputPer1M,
-            outputPer1M: lc.outputPer1M,
-            ...(isFinitePositiveOrZero(lc.cacheWrite5mPer1M) ? { cacheWrite5mPer1M: lc.cacheWrite5mPer1M } : {}),
-            ...(isFinitePositiveOrZero(lc.cacheWrite1hPer1M) ? { cacheWrite1hPer1M: lc.cacheWrite1hPer1M } : {}),
-            ...(isFinitePositiveOrZero(lc.cacheWritePer1M) ? { cacheWritePer1M: lc.cacheWritePer1M } : {}),
-            ...(isFinitePositiveOrZero(lc.cacheReadPer1M) ? { cacheReadPer1M: lc.cacheReadPer1M } : {})
-        };
-    }
-    if (isValidPromo(entry.promo)) pricing.promo = entry.promo;
-    return pricing;
-}
-
 function parseRemotePayload(payload: unknown): ProviderPricingTable | null {
-    if (!payload || typeof payload !== 'object') return null;
-    const record = payload as Record<string, unknown>;
-    const rawModels = Array.isArray(record.models) ? record.models : [];
-    const entries = rawModels.filter(isValidPricingEntry);
-    if (!entries.length) return null;
-
-    const table: ProviderPricingTable = {};
-    for (const entry of entries) {
-        const provider = entry.provider as AIProviderId;
-        if (!table[provider]) table[provider] = {};
-        table[provider][entry.modelId] = toModelPricing(entry);
-    }
-    return table;
+    const { table } = parsePricingFile(payload);
+    return Object.keys(table).length > 0 ? table : null;
 }
 
 function parseCache(raw: string | null): RemotePricingCache | null {

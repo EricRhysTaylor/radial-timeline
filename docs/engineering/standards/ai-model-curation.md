@@ -33,7 +33,7 @@ The promotion is atomic — these all change in the same PR:
 
 - `src/ai/registry/builtinModels.ts` — add the new model, remove the entry it replaces
 - `src/ai/registry/modelRequestProfiles.ts` — declare exactly the parameters from step 1; add a per-model override if it deviates from the provider default
-- `src/ai/cost/providerPricing.ts` — pricing rows, cache-read/write, long-context thresholds
+- `scripts/models/pricing.json` — pricing entry: input/output, cache read/write/storage, long-context thresholds, promo, and a `note` with the verified source and date. It is the only price table: the plugin bundles it at build time and fetches its live copy from `main`, so never add prices anywhere else
 - `scripts/models/registry.json` — drift-snapshot reference (the picker reads `BUILTIN_MODELS` directly via `getPickerModelsForProvider`; there is no separate `src/data/aiModels.ts`)
 
 ### 3. Run one real call with the full RT parameter set

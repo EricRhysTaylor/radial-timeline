@@ -1,4 +1,5 @@
 import type { AIProviderId } from '../types';
+import bundledPricingFile from '../../../scripts/models/pricing.json';
 
 export type PricingSource = 'remote' | 'cache' | 'builtin';
 
@@ -64,146 +65,127 @@ export interface ResolvedProviderModelPricing {
     meta: PricingMeta;
 }
 
-export const BUILTIN_PRICING: ProviderPricingTable = {
-    anthropic: {
-        // Current depth model. $4/$20 per MTok; cache writes keep the
-        // standard 1.25× (5m) / 2× (1h) multipliers, but cache reads are
-        // 0.05× input ($0.20), not 0.1×. Verified against
-        // platform.claude.com/docs/en/about-claude/pricing on 2026-09-25.
-        'claude-opus-5-5': {
-            inputPer1M: 4.0,
-            outputPer1M: 20.0,
-            cacheWrite5mPer1M: 5.0,
-            cacheWrite1hPer1M: 8.0,
-            cacheReadPer1M: 0.2
-        },
-        // Continuity model (one generation back). $5/$25 per MTok; cache
-        // write 1.25× (5m) / 2× (1h), cache read 0.1×.
-        'claude-opus-5': {
-            inputPer1M: 5.0,
-            outputPer1M: 25.0,
-            cacheWrite5mPer1M: 6.25,
-            cacheWrite1hPer1M: 10.0,
-            cacheReadPer1M: 0.5
-        },
-        // Mid tier: Claude Sonnet 5.5, same price as Sonnet 5 (whose $2/$10
-        // intro price became standard). Standard multipliers on $2: write
-        // 1.25×/2×, read 0.1×. Verified against
-        // platform.claude.com/docs/en/about-claude/pricing on 2026-10-01.
-        'claude-sonnet-5-5': {
-            inputPer1M: 2.0,
-            outputPer1M: 10.0,
-            cacheWrite5mPer1M: 2.5,
-            cacheWrite1hPer1M: 4.0,
-            cacheReadPer1M: 0.2
-        },
-        // Economy tier. Standard Anthropic cache multipliers on a $1 input:
-        // write 5m 1.25×, 1h 2×, read 0.1×.
-        'claude-haiku-4-5': {
-            inputPer1M: 1.0,
-            outputPer1M: 5.0,
-            cacheWrite5mPer1M: 1.25,
-            cacheWrite1hPer1M: 2.0,
-            cacheReadPer1M: 0.1
-        },
-        // Premium always-on-thinking model. 2× Opus on input/output; cache
-        // writes 5m $12.50, 1h $20.00 per MTok as on Fable 5. Cache reads are
-        // the one price that moved: $0.25/MTok (0.025× input), a quarter of
-        // Fable 5's $1.00 and half of Opus 5's $0.50.
-        'claude-fable-5-1': {
-            inputPer1M: 10.0,
-            outputPer1M: 50.0,
-            cacheWrite5mPer1M: 12.5,
-            cacheWrite1hPer1M: 20.0,
-            cacheReadPer1M: 0.25
-        }
-    },
-    openai: {
-        // Verified against developers.openai.com/api/docs/models on 2026-10-01.
-        // GPT-6.1 Sol/GPT-6 Luna prices are permanent (not promotional).
-        // GPT-5.6+ bills prompt-cache writes at 1.25× the uncached input rate
-        // (developers.openai.com/api/docs/guides/prompt-caching): $2.50 Sol,
-        // $12.50 Astra, $0.125 Luna. Long context is 2× input and cache-read,
-        // 1.5× output above 272K; the long-context write rate is 1.25× the
-        // long-context input rate. 6.1 Sol halves cache reads to $0.10
-        // (GPT-6 Sol: $0.20).
-        'gpt-6.1-sol': {
-            inputPer1M: 2.0,
-            outputPer1M: 10.0,
-            cacheWritePer1M: 2.5,
-            cacheReadPer1M: 0.1,
-            longContext: {
-                thresholdInputTokens: 272_000,
-                inputPer1M: 4.0,
-                outputPer1M: 15.0,
-                cacheWritePer1M: 5.0,
-                cacheReadPer1M: 0.2
-            }
-        },
-        // GPT-6 Astra, 'pro' channel.
-        'gpt-6-astra': {
-            inputPer1M: 10.0,
-            outputPer1M: 50.0,
-            cacheWritePer1M: 12.5,
-            cacheReadPer1M: 1.0,
-            longContext: {
-                thresholdInputTokens: 272_000,
-                inputPer1M: 20.0,
-                outputPer1M: 75.0,
-                cacheWritePer1M: 25.0,
-                cacheReadPer1M: 2.0
-            }
-        },
-        // Economy model on the gpt-6 line.
-        'gpt-6-luna': {
-            inputPer1M: 0.1,
-            outputPer1M: 0.5,
-            cacheWritePer1M: 0.125,
-            cacheReadPer1M: 0.01,
-            longContext: {
-                thresholdInputTokens: 272_000,
-                inputPer1M: 0.2,
-                outputPer1M: 0.75,
-                cacheWritePer1M: 0.25,
-                cacheReadPer1M: 0.02
-            }
-        }
-    },
-    google: {
-        // Verified against ai.google.dev/gemini-api/docs/pricing on 2026-09-05.
-        'gemini-3.1-pro-preview': {
-            inputPer1M: 2.0,
-            outputPer1M: 12.0,
-            cacheReadPer1M: 0.2,
-            cacheStoragePer1MPerHour: 4.5,
-            longContext: {
-                thresholdInputTokens: 200_000,
-                inputPer1M: 4.0,
-                outputPer1M: 18.0,
-                cacheReadPer1M: 0.4
-            }
-        },
-        // Launch pricing through 2026-12-31: $0.75/$3.75, cache read $0.075,
-        // cache storage $0.50/MTok/hour. From 2027-01-01 the standard rate is
-        // $1.50/$7.50, cache read $0.15, storage $1.00; the promo entry
-        // switches every rate automatically. No long-context tier.
-        // Verified against ai.google.dev/gemini-api/docs/pricing on 2026-09-25.
-        'gemini-3.8-flash': {
-            inputPer1M: 0.75,
-            outputPer1M: 3.75,
-            cacheReadPer1M: 0.075,
-            cacheStoragePer1MPerHour: 0.5,
-            promo: {
-                label: 'Launch pricing through Dec 31, 2026',
-                expiresAt: '2027-01-01T00:00:00Z',
-                standardInputPer1M: 1.5,
-                standardOutputPer1M: 7.5,
-                standardCacheReadPer1M: 0.15,
-                standardCacheStoragePer1MPerHour: 1.0
-            }
-        }
+function isFinitePositiveOrZero(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+const VALID_PROVIDERS = new Set<string>(['openai', 'anthropic', 'google']);
+
+function isValidPromo(value: unknown): value is PromoPricing {
+    if (!value || typeof value !== 'object') return false;
+    const v = value as Record<string, unknown>;
+    if (typeof v.label !== 'string' || !v.label.trim()) return false;
+    if (v.expiresAt !== undefined && typeof v.expiresAt !== 'string') return false;
+    if (v.standardInputPer1M !== undefined && !isFinitePositiveOrZero(v.standardInputPer1M)) return false;
+    if (v.standardOutputPer1M !== undefined && !isFinitePositiveOrZero(v.standardOutputPer1M)) return false;
+    if (v.standardCacheReadPer1M !== undefined && !isFinitePositiveOrZero(v.standardCacheReadPer1M)) return false;
+    if (v.standardCacheStoragePer1MPerHour !== undefined && !isFinitePositiveOrZero(v.standardCacheStoragePer1MPerHour)) return false;
+    return true;
+}
+
+type LongContextPricing = NonNullable<ProviderModelPricing['longContext']>;
+
+function isValidLongContext(value: unknown): value is LongContextPricing {
+    if (!value || typeof value !== 'object') return false;
+    const v = value as Record<string, unknown>;
+    return isFinitePositiveOrZero(v.thresholdInputTokens)
+        && isFinitePositiveOrZero(v.inputPer1M)
+        && isFinitePositiveOrZero(v.outputPer1M);
+}
+
+interface RawPricingEntry {
+    provider: string;
+    modelId: string;
+    inputPer1M: number;
+    outputPer1M: number;
+    [rate: string]: unknown;
+}
+
+function isValidPricingEntry(value: unknown): value is RawPricingEntry {
+    if (!value || typeof value !== 'object') return false;
+    const v = value as Record<string, unknown>;
+    if (typeof v.provider !== 'string' || !VALID_PROVIDERS.has(v.provider)) return false;
+    if (typeof v.modelId !== 'string' || !v.modelId.trim()) return false;
+    if (!isFinitePositiveOrZero(v.inputPer1M)) return false;
+    if (!isFinitePositiveOrZero(v.outputPer1M)) return false;
+    return true;
+}
+
+const OPTIONAL_RATES = [
+    'cacheWrite5mPer1M',
+    'cacheWrite1hPer1M',
+    'cacheWritePer1M',
+    'cacheReadPer1M',
+    'cacheStoragePer1MPerHour'
+] as const;
+
+function pickOptionalRates(source: Record<string, unknown>): Partial<Record<typeof OPTIONAL_RATES[number], number>> {
+    const rates: Partial<Record<typeof OPTIONAL_RATES[number], number>> = {};
+    for (const rate of OPTIONAL_RATES) {
+        const value = source[rate];
+        if (isFinitePositiveOrZero(value)) rates[rate] = value;
     }
-};
+    return rates;
+}
+
+function toModelPricing(entry: RawPricingEntry): ProviderModelPricing {
+    const pricing: ProviderModelPricing = {
+        inputPer1M: entry.inputPer1M,
+        outputPer1M: entry.outputPer1M,
+        ...pickOptionalRates(entry)
+    };
+    const lc = entry.longContext;
+    if (isValidLongContext(lc)) {
+        pricing.longContext = {
+            thresholdInputTokens: lc.thresholdInputTokens,
+            inputPer1M: lc.inputPer1M,
+            outputPer1M: lc.outputPer1M,
+            ...pickOptionalRates(lc)
+        };
+    }
+    if (isValidPromo(entry.promo)) pricing.promo = entry.promo;
+    return pricing;
+}
+
+/**
+ * Parse the pricing file format (`scripts/models/pricing.json`): a `models`
+ * array of `{ provider, modelId, rates… }`. The same parser reads the bundled
+ * copy and the live copy the plugin fetches, so both always mean the same.
+ * Returns the table and how many entries were rejected as invalid.
+ */
+export function parsePricingFile(payload: unknown): { table: ProviderPricingTable; rejected: number } {
+    const table: ProviderPricingTable = {};
+    if (!payload || typeof payload !== 'object') return { table, rejected: 0 };
+    const rawModels = (payload as Record<string, unknown>).models;
+    const models: unknown[] = Array.isArray(rawModels) ? rawModels : [];
+    let rejected = 0;
+    for (const raw of models) {
+        if (!isValidPricingEntry(raw)) {
+            rejected += 1;
+            continue;
+        }
+        const provider = raw.provider as AIProviderId;
+        if (!table[provider]) table[provider] = {};
+        table[provider][raw.modelId] = toModelPricing(raw);
+    }
+    return { table, rejected };
+}
+
+function loadBundledPricing(): ProviderPricingTable {
+    const { table, rejected } = parsePricingFile(bundledPricingFile);
+    if (rejected > 0) {
+        throw new Error(`scripts/models/pricing.json has ${rejected} invalid pricing entr${rejected === 1 ? 'y' : 'ies'}`);
+    }
+    return table;
+}
+
+/**
+ * The price table that ships inside the plugin: `scripts/models/pricing.json`,
+ * bundled at build time. That file is the only place prices are written; the
+ * plugin also fetches its live copy from the repo (remotePricing.ts) so a price
+ * fix reaches users without a release.
+ */
+export const BUILTIN_PRICING: ProviderPricingTable = loadBundledPricing();
 
 let activePricing: ProviderPricingTable = structuredClone(BUILTIN_PRICING);
 let activeMeta: PricingMeta = { source: 'builtin' };

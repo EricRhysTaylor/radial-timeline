@@ -12,9 +12,9 @@
  *
  *   [1] Every model.id in src/ai/registry/builtinModels.ts (excluding
  *       provider:'none' and provider:'ollama') has a pricing entry in
- *       src/ai/cost/providerPricing.ts.
+ *       scripts/models/pricing.json, the single price table.
  *
- *   [2] Every model.id in providerPricing.ts is either in BUILTIN_MODELS
+ *   [2] Every model in pricing.json is either in BUILTIN_MODELS
  *       or in the documented dangling allowlist (legacy retained-for-
  *       continuity entries).
  *
@@ -33,7 +33,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
 const BUILTIN_MODELS_PATH = path.join(ROOT, 'src/ai/registry/builtinModels.ts');
-const PROVIDER_PRICING_PATH = path.join(ROOT, 'src/ai/cost/providerPricing.ts');
+const PRICING_FILE_PATH = path.join(ROOT, 'scripts/models/pricing.json');
 
 // Pricing entries that intentionally exist without a corresponding
 // BUILTIN_MODELS entry. Each must be justified with a comment when
@@ -100,25 +100,16 @@ function parseBuiltinModels(source) {
     return entries;
 }
 
-/**
- * Parse providerPricing.ts to extract every keyed model ID. The file
- * structure is provider -> { modelId: { ... } } at depth 2.
- */
+/** Every modelId in pricing.json. */
 function parsePricingKeys(source) {
-    const keys = new Set();
-    // Top-of-line single-quoted keys (4-space indent) that begin a pricing object.
-    const re = /^\s{4,8}'([a-zA-Z0-9.\-_]+)':\s*\{/gm;
-    let match;
-    while ((match = re.exec(source)) !== null) {
-        keys.add(match[1]);
-    }
-    return keys;
+    const models = JSON.parse(source).models;
+    return new Set(Array.isArray(models) ? models.map(model => model.modelId) : []);
 }
 
 async function main() {
     const [builtinSrc, pricingSrc] = await Promise.all([
         readFileSafe(BUILTIN_MODELS_PATH),
-        readFileSafe(PROVIDER_PRICING_PATH),
+        readFileSafe(PRICING_FILE_PATH),
     ]);
 
     const builtinAll = parseBuiltinModels(builtinSrc);
@@ -139,7 +130,7 @@ async function main() {
             findings.push({
                 severity: 'error',
                 check: 'missing-pricing',
-                message: `${model.provider}/${model.id} is in BUILTIN_MODELS but has no entry in providerPricing.ts`,
+                message: `${model.provider}/${model.id} is in BUILTIN_MODELS but has no entry in scripts/models/pricing.json`,
             });
         }
     }
@@ -151,7 +142,7 @@ async function main() {
         findings.push({
             severity: 'warn',
             check: 'dangling-pricing',
-            message: `providerPricing.ts has '${key}' but no BUILTIN_MODELS entry — retire pricing or restore the registry entry`,
+            message: `pricing.json has '${key}' but no BUILTIN_MODELS entry — retire pricing or restore the registry entry`,
         });
     }
 

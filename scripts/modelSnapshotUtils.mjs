@@ -450,7 +450,7 @@ export function buildRecommendedFollowUps(input) {
     if (hasModelIdDrift || hasAliasDrift) {
         followUps.push('Review scripts/models/latest-models.json and scripts/models/model-drift-report.json for provider catalog drift.');
         followUps.push('If a new provider model should ship in RT, update scripts/models/registry.json and src/ai/registry/builtinModels.ts.');
-        followUps.push('If RT surfaces cost or positioning for the model, update src/ai/cost/providerPricing.ts.');
+        followUps.push('If RT surfaces cost or positioning for the model, update scripts/models/pricing.json.');
     }
 
     if (hasTokenDrift) {

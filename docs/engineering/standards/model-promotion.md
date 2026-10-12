@@ -67,7 +67,7 @@ A model leaves the catalog when:
 When you retire a model, the cleanup pass covers:
 
 - `src/ai/registry/builtinModels.ts` — remove the entry
-- `src/ai/cost/providerPricing.ts` — remove the pricing row
+- `scripts/models/pricing.json` — remove the pricing entry (the only price table; the plugin bundles it and fetches its live copy)
 - `src/data/aiModels.ts` — remove the curated picker entry
 - `scripts/models/registry.json` — remove from the drift snapshot
 - `src/utils/modelResolver.ts` — leave the LATEST_ALIAS_DISPLAY_NAMES entry if historic logs reference the model (for display only)

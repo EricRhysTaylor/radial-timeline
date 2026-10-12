@@ -4544,7 +4544,7 @@ export const de: DeepPartial<TranslationKeys> = {
             publicLabelName: 'Öffentliche Bezeichnung',
             publicLabelDesc: 'Optionale öffentliche Bezeichnung. Der private Buchtitel bleibt davon getrennt.',
             descriptionName: 'Beschreibung',
-            descriptionDesc: 'Optionale Beschreibung für Sie selbst oder für eine künftige öffentliche Darstellung.',
+            descriptionDesc: 'Optionale Angaben für die Community-Website.',
             booksName: 'Bücher',
             booksDesc: 'Das aktive Buch bestimmt Timeline-Ansicht, Titel und Exporte.',
             addBook: 'Buch hinzufügen',

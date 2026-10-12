@@ -4546,7 +4546,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             publicLabelName: '公开标签',
             publicLabelDesc: '可选的对外显示标签。私密书名保持独立。',
             descriptionName: '描述',
-            descriptionDesc: '可选的作者自用描述或将来的公开描述。',
+            descriptionDesc: '可选：显示在社区网站上的详细信息。',
             booksName: '书籍',
             booksDesc: '活动书籍决定时间轴视图、标题和导出。',
             addBook: '添加书籍',

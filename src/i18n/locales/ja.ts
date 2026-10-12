@@ -4545,7 +4545,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             publicLabelName: '公開ラベル',
             publicLabelDesc: '任意の公開用ラベル。非公開の書名とは別に管理されます。',
             descriptionName: '説明',
-            descriptionDesc: '著者向け、または将来の公開用の任意の説明。',
+            descriptionDesc: 'コミュニティサイトに表示する任意の詳細。',
             booksName: '本',
             booksDesc: 'アクティブな本が、タイムライン表示、タイトル、エクスポートを決定します。',
             addBook: '本を追加',

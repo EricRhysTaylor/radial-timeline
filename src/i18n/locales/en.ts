@@ -4226,7 +4226,7 @@ export const en = {
             publicLabelName: 'Public label',
             publicLabelDesc: 'Optional public-facing label. Private book title remains separate.',
             descriptionName: 'Description',
-            descriptionDesc: 'Optional author-facing or future public description.',
+            descriptionDesc: 'Optional details on the community website.',
             booksName: 'Books',
             booksDesc: 'The active book drives the timeline view, title and exports.',
             addBook: 'Add book',

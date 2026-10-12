@@ -4544,7 +4544,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             publicLabelName: '공개 라벨',
             publicLabelDesc: '선택적 공개용 라벨입니다. 비공개 책 제목은 별도로 유지됩니다.',
             descriptionName: '설명',
-            descriptionDesc: '저자용 또는 향후 공개용 선택적 설명.',
+            descriptionDesc: '커뮤니티 웹사이트에 표시할 선택적 세부 정보.',
             booksName: '책',
             booksDesc: '활성 책이 타임라인 보기, 제목, 내보내기를 결정합니다.',
             addBook: '책 추가',

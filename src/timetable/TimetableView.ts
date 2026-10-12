@@ -1,0 +1,519 @@
+/*
+ * Radial Timeline (tm) Plugin for Obsidian
+ * Copyright (c) 2025 Eric Rhys Taylor
+ * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
+ *
+ * Timetable: the Bases view
+ * -------------------------
+ * One row per note, in the wheel's manuscript order, with the wheel's color
+ * language: the scene number sits in a cell painted with the scene's status
+ * fill, and the Rings column shows subplot membership as a strip of squares in
+ * ring order. The Base's own filters choose the rows and its toolbar sets the
+ * columns, sort and grouping. Every value shown is the note's own frontmatter,
+ * so the wheel, this table and Obsidian's built-in Table never disagree.
+ */
+
+import {
+    BasesView,
+    Keymap,
+    MarkdownView,
+    TFile,
+    parsePropertyId,
+    setIcon,
+    type App,
+    type BasesAllOptions,
+    type BasesEntry,
+    type BasesEntryGroup,
+    type BasesPropertyId,
+    type QueryController,
+} from 'obsidian';
+import type RadialTimelinePlugin from '../main';
+import type { TimelineItem } from '../types';
+import { t } from '../i18n';
+import { getActiveBook, getBookIdForPath, getSagaBooks, getTimelineScope } from '../utils/books';
+import { getConfiguredActCount, parseActLabels, resolveActLabel } from '../utils/acts';
+import { getActiveFrontmatterMappings, readBeatPurpose } from '../utils/frontmatter';
+import { parseWhenField } from '../utils/date';
+import { formatSceneWhen, whenTextHasClock } from '../utils/whenFormat';
+import { normalizeStatus } from '../utils/text';
+import { isOverdueDateString } from '../utils/date';
+import { tooltip } from '../utils/tooltip';
+import { mountSvgMarkup } from '../utils/svgDom';
+import { renderDefs } from '../renderer/components/Defs';
+import { computeCacheableValues } from '../renderer/utils/Precompute';
+import type { PluginRendererFacade } from '../utils/sceneHelpers';
+import { runPromotion } from '../services/PromoteToSceneEntry';
+import {
+    buildRingLayout,
+    buildTableRow,
+    compareManuscriptRows,
+    sceneNumberFill,
+    withActDividers,
+    type RingLayout,
+    type TimetableRow,
+} from './timetableModel';
+import { TIMETABLE_VIEW_TYPE } from './timetableFiles';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const RINGS_PER_LINE_DEFAULT = 5;
+const RINGS_REFRESH_DELAY_MS = 300;
+
+interface TableItem {
+    entry: BasesEntry;
+    row: TimetableRow;
+    frontmatter: Record<string, unknown> | undefined;
+}
+
+interface TableGroup {
+    /** Stable identity for collapsing. */
+    id: string;
+    /** Header text, or null when the table isn't grouped. */
+    label: string | null;
+    items: TableItem[];
+}
+
+interface WheelRings {
+    key: string;
+    order: string[];
+    colorIndex: Map<string, number>;
+}
+
+/** Every open Timetable, so book switches and settings changes can redraw them. */
+const liveViews = new Set<TimetableView>();
+
+/** Redraw every open Timetable (after a book switch or a color change). */
+export function refreshTimetableViews(): void {
+    liveViews.forEach(view => view.refresh());
+}
+
+/** View options shown in the Bases toolbar's view menu. */
+export function timetableViewOptions(): BasesAllOptions[] {
+    return [
+        { type: 'toggle', key: 'ringsColumn', displayName: t('ui.timetable.optionRings'), default: true },
+        { type: 'slider', key: 'ringsPerLine', displayName: t('ui.timetable.optionRingsPerLine'), default: RINGS_PER_LINE_DEFAULT, min: 3, max: 8, step: 1 },
+    ];
+}
+
+/**
+ * Open a note from the table without replacing the table: reveal it where it
+ * is already open, otherwise use an editor tab in the main area, otherwise a
+ * new tab. Cmd/Ctrl-click always opens a new tab.
+ */
+async function openFromTimetable(app: App, file: TFile, evt: MouseEvent): Promise<void> {
+    if (Keymap.isModEvent(evt)) {
+        await app.workspace.openLinkText(file.path, '', 'tab');
+        return;
+    }
+    const markdownLeaves = app.workspace.getLeavesOfType('markdown')
+        .filter(leaf => leaf.getRoot() === app.workspace.rootSplit);
+    const showing = markdownLeaves.find(leaf => leaf.view instanceof MarkdownView && leaf.view.file?.path === file.path);
+    if (showing) {
+        await app.workspace.revealLeaf(showing);
+        app.workspace.setActiveLeaf(showing, { focus: true });
+        return;
+    }
+    const editor = markdownLeaves.find(leaf => !leaf.getViewState().pinned);
+    if (editor) {
+        await editor.openFile(file, { active: true }); // SAFE: openFile used for opening in an existing editor tab, so the Timetable tab itself is never replaced
+        return;
+    }
+    await app.workspace.openLinkText(file.path, '', 'tab');
+}
+
+function frontmatterKey(frontmatter: Record<string, unknown> | undefined, name: string): unknown {
+    if (!frontmatter) return undefined;
+    if (Object.prototype.hasOwnProperty.call(frontmatter, name)) return frontmatter[name];
+    const lower = name.toLowerCase();
+    const key = Object.keys(frontmatter).find(candidate => candidate.toLowerCase() === lower);
+    return key === undefined ? undefined : frontmatter[key];
+}
+
+function firstText(value: unknown): string {
+    const first: unknown = Array.isArray(value) ? value[0] : value;
+    return typeof first === 'string' ? first.trim() : (typeof first === 'number' ? String(first) : '');
+}
+
+export class TimetableView extends BasesView {
+    type = TIMETABLE_VIEW_TYPE;
+    private readonly rootEl: HTMLElement;
+    private readonly patternPrefix = `ert-timetable-${Math.random().toString(36).slice(2, 9)}-`;
+    private readonly collapsed = new Set<string>();
+    private rings: WheelRings | null = null;
+    private ringsTimer: number | null = null;
+    private ringsGeneration = 0;
+
+    constructor(controller: QueryController, containerEl: HTMLElement, private readonly plugin: RadialTimelinePlugin) {
+        super(controller);
+        this.rootEl = containerEl.createDiv({ cls: 'ert-timetable' });
+    }
+
+    onload(): void {
+        liveViews.add(this);
+        // One set of delegated handlers: rows are redrawn on every data update.
+        this.registerDomEvent(this.rootEl, 'click', (evt: MouseEvent) => this.handleClick(evt));
+        this.registerDomEvent(this.rootEl, 'keydown', (evt: KeyboardEvent) => {
+            if (evt.key !== 'Enter' && evt.key !== ' ') return;
+            const toggle = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__group-toggle') : null;
+            if (!toggle) return;
+            evt.preventDefault();
+            this.toggleGroup(toggle.dataset.groupId ?? '');
+        });
+    }
+
+    private handleClick(evt: MouseEvent): void {
+        const target = evt.target instanceof Element ? evt.target : null;
+        if (!target) return;
+        const toggle = target.closest<HTMLElement>('.ert-timetable__group-toggle');
+        if (toggle) {
+            this.toggleGroup(toggle.dataset.groupId ?? '');
+            return;
+        }
+        const switchBook = target.closest<HTMLElement>('.ert-timetable__notice button');
+        if (switchBook?.dataset.bookId) {
+            void this.plugin.setActiveBookId(switchBook.dataset.bookId);
+            return;
+        }
+        const row = target.closest<HTMLElement>('.ert-timetable__row');
+        const file = row?.dataset.path ? this.plugin.app.vault.getFileByPath(row.dataset.path) : null;
+        if (!file) return;
+        if (target.closest('.ert-timetable__promote')) {
+            void runPromotion(this.plugin, [file]);
+            return;
+        }
+        // Links, buttons and inputs inside a cell keep their own behavior.
+        if (target.closest('a, button, input, textarea, select')) return;
+        void openFromTimetable(this.plugin.app, file, evt);
+    }
+
+    private toggleGroup(id: string): void {
+        if (this.collapsed.has(id)) this.collapsed.delete(id);
+        else this.collapsed.add(id);
+        this.render();
+    }
+
+    onunload(): void {
+        liveViews.delete(this);
+        if (this.ringsTimer !== null) window.clearTimeout(this.ringsTimer);
+        this.ringsGeneration += 1;
+        this.rootEl.remove();
+    }
+
+    onDataUpdated(): void {
+        this.render();
+        this.scheduleRingsRefresh();
+    }
+
+    /** Redraw from the current data, and re-read the wheel's ring order. */
+    refresh(): void {
+        this.render();
+        this.scheduleRingsRefresh();
+    }
+
+    // ── Data ────────────────────────────────────────────────────────────
+
+    private buildGroups(): TableGroup[] {
+        const { app, settings } = this.plugin;
+        const authorSorted = this.config.getSort().length > 0;
+        const toItems = (entries: BasesEntry[]): TableItem[] => {
+            const items = entries
+                .filter(entry => entry.file.extension === 'md')
+                .map(entry => {
+                    const frontmatter: Record<string, unknown> | undefined = app.metadataCache.getFileCache(entry.file)?.frontmatter;
+                    return { entry, frontmatter, row: buildTableRow(entry.file.path, entry.file.basename, frontmatter, settings) };
+                });
+            // A sort the author sets in the Bases toolbar wins; otherwise wheel order.
+            return authorSorted ? items : items.sort((a, b) => compareManuscriptRows(a.row, b.row));
+        };
+
+        const grouped: BasesEntryGroup[] = this.data.groupedData;
+        if (grouped.length === 1 && !grouped[0].hasKey()) {
+            return this.splitByBook(toItems(grouped[0].entries));
+        }
+        return grouped.map((group, index) => {
+            const items = toItems(group.entries);
+            return { id: `group:${index}:${group.key?.toString() ?? ''}`, label: this.groupLabel(group, items), items };
+        });
+    }
+
+    /** An ungrouped table that spans books (the saga table) groups by book, in saga order. */
+    private splitByBook(items: TableItem[]): TableGroup[] {
+        const books = this.plugin.settings.books ?? [];
+        const bookOf = new Map(items.map(item => [item, getBookIdForPath(books, item.row.path)]));
+        const ids = new Set([...bookOf.values()].filter((id): id is string => typeof id === 'string'));
+        if (ids.size <= 1) return [{ id: 'all', label: null, items }];
+        const order = [...getSagaBooks(this.plugin.settings), ...books];
+        const groups: TableGroup[] = [];
+        for (const book of order) {
+            if (!ids.has(book.id) || groups.some(group => group.id === `book:${book.id}`)) continue;
+            groups.push({ id: `book:${book.id}`, label: book.title, items: items.filter(item => bookOf.get(item) === book.id) });
+        }
+        const outside = items.filter(item => bookOf.get(item) === undefined);
+        if (outside.length > 0) groups.push({ id: 'book:none', label: t('ui.timetable.outsideBooks'), items: outside });
+        return groups;
+    }
+
+    private groupLabel(group: BasesEntryGroup, items: TableItem[]): string {
+        if (!group.hasKey() || !group.key) return t('ui.timetable.noValue');
+        const text = group.key.toString();
+        const act = Number(text);
+        // Grouped by Act: name the act the way the timeline does.
+        if (Number.isInteger(act) && items.length > 0 && items.every(item => item.row.act === act)) {
+            return this.actLabel(act);
+        }
+        return text;
+    }
+
+    private actLabel(act: number | null): string {
+        if (act === null) return t('ui.timetable.noAct');
+        const labels = parseActLabels(this.plugin.settings, getConfiguredActCount(this.plugin.settings));
+        return resolveActLabel(act - 1, labels);
+    }
+
+    // ── Wheel ring order ────────────────────────────────────────────────
+
+    private bookIdsInView(): string[] {
+        const books = this.plugin.settings.books ?? [];
+        const ids = new Set<string>();
+        for (const entry of this.data?.data ?? []) {
+            const id = getBookIdForPath(books, entry.file.path);
+            if (id) ids.add(id);
+        }
+        return [...ids].sort();
+    }
+
+    private scheduleRingsRefresh(): void {
+        if (this.ringsTimer !== null) window.clearTimeout(this.ringsTimer);
+        const delay = this.rings ? RINGS_REFRESH_DELAY_MS : 0;
+        this.ringsTimer = window.setTimeout(() => {
+            this.ringsTimer = null;
+            void this.loadRings();
+        }, delay);
+    }
+
+    /** Read the ring order and colors the wheel would draw for the books in this table. */
+    private async loadRings(): Promise<void> {
+        const generation = ++this.ringsGeneration;
+        const ids = this.bookIdsInView();
+        const books = (this.plugin.settings.books ?? []).filter(book => ids.includes(book.id));
+        const scenes: TimelineItem[] = [];
+        for (const [bookIndex, book] of books.entries()) {
+            const bookScenes = await this.plugin.getSceneData({ sourcePath: book.sourceFolder });
+            scenes.push(...bookScenes.map(scene => ({ ...scene, bookId: book.id, bookIndex })));
+        }
+        if (generation !== this.ringsGeneration) return;
+        const { masterSubplotOrder, colorIndexBySubplot } = computeCacheableValues(this.plugin as unknown as PluginRendererFacade, scenes); // SAFE: the plugin satisfies the renderer facade at runtime; the structural type is narrower than the class
+        const next: WheelRings = { key: ids.join('|'), order: masterSubplotOrder, colorIndex: colorIndexBySubplot };
+        const changed = !this.rings
+            || this.rings.key !== next.key
+            || this.rings.order.join('\n') !== next.order.join('\n')
+            || [...next.colorIndex].some(([name, index]) => this.rings?.colorIndex.get(name) !== index);
+        this.rings = next;
+        if (changed) this.render();
+    }
+
+    // ── Rendering ───────────────────────────────────────────────────────
+
+    private render(): void {
+        if (!this.data) return;
+        const groups = this.buildGroups();
+        const scrollParent = this.rootEl.parentElement;
+        const scrollTop = scrollParent?.scrollTop ?? 0;
+        this.rootEl.empty();
+        this.mountPatternDefs();
+        this.renderBookNotice(groups);
+
+        const allItems = groups.flatMap(group => group.items);
+        if (allItems.length === 0) {
+            this.rootEl.createDiv({ cls: 'ert-timetable__empty', text: t('ui.timetable.empty') });
+            return;
+        }
+
+        const showRings = this.config.get('ringsColumn') !== false && this.rings !== null;
+        const perLine = Math.min(8, Math.max(3, Math.round(Number(this.config.get('ringsPerLine') ?? RINGS_PER_LINE_DEFAULT)) || RINGS_PER_LINE_DEFAULT));
+        const layout = this.rings ? buildRingLayout(this.rings.order, this.rings.colorIndex, allItems.map(item => item.row)) : null;
+        const properties = this.config.getOrder();
+        const columnCount = 1 + (showRings ? 1 : 0) + properties.length;
+
+        const table = this.rootEl.createEl('table', { cls: 'ert-timetable__table' });
+        table.setCssProps({ '--ert-timetable-rings-per-line': String(perLine) });
+        const headRow = table.createEl('thead').createEl('tr');
+        headRow.createEl('th', { cls: 'ert-timetable__num-head', text: '#' });
+        if (showRings && layout) this.renderRingsHeader(headRow.createEl('th', { cls: 'ert-timetable__rings-head' }), layout);
+        for (const property of properties) {
+            headRow.createEl('th', { text: this.config.getDisplayName(property) });
+        }
+
+        const showGroupHeaders = groups.length > 1 || groups[0].label !== null;
+        for (const group of groups) {
+            const body = table.createEl('tbody', { cls: 'ert-timetable__group' });
+            const collapsed = this.collapsed.has(group.id);
+            if (showGroupHeaders) this.renderGroupHeader(body, group, collapsed, columnCount);
+            if (collapsed) continue;
+            const byPath = new Map(group.items.map(item => [item.row.path, item]));
+            for (const line of withActDividers(group.items.map(item => item.row))) {
+                if (line.type === 'act') {
+                    const cell = body.createEl('tr', { cls: 'ert-timetable__act' }).createEl('td', { text: this.actLabel(line.act) });
+                    cell.colSpan = columnCount;
+                    continue;
+                }
+                const item = byPath.get(line.row.path);
+                if (item) this.renderRow(body, item, properties, showRings ? layout : null, columnCount);
+            }
+        }
+        if (scrollParent) scrollParent.scrollTop = scrollTop;
+    }
+
+    /** The wheel's Working and Todo patterns, under this table's own ID prefix. */
+    private mountPatternDefs(): void {
+        const { settings } = this.plugin;
+        const defs = renderDefs(settings.publishStageColors, 0.5, false, settings.workingPatternId, settings.customWorkingPatterns, this.patternPrefix);
+        const host = this.rootEl.createDiv({ cls: 'ert-timetable__defs' });
+        mountSvgMarkup(host, `<svg xmlns="${SVG_NS}" width="0" height="0" aria-hidden="true"><defs>${defs}</defs></svg>`);
+    }
+
+    /** When this table shows one book and the timeline another, say so, with a way to line them up. */
+    private renderBookNotice(groups: TableGroup[]): void {
+        const { settings } = this.plugin;
+        if (getTimelineScope(settings) !== 'book') return;
+        const active = getActiveBook(settings);
+        const ids = this.bookIdsInView();
+        if (!active || ids.length !== 1 || ids[0] === active.id || groups.length === 0) return;
+        const shown = (settings.books ?? []).find(book => book.id === ids[0]);
+        if (!shown) return;
+        const notice = this.rootEl.createDiv({ cls: 'ert-timetable__notice' });
+        notice.createSpan({ text: t('ui.timetable.bookMismatch', { table: shown.title, timeline: active.title }) });
+        const button = notice.createEl('button', { text: t('ui.timetable.showOnTimeline', { book: shown.title }) });
+        button.dataset.bookId = shown.id;
+    }
+
+    private renderGroupHeader(body: HTMLElement, group: TableGroup, collapsed: boolean, columnCount: number): void {
+        const row = body.createEl('tr', { cls: 'ert-timetable__group-head' });
+        const cell = row.createEl('td');
+        cell.colSpan = columnCount;
+        const toggle = cell.createDiv({ cls: 'ert-timetable__group-toggle' });
+        toggle.setAttr('role', 'button');
+        toggle.setAttr('tabindex', '0');
+        toggle.setAttr('aria-expanded', String(!collapsed));
+        setIcon(toggle.createSpan({ cls: 'ert-timetable__group-chevron' }), collapsed ? 'chevron-right' : 'chevron-down');
+        toggle.createSpan({ cls: 'ert-timetable__group-label', text: group.label ?? '' });
+        toggle.createSpan({ cls: 'ert-timetable__group-count', text: String(group.items.length) });
+        toggle.dataset.groupId = group.id;
+    }
+
+    private renderRow(body: HTMLElement, item: TableItem, properties: BasesPropertyId[], layout: RingLayout | null, columnCount: number): void {
+        const { row, entry, frontmatter } = item;
+        const tr = body.createEl('tr', { cls: ['ert-timetable__row', `is-${row.kind === 'otherClass' ? 'other-class' : row.kind}`] });
+        tr.setAttr('data-path', row.path);
+        this.renderNumberCell(tr.createEl('td', { cls: 'ert-timetable__num' }), item);
+
+        if (row.kind === 'beat') {
+            // Beats run across the table as quiet dividers, as on the wheel.
+            const cell = tr.createEl('td', { cls: 'ert-timetable__beat' });
+            cell.colSpan = columnCount - 1;
+            cell.createSpan({ cls: 'ert-timetable__beat-title', text: row.basename });
+            const model = firstText(frontmatterKey(frontmatter, 'Beat Model'));
+            if (model) cell.createSpan({ cls: 'ert-timetable__beat-model', text: model });
+            const purpose = readBeatPurpose(frontmatter ?? null);
+            if (purpose) cell.createSpan({ cls: 'ert-timetable__beat-purpose', text: purpose });
+        } else {
+            if (layout) this.renderRingsCell(tr.createEl('td', { cls: 'ert-timetable__rings' }), row, layout);
+            for (const property of properties) {
+                this.renderValueCell(tr.createEl('td'), entry, frontmatter, property);
+            }
+        }
+    }
+
+    private renderNumberCell(cell: HTMLElement, item: TableItem): void {
+        const { row, frontmatter } = item;
+        const chip = cell.createDiv({ cls: 'ert-timetable__chip' });
+        const svg = chip.createSvg('svg', { attr: { viewBox: '0 0 40 22', width: '40', height: '22', 'aria-hidden': 'true' } });
+        const rect = svg.createSvg('rect', { cls: 'ert-timetable__chip-cell', attr: { x: '1', y: '1', width: '38', height: '20', rx: '3' } });
+        if (row.kind === 'scene') rect.setAttribute('fill', sceneNumberFill(frontmatter, this.plugin.settings, this.patternPrefix));
+        const label = svg.createSvg('text', {
+            cls: 'ert-timetable__chip-text',
+            attr: { x: '20', y: '11.5', 'text-anchor': 'middle', 'dominant-baseline': 'central' },
+        });
+        label.textContent = row.prefix ?? '–';
+        tooltip(chip, this.chipTooltip(row, frontmatter), 'right');
+
+        if (row.kind === 'sketch' || row.kind === 'unclassed') {
+            const promote = cell.createEl('button', { cls: 'ert-timetable__promote clickable-icon' });
+            promote.setAttr('aria-label', t('ui.timetable.promote'));
+            setIcon(promote, 'file-up');
+            tooltip(promote, t('ui.timetable.promote'), 'right');
+        }
+    }
+
+    private chipTooltip(row: TimetableRow, frontmatter: Record<string, unknown> | undefined): string {
+        switch (row.kind) {
+            case 'scene': {
+                const status = normalizeStatus(frontmatterKey(frontmatter, 'Status'));
+                const stage = firstText(frontmatterKey(frontmatter, 'Publish Stage')) || 'Zero';
+                const due = frontmatterKey(frontmatter, 'Due');
+                const overdue = status !== 'Completed' && typeof due === 'string' && isOverdueDateString(due);
+                const label = overdue ? t('ui.timetable.statusOverdue') : (status === 'Completed' ? 'Complete' : (status || 'Todo'));
+                return t('ui.timetable.sceneStatus', { status: label, stage });
+            }
+            case 'beat': return t('ui.timetable.beatRow');
+            case 'sketch': return t('ui.timetable.sketchRow');
+            case 'unclassed': return t('ui.timetable.unclassedRow');
+            case 'otherClass': return t('ui.timetable.otherClassRow', { className: row.className ?? '' });
+        }
+    }
+
+    private renderRingsHeader(cell: HTMLElement, layout: RingLayout): void {
+        const grid = cell.createDiv({ cls: 'ert-timetable__ring-grid' });
+        layout.order.forEach(name => {
+            const square = grid.createSpan({ cls: 'ert-timetable__ring is-member' });
+            square.setCssProps({ '--ert-timetable-ring': `var(--rt-subplot-colors-${layout.colorIndex.get(name) ?? 0})` });
+        });
+        const names = layout.order.map((name, index) => layout.offWheel.has(name)
+            ? t('ui.timetable.ringOffWheel', { number: index + 1, name })
+            : `${index + 1}. ${name}`);
+        tooltip(grid, t('ui.timetable.ringsHeader', { list: names.join(' · ') }), 'bottom');
+    }
+
+    private renderRingsCell(cell: HTMLElement, row: TimetableRow, layout: RingLayout): void {
+        const grid = cell.createDiv({ cls: 'ert-timetable__ring-grid' });
+        const members = new Set(row.subplots);
+        // Scenes are in their rings; sketches and unclassed notes only plan to be.
+        const memberClass = row.kind === 'scene' ? 'is-member' : 'is-planned';
+        for (const name of layout.order) {
+            const square = grid.createSpan({ cls: 'ert-timetable__ring' });
+            if (!members.has(name)) continue;
+            square.addClass(memberClass);
+            square.setCssProps({ '--ert-timetable-ring': `var(--rt-subplot-colors-${layout.colorIndex.get(name) ?? 0})` });
+        }
+        const list = layout.order.filter(name => members.has(name)).join(', ');
+        const text = list.length === 0
+            ? t('ui.timetable.ringsNone')
+            : (row.kind === 'scene' ? t('ui.timetable.ringsIn', { list }) : t('ui.timetable.ringsPlanned', { list }));
+        tooltip(grid, text, 'right');
+    }
+
+    private renderValueCell(cell: HTMLElement, entry: BasesEntry, frontmatter: Record<string, unknown> | undefined, property: BasesPropertyId): void {
+        const { type, name } = parsePropertyId(property);
+        if (type === 'file' && name === 'name') {
+            cell.addClass('ert-timetable__name');
+            cell.setText(entry.file.basename);
+            return;
+        }
+        if (type === 'note' && this.isWhenProperty(name)) {
+            const raw = frontmatterKey(frontmatter, name);
+            const text = typeof raw === 'string' ? raw.trim() : '';
+            const when = text ? parseWhenField(text) : null;
+            cell.addClass('ert-timetable__when');
+            cell.setText(when ? formatSceneWhen(when, whenTextHasClock(text)) : text);
+            return;
+        }
+        const value = entry.getValue(property);
+        if (value) value.renderTo(cell, this.plugin.app.renderContext);
+    }
+
+    /** The When column, under the author's own key name when they mapped one. */
+    private isWhenProperty(name: string): boolean {
+        if (name.toLowerCase() === 'when') return true;
+        const mappings = getActiveFrontmatterMappings(this.plugin.settings);
+        return mappings?.[name] === 'When';
+    }
+}

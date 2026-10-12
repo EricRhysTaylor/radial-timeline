@@ -5,7 +5,7 @@
  *
  * One When formatter
  * ------------------
- * The scene hover and the Timeline table show a scene's When the same way:
+ * The scene hover and the Timetable show a scene's When the same way:
  * `Wed Jan 3, 2085 @ 2:20PM`. A date-only When shows no time, because
  * `parseWhenField` reads it as local noon and printing "@ Noon" would invent a
  * clock time the author never wrote. The title bar's scene-time badge keeps its

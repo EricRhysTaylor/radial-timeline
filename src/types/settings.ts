@@ -1216,6 +1216,8 @@ export interface RadialTimelineSettings {
     /** Internal one-time migration flag for per-book beat system selection bootstrap. */
     beatSelectionMigrationComplete?: boolean;
     dominantSubplots?: Record<string, string>;
+    /** Timetable `.base` files RT wrote, by book ID (or 'saga'), with the folders their filter names. Plugin data, not a setting. */
+    timetableFiles?: Record<string, { path: string; folders: string[] }>;
     globalPovMode?: GlobalPovMode;
     readabilityScale?: ReadabilityScale;
     _isResuming?: boolean;

@@ -82,7 +82,8 @@ const files = [
     'settings.css',
     'drag.css',
     'timeline-repair.css',
-    'timeline-audit.css'
+    'timeline-audit.css',
+    'timetable.css'
 ];
 
 async function bundle(options = {}) {

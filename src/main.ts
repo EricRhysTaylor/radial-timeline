@@ -63,6 +63,8 @@ import { migrateAuthorProgressSettings } from './authorProgress/authorProgressCo
 import { scheduleCommunityProjectSync, cancelPendingCommunityProjectSync } from './communityShare/communityShareClient';
 import { CommunityMailbox } from './communityShare/communityMailbox';
 import { DeskLamps } from './communityShare/deskLamps';
+import { TimetableService } from './timetable/TimetableService';
+import { refreshTimetableViews } from './timetable/TimetableView';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
 import { migratePublishingModelState, RENAMED_PANDOC_LAYOUT_IDS } from './utils/publishingMigration';
@@ -246,6 +248,7 @@ export default class RadialTimelinePlugin extends Plugin {
     private rendererService!: RendererService;
     private releaseNotesService!: ReleaseNotesService;
     private commandRegistrar!: CommandRegistrar;
+    private timetableService!: TimetableService;
     private sceneHighlighter!: SceneHighlighter;
     private gossamerScoreService!: GossamerScoreService;
     private sceneAnalysisService!: SceneAnalysisService;
@@ -458,6 +461,12 @@ export default class RadialTimelinePlugin extends Plugin {
         this.refreshTimelineIfNeeded(null);
         this.updateTimelineBookHeaders();
         this.inquiryService?.notifyBookSettingsChanged();
+        void this.timetableService?.followTimeline();
+    }
+
+    /** Open (or focus) the Timetable for the timeline's current book or saga. */
+    public openTimetable(): Promise<void> {
+        return this.timetableService.open();
     }
 
     /**
@@ -497,6 +506,7 @@ export default class RadialTimelinePlugin extends Plugin {
         await this.saveSettings();
         this.refreshTimelineIfNeeded(null);
         this.updateTimelineBookHeaders();
+        void this.timetableService?.followTimeline();
     }
 
     public async persistBookSettings(): Promise<void> {
@@ -699,6 +709,9 @@ export default class RadialTimelinePlugin extends Plugin {
                 return new InquiryView(leaf, this);
             }
         );
+        // Timetable: a Bases view of the book, beside the timeline.
+        this.timetableService = new TimetableService(this);
+        this.timetableService.register();
 
         // Register ribbon + commands (single orchestration point)
         this.commandRegistrar.registerAll(this.sceneAnalysisService);
@@ -1452,6 +1465,8 @@ export default class RadialTimelinePlugin extends Plugin {
 
     public setCSSColorVariables(): void {
         this.themeService.applyCssVariables();
+        // Status patterns in Timetable number cells are drawn from these colors.
+        refreshTimetableViews();
     }
 
     // Add helper method to highlight search terms

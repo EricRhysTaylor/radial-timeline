@@ -425,6 +425,7 @@ export class RadialTimelineView extends ItemView {
             // an icon button; on a bar too narrow for the full row, TitleBarFit
             // folds them into one menu built from this same list.
             const titleActions: Array<{ label: string; icon: string; run: () => void }> = [
+                { label: t('ui.timetable.viewName'), icon: 'table-2', run: () => { void this.plugin.openTimetable(); } },
                 { label: t('ui.timeLineView.radialTimelineCommands'), icon: 'command', run: () => this.openRadialTimelineCommands() },
                 { label: t('commands.manuscriptExport'), icon: 'printer', run: () => this.plugin.openManuscriptExportModal() },
                 // Same action as the version-indicator fallback; only the

@@ -1,0 +1,237 @@
+/*
+ * Timetable: the Radial Timeline view inside an Obsidian Base.
+ * Sizes and colors come from Obsidian's own Bases table variables, so the
+ * author's Bases font size and theme apply here too. Ring colors are the
+ * timeline's --rt-subplot-colors-* variables; status fills reuse the
+ * timeline's SVG patterns.
+ */
+
+.ert-timetable {
+  font-size: var(--bases-table-font-size, var(--font-smaller));
+  padding-bottom: var(--size-4-12);
+}
+
+.ert-timetable__defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.ert-timetable__empty {
+  padding: var(--size-4-6) var(--size-4-4);
+  color: var(--text-muted);
+}
+
+.ert-timetable__notice {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-3);
+  margin: var(--size-4-2) var(--size-4-3);
+  padding: var(--size-4-2) var(--size-4-3);
+  border-radius: var(--radius-s);
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+}
+
+.ert-timetable__notice button {
+  margin-inline-start: auto;
+}
+
+.ert-timetable__table {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+}
+
+.ert-timetable__table th,
+.ert-timetable__table td {
+  padding: var(--size-2-2) var(--size-4-2);
+  border-bottom: var(--border-width) solid var(--bases-table-border-color, var(--background-modifier-border));
+  text-align: start;
+  vertical-align: middle;
+}
+
+.ert-timetable__table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bases-table-header-background, var(--background-primary));
+  color: var(--bases-table-header-color, var(--text-muted));
+  font-weight: var(--bases-table-header-weight, var(--font-medium));
+  white-space: nowrap;
+}
+
+.ert-timetable__row {
+  height: var(--bases-table-row-height, 30px);
+  cursor: var(--cursor-link);
+}
+
+.ert-timetable__row:hover {
+  background: var(--bases-table-row-background-hover, var(--background-modifier-hover));
+}
+
+.ert-timetable__row td {
+  max-width: 28em;
+}
+
+.ert-timetable__name {
+  font-weight: var(--font-medium);
+  white-space: nowrap;
+}
+
+.ert-timetable__when {
+  white-space: nowrap;
+}
+
+/* Number cell: the scene number on the wheel's status fill. */
+.ert-timetable__num,
+.ert-timetable__num-head {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.ert-timetable__num {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+}
+
+.ert-timetable__chip {
+  display: inline-flex;
+  line-height: 0;
+}
+
+.ert-timetable__chip-cell {
+  fill: none;
+  stroke: var(--background-modifier-border-hover);
+  stroke-width: 1;
+}
+
+.ert-timetable__row.is-scene .ert-timetable__chip-cell {
+  stroke: none;
+}
+
+.ert-timetable__row.is-beat .ert-timetable__chip-cell {
+  fill: white;
+  stroke: var(--background-modifier-border-hover);
+}
+
+.ert-timetable__row.is-sketch .ert-timetable__chip-cell {
+  stroke: var(--text-faint);
+  stroke-dasharray: 3 2;
+}
+
+.ert-timetable__chip-text {
+  fill: var(--text-normal);
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  paint-order: stroke;
+  stroke: var(--background-primary);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.ert-timetable__row.is-beat .ert-timetable__chip-text {
+  fill: black;
+  stroke: none;
+}
+
+.ert-timetable__promote {
+  padding: var(--size-2-1);
+}
+
+/* Rings column: one square per subplot ring, in the wheel's ring order. */
+.ert-timetable__rings,
+.ert-timetable__rings-head {
+  width: 1%;
+}
+
+.ert-timetable__ring-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--ert-timetable-rings-per-line, 5), 10px);
+  gap: 2px;
+}
+
+.ert-timetable__ring {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--background-modifier-border);
+}
+
+.ert-timetable__ring.is-member {
+  background: var(--ert-timetable-ring);
+}
+
+.ert-timetable__ring.is-planned {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ert-timetable-ring);
+}
+
+/* Sketches are ghosted; notes the timeline can't see are muted. */
+.ert-timetable__row.is-sketch td {
+  background: var(--background-modifier-hover);
+  border-bottom-style: dashed;
+}
+
+.ert-timetable__row.is-sketch .ert-timetable__name {
+  font-style: italic;
+}
+
+.ert-timetable__row.is-unclassed,
+.ert-timetable__row.is-other-class {
+  color: var(--text-muted);
+}
+
+/* Beats run across the table as quiet dividers. */
+.ert-timetable__beat {
+  color: var(--text-muted);
+}
+
+.ert-timetable__beat-title {
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+}
+
+.ert-timetable__beat-model,
+.ert-timetable__beat-purpose {
+  margin-inline-start: var(--size-4-3);
+}
+
+.ert-timetable__beat-model {
+  color: var(--text-faint);
+}
+
+/* Group headers (Obsidian grouping) and act dividers within a group. */
+.ert-timetable__group-head td {
+  background: var(--bases-table-group-background, var(--background-primary-alt));
+  padding: var(--size-4-2) var(--size-4-2);
+}
+
+.ert-timetable__group-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  cursor: var(--cursor);
+  font-weight: var(--bases-group-heading-value-weight, var(--font-semibold));
+}
+
+.ert-timetable__group-chevron {
+  display: inline-flex;
+  color: var(--text-muted);
+}
+
+.ert-timetable__group-count {
+  color: var(--text-faint);
+  font-weight: var(--font-normal);
+}
+
+.ert-timetable__act td {
+  padding-top: var(--size-4-3);
+  color: var(--text-muted);
+  font-size: var(--font-smallest);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

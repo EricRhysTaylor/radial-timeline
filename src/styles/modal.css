@@ -603,6 +603,12 @@
   line-height: 1.4;
 }
 
+/* A control (toggle, dropdown) at the end of a confirm row, e.g. Promote to scene. */
+.ert-drag-confirm-row-control {
+  margin-inline-start: auto;
+  flex: none;
+}
+
 /* Default inline arrow — used by the "Recent moves" rows. Small and muted. */
 .ert-drag-confirm-inline-icon {
   display: inline-flex;

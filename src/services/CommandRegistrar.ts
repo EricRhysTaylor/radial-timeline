@@ -54,6 +54,7 @@ import { getRuntimeSettings } from '../utils/runtimeEstimator';
 import { t } from '../i18n';
 import { writeManagedOutput } from '../utils/logVaultOps';
 import { getExportValidationIssues } from './PublishingValidationService';
+import { registerPromoteToScene } from './PromoteToSceneEntry';
 
 export class CommandRegistrar {
     constructor(private plugin: RadialTimelinePlugin, private app: App) { }
@@ -67,6 +68,7 @@ export class CommandRegistrar {
         this.registerCommands();
         sceneAnalysisService.registerCommands();
         registerRuntimeCommands(this.plugin);
+        registerPromoteToScene(this.plugin);
     }
 
     public openManuscriptExportModal(): void {

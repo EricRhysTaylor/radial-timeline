@@ -1,7 +1,16 @@
 # Timeline table, sketches, and Promote to scene
 
 Date: 2026-10-11
-Status: proposed (Eric, 2026-10-11). Design only; nothing here is built.
+Status: proposed (Eric, 2026-10-11). Phase 1 (Promote to scene) built 2026-10-12; the rest is design only.
+
+**Built 2026-10-12: Promote to scene (§1).** It's in `src/services/PromoteToSceneService.ts` (planning and apply, with unit tests), `src/services/PromoteToSceneEntry.ts` (entry points) and `src/modals/PromoteToSceneModal.ts`.
+- **Entry points:** the command palette (**Promote note to scene**), the file menu on an eligible note, the file menu on a folder (its direct children only, so cut or archive subfolders are never swept in), and the multi-selection menu.
+- **Eligibility:** only notes with no Class, or with `Class: Sketch`. Beats, Backdrops, matter pages and every other classed note are skipped and listed.
+- **Writes:** missing template keys are detected under any letter case and through key mappings and built-in aliases, then inserted with `processFrontMatter`. Existing values are never overwritten, the Class key's casing is kept, and the body is never touched. Then come `ensureSceneIds`, a bounded wait for the metadata cache to show the new class, and `reorderSceneFields`.
+- **Numbering:** a single unnumbered note can be numbered "after which scene" through `buildDecimalSceneInsertionPrefix`, and the rename goes through `fileManager.renameFile`. A bulk promotion keeps names and reports unnumbered notes.
+- **Strings:** translated in all five languages.
+- **Difference from the plan:** a note outside every book folder is explained and skipped rather than offered a move. Moving notes between folders is better done in the file explorer, and offering it would mean guessing the target book.
+
 
 **Decided 2026-10-11 (Eric):**
 - The pre-scene note type is called **Sketch**.

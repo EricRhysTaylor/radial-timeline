@@ -14,6 +14,7 @@ Status: proposed (Eric, 2026-10-11). Design only; nothing here is built.
 - **One When formatter** for the scene hover and the Timeline table. The title bar keeps its own format. It keeps the current hover format with the weekday added and the `@` kept: `Wed Jan 3, 2085 @ 2:20PM`. A date-only When shows no time; it no longer reads "@ Noon". See §4.
 - **A sketch's text stays in the note body**, never in YAML.
 - **Promote is a Lucide icon button**, and Promote in Obsidian's built-in Table view is wanted (still a spike, phase 3).
+- **Opening the table:** a Timeline table button on the right side of the timeline's title bar, and a command palette entry. See §5.
 
 - **Compact layout** (Eric, from the mockups): status lives in the scene-number cell, using the stage color and the Working and Todo patterns from settings; subplot membership is one narrow Rings column, not a column per ring. The width goes to the author's other properties.
 
@@ -145,6 +146,21 @@ Today RT formats a scene's When in two different ways:
 
 This change is independent of the table and can ship first.
 
+## 5. Opening the table, and following the book
+
+**Entry points** (decided 2026-10-12)
+- **Title bar button.** A new entry in `titleActions` in `src/view/TimeLineView.ts`, alongside Commands, Export, Bug and Books, so it gets the same icon-button styling and folds into the ☰ menu (TitleBarFit) when the bar is narrow. It uses the Lucide icon `table-2`, with the tooltip and label "Timeline table".
+- **Command palette:** **Open timeline table**.
+- Both open the table for the timeline's current scope in a tab beside the timeline, or focus it if it's already open.
+
+**Following the book (proposed; Eric to confirm)**
+- **The timeline is the master view.** The table follows it, and the table never changes which book the timeline shows.
+- **One `.base` file per book,** so the built-in Table view inside each file is correctly limited by its own folder filter. A single shared Base can't do that: the built-in Table view has no idea which book is selected, and the Timeline table can only narrow the rows a Base's query returns, never add rows.
+- **First use asks once** where to keep table files, with an option to adopt an existing Base for the book (for example Eric's `Outline/Book 2 Scenes.base`). It also asks whether to create the other books' tables as needed without asking again. That standing choice, and the map from book ID to Base path, live in plugin data, never in notes.
+- **Book switching.** A table tab opened by the button or command follows `setActiveBookId`. It is notified the same way Inquiry is (`notifyBookSettingsChanged`) and re-targets the leaf to the new book's Base. A Base the author opened directly from the file explorer does not follow. If its book differs from the timeline's, the view shows a one-line notice ("This table shows Book 3; the timeline shows Book 2") with a **Switch timeline** action, because cross-highlighting needs both views on the same book.
+- **Saga scope** (`timelineScope === 'saga'`) opens a saga table covering every book with `includeInSaga`, grouped by book and then by act.
+- **No fallbacks.** If the active book has no `sourceFolder`, the button explains why and opens Book Manager. It never shows a vault-wide table instead.
+
 ## Considered and set aside: a lanes layout ("Unwrapped")
 
 We considered a linear layout of the timeline view itself, with each ring pulled into a horizontal lane and a sideways scroll in manuscript order. It answers the same requests and has two real benefits: every scene gets the same size, and gaps in a plotline stand out. It is also the familiar "plot grid" of other writing tools.
@@ -158,7 +174,7 @@ The Rings column in the Timeline table delivers the rhythm benefit and the reque
 ## Phases
 
 1. **Promote to scene:** the command, file menu and bulk preview. It's the smallest piece and is useful on its own. The **one When formatter** (§4) is equally independent and can ship alongside it.
-2. **Timeline table and sketches:** data, status number cells, the Rings column (with wrapping), the sketch drawer, row context menu, the Promote button, **+ New sketch**, query counts, cross-highlighting, and Create book base.
+2. **Timeline table and sketches:** the title bar button and command (§5), book following, data, status number cells, the Rings column (with wrapping), the sketch drawer, row context menu, the Promote button, **+ New sketch**, query counts, cross-highlighting, and Create book base.
 3. **Spikes, only if wanted:**
    - **Promote in Obsidian's built-in Table view** (wanted, Eric 2026-10-12): a formula column such as `link("obsidian://radial-timeline-…")` handled by an RT protocol handler (precedent: `AI_JOBS_PROTOCOL_ACTION`), shown as the `file-up` icon if Bases allows an icon as link text. It's unverified that Bases renders these as clickable;
    - "Follow timeline filters," so the table mirrors the search panel's filter;
@@ -175,6 +191,7 @@ The Rings column in the Timeline table delivers the rhythm benefit and the reque
   - **+ New sketch** creates a note that appears in the table but not on the wheel or in a manuscript export. Promoting it puts it on the wheel and in the export.
   - Typing in a sketch drawer saves to the note's body and leaves its frontmatter byte-identical. Editing the same note elsewhere while its drawer is open, with unsaved drawer text, raises a conflict notice instead of overwriting.
   - With more rings than fit on a line, the Rings grid wraps identically in every row.
+- **Opening and following:** the title bar button and the command open the active book's table beside the timeline. Switching books in the timeline re-targets that tab, and saga scope opens the saga table grouped by book.
 - **When formatter:** a date-only When (67.4's `2085-05-10`) shows `Thu May 10, 2085` in both the hover and the table, with no "@ Noon". A When with a clock shows `Wed Jan 3, 2085 @ 2:20PM`, and switching the plugin's language changes the month and weekday names.
 - Verification follows the feature-audit playbook (`build-only`, `tsc --noEmit`, `vitest`), plus an Obsidian reload check.
 
@@ -187,4 +204,5 @@ Settled on 2026-10-12: one When formatter, no "@ Noon" for date-only values, ske
 The title bar keeps its own format (decided 2026-10-12).
 
 Still open:
-1. **Icon choice:** `file-up` for Promote, or another Lucide icon?
+1. **Icon choices:** `file-up` for Promote and `table-2` for the Timeline table button, or other Lucide icons?
+2. **Following the book** (§5): one Base per book, with table tabs that follow the timeline. Confirm, and say where the table files should live by default.

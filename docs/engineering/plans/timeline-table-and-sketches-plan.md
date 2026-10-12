@@ -102,7 +102,9 @@ One row per scene, a page you scroll down, and columns you can rearrange. That's
 - a filter on the book's `sourceFolder`;
 - the Timeline table as the default view;
 - a built-in Table view for spreadsheet editing;
-- a **Not on the timeline** view (`class != "Scene"`, excluding beats and sketches) that lists everything Promote can fix.
+- a **Not on the timeline** view (`class != "Scene"`, excluding beats and sketches) that lists everything Promote can fix;
+- an **Act board**: Obsidian's built-in Kanban view grouped by Act, with columns in `groupOrder` for every act plus "No act" (decided 2026-10-12, §6);
+- a **Status board**: the built-in Kanban view grouped by Status (Todo, Working, Complete) (decided 2026-10-12, §6).
 
 The YAML audit panel can flag a Base whose columns have drifted from the template ("Refresh columns"). It never rewrites the file silently.
 
@@ -169,7 +171,7 @@ Reviewed against Obsidian 1.14.4 (Eric's install) and the `obsidian@1.14.4` API 
 
 - **Group menu and `groupOrder` (1.14.3).** Because the Timeline table reads `groupedData` (§2), authors get Obsidian's Group menu for free: reorder acts, hide one, or **add an empty group**. Create book base writes `groupOrder` with every act from the book's act count (for example `[1, 2, 3]`) plus `null`. So an act with nothing in it yet still shows as a header to plan into, and notes without an Act gather in a "No act" group, where unplaced sketches and not-yet-promoted notes sit. To verify: that `groupedData` honors `groupOrder` for custom views as it does for the built-in ones.
 - **Collapsible groups (1.14.0).** The built-in Table, Cards and List layouts can now collapse groups, so the Timeline table should too: collapse Act 1 while working in Act 2. Collapsed state is view state (`config.set` or in memory), never YAML.
-- **A Board view at no cost (kanban, 1.14.0–1.14.4).** Create book base can add a built-in Kanban view to each book's table file, grouped by Act. That gives a Save-the-Cat-style board of scene and sketch cards. Dragging a card to another column writes its Act (Obsidian does this), and the "+" in a column creates a note with that Act. A second board grouped by Status (Todo, Working, Complete) is equally free.
+- **A Board view at no cost (kanban, 1.14.0–1.14.4).** Decided 2026-10-12: both the Act board and the Status board are included. Create book base adds a built-in Kanban view to each book's table file, grouped by Act. That gives a Save-the-Cat-style board of scene and sketch cards. Dragging a card to another column writes its Act (Obsidian does this), and the "+" in a column creates a note with that Act. A second board grouped by Status (Todo, Working, Complete) is equally free.
   - **Don't group a board by Subplot.** It's a list, and a column drag would replace memberships rather than follow the move-or-add contract of ring drags.
   - **New notes from a board's "+"** follow Obsidian's new-note location, not the book folder (see *Creating a sketch* above). Either point authors at **+ New sketch** in the Timeline table, or verify whether a board can be scoped to create in the book folder.
 - **Date rendering in group headers (1.14.3).** Nothing to do. The Timeline table's own cells use RT's When formatter (§4).
@@ -206,6 +208,7 @@ The Rings column in the Timeline table delivers the rhythm benefit and the reque
   - Number cells match the wheel's status fills, including the author's Working pattern.
   - Changing Status from a row's context menu updates the wheel without a reload, and hovering highlights across views.
   - **+ New sketch** creates a note that appears in the table but not on the wheel or in a manuscript export. Promoting it puts it on the wheel and in the export.
+  - Each book's table file opens with five views: the Timeline table, the built-in Table, Not on the timeline, the Act board and the Status board. Dragging a card on the Act board changes that note's Act, and the Timeline table and wheel update.
   - Typing in a sketch drawer saves to the note's body and leaves its frontmatter byte-identical. Editing the same note elsewhere while its drawer is open, with unsaved drawer text, raises a conflict notice instead of overwriting.
   - With more rings than fit on a line, the Rings grid wraps identically in every row.
 - **Opening and following:** the title bar button and the command open the active book's table beside the timeline. Switching books in the timeline re-targets that tab, and saga scope opens the saga table grouped by book.
@@ -222,6 +225,6 @@ The title bar keeps its own format (decided 2026-10-12).
 
 Also settled on 2026-10-12: the icons (`file-up` for Promote, `table-2` for the Timeline table button), and one table per book, following the timeline. All tables, saga included, live together in `Radial Timeline/Tables/`, with no new settings.
 
-Proposed 2026-10-12, waiting for Eric: the 1.14 additions in §6 (native grouping with `groupOrder`, collapsible act groups, and built-in Act and Status boards in each book's table file).
+Decided 2026-10-12: each book's table file includes the built-in Act board and Status board (§6). Native grouping with `groupOrder` and collapsible act groups remain the proposed approach, since the boards rely on the same grouping.
 
 The remaining unknowns are implementation spikes (phase 3).

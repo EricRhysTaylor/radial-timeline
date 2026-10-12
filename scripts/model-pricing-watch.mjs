@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Model & Pricing Watch — the nightly orchestrator.
+ * Model & Pricing Watch — run by hand with `npm run pricing-watch`. Daily model
+ * and price monitoring is the Cloud AI Model Onboarding routine.
  *
  * Replaces the old "fail if pricing.json is stale" nag with a job that does
  * real work and reports what it found:

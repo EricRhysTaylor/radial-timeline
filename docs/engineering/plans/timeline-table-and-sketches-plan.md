@@ -7,9 +7,10 @@ Status: proposed (Eric, 2026-10-11). Design only; nothing here is built.
 - The pre-scene note type is called **Sketch**.
 - To begin with, sketches live **only in the Timeline table**, so the timeline isn't cluttered with non-manuscript material.
 - Sketches feed **Inquiry** as outline context, and nothing else (no Gossamer, Pulse or Summary).
-- The feature is called the **Timeline table**. Ring columns (§2) are the linear view users asked for. The separate lanes layout ("Unwrapped") was dropped; see *Considered and set aside*.
+- The feature is called the **Timeline table**. Its compact **Rings column** (§2) is the linear view users asked for. The separate lanes layout ("Unwrapped") was dropped; see *Considered and set aside*.
 - **No gating.** Pro is free for everyone; the Timeline table and sketches are listed on the website's Pro page as Pro features for fun.
 - **Promote's template** follows the Core/Advanced setting by default and shows it as a preselected toggle in the dialog. This was Claude's recommendation, since Eric was unsure; it's easy to revisit.
+- **Compact layout** (Eric, from the mockups): status lives in the scene-number cell, using the stage color and the Working and Todo patterns from settings; subplot membership is one narrow Rings column, not a column per ring. The width goes to the author's other properties.
 
 ## Problem
 
@@ -69,15 +70,17 @@ One row per scene, a page you scroll down, and columns you can rearrange. That's
 - **Groups.** Group by Act, using the timeline's act labels (`actLabelsRaw`). An author-chosen `groupBy` wins.
 - **Columns.** By default, the managed keys of the scene template, core plus advanced when enabled, taken from `buildScenePropertyDefinitions`, so the table mirrors the YAML exactly. The author can add, hide or reorder columns through the normal Bases properties menu (`config.getOrder()`).
 
-**Ring columns: the vertical linear view.** One narrow column per subplot ring, in the wheel's ring order (`masterSubplotOrder`). Because that's the author's saved order, it also answers the complaint about automatic inner-to-outer sorting.
-- **Cells.** A cell is filled with the ring's color when the scene belongs to that subplot. A scene in two subplots fills two cells.
-- **Rhythm.** Read down a ring column to see that plotline's rhythm. A thread that goes quiet shows as a blank run that is easy to spot, where on the wheel it's a thin arc on an inner ring.
-- **Not properties.** Ring columns are rendered by the view from `Subplot` and don't appear in the Bases properties menu. A view option (`BasesViewRegistration.options`) turns them on or off.
-- **Beat rows** run across the ring columns as white dividers. **Sketch rows** show their planned memberships as hollow cells.
-- **Optional editing:** clicking an empty ring cell adds that membership and clicking a filled one removes it, using the same membership actions as the context menu's *Add to subplot* and *Remove from* (see Decisions).
+**Rings column: the vertical linear view.** One narrow column (about 80px for five rings) that holds a tiny square for every subplot ring, in the wheel's ring order (`masterSubplotOrder`).
+- **Cells.** A square is filled with the ring's color when the scene belongs to that subplot. A scene in two subplots fills two squares, and a pale square means not a member.
+- **Rhythm.** Each ring keeps the same slot in every row, so reading down one slot shows that plotline's rhythm. A thread that goes quiet shows as a run of pale squares, where on the wheel it's a thin arc on an inner ring. Because the order is the author's saved ring order, this also answers the complaint about automatic inner-to-outer sorting.
+- **Names.** Hovering the strip lists the scene's rings, and hovering the header lists all rings in order. The header strip shows the ring colors in slot order.
+- **Not a property.** The column is rendered by the view from `Subplot`. A view option (`BasesViewRegistration.options`) turns it on or off.
+- **Beat rows** run across the full width as quiet dividers. **Sketch rows** show planned memberships as hollow squares.
+- **Read-only.** The squares are too small to click reliably, so membership changes stay in the row's context menu (*Add to subplot*, *Remove from*).
+- **Many rings.** Past about ten rings, the squares shrink, then the strip shows the first rings plus a "+N" count that expands on hover.
 
 **Visuals: the same color language as the wheel**
-- **Status swatch.** A left-edge bar or swatch computed by `getFillForScene`: the publish-stage color for completed scenes, the Todo or Working plaid for the scene's stage (reusing the same SVG pattern defs in a hidden inline `<svg>`), and the Due color when overdue.
+- **Status in the number cell.** The scene number sits in a square filled by `getFillForScene`, the same fill the wheel gives the scene's cell: the publish-stage color for completed scenes, the Todo plaid and the author's Working pattern (`workingPatternId`, including custom Pro patterns) for the scene's stage, and the Due color when overdue. The patterns reuse the timeline's SVG pattern defs, so the table never invents its own status colors. A sketch's cell is an outlined square with a dash; a note not on the timeline gets a grey outline. (The wheel's own number squares are tinted by subplot through `numberSquareVisualResolver`; the table deliberately uses status there, because the Rings column already carries the subplot.)
 - **Beat rows** are white, as on the wheel, and show the beat model and Purpose (read through `readBeatPurpose`).
 - **Sketch rows** (§3) are ghosted: dashed border and a translucent tint.
 - **Notes the timeline can't see** get a muted row and a **Promote** button (§1).
@@ -117,12 +120,12 @@ It was set aside on 2026-10-11 for two reasons:
 - **It needs a second renderer.** Polar geometry runs through the renderer (about 23 files use `Math.cos` and `Math.sin`).
 - **It gives up the one-screen overview** that defines RT.
 
-Ring columns in the Timeline table deliver the rhythm benefit and the requested vertical view at a fraction of the cost. Revisit lanes only if users still ask for a horizontal layout once the table ships.
+The Rings column in the Timeline table delivers the rhythm benefit and the requested vertical view at a fraction of the cost. Revisit lanes only if users still ask for a horizontal layout once the table ships.
 
 ## Phases
 
 1. **Promote to scene:** the command, file menu and bulk preview. It's the smallest piece and is useful on its own.
-2. **Timeline table and sketches:** data, visuals, ring columns, row context menu, the Promote button, **+ New sketch**, query counts, cross-highlighting, and Create book base.
+2. **Timeline table and sketches:** data, status number cells, the Rings column, row context menu, the Promote button, **+ New sketch**, query counts, cross-highlighting, and Create book base.
 3. **Spikes, only if wanted:**
    - action links in Obsidian's built-in Table view, through a formula such as `link("obsidian://radial-timeline-…")` handled by an RT protocol handler (precedent: `AI_JOBS_PROTOCOL_ACTION`); it's unverified that Bases renders these as clickable;
    - "Follow timeline filters," so the table mirrors the search panel's filter;
@@ -133,15 +136,15 @@ Ring columns in the Timeline table deliver the rhythm benefit and the requested 
 - **Phase 1:** in a book folder like Eric's Book 2 (51 notes, 9 visible), a bulk Promote preview lists the 42 non-scene notes. Applying it makes all of them appear on the wheel. No existing value changes, custom fields keep their places, no bodies change, and drafted scenes keep their filenames. A single promoted note's YAML matches what right-click Add scene would have produced.
 - **Phase 2:**
   - The Timeline table of the same book shows rows in wheel order with matching colors.
-  - Ring columns appear in the saved ring order. A scene in two subplots fills two cells, and a subplot absent for several scenes shows as a blank run.
+  - The Rings column shows the saved ring order. A scene in two subplots fills two squares, hovering names them, and a subplot absent for several scenes shows as a pale run.
+  - Number cells match the wheel's status fills, including the author's Working pattern.
   - Changing Status from a row's context menu updates the wheel without a reload, and hovering highlights across views.
   - **+ New sketch** creates a note that appears in the table but not on the wheel or in a manuscript export. Promoting it puts it on the wheel and in the export.
 - Verification follows the feature-audit playbook (`build-only`, `tsc --noEmit`, `vitest`), plus an Obsidian reload check.
 
 ## Decisions for Eric
 
-Settled on 2026-10-11 (see the top of this doc): the Sketch name, table-only sketches, Inquiry only, the Timeline table name with lanes set aside, no gating (Pro-page label only), and Promote following the template setting.
+Settled on 2026-10-11 (see the top of this doc): the Sketch name, table-only sketches, Inquiry only, the Timeline table name with lanes set aside, no gating (Pro-page label only), Promote following the template setting, and the compact layout (status in the number cell, a single read-only Rings column).
 
 Still open:
-1. **Clicking ring cells to edit membership.** Should it be on, or should ring columns be read-only, with membership changed only through the context menu?
-2. **Built-in Table support** through protocol links (phase 3), or the Timeline table only?
+1. **Built-in Table support** through protocol links (phase 3), or the Timeline table only?

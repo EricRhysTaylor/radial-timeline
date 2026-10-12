@@ -55,7 +55,7 @@ describe('i18n locale resolution', () => {
     it('uses the locale string and interpolates it', () => {
         setMomentLocale('de');
 
-        expect(t('settings.configuration.synopsisMaxLines.error')).toBe('Bitte geben Sie eine gültige Zahl zwischen 10 und 300 ein.');
+        expect(t('settings.ai.localLlmConfig.contextWindowName')).toBe('Kontextfenster (Tokens)');
         expect(t('timeline.acts.actFallback', { number: 7 })).toBe('Akt 7');
     });
 
@@ -67,5 +67,12 @@ describe('i18n locale resolution', () => {
         setMomentLocale('en');
         expect(tCount('scene', 1)).toBe('1 scene');
         expect(tCount('scene', 0)).toBe('0 scenes');
+    });
+
+    it('inserts values literally, in one pass', () => {
+        setMomentLocale('en');
+        // `$&` would expand under a string replacement; `{{count}}` inside a
+        // value must not be filled by a later placeholder.
+        expect(t('common.counts.scene.other', { count: 'A $& B {{count}}' })).toBe('A $& B {{count}} scenes');
     });
 });

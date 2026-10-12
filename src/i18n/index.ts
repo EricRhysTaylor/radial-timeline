@@ -169,13 +169,12 @@ export function t(key: string, vars?: Record<string, string | number>): string {
         return `[missing: ${key}]`;
     }
     
-    // Variable substitution: {{name}} -> value
+    // Variable substitution: {{name}} -> value, in one pass over the template.
+    // Values are inserted literally: a `$&` or a `{{other}}` inside a book
+    // title, folder name or error message is never re-read as syntax.
     if (vars) {
-        let result = value;
-        for (const [varKey, varValue] of Object.entries(vars)) {
-            result = result.replace(new RegExp(`\\{\\{${varKey}\\}\\}`, 'g'), String(varValue));
-        }
-        return result;
+        return value.replace(/\{\{(\w+)\}\}/g, (placeholder, name: string) =>
+            Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : placeholder);
     }
     
     return value;

@@ -142,3 +142,5 @@ The mode buttons in the title bar switch between the four main views:
   <img src="images/view-rt-mode-buttons.png" alt="Radial Timeline mode buttons" style="width: 358px; max-width: 100%; border-radius: 8px;" />
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Mode buttons — Progress, Narrative, Chronologue, and Gossamer</div>
 </div>
+
+The [Timetable](Timetable) opens beside the wheel from its title-bar table button. It follows the active book or saga and links scene rows to the wheel’s hover highlight.

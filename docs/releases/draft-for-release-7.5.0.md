@@ -9,7 +9,7 @@ The new Timetable puts your book’s notes beside the wheel. Write sketches, pro
 - **Sketch where the idea belongs.** **New sketch**, or **+** beside an act, creates a note with `Class: Sketch`. Expand its drawer and write directly beside the scenes; its text stays in the note body. Sketches appear in the Timetable and stay off the wheel until you promote them. Unresolved author queries have their own marker.
 - **Promote a note to a scene.** Use **Promote to scene** from a sketch or unclassified note, the file explorer, or the command palette. Review the proposed scene properties and placement. Existing text and property values stay; missing scene properties are filled from your templates.
 
-<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/main/wiki/images/timetable-sidebyside.webp" alt="The new Timetable beside the radial timeline, showing scene properties and subplot membership together" width="900">
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/41fe233a255b27bb32aec0ae04ebcc0090884b26/wiki/images/timetable-sidebyside.webp" alt="The new Timetable beside the radial timeline, showing scene properties and subplot membership together" width="900">
 
 See [Timetable](https://github.com/EricRhysTaylor/radial-timeline/wiki/Timetable).
 

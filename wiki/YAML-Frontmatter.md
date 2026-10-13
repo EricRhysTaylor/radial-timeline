@@ -104,6 +104,19 @@ The Scene properties editor lets you tailor the advanced scene properties while 
 *   Reordering keeps custom fields beside the managed property directly above them.
 *   Use the restore icon to revert to the shipped defaults.
 
+## Sketch Notes (YAML)
+
+`Class: Sketch` keeps a planning note in the [Timetable](Timetable), off the wheel until you promote it to a scene. Write the sketch in the note body; Act, Subplot, and When can record its intended placement. The drawer edits these author-facing properties and the body directly. Sketches and promotion are available in 7.5.0.
+
+```yaml
+Class: Sketch
+Act: 1
+Subplot:
+When:
+```
+
+Use **Promote to scene** when it is ready; existing values and prose are preserved. See [Promoting notes](Timetable#promote-a-note-to-a-scene).
+
 ## Beat Notes (YAML)
 
 ```yaml

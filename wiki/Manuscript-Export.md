@@ -2,6 +2,8 @@
 
 > **Available in 7.5.0:** folder and single-file sources, saved manuscript selections, and the PDF proof workspace.
 
+![A saved folder manuscript with title, author, reviewed note selection, and a rendered PDF proof beside the export controls](images/release-7-5-publishing-proof.png)
+
 ## What It Can Export
 
 Choose from:
@@ -23,6 +25,8 @@ Choose **RT book**, **Folder**, or **Single file**. For an RT book, use the book
 For a folder or file, enter **Title** and **Author** in the panel. Save a named manuscript to reuse its source, metadata, included notes, and reviewed order. **Update saved manuscript** stores changes, **Save as new** creates another selection, and **Remove saved manuscript** removes the saved choice without deleting notes. Formatting remains in export presets, separately from the source selection.
 
 Your source files stay unchanged. Recheck the included notes when returning to a saved selection, especially after moving or deleting files.
+
+![Saved manuscript source showing RT book, Folder, and Single file choices, and reusable title, author, selection and order](images/release-7-5-general-export-source.png)
 
 ## Who Is It For?
 

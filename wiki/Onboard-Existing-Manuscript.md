@@ -26,11 +26,19 @@ Missing scene files, duplicate-title ambiguity, and scene files absent from the 
 
 Choose **AI assisted** explicitly if you want AI splitting or generated summaries. Configure an available provider under [Settings → AI](Settings-AI) before using that mode.
 
+### Cloud or Local AI for a Single File
+
+With **AI assisted** selected, choose a validated **Local model — no API cost** or your configured cloud provider under **Run AI with**. Review the detected chapters and scene boundaries before using **Auto-split with AI**. The review panel names the selected model and shows a cloud estimate or **Free · local model**.
+
+<img src="images/release-7-5-onboarding-cloud.png" alt="Cloud AI onboarding of a large single-file manuscript, showing Claude Opus 5.5, an estimate, and chapter review" width="440"> <img src="images/release-7-5-onboarding-local.png" alt="The same single-file chapter review using a validated local Qwen 80B model with no API cost" width="440">
+
 ## Review and apply
 
 1. **Prepare:** choose the source type and import mode, check export readiness, and confirm how narrative order is determined.
 2. **Confirm scenes:** review boundaries and titles, choose the book's Publish Stage, and map exported metadata. The mapping table proposes fields and shows example values. Map a column to a Radial Timeline property, keep it as a custom field, or ignore it. For a column representing a subplot, choose **Mark scenes with this subplot (column name)**.
 3. **Review and apply:** inspect the proposed scene notes before approving their creation. Onboarding writes a separate `<Book> RT` folder and registers the imported book.
+
+![Scrivener metadata assignments: People to Character, Act to Act, POV to the point-of-view character, Status kept as a custom field, and Themes to Subplot](images/release-7-5-scrivener-metadata.png)
 
 Metadata mappings are applied once when the imported notes are created. They do not change the [Settings key remapper](Settings-Advanced), and you do not repeat them every time the plugin runs. ACT folders determine acts when present; otherwise the import allocates acts by position. Review the proposed acts and subplots before applying.
 

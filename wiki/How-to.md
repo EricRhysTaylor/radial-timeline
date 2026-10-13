@@ -85,6 +85,8 @@ This method automatically updates ordering for you.
 - Changing acts requires updating the **YAML `Act:` field**
 - Narrative Mode supports **drag-and-drop reordering**
 
+![Dragging a scene from Relationship to Investigation: the destination ring highlights and the pointer label previews the membership change](images/release-7-5-subplot-drag.png)
+
 ### Change a Scene’s Date
 
 Drag a scene on Chronologue’s outer All Scenes ring, then review its new date and whether undated followers should travel with it. See [Chronologue placement](Chronologue-Mode#drag-a-scene-to-change-its-date).

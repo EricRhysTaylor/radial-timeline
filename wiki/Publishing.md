@@ -1,8 +1,3 @@
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/settings-publish.png" alt="Settings → Publish tab" style="width: 600px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Settings → Publish</div>
-</div>
-
 Radial Timeline publishes an RT book, a folder of Markdown notes, or a standalone Markdown file as Markdown, Word, or PDF. In 7.5.0, folders and single files can become documents without timeline scene properties: review their contents and order, supply a title and author, and save the selection for reuse. See [Manuscript export](Manuscript-Export) for source selection, reader presets, PDF proofs, and delivery review.
 
 For PDF, choose a layout defining fonts, headers, chapter openers, and part dividers. Pandoc and LaTeX typeset the assembled document. Word requires Pandoc; Markdown needs neither tool.
@@ -12,6 +7,8 @@ For PDF, choose a layout defining fonts, headers, chapter openers, and part divi
 > **Prerequisites**: Pandoc installed (all Pandoc-based exports, including Word), plus LaTeX for PDF output. See below for the two-installer setup, and [Exporting a Manuscript](#exporting-a-manuscript) for the export workflow and checks.
 
 ---
+
+![Actual PDF proof of A Study in Scarlet, with page navigation and the rendered Professional layout](images/release-7-5-document-proof.png)
 
 ## Installing Pandoc and LaTeX
 

@@ -16,6 +16,9 @@ See [Timetable](https://github.com/EricRhysTaylor/radial-timeline/wiki/Timetable
 ### Drag scenes between subplots and dates
 
 - **Change subplot membership by dragging.** In Narrative, Chronologue, and Progress, drag a scene from one subplot ring onto another. It leaves the subplot you grabbed and joins the destination, keeping its other memberships. **Shift-drag** adds the destination instead. The ring lights up and the pointer label previews the change. Only **Subplot** changes; narrative order, numbering, and act stay. Each change offers **Undo**. In Narrative and Chronologue, the outer **All Scenes** ring keeps its own reorder or date behavior; start subplot changes from a subplot ring. In Progress, the outer **Main Plot** ring participates too.
+
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/742ccf6fc083334ace46cea90960f0171d60cffa/wiki/images/release-7-5-subplot-drag.png" alt="Dragging a scene from Relationship to Investigation, with the destination ring highlighted and the membership change preview beside the pointer" width="900">
+
 - **Place a scene in story time.** In regular Chronologue, drag on the outer ring and drop beside a dated scene. **Place scene in time** shows the available gap and suggested dates, or lets you enter a specific date and time. At the top of the circle, choose before the opening scene or after the closing scene. Placing writes **When** and preserves narrative order.
 - **Choose what happens to undated followers.** The placement panel names attached undated scenes. Let them travel with the moved scene while their dates stay blank, or choose **Keep them where they are** to write dates at their current displayed times. Review the dates before applying.
 - **Clearer drag and date displays.** Narrative and Chronologue drag arcs travel clockwise. Chronologue’s arc stays beneath the date labels; date lines and scene titles keep their space. File-explorer and tab-header scene highlighting also work reliably again.
@@ -26,8 +29,14 @@ See [Subplot dragging](https://github.com/EricRhysTaylor/radial-timeline/wiki/Ho
 
 - **Choose an RT book, folder, or Markdown file.** Publish essays, reports, collections of notes, and standalone documents as well as timeline books. Review a folder’s included notes and their order before export; plain sources keep existing Markdown headings and do not require scene YAML. Enter their title and author in the panel. Source notes remain unchanged.
 - **Save a manuscript selection for reuse.** A saved manuscript remembers its source, title, author, included notes, and reviewed order. Update it or save another selection. Export formatting stays in your presets separately.
+
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/742ccf6fc083334ace46cea90960f0171d60cffa/wiki/images/release-7-5-general-export-source.png" alt="A saved folder manuscript with title, author, and a reviewed selection of 14 Markdown notes, independent of RT book registration" width="700">
+
 - **Export for the reader.** **Editor round** prepares Word with scene IDs and author queries as margin comments. **AI review** prepares Markdown with IDs and queries. **Readers** produces clean Word or PDF. The panel reads back what the file will carry and flags private notes or review material that would reach the wrong reader. It remembers the last preset; **Reload preset** restores it after changes.
 - **Review actual PDF pages.** **Generate proof** renders the manuscript into a page-by-page proof workspace. Refresh after changing the manuscript or options. Proofs stay in the destination’s **Proofs** folder; final export renders the current manuscript again. Delivery review lists the files actually saved, including split outputs, for you to open and inspect.
+
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/742ccf6fc083334ace46cea90960f0171d60cffa/wiki/images/release-7-5-publishing-proof.png" alt="The general-purpose export panel beside an actual rendered PDF proof of A Study in Scarlet, showing folder sources and reader presets" width="900">
+
 - **Cleaner Word exports.** US Letter pages with 1-inch margins, current Word document format, centered `#` scene breaks, and **Every line is a paragraph** for drafts written with single returns. Kept `%%query:` author questions become margin comments signed with the author’s name; the older `%%ai:` marker is still recognized.
 - **Export reliability.** Format switches preserve scene selections. Long PDF literal blocks wrap within the page. Part epigraphs follow authored Part markers. Cleanup keeps prose between author queries and ordinary comments, and export checks and delivery paths agree.
 
@@ -37,14 +46,21 @@ See [Manuscript export](https://github.com/EricRhysTaylor/radial-timeline/wiki/M
 
 - **Import from Welcome.** Choose a Scrivener export, a Word document, or one big text, Markdown, or HTML file, then review scenes before creating notes. The import writes a separate `<Book> RT` folder and registers the book, leaving the source untouched. Book Manager refreshes after import.
 - **Structure only — no AI is the default.** It uses document structure and scene markers, carries exported synopses and metadata, and makes no AI requests. Choose **AI assisted** explicitly for AI splitting or summaries.
+- **Cloud or local AI for a large single file.** Choose **AI assisted**, then use a validated Local model or your configured cloud provider. Review the detected chapters before asking AI to propose scene splits. The review names the model and shows a cloud estimate or **Free · local model**.
+
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/742ccf6fc083334ace46cea90960f0171d60cffa/wiki/images/release-7-5-onboarding-cloud.png" alt="Cloud AI onboarding of a large single-file manuscript: Claude Opus 5.5, a cost estimate, and 14 chapters to review" width="440"> <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/742ccf6fc083334ace46cea90960f0171d60cffa/wiki/images/release-7-5-onboarding-local.png" alt="The same single-file onboarding review with a validated local Qwen 80B model and no API cost" width="440">
+
 - **Find the export and review its outline.** Pick a suggested manuscript or choose its folder directly. Scrivener’s **Outliner Contents as CSV** supplies narrative order; numbered filenames do so when no CSV is supplied. Scene files and the outline are shown separately, with reported mismatches available to review and recheck. Where offered, **Continue anyway** lets you proceed with the available material after inspecting the problems.
 - **Map metadata once.** During import, map exported columns to scene properties, custom fields, or subplot membership. This does not change your ongoing property-name mappings.
+
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/742ccf6fc083334ace46cea90960f0171d60cffa/wiki/images/release-7-5-scrivener-metadata.png" alt="Scrivener metadata assignments for Character, Act, POV, retained custom Status, and Subplot" width="800">
+
 
 See [Manuscript onboarding](https://github.com/EricRhysTaylor/radial-timeline/wiki/Onboard-Existing-Manuscript), and [Volume 10 — Quick Start](https://youtu.be/n53fYUejH44).
 
 ### AI, language, and polish
 
-- **Local model context is yours to declare.** Configure your local model’s context window rather than working within a fixed 32k assumption. Cancelling a Local LLM run stops the active request.
+- **Local model context is yours to declare.** Configure your local model’s context window rather than working within a fixed 32k assumption. Cancelling a Local LLM run stops the active request. Local model validation no longer fails with HTTP 411 on servers that require a fixed request length.
 - **Clearer AI processing.** Request-size estimates stay local; provider requests and cancellation paths are hardened, with clearer processing disclosures in the wiki.
 - **Retired model selections move within their lane.** Retired built-in pins migrate to their designated same-lane successor, with refreshed bundled pricing and model lifecycle information.
 - **German, Japanese, Korean, and Chinese completed.** More UI strings are translated, counted phrases follow each language’s grammar, and placeholder values are inserted literally.

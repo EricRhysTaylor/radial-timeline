@@ -21,8 +21,8 @@ export interface LiveTimetable {
     /** The table's element, so the timeline can find the pane it shows in (see readingPane). */
     readonly rootEl: HTMLElement;
     refresh(): void;
-    /** The wheel is hovering this scene (or nothing): light up its row. */
-    markLinkedRow(path: string | null): void;
+    /** The wheel is hovering this scene (or nothing): light up its row in the hovered cell's color (a CSS color). */
+    markLinkedRow(path: string | null, color: string | null): void;
     /** This note is open in an editor (or none is): mark its row. */
     markCurrentNote(path: string | null): void;
     /** The subplot key spotlights this ring (or none): dim rows outside it. */
@@ -102,9 +102,9 @@ export function refreshTimetableViews(): void {
     liveTimetables.forEach(view => view.refresh());
 }
 
-/** The wheel is hovering this scene (or nothing): light up its row in every open Timetable. */
-export function markTimetableRows(path: string | null): void {
-    liveTimetables.forEach(view => view.markLinkedRow(path));
+/** The wheel is hovering this scene (or nothing): light up its row, in the hovered cell's color, in every open Timetable. */
+export function markTimetableRows(path: string | null, color: string | null = null): void {
+    liveTimetables.forEach(view => view.markLinkedRow(path, color));
 }
 
 // ── Mode ────────────────────────────────────────────────────────────────

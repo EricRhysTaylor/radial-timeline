@@ -8,7 +8,7 @@
  * through the plugin's scene highlighter.
  */
 
-import { markTimetableRows, revealTimetableSegment, type TimelineColoring, type TimelineLens } from '../../timetable/timetableRegistry';
+import { currentTimelineColoring, markTimetableRows, revealTimetableSegment, type TimelineColoring, type TimelineLens } from '../../timetable/timetableRegistry';
 import { formatNumber } from '../../utils/svg';
 
 type TimetableLinkView = {
@@ -30,18 +30,40 @@ function scenePathOf(target: EventTarget | null): string | null {
 
 export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGElement): void {
     let current: string | null = null;
+    let currentColor: string | null = null;
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (event: Event) => {
         const path = scenePathOf(event.target);
-        if (!path || path === current) return;
+        if (!path) return;
+        // The same scene in another ring is another cell, with its own color.
+        const color = cellColor(event.target, path);
+        if (path === current && color === currentColor) return;
         current = path;
-        markTimetableRows(path);
+        currentColor = color;
+        markTimetableRows(path, color);
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (event: Event) => {
         if (current === null) return;
         if (scenePathOf((event as PointerEvent).relatedTarget) === current) return;
         current = null;
+        currentColor = null;
         markTimetableRows(null);
     });
+}
+
+/**
+ * The color the hovered cell shows: its value's color while a Timetable colors
+ * the wheel (neutral without one), otherwise its ring's color.
+ */
+function cellColor(target: EventTarget | null, path: string): string | null {
+    const coloring = currentTimelineColoring();
+    if (coloring) {
+        const value = coloring.values.get(path);
+        const slot = value === undefined ? undefined : coloring.legend.find(entry => entry.value === value)?.colorIndex;
+        return slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`;
+    }
+    const group = target instanceof Element ? target.closest('.rt-scene-group[data-path]') : null;
+    const slot = Number(group?.getAttribute('data-subplot-color-index') ?? Number.NaN);
+    return Number.isInteger(slot) ? `var(--rt-subplot-colors-${slot})` : null;
 }
 
 /** Clicking an act label (a book label in saga scope) shows that part of any open Timetable. */

@@ -373,11 +373,15 @@ export class TimetableView extends BasesView {
     }
 
     /** The wheel is hovering this scene: light up its row and bring it into view. */
-    markLinkedRow(path: string | null): void {
-        this.linkedRow?.removeClass('is-linked');
+    markLinkedRow(path: string | null, color: string | null): void {
+        if (this.linkedRow) {
+            this.linkedRow.removeClass('is-linked');
+            this.linkedRow.setCssProps({ '--ert-timetable-link-color': '' });
+        }
         this.linkedRow = path ? this.rowEls.get(path) ?? null : null;
         if (!this.linkedRow) return;
         this.linkedRow.addClass('is-linked');
+        if (color) this.linkedRow.setCssProps({ '--ert-timetable-link-color': color });
         this.linkedRow.scrollIntoView({ block: 'nearest' });
     }
 

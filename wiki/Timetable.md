@@ -18,7 +18,7 @@ The `.base` file is yours to customize. Change its columns, filters, sorting, or
 - **When:** dates use the same display formatter as the timeline hover, including the active planetary calendar where applicable.
 - **Open queries:** a marker identifies unresolved author queries in a note; hover to read them.
 
-Hover a scene row to highlight it on the wheel. Hover a scene on the wheel to highlight and reveal its row. Click a scene row to open its note; **Shift-click** brings the timeline forward and highlights that scene. Right-click a scene row for the timeline’s scene menu.
+Hover a scene row to highlight it on the wheel. Hover a scene on the wheel to reveal its row, lit in the color of the cell you’re pointing at: that ring’s color, or the color-by color while a column colors the timeline. Click a scene row to open its note; **Shift-click** brings the timeline forward and highlights that scene. Right-click a scene row for the timeline’s scene menu.
 
 ### The reading pane
 

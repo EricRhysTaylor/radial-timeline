@@ -4,6 +4,8 @@
 //   npm run server          start mlx_lm.server detached, wait until it answers, warm the model
 //   npm run server:stop     stop the process listening on the endpoint port
 //   npm run server:status   report endpoint, model id, pid, and GPU wired limit
+//   node scripts/local-llm-server.mjs restart --configure-memory
+//                          restore the model's wired limit, restart, and warm
 //
 // This file is the single source of truth for which model and flags the server
 // runs. The runtime is mlx-lm installed as a uv tool (`uv tool install mlx-lm
@@ -89,6 +91,22 @@ function checkWiredLimit() {
   } else {
     console.log(`  GPU wired limit: ${limit} MB`);
   }
+}
+
+function configureWiredLimit() {
+  if (wiredLimitMb() === REQUIRED_WIRED_LIMIT_MB) return;
+  try {
+    const memoryBytes = Number(execFileSync('sysctl', ['-n', 'hw.memsize'], { encoding: 'utf8' }).trim());
+    if (!Number.isFinite(memoryBytes) || REQUIRED_WIRED_LIMIT_MB * 1024 * 1024 >= memoryBytes) {
+      fail('The configured GPU wired limit must be smaller than this Mac\'s total RAM.');
+    }
+    console.log(`Restoring ${REQUIRED_WIRED_LIMIT_MB} MB (56 GiB) of GPU wired-memory capacity.`);
+    console.log('macOS may ask for your administrator password; typed characters will not appear.');
+    execFileSync('sudo', ['/usr/sbin/sysctl', `iogpu.wired_limit_mb=${REQUIRED_WIRED_LIMIT_MB}`], { stdio: 'inherit' });
+  } catch {
+    fail('Could not restore the GPU wired limit. Server startup was not attempted.');
+  }
+  if (wiredLimitMb() !== REQUIRED_WIRED_LIMIT_MB) fail('GPU wired limit did not reach the configured value. Server startup was not attempted.');
 }
 
 async function waitUntil(fn, timeoutMs, intervalMs = 1000) {
@@ -196,6 +214,12 @@ async function stop() {
 }
 
 const mode = process.argv[2] ?? 'start';
-const modes = { start, stop, status };
-if (!modes[mode]) fail(`Unknown mode "${mode}". Use start | stop | status.`);
+const modes = { start, stop, status, restart: async () => { await stop(); await start(); } };
+if (!modes[mode]) fail(`Unknown mode "${mode}". Use start | stop | status | restart.`);
+const flags = process.argv.slice(3);
+if (flags.some(flag => flag !== '--configure-memory')) fail('Unknown option. Use --configure-memory to restore the model\'s GPU wired limit.');
+if (flags.includes('--configure-memory')) {
+  if (mode !== 'start' && mode !== 'restart') fail('--configure-memory is only supported with start or restart.');
+  configureWiredLimit();
+}
 await modes[mode]();

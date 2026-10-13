@@ -50,21 +50,32 @@
   pointer-events: auto;
 }
 
+/* The grabbed scene wears the colour of the ring it will belong to: its own
+   ring's, until it hovers a move, then the destination's. */
 .radial-timeline-svg.rt-dragging-subplot .rt-scene-group.rt-drag-source .rt-scene-path {
-  fill: var(--rt-drag-stroke-color, var(--interactive-accent, #705DCF));
+  fill: var(--rt-membership-color, var(--interactive-accent));
   fill-opacity: 1;
 }
 
-/* The whole destination ring lights up: scenes outlined, empty cells tinted. */
-.radial-timeline-svg .rt-scene-group.rt-membership-target .rt-scene-path {
-  stroke: var(--rt-drag-stroke-color, var(--interactive-accent, #705DCF));
-  stroke-width: 3px;
+/* One outline around the whole destination ring, laid over the rings so no
+   neighbour covers an edge. The halo in the page background keeps the line
+   clear of neighbouring rings whatever their colour. */
+.radial-timeline-svg .rt-membership-ring-outline {
+  pointer-events: none;
 }
 
-.radial-timeline-svg .rt-void-cell.rt-membership-target {
-  fill: var(--rt-drag-stroke-color, var(--interactive-accent, #705DCF));
-  fill-opacity: 0.22;
-  stroke: none;
+.radial-timeline-svg .rt-membership-ring-outline path {
+  fill: none;
+}
+
+.radial-timeline-svg .rt-membership-ring-halo {
+  stroke: var(--background-primary);
+  stroke-width: 7px;
+}
+
+.radial-timeline-svg .rt-membership-ring-line {
+  stroke: var(--rt-membership-color, var(--interactive-accent));
+  stroke-width: 3px;
 }
 
 /* What the drop will do, beside the pointer: "Move A → D" / "Add D". */

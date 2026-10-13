@@ -11,7 +11,8 @@ import {
 } from '../../services/SubplotMembership';
 import { getActiveFrontmatterMappings } from '../../utils/frontmatter';
 import { sleep } from '../../utils/sleep';
-import { resolveSubplotColorFromGroup } from './dragGeometry';
+import { formatNumber } from '../../utils/svg';
+import { readSubplotColor } from '../../renderer/utils/subplotColors';
 import { membershipOfRing } from './subplotRings';
 import { t } from '../../i18n';
 
@@ -59,6 +60,16 @@ type MembershipDrop = Exclude<SubplotMembershipChange, { kind: 'remove' }>;
 
 const HOLD_MS = 500;
 const MOVE_THRESHOLD_PX = 7;
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** A whole ring between two radii: both circles, each drawn as two half arcs. */
+export function ringOutlinePath(innerR: number, outerR: number): string {
+    const circle = (r: number): string => {
+        const x = formatNumber(r);
+        return `M ${x} 0 A ${x} ${x} 0 1 1 ${formatNumber(-r)} 0 A ${x} ${x} 0 1 1 ${x} 0 Z`;
+    };
+    return `${circle(outerR)} ${circle(innerR)}`;
+}
 
 /** "14 Scene" → "Scene 14"; "3 The Wreck" → "Scene 3 The Wreck". */
 export function describeSceneFile(basename: string): string {
@@ -83,9 +94,10 @@ export class SubplotRingDragController {
     private shiftHeld = false;
     private lastPointer: { x: number; y: number } | null = null;
     private target: RingTarget | null = null;
-    private highlightedRing: number | null = null;
+    private outline: SVGGElement | null = null;
+    private outlinedRing: number | null = null;
+    private ringColors = new Map<number, string | undefined>();
     private previewEl: HTMLElement | null = null;
-    private accent?: string;
 
     constructor(
         private readonly view: SubplotRingViewAdapter,
@@ -151,7 +163,6 @@ export class SubplotRingDragController {
         this.sourceSubplot = subplot;
         this.startX = evt.clientX;
         this.startY = evt.clientY;
-        this.accent = resolveSubplotColorFromGroup(group);
         subplotDragActive = true;
         if (this.holdTimer !== null) window.clearTimeout(this.holdTimer);
         this.holdTimer = window.setTimeout(() => {
@@ -166,7 +177,7 @@ export class SubplotRingDragController {
         lastSubplotDragTime = Date.now();
         this.svg.classList.add('rt-dragging-subplot');
         this.sourceGroup.classList.add('rt-drag-source');
-        if (this.accent) this.sourceGroup.style.setProperty('--rt-drag-stroke-color', this.accent);
+        this.setSourceFill(this.ringColor(this.sourceRing));
         this.log('begin', { path: this.sourcePath, subplot: this.sourceSubplot });
     }
 
@@ -180,8 +191,8 @@ export class SubplotRingDragController {
             this.beginDrag();
         }
         if (!this.dragging) return;
-        this.setTarget(this.findTarget(evt));
-        this.updatePreview();
+        this.target = this.findTarget(evt);
+        this.updateFeedback();
     }
 
     private async onPointerUp(evt: PointerEvent): Promise<void> {
@@ -209,7 +220,7 @@ export class SubplotRingDragController {
         }
         if (evt.key === 'Shift') {
             this.shiftHeld = evt.type === 'keydown';
-            this.updatePreview();
+            if (this.dragging) this.updateFeedback();
         }
     }
 
@@ -223,32 +234,78 @@ export class SubplotRingDragController {
         return { ring, element: hit };
     }
 
-    // ── Feedback: the destination ring lights up, and a label by the pointer
-    // says what the drop will do ("Move A → D", "Add D").
+    // ── Feedback. The destination ring is outlined in its own colour. On a
+    // move the grabbed scene takes that colour too, since it is leaving its
+    // ring for that one; on an add (Shift) it keeps its own, since it stays.
+    // A drop that would change nothing outlines nothing. A label by the
+    // pointer says what the drop will do ("Move A → D", "Add D").
 
-    private setTarget(target: RingTarget | null): void {
-        this.target = target;
-        if (target?.ring === this.highlightedRing) return;
-        this.clearRingHighlight();
-        if (!target) return;
-        this.highlightedRing = target.ring;
-        for (const el of this.ringElements(target.ring)) {
-            el.classList.add('rt-membership-target');
-            if (this.accent) (el as SVGElement).style.setProperty('--rt-drag-stroke-color', this.accent);
+    private updateFeedback(): void {
+        const target = this.target;
+        const change = target ? this.changeFor(target.ring, this.shiftHeld) : null;
+        const current = change ? this.readCurrent() : null;
+        const after = change && current ? planSubplotMembership(current.before, change) : null;
+        const destination = target && after ? target.ring : null;
+        this.showRingOutline(destination);
+        this.setSourceFill(this.ringColor(destination !== null && change?.kind === 'move' ? destination : this.sourceRing));
+        // No preview when the scene's note cannot be read.
+        this.updatePreview(current ? change : null, after);
+    }
+
+    /** The colour a subplot ring is painted in, from its label's colour slot. */
+    private ringColor(ring: number): string | undefined {
+        if (!this.ringColors.has(ring)) {
+            const slot = this.svg.querySelector(`.rt-subplot-ring-label-text[data-ring="${ring}"]`)?.getAttribute('data-color-index');
+            this.ringColors.set(ring, slot == null ? undefined : readSubplotColor(this.svg.ownerDocument, Number(slot)));
         }
+        return this.ringColors.get(ring);
+    }
+
+    private setSourceFill(color: string | undefined): void {
+        if (!this.sourceGroup) return;
+        if (color) this.sourceGroup.style.setProperty('--rt-membership-color', color);
+        else this.sourceGroup.style.removeProperty('--rt-membership-color');
     }
 
     private ringElements(ring: number): Element[] {
         return Array.from(this.svg.querySelectorAll(`.rt-scene-group[data-ring="${ring}"], .rt-void-cell[data-ring="${ring}"]`));
     }
 
-    private clearRingHighlight(): void {
-        if (this.highlightedRing === null) return;
-        for (const el of this.ringElements(this.highlightedRing)) {
-            el.classList.remove('rt-membership-target');
-            (el as SVGElement).style.removeProperty('--rt-drag-stroke-color');
+    /**
+     * One outline around the whole ring, laid over the rings and act spokes
+     * (under the number squares), so neighbouring rings cannot cover any edge.
+     */
+    private showRingOutline(ring: number | null): void {
+        if (ring === this.outlinedRing) return;
+        this.removeRingOutline();
+        if (ring === null) return;
+        const cells = this.ringElements(ring);
+        const innerR = Math.min(...cells.map(el => Number(el.getAttribute('data-inner-r'))));
+        const outerR = Math.max(...cells.map(el => Number(el.getAttribute('data-outer-r'))));
+        if (!Number.isFinite(innerR) || !Number.isFinite(outerR)) return;
+
+        const doc = this.svg.ownerDocument;
+        const outline = doc.createElementNS(SVG_NS, 'g');
+        outline.classList.add('rt-membership-ring-outline');
+        const color = this.ringColor(ring);
+        if (color) outline.style.setProperty('--rt-membership-color', color);
+        for (const cls of ['rt-membership-ring-halo', 'rt-membership-ring-line']) {
+            const path = doc.createElementNS(SVG_NS, 'path');
+            path.classList.add(cls);
+            path.setAttribute('d', ringOutlinePath(innerR, outerR));
+            outline.appendChild(path);
         }
-        this.highlightedRing = null;
+        const squares = this.svg.querySelector('.rt-number-squares');
+        if (squares) squares.before(outline);
+        else this.svg.appendChild(outline);
+        this.outline = outline;
+        this.outlinedRing = ring;
+    }
+
+    private removeRingOutline(): void {
+        this.outline?.remove();
+        this.outline = null;
+        this.outlinedRing = null;
     }
 
     private changeFor(ring: number, shift: boolean): MembershipDrop | null {
@@ -263,15 +320,12 @@ export class SubplotRingDragController {
         return { file, before: readSubplotMemberships(this.view.plugin.app, file, getActiveFrontmatterMappings(this.view.plugin.settings)) };
     }
 
-    private updatePreview(): void {
-        const change = this.target ? this.changeFor(this.target.ring, this.shiftHeld) : null;
-        const current = change ? this.readCurrent() : null;
+    private updatePreview(change: MembershipDrop | null, after: string[] | null): void {
         const body = this.svg.ownerDocument?.body;
-        if (!change || !current || !body) {
+        if (!change || !body) {
             this.hidePreview();
             return;
         }
-        const after = planSubplotMembership(current.before, change);
         const action = after ? describeSubplotMembershipChange(change) : t('ui.subplotRingDragController.alreadyIn', { subplot: change.to });
         const detail = after
             ? (this.shiftHeld
@@ -298,16 +352,18 @@ export class SubplotRingDragController {
     }
 
     private async finishDrop(shift: boolean): Promise<void> {
-        const change = this.target ? this.changeFor(this.target.ring, shift) : null;
+        const target = this.target;
+        const change = target ? this.changeFor(target.ring, shift) : null;
         const current = change ? this.readCurrent() : null;
         const after = change && current ? planSubplotMembership(current.before, change) : null;
-        if (!change || !current || !after) {
+        if (!target || !change || !current || !after) {
             this.reset();
             return;
         }
         const { file, before } = current;
         const itemLabel = describeSceneFile(file.basename);
-        const accent = this.accent;
+        // The dialog wears the destination's colour: that is where the scene is going.
+        const accent = this.ringColor(target.ring);
         this.hidePreview();
 
         this.confirming = true;
@@ -353,17 +409,18 @@ export class SubplotRingDragController {
         if (this.holdTimer !== null) window.clearTimeout(this.holdTimer);
         this.holdTimer = null;
         this.hidePreview();
-        this.clearRingHighlight();
+        this.removeRingOutline();
         this.svg.classList.remove('rt-dragging-subplot');
         if (this.sourceGroup) {
             this.sourceGroup.classList.remove('rt-drag-source');
-            this.sourceGroup.style.removeProperty('--rt-drag-stroke-color');
+            this.sourceGroup.style.removeProperty('--rt-membership-color');
         }
         this.sourceGroup = null;
         this.sourcePath = null;
         this.sourceRing = -1;
         this.sourceSubplot = null;
         this.target = null;
+        this.ringColors.clear();
         this.dragging = false;
         this.shiftHeld = false;
         this.lastPointer = null;

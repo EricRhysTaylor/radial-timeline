@@ -5,7 +5,7 @@ import type { SceneUpdate } from '../../services/SceneReorderService';
 import { describeSubplotMembershipChange, type SubplotMembershipChange } from '../../services/SubplotMembership';
 import { t } from '../../i18n';
 import { OuterRingDragController } from './OuterRingDragController';
-import { describeSceneFile, SubplotRingDragController } from './SubplotRingDragController';
+import { describeSceneFile, ringOutlinePath, SubplotRingDragController } from './SubplotRingDragController';
 
 // What the confirm dialog showed, what was renumbered, and which membership
 // edits were applied.
@@ -14,13 +14,15 @@ const confirmation = vi.hoisted(() => ({
     resolvers: [] as Array<(value: boolean) => void>,
 }));
 const shown: DragConfirmCurrentMoveSummary[] = [];
+const accents: Array<string | undefined> = [];
 const renumbered: SceneUpdate[][] = [];
 const memberships: Array<{ path: string; change: SubplotMembershipChange }> = [];
 
 vi.mock('../../modals/DragConfirmModal', () => ({
     DragConfirmModal: class {
-        constructor(_app: unknown, summary: DragConfirmCurrentMoveSummary) {
+        constructor(_app: unknown, summary: DragConfirmCurrentMoveSummary, _recent: unknown, _onHistory: unknown, accent?: string) {
             shown.push(summary);
+            accents.push(accent);
         }
         waitForBegin(): Promise<boolean> {
             return confirmation.hold
@@ -51,10 +53,28 @@ vi.mock('../../services/SubplotMembership', async (importOriginal) => ({
 
 vi.mock('../../utils/sleep', () => ({ sleep: () => Promise.resolve() }));
 
-// Just enough SVG: class and [attr="value"] selectors, #id, closest.
+// Each colour slot reads back as its name, so a test can tell whose colour is on show.
+vi.mock('../../renderer/utils/subplotColors', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../renderer/utils/subplotColors')>()),
+    readSubplotColor: (_doc: unknown, index: number) => `slot-${index}`,
+}));
+
+// Just enough SVG: class and [attr="value"] selectors, #id, closest, and
+// creating, inserting and removing the drag outline.
+const fakeDocument = { createElementNS: (_ns: string, _tag: string): FakeEl => new FakeEl([]) };
+
 class FakeEl {
-    readonly classList = { add: (): void => {}, remove: (): void => {}, contains: (): boolean => false };
-    readonly style = { setProperty: (): void => {}, removeProperty: (): void => {} };
+    readonly ownerDocument = fakeDocument;
+    readonly classList = {
+        add: (...names: string[]): void => { names.forEach((name) => { if (!this.classes.includes(name)) this.classes.push(name); }); },
+        remove: (...names: string[]): void => { names.forEach((name) => { const at = this.classes.indexOf(name); if (at >= 0) this.classes.splice(at, 1); }); },
+        contains: (name: string): boolean => this.classes.includes(name),
+    };
+    readonly styles: Record<string, string> = {};
+    readonly style = {
+        setProperty: (name: string, value: string): void => { this.styles[name] = value; },
+        removeProperty: (name: string): void => { delete this.styles[name]; },
+    };
     readonly children: FakeEl[] = [];
     parent: FakeEl | null = null;
 
@@ -64,6 +84,18 @@ class FakeEl {
         kids.forEach((kid) => { kid.parent = this; this.children.push(kid); });
         return this;
     }
+    appendChild(kid: FakeEl): FakeEl { this.append(kid); return kid; }
+    before(el: FakeEl): void {
+        const siblings = this.parent!.children;
+        el.parent = this.parent;
+        siblings.splice(siblings.indexOf(this), 0, el);
+    }
+    remove(): void {
+        if (!this.parent) return;
+        this.parent.children.splice(this.parent.children.indexOf(this), 1);
+        this.parent = null;
+    }
+    setAttribute(name: string, value: string): void { this.attrs[name] = value; }
     getAttribute(name: string): string | null { return this.attrs[name] ?? null; }
     private descendants(): FakeEl[] { return this.children.flatMap((child) => [child, ...child.descendants()]); }
     private matches(selector: string): boolean {
@@ -105,6 +137,14 @@ const SCENES: Array<[string, number, 'Scene' | 'Beat', string]> = [
 
 const path = (basename: string): string => `Book/${basename}.md`;
 const angleOf = (basename: string): number => SCENES.findIndex(([name]) => name === basename) * 0.1;
+// Each ring is 40 wide with a 10 gap; each subplot paints in colour slot ring + 4.
+const innerROf = (ring: number): number => 100 + ring * 50;
+const outerROf = (ring: number): number => innerROf(ring) + 40;
+const slotOf = (ring: number): string => `slot-${ring + 4}`;
+
+function radii(ring: number): Record<string, string> {
+    return { 'data-inner-r': String(innerROf(ring)), 'data-outer-r': String(outerROf(ring)) };
+}
 
 function sceneGroup(basename: string, act: number, ring: number, itemType: 'Scene' | 'Beat' = 'Scene'): FakeEl {
     return new FakeEl(['rt-scene-group'], {
@@ -113,6 +153,7 @@ function sceneGroup(basename: string, act: number, ring: number, itemType: 'Scen
         'data-ring': String(ring),
         'data-start-angle': String(angleOf(basename)),
         'data-path': encodeURIComponent(path(basename)),
+        ...radii(ring),
     }).append(new FakeEl(['rt-scene-path'], {}, `r${ring}-${basename}`));
 }
 
@@ -131,10 +172,14 @@ function buildTimeline(): { svg: FakeEl; groups: Map<string, FakeEl> } {
     }
     // The outer ring's label names Main Plot (masterSubplotOrder[0]) in every
     // mode; only Progress mode shows Main Plot there.
+    const label = (ring: number, name: string): FakeEl =>
+        new FakeEl(['rt-subplot-ring-label-text'], { 'data-ring': String(ring), 'data-subplot-name': name, 'data-color-index': String(ring + 4) });
     svg.append(
-        new FakeEl(['rt-subplot-ring-label-text'], { 'data-ring': String(OUTER), 'data-subplot-name': 'Main Plot' }),
-        new FakeEl(['rt-subplot-ring-label-text'], { 'data-ring': String(SHIPWRECK_RING), 'data-subplot-name': SHIPWRECK }),
-        new FakeEl(['rt-subplot-ring-label-text'], { 'data-ring': String(KEEPERS_RING), 'data-subplot-name': KEEPERS }),
+        new FakeEl(['rt-void-cell'], { 'data-ring': String(KEEPERS_RING), ...radii(KEEPERS_RING) }),
+        label(OUTER, 'Main Plot'),
+        label(SHIPWRECK_RING, SHIPWRECK),
+        label(KEEPERS_RING, KEEPERS),
+        new FakeEl(['rt-number-squares']),
     );
     return { svg, groups };
 }
@@ -166,8 +211,12 @@ type SubplotInternals = {
     sourceRing: number;
     sourceSubplot: string | null;
     dragging: boolean;
+    shiftHeld: boolean;
     target: { ring: number; element: FakeEl } | null;
     membershipOf(ring: number): string | null;
+    beginDrag(): void;
+    updateFeedback(): void;
+    reset(): void;
     finishDrop(shift: boolean): Promise<void>;
     onPointerUp(event: PointerEvent): Promise<void>;
 };
@@ -176,23 +225,41 @@ function subplotDrag(mode: string, subplots: Record<string, string | string[]> =
     const { svg, groups } = buildTimeline();
     const controller = new SubplotRingDragController({ plugin: makePlugin(subplots), renderScope } as never, svg as never, { mode, onRefresh: () => {} });
     const internals = controller as unknown as SubplotInternals;
-    // What startDrag records for a grab on `ring`, and the ring under the pointer.
-    const drag = async (basename: string, fromRing: number, toRing: number, shift: boolean): Promise<void> => {
-        internals.sourceGroup = groups.get(`${fromRing}:${basename}`)!;
+    // What startDrag records for a grab on `ring`, then the drag begins.
+    const grab = (basename: string, fromRing: number): FakeEl => {
+        const group = groups.get(`${fromRing}:${basename}`)!;
+        internals.sourceGroup = group;
         internals.sourcePath = path(basename);
         internals.sourceRing = fromRing;
         internals.sourceSubplot = internals.membershipOf(fromRing);
-        internals.dragging = true;
+        internals.beginDrag();
+        return group;
+    };
+    const pointAt = (toRing: number): void => {
         internals.target = { ring: toRing, element: new FakeEl(['rt-void-cell'], { 'data-ring': String(toRing) }) };
+    };
+    // The pointer over `toRing`, Shift held or not.
+    const hover = (basename: string, fromRing: number, toRing: number, shift: boolean): FakeEl => {
+        const group = grab(basename, fromRing);
+        internals.shiftHeld = shift;
+        pointAt(toRing);
+        internals.updateFeedback();
+        return group;
+    };
+    const drag = async (basename: string, fromRing: number, toRing: number, shift: boolean): Promise<void> => {
+        grab(basename, fromRing);
+        pointAt(toRing);
         await internals.finishDrop(shift);
     };
-    return { internals, drag };
+    const outlines = (): FakeEl[] => svg.querySelectorAll('.rt-membership-ring-outline');
+    return { internals, svg, drag, hover, outlines };
 }
 
 beforeEach(() => {
     confirmation.hold = false;
     confirmation.resolvers.length = 0;
     shown.length = 0;
+    accents.length = 0;
     renumbered.length = 0;
     memberships.length = 0;
 });
@@ -233,6 +300,59 @@ describe('subplot ring drag — the membership contract', () => {
         const { drag } = subplotDrag('narrative', { ...lighthouseSubplots, [path('14 Scene')]: [SHIPWRECK, KEEPERS] });
         await drag('14 Scene', SHIPWRECK_RING, KEEPERS_RING, false);
         expect(shown[0].contextChange).toBe(`${SHIPWRECK}, ${KEEPERS} → ${KEEPERS}`);
+    });
+});
+
+describe('subplot ring drag — what the author sees', () => {
+    it('a move outlines the whole destination ring, under the number squares, in its colour', () => {
+        const { svg, hover, outlines } = subplotDrag('narrative');
+        hover('14 Scene', SHIPWRECK_RING, KEEPERS_RING, false);
+
+        expect(outlines()).toHaveLength(1);
+        const [outline] = outlines();
+        expect(outline.styles['--rt-membership-color']).toBe(slotOf(KEEPERS_RING));
+        const expected = ringOutlinePath(innerROf(KEEPERS_RING), outerROf(KEEPERS_RING));
+        expect(outline.children.map((child) => child.getAttribute('d'))).toEqual([expected, expected]);
+        const order = svg.children;
+        expect(order.indexOf(outline)).toBeLessThan(order.indexOf(svg.querySelector('.rt-number-squares')!));
+    });
+
+    it('the grabbed scene wears its own colour, then the destination\'s on a move', () => {
+        const { internals, hover } = subplotDrag('narrative');
+        const group = hover('14 Scene', SHIPWRECK_RING, KEEPERS_RING, false);
+        expect(group.styles['--rt-membership-color']).toBe(slotOf(KEEPERS_RING));
+
+        internals.target = null;
+        internals.updateFeedback();
+        expect(group.styles['--rt-membership-color']).toBe(slotOf(SHIPWRECK_RING));
+    });
+
+    it('with Shift (add) the scene stays where it is, so it keeps its own colour', () => {
+        const { hover, outlines } = subplotDrag('narrative');
+        const group = hover('14 Scene', SHIPWRECK_RING, KEEPERS_RING, true);
+        expect(group.styles['--rt-membership-color']).toBe(slotOf(SHIPWRECK_RING));
+        expect(outlines()).toHaveLength(1);
+    });
+
+    it('a drop that would change nothing outlines nothing', () => {
+        const { hover, outlines } = subplotDrag('narrative', { ...lighthouseSubplots, [path('14 Scene')]: [SHIPWRECK, KEEPERS] });
+        const group = hover('14 Scene', SHIPWRECK_RING, KEEPERS_RING, true);
+        expect(outlines()).toHaveLength(0);
+        expect(group.styles['--rt-membership-color']).toBe(slotOf(SHIPWRECK_RING));
+    });
+
+    it('ending the drag clears the outline and the colour', () => {
+        const { internals, hover, outlines } = subplotDrag('narrative');
+        const group = hover('14 Scene', SHIPWRECK_RING, KEEPERS_RING, false);
+        internals.reset();
+        expect(outlines()).toHaveLength(0);
+        expect(group.styles['--rt-membership-color']).toBeUndefined();
+    });
+
+    it('the confirmation wears the destination\'s colour, for a move and an add', async () => {
+        await subplotDrag('narrative').drag('14 Scene', SHIPWRECK_RING, KEEPERS_RING, false);
+        await subplotDrag('narrative').drag('14 Scene', SHIPWRECK_RING, KEEPERS_RING, true);
+        expect(accents).toEqual([slotOf(KEEPERS_RING), slotOf(KEEPERS_RING)]);
     });
 });
 

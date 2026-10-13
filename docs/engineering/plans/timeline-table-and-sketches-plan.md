@@ -1,7 +1,7 @@
 # Timetable, sketches, and Promote to scene
 
 Date: 2026-10-11
-Status: Phases 1 and 2 built 2026-10-12. Phase 3 spikes remain. The feature was renamed from "Timeline table" to **Timetable** on 2026-10-12 (Eric); the abbreviation (TT) and the icons are unchanged.
+Status: Phases 1, 2 and 4 built 2026-10-12. Phase 3 spikes remain. The feature was renamed from "Timeline table" to **Timetable** on 2026-10-12 (Eric); the abbreviation (TT) and the icons are unchanged.
 
 **Built 2026-10-12: Promote to scene (§1).** It's in `src/services/PromoteToSceneService.ts` (planning and apply, with unit tests), `src/services/PromoteToSceneEntry.ts` (entry points) and `src/modals/PromoteToSceneModal.ts`.
 - **Entry points:** the command palette (**Promote note to scene**), the file menu on an eligible note, the file menu on a folder (its direct children only, so cut or archive subfolders are never swept in), and the multi-selection menu.
@@ -212,6 +212,26 @@ Reviewed against Obsidian 1.14.4 (Eric's install) and the `obsidian@1.14.4` API 
 - **Right-to-left tables (1.14.1).** None of RT's languages are right-to-left today. If one is added, the Timetable should mirror the built-in table's RTL behavior.
 - **Base font size per device (1.14.2).** The Timetable should size its text from the same Bases font-size setting, so the author's per-device choice applies to it too.
 - **Embedding (not new, but worth using).** A view of a `.base` file can be embedded in any note, so an author can put the live Timetable inside a book's outline note, under the spine. The view must size itself to its content when embedded.
+
+## 7. Phase 4: two views, one instrument (decided and built 2026-10-12)
+
+The wheel is for seeing (proportion, rhythm, gaps, where you are); the Timetable is for reading and doing (text, exact values, comparison down a column, bulk and field edits). Each hands off to the other instead of duplicating it.
+
+**Principle (Eric: "yes to 5 as a general principle"):** the wheel owns structural edits (dragging between acts and rings, inserting and reordering scenes); the Timetable owns field and text edits, bulk changes, sketches and open queries. Where they overlap, one hands off to the other.
+
+**Built (`722098d3`):**
+- **The table follows the timeline's mode** (Eric: "brilliant"). A mode button in the table's corner shows the mode and can pin one instead.
+  - **Chronologue:** story order with a divider per day, beats left out as on the wheel. The micro-modes each add something: **Shift** a Gap column (time since the previous dated row), **Runtime** a Running time column (the wheel's running total), **Alt** the planetary calendar for When, days and gaps.
+  - **Progress:** each heading shows scenes complete, words and overdue scenes; overdue Due cells stand out.
+  - **Gossamer:** beats come forward with the latest score for the selected signal, its change, the expected range and the justification; other rows recede.
+  - A sort set in the Bases toolbar always wins over the mode's order.
+- **The lens.** A toggle in the table's corner (also a saved view option) dims every scene on the wheel outside the table's rows, with a pill on the wheel naming the table and turning the lens off. Any Bases filter becomes a pattern on the wheel; a saved view is a saved lens. It is RT search's structured cousin: search is a quick text match; a lens is a saved question.
+- **Links that don't touch scene clicks** (a scene click on the wheel still opens the note):
+  - the note open in an editor gets a steady accent in the table, however it was opened;
+  - clicking an act label on the wheel (a book label in saga scope) shows that act in the table, expanding it; labels look clickable only while a Timetable is open;
+  - spotlighting a ring in the subplot key fades table rows outside that ring.
+
+**Parked:** coloring the wheel by any table column (a heat map). Eric: depends on execution, might be overkill. To be explored before any build.
 
 ## Considered and set aside: a lanes layout ("Unwrapped")
 

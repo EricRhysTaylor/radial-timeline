@@ -62,7 +62,7 @@ import { GOSSAMER_SIGNAL_METADATA, GOSSAMER_SIGNAL_TYPES, type GossamerSignalTyp
 import { formatGossamerCacheClock, formatGossamerCacheCostHint, getGossamerCacheContext, resolveGossamerCacheWindow } from '../gossamer/cacheWindow';
 import { tooltip as applyTooltip } from '../utils/tooltip';
 import { currentTimelineColoring, currentTimelineLens, hasOpenTimetable, onTimelineOverlayChange, onTimetablePresenceChange, publishTimelineMode } from '../timetable/timetableRegistry';
-import { applyColoringToSvg, applyLensToSvg, applyQueryDots, linkActLabelsToTimetable } from './interactions/TimetableLink';
+import { applyColoringToSvg, applyLensToSvg, applyQueryMarks, linkActLabelsToTimetable } from './interactions/TimetableLink';
 import { listAuthorQueries } from '../utils/authorQueryComments';
 
 // Duplicate of constants defined in main for now. We can consolidate later.
@@ -344,7 +344,7 @@ export class RadialTimelineView extends ItemView {
         }, delayMs);
     }
 
-    /** Open author queries (`%%query: …%%`) show as a dot on each scene's number square. */
+    /** Open author queries (`%%query: …%%`) show as a question bubble in each of the scene's cells. */
     private async refreshQueryDots(): Promise<void> {
         const svg = this.contentEl.querySelector('.radial-timeline-svg');
         if (!svg) return;
@@ -369,7 +369,7 @@ export class RadialTimelineView extends ItemView {
         }
         // A redraw while the notes were read replaces the SVG; that render schedules its own pass.
         if (this.contentEl.querySelector('.radial-timeline-svg') !== svg) return;
-        applyQueryDots(svg, queries, questions => t('ui.timetable.queries', { count: questions.length, list: questions.slice(0, 3).join(' · ') }));
+        applyQueryMarks(svg, queries);
     }
 
     /**

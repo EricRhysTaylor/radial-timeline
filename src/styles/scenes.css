@@ -712,9 +712,24 @@
 }
 
 /* Open author queries (%%query: …%%): a dot on the corner of the scene's number square. */
-/* An open author query: white with a dark ring, so it reads on any scene color. */
+/* An open author query: the Timetable's question bubble, white with a dark outline so it
+   reads on any scene color (a dot in a cell too small for it). Like the number squares, it
+   lets the pointer through to the cell. */
+.rt-query-mark {
+  pointer-events: none;
+}
+
+.rt-query-icon {
+  color: var(--rt-legacy-black);
+  overflow: visible;
+}
+
+.rt-query-icon > path:first-child {
+  fill: var(--rt-color-empty);
+}
+
 .rt-query-dot {
   fill: var(--rt-color-empty);
   stroke: var(--rt-legacy-black);
-  stroke-width: 3px;
+  stroke-width: 2px;
 }

@@ -8,6 +8,7 @@
  * through the plugin's scene highlighter.
  */
 
+import { getIcon } from 'obsidian';
 import { currentTimelineColoring, markTimetableRows, revealTimetableSegment, type TimelineColoring, type TimelineLens } from '../../timetable/timetableRegistry';
 import { formatNumber } from '../../utils/svg';
 
@@ -125,38 +126,65 @@ export function applyColoringToSvg(svg: Element, coloring: TimelineColoring | nu
     });
 }
 
-const QUERY_DOT = 'rt-query-dot';
+const QUERY_MARK = 'rt-query-mark';
+
+/** The query icon's size in wheel units, at most and at least; a cell too small for the least gets a dot. */
+const QUERY_ICON_MAX = 28;
+const QUERY_ICON_MIN = 14;
 
 /**
- * Open author queries (`%%query: …%%`) show as a dot at the center of each of
- * a scene's cells; the Timetable lists and counts them. `queries` maps a scene
- * path to its open questions. The dot sits inside the scene's group, so it
- * fades and recedes with the scene (Gossamer, the lens) and a click on it
- * opens the scene.
+ * Open author queries (`%%query: …%%`) show at the center of each of a
+ * scene's cells as the Timetable's question bubble, sized to fit the cell. A
+ * cell too small for it (a compact All Scenes ring, a Sequence subring) gets
+ * a dot. `queries` maps a scene path to its open questions; the Timetable
+ * lists them. The mark sits inside the scene's group, so it recedes with the
+ * scene (Gossamer, the lens), and like the number squares it lets the pointer
+ * through to the cell, so clicks, drags and hover behave as on the cell.
  */
-export function applyQueryDots(svg: Element, queries: Map<string, string[]>, describe: (questions: string[]) => string): void {
-    svg.querySelectorAll(`.${QUERY_DOT}`).forEach(element => element.remove());
+export function applyQueryMarks(svg: Element, queries: Map<string, string[]>): void {
+    svg.querySelectorAll(`.${QUERY_MARK}`).forEach(element => element.remove());
     const doc = svg.ownerDocument;
     svg.querySelectorAll('.rt-scene-group[data-item-type="Scene"][data-path]').forEach(group => {
         const path = scenePathOf(group);
         const questions = path ? queries.get(path) : undefined;
         if (!questions || questions.length === 0) return;
-        const center = cellCenter(group);
-        if (!center) return;
+        const cell = cellGeometry(group);
+        if (!cell) return;
+        const mark = queryMarkFor(cell.thickness, cell.arcLength);
+        const icon = mark?.kind === 'icon' ? getIcon('message-circle-question') : null;
+        if (mark?.kind === 'icon' && icon) {
+            icon.setAttribute('class', `${QUERY_MARK} rt-query-icon`);
+            icon.setAttribute('x', formatNumber(cell.x - mark.size / 2));
+            icon.setAttribute('y', formatNumber(cell.y - mark.size / 2));
+            icon.setAttribute('width', formatNumber(mark.size));
+            icon.setAttribute('height', formatNumber(mark.size));
+            group.appendChild(icon);
+            return;
+        }
+        if (mark?.kind !== 'dot') return;
         const dot = doc.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        dot.setAttribute('class', QUERY_DOT);
-        dot.setAttribute('cx', formatNumber(center.x));
-        dot.setAttribute('cy', formatNumber(center.y));
-        dot.setAttribute('r', '9');
-        const title = doc.createElementNS('http://www.w3.org/2000/svg', 'title');
-        title.textContent = describe(questions);
-        dot.appendChild(title);
+        dot.setAttribute('class', `${QUERY_MARK} rt-query-dot`);
+        dot.setAttribute('cx', formatNumber(cell.x));
+        dot.setAttribute('cy', formatNumber(cell.y));
+        dot.setAttribute('r', formatNumber(mark.radius));
         group.appendChild(dot);
     });
 }
 
-/** The middle of a scene cell, from the arc its group records (radians, centered on the wheel). */
-function cellCenter(group: Element): { x: number; y: number } | null {
+/**
+ * What fits in a cell of this radial thickness and arc length (wheel units):
+ * the icon, up to QUERY_ICON_MAX, while it can be at least QUERY_ICON_MIN; else
+ * a small dot; nothing in a sliver.
+ */
+export function queryMarkFor(thickness: number, arcLength: number): { kind: 'icon'; size: number } | { kind: 'dot'; radius: number } | null {
+    const size = Math.min(QUERY_ICON_MAX, thickness * 0.45, arcLength * 0.6);
+    if (size >= QUERY_ICON_MIN) return { kind: 'icon', size };
+    const radius = Math.min(5, thickness * 0.3, arcLength * 0.3);
+    return radius >= 1.5 ? { kind: 'dot', radius } : null;
+}
+
+/** The middle of a scene cell and the room it has, from the arc its group records (radians, centered on the wheel). */
+function cellGeometry(group: Element): { x: number; y: number; thickness: number; arcLength: number } | null {
     const start = Number(group.getAttribute('data-start-angle-raw') ?? group.getAttribute('data-start-angle'));
     let end = Number(group.getAttribute('data-end-angle-raw') ?? group.getAttribute('data-end-angle'));
     const inner = Number(group.getAttribute('data-inner-r'));
@@ -165,5 +193,10 @@ function cellCenter(group: Element): { x: number; y: number } | null {
     if (end < start) end += Math.PI * 2;
     const angle = (start + end) / 2;
     const radius = (inner + outer) / 2;
-    return { x: radius * Math.cos(angle), y: radius * Math.sin(angle) };
+    return {
+        x: radius * Math.cos(angle),
+        y: radius * Math.sin(angle),
+        thickness: outer - inner,
+        arcLength: radius * (end - start),
+    };
 }

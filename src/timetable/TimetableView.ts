@@ -34,7 +34,7 @@ import {
 } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { TimelineItem } from '../types';
-import { getFormattingLocale, t } from '../i18n';
+import { getFormattingLocale, t, tCount } from '../i18n';
 import { getActiveBook, getBookIdForPath, getSagaBooks, getTimelineScope } from '../utils/books';
 import { getConfiguredActCount, parseActLabels, resolveActLabel } from '../utils/acts';
 import { canonicalizeFrontmatterKey, getActiveFrontmatterMappings, readBeatPurpose } from '../utils/frontmatter';
@@ -62,6 +62,7 @@ import {
     displayName,
     elapsedSincePrevious,
     groupProgress,
+    planColoring,
     readRuntimeSeconds,
     readWhen,
     runningTotals,
@@ -75,15 +76,27 @@ import {
 import { authorKeyFor, TIMETABLE_VIEW_TYPE } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import {
+    clearTimelineColoring,
     clearTimelineLens,
     currentNotePath,
+    currentTimelineColoring,
     currentTimelineLens,
     currentTimelineMode,
+    setTimelineColoring,
     setTimelineLens,
     trackTimetable,
     type TimelineModeState,
 } from './timetableRegistry';
-import { addPublishStageMenuItems, addStatusMenuItems, showSceneContextMenu } from '../view/interactions/SceneContextMenu';
+import {
+    addPublishStageMenuItems,
+    addStatusMenuItems,
+    applyStageToFrontmatter,
+    applyStatusToFrontmatter,
+    PUBLISH_STAGE_OPTIONS,
+    showSceneContextMenu,
+    STATUS_OPTIONS,
+} from '../view/interactions/SceneContextMenu';
+import { applySubplotMembershipChangeToMany } from '../services/SubplotMembership';
 import { readSubplotColor } from '../renderer/utils/subplotColors';
 import type { BookProfile, PlanetaryProfile } from '../types/settings';
 
@@ -92,11 +105,14 @@ const RINGS_PER_LINE_DEFAULT = 5;
 const RINGS_REFRESH_DELAY_MS = 300;
 
 /** Column widths (px). The number column holds the chevron, number cell, Promote and query count. */
-const NUMBER_COLUMN_WIDTH = 132;
+const NUMBER_COLUMN_WIDTH = 150;
 const OTHER_COLUMN_WIDTH = 140;
 const MIN_COLUMN_WIDTH = 48;
 const DEFAULT_COLUMN_WIDTHS: Record<string, number> = { When: 220, Duration: 100, Chapter: 150, Synopsis: 360, Act: 56 };
 const NAME_COLUMN_WIDTH = 220;
+
+/** Rows a bulk edit can change: scenes, sketches and notes the timeline can't see yet. */
+const SELECTABLE_KINDS = new Set(['scene', 'sketch', 'unclassed']);
 
 /** Width of the columns a Chronologue micro-mode adds (Gap, Running time). */
 const MICRO_COLUMN_WIDTH = 120;
@@ -262,6 +278,12 @@ export class TimetableView extends BasesView {
     private ringSpotlight: string | null = null;
     /** The lens toggle was just pressed here, so this table takes the lens from any other. */
     private claimLens = false;
+    /** The column this table colors the timeline by, if any. Not saved. */
+    private coloringProperty: BasesPropertyId | null = null;
+    private claimColoring = false;
+    /** Rows picked for a bulk edit, by path. Not saved. */
+    private readonly selected = new Set<string>();
+    private lastToggled: string | null = null;
     private readonly rowItems = new Map<string, TableItem>();
     private readonly groupHeaderEls = new Map<string, HTMLElement>();
     private readonly groupIdForAct = new Map<number, string>();
@@ -285,6 +307,12 @@ export class TimetableView extends BasesView {
         // One set of delegated handlers: rows are redrawn on every data update.
         this.registerDomEvent(this.rootEl, 'click', (evt: MouseEvent) => this.handleClick(evt));
         this.registerDomEvent(this.rootEl, 'keydown', (evt: KeyboardEvent) => {
+            if (evt.key === 'Escape' && this.selected.size > 0 && !(evt.target instanceof Element && evt.target.closest('input[type="text"], textarea, select'))) {
+                evt.preventDefault();
+                this.selected.clear();
+                this.render();
+                return;
+            }
             if (evt.key !== 'Enter' && evt.key !== ' ') return;
             const toggle = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__group-toggle') : null;
             if (!toggle) return;
@@ -520,6 +548,12 @@ export class TimetableView extends BasesView {
      * for notes that can become scenes.
      */
     private handleContextMenu(evt: MouseEvent): void {
+        const header = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__prop-head[data-property]') : null;
+        if (header?.dataset.property) {
+            evt.preventDefault();
+            this.showColumnMenu(evt, header.dataset.property as BasesPropertyId);
+            return;
+        }
         const row = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__row') : null;
         const file = row?.dataset.path ? this.plugin.app.vault.getFileByPath(row.dataset.path) : null;
         if (!row || !file) return;
@@ -567,6 +601,11 @@ export class TimetableView extends BasesView {
             this.showModeMenu(modeButton);
             return;
         }
+        const bulk = target.closest<HTMLElement>('.ert-timetable__bulk [data-bulk]');
+        if (bulk?.dataset.bulk) {
+            this.handleBulk(bulk.dataset.bulk, bulk);
+            return;
+        }
         const newSketch = target.closest<HTMLElement>('.ert-timetable__new-sketch');
         if (newSketch) {
             const act = newSketch.dataset.act ? Number(newSketch.dataset.act) : null;
@@ -581,6 +620,11 @@ export class TimetableView extends BasesView {
         if (!row || !path || !file) return;
         if (target.closest('.ert-timetable__promote')) {
             void runPromotion(this.plugin, [file]);
+            return;
+        }
+        if (target.closest('.ert-timetable__select')) {
+            evt.preventDefault();
+            this.toggleSelected(path, evt.shiftKey);
             return;
         }
         // A fixed-value cell, or a scene's number cell, opens a quick pick instead of the note.
@@ -606,6 +650,225 @@ export class TimetableView extends BasesView {
             return;
         }
         void openFromTimetable(this.plugin.app, file, evt, this.rootEl);
+    }
+
+    // ── Bulk edits ──────────────────────────────────────────────────────
+
+    /** Pick or unpick a row; Shift picks every row between it and the last one toggled. */
+    private toggleSelected(path: string, range: boolean): void {
+        const order = [...this.rowEls.keys()].filter(candidate => this.isSelectable(candidate));
+        const from = this.lastToggled ? order.indexOf(this.lastToggled) : -1;
+        const to = order.indexOf(path);
+        if (range && from >= 0 && to >= 0) {
+            const [start, end] = from < to ? [from, to] : [to, from];
+            order.slice(start, end + 1).forEach(candidate => this.selected.add(candidate));
+        } else if (this.selected.has(path)) {
+            this.selected.delete(path);
+        } else {
+            this.selected.add(path);
+        }
+        this.lastToggled = path;
+        this.render();
+    }
+
+    private isSelectable(path: string): boolean {
+        const item = this.rowItems.get(path);
+        return item !== undefined && SELECTABLE_KINDS.has(item.row.kind);
+    }
+
+    private selectedItems(): TableItem[] {
+        return [...this.selected].map(path => this.rowItems.get(path)).filter((item): item is TableItem => item !== undefined);
+    }
+
+    /** The bar under the table while rows are picked: set Status, Stage, Act or rings on all of them at once. */
+    private renderBulkBar(): void {
+        const items = this.selectedItems();
+        if (items.length === 0) return;
+        const scenes = items.filter(item => item.row.kind === 'scene').length;
+        const promotable = items.filter(item => item.row.kind !== 'scene').length;
+        const bar = this.rootEl.createDiv({ cls: 'ert-timetable__bulk' });
+        bar.createSpan({ cls: 'ert-timetable__bulk-count', text: t('ui.timetable.bulkSelected', { notes: tCount('note', items.length) }) });
+        const button = (kind: string, label: string, icon: string, menu: boolean): void => {
+            const el = bar.createEl('button', { cls: 'ert-timetable__bulk-action' });
+            el.dataset.bulk = kind;
+            setIcon(el.createSpan({ cls: 'ert-timetable__bulk-icon' }), icon);
+            el.createSpan({ text: label });
+            if (menu) setIcon(el.createSpan({ cls: 'ert-timetable__bulk-icon' }), 'chevron-down');
+        };
+        if (scenes > 0) {
+            button('status', t('ui.timetable.bulkStatus'), 'circle-dot', true);
+            button('stage', t('ui.timetable.bulkStage'), 'layers', true);
+        }
+        button('act', t('ui.timetable.bulkAct'), 'columns-3', true);
+        if (scenes > 0 && this.rings) {
+            button('ring-add', t('ui.timetable.bulkAddRing'), 'plus-circle', true);
+            button('ring-remove', t('ui.timetable.bulkRemoveRing'), 'minus-circle', true);
+        }
+        if (promotable > 0) button('promote', t('ui.timetable.bulkPromote', { notes: tCount('note', promotable) }), 'file-up', false);
+        const clear = bar.createEl('button', { cls: 'ert-timetable__bulk-clear clickable-icon' });
+        clear.dataset.bulk = 'clear';
+        clear.setAttr('aria-label', t('ui.timetable.bulkClear'));
+        setIcon(clear, 'x');
+    }
+
+    private handleBulk(kind: string, anchor: HTMLElement): void {
+        const items = this.selectedItems();
+        const sceneFiles = items.filter(item => item.row.kind === 'scene').map(item => item.entry.file);
+        if (kind === 'clear') {
+            this.selected.clear();
+            this.render();
+            return;
+        }
+        if (kind === 'promote') {
+            void runPromotion(this.plugin, items.filter(item => item.row.kind !== 'scene').map(item => item.entry.file));
+            return;
+        }
+        const host = { plugin: this.plugin };
+        const menu = new Menu();
+        if (kind === 'status') {
+            for (const option of STATUS_OPTIONS) {
+                menu.addItem(item => item.setTitle(option.label).setIcon(option.icon).onClick(() => {
+                    void this.bulkWrite(sceneFiles, fm => applyStatusToFrontmatter(host, fm, option.value),
+                        t('ui.timetable.bulkStatusDone', { value: option.label, scenes: tCount('scene', sceneFiles.length) }));
+                }));
+            }
+        } else if (kind === 'stage') {
+            for (const option of PUBLISH_STAGE_OPTIONS) {
+                menu.addItem(item => item.setTitle(option.label).setIcon(option.icon).onClick(() => {
+                    void this.bulkWrite(sceneFiles, fm => applyStageToFrontmatter(host, fm, option.value),
+                        t('ui.timetable.bulkStageDone', { value: option.label, scenes: tCount('scene', sceneFiles.length) }));
+                }));
+            }
+        } else if (kind === 'act') {
+            const { settings } = this.plugin;
+            const mappings = getActiveFrontmatterMappings(settings);
+            const labels = parseActLabels(settings, getConfiguredActCount(settings));
+            const writeAct = (files: TFile[], act: number | null, label: string): void => {
+                void this.bulkWrite(files, fm => {
+                    const key = Object.keys(fm).find(candidate => canonicalizeFrontmatterKey(candidate, mappings) === 'Act') ?? authorKeyFor('Act', settings);
+                    if (act === null) delete fm[key];
+                    else fm[key] = act;
+                }, t('ui.timetable.bulkActDone', { value: label, notes: tCount('note', files.length) }));
+            };
+            for (let act = 1; act <= getConfiguredActCount(settings); act++) {
+                const label = resolveActLabel(act - 1, labels);
+                menu.addItem(item => item.setTitle(label).onClick(() => writeAct(items.map(entry => entry.entry.file), act, label)));
+            }
+            // A scene always sits in an act; No act applies only to the other notes picked.
+            const others = items.filter(item => item.row.kind !== 'scene').map(item => item.entry.file);
+            if (others.length > 0) {
+                menu.addItem(item => item.setTitle(t('ui.timetable.noAct')).onClick(() => writeAct(others, null, t('ui.timetable.noAct'))));
+            }
+        } else if (kind === 'ring-add' || kind === 'ring-remove') {
+            const rings = (this.rings?.order ?? []).filter(name => name !== 'Backdrop' && name !== 'MicroBackdrop');
+            const inUse = new Set(items.filter(item => item.row.kind === 'scene').flatMap(item => item.row.subplots));
+            const choices = kind === 'ring-add' ? rings : rings.filter(name => inUse.has(name));
+            const mappings = getActiveFrontmatterMappings(this.plugin.settings);
+            for (const ring of choices) {
+                menu.addItem(item => item.setTitle(ring).onClick(() => {
+                    const change = kind === 'ring-add' ? { kind: 'add' as const, to: ring } : { kind: 'remove' as const, from: ring };
+                    void applySubplotMembershipChangeToMany(this.plugin.app, sceneFiles, change, {
+                        mappings,
+                        onChanged: () => this.plugin.refreshTimelineIfNeeded(null),
+                    });
+                }));
+            }
+        }
+        const rect = anchor.getBoundingClientRect();
+        menu.showAtPosition({ x: rect.left, y: rect.top }, anchor.ownerDocument);
+    }
+
+    /** One frontmatter change on every file, then one timeline refresh and one notice. */
+    private async bulkWrite(files: TFile[], change: (fm: Record<string, unknown>) => void, done: string): Promise<void> {
+        let failed = 0;
+        for (const file of files) {
+            try {
+                await this.plugin.app.fileManager.processFrontMatter(file, change);
+            } catch (error) {
+                failed += 1;
+                console.error(`[Timetable] Bulk edit failed for ${file.path}:`, error);
+            }
+        }
+        this.plugin.refreshTimelineIfNeeded(null);
+        new Notice(failed > 0 ? `${done} ${t('ui.timetable.bulkFailed', { notes: tCount('note', failed) })}` : done);
+    }
+
+    // ── Coloring the timeline by a column ───────────────────────────────
+
+    /** Right-click a column header: color the timeline's scenes by its values (or stop). */
+    private showColumnMenu(evt: MouseEvent, property: BasesPropertyId): void {
+        const name = this.config.getDisplayName(property);
+        const menu = new Menu();
+        const coloring = currentTimelineColoring();
+        if (coloring?.owner === this && this.coloringProperty === property) {
+            menu.addItem(item => item.setTitle(t('ui.timetable.coloringStop')).setIcon('palette').onClick(() => {
+                this.coloringProperty = null;
+                clearTimelineColoring(this);
+                this.render();
+            }));
+        } else {
+            const plan = this.planColoringFor(property);
+            menu.addItem(item => {
+                item.setIcon('palette');
+                if (plan.kind === 'ok') {
+                    item.setTitle(t('ui.timetable.coloringStart', { property: name })).onClick(() => {
+                        this.coloringProperty = property;
+                        this.claimColoring = true;
+                        this.render();
+                    });
+                } else {
+                    item.setTitle(plan.kind === 'tooMany'
+                        ? t('ui.timetable.coloringTooMany', { property: name, count: plan.count })
+                        : t('ui.timetable.coloringNone', { property: name })).setDisabled(true);
+                }
+            });
+        }
+        menu.showAtMouseEvent(evt);
+    }
+
+    /** Each scene row's value in a column (only scenes are colored on the timeline). */
+    private planColoringFor(property: BasesPropertyId): ReturnType<typeof planColoring> {
+        const { type, name } = parsePropertyId(property);
+        if (type !== 'note') return { kind: 'none' };
+        const { app, settings } = this.plugin;
+        const rows = (this.data?.data ?? [])
+            .filter(entry => entry.file.extension === 'md')
+            .map(entry => {
+                const frontmatter: Record<string, unknown> | undefined = app.metadataCache.getFileCache(entry.file)?.frontmatter;
+                return { entry, frontmatter, row: buildTableRow(entry.file.path, entry.file.basename, frontmatter, settings) };
+            })
+            .filter(item => item.row.kind === 'scene')
+            .map(item => ({ path: item.row.path, value: frontmatterKey(item.frontmatter, name) }));
+        return planColoring(rows);
+    }
+
+    /** Keep the timeline's coloring in step with this table's values; another table's coloring replaces it. */
+    private syncColoring(): void {
+        const property = this.coloringProperty;
+        if (property === null) return;
+        const active = currentTimelineColoring();
+        if (active && active.owner !== this && !this.claimColoring) {
+            this.coloringProperty = null;
+            return;
+        }
+        this.claimColoring = false;
+        const plan = this.planColoringFor(property);
+        if (plan.kind !== 'ok') {
+            this.coloringProperty = null;
+            clearTimelineColoring(this);
+            return;
+        }
+        setTimelineColoring({
+            owner: this,
+            property: this.config.getDisplayName(property),
+            values: plan.values,
+            legend: plan.legend,
+            turnOff: () => {
+                this.coloringProperty = null;
+                clearTimelineColoring(this);
+                this.render();
+            },
+        });
     }
 
     // ── Quick picks ─────────────────────────────────────────────────────
@@ -745,6 +1008,7 @@ export class TimetableView extends BasesView {
 
     onunload(): void {
         clearTimelineLens(this);
+        clearTimelineColoring(this);
         if (this.hoveredPath !== null) this.plugin.highlightSceneOnTimeline(null);
         if (this.ringsTimer !== null) window.clearTimeout(this.ringsTimer);
         this.ringsGeneration += 1;
@@ -886,6 +1150,7 @@ export class TimetableView extends BasesView {
         this.currentRow = null;
         this.synopsisFromBody.clear();
         this.syncLens();
+        this.syncColoring();
 
         const state = this.modeState();
         let groups = this.buildGroups();
@@ -915,6 +1180,10 @@ export class TimetableView extends BasesView {
 
         const table = this.rootEl.createEl('table', { cls: 'ert-timetable__table' });
         table.toggleClass('is-gossamer', state.mode === 'gossamer');
+        // Picked rows that have left the table (filtered out, renamed, deleted) are dropped.
+        const present = new Set(allItems.map(item => item.row.path));
+        for (const path of [...this.selected]) if (!present.has(path)) this.selected.delete(path);
+        table.toggleClass('has-selection', this.selected.size > 0);
         // Fixed widths, like Obsidian's own table: the author's saved sizes, or defaults.
         const sizes = this.columnSizes();
         const colgroup = table.createEl('colgroup');
@@ -940,6 +1209,11 @@ export class TimetableView extends BasesView {
         for (const column of columns) {
             const header = headRow.createEl('th', { cls: 'ert-timetable__prop-head' });
             if (column.kind === 'property') {
+                header.dataset.property = column.property;
+                if (this.coloringProperty === column.property) {
+                    header.addClass('is-coloring');
+                    setIcon(header.createSpan({ cls: 'ert-timetable__coloring-icon' }), 'palette');
+                }
                 header.createSpan({ cls: 'ert-timetable__prop-label', text: this.config.getDisplayName(column.property) });
                 const handle = header.createDiv({ cls: 'ert-timetable__resize' });
                 handle.dataset.property = column.property;
@@ -988,6 +1262,7 @@ export class TimetableView extends BasesView {
         this.pruneDrawers(openDrawers);
         this.setCurrentRow(currentNotePath());
         this.markRing(this.ringSpotlight);
+        this.renderBulkBar();
         if (scrollParent) scrollParent.scrollTop = scrollTop;
         void this.decorateFromBodies(allItems);
     }
@@ -1203,6 +1478,15 @@ export class TimetableView extends BasesView {
 
     private renderNumberCell(cell: HTMLElement, item: TableItem): void {
         const { row, frontmatter } = item;
+        // Pick rows for a bulk edit; other rows keep the space so numbers line up.
+        if (SELECTABLE_KINDS.has(row.kind)) {
+            const checkbox = cell.createEl('input', { cls: 'ert-timetable__select', type: 'checkbox' });
+            checkbox.checked = this.selected.has(row.path);
+            checkbox.setAttr('aria-label', t('ui.timetable.bulkPick', { name: displayName(row.basename) }));
+            cell.closest('tr')?.toggleClass('is-selected', checkbox.checked);
+        } else {
+            cell.createSpan({ cls: 'ert-timetable__select-spacer' });
+        }
         if (row.kind === 'sketch') {
             const open = this.drawerIsOpen(row.path);
             const toggle = cell.createEl('button', { cls: 'ert-timetable__drawer-toggle clickable-icon' });

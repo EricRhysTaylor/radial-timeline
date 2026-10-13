@@ -17,7 +17,7 @@
 
 import { Notice, type App, type TFile } from 'obsidian';
 import { canonicalizeFrontmatterKey, frontmatterValueToText } from '../utils/frontmatter';
-import { t } from '../i18n';
+import { t, tCount } from '../i18n';
 
 export const MAIN_PLOT = 'Main Plot';
 
@@ -158,6 +158,57 @@ export async function restoreSubplotField(app: App, file: TFile, snapshot: Subpl
         if (error !== SKIP_SUBPLOT_WRITE) throw error;
         return false;
     }
+}
+
+/**
+ * Apply one membership change to several notes (a bulk edit in the
+ * Timetable) with a single notice and a single Undo that puts every note back.
+ * Resolves to how many notes changed.
+ */
+export async function applySubplotMembershipChangeToMany(
+    app: App,
+    files: TFile[],
+    change: SubplotMembershipChange,
+    options: { mappings?: Record<string, string>; onChanged?: () => void }
+): Promise<number> {
+    const changed: Array<{ file: TFile; snapshot: SubplotFieldSnapshot }> = [];
+    for (const file of files) {
+        let snapshot: SubplotFieldSnapshot | null = null;
+        try {
+            await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+                const key = findSubplotKey(fm, options.mappings);
+                const planned = planSubplotMembership(key ? subplotValueToList(fm[key]) : [], change);
+                if (!planned) throw SKIP_SUBPLOT_WRITE;
+                snapshot = writeMembershipsToFrontmatter(fm, planned, options.mappings);
+            });
+        } catch (error) {
+            if (error !== SKIP_SUBPLOT_WRITE) throw error;
+        }
+        if (snapshot) changed.push({ file, snapshot });
+    }
+    if (changed.length === 0) return 0;
+    options.onChanged?.();
+
+    const fragment = activeWindow.createFragment();
+    fragment.createSpan({ text: t('ui.subplotMembership.bulkChangedNotice', { change: describeSubplotMembershipChange(change), scenes: tCount('scene', changed.length) }) });
+    const undo = fragment.createEl('a', { text: t('ui.subplotMembership.undo'), href: '#' });
+    const notice = new Notice(fragment, 8000);
+    undo.onClickEvent((event) => {
+        event.preventDefault();
+        notice.hide();
+        void (async () => {
+            let restored = 0;
+            for (const { file, snapshot } of changed) {
+                if (await restoreSubplotField(app, file, snapshot)) restored += 1;
+            }
+            options.onChanged?.();
+            new Notice(t('ui.subplotMembership.bulkUndoRestored', { scenes: tCount('scene', restored) }), 4000);
+        })().catch((error: unknown) => {
+            console.error('Subplot bulk Undo failed:', error);
+            new Notice(t('ui.subplotMembership.bulkUndoFailed'), 5000);
+        });
+    });
+    return changed.length;
 }
 
 /**

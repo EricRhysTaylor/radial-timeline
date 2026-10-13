@@ -5,7 +5,7 @@
  */
 // --- Imports and constants added for standalone module ---
 import { executeCommandById, openSettingsTab } from '../utils/obsidianInternals';
-import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Notice, setIcon, Menu, Component } from 'obsidian';
+import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Notice, setIcon, Menu, Component, getFrontMatterInfo } from 'obsidian';
 import { TimelineScaffoldModal } from '../modals/TimelineScaffoldModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import RadialTimelinePlugin from '../main';
@@ -61,8 +61,9 @@ import type { GossamerRunRecord } from '../utils/gossamer';
 import { GOSSAMER_SIGNAL_METADATA, GOSSAMER_SIGNAL_TYPES, type GossamerSignalType } from '../types/gossamerSignals';
 import { formatGossamerCacheClock, formatGossamerCacheCostHint, getGossamerCacheContext, resolveGossamerCacheWindow } from '../gossamer/cacheWindow';
 import { tooltip as applyTooltip } from '../utils/tooltip';
-import { currentTimelineLens, hasOpenTimetable, onTimelineLensChange, onTimetablePresenceChange, publishTimelineMode } from '../timetable/timetableRegistry';
-import { applyLensToSvg, linkActLabelsToTimetable } from './interactions/TimetableLink';
+import { currentTimelineColoring, currentTimelineLens, hasOpenTimetable, onTimelineOverlayChange, onTimetablePresenceChange, publishTimelineMode } from '../timetable/timetableRegistry';
+import { applyColoringToSvg, applyLensToSvg, applyQueryDots, linkActLabelsToTimetable } from './interactions/TimetableLink';
+import { listAuthorQueries } from '../utils/authorQueryComments';
 
 // Duplicate of constants defined in main for now. We can consolidate later.
 export const TIMELINE_VIEW_TYPE = "radial-timeline";
@@ -274,38 +275,101 @@ export class RadialTimelineView extends ItemView {
         });
     }
 
-    private lensPillEl: HTMLElement | null = null;
+    private overlaysEl: HTMLElement | null = null;
 
     /**
-     * A Timetable's lens: dim every scene outside its rows, and show a pill
-     * naming the table, with a button that turns the lens off at its source.
+     * What open Timetables lay over the wheel: a lens dims every scene outside
+     * a table's rows, and a coloring paints scenes by a table column. Each shows
+     * a pill with a button that turns it off at its source.
      */
-    private applyTimetableLens(): void {
+    private applyTimetableOverlays(): void {
         const lens = currentTimelineLens();
+        const coloring = currentTimelineColoring();
         const svg = this.contentEl.querySelector('.radial-timeline-svg');
         if (svg) {
             applyLensToSvg(svg, lens);
+            applyColoringToSvg(svg, coloring);
             // Act labels link to an open Timetable; only then do they look clickable.
             svg.classList.toggle('rt-timetable-linked', hasOpenTimetable());
         }
-        if (!lens) {
-            this.lensPillEl?.remove();
-            this.lensPillEl = null;
+        if (!lens && !coloring) {
+            this.overlaysEl?.remove();
+            this.overlaysEl = null;
             return;
         }
         const container = this.contentEl.querySelector<HTMLElement>('.radial-timeline-container');
         if (!container) return;
-        if (!this.lensPillEl || !this.lensPillEl.isConnected) {
-            const pill = container.createDiv({ cls: 'ert-timeline-lens' });
-            setIcon(pill.createSpan({ cls: 'ert-timeline-lens__icon' }), 'scan-eye');
-            pill.createSpan({ cls: 'ert-timeline-lens__label' });
-            const close = pill.createEl('button', { cls: 'ert-timeline-lens__close clickable-icon' });
-            close.setAttribute('aria-label', t('ui.timetable.lensClose'));
-            setIcon(close, 'x');
-            this.renderScope.registerDomEvent(close, 'click', () => currentTimelineLens()?.turnOff());
-            this.lensPillEl = pill;
+        if (!this.overlaysEl || !this.overlaysEl.isConnected) {
+            const overlays = container.createDiv({ cls: 'ert-timeline-overlays' });
+            this.renderScope.registerDomEvent(overlays, 'click', (evt: MouseEvent) => {
+                const close = evt.target instanceof Element ? evt.target.closest<HTMLElement>('[data-overlay]') : null;
+                if (close?.dataset.overlay === 'lens') currentTimelineLens()?.turnOff();
+                if (close?.dataset.overlay === 'coloring') currentTimelineColoring()?.turnOff();
+            });
+            this.overlaysEl = overlays;
         }
-        this.lensPillEl.querySelector('.ert-timeline-lens__label')?.setText(t('ui.timetable.lensPill', { view: lens.label, count: lens.paths.size }));
+        const overlays = this.overlaysEl;
+        overlays.empty();
+        const pill = (kind: 'lens' | 'coloring', icon: string, label: string): HTMLElement => {
+            const el = overlays.createDiv({ cls: 'ert-timeline-lens' });
+            setIcon(el.createSpan({ cls: 'ert-timeline-lens__icon' }), icon);
+            el.createSpan({ cls: 'ert-timeline-lens__label', text: label });
+            const body = el.createSpan({ cls: 'ert-timeline-lens__legend' });
+            const close = el.createEl('button', { cls: 'ert-timeline-lens__close clickable-icon' });
+            close.dataset.overlay = kind;
+            close.setAttribute('aria-label', kind === 'lens' ? t('ui.timetable.lensClose') : t('ui.timetable.coloringClose'));
+            setIcon(close, 'x');
+            return body;
+        };
+        if (lens) pill('lens', 'scan-eye', t('ui.timetable.lensPill', { view: lens.label, count: lens.paths.size }));
+        if (coloring) {
+            const legend = pill('coloring', 'palette', t('ui.timetable.coloredBy', { property: coloring.property }));
+            for (const entry of coloring.legend) {
+                const item = legend.createSpan({ cls: 'ert-timeline-lens__item' });
+                item.createSpan({ cls: 'ert-timeline-lens__swatch' }).setCssProps({ '--ert-timeline-swatch': `var(--rt-subplot-colors-${entry.colorIndex})` });
+                item.createSpan({ text: entry.value });
+            }
+        }
+    }
+
+    /** Each scene note's open author queries, cached by modification time. */
+    private readonly queryCache = new Map<string, { mtime: number; questions: string[] }>();
+    private queryDotsTimer: number | null = null;
+
+    private scheduleQueryDots(delayMs = 600): void {
+        if (this.queryDotsTimer !== null) window.clearTimeout(this.queryDotsTimer);
+        this.queryDotsTimer = window.setTimeout(() => {
+            this.queryDotsTimer = null;
+            void this.refreshQueryDots();
+        }, delayMs);
+    }
+
+    /** Open author queries (`%%query: …%%`) show as a dot on each scene's number square. */
+    private async refreshQueryDots(): Promise<void> {
+        const svg = this.contentEl.querySelector('.radial-timeline-svg');
+        if (!svg) return;
+        const paths = new Set<string>();
+        svg.querySelectorAll('.rt-scene-group[data-path]').forEach(group => {
+            const encoded = group.getAttribute('data-path');
+            if (encoded) paths.add(decodeURIComponent(encoded));
+        });
+        const queries = new Map<string, string[]>();
+        for (const path of paths) {
+            const file = this.app.vault.getFileByPath(path);
+            if (!file) continue;
+            const cached = this.queryCache.get(path);
+            let questions = cached && cached.mtime === file.stat.mtime ? cached.questions : null;
+            if (!questions) {
+                const content = await this.app.vault.cachedRead(file);
+                const info = getFrontMatterInfo(content);
+                questions = listAuthorQueries(content.slice(info.exists ? info.contentStart : 0));
+                this.queryCache.set(path, { mtime: file.stat.mtime, questions });
+            }
+            if (questions.length > 0) queries.set(path, questions);
+        }
+        // A redraw while the notes were read replaces the SVG; that render schedules its own pass.
+        if (this.contentEl.querySelector('.radial-timeline-svg') !== svg) return;
+        applyQueryDots(svg, queries, questions => t('ui.timetable.queries', { count: questions.length, list: questions.slice(0, 3).join(' · ') }));
     }
 
     /**
@@ -2988,8 +3052,15 @@ export class RadialTimelineView extends ItemView {
     async onOpen(): Promise<void> {
         this.contentEl.addClass('radial-timeline-view');
         this.publishModeToTimetables();
-        this.register(onTimelineLensChange(() => this.applyTimetableLens()));
-        this.register(onTimetablePresenceChange(() => this.applyTimetableLens()));
+        this.register(onTimelineOverlayChange(() => this.applyTimetableOverlays()));
+        this.register(onTimetablePresenceChange(() => this.applyTimetableOverlays()));
+        // A query added or answered in a scene note updates its dot.
+        this.registerEvent(this.app.vault.on('modify', (file) => {
+            if (file instanceof TFile && file.extension === 'md') this.scheduleQueryDots();
+        }));
+        this.register(() => {
+            if (this.queryDotsTimer !== null) window.clearTimeout(this.queryDotsTimer);
+        });
         this.syncBookHeader();
         await this.plugin.maybeShowReleaseNotesModal();
         
@@ -3236,9 +3307,11 @@ export class RadialTimelineView extends ItemView {
                 // Attach subplot ring key overlay (hover trigger / pin / hold Shift)
                 setupSubplotKeyController(this, svgElement, timelineContainer);
 
-                // Timetable: act labels show their part of the table; a Timetable lens dims scenes outside its rows.
+                // Timetable: act labels show their part of the table; a Timetable lens or coloring lies over the scenes.
                 linkActLabelsToTimetable(this, svgElement);
-                this.applyTimetableLens();
+                this.applyTimetableOverlays();
+                // Open author queries: a dot on each scene's number square.
+                this.scheduleQueryDots(0);
 
                 // Hold Shift (Narrative): beat labels show their In This Book names
                 setupBeatNameKeyController(this, timelineContainer);

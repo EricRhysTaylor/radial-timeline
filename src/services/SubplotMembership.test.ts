@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TFile, type App } from 'obsidian';
 import {
     applySubplotMembershipChange,
+    applySubplotMembershipChangeToMany,
     describeSubplotMembershipChange,
     findSubplotKey,
     planSubplotMembership,
@@ -192,4 +193,41 @@ describe('subplot mutation concurrency', () => {
         expect(writes).toEqual([]);
     });
 
+});
+
+
+describe('bulk membership changes (Timetable)', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('changes every note that needs it, skips the rest, and reports how many changed', async () => {
+        vi.stubGlobal('activeWindow', {
+            createFragment: () => ({
+                createSpan: () => {},
+                createEl: () => ({ onClickEvent: () => {} }),
+            }),
+        });
+        const notes: Record<string, Record<string, unknown>> = {
+            'Book/1 A.md': { Subplot: ['Main Plot'] },
+            'Book/2 B.md': { Subplot: ['Main Plot', 'Trisan Arc'] },
+            'Book/3 C.md': {},
+        };
+        const app = {
+            fileManager: {
+                processFrontMatter: (file: TFile, fn: (fm: Record<string, unknown>) => void) => {
+                    fn(notes[file.path]);
+                    return Promise.resolve();
+                },
+            },
+        } as unknown as App;
+        let refreshed = 0;
+        const changed = await applySubplotMembershipChangeToMany(app,
+            [new TFile('Book/1 A.md'), new TFile('Book/2 B.md'), new TFile('Book/3 C.md')],
+            { kind: 'add', to: 'Trisan Arc' },
+            { onChanged: () => { refreshed += 1; } });
+        expect(changed).toBe(2);
+        expect(refreshed).toBe(1);
+        expect(notes['Book/1 A.md'].Subplot).toEqual(['Main Plot', 'Trisan Arc']);
+        expect(notes['Book/2 B.md'].Subplot).toEqual(['Main Plot', 'Trisan Arc']);
+        expect(notes['Book/3 C.md'].Subplot).toEqual(['Main Plot', 'Trisan Arc']);
+    });
 });

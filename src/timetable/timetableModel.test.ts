@@ -9,6 +9,7 @@ import {
     displayName,
     elapsedSincePrevious,
     groupProgress,
+    planColoring,
     readRuntimeSeconds,
     readWhen,
     runningTotals,
@@ -153,5 +154,27 @@ describe('groupProgress', () => {
             { Class: 'Beat' },
         ].map((fm, index) => ({ row: row(`${index + 1} N`, fm), frontmatter: fm as Record<string, unknown> }));
         expect(groupProgress(items, settings)).toEqual({ scenes: 3, complete: 1, words: 2000, overdue: 1 });
+    });
+});
+
+describe('planColoring', () => {
+    it('gives each value a color slot, most frequent first, reading links and lists as the author sees them', () => {
+        const plan = planColoring([
+            { path: 'a', value: 'Trisan' },
+            { path: 'b', value: ['[[Characters/Shail|Shail]]', 'Trisan'] },
+            { path: 'c', value: 'Shail' },
+            { path: 'd', value: '' },
+            { path: 'e', value: 'Shail' },
+        ]);
+        expect(plan.kind).toBe('ok');
+        if (plan.kind !== 'ok') return;
+        expect(plan.legend).toEqual([{ value: 'Shail', colorIndex: 0 }, { value: 'Trisan', colorIndex: 1 }]);
+        expect(plan.values.get('b')).toBe('Shail');
+        expect(plan.values.has('d')).toBe(false);
+    });
+
+    it('refuses a column with too many values, or none', () => {
+        expect(planColoring([{ path: 'a', value: 'x' }, { path: 'b', value: 'y' }], 1)).toEqual({ kind: 'tooMany', count: 2 });
+        expect(planColoring([{ path: 'a', value: undefined }])).toEqual({ kind: 'none' });
     });
 });

@@ -570,13 +570,23 @@
   font-size: var(--font-smallest);
 }
 
-/* The lens pill on the timeline: which table lights the wheel, and a way to turn it off. */
-.ert-timeline-lens {
+/* Over the wheel: what open Timetables lay on it (a lens, a coloring), each with a way to turn it off. */
+.ert-timeline-overlays {
   position: absolute;
   top: var(--size-4-3);
   left: 50%;
   z-index: 4;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--size-4-1);
+  max-width: 80%;
+  transform: translateX(-50%);
+}
+
+.ert-timeline-lens {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--size-4-1);
   padding: var(--size-2-1) var(--size-2-1) var(--size-2-1) var(--size-4-2);
@@ -585,7 +595,29 @@
   border: var(--border-width) solid var(--interactive-accent);
   color: var(--text-normal);
   font-size: var(--font-ui-small);
-  transform: translateX(-50%);
+}
+
+.ert-timeline-lens__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2-2) var(--size-4-2);
+}
+
+.ert-timeline-lens__legend:empty {
+  display: none;
+}
+
+.ert-timeline-lens__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+}
+
+.ert-timeline-lens__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--ert-timeline-swatch);
 }
 
 .ert-timeline-lens__icon {
@@ -595,4 +627,75 @@
 
 .ert-timeline-lens__close {
   padding: var(--size-2-1);
+}
+
+/* Bulk edits: a checkbox on each row that can be picked, and a bar while rows are picked. */
+.ert-timetable__select,
+.ert-timetable__select-spacer {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.ert-timetable__select {
+  visibility: hidden;
+}
+
+.ert-timetable__row:hover .ert-timetable__select,
+.ert-timetable__table.has-selection .ert-timetable__select {
+  visibility: visible;
+}
+
+.ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row.is-selected > td {
+  background: var(--background-modifier-active-hover);
+}
+
+.ert-timetable__bulk {
+  position: sticky;
+  bottom: var(--size-4-3);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-4-2);
+  width: fit-content;
+  margin: var(--size-4-3) auto 0;
+  padding: var(--size-4-1) var(--size-4-2) var(--size-4-1) var(--size-4-3);
+  border: var(--border-width) solid var(--background-modifier-border);
+  border-radius: var(--radius-l);
+  background: var(--background-secondary);
+  box-shadow: var(--shadow-s);
+}
+
+.ert-timetable__bulk-count {
+  font-weight: var(--font-semibold);
+}
+
+.ert-timetable__bulk-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+}
+
+.ert-timetable__bulk-icon {
+  display: inline-flex;
+}
+
+.ert-timetable__bulk-icon svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
+/* The column the timeline is colored by. */
+.ert-timetable__coloring-icon {
+  display: inline-flex;
+  margin-inline-end: var(--size-2-2);
+  color: var(--interactive-accent);
+  vertical-align: middle;
+}
+
+.ert-timetable__coloring-icon svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
 }

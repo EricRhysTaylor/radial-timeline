@@ -21,6 +21,7 @@ import { isOverdueDateString, parseWhenField } from '../utils/date';
 import { normalizeStatus } from '../utils/text';
 import { whenTextHasClock } from '../utils/whenFormat';
 import { parseRuntimeField } from '../utils/runtimeEstimator';
+import { formatHoverMetadataValue } from '../utils/hoverMetadata';
 
 /**
  * - `scene`: on the wheel.
@@ -284,4 +285,37 @@ export function groupProgress(
         if (status !== 'Completed' && typeof fm.Due === 'string' && isOverdueDateString(fm.Due)) progress.overdue += 1;
     }
     return progress;
+}
+
+// ── Coloring the timeline by a column ──────────────────────────────────
+
+/** A column with more values than this can't color the timeline legibly. */
+export const MAX_COLOR_VALUES = 8;
+
+export type ColoringPlan =
+    | { kind: 'ok'; values: Map<string, string>; legend: Array<{ value: string; colorIndex: number }> }
+    | { kind: 'none' }
+    | { kind: 'tooMany'; count: number };
+
+/**
+ * Plan coloring scenes by a column: each scene's value as the author reads it
+ * (a link shows its name; a list counts its first item), one color slot per
+ * value, most frequent first. More than MAX_COLOR_VALUES values is refused.
+ */
+export function planColoring(rows: Array<{ path: string; value: unknown }>, max: number = MAX_COLOR_VALUES): ColoringPlan {
+    const values = new Map<string, string>();
+    const counts = new Map<string, number>();
+    for (const { path, value } of rows) {
+        const first: unknown = Array.isArray(value) ? value[0] : value;
+        const text = formatHoverMetadataValue(first);
+        if (!text) continue;
+        values.set(path, text);
+        counts.set(text, (counts.get(text) ?? 0) + 1);
+    }
+    if (counts.size === 0) return { kind: 'none' };
+    if (counts.size > max) return { kind: 'tooMany', count: counts.size };
+    const legend = [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([value], colorIndex) => ({ value, colorIndex }));
+    return { kind: 'ok', values, legend };
 }

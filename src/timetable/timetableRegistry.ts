@@ -12,6 +12,7 @@
  *   reach every open Timetable.
  * - A Timetable with its lens on publishes its rows; the timeline dims every
  *   scene that isn't among them.
+ * - A Timetable can color the timeline's scenes by one of its columns.
  * Dependency-free on purpose, so both sides can import it without a cycle.
  */
 
@@ -46,11 +47,25 @@ export interface TimelineLens {
     turnOff: () => void;
 }
 
+/** A Timetable column coloring the timeline's scenes, one color per value. */
+export interface TimelineColoring {
+    owner: object;
+    /** The column's name, for the legend. */
+    property: string;
+    /** Each scene's value. Scenes without one are drawn neutral. */
+    values: Map<string, string>;
+    /** Values in legend order, each with its color slot (0–15, the ring palette). */
+    legend: Array<{ value: string; colorIndex: number }>;
+    turnOff: () => void;
+}
+
 const liveTimetables = new Set<LiveTimetable>();
 let timelineMode: TimelineModeState | null = null;
 let currentNote: string | null = null;
 let lens: TimelineLens | null = null;
-const lensListeners = new Set<() => void>();
+let coloring: TimelineColoring | null = null;
+/** The timeline redraws its overlays (lens, coloring) when either changes. */
+const overlayListeners = new Set<() => void>();
 
 const presenceListeners = new Set<() => void>();
 
@@ -136,20 +151,50 @@ export function currentTimelineLens(): TimelineLens | null {
 export function setTimelineLens(next: TimelineLens): void {
     if (lens && lens.owner === next.owner && lens.label === next.label && sameSet(lens.paths, next.paths)) return;
     lens = next;
-    lensListeners.forEach(listener => listener());
+    overlayListeners.forEach(listener => listener());
 }
 
 /** A Timetable turns its lens off (or closes). Only the owner can clear its lens. */
 export function clearTimelineLens(owner: object): void {
     if (!lens || lens.owner !== owner) return;
     lens = null;
-    lensListeners.forEach(listener => listener());
+    overlayListeners.forEach(listener => listener());
 }
 
-/** The timeline redraws its lens whenever it changes. */
-export function onTimelineLensChange(listener: () => void): () => void {
-    lensListeners.add(listener);
-    return () => { lensListeners.delete(listener); };
+// ── Coloring ────────────────────────────────────────────────────────────
+
+export function currentTimelineColoring(): TimelineColoring | null {
+    return coloring;
+}
+
+/** A Timetable colors the timeline by a column, or its values changed. The newest wins. */
+export function setTimelineColoring(next: TimelineColoring): void {
+    if (coloring
+        && coloring.owner === next.owner
+        && coloring.property === next.property
+        && sameMap(coloring.values, next.values)
+        && coloring.legend.map(entry => `${entry.value}\u0000${entry.colorIndex}`).join('|') === next.legend.map(entry => `${entry.value}\u0000${entry.colorIndex}`).join('|')) return;
+    coloring = next;
+    overlayListeners.forEach(listener => listener());
+}
+
+/** Only the Timetable that colors the timeline can stop it. */
+export function clearTimelineColoring(owner: object): void {
+    if (!coloring || coloring.owner !== owner) return;
+    coloring = null;
+    overlayListeners.forEach(listener => listener());
+}
+
+/** The timeline redraws its overlays whenever the lens or the coloring changes. */
+export function onTimelineOverlayChange(listener: () => void): () => void {
+    overlayListeners.add(listener);
+    return () => { overlayListeners.delete(listener); };
+}
+
+function sameMap(a: Map<string, string>, b: Map<string, string>): boolean {
+    if (a.size !== b.size) return false;
+    for (const [key, value] of a) if (b.get(key) !== value) return false;
+    return true;
 }
 
 function sameSet(a: Set<string>, b: Set<string>): boolean {

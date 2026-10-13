@@ -710,3 +710,10 @@
 .rt-number-text.rt-lens-out {
   opacity: 0.18;
 }
+
+/* Open author queries (%%query: …%%): a dot on the corner of the scene's number square. */
+.rt-query-dot {
+  fill: var(--interactive-accent);
+  stroke: var(--background-primary);
+  stroke-width: 1.5px;
+}

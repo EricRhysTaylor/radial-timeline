@@ -59,14 +59,14 @@ export interface SceneMenuTarget {
     subplotColor?: string;
 }
 
-type TimelineStatusOption = {
+export type TimelineStatusOption = {
     label: string;
     value: 'Todo' | 'Working' | 'Complete';
     normalized: 'Todo' | 'Working' | 'Completed';
     icon: string;
 };
 
-type PublishStageOption = {
+export type PublishStageOption = {
     label: string;
     value: 'Zero' | 'Author' | 'House' | 'Press';
     icon: string;
@@ -76,13 +76,13 @@ const SCENE_CONTEXT_SELECTOR = '.rt-scene-group[data-item-type="Scene"], .rt-sce
 const CHAPTER_INSERT_BEFORE_KEYS = ['Synopsis'];
 const CHAPTER_INSERT_AFTER_KEYS = ['Duration', 'When', 'Act', 'Class'];
 
-const STATUS_OPTIONS: TimelineStatusOption[] = [
+export const STATUS_OPTIONS: TimelineStatusOption[] = [
     { label: 'Todo', value: 'Todo', normalized: 'Todo', icon: 'circle' },
     { label: 'Working', value: 'Working', normalized: 'Working', icon: 'loader' },
     { label: 'Complete', value: 'Complete', normalized: 'Completed', icon: 'check-circle-2' },
 ];
 
-const PUBLISH_STAGE_OPTIONS: PublishStageOption[] = [
+export const PUBLISH_STAGE_OPTIONS: PublishStageOption[] = [
     { label: 'Zero', value: 'Zero', icon: 'circle-dashed' },
     { label: 'Author', value: 'Author', icon: 'pen-line' },
     { label: 'House', value: 'House', icon: 'home' },
@@ -552,6 +552,17 @@ function cachedFrontmatter(view: SceneMenuHost, file: TFile): Record<string, unk
     return view.plugin.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
 }
 
+/** Set a scene's Status in its frontmatter. Complete also sets Due to today. */
+export function applyStatusToFrontmatter(view: SceneMenuHost, fm: Record<string, unknown>, value: TimelineStatusOption['value']): void {
+    fm[frontmatterKeyFor(view, fm, 'Status')] = value;
+    if (value === 'Complete') fm[frontmatterKeyFor(view, fm, 'Due')] = formatLocalDateKey();
+}
+
+/** Set a scene's Publish Stage in its frontmatter. */
+export function applyStageToFrontmatter(view: SceneMenuHost, fm: Record<string, unknown>, value: PublishStageOption['value']): void {
+    fm[frontmatterKeyFor(view, fm, 'Publish Stage')] = value;
+}
+
 /**
  * Status items (Todo, Working, Complete), the current one checked. Complete
  * also sets Due to today. Shared by the wheel's menu and the Timetable.
@@ -567,12 +578,7 @@ export function addStatusMenuItems(menu: Menu, view: SceneMenuHost, file: TFile)
                 void updateSceneFrontmatter(
                     view,
                     file,
-                    (fm) => {
-                        fm[frontmatterKeyFor(view, fm, 'Status')] = option.value;
-                        if (option.value === 'Complete') {
-                            fm[frontmatterKeyFor(view, fm, 'Due')] = formatLocalDateKey();
-                        }
-                    },
+                    (fm) => applyStatusToFrontmatter(view, fm, option.value),
                     option.value === 'Complete'
                         ? t('ui.sceneContextMenu.markedComplete', { name: file.basename })
                         : t('ui.sceneContextMenu.statusSet', { name: file.basename, status: option.label })
@@ -594,9 +600,7 @@ export function addPublishStageMenuItems(menu: Menu, view: SceneMenuHost, file: 
                 void updateSceneFrontmatter(
                     view,
                     file,
-                    (fm) => {
-                        fm[frontmatterKeyFor(view, fm, 'Publish Stage')] = option.value;
-                    },
+                    (fm) => applyStageToFrontmatter(view, fm, option.value),
                     t('ui.sceneContextMenu.stageSet', { name: file.basename, stage: option.label })
                 );
             });

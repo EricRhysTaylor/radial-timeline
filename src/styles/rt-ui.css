@@ -10798,7 +10798,9 @@
   width: 100%;
 }
 
-/* Manuscript controls and an actual, independently scrollable PDF page. */
+/* The modal owns settings scrolling; only the PDF page scrolls independently.
+   A second settings scroller lets the outer modal scroll into clipped blank
+   space instead of reaching Destination and the final export actions. */
 .ert-ui.ert-scope--modal .ert-manuscript-workspace.is-proof-enabled {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -10806,14 +10808,11 @@
   gap: var(--ert-gap-lg);
 }
 
-.ert-ui.ert-scope--modal .is-proof-enabled .ert-manuscript-controls {
-  max-height: calc(88vh - 64px);
-  overflow-y: auto;
-  padding-inline-end: var(--ert-pad-xs);
-}
-
 .ert-ui.ert-scope--modal .ert-manuscript-proof-pane {
   min-width: 0;
+  position: sticky;
+  top: 0;
+  align-self: start;
 }
 
 .ert-ui.ert-scope--modal .ert-manuscript-proof-pane.is-stale {
@@ -10849,8 +10848,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .ert-ui.ert-scope--modal .is-proof-enabled .ert-manuscript-controls {
-    max-height: none;
-    overflow-y: visible;
+  .ert-ui.ert-scope--modal .ert-manuscript-proof-pane {
+    position: static;
   }
 }

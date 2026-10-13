@@ -85,11 +85,21 @@
   background: var(--interactive-accent);
 }
 
-/* + New sketch, in the number column's header. */
-.ert-timetable__new-sketch--header {
-  font-size: var(--font-smallest);
-  height: auto;
-  padding: var(--size-2-1) var(--size-2-3);
+/* The corner: + New sketch, the lens toggle, and the mode the table follows. */
+.ert-timetable__corner {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-1);
+}
+
+.ert-timetable__corner .clickable-icon {
+  padding: var(--size-2-1);
+}
+
+.ert-timetable__lens-toggle.is-active,
+.ert-timetable__mode.is-pinned {
+  color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
 }
 
 .ert-timetable__row {
@@ -476,4 +486,113 @@
 .ert-timetable__row.is-scene .ert-timetable__chip.ert-timetable__pick:hover .ert-timetable__chip-cell {
   stroke: var(--interactive-accent);
   stroke-width: 2;
+}
+
+/* The note open in the editor: a steady accent on its row. */
+.ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row.is-current > td:first-child {
+  box-shadow: inset 3px 0 0 var(--interactive-accent);
+}
+
+/* The subplot key spotlights a ring: rows outside it fade, as on the wheel. */
+.ert-timetable__row.is-out-of-ring,
+.ert-timetable__row.is-receded {
+  opacity: 0.38;
+}
+
+.ert-timetable__group-head,
+.ert-timetable__act {
+  scroll-margin-top: 48px;
+}
+
+/* Chronologue: day dividers, and the Gap and Running time columns. */
+.ert-timetable__act.is-day td {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.ert-timetable__prop-head.is-micro,
+.ert-timetable__micro {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Progress: counts in each heading, and overdue dates. */
+.ert-timetable__progress {
+  margin-inline-start: var(--size-4-4);
+  color: var(--text-muted);
+  font-weight: var(--font-normal);
+}
+
+.ert-timetable__progress-overdue {
+  margin-inline-start: var(--size-4-2);
+  color: var(--text-error);
+}
+
+.ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row > td.is-overdue {
+  color: var(--text-error);
+  font-weight: var(--font-semibold);
+}
+
+/* Gossamer: each beat's latest score, its change and its expected range. */
+.ert-timetable__gossamer {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--size-2-2);
+  margin-inline-start: var(--size-4-3);
+  padding: 0 var(--size-2-3);
+  border-radius: var(--radius-s);
+  background: var(--background-modifier-hover);
+}
+
+.ert-timetable__gossamer.is-empty {
+  color: var(--text-faint);
+}
+
+.ert-timetable__gossamer.is-out-of-range {
+  box-shadow: inset 0 0 0 1px var(--text-error);
+}
+
+.ert-timetable__gossamer-score {
+  font-weight: var(--font-bold);
+  color: var(--text-normal);
+}
+
+.ert-timetable__gossamer-delta.is-up {
+  color: var(--text-success);
+}
+
+.ert-timetable__gossamer-delta.is-down {
+  color: var(--text-error);
+}
+
+.ert-timetable__gossamer-range {
+  color: var(--text-faint);
+  font-size: var(--font-smallest);
+}
+
+/* The lens pill on the timeline: which table lights the wheel, and a way to turn it off. */
+.ert-timeline-lens {
+  position: absolute;
+  top: var(--size-4-3);
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  padding: var(--size-2-1) var(--size-2-1) var(--size-2-1) var(--size-4-2);
+  border-radius: var(--radius-l);
+  background: var(--background-secondary);
+  border: var(--border-width) solid var(--interactive-accent);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  transform: translateX(-50%);
+}
+
+.ert-timeline-lens__icon {
+  display: inline-flex;
+  color: var(--interactive-accent);
+}
+
+.ert-timeline-lens__close {
+  padding: var(--size-2-1);
 }

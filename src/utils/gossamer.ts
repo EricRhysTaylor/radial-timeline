@@ -154,6 +154,33 @@ function readSignalForSlot(
   return DEFAULT_GOSSAMER_SIGNAL;
 }
 
+/**
+ * A beat's latest Gossamer score for one signal, read from its frontmatter
+ * the way the timeline reads it (the highest slot whose signal matches;
+ * legacy slots count as momentum), with the score before it and the
+ * latest score's justification. Null when the beat has no score for that
+ * signal.
+ */
+export function latestGossamerScore(
+  frontmatter: Record<string, unknown>,
+  signal: GossamerSignalType
+): { score: number; previous?: number; justification?: string } | null {
+  let latest: { score: number; previous?: number; justification?: string } | null = null;
+  for (let i = GOSSAMER_MAX_HISTORY; i >= 1; i--) {
+    const score = parseGossamerScoreValue(readGossamerFieldValue(frontmatter, getGossamerScoreKey(i)));
+    if (score === undefined) continue;
+    if (coerceGossamerSignal(readGossamerFieldValue(frontmatter, getGossamerSignalKey(i))) !== signal) continue;
+    if (latest) {
+      latest.previous = score;
+      return latest;
+    }
+    const justification = readGossamerFieldValue(frontmatter, getGossamerJustificationKey(i));
+    latest = { score };
+    if (typeof justification === 'string' && justification.trim().length > 0) latest.justification = justification.trim();
+  }
+  return latest;
+}
+
 export function createGossamerRunId(): string {
   return `goss-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }

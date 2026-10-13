@@ -95,6 +95,12 @@
   /* Color is now set dynamically in SVG */
 }
 
+/* With a Timetable open, an act label shows that act in the table. */
+.radial-timeline-svg.rt-timetable-linked .rt-act-label {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
 .radial-timeline-container .rt-month-spoke-line {
   stroke: var(--text-normal);
   stroke-width: 1px;

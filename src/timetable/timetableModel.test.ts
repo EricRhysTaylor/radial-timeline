@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import type { RadialTimelineSettings } from '../types';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
-import { buildRingLayout, buildTableRow, compareManuscriptRows, displayName, sceneNumberFill, withActDividers } from './timetableModel';
+import {
+    buildRingLayout,
+    buildTableRow,
+    compareChronologicalRows,
+    compareManuscriptRows,
+    displayName,
+    elapsedSincePrevious,
+    groupProgress,
+    readRuntimeSeconds,
+    readWhen,
+    runningTotals,
+    sceneNumberFill,
+    withActDividers,
+    withDayDividers,
+} from './timetableModel';
 
 const settings = { ...DEFAULT_SETTINGS, enableCustomMetadataMapping: false } as RadialTimelineSettings;
 const row = (basename: string, fm?: Record<string, unknown>) => buildTableRow(`Book 2/${basename}.md`, basename, fm, settings);
@@ -91,5 +105,53 @@ describe('displayName', () => {
         expect(displayName('5.01 DEBATE')).toBe('DEBATE');
         expect(displayName('Untitled sketch')).toBe('Untitled sketch');
         expect(displayName('2085 Notes')).toBe('Notes');
+    });
+});
+
+describe('Chronologue helpers', () => {
+    const dated = (basename: string, when: string | undefined, act = 1) => {
+        const fm = { Class: 'Scene', Act: act, ...(when ? { When: when } : {}) };
+        return { row: row(basename, fm), when: readWhen(fm, settings).when };
+    };
+
+    it('reads When the way the timeline does, and whether it names a time', () => {
+        expect(readWhen({ When: '2085-04-01 19:40' }, settings).hasClock).toBe(true);
+        expect(readWhen({ When: '2085-04-01' }, settings).hasClock).toBe(false);
+        expect(readWhen({}, settings).when).toBeNull();
+    });
+
+    it('orders by When, undated last, ties in manuscript order', () => {
+        const items = [dated('3 C', '2085-04-02'), dated('9 Undated', undefined), dated('2 B', '2085-03-31'), dated('1 A', '2085-03-31')];
+        expect(items.sort(compareChronologicalRows).map(item => item.row.basename)).toEqual(['1 A', '2 B', '3 C', '9 Undated']);
+    });
+
+    it('puts a divider before each new day', () => {
+        const lines = withDayDividers([dated('1 A', '2085-03-31 09:00'), dated('2 B', '2085-03-31 21:00'), dated('3 C', '2085-04-01')]);
+        expect(lines.map(line => line.type)).toEqual(['day', 'row', 'row', 'day', 'row']);
+    });
+
+    it('measures each gap from the previous dated row (Shift)', () => {
+        const hour = 3600 * 1000;
+        const whens = [new Date(2085, 2, 31, 9), null, new Date(2085, 2, 31, 12), new Date(2085, 3, 1, 12)];
+        expect(elapsedSincePrevious(whens)).toEqual([null, null, 3 * hour, 24 * hour]);
+    });
+
+    it('reads Runtime and keeps a running total (Runtime)', () => {
+        expect(readRuntimeSeconds({ Runtime: '2:30' }, settings)).toBe(150);
+        expect(readRuntimeSeconds({}, settings)).toBeNull();
+        expect(runningTotals([150, null, 60])).toEqual([150, 150, 210]);
+    });
+});
+
+describe('groupProgress', () => {
+    it('counts scenes, completions, words and overdue scenes only', () => {
+        const items = [
+            { Class: 'Scene', Status: 'Complete', Words: 1200 },
+            { Class: 'Scene', Status: ['Todo'], Words: '800', Due: '2020-01-01' },
+            { Class: 'Scene', Status: 'Working', Due: '2999-01-01' },
+            { Class: 'Sketch', Words: 400 },
+            { Class: 'Beat' },
+        ].map((fm, index) => ({ row: row(`${index + 1} N`, fm), frontmatter: fm as Record<string, unknown> }));
+        expect(groupProgress(items, settings)).toEqual({ scenes: 3, complete: 1, words: 2000, overdue: 1 });
     });
 });

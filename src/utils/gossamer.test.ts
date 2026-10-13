@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appendGossamerScore, buildAllGossamerRuns, clearAllGossamerData, normalizeGossamerHistory } from './gossamer';
+import { appendGossamerScore, buildAllGossamerRuns, clearAllGossamerData, latestGossamerScore, normalizeGossamerHistory } from './gossamer';
 import { toBeatModelMatchKey } from './beatsInputNormalize';
 
 function makeBeat(title: string, fields: Record<string, unknown> = {}) {
@@ -217,4 +217,19 @@ describe('clearAllGossamerData', () => {
     expect(clearAllGossamerData(frontmatter)).toBe(false);
     expect(Object.keys(frontmatter)).toEqual(['ID', 'Class']);
   });
+});
+
+describe('latestGossamerScore', () => {
+    it('reads the newest score for a signal, the one before it, and its justification', () => {
+        const fm = {
+            Gossamer1: 40,
+            Gossamer2: 55,
+            GossamerSignal2: 'tension',
+            Gossamer3: 62,
+            'Gossamer3 Justification': ' Stakes rise. ',
+        };
+        expect(latestGossamerScore(fm, 'momentum')).toEqual({ score: 62, previous: 40, justification: 'Stakes rise.' });
+        expect(latestGossamerScore(fm, 'tension')).toEqual({ score: 55 });
+        expect(latestGossamerScore(fm, 'activity')).toBeNull();
+    });
 });

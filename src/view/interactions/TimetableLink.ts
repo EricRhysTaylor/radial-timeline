@@ -8,7 +8,7 @@
  * through the plugin's scene highlighter.
  */
 
-import { markTimetableRows } from '../../timetable/timetableRegistry';
+import { markTimetableRows, revealTimetableSegment, type TimelineLens } from '../../timetable/timetableRegistry';
 
 type TimetableLinkView = {
     renderScope: {
@@ -40,5 +40,38 @@ export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGEl
         if (scenePathOf((event as PointerEvent).relatedTarget) === current) return;
         current = null;
         markTimetableRows(null);
+    });
+}
+
+/** Clicking an act label (a book label in saga scope) shows that part of any open Timetable. */
+export function linkActLabelsToTimetable(view: TimetableLinkView, svg: SVGSVGElement): void {
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'click', (event: Event) => {
+        const label = event.target instanceof Element ? event.target.closest('.rt-act-label[data-act]') : null;
+        const index = Number(label?.getAttribute('data-act'));
+        if (!label || !Number.isInteger(index)) return;
+        revealTimetableSegment(index);
+    });
+}
+
+const LENS_DIMMED = 'rt-lens-out';
+
+/**
+ * A Timetable's lens: every scene, beat and backdrop that isn't among the
+ * table's rows is dimmed, so the table's filter reads as a pattern on the
+ * wheel. A separate class from hover's rt-non-selected, which hover clears.
+ */
+export function applyLensToSvg(svg: Element, lens: TimelineLens | null): void {
+    svg.querySelectorAll(`.${LENS_DIMMED}`).forEach(element => element.classList.remove(LENS_DIMMED));
+    if (!lens) return;
+    const dimmedIds = new Set<string>();
+    svg.querySelectorAll('.rt-scene-group').forEach(group => {
+        const path = scenePathOf(group);
+        if (path && lens.paths.has(path)) return;
+        group.querySelectorAll('.rt-scene-path, .rt-scene-title').forEach(element => element.classList.add(LENS_DIMMED));
+        const sceneId = group.querySelector('.rt-scene-path')?.id;
+        if (sceneId) dimmedIds.add(sceneId);
+    });
+    svg.querySelectorAll('.rt-number-square, .rt-number-text').forEach(element => {
+        if (dimmedIds.has(element.getAttribute('data-scene-id') ?? '')) element.classList.add(LENS_DIMMED);
     });
 }

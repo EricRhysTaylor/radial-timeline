@@ -702,3 +702,11 @@
   fill: var(--text-warning);
   font-weight: 600;
 }
+
+/* Timetable lens: scenes outside the table's rows recede (rt-non-selected belongs to hover). */
+.rt-scene-path.rt-lens-out,
+.rt-scene-title.rt-lens-out,
+.rt-number-square.rt-lens-out,
+.rt-number-text.rt-lens-out {
+  opacity: 0.18;
+}

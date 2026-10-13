@@ -30,6 +30,8 @@
 import { RadialTimelineView } from '../TimeLineView';
 import { isTypingInField } from '../../utils/domFocus';
 import { t } from '../../i18n';
+import { markTimetableRing } from '../../timetable/timetableRegistry';
+import { membershipOfRing } from './subplotRings';
 
 interface SubplotKeyEntry {
     ring: number;
@@ -124,9 +126,12 @@ export function setupSubplotKeyController(
     const clearSpotlight = () => {
         dimmed.forEach(el => el.classList.remove('rt-non-selected'));
         dimmed = [];
+        markTimetableRing(null);
     };
     const spotlightRing = (ring: number) => {
         clearSpotlight();
+        // Open Timetables dim their rows outside this ring too (none for a ring of every scene).
+        markTimetableRing(membershipOfRing(svg, ring, view.currentMode));
         // Scene paths and titles live inside ring-stamped groups; number
         // squares/text live in their own layer keyed by data-scene-id, which
         // matches the group path's id — same lookup scene hover uses.

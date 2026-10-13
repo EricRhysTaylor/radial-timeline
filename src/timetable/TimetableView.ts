@@ -34,15 +34,20 @@ import {
 } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { TimelineItem } from '../types';
-import { t } from '../i18n';
+import { getFormattingLocale, t } from '../i18n';
 import { getActiveBook, getBookIdForPath, getSagaBooks, getTimelineScope } from '../utils/books';
 import { getConfiguredActCount, parseActLabels, resolveActLabel } from '../utils/acts';
 import { canonicalizeFrontmatterKey, getActiveFrontmatterMappings, readBeatPurpose } from '../utils/frontmatter';
 import { listAuthorQueries } from '../utils/authorQueryComments';
-import { parseWhenField } from '../utils/date';
+import { formatElapsedTime, parseWhenField } from '../utils/date';
 import { formatSceneWhen, whenTextHasClock } from '../utils/whenFormat';
 import { normalizeStatus } from '../utils/text';
 import { isOverdueDateString } from '../utils/date';
+import { convertFromEarth, formatElapsedTimePlanetary, getActivePlanetaryProfile } from '../utils/planetaryTime';
+import { formatRuntimeValue } from '../utils/runtimeEstimator';
+import { latestGossamerScore } from '../utils/gossamer';
+import { parseRange, isScoreInRange } from '../utils/rangeValidation';
+import { getToggleableModes } from '../modes/ModeRegistry';
 import { tooltip } from '../utils/tooltip';
 import { mountSvgMarkup } from '../utils/svgDom';
 import { renderDefs } from '../renderer/components/Defs';
@@ -52,19 +57,35 @@ import { runPromotion } from '../services/PromoteToSceneEntry';
 import {
     buildRingLayout,
     buildTableRow,
+    compareChronologicalRows,
     compareManuscriptRows,
     displayName,
+    elapsedSincePrevious,
+    groupProgress,
+    readRuntimeSeconds,
+    readWhen,
+    runningTotals,
     sceneNumberFill,
     withActDividers,
+    withDayDividers,
     type RingLayout,
+    type TimetableLine,
     type TimetableRow,
 } from './timetableModel';
 import { authorKeyFor, TIMETABLE_VIEW_TYPE } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
-import { trackTimetable } from './timetableRegistry';
+import {
+    clearTimelineLens,
+    currentNotePath,
+    currentTimelineLens,
+    currentTimelineMode,
+    setTimelineLens,
+    trackTimetable,
+    type TimelineModeState,
+} from './timetableRegistry';
 import { addPublishStageMenuItems, addStatusMenuItems, showSceneContextMenu } from '../view/interactions/SceneContextMenu';
 import { readSubplotColor } from '../renderer/utils/subplotColors';
-import type { BookProfile } from '../types/settings';
+import type { BookProfile, PlanetaryProfile } from '../types/settings';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const RINGS_PER_LINE_DEFAULT = 5;
@@ -76,6 +97,12 @@ const OTHER_COLUMN_WIDTH = 140;
 const MIN_COLUMN_WIDTH = 48;
 const DEFAULT_COLUMN_WIDTHS: Record<string, number> = { When: 220, Duration: 100, Chapter: 150, Synopsis: 360, Act: 56 };
 const NAME_COLUMN_WIDTH = 220;
+
+/** Width of the columns a Chronologue micro-mode adds (Gap, Running time). */
+const MICRO_COLUMN_WIDTH = 120;
+
+/** The icon for each timeline mode on the Timetable's mode button. */
+const MODE_ICONS: Record<string, string> = { narrative: 'list-ordered', progress: 'gauge', chronologue: 'clock', gossamer: 'activity' };
 
 /** Properties with a fixed set of values: clicking their cell offers a quick pick. */
 const PICKABLE_PROPERTIES = new Set(['Status', 'Publish Stage', 'Act']);
@@ -107,6 +134,28 @@ interface TableGroup {
     items: TableItem[];
 }
 
+/** A table column: one of the Base's properties, or a column a Chronologue micro-mode adds. */
+type Column =
+    | { kind: 'property'; property: BasesPropertyId }
+    | { kind: 'gap' }
+    | { kind: 'running' };
+
+/** What Chronologue order computes for the rows: story order, gaps (Shift) and running time (Runtime). */
+interface ChronologueContext {
+    group: TableGroup;
+    lines: TimetableLine[];
+    gap: Map<string, number | null>;
+    running: Map<string, number>;
+    /** The planetary calendar, when Alt is on and a profile is active. */
+    profile: PlanetaryProfile | null;
+}
+
+/** The mode the table is drawn in, and what that mode computed. */
+interface ModeContext {
+    state: TimelineModeState;
+    chronologue: ChronologueContext | null;
+}
+
 interface WheelRings {
     key: string;
     order: string[];
@@ -119,6 +168,7 @@ export function timetableViewOptions(): BasesAllOptions[] {
         { type: 'toggle', key: 'ringsColumn', displayName: t('ui.timetable.optionRings'), default: true },
         { type: 'slider', key: 'ringsPerLine', displayName: t('ui.timetable.optionRingsPerLine'), default: RINGS_PER_LINE_DEFAULT, min: 3, max: 8, step: 1 },
         { type: 'toggle', key: 'openAllSketches', displayName: t('ui.timetable.optionOpenSketches'), default: false },
+        { type: 'toggle', key: 'lens', displayName: t('ui.timetable.optionLens'), default: false },
     ];
 }
 
@@ -168,6 +218,15 @@ function checkedTitle(label: string, current: boolean): string {
     return current ? `${label}  ✓` : label;
 }
 
+function modeName(mode: string): string {
+    return t(`timeline.modes.${mode}.name`);
+}
+
+function modeIcon(mode: string): string {
+    const icon = MODE_ICONS[mode];
+    return typeof icon === 'string' ? icon : 'list-ordered';
+}
+
 function firstText(value: unknown): string {
     const first: unknown = Array.isArray(value) ? value[0] : value;
     return typeof first === 'string' ? first.trim() : (typeof first === 'number' ? String(first) : '');
@@ -196,6 +255,17 @@ export class TimetableView extends BasesView {
     private hoveredPath: string | null = null;
     private resizing: ColumnResize | null = null;
     private linkedRow: HTMLElement | null = null;
+    private currentRow: HTMLElement | null = null;
+    /** A mode the author pinned the table to; null follows the timeline. Not saved. */
+    private modePin: string | null = null;
+    /** The ring the timeline's subplot key spotlights, if any. */
+    private ringSpotlight: string | null = null;
+    /** The lens toggle was just pressed here, so this table takes the lens from any other. */
+    private claimLens = false;
+    private readonly rowItems = new Map<string, TableItem>();
+    private readonly groupHeaderEls = new Map<string, HTMLElement>();
+    private readonly groupIdForAct = new Map<number, string>();
+    private readonly actDividerEls = new Map<number, HTMLElement>();
     private readonly drawerHost: SketchDrawerHost = {
         promote: file => { void runPromotion(this.plugin, [file]); },
         openNote: (file, evt) => { void openFromTimetable(this.plugin.app, file, evt, this.rootEl); },
@@ -302,6 +372,148 @@ export class TimetableView extends BasesView {
         this.linkedRow.scrollIntoView({ block: 'nearest' });
     }
 
+    /** A note was opened in an editor: mark its row (and bring it into view). */
+    markCurrentNote(path: string | null): void {
+        this.setCurrentRow(path);
+        this.currentRow?.scrollIntoView({ block: 'nearest' });
+    }
+
+    private setCurrentRow(path: string | null): void {
+        this.currentRow?.removeClass('is-current');
+        this.currentRow = path ? this.rowEls.get(path) ?? null : null;
+        this.currentRow?.addClass('is-current');
+    }
+
+    /** The subplot key spotlights a ring: dim the rows outside it, as the wheel does. */
+    markRing(subplot: string | null): void {
+        this.ringSpotlight = subplot;
+        for (const [path, element] of this.rowEls) {
+            const item = this.rowItems.get(path);
+            element.toggleClass('is-out-of-ring', subplot !== null && item !== undefined && !item.row.subplots.includes(subplot));
+        }
+    }
+
+    /** An act label (a book label in saga scope) was clicked on the timeline: show that part of the table. */
+    revealSegment(index: number): void {
+        const saga = [...this.groupHeaderEls.keys()].some(id => id.startsWith('book:'));
+        let groupId: string | undefined;
+        if (saga) {
+            const book = getSagaBooks(this.plugin.settings)[index];
+            groupId = book ? `book:${book.id}` : undefined;
+        } else {
+            groupId = this.groupIdForAct.get(index + 1);
+            if (!groupId) {
+                this.actDividerEls.get(index + 1)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                return;
+            }
+        }
+        if (!groupId) return;
+        if (this.collapsed.delete(groupId)) this.render();
+        this.groupHeaderEls.get(groupId)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+
+    // ── Following the timeline's mode ───────────────────────────────────
+
+    /** The mode the table is drawn in: the timeline's, unless the author pinned another. */
+    private modeState(): TimelineModeState {
+        const timeline = currentTimelineMode() ?? { mode: this.plugin.settings.currentMode || 'narrative', shift: false, alt: false, runtime: false };
+        if (this.modePin === null || this.modePin === timeline.mode) return timeline;
+        return { mode: this.modePin, shift: false, alt: false, runtime: false };
+    }
+
+    private modeTooltip(state: TimelineModeState): string {
+        const micro = [
+            state.shift ? t('ui.timetable.microShift') : '',
+            state.alt ? t('ui.timetable.microAlt') : '',
+            state.runtime ? t('ui.timetable.microRuntime') : '',
+        ].filter(part => part.length > 0);
+        const label = [modeName(state.mode), ...micro].join(' · ');
+        return this.modePin === null ? t('ui.timetable.modeFollowing', { mode: label }) : t('ui.timetable.modePinned', { mode: label });
+    }
+
+    /** Follow the timeline (the default), or pin the table to one mode. */
+    private showModeMenu(anchor: HTMLElement): void {
+        const menu = new Menu();
+        const timeline = currentTimelineMode()?.mode ?? this.plugin.settings.currentMode ?? 'narrative';
+        menu.addItem(item => item
+            .setTitle(checkedTitle(t('ui.timetable.modeFollowItem', { mode: modeName(timeline) }), this.modePin === null))
+            .setIcon('link')
+            .onClick(() => {
+                this.modePin = null;
+                this.render();
+            }));
+        menu.addSeparator();
+        for (const mode of getToggleableModes()) {
+            menu.addItem(item => item
+                .setTitle(checkedTitle(modeName(mode.id), this.modePin === mode.id))
+                .setIcon(modeIcon(mode.id))
+                .onClick(() => {
+                    this.modePin = mode.id;
+                    this.render();
+                }));
+        }
+        const rect = anchor.getBoundingClientRect();
+        menu.showAtPosition({ x: rect.left, y: rect.bottom }, anchor.ownerDocument);
+    }
+
+    /**
+     * Chronologue order: the rows in story order (beats left out, as on the
+     * wheel), with a divider for each new day, the gap since the previous
+     * dated row (Shift) and the running time (Runtime). A sort the author set
+     * in the Bases toolbar still wins.
+     */
+    private chronologueContext(groups: TableGroup[], state: TimelineModeState): ChronologueContext {
+        const { settings } = this.plugin;
+        const authorSorted = this.config.getSort().length > 0;
+        const keyed = groups
+            .flatMap(group => group.items)
+            .filter(item => item.row.kind !== 'beat')
+            .map(item => ({ item, row: item.row, when: readWhen(item.frontmatter, settings).when }));
+        if (!authorSorted) keyed.sort(compareChronologicalRows);
+        const gaps = elapsedSincePrevious(keyed.map(entry => entry.when));
+        const totals = runningTotals(keyed.map(entry => entry.row.kind === 'scene' ? readRuntimeSeconds(entry.item.frontmatter, settings) : null));
+        return {
+            group: { id: 'chronologue', label: null, items: keyed.map(entry => entry.item) },
+            lines: authorSorted ? keyed.map(entry => ({ type: 'row' as const, row: entry.row })) : withDayDividers(keyed),
+            gap: new Map(keyed.map((entry, index) => [entry.row.path, gaps[index]])),
+            running: new Map(keyed.map((entry, index) => [entry.row.path, totals[index]])),
+            profile: state.alt ? getActivePlanetaryProfile(settings) : null,
+        };
+    }
+
+    /** A When in the table: the shared When format, or the planetary calendar when Alt is on. */
+    private formatWhen(when: Date, hasClock: boolean, profile: PlanetaryProfile | null): string {
+        const planetary = profile ? convertFromEarth(when, profile) : null;
+        return planetary ? planetary.formatted : formatSceneWhen(when, hasClock);
+    }
+
+    // ── Lens ────────────────────────────────────────────────────────────
+
+    /** With its lens on, this table's rows light up on the timeline. */
+    private syncLens(): void {
+        if (this.config.get('lens') !== true) {
+            clearTimelineLens(this);
+            return;
+        }
+        const active = currentTimelineLens();
+        // Another table's lens stays until this one's toggle is pressed.
+        if (active && active.owner !== this && !this.claimLens) return;
+        this.claimLens = false;
+        const paths = new Set((this.data?.data ?? []).filter(entry => entry.file.extension === 'md').map(entry => entry.file.path));
+        setTimelineLens({ owner: this, paths, label: this.config.name, turnOff: () => this.config.set('lens', false) });
+    }
+
+    private toggleLens(): void {
+        if (currentTimelineLens()?.owner === this) {
+            this.config.set('lens', false);
+            clearTimelineLens(this);
+        } else {
+            this.claimLens = true;
+            this.config.set('lens', true);
+        }
+        this.render();
+    }
+
     /**
      * Right-click a scene's row for the same menu as right-clicking it on the
      * wheel. Other rows get Obsidian's own file menu, which includes Promote
@@ -344,6 +556,15 @@ export class TimetableView extends BasesView {
         const switchBook = target.closest<HTMLElement>('.ert-timetable__notice button');
         if (switchBook?.dataset.bookId) {
             void this.plugin.setActiveBookId(switchBook.dataset.bookId);
+            return;
+        }
+        if (target.closest('.ert-timetable__lens-toggle')) {
+            this.toggleLens();
+            return;
+        }
+        const modeButton = target.closest<HTMLElement>('.ert-timetable__mode');
+        if (modeButton) {
+            this.showModeMenu(modeButton);
             return;
         }
         const newSketch = target.closest<HTMLElement>('.ert-timetable__new-sketch');
@@ -523,6 +744,7 @@ export class TimetableView extends BasesView {
     }
 
     onunload(): void {
+        clearTimelineLens(this);
         if (this.hoveredPath !== null) this.plugin.highlightSceneOnTimeline(null);
         if (this.ringsTimer !== null) window.clearTimeout(this.ringsTimer);
         this.ringsGeneration += 1;
@@ -656,9 +878,21 @@ export class TimetableView extends BasesView {
         }
         this.renderDeferred = false;
         this.rowEls.clear();
+        this.rowItems.clear();
+        this.groupHeaderEls.clear();
+        this.groupIdForAct.clear();
+        this.actDividerEls.clear();
         this.linkedRow = null;
+        this.currentRow = null;
         this.synopsisFromBody.clear();
-        const groups = this.buildGroups();
+        this.syncLens();
+
+        const state = this.modeState();
+        let groups = this.buildGroups();
+        const chronologue = state.mode === 'chronologue' ? this.chronologueContext(groups, state) : null;
+        if (chronologue) groups = [chronologue.group];
+        const mode: ModeContext = { state, chronologue };
+
         const scrollParent = this.rootEl.parentElement;
         const scrollTop = scrollParent?.scrollTop ?? 0;
         this.rootEl.empty();
@@ -676,10 +910,11 @@ export class TimetableView extends BasesView {
         const showRings = this.config.get('ringsColumn') !== false && this.rings !== null;
         const perLine = Math.min(8, Math.max(3, Math.round(Number(this.config.get('ringsPerLine') ?? RINGS_PER_LINE_DEFAULT)) || RINGS_PER_LINE_DEFAULT));
         const layout = this.rings ? buildRingLayout(this.rings.order, this.rings.colorIndex, allItems.map(item => item.row)) : null;
-        const properties = this.config.getOrder();
-        const columnCount = 1 + (showRings ? 1 : 0) + properties.length;
+        const columns = this.columnsFor(mode);
+        const columnCount = 1 + (showRings ? 1 : 0) + columns.length;
 
         const table = this.rootEl.createEl('table', { cls: 'ert-timetable__table' });
+        table.toggleClass('is-gossamer', state.mode === 'gossamer');
         // Fixed widths, like Obsidian's own table: the author's saved sizes, or defaults.
         const sizes = this.columnSizes();
         const colgroup = table.createEl('colgroup');
@@ -692,40 +927,58 @@ export class TimetableView extends BasesView {
         };
         addColumn(NUMBER_COLUMN_WIDTH);
         if (showRings) addColumn(perLine * 12 + 18);
-        for (const property of properties) addColumn(sizes[property] ?? this.defaultColumnWidth(property), property);
+        for (const column of columns) {
+            if (column.kind === 'property') addColumn(sizes[column.property] ?? this.defaultColumnWidth(column.property), column.property);
+            else addColumn(MICRO_COLUMN_WIDTH);
+        }
         table.setCssProps({ '--ert-timetable-rings-per-line': String(perLine), '--ert-timetable-width': `${tableWidth}px` });
 
         const headRow = table.createEl('thead').createEl('tr');
-        // + New sketch lives in the number column's header, so it stays in reach while scrolling.
-        this.renderHeaderNewSketch(headRow.createEl('th', { cls: 'ert-timetable__num-head' }));
+        // The corner: + New sketch, the lens, and the mode the table follows. It stays in reach while scrolling.
+        this.renderCorner(headRow.createEl('th', { cls: 'ert-timetable__num-head' }), state);
         if (showRings && layout) this.renderRingsHeader(headRow.createEl('th', { cls: 'ert-timetable__rings-head' }), layout);
-        for (const property of properties) {
+        for (const column of columns) {
             const header = headRow.createEl('th', { cls: 'ert-timetable__prop-head' });
-            header.createSpan({ cls: 'ert-timetable__prop-label', text: this.config.getDisplayName(property) });
-            const handle = header.createDiv({ cls: 'ert-timetable__resize' });
-            handle.dataset.property = property;
+            if (column.kind === 'property') {
+                header.createSpan({ cls: 'ert-timetable__prop-label', text: this.config.getDisplayName(column.property) });
+                const handle = header.createDiv({ cls: 'ert-timetable__resize' });
+                handle.dataset.property = column.property;
+            } else {
+                header.addClass('is-micro');
+                header.setText(column.kind === 'gap' ? t('ui.timetable.colGap') : t('ui.timetable.colRunningTime'));
+            }
         }
 
-        const showGroupHeaders = groups.length > 1 || groups[0].label !== null;
+        const isProgress = state.mode === 'progress';
+        const showGroupHeaders = !chronologue && (groups.length > 1 || groups[0].label !== null || isProgress);
         const openDrawers = new Set<string>();
         for (const group of groups) {
             const body = table.createEl('tbody', { cls: 'ert-timetable__group' });
             const collapsed = this.collapsed.has(group.id);
             const groupBook = this.singleBook(group.items);
-            if (showGroupHeaders) this.renderGroupHeader(body, group, collapsed, columnCount, groupBook);
+            if (showGroupHeaders) this.renderGroupHeader(body, group, collapsed, columnCount, groupBook, isProgress);
             if (collapsed) continue;
             const byPath = new Map(group.items.map(item => [item.row.path, item]));
-            for (const line of withActDividers(group.items.map(item => item.row))) {
+            const lines = chronologue ? chronologue.lines : withActDividers(group.items.map(item => item.row));
+            for (const line of lines) {
                 if (line.type === 'act') {
-                    const cell = body.createEl('tr', { cls: 'ert-timetable__act' }).createEl('td');
+                    const divider = body.createEl('tr', { cls: 'ert-timetable__act' });
+                    const cell = divider.createEl('td');
                     cell.colSpan = columnCount;
                     cell.createSpan({ text: this.actLabel(line.act) });
                     this.renderNewSketchButton(cell, line.act, groupBook, this.actLabel(line.act));
+                    if (line.act !== null) this.actDividerEls.set(line.act, divider);
+                    continue;
+                }
+                if (line.type === 'day') {
+                    const cell = body.createEl('tr', { cls: 'ert-timetable__act is-day' }).createEl('td');
+                    cell.colSpan = columnCount;
+                    cell.setText(line.day ? this.formatWhen(line.day, false, chronologue?.profile ?? null) : t('ui.timetable.noWhen'));
                     continue;
                 }
                 const item = byPath.get(line.row.path);
                 if (!item) continue;
-                this.renderRow(body, item, properties, showRings ? layout : null, columnCount);
+                this.renderRow(body, item, columns, showRings ? layout : null, columnCount, mode);
                 if (item.row.kind === 'sketch' && this.drawerIsOpen(item.row.path)) {
                     this.renderDrawer(body, item, layout, columnCount);
                     openDrawers.add(item.row.path);
@@ -733,8 +986,28 @@ export class TimetableView extends BasesView {
             }
         }
         this.pruneDrawers(openDrawers);
+        this.setCurrentRow(currentNotePath());
+        this.markRing(this.ringSpotlight);
         if (scrollParent) scrollParent.scrollTop = scrollTop;
         void this.decorateFromBodies(allItems);
+    }
+
+    /** The Base's columns, plus the columns a Chronologue micro-mode adds just after When. */
+    private columnsFor(mode: ModeContext): Column[] {
+        const columns: Column[] = this.config.getOrder().map(property => ({ kind: 'property', property }));
+        if (!mode.chronologue) return columns;
+        const added: Column[] = [];
+        if (mode.state.shift) added.push({ kind: 'gap' });
+        if (mode.state.runtime) added.push({ kind: 'running' });
+        if (added.length === 0) return columns;
+        const whenIndex = columns.findIndex(column => column.kind === 'property' && this.isWhenColumn(column.property));
+        columns.splice(whenIndex + 1, 0, ...added);
+        return columns;
+    }
+
+    private isWhenColumn(property: BasesPropertyId): boolean {
+        const { type, name } = parsePropertyId(property);
+        return type === 'note' && this.isWhenProperty(name);
     }
 
     /** The one book a set of rows belongs to, if there is exactly one. */
@@ -746,10 +1019,28 @@ export class TimetableView extends BasesView {
         return id;
     }
 
-    private renderHeaderNewSketch(cell: HTMLElement): void {
-        const button = cell.createEl('button', { cls: 'ert-timetable__new-sketch ert-timetable__new-sketch--header' });
-        setIcon(button.createSpan({ cls: 'ert-timetable__new-sketch-icon' }), 'plus');
-        button.createSpan({ text: t('ui.timetable.newSketch') });
+    /** The table's control corner: + New sketch, the lens, and the mode the table follows. */
+    private renderCorner(cell: HTMLElement, state: TimelineModeState): void {
+        const corner = cell.createDiv({ cls: 'ert-timetable__corner' });
+        const add = corner.createEl('button', { cls: 'ert-timetable__new-sketch clickable-icon' });
+        add.setAttr('aria-label', t('ui.timetable.newSketch'));
+        setIcon(add, 'plus');
+        tooltip(add, t('ui.timetable.newSketch'), 'bottom');
+
+        const lensOn = currentTimelineLens()?.owner === this;
+        const lens = corner.createEl('button', { cls: 'ert-timetable__lens-toggle clickable-icon' });
+        lens.toggleClass('is-active', lensOn);
+        lens.setAttr('aria-pressed', String(lensOn));
+        lens.setAttr('aria-label', t('ui.timetable.optionLens'));
+        setIcon(lens, 'scan-eye');
+        tooltip(lens, lensOn ? t('ui.timetable.lensOn') : t('ui.timetable.lensOff'), 'bottom');
+
+        const modeButton = corner.createEl('button', { cls: 'ert-timetable__mode clickable-icon' });
+        modeButton.toggleClass('is-pinned', this.modePin !== null);
+        modeButton.setAttr('aria-haspopup', 'menu');
+        modeButton.setAttr('aria-label', this.modeTooltip(state));
+        setIcon(modeButton, modeIcon(state.mode));
+        tooltip(modeButton, this.modeTooltip(state), 'bottom');
     }
 
     /** An empty table has no header row, so + New sketch sits above the message. */
@@ -845,8 +1136,10 @@ export class TimetableView extends BasesView {
         button.dataset.bookId = shown.id;
     }
 
-    private renderGroupHeader(body: HTMLElement, group: TableGroup, collapsed: boolean, columnCount: number, bookId: string | undefined): void {
+    private renderGroupHeader(body: HTMLElement, group: TableGroup, collapsed: boolean, columnCount: number, bookId: string | undefined, progress: boolean): void {
         const row = body.createEl('tr', { cls: 'ert-timetable__group-head' });
+        this.groupHeaderEls.set(group.id, row);
+        if (typeof group.act === 'number') this.groupIdForAct.set(group.act, group.id);
         const cell = row.createEl('td');
         cell.colSpan = columnCount;
         const toggle = cell.createDiv({ cls: 'ert-timetable__group-toggle' });
@@ -854,18 +1147,37 @@ export class TimetableView extends BasesView {
         toggle.setAttr('tabindex', '0');
         toggle.setAttr('aria-expanded', String(!collapsed));
         setIcon(toggle.createSpan({ cls: 'ert-timetable__group-chevron' }), collapsed ? 'chevron-right' : 'chevron-down');
-        toggle.createSpan({ cls: 'ert-timetable__group-label', text: group.label ?? '' });
+        toggle.createSpan({ cls: 'ert-timetable__group-label', text: group.label ?? t('ui.timetable.allNotes') });
         toggle.createSpan({ cls: 'ert-timetable__group-count', text: String(group.items.length) });
         toggle.dataset.groupId = group.id;
+        // Progress: the numbers the wheel shows only as color.
+        if (progress) {
+            const stats = groupProgress(group.items, this.plugin.settings);
+            if (stats.scenes > 0) {
+                const summary = cell.createSpan({ cls: 'ert-timetable__progress' });
+                summary.createSpan({
+                    text: t('ui.timetable.progressStats', {
+                        complete: stats.complete,
+                        scenes: stats.scenes,
+                        words: stats.words.toLocaleString(getFormattingLocale()),
+                    }),
+                });
+                if (stats.overdue > 0) summary.createSpan({ cls: 'ert-timetable__progress-overdue', text: t('ui.timetable.progressOverdue', { count: stats.overdue }) });
+            }
+        }
         // An act group, or a book group in the saga table, can take a new sketch.
         if (group.act !== undefined || group.id.startsWith('book:')) this.renderNewSketchButton(cell, group.act, bookId, group.label ?? '');
     }
 
-    private renderRow(body: HTMLElement, item: TableItem, properties: BasesPropertyId[], layout: RingLayout | null, columnCount: number): void {
+    private renderRow(body: HTMLElement, item: TableItem, columns: Column[], layout: RingLayout | null, columnCount: number, mode: ModeContext): void {
         const { row, frontmatter } = item;
         const tr = body.createEl('tr', { cls: ['ert-timetable__row', `is-${row.kind === 'otherClass' ? 'other-class' : row.kind}`] });
         tr.setAttr('data-path', row.path);
         this.rowEls.set(row.path, tr);
+        this.rowItems.set(row.path, item);
+        // Gossamer: beats come forward, everything else recedes.
+        const gossamer = mode.state.mode === 'gossamer';
+        if (gossamer && row.kind !== 'beat') tr.addClass('is-receded');
         this.renderNumberCell(tr.createEl('td', { cls: 'ert-timetable__num' }).createDiv({ cls: 'ert-timetable__num-inner' }), item);
 
         if (row.kind === 'beat') {
@@ -875,12 +1187,16 @@ export class TimetableView extends BasesView {
             cell.createSpan({ cls: 'ert-timetable__beat-title', text: displayName(row.basename) });
             const model = firstText(frontmatterKey(frontmatter, 'Beat Model'));
             if (model) cell.createSpan({ cls: 'ert-timetable__beat-model', text: model });
-            const purpose = readBeatPurpose(frontmatter ?? null);
+            const score = gossamer ? this.renderGossamerScore(cell, frontmatter) : null;
+            // In Gossamer, the score's justification says more than the beat's Purpose.
+            const purpose = score?.justification ?? readBeatPurpose(frontmatter ?? null);
             if (purpose) cell.createSpan({ cls: 'ert-timetable__beat-purpose', text: purpose });
         } else {
             if (layout) this.renderRingsCell(tr.createEl('td', { cls: 'ert-timetable__rings' }), row, layout);
-            for (const property of properties) {
-                this.renderValueCell(tr.createEl('td'), item, property);
+            for (const column of columns) {
+                const cell = tr.createEl('td');
+                if (column.kind === 'property') this.renderValueCell(cell, item, column.property, mode);
+                else this.renderMicroCell(cell, row, column.kind, mode.chronologue);
             }
         }
     }
@@ -966,7 +1282,44 @@ export class TimetableView extends BasesView {
         tooltip(grid, text, 'right');
     }
 
-    private renderValueCell(cell: HTMLElement, item: TableItem, property: BasesPropertyId): void {
+    /** Shift's gap since the previous dated row, or Runtime's running time. */
+    private renderMicroCell(cell: HTMLElement, row: TimetableRow, kind: 'gap' | 'running', chronologue: ChronologueContext | null): void {
+        cell.addClass('ert-timetable__micro');
+        if (!chronologue) return;
+        if (kind === 'gap') {
+            const gap = chronologue.gap.get(row.path);
+            if (typeof gap !== 'number') return;
+            const text = chronologue.profile ? formatElapsedTimePlanetary(gap, chronologue.profile) : formatElapsedTime(gap);
+            cell.setText(`+${text}`);
+            return;
+        }
+        const total = chronologue.running.get(row.path);
+        if (row.kind === 'scene' && typeof total === 'number' && total > 0) cell.setText(formatRuntimeValue(total));
+    }
+
+    /** Gossamer: a beat's latest score for the selected signal, its change, and its expected range. */
+    private renderGossamerScore(cell: HTMLElement, frontmatter: Record<string, unknown> | undefined): { justification?: string } | null {
+        const badge = cell.createSpan({ cls: 'ert-timetable__gossamer' });
+        const latest = latestGossamerScore(frontmatter ?? {}, this.plugin.gossamerSelectedSignal);
+        if (!latest) {
+            badge.addClass('is-empty');
+            badge.setText(t('ui.timetable.gossamerNotScored'));
+            return null;
+        }
+        badge.createSpan({ cls: 'ert-timetable__gossamer-score', text: String(latest.score) });
+        if (latest.previous !== undefined && latest.previous !== latest.score) {
+            const delta = latest.score - latest.previous;
+            badge.createSpan({ cls: ['ert-timetable__gossamer-delta', delta > 0 ? 'is-up' : 'is-down'], text: `${delta > 0 ? '+' : '−'}${Math.abs(delta)}` });
+        }
+        const range = parseRange(firstText(frontmatterKey(frontmatter, 'Range')));
+        if (range) {
+            badge.createSpan({ cls: 'ert-timetable__gossamer-range', text: t('ui.timetable.gossamerRange', { min: range.min, max: range.max }) });
+            badge.toggleClass('is-out-of-range', !isScoreInRange(latest.score, range));
+        }
+        return latest;
+    }
+
+    private renderValueCell(cell: HTMLElement, item: TableItem, property: BasesPropertyId, mode: ModeContext): void {
         const { entry, frontmatter, row } = item;
         const { type, name } = parsePropertyId(property);
         if (type === 'file' && name === 'name') {
@@ -979,7 +1332,7 @@ export class TimetableView extends BasesView {
             const text = typeof raw === 'string' ? raw.trim() : '';
             const when = text ? parseWhenField(text) : null;
             cell.addClass('ert-timetable__when');
-            cell.setText(when ? formatSceneWhen(when, whenTextHasClock(text)) : text);
+            cell.setText(when ? this.formatWhen(when, whenTextHasClock(text), mode.chronologue?.profile ?? null) : text);
             return;
         }
         const value = entry.getValue(property);
@@ -992,6 +1345,12 @@ export class TimetableView extends BasesView {
             cell.addClass('ert-timetable__pick');
             cell.dataset.pick = canonical;
             setIcon(cell.createSpan({ cls: 'ert-timetable__pick-icon' }), 'chevron-down');
+        }
+        // Progress: an overdue scene's Due stands out.
+        if (mode.state.mode === 'progress' && canonical === 'Due' && row.kind === 'scene') {
+            const due = frontmatterKey(frontmatter, name);
+            const complete = normalizeStatus(frontmatterKey(frontmatter, 'Status')) === 'Completed';
+            cell.toggleClass('is-overdue', !complete && typeof due === 'string' && isOverdueDateString(due));
         }
         // A sketch without a Synopsis shows its first line of text instead.
         if (empty && row.kind === 'sketch' && canonical === 'Synopsis') {

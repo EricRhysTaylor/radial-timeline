@@ -17,6 +17,10 @@ import { frontmatterValueToText, getActiveFrontmatterMappings, normalizeFrontmat
 import { comparePrefixTokens, extractPrefixToken } from '../utils/prefixOrder';
 import { isStoryBeat } from '../utils/sceneHelpers';
 import { getFillForScene } from '../renderer/utils/SceneFill';
+import { isOverdueDateString, parseWhenField } from '../utils/date';
+import { normalizeStatus } from '../utils/text';
+import { whenTextHasClock } from '../utils/whenFormat';
+import { parseRuntimeField } from '../utils/runtimeEstimator';
 
 /**
  * - `scene`: on the wheel.
@@ -107,10 +111,11 @@ export function compareManuscriptRows(a: TimetableRow, b: TimetableRow): number 
     return a.basename.localeCompare(b.basename, undefined, { numeric: true, sensitivity: 'base' });
 }
 
-/** A row, or the act divider drawn before the first row of a new act inside a group. */
+/** A row, or a divider drawn before the first row of a new act (or, in Chronologue order, a new day). */
 export type TimetableLine =
     | { type: 'row'; row: TimetableRow }
-    | { type: 'act'; act: number | null };
+    | { type: 'act'; act: number | null }
+    | { type: 'day'; day: Date | null };
 
 /**
  * Insert act dividers between rows when a group spans more than one act.
@@ -181,4 +186,102 @@ export function sceneNumberFill(
         due: typeof fm.Due === 'string' ? fm.Due : undefined,
     };
     return getFillForScene(item, settings.publishStageColors).replace(/url\(#plaid/g, `url(#${patternIdPrefix}plaid`);
+}
+
+
+// ── Chronologue ────────────────────────────────────────────────────────
+
+/** A note's When, read the way the timeline reads it, and whether the YAML names a clock time. */
+export function readWhen(
+    rawFrontmatter: Record<string, unknown> | undefined,
+    settings: RadialTimelineSettings
+): { when: Date | null; hasClock: boolean } {
+    const fm = rawFrontmatter ? normalizeFrontmatterKeys(rawFrontmatter, getActiveFrontmatterMappings(settings)) : {};
+    const raw = fm.When;
+    if (typeof raw !== 'string' || raw.trim() === '') return { when: null, hasClock: false };
+    return { when: parseWhenField(raw.trim()), hasClock: whenTextHasClock(raw) };
+}
+
+/** Story order: When first (notes without one last), then manuscript order. */
+export function compareChronologicalRows(
+    a: { row: TimetableRow; when: Date | null },
+    b: { row: TimetableRow; when: Date | null }
+): number {
+    if (a.when && b.when && a.when.getTime() !== b.when.getTime()) return a.when.getTime() - b.when.getTime();
+    if (a.when && !b.when) return -1;
+    if (!a.when && b.when) return 1;
+    return compareManuscriptRows(a.row, b.row);
+}
+
+/** Day dividers between rows in story order: one before the first row of each new day. */
+export function withDayDividers(items: Array<{ row: TimetableRow; when: Date | null }>): TimetableLine[] {
+    const lines: TimetableLine[] = [];
+    let currentDay: string | undefined;
+    for (const item of items) {
+        const day = item.when ? `${item.when.getFullYear()}-${item.when.getMonth()}-${item.when.getDate()}` : '';
+        if (day !== currentDay) {
+            lines.push({ type: 'day', day: item.when });
+            currentDay = day;
+        }
+        lines.push({ type: 'row', row: item.row });
+    }
+    return lines;
+}
+
+/** Shift: milliseconds since the previous dated row, or null where either date is unknown. */
+export function elapsedSincePrevious(whens: Array<Date | null>): Array<number | null> {
+    let previous: Date | null = null;
+    return whens.map(when => {
+        const gap = when && previous ? when.getTime() - previous.getTime() : null;
+        if (when) previous = when;
+        return gap;
+    });
+}
+
+/** Runtime: a scene's Runtime in seconds, read the way the timeline's Runtime overlay reads it. */
+export function readRuntimeSeconds(
+    rawFrontmatter: Record<string, unknown> | undefined,
+    settings: RadialTimelineSettings
+): number | null {
+    const fm = rawFrontmatter ? normalizeFrontmatterKeys(rawFrontmatter, getActiveFrontmatterMappings(settings)) : {};
+    const raw = fm.Runtime;
+    return typeof raw === 'string' || typeof raw === 'number' ? parseRuntimeField(raw) : null;
+}
+
+/** Runtime: the running total through each row (rows without a Runtime add nothing). */
+export function runningTotals(seconds: Array<number | null>): number[] {
+    let total = 0;
+    return seconds.map(value => {
+        total += value !== null && value > 0 ? value : 0;
+        return total;
+    });
+}
+
+// ── Progress ───────────────────────────────────────────────────────────
+
+export interface GroupProgress {
+    scenes: number;
+    complete: number;
+    words: number;
+    overdue: number;
+}
+
+/** Progress: scenes, how many are complete, their words, and how many are overdue. Only scenes count. */
+export function groupProgress(
+    items: Array<{ row: TimetableRow; frontmatter: Record<string, unknown> | undefined }>,
+    settings: RadialTimelineSettings
+): GroupProgress {
+    const progress: GroupProgress = { scenes: 0, complete: 0, words: 0, overdue: 0 };
+    const mappings = getActiveFrontmatterMappings(settings);
+    for (const { row, frontmatter } of items) {
+        if (row.kind !== 'scene') continue;
+        const fm = frontmatter ? normalizeFrontmatterKeys(frontmatter, mappings) : {};
+        progress.scenes += 1;
+        const status = normalizeStatus(fm.Status);
+        if (status === 'Completed') progress.complete += 1;
+        const words = Number(fm.Words);
+        if (Number.isFinite(words) && words > 0) progress.words += words;
+        if (status !== 'Completed' && typeof fm.Due === 'string' && isOverdueDateString(fm.Due)) progress.overdue += 1;
+    }
+    return progress;
 }

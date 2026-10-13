@@ -28,7 +28,7 @@ export function renderActLabels(params: {
         M ${formatNumber(actLabelRadius * Math.cos(startAngleAct))} ${formatNumber(actLabelRadius * Math.sin(startAngleAct))}
         A ${formatNumber(actLabelRadius)} ${formatNumber(actLabelRadius)} 0 0 1 ${formatNumber(actLabelRadius * Math.cos(endAngleAct))} ${formatNumber(actLabelRadius * Math.sin(endAngleAct))}
       " fill="none" />
-      <text class="rt-act-label" fill="${maxStageColor}">
+      <text class="rt-act-label" data-act="${act}" fill="${maxStageColor}">
         <textPath href="#${actPathId}" startOffset="0" text-anchor="start">${labelText}</textPath>
       </text>
     `;

@@ -3,6 +3,7 @@ import type RadialTimelinePlugin from '../main';
 import type { SceneHighlighter } from './SceneHighlighter';
 import { bindToAllDocuments } from '../utils/documents';
 import { leafForTabHeader } from '../utils/obsidianInternals';
+import { publishCurrentNote } from '../timetable/timetableRegistry';
 
 /**
  * Hovering a scene note in the file explorer, or its tab header, lights that
@@ -27,6 +28,8 @@ export class HoverHighlighter {
         bindToAllDocuments(this.plugin, (doc) => this.registerHoverListeners(doc));
 
         this.plugin.registerEvent(this.app.workspace.on('file-open', (file) => {
+            // Open Timetables mark the open note's row.
+            publishCurrentNote(file?.path ?? null);
             if (!file || !this.plugin.isSceneFile(file.path)) return;
             this.plugin.openScenePaths.add(file.path);
             this.plugin.refreshTimelineIfNeeded(null);

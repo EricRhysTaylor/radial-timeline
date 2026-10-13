@@ -61,6 +61,8 @@ import type { GossamerRunRecord } from '../utils/gossamer';
 import { GOSSAMER_SIGNAL_METADATA, GOSSAMER_SIGNAL_TYPES, type GossamerSignalType } from '../types/gossamerSignals';
 import { formatGossamerCacheClock, formatGossamerCacheCostHint, getGossamerCacheContext, resolveGossamerCacheWindow } from '../gossamer/cacheWindow';
 import { tooltip as applyTooltip } from '../utils/tooltip';
+import { currentTimelineLens, hasOpenTimetable, onTimelineLensChange, onTimetablePresenceChange, publishTimelineMode } from '../timetable/timetableRegistry';
+import { applyLensToSvg, linkActLabelsToTimetable } from './interactions/TimetableLink';
 
 // Duplicate of constants defined in main for now. We can consolidate later.
 export const TIMELINE_VIEW_TYPE = "radial-timeline";
@@ -259,6 +261,51 @@ export class RadialTimelineView extends ItemView {
         this._currentMode = mode;
         this.updateTimelineLegend();
         this.syncModeNav();
+        this.publishModeToTimetables();
+    }
+
+    /** Open Timetables follow the timeline's mode and Chronologue micro-modes. */
+    private publishModeToTimetables(): void {
+        publishTimelineMode({
+            mode: this._currentMode,
+            shift: this.chronologueState.shift,
+            alt: this.chronologueState.alien,
+            runtime: this.chronologueState.runtime,
+        });
+    }
+
+    private lensPillEl: HTMLElement | null = null;
+
+    /**
+     * A Timetable's lens: dim every scene outside its rows, and show a pill
+     * naming the table, with a button that turns the lens off at its source.
+     */
+    private applyTimetableLens(): void {
+        const lens = currentTimelineLens();
+        const svg = this.contentEl.querySelector('.radial-timeline-svg');
+        if (svg) {
+            applyLensToSvg(svg, lens);
+            // Act labels link to an open Timetable; only then do they look clickable.
+            svg.classList.toggle('rt-timetable-linked', hasOpenTimetable());
+        }
+        if (!lens) {
+            this.lensPillEl?.remove();
+            this.lensPillEl = null;
+            return;
+        }
+        const container = this.contentEl.querySelector<HTMLElement>('.radial-timeline-container');
+        if (!container) return;
+        if (!this.lensPillEl || !this.lensPillEl.isConnected) {
+            const pill = container.createDiv({ cls: 'ert-timeline-lens' });
+            setIcon(pill.createSpan({ cls: 'ert-timeline-lens__icon' }), 'scan-eye');
+            pill.createSpan({ cls: 'ert-timeline-lens__label' });
+            const close = pill.createEl('button', { cls: 'ert-timeline-lens__close clickable-icon' });
+            close.setAttribute('aria-label', t('ui.timetable.lensClose'));
+            setIcon(close, 'x');
+            this.renderScope.registerDomEvent(close, 'click', () => currentTimelineLens()?.turnOff());
+            this.lensPillEl = pill;
+        }
+        this.lensPillEl.querySelector('.ert-timeline-lens__label')?.setText(t('ui.timetable.lensPill', { view: lens.label, count: lens.paths.size }));
     }
 
     /**
@@ -968,6 +1015,7 @@ export class RadialTimelineView extends ItemView {
 
     /** Hide the Chronologue sub-nav and clear its active states. */
     public hideChronologueSubNav(): void {
+        this.publishModeToTimetables();
         const el = this.chronologueSubNavEl;
         if (el) el.hidden = true;
         const btns = this.chronologueSubNavBtns;
@@ -984,6 +1032,7 @@ export class RadialTimelineView extends ItemView {
      * CapsLock / Alt), the in-view keycaps, or these header chips alike.
      */
     public syncChronologueSubNav(state: { shift: boolean; alt: boolean; runtime: boolean }): void {
+        this.publishModeToTimetables();
         const btns = this.chronologueSubNavBtns;
         if (!btns) return;
         const apply = (btn: HTMLButtonElement, active: boolean) => {
@@ -2938,6 +2987,9 @@ export class RadialTimelineView extends ItemView {
     
     async onOpen(): Promise<void> {
         this.contentEl.addClass('radial-timeline-view');
+        this.publishModeToTimetables();
+        this.register(onTimelineLensChange(() => this.applyTimetableLens()));
+        this.register(onTimetablePresenceChange(() => this.applyTimetableLens()));
         this.syncBookHeader();
         await this.plugin.maybeShowReleaseNotesModal();
         
@@ -3183,6 +3235,10 @@ export class RadialTimelineView extends ItemView {
 
                 // Attach subplot ring key overlay (hover trigger / pin / hold Shift)
                 setupSubplotKeyController(this, svgElement, timelineContainer);
+
+                // Timetable: act labels show their part of the table; a Timetable lens dims scenes outside its rows.
+                linkActLabelsToTimetable(this, svgElement);
+                this.applyTimetableLens();
 
                 // Hold Shift (Narrative): beat labels show their In This Book names
                 setupBeatNameKeyController(this, timelineContainer);

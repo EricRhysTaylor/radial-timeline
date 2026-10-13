@@ -3,25 +3,78 @@
  * Copyright (c) 2025 Eric Rhys Taylor
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  *
- * Every open Timetable, so the plugin and the timeline can reach them: a book
- * switch or a color change redraws them, and hovering a scene on the wheel
- * lights up its row.
+ * The meeting point of the timeline and the Timetable
+ * ----------------------------------------------------
+ * Each view publishes what the other needs and subscribes to what it offers.
+ * - The timeline publishes its mode and Chronologue micro-modes; Timetables
+ *   follow them.
+ * - The open note, a ring the subplot key spotlights, and an act label click
+ *   reach every open Timetable.
+ * - A Timetable with its lens on publishes its rows; the timeline dims every
+ *   scene that isn't among them.
+ * Dependency-free on purpose, so both sides can import it without a cycle.
  */
 
 export interface LiveTimetable {
     refresh(): void;
-    /** Light up the row for this note (scrolling it into view), or clear it with null. */
+    /** The wheel is hovering this scene (or nothing): light up its row. */
     markLinkedRow(path: string | null): void;
+    /** This note is open in an editor (or none is): mark its row. */
+    markCurrentNote(path: string | null): void;
+    /** The subplot key spotlights this ring (or none): dim rows outside it. */
+    markRing(subplot: string | null): void;
+    /** An act label (or, in saga scope, a book label) was clicked: show that part of the table. */
+    revealSegment(index: number): void;
+}
+
+/** The timeline's mode, and Chronologue's micro-modes (each false outside Chronologue). */
+export interface TimelineModeState {
+    mode: string;
+    shift: boolean;
+    alt: boolean;
+    runtime: boolean;
+}
+
+/** A Timetable's rows, lighting up the timeline. */
+export interface TimelineLens {
+    /** The Timetable that owns the lens. */
+    owner: object;
+    paths: Set<string>;
+    /** The Timetable view's name, shown on the timeline's lens pill. */
+    label: string;
+    /** Turn the lens off at its source (the pill's close button). */
+    turnOff: () => void;
 }
 
 const liveTimetables = new Set<LiveTimetable>();
+let timelineMode: TimelineModeState | null = null;
+let currentNote: string | null = null;
+let lens: TimelineLens | null = null;
+const lensListeners = new Set<() => void>();
+
+const presenceListeners = new Set<() => void>();
 
 export function trackTimetable(view: LiveTimetable): () => void {
     liveTimetables.add(view);
-    return () => { liveTimetables.delete(view); };
+    presenceListeners.forEach(listener => listener());
+    return () => {
+        liveTimetables.delete(view);
+        presenceListeners.forEach(listener => listener());
+    };
 }
 
-/** Redraw every open Timetable (after a book switch or a color change). */
+/** True while at least one Timetable is open (the timeline's act labels then link to it). */
+export function hasOpenTimetable(): boolean {
+    return liveTimetables.size > 0;
+}
+
+/** The timeline hears when Timetables open or close. */
+export function onTimetablePresenceChange(listener: () => void): () => void {
+    presenceListeners.add(listener);
+    return () => { presenceListeners.delete(listener); };
+}
+
+/** Redraw every open Timetable (after a book switch, a mode change or a color change). */
 export function refreshTimetableViews(): void {
     liveTimetables.forEach(view => view.refresh());
 }
@@ -29,4 +82,78 @@ export function refreshTimetableViews(): void {
 /** The wheel is hovering this scene (or nothing): light up its row in every open Timetable. */
 export function markTimetableRows(path: string | null): void {
     liveTimetables.forEach(view => view.markLinkedRow(path));
+}
+
+// ── Mode ────────────────────────────────────────────────────────────────
+
+/** The timeline's current mode, or null before any timeline has opened. */
+export function currentTimelineMode(): TimelineModeState | null {
+    return timelineMode;
+}
+
+/** Called by the timeline whenever its mode or a Chronologue micro-mode changes. */
+export function publishTimelineMode(state: TimelineModeState): void {
+    const next = state.mode === 'chronologue' ? state : { mode: state.mode, shift: false, alt: false, runtime: false };
+    if (timelineMode
+        && timelineMode.mode === next.mode
+        && timelineMode.shift === next.shift
+        && timelineMode.alt === next.alt
+        && timelineMode.runtime === next.runtime) return;
+    timelineMode = next;
+    refreshTimetableViews();
+}
+
+// ── Open note, rings, act labels ────────────────────────────────────────
+
+export function currentNotePath(): string | null {
+    return currentNote;
+}
+
+/** A note was opened in an editor (or the last one closed). */
+export function publishCurrentNote(path: string | null): void {
+    if (path === currentNote) return;
+    currentNote = path;
+    liveTimetables.forEach(view => view.markCurrentNote(path));
+}
+
+/** The subplot key spotlights a ring (or none). */
+export function markTimetableRing(subplot: string | null): void {
+    liveTimetables.forEach(view => view.markRing(subplot));
+}
+
+/** An act label (a book label in saga scope) was clicked on the timeline. */
+export function revealTimetableSegment(index: number): void {
+    liveTimetables.forEach(view => view.revealSegment(index));
+}
+
+// ── Lens ────────────────────────────────────────────────────────────────
+
+export function currentTimelineLens(): TimelineLens | null {
+    return lens;
+}
+
+/** A Timetable turns its lens on, or its rows changed. The newest lens wins. */
+export function setTimelineLens(next: TimelineLens): void {
+    if (lens && lens.owner === next.owner && lens.label === next.label && sameSet(lens.paths, next.paths)) return;
+    lens = next;
+    lensListeners.forEach(listener => listener());
+}
+
+/** A Timetable turns its lens off (or closes). Only the owner can clear its lens. */
+export function clearTimelineLens(owner: object): void {
+    if (!lens || lens.owner !== owner) return;
+    lens = null;
+    lensListeners.forEach(listener => listener());
+}
+
+/** The timeline redraws its lens whenever it changes. */
+export function onTimelineLensChange(listener: () => void): () => void {
+    lensListeners.add(listener);
+    return () => { lensListeners.delete(listener); };
+}
+
+function sameSet(a: Set<string>, b: Set<string>): boolean {
+    if (a.size !== b.size) return false;
+    for (const value of a) if (!b.has(value)) return false;
+    return true;
 }

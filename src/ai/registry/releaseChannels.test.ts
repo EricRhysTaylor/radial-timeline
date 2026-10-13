@@ -30,7 +30,7 @@ describe('release channel curation', () => {
         const picker = getPickerModelsForProvider(BUILTIN_MODELS, 'google').map(model => model.alias);
         // Order is not pinned — only that both lanes appear.
         expect(picker).toHaveLength(2);
-        expect(picker).toContain('gemini-3.1-pro-preview');
+        expect(picker).toContain('gemini-4-argon');
         expect(picker).toContain('gemini-3.8-flash');
     });
 

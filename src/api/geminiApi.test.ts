@@ -128,7 +128,7 @@ describe('gemini grounding citation extraction', () => {
 
         const response = await callGeminiApi(
             'test-key',
-            'gemini-3.1-pro-preview',
+            'gemini-4-argon',
             null,
             'Summarize the manuscript.',
             1024,

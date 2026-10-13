@@ -1,0 +1,144 @@
+{
+  "provider": "google",
+  "modelId": "gemini-4-argon",
+  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault AI Certification",
+  "book": "Pride & Prejudice",
+  "generatedAt": "2026-10-13T19:48:03.143Z",
+  "cases": [
+    {
+      "id": "pulse:16 Wickham's Story",
+      "feature": "pulse",
+      "durationMs": 13112,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 11438,
+        "outputTokens": 980,
+        "totalTokens": 12418
+      },
+      "costUSD": 0.032676,
+      "sample": {
+        "previousSceneAnalysis": "- 15 The Street Encounter + / Darcy and Wickham's tense glare hooks reader curiosity immediately.\n- Supper Invitation + / Mrs. Philips's party directly sets the stage for Scene 16.\n- Collins Targets Elizabeth + / Establishes the comedic subplot and romantic foil to Wickham.\n- Collins Backstory - / Opening exposition dumps character history, slowing early scene momentum.",
+        "currentSceneAnalysis": "- 16 B / Great romantic tension, but trim Wickham's lengthy monologues to keep dialogue pacing snappy.\n- Confirmation Bias + / Wickham's slander exploits Elizabeth's prejudice, deepening central romantic conflict.\n- De Bourgh Connection + / Linking Lady Catherine to Darcy cleverly weaves subplots together.\n- Foil Contrast + / Collins's pompousness highlights Wickham's charm, raising Elizabeth's emotional stakes.\n- Expository Dialogue - / Wickham's backstory blocks feel static; needs more physical party interruptions.",
+        "nextSceneAnalysis": "- 17 Sisterly Debrief + / Debating Wickham's truth with Jane cements Elizabeth's emotional investment.\n- Netherfield Ball Setup + / Bingley's invitation promises an imminent, high-stakes showdown with Darcy.\n- The Dance Trap + / Collins claiming Elizabeth's dances thwarts her Wickham plans, adding tension.\n- Rainy Delay ? / Weather summary stalls action slightly, though it builds anticipation.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:30 Bingley Returns",
+      "feature": "pulse",
+      "durationMs": 12693,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 9738,
+        "outputTokens": 1007,
+        "totalTokens": 10745
+      },
+      "costUSD": 0.029546000000000003,
+      "sample": {
+        "previousSceneAnalysis": "- 29 Lady Catherine's Dominance + / Establishes the oppressive social dynamics repeated throughout Scene 30.\n- Darcy Family Resemblance + / Elizabeth noticing Darcy's traits in his aunt foreshadows his arrival.\n- Sir William's Awe ? / Sets up his satisfied departure, though his subplot lacks stakes.\n- Miss de Bourgh's Frailty + / Contrasts with Elizabeth's vitality, fueling later observations about Darcy's betrothal.",
+        "currentSceneAnalysis": "- 30 B / Trim the repetitive Hunsford routine exposition to reach Darcy's arrival faster.\n- Charlotte's Domestic Strategy + / Subtle room-choice detail brilliantly shows how Charlotte manages her marriage.\n- The Sheltered Path + / Establishes Elizabeth's solitary walk, crucial setting for future romantic confrontations.\n- Darcy's Sudden Arrival + / Injects immediate romantic tension and rescues the sagging middle-act pacing.\n- The London Probe + / Elizabeth's pointed question about Jane creates great subtext and awkwardness.",
+        "nextSceneAnalysis": "- 31 Fitzwilliam's Charm + / Develops his pleasant introduction into a lively, triangular dynamic.\n- Piano Banter + / Escalates the stiff parsonage reunion into overtly flirtatious verbal sparring.\n- Testing the Betrothal + / Pays off Elizabeth's curiosity from Scene 30 regarding Darcy and Anne.\n- Darcy's Shame + / Contrasts Lady Catherine's meddling in Scene 30 with Darcy's embarrassment.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:44 Invitation and Visit",
+      "feature": "pulse",
+      "durationMs": 15682,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 14613,
+        "outputTokens": 1141,
+        "totalTokens": 15754
+      },
+      "costUSD": 0.040636,
+      "sample": {
+        "previousSceneAnalysis": "- 43 Georgiana Introduction + / Darcy's surprising request directly triggers the current scene's morning visit.\n- Darcy's Altered Manners + / His unexpected civility establishes the emotional mystery Elizabeth now analyzes.\n- Gardiners' Shifting View + / Their initial favorable impression prepares them to spot Darcy's love.\n- Wickham's True Character + / Elizabeth's guarded reveal about Wickham gets confirmed by Lambton locals.\n- Fishing Invitation + / The casual fishing offer becomes a concrete social engagement here.",
+        "currentSceneAnalysis": "- 44 B / Strong emotional pivot, but trim repetitive internal monologue to sharpen dramatic tension.\n- Urgent Morning Call + / Darcy arriving a day early heightens romantic urgency and stakes.\n- Georgiana's Shyness + / Subverting expectations of pride with shyness softens the Darcy faction.\n- Bingley's Lingering Regret + / Subtext in Bingley's exact memory revitalizes the Jane subplot effectively.\n- Gratitude to Love + / Crucial character arc beat where Elizabeth's hostility fully dissolves.\n- Telling Over Showing - / Summarizing the visit and local gossip slows the narrative momentum.",
+        "nextSceneAnalysis": "- 45 Reciprocal Pemberley Visit + / Executes the polite morning call planned at the chapter's end.\n- Miss Bingley's Jealousy + / Contrasts Darcy's warm inn visit with his circle's cold hostility.\n- Georgiana's Timidity + / Reinforces her shyness when Miss Bingley's Wickham barb causes distress.\n- Riverside Fishing + / Follows through on the men's fishing engagement to separate characters.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "gossamer:momentum",
+      "feature": "gossamer",
+      "durationMs": 21006,
+      "passed": true,
+      "summary": "All 15 beats scored and validated (61 scenes, 121693 words).",
+      "usage": {
+        "inputTokens": 166592,
+        "outputTokens": 1325,
+        "totalTokens": 167917
+      },
+      "costUSD": 0.34643399999999996,
+      "sample": [
+        {
+          "beatName": "Opening Image",
+          "signal": "momentum",
+          "score": 55,
+          "justification": "Brisk, witty dialogue immediately establishes the central marriage goal and the arrival of a wealthy newcomer, creating steady forward pull."
+        },
+        {
+          "beatName": "Theme Stated",
+          "signal": "momentum",
+          "score": 25,
+          "justification": "After a brief discussion of impressions with Jane, the chapter slows into extended, static exposition detailing the Bingleys' background and Darcy's character."
+        },
+        {
+          "beatName": "Setup",
+          "signal": "momentum",
+          "score": 50,
+          "justification": "Parlor conversations advance the social dynamics and character oppositions steadily, ending with the minor urgency of Jane's worsening illness."
+        }
+      ]
+    },
+    {
+      "id": "inquiry:setup-core",
+      "feature": "inquiry",
+      "durationMs": 74660,
+      "passed": true,
+      "summary": "Inquiry returned 17 finding(s) over 61 scenes; verdict and refs passed the production result builder.",
+      "usage": {
+        "inputTokens": 170305,
+        "outputTokens": 7397,
+        "totalTokens": 177702,
+        "cacheReadInputTokens": 168256
+      },
+      "costUSD": 0.0948936,
+      "sample": {
+        "verdict": {
+          "flow": 0.96,
+          "depth": 0.98
+        },
+        "summary": "For the narrative to maintain its brisk timing and escalating pressure, key socio-economic and historical conditions—such as the legal entail of Longbourn in Scene 7 (7 Jane Falls Ill.md), the long-standing Darcy-Wickham backstory revealed in Scene 35 (35 Darcy's Letter.md), and the failed failure-to-produce-a-son economy in Scene 50 (50 Mr Bennet's Regrets.md)—must already be fixed in place before the opening chapter. These pre-existing pressures compress the characters' choices, allowing scenes like Scene 1 (1 Bingley Arrives.md), Scene 13 (13 Collins Arrives.md), and Scene 46 (46 Jane's Letters.md) to generate immediate momentum without slowing for heavy exposition.",
+        "firstFinding": {
+          "refId": "scn_a25045e5",
+          "kind": "strength",
+          "headline": "Pre-existing marital mismatch and patriarchal visiting rules immediately drive the opening scene's momentum.",
+          "bullets": [
+            "Twenty-three years of marriage have already fixed Mr. Bennet's sarcastic reserve and Mrs. Bennet's single-minded focus on marrying off her five daughters.",
+            "Regency social etiquette—requiring the father of the family to call on a male newcomer before the women can be introduced—must already hold true as an unbreakable social contract to create the opening conflict."
+          ],
+          "subject": "Social etiquette and family dynamics",
+          "span": "S1",
+          "related": [],
+          "supportingRefs": [
+            {
+              "refId": "scn_a25045e5",
+              "refLabel": "1 Bingley Arrives.md",
+              "refPath": "Pride & Prejudice/1 Bingley Arrives.md",
+              "quote": "Mr. Bennet was so odd a mixture of quick parts, sarcastic humour, reserve, and caprice, that the experience of three-and-twenty years had been insufficient to make his wife understand his character."
+            }
+          ],
+          "evidenceType": "mixed",
+          "lens": "both",
+          "role": "target",
+          "evidenceQuote": "Indeed you must go, for it will be impossible for _us_ to visit him, if you do not."
+        }
+      }
+    }
+  ]
+}

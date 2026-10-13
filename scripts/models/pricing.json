@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T18:00:00.000Z",
+  "generatedAt": "2026-10-13T18:00:00.000Z",
   "models": [
     {
       "provider": "anthropic",
@@ -109,18 +109,18 @@
     },
     {
       "provider": "google",
-      "modelId": "gemini-3.1-pro-preview",
+      "modelId": "gemini-4-argon",
       "inputPer1M": 2,
-      "outputPer1M": 12,
-      "cacheReadPer1M": 0.2,
-      "cacheStoragePer1MPerHour": 4.5,
-      "longContext": {
-        "thresholdInputTokens": 200000,
-        "inputPer1M": 4,
-        "outputPer1M": 18,
-        "cacheReadPer1M": 0.4
+      "outputPer1M": 10,
+      "cacheReadPer1M": 0.1,
+      "promo": {
+        "label": "Launch pricing through Nov 30, 2026",
+        "expiresAt": "2026-12-01T00:00:00Z",
+        "standardInputPer1M": 4,
+        "standardOutputPer1M": 20,
+        "standardCacheReadPer1M": 0.2
       },
-      "note": "Verified against ai.google.dev/gemini-api/docs/pricing on 2026-09-05. Cache storage billed per MTok per hour."
+      "note": "Launch pricing through 2026-11-30; standard rates from 2026-12-01. Implicit caching only (no explicit cache, so no storage charge); cache read is the implicit-hit rate. No long-context tier. Verified against ai.google.dev/gemini-api/docs/pricing on 2026-10-13."
     },
     {
       "provider": "google",

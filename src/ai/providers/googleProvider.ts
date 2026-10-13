@@ -5,6 +5,7 @@ import { classifyProviderError } from '../../api/providerErrors';
 import { extractTokenUsage } from '../usage/providerUsage';
 import { getCredential } from '../credentials/credentials';
 import { splitAtCacheBreak } from '../prompts/composeEnvelope';
+import { modelSupportsExplicitCache } from '../registry/modelRequestProfiles';
 import { buildDefaultAiSettings } from '../settings/aiSettings';
 import { normalizeGeminiCacheTtlSeconds } from '../settings/cacheWindows';
 import { validateAiSettings } from '../settings/validateAiSettings';
@@ -46,8 +47,16 @@ export class GoogleProvider implements AIProvider {
     private deriveCacheResult(
         responseData: unknown,
         cachedContentName: string | undefined,
-        clientCacheStatus: ProviderExecutionResult['cacheStatus']
+        clientCacheStatus: ProviderExecutionResult['cacheStatus'],
+        implicitCache: boolean
     ): Pick<ProviderExecutionResult, 'cacheUsed' | 'cacheStatus'> {
+        if (implicitCache) {
+            // Implicit-only models (Gemini 4 Argon): RT created nothing, so
+            // a reported cachedContentTokenCount IS provider proof of reuse
+            // of an earlier request's prefix.
+            const read = extractTokenUsage('google', responseData)?.cacheReadInputTokens ?? 0; // SAFE: an absent counter means no cached read
+            return read > 0 ? { cacheUsed: true, cacheStatus: 'hit' } : { cacheUsed: false };
+        }
         if (!cachedContentName) return {};
         if (clientCacheStatus === 'hit') {
             // True reuse: a prior valid resource was found and reused.
@@ -112,7 +121,7 @@ export class GoogleProvider implements AIProvider {
         apiKey: string,
         ttlSetting: number | undefined
     ): Promise<
-        | { userPrompt: string; cachedContentName?: string; cacheStatus?: ProviderExecutionResult['cacheStatus']; cacheExpiresAt?: number }
+        | { userPrompt: string; cachedContentName?: string; cacheStatus?: ProviderExecutionResult['cacheStatus']; cacheExpiresAt?: number; implicitCache?: boolean }
         | { failure: ProviderExecutionResult }
     > {
         const split = splitAtCacheBreak(req.userPrompt);
@@ -120,6 +129,11 @@ export class GoogleProvider implements AIProvider {
         const uncachedPrompt = split.volatile ? `${split.stable}\n\n${split.volatile}` : split.stable;
         if (req.citationsEnabled || req.bypassProviderReuse || !split.stable) {
             return { userPrompt: uncachedPrompt };
+        }
+        // No cachedContents on this model: the stable prefix leads the
+        // prompt, so the provider's implicit cache can match it across runs.
+        if (!modelSupportsExplicitCache('google', req.modelId)) {
+            return { userPrompt: uncachedPrompt, implicitCache: true };
         }
         const ttlSeconds = normalizeGeminiCacheTtlSeconds(ttlSetting);
         try {
@@ -149,7 +163,7 @@ export class GoogleProvider implements AIProvider {
         const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings()).value;
         const prepared = await this.prepareCachedPrompt(req, apiKey, aiSettings.cacheWindows?.googleTtlSeconds);
         if ('failure' in prepared) return prepared.failure;
-        const { userPrompt, cachedContentName, cacheStatus, cacheExpiresAt } = prepared;
+        const { userPrompt, cachedContentName, cacheStatus, cacheExpiresAt, implicitCache } = prepared;
         const result = await callGeminiApi(
             apiKey,
             req.modelId,
@@ -165,7 +179,7 @@ export class GoogleProvider implements AIProvider {
             req.requestControl
         );
         const classification = classifyProviderError(result);
-        const cacheResult = this.deriveCacheResult(result.responseData, cachedContentName, cacheStatus);
+        const cacheResult = this.deriveCacheResult(result.responseData, cachedContentName, cacheStatus, implicitCache === true);
         return {
             success: result.success,
             content: result.content,
@@ -191,7 +205,7 @@ export class GoogleProvider implements AIProvider {
         const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? buildDefaultAiSettings()).value;
         const prepared = await this.prepareCachedPrompt(req, apiKey, aiSettings.cacheWindows?.googleTtlSeconds);
         if ('failure' in prepared) return prepared.failure;
-        const { userPrompt, cachedContentName, cacheStatus, cacheExpiresAt } = prepared;
+        const { userPrompt, cachedContentName, cacheStatus, cacheExpiresAt, implicitCache } = prepared;
         const result = await callGeminiApi(
             apiKey,
             req.modelId,
@@ -207,7 +221,7 @@ export class GoogleProvider implements AIProvider {
             req.requestControl
         );
         const classification = classifyProviderError(result);
-        const cacheResult = this.deriveCacheResult(result.responseData, cachedContentName, cacheStatus);
+        const cacheResult = this.deriveCacheResult(result.responseData, cachedContentName, cacheStatus, implicitCache === true);
         return {
             success: result.success,
             content: result.content,

@@ -121,13 +121,20 @@ describe('BUILTIN_MODELS — Anthropic Claude Fable 5.1', () => {
 });
 
 describe('BUILTIN_MODELS — Google Gemini', () => {
-    it('declares Gemini 3.1 Pro Preview as the depth lane', () => {
-        const model = byAlias('gemini-3.1-pro-preview');
-        expect(model.status).toBe('preview');
+    it('declares Gemini 4 Argon as the depth lane', () => {
+        const model = byAlias('gemini-4-argon');
+        expect(model.status).toBe('stable');
         expect(model.tier).toBe('DEEP');
+        expect(model.line).toBe('gemini-pro');
         expect(model.contextWindow).toBe(1048576);
         expect(model.maxOutput).toBe(65536);
         expect(model.constraints?.cacheVsCitationsExclusive).toBe(true);
+        // Sampling is provider-managed; caching is implicit only (no cachedContents).
+        expect(model.constraints?.supportsTemperature).toBe(false);
+        expect(model.constraints?.supportsTopP).toBe(false);
+        expect(model.constraints?.supportsExplicitCache).toBe(false);
+        // No releasedAt, so Gemini 3.8 Flash stays the Google latest-stable default.
+        expect(model.releasedAt).toBeUndefined();
     });
 
     it('declares Gemini 3.8 Flash as the stable/speed lane', () => {
@@ -146,9 +153,10 @@ describe('BUILTIN_MODELS — Google Gemini', () => {
 describe('BUILTIN_MODELS — catalog policy invariants', () => {
     it('keeps the catalog small enough to be deliberately curated (one top model per provider, plus deliberate splits)', () => {
         const cloud = BUILTIN_MODELS.filter(m => m.provider !== 'none' && m.provider !== 'ollama');
-        // Anthropic 5 (Opus 5 + 4.8 continuity + Fable 5 premium pro lane
-        // + Sonnet 5 BALANCED + Haiku FAST, Haiku 5.5 since 2026-10-12) + OpenAI 2 (5.5 + 5.4 economy)
-        // + Google 2 (3.1 Pro depth / 3.5 Flash speed) = 9 cloud models.
+        // Anthropic 5 (Opus 5.5 + Opus 5 continuity + Fable 5.1 premium pro
+        // lane + Sonnet 5.5 BALANCED + Haiku 5.5 FAST) + OpenAI 3 (GPT-6.1 Sol
+        // + GPT-6 Astra pro lane + GPT-6 Luna economy) + Google 2 (Gemini 4
+        // Argon depth / Gemini 3.8 Flash speed) = 10 cloud models.
         //
         // Fable 5 was promoted as an explicit-choice premium model (2× Opus
         // cost), NOT an auto-default. Sonnet 5 and Haiku 4.5 were added

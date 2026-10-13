@@ -362,18 +362,37 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
+        // Gemini 4 Argon (GA 2026-10-13, promoted 2026-10-13, replacing
+        // Gemini 3.1 Pro Preview on the depth lane). ai.google.dev/gemini-api/
+        // docs/models/gemini-4-argon + /latest-model: 1,048,576 tokens shared
+        // by input, thinking and output; 65,536 output by default. Deltas that
+        // matter to RT:
+        //   - Explicit caching (cachedContents) is NOT supported; implicit
+        //     caching is on for prompts >= 4,096 tokens at 95% off. RT skips
+        //     the cache manager and reads hits from cachedContentTokenCount.
+        //   - temperature/top_p/top_k are ignored; sampling is provider-managed.
+        //   - thinking_level low/medium/high, default medium; RT sends no
+        //     thinkingConfig. maxOutputTokens caps thinking + answer together.
+        // No releasedAt: Gemini 3.8 Flash stays the Google latest-stable
+        // default (the depth lane is an explicit pick, as 3.1 Pro was).
+        // Launch pricing through 2026-11-30; see pricing.json.
         provider: 'google',
-        id: 'gemini-3.1-pro-preview',
-        alias: 'gemini-3.1-pro-preview',
-        label: 'Gemini 3.1 Pro Preview',
+        id: 'gemini-4-argon',
+        alias: 'gemini-4-argon',
+        label: 'Gemini 4 Argon',
         line: 'gemini-pro',
         tier: 'DEEP',
         capabilities: ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap', 'streaming'],
         personality: { reasoning: 9, writing: 8, determinism: 8 },
         contextWindow: 1048576,
         maxOutput: 65536,
-        status: 'preview',
-        constraints: { cacheVsCitationsExclusive: true }
+        status: 'stable',
+        constraints: {
+            cacheVsCitationsExclusive: true,
+            supportsTemperature: false,
+            supportsTopP: false,
+            supportsExplicitCache: false
+        }
     },
     {
         // Gemini 3.8 Flash (GA 2026-09-02, promoted 2026-09-25, replacing
@@ -385,7 +404,7 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         //   - thinking level 'minimal' returns an error; RT sends no
         //     thinkingConfig, so the model default applies.
         // Launch pricing through 2026-12-31 is half the standard rate; see
-        // the promo entry in providerPricing.ts.
+        // the promo entry in pricing.json.
         provider: 'google',
         id: 'gemini-3.8-flash',
         alias: 'gemini-3.8-flash',

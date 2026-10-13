@@ -27,6 +27,8 @@ export interface ModelRequestProfile {
      * budget-less prose).
      */
     thinkingDefaultsOn?: boolean;
+    /** Explicit cached-content resources (Gemini cachedContents); false means implicit caching only. */
+    supportsExplicitCache?: boolean;
 }
 
 const PROVIDER_DEFAULTS: Record<Exclude<AIProviderId, 'none'>, ModelRequestProfile> = {
@@ -89,6 +91,7 @@ function constraintsToProfileOverride(constraints: ModelInfo['constraints']): Pa
     if (constraints.supportsAdaptiveThinking !== undefined) override.supportsAdaptiveThinking = constraints.supportsAdaptiveThinking;
     if (constraints.thinkingAlwaysOn !== undefined) override.thinkingAlwaysOn = constraints.thinkingAlwaysOn;
     if (constraints.thinkingDefaultsOn !== undefined) override.thinkingDefaultsOn = constraints.thinkingDefaultsOn;
+    if (constraints.supportsExplicitCache !== undefined) override.supportsExplicitCache = constraints.supportsExplicitCache;
     return override;
 }
 
@@ -176,4 +179,17 @@ export function modelThinkingDefaultsOn(
     modelId?: string
 ): boolean {
     return getModelRequestProfile(provider, modelId).thinkingDefaultsOn === true;
+}
+
+/**
+ * Whether the provider accepts an explicit cached-content resource for this
+ * model. Gemini 4 Argon caches implicitly only, so RT must not create or
+ * reference `cachedContents` for it. Declared per-model via
+ * ModelInfo.constraints.supportsExplicitCache.
+ */
+export function modelSupportsExplicitCache(
+    provider: Exclude<AIProviderId, 'none'>,
+    modelId?: string
+): boolean {
+    return getModelRequestProfile(provider, modelId).supportsExplicitCache !== false;
 }

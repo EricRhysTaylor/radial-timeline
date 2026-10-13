@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T18:00:00.000Z",
+  "generatedAt": "2026-10-13T18:00:00.000Z",
   "models": [
     {
       "provider": "anthropic",
@@ -278,9 +278,9 @@
     },
     {
       "provider": "google",
-      "id": "gemini-3.1-pro-preview",
-      "alias": "gemini-3.1-pro-preview",
-      "label": "Gemini 3.1 Pro Preview",
+      "id": "gemini-4-argon",
+      "alias": "gemini-4-argon",
+      "label": "Gemini 4 Argon",
       "line": "gemini-pro",
       "tier": "DEEP",
       "capabilities": [
@@ -297,9 +297,12 @@
       },
       "contextWindow": 1048576,
       "maxOutput": 65536,
-      "status": "preview",
+      "status": "stable",
       "constraints": {
-        "cacheVsCitationsExclusive": true
+        "cacheVsCitationsExclusive": true,
+        "supportsTemperature": false,
+        "supportsTopP": false,
+        "supportsExplicitCache": false
       }
     },
     {

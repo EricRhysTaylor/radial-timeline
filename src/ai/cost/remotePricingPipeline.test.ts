@@ -213,7 +213,7 @@ describe('remote pricing pipeline — fallback behavior', () => {
             enabled: true,
             url: 'https://example.com/pricing.json',
             readCache: async () => staleCacheJson({
-                table: { google: { 'gemini-3.1-pro-preview': { inputPer1M: 2.5, outputPer1M: 15 } } }
+                table: { google: { 'gemini-4-argon': { inputPer1M: 2.5, outputPer1M: 15 } } }
             }),
             writeCache: async () => undefined,
             fetchImpl: mockFetch({ not_models: 'bad data' })

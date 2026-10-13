@@ -106,6 +106,7 @@ import { getLastAiAdvancedContext } from '../ai/runtime/aiClient';
 // computeCaps, INPUT_TOKEN_GUARD_FACTOR: now used in inquiryReadinessBuilder.ts
 import { resolveCitationsEnabled } from '../ai/caps/computeCaps';
 import { BUILTIN_MODELS } from '../ai/registry/builtinModels';
+import { modelSupportsExplicitCache } from '../ai/registry/modelRequestProfiles';
 import { AI_JOB_PROVIDER } from '../utils/modelResolver';
 import { ANTHROPIC_REQUESTED_CACHE_TTL, buildDefaultAiSettings } from '../ai/settings/aiSettings';
 import { validateAiSettings } from '../ai/settings/validateAiSettings';
@@ -9065,7 +9066,9 @@ export class InquiryView extends ItemView {
             }
         } else if (provider === 'google') {
             // The explicit-cache manager's create/hit verdict. Implicit-cache
-            // reads carry no lifetime to count down.
+            // reads carry no lifetime to count down — including every read on
+            // an implicit-only model (Gemini 4 Argon), which RT never creates.
+            if (!modelSupportsExplicitCache('google', result.aiModelResolved)) return null;
             if (!trace?.cacheStatus && !confirmedHit) return null;
             // Gemini cache TTL is fixed at creation and does NOT extend on hits.
             // Use the provider-reported expiry so the countdown reflects the

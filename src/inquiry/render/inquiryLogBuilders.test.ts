@@ -164,8 +164,8 @@ describe('buildInquiryLogContent', () => {
                 scope: 'saga',
                 scopeLabel: 'Σ',
                 aiProvider: 'google',
-                aiModelResolved: 'gemini-3.1-pro-preview',
-                aiModelRequested: 'gemini-3.1-pro-preview',
+                aiModelResolved: 'gemini-3.8-flash',
+                aiModelRequested: 'gemini-3.8-flash',
                 findings: [],
                 verdict: {
                     flow: 85,

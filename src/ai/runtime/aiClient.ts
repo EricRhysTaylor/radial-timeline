@@ -8,6 +8,7 @@ import { buildOutputRulesText } from '../prompts/outputRules';
 import { providerSupportsCorpusReuse, sanitizeDispatchParams, type AiProvider, type ProviderDispatchParams } from '../../api/providerCapabilities';
 import { ModelRegistry } from '../registry/modelRegistry';
 import { BUILTIN_MODELS } from '../registry/builtinModels';
+import { modelSupportsExplicitCache } from '../registry/modelRequestProfiles';
 import { findSnapshotModel, loadProviderSnapshot, type ProviderSnapshotLoadResult } from '../registry/providerSnapshot';
 import { loadRemotePricing, type RemotePricingLoadResult } from '../cost/remotePricing';
 import { mergeRemotePricing } from '../cost/providerPricing';
@@ -1067,11 +1068,23 @@ export class AIClient {
             if (execution.cacheUsed) {
                 // Confirmed hit — safe to mark warm and surface cache coverage.
                 advancedContext.reuseState = 'warm';
-                if (provider === 'google' && typeof cachedStableRatio === 'number') {
-                    advancedContext.cachedStableRatio = cachedStableRatio;
-                }
-                if (provider === 'google' && typeof cachedStableTokens === 'number') {
-                    advancedContext.cachedStableTokens = cachedStableTokens;
+                // An implicit-cache hit (Gemini 4 Argon) can cover only part of
+                // the stable prefix: report the provider's cached count, not
+                // the estimate of the whole prefix.
+                const implicitReadTokens = provider === 'google' && !modelSupportsExplicitCache('google', modelSelection.model.id)
+                    ? (actualUsage?.cacheReadInputTokens ?? 0) // SAFE: an absent counter means no cached read
+                    : 0;
+                if (implicitReadTokens > 0) {
+                    const totalInput = advancedContext.totalInputTokens ?? tokenEstimateInput;
+                    advancedContext.cachedStableTokens = implicitReadTokens;
+                    advancedContext.cachedStableRatio = totalInput > 0 ? Math.min(implicitReadTokens / totalInput, 1) : 0;
+                } else {
+                    if (provider === 'google' && typeof cachedStableRatio === 'number') {
+                        advancedContext.cachedStableRatio = cachedStableRatio;
+                    }
+                    if (provider === 'google' && typeof cachedStableTokens === 'number') {
+                        advancedContext.cachedStableTokens = cachedStableTokens;
+                    }
                 }
                 advancedContext.cacheStatus = execution.cacheStatus;
                 if (typeof execution.cacheExpiresAt === 'number') {

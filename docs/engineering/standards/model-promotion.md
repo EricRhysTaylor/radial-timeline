@@ -19,7 +19,8 @@ Anthropic: Claude Opus 5.5              (depth, current — auto-selected; promo
 OpenAI:    GPT-6.1 Sol                   (depth — promoted 2026-10-01, replacing GPT-6 Sol)
            GPT-6 Astra                   (depth, premium 'pro' channel — explicit choice only)
            GPT-6 Luna                    (economy — FAST tier, promoted 2026-09-25, replacing GPT-5.6 Luna)
-Google:    Gemini 3.1 Pro Preview        (depth)
+Google:    Gemini 4 Argon                (depth — promoted 2026-10-13, replacing Gemini 3.1 Pro Preview;
+                                          implicit caching only, no explicit cachedContents)
            Gemini 3.8 Flash              (speed — promoted 2026-09-25, replacing Gemini 3.5 Flash)
 Ollama:    llama3, local-model           (local)
 ```

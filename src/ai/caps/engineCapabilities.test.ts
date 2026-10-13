@@ -53,7 +53,7 @@ describe('resolveEngineCapabilities', () => {
     });
 
     it('marks Gemini grounded attribution, reuse, and context available while direct manuscript citations remain unavailable', () => {
-        const model = byAlias('gemini-3.1-pro-preview');
+        const model = byAlias('gemini-4-argon');
         const resolved = resolveEngineCapabilities(model);
 
         expect(resolved.directManuscriptCitations.status).toBe('unavailable');

@@ -102,6 +102,13 @@ export interface ModelInfo {
          * request contract vs Opus 4.8.
          */
         thinkingDefaultsOn?: boolean;
+        /**
+         * Whether the provider accepts explicit cached-content resources for
+         * this model (Gemini `cachedContents`). False on Gemini 4 Argon, which
+         * caches implicitly only: RT sends the stable prefix first and reads
+         * the hit from `cachedContentTokenCount`. Default (absent) is true.
+         */
+        supportsExplicitCache?: boolean;
         /** Provider endpoint/lane RT should use for this model. */
         preferredOpenAiEndpoint?: 'responses' | 'chat_completions';
     };

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { estimateCorpusCost, estimateOmnibusCostRange, estimateUsageCost } from './estimateCorpusCost';
 import { getActivePricingTable, mergeRemotePricing, resetPricingToBuiltin } from './providerPricing';
 
@@ -151,45 +151,57 @@ describe('estimateCorpusCost', () => {
         expect(result?.totalCostUSD).toBeGreaterThan(0);
     });
 
-    it('Gemini 3.1 Pro Preview surfaces a separate cache-read line', () => {
-        const result = estimateUsageCost('google', 'gemini-3.1-pro-preview', {
-            inputTokens: 264_606,
-            outputTokens: 5_409,
-            cacheReadInputTokens: 264_584
+    // Gemini 3.8 Flash is the remaining explicit-cache (cachedContents)
+    // Gemini model. Its launch promo makes rates date-dependent, so these
+    // tests pin the clock past the promo (standard $1.50 in / $7.50 out /
+    // $0.15 cache read per 1M).
+    describe('Gemini 3.8 Flash (clock pinned past the launch promo)', () => {
+        beforeEach(() => {
+            vi.useFakeTimers({ toFake: ['Date'] });
+            vi.setSystemTime(new Date('2027-02-01T00:00:00Z'));
         });
-        // Cache-read pricing must flow through as its own number.
-        expect(typeof result?.cacheReadCostUSD).toBe('number');
-        expect(result?.cacheReadCostUSD).toBeGreaterThan(0);
-        expect(result?.outputTokens).toBe(5_409);
-        expect(result?.totalCostUSD).toBeGreaterThan(0);
-    });
+        afterEach(() => {
+            vi.useRealTimers();
+        });
 
-    it('prices Gemini "created" cache tokens at the input rate, not the read discount', () => {
-        // Gemini reports cachedContentTokenCount on the CREATING call too, so a
-        // first run looks like a 136k "cache read". It must NOT get the read
-        // discount — those tokens were processed fresh to build the cache.
-        const usage = {
-            inputTokens: 135_723,
-            outputTokens: 4_898,
-            totalTokens: 140_621,
-            cacheReadInputTokens: 135_700
-        };
-        // Pro table (under the 200k threshold): input $2.00/M, output $12.00/M,
-        // cacheRead $0.20/M. (Pro, not Flash: Flash's launch promo makes its
-        // rates date-dependent.)
-        const created = estimateUsageCost('google', 'gemini-3.1-pro-preview', usage, 'created');
-        const hit = estimateUsageCost('google', 'gemini-3.1-pro-preview', usage, 'hit');
+        it('surfaces a separate cache-read line', () => {
+            const result = estimateUsageCost('google', 'gemini-3.8-flash', {
+                inputTokens: 264_606,
+                outputTokens: 5_409,
+                cacheReadInputTokens: 264_584
+            });
+            // Cache-read pricing must flow through as its own number.
+            expect(typeof result?.cacheReadCostUSD).toBe('number');
+            // 264,584 × $0.15/1M ≈ $0.0397.
+            expect(result?.cacheReadCostUSD).toBeCloseTo(0.0397, 4);
+            expect(result?.outputTokens).toBe(5_409);
+            expect(result?.totalCostUSD).toBeGreaterThan(0);
+        });
 
-        // Created ≈ fresh: 135.7k @ $2/M + 4.9k @ $12/M ≈ $0.330.
-        expect(created?.totalCostUSD).toBeCloseTo(0.3302, 2);
-        // Hit gets the read discount on the cached prefix ≈ $0.086.
-        expect(hit?.totalCostUSD).toBeCloseTo(0.0860, 2);
-        // The created run must be materially pricier than a genuine reuse hit.
-        expect((created?.totalCostUSD ?? 0)).toBeGreaterThan((hit?.totalCostUSD ?? 0) * 3);
+        it('prices "created" cache tokens at the input rate, not the read discount', () => {
+            // Gemini reports cachedContentTokenCount on the CREATING call too, so a
+            // first run looks like a 136k "cache read". It must NOT get the read
+            // discount — those tokens were processed fresh to build the cache.
+            const usage = {
+                inputTokens: 135_723,
+                outputTokens: 4_898,
+                totalTokens: 140_621,
+                cacheReadInputTokens: 135_700
+            };
+            const created = estimateUsageCost('google', 'gemini-3.8-flash', usage, 'created');
+            const hit = estimateUsageCost('google', 'gemini-3.8-flash', usage, 'hit');
+
+            // Created ≈ fresh: 135,723 @ $1.50/M + 4,898 @ $7.50/M ≈ $0.2403.
+            expect(created?.totalCostUSD).toBeCloseTo(0.2403, 3);
+            // Hit: 23 @ $1.50/M + 135,700 @ $0.15/M + 4,898 @ $7.50/M ≈ $0.0571.
+            expect(hit?.totalCostUSD).toBeCloseTo(0.0571, 3);
+            // The created run must be materially pricier than a genuine reuse hit.
+            expect((created?.totalCostUSD ?? 0)).toBeGreaterThan((hit?.totalCostUSD ?? 0) * 3);
+        });
     });
 
     it('Gemini recovers thinking-token output from totalTokens for legacy sessions', () => {
-        const result = estimateUsageCost('google', 'gemini-3.1-pro-preview', {
+        const result = estimateUsageCost('google', 'gemini-4-argon', {
             inputTokens: 264_606,
             outputTokens: 531,
             totalTokens: 270_015,

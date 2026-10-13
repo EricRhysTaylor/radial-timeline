@@ -39,12 +39,12 @@ describe('Pulse completion accounting', () => {
         expect(buildPulseUsageReport(run({ responseData: { usage: {
             input_tokens: 100, output_tokens: 20, cache_creation_input_tokens: 900
         } } })).cache).toBe('created');
-        const result = run({ provider: 'google', modelResolved: 'gemini-3.1-pro-preview',
+        const result = run({ provider: 'google', modelResolved: 'gemini-3.8-flash',
             responseData: { usageMetadata: { promptTokenCount: 1000, candidatesTokenCount: 20, cachedContentTokenCount: 900 } },
             advancedContext: { cacheStatus: 'created' } as AIRunResult['advancedContext'] });
         expect(buildPulseUsageReport(result).cache).toBe('created');
         expect(buildPulseUsageReport(result).cacheDetail).toContain('CREATED');
-        expect(buildPulseUsageReport(result).costUSD).toBe(buildUsageCostBreakdown('google', 'gemini-3.1-pro-preview',
+        expect(buildPulseUsageReport(result).costUSD).toBe(buildUsageCostBreakdown('google', 'gemini-3.8-flash',
             extractTokenUsage('google', result.responseData), 'created')?.totalCostUSD);
     });
     it('never charges again for an RT memory-cache result', () => {

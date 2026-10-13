@@ -144,8 +144,9 @@ function sendProviderRequest(options: RequestUrlParam, control: AIRequestControl
         try {
             // Credential resolution and request construction may have awaited work.
             control?.assertActive();
-            if (body) req.write(body);
-            req.end();
+            // Ending with the complete buffer lets Node set Content-Length.
+            // MLX and other local servers can reject chunked POST bodies with 411.
+            req.end(body);
         } catch (error) {
             stop(error instanceof Error ? error : new Error(String(error)));
         }

@@ -19,6 +19,11 @@ To import an existing draft, use **Choose manuscript**. **Scan for exports** sug
 *   **Create draft**: Make a sibling draft copy of a book folder and add it as a new book profile.
 *   **Remove profile**: Removes the book profile and preserves its files.
 
+<div style="text-align: center; margin: 20px 0;">
+  <img src="images/panel-project-metadata.png" alt="Project metadata dialog: genre, project stage, public label and description" style="width: 380px; max-width: 100%; border-radius: 8px;" />
+  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Project metadata — the description adds optional details on the Community website</div>
+</div>
+
 ## Progress And Status
 
 Manage your project milestones and status tracking.
@@ -31,6 +36,11 @@ Manage your project milestones and status tracking.
 *   **Press target date**: Target completion date for the Press Ready stage. Must be after the House target date.
 
 Target dates are validated to ensure proper stage ordering. Overdue dates are highlighted in red. Each stage has its own color-coded marker on the timeline.
+
+<div style="text-align: center; margin: 20px 0;">
+  <img src="images/progress-target-ticks.png" alt="Stage target markers on the year ring at the centre of the timeline, with the Author target tooltip" style="width: 400px; max-width: 100%; border-radius: 8px;" />
+  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Stage target markers on the centre year ring — hover one to see its date</div>
+</div>
 
 *   **Show estimated completion date**: Toggles the predicted completion tick mark on the timeline.
 *   **Zero draft mode**: A focused mode for first-draft writing. Intercepts clicks on scenes with `Publish Stage = Zero` and `Status = Complete` to open a `Pending Edits` panel instead of the full note.

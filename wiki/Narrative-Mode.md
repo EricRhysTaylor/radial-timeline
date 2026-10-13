@@ -18,6 +18,11 @@ Narrative Mode is your primary manuscript-order workspace. It displays all scene
 *   **Scene right-click menu**: Add a scene after the current one, set a chapter marker, change Status, change Publish Stage, or flag it for Pulse — see below.
 *   **Recent moves overlay**: Narrative Mode can show a top-left list of recent committed scene and beat moves. Toggle it in [Settings → Advanced → Configuration](Settings-Advanced#configuration).
 
+<div style="text-align: center; margin: 20px 0;">
+  <img src="images/mode-narrative-beats.png" alt="Narrative Mode with Save the Cat beats around the outer ring and the recent moves overlay at top left" style="width: 480px; max-width: 100%; border-radius: 8px;" />
+  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Save the Cat beats around the outer ring, with the recent moves overlay at top left</div>
+</div>
+
 ## Subplot Alignment: Fill vs Sequence
 
 The **alignment chip** at the left of the mode row switches how subplot rings lay out their scenes. It applies in Narrative, Chronologue, and Gossamer modes.

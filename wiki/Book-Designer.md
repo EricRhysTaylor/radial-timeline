@@ -17,8 +17,8 @@ You can open Book Designer in two ways:
 2.  **Welcome Screen**: Under **Set Book Project**, choose **→ or open Book Designer**.
 
 <div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-book-designer.png" alt="Book Designer panel with preview donut chart" style="width: 550px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Book Designer — configure structure, subplots, and scene properties with live preview</div>
+  <img src="images/panel-book-designer.png" alt="Book Designer panel: target book, scene count, three acts, three subplots and the live preview" style="width: 480px; max-width: 100%; border-radius: 8px;" />
+  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Book Designer — configure structure, subplots, and scene sets with a live preview you can drag scenes in</div>
 </div>
 
 ## Workflow
@@ -26,7 +26,8 @@ You can open Book Designer in two ways:
 The panel is organized into three main sections:
 
 ### 1. Location & Structure
-*   **Target location**: The folder path where your new book files will be created (e.g., `Book 1`). The folder will be created if it doesn't exist. Otherwise root of the vault will be used.
+*   **Target book**: The Book Manager project where scenes and beats will be created. Add the book in Book Manager and set its folder first.
+*   **Date increment per scene**: How far story time advances from one scene to the next (e.g. 1 hour, 1 day, 1 week). Set it to 0 to disable increments.
 *   **Scenes to generate**: The total number of scene files to create.
 *   **Target book length**: Used for numbering distribution. For example, if you generate 10 scenes with a target length of 60, scenes will be numbered 1, 8, 14 … 60, leaving gaps for future scenes.
 *   **Acts to distribute scenes across**: Choose which acts (1..N) to populate, where **N** comes from your **Settings → Core → Acts → Act count**. Scenes are distributed evenly across the selected acts.
@@ -35,16 +36,17 @@ The panel is organized into three main sections:
 *   **Subplots**: Enter your subplots, one per line. Scenes will be assigned to these subplots in a round-robin fashion. Each scene will belong to only one subplot.
 *   **Characters**: Enter your main characters, one per line. These will be added to the YAML frontmatter of the generated scenes.
 
-### 3. Scene Properties & Extras
-*   **Scene properties**: Choose between **Core properties** (minimal) and **Advanced properties**. The advanced properties profile can be customized in settings.
-*   **Generate Beats**: Optionally generate beat sheet files based on your selected beat system (e.g., Save the Cat, configured in Settings).
+### 3. Scene Sets & Extras
+*   **Scene set**: Choose between the **Base Scene Set** (core properties) and **Advanced properties**. The advanced properties profile can be customized in settings.
+*   **Generate beats**: Named after your active beat system (e.g. **Generate Save The Cat beats**). Choose **Yes** to create beat notes alongside the scenes.
+*   **Scene layouts**: **Save Scene Set** keeps the current layout (acts, subplots, assignments, metadata) to reuse later; pick a saved one from the list. **Reset** returns to auto distribution. **Demo Project** builds a sample book with scenes, acts, subplots, beats, and chronologue timing.
 
 ## Visual Preview
-As you adjust the settings, the **Preview** donut chart updates in real time to show how scenes will be distributed across acts and subplots. This lets you inspect the structure before any files are generated. If you want a different shape afterward, reopen Book Designer and regenerate.
+As you adjust the settings, the **Preview** donut chart updates in real time to show how scenes will be distributed across acts and subplots. This lets you inspect the structure before any files are generated. Drag a scene in the preview to another act or subplot ring to place it by hand; the header switches from **Auto mode** to **Manual mode**. If you want a different shape afterward, reopen Book Designer and regenerate.
 
 ## Generate the Manuscript Scaffold
 Once configured, click **Create Book**. The plugin will:
-1.  Create the target folder.
+1.  Create the book's folder if it doesn't exist yet.
 2.  Generate individual markdown files for each scene, populated with the correct YAML frontmatter (scene number, act, subplot, characters, date).
 3.  (Optional) Create beat sheet notes if selected.
 
@@ -53,7 +55,7 @@ You'll see a notification confirming the number of scenes and files created. You
 ## Customizing Scene Properties
 
 Book Designer supports two built-in scene property profiles:
-1.  **Core properties**: A minimal profile with the essential fields required for Radial Timeline.
+1.  **Core properties** (the **Base Scene Set**): A minimal profile with the essential fields required for Radial Timeline.
 2.  **Advanced properties**: A richer profile with analysis, stats, and additional workflow fields.
 
 ### Adding Custom Properties
@@ -70,7 +72,7 @@ If your writing methodology uses fields beyond the built-in keys (for example Dr
 If you use a story structure not listed in the standard options:
 1.  Go to **Settings → Core → Story beats system** and select **Custom**.
 2.  Name your beat system and add beats in the **Custom story beat system editor**. Assign each beat to an act.
-3.  In the Book Designer, enable **Generate Beats** to automatically generate beat notes for your custom system.
+3.  In the Book Designer, set **Generate … beats** to **Yes** to generate beat notes for your custom system.
 
 After generating beats, you can reorder or rename them in the editor. Row colors indicate sync status (green = aligned, orange = needs merge, red = duplicate). Use **Merge** to realign existing files after changes.
 

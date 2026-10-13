@@ -128,3 +128,13 @@ describe('timelineSceneMatchesSearch', () => {
         expect(timelineSceneMatchesSearch(sceneWith({ synopsis: 'coast' }), 'mountain', { settings: bareSettings })).toBe(false);
     });
 });
+
+describe('literal numeric dates do not interpret regular expressions', () => {
+    it.each(['[', '(', '\\', '.*', '(a+)+', '?', '.', '|'])('treats %s literally', phrase => {
+        const scene = sceneWith({ title: 'A', when: new Date(2020, 1, 2) });
+        expect(timelineSceneMatchesSearch(scene, phrase, { settings: bareSettings })).toBe(false);
+    });
+    it('preserves numeric date matching', () => {
+        expect(timelineSceneMatchesSearch(sceneWith({ when: new Date(2020, 1, 2) }), '2/2/2020', { settings: bareSettings })).toBe(true);
+    });
+});

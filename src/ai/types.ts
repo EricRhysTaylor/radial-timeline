@@ -236,9 +236,9 @@ export interface LocalLlmSettings {
     /**
      * Declarations scoped to `backend|baseUrl::modelId`.
      *
-     * A declaration is a claim about ONE model on ONE server -- ConceptSearch
-     * doubles its chunk budget on `longContext`, so carrying an 80B's claim onto a
-     * 3B sends prompts that model cannot hold. `declaredCapabilities` above is a
+     * A declaration is a claim about ONE model on ONE server. Carrying an 80B's
+     * claim onto a 3B would misrepresent its capabilities. Numeric context limits
+     * below determine search packaging; `declaredCapabilities` above is a
      * cache of this map's entry for the ACTIVE identity; readers get it resolved by
      * getLocalLlmSettings() and should never trust the stored array directly.
      */

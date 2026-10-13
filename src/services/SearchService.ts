@@ -7,7 +7,7 @@ import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { frontmatterValueToText } from '../utils/frontmatter';
 import type { RadialTimelineSettings } from '../types/settings';
 import type { TimelineItem } from '../types';
-import { hasSearchScope, mergeSearchHit, type TimelineSearchHit } from './searchState';
+import { hasSearchScope, mergeSearchHit, type TimelineSearchHit, type TimelineSearchGap } from './searchState';
 import { SceneBodyIndex, findBodyMatches } from './SceneBodyIndex';
 import {
     ConceptSearchService,
@@ -18,9 +18,12 @@ import { getLocalLlmAvailability } from '../ai/localLlm/availability';
 import { getCanonicalLocalLlmSettings } from '../ai/localLlm/settings';
 import type { TimelineSearchOptions } from './searchState';
 import { t } from '../i18n';
+import { escapeRegExp } from '../utils/regex';
 
 export interface TimelineSearchMatchOptions {
     planetaryLine?: string;
+    /** Concept input also carries the dates searched separately by literal matching. */
+    includeDates?: boolean;
     /**
      * Settings, so the enabled hover-metadata fields can be resolved.
      *
@@ -34,13 +37,8 @@ export interface TimelineSearchMatchOptions {
 
 const containsWholePhrase = (haystack: string | undefined, phrase: string, isDate: boolean = false): boolean => {
     if (!haystack || !phrase || typeof haystack !== 'string') return false;
-    const h = haystack.toLowerCase();
-    const p = phrase.toLowerCase();
-    if (isDate && h.includes('/')) {
-        const datePattern = new RegExp(p.replace(/\//g, '\\/') + '(?:\\/|$)', 'i');
-        return datePattern.test(h);
-    }
-    return h.includes(p);
+    const suffix = isDate && haystack.includes('/') ? '(?:\\/|$)' : '';
+    return new RegExp(escapeRegExp(phrase) + suffix, 'iu').test(haystack);
 };
 
 /**
@@ -85,6 +83,10 @@ export function buildTimelineSearchTextFields(scene: TimelineItem, options: Time
     appendSearchValue(fields, scene.Character);
     appendSearchValue(fields, scene.subplot);
     appendSearchValue(fields, scene.Duration);
+    if (options.includeDates && scene.when instanceof Date && !Number.isNaN(scene.when.getTime())) {
+        appendSearchValue(fields, scene.when.toLocaleDateString());
+        appendSearchValue(fields, displayDateOrEmpty(scene.when, scene.whenHasClock ?? true));
+    }
 
     // The AI Pulse analysis is deliberately NOT searched. It is commentary
     // *about* a scene — a grade and editorial notes — not something the scene
@@ -106,7 +108,8 @@ export function timelineSceneMatchesSearch(scene: TimelineItem, phrase: string, 
         .some(field => containsWholePhrase(field, phrase, false));
     if (textMatched) return true;
 
-    const dateFieldNumeric = scene.when?.toLocaleDateString();
+    const dateFieldNumeric = scene.when instanceof Date && !Number.isNaN(scene.when.getTime())
+        ? scene.when.toLocaleDateString() : undefined;
     const dateFieldDisplay = displayDateOrEmpty(scene.when, scene.whenHasClock ?? true);
     return containsWholePhrase(dateFieldNumeric, phrase, true) ||
         containsWholePhrase(dateFieldDisplay, phrase, false);
@@ -121,7 +124,7 @@ export class SearchService {
      * so a slow earlier search resolving after a newer search — or after Clear
      * — discards its work instead of overwriting live results.
      */
-    private runId = 0;
+    private get runId(): number { return this.plugin.searchState.runId; }
 
     private readonly bodyIndex: SceneBodyIndex;
     private readonly conceptSearch: ConceptSearchService;
@@ -144,6 +147,9 @@ export class SearchService {
             this.bodyIndex.invalidate(file.path);
         }));
         plugin.registerEvent(app.vault.on('delete', (file) => {
+            this.bodyIndex.invalidate(file.path);
+        }));
+        plugin.registerEvent(app.vault.on('modify', (file) => {
             this.bodyIndex.invalidate(file.path);
         }));
     }
@@ -182,10 +188,21 @@ export class SearchService {
         if (!trimmed) { this.clearSearch(); return; }
 
         // Claim this run. Anything already in flight is now stale.
-        const myRun = ++this.runId;
+        this.cancelSearch();
+        const myRun = ++this.plugin.searchState.runId;
+        this.cancelController = new AbortController();
+        this.cancelToken = { cancelled: false, signal: this.cancelController.signal };
         const state = this.plugin.searchState;
         state.status = 'running';
         state.error = undefined;
+        state.pendingTerm = trimmed;
+        state.runningHitCount = 0;
+        state.progress = undefined;
+        state.droppedClaims = undefined;
+        state.unreadableScenes = undefined;
+        state.unreadableNotes = undefined;
+        state.stoppedEarly = undefined;
+        this.syncTimelineSearchControls();
 
         // No scope selected means the search has nowhere to look. Commit an
         // empty result set rather than quietly matching on a scope the author
@@ -211,9 +228,11 @@ export class SearchService {
                 // Body text is the run's only remaining async input, so it is
                 // gathered here — before the settings capture below, which must
                 // sit immediately ahead of the synchronous pass.
-                const bodies = options.body
-                    ? await this.bodyIndex.load(searchable)
+                const bodyResult = options.body
+                    ? await this.bodyIndex.load(searchable, () => myRun === this.runId && !this.cancelToken.cancelled)
                     : null;
+                const bodies = bodyResult ? bodyResult.bodies : null;
+                const unreadableNotes = bodyResult ? bodyResult.unreadableNotes : [];
 
                 if (myRun !== this.runId) return; // superseded during body reads
 
@@ -234,7 +253,7 @@ export class SearchService {
                 if (options.llmAssist) {
                     await this.runConceptSearch({
                         myRun, term: trimmed, searchable, bodies, settings,
-                        planetaryProfile, options
+                        planetaryProfile, options, unreadableNotes
                     });
                     return;
                 }
@@ -270,7 +289,7 @@ export class SearchService {
 
                 if (myRun !== this.runId) return; // superseded while matching
 
-                this.commit(trimmed, hits);
+                this.commit(trimmed, hits, undefined, false, unreadableNotes);
             })
             .catch(error => {
                 if (myRun !== this.runId) return;
@@ -280,6 +299,12 @@ export class SearchService {
                 console.error('[Search] Scene data load failed.', error);
                 this.syncTimelineSearchControls();
             });
+    }
+
+    /** Book/saga changes supersede the old corpus just like a checkbox change. */
+    restartForScopeChange(): void {
+        const term = this.plugin.searchState.pendingTerm ?? this.plugin.searchState.term;
+        if (term) this.performSearch(term);
     }
 
     /**
@@ -295,36 +320,56 @@ export class SearchService {
         settings: RadialTimelineSettings;
         planetaryProfile: ReturnType<typeof getActivePlanetaryProfile>;
         options: TimelineSearchOptions;
+        unreadableNotes: TimelineSearchGap[];
     }): Promise<void> {
         const { myRun, term, searchable, bodies, settings, options } = input;
         const state = this.plugin.searchState;
+
+        if (this.cancelToken.cancelled) {
+            this.commit(term, new Map(), 0, true, input.unreadableNotes);
+            return;
+        }
+        if (this.plugin.settings.enableAiSceneAnalysis !== true) {
+            this.fail(t('notices.aiTurnedOff'));
+            return;
+        }
 
         // Forced, not cached: the author is committing to a run, and a stale
         // "available" would fail confusingly a minute later.
         const availability = await getLocalLlmAvailability(this.plugin, { force: true });
         if (myRun !== this.runId) return;
+        if (this.cancelToken.cancelled) {
+            this.commit(term, new Map(), 0, true, input.unreadableNotes);
+            return;
+        }
         if (!availability.available) {
             this.fail(availability.reason ?? t('ui.searchService.noLocalModel'));
             return;
         }
 
-        const corpus: ConceptSearchScene[] = searchable
-            .filter(scene => !!scene.path)
-            .map(scene => {
+        const byPath = new Map<string, { fields: Set<string>; bodyText?: string }>();
+        for (const scene of searchable) {
+            if (!scene.path) continue;
+            let entry = byPath.get(scene.path);
+            if (!entry) {
+                entry = { fields: new Set(), bodyText: options.body ? bodies?.get(scene.path) : undefined };
+                byPath.set(scene.path, entry);
+            }
+            if (options.timelineFields) {
+                for (const text of buildTimelineSearchTextFields(scene, {
+                    planetaryLine: this.planetaryLineFor(scene, input.planetaryProfile), settings, includeDates: true
+                })) entry.fields.add(text);
+            }
+        }
+        const corpus: ConceptSearchScene[] = [...byPath].map(([path, entry]) => {
                 const fieldsText = options.timelineFields
-                    ? buildTimelineSearchTextFields(scene, {
-                        planetaryLine: this.planetaryLineFor(scene, input.planetaryProfile),
-                        settings
-                    }).join(' · ')
+                    ? [...entry.fields].join(' · ')
                     : undefined;
-                const bodyText = options.body ? bodies?.get(scene.path as string) : undefined;
-                return { path: scene.path as string, fieldsText, bodyText };
+                return { path, fieldsText, bodyText: entry.bodyText };
             })
             // A scene contributing no text would just spend tokens.
             .filter(scene => !!scene.fieldsText || !!scene.bodyText);
 
-        this.cancelController = new AbortController();
-        this.cancelToken = { cancelled: false, signal: this.cancelController.signal };
         const cancel = this.cancelToken;
 
         // Published as the sweep runs rather than held to the end. A run over a
@@ -347,12 +392,14 @@ export class SearchService {
                 onHit: (hit) => {
                     if (myRun !== this.runId) return;
                     mergeSearchHit(hits, hit);
+                    state.runningHitCount = hits.size;
                     this.publishPartial(term, hits);
                 }
             });
 
             if (myRun !== this.runId) return;
-            this.commit(term, hits, outcome.droppedClaims, outcome.cancelled, outcome.unreadableScenes);
+            const unreadable = new Map([...input.unreadableNotes, ...outcome.unreadableNotes].map(note => [note.path, note]));
+            this.commit(term, hits, outcome.droppedClaims, outcome.cancelled, [...unreadable.values()]);
         } catch (error) {
             if (myRun !== this.runId) return;
             const message = error instanceof Error ? error.message : String(error);
@@ -413,17 +460,20 @@ export class SearchService {
         hits: Map<string, TimelineSearchHit>,
         droppedClaims?: number,
         stoppedEarly?: boolean,
-        unreadableScenes?: number
+        unreadableNotes?: TimelineSearchGap[]
     ): void {
         const state = this.plugin.searchState;
         state.term = term;
         state.active = true;
         state.status = 'ready';
+        state.pendingTerm = undefined;
+        state.runningHitCount = undefined;
         state.error = undefined;
         state.progress = undefined;
         state.droppedClaims = droppedClaims;
         state.stoppedEarly = stoppedEarly;
-        state.unreadableScenes = unreadableScenes;
+        state.unreadableNotes = unreadableNotes;
+        state.unreadableScenes = unreadableNotes?.length;
         state.hits = hits;
         this.syncTimelineSearchControls();
         this.refreshTimelineViews();
@@ -438,7 +488,7 @@ export class SearchService {
      * state that was just cleared.
      */
     private reset(): void {
-        this.runId += 1;
+        this.plugin.searchState.runId += 1;
         // Stop a concept run scheduling more passes, and abort the one in
         // flight — clearing a search should not leave the server working.
         this.cancelToken.cancelled = true;
@@ -446,6 +496,8 @@ export class SearchService {
 
         const state = this.plugin.searchState;
         state.term = '';
+        state.pendingTerm = undefined;
+        state.runningHitCount = undefined;
         state.active = false;
         state.status = 'idle';
         state.error = undefined;
@@ -453,6 +505,7 @@ export class SearchService {
         state.droppedClaims = undefined;
         state.stoppedEarly = undefined;
         state.unreadableScenes = undefined;
+        state.unreadableNotes = undefined;
         state.hits = new Map();
     }
 

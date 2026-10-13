@@ -56,6 +56,8 @@ export interface TimelineSearchHit {
     reason?: string;
 }
 
+export interface TimelineSearchGap { path: string; reason: string }
+
 export type TimelineSearchStatus = 'idle' | 'running' | 'ready' | 'error';
 
 /** Which chunk of a multi-call concept run is in flight. */
@@ -65,8 +67,14 @@ export interface TimelineSearchProgress {
 }
 
 export interface TimelineSearchState {
+    /** Identity shared by stale-result guards and the Cancel control. */
+    runId: number;
     /** The committed term — the one `hits` actually corresponds to. */
     term: string;
+    /** Submitted query while its result set is still being computed. */
+    pendingTerm?: string;
+    /** Matches from the running sweep, excluding a previous committed query. */
+    runningHitCount?: number;
     options: TimelineSearchOptions;
     active: boolean;
     status: TimelineSearchStatus;
@@ -84,6 +92,8 @@ export interface TimelineSearchState {
     stoppedEarly?: boolean;
     /** Scenes the sweep reached but could not get a usable answer for. */
     unreadableScenes?: number;
+    /** Coverage failures available on the status tooltip, including file reads. */
+    unreadableNotes?: TimelineSearchGap[];
     hits: Map<string, TimelineSearchHit>;
 }
 
@@ -97,6 +107,7 @@ export function createSearchState(
     options: TimelineSearchOptions = DEFAULT_SEARCH_OPTIONS
 ): TimelineSearchState {
     return {
+        runId: 0,
         term: '',
         options: { ...options },
         active: false,

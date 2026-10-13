@@ -1136,7 +1136,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             statusChunk: '{{total}} シーン中 {{chunk}} シーン目を読み込み中',
             statusChunkFound: '{{total}} シーン中 {{chunk}} シーン目を読み込み中 · {{found}} 件見つかりました',
             statusStopped: '途中で停止しました — これまでに {{count}} 件見つかりました',
-            statusDropped: '{{count}} 件のモデルの主張を除外しました（逐語的な一致なし）',
+            statusDropped: "モデルの根拠を確認できないノート: {{count}}",
             statusUnreadable: '{{count}} シーンを読み取れません',
             cancelAction: 'キャンセル',
             cancelPending: '停止中…',
@@ -3973,8 +3973,10 @@ export const ja: DeepPartial<TranslationKeys> = {
             disconnectFailed: 'コミュニティ共有の接続を解除できませんでした。',
         },
         conceptSearchService: {
-            consecutiveFailures: 'ローカルモデルが {{scenes}}連続で失敗しました：{{error}}',
+            consecutiveFailures: "ローカルモデルが{{attempts}}回連続で使用できない応答を返しました: {{error}}",
             requestUnreadable: 'ローカルモデルがリクエストを読み取れませんでした：{{error}}',
+            budgetTooSmall: "検索リクエストが設定されたコンテキスト予算を超えています。設定 → AI でローカルモデルの実際のコンテキストウィンドウを指定するか、検索文を短くしてください。",
+            invalidPlan: "ローカルモデルが空の検索条件を返しました。",
         },
         configurationSection: {
             timelineDisplayTitle: 'タイムライン表示',

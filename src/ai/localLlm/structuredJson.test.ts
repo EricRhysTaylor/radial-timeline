@@ -92,3 +92,11 @@ describe('runStructuredJsonPipeline', () => {
         }
     });
 });
+
+it('returns the canonical validated object when a model uses a known wrapper', async () => {
+    const result = await runStructuredJsonPipeline({ providerLabel: 'Local',
+        schema: { type: 'object', required: ['groups'], properties: { groups: { type: 'array', items: { type: 'string' } } } },
+        jsonMode: 'prompt_only', maxRetries: 0, runner: { run: async () => ({ content: '{"result":{"groups":["dinner"]}}', responseData: {} }) }, userPrompt: 'query' });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(JSON.parse(result.content)).toEqual({ groups: ['dinner'] });
+});

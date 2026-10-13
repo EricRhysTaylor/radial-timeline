@@ -1135,7 +1135,7 @@ export const de: DeepPartial<TranslationKeys> = {
             statusChunk: 'Lese Szene {{chunk}} von {{total}}',
             statusChunkFound: 'Lese Szene {{chunk}} von {{total}} · {{found}} gefunden',
             statusStopped: 'Vorzeitig gestoppt — bisher {{count}} gefunden',
-            statusDropped: '{{count}} Modellangaben verworfen (keine wörtliche Übereinstimmung)',
+            statusDropped: "{{count}} Notizen mit nicht überprüfbaren Modellbelegen",
             statusUnreadable: '{{count}} Szenen nicht lesbar',
             cancelAction: 'Abbrechen',
             cancelPending: 'Wird gestoppt…',
@@ -3972,8 +3972,10 @@ export const de: DeepPartial<TranslationKeys> = {
             disconnectFailed: 'Community Share konnte nicht getrennt werden.',
         },
         conceptSearchService: {
-            consecutiveFailures: 'Das lokale Modell ist bei {{scenes}} hintereinander fehlgeschlagen: {{error}}',
+            consecutiveFailures: "Das lokale Modell hat {{attempts}} unbrauchbare Antworten in Folge zurückgegeben: {{error}}",
             requestUnreadable: 'Das lokale Modell konnte die Anfrage nicht lesen: {{error}}',
+            budgetTooSmall: "Die Suchanfrage überschreitet das konfigurierte Kontextbudget. Gib das tatsächliche Kontextfenster des lokalen Modells unter Einstellungen → KI an oder kürze die Anfrage.",
+            invalidPlan: "Das lokale Modell hat eine leere Suchbedingung zurückgegeben.",
         },
         configurationSection: {
             timelineDisplayTitle: 'Timeline-Anzeige',

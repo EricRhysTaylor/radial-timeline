@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { buildDefaultAiSettings } from '../settings/aiSettings';
 import { validateAiSettings } from '../settings/validateAiSettings';
-import { getLocalLlmSettings, withDeclaredCapabilitiesForActiveModel } from './settings';
+import { getLocalLlmSettings, withDeclaredCapabilitiesForActiveModel, withContextWindowForActiveModel } from './settings';
 import { buildLocalLlmModelIdentity } from './identity';
 import { chunkBudgetFor } from '../../services/ConceptSearchService';
 import type { AiSettingsV1 } from '../types';
 
 /**
  * A capability declaration is a claim about ONE model on ONE server.
- * ConceptSearchService.chunkBudgetFor() doubles the per-chunk input budget when
- * `longContext` is declared, so a declaration that survives a model change makes
+ * ConceptSearchService.chunkBudgetFor() uses the declared numeric window, so a
+ * context declaration that survives a model change makes
  * RT send prompts a smaller model cannot hold. These exercise the scoping that
  * prevents that, rather than asserting source strings.
  */
@@ -50,6 +50,7 @@ describe('local LLM capability scoping', () => {
     it('keeps ConceptSearch on the small budget after a model change', () => {
         const ai = settingsFor('openaiCompatible', 'http://localhost:8080/v1', 'big-80b');
         ai.localLlm = withDeclaredCapabilitiesForActiveModel(getLocalLlmSettings(ai), ['longContext']);
+        ai.localLlm = withContextWindowForActiveModel(ai.localLlm, 32768);
         const wide = chunkBudgetFor(getLocalLlmSettings(ai));
 
         const switched = { ...ai, localLlm: { ...ai.localLlm, defaultModelId: 'small-3b' } };

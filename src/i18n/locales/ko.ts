@@ -1135,7 +1135,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             statusChunk: '장면 {{total}}개 중 {{chunk}}번째 읽는 중',
             statusChunkFound: '장면 {{total}}개 중 {{chunk}}번째 읽는 중 · {{found}}개 발견',
             statusStopped: '조기 중지됨 — 지금까지 {{count}}개 발견',
-            statusDropped: '모델 주장 {{count}}개 제외됨 (원문 일치 없음)',
+            statusDropped: "모델 근거를 확인할 수 없는 노트 {{count}}개",
             statusUnreadable: '장면 {{count}}개를 읽을 수 없음',
             cancelAction: '취소',
             cancelPending: '중지하는 중…',
@@ -3972,8 +3972,10 @@ export const ko: DeepPartial<TranslationKeys> = {
             disconnectFailed: 'Community Share 연결을 해제할 수 없습니다.',
         },
         conceptSearchService: {
-            consecutiveFailures: '로컬 모델이 {{scenes}}에서 연속으로 실패했습니다: {{error}}',
+            consecutiveFailures: "로컬 모델이 연속으로 {{attempts}}개의 사용할 수 없는 응답을 반환했습니다: {{error}}",
             requestUnreadable: '로컬 모델이 요청을 읽을 수 없습니다: {{error}}',
+            budgetTooSmall: "검색 요청이 설정된 컨텍스트 예산을 초과합니다. 설정 → AI에서 로컬 모델의 실제 컨텍스트 창을 지정하거나 검색어를 줄이세요.",
+            invalidPlan: "로컬 모델이 빈 검색 조건을 반환했습니다.",
         },
         configurationSection: {
             timelineDisplayTitle: '타임라인 표시',

@@ -4,6 +4,9 @@ import {
     describeVerdict, verifyMatch, type ConceptSearchScene
 } from './ConceptSearchService';
 import type { LocalLlmSettings } from '../ai/types';
+import { withContextWindowForActiveModel } from '../ai/localLlm/settings';
+import { cloneDefaultLocalLlmSettings } from '../ai/settings/aiSettings';
+import { estimateHeuristicInputTokens } from '../ai/tokens/inputTokenEstimate';
 
 const scene = (overrides: Partial<ConceptSearchScene> = {}): ConceptSearchScene => ({
     path: 'a.md',
@@ -119,21 +122,21 @@ describe('buildPasses', () => {
 
 describe('chunkBudgetFor', () => {
     const local = (caps: string[]): LocalLlmSettings =>
-        ({ declaredCapabilities: caps } as unknown as LocalLlmSettings);
+        ({ ...cloneDefaultLocalLlmSettings(), declaredCapabilities: caps } as LocalLlmSettings);
 
-    it('stays small unless the operator declares long context', () => {
+    it('uses a conservative complete-request ceiling until a numeric window is declared', () => {
         // The loaded context length is set outside Obsidian and cannot be
         // discovered; overshooting it makes the server reject the whole
         // request rather than degrade.
-        expect(chunkBudgetFor(local([]))).toBeLessThanOrEqual(2_000);
+        expect(chunkBudgetFor(local([]))).toBeLessThanOrEqual(3_200);
     });
 
-    it('trusts an explicit longContext declaration', () => {
-        expect(chunkBudgetFor(local(['longContext']))).toBeGreaterThan(chunkBudgetFor(local([])));
+    it('trusts a numeric context declaration for the active model', () => {
+        expect(chunkBudgetFor(withContextWindowForActiveModel(local([]), 32768))).toBeGreaterThan(chunkBudgetFor(local([])));
     });
 
     it('tolerates settings with no declared capabilities at all', () => {
-        expect(chunkBudgetFor({} as unknown as LocalLlmSettings)).toBeLessThanOrEqual(2_000);
+        expect(chunkBudgetFor(cloneDefaultLocalLlmSettings())).toBeLessThanOrEqual(3_200);
     });
 });
 
@@ -210,5 +213,41 @@ describe('describeVerdict', () => {
 
     it('handles an element that is not phrased as a question', () => {
         expect(describeVerdict(['a storm at sea'], [true])).toBe('a storm at sea: yes');
+    });
+});
+
+describe('complete-request window planning', () => {
+    it('covers oversized fields-only notes instead of silently dropping them', () => {
+        const passes = buildPasses([{ path: 'a.md', fieldsText: 'FIELD_START ' + '海'.repeat(1500) + ' FIELD_END' }], 1000);
+        expect(passes.length).toBeGreaterThan(1);
+        expect(passes.map(pass => pass.text).join('')).toContain('FIELD_START');
+        expect(passes.map(pass => pass.text).join('')).toContain('FIELD_END');
+    });
+    it('budgets metadata, Unicode, the question envelope, schema and reserved output', () => {
+        const systemPrompt = 'Answer from the passage.', questions = '1. What happened?', schema = { type: 'object' }, outputTokens = 512;
+        const passes = buildPasses([{ path: 'a.md', fieldsText: '海'.repeat(1800), bodyText: 'BODY_START ' + 'prose '.repeat(1000) + 'BODY_END' }], 2000,
+            { systemPrompt, questions, schema, outputTokens });
+        for (const pass of passes) {
+            const input = estimateHeuristicInputTokens({ systemPrompt, userPrompt: `Scene passage:\n${pass.text}\n\nQuestions:\n${questions}`, jsonSchema: schema });
+            expect(input + outputTokens).toBeLessThanOrEqual(2000);
+        }
+        expect(passes.map(pass => pass.text).join('')).toContain('BODY_END');
+    });
+    it('fails clearly when the envelope alone cannot fit', () => {
+        expect(() => buildPasses([{ path: 'a.md', bodyText: 'text' }], 100, { systemPrompt: 'x'.repeat(800), outputTokens: 512 })).toThrow('context budget');
+    });
+    it('does not split a supplementary Unicode character into invalid halves', () => {
+        const passes = buildPasses([{ path: 'a.md', bodyText: '😀'.repeat(50) }], 90);
+        expect(passes.length).toBeGreaterThan(1);
+        for (const pass of passes) {
+            expect(pass.text).not.toMatch(/^[\uDC00-\uDFFF]/);
+            expect(pass.text).not.toMatch(/[\uD800-\uDBFF]$/);
+        }
+    });
+    it('only honors the active model context declaration', () => {
+        const local = cloneDefaultLocalLlmSettings();
+        const declared = withContextWindowForActiveModel(local, 32768);
+        expect(chunkBudgetFor(declared)).toBeGreaterThan(chunkBudgetFor(local));
+        expect(chunkBudgetFor({ ...declared, defaultModelId: 'another-model' })).toBe(chunkBudgetFor(local));
     });
 });

@@ -456,6 +456,7 @@ export default class RadialTimelinePlugin extends Plugin {
         this.settings.activeBookId = bookId;
         this.settings.timelineScope = 'book';
         this.syncLegacySourcePathFromActiveBook();
+        this.searchService?.restartForScopeChange();
         await this.saveSettings();
         this.maybeAutoAdoptBeatSystems();
         this.refreshTimelineIfNeeded(null);
@@ -504,6 +505,7 @@ export default class RadialTimelinePlugin extends Plugin {
     }
 
     public async setTimelineScope(scope: 'book' | 'saga'): Promise<void> {
+        const previousScope = this.settings.timelineScope;
         if (scope === 'saga') {
             if (!isSagaScopeAvailable(this.settings)) {
                 new Notice(t('ui.main.sagaNeedsTwoBooks'));
@@ -519,6 +521,7 @@ export default class RadialTimelinePlugin extends Plugin {
             this.settings.timelineScope = 'book';
         }
 
+        if (previousScope !== this.settings.timelineScope) this.searchService?.restartForScopeChange();
         await this.saveSettings();
         this.refreshTimelineIfNeeded(null);
         this.updateTimelineBookHeaders();

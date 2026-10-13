@@ -46,7 +46,7 @@ function stripCodeFence(input: string): string {
         : withoutStart.trim();
 }
 
-function extractBalancedObject(raw: string): string | null {
+export function extractBalancedObject(raw: string): string | null {
     const input = stripCodeFence(raw);
     const start = input.indexOf('{');
     if (start < 0) return null;
@@ -96,7 +96,7 @@ function validateStructuredJson(
             error: validation.error instanceof Error ? validation.error.message : 'Invalid JSON response.'
         };
     }
-    return { ok: true, normalized: extracted };
+    return { ok: true, normalized: validation.normalizedRaw ?? extracted }; // SAFE: preserve the validator's canonical unwrapped object when a model used a known envelope
 }
 
 export async function runStructuredJsonPipeline(input: {

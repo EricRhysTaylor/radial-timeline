@@ -42,6 +42,7 @@ export class SearchPanelController {
     private readonly statusText: HTMLElement;
     private readonly cancelButton: HTMLButtonElement;
     private cancelRequested = false;
+    private cancelRunId?: number;
     private expanded = false;
     /** Generation token: a slow probe must not overwrite a newer answer. */
     private statusProbeId = 0;
@@ -178,6 +179,7 @@ export class SearchPanelController {
             // cannot take effect until the current pass returns should say so,
             // not look ignored.
             this.cancelRequested = true;
+            this.cancelRunId = this.host.getSearchState().runId;
             this.cancelButton.disabled = true;
             this.statusText.textContent = t('timeline.search.cancelPending');
             this.host.cancelSearch();
@@ -272,7 +274,7 @@ export class SearchPanelController {
 
         // A model that has gone away must not leave the option silently on.
         if (!status.available && this.host.getSearchState().options.llmAssist) {
-            this.commitOptions();
+            this.host.setSearchOptions({ ...this.host.getSearchState().options, llmAssist: false });
         }
     }
 
@@ -306,6 +308,7 @@ export class SearchPanelController {
     /** Mirror the live search state into the controls and the status line. */
     syncFromState(): void {
         const state = this.host.getSearchState();
+        this.statusText.title = state.unreadableNotes ? state.unreadableNotes.map(note => `${note.path}: ${note.reason}`).join('\n') : '';
 
         for (const row of this.scopeRows) {
             row.checkbox.checked = state.options[row.key];
@@ -316,7 +319,7 @@ export class SearchPanelController {
         // Only a concept run has passes to cancel; the literal sweep is over
         // before a button could be pressed.
         this.cancelButton.hidden = !(running && state.options.llmAssist);
-        if (!running) {
+        if (!running || this.cancelRunId !== state.runId) {
             this.cancelRequested = false;
             this.cancelButton.disabled = false;
         }
@@ -338,8 +341,9 @@ export class SearchPanelController {
                 };
                 // Showing the running count is what turns a long sweep from a
                 // blank wait into something the author can act on partway.
-                return state.hits.size > 0
-                    ? t('timeline.search.statusChunkFound', { ...position, found: String(state.hits.size) })
+                const found = state.runningHitCount ?? 0; // SAFE: no published hit in this run yet
+                return found > 0
+                    ? t('timeline.search.statusChunkFound', { ...position, found: String(found) })
                     : t('timeline.search.statusChunk', position);
             }
             return t('timeline.search.statusRunning');

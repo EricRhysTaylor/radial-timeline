@@ -15,21 +15,28 @@
 import { TFile, type App, type Vault, type MetadataCache } from 'obsidian';
 import type { TimelineItem } from '../types';
 import { extractBodyAfterFrontmatter } from '../utils/frontmatterDocument';
+import { escapeRegExp } from '../utils/regex';
+import type { TimelineSearchGap } from './searchState';
 
 interface SceneBodyEntry {
     /** Modification time the cached body was read at; a change invalidates it. */
     mtime: number;
+    size: number;
     body: string;
+}
+
+export interface SceneBodyLoad {
+    bodies: Map<string, string>;
+    unreadableNotes: TimelineSearchGap[];
 }
 
 /**
  * Distinct matched substrings of `phrase` within `body`, case-insensitive.
  *
  * Returns the text **as it appears in the prose**, so a search for `coast`
- * yields `['Coast']` when that is how the author wrote it. Deliberately a
- * literal `indexOf` sweep rather than a regex: an author's apostrophes,
- * parentheses, and em dashes then need no escaping and mean exactly themselves,
- * matching the semantics timeline-field search already has.
+ * yields `['Coast']` when that is how the author wrote it. The expression is
+ * escaped, so punctuation stays literal. Unicode case matching preserves the
+ * original offsets even when lowercasing a character would change its length.
  *
  * Distinct *variants* rather than one entry per occurrence, because that is
  * what survives editing. Storing surrounding context would break the moment the
@@ -39,17 +46,12 @@ interface SceneBodyEntry {
 export function findBodyMatches(body: string, phrase: string): string[] {
     if (!body || !phrase) return [];
 
-    const haystack = body.toLowerCase();
-    const needle = phrase.toLowerCase();
+    const pattern = new RegExp(escapeRegExp(phrase), 'giu');
     const variants: string[] = [];
 
-    let from = 0;
-    for (;;) {
-        const at = haystack.indexOf(needle, from);
-        if (at === -1) break;
-        const asWritten = body.slice(at, at + phrase.length);
-        if (!variants.includes(asWritten)) variants.push(asWritten);
-        from = at + needle.length;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(body)) !== null) {
+        if (!variants.includes(match[0])) variants.push(match[0]);
     }
 
     return variants;
@@ -108,6 +110,7 @@ export class SceneBodyIndex {
     private readonly vault: Vault;
     private readonly metadataCache: MetadataCache;
     private readonly entries = new Map<string, SceneBodyEntry>();
+    private readonly pendingReads = new Set<{ path: string; current: boolean }>();
 
     constructor(app: App) {
         this.vault = app.vault;
@@ -116,50 +119,73 @@ export class SceneBodyIndex {
 
     /**
      * Read the bodies for `scenes`, reusing cached text whose file has not
-     * changed. Returns a path → body map for the synchronous matching pass.
+     * changed. Returns bodies and named coverage failures for the matching pass.
      */
-    async load(scenes: TimelineItem[]): Promise<Map<string, string>> {
+    async load(scenes: TimelineItem[], isCurrent: () => boolean = () => true): Promise<SceneBodyLoad> {
         const bodies = new Map<string, string>();
+        const unreadableNotes: TimelineSearchGap[] = [];
+        const seen = new Set<string>();
 
         for (const scene of scenes) {
+            if (!isCurrent()) break;
             if (!scene.path) continue;
+            if (seen.has(scene.path)) continue;
+            seen.add(scene.path);
 
             const file = this.vault.getAbstractFileByPath(scene.path);
-            if (!(file instanceof TFile)) continue;
+            if (!(file instanceof TFile)) {
+                unreadableNotes.push({ path: scene.path, reason: 'Scene file is no longer available.' });
+                continue;
+            }
 
             const cached = this.entries.get(scene.path);
-            if (cached && cached.mtime === file.stat.mtime) {
+            if (cached && cached.mtime === file.stat.mtime && cached.size === file.stat.size) {
                 bodies.set(scene.path, cached.body);
                 continue;
             }
 
+            const reading = { path: scene.path, current: true };
+            this.pendingReads.add(reading);
             try {
+                const mtime = file.stat.mtime;
+                const size = file.stat.size;
                 const raw = await this.vault.cachedRead(file);
+                if (!isCurrent()) break;
+                const currentFile = this.vault.getAbstractFileByPath(scene.path);
+                if (!reading.current || !(currentFile instanceof TFile) || file.path !== scene.path || currentFile.stat.mtime !== mtime || currentFile.stat.size !== size) {
+                    throw new Error('Scene changed while its body was being read; search again for the current text.');
+                }
                 const frontmatter = this.metadataCache.getFileCache(file)?.frontmatter;
                 // The canonical helper: prefers Obsidian's frontmatter end
                 // offset and falls back to stripping the YAML fence, so a
                 // missing metadata cache cannot leak frontmatter into the body.
                 const body = extractBodyAfterFrontmatter(raw, frontmatter ?? {});
-                this.entries.set(scene.path, { mtime: file.stat.mtime, body });
+                this.entries.set(scene.path, { mtime, size, body });
                 bodies.set(scene.path, body);
             } catch (error) {
-                // One unreadable scene must not fail the whole search; it simply
-                // contributes no body matches. Logged so it is not invisible.
+                // Continue the other notes and report this gap to the author.
                 const message = error instanceof Error ? error.message : String(error);
                 console.warn(`[Search] Could not read scene body "${scene.path}": ${message}`);
+                unreadableNotes.push({ path: scene.path, reason: message });
+            } finally {
+                this.pendingReads.delete(reading);
             }
         }
 
-        return bodies;
+        return { bodies, unreadableNotes };
     }
 
     /** Drop one path — a rename or delete makes its cached body meaningless. */
     invalidate(path: string): void {
         this.entries.delete(path);
+        for (const reading of this.pendingReads) {
+            if (reading.path === path) reading.current = false;
+        }
     }
 
     clear(): void {
         this.entries.clear();
+        for (const reading of this.pendingReads) reading.current = false;
     }
 
     /** Cached entry count, for diagnostics. */

@@ -29,6 +29,9 @@ export interface LocalLlmBackend {
         systemPrompt?: string | null;
         userPrompt: string;
         maxOutputTokens?: number;
+        /** Streaming lets a local server observe cancellation between token writes. */
+        stream?: boolean;
+        expectedJsonSchema?: Record<string, unknown>;
         temperature?: number;
         topP?: number;
         responseFormat?: LocalLlmJsonRequest;
@@ -77,6 +80,8 @@ function createOpenAiCompatibleBackend(id: LocalLlmBackendId): LocalLlmBackend {
             systemPrompt: request.systemPrompt,
             userPrompt: request.userPrompt,
             maxOutputTokens: request.maxOutputTokens,
+            stream: request.stream,
+            expectedJsonSchema: request.expectedJsonSchema,
             temperature: request.temperature,
             topP: request.topP,
             responseFormat: toWireResponseFormat(id, request.responseFormat)

@@ -1025,7 +1025,7 @@ export const en = {
             /** The author cancelled; what was found is kept. */
             statusStopped: 'Stopped early \u2014 {{count}} found so far',
             /** Appended when the model named scenes it could not quote. {{count}} claims. */
-            statusDropped: '{{count}} model claims dropped (no verbatim match)',
+            statusDropped: "{{count}} notes with unverifiable model evidence",
             /** Appended when some scenes produced no usable reply at all. */
             statusUnreadable: '{{count}} scenes unreadable',
             cancelAction: 'Cancel',
@@ -3654,8 +3654,10 @@ export const en = {
             disconnectFailed: 'Could not disconnect Community Share.',
         },
         conceptSearchService: {
-            consecutiveFailures: 'Local model failed on {{scenes}} in a row: {{error}}',
+            consecutiveFailures: "Local model returned {{attempts}} unusable replies in a row: {{error}}",
             requestUnreadable: 'Local model could not read the request: {{error}}',
+            budgetTooSmall: "The search request exceeds the configured context budget. Set your local model's actual context window in Settings → AI, or shorten the query.",
+            invalidPlan: "Local model returned an empty search condition.",
         },
         configurationSection: {
             timelineDisplayTitle: 'Timeline Display',

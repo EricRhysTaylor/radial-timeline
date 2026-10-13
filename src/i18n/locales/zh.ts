@@ -1137,7 +1137,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             statusChunk: '正在读取第 {{chunk}} 个场景，共 {{total}} 个',
             statusChunkFound: '正在读取第 {{chunk}} 个场景，共 {{total}} 个 · 已找到 {{found}} 个',
             statusStopped: '已提前停止 — 目前找到 {{count}} 个',
-            statusDropped: '已丢弃 {{count}} 条模型结果（无逐字匹配）',
+            statusDropped: "{{count}} 篇笔记包含无法核实的模型依据",
             statusUnreadable: '{{count}} 个场景无法读取',
             cancelAction: '取消',
             cancelPending: '正在停止…',
@@ -3974,8 +3974,10 @@ export const zh: DeepPartial<TranslationKeys> = {
             disconnectFailed: '无法断开社区分享的连接。',
         },
         conceptSearchService: {
-            consecutiveFailures: '本地模型连续在 {{scenes}}上失败：{{error}}',
+            consecutiveFailures: "本地模型连续返回了 {{attempts}} 个无法使用的回复：{{error}}",
             requestUnreadable: '本地模型无法读取请求：{{error}}',
+            budgetTooSmall: "搜索请求超出了配置的上下文预算。请在设置 → AI 中指定本地模型的实际上下文窗口，或缩短查询。",
+            invalidPlan: "本地模型返回了空的搜索条件。",
         },
         configurationSection: {
             timelineDisplayTitle: '时间轴显示',

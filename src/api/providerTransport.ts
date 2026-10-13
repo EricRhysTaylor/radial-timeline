@@ -1,9 +1,12 @@
 import { request } from 'https'; // SAFE: desktop-only abortable HTTPS sockets and SSE; Obsidian requestUrl exposes neither cancellation nor response streaming
 import { request as requestHttp } from 'http'; // SAFE: only explicitly configured Local LLM endpoints may use HTTP
+import { StringDecoder } from 'string_decoder'; // SAFE: keep streamed Unicode text intact across socket chunks
 import type { RequestUrlParam } from 'obsidian';
 import type { AIRequestControl } from '../ai/types';
 import { redactSensitiveValue } from '../ai/credentials/redactSensitive';
 import { classifyProviderError } from './providerErrors';
+import { extractBalancedObject } from '../ai/localLlm/structuredJson';
+import { validateJsonResponse } from '../ai/runtime/jsonValidator';
 
 export interface ProviderHttpResponse {
     status: number;
@@ -18,6 +21,8 @@ export interface ProviderTransportOptions {
     allowHttp?: boolean;
     signal?: AbortSignal;
     maxResponseBytes?: number;
+    /** Local structured tasks may stop after their complete validated object, before model commentary. */
+    streamJsonSchema?: Record<string, unknown>;
 }
 
 /** A transport failure preserves HTTP diagnostics without persisting request headers. */
@@ -72,6 +77,30 @@ export function decodeAnthropicStream(text: string): unknown {
     return { ...message, content: blocks };
 }
 
+/** Reassemble OpenAI-compatible SSE; incomplete or errored streams never succeed. */
+export function decodeOpenAiStream(text: string): unknown {
+    let content = '', completed = false, finishReason: string | undefined;
+    let usage: unknown;
+    for (const frame of text.split(/\r?\n\r?\n/)) {
+        const data = frame.split(/\r?\n/).filter(line => line.startsWith('data:'))
+            .map(line => line.slice(5).trimStart()).join('\n');
+        if (!data) continue; // SSE comments include MLX's prefill keepalive.
+        if (data.trim() === '[DONE]') { completed = true; continue; }
+        const event = JSON.parse(data) as { error?: { message?: string }; usage?: unknown;
+            choices?: Array<{ index?: number; delta?: { content?: string }; finish_reason?: string | null }> };
+        if (event.error) throw new ProviderTransportError(`Local response stream failed: ${event.error.message}`);
+        if (event.usage !== undefined) usage = event.usage;
+        const choice = event.choices?.find(choice => choice.index === 0);
+        if (choice?.delta?.content !== undefined) content += choice.delta.content;
+        if (choice?.finish_reason) finishReason = choice.finish_reason;
+    }
+    if (!completed || !finishReason) throw new ProviderTransportError('Local response stream ended before completion.');
+    // A token limit completes the transport too. The structured validator must
+    // decide whether the JSON finished before that limit; missing DONE is always an error.
+    if (finishReason !== 'stop' && finishReason !== 'length') throw new ProviderTransportError(`Local response stream did not finish normally (${finishReason}).`);
+    return { choices: [{ message: { content }, finish_reason: finishReason }], usage };
+}
+
 function sendProviderRequest(options: RequestUrlParam, control: AIRequestControl | undefined, transport: ProviderTransportOptions): Promise<ProviderHttpResponse> {
     control?.assertActive();
     const url = new URL(options.url);
@@ -99,6 +128,9 @@ function sendProviderRequest(options: RequestUrlParam, control: AIRequestControl
             }
             const chunks: Buffer[] = [];
             let responseBytes = 0;
+            let terminalTail = '';
+            const jsonDecoder = transport.streamJsonSchema ? new StringDecoder('utf8') : undefined;
+            let jsonFrames = '', jsonContent = '';
             res.on('data', (chunk: Buffer) => {
                 responseBytes += chunk.length;
                 if (transport.maxResponseBytes !== undefined && responseBytes > transport.maxResponseBytes) {
@@ -108,10 +140,48 @@ function sendProviderRequest(options: RequestUrlParam, control: AIRequestControl
                     return;
                 }
                 if (!settled) chunks.push(chunk);
+                if (headers['content-type']?.includes('text/event-stream')) {
+                    if (jsonDecoder && transport.streamJsonSchema && !settled && statusIsSuccess(res.statusCode)) {
+                        jsonFrames += jsonDecoder.write(chunk);
+                        const frames = jsonFrames.split(/\r?\n\r?\n/);
+                        jsonFrames = frames.pop() ?? ''; // SAFE: split retains the last unfinished frame, including an empty fragment
+                        for (const frame of frames) {
+                            const data = frame.split(/\r?\n/).filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n');
+                            if (!data || data.trim() === '[DONE]') continue;
+                            try {
+                                const event = JSON.parse(data) as { error?: { message?: string }; choices?: Array<{ index: number; delta?: { content?: string } }> };
+                                if (event.error) throw new ProviderTransportError(`Local response stream failed: ${event.error.message}`);
+                                const content = event.choices?.find(choice => choice.index === 0)?.delta?.content;
+                                if (typeof content === 'string') jsonContent += content;
+                                const object = extractBalancedObject(jsonContent);
+                                if (!object?.endsWith('}')) continue;
+                                const validation = validateJsonResponse(object, transport.streamJsonSchema, 'Local LLM');
+                                if (!validation.ok) continue;
+                                control?.assertActive();
+                                const normalized = validation.normalizedRaw ?? object; // SAFE: preserve the canonical unwrapped object only when the validator normalized a known envelope
+                                finish(undefined, { status: res.statusCode!, headers, text: Buffer.concat(chunks).toString('utf8'),
+                                    json: { choices: [{ message: { content: normalized } }], clientCompletedJson: true }, retryCount: 0 });
+                                req.destroy();
+                                return;
+                            } catch (error) {
+                                finish(error instanceof Error ? error : new Error(String(error)));
+                                req.destroy();
+                                return;
+                            }
+                        }
+                    }
+                    terminalTail = (terminalTail + chunk.toString('utf8')).slice(-256);
+                    if (/(?:^|\r?\n)data:\s*\[DONE\]\r?\n\r?\n/.test(terminalTail)) {
+                        // SSE has its own terminal marker. Do not wait for a
+                        // local server to close a persistent HTTP connection.
+                        finishResponse();
+                        req.destroy();
+                    }
+                }
             });
             res.on('error', error => finish(new ProviderTransportError(error.message)));
             res.on('aborted', () => finish(new ProviderTransportError('Provider response connection ended before completion.')));
-            res.on('end', () => {
+            const finishResponse = (): void => {
                 try {
                     control?.assertActive();
                     const text = Buffer.concat(chunks).toString('utf8');
@@ -120,7 +190,8 @@ function sendProviderRequest(options: RequestUrlParam, control: AIRequestControl
                     if (status >= 300 && status < 400) throw new ProviderTransportError('Provider redirect refused; credentials and manuscript were not forwarded.', status);
                     let json: unknown;
                     if (headers['content-type']?.includes('text/event-stream')) {
-                        json = decodeAnthropicStream(text);
+                        json = url.hostname === 'api.anthropic.com' || text.includes('event: message_start')
+                            ? decodeAnthropicStream(text) : decodeOpenAiStream(text);
                     } else if (status >= 400) {
                         // Non-JSON gateway failures still preserve status and retry headers.
                         try { json = JSON.parse(text); }
@@ -132,7 +203,8 @@ function sendProviderRequest(options: RequestUrlParam, control: AIRequestControl
                 } catch (error) {
                     finish(error instanceof Error ? error : new Error(String(error)));
                 }
-            });
+            };
+            res.on('end', finishResponse);
         });
         req.on('error', error => finish(new ProviderTransportError(error.message)));
         const stop = (error: Error): void => { req.destroy(error); finish(error); };
@@ -151,6 +223,10 @@ function sendProviderRequest(options: RequestUrlParam, control: AIRequestControl
             stop(error instanceof Error ? error : new Error(String(error)));
         }
     });
+}
+
+function statusIsSuccess(status: number | undefined): boolean {
+    return status !== undefined && status >= 200 && status < 300;
 }
 
 /** Retry only explicit transient HTTP rejections, never ambiguous network/timeout failures. */

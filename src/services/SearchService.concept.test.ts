@@ -4,9 +4,21 @@ import type { TimelineItem } from '../types';
 
 const listModels = vi.fn();
 const complete = vi.fn();
+const verifyComplete = vi.fn();
+const seenQuotes = new Set<string>();
 
 vi.mock('../ai/localLlm/backends', () => ({
-    getLocalLlmBackend: () => ({ id: 'ollama', label: 'Ollama', listModels, complete })
+    getLocalLlmBackend: () => ({ id: 'ollama', label: 'Ollama', listModels, complete: async (request: { responseFormat?: { schemaName?: string } }) => {
+        if (request.responseFormat?.schemaName === 'query_match') return verifyComplete(request);
+        const result = await complete(request);
+        if (result?.content) {
+            try {
+                const parsed = JSON.parse(result.content) as { evidence?: string[][] };
+                for (const quotes of parsed.evidence ?? []) quotes.forEach(quote => seenQuotes.add(quote));
+            } catch { /* malformed fixtures remain malformed for the real validator */ }
+        }
+        return result;
+    } })
 }));
 vi.mock('../ai/credentials/credentials', () => ({
     getCredential: () => Promise.resolve(undefined)
@@ -18,7 +30,7 @@ const { createSearchState } = await import('./searchState');
 const LOCAL = {
     enabled: true, configurationMode: 'manual', backend: 'ollama',
     baseUrl: 'http://localhost:11434/v1', defaultModelId: 'qwen3',
-    timeoutMs: 1000, maxRetries: 0, jsonMode: 'response_format', declaredCapabilities: []
+    timeoutMs: 1000, maxRetries: 0, jsonMode: 'response_format', declaredCapabilities: [], contextWindowByModel: {}, capabilitiesByModel: {}
 };
 
 const scene = (path: string, synopsis: string): TimelineItem =>
@@ -45,7 +57,7 @@ function makeHarness() {
 
     const plugin = {
         searchState: createSearchState(),
-        settings: { aiSettings: { localLlm: { ...LOCAL } } } as Record<string, unknown>,
+        settings: { enableAiSceneAnalysis: true, aiSettings: { localLlm: { ...LOCAL } } } as Record<string, unknown>,
         registerEvent: () => { /* no-op */ },
         getTimelineSceneData: () => scenesPromise,
         getTimelineViews: () => [{ refreshTimeline: () => {}, syncTimelineSearchControl: () => {} }],
@@ -60,12 +72,12 @@ const settle = async () => { for (let i = 0; i < 12; i++) await new Promise(r =>
 
 /** The one-off decomposition reply that opens every run. */
 const elementsReply = (elements: string[]) => ({
-    success: true, content: JSON.stringify({ elements }), responseData: {}, error: undefined
+    success: true, content: JSON.stringify({ groups: [elements] }), responseData: {}, error: undefined
 });
 
 /** A per-scene verdict: one boolean per question, plus supporting quotes. */
 const verdict = (answers: boolean[], quotes: string[] = []) => ({
-    success: true, content: JSON.stringify({ answers, quotes }), responseData: {}, error: undefined
+    success: true, content: JSON.stringify({ evidence: answers.map(supported => supported ? quotes : []) }), responseData: {}, error: undefined
 });
 
 /** Matches when every element holds and the quote is verbatim. */
@@ -75,6 +87,10 @@ const noMatch = () => verdict([false], []);
 beforeEach(() => {
     listModels.mockReset();
     complete.mockReset();
+    verifyComplete.mockReset();
+    seenQuotes.clear();
+    verifyComplete.mockImplementation((request: { userPrompt: string }) => ({ success: true,
+        content: JSON.stringify({ match: true, quotes: [...seenQuotes].filter(quote => request.userPrompt.includes(quote)).slice(0, 2) }), responseData: {} }));
     listModels.mockResolvedValue([{ id: 'qwen3' }]);
 });
 
@@ -330,4 +346,164 @@ describe('concept search through the transaction', () => {
         expect(complete).not.toHaveBeenCalled();
         expect(listModels).not.toHaveBeenCalled();
     });
+});
+
+describe('search hardening regressions', () => {
+    it('preserves OR alternatives', async () => {
+        const h = makeHarness();
+        h.plugin.searchState.options = { timelineFields: true, body: false, llmAssist: true };
+        complete.mockResolvedValueOnce({ success: true, content: JSON.stringify({ groups: [['Celebration?'], ['Farewell?']] }), responseData: {} })
+            .mockResolvedValueOnce(verdict([true, false], ['cheered']))
+            .mockResolvedValueOnce(verdict([false, true], ['waved goodbye']));
+        h.service.performSearch('celebration or farewell');
+        h.resolve([scene('a.md', 'They cheered.'), scene('b.md', 'They waved goodbye.')]);
+        await settle();
+        expect([...h.plugin.searchState.hits.keys()]).toEqual(['a.md', 'b.md']);
+    });
+
+    it('combines grounded facts across windows, then verifies the original request', async () => {
+        const h = makeHarness();
+        h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
+        h.bodies.set('a.md', 'Ada arrived.' + ' padding'.repeat(2500) + 'They ate dinner.');
+        complete.mockResolvedValueOnce(elementsReply(['Ada present?', 'Dinner?'])).mockImplementation(request => ({
+            success: true, responseData: {}, content: JSON.stringify({ evidence: [
+                request.userPrompt.includes('Ada arrived.') ? ['Ada arrived.'] : [],
+                request.userPrompt.includes('They ate dinner.') ? ['They ate dinner.'] : []
+            ] })
+        }));
+        h.service.performSearch('dinner with Ada'); h.resolve([scene('a.md', '')]); await settle();
+        expect(h.plugin.searchState.hits.size).toBe(1);
+        expect(h.plugin.searchState.hits.get('a.md')?.evidence).toEqual(expect.arrayContaining(['Ada arrived.', 'They ate dinner.']));
+        expect(verifyComplete).toHaveBeenCalledTimes(1);
+        expect(complete.mock.calls.length).toBeGreaterThan(2);
+    });
+
+    it('does not accept separate facts when the original relationship is false', async () => {
+        const h = makeHarness(); h.plugin.searchState.options.llmAssist = true;
+        complete.mockResolvedValueOnce(elementsReply(['Ada present?', 'Dinner?']))
+            .mockResolvedValue(verdict([true, true], ['Ada left.', 'Others ate dinner.']));
+        verifyComplete.mockResolvedValue({ success: true, content: JSON.stringify({ match: false, quotes: [] }), responseData: {} });
+        h.service.performSearch('dinner with Ada'); h.resolve([scene('a.md', 'Ada left. Others ate dinner.')]); await settle();
+        expect(h.plugin.searchState.hits.size).toBe(0);
+        expect(verifyComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('requires grounded support for every criterion in a matching group', async () => {
+        const h = makeHarness(); h.plugin.searchState.options.llmAssist = true;
+        complete.mockResolvedValueOnce(elementsReply(['Dinner?', 'Ada present?']))
+            .mockResolvedValue({ success: true, responseData: {}, content: JSON.stringify({ evidence: [['Dinner.'], ['invented presence']] }) });
+        h.service.performSearch('dinner with Ada'); h.resolve([scene('a.md', 'Dinner.')]); await settle();
+        expect(h.plugin.searchState.hits.size).toBe(0); expect(h.plugin.searchState.droppedClaims).toBe(1);
+        expect(verifyComplete).not.toHaveBeenCalled();
+    });
+
+    it('searches one file once while retaining every subplot representation', async () => {
+        const h = makeHarness(); h.plugin.searchState.options.llmAssist = true;
+        complete.mockResolvedValueOnce(elementsReply(['Relationship?'])).mockResolvedValue(match(['Relationship']));
+        h.service.performSearch('relationship');
+        h.resolve([{ ...scene('a.md', 'coast'), subplot: 'Main Plot' }, { ...scene('a.md', 'coast'), subplot: 'Relationship' }]);
+        await settle();
+        expect(complete).toHaveBeenCalledTimes(2); // Plan plus one evidence pass; verification has its own spy.
+        expect(complete.mock.calls[1][0].userPrompt).toContain('Main Plot');
+        expect(complete.mock.calls[1][0].userPrompt).toContain('Relationship');
+        expect(h.plugin.searchState.hits.size).toBe(1);
+    });
+
+    it('aborts a superseded AI run and prevents it scheduling another scene', async () => {
+        const h = makeHarness(); h.plugin.searchState.options.llmAssist = true;
+        let release!: (value: unknown) => void;
+        let signal!: AbortSignal;
+        complete.mockResolvedValueOnce(elementsReply(['Relevant?'])).mockImplementationOnce(request => {
+            signal = request.signal; return new Promise(resolve => { release = resolve; });
+        }).mockResolvedValue(noMatch());
+        h.service.performSearch('concept'); h.resolve([scene('a.md', 'coast'), scene('b.md', 'coast')]); await settle();
+        h.plugin.searchState.options = { timelineFields: true, body: false, llmAssist: false };
+        h.service.performSearch('coast'); await settle();
+        expect(signal.aborted).toBe(true);
+        release(noMatch()); await settle();
+        expect(complete).toHaveBeenCalledTimes(2);
+        expect(h.plugin.searchState.term).toBe('coast'); expect(h.plugin.searchState.hits.size).toBe(2);
+    });
+
+    it('serializes replacement AI sweeps until the old request settles', async () => {
+        const h = makeHarness(); h.plugin.searchState.options.llmAssist = true;
+        let release!: (value: unknown) => void;
+        complete.mockResolvedValueOnce(elementsReply(['Relevant?'])).mockImplementationOnce(() => new Promise(resolve => { release = resolve; }))
+            .mockResolvedValueOnce(elementsReply(['New relevant?'])).mockResolvedValue(noMatch());
+        h.service.performSearch('first'); h.resolve([scene('a.md', 'prose')]); await settle();
+        h.service.performSearch('second'); await settle();
+        expect(complete).toHaveBeenCalledTimes(2);
+        release(noMatch()); await settle();
+        expect(complete).toHaveBeenCalledTimes(4); expect(h.plugin.searchState.term).toBe('second');
+    });
+
+    it('refuses completion calls when the AI master switch is off', async () => {
+        const h = makeHarness(); h.plugin.settings.enableAiSceneAnalysis = false;
+        h.plugin.searchState.options.llmAssist = true;
+        h.service.performSearch('concept'); h.resolve([scene('a.md', 'prose')]); await settle();
+        expect(complete).not.toHaveBeenCalled(); expect(listModels).not.toHaveBeenCalled();
+        expect(h.plugin.searchState.status).toBe('error');
+    });
+
+    it('stops when permission is withdrawn during decomposition', async () => {
+        const h = makeHarness(); h.plugin.searchState.options.llmAssist = true;
+        complete.mockImplementation(() => { h.plugin.settings.enableAiSceneAnalysis = false; return elementsReply(['Relevant?']); });
+        h.service.performSearch('concept'); h.resolve([scene('a.md', 'prose')]); await settle();
+        expect(complete).toHaveBeenCalledTimes(1);
+        expect(h.plugin.searchState.stoppedEarly).toBe(true); expect(h.plugin.searchState.hits.size).toBe(0);
+    });
+
+    it.each(['decomposition', 'final scene'])('cancels during %s without reporting unreadable scenes', async phase => {
+        const h = makeHarness(); h.plugin.searchState.options.llmAssist = true;
+        let release!: (value: unknown) => void;
+        if (phase === 'final scene') complete.mockResolvedValueOnce(elementsReply(['Relevant?']));
+        complete.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+        h.service.performSearch('concept'); h.resolve([scene('a.md', 'prose')]); await settle();
+        h.service.cancelSearch(); release({ success: false, content: null, responseData: {}, error: 'cancelled' }); await settle();
+        expect(h.plugin.searchState.status).toBe('ready'); expect(h.plugin.searchState.stoppedEarly).toBe(true);
+        expect(h.plugin.searchState.unreadableScenes).toBe(0);
+    });
+
+    it('publishes pending status immediately and can cancel before scene data arrives', async () => {
+        const h = makeHarness(); h.plugin.searchState.options.llmAssist = true;
+        h.service.performSearch('new concept');
+        expect(h.plugin.searchState.pendingTerm).toBe('new concept'); expect(h.plugin.searchState.status).toBe('running');
+        h.service.cancelSearch(); h.resolve([scene('a.md', 'prose')]); await settle();
+        expect(complete).not.toHaveBeenCalled(); expect(h.plugin.searchState.stoppedEarly).toBe(true);
+    });
+
+    it('counts an unreadable file while keeping matches in the selected fields', async () => {
+        const h = makeHarness(); h.plugin.searchState.options = { timelineFields: true, body: true, llmAssist: false };
+        h.service.performSearch('coast'); h.resolve([scene('missing.md', 'coast')]); await settle();
+        expect(h.plugin.searchState.hits.size).toBe(1); expect(h.plugin.searchState.unreadableScenes).toBe(1);
+    });
+});
+
+it('counts failed windows of one note as one unreadable scene', async () => {
+    const h = makeHarness(); h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true };
+    h.bodies.set('a.md', 'x'.repeat(20000));
+    complete.mockResolvedValueOnce(elementsReply(['Relevant?'])).mockResolvedValue({ success: false, content: null, responseData: {}, error: 'bad reply' });
+    h.service.performSearch('concept'); h.resolve([scene('a.md', '')]); await settle();
+    expect(complete.mock.calls.length).toBeGreaterThan(2); expect(h.plugin.searchState.unreadableScenes).toBe(1);
+});
+
+it('does not silently substitute the query when decomposition has no conditions', async () => {
+    const h = makeHarness(); h.plugin.searchState.options.llmAssist = true;
+    complete.mockResolvedValue({ success: true, content: '{"groups":[]}', responseData: {} });
+    h.service.performSearch('concept'); h.resolve([scene('a.md', 'prose')]); await settle();
+    expect(h.plugin.searchState.status).toBe('error'); expect(complete).toHaveBeenCalledTimes(1);
+});
+
+it('accepts extra verifiable quotes without declaring the scene unreadable', async () => {
+    const h = makeHarness(); h.plugin.searchState.options.llmAssist = true;
+    complete.mockResolvedValueOnce(elementsReply(['Relevant?'])).mockResolvedValue(match(['first', 'second', 'third']));
+    h.service.performSearch('concept'); h.resolve([scene('a.md', 'first second third')]); await settle();
+    expect(h.plugin.searchState.unreadableScenes).toBe(0); expect(h.plugin.searchState.hits.size).toBe(1);
+});
+
+it('treats a blank evidence string as unsupported evidence, not an unreadable scene', async () => {
+    const h = makeHarness(); h.plugin.searchState.options.llmAssist = true;
+    complete.mockResolvedValueOnce(elementsReply(['Relevant?'])).mockResolvedValue(match(['']));
+    h.service.performSearch('concept'); h.resolve([scene('a.md', 'prose')]); await settle();
+    expect(h.plugin.searchState.unreadableScenes).toBe(0); expect(h.plugin.searchState.hits.size).toBe(0);
 });

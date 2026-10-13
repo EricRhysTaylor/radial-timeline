@@ -834,7 +834,9 @@ export class RadialTimelineView extends ItemView {
                 {
                     getSearchState: () => this.plugin.searchState,
                     setSearchOptions: (options) => { void this.applySearchOptions(options); },
-                    getLocalModelStatus: () => getLocalLlmAvailability(this.plugin),
+                    getLocalModelStatus: () => this.plugin.settings.enableAiSceneAnalysis === true
+                        ? getLocalLlmAvailability(this.plugin)
+                        : Promise.resolve({ available: false, reason: t('notices.aiTurnedOff') }),
                     cancelSearch: () => this.plugin.cancelSearch(),
                     registerDomEvent: (el, event, handler) =>
                         this.registerDomEvent(el as HTMLElement, event, handler),
@@ -2357,17 +2359,19 @@ export class RadialTimelineView extends ItemView {
         if (!this.timelineSearchInput || !this.timelineSearchButton) return;
 
         const search = this.plugin.searchState;
+        // Progress must not replace the author's draft with a previous query.
+        if (search.status === 'running' || search.status === 'error') {
+            if (search.pendingTerm && (!this.timelineSearchInput.value || this.timelineSearchInput.value === search.term)) {
+                this.timelineSearchInput.value = search.pendingTerm;
+            }
+            this.setTimelineSearchButtonMode(this.timelineSearchInput.value.trim() === search.pendingTerm ? 'clear' : 'search');
+            return;
+        }
         if (search.active && search.term) {
             this.timelineSearchInput.value = search.term;
             this.setTimelineSearchButtonMode('clear');
             return;
         }
-
-        // A run in flight has not committed its term yet. Blanking the box here
-        // would erase the author's query in front of them — invisible for the
-        // instant literal sweep, but a concept run reports progress for as long
-        // as it takes, and each report would wipe the field again.
-        if (search.status === 'running' || search.status === 'error') return;
 
         this.timelineSearchInput.value = '';
         this.setTimelineSearchButtonMode('search');
@@ -2383,13 +2387,14 @@ export class RadialTimelineView extends ItemView {
 
         search.options = { ...options };
         this.plugin.settings.timelineSearch = writeTimelineSearchSettings(search.options);
-        await this.plugin.saveSettings();
-
-        if (search.active && search.term) {
-            this.plugin.performSearch(search.term);
+        const term = search.pendingTerm ?? search.term;
+        if (term) {
+            // Invalidate immediately, before asynchronous settings persistence.
+            this.plugin.performSearch(term);
         } else {
             this.searchPanel?.syncFromState();
         }
+        await this.plugin.saveSettings();
     }
 
     private setTimelineSearchButtonMode(mode: 'search' | 'clear'): void {
@@ -2410,7 +2415,7 @@ export class RadialTimelineView extends ItemView {
         const term = this.timelineSearchInput.value.trim();
         if (!term) {
             this.setTimelineSearchButtonMode('search');
-            if (search.active || search.term) {
+            if (search.status !== 'idle' || search.active || search.term) {
                 this.plugin.clearSearch();
             }
             return;
@@ -2427,7 +2432,7 @@ export class RadialTimelineView extends ItemView {
         const search = this.plugin.searchState;
         const term = this.timelineSearchInput.value.trim();
         if (!term) {
-            if (search.active || search.term) {
+            if (search.status !== 'idle' || search.active || search.term) {
                 this.plugin.clearSearch();
             } else {
                 this.setTimelineSearchButtonMode('search');
@@ -2450,7 +2455,7 @@ export class RadialTimelineView extends ItemView {
         }
         this.setTimelineSearchButtonMode('search');
         const search = this.plugin.searchState;
-        if (search.active || search.term) {
+        if (search.status !== 'idle' || search.active || search.term) {
             this.plugin.clearSearch();
         }
     }

@@ -395,6 +395,8 @@ export async function callOpenAiCompatibleLocalCompletion(input: {
     systemPrompt?: string | null;
     userPrompt: string;
     maxOutputTokens?: number;
+    stream?: boolean;
+    expectedJsonSchema?: Record<string, unknown>;
     temperature?: number;
     topP?: number;
     responseFormat?: LocalLlmWireResponseFormat;
@@ -406,6 +408,7 @@ export async function callOpenAiCompatibleLocalCompletion(input: {
     if (typeof input.maxOutputTokens === 'number') {
         requestPayload.max_completion_tokens = input.maxOutputTokens;
     }
+    if (input.stream) requestPayload.stream = true;
     if (typeof input.temperature === 'number') {
         requestPayload.temperature = input.temperature;
     }
@@ -458,7 +461,7 @@ export async function callOpenAiCompatibleLocalCompletion(input: {
             },
             timeoutMs: input.transport.timeoutMs,
             retryPolicy: { maxAttempts: 1, baseDelayMs: 0 }
-        }, { allowHttp: true, signal: input.transport.signal, maxResponseBytes: COMPLETION_MAX_BYTES });
+        }, { allowHttp: true, signal: input.transport.signal, maxResponseBytes: COMPLETION_MAX_BYTES, streamJsonSchema: input.expectedJsonSchema });
         input.transport.requestControl?.assertActive();
         if (input.transport.signal?.aborted) throw new Error(LOCAL_LLM_CANCELLED);
         return interpret(response.status, response.json);

@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { findBodyMatches, locateBodyEvidenceRanges } from './SceneBodyIndex';
+import { describe, expect, it, vi } from 'vitest';
+import { TFile } from 'obsidian';
+import { SceneBodyIndex, findBodyMatches, locateBodyEvidenceRanges } from './SceneBodyIndex';
 import { extractBodyAfterFrontmatter } from '../utils/frontmatterDocument';
 
 describe('findBodyMatches', () => {
@@ -126,4 +127,68 @@ describe('locateBodyEvidenceRanges', () => {
         expect(locateBodyEvidenceRanges(content, body, [])).toEqual([]);
         expect(locateBodyEvidenceRanges(content, body, [''])).toEqual([]);
     });
+});
+
+describe('body index read ownership', () => {
+    function harness() {
+        const file = Object.assign(new TFile('a.md'), { stat: { mtime: 1, ctime: 1, size: 20 } });
+        let text = '---\nPlace: Secret\n---\nOld body.';
+        const read = vi.fn(async () => text);
+        const app = { vault: { getAbstractFileByPath: (path: string) => path === file.path ? file : null, cachedRead: read },
+            metadataCache: { getFileCache: () => ({}) } };
+        return { file, read, setText: (value: string) => { text = value; }, index: new SceneBodyIndex(app as never) };
+    }
+    it('reuses unchanged text, reads edited text, and excludes YAML', async () => {
+        const h = harness(), scenes = [{ path: 'a.md' }] as never;
+        expect((await h.index.load(scenes)).bodies.get('a.md')?.trim()).toBe('Old body.');
+        await h.index.load(scenes); expect(h.read).toHaveBeenCalledTimes(1);
+        h.file.stat.mtime = 2; h.setText('New body.');
+        expect((await h.index.load(scenes)).bodies.get('a.md')).toBe('New body.'); expect(h.read).toHaveBeenCalledTimes(2);
+    });
+    it('never stamps a stale read with an edit that occurred while awaiting it', async () => {
+        const h = harness(); let release!: (value: string) => void;
+        h.read.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+        const pending = h.index.load([{ path: 'a.md' }] as never);
+        h.file.stat.mtime = 2; h.setText('New body.'); release('Old body.');
+        const first = await pending;
+        expect(first.bodies.size).toBe(0); expect(first.unreadableNotes.map(note => note.path)).toEqual(['a.md']);
+        expect((await h.index.load([{ path: 'a.md' }] as never)).bodies.get('a.md')).toBe('New body.');
+        expect(h.read).toHaveBeenCalledTimes(2);
+    });
+    it('reads duplicate subplot representations once and counts missing files once', async () => {
+        const h = harness();
+        const result = await h.index.load([{ path: 'a.md' }, { path: 'a.md' }, { path: 'missing.md' }, { path: 'missing.md' }] as never);
+        expect(h.read).toHaveBeenCalledTimes(1); expect(result.unreadableNotes.map(note => note.path)).toEqual(['missing.md']);
+    });
+    it('reports read failures to the caller', async () => {
+        const h = harness(); h.read.mockRejectedValue(new Error('unreadable'));
+        expect((await h.index.load([{ path: 'a.md' }] as never)).unreadableNotes.map(note => note.path)).toEqual(['a.md']);
+    });
+    it('invalidates renamed or deleted paths', async () => {
+        const h = harness(); await h.index.load([{ path: 'a.md' }] as never); h.index.invalidate('a.md');
+        await h.index.load([{ path: 'a.md' }] as never); expect(h.read).toHaveBeenCalledTimes(2);
+    });
+    it('stops reading as soon as the run is superseded', async () => {
+        const h = harness(); let current = true;
+        h.read.mockImplementationOnce(async () => { current = false; return 'Old body.'; });
+        const result = await h.index.load([{ path: 'a.md' }, { path: 'missing.md' }] as never, () => current);
+        expect(result.bodies.size).toBe(0); expect(result.unreadableNotes.map(note => note.path)).toEqual([]); expect(h.read).toHaveBeenCalledTimes(1);
+    });
+});
+
+it('invalidates an in-flight read even when an edit keeps the same size and timestamp', async () => {
+    const file = Object.assign(new TFile('a.md'), { stat: { mtime: 1, ctime: 1, size: 4 } });
+    let release!: (body: string) => void;
+    const read = vi.fn<() => Promise<string>>().mockImplementationOnce(() => new Promise(resolve => { release = resolve; })).mockResolvedValue('new!');
+    const index = new SceneBodyIndex({ vault: { getAbstractFileByPath: () => file, cachedRead: read }, metadataCache: { getFileCache: () => ({}) } } as never);
+    const pending = index.load([{ path: 'a.md' }] as never); index.invalidate('a.md'); release('old!');
+    expect((await pending).unreadableNotes.map(note => note.path)).toEqual(['a.md']);
+    expect((await index.load([{ path: 'a.md' }] as never)).bodies.get('a.md')).toBe('new!');
+});
+
+it('keeps literal match evidence after a Unicode character whose lowercase expands', () => {
+    const body = 'İstanbul coast';
+    const evidence = findBodyMatches(body, 'COAST');
+    expect(evidence).toEqual(['coast']);
+    expect(locateBodyEvidenceRanges(body, body, evidence)).toEqual([[9, 14]]);
 });

@@ -1,6 +1,6 @@
 Keep the book’s notes beside the wheel in an Obsidian Bases view. The Timetable shows scenes, story beats, sketches, and other manuscript notes in rows, with scene status, subplot membership, dates, durations, and synopses visible together.
 
-> **Available in 7.5.0.** Enable **Bases** under **Settings → Core plugins**. The Timetable works with Obsidian 1.13; the Act and Status boards require Obsidian 1.14 or later.
+> **Available in 7.5.0.** Enable **Bases** under **Settings → Core plugins**. The Timetable works with Obsidian 1.13; the Act and Status boards require Obsidian 1.14 or later. Mode following, the lens, coloring by a column, and bulk edits arrived in 7.5.1.
 
 ![The Timetable beside the radial timeline, with scene numbers, colored subplot squares, dates, durations, and synopses](images/timetable-sidebyside.webp)
 
@@ -12,13 +12,37 @@ The `.base` file is yours to customize. Change its columns, filters, sorting, or
 
 ## Read the rows
 
-- **Scene number:** the number cell carries writing status and Publish Stage colors. Story beats have their own number treatment; sketches remain distinct from scenes.
+- **Scene number:** the number cell carries writing status and Publish Stage colors. Story beats have their own number treatment; sketches remain distinct from scenes. Click a scene's number cell to set its Status or Publish Stage, or click a Status, Publish Stage, or Act cell for that property's values. Marking a scene Complete sets Due to today, as it does from the wheel.
 - **Rings:** colored squares show subplot membership in the wheel’s ring order. Hover for the subplot names. Outlined squares can show a subplot planned for a sketch before it appears on the wheel. **Rings per line** controls wrapping.
 - **Properties:** columns come from your scene property templates and respect your field-name mappings. Use **Properties** to show or hide columns and drag a column edge to resize it.
 - **When:** dates use the same display formatter as the timeline hover, including the active planetary calendar where applicable.
-- **Open queries:** a marker identifies unresolved author queries in a note; hover to read them.
+- **Open queries:** a marker identifies unresolved author queries in a note; hover to read them. On the wheel, the same scene shows a question bubble in each of its cells.
 
 Hover a scene row to highlight it on the wheel. Hover a scene on the wheel to reveal its row, lit in the color of the cell you’re pointing at: that ring’s color, or the color-by color while a column colors the timeline. Click a scene row to open its note; **Shift-click** brings the timeline forward and highlights that scene. Right-click a scene row for the timeline’s scene menu.
+
+The table and the wheel point at each other. The note open in an editor is marked in the table. Clicking an act label on the wheel (a book label in Saga scope) shows that act in the table, expanding it if collapsed. Spotlighting a ring in the subplot key fades the rows outside that ring.
+
+### Follow the timeline’s mode
+
+The Timetable draws itself in the timeline’s mode, and the mode button in its corner shows which. Click it to pin a mode instead. A sort set in the Bases toolbar still wins over the mode’s order.
+
+| Timeline mode | What the table shows |
+|---|---|
+| **Chronologue** | Rows in story order with a divider for each day; beats are left out, as on the wheel. **Shift** adds a **Gap** column (time since the previous dated row), **Runtime** adds a **Running time** column, and the Alt calendar shows dates, days, and gaps in the planetary calendar. |
+| **Progress** | Each heading counts complete scenes, words, and overdue scenes; overdue Due cells stand out. |
+| **Gossamer** | Beats come forward with their latest score for the selected signal, its change since the previous run, the expected range (flagged when a score is outside it), and the justification. Other rows recede. |
+
+### Light up the table on the timeline
+
+Turn on the lens in the Timetable’s corner, or as a view option saved in the `.base` file. Every scene, beat, and backdrop outside the table’s rows dims on the wheel, and a pill names the view, with a button that turns the lens off. Any Bases filter becomes a pattern on the wheel, so a saved view is a saved lens.
+
+### Color the timeline by a column
+
+Right-click a column header to color the timeline’s scenes by that column’s values, such as POV or Location: any field with up to eight values. Each value takes a ring color, scenes without one are drawn neutral, and a pill on the wheel shows the legend. **Stop coloring** restores the status and subplot colors. Coloring isn’t saved, and one table colors the timeline at a time.
+
+### Edit many rows at once
+
+Each scene, sketch, and not-yet-promoted row has a checkbox. **Shift** picks a range and **Esc** clears the selection. While rows are picked, a bar under the table sets Status, Stage, or Act on all of them, adds them to a ring or removes them from one, or promotes the ones that aren’t scenes yet. Status and Stage follow the wheel menu’s rules, so Complete sets Due. Ring changes come with one notice and one **Undo** for every note changed.
 
 ### The reading pane
 

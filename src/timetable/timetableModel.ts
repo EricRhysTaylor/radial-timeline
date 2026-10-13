@@ -22,6 +22,7 @@ import { normalizeStatus } from '../utils/text';
 import { whenTextHasClock } from '../utils/whenFormat';
 import { parseRuntimeField } from '../utils/runtimeEstimator';
 import { formatHoverMetadataValue } from '../utils/hoverMetadata';
+import { hexToRgb } from '../utils/colour';
 
 /**
  * - `scene`: on the wheel.
@@ -292,6 +293,9 @@ export function groupProgress(
 /** A column with more values than this can't color the timeline legibly. */
 export const MAX_COLOR_VALUES = 8;
 
+/** A value that reads as a number (an act, a chapter): the legend lists these in order. */
+const NUMBER_VALUE = /^-?\d+(\.\d+)?$/;
+
 export type ColoringPlan =
     | { kind: 'ok'; values: Map<string, string>; legend: Array<{ value: string; colorIndex: number }> }
     | { kind: 'none' }
@@ -300,9 +304,15 @@ export type ColoringPlan =
 /**
  * Plan coloring scenes by a column: each scene's value as the author reads it
  * (a link shows its name; a list counts its first item), one color slot per
- * value, most frequent first. More than MAX_COLOR_VALUES values is refused.
+ * value, most frequent first, taking slots in `slotOrder` (see
+ * distinctColorSlots). The legend lists numbers in order. More than
+ * MAX_COLOR_VALUES values is refused.
  */
-export function planColoring(rows: Array<{ path: string; value: unknown }>, max: number = MAX_COLOR_VALUES): ColoringPlan {
+export function planColoring(
+    rows: Array<{ path: string; value: unknown }>,
+    max: number = MAX_COLOR_VALUES,
+    slotOrder: number[] = [],
+): ColoringPlan {
     const values = new Map<string, string>();
     const counts = new Map<string, number>();
     for (const { path, value } of rows) {
@@ -316,6 +326,64 @@ export function planColoring(rows: Array<{ path: string; value: unknown }>, max:
     if (counts.size > max) return { kind: 'tooMany', count: counts.size };
     const legend = [...counts.entries()]
         .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .map(([value], colorIndex) => ({ value, colorIndex }));
+        .map(([value], index) => ({ value, colorIndex: slotOrder[index] ?? index }));
+    // Numbers (acts, chapters) read best in order; other values most frequent first.
+    if (legend.every(entry => NUMBER_VALUE.test(entry.value))) legend.sort((a, b) => Number(a.value) - Number(b.value));
     return { kind: 'ok', values, legend };
+}
+
+/** Below this chroma a ring color reads as grey, too close to an uncolored scene. */
+const MIN_COLORING_CHROMA = 20;
+
+/**
+ * The ring palette's slots in the order coloring should use them, so a few
+ * values get colors that are easy to tell apart: the most vivid color first,
+ * then each time the color farthest from those already taken. Near-greys (and
+ * anything unreadable) come last, in slot order.
+ */
+export function distinctColorSlots(palette: string[]): number[] {
+    const colors = palette.map((color, slot) => ({ slot, lab: hexToLab(color) }));
+    const pool = colors.filter((color): color is { slot: number; lab: Lab } => color.lab !== null && chroma(color.lab) >= MIN_COLORING_CHROMA);
+    const order: Array<{ slot: number; lab: Lab }> = [];
+    while (pool.length > 0) {
+        let best = 0;
+        let bestScore = -1;
+        pool.forEach((color, index) => {
+            const score = order.length === 0
+                ? chroma(color.lab)
+                : Math.min(...order.map(taken => labDistance(taken.lab, color.lab)));
+            if (score > bestScore) { best = index; bestScore = score; }
+        });
+        order.push(...pool.splice(best, 1));
+    }
+    const taken = new Set(order.map(color => color.slot));
+    return [...order.map(color => color.slot), ...colors.filter(color => !taken.has(color.slot)).map(color => color.slot)];
+}
+
+type Lab = { l: number; a: number; b: number };
+
+/** CIE L*a*b* (D65) for a hex color, or null if it isn't one. */
+function hexToLab(hex: string): Lab | null {
+    const rgb = hexToRgb(hex.trim());
+    if (!rgb) return null;
+    const linear = (channel: number): number => {
+        const c = channel / 255;
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    const r = linear(rgb.r);
+    const g = linear(rgb.g);
+    const b = linear(rgb.b);
+    const f = (t: number): number => (t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116);
+    const x = f((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047);
+    const y = f(0.2126 * r + 0.7152 * g + 0.0722 * b);
+    const z = f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883);
+    return { l: 116 * y - 16, a: 500 * (x - y), b: 200 * (y - z) };
+}
+
+function chroma(lab: Lab): number {
+    return Math.hypot(lab.a, lab.b);
+}
+
+function labDistance(a: Lab, b: Lab): number {
+    return Math.hypot(a.l - b.l, a.a - b.a, a.b - b.b);
 }

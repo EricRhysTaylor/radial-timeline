@@ -60,6 +60,7 @@ import {
     compareChronologicalRows,
     compareManuscriptRows,
     displayName,
+    distinctColorSlots,
     elapsedSincePrevious,
     groupProgress,
     planColoring,
@@ -97,7 +98,7 @@ import {
     STATUS_OPTIONS,
 } from '../view/interactions/SceneContextMenu';
 import { applySubplotMembershipChangeToMany } from '../services/SubplotMembership';
-import { readSubplotColor } from '../renderer/utils/subplotColors';
+import { readSubplotColor, SUBPLOT_COLOR_SLOTS } from '../renderer/utils/subplotColors';
 import type { BookProfile, PlanetaryProfile } from '../types/settings';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -307,18 +308,16 @@ export class TimetableView extends BasesView {
         // One set of delegated handlers: rows are redrawn on every data update.
         this.registerDomEvent(this.rootEl, 'click', (evt: MouseEvent) => this.handleClick(evt));
         this.registerDomEvent(this.rootEl, 'keydown', (evt: KeyboardEvent) => {
-            if (evt.key === 'Escape' && this.selected.size > 0 && !(evt.target instanceof Element && evt.target.closest('input[type="text"], textarea, select'))) {
-                evt.preventDefault();
-                this.selected.clear();
-                this.render();
-                return;
-            }
             if (evt.key !== 'Enter' && evt.key !== ' ') return;
             const toggle = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__group-toggle') : null;
             if (!toggle) return;
             evt.preventDefault();
             this.toggleGroup(toggle.dataset.groupId ?? '');
         });
+        // Esc clears picked rows wherever focus is (after a bulk menu or a row click it sits on the page).
+        // On the app's scope, so an open menu or dialog takes Esc first.
+        const escape = this.plugin.app.scope.register([], 'Escape', (evt: KeyboardEvent) => this.clearSelectionOnEscape(evt));
+        this.register(() => this.plugin.app.scope.unregister(escape));
         this.registerDomEvent(this.rootEl, 'contextmenu', (evt: MouseEvent) => this.handleContextMenu(evt));
         // Column resizing: the handle captures the pointer, so its moves bubble here.
         this.registerDomEvent(this.rootEl, 'pointerdown', (evt: PointerEvent) => this.startResize(evt));
@@ -547,6 +546,16 @@ export class TimetableView extends BasesView {
      * wheel. Other rows get Obsidian's own file menu, which includes Promote
      * for notes that can become scenes.
      */
+    /** Esc clears the picked rows while this table's pane is active and no text field has focus. False means handled. */
+    private clearSelectionOnEscape(evt: KeyboardEvent): boolean {
+        if (this.selected.size === 0) return true;
+        if (!this.rootEl.closest('.workspace-leaf')?.hasClass('mod-active')) return true;
+        if (evt.target instanceof Element && evt.target.closest('input[type="text"], textarea, select, .cm-editor')) return true;
+        this.selected.clear();
+        this.render();
+        return false;
+    }
+
     private handleContextMenu(evt: MouseEvent): void {
         const header = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__prop-head[data-property]') : null;
         if (header?.dataset.property) {
@@ -839,7 +848,8 @@ export class TimetableView extends BasesView {
             })
             .filter(item => item.row.kind === 'scene')
             .map(item => ({ path: item.row.path, value: frontmatterKey(item.frontmatter, name) }));
-        return planColoring(rows);
+        const palette = Array.from({ length: SUBPLOT_COLOR_SLOTS }, (_, slot) => readSubplotColor(this.rootEl.ownerDocument, slot));
+        return planColoring(rows, undefined, distinctColorSlots(palette));
     }
 
     /** Keep the timeline's coloring in step with this table's values; another table's coloring replaces it. */
@@ -1482,7 +1492,7 @@ export class TimetableView extends BasesView {
         if (SELECTABLE_KINDS.has(row.kind)) {
             const checkbox = cell.createEl('input', { cls: 'ert-timetable__select', type: 'checkbox' });
             checkbox.checked = this.selected.has(row.path);
-            checkbox.setAttr('aria-label', t('ui.timetable.bulkPick', { name: displayName(row.basename) }));
+            tooltip(checkbox, t('ui.timetable.bulkPick', { name: displayName(row.basename) }), 'right');
             cell.closest('tr')?.toggleClass('is-selected', checkbox.checked);
         } else {
             cell.createSpan({ cls: 'ert-timetable__select-spacer' });

@@ -232,8 +232,8 @@ The wheel is for seeing (proportion, rhythm, gaps, where you are); the Timetable
   - spotlighting a ring in the subplot key fades table rows outside that ring.
 
 **Also built (`ed647245`), Eric 2026-10-12: "for 3, go ahead. pov or location could be helpful. yes to bulk edits and yes to open query dots":**
-- **Color the timeline by a column.** Right-click a column header in the Timetable. Only columns with up to eight values on scenes qualify (POV, Location and the like); numeric heat maps were left out as overkill. Each value takes a ring color, scenes without one are neutral, and a pill on the wheel shows the legend and a button to stop. Not saved.
-- **Bulk edits** (the table owns field edits). Checkboxes on scene, sketch and unpromoted rows; Shift picks a range; Esc clears. A bar sets Status, Publish Stage, Act or rings on every picked row, or promotes the non-scenes. Ring changes (scenes only) get one notice and one Undo for all of them.
+- **Color the timeline by a column.** Right-click a column header in the Timetable. Only columns with up to eight values on scenes qualify (POV, Location and the like); numeric heat maps were left out as overkill. Each value takes a ring color, picked from the palette to stay far apart (the most vivid first; greys last), and scenes without one are neutral. A pill on the wheel shows the legend (numbers such as acts in order, other values most frequent first) and a button to stop. Not saved.
+- **Bulk edits** (the table owns field edits). Checkboxes on scene, sketch and unpromoted rows; Shift picks a range; Esc clears (from the app's key scope, so it works wherever focus is while the Timetable pane is active, and an open menu takes Esc first). A bar sets Status, Publish Stage, Act or rings on every picked row, or promotes the non-scenes. Ring changes (scenes only) get one notice and one Undo for all of them.
 - **Open query dots on the wheel** (the wheel flags, the table works through them). A scene with `%%query: …%%` in its text gets a dot on its number square; hovering lists the first three.
 
 ## Considered and set aside: a lanes layout ("Unwrapped")

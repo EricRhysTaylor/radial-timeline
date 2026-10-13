@@ -7,6 +7,7 @@ import {
     compareChronologicalRows,
     compareManuscriptRows,
     displayName,
+    distinctColorSlots,
     elapsedSincePrevious,
     groupProgress,
     planColoring,
@@ -173,8 +174,37 @@ describe('planColoring', () => {
         expect(plan.values.has('d')).toBe(false);
     });
 
+    it('takes color slots in the order it is given', () => {
+        const plan = planColoring([{ path: 'a', value: 'x' }, { path: 'b', value: 'x' }, { path: 'c', value: 'y' }], 8, [10, 3]);
+        expect(plan.kind === 'ok' && plan.legend).toEqual([{ value: 'x', colorIndex: 10 }, { value: 'y', colorIndex: 3 }]);
+    });
+
+    it('lists numbers in order, keeping the most frequent value’s color', () => {
+        const plan = planColoring([{ path: 'a', value: 2 }, { path: 'b', value: 2 }, { path: 'c', value: 1 }, { path: 'd', value: 3 }], 8, [5, 3, 15]);
+        expect(plan.kind === 'ok' && plan.legend).toEqual([
+            { value: '1', colorIndex: 3 },
+            { value: '2', colorIndex: 5 },
+            { value: '3', colorIndex: 15 },
+        ]);
+    });
+
     it('refuses a column with too many values, or none', () => {
         expect(planColoring([{ path: 'a', value: 'x' }, { path: 'b', value: 'y' }], 1)).toEqual({ kind: 'tooMany', count: 2 });
         expect(planColoring([{ path: 'a', value: undefined }])).toEqual({ kind: 'none' });
+    });
+});
+
+describe('distinctColorSlots', () => {
+    it('starts with the most vivid ring color and keeps neighbours apart', () => {
+        const order = distinctColorSlots(DEFAULT_SETTINGS.subplotColors);
+        expect(order).toHaveLength(16);
+        expect(new Set(order).size).toBe(16);
+        const [first, second] = order.map(slot => DEFAULT_SETTINGS.subplotColors[slot].toLowerCase());
+        expect(first).toBe('#98ce00');
+        expect(second).toBe('#314cb6');
+    });
+
+    it('puts greys and unreadable colors last, in slot order', () => {
+        expect(distinctColorSlots(['#cccccc', '#ff0000', 'teal', '#0000ff'])).toEqual([3, 1, 0, 2]);
     });
 });

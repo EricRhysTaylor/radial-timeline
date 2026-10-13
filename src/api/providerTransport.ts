@@ -32,6 +32,11 @@ export class ProviderTransportError extends Error {
     }
 }
 
+/** A streamed text field: the provider sends strings; anything else adds nothing. */
+function streamText(value: unknown): string {
+    return typeof value === 'string' ? value : '';
+}
+
 function requestTimeout(options: RequestUrlParam, control?: AIRequestControl): number {
     return control ? control.timeoutMs : options.method === 'GET' ? 30_000 : 600_000;
 }
@@ -57,10 +62,10 @@ export function decodeAnthropicStream(text: string): unknown {
             const block = blocks[index];
             if (!block) throw new ProviderTransportError('Anthropic stream delta has no content block.');
             const delta = event.delta as Record<string, unknown>;
-            if (delta.type === 'text_delta') block.text = `${block.text}${delta.text}`;
-            if (delta.type === 'thinking_delta') block.thinking = `${block.thinking}${delta.thinking}`;
-            if (delta.type === 'signature_delta') block.signature = `${block.signature}${delta.signature}`;
-            if (delta.type === 'input_json_delta') toolJson.set(index, `${toolJson.get(index) ?? ''}${delta.partial_json}`); // SAFE: the first tool delta starts an empty JSON buffer
+            if (delta.type === 'text_delta') block.text = streamText(block.text) + streamText(delta.text);
+            if (delta.type === 'thinking_delta') block.thinking = streamText(block.thinking) + streamText(delta.thinking);
+            if (delta.type === 'signature_delta') block.signature = streamText(block.signature) + streamText(delta.signature);
+            if (delta.type === 'input_json_delta') toolJson.set(index, (toolJson.get(index) ?? '') + streamText(delta.partial_json)); // SAFE: the first tool delta starts an empty JSON buffer
             if (delta.type === 'citations_delta') {
                 if (!Array.isArray(block.citations)) block.citations = [];
                 (block.citations as unknown[]).push(delta.citation);

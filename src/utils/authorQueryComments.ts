@@ -29,11 +29,11 @@ export interface AuthorQueryCommentOptions {
 }
 
 function tokenFor(index: number): string {
-    return `\u0000RTQUERY${index}\u0000`;
+    return `\uE000RTQUERY${index}\uE001`;
 }
 
-const TOKEN_ONLY_LINE = /^\s*(?:\u0000RTQUERY\d+\u0000\s*)+$/;
-const TOKEN_PATTERN = /\u0000RTQUERY(\d+)\u0000/g;
+const TOKEN_ONLY_LINE = /^\s*(?:\uE000RTQUERY\d+\uE001\s*)+$/;
+const TOKEN_PATTERN = /\uE000RTQUERY(\d+)\uE001/g;
 
 // Inline Markdown inside the comment must read as plain text.
 function escapeCommentText(question: string): string {

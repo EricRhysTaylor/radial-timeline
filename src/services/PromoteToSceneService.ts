@@ -192,7 +192,7 @@ export function isPromotable(app: App, settings: RadialTimelineSettings, file: T
 }
 
 function readNumber(value: unknown): number | null {
-    const parsed = typeof value === 'number' ? value : Number.parseInt(String(value ?? ''), 10);
+    const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number.parseInt(value, 10) : NaN;
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
@@ -221,7 +221,7 @@ export function buildTemplateValues(
         characterList: [],
         placeList: [],
     });
-    const parsed = parseYaml(content);
+    const parsed: unknown = parseYaml(content);
     return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {};
 }
 

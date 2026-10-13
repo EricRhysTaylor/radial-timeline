@@ -73,9 +73,8 @@ function normalizeErrorMessage(error: unknown): string {
     if (error instanceof Error) return error.message.trim();
     if (error === null || error === undefined) return 'Unknown error';
     if (typeof error === 'string') return error.trim();
-    if (['number', 'boolean', 'bigint', 'symbol'].includes(typeof error)) {
-        return String(error).trim();
-    }
+    if (typeof error === 'number' || typeof error === 'boolean' || typeof error === 'bigint') return String(error);
+    if (typeof error === 'symbol') return error.toString();
     try {
         return JSON.stringify(error).trim();
     } catch {

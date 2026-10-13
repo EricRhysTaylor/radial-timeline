@@ -162,7 +162,7 @@ export function applyQueryMarks(svg: Element, queries: Map<string, string[]>): v
             return;
         }
         if (mark?.kind !== 'dot') return;
-        const dot = doc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        const dot = doc.win.createSvg('circle');
         dot.setAttribute('class', `${QUERY_MARK} rt-query-dot`);
         dot.setAttribute('cx', formatNumber(cell.x));
         dot.setAttribute('cy', formatNumber(cell.y));

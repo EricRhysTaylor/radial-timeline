@@ -52,9 +52,15 @@ export function estimateTokensFromText(text: string, charsPerToken = DEFAULT_CHA
  * CJK and other scripts. No provider tokenizer or network request is used.
  */
 function estimateExecutionTextTokens(text: string, charsPerToken = DEFAULT_CHARS_PER_TOKEN): number {
-    const ascii = text.replace(/[^\x00-\x7f]/g, '');
-    const unicode = text.replace(/[\x00-\x7f]/g, '');
-    return estimateTokensFromChars(ascii.length, charsPerToken) + new TextEncoder().encode(unicode).length;
+    let asciiChars = 0;
+    let unicodeBytes = 0;
+    for (const char of text) {
+        const codePoint = char.codePointAt(0) ?? 0;
+        if (codePoint <= 0x7f) asciiChars += 1;
+        // UTF-8 width; a lone surrogate counts as U+FFFD (3 bytes), as TextEncoder writes it.
+        else unicodeBytes += codePoint <= 0x7ff ? 2 : codePoint <= 0xffff ? 3 : 4;
+    }
+    return estimateTokensFromChars(asciiChars, charsPerToken) + unicodeBytes;
 }
 
 export function estimateHeuristicInputTokens(params: {

@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian';
-import { openOrRevealFile } from '../../utils/fileUtils';
+import { openFromWheel } from '../../timetable/readingPane';
 import { buildSearchHighlight } from '../../services/searchHighlight';
 import type { TimelineItem } from '../../types';
 import { handleDominantSubplotSelection } from '../interactions/DominantSubplotHandler';
@@ -44,7 +44,7 @@ export function setupSceneInteractions(view: RadialTimelineView, group: Element,
                 file,
                 enableZeroDraftMode: view.plugin.settings.enableZeroDraftMode,
                 sceneTitle: file.basename || 'Scene',
-                onOverrideOpen: async () => openOrRevealFile(view.plugin.app, file, false, highlight)
+                onOverrideOpen: async () => openFromWheel(view.plugin.app, file, svgElement, highlight, evt)
             });
             if (zeroDraftHandled) {
                 evt.preventDefault();
@@ -52,7 +52,7 @@ export function setupSceneInteractions(view: RadialTimelineView, group: Element,
                 return;
             }
 
-            await openOrRevealFile(view.plugin.app, file, false, highlight);
+            await openFromWheel(view.plugin.app, file, svgElement, highlight, evt);
         })(); });
 
         view.renderScope.registerDomEvent(group as HTMLElement, 'mouseenter', () => {

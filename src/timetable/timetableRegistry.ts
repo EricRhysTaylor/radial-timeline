@@ -13,10 +13,13 @@
  * - A Timetable with its lens on publishes its rows; the timeline dims every
  *   scene that isn't among them.
  * - A Timetable can color the timeline's scenes by one of its columns.
+ * - A note clicked on the wheel opens in a showing Timetable's reading pane.
  * Dependency-free on purpose, so both sides can import it without a cycle.
  */
 
 export interface LiveTimetable {
+    /** The table's element, so the timeline can find the pane it shows in (see readingPane). */
+    readonly rootEl: HTMLElement;
     refresh(): void;
     /** The wheel is hovering this scene (or nothing): light up its row. */
     markLinkedRow(path: string | null): void;
@@ -81,6 +84,11 @@ export function trackTimetable(view: LiveTimetable): () => void {
 /** True while at least one Timetable is open (the timeline's act labels then link to it). */
 export function hasOpenTimetable(): boolean {
     return liveTimetables.size > 0;
+}
+
+/** Each open Timetable's element. */
+export function openTimetableElements(): HTMLElement[] {
+    return [...liveTimetables].map(view => view.rootEl);
 }
 
 /** The timeline hears when Timetables open or close. */

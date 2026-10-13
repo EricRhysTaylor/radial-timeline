@@ -1,5 +1,5 @@
 import { TFile } from 'obsidian';
-import { openOrRevealFile } from '../../utils/fileUtils';
+import { openFromWheel } from '../../timetable/readingPane';
 import { buildSearchHighlight } from '../../services/searchHighlight';
 import { SceneInteractionManager } from '../interactions/SceneInteractionManager';
 import { maybeHandleZeroDraftClick } from '../interactions/ZeroDraftHandler';
@@ -120,14 +120,14 @@ export function setupMainPlotMode(view: RadialTimelineView, svg: SVGSVGElement):
                 file,
                 enableZeroDraftMode: view.plugin.settings.enableZeroDraftMode,
                 sceneTitle: file.basename || 'Scene',
-                onOverrideOpen: async () => openOrRevealFile(view.plugin.app, file, false, highlight)
+                onOverrideOpen: async () => openFromWheel(view.plugin.app, file, svg, highlight, e)
             });
             if (zeroDraftHandled) {
                 e.preventDefault();
                 e.stopPropagation();
                 return;
             }
-            await openOrRevealFile(view.plugin.app, file, false, highlight);
+            await openFromWheel(view.plugin.app, file, svg, highlight, e);
         }
     })(); });
 }

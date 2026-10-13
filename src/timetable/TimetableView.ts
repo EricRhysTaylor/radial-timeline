@@ -16,7 +16,6 @@
 import {
     BasesView,
     Keymap,
-    MarkdownView,
     Menu,
     Notice,
     TFile,
@@ -76,6 +75,7 @@ import {
 } from './timetableModel';
 import { authorKeyFor, TIMETABLE_VIEW_TYPE } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
+import { openInReadingPane } from './readingPane';
 import {
     clearTimelineColoring,
     clearTimelineLens,
@@ -196,30 +196,12 @@ export function timetableViewOptions(): BasesAllOptions[] {
  * opens a new tab.
  */
 async function openFromTimetable(app: App, file: TFile, evt: MouseEvent, fromEl: HTMLElement): Promise<void> {
-    if (Keymap.isModEvent(evt)) {
-        await app.workspace.openLinkText(file.path, '', 'tab');
-        return;
-    }
-    const markdownLeaves = app.workspace.getLeavesOfType('markdown')
-        .filter(leaf => leaf.getRoot() === app.workspace.rootSplit);
-    const showing = markdownLeaves.find(leaf => leaf.view instanceof MarkdownView && leaf.view.file?.path === file.path);
-    if (showing) {
-        await app.workspace.revealLeaf(showing);
-        app.workspace.setActiveLeaf(showing, { focus: true });
-        return;
-    }
-    const emptyLeaves = app.workspace.getLeavesOfType('empty').filter(leaf => leaf.getRoot() === app.workspace.rootSplit);
-    const target = markdownLeaves.find(leaf => !leaf.getViewState().pinned) ?? emptyLeaves[0];
-    if (target) {
-        await target.openFile(file, { active: true }); // SAFE: openFile used for opening in an existing editor or empty tab, so the Timetable tab itself is never replaced
-        return;
-    }
     const tableLeaf = app.workspace.getLeavesOfType('bases').find(leaf => leaf.view.containerEl.contains(fromEl));
     if (!tableLeaf) {
         await app.workspace.openLinkText(file.path, '', 'tab');
         return;
     }
-    await app.workspace.createLeafBySplit(tableLeaf, 'vertical').openFile(file, { active: true }); // SAFE: openFile used for opening beside the Timetable rather than over it
+    await openInReadingPane(app, file, tableLeaf, { evt });
 }
 
 function frontmatterKey(frontmatter: Record<string, unknown> | undefined, name: string): unknown {
@@ -251,7 +233,7 @@ function firstText(value: unknown): string {
 
 export class TimetableView extends BasesView {
     type = TIMETABLE_VIEW_TYPE;
-    private readonly rootEl: HTMLElement;
+    readonly rootEl: HTMLElement;
     private readonly patternPrefix = `ert-timetable-${Math.random().toString(36).slice(2, 9)}-`;
     private readonly collapsed = new Set<string>();
     private rings: WheelRings | null = null;
@@ -402,7 +384,22 @@ export class TimetableView extends BasesView {
     /** A note was opened in an editor: mark its row (and bring it into view). */
     markCurrentNote(path: string | null): void {
         this.setCurrentRow(path);
-        this.currentRow?.scrollIntoView({ block: 'nearest' });
+        this.revealCurrentRow();
+    }
+
+    /** Bring the open note's row into view, centred when it was out of sight (as after a wheel click); a visible row stays put. */
+    private revealCurrentRow(): void {
+        const row = this.currentRow;
+        const scroller = row?.closest<HTMLElement>('.bases-view');
+        if (!row || !scroller) {
+            row?.scrollIntoView({ block: 'nearest' });
+            return;
+        }
+        const box = row.getBoundingClientRect();
+        const view = scroller.getBoundingClientRect();
+        const header = row.closest('table')?.querySelector('thead')?.getBoundingClientRect().height ?? 0;
+        if (box.top >= view.top + header && box.bottom <= view.bottom) return;
+        row.scrollIntoView({ block: 'center' });
     }
 
     private setCurrentRow(path: string | null): void {

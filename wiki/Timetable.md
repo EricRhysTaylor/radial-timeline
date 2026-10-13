@@ -20,6 +20,16 @@ The `.base` file is yours to customize. Change its columns, filters, sorting, or
 
 Hover a scene row to highlight it on the wheel. Hover a scene on the wheel to highlight and reveal its row. Click a scene row to open its note; **Shift-click** brings the timeline forward and highlights that scene. Right-click a scene row for the timeline’s scene menu.
 
+### The reading pane
+
+Notes you open from the Timetable appear in a pane below the table, so the wheel, the table and one note sit side by side. While a Timetable is showing, scenes clicked on the wheel open there too, and their row is marked in the table.
+
+- The first note splits the table downward. Each later note replaces the one in the pane, and the pane’s back and forward buttons step through the scenes you visited. Drag the divider to give the table or the note more room; you can also drag the pane above the table.
+- A note that is already open somewhere is shown where it is, not opened twice.
+- **Cmd-click** (Ctrl-click on Windows and Linux) opens a new tab instead.
+- Pin the note in the pane to keep it: the next note opens in a tab beside it.
+- With no Timetable showing, the wheel opens notes as before.
+
 ## Write sketches beside scenes
 
 Use **New sketch**, or the **+** beside an act heading, to create a sketch in the book’s manuscript folder. A sketch has `Class: Sketch` and appears in the Timetable, keeping a place for an idea without putting it on the wheel yet. In Saga scope, use a book heading’s **+** to choose the book.

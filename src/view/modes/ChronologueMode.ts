@@ -8,7 +8,7 @@ import { TFile } from 'obsidian';
 import { setupChronologueShiftController } from '../interactions/ChronologueShiftController';
 import { ChronologueDragController, wasRecentlyHandledByChronologueDrag } from '../interactions/ChronologueDragController';
 import { isSubplotDragActive, wasRecentlyHandledBySubplotDrag } from '../interactions/SubplotRingDragController';
-import { openOrRevealFile } from '../../utils/fileUtils';
+import { openFromWheel } from '../../timetable/readingPane';
 import { buildSearchHighlight } from '../../services/searchHighlight';
 import { handleDominantSubplotSelection } from '../interactions/DominantSubplotHandler';
 import { SceneInteractionManager } from '../interactions/SceneInteractionManager';
@@ -421,14 +421,14 @@ function setupSceneClickInteractions(view: RadialTimelineView, svg: SVGSVGElemen
                     file,
                     enableZeroDraftMode: view.plugin.settings.enableZeroDraftMode,
                     sceneTitle: file.basename || t('ui.chronologueMode.sceneFallback'),
-                    onOverrideOpen: async () => openOrRevealFile(view.plugin.app, file, false, highlight)
+                    onOverrideOpen: async () => openFromWheel(view.plugin.app, file, svg, highlight, e)
                 });
                 if (zeroDraftHandled) {
                     e.preventDefault();
                     e.stopPropagation();
                     return;
                 }
-                await openOrRevealFile(view.plugin.app, file, false, highlight);
+                await openFromWheel(view.plugin.app, file, svg, highlight, e);
             }
         }
     })(); });

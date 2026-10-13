@@ -22,7 +22,7 @@ describe('createSearchState', () => {
 
     it('defaults to timeline fields only — the visible metadata', () => {
         const { options } = createSearchState();
-        expect(options).toEqual({ timelineFields: true, body: false, llmAssist: false });
+        expect(options).toEqual({ timelineFields: true, body: false, llmAssist: false, semanticIndex: false });
     });
 
     it('copies the options so callers cannot mutate the defaults', () => {
@@ -98,15 +98,16 @@ describe('searchOptionsSignature', () => {
             searchOptionsSignature(base),
             searchOptionsSignature({ ...base, timelineFields: false }),
             searchOptionsSignature({ ...base, body: true }),
-            searchOptionsSignature({ ...base, llmAssist: true })
+            searchOptionsSignature({ ...base, llmAssist: true }),
+            searchOptionsSignature({ ...base, semanticIndex: true })
         ]);
-        expect(signatures.size).toBe(4);
+        expect(signatures.size).toBe(5);
     });
 
     it('is stable for the default options', () => {
         // ChangeDetection fixtures assert against this literal; a silent
         // reordering would make them pass while comparing nothing real.
-        expect(searchOptionsSignature(createSearchState().options)).toBe('100');
+        expect(searchOptionsSignature(createSearchState().options)).toBe('1000');
     });
 
     it('covers every option key', () => {
@@ -125,11 +126,11 @@ describe('readTimelineSearchSettings', () => {
 
     it('round-trips through the writer', () => {
         const options = { timelineFields: true, body: true, llmAssist: false };
-        expect(readTimelineSearchSettings(writeTimelineSearchSettings(options))).toEqual(options);
+        expect(readTimelineSearchSettings(writeTimelineSearchSettings(options))).toEqual({ ...options, semanticIndex: false });
     });
 
     it('ignores a payload written by an unknown schema version', () => {
-        const future = { schemaVersion: 2, timelineFields: false, body: true, llmAssist: true } as never;
+        const future = { schemaVersion: 99, timelineFields: false, body: true, llmAssist: true } as never;
         expect(readTimelineSearchSettings(future)).toEqual(createSearchState().options);
     });
 
@@ -143,7 +144,7 @@ describe('readTimelineSearchSettings', () => {
     it('repairs a stored state with every scope off', () => {
         // Otherwise the author reopens to a search box that matches nothing
         // with no obvious way back.
-        const allOff = writeTimelineSearchSettings({ timelineFields: false, body: false, llmAssist: false });
+        const allOff = writeTimelineSearchSettings({ timelineFields: false, body: false, llmAssist: false, semanticIndex: false });
         expect(readTimelineSearchSettings(allOff).timelineFields).toBe(true);
     });
 });
@@ -163,4 +164,13 @@ describe('searchHitPaths', () => {
         state.hits.set('b.md', { path: 'b.md', source: 'timelineFields', evidence: [] });
         expect(searchHitPaths(state)).toEqual(new Set(['a.md', 'b.md']));
     });
+});
+
+
+it('preserves legacy scopes and full AI mode while persisting explicit indexed mode in v2', () => {
+    expect(readTimelineSearchSettings({ schemaVersion: 1, timelineFields: false, body: true, llmAssist: true }))
+        .toEqual({ timelineFields: false, body: true, llmAssist: true, semanticIndex: false });
+    const selected = { timelineFields: true, body: true, llmAssist: true, semanticIndex: true };
+    expect(writeTimelineSearchSettings(selected).schemaVersion).toBe(2);
+    expect(readTimelineSearchSettings(writeTimelineSearchSettings(selected))).toEqual(selected);
 });

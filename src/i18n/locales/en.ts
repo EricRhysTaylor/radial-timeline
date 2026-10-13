@@ -999,6 +999,11 @@ export const en = {
         /** Synopsis hover label for past-due dates. {{date}} is substituted with the formatted date string. */
         overdue: 'Overdue: {{date}}',
         search: {
+            indexLabel: 'Use semantic index',
+            indexHint: 'Local English passage index. Reviews likely excerpts; turn off to review every scene.',
+            statusIndexing: 'Updating index: {{done}} of {{total}} scenes',
+            statusIndexed: 'Indexed excerpts: {{selected}} of {{total}} scenes reviewed; other matches may be missed',
+
             inputLabel: 'Search timeline',
             placeholder: 'Search timeline',
             searchAction: 'Search timeline',

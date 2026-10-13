@@ -520,10 +520,11 @@ export interface LlmTimingStats {
  * frontmatter — scene YAML belongs to the author.
  */
 export interface PersistedTimelineSearchOptions {
-    schemaVersion: 1;
+    schemaVersion: 1 | 2;
     timelineFields: boolean;
     body: boolean;
     llmAssist: boolean;
+    semanticIndex?: boolean;
 }
 
 export interface HoverMetadataField {

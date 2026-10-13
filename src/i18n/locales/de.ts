@@ -1115,6 +1115,11 @@ export const de: DeepPartial<TranslationKeys> = {
         renderError: 'Fehler beim Rendern der Timeline. Details siehe Konsole.',
         overdue: 'Überfällig: {{date}}',
         search: {
+            indexLabel: 'Semantischen Index verwenden',
+            indexHint: 'Lokaler englischer Textindex. Prüft wahrscheinliche Auszüge; deaktivieren, um jede Szene zu prüfen.',
+            statusIndexing: 'Index wird aktualisiert: {{done}} von {{total}} Szenen',
+            statusIndexed: 'Indexierte Auszüge: {{selected}} von {{total}} Szenen geprüft; weitere Treffer können fehlen',
+
             inputLabel: 'Timeline durchsuchen',
             placeholder: 'Timeline durchsuchen',
             searchAction: 'Timeline durchsuchen',

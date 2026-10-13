@@ -37,6 +37,8 @@ export interface TimelineSearchOptions {
     body: boolean;
     /** Local-LLM concept matching. Forced false when no local server is available. */
     llmAssist: boolean;
+    /** Explicit fast retrieval mode; absent/false preserves the complete local AI sweep. */
+    semanticIndex?: boolean;
 }
 
 /** Which scope produced a hit. */
@@ -82,6 +84,8 @@ export interface TimelineSearchState {
     error?: string;
     /** Set only while a concept run is stepping through chunks. */
     progress?: TimelineSearchProgress;
+    indexProgress?: { done: number; total: number };
+    retrieval?: { candidates: number; total: number; updatedNotes: number; passages: number; elapsedMs: number };
     /**
      * Model claims discarded for want of a verbatim quote, on the committed
      * run. Reported rather than swallowed — silence would present a thin sweep
@@ -100,7 +104,8 @@ export interface TimelineSearchState {
 export const DEFAULT_SEARCH_OPTIONS: TimelineSearchOptions = {
     timelineFields: true,
     body: false,
-    llmAssist: false
+    llmAssist: false,
+    semanticIndex: false
 };
 
 export function createSearchState(
@@ -140,7 +145,8 @@ export function searchHitPaths(state: TimelineSearchState): Set<string> {
 const SEARCH_OPTION_KEYS: Record<keyof TimelineSearchOptions, true> = {
     timelineFields: true,
     body: true,
-    llmAssist: true
+    llmAssist: true,
+    semanticIndex: true
 };
 
 /** Change-detection signature for the scope options. */
@@ -165,7 +171,7 @@ export function shouldHighlightMetadataTerm(state: TimelineSearchState): boolean
     return state.active && !!state.term && state.options.timelineFields;
 }
 
-export const TIMELINE_SEARCH_SETTINGS_VERSION = 1;
+export const TIMELINE_SEARCH_SETTINGS_VERSION = 2;
 
 /**
  * Read persisted scope options, falling back to defaults for anything absent,
@@ -179,7 +185,7 @@ export function readTimelineSearchSettings(
     persisted: PersistedTimelineSearchOptions | undefined
 ): TimelineSearchOptions {
     if (!persisted || typeof persisted !== 'object') return { ...DEFAULT_SEARCH_OPTIONS };
-    if (persisted.schemaVersion !== TIMELINE_SEARCH_SETTINGS_VERSION) return { ...DEFAULT_SEARCH_OPTIONS };
+    if (persisted.schemaVersion !== 1 && persisted.schemaVersion !== TIMELINE_SEARCH_SETTINGS_VERSION) return { ...DEFAULT_SEARCH_OPTIONS };
 
     const readFlag = (value: unknown, fallback: boolean): boolean =>
         typeof value === 'boolean' ? value : fallback;
@@ -187,7 +193,9 @@ export function readTimelineSearchSettings(
     const options: TimelineSearchOptions = {
         timelineFields: readFlag(persisted.timelineFields, DEFAULT_SEARCH_OPTIONS.timelineFields),
         body: readFlag(persisted.body, DEFAULT_SEARCH_OPTIONS.body),
-        llmAssist: readFlag(persisted.llmAssist, DEFAULT_SEARCH_OPTIONS.llmAssist)
+        llmAssist: readFlag(persisted.llmAssist, DEFAULT_SEARCH_OPTIONS.llmAssist),
+        semanticIndex: persisted.schemaVersion === TIMELINE_SEARCH_SETTINGS_VERSION
+            && persisted.semanticIndex === true
     };
 
     // A stored state with every scope off would leave the author with a search
@@ -204,7 +212,8 @@ export function writeTimelineSearchSettings(
         schemaVersion: TIMELINE_SEARCH_SETTINGS_VERSION,
         timelineFields: options.timelineFields,
         body: options.body,
-        llmAssist: options.llmAssist
+        llmAssist: options.llmAssist,
+        semanticIndex: options.semanticIndex
     };
 }
 

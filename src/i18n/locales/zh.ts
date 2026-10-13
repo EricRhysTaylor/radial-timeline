@@ -1117,6 +1117,11 @@ export const zh: DeepPartial<TranslationKeys> = {
         renderError: '渲染时间轴时出错。请查看控制台了解详情。',
         overdue: '已逾期：{{date}}',
         search: {
+            indexLabel: '使用语义索引',
+            indexHint: '本地英文段落索引。检查可能相关的摘录；关闭后检查每个场景。',
+            statusIndexing: '更新索引：{{total}} 个场景中的 {{done}} 个',
+            statusIndexed: '索引摘录：已检查 {{total}} 个场景中的 {{selected}} 个；可能遗漏其他匹配',
+
             inputLabel: '搜索时间轴',
             placeholder: '搜索时间轴',
             searchAction: '搜索时间轴',

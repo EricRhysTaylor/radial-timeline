@@ -18,6 +18,7 @@ import { getLocalLlmAvailability } from '../ai/localLlm/availability';
 import { getCanonicalLocalLlmSettings } from '../ai/localLlm/settings';
 import type { TimelineSearchOptions } from './searchState';
 import { t } from '../i18n';
+import { LocalSemanticIndex } from './LocalSemanticIndex';
 import { escapeRegExp } from '../utils/regex';
 
 export interface TimelineSearchMatchOptions {
@@ -128,6 +129,7 @@ export class SearchService {
 
     private readonly bodyIndex: SceneBodyIndex;
     private readonly conceptSearch: ConceptSearchService;
+    private semanticIndex?: LocalSemanticIndex;
     /** Shared with the in-flight concept run so the panel can stop it. */
     private cancelToken: CancelToken = { cancelled: false };
     /** Aborts the request in flight, so a stopped sweep stops the server too. */
@@ -145,12 +147,16 @@ export class SearchService {
         plugin.registerEvent(app.vault.on('rename', (file, oldPath) => {
             this.bodyIndex.invalidate(oldPath);
             this.bodyIndex.invalidate(file.path);
+            this.semanticIndex?.invalidate(oldPath);
+            this.semanticIndex?.invalidate(file.path);
         }));
         plugin.registerEvent(app.vault.on('delete', (file) => {
             this.bodyIndex.invalidate(file.path);
+            this.semanticIndex?.invalidate(file.path);
         }));
         plugin.registerEvent(app.vault.on('modify', (file) => {
             this.bodyIndex.invalidate(file.path);
+            this.semanticIndex?.invalidate(file.path);
         }));
     }
 
@@ -198,6 +204,8 @@ export class SearchService {
         state.pendingTerm = trimmed;
         state.runningHitCount = 0;
         state.progress = undefined;
+        state.indexProgress = undefined;
+        state.retrieval = undefined;
         state.droppedClaims = undefined;
         state.unreadableScenes = undefined;
         state.unreadableNotes = undefined;
@@ -368,7 +376,7 @@ export class SearchService {
                 return { path, fieldsText, bodyText: entry.bodyText };
             })
             // A scene contributing no text would just spend tokens.
-            .filter(scene => !!scene.fieldsText || !!scene.bodyText);
+            .filter(scene => !!scene.fieldsText?.trim() || !!scene.bodyText?.trim());
 
         const cancel = this.cancelToken;
 
@@ -379,11 +387,39 @@ export class SearchService {
         const hits = new Map<string, TimelineSearchHit>();
 
         try {
+            if (options.semanticIndex && !this.semanticIndex) {
+                this.semanticIndex = new LocalSemanticIndex(this.app.vault.adapter, // SAFE: generated cache in the hidden config directory is outside the Vault file index; author notes are never written
+                    `${this.app.vault.configDir}/plugins/${this.plugin.manifest.id}/search-index`);
+            }
+            const selectScenes = options.semanticIndex ? async () => {
+                const assertActive = () => {
+                    if (myRun !== this.runId || cancel.cancelled || cancel.signal?.aborted
+                        || this.plugin.settings.enableAiSceneAnalysis !== true
+                        || getCanonicalLocalLlmSettings(this.plugin).enabled !== true) {
+                        cancel.cancelled = true;
+                        throw new Error(t('timeline.search.cancelPending'));
+                    }
+                };
+                const result = await this.semanticIndex!.query({ queries: [term], scenes: corpus, signal: cancel.signal,
+                    control: { assertActive, timeoutMs: getCanonicalLocalLlmSettings(this.plugin).timeoutMs,
+                        retryPolicy: { maxAttempts: 1, baseDelayMs: 0 } },
+                    onProgress: (done, total) => {
+                        if (myRun !== this.runId) return;
+                        state.indexProgress = total ? { done, total } : undefined;
+                        this.syncTimelineSearchControls();
+                    } });
+                assertActive();
+                state.indexProgress = undefined;
+                state.retrieval = result.stats;
+                this.syncTimelineSearchControls();
+                return result.scenes;
+            } : undefined;
             const outcome = await this.conceptSearch.run({
                 query: term,
                 scenes: corpus,
                 localLlm: getCanonicalLocalLlmSettings(this.plugin),
                 cancel,
+                selectScenes,
                 onProgress: (progress) => {
                     if (myRun !== this.runId) return;
                     state.progress = progress;
@@ -402,6 +438,10 @@ export class SearchService {
             this.commit(term, hits, outcome.droppedClaims, outcome.cancelled, [...unreadable.values()]);
         } catch (error) {
             if (myRun !== this.runId) return;
+            if (cancel.cancelled || cancel.signal?.aborted) {
+                this.commit(term, hits, 0, true, input.unreadableNotes);
+                return;
+            }
             const message = error instanceof Error ? error.message : String(error);
             console.error('[Search] Concept search failed.', error);
             // Matches already published stay: they were verified before the
@@ -433,6 +473,7 @@ export class SearchService {
     private fail(message: string): void {
         const state = this.plugin.searchState;
         state.status = 'error';
+        state.indexProgress = undefined;
         state.error = message;
         state.progress = undefined;
         this.syncTimelineSearchControls();
@@ -470,6 +511,7 @@ export class SearchService {
         state.runningHitCount = undefined;
         state.error = undefined;
         state.progress = undefined;
+        state.indexProgress = undefined;
         state.droppedClaims = droppedClaims;
         state.stoppedEarly = stoppedEarly;
         state.unreadableNotes = unreadableNotes;
@@ -502,6 +544,8 @@ export class SearchService {
         state.status = 'idle';
         state.error = undefined;
         state.progress = undefined;
+        state.indexProgress = undefined;
+        state.retrieval = undefined;
         state.droppedClaims = undefined;
         state.stoppedEarly = undefined;
         state.unreadableScenes = undefined;

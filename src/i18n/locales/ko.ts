@@ -1115,6 +1115,11 @@ export const ko: DeepPartial<TranslationKeys> = {
         renderError: '타임라인 렌더링 오류. 자세한 내용은 콘솔을 확인하세요.',
         overdue: '기한 초과: {{date}}',
         search: {
+            indexLabel: '의미 검색 색인 사용',
+            indexHint: '로컬 영어 문단 색인입니다. 관련 발췌문을 확인합니다. 모든 장면을 확인하려면 끄세요.',
+            statusIndexing: '색인 업데이트: {{total}}개 장면 중 {{done}}개',
+            statusIndexed: '색인 발췌문: {{total}}개 장면 중 {{selected}}개 확인. 다른 일치 항목을 놓칠 수 있습니다',
+
             inputLabel: '타임라인 검색',
             placeholder: '타임라인 검색',
             searchAction: '타임라인 검색',

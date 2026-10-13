@@ -121,12 +121,16 @@ async function waitUntil(fn, timeoutMs, intervalMs = 1000) {
 
 async function warmModel(modelId) {
   const started = Date.now();
+  // Load and prefill a representative search-sized input, not just a tiny
+  // greeting. This is synthetic local text; no manuscript is used for warm-up.
+  const warmupText = 'A local warm-up passage contains only synthetic text.\n'.repeat(160)
+    + '\nReply with exactly: OK';
   const res = await fetch(`${BASE_URL}/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: modelId,
-      messages: [{ role: 'user', content: 'Reply with exactly: OK' }],
+      messages: [{ role: 'user', content: warmupText }],
       max_tokens: 5,
     }),
     signal: AbortSignal.timeout(WARMUP_TIMEOUT_MS),
@@ -134,6 +138,7 @@ async function warmModel(modelId) {
   if (!res.ok) throw new Error(`warm-up request returned HTTP ${res.status}`);
   const body = await res.json();
   const text = body?.choices?.[0]?.message?.content ?? '';
+  if (!text.trim()) throw new Error('warm-up returned no generated text');
   return { seconds: ((Date.now() - started) / 1000).toFixed(1), text };
 }
 
@@ -184,11 +189,12 @@ async function start() {
 
   const models = await waitUntil(() => fetchModels(), READY_TIMEOUT_MS);
   if (!models) fail(`Server did not answer ${BASE_URL}/models within ${READY_TIMEOUT_MS / 1000}s. Check ${LOG_FILE}.`);
+  if (!models.includes(MODEL_REPO)) fail(`Configured model ${MODEL_REPO} was not reported by the server. Check ${LOG_FILE}.`);
   console.log(green(`✔ Endpoint up`) + ` (pid ${child.pid}) — model: ${models.join(', ')}`);
 
-  console.log(`  Warming model (first request loads the weights; ~20–30 s for the 80B)…`);
+  console.log(`  Warming ${MODEL_REPO} (first request loads its weights)…`);
   try {
-    const { seconds, text } = await warmModel(models[0]);
+    const { seconds, text } = await warmModel(MODEL_REPO);
     console.log(green(`✔ Model ready`) + ` in ${seconds}s — replied "${text.trim()}"`);
   } catch (err) {
     fail(`Warm-up failed: ${err instanceof Error ? err.message : String(err)}. Check ${LOG_FILE}.`);

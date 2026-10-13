@@ -1116,6 +1116,11 @@ export const ja: DeepPartial<TranslationKeys> = {
         renderError: 'タイムラインの描画でエラーが発生しました。詳細はコンソールを確認してください。',
         overdue: '期限超過: {{date}}',
         search: {
+            indexLabel: '意味検索インデックスを使用',
+            indexHint: 'ローカルの英語テキスト索引。関連する抜粋を確認します。全シーンを確認するにはオフにしてください。',
+            statusIndexing: '索引を更新中：{{total}} シーン中 {{done}}',
+            statusIndexed: '索引の抜粋：{{total}} シーン中 {{selected}} を確認。ほかの一致を見逃す可能性があります',
+
             inputLabel: 'タイムライン検索',
             placeholder: 'タイムライン検索',
             searchAction: 'タイムラインを検索',

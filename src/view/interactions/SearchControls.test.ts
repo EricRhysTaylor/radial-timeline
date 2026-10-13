@@ -51,9 +51,21 @@ it('makes coverage failures inspectable and resets Cancel for a replacement run'
         options: { timelineFields: true, body: false, llmAssist: true },
         unreadableNotes: [{ path: 'missing.md', reason: 'read failed' }] };
     const statusText = { textContent: '', title: '' }, cancelButton = { hidden: true, disabled: true };
-    Object.assign(panel, { cancelRequested: true, cancelRunId: 1, scopeRows: [], assistCheckbox: { checked: true }, statusText, cancelButton,
+    Object.assign(panel, { cancelRequested: true, cancelRunId: 1, scopeRows: [], indexCheckbox: { checked: false, disabled: false }, assistCheckbox: { checked: true }, statusText, cancelButton,
         host: { getSearchState: () => state } });
     panel.syncFromState();
     expect(statusText.title).toBe('missing.md: read failed'); expect(statusText.textContent).toBe('Searching…');
     expect(cancelButton.disabled).toBe(false); expect(cancelButton.hidden).toBe(false);
+});
+
+
+it('discloses indexed excerpt coverage and indexing progress in the existing status line', () => {
+    const panel = Object.create(SearchPanelController.prototype); // SAFE: status formatting needs no rendered Obsidian leaf
+    const state = createSearchState({ timelineFields: true, body: true, llmAssist: true, semanticIndex: true });
+    state.status = 'running'; state.indexProgress = { done: 2, total: 7 };
+    expect(panel.describeStatus(state)).toBe('Updating index: 2 of 7 scenes');
+    state.status = 'ready'; state.active = true; state.indexProgress = undefined;
+    state.retrieval = { candidates: 12, total: 84, updatedNotes: 0, passages: 100, elapsedMs: 10 };
+    expect(panel.describeStatus(state)).toContain('12 of 84 scenes reviewed');
+    expect(panel.describeStatus(state)).toContain('other matches may be missed');
 });

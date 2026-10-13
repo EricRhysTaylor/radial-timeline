@@ -25,6 +25,7 @@ vi.mock('../ai/credentials/credentials', () => ({
 }));
 
 const { SearchService } = await import('./SearchService');
+const { LocalSemanticIndex } = await import('./LocalSemanticIndex');
 const { createSearchState } = await import('./searchState');
 
 const LOCAL = {
@@ -41,9 +42,11 @@ function makeHarness() {
     let resolveScenes: ((s: TimelineItem[]) => void) | null = null;
     const scenesPromise = new Promise<TimelineItem[]>(res => { resolveScenes = res; });
 
+    const events = new Map<string, (...args: unknown[]) => void>();
     const app = {
         vault: {
-            on: () => ({}),
+            configDir: '.obsidian', adapter: {},
+            on: (event: string, handler: (...args: unknown[]) => void) => { events.set(event, handler); return {}; },
             getAbstractFileByPath: (path: string) => {
                 if (!bodies.has(path)) return null;
                 const file = new TFile(path);
@@ -57,6 +60,7 @@ function makeHarness() {
 
     const plugin = {
         searchState: createSearchState(),
+        manifest: { id: 'radial-timeline' },
         settings: { enableAiSceneAnalysis: true, aiSettings: { localLlm: { ...LOCAL } } } as Record<string, unknown>,
         registerEvent: () => { /* no-op */ },
         getTimelineSceneData: () => scenesPromise,
@@ -65,7 +69,7 @@ function makeHarness() {
     };
 
     const service = new SearchService(app as never, plugin as never);
-    return { service, plugin, bodies, resolve: (s: TimelineItem[]) => resolveScenes?.(s) };
+    return { service, plugin, bodies, events, resolve: (s: TimelineItem[]) => resolveScenes?.(s) };
 }
 
 const settle = async () => { for (let i = 0; i < 12; i++) await new Promise(r => setTimeout(r, 0)); };
@@ -85,6 +89,7 @@ const match = (quotes: string[]) => verdict([true], quotes);
 const noMatch = () => verdict([false], []);
 
 beforeEach(() => {
+    vi.restoreAllMocks();
     listModels.mockReset();
     complete.mockReset();
     verifyComplete.mockReset();
@@ -506,4 +511,104 @@ it('treats a blank evidence string as unsupported evidence, not an unreadable sc
     complete.mockResolvedValueOnce(elementsReply(['Relevant?'])).mockResolvedValue(match(['']));
     h.service.performSearch('concept'); h.resolve([scene('a.md', 'prose')]); await settle();
     expect(h.plugin.searchState.unreadableScenes).toBe(0); expect(h.plugin.searchState.hits.size).toBe(0);
+});
+
+
+describe('indexed concepts preserve the transaction and literal options', () => {
+    const stats = { candidates: 1, total: 30, updatedNotes: 0, passages: 30, elapsedMs: 1 };
+    it('verifies indexed excerpts directly and retains explicit shortlist coverage', async () => {
+        const h = makeHarness();
+        h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true, semanticIndex: true };
+        h.bodies.set('a.md', 'She reached the coast at dawn.');
+        const query = vi.spyOn(LocalSemanticIndex.prototype, 'query').mockImplementation(async input => {
+            expect(input.queries).toEqual(['a homecoming']);
+            return { scenes: [{ path: 'a.md', bodyText: 'She reached the coast at dawn.', grounding: input.scenes[0], indexedPassages: [{ text: 'She reached the coast at dawn.', source: 'body' }] }], stats };
+        });
+        verifyComplete.mockResolvedValue({ success: true, content: '{"match":true,"evidenceIds":[1]}', responseData: {} });
+        h.service.performSearch('a homecoming'); h.resolve([scene('a.md', '')]); await settle();
+        expect(query).toHaveBeenCalledOnce(); expect(complete).not.toHaveBeenCalled(); expect(verifyComplete).toHaveBeenCalledOnce();
+        expect(h.plugin.searchState.hits.get('a.md')?.evidence).toEqual(['She reached the coast at dawn.']);
+        expect(h.plugin.searchState.retrieval).toEqual(stats);
+    });
+    it('does not call the index or AI for a literal search with the index preference checked', async () => {
+        const h = makeHarness(); const query = vi.spyOn(LocalSemanticIndex.prototype, 'query');
+        h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: false, semanticIndex: true };
+        h.bodies.set('a.md', 'She reached the coast at dawn.');
+        h.service.performSearch('coast'); h.resolve([scene('a.md', '')]); await settle();
+        expect([...h.plugin.searchState.hits.keys()]).toEqual(['a.md']); expect(query).not.toHaveBeenCalled();
+        expect(complete).not.toHaveBeenCalled(); expect(verifyComplete).not.toHaveBeenCalled();
+    });
+    it('surfaces an unavailable encoder without starting a full sweep', async () => {
+        const h = makeHarness();
+        h.plugin.searchState.options = { timelineFields: true, body: false, llmAssist: true, semanticIndex: true };
+        vi.spyOn(LocalSemanticIndex.prototype, 'query').mockRejectedValue(new Error('Index encoder unavailable'));
+        h.service.performSearch('a homecoming'); h.resolve([scene('a.md', 'at dawn')]); await settle();
+        expect(h.plugin.searchState.status).toBe('error'); expect(h.plugin.searchState.error).toContain('Index encoder unavailable');
+        expect(complete).not.toHaveBeenCalled(); expect(verifyComplete).not.toHaveBeenCalled();
+    });
+    it('honors the AI master switch before indexing', async () => {
+        const h = makeHarness(); const query = vi.spyOn(LocalSemanticIndex.prototype, 'query');
+        h.plugin.settings.enableAiSceneAnalysis = false;
+        h.plugin.searchState.options = { timelineFields: true, body: false, llmAssist: true, semanticIndex: true };
+        h.service.performSearch('a homecoming'); h.resolve([scene('a.md', 'at dawn')]); await settle();
+        expect(query).not.toHaveBeenCalled(); expect(h.plugin.searchState.status).toBe('error');
+    });
+    it('cancels during retrieval without verifying or committing old results', async () => {
+        const h = makeHarness(); let release!: (value: { scenes: []; stats: typeof stats }) => void;
+        vi.spyOn(LocalSemanticIndex.prototype, 'query').mockImplementation(() => new Promise(resolve => { release = resolve; }));
+        h.plugin.searchState.options = { timelineFields: true, body: false, llmAssist: true, semanticIndex: true };
+        h.service.performSearch('a homecoming'); h.resolve([scene('a.md', 'at dawn')]); await settle();
+        h.service.cancelSearch(); release({ scenes: [], stats }); await settle();
+        expect(h.plugin.searchState.status).toBe('ready'); expect(h.plugin.searchState.stoppedEarly).toBe(true);
+        expect(verifyComplete).not.toHaveBeenCalled();
+    });
+    it('supersedes retrieval when the author changes to literal search', async () => {
+        const h = makeHarness(); let release!: (value: { scenes: []; stats: typeof stats }) => void;
+        vi.spyOn(LocalSemanticIndex.prototype, 'query').mockImplementation(() => new Promise(resolve => { release = resolve; }));
+        h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true, semanticIndex: true };
+        h.bodies.set('a.md', 'She reached the coast at dawn.');
+        h.service.performSearch('a homecoming'); h.resolve([scene('a.md', '')]); await settle();
+        h.plugin.searchState.options = { ...h.plugin.searchState.options, llmAssist: false };
+        h.service.performSearch('coast'); await settle(); release({ scenes: [], stats }); await settle();
+        expect(h.plugin.searchState.term).toBe('coast'); expect([...h.plugin.searchState.hits.keys()]).toEqual(['a.md']);
+        expect(h.plugin.searchState.retrieval).toBeUndefined(); expect(verifyComplete).not.toHaveBeenCalled();
+    });
+    it('wires edit, rename and delete events to index invalidation', async () => {
+        const h = makeHarness(); const invalidated = vi.spyOn(LocalSemanticIndex.prototype, 'invalidate');
+        vi.spyOn(LocalSemanticIndex.prototype, 'query').mockResolvedValue({ scenes: [], stats });
+        h.plugin.searchState.options = { timelineFields: true, body: false, llmAssist: true, semanticIndex: true };
+        h.service.performSearch('a homecoming'); h.resolve([scene('a.md', 'at dawn')]); await settle();
+        h.events.get('modify')!({ path: 'a.md' }); h.events.get('rename')!({ path: 'b.md' }, 'a.md'); h.events.get('delete')!({ path: 'b.md' });
+        expect(invalidated.mock.calls.map(call => call[0])).toEqual(['a.md', 'a.md', 'b.md', 'b.md']);
+    });
+    it('rejects fabricated passage-gap evidence even if it appears in the indexed prompt', async () => {
+        const h = makeHarness(); h.bodies.set('a.md', 'The coast is quiet. Dawn arrives.');
+        h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true, semanticIndex: true };
+        vi.spyOn(LocalSemanticIndex.prototype, 'query').mockImplementation(async input => ({
+            scenes: [{ path: 'a.md', bodyText: 'The coast is quiet.\n[passage gap]\nDawn arrives.', grounding: input.scenes[0] }], stats }));
+        verifyComplete.mockResolvedValue({ success: true, content: '{"match":true,"quotes":["[passage gap]"]}', responseData: {} });
+        h.service.performSearch('a homecoming'); h.resolve([scene('a.md', '')]); await settle();
+        expect(h.plugin.searchState.hits.size).toBe(0); expect(h.plugin.searchState.droppedClaims).toBe(1);
+    });
+    it('blocks oversized indexed evidence rather than silently dropping it', async () => {
+        const h = makeHarness(); const text = 'oversized excerpt '.repeat(5000);
+        h.plugin.searchState.options = { timelineFields: true, body: false, llmAssist: true, semanticIndex: true };
+        vi.spyOn(LocalSemanticIndex.prototype, 'query').mockResolvedValue({ scenes: [{ path: 'a.md', fieldsText: text }], stats });
+        h.service.performSearch('a homecoming'); h.resolve([scene('a.md', text)]); await settle();
+        expect(h.plugin.searchState.status).toBe('error'); expect(h.plugin.searchState.error).toContain('context budget');
+        expect(verifyComplete).not.toHaveBeenCalled();
+    });
+});
+
+
+it('reports an out-of-range indexed evidence ID without fabricating a passage', async () => {
+    const h = makeHarness(); h.bodies.set('a.md', 'The coast is quiet.');
+    h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true, semanticIndex: true };
+    const stats = { candidates: 1, total: 1, updatedNotes: 0, passages: 1, elapsedMs: 1 };
+    vi.spyOn(LocalSemanticIndex.prototype, 'query').mockImplementation(async input => ({ scenes: [{ path: 'a.md', bodyText: 'The coast is quiet.',
+        grounding: input.scenes[0], indexedPassages: [{ text: 'The coast is quiet.', source: 'body' }] }], stats }));
+    verifyComplete.mockResolvedValue({ success: true, content: '{"match":true,"evidenceIds":[99]}', responseData: {} });
+    h.service.performSearch('a homecoming'); h.resolve([scene('a.md', '')]); await settle();
+    expect(h.plugin.searchState.hits.size).toBe(0); expect(h.plugin.searchState.unreadableScenes).toBe(1);
+    expect(h.plugin.searchState.unreadableNotes?.[0].path).toBe('a.md');
 });

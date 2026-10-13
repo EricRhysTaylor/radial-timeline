@@ -39,6 +39,7 @@ export class SearchPanelController {
     private readonly scopeRows: ScopeRow[] = [];
     private readonly assistCheckbox: HTMLInputElement;
     private readonly assistHint: HTMLElement;
+    private readonly indexCheckbox: HTMLInputElement;
     private readonly statusText: HTMLElement;
     private readonly cancelButton: HTMLButtonElement;
     private cancelRequested = false;
@@ -46,6 +47,7 @@ export class SearchPanelController {
     private expanded = false;
     /** Generation token: a slow probe must not overwrite a newer answer. */
     private statusProbeId = 0;
+    private hintCount = 0;
 
     constructor(host: SearchPanelHost, shell: HTMLElement, input: HTMLInputElement) {
         this.host = host;
@@ -104,6 +106,8 @@ export class SearchPanelController {
         );
         this.assistCheckbox = assistRow.checkbox;
         this.assistHint = assistRow.hint;
+        this.indexCheckbox = this.buildCheckRow(assistWrap,
+            t('timeline.search.indexLabel'), t('timeline.search.indexHint'), false).checkbox;
         this.panel.appendChild(assistWrap);
 
         // --- Status ----------------------------------------------------------
@@ -158,7 +162,7 @@ export class SearchPanelController {
         const hintEl = doc.win.createSpan();
         hintEl.className = 'ert-timeline-search-panel__row-hint';
         hintEl.textContent = hint;
-        hintEl.id = `${this.panel.id}-hint-${parent.childElementCount}`;
+        hintEl.id = `${this.panel.id}-hint-${++this.hintCount}`;
         checkbox.setAttribute('aria-describedby', hintEl.id);
 
         row.appendChild(checkbox);
@@ -173,6 +177,7 @@ export class SearchPanelController {
             this.host.registerDomEvent(row.checkbox, 'change', () => this.commitOptions());
         }
         this.host.registerDomEvent(this.assistCheckbox, 'change', () => this.commitOptions());
+        this.host.registerDomEvent(this.indexCheckbox, 'change', () => this.commitOptions());
 
         this.host.registerDomEvent(this.cancelButton, 'click', () => {
             // The label changes rather than the button vanishing: a request that
@@ -228,6 +233,7 @@ export class SearchPanelController {
             if (!row.checkbox.disabled) next[row.key] = row.checkbox.checked;
         }
         if (!this.assistCheckbox.disabled) next.llmAssist = this.assistCheckbox.checked;
+        if (!this.indexCheckbox.disabled) next.semanticIndex = this.indexCheckbox.checked;
         this.host.setSearchOptions(next);
     }
 
@@ -308,6 +314,9 @@ export class SearchPanelController {
     /** Mirror the live search state into the controls and the status line. */
     syncFromState(): void {
         const state = this.host.getSearchState();
+        this.indexCheckbox.checked = state.options.semanticIndex === true;
+        this.indexCheckbox.disabled = !state.options.llmAssist;
+        this.indexCheckbox.parentElement?.classList.toggle('is-disabled', this.indexCheckbox.disabled);
         this.statusText.title = state.unreadableNotes ? state.unreadableNotes.map(note => `${note.path}: ${note.reason}`).join('\n') : '';
 
         for (const row of this.scopeRows) {
@@ -334,6 +343,9 @@ export class SearchPanelController {
     private describeStatus(state: TimelineSearchState): string {
         if (!hasSearchScope(state.options)) return t('timeline.search.statusNoScope');
         if (state.status === 'running') {
+            if (state.indexProgress) return t('timeline.search.statusIndexing', {
+                done: String(state.indexProgress.done), total: String(state.indexProgress.total)
+            });
             if (state.progress) {
                 const position = {
                     chunk: String(state.progress.chunk),
@@ -366,6 +378,9 @@ export class SearchPanelController {
 
         // Silence here would present a thin sweep as a complete one.
         const caveats: string[] = [];
+        if (state.retrieval) caveats.push(t('timeline.search.statusIndexed', {
+            selected: String(state.retrieval.candidates), total: String(state.retrieval.total)
+        }));
         if (state.droppedClaims && state.droppedClaims > 0) {
             caveats.push(t('timeline.search.statusDropped', { count: String(state.droppedClaims) }));
         }

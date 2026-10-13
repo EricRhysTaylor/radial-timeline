@@ -303,3 +303,11 @@ Before anything is written, a dialog lists what the file contains:
 If your subplot names could themselves reveal plot, turn on **Generic ring names** in the dialog to export them as "Subplot 1, Subplot 2…".
 
 Related: [Settings → Community](Settings-Community).
+
+## Open timetable
+
+**Radial timeline: Open timetable** opens or focuses the Bases view for the timeline’s current book or saga. Enable the Bases core plugin first. See [Timetable](Timetable).
+
+## Promote note to scene
+
+**Radial timeline: Promote note to scene** reviews a sketch or unclassified note for conversion to a scene, preserving its text and existing properties. See [Promoting notes](Timetable#promote-a-note-to-a-scene).

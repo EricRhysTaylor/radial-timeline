@@ -1,3 +1,5 @@
+> Superseded by [the 7.5.0 release draft](draft-for-release-7.5.0.md), which includes these improvements and the subsequent Timetable and publishing work.
+
 ## Radial Timeline 7.4.1
 
 Manuscript onboarding is out of testing: bring in a Scrivener export, a Word document, or one big file without AI. Manuscript export follows Editorialist's new `%%query:` marker for author queries.

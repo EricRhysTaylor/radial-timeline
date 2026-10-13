@@ -30,6 +30,7 @@
     *   [AI Pulse Triplet Analysis](AI-Pulse-Analysis)
     *   [Beat Systems](Gossamer-Mode#story-beats-configuration)
     *   [Status & Progress Stage](Progress-Mode#status-and-progress-stage)
+*   [Timetable](Timetable)
 *   [Scene Time](Scene-Time)
 *   [Inquiry View](Inquiry)
     *   [Troubleshooting](Inquiry#troubleshooting)

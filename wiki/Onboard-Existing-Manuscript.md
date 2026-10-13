@@ -2,7 +2,7 @@ Onboarding imports your draft as scene notes with frontmatter. Review scene boun
 
 Start from **Manuscript onboarding** on the Welcome screen or **Radial timeline: Manuscript onboarding** in the Command Palette. The Welcome flow lets you choose an export directly; you do not need to configure Book Manager first.
 
-> **Build availability:** the direct source chooser, export discovery, and CSV-first ordering described here are in the current main build, after release 7.4.0. Update to a release containing these changes before expecting the same screens.
+> **Available in 7.5.0:** the direct source chooser, export discovery, and CSV-first ordering described here require 7.5.0 or a later release.
 
 ## Import sources
 
@@ -18,7 +18,7 @@ Choose a suggested export or select its folder yourself. Suggestions are local, 
 
 When a CSV is supplied, **its row order determines narrative order**, even if filename numbering differs. Rows match scene files by document title. Without a CSV, numbered filenames supply the order.
 
-Missing scene files, duplicate-title ambiguity, and scene files absent from the supplied outline block import. Follow the reported instructions in Scrivener, export the same manuscript selection again, and choose **Recheck export**. Without a CSV, scene-only import is supported with a warning. Some unmatched outline rows may be folders or empty placeholders; check them against the binder. A Word Count column can help identify missing prose documents, but it is not required metadata to manage.
+Missing scene files, duplicate-title ambiguity, and scene files absent from the supplied outline appear in the export review. Inspect the scene and outline lists, correct the export in Scrivener, and choose **Recheck export**. When the review offers **Continue anyway**, you can proceed with the available material after reading the reported problems. Without a CSV, scene-only import is supported with a warning. Some unmatched outline rows may be folders or empty placeholders; check them against the binder. A Word Count column can help identify missing prose documents, but it is not required metadata to manage.
 
 ## Import without AI
 

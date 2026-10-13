@@ -31,6 +31,14 @@ The red number-square indicator remains for undated `Working` or `Complete` scen
 
 **Timeline Date Scaffold** is optional: use it when you want to assign provisional dates, review them, and apply them. **Timeline Date Audit** can run with dates left blank. It lists undated scenes separately from warnings and checks actual contradictions and manuscript evidence. See [Timeline commands](Commands#timeline-order).
 
+## Drag a scene to change its date
+
+In the regular Chronologue view, drag a scene on the **outer All Scenes ring** and drop it beside a dated scene. **Place scene in time** shows the neighboring scenes, available room, suggested dates, and a specific date-and-time option. Review the choice and click **Place** to write the scene’s `When`. At the top seam, choose whether you mean before the opening scene or after the closing scene. Narrative numbering and order stay unchanged.
+
+If undated scenes follow the scene you are moving, the panel names them. Leave **Keep it where it is** / **Keep them where they are** off to let them travel with the moved scene while their `When` fields stay blank. Turn it on to leave them in place: this writes each follower a `When` date at its current displayed time. Review those dates before placing the scene.
+
+Date dragging is available in the regular view, not the Shift, planetary, or Runtime overlays. To change subplot membership, drag from a subplot ring instead; see [Move scenes between subplots](How-to#move-scenes-between-subplots).
+
 ### Why this matters
 Chronologue orders scenes by story time to help you find:
 *   Pacing issues (too much/too little story time between events)

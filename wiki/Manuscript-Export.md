@@ -1,9 +1,6 @@
-`Manuscript export` opens the export panel for compiled manuscript and outline outputs.
+**Manuscript export** opens the export panel for an RT book, a folder of Markdown notes, or a single Markdown file. Publish a novel, an essay, a report, or another document without first turning every note into a timeline scene.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-manuscript-export.png" alt="Manuscript export panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Manuscript export — filtering, ordering, range, and output controls</div>
-</div>
+> **Available in 7.5.0:** folder and single-file sources, saved manuscript selections, and the PDF proof workspace.
 
 ## What It Can Export
 
@@ -18,6 +15,14 @@ Choose from:
 Core includes compiled Markdown, Pandoc PDF export with the Basic and Standard layouts, and Word submission export. Pro adds the Professional, Signature, Screenplay, and Podcast Script layouts plus deeper publishing customization (custom Pandoc metadata, custom LaTeX preamble, the PDF style designer).
 
 The panel supports ordering, selection range, output presets, and publishing-oriented layout decisions in one place.
+
+## Choose and Review the Source
+
+Choose **RT book**, **Folder**, or **Single file**. For an RT book, use the book’s scene order, subplot filters, and range controls. For a folder, review the included Markdown notes, remove unwanted entries, move notes earlier or later, then choose **Use this order and selection**. A single Markdown file is ready as one source. Plain sources retain existing Markdown headings and join notes with blank lines; they do not need scene YAML or Book Manager registration.
+
+For a folder or file, enter **Title** and **Author** in the panel. Save a named manuscript to reuse its source, metadata, included notes, and reviewed order. **Update saved manuscript** stores changes, **Save as new** creates another selection, and **Remove saved manuscript** removes the saved choice without deleting notes. Formatting remains in export presets, separately from the source selection.
+
+Your source files stay unchanged. Recheck the included notes when returning to a saved selection, especially after moving or deleting files.
 
 ## Who Is It For?
 
@@ -58,6 +63,12 @@ For PDF exports, choose a novel PDF layout from the layout selector. The selecte
 The preview cards show the expected chapter, part, and body-page structure before export. Export checks report missing Pandoc, LaTeX, bundled fonts, and layout-token problems before you generate the PDF.
 
 The selected novel PDF layout is remembered per book. Narrative Mode uses that same setting for chapter and part placards on the timeline. See [Narrative Mode](Narrative-Mode#chapter-and-part-placards).
+
+## Review the Actual PDF
+
+For PDF output, use **Generate proof** to render the current manuscript, then inspect its actual pages in the **Document proof** workspace. Move between pages and refresh the proof after changing the manuscript or export options. Proofs are saved under the export folder’s `Proofs` subfolder; final export renders the current manuscript again.
+
+After export, the delivery review lists the files saved to the destination. Open those final files to check the result, particularly split outputs. **Save compiled + Pandoc-ready Markdown files** also keeps the assembled and cleaned source beside the export for inspection.
 
 ## Related Docs
 

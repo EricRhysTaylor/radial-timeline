@@ -3,7 +3,9 @@
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Settings → Publish</div>
 </div>
 
-Radial Timeline turns your scene notes into a finished manuscript using **Pandoc** and **LaTeX**. You select a template that defines the look of the page — fonts, headers, chapter openers, part dividers — and the plugin assembles your scenes into that format and hands the result to Pandoc to produce a PDF.
+Radial Timeline publishes an RT book, a folder of Markdown notes, or a standalone Markdown file as Markdown, Word, or PDF. In 7.5.0, folders and single files can become documents without timeline scene properties: review their contents and order, supply a title and author, and save the selection for reuse. See [Manuscript export](Manuscript-Export) for source selection, reader presets, PDF proofs, and delivery review.
+
+For PDF, choose a layout defining fonts, headers, chapter openers, and part dividers. Pandoc and LaTeX typeset the assembled document. Word requires Pandoc; Markdown needs neither tool.
 
 **Pandoc-based PDF export ships with the plugin.** The Core surface exports PDFs with the bundled Core publishing layouts. **Pro** covers extra bundled PDF layouts and deeper publishing customization. See [Pro](Pro).
 

@@ -231,7 +231,10 @@ The wheel is for seeing (proportion, rhythm, gaps, where you are); the Timetable
   - clicking an act label on the wheel (a book label in saga scope) shows that act in the table, expanding it; labels look clickable only while a Timetable is open;
   - spotlighting a ring in the subplot key fades table rows outside that ring.
 
-**Parked:** coloring the wheel by any table column (a heat map). Eric: depends on execution, might be overkill. To be explored before any build.
+**Also built (`ed647245`), Eric 2026-10-12: "for 3, go ahead. pov or location could be helpful. yes to bulk edits and yes to open query dots":**
+- **Color the timeline by a column.** Right-click a column header in the Timetable. Only columns with up to eight values on scenes qualify (POV, Location and the like); numeric heat maps were left out as overkill. Each value takes a ring color, scenes without one are neutral, and a pill on the wheel shows the legend and a button to stop. Not saved.
+- **Bulk edits** (the table owns field edits). Checkboxes on scene, sketch and unpromoted rows; Shift picks a range; Esc clears. A bar sets Status, Publish Stage, Act or rings on every picked row, or promotes the non-scenes. Ring changes (scenes only) get one notice and one Undo for all of them.
+- **Open query dots on the wheel** (the wheel flags, the table works through them). A scene with `%%query: …%%` in its text gets a dot on its number square; hovering lists the first three.
 
 ## Considered and set aside: a lanes layout ("Unwrapped")
 

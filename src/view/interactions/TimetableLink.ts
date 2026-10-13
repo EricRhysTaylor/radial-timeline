@@ -9,6 +9,7 @@
  */
 
 import { markTimetableRows, revealTimetableSegment, type TimelineColoring, type TimelineLens } from '../../timetable/timetableRegistry';
+import { formatNumber } from '../../utils/svg';
 
 type TimetableLinkView = {
     renderScope: {
@@ -105,31 +106,42 @@ export function applyColoringToSvg(svg: Element, coloring: TimelineColoring | nu
 const QUERY_DOT = 'rt-query-dot';
 
 /**
- * Open author queries (`%%query: …%%`) show as a dot on the corner of a
- * scene's number square; the Timetable lists and counts them. `queries` maps
- * a scene path to its open questions.
+ * Open author queries (`%%query: …%%`) show as a dot at the center of each of
+ * a scene's cells; the Timetable lists and counts them. `queries` maps a scene
+ * path to its open questions. The dot sits inside the scene's group, so it
+ * fades and recedes with the scene (Gossamer, the lens) and a click on it
+ * opens the scene.
  */
 export function applyQueryDots(svg: Element, queries: Map<string, string[]>, describe: (questions: string[]) => string): void {
     svg.querySelectorAll(`.${QUERY_DOT}`).forEach(element => element.remove());
     const doc = svg.ownerDocument;
-    svg.querySelectorAll('.rt-scene-group[data-path]').forEach(group => {
+    svg.querySelectorAll('.rt-scene-group[data-item-type="Scene"][data-path]').forEach(group => {
         const path = scenePathOf(group);
         const questions = path ? queries.get(path) : undefined;
-        const sceneId = group.querySelector('.rt-scene-path')?.id;
-        if (!questions || questions.length === 0 || !sceneId) return;
-        const square = svg.querySelector(`.rt-number-square[data-scene-id="${CSS.escape(sceneId)}"]`);
-        if (!square?.parentElement) return;
-        const x = Number(square.getAttribute('x')) + Number(square.getAttribute('width'));
-        const y = Number(square.getAttribute('y'));
-        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+        if (!questions || questions.length === 0) return;
+        const center = cellCenter(group);
+        if (!center) return;
         const dot = doc.createElementNS('http://www.w3.org/2000/svg', 'circle');
         dot.setAttribute('class', QUERY_DOT);
-        dot.setAttribute('cx', String(x));
-        dot.setAttribute('cy', String(y));
-        dot.setAttribute('r', '4.5');
+        dot.setAttribute('cx', formatNumber(center.x));
+        dot.setAttribute('cy', formatNumber(center.y));
+        dot.setAttribute('r', '9');
         const title = doc.createElementNS('http://www.w3.org/2000/svg', 'title');
         title.textContent = describe(questions);
         dot.appendChild(title);
-        square.parentElement.appendChild(dot);
+        group.appendChild(dot);
     });
+}
+
+/** The middle of a scene cell, from the arc its group records (radians, centered on the wheel). */
+function cellCenter(group: Element): { x: number; y: number } | null {
+    const start = Number(group.getAttribute('data-start-angle-raw') ?? group.getAttribute('data-start-angle'));
+    let end = Number(group.getAttribute('data-end-angle-raw') ?? group.getAttribute('data-end-angle'));
+    const inner = Number(group.getAttribute('data-inner-r'));
+    const outer = Number(group.getAttribute('data-outer-r'));
+    if (![start, end, inner, outer].every(Number.isFinite)) return null;
+    if (end < start) end += Math.PI * 2;
+    const angle = (start + end) / 2;
+    const radius = (inner + outer) / 2;
+    return { x: radius * Math.cos(angle), y: radius * Math.sin(angle) };
 }

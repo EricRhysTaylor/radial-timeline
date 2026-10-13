@@ -1424,7 +1424,9 @@ export class TimetableView extends BasesView {
         if (typeof group.act === 'number') this.groupIdForAct.set(group.act, group.id);
         const cell = row.createEl('td');
         cell.colSpan = columnCount;
-        const toggle = cell.createDiv({ cls: 'ert-timetable__group-toggle' });
+        // One flex line, so the label, the progress numbers and + share a center line.
+        const line = cell.createDiv({ cls: 'ert-timetable__group-line' });
+        const toggle = line.createDiv({ cls: 'ert-timetable__group-toggle' });
         toggle.setAttr('role', 'button');
         toggle.setAttr('tabindex', '0');
         toggle.setAttr('aria-expanded', String(!collapsed));
@@ -1436,7 +1438,7 @@ export class TimetableView extends BasesView {
         if (progress) {
             const stats = groupProgress(group.items, this.plugin.settings);
             if (stats.scenes > 0) {
-                const summary = cell.createSpan({ cls: 'ert-timetable__progress' });
+                const summary = line.createSpan({ cls: 'ert-timetable__progress' });
                 summary.createSpan({
                     text: t('ui.timetable.progressStats', {
                         complete: stats.complete,
@@ -1448,7 +1450,7 @@ export class TimetableView extends BasesView {
             }
         }
         // An act group, or a book group in the saga table, can take a new sketch.
-        if (group.act !== undefined || group.id.startsWith('book:')) this.renderNewSketchButton(cell, group.act, bookId, group.label ?? '');
+        if (group.act !== undefined || group.id.startsWith('book:')) this.renderNewSketchButton(line, group.act, bookId, group.label ?? '');
     }
 
     private renderRow(body: HTMLElement, item: TableItem, columns: Column[], layout: RingLayout | null, columnCount: number, mode: ModeContext): void {

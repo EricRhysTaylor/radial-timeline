@@ -712,8 +712,9 @@
 }
 
 /* Open author queries (%%query: …%%): a dot on the corner of the scene's number square. */
+/* An open author query: white with a dark ring, so it reads on any scene color. */
 .rt-query-dot {
-  fill: var(--interactive-accent);
-  stroke: var(--background-primary);
-  stroke-width: 1.5px;
+  fill: var(--rt-color-empty);
+  stroke: var(--rt-legacy-black);
+  stroke-width: 3px;
 }

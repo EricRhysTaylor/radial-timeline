@@ -62,7 +62,7 @@ import {
 import { authorKeyFor, TIMETABLE_VIEW_TYPE } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { trackTimetable } from './timetableRegistry';
-import { showSceneContextMenu } from '../view/interactions/SceneContextMenu';
+import { addPublishStageMenuItems, addStatusMenuItems, showSceneContextMenu } from '../view/interactions/SceneContextMenu';
 import { readSubplotColor } from '../renderer/utils/subplotColors';
 import type { BookProfile } from '../types/settings';
 
@@ -76,6 +76,9 @@ const OTHER_COLUMN_WIDTH = 140;
 const MIN_COLUMN_WIDTH = 48;
 const DEFAULT_COLUMN_WIDTHS: Record<string, number> = { When: 220, Duration: 100, Chapter: 150, Synopsis: 360, Act: 56 };
 const NAME_COLUMN_WIDTH = 220;
+
+/** Properties with a fixed set of values: clicking their cell offers a quick pick. */
+const PICKABLE_PROPERTIES = new Set(['Status', 'Publish Stage', 'Act']);
 
 /** A column resize in progress. */
 interface ColumnResize {
@@ -158,6 +161,11 @@ function frontmatterKey(frontmatter: Record<string, unknown> | undefined, name: 
     const lower = name.toLowerCase();
     const key = Object.keys(frontmatter).find(candidate => candidate.toLowerCase() === lower);
     return key === undefined ? undefined : frontmatter[key];
+}
+
+/** A menu title with the wheel menu's check mark for the current value. */
+function checkedTitle(label: string, current: boolean): string {
+    return current ? `${label}  ✓` : label;
 }
 
 function firstText(value: unknown): string {
@@ -354,6 +362,12 @@ export class TimetableView extends BasesView {
             void runPromotion(this.plugin, [file]);
             return;
         }
+        // A fixed-value cell, or a scene's number cell, opens a quick pick instead of the note.
+        const pick = target.closest<HTMLElement>('.ert-timetable__pick');
+        if (pick?.dataset.pick) {
+            this.showQuickPick(pick, file, pick.dataset.pick, row.hasClass('is-scene'));
+            return;
+        }
         if (target.closest('.ert-timetable__drawer-toggle')) {
             this.toggleDrawer(path);
             return;
@@ -371,6 +385,58 @@ export class TimetableView extends BasesView {
             return;
         }
         void openFromTimetable(this.plugin.app, file, evt, this.rootEl);
+    }
+
+    // ── Quick picks ─────────────────────────────────────────────────────
+
+    /**
+     * The quick pick for a fixed-value property. Status and Publish Stage use
+     * the wheel's own menu items (Complete also sets Due); the number cell
+     * offers both. Act offers the book's acts, and No act for a note that
+     * isn't a scene yet.
+     */
+    private showQuickPick(anchor: HTMLElement, file: TFile, property: string, isScene: boolean): void {
+        const menu = new Menu();
+        const host = { plugin: this.plugin };
+        if (property === 'status') {
+            addStatusMenuItems(menu, host, file);
+            menu.addSeparator();
+            addPublishStageMenuItems(menu, host, file);
+        } else if (property === 'Status') {
+            addStatusMenuItems(menu, host, file);
+        } else if (property === 'Publish Stage') {
+            addPublishStageMenuItems(menu, host, file);
+        } else if (property === 'Act') {
+            this.addActItems(menu, file, isScene);
+        }
+        const rect = anchor.getBoundingClientRect();
+        menu.showAtPosition({ x: rect.left, y: rect.bottom }, anchor.ownerDocument);
+    }
+
+    private addActItems(menu: Menu, file: TFile, isScene: boolean): void {
+        const { settings } = this.plugin;
+        const mappings = getActiveFrontmatterMappings(settings);
+        const frontmatter: Record<string, unknown> | undefined = this.plugin.app.metadataCache.getFileCache(file)?.frontmatter;
+        const current = buildTableRow(file.path, file.basename, frontmatter, settings).act;
+        const labels = parseActLabels(settings, getConfiguredActCount(settings));
+        const write = (act: number | null): void => {
+            void this.plugin.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+                const key = Object.keys(fm).find(candidate => canonicalizeFrontmatterKey(candidate, mappings) === 'Act') ?? authorKeyFor('Act', settings);
+                if (act === null) delete fm[key];
+                else fm[key] = act;
+            }).then(() => this.plugin.refreshTimelineIfNeeded(file, 100));
+        };
+        for (let act = 1; act <= getConfiguredActCount(settings); act++) {
+            menu.addItem(item => item
+                .setTitle(checkedTitle(resolveActLabel(act - 1, labels), current === act))
+                .onClick(() => write(act)));
+        }
+        // A scene always sits in an act on the wheel; only other notes can have none.
+        if (!isScene) {
+            menu.addItem(item => item
+                .setTitle(checkedTitle(t('ui.timetable.noAct'), current === null))
+                .onClick(() => write(null)));
+        }
     }
 
     // ── Sketches ────────────────────────────────────────────────────────
@@ -838,6 +904,12 @@ export class TimetableView extends BasesView {
         });
         label.textContent = row.prefix ?? '–';
         tooltip(chip, this.chipTooltip(row, frontmatter), 'right');
+        if (row.kind === 'scene') {
+            chip.addClass('ert-timetable__pick');
+            chip.dataset.pick = 'status';
+            chip.setAttr('role', 'button');
+            chip.setAttr('aria-haspopup', 'menu');
+        }
 
         if (row.kind === 'sketch' || row.kind === 'unclassed') {
             const promote = cell.createEl('button', { cls: 'ert-timetable__promote clickable-icon' });
@@ -913,9 +985,16 @@ export class TimetableView extends BasesView {
         const value = entry.getValue(property);
         const empty = !value || !value.isTruthy();
         if (!empty) value.renderTo(cell, this.plugin.app.renderContext);
-        // A sketch without a Synopsis shows its first line of text instead.
         const mappings = getActiveFrontmatterMappings(this.plugin.settings);
-        if (empty && row.kind === 'sketch' && type === 'note' && canonicalizeFrontmatterKey(name, mappings) === 'Synopsis') {
+        const canonical = type === 'note' ? canonicalizeFrontmatterKey(name, mappings) : '';
+        // Status, Publish Stage and Act have fixed values: a click offers them. Beats and other classes are left alone.
+        if (PICKABLE_PROPERTIES.has(canonical) && row.kind !== 'otherClass' && (canonical === 'Act' || row.kind === 'scene')) {
+            cell.addClass('ert-timetable__pick');
+            cell.dataset.pick = canonical;
+            setIcon(cell.createSpan({ cls: 'ert-timetable__pick-icon' }), 'chevron-down');
+        }
+        // A sketch without a Synopsis shows its first line of text instead.
+        if (empty && row.kind === 'sketch' && canonical === 'Synopsis') {
             this.synopsisFromBody.set(row.path, cell);
         }
     }

@@ -447,3 +447,33 @@
 .ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row.is-linked > td {
   background: var(--background-modifier-active-hover);
 }
+
+/* Quick picks: Status, Publish Stage and Act cells, and a scene's number cell. */
+.ert-timetable__pick {
+  cursor: pointer;
+}
+
+.ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row > td.ert-timetable__pick:hover {
+  background: var(--background-modifier-active-hover);
+}
+
+.ert-timetable__pick-icon {
+  display: none;
+  margin-inline-start: var(--size-2-2);
+  color: var(--text-faint);
+  vertical-align: middle;
+}
+
+.ert-timetable__pick-icon svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
+.ert-timetable__pick:hover .ert-timetable__pick-icon {
+  display: inline-flex;
+}
+
+.ert-timetable__row.is-scene .ert-timetable__chip.ert-timetable__pick:hover .ert-timetable__chip-cell {
+  stroke: var(--interactive-accent);
+  stroke-width: 2;
+}

@@ -13,7 +13,7 @@ import { readPartMarker, SHARED_PART_FIELD_KEY } from '../../utils/timelineParts
 import { describeParts } from '../../publishing/layoutVisuals';
 import { resolveActiveNovelPandocLayout } from '../../utils/exportFormats';
 import { readSharedChapterTitle, SHARED_CHAPTER_FIELD_KEY } from '../../utils/timelineChapters';
-import { frontmatterValueToText, getActiveFrontmatterMappings } from '../../utils/frontmatter';
+import { canonicalizeFrontmatterKey, frontmatterValueToText, getActiveFrontmatterMappings } from '../../utils/frontmatter';
 import {
     applySubplotMembershipChange,
     planSubplotMembership,
@@ -542,6 +542,68 @@ async function setChapterAtScene(view: SceneMenuHost, file: TFile, currentChapte
     }
 }
 
+/** The note's own key for a property (any letter case, or the author's mapped name), or its canonical name. */
+function frontmatterKeyFor(view: SceneMenuHost, frontmatter: Record<string, unknown>, canonical: string): string {
+    const mappings = getActiveFrontmatterMappings(view.plugin.settings);
+    return Object.keys(frontmatter).find(key => canonicalizeFrontmatterKey(key, mappings) === canonical) ?? canonical;
+}
+
+function cachedFrontmatter(view: SceneMenuHost, file: TFile): Record<string, unknown> {
+    return view.plugin.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
+}
+
+/**
+ * Status items (Todo, Working, Complete), the current one checked. Complete
+ * also sets Due to today. Shared by the wheel's menu and the Timetable.
+ */
+export function addStatusMenuItems(menu: Menu, view: SceneMenuHost, file: TFile): void {
+    const frontmatter = cachedFrontmatter(view, file);
+    const currentStatus = normalizeStatus(frontmatter[frontmatterKeyFor(view, frontmatter, 'Status')]);
+    STATUS_OPTIONS.forEach(option => {
+        menu.addItem(item => {
+            item.setIcon(option.icon);
+            item.setTitle(menuTitle(option.label, currentStatus === option.normalized));
+            item.onClick(() => {
+                void updateSceneFrontmatter(
+                    view,
+                    file,
+                    (fm) => {
+                        fm[frontmatterKeyFor(view, fm, 'Status')] = option.value;
+                        if (option.value === 'Complete') {
+                            fm[frontmatterKeyFor(view, fm, 'Due')] = formatLocalDateKey();
+                        }
+                    },
+                    option.value === 'Complete'
+                        ? t('ui.sceneContextMenu.markedComplete', { name: file.basename })
+                        : t('ui.sceneContextMenu.statusSet', { name: file.basename, status: option.label })
+                );
+            });
+        });
+    });
+}
+
+/** Publish Stage items (Zero, Author, House, Press), the current one checked. Shared by the wheel and the Timetable. */
+export function addPublishStageMenuItems(menu: Menu, view: SceneMenuHost, file: TFile): void {
+    const frontmatter = cachedFrontmatter(view, file);
+    const currentStage = normalizeScalar(frontmatter[frontmatterKeyFor(view, frontmatter, 'Publish Stage')]) || 'Zero';
+    PUBLISH_STAGE_OPTIONS.forEach(option => {
+        menu.addItem(item => {
+            item.setIcon(option.icon);
+            item.setTitle(menuTitle(option.label, currentStage.toLowerCase() === option.value.toLowerCase()));
+            item.onClick(() => {
+                void updateSceneFrontmatter(
+                    view,
+                    file,
+                    (fm) => {
+                        fm[frontmatterKeyFor(view, fm, 'Publish Stage')] = option.value;
+                    },
+                    t('ui.sceneContextMenu.stageSet', { name: file.basename, stage: option.label })
+                );
+            });
+        });
+    });
+}
+
 /** Read the menu target from a clicked scene group on the wheel. */
 function targetFromGroup(view: SceneMenuHost, group: Element): SceneMenuTarget | null {
     const file = getSceneFile(view, group);
@@ -561,8 +623,6 @@ export function showSceneContextMenu(view: SceneMenuHost, target: SceneMenuTarge
     const { file } = target;
     const cache = view.plugin.app.metadataCache.getFileCache(file);
     const frontmatter = (cache?.frontmatter ?? {}) as Record<string, unknown>;
-    const currentStatus = normalizeStatus(frontmatter.Status);
-    const currentStage = normalizeScalar(frontmatter['Publish Stage']) || 'Zero';
     const currentChapterTitle = readSharedChapterTitle(frontmatter);
     const currentPartMarker = readPartMarker(frontmatter);
     const currentPartValue: string | true | undefined = currentPartMarker
@@ -607,46 +667,9 @@ export function showSceneContextMenu(view: SceneMenuHost, target: SceneMenuTarge
         menu.addSeparator();
     }
 
-    STATUS_OPTIONS.forEach(option => {
-        menu.addItem(item => {
-            item.setIcon(option.icon);
-            item.setTitle(menuTitle(option.label, currentStatus === option.normalized));
-            item.onClick(() => {
-                void updateSceneFrontmatter(
-                    view,
-                    file,
-                    (fm) => {
-                        fm.Status = option.value;
-                        if (option.value === 'Complete') {
-                            fm.Due = formatLocalDateKey();
-                        }
-                    },
-                    option.value === 'Complete'
-                        ? t('ui.sceneContextMenu.markedComplete', { name: file.basename })
-                        : t('ui.sceneContextMenu.statusSet', { name: file.basename, status: option.label })
-                );
-            });
-        });
-    });
-
+    addStatusMenuItems(menu, view, file);
     menu.addSeparator();
-
-    PUBLISH_STAGE_OPTIONS.forEach(option => {
-        menu.addItem(item => {
-            item.setIcon(option.icon);
-            item.setTitle(menuTitle(option.label, currentStage.toLowerCase() === option.value.toLowerCase()));
-            item.onClick(() => {
-                void updateSceneFrontmatter(
-                    view,
-                    file,
-                    (fm) => {
-                        fm['Publish Stage'] = option.value;
-                    },
-                    t('ui.sceneContextMenu.stageSet', { name: file.basename, stage: option.label })
-                );
-            });
-        });
-    });
+    addPublishStageMenuItems(menu, view, file);
 
     menu.addSeparator();
 

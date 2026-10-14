@@ -1352,7 +1352,9 @@ export class TimetableView extends BasesView {
     private setUpKey(): void {
         const button = this.rootEl.createEl('button', {
             cls: 'ert-timeline-legend__trigger ert-timetable__key clickable-icon',
-            attr: { type: 'button', 'aria-expanded': 'false', 'aria-label': t('ui.timetable.keyTitle') },
+            // No aria-label: Obsidian would show it as a second tooltip over the key panel,
+            // matching the timeline's own ✱ trigger.
+            attr: { type: 'button', 'aria-expanded': 'false' },
         });
         button.detach();
         setIcon(button, 'asterisk');

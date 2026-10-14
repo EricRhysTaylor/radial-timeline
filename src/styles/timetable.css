@@ -719,3 +719,14 @@
   width: var(--icon-xs);
   height: var(--icon-xs);
 }
+
+/* The ✱ key hangs from the window under its corner button, so a short table pane never clips it. */
+.ert-timeline-legend.ert-timetable-key {
+  position: fixed;
+  top: var(--ert-key-top, 0);
+  right: auto;
+  left: var(--ert-key-left, 0);
+  width: min(360px, calc(100vw - 32px));
+  max-height: var(--ert-key-max-height, 70vh);
+  overflow-y: auto;
+}

@@ -2208,12 +2208,15 @@
 .ert-timeline-legend {
   position: absolute;
   top: calc(100% + 8px);
-  left: 0;
+  /* Anchored at the right of its cluster, so it opens inward and stays inside the pane. */
+  right: 0;
   width: min(330px, calc(100vw - 32px));
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
   z-index: var(--layer-popover, 1000);
   opacity: 0;
   transform: translateY(-4px);
-  transform-origin: top left;
+  transform-origin: top right;
   pointer-events: none;
   transition: opacity 120ms ease, transform 120ms ease;
 }
@@ -2472,6 +2475,80 @@
   font-weight: normal;
   line-height: 1;
   color: var(--ert-legend-swatch-text, var(--rt-legacy-black));
+}
+
+/* A dashed swatch (a sketch's number cell), and ring squares (the Timetable's Rings column). */
+.ert-timeline-legend__swatch.is-dashed {
+  border-style: dashed;
+}
+
+.ert-timeline-legend__icon--rings {
+  gap: 2px;
+}
+
+.ert-timeline-legend__ring {
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--ert-legend-ring);
+}
+
+.ert-timeline-legend__ring.is-planned {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--text-muted);
+}
+
+/* Compact key (the Timetable's): one line per row, label then detail. */
+.ert-timeline-legend--compact .ert-timeline-legend__surface {
+  padding: var(--size-4-2) var(--size-4-3) var(--size-4-3);
+}
+
+.ert-timeline-legend--compact .ert-timeline-legend__header {
+  margin-bottom: var(--size-4-2);
+}
+
+.ert-timeline-legend--compact .ert-timeline-legend__section {
+  padding-top: var(--size-4-2);
+  margin-top: var(--size-4-2);
+}
+
+.ert-timeline-legend--compact .ert-timeline-legend__section-title {
+  margin-bottom: var(--size-2-2);
+  font-size: 11px;
+}
+
+.ert-timeline-legend--compact .ert-timeline-legend__row {
+  align-items: center;
+  min-height: 22px;
+  padding: 1px 0;
+}
+
+.ert-timeline-legend--compact .ert-timeline-legend__icon {
+  height: 20px;
+}
+
+.ert-timeline-legend--compact .ert-timeline-legend__icon svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
+}
+
+.ert-timeline-legend--compact .ert-timeline-legend__copy {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--size-4-2);
+  row-gap: 0;
+}
+
+.ert-timeline-legend--compact .ert-timeline-legend__label {
+  font-size: 12px;
+}
+
+.ert-timeline-legend--compact .ert-timeline-legend__detail {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: normal;
 }
 
 /* ============================================================

@@ -63,6 +63,7 @@ import { formatGossamerCacheClock, formatGossamerCacheCostHint, getGossamerCache
 import { tooltip as applyTooltip } from '../utils/tooltip';
 import { currentTimelineColoring, currentTimelineLens, hasOpenTimetable, onTimelineOverlayChange, onTimetablePresenceChange, publishTimelineMode } from '../timetable/timetableRegistry';
 import { applyColoringToSvg, applyLensToSvg, applyQueryMarks, linkActLabelsToTimetable } from './interactions/TimetableLink';
+import { renderLegendSurface, wireLegendTrigger, type LegendDetailSegment, type LegendSection } from './interactions/LegendPanel';
 import { listAuthorQueries } from '../utils/authorQueryComments';
 
 // Duplicate of constants defined in main for now. We can consolidate later.
@@ -92,33 +93,6 @@ interface SessionStatusDisplay {
 // - Do not introduce fresh rt-* class creation for new chrome here unless it is explicitly allowlisted.
 
 const TIMELINE_LEGEND_MODES = new Set(['progress', 'narrative', 'chronologue']);
-
-interface TimelineLegendRow {
-    icon?: string;
-    swatch?: TimelineLegendSwatch;
-    label: string;
-    detail?: string;
-    detailSegments?: TimelineLegendDetailSegment[];
-    detailIcon?: string;
-    detailIconLabel?: string;
-}
-
-interface TimelineLegendDetailSegment {
-    text: string;
-    color?: string;
-}
-
-interface TimelineLegendSwatch {
-    fill?: string;
-    stroke?: string;
-    text?: string;
-    textColor?: string;
-}
-
-interface TimelineLegendSection {
-    title: string;
-    rows: TimelineLegendRow[];
-}
 
 // SceneNumberInfo now imported from constants
 
@@ -501,7 +475,7 @@ export class RadialTimelineView extends ItemView {
             setIcon(legendBtn, 'asterisk');
 
             const legendPanel = doc.win.createDiv();
-            legendPanel.className = 'ert-timeline-legend';
+            legendPanel.className = 'ert-timeline-legend ert-timeline-legend--compact';
             legendPanel.setAttribute('role', 'tooltip');
 
             // Book selector, badged with a book icon so the control reads
@@ -607,63 +581,7 @@ export class RadialTimelineView extends ItemView {
             doc.body.appendChild(sessionPanel);
             this.register(() => sessionPanel.remove());
 
-            let hideLegendTimer: number | null = null;
-            const showLegend = () => {
-                if (hideLegendTimer !== null) {
-                    window.clearTimeout(hideLegendTimer);
-                    hideLegendTimer = null;
-                }
-                if (legendBtn.hidden) return;
-                this.updateTimelineLegend();
-                legendPanel.classList.add('is-visible');
-                legendBtn.setAttribute('aria-expanded', 'true');
-            };
-            const hideLegend = () => {
-                legendPanel.classList.remove('is-visible');
-                legendBtn.setAttribute('aria-expanded', 'false');
-            };
-            const scheduleLegendHide = () => {
-                if (hideLegendTimer !== null) {
-                    window.clearTimeout(hideLegendTimer);
-                }
-                hideLegendTimer = window.setTimeout(() => {
-                    hideLegendTimer = null;
-                    if (legendPanel.matches(':hover') || legendBtn.matches(':hover') || legendPanel.contains(doc.activeElement)) {
-                        return;
-                    }
-                    hideLegend();
-                }, 120);
-            };
-
-            this.registerDomEvent(legendBtn, 'mouseenter', showLegend);
-            this.registerDomEvent(legendBtn, 'focus', showLegend);
-            this.registerDomEvent(legendBtn, 'mouseleave', scheduleLegendHide);
-            this.registerDomEvent(legendBtn, 'blur', scheduleLegendHide);
-            this.registerDomEvent(legendBtn, 'click', (evt: MouseEvent) => {
-                evt.preventDefault();
-                evt.stopPropagation();
-                if (legendPanel.classList.contains('is-visible')) {
-                    hideLegend();
-                    return;
-                }
-                showLegend();
-            });
-            this.registerDomEvent(legendPanel, 'mouseenter', showLegend);
-            this.registerDomEvent(legendPanel, 'mouseleave', scheduleLegendHide);
-            this.registerDomEvent(doc.body, 'click', (evt: MouseEvent) => {
-                const target = evt.target as Node | null;
-                if (target && (legendPanel.contains(target) || legendBtn.contains(target))) return;
-                hideLegend();
-            });
-            this.registerDomEvent(doc, 'keydown', (evt: KeyboardEvent) => {
-                if (evt.key === 'Escape') hideLegend();
-            });
-            this.register(() => {
-                if (hideLegendTimer !== null) {
-                    window.clearTimeout(hideLegendTimer);
-                    hideLegendTimer = null;
-                }
-            });
+            wireLegendTrigger(this, legendBtn, legendPanel, () => this.updateTimelineLegend());
 
             searchShell.appendChild(searchBtn);
             searchShell.appendChild(searchInput);
@@ -2496,95 +2414,11 @@ export class RadialTimelineView extends ItemView {
         this.timelineLegendTrigger.setAttribute('aria-expanded', 'false');
         if (!isSupportedMode) return;
 
-        this.timelineLegendPanel.empty();
-
-        const doc = this.timelineLegendPanel.ownerDocument;
-        const surface = doc.win.createDiv();
-        surface.className = 'ert-timeline-legend__surface';
-
-        const header = doc.win.createDiv();
-        header.className = 'ert-timeline-legend__header';
-        const title = doc.win.createDiv();
-        title.className = 'ert-timeline-legend__title';
-        title.textContent = t('ui.timeLineView.legendTitle');
-        const badge = doc.win.createDiv();
-        badge.className = 'ert-timeline-legend__mode';
-        badge.textContent = this.getTimelineLegendModeLabel(mode);
-        header.appendChild(title);
-        header.appendChild(badge);
-        surface.appendChild(header);
-
-        this.getTimelineLegendSections(mode).forEach(section => {
-            const sectionEl = doc.win.createEl('section');
-            sectionEl.className = 'ert-timeline-legend__section';
-
-            const sectionTitle = doc.win.createDiv();
-            sectionTitle.className = 'ert-timeline-legend__section-title';
-            sectionTitle.textContent = section.title;
-            sectionEl.appendChild(sectionTitle);
-
-            section.rows.forEach(row => {
-                const rowEl = doc.win.createDiv();
-                rowEl.className = 'ert-timeline-legend__row';
-
-                const iconEl = doc.win.createSpan();
-                iconEl.className = 'ert-timeline-legend__icon';
-                if (row.swatch) {
-                    iconEl.classList.add('ert-timeline-legend__icon--swatch');
-                    const swatchEl = doc.win.createSpan();
-                    swatchEl.className = 'ert-timeline-legend__swatch';
-                    if (row.swatch.fill) swatchEl.style.setProperty('--ert-legend-swatch-fill', row.swatch.fill);
-                    if (row.swatch.stroke) swatchEl.style.setProperty('--ert-legend-swatch-stroke', row.swatch.stroke);
-                    if (row.swatch.textColor) swatchEl.style.setProperty('--ert-legend-swatch-text', row.swatch.textColor);
-                    if (row.swatch.text) swatchEl.textContent = row.swatch.text;
-                    iconEl.appendChild(swatchEl);
-                } else if (row.icon) {
-                    setIcon(iconEl, row.icon);
-                }
-
-                const copyEl = doc.win.createSpan();
-                copyEl.className = 'ert-timeline-legend__copy';
-                const labelEl = doc.win.createSpan();
-                labelEl.className = 'ert-timeline-legend__label';
-                labelEl.textContent = row.label;
-                copyEl.appendChild(labelEl);
-
-                if (row.detail) {
-                    const detailEl = doc.win.createSpan();
-                    detailEl.className = 'ert-timeline-legend__detail';
-                    if (row.detailSegments) {
-                        row.detailSegments.forEach(segment => {
-                            const segmentEl = detailEl.createSpan({ text: segment.text });
-                            if (segment.color) {
-                                segmentEl.className = 'ert-timeline-legend__detail-segment';
-                                segmentEl.style.setProperty('--ert-legend-segment-color', segment.color);
-                            }
-                        });
-                    } else {
-                        detailEl.appendText(row.detail);
-                    }
-                    if (row.detailIcon) {
-                        const detailIconEl = detailEl.createSpan({
-                            cls: 'ert-timeline-legend__detail-icon',
-                            attr: {
-                                'aria-label': row.detailIconLabel || row.detailIcon,
-                                title: row.detailIconLabel || row.detailIcon,
-                            },
-                        });
-                        setIcon(detailIconEl, row.detailIcon);
-                    }
-                    copyEl.appendChild(detailEl);
-                }
-
-                rowEl.appendChild(iconEl);
-                rowEl.appendChild(copyEl);
-                sectionEl.appendChild(rowEl);
-            });
-
-            surface.appendChild(sectionEl);
+        renderLegendSurface(this.timelineLegendPanel, {
+            title: t('ui.timeLineView.legendTitle'),
+            badge: this.getTimelineLegendModeLabel(mode),
+            sections: this.getTimelineLegendSections(mode),
         });
-
-        this.timelineLegendPanel.appendChild(surface);
     }
 
     private getTimelineLegendModeLabel(mode: string): string {
@@ -2597,8 +2431,8 @@ export class RadialTimelineView extends ItemView {
         return String(1 + Math.floor(Math.random() * 99));
     }
 
-    private getTimelineLegendSections(mode: string): TimelineLegendSection[] {
-        const sections: TimelineLegendSection[] = [
+    private getTimelineLegendSections(mode: string): LegendSection[] {
+        const sections: LegendSection[] = [
             {
                 title: t('ui.timeLineView.legendSceneActions'),
                 rows: [
@@ -2677,6 +2511,24 @@ export class RadialTimelineView extends ItemView {
         });
 
         sections.push({
+            title: t('ui.timeLineView.legendSceneMarks'),
+            rows: [
+                { icon: 'message-circle-question', label: t('ui.timeLineView.legendOpenQuery'), detail: t('ui.timeLineView.legendOpenQueryDetail') },
+            ],
+        });
+
+        // Act labels and scene clicks link to a Timetable only while one is open.
+        if (hasOpenTimetable()) {
+            sections.push({
+                title: t('ui.timeLineView.legendWithTimetable'),
+                rows: [
+                    { icon: 'mouse-pointer-click', label: t('ui.timeLineView.legendClickSceneTimetable'), detail: t('ui.timeLineView.legendClickSceneTimetableDetail') },
+                    { icon: 'table-2', label: t('ui.timeLineView.legendClickActLabel'), detail: t('ui.timeLineView.legendClickActLabelDetail') },
+                ],
+            });
+        }
+
+        sections.push({
             title: t('ui.timeLineView.legendRightClickMenu'),
             rows: [
                 {
@@ -2695,7 +2547,7 @@ export class RadialTimelineView extends ItemView {
         return sections;
     }
 
-    private getStageLegendDetailSegments(): TimelineLegendDetailSegment[] {
+    private getStageLegendDetailSegments(): LegendDetailSegment[] {
         const colors = this.plugin.settings.publishStageColors || {};
         return [
             { text: 'Zero', color: colors.Zero },

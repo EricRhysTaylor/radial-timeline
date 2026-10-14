@@ -18,6 +18,7 @@ import {
     Keymap,
     Menu,
     Notice,
+    Platform,
     TFile,
     getFrontMatterInfo,
     normalizePath,
@@ -77,6 +78,7 @@ import {
 import { authorKeyFor, TIMETABLE_VIEW_TYPE } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { openInReadingPane } from './readingPane';
+import { renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
 import {
     clearTimelineColoring,
     clearTimelineLens,
@@ -235,6 +237,8 @@ function firstText(value: unknown): string {
 export class TimetableView extends BasesView {
     type = TIMETABLE_VIEW_TYPE;
     readonly rootEl: HTMLElement;
+    /** The ✱ key's button, made once and moved into each redrawn corner. */
+    private keyButton: HTMLButtonElement | null = null;
     private readonly patternPrefix = `ert-timetable-${Math.random().toString(36).slice(2, 9)}-`;
     private readonly collapsed = new Set<string>();
     private rings: WheelRings | null = null;
@@ -288,6 +292,7 @@ export class TimetableView extends BasesView {
 
     onload(): void {
         this.register(trackTimetable(this));
+        this.setUpKey();
         // One set of delegated handlers: rows are redrawn on every data update.
         this.registerDomEvent(this.rootEl, 'click', (evt: MouseEvent) => this.handleClick(evt));
         this.registerDomEvent(this.rootEl, 'keydown', (evt: KeyboardEvent) => {
@@ -1335,6 +1340,78 @@ export class TimetableView extends BasesView {
         modeButton.setAttr('aria-label', this.modeTooltip(state));
         setIcon(modeButton, modeIcon(state.mode));
         tooltip(modeButton, this.modeTooltip(state), 'bottom');
+
+        if (this.keyButton) corner.appendChild(this.keyButton);
+    }
+
+    /**
+     * The ✱ key: the table's marks, clicks and corner buttons, as the timeline
+     * has its own. The button moves into each redrawn corner; the panel hangs
+     * from the window, so a short table pane never clips it.
+     */
+    private setUpKey(): void {
+        const button = this.rootEl.createEl('button', {
+            cls: 'ert-timeline-legend__trigger ert-timetable__key clickable-icon',
+            attr: { type: 'button', 'aria-expanded': 'false', 'aria-label': t('ui.timetable.keyTitle') },
+        });
+        button.detach();
+        setIcon(button, 'asterisk');
+        const panel = this.rootEl.doc.body.createDiv({ cls: 'ert-timeline-legend ert-timeline-legend--compact ert-timetable-key', attr: { role: 'tooltip' } });
+        this.register(() => panel.remove());
+        wireLegendTrigger(this, button, panel, () => this.fillKey(button, panel));
+        this.keyButton = button;
+    }
+
+    private fillKey(button: HTMLElement, panel: HTMLElement): void {
+        renderLegendSurface(panel, { title: t('ui.timetable.keyTitle'), sections: this.keySections() });
+        // Just below the button, inside the window.
+        const box = button.getBoundingClientRect();
+        const win = button.win;
+        const width = Math.min(360, win.innerWidth - 32);
+        const left = Math.max(8, Math.min(box.left, win.innerWidth - width - 8));
+        const top = box.bottom + 6;
+        panel.setCssProps({
+            '--ert-key-top': `${top}px`,
+            '--ert-key-left': `${left}px`,
+            '--ert-key-max-height': `${Math.max(160, win.innerHeight - top - 12)}px`,
+        });
+    }
+
+    private keySections(): LegendSection[] {
+        const stage = this.plugin.settings.publishStageColors;
+        return [
+            {
+                title: t('ui.timetable.keyRows'),
+                rows: [
+                    { swatch: { fill: stage.Press, stroke: stage.Press, text: '12', textColor: 'var(--rt-legacy-black)' }, label: t('ui.timetable.keyScene'), detail: t('ui.timetable.keySceneDetail') },
+                    { swatch: { fill: 'transparent', stroke: 'var(--text-muted)', text: '–', textColor: 'var(--text-muted)', dashed: true }, label: t('ui.timetable.keySketch'), detail: t('ui.timetable.keySketchDetail') },
+                    { swatch: { fill: 'transparent', stroke: 'var(--text-faint)', text: '–', textColor: 'var(--text-faint)' }, label: t('ui.timetable.keyNote'), detail: t('ui.timetable.keyNoteDetail') },
+                    { rings: ['var(--rt-subplot-colors-0)', 'var(--rt-subplot-colors-1)', null], label: t('ui.timetable.keyRings'), detail: t('ui.timetable.keyRingsDetail') },
+                    { icon: 'message-circle-question', label: t('ui.timetable.keyQueries'), detail: t('ui.timetable.keyQueriesDetail') },
+                    { icon: 'file-up', label: t('ui.timetable.keyPromote'), detail: t('ui.timetable.keyPromoteDetail') },
+                ],
+            },
+            {
+                title: t('ui.timetable.keyClicks'),
+                rows: [
+                    { icon: 'mouse-pointer-click', label: t('ui.timetable.keyClick'), detail: t('ui.timetable.keyClickDetail') },
+                    { icon: 'command', label: Platform.isMacOS ? t('ui.timetable.keyModClickMac') : t('ui.timetable.keyModClick'), detail: t('ui.timetable.keyModClickDetail') },
+                    { icon: 'arrow-big-up', label: t('ui.timetable.keyShiftClick'), detail: t('ui.timetable.keyShiftClickDetail') },
+                    { icon: 'mouse', label: t('ui.timetable.keyRightClick'), detail: t('ui.timetable.keyRightClickDetail') },
+                    { icon: 'chevron-down', label: t('ui.timetable.keyPick'), detail: t('ui.timetable.keyPickDetail') },
+                    { icon: 'square-check', label: t('ui.timetable.keyCheckboxes'), detail: t('ui.timetable.keyCheckboxesDetail') },
+                    { icon: 'square-mouse-pointer', label: t('ui.timetable.keyHover'), detail: t('ui.timetable.keyHoverDetail') },
+                ],
+            },
+            {
+                title: t('ui.timetable.keyCorner'),
+                rows: [
+                    { icon: 'plus', label: t('ui.timetable.keyNewSketch'), detail: t('ui.timetable.keyNewSketchDetail') },
+                    { icon: 'scan-eye', label: t('ui.timetable.keyLens'), detail: t('ui.timetable.keyLensDetail') },
+                    { icon: modeIcon(this.modeState().mode), label: t('ui.timetable.keyMode'), detail: t('ui.timetable.keyModeDetail') },
+                ],
+            },
+        ];
     }
 
     /** An empty table has no header row, so + New sketch sits above the message. */

@@ -80,6 +80,24 @@ function formattedFixture() {
 }
 
 describe('manuscript export UI-to-runner contract', () => {
+    it.each(['pdf', 'docx'] as const)('passes document contents and depth to %s rendering', async outputFormat => {
+        const { registrar, options } = formattedFixture();
+        vi.spyOn(registrar as unknown as { ensureVaultFolderPath(path: string): Promise<void> }, 'ensureVaultFolderPath').mockResolvedValue(undefined);
+        await registrar['handleManuscriptExport']({ ...options, outputFormat, tocMode: 'document', tocDepth: 2 });
+        expect(runPandocOnContent).toHaveBeenCalledWith(expect.any(String), expect.any(String), expect.objectContaining({ targetFormat: outputFormat, documentContents: true, tocDepth: 2 }));
+    });
+    it('builds per-file Markdown contents after cleanup in split exports', async () => {
+        const { registrar, writer, options } = fixture();
+        vi.spyOn(registrar as unknown as { ensureVaultFolderPath(path: string): Promise<void> }, 'ensureVaultFolderPath').mockResolvedValue(undefined);
+        await registrar['handleManuscriptExport']({ ...options, tocMode: 'document', splitMode: 'parts', splitParts: 2 });
+        const outputs = writer.mock.calls.map(call => call[1]);
+        expect(outputs).toHaveLength(2);
+        expect(outputs[0]).toContain('[1 First](#^manuscript-heading-1)');
+        expect(outputs[0]).not.toContain('2 Second');
+        expect(outputs[1]).toContain('[2 Second](#^manuscript-heading-1)');
+        expect(outputs[1]).not.toContain('1 First');
+        expect(outputs[0]).not.toContain('private note');
+    });
     it('attaches checks for completed outputs when a later split render fails', async () => {
         const { registrar, options, plugin } = formattedFixture();
         vi.spyOn(registrar as unknown as { ensureVaultFolderPath(path: string): Promise<void> }, 'ensureVaultFolderPath').mockResolvedValue(undefined);

@@ -53,7 +53,7 @@ describe('exportProfileModel', () => {
 
     describe('preset matching', () => {
         // Shape of a Word preset as saved by the export modal: the TOC flag is
-        // stored false because Word has no TOC, while the heading flag is on.
+        // stored false because the legacy scene index is Markdown-only.
         const wordPreset: ModalExportProfile = {
             id: 'word-edits',
             name: 'Word edits',
@@ -123,6 +123,16 @@ describe('exportProfileModel', () => {
             expect(reloaded.id).toBe('word-edits');
             expect(reloaded.templateProfileId).toBe('bundled-fiction-signature-literary');
             expect(exportProfilesMatch(reloaded, edited)).toBe(true);
+        });
+
+        it.each(['pdf', 'docx', 'markdown'] as const)('preserves document contents and depth for %s presets', outputFormat => {
+            const preset: ModalExportProfile = { ...wordPreset, outputFormat, tocMode: 'document', tocDepth: 2 };
+            const reloaded = buildModalExportProfile(buildPersistedExportProfileFromModalExportProfile(preset), templateProfiles as any);
+            expect(reloaded.tocDepth).toBe(2);
+            expect(reloaded.tocMode).toBe('document');
+            expect(exportProfilesMatch(reloaded, preset)).toBe(true);
+            expect(exportProfilesMatch({ ...reloaded, tocDepth: 3 }, preset)).toBe(false);
+            expect(exportProfilesMatch({ ...reloaded, tocMode: 'none' }, preset)).toBe(false);
         });
     });
 });

@@ -7,6 +7,7 @@ import type {
 } from '../types';
 import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions } from './manuscriptSanitize';
 import { normalizeExportProfile } from './publishingMigration';
+import { contentsDepth } from '../publishing/documentContents';
 export { adaptPandocLayoutsToPublishingModel } from './publishingModel';
 
 export interface ModalExportProfile extends ExportProfile {
@@ -66,6 +67,7 @@ export function buildTransientModalExportProfile(params: {
     subplot: string;
     outlinePreset: OutlinePreset;
     tocMode: ExportProfile['tocMode'];
+    tocDepth?: number;
     includeSceneIdInToc?: boolean;
     includeSceneIdInHeading?: boolean;
     includeMatter: boolean;
@@ -92,6 +94,7 @@ export function buildTransientModalExportProfile(params: {
         manuscriptPreset: params.usageContext,
         outlinePreset: params.outlinePreset,
         tocMode: params.tocMode,
+        tocDepth: params.tocDepth,
         includeSceneIdInToc: params.includeSceneIdInToc,
         includeSceneIdInHeading: params.includeSceneIdInHeading,
         order: params.order,
@@ -129,7 +132,7 @@ export function resolveIncludeSceneId(profile: Pick<ExportProfile, 'includeScene
  * Project a profile onto the fields its export mode actually uses. The
  * export modal decides "matches preset" by running both the saved preset and
  * its own live state through this one projection, so a field the mode hides
- * (TOC on Word, matter on Markdown) can never read as a change.
+ * (legacy scene indexes on Word, matter on Markdown) can never read as a change.
  */
 export function buildComparableExportProfile(profile: ModalExportProfile) {
     const isOutline = profile.exportType === 'outline';
@@ -145,7 +148,8 @@ export function buildComparableExportProfile(profile: ModalExportProfile) {
         exportType: profile.exportType,
         outputFormat,
         outlinePreset: profile.outlinePreset || 'beat-sheet',
-        tocMode: isMarkdownManuscript ? (profile.tocMode || 'none') : 'none',
+        tocMode: !isOutline && profile.tocMode === 'document' ? 'document' : isMarkdownManuscript ? (profile.tocMode || 'none') : 'none',
+        tocDepth: !isOutline && profile.tocMode === 'document' ? contentsDepth(profile.tocDepth) : undefined,
         includeSceneIdInToc: isMarkdownManuscript && includeSceneId,
         includeSceneIdInHeading: includeSceneId,
         order: profile.order,

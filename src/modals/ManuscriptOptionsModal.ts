@@ -1,3 +1,4 @@
+import { contentsDepth } from '../publishing/documentContents';
 /*
  * Manuscript Options Modal
  */
@@ -93,6 +94,7 @@ export interface ManuscriptModalResult {
     source?: ManuscriptSource;
     order: ManuscriptOrder;
     tocMode: TocMode;
+    tocDepth?: number;
     includeSceneIdInToc?: boolean;
     includeSceneIdInHeading?: boolean;
     rangeStart?: number;
@@ -292,6 +294,10 @@ export class ManuscriptOptionsModal extends Modal {
 
     private order: ManuscriptOrder = 'narrative';
     private tocMode: TocMode = 'markdown';
+    private tocDepth = 3;
+    private tocDepthRow?: HTMLElement;
+    private tocDepthSelect?: DropdownComponent;
+    private tocNoteEl?: HTMLElement;
     private includeSceneId: boolean = true;
     private subplot: string = 'All Subplots';
     private exportType: ExportType = 'manuscript';
@@ -470,7 +476,7 @@ export class ManuscriptOptionsModal extends Modal {
             showFormatStatic: isOutline,
             showManuscriptPreset: isManuscript,
             showOutlinePreset: isOutline,
-            showToc: isMarkdownManuscript,
+            showToc: isManuscript,
             showPublishing: isManuscript,
             showWordCount: isManuscript,
             showIncludeMatter: isPdfManuscript || isDocxManuscript,
@@ -484,6 +490,7 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private sanitizeStateForMode(mode: ReturnType<ManuscriptOptionsModal['getUiMode']>): void {
+        if (!mode.isMarkdownManuscript && this.tocMode !== 'document') this.tocMode = 'none';
         if (mode.isOutline) {
             this.outputFormat = 'markdown';
             this.includeMatter = false;
@@ -1336,25 +1343,29 @@ export class ManuscriptOptionsModal extends Modal {
         this.createSectionHeading(this.manuscriptRulesCard, t('manuscriptModal.tocHeading'), 'list-checks');
 
         this.tocCard = this.manuscriptRulesCard.createDiv({ cls: 'ert-manuscript-rule-block' });
-        this.tocCard.createDiv({ cls: 'ert-manuscript-toggle-label', text: t('manuscriptModal.tocHeading') });
         const tocActions = this.tocCard.createDiv({ cls: 'ert-manuscript-pill-row' });
         this.tocActionsEl = tocActions;
+        this.createPill(tocActions, t('manuscriptModal.documentContents'), this.tocMode === 'document', () => {
+            this.tocMode = 'document'; this.syncExportUi();
+        });
         this.createPill(tocActions, t('manuscriptModal.tocMarkdown'), this.tocMode === 'markdown', () => {
             this.tocMode = 'markdown';
-            this.updatePills(tocActions, 0);
+            this.syncExportUi();
         });
         this.createPill(tocActions, t('manuscriptModal.tocPlain'), this.tocMode === 'plain', () => {
             this.tocMode = 'plain';
-            this.updatePills(tocActions, 1);
+            this.syncExportUi();
         });
         this.createPill(tocActions, t('manuscriptModal.tocNone'), this.tocMode === 'none', () => {
             this.tocMode = 'none';
-            this.updatePills(tocActions, 2);
+            this.syncExportUi();
         });
-        this.tocCard.createDiv({
-            cls: 'ert-sub-card-note',
-            text: t('manuscriptModal.tocNote')
-        });
+        this.tocDepthRow = this.tocCard.createDiv({ cls: 'ert-inline' });
+        const depthLabel = this.tocDepthRow.createEl('label', { cls: 'ert-inline', text: t('manuscriptModal.tocDepth') });
+        this.tocDepthSelect = new DropdownComponent(depthLabel);
+        for (let level = 1; level <= 6; level++) this.tocDepthSelect.addOption(String(level), String(level));
+        this.tocDepthSelect.setValue(String(this.tocDepth)).onChange(value => { this.tocDepth = contentsDepth(Number(value)); this.syncExportUi(); });
+        this.tocNoteEl = this.tocCard.createDiv({ cls: 'ert-sub-card-note' });
 
         this.syncTocPills();
 
@@ -1730,6 +1741,7 @@ export class ManuscriptOptionsModal extends Modal {
             subplot: this.subplot,
             outlinePreset: this.outlinePreset,
             tocMode: this.tocMode,
+            tocDepth: this.tocDepth,
             includeSceneIdInToc: this.includeSceneId,
             includeSceneIdInHeading: this.includeSceneId,
             includeMatter: this.includeMatterUserChoice,
@@ -1963,6 +1975,7 @@ export class ManuscriptOptionsModal extends Modal {
             exportType: this.exportType,
             outlinePreset: this.outlinePreset,
             tocMode: mode.showToc ? this.tocMode : 'none',
+            tocDepth: this.tocDepth,
             includeSceneIdInToc: mode.showToc ? this.includeSceneId : false,
             includeSceneIdInHeading: this.includeSceneId,
             includeMatter: mode.showIncludeMatter ? this.includeMatterUserChoice : false,
@@ -2183,6 +2196,8 @@ export class ManuscriptOptionsModal extends Modal {
         this.outlinePreset = template.outlinePreset || 'beat-sheet';
         this.outputFormat = template.outputFormat;
         this.tocMode = template.tocMode || 'none';
+        this.tocDepth = contentsDepth(template.tocDepth);
+        this.tocDepthSelect?.setValue(String(this.tocDepth));
         this.includeSceneId = resolveIncludeSceneId(template);
         this.sceneIdToggle?.setValue(this.includeSceneId);
         this.order = template.order;
@@ -2383,11 +2398,7 @@ export class ManuscriptOptionsModal extends Modal {
 
     private syncTocPills(): void {
         if (!this.tocActionsEl) return;
-        const activeIndex = this.tocMode === 'markdown'
-            ? 0
-            : this.tocMode === 'plain'
-                ? 1
-                : 2;
+        const activeIndex = this.tocMode === 'document' ? 0 : this.tocMode === 'markdown' ? 1 : this.tocMode === 'plain' ? 2 : 3;
         this.updatePills(this.tocActionsEl, activeIndex);
     }
 
@@ -2530,7 +2541,7 @@ export class ManuscriptOptionsModal extends Modal {
             this.includeMatterUserChoice = false;
             this.updateWordCounts = false;
             this.includeSceneId = false;
-            this.tocMode = 'none';
+            if (this.tocMode !== 'document') this.tocMode = 'none';
             this.order = 'narrative';
             this.subplot = 'All Subplots';
             this.rangeStart = 1;
@@ -2547,8 +2558,12 @@ export class ManuscriptOptionsModal extends Modal {
         this.purposeCard?.toggleClass('ert-hidden', !mode.isManuscript);
         this.manuscriptOptionsCard?.toggleClass('ert-hidden', !mode.showManuscriptPreset);
         this.outlineOptionsCard?.toggleClass('ert-hidden', !mode.showOutlinePreset);
-        this.manuscriptRulesCard?.toggleClass('ert-hidden', !mode.showToc || plainSource);
-        this.tocCard?.toggleClass('ert-hidden', !mode.showToc || plainSource);
+        this.manuscriptRulesCard?.toggleClass('ert-hidden', !mode.showToc);
+        this.tocCard?.toggleClass('ert-hidden', !mode.showToc);
+        this.tocDepthRow?.toggleClass('ert-hidden', this.tocMode !== 'document');
+        this.tocActionsEl?.querySelectorAll('[data-ert-toggle]').forEach((el, index) => el.toggleClass('ert-hidden', (index === 1 || index === 2) && (!mode.isMarkdownManuscript || plainSource)));
+        this.tocNoteEl?.setText(this.tocMode === 'document' ? t(mode.isDocxManuscript ? 'manuscriptModal.tocDocumentWord' : mode.isPdfManuscript ? 'manuscriptModal.tocDocumentPdf' : 'manuscriptModal.tocDocumentMarkdown') : t('manuscriptModal.tocNote'));
+        this.tocNoteEl?.toggleClass('ert-hidden', this.tocMode === 'none');
         this.publishingCard?.toggleClass('ert-hidden', !mode.showPublishing);
         this.pdfSettingsCard?.toggleClass('ert-hidden', !mode.showIncludeMatter && !mode.showLineBreaksAsParagraphs && !mode.showSavePrecompile);
         this.wordCountCard?.toggleClass('ert-hidden', !mode.showWordCount || plainSource);
@@ -4047,6 +4062,7 @@ export class ManuscriptOptionsModal extends Modal {
             source: this.source ? structuredClone(this.source) : undefined,
             order: this.order,
             tocMode,
+            tocDepth: this.tocMode === 'document' ? this.tocDepth : undefined,
             includeSceneIdInToc: tocMode !== 'none' ? this.includeSceneId : false,
             includeSceneIdInHeading: this.includeSceneId,
             // Open-scene paths already contain the chosen range.

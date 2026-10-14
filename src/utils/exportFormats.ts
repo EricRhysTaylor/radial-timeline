@@ -1,3 +1,4 @@
+import { contentsDepth, documentContentsHeader } from '../publishing/documentContents';
 /*
  * Export format helpers (manuscript + outline + Pandoc).
  * Keep this module focused on formatting and process execution.
@@ -260,6 +261,8 @@ export function buildExportFilename(options: ExportFilenameOptions): string {
 
 export interface PandocOptions {
     targetFormat: 'pdf' | 'docx';
+    documentContents?: boolean;
+    tocDepth?: number;
     pandocPath?: string;
     /** LaTeX template — PDF only. Ignored for docx. */
     templatePath?: string;
@@ -1222,7 +1225,7 @@ export async function runPandocOnContent(
         let tmpHeader: string | null = null;
         if (isPdf) {
             tmpHeader = path.join(tmpDir, 'header.tex');
-            const header = [PDF_LITERAL_BLOCK_HEADER, options.headerIncludes?.trim()].filter(Boolean).join('\n');
+            const header = [PDF_LITERAL_BLOCK_HEADER, options.documentContents ? documentContentsHeader(contentsDepth(options.tocDepth)) : '', options.headerIncludes?.trim()].filter(Boolean).join('\n');
             await fs.promises.writeFile(tmpHeader, header, 'utf8');
         }
 
@@ -1234,6 +1237,14 @@ export async function runPandocOnContent(
         }
 
         const args = ['-f', 'markdown', '-t', options.targetFormat, '-o', tmpOutput, tmpInput];
+        if (options.documentContents) {
+            args.push('--toc-depth', String(contentsDepth(options.tocDepth)));
+            if (!isPdf) args.push('--toc');
+            if (isPdf && /\\rt(?:SceneOpener|Chapter|Part|SceneSep)\b/.test(content) && options.templatePath
+                && !(await fs.promises.readFile(options.templatePath, 'utf8')).includes('\\providecommand{\\rtNavigationFlush}')) {
+                throw new ExportFailure({ category: 'invalid_template', message: t('ui.exportFormats.contentsLayoutHooks') });
+            }
+        }
         if (isPdf) {
             const pdfEngineSelection = getAutoPdfEngineSelection(options.templatePath);
             if (!pdfEngineSelection.path) {

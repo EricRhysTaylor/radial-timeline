@@ -1,3 +1,4 @@
+import { addMarkdownContents, contentsDepth } from '../publishing/documentContents';
 /*
  * CommandRegistrar
  * Encapsulates all command+ribbon registration.
@@ -605,11 +606,12 @@ export class CommandRegistrar {
                         undefined,
                         result.tocMode === 'markdown',
                         filteredSelection.sortOrder,
-                        result.tocMode !== 'none',
+                        result.tocMode !== 'none' && result.tocMode !== 'document',
                         bookMetaResolution.bookMeta,
                         filteredSelection.matterMetaByPath,
                         {
                             sourceNotes: plainSource ? 'markdown' : undefined,
+                            documentContents: result.tocMode === 'document' ? { format: 'markdown', depth: contentsDepth(result.tocDepth), chapters: filteredSelection.chapterMarkersByScenePath } : undefined,
                             chapterMarkersByScenePath: filteredSelection.chapterMarkersByScenePath,
                             sceneHeadingRenderMode: 'markdown-h2',
                             includeSceneIdInToc: result.includeSceneIdInToc === true,
@@ -624,7 +626,8 @@ export class CommandRegistrar {
                         await updateSceneWordCounts(this.app, partSelection.files, assembled.scenes);
                     }
 
-                    const sanitizedText = sanitizeCompiledManuscript(assembled.text, cleanupOptions);
+                    const cleanedText = sanitizeCompiledManuscript(assembled.text, cleanupOptions);
+                    const sanitizedText = result.tocMode === 'document' ? addMarkdownContents(cleanedText, contentsDepth(result.tocDepth)) : cleanedText;
 
                     const filename = isSplitRun
                         ? `${baseTitle} - Part ${range.part}.${extension}`
@@ -686,11 +689,12 @@ export class CommandRegistrar {
                         undefined,
                         result.tocMode === 'markdown',
                         filteredSelection.sortOrder,
-                        result.tocMode !== 'none',
+                        result.tocMode !== 'none' && result.tocMode !== 'document',
                         bookMetaResolution.bookMeta,
                         filteredSelection.matterMetaByPath,
                         {
                             sourceNotes: plainSource ? 'docx' : undefined,
+                            documentContents: result.tocMode === 'document' ? { format: 'docx', depth: contentsDepth(result.tocDepth), chapters: filteredSelection.chapterMarkersByScenePath } : undefined,
                             chapterMarkersByScenePath: filteredSelection.chapterMarkersByScenePath,
                             sceneHeadingRenderMode: 'markdown-h2',
                             includeSceneIdInToc: result.includeSceneIdInToc === true,
@@ -724,6 +728,8 @@ export class CommandRegistrar {
                         });
                     const publishedPath = await runPandocOnContent(docxText, `${absoluteOutputFolder}/${renderedFilename}`, {
                         targetFormat: 'docx',
+                        documentContents: result.tocMode === 'document',
+                        tocDepth: result.tocDepth,
                         referenceDocPath: referenceDoc.path,
                         lineBreaksAsParagraphs: result.lineBreaksAsParagraphs === true,
                         workingDir: absoluteOutputFolder,
@@ -859,11 +865,12 @@ export class CommandRegistrar {
                     undefined,
                     result.tocMode === 'markdown',
                     filteredSelection.sortOrder,
-                    result.tocMode !== 'none',
+                    result.tocMode !== 'none' && result.tocMode !== 'document',
                     bookMetaResolution.bookMeta,
                     filteredSelection.matterMetaByPath,
                     {
                         sourceNotes: plainSource ? 'pdf' : undefined,
+                        documentContents: result.tocMode === 'document' ? { format: 'pdf', depth: contentsDepth(result.tocDepth), chapters: filteredSelection.chapterMarkersByScenePath } : undefined,
                         chapterMarkersByScenePath,
                         sceneHeadingMode: layoutSceneHeadingMode,
                         sceneHeadingRenderMode,
@@ -928,6 +935,8 @@ export class CommandRegistrar {
 
                 const publishedPath = await runPandocOnContent(sanitizedMarkdown, renderedAbsolutePath, {
                     targetFormat: 'pdf',
+                    documentContents: result.tocMode === 'document',
+                    tocDepth: result.tocDepth,
                     templatePath,
                     headerIncludes,
                     lineBreaksAsParagraphs: result.lineBreaksAsParagraphs === true,

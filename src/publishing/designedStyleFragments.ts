@@ -334,6 +334,7 @@ export function renderFolio(spec: DesignedStyleSpec): string {
  */
 export function renderPageNumberingControl(_spec: DesignedStyleSpec): string {
     return [
+        '\\providecommand{\\rtNavigationFlush}{}',
         '\\pagenumbering{roman}',
         '\\newif\\ifrtMainStarted',
         '\\rtMainStartedfalse',
@@ -371,6 +372,7 @@ export function renderPartTitle(spec: DesignedStyleSpec): string {
     // bind to it reliably (without \null they can be discarded at the page
     // boundary). Same fix applied in \rtChapter and \rtSceneOpener.
     lines.push('  \\null%');
+    lines.push('  \\rtNavigationFlush%');
     lines.push('  \\thispagestyle{rtEmpty}%');
     lines.push('  \\vspace*{1.55in}%');
     lines.push('  \\begin{center}');
@@ -494,6 +496,7 @@ export function renderChapterTitle(spec: DesignedStyleSpec): string {
     if (spec.chapters.pageBreak) lines.push(`  ${breakCommand}`);
     lines.push('  \\refstepcounter{chapter}%');
     lines.push('  \\null%');
+    lines.push('  \\rtNavigationFlush%');
     lines.push('  \\thispagestyle{rtEmpty}%');
     lines.push(`  \\vspace*{${topVspace}}%`);
     lines.push('  \\begin{center}');
@@ -572,6 +575,7 @@ export function renderSceneOpener(spec: DesignedStyleSpec): string {
             // \vspace* bind to it reliably (without \null they can be
             // discarded at the page boundary).
             lines.push('  \\null%');
+            lines.push('  \\rtNavigationFlush%');
             if (spec.scene.suppressHeaderFooterOnOpener) lines.push('  \\thispagestyle{empty}%');
             lines.push('  \\vspace*{0.16\\textheight}%');
             lines.push(`  \\begin{center}{\\normalfont\\bfseries\\Large ${titleExpr}}\\end{center}`);
@@ -583,6 +587,7 @@ export function renderSceneOpener(spec: DesignedStyleSpec): string {
         lines.push('  \\ifrtMainStarted\\else\\rtBeginMainArabic\\fi%');
         lines.push('  \\clearpage');
         lines.push('  \\null%');
+        lines.push('  \\rtNavigationFlush%');
         lines.push('  \\thispagestyle{rtEmpty}%');
         lines.push('  \\vspace*{0.78in}%');
         lines.push('  \\begin{center}');
@@ -607,6 +612,7 @@ export function renderSceneOpener(spec: DesignedStyleSpec): string {
         lines.push('\\newcommand{\\rtSceneOpener}[1]{%');
         lines.push('  \\ifrtMainStarted\\else\\rtBeginMainArabic\\fi%');
         lines.push('  \\section*{#1}%');
+        lines.push('  \\rtNavigationFlush%');
         lines.push('}');
         lines.push('\\titleformat{\\section}[display]{\\normalfont\\bfseries\\centering\\fontsize{30}{34}\\selectfont}{\\arabic{section}}{0.2em}{}');
         lines.push('\\titleformat{name=\\section,numberless}[display]{\\normalfont\\bfseries\\centering\\fontsize{30}{34}\\selectfont}{}{0pt}{}');

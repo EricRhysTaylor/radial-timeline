@@ -111,6 +111,7 @@ describe('BUNDLED_FICTION_SPECS', () => {
   \ifrtMainStarted\else\rtBeginMainArabic\fi%
   \clearpage
   \null%
+  \rtNavigationFlush%
   \thispagestyle{rtEmpty}%
   \vspace*{1.55in}%
   \begin{center}

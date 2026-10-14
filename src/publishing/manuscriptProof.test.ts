@@ -43,6 +43,9 @@ describe('manuscript proof freshness', () => {
     it('invalidates a changed source selection or metadata', async () => {
         const { plugin, request, receipt } = fixture();
         expect(await getManuscriptProofStaleReason(plugin, receipt, { ...request, rangeStart: 2 })).toContain('settings');
+        expect(await getManuscriptProofStaleReason(plugin, receipt, { ...request, tocMode: 'document', tocDepth: 2 })).toContain('settings');
+        const contents = { ...request, tocMode: 'document' as const, tocDepth: 2 };
+        expect(getManuscriptProofConfigurationKey(plugin, contents)).not.toBe(getManuscriptProofConfigurationKey(plugin, { ...contents, tocDepth: 3 }));
         expect(await getManuscriptProofStaleReason(plugin, receipt, { ...request, source: { kind: 'file', path: 'Draft/One.md', paths: ['Draft/One.md'], title: 'Changed', author: 'Author' } })).toContain('settings');
     });
 });

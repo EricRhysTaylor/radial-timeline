@@ -1,3 +1,6 @@
+import { contentsDepth } from '../publishing/documentContents';
+import { t } from '../i18n';
+
 /*
  * Pandoc Lua filters for manuscript export. Pandoc parses the markdown, so a
  * filter only ever sees the nodes it rewrites: lists, code, tables and raw
@@ -41,9 +44,20 @@ end
 export function buildPandocLuaFilter(options: {
     targetFormat: 'pdf' | 'docx';
     lineBreaksAsParagraphs?: boolean;
+    documentContents?: boolean;
+    tocDepth?: number;
 }): string | null {
     const filters: string[] = [];
     if (options.lineBreaksAsParagraphs) filters.push(LINE_PER_PARAGRAPH_FILTER);
     if (options.targetFormat === 'docx') filters.push(DOCX_SCENE_BREAK_FILTER);
+    if (options.documentContents) filters.push(`function Pandoc(doc)
+  local count = 0
+  doc:walk({
+    Header = function(el) if el.level <= ${contentsDepth(options.tocDepth)} then count = count + 1 end end,
+    RawBlock = function(el) if el.text:find('rtQueueNavigation', 1, true) then count = count + 1 end end
+  })
+  if count == 0 then error(${JSON.stringify(t('ui.exportFormats.contentsNoHeadings'))}) end
+  return doc
+end`);
     return filters.length > 0 ? filters.join('\n') : null;
 }

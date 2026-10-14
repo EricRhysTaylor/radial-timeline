@@ -40,6 +40,20 @@ Change any setting afterwards and the preset shows as changed: **Reload preset**
 
 A line above the Export button reads back what the file will carry before you make it, for example "34 scenes with IDs · 3 questions as margin comments · your notes stripped". It warns in orange when private notes would appear, when a PDF would print author queries as text, or when a Readers export still has queries or scene IDs.
 
+## Table of Contents
+
+Under **Table of contents**, choose **Contents** for a document TOC, then choose how many **Heading levels** to include. This option works with PDF, Word and Markdown, including folder and single-file manuscripts. **No TOC** leaves it out. The older scene indexes remain available for Markdown book exports.
+
+* **PDF** — searchable text, clickable contents with final page numbers, and nested navigation bookmarks. Contents can span multiple pages. Generate a fresh proof after changing contents or depth.
+* **Word** — real heading styles and an updateable TOC field. Open the document in Word and update the entire table to populate its final page numbers and links. Check pagination in Word before sharing.
+* **Markdown** — linked headings with unique block targets for Obsidian and matching HTML anchors for other Markdown viewers. Repeated titles get distinct destinations. Generated navigation is added after cleanup, so stripping source links or block IDs does not remove the new contents.
+
+Radial Timeline books use authored **Part** boundaries, resolved **Chapter** markers and scene headings. With all three present, level 1 includes parts, level 2 adds chapters, and level 3 adds scenes. With fewer structural layers, levels start at the first available layer. PDF layouts retain their own opener styling; layouts that omit printed part/chapter pages can still include those divisions in navigation, pointing to the associated opener.
+
+For a printed act division, use an authored part title such as `Part: Act II`. The analytical scene `Act` field does not create publishing boundaries. Folder and single-file manuscripts instead use their existing Markdown heading hierarchy, such as `# Act I`, `## Chapter One` and `### Scene One`; they need no scene YAML.
+
+Saved export presets retain contents mode and depth. Each split output has contents for the material included in that file. Existing custom PDF templates with custom opener commands may need regeneration in the style designer before they can place navigation correctly; export reports this rather than producing misleading links.
+
 ## Word (DOCX) Submission Export
 
 The **Word** format produces a `.docx` in standard manuscript format — the layout agents and editors expect for queries and submissions: Times New Roman 12 pt, double-spaced, 0.5" first-line indents, centered chapter headings that start on a new page. Styling comes from a bundled Word reference document installed into your Pandoc folder (`reference-manuscript.docx`); configure Pandoc under **Settings → Publish** to use it.

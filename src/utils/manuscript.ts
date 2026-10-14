@@ -68,7 +68,7 @@ export interface ManuscriptSceneSelection {
   chapterMarkersByScenePath?: Record<string, TimelineChapterMarker[]>;
 }
 
-export type TocMode = 'markdown' | 'plain' | 'none';
+export type TocMode = 'markdown' | 'plain' | 'none' | 'document';
 export type ManuscriptSceneHeadingMode = 'scene-number' | 'scene-number-title' | 'title-only';
 export type SceneHeadingRenderMode = 'markdown-h2' | 'latex-section-starred';
 
@@ -79,8 +79,9 @@ export interface ModernClassicStructureOptions {
 }
 
 export interface AssembleManuscriptOptions {
-  /** Plain notes retain their own headings and reviewed order, without RT scene/matter interpretation. */
+  /** Plain notes retain their own headings and reviewed order, without Radial Timeline scene/matter interpretation. */
   sourceNotes?: 'markdown' | 'pdf' | 'docx';
+  documentContents?: { format: 'markdown' | 'pdf' | 'docx'; depth: number; chapters?: Record<string, TimelineChapterMarker[]> };
   sceneHeadingMode?: ManuscriptSceneHeadingMode;
   sceneHeadingRenderMode?: SceneHeadingRenderMode;
   modernClassicStructure?: ModernClassicStructureOptions;
@@ -1023,6 +1024,11 @@ export async function assembleManuscript(
   }> = [];
   const modernClassicState = createModernClassicState(options?.modernClassicStructure);
   let matterChromeActive = false;
+  const documentContents = options?.documentContents;
+  const navigationChapters = documentContents?.chapters ?? chapterMarkersByScenePath;
+  let navigationPart = 0;
+  const queueNavigation = (level: number, label: string) => buildRawLatexBlock(`\\rtQueueNavigation{${level}}{${sanitizeModernClassicMacroArg(label)}}`);
+
 
   const beginMatterPage = () => {
     if (!suppressMatterPageChrome) return;
@@ -1199,9 +1205,20 @@ export async function assembleManuscript(
     });
   };
 
+  const hasNavigationParts = !options?.sourceNotes && sceneClassified.some(c => c.content && readPartMarker(extractFrontmatterObject(c.content) ?? undefined));
+  const hasNavigationChapters = !options?.sourceNotes && sceneClassified.some(c => (navigationChapters[c.file.path] || []).length > 0);
+  const chapterLevel = hasNavigationParts ? 2 : 1;
+  const sceneLevel = hasNavigationParts ? (hasNavigationChapters ? 3 : 2) : (hasNavigationChapters ? 2 : 1);
+  const partLabel = (title: string | undefined, n: number) => title && /^act\b/i.test(title)
+    ? title : `Part ${toRomanNumeral(n)}${title ? `: ${title}` : ''}`;
+
   // Frontmatter pages first (resolver order, with bookPageOrder applied).
   for (const page of frontPages) emitMatterPage(page);
   endMatterChrome();
+
+  if (documentContents?.format === 'pdf') {
+    textParts.push(buildRawLatexBlock('\\clearpage\\tableofcontents\\clearpage'));
+  }
 
   // ── Scene loop ────────────────────────────────────────────────────────
   // Original scene order is preserved (matter notes have been hoisted to
@@ -1227,11 +1244,25 @@ export async function assembleManuscript(
     const sceneId = readSceneId(sceneFrontmatter);
     const wordCount = countWords(countableBodyText);
 
+    const navigationPartMarker = documentContents && !options?.sourceNotes ? readPartMarker(sceneFrontmatter ?? undefined) : null;
+    if (navigationPartMarker) {
+      navigationPart++;
+      if (documentContents?.format === 'pdf') textParts.push(queueNavigation(1, partLabel(navigationPartMarker.title, navigationPart)));
+    }
+
     if (options?.sourceNotes) {
       if (i === 0 && options.sourceNotes === 'pdf') textParts.push(buildRawLatexBlock('\\pagenumbering{arabic}'));
       scenes.push({ title, bodyText, wordCount, sourcePath: file.path });
       totalWords += wordCount;
       textParts.push(`${bodyText}\n\n`);
+    } else if (documentContents && documentContents.format !== 'pdf') {
+      if (navigationPartMarker) textParts.push(`# ${partLabel(navigationPartMarker.title, navigationPart)}\n\n`);
+      for (const marker of navigationChapters[file.path] || []) textParts.push(`${'#'.repeat(chapterLevel)} ${normalizeChapterHeadingText(marker.title)}\n\n`);
+      const heading = resolveSceneHeading(resolveSceneTitleForPublishing(title, sceneFrontmatter), sceneHeadingMode, i + 1);
+      const suffix = includeSceneIdInHeading && sceneId ? ` ${formatSceneIdForManuscript(sceneId, sceneIdFormat)}` : '';
+      scenes.push({ title: heading, bodyText, wordCount, sceneId, sourcePath: file.path });
+      totalWords += wordCount;
+      textParts.push(`${'#'.repeat(sceneLevel)} ${heading}${suffix}\n\n${bodyText}\n\n`);
     } else if (modernClassicState.enabled) {
       // RT terminology → structure mapping:
       //   Parts (from Part markers)        → \rtPart{Roman}{title}{quote}{attr} — Part page
@@ -1269,10 +1300,12 @@ export async function assembleManuscript(
           const chapterTitle = sanitizeModernClassicMacroArg(marker.title);
           if (!chapterTitle) continue;
           modernClassicState.chapterIndex += 1;
+          if (documentContents?.format === 'pdf') textParts.push(queueNavigation(chapterLevel, marker.title));
           textParts.push(buildRawLatexBlock(`\\rtChapter{${modernClassicState.chapterIndex}}{${chapterTitle}}`));
         }
       }
 
+      if (documentContents?.format === 'pdf') textParts.push(queueNavigation(sceneLevel, resolveSceneTitleForPublishing(title, sceneFrontmatter)));
       modernClassicState.sceneIndexInPart += 1;
       const sceneRoman = toRomanNumeral(modernClassicState.sceneIndexInPart).toLowerCase();
       textParts.push(buildRawLatexBlock(`\\rtSceneSep{${sceneRoman}}`));
@@ -1282,7 +1315,11 @@ export async function assembleManuscript(
       textParts.push(`${bodyText}\n\n`);
     } else {
       const chapterMarkers = file.path ? (chapterMarkersByScenePath[file.path] || []) : [];
+      if (documentContents?.format === 'pdf' && chapterMarkers.length === 0) {
+        for (const marker of navigationChapters[file.path] || []) textParts.push(queueNavigation(chapterLevel, marker.title));
+      }
       for (const marker of chapterMarkers) {
+        if (documentContents?.format === 'pdf') textParts.push(queueNavigation(chapterLevel, marker.title));
         if (useRtChapterMacro) {
           // Emit \rtChapter{N}{Title} so the layout's template macro owns the
           // chapter page typography (cleardoublepage, chrome suppression,
@@ -1298,7 +1335,8 @@ export async function assembleManuscript(
         } else {
           const chapterTitle = normalizeChapterHeadingText(marker.title);
           if (!chapterTitle) continue;
-          textParts.push(`# ${chapterTitle}\n\n`);
+          textParts.push(`# ${chapterTitle}${documentContents?.format === 'pdf' ? ' {.unnumbered .unlisted}' : ''}\n\n`);
+          if (documentContents?.format === 'pdf') textParts.push(buildRawLatexBlock('\\rtNavigationFlush'));
         }
       }
 
@@ -1307,6 +1345,7 @@ export async function assembleManuscript(
       scenes.push({ title: heading, bodyText, wordCount, sceneId, sourcePath: file.path });
       totalWords += wordCount;
 
+      if (documentContents?.format === 'pdf') textParts.push(queueNavigation(sceneLevel, `${heading}${includeSceneIdInToc && sceneId ? ` ${sceneId}` : ''}`));
       if (sceneHeadingRenderMode === 'latex-section-starred') {
         const latexHeading = resolveLatexSceneHeading(publishTitle, sceneHeadingMode, i + 1);
         const latexRunningMark = resolveLatexSceneRunningMark(publishTitle, i + 1);
@@ -1325,7 +1364,8 @@ export async function assembleManuscript(
         const headingSuffix = includeSceneIdInHeading
           ? sceneId ? ` ${formatSceneIdForManuscript(sceneId, sceneIdFormat)}` : ''
           : '';
-        textParts.push(`## ${heading}${headingSuffix}\n\n${bodyText}\n\n`);
+        const navigation = documentContents?.format === 'pdf' ? ' {.unnumbered .unlisted}\n\n' + buildRawLatexBlock('\\rtNavigationFlush') : '\n\n';
+        textParts.push(`## ${heading}${headingSuffix}${navigation}${bodyText}\n\n`);
       }
     }
   }

@@ -26,6 +26,6 @@ Advanced is currently grouped into three areas:
 
 ### Logs
 
-*   **Logs**: Readout of the main RT logs location.
+*   **Logs**: Readout of the main Radial Timeline logs location.
 *   **Export folder**: Destination for manuscript, outline, and cue-card exports. Editable — type or pick any folder inside your vault; the chip beside the field reveals it in the file explorer.
 *   **Enable AI content logs**: Saves full prompts, submitted material, and API responses in your vault for reviewing AI runs, including failed runs. Credentials are redacted. Your vault's sync and backup settings apply to these files.

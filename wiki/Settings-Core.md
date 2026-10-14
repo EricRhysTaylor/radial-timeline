@@ -141,7 +141,7 @@ Manage the scene note properties that Radial Timeline maintains and shows in hov
 
 Important behavior:
 
-*   RT-maintained scene normalization only manages the **core** and current **advanced** scene-property fields.
+*   Radial Timeline-maintained scene normalization only manages the **core** and current **advanced** scene-property fields.
 *   Scene-property maintenance preserves your custom fields and fields from other plugins.
 *   Reordering keeps custom fields beside the managed property directly above them.
 *   **Remap frontmatter field keys** now lives in [Settings → Advanced → Configuration](Settings-Advanced#configuration).

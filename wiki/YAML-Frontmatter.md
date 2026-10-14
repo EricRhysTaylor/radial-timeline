@@ -104,7 +104,7 @@ The Scene properties editor lets you tailor the advanced scene properties while 
 *   Enable **Settings → Core → Scene properties → Scene properties editor**.
 *   Required base keys stay locked and auto-included in order.
 *   Optional keys can be drag-reordered, renamed, deleted, or added.
-*   RT-managed maintenance only governs the core and current advanced scene-property fields.
+*   Radial Timeline-managed maintenance only governs the core and current advanced scene-property fields.
 *   Scene-property maintenance preserves custom fields and fields from other plugins.
 *   Reordering keeps custom fields beside the managed property directly above them.
 *   Use the restore icon to revert to the shipped defaults.

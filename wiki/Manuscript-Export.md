@@ -1,4 +1,4 @@
-**Manuscript export** opens the export panel for an RT book, a folder of Markdown notes, or a single Markdown file. Publish a novel, an essay, a report, or another document without first turning every note into a timeline scene.
+**Manuscript export** opens the export panel for a Radial Timeline book, a folder of Markdown notes, or a single Markdown file. Publish a novel, an essay, a report, or another document without first turning every note into a timeline scene.
 
 > **Available in 7.5.0:** folder and single-file sources, saved manuscript selections, and the PDF proof workspace.
 
@@ -20,13 +20,13 @@ The panel supports ordering, selection range, output presets, and publishing-ori
 
 ## Choose and Review the Source
 
-Choose **RT book**, **Folder**, or **Single file**. For an RT book, use the book’s scene order, subplot filters, and range controls. For a folder, review the included Markdown notes, remove unwanted entries, move notes earlier or later, then choose **Use this order and selection**. A single Markdown file is ready as one source. Plain sources retain existing Markdown headings and join notes with blank lines; they do not need scene YAML or Book Manager registration.
+Choose **Radial Timeline Book**, **Folder**, or **Single file**. For a Radial Timeline book, use the book’s scene order, subplot filters, and range controls. For a folder, review the included Markdown notes, remove unwanted entries, move notes earlier or later, then choose **Use this order and selection**. A single Markdown file is ready as one source. Plain sources retain existing Markdown headings and join notes with blank lines; they do not need scene YAML or Book Manager registration.
 
 For a folder or file, enter **Title** and **Author** in the panel. Save a named manuscript to reuse its source, metadata, included notes, and reviewed order. **Update saved manuscript** stores changes, **Save as new** creates another selection, and **Remove saved manuscript** removes the saved choice without deleting notes. Formatting remains in export presets, separately from the source selection.
 
 Your source files stay unchanged. Recheck the included notes when returning to a saved selection, especially after moving or deleting files.
 
-![Saved manuscript source showing RT book, Folder, and Single file choices, and reusable title, author, selection and order](images/release-7-5-general-export-source.png)
+![Saved manuscript source showing Radial Timeline book, Folder, and Single file choices, and reusable title, author, selection and order](images/release-7-5-general-export-source.png)
 
 ## Who Is It For?
 

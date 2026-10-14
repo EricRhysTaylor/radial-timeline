@@ -19,7 +19,7 @@ export function dirname(path: string): string {
 }
 
 /**
- * Destination for the onboarded RT book: a sibling of the untouched source
+ * Destination for the onboarded Radial Timeline book: a sibling of the untouched source
  * folder named `<Book title> RT`. The suffix keeps it distinct from the
  * source when the title matches the export folder's name.
  */

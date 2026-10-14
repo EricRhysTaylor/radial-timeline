@@ -55,7 +55,7 @@ Some commands are hidden until their required feature is enabled. Others remain 
 <a name="create-note"></a>
 ## Create note…
 
-Opens the guided RT note selector.
+Opens the guided Radial Timeline note selector.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/panel-create-note.png" alt="Create note command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />

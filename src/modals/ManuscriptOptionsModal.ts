@@ -953,7 +953,7 @@ export class ManuscriptOptionsModal extends Modal {
                 });
         }
         const choices = card.createDiv({ cls: 'ert-manuscript-pill-row' });
-        const bookButton = new ButtonComponent(choices).setButtonText(t('ui.manuscriptOptionsModal.rtBook')).onClick(() => {
+        const bookButton = new ButtonComponent(choices).setButtonText(t('ui.manuscriptOptionsModal.radialTimelineBook')).onClick(() => {
             const book = getActiveBook(this.plugin.settings);
             if (!book) { new Notice(t('ui.manuscriptOptionsModal.addBookNotice')); return; }
             this.clearSavedSourceSelection();
@@ -1595,7 +1595,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.syncExportUi();
     }
 
-    /** "3 scenes" for an RT book, "3 notes" for a folder or file source. */
+    /** "3 scenes" for a Radial Timeline book, "3 notes" for a folder or file source. */
     private countItems(count: number): string {
         return this.source?.kind === 'book' ? tCount('scene', count) : tCount('note', count);
     }

@@ -1,4 +1,4 @@
-Radial Timeline publishes an RT book, a folder of Markdown notes, or a standalone Markdown file as Markdown, Word, or PDF. In 7.5.0, folders and single files can become documents without timeline scene properties: review their contents and order, supply a title and author, and save the selection for reuse. See [Manuscript export](Manuscript-Export) for source selection, reader presets, PDF proofs, and delivery review.
+Radial Timeline publishes a Radial Timeline book, a folder of Markdown notes, or a standalone Markdown file as Markdown, Word, or PDF. In 7.5.0, folders and single files can become documents without timeline scene properties: review their contents and order, supply a title and author, and save the selection for reuse. See [Manuscript export](Manuscript-Export) for source selection, reader presets, PDF proofs, and delivery review.
 
 For PDF, choose a layout defining fonts, headers, chapter openers, and part dividers. Pandoc and LaTeX typeset the assembled document. Word requires Pandoc; Markdown needs neither tool.
 

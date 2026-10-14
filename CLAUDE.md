@@ -11,6 +11,12 @@ Do NOT use git worktrees. Do NOT work from agent worktree directories (e.g. `~/.
 
 The primary branch is `main`.
 
+## Product naming
+
+Use **Radial Timeline** in full in product copy, UI labels, wiki prose, and new code comments. Do not abbreviate the product name to **RT**. The manuscript source button is **Radial Timeline Book**. The shortened logo is a graphic mark, not the product's written name.
+
+Preserve established technical identifiers (such as `ert-*` CSS classes and existing persisted keys), literal filenames, and controls where `RT` means **Runtime**. Do not rename these as part of a copy edit.
+
 ## GitHub issues are inbound only — never file your own
 
 **Do not open GitHub issues.** Not for bugs you find, not for design

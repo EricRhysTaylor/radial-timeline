@@ -32,7 +32,7 @@ export interface PublishingValidationContext {
     manuscriptPreset?: UsageContext;
     selectedLayoutId?: string;
     includeMatter?: boolean;
-    /** Direct manuscript metadata supplied in the export dialog, independent of RT books. */
+    /** Direct manuscript metadata supplied in the export dialog, independent of Radial Timeline books. */
     manuscriptMetadata?: Pick<BookMeta, 'title' | 'author'>;
 }
 

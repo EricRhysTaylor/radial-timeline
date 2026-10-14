@@ -93,6 +93,10 @@ Secondary pages should summarize in one line and link to the canonical page.
 
 ## Terminology
 
+- Write **Radial Timeline** in full. Do not use **RT** as shorthand for the product in prose or labels; the abbreviated logo is a graphic mark.
+- Use **Radial Timeline Book** when naming the manuscript source button.
+- Preserve literal UI labels where `RT` means Runtime, and literal filenames or technical identifiers.
+
 - Match the UI and command palette exactly.
 - If the command palette says `Book designer`, the docs should not rename it to something else.
 - Prefer Obsidian-friendly user language:

@@ -93,13 +93,13 @@ export class ExportDeliveryReviewModal extends Modal {
                     ? t('ui.exportDeliveryReviewModal.fileSizeWordChecked', { bytes: file.bytes.toLocaleString() })
                     : t('ui.exportDeliveryReviewModal.fileSizeTextChecked', { bytes: file.bytes.toLocaleString() })) });
             if (file.modifiedAfterExport) card.createDiv({ cls: 'ert-section-desc', text: t('ui.exportDeliveryReviewModal.changedSinceExport') });
-            const row = card.createDiv({ cls: 'ert-manuscript-pill-row' });
+            const row = card.createDiv({ cls: 'ert-inline' });
             new ButtonComponent(row).setButtonText(receipt.format === 'docx' ? t('ui.exportDeliveryReviewModal.openWordFile') : t('ui.exportDeliveryReviewModal.openFile')).setDisabled(!file.available || !!file.error || !!this.checkError).onClick(() => { void this.openFile(file.path); });
-            const label = row.createEl('label');
+            const label = row.createEl('label', { cls: 'ert-delivery-review-mark' });
             const check = label.createEl('input', { attr: { type: 'checkbox' } });
             check.checked = !!file.sha256 && file.reviewedSha256 === file.sha256;
             check.disabled = !file.available || !!file.error || !!this.checkError;
-            label.appendText(` ${t('ui.exportDeliveryReviewModal.contentReviewed')}`);
+            label.createSpan({ text: t('ui.exportDeliveryReviewModal.contentReviewed') });
             check.addEventListener('change', () => { void this.runCheck(file.path, check.checked); });
         }
         const working = receipt.files.filter(file => !file.primary);

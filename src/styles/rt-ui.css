@@ -10760,6 +10760,18 @@
   overflow-wrap: anywhere;
 }
 
+.ert-ui.ert-scope--modal .ert-delivery-review-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ert-gap-sm);
+  min-width: 0;
+}
+
+.ert-ui.ert-scope--modal .ert-delivery-review-mark input[type="checkbox"] {
+  flex-shrink: 0;
+  margin: 0;
+}
+
 .ert-ui.ert-scope--modal .ert-manuscript-source-details {
   gap: var(--ert-gap-lg);
   margin-top: var(--ert-gap-sm);

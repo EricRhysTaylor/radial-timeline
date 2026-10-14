@@ -54,6 +54,7 @@ import { computeCacheableValues } from '../renderer/utils/Precompute';
 import type { PluginRendererFacade } from '../utils/sceneHelpers';
 import { runPromotion } from '../services/PromoteToSceneEntry';
 import {
+    belongsInTimetable,
     buildRingLayout,
     buildTableRow,
     compareChronologicalRows,
@@ -527,7 +528,12 @@ export class TimetableView extends BasesView {
         // Another table's lens stays until this one's toggle is pressed.
         if (active && active.owner !== this && !this.claimLens) return;
         this.claimLens = false;
-        const paths = new Set((this.data?.data ?? []).filter(entry => entry.file.extension === 'md').map(entry => entry.file.path));
+        const { app, settings } = this.plugin;
+        const bookFolders = (settings.books ?? []).map(book => book.sourceFolder);
+        const paths = new Set((this.data?.data ?? [])
+            .filter(entry => entry.file.extension === 'md')
+            .filter(entry => belongsInTimetable(buildTableRow(entry.file.path, entry.file.basename, app.metadataCache.getFileCache(entry.file)?.frontmatter, settings), bookFolders))
+            .map(entry => entry.file.path));
         setTimelineLens({ owner: this, paths, label: this.config.name, turnOff: () => this.config.set('lens', false) });
     }
 
@@ -1042,13 +1048,15 @@ export class TimetableView extends BasesView {
     private buildGroups(): TableGroup[] {
         const { app, settings } = this.plugin;
         const authorSorted = this.config.getSort().length > 0;
+        const bookFolders = (settings.books ?? []).map(book => book.sourceFolder);
         const toItems = (entries: BasesEntry[]): TableItem[] => {
             const items = entries
                 .filter(entry => entry.file.extension === 'md')
                 .map(entry => {
                     const frontmatter: Record<string, unknown> | undefined = app.metadataCache.getFileCache(entry.file)?.frontmatter;
                     return { entry, frontmatter, row: buildTableRow(entry.file.path, entry.file.basename, frontmatter, settings) };
-                });
+                })
+                .filter(item => belongsInTimetable(item.row, bookFolders));
             // A sort the author sets in the Bases toolbar wins; otherwise wheel order.
             return authorSorted ? items : items.sort((a, b) => compareManuscriptRows(a.row, b.row));
         };
@@ -1062,7 +1070,7 @@ export class TimetableView extends BasesView {
             const act = this.groupAct(group, items);
             const label = act !== undefined ? this.actLabel(act) : (group.hasKey() && group.key ? group.key.toString() : t('ui.timetable.noValue'));
             return { id: `group:${index}:${group.key?.toString() ?? ''}`, label, act, items };
-        });
+        }).filter(group => group.items.length > 0);
     }
 
     /** An ungrouped table that spans books (the saga table) groups by book, in saga order. */

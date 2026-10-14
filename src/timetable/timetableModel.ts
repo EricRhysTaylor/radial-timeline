@@ -95,6 +95,24 @@ export function buildTableRow(
     };
 }
 
+/**
+ * Whether a note belongs in the Timetable view. Scenes, beats and sketches do
+ * wherever they sit in a book folder, as on the wheel. Other notes (drafts
+ * waiting for Promote, front matter) do at a book folder's top level, but not
+ * in its subfolders, where a book keeps its feedback, cuts and publishing
+ * material. A note outside every book folder (an author's own filter) does.
+ */
+export function belongsInTimetable(row: TimetableRow, bookFolders: string[]): boolean {
+    if (row.kind === 'scene' || row.kind === 'beat' || row.kind === 'sketch') return true;
+    const folder = row.path.includes('/') ? row.path.slice(0, row.path.lastIndexOf('/')) : '';
+    // The deepest book folder holding the note decides, in case one book folder sits inside another.
+    const book = bookFolders
+        .map(entry => entry.trim().replace(/\/+$/, ''))
+        .filter(entry => entry.length > 0 && row.path.startsWith(`${entry}/`))
+        .sort((a, b) => b.length - a.length)[0];
+    return book === undefined || folder === book;
+}
+
 /** A note's name as the table shows it: the number prefix lives in the number cell, so it isn't repeated. */
 export function displayName(basename: string): string {
     return basename.replace(/^\s*\d+(?:\.\d+)?\s+/, '');

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { RadialTimelineSettings } from '../types';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import {
+    belongsInTimetable,
     buildRingLayout,
     buildTableRow,
     compareChronologicalRows,
@@ -206,5 +207,30 @@ describe('distinctColorSlots', () => {
 
     it('puts greys and unreadable colors last, in slot order', () => {
         expect(distinctColorSlots(['#cccccc', '#ff0000', 'teal', '#0000ff'])).toEqual([3, 1, 0, 2]);
+    });
+});
+
+describe('belongsInTimetable', () => {
+    const at = (path: string, fm?: Record<string, unknown>) => buildTableRow(path, path.split('/').pop() ?? path, fm, settings);
+    const books = ['Book 2', 'Book 3/'];
+
+    it('keeps scenes, beats and sketches anywhere in a book folder', () => {
+        expect(belongsInTimetable(at('Book 2/Act 1/5 Arrival.md', { Class: 'Scene' }), books)).toBe(true);
+        expect(belongsInTimetable(at('Book 2/Drafts/Idea.md', { Class: 'Sketch' }), books)).toBe(true);
+    });
+
+    it('keeps other notes at a book folder’s top level', () => {
+        expect(belongsInTimetable(at('Book 2/78 Dry Tank.md'), books)).toBe(true);
+        expect(belongsInTimetable(at('Book 3/Title Page.md', { Class: 'Frontmatter' }), books)).toBe(true);
+    });
+
+    it('leaves out other notes in a book’s subfolders (feedback, cuts, publishing material)', () => {
+        expect(belongsInTimetable(at('Book 2/Feedback/Manuscript Assessment.md'), books)).toBe(false);
+        expect(belongsInTimetable(at('Book 2/Cut/Old Opening.md', { Class: 'Cut' }), books)).toBe(false);
+    });
+
+    it('keeps notes outside every book folder, and lets the deepest book folder decide', () => {
+        expect(belongsInTimetable(at('Research/Ships.md'), books)).toBe(true);
+        expect(belongsInTimetable(at('Book 2/Book 2b/Notes.md'), [...books, 'Book 2/Book 2b'])).toBe(true);
     });
 });

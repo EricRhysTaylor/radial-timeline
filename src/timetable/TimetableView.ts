@@ -1365,7 +1365,8 @@ export class TimetableView extends BasesView {
     }
 
     private fillKey(button: HTMLElement, panel: HTMLElement): void {
-        renderLegendSurface(panel, { title: t('ui.timetable.keyTitle'), sections: this.keySections() });
+        const state = this.modeState();
+        renderLegendSurface(panel, { title: t('ui.timetable.keyTitle'), badge: modeName(state.mode), sections: this.keySections(state) });
         // Just below the button, inside the window.
         const box = button.getBoundingClientRect();
         const win = button.win;
@@ -1379,9 +1380,11 @@ export class TimetableView extends BasesView {
         });
     }
 
-    private keySections(): LegendSection[] {
+    private keySections(state: TimelineModeState): LegendSection[] {
         const stage = this.plugin.settings.publishStageColors;
+        const modeSection = this.keyModeSection(state);
         return [
+            ...(modeSection ? [modeSection] : []),
             {
                 title: t('ui.timetable.keyRows'),
                 rows: [
@@ -1414,6 +1417,37 @@ export class TimetableView extends BasesView {
                 ],
             },
         ];
+    }
+
+    /** What the mode the table follows changes in it; Narrative changes nothing to explain. */
+    private keyModeSection(state: TimelineModeState): LegendSection | null {
+        const title = modeName(state.mode);
+        if (state.mode === 'chronologue') {
+            const rows = [{ icon: 'calendar-days', label: t('ui.timetable.keyDayDividers'), detail: t('ui.timetable.keyDayDividersDetail') }];
+            if (state.shift) rows.push({ icon: 'arrow-left-right', label: t('ui.timetable.colGap'), detail: t('ui.timetable.keyGapDetail') });
+            if (state.runtime) rows.push({ icon: 'timer', label: t('ui.timetable.colRunningTime'), detail: t('ui.timetable.keyRunningDetail') });
+            if (state.alt) rows.push({ icon: 'orbit', label: t('ui.timetable.keyAlt'), detail: t('ui.timetable.keyAltDetail') });
+            return { title, rows };
+        }
+        if (state.mode === 'progress') {
+            return {
+                title,
+                rows: [
+                    { icon: 'gauge', label: t('ui.timetable.keyActHeader'), detail: t('ui.timetable.keyActHeaderDetail') },
+                    { icon: 'calendar-x', label: t('ui.timetable.keyOverdue'), detail: t('ui.timetable.keyOverdueDetail') },
+                ],
+            };
+        }
+        if (state.mode === 'gossamer') {
+            return {
+                title,
+                rows: [
+                    { icon: 'activity', label: t('ui.timetable.keyBeatsForward'), detail: t('ui.timetable.keyBeatsForwardDetail') },
+                    { swatch: { fill: 'var(--background-modifier-hover)', stroke: 'var(--background-modifier-border)', text: '72', textColor: 'var(--text-normal)' }, label: t('ui.timetable.keyScore'), detail: t('ui.timetable.keyScoreDetail') },
+                ],
+            };
+        }
+        return null;
     }
 
     /** An empty table has no header row, so + New sketch sits above the message. */

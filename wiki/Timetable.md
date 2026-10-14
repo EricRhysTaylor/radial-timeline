@@ -18,7 +18,7 @@ The `.base` file is yours to customize. Change its columns, filters, sorting, or
 - **When:** dates use the same display formatter as the timeline hover, including the active planetary calendar where applicable.
 - **Open queries:** a marker identifies unresolved author queries in a note; hover to read them. On the wheel, the same scene shows a question bubble in each of its cells.
 
-The **✱** button in the table’s corner opens the Timetable keys: what the row marks mean, what each click does, and the corner buttons. The timeline’s own **✱** key covers the wheel, including the open-query mark and the clicks that link to a Timetable.
+The **✱** button in the table’s corner opens the Timetable keys: what the row marks mean, what each click does, and the corner buttons. A badge names the mode the table follows, and a section on top explains what that mode changes (Chronologue’s date dividers and its Gap or Running time column, Progress’s act totals and overdue dates, Gossamer’s beats and scores). The timeline’s own **✱** key covers the wheel, including the open-query mark and the clicks that link to a Timetable.
 
 Hover a scene row to highlight it on the wheel. Hover a scene on the wheel to reveal its row, lit in the color of the cell you’re pointing at: that ring’s color, or the color-by color while a column colors the timeline. Click a scene row to open its note; **Shift-click** brings the timeline forward and highlights that scene. Right-click a scene row for the timeline’s scene menu.
 

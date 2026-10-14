@@ -10743,21 +10743,28 @@
 }
 
 /* Reviewed manuscript contents stay bounded inside the existing export shell. */
+.ert-ui.ert-scope--modal .ert-manuscript-modal {
+  --ert-manuscript-label-width: 80px;
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-controls {
+  gap: var(--ert-gap-xl);
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-controls > .ert-sub-card {
+  margin-top: 0;
+  gap: var(--ert-gap-lg);
+}
+
 .ert-ui.ert-scope--modal .ert-delivery-file-path {
   overflow-wrap: anywhere;
 }
 
 .ert-ui.ert-scope--modal .ert-manuscript-source-details {
+  gap: var(--ert-gap-lg);
   margin-top: var(--ert-gap-sm);
   padding-top: var(--ert-pad-md);
   border-top: 1px solid var(--background-modifier-border);
-}
-
-.ert-ui.ert-scope--modal .ert-manuscript-source-book-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--ert-gap-sm);
 }
 
 .ert-ui.ert-scope--modal .ert-manuscript-source-list {
@@ -10791,11 +10798,37 @@
   display: grid;
   align-items: center;
   gap: var(--ert-gap-sm);
-  grid-template-columns: 80px minmax(0, 1fr);
+  grid-template-columns: var(--ert-manuscript-label-width) minmax(0, 1fr);
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-source-field > span,
+.ert-ui.ert-scope--modal .ert-manuscript-source-location .ert-section-desc {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .ert-ui.ert-scope--modal .ert-manuscript-source-field input {
   width: 100%;
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-source-save {
+  display: grid;
+  grid-template-columns: var(--ert-manuscript-label-width) minmax(0, 1fr);
+  gap: var(--ert-gap-lg) var(--ert-gap-sm);
+  padding-top: var(--ert-pad-xs);
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-source-save > .ert-manuscript-source-field {
+  grid-column: 1 / -1;
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-source-save-actions,
+.ert-ui.ert-scope--modal .ert-manuscript-source-save-note {
+  grid-column: 2;
+}
+
+.ert-ui.ert-scope--modal .ert-manuscript-output-grid--format-only {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 /* The modal owns settings scrolling; only the PDF page scrolls independently.

@@ -257,6 +257,8 @@ export class ManuscriptOptionsModal extends Modal {
     private sourceSaveButton?: ButtonComponent;
     private sourceSaveAsButton?: ButtonComponent;
     private controlsEl?: HTMLElement;
+    private outputGridEl?: HTMLElement;
+    private exportTypeColEl?: HTMLElement;
     private proofPane?: HTMLElement;
     private proofStatusEl?: HTMLElement;
     private proofFrame?: HTMLElement;
@@ -794,7 +796,7 @@ export class ManuscriptOptionsModal extends Modal {
             this.sourceReviewed = restored.addedPaths.length === 0 && restored.missingPaths.length === 0;
             this.savedSourceNotice = restored.addedPaths.length || restored.missingPaths.length
                 ? t('ui.manuscriptOptionsModal.restoredChanges', { newNotes: tCount('newNote', restored.addedPaths.length), missingPaths: tCount('savedPath', restored.missingPaths.length) })
-                : t('ui.manuscriptOptionsModal.savedSelectionLoaded');
+                : '';
         } catch (error) {
             this.savedSourceNotice = error instanceof Error ? error.message : t('ui.manuscriptOptionsModal.savedSourceUnavailable');
         }
@@ -902,6 +904,7 @@ export class ManuscriptOptionsModal extends Modal {
         if (!this.savedSourceId) return;
         this.savedSourceNotice = t('ui.manuscriptOptionsModal.unsavedChanges');
         this.savedSourceNoticeEl?.setText(this.savedSourceNotice);
+        this.savedSourceNoticeEl?.removeClass('ert-hidden');
     }
 
     private async chooseSource(kind: 'folder' | 'file', sourcePath: string): Promise<void> {
@@ -938,7 +941,7 @@ export class ManuscriptOptionsModal extends Modal {
         if (this.savedSourceStorageError) card.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: this.savedSourceStorageError });
         if (this.plugin.isSettingsPersistenceBlocked()) card.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: t('ui.manuscriptOptionsModal.settingsUnreadable') });
         if (this.savedManuscripts.length) {
-            const savedRow = card.createDiv({ cls: 'ert-row ert-manuscript-source-book-row' });
+            const savedRow = card.createDiv({ cls: 'ert-row ert-manuscript-source-field' });
             savedRow.createSpan({ text: t('ui.manuscriptOptionsModal.savedManuscriptLabel') });
             new DropdownComponent(savedRow).addOption('', t('ui.manuscriptOptionsModal.unsavedManuscript'))
                 .addOptions(Object.fromEntries(this.savedManuscripts.map(record => [record.id, record.name])))
@@ -973,9 +976,12 @@ export class ManuscriptOptionsModal extends Modal {
         const source = this.source;
         if (!source) { card.createDiv({ cls: 'ert-section-desc', text: t('ui.manuscriptOptionsModal.chooseSourcePrompt') }); return; }
         const sourceDetails = card.createDiv({ cls: 'ert-stack ert-manuscript-source-details' });
-        if (this.savedSourceId || this.savedSourceNotice) this.savedSourceNoticeEl = sourceDetails.createDiv({ cls: 'ert-section-desc', text: this.savedSourceNotice });
+        if (this.savedSourceId || this.savedSourceNotice) {
+            this.savedSourceNoticeEl = sourceDetails.createDiv({ cls: 'ert-section-desc', text: this.savedSourceNotice });
+            this.savedSourceNoticeEl.toggleClass('ert-hidden', !this.savedSourceNotice);
+        }
         if (source.kind === 'book') {
-            const row = sourceDetails.createDiv({ cls: 'ert-row ert-manuscript-source-book-row' });
+            const row = sourceDetails.createDiv({ cls: 'ert-row ert-manuscript-source-field' });
             row.createSpan({ text: t('ui.manuscriptOptionsModal.book') });
             new DropdownComponent(row).addOptions(Object.fromEntries(this.plugin.settings.books.map(book => [book.id, book.title])))
                 .setValue(source.bookId).onChange(id => {
@@ -985,10 +991,13 @@ export class ManuscriptOptionsModal extends Modal {
                     this.renderSourceCard();
                     void this.loadSubplots().then(() => this.loadScenesForOrder());
                 });
-            sourceDetails.createDiv({ cls: 'ert-section-desc', text: this.getSourceBook()?.sourceFolder || t('ui.manuscriptOptionsModal.noSourceFolder') });
-            return;
         }
-        sourceDetails.createDiv({ cls: 'ert-section-desc', text: source.path });
+        const location = sourceDetails.createDiv({ cls: 'ert-row ert-manuscript-source-field ert-manuscript-source-location' });
+        location.createSpan({ text: source.kind === 'file' ? t('ui.manuscriptOptionsModal.singleFile') : t('ui.manuscriptOptionsModal.folder') });
+        location.createDiv({ cls: 'ert-section-desc', text: source.kind === 'book'
+            ? this.getSourceBook()?.sourceFolder || t('ui.manuscriptOptionsModal.noSourceFolder')
+            : source.path });
+        if (source.kind === 'book') return;
         sourceDetails.createDiv({ cls: 'ert-section-desc', text: t('ui.manuscriptOptionsModal.plainSourceNote') });
         for (const field of ['title', 'author'] as const) {
             const label = sourceDetails.createEl('label', { cls: 'ert-row ert-manuscript-source-field' });
@@ -1053,22 +1062,23 @@ export class ManuscriptOptionsModal extends Modal {
                 .setDisabled(this.sourceReviewed || source.paths.length === 0)
                 .onClick(() => { this.sourceReviewed = true; this.renderSourceCard(); this.syncExportUi(); });
         }
-        const nameRow = sourceDetails.createEl('label', { cls: 'ert-row ert-manuscript-source-field' });
+        const saveGroup = sourceDetails.createDiv({ cls: 'ert-manuscript-source-save', attr: { role: 'group', 'aria-label': t('ui.manuscriptOptionsModal.savedManuscriptNameAria') } });
+        const nameRow = saveGroup.createEl('label', { cls: 'ert-row ert-manuscript-source-field' });
         nameRow.createSpan({ text: t('ui.manuscriptOptionsModal.saveAs') });
         const nameInput = nameRow.createEl('input', { cls: 'ert-input', attr: { type: 'text', 'aria-label': t('ui.manuscriptOptionsModal.savedManuscriptNameAria') } });
         nameInput.value = this.savedSourceName;
         nameInput.addEventListener('input', () => { this.savedSourceName = nameInput.value; this.markSourceChanged(); this.updateSourceActions(); });
-        const saveActions = sourceDetails.createDiv({ cls: 'ert-manuscript-pill-row' });
+        const saveActions = saveGroup.createDiv({ cls: 'ert-manuscript-pill-row ert-manuscript-source-save-actions' });
         this.sourceSaveButton = new ButtonComponent(saveActions).setButtonText(this.savedSourceId ? t('ui.manuscriptOptionsModal.updateSavedManuscript') : t('ui.manuscriptOptionsModal.saveManuscript')).onClick(() => { void this.saveSource(false); });
         if (this.savedSourceId) {
-            this.sourceSaveAsButton = new ButtonComponent(saveActions).setButtonText(t('ui.manuscriptOptionsModal.saveAsNew')).onClick(() => { void this.saveSource(true); });
+            this.sourceSaveAsButton = new ButtonComponent(saveActions).setButtonText(t('ui.manuscriptOptionsModal.saveManuscript')).setTooltip(t('ui.manuscriptOptionsModal.saveAsNew')).onClick(() => { void this.saveSource(true); });
             const id = this.savedSourceId;
             new ButtonComponent(saveActions).setButtonText(t('ui.manuscriptOptionsModal.removeSavedManuscript')).onClick(() => {
                 const record = this.savedManuscripts.find(item => item.id === id);
                 if (record) new DeletePublishingItemModal(this.app, record.name, () => { void this.deleteSavedSource(id); }, 'saved manuscript').open();
             });
         }
-        sourceDetails.createDiv({ cls: 'ert-section-desc', text: t('ui.manuscriptOptionsModal.saveSourceNote') });
+        saveGroup.createDiv({ cls: 'ert-section-desc ert-manuscript-source-save-note', text: t('ui.manuscriptOptionsModal.saveSourceNote') });
         this.sourceErrorEl = sourceDetails.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: this.sourceError || '' });
         this.updateSourceActions();
     }
@@ -1140,8 +1150,10 @@ export class ManuscriptOptionsModal extends Modal {
         const outputCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         this.createSectionHeading(outputCard, t('ui.manuscriptOptionsModal.output'), 'file-output');
         const outputGrid = outputCard.createDiv({ cls: 'ert-manuscript-output-grid' });
+        this.outputGridEl = outputGrid;
 
         const exportTypeCol = outputGrid.createDiv({ cls: 'ert-manuscript-output-col' });
+        this.exportTypeColEl = exportTypeCol;
         exportTypeCol.createSpan({ cls: 'ert-manuscript-toggle-label', text: t('ui.manuscriptOptionsModal.whatExporting') });
         const exportRow = exportTypeCol.createDiv({ cls: 'ert-manuscript-pill-row ert-manuscript-pill-row--single' });
         this.createExportTypePill(exportRow, t('manuscriptModal.exportTypeManuscript'), 'manuscript');
@@ -1217,10 +1229,6 @@ export class ManuscriptOptionsModal extends Modal {
         // C) SPLIT OUTPUT
         this.splitCard = container.createDiv({ cls: 'ert-glass-card ert-sub-card' });
         this.createSectionHeading(this.splitCard, t('ui.manuscriptOptionsModal.splitOutput'), 'split');
-        this.splitCard.createDiv({
-            cls: 'ert-sub-card-note',
-            text: t('ui.manuscriptOptionsModal.splitOutputNote')
-        });
         const splitModeRow = this.splitCard.createDiv({ cls: 'ert-manuscript-split-grid' });
         const splitModeGroup = `ert-manuscript-split-${Date.now()}`;
         const singleCol = splitModeRow.createDiv({ cls: 'ert-manuscript-split-col ert-manuscript-split-col--single' });
@@ -2525,6 +2533,8 @@ export class ManuscriptOptionsModal extends Modal {
         this.sanitizeStateForMode(mode);
         this.scopeCard?.toggleClass('ert-hidden', plainSource);
         this.orderingCard?.toggleClass('ert-hidden', plainSource);
+        this.exportTypeColEl?.toggleClass('ert-hidden', plainSource);
+        this.outputGridEl?.toggleClass('ert-manuscript-output-grid--format-only', plainSource);
         this.exportTypePills.forEach(({ el, type }) => el.toggleClass('ert-hidden', plainSource && type === 'outline'));
 
         this.purposeCard?.toggleClass('ert-hidden', !mode.isManuscript);
@@ -2548,6 +2558,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.chronoHelperEl?.toggleClass('ert-hidden', !mode.chronoMessage);
 
         if (this.documentTypeDescEl) {
+            this.documentTypeDescEl.toggleClass('ert-hidden', mode.isManuscript);
             this.documentTypeDescEl.setText(mode.isManuscript
                 ? plainSource ? t('ui.manuscriptOptionsModal.docTypeNotes') : t('ui.manuscriptOptionsModal.docTypeScenes')
                 : t('ui.manuscriptOptionsModal.docTypeOutline'));

@@ -87,6 +87,15 @@ describe('export delivery checks', () => {
         expect(changed.reviewedAt).toBeUndefined();
         expect(isDeliveryReviewed(changed)).toBe(false);
     });
+    it('retains twenty recent receipt pointers across exports without removing portable records', async () => {
+        const { plugin, bytes, text, request } = fixture();
+        bytes.set('Out/One.md', strToU8('Original'));
+        for (let n = 0; n < 22; n++) await checkExportDelivery(plugin, request, { savedPaths: ['Out/One.md'], outputFolder: 'Out' }, 'One', ['Draft/One.md']);
+        expect(plugin.settings.recentExportDeliveryReceiptPaths).toHaveLength(20);
+        expect(plugin.settings.recentExportDeliveryReceiptPaths?.[0]).toBe(plugin.settings.lastExportDeliveryReceiptPath);
+        expect(new Set(plugin.settings.recentExportDeliveryReceiptPaths).size).toBe(20);
+        expect(text.size).toBe(22);
+    });
     it('rejects receipt traversal and preserves original export provenance during review', async () => {
         const { plugin, bytes, text, request } = fixture();
         bytes.set('Out/One.md', strToU8('Original'));

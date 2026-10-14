@@ -151,6 +151,10 @@ export async function checkExportDelivery(plugin: RadialTimelinePlugin, result: 
     };
     receipt.problems = deliveryProblems(receipt);
     await writeDeliveryReceipt(plugin.app, receipt);
+    plugin.settings.recentExportDeliveryReceiptPaths = [...new Set([receipt.receiptPath,
+        ...(plugin.settings.lastExportDeliveryReceiptPath ? [plugin.settings.lastExportDeliveryReceiptPath] : []),
+        ...(plugin.settings.recentExportDeliveryReceiptPaths || []),
+    ])].slice(0, 20);
     plugin.settings.lastExportDeliveryReceiptPath = receipt.receiptPath;
     await plugin.saveSettings();
     return receipt;

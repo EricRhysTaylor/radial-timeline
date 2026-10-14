@@ -1,5 +1,5 @@
 import { ButtonComponent, Modal, Notice, type App } from 'obsidian';
-import { getVaultAbsolutePath } from '../utils/exportFormats';
+import { openExportedFile } from '../publishing/openExportedFile';
 import { isDeliveryReviewed, readDeliveryReceipt, recheckDelivery, writeDeliveryReceipt, type ExportDeliveryReceipt } from '../publishing/exportDelivery';
 import { t, tCount } from '../i18n';
 
@@ -8,7 +8,8 @@ export class ExportDeliveryReviewModal extends Modal {
     private busy = false;
     private closed = false;
     private checkError: string | null = null;
-    constructor(app: App, private receipt: ExportDeliveryReceipt) { super(app); }
+    private reviewExpanded = false;
+    constructor(app: App, private receipt: ExportDeliveryReceipt, private onFileOpened?: () => void) { super(app); }
 
     async onOpen(): Promise<void> {
         this.modalEl.addClass('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
@@ -94,40 +95,42 @@ export class ExportDeliveryReviewModal extends Modal {
                     : t('ui.exportDeliveryReviewModal.fileSizeTextChecked', { bytes: file.bytes.toLocaleString() })) });
             if (file.modifiedAfterExport) card.createDiv({ cls: 'ert-section-desc', text: t('ui.exportDeliveryReviewModal.changedSinceExport') });
             const row = card.createDiv({ cls: 'ert-inline' });
-            new ButtonComponent(row).setButtonText(receipt.format === 'docx' ? t('ui.exportDeliveryReviewModal.openWordFile') : t('ui.exportDeliveryReviewModal.openFile')).setDisabled(!file.available || !!file.error || !!this.checkError).onClick(() => { void this.openFile(file.path); });
-            const label = row.createEl('label', { cls: 'ert-delivery-review-mark' });
+            new ButtonComponent(row).setButtonText(receipt.format === 'docx' ? t('ui.exportDeliveryReviewModal.openWordFile') : t('ui.exportDeliveryReviewModal.openFile')).setCta().setDisabled(!file.available || !!file.error || !!this.checkError).onClick(() => { void this.openFile(file.path); });
+        }
+        const review = this.contentEl.createEl('details', { cls: 'ert-delivery-signoff' });
+        review.open = this.reviewExpanded;
+        review.createEl('summary', { text: t('ui.exportDeliveryReviewModal.optionalReview') });
+        review.addEventListener('toggle', () => { this.reviewExpanded = review.open; });
+        const reviewBody = review.createDiv({ cls: 'ert-stack ert-delivery-signoff-body' });
+        reviewBody.createDiv({ cls: 'ert-section-desc', text: t('ui.exportDeliveryReviewModal.reviewMarksSaved') });
+        for (const file of primary) {
+            const label = reviewBody.createEl('label', { cls: 'ert-delivery-review-mark' });
             const check = label.createEl('input', { attr: { type: 'checkbox' } });
             check.checked = !!file.sha256 && file.reviewedSha256 === file.sha256;
             check.disabled = !file.available || !!file.error || !!this.checkError;
-            label.createSpan({ text: t('ui.exportDeliveryReviewModal.contentReviewed') });
+            label.createSpan({ cls: 'ert-delivery-file-path', text: primary.length > 1
+                ? `${file.path.split('/').pop()} · ${t('ui.exportDeliveryReviewModal.contentReviewed')}`
+                : t('ui.exportDeliveryReviewModal.contentReviewed') });
             check.addEventListener('change', () => { void this.runCheck(file.path, check.checked); });
         }
+        const reviewActions = reviewBody.createDiv({ cls: 'ert-inline' });
+        new ButtonComponent(reviewActions).setButtonText(t('ui.exportDeliveryReviewModal.recordReviewComplete')).setDisabled(!!this.checkError || !isDeliveryReviewed(receipt) || !!receipt.reviewedAt).onClick(() => { void this.runCheck(undefined, undefined, true); });
         const working = receipt.files.filter(file => !file.primary);
         if (working.length) {
             const details = this.contentEl.createEl('details');
             details.createEl('summary', { text: t('ui.exportDeliveryReviewModal.workingMarkdownSummary', { count: working.length }) });
             for (const file of working) details.createDiv({ cls: 'ert-section-desc ert-delivery-file-path', text: file.error ? `${file.path} · ${file.error}` : file.path });
         }
-        this.contentEl.createDiv({ cls: 'ert-section-desc', text: t('ui.exportDeliveryReviewModal.reviewMarksSaved') });
         const actions = this.contentEl.createDiv({ cls: 'ert-modal-actions' });
         new ButtonComponent(actions).setButtonText(t('ui.exportDeliveryReviewModal.recheckFiles')).onClick(() => { void this.runCheck(); });
-        new ButtonComponent(actions).setButtonText(t('ui.exportDeliveryReviewModal.recordReviewComplete')).setCta().setDisabled(!!this.checkError || !isDeliveryReviewed(receipt) || !!receipt.reviewedAt).onClick(() => { void this.runCheck(undefined, undefined, true); });
         new ButtonComponent(actions).setButtonText(t('ui.exportDeliveryReviewModal.close')).onClick(() => this.close());
     }
 
     private async openFile(vaultPath: string): Promise<void> {
         try {
-            if (this.receipt.format === 'docx') {
-                const absolute = getVaultAbsolutePath({ app: this.app }, vaultPath);
-                if (!absolute) throw new Error(t('ui.exportDeliveryReviewModal.openWithDeviceApp'));
-                const shell = (window as unknown as { require?: (name: string) => { shell?: { openPath(path: string): Promise<string> } } }).require?.('electron').shell;
-                if (!shell) throw new Error(t('ui.exportDeliveryReviewModal.openerUnavailable'));
-                const error = await shell.openPath(absolute);
-                if (error) throw new Error(error);
-            } else {
-                await this.app.workspace.openLinkText(vaultPath, '', 'tab');
-                this.close();
-            }
+            await openExportedFile(this.app, vaultPath, this.receipt.format);
+            this.close();
+            this.onFileOpened?.();
         } catch (error) { new Notice(error instanceof Error ? error.message : t('ui.exportDeliveryReviewModal.fileNotOpened')); }
     }
 }

@@ -1255,6 +1255,8 @@ export interface RadialTimelineSettings {
     savedManuscriptSources?: SavedManuscriptSource[];
     lastUsedManuscriptSourceId?: string;
     lastExportDeliveryReceiptPath?: string;
+    /** Recent receipt pointers only; full export records remain beside the files. */
+    recentExportDeliveryReceiptPaths?: string[];
     bookPublishingPreferences?: BookPublishingPreferences[];
     lastUsedExportProfileId?: string;
     /** @deprecated Use backdropYamlTemplates instead. Kept for migration. */

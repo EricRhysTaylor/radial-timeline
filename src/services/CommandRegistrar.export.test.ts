@@ -413,7 +413,7 @@ describe('manuscript export UI-to-runner contract', () => {
         modal['splitParts'] = 3;
         modal['outputFormat'] = 'pdf';
         const setButtonText = vi.fn();
-        modal['actionButton'] = { setButtonText, setDisabled: vi.fn() } as unknown as ButtonComponent;
+        modal['actionButton'] = { setButtonText, setDisabled: vi.fn(), setCta: vi.fn(), removeCta: vi.fn() } as unknown as ButtonComponent;
         modal['updateSplitUi']();
         expect(modal['splitMode']).toBe('single');
         expect(setButtonText).toHaveBeenCalledWith('Generate PDF');

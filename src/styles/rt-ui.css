@@ -10772,6 +10772,17 @@
   margin: 0;
 }
 
+/* A file path yields space to the direct action and wraps on narrow screens. */
+.ert-ui.ert-scope--modal .ert-export-history-file > a {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.ert-ui.ert-scope--modal .ert-delivery-signoff-body {
+  gap: var(--ert-gap-md);
+  padding-top: var(--ert-pad-xs);
+}
+
 .ert-ui.ert-scope--modal .ert-manuscript-source-details {
   gap: var(--ert-gap-lg);
   margin-top: var(--ert-gap-sm);

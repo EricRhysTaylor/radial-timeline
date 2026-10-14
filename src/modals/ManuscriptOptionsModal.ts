@@ -15,6 +15,8 @@ import { readSavedManuscripts, restoreSavedManuscript, saveManuscriptRecord } fr
 import { randomUUID } from 'crypto'; // SAFE: local saved manuscript identities, never credentials.
 import { deliveryFormat, readDeliveryReceipt, validateExportDestination, type ExportDeliveryReceipt } from '../publishing/exportDelivery';
 import { ExportDeliveryReviewModal } from './ExportDeliveryReviewModal';
+import { RecentExportsModal } from './RecentExportsModal';
+import { openExportedFile } from '../publishing/openExportedFile';
 import { ModalFolderSuggest } from '../settings/FolderSuggest';
 import { resolveExportOutputFolder } from '../utils/aiOutput';
 import { clearFontAvailabilityCache, ExportFormat, ExportType, ManuscriptPreset, OutlinePreset, getAutoPdfEngineSelection, resolveTemplatePath, validatePandocLayout, getTemplateFontDiagnostics, getStructuredFontDiagnostic } from '../utils/exportFormats';
@@ -244,7 +246,7 @@ export class ManuscriptOptionsModal extends Modal {
     private destinationInput?: HTMLInputElement;
     private destinationSummaryEl?: HTMLElement;
     private destinationErrorEl?: HTMLElement;
-    private reviewLastButton?: ButtonComponent;
+    private recentExportsButton?: ButtonComponent;
     private destinationSuggest?: ModalFolderSuggest;
     private savedManuscripts: SavedManuscriptSource[] = [];
     private savedSourceId?: string;
@@ -1130,6 +1132,11 @@ export class ManuscriptOptionsModal extends Modal {
             this.openPublishingSettings();
         });
 
+        const recentLink = bookContextRow.createEl('a', {
+            cls: 'ert-modal-meta-item', text: t('ui.exportDeliveryReviewModal.recentExports'), attr: { href: '#' }
+        });
+        recentLink.addEventListener('click', event => { event.preventDefault(); this.openRecentExports(); });
+
         this.sourceCard = container.createDiv({ cls: 'ert-panel ert-stack' });
         this.renderSourceCard();
 
@@ -1574,7 +1581,7 @@ export class ManuscriptOptionsModal extends Modal {
 
         this.openFileButton = new ButtonComponent(actions)
             .setButtonText(t('ui.manuscriptOptionsModal.openFile'))
-            .onClick(() => this.openOutcomeFile());
+            .onClick(() => { void this.openOutcomeFile(); });
         this.openFileButton.buttonEl.addClass('ert-hidden');
 
         this.cancelButton = new ButtonComponent(actions)
@@ -3442,6 +3449,13 @@ export class ManuscriptOptionsModal extends Modal {
 
     private updateActionButtonLabel(): void {
         this.actionButton?.setButtonText(this.getPrimaryActionLabel());
+        if (this.exportCompleted) {
+            this.actionButton?.removeCta();
+            this.openFileButton?.setCta();
+        } else {
+            this.actionButton?.setCta();
+            this.openFileButton?.removeCta();
+        }
     }
 
     private renderStatusPathGroup(label: string, paths: string[]): void {
@@ -3500,10 +3514,7 @@ export class ManuscriptOptionsModal extends Modal {
             this.updateDestinationUi();
             this.syncExportUi();
         });
-        this.reviewLastButton = new ButtonComponent(actions).setButtonText(t('ui.manuscriptOptionsModal.reviewLastExport')).onClick(() => {
-            const receiptPath = this.plugin.settings.lastExportDeliveryReceiptPath;
-            if (receiptPath) void this.openDeliveryReview(receiptPath);
-        });
+        this.recentExportsButton = new ButtonComponent(actions).setButtonText(t('ui.exportDeliveryReviewModal.recentExports')).onClick(() => this.openRecentExports());
         this.updateDestinationUi();
     }
 
@@ -3523,8 +3534,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.destinationSummaryEl?.setText(this.outputFormat === 'pdf' && this.saveMarkdownArtifact
             ? t('ui.manuscriptOptionsModal.destinationSummaryWorking', summaryVars)
             : t('ui.manuscriptOptionsModal.destinationSummary', summaryVars));
-        this.reviewLastButton?.buttonEl.toggleClass('ert-hidden', !this.plugin.settings.lastExportDeliveryReceiptPath);
-        this.reviewLastButton?.setDisabled(this.exportInFlight || this.proofLoading || this.sourceSaving);
+        this.recentExportsButton?.setDisabled(this.exportInFlight || this.proofLoading || this.sourceSaving);
         this.updateActionButtonDisabledState();
     }
 
@@ -3536,7 +3546,12 @@ export class ManuscriptOptionsModal extends Modal {
             ? t('ui.manuscriptOptionsModal.deliveryNeedsAttention', deliveryVars)
             : t('ui.manuscriptOptionsModal.deliveryPassed', deliveryVars) });
         for (const problem of receipt.problems) this.outputStatusEl.createDiv({ text: problem });
-        new ButtonComponent(this.outputStatusEl).setButtonText(t('ui.manuscriptOptionsModal.reviewExportedFiles')).onClick(() => { void this.openDeliveryReview(receipt.receiptPath); });
+        new ButtonComponent(this.outputStatusEl).setButtonText(t('ui.exportDeliveryReviewModal.details')).onClick(() => { void this.openDeliveryReview(receipt.receiptPath); });
+    }
+
+    private openRecentExports(): void {
+        if (this.exportInFlight || this.proofLoading || this.sourceSaving) return;
+        new RecentExportsModal(this.plugin, this.destination, () => this.close()).open();
     }
 
     private async openDeliveryReview(receiptPath: string): Promise<void> {
@@ -3682,19 +3697,14 @@ export class ManuscriptOptionsModal extends Modal {
             || null;
     }
 
-    private openOutcomeFile(): void {
+    private async openOutcomeFile(): Promise<void> {
         const filePath = this.getOutcomeFilePath();
-        if (!filePath) {
-            new Notice(t('ui.manuscriptOptionsModal.noOutputFile'));
-            return;
-        }
-        const file = this.app.vault.getAbstractFileByPath(filePath);
-        if (!file || !(file instanceof TFile)) {
-            new Notice(t('ui.manuscriptOptionsModal.fileNotFound', { path: filePath }));
-            return;
-        }
-        void this.app.workspace.openLinkText(filePath, '', 'tab');
-        this.close();
+        if (!filePath) { new Notice(t('ui.manuscriptOptionsModal.noOutputFile')); return; }
+        try {
+            const format = this.lastOutcome?.delivery?.format || deliveryFormat(this.buildSubmissionResult());
+            await openExportedFile(this.app, filePath, format);
+            this.close();
+        } catch (error) { new Notice(error instanceof Error ? error.message : t('ui.exportDeliveryReviewModal.fileNotOpened')); }
     }
 
     private registerPointerEvents(): void {

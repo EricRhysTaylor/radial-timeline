@@ -6,7 +6,7 @@ import { getReadabilityMultiplier } from '../../utils/readability';
 import { generateNumberSquareGroup, makeSceneId } from '../../utils/numberSquareHelpers';
 import { getTimelineScope } from '../../utils/books';
 import { getTimelineSegmentCount } from '../utils/TimelineSegments';
-import type { PositionInfo } from '../utils/SceneLayout';
+import { computeChronologueLayout, type PositionInfo } from '../utils/SceneLayout';
 
 interface SubplotRingPlacement {
   ring: number;
@@ -34,6 +34,7 @@ function resolveSubplotRingPlacement(params: {
   sortByWhen: boolean;
   isSagaScope: boolean;
   totalSegments: number;
+  referenceLayout?: Map<string, Map<number, PositionInfo>>;
   /** Sequence alignment: outer-ring angles keyed by scene. Absent in Fill. */
   outerPositionByKey?: Map<string, PositionInfo>;
 }): SubplotRingPlacement | null {
@@ -77,7 +78,12 @@ function resolveSubplotRingPlacement(params: {
   } else {
     const segmentSpan = sortByWhen ? 2 * Math.PI : (2 * Math.PI) / totalSegments;
     const segmentStart = sortByWhen ? -Math.PI / 2 : (segment * 2 * Math.PI) / totalSegments - Math.PI / 2;
-    startAngle = segmentStart + (sceneIndex * (segmentSpan / ringScenes.length));
+    if (params.referenceLayout) {
+      const layoutKey = `${segment}:${ring}`;
+      if (!params.referenceLayout.has(layoutKey)) params.referenceLayout.set(layoutKey,
+        computeChronologueLayout(ringStartRadii[ring], ringStartRadii[ring] + ringWidths[ring], segmentStart, segmentStart + segmentSpan, ringScenes).positions);
+      startAngle = params.referenceLayout.get(layoutKey)!.get(sceneIndex)!.startAngle;
+    } else startAngle = segmentStart + (sceneIndex * (segmentSpan / ringScenes.length));
   }
 
   const innerR = ringStartRadii[ring];
@@ -136,6 +142,7 @@ export function renderNumberSquaresUnified(params: {
   const squareScale = readabilityScale > 1 ? 1 + (readabilityScale - 1) * 0.75 : 1; // pad more aggressively when font grows
   const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
   const totalSegments = getTimelineSegmentCount(plugin.settings);
+  const referenceLayout = plugin.settings.currentMode === 'chronologue' ? new Map<string, Map<number, PositionInfo>>() : undefined;
 
   scenes.forEach((scene, idx) => {
     if (isBeatNote(scene) || scene.itemType === 'Backdrop') return;
@@ -170,7 +177,8 @@ export function renderNumberSquaresUnified(params: {
         scenesByActAndSubplot,
         sortByWhen: usesWhenOrdering(plugin.settings),
         isSagaScope,
-        totalSegments
+        totalSegments,
+        referenceLayout
       });
       if (!placement) return;
       sceneStartAngle = placement.startAngle;
@@ -288,6 +296,7 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
   const squareScale = readabilityScale > 1 ? 1 + (readabilityScale - 1) * 0.75 : 1;
   const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
   const totalSegments = getTimelineSegmentCount(plugin.settings);
+  const referenceLayout = plugin.settings.currentMode === 'chronologue' ? new Map<string, Map<number, PositionInfo>>() : undefined;
 
   const sortByWhen = usesWhenOrdering(plugin.settings);
 
@@ -307,6 +316,7 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
       sortByWhen,
       isSagaScope,
       totalSegments,
+      referenceLayout,
       outerPositionByKey
     });
     if (!placement) return;

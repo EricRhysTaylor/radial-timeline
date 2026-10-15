@@ -1,3 +1,4 @@
+import { setupTimeReferenceInteractions } from '../../chronologue/timeReferences/interactions';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -43,6 +44,7 @@ export function setupChronologueMode(view: RadialTimelineView, svg: SVGSVGElemen
 
     setupSceneContextMenu(view, svg);
     linkSceneHoverToTimetable(view, svg);
+    setupTimeReferenceInteractions(view, svg);
 }
 
 /**

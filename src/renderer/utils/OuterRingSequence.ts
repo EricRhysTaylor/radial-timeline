@@ -19,7 +19,7 @@
 import type { TimelineItem } from '../../types';
 import { isBeatNote, sceneKey, sortScenes } from '../../utils/sceneHelpers';
 import { resolveDominantScene } from '../components/SubplotDominanceIndicators';
-import { computePositions, type PositionInfo } from './SceneLayout';
+import { computePositions, computeChronologueLayout, type PositionInfo } from './SceneLayout';
 
 export interface OuterRingSequence {
     /** Deduped, dominance-resolved, sorted items in draw order. */
@@ -37,6 +37,7 @@ export interface OuterRingSequence {
      * candidate. The caller owns settings, so the caller clears them.
      */
     staleDominantPaths: string[];
+    referenceSlots: import('../../chronologue/timeReferences/layout').ReferenceSlot[];
 }
 
 export function buildOuterRingSequence(params: {
@@ -117,7 +118,10 @@ export function buildOuterRingSequence(params: {
     });
 
     const items = sortScenes(combined, sortByWhen, forceChronological, scenes);
-    const positions = computePositions(innerR, outerR, startAngle, endAngle, items);
+    const layout = forceChronological
+        ? computeChronologueLayout(innerR, outerR, startAngle, endAngle, items)
+        : { positions: computePositions(innerR, outerR, startAngle, endAngle, items), slots: [] };
+    const positions = layout.positions;
 
     const positionByKey = new Map<string, PositionInfo>();
     items.forEach((item, idx) => {
@@ -126,5 +130,5 @@ export function buildOuterRingSequence(params: {
         if (position) positionByKey.set(sceneKey(item), position);
     });
 
-    return { items, positions, positionByKey, staleDominantPaths };
+    return { items, positions, positionByKey, staleDominantPaths, referenceSlots: layout.slots };
 }

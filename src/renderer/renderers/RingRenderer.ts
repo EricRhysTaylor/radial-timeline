@@ -1,3 +1,5 @@
+import { renderTimeReferenceSlices } from '../../chronologue/timeReferences/render';
+import type { ReferenceSlot } from '../../chronologue/timeReferences/layout';
 import { readSubplotColor } from '../utils/subplotColors';
 import type { TimelineItem } from '../../types';
 import { formatNumber, escapeXml } from '../../utils/svg';
@@ -17,7 +19,7 @@ import {
     PADDING_RENDER_PX,
     SCENE_TITLE_INSET
 } from '../layout/LayoutConstants';
-import { alignPositionsToOuterRing, computePositions, computeVoidSpans, type PositionInfo } from '../utils/SceneLayout';
+import { alignPositionsToOuterRing, computeChronologueLayout, computePositions, computeVoidSpans, type PositionInfo } from '../utils/SceneLayout';
 import { buildOuterRingSequence } from '../utils/OuterRingSequence';
 import { getFillForScene } from '../utils/SceneFill';
 import { estimatePixelsFromTitle, toBeatRingLabel } from '../utils/LabelMetrics';
@@ -103,6 +105,7 @@ export function renderRings(ctx: RingRenderContext): string {
         // read by its subplot rings. Stays undefined when there is no
         // all-scenes outer ring to align against.
         let outerPositionByKey: Map<string, PositionInfo> | undefined;
+        let outerReferenceSlots: ReferenceSlot[] = [];
         const totalRings = NUM_RINGS;
         const subplotCount = masterSubplotOrder.length;
         const ringsToUse = Math.min(subplotCount, totalRings);
@@ -150,6 +153,7 @@ export function renderRings(ctx: RingRenderContext): string {
                 });
                 const { items: sortedCombined, positions } = sequence;
                 outerPositionByKey = sequence.positionByKey;
+                outerReferenceSlots = sequence.referenceSlots;
 
                 // A stored preference that matches no candidate is stale — drop it.
                 const dominantSubplots = plugin.settings.dominantSubplots;
@@ -317,6 +321,8 @@ export function renderRings(ctx: RingRenderContext): string {
                     });
                 });
                 svg += ringScenesSvg;
+                svg += renderTimeReferenceSlices(sortedCombined, positions, sequence.referenceSlots, innerR, outerR, ring,
+                    scene => getFillForScene(scene, PUBLISH_STAGE_COLORS, subplotColorFor, true, forceSubplotFillColors));
 
                 continue; // Continue to next ring loop (which iterates rings for this act)
             }
@@ -331,9 +337,15 @@ export function renderRings(ctx: RingRenderContext): string {
                 // Sequence: each scene sits at its outer-ring angle, leaving real
                 // gaps where this subplot is absent. Fill: spread across the segment.
                 const isAlignedRing = isSequenceAlignment && outerPositionByKey !== undefined;
+                const referenceLayout = isChronologueMode && !isAlignedRing
+                    ? computeChronologueLayout(innerR, outerR, startAngle, endAngle, effectiveScenes) : null;
                 const scenePositions = (isAlignedRing && outerPositionByKey)
                     ? alignPositionsToOuterRing(effectiveScenes, outerPositionByKey)
-                    : computePositions(innerR, outerR, startAngle, endAngle, effectiveScenes);
+                    : referenceLayout?.positions ?? computePositions(innerR, outerR, startAngle, endAngle, effectiveScenes);
+                const paths = new Set(effectiveScenes.map(scene => scene.path));
+                const referenceSlots = referenceLayout?.slots ?? (isChronologueMode && isAlignedRing
+                    ? outerReferenceSlots.map(slot => ({ ...slot, references: slot.references.filter(ref => paths.has(ref.path)) }))
+                        .filter(slot => slot.references.length > 0) : []);
 
                 let ringScenesSvg = '';
                 effectiveScenes.forEach((scene, idx) => {
@@ -415,6 +427,8 @@ export function renderRings(ctx: RingRenderContext): string {
                     });
                 });
                 svg += ringScenesSvg;
+                svg += renderTimeReferenceSlices(effectiveScenes, scenePositions, referenceSlots, innerR, outerR, ring,
+                    scene => getFillForScene(scene, PUBLISH_STAGE_COLORS, subplotColorFor, isAllScenesMode, forceSubplotFillColors));
             } else {
                 // No scenes, render empty void ring
                 svg += renderVoidCellPath(innerR, outerR, startAngle, endAngle, {

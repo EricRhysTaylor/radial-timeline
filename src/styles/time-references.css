@@ -1,0 +1,32 @@
+/* Radial Timeline references follow each ring's own bottom radius. */
+.ert-time-reference-connector {
+    pointer-events: none;
+    opacity: 0;
+    stroke-width: 1px;
+    vector-effect: non-scaling-stroke;
+}
+.ert-time-reference-connector.is-related { opacity: 0.22; }
+.ert-time-reference-connector.is-active { opacity: 1; stroke-width: 1.5px; }
+.ert-time-reference-hit { pointer-events: stroke; cursor: pointer; }
+.ert-time-reference-slice { pointer-events: none; }
+.ert-time-reference.is-active .ert-time-reference-slice { stroke: var(--text-normal); stroke-width: 1px; }
+.ert-time-reference-source .rt-scene-path { stroke: var(--interactive-accent); stroke-width: 2px; }
+.ert-time-reference-filtered,
+.ert-time-reference-connector.ert-time-reference-filtered,
+.ert-time-reference.rt-non-selected,
+.ert-time-reference-connector.rt-non-selected { opacity: 0.08; pointer-events: none; }
+.ert-time-reference-count { fill: var(--text-normal); font-size: 12px; text-anchor: middle; pointer-events: none; }
+.ert-time-reference-row td { padding-inline-start: var(--size-4-8); }
+.ert-time-reference-open {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--size-4-3);
+    min-height: var(--size-4-8);
+    background: transparent;
+    box-shadow: none;
+    text-align: start;
+}
+.ert-time-reference-open svg { width: var(--icon-s); height: var(--icon-s); }
+.ert-time-reference-date { font-variant-numeric: tabular-nums; }
+.ert-time-reference-row.is-reference-selected { background: var(--background-modifier-hover); }

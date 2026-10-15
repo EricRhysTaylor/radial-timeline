@@ -1,8 +1,9 @@
 # Chronologue time references
 
-Status: implementation proposal, 2026-10-14. The visual direction and subplot
-inheritance below were agreed in the design conversation. The schema and
-implementation details are proposals. No runtime feature has been implemented.
+Status: manual prototype implemented, 2026-10-14. The visual direction, author
+property, inherited subplot occurrences, editor, and Timetable integration below
+are implemented. Native acceptance used an isolated synthetic test vault.
+Automatic extraction remains subsequent work; no public release is implied.
 
 ## Purpose
 
@@ -50,9 +51,9 @@ cross-scene event deduplication, alternate-history branches, and standalone
 linear timeline development are subsequent work. Do not introduce their
 persistence or service scaffolding in the first implementation.
 
-## Proposed author data
+## Author data
 
-An optional advanced author property, provisionally `Time References`, contains
+An optional advanced author property, `Time References`, contains
 declarations such as this synthetic example:
 
 ```yaml
@@ -115,17 +116,18 @@ accepted declarations.
 
 ## Chronological placement
 
-The first engineering spike must settle placement before interaction work.
-Current layouts allocate fixed-width beat slots and equal remaining scene
-slots; a reference must not receive an equal full-scene slot.
+Placement extends the existing beat/scene allocation with a separate narrow
+reference slot; references never receive full-scene slots.
 
-Proposed approach:
+Implemented approach:
 
 - Merge primary scenes and references into one ordered placement input, tagged
   by entry kind. Preserve the current primary-scene order and undated-follower
   rules. Use precision-aware reference bounds for display ordering only.
 - Reserve narrow reference slots, then distribute remaining angular space to
-  primary scenes. Derive labels and tick anchors from the resulting positions.
+  primary scenes. Derive primary perimeter labels and tick anchors from the
+  resulting positions. Reference dates appear in tooltips and nested rows,
+  avoiding colliding perimeter labels beside the narrow slices.
 - Compute final positions with the existing Fill and Sequence layout choices.
   Sequence occurrences follow the outer ring; Fill occurrences use that ring's
   order. Never infer an inner-ring reference angle from outer geometry when
@@ -133,9 +135,9 @@ Proposed approach:
 - A shared declared year does not establish event order within that year.
   Ties use deterministic source ordering and remain labeled at their actual
   precision. A period's marker identifies the period; its width is not duration.
-- Define a bounded density policy in the spike. Group colliding reference
-  markers with an explicit count and a selectable list when narrow slots
-  cannot fit. Keep every declaration available in the Timetable. Do not erase
+- Reserve at most one quarter of a ring for reference slots. Group dense
+  chronological entries with an explicit count and a selectable list when
+  narrow slots cannot fit. Keep every declaration available in the Timetable. Do not erase
   entries, draw over primary scenes, or let allocations become negative.
 - Derive connector radii from the final parent/reference ring geometry. Both
   endpoints must have that ring's inner radius. Route earlier/later references
@@ -221,7 +223,20 @@ acceptance flow. `build-only` avoids the auto-backup behavior of `npm run build`
 
 ## Current delivery state
 
-The interactive concept was tested for linked hover/click, disclosure, light and
-dark appearance, narrow layouts, and circular connector geometry. That is design
-evidence only. No plugin implementation, installed-vault change, native feature
-acceptance, or release is claimed by this plan.
+The manual prototype is implemented in `src/chronologue/timeReferences/`.
+Right-click a Scene file to manage its references, or select prose and use the
+editor menu's Add time reference action. First use explicitly enrolls the field
+in the advanced Scene template; it does not populate existing scenes.
+
+Native acceptance in the isolated **Chronologue References QA** vault covered
+three primary scenes, three references on one scene across three visible rings,
+Fill/Sequence, nested rows, linked selection, exact passage highlighting,
+creation, Undo, and a rejected stale write. The status count stayed at three.
+Source dates and surrounding prose were preserved. Native inspector checks
+confirmed that the reference chrome's CSS tokens resolve to values.
+
+No author manuscript or installed author-vault plugin was changed. Only the QA
+vault received the build. Automatic extraction, native large-manuscript density
+and performance, mobile/touch, and complete alternate-calendar acceptance remain
+outside this prototype's native evidence. See the [feature audit](../audits/2026-10-14-chronologue-time-references.md) for
+verification results and remaining concerns.

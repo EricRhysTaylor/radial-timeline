@@ -1,3 +1,4 @@
+import { computeChronologueLayout } from './SceneLayout';
 /*
  * Helper to generate outer label data for Chronologue mode.
  */
@@ -35,7 +36,9 @@ export type ChronologueLabel = {
 
 export function buildChronologueOuterLabels(
     plugin: PluginRendererFacade,
-    scenes: TimelineItem[]
+    scenes: TimelineItem[],
+    innerR: number,
+    outerR: number
 ): ChronologueLabel[] {
     const stopChronoLabels = startPerfSegment(plugin, 'timeline.chronologue-labels');
     const startAngle = -Math.PI / 2;
@@ -48,17 +51,9 @@ export function buildChronologueOuterLabels(
         .filter((when): when is Date => when instanceof Date && !isNaN(when.getTime()));
     const timeSpan = validDates.length > 0 ? calculateTimeSpan(validDates) : undefined;
 
-    const sceneStartAngles: number[] = [];
-    let sceneAngularSize = 0;
-    if (sortedScenes.length > 0) {
-        const totalAngularSpace = endAngle - startAngle;
-        sceneAngularSize = totalAngularSpace / sortedScenes.length;
-
-        sortedScenes.forEach((_, idx) => {
-            const sceneStartAngle = startAngle + (idx * sceneAngularSize);
-            sceneStartAngles.push(sceneStartAngle);
-        });
-    }
+    const layout = computeChronologueLayout(innerR, outerR, startAngle, endAngle, sortedScenes);
+    const sceneStartAngles = sortedScenes.map((_, idx) => layout.positions.get(idx)!.startAngle);
+    const sceneAngularSize = layout.positions.get(0)?.angularSize ?? 0;
 
     const chronoTicks = generateChronologicalTicks(sortedScenes, sceneStartAngles, sceneAngularSize, timeSpan);
     const outerLabels = chronoTicks.map(tick => ({
@@ -71,6 +66,8 @@ export function buildChronologueOuterLabels(
         sceneIndex: tick.sceneIndex,
         earthDate: tick.earthDate
     }));
+    // Reference dates live on their slice tooltip and Timetable subrow. A narrow
+    // reference slot beside a scene boundary cannot fit another perimeter label.
     stopChronoLabels();
     return outerLabels;
 }

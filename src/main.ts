@@ -1,3 +1,4 @@
+import { registerTimeReferences } from './chronologue/timeReferences/editor';
 import { registerManualTime } from './sceneTime/ManualTimeModal';
 /* global __RT_DEV__ -- build-time flags injected by esbuild define; see esbuild.config.mjs */
 /*
@@ -663,6 +664,7 @@ export default class RadialTimelinePlugin extends Plugin {
         this.outputProfileStore = new OutputProfileStore(this);
         void this.outputProfileStore.ensureLoaded();
         this.sceneDataService = new SceneDataService(this.app, this.settings);
+        registerTimeReferences(this);
         const sceneTimeService = this.addChild(new SceneTimeService(this));
         await sceneTimeService.initialize();
         registerManualTime(sceneTimeService);

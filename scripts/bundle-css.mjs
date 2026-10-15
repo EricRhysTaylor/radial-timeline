@@ -53,6 +53,7 @@ const files = [
     'indicators.css',
     // Chronologue partials (order matters: base first, then mode overrides)
     'chronologue-base.css',
+    'time-references.css',
     'chronologue-shift.css',
     'chronologue-alt.css',
     'chronologue-runtime.css',

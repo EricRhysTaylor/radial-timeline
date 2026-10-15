@@ -344,7 +344,7 @@ export function createTimelineSVG(
 
     let outerLabels: { name: string; shortName: string; angle: number; isMajor?: boolean; isFirst?: boolean; isLast?: boolean; sceneIndex?: number }[];
     if (isChronologueMode) {
-        outerLabels = buildChronologueOuterLabels(plugin, scenes);
+        outerLabels = buildChronologueOuterLabels(plugin, scenes, ringStartRadii[NUM_RINGS - 1], ringStartRadii[NUM_RINGS - 1] + ringWidths[NUM_RINGS - 1]);
     } else {
         outerLabels = standardMonths;
     }

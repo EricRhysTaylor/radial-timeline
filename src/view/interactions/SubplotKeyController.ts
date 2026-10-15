@@ -135,6 +135,9 @@ export function setupSubplotKeyController(
         // Scene paths and titles live inside ring-stamped groups; number
         // squares/text live in their own layer keyed by data-scene-id, which
         // matches the group path's id — same lookup scene hover uses.
+        svg.querySelectorAll('.ert-time-reference, .ert-time-reference-connector').forEach(reference => {
+            if (reference.getAttribute('data-ring') !== String(ring)) dim(reference);
+        });
         const keepSceneIds = new Set<string>();
         svg.querySelectorAll('.rt-scene-group').forEach(group => {
             const path = group.querySelector('.rt-scene-path');

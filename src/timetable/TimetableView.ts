@@ -1,3 +1,6 @@
+import { readTimeReferences, referenceDateLabel, TIME_REFERENCES_KEY, type TimeReference } from '../chronologue/timeReferences/model';
+import { manageTimeReferences, openTimeReference } from '../chronologue/timeReferences/editor';
+import { currentReferenceSelection, hoverTimeReference, onReferenceSelection, pinTimeReference } from '../chronologue/timeReferences/selection';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -273,6 +276,7 @@ export class TimetableView extends BasesView {
     private readonly selected = new Set<string>();
     private lastToggled: string | null = null;
     private readonly rowItems = new Map<string, TableItem>();
+    private readonly expandedReferences = new Set<string>();
     private readonly groupHeaderEls = new Map<string, HTMLElement>();
     private readonly groupIdForAct = new Map<number, string>();
     private readonly actDividerEls = new Map<number, HTMLElement>();
@@ -292,6 +296,14 @@ export class TimetableView extends BasesView {
 
     onload(): void {
         this.register(trackTimetable(this));
+        this.register(onReferenceSelection(selection => {
+            if (selection?.reveal && this.rowEls.has(selection.path) && !this.expandedReferences.has(selection.path)) {
+                this.expandedReferences.add(selection.path); this.render();
+            }
+            this.markLinkedRow(selection?.path ?? null, null, false);
+            this.rootEl.querySelectorAll<HTMLElement>('.ert-time-reference-row').forEach(row =>
+                row.toggleClass('is-reference-selected', row.dataset.referenceKey === selection?.key));
+        }));
         this.setUpKey();
         // One set of delegated handlers: rows are redrawn on every data update.
         this.registerDomEvent(this.rootEl, 'click', (evt: MouseEvent) => this.handleClick(evt));
@@ -314,13 +326,27 @@ export class TimetableView extends BasesView {
         this.registerDomEvent(this.rootEl, 'pointercancel', () => this.endResize());
         // Hovering a scene's row lights it up on the wheel.
         this.registerDomEvent(this.rootEl, 'mouseover', (evt: MouseEvent) => {
+            if (evt.target instanceof Element && evt.target.closest('.ert-time-reference-row')) {
+                const reference = this.referenceAt(evt.target);
+                hoverTimeReference(reference ? { path: reference.path, key: reference.key } : null);
+                return;
+            }
             const row = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__row.is-scene') : null;
             const path = row?.dataset.path ?? null;
+            hoverTimeReference(path ? { path, key: '' } : null);
             if (path === this.hoveredPath) return;
             this.hoveredPath = path;
             this.plugin.highlightSceneOnTimeline(path);
         });
+        this.registerDomEvent(this.rootEl, 'focusin', evt => {
+            const reference = this.referenceAt(evt.target);
+            if (reference) hoverTimeReference({ path: reference.path, key: reference.key });
+        });
+        this.registerDomEvent(this.rootEl, 'focusout', evt => {
+            if (this.referenceAt(evt.target)) hoverTimeReference(null);
+        });
         this.registerDomEvent(this.rootEl, 'mouseleave', () => {
+            hoverTimeReference(null);
             if (this.hoveredPath === null) return;
             this.hoveredPath = null;
             this.plugin.highlightSceneOnTimeline(null);
@@ -379,7 +405,7 @@ export class TimetableView extends BasesView {
     }
 
     /** The wheel is hovering this scene: light up its row and bring it into view. */
-    markLinkedRow(path: string | null, color: string | null): void {
+    markLinkedRow(path: string | null, color: string | null, reveal = true): void {
         if (this.linkedRow) {
             this.linkedRow.removeClass('is-linked');
             this.linkedRow.setCssProps({ '--ert-timetable-link-color': '' });
@@ -388,7 +414,7 @@ export class TimetableView extends BasesView {
         if (!this.linkedRow) return;
         this.linkedRow.addClass('is-linked');
         if (color) this.linkedRow.setCssProps({ '--ert-timetable-link-color': color });
-        this.linkedRow.scrollIntoView({ block: 'nearest' });
+        if (reveal) this.linkedRow.scrollIntoView({ block: 'nearest' });
     }
 
     /** A note was opened in an editor: mark its row (and bring it into view). */
@@ -600,9 +626,34 @@ export class TimetableView extends BasesView {
         }, evt);
     }
 
+    private referenceAt(target: EventTarget | null): TimeReference | undefined {
+        const row = target instanceof Element ? target.closest<HTMLElement>('.ert-time-reference-row[data-reference-key]') : null;
+        const item = this.rowItems.get(row?.dataset.sourcePath ?? '');
+        return item ? readTimeReferences(item.frontmatter?.[TIME_REFERENCES_KEY], item.row.path).references.find(ref => ref.key === row?.dataset.referenceKey) : undefined;
+    }
+
     private handleClick(evt: MouseEvent): void {
         const target = evt.target instanceof Element ? evt.target : null;
         if (!target) return;
+        const referenceToggle = target.closest<HTMLElement>('.ert-time-reference-toggle');
+        if (referenceToggle) {
+            evt.stopPropagation();
+            const path = referenceToggle.closest<HTMLElement>('[data-path]')?.dataset.path;
+            if (path) { if (!this.expandedReferences.delete(path)) this.expandedReferences.add(path); this.render(); }
+            return;
+        }
+        const reference = this.referenceAt(target);
+        if (reference && target.closest('.ert-time-reference-open')) {
+            evt.stopPropagation(); pinTimeReference({ path: reference.path, key: reference.key });
+            void openTimeReference(this.plugin, reference, this.rootEl); return;
+        }
+        const manage = target.closest<HTMLElement>('[data-time-reference-manage]');
+        if (manage) {
+            evt.stopPropagation();
+            const item = this.rowItems.get(manage.dataset.timeReferenceManage ?? '');
+            if (item) manageTimeReferences(this.plugin, item.entry.file);
+            return;
+        }
         const toggle = target.closest<HTMLElement>('.ert-timetable__group-toggle');
         if (toggle) {
             this.toggleGroup(toggle.dataset.groupId ?? '');
@@ -1277,6 +1328,7 @@ export class TimetableView extends BasesView {
                 const item = byPath.get(line.row.path);
                 if (!item) continue;
                 this.renderRow(body, item, columns, showRings ? layout : null, columnCount, mode);
+                if (item.row.kind === 'scene') this.renderTimeReferences(body, item, columnCount);
                 if (item.row.kind === 'sketch' && this.drawerIsOpen(item.row.path)) {
                     this.renderDrawer(body, item, layout, columnCount);
                     openDrawers.add(item.row.path);
@@ -1610,6 +1662,30 @@ export class TimetableView extends BasesView {
         }
     }
 
+    private renderTimeReferences(body: HTMLElement, item: TableItem, columnCount: number): void {
+        if (!this.expandedReferences.has(item.row.path)) return;
+        const snapshot = readTimeReferences(item.frontmatter?.[TIME_REFERENCES_KEY], item.row.path);
+        const icons = { enacted: 'clapperboard', recollection: 'history', mention: 'scroll-text', possibility: 'telescope' };
+        for (const reference of snapshot.references) {
+            const row = body.createEl('tr', { cls: 'ert-time-reference-row' });
+            row.dataset.referenceKey = reference.key;
+            row.dataset.sourcePath = reference.path;
+            row.toggleClass('is-reference-selected', currentReferenceSelection()?.key === reference.key);
+            const cell = row.createEl('td'); cell.colSpan = columnCount;
+            const button = cell.createEl('button', { cls: 'ert-time-reference-open' });
+            setIcon(button.createSpan(), icons[reference.kind]);
+            button.createSpan({ text: reference.label });
+            button.createSpan({ cls: 'ert-time-reference-date', text: this.modeState().alt ? `${referenceDateLabel(reference)} · ${t('timeReferences.earthCalendar')}` : referenceDateLabel(reference) });
+            button.createSpan({ text: t(`timeReferences.kinds.${reference.kind}`) });
+            tooltip(button, [reference.passage, displayName(item.row.basename)].filter(Boolean).join(' · '));
+        }
+        const cell = body.createEl('tr', { cls: 'ert-time-reference-row' }).createEl('td'); cell.colSpan = columnCount;
+        if (snapshot.problems.length) cell.createSpan({ text: snapshot.problems[0].index < 0
+            ? t('timeReferences.invalidArray') : t('timeReferences.invalidEntry', { number: snapshot.problems[0].index + 1 }) });
+        const manage = cell.createEl('button', { text: t('timeReferences.manage') });
+        manage.dataset.timeReferenceManage = item.row.path;
+    }
+
     private renderNumberCell(cell: HTMLElement, item: TableItem): void {
         const { row, frontmatter } = item;
         // Pick rows for a bulk edit; other rows keep the space so numbers line up.
@@ -1627,6 +1703,13 @@ export class TimetableView extends BasesView {
             toggle.setAttr('aria-expanded', String(open));
             toggle.setAttr('aria-label', t('ui.timetable.toggleSketch'));
             setIcon(toggle, open ? 'chevron-down' : 'chevron-right');
+        }
+        if (row.kind === 'scene' && frontmatter?.[TIME_REFERENCES_KEY] !== undefined) {
+            const toggle = cell.createEl('button', { cls: 'ert-time-reference-toggle clickable-icon' });
+            const count = readTimeReferences(frontmatter[TIME_REFERENCES_KEY], row.path).references.length;
+            toggle.setAttr('aria-expanded', String(this.expandedReferences.has(row.path)));
+            toggle.setAttr('aria-label', t('timeReferences.references', { count }));
+            setIcon(toggle, this.expandedReferences.has(row.path) ? 'chevron-down' : 'history');
         }
         const chip = cell.createDiv({ cls: 'ert-timetable__chip' });
         const svg = chip.createSvg('svg', { attr: { viewBox: '0 0 40 22', width: '40', height: '22', 'aria-hidden': 'true' } });

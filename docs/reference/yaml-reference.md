@@ -19,6 +19,7 @@ Complete guide to frontmatter fields used in Radial Timeline. This YAML must be 
 |-------|------|-------------|
 | `When` | Date | In-world date (YYYY-MM-DD or ISO format) |
 | `Synopsis` | String | Brief description of what happens |
+| `Time References` | Array | Optional periods referenced within a scene; see below |
 | `Character` | Array | Characters on stage (link to character notes) |
 | `Publish Stage` | String | Progress stage: `Zero`, `Author`, `House`, or `Press` |
 | `Iteration` | Number | Edit iteration count (leave blank until stage > zero) |
@@ -40,6 +41,49 @@ Status: Todo
 Subplot: Main Plot
 ---
 ```
+
+### Time references within a scene
+
+A scene keeps its primary `When`. Optional `Time References` declarations place
+short markers at other dates in Chronologue and add expandable Timetable rows.
+They inherit the scene's visible subplot rings and do not increase scene counts,
+word totals, elapsed gaps, or Runtime.
+
+Right-click a Scene file and choose **Time references**, or select prose in the
+editor and choose **Add time reference**. The editor first offers explicit
+enrollment in the advanced Scene template. It does not add empty arrays to
+existing notes. There is no automatic prose scan in this version.
+
+```yaml
+When: "2026-10-14"
+Time References:
+  - Label: The station fire
+    When: "1952"
+    Kind: recollection
+    Passage: "She remembered the fire of 1952."
+  - Label: The years of letters
+    When: "1986"
+    End: "1989"
+    Kind: mention
+  - Label: The proposed departure
+    When: "2040"
+    Kind: possibility
+```
+
+Each entry requires `Label`, `When`, and `Kind`. The kinds are `enacted`,
+`recollection`, `mention`, and `possibility`. Optional `End` describes a stated
+period; the slice's width does not represent duration. Optional `Passage` is an
+exact prose excerpt: navigation highlights a unique current match. Missing or
+repeated excerpts are reported rather than relocated by guesswork.
+
+**Quote reference dates.** Supported forms are `YYYY`, `YYYY-MM`, `YYYY-MM-DD`,
+and a full day followed by `HH:mm` or `HH:mm:ss` (space or `T` separator).
+Year/month precision is preserved; a year does not assert January 1. These are
+Earth-calendar dates, including when the main wheel uses a planetary display.
+Relative expressions and malformed dates stay visible as validation problems
+and receive no invented position. Unknown entry properties are preserved by the
+editor. Concurrent changes are checked before saving; the modal also offers Undo
+for its last successful change.
 
 ### Standard Scene
 

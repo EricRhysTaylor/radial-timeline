@@ -60,6 +60,13 @@ export function htmlToText(html: string): string {
   let text = html
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/<(script|style)[\s\S]*?<\/\1>/gi, '');
+  // Gutenberg uses div.verse (new editions) and span.i0/i2 (older editions).
+  // Their closes are LINE breaks; the enclosing stanza remains a paragraph.
+  // Inline emphasis and footnote anchors are stripped by the normal pass below.
+  text = text.replace(
+    /<(div|span)\b[^>]*\bclass\s*=\s*["'][^"']*\b(?:verse|i\d+)\b[^"']*["'][^>]*>([\s\S]*?)<\/\1>\s*/gi,
+    (_whole, _tag: string, line: string) => `${line.trim()}\n`
+  );
   // Block-level tags become paragraph breaks; <br> a single newline.
   text = text
     .replace(/<br\s*\/?>(?!\n)/gi, '\n')
@@ -75,7 +82,7 @@ export function htmlToText(html: string): string {
 
 /** A standalone division heading line: BOOK/CHAPTER/PART/CANTO/LETTER + numeral. */
 const HEADING_RE =
-  /^\s*(?:BOOK|CHAPTER|PART|CANTO|LETTER)\s+(?:[IVXLCDM]+|\d+|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|ELEVEN|TWELVE)\b[.:]?\s*$/i;
+  /^\s*(?:BOOK|CHAPTER|PART|CANTO|CANT\.|LETTER)\s+(?:[IVXLCDM]+|\d+|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|ELEVEN|TWELVE)\b[.:]?\s*$/i;
 /** A Markdown division heading (# / ## / ###). */
 const MD_HEADING_RE = /^\s{0,3}#{1,3}\s+\S/;
 
@@ -85,7 +92,7 @@ export function isDivisionHeading(line: string): boolean {
 
 /** Title-case a heading, keeping Roman-numeral tokens uppercase. "BOOK IV." → "Book IV". */
 export function normalizeHeading(line: string): string {
-  const cleaned = line.replace(/^\s{0,3}#{1,3}\s+/, '').replace(/[.:]\s*$/, '').trim();
+  const cleaned = line.replace(/^\s{0,3}#{1,3}\s+/, '').replace(/[.:]\s*$/, '').trim().replace(/^cant\.\s+/i, 'Canto ');
   return cleaned
     .split(/\s+/)
     .map((word) => {
@@ -93,6 +100,15 @@ export function normalizeHeading(line: string): string {
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     })
     .join(' ');
+}
+
+/** Explicit heading hierarchy; repeated child numbers belong to their parent. */
+function divisionLevel(line: string): number {
+  const markdown = line.match(/^\s{0,3}(#{1,3})\s/);
+  if (markdown) return markdown[1].length;
+  if (/^\s*PART\b/i.test(line)) return 1;
+  if (/^\s*BOOK\b/i.test(line)) return 2;
+  return 3; // Chapters, cantos, and letters are peer divisions within a book.
 }
 
 /**
@@ -103,11 +119,15 @@ export function normalizeHeading(line: string): string {
 export function detectDivisions(text: string): DetectedDivision[] {
   const lines = text.split(/\r?\n/);
   const divisions: DetectedDivision[] = [];
+  const parents: Array<{ level: number; title: string }> = [];
   let current: { title: string; lines: string[] } | null = null;
   for (const line of lines) {
     if (isDivisionHeading(line)) {
       if (current) divisions.push({ title: current.title, body: current.lines.join('\n').trim() });
-      current = { title: normalizeHeading(line), lines: [] };
+      const level = divisionLevel(line);
+      while (parents.length > 0 && parents[parents.length - 1].level >= level) parents.pop();
+      parents.push({ level, title: normalizeHeading(line) });
+      current = { title: parents.map((parent) => parent.title).join(' — '), lines: [] };
     } else if (current) {
       current.lines.push(line);
     }
@@ -122,7 +142,7 @@ export function detectDivisions(text: string): DetectedDivision[] {
   const withBody = divisions.filter((division) => division.body.length > 0);
   // A Gutenberg table of contents repeats every heading ("BOOK I" … "BOOK XXIV")
   // before the real text; the last TOC entry swallows the preface as its body.
-  // When a title repeats, the REAL division is the last occurrence — keep it,
+  // When a full heading path repeats, the REAL division is the last occurrence — keep it,
   // which drops the TOC duplicates (and the front matter they captured).
   const lastIndex = new Map<string, number>();
   withBody.forEach((division, i) => {

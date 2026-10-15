@@ -1,6 +1,6 @@
 # Sample vaults — implemented contract
 
-Updated October 4, 2026. The Inquiry sidecar remains the demo-detection and saved-results contract. Multi-book collections additionally carry the explicit book list below; no hidden import marker or demo-state switch is used.
+Updated October 14, 2026. The Inquiry sidecar remains the demo-detection and saved-results contract. Multi-book collections additionally carry the explicit book list below; no hidden import marker or demo-state switch is used. Preparation states are separate from published sample availability.
 
 ## Portable content
 
@@ -12,7 +12,7 @@ The Inquiry sessions sidecar carries saved results and the active book identity.
 
 The welcome hero **Explore a finished book** opens the demo chooser directly. A detected sample retains its open action and a secondary **Browse demo projects** action. Settings → Demo vaults opens the same chooser for nonempty vaults. Manual ZIP downloads remain direct links; the website is optional.
 
-The shared catalog in `src/settings/bonusVaults.ts` owns availability, manuscript folders, counted download URLs, archive roots, exact byte sizes and SHA-256 digests. Only reviewed public editions are importable. P&P and Odyssey are available; Sherlock stays disabled until its reviewed candidate has a verified public download. Publishing a revised ZIP requires updating the pinned catalog digest and size.
+The shared catalog in `src/settings/bonusVaults.ts` owns availability, manuscript folders, counted download URLs, archive roots, exact byte sizes and SHA-256 digests. Only reviewed public editions are importable. P&P, Odyssey and the four-novel Sherlock collection are available. The Faerie Queene remains coming soon, without an archive in the catalog. Publishing a revised ZIP requires updating the pinned catalog digest and size.
 
 **Add demo to this vault** validates and unpacks the complete archive before writes. It rejects unsafe paths, unsupported files, oversized archives, duplicate manuscript IDs, missing books and invalid saved evidence. Files are written into a uniquely owned staging folder under `Radial Timeline/Demo Imports/`, then the complete folder is moved to:
 
@@ -51,7 +51,7 @@ books:
 
 The list defines collection order and the opening book. The welcome action validates every folder before adding missing Book Manager profiles. Reopening reuses profiles by folder and preserves author titles, IDs, order and Saga choices. Missing folders, unsupported schemas, overlapping folders and malformed lists surface an error instead of registering part of the collection. The collection name takes precedence over the Inquiry sidecar's active-book name.
 
-Inquiry's saved-question lookup matches both question and book scope key; a later answer from another novel cannot replace the selected novel's answer. Saga answers remain separate. This requires the updated plugin; it is not a claim that Sherlock's summaries and AI results have passed acceptance or that its public download is available.
+Inquiry's saved-question lookup matches both question and book scope key; a later answer from another novel cannot replace the selected novel's answer. Saga answers remain separate. This requires the updated plugin. Sherlock's published package contains its twelve accepted per-book answers; historical working sessions are excluded.
 
 Scene IDs and literary prose are preserved. Preparation changes belong in the designated canonical vault; ZIPs are regenerated from that source. Operational state never belongs in scene YAML.
 
@@ -59,13 +59,21 @@ Scene IDs and literary prose are preserved. Preparation changes belong in the de
 
 On current main, Inquiry view access is independent of AI permission. Saved results remain browsable with AI off and no credentials. New generative actions require explicit AI enablement and a configured provider. See `inquiry-critical-path-rules.md` for the access boundary.
 
-Public plugin **7.3.1** predates that change: its Inquiry view requires the AI toggle, although saved demo results do not require an API key. The October 2 download guide states this distinction. Do not claim the always-visible view fix or Pulse completion cost/cache display has shipped publicly until a plugin release includes those commits.
+Historical compatibility note: plugin **7.3.1** predates that change; its Inquiry view requires the AI toggle, although saved demo results do not require an API key. Older download guides may describe that workaround. Verify the actual installed version when testing a sample rather than applying that older limitation to every current build.
 
 ## Packaging and acceptance
 
 Use [the maintained packager](../../scripts/demo-vaults/README.md). It has required YAML parsing, explicit inclusion lists, full source-chapter comparison, boundary-aware Pulse checks, latest Gossamer-run consistency, Inquiry evidence validation, wiki-link validation, deterministic ZIPs, and SHA-256 inventory output. Existing output directories are refused.
 
-The checked-in contracts cover P&P's chapter layout, Odyssey's Gutenberg HTML layout, and Sherlock's four-novel HTML layout. Sherlock's candidate includes 56 chapters, 41 beats, four Gossamer signals per book, and twelve accepted per-book Inquiry results. The collection validator checks exact book ownership, full manuscript coverage, supporting quotes, reviewed acts/dates/beat positions, original sources, and the sample manifest. Seven historical sessions remain in the working vault and are excluded by explicit accepted run IDs. Automated checks do not replace literary review, verify AI opinions, or authorize provider calls. Sherlock remains a candidate until fresh-profile QA and public plugin compatibility are confirmed.
+The checked-in contracts cover P&P's chapter layout, Odyssey's Gutenberg HTML layout, and Sherlock's four-novel HTML layout. Sherlock's published edition includes 56 chapters, 41 beats, four Gossamer signals per book, and twelve accepted per-book Inquiry results. The collection validator checks exact book ownership, full manuscript coverage, supporting quotes, reviewed acts/dates/beat positions, original sources, and the sample manifest. Seven historical sessions remain in the working vault and are excluded by explicit accepted run IDs. Automated checks do not replace literary review, verify AI opinions, or authorize provider calls. Any revised package still requires exact-artifact QA and public compatibility verification.
+
+## Literary-form preparation
+
+The Faerie Queene is conditioned for a user-operated AI import, not published as a finished sample. The matching Smith sources produce 75 canto/fragment source notes and six separate proems. The source conditioner adds author-facing book/canto/stanza references, preserves verse lines and spelling, separates textual witnesses and editorial apparatus, and creates no scene metadata or fake saved sessions. The shipped import workflow owns scene creation. See [verse source preparation](../../scripts/demo-vaults/README.md#verse-source-preparation).
+
+Preserve deliberate source units at Confirm scenes; optional Auto-split is not required for an already conditioned canto folder. A canto-level scene note may contain multiple dramatic events. Describe that granularity honestly. Keep unsupported chronology blank, identify interlaced quests and narrative frames, and treat allegorical readings as interpretations. The unfinished Mutabilitie material must retain its actual VI–VIII numbering and the two-stanza VIII fragment.
+
+Single-file division detection identifies a child division by its full parent path, so repeated Canto I headings in different books survive contents deduplication. Gutenberg verse-line markup creates line breaks while enclosing stanzas retain paragraph boundaries. Compact regression fixtures cover these shared importer behaviors; actual source acceptance additionally exercises the Markdown adapter, split-confirmation model and deterministic proposals without a provider.
 
 Test the exact extracted ZIP in a fresh profile: sample detection, book initialization, four timeline modes, all saved Inquiry examples, scene navigation, and reopening. Keep provider calls user-operated. Back up the previous public ZIP and verify actual downloaded bytes after upload, including the website and email redirect paths.
 
@@ -75,6 +83,7 @@ Test the exact extracted ZIP in a fresh profile: sample detection, book initiali
 |---|---|---|
 | Pride & Prejudice | 61 chapters with Pulse, 15 beats with four reviewed October Gossamer signals, 3 saved Inquiry sessions | Published direct download; catalog pins the live ZIP |
 | The Odyssey | 89 scenes with Pulse, 12 beats with four Gossamer signals, 3 saved Inquiry sessions | October 3, 2026; published direct download |
+| Sherlock Holmes | Four novels / 56 chapters with Pulse, 41 beats with four Gossamer signals, 12 saved Inquiry sessions | Published direct download; catalog pins the live ZIP |
 
 Older Gossamer runs remain explicitly identified as history in the guide. The updated readings are the October 2 Claude Opus 5.5 runs. No blanket claim is made that every historical analysis used that model.
 

@@ -21,3 +21,24 @@ Use `--config scripts/demo-vaults/odyssey.json` for the Odyssey. A supported lay
 `sherlock-holmes.json` covers the four complete novels: 56 chapters, 41 reviewed beat placements, four accepted Gossamer runs per book, and three accepted Inquiry answers per book. Its 191-file inclusion list preserves the original Gutenberg HTML and referenced illustrations. Source comparison removes chapter headings and illustration captions and requires every narrative non-whitespace character to match, including case and punctuation. Acts and defensible dates are pinned; unsupported calendar years remain blank. Global IDs, each session's full selected-book corpus, primary and supporting quotes, and the four-book sample manifest are checked. Public export retains only the twelve explicitly reviewed run IDs and sets the collection identity; original AI results and working history are preserved. Use `--config scripts/demo-vaults/sherlock-holmes.json`. Fresh-profile QA and a public plugin with multi-book sample support are required before promotion.
 
 Before public replacement: extract the exact ZIP into a fresh QA vault; test sample detection, all four timeline modes, and saved Inquiry browsing with AI disabled, including citation navigation and reopening. Back up the current public ZIP, upload the accepted artifact, and verify downloaded bytes through the public delivery URL.
+
+## Verse source preparation
+
+`prepare_faerie_queene_source.py` conditions Smith's Gutenberg #70717 and #72698 into source notes for the **shipped Import manuscript workflow**. It does not ingest scenes, generate metadata, invoke providers or change plugin settings. Supply the original HTML files and a new output directory:
+
+```sh
+uv run scripts/demo-vaults/prepare_faerie_queene_source.py \
+  --volume-one '/path/to/pg70717-images.html' \
+  --volume-two '/path/to/pg72698-images.html' \
+  --output '/path/to/new/Prepared Source'
+RT_VERSE_SOURCE_QA='/path/to/new/Prepared Source' \
+  npx vitest run tests/preparedVerseSource.test.ts
+```
+
+The conditioner validates all six complete books and the surviving Mutabilitie VI–VIII: 75 narrative units and six separately held proems, 3,848 nine-line stanzas and 296 argument lines. Source references and unique stanza ordinals accompany the printed Roman labels. It preserves the verified II.x ordinal 74 / printed `lxiv` discrepancy explicitly. The alternative 1590 ending of Book III stays in the original HTML, outside the continuing narrative; so do editorial apparatus and supporting documents. Generated source notes contain no `Class: Scene` or invented analyses. Unexpected stanza sequences/line counts and existing output directories stop preparation.
+
+The opt-in acceptance test feeds all 75 canto files through the real Markdown adapter, split-confirmation model and structure-only proposal builder. It checks hashes, source references, verse bodies and separation of proems without a provider. It does not claim native modal acceptance or an AI result. Regression tests cover missing lines/stanzas, reference retention, inline note calls and the unfinished fragment.
+
+For the first AI batch, Eric selects Book I's source folder (twelve cantos) in **Import manuscript**, chooses **AI assisted**, reviews the resolved model/forecast, and uses **Continue** at Confirm scenes without optional Auto-split. Start with entity profile scaffolds and keep the extra profile-summary calls off. Review metadata before further books, Summary, Pulse, beats, Gossamer or Inquiry. All provider calls remain user-operated.
+
+No Faerie Queene release contract is provided yet. Source conditioning is distinct from accepted metadata, accepted analyses, exact-package acceptance and publication. Add an explicit verse-aware scene/source contract after real import results are accepted, then perform the normal fresh-vault release checks.

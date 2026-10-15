@@ -29,6 +29,31 @@ describe('normalizeHeading', () => {
 });
 
 describe('detectDivisions', () => {
+  it('keeps repeated canto numbers within their parent books, including proems', () => {
+    const divisions = detectDivisions([
+      'BOOK I.', '', 'First proem.', '', 'CANTO I.', '', 'First quest.',
+      '', 'CANTO II.', '', 'Second encounter.', '', 'BOOK II.', '',
+      'Second proem.', '', 'CANTO I.', '', 'Another quest.',
+    ].join('\n'));
+    expect(divisions).toEqual([
+      { title: 'Book I', body: 'First proem.' },
+      { title: 'Book I — Canto I', body: 'First quest.' },
+      { title: 'Book I — Canto II', body: 'Second encounter.' },
+      { title: 'Book II', body: 'Second proem.' },
+      { title: 'Book II — Canto I', body: 'Another quest.' },
+    ]);
+  });
+
+  it('removes contents duplicates using the full division path', () => {
+    const divisions = detectDivisions('BOOK I.\nCANTO I.\nContents.\nBOOK II.\nCANTO I.\nPreface.\nBOOK I.\nCANTO I.\nOne.\nBOOK II.\nCANTO I.\nTwo.');
+    expect(divisions.map((division) => division.body)).toEqual(['One.', 'Two.']);
+  });
+
+  it('recognizes abbreviated canto headings without treating stanza numbers as headings', () => {
+    const divisions = detectDivisions('BOOK I.\nCant. IIII.\n\ni\n\nVerse.\n\nii\n\nMore verse.');
+    expect(divisions).toEqual([{ title: 'Book I — Canto IIII', body: 'i\n\nVerse.\n\nii\n\nMore verse.' }]);
+  });
+
   it('splits on headings and drops pre-first-heading front matter', () => {
     const text = [
       'Translator preface and table of contents.',
@@ -60,6 +85,19 @@ describe('detectDivisions', () => {
 });
 
 describe('htmlToText', () => {
+  it('preserves Gutenberg verse lines and stanza boundaries with inline markup', () => {
+    const html = '<div class="poetry"><div class="stanza">\n' +
+      '<div class="verse indent0">A <i>knight</i> rides.</div>\n' +
+      '<div class="verse indent2">His shield is bright.</div>\n</div>\n' +
+      '<div class="stanza"><div class="verse indent0">Another stanza.</div></div></div>';
+    expect(htmlToText(html)).toBe('A knight rides.\nHis shield is bright.\n\nAnother stanza.');
+  });
+
+  it('preserves older Gutenberg span-based verse lines', () => {
+    expect(htmlToText('<div class="stanza"><span class="i0">One.</span><span class="i2">Two.</span></div>'))
+      .toBe('One.\nTwo.');
+  });
+
   it('strips tags, decodes entities, and preserves paragraphs', () => {
     const html = '<p>The gods&mdash;in council.</p><p>Tell me, O Muse&rsquo;s son.</p>';
     const text = htmlToText(html);

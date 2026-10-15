@@ -1,7 +1,7 @@
 # Timetable, sketches, and Promote to scene
 
 Date: 2026-10-11
-Status: Phases 1, 2 and 4 built 2026-10-12. Phase 3 spikes remain. The feature was renamed from "Timeline table" to **Timetable** on 2026-10-12 (Eric); the abbreviation (TT) and the icons are unchanged.
+Status: Phases 1, 2 and 4 built 2026-10-12, with follow-ups through 2026-10-15 (the reading pane, color by column, bulk edits, query marks, cell-colored hover rows, the subfolder rule, the ✱ keys and standalone use). Eric dropped embedding, Promote in the built-in Table view and sketches on the wheel (2026-10-15); the remaining spikes are below. The feature was renamed from "Timeline table" to **Timetable** on 2026-10-12 (Eric); the abbreviation (TT) and the icons are unchanged.
 
 **Built 2026-10-12: Promote to scene (§1).** It's in `src/services/PromoteToSceneService.ts` (planning and apply, with unit tests), `src/services/PromoteToSceneEntry.ts` (entry points) and `src/modals/PromoteToSceneModal.ts`.
 - **Entry points:** the command palette (**Promote note to scene**), the file menu on an eligible note, the file menu on a folder (its direct children only, so cut or archive subfolders are never swept in), and the multi-selection menu.
@@ -26,6 +26,7 @@ Status: Phases 1, 2 and 4 built 2026-10-12. Phase 3 spikes remain. The feature w
 - **Right-click on a row that isn't a scene** shows Obsidian's own file menu, which includes Promote for notes that qualify.
 - **The row of a scene hovered on the wheel** is lit in the hovered cell's color (a 30% wash and a 4px bar): the ring's palette slot (`data-subplot-color-index`), or the color-by color while a Timetable colors the wheel (neutral for a scene without a value). The same scene in another ring relights in that ring's color. Status and stage stay in the number chip; Eric 2026-10-13 found the theme hover too faint.
 - **What the Timetable view lists** (`belongsInTimetable`): scenes, beats and sketches anywhere in the book folder, as on the wheel (`isPathInFolderScope` is recursive); other notes (unpromoted drafts, matter pages) only from a book folder's top level, never its subfolders, and notes outside every book folder as the author's filter brings them. Eric's Book 1 folder keeps Cut, Feedback and Publisher Materials subfolders: 73 of the table's 172 notes. The `.base` filter stays `file.inFolder(...)`, so the Table and Not on the timeline views still reach them, and Bases' "N results" counts them too. The lens counts the same rows as the table.
+- **The Timetable works on its own** (checked 2026-10-15 with no timeline open, after a plugin reload, recording errors: none). Rows, ring order and status fills come from the notes, not the wheel. Hover, the lens and color by publish to the registry, which simply has no listener; the mode button follows the last mode the timeline published, or Narrative. Clicks, quick picks, the scene menu, bulk edits with Undo, the drawer, + New sketch, Promote and the keys all work. Shift-click is the one action that needs a timeline: it opens one to the left of the table (`revealSceneOnTimeline(path, beside)`), never over it. Found and fixed: the scene menu's Add scene opened the new note over the Timetable (the wheel's opener reuses the active tab, which a right-click makes the table); the Timetable now passes its reading pane (`SceneMenuHost.openNote`).
 - **Opening a note from a row** never covers the Timetable. It uses a reading pane: the note pane stacked with the table in its column (found by layout, nearest first, so no state is saved), replacing the note there; the first note splits the table downward. A note already open is revealed instead; Cmd/Ctrl-click opens a new tab; a pinned note in the pane gets a tab beside it. While a Timetable is showing, wheel clicks in every mode use the same pane (`openFromWheel`), giving a wheel, table and note layout; with none showing, the wheel opens notes as before. (Earlier the table reused the first unpinned editor anywhere, which could replace an unrelated note, or split to the right, squeezing the wheel.)
 - **Default columns** leave out what the number cell and Rings column show and the long-form Summary and Pending Edits. Cells stay on one line, as in Obsidian's table.
 - **Text size** follows Obsidian's Bases table variables, so the per-device Bases font size applies.
@@ -37,7 +38,6 @@ Status: Phases 1, 2 and 4 built 2026-10-12. Phase 3 spikes remain. The feature w
 - The YAML audit's "Refresh columns" for a table whose columns have drifted from the template.
 - Shared multi-row selection and "Promote selected" across the table and the wheel.
 - Inline cell editing, which the built-in Table view already offers on the same file.
-- Embedding check: a Timetable embedded in a note was not tested.
 
 **Decided 2026-10-11 (Eric):**
 - The pre-scene note type is called **Sketch**.
@@ -49,7 +49,7 @@ Status: Phases 1, 2 and 4 built 2026-10-12. Phase 3 spikes remain. The feature w
 **Decided 2026-10-12 (Eric):**
 - **One When formatter** for the scene hover and the Timetable. The title bar keeps its own format. It keeps the current hover format with the weekday added and the `@` kept: `Wed Jan 3, 2085 @ 2:20PM`. A date-only When shows no time; it no longer reads "@ Noon". See §4.
 - **A sketch's text stays in the note body**, never in YAML.
-- **Promote is a Lucide icon button**, and Promote in Obsidian's built-in Table view is wanted (still a spike, phase 3).
+- **Promote is a Lucide icon button.** (Promote in Obsidian's built-in Table view was dropped 2026-10-15.)
 - **Opening the table:** a Timetable button on the right side of the timeline's title bar, and a command palette entry. See §5.
 
 - **Compact layout** (Eric, from the mockups): status lives in the scene-number cell, using the stage color and the Working and Todo patterns from settings; subplot membership is one narrow Rings column, not a column per ring. The width goes to the author's other properties.
@@ -163,7 +163,7 @@ An author-facing note type, `Class: Sketch`, for story material that has a place
   - **Scenes don't get a body editor.** Manuscript prose is never editable from the table. A later, optional scene drawer would edit Synopsis only.
 - **Commitment.** Promote (§1) turns a sketch into a scene. That is the moment it appears on the wheel, and the deliberate moment an idea enters the manuscript. Promote never touches the body, so the sketch's text becomes the new scene's starting notes.
 - **Open questions** don't need a class. Editorialist's `%%query: …%%` author queries already exist, and RT handles them on export (`src/utils/authorQueryComments.ts`). The Timetable can show a count of open queries on any scene or sketch row, so spine questions show up where they live. No new YAML is needed.
-- **Later, only if wanted:** ghost cells for numbered sketches on the wheel, and **Add sketch** in the wheel's right-click menu.
+- **Sketches stay off the wheel** (Eric 2026-10-15: no ghost cells, no Add sketch in the wheel's menu).
 
 ## 4. One When formatter
 
@@ -213,7 +213,6 @@ Reviewed against Obsidian 1.14.4 (Eric's install) and the `obsidian@1.14.4` API 
 - **Date rendering in group headers (1.14.3).** Nothing to do. The Timetable's own cells use RT's When formatter (§4).
 - **Right-to-left tables (1.14.1).** None of RT's languages are right-to-left today. If one is added, the Timetable should mirror the built-in table's RTL behavior.
 - **Base font size per device (1.14.2).** The Timetable should size its text from the same Bases font-size setting, so the author's per-device choice applies to it too.
-- **Embedding (not new, but worth using).** A view of a `.base` file can be embedded in any note, so an author can put the live Timetable inside a book's outline note, under the spine. The view must size itself to its content when embedded.
 
 ## 7. Phase 4: two views, one instrument (decided and built 2026-10-12)
 
@@ -253,10 +252,8 @@ The Rings column in the Timetable delivers the rhythm benefit and the requested 
 1. **Promote to scene:** the command, file menu and bulk preview. It's the smallest piece and is useful on its own. The **one When formatter** (§4) is equally independent and can ship alongside it.
 2. **Timetable and sketches:** the title bar button and command (§5), book following, data, status number cells, the Rings column (with wrapping), the sketch drawer, row context menu, the Promote button, **+ New sketch**, query counts, cross-highlighting, and Create book base.
 3. **Spikes, only if wanted:**
-   - **Promote in Obsidian's built-in Table view** (wanted, Eric 2026-10-12): a formula column such as `link("obsidian://radial-timeline-…")` handled by an RT protocol handler (precedent: `AI_JOBS_PROTOCOL_ACTION`), shown as the `file-up` icon if Bases allows an icon as link text. It's unverified that Bases renders these as clickable;
    - "Follow timeline filters," so the table mirrors the search panel's filter;
-   - sketches on the wheel;
-   - whether `groupedData` honors `groupOrder` for custom views, and whether a Kanban view's "+" can create notes in the book folder.
+   - whether a Kanban view's "+" can create notes in the book folder. (Whether `groupedData` honors `groupOrder` for custom views was answered 2026-10-12; see *Group order is written only on the two boards*.)
 
 ## Acceptance (live vault)
 
@@ -278,7 +275,7 @@ The Rings column in the Timetable delivers the rhythm benefit and the requested 
 
 Settled on 2026-10-11 (see the top of this doc): the Sketch name, table-only sketches, Inquiry only, the Timetable name with lanes set aside, no gating (Pro-page label only), Promote following the template setting, and the compact layout (status in the number cell, a single read-only Rings column).
 
-Settled on 2026-10-12: one When formatter, no "@ Noon" for date-only values, sketch text in the note body, and Lucide icon Promote buttons, with built-in Table support wanted.
+Settled on 2026-10-12: one When formatter, no "@ Noon" for date-only values, sketch text in the note body, and Lucide icon Promote buttons.
 
 The title bar keeps its own format (decided 2026-10-12).
 

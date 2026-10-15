@@ -476,13 +476,19 @@ export default class RadialTimelinePlugin extends Plugin {
         this.sceneHighlighter.spotlight(path);
     }
 
-    /** Bring the timeline forward and light up a scene on it (Shift-click in the Timetable). */
-    public async revealSceneOnTimeline(path: string): Promise<void> {
+    /**
+     * Bring the timeline forward and light up a scene on it (Shift-click in the
+     * Timetable). With no timeline open, one opens to the left of `beside`
+     * (the Timetable's tab), so it never covers the table.
+     */
+    public async revealSceneOnTimeline(path: string, beside?: WorkspaceLeaf): Promise<void> {
         const view = this.getTimelineViews()[0];
-        if (!view) {
-            await this.timelineService.activateView();
-        } else {
+        if (view) {
             await this.app.workspace.revealLeaf(view.leaf);
+        } else if (beside) {
+            await this.app.workspace.createLeafBySplit(beside, 'vertical', true).setViewState({ type: TIMELINE_VIEW_TYPE, active: true });
+        } else {
+            await this.timelineService.activateView();
         }
         this.sceneHighlighter.spotlight(path);
     }

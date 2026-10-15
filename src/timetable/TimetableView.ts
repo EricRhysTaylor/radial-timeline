@@ -34,6 +34,7 @@ import {
     type BasesEntryGroup,
     type BasesPropertyId,
     type QueryController,
+    type WorkspaceLeaf,
 } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { TimelineItem } from '../types';
@@ -201,7 +202,7 @@ export function timetableViewOptions(): BasesAllOptions[] {
  * area, otherwise split a pane beside the Timetable. Cmd/Ctrl-click always
  * opens a new tab.
  */
-async function openFromTimetable(app: App, file: TFile, evt: MouseEvent, fromEl: HTMLElement): Promise<void> {
+async function openFromTimetable(app: App, file: TFile, evt: MouseEvent | undefined, fromEl: HTMLElement): Promise<void> {
     const tableLeaf = app.workspace.getLeavesOfType('bases').find(leaf => leaf.view.containerEl.contains(fromEl));
     if (!tableLeaf) {
         await app.workspace.openLinkText(file.path, '', 'tab');
@@ -594,6 +595,11 @@ export class TimetableView extends BasesView {
         return false;
     }
 
+    /** The workspace tab this table shows in. */
+    private tableLeaf(): WorkspaceLeaf | null {
+        return this.plugin.app.workspace.getLeavesOfType('bases').find(leaf => leaf.view.containerEl.contains(this.rootEl)) ?? null;
+    }
+
     private handleContextMenu(evt: MouseEvent): void {
         const header = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__prop-head[data-property]') : null;
         if (header?.dataset.property) {
@@ -616,7 +622,7 @@ export class TimetableView extends BasesView {
         const subplots = buildTableRow(file.path, file.basename, frontmatter, this.plugin.settings).subplots;
         const primary = subplots[0];
         const colorIndex = primary !== undefined ? this.rings?.colorIndex.get(primary) : undefined;
-        showSceneContextMenu({ plugin: this.plugin }, {
+        showSceneContextMenu({ plugin: this.plugin, openNote: created => openFromTimetable(this.plugin.app, created, undefined, this.rootEl) }, {
             file,
             itemType: 'Scene',
             ringSubplot: null,
@@ -713,7 +719,7 @@ export class TimetableView extends BasesView {
         if (target.closest('a, button, input, textarea, select')) return;
         // Shift-click shows the scene on the timeline.
         if (evt.shiftKey && row.hasClass('is-scene')) {
-            void this.plugin.revealSceneOnTimeline(path);
+            void this.plugin.revealSceneOnTimeline(path, this.tableLeaf() ?? undefined);
             return;
         }
         // A sketch's row opens its drawer; every other row opens the note.

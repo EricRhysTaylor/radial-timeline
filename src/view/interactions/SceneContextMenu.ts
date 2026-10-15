@@ -33,6 +33,8 @@ export type SceneMenuHost = {
         refreshTimelineIfNeeded?: (file: TFile | null, delayMs?: number) => void;
     };
     refreshTimeline?: () => void;
+    /** Where a note the menu creates opens: the Timetable's reading pane. Without it, as the wheel opens notes. */
+    openNote?: (file: TFile) => Promise<void>;
 };
 
 type SceneContextMenuView = SceneMenuHost & {
@@ -500,7 +502,8 @@ async function addSceneAfterAnchor(view: SceneMenuHost, target: SceneMenuTarget)
         const createdFile = view.plugin.app.vault.getAbstractFileByPath(result.path);
         if (createdFile instanceof TFile) {
             refreshTimelineView(view, createdFile);
-            await openOrRevealFile(view.plugin.app, createdFile, false);
+            if (view.openNote) await view.openNote(createdFile);
+            else await openOrRevealFile(view.plugin.app, createdFile, false);
         } else {
             refreshTimelineView(view, file);
         }

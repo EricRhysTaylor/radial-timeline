@@ -18,20 +18,23 @@
  *   .setName(t('settings.general.sourcePath.name'))
  */
 
-import { moment } from 'obsidian';
+import { getLanguage } from 'obsidian';
 import { en, type TranslationKeys } from './locales/en';
 import { ja } from './locales/ja';
 import { zh } from './locales/zh';
 import { ko } from './locales/ko';
 import { de } from './locales/de';
-// Future: import { ar } from './locales/ar';
+import { es } from './locales/es';
+import { fr } from './locales/fr';
+import { th } from './locales/th';
+import { vi } from './locales/vi';
 
 // Helper type for deep partial (allows partial translations at any nesting level)
 type DeepPartial<T> = {
     [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
-export const SUPPORTED_LOCALES = ['en', 'ja', 'zh', 'ko', 'de'] as const;
+export const SUPPORTED_LOCALES = ['en', 'ja', 'zh', 'ko', 'de', 'es', 'fr', 'th', 'vi'] as const;
 export type SupportedLocale = typeof SUPPORTED_LOCALES[number];
 
 const localeAliases: Record<string, SupportedLocale> = {
@@ -47,7 +50,10 @@ const locales: Record<SupportedLocale, DeepPartial<TranslationKeys>> = {
     zh,
     ko,
     de,
-    // ar,
+    es,
+    fr,
+    th,
+    vi,
 };
 
 function isSupportedLocale(locale: string): locale is SupportedLocale {
@@ -62,8 +68,7 @@ let cachedTranslations: TranslationKeys | null = null;
  * Get the current Obsidian locale code
  */
 function getCurrentLocale(): string {
-    // Obsidian uses moment.js for localization
-    const locale = moment.locale().toLowerCase();
+    const locale = getLanguage().toLowerCase();
     if (isSupportedLocale(locale)) return locale;
     if (locale in localeAliases) return localeAliases[locale];
 
@@ -188,7 +193,14 @@ export type CountedNoun = keyof TranslationKeys['common']['counts'];
  * a plural ending, which only works in English.
  */
 export function tCount(noun: CountedNoun, count: number): string {
-    return t(`common.counts.${noun}.${count === 1 ? 'one' : 'other'}`, { count });
+    // The shipped languages use singular/other noun forms. French includes
+    // zero in its singular category; Thai and Vietnamese always use other.
+    const locale = getCurrentLocale();
+    const category = new Intl.PluralRules(isSupportedLocale(locale) ? getFormattingLocale() : 'en').select(count);
+    const form = category === 'one' ? 'one' : 'other';
+    return t(`common.counts.${noun}.${form}`, {
+        count: new Intl.NumberFormat(getFormattingLocale()).format(count),
+    });
 }
 
 /**
@@ -205,7 +217,7 @@ export function clearLocaleCache(): void {
  * formatting respects the user's language setting.
  */
 export function getFormattingLocale(): string {
-    return moment.locale();
+    return getLanguage();
 }
 
 /**

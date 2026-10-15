@@ -84,6 +84,7 @@ import {
 } from '../utils/timelineChapters';
 import { resolveActiveNovelPandocLayout } from '../utils/exportFormats';
 import { resolveTimelinePartMarkers, type TimelinePartMarker } from '../utils/timelineParts';
+import { getFormattingLocale } from '../i18n';
 
 
 // STATUS_COLORS and SceneNumberInfo now imported from constants
@@ -336,8 +337,8 @@ export function createTimelineSVG(
 
     const standardMonths = Array.from({ length: 12 }, (_, i) => {
         const angle = (i / 12) * 2 * Math.PI - Math.PI / 2;
-        const name = new Date(2000, i).toLocaleString('en-US', { month: 'long' });
-        const shortName = new Date(2000, i).toLocaleString('en-US', { month: 'short' }).slice(0, 3);
+        const name = new Date(2000, i).toLocaleString(getFormattingLocale(), { month: 'long', calendar: 'gregory' });
+        const shortName = new Date(2000, i).toLocaleString(getFormattingLocale(), { month: 'short', calendar: 'gregory' });
         return { name, shortName, angle };
     });
     const months = standardMonths;

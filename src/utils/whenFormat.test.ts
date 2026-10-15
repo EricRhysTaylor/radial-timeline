@@ -32,4 +32,10 @@ describe('formatSceneWhen', () => {
     it('rejects an invalid date', () => {
         expect(() => formatSceneWhen(new Date('nonsense'), true, 'en')).toThrow();
     });
+
+    it('keeps the Gregorian manuscript year in Thai', () => {
+        const label = formatSceneWhen(new Date(2085, 4, 10), false, 'th');
+        expect(label).toContain('2085');
+        expect(label).not.toContain('2628');
+    });
 });

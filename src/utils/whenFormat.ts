@@ -46,7 +46,7 @@ export function formatSceneWhen(when: Date, hasClock: boolean, locale: string = 
         const date = `${ENGLISH_WEEKDAYS[when.getDay()]} ${ENGLISH_MONTHS[when.getMonth()]} ${when.getDate()}, ${when.getFullYear()}`;
         return hasClock ? `${date} @ ${englishClock(when)}` : date;
     }
-    const date = new Intl.DateTimeFormat(locale, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }).format(when);
+    const date = new Intl.DateTimeFormat(locale, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', calendar: 'gregory' }).format(when);
     if (!hasClock) return date;
     const clock = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }).format(when);
     return `${date} @ ${clock}`;

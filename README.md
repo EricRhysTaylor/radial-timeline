@@ -110,7 +110,7 @@ Radial Timeline is a **desktop-only** Obsidian plugin.
 
 ## Language Support
 
-Radial Timeline ships complete English interface text and partial interface translations for Japanese, Simplified Chinese, Korean, and German. Missing translated strings fall back to English. Traditional Chinese variants fall back to English until a dedicated Traditional Chinese locale is available.
+Radial Timeline follows your Obsidian language, with interface catalogs for English, German, Japanese, Korean, Simplified Chinese, Spanish, French, Thai, and Vietnamese. Missing translated strings fall back to English. Regional variants use the matching base language; Traditional Chinese variants fall back to English until a dedicated Traditional Chinese locale is available.
 
 ## Privacy & Security
 

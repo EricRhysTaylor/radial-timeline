@@ -1,4 +1,5 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import * as obsidian from 'obsidian';
 import { moment } from 'obsidian';
 import {
     clearLocaleCache,
@@ -15,12 +16,13 @@ function setMomentLocale(locale: string): void {
 }
 
 describe('i18n locale resolution', () => {
+    afterEach(() => vi.restoreAllMocks());
     beforeEach(() => {
         setMomentLocale('en');
     });
 
     it('declares the shipped locale set explicitly', () => {
-        expect(SUPPORTED_LOCALES).toEqual(['en', 'ja', 'zh', 'ko', 'de']);
+        expect(SUPPORTED_LOCALES).toEqual(['en', 'ja', 'zh', 'ko', 'de', 'es', 'fr', 'th', 'vi']);
     });
 
     it.each([
@@ -30,6 +32,10 @@ describe('i18n locale resolution', () => {
         ['zh-Hans', '源路径'],
         ['ko', '원본 경로'],
         ['de', 'Quellpfad'],
+        ['es-MX', 'Carpeta de origen'],
+        ['fr-CA', 'Dossier source'],
+        ['th-TH', 'โฟลเดอร์ต้นทาง'],
+        ['vi-VN', 'Thư mục nguồn'],
     ])('resolves %s to its supported interface locale', (locale, expected) => {
         setMomentLocale(locale);
 
@@ -37,7 +43,7 @@ describe('i18n locale resolution', () => {
     });
 
     it('falls back to English for unsupported locales and Traditional Chinese variants', () => {
-        setMomentLocale('fr');
+        setMomentLocale('it');
         expect(t('settings.general.sourcePath.name')).toBe('Legacy: source path (deprecated)');
 
         setMomentLocale('zh-TW');
@@ -50,6 +56,14 @@ describe('i18n locale resolution', () => {
 
         expect(getLocale()).toBe('de');
         expect(getFormattingLocale()).toBe('de-AT');
+    });
+
+    it('uses the configured app language independently of Moment locale', () => {
+        setMomentLocale('en');
+        vi.spyOn(obsidian, 'getLanguage').mockReturnValue('fr-CA');
+        expect(getLocale()).toBe('fr');
+        expect(getFormattingLocale()).toBe('fr-CA');
+        expect(t('settings.general.sourcePath.name')).toBe('Dossier source');
     });
 
     it('uses the locale string and interpolates it', () => {
@@ -74,5 +88,33 @@ describe('i18n locale resolution', () => {
         // `$&` would expand under a string replacement; `{{count}}` inside a
         // value must not be filled by a later placeholder.
         expect(t('common.counts.scene.other', { count: 'A $& B {{count}}' })).toBe('A $& B {{count}} scenes');
+    });
+
+    it('uses French singular at zero and localized number grouping', () => {
+        setMomentLocale('fr');
+        expect(tCount('scene', 0)).toBe(t('common.counts.scene.one', { count: 0 }));
+        expect(tCount('scene', 2)).toBe(t('common.counts.scene.other', { count: 2 }));
+        expect(tCount('scene', 1200)).toContain(new Intl.NumberFormat('fr').format(1200));
+    });
+
+    it('keeps English grammar when an unsupported language uses English text', () => {
+        setMomentLocale('pt-BR');
+        expect(tCount('scene', 0)).toBe('0 scenes');
+    });
+
+    it.each(['th', 'vi'])('uses the invariant other form for %s counts', locale => {
+        setMomentLocale(locale);
+        for (const count of [0, 1, 2, 21]) {
+            expect(tCount('scene', count)).toBe(t('common.counts.scene.other', { count }));
+        }
+    });
+
+    it.each([
+        ['es', 'Cerrar'], ['fr', 'Fermer'], ['th', 'ปิด'], ['vi', 'Đóng'],
+    ])('uses action wording and preserves the Word product name in %s', (locale, close) => {
+        setMomentLocale(locale);
+        expect(t('manuscriptModal.formatDocx')).toBe('Word');
+        expect(t('ui.manuscriptOptionsModal.close')).toBe(close);
+        expect(t('ui.layoutVisuals.partsNumberingWord')).not.toBe('Word');
     });
 });

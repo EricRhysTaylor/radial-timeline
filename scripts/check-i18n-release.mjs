@@ -14,6 +14,10 @@ const bundleSentinels = {
   zh: '源路径',
   ko: '원본 경로',
   de: 'Quellpfad',
+  es: 'Carpeta de origen',
+  fr: 'Dossier source',
+  th: 'โฟลเดอร์ต้นทาง',
+  vi: 'Thư mục nguồn',
 };
 
 function fail(message) {

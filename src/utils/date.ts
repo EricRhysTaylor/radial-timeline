@@ -4,7 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
-import { t, tCount } from '../i18n';
+import { getFormattingLocale, t, tCount } from '../i18n';
 import { escapeXml } from './svg';
 
 /**
@@ -890,10 +890,9 @@ export function generateChronologicalTicks(
     if (validScenes.length === 1) {
         const singleDate = validScenes[0].date;
         // Use local time methods to ensure consistency with parsing
-        const month = singleDate.toLocaleString('en-US', { month: 'short' });
-        const day = singleDate.getDate();
-        const year = singleDate.getFullYear();
-        const dateLabel = `${month} ${day}, ${year}`;
+        const dateLabel = singleDate.toLocaleDateString(getFormattingLocale(), {
+            month: 'short', day: 'numeric', year: 'numeric', calendar: 'gregory',
+        });
 
         return [{
             angle: -Math.PI / 2, // Top of circle
@@ -979,8 +978,7 @@ export function generateChronologicalTicks(
 
     // Helper function to generate intelligent labels based on gap size
     const generateLabel = (sceneDate: Date, sceneIndex: number, isFirst: boolean, isLast: boolean): { name: string; shortName: string } => {
-        // Helper to format time in 12-hour format with AM/PM
-        const formatTime12Hour = (date: Date): string => {
+        const formatTime = (date: Date): string => {
             const hour = date.getHours();
             const minute = date.getMinutes();
 
@@ -991,17 +989,14 @@ export function generateChronologicalTicks(
                 return escapeXml(t('ui.date.midnight'));
             }
 
-            // Regular time formatting
-            const ampm = hour >= 12 ? 'pm' : 'am';
-            const displayHour = hour % 12 || 12; // Convert 0 to 12
-            const minuteStr = minute.toString().padStart(2, '0');
-            return `${displayHour}:${minuteStr}${ampm}`;
+            return date.toLocaleTimeString(getFormattingLocale(), { hour: 'numeric', minute: '2-digit' });
         };
 
-        const month = sceneDate.toLocaleString('en-US', { month: 'short' });
-        const day = sceneDate.getDate();
-        const year = sceneDate.getFullYear();
-        const timeStr = formatTime12Hour(sceneDate);
+        const dateStr = sceneDate.toLocaleDateString(getFormattingLocale(), {
+            month: 'short', day: 'numeric', calendar: 'gregory',
+        });
+        const year = sceneDate.toLocaleDateString(getFormattingLocale(), { year: 'numeric', calendar: 'gregory' });
+        const timeStr = formatTime(sceneDate);
 
         // Analyze gap before this scene to determine label type
         const gapMs = sceneGaps[sceneIndex];
@@ -1013,10 +1008,10 @@ export function generateChronologicalTicks(
             const totalSpanHours = span.hours;
             if (totalSpanHours < 48) {
                 // Short timeline: show date + time
-                return { name: `${month} ${day}\n${timeStr}`, shortName: `${month} ${day}\n${timeStr}` };
+                return { name: `${dateStr}\n${timeStr}`, shortName: `${dateStr}\n${timeStr}` };
             } else {
                 // Long timeline: show year + date
-                return { name: `${year}\n${month} ${day}`, shortName: `${year}\n${month} ${day}` };
+                return { name: `${year}\n${dateStr}`, shortName: `${year}\n${dateStr}` };
             }
         }
 
@@ -1025,10 +1020,10 @@ export function generateChronologicalTicks(
             const totalSpanHours = span.hours;
             if (totalSpanHours < 48) {
                 // Short timeline: show date + time (matching first scene)
-                return { name: `${month} ${day}\n${timeStr}`, shortName: `${month} ${day}\n${timeStr}` };
+                return { name: `${dateStr}\n${timeStr}`, shortName: `${dateStr}\n${timeStr}` };
             } else {
                 // Long timeline: show year + date (matching first scene)
-                return { name: `${year}\n${month} ${day}`, shortName: `${year}\n${month} ${day}` };
+                return { name: `${year}\n${dateStr}`, shortName: `${year}\n${dateStr}` };
             }
         }
 
@@ -1038,10 +1033,10 @@ export function generateChronologicalTicks(
             return { name: timeStr, shortName: timeStr };
         } else if (gapHours < 48) {
             // Gap 6-48 hours: Show DATE + TIME
-            return { name: `${month} ${day}\n${timeStr}`, shortName: `${month} ${day}\n${timeStr}` };
+            return { name: `${dateStr}\n${timeStr}`, shortName: `${dateStr}\n${timeStr}` };
         } else {
             // Gap > 48 hours: Show DATE only
-            return { name: `${month} ${day}`, shortName: `${month} ${day}` };
+            return { name: dateStr, shortName: dateStr };
         }
     };
 

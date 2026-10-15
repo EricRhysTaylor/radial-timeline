@@ -133,6 +133,8 @@ export const moment = {
   locale: () => 'en',
 };
 
+export const getLanguage = (): string => moment.locale();
+
 // Obsidian app API version (the runtime's `apiVersion` export)
 export const apiVersion = '1.9.12';
 

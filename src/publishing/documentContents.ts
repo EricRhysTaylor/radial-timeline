@@ -37,7 +37,7 @@ export function addMarkdownContents(text: string, depth = 3): string {
                 const preserveId = existingId && !used.has(existingId);
                 const id = preserveId ? existingId : `manuscript-heading-${nextId++}`;
                 used.add(id);
-                entries.push(`${'  '.repeat(level - 1)}- [${title.replace(/[\[\]\\]/g, '\\$&')}](#^${id})`);
+                entries.push(`${'  '.repeat(level - 1)}- [${title.replace(/[[\]\\]/g, '\\$&')}](#^${id})`);
                 body.push(`<a id="^${id}"></a>\n`);
                 body.push(preserveId ? line : `${line.replace(/\s+\^[\w-]+\s*$/, '').replace(/\s+#+\s*$/, '')} ^${id}`);
                 continue;

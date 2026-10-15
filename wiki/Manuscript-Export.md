@@ -86,7 +86,11 @@ The selected novel PDF layout is remembered per book. Narrative Mode uses that s
 
 For PDF output, use **Generate proof** to render the current manuscript, then inspect its actual pages in the **Document proof** workspace. Move between pages and refresh the proof after changing the manuscript or export options. Proofs are saved under the export folder’s `Proofs` subfolder; final export renders the current manuscript again.
 
-After export, the delivery review lists the files saved to the destination. Open those final files to check the result, particularly split outputs. **Save compiled + Pandoc-ready Markdown files** also keeps the assembled and cleaned source beside the export for inspection.
+After export, the delivery review lists the files saved to the destination, and **Open file** is the main button. Open those final files to check the result, particularly split outputs. **Save compiled + Pandoc-ready Markdown files** also keeps the assembled and cleaned source beside the export for inspection.
+
+## Recent Exports
+
+**Recent exports**, in the export panel's header and beside **Destination**, lists your last five exports with their dates, formats, and files, each with **Open file**. Split exports list every file. **Details** shows the automatic file checks for that export. Under **Optional sign-off** you can record that you inspected the final files; the sign-off stays with that export, and opening a file never marks it reviewed. Recent exports opens the files you delivered; it does not regenerate an earlier export.
 
 ## Related Docs
 

@@ -83,6 +83,8 @@ Location: `docs/engineering/plans/`
 Contains architecture proposals and historical planning documents.
 These describe design direction but are not always authoritative rules.
 
+- **[chronologue-time-references-plan.md](plans/chronologue-time-references-plan.md)** — Proposed manual time references within scenes: short slices connected along their ring's bottom radius, inherited subplot occurrences, and nested Timetable rows. Visual direction agreed; runtime implementation pending.
+
 - **[v7-removals.md](plans/v7-removals.md)** — Migration shims and deprecated fallbacks to delete when cutting v7. Grep `TODO(v7)` for in-code touch points.
 - **[parts-first-class-markers-implementation.md](plans/parts-first-class-markers-implementation.md)** — Decouple publishing Parts from narrative Acts: `Part:` becomes an explicit scene marker like `Chapter`. Executable plan; decisions D1–D4 and the migration-journal contract are settled. Origin: issue #30.
 - **[desk-lamps-plan.md](plans/desk-lamps-plan.md)** — Desk Lamps: mutual close-friend lists on the Community, and a live "who's at the desk" lamp in the plugin for writing sessions the author chooses to share; a 12-row living list keeps the freshest lamps on top. Approved 2026-10-04; built 2026-10-03/04 (contract amended, backend live, website and plugin shipped).

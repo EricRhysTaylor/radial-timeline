@@ -643,7 +643,7 @@ export function renderBeatPropertiesSection(params: {
             });
         });
 
-    new Settings(actsStack)
+    const actLabelsSetting = new Settings(actsStack)
         .setName(t('settings.beats.actLabels.name'))
         .setDesc(t('settings.beats.actLabels.desc'))
         .addText(text => {
@@ -657,6 +657,7 @@ export function renderBeatPropertiesSection(params: {
                 updateActPreview();
             });
         });
+    actLabelsSetting.settingEl.addClass('ert-setting-full-width-input');
 
     // Preview (planet-style)
     const actsPreview = actsStack.createDiv({
@@ -980,6 +981,7 @@ export function renderBeatPropertiesSection(params: {
             listContainer.empty();
             const maxActs = getActCount();
             const actLabels = buildActLabels(maxActs, actRanges);
+            const compactActLabels = buildActLabels(maxActs);
             const beats: BeatRow[] = getActiveCustomBeats()
                 .map(parseBeatRow)
                 .map(b => ({ ...b, act: clampBeatAct(b.act, maxActs) }));
@@ -1205,8 +1207,9 @@ export function renderBeatPropertiesSection(params: {
 
                     // Act select
                     const actSelect = row.createEl('select', { cls: 'ert-beat-act-select ert-input' });
+                    setTooltip(actSelect, actLabels[actNumber - 1]);
                     Array.from({ length: maxActs }, (_, i) => i + 1).forEach(n => {
-                        const opt = actSelect.createEl('option', { value: n.toString(), text: actLabels[n - 1] });
+                        const opt = actSelect.createEl('option', { value: n.toString(), text: compactActLabels[n - 1] });
                         if (act === n.toString()) opt.selected = true;
                     });
                     plugin.registerDomEvent(actSelect, 'change', () => {
@@ -1273,9 +1276,12 @@ export function renderBeatPropertiesSection(params: {
             setTooltip(addRangeInput, t('settings.beats.design.rangeTooltip'));
             const addActSelect = addRow.createEl('select', { cls: 'ert-beat-act-select ert-input' });
             Array.from({ length: maxActs }, (_, i) => i + 1).forEach(n => {
-                const opt = addActSelect.createEl('option', { value: n.toString(), text: actLabels[n - 1] });
+                const opt = addActSelect.createEl('option', { value: n.toString(), text: compactActLabels[n - 1] });
                 if (defaultAct === n) opt.selected = true;
             });
+            const updateAddActTooltip = () => setTooltip(addActSelect, actLabels[Number(addActSelect.value) - 1]);
+            updateAddActTooltip();
+            plugin.registerDomEvent(addActSelect, 'change', updateAddActTooltip);
 
             const addBtn = addRow.createEl('button', { cls: ['ert-iconBtn', 'ert-beat-add-btn'], attr: { 'aria-label': t('settings.beats.design.addBeatAriaLabel') } });
             setIcon(addBtn, 'plus');

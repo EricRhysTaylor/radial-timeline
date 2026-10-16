@@ -257,9 +257,9 @@
 .ert-ui.ert-scope--settings .ert-custom-beat-row {
   display: grid;
   box-sizing: border-box;
-  grid-template-columns: auto auto auto auto minmax(0, 1fr) auto auto auto;
+  grid-template-columns: 18px 16px 3ch 6ch minmax(0, 1fr) 8ch 10ch auto;
   align-items: center;
-  gap: var(--ert-gap-md);
+  gap: var(--ert-gap-xs);
   padding: calc(var(--ert-gap-sm) + (var(--ert-gap-xs) / 2)) calc(var(--ert-gap-sm) + (var(--ert-gap-xs) / 2)) calc(var(--ert-gap-sm) + (var(--ert-gap-xs) / 2)) var(--ert-gap-md);
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
@@ -270,8 +270,12 @@
   grid-column: 5 / -1;
 }
 
+.ert-ui.ert-scope--settings .ert-custom-beat-row > :is(input, select) {
+  width: 100%;
+  min-width: 0;
+}
+
 .ert-ui.ert-scope--settings .ert-beat-range-input {
-  width: 80px;
   text-align: center;
 }
 
@@ -291,13 +295,14 @@
 
 .ert-ui.ert-scope--settings .ert-custom-beat-row .ert-drag-handle {
   justify-self: start;
+  width: 18px;
 }
 
 .ert-ui.ert-scope--settings .ert-beat-row-info {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: calc(var(--ert-gap-md) + var(--ert-gap-sm));
+  width: 16px;
   height: calc(var(--ert-gap-md) + var(--ert-gap-sm));
   color: var(--text-muted);
 }
@@ -311,7 +316,7 @@
 }
 
 .ert-ui.ert-scope--settings .ert-beat-ordinal {
-  min-width: 24px;
+  min-width: 0;
   color: var(--text-muted);
   font-weight: 600;
   text-align: right;
@@ -322,7 +327,7 @@
 }
 
 .ert-ui.ert-scope--settings .ert-beat-index {
-  min-width: 44px;
+  min-width: 0;
   text-align: right;
 }
 

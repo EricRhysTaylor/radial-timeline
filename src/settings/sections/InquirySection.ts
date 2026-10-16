@@ -642,6 +642,9 @@ export function renderInquirySection(params: SectionParams): void {
             }
 
             nameCell.setAttribute('title', config.className);
+            Array.from(row.children).forEach((cell, index) => {
+                cell.setAttribute('data-label', header.children[index]?.textContent ?? '');
+            });
         });
 
         classTableWrap.replaceChildren(...Array.from(container.children));

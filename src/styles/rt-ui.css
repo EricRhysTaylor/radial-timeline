@@ -270,6 +270,7 @@
 }
 
 .ert-ui.ert-scope--settings.ert-settings-root {
+  container: ert-settings / inline-size;
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
@@ -976,7 +977,7 @@
   color: color-mix(in srgb, var(--text-normal) 86%, var(--text-muted));
 }
 
-@media (max-width: 860px) {
+@container ert-settings (max-width: 860px) {
   .ert-ui.ert-scope--settings .ert-pro-hero-body {
     column-count: 1;
   }
@@ -1002,7 +1003,9 @@
 }
 
 .ert-ui.ert-scope--settings .ert-feature-item {
-  align-items: center;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: start;
   font-size: 13px;
   color: var(--text-muted);
   padding: var(--ert-gap-2xs) 0;
@@ -1025,6 +1028,7 @@
   display: inline-flex;
   align-items: center;
   color: var(--ert-accent);
+  padding-top: 2px;
 }
 
 .ert-ui.ert-scope--settings .ert-feature-icon svg {
@@ -1312,7 +1316,7 @@
 }
 
 .ert-ui.ert-scope--settings .ert-controlGroup--inquiry-books {
-  --ert-controlGroup-columns: minmax(74px, max-content) minmax(220px, 1.15fr) minmax(180px, 1fr) minmax(120px, max-content);
+  --ert-controlGroup-columns: 5ch minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.85fr);
 }
 
 .ert-ui.ert-scope--settings .ert-controlGroup--inquiry-material-rules {
@@ -1819,6 +1823,7 @@
 }
 
 .ert-ui.ert-scope--settings .ert-badgePill__wikiLink {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2707,22 +2712,25 @@
   align-items: center;
 }
 
-:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .setting-item:not(.setting-item-heading):not(.mod-toggle):not(.ert-row):not(.ert-elementBlock):not(.ert-setting-two-row) {
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .setting-item:not(.setting-item-heading):not(.mod-toggle):not(.ert-row):not(.ert-elementBlock):not(.ert-setting-two-row):not(.ert-setting-full-width-input) {
   display: flex;
   align-items: center;
-  gap: var(--ert-gap-lg);
+  flex-wrap: wrap;
+  gap: var(--ert-gap-sm) var(--ert-gap-lg);
 }
 
-:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .setting-item:not(.setting-item-heading):not(.mod-toggle):not(.ert-row):not(.ert-elementBlock):not(.ert-setting-two-row) .setting-item-info {
-  flex: 1 1 auto;
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .setting-item:not(.setting-item-heading):not(.mod-toggle):not(.ert-row):not(.ert-elementBlock):not(.ert-setting-two-row):not(.ert-setting-full-width-input) .setting-item-info {
+  flex: 1 1 240px;
   min-width: 0;
 }
 
-:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .setting-item:not(.setting-item-heading):not(.mod-toggle):not(.ert-row):not(.ert-elementBlock):not(.ert-setting-two-row) .setting-item-control {
-  flex: 0 0 auto;
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .setting-item:not(.setting-item-heading):not(.mod-toggle):not(.ert-row):not(.ert-elementBlock):not(.ert-setting-two-row):not(.ert-setting-full-width-input) .setting-item-control {
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 100%;
   margin-left: auto;
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: var(--ert-gap-xs, var(--ert-gap-sm));
@@ -3808,13 +3816,13 @@
   background: var(--ert-local-llm-tier4-accent);
 }
 
-@media (max-width: 980px) {
+@container ert-settings (max-width: 980px) {
   .ert-ui.ert-scope--settings .ert-ai-local-llm-status-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 680px) {
+@container ert-settings (max-width: 680px) {
   .ert-ui.ert-scope--settings .ert-ai-local-llm-status-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -4224,7 +4232,7 @@
   margin-bottom: 10px;
 }
 
-@media (max-width: 760px) {
+@container ert-settings (max-width: 760px) {
   .ert-ui.ert-scope--settings .ert-ai-steps-row,
   .ert-ui.ert-scope--settings .ert-ai-step3-grid,
   .ert-ui.ert-scope--settings .ert-ai-quick-grid,
@@ -8336,14 +8344,14 @@
    like "Book title (left) · Section (right), sans" don't wrap early.
    The `flex-wrap: wrap` is set on .ert-layout-row-setting above. */
 
-.ert-ui.ert-scope--settings .ert-layout-row .setting-item.ert-layout-row-setting > .setting-item-info {
+.ert-ui.ert-scope--settings .ert-layout-row .setting-item.ert-layout-row-setting:not(.setting-item-heading):not(.mod-toggle):not(.ert-row):not(.ert-elementBlock):not(.ert-setting-two-row):not(.ert-setting-full-width-input) > .setting-item-info {
   flex: 1 1 100%;
   min-width: 0;
 }
 
 /* Specificity must match the generic .setting-item-control override at line ~2407
-   (which uses 5 `:not()` clauses). We mirror those here so this rule wins. */
-.ert-ui.ert-scope--settings .ert-layout-row .setting-item.ert-layout-row-setting:not(.setting-item-heading):not(.mod-toggle):not(.ert-row):not(.ert-elementBlock):not(.ert-setting-two-row) > .setting-item-control {
+   (which excludes specialized row layouts). We mirror those here so this rule wins. */
+.ert-ui.ert-scope--settings .ert-layout-row .setting-item.ert-layout-row-setting:not(.setting-item-heading):not(.mod-toggle):not(.ert-row):not(.ert-elementBlock):not(.ert-setting-two-row):not(.ert-setting-full-width-input) > .setting-item-control {
   flex: 1 1 100%;
   justify-content: center;
   margin-left: 0;
@@ -9669,13 +9677,6 @@
 
 .ert-ui.ert-scope--settings .ert-coreQuickLinks {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--ert-gap-sm);
-}
-
-.ert-ui.ert-scope--settings .ert-coreQuickLinks__row {
-  display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
@@ -9683,7 +9684,8 @@
 }
 
 .ert-ui.ert-scope--settings .ert-coreQuickLinks__label {
-  margin-right: var(--ert-gap-2xs);
+  flex-basis: 100%;
+  text-align: center;
   color: var(--text-muted);
   font-size: 0.72rem;
   font-weight: 600;

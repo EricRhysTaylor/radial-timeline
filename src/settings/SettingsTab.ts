@@ -801,33 +801,19 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
         const root = containerEl.createDiv({ cls: 'ert-coreQuickLinks' });
 
-        // Split across two rows, keeping the first row strictly wider than the
-        // second so the block reads as a tapering header rather than a grid.
-        const firstCount = Math.ceil((valid.length + 1) / 2);
-
-        const buildRow = (entries: Array<{ label: string; target: HTMLElement }>, withLabel: boolean): void => {
-            const row = root.createDiv({ cls: `${ERT_CLASSES.INLINE} ert-coreQuickLinks__row` });
-            if (withLabel) {
-                row.createSpan({ cls: 'ert-coreQuickLinks__label', text: t('ui.settingsTab.quickLinksLabel') });
-            }
-            entries.forEach(({ label: text, target }) => {
-                const button = row.createEl('button', {
-                    cls: `${ERT_CLASSES.PILL_BTN} ${ERT_CLASSES.PILL_BTN_STANDARD} ert-coreQuickLinks__pill`,
-                    attr: { type: 'button' }
-                });
-                button.createSpan({ cls: ERT_CLASSES.PILL_BTN_LABEL, text });
-                const iconEl = button.createSpan({ cls: ERT_CLASSES.PILL_BTN_ICON });
-                setIcon(iconEl, 'corner-right-down');
-                this.plugin.registerDomEvent(button, 'click', () => {
-                    target.scrollIntoView({ block: 'start' });
-                });
+        root.createSpan({ cls: 'ert-coreQuickLinks__label', text: t('ui.settingsTab.quickLinksLabel') });
+        valid.forEach(({ label: text, target }) => {
+            const button = root.createEl('button', {
+                cls: `${ERT_CLASSES.PILL_BTN} ${ERT_CLASSES.PILL_BTN_STANDARD} ert-coreQuickLinks__pill`,
+                attr: { type: 'button' }
             });
-        };
-
-        buildRow(valid.slice(0, firstCount), true);
-        if (valid.length > firstCount) {
-            buildRow(valid.slice(firstCount), false);
-        }
+            button.createSpan({ cls: ERT_CLASSES.PILL_BTN_LABEL, text });
+            const iconEl = button.createSpan({ cls: ERT_CLASSES.PILL_BTN_ICON });
+            setIcon(iconEl, 'corner-right-down');
+            this.plugin.registerDomEvent(button, 'click', () => {
+                target.scrollIntoView({ block: 'start' });
+            });
+        });
     }
 
     private renderGuarded(label: string, containerEl: HTMLElement, render: () => void): boolean {

@@ -3447,6 +3447,9 @@ export const zh: DeepPartial<TranslationKeys> = {
             inPreparation: '准备中',
         },
         bonusVaultsSection: {
+            secretVault: '神秘 Vault',
+            viewDemoPage: '查看演示页面',
+            viewDemoPageAria: '查看《{{title}}》演示页面',
             freeDemosBadge: '免费演示',
             heading: '演示 Vault',
             description: '探索附带已保存分析的完整示例。从免费的《傲慢与偏见》、《奥德赛》或夏洛克·福尔摩斯项目开始；浏览已保存的结果无需 API 密钥。可以将演示直接添加到此 Vault，或将单独的 Vault 下载为 ZIP。',

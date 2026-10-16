@@ -3445,6 +3445,9 @@ export const de: DeepPartial<TranslationKeys> = {
             inPreparation: 'In Vorbereitung',
         },
         bonusVaultsSection: {
+            secretVault: 'Geheimer Vault',
+            viewDemoPage: 'Demo-Seite ansehen',
+            viewDemoPageAria: 'Demo-Seite für {{title}} ansehen',
             freeDemosBadge: 'KOSTENLOSE DEMOS',
             heading: 'Demo-Vaults',
             description: 'Erkunden Sie vollständig ausgearbeitete Beispiele mit gespeicherter Analyse. Beginnen Sie mit dem kostenlosen Projekt Pride & Prejudice, Odyssey oder Sherlock Holmes; zum Durchsehen gespeicherter Ergebnisse ist kein API-Schlüssel nötig. Fügen Sie eine Demo direkt zu diesem Vault hinzu oder laden Sie einen separaten Vault als ZIP herunter.',

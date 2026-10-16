@@ -1,4 +1,4 @@
-import { PRIDE_AND_PREJUDICE_THUMB } from '../branding/bonusVaultThumbs';
+import { getEmbeddedAssetDataUri } from '../utils/embeddedAssets';
 import type { SampleBookDefinition } from '../utils/sampleVault';
 import { t } from '../i18n';
 
@@ -20,6 +20,7 @@ export interface BonusVaultDef {
     countLabel: string;
     status: 'available' | 'coming-soon';
     thumb?: string;
+    pageUrl?: string;
     description?: string;
     books?: readonly SampleBookDefinition[];
     archive?: DemoArchive;
@@ -32,7 +33,8 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         author: 'Austen',
         get countLabel() { return t('ui.bonusVaults.prideCountLabel'); },
         status: 'available',
-        thumb: PRIDE_AND_PREJUDICE_THUMB,
+        get thumb() { return getEmbeddedAssetDataUri('demo-vaults/pride-and-prejudice.jpg'); },
+        pageUrl: 'https://www.radialtimeline.com/resources/pride',
         get description() { return t('ui.bonusVaults.prideDescription'); },
         books: [{ title: 'Pride & Prejudice', sourceFolder: 'Pride & Prejudice' }],
         archive: {
@@ -49,6 +51,8 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         author: 'Homer',
         get countLabel() { return t('ui.bonusVaults.odysseyCountLabel'); },
         status: 'available',
+        get thumb() { return getEmbeddedAssetDataUri('demo-vaults/odyssey.jpg'); },
+        pageUrl: 'https://www.radialtimeline.com/resources/odyssey',
         get description() { return t('ui.bonusVaults.odysseyDescription'); },
         books: [{ title: 'The Odyssey', sourceFolder: 'The Odyssey' }],
         archive: {
@@ -65,6 +69,8 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         author: 'Doyle',
         get countLabel() { return t('ui.bonusVaults.sherlockCountLabel'); },
         status: 'available',
+        get thumb() { return getEmbeddedAssetDataUri('demo-vaults/sherlock-holmes.jpg'); },
+        pageUrl: 'https://www.radialtimeline.com/resources/sherlock',
         get description() { return t('ui.bonusVaults.sherlockDescription'); },
         books: [
             { title: 'A Study in Scarlet', sourceFolder: '01 A Study in Scarlet' },

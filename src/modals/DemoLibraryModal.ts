@@ -14,15 +14,19 @@ export class DemoLibraryModal extends ErtModal {
     private busyIndicator!: HTMLElement;
     private buttons: HTMLButtonElement[] = [];
 
-    constructor(app: App, private plugin: RadialTimelinePlugin) { super(app); }
+    constructor(app: App, private plugin: RadialTimelinePlugin, private readonly selectedDemo?: BonusVaultDef) { super(app); }
 
     onOpen(): void {
         this.visible = true;
         this.contentEl.empty();
         this.buttons = [];
-        this.applyShell({ size: 'lg', width: 'min(960px, 92vw)', containerClasses: ['ert-demo-library'] });
+        this.applyShell({
+            size: this.selectedDemo ? 'md' : 'lg',
+            width: this.selectedDemo ? 'min(640px, 92vw)' : 'min(960px, 92vw)',
+            containerClasses: ['ert-demo-library']
+        });
         this.mountHeader({
-            title: t('ui.demoLibraryModal.title'),
+            title: this.selectedDemo?.title ?? t('ui.demoLibraryModal.title'),
             subtitle: t('ui.demoLibraryModal.subtitle')
         });
         const statusRow = this.contentEl.createEl('p', {
@@ -35,7 +39,8 @@ export class DemoLibraryModal extends ErtModal {
         this.status = statusRow.createSpan();
         this.status.setText(t('ui.demoLibraryModal.addedUnder', { folder: DEMO_PROJECTS_FOLDER }));
         const grid = this.contentEl.createDiv({ cls: 'ert-demo-library__grid' });
-        BONUS_VAULTS.filter(demo => demo.books?.length).forEach(demo => this.mountDemo(grid, demo));
+        const demos = this.selectedDemo ? [this.selectedDemo] : BONUS_VAULTS.filter(demo => demo.books?.length);
+        demos.forEach(demo => this.mountDemo(grid, demo));
         const close = this.mountActions().createEl('button', { cls: 'ert-btn', text: t('ui.demoLibraryModal.close'), attr: { type: 'button' } });
         close.addEventListener('click', () => this.close());
     }

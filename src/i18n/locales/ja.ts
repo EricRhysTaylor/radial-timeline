@@ -3446,6 +3446,9 @@ export const ja: DeepPartial<TranslationKeys> = {
             inPreparation: '準備中',
         },
         bonusVaultsSection: {
+            secretVault: 'シークレット Vault',
+            viewDemoPage: 'デモページを見る',
+            viewDemoPageAria: '{{title}} のデモページを見る',
             freeDemosBadge: '無料デモ',
             heading: 'デモ Vault',
             description: '保存済みの分析が入った完全な作例を探索できます。無料の『高慢と偏見』、『オデュッセイア』、またはシャーロック・ホームズのプロジェクトから始めましょう。保存済みの結果を閲覧するのに API キーは不要です。デモをこの Vault に直接追加するか、別の Vault として ZIP でダウンロードできます。',

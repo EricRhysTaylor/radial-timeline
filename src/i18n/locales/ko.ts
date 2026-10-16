@@ -3445,6 +3445,9 @@ export const ko: DeepPartial<TranslationKeys> = {
             inPreparation: '준비 중',
         },
         bonusVaultsSection: {
+            secretVault: '비밀 vault',
+            viewDemoPage: '데모 페이지 보기',
+            viewDemoPageAria: '{{title}} 데모 페이지 보기',
             freeDemosBadge: '무료 데모',
             heading: '데모 vault',
             description: '저장된 분석이 포함된 완전한 작업 예시를 살펴보세요. 무료로 제공되는 오만과 편견, 오디세이아 또는 셜록 홈즈 프로젝트로 시작하세요. 저장된 결과를 둘러보는 데는 API 키가 필요하지 않습니다. 데모를 이 vault에 바로 추가하거나, 별도의 vault를 ZIP으로 다운로드하세요.',

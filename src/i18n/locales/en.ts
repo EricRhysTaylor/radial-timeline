@@ -3129,6 +3129,9 @@ export const en = {
             inPreparation: 'In preparation',
         },
         bonusVaultsSection: {
+            secretVault: 'Secret vault',
+            viewDemoPage: 'View demo page',
+            viewDemoPageAria: 'View the {{title}} demo page',
             freeDemosBadge: 'FREE DEMOS',
             heading: 'Demo vaults',
             description: 'Explore complete worked examples with saved analysis. Start with the free Pride & Prejudice, Odyssey, or Sherlock Holmes project; no API key is needed to browse saved results. Add a demo directly to this vault, or download a separate vault as a ZIP.',

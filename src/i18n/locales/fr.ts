@@ -3448,6 +3448,9 @@ export const fr: TranslationKeys = {
             "inPreparation": "en préparation"
         },
         "bonusVaultsSection": {
+            "secretVault": "Coffre secret",
+            "viewDemoPage": "Voir la page de démo",
+            "viewDemoPageAria": "Voir la page de démo de {{title}}",
             "freeDemosBadge": "Démos gratuites",
             "heading": "Coffres de démonstration",
             "description": "Explorez des exemples complets de travaux avec une analyse enregistrée. Commencez par le projet gratuit Pride & Prejudice, Odyssey ou Sherlock Holmes ; non API La clé est nécessaire pour parcourir les résultats enregistrés. Ajoutez une démo directement à ce coffre-fort, ou téléchargez un coffre séparé en tant que ZIP.",

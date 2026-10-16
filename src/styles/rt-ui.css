@@ -481,7 +481,7 @@
   color: var(--text-normal);
 }
 
-/* ── Bonus vaults (Website Exclusives) card grid ──────────────────────── */
+/* Demo vault cards share the artwork used on the resource pages. */
 .ert-ui.ert-scope--settings .ert-bonus-section {
   width: 100%;
   max-width: 100%;
@@ -503,7 +503,7 @@
   margin-top: var(--ert-gap-sm);
 }
 
-@media (max-width: 520px) {
+@container ert-settings (max-width: 520px) {
   .ert-ui.ert-scope--settings .ert-bonus-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -519,12 +519,11 @@
   border-radius: 14px;
   background: color-mix(in srgb, var(--background-secondary) 60%, transparent);
   border: 1px solid var(--background-modifier-border);
-  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+  transition: border-color 120ms ease;
 }
 
 .ert-ui.ert-scope--settings .ert-bonus-card.is-available:hover {
   border-color: color-mix(in srgb, var(--ert-pro-accent-color) 55%, transparent);
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--ert-pro-accent-color) 14%, transparent);
 }
 
 .ert-ui.ert-scope--settings .ert-bonus-card.is-coming-soon {
@@ -582,11 +581,22 @@
   color: var(--text-muted);
 }
 
+.ert-ui.ert-scope--settings .ert-bonus-card__description {
+  flex: 1 1 auto;
+  margin: var(--ert-gap-xs) 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .ert-ui.ert-scope--settings .ert-bonus-card__action {
   display: flex;
   flex-wrap: wrap;
   gap: var(--ert-gap-tight);
-  margin-top: var(--ert-gap-sm);
+  margin-top: auto;
+  padding-top: var(--ert-gap-sm);
+  align-items: center;
+  justify-content: space-between;
 }
 
 .ert-ui.ert-scope--settings .ert-bonus-card__btn {
@@ -609,9 +619,22 @@
 }
 
 .ert-ui.ert-scope--settings .ert-bonus-card__btn--primary {
+  width: 100%;
+  justify-content: center;
   border-color: transparent;
   color: var(--text-on-accent);
   background: var(--ert-pro-accent-color);
+}
+
+.ert-ui.ert-scope--settings .ert-bonus-card__link {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-underline-offset: 3px;
+}
+
+.ert-ui.ert-scope--settings .ert-bonus-card__link:hover,
+.ert-ui.ert-scope--settings .ert-bonus-card__link:focus-visible {
+  color: var(--text-accent);
 }
 
 .ert-ui.ert-scope--settings .ert-bonus-card__btn-icon {

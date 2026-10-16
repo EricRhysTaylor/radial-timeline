@@ -106,11 +106,14 @@ function renderCard(
         buildIncognitoGlyph(placeholder);
     }
     // Title + meta
-    card.createDiv({ cls: 'ert-bonus-card__title', text: vault.title });
+    card.createDiv({ cls: 'ert-bonus-card__title', text: isComingSoon ? t('ui.bonusVaultsSection.secretVault') : vault.title });
     card.createDiv({
         cls: 'ert-bonus-card__meta',
-        text: `${vault.author} · ${vault.countLabel}`
+        text: isComingSoon ? vault.countLabel : `${vault.author} · ${vault.countLabel}`
     });
+    if (!isComingSoon && vault.description) {
+        card.createEl('p', { cls: 'ert-bonus-card__description', text: vault.description });
+    }
 
     // Action row
     const action = card.createDiv({ cls: 'ert-bonus-card__action' });
@@ -131,7 +134,23 @@ function renderCard(
         btn.createSpan({ text: t('ui.bonusVaultsSection.exploreDemo') });
         btn.setAttr('aria-label', t('ui.bonusVaultsSection.exploreDemoAria', { title: vault.title }));
         plugin.registerDomEvent(btn, 'click', () => {
-            new DemoLibraryModal(plugin.app, plugin).open();
+            new DemoLibraryModal(plugin.app, plugin, vault).open();
         });
+        if (vault.pageUrl) {
+            action.createEl('a', {
+                cls: 'ert-bonus-card__link',
+                text: t('ui.bonusVaultsSection.viewDemoPage'),
+                href: vault.pageUrl,
+                attr: { target: '_blank', rel: 'noopener noreferrer', 'aria-label': t('ui.bonusVaultsSection.viewDemoPageAria', { title: vault.title }) }
+            });
+        }
+        if (vault.archive) {
+            action.createEl('a', {
+                cls: 'ert-bonus-card__link',
+                text: t('ui.demoLibraryModal.downloadZip', { size: (vault.archive.bytes / 1048576).toFixed(1) }),
+                href: vault.archive.downloadUrl,
+                attr: { target: '_blank', rel: 'noopener noreferrer', 'aria-label': t('ui.demoLibraryModal.downloadAria', { title: vault.title }) }
+            });
+        }
     }
 }

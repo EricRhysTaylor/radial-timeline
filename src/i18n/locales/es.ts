@@ -3448,6 +3448,9 @@ export const es: TranslationKeys = {
             "inPreparation": "en preparación"
         },
         "bonusVaultsSection": {
+            "secretVault": "Vault secreto",
+            "viewDemoPage": "Ver página de la demo",
+            "viewDemoPageAria": "Ver la página de la demo de {{title}}",
             "freeDemosBadge": "demostraciones gratis",
             "heading": "Bóvedas de demostración",
             "description": "Explore ejemplos trabajados completos con análisis guardado. Comience con el proyecto Free Pride & Prejudice, Odyssey o Sherlock Holmes; no API Se necesita clave para explorar los resultados guardados. Agregue una demostración directamente a esta bóveda o descargue una bóveda separada como zip.",

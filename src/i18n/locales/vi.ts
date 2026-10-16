@@ -3448,6 +3448,9 @@ export const vi: TranslationKeys = {
             "inPreparation": "Đang chuẩn bị"
         },
         "bonusVaultsSection": {
+            "secretVault": "Vault bí mật",
+            "viewDemoPage": "Xem trang demo",
+            "viewDemoPageAria": "Xem trang demo {{title}}",
             "freeDemosBadge": "Bản trình diễn miễn phí",
             "heading": "Kho demo",
             "description": "Khám phá các ví dụ đã làm việc hoàn chỉnh với phân tích đã lưu. Bắt đầu với Dự án Free Pride & Prejudice, Odyssey, hoặc Sherlock Holmes; không API khóa là cần thiết để duyệt kết quả đã lưu. Thêm bản demo trực tiếp vào kho này hoặc tải xuống một kho riêng dưới dạng zip.",

@@ -3448,6 +3448,9 @@ export const th: TranslationKeys = {
             "inPreparation": "ในการเตรียมตัว"
         },
         "bonusVaultsSection": {
+            "secretVault": "คลังลับ",
+            "viewDemoPage": "ดูหน้าเดโม",
+            "viewDemoPageAria": "ดูหน้าเดโม {{title}}",
             "freeDemosBadge": "การสาธิตฟรี",
             "heading": "สาธิตห้องนิรภัย",
             "description": "สำรวจตัวอย่างการทำงานที่สมบูรณ์ด้วยการวิเคราะห์ที่บันทึกไว้ เริ่มต้นด้วยโครงการ Pride & Prejudice, Odyssey หรือ Sherlock Holmes ฟรี ไม่ API จำเป็นต้องใช้คีย์เพื่อเรียกดูผลลัพธ์ที่บันทึกไว้ เพิ่มการสาธิตไปยังห้องนิรภัยนี้โดยตรง หรือดาวน์โหลดห้องนิรภัยแยกต่างหากเป็น zip",

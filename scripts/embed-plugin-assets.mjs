@@ -48,6 +48,21 @@ const outFile = path.join(srcDir, 'generated', 'embeddedAssets.ts');
  */
 export const EMBEDDED_ASSET_MANIFEST = [
     {
+        key: 'demo-vaults/pride-and-prejudice.jpg',
+        src: 'assets/demo-vaults/pride-and-prejudice.jpg',
+        note: 'Demo card artwork from radialtimeline.com/resources/pride (512px JPEG)',
+    },
+    {
+        key: 'demo-vaults/odyssey.jpg',
+        src: 'assets/demo-vaults/odyssey.jpg',
+        note: 'Demo card artwork from radialtimeline.com/resources/odyssey (512px JPEG)',
+    },
+    {
+        key: 'demo-vaults/sherlock-holmes.jpg',
+        src: 'assets/demo-vaults/sherlock-holmes.jpg',
+        note: 'Demo card artwork from radialtimeline.com/resources/sherlock (512px JPEG)',
+    },
+    {
         key: 'icons/radial-inquiry.svg',
         src: 'assets/icons/radial-inquiry.svg',
         note: 'Theme-aware Radial Inquiry mark for ribbons, tabs, and settings',
@@ -121,6 +136,7 @@ export const LICENCE_FILE_NAMES = new Set(['OFL.txt', 'LICENSE.txt', 'LICENSE.md
 
 /** MIME types for data-URI consumers (images). Fonts/docx are written as bytes. */
 const MIME_BY_EXTENSION = {
+    '.jpg': 'image/jpeg',
     '.png': 'image/png',
     '.svg': 'image/svg+xml',
     '.ttf': 'font/ttf',

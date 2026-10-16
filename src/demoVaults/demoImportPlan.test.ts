@@ -66,10 +66,10 @@ describe.skipIf(!archiveDirectory)('published demo editions', () => {
         const numbers = new Map(demoBookDefinitions(demo).map((book, index) => [book.sourceFolder, index + 3]));
         const plan = await prepareDemoImport(bytes, demo, numbers);
         const sessions = JSON.parse(strFromU8(plan.files.get(INQUIRY_SIDECAR_PATH)!)).sessions;
-        expect(sessions).toHaveLength(3);
+        expect(sessions).toHaveLength(demoBookDefinitions(demo).length * 3);
         for (const session of sessions) {
             expect(session.activeBookId.startsWith(`${demoProjectFolder(demo)}/`)).toBe(true);
-            expect(session.result.scopeLabel).toBe('B3');
+            expect(session.result.scopeLabel).toBe(`B${numbers.get(session.activeBookId)}`);
             for (const meta of session.result.evidenceDocumentMeta) {
                 expect(meta.path.startsWith(`${demoProjectFolder(demo)}/`)).toBe(true);
                 expect(plan.files.has(meta.path.slice(demoProjectFolder(demo).length + 1))).toBe(true);

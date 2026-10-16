@@ -359,8 +359,22 @@ const openSampleVault = async (
     }
 };
 
+/**
+ * A packaged sample is a vault whose Book Manager is not set up yet. Every
+ * author's Inquiry sidecar records their active book too, so once a book points
+ * at a real folder the vault is the author's own: never call it a sample, and
+ * never register sample books or sample Inquiry sources into it.
+ */
+const isPackagedSampleVault = async (plugin: RadialTimelinePlugin): Promise<boolean> => {
+    const configured = (plugin.settings.books || []).some(book => {
+        const folder = book.sourceFolder.trim();
+        return folder.length > 0 && plugin.app.vault.getAbstractFileByPath(normalizePath(folder)) instanceof TFolder;
+    });
+    return !configured && await hasInquirySessionSidecarInVault(plugin.app);
+};
+
 const openBookManagerFromWelcome = async (plugin: RadialTimelinePlugin): Promise<void> => {
-    if (await hasInquirySessionSidecarInVault(plugin.app)) {
+    if (await isPackagedSampleVault(plugin)) {
         try {
             const config = resolveSampleVaultConfig(plugin);
             const targetId = await ensureSampleBookProject(plugin, config);
@@ -382,10 +396,11 @@ const openBookManagerFromWelcome = async (plugin: RadialTimelinePlugin): Promise
 };
 
 /**
- * The Inquiry sidecar (Radial Timeline/Inquiry/Sessions/sessions.json) is the clearest
- * signal that the vault already carries packaged Radial Timeline data. Check
- * for the file before showing the sample download/signup path; otherwise a
- * sample vault can look like it needs to be fetched again. Fire-and-forget;
+ * In a vault Book Manager has not set up, the Inquiry sidecar (Radial
+ * Timeline/Inquiry/Sessions/sessions.json) is the clearest signal that the
+ * vault carries packaged Radial Timeline data (see isPackagedSampleVault).
+ * Check before showing the sample download/signup path; otherwise a sample
+ * vault can look like it needs to be fetched again. Fire-and-forget;
  * mutating a detached container after the view closes is harmless.
  */
 const hydrateSampleVaultCard = async (
@@ -394,9 +409,8 @@ const hydrateSampleVaultCard = async (
     refreshTimeline: () => void,
     onDetected: () => void
 ): Promise<void> => {
-    const hasSidecar = await hasInquirySessionSidecarInVault(plugin.app);
     const WELCOME_COPY = getWelcomeCopy();
-    if (!hasSidecar) {
+    if (!(await isPackagedSampleVault(plugin))) {
         refs.root.removeClass('rt-welcome-card-pending');
         refs.title.setText(WELCOME_COPY.cards.sampleGet.title);
         refs.desc.setText(WELCOME_COPY.cards.sampleGet.desc);

@@ -75,6 +75,7 @@ Eric pointed the import at `Book 4 Uranus & Neptune`, a folder that was already 
 - Book Manager's panel, now "Add an existing book or manuscript", lists what **Scan vault** finds. A book folder gets **Add book**; an export gets **Import**, which opens the import on that folder.
 - **+** no longer switches the timeline. It reuses the blank card waiting for a folder, or adds one, then scrolls to it and focuses its folder field. A new book becomes the timeline's book only once its folder holds scenes.
 - A card pointed at a folder holding a Scrivener or Word export, with no scene notes, keeps its old folder. The card says so and offers **Import**. An import started from a blank card replaces that card.
+- The Welcome screen took Eric's own vault for a packaged sample. Every author's Inquiry sidecar records the active book (`vault.displayName`/`bookFolder`), and the screen treated any sidecar as proof of a sample, showing "Shail + Trisan detected". Its Book Manager link would also have registered sample books and merged sample Inquiry sources into real settings. A vault now counts as a packaged sample only while no book in Book Manager points at an existing folder (`isPackagedSampleVault`).
 - `OnboardingService.addBook` is the one way a folder joins Book Manager (imports and book folders alike). It switches through `setActiveBookId`, so a saga timeline returns to book scope.
 
 ## Deferred

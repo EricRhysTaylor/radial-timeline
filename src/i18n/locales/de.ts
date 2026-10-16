@@ -1115,13 +1115,10 @@ export const de: DeepPartial<TranslationKeys> = {
         renderError: 'Fehler beim Rendern der Timeline. Details siehe Konsole.',
         overdue: 'Überfällig: {{date}}',
         search: {
-            indexChecking: "Lokaler Server für den semantischen Index wird geprüft…",
-            indexUnavailable: "Server für den semantischen Index nicht erkannt. Starten Sie den lokalen Suchdienst.",
-            indexIncompatible: "Der Server für den semantischen Index hat mit einem inkompatiblen Modell geantwortet. Starten Sie den lokalen Suchdienst neu.",
             unavailableSelected: "Deaktivieren Sie die Option, um den Suchmodus zu ändern. Der aktuelle Modus bleibt erhalten, bis Sie ihn ändern.",
             indexRequiresAssist: "Aktivieren Sie die lokale LLM-Unterstützung, um den semantischen Index zu verwenden.",
-            indexLabel: 'Semantischen Index verwenden',
-            indexHint: 'Lokaler englischer Textindex. Prüft wahrscheinliche Auszüge; deaktivieren, um jede Szene zu prüfen.',
+            indexLabel: "Suchindex verwenden",
+            indexHint: "Lokaler Textindex. Verwendet den in den KI-Einstellungen gewählten Server und das gewählte Modell, um wahrscheinliche Textstellen zu prüfen. Kann Treffer übersehen; deaktivieren, um jede Szene zu prüfen.",
             statusIndexing: 'Index wird aktualisiert: {{done}} von {{total}} Szenen',
             statusIndexed: 'Indexierte Auszüge: {{selected}} von {{total}} Szenen geprüft; weitere Treffer können fehlen',
 

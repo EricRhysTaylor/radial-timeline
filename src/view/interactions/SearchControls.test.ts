@@ -7,21 +7,19 @@ function availabilityHarness(options = { timelineFields: true, body: false, llmA
     const panel = Object.create(SearchPanelController.prototype); // SAFE: exercise the controller state machine without an Obsidian leaf
     const checkbox = () => ({ disabled: false, checked: false, parentElement: { title: '', classList: { toggle: vi.fn() } } });
     const localProbe = vi.fn(async () => ({ available: true, modelId: 'model' }));
-    const indexProbe = vi.fn(async () => ({ available: true }));
     const setSearchOptions = vi.fn((next: typeof options) => { options = next; });
     Object.assign(panel, { statusProbeId: 0, scopeRows: [], assistCheckbox: checkbox(), indexCheckbox: checkbox(),
         assistHint: { textContent: '' }, indexHint: { textContent: '' },
         assistIndicator: { hidden: true }, indexIndicator: { hidden: true },
-        host: { getLocalModelStatus: localProbe, getSemanticIndexStatus: indexProbe,
+        host: { getLocalModelStatus: localProbe,
             getSearchState: () => ({ options }), setSearchOptions } });
-    return { panel, localProbe, indexProbe, setSearchOptions, options: () => options };
+    return { panel, localProbe, setSearchOptions, options: () => options };
 }
 
-describe('independent local search availability', () => {
+describe('single-server local search availability', () => {
     it('mutes unavailable options without changing modes, but lets a selected option be turned off', async () => {
         const h = availabilityHarness();
         h.localProbe.mockResolvedValue({ available: false, reason: 'Server not detected' } as never);
-        h.indexProbe.mockResolvedValue({ available: false, reason: 'Index server not detected' } as never);
         await h.panel.refreshLocalModelStatus();
         expect(h.setSearchOptions).not.toHaveBeenCalled();
         expect(h.panel.assistIndicator.hidden).toBe(false);
@@ -35,18 +33,15 @@ describe('independent local search availability', () => {
         expect(h.options().semanticIndex).toBe(true);
         expect(h.panel.assistCheckbox.disabled).toBe(true);
     });
-    it('detects an offline encoder independently, and recovers without toggling saved preferences', async () => {
+    it('uses the same configured server for index availability and recovers without changing preferences', async () => {
         const h = availabilityHarness({ timelineFields: true, body: false, llmAssist: true, semanticIndex: false });
-        h.indexProbe.mockResolvedValueOnce({ available: false, reason: 'Index server not detected' } as never);
+        h.localProbe.mockResolvedValueOnce({ available: false, reason: 'Server not detected' } as never);
         await h.panel.refreshLocalModelStatus();
-        expect(h.panel.assistIndicator.hidden).toBe(true);
-        expect(h.panel.indexIndicator.hidden).toBe(false);
+        expect(h.panel.assistIndicator.hidden).toBe(false); expect(h.panel.indexIndicator.hidden).toBe(false);
         expect(h.panel.indexCheckbox.disabled).toBe(true);
-        expect(h.panel.indexHint.textContent).toContain('not detected');
         await h.panel.refreshLocalModelStatus();
-        expect(h.panel.indexIndicator.hidden).toBe(true);
-        expect(h.panel.indexCheckbox.disabled).toBe(false);
-        expect(h.panel.indexHint.textContent).toContain('Reviews likely excerpts');
+        expect(h.panel.indexIndicator.hidden).toBe(true); expect(h.panel.indexCheckbox.disabled).toBe(false);
+        expect(h.panel.indexHint.textContent).toContain('server and model selected in AI settings');
         expect(h.setSearchOptions).not.toHaveBeenCalled();
     });
     it('keeps an unselected index disabled when assist is off, even when both servers respond', async () => {

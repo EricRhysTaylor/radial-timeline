@@ -999,11 +999,8 @@ export const en = {
         /** Synopsis hover label for past-due dates. {{date}} is substituted with the formatted date string. */
         overdue: 'Overdue: {{date}}',
         search: {
-            indexLabel: 'Use semantic index',
-            indexHint: 'Local English passage index. Reviews likely excerpts; turn off to review every scene.',
-            indexChecking: 'Checking the local semantic-index server…',
-            indexUnavailable: 'Semantic-index server not detected. Start your local search service.',
-            indexIncompatible: 'The semantic-index server responded with an incompatible model. Restart your local search service.',
+            indexLabel: "Use search index",
+            indexHint: "Local text index. Uses the server and model selected in AI settings to review likely passages. May miss matches; turn off to review every scene.",
             unavailableSelected: 'Uncheck to change search mode. Your current mode is kept until you change it.',
             indexRequiresAssist: 'Turn on Local LLM assist to use the semantic index.',
             statusIndexing: 'Updating index: {{done}} of {{total}} scenes',

@@ -5,11 +5,13 @@ import type { TimelineItem } from '../types';
 const listModels = vi.fn();
 const complete = vi.fn();
 const verifyComplete = vi.fn();
+const expandComplete = vi.fn();
 const seenQuotes = new Set<string>();
 
 vi.mock('../ai/localLlm/backends', () => ({
     getLocalLlmBackend: () => ({ id: 'ollama', label: 'Ollama', listModels, complete: async (request: { responseFormat?: { schemaName?: string } }) => {
         if (request.responseFormat?.schemaName === 'query_match') return verifyComplete(request);
+        if (request.responseFormat?.schemaName === 'search_terms') return expandComplete(request);
         const result = await complete(request);
         if (result?.content) {
             try {
@@ -93,6 +95,7 @@ beforeEach(() => {
     listModels.mockReset();
     complete.mockReset();
     verifyComplete.mockReset();
+    expandComplete.mockReset().mockResolvedValue({ success: true, content: '{"terms":["coast"]}', responseData: {} });
     seenQuotes.clear();
     verifyComplete.mockImplementation((request: { userPrompt: string }) => ({ success: true,
         content: JSON.stringify({ match: true, quotes: [...seenQuotes].filter(quote => request.userPrompt.includes(quote)).slice(0, 2) }), responseData: {} }));
@@ -516,17 +519,29 @@ it('treats a blank evidence string as unsupported evidence, not an unreadable sc
 
 describe('indexed concepts preserve the transaction and literal options', () => {
     const stats = { candidates: 1, total: 30, updatedNotes: 0, passages: 30, elapsedMs: 1 };
+    it('reports an invalid query expansion without substituting a sweep or another model', async () => {
+        const h = makeHarness();
+        const query = vi.spyOn(LocalSemanticIndex.prototype, 'query');
+        h.plugin.searchState.options = { timelineFields: true, body: false, llmAssist: true, semanticIndex: true };
+        expandComplete.mockResolvedValueOnce({ success: true, content: '{"terms":[]}', responseData: {} });
+        h.service.performSearch('a homecoming'); h.resolve([scene('a.md', 'at dawn')]); await settle();
+        expect(h.plugin.searchState.status).toBe('error'); expect(query).not.toHaveBeenCalled();
+        expect(complete).not.toHaveBeenCalled(); expect(verifyComplete).not.toHaveBeenCalled();
+        expect(expandComplete).toHaveBeenCalledOnce();
+    });
     it('verifies indexed excerpts directly and retains explicit shortlist coverage', async () => {
         const h = makeHarness();
         h.plugin.searchState.options = { timelineFields: false, body: true, llmAssist: true, semanticIndex: true };
         h.bodies.set('a.md', 'She reached the coast at dawn.');
         const query = vi.spyOn(LocalSemanticIndex.prototype, 'query').mockImplementation(async input => {
-            expect(input.queries).toEqual(['a homecoming']);
+            expect(input.queries).toEqual(['a homecoming', 'coast']);
             return { scenes: [{ path: 'a.md', bodyText: 'She reached the coast at dawn.', grounding: input.scenes[0], indexedPassages: [{ text: 'She reached the coast at dawn.', source: 'body' }] }], stats };
         });
         verifyComplete.mockResolvedValue({ success: true, content: '{"match":true,"evidenceIds":[1]}', responseData: {} });
         h.service.performSearch('a homecoming'); h.resolve([scene('a.md', '')]); await settle();
         expect(query).toHaveBeenCalledOnce(); expect(complete).not.toHaveBeenCalled(); expect(verifyComplete).toHaveBeenCalledOnce();
+        expect(expandComplete).toHaveBeenCalledWith(expect.objectContaining({ baseUrl: LOCAL.baseUrl, modelId: LOCAL.defaultModelId }));
+        expect(verifyComplete).toHaveBeenCalledWith(expect.objectContaining({ baseUrl: LOCAL.baseUrl, modelId: LOCAL.defaultModelId }));
         expect(h.plugin.searchState.hits.get('a.md')?.evidence).toEqual(['She reached the coast at dawn.']);
         expect(h.plugin.searchState.retrieval).toEqual(stats);
     });
@@ -538,12 +553,12 @@ describe('indexed concepts preserve the transaction and literal options', () => 
         expect([...h.plugin.searchState.hits.keys()]).toEqual(['a.md']); expect(query).not.toHaveBeenCalled();
         expect(complete).not.toHaveBeenCalled(); expect(verifyComplete).not.toHaveBeenCalled();
     });
-    it('surfaces an unavailable encoder without starting a full sweep', async () => {
+    it('surfaces a corrupt index without starting a full sweep', async () => {
         const h = makeHarness();
         h.plugin.searchState.options = { timelineFields: true, body: false, llmAssist: true, semanticIndex: true };
-        vi.spyOn(LocalSemanticIndex.prototype, 'query').mockRejectedValue(new Error('Index encoder unavailable'));
+        vi.spyOn(LocalSemanticIndex.prototype, 'query').mockRejectedValue(new Error('Index cache unreadable'));
         h.service.performSearch('a homecoming'); h.resolve([scene('a.md', 'at dawn')]); await settle();
-        expect(h.plugin.searchState.status).toBe('error'); expect(h.plugin.searchState.error).toContain('Index encoder unavailable');
+        expect(h.plugin.searchState.status).toBe('error'); expect(h.plugin.searchState.error).toContain('Index cache unreadable');
         expect(complete).not.toHaveBeenCalled(); expect(verifyComplete).not.toHaveBeenCalled();
     });
     it('honors the AI master switch before indexing', async () => {

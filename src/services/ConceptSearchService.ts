@@ -42,6 +42,18 @@ const MAX_QUOTE_CHARS = 240;
 const CONSECUTIVE_FAILURE_LIMIT = 5;
 const PLAN_OUTPUT_TOKENS = 512;
 const VERIFY_OUTPUT_TOKENS = 512;
+const INDEX_TERMS_SCHEMA: Record<string, unknown> = {
+    type: 'object', required: ['terms'], additionalProperties: false,
+    properties: { terms: { type: 'array', minItems: 1, maxItems: 16,
+        items: { type: 'string', minLength: 1, maxLength: 80 } } }
+};
+const INDEX_TERMS_PROMPT = [
+    'Expand the reader request into search words or short phrases likely to occur in story prose.',
+    'Include the original names and events, useful synonyms, and concrete actions or objects that could express the concept.',
+    'Cover every alternative in an OR request. Do not invent names or add requirements.',
+    'These terms only retrieve candidates; the original request will judge every match afterwards.',
+    'Use the request language. Return at most 16 terms as {"terms":["word","short phrase"]}. Stop after the object.'
+].join(' ');
 
 export function chunkBudgetFor(localLlm: LocalLlmSettings): number {
     const declared = getDeclaredContextWindowForActiveModel(localLlm);
@@ -250,7 +262,7 @@ interface RunInput {
     cancel: CancelToken;
     onProgress: (progress: ConceptSearchProgress) => void;
     onHit: (hit: TimelineSearchHit) => void;
-    selectScenes?: () => Promise<ConceptSearchScene[]>;
+    selectScenes?: (queries: string[]) => Promise<ConceptSearchScene[]>;
 }
 
 export class ConceptSearchService {
@@ -318,7 +330,13 @@ export class ConceptSearchService {
         };
         try {
             if (input.selectScenes) {
-                const selected = await input.selectScenes();
+                const expansion = await callJson<{ terms: string[] }>({ ...common, schema: INDEX_TERMS_SCHEMA,
+                    schemaName: 'search_terms', systemPrompt: INDEX_TERMS_PROMPT,
+                    userPrompt: `Request: ${query}`, outputTokens: 384 });
+                if (stopped()) return outcome();
+                if (!expansion.ok) throw new Error(t('ui.conceptSearchService.requestUnreadable', { error: expansion.error }));
+                if (expansion.value.terms.some(term => !term.trim())) throw new Error(t('ui.conceptSearchService.invalidPlan'));
+                const selected = await input.selectScenes([query, ...expansion.value.terms]);
                 for (const [index, scene] of selected.entries()) {
                     if (stopped()) return outcome();
                     onProgress({ chunk: index + 1, chunkCount: selected.length });

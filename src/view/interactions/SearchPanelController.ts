@@ -16,7 +16,6 @@ export interface SearchPanelHost {
     setSearchOptions(options: TimelineSearchOptions): void;
     /** Probe metadata with a short timeout; never run a completion. */
     getLocalModelStatus(): Promise<LocalModelStatus>;
-    getSemanticIndexStatus(): Promise<LocalModelStatus>;
     /** Stop an in-flight concept run at the next chunk boundary. */
     cancelSearch(): void;
     registerDomEvent(el: HTMLElement | Document, event: string, handler: (ev: Event) => void): void;
@@ -45,7 +44,6 @@ export class SearchPanelController {
     private readonly indexHint: HTMLElement;
     private readonly indexIndicator: HTMLElement;
     private localStatus?: LocalModelStatus;
-    private indexStatus?: LocalModelStatus;
     private statusTimer?: number;
     private readonly statusText: HTMLElement;
     private readonly cancelButton: HTMLButtonElement;
@@ -277,18 +275,12 @@ export class SearchPanelController {
     /** Keep availability separate from saved search intent: probes never change modes or start searches. */
     private async refreshLocalModelStatus(): Promise<void> {
         const probeId = ++this.statusProbeId;
-        const probe = async (kind: 'localStatus' | 'indexStatus', read: () => Promise<LocalModelStatus>) => {
-            let status: LocalModelStatus;
-            try { status = await read(); }
-            catch (error) { status = { available: false, reason: error instanceof Error ? error.message : String(error) }; }
-            if (probeId !== this.statusProbeId) return;
-            this[kind] = status;
-            this.syncAvailability();
-        };
-        await Promise.all([
-            probe('localStatus', () => this.host.getLocalModelStatus()),
-            probe('indexStatus', () => this.host.getSemanticIndexStatus())
-        ]);
+        let status: LocalModelStatus;
+        try { status = await this.host.getLocalModelStatus(); }
+        catch (error) { status = { available: false, reason: error instanceof Error ? error.message : String(error) }; }
+        if (probeId !== this.statusProbeId) return;
+        this.localStatus = status;
+        this.syncAvailability();
     }
 
     private syncAvailability(): void {
@@ -310,12 +302,11 @@ export class SearchPanelController {
         const localText = !this.localStatus ? t('timeline.search.assistChecking') : this.localStatus.available
             ? t('timeline.search.assistConnected', { model: this.localStatus.modelId ?? '' })
             : this.localStatus.reason ?? t('ui.searchService.noLocalModel');
-        const indexText = !this.indexStatus ? t('timeline.search.indexChecking') : !this.indexStatus.available
-            ? this.indexStatus.reason ?? t('timeline.search.indexUnavailable')
+        const indexText = this.localStatus?.available === false ? localText
             : options.llmAssist ? t('timeline.search.indexHint') : t('timeline.search.indexRequiresAssist');
         update(this.assistCheckbox, this.assistHint, this.assistIndicator, this.localStatus, options.llmAssist, localText);
-        update(this.indexCheckbox, this.indexHint, this.indexIndicator, this.indexStatus, options.semanticIndex === true,
-            indexText, !options.llmAssist || this.localStatus?.available !== true);
+        update(this.indexCheckbox, this.indexHint, this.indexIndicator, this.localStatus, options.semanticIndex === true,
+            indexText, !options.llmAssist);
     }
 
     /**

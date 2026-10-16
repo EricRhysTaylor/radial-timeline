@@ -46,7 +46,6 @@ import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { SearchPanelController } from './interactions/SearchPanelController';
 import { getLocalLlmAvailability } from '../ai/localLlm/availability';
-import { getLocalSemanticIndexAvailability } from '../services/LocalSemanticIndex';
 import { searchOptionsSignature, writeTimelineSearchSettings, type TimelineSearchOptions } from '../services/searchState';
 import { DEFAULT_BOOK_TITLE, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable } from '../utils/books';
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
@@ -755,9 +754,6 @@ export class RadialTimelineView extends ItemView {
                     setSearchOptions: (options) => { void this.applySearchOptions(options); },
                     getLocalModelStatus: () => this.plugin.settings.enableAiSceneAnalysis === true
                         ? getLocalLlmAvailability(this.plugin, { force: true, timeoutMs: 2000 })
-                        : Promise.resolve({ available: false, reason: t('notices.aiTurnedOff') }),
-                    getSemanticIndexStatus: () => this.plugin.settings.enableAiSceneAnalysis === true
-                        ? getLocalSemanticIndexAvailability()
                         : Promise.resolve({ available: false, reason: t('notices.aiTurnedOff') }),
                     cancelSearch: () => this.plugin.cancelSearch(),
                     registerDomEvent: (el, event, handler) =>

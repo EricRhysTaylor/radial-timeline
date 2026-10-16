@@ -1,79 +1,42 @@
-# Local indexed concept search
+# Indexed concept search with one local server
 
-Local AI search keeps two explicit modes. The existing full sweep reads every
-selected scene with the local generation model. **Use semantic index** retrieves
-up to 12 likely scenes and checks up to three selected passages per candidate.
-It reports that coverage and can miss other matches. Unchecking the index returns
-to the full sweep; an unavailable index never silently starts a slow full sweep.
-Literal search does not call either AI service, including when the saved index
-preference is checked. Fields/prose selection governs both indexing and retrieval.
+The only AI dependency is the server address and model already selected in
+Settings → AI. Search never starts, stops, installs or reconfigures a server or
+loads another model. The owner's Desktop launcher controls only their existing
+local LLM server. There is no companion encoder, second endpoint or model download.
 
-## Runtime and cache
+## Index and retrieval
 
-The companion CPU service binds only to `127.0.0.1:8081`. It uses the pinned English
-[`BAAI/bge-small-en-v1.5`](https://huggingface.co/BAAI/bge-small-en-v1.5) ONNX model with CLS pooling, normalized 384-dimensional
-vectors, 440-token passages, and 64-token overlap. It rejects oversized queries
-instead of truncating them. It logs neither source text nor queries. Ordinary
-startup uses cached model files offline; installation is an explicit command.
-The existing generation model and its RAM/context settings are unchanged.
+**Use search index** builds a plugin-managed text index in each vault's
+`.obsidian/plugins/radial-timeline/search-index/index.json` (using its actual
+configuration directory). It contains exact source excerpts and per-scope content
+fingerprints. Building and refreshing this index requires no AI or network calls.
+Schema version 2 replaces the removed experimental vector-cache format.
 
-The generated cache lives in each vault at
-`.obsidian/plugins/radial-timeline/search-index/index.json` (using the vault's
-actual configuration directory). It contains passage text and vectors, stamped
-with schema version and encoder identity. It is private local operational state,
-not scene YAML or author prose. Removing this generated cache rebuilds it on the
-next indexed search. Invalid cache data causes an actionable error rather than
-being silently replaced. A new encoder identity explicitly invalidates vectors.
+On an explicitly requested indexed concept search, the selected LLM expands the
+query into search terms. The plugin ranks local passages by term overlap weighted
+by rarity, and prioritizes exact original-query occurrences. The same selected
+LLM verifies the original request against up to three passages from each of up
+to 12 candidate scenes. It cites numbered passages; the plugin supplies the exact
+source excerpts for highlights. This is approximate retrieval, not exhaustive
+semantic coverage. The UI discloses the number of scenes reviewed. Turning the
+index off runs the existing full sweep. Failures never silently switch modes.
 
-Each scope has a content fingerprint. Modify/rename/delete events invalidate
-cached records; each search reconciles the current corpus and refreshes only
-changed selected text before retrieval. New notes are added and deleted paths
-are removed. An edit during a pending transaction prevents stale results from
-committing. There is no automatic AI execution in response to editor activity.
+Fields/body selection governs indexing, retrieval and evidence. New and changed
+scenes refresh before retrieval; deleted records are removed and rename/modify/
+delete events invalidate stale entries. Changes during a transaction prevent
+stale results from committing. No AI runs merely because a scene is edited.
+Literal search bypasses both the index and LLM.
 
-Dense ranking is combined with exact phrase retrieval in the selected scopes.
-The same original-query semantic rules check relationships, timing, AND/OR and
-exclusions in both AI modes. Indexed replies cite numbered passages; the plugin
-turns those IDs into its own exact source excerpts for editor highlights. Invalid
-IDs, missing support, incompatible vectors and unavailable services remain
-visible failures. A saved result is not a guarantee of exhaustive relevance.
+## Availability and verification
 
-## Setup and restart (Mac)
+Only the configured LLM server is checked, via metadata, on opening the panel and
+every five seconds while open, with a two-second timeout. A muted × and reason
+identify unavailable AI options. Selected options remain switchable off; probes
+never change preferences or run queries. Closing the panel stops checking.
 
-```sh
-npm run search:index:setup
-npm run search:index:start
-npm run search:index:status
-```
-
-Setup requires `uv`, installs the pinned CPU dependencies in
-`~/.local/share/radial-timeline-search/venv`, and downloads the pinned model files.
-The generation service remains controlled by `npm run server`. The owner's
-Desktop `Restart Local AI.command` restores the 56 GiB GPU wired limit, restarts
-and warms the generation model, then restarts the index encoder. It asks for the
-administrator password only when the wired limit needs restoring after reboot.
-The encoder uses CPU memory and does not alter that GPU limit.
-
-## Search-panel availability
-
-The panel checks generation-model metadata and encoder metadata independently on
-opening and every five seconds while open. Checks have a two-second timeout;
-they never submit manuscript text, run inference, or rebuild the index. Closing
-the panel stops its checks and ignores any late responses.
-
-An unavailable option shows a muted × and an explanatory hint/tooltip. An option
-that is off cannot be enabled until its service returns. A selected option can
-still be unchecked, allowing an explicit change to literal or full-sweep search.
-Health checks never change saved preferences or automatically rerun a query.
-Search-time failures remain visible and preserve previously committed results.
-
-## Verification contract
-
-- Compare complete filenames/evidence, not only hit counts, on warm and first-index runs.
-- Check labelled concept fixtures with more notes than the shortlist: OR, relationships,
-  evidence separated across long scenes, and negative controls.
-- Verify fields-only/prose-only/combined/no-scope and literal punctuation independently.
-- Verify restart reuse, edits, metadata changes, new/renamed/deleted notes, stale reads,
-  cancellation/supersession, permission withdrawal, model identity changes and corrupt cache errors.
-- Keep manuscript hashes unchanged; temporary fixtures and author benchmark text stay private.
-- Run TypeScript, build-only and the repository gates; native UI acceptance is a separate evidence level.
+Verify literal scopes and punctuation; concept OR/AND, relationships, exclusions,
+and long scenes; index persistence, edits, creates, renames, deletes, cancellation,
+corrupt caches and permission withdrawal. Benchmark the new retrieval separately
+from the removed encoder implementation. Retain exact manuscript hashes, labelled
+fixtures, TypeScript/build/gate results, and native evidence.

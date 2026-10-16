@@ -391,7 +391,7 @@ export class SearchService {
                 this.semanticIndex = new LocalSemanticIndex(this.app.vault.adapter, // SAFE: generated cache in the hidden config directory is outside the Vault file index; author notes are never written
                     `${this.app.vault.configDir}/plugins/${this.plugin.manifest.id}/search-index`);
             }
-            const selectScenes = options.semanticIndex ? async () => {
+            const selectScenes = options.semanticIndex ? async (queries: string[]) => {
                 const assertActive = () => {
                     if (myRun !== this.runId || cancel.cancelled || cancel.signal?.aborted
                         || this.plugin.settings.enableAiSceneAnalysis !== true
@@ -400,7 +400,7 @@ export class SearchService {
                         throw new Error(t('timeline.search.cancelPending'));
                     }
                 };
-                const result = await this.semanticIndex!.query({ queries: [term], scenes: corpus, signal: cancel.signal,
+                const result = await this.semanticIndex!.query({ queries, scenes: corpus, signal: cancel.signal,
                     control: { assertActive, timeoutMs: getCanonicalLocalLlmSettings(this.plugin).timeoutMs,
                         retryPolicy: { maxAttempts: 1, baseDelayMs: 0 } },
                     onProgress: (done, total) => {

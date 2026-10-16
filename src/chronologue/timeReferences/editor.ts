@@ -115,7 +115,7 @@ class TimeReferencesModal extends ErtModal {
         new Setting(this.contentEl).setName(t('timeReferences.when')).setDesc(t('timeReferences.dateHelp')).addText(input => input.setValue(when).onChange(text => { when = text; }));
         new Setting(this.contentEl).setName(t('timeReferences.end')).addText(input => input.setValue(end).onChange(text => { end = text; }));
         new Setting(this.contentEl).setName(t('timeReferences.kind')).addDropdown(input => {
-            REFERENCE_KINDS.forEach(key => input.addOption(key, t(`timeReferences.kinds.${key}`)));
+            REFERENCE_KINDS.forEach(key => { input.addOption(key, t(`timeReferences.kinds.${key}`)); });
             input.setValue(kind).onChange(text => { kind = text; });
         });
         new Setting(this.contentEl).setName(t('timeReferences.passage')).setDesc(t('timeReferences.passageHelp'))

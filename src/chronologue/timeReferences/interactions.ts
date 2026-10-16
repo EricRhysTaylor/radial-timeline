@@ -13,14 +13,20 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
         if (!Array.isArray(keys)) return;
         keys.forEach((key: unknown) => {
             if (typeof key !== 'string') return;
-            const [path, index, entry]: unknown[] = JSON.parse(key);
+            const parsed: unknown = JSON.parse(key);
+            if (!Array.isArray(parsed)) return;
+            const parts: readonly unknown[] = parsed;
+            const [path, index, entry] = parts;
             if (typeof path !== 'string' || typeof index !== 'number') return;
             const reference = readTimeReferences([entry], path).references[0];
             if (reference) references.set(key, { ...reference, index, key });
         });
     });
     const groupOf = (target: EventTarget | null): Element | null => target instanceof Element ? target.closest('.ert-time-reference') : null;
-    const keysOf = (group: Element): string[] => JSON.parse(group.getAttribute('data-reference-keys')!);
+    const keysOf = (group: Element): string[] => {
+        const parsed: unknown = JSON.parse(group.getAttribute('data-reference-keys') ?? '[]');
+        return Array.isArray(parsed) ? parsed.filter((key): key is string => typeof key === 'string') : [];
+    };
     const update = (): void => {
         const lens = currentTimelineLens(), coloring = currentTimelineColoring();
         svg.querySelectorAll<SVGElement>('.ert-time-reference-connector').forEach(connector => {

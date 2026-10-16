@@ -108,6 +108,14 @@ class PackagingBoundaries(unittest.TestCase):
         scenes[10][1]['Act'] = 1
         with self.assertRaises(ValueError): validate_source(scenes, source, config)
 
+    def test_unmatched_source_layout_blocks_instead_of_skipping(self):
+        # The legacy helper found no CHAPTER headings in the Odyssey HTML and silently skipped alignment.
+        source = '<h2><a id="chap01"></a>BOOK I</h2><p>Book 1.</p></div><!--end chapter-->'
+        scenes = [(Path('1 Scene.md'), {'Book': 1, 'Act': 1}, 'Book 1.')]
+        with self.assertRaisesRegex(ValueError, 'coverage unavailable'): validate_source(scenes, source, {'scene_count': 1})
+        with self.assertRaisesRegex(ValueError, 'Unsupported source layout'):
+            validate_source(scenes, source, {'source_layout': 'gutenberg-unreviewed-html', 'scene_count': 1})
+
     def test_inquiry_blocks_unverified_unknown_and_recovered_without_quotes(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); scene = root / 'Odyssey/1 Scene.md'

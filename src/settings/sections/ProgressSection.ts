@@ -1,4 +1,4 @@
-import type { App } from 'obsidian';
+import type { App, Component } from 'obsidian';
 import { Setting as ObsidianSetting, Notice, setIcon, setTooltip } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { t, getFormattingLocale } from '../../i18n';
@@ -760,10 +760,12 @@ export function renderCompletionEstimatePreview(params: {
 }
 
 export function renderProgressSection(params: {
+    /** Owns this render's listeners; the settings tab re-renders the section when the active book changes. */
+    scope: Component;
     plugin: RadialTimelinePlugin;
     containerEl: HTMLElement;
 }): void {
-    const { plugin, containerEl } = params;
+    const { scope, plugin, containerEl } = params;
     containerEl.classList.add(ERT_CLASSES.STACK);
 
     const progressHeading = new ObsidianSetting(containerEl)
@@ -812,7 +814,7 @@ export function renderProgressSection(params: {
                     text.inputEl.removeClass('ert-setting-input-overdue');
                 });
 
-                plugin.registerDomEvent(text.inputEl, 'keydown', (evt: KeyboardEvent) => {
+                scope.registerDomEvent(text.inputEl, 'keydown', (evt: KeyboardEvent) => {
                     if (evt.key === 'Enter') {
                         evt.preventDefault();
                         text.inputEl.blur();
@@ -882,7 +884,7 @@ export function renderProgressSection(params: {
                     void scheduleCommunityProjectSync(plugin);
                 };
 
-                plugin.registerDomEvent(text.inputEl, 'blur', () => { void handleBlur(); });
+                scope.registerDomEvent(text.inputEl, 'blur', () => { void handleBlur(); });
             });
 
         // Create custom name with icon

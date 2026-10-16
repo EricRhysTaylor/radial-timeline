@@ -45,18 +45,19 @@ import { getLocalLlmSettings } from '../ai/localLlm/settings';
 import { CORE_ALERTS_SECTION_KEY, type RadialTimelineSettingsTabId } from './settingsAnchors';
 
 export class RadialTimelineSettingsTab extends PluginSettingTab {
-    private _beatSectionScope: Component | null = null;
+    /** Owns the listeners of the panels that read the active book (Progress and status, Story beats system). */
+    private _activeBookScope: Component | null = null;
 
-    private disposeBeatSection(): void {
-        this._beatSectionScope?.unload();
-        this._beatSectionScope = null;
+    private disposeActiveBookSections(): void {
+        this._activeBookScope?.unload();
+        this._activeBookScope = null;
     }
 
-    private resetBeatSectionScope(): Component {
-        this.disposeBeatSection();
+    private resetActiveBookScope(): Component {
+        this.disposeActiveBookSections();
         const scope = new Component();
         scope.load();
-        this._beatSectionScope = scope;
+        this._activeBookScope = scope;
         return scope;
     }
 
@@ -70,7 +71,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
     /** Stop settings-owned async work when the plugin itself is reloaded. */
     public disposeAsyncWork(): void {
-        this.disposeBeatSection();
+        this.disposeActiveBookSections();
         this.disposeAiSection();
         this._aiTabActivationHandler = null;
     }
@@ -98,6 +99,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
     private _pendingSectionRevealTimer: number | null = null;
     private _tabEls: Partial<Record<RadialTimelineSettingsTabId, HTMLElement>> = {};
     private _tabContentEls: Partial<Record<RadialTimelineSettingsTabId, HTMLElement>> = {};
+    private _progressStatusStack?: HTMLElement;
     private _beatsWrapper?: HTMLElement;
     private _backdropYamlTarget?: HTMLElement;
 
@@ -110,31 +112,45 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
     }
 
     /**
-     * Re-render just the Story beats system panel in place. Called when the
-     * active book's settings change (e.g. its source folder is pointed at a
-     * manuscript), so the panel reflects newly-detected/auto-adopted beat
-     * systems without rebuilding the whole settings tab. No-op when the tab
-     * isn't currently displayed.
+     * Re-render, in place, the Core panels that read the active book:
+     * Progress and status (its title and stage target dates) and the Story
+     * beats system (its source folder and adopted beat systems). The plugin
+     * calls this whenever the active book changes or its settings are saved,
+     * so these panels never show one book while their inputs write to
+     * another. No-op when the Core panels aren't displayed.
      */
-    public refreshBeatPropertiesSection(): void {
-        const wrapper = this._beatsWrapper;
-        if (!wrapper || !wrapper.isConnected) return;
-        const scope = this.resetBeatSectionScope();
-        wrapper.empty();
-        renderBeatPropertiesSection({
-            scope,
-            app: this.app,
-            plugin: this.plugin,
-            containerEl: wrapper,
-            backdropYamlTargetEl: this._backdropYamlTarget,
+    public refreshActiveBookSections(): void {
+        const progressStack = this._progressStatusStack;
+        const beatsWrapper = this._beatsWrapper;
+        if (!progressStack?.isConnected || !beatsWrapper?.isConnected) return;
+        const scope = this.resetActiveBookScope();
+        progressStack.empty();
+        this.renderProgressStatus(progressStack, scope);
+        beatsWrapper.empty();
+        this.renderBeatProperties(beatsWrapper, scope);
+    }
+
+    private renderProgressStatus(containerEl: HTMLElement, scope: Component): void {
+        this.renderGuarded(t('ui.settingsTab.guardProgress'), containerEl, () => {
+            renderProgressSection({ scope, plugin: this.plugin, containerEl });
         });
-        // Mirror the section ordering applied in display().
-        const story = wrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="beats-story"]`);
-        const acts = wrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="beats-acts"]`);
-        const yaml = wrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="beats-yaml"]`);
-        if (story) wrapper.appendChild(story);
-        if (acts) wrapper.appendChild(acts);
-        if (yaml) wrapper.appendChild(yaml);
+    }
+
+    private renderBeatProperties(containerEl: HTMLElement, scope: Component): void {
+        this.renderGuarded(t('ui.settingsTab.guardStoryProperties'), containerEl, () => {
+            renderBeatPropertiesSection({
+                scope,
+                app: this.app,
+                plugin: this.plugin,
+                containerEl,
+                backdropYamlTargetEl: this._backdropYamlTarget,
+            });
+            // Story beats, acts and beat YAML read after the scene properties.
+            for (const key of ['beats-story', 'beats-acts', 'beats-yaml']) {
+                const section = containerEl.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="${key}"]`);
+                if (section) containerEl.appendChild(section);
+            }
+        });
     }
 
     public revealSettingsSection(
@@ -795,14 +811,16 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         });
     }
 
-    private renderCoreQuickLinks(containerEl: HTMLElement, links: Array<{ label: string; target: HTMLElement | null }>): void {
-        const valid = links.filter((link): link is { label: string; target: HTMLElement } => link.target !== null);
+    private renderCoreQuickLinks(containerEl: HTMLElement, links: Array<{ label: string; section: string }>): void {
+        // Links name sections by key, not element: the active-book panels re-render in place.
+        const findSection = (key: string) => this.containerEl.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="${key}"]`);
+        const valid = links.filter(link => findSection(link.section) !== null);
         if (!valid.length) return;
 
         const root = containerEl.createDiv({ cls: 'ert-coreQuickLinks' });
 
         root.createSpan({ cls: 'ert-coreQuickLinks__label', text: t('ui.settingsTab.quickLinksLabel') });
-        valid.forEach(({ label: text, target }) => {
+        valid.forEach(({ label: text, section }) => {
             const button = root.createEl('button', {
                 cls: `${ERT_CLASSES.PILL_BTN} ${ERT_CLASSES.PILL_BTN_STANDARD} ert-coreQuickLinks__pill`,
                 attr: { type: 'button' }
@@ -811,7 +829,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             const iconEl = button.createSpan({ cls: ERT_CLASSES.PILL_BTN_ICON });
             setIcon(iconEl, 'corner-right-down');
             this.plugin.registerDomEvent(button, 'click', () => {
-                target.scrollIntoView({ block: 'start' });
+                findSection(section)?.scrollIntoView({ block: 'start' });
             });
         });
     }
@@ -960,14 +978,11 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const forceExpandCompletionPreview = this._forceExpandCoreCompletionPreview;
         this._forceExpandCoreCompletionPreview = false;
 
-        let beatsStorySection: HTMLElement | null = null;
         let backdropSection: HTMLElement | null = null;
         let chronologueSection: HTMLElement | null = null;
         let generalSection: HTMLElement | null = null;
         let progressSection: HTMLElement | null = null;
         let goalsSessionsSection: HTMLElement | null = null;
-        let scenePropertiesSection: HTMLElement | null = null;
-        let colorsWorkingPatternSection: HTMLElement | null = null;
 
         const quickLinksRow = coreStack.createDiv();
 
@@ -1004,12 +1019,9 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
         const progressStatusSection = progressStack.createDiv({ attr: { [ERT_DATA.SECTION]: 'progress-status' } });
         const progressStatusStack = progressStatusSection.createDiv({ cls: ERT_CLASSES.STACK });
-        this.renderGuarded(t('ui.settingsTab.guardProgress'), progressStatusStack, () => {
-            renderProgressSection({
-                plugin: this.plugin,
-                containerEl: progressStatusStack
-            });
-        });
+        this._progressStatusStack = progressStatusStack;
+        const activeBookScope = this.resetActiveBookScope();
+        this.renderProgressStatus(progressStatusStack, activeBookScope);
 
         goalsSessionsSection = searchableContent.createDiv({
             attr: { [ERT_DATA.SECTION]: 'goals-sessions' }
@@ -1031,16 +1043,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const backdropYamlTarget = createDiv();
         this._beatsWrapper = beatsWrapper;
         this._backdropYamlTarget = backdropYamlTarget;
-        this.renderGuarded(t('ui.settingsTab.guardStoryProperties'), beatsWrapper, () => {
-            renderBeatPropertiesSection({ app: this.app, plugin: this.plugin, containerEl: beatsWrapper, backdropYamlTargetEl: backdropYamlTarget, scope: this.resetBeatSectionScope() });
-            beatsStorySection = beatsWrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="beats-story"]`);
-            const beatsActsSection = beatsWrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="beats-acts"]`);
-            const beatsYamlSection = beatsWrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="beats-yaml"]`);
-            scenePropertiesSection = beatsWrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="scene-properties"]`);
-            if (beatsStorySection) beatsWrapper.appendChild(beatsStorySection);
-            if (beatsActsSection) beatsWrapper.appendChild(beatsActsSection);
-            if (beatsYamlSection) beatsWrapper.appendChild(beatsYamlSection);
-        });
+        this.renderBeatProperties(beatsWrapper, activeBookScope);
 
         chronologueSection = searchableContent.createDiv({ attr: { [ERT_DATA.SECTION]: 'chronologue' } });
         const chronologueTarget = chronologueSection;
@@ -1068,7 +1071,6 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const colorsWrapper = searchableContent.createDiv();
         this.renderGuarded(t('ui.settingsTab.guardColors'), colorsWrapper, () => {
             renderColorsSection(colorsWrapper, this.plugin);
-            colorsWorkingPatternSection = colorsWrapper.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="colors-working-pattern"]`);
         });
 
         const releaseNotesSection = searchableContent.createDiv({ attr: { [ERT_DATA.SECTION]: 'release-notes' } });
@@ -1081,16 +1083,16 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
         // Order mirrors the on-page section order so the links read top-to-bottom.
         this.renderCoreQuickLinks(quickLinksRow, [
-            { label: t('ui.settingsTab.quickLinkBooks'), target: generalSection },
-            { label: t('ui.settingsTab.quickLinkSessions'), target: goalsSessionsSection },
-            { label: t('ui.settingsTab.quickLinkBeats'), target: beatsStorySection },
-            { label: t('ui.settingsTab.quickLinkProperties'), target: scenePropertiesSection },
-            { label: t('ui.settingsTab.quickLinkChronology'), target: chronologueSection },
-            { label: t('ui.settingsTab.quickLinkPov'), target: povSection },
-            { label: t('ui.settingsTab.quickLinkPlanetary'), target: planetarySection },
-            { label: t('ui.settingsTab.quickLinkBackdrop'), target: backdropSection },
-            { label: t('ui.settingsTab.quickLinkColors'), target: colorsWorkingPatternSection },
-            { label: t('ui.settingsTab.quickLinkReleaseNotes'), target: releaseNotesSection }
+            { label: t('ui.settingsTab.quickLinkBooks'), section: 'general' },
+            { label: t('ui.settingsTab.quickLinkSessions'), section: 'goals-sessions' },
+            { label: t('ui.settingsTab.quickLinkBeats'), section: 'beats-story' },
+            { label: t('ui.settingsTab.quickLinkProperties'), section: 'scene-properties' },
+            { label: t('ui.settingsTab.quickLinkChronology'), section: 'chronologue' },
+            { label: t('ui.settingsTab.quickLinkPov'), section: 'pov' },
+            { label: t('ui.settingsTab.quickLinkPlanetary'), section: 'planetary' },
+            { label: t('ui.settingsTab.quickLinkBackdrop'), section: 'backdrop' },
+            { label: t('ui.settingsTab.quickLinkColors'), section: 'colors-working-pattern' },
+            { label: t('ui.settingsTab.quickLinkReleaseNotes'), section: 'release-notes' }
         ]);
 
         this.renderGuarded(t('ui.settingsTab.guardSocial'), socialContent, () => {

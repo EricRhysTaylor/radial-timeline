@@ -38,13 +38,13 @@ describe('settings section navigation anchors', () => {
 
     it('uses concise Core quick-link labels', () => {
         const source = readFileSync(resolve(process.cwd(), 'src/settings/SettingsTab.ts'), 'utf8');
-        expect(source.includes("{ label: t('ui.settingsTab.quickLinkBeats'), target: beatsStorySection }")).toBe(true);
-        expect(source.includes("{ label: t('ui.settingsTab.quickLinkProperties'), target: scenePropertiesSection }")).toBe(true);
+        expect(source.includes("{ label: t('ui.settingsTab.quickLinkBeats'), section: 'beats-story' }")).toBe(true);
+        expect(source.includes("{ label: t('ui.settingsTab.quickLinkProperties'), section: 'scene-properties' }")).toBe(true);
         // The README is no longer rendered in settings — it lives on GitHub and
         // the Obsidian directory only.
         expect(source.includes('readmeSection')).toBe(false);
-        expect(source.includes("{ label: 'Story beats', target: beatsStorySection }")).toBe(false);
-        expect(source.includes("{ label: 'Scene properties', target: scenePropertiesSection }")).toBe(false);
+        expect(source.includes("{ label: 'Story beats',")).toBe(false);
+        expect(source.includes("{ label: 'Scene properties',")).toBe(false);
     });
 
     it('anchors timeline Settings Alert clicks to Core alerts instead of the remembered tab', () => {

@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { Component } from 'obsidian';
 import { dirtyState } from './sections/beats/dirtyState';
 import { renderBeatPropertiesSection } from './sections/BeatPropertiesSection';
+import { renderProgressSection } from './sections/ProgressSection';
 import { RadialTimelineSettingsTab } from './SettingsTab';
 
 vi.mock('./FolderSuggest', () => ({ FolderSuggest: class {} }));
@@ -34,12 +37,22 @@ afterEach(() => {
     vi.clearAllMocks();
 });
 
-function mount() {
-    const tab = new RadialTimelineSettingsTab({} as never, { settings: {} } as never);
+function fakePanel(isConnected = true) {
+    return { isConnected, empty: vi.fn(), querySelector: () => null };
+}
+
+function mountPanels(settings: { activeBookId?: string } = {}, isConnected = true) {
+    const tab = new RadialTimelineSettingsTab({} as never, { settings } as never);
     tabs.push(tab);
-    const wrapper = { isConnected: true, empty: vi.fn(), querySelector: () => null };
-    // SAFE: supply only the mounted wrapper used by the public refresh entry point.
-    (tab as unknown as { _beatsWrapper: unknown })._beatsWrapper = wrapper;
+    const progressStack = fakePanel(isConnected);
+    const beatsWrapper = fakePanel(isConnected);
+    // SAFE: supply only the mounted panels used by the public refresh entry point.
+    Object.assign(tab as unknown as Record<string, unknown>, { _progressStatusStack: progressStack, _beatsWrapper: beatsWrapper });
+    return { tab, progressStack, beatsWrapper };
+}
+
+function mount() {
+    const { tab } = mountPanels();
     const listeners: ReturnType<typeof vi.fn>[] = [];
     const cleanups: ReturnType<typeof vi.fn>[] = [];
     vi.mocked(renderBeatPropertiesSection).mockImplementation(({ scope }) => {
@@ -51,14 +64,14 @@ function mount() {
         scope.register(dirtyState.subscribe(listener));
         scope.register(cleanup);
     });
-    tab.refreshBeatPropertiesSection();
+    tab.refreshActiveBookSections();
     return { tab, listeners, cleanups };
 }
 
 describe('settings-owned beat render lifetime', () => {
     it('unsubscribes the old render before mounting a replacement', () => {
         const { tab, listeners, cleanups } = mount();
-        tab.refreshBeatPropertiesSection();
+        tab.refreshActiveBookSections();
         dirtyState.notify();
         expect(listeners[0]).not.toHaveBeenCalled();
         expect(listeners[1]).toHaveBeenCalledTimes(1);
@@ -73,7 +86,7 @@ describe('settings-owned beat render lifetime', () => {
         dirtyState.notify();
         expect(listeners[0]).not.toHaveBeenCalled();
         expect(cleanups[0]).toHaveBeenCalledTimes(1);
-        tab.refreshBeatPropertiesSection();
+        tab.refreshActiveBookSections();
         dirtyState.notify();
         expect(listeners[1]).toHaveBeenCalledTimes(1);
         expect(listeners[0]).not.toHaveBeenCalled();
@@ -91,5 +104,51 @@ describe('settings-owned beat render lifetime', () => {
             throw stop;
         } } as unknown as HTMLElement;
         expect(() => tab.display()).toThrow(stop);
+    });
+});
+
+describe('settings panels that read the active book', () => {
+    it('re-renders Progress and status in place when the active book changes', () => {
+        const settings = { activeBookId: 'broken-draft' };
+        const { tab, progressStack } = mountPanels(settings);
+        const renderedFor: Array<string | undefined> = [];
+        vi.mocked(renderProgressSection).mockImplementation(({ plugin, containerEl }) => {
+            expect(containerEl).toBe(progressStack);
+            renderedFor.push(plugin.settings.activeBookId);
+        });
+        tab.refreshActiveBookSections();
+        settings.activeBookId = 'harbor-book';
+        tab.refreshActiveBookSections();
+        expect(renderedFor).toEqual(['broken-draft', 'harbor-book']);
+        expect(progressStack.empty).toHaveBeenCalledTimes(2);
+        expect(renderBeatPropertiesSection).toHaveBeenCalledTimes(2);
+    });
+
+    it('drops the previous Progress render listeners before mounting a replacement', () => {
+        const { tab } = mountPanels();
+        const cleanups: ReturnType<typeof vi.fn>[] = [];
+        vi.mocked(renderProgressSection).mockImplementation(({ scope }) => {
+            const cleanup = vi.fn();
+            cleanups.push(cleanup);
+            scope.register(cleanup);
+        });
+        tab.refreshActiveBookSections();
+        tab.refreshActiveBookSections();
+        expect(cleanups[0]).toHaveBeenCalledTimes(1);
+        expect(cleanups[1]).not.toHaveBeenCalled();
+    });
+
+    it('does nothing while the Core panels are not displayed', () => {
+        const { tab, progressStack } = mountPanels({}, false);
+        tab.refreshActiveBookSections();
+        expect(progressStack.empty).not.toHaveBeenCalled();
+        expect(renderProgressSection).not.toHaveBeenCalled();
+        expect(renderBeatPropertiesSection).not.toHaveBeenCalled();
+    });
+
+    it.each(['setActiveBookId', 'persistBookSettings'])('plugin %s refreshes the open panels', (method) => {
+        const mainSrc = readFileSync(resolve(process.cwd(), 'src/main.ts'), 'utf8');
+        const body = mainSrc.match(new RegExp(`public async ${method}\\([^)]*\\): Promise<void> \\{[\\s\\S]+?\\n {4}\\}`))?.[0] ?? '';
+        expect(body).toContain('this.settingsTab?.refreshActiveBookSections();');
     });
 });

@@ -432,8 +432,10 @@ export function renderGeneralSection(params: {
             // Row 2 holds the source folder input + trash, spanning under title and controls
             const folderRow = row.settingEl.createDiv({ cls: 'ert-book-card__folder' });
 
-            // Activate: click the row (title stopPropagation prevents conflict)
-            if (!isActive) {
+            // Activate: click the row (title stopPropagation prevents conflict).
+            // Only a book whose folder exists can become the timeline's book; a
+            // card still waiting for its folder, or with a missing one, cannot.
+            if (!isActive && hasResolvedFolder) {
                 row.settingEl.addClass('ert-book-card--clickable');
                 row.settingEl.addEventListener('click', () => { void (async () => { // SAFE: direct addEventListener; Settings lifecycle manages cleanup
                     if (dragState.index !== null) return;

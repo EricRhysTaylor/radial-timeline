@@ -577,7 +577,7 @@
   color: var(--text-error);
 }
 
-/* Clickable row to activate inactive book */
+/* Clickable row to activate an inactive book whose folder exists */
 .ert-book-card--clickable {
   cursor: pointer;
 }
@@ -588,14 +588,6 @@
 
 .ert-book-card--clickable:hover .ert-book-card__status {
   color: var(--text-success);
-}
-
-.ert-book-card--clickable.ert-book-card--link-broken:hover {
-  border-color: color-mix(in srgb, var(--text-error) 42%, var(--background-modifier-border));
-}
-
-.ert-book-card--clickable.ert-book-card--link-broken:hover .ert-book-card__status--invalid {
-  color: var(--text-error);
 }
 
 .ert-book-card__stat--warn {

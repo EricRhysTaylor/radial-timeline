@@ -481,6 +481,21 @@
   min-width: 0;
 }
 
+/* A folder holding a manuscript export: say so and offer the import */
+.ert-book-card__hint {
+  grid-column: 2 / span 2;
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ert-gap-sm);
+  min-width: 0;
+}
+
+.ert-book-card__hint:empty {
+  display: none;
+}
+
 /* Narrow panes: controls drop to their own row so the title keeps its width */
 @container ert-books (max-width: 520px) {
   :is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-book-card.setting-item {
@@ -495,6 +510,10 @@
 
   .ert-book-card__folder {
     grid-row: 3;
+  }
+
+  .ert-book-card__hint {
+    grid-row: 4;
   }
 }
 

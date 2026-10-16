@@ -1,12 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import type { App } from 'obsidian';
-import { discoverOnboardingCandidates } from './discovery';
+import { countSceneNotes, discoverOnboardingCandidates, holdsManuscriptExport } from './discovery';
+/** A synthetic vault; a value of `SCENE` is a note whose frontmatter says `Class: Scene`. */
+const SCENE = '---\nClass: Scene\n---\nProse.';
 function app(paths: Record<string, string>): App {
-  // SAFE: discovery consumes only these vault methods; all data is a synthetic export.
-  return { vault: {
-    getFiles: () => Object.keys(paths).map(path => ({ path, name: path.slice(path.lastIndexOf('/') + 1), extension: path.split('.').pop() })),
-    read: async (file: { path: string }) => paths[file.path],
-  } } as unknown as App;
+  // SAFE: discovery consumes only these vault and metadata-cache methods; all data is synthetic.
+  return {
+    vault: {
+      getFiles: () => Object.keys(paths).map(path => ({ path, name: path.slice(path.lastIndexOf('/') + 1), extension: path.split('.').pop() })),
+      read: async (file: { path: string }) => paths[file.path],
+    },
+    metadataCache: { getFileCache: (file: { path: string }) => (paths[file.path] === SCENE ? { frontmatter: { Class: 'Scene' } } : null) },
+  } as unknown as App;
 }
 const outline = 'Title,Synopsis,Word Count\nArrival,An arrival,5';
 describe('read-only onboarding discovery', () => {
@@ -46,5 +51,28 @@ describe('read-only onboarding discovery', () => {
       { kind: 'word', folder: 'Drafts', document: 'Novel.docx' },
       { kind: 'scrivener', folder: 'Imports/Salt', sceneCount: 2, outline: null },
     ]);
+  });
+  it('reports an unregistered folder of scene notes as a book, never as an export to import', async () => {
+    const vault = app({
+      'Saga/Book 4/01 Arrival.md': SCENE,
+      'Saga/Book 4/02 Departure.md': SCENE,
+      'Saga/Book 4/Notes.md': 'plain note',
+      'Saga/Book 4/Exports/Book 4.docx': 'binary',
+      'Saga/Book 1/01 Opening.md': SCENE,
+      'Saga/01 Saturn/01 Ring.md': SCENE,
+      'Saga/02 Jupiter/01 Storm.md': SCENE,
+    });
+    expect(await discoverOnboardingCandidates(vault, ['Saga/Book 1'])).toEqual([
+      { kind: 'book', folder: 'Saga/01 Saturn', sceneCount: 1 },
+      { kind: 'book', folder: 'Saga/02 Jupiter', sceneCount: 1 },
+      { kind: 'book', folder: 'Saga/Book 4', sceneCount: 2 },
+    ]);
+  });
+  it('tells a book folder from a manuscript export', () => {
+    const vault = app({ 'Book/01 Arrival.md': SCENE, 'Book/Act 2/02 Storm.md': SCENE, 'Export/01 Arrival.txt': 'prose', 'Export/Notes.md': 'plain' });
+    expect(countSceneNotes(vault, 'Book')).toBe(2);
+    expect(countSceneNotes(vault, 'Export')).toBe(0);
+    expect(holdsManuscriptExport(vault, 'Export')).toBe(true);
+    expect(holdsManuscriptExport(vault, 'Book')).toBe(false);
   });
 });

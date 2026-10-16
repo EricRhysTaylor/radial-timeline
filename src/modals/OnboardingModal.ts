@@ -3,6 +3,8 @@
  *
  * Every import starts at Choose (detected exports, or any folder). Then:
  *
+ *   Radial Timeline book (a folder of scene notes) → Add book, as it is; there
+ *                      is nothing to import, and importing would only copy it
  *   Scrivener export → Review (one screen: title, outline columns, live
  *                      result) → Import → the timeline
  *   Other sources    → Prepare → CHECKPOINT 1 (Split: confirm scenes + order,
@@ -40,7 +42,8 @@ import { basename } from '../onboarding/paths';
 import { refreshOnboardingPrompt } from '../onboarding/promptSync';
 import { proposeScrivenerAutomap, type ScrivenerFieldTarget } from '../onboarding/adapters/scrivenerAdapter';
 import { createBookId, normalizeBookProfile } from '../utils/books';
-import { discoverOnboardingCandidates } from '../onboarding/discovery';
+import { isPathInFolderScope } from '../utils/pathScope';
+import { countSceneNotes, discoverOnboardingCandidates, type OnboardingCandidate } from '../onboarding/discovery';
 import { missingOutlineText, renderScrivenerExportHelp, renderScrivenerProblems, renderScrivenerReview, renderSourceParts, type ScrivenerReviewState } from './OnboardingScrivenerReview';
 import { STAGE_ORDER, type Stage } from '../utils/constants';
 import type { AIProviderId } from '../ai/types';
@@ -72,6 +75,23 @@ function asStringList(value: unknown): string[] {
 /** Display a `[[Wiki Link]]` as its bare name for a pill. */
 function stripWikiLink(value: string): string {
   return value.replace(/^\[\[/, '').replace(/\]\]$/, '');
+}
+
+/**
+ * The labeled parts of a manuscript found in the vault. A Scrivener export is
+ * its scene files plus the outline CSV; a missing outline is flagged.
+ */
+export function candidateParts(candidate: OnboardingCandidate): Array<{ label: string; value: string; warn?: boolean }> {
+  const scenes = t('ui.onboardingScrivenerReview.sourceScenes');
+  if (candidate.kind === 'book') return [{ label: scenes, value: t('ui.onboardingModal.existingBookScenes', { scenes: tCount('sceneNote', candidate.sceneCount) }) }];
+  if (candidate.kind === 'word') return [{ label: t('ui.onboardingModal.sourceDocument'), value: candidate.document }];
+  const properties = t('ui.onboardingScrivenerReview.sourceProperties');
+  return [
+    { label: scenes, value: tCount('textFile', candidate.sceneCount) },
+    candidate.outline
+      ? { label: properties, value: t('ui.onboardingModal.scrivenerOutlineValue', { outline: candidate.outline }) }
+      : { label: properties, value: missingOutlineText(), warn: true },
+  ];
 }
 
 /** Author-facing names for the import lanes shown on the Prepare screen. */
@@ -216,8 +236,11 @@ export class OnboardingModal extends Modal {
   private extractModel: ManuscriptModel | null = null;
   private abortController: AbortController | null = null;
 
-  /** `onClosed` lets the opener refresh after an import (Book Manager redraws its list). */
-  constructor(app: App, plugin: RadialTimelinePlugin, private readonly onClosed?: () => void) {
+  /**
+   * `folder` opens straight on a source the opener already found; `onClosed`
+   * lets the opener refresh after an import (Book Manager redraws its list).
+   */
+  constructor(app: App, plugin: RadialTimelinePlugin, private readonly options: { folder?: string; onClosed?: () => void } = {}) {
     super(app);
     this.plugin = plugin;
     this.service = new OnboardingService(plugin);
@@ -285,7 +308,8 @@ export class OnboardingModal extends Modal {
 
     // Resume: a dismissed modal (stray outside click, Escape) loses nothing —
     // reopening picks up exactly where it left off.
-    if (activeSession?.model) {
+    const folder = this.options.folder;
+    if (activeSession?.model && (!folder || activeSession.folder === folder)) {
       this.restoreSession(activeSession);
       if (activeSession.stage === 'scrivener') {
         void this.showScrivenerReview();
@@ -296,13 +320,17 @@ export class OnboardingModal extends Modal {
       }
       return;
     }
+    if (folder) {
+      void this.selectSourceFolder(folder);
+      return;
+    }
     void this.showSourceSelection();
   }
 
   onClose(): void {
     this.abortController?.abort();
     this.contentEl.empty();
-    this.onClosed?.();
+    this.options.onClosed?.();
   }
 
   // ---- Views -------------------------------------------------------------
@@ -349,14 +377,7 @@ export class OnboardingModal extends Modal {
         const row = found.createEl('button', { cls: 'ert-modal-choice', attr: { type: 'button' } });
         const name = row.createDiv({ cls: 'ert-onb-source__name', text: basename(candidate.folder) });
         if (candidate.folder !== basename(candidate.folder)) name.createSpan({ cls: 'ert-section-desc', text: `  ${candidate.folder}` });
-        renderSourceParts(row, candidate.kind === 'word'
-          ? [{ label: t('ui.onboardingModal.sourceDocument'), value: candidate.document }]
-          : [
-            { label: t('ui.onboardingScrivenerReview.sourceScenes'), value: tCount('textFile', candidate.sceneCount) },
-            candidate.outline
-              ? { label: t('ui.onboardingScrivenerReview.sourceProperties'), value: t('ui.onboardingModal.scrivenerOutlineValue', { outline: candidate.outline }) }
-              : { label: t('ui.onboardingScrivenerReview.sourceProperties'), value: missingOutlineText(), warn: true },
-          ]);
+        renderSourceParts(row, candidateParts(candidate));
         row.addEventListener('click', () => void selectFolder(candidate.folder));
       }
     } catch (failure) {
@@ -364,8 +385,20 @@ export class OnboardingModal extends Modal {
     }
   }
 
-  /** Keep the chosen source local until the author approves materialization. */
+  /**
+   * Keep the chosen source local until the author approves materialization.
+   * A folder of scene notes is already a Radial Timeline book: it is added as
+   * it is, never run through an import.
+   */
   private async selectSourceFolder(folder: string): Promise<void> {
+    const registered = (this.plugin.settings.books ?? []) // SAFE: a new vault has no books
+      .filter(book => isPathInFolderScope(folder, book.sourceFolder))
+      .sort((a, b) => b.sourceFolder.length - a.sourceFolder.length)[0] ?? null; // SAFE: null when no book in Book Manager holds this folder
+    const sceneCount = countSceneNotes(this.app, folder);
+    if (registered || sceneCount > 0) {
+      this.showExistingBook(folder, registered, sceneCount);
+      return;
+    }
     activeSession = null;
     this.book = normalizeBookProfile({ id: createBookId(), title: folder.slice(folder.lastIndexOf('/') + 1), sourceFolder: folder });
     this.flowOverride = null;
@@ -383,6 +416,39 @@ export class OnboardingModal extends Modal {
     this.splitPlans.clear();
     this.splitOutcomes = null;
     await this.showPreflight();
+  }
+
+  /**
+   * A folder that is already a Radial Timeline book: add it to Book Manager as
+   * it is, or show it when Book Manager already has it.
+   */
+  private showExistingBook(folder: string, registered: BookProfile | null, sceneCount: number): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    const header = contentEl.createDiv({ cls: 'ert-modal-header' });
+    header.createSpan({ cls: 'ert-modal-badge', text: t('ui.onboardingModal.importBadge') });
+    header.createDiv({ cls: 'ert-modal-title', text: basename(folder) });
+    header.createDiv({ cls: 'ert-modal-subtitle', text: registered
+      ? t('ui.onboardingModal.registeredBookSubtitle', { title: registered.title })
+      : t('ui.onboardingModal.existingBookSubtitle') });
+    const panel = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
+    renderSourceParts(panel, [{ label: t('ui.onboardingScrivenerReview.sourceScenes'), value: tCount('sceneNote', sceneCount) }]);
+    if (!registered) panel.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingModal.existingBookNothingToImport') });
+    const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
+    new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.chooseAnotherManuscript')).onClick(() => void this.showSourceSelection());
+    new ButtonComponent(actions)
+      .setButtonText(registered ? t('ui.onboardingModal.showOnTimeline') : t('ui.generalSection.addBook'))
+      .setCta()
+      .onClick(() => void (async () => {
+        if (registered) {
+          await this.plugin.setActiveBookId(registered.id);
+        } else {
+          const added = await this.service.addBook({ title: basename(folder), sourceFolder: folder });
+          new Notice(t('ui.onboardingModal.bookAddedNotice', { title: added.title }));
+        }
+        this.close();
+        await this.plugin.getTimelineService().activateView();
+      })());
   }
 
   /**

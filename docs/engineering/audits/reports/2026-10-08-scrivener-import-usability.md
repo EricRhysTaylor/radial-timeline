@@ -66,6 +66,17 @@ Fresh test vault, Welcome → Import manuscript → The Salt Road → Review →
 
 - Export problems no longer stop the import outright. Each problem carries what importing anyway does (`ScrivenerProblem.ifImported`); **Continue anyway** imports with those consequences listed as review warnings. Lenient rules: the outline orders the files it lists (shared titles pair rows and files in turn), unlisted files follow in file order; a title held by more than one file or row carries no outline properties; an unusable CSV is left out; with no order source, files go by folder and name. Only an export with no scene text is refused. `ingest()` now takes the resolved lane instead of re-detecting it.
 
+## Book folders versus imports (2026-10-16)
+
+Eric pointed the import at `Book 4 Uranus & Neptune`, a folder that was already a Radial Timeline book. Prepare offered to onboard it ("0 chapters, 5 already onboarded, skipped"), which would only have copied it. In the same session Book Manager's **+** made a blank "Untitled Manuscript" the active book. The timeline then showed the Welcome screen, whose sample card lists the demo vault's books. Each click appended another blank card below the fold.
+
+- A folder holding scene notes (`Class: Scene`, any depth, the notes the timeline reads) is a book, never an import. Choosing one, from the chooser list or by typing it, opens one screen with **Add book**. A folder that a registered book already covers gets **Show on timeline**. Neither reaches Prepare.
+- Discovery reports unregistered book folders as `kind: 'book'` (the outermost folder holding scene notes, never binder-climbed). Exports inside a book folder belong to that book and are not offered for import.
+- Book Manager's panel, now "Add an existing book or manuscript", lists what **Scan vault** finds. A book folder gets **Add book**; an export gets **Import**, which opens the import on that folder.
+- **+** no longer switches the timeline. It reuses the blank card waiting for a folder, or adds one, then scrolls to it and focuses its folder field. A new book becomes the timeline's book only once its folder holds scenes.
+- A card pointed at a folder holding a Scrivener or Word export, with no scene notes, keeps its old folder. The card says so and offers **Import**. An import started from a blank card replaces that card.
+- `OnboardingService.addBook` is the one way a folder joins Book Manager (imports and book folders alike). It switches through `setActiveBookId`, so a saga timeline returns to book scope.
+
 ## Deferred
 
 - Word and single-file imports still use the four-stage path; the same one-screen review would suit them once scene splitting is folded in.

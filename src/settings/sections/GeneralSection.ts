@@ -1,7 +1,9 @@
 import type { App } from 'obsidian';
 import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, ExtraButtonComponent, TextComponent, setIcon, setTooltip, TFile, TFolder } from 'obsidian';
-import { OnboardingModal } from '../../modals/OnboardingModal';
-import { describeOnboardingCandidate, discoverOnboardingCandidates } from '../../onboarding/discovery';
+import { OnboardingModal, candidateParts } from '../../modals/OnboardingModal';
+import { OnboardingService } from '../../onboarding/OnboardingService';
+import { basename } from '../../onboarding/paths';
+import { countSceneNotes, discoverOnboardingCandidates, holdsManuscriptExport } from '../../onboarding/discovery';
 import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
 import { CreateBookCopyModal } from '../../modals/CreateBookCopyModal';
@@ -121,25 +123,55 @@ export function renderGeneralSection(params: {
     });
     setIcon(addBookBtn, 'plus');
 
+    // Existing books and manuscripts: a folder of scene notes is added as it
+    // is; a Scrivener or Word export goes through the import. Keeping the two
+    // apart is the point: importing a book folder would only copy it.
     const discoveryPanel = containerEl.createDiv({ cls: 'ert-panel ert-stack' });
     const scanSetting = new ObsidianSetting(discoveryPanel)
         .setName(t('ui.generalSection.importName'))
         .setDesc(t('ui.generalSection.importDesc'))
-        .addButton(button => button.setButtonText(t('ui.generalSection.chooseManuscript')).onClick(() => new OnboardingModal(app, plugin, () => renderBooksManager()).open()));
+        .addButton(button => button.setButtonText(t('commands.onboardManuscript')).onClick(() => openImport()));
     const candidatesEl = discoveryPanel.createDiv({ cls: 'ert-stack' });
+    let scanned = false;
     const scan = async () => {
-        candidatesEl.setText(t('ui.generalSection.checkingExports'));
+        scanned = true;
+        candidatesEl.setText(t('ui.generalSection.scanningVault'));
         try {
             const candidates = await discoverOnboardingCandidates(app, (plugin.settings.books ?? []).map(book => book.sourceFolder)); // SAFE: a new vault has no registered books
             if (!candidatesEl.isConnected) return;
             candidatesEl.empty();
-            candidatesEl.createDiv({ cls: 'ert-section-desc', text: candidates.length ? t('ui.generalSection.candidatesFound', { count: candidates.length }) : t('ui.generalSection.noExportsFound') });
-            for (const candidate of candidates) candidatesEl.createDiv({ cls: 'ert-section-desc', text: `${candidate.folder} — ${describeOnboardingCandidate(candidate)}` });
+            if (candidates.length === 0) candidatesEl.createDiv({ cls: 'ert-section-desc', text: t('ui.generalSection.noExportsFound') });
+            for (const candidate of candidates) {
+                const row = new ObsidianSetting(candidatesEl)
+                    .setName(candidate.folder)
+                    .setDesc(candidateParts(candidate).map(part => part.value).join(' · '));
+                if (candidate.kind === 'book') {
+                    row.addButton(button => button.setButtonText(t('ui.generalSection.addBook')).setCta().onClick(async () => {
+                        await new OnboardingService(plugin).addBook({ title: basename(candidate.folder), sourceFolder: candidate.folder });
+                        renderBooksManager();
+                        void scan();
+                    }));
+                } else {
+                    row.addButton(button => button.setButtonText(t('ui.generalSection.importAction')).onClick(() => openImport(candidate.folder)));
+                }
+            }
         } catch (error) {
-            if (candidatesEl.isConnected) candidatesEl.setText(t('ui.generalSection.scanFailed', { error: error instanceof Error ? error.message : String(error) }));
+            if (candidatesEl.isConnected) candidatesEl.setText(t('ui.onboardingModal.cannotScanVault', { message: error instanceof Error ? error.message : String(error) }));
         }
     };
-    scanSetting.addButton(button => button.setButtonText(t('ui.generalSection.scanForExports')).onClick(() => void scan()));
+    /** Import a manuscript; afterwards Book Manager and any scan results redraw. */
+    const openImport = (folder?: string, onImported?: () => void) => {
+        const before = (plugin.settings.books ?? []).length; // SAFE: a new vault has no books
+        new OnboardingModal(app, plugin, {
+            folder,
+            onClosed: () => {
+                if ((plugin.settings.books ?? []).length > before) onImported?.(); // SAFE: a new vault has no books
+                renderBooksManager();
+                if (scanned) void scan();
+            },
+        }).open();
+    };
+    scanSetting.addButton(button => button.setButtonText(t('ui.generalSection.scanVault')).onClick(() => void scan()));
     if (!(plugin.settings.books ?? []).some(book => book.sourceFolder && app.vault.getAbstractFileByPath(book.sourceFolder) instanceof TFolder)) void scan(); // SAFE: only first-run or unconfigured vaults scan automatically
 
     const booksPanel = containerEl.createDiv({ cls: `${ERT_CLASSES.STACK} ert-books-panel` });
@@ -158,22 +190,34 @@ export function renderGeneralSection(params: {
         addBookBtn.toggleClass('ert-books-add-btn--pulse', needsAttention);
     };
 
+    /** Each card's folder input, so "+" can take the author straight to it. */
+    const folderInputs = new Map<string, HTMLInputElement>();
+
+    /**
+     * "+" opens a card for a book's folder. It never switches the timeline: a
+     * book shows once its folder holds scenes. One blank card at a time, so
+     * "+" returns to the one still waiting for its folder.
+     */
     const addNewBook = async () => {
-        const next = normalizeBookProfile({
-            id: createBookId(),
-            title: DEFAULT_BOOK_TITLE,
-            sourceFolder: ''
-        });
-        plugin.settings.books = [...(plugin.settings.books || []), next];
-        plugin.settings.activeBookId = next.id;
-        await plugin.persistBookSettings();
+        const books = plugin.settings.books ?? []; // SAFE: a new vault has no books
+        let blank = books.find(book => !book.sourceFolder.trim());
+        if (!blank) {
+            blank = normalizeBookProfile({ id: createBookId(), title: DEFAULT_BOOK_TITLE, sourceFolder: '' });
+            plugin.settings.books = [...books, blank];
+            if (books.length === 0) plugin.settings.activeBookId = blank.id;
+            await plugin.persistBookSettings();
+        }
         renderBooksManager();
+        const input = folderInputs.get(blank.id);
+        input?.scrollIntoView({ block: 'center' });
+        input?.focus();
     };
 
     addBookBtn.addEventListener('click', () => { void addNewBook(); }); // SAFE: direct addEventListener; Settings lifecycle manages cleanup
 
     const renderBooksManager = () => {
         booksPanel.empty();
+        folderInputs.clear();
 
         const books = plugin.settings.books || [];
         const activeId = plugin.settings.activeBookId;
@@ -561,6 +605,21 @@ export function renderGeneralSection(params: {
             text.inputEl.addClass('ert-input--full');
 
             const inputEl = text.inputEl;
+            folderInputs.set(book.id, inputEl);
+            // A folder holding a Scrivener or Word export, not scene notes, is
+            // a manuscript to import, not a book folder.
+            const exportHint = row.settingEl.createDiv({ cls: 'ert-book-card__hint' });
+            const showExportHint = (folder: string) => {
+                exportHint.empty();
+                exportHint.createSpan({ cls: 'ert-section-desc ert-section-desc--alert', text: t('ui.generalSection.folderHoldsExport') });
+                new ButtonComponent(exportHint).setButtonText(t('ui.generalSection.importAction')).onClick(() => openImport(folder, () => {
+                    // The import made the book this card was waiting for.
+                    if (book.sourceFolder.trim()) return;
+                    plugin.settings.books = (plugin.settings.books ?? []).filter(candidate => candidate.id !== book.id); // SAFE: the list holds at least the imported book
+                    void plugin.persistBookSettings();
+                }));
+            };
+            if (hasResolvedFolder && sceneFiles.length === 0 && countSceneNotes(app, normalizedFolder) === 0 && holdsManuscriptExport(app, normalizedFolder)) showExportHint(normalizedFolder);
             let blurCommitTimer: number | null = null;
             const resetState = () => {
                 inputEl.removeClass('ert-setting-input-success');
@@ -572,11 +631,19 @@ export function renderGeneralSection(params: {
                 const raw = (overrideValue ?? text.getValue()).trim();
                 const normalizedValue = raw ? normalizePath(raw) : '';
 
+                exportHint.empty();
                 if (raw) {
                     const isValid = await plugin.validateAndRememberPath(normalizedValue);
-                    if (isValid) {
+                    const sceneCount = isValid ? countSceneNotes(app, normalizedValue) : 0;
+                    if (isValid && sceneCount === 0 && holdsManuscriptExport(app, normalizedValue)) {
+                        inputEl.addClass('ert-setting-input-error');
+                        showExportHint(normalizedValue);
+                    } else if (isValid) {
+                        const firstFolder = !book.sourceFolder.trim();
                         book.sourceFolder = normalizedValue;
                         await plugin.persistBookSettings();
+                        // A new book shows on the timeline once its folder holds scenes.
+                        if (firstFolder && sceneCount > 0) await plugin.setActiveBookId(book.id);
                         updateAddBtnPulse();
                         inputEl.addClass('ert-setting-input-success');
                         window.setTimeout(() => { inputEl.removeClass('ert-setting-input-success'); renderBooksManager(); }, 1000);

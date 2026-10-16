@@ -853,7 +853,7 @@ export class OnboardingService {
     // list means "scenes only". Craft sections always stay blank.
     const bookTitle = sourceBook.title;
     const stubsCreated = await this.createEntityNotes(destFolder, entityProposals, bookTitle);
-    await this.registerBook(sourceBook, destFolder);
+    await this.addBook({ title: sourceBook.title, sourceFolder: destFolder, genre: sourceBook.genre, projectStage: sourceBook.projectStage });
 
     return {
       bookFolder: destFolder,
@@ -945,16 +945,16 @@ export class OnboardingService {
     return created;
   }
 
-  private async registerBook(sourceBook: BookProfile, destFolder: string): Promise<void> {
-    const newBook = normalizeBookProfile({
-      id: createBookId(),
-      title: sourceBook.title,
-      sourceFolder: destFolder,
-      genre: sourceBook.genre,
-      projectStage: sourceBook.projectStage,
-    });
-    this.plugin.settings.books = [...(this.plugin.settings.books ?? []), newBook]; // SAFE: the first onboarded book seeds an empty list
-    this.plugin.settings.activeBookId = newBook.id;
+  /**
+   * Add a book for a folder and make it the timeline's book: how an import's
+   * new folder, or a folder that is already a Radial Timeline book, joins
+   * Book Manager.
+   */
+  async addBook(fields: Pick<BookProfile, 'title' | 'sourceFolder'> & Partial<Pick<BookProfile, 'genre' | 'projectStage'>>): Promise<BookProfile> {
+    const newBook = normalizeBookProfile({ id: createBookId(), ...fields });
+    this.plugin.settings.books = [...(this.plugin.settings.books ?? []), newBook]; // SAFE: the first book seeds an empty list
     await this.plugin.persistBookSettings();
+    await this.plugin.setActiveBookId(newBook.id);
+    return newBook;
   }
 }

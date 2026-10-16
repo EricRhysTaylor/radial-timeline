@@ -267,7 +267,7 @@ export const es: TranslationKeys = {
                 "insufficientData": "Datos insuficientes para calcular",
                 "projectionHeading": "Proyección de progreso mensual",
                 "projectionHeadingLastPace": "Proyección de progreso mensual (basada en el ritmo más reciente)",
-                "lastProgress": "Último progreso: {{date}} ({{days}} días atrás) • Ventana móvil de {{window}} días"
+                "lastProgress": "Última finalización registrada: {{date}} (hace {{days}} días) • Período de {{window}} días"
             }
         },
         "beats": {
@@ -6198,7 +6198,7 @@ export const es: TranslationKeys = {
             "houseCompleteTitle": "Etapa de casa completa",
             "houseCompleteSubtitle": "La revisión editorial está completa.",
             "estimateError": "Estimación de cálculo de errores.",
-            "noRecentProgress": "Ningún progreso reciente registrado",
+            "noRecentProgress": "No hay fechas de finalización registradas",
             "projectionMonth": "Mes",
             "projectionAdded": "+escenas",
             "projectionTotal": "Total",
@@ -6212,7 +6212,7 @@ export const es: TranslationKeys = {
             "scenesCompleteSubtitle": "{{completed}}/{{total}} Escenas completas",
             "progressSlowing": "Progreso ralentización ({{days}} días desde la última finalización)",
             "fallingBehind": "Quedarse atrás ({{days}} días desde la última finalización)",
-            "stalled": "estancado — sin progreso en {{days}} días",
+            "stalled": "No se han registrado finalizaciones en {{days}} días",
             "stageTargetOverdueTooltip": "{{stage}} Objetivo: {{date}} (atrasado)",
             "stageTargetTooltip": "{{stage}} Objetivo: {{date}}",
             "targetDatesPerBook": "Las fechas objetivo son por libro — Edición “{{title}}”. Cambie el libro activo en el Administrador de libros para establecer los objetivos de otro libro.",

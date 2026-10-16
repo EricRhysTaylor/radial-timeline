@@ -267,7 +267,7 @@ export const vi: TranslationKeys = {
                 "insufficientData": "Không đủ dữ liệu để tính toán",
                 "projectionHeading": "Dự báo tiến độ hàng tháng",
                 "projectionHeadingLastPace": "Dự báo tiến độ hàng tháng (dựa trên nhịp độ gần nhất)",
-                "lastProgress": "Tiến bộ gần nhất: {{date}} ({{days}} ngày trước) • Cửa sổ cuộn {{window}} ngày"
+                "lastProgress": "Lần hoàn thành gần nhất được ghi nhận: {{date}} ({{days}} ngày trước) • Khoảng tính {{window}} ngày"
             }
         },
         "beats": {
@@ -6198,7 +6198,7 @@ export const vi: TranslationKeys = {
             "houseCompleteTitle": "Sân khấu nhà hoàn thành",
             "houseCompleteSubtitle": "Bản sửa đổi biên tập đã hoàn tất.",
             "estimateError": "Lỗi tính toán ước lượng.",
-            "noRecentProgress": "Không có tiến trình gần đây được ghi lại",
+            "noRecentProgress": "Chưa ghi nhận ngày hoàn thành",
             "projectionMonth": "Tháng",
             "projectionAdded": "+ Cảnh",
             "projectionTotal": "Toàn bộ",
@@ -6212,7 +6212,7 @@ export const vi: TranslationKeys = {
             "scenesCompleteSubtitle": "hoàn thành các cảnh {{completed}} / {{total}}",
             "progressSlowing": "Tiến độ chậm lại ({{days}} kể từ khi hoàn thành lần cuối)",
             "fallingBehind": "Bị tụt lại phía sau ({{days}} kể từ khi hoàn thành lần cuối)",
-            "stalled": "Bị đình trệ - Không có tiến bộ trong ngày {{days}}",
+            "stalled": "Không ghi nhận lần hoàn thành nào trong {{days}} ngày",
             "stageTargetOverdueTooltip": "{{stage}} Mục tiêu: {{date}} (quá hạn)",
             "stageTargetTooltip": "{{stage}} Mục tiêu: {{date}}",
             "targetDatesPerBook": "Ngày mục tiêu là mỗi cuốn sách - chỉnh sửa “{{title}}”. Chuyển sách đang hoạt động trong Trình quản lý sách để đặt mục tiêu của một cuốn sách khác.",

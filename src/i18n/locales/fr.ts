@@ -267,7 +267,7 @@ export const fr: TranslationKeys = {
                 "insufficientData": "Données insuffisantes pour le calcul",
                 "projectionHeading": "Projection de progression mensuelle",
                 "projectionHeadingLastPace": "Projection de progression mensuelle (basée sur le rythme dernier connu)",
-                "lastProgress": "Dernière progression : {{date}} ({{days}} jours atrás) • Fenêtre roulante de {{window}} jours"
+                "lastProgress": "Dernier achèvement enregistré : {{date}} (il y a {{days}} jours) • Période de {{window}} jours"
             }
         },
         "beats": {
@@ -6198,7 +6198,7 @@ export const fr: TranslationKeys = {
             "houseCompleteTitle": "Scène de maison terminée",
             "houseCompleteSubtitle": "La révision éditoriale est terminée.",
             "estimateError": "Erreur lors du calcul de l'estimation.",
-            "noRecentProgress": "Aucun progrès récent enregistré",
+            "noRecentProgress": "Aucune date d’achèvement enregistrée",
             "projectionMonth": "Mois",
             "projectionAdded": "+Scènes",
             "projectionTotal": "Total",
@@ -6212,7 +6212,7 @@ export const fr: TranslationKeys = {
             "scenesCompleteSubtitle": "{{completed}}/{{total}} Scènes terminées",
             "progressSlowing": "Ralentissement des progrès (jours {{days}} depuis la dernière achèvement)",
             "fallingBehind": "Prendre du retard ({{days}} jours depuis la dernière achèvement)",
-            "stalled": "Standard — Pas de progrès en {{days}} jours",
+            "stalled": "Aucun achèvement enregistré depuis {{days}} jours",
             "stageTargetOverdueTooltip": "{{stage}} Cible : {{date}} (échéance)",
             "stageTargetTooltip": "{{stage}} Cible : {{date}}",
             "targetDatesPerBook": "Les dates cibles sont par livre — édition « {{title}} ». Changez le livre actif dans Book Manager pour définir les objectifs d'un autre livre.",

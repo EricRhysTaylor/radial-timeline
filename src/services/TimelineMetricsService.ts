@@ -2,7 +2,6 @@ import type RadialTimelinePlugin from '../main';
 import type { TimelineItem } from '../types';
 import { isSceneItem } from '../utils/sceneHelpers';
 import { STAGE_ORDER } from '../utils/constants';
-import { parseSceneTitle } from '../utils/text';
 import { isCompleteStatus, normalizePublishStage } from '../progress/progressSnapshot';
 
 const COMPLETION_ESTIMATE_WINDOW_DAYS = 30;
@@ -47,8 +46,6 @@ export interface CompletionEstimate {
  * - Milestones: Celebration & encouragement (binary: stage done or not)
  */
 export class TimelineMetricsService {
-    private lastFreshEstimate: CompletionEstimate | null = null;
-
     constructor(private plugin: RadialTimelinePlugin) {}
 
     calculateCompletionEstimate(scenes: TimelineItem[]): CompletionEstimate | null {
@@ -123,21 +120,6 @@ export class TimelineMetricsService {
         const stageScenes = sceneNotesOnly.filter(scene => normalizeStage(scene['Publish Stage']) === activeStage);
         if (stageScenes.length === 0 && maxRecentCompletions === 0) return null;
 
-        // Compute highest scene number across all scenes (any stage) as a floor for total count
-        const seenForMax = new Set<string>();
-        let highestPrefixNumber = 0;
-        sceneNotesOnly.forEach(scene => {
-            if (!scene.path || seenForMax.has(scene.path)) return;
-            seenForMax.add(scene.path);
-            const { number } = parseSceneTitle(scene.title || '', scene.number);
-            if (number) {
-                const n = parseFloat(String(number));
-                if (!isNaN(n)) {
-                    highestPrefixNumber = Math.max(highestPrefixNumber, n);
-                }
-            }
-        });
-
         // Count remaining work for the active stage revision round
         // Remaining includes:
         //   1. Scenes AT active stage that are NOT complete (being worked on)
@@ -208,8 +190,7 @@ export class TimelineMetricsService {
 
         this.plugin.latestStatusCounts = currentStatusCounts;
 
-        const totalScenesDeduped = processedPaths.size;
-        const totalForEstimate = Math.max(totalScenesDeduped, Math.floor(highestPrefixNumber));
+        const totalForEstimate = processedPaths.size;
         
         // Remaining = incomplete at active stage + complete at lower stages (pending promotion)
         // Plus stragglers (incomplete at lower stages - will eventually need to be done too)
@@ -281,15 +262,7 @@ export class TimelineMetricsService {
             stragglerCount: stragglerCount > 0 ? stragglerCount : undefined
         };
 
-        // Freeze to last fresh estimate if we have no valid rate/date but we had one before
-        if (!estimatedDate || scenesPerDay <= 0 || !Number.isFinite(daysNeeded)) {
-            const frozen = this.freezeToLastEstimate(activeStage, lastProgressDate, windowDays, stragglerCount);
-            this.captureLatestStats(totalForEstimate, remainingScenes, scenesPerWeek);
-            return frozen;
-        }
-
-        // Store as last fresh estimate for morale-friendly freezing
-        this.lastFreshEstimate = { ...result, isFrozen: false, labelText: undefined };
+        // Recorded progress remains valid when the pace window cannot supply a date.
         this.captureLatestStats(totalForEstimate, remainingScenes, scenesPerWeek);
         return result;
     }
@@ -298,22 +271,6 @@ export class TimelineMetricsService {
         this.plugin.latestTotalScenes = total;
         this.plugin.latestRemainingScenes = remaining;
         this.plugin.latestScenesPerWeek = rate;
-    }
-
-    private freezeToLastEstimate(stage: string, lastProgressDate: Date | null, windowDays: number, stragglerCount?: number): CompletionEstimate | null {
-        if (!this.lastFreshEstimate || this.lastFreshEstimate.stage !== stage) {
-            return null;
-        }
-        const staleness = this.classifyStaleness(lastProgressDate, new Date());
-        return {
-            ...this.lastFreshEstimate,
-            staleness,
-            lastProgressDate: lastProgressDate ?? this.lastFreshEstimate.lastProgressDate,
-            windowDays,
-            labelText: '?',
-            isFrozen: true,
-            stragglerCount: stragglerCount && stragglerCount > 0 ? stragglerCount : undefined
-        };
     }
 
     private classifyStaleness(lastProgressDate: Date | null, today: Date): CompletionEstimate['staleness'] {

@@ -267,7 +267,7 @@ export const th: TranslationKeys = {
                 "insufficientData": "ข้อมูลไม่เพียงพอในการคำนวณ",
                 "projectionHeading": "การพยากรณ์ความคืบหน้ารายเดือน",
                 "projectionHeadingLastPace": "การพยากรณ์ความคืบหน้ารายเดือน (อ้างอิงจากจังหวะล่าสุด)",
-                "lastProgress": "ความคืบหน้าล่าสุด: {{date}} ({{days}} วันที่ผ่านมา) • ช่วง Rolling {{window}} วัน"
+                "lastProgress": "เสร็จสมบูรณ์ล่าสุดที่บันทึกไว้: {{date}} ({{days}} วันที่แล้ว) • ช่วงคำนวณ {{window}} วัน"
             }
         },
         "beats": {
@@ -6198,7 +6198,7 @@ export const th: TranslationKeys = {
             "houseCompleteTitle": "บ้านเวทีสมบูรณ์",
             "houseCompleteSubtitle": "การแก้ไขบทบรรณาธิการเสร็จสมบูรณ์",
             "estimateError": "ข้อผิดพลาดในการคำนวณค่าประมาณ",
-            "noRecentProgress": "ไม่มีการบันทึกความคืบหน้าล่าสุด",
+            "noRecentProgress": "ไม่มีวันที่เสร็จสมบูรณ์ที่บันทึกไว้",
             "projectionMonth": "เดือน",
             "projectionAdded": "+ฉาก",
             "projectionTotal": "ทั้งหมด",
@@ -6212,7 +6212,7 @@ export const th: TranslationKeys = {
             "scenesCompleteSubtitle": "{{completed}}/{{total}}ฉากสมบูรณ์",
             "progressSlowing": "ความคืบหน้าช้า ({{days}} วันตั้งแต่เสร็จสิ้นล่าสุด)",
             "fallingBehind": "ตามหลัง ({{days}} วันตั้งแต่เสร็จสิ้นล่าสุด)",
-            "stalled": "หยุดชะงัก — ไม่มีความคืบหน้าใน{{days}}",
+            "stalled": "ไม่มีการบันทึกงานที่เสร็จสมบูรณ์ใน {{days}} วัน",
             "stageTargetOverdueTooltip": "{{stage}}เป้าหมาย: {{date}} (เกินกำหนด)",
             "stageTargetTooltip": "{{stage}}เป้าหมาย: {{date}}",
             "targetDatesPerBook": "วันที่เป้าหมายคือต่อเล่ม — การแก้ไข “{{title}}” เปลี่ยนหนังสือที่ใช้งานในตัวจัดการหนังสือเพื่อกำหนดเป้าหมายหนังสือเล่มอื่น",

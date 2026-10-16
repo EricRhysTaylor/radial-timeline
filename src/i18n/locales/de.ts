@@ -2673,6 +2673,12 @@ export const de: DeepPartial<TranslationKeys> = {
         },
     },
     timeReferences: {
+        earlier: "Früher",
+        later: "Später",
+        unanchored: "Keine datierten Szenen in diesem Ring",
+        dateGroups: "{{count}} Daten — Referenz wählen",
+        overlapsRange: "Überschneidet den angezeigten Zeitraum",
+
         earthCalendar: 'Erdkalender',
         title: 'Zeitbezüge…', add: 'Zeitbezug hinzufügen…', edit: 'Bearbeiten', remove: 'Entfernen',
         new: 'Neuer Zeitbezug', save: 'Zeitbezug speichern', undo: 'Letzte Änderung rückgängig', label: 'Bezeichnung',

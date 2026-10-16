@@ -2673,6 +2673,12 @@ export const ko: DeepPartial<TranslationKeys> = {
         },
     },
     timeReferences: {
+        earlier: "이전",
+        later: "이후",
+        unanchored: "이 링에 날짜가 있는 장면 없음",
+        dateGroups: "날짜 {{count}}개 — 참조 선택",
+        overlapsRange: "표시된 기간과 겹침",
+
         earthCalendar: '지구력',
         title: '시간 참조…', add: '시간 참조 추가…', edit: '편집', remove: '삭제',
         new: '새 참조', save: '참조 저장', undo: '마지막 변경 취소', label: '이름',

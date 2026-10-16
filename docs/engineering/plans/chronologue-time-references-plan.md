@@ -1,9 +1,9 @@
 # Chronologue time references
 
-Status: manual prototype implemented, 2026-10-14. The visual direction, author
-property, inherited subplot occurrences, editor, and Timetable integration below
-are implemented. Native acceptance used an isolated synthetic test vault.
-Automatic extraction remains subsequent work; no public release is implied.
+Status: manual prototype implemented 2026-10-14; interior connectors and
+primary-date-only range implemented 2026-10-15. Native acceptance uses isolated
+synthetic vaults. Automatic extraction remains subsequent work; no public release
+is implied.
 
 ## Purpose
 
@@ -16,21 +16,25 @@ attached to that scene, with one or more rendered occurrences.
 
 ## Agreed interaction and geometry
 
-- A reference is a short, solid slice, narrower than the existing 10-unit beat
-  slice. Start with a 4-unit width as a prototype value, not a new author setting.
-- A scene and its references share the bottom (inner) radius of their ring.
-  A connector is a circular arc on that radius, directly joining their bases.
-- Connectors never cross the central status grid. Do not route a same-ring
-  connection through another subplot ring or add radial detours.
-- Reference slices inherit their parent scene's subplot memberships and appear
-  in those rings and the All Scenes ring. Each occurrence uses its ring's color.
-- Hover emphasizes the local reference and connector, highlights its parent,
-  and identifies the same reference and scene in the other rings and Timetable.
+- A reference is a small solid square at the clockwise inner corner of its
+  date position. It overlays scene geometry and never receives a scene slot.
+- From the master scene's clockwise inner corner, a short radial feed reaches
+  a concentric track inside the ring. The arc follows that track and ends
+  radially at the reference square. It clears the scene center's question icon.
+- Connectors never cross the central status grid or travel through another ring.
+  A coincident date produces a radial connection rather than an artificial arc.
+- Same-date references stack radially at the same angle, with at most three
+  visible squares. A selectable `+N` retains overflow. Narrow rings and different
+  dates too close together use an explicit selectable count cluster.
+- References inherit their parent scene's subplot memberships and appear in
+  those rings and All Scenes. Hover/pin shows only the active occurrence's
+  connector family; other source/reference copies are highlighted. A Timetable
+  selection uses the outermost available occurrence.
 - The Timetable has one parent scene row, a reference count/disclosure, and one
   set of nested reference rows. Hover does not force expansion or scroll jumps.
-  Clicking can hold selection and expand the references.
-- Reference kind is conveyed by text/icons in the Timetable and details. Keep
-  slice color available for the existing ring/column-coloring semantics.
+  Activation holds selection, expands references and opens an exact passage.
+- Kind and date precision remain explicit in reference details and nested rows.
+  Square color follows the existing ring/column-coloring semantics.
 
 The local interactive concept is under `build/concept-previews/` and is ignored
 by Git. It demonstrates behavior; its schematic angles and illustrative prose
@@ -38,7 +42,7 @@ are not production geometry or manuscript content.
 
 ## First usable scope
 
-Manual creation, editing, removal, passage navigation, Chronologue slices and
+Manual creation, editing, removal, passage navigation, Chronologue markers and
 connectors, inherited subplot occurrences, and nested Timetable rows.
 
 Existing scene numbering, primary-date dragging, counts, author progress,
@@ -116,39 +120,33 @@ accepted declarations.
 
 ## Chronological placement
 
-Placement extends the existing beat/scene allocation with a separate narrow
-reference slot; references never receive full-scene slots.
+Primary `When` dates alone determine the displayed domain. References do not
+expand that domain, shrink scenes, alter numbering, or move perimeter ticks.
+The existing primary positions are returned unchanged even for dense references.
 
-Implemented approach:
+- In-range references interpolate between dated scene corners in the current
+  scene layout. Sequence inherits outer-ring placement; Fill uses local ring
+  positions with the same manuscript-wide domain.
+- A wholly earlier date travels backward across the 12 o'clock seam, ending in
+  an Earlier terminal just left of the seam. A wholly later date travels forward
+  across it to a Later terminal on the right. A real connector gap and two
+  slashes mark the discontinuity; terminal labels include the actual date.
+  The terminal is categorical and does not encode the omitted time distance.
+- Several off-range dates share an explicit date-count cluster at that terminal,
+  with all declarations available in its menu and Timetable. They are never
+  misrepresented as multiple references at one date.
+- Precision bounds classify wholly off-range dates. A year-only reference that
+  overlaps a one-week manuscript remains in range with an overlap explanation;
+  its year is never presented as a known January 1 date. Periods keep their full
+  declared start/end in details; marker width is not duration.
+- Without dated primary anchors in a ring, in-range references use their source
+  corners and say No dated scenes in this ring. Without any primary dates in
+  the manuscript, no earlier/later relation or calendar scale is invented.
+- Connectors and their seam marks do not intercept pointer events. Small marker
+  targets, labels and normal keyboard button activation support selection.
 
-- Merge primary scenes and references into one ordered placement input, tagged
-  by entry kind. Preserve the current primary-scene order and undated-follower
-  rules. Use precision-aware reference bounds for display ordering only.
-- Reserve narrow reference slots, then distribute remaining angular space to
-  primary scenes. Derive primary perimeter labels and tick anchors from the
-  resulting positions. Reference dates appear in tooltips and nested rows,
-  avoiding colliding perimeter labels beside the narrow slices.
-- Compute final positions with the existing Fill and Sequence layout choices.
-  Sequence occurrences follow the outer ring; Fill occurrences use that ring's
-  order. Never infer an inner-ring reference angle from outer geometry when
-  the layout deliberately compacts that ring.
-- A shared declared year does not establish event order within that year.
-  Ties use deterministic source ordering and remain labeled at their actual
-  precision. A period's marker identifies the period; its width is not duration.
-- Reserve at most one quarter of a ring for reference slots. Group dense
-  chronological entries with an explicit count and a selectable list when
-  narrow slots cannot fit. Keep every declaration available in the Timetable. Do not erase
-  entries, draw over primary scenes, or let allocations become negative.
-- Derive connector radii from the final parent/reference ring geometry. Both
-  endpoints must have that ring's inner radius. Route earlier/later references
-  through the displayed chronology, respecting the circle's chronological seam.
-- Shared sections can visually merge for references of the same parent; paint
-  the active connector above its siblings. Connectors do not intercept pointer
-  events or receive enormous overlapping hit areas.
-
-Chronological extents may include references. Primary-scene elapsed gaps,
-overlap warnings, Duration and Runtime remain computed from primary scenes.
-References never become neighbors in the primary scene re-date controller.
+Primary elapsed gaps, overlap warnings, Duration and Runtime continue to use
+primary scenes only. References never enter the primary re-date controller.
 
 Earth dates remain the stored chronology anchor. Preserve the established
 planetary-display contract and source precision; do not reinterpret a year-only
@@ -161,9 +159,9 @@ reference its parent's reading time.
 | --- | --- | --- |
 | Scene metadata | `src/services/SceneDataService.ts`, `src/types/timeline.ts` | Shared typed reference parsing; keep primary scene identity and counts |
 | Managed field boundary | `src/sceneProperties/scenePropertyAdapter.ts`, `src/sceneProperties/scenePropertyPolicy.ts`, `src/utils/frontmatter.ts` | Explicit optional field enrollment, safe targeted writes |
-| Scene chronological order | `src/utils/sceneHelpers.ts` (`buildChronologueSceneSequence`) | Preserve primary order; share entry placement with label/layout consumers |
-| Angular slots | `src/renderer/utils/SceneLayout.ts` | One entry-aware allocation path for the Chronologue feature; existing modes keep their contract |
-| Ring rendering and metadata | `src/renderer/renderers/RingRenderer.ts`, `src/renderer/components/Scenes.ts`, `src/renderer/components/SceneArcs.ts` | Small reference geometry and same-ring bottom-radius arcs, using final layout |
+| Scene chronological order | `src/utils/sceneHelpers.ts` (`buildChronologueSceneSequence`) | Preserve primary order; overlay references without changing scene/label positions |
+| Angular slots | `src/renderer/utils/SceneLayout.ts` | Reference overlays on unchanged primary positions; existing modes keep their contract |
+| Ring rendering and metadata | `src/renderer/renderers/RingRenderer.ts`, `src/renderer/components/Scenes.ts`, `src/renderer/components/SceneArcs.ts` | Small square terminals and concentric interior tracks with seam discontinuities |
 | Chronologue orchestration and labels | `src/renderer/TimelineRenderer.ts`, `src/renderer/utils/Chronologue.ts` | Consume shared positions; preserve primary-only duration/overlap overlays |
 | Wheel/table hover | `src/view/interactions/TimetableLink.ts`, `src/timetable/timetableRegistry.ts` | Extend selection with reference and occurrence identity, retaining scene-path API behavior |
 | Parent and child rows | `src/timetable/TimetableView.ts`, `src/timetable/timetableModel.ts` | Dedicated reference subrows outside file-row/bulk-selection maps |
@@ -182,7 +180,7 @@ snapshot; it does not scan vault text or rebuild the timeline.
 ## Implementation sequence
 
 1. **Contract and geometry spike.** Typed parser/diagnostics, precision rules,
-   revision-safe locators, bounded slot allocation, and circular connector
+   revision-safe locators, bounded overlay clustering, and circular connector
    geometry. Synthetic cases cover one scene in two subplots and All Scenes.
    Exit: real scene boundaries and reference positions agree without fabricating
    scenes or dates; density behavior and Fill/Sequence are demonstrated.
@@ -240,3 +238,11 @@ vault received the build. Automatic extraction, native large-manuscript density
 and performance, mobile/touch, and complete alternate-calendar acceptance remain
 outside this prototype's native evidence. See the [feature audit](../audits/2026-10-14-chronologue-time-references.md) for
 verification results and remaining concerns.
+
+
+The 2026-10-15 seam revision is tested in **Chronologue Seam QA**, a disposable
+copy under `Demo Vaults/Testing Vaults/2026-10-15 Chronologue reference seam/Working/`.
+Its three primary scenes span June 1–7, 2026. Five same-date references to 1952,
+one in-range date and one possible future in 2040 exercise seam routing, stacks,
+overflow, linked selection and the existing question icon. The preserved Baseline
+is outside the active vault. Only this Working copy receives the revision build.

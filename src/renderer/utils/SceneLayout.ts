@@ -1,4 +1,4 @@
-import { placeTimeReferences, type ReferenceLayout } from '../../chronologue/timeReferences/layout';
+import { placeTimeReferences, type ReferenceLayout, type ReferenceDomain } from '../../chronologue/timeReferences/layout';
 import { PLOT_PIXEL_WIDTH } from '../layout/LayoutConstants';
 import type { TimelineItem } from '../../types';
 import { isBeatNote, sceneKey } from '../../utils/sceneHelpers';
@@ -83,7 +83,7 @@ export function computeVoidSpans(
     return spans;
 }
 
-/** Chronologue reserves narrow reference slots without creating additional scene items. */
-export function computeChronologueLayout(innerR: number, outerR: number, startAngle: number, endAngle: number, items: TimelineItem[]): ReferenceLayout {
-    return placeTimeReferences(items, computePositions(innerR, outerR, startAngle, endAngle, items), innerR, outerR, startAngle, endAngle);
+/** Chronologue references overlay unchanged scene positions. */
+export function computeChronologueLayout(innerR: number, outerR: number, startAngle: number, endAngle: number, items: TimelineItem[], domain?: ReferenceDomain): ReferenceLayout {
+    return placeTimeReferences(items, computePositions(innerR, outerR, startAngle, endAngle, items), innerR, outerR, startAngle, endAngle, domain);
 }

@@ -1,36 +1,52 @@
 import { t } from '../../i18n';
 import type { TimelineItem } from '../../types';
 import { escapeXml } from '../../utils/svg';
-import { sceneArcPath } from '../../renderer/components/SceneArcs';
 import type { PositionInfo } from '../../renderer/utils/SceneLayout';
-import { bottomRadiusConnector, type ReferenceSlot } from './layout';
-import { referenceDateLabel } from './model';
+import { referenceConnector, referenceDateIdentity, type ReferenceSlot } from './layout';
+import { referenceDateLabel, type TimeReference } from './model';
 
-/** Reference groups deliberately do not carry scene classes or scene IDs. */
-export function renderTimeReferenceSlices(items: TimelineItem[], positions: Map<number, PositionInfo>, slots: ReferenceSlot[],
+/** Reference buttons are overlays, deliberately outside scene IDs, counts and drag targets. */
+export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map<number, PositionInfo>, slots: ReferenceSlot[],
     innerR: number, outerR: number, ring: number, colorOf: (item: TimelineItem) => string): string {
     const byPath = new Map(items.map((item, i) => [item.path, { item, position: positions.get(i) }]));
-    let svg = '';
+    const thickness = outerR - innerR;
+    const size = Math.min(6, thickness * .15), pitch = size + 4;
+    const base = innerR + Math.min(size + 3, thickness / 2);
+    const capacity = Math.max(1, Math.min(3, Math.floor((thickness - 16) / pitch)));
+    let connectors = '', markers = '';
     for (const slot of slots) {
-        const angle = (slot.startAngle + slot.endAngle) / 2;
-        for (const ref of slot.references) {
-            const parent = byPath.get(ref.path);
-            if (!parent?.position) continue;
-            const color = escapeXml(colorOf(parent.item));
-            const attrs = `data-reference-key="${escapeXml(ref.key)}" data-source-path="${escapeXml(encodeURIComponent(ref.path))}" data-ring="${ring}"`;
-            const source = (parent.position.startAngle + parent.position.endAngle) / 2;
-            svg += `<path class="ert-time-reference-connector" ${attrs} d="${bottomRadiusConnector(innerR, source, angle)}" stroke="${color}" fill="none"/>`;
+        const refs = slot.references.filter(ref => byPath.get(ref.path)?.position);
+        if (!refs.length) continue;
+        const dateCount = new Set(refs.map(referenceDateIdentity)).size;
+        const mixed = dateCount > 1 || (thickness < 28 && refs.length > 1);
+        const shown = mixed ? [refs] : refs.slice(0, capacity).map(ref => [ref]);
+        const attrs = (keys: TimeReference[]) => `data-reference-keys="${escapeXml(JSON.stringify(keys.map(ref => ref.key)))}" data-ring="${ring}"`;
+        const terminalRadius = (index: number) => base + index * pitch;
+        for (const path of new Set(refs.map(ref => ref.path))) {
+            const owned = refs.filter(ref => ref.path === path), parent = byPath.get(path)!;
+            const index = mixed ? 0 : Math.min(refs.findIndex(ref => ref.path === path), shown.length - 1);
+            const route = referenceConnector(innerR, outerR, parent.position!, slot, terminalRadius(index));
+            const routeAttrs = `${attrs(owned)} data-source-path="${escapeXml(encodeURIComponent(path))}" stroke="${escapeXml(colorOf(parent.item))}" fill="none"`;
+            connectors += `<path class="ert-time-reference-connector" ${routeAttrs} d="${route.path}"/>`;
+            if (route.discontinuity) connectors += `<path class="ert-time-reference-connector ert-time-reference-break" ${routeAttrs} d="${route.discontinuity}"/>`;
         }
-        const parent = byPath.get(slot.references[0].path);
-        if (!parent) continue;
-        const keys = escapeXml(JSON.stringify(slot.references.map(ref => ref.key)));
-        const details = slot.references.map(ref => `${ref.label} · ${referenceDateLabel(ref)} · ${t(`timeReferences.kinds.${ref.kind}`)} · ${t('timeReferences.earthCalendar')}`).join('\n');
-        const title = escapeXml(slot.references.length > 1 ? `${t('timeReferences.cluster', { count: slot.references.length })}\n${details}` : details);
-        const top = Math.min(outerR, innerR + 15);
-        svg += `<g class="ert-time-reference" data-reference-keys="${keys}" data-ring="${ring}" role="button" tabindex="0" data-rt-tip="${title}"><title>${title}</title>
-            <path class="ert-time-reference-slice" d="${sceneArcPath(innerR, top, slot.startAngle, slot.endAngle)}" fill="${escapeXml(colorOf(parent.item))}"/>
-            <path class="ert-time-reference-hit" d="${sceneArcPath(innerR, top, slot.startAngle, slot.endAngle)}" fill="none" stroke="transparent" stroke-width="12"/>
-            ${slot.references.length > 1 ? `<text class="ert-time-reference-count" x="${(top + 8) * Math.cos(angle)}" y="${(top + 8) * Math.sin(angle)}">${slot.references.length}</text>` : ''}</g>`;
+        const offRange = slot.extent === 'earlier' || slot.extent === 'later';
+        const extentLabel = slot.extent === 'within' ? '' : t(`timeReferences.${slot.extent}`);
+        const dateLabel = dateCount > 1 ? t('timeReferences.dateGroups', { count: dateCount }) : referenceDateLabel(refs[0]);
+        const button = (choices: TimeReference[], radius: number, overflow: boolean, showRange = false): string => {
+            const x = radius * Math.cos(slot.angle), y = radius * Math.sin(slot.angle);
+            const detail = choices.map(ref => `${ref.label} · ${referenceDateLabel(ref)} · ${t(`timeReferences.kinds.${ref.kind}`)}`).join('\n');
+            const title = escapeXml([extentLabel, dateCount > 1 ? dateLabel : '', slot.clipped ? t('timeReferences.overlapsRange') : '', detail, t('timeReferences.earthCalendar')].filter(Boolean).join('\n'));
+            const rangeLabel = showRange ? `<text class="ert-time-reference-range" x="${x + (slot.extent === 'earlier' ? -9 : 9)}" y="${y + 3}" text-anchor="${slot.extent === 'earlier' ? 'end' : 'start'}">${escapeXml(`${extentLabel} · ${dateLabel}`)}</text>` : '';
+            const color = escapeXml(colorOf(byPath.get(choices[0].path)!.item));
+            return `<g class="ert-time-reference" ${attrs(choices)} data-extent="${slot.extent}" role="button" tabindex="0" data-rt-tip="${title}"><title>${title}</title>
+                <rect class="ert-time-reference-hit" x="${x - 8}" y="${y - 8}" width="16" height="16" fill="transparent"/>
+                ${overflow ? `<text class="ert-time-reference-count" x="${x}" y="${y + 4}">+${choices.length}</text>` : `<rect class="ert-time-reference-slice" x="${x - size / 2}" y="${y - size / 2}" width="${size}" height="${size}" fill="${color}"/>`}
+                ${rangeLabel}
+                ${mixed && !overflow ? `<text class="ert-time-reference-count" x="${x + 11}" y="${y + 4}">${refs.length}</text>` : ''}</g>`;
+        };
+        shown.forEach((choices, index) => { markers += button(choices, terminalRadius(index), false, offRange && index === 0); });
+        if (!mixed && refs.length > shown.length) markers += button(refs.slice(shown.length), terminalRadius(shown.length), true);
     }
-    return svg;
+    return connectors + markers;
 }

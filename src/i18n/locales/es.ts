@@ -2653,6 +2653,12 @@ export const es: TranslationKeys = {
         }
     },
     "timeReferences": {
+        earlier: "Anterior",
+        later: "Posterior",
+        unanchored: "Sin escenas fechadas en este anillo",
+        dateGroups: "{{count}} fechas — elegir una referencia",
+        overlapsRange: "Se superpone al período mostrado",
+
         "earthCalendar": "calendario de la tierra",
         "title": "Referencias de tiempo…",
         "add": "Agregar referencia de tiempo…",

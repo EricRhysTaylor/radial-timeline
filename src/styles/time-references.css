@@ -1,4 +1,4 @@
-/* Radial Timeline references follow each ring's own bottom radius. */
+/* Radial Timeline references use concentric tracks inside each scene ring. */
 .ert-time-reference-connector {
     pointer-events: none;
     opacity: 0;
@@ -7,14 +7,19 @@
 }
 .ert-time-reference-connector.is-related { opacity: 0.22; }
 .ert-time-reference-connector.is-active { opacity: 1; stroke-width: 1.5px; }
-.ert-time-reference-hit { pointer-events: stroke; cursor: pointer; }
-.ert-time-reference-slice { pointer-events: none; }
+.ert-time-reference-hit { pointer-events: all; cursor: pointer; }
+.ert-time-reference-slice { pointer-events: none; stroke: var(--background-primary); stroke-width: 1px; }
 .ert-time-reference.is-active .ert-time-reference-slice { stroke: var(--text-normal); stroke-width: 1px; }
 .ert-time-reference-source .rt-scene-path { stroke: var(--interactive-accent); stroke-width: 2px; }
 .ert-time-reference-filtered,
+.ert-time-reference.rt-non-selected { opacity: 0.08; pointer-events: none; }
 .ert-time-reference-connector.ert-time-reference-filtered,
-.ert-time-reference.rt-non-selected,
-.ert-time-reference-connector.rt-non-selected { opacity: 0.08; pointer-events: none; }
+.ert-time-reference-connector.rt-non-selected { opacity: 0; }
+.ert-time-reference-filtered .ert-time-reference-hit,
+.ert-time-reference-filtered .ert-time-reference-range,
+.ert-time-reference.rt-non-selected .ert-time-reference-hit,
+.ert-time-reference.rt-non-selected .ert-time-reference-range { pointer-events: none; }
+.ert-time-reference-range { fill: var(--text-normal); font-size: 11px; paint-order: stroke; stroke: var(--background-primary); stroke-width: 4px; stroke-linejoin: round; pointer-events: all; cursor: pointer; }
 .ert-time-reference-count { fill: var(--text-normal); font-size: 12px; text-anchor: middle; pointer-events: none; }
 .ert-time-reference-row td { padding-inline-start: var(--size-4-8); }
 .ert-time-reference-open {

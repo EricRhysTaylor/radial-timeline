@@ -2653,6 +2653,12 @@ export const fr: TranslationKeys = {
         }
     },
     "timeReferences": {
+        earlier: "Antérieur",
+        later: "Ultérieur",
+        unanchored: "Aucune scène datée dans cet anneau",
+        dateGroups: "{{count}} dates — choisir une référence",
+        overlapsRange: "Chevauche la période affichée",
+
         "earthCalendar": "calendrier de la Terre",
         "title": "Références temporelles…",
         "add": "Ajouter une référence de temps…",

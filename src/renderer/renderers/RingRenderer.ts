@@ -1,5 +1,5 @@
-import { renderTimeReferenceSlices } from '../../chronologue/timeReferences/render';
-import type { ReferenceSlot } from '../../chronologue/timeReferences/layout';
+import { renderTimeReferenceMarkers } from '../../chronologue/timeReferences/render';
+import { primaryReferenceDomain, type ReferenceSlot } from '../../chronologue/timeReferences/layout';
 import { readSubplotColor } from '../utils/subplotColors';
 import type { TimelineItem } from '../../types';
 import { formatNumber, escapeXml } from '../../utils/svg';
@@ -77,6 +77,7 @@ export function renderRings(ctx: RingRenderContext): string {
     } = ctx;
 
     let svg = '';
+    const referenceDomain = isChronologueMode ? primaryReferenceDomain(scenes) : undefined;
     const fontScale = getReadabilityMultiplier(plugin.settings);
     const NUM_RINGS = masterSubplotOrder.length;
     const readabilityScale = plugin.settings.readabilityScale || 'normal';
@@ -321,7 +322,7 @@ export function renderRings(ctx: RingRenderContext): string {
                     });
                 });
                 svg += ringScenesSvg;
-                svg += renderTimeReferenceSlices(sortedCombined, positions, sequence.referenceSlots, innerR, outerR, ring,
+                svg += renderTimeReferenceMarkers(sortedCombined, positions, sequence.referenceSlots, innerR, outerR, ring,
                     scene => getFillForScene(scene, PUBLISH_STAGE_COLORS, subplotColorFor, true, forceSubplotFillColors));
 
                 continue; // Continue to next ring loop (which iterates rings for this act)
@@ -338,7 +339,7 @@ export function renderRings(ctx: RingRenderContext): string {
                 // gaps where this subplot is absent. Fill: spread across the segment.
                 const isAlignedRing = isSequenceAlignment && outerPositionByKey !== undefined;
                 const referenceLayout = isChronologueMode && !isAlignedRing
-                    ? computeChronologueLayout(innerR, outerR, startAngle, endAngle, effectiveScenes) : null;
+                    ? computeChronologueLayout(innerR, outerR, startAngle, endAngle, effectiveScenes, referenceDomain) : null;
                 const scenePositions = (isAlignedRing && outerPositionByKey)
                     ? alignPositionsToOuterRing(effectiveScenes, outerPositionByKey)
                     : referenceLayout?.positions ?? computePositions(innerR, outerR, startAngle, endAngle, effectiveScenes);
@@ -427,7 +428,7 @@ export function renderRings(ctx: RingRenderContext): string {
                     });
                 });
                 svg += ringScenesSvg;
-                svg += renderTimeReferenceSlices(effectiveScenes, scenePositions, referenceSlots, innerR, outerR, ring,
+                svg += renderTimeReferenceMarkers(effectiveScenes, scenePositions, referenceSlots, innerR, outerR, ring,
                     scene => getFillForScene(scene, PUBLISH_STAGE_COLORS, subplotColorFor, isAllScenesMode, forceSubplotFillColors));
             } else {
                 // No scenes, render empty void ring

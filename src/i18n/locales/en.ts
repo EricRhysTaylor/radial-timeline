@@ -2355,6 +2355,12 @@ export const en = {
         },
     },
     timeReferences: {
+        earlier: "Earlier",
+        later: "Later",
+        unanchored: "No dated scenes in this ring",
+        dateGroups: "{{count}} dates — choose a reference",
+        overlapsRange: "Overlaps the displayed period",
+
         earthCalendar: 'Earth calendar',
         title: 'Time references…', add: 'Add time reference…', edit: 'Edit', remove: 'Remove',
         new: 'New reference', save: 'Save reference', undo: 'Undo last change', label: 'Label',

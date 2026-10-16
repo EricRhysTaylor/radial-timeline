@@ -2653,6 +2653,12 @@ export const th: TranslationKeys = {
         }
     },
     "timeReferences": {
+        earlier: "ก่อนหน้า",
+        later: "ภายหลัง",
+        unanchored: "ไม่มีฉากที่ระบุวันที่ในวงแหวนนี้",
+        dateGroups: "{{count}} วันที่ — เลือกการอ้างอิง",
+        overlapsRange: "ทับซ้อนกับช่วงเวลาที่แสดง",
+
         "earthCalendar": "ปฏิทินโลก",
         "title": "อ้างอิงเวลา…",
         "add": "เพิ่มเวลาอ้างอิง…",

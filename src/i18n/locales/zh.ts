@@ -2675,6 +2675,12 @@ export const zh: DeepPartial<TranslationKeys> = {
         },
     },
     timeReferences: {
+        earlier: "更早",
+        later: "更晚",
+        unanchored: "此环中没有带日期的场景",
+        dateGroups: "{{count}} 个日期 — 选择引用",
+        overlapsRange: "与显示时段重叠",
+
         earthCalendar: '地球历',
         title: '时间引用…', add: '添加时间引用…', edit: '编辑', remove: '移除',
         new: '新建引用', save: '保存引用', undo: '撤销上次更改', label: '标签',

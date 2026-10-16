@@ -1,4 +1,4 @@
-import { computeChronologueLayout } from './SceneLayout';
+import { computePositions } from './SceneLayout';
 /*
  * Helper to generate outer label data for Chronologue mode.
  */
@@ -51,9 +51,9 @@ export function buildChronologueOuterLabels(
         .filter((when): when is Date => when instanceof Date && !isNaN(when.getTime()));
     const timeSpan = validDates.length > 0 ? calculateTimeSpan(validDates) : undefined;
 
-    const layout = computeChronologueLayout(innerR, outerR, startAngle, endAngle, sortedScenes);
-    const sceneStartAngles = sortedScenes.map((_, idx) => layout.positions.get(idx)!.startAngle);
-    const sceneAngularSize = layout.positions.get(0)?.angularSize ?? 0;
+    const positions = computePositions(innerR, outerR, startAngle, endAngle, sortedScenes);
+    const sceneStartAngles = sortedScenes.map((_, idx) => positions.get(idx)!.startAngle);
+    const sceneAngularSize = positions.get(0)?.angularSize ?? 0;
 
     const chronoTicks = generateChronologicalTicks(sortedScenes, sceneStartAngles, sceneAngularSize, timeSpan);
     const outerLabels = chronoTicks.map(tick => ({
@@ -66,8 +66,7 @@ export function buildChronologueOuterLabels(
         sceneIndex: tick.sceneIndex,
         earthDate: tick.earthDate
     }));
-    // Reference dates live on their slice tooltip and Timetable subrow. A narrow
-    // reference slot beside a scene boundary cannot fit another perimeter label.
+    // Reference dates live on their overlay tooltip and Timetable subrow.
     stopChronoLabels();
     return outerLabels;
 }

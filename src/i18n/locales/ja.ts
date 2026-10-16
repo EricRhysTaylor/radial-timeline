@@ -2674,6 +2674,12 @@ export const ja: DeepPartial<TranslationKeys> = {
         },
     },
     timeReferences: {
+        earlier: "表示期間より前",
+        later: "表示期間より後",
+        unanchored: "このリングに日付付きシーンはありません",
+        dateGroups: "{{count}} 個の日付 — 参照を選択",
+        overlapsRange: "表示期間と重なります",
+
         earthCalendar: '地球暦',
         title: '時間参照…', add: '時間参照を追加…', edit: '編集', remove: '削除',
         new: '新しい参照', save: '参照を保存', undo: '最後の変更を元に戻す', label: 'ラベル',

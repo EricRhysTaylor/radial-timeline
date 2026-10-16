@@ -2653,6 +2653,12 @@ export const vi: TranslationKeys = {
         }
     },
     "timeReferences": {
+        earlier: "Trước đó",
+        later: "Sau đó",
+        unanchored: "Không có cảnh có ngày trong vòng này",
+        dateGroups: "{{count}} ngày — chọn tham chiếu",
+        overlapsRange: "Trùng với khoảng thời gian hiển thị",
+
         "earthCalendar": "Lịch trái đất",
         "title": "Thời gian tham khảo…",
         "add": "Thêm thời gian tham khảo…",

@@ -4,6 +4,7 @@ import type { AIRequestControl } from '../ai/types';
 import { requestProvider } from '../api/providerTransport';
 import type { ConceptSearchScene } from './ConceptSearchService';
 import { escapeRegExp } from '../utils/regex';
+import { t } from '../i18n';
 
 /** The companion encoder always lives on this computer; manuscripts never go to a cloud embedding API. */
 const ENDPOINT = 'http://127.0.0.1:8081/v1';
@@ -15,6 +16,30 @@ export interface IndexedPassage { text: string; vector: number[] }
 interface IndexedText { hash: string; passages: IndexedPassage[] }
 interface Entry { fields?: IndexedText; body?: IndexedText }
 interface Model { schemaVersion: number; identity: string; dimensions: number; language: string }
+function isCompatibleModel(value: unknown): value is Model {
+    if (!value || typeof value !== 'object') return false;
+    const model = value as Model;
+    return model.schemaVersion === 1 && typeof model.identity === 'string' && !!model.identity
+        && Number.isInteger(model.dimensions) && model.dimensions >= 1 && model.dimensions <= 4096 && model.language === 'en';
+}
+
+/** Metadata only: never embeds text, loads the cache, or calls the generation model. */
+export async function getLocalSemanticIndexAvailability(): Promise<{ available: boolean; reason?: string }> {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 2000);
+    try {
+        const response = await requestProvider({ url: `${ENDPOINT}/index-model`, method: 'GET' }, undefined,
+            { allowHttp: true, signal: controller.signal, maxResponseBytes: 16 * 1024 });
+        if (response.status !== 200 || !isCompatibleModel(response.json)) {
+            return { available: false, reason: t('timeline.search.indexIncompatible') };
+        }
+        return { available: true };
+    } catch {
+        return { available: false, reason: t('timeline.search.indexUnavailable') };
+    } finally {
+        window.clearTimeout(timer);
+    }
+}
 interface DiskIndex { schemaVersion: number; identity: string; entries: Record<string, Entry> }
 export interface SemanticIndexStats { candidates: number; total: number; updatedNotes: number; passages: number; elapsedMs: number }
 interface QueryInput {
@@ -148,8 +173,7 @@ export class LocalSemanticIndex {
             }
         };
         const model = await this.request('index-model', input) as Model;
-        if (!model || model.schemaVersion !== 1 || typeof model.identity !== 'string' || !model.identity
-            || !Number.isInteger(model.dimensions) || model.dimensions < 1 || model.dimensions > 4096 || model.language !== 'en') {
+        if (!isCompatibleModel(model)) {
             throw new Error('The local English search encoder has an incompatible model contract.');
         }
         await this.load(model, input);

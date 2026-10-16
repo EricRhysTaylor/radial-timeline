@@ -1116,6 +1116,11 @@ export const ja: DeepPartial<TranslationKeys> = {
         renderError: 'タイムラインの描画でエラーが発生しました。詳細はコンソールを確認してください。',
         overdue: '期限超過: {{date}}',
         search: {
+            indexChecking: "ローカルの意味検索インデックスサーバーを確認しています…",
+            indexUnavailable: "意味検索インデックスサーバーが見つかりません。ローカル検索サービスを起動してください。",
+            indexIncompatible: "意味検索インデックスサーバーから互換性のないモデルが返されました。ローカル検索サービスを再起動してください。",
+            unavailableSelected: "検索モードを変更するには、チェックを外してください。変更するまで現在のモードが維持されます。",
+            indexRequiresAssist: "意味検索インデックスを使うには、ローカルLLMアシストを有効にしてください。",
             indexLabel: '意味検索インデックスを使用',
             indexHint: 'ローカルの英語テキスト索引。関連する抜粋を確認します。全シーンを確認するにはオフにしてください。',
             statusIndexing: '索引を更新中：{{total}} シーン中 {{done}}',

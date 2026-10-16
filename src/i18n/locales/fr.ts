@@ -1096,6 +1096,11 @@ export const fr: TranslationKeys = {
         "renderError": "Chronologie du rendu des erreurs. Vérifiez la console pour les détails.",
         "overdue": "En retard : {{date}}",
         "search": {
+            "indexChecking": "Vérification du serveur local de l’index sémantique…",
+            "indexUnavailable": "Serveur de l’index sémantique non détecté. Démarrez le service de recherche local.",
+            "indexIncompatible": "Le serveur de l’index sémantique a répondu avec un modèle incompatible. Redémarrez le service de recherche local.",
+            "unavailableSelected": "Décochez l’option pour changer de mode de recherche. Le mode actuel est conservé jusqu’à ce que vous le changiez.",
+            "indexRequiresAssist": "Activez l’assistance du LLM local pour utiliser l’index sémantique.",
             "indexLabel": "Utiliser l'index sémantique",
             "indexHint": "Indice de passage en anglais local. Avis sur les extraits probables ; Désactivez pour revoir chaque scène.",
             "statusIndexing": "Index de mise à jour : {{done}} de {{total}} scènes",

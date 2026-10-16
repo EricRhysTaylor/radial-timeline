@@ -1117,6 +1117,11 @@ export const zh: DeepPartial<TranslationKeys> = {
         renderError: '渲染时间轴时出错。请查看控制台了解详情。',
         overdue: '已逾期：{{date}}',
         search: {
+            indexChecking: "正在检查本地语义索引服务器…",
+            indexUnavailable: "未检测到语义索引服务器。请启动本地搜索服务。",
+            indexIncompatible: "语义索引服务器返回了不兼容的模型。请重启本地搜索服务。",
+            unavailableSelected: "取消勾选即可更改搜索模式。在您更改之前，将保留当前模式。",
+            indexRequiresAssist: "请启用本地 LLM 辅助以使用语义索引。",
             indexLabel: '使用语义索引',
             indexHint: '本地英文段落索引。检查可能相关的摘录；关闭后检查每个场景。',
             statusIndexing: '更新索引：{{total}} 个场景中的 {{done}} 个',

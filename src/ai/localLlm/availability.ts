@@ -174,7 +174,7 @@ export async function probeLocalLlmAvailability(
  */
 export async function getLocalLlmAvailability(
     plugin: RadialTimelinePlugin,
-    opts: { maxAgeMs?: number; force?: boolean } = {}
+    opts: { maxAgeMs?: number; force?: boolean; timeoutMs?: number } = {}
 ): Promise<LocalLlmAvailability> {
     const localLlm = getCanonicalLocalLlmSettings(plugin);
     const key = cacheKey(localLlm);
@@ -186,7 +186,9 @@ export async function getLocalLlmAvailability(
         if (now - cached.checkedAt < maxAgeMs) return cached.value;
     }
 
-    const value = await probeLocalLlmAvailability(plugin, localLlm, now);
+    const value = await probeLocalLlmAvailability(plugin, {
+        ...localLlm, timeoutMs: Math.min(localLlm.timeoutMs, opts.timeoutMs ?? localLlm.timeoutMs)
+    }, now);
     cached = { key, checkedAt: now, value };
     return value;
 }

@@ -14,8 +14,9 @@ export interface SearchPanelHost {
     getSearchState(): TimelineSearchState;
     /** Persist and apply an options change. */
     setSearchOptions(options: TimelineSearchOptions): void;
-    /** Probe the configured local model. Cheap and cached; safe to call per expand. */
+    /** Probe metadata with a short timeout; never run a completion. */
     getLocalModelStatus(): Promise<LocalModelStatus>;
+    getSemanticIndexStatus(): Promise<LocalModelStatus>;
     /** Stop an in-flight concept run at the next chunk boundary. */
     cancelSearch(): void;
     registerDomEvent(el: HTMLElement | Document, event: string, handler: (ev: Event) => void): void;
@@ -39,7 +40,13 @@ export class SearchPanelController {
     private readonly scopeRows: ScopeRow[] = [];
     private readonly assistCheckbox: HTMLInputElement;
     private readonly assistHint: HTMLElement;
+    private readonly assistIndicator: HTMLElement;
     private readonly indexCheckbox: HTMLInputElement;
+    private readonly indexHint: HTMLElement;
+    private readonly indexIndicator: HTMLElement;
+    private localStatus?: LocalModelStatus;
+    private indexStatus?: LocalModelStatus;
+    private statusTimer?: number;
     private readonly statusText: HTMLElement;
     private readonly cancelButton: HTMLButtonElement;
     private cancelRequested = false;
@@ -106,8 +113,12 @@ export class SearchPanelController {
         );
         this.assistCheckbox = assistRow.checkbox;
         this.assistHint = assistRow.hint;
-        this.indexCheckbox = this.buildCheckRow(assistWrap,
-            t('timeline.search.indexLabel'), t('timeline.search.indexHint'), false).checkbox;
+        this.assistIndicator = this.buildAvailabilityIndicator(assistRow.label);
+        const indexRow = this.buildCheckRow(assistWrap,
+            t('timeline.search.indexLabel'), t('timeline.search.indexHint'), false);
+        this.indexCheckbox = indexRow.checkbox;
+        this.indexHint = indexRow.hint;
+        this.indexIndicator = this.buildAvailabilityIndicator(indexRow.label);
         this.panel.appendChild(assistWrap);
 
         // --- Status ----------------------------------------------------------
@@ -144,7 +155,7 @@ export class SearchPanelController {
         label: string,
         hint: string,
         disabled: boolean
-    ): { checkbox: HTMLInputElement; hint: HTMLElement } {
+    ): { checkbox: HTMLInputElement; hint: HTMLElement; label: HTMLElement } {
         const doc = parent.ownerDocument;
         const row = doc.win.createEl('label');
         row.className = 'ert-timeline-search-panel__row';
@@ -169,7 +180,17 @@ export class SearchPanelController {
         row.appendChild(text);
         row.appendChild(hintEl);
         parent.appendChild(row);
-        return { checkbox, hint: hintEl };
+        return { checkbox, hint: hintEl, label: text };
+    }
+
+    private buildAvailabilityIndicator(label: HTMLElement): HTMLElement {
+        const indicator = label.ownerDocument.win.createSpan();
+        indicator.className = 'ert-timeline-search-panel__unavailable';
+        indicator.textContent = '×';
+        indicator.setAttribute('aria-hidden', 'true');
+        indicator.hidden = true;
+        label.appendChild(indicator);
+        return indicator;
     }
 
     private bindEvents(doc: Document): void {
@@ -223,7 +244,11 @@ export class SearchPanelController {
         };
         this.host.registerDomEvent(doc, 'pointerdown', onDocumentPointerDown);
 
-        this.host.register(() => this.panel.remove());
+        this.host.register(() => {
+            this.collapse();
+            this.statusProbeId += 1;
+            this.panel.remove();
+        });
     }
 
     private commitOptions(): void {
@@ -246,42 +271,51 @@ export class SearchPanelController {
         this.syncFromState();
         this.applyEdgeAnchor();
         void this.refreshLocalModelStatus();
+        this.statusTimer = this.panel.ownerDocument.win.setInterval(() => { void this.refreshLocalModelStatus(); }, 5000);
     }
 
-    /**
-     * Ask whether a local model is usable, enable the control accordingly, and
-     * say plainly what was found.
-     *
-     * When no model is available the checkbox is disabled *and* the option is
-     * forced off — an assist flag left set against a server that has gone away
-     * would fail at commit for reasons the panel had stopped showing.
-     */
+    /** Keep availability separate from saved search intent: probes never change modes or start searches. */
     private async refreshLocalModelStatus(): Promise<void> {
         const probeId = ++this.statusProbeId;
-        this.assistHint.textContent = t('timeline.search.assistChecking');
+        const probe = async (kind: 'localStatus' | 'indexStatus', read: () => Promise<LocalModelStatus>) => {
+            let status: LocalModelStatus;
+            try { status = await read(); }
+            catch (error) { status = { available: false, reason: error instanceof Error ? error.message : String(error) }; }
+            if (probeId !== this.statusProbeId) return;
+            this[kind] = status;
+            this.syncAvailability();
+        };
+        await Promise.all([
+            probe('localStatus', () => this.host.getLocalModelStatus()),
+            probe('indexStatus', () => this.host.getSemanticIndexStatus())
+        ]);
+    }
 
-        let status: LocalModelStatus;
-        try {
-            status = await this.host.getLocalModelStatus();
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            status = { available: false, reason: message };
-        }
-
-        // A newer expand already asked; its answer wins.
-        if (probeId !== this.statusProbeId) return;
-
-        this.assistHint.textContent = status.available
-            ? t('timeline.search.assistConnected', { model: status.modelId ?? '' })
-            : (status.reason ?? t('timeline.search.assistChecking'));
-
-        this.assistCheckbox.disabled = !status.available;
-        this.assistCheckbox.parentElement?.classList.toggle('is-disabled', !status.available);
-
-        // A model that has gone away must not leave the option silently on.
-        if (!status.available && this.host.getSearchState().options.llmAssist) {
-            this.host.setSearchOptions({ ...this.host.getSearchState().options, llmAssist: false });
-        }
+    private syncAvailability(): void {
+        const options = this.host.getSearchState().options;
+        const update = (checkbox: HTMLInputElement, hint: HTMLElement, indicator: HTMLElement,
+            status: LocalModelStatus | undefined, selected: boolean, text: string, dependent = false) => {
+            const unavailable = status?.available === false;
+            // An unavailable selected option remains switchable OFF. Never silently fall back to another mode.
+            checkbox.disabled = (!status?.available || dependent) && !selected;
+            const message = unavailable && selected ? `${text} ${t('timeline.search.unavailableSelected')}` : text;
+            hint.textContent = message;
+            indicator.hidden = !unavailable;
+            const row = checkbox.parentElement;
+            if (row) {
+                row.classList.toggle('is-disabled', checkbox.disabled || unavailable || dependent);
+                row.title = message;
+            }
+        };
+        const localText = !this.localStatus ? t('timeline.search.assistChecking') : this.localStatus.available
+            ? t('timeline.search.assistConnected', { model: this.localStatus.modelId ?? '' })
+            : this.localStatus.reason ?? t('ui.searchService.noLocalModel');
+        const indexText = !this.indexStatus ? t('timeline.search.indexChecking') : !this.indexStatus.available
+            ? this.indexStatus.reason ?? t('timeline.search.indexUnavailable')
+            : options.llmAssist ? t('timeline.search.indexHint') : t('timeline.search.indexRequiresAssist');
+        update(this.assistCheckbox, this.assistHint, this.assistIndicator, this.localStatus, options.llmAssist, localText);
+        update(this.indexCheckbox, this.indexHint, this.indexIndicator, this.indexStatus, options.semanticIndex === true,
+            indexText, !options.llmAssist || this.localStatus?.available !== true);
     }
 
     /**
@@ -302,6 +336,9 @@ export class SearchPanelController {
     collapse(): void {
         if (!this.expanded) return;
         this.expanded = false;
+        this.panel.ownerDocument.win.clearInterval(this.statusTimer);
+        this.statusTimer = undefined;
+        this.statusProbeId += 1;
         this.panel.hidden = true;
         this.shell.classList.remove('is-expanded');
         this.input.setAttribute('aria-expanded', 'false');
@@ -315,8 +352,7 @@ export class SearchPanelController {
     syncFromState(): void {
         const state = this.host.getSearchState();
         this.indexCheckbox.checked = state.options.semanticIndex === true;
-        this.indexCheckbox.disabled = !state.options.llmAssist;
-        this.indexCheckbox.parentElement?.classList.toggle('is-disabled', this.indexCheckbox.disabled);
+        this.syncAvailability();
         this.statusText.title = state.unreadableNotes ? state.unreadableNotes.map(note => `${note.path}: ${note.reason}`).join('\n') : '';
 
         for (const row of this.scopeRows) {

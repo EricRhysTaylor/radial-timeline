@@ -3,16 +3,93 @@ import { SearchPanelController } from './SearchPanelController';
 import { RadialTimelineView } from '../TimeLineView';
 import { createSearchState } from '../../services/searchState';
 
-describe('search controls during pending runs', () => {
-    it('forces unavailable assist off even though its checkbox is disabled', async () => {
-        let options = { timelineFields: true, body: false, llmAssist: true };
-        const panel = Object.create(SearchPanelController.prototype); // SAFE: hydrate only the inputs used by the controller probe
-        Object.assign(panel, { statusProbeId: 0, assistHint: { textContent: '' },
-            assistCheckbox: { disabled: false, checked: true, parentElement: { classList: { toggle: vi.fn() } } },
-            host: { getLocalModelStatus: async () => ({ available: false, reason: 'offline' }), getSearchState: () => ({ options }),
-                setSearchOptions: (next: typeof options) => { options = next; } } });
-        await panel.refreshLocalModelStatus(); expect(panel.assistCheckbox.disabled).toBe(true); expect(options.llmAssist).toBe(false);
+function availabilityHarness(options = { timelineFields: true, body: false, llmAssist: true, semanticIndex: true }) {
+    const panel = Object.create(SearchPanelController.prototype); // SAFE: exercise the controller state machine without an Obsidian leaf
+    const checkbox = () => ({ disabled: false, checked: false, parentElement: { title: '', classList: { toggle: vi.fn() } } });
+    const localProbe = vi.fn(async () => ({ available: true, modelId: 'model' }));
+    const indexProbe = vi.fn(async () => ({ available: true }));
+    const setSearchOptions = vi.fn((next: typeof options) => { options = next; });
+    Object.assign(panel, { statusProbeId: 0, scopeRows: [], assistCheckbox: checkbox(), indexCheckbox: checkbox(),
+        assistHint: { textContent: '' }, indexHint: { textContent: '' },
+        assistIndicator: { hidden: true }, indexIndicator: { hidden: true },
+        host: { getLocalModelStatus: localProbe, getSemanticIndexStatus: indexProbe,
+            getSearchState: () => ({ options }), setSearchOptions } });
+    return { panel, localProbe, indexProbe, setSearchOptions, options: () => options };
+}
+
+describe('independent local search availability', () => {
+    it('mutes unavailable options without changing modes, but lets a selected option be turned off', async () => {
+        const h = availabilityHarness();
+        h.localProbe.mockResolvedValue({ available: false, reason: 'Server not detected' } as never);
+        h.indexProbe.mockResolvedValue({ available: false, reason: 'Index server not detected' } as never);
+        await h.panel.refreshLocalModelStatus();
+        expect(h.setSearchOptions).not.toHaveBeenCalled();
+        expect(h.panel.assistIndicator.hidden).toBe(false);
+        expect(h.panel.indexIndicator.hidden).toBe(false);
+        expect(h.panel.assistCheckbox.disabled).toBe(false);
+        expect(h.panel.indexCheckbox.disabled).toBe(false);
+        expect(h.panel.assistCheckbox.parentElement.title).toContain('Uncheck');
+        h.panel.assistCheckbox.checked = false; h.panel.indexCheckbox.checked = true;
+        h.panel.commitOptions(); h.panel.syncAvailability();
+        expect(h.options().llmAssist).toBe(false);
+        expect(h.options().semanticIndex).toBe(true);
+        expect(h.panel.assistCheckbox.disabled).toBe(true);
     });
+    it('detects an offline encoder independently, and recovers without toggling saved preferences', async () => {
+        const h = availabilityHarness({ timelineFields: true, body: false, llmAssist: true, semanticIndex: false });
+        h.indexProbe.mockResolvedValueOnce({ available: false, reason: 'Index server not detected' } as never);
+        await h.panel.refreshLocalModelStatus();
+        expect(h.panel.assistIndicator.hidden).toBe(true);
+        expect(h.panel.indexIndicator.hidden).toBe(false);
+        expect(h.panel.indexCheckbox.disabled).toBe(true);
+        expect(h.panel.indexHint.textContent).toContain('not detected');
+        await h.panel.refreshLocalModelStatus();
+        expect(h.panel.indexIndicator.hidden).toBe(true);
+        expect(h.panel.indexCheckbox.disabled).toBe(false);
+        expect(h.panel.indexHint.textContent).toContain('Reviews likely excerpts');
+        expect(h.setSearchOptions).not.toHaveBeenCalled();
+    });
+    it('keeps an unselected index disabled when assist is off, even when both servers respond', async () => {
+        const h = availabilityHarness({ timelineFields: true, body: true, llmAssist: false, semanticIndex: false });
+        await h.panel.refreshLocalModelStatus();
+        expect(h.panel.assistCheckbox.disabled).toBe(false);
+        expect(h.panel.indexCheckbox.disabled).toBe(true);
+        expect(h.panel.indexHint.textContent).toContain('Turn on Local LLM assist');
+    });
+    it('does not let a late failed probe overwrite a newer healthy result', async () => {
+        const h = availabilityHarness(); let finish!: (value: { available: boolean }) => void;
+        h.localProbe.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+        const stale = h.panel.refreshLocalModelStatus();
+        await h.panel.refreshLocalModelStatus(); finish({ available: false }); await stale;
+        expect(h.panel.assistIndicator.hidden).toBe(true);
+    });
+    it('rechecks while open and stops checking on collapse or disposal', async () => {
+        vi.useFakeTimers();
+        try {
+            const h = availabilityHarness();
+            Object.assign(h.panel, { expanded: false, panel: { hidden: true, ownerDocument: { win: window } }, shell: { classList: { add: vi.fn(), remove: vi.fn() } },
+                input: { setAttribute: vi.fn() }, syncFromState: vi.fn(), applyEdgeAnchor: vi.fn() });
+            h.panel.expand(); await vi.advanceTimersByTimeAsync(5000);
+            expect(h.localProbe).toHaveBeenCalledTimes(2);
+            h.panel.collapse(); await vi.advanceTimersByTimeAsync(10000);
+            expect(h.localProbe).toHaveBeenCalledTimes(2);
+            expect(vi.getTimerCount()).toBe(0);
+        } finally { vi.useRealTimers(); }
+    });
+    it('shows a rejected health check and ignores an answer after closing', async () => {
+        const h = availabilityHarness();
+        h.localProbe.mockRejectedValueOnce(new Error('Connection refused'));
+        await h.panel.refreshLocalModelStatus();
+        expect(h.panel.assistHint.textContent).toContain('Connection refused');
+        let finish!: (value: { available: boolean }) => void;
+        h.localProbe.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+        const pending = h.panel.refreshLocalModelStatus();
+        h.panel.statusProbeId += 1; finish({ available: true }); await pending;
+        expect(h.panel.assistHint.textContent).toContain('Connection refused');
+    });
+});
+
+describe('search controls during pending runs', () => {
     it('clears a run before its first result', () => {
         const view = Object.create(RadialTimelineView.prototype); // SAFE: hydrate the control facade without creating an Obsidian leaf
         const clearSearch = vi.fn();
@@ -51,7 +128,7 @@ it('makes coverage failures inspectable and resets Cancel for a replacement run'
         options: { timelineFields: true, body: false, llmAssist: true },
         unreadableNotes: [{ path: 'missing.md', reason: 'read failed' }] };
     const statusText = { textContent: '', title: '' }, cancelButton = { hidden: true, disabled: true };
-    Object.assign(panel, { cancelRequested: true, cancelRunId: 1, scopeRows: [], indexCheckbox: { checked: false, disabled: false }, assistCheckbox: { checked: true }, statusText, cancelButton,
+    Object.assign(panel, { syncAvailability: vi.fn(), cancelRequested: true, cancelRunId: 1, scopeRows: [], indexCheckbox: { checked: false, disabled: false }, assistCheckbox: { checked: true }, statusText, cancelButton,
         host: { getSearchState: () => state } });
     panel.syncFromState();
     expect(statusText.title).toBe('missing.md: read failed'); expect(statusText.textContent).toBe('Searching…');

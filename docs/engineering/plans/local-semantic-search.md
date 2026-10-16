@@ -54,6 +54,19 @@ and warms the generation model, then restarts the index encoder. It asks for the
 administrator password only when the wired limit needs restoring after reboot.
 The encoder uses CPU memory and does not alter that GPU limit.
 
+## Search-panel availability
+
+The panel checks generation-model metadata and encoder metadata independently on
+opening and every five seconds while open. Checks have a two-second timeout;
+they never submit manuscript text, run inference, or rebuild the index. Closing
+the panel stops its checks and ignores any late responses.
+
+An unavailable option shows a muted × and an explanatory hint/tooltip. An option
+that is off cannot be enabled until its service returns. A selected option can
+still be unchecked, allowing an explicit change to literal or full-sweep search.
+Health checks never change saved preferences or automatically rerun a query.
+Search-time failures remain visible and preserve previously committed results.
+
 ## Verification contract
 
 - Compare complete filenames/evidence, not only hit counts, on warm and first-index runs.

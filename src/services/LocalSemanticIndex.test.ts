@@ -1,11 +1,38 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { DataAdapter } from 'obsidian';
-import { LocalSemanticIndex } from './LocalSemanticIndex';
+import { LocalSemanticIndex, getLocalSemanticIndexAvailability } from './LocalSemanticIndex';
 import { requestProvider } from '../api/providerTransport';
 vi.mock('../api/providerTransport', () => ({ requestProvider: vi.fn() }));
 const transport = vi.mocked(requestProvider);
 const identity = 'fixture-model:revision-one:pooling-one';
 const vector = (text: string) => text.includes('coast') ? [1, 0] : [0, 1];
+
+describe('semantic-index availability', () => {
+    it('checks only local metadata and rejects incompatible or failed responses', async () => {
+        fixture(); transport.mockClear();
+        expect(await getLocalSemanticIndexAvailability()).toEqual({ available: true });
+        expect(transport).toHaveBeenCalledWith(expect.objectContaining({ method: 'GET', url: 'http://127.0.0.1:8081/v1/index-model' }),
+            undefined, expect.objectContaining({ allowHttp: true, maxResponseBytes: 16384 }));
+        for (const json of [null, {}, { schemaVersion: 1, identity: 'x', dimensions: 384, language: 'fr' }]) {
+            transport.mockResolvedValueOnce({ status: 200, headers: {}, text: '', json, retryCount: 0 });
+            expect(await getLocalSemanticIndexAvailability()).toEqual({ available: false, reason: expect.stringContaining('incompatible') });
+        }
+        transport.mockRejectedValueOnce(new Error('connection refused'));
+        expect(await getLocalSemanticIndexAvailability()).toEqual({ available: false, reason: expect.stringContaining('not detected') });
+    });
+    it('aborts a hung health check after two seconds', async () => {
+        vi.useFakeTimers();
+        try {
+            transport.mockImplementationOnce((_options, _control, config) => new Promise((_resolve, reject) => {
+                config?.signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true }); // SAFE: one-shot AbortSignal listener in a transport timeout test
+            }));
+            const pending = getLocalSemanticIndexAvailability();
+            await vi.advanceTimersByTimeAsync(2000);
+            expect((await pending).available).toBe(false);
+            expect(vi.getTimerCount()).toBe(0);
+        } finally { vi.useRealTimers(); }
+    });
+});
 function fixture() {
     const files = new Map<string, string>();
     let modelIdentity = identity;

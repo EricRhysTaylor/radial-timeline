@@ -1115,6 +1115,11 @@ export const ko: DeepPartial<TranslationKeys> = {
         renderError: '타임라인 렌더링 오류. 자세한 내용은 콘솔을 확인하세요.',
         overdue: '기한 초과: {{date}}',
         search: {
+            indexChecking: "로컬 의미 검색 인덱스 서버를 확인하는 중…",
+            indexUnavailable: "의미 검색 인덱스 서버를 찾을 수 없습니다. 로컬 검색 서비스를 시작하세요.",
+            indexIncompatible: "의미 검색 인덱스 서버가 호환되지 않는 모델로 응답했습니다. 로컬 검색 서비스를 다시 시작하세요.",
+            unavailableSelected: "검색 모드를 변경하려면 선택을 해제하세요. 변경하기 전까지 현재 모드가 유지됩니다.",
+            indexRequiresAssist: "의미 검색 인덱스를 사용하려면 로컬 LLM 지원을 켜세요.",
             indexLabel: '의미 검색 색인 사용',
             indexHint: '로컬 영어 문단 색인입니다. 관련 발췌문을 확인합니다. 모든 장면을 확인하려면 끄세요.',
             statusIndexing: '색인 업데이트: {{total}}개 장면 중 {{done}}개',

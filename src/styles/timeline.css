@@ -2117,6 +2117,11 @@
   color: var(--text-muted);
 }
 
+.ert-timeline-search-panel__unavailable {
+  margin-left: var(--size-2-2);
+  color: var(--text-muted);
+}
+
 /* The hint carries the reason a control is disabled, so it must stay legible
    even though the control itself is dimmed. */
 .ert-timeline-search-panel__row-hint {

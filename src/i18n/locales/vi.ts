@@ -1096,6 +1096,11 @@ export const vi: TranslationKeys = {
         "renderError": "Lỗi hiển thị dòng thời gian. Kiểm tra bảng điều khiển để biết chi tiết.",
         "overdue": "Quá hạn: {{date}}",
         "search": {
+            "indexChecking": "Đang kiểm tra máy chủ chỉ mục ngữ nghĩa cục bộ…",
+            "indexUnavailable": "Không phát hiện máy chủ chỉ mục ngữ nghĩa. Hãy khởi động dịch vụ tìm kiếm cục bộ.",
+            "indexIncompatible": "Máy chủ chỉ mục ngữ nghĩa trả về mô hình không tương thích. Hãy khởi động lại dịch vụ tìm kiếm cục bộ.",
+            "unavailableSelected": "Bỏ chọn để đổi chế độ tìm kiếm. Chế độ hiện tại được giữ nguyên cho đến khi bạn thay đổi.",
+            "indexRequiresAssist": "Bật trợ giúp LLM cục bộ để sử dụng chỉ mục ngữ nghĩa.",
             "indexLabel": "Sử dụng chỉ mục ngữ nghĩa",
             "indexHint": "Chỉ số đoạn văn tiếng Anh địa phương. đánh giá các đoạn trích có thể xảy ra; Tắt để xem lại mọi cảnh.",
             "statusIndexing": "Cập nhật chỉ mục: {{done}} của {{total}} Cảnh",

@@ -86,6 +86,16 @@ describe('probeLocalLlmServer', () => {
 });
 
 describe('availability cache', () => {
+    it('forces a fresh short UI probe instead of trusting an earlier healthy answer', async () => {
+        const config = settings({ timeoutMs: 45000 });
+        primeLocalLlmAvailability(config, { available: true, modelId: 'qwen3', checkedAt: Date.now() });
+        listModels.mockRejectedValueOnce(new Error('offline'));
+        const result = await getLocalLlmAvailability({ settings: { aiSettings: { localLlm: config } } } as never,
+            { force: true, timeoutMs: 2000 });
+        expect(result.available).toBe(false);
+        expect(listModels).toHaveBeenCalledWith(expect.objectContaining({ timeoutMs: 2000 }));
+        expect(config.timeoutMs).toBe(45000);
+    });
     it('reuses a primed answer for the same configuration', async () => {
         const config = settings();
         primeLocalLlmAvailability(config, { available: true, modelId: 'qwen3', checkedAt: Date.now() });

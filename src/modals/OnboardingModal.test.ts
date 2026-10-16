@@ -12,7 +12,7 @@ vi.mock('../onboarding/OnboardingService', () => ({
     preflight = probes.preflight;
     cloudAvailability = probes.cloud;
     detectImportFlow() { return null; }
-    async ingest() { return { kind: 'ok', model: { chapters: [{ scenes: [{ rawText: 'A scene.', alreadyOnboarded: false }] }] } }; }
+    async ingest() { return { kind: 'ok', model: { chapters: [{ scenes: [{ rawText: 'A scene.' }] }] } }; }
     setEngine() {}
   },
 }));

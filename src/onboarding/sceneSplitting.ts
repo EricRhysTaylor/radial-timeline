@@ -83,7 +83,6 @@ export interface ScenePlan {
   labels: string[];
   /** Sorted unique break indices in the open range (0, paragraphs.length). */
   breaks: number[];
-  alreadyOnboarded: boolean;
   knownMetadata: Record<string, string>;
   knownSynopsis: string | null;
 }
@@ -110,7 +109,6 @@ export function planSceneSplit(scene: ManuscriptScene): ScenePlan {
     paragraphs,
     labels,
     breaks: normalizeBreaks(breaks, paragraphs.length),
-    alreadyOnboarded: scene.alreadyOnboarded,
     knownMetadata: scene.knownMetadata,
     knownSynopsis: scene.knownSynopsis,
   };
@@ -191,7 +189,7 @@ export function toggleBreak(plan: ScenePlan, index: number): number[] {
 
 /** How many scenes a plan currently yields. */
 export function segmentCount(plan: ScenePlan): number {
-  if (plan.alreadyOnboarded || plan.paragraphs.length === 0) return 1;
+  if (plan.paragraphs.length === 0) return 1;
   return plan.breaks.length + 1;
 }
 
@@ -217,13 +215,10 @@ function segmentTitle(plan: ScenePlan, index: number, total: number): string | n
   return plan.baseTitle ? `${plan.baseTitle} — ${suffix}` : suffix;
 }
 
-/** Expand a plan into ManuscriptScenes. Already-onboarded notes are never split. */
+/** Expand a plan into ManuscriptScenes. */
 export function scenesFromPlan(plan: ScenePlan): ManuscriptScene[] {
-  const base = {
-    knownMetadata: plan.knownMetadata,
-    alreadyOnboarded: plan.alreadyOnboarded,
-  };
-  if (plan.alreadyOnboarded || segmentCount(plan) <= 1) {
+  const base = { knownMetadata: plan.knownMetadata };
+  if (segmentCount(plan) <= 1) {
     return [{
       ...base,
       title: plan.baseTitle,

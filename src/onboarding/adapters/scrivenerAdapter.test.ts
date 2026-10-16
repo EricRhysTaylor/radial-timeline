@@ -187,7 +187,6 @@ describe('ingestScrivenerFolder', () => {
     expect(unlisted.title).toBe('Unlisted');
     expect(unlisted.knownSynopsis).toBeNull();
     expect(unlisted.knownMetadata).toEqual({});
-    expect(unlisted.alreadyOnboarded).toBe(false);
   });
 
   it('ingests scene files alone when there is no sidecar', async () => {
@@ -386,7 +385,6 @@ describe('applyMetadataMappingToModel', () => {
           knownMetadata: { Storyline: 'Revenge', 'Word Count': '812', Label: 'Blue' },
           knownSynopsis: null,
           sourceRef: '01 One.md',
-          alreadyOnboarded: false,
         }],
       }],
     };

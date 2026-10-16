@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   ingestMarkdownFolder,
-  isAlreadyOnboarded,
   stripFrontmatter,
   titleFromFileName,
   type MarkdownNote,
@@ -24,16 +23,6 @@ function note(fileName: string, over: Partial<MarkdownNote> = {}): MarkdownNote 
     ...over,
   };
 }
-
-describe('isAlreadyOnboarded', () => {
-  it('is true only when Class is Scene (case-insensitive value)', () => {
-    expect(isAlreadyOnboarded({ Class: 'Scene' })).toBe(true);
-    expect(isAlreadyOnboarded({ Class: 'scene' })).toBe(true);
-    expect(isAlreadyOnboarded({ Class: 'Character' })).toBe(false);
-    expect(isAlreadyOnboarded({})).toBe(false);
-    expect(isAlreadyOnboarded(null)).toBe(false);
-  });
-});
 
 describe('stripFrontmatter', () => {
   it('removes a leading YAML block and keeps the body', () => {
@@ -69,15 +58,6 @@ describe('ingestMarkdownFolder', () => {
       // Non-canonical frontmatter is carried; drives the custom-field list.
       expect(scenes[0].knownMetadata).toEqual({ Storyline: 'Homecoming' });
       expect(result.model.customFields).toContain('Storyline');
-    }
-  });
-
-  it('flags an already-onboarded note without dropping it', async () => {
-    const notes = [note('01 A.md', { frontmatter: { Class: 'Scene' } })];
-    const result = await ingestMarkdownFolder(sourceOf(notes), 'Book');
-    expect(result.kind).toBe('ok');
-    if (result.kind === 'ok') {
-      expect(result.model.chapters[0].scenes[0].alreadyOnboarded).toBe(true);
     }
   });
 

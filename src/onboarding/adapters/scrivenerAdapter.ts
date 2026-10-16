@@ -378,7 +378,6 @@ function fileToScene(file: ScrivenerFile, row: Record<string, string> | null): M
     knownMetadata: row ? carriedMetadata(row) : {},
     knownSynopsis: row ? readColumn(row, 'Synopsis') : null,
     sourceRef: file.path,
-    alreadyOnboarded: false, // exports are fresh material, never existing RT notes
   };
 }
 

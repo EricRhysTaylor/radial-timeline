@@ -154,7 +154,6 @@ export function ingestDocxFile(fileName: string, data: ArrayBuffer | Uint8Array)
     knownMetadata: {},
     knownSynopsis: null,
     sourceRef: `${fileName}#${index + 1}`,
-    alreadyOnboarded: false,
   }));
   return {
     sourceKind: 'docx',

@@ -22,8 +22,6 @@ export interface ManuscriptScene {
   knownSynopsis: string | null;
   /** Where this scene came from (file path / heading path) — for the report. */
   sourceRef: string;
-  /** True when the source note already carries `Class: Scene` (existing-vault re-run skip). */
-  alreadyOnboarded: boolean;
   /**
    * Act carried by the source's own structure (e.g. a Scrivener "ACT 2" export
    * folder). When present it overrides positional act math downstream.
@@ -46,15 +44,6 @@ export interface ManuscriptModel {
 /** Flatten a model to its scenes in reading order. */
 export function flattenScenes(model: ManuscriptModel): ManuscriptScene[] {
   return model.chapters.flatMap((chapter) => chapter.scenes);
-}
-
-/** Count scenes, optionally excluding ones already onboarded. */
-export function sceneCount(model: ManuscriptModel, opts?: { excludeOnboarded?: boolean }): number {
-  const scenes = flattenScenes(model);
-  if (opts?.excludeOnboarded) {
-    return scenes.filter((scene) => !scene.alreadyOnboarded).length;
-  }
-  return scenes.length;
 }
 
 export type ReadingOrderResult =

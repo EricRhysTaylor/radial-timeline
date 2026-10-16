@@ -582,7 +582,6 @@ export class OnboardingModal extends Modal {
 
     let ingestReason = '';
     let candidateCount = 0;
-    let skippedCount = 0;
     try {
       this.model = null;
       const ingest = await this.service.ingest(book.sourceFolder, activeFlow ?? 'folder');
@@ -591,8 +590,7 @@ export class OnboardingModal extends Modal {
       } else {
         this.model = ingest.model;
         const scenes = flattenScenes(ingest.model);
-        skippedCount = scenes.filter((scene) => scene.alreadyOnboarded).length;
-        candidateCount = scenes.length - skippedCount;
+        candidateCount = scenes.length;
         // Prose actually sent to the model — the same text the adapters
         // produced, so the forecast measures the real payload rather than the
         // source file (which still carries markup the adapter stripped).
@@ -713,10 +711,7 @@ export class OnboardingModal extends Modal {
     if (ingestReason) {
       this.renderStatusRow(status, t('ui.onboardingModal.bookFolderLabel'), ingestReason, false);
     } else {
-      const chaptersValue = skippedCount > 0
-        ? t('ui.onboardingModal.chaptersFoundSkipped', { count: candidateCount, skipped: skippedCount })
-        : String(candidateCount);
-      this.renderStatusRow(status, t('ui.onboardingModal.chaptersFoundLabel'), chaptersValue, candidateCount > 0);
+      this.renderStatusRow(status, t('ui.onboardingModal.chaptersFoundLabel'), String(candidateCount), candidateCount > 0);
     }
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.chooseAnotherManuscript')).onClick(() => void this.showSourceSelection());
@@ -767,7 +762,7 @@ export class OnboardingModal extends Modal {
         .map((scene) => this.splitPlans.get(scene.sourceRef))
         .filter((plan): plan is ScenePlan => !!plan);
       const undecided = plans.filter(
-        (plan) => !plan.alreadyOnboarded && plan.paragraphs.length > 1 && plan.breaks.length === 0
+        (plan) => plan.paragraphs.length > 1 && plan.breaks.length === 0
       ).length;
       if (this.aiAvailable && !this.splitOutcomes && undecided > 0) {
         totalLine.setText(
@@ -842,7 +837,7 @@ export class OnboardingModal extends Modal {
     // unmarked prose, so it takes the CTA until it has run; Continue takes over
     // after (or when there is nothing to auto-split).
     const splittable = [...this.splitPlans.values()].some(
-      (plan) => !plan.alreadyOnboarded && plan.paragraphs.length > 1 && plan.breaks.length === 0
+      (plan) => plan.paragraphs.length > 1 && plan.breaks.length === 0
     );
     const offerAutoSplit = splittable && !this.splitOutcomes && this.aiAvailable;
     if (offerAutoSplit) {
@@ -897,12 +892,9 @@ export class OnboardingModal extends Modal {
     // author's attention, green = processed by a completed auto-split run.
     // Neutral until auto-split has run so the initial list stays calm.
     let statusText = '';
-    if (plan.paragraphs.length === 0 && !plan.alreadyOnboarded) {
+    if (plan.paragraphs.length === 0) {
       card.addClass('is-failed');
       statusText = t('ui.onboardingModal.noProse');
-    } else if (plan.alreadyOnboarded) {
-      card.addClass('is-warn');
-      statusText = t('ui.onboardingModal.alreadyOnboardedSkipped');
     } else if (this.splitOutcomes?.get(plan.sourceRef) === 'fallback') {
       card.addClass('is-warn');
       statusText = t('ui.onboardingModal.splitFallback');
@@ -931,12 +923,11 @@ export class OnboardingModal extends Modal {
       // Without AI, nothing further will "decide" a chapter — it is what it is.
       const undecided =
         this.aiAvailable &&
-        !plan.alreadyOnboarded &&
         plan.paragraphs.length > 1 &&
         plan.breaks.length === 0 &&
         !this.splitOutcomes;
       const n = segmentCount(plan);
-      countPill.setText(plan.alreadyOnboarded ? t('ui.onboardingModal.pillSkip') : undecided ? t('ui.onboardingModal.pillUnsplit') : tCount('scene', n));
+      countPill.setText(undecided ? t('ui.onboardingModal.pillUnsplit') : tCount('scene', n));
       countPill.toggleClass('ert-onb-pill--undecided', undecided);
     };
     refreshCount();
@@ -968,10 +959,6 @@ export class OnboardingModal extends Modal {
 
   /** The break editor: section titles (if any) + paragraphs with clickable break dividers. */
   private buildSplitEditor(body: HTMLElement, plan: ScenePlan, onChange: () => void): void {
-    if (plan.alreadyOnboarded) {
-      body.createDiv({ cls: 'ert-onb-error', text: t('ui.onboardingModal.alreadyOnboardedNotSplit') });
-      return;
-    }
     if (plan.paragraphs.length === 0) {
       body.createDiv({ cls: 'ert-onb-error', text: t('ui.onboardingModal.noProse') });
       return;

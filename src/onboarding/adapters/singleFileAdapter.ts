@@ -165,7 +165,6 @@ export function ingestSingleFile(fileName: string, content: string): ManuscriptM
     knownMetadata: {},
     knownSynopsis: null,
     sourceRef: `${fileName}#${index + 1}`,
-    alreadyOnboarded: false,
   }));
   return {
     sourceKind: 'md',

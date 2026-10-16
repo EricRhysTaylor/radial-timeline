@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   resolveReadingOrder,
   flattenScenes,
-  sceneCount,
   type ManuscriptModel,
   type ManuscriptScene,
 } from './manuscriptModel';
@@ -14,7 +13,6 @@ function scene(over: Partial<ManuscriptScene> = {}): ManuscriptScene {
     knownMetadata: {},
     knownSynopsis: null,
     sourceRef: 'x.md',
-    alreadyOnboarded: false,
     ...over,
   };
 }
@@ -68,22 +66,17 @@ describe('resolveReadingOrder', () => {
   });
 });
 
-describe('flattenScenes / sceneCount', () => {
+describe('flattenScenes', () => {
   const model: ManuscriptModel = {
     sourceKind: 'md',
     customFields: [],
     chapters: [
-      { title: null, scenes: [scene({ alreadyOnboarded: true }), scene()] },
+      { title: null, scenes: [scene(), scene()] },
       { title: null, scenes: [scene()] },
     ],
   };
 
   it('flattens chapters in order', () => {
     expect(flattenScenes(model)).toHaveLength(3);
-  });
-
-  it('counts all scenes, or only not-yet-onboarded ones', () => {
-    expect(sceneCount(model)).toBe(3);
-    expect(sceneCount(model, { excludeOnboarded: true })).toBe(2);
   });
 });

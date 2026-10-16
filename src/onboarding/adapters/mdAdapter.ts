@@ -2,8 +2,9 @@
  * Markdown ingest adapter — the existing-vault path.
  *
  * Reads a folder of prose `.md` notes into a Manuscript Model: resolves reading
- * order, strips any existing frontmatter to get raw prose, and flags notes that
- * already carry `Class: Scene` so a re-run is a no-op. No AI here.
+ * order and strips any existing frontmatter to get raw prose. A folder holding
+ * scene notes never arrives here: it is already a book (see discovery's
+ * `countSceneNotes`). No AI here.
  *
  * The adapter depends on a narrow `MarkdownSource` surface (not the whole
  * Obsidian App) so it stays unit-testable; `createObsidianMarkdownSource`
@@ -83,12 +84,6 @@ export async function ingestMarkdownFolder(
   };
 }
 
-/** True when a note already carries `Class: Scene` (any casing of the value). */
-export function isAlreadyOnboarded(frontmatter: Record<string, unknown> | null): boolean {
-  const value = frontmatter?.['Class'];
-  return typeof value === 'string' && value.trim().toLowerCase() === 'scene';
-}
-
 function noteToScene(note: MarkdownNote): ManuscriptScene {
   return {
     title: titleFromFileName(note.fileName),
@@ -96,7 +91,6 @@ function noteToScene(note: MarkdownNote): ManuscriptScene {
     knownMetadata: nonCanonicalStrings(note.frontmatter),
     knownSynopsis: readString(note.frontmatter?.['Synopsis']),
     sourceRef: note.path,
-    alreadyOnboarded: isAlreadyOnboarded(note.frontmatter),
   };
 }
 

@@ -445,7 +445,7 @@ export class OnboardingService {
 
   /** One structured survey call establishing acts, subplot vocabulary, and scene classification. */
   async survey(model: ManuscriptModel): Promise<SurveyResult | null> {
-    const scenes = this.candidateScenes(model);
+    const scenes = flattenScenes(model);
     if (scenes.length === 0) return null;
     // Naming subplots is a whole-book gestalt task — a representative SAMPLE of
     // openings is plenty, and keeping the prompt small (input AND, via the
@@ -483,7 +483,7 @@ export class OnboardingService {
    */
   buildStructureOnlyProposals(model: ManuscriptModel, options: { publishStage?: Stage } = {}): StructureOnlyImport {
     const actCount = Math.max(3, this.plugin.settings.actCount ?? 3); // SAFE: three acts is the plugin's structural minimum and its shipped default
-    const scenes = this.candidateScenes(model);
+    const scenes = flattenScenes(model);
     const acts = resolveImportActs(scenes, actCount);
     const proposals: SceneProposal[] = scenes.map((scene, index) => {
       const extraction = deterministicExtraction(scene);
@@ -521,7 +521,7 @@ export class OnboardingService {
     options: ExtractOptions = {}
   ): Promise<SceneProposal[]> {
     const actCount = Math.max(3, this.plugin.settings.actCount ?? 3); // SAFE: three acts is the plugin's structural minimum and its shipped default
-    const scenes = this.candidateScenes(model);
+    const scenes = flattenScenes(model);
     const subplotVocabulary = survey?.subplots ?? []; // SAFE: no survey answers yet means an empty vocabulary, which enforceSubplotVocabulary handles explicitly
     const aiClient = getAIClient(this.plugin);
     const proposals: SceneProposal[] = [];
@@ -634,7 +634,7 @@ export class OnboardingService {
    */
   async proposeSplits(plans: ScenePlan[], options: SplitOptions = {}): Promise<Map<string, 'split' | 'failed' | 'fallback'>> {
     const targets = plans.filter(
-      (plan) => !plan.alreadyOnboarded && plan.paragraphs.length > 1 && plan.breaks.length === 0
+      (plan) => plan.paragraphs.length > 1 && plan.breaks.length === 0
     );
     const outcomes = new Map<string, 'split' | 'failed' | 'fallback'>();
     const aiClient = getAIClient(this.plugin);
@@ -872,10 +872,6 @@ export class OnboardingService {
   /** True when the import's destination folder is already taken. */
   destinationExists(book: BookProfile): boolean {
     return this.plugin.app.vault.getAbstractFileByPath(this.destinationFor(book)) !== null;
-  }
-
-  private candidateScenes(model: ManuscriptModel): ManuscriptScene[] {
-    return flattenScenes(model).filter((scene) => !scene.alreadyOnboarded);
   }
 
   private failed(scene: ManuscriptScene, title: string, error: string): SceneProposal {

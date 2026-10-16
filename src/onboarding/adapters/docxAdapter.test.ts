@@ -152,7 +152,6 @@ describe('ingestDocxFile', () => {
     expect(scenes[0].rawText).toContain('The rain fell in torrents.');
     expect(scenes[0].rawText).not.toContain('Chapter Two');
     expect(scenes[1].rawText).toBe('Morning came & the storm had passed.');
-    expect(scenes.every((s) => !s.alreadyOnboarded)).toBe(true);
     expect(scenes.every((s) => s.knownSynopsis === null)).toBe(true);
   });
 

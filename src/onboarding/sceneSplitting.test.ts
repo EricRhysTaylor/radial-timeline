@@ -24,7 +24,6 @@ function scene(over: Partial<ManuscriptScene> = {}): ManuscriptScene {
     knownMetadata: {},
     knownSynopsis: null,
     sourceRef: 'Book Odyssey/01 Book 1.md',
-    alreadyOnboarded: false,
     ...over,
   };
 }
@@ -176,11 +175,6 @@ describe('scenesFromPlan', () => {
     expect(scenes[1].sourceRef).toBe('Book Odyssey/01 Book 1.md#2');
     expect(scenes[0].knownSynopsis).toBe('whole-file synopsis');
     expect(scenes[1].knownSynopsis).toBeNull();
-  });
-
-  it('never splits an already-onboarded note', () => {
-    const plan = planSceneSplit(scene({ rawText: 'one\n\n***\n\ntwo', alreadyOnboarded: true }));
-    expect(scenesFromPlan(plan)).toHaveLength(1);
   });
 
   it('keeps the argument header in the single-scene body', () => {

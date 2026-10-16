@@ -20,8 +20,9 @@ import {
     buildNonlinearDemoProjectPlan,
     isValidIsoDateOnly,
 } from '../utils/bookDesignerDemoProject';
+import { getMainPlotName } from '../utils/mainPlot';
 
-const DEFAULT_SUBPLOTS = "Main Plot\nSubplot A\nSubplot B";
+const defaultSubplots = (): string => `${getMainPlotName()}\nSubplot A\nSubplot B`;
 const DEFAULT_CHARACTERS = "Hero\nAntagonist";
 
 type PreviewDims = {
@@ -237,7 +238,7 @@ export class BookDesignerModal extends Modal {
     private scenesToGenerate: number = 1;
     private targetRangeMax: number = 60;
     private selectedActs: number[] = [1, 2, 3];
-    private subplots: string = DEFAULT_SUBPLOTS;
+    private subplots: string = defaultSubplots();
     private character: string = DEFAULT_CHARACTERS;
     private templateType: 'base' | 'advanced';
     private generateBeats: boolean = false;
@@ -383,7 +384,7 @@ export class BookDesignerModal extends Modal {
         this.scenesToGenerate = 1;
         this.targetRangeMax = 60;
         this.selectedActs = Array.from({ length: maxActs }, (_, i) => i + 1);
-        this.subplots = DEFAULT_SUBPLOTS;
+        this.subplots = defaultSubplots();
         this.character = DEFAULT_CHARACTERS;
         this.templateType = 'base';
         this.generateBeats = false;
@@ -671,7 +672,7 @@ export class BookDesignerModal extends Modal {
         this.targetRangeMax = template.targetRangeMax;
         this.timeIncrement = template.timeIncrement;
         this.selectedActs = [...template.selectedActs];
-        this.subplots = template.subplots.join('\n') || 'Main Plot';
+        this.subplots = template.subplots.join('\n') || getMainPlotName();
         this.character = template.characters.join('\n') || 'Hero';
         this.generateBeats = template.generateBeats;
         const templatedBookId = template.targetBookId?.trim() || this.findBookIdByLegacyTargetPath(template.targetPath);
@@ -1039,7 +1040,7 @@ export class BookDesignerModal extends Modal {
                 text.inputEl.addEventListener('blur', () => {
                     const trimmed = this.subplots.split('\n').map(s => s.trim()).filter(Boolean);
                     if (trimmed.length === 0) {
-                        this.subplots = 'Main Plot';
+                        this.subplots = getMainPlotName();
                         text.setValue(this.subplots);
                         this.schedulePreviewUpdate();
                     }
@@ -1289,7 +1290,7 @@ export class BookDesignerModal extends Modal {
             .split('\n')
             .map(s => s.trim())
             .filter(Boolean);
-        return list.length > 0 ? list : ['Main Plot'];
+        return list.length > 0 ? list : [getMainPlotName()];
     }
 
     private updateSubplotColorLegend(): void {
@@ -1756,7 +1757,7 @@ export class BookDesignerModal extends Modal {
 
         // Parse subplots
         const subplotList = this.subplots.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-        if (subplotList.length === 0) subplotList.push('Main Plot');
+        if (subplotList.length === 0) subplotList.push(getMainPlotName());
 
         // Get template string from single source of truth
         const sceneParts = getTemplateParts('Scene', this.plugin.settings);

@@ -13,6 +13,7 @@ import type RadialTimelinePlugin from '../main';
 import type { ProcessingMode } from '../modals/SceneAnalysisProcessingModal';
 import type { ProcessedCheckOptions, SceneData } from './types';
 import { isPathInExplicitFolderScope } from '../utils/pathScope';
+import { compareSubplotOrder } from '../renderer/utils/Precompute';
 import { createHash } from 'crypto';
 
 export function sceneSourceRevision(content: string): string {
@@ -331,12 +332,7 @@ export async function getDistinctSubplotNames(
         count
     }));
 
-    subplotArray.sort((a, b) => {
-        if (a.subplot === 'Main Plot' || !a.subplot) return -1;
-        if (b.subplot === 'Main Plot' || !b.subplot) return 1;
-        if (a.count !== b.count) return b.count - a.count;
-        return a.subplot.localeCompare(b.subplot);
-    });
+    subplotArray.sort(compareSubplotOrder);
 
     return subplotArray.map(item => item.subplot);
 }

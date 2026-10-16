@@ -9,6 +9,7 @@ import type { TimelineItem } from '../../types';
 import type { PluginRendererFacade } from '../../utils/sceneHelpers';
 import { getMostAdvancedStageColor } from '../../utils/colour';
 import { getFillForScene } from '../utils/SceneFill';
+import { getMainPlotName } from '../../utils/mainPlot';
 
 /**
  * Updates scene colors in the DOM without regenerating SVG
@@ -34,7 +35,7 @@ export function updateSceneColors(
             
             sceneGroups.forEach(group => {
                 // Get the subplot index
-                const subplot = scene.subplot || 'Main Plot';
+                const subplot = scene.subplot || getMainPlotName();
                 const subplotIndex = masterSubplotOrder.indexOf(subplot);
                 
                 if (subplotIndex === -1) return;

@@ -20,6 +20,7 @@ import {
   type MatterNoteSummary,
   type ResolvedPage
 } from './bookPagesResolver';
+import { getMainPlotName } from './mainPlot';
 
 export interface SceneContent {
   title: string;
@@ -594,7 +595,7 @@ export async function getSceneFilesByOrder(
     // Filter by subplot if specified (matter notes bypass subplot filter)
     const isMatter = scene.itemType === 'Frontmatter' || scene.itemType === 'Backmatter';
     if (!isMatter && subplotFilter && subplotFilter !== 'All Subplots') {
-      const sceneSubplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
+      const sceneSubplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : getMainPlotName();
       if (sceneSubplot !== subplotFilter) return false;
     }
 
@@ -713,7 +714,7 @@ export async function getSceneFilesByOrder(
     acts.push(parseActNumber(scene.actNumber ?? scene.act));
     const numStr = getScenePrefixNumber(scene.title, scene.number);
     sceneNumbers.push(numStr ? parseInt(numStr, 10) || 0 : 0);
-    const sceneSubplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
+    const sceneSubplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : getMainPlotName();
     subplots.push(sceneSubplot);
 
     const rf = scene.rawFrontmatter;

@@ -23,6 +23,7 @@ import { whenTextHasClock } from '../utils/whenFormat';
 import { parseRuntimeField } from '../utils/runtimeEstimator';
 import { formatHoverMetadataValue } from '../utils/hoverMetadata';
 import { hexToRgb } from '../utils/colour';
+import { getMainPlotName } from '../utils/mainPlot';
 
 /**
  * - `scene`: on the wheel.
@@ -46,8 +47,6 @@ export interface TimetableRow {
     /** Subplot memberships. Scenes always have at least Main Plot; sketches list planned rings. */
     subplots: string[];
 }
-
-const MAIN_PLOT = 'Main Plot';
 
 function readSubplots(value: unknown): string[] {
     const raw = Array.isArray(value) ? value : (value === undefined || value === null ? [] : [value]);
@@ -91,7 +90,7 @@ export function buildTableRow(
         className,
         prefix: extractPrefixToken(basename),
         act: act ?? (kind === 'scene' || kind === 'beat' ? 1 : null),
-        subplots: kind === 'scene' && subplots.length === 0 ? [MAIN_PLOT] : (kind === 'beat' || kind === 'otherClass' ? [] : subplots),
+        subplots: kind === 'scene' && subplots.length === 0 ? [getMainPlotName()] : (kind === 'beat' || kind === 'otherClass' ? [] : subplots),
     };
 }
 

@@ -26,6 +26,7 @@ import { computeSubplotDominanceStates, type SubplotDominanceState } from '../co
 import { getReadabilityScale } from '../../utils/readability';
 import { getTimelineScope } from '../../utils/books';
 import { getTimelineSegmentCount } from './TimelineSegments';
+import { getMainPlotName } from '../../utils/mainPlot';
 
 /** One subplot's aggregated scene count, the unit {@link compareSubplotOrder} orders. */
 export interface SubplotCountEntry {
@@ -35,11 +36,13 @@ export interface SubplotCountEntry {
 
 /**
  * Strict total order for ring placement (outermost first). The single
- * canonical definition — `computeCacheableValues` sorts with this directly,
- * and tests exercise it directly, so there is exactly one place the rule
- * can be stated or broken.
+ * canonical definition — `computeCacheableValues`, the APR renderer and the
+ * scene-analysis subplot list all sort with this directly, and tests exercise
+ * it directly, so there is exactly one place the rule can be stated or broken.
  *
- *   1. 'Main Plot' is pinned first — it is the spine and always reads first.
+ *   1. The main plot is pinned first — it is the spine and always reads
+ *      first. Its name is "Main Plot" unless the author renamed it (see
+ *      utils/mainPlot).
  *   2. Otherwise, higher scene count sorts first (busiest subplot gets the
  *      longest/outermost ring).
  *   3. Ties break by subplot name, ascending, via localeCompare — the
@@ -51,7 +54,7 @@ export interface SubplotCountEntry {
  *      because that package must produce byte-identical output across
  *      machines; the plugin has no such constraint.)
  *
- * Pinning is on exact name match to 'Main Plot' only, computed once per side
+ * Pinning is on exact name match to the main plot's name only, computed once per side
  * as a rank rather than as two independent `return -1` / `return 1` branches.
  * An earlier version used `if (a.subplot === 'Main Plot' || !a.subplot)
  * return -1;` / the mirrored check for `b` — a defensive fallback for a
@@ -83,10 +86,11 @@ export interface SubplotCountEntry {
  * transitive for that case as well.
  */
 export function compareSubplotOrder(a: SubplotCountEntry, b: SubplotCountEntry): number {
-    const rankA = a.subplot === 'Main Plot' ? 0 : 1;
-    const rankB = b.subplot === 'Main Plot' ? 0 : 1;
+    const mainPlot = getMainPlotName();
+    const rankA = a.subplot === mainPlot ? 0 : 1;
+    const rankB = b.subplot === mainPlot ? 0 : 1;
     if (rankA !== rankB) return rankA - rankB;
-    if (rankA === 0) return 0; // both are the (at most one) 'Main Plot' entry
+    if (rankA === 0) return 0; // both are the (at most one) main plot entry
     if (a.count !== b.count) return b.count - a.count;
     return a.subplot.localeCompare(b.subplot);
 }
@@ -174,7 +178,7 @@ export function computeCacheableValues(
         scenesByActAndSubplot[0] = {};
         scenes.forEach(scene => {
             if (scene.itemType === 'Backdrop' || isMatterNote(scene)) return;
-            const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
+            const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : getMainPlotName();
             if (!scenesByActAndSubplot[0][subplot]) {
                 scenesByActAndSubplot[0][subplot] = [];
             }
@@ -198,7 +202,7 @@ export function computeCacheableValues(
             // actCount) must not collapse into Act 1's quadrant. Mirrors the
             // clamping already used for the same case in AprRenderer.ts.
             const validAct = Math.min(Math.max(act, 0), numActs - 1);
-            const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
+            const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : getMainPlotName();
             if (!scenesByActAndSubplot[validAct][subplot]) {
                 scenesByActAndSubplot[validAct][subplot] = [];
             }

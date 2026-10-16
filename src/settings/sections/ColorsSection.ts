@@ -11,6 +11,7 @@ import { HERO_PATTERNS, DEFAULT_WORKING_PATTERN_ID, CUSTOM_PATTERN_ID_PREFIX, ge
 import { validateSvgPattern } from '../../renderer/components/heroPatternValidator';
 import { hasProFeatureAccess } from '../featureGate';
 import { IMPACT_FULL } from '../SettingImpact';
+import { DEFAULT_MAIN_PLOT_NAME } from '../../utils/mainPlot';
 import { t } from '../../i18n';
 
 /**
@@ -504,9 +505,11 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
     void (async () => {
         const subplotOrder = await getTimelineSubplotOrder(plugin);
         if (subplotOrder.length === 0) return;
-        for (let i = 1; i < subplotLabels.length; i++) {
+        // Swatch 1 is the main plot's ring: it keeps the translated MAIN PLOT
+        // label until the author renames the main plot.
+        for (let i = 0; i < subplotLabels.length; i++) {
             const subplotName = subplotOrder[i];
-            if (!subplotName || subplotName.toLowerCase() === 'main plot') continue;
+            if (!subplotName || subplotName === DEFAULT_MAIN_PLOT_NAME) continue;
             subplotLabels[i].setText(normalizeSubplotLabel(subplotName));
         }
     })();

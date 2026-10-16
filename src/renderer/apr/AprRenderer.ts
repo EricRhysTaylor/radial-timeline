@@ -16,6 +16,8 @@ import { DEFAULT_BOOK_TITLE } from '../../utils/books';
 import { renderAprBadges, renderAprBranding, renderAprCenterPercent } from './AprBranding';
 import { STAGE_ORDER } from '../../utils/constants';
 import { escapeXml } from '../../utils/svg';
+import { compareSubplotOrder } from '../utils/Precompute';
+import { getMainPlotName } from '../../utils/mainPlot';
 
 export interface AprRenderOptions {
     size: AprSize;
@@ -212,25 +214,19 @@ export function createAprSVG(scenes: TimelineItem[], opts: AprRenderOptions): Ap
     // Determine subplot rings
     const scenesBySubplot: Record<string, TimelineItem[]> = {};
     safeScenes.forEach(scene => {
-        const subplot = scene.subplot?.trim() || 'Main Plot';
+        const subplot = scene.subplot?.trim() || getMainPlotName();
         if (!scenesBySubplot[subplot]) {
             scenesBySubplot[subplot] = [];
         }
         scenesBySubplot[subplot].push(scene);
     });
 
-    // Match timeline subplot ordering logic exactly (outer -> inner):
-    // Main Plot first, then by scene count desc, then subplot name asc (tie-break).
+    // Same ring order as the timeline (outer -> inner) — see compareSubplotOrder.
     const subplotCounts = Object.entries(scenesBySubplot).map(([subplot, items]) => ({
         subplot,
         count: items.length
     }));
-    subplotCounts.sort((a, b) => {
-        if (a.subplot === 'Main Plot' || !a.subplot) return -1;
-        if (b.subplot === 'Main Plot' || !b.subplot) return 1;
-        if (a.count !== b.count) return b.count - a.count;
-        return a.subplot.localeCompare(b.subplot);
-    });
+    subplotCounts.sort(compareSubplotOrder);
 
     // APR ring layout is built from inner -> outer.
     // Convert timeline order (outer -> inner) to APR order (inner -> outer).
@@ -249,7 +245,7 @@ export function createAprSVG(scenes: TimelineItem[], opts: AprRenderOptions): Ap
         });
     } else {
         ringsToRender.push({
-            subplot: 'Main Plot',
+            subplot: getMainPlotName(),
             scenes: safeScenes,
             innerR: innerRadius,
             outerR: outerRadius

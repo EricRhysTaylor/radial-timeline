@@ -18,6 +18,7 @@ import { redactSensitiveValue } from '../ai/credentials/redactSensitive';
 import { CANONICAL_PROVIDER_LABELS, getCanonicalAiSettings, resolveConfiguredSelection } from '../ai/runtime/runtimeSelection';
 import { getLocalLlmSettings } from '../ai/localLlm/settings';
 import { t } from '../i18n';
+import { getMainPlotName } from '../utils/mainPlot';
 
 export type RuntimeScope = 'current' | 'subplot' | 'all';
 export type RuntimeMode = 'local' | 'ai';
@@ -479,7 +480,7 @@ export class RuntimeProcessingModal extends ErtModal {
 
             scenes.forEach(scene => {
                 if (isNonSceneItem(scene)) return;
-                const sub = scene.subplot && scene.subplot.trim() ? scene.subplot : 'Main Plot';
+                const sub = scene.subplot && scene.subplot.trim() ? scene.subplot : getMainPlotName();
                 subplotCounts.set(sub, (subplotCounts.get(sub) || 0) + 1);
             });
 
@@ -487,8 +488,8 @@ export class RuntimeProcessingModal extends ErtModal {
             this.orderedSubplots = Array.from(subplotCounts.entries())
                 .map(([name, count]) => ({ name, count }))
                 .sort((a, b) => {
-                    if (a.name === 'Main Plot') return -1;
-                    if (b.name === 'Main Plot') return 1;
+                    if (a.name === getMainPlotName()) return -1;
+                    if (b.name === getMainPlotName()) return 1;
                     if (a.count !== b.count) return b.count - a.count;
                     return a.name.localeCompare(b.name);
                 });

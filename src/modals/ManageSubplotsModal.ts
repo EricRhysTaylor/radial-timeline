@@ -10,6 +10,8 @@ import type RadialTimelinePlugin from '../main';
 import { SubplotManagementService, SubplotStats } from '../services/SubplotManagementService';
 import { t, tCount } from '../i18n';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
+import { getMainPlotName } from '../utils/mainPlot';
+import { IMPACT_FULL } from '../settings/SettingImpact';
 
 export class ManageSubplotsModal extends Modal {
     private plugin: RadialTimelinePlugin;
@@ -62,10 +64,11 @@ export class ManageSubplotsModal extends Modal {
     renderList() {
         if (!this.listContainer) return;
 
-        // Sort: Main Plot first, then by count (desc), then name
+        // Sort: main plot first, then by count (desc), then name
+        const mainPlot = getMainPlotName();
         const sorted = [...this.subplots].sort((a, b) => {
-            if (a.name === "Main Plot") return -1;
-            if (b.name === "Main Plot") return 1;
+            if (a.name === mainPlot) return -1;
+            if (b.name === mainPlot) return 1;
             if (b.count !== a.count) return b.count - a.count;
             return a.name.localeCompare(b.name);
         });
@@ -95,17 +98,16 @@ export class ManageSubplotsModal extends Modal {
             // Right: Actions
             const actions = row.createDiv({ cls: 'ert-manage-subplots-actions' });
 
-            // Rename Button
+            // Rename Button (the main plot can be renamed, never deleted)
             const renameBtn = new ButtonComponent(actions)
                 .setIcon('pencil-line')
                 .setTooltip(t('ui.manageSubplotsModal.renameTooltip'))
-                .setDisabled(subplot.name === "Main Plot")
                 .onClick(() => this.handleRename(subplot.name));
 
             renameBtn.buttonEl.classList.add('ert-pulse-icon-button', 'ert-manage-subplots-btn');
 
-            // Delete Button (Disable for Main Plot)
-            const isMainPlot = subplot.name === "Main Plot";
+            // Delete Button (Disable for the main plot)
+            const isMainPlot = subplot.name === mainPlot;
             const deleteBtn = new ButtonComponent(actions)
                 .setIcon('eraser')
                 .setTooltip(isMainPlot ? t('ui.manageSubplotsModal.mainPlotCannotDelete') : t('ui.manageSubplotsModal.deleteTooltip'))
@@ -116,7 +118,6 @@ export class ManageSubplotsModal extends Modal {
             
             if (isMainPlot) {
                 deleteBtn.buttonEl.classList.add('ert-manage-subplots-disabled');
-                renameBtn.buttonEl.classList.add('ert-manage-subplots-disabled');
             }
         });
     }
@@ -124,7 +125,13 @@ export class ManageSubplotsModal extends Modal {
     async handleRename(oldName: string) {
         new RenameSubplotModal(this.app, oldName, async (newName) => {
              if (newName && newName !== oldName) {
+                const renamingMainPlot = oldName === getMainPlotName();
                 await this.service.renameSubplot(oldName, newName);
+                // The rename may have changed settings (the main plot's name,
+                // Dominant Subplots); persist them.
+                await this.plugin.saveSettings();
+                // Scenes with no Subplot change rings without any file edit.
+                if (renamingMainPlot) this.plugin.onSettingChanged(IMPACT_FULL);
                 await this.loadSubplots();
              }
         }).open();

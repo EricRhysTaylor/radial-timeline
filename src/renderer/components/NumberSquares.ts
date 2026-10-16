@@ -7,6 +7,7 @@ import { generateNumberSquareGroup, makeSceneId } from '../../utils/numberSquare
 import { getTimelineScope } from '../../utils/books';
 import { getTimelineSegmentCount } from '../utils/TimelineSegments';
 import { type PositionInfo } from '../utils/SceneLayout';
+import { getMainPlotName } from '../../utils/mainPlot';
 
 interface SubplotRingPlacement {
   ring: number;
@@ -42,7 +43,7 @@ function resolveSubplotRingPlacement(params: {
     scenesByActAndSubplot, sortByWhen, isSagaScope, totalSegments, outerPositionByKey
   } = params;
 
-  const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
+  const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : getMainPlotName();
   const subplotIndex = masterSubplotOrder.indexOf(subplot);
   if (subplotIndex === -1) return null;
   const ring = NUM_RINGS - 1 - subplotIndex;

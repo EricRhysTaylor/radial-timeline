@@ -25,6 +25,7 @@ import { readSceneId } from '../utils/sceneIds';
 import { isMatterClassValue, parseMatterMetaFromFrontmatter } from '../utils/matterMeta';
 import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
 import { readSharedChapterTitle } from '../utils/timelineChapters';
+import { getMainPlotName } from '../utils/mainPlot';
 
 export interface GetSceneDataOptions {
     filterBeatsBySystem?: boolean;
@@ -121,12 +122,14 @@ export class SceneDataService {
                         ? normalizedWhen.toISOString().split('T')[0]
                         : '';
 
-                    // Split subplots if provided, otherwise default to "Main Plot"
-                    const subplots = metadata.Subplot
+                    // One item per subplot. A scene with no Subplot, or only blank
+                    // entries, belongs to the main plot under its current name.
+                    const listedSubplots = (metadata.Subplot
                         ? Array.isArray(metadata.Subplot)
                             ? metadata.Subplot.map((value: unknown) => frontmatterValueToText(value))
                             : [frontmatterValueToText(metadata.Subplot)]
-                        : ["Main Plot"];
+                        : []).filter((name: string) => name.trim().length > 0);
+                    const subplots = listedSubplots.length > 0 ? listedSubplots : [getMainPlotName()];
 
                     // Read actNumber from metadata, default to 1 if missing or empty
                     const actValue = metadata.Act;
@@ -445,7 +448,7 @@ export class SceneDataService {
                 when: undefined,
                 path: file.path,
                 title: beatSource.Title as string | undefined ?? file.basename,
-                subplot: "Main Plot", // Beats always use Main Plot for outermost ring
+                subplot: getMainPlotName(), // Beats live on the main plot's ring (the outermost)
                 act: String(validActNumber),
                 actNumber: validActNumber,
                 synopsis: beatSource.Synopsis as string | undefined,

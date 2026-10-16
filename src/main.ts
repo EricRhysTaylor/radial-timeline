@@ -83,6 +83,7 @@ import { seedProEntitlement } from './settings/proEntitlementSeed';
 import { detectBetaFeatures, hasProFeatureAccess } from './settings/featureGate';
 import { DisposableRegistry } from './core/disposable';
 import { systemFolderPath } from './utils/systemFolder';
+import { syncMainPlotName } from './utils/mainPlot';
 import { t, tCount } from './i18n';
 
 // Import the new scene analysis function <<< UPDATED IMPORT
@@ -972,6 +973,7 @@ export default class RadialTimelinePlugin extends Plugin {
         const isFreshInstall = read.kind === 'absent';
         const loadedSettings = read.kind === 'loaded' ? read.data : {};
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
+        syncMainPlotName(this.settings);
         await this.hydrateInquirySessionsFromVault();
         if (this.settings.publishStageColors?.House === '#DA7847') {
             this.settings.publishStageColors.House = '#F2863C';
@@ -1348,6 +1350,7 @@ export default class RadialTimelinePlugin extends Plugin {
     }
 
     async saveSettings(): Promise<void> {
+        syncMainPlotName(this.settings);
         this.sceneTimeHeader?.settingsChanged();
         this.communityMailbox?.settingsChanged();
         this.deskLamps?.settingsChanged();

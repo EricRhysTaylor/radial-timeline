@@ -18,6 +18,7 @@ import { getAIClient } from './ai/runtime/aiClient';
 import { hasProFeatureAccess } from './settings/featureGate';
 import type { AIRunAdvancedContext } from './ai/types';
 import { t } from './i18n';
+import { getMainPlotName } from './utils/mainPlot';
 
 interface SceneToProcess {
     file: TFile;
@@ -94,10 +95,10 @@ async function getScenesForScope(
         targetScenes = scenes.filter(s => s.path === activeFile.path);
     } else if (scope === 'subplot') {
         // Filter by subplot
-        const normalizedFilter = (subplotFilter || 'Main Plot').trim().toLowerCase();
+        const normalizedFilter = (subplotFilter || getMainPlotName()).trim().toLowerCase();
         targetScenes = scenes.filter(s => {
             if (isNonSceneItem(s)) return false;
-            const sub = s.subplot && s.subplot.trim() ? s.subplot.trim().toLowerCase() : 'main plot';
+            const sub = s.subplot && s.subplot.trim() ? s.subplot.trim().toLowerCase() : getMainPlotName().toLowerCase();
             return sub === normalizedFilter;
         });
     } else {

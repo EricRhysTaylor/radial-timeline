@@ -63,6 +63,7 @@ import type {
     TemplateProfile,
     SavedManuscriptSource,
 } from '../types';
+import { getMainPlotName } from '../utils/mainPlot';
 
 const OPEN_SCENES_FILTER = '__open_scenes__';
 
@@ -3815,13 +3816,13 @@ export class ManuscriptOptionsModal extends Modal {
             
             scenes.forEach(scene => {
                 if (scene.itemType !== 'Scene') return;
-                const sub = scene.subplot && scene.subplot.trim() ? scene.subplot : 'Main Plot';
+                const sub = scene.subplot && scene.subplot.trim() ? scene.subplot : getMainPlotName();
                 subplotCounts.set(sub, (subplotCounts.get(sub) || 0) + 1);
             });
 
             const sortedSubplots = Array.from(subplotCounts.keys()).sort((a, b) => {
-                if (a === 'Main Plot') return -1;
-                if (b === 'Main Plot') return 1;
+                if (a === getMainPlotName()) return -1;
+                if (b === getMainPlotName()) return 1;
                 const countA = subplotCounts.get(a) || 0;
                 const countB = subplotCounts.get(b) || 0;
                 if (countA !== countB) return countB - countA; // Descending count

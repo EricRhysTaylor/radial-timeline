@@ -1,5 +1,6 @@
 import type { TimelineItem } from '../../types';
 import { escapeXml } from '../../utils/svg';
+import { getMainPlotName } from '../../utils/mainPlot';
 
 export interface SubplotDominanceState {
     hasSharedOverlap: boolean;
@@ -17,7 +18,7 @@ function normalizeSubplotName(name?: string | null): string {
     if (name && name.trim().length > 0) {
         return name.trim();
     }
-    return 'Main Plot';
+    return getMainPlotName();
 }
 
 export function resolveDominantScene(params: {

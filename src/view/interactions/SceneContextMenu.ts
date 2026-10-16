@@ -23,6 +23,7 @@ import {
 import { SubplotPickerModal } from '../../modals/SubplotPickerModal';
 import { formatLocalDateKey } from '../../utils/date';
 import { t } from '../../i18n';
+import { getMainPlotName } from '../../utils/mainPlot';
 
 /** What the menu needs from whoever opens it: the wheel's view, or the Timetable. */
 export type SceneMenuHost = {
@@ -415,7 +416,7 @@ function addSubplotMenuItems(menu: Menu, view: SceneMenuHost, target: SceneMenuT
     const { file, ringSubplot } = target;
     const mappings = getActiveFrontmatterMappings(view.plugin.settings);
     const current = readSubplotMemberships(view.plugin.app, file, mappings);
-    const effective = current.length > 0 ? current : ['Main Plot'];
+    const effective = current.length > 0 ? current : [getMainPlotName()];
     const known = target.knownSubplots;
     const moveFrom = (from: string): void => pickSubplot(view, known.filter(name => name !== from), t('ui.sceneContextMenu.moveSceneFromToPlaceholder', { name: file.basename, from }),
         to => { void changeSubplotMembership(view, file, { kind: 'move', from, to }); });

@@ -9,6 +9,7 @@ import { getActiveFrontmatterMappings } from '../utils/frontmatter';
 import { formatLocalDateKey } from '../utils/date';
 import { escapeRegExp } from '../utils/regex';
 import { fileStem } from '../utils/paths';
+import { getMainPlotName } from '../utils/mainPlot';
 
 export interface SceneInsertOptions {
     app: App;
@@ -68,7 +69,7 @@ function parsePrefixNumber(prefix: string | null): number | null {
 
 function normalizePrimarySubplot(primarySubplot?: string): string[] {
     const normalized = (primarySubplot ?? '').trim();
-    if (!normalized || normalized === 'Main Plot') return [];
+    if (!normalized || normalized === getMainPlotName()) return [];
     return [normalized];
 }
 
@@ -284,7 +285,7 @@ export async function planSceneInsertion(options: SceneInsertOptions): Promise<S
         filename,
         actNumber,
         when,
-        subplotLabel: subplots[0] ?? 'Main Plot',
+        subplotLabel: subplots[0] ?? getMainPlotName(),
         yamlMode: useAdvanced ? 'Advanced' : 'Basic',
         frontmatter: ensureSceneTemplateFrontmatter(content).frontmatter
     };

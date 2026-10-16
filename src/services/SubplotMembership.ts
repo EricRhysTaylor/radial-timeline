@@ -10,16 +10,15 @@
  *   move A to D: B, C, D        add D: A, B, C, D
  *   move A to C: B, C           add C: no change
  *   move A to A: no change      remove A: B, C
- * A scene with no Subplot field is in Main Plot, so dragging it moves Main
- * Plot and Shift-dragging keeps it. A scene left with no membership returns
- * to Main Plot.
+ * A scene with no Subplot field is in the main plot, so dragging it moves
+ * the main plot and Shift-dragging keeps it. A scene left with no membership
+ * returns to the main plot.
  */
 
 import { Notice, type App, type TFile } from 'obsidian';
 import { canonicalizeFrontmatterKey, frontmatterValueToText } from '../utils/frontmatter';
 import { t, tCount } from '../i18n';
-
-export const MAIN_PLOT = 'Main Plot';
+import { getMainPlotName } from '../utils/mainPlot';
 
 // Throwing from processFrontMatter aborts its YAML serialization/write.
 const SKIP_SUBPLOT_WRITE = new Error('Subplot write not required');
@@ -44,11 +43,11 @@ function normalizeMemberships(memberships: string[]): string[] {
 /**
  * The memberships after the change, or null when nothing changes. `current`
  * holds the scene's explicit memberships; an empty list (no Subplot field)
- * means Main Plot.
+ * means the main plot.
  */
 export function planSubplotMembership(current: string[], change: SubplotMembershipChange): string[] | null {
     const explicit = normalizeMemberships(current);
-    const before = explicit.length > 0 ? explicit : [MAIN_PLOT];
+    const before = explicit.length > 0 ? explicit : [getMainPlotName()];
     let after: string[];
     if (change.kind === 'add') {
         if (before.includes(change.to)) return null;
@@ -60,7 +59,7 @@ export function planSubplotMembership(current: string[], change: SubplotMembersh
     } else {
         after = before.filter(name => name !== change.from);
     }
-    if (after.length === 0) after = [MAIN_PLOT];
+    if (after.length === 0) after = [getMainPlotName()];
     const unchanged = after.length === before.length && after.every((name, index) => name === before[index]);
     return unchanged ? null : after;
 }
@@ -74,7 +73,7 @@ export function describeSubplotMembershipChange(change: SubplotMembershipChange)
 
 export function formatMemberships(memberships: string[]): string {
     const names = normalizeMemberships(memberships);
-    return names.length > 0 ? names.join(', ') : MAIN_PLOT;
+    return names.length > 0 ? names.join(', ') : getMainPlotName();
 }
 
 /** The raw frontmatter key that holds Subplot under the active key mappings, if present. */
@@ -88,7 +87,7 @@ function subplotValueToList(value: unknown): string[] {
     return normalizeMemberships(values.map(entry => frontmatterValueToText(entry)));
 }
 
-/** The scene's explicit memberships from the metadata cache ([] = implicit Main Plot). */
+/** The scene's explicit memberships from the metadata cache ([] = implicit main plot). */
 export function readSubplotMemberships(app: App, file: TFile, mappings?: Record<string, string>): string[] {
     const frontmatter = (app.metadataCache.getFileCache(file)?.frontmatter ?? {}) as Record<string, unknown>;
     const key = findSubplotKey(frontmatter, mappings);

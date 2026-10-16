@@ -31,6 +31,7 @@ import type { StageColorMap } from '../utils/Gossamer';
 import { getReadabilityMultiplier } from '../../utils/readability';
 import type { OuterRingChapterBoundaryGeometry } from '../components/ChapterMarkers';
 import { getTimelineScope } from '../../utils/books';
+import { getMainPlotName } from '../../utils/mainPlot';
 
 export interface RingRenderContext {
     plugin: PluginRendererFacade;
@@ -85,9 +86,9 @@ export function renderRings(ctx: RingRenderContext): string {
     const beatTextRadius = BEAT_TEXT_RADIUS[readabilityScale] || BEAT_TEXT_RADIUS.normal;
 
     const resolveSubplotColorIndex = (subplotName: string): number => {
-        const key = subplotName && subplotName.trim().length > 0 ? subplotName : 'Main Plot';
+        const key = subplotName && subplotName.trim().length > 0 ? subplotName : getMainPlotName();
         if (colorIndexBySubplot.has(key)) return colorIndexBySubplot.get(key)!;
-        const fallback = colorIndexBySubplot.get('Main Plot');
+        const fallback = colorIndexBySubplot.get(getMainPlotName());
         return fallback !== undefined ? fallback : 0;
     };
 
@@ -248,10 +249,10 @@ export function renderRings(ctx: RingRenderContext): string {
                     const largeArcFlag = desiredAngleArc > Math.PI ? 1 : 0;
 
                     const subplotIdxAttr = (() => {
-                        const name = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
+                        const name = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : getMainPlotName();
                         return Math.max(0, masterSubplotOrder.indexOf(name));
                     })();
-                    const subplotColorIdxAttr = resolveSubplotColorIndex(scene.subplot || 'Main Plot');
+                    const subplotColorIdxAttr = resolveSubplotColorIndex(scene.subplot || getMainPlotName());
 
                     const plotStrokeAttr = (() => {
                         if (isBeatNote(scene)) {
@@ -374,10 +375,10 @@ export function renderRings(ctx: RingRenderContext): string {
                     const sceneId = makeSceneId(act, ring, idx, false, false, sceneUniqueKey);
 
                     const subplotIdxAttr = (() => {
-                        const name = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
+                        const name = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : getMainPlotName();
                         return Math.max(0, masterSubplotOrder.indexOf(name));
                     })();
-                    const subplotColorIdxAttr = resolveSubplotColorIndex(scene.subplot || 'Main Plot');
+                    const subplotColorIdxAttr = resolveSubplotColorIndex(scene.subplot || getMainPlotName());
 
                     let sceneClasses = "rt-scene-path rt-scene-arc";
                     if (scene.path && plugin.openScenePaths.has(scene.path)) sceneClasses += " rt-scene-is-open";

@@ -15,6 +15,7 @@ import { getModeDefinition } from '../../modes/ModeRegistry';
 import type { PluginRendererFacade } from '../../utils/sceneHelpers';
 import { t } from '../../i18n';
 import { getTimelineScope } from '../../utils/books';
+import { DEFAULT_MAIN_PLOT_NAME } from '../../utils/mainPlot';
 
 // Type alias for compatibility
 type PluginFacade = PluginRendererFacade;
@@ -116,7 +117,9 @@ export function getSubplotLabelText(plugin: PluginFacade, subplot: string, isOut
     if (modeDef.rendering.outerRingContent === 'narrative') {
         return t('timeline.subplotRing.allScenes');
     } else if (modeDef.rendering.outerRingContent === 'subplot-only') {
-        return t('timeline.subplotRing.mainPlot');
+        // Ring 1 holds the main plot alone. Keep the translated label while it
+        // has the default name; once the author renames it, show that name.
+        return subplot === DEFAULT_MAIN_PLOT_NAME ? t('timeline.subplotRing.mainPlot') : subplot.toUpperCase();
     } else if (modeDef.rendering.outerRingContent === 'chronologue') {
         return t('timeline.subplotRing.chronologue');
     }

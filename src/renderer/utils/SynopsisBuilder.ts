@@ -5,6 +5,7 @@ import { resolveScenePov } from '../../utils/pov';
 import { getReadabilityMultiplier } from '../../utils/readability';
 import { getSynopsisGenerationWordLimit, getSynopsisHoverWordLimit, truncateToWordLimit } from '../../utils/synopsisLimits';
 import { markBeatPurposeSecondary } from '../../synopsis/SynopsisData';
+import { getMainPlotName } from '../../utils/mainPlot';
 
 function resolveHoverSynopsisText(scene: TimelineItem, synopsisWordLimit: number, hoverWordLimit: number): string | undefined {
     const synopsis = typeof scene.synopsis === 'string' ? scene.synopsis.trim() : '';
@@ -190,7 +191,7 @@ export function appendSynopsisElementForScene({
         .filter(s => s.path === scene.path)
         .map(s => s.subplot)
         .filter((s): s is string => s !== undefined);
-    const sceneSubplot = scene.subplot || 'Main Plot';
+    const sceneSubplot = scene.subplot || getMainPlotName();
     const orderedSubplots = [sceneSubplot, ...allSceneSubplots.filter(s => s !== sceneSubplot)];
 
     try {

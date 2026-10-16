@@ -3,6 +3,7 @@ import { isBeatNote } from '../../utils/sceneHelpers';
 import { normalizeStatus } from '../../utils/text';
 import { isOverdueDateString } from '../../utils/date';
 import { STATUS_COLORS, STATUS_HEX } from '../../utils/constants';
+import { getMainPlotName } from '../../utils/mainPlot';
 
 // Portable status colors are the raw hex source-of-truth (STATUS_HEX). The CSS-var form
 // (STATUS_COLORS) shares the same hex as its fallback, so timeline + APR stay locked together.
@@ -32,7 +33,7 @@ export function getFillForScene(
         return '#FFFFFF';
     }
 
-    const subplotName = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
+    const subplotName = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : getMainPlotName();
     if (forceSubplotColor && subplotColorResolver) {
         return subplotColorResolver(subplotName);
     }

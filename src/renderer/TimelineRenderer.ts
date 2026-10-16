@@ -85,6 +85,7 @@ import {
 import { resolveActiveNovelPandocLayout } from '../utils/exportFormats';
 import { resolveTimelinePartMarkers, type TimelinePartMarker } from '../utils/timelineParts';
 import { getFormattingLocale } from '../i18n';
+import { getMainPlotName } from '../utils/mainPlot';
 
 
 // STATUS_COLORS and SceneNumberInfo now imported from constants
@@ -284,15 +285,15 @@ export function createTimelineSVG(
     const isNarrativeMode = currentMode === 'narrative';
 
     const resolveSubplotColorIndex = (subplotName: string): number => {
-        const key = subplotName && subplotName.trim().length > 0 ? subplotName : 'Main Plot';
+        const key = subplotName && subplotName.trim().length > 0 ? subplotName : getMainPlotName();
         if (colorIndexBySubplot.has(key)) return colorIndexBySubplot.get(key)!;
-        const fallback = colorIndexBySubplot.get('Main Plot');
+        const fallback = colorIndexBySubplot.get(getMainPlotName());
         return fallback !== undefined ? fallback : 0;
     };
 
     const numberSquareVisualResolver = shouldApplyNumberSquareColors
         ? (scene: TimelineItem) => ({
-            subplotIndex: resolveSubplotColorIndex(scene.subplot || 'Main Plot')
+            subplotIndex: resolveSubplotColorIndex(scene.subplot || getMainPlotName())
         })
         : null;
 
@@ -494,8 +495,8 @@ export function createTimelineSVG(
     const sceneGrades = new Map<string, string>();
 
     scenes.forEach((scene) => {
-        // Handle undefined subplot with a default "Main Plot"
-        const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : 'Main Plot';
+        // A scene with no subplot belongs to the main plot
+        const subplot = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : getMainPlotName();
         const subplotIndex = masterSubplotOrder.indexOf(subplot);
         const ring = NUM_RINGS - 1 - subplotIndex;
 

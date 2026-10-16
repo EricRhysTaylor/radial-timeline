@@ -9,6 +9,7 @@ import { SceneDataService } from './SceneDataService';
 import { frontmatterValueToText, normalizeFrontmatterKeys } from '../utils/frontmatter';
 import { isPathInFolderScope } from '../utils/pathScope';
 import { t, tCount } from '../i18n';
+import { getMainPlotName } from '../utils/mainPlot';
 
 export interface SubplotStats {
     name: string;
@@ -30,14 +31,15 @@ export class SubplotManagementService {
      * changes immediately instead of waiting on scene data cache refresh.
      */
     async getSubplotStats(): Promise<SubplotStats[]> {
+        const mainPlot = getMainPlotName();
         const counts = new Map<string, number>();
 
-        counts.set("Main Plot", 0);
+        counts.set(mainPlot, 0);
 
-        const files = await this.getSceneFiles();
+        const files = await this.getSceneFiles('active-book');
         for (const file of files) {
             const subplotNames = await this.getSceneSubplots(file);
-            const uniqueSubplots = new Set(subplotNames.length > 0 ? subplotNames : ["Main Plot"]);
+            const uniqueSubplots = new Set(subplotNames.length > 0 ? subplotNames : [mainPlot]);
 
             for (const subplot of uniqueSubplots) {
                 counts.set(subplot, (counts.get(subplot) || 0) + 1);
@@ -50,23 +52,24 @@ export class SubplotManagementService {
         }
 
         return result.sort((a, b) => {
-            if (a.name === "Main Plot") return -1;
-            if (b.name === "Main Plot") return 1;
+            if (a.name === mainPlot) return -1;
+            if (b.name === mainPlot) return 1;
             return a.name.localeCompare(b.name);
         });
     }
 
     /**
      * Delete a subplot from all scenes.
-     * If a scene has only this subplot, it defaults to "Main Plot".
+     * If a scene has only this subplot, it moves to the main plot.
      */
     async deleteSubplot(subplotToDelete: string): Promise<void> {
-        if (subplotToDelete === "Main Plot") {
+        const mainPlot = getMainPlotName();
+        if (subplotToDelete === mainPlot) {
             new Notice(t('ui.subplotManagementService.cannotDeleteMainPlot'));
             return;
         }
 
-        const files = await this.getSceneFiles();
+        const files = await this.getSceneFiles('active-book');
         let modifiedCount = 0;
 
         for (const file of files) {
@@ -98,16 +101,16 @@ export class SubplotManagementService {
                     // Filter it out
                     const newSubplots = currentSubplots.filter(s => s !== subplotToDelete);
                     
-                    // If empty, default to Main Plot
+                    // If empty, the scene moves to the main plot
                     if (newSubplots.length === 0) {
-                        newSubplots.push("Main Plot");
+                        newSubplots.push(mainPlot);
                     }
 
                     // Update frontmatter
                     // If single item, can store as string or array. Let's keep array if it was array, or string if single.
                     // To be safe and consistent, maybe just stick to what it was? 
-                    // Actually, if we are removing one from a list, it stays a list (or becomes empty -> Main Plot).
-                    // If it becomes single "Main Plot", we can store as string "Main Plot" if that's preferred, 
+                    // Actually, if we are removing one from a list, it stays a list (or becomes empty -> main plot).
+                    // If it becomes the single main plot name, we can store it as a string if that's preferred,
                     // but array is also valid.
                     // Let's store as array if length > 1, string if length === 1
                     
@@ -129,20 +132,18 @@ export class SubplotManagementService {
 
     /**
      * Rename a subplot in all scenes.
+     *
+     * Renaming the main plot also renames it in settings: scenes with no
+     * Subplot follow the new name without any file change. The main plot's
+     * name is vault-wide (saga view merges books by subplot name), so its
+     * rename rewrites scenes in every book; other renames stay in the active
+     * book. The caller persists settings.
      */
     async renameSubplot(oldName: string, newName: string): Promise<void> {
         if (oldName === newName) return;
-        if (oldName === "Main Plot") {
-            // User requested that Main Plot cannot be deleted, but renaming? 
-            // Usually "Main Plot" is a special identifier. Renaming it might break things if code relies on "Main Plot".
-            // The prompt said: "Main plot can never be deleted." It didn't explicitly forbid renaming.
-            // However, "Main Plot" is used as default fallback. If we rename it, we change the default?
-            // Let's allow renaming for now, but ensure the new name is used.
-            // Actually, if we rename Main Plot, do we change the system default? Probably not.
-            // Let's treat it like any other subplot for renaming.
-        }
+        const renamingMainPlot = oldName === getMainPlotName();
 
-        const files = await this.getSceneFiles();
+        const files = await this.getSceneFiles(renamingMainPlot ? 'all-books' : 'active-book');
         let modifiedCount = 0;
 
         for (const file of files) {
@@ -184,59 +185,38 @@ export class SubplotManagementService {
             if (processed) modifiedCount++;
         }
         
-        // Also update settings if necessary (dominant subplots)
-        await this.renameSubplotInSettings(oldName, newName);
+        this.renameSubplotInSettings(oldName, newName, renamingMainPlot);
 
         new Notice(t('ui.subplotManagementService.renamedInScenes', { oldName, newName, scenes: tCount('scene', modifiedCount) }));
     }
 
     /**
-     * Rename subplot in settings (Dominant Subplots preference)
+     * Rename subplot in settings: the main plot's name, and Dominant Subplots
+     * preferences. Updates the live settings object; the caller saves it.
      */
-    async renameSubplotInSettings(oldName: string, newName: string): Promise<void> {
+    private renameSubplotInSettings(oldName: string, newName: string, renamingMainPlot: boolean): void {
         // SceneDataService shares the live settings reference with the plugin.
         const settings = this.sceneDataService.getSettings();
-        if (settings.dominantSubplots) {
-            let settingsChanged = false;
-            const dominantSubplots = settings.dominantSubplots;
-
-            for (const [path, subplot] of Object.entries(dominantSubplots)) {
-                if (subplot === oldName) {
-                    dominantSubplots[path] = newName;
-                    settingsChanged = true;
-                }
-            }
-            
-            if (settingsChanged) {
-                // We need to save settings. SceneDataService doesn't have save capability.
-                // We should probably pass a save callback or handle this in the modal/command.
-                // For now, we update the memory object. The plugin needs to persist it.
-                // NOTE: This service doesn't persist settings to disk. 
-                // The Modal usually has access to Plugin. We should return a flag or let the Modal handle settings update?
-                // Or better, let's inject a "saveSettings" callback to this service?
-                // Simpler: Just update the object in memory and assume the user will save settings eventually? 
-                // No, settings need to be saved.
-                
-                // Let's return true if settings need saving, and let the caller handle it?
-                // Or just leave it for now. The requirement was specifically about scene files.
-                // Renaming in settings is a nice-to-have correctness fix.
-            }
+        if (renamingMainPlot) settings.mainPlotName = newName;
+        const dominantSubplots = settings.dominantSubplots;
+        if (!dominantSubplots) return;
+        for (const [path, subplot] of Object.entries(dominantSubplots)) {
+            if (subplot === oldName) dominantSubplots[path] = newName;
         }
     }
 
     /**
      * Helper to get all scene files (raw TFiles)
      */
-    private async getSceneFiles(): Promise<TFile[]> {
+    private async getSceneFiles(scope: 'active-book' | 'all-books'): Promise<TFile[]> {
         // We use the same filtering logic as SceneDataService
-        // But simpler: just get all markdown files in source path and check Class
-        
-        // Use the settings from sceneDataService
+        // But simpler: just get all markdown files in the book folders and check Class
         const settings = this.sceneDataService.getSettings();
-        const sourcePath = settings.sourcePath || "";
+        const bookFolders = scope === 'all-books' ? (settings.books ?? []).map(book => book.sourceFolder) : [];
+        const folders = bookFolders.length > 0 ? bookFolders : [settings.sourcePath || ""];
 
         const files = this.app.vault.getMarkdownFiles().filter((file: TFile) => {
-            return isPathInFolderScope(file.path, sourcePath);
+            return folders.some(folder => isPathInFolderScope(file.path, folder));
         });
 
         const sceneFiles: TFile[] = [];
@@ -256,13 +236,13 @@ export class SubplotManagementService {
         const content = await this.app.vault.read(file);
         const fmInfo = getFrontMatterInfo(content) as { exists?: boolean; frontmatter?: string };
         if (!fmInfo?.exists || !fmInfo.frontmatter) {
-            return ["Main Plot"];
+            return [getMainPlotName()];
         }
 
         try {
             const parsed: unknown = parseYaml(fmInfo.frontmatter);
             if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-                return ["Main Plot"];
+                return [getMainPlotName()];
             }
 
             const normalized = normalizeFrontmatterKeys(parsed as Record<string, unknown>);
@@ -272,16 +252,16 @@ export class SubplotManagementService {
                 const names = rawSubplots
                     .map(value => frontmatterValueToText(value).trim())
                     .filter(Boolean);
-                return names.length > 0 ? names : ["Main Plot"];
+                return names.length > 0 ? names : [getMainPlotName()];
             }
 
             if (rawSubplots === null || rawSubplots === undefined || rawSubplots === '') {
-                return ["Main Plot"];
+                return [getMainPlotName()];
             }
 
             return [frontmatterValueToText(rawSubplots).trim()].filter(Boolean);
         } catch {
-            return ["Main Plot"];
+            return [getMainPlotName()];
         }
     }
 }

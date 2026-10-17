@@ -18,7 +18,8 @@ import { vi } from './vi';
  * Parliament, and a "ring" as jewelry or a ringtone. Wherever an English
  * string uses a core term, its translation must use one of the accepted words
  * for that term. Several words are listed only where each is a genuine
- * rendering; the first is preferred.
+ * rendering; the first is preferred. A pattern stands in for a word that also
+ * occurs inside unrelated words.
  *
  * A locale missing from a term is not yet consistent for it — the comment by
  * the term says what is wrong. Add the locale once its strings are fixed.
@@ -30,7 +31,7 @@ type Tree = { [key: string]: unknown };
 interface Term {
     /** Matches the term in an English string (placeholders removed first). */
     en: RegExp;
-    words: Partial<Record<Locale, string[]>>;
+    words: Partial<Record<Locale, Array<string | RegExp>>>;
     /**
      * Keys whose English names a YAML field or an author's own folder or
      * column, so the translation may keep that name verbatim instead.
@@ -117,6 +118,20 @@ const GLOSSARY: Record<string, Term> = {
             vi: ['vòng'],
         },
     },
+    // Vietnamese keeps "beat" as a loanword in places, matching Class: Beat.
+    beat: {
+        en: /\bbeats?\b/i,
+        words: {
+            vi: ['nhịp', 'beat'],
+        },
+    },
+    // Obsidian's own Vietnamese interface calls the vault "kho".
+    vault: {
+        en: /\bvaults?\b/i,
+        words: {
+            vi: [/(?<!\p{L})kho(?!\p{L})/iu],
+        },
+    },
 };
 
 /** Wrong senses already removed from a locale; any return is a regression. */
@@ -124,7 +139,11 @@ const BANNED: Partial<Record<Locale, RegExp[]>> = {
     fr: [/terrain principal/i, /tracé principal/i, /bague/i, /sonnerie/i, /sous-(parcelle|plaque|plancher|plot)/i],
     es: [/parcela/i, /subtrabajo/i],
     th: [/พระราชบัญญัติ/, /แปลงหลัก/, /แผนย่อย/, /ซับพล็อต/, /กรรมาธิการ/, /(?<!วง)แหวน/],
-    vi: [/nhẫn/i, /(?<!\p{L})(ô|lô) phụ/iu, /mảnh ghép/i, /biểu đồ phụ/i, /sublot/i, /vòng đệm/i, /phím chuông/i],
+    vi: [
+        /nhẫn/i, /(?<!\p{L})(ô|lô) phụ/iu, /mảnh ghép/i, /biểu đồ phụ/i, /sublot/i, /vòng đệm/i, /phím chuông/i,
+        /ghi chú đánh bại/i, /đánh đập/i, /nhịp đập/i, /nốt (nhạc|nhịp)/i, /mô hình (beat|nhịp)/i,
+        /kho tiền/i, /(?<!\p{L})hầm(?!\p{L})/iu,
+    ],
 };
 
 function flatten(node: Tree, prefix = '', out: Record<string, string> = {}): Record<string, string> {
@@ -159,11 +178,10 @@ const locales: Record<Locale, Record<string, string>> = {
 };
 
 const cases = Object.entries(GLOSSARY).flatMap(([term, spec]) =>
-    (Object.entries(spec.words) as Array<[Locale, string[]]>).map(([locale, words]) => ({ term, spec, locale, words })));
+    (Object.entries(spec.words) as Array<[Locale, Array<string | RegExp>]>).map(([locale, words]) => ({ term, spec, locale, words })));
 
 describe('core-term glossary', () => {
     it.each(cases)('$locale translates "$term" with $words', ({ spec, locale, words }) => {
-        const accepted = words.map(word => word.toLowerCase());
         const wrong = Object.keys(english).filter(key => {
             if (!spec.en.test(withoutPlaceholders(english[key]))) return false;
             if (spec.otherSense?.includes(key)) return false;
@@ -172,7 +190,7 @@ describe('core-term glossary', () => {
             const fieldName = spec.fieldNames?.[key];
             if (fieldName && namesField(translated, fieldName)) return false;
             const lower = translated.toLowerCase();
-            return !accepted.some(word => lower.includes(word));
+            return !words.some(word => typeof word === 'string' ? lower.includes(word.toLowerCase()) : word.test(translated));
         });
         expect(wrong.map(key => `${key}: ${locales[locale][key]}`)).toEqual([]);
     });

@@ -1,6 +1,6 @@
 # Sample vaults — implemented contract
 
-Updated October 14, 2026. The Inquiry sidecar remains the demo-detection and saved-results contract. Multi-book collections additionally carry the explicit book list below; no hidden import marker or demo-state switch is used. Preparation states are separate from published sample availability.
+Updated October 17, 2026. The Inquiry sidecar remains the demo-detection and saved-results contract. Multi-book collections additionally carry the explicit book list below; no hidden import marker or demo-state switch is used. Preparation states are separate from published sample availability.
 
 ## Portable content
 
@@ -69,7 +69,9 @@ The checked-in contracts cover P&P's chapter layout, Odyssey's Gutenberg HTML la
 
 ## Literary-form preparation
 
-The Faerie Queene is conditioned for a user-operated AI import, not published as a finished sample. The matching Smith sources produce 75 canto/fragment source notes and six separate proems. The source conditioner adds author-facing book/canto/stanza references, preserves verse lines and spelling, separates textual witnesses and editorial apparatus, and creates no scene metadata or fake saved sessions. The shipped import workflow owns scene creation. See [verse source preparation](../../scripts/demo-vaults/README.md#verse-source-preparation).
+The Faerie Queene is directly onboarded at the owner’s request, and remains unpublished. Its 75 working canto/fragment scene notes belong to seven registered books; all bodies match the preserved Smith source notes. Six proems remain separate context. Book I has twelve agent-written, source-checked synopses and summaries, with selective character/place profiles; Books II–VII still require literary metadata passes. The next provider batch is Book I Pulse, not another manuscript import. Source preprocessing remains distinct from working-note creation and creates no scene metadata or fake results. See [verse source preparation](../../scripts/demo-vaults/README.md#verse-source-preparation).
+
+For an explicitly requested direct agent preparation, preserve a baseline, existing IDs and analyses, verify source bodies and references, register book scopes safely, and inspect the result natively. Attribute session-written summaries to the agent; never synthesize plugin/provider provenance. Only the shipped import path supplies importer acceptance evidence. Direct content preparation does not replace importer regression coverage or release-contract checks. New IDs must follow the Pulse/reference grammar (`scn_` plus 8–10 hexadecimal digits).
 
 Preserve deliberate source units at Confirm scenes; optional Auto-split is not required for an already conditioned canto folder. A canto-level scene note may contain multiple dramatic events. Describe that granularity honestly. Keep unsupported chronology blank, identify interlaced quests and narrative frames, and treat allegorical readings as interpretations. The unfinished Mutabilitie material must retain its actual VI–VIII numbering and the two-stanza VIII fragment.
 

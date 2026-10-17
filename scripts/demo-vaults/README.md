@@ -24,7 +24,7 @@ Before public replacement: extract the exact ZIP into a fresh QA vault; test sam
 
 ## Verse source preparation
 
-`prepare_faerie_queene_source.py` conditions Smith's Gutenberg #70717 and #72698 into source notes for the **shipped Import manuscript workflow**. It does not ingest scenes, generate metadata, invoke providers or change plugin settings. Supply the original HTML files and a new output directory:
+`prepare_faerie_queene_source.py` conditions Smith's Gutenberg #70717 and #72698 into source notes for manuscript preparation. The shipped Import manuscript workflow is the product path; explicitly requested direct agent preparation can instead create and register working notes separately. The conditioner does not ingest scenes, generate metadata, invoke providers or change plugin settings. Supply the original HTML files and a new output directory:
 
 ```sh
 uv run scripts/demo-vaults/prepare_faerie_queene_source.py \
@@ -39,6 +39,8 @@ The conditioner validates all six complete books and the surviving Mutabilitie V
 
 The opt-in acceptance test feeds all 75 canto files through the real Markdown adapter, split-confirmation model and structure-only proposal builder. It checks hashes, source references, verse bodies and separation of proems without a provider. It does not claim native modal acceptance or an AI result. Regression tests cover missing lines/stanzas, reference retention, inline note calls and the unfinished fragment.
 
-For the first AI batch, Eric selects Book I's source folder (twelve cantos) in **Import manuscript**, chooses **AI assisted**, reviews the resolved model/forecast, and uses **Continue** at Confirm scenes without optional Auto-split. Start with entity profile scaffolds and keep the extra profile-summary calls off. Review metadata before further books, Summary, Pulse, beats, Gossamer or Inquiry. All provider calls remain user-operated.
+**Current working-vault checkpoint, October 17:** the owner requested direct agent onboarding. All 75 canto units are now working scene notes in seven books; Book I’s twelve synopses/summaries and selective profiles have received a source-based pass. The next user-operated provider batch is Book I Pulse. Do not import the manuscript again. Books II–VII still need literary passes. Agent-written summaries carry agent attribution, not invented API logs.
 
-No Faerie Queene release contract is provided yet. Source conditioning is distinct from accepted metadata, accepted analyses, exact-package acceptance and publication. Add an explicit verse-aware scene/source contract after real import results are accepted, then perform the normal fresh-vault release checks.
+For a separate **product onboarding rehearsal**, select the individual source folder, choose the intended import mode, and keep all canto boundaries at Confirm scenes with Continue rather than optional Auto-split. Source preprocessing and direct content preparation do not certify that product path. All provider calls remain user-operated.
+
+No Faerie Queene release contract is provided yet. Source conditioning is distinct from accepted metadata, accepted analyses, exact-package acceptance and publication. Add an explicit verse-aware scene/source contract after the working manuscript and literary metadata are accepted, then perform the normal fresh-vault release checks.

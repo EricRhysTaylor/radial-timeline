@@ -200,7 +200,8 @@
   opacity: 0;
 }
 
-.radial-timeline-svg.scene-hover .rt-subplot-ring-label-text {
+.radial-timeline-svg.scene-hover .rt-subplot-ring-label-text,
+.radial-timeline-svg.ert-scene-spotlight .rt-subplot-ring-label-text {
   opacity: 0;
 }
 

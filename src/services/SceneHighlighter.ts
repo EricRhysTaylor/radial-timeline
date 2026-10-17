@@ -14,6 +14,7 @@ export class SceneHighlighter {
      */
     spotlight(filePath: string | null): void {
         for (const svg of this.timelineSvgs()) {
+            svg.classList.remove('ert-scene-spotlight');
             const all = svg.querySelectorAll(SPOTLIGHT_SELECTOR);
             const gossamer = svg.getAttribute('data-mode') === 'gossamer';
             all.forEach(element => {
@@ -23,6 +24,7 @@ export class SceneHighlighter {
             if (!filePath) continue;
             const groups = svg.querySelectorAll(`.rt-scene-group[data-path="${encodeURIComponent(filePath)}"]`);
             if (groups.length === 0) continue;
+            svg.classList.add('ert-scene-spotlight');
             groups.forEach(group => {
                 const scenePath = group.querySelector('.rt-scene-path');
                 scenePath?.classList.add('rt-selected');

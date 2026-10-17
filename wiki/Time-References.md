@@ -1,6 +1,6 @@
 Keep a scene’s `When` as the date when its main action happens. Add **Time References** for other periods inside that scene: a remembered fire, a quoted letter, an enacted flashback, or an imagined future.
 
-> **Available in 7.5.2.** The screenshots use a synthetic study manuscript, **Time Reference Study**.
+> **Available in 7.6.0.** The screenshots use a synthetic study manuscript, **Time Reference Study**.
 
 ## Add references to a scene
 

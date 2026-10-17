@@ -131,15 +131,15 @@ Opens the subplot manager for bulk cleanup. Use it when subplot names have drift
 
 Lists active subplots with scene counts and gives you bulk actions:
 
-*   **Rename** a subplot across scene files.
+*   **Rename** a subplot in the active book's scene files.
 *   **Remove** a subplot from the timeline.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/panel-manage-subplots-rename.png" alt="Subplot manager — rename detail" style="width: 450px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Rename a subplot — automatically updates the frontmatter of every scene using it</div>
+  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Rename a subplot — updates the Subplot field of every scene in the active book that uses it</div>
 </div>
 
-`Main Plot` is protected and cannot be renamed or deleted. Removing a subplot moves any scenes that only belonged to it back to `Main Plot`.
+The main plot is marked with a map pin. It stays in ring 1 whatever it is called and includes any scene without a Subplot. Each book names its own main plot (**Main Plot** until you rename it): renaming it updates only the active book's scenes, the dialog says how many before anything is written, and a name another subplot already uses is refused. The main plot can't be deleted. Removing a subplot moves any scenes that only belonged to it back to the main plot.
 
 Related: [Narrative Mode](Narrative-Mode), [How to](How-to#manage-subplots-in-bulk).
 

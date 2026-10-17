@@ -1,6 +1,6 @@
 ## Radial Timeline 7.5.2
 
-A bug-fix release.
+A bug-fix release, plus a name of your own for the main plot and a way to take a scene out of the book without deleting it.
 
 ### Fixes
 
@@ -9,8 +9,11 @@ A bug-fix release.
 - **Importing an existing book adds it.** Pointing the import at a folder that's already a Radial Timeline book now opens **Add book**, or **Show on timeline**, instead of copying it into a new folder.
 - **Book cards without a folder can't be made active.** Activating one showed an empty timeline and the Welcome screen.
 - **The Timetable stays in view.** **Add scene** from its scene menu opens the new note in the reading pane, and **Shift-click** with no timeline open places the timeline beside the table instead of over it.
+- **Drag arcs follow the book's order.** Dragging a scene to an earlier position no longer draws its arc past the closing scene and across the opening seam.
 - **Completion progress stays visible** without recent writing-pace data, and settings fit narrow floating windows.
 
 ### Also new
 
+- **Name your main plot.** In **Subplot manager**, rename the main plot like any subplot. It stays in ring 1, keeps scenes with no Subplot, and is marked with a map pin. Each book names its own, and the dialog says how many of that book's scenes it updates before writing.
+- **Remove from book.** Right-click a scene and choose **Remove from book** to take it off the timeline and out of the manuscript without deleting the note. Only its `Class` is removed; **Promote to scene** brings the same scene back.
 - **Spanish, French, Thai, and Vietnamese.** The interface follows Obsidian's language in four more languages.

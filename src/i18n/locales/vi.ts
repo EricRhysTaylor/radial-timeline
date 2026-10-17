@@ -275,14 +275,14 @@ export const vi: TranslationKeys = {
                 "name": "Hồi"
             },
             "actCount": {
-                "name": "Số lượng hành động",
+                "name": "Số hồi",
                 "desc": "Áp dụng cho chế độ Kịch bản, Tiến độ và Gossamer. Thuộc tính Cảnh và Nhịp. (Tối thiểu 3)",
                 "placeholder": "3"
             },
             "actLabels": {
-                "name": "Nhãn hành động (tùy chọn)",
-                "desc": "Nhãn cách nhau bằng dấu phẩy. Để trống để dùng Hành động 1, Hành động 2, Hành động 3. Ví dụ: \"1, 2, 3, 4\" hoặc \"Mùa xuân, Mùa hè, Mùa thu, Mùa đông\".",
-                "placeholder": "Hành động 1, Hành động 2, Hành động 3"
+                "name": "Nhãn hồi (không bắt buộc)",
+                "desc": "Nhãn cách nhau bằng dấu phẩy. Để trống để dùng Hồi 1, Hồi 2, Hồi 3. Ví dụ: \"1, 2, 3, 4\" hoặc \"Mùa xuân, Mùa hè, Mùa thu, Mùa đông\".",
+                "placeholder": "Hồi 1, Hồi 2, Hồi 3"
             },
             "storyBeatsSystem": {
                 "name": "Hệ thống nhịp cốt truyện"
@@ -311,7 +311,7 @@ export const vi: TranslationKeys = {
                 "starterDirtyTooltip": "Bộ khởi đầu đã bị thay đổi. Lưu bản sao để giữ phiên bản của bạn.",
                 "savedDirtyTooltip": "Đã có thay đổi kể từ lần lưu cuối.",
                 "modifiedLabel": "Đã chỉnh sửa",
-                "guidance": "Tạo beat từ hàng ở phía dưới: Nhập tên beat, phạm vi tùy chọn, chọn một hành động, sau đó nhấp vào + (hoặc nhấn Enter). Kéo nhịp vào sắp xếp lại hoặc thả chúng vào một hành động khác. Sử dụng các ghi chú đánh bại bên dưới để tạo hoặc sửa chữa các tệp Beat trong kho tiền của bạn.",
+                "guidance": "Tạo nhịp từ hàng ở phía dưới: nhập tên nhịp, khoảng (tùy chọn), chọn một hồi, rồi nhấp + (hoặc nhấn Enter). Kéo nhịp để sắp xếp lại hoặc thả vào hồi khác. Dùng phần ghi chú nhịp bên dưới để tạo hoặc sửa các tệp nhịp trong vault của bạn.",
                 "beatNamesNotice": "Tên nhịp phải bao gồm chữ hoặc số.",
                 "beatNameNotice": "Tên nhịp phải bao gồm chữ hoặc số.",
                 "beatNamePlaceholder": "Tên nhịp",
@@ -333,7 +333,7 @@ export const vi: TranslationKeys = {
                 "createText": "Tạo ghi chú nhịp",
                 "createTooltip": "Tạo các tệp ghi chú nhịp trong thư mục sách đang hoạt động",
                 "repairText": "Sửa ghi chú nhịp",
-                "repairTooltip": "Cập nhật Mô hình Hành động và Nhịp trong frontmatter cho các ghi chú nhịp không khớp. Các số tiền tố không bị thay đổi."
+                "repairTooltip": "Cập nhật Act và Beat Model trong frontmatter cho các ghi chú nhịp bị lệch. Các số tiền tố không bị thay đổi."
             },
             "beatFields": {
                 "name": "Trường nhịp",
@@ -761,7 +761,7 @@ export const vi: TranslationKeys = {
                 },
                 "spokesAndBorders": {
                     "name": "biên giới",
-                    "desc": "Kiểm soát đường viền cảnh và đường phân chia hành động. Chọn màu trắng, đen, không có hoặc màu tùy chỉnh."
+                    "desc": "Điều khiển đường viền cảnh và đường phân chia các hồi. Chọn trắng, đen, không có hoặc màu tùy chỉnh."
                 },
                 "strokeLightStrokes": "đường viền nhẹ",
                 "strokeDarkStrokes": "đường viền tối",
@@ -1090,7 +1090,7 @@ export const vi: TranslationKeys = {
     },
     "timeline": {
         "acts": {
-            "actFallback": "Hành động {{number}}"
+            "actFallback": "Hồi {{number}}"
         },
         "loadingData": "Đang tải dữ liệu dòng thời gian ...",
         "renderError": "Lỗi hiển thị dòng thời gian. Kiểm tra bảng điều khiển để biết chi tiết.",
@@ -1153,14 +1153,14 @@ export const vi: TranslationKeys = {
             }
         },
         "subplotAlignment": {
-            "groupLabel": "Căn chỉnh ô phụ",
+            "groupLabel": "Căn chỉnh cốt truyện phụ",
             "fill": {
                 "label": "Điền vào",
-                "tooltip": "Điền - Các cảnh phụ trải đều trên mỗi hành động"
+                "tooltip": "Lấp đầy — các cảnh của cốt truyện phụ trải đều trong mỗi hồi"
             },
             "sequence": {
                 "label": "Dãy",
-                "tooltip": "Trình tự - các cảnh phụ nằm ở vị trí của họ trong bản thảo đầy đủ"
+                "tooltip": "Trình tự — các cảnh của cốt truyện phụ nằm đúng vị trí của chúng trong toàn bộ bản thảo"
             },
             "switchTo": "Nhấp vào {{name}}."
         },
@@ -1216,11 +1216,11 @@ export const vi: TranslationKeys = {
         "title": "Xuất khẩu chia sẻ dòng thời gian",
         "subtitle": "Không có gì được chia sẻ bằng cách xuất. Tệp vẫn ở trong kho tiền của bạn cho đến khi bạn tải tệp lên chia sẻ cộng đồng của mình và kích hoạt tệp.",
         "structuralHeading": "được chia sẻ khi bạn kích hoạt",
-        "structuralBody": "Số cảnh, hành vi, tên mảnh ghép, trạng thái, giai đoạn xuất bản, tên sách và tác giả.",
+        "structuralBody": "Số cảnh, hồi, tên cốt truyện phụ, trạng thái, giai đoạn xuất bản, tên sách và tác giả.",
         "revealingHeading": "được tổ chức cho tiết lộ theo từng cảnh",
         "revealingBody": "Tiêu đề cảnh, tóm tắt, nhân vật, POV và ngày câu chuyện - bị ẩn cho đến khi bạn tiết lộ từng cảnh.",
-        "genericNamesToggleLabel": "Tên vòng chung (sublot 1, subplot 2…)",
-        "genericNamesToggleDescription": "Sử dụng nếu tên plot của bạn có thể tiết lộ cốt truyện.",
+        "genericNamesToggleLabel": "Tên vòng chung (Cốt truyện phụ 1, Cốt truyện phụ 2…)",
+        "genericNamesToggleDescription": "Dùng khi tên các cốt truyện phụ có thể tiết lộ cốt truyện.",
         "destinationBody": "Đã lưu vào {{path}} trong kho tiền của bạn.",
         "cancelButton": "Hủy",
         "exportButton": "Xuất JSON"
@@ -1526,7 +1526,7 @@ export const vi: TranslationKeys = {
         "tocHeading": "Mục lục",
         "documentContents": "Nội dung",
         "tocDepth": "Cấp tiêu đề",
-        "tocDocumentPdf": "Nội dung có liên kết và dấu trang PDF với số trang. Dùng các phần/đoạn, chương và cảnh do người viết tạo, hoặc các tiêu đề Markdown hiện có.",
+        "tocDocumentPdf": "Nội dung có liên kết và dấu trang PDF với số trang. Dùng các phần/hồi, chương và cảnh do người viết tạo, hoặc các tiêu đề Markdown hiện có.",
         "tocDocumentWord": "Dùng kiểu tiêu đề của Word và trường mục lục có thể cập nhật. Cập nhật mục lục trong Word để lấy số trang cuối cùng.",
         "tocDocumentMarkdown": "Các tiêu đề liên kết trong tài liệu, bao gồm các phần và chương do người viết tạo. Các tiêu đề lặp lại có điểm đến riêng biệt.",
         "tocMarkdown": "Danh sách cảnh (liên kết)",
@@ -1871,9 +1871,9 @@ export const vi: TranslationKeys = {
             "nameField": {
                 "name": "Tên bố cục",
                 "desc": "Chọn một cái tên ngắn gọn, độc đáo.",
-                "placeholder": "Ví dụ: phim kinh dị / 3 hành động cân bằng"
+                "placeholder": "Ví dụ: Giật gân / 3 hồi cân bằng"
             },
-            "note": "Mẫu chụp bố cục, hành vi, biểu đồ phụ, ký tự, chuyển đổi nhịp và loại YAML đã chọn (cơ sở / nâng cao).",
+            "note": "Mẫu lưu bố cục, hồi, cốt truyện phụ, nhân vật, tùy chọn bật/tắt nhịp và loại YAML đã chọn (cơ bản/nâng cao).",
             "nameRequired": "Tên mẫu là bắt buộc."
         },
         "deleteTemplate": {
@@ -1883,19 +1883,19 @@ export const vi: TranslationKeys = {
         "demoProject": {
             "badge": "Bản thử nghiệm",
             "title": "Tạo dự án demo phi tuyến",
-            "subtitle": "Tạo một ví dụ 20 cảnh, 5 hành động để chỉ ra sự khác biệt giữa thứ tự tường thuật (thứ tự người đọc bắt gặp các cảnh) và theo trình tự thời gian thứ tự (khi các sự kiện thực sự xảy ra). Số cảnh chạy 1–20 theo thứ tự tường thuật, nhưng ngày và giờ nhảy xung quanh - mở bắt đầu Ở đây lưu ý sau khi tạo để xem làm thế nào và chuyển đổi giữa dòng thời gian và Chronologue quan điểm để so sánh.",
+            "subtitle": "Tạo một ví dụ 20 cảnh, 5 hồi để chỉ ra sự khác biệt giữa thứ tự tường thuật (thứ tự người đọc bắt gặp các cảnh) và theo trình tự thời gian thứ tự (khi các sự kiện thực sự xảy ra). Số cảnh chạy 1–20 theo thứ tự tường thuật, nhưng ngày và giờ nhảy xung quanh - mở bắt đầu Ở đây lưu ý sau khi tạo để xem làm thế nào và chuyển đổi giữa dòng thời gian và Chronologue quan điểm để so sánh.",
             "startDate": {
                 "name": "Ngày bắt đầu",
                 "desc": "được sử dụng cho nhịp thời gian. Định dạng: YYYY-MM-DD."
             },
-            "note": "Điều này cũng sẽ đảm bảo không gian làm việc được định cấu hình cho năm hành động để bản demo hiển thị chính xác.",
+            "note": "Điều này cũng sẽ đảm bảo không gian làm việc được định cấu hình cho năm hồi để bản demo hiển thị chính xác.",
             "generate": "Tạo dự án demo",
             "invalidDate": "Sử dụng ngày bắt đầu hợp lệ ở định dạng YYYY-MM-DD."
         },
         "modal": {
             "badge": "thiết lập",
             "title": "Nhà thiết kế sách",
-            "subtitle": "Định cấu hình và tạo giàn giáo cho cuốn tiểu thuyết mới của bạn. Kéo các cảnh trong bản xem trước đến các hành vi khác nhau và các biểu đồ phụ để kích hoạt chế độ thủ công. Tiết kiệm mẫu để sử dụng lại sau này.",
+            "subtitle": "Định cấu hình và tạo khung cho cuốn tiểu thuyết mới của bạn. Kéo các cảnh trong bản xem trước sang các hồi và cốt truyện phụ khác để bật chế độ thủ công. Lưu mẫu để dùng lại sau này.",
             "wikiAriaLabel": "Đọc thêm trong Wiki",
             "noBookSelected": "Không có cuốn sách nào được chọn",
             "untitled": "không có tiêu đề"
@@ -1935,12 +1935,12 @@ export const vi: TranslationKeys = {
                 "detail": "Các cảnh sẽ được đánh số: {{examples}}{{suffix}} dựa trên các cảnh {{scenes}} trên các đơn vị {{max}}."
             },
             "acts": {
-                "label": "hành động để phân phối các cảnh trên",
-                "actLabel": "Hành động {{num}}"
+                "label": "Các hồi để phân bổ cảnh",
+                "actLabel": "Hồi {{num}}"
             },
             "subplots": {
-                "name": "các ô phụ",
-                "desc": "Nhập một ô phụ trên mỗi dòng."
+                "name": "Cốt truyện phụ",
+                "desc": "Nhập mỗi dòng một cốt truyện phụ."
             },
             "characters": {
                 "name": "Nhân vật",
@@ -1962,15 +1962,15 @@ export const vi: TranslationKeys = {
             },
             "sceneLayouts": {
                 "name": "Bố cục cảnh",
-                "desc": "Chọn bố cục đã lưu (hành động, biểu đồ phụ, bài tập, siêu dữ liệu).",
+                "desc": "Chọn bố cục đã lưu (hồi, cốt truyện phụ, phân bổ, siêu dữ liệu).",
                 "newOption": "Mẫu mới",
                 "emptyOption": "—"
             }
         },
         "preview": {
             "title": "Xem trước",
-            "dragging": "Kéo cảnh {{scene}} → ACT {{act}}, {{subplot}}",
-            "subplotFallback": "Plot {{num}}"
+            "dragging": "Kéo cảnh {{scene}} → Hồi {{act}}, {{subplot}}",
+            "subplotFallback": "Cốt truyện phụ {{num}}"
         },
         "buttons": {
             "saveSceneSet": "Lưu cảnh đặt",
@@ -1983,7 +1983,7 @@ export const vi: TranslationKeys = {
             "cancel": "Hủy"
         },
         "notes": {
-            "layoutTemplatesIncludes": "Bao gồm các cảnh, hành động, tình tiết phụ, nhịp đập và thời gian thời gian."
+            "layoutTemplatesIncludes": "Bao gồm cảnh, hồi, cốt truyện phụ, nhịp và thời gian Chronologue."
         },
         "notices": {
             "layoutReset": "Đặt lại bố cục về mặc định với phân phối tự động.",
@@ -2194,13 +2194,13 @@ export const vi: TranslationKeys = {
         "processingModal": {
             "titleSummaryRefresh": "Tóm tắt cảnh làm mới",
             "titleScenePulse": "Phân tích xung cảnh",
-            "titleProcessingSubplot": "Xử lý phụ: {{name}}",
-            "titleProcessingEntireSubplot": "Xử lý toàn bộ lô phụ: {{name}}",
+            "titleProcessingSubplot": "Đang xử lý cốt truyện phụ: {{name}}",
+            "titleProcessingEntireSubplot": "Đang xử lý toàn bộ cốt truyện phụ: {{name}}",
             "badgeAiSummary": "Tóm tắt AI",
             "badgeAiPulseRun": "Chạy AI Pulse",
             "subtitleSynopsis": "Tạo tóm tắt kho ngữ liệu Inquiry và viết từng cảnh ngay khi hoàn thành. Các giá trị tóm tắt hiện có được thay thế (và tóm tắt lại nếu được bật).",
-            "subtitleEntireSubplot": "Phân tích mọi cảnh trong ô phụ \"{{name}}\"",
-            "subtitleFlaggedSubplot": "Phân tích các cảnh được gắn cờ trong ô phụ \"{{name}}\"",
+            "subtitleEntireSubplot": "Phân tích mọi cảnh trong cốt truyện phụ \"{{name}}\"",
+            "subtitleFlaggedSubplot": "Phân tích các cảnh được gắn cờ trong cốt truyện phụ \"{{name}}\"",
             "modeUnprocessed": "Cảnh thiếu siêu dữ liệu xung",
             "modeForceAll": "Xử lý lại mọi cảnh đã hoàn thành",
             "modeFlagged": "Phân tích các cảnh được gắn cờ theo thứ tự bản thảo",
@@ -2388,9 +2388,9 @@ export const vi: TranslationKeys = {
             },
             "scope": {
                 "current": "cảnh hiện tại",
-                "subplot": "Cảnh phụ",
+                "subplot": "Cảnh của cốt truyện phụ",
                 "all": "tất cả các cảnh",
-                "subplotLabel": "Biểu đồ phụ:",
+                "subplotLabel": "Cốt truyện phụ:",
                 "sceneLabel": "Cảnh: ",
                 "noSceneOpen": "Không có cảnh mở"
             },
@@ -2484,10 +2484,10 @@ export const vi: TranslationKeys = {
             "notices": {
                 "noScenesValid": "Không tìm thấy cảnh hợp lệ trong thư mục Sách đang hoạt động.",
                 "noFlaggedSubplotScenes": "Không có cảnh được gắn cờ (Cập nhật xung: Có / Đúng / 1) với nội dung được tìm thấy cho \"{{name}}\".",
-                "noScenesForSubplot": "Không tìm thấy cảnh nào cho subplot \"{{name}}\".",
-                "noScenesContentSubplot": "Không có cảnh nào có nội dung được tìm thấy cho ô phụ \"{{name}}\".",
-                "noRemainingResumingSubplot": "Không có cảnh nào còn lại để xử lý cho subplot \"{{name}}\" (tất cả có thể đã được xử lý ngày hôm nay).",
-                "noFlaggedPulseUpdateSubplot": "Không có cảnh gắn cờ (Cập nhật xung: Có) với nội dung được tìm thấy cho ô phụ \"{{name}}\".",
+                "noScenesForSubplot": "Không tìm thấy cảnh nào cho cốt truyện phụ \"{{name}}\".",
+                "noScenesContentSubplot": "Không tìm thấy cảnh nào có nội dung cho cốt truyện phụ \"{{name}}\".",
+                "noRemainingResumingSubplot": "Không còn cảnh nào để xử lý cho cốt truyện phụ \"{{name}}\" (có thể tất cả đã được xử lý hôm nay).",
+                "noFlaggedPulseUpdateSubplot": "Không tìm thấy cảnh được gắn cờ (Pulse Update: Yes) có nội dung cho cốt truyện phụ \"{{name}}\".",
                 "abortedByUser": "xử lý bị hủy bỏ bởi người dùng",
                 "abortedRateLimit": "xử lý bị hủy bỏ bởi người dùng hoặc giới hạn tỷ lệ",
                 "fatalError": "Lỗi nghiêm trọng: {{error}}"
@@ -2519,14 +2519,14 @@ export const vi: TranslationKeys = {
                 "buttonCancel": "Hủy",
                 "noScenes": "Không có cảnh nào được tìm thấy trong bản thảo.",
                 "confirmManuscript": "Thanh lọc tất cả các nhịp từ {{scenes}} trong bản thảo của bạn?",
-                "confirmSubplot": "thanh lọc từ {{scenes}} trong ô phụ \"{{name}}\"?",
+                "confirmSubplot": "Xóa nhịp khỏi {{scenes}} trong cốt truyện phụ \"{{name}}\"?",
                 "detailFields": "`previousSceneAnalysis`, `currentSceneAnalysis`, `nextSceneAnalysis`",
                 "detailPulseUpdate": "`Pulse Update` dấu thời gian",
                 "detailPulseLastUpdated": "Dấu thời gian `Pulse Last Updated`",
                 "noticeStart": "Thanh lọc nhịp đập từ tất cả các cảnh ...",
                 "noticeStartSubplot": "Thanh lọc nhịp từ \"{{name}}\" ...",
                 "resultManuscript": "Nhịp đập được thanh trừng từ {{purged}} của {{scenes}}.",
-                "resultSubplot": "thanh lọc từ {{purged}} của {{scenes}} trong ô phụ \"{{name}}\".",
+                "resultSubplot": "Đã xóa nhịp khỏi {{purged}} trên {{scenes}} trong cốt truyện phụ \"{{name}}\".",
                 "archived": "Đã lưu trữ các trường đã xóa: {{path}}",
                 "errorGeneric": "Lỗi thanh lọc. Kiểm tra bảng điều khiển để biết chi tiết."
             },
@@ -2554,33 +2554,33 @@ export const vi: TranslationKeys = {
             "commands": {
                 "summaryRefresh": "Tóm tắt cảnh làm mới",
                 "scenePulseManuscript": "Phân tích xung cảnh (thứ tự bản thảo)",
-                "scenePulseSubplot": "Phân tích xung cảnh (thứ tự phụ)"
+                "scenePulseSubplot": "Phân tích xung cảnh (thứ tự cốt truyện phụ)"
             },
             "notices": {
-                "noSubplots": "Không tìm thấy các ô phụ.",
+                "noSubplots": "Không tìm thấy cốt truyện phụ nào.",
                 "aiDisabled": "Chiến lược AI bị vô hiệu hóa. Chọn nhà cung cấp AI trong Cài đặt → AI.",
                 "localLlmDisabled": "LLM cục bộ bị vô hiệu hóa. Bật nó trong Cài đặt → AI.",
                 "localLlmRequiresUrl": "LLM cục bộ yêu cầu URL cơ sở và lựa chọn mô hình.",
                 "providerKeyMissing": "{{provider}} Phím đã lưu không được đặt trong cài đặt."
             },
             "subplotPicker": {
-                "title": "Xử lý các cảnh phụ",
-                "subtitle": "Chọn một biểu đồ phụ và chạy các bản cập nhật xung chỉ cho cung đó.",
+                "title": "Xử lý các cảnh của cốt truyện phụ",
+                "subtitle": "Chọn một cốt truyện phụ và chạy cập nhật xung chỉ cho mạch truyện đó.",
                 "badge": "AI Pulse Run",
                 "badgeWith": "chạy xung ai · {{model}}",
                 "flaggedScenes": "Cảnh gắn cờ",
                 "processableScenes": "cảnh có thể xử lý",
                 "totalScenes": "Tổng số cảnh",
-                "pickLabel": "Chọn một biểu đồ phụ để xử lý",
+                "pickLabel": "Chọn một cốt truyện phụ để xử lý",
                 "processFlagged": "Xử lý cảnh gắn cờ",
-                "processEntire": "Xử lý toàn bộ ô phụ",
+                "processEntire": "Xử lý toàn bộ cốt truyện phụ",
                 "purgeAll": "thanh lọc tất cả xung",
                 "cancel": "Hủy",
                 "stats": "{{flagged}} được gắn cờ • {{processable}} có thể xử lý được • {{total}} tổng cộng",
                 "infoLocalLlm": "Chế độ LLM cục bộ: Kết quả hợp lệ Các trường di chuột cảnh tự động. Kết quả không hợp lệ được ghi lại và đánh dấu để xem xét.",
                 "infoCloud": "Các cảnh đã chọn sẽ được gửi đến nhà cung cấp AI của bạn để phân tích xung, theo các điều khoản của nhà cung cấp đó.",
-                "noOptions": "Không có tùy chọn phụ nào có sẵn.",
-                "unknownSelection": "Lựa chọn ô phụ không xác định: {{name}}"
+                "noOptions": "Không có cốt truyện phụ nào để chọn.",
+                "unknownSelection": "Lựa chọn cốt truyện phụ không xác định: {{name}}"
             },
             "errorPrefix": "Lỗi: {{error}}",
             "aiDisabledLabel": "AI bị vô hiệu hóa"
@@ -2951,14 +2951,14 @@ export const vi: TranslationKeys = {
             "singlePassBody": "Toàn bộ bản thảo được phân tích trong một yêu cầu. Phù hợp nhất cho các câu hỏi chuyên đề toàn cầu sâu sắc phụ thuộc vào bản thảo đầy đủ được xem xét cùng một lúc.",
             "singlePassQuestion1": "Lập luận đạo đức trung tâm của cuốn sách này là gì?",
             "singlePassQuestion2": "Kết thúc có thực hiện lời hứa theo chủ đề mở đầu không?",
-            "singlePassQuestion3": "Sự biến đổi của nhân vật chính có mạch lạc qua tất cả các hành động không?",
+            "singlePassQuestion3": "Sự biến đổi của nhân vật chính có mạch lạc qua tất cả các hồi không?",
             "singlePassQuestion4": "Làm thế nào để điểm giữa điều chỉnh độ phân giải cuối cùng?",
             "multiPassTitle": "Phân tích nhiều lần",
             "multiPassBody": "Các bản thảo lớn được chia thành các phân đoạn có cấu trúc. Mỗi phân đoạn được đánh giá độc lập, và các kết quả được kết hợp thành một phản hồi thống nhất. Tốt nhất cho các mẫu cấu trúc có thể được phân tích theo từng phân đoạn.",
             "multiPassQuestion1": "Xác định các cung nhân vật chưa được giải quyết trên bản thảo.",
             "multiPassQuestion2": "Căng thẳng dừng lại ở đâu hoặc lặp lại theo cấu trúc?",
             "multiPassQuestion3": "phát hiện sự không nhất quán hoặc lỗi liên tục của dòng thời gian.",
-            "multiPassQuestion4": "So sánh các kiểu nhịp độ cảnh qua các hành động.",
+            "multiPassQuestion4": "So sánh các kiểu nhịp độ ở cấp cảnh giữa các hồi.",
             "exampleQuestionsLabel": "Câu hỏi ví dụ:"
         },
         "aiSection": {
@@ -3119,7 +3119,7 @@ export const vi: TranslationKeys = {
             "ringDesc": "Chỉ vòng tiến trình - Bí ẩn tối đa",
             "scenesDesc": "Cấu trúc cảnh trong thang độ xám với các mẫu",
             "colorsDesc": "công bố màu sắc sân khấu được tiết lộ",
-            "fullDesc": "Tất cả các vòng đệm phụ hiển thị - Hình ảnh hoàn chỉnh"
+            "fullDesc": "Hiện tất cả các vòng cốt truyện phụ — bức tranh hoàn chỉnh"
         },
         "aprPaletteModal": {
             "badge": "Bảng màu",
@@ -3272,7 +3272,7 @@ export const vi: TranslationKeys = {
         "backdropSection": {
             "heading": "Vòng phông nền và ngữ cảnh vi mô",
             "showRingName": "Hiển thị vòng backdrop",
-            "showRingDesc": "Hiển thị vòng backdrop ở chế độ Chronologue. Khi bị vô hiệu hóa, không gian vòng được thu hồi cho các vòng phụ. ",
+            "showRingDesc": "Hiển thị vòng phông nền ở chế độ Chronologue. Khi tắt, không gian của vòng được dành lại cho các vòng cốt truyện phụ. ",
             "commandPaletteHintLead": "Sử dụng bảng lệnh ",
             "ctrlKey": "Ctrl",
             "commandPaletteHintTail": ". Hoặc tạo một ghi chú backdrop bằng cách sử dụng 'class = backdrop'.",
@@ -3296,7 +3296,7 @@ export const vi: TranslationKeys = {
             "addButton": "Chấp thêm"
         },
         "beatPropertiesSection": {
-            "actsPreviewHeading": "Xem trước ({{count}})",
+            "actsPreviewHeading": "Xem trước ({{count}} hồi)",
             "loadedSystemUnsaved": "Hệ thống được tải có những thay đổi chưa được lưu.",
             "noMatchingTitleNote": "Không có ghi chú tiêu đề phù hợp.",
             "noBeatsDefinedTooltip": "Chưa có nhịp đập nào được xác định cho hệ thống này.",
@@ -3314,19 +3314,19 @@ export const vi: TranslationKeys = {
             "inactiveInManuscript": "không hoạt động trong bản thảo",
             "activeWithIssues": "Hoạt động trong bản thảo - {{issues}}",
             "activeAligned": "hoạt động trong bản thảo - cấu trúc được căn chỉnh",
-            "overviewMeta": "{{beatCount}} Nhịp · {{actCount}}",
+            "overviewMeta": "{{beatCount}} nhịp · {{actCount}} hồi",
             "editSystemAria": "Chỉnh sửa \"{{name}}\"",
             "designCountSummary": "{{count}} Beats · {{acts}}",
             "countWithState": "{{summary}} - {{state}}",
-            "misalignedBeatsOne": "{{count}} beat được đặt trong một hành động khác trong bản thảo.",
-            "misalignedBeatsOther": "Các nhịp {{count}} được đặt trong một hành động khác trong bản thảo.",
+            "misalignedBeatsOne": "{{count}} nhịp được đặt ở một hồi khác trong bản thảo.",
+            "misalignedBeatsOther": "{{count}} nhịp được đặt ở một hồi khác trong bản thảo.",
             "outOfSequenceBeatsOne": "{{count}} beat nằm ngoài chuỗi bản thảo (đặt tiền tố tên tệp không khớp với mẫu).",
             "outOfSequenceBeatsOther": "Các nhịp {{count}} nằm ngoài chuỗi bản thảo (đặt tiền tố tên tệp không khớp với mẫu).",
             "setModifiedTooltip": "SET đã được sửa đổi kể từ lần lưu cuối cùng.",
             "dropBeatInto": "thả nhịp vào {{act}}",
             "duplicateTitleNotice": "Tiêu đề đánh bại trùng lặp. Xóa thủ công các ghi chú đánh bại trùng lặp (hoặc đổi tên một tiêu đề) để giải quyết.",
             "multipleMatchesNotice": "Nhiều nốt nhịp phù hợp với tiêu đề này. Xóa thủ công các ghi chú đánh bại trùng lặp để giải quyết.",
-            "placedInActNotice": "được đặt trong ACT {{actNumber}} trong bản thảo. Mẫu đề xuất {{act}}.",
+            "placedInActNotice": "Được đặt ở Hồi {{actNumber}} trong bản thảo. Mẫu đề xuất {{act}}.",
             "rangePlaceholder": "e.g. 10-20",
             "selectSystemDesc": "Chọn một hệ thống nhịp để định cấu hình các ghi chú đã đặt và hành vi nhịp câu chuyện.",
             "otherColumn": "Khác",
@@ -3382,13 +3382,13 @@ export const vi: TranslationKeys = {
             "createMissingForBeatsWithDetails": "{{details}}\n\nTạo ghi chú mất tích cho {{beats}} không có tệp",
             "createMissingForBeats": "Tạo nốt nhạc bị thiếu cho {{beats}} mà không có tệp",
             "allHaveFilesRepairModel": "Tất cả các nhịp đều có tệp. Sử dụng sửa chữa để đặt các giá trị mô hình nhịp bị thiếu.",
-            "allHaveFilesRepairAct": "Tất cả các nhịp đều có tệp. Sử dụng sửa chữa để sửa chữa hành động và đánh bại mô hình.",
+            "allHaveFilesRepairAct": "Tất cả các nhịp đều có tệp. Dùng Sửa để sửa Act và Beat Model.",
             "repairButton": "Sửa chữa {{notes}}",
-            "repairTooltipBoth": "Cập nhật hành động và mô hình nhịp cho {{misaligned}} bị lệch và {{missing}} bị thiếu các nốt nhịp mô hình. Số tiền tố không được thay đổi.",
-            "repairTooltipMisalignedOne": "Cập nhật hành động và mô hình nhịp cho nốt nhịp lệch {{count}}. Số tiền tố không được thay đổi.",
-            "repairTooltipMisalignedOther": "Cập nhật hành động và mô hình nhịp cho các nốt nhịp lệch {{count}}. Số tiền tố không được thay đổi.",
-            "repairTooltipMissingModelOne": "Cập nhật hành động và mô hình beat cho {{count}} bị thiếu nhịp mô hình nhịp. Số tiền tố không được thay đổi.",
-            "repairTooltipMissingModelOther": "Cập nhật hành động và mô hình beat cho {{count}} bị thiếu các nốt nhịp mô hình. Số tiền tố không được thay đổi.",
+            "repairTooltipBoth": "Cập nhật Act và Beat Model cho {{misaligned}} ghi chú nhịp bị lệch và {{missing}} ghi chú nhịp thiếu Beat Model. Số tiền tố không được thay đổi.",
+            "repairTooltipMisalignedOne": "Cập nhật Act và Beat Model cho {{count}} ghi chú nhịp bị lệch. Số tiền tố không được thay đổi.",
+            "repairTooltipMisalignedOther": "Cập nhật Act và Beat Model cho {{count}} ghi chú nhịp bị lệch. Số tiền tố không được thay đổi.",
+            "repairTooltipMissingModelOne": "Cập nhật Act và Beat Model cho {{count}} ghi chú nhịp thiếu Beat Model. Số tiền tố không được thay đổi.",
+            "repairTooltipMissingModelOther": "Cập nhật Act và Beat Model cho {{count}} ghi chú nhịp thiếu Beat Model. Số tiền tố không được thay đổi.",
             "resolveDuplicatesOne": "giải quyết trùng lặp trước khi hợp nhất. Xóa thủ công các ghi chú đánh bại trùng lặp.",
             "resolveDuplicatesOther": "giải quyết các bản sao trước khi hợp nhất. Xóa thủ công các ghi chú đánh bại trùng lặp.",
             "mergeCustomOnlyNotice": "Merge chỉ có sẵn cho các hệ thống beat tùy chỉnh.",
@@ -3398,7 +3398,7 @@ export const vi: TranslationKeys = {
             "noMergeWithDuplicatesNotice": "Không có nốt nhịp nào có thể được hợp nhất. Nhân bản: {{count}}. Xóa thủ công các ghi chú đánh bại trùng lặp.",
             "duplicateTitlesSkipped": "{{titles}} đã bỏ qua (xóa thủ công các ghi chú đánh bại trùng lặp).",
             "setModelOnNotes": "Đặt mô hình beat trên {{notes}}.",
-            "repairedNotice": "Đã sửa chữa {{notes}} (hành động, mô hình đánh bại).",
+            "repairedNotice": "Đã sửa {{notes}} (Act, Beat Model).",
             "unknownStructureNotice": "Cấu trúc câu chuyện không xác định: {{name}}",
             "createdWithErrorsNotice": "Đã tạo ghi chú {{created}}. {{skipped}} bị bỏ qua. Lỗi {{errors}}. Kiểm tra bảng điều khiển.",
             "allExistNotice": "Tất cả các nốt nhạc {{count}} đã tồn tại. Không có ghi chú mới nào được tạo.",
@@ -3428,7 +3428,7 @@ export const vi: TranslationKeys = {
             "documentaryArcDesc": "Cân bằng thời gian, bối cảnh, cổ phần và hệ quả trong các sự kiện được kể lại.\n\nSử dụng nó khi bạn cần hướng dẫn khán giả thông qua các sự kiện thực tế mà không mất đà.\n\nTốt nhất cho: viết lịch sử, cấu trúc tài liệu, kể chuyện phi hư cấu, dòng thời gian\nHồ sơ động lượng: Bối cảnh -> Xây dựng -> Pivot -> Hậu quả",
             "documentaryArcExamples": "Ví dụ: phim tài liệu lịch sử, các chương lịch sử tường thuật, tái hiện sự kiện.",
             "romanceLadderTitle": "Thang bậc cốt truyện tình yêu",
-            "romanceLadderDesc": "Theo dõi sự hấp dẫn, căng thẳng, dễ bị tổn thương, vỡ và phần thưởng cảm xúc.\n\nSử dụng nó khi vòng cung quan hệ tình cảm là động cơ chính của đầu tư của độc giả.\n\nTốt nhất cho: lãng mạn, tình tiết phụ lãng mạn, nhân vật hóa học\nHồ sơ động lượng: Spark -> Căng thẳng -> Tính dễ bị tổn thương -> Vỡ -> Liên minh / Quyết định",
+            "romanceLadderDesc": "Theo dõi sự hấp dẫn, căng thẳng, dễ bị tổn thương, vỡ và phần thưởng cảm xúc.\n\nSử dụng nó khi vòng cung quan hệ tình cảm là động cơ chính của đầu tư của độc giả.\n\nTốt nhất cho: lãng mạn, cốt truyện phụ lãng mạn, nhân vật hóa học\nHồ sơ động lượng: Spark -> Căng thẳng -> Tính dễ bị tổn thương -> Vỡ -> Liên minh / Quyết định",
             "romanceLadderExamples": "Ví dụ: kẻ thù với người yêu, sự gần gũi cưỡng bức, sự cháy chậm.",
             "thrillerLadderTitle": "Thang leo thang kinh dị",
             "thrillerLadderDesc": "Xây dựng áp lực thông qua nguy hiểm, mặc khải, đảo ngược và thu hẹp các lựa chọn.\n\nSử dụng nó khi bạn muốn mọi giai đoạn để thắt chặt rủi ro và giảm sự lựa chọn an toàn của nhân vật chính.\n\nTốt nhất cho: phim kinh dị, hồi hộp, rượt đuổi, câu chuyện sinh tồn\nHồ sơ động lực: Đe dọa -> Theo đuổi -> Đảo ngược -> Nén -> Đối đầu",
@@ -3750,14 +3750,14 @@ export const vi: TranslationKeys = {
             "customOption": "Tùy…",
             "resetTooltip": "Đặt lại về mặc định",
             "stageColorsHeading": "Xuất bản màu sắc sân khấu",
-            "stageColorsDesc": "Được sử dụng cho các cảnh hoàn thành, ma trận sân khấu, nhãn hành động và hơn thế nữa.",
+            "stageColorsDesc": "Được sử dụng cho các cảnh hoàn thành, ma trận sân khấu, nhãn hồi và hơn thế nữa.",
             "stageColorAriaLabel": "Màu sắc sân khấu {{stage}}",
-            "subplotColorsHeading": "Màu vòng phụ màu",
-            "subplotColorsDesc": "Màu vòng phụ màu được sử dụng cho vòng 1 đến vòng 16 di chuyển vào trong.",
+            "subplotColorsHeading": "Màu vòng cốt truyện phụ",
+            "subplotColorsDesc": "Màu vòng cốt truyện phụ dùng cho các vòng 1 đến 16, đi dần vào trong.",
             "mainPlotLabel": "cốt truyện chính",
             "ringLabel": "Vòng {{number}}",
             "mainPlotPin": "Cốt truyện chính · vòng 1",
-            "subplotColorAriaLabel": "Vòng phụ {{number}} màu"
+            "subplotColorAriaLabel": "Màu vòng cốt truyện phụ {{number}}"
         },
         "commandRegistrar": {
             "archivedBeforeOverwrite": "Đã lưu trữ đầu ra hiện có trước khi ghi đè: {{path}}",
@@ -4093,7 +4093,7 @@ export const vi: TranslationKeys = {
             "familyStoryWorldTitle": "Thế giới câu chuyện",
             "familyStoryWorldDesc": "Tạo ghi chú theo ngữ cảnh định hình thời gian, địa điểm hoặc các sự kiện xung quanh.",
             "beatTitle": "Nhịp truyện",
-            "beatDesc": "Một nốt nhạc nhịp điệu duy nhất với các trường hành động và mục đích.",
+            "beatDesc": "Một ghi chú nhịp truyện với các trường Act và Purpose.",
             "backdropTitle": "Bối cảnh",
             "backdropDesc": "Lưu ý bối cảnh dòng thời gian với ngày bắt đầu và ngày kết thúc.",
             "characterTitle": "Tính cách",
@@ -4155,15 +4155,15 @@ export const vi: TranslationKeys = {
             "blurbSubmission": "Bản nháp đọc đơn giản trên các trang 6 × 9, với loại sans-serif, khoảng cách dòng 1,5 và các bộ mở cảnh riêng biệt. Tùy chỉnh hình học và kiểu chữ của nó cho người đọc của bạn.",
             "blurbReadingDraft": "Một bản nháp đọc được đánh bóng cho người đọc beta và người kiểm chứng. Đủ sạch sẽ để cảm thấy giống như một cuốn sách đã hoàn thành mà không cần phải thực hiện một thẩm mỹ cuối cùng. Kiểu cơ thể serif đương đại, khoảng cách thoải mái và cấu trúc hạn chế luôn quen thuộc với tiểu thuyết thương mại hiện đại.",
             "blurbLiterary": "Tinh tế và xuất bản - cảm giác của một cuốn tiểu thuyết thương mại chuyên nghiệp. đầu chạy, trình bày chương có cấu trúc và Nhịp điệu thị giác mạnh mẽ hơn tạo ra trải nghiệm đọc nhập vai hơn trong khi vẫn bị hạn chế và dễ đọc.",
-            "blurbStructured": "kiến trúc và văn học. Được xây dựng cho tiểu thuyết đầy tham vọng được hưởng lợi từ việc cố ý đi lại, phòng thở có cấu trúc, người mở hành động, biểu tượng, và trình bày cảnh đặc biệt. gợi lên sự khéo léo được xem xét của các ấn bản văn học boutique và in giữa thế kỷ truyền thống thiết kế.",
+            "blurbStructured": "kiến trúc và văn học. Được xây dựng cho tiểu thuyết đầy tham vọng được hưởng lợi từ nhịp độ có chủ ý, phòng thở có cấu trúc, trang mở đầu hồi, đề từ, và trình bày cảnh đặc biệt. gợi lên sự khéo léo được xem xét của các ấn bản văn học boutique và in giữa thế kỷ truyền thống thiết kế.",
             "notePage": "Kích thước trang và lề định hình trải nghiệm đọc nhiều hơn hầu hết các tác giả nhận ra. Bố cục chặt chẽ hơn làm tăng mật độ và tốc độ, trong khi Lề rộng hơn tạo ra phòng thở bằng hình ảnh và cảm giác văn học hơn. Hầu hết các tiểu thuyết thương mại cân bằng khả năng đọc với số trang hiệu quả.",
             "noteBody": "Kiểu chữ cơ thể quyết định sự thoải mái khi đọc ở dạng dài. phông chữ serif vẫn chiếm ưu thế trong tiểu thuyết in vì chúng hướng dẫn mắt một cách tự nhiên qua các trang văn bản dày đặc. Khoảng cách dòng ảnh hưởng một cách tinh tế đến nhịp độ: Bố cục chặt chẽ hơn cảm thấy nhanh hơn và khẩn cấp hơn, trong khi khoảng cách mở làm chậm người đọc và tạo ra sự phản chiếu.",
             "noteHeaders": "Các tiêu đề chạy giúp người đọc duy trì định hướng trong các tác phẩm dài hơn và phổ biến trong các phiên bản in hoàn chỉnh. Bản thảo bản thảo thường bỏ qua chúng hoàn toàn, trong khi bố cục thương mại và văn học được đánh bóng thường sử dụng các tiêu đề hạn chế để củng cố cấu trúc mà không làm mất tập trung văn xuôi.",
             "noteFolio": "Số trang lặng lẽ neo người đọc vào bên trong bản thảo. Các bản nháp truyền thống thường đặt folios ở trung tâm dưới cùng, trong khi được xuất bản Fiction thường tích hợp chúng vào hệ thống tiêu đề đang chạy để trình bày tinh tế hơn.",
-            "noteParts": "Các trang phân chia các chuyển động tường thuật chính và tạo phòng thở có cấu trúc giữa các hành vi hoặc các giai đoạn của câu chuyện. văn học và Tiểu thuyết thương mại quy mô lớn thường sử dụng các phần mở phần dành riêng, chữ số La Mã hoặc biểu tượng để củng cố các chuyển đổi theo chủ đề và động lượng dài.",
+            "noteParts": "Các trang phân chia các chuyển động tường thuật chính và tạo phòng thở có cấu trúc giữa các hồi hoặc các giai đoạn của câu chuyện. văn học và Tiểu thuyết thương mại quy mô lớn thường sử dụng các phần mở phần dành riêng, chữ số La Mã hoặc đề từ để củng cố các chuyển đổi theo chủ đề và động lượng dài.",
             "noteChapters": "Trình bày chương hình thành nhịp điệu tường thuật. Các trang chương tối thiểu giữ cho nhịp độ vô hình và nhanh, trong khi các phần mở lớn hơn tạo ra tạm dừng, nhấn mạnh và dự đoán. Tiêu đề chương được chia sẻ và khoảng cách của người mở có thể củng cố một cách tinh tế giai điệu và kỳ vọng về thể loại.",
             "noteScenes": "Cảnh phá vỡ kiểm soát động lượng ở cấp độ vi mô. Chuyển đổi vô hình tạo ra tốc độ và tính liên tục, trong khi các bộ mở cảnh chuyên dụng cho trọng lượng cảm xúc hoặc cấu trúc cho mỗi trình tự. Đánh số, tiêu đề và quy tắc trang trí giúp người đọc tự định hướng bên trong phức tạp những câu chuyện kể.",
-            "noteEpigraph": "Epigraph đóng khung lăng kính cảm xúc hoặc chủ đề của một phần trước khi bắt đầu văn xuôi. Một số tiểu thuyết sử dụng chúng một cách tiết kiệm để nhấn mạnh, trong khi Tiểu thuyết văn học và cấu trúc có thể sử dụng các biểu tượng lặp lại để tạo ra sự cộng hưởng giữa các hành vi, chương hoặc các vòng cung nhân vật.",
+            "noteEpigraph": "Epigraph đóng khung lăng kính cảm xúc hoặc chủ đề của một phần trước khi bắt đầu văn xuôi. Một số tiểu thuyết sử dụng chúng một cách tiết kiệm để nhấn mạnh, trong khi Tiểu thuyết văn học và cấu trúc có thể sử dụng các đề từ lặp lại để tạo ra sự cộng hưởng giữa các hồi, chương hoặc các vòng cung nhân vật.",
             "fontCustomSystem": "Tùy chỉnh (phông chữ hệ thống)",
             "errStyleNameRequired": "Tên kiểu là bắt buộc.",
             "errCustomWidthPositive": "Chiều rộng giấy tùy chỉnh phải lớn hơn 0.",
@@ -4310,7 +4310,7 @@ export const vi: TranslationKeys = {
             "folioBottomCenter": "tâm đáy",
             "folioInHeaders": "trong tiêu đề",
             "folioPositionAria": "Vị trí Folio: {{position}}",
-            "renderPartPages": "Kết xuất các trang một phần / hành động",
+            "renderPartPages": "Kết xuất trang Phần / Hồi",
             "numeralStyleLabel": "kiểu số",
             "numeralRoman": "Roman I II III",
             "numeralWord": "Chữ  Một Hai",
@@ -4321,7 +4321,7 @@ export const vi: TranslationKeys = {
             "epigraphPlacement": "Vị trí Epigraph",
             "placementInline": "nội tuyến",
             "placementOwnPage": "trang riêng",
-            "glossaryPartActTerm": "Phần / Hành động",
+            "glossaryPartActTerm": "Phần / Hồi",
             "glossaryPartActDef": "Bộ phận cấp cao nhất nhóm nhiều chương hoặc cảnh (ví dụ: Phần I, Phần II). Thường được giới thiệu với một trang mở chuyên dụng.",
             "glossaryNumeralStyleDef": "Cách hiển thị số phần: I II III (số La Mã), 1 2 3 (chữ số Ả Rập) hoặc Một Hai (bằng chữ).",
             "glossaryPartTitleTerm": "Phần tiêu đề",
@@ -4452,7 +4452,7 @@ export const vi: TranslationKeys = {
             "extraEffectLabel": "Hiệu ứng phụ",
             "rippleRenameEnabled": "Đã bật tên của Ripple",
             "recentMovesTitle": "những động thái gần đây",
-            "crossedActs": "hành vi chéo",
+            "crossedActs": "Chuyển qua hồi khác",
             "rippleRename": "đổi tên gợn sóng",
             "preparingStatus": "Chuẩn bị sắp xếp lại...",
             "beginButton": "bắt đầu",
@@ -5256,7 +5256,7 @@ export const vi: TranslationKeys = {
             "partsFlagNoPageBreak": "Không có ngắt trang",
             "partOpener": "Bộ phận mở phần - {{numbering}}",
             "partOpenerWithFlags": "Dụng cụ mở phần - {{numbering}} - {{flags}}",
-            "partsActOpener": "ACT Opener - Chữ số La Mã với Epigraph tùy chọn",
+            "partsActOpener": "Trang mở đầu hồi — Chữ số La Mã với đề từ tùy chọn",
             "chaptersNumbered": "Các trang chương được đánh số",
             "chaptersTitled": "Các trang chương có tiêu đề",
             "chaptersDefault": "Chương",
@@ -5337,23 +5337,23 @@ export const vi: TranslationKeys = {
         },
         "manageSubplotsModal": {
             "badge": "Cấu hình",
-            "subtitle": "Đổi tên hoặc xóa các ô phụ theo dòng thời gian. Cảnh mồ côi sẽ được chuyển sang cốt truyện chính.",
-            "activeSubplots": "Các ô phụ hoạt động · {{count}}",
+            "subtitle": "Đổi tên hoặc xóa các cốt truyện phụ trên dòng thời gian. Các cảnh không còn cốt truyện phụ nào sẽ được chuyển sang cốt truyện chính.",
+            "activeSubplots": "Cốt truyện phụ đang dùng · {{count}}",
             "renameTooltip": "Đổi tên",
             "mainPlotCannotDelete": "Cốt truyện chính không thể bị xóa",
             "mainPlotMeta": "Cốt truyện chính · vòng 1 · {{scenes}}",
             "mainPlotRenameNote": "Đây là cốt truyện chính của bạn. Nó luôn ở vòng 1 và mặc định bao gồm mọi cảnh không có Subplot.",
             "renameScenesNote": "Cập nhật trường Subplot trong {{scenes}} của {{book}}. Các sách khác không thay đổi.",
-            "mainPlotNameTaken": "\"{{name}}\" đã là một tuyến truyện phụ trong sách này. Hãy chọn tên mà không tuyến phụ nào khác dùng.",
+            "mainPlotNameTaken": "\"{{name}}\" đã là một cốt truyện phụ trong sách này. Hãy chọn tên mà không cốt truyện phụ nào khác dùng.",
             "deleteTooltip": "Xóa",
             "removeBadge": "Cảnh báo",
-            "removeTitle": "loại bỏ ô phụ?",
+            "removeTitle": "Xóa cốt truyện phụ?",
             "removeSubtitle": "hành động này không thể được hoàn tác.",
-            "removeMeta": "Các cảnh chỉ trong ô phụ này sẽ được chuyển sang cốt truyện chính",
+            "removeMeta": "Các cảnh chỉ thuộc cốt truyện phụ này sẽ được chuyển sang cốt truyện chính",
             "removeConfirm": "Bạn có chắc chắn muốn xóa \"{{subplot}}\" khỏi dòng thời gian không?",
-            "removeButton": "loại bỏ ô phụ",
+            "removeButton": "Xóa cốt truyện phụ",
             "renameBadge": "Chỉnh sửa",
-            "renameTitle": "đổi tên ô phụ",
+            "renameTitle": "Đổi tên cốt truyện phụ",
             "renameSubtitle": "Nhập tên mới cho \"{{subplot}}\"",
             "renameButton": "Đổi tên"
         },
@@ -5458,7 +5458,7 @@ export const vi: TranslationKeys = {
             "splitHelper": "Các cảnh được chia đều trên các tệp.",
             "scope": "Phạm vi",
             "sceneFilter": "Bộ lọc cảnh",
-            "allSubplots": "tất cả các ô phụ",
+            "allSubplots": "Tất cả cốt truyện phụ",
             "rangeStartAria": "bắt đầu phạm vi",
             "rangeEndAria": "kết thúc phạm vi",
             "manuscriptOptions": "Tùy chọn bản thảo",
@@ -5755,14 +5755,14 @@ export const vi: TranslationKeys = {
             "reviewSubtitleFlagged": "Các cảnh {{ready}} đã sẵn sàng, {{flagged}} với các dự đoán được gắn cờ. Mở rộng một cảnh để xem cách nó ánh xạ vào mẫu Radial Timeline - Áp dụng viết sách.",
             "reviewSubtitleFailed": "Các cảnh {{ready}} đã sẵn sàng, {{failed}} không thành công. Mở rộng một cảnh để xem cách nó ánh xạ vào mẫu Radial Timeline - Áp dụng viết sách.",
             "reviewSubtitleFlaggedFailed": "{{ready}} Cảnh sẵn sàng, {{flagged}} Với những phỏng đoán được gắn cờ, {{failed}} thất bại. mở rộng một cảnh để xem cách nó ánh xạ vào Radial Timeline Mẫu - Áp dụng viết sách.",
-            "surveyFailed": "Cuộc khảo sát cấu trúc không thành công, vì vậy mọi cảnh đều nằm trên cốt truyện chính. Bạn có thể chạy lại giới thiệu cho một lần vượt qua khác hoặc lớp phụ sau.",
+            "surveyFailed": "Khảo sát cấu trúc không thành công, nên mọi cảnh đều nằm ở cốt truyện chính. Bạn có thể chạy lại quy trình bắt đầu để thử lần nữa, hoặc thêm cốt truyện phụ sau.",
             "createsDestination": "Tạo {{destination}} · Xuất bản giai đoạn: {{stage}}.",
             "alsoCreate": "Cũng tạo (tùy chọn)",
             "createCharacterProfiles": "Tạo hồ sơ nhân vật",
             "createPlaceProfiles": "Tạo hồ sơ địa điểm",
             "generateSummaries": "Tạo bản tóm tắt AI cho các cấu hình (chậm - một cuộc gọi cho mỗi ký tự / địa điểm)",
             "applyWriteScenes": "Áp dụng — Viết cảnh {{count}}",
-            "actPill": "Hành động {{act}}",
+            "actPill": "Hồi {{act}}",
             "charsPill": "ký tự {{count}}",
             "placesPill": "địa điểm {{count}}",
             "failedPill": "thất bại",
@@ -5782,7 +5782,7 @@ export const vi: TranslationKeys = {
             "guessedFieldsLabel": "Các trường đã đoán",
             "guessedRollupOne": "Cảnh {{rollup}}",
             "guessedRollupOther": "cảnh {{rollup}}",
-            "guessedFieldsHint": "Dự kiến khi văn bản không có ngày rõ ràng hoặc dấu hiệu hành động - kiểm tra ngay trên dòng thời gian.",
+            "guessedFieldsHint": "Dự kiến khi văn bản không có ngày rõ ràng hoặc dấu hiệu hồi - kiểm tra ngay trên dòng thời gian.",
             "failedLabel": "Thất bại",
             "onboardedNotice": "Các cảnh {{count}} được tích hợp vào {{folder}}.",
             "done": "Xong",
@@ -5812,7 +5812,7 @@ export const vi: TranslationKeys = {
             "optionPovCharacter": "Ký tự POV (được liệt kê đầu tiên bằng ký tự)",
             "groupMoreSceneFields": "Các trường cảnh khác",
             "groupThisColumn": "cột này",
-            "optionSubplotFlag": "Biểu đồ phụ “{{field}}” cho các ô đã điền",
+            "optionSubplotFlag": "Cốt truyện phụ “{{field}}” cho các ô đã điền",
             "optionKeepAs": "Giữ là “{{field}}”",
             "optionSkip": "Nhảy",
             "reviewTitle": "Xem lại nhập của bạn",
@@ -5834,12 +5834,12 @@ export const vi: TranslationKeys = {
             "createsDestination": "Tạo “{{destination}}”.",
             "mappingConflict": "Nhiều hơn một cột đi đến {{field}}; Mỗi cảnh giữ cảnh đầu tiên được lấp đầy.",
             "yourTimeline": "Dòng thời gian của bạn",
-            "subplots": "các ô phụ",
+            "subplots": "Cốt truyện phụ",
             "acts": "Hồi",
-            "actsFromColumn": "Từ cột ACT của bạn",
+            "actsFromColumn": "Từ cột Act của bạn",
             "actsFromFolders": "từ các thư mục ACT của bạn",
             "actsSplitEvenly": "{{count}}, chia đều theo thứ tự cảnh",
-            "actOverflow": "Tên xuất của bạn {{highest}} nhưng dòng thời gian có {{count}}; Các hành vi sau này được đặt trong Act {{count}}. Tăng số lượng hành động trong cài đặt trước để giữ chúng.",
+            "actOverflow": "Tệp xuất của bạn có {{highest}} hồi nhưng dòng thời gian có {{count}}; các hồi sau được đặt vào Hồi {{count}}. Hãy tăng số hồi trong Cài đặt trước để giữ chúng.",
             "characters": "Nhân vật",
             "createCharacterNotes": "Tạo ghi chú cho mỗi ký tự",
             "createCharacterNotesCount": "Tạo ghi chú cho từng ký tự ({{count}})",
@@ -5847,7 +5847,7 @@ export const vi: TranslationKeys = {
             "createPlaceNotes": "Tạo ghi chú cho từng địa điểm",
             "createPlaceNotesCount": "Tạo một ghi chú cho mỗi nơi ({{count}})",
             "showAllScenes": "Hiển thị tất cả các cảnh {{count}}",
-            "sceneRowMeta": "ACT {{act}} · {{subplots}}",
+            "sceneRowMeta": "Hồi {{act}} · {{subplots}}",
             "importScenes": "Nhập {{scenes}}"
         },
         "outerRingDragController": {
@@ -5960,7 +5960,7 @@ export const vi: TranslationKeys = {
             "viewName": "Thời khóa biểu",
             "viewTable": "Cái bàn",
             "viewNotOnTimeline": "Không có trên dòng thời gian",
-            "viewActBoard": "Ban hành động",
+            "viewActBoard": "Bảng hồi",
             "viewStatusBoard": "Bảng trạng thái",
             "sagaTitle": "Saga",
             "thisBook": "Cuốn sách này",
@@ -5968,7 +5968,7 @@ export const vi: TranslationKeys = {
             "optionRingsPerLine": "Số vòng trên mỗi dòng",
             "outsideBooks": "bên ngoài bất kỳ cuốn sách nào",
             "noValue": "Không có giá trị",
-            "noAct": "Không có hành động",
+            "noAct": "Không có hồi",
             "empty": "Không có ghi chú nào phù hợp với bảng này.",
             "bookMismatch": "Bảng này hiển thị {{table}}; Dòng thời gian hiển thị {{timeline}}.",
             "showOnTimeline": "Hiển thị {{book}} trên dòng thời gian",
@@ -5987,7 +5987,7 @@ export const vi: TranslationKeys = {
             "basesDisabled": "Thời gian biểu cần plugin cơ sở cốt lõi. Bật nó trong Cài đặt → Plugin cốt lõi.",
             "noSourceFolder": "{{book}} chưa có thư mục bản thảo nào. Đặt một trong Trình quản lý sách để mở thời gian biểu của nó.",
             "createTitle": "Tạo thời gian biểu cho {{book}}?",
-            "createMessage": "Radial Timeline sẽ lưu nó như {{path}}. Nó giữ thời gian biểu, một bảng để chỉnh sửa bảng tính, danh sách các ghi chú không có trên dòng thời gian, và bảng trạng thái và hành động.",
+            "createMessage": "Radial Timeline sẽ lưu nó như {{path}}. Nó giữ thời gian biểu, một bảng để chỉnh sửa bảng tính, danh sách các ghi chú không có trên dòng thời gian, cùng các bảng Hồi và Trạng thái.",
             "createButton": "Đóng tuồng",
             "bulkSelected": "{{notes}} đã chọn",
             "bulkStatus": "Trạng thái",
@@ -5999,7 +5999,7 @@ export const vi: TranslationKeys = {
             "bulkClear": "Lựa chọn rõ ràng",
             "bulkStatusDone": "Trạng thái được đặt thành {{value}} trên {{scenes}}.",
             "bulkStageDone": "Xuất bản giai đoạn đặt lên {{value}} trên {{scenes}}.",
-            "bulkActDone": "ACT thiết lập thành {{value}} trên {{notes}}.",
+            "bulkActDone": "Đã đặt hồi thành {{value}} trên {{notes}}.",
             "bulkFailed": "{{notes}} không thể thay đổi; Bảng điều khiển dành cho nhà phát triển có các chi tiết.",
             "bulkPick": "Chọn {{name}}",
             "coloringStart": "Tô màu dòng thời gian bằng {{property}}",
@@ -6022,7 +6022,7 @@ export const vi: TranslationKeys = {
             "keyNote": "Lưu ý không có lớp học",
             "keyNoteDetail": "quảng cáo làm cho nó trở thành một cảnh",
             "keyRings": "Vòng",
-            "keyRingsDetail": "các ô phụ theo thứ tự bánh xe; Vạch ra: đã lên kế hoạch",
+            "keyRingsDetail": "cốt truyện phụ theo thứ tự trên vòng tròn; viền ngoài: đã lên kế hoạch",
             "keyQueries": "truy vấn mở",
             "keyQueriesDetail": "di chuột để đọc chúng",
             "keyPromote": "Quảng cáo cho cảnh",
@@ -6037,7 +6037,7 @@ export const vi: TranslationKeys = {
             "keyShiftClickDetail": "Hiển thị cảnh trên dòng thời gian",
             "keyRightClick": "Nhấp chuột phải",
             "keyRightClickDetail": "Hàng: Menu cảnh · Tiêu đề: Tô màu dòng thời gian",
-            "keyPick": "trạng thái, giai đoạn, hành động, số",
+            "keyPick": "trạng thái, giai đoạn, hồi, số",
             "keyPickDetail": "Nhấp để chọn một giá trị",
             "keyCheckboxes": "hộp kiểm",
             "keyCheckboxesDetail": "Chỉnh sửa hàng loạt · Shift: Phạm vi · ESC: rõ ràng",
@@ -6045,7 +6045,7 @@ export const vi: TranslationKeys = {
             "keyHoverDetail": "Thắp sáng khung cảnh trên bánh xe",
             "keyCorner": "Góc phố",
             "keyNewSketch": "Phác thảo mới",
-            "keyNewSketchDetail": "hoặc + bên cạnh một hành động",
+            "keyNewSketchDetail": "hoặc + bên cạnh một hồi",
             "keyLens": "thấu kính",
             "keyLensDetail": "thắp sáng các hàng của bảng này trên bánh xe",
             "keyMode": "Chế độ",
@@ -6056,7 +6056,7 @@ export const vi: TranslationKeys = {
             "keyRunningDetail": "thời gian chạy cho đến nay",
             "keyAlt": "alt",
             "keyAltDetail": "Ngày trong lịch của hành tinh",
-            "keyActHeader": "tiêu đề hành động",
+            "keyActHeader": "tiêu đề hồi",
             "keyActHeaderDetail": "Hoàn thành tổng số · từ · quá hạn",
             "keyOverdue": "màu đỏ đến hạn",
             "keyOverdueDetail": "Quá hạn, không hoàn thành",
@@ -6576,16 +6576,16 @@ export const vi: TranslationKeys = {
             "partCleared": "Đã xóa điểm đánh dấu bộ phận khỏi {{name}}.",
             "partSet": "Đặt điểm đánh dấu phần trên {{name}}.",
             "partFailed": "Không thể đặt phần cho {{name}}. Xem lại bảng điều khiển để biết chi tiết.",
-            "noSubplotChange": "{{name}}: Không thay đổi ô phụ.",
-            "noOtherSubplot": "Không có ô phụ nào khác để lựa chọn.",
+            "noSubplotChange": "{{name}}: Không thay đổi cốt truyện phụ.",
+            "noOtherSubplot": "Không có cốt truyện phụ nào khác để chọn.",
             "moveSceneFromToPlaceholder": "Di chuyển {{name}} từ {{from}} sang…",
             "moveFromTo": "Chuyển từ {{from}} sang…",
-            "moveFromSubplot": "Di chuyển từ lô phụ…",
+            "moveFromSubplot": "Chuyển khỏi cốt truyện phụ…",
             "moveSceneFromPlaceholder": "Di chuyển {{name}} từ…",
-            "addToSubplot": "Thêm vào ô phụ…",
+            "addToSubplot": "Thêm vào cốt truyện phụ…",
             "addSceneToPlaceholder": "Thêm {{name}} vào…",
             "removeFrom": "Xóa khỏi {{from}}",
-            "removeFromSubplot": "Xóa khỏi ô phụ…",
+            "removeFromSubplot": "Xóa khỏi cốt truyện phụ…",
             "removeSceneFromPlaceholder": "Xóa {{name}} khỏi…",
             "addDataUnavailable": "Không thể thêm cảnh vì dữ liệu cảnh dòng thời gian không khả dụng.",
             "addFailed": "Không thể thêm cảnh sau {{name}}. Xem lại bảng điều khiển để biết chi tiết.",
@@ -6910,22 +6910,22 @@ export const vi: TranslationKeys = {
             "bulkChangedNotice": "{{change}}: {{scenes}} đã thay đổi. ",
             "bulkUndoRestored": "Đã khôi phục {{scenes}}.",
             "bulkUndoFailed": "Hoàn tác không thành công. Bảng điều khiển dành cho nhà phát triển có các chi tiết.",
-            "undoFailed": "{{item}}: Hoàn tác không thành công. Kiểm tra các ô phụ của hiện trường trước khi tiếp tục.",
+            "undoFailed": "{{item}}: Hoàn tác không thành công. Hãy kiểm tra các cốt truyện phụ của cảnh trước khi tiếp tục.",
             "undoRestored": "{{item}}: quay lại {{memberships}}.",
-            "undoSkipped": "{{item}}: Hoàn tác bỏ qua vì các ô phụ của nó đã thay đổi sau thao tác này."
+            "undoSkipped": "{{item}}: Đã bỏ qua hoàn tác vì các cốt truyện phụ của nó đã thay đổi sau thao tác này."
         },
         "subplotRingDragController": {
             "sceneNumberLabel": "cảnh {{number}} {{label}}",
             "sceneNumber": "cảnh {{number}}",
             "alreadyIn": "Đã có trong {{subplot}}",
-            "detailReleaseToMove": "Các ô phụ: {{subplots}} · Phát hành Shift để di chuyển",
-            "detailHoldToAdd": "Các ô phụ: {{subplots}} · Giữ SHIFT để thêm",
+            "detailReleaseToMove": "Cốt truyện phụ: {{subplots}} · nhả Shift để di chuyển",
+            "detailHoldToAdd": "Cốt truyện phụ: {{subplots}} · giữ Shift để thêm",
             "noChange": "Không thay đổi",
-            "contextLabel": "các ô phụ",
-            "badgeAdd": "Thêm biểu đồ phụ",
+            "contextLabel": "Cốt truyện phụ",
+            "badgeAdd": "Thêm cốt truyện phụ",
             "badgeMove": "Di chuyển cảnh",
-            "confirmTitle": "Xác nhận thay đổi biểu đồ phụ",
-            "changeFailed": "Thay đổi biểu đồ phụ không thành công. Kiểm tra bảng điều khiển để biết chi tiết, sau đó loại bỏ."
+            "confirmTitle": "Xác nhận thay đổi cốt truyện phụ",
+            "changeFailed": "Thay đổi cốt truyện phụ không thành công. Kiểm tra console để biết chi tiết, rồi đóng thông báo."
         },
         "synopsisManager": {
             "backdropEnd": "đến {{end}}",
@@ -7041,7 +7041,7 @@ export const vi: TranslationKeys = {
             "legendDragOuterRing": "Kéo vòng ngoài",
             "legendDragOuterRingDetail": "Di chuyển cảnh hoặc đánh theo thứ tự bản thảo",
             "legendHoldShift": "Giữ Shift",
-            "legendHoldShiftDetail": "Hiển thị phím vòng phụ và trong cuốn sách này tên đánh bại tên",
+            "legendHoldShiftDetail": "hiện chú giải vòng cốt truyện phụ và tên nhịp In This Book",
             "legendChronologueOnly": "Chỉ Chronologue",
             "legendShiftCapsLock": "Khóa chuyển đổi / mũ",
             "legendShiftCapsLockDetail": "So sánh thời gian đã trôi qua giữa các cảnh",
@@ -7072,8 +7072,8 @@ export const vi: TranslationKeys = {
             "legendOpenQuery": "Mở truy vấn",
             "legendOpenQueryDetail": "%% truy vấn%% trong văn bản của cảnh",
             "legendWithTimetable": "với thời gian biểu",
-            "legendClickActLabel": "Nhấp vào Nhãn hành động",
-            "legendClickActLabelDetail": "Thể hiện hành động đó trong thời gian biểu",
+            "legendClickActLabel": "Nhấp vào nhãn hồi",
+            "legendClickActLabelDetail": "hiện hồi đó trong Thời gian biểu",
             "legendClickSceneTimetable": "Nhấp vào Cảnh",
             "legendClickSceneTimetableDetail": "Mở nó bên dưới thời gian biểu",
             "sagaOption": "Saga",
@@ -7170,7 +7170,7 @@ export const vi: TranslationKeys = {
             "unparsableDate": "Đó không phải là ngày Radial Timeline có thể đọc được."
         },
         "welcomeScreen": {
-            "intro": "Radial Timeline biến các câu chuyện dài thành một bản đồ câu chuyện duy nhất, có thể điều hướng được. Theo dõi các cảnh, tình tiết phụ, nhân vật, nhịp đập và dòng thời gian trên tiểu thuyết, sagas, hồi ký và các dự án tiểu thuyết hoặc phi hư cấu bền vững khác. Chọn một điểm bắt đầu bên dưới.",
+            "intro": "Radial Timeline biến các câu chuyện dài thành một bản đồ câu chuyện duy nhất, có thể điều hướng được. Theo dõi các cảnh, cốt truyện phụ, nhân vật, nhịp và dòng thời gian trên tiểu thuyết, sagas, hồi ký và các dự án tiểu thuyết hoặc phi hư cấu bền vững khác. Chọn một điểm bắt đầu bên dưới.",
             "websiteTitle": "Truy cập trang web",
             "websiteDesc": "Tham gia cộng đồng và chia sẻ hành trình của bạn ở mức độ thoải mái của riêng bạn. Tìm hiểu về các tính năng có sẵn bằng cách sử dụng Radial Timeline & Editorialist hệ sinh thái và nhận trợ giúp.",
             "websiteCta": "Mở trang web",
@@ -7192,8 +7192,8 @@ export const vi: TranslationKeys = {
             "workflowLead": "Bắt đầu một kho tiền mới?",
             "workflowStepBookManager": "Đặt thư mục tiểu thuyết của bạn bên trong kho tiền với [Book Manager].",
             "workflowStepCreateNote": "Mở bảng lệnh `⌘ + P` và chạy `Create note`, hoặc giàn giáo nhanh chóng với `Book Designer`.",
-            "workflowStepPopulate": "phổ biến các cảnh và sau đó mở rộng với các biểu đồ phụ, hệ thống đánh bại và hơn thế nữa.",
-            "workflowStepDecide": "Quyết định sớm: Có bao nhiêu hành vi? Khoảng thời gian là gì? Xem xét các điểm đánh dấu ngữ cảnh hữu ích với các ghi chú phông nền hoặc phông nền vi mô.",
+            "workflowStepPopulate": "Thêm các cảnh rồi mở rộng với cốt truyện phụ, hệ thống nhịp và nhiều hơn nữa.",
+            "workflowStepDecide": "Quyết định sớm: Có bao nhiêu hồi? Khoảng thời gian là gì? Xem xét các điểm đánh dấu ngữ cảnh hữu ích với các ghi chú phông nền hoặc phông nền vi mô.",
             "workflowStepTrack": "Khi bạn bắt đầu nhịp điệu, đừng quên theo dõi thời gian viết và đếm từ của bạn và đặt ngày đến hạn cho các cảnh hoặc các giai đoạn xuất bản.",
             "feedback": "Hãy dành một chút thời gian để [chia sẻ phản hồi của bạn] về Radial Timeline và các tính năng bạn muốn xem bên cạnh quy trình viết của bạn. Radial Timeline đang mở rộng theo mọi hướng và phản hồi của bạn giúp hướng dẫn nó.",
             "feedbackContact": "Phản hồi của cộng đồng yêu cầu đăng nhập. Nếu không có tài khoản cộng đồng, hãy sử dụng [biểu mẫu liên hệ] của chúng tôi. Chúc bạn viết lách vui vẻ!",

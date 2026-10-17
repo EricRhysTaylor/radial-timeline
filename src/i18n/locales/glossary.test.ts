@@ -75,7 +75,6 @@ const GLOSSARY: Record<string, Term> = {
             vi: ['cốt truyện chính'],
         },
     },
-    // vi: "ô phụ", "mảnh ghép", "biểu đồ phụ" (cell, puzzle piece, chart).
     subplot: {
         en: /\bsub-?plots?\b/i,
         words: {
@@ -86,10 +85,10 @@ const GLOSSARY: Record<string, Term> = {
             es: ['subtrama', 'trama secundaria', 'tramas secundarias'],
             fr: ['sous-intrigue', 'intrigue secondaire', 'intrigues secondaires'],
             th: ['พล็อตย่อย'],
+            vi: ['cốt truyện phụ'],
         },
         fieldNames: SUBPLOT_FIELD,
     },
-    // vi: "hành động" / "hành vi" (an action, a behavior).
     act: {
         en: /\bacts?\b/i,
         words: {
@@ -100,6 +99,7 @@ const GLOSSARY: Record<string, Term> = {
             es: ['acto'],
             fr: ['acte'],
             th: ['องก์'],
+            vi: ['hồi'],
         },
         fieldNames: ACT_FIELD,
         otherSense: ['ui.refactorAlerts.pendingEditsTypeDescription'],
@@ -124,7 +124,7 @@ const BANNED: Partial<Record<Locale, RegExp[]>> = {
     fr: [/terrain principal/i, /tracé principal/i, /bague/i, /sonnerie/i, /sous-(parcelle|plaque|plancher|plot)/i],
     es: [/parcela/i, /subtrabajo/i],
     th: [/พระราชบัญญัติ/, /แปลงหลัก/, /แผนย่อย/, /ซับพล็อต/, /กรรมาธิการ/, /(?<!วง)แหวน/],
-    vi: [/nhẫn/i],
+    vi: [/nhẫn/i, /(?<!\p{L})(ô|lô) phụ/iu, /mảnh ghép/i, /biểu đồ phụ/i, /sublot/i, /vòng đệm/i, /phím chuông/i],
 };
 
 function flatten(node: Tree, prefix = '', out: Record<string, string> = {}): Record<string, string> {

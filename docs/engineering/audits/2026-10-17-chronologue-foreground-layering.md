@@ -45,7 +45,7 @@ inspector output are outside the vault in
 - Runtime retains its blue title color and 0.8 opacity, confirmed in computed
   styles and a native screenshot. The normal date view is restored afterward.
 
-The final installed build matches the verified build's main.js and styles.css.
+The native-tested plugin uses main.js SHA256 `8d859e673585b3cfdc1e61d25870e4b8450feda2c8f5eb97d444a4d67c2f220a` and styles.css SHA256 `b93bcdf7935b27dcc7fa400d3ba87d2d7a72bb0a284d7ee22ebe77dc5bcb7467`. A concurrent Vietnamese translation build can change the repository's generated main.js afterward; these hashes identify the actual inspected installation.
 The vault is left in Sequence with the council's June 4 date selected.
 
 ## Verification and findings

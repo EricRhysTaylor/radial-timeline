@@ -7,12 +7,13 @@
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
 }
-.ert-time-reference-connector.is-related { opacity: 0.5; }
 .ert-time-reference-connector.is-active { opacity: 1; stroke-width: 3px; }
 .ert-time-reference-connector.ert-time-reference-break { stroke-width: 1.5px; }
 .ert-time-reference-hit { pointer-events: all; cursor: pointer; }
 .ert-time-reference-slice { pointer-events: none; }
-.ert-time-reference-source .rt-scene-path { stroke: var(--interactive-accent); stroke-width: 2px; }
+.ert-time-reference-origin { pointer-events: none; }
+.ert-time-reference-origin-label { opacity: 0; fill: var(--text-normal); font-size: 13px; font-weight: 600; paint-order: stroke; stroke: var(--background-primary); stroke-width: 3px; }
+.ert-time-reference-origin.is-active .ert-time-reference-origin-label { opacity: 1; }
 .ert-time-reference-filtered,
 .ert-time-reference.rt-non-selected { opacity: 0.08; pointer-events: none; }
 .ert-time-reference-connector.ert-time-reference-filtered,

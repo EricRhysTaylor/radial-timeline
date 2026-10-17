@@ -1,7 +1,7 @@
 import { Menu } from 'obsidian';
 import { referenceMarkColor } from './render';
 import type { RadialTimelineView } from '../../view/TimeLineView';
-import { currentTimelineColoring, currentTimelineLens, onTimelineOverlayChange, markTimetableRows } from '../../timetable/timetableRegistry';
+import { currentTimelineColoring, currentTimelineLens, onTimelineOverlayChange } from '../../timetable/timetableRegistry';
 import { openTimeReference } from './editor';
 import { onReferenceSelection, hoverTimeReference, pinTimeReference } from './selection';
 import { readTimeReferences, type TimeReference } from './model';
@@ -37,7 +37,7 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
             connector.setCssProps({ stroke: coloring ? referenceMarkColor(slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`) : '' });
             connector.classList.toggle('ert-time-reference-filtered', !!reference && !!lens && !lens.paths.has(reference.path));
         });
-        svg.querySelectorAll<SVGElement>('.ert-time-reference').forEach(group => {
+        svg.querySelectorAll<SVGElement>('.ert-time-reference, .ert-time-reference-origin').forEach(group => {
             const candidates = keysOf(group).map(key => references.get(key)).filter((ref): ref is TimeReference => !!ref);
             const ref = candidates.find(candidate => !lens || lens.paths.has(candidate.path)) ?? candidates[0];
             group.classList.toggle('ert-time-reference-filtered', !!lens && candidates.every(candidate => !lens.paths.has(candidate.path)));
@@ -45,53 +45,34 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
             const value = coloring?.values.get(ref.path);
             const slot = value === undefined ? undefined : coloring?.legend.find(entry => entry.value === value)?.colorIndex;
             const fill = coloring ? referenceMarkColor(slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`) : '';
-            group.querySelector<SVGElement>('.ert-time-reference-slice')?.setCssProps({ fill });
+            group.querySelector<SVGElement>('.ert-time-reference-slice, circle')?.setCssProps({ fill });
         });
     };
     update();
     view.renderScope.register(onTimelineOverlayChange(update));
     view.renderScope.register(onReferenceSelection(selection => {
-        svg.querySelectorAll('.rt-scene-group[data-path]').forEach(group => {
-            group.classList.toggle('ert-time-reference-source', !!selection && group.getAttribute('data-path') === encodeURIComponent(selection.path));
+        svg.querySelectorAll('.ert-time-reference-origin[data-source-path]').forEach(group => {
+            group.classList.toggle('is-active', !!selection && group.getAttribute('data-source-path') === encodeURIComponent(selection.path));
         });
         const connectors = Array.from(svg.querySelectorAll<SVGElement>('.ert-time-reference-connector'));
-        const sourceRings = selection ? connectors.filter(connector => keysOf(connector).some(key => references.get(key)?.path === selection.path))
-            .map(connector => Number(connector.dataset.ring)) : [];
-        const requestedRing = selection?.ring === undefined ? undefined : Number(selection.ring);
-        const activeRing = requestedRing !== undefined && sourceRings.includes(requestedRing) ? requestedRing : Math.max(...sourceRings);
         connectors.forEach(connector => {
-            const keys = keysOf(connector);
-            const sameRing = Number(connector.dataset.ring) === activeRing;
-            connector.classList.toggle('is-related', sameRing && !!selection && keys.some(key => references.get(key)?.path === selection.path));
-            connector.classList.toggle('is-active', sameRing && !!selection && keys.includes(selection.key));
+            connector.classList.toggle('is-active', !!selection && keysOf(connector).includes(selection.key));
         });
         svg.querySelectorAll<SVGElement>('.ert-time-reference').forEach(group => group.classList.toggle('is-active', !!selection && keysOf(group).includes(selection.key)));
     }));
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (event: Event) => {
         const group = groupOf(event.target);
-        if (!group) {
-            const scene = event.target instanceof Element ? event.target.closest('.rt-scene-group[data-path]') : null;
-            const path = scene?.getAttribute('data-path');
-            if (path) {
-                const sourcePath = decodeURIComponent(path);
-                hoverTimeReference([...references.values()].some(ref => ref.path === sourcePath)
-                    ? { path: sourcePath, key: '', ring: scene?.getAttribute('data-ring') ?? undefined } : null);
-            }
-            return;
-        }
+        if (!group) return;
         const reference = references.get(keysOf(group)[0]);
-        if (reference) { hoverTimeReference({ path: reference.path, key: reference.key, ring: group.getAttribute('data-ring') ?? undefined });
-            markTimetableRows(reference.path, null, false); }
+        if (reference) hoverTimeReference({ path: reference.path, key: reference.key });
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (event: Event) => {
         const group = groupOf(event.target);
         if (group && !group.contains((event as PointerEvent).relatedTarget as Node | null)) hoverTimeReference(null);
-        if (!group && event.target instanceof Element && event.target.closest('.rt-scene-group')
-            && !event.target.closest('.rt-scene-group')?.contains((event as PointerEvent).relatedTarget as Node | null)) hoverTimeReference(null);
     });
     const activate = (group: Element, event?: MouseEvent): void => {
         const choices = keysOf(group).map(key => references.get(key)).filter((ref): ref is TimeReference => !!ref);
-        const open = (reference: TimeReference): void => { pinTimeReference({ path: reference.path, key: reference.key, ring: group.getAttribute('data-ring') ?? undefined }); void openTimeReference(view.plugin, reference, group); };
+        const open = (reference: TimeReference): void => { pinTimeReference({ path: reference.path, key: reference.key }); void openTimeReference(view.plugin, reference, group); };
         if (choices.length === 1) open(choices[0]);
         else {
             const menu = new Menu();
@@ -102,13 +83,13 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
     };
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'click', (event: Event) => {
         const group = groupOf(event.target);
-        if (!group) return;
+        if (!group) { hoverTimeReference(null); pinTimeReference(null); return; }
         event.stopPropagation(); activate(group, event as MouseEvent);
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'focusin', (event: Event) => {
         const group = groupOf(event.target);
         const reference = group ? references.get(keysOf(group)[0]) : undefined;
-        if (reference) hoverTimeReference({ path: reference.path, key: reference.key, ring: group?.getAttribute('data-ring') ?? undefined });
+        if (reference) hoverTimeReference({ path: reference.path, key: reference.key });
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'focusout', (event: Event) => {
         if (groupOf(event.target)) hoverTimeReference(null);

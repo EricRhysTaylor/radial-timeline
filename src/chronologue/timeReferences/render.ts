@@ -1,6 +1,7 @@
 import { t } from '../../i18n';
 import type { TimelineItem } from '../../types';
 import { escapeXml } from '../../utils/svg';
+import { parseSceneTitle } from '../../utils/text';
 import type { PositionInfo } from '../../renderer/utils/SceneLayout';
 import { referenceConnector, referenceDateIdentity, referenceRingGeometry, type ReferenceSlot } from './layout';
 import { referenceDateLabel, type TimeReference } from './model';
@@ -19,7 +20,8 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
     const byPath = new Map(items.map((item, i) => [item.path, { item, position: positions.get(i) }]));
     const thickness = outerR - innerR;
     const { size, pitch, base, capacity } = referenceRingGeometry(innerR, outerR);
-    let connectors = '', markers = '';
+    let connectors = '', markers = '', origins = '';
+    const sourcePaths = new Set<string>();
     for (const slot of slots) {
         const refs = slot.references.filter(ref => byPath.get(ref.path)?.position);
         if (!refs.length) continue;
@@ -33,6 +35,16 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
             const owned = refs.filter(ref => ref.path === path), parent = byPath.get(path)!;
             const index = mixed ? 0 : Math.min(refs.findIndex(ref => ref.path === path), shown.length - 1);
             const route = referenceConnector(innerR, outerR, parent.position!, slot, terminalRadius(index));
+            if (!sourcePaths.has(path)) {
+                sourcePaths.add(path);
+                const { text, number } = parseSceneTitle(parent.item.title || '', parent.item.number);
+                const sourceLabel = [escapeXml(number), text].filter(Boolean).join(' · ');
+                const rotation = (Math.atan2(route.origin.y, route.origin.x) * 180 / Math.PI + 450) % 360;
+                const flip = rotation > 90 && rotation < 270;
+                origins += `<g class="ert-time-reference-origin" ${attrs(owned)} data-source-path="${escapeXml(encodeURIComponent(path))}" transform="translate(${route.origin.x} ${route.origin.y}) rotate(${rotation + (flip ? 180 : 0)})"><title>${sourceLabel}</title>
+                    <circle r="4.5" fill="${escapeXml(referenceMarkColor(colorOf(parent.item)))}"/>
+                    <text class="ert-time-reference-origin-label" x="${flip ? 12 : -12}" y="4" text-anchor="${flip ? 'start' : 'end'}">${sourceLabel}</text></g>`;
+            }
             const routeAttrs = `${attrs(owned)} data-source-path="${escapeXml(encodeURIComponent(path))}" stroke="${escapeXml(referenceMarkColor(colorOf(parent.item)))}" fill="none"`;
             connectors += `<path class="ert-time-reference-connector" ${routeAttrs} d="${route.path}"/>`;
             if (route.discontinuity) {
@@ -45,7 +57,7 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
         const dateLabel = dateCount > 1 ? t('timeReferences.dateGroups', { count: dateCount }) : referenceDateLabel(refs[0]);
         const button = (choices: TimeReference[], radius: number, overflow: boolean, showRange = false): string => {
             const x = radius * Math.cos(slot.angle), y = radius * Math.sin(slot.angle);
-            const detail = choices.map(ref => `${ref.label} · ${referenceDateLabel(ref)} · ${t(`timeReferences.kinds.${ref.kind}`)}`).join('\n');
+            const detail = choices.map(ref => `${byPath.get(ref.path)!.item.title} · ${ref.label} · ${referenceDateLabel(ref)} · ${t(`timeReferences.kinds.${ref.kind}`)}`).join('\n');
             const title = escapeXml([extentLabel, dateCount > 1 ? dateLabel : '', slot.clipped ? t('timeReferences.overlapsRange') : '', detail, t('timeReferences.earthCalendar')].filter(Boolean).join('\n'));
             const rangeLabel = showRange ? `<text class="ert-time-reference-range" x="${x + (slot.extent === 'earlier' ? -(size / 2 + 12) : size / 2 + 12)}" y="${y + 5}" text-anchor="${slot.extent === 'earlier' ? 'end' : 'start'}">${escapeXml(`${extentLabel} · ${dateLabel}`)}</text>` : '';
             const countAnchor = slot.extent === 'earlier' ? 'end' : slot.extent === 'later' ? 'start' : 'middle';
@@ -61,5 +73,5 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
         shown.forEach((choices, index) => { markers += button(choices, terminalRadius(index), false, offRange && index === 0); });
         if (!mixed && refs.length > shown.length) markers += button(refs.slice(shown.length), terminalRadius(shown.length), true);
     }
-    return connectors + markers;
+    return connectors + markers + origins;
 }

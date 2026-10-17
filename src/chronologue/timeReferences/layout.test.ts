@@ -23,6 +23,10 @@ describe('Chronologue reference overlays', () => {
         expect(primaryReferenceDomain(items)).toEqual(primaryReferenceDomain(week([])));
         for (const slot of result.slots) {
             const route = referenceConnector(700, 760, result.positions.get(1)!, slot, 709);
+            const source = result.positions.get(1)!;
+            const originAngle = source.startAngle + source.angularSize / 2 + Math.min(32 / 740.8, source.angularSize / 4);
+            expect(route.origin.x).toBeCloseTo(708.8 * Math.cos(originAngle));
+            expect(route.origin.y).toBeCloseTo(708.8 * Math.sin(originAngle));
             expect(route.path.match(/M /g)).toHaveLength(2);
             expect(route.discontinuity).toMatchObject({ x: expect.closeTo(0), y: expect.closeTo(-740.8) });
             expect(route.path).toContain('A 740.8 740.8');

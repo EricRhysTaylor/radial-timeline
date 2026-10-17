@@ -1,8 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TimelineItem } from '../../types';
-import { buildOuterRingSequence } from '../../renderer/utils/OuterRingSequence';
-import { alignPositionsToOuterRing, computeChronologueLayout } from '../../renderer/utils/SceneLayout';
+import { computeChronologueLayout } from '../../renderer/utils/SceneLayout';
 import { renderTimeReferenceMarkers } from './render';
+import { renderRings } from '../../renderer/renderers/RingRenderer';
+
+vi.mock('../../renderer/utils/FontMetricsCache', () => ({ estimateBeatLabelWidth: (title: string) => title.length * 8 }));
+vi.mock('../../renderer/utils/SynopsisBuilder', () => ({ appendSynopsisElementForScene: () => undefined }));
+vi.mock('../../renderer/utils/subplotColors', () => ({ readSubplotColor: () => '#996699' }));
+afterEach(() => vi.unstubAllGlobals());
 
 const start = -Math.PI / 2, end = 3 * Math.PI / 2;
 const source = (subplot: string, dates = ['1952']): TimelineItem => ({ path: '12.md', title: '12 Source', date: '', when: new Date('2026-10-14T12:00:00'), subplot,
@@ -12,21 +17,22 @@ const render = (dates: string[], inner = 400, outer = 460) => {
     return renderTimeReferenceMarkers(items, layout.positions, layout.slots, inner, outer, 0, () => 'var(--rt-subplot-colors-1)');
 };
 describe('reference occurrences across actual ring layouts', () => {
-    it('deduplicates the outer reference while rendering an occurrence in each inherited ring', () => {
-        const scenes = [source('Family'), source('History')];
-        const outer = buildOuterRingSequence({ scenes, segment: 0, isSagaScope: false, sortByWhen: true, forceChronological: true,
-            includeBeats: false, masterSubplotOrder: ['Main Plot', 'Family', 'History'], innerR: 700, outerR: 760, startAngle: start, endAngle: end });
-        expect(outer.items).toHaveLength(1);
-        expect(outer.referenceSlots).toHaveLength(1);
-        let markup = renderTimeReferenceMarkers(outer.items, outer.positions, outer.referenceSlots, 700, 760, 2, () => 'var(--rt-subplot-colors-0)');
-        for (const [ring, subplot] of ['Family', 'History'].entries()) {
-            const items = [source(subplot)];
-            markup += renderTimeReferenceMarkers(items, alignPositionsToOuterRing(items, outer.positionByKey), outer.referenceSlots,
-                400 + ring * 100, 460 + ring * 100, ring, () => `var(--rt-subplot-colors-${ring + 1})`);
-        }
-        expect(markup.match(/class="ert-time-reference"/g)).toHaveLength(3);
-        expect(markup.match(/class="ert-time-reference-connector"/g)).toHaveLength(3);
-        expect(markup).not.toContain('class="rt-scene-group');
+    it.each(['fill', 'sequence'])('renders references once on All Scenes while preserving subplot scenes: %s', subplotAlignment => {
+        vi.stubGlobal('activeDocument', {});
+        const scenes = [source('Family', ['1952', '2040']), source('History', ['1952', '2040'])].map(item => ({ ...item, actNumber: 1 }));
+        const plugin = { settings: { currentMode: 'chronologue', subplotAlignment, actCount: 1 }, openScenePaths: new Set() };
+        const markup = renderRings({ plugin: plugin as never, scenes, actsToRender: 1, sortByWhen: true,
+            isChronologueMode: true, forceChronological: true, masterSubplotOrder: ['Main Plot', 'Family', 'History'],
+            colorIndexBySubplot: new Map([['Main Plot', 0], ['Family', 1], ['History', 2]]),
+            ringStartRadii: [200, 400, 600], ringWidths: [200, 200, 200],
+            scenesByActAndSubplot: { 0: { Family: [scenes[0]], History: [scenes[1]] } },
+            PUBLISH_STAGE_COLORS: { Zero: '#996699' }, maxTextWidth: 120, synopsesElements: [] });
+        expect(markup.match(/class="ert-time-reference"/g)).toHaveLength(2);
+        expect(markup.match(/class="ert-time-reference-origin"/g)).toHaveLength(1);
+        expect(markup.match(/class="rt-scene-group/g)).toHaveLength(3);
+        const occurrences = [...markup.matchAll(/<g class="ert-time-reference"[^>]*data-ring="(\d+)"/g)];
+        expect(occurrences.map(match => match[1])).toEqual(['2', '2']);
+        expect(markup).toContain('12 · Source');
         expect(markup).toContain('A &lt;memory&gt;');
         expect(markup).not.toContain('aria-label=');
     });
@@ -57,12 +63,11 @@ describe('reference occurrences across actual ring layouts', () => {
         expect(markup).not.toContain('ert-time-reference-halo');
         expect(markup).toContain('d="M22 12h-2.48');
     });
-    it.each([false, true])('keeps overflow on its own side of the seam with inherited Sequence slots: %s', inherited => {
+    it('keeps overflow on its own side of the seam across ring sizes', () => {
         const items = [source('History', Array(5).fill('1952'))];
-        const outer = computeChronologueLayout(700, 900, start, end, items);
         for (const [inner, outside] of [[200, 320], [400, 520], [700, 900]]) {
             const local = computeChronologueLayout(inner, outside, start, end, items);
-            const markup = renderTimeReferenceMarkers(items, local.positions, inherited ? outer.slots : local.slots, inner, outside, 0, () => 'purple');
+            const markup = renderTimeReferenceMarkers(items, local.positions, local.slots, inner, outside, 0, () => 'purple');
             const overflow = markup.match(/class="ert-time-reference-count" x="([^"]+)" y="[^"]+" text-anchor="end">\+2/);
             expect(overflow).not.toBeNull();
             // End anchoring makes the whole count extend left, away from the seam.

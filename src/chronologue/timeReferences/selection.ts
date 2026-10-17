@@ -1,14 +1,18 @@
 /** Ephemeral shared selection; no plugin state is written into author notes. */
-export interface ReferenceSelection { path: string; key: string; ring?: string; reveal?: boolean }
+export interface ReferenceSelection { path: string; key: string; reveal?: boolean }
 let hovered: ReferenceSelection | null = null;
 let pinned: ReferenceSelection | null = null;
 const listeners = new Set<(selection: ReferenceSelection | null) => void>();
-export const currentReferenceSelection = (): ReferenceSelection | null => hovered ?? pinned;
+export const currentReferenceSelection = (): ReferenceSelection | null => pinned ?? hovered;
 function publish(selection = currentReferenceSelection()): void { listeners.forEach(listener => listener(selection)); }
-export function hoverTimeReference(selection: ReferenceSelection | null): void { hovered = selection; publish(); }
+export function hoverTimeReference(selection: ReferenceSelection | null): void {
+    if (pinned) return;
+    hovered = selection; publish();
+}
 export function pinTimeReference(selection: ReferenceSelection | null): void {
     pinned = selection;
-    // Reveal once on activation; restoring a pin after hover must not reopen a collapsed row.
+    hovered = null;
+    // Reveal once on activation; pointer movement must not reopen a collapsed row.
     publish(pinned ? { ...pinned, reveal: true } : null);
 }
 export function onReferenceSelection(listener: (selection: ReferenceSelection | null) => void): () => void {

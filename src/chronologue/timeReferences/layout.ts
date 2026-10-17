@@ -102,9 +102,10 @@ function arc(radius: number, from: number, to: number): string {
 }
 
 /** Concentric interior track, with a real gap for the Lucide Activity seam mark. */
-export function referenceConnector(innerR: number, outerR: number, source: PositionInfo, slot: ReferenceSlot, terminalRadius: number): { path: string; discontinuity?: { x: number; y: number; rotation: number } } {
+export function referenceConnector(innerR: number, outerR: number, source: PositionInfo, slot: ReferenceSlot, terminalRadius: number): { path: string; origin: { x: number; y: number }; discontinuity?: { x: number; y: number; rotation: number } } {
     const { track, base: sourceRadius } = referenceRingGeometry(innerR, outerR);
-    const from = source.endAngle - Math.min(18 / track, source.angularSize / 4);
+    // Keep the radial feed beside the scene-center Question icon.
+    const from = source.startAngle + source.angularSize / 2 + Math.min(32 / track, source.angularSize / 4);
     let path = `M ${point(sourceRadius, from)} L ${point(track, from)} `;
     const offRange = slot.extent === 'earlier' || slot.extent === 'later';
     let discontinuity: { x: number; y: number; rotation: number } | undefined;
@@ -115,5 +116,5 @@ export function referenceConnector(innerR: number, outerR: number, source: Posit
         discontinuity = { x: track * Math.cos(slot.seam), y: track * Math.sin(slot.seam), rotation: slot.seam * 180 / Math.PI + 90 };
     } else path += arc(track, from, slot.angle);
     path += ` L ${point(terminalRadius, slot.angle)}`;
-    return { path, discontinuity };
+    return { path, origin: { x: sourceRadius * Math.cos(from), y: sourceRadius * Math.sin(from) }, discontinuity };
 }

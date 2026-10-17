@@ -21,7 +21,7 @@ attached to that scene, with one or more rendered occurrences.
   scene slot. Marker bases sit four SVG units above the inner edge, allowing
   for half the square height. Only Later markers lift another six units to
   clear the subplot dominance triangle.
-- From the master scene's clockwise inner corner, a short radial feed reaches
+- From the middle of the master scene's inner edge, a short radial feed reaches
   a concentric track 32% inside the outer ring border. The arc follows that track
   and ends radially at the reference square. Lines and solid squares have no
   backing outline; source hues blend with the theme text color for visibility
@@ -32,10 +32,16 @@ attached to that scene, with one or more rendered occurrences.
 - Same-date references stack radially at the same angle, with at most three
   visible squares. A selectable `+N` retains overflow. Narrow rings and different
   dates too close together use an explicit selectable count cluster.
-- References inherit their parent scene's subplot memberships and appear in
-  those rings and All Scenes. Hover/pin shows only the active occurrence's
-  connector family; other source/reference copies are highlighted. A Timetable
-  selection uses the outermost available occurrence.
+- Reference relationships appear once on All Scenes. Subplot memberships still
+  belong to the source scene; references do not create subplot copies or imply
+  that another scene at the referenced date participates in the relationship.
+- A small solid circle marks the middle of the source scene's inner edge. Selecting a reference shows the
+  source's scene number/name beside that circle and one source-to-date route.
+  The referenced date remains a solid square; its details name the owning scene.
+- Ordinary scene/ring and parent Timetable-row hovers do not reveal routes.
+  Direct reference hover/focus previews one connection. Clicking pins that
+  connection until another reference or the timeline background is clicked;
+  subsequent hovering cannot displace it. Sibling routes remain hidden.
 - The Timetable has one parent scene row, a reference count/disclosure, and one
   set of nested reference rows. Hover does not force expansion or scroll jumps.
   Activation holds selection, expands references and opens an exact passage.
@@ -49,7 +55,7 @@ are not production geometry or manuscript content.
 ## First usable scope
 
 Manual creation, editing, removal, passage navigation, Chronologue markers and
-connectors, inherited subplot occurrences, and nested Timetable rows.
+connectors, one All Scenes relationship per reference, and nested Timetable rows.
 
 Existing scene numbering, primary-date dragging, counts, author progress,
 Duration/Runtime, manuscript export, and other timeline modes retain their
@@ -130,9 +136,8 @@ Primary `When` dates alone determine the displayed domain. References do not
 expand that domain, shrink scenes, alter numbering, or move perimeter ticks.
 The existing primary positions are returned unchanged even for dense references.
 
-- In-range references interpolate between dated scene corners in the current
-  scene layout. Sequence inherits outer-ring placement; Fill uses local ring
-  positions with the same manuscript-wide domain.
+- In-range references interpolate between dated scene corners on All Scenes.
+  Fill and Sequence affect subplot scene geometry, not reference placement.
 - A wholly earlier date travels backward across the 12 o'clock seam, ending in
   an Earlier terminal just left of the seam. A wholly later date travels forward
   across it to a Later terminal on the right. A real connector gap and a small
@@ -175,7 +180,7 @@ reference its parent's reading time.
 | Angular slots | `src/renderer/utils/SceneLayout.ts` | Reference overlays on unchanged primary positions; existing modes keep their contract |
 | Ring rendering and metadata | `src/renderer/renderers/RingRenderer.ts`, `src/renderer/components/Scenes.ts`, `src/renderer/components/SceneArcs.ts` | Small square terminals and concentric interior tracks with seam discontinuities |
 | Chronologue orchestration and labels | `src/renderer/TimelineRenderer.ts`, `src/renderer/utils/Chronologue.ts` | Consume shared positions; preserve primary-only duration/overlap overlays |
-| Wheel/table hover | `src/view/interactions/TimetableLink.ts`, `src/timetable/timetableRegistry.ts` | Extend selection with reference and occurrence identity, retaining scene-path API behavior |
+| Wheel/table hover | `src/view/interactions/TimetableLink.ts`, `src/timetable/timetableRegistry.ts` | Select one reference on All Scenes, retaining scene-path API behavior |
 | Parent and child rows | `src/timetable/TimetableView.ts`, `src/timetable/timetableModel.ts` | Dedicated reference subrows outside file-row/bulk-selection maps |
 | Passage review/navigation patterns | `src/sceneTime/manualTime.ts`, `src/services/SceneBodyIndex.ts` | Reuse suitable exact-prose primitives, preserving ambiguity checks; keep elapsed-time decisions distinct |
 | Date display | `src/utils/date.ts`, `src/utils/whenFormat.ts` | One precision-aware reference boundary and formatter; do not globally change existing When interpretation |
@@ -212,8 +217,8 @@ snapshot; it does not scan vault text or rebuild the timeline.
 ## Acceptance cases
 
 - One dated scene, three references: a year-only recollection, a stated period,
-  and a possible future. One scene belongs to two subplots: three rendered
-  occurrences per reference including All Scenes, one Timetable child list.
+  and a possible future. One scene belongs to two subplots: one rendered
+  relationship per reference on All Scenes, one Timetable child list.
 - Exact dates, day-only/year-only/month-only precision, invalid leap dates,
   reversed periods, unsupported expressions, and equal dates across scenes.
 - Missing parent When, rename, deletion, reference reorder/edit, duplicate
@@ -258,3 +263,11 @@ Its three primary scenes span June 1–7, 2026. Five same-date references to 195
 one in-range date and one possible future in 2040 exercise seam routing, stacks,
 overflow, linked selection and the existing question icon. The preserved Baseline
 is outside the active vault. Only this Working copy receives the revision build.
+
+
+The 2026-10-16 clarity correction renders references only on All Scenes. The
+source circle and its selected scene caption identify ownership; only the
+selected reference route appears. Ordinary scene hover does not reveal routes,
+and a clicked reference remains pinned across hover activity. Chronologue Seam
+QA now has four primary scenes, including the author's New Scene; all seven
+reference declarations and the three source-scene subplot occurrences remain.

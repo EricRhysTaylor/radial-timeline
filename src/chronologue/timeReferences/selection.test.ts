@@ -4,11 +4,22 @@ import { currentReferenceSelection, hoverTimeReference, onReferenceSelection, pi
 afterEach(() => { hoverTimeReference(null); pinTimeReference(null); });
 
 describe('reference selection lifetime', () => {
-    it('restores the pinned selection after a temporary hover', () => {
+    it('holds a clicked relationship steady during other hover activity', () => {
         pinTimeReference({ path: 'scene.md', key: 'first' });
         hoverTimeReference({ path: 'other.md', key: 'second' });
+        expect(currentReferenceSelection()).toEqual({ path: 'scene.md', key: 'first' });
         hoverTimeReference(null);
         expect(currentReferenceSelection()).toEqual({ path: 'scene.md', key: 'first' });
+    });
+
+    it('a new activation replaces both a pin and a stale hover', () => {
+        hoverTimeReference({ path: 'old.md', key: 'old' });
+        pinTimeReference({ path: 'scene.md', key: 'first' });
+        expect(currentReferenceSelection()).toEqual({ path: 'scene.md', key: 'first' });
+        pinTimeReference({ path: 'scene.md', key: 'second' });
+        expect(currentReferenceSelection()).toEqual({ path: 'scene.md', key: 'second' });
+        pinTimeReference(null);
+        expect(currentReferenceSelection()).toBeNull();
     });
 
     it('reveals only on activation so the author can collapse pinned references', () => {
@@ -16,9 +27,10 @@ describe('reference selection lifetime', () => {
         const unsubscribe = onReferenceSelection(value => reveals.push(value?.reveal === true));
         pinTimeReference({ path: 'scene.md', key: 'first' });
         hoverTimeReference({ path: 'other.md', key: 'second' });
+        expect(currentReferenceSelection()).toEqual({ path: 'scene.md', key: 'first' });
         hoverTimeReference(null);
         unsubscribe();
-        expect(reveals).toEqual([false, true, false, false]);
+        expect(reveals).toEqual([false, true]);
     });
 
     it('invalidates changed declarations without clearing another scene', () => {

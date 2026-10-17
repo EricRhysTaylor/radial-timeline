@@ -334,7 +334,7 @@ export class TimetableView extends BasesView {
             }
             const row = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__row.is-scene') : null;
             const path = row?.dataset.path ?? null;
-            hoverTimeReference(path ? { path, key: '' } : null);
+            hoverTimeReference(null);
             if (path === this.hoveredPath) return;
             this.hoveredPath = path;
             this.plugin.highlightSceneOnTimeline(path);

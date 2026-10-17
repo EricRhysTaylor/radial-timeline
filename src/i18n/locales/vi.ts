@@ -736,7 +736,7 @@ export const vi: TranslationKeys = {
                 "autoButton": "Xe hơi",
                 "title": {
                     "label": "Tiêu đề",
-                    "desc": "Văn bản tiêu đề cuốn sách bên ngoài. Màu này được sử dụng cho màu hạt giống bảng màu."
+                    "desc": "Văn bản tiêu đề sách ở vòng ngoài. Màu này được sử dụng cho màu hạt giống bảng màu."
                 },
                 "author": {
                     "label": "Author",
@@ -6890,7 +6890,7 @@ export const vi: TranslationKeys = {
             "sceneBeatsProgress": "Nhịp đập cảnh: {{current}} / {{total}} ({{percentage}}%)"
         },
         "subplotKeyController": {
-            "ringKey": "Phím chuông",
+            "ringKey": "Chú giải vòng",
             "outerToInner": "Bên ngoài → Bên trong"
         },
         "subplotManagementService": {

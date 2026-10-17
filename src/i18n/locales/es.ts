@@ -2554,7 +2554,7 @@ export const es: TranslationKeys = {
             "commands": {
                 "summaryRefresh": "Actualización de la escena de resumen",
                 "scenePulseManuscript": "Análisis de pulsos de escena (orden de manuscrito)",
-                "scenePulseSubplot": "Análisis de pulsos de escena (orden de subtrabajo)"
+                "scenePulseSubplot": "Análisis de pulsos de escena (orden de subtramas)"
             },
             "notices": {
                 "noSubplots": "No se encontraron subtramas.",
@@ -5753,7 +5753,7 @@ export const es: TranslationKeys = {
             "reviewSubtitleFlagged": "{{ready}} Escenas listas, {{flagged}} con conjeturas marcadas. Expanda una escena para ver cómo se asigna a la plantilla Radial Timeline — Aplicar escribe el libro.",
             "reviewSubtitleFailed": "{{ready}} Escenas listas, {{failed}} Fallaron. Expanda una escena para ver cómo se asigna a la plantilla Radial Timeline — Aplicar escribe el libro.",
             "reviewSubtitleFlaggedFailed": "{{ready}} Escenas listas, {{flagged}} con conjeturas marcadas, {{failed}} fallido. Expanda una escena para ver cómo se mapea en el Radial Timeline Plantilla — Aplicar Escribe el libro.",
-            "surveyFailed": "La encuesta de estructura falló, por lo que cada escena está en la trama principal. Puede volver a ejecutar la incorporación para otro pase, o subdivisiones de capas más adelante.",
+            "surveyFailed": "La encuesta de estructura falló, por lo que cada escena está en la trama principal. Puede volver a ejecutar la incorporación para otro pase, o añadir subtramas más adelante.",
             "createsDestination": "Crea {{destination}} · Etapa de publicación: {{stage}}.",
             "alsoCreate": "también crear (opcional)",
             "createCharacterProfiles": "Crear perfiles de personajes",
@@ -6019,7 +6019,7 @@ export const es: TranslationKeys = {
             "keySketchDetail": "Aún no está en la línea de tiempo",
             "keyNote": "Nota sin una clase",
             "keyNoteDetail": "Promover lo convierte en una escena",
-            "keyRings": "aros",
+            "keyRings": "anillos",
             "keyRingsDetail": "Subtramas en orden de rueda; Delineado: Planificado",
             "keyQueries": "Consultas abiertas",
             "keyQueriesDetail": "Pase el cursor para leerlos",

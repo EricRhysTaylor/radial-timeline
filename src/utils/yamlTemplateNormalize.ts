@@ -87,7 +87,7 @@ export function safeParseYaml(template: string): Record<string, FieldEntryValue>
         const parsed: unknown = parseYaml(sanitizeTemplatePlaceholdersForYamlParse(template));
         if (!parsed || typeof parsed !== 'object') return {};
         const entries: Record<string, FieldEntryValue> = {};
-        Object.entries(parsed as Record<string, unknown>).forEach(([key, value]) => {
+        Object.entries(parsed).forEach(([key, value]: [string, unknown]) => {
             if (Array.isArray(value)) {
                 entries[key] = value.map((v) => normalizeParsedTemplateScalar(v));
             } else if (value === undefined || value === null) {

@@ -36,9 +36,18 @@ without CORS headers, timeout, cancellation, permission withdrawal, oversized
 responses, cancellation before connecting, malformed/unexpected JSON and HTTP
 errors. Failed probes disconnect and are not retried.
 
-Production dependencies have zero `npm audit --omit=dev` findings. This is not a
-claim that development tooling is advisory-free; the separate all-dependency
-audit reports 16 development dependency findings.
+Production dependencies have zero audit findings. A follow-up tooling cleanup
+reduces the all-dependency audit from 16 findings to three moderate findings
+in one dependency chain: the Obsidian SDK's pinned Moment version and its
+dependants (`obsidian` and `eslint-plugin-obsidianmd`). There are no remaining
+high or critical audit findings. The SDK/API version remains unchanged.
+
+The compatible tooling updates include Vitest/coverage 4.1.12, patched
+transitive parsers/build tools, tsx 4.23.15 and Node 20 declarations. Vite is
+explicitly kept on the supported 7.3.7 line: Vitest accepts Vite 6/7/8, while
+an unconstrained update selected Vite 8 with a conflicting optional esbuild
+peer. A clean `npm ci` and dependency-tree validation pass with the final
+resolution. No `--force` or `--legacy-peer-deps` workaround was used.
 
 Official report lint now has one settings-definition warning and zero errors.
 An additional full-source unnecessary-assertion lint pass is clean.

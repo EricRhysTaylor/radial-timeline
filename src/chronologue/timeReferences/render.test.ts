@@ -62,7 +62,7 @@ describe('reference occurrences across actual ring layouts', () => {
         const markup = render(Array(5).fill('1952'), 400, 520);
         expect(markup.match(/class="ert-time-reference-slice"/g)).toHaveLength(3);
         expect(markup.match(/class="ert-time-reference"/g)).toHaveLength(4);
-        expect(markup).toContain('>+2</text>');
+        expect(markup).toContain('>+2</textPath></text>');
         // One shared source/date route, plus its seam break, rather than five coincident paths.
         expect(markup.match(/class="ert-time-reference-connector"/g)).toHaveLength(1);
         for (let i = 0; i < 5; i++) expect(markup).toContain(`A &lt;memory&gt; ${i}`);
@@ -90,15 +90,18 @@ describe('reference occurrences across actual ring layouts', () => {
         const sourcePath = markup.match(new RegExp(`<path id="${label![1]}" d="([^"]+)"`));
         expect(sourcePath![1]).toContain(' A 422.8 422.8 0 0 0 ');
     });
-    it('keeps overflow on its own side of the seam across ring sizes', () => {
+    it('keeps overflow text on the date baseline, away from scene titles across ring sizes', () => {
         const items = [source('History', Array(5).fill('1952'))];
         for (const [inner, outside] of [[200, 320], [400, 520], [700, 900]]) {
             const local = computeChronologueLayout(inner, outside, start, end, items);
             const markup = renderTimeReferenceMarkers(items, local.positions, local.slots, inner, outside, 0, () => 'purple');
-            const overflow = markup.match(/class="ert-time-reference-count" x="([^"]+)" y="[^"]+" text-anchor="end">\+2/);
+            const overflow = markup.match(/<g class="ert-time-reference"[^>]*data-reference-x="([^"]+)" data-reference-y="([^"]+)" data-reference-overflow="true"/);
             expect(overflow).not.toBeNull();
-            // End anchoring makes the whole count extend left, away from the seam.
-            expect(Number(overflow![1])).toBeLessThan(-10);
+            // The count follows the first date's inner baseline, not a fourth row.
+            expect(Math.hypot(Number(overflow![1]), Number(overflow![2]))).toBeCloseTo(inner + 9);
+            const countPath = markup.match(/<path id="[^"]+-overflow" d="[^"]* A ([^ ]+) /);
+            expect(Number(countPath![1])).toBeLessThanOrEqual(inner + (outside - inner) * .4);
+            expect(markup).toContain('>+2</textPath></text>');
         }
     });
     it('distinguishes multiple off-range dates from a same-date stack', () => {

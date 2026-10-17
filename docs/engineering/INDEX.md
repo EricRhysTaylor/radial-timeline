@@ -99,6 +99,7 @@ Location: `docs/engineering/audits/`
 
 Historical audits and investigations.
 
+- **[Chronologue annotation readability](audits/2026-10-17-chronologue-annotation-readability.md)** — Inner-band reference labels and overflow counts, full-opacity date squares, and native overflow-menu selection checks.
 - **[Chronologue query foreground and source clearance](audits/2026-10-17-chronologue-query-foreground.md)** — Question icons above subplot headlines and separated source/date squares at the seam, checked in Fill and Sequence.
 - **[Chronologue foreground layering](audits/2026-10-17-chronologue-foreground-layering.md)** — Date references and scene titles above fixed subplot headlines, with native shared-date owner switching and SVG-instance clipping checks.
 - **[Chronologue reference emphasis and circular labels](audits/2026-10-17-chronologue-reference-emphasis.md)** — Larger selected and source squares, dimmed alternatives, circular labels and tangential marker rotation, with native Fill/Sequence checks.

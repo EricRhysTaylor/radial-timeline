@@ -3,7 +3,7 @@ import { referenceMarkColor } from './render';
 import type { RadialTimelineView } from '../../view/TimeLineView';
 import { currentTimelineColoring, currentTimelineLens, onTimelineOverlayChange } from '../../timetable/timetableRegistry';
 import { openTimeReference } from './editor';
-import { onReferenceSelection, hoverTimeReference, pinTimeReference } from './selection';
+import { onReferenceSelection, hoverTimeReference, pinTimeReference, currentReferenceSelection, type ReferenceSelection } from './selection';
 import { readTimeReferences, type TimeReference } from './model';
 
 export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SVGSVGElement): void {
@@ -48,9 +48,34 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
             group.querySelector<SVGElement>('.ert-time-reference-slice, .ert-time-reference-source-mark')?.setCssProps({ fill });
         });
     };
+    // Keep overflow beside its date label in the inner text lane. Measure the
+    // actual font so counts never climb the stack into the scene-title radius.
+    const positionOverflowCounts = (): void => {
+        svg.querySelectorAll<SVGGElement>('.ert-time-reference[data-reference-overflow]').forEach(group => {
+            const count = group.querySelector<SVGTextElement>('.ert-time-reference-count')!;
+            const slot = group.dataset.referenceSlot;
+            const labelGroup = Array.from(svg.querySelectorAll<SVGGElement>('.ert-time-reference'))
+                .find(candidate => candidate.dataset.referenceSlot === slot && candidate.querySelector('.ert-time-reference-label'));
+            const label = labelGroup?.querySelector<SVGTextElement>('.ert-time-reference-range');
+            const radius = Math.hypot(Number(group.dataset.referenceX), Number(group.dataset.referenceY));
+            let rotation = 0;
+            if (label && group.dataset.extent === 'earlier') {
+                labelGroup!.querySelector('.ert-time-reference-label')!
+                    .setAttribute('transform', `rotate(${-(count.getComputedTextLength() + 12) / radius * 180 / Math.PI})`);
+            } else if (label) {
+                rotation = (label.getComputedTextLength() + 12) / radius;
+                group.setAttribute('transform', `rotate(${rotation * 180 / Math.PI})`);
+            }
+            const bounds = count.getBBox(), x = bounds.x + bounds.width / 2, y = bounds.y + bounds.height / 2;
+            const hit = group.querySelector('.ert-time-reference-hit')!;
+            hit.setAttribute('x', String(x - 10)); hit.setAttribute('y', String(y - 10));
+            group.dataset.referenceX = String(x * Math.cos(rotation) - y * Math.sin(rotation));
+            group.dataset.referenceY = String(x * Math.sin(rotation) + y * Math.cos(rotation));
+        });
+    };
     update();
     view.renderScope.register(onTimelineOverlayChange(update));
-    view.renderScope.register(onReferenceSelection(selection => {
+    const applySelection = (selection: ReferenceSelection | null): void => {
         svg.classList.toggle('ert-has-reference-selection', !!selection && references.has(selection.key));
         svg.querySelectorAll('.ert-time-reference-origin[data-source-path]').forEach(group => {
             group.classList.toggle('is-active', !!selection && group.getAttribute('data-source-path') === encodeURIComponent(selection.path));
@@ -69,7 +94,16 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
             group.classList.toggle('is-active', group === selected);
             group.classList.toggle('is-date-active', !!selected && group.dataset.referenceSlot === selected.dataset.referenceSlot);
         });
-    }));
+    };
+    view.renderScope.register(onReferenceSelection(applySelection));
+    // The view attaches its fragment after interaction setup. Measure only once
+    // that SVG is attached, then refresh a selection that may target a count.
+    const win = svg.ownerDocument.defaultView!;
+    const countFrame = win.requestAnimationFrame(() => {
+        positionOverflowCounts();
+        applySelection(currentReferenceSelection());
+    });
+    view.renderScope.register(() => win.cancelAnimationFrame(countFrame));
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (event: Event) => {
         const group = groupOf(event.target);
         if (!group) return;

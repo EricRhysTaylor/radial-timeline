@@ -16,10 +16,10 @@ export function referenceMarkColor(sourceColor: string): string {
 }
 
 /** Text follows the ring baseline; reverse lower-half paths to keep labels upright. */
-function curvedReferenceLabel(id: string, radius: number, angle: number, gap: number, before: boolean, text: string, className: string): string {
+function curvedReferenceLabel(id: string, radius: number, angle: number, gap: number, before: boolean, text: string, className: string, maxRadius: number): string {
     const rotation = (angle * 180 / Math.PI + 450) % 360;
     const reversed = rotation > 90 && rotation < 270;
-    const labelRadius = radius + (reversed ? 14 : 0);
+    const labelRadius = Math.min(radius + (reversed ? 14 : 0), maxRadius);
     const near = angle + (before ? -gap : gap) / labelRadius;
     const far = near + (before ? -1 : 1) * Math.PI / 2;
     const from = before !== reversed ? far : near;
@@ -34,6 +34,7 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
     innerR: number, outerR: number, ring: number, colorOf: (item: TimelineItem) => string): string {
     const byPath = new Map(items.map((item, i) => [item.path, { item, position: positions.get(i), index: i }]));
     const thickness = outerR - innerR;
+    const textRadiusLimit = innerR + thickness * .4;
     const { size, sourceSize, pitch, base, capacity } = referenceRingGeometry(innerR, outerR);
     let connectors = '', markers = '', origins = '';
     const sourcePaths = new Set<string>();
@@ -59,7 +60,7 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
                 const labelId = `ert-reference-source-${makeSceneId(parent.item.bookIndex ?? 0, ring, parent.index, true, true, path)}`;
                 origins += `<g class="ert-time-reference-origin" ${attrs(owned)} data-source-path="${escapeXml(encodeURIComponent(path))}"><title>${sourceLabel}</title>
                     <g transform="translate(${route.origin.x} ${route.origin.y}) rotate(${angle * 180 / Math.PI + 90})"><rect class="ert-time-reference-source-mark" x="${-sourceSize / 2}" y="${-sourceSize / 2}" width="${sourceSize}" height="${sourceSize}" fill="${escapeXml(referenceMarkColor(colorOf(parent.item)))}"/></g>
-                    ${curvedReferenceLabel(labelId, sourceAnchor.radius, angle, sourceSize / 2 + 12, true, sourceLabel, 'ert-time-reference-origin-label')}</g>`;
+                    ${curvedReferenceLabel(labelId, sourceAnchor.radius, angle, sourceSize / 2 + 12, true, sourceLabel, 'ert-time-reference-origin-label', textRadiusLimit)}</g>`;
             }
             const routeAttrs = `${attrs(owned)} data-source-path="${escapeXml(encodeURIComponent(path))}" stroke="${escapeXml(referenceMarkColor(colorOf(parent.item)))}" fill="none"`;
             connectors += `<path class="ert-time-reference-connector" ${routeAttrs} d="${route.path}"/>`;
@@ -74,22 +75,20 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
         const button = (choices: TimeReference[], radius: number, overflow: boolean, showRange = false): string => {
             const x = radius * Math.cos(slot.angle), y = radius * Math.sin(slot.angle);
             const detail = choices.map(ref => `${byPath.get(ref.path)!.item.title} · ${ref.label} · ${referenceDateLabel(ref)} · ${t(`timeReferences.kinds.${ref.kind}`)}`).join('\n');
-            const title = escapeXml([extentLabel, dateCount > 1 ? dateLabel : '', slot.clipped ? t('timeReferences.overlapsRange') : '', detail, t('timeReferences.earthCalendar')].filter(Boolean).join('\n'));
+            const title = escapeXml([overflow ? t('timeReferences.cluster', { count: choices.length }) : '', extentLabel, dateCount > 1 ? dateLabel : '', slot.clipped ? t('timeReferences.overlapsRange') : '', detail, t('timeReferences.earthCalendar')].filter(Boolean).join('\n'));
             const parent = byPath.get(choices[0].path)!;
             const labelId = `ert-reference-date-${slotIndex}-${makeSceneId(parent.item.bookIndex ?? 0, ring, parent.index, true, true, choices[0].path)}`;
-            const rangeLabel = showRange ? curvedReferenceLabel(labelId, radius, slot.angle, size / 2 + 12, slot.extent === 'earlier', escapeXml(`${extentLabel} · ${dateLabel}`), 'ert-time-reference-range') : '';
-            const countAnchor = slot.extent === 'earlier' ? 'end' : slot.extent === 'later' ? 'start' : 'middle';
-            const overflowX = x + (slot.extent === 'earlier' ? size / 2 : slot.extent === 'later' ? -size / 2 : 0);
+            const rangeLabel = showRange ? `<g class="ert-time-reference-label">${curvedReferenceLabel(labelId, radius, slot.angle, size / 2 + 12, slot.extent === 'earlier', escapeXml(`${extentLabel} · ${dateLabel}`), 'ert-time-reference-range', textRadiusLimit)}</g>` : '';
             const mixedX = x + (slot.extent === 'earlier' ? -(size / 2 + 6) : size / 2 + 6);
             const color = escapeXml(referenceMarkColor(colorOf(byPath.get(choices[0].path)!.item)));
-            return `<g class="ert-time-reference" ${attrs(choices)} data-extent="${slot.extent}" data-reference-slot="${ring}-${items[0]?.bookIndex ?? 0}-${slotIndex}" data-reference-x="${x}" data-reference-y="${y}" role="button" tabindex="0" data-rt-tip="${title}"><title>${title}</title>
+            return `<g class="ert-time-reference" ${attrs(choices)} data-extent="${slot.extent}" data-reference-slot="${ring}-${items[0]?.bookIndex ?? 0}-${slotIndex}" data-reference-x="${x}" data-reference-y="${y}"${overflow ? ' data-reference-overflow="true"' : ''} role="button" tabindex="0" data-rt-tip="${title}"><title>${title}</title>
                 <rect class="ert-time-reference-hit" x="${x - 10}" y="${y - 10}" width="20" height="20" fill="transparent"/>
-                ${overflow ? `<text class="ert-time-reference-count" x="${overflowX}" y="${y + 4}" text-anchor="${countAnchor}">+${choices.length}</text>` : `<g transform="translate(${x} ${y}) rotate(${slot.angle * 180 / Math.PI + 90})"><rect class="ert-time-reference-slice" x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}" fill="${color}"/></g>`}
+                ${overflow ? curvedReferenceLabel(`${labelId}-overflow`, radius, slot.angle, size / 2 + 12, slot.extent === 'earlier', `+${choices.length}`, 'ert-time-reference-count', textRadiusLimit) : `<g transform="translate(${x} ${y}) rotate(${slot.angle * 180 / Math.PI + 90})"><rect class="ert-time-reference-slice" x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}" fill="${color}"/></g>`}
                 ${rangeLabel}
                 ${mixed && !overflow ? `<text class="ert-time-reference-count" x="${mixedX}" y="${y + 4}" text-anchor="${slot.extent === 'earlier' ? 'end' : 'start'}">${refs.length}</text>` : ''}</g>`;
         };
         shown.forEach((choices, index) => { markers += button(choices, terminalRadius(index), false, offRange && index === 0); });
-        if (!mixed && refs.length > shown.length) markers += button(refs.slice(shown.length), terminalRadius(shown.length), true);
+        if (!mixed && refs.length > shown.length) markers += button(refs.slice(shown.length), terminalRadius(0), true);
     }
     return connectors + markers + origins;
 }

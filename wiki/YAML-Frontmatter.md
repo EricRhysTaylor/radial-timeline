@@ -1,5 +1,9 @@
 Radial Timeline reads scene, beat, and backdrop metadata from **Obsidian properties** at the top of each note. Start with the core properties and add fields as your project develops.
 
+## Time references
+
+The optional **Time References** list records other dates or periods mentioned within a scene. See [Time references](Time-References) for the required fields, a quoted YAML example, and screenshots of the timeline and Timetable. The scene’s primary `When` stays unchanged.
+
 ## Core Scene Scaffold
 
 ```yaml

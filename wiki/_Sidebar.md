@@ -19,6 +19,7 @@
     *   [Progress Mode](Progress-Mode)
     *   [Narrative Mode](Narrative-Mode)
     *   [Chronologue Mode](Chronologue-Mode)
+        *   [Time references](Time-References)
         *   [Discontinuity & Time Gaps](Chronologue-Mode#shift-sub-mode)
         *   [Planetary Calendar](Chronologue-Mode#alt-sub-mode)
         *   [Runtime](Chronologue-Mode#runtime-sub-mode)

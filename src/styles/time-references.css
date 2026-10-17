@@ -1,4 +1,9 @@
 /* Radial Timeline references use concentric tracks on All Scenes. */
+.radial-timeline-svg:not([data-mode="chronologue"]) :is(.ert-time-reference, .ert-time-reference-origin, .ert-time-reference-connector),
+.radial-timeline-svg[data-shift-mode] :is(.ert-time-reference, .ert-time-reference-origin, .ert-time-reference-connector) {
+    display: none;
+}
+
 .ert-time-reference-connector {
     pointer-events: none;
     opacity: 0;

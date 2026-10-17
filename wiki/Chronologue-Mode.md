@@ -19,6 +19,10 @@ Chronologue is one of four modes within the Radial Timeline View. It is essentia
 
 > **Date formats**: A calendar anchor needs at least a year. Year-only (`When: 2045`), year+month (`When: 2045-07`), and textual month+year (`When: July 2045`) work — omitted pieces default internally to the first day at noon. Month-only, day-only, and time-only values cannot establish a calendar anchor. A scene can still appear in Chronologue with `When` blank.
 
+## Other periods inside a scene
+
+Add **Time References** for memories, mentions, enacted passages, and possible futures while keeping the scene’s primary `When`. Their source squares, linked dates, and connectors appear only in normal Chronologue. See [Time references](Time-References) for YAML examples, timeline marks, and Timetable child rows.
+
 ### Undated scenes
 
 Dated scenes establish chronological anchors. Each undated scene stays with the nearest preceding dated **scene in its own book’s narrative order**. When the anchors rearrange chronologically, their undated followers travel with them, preserving narrative order within each group. Subplot rings use the same relationships, even when an anchor belongs to another subplot.

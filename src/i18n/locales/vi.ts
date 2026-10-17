@@ -160,7 +160,7 @@ export const vi: TranslationKeys = {
             },
             "secureKey": {
                 "unavailableName": "Lưu khóa bảo mật không khả dụng",
-                "unavailableDesc": "Lưu khóa bảo mật không khả dụng trong bản Obsidian này. Các khóa của nhà cung cấp API không thể được cấu hình cho đến khi lưu trữ bí mật khả dụng.",
+                "unavailableDesc": "Lưu khóa bảo mật không khả dụng trong bản Obsidian này. Chưa thể cấu hình khóa API của nhà cung cấp cho đến khi lưu trữ bí mật khả dụng.",
                 "migrateName": "Bảo mật các khóa đã lưu của tôi",
                 "migrateDesc": "Di chuyển các trường khóa nhà cung cấp cũ vào khóa lưu trữ riêng và xóa các giá trị văn bản thuần.",
                 "migrateButton": "Bảo mật ngay",
@@ -182,9 +182,9 @@ export const vi: TranslationKeys = {
                 "copyKeyNameButton": "Sao chép tên khóa",
                 "keyNameCopiedNotice": "Đã sao chép tên khóa đã lưu.",
                 "keyNameCopyFailNotice": "Không thể sao chép tên khóa đã lưu.",
-                "placeholderAnthropic": "Nhập khóa Anthropic API của bạn",
-                "placeholderGoogle": "Nhập khóa Google API của bạn",
-                "placeholderOpenai": "Nhập khóa OpenAI API của bạn"
+                "placeholderAnthropic": "Nhập khóa API Anthropic của bạn",
+                "placeholderGoogle": "Nhập khóa API Google của bạn",
+                "placeholderOpenai": "Nhập khóa API OpenAI của bạn"
             },
             "localLlm": {
                 "configTitle": "Cấu hình Local LLM",
@@ -1739,7 +1739,7 @@ export const vi: TranslationKeys = {
             "cannotCancelFromPreview": "Không thể hủy lần chạy này khỏi bảng xem trước.",
             "cancelRequested": "Inquiry đã yêu cầu hủy bỏ. Inquiry sẽ dừng sau khi vượt qua hiện tại. yêu cầu nhà cung cấp đang hoạt động vẫn có thể hoàn tất.",
             "bookScopeUnresolved": "Phạm vi sách chưa được giải quyết. Định cấu hình sách trong Cài đặt trước khi chạy Inquiry.",
-            "noApiKey": "Thêm phím API trong Cài đặt → Radial Timeline → AI để chạy các phân tích Inquiry mới.",
+            "noApiKey": "Thêm khóa API trong Cài đặt → Radial Timeline → AI để chạy các phân tích Inquiry mới.",
             "writebackDisabledSimulated": "{{fieldLabel}} WriteBack bị vô hiệu hóa khi chạy mô phỏng.",
             "noActionItemsThreshold": "Không có mục hành động nào đáp ứng ngưỡng ghi lại.",
             "cancelOnlySingleQuestion": "Hủy có sẵn cho các lần chạy Inquiry một câu hỏi đang hoạt động.",
@@ -2882,10 +2882,10 @@ export const vi: TranslationKeys = {
         },
         "aiCredentialPanel": {
             "secretNameName": "Tên bí mật Obsidian ({{provider}})",
-            "secretNameDesc": "Tên này của kho lưu trữ bí mật Obsidian này của bạn khóa {{provider}} API của bạn bên dưới. ",
+            "secretNameDesc": "Tên mà lưu trữ bí mật Obsidian của kho này dùng để lưu khóa API {{provider}} của bạn. ",
             "getKeyLink": "Nhận chìa khóa",
             "secretSharedNote": " Các khóa bí mật Obsidian được chia sẻ trên các plugin trong kho này.",
-            "keyStatusName": "{{provider}} API trạng thái khóa",
+            "keyStatusName": "Trạng thái khóa API {{provider}}",
             "saveSecretNameFailedNotice": "Không thể lưu tên bí mật {{provider}}.",
             "apiKeyName": "{{provider}} khóa API",
             "apiKeyDesc": "được lưu riêng tư trên thiết bị này. Dán một phím, sau đó nhấp vào bên ngoài trường này hoặc nhấn Enter / Return để lưu hoặc thay thế nó. chìa khóa không bao giờ được ghi vào tệp cài đặt của bạn.",
@@ -3106,14 +3106,14 @@ export const vi: TranslationKeys = {
             "cacheRemainingHours": "{{hours}}h còn lại",
             "cacheRemainingMinutes": "{{minutes}}m còn lại",
             "keyRejectedTitle": "khóa bị từ chối",
-            "keyRejectedDetail": "{{provider}} · Thay thế khóa đã lưu dưới API phím để chạy",
-            "keyRejectedForecast": "{{provider}} đã từ chối khóa đã lưu. Thay thế nó dưới các phím API để dự báo.",
+            "keyRejectedDetail": "{{provider}} · thay khóa đã lưu trong mục Khóa API để chạy",
+            "keyRejectedForecast": "{{provider}} đã từ chối khóa đã lưu. Hãy thay nó trong mục Khóa API để dự báo.",
             "unreachableTitle": "nhà cung cấp không thể truy cập",
             "unreachableDetail": "{{provider}} · Xác thực khóa không thể đến nhà cung cấp",
             "unreachableForecast": "Không thể liên lạc với {{provider}} để xác thực khóa. Dự báo tiếp tục sau khi nó xác thực.",
-            "noKeyTitle": "Không có phím API",
-            "noKeyDetail": "{{provider}} · Dán khóa dưới API phím để chạy",
-            "noKeyForecast": "Không có phím {{provider}} nào được lưu. Dán một trong các phím API để dự báo."
+            "noKeyTitle": "Không có khóa API",
+            "noKeyDetail": "{{provider}} · dán khóa vào mục Khóa API để chạy",
+            "noKeyForecast": "Chưa lưu khóa {{provider}} nào. Hãy dán một khóa vào mục Khóa API để dự báo."
         },
         "aprConstants": {
             "ringDesc": "Chỉ vòng tiến trình - Bí ẩn tối đa",
@@ -3455,7 +3455,7 @@ export const vi: TranslationKeys = {
             "viewDemoPageAria": "Xem trang demo {{title}}",
             "freeDemosBadge": "Bản trình diễn miễn phí",
             "heading": "Kho demo",
-            "description": "Khám phá các ví dụ đã làm việc hoàn chỉnh với phân tích đã lưu. Bắt đầu với Dự án Free Pride & Prejudice, Odyssey, hoặc Sherlock Holmes; không API khóa là cần thiết để duyệt kết quả đã lưu. Thêm bản demo trực tiếp vào kho này hoặc tải xuống một kho riêng dưới dạng zip.",
+            "description": "Khám phá các ví dụ đã làm việc hoàn chỉnh với phân tích đã lưu. Bắt đầu với Dự án Free Pride & Prejudice, Odyssey, hoặc Sherlock Holmes; không cần khóa API để duyệt kết quả đã lưu. Thêm bản demo trực tiếp vào kho này hoặc tải xuống một kho riêng dưới dạng zip.",
             "comingSoon": "Sắp ra mắt",
             "exploreDemo": "Khám phá bản demo",
             "exploreDemoAria": "Khám phá bản demo {{title}}"

@@ -15,6 +15,7 @@ export function getRotationStepDegrees(segmentCount: number): number {
 
 export function setupRotationController(view: RotationView, svg: SVGSVGElement): void {
     const rotatable = svg.querySelector('#timeline-rotatable');
+    const foreground = svg.querySelector('.ert-scene-foreground');
     const toggle = svg.querySelector('#rotation-toggle');
     const arrowUp = svg.querySelector('#rotation-arrow-up');
     const arrowDown = svg.querySelector('#rotation-arrow-down');
@@ -39,6 +40,8 @@ export function setupRotationController(view: RotationView, svg: SVGSVGElement):
             arrowUp.classList.remove('is-hidden');
             arrowDown.classList.add('is-hidden');
         }
+        if (rotated) foreground?.setAttribute('transform', `rotate(-${angle})`);
+        else foreground?.removeAttribute('transform');
         svg.setAttribute('data-rotated', rotated ? 'true' : 'false');
         view.applyRotationToNumberSquares(svg, rotated);
 

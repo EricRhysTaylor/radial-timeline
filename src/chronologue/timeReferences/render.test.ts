@@ -21,12 +21,26 @@ describe('reference occurrences across actual ring layouts', () => {
         vi.stubGlobal('activeDocument', {});
         const scenes = [source('Family', ['1952', '2040']), source('History', ['1952', '2040'])].map(item => ({ ...item, actNumber: 1 }));
         const plugin = { settings: { currentMode: 'chronologue', subplotAlignment, actCount: 1 }, openScenePaths: new Set() };
-        const markup = renderRings({ plugin: plugin as never, scenes, actsToRender: 1, sortByWhen: true,
+        const foregroundElements: string[] = [];
+        const scenesMarkup = renderRings({ plugin: plugin as never, scenes, actsToRender: 1, sortByWhen: true,
             isChronologueMode: true, forceChronological: true, masterSubplotOrder: ['Main Plot', 'Family', 'History'],
             colorIndexBySubplot: new Map([['Main Plot', 0], ['Family', 1], ['History', 2]]),
             ringStartRadii: [200, 400, 600], ringWidths: [200, 200, 200],
             scenesByActAndSubplot: { 0: { Family: [scenes[0]], History: [scenes[1]] } },
-            PUBLISH_STAGE_COLORS: { Zero: '#996699' }, maxTextWidth: 120, synopsesElements: [] });
+            PUBLISH_STAGE_COLORS: { Zero: '#996699' }, maxTextWidth: 120, synopsesElements: [], foregroundElements });
+        const foreground = foregroundElements.join('');
+        const markup = scenesMarkup + foreground;
+        expect(scenesMarkup).not.toContain('class="ert-time-reference"');
+        expect(foreground.match(/<use href="#scene-title-/g)).toHaveLength(3);
+        expect(scenesMarkup.match(/<defs><text id="scene-title-/g)).toHaveLength(3);
+        // Clip the painted instance outside its shadow tree so Chromium resolves
+        // the scene path. The source remains in its scene group for live updates.
+        const paintedTitles = [...foreground.matchAll(/<use href="#scene-title-([^"]+)" clip-path="url\(#clip-([^)]+)\)"/g)];
+        expect(paintedTitles).toHaveLength(3);
+        for (const match of paintedTitles) {
+            expect(match[1]).toBe(match[2]);
+            expect(scenesMarkup).toContain(`<clipPath id="clip-${match[1]}">`);
+        }
         expect(markup.match(/class="ert-time-reference"/g)).toHaveLength(2);
         expect(markup.match(/class="ert-time-reference-origin"/g)).toHaveLength(1);
         expect(markup.match(/class="rt-scene-group/g)).toHaveLength(3);

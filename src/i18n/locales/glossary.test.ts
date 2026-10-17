@@ -132,6 +132,12 @@ const GLOSSARY: Record<string, Term> = {
             vi: [/(?<!\p{L})kho(?!\p{L})/iu],
         },
     },
+    apiKey: {
+        en: /\bAPI keys?\b/i,
+        words: {
+            vi: ['khóa API'],
+        },
+    },
 };
 
 /** Wrong senses already removed from a locale; any return is a regression. */
@@ -142,7 +148,7 @@ const BANNED: Partial<Record<Locale, RegExp[]>> = {
     vi: [
         /nhẫn/i, /(?<!\p{L})(ô|lô) phụ/iu, /mảnh ghép/i, /biểu đồ phụ/i, /sublot/i, /vòng đệm/i, /phím chuông/i,
         /ghi chú đánh bại/i, /đánh đập/i, /nhịp đập/i, /nốt (nhạc|nhịp)/i, /mô hình (beat|nhịp)/i,
-        /kho tiền/i, /(?<!\p{L})hầm(?!\p{L})/iu,
+        /kho tiền/i, /(?<!\p{L})hầm(?!\p{L})/iu, /phím API|API phím/i,
     ],
 };
 

@@ -574,6 +574,7 @@ export function createTimelineSVG(
 
     const stopRingRender = startPerfSegment(plugin, 'timeline.render-rings');
 
+    const foregroundElements: string[] = [];
     const ringRenderContext: RingRenderContext = {
         plugin,
         scenes,
@@ -589,6 +590,7 @@ export function createTimelineSVG(
         PUBLISH_STAGE_COLORS,
         maxTextWidth,
         synopsesElements,
+        foregroundElements,
         outerRingPositionByKey,
         outerRingChapterBoundaryGeometry: showChapterMarkers ? new Map<string, OuterRingChapterBoundaryGeometry>() : undefined,
         maxStageColor // Pass for Gossamer mode beat strokes
@@ -731,6 +733,10 @@ export function createTimelineSVG(
     svg += `<g class="background-layer subplot-labels-fixed">`;
     svg += renderSubplotLabels({ NUM_RINGS, ringStartRadii, ringWidths, masterSubplotOrder, colorIndexBySubplot, plugin });
     svg += `</g>`;
+
+    // Scene-title sources stay with their scenes; paint them and the reference
+    // controls after the headlines, in the same rotation space as the scenes.
+    svg += `<g class="ert-scene-foreground">${foregroundElements.join('')}</g>`;
 
     let chronologueOverlaysHtml = '';
     // Add Chronologue mode arcs

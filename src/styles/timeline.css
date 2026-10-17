@@ -2,19 +2,19 @@
    - New Timeline chrome (legend, trigger, tooltip, panel, badge, overlay) should use ert-timeline-*.
    - Existing SVG renderer primitives in this legacy island may remain rt-* until intentionally migrated. */
 .rt-scene-title-bold.rt-title-stage-zero {
-  fill: var(--rt-publishStageColors-Zero, var(--rt-color-zero));
+  fill: var(--ert-scene-title-fill, var(--rt-publishStageColors-Zero, var(--rt-color-zero)));
 }
 
 .rt-scene-title-bold.rt-title-stage-author {
-  fill: var(--rt-publishStageColors-Author, var(--rt-color-author));
+  fill: var(--ert-scene-title-fill, var(--rt-publishStageColors-Author, var(--rt-color-author)));
 }
 
 .rt-scene-title-bold.rt-title-stage-house {
-  fill: var(--rt-publishStageColors-House, var(--rt-color-house));
+  fill: var(--ert-scene-title-fill, var(--rt-publishStageColors-House, var(--rt-color-house)));
 }
 
 .rt-scene-title-bold.rt-title-stage-press {
-  fill: var(--rt-publishStageColors-Press, var(--rt-color-press));
+  fill: var(--ert-scene-title-fill, var(--rt-publishStageColors-Press, var(--rt-color-press)));
 }
 
 .radial-timeline-container .rt-month-label {
@@ -159,15 +159,15 @@
   display: none;
 }
 
-.radial-timeline-container .rt-scene-title-small {
+.rt-scene-title-small {
   font-size: calc(9px * var(--rt-font-scale, 1));
 }
 
-.radial-timeline-container .rt-scene-title-medium {
+.rt-scene-title-medium {
   font-size: calc(16px * var(--rt-font-scale, 1));
 }
 
-.radial-timeline-container .rt-scene-title-large {
+.rt-scene-title-large {
   font-size: calc(18px * var(--rt-font-scale, 1));
 }
 
@@ -637,9 +637,9 @@
 }
 
 /* 3. Scene Text: Match number square text color and opacity */
-.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-title {
-  fill: rgba(200, 50, 50, 0.8);
-  opacity: 0.7;
+.radial-timeline-svg[data-shift-mode="alien"] {
+  --ert-scene-title-fill: rgba(200, 50, 50, 0.8);
+  --ert-scene-title-opacity: 0.7;
 }
 
 /* 4. Spokes/Radial Lines/Month Lines: Muted red tint (increased visibility to match SHIFT) */
@@ -888,9 +888,9 @@
 }
 
 /* 4. Scene Text: Match number square text color */
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-title {
-  fill: rgba(60, 140, 200, 0.9);
-  opacity: 0.8;
+.radial-timeline-svg[data-shift-mode="runtime"] {
+  --ert-scene-title-fill: rgba(60, 140, 200, 0.9);
+  --ert-scene-title-opacity: 0.8;
 }
 
 /* 5. Spokes/Radial Lines/Month Lines: Blue tint */

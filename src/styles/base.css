@@ -990,10 +990,11 @@ body.rt-modal-open .radial-timeline-container * {
 /* .rt-scene-path.rt-selected: no stroke and no filter on hover. The hovered
    scene is announced by its title and synopsis, not by an edge on the slice. */
 
-.radial-timeline-container .rt-scene-title {
+/* SVG use instances need title rules that do not depend on external ancestors. */
+.rt-scene-title {
   cursor: pointer;
-  fill: white;
-  opacity: 1;
+  fill: var(--ert-scene-title-fill, white);
+  opacity: var(--ert-scene-title-opacity, 1);
   font-size: calc(18px * var(--rt-font-scale, 1));
   pointer-events: none;
 }
@@ -1014,7 +1015,7 @@ body.rt-modal-open .radial-timeline-container * {
 }
 
 /* Title text styles */
-.radial-timeline-container .rt-scene-title-bold {
+.rt-scene-title-bold {
   font-weight: bold;
 }
 

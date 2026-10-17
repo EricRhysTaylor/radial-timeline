@@ -47,6 +47,8 @@ export interface RingRenderContext {
     PUBLISH_STAGE_COLORS: StageColorMap;
     maxTextWidth: number;
     synopsesElements: SVGGElement[];
+    /** Chronologue titles and references, painted above the fixed subplot headlines. */
+    foregroundElements: string[];
     /**
      * Filled by this renderer: where each scene sits on the all-scenes outer
      * ring. Chronologue's duration and backbone arcs read it afterwards.
@@ -77,6 +79,16 @@ export function renderRings(ctx: RingRenderContext): string {
     } = ctx;
 
     let svg = '';
+    // Keep the live title in its scene group for hover, clipping and updates.
+    // A single SVG use paints that same title above the fixed subplot headlines.
+    const renderTitle = (sceneId: string, pathId: string, text: string, isOpen: boolean): string => {
+        const id = `scene-title-${sceneId}`;
+        const clip = `clip-path="url(#clip-${sceneId})"`;
+        const title = `<text id="${id}" class="rt-scene-title${isOpen ? ' rt-scene-is-open' : ''}" ${isChronologueMode ? '' : clip} data-scene-id="${sceneId}"><textPath href="#${pathId}" startOffset="${TEXTPATH_START_OFFSET_PX}">${text}</textPath></text>`;
+        if (!isChronologueMode) return title;
+        ctx.foregroundElements.push(`<use href="#${id}" ${clip} pointer-events="none" />`);
+        return `<defs>${title}</defs>`;
+    };
     const fontScale = getReadabilityMultiplier(plugin.settings);
     const NUM_RINGS = masterSubplotOrder.length;
     const readabilityScale = plugin.settings.readabilityScale || 'normal';
@@ -218,7 +230,6 @@ export function renderRings(ctx: RingRenderContext): string {
 
                     let sceneClasses = 'rt-scene-path';
                     if (scene.path && plugin.openScenePaths.has(scene.path)) sceneClasses += ' rt-scene-is-open';
-                    const dyOffset = 0;
 
                     // Beat title estimation
                     const rawTitleFull = (() => {
@@ -290,9 +301,7 @@ export function renderRings(ctx: RingRenderContext): string {
                                      A ${formatNumber(textPathRadius)} ${formatNumber(textPathRadius)} 0 ${textPathLargeArcFlag} 1 ${formatNumber(textPathRadius * Math.cos(sceneEndAngle))} ${formatNumber(textPathRadius * Math.sin(sceneEndAngle))}" 
                                   fill="none"/>
                             <clipPath id="clip-${sceneId}"><use href="#${sceneId}"/></clipPath>
-                            <text class="rt-scene-title${scene.path && plugin.openScenePaths.has(scene.path) ? ' rt-scene-is-open' : ''}" clip-path="url(#clip-${sceneId})" dy="${dyOffset}" data-scene-id="${sceneId}">
-                                <textPath href="#textPath-${act}-${ring}-outer-${idx}" startOffset="${TEXTPATH_START_OFFSET_PX}">${text}</textPath>
-                            </text>` : isBeatNote(scene) ? `
+                            ${renderTitle(sceneId, `textPath-${act}-${ring}-outer-${idx}`, text, !!scene.path && plugin.openScenePaths.has(scene.path))}` : isBeatNote(scene) ? `
                             <path id="plot-label-arc-${act}-${ring}-outer-${idx}" 
                                   d="M ${formatNumber(beatTextRadius * Math.cos(labelStartAngle))} ${formatNumber(beatTextRadius * Math.sin(labelStartAngle))} 
                                      A ${formatNumber(beatTextRadius)} ${formatNumber(beatTextRadius)} 0 ${largeArcFlag} 1 ${formatNumber(beatTextRadius * Math.cos(labelEndAngle))} ${formatNumber(beatTextRadius * Math.sin(labelEndAngle))}" 
@@ -319,8 +328,8 @@ export function renderRings(ctx: RingRenderContext): string {
                     });
                 });
                 svg += ringScenesSvg;
-                svg += renderTimeReferenceMarkers(sortedCombined, positions, sequence.referenceSlots, innerR, outerR, ring,
-                    scene => getFillForScene(scene, PUBLISH_STAGE_COLORS, subplotColorFor, true, forceSubplotFillColors));
+                ctx.foregroundElements.push(renderTimeReferenceMarkers(sortedCombined, positions, sequence.referenceSlots, innerR, outerR, ring,
+                    scene => getFillForScene(scene, PUBLISH_STAGE_COLORS, subplotColorFor, true, forceSubplotFillColors)));
 
                 continue; // Continue to next ring loop (which iterates rings for this act)
             }
@@ -400,9 +409,7 @@ export function renderRings(ctx: RingRenderContext): string {
                                      A ${formatNumber(textPathRadius)} ${formatNumber(textPathRadius)} 0 ${textPathLargeArcFlag} 1 ${formatNumber(textPathRadius * Math.cos(sceneEndAngle))} ${formatNumber(textPathRadius * Math.sin(sceneEndAngle))}" 
                                   fill="none"/>
                             <clipPath id="clip-${sceneId}"><use href="#${sceneId}"/></clipPath>
-                            <text class="rt-scene-title${scene.path && plugin.openScenePaths.has(scene.path) ? ' rt-scene-is-open' : ''}" clip-path="url(#clip-${sceneId})" data-scene-id="${sceneId}">
-                                <textPath href="#textPath-${act}-${ring}-${idx}" startOffset="${TEXTPATH_START_OFFSET_PX}">${text}</textPath>
-                            </text>` : ``}
+                            ${renderTitle(sceneId, `textPath-${act}-${ring}-${idx}`, text, !!scene.path && plugin.openScenePaths.has(scene.path))}` : ``}
                         </g>`;
                 });
 

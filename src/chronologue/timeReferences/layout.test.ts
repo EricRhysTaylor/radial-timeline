@@ -24,7 +24,7 @@ describe('Chronologue reference overlays', () => {
         for (const slot of result.slots) {
             const route = referenceConnector(700, 760, result.positions.get(1)!, slot, 709);
             expect(route.path.match(/M /g)).toHaveLength(2);
-            expect(route.discontinuity?.match(/M /g)).toHaveLength(2);
+            expect(route.discontinuity).toMatchObject({ x: expect.closeTo(0), y: expect.closeTo(-740.8) });
             expect(route.path).toContain('A 740.8 740.8');
             expect(route.path).not.toMatch(/NaN|Infinity/);
         }
@@ -60,21 +60,19 @@ describe('Chronologue reference overlays', () => {
         expect(result.slots[0].extent).toBe('unanchored');
         expect(result.slots[0].angle).toBeCloseTo(result.positions.get(0)!.endAngle - 18 / 740.8);
     });
-    it('separates tracks and off-range terminals from borders, the core and dominance flags', () => {
+    it('uses the same seam angle across ring radii while keeping terminals at the inner edge', () => {
+        const offsets: number[] = [], horizontalOffsets: number[] = [];
         for (const [inner, outer] of [[400, 460], [500, 650], [700, 900]]) {
             const geometry = referenceRingGeometry(inner, outer);
             expect(outer - geometry.track).toBeGreaterThanOrEqual((outer - inner) * .30);
+            expect(geometry.base - geometry.size / 2).toBe(inner + 4);
             const result = computeChronologueLayout(inner, outer, start, end, week(['1952', '2040']));
-            for (const slot of result.slots) {
-                const x = geometry.base * Math.cos(slot.angle), y = geometry.base * Math.sin(slot.angle);
-                expect(Math.abs(x) - geometry.size / 2).toBeGreaterThan(45);
-                expect(y + geometry.size / 2).toBeLessThan(-inner - 10);
-                const route = referenceConnector(inner, outer, result.positions.get(1)!, slot, geometry.base);
-                const slashPoints = Array.from(route.discontinuity!.matchAll(/[ML] ([\d.e+-]+) ([\d.e+-]+)/g), match => [Number(match[1]), Number(match[2])]);
-                expect(Math.max(...slashPoints.map(p => p[0])) - Math.min(...slashPoints.map(p => p[0]))).toBeCloseTo(18);
-                expect(Math.max(...slashPoints.map(p => p[1])) - Math.min(...slashPoints.map(p => p[1]))).toBeCloseTo(16);
-            }
+            offsets.push(start - result.slots[0].angle, result.slots[1].angle - end);
+            horizontalOffsets.push(Math.abs(geometry.base * Math.cos(result.slots[0].angle)));
         }
+        offsets.forEach(offset => expect(offset).toBeCloseTo(Math.PI / 45));
+        expect(horizontalOffsets[0]).toBeLessThan(horizontalOffsets[1]);
+        expect(horizontalOffsets[1]).toBeLessThan(horizontalOffsets[2]);
     });
     it('ignores non-scene dates and duplicate subplot declarations', () => {
         const source = scene('source.md', '2026-06-04', ['1952']);

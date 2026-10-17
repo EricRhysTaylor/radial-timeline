@@ -9,13 +9,9 @@
 }
 .ert-time-reference-connector.is-related { opacity: 0.5; }
 .ert-time-reference-connector.is-active { opacity: 1; stroke-width: 3px; }
-.ert-time-reference-connector.ert-time-reference-halo { stroke: var(--background-primary); stroke-width: 5px; }
-.ert-time-reference-connector.ert-time-reference-halo.is-active { stroke-width: 6px; }
-.ert-time-reference-connector.ert-time-reference-break { stroke-width: 4px; }
-.ert-time-reference-connector.ert-time-reference-break.ert-time-reference-halo { stroke-width: 7px; }
+.ert-time-reference-connector.ert-time-reference-break { stroke-width: 1.5px; }
 .ert-time-reference-hit { pointer-events: all; cursor: pointer; }
-.ert-time-reference-slice { pointer-events: none; stroke: var(--background-primary); stroke-width: 1.5px; }
-.ert-time-reference.is-active .ert-time-reference-slice { stroke: var(--text-normal); stroke-width: 2px; }
+.ert-time-reference-slice { pointer-events: none; }
 .ert-time-reference-source .rt-scene-path { stroke: var(--interactive-accent); stroke-width: 2px; }
 .ert-time-reference-filtered,
 .ert-time-reference.rt-non-selected { opacity: 0.08; pointer-events: none; }
@@ -26,7 +22,7 @@
 .ert-time-reference.rt-non-selected .ert-time-reference-hit,
 .ert-time-reference.rt-non-selected .ert-time-reference-range { pointer-events: none; }
 .ert-time-reference-range { fill: var(--text-normal); font-size: 13px; font-weight: 600; paint-order: stroke; stroke: var(--background-primary); stroke-width: 4px; stroke-linejoin: round; pointer-events: all; cursor: pointer; }
-.ert-time-reference-count { fill: var(--text-normal); font-size: 13px; font-weight: 600; paint-order: stroke; stroke: var(--background-primary); stroke-width: 3px; text-anchor: middle; pointer-events: none; }
+.ert-time-reference-count { fill: var(--text-normal); font-size: 13px; font-weight: 600; paint-order: stroke; stroke: var(--background-primary); stroke-width: 3px; pointer-events: none; }
 .ert-time-reference-row td { padding-inline-start: var(--size-4-8); }
 .ert-time-reference-open {
     display: flex;

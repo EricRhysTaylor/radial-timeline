@@ -33,7 +33,7 @@ describe('reference occurrences across actual ring layouts', () => {
     it('uses interior concentric tracks and separate explicit seam terminals', () => {
         const markup = render(['1952', '2040']);
         expect(markup).toContain(' A 440.8 440.8 ');
-        expect(markup.match(/ert-time-reference-break/g)).toHaveLength(4);
+        expect(markup.match(/ert-time-reference-break/g)).toHaveLength(2);
         expect(markup).toContain('Earlier · 1952');
         expect(markup).toContain('Later · 2040');
         expect(markup).not.toMatch(/NaN|Infinity/);
@@ -47,15 +47,27 @@ describe('reference occurrences across actual ring layouts', () => {
         expect(markup.match(/class="ert-time-reference-connector"/g)).toHaveLength(1);
         for (let i = 0; i < 5; i++) expect(markup).toContain(`A &lt;memory&gt; ${i}`);
     });
-    it('keeps larger seam glyphs above the inner edge and clear of the dominance triangles', () => {
+    it('returns labels to scene bottoms and lifts only Later slightly above the dominance corner', () => {
         const markup = render(['1952', '2040']);
         const squares = Array.from(markup.matchAll(/<rect class="ert-time-reference-slice" x="([^"]+)" y="([^"]+)" width="([^"]+)" height="([^"]+)"/g), m => m.slice(1).map(Number));
         expect(squares).toHaveLength(2);
-        squares.forEach(([x, y, width, height]) => {
-            expect(width).toBeGreaterThanOrEqual(9);
-            expect(x > 40 || x + width < -40).toBe(true);
-            expect(y + height).toBeLessThan(-410);
-        });
+        const radii = squares.map(([x, y, width, height]) => Math.hypot(x + width / 2, y + height / 2));
+        expect(radii[0]).toBeCloseTo(408.8);
+        expect(radii[1] - radii[0]).toBeCloseTo(6);
+        expect(markup).not.toContain('ert-time-reference-halo');
+        expect(markup).toContain('d="M22 12h-2.48');
+    });
+    it.each([false, true])('keeps overflow on its own side of the seam with inherited Sequence slots: %s', inherited => {
+        const items = [source('History', Array(5).fill('1952'))];
+        const outer = computeChronologueLayout(700, 900, start, end, items);
+        for (const [inner, outside] of [[200, 320], [400, 520], [700, 900]]) {
+            const local = computeChronologueLayout(inner, outside, start, end, items);
+            const markup = renderTimeReferenceMarkers(items, local.positions, inherited ? outer.slots : local.slots, inner, outside, 0, () => 'purple');
+            const overflow = markup.match(/class="ert-time-reference-count" x="([^"]+)" y="[^"]+" text-anchor="end">\+2/);
+            expect(overflow).not.toBeNull();
+            // End anchoring makes the whole count extend left, away from the seam.
+            expect(Number(overflow![1])).toBeLessThan(-10);
+        }
     });
     it('distinguishes multiple off-range dates from a same-date stack', () => {
         const markup = render(['1952', '1986', '1990']);

@@ -1,4 +1,5 @@
 import { Menu } from 'obsidian';
+import { referenceMarkColor } from './render';
 import type { RadialTimelineView } from '../../view/TimeLineView';
 import { currentTimelineColoring, currentTimelineLens, onTimelineOverlayChange, markTimetableRows } from '../../timetable/timetableRegistry';
 import { openTimeReference } from './editor';
@@ -33,7 +34,7 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
             const reference = references.get(keysOf(connector)[0]);
             const value = reference ? coloring?.values.get(reference.path) : undefined;
             const slot = value === undefined ? undefined : coloring?.legend.find(entry => entry.value === value)?.colorIndex;
-            if (!connector.classList.contains('ert-time-reference-halo')) connector.setCssProps({ stroke: coloring ? (slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`) : '' });
+            connector.setCssProps({ stroke: coloring ? referenceMarkColor(slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`) : '' });
             connector.classList.toggle('ert-time-reference-filtered', !!reference && !!lens && !lens.paths.has(reference.path));
         });
         svg.querySelectorAll<SVGElement>('.ert-time-reference').forEach(group => {
@@ -43,7 +44,7 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
             if (!ref) return;
             const value = coloring?.values.get(ref.path);
             const slot = value === undefined ? undefined : coloring?.legend.find(entry => entry.value === value)?.colorIndex;
-            const fill = coloring ? (slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`) : '';
+            const fill = coloring ? referenceMarkColor(slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`) : '';
             group.querySelector<SVGElement>('.ert-time-reference-slice')?.setCssProps({ fill });
         });
     };

@@ -19,12 +19,12 @@ export function referenceRingGeometry(innerR: number, outerR: number) {
     const thickness = outerR - innerR;
     const size = Math.min(10, thickness * .16);
     const pitch = size + 6;
-    const base = innerR + thickness * .36;
+    const base = innerR + size / 2 + 4;
     return {
         track: innerR + thickness * .68,
         base, size, pitch,
         capacity: Math.max(1, Math.min(3, Math.floor((outerR - base - size / 2) / pitch))),
-        seamOffset: 64 / base,
+        seamOffset: Math.PI / 45,
     };
 }
 
@@ -101,20 +101,18 @@ function arc(radius: number, from: number, to: number): string {
     return `A ${radius} ${radius} 0 ${Math.abs(to - from) > Math.PI ? 1 : 0} ${to >= from ? 1 : 0} ${point(radius, to)}`;
 }
 
-/** Concentric interior track, with a real gap and two slashes at an off-range seam. */
-export function referenceConnector(innerR: number, outerR: number, source: PositionInfo, slot: ReferenceSlot, terminalRadius: number): { path: string; discontinuity?: string } {
+/** Concentric interior track, with a real gap for the Lucide Activity seam mark. */
+export function referenceConnector(innerR: number, outerR: number, source: PositionInfo, slot: ReferenceSlot, terminalRadius: number): { path: string; discontinuity?: { x: number; y: number; rotation: number } } {
     const { track, base: sourceRadius } = referenceRingGeometry(innerR, outerR);
     const from = source.endAngle - Math.min(18 / track, source.angularSize / 4);
     let path = `M ${point(sourceRadius, from)} L ${point(track, from)} `;
     const offRange = slot.extent === 'earlier' || slot.extent === 'later';
-    let discontinuity: string | undefined;
+    let discontinuity: { x: number; y: number; rotation: number } | undefined;
     if (offRange) {
         const direction = slot.extent === 'later' ? 1 : -1;
         const halfGap = Math.min(16 / track, Math.abs(slot.angle - slot.seam) / 3);
         path += `${arc(track, from, slot.seam - direction * halfGap)} M ${point(track, slot.seam + direction * halfGap)} ${arc(track, slot.seam + direction * halfGap, slot.angle)}`;
-        const x = track * Math.cos(slot.seam), y = track * Math.sin(slot.seam);
-        const slashPoint = (tangent: number, radial: number): string => `${x - tangent * Math.sin(slot.seam) + radial * Math.cos(slot.seam)} ${y + tangent * Math.cos(slot.seam) + radial * Math.sin(slot.seam)}`;
-        discontinuity = [-6, 6].map(offset => `M ${slashPoint(offset - 3, -8)} L ${slashPoint(offset + 3, 8)}`).join(' ');
+        discontinuity = { x: track * Math.cos(slot.seam), y: track * Math.sin(slot.seam), rotation: slot.seam * 180 / Math.PI + 90 };
     } else path += arc(track, from, slot.angle);
     path += ` L ${point(terminalRadius, slot.angle)}`;
     return { path, discontinuity };

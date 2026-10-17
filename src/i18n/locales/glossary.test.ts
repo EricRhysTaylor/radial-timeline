@@ -39,6 +39,8 @@ interface Term {
     fieldNames?: Record<string, string>;
     /** Keys whose English uses the word in another sense ("act as"). */
     otherSense?: string[];
+    /** Per locale: keys whose word order moves the term into the next fragment of a split sentence. */
+    movedByWordOrder?: Partial<Record<Locale, string[]>>;
 }
 
 const SUBPLOT_FIELD = {
@@ -151,11 +153,16 @@ const GLOSSARY: Record<string, Term> = {
         en: /\bvaults?\b/i,
         words: {
             de: ['Vault'],
+            ja: ['保管庫'],
+            ko: ['보관함'],
+            zh: ['仓库'],
             es: ['bóveda'],
             fr: ['coffre'],
             th: ['ห้องนิรภัย'],
             vi: [/(?<!\p{L})kho(?!\p{L})/iu],
         },
+        // "…demo vaults such as" + the next fragment: Japanese says 無料デモ保管庫 in heroBodyTail.
+        movedByWordOrder: { ja: ['ui.proEntitlementPanel.heroBodyMiddle'] },
     },
     apiKey: {
         en: /\bAPI keys?\b/i,
@@ -194,7 +201,13 @@ const VERBATIM = [
 const QUOTED_YAML = /"((?:Class|Beat Model|Subplot|Act|When|Pulse Update): [^"]*)"/g;
 
 /** Wrong senses already removed from a locale; any return is a regression. */
+const UNTRANSLATED_VAULT = /(?<![A-Za-z{])[Vv]aults?(?![A-Za-z}])/;
+
 const BANNED: Partial<Record<Locale, RegExp[]>> = {
+    ja: [UNTRANSLATED_VAULT],
+    // 보관함 ends in a consonant, so it takes 을 / 은 / 과, never 를 / 는 / 와.
+    ko: [UNTRANSLATED_VAULT, /보관함(를|는|와)/],
+    zh: [UNTRANSLATED_VAULT],
     fr: [
         /terrain principal/i, /tracé principal/i, /bague/i, /sonnerie/i, /sous-(parcelle|plaque|plancher|plot)/i,
         /battement/i, /\bbatt(re|ez|er)\b/i, /coffre-fort/i, /touche API/i,
@@ -250,6 +263,7 @@ describe('core-term glossary', () => {
         const wrong = Object.keys(english).filter(key => {
             if (!spec.en.test(withoutPlaceholders(english[key]))) return false;
             if (spec.otherSense?.includes(key)) return false;
+            if (spec.movedByWordOrder?.[locale]?.includes(key)) return false;
             const translated = locales[locale][key];
             if (translated === undefined) return false;
             const fieldName = spec.fieldNames?.[key];

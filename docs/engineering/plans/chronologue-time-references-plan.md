@@ -16,11 +16,13 @@ attached to that scene, with one or more rendered occurrences.
 
 ## Agreed interaction and geometry
 
-- A reference is a small solid square at the clockwise inner corner of its
-  date position. It overlays scene geometry and never receives a scene slot.
+- A reference is a solid square, up to 10 SVG units, at the clockwise interior
+  corner of its date position. It overlays scene geometry and never receives a
+  scene slot. Marker bases sit 36% into the ring from its inner edge.
 - From the master scene's clockwise inner corner, a short radial feed reaches
-  a concentric track inside the ring. The arc follows that track and ends
-  radially at the reference square. It clears the scene center's question icon.
+  a concentric track 32% inside the outer ring border. The arc follows that track
+  and ends radially at the reference square. A contrasting background stroke
+  keeps it readable over scene fills. It clears the scene center's question icon.
 - Connectors never cross the central status grid or travel through another ring.
   A coincident date produces a radial connection rather than an artificial arc.
 - Same-date references stack radially at the same angle, with at most three
@@ -132,6 +134,10 @@ The existing primary positions are returned unchanged even for dense references.
   across it to a Later terminal on the right. A real connector gap and two
   slashes mark the discontinuity; terminal labels include the actual date.
   The terminal is categorical and does not encode the omitted time distance.
+  Terminals are offset from the seam (64 SVG units at the base radius), raised
+  clear of dominance triangles and the core, and use 13-unit labels. The seam
+  has a 32-unit gap with an enlarged double slash; active connector and break
+  strokes render at 3 px and 4 px, respectively.
 - Several off-range dates share an explicit date-count cluster at that terminal,
   with all declarations available in its menu and Timetable. They are never
   misrepresented as multiple references at one date.

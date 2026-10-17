@@ -99,6 +99,7 @@ Location: `docs/engineering/audits/`
 
 Historical audits and investigations.
 
+- **[Chronologue reference visibility](audits/2026-10-16-chronologue-reference-visibility.md)** — Deeper interior tracks, larger seam notation and square markers, native dominance collision checks and verification.
 - **[Chronologue reference seam](audits/2026-10-15-chronologue-reference-seam.md)** — Primary-date-only range, interior connectors, seam discontinuities, square stacks, linked native selection and verification.
 - **[Chronologue time references](audits/2026-10-14-chronologue-time-references.md)** — Manual prototype audit, native evidence, verification results, and remaining acceptance coverage.
 

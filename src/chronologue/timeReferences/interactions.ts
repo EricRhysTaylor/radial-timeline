@@ -33,7 +33,7 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
             const reference = references.get(keysOf(connector)[0]);
             const value = reference ? coloring?.values.get(reference.path) : undefined;
             const slot = value === undefined ? undefined : coloring?.legend.find(entry => entry.value === value)?.colorIndex;
-            connector.setCssProps({ stroke: coloring ? (slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`) : '' });
+            if (!connector.classList.contains('ert-time-reference-halo')) connector.setCssProps({ stroke: coloring ? (slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`) : '' });
             connector.classList.toggle('ert-time-reference-filtered', !!reference && !!lens && !lens.paths.has(reference.path));
         });
         svg.querySelectorAll<SVGElement>('.ert-time-reference').forEach(group => {

@@ -32,20 +32,30 @@ describe('reference occurrences across actual ring layouts', () => {
     });
     it('uses interior concentric tracks and separate explicit seam terminals', () => {
         const markup = render(['1952', '2040']);
-        expect(markup).toContain(' A 448 448 ');
-        expect(markup.match(/ert-time-reference-break/g)).toHaveLength(2);
+        expect(markup).toContain(' A 440.8 440.8 ');
+        expect(markup.match(/ert-time-reference-break/g)).toHaveLength(4);
         expect(markup).toContain('Earlier · 1952');
         expect(markup).toContain('Later · 2040');
         expect(markup).not.toMatch(/NaN|Infinity/);
     });
     it('shows three same-date squares and an actionable overflow containing every remaining reference', () => {
-        const markup = render(Array(5).fill('1952'));
+        const markup = render(Array(5).fill('1952'), 400, 520);
         expect(markup.match(/class="ert-time-reference-slice"/g)).toHaveLength(3);
         expect(markup.match(/class="ert-time-reference"/g)).toHaveLength(4);
         expect(markup).toContain('>+2</text>');
         // One shared source/date route, plus its seam break, rather than five coincident paths.
         expect(markup.match(/class="ert-time-reference-connector"/g)).toHaveLength(1);
         for (let i = 0; i < 5; i++) expect(markup).toContain(`A &lt;memory&gt; ${i}`);
+    });
+    it('keeps larger seam glyphs above the inner edge and clear of the dominance triangles', () => {
+        const markup = render(['1952', '2040']);
+        const squares = Array.from(markup.matchAll(/<rect class="ert-time-reference-slice" x="([^"]+)" y="([^"]+)" width="([^"]+)" height="([^"]+)"/g), m => m.slice(1).map(Number));
+        expect(squares).toHaveLength(2);
+        squares.forEach(([x, y, width, height]) => {
+            expect(width).toBeGreaterThanOrEqual(9);
+            expect(x > 40 || x + width < -40).toBe(true);
+            expect(y + height).toBeLessThan(-410);
+        });
     });
     it('distinguishes multiple off-range dates from a same-date stack', () => {
         const markup = render(['1952', '1986', '1990']);

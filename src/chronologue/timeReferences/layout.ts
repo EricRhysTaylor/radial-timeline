@@ -14,6 +14,20 @@ export interface ReferenceSlot {
 }
 export interface ReferenceLayout { positions: Map<number, PositionInfo>; slots: ReferenceSlot[] }
 
+/** Shared ring geometry keeps routes, stacked markers and seam labels in the scene interior. */
+export function referenceRingGeometry(innerR: number, outerR: number) {
+    const thickness = outerR - innerR;
+    const size = Math.min(10, thickness * .16);
+    const pitch = size + 6;
+    const base = innerR + thickness * .36;
+    return {
+        track: innerR + thickness * .68,
+        base, size, pitch,
+        capacity: Math.max(1, Math.min(3, Math.floor((outerR - base - size / 2) / pitch))),
+        seamOffset: 64 / base,
+    };
+}
+
 /** Precision bounds describe the primary When dates only, never reference dates. */
 export function primaryReferenceDomain(items: TimelineItem[]): ReferenceDomain | undefined {
     const bounds = items.filter(isSceneItem).flatMap(item => {
@@ -44,7 +58,8 @@ export function placeTimeReferences(items: TimelineItem[], primary: Map<number, 
         seen.add(key);
         return readTimeReferences(item.rawFrontmatter?.[TIME_REFERENCES_KEY], item.path).references;
     }).sort((a, b) => a.when.start - b.when.start || a.path.localeCompare(b.path) || a.index - b.index);
-    const radius = outerR - Math.min(12, (outerR - innerR) * .22);
+    const geometry = referenceRingGeometry(innerR, outerR);
+    const radius = geometry.track;
     const inset = Math.min(18 / radius, (endAngle - startAngle) / 8);
     const anchors = items.flatMap((item, i) => {
         const position = primary.get(i);
@@ -67,7 +82,8 @@ export function placeTimeReferences(items: TimelineItem[], primary: Map<number, 
         const parentIndex = items.findIndex(item => item.path === ref.path);
         const parent = primary.get(parentIndex);
         if (!parent) continue;
-        const angle = extent === 'earlier' ? startAngle - inset : extent === 'later' ? endAngle + inset
+        const seamOffset = Math.min(geometry.seamOffset, (endAngle - startAngle) / 8);
+        const angle = extent === 'earlier' ? startAngle - seamOffset : extent === 'later' ? endAngle + seamOffset
             : extent === 'unanchored' ? parent.endAngle - Math.min(inset, parent.angularSize / 4)
             : angleAt(Math.max(domain!.start, ref.when.start));
         const clipped = extent === 'within' && (ref.when.start < domain!.start || finish > domain!.end);
@@ -87,20 +103,18 @@ function arc(radius: number, from: number, to: number): string {
 
 /** Concentric interior track, with a real gap and two slashes at an off-range seam. */
 export function referenceConnector(innerR: number, outerR: number, source: PositionInfo, slot: ReferenceSlot, terminalRadius: number): { path: string; discontinuity?: string } {
-    const thickness = outerR - innerR;
-    const track = outerR - Math.min(12, thickness * .22);
+    const { track, base: sourceRadius } = referenceRingGeometry(innerR, outerR);
     const from = source.endAngle - Math.min(18 / track, source.angularSize / 4);
-    const sourceRadius = innerR + Math.min(9, thickness * .18);
     let path = `M ${point(sourceRadius, from)} L ${point(track, from)} `;
     const offRange = slot.extent === 'earlier' || slot.extent === 'later';
     let discontinuity: string | undefined;
     if (offRange) {
         const direction = slot.extent === 'later' ? 1 : -1;
-        const halfGap = Math.min(5 / track, Math.abs(slot.angle - slot.seam) / 3);
+        const halfGap = Math.min(16 / track, Math.abs(slot.angle - slot.seam) / 3);
         path += `${arc(track, from, slot.seam - direction * halfGap)} M ${point(track, slot.seam + direction * halfGap)} ${arc(track, slot.seam + direction * halfGap, slot.angle)}`;
         const x = track * Math.cos(slot.seam), y = track * Math.sin(slot.seam);
         const slashPoint = (tangent: number, radial: number): string => `${x - tangent * Math.sin(slot.seam) + radial * Math.cos(slot.seam)} ${y + tangent * Math.cos(slot.seam) + radial * Math.sin(slot.seam)}`;
-        discontinuity = [-2, 2].map(offset => `M ${slashPoint(offset - 1, -3)} L ${slashPoint(offset + 1, 3)}`).join(' ');
+        discontinuity = [-6, 6].map(offset => `M ${slashPoint(offset - 3, -8)} L ${slashPoint(offset + 3, 8)}`).join(' ');
     } else path += arc(track, from, slot.angle);
     path += ` L ${point(terminalRadius, slot.angle)}`;
     return { path, discontinuity };

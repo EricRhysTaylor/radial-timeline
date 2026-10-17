@@ -1,6 +1,6 @@
 Keep a scene’s `When` as the date when its main action happens. Add **Time References** for other periods inside that scene: a remembered fire, a quoted letter, an enacted flashback, or an imagined future.
 
-> **Development build:** Time references are available in the current development build. The screenshots use the synthetic **Time Reference Study** manuscript in the Chronologue Seam QA vault.
+> **Available in 7.5.2.** The screenshots use a synthetic study manuscript, **Time Reference Study**.
 
 ## Add references to a scene
 

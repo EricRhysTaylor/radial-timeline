@@ -1,6 +1,6 @@
 ## Radial Timeline 7.5.2
 
-A bug-fix release, plus a name of your own for the main plot and a way to take a scene off the timeline without deleting it.
+A bug-fix release, plus time references in Chronologue, a name of your own for the main plot, and a way to take a scene off the timeline without deleting it.
 
 ### Fixes
 
@@ -14,6 +14,7 @@ A bug-fix release, plus a name of your own for the main plot and a way to take a
 
 ### Also new
 
+- **Time references in Chronologue.** A scene keeps its own `When` and can now point to other periods in its prose: a memory, a mention, an enacted flashback, or a possible future. Right-click a scene note and choose **Time references…**, or select a passage in the editor and choose **Add time reference…**. In normal Chronologue, each reference appears as a dated square on the outer ring, linked to its scene; clicking it opens the passage. The Timetable lists a scene's references as rows you can expand. See [Time references](https://github.com/EricRhysTaylor/radial-timeline/wiki/Time-References).
 - **Name your main plot.** In **Subplot manager**, rename the main plot like any subplot. It stays in ring 1, keeps scenes with no Subplot, and is marked with a map pin. Each book names its own, and the dialog says how many of that book's scenes it updates before writing.
 - **Remove from timeline.** Right-click a scene and choose **Remove from timeline** to take it off the timeline and out of the manuscript without deleting the note. Only its `Class` is removed; **Promote to scene** brings the same scene back.
 - **Spanish, French, Thai, and Vietnamese.** The interface follows Obsidian's language in four more languages.

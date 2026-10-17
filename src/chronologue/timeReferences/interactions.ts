@@ -45,20 +45,30 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
             const value = coloring?.values.get(ref.path);
             const slot = value === undefined ? undefined : coloring?.legend.find(entry => entry.value === value)?.colorIndex;
             const fill = coloring ? referenceMarkColor(slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`) : '';
-            group.querySelector<SVGElement>('.ert-time-reference-slice, circle')?.setCssProps({ fill });
+            group.querySelector<SVGElement>('.ert-time-reference-slice, .ert-time-reference-source-mark')?.setCssProps({ fill });
         });
     };
     update();
     view.renderScope.register(onTimelineOverlayChange(update));
     view.renderScope.register(onReferenceSelection(selection => {
+        svg.classList.toggle('ert-has-reference-selection', !!selection && references.has(selection.key));
         svg.querySelectorAll('.ert-time-reference-origin[data-source-path]').forEach(group => {
             group.classList.toggle('is-active', !!selection && group.getAttribute('data-source-path') === encodeURIComponent(selection.path));
         });
-        const connectors = Array.from(svg.querySelectorAll<SVGElement>('.ert-time-reference-connector'));
-        connectors.forEach(connector => {
-            connector.classList.toggle('is-active', !!selection && keysOf(connector).includes(selection.key));
+        const markers = Array.from(svg.querySelectorAll<SVGElement>('.ert-time-reference'));
+        const selected = markers.find(group => !!selection && keysOf(group).includes(selection.key));
+        svg.querySelectorAll<SVGElement>('.ert-time-reference-connector').forEach(connector => {
+            const active = !!selection && keysOf(connector).includes(selection.key);
+            connector.classList.toggle('is-active', active);
+            if (active && selected && !connector.classList.contains('ert-time-reference-break')) {
+                // Same-date stacks share a route; its last leg follows the selected passage marker.
+                connector.setAttribute('d', connector.getAttribute('d')!.replace(/ L [^L]+$/, ` L ${selected.dataset.referenceX} ${selected.dataset.referenceY}`));
+            }
         });
-        svg.querySelectorAll<SVGElement>('.ert-time-reference').forEach(group => group.classList.toggle('is-active', !!selection && keysOf(group).includes(selection.key)));
+        markers.forEach(group => {
+            group.classList.toggle('is-active', group === selected);
+            group.classList.toggle('is-date-active', !!selected && group.dataset.referenceSlot === selected.dataset.referenceSlot);
+        });
     }));
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (event: Event) => {
         const group = groupOf(event.target);

@@ -55,13 +55,26 @@ describe('reference occurrences across actual ring layouts', () => {
     });
     it('returns labels to scene bottoms and lifts only Later slightly above the dominance corner', () => {
         const markup = render(['1952', '2040']);
-        const squares = Array.from(markup.matchAll(/<rect class="ert-time-reference-slice" x="([^"]+)" y="([^"]+)" width="([^"]+)" height="([^"]+)"/g), m => m.slice(1).map(Number));
+        const squares = Array.from(markup.matchAll(/<g transform="translate\(([^ ]+) ([^)]+)\) rotate\(([^)]+)\)"><rect class="ert-time-reference-slice" x="[^"]+" y="[^"]+" width="([^"]+)"/g), m => m.slice(1).map(Number));
         expect(squares).toHaveLength(2);
-        const radii = squares.map(([x, y, width, height]) => Math.hypot(x + width / 2, y + height / 2));
+        const radii = squares.map(([x, y, rotation]) => {
+            expect(Math.cos(rotation * Math.PI / 180)).toBeCloseTo(Math.cos(Math.atan2(y, x) + Math.PI / 2));
+            return Math.hypot(x, y);
+        });
         expect(radii[0]).toBeCloseTo(408.8);
         expect(radii[1] - radii[0]).toBeCloseTo(6);
         expect(markup).not.toContain('ert-time-reference-halo');
         expect(markup).toContain('d="M22 12h-2.48');
+    });
+    it('uses circular label paths and a larger source square, with upright lower-half source text', () => {
+        const markup = render(['1952', '2040']);
+        expect(markup.match(/<textPath /g)).toHaveLength(3);
+        const sourceMark = markup.match(/class="ert-time-reference-source-mark"[^>]*width="([^"]+)"/);
+        expect(Number(sourceMark![1])).toBeGreaterThan(9.6 * 1.35);
+        expect(markup).not.toContain('<circle');
+        const label = markup.match(/class="ert-time-reference-origin-label"[^>]*><textPath href="#([^"]+)"/);
+        const sourcePath = markup.match(new RegExp(`<path id="${label![1]}" d="([^"]+)"`));
+        expect(sourcePath![1]).toContain(' A 422.8 422.8 0 0 0 ');
     });
     it('keeps overflow on its own side of the seam across ring sizes', () => {
         const items = [source('History', Array(5).fill('1952'))];

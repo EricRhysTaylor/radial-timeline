@@ -1,4 +1,4 @@
-/* Radial Timeline references use concentric tracks inside each scene ring. */
+/* Radial Timeline references use concentric tracks on All Scenes. */
 .ert-time-reference-connector {
     pointer-events: none;
     opacity: 0;
@@ -10,7 +10,12 @@
 .ert-time-reference-connector.is-active { opacity: 1; stroke-width: 3px; }
 .ert-time-reference-connector.ert-time-reference-break { stroke-width: 1.5px; }
 .ert-time-reference-hit { pointer-events: all; cursor: pointer; }
-.ert-time-reference-slice { pointer-events: none; }
+.ert-time-reference-slice { pointer-events: none; transform-box: fill-box; transform-origin: center; }
+.ert-time-reference.is-active .ert-time-reference-slice { transform: scale(1.35); }
+.ert-has-reference-selection .ert-time-reference:not(.is-active) .ert-time-reference-slice,
+.ert-has-reference-selection .ert-time-reference:not(.is-active) .ert-time-reference-count,
+.ert-has-reference-selection .ert-time-reference:not(.is-date-active) .ert-time-reference-range,
+.ert-has-reference-selection .ert-time-reference-origin:not(.is-active):not(.ert-time-reference-filtered) { opacity: 0.25; }
 .ert-time-reference-origin { pointer-events: none; }
 .ert-time-reference-origin-label { opacity: 0; fill: var(--text-normal); font-size: 13px; font-weight: 600; paint-order: stroke; stroke: var(--background-primary); stroke-width: 3px; }
 .ert-time-reference-origin.is-active .ert-time-reference-origin-label { opacity: 1; }

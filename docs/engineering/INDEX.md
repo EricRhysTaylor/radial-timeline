@@ -99,6 +99,7 @@ Location: `docs/engineering/audits/`
 
 Historical audits and investigations.
 
+- **[Chronologue reference emphasis and circular labels](audits/2026-10-17-chronologue-reference-emphasis.md)** — Larger selected and source squares, dimmed alternatives, circular labels and tangential marker rotation, with native Fill/Sequence checks.
 - **[Chronologue reference ownership and selection](audits/2026-10-16-chronologue-reference-clarity.md)** — One All Scenes reference set, named source circles, one active connection and stable pinning, with native Fill/Sequence verification.
 - **[Chronologue reference alignment correction](audits/2026-10-16-chronologue-reference-alignment.md)** — Scene-bottom labels, consistent seam angles, unoutlined solid marks and Lucide Activity, with native count-clipping verification.
 - **[Chronologue reference visibility](audits/2026-10-16-chronologue-reference-visibility.md)** — Deeper interior tracks, larger seam notation and square markers, native dominance collision checks and verification.

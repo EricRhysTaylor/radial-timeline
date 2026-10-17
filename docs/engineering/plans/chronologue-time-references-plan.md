@@ -35,9 +35,16 @@ attached to that scene, with one or more rendered occurrences.
 - Reference relationships appear once on All Scenes. Subplot memberships still
   belong to the source scene; references do not create subplot copies or imply
   that another scene at the referenced date participates in the relationship.
-- A small solid circle marks the middle of the source scene's inner edge. Selecting a reference shows the
-  source's scene number/name beside that circle and one source-to-date route.
-  The referenced date remains a solid square; its details name the owning scene.
+- A larger solid square (up to 16 SVG units) marks the source near the middle
+  of its inner edge, offset beside the Question icon. Its selected scene caption
+  follows the ring on a text path. The selected date square grows to 135% of its
+  normal size; other reference squares and unrelated date labels dim to 25%.
+- Source and date squares rotate tangentially with the ring. Source, Earlier and
+  Later labels follow circular text paths; lower-half paths reverse to stay
+  upright. Guide paths live in SVG definitions and do not enlarge hit bounds.
+- Selecting a same-date stack entry moves the shared route's final leg to that
+  entry's marker. Its date label stays readable; the sibling squares dim.
+  Referenced-date details name the owning scene.
 - Ordinary scene/ring and parent Timetable-row hovers do not reveal routes.
   Direct reference hover/focus previews one connection. Clicking pins that
   connection until another reference or the timeline background is clicked;
@@ -266,7 +273,7 @@ is outside the active vault. Only this Working copy receives the revision build.
 
 
 The 2026-10-16 clarity correction renders references only on All Scenes. The
-source circle and its selected scene caption identify ownership; only the
+source marker and its selected scene caption identify ownership; only the
 selected reference route appears. Ordinary scene hover does not reveal routes,
 and a clicked reference remains pinned across hover activity. Chronologue Seam
 QA now has four primary scenes, including the author's New Scene; all seven

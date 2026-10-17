@@ -719,6 +719,10 @@
   pointer-events: none;
 }
 
+.radial-timeline-svg[data-mode="chronologue"][data-shift-mode] .rt-query-mark {
+    display: none;
+}
+
 .rt-query-icon {
   color: var(--rt-legacy-black);
   overflow: visible;

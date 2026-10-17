@@ -21,3 +21,7 @@ Evidence: `Demo Vaults/Testing Vaults/2026-10-17 Chronologue mode documentation/
 `CI=true npm run build-only`, all 14 `CI=true npm run gates` checks, all 32 focused time-reference tests and `git diff --check` passed. Checked local wiki page/image links and reviewed all three screenshot crops. Existing report-only Obsidian lint and unused-CSS notices remain outside this scope.
 
 No release-blocking, high or medium findings in this change. No refactor, dead-code removal, naming migration, settings migration, shortcut or new YAML field was needed. Reference ownership, scene positions, author metadata and primary date range remain intact. Mobile/touch and light theme were not exercised. No public plugin release was made.
+
+## Follow-up: Question marks in sub-modes
+
+At the author's request, a scoped rule in `scenes.css` now hides `.rt-query-mark` only when a Chronologue SVG has a sub-mode attribute. This includes both the bubble and compact dot; normal Chronologue and other modes preserve them. Native QA inspected seven marks: seven visible in normal Chronologue, zero in Shift, zero in Runtime, and zero in Alien Calendar. Narrative retained all seven. Scene title occurrences remained at 67 in the Chronologue sub-modes. The temporary calendar settings were restored. Evidence is in `Demo Vaults/Testing Vaults/2026-10-17 Chronologue query submodes/`. The Time References guide now notes this behavior; its normal-mode screenshots remain current. The four query-mark tests and all 14 verification gates passed.

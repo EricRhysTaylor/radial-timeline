@@ -53,11 +53,11 @@ export const th: TranslationKeys = {
             },
             "manuscriptOutputFolder": {
                 "name": "โฟลเดอร์ส่งออก",
-                "desc": "จุดหมายสำหรับการส่งออกต้นฉบับ, แผนผัง, และบัตรคำใบ้ (Markdown, PDF, แผนผังจังหวะ, บัตรดัชนี) ต้องเป็นโฟลเดอร์ภายในวอลต์ของคุณ"
+                "desc": "จุดหมายสำหรับการส่งออกต้นฉบับ, แผนผัง, และบัตรคำใบ้ (Markdown, PDF, แผนผังบีท, บัตรดัชนี) ต้องเป็นโฟลเดอร์ภายในห้องนิรภัยของคุณ"
             },
             "rippleRename": {
                 "name": "การเปลี่ยนชื่อแบบลูกโซ่สำหรับต้นฉบับ: ปรับรูปแบบตัวเลขนำหน้าหลังการจัดเรียงใหม่ด้วยการลาก",
-                "desc": "เปลี่ยนชื่อไฟล์ฉากและจังหวะที่ใช้งานเท่านั้น ฉากจะคงเป็นจำนวนเต็ม (1, 2, 3) จังหวะจะกลายเป็นเลขทศนิยมย่อย (1.01, 1.02)"
+                "desc": "เปลี่ยนชื่อไฟล์ฉากและบีทที่ใช้งานเท่านั้น ฉากจะคงเป็นจำนวนเต็ม (1, 2, 3) บีทจะกลายเป็นเลขทศนิยมย่อย (1.01, 1.02)"
             },
             "autoExpand": {
                 "name": "ขยายชื่อฉากที่ถูกตัด",
@@ -91,7 +91,7 @@ export const th: TranslationKeys = {
                 "highlightsKicker": "ไฮไลต์ของ AI",
                 "featureInquiry": "Inquiry — ถามคำถามข้ามฉากและรับข้อเสนอแนะการแก้ไขแบบมีโครงสร้าง",
                 "featurePulse": "Pulse — วิเคราะห์ฉากในบริบทโดยใช้เลนส์สามฉากของ Radial Timeline",
-                "featureGossamer": "Gossamer — วัดระดับความตึงเครียดและพลังเชิงเรื่องราวในแต่ละจังหวะ",
+                "featureGossamer": "Gossamer — วัดระดับความตึงเครียดและพลังเชิงเรื่องราวในแต่ละบีท",
                 "featureForceMultiplier": "ตัวคูณแรง — ขยายขอบเขตการวิเคราะห์ด้วยข้อมูลเชิงบริบทและข้อเสนอแนะที่ใช้การได้จริง"
             },
             "heroOff": {
@@ -100,7 +100,7 @@ export const th: TranslationKeys = {
                 "toolsKicker": "พร้อมใช้งานเมื่อเปิดใช้งาน",
                 "featureInquiry": "Inquiry — การวิเคราะห์โครงสร้างข้ามฉาก",
                 "featurePulse": "Pulse — การประเมินฉากแบบรับรู้บริบท",
-                "featureGossamer": "Gossamer — จังหวะพลังเชิงเรื่องราวระดับจังหวะ",
+                "featureGossamer": "Gossamer — บีทพลังเชิงเรื่องราวระดับบีท",
                 "featureEnhanced": "สรุปฉาก ประมาณเวลาการเล่น และเครื่องมือกระบวนการทำงาน",
                 "muted": "เสียงของคุณเป็นผู้นำ AI ช่วยสนับสนุน"
             },
@@ -144,7 +144,7 @@ export const th: TranslationKeys = {
                 "desc": "การกำหนดบทบาทและบริบทที่ใช้กับคุณลักษณะ AI ทั้งหมด"
             },
             "apiKeys": {
-                "name": "กุญแจ API"
+                "name": "คีย์ API"
             },
             "configuration": {
                 "name": "การตั้งค่า"
@@ -160,7 +160,7 @@ export const th: TranslationKeys = {
             },
             "secureKey": {
                 "unavailableName": "การบันทึกกุญแจปลอดภัยไม่สามารถใช้งานได้",
-                "unavailableDesc": "การบันทึกคีย์ปลอดภัยไม่สามารถใช้งานได้ใน build Obsidian นี้ คีย์จากผู้ให้บริการ API ไม่สามารถตั้งค่าได้จนกว่าจะมีการจัดเก็บลับ",
+                "unavailableDesc": "การบันทึกคีย์ปลอดภัยไม่สามารถใช้งานได้ใน build Obsidian นี้ คีย์ API ของผู้ให้บริการไม่สามารถตั้งค่าได้จนกว่าจะมีการจัดเก็บลับ",
                 "migrateName": "จัดเก็บคีย์ที่บันทึกไว้ของฉัน",
                 "migrateDesc": "ย้ายฟิลด์คีย์ผู้ให้บริการรุ่นเก่าไปยังคีย์ที่บันทึกไว้อย่างเป็นส่วนตัวและล้างค่าข้อความธรรมดา",
                 "migrateButton": "จัดเก็บตอนนี้",
@@ -182,9 +182,9 @@ export const th: TranslationKeys = {
                 "copyKeyNameButton": "คัดลอกชื่อคีย์",
                 "keyNameCopiedNotice": "คัดลอกชื่อคีย์ที่บันทึกไว้แล้ว",
                 "keyNameCopyFailNotice": "ไม่สามารถคัดลอกชื่อคีย์ที่บันทึกไว้",
-                "placeholderAnthropic": "ป้อนคีย์ Anthropic API ของคุณ",
-                "placeholderGoogle": "ป้อนคีย์ Google API ของคุณ",
-                "placeholderOpenai": "ป้อนคีย์ OpenAI API ของคุณ"
+                "placeholderAnthropic": "ป้อนคีย์ API Anthropic ของคุณ",
+                "placeholderGoogle": "ป้อนคีย์ API Google ของคุณ",
+                "placeholderOpenai": "ป้อนคีย์ API OpenAI ของคุณ"
             },
             "localLlm": {
                 "configTitle": "การตั้งค่า Local LLM",
@@ -276,7 +276,7 @@ export const th: TranslationKeys = {
             },
             "actCount": {
                 "name": "จำนวนองก์",
-                "desc": "ใช้กับโหมด Narrative, Progress และ Gossamer คุณสมบัติของฉากและจังหวะ (ต่ำสุด 3)",
+                "desc": "ใช้กับโหมด Narrative, Progress และ Gossamer คุณสมบัติของฉากและบีท (ต่ำสุด 3)",
                 "placeholder": "3"
             },
             "actLabels": {
@@ -285,16 +285,16 @@ export const th: TranslationKeys = {
                 "placeholder": "องก์ที่ 1, องก์ที่ 2, องก์ที่ 3"
             },
             "storyBeatsSystem": {
-                "name": "ระบบจังหวะเรื่อง"
+                "name": "ระบบบีทเรื่อง"
             },
             "systemEditModal": {
                 "badge": "แก้ไข",
                 "title": "แก้ไขรายละเอียดระบบจังหวะที่กำหนดเอง",
-                "subtitle": "ชื่อนี้ใช้ระบุระบบจังหวะของคุณและปรากฏใน frontmatter ของโน้ตแต่ละจังหวะ",
+                "subtitle": "ชื่อนี้ใช้ระบุระบบบีทของคุณและปรากฏใน frontmatter ของโน้ตแต่ละบีท",
                 "nameLabel": "ชื่อระบบ",
-                "namePlaceholder": "จังหวะที่กำหนดเอง",
+                "namePlaceholder": "บีทที่กำหนดเอง",
                 "descLabel": "คำอธิบาย (ไม่บังคับ)",
-                "descPlaceholder": "อธิบายจุดประสงค์ของระบบจังหวะนี้...",
+                "descPlaceholder": "อธิบายจุดประสงค์ของระบบบีทนี้...",
                 "nameRequiredNotice": "โปรดป้อนชื่อระบบที่มีตัวอักษรหรือตัวเลข",
                 "nameLettersNotice": "ชื่อระบบต้องมีตัวอักษรหรือตัวเลข",
                 "saveText": "บันทึก",
@@ -311,16 +311,16 @@ export const th: TranslationKeys = {
                 "starterDirtyTooltip": "ชุดเริ่มต้นถูกเปลี่ยนแปลง บันทึกสำเนาเพื่อเก็บเวอร์ชันของคุณ",
                 "savedDirtyTooltip": "มีการเปลี่ยนแปลงตั้งแต่บันทึกครั้งสุดท้าย",
                 "modifiedLabel": "แก้ไขแล้ว",
-                "guidance": "สร้างจังหวะจากแถวที่ด้านล่าง: ป้อนชื่อจังหวะ ช่วงทางเลือก เลือกองก์ จากนั้นคลิก + (หรือกด Enter) ลากจังหวะไปที่ เรียงลำดับใหม่หรือวางลงในองก์อื่น ใช้บีทโน้ตด้านล่างเพื่อสร้างหรือซ่อมแซมไฟล์บีทในห้องนิรภัยของคุณ",
-                "beatNamesNotice": "ชื่อจังหวะต้องมีตัวอักษรหรือตัวเลข",
-                "beatNameNotice": "ชื่อจังหวะต้องมีตัวอักษรหรือตัวเลข",
-                "beatNamePlaceholder": "ชื่อจังหวะ",
-                "newBeatPlaceholder": "จังหวะใหม่",
-                "addBeatAriaLabel": "เพิ่มจังหวะ",
-                "dragTooltip": "ลากเพื่อจัดเรียงจังหวะ",
+                "guidance": "สร้างบีทจากแถวที่ด้านล่าง: ป้อนชื่อบีท ช่วงทางเลือก เลือกองก์ จากนั้นคลิก + (หรือกด Enter) ลากบีทไปที่ เรียงลำดับใหม่หรือวางลงในองก์อื่น ใช้บีทโน้ตด้านล่างเพื่อสร้างหรือซ่อมแซมไฟล์บีทในห้องนิรภัยของคุณ",
+                "beatNamesNotice": "ชื่อบีทต้องมีตัวอักษรหรือตัวเลข",
+                "beatNameNotice": "ชื่อบีทต้องมีตัวอักษรหรือตัวเลข",
+                "beatNamePlaceholder": "ชื่อบีท",
+                "newBeatPlaceholder": "บีทใหม่",
+                "addBeatAriaLabel": "เพิ่มบีท",
+                "dragTooltip": "ลากเพื่อจัดเรียงบีท",
                 "rangeTooltip": "ช่วงโมเมนตัม Gossamer (เช่น 10-20)",
                 "setSavedNotice": "บันทึกแล้ว คุณสามารถเรียกใช้การตรวจสอบได้ตอนนี้",
-                "noActiveSystemNotice": "ไม่มีระบบจังหวะที่ใช้งานอยู่"
+                "noActiveSystemNotice": "ไม่มีระบบบีทที่ใช้งานอยู่"
             },
             "stages": {
                 "preview": "แสดงตัวอย่าง",
@@ -328,50 +328,50 @@ export const th: TranslationKeys = {
                 "fields": "ฟิลด์"
             },
             "beatNotes": {
-                "name": "บันทึกจังหวะ",
-                "desc": "สร้างไฟล์บันทึกจังหวะในวอลต์ของคุณตามระบบโครงเรื่องที่เลือก",
-                "createText": "สร้างบันทึกจังหวะ",
-                "createTooltip": "สร้างไฟล์บันทึกจังหวะในโฟลเดอร์หนังสือที่ใช้งานอยู่",
-                "repairText": "ซ่อมแซมบันทึกจังหวะ",
-                "repairTooltip": "อัปเดต Act และ Beat Model ใน frontmatter สำหรับบันทึกจังหวะที่ไม่ตรงกัน ตัวเลขหน้าไม่ถูกเปลี่ยน"
+                "name": "บันทึกบีท",
+                "desc": "สร้างไฟล์บันทึกบีทในห้องนิรภัยของคุณตามระบบโครงเรื่องที่เลือก",
+                "createText": "สร้างบันทึกบีท",
+                "createTooltip": "สร้างไฟล์บันทึกบีทในโฟลเดอร์หนังสือที่ใช้งานอยู่",
+                "repairText": "ซ่อมแซมบันทึกบีท",
+                "repairTooltip": "อัปเดต Act และ Beat Model ใน frontmatter สำหรับบันทึกบีทที่ไม่ตรงกัน ตัวเลขหน้าไม่ถูกเปลี่ยน"
             },
             "beatFields": {
-                "name": "ฟิลด์จังหวะ",
-                "desc": "ปรับแต่งคุณสมบัติเพิ่มเติมสำหรับบันทึกจังหวะ เปิดใช้งานฟิลด์เพื่อแสดงในข้อมูลลอยของจังหวะ ใช้การตรวจสอบด้านล่างเพื่อตรวจสอบความสอดคล้องของบันทึกจังหวะที่มีอยู่",
+                "name": "ฟิลด์บีท",
+                "desc": "ปรับแต่งคุณสมบัติเพิ่มเติมสำหรับบันทึกบีท เปิดใช้งานฟิลด์เพื่อแสดงในข้อมูลลอยของบีท ใช้การตรวจสอบด้านล่างเพื่อตรวจสอบความสอดคล้องของบันทึกบีทที่มีอยู่",
                 "baseFieldsHeading": "ฟิลด์พื้นฐาน (อ่านอย่างเดียว)",
                 "customFieldsHeading": "ฟิลด์ที่กำหนดเอง",
                 "dragTooltip": "ลากเพื่อจัดเรียงใหม่",
                 "iconPlaceholder": "ชื่อไอคอน...",
                 "iconTooltip": "ชื่อไอคอน Lucide สำหรับคำอธิบายลอย",
-                "hoverCheckboxTooltip": "แสดงในคำอธิบายลอยของจังหวะ",
+                "hoverCheckboxTooltip": "แสดงในคำอธิบายลอยของบีท",
                 "keyPlaceholder": "คีย์",
                 "keyRequiredNotice": "คีย์ฟิลด์ต้องมีตัวอักษรหรือตัวเลข",
-                "baseFieldNotice": "เป็นฟิลด์จังหวะพื้นฐาน เลือกชื่ออื่น",
-                "legacyKeyNotice": "เป็นคีย์จังหวะรุ่นเก่า ใช้ \"Purpose\" แทน",
+                "baseFieldNotice": "เป็นฟิลด์บีทพื้นฐาน เลือกชื่ออื่น",
+                "legacyKeyNotice": "เป็นคีย์บีทรุ่นเก่า ใช้ \"Purpose\" แทน",
                 "keyExistsNotice": "คีย์ \"{{key}}\" มีอยู่แล้ว",
                 "commaSeparatedPlaceholder": "ค่าที่คั่นด้วยจุลภาค",
                 "defaultValuePlaceholder": "ค่าเริ่มต้น (ไม่บังคับ)",
                 "removeFieldLabel": "ลบฟิลด์",
                 "newKeyPlaceholder": "คีย์ใหม่",
                 "valuePlaceholder": "ค่า",
-                "addPropertyTooltip": "เพิ่มคุณสมบัติจังหวะที่กำหนดเอง",
-                "revertTooltip": "คืนค่าคุณสมบัติจังหวะเป็นค่าเริ่มต้น"
+                "addPropertyTooltip": "เพิ่มคุณสมบัติบีทที่กำหนดเอง",
+                "revertTooltip": "คืนค่าคุณสมบัติบีทเป็นค่าเริ่มต้น"
             },
             "resetModal": {
                 "badge": "คำเตือน",
-                "title": "รีเซ็ตคุณสมบัติจังหวะ",
-                "subtitle": "การรีเซ็ตจะลบคุณสมบัติจังหวะที่กำหนดเอง ไอคอน Lucide และคืนค่าเริ่มต้น",
+                "title": "รีเซ็ตคุณสมบัติบีท",
+                "subtitle": "การรีเซ็ตจะลบคุณสมบัติบีทที่กำหนดเอง ไอคอน Lucide และคืนค่าเริ่มต้น",
                 "confirmText": "คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ต? การกระทำนี้ไม่สามารถยกเลิกได้",
                 "resetText": "รีเซ็ตเป็นค่าเริ่มต้น",
                 "cancelText": "ยกเลิก"
             },
             "hoverPreview": {
-                "heading": "ตัวอย่างข้อมูลลอยจังหวะ",
-                "headingNoneEnabled": "ตัวอย่างข้อมูลลอยจังหวะ (ไม่มีการเปิดใช้งาน)",
-                "enableHint": "เปิดใช้งานฟิลด์โดยใช้ช่องทำเครื่องหมายด้านบนเพื่อแสดงในคำอธิบายลอยของจังหวะ"
+                "heading": "ตัวอย่างข้อมูลลอยบีท",
+                "headingNoneEnabled": "ตัวอย่างข้อมูลลอยบีท (ไม่มีการเปิดใช้งาน)",
+                "enableHint": "เปิดใช้งานฟิลด์โดยใช้ช่องทำเครื่องหมายด้านบนเพื่อแสดงในคำอธิบายลอยของบีท"
             },
             "library": {
-                "heading": "ชุดระบบจังหวะ",
+                "heading": "ชุดระบบบีท",
                 "desc": "ระบบไลบรารีเป็นเลนส์โครงสร้างที่พร้อมใช้งาน ชุดที่บันทึกไว้คือเวอร์ชันของคุณที่สามารถแก้ไขและลบได้",
                 "addSystemLabel": "เพิ่มระบบ",
                 "selectLabel": "เลือกชุด",
@@ -392,7 +392,7 @@ export const th: TranslationKeys = {
                 "resetToDefaultText": "รีเซ็ตเป็นค่าเริ่มต้น"
             },
             "deleteModal": {
-                "subtitleWithNotes": "การนี้จะย้ายโน้ตจังหวะไปที่ถังขยะ นิยามชุดยังคงอยู่ในเพิ่มระบบ",
+                "subtitleWithNotes": "การนี้จะย้ายโน้ตบีทไปที่ถังขยะ นิยามชุดยังคงอยู่ในเพิ่มระบบ",
                 "scopePrefix": "ขอบเขต: ",
                 "warningExtra": "คุณสมบัติที่กำหนดเองทั้งหมดที่มีค่าจะสูญหาย รวมถึงข้อมูลทั้งหมดที่ป้อนในฟิลด์ที่ไม่ใช่เทมเพลต",
                 "warningTemplate": "คุณสมบัติที่กำหนดเองทั้งหมดที่มีค่าจะสูญหาย รวมถึงข้อมูลทั้งหมดที่ป้อน",
@@ -400,7 +400,7 @@ export const th: TranslationKeys = {
                 "cancelText": "ยกเลิก"
             },
             "saveModal": {
-                "badge": "ระบบจังหวะ",
+                "badge": "ระบบบีท",
                 "copyTitle": "บันทึกสำเนา",
                 "saveTitle": "บันทึกชุด",
                 "copySubtitle": "สร้างสำเนาที่แก้ไขได้ของชุดเริ่มต้นนี้ ชุดต้นฉบับจะไม่เปลี่ยนแปลง",
@@ -408,8 +408,8 @@ export const th: TranslationKeys = {
                 "namePlaceholder": "ชื่อชุด",
                 "saveText": "บันทึก",
                 "cancelText": "ยกเลิก",
-                "beatNamesNotice": "ชื่อจังหวะต้องมีตัวอักษรหรือตัวเลขก่อนบันทึกชุด",
-                "noBeatsNotice": "ไม่มีจังหวะที่กำหนด โปรดเพิ่มจังหวะก่อนบันทึก",
+                "beatNamesNotice": "ชื่อบีทต้องมีตัวอักษรหรือตัวเลขก่อนบันทึกชุด",
+                "noBeatsNotice": "ไม่มีบีทที่กำหนด โปรดเพิ่มบีทก่อนบันทึก",
                 "nameRequiredNotice": "ชื่อชุดต้องมีตัวอักษรหรือตัวเลข"
             },
             "backdrop": {
@@ -438,7 +438,7 @@ export const th: TranslationKeys = {
                 "fixDuplicateIdsText": "แก้ไขรหัสที่ซ้ำกันภายในหนังสือเล่มนี้",
                 "fixDuplicateIdsTooltip": "กำหนดรหัสอ้างอิงที่ซ้ำกันใหม่ในขอบเขตนี้",
                 "fillEmptyText": "เติมค่าว่าง",
-                "fillEmptyTooltip": "เติมฟิลด์จังหวะที่กำหนดเองที่มีอยู่ในโฟลเดอร์หนังสือที่ใช้งานอยู่",
+                "fillEmptyTooltip": "เติมฟิลด์บีทที่กำหนดเองที่มีอยู่ในโฟลเดอร์หนังสือที่ใช้งานอยู่",
                 "migrateDeprecatedText": "โยกย้ายฟิลด์ที่เลิกใช้แล้ว",
                 "migrateDeprecatedTooltip": "ย้ายข้อมูล YAML ไปยังฟิลด์ตามรูปแบบบัญญัติก่อนการล้างข้อมูล",
                 "deleteCustomText": "ลบฟิลด์ที่กำหนดเอง",
@@ -446,7 +446,7 @@ export const th: TranslationKeys = {
                 "reorderText": "เรียงลำดับคุณสมบัติ",
                 "reorderTooltip": "เรียงลำดับคุณสมบัติ FrontMatter ใหม่เพื่อให้ตรงกับลำดับเทมเพลตตามรูปแบบบัญญัติ",
                 "saveChangesText": "บันทึกการเปลี่ยนแปลง",
-                "saveChangesTooltip": "บันทึกการเปลี่ยนแปลงก่อนเรียกใช้ Beat Audit",
+                "saveChangesTooltip": "บันทึกการเปลี่ยนแปลงก่อนเรียกใช้การตรวจสอบบีท",
                 "checkNotesText": "ตรวจสอบบันทึกย่อ",
                 "healthClean": "สะอาด",
                 "healthMixed": "จำเป็นต้องทำความสะอาดบ้าง",
@@ -477,23 +477,23 @@ export const th: TranslationKeys = {
             },
             "parenthetical": {
                 "beat": {
-                    "name": "(จังหวะ)",
+                    "name": "(beat)",
                     "desc": "หยุดชั่วคราว การกำหนดเวลาในวงเล็บ — เพิ่มวินาทีเมื่อตรวจพบคำสั่งบทภาพยนตร์"
                 },
                 "pause": {
-                    "name": "(หยุดชั่วคราว)",
+                    "name": "(pause)",
                     "desc": "หยุดชั่วคราวมาตรฐาน"
                 },
                 "longPause": {
-                    "name": "(หยุดยาว)",
+                    "name": "(long pause)",
                     "desc": "ความเงียบขยาย"
                 },
                 "moment": {
-                    "name": "(ชั่วขณะหนึ่ง)",
-                    "desc": "จังหวะสะท้อนแสง"
+                    "name": "(a moment)",
+                    "desc": "ช่วงหยุดครุ่นคิด"
                 },
                 "silence": {
-                    "name": "(เงียบ)",
+                    "name": "(silence)",
                     "desc": "หยุดพักบรรยากาศ"
                 },
                 "resetTooltip": "รีเซ็ตเป็นค่าเริ่มต้น"
@@ -1238,20 +1238,20 @@ export const th: TranslationKeys = {
                 "other": "{{count}} เซสชัน"
             },
             "beat": {
-                "one": "{{count}} จังหวะเรื่อง",
-                "other": "{{count}} จังหวะเรื่อง"
+                "one": "{{count}} บีทเรื่อง",
+                "other": "{{count}} บีทเรื่อง"
             },
             "moreBeat": {
-                "one": "{{count}} จังหวะเรื่องเพิ่มเติม",
-                "other": "{{count}} จังหวะเรื่องเพิ่มเติม"
+                "one": "{{count}} บีทเรื่องเพิ่มเติม",
+                "other": "{{count}} บีทเรื่องเพิ่มเติม"
             },
             "aiCitation": {
                 "one": "{{count}} การอ้างอิงจาก AI",
                 "other": "{{count}} การอ้างอิงจาก AI"
             },
             "beatNote": {
-                "one": "{{count}} บันทึกจังหวะเรื่อง",
-                "other": "{{count}} บันทึกจังหวะเรื่อง"
+                "one": "{{count}} บันทึกบีทเรื่อง",
+                "other": "{{count}} บันทึกบีทเรื่อง"
             },
             "campaign": {
                 "one": "{{count}} แคมเปญ",
@@ -1422,8 +1422,8 @@ export const th: TranslationKeys = {
                 "other": "{{count}} โมเดลท้องถิ่น"
             },
             "duplicateBeatNote": {
-                "one": "{{count}} บันทึกจังหวะซ้ำ",
-                "other": "{{count}} บันทึกจังหวะซ้ำ"
+                "one": "{{count}} บันทึกบีทซ้ำ",
+                "other": "{{count}} บันทึกบีทซ้ำ"
             },
             "structuralIssue": {
                 "one": "{{count}} ปัญหาโครงสร้าง",
@@ -1446,8 +1446,8 @@ export const th: TranslationKeys = {
                 "other": "{{count}} ฟิลด์"
             },
             "missingBeatNote": {
-                "one": "โน้ตจังหวะที่ขาดหาย {{count}} รายการ",
-                "other": "โน้ตจังหวะที่ขาดหาย {{count}} รายการ"
+                "one": "โน้ตบีทที่ขาดหาย {{count}} รายการ",
+                "other": "โน้ตบีทที่ขาดหาย {{count}} รายการ"
             },
             "duplicate": {
                 "one": "ซ้ำ {{count}} รายการ",
@@ -1512,7 +1512,7 @@ export const th: TranslationKeys = {
         "presetNovelDesc": "จัดรูปแบบฉากให้เป็นฉบับต้นฉบับที่อ่านเข้าใจง่าย",
         "presetScreenplay": "สคริปต์ภาพยนตร์",
         "presetPodcast": "สคริปต์พอดีค",
-        "outlineBeatSheetDesc": "รายการจังหวะเรื่องตามแนวทาง Save the Cat จากข้อมูลฉาก",
+        "outlineBeatSheetDesc": "รายการบีทเรื่องตามแนวทาง Save the Cat จากข้อมูลฉาก",
         "outlineEpisodeRundownDesc": "รายการฉากเรียงลำดับด้วยโครงสร้างที่เน้นเวลา",
         "outlineShootingScheduleDesc": "ตารางฉากที่เน้นการผลิตพร้อมบริบทของสถานที่และตารางเวลา",
         "outlineIndexCardsDesc": "ข้อมูลฉากที่จัดโครงสร้างสำหรับเครื่องมือภายนอกและการอัตโนมัติ",
@@ -1520,7 +1520,7 @@ export const th: TranslationKeys = {
         "formatPdf": "PDF",
         "formatDocx": "Word",
         "outlinePresetHeading": "เทมเพลตแผนเรื่อง",
-        "outlineBeatSheet": "แผนจังหวะเรื่อง",
+        "outlineBeatSheet": "แผนบีทเรื่อง",
         "outlineEpisodeRundown": "ลำดับเนื้อหาตอน",
         "outlineShootingSchedule": "แผนการถ่ายทำ",
         "tocHeading": "สารบัญ",
@@ -1873,7 +1873,7 @@ export const th: TranslationKeys = {
                 "desc": "เลือกชื่อสั้น ๆ ที่ไม่ซ้ำกัน",
                 "placeholder": "เช่น หนังระทึกขวัญ / 3 องก์แบบสมดุล"
             },
-            "note": "เทมเพลตการจับภาพ องก์ พล็อตย่อย อักขระ การสลับจังหวะ และประเภท YAML ที่เลือก (ฐาน/ขั้นสูง)",
+            "note": "เทมเพลตการจับภาพ องก์ พล็อตย่อย อักขระ การสลับบีท และประเภท YAML ที่เลือก (ฐาน/ขั้นสูง)",
             "nameRequired": "ต้องระบุชื่อเทมเพลต"
         },
         "deleteTemplate": {
@@ -1915,7 +1915,7 @@ export const th: TranslationKeys = {
         "fields": {
             "targetBook": {
                 "name": "หนังสือเป้าหมาย",
-                "desc": "เลือกโครงการ Book Manager ที่จะสร้างฉากและจังหวะ",
+                "desc": "เลือกโครงการ Book Manager ที่จะสร้างฉากและบีท",
                 "noBooks": "ไม่มีการกำหนดค่าหนังสือ",
                 "addFirstNote": "เพิ่มหนังสือใน Book Manager และตั้งค่าโฟลเดอร์ก่อนที่จะสร้างนั่งร้านที่นี่"
             },
@@ -1952,11 +1952,11 @@ export const th: TranslationKeys = {
                 "advanced": "คุณสมบัติขั้นสูง"
             },
             "generateBeats": {
-                "withSystem": "สร้างจังหวะ {{name}}",
+                "withSystem": "สร้างบีท {{name}}",
                 "noSystem": "ไม่มีระบบบีททำงาน",
-                "tooltipNoSystem": "เลือกระบบบีทในการตั้งค่า → จังหวะเพื่อเปิดใช้งานการสร้างบีต",
-                "existsAria": "Beat Notes มีอยู่แล้วในโฟลเดอร์นี้",
-                "noSystemAria": "เลือกระบบบีทในการตั้งค่า → เต้นก่อน",
+                "tooltipNoSystem": "เลือกระบบบีทในการตั้งค่า → บีทเพื่อเปิดใช้งานการสร้างบีท",
+                "existsAria": "มีโน้ตบีทอยู่แล้วในโฟลเดอร์นี้",
+                "noSystemAria": "เลือกระบบบีทในการตั้งค่า → บีทเรื่อง ก่อน",
                 "yes": "ใช่",
                 "no": "ไม่ใช่"
             },
@@ -1983,7 +1983,7 @@ export const th: TranslationKeys = {
             "cancel": "ยกเลิก"
         },
         "notes": {
-            "layoutTemplatesIncludes": "รวมถึงฉาก องก์ พล็อตย่อย จังหวะ และจังหวะโครโนล"
+            "layoutTemplatesIncludes": "รวมถึงฉาก องก์ พล็อตย่อย บีท และเวลาของ Chronologue"
         },
         "notices": {
             "layoutReset": "เค้าโครงรีเซ็ตเป็นค่าเริ่มต้นด้วยการกระจายอัตโนมัติ",
@@ -1999,26 +1999,26 @@ export const th: TranslationKeys = {
             "generating": "สร้าง {{count}} ฉาก...",
             "beatsExist": "โน้ตบีทมีอยู่แล้วในโฟลเดอร์นี้ (พบ {{count}}) ใช้ตัวจัดการบีทในการตั้งค่าเพื่อซ่อมแซมหรือซิงค์ใหม่",
             "noBeatSystemActive": "ไม่มีระบบบีทที่ใช้งานอยู่สำหรับหนังสือเล่มนี้ เลือกหนึ่งรายการใน Beat Manager ก่อนสร้างบันทึกย่อ",
-            "beatsError": "เกิดข้อผิดพลาดในการสร้างจังหวะ: {{error}}",
+            "beatsError": "เกิดข้อผิดพลาดในการสร้างบีท: {{error}}",
             "bookCreated": "หนังสือสร้าง! {{scenes}} ฉาก{{skipped}}{{beats}}.",
             "bookCreatedSkipped": " (ข้าม {{count}} ที่มีอยู่)",
-            "bookCreatedBeatsExist": " (จังหวะมีอยู่แล้ว)",
-            "bookCreatedBeats": ", {{count}}ตีโน้ต",
-            "demoReady": "โครงการสาธิตพร้อม: {{scenes}} ฉาก, {{notes}} โน้ต, {{beats}} ตีโน้ต{{skipped}}",
+            "bookCreatedBeatsExist": " (บีทมีอยู่แล้ว)",
+            "bookCreatedBeats": ", โน้ตบีท {{count}} รายการ",
+            "demoReady": "โครงการสาธิตพร้อมแล้ว: {{scenes}} ฉาก, {{notes}} โน้ต, โน้ตบีท {{beats}} รายการ{{skipped}}",
             "demoSkipped": " ข้ามฉากที่มีอยู่ของ {{scenes}} และบันทึกย่อที่มีอยู่ของ {{notes}}"
         }
     },
     "gossamer": {
         "scoreModal": {
             "badgePrefix": "Gossamer {{signal}}",
-            "beatSystemTitle": "{{label}}ระบบตี",
-            "subtitle": "ป้อนคะแนน {{signal}} (0-100) สำหรับแต่ละจังหวะ คะแนนก่อนหน้าจะถูกบันทึกเป็นประวัติ",
+            "beatSystemTitle": "ระบบบีท {{label}}",
+            "subtitle": "ป้อนคะแนน {{signal}} (0-100) สำหรับแต่ละบีท คะแนนก่อนหน้าจะถูกบันทึกเป็นประวัติ",
             "signalMeta": "สัญญาณ: {{label}}",
-            "beatsDetectedMeta": "ตรวจพบ Beats: {{count}}",
+            "beatsDetectedMeta": "ตรวจพบบีท: {{count}}",
             "noActiveBeatSystem": "ไม่มีระบบบีทที่ใช้งานอยู่สำหรับหนังสือเล่มนี้ เลือกหนึ่งรายการใน Beat Manager เพื่อทำคะแนน {{signal}} กับโครงสร้างเฉพาะ",
             "noBeatsCustom": "⚠️ไม่พบเนื้อเรื่องที่กำหนดเอง สร้างโน้ตด้วย \"Class: Beat\" และ \"Beat Model: {{label}}\" หรือเปลี่ยนระบบบีทในการตั้งค่า",
-            "noBeatsForModel": "⚠️ไม่พบเรื่องราวจังหวะด้วย \"Beat Model: {{label}}\" ตรวจสอบบีทโน้ตของคุณ มีฟิลด์โมเดลบีตที่ถูกต้อง หรือเปลี่ยนระบบบีทในการตั้งค่า",
-            "countMismatch": "⚠️ คาด {{expected}} เต้นสำหรับ {{label}} แต่พบ {{actual}}เนื้อเรื่องกับโมเดลบีทที่เข้าชุดกัน ตรวจสอบห้องนิรภัยของคุณ",
+            "noBeatsForModel": "⚠️ ไม่พบบีทของเรื่องที่มี \"Beat Model: {{label}}\" ตรวจสอบว่าโน้ตบีทของคุณมีฟิลด์ Beat Model ที่ถูกต้อง หรือเปลี่ยนระบบบีทในการตั้งค่า",
+            "countMismatch": "⚠️ คาดว่าจะมีบีท {{expected}} รายการสำหรับ {{label}} แต่พบบีทของเรื่อง {{actual}} รายการที่มี Beat Model ตรงกัน ตรวจสอบห้องนิรภัยของคุณ",
             "enterScoreLabel": "ใส่คะแนน",
             "scorePlaceholder": "0-100",
             "scoreCount": "(คะแนน {{count}})",
@@ -2033,10 +2033,10 @@ export const th: TranslationKeys = {
             "cancelButton": "ยกเลิก",
             "aiMetaPrefix": "พรอมต์ → คลิปบอร์ด · ต้นฉบับ → ",
             "aiMetaVaultLink": "ไฟล์ห้องนิรภัย",
-            "aiMetaSuffix": " · {{count}} จังหวะ · {{label}}",
+            "aiMetaSuffix": " · {{count}} บีท · {{label}}",
             "tooltipNormalizeAvailable": "ช่องว่างการนับจำนวนที่กะทัดรัดและปล่อยเหตุผลเด็กกำพร้า",
             "tooltipNormalizeNone": "ไม่พบช่องว่างหรือเหตุผลเด็กกำพร้า - ไม่มีอะไรที่จะทำให้เป็นปกติ",
-            "tooltipCopy": "คัดลอกข้อความแจ้งเดียวกันที่ AI Run ส่ง (บทบาทการให้คะแนน · รูบริก · beats · รูปแบบ JSON) ต้นฉบับจะถูกบันทึกเป็นไฟล์ที่จะอัปโหลดด้วย",
+            "tooltipCopy": "คัดลอกข้อความแจ้งเดียวกันที่ AI Run ส่ง (บทบาทการให้คะแนน · รูบริก · บีท · รูปแบบ JSON) ต้นฉบับจะถูกบันทึกเป็นไฟล์ที่จะอัปโหลดด้วย",
             "tooltipPaste": "ตรวจสอบ AI's JSON ตอบกลับแบบเดียวกับที่ AI ทำ จากนั้นบันทึกในขั้นตอนเดียว",
             "tooltipSave": "บันทึกคะแนนด้วยตนเอง",
             "tooltipCancel": "ปิดโดยไม่ต้องประหยัด",
@@ -2051,9 +2051,9 @@ export const th: TranslationKeys = {
             "pasteSuccess": "✓ วาง {{matched}} คะแนน + เหตุผล",
             "pasteError": "⚠️ {{reason}}",
             "pasteRejected": "ไม่ยอมรับการตอบกลับ ดังนั้นจึงไม่มีการกรอกคะแนน (ปัญหา {{count}}) ครั้งแรก: {{detail}}",
-            "pasteUnplaced": "จังหวะเหล่านี้ไม่อยู่ในรายการนี้ ดังนั้นจึงไม่มีการเติมคะแนน: {{list}}",
+            "pasteUnplaced": "บีทเหล่านี้ไม่อยู่ในรายการนี้ ดังนั้นจึงไม่มีการเติมคะแนน: {{list}}",
             "noBookSystem": "ไม่มีระบบบีทที่ใช้งานอยู่สำหรับหนังสือเล่มนี้",
-            "noBeatsAvailable": "ไม่มีจังหวะที่มีอยู่ เพิ่มบีทโน้ตด้วยโมเดลบีทที่เลือกไว้ก่อน",
+            "noBeatsAvailable": "ไม่มีบีท เพิ่มโน้ตบีทที่มี Beat Model ที่เลือกไว้ก่อน",
             "noScenesInBook": "ไม่พบฉากในโฟลเดอร์หนังสือที่ใช้งานอยู่ กำหนดค่าโปรไฟล์หนังสือก่อน",
             "manuscriptEmpty": "ต้นฉบับว่างเปล่า ไม่สามารถสร้างข้อความแจ้ง AI ได้",
             "promptCopied": "✓ คัดลอกข้อความแจ้งไปยังคลิปบอร์ด ต้นฉบับที่บันทึกไว้ไปยัง {{path}} ({{scenes}} ฉาก · {{words}} คำพูด) วางข้อความแจ้งลงใน LLM ของคุณและอัปโหลดไฟล์นี้เป็นไฟล์แนบ",
@@ -2067,25 +2067,25 @@ export const th: TranslationKeys = {
             "saveFailed": "บันทึกคะแนนไม่สำเร็จ ตรวจสอบคอนโซลสำหรับรายละเอียด",
             "archivedDeletion": "เก็บถาวรแล้ว Gossamer ฟิลด์ก่อนล้างข้อมูล: {{path}}",
             "noScoresToDelete": "ไม่มี Gossamer {{signal}} คะแนนที่พบว่าลบ",
-            "deletedScores": "ลบคะแนน {{label}} จาก {{count}} BEAT NOTE(S) ประวัติสัญญาณอื่น ๆ ที่ไม่มีใครแตะต้อง",
+            "deletedScores": "ลบคะแนน {{label}} จากโน้ตบีท {{count}} รายการแล้ว ประวัติสัญญาณอื่นไม่ถูกแตะต้อง",
             "deleteFailed": "ไม่สามารถลบคะแนนทั้งหมดได้ ตรวจสอบคอนโซลสำหรับรายละเอียด",
-            "missingMetadata": "ขาด {{field}} ใน beat frontmatter สำหรับ: {{preview}}{{remainder}} อัปเดต Beat Notes เพื่อปรับแต่งเทมเพลต AI",
+            "missingMetadata": "ไม่มี {{field}} ใน frontmatter ของบีทสำหรับ: {{preview}}{{remainder}} อัปเดตโน้ตบีทเพื่อปรับแต่งเทมเพลต AI",
             "deleteConfirmBadge": "คำเตือน",
             "deleteConfirmTitle": "ลบคะแนนทั้งหมด {{label}}",
             "deleteConfirmSubtitle": "Radial Timeline จะจัดเก็บช่อง {{label}} ที่ถูกลบไว้ในบันทึก Gossamer ก่อนการทำความสะอาด ประวัติสัญญาณอื่นๆ ไม่ถูกแตะต้อง",
-            "deleteConfirmBody": "นี้จะลบทุก Gossamer สล็อตที่มีสัญญาณคือ {{label}} ในสมุดบันทึกจังหวะทั้งหมดในหนังสือที่ใช้งานอยู่ รวมถึงเหตุผล ช่องที่เป็นของสัญญาณอื่นจะถูกเก็บไว้",
+            "deleteConfirmBody": "นี้จะลบทุก Gossamer สล็อตที่มีสัญญาณคือ {{label}} ในสมุดบันทึกบีททั้งหมดในหนังสือที่ใช้งานอยู่ รวมถึงเหตุผล ช่องที่เป็นของสัญญาณอื่นจะถูกเก็บไว้",
             "deleteConfirmButton": "ลบ {{label}} คะแนน",
             "deleteConfirmCancel": "ยกเลิก",
             "noGossamerToDelete": "ไม่พบข้อมูล Gossamer ที่จะลบ",
-            "deletedAllGossamer": "ลบข้อมูล Gossamer ทั้งหมดจาก {{count}} beat note ทุกประวัติสัญญาณถูกลบออก",
+            "deletedAllGossamer": "ลบข้อมูล Gossamer ทั้งหมดจากโน้ตบีท {{count}} รายการแล้ว ประวัติสัญญาณทั้งหมดถูกลบ",
             "deleteAllConfirmTitle": "ลบข้อมูลทั้งหมด Gossamer",
-            "deleteAllConfirmSubtitle": "Radial Timeline จะจัดเก็บฟิลด์ Gossamer ทั้งหมดที่ถูกลบไว้ในบันทึก Gossamer ก่อนการทำความสะอาด การกระทำนี้จะรีเซ็ตทุก beat เพื่อเริ่มใหม่",
-            "deleteAllConfirmBody": "นี้จะลบทุก Gossamer สล็อต — สัญญาณทั้งหมด (โมเมนตัม ภายใน กิจกรรม ความตึงเครียด) และเหตุผลของพวกเขา — บวกกับมรดก Gossamer ฟิลด์ ข้ามโน้ตทั้งหมดในหนังสือที่ใช้งานอยู่ ไม่มีอะไรถูกเก็บไว้",
+            "deleteAllConfirmSubtitle": "Radial Timeline จะจัดเก็บฟิลด์ Gossamer ทั้งหมดที่ถูกลบไว้ในบันทึก Gossamer ก่อนการทำความสะอาด การกระทำนี้จะรีเซ็ตบีททั้งหมด เพื่อเริ่มใหม่",
+            "deleteAllConfirmBody": "การดำเนินการนี้จะลบช่อง Gossamer ทุกช่อง — สัญญาณทั้งหมด (โมเมนตัม ความรู้สึกภายใน กิจกรรม ความตึงเครียด) และเหตุผลประกอบ — รวมถึงฟิลด์ Gossamer แบบเก่า จากโน้ตบีททั้งหมดในหนังสือที่ใช้งานอยู่ ไม่มีสิ่งใดถูกเก็บไว้",
             "deleteAllConfirmButton": "ลบข้อมูลทั้งหมด Gossamer",
             "normalizeConfirmBadge": "คำเตือน",
             "normalizeConfirmTitle": "ปรับประวัติ Gossamer ให้เป็นปกติ?",
             "normalizeConfirmSubtitle": "การกระทำนี้ไม่สามารถยกเลิกได้ Radial Timeline จะจัดเก็บฟิลด์ที่ถูกลบไว้ก่อนการทำความสะอาด",
-            "normalizeIssuesTitle": "เต้นเพื่อทำให้เป็นปกติ",
+            "normalizeIssuesTitle": "บีทที่ต้องปรับให้เป็นมาตรฐาน",
             "normalizeGapLabel": "ช่องว่าง",
             "normalizeGapsLabel": "ช่องว่าง",
             "normalizeOutOfOrder": "การนับเลขที่ไม่เป็นระเบียบ",
@@ -2102,7 +2102,7 @@ export const th: TranslationKeys = {
             "title": "Gossamer {{signal}}การวิเคราะห์",
             "backgroundContinues": "การวิเคราะห์ยังคงดำเนินต่อไปในเบื้องหลัง",
             "modelDisabled": "AI ปิดการใช้งาน",
-            "confirmSubtitle": "ประเมินการบรรยาย {{signal}} ในแต่ละจังหวะ สิ่งนี้จะส่งหลักฐานต้นฉบับที่เลือกไปยัง AI เพื่อการวิเคราะห์ AI ไม่ได้อ้างอิงคะแนนก่อนหน้าหรือ เหตุผลเพื่อหลีกเลี่ยงความลำเอียง AI จะคืนคะแนนและเหตุผลสำหรับแต่ละจังหวะ",
+            "confirmSubtitle": "ประเมินการบรรยาย {{signal}} ในแต่ละบีท สิ่งนี้จะส่งหลักฐานต้นฉบับที่เลือกไปยัง AI เพื่อการวิเคราะห์ AI ไม่ได้อ้างอิงคะแนนก่อนหน้าหรือ เหตุผลเพื่อหลีกเลี่ยงความลำเอียง AI จะคืนคะแนนและเหตุผลสำหรับแต่ละบีท",
             "gatheringDetails": "รวบรวมรายละเอียดต้นฉบับ...",
             "manuscriptInfoHeading": "ข้อมูลต้นฉบับ",
             "repeatReading": "{{signal}} ได้คะแนนแล้วในต้นฉบับที่ไม่เปลี่ยนแปลงนี้ที่ {{time}}. การให้คะแนนอีกครั้งจะเพิ่มการอ่านอีกครั้งในประวัติการวิ่ง มันไม่ได้แทนที่อันก่อนหน้า",
@@ -2118,7 +2118,7 @@ export const th: TranslationKeys = {
             "statScenes": "ฉาก",
             "statWords": "คำ",
             "statCorpusTokens": "โทเค็นคลังข้อมูล",
-            "statBeats": "เรื่องราวเต้น",
+            "statBeats": "บีทของเรื่อง",
             "statEvidence": "หลักฐาน",
             "evidenceDefault": "ออโต้ (ฉากก่อน)",
             "beatSystemLine": "ระบบบีท: {{name}}",
@@ -2147,16 +2147,16 @@ export const th: TranslationKeys = {
             "advMultiPassTrigger": "ทริกเกอร์หลายรอบ: {{value}}"
         },
         "notices": {
-            "noStoryBeats": "ไม่พบเรื่องราวที่เต้น สร้างบันทึกย่อด้วย frontmatter \"class: beat\"",
+            "noStoryBeats": "ไม่พบบีทของเรื่อง สร้างโน้ตที่มี frontmatter \"Class: Beat\"",
             "cannotEnterMode": "ไม่สามารถเข้าสู่โหมด Gossamer {{hint}}",
             "systemHintWithModel": "ไม่พบบีทโน้ต \"{{system}}\" ในห้องนิรภัยของคุณ สร้างบีทโน้ตด้วย \"Class: Beat\" และ \"Beat Model: {{system}}\" ใน frontmatter",
-            "systemHintNoModel": "ไม่พบเรื่องราวที่เต้น สร้างบันทึกย่อด้วย frontmatter \"class: beat\"",
-            "modeMatchHintWithModel": "ไม่พบบีทโน้ตที่ตรงกัน \"{{system}}\" ตรวจสอบว่าบีทโน้ตของคุณมี \"Beat model: {{system}}\" ใน frontmatter",
-            "modeMatchHintNoModel": "ไม่มีการจับคู่โน้ตของเนื้อเรื่อง ตรวจสอบให้แน่ใจว่าโน้ตมี \"Class: Beat\" ใน frontmatter",
+            "systemHintNoModel": "ไม่พบบีทของเรื่อง สร้างโน้ตที่มี frontmatter \"Class: Beat\"",
+            "modeMatchHintWithModel": "ไม่พบบีทโน้ตที่ตรงกัน \"{{system}}\" ตรวจสอบว่าบีทโน้ตของคุณมี \"Beat Model: {{system}}\" ใน frontmatter",
+            "modeMatchHintNoModel": "ไม่พบโน้ตบีทของเรื่องที่ตรงกัน ตรวจสอบให้แน่ใจว่าโน้ตมี \"Class: Beat\" ใน frontmatter",
             "noScoresInfo": "ไม่พบคะแนน Gossamer {{signal}} แสดงช่วงและซี่ในอุดมคติ เพิ่มคะแนนโดยใช้คำสั่ง Gossamer score-entry",
-            "noActiveBeatSystemRun": "ไม่มีระบบบีทที่ใช้งานอยู่สำหรับหนังสือเล่มนี้ เลือกหนึ่งในตัวจัดการจังหวะก่อนวิ่ง Gossamer",
+            "noActiveBeatSystemRun": "ไม่มีระบบบีทที่ใช้งานอยู่สำหรับหนังสือเล่มนี้ เลือกหนึ่งในตัวจัดการบีทก่อนวิ่ง Gossamer",
             "validating": "กำลังตรวจสอบการกำหนดค่า...",
-            "loadingBeats": "กำลังโหลดเรื่องราว...",
+            "loadingBeats": "กำลังโหลดบีทของเรื่อง...",
             "assemblingEvidence": "หลักฐานประกอบต้นฉบับ...",
             "assemblingEvidenceWithMode": "หลักฐานการประกอบต้นฉบับ ({{mode}})...",
             "noScenesInBook": "ไม่พบฉากในโฟลเดอร์หนังสือที่ใช้งานอยู่",
@@ -2164,24 +2164,24 @@ export const th: TranslationKeys = {
             "buildingPrompt": "การวิเคราะห์อาคาร...",
             "sendingToAi": "ส่งต้นฉบับไปยัง AI สำหรับการวิเคราะห์ {{signal}}...",
             "aiResponseError": "ล้มเหลวในการรับคำตอบจาก AI",
-            "updatingBeats": "กำลังอัปเดตโน้ต ...",
+            "updatingBeats": "กำลังอัปเดตโน้ตบีท...",
             "archivedSnapshot": "ที่เก็บถาวรแทนที่ประวัติ Gossamer ก่อนบันทึก (1 สแนปชอต)",
             "generatingLog": "สร้างบันทึกการวิเคราะห์...",
-            "successUpdated": "✓ อัปเดต {{count}} เต้นด้วยคะแนน {{signal}}",
+            "successUpdated": "✓ อัปเดตบีท {{count}} รายการด้วยคะแนน {{signal}} แล้ว",
             "successLogWithContent": "{{message}}. บันทึกบันทึกไปยัง {{path}} (หลักฐาน: {{mode}})",
             "successLogWithoutContent": "{{message}}. บันทึกสรุปบันทึกไปยัง {{path}} บันทึกเนื้อหาถูกปิดใช้งาน",
             "processingFailed": "การประมวลผลล้มเหลว: {{error}}",
             "aiAnalysisFailed": "การวิเคราะห์ AI Gossamer ล้มเหลว: {{error}}",
             "prepareFailed": "ล้มเหลวในการเตรียม Gossamer การวิเคราะห์: {{error}}",
             "retryGemini": "ลองอีกครั้งหรือตรวจสอบการกำหนดค่า Gemini API",
-            "unmatchedBeats": "ไม่สามารถจับคู่ {{count}} จังหวะ: {{list}}",
-            "validationFailed": "การตอบสนองของ AI ไม่ตรงกับจังหวะที่ส่ง ({{count}} ปัญหา) — ไม่มีการเขียนคะแนน ดูบันทึก Gossamer สำหรับรายละเอียด"
+            "unmatchedBeats": "ไม่สามารถจับคู่ {{count}} บีท: {{list}}",
+            "validationFailed": "การตอบสนองของ AI ไม่ตรงกับบีทที่ส่ง ({{count}} ปัญหา) — ไม่มีการเขียนคะแนน ดูบันทึก Gossamer สำหรับรายละเอียด"
         },
         "service": {
-            "updatedBeatScoresPlural": "อัปเดต {{count}} เอาชนะคะแนน ({{stage}} เวที)",
-            "updatedBeatScoreSingular": "อัปเดต {{count}} คะแนน ({{stage}})",
+            "updatedBeatScoresPlural": "อัปเดตคะแนนบีท {{count}} รายการแล้ว (ขั้น {{stage}})",
+            "updatedBeatScoreSingular": "อัปเดตคะแนนบีท {{count}} รายการแล้ว (ขั้น {{stage}})",
             "archivedSingleSnapshot": "เก็บถาวรแทนที่ประวัติ Gossamer ใน 1 สแน็ปช็อต",
-            "noBeatsUpdated": "ไม่มีการปรับปรุงจังหวะ"
+            "noBeatsUpdated": "ไม่มีการปรับปรุงบีท"
         }
     },
     "sceneAnalysis": {
@@ -2407,11 +2407,11 @@ export const th: TranslationKeys = {
                 "narrationRateLabel": "อัตราการบรรยาย:",
                 "wpmValue": "{{value}} wpm",
                 "parentheticalTimingsHeader": "การกำหนดเวลาในวงเล็บ",
-                "timingBeat": "(จังหวะ)",
-                "timingPause": "(หยุดชั่วคราว)",
-                "timingLongPause": "(หยุดยาว)",
-                "timingMoment": "(ชั่วขณะหนึ่ง)",
-                "timingSilence": "(เงียบ)",
+                "timingBeat": "(beat)",
+                "timingPause": "(pause)",
+                "timingLongPause": "(long pause)",
+                "timingMoment": "(a moment)",
+                "timingSilence": "(silence)",
                 "secondsValue": "{{value}}s",
                 "configHint": "กำหนดค่าเหล่านี้ในการตั้งค่า → PRO → การประมาณรันไทม์"
             },
@@ -2511,24 +2511,24 @@ export const th: TranslationKeys = {
             },
             "purge": {
                 "badgeWarning": "คำเตือน",
-                "title": "ยืนยันการล้างจังหวะ",
+                "title": "ยืนยันการล้างบีท",
                 "subtitle": "Radial Timeline จะจัดเก็บฟิลด์การวิเคราะห์ฉากที่ถูกลบไว้ก่อนการทำความสะอาด",
                 "dangerHeader": "การดำเนินการนี้จะลบฟิลด์เหล่านี้และเก็บถาวรไปยังสแนปชอตบันทึกก่อน:",
                 "areYouSure": "คุณแน่ใจหรือว่าต้องการดำเนินการต่อ?",
-                "buttonPurge": "เพชฌฆาต",
+                "buttonPurge": "ล้างบีท",
                 "buttonCancel": "ยกเลิก",
                 "noScenes": "ไม่พบฉากในต้นฉบับ",
-                "confirmManuscript": "ล้างจังหวะทั้งหมดจาก {{scenes}} ในต้นฉบับของคุณ?",
-                "confirmSubplot": "Purge Beats จาก {{scenes}} ในพล็อตย่อย \"{{name}}\"?",
+                "confirmManuscript": "ล้างบีททั้งหมดจาก {{scenes}} ในต้นฉบับของคุณ?",
+                "confirmSubplot": "ล้างบีทจาก {{scenes}} ในพล็อตย่อย \"{{name}}\" หรือไม่?",
                 "detailFields": "`previousSceneAnalysis`, `currentSceneAnalysis`, `nextSceneAnalysis`",
                 "detailPulseUpdate": "`Pulse Update`การประทับเวลา",
                 "detailPulseLastUpdated": "`Pulse Last Updated`การประทับเวลา",
-                "noticeStart": "คว่ำบาตรจากทุกฉาก...",
-                "noticeStartSubplot": "ล้างจังหวะจาก \"{{name}}\"...",
-                "resultManuscript": "จังหวะล้างจาก {{purged}} จาก {{scenes}}",
-                "resultSubplot": "จังหวะล้างจาก {{purged}} ของ {{scenes}} ในพล็อตย่อย \"{{name}}\"",
+                "noticeStart": "กำลังล้างบีทจากทุกฉาก...",
+                "noticeStartSubplot": "ล้างบีทจาก \"{{name}}\"...",
+                "resultManuscript": "บีทล้างจาก {{purged}} จาก {{scenes}}",
+                "resultSubplot": "บีทล้างจาก {{purged}} ของ {{scenes}} ในพล็อตย่อย \"{{name}}\"",
                 "archived": "ฟิลด์ที่ถูกลบที่เก็บถาวร: {{path}}",
-                "errorGeneric": "ข้อผิดพลาดในการล้างจังหวะ ตรวจสอบคอนโซลสำหรับรายละเอียด"
+                "errorGeneric": "ข้อผิดพลาดในการล้างบีท ตรวจสอบคอนโซลสำหรับรายละเอียด"
             },
             "saveError": "เกิดข้อผิดพลาดในการบันทึกการอัปเดตเป็น {{file}}"
         },
@@ -2882,12 +2882,12 @@ export const th: TranslationKeys = {
         },
         "aiCredentialPanel": {
             "secretNameName": "Obsidian ชื่อลับ ({{provider}})",
-            "secretNameDesc": "ชื่อนี้ Obsidian secret storage storage ของ {{provider}} API คีย์ของคุณใต้ ",
+            "secretNameDesc": "ชื่อที่พื้นที่เก็บข้อมูลลับของ Obsidian ในห้องนิรภัยนี้ใช้เก็บคีย์ API {{provider}} ของคุณ ",
             "getKeyLink": "รับคีย์",
             "secretSharedNote": " Obsidian คีย์ลับจะถูกแชร์ผ่านปลั๊กอินในห้องนิรภัยนี้",
-            "keyStatusName": "{{provider}} APIสถานะคีย์",
+            "keyStatusName": "สถานะคีย์ API {{provider}}",
             "saveSecretNameFailedNotice": "ไม่สามารถบันทึก {{provider}} ชื่อลับ",
-            "apiKeyName": "{{provider}} APIคีย์",
+            "apiKeyName": "คีย์ API {{provider}}",
             "apiKeyDesc": "บันทึกไว้เป็นการส่วนตัวบนอุปกรณ์นี้ วางคีย์ จากนั้นคลิกนอกฟิลด์นี้หรือกด Enter/Return เพื่อบันทึกหรือแทนที่ กุญแจไม่เคย เขียนลงในไฟล์การตั้งค่าของคุณ",
             "setKeyNameFirstNotice": "ตั้งชื่อคีย์ที่บันทึกไว้ {{provider}} ก่อน",
             "saveKeyFailedNotice": "ไม่สามารถบันทึก {{provider}} แบบส่วนตัว",
@@ -2920,14 +2920,14 @@ export const th: TranslationKeys = {
             "corpusReferencesNone": "อ้างอิง — ไม่มี",
             "corpusTitle": "คลังสมอง",
             "promptTitle": "รวดเร็ว",
-            "beatScoringRequest": "คำขอให้คะแนน",
+            "beatScoringRequest": "คำขอให้คะแนนบีท",
             "roleTemplate": "เทมเพลตบทบาท AI (กำหนดผู้เขียน)",
-            "beatScoringInstructions": "เอาชนะคำแนะนำการให้คะแนน",
+            "beatScoringInstructions": "คำแนะนำการให้คะแนนบีท",
             "zoneQuestion": "คำถามโซน",
             "editorialInstructions": "คำแนะนำการวิเคราะห์บทบรรณาธิการ",
             "transformTitle": "แปลง",
-            "beatOverlay": "Beat Overlay (ลำดับลำดับ)",
-            "perBeatScores": "คะแนนต่อจังหวะ",
+            "beatOverlay": "เลเยอร์บีท (ลำดับที่เรียงแล้ว)",
+            "perBeatScores": "คะแนนต่อบีท",
             "sceneLinkedFindings": "การค้นพบที่เชื่อมโยงกับฉาก",
             "outputTitle": "เอาท์พุต",
             "strictJson": "โครงสร้างที่เข้มงวด JSON",
@@ -3106,13 +3106,13 @@ export const th: TranslationKeys = {
             "cacheRemainingHours": "{{hours}}h ที่เหลืออยู่",
             "cacheRemainingMinutes": "{{minutes}}m ที่เหลืออยู่",
             "keyRejectedTitle": "คีย์ถูกปฏิเสธ",
-            "keyRejectedDetail": "{{provider}} · เปลี่ยนคีย์ที่บันทึกไว้ภายใต้ API ปุ่มเพื่อเรียกใช้",
+            "keyRejectedDetail": "{{provider}} · แทนที่คีย์ที่บันทึกไว้ในส่วนคีย์ API เพื่อเรียกใช้",
             "keyRejectedForecast": "{{provider}} ปฏิเสธคีย์ที่บันทึกไว้ แทนที่ด้วยคีย์ API เพื่อคาดการณ์",
             "unreachableTitle": "ผู้ให้บริการไม่สามารถเข้าถึงได้",
             "unreachableDetail": "{{provider}} · การตรวจสอบคีย์ไม่สามารถเข้าถึงผู้ให้บริการได้",
             "unreachableForecast": "ไม่สามารถติดต่อ {{provider}} เพื่อตรวจสอบคีย์ได้ การคาดการณ์จะดำเนินการต่อเมื่อตรวจสอบความถูกต้องแล้ว",
             "noKeyTitle": "ไม่มีคีย์ API",
-            "noKeyDetail": "{{provider}} · วางกุญแจไว้ใต้ API ปุ่มเพื่อเรียกใช้",
+            "noKeyDetail": "{{provider}} · วางคีย์ในส่วนคีย์ API เพื่อเรียกใช้",
             "noKeyForecast": "ไม่มีการบันทึกคีย์ {{provider}} วางหนึ่งอันภายใต้คีย์ API เพื่อคาดการณ์"
         },
         "aprConstants": {
@@ -3299,13 +3299,13 @@ export const th: TranslationKeys = {
             "actsPreviewHeading": "ดูตัวอย่าง ({{count}} องก์)",
             "loadedSystemUnsaved": "ระบบโหลดมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก",
             "noMatchingTitleNote": "ไม่มีบันทึกชื่อเรื่องที่ตรงกัน",
-            "noBeatsDefinedTooltip": "ยังไม่มีการกำหนดจังหวะสำหรับระบบนี้",
+            "noBeatsDefinedTooltip": "ยังไม่มีการกำหนดบีทสำหรับระบบนี้",
             "noNotesWrongModelTooltip": "ไม่มีบีทโน้ตใดที่มาจากระบบนี้ ชื่อที่ตรงกันเป็นของบีทโมเดลอื่นๆ",
-            "noNotesMissingModelTooltip": "ยังไม่มีการตีโน้ตใด ๆ ที่มาจากระบบนี้ ชื่อที่ตรงกันไม่มีโมเดลบีต",
+            "noNotesMissingModelTooltip": "ยังไม่มีโน้ตบีทใดที่ระบุว่าเป็นของระบบนี้ ชื่อที่ตรงกันยังไม่มี Beat Model",
             "notDeployedTooltip": "ระบบนี้ยังไม่ได้ปรับใช้ในต้นฉบับ",
             "duplicateNotesTooltip": "พบ {{notes}} ลบบันทึกย่อที่ซ้ำกันเพื่อแก้ไขด้วยตนเอง",
-            "missingModelBeatsOne": "{{count}}บีตขาดโมเดลบีท",
-            "missingModelBeatsOther": "{{count}}บีตขาดโมเดลบีต",
+            "missingModelBeatsOne": "บีท {{count}} รายการไม่มี Beat Model",
+            "missingModelBeatsOther": "บีท {{count}} รายการไม่มี Beat Model",
             "notesNotCreatedTooltip": "{{notes}} ยังไม่ได้สร้าง",
             "systemAlignedTooltip": "ระบบทำงานอยู่ในต้นฉบับและจัดโครงสร้าง",
             "systemIssuesTooltip": "ระบบใช้งานได้ในต้นฉบับ แต่มี {{issues}}",
@@ -3314,27 +3314,27 @@ export const th: TranslationKeys = {
             "inactiveInManuscript": "ไม่ใช้งานในต้นฉบับ",
             "activeWithIssues": "ใช้งานในต้นฉบับ — {{issues}}",
             "activeAligned": "ใช้งานในต้นฉบับ — จัดวางโครงสร้าง",
-            "overviewMeta": "{{beatCount}} จังหวะ · {{actCount}} องก์",
+            "overviewMeta": "{{beatCount}} บีท · {{actCount}} องก์",
             "editSystemAria": "แก้ไข \"{{name}}\"",
-            "designCountSummary": "{{count}} บีต · {{acts}}",
+            "designCountSummary": "{{count}} บีท · {{acts}}",
             "countWithState": "{{summary}} — {{state}}",
-            "misalignedBeatsOne": "{{count}} จังหวะถูกวางไว้ในองก์ที่ต่างออกไปในต้นฉบับ",
+            "misalignedBeatsOne": "{{count}} บีทถูกวางไว้ในองก์ที่ต่างออกไปในต้นฉบับ",
             "misalignedBeatsOther": "{{count}} บีทจะถูกวางไว้ในองก์ที่ต่างออกไปในต้นฉบับ",
-            "outOfSequenceBeatsOne": "{{count}} beat ไม่อยู่ในลำดับต้นฉบับ (การเรียงลำดับคำนำหน้าชื่อไฟล์ไม่ตรงกับเทมเพลต)",
-            "outOfSequenceBeatsOther": "{{count}} beats ไม่อยู่ในลำดับต้นฉบับ (การเรียงลำดับคำนำหน้าชื่อไฟล์ไม่ตรงกับเทมเพลต)",
+            "outOfSequenceBeatsOne": "บีท {{count}} รายการไม่อยู่ในลำดับต้นฉบับ (การเรียงลำดับคำนำหน้าชื่อไฟล์ไม่ตรงกับเทมเพลต)",
+            "outOfSequenceBeatsOther": "บีท {{count}} รายการไม่อยู่ในลำดับต้นฉบับ (การเรียงลำดับคำนำหน้าชื่อไฟล์ไม่ตรงกับเทมเพลต)",
             "setModifiedTooltip": "ชุดได้รับการแก้ไขตั้งแต่บันทึกครั้งล่าสุด",
-            "dropBeatInto": "ดรอปจังหวะเข้า {{act}}",
-            "duplicateTitleNotice": "ชื่อจังหวะที่ซ้ำกัน ลบบันทึกย่อที่ซ้ำกันด้วยตนเอง (หรือเปลี่ยนชื่อหนึ่งชื่อ) เพื่อแก้ไข",
+            "dropBeatInto": "ดรอปบีทเข้า {{act}}",
+            "duplicateTitleNotice": "ชื่อบีทที่ซ้ำกัน ลบบันทึกย่อที่ซ้ำกันด้วยตนเอง (หรือเปลี่ยนชื่อหนึ่งชื่อ) เพื่อแก้ไข",
             "multipleMatchesNotice": "โน้ตหลายตัวตรงกับชื่อนี้ ลบโน้ตบีทที่ซ้ำกันด้วยตนเองเพื่อแก้ไข",
             "placedInActNotice": "วางไว้ในองก์ที่ {{actNumber}} ในต้นฉบับ เทมเพลตแนะนำ {{act}}",
             "rangePlaceholder": "e.g. 10-20",
-            "selectSystemDesc": "เลือกระบบบีทเพื่อกำหนดค่าบันทึกการตั้งค่าและพฤติกรรมการเต้นของเรื่องราว",
+            "selectSystemDesc": "เลือกระบบบีทเพื่อกำหนดค่าโน้ตชุดและพฤติกรรมของบีทในเรื่อง",
             "otherColumn": "อีก",
             "checkingStatus": "กำลังตรวจสอบ…",
             "missingStatus": "ขาดไป",
             "incompleteStatus": "ไม่ครบถ้วน",
-            "noBeatsInSet": "ไม่พบจังหวะสำหรับชุดนี้",
-            "noBeatsYet": "ยังไม่มีจังหวะ ไปที่การออกแบบเพื่อเพิ่มพวกเขา",
+            "noBeatsInSet": "ไม่พบบีทสำหรับชุดนี้",
+            "noBeatsYet": "ยังไม่มีบีท ไปที่การออกแบบเพื่อเพิ่มพวกเขา",
             "completeStatus": "Complete",
             "templateSuggests": "แม่แบบแนะนำ {{act}}",
             "deleteBeatNotesAction": "ลบบีทโน้ต",
@@ -3344,7 +3344,7 @@ export const th: TranslationKeys = {
             "removeTabAria": "ลบ {{name}}",
             "removeTabTooltip": "ลบ \"{{name}}\"",
             "moreBeatSystemsAria": "ระบบบีทเพิ่มเติม",
-            "hoverPreviewHeadingCount": "ตัวอย่างข้อมูลเมตาดาต้าโฮเวอร์ ({{fields}})",
+            "hoverPreviewHeadingCount": "ตัวอย่างข้อมูลเมตาเมื่อชี้ที่บีท ({{fields}})",
             "loadedSystemNotice": "โหลด \"{{name}}\"",
             "noBeatNotesFoundFor": "ไม่พบบีทโน้ตสำหรับ \"{{name}}\"",
             "beatSetBadge": "ชุดบีท",
@@ -3356,33 +3356,33 @@ export const th: TranslationKeys = {
             "setSavedNotice": "ตั้งค่า \"{{name}}\" ที่บันทึกไว้",
             "backdropHoverPreviewHeadingCount": "แสดงตัวอย่างข้อมูลเมตาโฮเวอร์ backdrop ({{fields}})",
             "missingDetails": "รายละเอียดที่ขาดหายไป: {{detail}}",
-            "missingTooltipHeader": "เหตุใดจังหวะเหล่านี้จึงหายไป:\n{{lines}}",
+            "missingTooltipHeader": "เหตุใดบีทเหล่านี้จึงหายไป:\n{{lines}}",
             "beatNotesForSystem": "บีทโน้ตในห้องนิรภัยของคุณสำหรับ {{name}}",
-            "createCustomNotesDesc": "สร้าง {{count}} ไฟล์โน้ตสำหรับระบบที่กำหนดเองของคุณ",
-            "addBeatFirstDesc": "เพิ่มอย่างน้อยหนึ่งจังหวะด้านบนเพื่อสร้างโน้ตบีท",
-            "createSystemNotesDesc": "สร้างไฟล์โน้ต {{system}} ในห้องนิรภัยของคุณที่ตรงกับโครงสร้างของระบบนี้",
+            "createCustomNotesDesc": "สร้างไฟล์โน้ตบีท {{count}} ไฟล์สำหรับระบบที่กำหนดเองของคุณ",
+            "addBeatFirstDesc": "เพิ่มอย่างน้อยหนึ่งบีทด้านบนเพื่อสร้างโน้ตบีท",
+            "createSystemNotesDesc": "สร้างไฟล์โน้ตบีท {{system}} ในห้องนิรภัยของคุณตามโครงสร้างของระบบนี้",
             "saveSetFirstTooltip": "บันทึกชุดนี้ก่อนสร้างหรือซ่อมแซมบีทโน้ต",
             "createMissingNotesButton": "สร้างบีทโน้ตที่หายไป",
             "createMissingNotesTooltip": "สร้างบีทโน้ตที่ขาดหายไปในโฟลเดอร์หนังสือที่ใช้งานอยู่",
             "saveBeforeCreateDesc": "{{desc}} บันทึกการเปลี่ยนแปลงก่อนสร้างหรือซ่อมแซมบีทโน้ต",
-            "createNotesForSystem": "สร้าง {{count}} ตีโน้ตสำหรับ {{system}}",
-            "notesFoundStatus": "{{found}}ของ {{expected}} พบโน้ต",
+            "createNotesForSystem": "สร้างโน้ตบีท {{count}} รายการสำหรับ {{system}}",
+            "notesFoundStatus": "พบโน้ตบีท {{found}} จาก {{expected}} รายการ",
             "createMissingCountButton": "สร้าง {{notes}}",
             "createRemainingWithDetails": "{{details}}\n\nสร้าง {{notes}} ที่เหลือสำหรับ {{system}}",
             "createRemaining": "สร้างส่วนที่เหลือ {{notes}} สำหรับ {{system}}",
             "allNotesCreated": "สร้างโน้ตบีทโน้ต {{count}} ทั้งหมด",
             "allNotesExistTooltip": "โน้ตบีททั้งหมดมีอยู่แล้ว",
-            "createNoteFilesTooltip": "สร้างไฟล์โน้ต {{count}}",
+            "createNoteFilesTooltip": "สร้างไฟล์โน้ตบีท {{count}} ไฟล์",
             "syncedPart": "{{count}} ซิงค์",
             "misalignedPart": "{{count}}ผิดแนว",
             "missingPart": "{{count}} หายไป",
-            "missingModelPart": "รุ่นบีทที่หายไป ({{count}})",
+            "missingModelPart": "ไม่มี Beat Model ({{count}})",
             "allNotesSynced": "ซิงค์โน้ตบีท {{count}} ทั้งหมดจะถูกซิงค์",
-            "allAlignedTooltip": "beats ทั้งหมดมีไฟล์ที่จัดตำแหน่งแล้ว",
+            "allAlignedTooltip": "บีททั้งหมดมีไฟล์ที่จัดตำแหน่งแล้ว",
             "createMissingForBeatsWithDetails": "{{details}}\n\nCREATE บีทโน้ตที่ขาดหายไปสำหรับ {{beats}} ไม่มีไฟล์",
             "createMissingForBeats": "สร้างบีทโน้ตที่ขาดหายไปสำหรับ {{beats}} โดยไม่ต้องใช้ไฟล์",
-            "allHaveFilesRepairModel": "Beats ทั้งหมดมีไฟล์ ใช้การซ่อมแซมเพื่อตั้งค่าโมเดลบีทที่หายไป",
-            "allHaveFilesRepairAct": "Beats ทั้งหมดมีไฟล์ ใช้การซ่อมแซมเพื่อแก้ไข Act และ Beat Model",
+            "allHaveFilesRepairModel": "บีททั้งหมดมีไฟล์ ใช้การซ่อมแซมเพื่อตั้งค่า Beat Model ที่ขาดหายไป",
+            "allHaveFilesRepairAct": "บีททั้งหมดมีไฟล์ ใช้การซ่อมแซมเพื่อแก้ไข Act และ Beat Model",
             "repairButton": "ซ่อม {{notes}}",
             "repairTooltipBoth": "อัปเดต Act และ Beat Model สำหรับบีทโน้ตที่ไม่ตรงแนว {{misaligned}} รายการ และบีทโน้ตที่ไม่มี Beat Model {{missing}} รายการ ตัวเลขคำนำหน้าจะไม่เปลี่ยนแปลง",
             "repairTooltipMisalignedOne": "อัปเดต Act และ Beat Model สำหรับบีทโน้ตที่ไม่ตรงแนว {{count}} รายการ ตัวเลขคำนำหน้าจะไม่เปลี่ยนแปลง",
@@ -3392,23 +3392,23 @@ export const th: TranslationKeys = {
             "resolveDuplicatesOne": "แก้ไขซ้ำก่อนที่จะรวม ลบโน้ตบีทที่ซ้ำกันด้วยตนเอง",
             "resolveDuplicatesOther": "แก้ไขรายการที่ซ้ำกันก่อนที่จะรวม ลบโน้ตบีทที่ซ้ำกันด้วยตนเอง",
             "mergeCustomOnlyNotice": "ผสานใช้ได้กับระบบบีทแบบกำหนดเองเท่านั้น",
-            "noCustomBeatsNotice": "ไม่มีการกำหนดจังหวะที่กำหนดเอง เพิ่มจังหวะในรายการด้านบน",
+            "noCustomBeatsNotice": "ไม่มีการกำหนดบีทที่กำหนดเอง เพิ่มบีทในรายการด้านบน",
             "noNotesToMergeNotice": "ไม่พบบีทโน้ตที่มีอยู่ในการผสาน",
             "noMergeNotice": "ไม่สามารถรวมบีทโน้ตได้",
             "noMergeWithDuplicatesNotice": "ไม่สามารถรวมบีทโน้ตได้ ซ้ำ: {{count}}. ลบโน้ตบีทที่ซ้ำกันด้วยตนเอง",
-            "duplicateTitlesSkipped": "{{titles}} ข้าม (ลบบันทึกจังหวะที่ซ้ำกัน)",
-            "setModelOnNotes": "ตั้งค่าโมเดลบีทบน {{notes}}",
+            "duplicateTitlesSkipped": "{{titles}} ข้าม (ลบบันทึกบีทที่ซ้ำกัน)",
+            "setModelOnNotes": "ตั้งค่า Beat Model ให้ {{notes}}",
             "repairedNotice": "ซ่อมแซม {{notes}} (Act, Beat Model)",
             "unknownStructureNotice": "โครงสร้างเรื่องราวที่ไม่รู้จัก: {{name}}",
             "createdWithErrorsNotice": "สร้างบันทึกย่อ {{created}} {{skipped}} ข้าม ข้อผิดพลาด {{errors}} ตรวจสอบคอนโซล",
             "allExistNotice": "ทั้งหมด {{count}} บีทโน้ตมีอยู่แล้ว ไม่มีการสร้างโน้ตใหม่",
-            "createdNotice": "✓สร้างได้สำเร็จ {{count}} beat set notes!",
+            "createdNotice": "✓ สร้างโน้ตชุดบีท {{count}} รายการสำเร็จ!",
             "createFailedNotice": "ล้มเหลวในการสร้างชุดบีทเรื่องราว: {{error}}",
-            "newBeatDefaultName": "จังหวะใหม่"
+            "newBeatDefaultName": "บีทใหม่"
         },
         "beatSystemCopy": {
             "saveTheCatTitle": "Save the Cat",
-            "saveTheCatDesc": "เน้นจังหวะอารมณ์ที่ชัดเจนและการมีส่วนร่วมของผู้ชม\n\nใช้เมื่อคุณต้องการจุดเปลี่ยนที่สะอาด การกลับรายการที่มองเห็นได้ และความรู้สึกที่แข็งแกร่งของโมเมนตัมที่ต้องเผชิญกับผู้ชมจากการตั้งค่าจนถึงตอนจบ\n\nดีที่สุดสำหรับ: นิยายเชิงพาณิชย์, บทภาพยนตร์, แนวความคิดสูง\nโปรไฟล์โมเมนตัม: การตั้งค่า -> จุดกึ่งกลาง -> ปิดการจ่ายเงิน",
+            "saveTheCatDesc": "เน้นบีทอารมณ์ที่ชัดเจนและการมีส่วนร่วมของผู้ชม\n\nใช้เมื่อคุณต้องการจุดเปลี่ยนที่สะอาด การกลับรายการที่มองเห็นได้ และความรู้สึกที่แข็งแกร่งของโมเมนตัมที่ต้องเผชิญกับผู้ชมจากการตั้งค่าจนถึงตอนจบ\n\nดีที่สุดสำหรับ: นิยายเชิงพาณิชย์, บทภาพยนตร์, แนวความคิดสูง\nโปรไฟล์โมเมนตัม: การตั้งค่า -> จุดกึ่งกลาง -> ปิดการจ่ายเงิน",
             "saveTheCatExamples": "ตัวอย่าง: The Hunger Games, The Martian, The Fault in Our Stars",
             "saveTheCatSourceLabel": "หนังสือ Save the Cat ของ Jessica Brody",
             "herosJourneyTitle": "การเดินทางของฮีโร่",
@@ -3434,11 +3434,11 @@ export const th: TranslationKeys = {
             "thrillerLadderDesc": "สร้างแรงกดดันผ่านอันตราย การเปิดเผย การพลิกกลับ และตัวเลือกที่แคบลง\n\nใช้เมื่อคุณต้องการให้ทุกขั้นตอนกระชับความเสี่ยงและลดทางเลือกที่ปลอดภัยของตัวเอก\n\nดีที่สุดสำหรับ: ระทึกขวัญ, ใจจดใจจ่อ, แผนการไล่ล่า, การเล่าเรื่องเอาชีวิตรอด\nโปรไฟล์โมเมนตัม: ภัยคุกคาม -> การแสวงหา -> การกลับรายการ -> การบีบอัด -> การเผชิญหน้า",
             "thrillerLadderExamples": "ตัวอย่าง: The Fugitive, Gone Girl, The Silence of the Lambs",
             "customTitle": "ระบบที่กำหนดเอง",
-            "customDesc": "ออกแบบกรอบโครงสร้างของคุณเองสำหรับต้นฉบับนี้ กำหนดจังหวะที่มีความสำคัญต่อเรื่องราวของคุณ ไม่ว่าพวกเขาจะตามส่วนโค้งแบบคลาสสิกหรือ ติดตามความก้าวหน้าเฉพาะประเภท\n\nระบบที่กำหนดเองสามารถเป็นตัวแทนของเขตร้อน การเลี้ยวเฉพาะเรื่อง เหตุการณ์สำคัญในการสืบสวน ขั้นตอนทางประวัติศาสตร์ หรือจังหวะโครงสร้างใดๆ ที่คุณต้องการ ตวง",
+            "customDesc": "ออกแบบกรอบโครงสร้างของคุณเองสำหรับต้นฉบับนี้ กำหนดบีทที่มีความสำคัญต่อเรื่องราวของคุณ ไม่ว่าพวกเขาจะตามส่วนโค้งแบบคลาสสิกหรือ ติดตามความก้าวหน้าเฉพาะประเภท\n\nระบบที่กำหนดเองสามารถเป็นตัวแทนของเขตร้อน การเลี้ยวเฉพาะเรื่อง เหตุการณ์สำคัญในการสืบสวน ขั้นตอนทางประวัติศาสตร์ หรือจังหวะโครงสร้างใดๆ ที่คุณต้องการ ตวง",
             "customExamples": "ตัวอย่าง: เวิร์กโฟลว์นวนิยายแบบกำหนดเอง, ระบบการแก้ไขตามสั่ง, โครงสร้างห้องเรียน",
             "blankCustomTitle": "ที่กำหนดเอง",
-            "blankCustomDesc": "เริ่มว่างเปล่าเพื่อให้คุณสามารถออกแบบโครงสร้างของคุณเองได้ตั้งแต่เริ่มต้น\n\nใช้เมื่อไม่มีเลนส์ห้องสมุดใดที่ตรงกับกระบวนการของคุณหรือคุณต้องการโมเดลเฉพาะโครงการ\n\nเหมาะสำหรับ: การออกแบบจังหวะแบบกำหนดเอง การทดลอง โครงสร้างไฮบริด การสอนวิธีการของคุณเอง\nโปรไฟล์โมเมนตัม: ผู้แต่ง",
-            "blankCustomExamples": "เริ่มต้นด้วยอย่างน้อย 3 ครั้ง ตั้งชื่อแต่ละจังหวะด้วยฟังก์ชัน ไม่ใช่ธีม ใช้ความก้าวหน้าที่ชัดเจน เช่น การเปิด -> แรงดัน -> กะ เพิ่มหรือ ลำดับใหม่จะเต้นก็ต่อเมื่อแต่ละอันมีจุดประสงค์เชิงโครงสร้างที่แตกต่างกันเท่านั้น"
+            "blankCustomDesc": "เริ่มว่างเปล่าเพื่อให้คุณสามารถออกแบบโครงสร้างของคุณเองได้ตั้งแต่เริ่มต้น\n\nใช้เมื่อไม่มีเลนส์ห้องสมุดใดที่ตรงกับกระบวนการของคุณหรือคุณต้องการโมเดลเฉพาะโครงการ\n\nเหมาะสำหรับ: การออกแบบบีทแบบกำหนดเอง การทดลอง โครงสร้างไฮบริด การสอนวิธีการของคุณเอง\nโปรไฟล์โมเมนตัม: ผู้แต่ง",
+            "blankCustomExamples": "เริ่มต้นด้วยอย่างน้อย 3 บีท ตั้งชื่อแต่ละบีทด้วยฟังก์ชัน ไม่ใช่ธีม ใช้ความก้าวหน้าที่ชัดเจน เช่น การเปิด -> แรงดัน -> กะ เพิ่มหรือจัดลำดับบีทใหม่ก็ต่อเมื่อแต่ละอันมีจุดประสงค์เชิงโครงสร้างที่แตกต่างกันเท่านั้น"
         },
         "bonusVaults": {
             "prideCountLabel": "61 บท",
@@ -3450,12 +3450,12 @@ export const th: TranslationKeys = {
             "inPreparation": "ในการเตรียมตัว"
         },
         "bonusVaultsSection": {
-            "secretVault": "คลังลับ",
+            "secretVault": "ห้องนิรภัยลับ",
             "viewDemoPage": "ดูหน้าเดโม",
             "viewDemoPageAria": "ดูหน้าเดโม {{title}}",
             "freeDemosBadge": "การสาธิตฟรี",
             "heading": "สาธิตห้องนิรภัย",
-            "description": "สำรวจตัวอย่างการทำงานที่สมบูรณ์ด้วยการวิเคราะห์ที่บันทึกไว้ เริ่มต้นด้วยโครงการ Pride & Prejudice, Odyssey หรือ Sherlock Holmes ฟรี ไม่ API จำเป็นต้องใช้คีย์เพื่อเรียกดูผลลัพธ์ที่บันทึกไว้ เพิ่มการสาธิตไปยังห้องนิรภัยนี้โดยตรง หรือดาวน์โหลดห้องนิรภัยแยกต่างหากเป็น zip",
+            "description": "สำรวจตัวอย่างการทำงานที่สมบูรณ์ด้วยการวิเคราะห์ที่บันทึกไว้ เริ่มต้นด้วยโครงการ Pride & Prejudice, Odyssey หรือ Sherlock Holmes ฟรี ไม่ต้องใช้คีย์ API เพื่อเรียกดูผลลัพธ์ที่บันทึกไว้ เพิ่มการสาธิตไปยังห้องนิรภัยนี้โดยตรง หรือดาวน์โหลดห้องนิรภัยแยกต่างหากเป็น zip",
             "comingSoon": "เร็วๆนี้",
             "exploreDemo": "สำรวจการสาธิต",
             "exploreDemoAria": "สำรวจ {{title}}"
@@ -4036,7 +4036,7 @@ export const th: TranslationKeys = {
             "deskLampsDesc": "เมื่อห้องนิรภัยนี้เชื่อมต่อกับชุมชน โคมไฟข้างกล่องจดหมายจะแสดงว่าอันไหนของคุณ Desk Lamps อยู่ที่โต๊ะทำงาน และแผงเซสชันช่วยให้คุณแชร์เซสชันกับพวกเขาได้ ปิดเพื่อซ่อนทั้งสองและปิดตะเกียงของคุณเอง",
             "chapterMarkersDescWithStatus": "{{desc}} {{status}}",
             "recentMovesName": "การซ้อนทับการลากล่าสุดในโหมดการเล่าเรื่อง",
-            "recentMovesDesc": "แสดงฉากสุดท้ายที่มุ่งมั่นและจังหวะการลากจังหวะในไทม์ไลน์การเล่าเรื่อง",
+            "recentMovesDesc": "แสดงฉากสุดท้ายที่มุ่งมั่นและบีทการลากบีทในไทม์ไลน์การเล่าเรื่อง",
             "chapterMarkersActive": "{{markers}} ในหนังสือที่ใช้งานอยู่ปัจจุบัน",
             "chapterMarkersNone": "ไม่มีเครื่องหมายบทที่ใช้งานอยู่"
         },
@@ -4047,9 +4047,9 @@ export const th: TranslationKeys = {
             "badge": "พวก",
             "title": "สร้างโน้ตชุดบีท",
             "subtitle": "สิ่งนี้จะสร้าง {{beatNotes}}สำหรับ \"{{system}}\"",
-            "structureNote": "โน้ตแต่ละตัวจะมีโครงสร้างคุณสมบัติดังต่อไปนี้ (แสดงในรูปแบบ YAML):",
+            "structureNote": "โน้ตบีทแต่ละรายการจะมีโครงสร้างคุณสมบัติดังต่อไปนี้ (แสดงในรูปแบบ YAML):",
             "sampleAutoGenerated": "[สร้างอัตโนมัติ]",
-            "sampleBeatPurpose": "[เป้าหมายการเอาชนะ]",
+            "sampleBeatPurpose": "[จุดประสงค์ของบีท]",
             "sampleMomentumRange": "[ช่วงโมเมนตัมในอุดมคติ]",
             "locationFolder": "โน้ตจะถูกสร้างขึ้นใน: {{path}}/",
             "locationVaultRoot": "โน้ตจะถูกสร้างขึ้นในรูทห้องนิรภัย (ไม่มีชุดโฟลเดอร์หนังสือ)",
@@ -4092,8 +4092,8 @@ export const th: TranslationKeys = {
             "bookMetaDesc": "การเผยแพร่และข้อมูลเมตาของสิทธิ์สำหรับหนังสือที่ใช้งานอยู่",
             "familyStoryWorldTitle": "โลกแห่งเรื่องราว",
             "familyStoryWorldDesc": "สร้างบันทึกตามบริบทที่กำหนดเวลา สถานที่ หรือเหตุการณ์โดยรอบ",
-            "beatTitle": "จังหวะเรื่อง",
-            "beatDesc": "โน้ตตัวเดียวที่มีฟิลด์ Act และ Purpose",
+            "beatTitle": "บีทเรื่อง",
+            "beatDesc": "โน้ตบีทของเรื่องหนึ่งรายการที่มีฟิลด์ Act และ Purpose",
             "backdropTitle": "ฉากหลัง",
             "backdropDesc": "บันทึกบริบทของไทม์ไลน์พร้อมวันที่เริ่มต้นและสิ้นสุด",
             "characterTitle": "อักขระ",
@@ -4124,7 +4124,7 @@ export const th: TranslationKeys = {
         },
         "demoLibraryModal": {
             "title": "สำรวจหนังสือที่เสร็จแล้ว",
-            "subtitle": "เพิ่มการสาธิตฟรีในห้องนิรภัยนี้ เรียกดูฉาก, จังหวะ, ชีพจร, Gossamer และบันทึกการบรรยายสรุป Inquiry โดยไม่ต้องใช้คีย์ API",
+            "subtitle": "เพิ่มการสาธิตฟรีในห้องนิรภัยนี้ เรียกดูฉาก, บีท, ชีพจร, Gossamer และบันทึกการบรรยายสรุป Inquiry โดยไม่ต้องใช้คีย์ API",
             "addedUnder": "เพิ่มการสาธิตภายใต้ {{folder}} ไฟล์ที่มีอยู่จะถูกเก็บรักษาไว้",
             "close": "ปิด",
             "openDemo": "เปิดสาธิต",
@@ -4443,9 +4443,9 @@ export const th: TranslationKeys = {
         },
         "dragConfirmModal": {
             "reorderSceneBadge": "จัดฉากใหม่",
-            "reorderBeatBadge": "เรียงลำดับจังหวะใหม่",
+            "reorderBeatBadge": "เรียงลำดับบีทใหม่",
             "confirmSceneReorder": "ยืนยันการจัดลำดับฉากใหม่",
-            "confirmBeatReorder": "ยืนยันการสั่งซื้อใหม่",
+            "confirmBeatReorder": "ยืนยันการจัดลำดับบีทใหม่",
             "currentMoveTitle": "สรุปการย้ายปัจจุบัน",
             "renameImpactLabel": "เปลี่ยนชื่อผลกระทบ",
             "contextChangeLabel": "การเปลี่ยนแปลงบริบท",
@@ -4714,7 +4714,7 @@ export const th: TranslationKeys = {
         "gossamerSignals": {
             "activityTooltip": "กิจกรรม\n\nวัดว่าเกิดขึ้นจริงหรือเห็นได้ชัดบนหน้า—การกระทำ เหตุการณ์ และการเปลี่ยนแปลงภายนอก กิจกรรมสูงไม่ได้หมายความถึงสูง ความตึงเครียดหรืออารมณ์",
             "interiorityTooltip": "ภายใน\n\nวัดความเข้มข้นของประสบการณ์ภายในของตัวละคร—ความคิด อารมณ์ และความขัดแย้งทางจิตใจ การตระหนักรู้ที่ละเอียดอ่อนสามารถมากขึ้น รุนแรงกว่าการระเบิดที่น่าทึ่ง",
-            "momentumTooltip": "โมเมนตัม\n\nวัดว่าเรื่องราวก้าวไปข้างหน้าอย่างแข็งแกร่งเพียงใด—แต่ละจังหวะจะดึงผู้อ่านไปสู่สิ่งที่เกิดขึ้นต่อไป เน้นการเว้นจังหวะและ ผลที่ตามมา ไม่ใช่แค่การนับเหตุการณ์",
+            "momentumTooltip": "โมเมนตัม\n\nวัดว่าเรื่องราวก้าวไปข้างหน้าอย่างแข็งแกร่งเพียงใด—แต่ละบีทจะดึงผู้อ่านไปสู่สิ่งที่เกิดขึ้นต่อไป เน้นการเว้นจังหวะและ ผลที่ตามมา ไม่ใช่แค่การนับเหตุการณ์",
             "tensionTooltip": "ความตึงเครียด\n\nวัดความกดดันที่ผู้อ่านรู้สึก—จำนวนความเครียด ความไม่แน่นอน หรือความขัดแย้งที่ยังไม่ได้รับการแก้ไข ฉากที่เงียบสงบสามารถสูงได้ ตึงเครียดหากเดิมพันชัดเจน"
         },
         "helpIcon": {
@@ -5327,7 +5327,7 @@ export const th: TranslationKeys = {
             "overwriteTitle": "เขียนทับผลลัพธ์ที่มีอยู่?"
         },
         "main": {
-            "adoptedBeats": "ใช้จังหวะ \"{{name}}\" จากต้นฉบับของคุณ",
+            "adoptedBeats": "ใช้บีท \"{{name}}\" จากต้นฉบับของคุณ",
             "sagaIsPro": "ไทม์ไลน์ของซากะเป็นเวิร์กโฟลว์แบบมืออาชีพ",
             "sagaNeedsTwoBooks": "เพิ่มหนังสืออย่างน้อยสองเล่มใน Book Manager เพื่อใช้ไทม์ไลน์ของ SAGA",
             "sceneIdsAdded": "เพิ่ม ID ฉาก {{scenes}} ไม่ต้องดำเนินการใดๆ",
@@ -5539,7 +5539,7 @@ export const th: TranslationKeys = {
             "formatUnavailable": "รูปแบบเอาต์พุตนี้ไม่พร้อมใช้งาน",
             "docTypeNotes": "เอกสารของบันทึกย่อที่คุณเลือกในลำดับที่ตรวจสอบแล้ว",
             "docTypeScenes": "เอกสารจัดรูปแบบฉากของคุณตามลำดับการอ่าน",
-            "docTypeOutline": "สรุปโครงสร้างตามข้อมูลเมตาของฉากและจังหวะ",
+            "docTypeOutline": "สรุปโครงสร้างตามข้อมูลเมตาของฉากและบีท",
             "pdfOptions": "PDF ตัวเลือก",
             "noLayoutsFor": "ไม่มีเลย์เอาต์สำหรับ {{preset}}",
             "manageLayouts": "จัดการเค้าโครง…",
@@ -5650,7 +5650,7 @@ export const th: TranslationKeys = {
             "couldNotEnterMode": "ไม่สามารถเข้าสู่โหมด {{mode}} ตรวจสอบ Developer Console สำหรับรายละเอียด",
             "couldNotSwitchMode": "ไม่สามารถเปลี่ยนเป็นโหมด {{mode}} {{message}}",
             "sagaNarrativeOnly": "Timeline ของ SAGA พร้อมใช้งานในโหมดการเล่าเรื่องเท่านั้น",
-            "systemHintWithModel": "ไม่พบบีทโน้ต \"{{system}}\" ตรวจสอบให้แน่ใจว่าโน้ตบีทมี \"คลาส: บีท\" และ \"บีทโมเดล: {{system}}\" ใน frontmatter"
+            "systemHintWithModel": "ไม่พบบีทโน้ต \"{{system}}\" ตรวจสอบให้แน่ใจว่าโน้ตบีทมี \"Class: Beat\" และ \"Beat Model: {{system}}\" ใน frontmatter"
         },
         "modeToggleController": {
             "switchFailedNotice": "ไม่สามารถเปลี่ยนเป็นโหมด {{mode}} ตรวจสอบ Developer Console สำหรับรายละเอียด"
@@ -5854,10 +5854,10 @@ export const th: TranslationKeys = {
             "unknownFollowUpIssue": "ปัญหาการติดตามที่ไม่รู้จัก",
             "sceneNumberLabel": "ฉาก {{number}} {{label}}",
             "sceneNumber": "ฉาก {{number}}",
-            "beatNumberLabel": "ตี {{number}} {{label}}",
-            "labelBeat": "{{label}}เอาชนะ",
-            "beatNumber": "เอาชนะ {{number}}",
-            "beatFallback": "จังหวะเรื่อง",
+            "beatNumberLabel": "บีท {{number}} {{label}}",
+            "labelBeat": "บีท {{label}}",
+            "beatNumber": "บีท {{number}}",
+            "beatFallback": "บีทเรื่อง",
             "movedBefore": "{{source}}ก่อน {{target}}",
             "moveTo": "ย้าย {{source}} ไป {{destination}}",
             "movedTo": "ย้าย {{source}} เป็น {{destination}}",
@@ -5975,7 +5975,7 @@ export const th: TranslationKeys = {
             "promote": "โปรโมทไปฉาก",
             "statusOverdue": "หนี้ที่ค้างชำระ",
             "sceneStatus": "{{status}} · {{stage}}",
-            "beatRow": "จังหวะเนื้อเรื่อง",
+            "beatRow": "บีทเนื้อเรื่อง",
             "sketchRow": "Sketch: เฉพาะในตารางเวลาไม่ใช่บนไทม์ไลน์",
             "unclassedRow": "ไม่ได้อยู่บนไทม์ไลน์: โน้ตนี้ไม่มีคลาส",
             "otherClassRow": "คลาส: {{className}}",
@@ -6060,7 +6060,7 @@ export const th: TranslationKeys = {
             "keyActHeaderDetail": "สมบูรณ์ของทั้งหมด · คำ · เกินกำหนด",
             "keyOverdue": "สีแดงเนื่องจาก",
             "keyOverdueDetail": "เกินกำหนดไม่สมบูรณ์",
-            "keyBeatsForward": "เต้นต่อหน้า",
+            "keyBeatsForward": "บีทอยู่ด้านหน้า",
             "keyBeatsForwardDetail": "แถวอื่นจาง",
             "keyScore": "คะแนน",
             "keyScoreDetail": "คะแนนล่าสุด การเปลี่ยนแปลง ช่วง; โครงร่างสีแดง: อยู่นอกช่วง",
@@ -6107,7 +6107,7 @@ export const th: TranslationKeys = {
             "magentaNote": "กระบวนงาน Pro จะปรากฏขึ้นทั่ว Radial Timeline ในสีม่วง",
             "heroBodyLead": "โปรเป็นของสะสมของ ",
             "heroBodyStrong": "เวิร์กโฟลว์โปร",
-            "heroBodyMiddle": " - ปลายลึกของ Radial Timeline. ประเมินเรื่องราวของคุณด้วยคำถามเชิงลึก+ คำถาม โครงสร้างและโมเมนตัมในฉากต่างๆ และสร้างต้นฉบับที่ขัดเกลาด้วย ปาน PDF การส่งออกและกำหนดเอง LaTeX แม่แบบ แชร์ความคืบหน้าผ่านแคมเปญ APR และสำรวจห้องเก็บตัวอย่างฟรีเช่น ",
+            "heroBodyMiddle": " - ปลายลึกของ Radial Timeline. ประเมินเรื่องราวของคุณด้วยคำถามเชิงลึก+ คำถาม โครงสร้างและโมเมนตัมในฉากต่างๆ และสร้างต้นฉบับที่ขัดเกลาด้วย การส่งออก PDF ด้วย PANDOC และแม่แบบ LaTeX แบบกำหนดเอง แชร์ความคืบหน้าผ่านแคมเปญ APR และสำรวจห้องนิรภัยตัวอย่างฟรี เช่น ",
             "heroBodyTail": " ด้วยพัลส์ที่บันทึกไว้, Gossamer และตัวอย่าง Inquiry กำลังเตรียมความคลาสสิกมากขึ้น",
             "featurePublishing": "การประกาศ",
             "featureAprCampaigns": "แคมเปญ APR",
@@ -6238,7 +6238,7 @@ export const th: TranslationKeys = {
             "starterModalSubtitle": "ตรวจจับ Pandoc และ LaTeX ติดตั้งเทมเพลต/แบบอักษรที่รวมไว้ในห้องนิรภัยของคุณ และสร้างบันทึกการเผยแพร่เริ่มต้น แอปภายนอกไม่ได้ดาวน์โหลด",
             "starterModalCreatesHeading": "สิ่งที่การตั้งค่านี้สร้างขึ้น",
             "starterModalItemDetection": "Pandoc และ LaTeX การตรวจจับ",
-            "starterModalItemTemplates": "เทมเพลตแบบรวมและแบบอักษร Vault-local",
+            "starterModalItemTemplates": "เทมเพลตที่มาพร้อมกันและแบบอักษรในห้องนิรภัย",
             "starterModalItemBookDetails": "รายละเอียดหนังสือ",
             "starterModalItemMatterExamples": "อินไลน์ LaTeX ตัวอย่างสสารด้านหน้า/ด้านหลัง",
             "exportPublishingHeading": "ส่งออกและเผยแพร่",
@@ -6821,7 +6821,7 @@ export const th: TranslationKeys = {
             "coreTitle": "สร้างแกนหลักของเวิร์กโฟลว์การเขียนของคุณ",
             "coreSubtitle": "ถึงเพียงไร Radial Timeline ได้รับการออกแบบมาเพื่อเพิ่มขีดความสามารถให้กับคุณ ผู้เขียน ไปสู่ประสิทธิภาพการทำงานและความรับผิดชอบที่มากขึ้น ใช้การตั้งค่าหลักเพื่อจัดแนวไทม์ไลน์กับของคุณ โครงสร้างของต้นฉบับ ปรับปรุงเวิร์กโฟลว์ของคุณ และเคลื่อนที่เร็วขึ้นด้วยความชัดเจน",
             "coreKicker": "ไฮไลท์หลัก:",
-            "coreFeatureStructure": "โครงสร้างเรื่องราว — จัดการฉาก จังหวะ โปรไฟล์ และฟิลด์ขั้นสูง",
+            "coreFeatureStructure": "โครงสร้างเรื่องราว — จัดการฉาก บีท โปรไฟล์ และฟิลด์ขั้นสูง",
             "coreFeatureChronologue": "Chronologue & เวลา — จัดตำแหน่งโครโนล็อก ฉากหลัง และนาฬิกาดาวเคราะห์",
             "coreFeatureSessions": "เซสชัน — ปรับเทียบความเร็วการร่าง เป้าหมายรายวัน และค่าประมาณความสำเร็จ",
             "quickLinksLabel": "ลิงค์ด่วน",
@@ -6848,7 +6848,7 @@ export const th: TranslationKeys = {
             "guardReleaseNotes": "บันทึกประจำรุ่น",
             "quickLinkBooks": "หนังสือ",
             "quickLinkSessions": "ช่วง",
-            "quickLinkBeats": "จังหวะเรื่อง",
+            "quickLinkBeats": "บีทเรื่อง",
             "quickLinkProperties": "สรรพคุณ",
             "quickLinkChronology": "ลำดับเหตุการณ์",
             "quickLinkPov": "เปิดโปง",
@@ -6889,7 +6889,7 @@ export const th: TranslationKeys = {
         },
         "statusBarService": {
             "clickToViewProgress": "คลิกเพื่อดูความคืบหน้า",
-            "sceneBeatsProgress": "ฉากเต้น: {{current}}/{{total}} ({{percentage}}%)"
+            "sceneBeatsProgress": "บีทของฉาก: {{current}}/{{total}} ({{percentage}}%)"
         },
         "subplotKeyController": {
             "ringKey": "คำอธิบายวงแหวน",
@@ -7039,9 +7039,9 @@ export const th: TranslationKeys = {
             "legendRightClickSceneDetail": "เพิ่มฉาก ตั้งค่าสถานะ เวทีหรือแฟล็กพัลส์",
             "legendNarrativeOnly": "เรื่องเล่าเท่านั้น",
             "legendDragOuterRing": "ลากวงแหวนรอบนอก",
-            "legendDragOuterRingDetail": "ย้ายฉากหรือตีตามลำดับต้นฉบับ",
+            "legendDragOuterRingDetail": "ย้ายฉากหรือบีทตามลำดับต้นฉบับ",
             "legendHoldShift": "ถือกะ",
-            "legendHoldShiftDetail": "แสดงคำอธิบายวงแหวนพล็อตย่อยและชื่อจังหวะ In This Book",
+            "legendHoldShiftDetail": "แสดงคำอธิบายวงแหวนพล็อตย่อยและชื่อบีท In This Book",
             "legendChronologueOnly": "Chronologueเท่านั้น",
             "legendShiftCapsLock": "Shift / Caps Lock",
             "legendShiftCapsLockDetail": "เปรียบเทียบเวลาที่ผ่านไประหว่างฉาก",
@@ -7081,7 +7081,7 @@ export const th: TranslationKeys = {
             "gossamerLoadFailed": "โหมด Gossamer ไม่สามารถโหลดได้ กลับสู่โหมดการเล่าเรื่อง",
             "recentMoves": "การเคลื่อนไหวล่าสุด",
             "recentCache": "แคชล่าสุด {{clock}}",
-            "cacheTooltip": "แคชยืนยันล่าสุดสำหรับหนังสือเล่มนี้เมื่อ {{provider}} การนำกลับมาใช้ใหม่ต้องใช้ต้นฉบับ จังหวะ และโมเดลที่ไม่เปลี่ยนแปลง",
+            "cacheTooltip": "แคชยืนยันล่าสุดสำหรับหนังสือเล่มนี้เมื่อ {{provider}} การนำกลับมาใช้ใหม่ต้องใช้ต้นฉบับ บีท และโมเดลที่ไม่เปลี่ยนแปลง",
             "showAllTraces": "คลิกเพื่อแสดงร่องรอยทั้งหมด",
             "showLatestOnly": "คลิกเพื่อแสดงล่าสุดเท่านั้น",
             "tracesCount": "{{count}} ร่องรอย",
@@ -7174,7 +7174,7 @@ export const th: TranslationKeys = {
             "websiteTitle": "เยี่ยมชมเว็บไซต์",
             "websiteDesc": "เข้าร่วมชุมชนและแบ่งปันการเดินทางของคุณในระดับความสะดวกสบายของคุณเอง เรียนรู้เกี่ยวกับคุณสมบัติที่มีอยู่โดยใช้ Radial Timeline & Editorialist ระบบนิเวศและรับความช่วยเหลือ",
             "websiteCta": "เปิดเว็บไซต์",
-            "sampleCheckingTitle": "สำรวจห้องเก็บตัวอย่าง",
+            "sampleCheckingTitle": "สำรวจห้องนิรภัยตัวอย่าง",
             "sampleCheckingDesc": "การตรวจสอบห้องนิรภัยนี้สำหรับหนังสือตัวอย่างและการวิเคราะห์ที่บันทึกไว้",
             "sampleCheckingCta": "ตรวจห้องนิรภัย...",
             "sampleGetTitle": "สำรวจหนังสือที่เสร็จแล้ว",
@@ -7182,7 +7182,7 @@ export const th: TranslationKeys = {
             "sampleGetCta": "เลือกโครงการสาธิต",
             "sampleOpenTitle": "{{name}} ตรวจพบ",
             "sampleOpenDesc": "ห้องนิรภัยนี้จัดส่งพร้อมสำรวจ {{name}} เปิดมันเพื่อวางลงในเรื่องราวที่เสร็จแล้วบนไทม์ไลน์",
-            "sampleOpenCta": "เปิดห้องเก็บตัวอย่าง",
+            "sampleOpenCta": "เปิดห้องนิรภัยตัวอย่าง",
             "designTitle": "โครงการหนังสือชุด",
             "designDesc": "เลือกโฟลเดอร์ต้นฉบับที่ขับเคลื่อนไทม์ไลน์ การส่งออก ขอบเขต Inquiry และตัวจัดการหนังสือ",
             "designCta": "เปิดผู้จัดการหนังสือ",
@@ -7198,11 +7198,11 @@ export const th: TranslationKeys = {
             "feedback": "ใช้เวลาสักครู่เพื่อ [แบ่งปันความคิดเห็นของคุณ] เกี่ยวกับ Radial Timeline และคุณสมบัติที่คุณต้องการเห็นต่อไปเพื่อทำให้เวิร์กโฟลว์การเขียนของคุณราบรื่นขึ้น Radial Timeline กำลังขยายไปในทุกทิศทาง และความคิดเห็นของคุณช่วยชี้แนะ",
             "feedbackContact": "ความคิดเห็นของชุมชนต้องลงชื่อเข้าใช้ หากไม่มีบัญชีชุมชน ให้ใช้ [แบบฟอร์มติดต่อ] ของเรา มีความสุขในการเขียน!",
             "updateNote": "ชุมชนใช้งานได้จริง — เชื่อมต่อจากการตั้งค่าปลั๊กอิน Radial Timeline → ชุมชนและแบ่งปันเส้นทางการเขียนของคุณ",
-            "unableToOpenSample": "ไม่สามารถเปิดห้องเก็บตัวอย่างได้",
+            "unableToOpenSample": "ไม่สามารถเปิดห้องนิรภัยตัวอย่างได้",
             "sampleFolderMissing": "โฟลเดอร์ต้นฉบับตัวอย่างหายไป: {{folder}}",
             "sampleNeedsAttention": "ตัวอย่างห้องนิรภัยต้องการความสนใจ",
             "invalidSampleConfig": "การกำหนดค่าห้องนิรภัยตัวอย่างไม่ถูกต้อง",
-            "sampleVaultName": "ห้องเก็บของตัวอย่าง",
+            "sampleVaultName": "ห้องนิรภัยตัวอย่าง",
             "exploreAllBooks": "สำรวจหนังสือทั้งหมด {{count}} ใน {{name}} เลือกนวนิยายที่มีตัวเลือกหนังสือ หรือสำรวจด้วยกันใน Saga View",
             "welcomeTitle": "ต้อนรับ",
             "browseDemoProjects": "เรียกดูโครงการสาธิต",
@@ -7260,10 +7260,10 @@ export const th: TranslationKeys = {
             "sessionLogUnreadable": "ไม่สามารถอ่าน {{path}} ({{reason}}) ประวัติของคุณไม่ได้ถูกเขียนทับ — ไฟล์ที่เสียหายตอนนี้คือ {{quarantinePath}} และได้เริ่มบันทึกใหม่แล้ว"
         },
         "yamlAuditPanel": {
-            "typeBeat": "ตี",
+            "typeBeat": "บีท",
             "typeBackdrop": "ฉากหลัง",
             "typeScene": "ฉาก",
-            "beatAuditBadge": "ชนะการตรวจสอบ",
+            "beatAuditBadge": "การตรวจสอบบีท",
             "backdropAuditBadge": "การตรวจสอบฉากหลัง",
             "sceneAuditBadge": "การตรวจสอบฉาก",
             "checkPropertiesName": "ตรวจสอบคุณสมบัติ {{type}}",
@@ -7334,7 +7334,7 @@ export const th: TranslationKeys = {
             "removedDescriptionKeysOther": "ลบ {{count}} คีย์คำอธิบาย",
             "alreadyHadAllFields": "{{count}}มีทุกสาขาแล้ว",
             "saveSetBeforeFillNotice": "บันทึกชุดกำหนดเองที่ใช้งานอยู่ก่อนเติมค่าว่าง",
-            "noEmptyFieldsNotice": "ไม่พบฟิลด์บีตว่างที่มีค่าเริ่มต้นในโฟลเดอร์หนังสือที่ใช้งานอยู่",
+            "noEmptyFieldsNotice": "ไม่พบฟิลด์บีทว่างที่มีค่าเริ่มต้นในโฟลเดอร์หนังสือที่ใช้งานอยู่",
             "fillEmptySubtitle": "เติม {{values}} ใน {{notes}}",
             "fillAction": "ใส่",
             "fillEmptyBody": "กรอกเฉพาะคีย์เปล่าที่มีอยู่เท่านั้น ไม่มีการเพิ่ม ลบ หรือเขียนทับคีย์",

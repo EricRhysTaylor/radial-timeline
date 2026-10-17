@@ -477,23 +477,23 @@ export const vi: TranslationKeys = {
             },
             "parenthetical": {
                 "beat": {
-                    "name": "(nhịp)",
+                    "name": "(beat)",
                     "desc": "Dừng ngắn. Thời gian trong ngoặc – giây được thêm vào khi phát hiện chỉ dẫn kịch bản."
                 },
                 "pause": {
-                    "name": "(dừng)",
+                    "name": "(pause)",
                     "desc": "Dừng tiêu chuẩn"
                 },
                 "longPause": {
-                    "name": "(dừng dài)",
+                    "name": "(long pause)",
                     "desc": "Sự im lặng kéo dài"
                 },
                 "moment": {
-                    "name": "(một khoảnh khắc)",
+                    "name": "(a moment)",
                     "desc": "Nhịp suy ngẫm"
                 },
                 "silence": {
-                    "name": "(im lặng)",
+                    "name": "(silence)",
                     "desc": "Khoảng lặng mang tính không khí"
                 },
                 "resetTooltip": "Đặt lại về mặc định"
@@ -2407,11 +2407,11 @@ export const vi: TranslationKeys = {
                 "narrationRateLabel": "Tỷ lệ tường thuật:",
                 "wpmValue": "{{value}} wpm",
                 "parentheticalTimingsHeader": "thời gian trong ngoặc đơn",
-                "timingBeat": "(nhịp)",
-                "timingPause": "(dừng)",
-                "timingLongPause": "(dừng dài)",
-                "timingMoment": "(một khoảnh khắc)",
-                "timingSilence": "(im lặng)",
+                "timingBeat": "(beat)",
+                "timingPause": "(pause)",
+                "timingLongPause": "(long pause)",
+                "timingMoment": "(a moment)",
+                "timingSilence": "(silence)",
                 "secondsValue": "{{value}}s",
                 "configHint": "Định cấu hình các giá trị này trong Cài đặt → Pro → Ước tính thời gian chạy"
             },

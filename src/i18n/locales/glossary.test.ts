@@ -48,6 +48,15 @@ const SUBPLOT_FIELD = {
     'ui.subplotManagementService.renameFailed': 'Subplot',
 };
 
+const BEAT_FIELD = {
+    'settings.runtime.parenthetical.beat.name': '(beat)',
+    'sceneAnalysis.runtimeModal.settings.timingBeat': '(beat)',
+    'ui.beatPropertiesSection.missingModelPart': 'Beat Model',
+    'ui.beatPropertiesSection.setModelOnNotes': 'Beat Model',
+    'ui.beatPropertiesSection.repairedNotice': 'Beat Model',
+    'ui.promoteToScene.skippedOtherClass': 'Beat',
+};
+
 const ACT_FIELD = {
     'settings.beats.beatNotes.repairTooltip': 'Act',
     'ui.beatPropertiesSection.allHaveFilesRepairAct': 'Act',
@@ -118,33 +127,83 @@ const GLOSSARY: Record<string, Term> = {
             vi: ['vòng'],
         },
     },
-    // Vietnamese keeps "beat" as a loanword in places, matching Class: Beat.
+    // A story beat. Spanish, French and Thai use the loanword because their
+    // native words (ritmo, rythme, จังหวะ) already mean pacing; Vietnamese
+    // also keeps "beat" in places, matching Class: Beat.
     beat: {
         en: /\bbeats?\b/i,
         words: {
+            de: ['Beat'],
+            ja: ['ビート'],
+            ko: ['비트'],
+            zh: ['节拍'],
+            es: ['beat'],
+            fr: ['beat'],
+            th: ['บีท'],
             vi: ['nhịp', 'beat'],
         },
+        fieldNames: BEAT_FIELD,
+        // "Reflective beat" describes the (a moment) pause, not a story beat.
+        otherSense: ['settings.runtime.parenthetical.moment.desc'],
     },
-    // Obsidian's own Vietnamese interface calls the vault "kho".
+    // The word Obsidian's own interface uses in each language.
     vault: {
         en: /\bvaults?\b/i,
         words: {
+            de: ['Vault'],
+            es: ['bóveda'],
+            fr: ['coffre'],
+            th: ['ห้องนิรภัย'],
             vi: [/(?<!\p{L})kho(?!\p{L})/iu],
         },
     },
     apiKey: {
         en: /\bAPI keys?\b/i,
         words: {
+            de: ['API-Schlüssel'],
+            ja: ['API キー', 'APIキー'],
+            ko: ['API 키'],
+            zh: ['API 密钥'],
+            es: ['clave de API', 'claves de API', 'clave API', 'claves API'],
+            fr: ['clé API', 'clés API'],
+            th: ['คีย์ API'],
             vi: ['khóa API'],
         },
     },
 };
 
+/**
+ * Screenplay parentheticals the runtime estimator matches in the author's own
+ * text (runtimeEstimator.ts). A translated label would name a directive the
+ * plugin never detects, so these stay exactly as in English.
+ */
+const VERBATIM = [
+    'settings.runtime.parenthetical.beat.name',
+    'settings.runtime.parenthetical.pause.name',
+    'settings.runtime.parenthetical.longPause.name',
+    'settings.runtime.parenthetical.moment.name',
+    'settings.runtime.parenthetical.silence.name',
+    'sceneAnalysis.runtimeModal.settings.timingBeat',
+    'sceneAnalysis.runtimeModal.settings.timingPause',
+    'sceneAnalysis.runtimeModal.settings.timingLongPause',
+    'sceneAnalysis.runtimeModal.settings.timingMoment',
+    'sceneAnalysis.runtimeModal.settings.timingSilence',
+];
+
+/** YAML the author is told to type, quoted in English ("Class: Beat"). */
+const QUOTED_YAML = /"((?:Class|Beat Model|Subplot|Act|When|Pulse Update): [^"]*)"/g;
+
 /** Wrong senses already removed from a locale; any return is a regression. */
 const BANNED: Partial<Record<Locale, RegExp[]>> = {
-    fr: [/terrain principal/i, /tracé principal/i, /bague/i, /sonnerie/i, /sous-(parcelle|plaque|plancher|plot)/i],
-    es: [/parcela/i, /subtrabajo/i],
-    th: [/พระราชบัญญัติ/, /แปลงหลัก/, /แผนย่อย/, /ซับพล็อต/, /กรรมาธิการ/, /(?<!วง)แหวน/],
+    fr: [
+        /terrain principal/i, /tracé principal/i, /bague/i, /sonnerie/i, /sous-(parcelle|plaque|plancher|plot)/i,
+        /battement/i, /\bbatt(re|ez|er)\b/i, /coffre-fort/i, /touche API/i,
+    ],
+    es: [/parcela/i, /subtrabajo/i, /latido/i, /\bbat(ir|ido|idos|ite)\b/i, /tecla API/i],
+    th: [
+        /พระราชบัญญัติ/, /แปลงหลัก/, /แผนย่อย/, /ซับพล็อต/, /กรรมาธิการ/, /(?<!วง)แหวน/,
+        /เต้น/, /เอาชนะ/, /เพชฌฆาต/, /คว่ำบาตร/, /บีต/, /วอลต์/, /กุญแจ API/,
+    ],
     vi: [
         /nhẫn/i, /(?<!\p{L})(ô|lô) phụ/iu, /mảnh ghép/i, /biểu đồ phụ/i, /sublot/i, /vòng đệm/i, /phím chuông/i,
         /ghi chú đánh bại/i, /đánh đập/i, /nhịp đập/i, /nốt (nhạc|nhịp)/i, /mô hình (beat|nhịp)/i,
@@ -169,7 +228,7 @@ const withoutPlaceholders = (value: string): string => value.replace(/\{\{\s*[\w
  * particles directly to the name ("Act와").
  */
 const namesField = (value: string, name: string): boolean =>
-    new RegExp(`(?<![A-Za-z\u00C0-\u024F])${name}(?![A-Za-z\u00C0-\u024F])`).test(value);
+    new RegExp(`(?<![A-Za-z\u00C0-\u024F])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z\u00C0-\u024F])`).test(value);
 
 const english = flatten(en as unknown as Tree);
 const locales: Record<Locale, Record<string, string>> = {
@@ -199,6 +258,16 @@ describe('core-term glossary', () => {
             return !words.some(word => typeof word === 'string' ? lower.includes(word.toLowerCase()) : word.test(translated));
         });
         expect(wrong.map(key => `${key}: ${locales[locale][key]}`)).toEqual([]);
+    });
+
+    it.each(Object.keys(locales) as Locale[])('%s keeps screenplay parentheticals and quoted YAML verbatim', locale => {
+        const translated = locales[locale];
+        const changed = Object.keys(english).filter(key => {
+            if (translated[key] === undefined) return false;
+            if (VERBATIM.includes(key)) return translated[key] !== english[key];
+            return [...english[key].matchAll(QUOTED_YAML)].some(([, yaml]) => !translated[key].includes(yaml));
+        });
+        expect(changed.map(key => `${key}: ${translated[key]}`)).toEqual([]);
     });
 
     it.each(Object.entries(BANNED) as Array<[Locale, RegExp[]]>)('%s keeps out wrong senses already fixed', (locale, patterns) => {

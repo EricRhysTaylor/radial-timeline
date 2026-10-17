@@ -6584,7 +6584,7 @@ export const th: TranslationKeys = {
             "moveSceneFromPlaceholder": "ย้าย {{name}} จาก…",
             "addToSubplot": "เพิ่มลงในพล็อตย่อย…",
             "addSceneToPlaceholder": "เพิ่ม {{name}}เพื่อ…",
-            "removeFrom": "นำออกจาก {{from}}",
+            "removeFromThisSubplot": "ลบออกจากพล็อตย่อย",
             "removeFromSubplot": "ลบออกจากพล็อตย่อย…",
             "removeSceneFromPlaceholder": "ลบ {{name}} จาก…",
             "addDataUnavailable": "ไม่สามารถเพิ่มฉากได้เนื่องจากไม่มีข้อมูลฉากไทม์ไลน์",
@@ -6607,7 +6607,9 @@ export const th: TranslationKeys = {
             "statusSet": "ตั้งค่าสถานะ {{name}} เป็น {{status}}",
             "stageSet": "ตั้งค่า {{name}} เผยแพร่เวทีเป็น {{stage}}",
             "flagTripletPulse": "ธงสามเท่าชีพจร",
-            "flaggedTripletPulse": "ตั้งค่าสถานะ {{name}} สำหรับชีพจรสามเท่า"
+            "flaggedTripletPulse": "ตั้งค่าสถานะ {{name}} สำหรับชีพจรสามเท่า",
+            "removeFromBook": "นำออกจากหนังสือ",
+            "removedFromBook": "นำ {{name}} ออกจากหนังสือแล้ว โน้ตยังอยู่ในโฟลเดอร์เดิม"
         },
         "sceneNormalizerSection": {
             "unchangedCount": "{{count}}ไม่เปลี่ยนแปลง",

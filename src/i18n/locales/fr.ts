@@ -6584,7 +6584,7 @@ export const fr: TranslationKeys = {
             "moveSceneFromPlaceholder": "Déplacer {{name}} de…",
             "addToSubplot": "Ajouter à la sous-intrigue…",
             "addSceneToPlaceholder": "Ajoutez {{name}} à…",
-            "removeFrom": "Supprimer de {{from}}",
+            "removeFromThisSubplot": "Supprimer de la sous-intrigue",
             "removeFromSubplot": "Supprimer de la sous-intrigue…",
             "removeSceneFromPlaceholder": "Supprimer {{name}} de…",
             "addDataUnavailable": "Impossible d'ajouter une scène car les données de scène de la chronologie ne sont pas disponibles.",
@@ -6607,7 +6607,9 @@ export const fr: TranslationKeys = {
             "statusSet": "Définissez {{name}} Statut sur {{status}}.",
             "stageSet": "Définissez {{name}} la phase de publication sur {{stage}}.",
             "flagTripletPulse": "Pulse triplet de drapeau",
-            "flaggedTripletPulse": "Marqué {{name}} pour le pouls du triplet."
+            "flaggedTripletPulse": "Marqué {{name}} pour le pouls du triplet.",
+            "removeFromBook": "Retirer du livre",
+            "removedFromBook": "{{name}} a été retiré du livre. La note reste dans son dossier."
         },
         "sceneNormalizerSection": {
             "unchangedCount": "{{count}} inchangé",

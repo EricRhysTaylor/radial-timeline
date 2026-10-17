@@ -421,6 +421,13 @@ function addSubplotMenuItems(menu: Menu, view: SceneMenuHost, target: SceneMenuT
     const moveFrom = (from: string): void => pickSubplot(view, known.filter(name => name !== from), t('ui.sceneContextMenu.moveSceneFromToPlaceholder', { name: file.basename, from }),
         to => { void changeSubplotMembership(view, file, { kind: 'move', from, to }); });
 
+    menu.addItem(item => {
+        item.setIcon('plus-circle');
+        item.setTitle(t('ui.sceneContextMenu.addToSubplot'));
+        item.onClick(() => pickSubplot(view, known.filter(name => !effective.includes(name)), t('ui.sceneContextMenu.addSceneToPlaceholder', { name: file.basename }),
+            to => { void changeSubplotMembership(view, file, { kind: 'add', to }); }));
+    });
+
     // On a subplot ring the ring is the source. On a ring that lists every
     // scene, the source is the scene's subplot, chosen first if it has several.
     const sources = ringSubplot ? [ringSubplot] : effective;
@@ -438,19 +445,15 @@ function addSubplotMenuItems(menu: Menu, view: SceneMenuHost, target: SceneMenuT
             item.onClick(() => pickSubplot(view, sources, t('ui.sceneContextMenu.moveSceneFromPlaceholder', { name: file.basename }), moveFrom));
         });
     }
-    menu.addItem(item => {
-        item.setIcon('plus-circle');
-        item.setTitle(t('ui.sceneContextMenu.addToSubplot'));
-        item.onClick(() => pickSubplot(view, known.filter(name => !effective.includes(name)), t('ui.sceneContextMenu.addSceneToPlaceholder', { name: file.basename }),
-            to => { void changeSubplotMembership(view, file, { kind: 'add', to }); }));
-    });
+    // One removable subplot is the one the Move item above names (or the
+    // clicked ring), so the label needn't repeat it; several open a picker.
     const removable = (ringSubplot ? [ringSubplot] : effective)
         .filter(from => planSubplotMembership(current, { kind: 'remove', from }) !== null);
     if (removable.length === 1) {
         const from = removable[0];
         menu.addItem(item => {
             item.setIcon('minus-circle');
-            item.setTitle(t('ui.sceneContextMenu.removeFrom', { from }));
+            item.setTitle(t('ui.sceneContextMenu.removeFromThisSubplot'));
             item.onClick(() => { void changeSubplotMembership(view, file, { kind: 'remove', from }); });
         });
     } else if (removable.length > 1) {
@@ -461,6 +464,25 @@ function addSubplotMenuItems(menu: Menu, view: SceneMenuHost, target: SceneMenuT
                 from => { void changeSubplotMembership(view, file, { kind: 'remove', from }); }));
         });
     }
+}
+
+/**
+ * Take a scene out of the book without moving or deleting the note: only its
+ * Class goes, so the timeline stops drawing it and the Timetable lists it as a
+ * note with no Class, where Promote to scene puts it back. The scene ID stays,
+ * so a promoted scene keeps the identity its history is filed under.
+ */
+async function removeSceneFromBook(view: SceneMenuHost, file: TFile): Promise<void> {
+    await updateSceneFrontmatter(
+        view,
+        file,
+        (fm) => {
+            for (const key of Object.keys(fm)) {
+                if (key.toLowerCase() === 'class') delete fm[key];
+            }
+        },
+        t('ui.sceneContextMenu.removedFromBook', { name: file.basename })
+    );
 }
 
 async function addSceneAfterAnchor(view: SceneMenuHost, target: SceneMenuTarget): Promise<void> {
@@ -626,7 +648,7 @@ function targetFromGroup(view: SceneMenuHost, group: Element): SceneMenuTarget |
     };
 }
 
-/** The scene menu: Add scene, chapter and part, subplot moves, Status, Publish Stage, Pulse. */
+/** The scene menu: Add scene, chapter and part, subplot moves, Status, Publish Stage, Pulse, Remove from book. */
 export function showSceneContextMenu(view: SceneMenuHost, target: SceneMenuTarget, event: MouseEvent): void {
     const { file } = target;
     const cache = view.plugin.app.metadataCache.getFileCache(file);
@@ -695,6 +717,15 @@ export function showSceneContextMenu(view: SceneMenuHost, target: SceneMenuTarge
             );
         });
     });
+
+    if (target.itemType === 'Scene') {
+        menu.addSeparator();
+        menu.addItem(item => {
+            item.setIcon('book-x');
+            item.setTitle(t('ui.sceneContextMenu.removeFromBook'));
+            item.onClick(() => { void removeSceneFromBook(view, file); });
+        });
+    }
 
     menu.showAtMouseEvent(event);
 }

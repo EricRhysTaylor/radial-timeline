@@ -118,7 +118,7 @@ One row per scene, a page you scroll down, and columns you can rearrange. That's
 - **Names.** Hovering the strip lists the scene's rings, and hovering the header lists all rings in order. The header strip shows the ring colors in slot order.
 - **Not a property.** The column is rendered by the view from `Subplot`. A view option (`BasesViewRegistration.options`) turns it on or off.
 - **Beat rows** run across the full width as quiet dividers. **Sketch rows** show planned memberships as hollow squares.
-- **Read-only.** The squares are too small to click reliably, so membership changes stay in the row's context menu (*Add to subplot*, *Remove from*).
+- **Read-only.** The squares are too small to click reliably, so membership changes stay in the row's context menu (*Add to subplot*, *Move from … to*, *Remove from subplot*).
 - **Wrapping** (Eric, 2026-10-12). Past a set number of squares per line (a view option, 3 to 5 by default), the grid wraps onto more lines. Every row wraps at the same point, so each ring keeps its slot and a plotline still reads straight down the page; the column just gets taller.
 
 **Visuals: the same color language as the wheel**

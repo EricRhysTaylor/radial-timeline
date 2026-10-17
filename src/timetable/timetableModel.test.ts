@@ -219,6 +219,16 @@ describe('belongsInTimetable', () => {
         expect(belongsInTimetable(at('Book 2/Drafts/Idea.md', { Class: 'Sketch' }), books)).toBe(true);
     });
 
+    it('keeps a scene removed from the book (no Class, scene ID kept) wherever it sits', () => {
+        const removed = at('Book 2/Act 1/5 Arrival.md', { ID: 'scn_1a2b3c4d', Act: 1, Subplot: ['Search for Lost Crew'] });
+        expect(removed.kind).toBe('unclassed');
+        expect(removed.removedScene).toBe(true);
+        expect(removed.act).toBe(1);
+        expect(removed.subplots).toEqual(['Search for Lost Crew']);
+        expect(belongsInTimetable(removed, books)).toBe(true);
+        expect(at('Book 2/Act 1/5 Arrival.md', { Class: 'Scene', ID: 'scn_1a2b3c4d' }).removedScene).toBe(false);
+    });
+
     it('keeps other notes at a book folder’s top level', () => {
         expect(belongsInTimetable(at('Book 2/78 Dry Tank.md'), books)).toBe(true);
         expect(belongsInTimetable(at('Book 3/Title Page.md', { Class: 'Frontmatter' }), books)).toBe(true);

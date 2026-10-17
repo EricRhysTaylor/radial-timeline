@@ -6581,7 +6581,7 @@ export const de: DeepPartial<TranslationKeys> = {
             moveSceneFromPlaceholder: '{{name}} verschieben aus…',
             addToSubplot: 'Zu Nebenhandlung hinzufügen…',
             addSceneToPlaceholder: '{{name}} hinzufügen zu…',
-            removeFrom: 'Aus {{from}} entfernen',
+            removeFromThisSubplot: 'Aus Nebenhandlung entfernen',
             removeFromSubplot: 'Aus Nebenhandlung entfernen…',
             removeSceneFromPlaceholder: '{{name}} entfernen aus…',
             addDataUnavailable: 'Szene konnte nicht hinzugefügt werden, weil die Szenendaten der Timeline nicht verfügbar sind.',
@@ -6605,6 +6605,8 @@ export const de: DeepPartial<TranslationKeys> = {
             stageSet: 'Veröffentlichungsphase von {{name}} auf {{stage}} gesetzt.',
             flagTripletPulse: 'Für Triplet-Puls markieren',
             flaggedTripletPulse: '{{name}} für Triplet-Puls markiert.',
+            removeFromBook: 'Aus dem Buch entfernen',
+            removedFromBook: '{{name}} aus dem Buch entfernt. Die Notiz bleibt in ihrem Ordner und in der Timetable; „Zur Szene machen“ holt sie zurück.',
         },
         sceneNormalizerSection: {
             unchangedCount: '{{count}} unverändert',

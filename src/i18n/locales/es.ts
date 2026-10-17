@@ -6584,7 +6584,7 @@ export const es: TranslationKeys = {
             "moveSceneFromPlaceholder": "Mover {{name}} de…",
             "addToSubplot": "Añadir a la subtrama…",
             "addSceneToPlaceholder": "Añadir {{name}} a…",
-            "removeFrom": "Quitar de {{from}}",
+            "removeFromThisSubplot": "Eliminar de la subtrama",
             "removeFromSubplot": "Eliminar de la subtrama…",
             "removeSceneFromPlaceholder": "Eliminar {{name}} de…",
             "addDataUnavailable": "No se pudo agregar la escena porque los datos de la escena de la línea de tiempo no están disponibles.",
@@ -6607,7 +6607,9 @@ export const es: TranslationKeys = {
             "statusSet": "Establecer {{name}} Estado en {{status}}.",
             "stageSet": "Establecer {{name}} Publicar etapa en {{stage}}.",
             "flagTripletPulse": "Marcar pulso de triplete",
-            "flaggedTripletPulse": "Marcado {{name}} para pulso de triplete."
+            "flaggedTripletPulse": "Marcado {{name}} para pulso de triplete.",
+            "removeFromBook": "Quitar del libro",
+            "removedFromBook": "Se quitó {{name}} del libro. La nota sigue en su carpeta."
         },
         "sceneNormalizerSection": {
             "unchangedCount": "{{count}} Sin cambios",

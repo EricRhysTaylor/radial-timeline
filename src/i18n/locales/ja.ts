@@ -6582,7 +6582,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             moveSceneFromPlaceholder: '{{name}} の移動元…',
             addToSubplot: 'サブプロットに追加…',
             addSceneToPlaceholder: '{{name}} の追加先…',
-            removeFrom: '{{from}} から削除',
+            removeFromThisSubplot: 'サブプロットから削除',
             removeFromSubplot: 'サブプロットから削除…',
             removeSceneFromPlaceholder: '{{name}} の削除元…',
             addDataUnavailable: 'タイムラインのシーンデータを利用できないため、シーンを追加できませんでした。',
@@ -6606,6 +6606,8 @@ export const ja: DeepPartial<TranslationKeys> = {
             stageSet: '{{name}} の Publish Stage を {{stage}} に設定しました。',
             flagTripletPulse: '三連パルスのフラグを付ける',
             flaggedTripletPulse: '{{name}} に三連パルスのフラグを付けました。',
+            removeFromBook: '書籍から外す',
+            removedFromBook: '{{name}} を書籍から外しました。ノートはフォルダーとタイムテーブルに残ります。「シーンに昇格」で元に戻せます。',
         },
         sceneNormalizerSection: {
             unchangedCount: '変更なし {{count}} 件',

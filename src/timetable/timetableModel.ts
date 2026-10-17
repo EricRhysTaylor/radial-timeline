@@ -24,6 +24,7 @@ import { parseRuntimeField } from '../utils/runtimeEstimator';
 import { formatHoverMetadataValue } from '../utils/hoverMetadata';
 import { hexToRgb } from '../utils/colour';
 import { getMainPlotName } from '../utils/mainPlot';
+import { readSceneId } from '../utils/sceneIds';
 
 /**
  * - `scene`: on the wheel.
@@ -46,6 +47,8 @@ export interface TimetableRow {
     act: number | null;
     /** Subplot memberships. Scenes always have at least Main Plot; sketches list planned rings. */
     subplots: string[];
+    /** An unclassed note that still carries a scene ID: a scene taken out of the book (right-click → Remove from book). */
+    removedScene: boolean;
 }
 
 function readSubplots(value: unknown): string[] {
@@ -91,18 +94,20 @@ export function buildTableRow(
         prefix: extractPrefixToken(basename),
         act: act ?? (kind === 'scene' || kind === 'beat' ? 1 : null),
         subplots: kind === 'scene' && subplots.length === 0 ? [getMainPlotName()] : (kind === 'beat' || kind === 'otherClass' ? [] : subplots),
+        removedScene: kind === 'unclassed' && readSceneId(rawFrontmatter) !== undefined,
     };
 }
 
 /**
- * Whether a note belongs in the Timetable view. Scenes, beats and sketches do
- * wherever they sit in a book folder, as on the wheel. Other notes (drafts
+ * Whether a note belongs in the Timetable view. Scenes, beats, sketches and
+ * scenes taken out of the book do wherever they sit in a book folder, as on
+ * the wheel. Other notes (drafts
  * waiting for Promote, front matter) do at a book folder's top level, but not
  * in its subfolders, where a book keeps its feedback, cuts and publishing
  * material. A note outside every book folder (an author's own filter) does.
  */
 export function belongsInTimetable(row: TimetableRow, bookFolders: string[]): boolean {
-    if (row.kind === 'scene' || row.kind === 'beat' || row.kind === 'sketch') return true;
+    if (row.kind === 'scene' || row.kind === 'beat' || row.kind === 'sketch' || row.removedScene) return true;
     const folder = row.path.includes('/') ? row.path.slice(0, row.path.lastIndexOf('/')) : '';
     // The deepest book folder holding the note decides, in case one book folder sits inside another.
     const book = bookFolders

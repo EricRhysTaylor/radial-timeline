@@ -6265,7 +6265,7 @@ export const en = {
             moveSceneFromPlaceholder: 'Move {{name}} from…',
             addToSubplot: 'Add to subplot…',
             addSceneToPlaceholder: 'Add {{name}} to…',
-            removeFrom: 'Remove from {{from}}',
+            removeFromThisSubplot: 'Remove from subplot',
             removeFromSubplot: 'Remove from subplot…',
             removeSceneFromPlaceholder: 'Remove {{name}} from…',
             addDataUnavailable: 'Could not add scene because timeline scene data is unavailable.',
@@ -6289,6 +6289,8 @@ export const en = {
             stageSet: 'Set {{name}} publish stage to {{stage}}.',
             flagTripletPulse: 'Flag Triplet Pulse',
             flaggedTripletPulse: 'Flagged {{name}} for triplet pulse.',
+            removeFromBook: 'Remove from book',
+            removedFromBook: 'Removed {{name}} from the book. The note stays in its folder and in the Timetable; Promote to scene puts it back.',
         },
         sceneNormalizerSection: {
             unchangedCount: '{{count}} unchanged',

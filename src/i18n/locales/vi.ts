@@ -6584,7 +6584,7 @@ export const vi: TranslationKeys = {
             "moveSceneFromPlaceholder": "Di chuyển {{name}} từ…",
             "addToSubplot": "Thêm vào cốt truyện phụ…",
             "addSceneToPlaceholder": "Thêm {{name}} vào…",
-            "removeFrom": "Xóa khỏi {{from}}",
+            "removeFromThisSubplot": "Xóa khỏi cốt truyện phụ",
             "removeFromSubplot": "Xóa khỏi cốt truyện phụ…",
             "removeSceneFromPlaceholder": "Xóa {{name}} khỏi…",
             "addDataUnavailable": "Không thể thêm cảnh vì dữ liệu cảnh dòng thời gian không khả dụng.",
@@ -6607,7 +6607,9 @@ export const vi: TranslationKeys = {
             "statusSet": "Đặt trạng thái {{name}} thành {{status}}.",
             "stageSet": "Đặt {{name}} Xuất bản giai đoạn thành {{stage}}.",
             "flagTripletPulse": "Cờ xung bộ ba",
-            "flaggedTripletPulse": "Đã gắn cờ {{name}} cho xung bộ ba."
+            "flaggedTripletPulse": "Đã gắn cờ {{name}} cho xung bộ ba.",
+            "removeFromBook": "Xóa khỏi sách",
+            "removedFromBook": "Đã xóa {{name}} khỏi sách. Ghi chú vẫn ở trong thư mục của nó."
         },
         "sceneNormalizerSection": {
             "unchangedCount": "{{count}} không thay đổi",

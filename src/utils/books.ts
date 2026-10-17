@@ -41,6 +41,7 @@ export function normalizeBookProfile(profile: BookProfile): BookProfile {
   const projectStage = profile.projectStage?.trim();
   const publicLabel = profile.publicLabel?.trim();
   const publicDescription = profile.publicDescription?.trim();
+  const mainPlotName = profile.mainPlotName?.trim();
   const normalizedLayoutOptions: BookProfile['layoutOptions'] = {};
   const normalizeSceneHeadingMode = (value: unknown): ManuscriptSceneHeadingMode | undefined => {
     if (value === 'scene-number' || value === 'scene-number-title' || value === 'title-only') return value;
@@ -107,6 +108,7 @@ export function normalizeBookProfile(profile: BookProfile): BookProfile {
     ...(publicLabel && publicLabel.length > 0 ? { publicLabel } : {}),
     ...(publicDescription && publicDescription.length > 0 ? { publicDescription } : {}),
     ...(Object.keys(normalizedStageTargetDates).length > 0 ? { stageTargetDates: normalizedStageTargetDates } : {}),
+    ...(mainPlotName && mainPlotName.length > 0 ? { mainPlotName } : {}),
     ...(profile.lastUsedPandocLayoutByPreset ? { lastUsedPandocLayoutByPreset: { ...profile.lastUsedPandocLayoutByPreset } } : {}),
     ...(Object.keys(normalizedLayoutOptions).length > 0 ? { layoutOptions: normalizedLayoutOptions } : {}),
     ...(normalizeBeatWorkspace(profile.beatWorkspace) ? { beatWorkspace: normalizeBeatWorkspace(profile.beatWorkspace) } : {}),

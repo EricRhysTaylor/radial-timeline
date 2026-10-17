@@ -5343,6 +5343,8 @@ export const th: TranslationKeys = {
             "mainPlotCannotDelete": "พล็อตหลักลบไม่ได้",
             "mainPlotMeta": "พล็อตหลัก · วงแหวน 1 · {{scenes}}",
             "mainPlotRenameNote": "นี่คือพล็อตหลักของคุณ อยู่ในวงแหวน 1 เสมอ และรวมทุกฉากที่ไม่มี Subplot ไว้โดยค่าเริ่มต้น",
+            "renameScenesNote": "อัปเดตฟิลด์ Subplot ใน {{scenes}} ของ {{book}} หนังสือเล่มอื่นจะไม่เปลี่ยนแปลง",
+            "mainPlotNameTaken": "\"{{name}}\" เป็นพล็อตย่อยในหนังสือเล่มนี้อยู่แล้ว เลือกชื่อที่ไม่มีพล็อตย่อยอื่นใช้",
             "deleteTooltip": "ลบ",
             "removeBadge": "คำเตือน",
             "removeTitle": "ลบพล็อตย่อย?",
@@ -6896,7 +6898,8 @@ export const th: TranslationKeys = {
         "subplotManagementService": {
             "cannotDeleteMainPlot": "ลบพล็อตหลักไม่ได้",
             "removedFromScenes": "ลบ \"{{name}}\" จาก {{scenes}}",
-            "renamedInScenes": "เปลี่ยนชื่อเป็น \"{{oldName}}\" เป็น \"{{newName}}\" ใน {{scenes}}"
+            "renamedInScenes": "เปลี่ยนชื่อเป็น \"{{oldName}}\" เป็น \"{{newName}}\" ใน {{scenes}}",
+            "renameFailed": "อัปเดต {{files}} ไม่ได้ ฟิลด์ Subplot ยังเป็น \"{{oldName}}\""
         },
         "subplotMembership": {
             "addChange": "เพิ่ม {{to}}",

@@ -5340,6 +5340,8 @@ export const de: DeepPartial<TranslationKeys> = {
             mainPlotCannotDelete: 'Die Haupthandlung kann nicht gelöscht werden',
             mainPlotMeta: 'Haupthandlung · Ring 1 · {{scenes}}',
             mainPlotRenameNote: 'Dies ist Ihre Haupthandlung. Sie bleibt in Ring 1 und enthält standardmäßig jede Szene ohne Subplot.',
+            renameScenesNote: 'Aktualisiert das Feld Subplot in {{scenes}} von {{book}}. Andere Bücher bleiben unverändert.',
+            mainPlotNameTaken: '„{{name}}“ ist in diesem Buch bereits eine Nebenhandlung. Wählen Sie einen Namen, den keine andere Nebenhandlung verwendet.',
             deleteTooltip: 'Löschen',
             removeBadge: 'Warnung',
             removeTitle: 'Nebenhandlung entfernen?',
@@ -6894,6 +6896,7 @@ export const de: DeepPartial<TranslationKeys> = {
             cannotDeleteMainPlot: 'Die Haupthandlung kann nicht gelöscht werden.',
             removedFromScenes: '„{{name}}“ aus {{scenes}} entfernt.',
             renamedInScenes: '„{{oldName}}“ in {{scenes}} zu „{{newName}}“ umbenannt.',
+            renameFailed: 'Konnte {{files}} nicht aktualisieren. Im Feld Subplot steht dort weiterhin „{{oldName}}“.',
         },
         subplotMembership: {
             addChange: '{{to}} hinzufügen',

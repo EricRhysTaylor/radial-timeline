@@ -83,7 +83,7 @@ import { seedProEntitlement } from './settings/proEntitlementSeed';
 import { detectBetaFeatures, hasProFeatureAccess } from './settings/featureGate';
 import { DisposableRegistry } from './core/disposable';
 import { systemFolderPath } from './utils/systemFolder';
-import { syncMainPlotName } from './utils/mainPlot';
+import { syncMainPlotName, toSagaMainPlot } from './utils/mainPlot';
 import { t, tCount } from './i18n';
 
 // Import the new scene analysis function <<< UPDATED IMPORT
@@ -850,7 +850,7 @@ export default class RadialTimelinePlugin extends Plugin {
         const books = getSagaBooks(this.settings);
         const allScenes: TimelineItem[] = [];
         for (const [bookIndex, book] of books.entries()) {
-            const bookScenes = await this.getSceneData({ ...options, sourcePath: book.sourceFolder });
+            const bookScenes = toSagaMainPlot(await this.getSceneData({ ...options, sourcePath: book.sourceFolder }), book);
             allScenes.push(...bookScenes.map(scene => ({
                 ...scene,
                 bookId: book.id,

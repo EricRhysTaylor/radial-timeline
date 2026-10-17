@@ -12,7 +12,6 @@ import { PLOT_SYSTEM_NAMES } from '../utils/beatsSystems';
 import { buildDefaultAuthorProgressSettings } from '../authorProgress/authorProgressConfig';
 import { buildDefaultCommunityShareSettings } from '../communityShare/communityShareSettings';
 import { systemFolderPath } from '../utils/systemFolder';
-import { DEFAULT_MAIN_PLOT_NAME } from '../utils/mainPlot';
 
 export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     books: [],
@@ -121,7 +120,6 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     readabilityScale: 'normal',
     shouldRestoreTimelineOnLoad: false,
     beatSelectionMigrationComplete: false,
-    mainPlotName: DEFAULT_MAIN_PLOT_NAME,
     dominantSubplots: {}, // Default: empty map, will use outermost subplot for scenes in multiple subplots
     globalPovMode: 'off',
     lastSeenReleaseNotesVersion: '',

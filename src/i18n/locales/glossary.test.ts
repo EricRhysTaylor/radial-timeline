@@ -43,6 +43,8 @@ interface Term {
 const SUBPLOT_FIELD = {
     'ui.addSceneConfirmModal.subplotLabel': 'Subplot',
     'ui.manageSubplotsModal.mainPlotRenameNote': 'Subplot',
+    'ui.manageSubplotsModal.renameScenesNote': 'Subplot',
+    'ui.subplotManagementService.renameFailed': 'Subplot',
 };
 
 const ACT_FIELD = {

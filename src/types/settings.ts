@@ -577,6 +577,8 @@ export interface BookProfile {
     publicDescription?: string;
     /** Publishing target dates for THIS book (Progress & status panel). */
     stageTargetDates?: StageTargetDates;
+    /** Name of THIS book's main plot, the subplot that owns ring 1 (see utils/mainPlot). Absent means "Main Plot". Renamed in the Subplot Manager. */
+    mainPlotName?: string;
     lastUsedPandocLayoutByPreset?: Partial<Record<'novel' | 'screenplay' | 'podcast', string>>;
     layoutOptions?: Record<string, BookLayoutOptions>;
     beatWorkspace?: BeatWorkspaceState;
@@ -1218,8 +1220,6 @@ export interface RadialTimelineSettings {
     shouldRestoreTimelineOnLoad?: boolean;
     /** Internal one-time migration flag for per-book beat system selection bootstrap. */
     beatSelectionMigrationComplete?: boolean;
-    /** Name of the subplot that owns ring 1 (see utils/mainPlot). Renamed in the Subplot Manager. */
-    mainPlotName: string;
     dominantSubplots?: Record<string, string>;
     /** Timetable `.base` files RT wrote, by book ID (or 'saga'), with the folders their filter names. Plugin data, not a setting. */
     timetableFiles?: Record<string, { path: string; folders: string[] }>;

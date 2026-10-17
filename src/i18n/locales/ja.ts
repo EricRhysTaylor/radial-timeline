@@ -5341,6 +5341,8 @@ export const ja: DeepPartial<TranslationKeys> = {
             mainPlotCannotDelete: 'メインプロットは削除できません',
             mainPlotMeta: 'メインプロット · リング 1 · {{scenes}}',
             mainPlotRenameNote: 'これはメインプロットです。常にリング 1 にあり、Subplot のないシーンはデフォルトでここに含まれます。',
+            renameScenesNote: '{{book}} の {{scenes}} で Subplot フィールドを更新します。他の本は変更されません。',
+            mainPlotNameTaken: '「{{name}}」はこの本ですでにサブプロットです。他のサブプロットが使っていない名前を選んでください。',
             deleteTooltip: '削除',
             removeBadge: '警告',
             removeTitle: 'サブプロットを削除しますか？',
@@ -6895,6 +6897,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             cannotDeleteMainPlot: 'メインプロットは削除できません。',
             removedFromScenes: '{{scenes}} から「{{name}}」を削除しました。',
             renamedInScenes: '{{scenes}} で「{{oldName}}」を「{{newName}}」に名前変更しました。',
+            renameFailed: '{{files}} を更新できませんでした。Subplot フィールドは「{{oldName}}」のままです。',
         },
         subplotMembership: {
             addChange: '{{to}} に追加',

@@ -7,10 +7,10 @@
 
 import { App, Modal, ButtonComponent, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import { SubplotManagementService, SubplotStats } from '../services/SubplotManagementService';
+import { SubplotManagementService, SubplotStats, isSubplotNameTaken } from '../services/SubplotManagementService';
 import { t, tCount } from '../i18n';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
-import { getMainPlotName } from '../utils/mainPlot';
+import { getActiveBookTitle } from '../utils/books';
 import { IMPACT_FULL } from '../settings/SettingImpact';
 
 /** The main plot's marker: home on the map, pinned to ring 1. Decorative — the text beside it names the role. */
@@ -71,7 +71,7 @@ export class ManageSubplotsModal extends Modal {
         if (!this.listContainer) return;
 
         // Sort: main plot first, then by count (desc), then name
-        const mainPlot = getMainPlotName();
+        const mainPlot = this.service.getMainPlotName();
         const sorted = [...this.subplots].sort((a, b) => {
             if (a.name === mainPlot) return -1;
             if (b.name === mainPlot) return 1;
@@ -132,17 +132,25 @@ export class ManageSubplotsModal extends Modal {
     }
 
     async handleRename(oldName: string) {
-        const renamingMainPlot = oldName === getMainPlotName();
-        new RenameSubplotModal(this.app, oldName, renamingMainPlot, async (newName) => {
-             if (newName && newName !== oldName) {
-                await this.service.renameSubplot(oldName, newName);
-                // The rename may have changed settings (the main plot's name,
-                // Dominant Subplots); persist them.
-                await this.plugin.saveSettings();
-                // Scenes with no Subplot change rings without any file edit.
-                if (renamingMainPlot) this.plugin.onSettingChanged(IMPACT_FULL);
-                await this.loadSubplots();
-             }
+        const renamingMainPlot = oldName === this.service.getMainPlotName();
+        new RenameSubplotModal(this.app, {
+            oldName,
+            isMainPlot: renamingMainPlot,
+            scenesNote: t('ui.manageSubplotsModal.renameScenesNote', {
+                scenes: tCount('scene', this.service.countScenesListing(oldName)),
+                book: getActiveBookTitle(this.plugin.settings),
+            }),
+            // Renaming onto another subplot merges the two for good; the main
+            // plot never may, since its scenes could not be told apart again.
+            nameTaken: renamingMainPlot ? (name) => isSubplotNameTaken(this.subplots, oldName, name) : () => false,
+        }, async (newName) => {
+            await this.service.renameSubplot(oldName, newName);
+            // The rename may have changed settings (the book's main plot name,
+            // Dominant Subplots); persist them.
+            await this.plugin.saveSettings();
+            // Scenes with no Subplot change rings without any file edit.
+            if (renamingMainPlot) this.plugin.onSettingChanged(IMPACT_FULL);
+            await this.loadSubplots();
         }).open();
     }
 
@@ -221,19 +229,23 @@ class SubplotDeletionConfirmModal extends Modal {
  * Modal for Renaming
  */
 class RenameSubplotModal extends Modal {
-    private oldName: string;
-    private isMainPlot: boolean;
-    private onRename: (newName: string) => Promise<void>;
-
-    constructor(app: App, oldName: string, isMainPlot: boolean, onRename: (newName: string) => Promise<void>) {
+    constructor(
+        app: App,
+        private readonly options: {
+            oldName: string;
+            isMainPlot: boolean;
+            /** Which scenes the rename edits, shown before anything is written. */
+            scenesNote: string;
+            nameTaken: (name: string) => boolean;
+        },
+        private readonly onRename: (newName: string) => Promise<void>,
+    ) {
         super(app);
-        this.oldName = oldName;
-        this.isMainPlot = isMainPlot;
-        this.onRename = onRename;
     }
 
     onOpen() {
         const { contentEl, modalEl } = this;
+        const { oldName, isMainPlot, scenesNote, nameTaken } = this.options;
         contentEl.empty();
         
         // Shell & Container (matching PlanetaryTimeModal)
@@ -244,12 +256,13 @@ class RenameSubplotModal extends Modal {
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
         header.createSpan({ cls: 'ert-modal-badge', text: t('ui.manageSubplotsModal.renameBadge') });
         header.createDiv({ cls: 'ert-modal-title', text: t('ui.manageSubplotsModal.renameTitle') });
-        header.createDiv({ cls: 'ert-modal-subtitle', text: t('ui.manageSubplotsModal.renameSubtitle', { subplot: this.oldName }) });
-        if (this.isMainPlot) {
+        header.createDiv({ cls: 'ert-modal-subtitle', text: t('ui.manageSubplotsModal.renameSubtitle', { subplot: oldName }) });
+        if (isMainPlot) {
             const note = header.createDiv({ cls: 'ert-modal-subtitle ert-main-plot-note' });
             appendMainPlotPin(note);
             note.createSpan({ text: t('ui.manageSubplotsModal.mainPlotRenameNote') });
         }
+        header.createDiv({ cls: 'ert-modal-subtitle', text: scenesNote });
 
         // Input Field (Large template input field style)
         // Container with border
@@ -259,9 +272,10 @@ class RenameSubplotModal extends Modal {
         
         const inputEl = inputContainer.createEl('input', { 
             type: 'text', 
-            value: this.oldName, 
+            value: oldName, 
             cls: 'ert-input--full' 
         });
+        let takenEl: HTMLElement | null = null;
 
         scheduleFocusAfterPaint(inputEl, { selectText: true });
 
@@ -270,12 +284,21 @@ class RenameSubplotModal extends Modal {
         
         const save = async () => {
             const val = inputEl.value.trim();
-            if (val && val !== this.oldName) {
-                await this.onRename(val);
+            if (val === oldName) {
                 this.close();
-            } else if (val === this.oldName) {
-                this.close();
+                return;
             }
+            if (!val) return;
+            if (nameTaken(val)) {
+                if (!takenEl) {
+                    takenEl = createDiv({ cls: 'ert-pulse-warning' });
+                    inputContainer.after(takenEl);
+                }
+                takenEl.setText(t('ui.manageSubplotsModal.mainPlotNameTaken', { name: val }));
+                return;
+            }
+            await this.onRename(val);
+            this.close();
         };
 
         new ButtonComponent(buttonRow)

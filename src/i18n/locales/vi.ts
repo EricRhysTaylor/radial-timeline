@@ -5343,6 +5343,8 @@ export const vi: TranslationKeys = {
             "mainPlotCannotDelete": "Cốt truyện chính không thể bị xóa",
             "mainPlotMeta": "Cốt truyện chính · vòng 1 · {{scenes}}",
             "mainPlotRenameNote": "Đây là cốt truyện chính của bạn. Nó luôn ở vòng 1 và mặc định bao gồm mọi cảnh không có Subplot.",
+            "renameScenesNote": "Cập nhật trường Subplot trong {{scenes}} của {{book}}. Các sách khác không thay đổi.",
+            "mainPlotNameTaken": "\"{{name}}\" đã là một tuyến truyện phụ trong sách này. Hãy chọn tên mà không tuyến phụ nào khác dùng.",
             "deleteTooltip": "Xóa",
             "removeBadge": "Cảnh báo",
             "removeTitle": "loại bỏ ô phụ?",
@@ -6896,7 +6898,8 @@ export const vi: TranslationKeys = {
         "subplotManagementService": {
             "cannotDeleteMainPlot": "Không thể xóa cốt truyện chính.",
             "removedFromScenes": "Đã xóa \"{{name}}\" khỏi {{scenes}}.",
-            "renamedInScenes": "đổi tên thành \"{{oldName}}\" thành \"{{newName}}\" trong {{scenes}}."
+            "renamedInScenes": "đổi tên thành \"{{oldName}}\" thành \"{{newName}}\" trong {{scenes}}.",
+            "renameFailed": "Không thể cập nhật {{files}}. Trường Subplot vẫn ghi \"{{oldName}}\"."
         },
         "subplotMembership": {
             "addChange": "Thêm {{to}}",

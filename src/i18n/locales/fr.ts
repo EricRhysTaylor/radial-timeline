@@ -5343,6 +5343,8 @@ export const fr: TranslationKeys = {
             "mainPlotCannotDelete": "L'intrigue principale ne peut pas être supprimée",
             "mainPlotMeta": "Intrigue principale · anneau 1 · {{scenes}}",
             "mainPlotRenameNote": "Ceci est votre intrigue principale. Elle reste dans l'anneau 1 et inclut par défaut toute scène sans Subplot.",
+            "renameScenesNote": "Met à jour le champ Subplot dans {{scenes}} de {{book}}. Les autres livres ne changent pas.",
+            "mainPlotNameTaken": "« {{name}} » est déjà une intrigue secondaire de ce livre. Choisissez un nom qu’aucune autre n’utilise.",
             "deleteTooltip": "Supprimer",
             "removeBadge": "Avertissement",
             "removeTitle": "Supprimer la sous-intrigue ?",
@@ -6896,7 +6898,8 @@ export const fr: TranslationKeys = {
         "subplotManagementService": {
             "cannotDeleteMainPlot": "Impossible de supprimer l'intrigue principale.",
             "removedFromScenes": "Supprimé \"{{name}}\" de {{scenes}}.",
-            "renamedInScenes": "Renommé \"{{oldName}}\" en \"{{newName}}\" dans {{scenes}}."
+            "renamedInScenes": "Renommé \"{{oldName}}\" en \"{{newName}}\" dans {{scenes}}.",
+            "renameFailed": "Impossible de mettre à jour {{files}}. Leur champ Subplot indique toujours « {{oldName}} »."
         },
         "subplotMembership": {
             "addChange": "Ajouter {{to}}",

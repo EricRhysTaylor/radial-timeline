@@ -5343,6 +5343,8 @@ export const es: TranslationKeys = {
             "mainPlotCannotDelete": "La trama principal no se puede eliminar",
             "mainPlotMeta": "Trama principal · anillo 1 · {{scenes}}",
             "mainPlotRenameNote": "Esta es su trama principal. Permanece en el anillo 1 e incluye de forma predeterminada cualquier escena sin Subplot.",
+            "renameScenesNote": "Actualiza el campo Subplot en {{scenes}} de {{book}}. Los demás libros no cambian.",
+            "mainPlotNameTaken": "\"{{name}}\" ya es una subtrama de este libro. Elige un nombre que ninguna otra subtrama use.",
             "deleteTooltip": "Eliminar",
             "removeBadge": "Advertencia",
             "removeTitle": "eliminar la subtrama?",
@@ -6896,7 +6898,8 @@ export const es: TranslationKeys = {
         "subplotManagementService": {
             "cannotDeleteMainPlot": "No se puede eliminar la trama principal.",
             "removedFromScenes": "eliminado \"{{name}}\" de {{scenes}}.",
-            "renamedInScenes": "renombrado \"{{oldName}}\" a \"{{newName}}\" en {{scenes}}."
+            "renamedInScenes": "renombrado \"{{oldName}}\" a \"{{newName}}\" en {{scenes}}.",
+            "renameFailed": "No se pudo actualizar {{files}}. Su campo Subplot sigue diciendo \"{{oldName}}\"."
         },
         "subplotMembership": {
             "addChange": "Añadir {{to}}",

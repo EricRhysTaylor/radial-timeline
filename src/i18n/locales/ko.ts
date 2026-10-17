@@ -5340,6 +5340,8 @@ export const ko: DeepPartial<TranslationKeys> = {
             mainPlotCannotDelete: '메인 플롯은 삭제할 수 없습니다',
             mainPlotMeta: '메인 플롯 · 링 1 · {{scenes}}',
             mainPlotRenameNote: '메인 플롯입니다. 항상 링 1에 있으며, Subplot이 없는 장면은 기본적으로 여기에 포함됩니다.',
+            renameScenesNote: '{{book}}의 {{scenes}}에서 Subplot 필드를 업데이트합니다. 다른 책은 변경되지 않습니다.',
+            mainPlotNameTaken: '"{{name}}"은(는) 이 책에 이미 있는 서브플롯입니다. 다른 서브플롯이 쓰지 않는 이름을 고르세요.',
             deleteTooltip: '삭제',
             removeBadge: '경고',
             removeTitle: '서브플롯을 제거하시겠습니까?',
@@ -6894,6 +6896,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             cannotDeleteMainPlot: '메인 플롯은 삭제할 수 없습니다.',
             removedFromScenes: '{{scenes}}에서 "{{name}}"을(를) 제거했습니다.',
             renamedInScenes: '{{scenes}}에서 "{{oldName}}"의 이름을 "{{newName}}"(으)로 변경했습니다.',
+            renameFailed: '{{files}}을(를) 업데이트하지 못했습니다. Subplot 필드는 여전히 "{{oldName}}"입니다.',
         },
         subplotMembership: {
             addChange: '{{to}} 추가',

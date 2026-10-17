@@ -5024,6 +5024,8 @@ export const en = {
             mainPlotCannotDelete: 'Main Plot cannot be deleted',
             mainPlotMeta: 'Main plot · ring 1 · {{scenes}}',
             mainPlotRenameNote: 'This is your main plot. It stays in ring 1 and includes any scene without a Subplot by default.',
+            renameScenesNote: 'Updates the Subplot field in {{scenes}} of {{book}}. Other books are not changed.',
+            mainPlotNameTaken: '"{{name}}" is already a subplot in this book. Choose a name no other subplot uses.',
             deleteTooltip: 'Delete',
             removeBadge: 'Warning',
             removeTitle: 'Remove subplot?',
@@ -6578,6 +6580,7 @@ export const en = {
             cannotDeleteMainPlot: 'Cannot delete Main Plot.',
             removedFromScenes: 'Removed "{{name}}" from {{scenes}}.',
             renamedInScenes: 'Renamed "{{oldName}}" to "{{newName}}" in {{scenes}}.',
+            renameFailed: 'Could not update {{files}}. Their Subplot field still says "{{oldName}}".',
         },
         subplotMembership: {
             addChange: 'Add {{to}}',

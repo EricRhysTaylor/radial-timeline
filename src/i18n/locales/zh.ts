@@ -5342,6 +5342,8 @@ export const zh: DeepPartial<TranslationKeys> = {
             mainPlotCannotDelete: '主情节无法删除',
             mainPlotMeta: '主情节 · 环 1 · {{scenes}}',
             mainPlotRenameNote: '这是您的主情节。它始终位于环 1，默认包含所有没有 Subplot 的场景。',
+            renameScenesNote: '更新 {{book}} 中 {{scenes}} 的 Subplot 字段。其他书不会更改。',
+            mainPlotNameTaken: '“{{name}}”已是本书中的副情节。请选择其他副情节未使用的名称。',
             deleteTooltip: '删除',
             removeBadge: '警告',
             removeTitle: '移除副情节？',
@@ -6896,6 +6898,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             cannotDeleteMainPlot: '无法删除主情节。',
             removedFromScenes: '已从 {{scenes}} 中移除“{{name}}”。',
             renamedInScenes: '已在 {{scenes}} 中将“{{oldName}}”重命名为“{{newName}}”。',
+            renameFailed: '无法更新 {{files}}。其 Subplot 字段仍为“{{oldName}}”。',
         },
         subplotMembership: {
             addChange: '添加 {{to}}',

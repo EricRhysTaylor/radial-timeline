@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../../types';
 import { computeChronologueLayout, computePositions } from '../../renderer/utils/SceneLayout';
-import { primaryReferenceDomain, referenceConnector, referenceRingGeometry } from './layout';
+import { primaryReferenceDomain, referenceConnector, referenceRingGeometry, referenceSourceAnchor } from './layout';
 
 const start = -Math.PI / 2, end = 3 * Math.PI / 2;
 function scene(path: string, when: string, dates: string[] = []): TimelineItem {
@@ -22,7 +22,7 @@ describe('Chronologue reference overlays', () => {
         expect(result.slots[1].angle).toBeGreaterThan(end);
         expect(primaryReferenceDomain(items)).toEqual(primaryReferenceDomain(week([])));
         for (const slot of result.slots) {
-            const route = referenceConnector(700, 760, result.positions.get(1)!, slot, 709);
+            const route = referenceConnector(700, 760, slot, 709, referenceSourceAnchor(700, 760, result.positions.get(1)!, result.slots));
             const source = result.positions.get(1)!;
             const originAngle = source.startAngle + source.angularSize / 2 + Math.min(32 / 740.8, source.angularSize / 4);
             expect(route.origin.x).toBeCloseTo(708.8 * Math.cos(originAngle));
@@ -33,11 +33,31 @@ describe('Chronologue reference overlays', () => {
             expect(route.path).not.toMatch(/NaN|Infinity/);
         }
     });
+    it('separates the last master from the earlier seam stack in a 30-scene manuscript', () => {
+        const items = Array.from({ length: 30 }, (_, i) => scene(`${i}.md`,
+            i === 29 ? '2026-06-07' : '2026-06-01', i === 29 ? ['1952', '2040'] : []));
+        const result = layout(items), source = result.positions.get(29)!;
+        const { base, track, size, sourceSize } = referenceRingGeometry(700, 760);
+        const earlier = result.slots.find(slot => slot.extent === 'earlier')!;
+        const defaultAngle = source.startAngle + source.angularSize / 2 + Math.min(32 / track, source.angularSize / 4);
+        const chosen = referenceSourceAnchor(700, 760, source, result.slots);
+        const distance = (angle: number) => Math.abs(2 * base * Math.sin((angle - earlier.angle) / 2));
+        expect(distance(defaultAngle)).toBeLessThan((sourceSize + size) / 2);
+        expect(distance(chosen.angle)).toBeGreaterThan((sourceSize + size * 1.35) / Math.sqrt(2) + 4);
+        expect(chosen.angle).toBeGreaterThan(source.startAngle);
+        expect(chosen.angle).toBeLessThan(source.endAngle);
+        expect(chosen.radius - base - sourceSize / 2).toBeGreaterThan(8);
+        expect(chosen.radius).toBeLessThanOrEqual(730);
+        // Every date from this master must leave the same visible source square.
+        const origins = result.slots.map(slot => referenceConnector(700, 760, slot, base, chosen).origin);
+        expect(origins[0]).toEqual(origins[1]);
+        expect(result.positions).toEqual(computePositions(700, 760, start, end, items));
+    });
     it('keeps an in-range date within the primary geometry, with no seam break', () => {
         const result = layout(week(['2026-06-04'])), slot = result.slots[0];
         expect(slot.extent).toBe('within');
         expect(slot.angle).toBeCloseTo(result.positions.get(1)!.endAngle - 18 / 740.8);
-        expect(referenceConnector(700, 760, result.positions.get(1)!, slot, 709).discontinuity).toBeUndefined();
+        expect(referenceConnector(700, 760, slot, 709, referenceSourceAnchor(700, 760, result.positions.get(1)!, result.slots)).discontinuity).toBeUndefined();
     });
     it('does not invent January 1 precision for a year overlapping the manuscript week', () => {
         const result = layout(week(['2026']));

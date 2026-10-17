@@ -137,9 +137,10 @@ const QUERY_ICON_MIN = 14;
  * scene's cells as the Timetable's question bubble, sized to fit the cell. A
  * cell too small for it (a compact All Scenes ring, a Sequence subring) gets
  * a dot. `queries` maps a scene path to its open questions; the Timetable
- * lists them. The mark sits inside the scene's group, so it recedes with the
- * scene (Gossamer, the lens), and like the number squares it lets the pointer
- * through to the cell, so clicks, drags and hover behave as on the cell.
+ * lists them. Chronologue paints marks in the scene foreground so subplot
+ * headlines cannot cover them; other modes keep marks in the scene group.
+ * Like the number squares, marks let the pointer through to the cell, so
+ * clicks, drags and hover behave as on the cell.
  */
 export function applyQueryMarks(svg: Element, queries: Map<string, string[]>): void {
     svg.querySelectorAll(`.${QUERY_MARK}`).forEach(element => element.remove());
@@ -150,6 +151,10 @@ export function applyQueryMarks(svg: Element, queries: Map<string, string[]>): v
         if (!questions || questions.length === 0) return;
         const cell = cellGeometry(group);
         if (!cell) return;
+        // SAFE: Chronologue's renderer always creates this foreground layer.
+        const paintParent = svg.getAttribute('data-mode') === 'chronologue'
+            ? svg.querySelector('.ert-scene-foreground')!
+            : group;
         const mark = queryMarkFor(cell.thickness, cell.arcLength);
         const icon = mark?.kind === 'icon' ? getIcon('message-circle-question') : null;
         if (mark?.kind === 'icon' && icon) {
@@ -158,7 +163,8 @@ export function applyQueryMarks(svg: Element, queries: Map<string, string[]>): v
             icon.setAttribute('y', formatNumber(cell.y - mark.size / 2));
             icon.setAttribute('width', formatNumber(mark.size));
             icon.setAttribute('height', formatNumber(mark.size));
-            group.appendChild(icon);
+            icon.setAttribute('data-query-scene', group.id);
+            paintParent.appendChild(icon);
             return;
         }
         if (mark?.kind !== 'dot') return;
@@ -167,7 +173,8 @@ export function applyQueryMarks(svg: Element, queries: Map<string, string[]>): v
         dot.setAttribute('cx', formatNumber(cell.x));
         dot.setAttribute('cy', formatNumber(cell.y));
         dot.setAttribute('r', formatNumber(mark.radius));
-        group.appendChild(dot);
+        dot.setAttribute('data-query-scene', group.id);
+        paintParent.appendChild(dot);
     });
 }
 

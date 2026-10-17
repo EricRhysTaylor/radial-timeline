@@ -23,6 +23,7 @@ export function referenceRingGeometry(innerR: number, outerR: number) {
     return {
         track: innerR + thickness * .68,
         base, size, pitch,
+        sourceSize: Math.min(16, thickness * .26),
         capacity: Math.max(1, Math.min(3, Math.floor((outerR - base - size / 2) / pitch))),
         seamOffset: Math.PI / 45,
     };
@@ -101,11 +102,32 @@ function arc(radius: number, from: number, to: number): string {
     return `A ${radius} ${radius} 0 ${Math.abs(to - from) > Math.PI ? 1 : 0} ${to >= from ? 1 : 0} ${point(radius, to)}`;
 }
 
+/** Keep the master marker clear of date stacks without moving the dates or the scene. */
+export function referenceSourceAnchor(innerR: number, outerR: number, source: PositionInfo, slots: ReferenceSlot[]): { angle: number; radius: number } {
+    const { track, base, size, sourceSize } = referenceRingGeometry(innerR, outerR);
+    const center = source.startAngle + source.angularSize / 2;
+    // Both choices sit beside the center Question icon and inside this scene.
+    const offset = Math.min(32 / track, source.angularSize / 4);
+    const preferred = center + offset;
+    const alternate = center - offset;
+    const clearance = (angle: number) => slots.reduce((closest, slot) =>
+        Math.min(closest, Math.abs(2 * base * Math.sin((angle - slot.angle) / 2))), Infinity);
+    // Include the selected date's enlargement and the rotated square corners.
+    const required = (sourceSize + size * 1.35) / Math.sqrt(2) + 4;
+    const preferredClearance = clearance(preferred);
+    if (preferredClearance >= required) return { angle: preferred, radius: base };
+    // Clear the date-label baseline as well as the square stack. Stay in the
+    // inner half of the source scene, below its title and beside its Question.
+    return {
+        angle: clearance(alternate) > preferredClearance ? alternate : preferred,
+        radius: Math.min(base + sourceSize / 2 + 20, (innerR + outerR) / 2)
+    };
+}
+
 /** Concentric interior track, with a real gap for the Lucide Activity seam mark. */
-export function referenceConnector(innerR: number, outerR: number, source: PositionInfo, slot: ReferenceSlot, terminalRadius: number): { path: string; origin: { x: number; y: number }; discontinuity?: { x: number; y: number; rotation: number } } {
-    const { track, base: sourceRadius } = referenceRingGeometry(innerR, outerR);
-    // Keep the radial feed beside the scene-center Question icon.
-    const from = source.startAngle + source.angularSize / 2 + Math.min(32 / track, source.angularSize / 4);
+export function referenceConnector(innerR: number, outerR: number, slot: ReferenceSlot, terminalRadius: number, source: { angle: number; radius: number }): { path: string; origin: { x: number; y: number }; discontinuity?: { x: number; y: number; rotation: number } } {
+    const { track } = referenceRingGeometry(innerR, outerR);
+    const { angle: from, radius: sourceRadius } = source;
     let path = `M ${point(sourceRadius, from)} L ${point(track, from)} `;
     const offRange = slot.extent === 'earlier' || slot.extent === 'later';
     let discontinuity: { x: number; y: number; rotation: number } | undefined;

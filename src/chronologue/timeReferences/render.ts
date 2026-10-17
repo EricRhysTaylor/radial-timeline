@@ -4,7 +4,7 @@ import { escapeXml } from '../../utils/svg';
 import { parseSceneTitle } from '../../utils/text';
 import { makeSceneId } from '../../utils/numberSquareHelpers';
 import type { PositionInfo } from '../../renderer/utils/SceneLayout';
-import { referenceConnector, referenceDateIdentity, referenceRingGeometry, type ReferenceSlot } from './layout';
+import { referenceConnector, referenceDateIdentity, referenceRingGeometry, referenceSourceAnchor, type ReferenceSlot } from './layout';
 import { referenceDateLabel, type TimeReference } from './model';
 
 // Lucide Activity, matching the single-line icon convention used by the timeline indicators.
@@ -34,7 +34,7 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
     innerR: number, outerR: number, ring: number, colorOf: (item: TimelineItem) => string): string {
     const byPath = new Map(items.map((item, i) => [item.path, { item, position: positions.get(i), index: i }]));
     const thickness = outerR - innerR;
-    const { size, pitch, base, capacity } = referenceRingGeometry(innerR, outerR);
+    const { size, sourceSize, pitch, base, capacity } = referenceRingGeometry(innerR, outerR);
     let connectors = '', markers = '', origins = '';
     const sourcePaths = new Set<string>();
     for (const [slotIndex, slot] of slots.entries()) {
@@ -49,17 +49,17 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
         for (const path of new Set(refs.map(ref => ref.path))) {
             const owned = refs.filter(ref => ref.path === path), parent = byPath.get(path)!;
             const index = mixed ? 0 : Math.min(refs.findIndex(ref => ref.path === path), shown.length - 1);
-            const route = referenceConnector(innerR, outerR, parent.position!, slot, terminalRadius(index));
+            const sourceAnchor = referenceSourceAnchor(innerR, outerR, parent.position!, slots);
+            const route = referenceConnector(innerR, outerR, slot, terminalRadius(index), sourceAnchor);
             if (!sourcePaths.has(path)) {
                 sourcePaths.add(path);
                 const { text, number } = parseSceneTitle(parent.item.title || '', parent.item.number);
                 const sourceLabel = [escapeXml(number), text].filter(Boolean).join(' · ');
                 const angle = Math.atan2(route.origin.y, route.origin.x);
-                const sourceSize = Math.min(16, thickness * .26);
                 const labelId = `ert-reference-source-${makeSceneId(parent.item.bookIndex ?? 0, ring, parent.index, true, true, path)}`;
                 origins += `<g class="ert-time-reference-origin" ${attrs(owned)} data-source-path="${escapeXml(encodeURIComponent(path))}"><title>${sourceLabel}</title>
                     <g transform="translate(${route.origin.x} ${route.origin.y}) rotate(${angle * 180 / Math.PI + 90})"><rect class="ert-time-reference-source-mark" x="${-sourceSize / 2}" y="${-sourceSize / 2}" width="${sourceSize}" height="${sourceSize}" fill="${escapeXml(referenceMarkColor(colorOf(parent.item)))}"/></g>
-                    ${curvedReferenceLabel(labelId, base, angle, sourceSize / 2 + 12, true, sourceLabel, 'ert-time-reference-origin-label')}</g>`;
+                    ${curvedReferenceLabel(labelId, sourceAnchor.radius, angle, sourceSize / 2 + 12, true, sourceLabel, 'ert-time-reference-origin-label')}</g>`;
             }
             const routeAttrs = `${attrs(owned)} data-source-path="${escapeXml(encodeURIComponent(path))}" stroke="${escapeXml(referenceMarkColor(colorOf(parent.item)))}" fill="none"`;
             connectors += `<path class="ert-time-reference-connector" ${routeAttrs} d="${route.path}"/>`;

@@ -1153,7 +1153,7 @@ export const th: TranslationKeys = {
             }
         },
         "subplotAlignment": {
-            "groupLabel": "การจัดตำแหน่งแผนย่อย",
+            "groupLabel": "การจัดตำแหน่งพล็อตย่อย",
             "fill": {
                 "label": "ใส่",
                 "tooltip": "เติม — ฉากพล็อตย่อยกระจายอย่างเท่าเทียมกันในแต่ละฉาก"
@@ -1196,7 +1196,7 @@ export const th: TranslationKeys = {
         "inquiryOmnibusPass": "การสอบถามแบบรวม",
         "searchTimeline": "ค้นหาเส้นเวลา",
         "createNote": "สร้างบันทึก...",
-        "subplotManager": "ผู้จัดการซับพล็อต",
+        "subplotManager": "ตัวจัดการพล็อตย่อย",
         "bookDesigner": "นักออกแบบหนังสือ",
         "timelineDateScaffold": "โครงสร้างวันที่เส้นเวลา",
         "timelineAudit": "ตรวจสอบวันที่บนไทม์ไลน์",
@@ -1216,11 +1216,11 @@ export const th: TranslationKeys = {
         "title": "การส่งออกแชร์ไทม์ไลน์",
         "subtitle": "ไม่มีการแบ่งปันสิ่งใดโดยการส่งออก ไฟล์จะอยู่ในห้องนิรภัยของคุณจนกว่าคุณจะอัปโหลดไปยังชุมชนแชร์และเปิดใช้งาน",
         "structuralHeading": "แชร์เมื่อคุณเปิดใช้งาน",
-        "structuralBody": "หมายเลขฉาก การกระทำ ชื่อแผนย่อย สถานะ เวทีเผยแพร่ ชื่อหนังสือ และผู้แต่ง",
+        "structuralBody": "หมายเลขฉาก การกระทำ ชื่อพล็อตย่อย สถานะ เวทีเผยแพร่ ชื่อหนังสือ และผู้แต่ง",
         "revealingHeading": "จัดขึ้นเพื่อเปิดเผยต่อฉาก",
         "revealingBody": "ชื่อฉาก เรื่องย่อ ตัวละคร POV และวันที่ของเรื่องราว — ซ่อนไว้จนกว่าคุณจะเปิดเผยแต่ละฉาก",
-        "genericNamesToggleLabel": "ชื่อวงแหวนทั่วไป (แผนย่อย 1, แผนย่อย 2…)",
-        "genericNamesToggleDescription": "ใช้หากชื่อโครงเรื่องย่อยของคุณสามารถเปิดเผยโครงเรื่องได้",
+        "genericNamesToggleLabel": "ชื่อวงแหวนทั่วไป (พล็อตย่อย 1, พล็อตย่อย 2…)",
+        "genericNamesToggleDescription": "ใช้หากชื่อพล็อตย่อยของคุณสามารถเปิดเผยโครงเรื่องได้",
         "destinationBody": "บันทึกไปยัง {{path}} ในห้องนิรภัยของคุณ",
         "cancelButton": "ยกเลิก",
         "exportButton": "ส่งออก JSON"
@@ -1873,7 +1873,7 @@ export const th: TranslationKeys = {
                 "desc": "เลือกชื่อสั้น ๆ ที่ไม่ซ้ำกัน",
                 "placeholder": "เช่น หนังระทึกขวัญ / 3-Act Balanced"
             },
-            "note": "เทมเพลตการจับภาพ การกระทำ แผนย่อย อักขระ การสลับจังหวะ และประเภท YAML ที่เลือก (ฐาน/ขั้นสูง)",
+            "note": "เทมเพลตการจับภาพ การกระทำ พล็อตย่อย อักขระ การสลับจังหวะ และประเภท YAML ที่เลือก (ฐาน/ขั้นสูง)",
             "nameRequired": "ต้องระบุชื่อเทมเพลต"
         },
         "deleteTemplate": {
@@ -1895,7 +1895,7 @@ export const th: TranslationKeys = {
         "modal": {
             "badge": "พวก",
             "title": "นักออกแบบหนังสือ",
-            "subtitle": "กำหนดค่าและสร้างโครงสำหรับนวนิยายใหม่ของคุณ ลากฉากในการแสดงตัวอย่างไปยัง ACT และแผนย่อยต่างๆ เพื่อเปิดใช้งานโหมดแมนนวล ประหยัด เทมเพลตเพื่อใช้ซ้ำในภายหลัง",
+            "subtitle": "กำหนดค่าและสร้างโครงสำหรับนวนิยายใหม่ของคุณ ลากฉากในการแสดงตัวอย่างไปยัง ACT และพล็อตย่อยต่างๆ เพื่อเปิดใช้งานโหมดแมนนวล ประหยัด เทมเพลตเพื่อใช้ซ้ำในภายหลัง",
             "wikiAriaLabel": "อ่านเพิ่มเติมในวิกิ",
             "noBookSelected": "ไม่มีหนังสือที่เลือก",
             "untitled": "ไม่มีชื่อ"
@@ -1939,8 +1939,8 @@ export const th: TranslationKeys = {
                 "actLabel": "พระราชบัญญัติ {{num}}"
             },
             "subplots": {
-                "name": "แผนย่อย",
-                "desc": "ป้อนหนึ่งแผนย่อยต่อบรรทัด"
+                "name": "พล็อตย่อย",
+                "desc": "ป้อนหนึ่งพล็อตย่อยต่อบรรทัด"
             },
             "characters": {
                 "name": "ตัวอักษร",
@@ -1962,7 +1962,7 @@ export const th: TranslationKeys = {
             },
             "sceneLayouts": {
                 "name": "เค้าโครงฉาก",
-                "desc": "เลือกเลย์เอาต์ที่บันทึกไว้ (การกระทำ แผนย่อย การกำหนด ข้อมูลเมตา)",
+                "desc": "เลือกเลย์เอาต์ที่บันทึกไว้ (การกระทำ พล็อตย่อย การกำหนด ข้อมูลเมตา)",
                 "newOption": "เทมเพลตใหม่",
                 "emptyOption": "—"
             }
@@ -1970,7 +1970,7 @@ export const th: TranslationKeys = {
         "preview": {
             "title": "แสดงตัวอย่าง",
             "dragging": "ฉากลาก {{scene}} → ACT {{act}}, {{subplot}}",
-            "subplotFallback": "แผนย่อย {{num}}"
+            "subplotFallback": "พล็อตย่อย {{num}}"
         },
         "buttons": {
             "saveSceneSet": "บันทึกชุดฉาก",
@@ -1983,7 +1983,7 @@ export const th: TranslationKeys = {
             "cancel": "ยกเลิก"
         },
         "notes": {
-            "layoutTemplatesIncludes": "รวมถึงฉาก การแสดง โครงเรื่องย่อย จังหวะ และจังหวะโครโนล"
+            "layoutTemplatesIncludes": "รวมถึงฉาก การแสดง พล็อตย่อย จังหวะ และจังหวะโครโนล"
         },
         "notices": {
             "layoutReset": "เค้าโครงรีเซ็ตเป็นค่าเริ่มต้นด้วยการกระจายอัตโนมัติ",
@@ -2194,8 +2194,8 @@ export const th: TranslationKeys = {
         "processingModal": {
             "titleSummaryRefresh": "รีเฟรชฉากสรุป",
             "titleScenePulse": "การวิเคราะห์ชีพจรฉาก",
-            "titleProcessingSubplot": "แผนผังย่อยการประมวลผล: {{name}}",
-            "titleProcessingEntireSubplot": "การประมวลผลแผนย่อยทั้งหมด: {{name}}",
+            "titleProcessingSubplot": "กำลังประมวลผลพล็อตย่อย: {{name}}",
+            "titleProcessingEntireSubplot": "การประมวลผลพล็อตย่อยทั้งหมด: {{name}}",
             "badgeAiSummary": "สรุป AI",
             "badgeAiPulseRun": "การรัน AI Pulse",
             "subtitleSynopsis": "สร้างข้อมูลสรุปคลังข้อมูล Inquiry และเขียนแต่ละฉากทันทีเมื่อเสร็จสิ้น ค่าสรุปที่มีอยู่จะถูกแทนที่ (และเรื่องย่อด้วยหากเปิดใช้งาน)",
@@ -2266,7 +2266,7 @@ export const th: TranslationKeys = {
                 "startOfBoundary": "จุดเริ่มต้นของ {{boundary}}",
                 "endOfBoundary": "สิ้นสุด {{boundary}}",
                 "boundaryManuscript": "ต้นฉบับ",
-                "boundarySubplot": "แผนย่อย",
+                "boundarySubplot": "พล็อตย่อย",
                 "unnumberedScene": "ฉากไม่นับ"
             },
             "progress": {
@@ -2390,7 +2390,7 @@ export const th: TranslationKeys = {
                 "current": "ฉากปัจจุบัน",
                 "subplot": "ฉากพล็อตย่อย",
                 "all": "ทุกฉาก",
-                "subplotLabel": "แผนย่อย:",
+                "subplotLabel": "พล็อตย่อย:",
                 "sceneLabel": "ฉาก: ",
                 "noSceneOpen": "ไม่มีฉากเปิด"
             },
@@ -2484,10 +2484,10 @@ export const th: TranslationKeys = {
             "notices": {
                 "noScenesValid": "ไม่พบฉากที่ถูกต้องในโฟลเดอร์หนังสือที่ใช้งานอยู่",
                 "noFlaggedSubplotScenes": "ไม่มีฉากที่ถูกตั้งค่าสถานะ (Pulse Update: Yes/True/1) พร้อมเนื้อหาที่พบสำหรับ \"{{name}}\"",
-                "noScenesForSubplot": "ไม่พบฉากสำหรับโครงเรื่องย่อย \"{{name}}\"",
+                "noScenesForSubplot": "ไม่พบฉากสำหรับพล็อตย่อย \"{{name}}\"",
                 "noScenesContentSubplot": "ไม่พบฉากที่มีเนื้อหาสำหรับพล็อตย่อย \"{{name}}\"",
-                "noRemainingResumingSubplot": "ไม่มีฉากที่เหลือเพื่อประมวลผลสำหรับแผนย่อย \"{{name}}\" (วันนี้อาจได้รับการประมวลผลทั้งหมด)",
-                "noFlaggedPulseUpdateSubplot": "ไม่มีฉากที่ถูกตั้งค่าสถานะ (Pulse Update: Yes) พร้อมเนื้อหาที่พบสำหรับโครงเรื่องย่อย \"{{name}}\"",
+                "noRemainingResumingSubplot": "ไม่มีฉากที่เหลือเพื่อประมวลผลสำหรับพล็อตย่อย \"{{name}}\" (วันนี้อาจได้รับการประมวลผลทั้งหมด)",
+                "noFlaggedPulseUpdateSubplot": "ไม่มีฉากที่ถูกตั้งค่าสถานะ (Pulse Update: Yes) พร้อมเนื้อหาที่พบสำหรับพล็อตย่อย \"{{name}}\"",
                 "abortedByUser": "การประมวลผลที่ถูกยกเลิกโดยผู้ใช้",
                 "abortedRateLimit": "การประมวลผลที่ถูกยกเลิกโดยผู้ใช้หรือขีด จำกัด อัตรา",
                 "fatalError": "ข้อผิดพลาดร้ายแรง: {{error}}"
@@ -2554,10 +2554,10 @@ export const th: TranslationKeys = {
             "commands": {
                 "summaryRefresh": "รีเฟรชฉากสรุป",
                 "scenePulseManuscript": "การวิเคราะห์ชีพจรฉาก (ลำดับต้นฉบับ)",
-                "scenePulseSubplot": "การวิเคราะห์พัลส์ฉาก (ลำดับย่อย)"
+                "scenePulseSubplot": "การวิเคราะห์พัลส์ฉาก (ลำดับพล็อตย่อย)"
             },
             "notices": {
-                "noSubplots": "ไม่พบโครงเรื่องย่อย",
+                "noSubplots": "ไม่พบพล็อตย่อย",
                 "aiDisabled": "กลยุทธ์ AI ถูกปิดใช้งาน เลือกผู้ให้บริการ AI ในการตั้งค่า → AI",
                 "localLlmDisabled": "LLM ในพื้นที่ถูกปิดใช้งาน เปิดใช้งานในการตั้งค่า → AI",
                 "localLlmRequiresUrl": "LLM ในเครื่องต้องมี URL พื้นฐานและการเลือกโมเดล",
@@ -2573,7 +2573,7 @@ export const th: TranslationKeys = {
                 "totalScenes": "รวมฉาก",
                 "pickLabel": "เลือกพล็อตย่อยเพื่อประมวลผล",
                 "processFlagged": "กระบวนการตั้งค่าสถานะฉาก",
-                "processEntire": "ประมวลผลแผนย่อยทั้งหมด",
+                "processEntire": "ประมวลผลพล็อตย่อยทั้งหมด",
                 "purgeAll": "ล้างชีพจรทั้งหมด",
                 "cancel": "ยกเลิก",
                 "stats": "{{flagged}}ติดธง • {{processable}} ประมวลผลได้ • {{total}} รวม",
@@ -2832,7 +2832,7 @@ export const th: TranslationKeys = {
             "addAfter": "เพิ่ม {{scene}} หลัง {{anchor}}",
             "whenLabel": "เมื่อ",
             "whenBlank": "ว่าง",
-            "subplotLabel": "แผนย่อย",
+            "subplotLabel": "พล็อตย่อย",
             "yamlBasic": "ขั้นพื้นฐาน",
             "yamlAdvanced": "สูง",
             "noRenames": "จะไม่มีการเปลี่ยนชื่อฉากหรือชื่อไฟล์บีทที่มีอยู่",
@@ -3119,7 +3119,7 @@ export const th: TranslationKeys = {
             "ringDesc": "วงแหวนความคืบหน้าเท่านั้น - ความลึกลับสูงสุด",
             "scenesDesc": "โครงสร้างฉากในสีเทาที่มีลวดลาย",
             "colorsDesc": "เผยแพร่สีเวทีเปิดเผย",
-            "fullDesc": "มองเห็นวงแหวนย่อยทั้งหมด — รูปภาพที่สมบูรณ์"
+            "fullDesc": "มองเห็นวงแหวนพล็อตย่อยทั้งหมด — รูปภาพที่สมบูรณ์"
         },
         "aprPaletteModal": {
             "badge": "จานสี",
@@ -3272,7 +3272,7 @@ export const th: TranslationKeys = {
         "backdropSection": {
             "heading": "ฉากหลังและวงแหวนบริบทขนาดเล็ก",
             "showRingName": "แสดงวงแหวนฉากหลัง",
-            "showRingDesc": "แสดงวงแหวนฉากหลังในโหมด Chronologue เมื่อปิดใช้งาน พื้นที่วงแหวนจะถูกเรียกคืนสำหรับวงแหวนย่อย ",
+            "showRingDesc": "แสดงวงแหวนฉากหลังในโหมด Chronologue เมื่อปิดใช้งาน พื้นที่วงแหวนจะถูกเรียกคืนสำหรับวงแหวนพล็อตย่อย ",
             "commandPaletteHintLead": "ใช้พาเลทคำสั่ง ",
             "ctrlKey": "บัญชี",
             "commandPaletteHintTail": ". หรือสร้างโน้ตฉากหลังโดยใช้ 'class=backdrop'",
@@ -3428,7 +3428,7 @@ export const th: TranslationKeys = {
             "documentaryArcDesc": "ปรับสมดุลตามลำดับเวลา บริบท เดิมพัน และผลที่ตามมาในเหตุการณ์ซ้ำ\n\nใช้เมื่อคุณต้องการแนะนำผู้ชมผ่านเหตุการณ์จริงโดยไม่สูญเสียโมเมนตัม\n\nดีที่สุดสำหรับ: การเขียนประวัติศาสตร์, โครงสร้างสารคดี, การเล่าเรื่องสารคดี, ไทม์ไลน์\nโปรไฟล์โมเมนตัม: บริบท -> การสร้าง -> หมุน -> ผลที่ตามมา",
             "documentaryArcExamples": "ตัวอย่าง: สารคดีประวัติศาสตร์ บทประวัติศาสตร์การเล่าเรื่อง การสร้างเหตุการณ์ใหม่",
             "romanceLadderTitle": "บันไดโรแมนติค",
-            "romanceLadderDesc": "ติดตามการดึงดูด ความตึงเครียด ความเปราะบาง การแตกร้าว และผลตอบแทนทางอารมณ์\n\nใช้เมื่อส่วนโค้งของความสัมพันธ์ทางอารมณ์เป็นกลไกหลักของการลงทุนของผู้อ่าน\n\nดีที่สุดสำหรับ: โรแมนติก, แผนย่อยโรแมนติก, เคมีตัวละครผ่าน\nโปรไฟล์โมเมนตัม: จุดประกาย -> ความตึงเครียด -> ช่องโหว่ -> แตก -> สหภาพ/การตัดสินใจ",
+            "romanceLadderDesc": "ติดตามการดึงดูด ความตึงเครียด ความเปราะบาง การแตกร้าว และผลตอบแทนทางอารมณ์\n\nใช้เมื่อส่วนโค้งของความสัมพันธ์ทางอารมณ์เป็นกลไกหลักของการลงทุนของผู้อ่าน\n\nดีที่สุดสำหรับ: โรแมนติก, พล็อตย่อยโรแมนติก, เคมีตัวละครผ่าน\nโปรไฟล์โมเมนตัม: จุดประกาย -> ความตึงเครียด -> ช่องโหว่ -> แตก -> สหภาพ/การตัดสินใจ",
             "romanceLadderExamples": "ตัวอย่าง: ศัตรูต่อคู่รัก, ความใกล้ชิดแบบบังคับ, การเผาไหม้ช้า",
             "thrillerLadderTitle": "บันไดเลื่อนระทึกขวัญ",
             "thrillerLadderDesc": "สร้างแรงกดดันผ่านอันตราย การเปิดเผย การพลิกกลับ และตัวเลือกที่แคบลง\n\nใช้เมื่อคุณต้องการให้ทุกขั้นตอนกระชับความเสี่ยงและลดทางเลือกที่ปลอดภัยของตัวเอก\n\nดีที่สุดสำหรับ: ระทึกขวัญ, ใจจดใจจ่อ, แผนการไล่ล่า, การเล่าเรื่องเอาชีวิตรอด\nโปรไฟล์โมเมนตัม: ภัยคุกคาม -> การแสวงหา -> การกลับรายการ -> การบีบอัด -> การเผชิญหน้า",
@@ -3752,12 +3752,12 @@ export const th: TranslationKeys = {
             "stageColorsHeading": "การเผยแพร่สีเวที",
             "stageColorsDesc": "ใช้สำหรับฉากที่สมบูรณ์ เมทริกซ์เวที ป้ายกำกับ ACT และอื่นๆ",
             "stageColorAriaLabel": "{{stage}}สีเวที",
-            "subplotColorsHeading": "สีวงแหวนย่อย",
-            "subplotColorsDesc": "สีวงแหวนย่อยที่ใช้สำหรับวงแหวน 1 ถึง 16 เคลื่อนที่เข้าด้านใน",
+            "subplotColorsHeading": "สีวงแหวนพล็อตย่อย",
+            "subplotColorsDesc": "สีวงแหวนพล็อตย่อยที่ใช้สำหรับวงแหวน 1 ถึง 16 เคลื่อนที่เข้าด้านใน",
             "mainPlotLabel": "พล็อตหลัก",
             "ringLabel": "วงแหวน {{number}}",
             "mainPlotPin": "พล็อตหลัก · วงแหวน 1",
-            "subplotColorAriaLabel": "สีวงแหวนย่อย {{number}}"
+            "subplotColorAriaLabel": "สีวงแหวนพล็อตย่อย {{number}}"
         },
         "commandRegistrar": {
             "archivedBeforeOverwrite": "เก็บถาวรที่มีอยู่ออกก่อนเขียนทับ: {{path}}",
@@ -5338,20 +5338,20 @@ export const th: TranslationKeys = {
         "manageSubplotsModal": {
             "badge": "การตั้งค่า",
             "subtitle": "เปลี่ยนชื่อหรือลบพล็อตย่อยในไทม์ไลน์ ฉากกำพร้าจะถูกย้ายไปยังพล็อตหลัก",
-            "activeSubplots": "แผนย่อยที่ใช้งาน · {{count}}",
+            "activeSubplots": "พล็อตย่อยที่ใช้งาน · {{count}}",
             "renameTooltip": "เปลี่ยนชื่อ",
             "mainPlotCannotDelete": "พล็อตหลักลบไม่ได้",
             "mainPlotMeta": "พล็อตหลัก · วงแหวน 1 · {{scenes}}",
             "mainPlotRenameNote": "นี่คือพล็อตหลักของคุณ อยู่ในวงแหวน 1 เสมอ และรวมทุกฉากที่ไม่มี Subplot ไว้โดยค่าเริ่มต้น",
             "deleteTooltip": "ลบ",
             "removeBadge": "คำเตือน",
-            "removeTitle": "ลบแผนย่อย?",
+            "removeTitle": "ลบพล็อตย่อย?",
             "removeSubtitle": "การกระทำนี้ไม่สามารถยกเลิกได้",
             "removeMeta": "ฉากในพล็อตย่อยนี้จะถูกย้ายไปยังพล็อตหลัก",
             "removeConfirm": "คุณแน่ใจหรือไม่ว่าต้องการลบ \"{{subplot}}\" ออกจากไทม์ไลน์",
-            "removeButton": "ลบแผนย่อย",
+            "removeButton": "ลบพล็อตย่อย",
             "renameBadge": "แก้ไข",
-            "renameTitle": "เปลี่ยนชื่อแผนย่อย",
+            "renameTitle": "เปลี่ยนชื่อพล็อตย่อย",
             "renameSubtitle": "ป้อนชื่อใหม่สำหรับ \"{{subplot}}\"",
             "renameButton": "เปลี่ยนชื่อ"
         },
@@ -5456,7 +5456,7 @@ export const th: TranslationKeys = {
             "splitHelper": "ฉากจะถูกแบ่งเท่าๆ กันในไฟล์ต่างๆ",
             "scope": "ขอบเขต",
             "sceneFilter": "ตัวกรองฉาก",
-            "allSubplots": "แผนย่อยทั้งหมด",
+            "allSubplots": "พล็อตย่อยทั้งหมด",
             "rangeStartAria": "จุดเริ่มต้นของพิสัย",
             "rangeEndAria": "สิ้นสุดช่วง",
             "manuscriptOptions": "ตัวเลือกต้นฉบับ",
@@ -5753,7 +5753,7 @@ export const th: TranslationKeys = {
             "reviewSubtitleFlagged": "{{ready}} ฉากพร้อม {{flagged}} พร้อมการเดาที่ติดธง ขยายฉากเพื่อดูว่ามันจับคู่อย่างไรในเทมเพลต Radial Timeline — ใช้เขียนหนังสือ",
             "reviewSubtitleFailed": "{{ready}} ฉากพร้อมแล้ว {{failed}} ล้มเหลว ขยายฉากเพื่อดูว่ามันจับคู่อย่างไรในเทมเพลต Radial Timeline — ใช้เขียนหนังสือ",
             "reviewSubtitleFlaggedFailed": "{{ready}} ฉากพร้อม, {{flagged}} ด้วยการเดาที่ติดธง {{failed}} ล้มเหลว ขยายฉากเพื่อดูว่ามันจับคู่อย่างไรใน Radial Timeline แม่แบบ — สมัครเขียนหนังสือ",
-            "surveyFailed": "การสำรวจโครงสร้างล้มเหลว ดังนั้นทุกฉากจึงอยู่ในโครงเรื่องหลัก คุณสามารถเรียกใช้ Onboarding อีกครั้งสำหรับ Pass อื่นหรือเลเยอร์ย่อยในภายหลัง",
+            "surveyFailed": "การสำรวจโครงสร้างล้มเหลว ดังนั้นทุกฉากจึงอยู่ในพล็อตหลัก คุณสามารถเรียกใช้ Onboarding อีกครั้งสำหรับ Pass อื่นหรือเพิ่มพล็อตย่อยในภายหลัง",
             "createsDestination": "สร้าง {{destination}} · เผยแพร่สเตจ: {{stage}}",
             "alsoCreate": "สร้าง (ไม่บังคับ) ด้วย",
             "createCharacterProfiles": "สร้างโปรไฟล์ตัวละคร",
@@ -5810,7 +5810,7 @@ export const th: TranslationKeys = {
             "optionPovCharacter": "ตัวละคร POV (แสดงเป็นตัวอักษรแรก)",
             "groupMoreSceneFields": "ฟิลด์ฉากเพิ่มเติม",
             "groupThisColumn": "คอลัมน์นี้",
-            "optionSubplotFlag": "แผนย่อย “{{field}}” สำหรับเซลล์ที่เติม",
+            "optionSubplotFlag": "พล็อตย่อย “{{field}}” สำหรับเซลล์ที่เติม",
             "optionKeepAs": "เก็บเป็น “{{field}}”",
             "optionSkip": "โดด",
             "reviewTitle": "ตรวจสอบการนำเข้าของคุณ",
@@ -5832,7 +5832,7 @@ export const th: TranslationKeys = {
             "createsDestination": "สร้าง “{{destination}}”",
             "mappingConflict": "มากกว่าหนึ่งคอลัมน์ไปที่ {{field}}; แต่ละฉากจะเก็บฉากแรกไว้",
             "yourTimeline": "ไทม์ไลน์ของคุณ",
-            "subplots": "แผนย่อย",
+            "subplots": "พล็อตย่อย",
             "acts": "องก์",
             "actsFromColumn": "จากคอลัมน์ ACT ของคุณ",
             "actsFromFolders": "จากโฟลเดอร์ ACT ของคุณ",
@@ -6020,7 +6020,7 @@ export const th: TranslationKeys = {
             "keyNote": "หมายเหตุไม่มีคลาส",
             "keyNoteDetail": "โปรโมททำให้เป็นฉาก",
             "keyRings": "วง",
-            "keyRingsDetail": "แผนย่อยตามลำดับล้อ สรุป: วางแผน",
+            "keyRingsDetail": "พล็อตย่อยตามลำดับล้อ สรุป: วางแผน",
             "keyQueries": "เปิดคำถาม",
             "keyQueriesDetail": "เลื่อนเพื่ออ่าน",
             "keyPromote": "โปรโมทไปฉาก",
@@ -6575,15 +6575,15 @@ export const th: TranslationKeys = {
             "partSet": "ตั้งค่าเครื่องหมายชิ้นส่วนบน {{name}}",
             "partFailed": "ไม่สามารถตั้งค่าส่วนสำหรับ {{name}} ตรวจสอบคอนโซลสำหรับรายละเอียด",
             "noSubplotChange": "{{name}}: ไม่มีการเปลี่ยนแปลงพล็อตย่อย",
-            "noOtherSubplot": "ไม่มีแผนย่อยอื่นให้เลือก",
+            "noOtherSubplot": "ไม่มีพล็อตย่อยอื่นให้เลือก",
             "moveSceneFromToPlaceholder": "ย้าย {{name}} จาก {{from}} ถึง…",
             "moveFromTo": "ย้ายจาก {{from}} ไป…",
-            "moveFromSubplot": "ย้ายจากแผนย่อย…",
+            "moveFromSubplot": "ย้ายจากพล็อตย่อย…",
             "moveSceneFromPlaceholder": "ย้าย {{name}} จาก…",
-            "addToSubplot": "เพิ่มลงในแผนย่อย…",
+            "addToSubplot": "เพิ่มลงในพล็อตย่อย…",
             "addSceneToPlaceholder": "เพิ่ม {{name}}เพื่อ…",
             "removeFrom": "นำออกจาก {{from}}",
-            "removeFromSubplot": "ลบออกจากแผนย่อย…",
+            "removeFromSubplot": "ลบออกจากพล็อตย่อย…",
             "removeSceneFromPlaceholder": "ลบ {{name}} จาก…",
             "addDataUnavailable": "ไม่สามารถเพิ่มฉากได้เนื่องจากไม่มีข้อมูลฉากไทม์ไลน์",
             "addFailed": "ไม่สามารถเพิ่มฉากได้หลังจาก {{name}} ตรวจสอบคอนโซลสำหรับรายละเอียด",
@@ -6907,22 +6907,22 @@ export const th: TranslationKeys = {
             "bulkChangedNotice": "{{change}}: {{scenes}} เปลี่ยนไป ",
             "bulkUndoRestored": "ได้รับการบูรณะ {{scenes}}.",
             "bulkUndoFailed": "เลิกทำล้มเหลว คอนโซลนักพัฒนาซอฟต์แวร์มีรายละเอียด",
-            "undoFailed": "{{item}}: เลิกทำล้มเหลว ตรวจสอบโครงเรื่องย่อยของฉากก่อนดำเนินการต่อ",
+            "undoFailed": "{{item}}: เลิกทำล้มเหลว ตรวจสอบพล็อตย่อยของฉากก่อนดำเนินการต่อ",
             "undoRestored": "{{item}}: กลับไปที่ {{memberships}}",
-            "undoSkipped": "{{item}}: ยกเลิกการข้ามเพราะแผนย่อยเปลี่ยนไปหลังจากการดำเนินการนี้"
+            "undoSkipped": "{{item}}: ยกเลิกการข้ามเพราะพล็อตย่อยเปลี่ยนไปหลังจากการดำเนินการนี้"
         },
         "subplotRingDragController": {
             "sceneNumberLabel": "ฉาก {{number}} {{label}}",
             "sceneNumber": "ฉาก {{number}}",
             "alreadyIn": "แล้วใน {{subplot}}",
-            "detailReleaseToMove": "แผนย่อย: {{subplots}} · ปล่อยกะเพื่อย้าย",
-            "detailHoldToAdd": "แผนย่อย: {{subplots}} · กด Shift ค้างไว้เพื่อเพิ่ม",
+            "detailReleaseToMove": "พล็อตย่อย: {{subplots}} · ปล่อยกะเพื่อย้าย",
+            "detailHoldToAdd": "พล็อตย่อย: {{subplots}} · กด Shift ค้างไว้เพื่อเพิ่ม",
             "noChange": "ไม่มีการเปลี่ยนแปลง",
-            "contextLabel": "แผนย่อย",
-            "badgeAdd": "เพิ่มแผนย่อย",
+            "contextLabel": "พล็อตย่อย",
+            "badgeAdd": "เพิ่มพล็อตย่อย",
             "badgeMove": "ย้ายฉาก",
-            "confirmTitle": "ยืนยันการเปลี่ยนแปลงแผนย่อย",
-            "changeFailed": "การเปลี่ยนแปลงแผนย่อยล้มเหลว ตรวจสอบคอนโซลสำหรับรายละเอียด แล้วปิด"
+            "confirmTitle": "ยืนยันการเปลี่ยนแปลงพล็อตย่อย",
+            "changeFailed": "การเปลี่ยนแปลงพล็อตย่อยล้มเหลว ตรวจสอบคอนโซลสำหรับรายละเอียด แล้วปิด"
         },
         "synopsisManager": {
             "backdropEnd": "เป็น {{end}}",
@@ -7167,7 +7167,7 @@ export const th: TranslationKeys = {
             "unparsableDate": "นั่นไม่ใช่วันที่ Radial Timeline สามารถอ่านได้"
         },
         "welcomeScreen": {
-            "intro": "Radial Timeline เปลี่ยนการเล่าเรื่องแบบยาวเป็นแผนที่เรื่องราวเดียวที่นำทางได้ ฉากติดตาม โครงเรื่องย่อย ตัวละคร บีท และไทม์ไลน์ในนวนิยาย เทพนิยาย บันทึกความทรงจำ และโครงการนิยายหรือสารคดีอื่นๆ ที่ยั่งยืน เลือกจุดเริ่มต้นด้านล่าง",
+            "intro": "Radial Timeline เปลี่ยนการเล่าเรื่องแบบยาวเป็นแผนที่เรื่องราวเดียวที่นำทางได้ ฉากติดตาม พล็อตย่อย ตัวละคร บีท และไทม์ไลน์ในนวนิยาย เทพนิยาย บันทึกความทรงจำ และโครงการนิยายหรือสารคดีอื่นๆ ที่ยั่งยืน เลือกจุดเริ่มต้นด้านล่าง",
             "websiteTitle": "เยี่ยมชมเว็บไซต์",
             "websiteDesc": "เข้าร่วมชุมชนและแบ่งปันการเดินทางของคุณในระดับความสะดวกสบายของคุณเอง เรียนรู้เกี่ยวกับคุณสมบัติที่มีอยู่โดยใช้ Radial Timeline & Editorialist ระบบนิเวศและรับความช่วยเหลือ",
             "websiteCta": "เปิดเว็บไซต์",
@@ -7189,7 +7189,7 @@ export const th: TranslationKeys = {
             "workflowLead": "เริ่มห้องนิรภัยใหม่?",
             "workflowStepBookManager": "ตั้งค่าโฟลเดอร์นวนิยายของคุณภายในห้องนิรภัยด้วย [Book Manager]",
             "workflowStepCreateNote": "เปิด Palette คำสั่ง `⌘ + P` และเรียกใช้ `Create note` หรือนั่งร้านอย่างรวดเร็วด้วย `Book Designer`",
-            "workflowStepPopulate": "เติมฉากแล้วขยายด้วยโครงเรื่องย่อย ระบบบีท และอื่นๆ",
+            "workflowStepPopulate": "เติมฉากแล้วขยายด้วยพล็อตย่อย ระบบบีท และอื่นๆ",
             "workflowStepDecide": "ตัดสินใจก่อน: มีกี่การกระทำ? ช่วงเวลาคืออะไร? พิจารณาเครื่องหมายบริบทที่เป็นประโยชน์พร้อมโน้ตฉากหลังหรือฉากหลังแบบไมโคร",
             "workflowStepTrack": "เมื่อคุณเข้าจังหวะแล้ว อย่าลืมติดตามเวลาเขียนและจำนวนคำ และกำหนดวันครบกำหนดสำหรับฉากหรือขั้นตอนการเผยแพร่",
             "feedback": "ใช้เวลาสักครู่เพื่อ [แบ่งปันความคิดเห็นของคุณ] เกี่ยวกับ Radial Timeline และคุณสมบัติที่คุณต้องการเห็นต่อไปเพื่อทำให้เวิร์กโฟลว์การเขียนของคุณราบรื่นขึ้น Radial Timeline กำลังขยายไปในทุกทิศทาง และความคิดเห็นของคุณช่วยชี้แนะ",

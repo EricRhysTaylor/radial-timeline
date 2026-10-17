@@ -8,39 +8,48 @@ function arcFlags(path: string): [string, string] {
     return [match[1], match[2]];
 }
 
+const CLOCKWISE = '1';
+const COUNTER_CLOCKWISE = '0';
+
 describe('arcPath', () => {
     const R = 100;
-    const TOP = -Math.PI / 2;
+    /** Ring positions: the book opens at 12 o'clock and closes there a full turn later. */
+    const OPENING = -Math.PI / 2;
+    const CLOSING = (3 * Math.PI) / 2;
 
-    it('draws a forward span clockwise the short way', () => {
-        expect(arcFlags(arcPath(R, TOP, TOP + Math.PI / 6))).toEqual(['0', '1']);
+    it('runs clockwise to a later point', () => {
+        expect(arcFlags(arcPath(R, OPENING + 1, OPENING + 1.5))).toEqual(['0', CLOCKWISE]);
     });
 
-    // Drag chrome: a drop behind the dragged scene must not sweep backwards,
-    // which would picture the scene travelling back through the story.
-    it('reaches an end behind the start the long way round, still clockwise', () => {
-        expect(arcFlags(arcPath(R, TOP + Math.PI / 2, TOP + Math.PI / 4))).toEqual(['1', '1']);
+    it('runs counter-clockwise to an earlier point', () => {
+        expect(arcFlags(arcPath(R, OPENING + 1.5, OPENING + 1))).toEqual(['0', COUNTER_CLOCKWISE]);
     });
 
-    it('takes the long way even for an end only just behind the start', () => {
-        expect(arcFlags(arcPath(R, 1, 0.99))).toEqual(['1', '1']);
+    // Drag chrome: the arc shows a scene's move through the book. Crossing the
+    // seam would mean reaching an earlier scene by running past the last one.
+    describe('never crosses the seam at the book\'s opening', () => {
+        it('takes a move from the close back to the opening counter-clockwise, the long way round', () => {
+            expect(arcFlags(arcPath(R, CLOSING - 0.2, OPENING + 0.2))).toEqual(['1', COUNTER_CLOCKWISE]);
+        });
+
+        it('takes a move from the opening to the close clockwise, the long way round', () => {
+            expect(arcFlags(arcPath(R, OPENING + 0.2, CLOSING - 0.2))).toEqual(['1', CLOCKWISE]);
+        });
+
+        it('keeps a short backward move short', () => {
+            expect(arcFlags(arcPath(R, CLOSING - 0.2, CLOSING - 0.5))).toEqual(['0', COUNTER_CLOCKWISE]);
+        });
     });
 
-    it('flags a forward span past a half turn', () => {
+    it('flags a span past a half turn in either direction', () => {
         // Pinned to 0, SVG would draw the short arc off the ring on the far side.
-        expect(arcFlags(arcPath(R, TOP, TOP + Math.PI * 1.5))).toEqual(['1', '1']);
-    });
-
-    it('measures across the 12 o\'clock seam', () => {
-        // Last scene of the ring to the first: a short clockwise hop over the top.
-        expect(arcFlags(arcPath(R, (3 * Math.PI) / 2 - 0.2, TOP + 0.2))).toEqual(['0', '1']);
-        // First scene back to the last: the whole ring, clockwise.
-        expect(arcFlags(arcPath(R, TOP + 0.2, (3 * Math.PI) / 2 - 0.2))).toEqual(['1', '1']);
+        expect(arcFlags(arcPath(R, OPENING, OPENING + Math.PI * 1.5))).toEqual(['1', CLOCKWISE]);
+        expect(arcFlags(arcPath(R, OPENING + Math.PI * 1.5, OPENING))).toEqual(['1', COUNTER_CLOCKWISE]);
     });
 
     it('is unaffected by the overlay rotation offset', () => {
         // Rotated timelines add the same offset to both ends.
         const offset = -(2 * Math.PI) / 3;
-        expect(arcFlags(arcPath(R, 2 + offset, 1 + offset))).toEqual(arcFlags(arcPath(R, 2, 1)));
+        expect(arcFlags(arcPath(R, 4 + offset, -1 + offset))).toEqual(arcFlags(arcPath(R, 4, -1)));
     });
 });

@@ -183,10 +183,11 @@ export class DragOverlays {
     }
 
     /**
-     * Arc from the dragged scene to the drop point, always clockwise. The ring
-     * reads clockwise in both narrative and Chronologue order, so a drop behind
-     * the source wraps the long way round: sweeping backwards would picture the
-     * scene travelling back through the story.
+     * Arc from the dragged scene to the drop point, along the book's own order:
+     * clockwise to a later point, counter-clockwise to an earlier one. It never
+     * crosses the seam at the book's opening — reaching an earlier scene by
+     * running forward past the closing scene would picture time wrapping round.
+     * The rotation offset shifts both ends equally, so it never flips direction.
      */
     showArc(startAngle: number, endAngle: number, color: string | undefined): void {
         const arc = this.ensureArc();

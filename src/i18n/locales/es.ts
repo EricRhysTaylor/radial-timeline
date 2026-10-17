@@ -333,7 +333,7 @@ export const es: TranslationKeys = {
                 "createText": "Crear notas de beat",
                 "createTooltip": "Crear archivos de notas de beat en la carpeta del libro activo",
                 "repairText": "Reparar notas de beat",
-                "repairTooltip": "Actualiza el Acto y el Modelo de Beat en la frente para notas de beat desalineadas. Los prefijos numéricos no se modifican."
+                "repairTooltip": "Actualiza Act y Beat Model en el frontmatter de las notas de ritmo desalineadas. Los prefijos numéricos no se modifican."
             },
             "beatFields": {
                 "name": "Campos de beat",
@@ -761,7 +761,7 @@ export const es: TranslationKeys = {
                 },
                 "spokesAndBorders": {
                     "name": "fronteras",
-                    "desc": "Controla los bordes de la escena y las líneas de división ACT. Elija blanco, negro, ninguno o un color personalizado."
+                    "desc": "Controla los bordes de la escena y las líneas de división de los actos. Elija blanco, negro, ninguno o un color personalizado."
                 },
                 "strokeLightStrokes": "Fronteras claras",
                 "strokeDarkStrokes": "fronteras oscuras",
@@ -1935,7 +1935,7 @@ export const es: TranslationKeys = {
                 "detail": "Las escenas estarán numeradas: {{examples}}{{suffix}} Basado en {{scenes}} Escenas a través de {{max}} unidades."
             },
             "acts": {
-                "label": "Actúa para distribuir escenas a través",
+                "label": "Actos entre los que distribuir las escenas",
                 "actLabel": "Acto {{num}}"
             },
             "subplots": {
@@ -3382,13 +3382,13 @@ export const es: TranslationKeys = {
             "createMissingForBeatsWithDetails": "{{details}}\n\ncrear notas de ritmo faltantes para {{beats}} sin archivos",
             "createMissingForBeats": "crear notas de ritmo faltantes para {{beats}} sin archivos",
             "allHaveFilesRepairModel": "Todos los ritmos tienen archivos. Utilice Reparación para establecer los valores del modelo de ritmo faltante.",
-            "allHaveFilesRepairAct": "Todos los ritmos tienen archivos. Use Reparación para arreglar el modelo Act y Beat.",
+            "allHaveFilesRepairAct": "Todos los ritmos tienen archivos. Use Reparar para corregir Act y Beat Model.",
             "repairButton": "Reparación {{notes}}",
-            "repairTooltipBoth": "Actualizar el modelo de acción y ritmo para {{misaligned}} desalineado y {{missing}} falta de notas de ritmo del modelo de ritmo. Los números de prefijo no se cambian.",
-            "repairTooltipMisalignedOne": "Actualice el modelo de acción y ritmo para {{count}} Nota de ritmo desalineada. Los números de prefijo no se cambian.",
-            "repairTooltipMisalignedOther": "Actualice el modelo de acción y ritmo para {{count}} notas de ritmo desalineadas. Los números de prefijo no se cambian.",
-            "repairTooltipMissingModelOne": "Actualice el modelo de acción y ritmo para {{count}} Nota de ritmo del modelo de ritmo faltante. Los números de prefijo no se cambian.",
-            "repairTooltipMissingModelOther": "Actualice el modelo de acción y ritmo para {{count}} Notas de ritmo del modelo de ritmo faltante. Los números de prefijo no se cambian.",
+            "repairTooltipBoth": "Actualiza Act y Beat Model en {{misaligned}} notas de ritmo desalineadas y {{missing}} notas de ritmo sin Beat Model. Los números de prefijo no se cambian.",
+            "repairTooltipMisalignedOne": "Actualiza Act y Beat Model en {{count}} nota de ritmo desalineada. Los números de prefijo no se cambian.",
+            "repairTooltipMisalignedOther": "Actualiza Act y Beat Model en {{count}} notas de ritmo desalineadas. Los números de prefijo no se cambian.",
+            "repairTooltipMissingModelOne": "Actualiza Act y Beat Model en {{count}} nota de ritmo sin Beat Model. Los números de prefijo no se cambian.",
+            "repairTooltipMissingModelOther": "Actualiza Act y Beat Model en {{count}} notas de ritmo sin Beat Model. Los números de prefijo no se cambian.",
             "resolveDuplicatesOne": "Resolver duplicado antes de fusionar. Eliminar manualmente notas de ritmo duplicadas.",
             "resolveDuplicatesOther": "Resolver duplicados antes de fusionar. Eliminar manualmente notas de ritmo duplicadas.",
             "mergeCustomOnlyNotice": "Merge está disponible solo para sistemas Beat personalizados.",
@@ -3398,7 +3398,7 @@ export const es: TranslationKeys = {
             "noMergeWithDuplicatesNotice": "No se pudieron fusionar notas de ritmo. Duplicados: {{count}}. Eliminar manualmente notas de ritmo duplicadas.",
             "duplicateTitlesSkipped": "{{titles}} omitido (eliminar manualmente notas de ritmo duplicadas).",
             "setModelOnNotes": "Establezca el modelo de ritmo en {{notes}}.",
-            "repairedNotice": "reparado {{notes}} (act, beat modelo).",
+            "repairedNotice": "Reparado {{notes}} (Act, Beat Model).",
             "unknownStructureNotice": "Estructura de la historia desconocida: {{name}}",
             "createdWithErrorsNotice": "Creado {{created}} Notas. {{skipped}} omitido. {{errors}} Errores. Comprobar consola.",
             "allExistNotice": "Todas las notas de ritmo {{count}} ya existen. No se crean nuevas notas.",
@@ -4093,7 +4093,7 @@ export const es: TranslationKeys = {
             "familyStoryWorldTitle": "mundo de la historia",
             "familyStoryWorldDesc": "Cree notas contextuales que den forma al tiempo, el lugar o los eventos circundantes.",
             "beatTitle": "Momento narrativo",
-            "beatDesc": "Una nota de ritmo de una sola historia con campos de actos y propósitos.",
+            "beatDesc": "Una nota de ritmo de la historia con los campos Act y Purpose.",
             "backdropTitle": "Trasfondo",
             "backdropDesc": "Nota de contexto de la línea de tiempo con fechas de inicio y finalización.",
             "characterTitle": "Carácter",
@@ -5256,7 +5256,7 @@ export const es: TranslationKeys = {
             "partsFlagNoPageBreak": "Sin salto de página",
             "partOpener": "Abridor de piezas — {{numbering}}",
             "partOpenerWithFlags": "Abridor de piezas — {{numbering}} — {{flags}}",
-            "partsActOpener": "Abrir ACT — Número romano con epígrafe opcional",
+            "partsActOpener": "Apertura de acto — Número romano con epígrafe opcional",
             "chaptersNumbered": "Páginas de capítulos numerados",
             "chaptersTitled": "Páginas de capítulos tituladas",
             "chaptersDefault": "Capítulos",
@@ -5836,7 +5836,7 @@ export const es: TranslationKeys = {
             "yourTimeline": "Tu línea de tiempo",
             "subplots": "Subtramas",
             "acts": "Actos",
-            "actsFromColumn": "de su columna ACT",
+            "actsFromColumn": "De su columna Act",
             "actsFromFolders": "Desde sus carpetas ACT",
             "actsSplitEvenly": "{{count}}, dividido uniformemente por orden de escena",
             "actOverflow": "Sus nombres de exportación {{highest}} actúan pero la línea de tiempo tiene {{count}}; Los actos posteriores se colocan en el acto {{count}}. Eleve el recuento de actos en los ajustes primero para mantenerlos.",
@@ -5987,7 +5987,7 @@ export const es: TranslationKeys = {
             "basesDisabled": "El horario necesita el plugin base de bases. Enciéndalo en Configuración → Plugins Core.",
             "noSourceFolder": "{{book}} aún no tiene carpeta de manuscritos. Establezca uno en el Administrador de libros para abrir su horario.",
             "createTitle": "¿Crear el horario de {{book}}?",
-            "createMessage": "Radial Timeline lo salvará como {{path}}. Contiene el calendario, una tabla para la edición de hojas de cálculo, una lista de notas que no están en la línea de tiempo y los tableros de ACT y de estado.",
+            "createMessage": "Radial Timeline lo guardará como {{path}}. Contiene el calendario, una tabla para la edición de hojas de cálculo, una lista de notas que no están en la línea de tiempo y los tableros de actos y de estado.",
             "createButton": "Crear",
             "bulkSelected": "{{notes}} seleccionado",
             "bulkStatus": "Estado",

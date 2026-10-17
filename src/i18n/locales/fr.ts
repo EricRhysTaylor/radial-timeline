@@ -333,7 +333,7 @@ export const fr: TranslationKeys = {
                 "createText": "Créer les notes de battements",
                 "createTooltip": "Créer les fichiers de notes de battements dans le dossier du livre actif",
                 "repairText": "Réparer les notes de battements",
-                "repairTooltip": "Mettre à jour le Modèle d'Acte et de Battement dans l'en-tête pour les notes de battements décalées. Les préfixes numériques ne sont pas modifiés."
+                "repairTooltip": "Met à jour Act et Beat Model dans le frontmatter des notes de battement mal alignées. Les numéros de préfixe ne sont pas modifiés."
             },
             "beatFields": {
                 "name": "Champs de battements",
@@ -736,11 +736,11 @@ export const fr: TranslationKeys = {
                 "autoButton": "Auto",
                 "title": {
                     "label": "Titre",
-                    "desc": "Texte du titre du livre de la bague extérieure. Cette couleur est utilisée pour la couleur des graines de la palette."
+                    "desc": "Texte du titre du livre sur l'anneau extérieur. Cette couleur sert de couleur de base à la palette."
                 },
                 "author": {
                     "label": "Author",
-                    "desc": "Texte du nom de l'auteur de la bague extérieure.",
+                    "desc": "Texte du nom de l'auteur sur l'anneau extérieur.",
                     "placeholder": "Author"
                 },
                 "percentNumber": {
@@ -761,7 +761,7 @@ export const fr: TranslationKeys = {
                 },
                 "spokesAndBorders": {
                     "name": "Limites",
-                    "desc": "Contrôle les frontières de la scène et les lignes de division ACT. Choisissez le blanc, le noir, aucun ou une couleur personnalisée."
+                    "desc": "Contrôle les bordures des scènes et les lignes de séparation des actes. Choisissez blanc, noir, aucun ou une couleur personnalisée."
                 },
                 "strokeLightStrokes": "Bordures légères",
                 "strokeDarkStrokes": "Bordures sombres",
@@ -1153,7 +1153,7 @@ export const fr: TranslationKeys = {
             }
         },
         "subplotAlignment": {
-            "groupLabel": "Alignement des sous-plaques",
+            "groupLabel": "Alignement des sous-intrigues",
             "fill": {
                 "label": "Remplir",
                 "tooltip": "Remplir : les scènes de sous-intrigues réparties uniformément sur chaque acte"
@@ -1219,7 +1219,7 @@ export const fr: TranslationKeys = {
         "structuralBody": "Numéros de scène, actes, noms de sous-intrigues, statut, étape de publication, titre de livre et auteur.",
         "revealingHeading": "Tenue pour la révélation par scène",
         "revealingBody": "Les titres de scène, les synopsis, les personnages, les points de vue et les dates des histoires – cachés jusqu'à ce que vous dévoiliez chaque scène.",
-        "genericNamesToggleLabel": "Noms de sonnerie génériques (sous-plancher 1, sous-intrigue 2…)",
+        "genericNamesToggleLabel": "Noms d'anneaux génériques (Sous-intrigue 1, Sous-intrigue 2…)",
         "genericNamesToggleDescription": "Utilisez si vos noms de sous-intrigues pourraient révéler l'intrigue.",
         "destinationBody": "Enregistré à {{path}} dans votre coffre-fort.",
         "cancelButton": "Annuler",
@@ -1935,7 +1935,7 @@ export const fr: TranslationKeys = {
                 "detail": "Les scènes seront numérotées : {{examples}}{{suffix}} basée sur {{scenes}} scènes sur {{max}}."
             },
             "acts": {
-                "label": "agit pour distribuer des scènes à travers",
+                "label": "Actes entre lesquels répartir les scènes",
                 "actLabel": "Acte {{num}}"
             },
             "subplots": {
@@ -1969,7 +1969,7 @@ export const fr: TranslationKeys = {
         },
         "preview": {
             "title": "Aperçu",
-            "dragging": "Glisser la scène {{scene}} → ACT {{act}}, {{subplot}}",
+            "dragging": "Glisser la scène {{scene}} → Acte {{act}}, {{subplot}}",
             "subplotFallback": "Sous-intrigue {{num}}"
         },
         "buttons": {
@@ -2487,7 +2487,7 @@ export const fr: TranslationKeys = {
                 "noScenesForSubplot": "Aucune scène trouvée pour la sous-intrigue \"{{name}}\".",
                 "noScenesContentSubplot": "Aucune scène avec du contenu trouvé pour la sous-intrigue \"{{name}}\".",
                 "noRemainingResumingSubplot": "Aucune scène restante à traiter pour la sous-intrigue \"{{name}}\" (toutes peuvent avoir été traitées aujourd'hui).",
-                "noFlaggedPulseUpdateSubplot": "Pas de scènes signalées (Mise à jour d'impulsions : Oui) avec le contenu trouvé pour la sous-plot \"{{name}}\".",
+                "noFlaggedPulseUpdateSubplot": "Pas de scènes signalées (Mise à jour d'impulsions : Oui) avec le contenu trouvé pour la sous-intrigue \"{{name}}\".",
                 "abortedByUser": "Traitement abandonné par l'utilisateur",
                 "abortedRateLimit": "Traitement abandonné par l'utilisateur ou la limite de taux",
                 "fatalError": "Erreur fatale : {{error}}"
@@ -3271,8 +3271,8 @@ export const fr: TranslationKeys = {
         },
         "backdropSection": {
             "heading": "Anneaux de fond et de micro-contexte",
-            "showRingName": "Afficher la bague de fond",
-            "showRingDesc": "Affichez la bague de fond en mode Chronologue. Lorsqu'il est désactivé, l'espace de sonnerie est récupéré pour les anneaux de sous-intrigue. ",
+            "showRingName": "Afficher l'anneau de fond",
+            "showRingDesc": "Affichez l'anneau de fond en mode Chronologue. Lorsqu'il est désactivé, l'espace de l'anneau est récupéré pour les anneaux de sous-intrigue. ",
             "commandPaletteHintLead": "Utiliser la palette de commandes ",
             "ctrlKey": "ctrl",
             "commandPaletteHintTail": ". Ou créez une note de fond à l'aide du 'class=backdrop'.",
@@ -3292,7 +3292,7 @@ export const fr: TranslationKeys = {
             "dateRangeDesc": "Exemples de formats : \"4/24/2024 - 25/04/2025 13:45\" ou \"2024-04-24 - 2024-04-25 13:45\".",
             "emptyHint": " Pas encore de micro-dossiers. Ajoutez-en un pour commencer.",
             "addName": "Ajouter une micro-fond",
-            "addDesc": "Crée une nouvelle configuration de sonnerie. Les micro-dossiers sont des bandes minces et personnalisées nichées sous l'anneau de fond (Chronologue mode uniquement). Les micro-dos de fond coexisteront sur un anneau à moins qu'il n'y ait un chevauchement de plage de dates, auquel cas ils seront placés sur des Anneaux. {{emptyHint}}",
+            "addDesc": "Crée une nouvelle configuration d'anneau. Les micro-fonds sont de fines bandes personnalisées nichées sous l'anneau de fond (mode Chronologue uniquement). Les micro-fonds coexistent sur un même anneau sauf si leurs plages de dates se chevauchent ; ils sont alors placés sur des anneaux distincts. {{emptyHint}}",
             "addButton": "Ajouter"
         },
         "beatPropertiesSection": {
@@ -3382,13 +3382,13 @@ export const fr: TranslationKeys = {
             "createMissingForBeatsWithDetails": "{{details}}\n\ncréer des notes de battement manquantes pour {{beats}} sans fichiers",
             "createMissingForBeats": "Créez des notes de rythmes manquantes pour {{beats}} sans fichiers",
             "allHaveFilesRepairModel": "Tous les temps ont des fichiers. Utilisez la réparation pour définir des valeurs de modèle de battement manquantes.",
-            "allHaveFilesRepairAct": "Tous les temps ont des fichiers. Utilisez Réparation pour réparer le modèle ACT et BAT.",
+            "allHaveFilesRepairAct": "Tous les battements ont des fichiers. Utilisez Réparer pour corriger Act et Beat Model.",
             "repairButton": "Réparer {{notes}}",
-            "repairTooltipBoth": "Mettre à jour le modèle ACT et BEAT pour {{misaligned}} mal aligné et {{missing}} manquants. Les numéros de préfixe ne sont pas modifiés.",
-            "repairTooltipMisalignedOne": "Mettez à jour le modèle d'acte et de beat pour {{count}} une note de battement mal alignée. Les numéros de préfixe ne sont pas modifiés.",
-            "repairTooltipMisalignedOther": "Mettez à jour le modèle ACT et BEAT pour {{count}} Notes de battement mal alignées. Les numéros de préfixe ne sont pas modifiés.",
-            "repairTooltipMissingModelOne": "Mettez à jour le modèle ACT et BEAT pour {{count}} Missing Beat Model Beat Note. Les numéros de préfixe ne sont pas modifiés.",
-            "repairTooltipMissingModelOther": "Mettez à jour le modèle ACT et BEAT pour {{count}} Missing Beat Model Beat Notes. Les numéros de préfixe ne sont pas modifiés.",
+            "repairTooltipBoth": "Met à jour Act et Beat Model pour {{misaligned}} notes de battement mal alignées et {{missing}} notes de battement sans Beat Model. Les numéros de préfixe ne sont pas modifiés.",
+            "repairTooltipMisalignedOne": "Met à jour Act et Beat Model pour {{count}} note de battement mal alignée. Les numéros de préfixe ne sont pas modifiés.",
+            "repairTooltipMisalignedOther": "Met à jour Act et Beat Model pour {{count}} notes de battement mal alignées. Les numéros de préfixe ne sont pas modifiés.",
+            "repairTooltipMissingModelOne": "Met à jour Act et Beat Model pour {{count}} note de battement sans Beat Model. Les numéros de préfixe ne sont pas modifiés.",
+            "repairTooltipMissingModelOther": "Met à jour Act et Beat Model pour {{count}} notes de battement sans Beat Model. Les numéros de préfixe ne sont pas modifiés.",
             "resolveDuplicatesOne": "Résoudre les doublons avant de fusionner. Supprimez manuellement les notes de battement en double.",
             "resolveDuplicatesOther": "Résoudre les doublons avant de fusionner. Supprimez manuellement les notes de battement en double.",
             "mergeCustomOnlyNotice": "La fusion est disponible uniquement pour les systèmes de battement personnalisés.",
@@ -3752,7 +3752,7 @@ export const fr: TranslationKeys = {
             "stageColorsHeading": "Publication des couleurs de la scène",
             "stageColorsDesc": "Utilisé pour les scènes terminées, la matrice de scène, les étiquettes d'acte et plus encore.",
             "stageColorAriaLabel": "{{stage}} Couleur de la scène",
-            "subplotColorsHeading": "Couleurs de bague de sous-intrigue",
+            "subplotColorsHeading": "Couleurs des anneaux de sous-intrigue",
             "subplotColorsDesc": "Couleurs des anneaux de sous-intrigues utilisées pour les anneaux 1 à 16 se déplaçant vers l'intérieur.",
             "mainPlotLabel": "Intrigue principale",
             "ringLabel": "Anneau {{number}}",
@@ -5812,7 +5812,7 @@ export const fr: TranslationKeys = {
             "optionPovCharacter": "Caractère POV (liste du premier caractère)",
             "groupMoreSceneFields": "Plus de champs de scène",
             "groupThisColumn": "cette colonne",
-            "optionSubplotFlag": "Sous-parcelle \"{{field}}\" pour les cellules remplies",
+            "optionSubplotFlag": "Sous-intrigue \"{{field}}\" pour les cellules remplies",
             "optionKeepAs": "Conservez comme \"{{field}}\"",
             "optionSkip": "Sauter",
             "reviewTitle": "Examinez votre importation",
@@ -5836,7 +5836,7 @@ export const fr: TranslationKeys = {
             "yourTimeline": "Votre chronologie",
             "subplots": "intrigues secondaires",
             "acts": "Actes",
-            "actsFromColumn": "De votre colonne ACT",
+            "actsFromColumn": "De votre colonne Act",
             "actsFromFolders": "À partir de vos dossiers ACT",
             "actsSplitEvenly": "{{count}}, répartis uniformément par ordre de scène",
             "actOverflow": "Vos noms d'exportation {{highest}} agissent mais le calendrier a {{count}} ; Les actes ultérieurs sont placés dans la loi {{count}}. Augmentez d'abord le nombre d'actes dans les paramètres pour les conserver.",
@@ -5981,7 +5981,7 @@ export const fr: TranslationKeys = {
             "otherClassRow": "Classe : {{className}}",
             "ringOffWheel": "{{number}}. {{name}} (pas encore sur la chronologie)",
             "ringsHeader": "Anneaux, dans la chronologie : {{list}}",
-            "ringsNone": "Pas dans aucun ring",
+            "ringsNone": "Dans aucun anneau",
             "ringsIn": "En {{list}}",
             "ringsPlanned": "Prévu pour {{list}}",
             "basesDisabled": "L'horaire nécessite le plugin Bases Core. Activez-le dans Paramètres → Plugins de base.",
@@ -5993,8 +5993,8 @@ export const fr: TranslationKeys = {
             "bulkStatus": "Statut",
             "bulkStage": "Étape",
             "bulkAct": "Acte",
-            "bulkAddRing": "Ajouter à la bague",
-            "bulkRemoveRing": "Retirer de la bague",
+            "bulkAddRing": "Ajouter à l'anneau",
+            "bulkRemoveRing": "Retirer de l'anneau",
             "bulkPromote": "Promouvoir {{notes}}",
             "bulkClear": "Sélection claire",
             "bulkStatusDone": "Statut défini sur {{value}} ON {{scenes}}.",
@@ -6022,7 +6022,7 @@ export const fr: TranslationKeys = {
             "keyNote": "Remarque sans classe",
             "keyNoteDetail": "Promouvoir en fait une scène",
             "keyRings": "Les anneaux",
-            "keyRingsDetail": "des sous-parcelles dans l'ordre des roues ; Décrit : prévu",
+            "keyRingsDetail": "sous-intrigues dans l'ordre de la roue ; en contour : prévues",
             "keyQueries": "requêtes ouvertes",
             "keyQueriesDetail": "Survolez pour les lire",
             "keyPromote": "Promouvoir sur scène",
@@ -6892,7 +6892,7 @@ export const fr: TranslationKeys = {
             "sceneBeatsProgress": "Battements de scène : {{current}}/{{total}} ({{percentage}}%)"
         },
         "subplotKeyController": {
-            "ringKey": "clef",
+            "ringKey": "Légende des anneaux",
             "outerToInner": "Extérieur → intérieur"
         },
         "subplotManagementService": {
@@ -6912,7 +6912,7 @@ export const fr: TranslationKeys = {
             "bulkUndoFailed": "Undo a échoué. La console développeur a les détails.",
             "undoFailed": "{{item}} : Échec de l'annulation. Vérifiez les sous-intrigues de la scène avant de continuer.",
             "undoRestored": "{{item}} : Retour à {{memberships}}.",
-            "undoSkipped": "{{item}} : Annuler ignoré car ses sous-parcelles ont changé après cette opération."
+            "undoSkipped": "{{item}} : Annuler ignoré car ses sous-intrigues ont changé après cette opération."
         },
         "subplotRingDragController": {
             "sceneNumberLabel": "Scène {{number}} {{label}}",
@@ -7072,7 +7072,7 @@ export const fr: TranslationKeys = {
             "legendOpenQuery": "Ouvrir la requête",
             "legendOpenQueryDetail": "%%Query%% dans le texte de la scène",
             "legendWithTimetable": "avec un horaire",
-            "legendClickActLabel": "Cliquez sur Étiquette ACT",
+            "legendClickActLabel": "Cliquez sur l'étiquette d'un acte",
             "legendClickActLabelDetail": "montrer cet acte dans l'horaire",
             "legendClickSceneTimetable": "Cliquez sur scène",
             "legendClickSceneTimetableDetail": "Ouvrez-le sous les horaires",

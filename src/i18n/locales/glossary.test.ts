@@ -75,7 +75,6 @@ const GLOSSARY: Record<string, Term> = {
             vi: ['cốt truyện chính'],
         },
     },
-    // fr: also "sous-plaques", "sous-plancher", "sous-parcelle" (plates, floor, land).
     // vi: "ô phụ", "mảnh ghép", "biểu đồ phụ" (cell, puzzle piece, chart).
     subplot: {
         en: /\bsub-?plots?\b/i,
@@ -85,11 +84,11 @@ const GLOSSARY: Record<string, Term> = {
             ko: ['서브플롯'],
             zh: ['副情节', '副线', '支线'],
             es: ['subtrama', 'trama secundaria', 'tramas secundarias'],
+            fr: ['sous-intrigue', 'intrigue secondaire', 'intrigues secondaires'],
             th: ['พล็อตย่อย'],
         },
         fieldNames: SUBPLOT_FIELD,
     },
-    // es, fr: "acción" / "agit", untranslated ACT, and mangled field names.
     // vi: "hành động" / "hành vi" (an action, a behavior).
     act: {
         en: /\bacts?\b/i,
@@ -98,12 +97,13 @@ const GLOSSARY: Record<string, Term> = {
             ja: ['幕'],
             ko: ['막'],
             zh: ['幕'],
+            es: ['acto'],
+            fr: ['acte'],
             th: ['องก์'],
         },
         fieldNames: ACT_FIELD,
         otherSense: ['ui.refactorAlerts.pendingEditsTypeDescription'],
     },
-    // fr: "bague", "sonnerie" (a finger ring, a ringtone).
     ring: {
         en: /\brings?\b/i,
         words: {
@@ -112,6 +112,7 @@ const GLOSSARY: Record<string, Term> = {
             ko: ['링'],
             zh: ['环'],
             es: ['anillo'],
+            fr: ['anneau'],
             th: ['วงแหวน'],
             vi: ['vòng'],
         },
@@ -120,8 +121,8 @@ const GLOSSARY: Record<string, Term> = {
 
 /** Wrong senses already removed from a locale; any return is a regression. */
 const BANNED: Partial<Record<Locale, RegExp[]>> = {
-    fr: [/terrain principal/i, /tracé principal/i],
-    es: [/parcela/i],
+    fr: [/terrain principal/i, /tracé principal/i, /bague/i, /sonnerie/i, /sous-(parcelle|plaque|plancher|plot)/i],
+    es: [/parcela/i, /subtrabajo/i],
     th: [/พระราชบัญญัติ/, /แปลงหลัก/, /แผนย่อย/, /ซับพล็อต/, /กรรมาธิการ/, /(?<!วง)แหวน/],
     vi: [/nhẫn/i],
 };
@@ -136,6 +137,14 @@ function flatten(node: Tree, prefix = '', out: Record<string, string> = {}): Rec
 }
 
 const withoutPlaceholders = (value: string): string => value.replace(/\{\{\s*[\w.]+\s*\}\}/g, '');
+
+/**
+ * The field name as a word of its own: "Act" in "Act y Beat Model", not in
+ * "Actualice". Only Latin letters count as joined, because Korean attaches
+ * particles directly to the name ("Act와").
+ */
+const namesField = (value: string, name: string): boolean =>
+    new RegExp(`(?<![A-Za-z\u00C0-\u024F])${name}(?![A-Za-z\u00C0-\u024F])`).test(value);
 
 const english = flatten(en as unknown as Tree);
 const locales: Record<Locale, Record<string, string>> = {
@@ -161,7 +170,7 @@ describe('core-term glossary', () => {
             const translated = locales[locale][key];
             if (translated === undefined) return false;
             const fieldName = spec.fieldNames?.[key];
-            if (fieldName && translated.includes(fieldName)) return false;
+            if (fieldName && namesField(translated, fieldName)) return false;
             const lower = translated.toLowerCase();
             return !accepted.some(word => lower.includes(word));
         });

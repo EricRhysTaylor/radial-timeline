@@ -1166,7 +1166,7 @@ export const fr: TranslationKeys = {
         },
         "subplotRing": {
             "allScenes": "Toutes les scènes",
-            "mainPlot": "terrain principal",
+            "mainPlot": "Intrigue principale",
             "chronologue": "chronologue"
         },
         "grid": {
@@ -1220,7 +1220,7 @@ export const fr: TranslationKeys = {
         "revealingHeading": "Tenue pour la révélation par scène",
         "revealingBody": "Les titres de scène, les synopsis, les personnages, les points de vue et les dates des histoires – cachés jusqu'à ce que vous dévoiliez chaque scène.",
         "genericNamesToggleLabel": "Noms de sonnerie génériques (sous-plancher 1, sous-intrigue 2…)",
-        "genericNamesToggleDescription": "Utilisez si vos noms de sous-intrigues pourraient révéler le tracé.",
+        "genericNamesToggleDescription": "Utilisez si vos noms de sous-intrigues pourraient révéler l'intrigue.",
         "destinationBody": "Enregistré à {{path}} dans votre coffre-fort.",
         "cancelButton": "Annuler",
         "exportButton": "Exporter JSON"
@@ -3754,7 +3754,7 @@ export const fr: TranslationKeys = {
             "stageColorAriaLabel": "{{stage}} Couleur de la scène",
             "subplotColorsHeading": "Couleurs de bague de sous-intrigue",
             "subplotColorsDesc": "Couleurs des anneaux de sous-intrigues utilisées pour les anneaux 1 à 16 se déplaçant vers l'intérieur.",
-            "mainPlotLabel": "terrain principal",
+            "mainPlotLabel": "Intrigue principale",
             "ringLabel": "Anneau {{number}}",
             "mainPlotPin": "Intrigue principale · anneau 1",
             "subplotColorAriaLabel": "Anneau de sous-intrigue {{number}} Couleur"
@@ -5340,7 +5340,7 @@ export const fr: TranslationKeys = {
             "subtitle": "Renommez ou supprimez les sous-intrigues dans la chronologie. Les scènes orphelines seront déplacées vers l'intrigue principale.",
             "activeSubplots": "Intrigues secondaires actives · {{count}}",
             "renameTooltip": "Rebaptiser",
-            "mainPlotCannotDelete": "Le tracé principal ne peut pas être supprimé",
+            "mainPlotCannotDelete": "L'intrigue principale ne peut pas être supprimée",
             "mainPlotMeta": "Intrigue principale · anneau 1 · {{scenes}}",
             "mainPlotRenameNote": "Ceci est votre intrigue principale. Elle reste dans l'anneau 1 et inclut par défaut toute scène sans Subplot.",
             "deleteTooltip": "Supprimer",
@@ -6894,7 +6894,7 @@ export const fr: TranslationKeys = {
             "outerToInner": "Extérieur → intérieur"
         },
         "subplotManagementService": {
-            "cannotDeleteMainPlot": "Impossible de supprimer le tracé principal.",
+            "cannotDeleteMainPlot": "Impossible de supprimer l'intrigue principale.",
             "removedFromScenes": "Supprimé \"{{name}}\" de {{scenes}}.",
             "renamedInScenes": "Renommé \"{{oldName}}\" en \"{{newName}}\" dans {{scenes}}."
         },

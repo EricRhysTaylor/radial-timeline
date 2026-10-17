@@ -1166,7 +1166,7 @@ export const es: TranslationKeys = {
         },
         "subplotRing": {
             "allScenes": "Todas las escenas",
-            "mainPlot": "Parcela principal",
+            "mainPlot": "Trama principal",
             "chronologue": "cronólogo"
         },
         "grid": {
@@ -1895,7 +1895,7 @@ export const es: TranslationKeys = {
         "modal": {
             "badge": "Disposición",
             "title": "diseñador de libros",
-            "subtitle": "Configure y genere el andamio para su nueva novela. Arrastre escenas en vista previa a diferentes actos y subparcelas para activar el modo manual. Salvar la plantilla para reutilizarla más tarde.",
+            "subtitle": "Configure y genere el andamio para su nueva novela. Arrastre escenas en vista previa a diferentes actos y subtramas para activar el modo manual. Salvar la plantilla para reutilizarla más tarde.",
             "wikiAriaLabel": "Leer más en la Wiki",
             "noBookSelected": "Ningún libro seleccionado",
             "untitled": "Intitulado"
@@ -1962,7 +1962,7 @@ export const es: TranslationKeys = {
             },
             "sceneLayouts": {
                 "name": "Diseños de escena",
-                "desc": "Seleccione un diseño guardado (actos, subparcelas, asignaciones, metadatos).",
+                "desc": "Seleccione un diseño guardado (actos, subtramas, asignaciones, metadatos).",
                 "newOption": "Nueva plantilla",
                 "emptyOption": "—"
             }
@@ -2195,7 +2195,7 @@ export const es: TranslationKeys = {
             "titleSummaryRefresh": "Actualización de la escena de resumen",
             "titleScenePulse": "Análisis de pulso de escena",
             "titleProcessingSubplot": "Subtrama de procesamiento: {{name}}",
-            "titleProcessingEntireSubplot": "Procesando toda la subparcela: {{name}}",
+            "titleProcessingEntireSubplot": "Procesando toda la subtrama: {{name}}",
             "badgeAiSummary": "Resumen de IA",
             "badgeAiPulseRun": "Ejecución de pulso",
             "subtitleSynopsis": "Genera Inquiry resúmenes de corpus y escribe cada escena inmediatamente a medida que se completa. Los valores de resumen existentes se reemplazan (y también la sinopsis si está habilitada).",
@@ -2526,7 +2526,7 @@ export const es: TranslationKeys = {
                 "noticeStart": "Purgando ritmos de todas las escenas...",
                 "noticeStartSubplot": "Purga latidos de \"{{name}}\"...",
                 "resultManuscript": "latidos purgados de {{purged}} de {{scenes}}.",
-                "resultSubplot": "Latidos purgados de {{purged}} de {{scenes}} en la subparcela \"{{name}}\".",
+                "resultSubplot": "Latidos purgados de {{purged}} de {{scenes}} en la subtrama \"{{name}}\".",
                 "archived": "Campos eliminados archivados: {{path}}",
                 "errorGeneric": "Latidos de purga de errores. Consulte la consola para obtener más detalles."
             },
@@ -3754,7 +3754,7 @@ export const es: TranslationKeys = {
             "stageColorAriaLabel": "{{stage}} Color de la etapa",
             "subplotColorsHeading": "Colores de anillos de subtrama",
             "subplotColorsDesc": "Colores de anillos de subtrama utilizados para los anillos 1 a 16 que se mueven hacia adentro.",
-            "mainPlotLabel": "Parcela principal",
+            "mainPlotLabel": "Trama principal",
             "ringLabel": "Anillo {{number}}",
             "mainPlotPin": "Trama principal · anillo 1",
             "subplotColorAriaLabel": "Anillo de subtrama {{number}} Color"
@@ -6574,7 +6574,7 @@ export const es: TranslationKeys = {
             "partCleared": "Marcador de pieza borrado de {{name}}.",
             "partSet": "Establezca el marcador de pieza en {{name}}.",
             "partFailed": "No se pudo configurar la pieza para {{name}}. Revise la consola para más detalles.",
-            "noSubplotChange": "{{name}}: Sin cambio de subparcela.",
+            "noSubplotChange": "{{name}}: Sin cambio de subtrama.",
             "noOtherSubplot": "No hay otra subtrama para elegir.",
             "moveSceneFromToPlaceholder": "Mover {{name}} de {{from}} a…",
             "moveFromTo": "Pasar de {{from}} a…",
@@ -6909,7 +6909,7 @@ export const es: TranslationKeys = {
             "bulkUndoFailed": "Deshacer falló. La consola de desarrollador tiene los detalles.",
             "undoFailed": "{{item}}: Deshacer falló. Compruebe las tramas secundarias de la escena antes de continuar.",
             "undoRestored": "{{item}}: Volver a {{memberships}}.",
-            "undoSkipped": "{{item}}: Deshacer omitido porque sus subparcelas cambiaron después de esta operación."
+            "undoSkipped": "{{item}}: Deshacer omitido porque sus subtramas cambiaron después de esta operación."
         },
         "subplotRingDragController": {
             "sceneNumberLabel": "Escena {{number}} {{label}}",
@@ -6922,7 +6922,7 @@ export const es: TranslationKeys = {
             "badgeAdd": "Agregar subtrama",
             "badgeMove": "Escena de movimiento",
             "confirmTitle": "Confirmar cambio de subtrama",
-            "changeFailed": "Error al cambio de subparcela. Consulte la consola para obtener más detalles, luego descartar."
+            "changeFailed": "Error al cambio de subtrama. Consulte la consola para obtener más detalles, luego descartar."
         },
         "synopsisManager": {
             "backdropEnd": "a {{end}}",

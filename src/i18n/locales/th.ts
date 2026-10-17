@@ -541,7 +541,7 @@ export const th: TranslationKeys = {
             },
             "dailyMinutes": {
                 "name": "เป้าหมายเวลารายวัน",
-                "desc": "นาทีทางเลือกที่คุณต้องการเขียนในแต่ละวัน ใช้โดยตัวจับเวลาแถบชื่อเรื่อง แหวนนับ สถิติเป้าหมายรายวัน และค่าประมาณการวางแผน"
+                "desc": "นาทีทางเลือกที่คุณต้องการเขียนในแต่ละวัน ใช้โดยตัวจับเวลาแถบชื่อเรื่อง วงแหวนนับ สถิติเป้าหมายรายวัน และค่าประมาณการวางแผน"
             },
             "dailyWords": {
                 "name": "เป้าหมายรายวัน",
@@ -687,7 +687,7 @@ export const th: TranslationKeys = {
                 "sizeLabel": "พรีวิว APR",
                 "actualSizePreview": "ตัวอย่างขนาดจริง",
                 "teaserAuto": "อัตโนมัติ (เวทีปัจจุบัน)",
-                "teaserRing": "แหวน",
+                "teaserRing": "วงแหวน",
                 "teaserScenes": "ฉาก",
                 "teaserColor": "สี",
                 "teaserComplete": "Complete",
@@ -1166,8 +1166,8 @@ export const th: TranslationKeys = {
         },
         "subplotRing": {
             "allScenes": "ทุกฉาก",
-            "mainPlot": "แปลงหลัก",
-            "chronologue": "จดหมาย"
+            "mainPlot": "พล็อตหลัก",
+            "chronologue": "Chronologue"
         },
         "grid": {
             "statusHeader": {
@@ -1219,7 +1219,7 @@ export const th: TranslationKeys = {
         "structuralBody": "หมายเลขฉาก การกระทำ ชื่อแผนย่อย สถานะ เวทีเผยแพร่ ชื่อหนังสือ และผู้แต่ง",
         "revealingHeading": "จัดขึ้นเพื่อเปิดเผยต่อฉาก",
         "revealingBody": "ชื่อฉาก เรื่องย่อ ตัวละคร POV และวันที่ของเรื่องราว — ซ่อนไว้จนกว่าคุณจะเปิดเผยแต่ละฉาก",
-        "genericNamesToggleLabel": "ชื่อแหวนทั่วไป (แผนย่อย 1, แผนย่อย 2…)",
+        "genericNamesToggleLabel": "ชื่อวงแหวนทั่วไป (แผนย่อย 1, แผนย่อย 2…)",
         "genericNamesToggleDescription": "ใช้หากชื่อโครงเรื่องย่อยของคุณสามารถเปิดเผยโครงเรื่องได้",
         "destinationBody": "บันทึกไปยัง {{path}} ในห้องนิรภัยของคุณ",
         "cancelButton": "ยกเลิก",
@@ -3116,7 +3116,7 @@ export const th: TranslationKeys = {
             "noKeyForecast": "ไม่มีการบันทึกคีย์ {{provider}} วางหนึ่งอันภายใต้คีย์ API เพื่อคาดการณ์"
         },
         "aprConstants": {
-            "ringDesc": "แหวนความคืบหน้าเท่านั้น - ความลึกลับสูงสุด",
+            "ringDesc": "วงแหวนความคืบหน้าเท่านั้น - ความลึกลับสูงสุด",
             "scenesDesc": "โครงสร้างฉากในสีเทาที่มีลวดลาย",
             "colorsDesc": "เผยแพร่สีเวทีเปิดเผย",
             "fullDesc": "มองเห็นวงแหวนย่อยทั้งหมด — รูปภาพที่สมบูรณ์"
@@ -3270,8 +3270,8 @@ export const th: TranslationKeys = {
             "resetToPath": "รีเซ็ตเป็น {{path}}"
         },
         "backdropSection": {
-            "heading": "ฉากหลังและแหวนบริบทขนาดเล็ก",
-            "showRingName": "แสดงแหวนฉากหลัง",
+            "heading": "ฉากหลังและวงแหวนบริบทขนาดเล็ก",
+            "showRingName": "แสดงวงแหวนฉากหลัง",
             "showRingDesc": "แสดงวงแหวนฉากหลังในโหมด Chronologue เมื่อปิดใช้งาน พื้นที่วงแหวนจะถูกเรียกคืนสำหรับวงแหวนย่อย ",
             "commandPaletteHintLead": "ใช้พาเลทคำสั่ง ",
             "ctrlKey": "บัญชี",
@@ -3292,7 +3292,7 @@ export const th: TranslationKeys = {
             "dateRangeDesc": "ตัวอย่างรูปแบบ: \"4/24/2024 - 4/25/2025 1:45PM\" หรือ \"2024-04-24 - 2024-04-25 13:45\"",
             "emptyHint": " ยังไม่มีฉากหลังแบบไมโคร เพิ่มหนึ่งเพื่อเริ่มต้น",
             "addName": "เพิ่มไมโครฉากหลัง",
-            "addDesc": "สร้างการกำหนดค่าวงแหวนใหม่ ฉากหลังแบบไมโครเป็นแถบแบบกำหนดเองที่เรียวยาวซึ่งซุกอยู่ใต้วงแหวนฉากหลัง (Chronologue โหมดเท่านั้น) Micro-backdrops จะอยู่ร่วมกันบนวงแหวนหนึ่งวงเว้นแต่จะมีช่วงวันที่ทับซ้อนกัน ซึ่งในกรณีนี้จะวางบนแยกต่างหาก แหวน. {{emptyHint}}",
+            "addDesc": "สร้างการกำหนดค่าวงแหวนใหม่ ฉากหลังแบบไมโครเป็นแถบแบบกำหนดเองที่เรียวยาวซึ่งซุกอยู่ใต้วงแหวนฉากหลัง (Chronologue โหมดเท่านั้น) Micro-backdrops จะอยู่ร่วมกันบนวงแหวนหนึ่งวงเว้นแต่จะมีช่วงวันที่ทับซ้อนกัน ซึ่งในกรณีนี้จะวางบนวงแหวนแยกกัน {{emptyHint}}",
             "addButton": "เพิ่ม"
         },
         "beatPropertiesSection": {
@@ -3752,12 +3752,12 @@ export const th: TranslationKeys = {
             "stageColorsHeading": "การเผยแพร่สีเวที",
             "stageColorsDesc": "ใช้สำหรับฉากที่สมบูรณ์ เมทริกซ์เวที ป้ายกำกับ ACT และอื่นๆ",
             "stageColorAriaLabel": "{{stage}}สีเวที",
-            "subplotColorsHeading": "สีแหวนย่อย",
-            "subplotColorsDesc": "สีวงแหวนย่อยที่ใช้สำหรับแหวน 1 ถึง 16 เคลื่อนที่เข้าด้านใน",
-            "mainPlotLabel": "แปลงหลัก",
-            "ringLabel": "แหวน {{number}}",
-            "mainPlotPin": "พล็อตหลัก · วง 1",
-            "subplotColorAriaLabel": "แหวนรอง {{number}}สี"
+            "subplotColorsHeading": "สีวงแหวนย่อย",
+            "subplotColorsDesc": "สีวงแหวนย่อยที่ใช้สำหรับวงแหวน 1 ถึง 16 เคลื่อนที่เข้าด้านใน",
+            "mainPlotLabel": "พล็อตหลัก",
+            "ringLabel": "วงแหวน {{number}}",
+            "mainPlotPin": "พล็อตหลัก · วงแหวน 1",
+            "subplotColorAriaLabel": "สีวงแหวนย่อย {{number}}"
         },
         "commandRegistrar": {
             "archivedBeforeOverwrite": "เก็บถาวรที่มีอยู่ออกก่อนเขียนทับ: {{path}}",
@@ -5063,7 +5063,7 @@ export const th: TranslationKeys = {
             "scopeHoverBook": "ขอบเขตหนังสือ",
             "scopeHoverTargetsInactive": "ฉากเป้าหมายจะถูกบันทึกไว้สำหรับขอบเขตหนังสือและไม่ได้ใช้งานที่นี่",
             "scopeHoverResult": "{{scope}}: {{label}}. {{status}}.",
-            "scopeHoverSeeded": "{{scope}}: {{label}}. {{status}}. แหวนที่เมล็ดพันธุ์จากการสอบถามที่บันทึกไว้ล่าสุดสำหรับการเลือกนี้",
+            "scopeHoverSeeded": "{{scope}}: {{label}}. {{status}}. วงแหวนที่เมล็ดพันธุ์จากการสอบถามที่บันทึกไว้ล่าสุดสำหรับการเลือกนี้",
             "scopeHoverNoRun": "{{scope}}: {{label}}. {{status}}. ยังไม่มีการสอบถาม",
             "ringScore": "{{lens}} คะแนน {{score}}.",
             "ringScoreSeeded": "{{lens}} คะแนน {{score}} จากคำถามที่บันทึกไว้ล่าสุดสำหรับการเลือกนี้ เรียกใช้การสอบถามเพื่อรีเฟรช",
@@ -5341,8 +5341,8 @@ export const th: TranslationKeys = {
             "activeSubplots": "แผนย่อยที่ใช้งาน · {{count}}",
             "renameTooltip": "เปลี่ยนชื่อ",
             "mainPlotCannotDelete": "พล็อตหลักลบไม่ได้",
-            "mainPlotMeta": "พล็อตหลัก · วง 1 · {{scenes}}",
-            "mainPlotRenameNote": "นี่คือพล็อตหลักของคุณ อยู่ในวง 1 เสมอ และรวมทุกฉากที่ไม่มี Subplot ไว้โดยค่าเริ่มต้น",
+            "mainPlotMeta": "พล็อตหลัก · วงแหวน 1 · {{scenes}}",
+            "mainPlotRenameNote": "นี่คือพล็อตหลักของคุณ อยู่ในวงแหวน 1 เสมอ และรวมทุกฉากที่ไม่มี Subplot ไว้โดยค่าเริ่มต้น",
             "deleteTooltip": "ลบ",
             "removeBadge": "คำเตือน",
             "removeTitle": "ลบแผนย่อย?",
@@ -5962,8 +5962,8 @@ export const th: TranslationKeys = {
             "viewStatusBoard": "บอร์ดสถานะ",
             "sagaTitle": "นิยายเกี่ยวกับความกล้าหาญ",
             "thisBook": "หนังสือเล่มนี้",
-            "optionRings": "คอลัมน์แหวน",
-            "optionRingsPerLine": "แหวนต่อบรรทัด",
+            "optionRings": "คอลัมน์วงแหวน",
+            "optionRingsPerLine": "วงแหวนต่อบรรทัด",
             "outsideBooks": "ภายนอกหนังสือใดๆ",
             "noValue": "ไม่มีค่า",
             "noAct": "ไม่มีการกระทำ",
@@ -5978,7 +5978,7 @@ export const th: TranslationKeys = {
             "unclassedRow": "ไม่ได้อยู่บนไทม์ไลน์: โน้ตนี้ไม่มีคลาส",
             "otherClassRow": "คลาส: {{className}}",
             "ringOffWheel": "{{number}}. {{name}} (ยังไม่อยู่ในไทม์ไลน์)",
-            "ringsHeader": "แหวนในลำดับไทม์ไลน์: {{list}}",
+            "ringsHeader": "วงแหวนในลำดับไทม์ไลน์: {{list}}",
             "ringsNone": "ไม่อยู่ในวงแหวนใดๆ",
             "ringsIn": "ใน {{list}}",
             "ringsPlanned": "วางแผนสำหรับ {{list}}",
@@ -5991,7 +5991,7 @@ export const th: TranslationKeys = {
             "bulkStatus": "สถานะ",
             "bulkStage": "เวที",
             "bulkAct": "องก์",
-            "bulkAddRing": "เพิ่มไปยังแหวน",
+            "bulkAddRing": "เพิ่มไปยังวงแหวน",
             "bulkRemoveRing": "ถอดออกจากวงแหวน",
             "bulkPromote": "โปรโมต {{notes}}",
             "bulkClear": "เลือกที่ชัดเจน",
@@ -6890,7 +6890,7 @@ export const th: TranslationKeys = {
             "sceneBeatsProgress": "ฉากเต้น: {{current}}/{{total}} ({{percentage}}%)"
         },
         "subplotKeyController": {
-            "ringKey": "กุญแจแหวน",
+            "ringKey": "คำอธิบายวงแหวน",
             "outerToInner": "ด้านนอก → ภายใน"
         },
         "subplotManagementService": {

@@ -4572,6 +4572,7 @@ export const de: DeepPartial<TranslationKeys> = {
             templateFileNotFound: 'Vorlagendatei nicht gefunden: {{path}}',
             templateMustBeTex: 'Die Vorlagendatei muss die Endung .tex haben.',
             unableToReadTemplate: 'Vorlage konnte nicht gelesen werden: {{path}}',
+            pdfMissingGlyphs: "Die PDF-Schrift kann einige Zeichen des Manuskripts nicht darstellen. Wählen Sie eine Schrift, die diesen Text unterstützt, und exportieren Sie erneut.",
             wordDocumentFailed: 'Pandoc konnte das Word-Dokument nicht erstellen.',
         },
         exportPurposes: {

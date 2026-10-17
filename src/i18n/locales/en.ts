@@ -4256,6 +4256,7 @@ export const en = {
             templateFileNotFound: 'Template file not found: {{path}}',
             templateMustBeTex: 'Template file must use a .tex extension.',
             unableToReadTemplate: 'Unable to read template: {{path}}',
+            pdfMissingGlyphs: "The PDF font cannot display some manuscript characters. Choose a font that supports this text, then export again.",
             wordDocumentFailed: 'Pandoc could not create the Word document.',
         },
         exportPurposes: {

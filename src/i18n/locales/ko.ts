@@ -4572,6 +4572,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             templateFileNotFound: '템플릿 파일을 찾을 수 없습니다: {{path}}',
             templateMustBeTex: '템플릿 파일은 .tex 확장자를 사용해야 합니다.',
             unableToReadTemplate: '템플릿을 읽을 수 없습니다: {{path}}',
+            pdfMissingGlyphs: "PDF 글꼴이 원고의 일부 문자를 표시할 수 없습니다. 이 텍스트를 지원하는 글꼴을 선택한 후 다시 내보내세요.",
             wordDocumentFailed: 'Pandoc이 Word 문서를 만들 수 없습니다.',
         },
         exportPurposes: {

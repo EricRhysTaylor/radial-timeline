@@ -4573,6 +4573,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             templateFileNotFound: 'テンプレートファイルが見つかりません：{{path}}',
             templateMustBeTex: 'テンプレートファイルの拡張子は .tex である必要があります。',
             unableToReadTemplate: 'テンプレートを読み取れません：{{path}}',
+            pdfMissingGlyphs: "PDF のフォントで原稿の一部の文字を表示できません。このテキストに対応するフォントを選択して、再度エクスポートしてください。",
             wordDocumentFailed: 'Pandoc で Word 文書を作成できませんでした。',
         },
         exportPurposes: {

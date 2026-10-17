@@ -4575,6 +4575,7 @@ export const th: TranslationKeys = {
             "templateFileNotFound": "ไม่พบไฟล์เทมเพลต: {{path}}",
             "templateMustBeTex": "ไฟล์เทมเพลตต้องใช้นามสกุล .tex",
             "unableToReadTemplate": "ไม่สามารถอ่านเทมเพลต: {{path}}",
+            pdfMissingGlyphs: "แบบอักษรของ PDF ไม่สามารถแสดงอักขระบางตัวในต้นฉบับได้ โปรดเลือกแบบอักษรที่รองรับข้อความนี้แล้วส่งออกอีกครั้ง",
             "wordDocumentFailed": "Pandoc ไม่สามารถสร้างเอกสาร Word ได้"
         },
         "exportPurposes": {

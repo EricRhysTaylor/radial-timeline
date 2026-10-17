@@ -4575,6 +4575,7 @@ export const fr: TranslationKeys = {
             "templateFileNotFound": "Fichier de modèle introuvable : {{path}}",
             "templateMustBeTex": "Le fichier de modèle doit utiliser une extension .tex.",
             "unableToReadTemplate": "Impossible de lire le modèle : {{path}}",
+            pdfMissingGlyphs: "La police du PDF ne peut pas afficher certains caractères du manuscrit. Choisissez une police compatible avec ce texte, puis exportez à nouveau.",
             "wordDocumentFailed": "Pandoc n'a pas pu créer le document Word."
         },
         "exportPurposes": {

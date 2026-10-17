@@ -1286,6 +1286,16 @@ export async function runPandocOnContent(
                     reject(failure);
                     return;
                 }
+                // LaTeX can exit successfully while replacing manuscript glyphs
+                // with boxes. Keep that render staged rather than publish it.
+                if (isPdf && /^\s*(?:\[WARNING\]\s*)?Missing character:/im.test(stderr)) {
+                    reject(new ExportFailure({
+                        category: 'pandoc_compile_failure',
+                        message: t('ui.exportFormats.pdfMissingGlyphs'),
+                        detail: stderr.trim(),
+                    }));
+                    return;
+                }
                 resolve();
             });
         });

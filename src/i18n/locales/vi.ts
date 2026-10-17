@@ -4575,6 +4575,7 @@ export const vi: TranslationKeys = {
             "templateFileNotFound": "Không tìm thấy tệp mẫu: {{path}}",
             "templateMustBeTex": "Tệp mẫu phải sử dụng phần mở rộng .tex.",
             "unableToReadTemplate": "Không thể đọc Mẫu: {{path}}",
+            pdfMissingGlyphs: "Phông chữ PDF không thể hiển thị một số ký tự trong bản thảo. Hãy chọn phông chữ hỗ trợ văn bản này rồi xuất lại.",
             "wordDocumentFailed": "Pandoc không thể tạo tài liệu Word."
         },
         "exportPurposes": {

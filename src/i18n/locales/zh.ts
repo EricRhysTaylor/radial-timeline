@@ -4574,6 +4574,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             templateFileNotFound: '未找到模板文件：{{path}}',
             templateMustBeTex: '模板文件必须使用 .tex 扩展名。',
             unableToReadTemplate: '无法读取模板：{{path}}',
+            pdfMissingGlyphs: "PDF 字体无法显示稿件中的某些字符。请选择支持此文本的字体，然后重新导出。",
             wordDocumentFailed: 'Pandoc 无法创建 Word 文档。',
         },
         exportPurposes: {

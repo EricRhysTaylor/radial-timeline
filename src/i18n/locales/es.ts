@@ -4575,6 +4575,7 @@ export const es: TranslationKeys = {
             "templateFileNotFound": "Archivo de plantilla no encontrado: {{path}}",
             "templateMustBeTex": "El archivo de plantilla debe usar una extensión .tex.",
             "unableToReadTemplate": "No se puede leer la plantilla: {{path}}",
+            pdfMissingGlyphs: "La fuente del PDF no puede mostrar algunos caracteres del manuscrito. Elige una fuente que admita este texto y vuelve a exportar.",
             "wordDocumentFailed": "Pandoc no pudo crear el documento de Word."
         },
         "exportPurposes": {

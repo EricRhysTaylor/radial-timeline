@@ -3753,6 +3753,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             subplotColorsDesc: '바깥쪽에서 안쪽으로 1번부터 16번 링까지 사용되는 서브플롯 링 색상입니다.',
             mainPlotLabel: '메인 플롯',
             ringLabel: '링 {{number}}',
+            mainPlotPin: '메인 플롯 · 링 1',
             subplotColorAriaLabel: '서브플롯 링 {{number}} 색상',
         },
         commandRegistrar: {
@@ -5337,6 +5338,8 @@ export const ko: DeepPartial<TranslationKeys> = {
             activeSubplots: '활성 서브플롯 · {{count}}',
             renameTooltip: '이름 변경',
             mainPlotCannotDelete: '메인 플롯은 삭제할 수 없습니다',
+            mainPlotMeta: '메인 플롯 · 링 1 · {{scenes}}',
+            mainPlotRenameNote: '메인 플롯입니다. 항상 링 1에 있으며, Subplot이 없는 장면은 기본적으로 여기에 포함됩니다.',
             deleteTooltip: '삭제',
             removeBadge: '경고',
             removeTitle: '서브플롯을 제거하시겠습니까?',

@@ -3755,6 +3755,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             subplotColorsDesc: '副情节环颜色，依次用于由外向内的第 1 至第 16 环。',
             mainPlotLabel: '主情节',
             ringLabel: '环 {{number}}',
+            mainPlotPin: '主情节 · 环 1',
             subplotColorAriaLabel: '副情节环 {{number}} 颜色',
         },
         commandRegistrar: {
@@ -5339,6 +5340,8 @@ export const zh: DeepPartial<TranslationKeys> = {
             activeSubplots: '当前副情节 · {{count}}',
             renameTooltip: '重命名',
             mainPlotCannotDelete: '主情节无法删除',
+            mainPlotMeta: '主情节 · 环 1 · {{scenes}}',
+            mainPlotRenameNote: '这是您的主情节。它始终位于环 1，默认包含所有没有 Subplot 的场景。',
             deleteTooltip: '删除',
             removeBadge: '警告',
             removeTitle: '移除副情节？',

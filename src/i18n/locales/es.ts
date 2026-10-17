@@ -3756,6 +3756,7 @@ export const es: TranslationKeys = {
             "subplotColorsDesc": "Colores de anillos de subtrama utilizados para los anillos 1 a 16 que se mueven hacia adentro.",
             "mainPlotLabel": "Parcela principal",
             "ringLabel": "Anillo {{number}}",
+            "mainPlotPin": "Trama principal · anillo 1",
             "subplotColorAriaLabel": "Anillo de subtrama {{number}} Color"
         },
         "commandRegistrar": {
@@ -5340,6 +5341,8 @@ export const es: TranslationKeys = {
             "activeSubplots": "Subtramas activas · {{count}}",
             "renameTooltip": "Rebautizar",
             "mainPlotCannotDelete": "La trama principal no se puede eliminar",
+            "mainPlotMeta": "Trama principal · anillo 1 · {{scenes}}",
+            "mainPlotRenameNote": "Esta es su trama principal. Permanece en el anillo 1 e incluye de forma predeterminada cualquier escena sin Subplot.",
             "deleteTooltip": "Eliminar",
             "removeBadge": "Advertencia",
             "removeTitle": "eliminar la subtrama?",

@@ -5,13 +5,19 @@
  * that matches the Gossamer/Pulse aesthetic.
  */
 
-import { App, Modal, ButtonComponent } from 'obsidian';
+import { App, Modal, ButtonComponent, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { SubplotManagementService, SubplotStats } from '../services/SubplotManagementService';
 import { t, tCount } from '../i18n';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
 import { getMainPlotName } from '../utils/mainPlot';
 import { IMPACT_FULL } from '../settings/SettingImpact';
+
+/** The main plot's marker: home on the map, pinned to ring 1. Decorative — the text beside it names the role. */
+function appendMainPlotPin(parent: HTMLElement): void {
+    const pin = parent.createSpan({ cls: 'ert-main-plot-pin', attr: { 'aria-hidden': 'true' } });
+    setIcon(pin, 'map-pin');
+}
 
 export class ManageSubplotsModal extends Modal {
     private plugin: RadialTimelinePlugin;
@@ -86,14 +92,18 @@ export class ManageSubplotsModal extends Modal {
         sorted.forEach(subplot => {
             const row = scrollArea.createDiv({ cls: 'ert-manage-subplots-row' });
             
-            // Left: Name and Count
+            // Left: Name and Count. The main plot is pinned to ring 1 whatever
+            // it is called, so it carries the pin and says so.
+            const isMainPlot = subplot.name === mainPlot;
             const info = row.createDiv({ cls: 'ert-manage-subplots-info' });
             
             const nameEl = info.createDiv({ cls: 'ert-manage-subplots-name' });
-            nameEl.setText(subplot.name);
+            if (isMainPlot) appendMainPlotPin(nameEl);
+            nameEl.createSpan({ text: subplot.name });
 
             const countEl = info.createDiv({ cls: 'ert-manage-subplots-count' });
-            countEl.setText(tCount('scene', subplot.count));
+            const sceneCount = tCount('scene', subplot.count);
+            countEl.setText(isMainPlot ? t('ui.manageSubplotsModal.mainPlotMeta', { scenes: sceneCount }) : sceneCount);
 
             // Right: Actions
             const actions = row.createDiv({ cls: 'ert-manage-subplots-actions' });
@@ -107,7 +117,6 @@ export class ManageSubplotsModal extends Modal {
             renameBtn.buttonEl.classList.add('ert-pulse-icon-button', 'ert-manage-subplots-btn');
 
             // Delete Button (Disable for the main plot)
-            const isMainPlot = subplot.name === mainPlot;
             const deleteBtn = new ButtonComponent(actions)
                 .setIcon('eraser')
                 .setTooltip(isMainPlot ? t('ui.manageSubplotsModal.mainPlotCannotDelete') : t('ui.manageSubplotsModal.deleteTooltip'))
@@ -123,9 +132,9 @@ export class ManageSubplotsModal extends Modal {
     }
 
     async handleRename(oldName: string) {
-        new RenameSubplotModal(this.app, oldName, async (newName) => {
+        const renamingMainPlot = oldName === getMainPlotName();
+        new RenameSubplotModal(this.app, oldName, renamingMainPlot, async (newName) => {
              if (newName && newName !== oldName) {
-                const renamingMainPlot = oldName === getMainPlotName();
                 await this.service.renameSubplot(oldName, newName);
                 // The rename may have changed settings (the main plot's name,
                 // Dominant Subplots); persist them.
@@ -213,11 +222,13 @@ class SubplotDeletionConfirmModal extends Modal {
  */
 class RenameSubplotModal extends Modal {
     private oldName: string;
+    private isMainPlot: boolean;
     private onRename: (newName: string) => Promise<void>;
 
-    constructor(app: App, oldName: string, onRename: (newName: string) => Promise<void>) {
+    constructor(app: App, oldName: string, isMainPlot: boolean, onRename: (newName: string) => Promise<void>) {
         super(app);
         this.oldName = oldName;
+        this.isMainPlot = isMainPlot;
         this.onRename = onRename;
     }
 
@@ -234,6 +245,11 @@ class RenameSubplotModal extends Modal {
         header.createSpan({ cls: 'ert-modal-badge', text: t('ui.manageSubplotsModal.renameBadge') });
         header.createDiv({ cls: 'ert-modal-title', text: t('ui.manageSubplotsModal.renameTitle') });
         header.createDiv({ cls: 'ert-modal-subtitle', text: t('ui.manageSubplotsModal.renameSubtitle', { subplot: this.oldName }) });
+        if (this.isMainPlot) {
+            const note = header.createDiv({ cls: 'ert-modal-subtitle ert-main-plot-note' });
+            appendMainPlotPin(note);
+            note.createSpan({ text: t('ui.manageSubplotsModal.mainPlotRenameNote') });
+        }
 
         // Input Field (Large template input field style)
         // Container with border

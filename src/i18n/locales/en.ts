@@ -3437,6 +3437,7 @@ export const en = {
             subplotColorsDesc: 'Subplot ring colors used for rings 1 through 16 moving inward.',
             mainPlotLabel: 'MAIN PLOT',
             ringLabel: 'Ring {{number}}',
+            mainPlotPin: 'Main plot · ring 1',
             subplotColorAriaLabel: 'Subplot ring {{number}} color',
         },
         commandRegistrar: {
@@ -5021,6 +5022,8 @@ export const en = {
             activeSubplots: 'Active Subplots · {{count}}',
             renameTooltip: 'Rename',
             mainPlotCannotDelete: 'Main Plot cannot be deleted',
+            mainPlotMeta: 'Main plot · ring 1 · {{scenes}}',
+            mainPlotRenameNote: 'This is your main plot. It stays in ring 1 and includes any scene without a Subplot by default.',
             deleteTooltip: 'Delete',
             removeBadge: 'Warning',
             removeTitle: 'Remove subplot?',

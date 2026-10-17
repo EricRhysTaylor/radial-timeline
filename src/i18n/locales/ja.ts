@@ -3754,6 +3754,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             subplotColorsDesc: '外側から内側へ向かうリング 1〜16 に使用されるサブプロットリングの色。',
             mainPlotLabel: 'メインプロット',
             ringLabel: 'リング {{number}}',
+            mainPlotPin: 'メインプロット · リング 1',
             subplotColorAriaLabel: 'サブプロットリング {{number}} の色',
         },
         commandRegistrar: {
@@ -5338,6 +5339,8 @@ export const ja: DeepPartial<TranslationKeys> = {
             activeSubplots: '有効なサブプロット · {{count}}',
             renameTooltip: '名前を変更',
             mainPlotCannotDelete: 'メインプロットは削除できません',
+            mainPlotMeta: 'メインプロット · リング 1 · {{scenes}}',
+            mainPlotRenameNote: 'これはメインプロットです。常にリング 1 にあり、Subplot のないシーンはデフォルトでここに含まれます。',
             deleteTooltip: '削除',
             removeBadge: '警告',
             removeTitle: 'サブプロットを削除しますか？',

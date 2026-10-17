@@ -3753,6 +3753,7 @@ export const de: DeepPartial<TranslationKeys> = {
             subplotColorsDesc: 'Farben der Nebenhandlungsringe für die Ringe 1 bis 16 von außen nach innen.',
             mainPlotLabel: 'HAUPTHANDLUNG',
             ringLabel: 'Ring {{number}}',
+            mainPlotPin: 'Haupthandlung · Ring 1',
             subplotColorAriaLabel: 'Farbe des Nebenhandlungsrings {{number}}',
         },
         commandRegistrar: {
@@ -5337,6 +5338,8 @@ export const de: DeepPartial<TranslationKeys> = {
             activeSubplots: 'Aktive Nebenhandlungen · {{count}}',
             renameTooltip: 'Umbenennen',
             mainPlotCannotDelete: 'Die Haupthandlung kann nicht gelöscht werden',
+            mainPlotMeta: 'Haupthandlung · Ring 1 · {{scenes}}',
+            mainPlotRenameNote: 'Dies ist Ihre Haupthandlung. Sie bleibt in Ring 1 und enthält standardmäßig jede Szene ohne Subplot.',
             deleteTooltip: 'Löschen',
             removeBadge: 'Warnung',
             removeTitle: 'Nebenhandlung entfernen?',

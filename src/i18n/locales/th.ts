@@ -3756,6 +3756,7 @@ export const th: TranslationKeys = {
             "subplotColorsDesc": "สีวงแหวนย่อยที่ใช้สำหรับแหวน 1 ถึง 16 เคลื่อนที่เข้าด้านใน",
             "mainPlotLabel": "แปลงหลัก",
             "ringLabel": "แหวน {{number}}",
+            "mainPlotPin": "พล็อตหลัก · วง 1",
             "subplotColorAriaLabel": "แหวนรอง {{number}}สี"
         },
         "commandRegistrar": {
@@ -5340,6 +5341,8 @@ export const th: TranslationKeys = {
             "activeSubplots": "แผนย่อยที่ใช้งาน · {{count}}",
             "renameTooltip": "เปลี่ยนชื่อ",
             "mainPlotCannotDelete": "พล็อตหลักลบไม่ได้",
+            "mainPlotMeta": "พล็อตหลัก · วง 1 · {{scenes}}",
+            "mainPlotRenameNote": "นี่คือพล็อตหลักของคุณ อยู่ในวง 1 เสมอ และรวมทุกฉากที่ไม่มี Subplot ไว้โดยค่าเริ่มต้น",
             "deleteTooltip": "ลบ",
             "removeBadge": "คำเตือน",
             "removeTitle": "ลบแผนย่อย?",

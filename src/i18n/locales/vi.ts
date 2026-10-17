@@ -3756,6 +3756,7 @@ export const vi: TranslationKeys = {
             "subplotColorsDesc": "Màu vòng phụ màu được sử dụng cho vòng 1 đến vòng 16 di chuyển vào trong.",
             "mainPlotLabel": "cốt truyện chính",
             "ringLabel": "Nhẫn {{number}}",
+            "mainPlotPin": "Cốt truyện chính · vòng 1",
             "subplotColorAriaLabel": "Vòng phụ {{number}} màu"
         },
         "commandRegistrar": {
@@ -5340,6 +5341,8 @@ export const vi: TranslationKeys = {
             "activeSubplots": "Các ô phụ hoạt động · {{count}}",
             "renameTooltip": "Đổi tên",
             "mainPlotCannotDelete": "Cốt truyện chính không thể bị xóa",
+            "mainPlotMeta": "Cốt truyện chính · vòng 1 · {{scenes}}",
+            "mainPlotRenameNote": "Đây là cốt truyện chính của bạn. Nó luôn ở vòng 1 và mặc định bao gồm mọi cảnh không có Subplot.",
             "deleteTooltip": "Xóa",
             "removeBadge": "Cảnh báo",
             "removeTitle": "loại bỏ ô phụ?",

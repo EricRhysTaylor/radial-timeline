@@ -3756,6 +3756,7 @@ export const fr: TranslationKeys = {
             "subplotColorsDesc": "Couleurs des anneaux de sous-intrigues utilisées pour les anneaux 1 à 16 se déplaçant vers l'intérieur.",
             "mainPlotLabel": "terrain principal",
             "ringLabel": "Anneau {{number}}",
+            "mainPlotPin": "Intrigue principale · anneau 1",
             "subplotColorAriaLabel": "Anneau de sous-intrigue {{number}} Couleur"
         },
         "commandRegistrar": {
@@ -5340,6 +5341,8 @@ export const fr: TranslationKeys = {
             "activeSubplots": "Intrigues secondaires actives · {{count}}",
             "renameTooltip": "Rebaptiser",
             "mainPlotCannotDelete": "Le tracé principal ne peut pas être supprimé",
+            "mainPlotMeta": "Intrigue principale · anneau 1 · {{scenes}}",
+            "mainPlotRenameNote": "Ceci est votre intrigue principale. Elle reste dans l'anneau 1 et inclut par défaut toute scène sans Subplot.",
             "deleteTooltip": "Supprimer",
             "removeBadge": "Avertissement",
             "removeTitle": "Supprimer la sous-intrigue ?",

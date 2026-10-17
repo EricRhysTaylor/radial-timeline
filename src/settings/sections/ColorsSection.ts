@@ -438,14 +438,18 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
     const subplotGrid = subplotSection.createDiv({ cls: 'ert-color-grid' });
     const ensureArray = (arr: unknown): string[] => Array.isArray(arr) ? arr as string[] : [];
     const subplotColors = ensureArray(plugin.settings.subplotColors);
-    const subplotLabels: HTMLDivElement[] = [];
+    const subplotLabels: HTMLElement[] = [];
     for (let i = 0; i < 16; i++) {
         const labelText = i === 0 ? t('ui.colorsSection.mainPlotLabel') : t('ui.colorsSection.ringLabel', { number: i + 1 });
         const current = subplotColors[i] || DEFAULT_SETTINGS.subplotColors[i];
         const cell = subplotGrid.createDiv({ cls: 'ert-color-grid-item' });
         const label = cell.createDiv({ cls: 'ert-color-grid-label' });
-        label.setText(labelText);
-        subplotLabels.push(label);
+        if (i === 0) {
+            // Ring 1 is the main plot's, pinned there whatever it is called.
+            const pin = label.createSpan({ cls: 'ert-main-plot-pin', attr: { 'aria-label': t('ui.colorsSection.mainPlotPin') } });
+            setIcon(pin, 'map-pin');
+        }
+        subplotLabels.push(label.createSpan({ text: labelText }));
 
         const control = cell.createDiv({ cls: 'ert-color-grid-controls' });
         let inputRef: TextComponent | undefined;

@@ -1136,8 +1136,33 @@
 }
 
 .ert-manage-subplots-name {
+  display: flex;
+  align-items: center;
   font-size: 1em;
   color: var(--text-normal);
+}
+
+/* Main plot marker: home on the map, pinned to ring 1. Used by the Subplot
+   Manager row and rename dialog, and by swatch 1 in Settings → Colors. */
+.ert-ui .ert-main-plot-pin {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-inline-end: var(--ert-gap-xs);
+  vertical-align: -0.125em;
+}
+
+.ert-ui .ert-main-plot-pin svg {
+  width: 1em;
+  height: 1em;
+}
+
+.ert-ui .ert-main-plot-note {
+  display: flex;
+  align-items: flex-start;
+}
+
+.ert-ui .ert-main-plot-note .ert-main-plot-pin {
+  margin-top: 0.2em;
 }
 
 .ert-manage-subplots-count {

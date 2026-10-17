@@ -219,7 +219,7 @@ describe('belongsInTimetable', () => {
         expect(belongsInTimetable(at('Book 2/Drafts/Idea.md', { Class: 'Sketch' }), books)).toBe(true);
     });
 
-    it('keeps a scene removed from the book (no Class, scene ID kept) wherever it sits', () => {
+    it('keeps a scene removed from the timeline (no Class, scene ID kept) wherever it sits', () => {
         const removed = at('Book 2/Act 1/5 Arrival.md', { ID: 'scn_1a2b3c4d', Act: 1, Subplot: ['Search for Lost Crew'] });
         expect(removed.kind).toBe('unclassed');
         expect(removed.removedScene).toBe(true);

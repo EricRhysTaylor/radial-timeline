@@ -467,12 +467,12 @@ function addSubplotMenuItems(menu: Menu, view: SceneMenuHost, target: SceneMenuT
 }
 
 /**
- * Take a scene out of the book without moving or deleting the note: only its
+ * Take a scene off the timeline without moving or deleting the note: only its
  * Class goes, so the timeline stops drawing it and the Timetable lists it as a
  * note with no Class, where Promote to scene puts it back. The scene ID stays,
  * so a promoted scene keeps the identity its history is filed under.
  */
-async function removeSceneFromBook(view: SceneMenuHost, file: TFile): Promise<void> {
+async function removeSceneFromTimeline(view: SceneMenuHost, file: TFile): Promise<void> {
     await updateSceneFrontmatter(
         view,
         file,
@@ -481,7 +481,7 @@ async function removeSceneFromBook(view: SceneMenuHost, file: TFile): Promise<vo
                 if (key.toLowerCase() === 'class') delete fm[key];
             }
         },
-        t('ui.sceneContextMenu.removedFromBook', { name: file.basename })
+        t('ui.sceneContextMenu.removedFromTimeline', { name: file.basename })
     );
 }
 
@@ -648,7 +648,7 @@ function targetFromGroup(view: SceneMenuHost, group: Element): SceneMenuTarget |
     };
 }
 
-/** The scene menu: Add scene, chapter and part, subplot moves, Status, Publish Stage, Pulse, Remove from book. */
+/** The scene menu: Add scene, chapter and part, subplot moves, Status, Publish Stage, Pulse, Remove from timeline. */
 export function showSceneContextMenu(view: SceneMenuHost, target: SceneMenuTarget, event: MouseEvent): void {
     const { file } = target;
     const cache = view.plugin.app.metadataCache.getFileCache(file);
@@ -722,8 +722,8 @@ export function showSceneContextMenu(view: SceneMenuHost, target: SceneMenuTarge
         menu.addSeparator();
         menu.addItem(item => {
             item.setIcon('book-x');
-            item.setTitle(t('ui.sceneContextMenu.removeFromBook'));
-            item.onClick(() => { void removeSceneFromBook(view, file); });
+            item.setTitle(t('ui.sceneContextMenu.removeFromTimeline'));
+            item.onClick(() => { void removeSceneFromTimeline(view, file); });
         });
     }
 

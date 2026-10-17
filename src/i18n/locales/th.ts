@@ -6608,8 +6608,8 @@ export const th: TranslationKeys = {
             "stageSet": "ตั้งค่า {{name}} เผยแพร่เวทีเป็น {{stage}}",
             "flagTripletPulse": "ธงสามเท่าชีพจร",
             "flaggedTripletPulse": "ตั้งค่าสถานะ {{name}} สำหรับชีพจรสามเท่า",
-            "removeFromBook": "นำออกจากหนังสือ",
-            "removedFromBook": "นำ {{name}} ออกจากหนังสือแล้ว โน้ตยังอยู่ในโฟลเดอร์เดิม"
+            "removeFromTimeline": "นำออกจากไทม์ไลน์",
+            "removedFromTimeline": "นำ {{name}} ออกจากไทม์ไลน์แล้ว โน้ตยังอยู่ในโฟลเดอร์เดิม"
         },
         "sceneNormalizerSection": {
             "unchangedCount": "{{count}}ไม่เปลี่ยนแปลง",

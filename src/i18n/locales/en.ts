@@ -6289,8 +6289,8 @@ export const en = {
             stageSet: 'Set {{name}} publish stage to {{stage}}.',
             flagTripletPulse: 'Flag Triplet Pulse',
             flaggedTripletPulse: 'Flagged {{name}} for triplet pulse.',
-            removeFromBook: 'Remove from book',
-            removedFromBook: 'Removed {{name}} from the book. The note stays in its folder and in the Timetable; Promote to scene puts it back.',
+            removeFromTimeline: 'Remove from timeline',
+            removedFromTimeline: 'Removed {{name}} from the timeline. The note stays in its folder and in the Timetable; Promote to scene puts it back.',
         },
         sceneNormalizerSection: {
             unchangedCount: '{{count}} unchanged',

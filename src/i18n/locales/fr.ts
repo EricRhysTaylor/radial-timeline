@@ -6608,8 +6608,8 @@ export const fr: TranslationKeys = {
             "stageSet": "Définissez {{name}} la phase de publication sur {{stage}}.",
             "flagTripletPulse": "Pulse triplet de drapeau",
             "flaggedTripletPulse": "Marqué {{name}} pour le pouls du triplet.",
-            "removeFromBook": "Retirer du livre",
-            "removedFromBook": "{{name}} a été retiré du livre. La note reste dans son dossier."
+            "removeFromTimeline": "Retirer de la chronologie",
+            "removedFromTimeline": "{{name}} a été retiré de la chronologie. La note reste dans son dossier."
         },
         "sceneNormalizerSection": {
             "unchangedCount": "{{count}} inchangé",

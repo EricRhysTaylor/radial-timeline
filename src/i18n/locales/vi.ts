@@ -6608,8 +6608,8 @@ export const vi: TranslationKeys = {
             "stageSet": "Đặt {{name}} Xuất bản giai đoạn thành {{stage}}.",
             "flagTripletPulse": "Cờ xung bộ ba",
             "flaggedTripletPulse": "Đã gắn cờ {{name}} cho xung bộ ba.",
-            "removeFromBook": "Xóa khỏi sách",
-            "removedFromBook": "Đã xóa {{name}} khỏi sách. Ghi chú vẫn ở trong thư mục của nó."
+            "removeFromTimeline": "Xóa khỏi dòng thời gian",
+            "removedFromTimeline": "Đã xóa {{name}} khỏi dòng thời gian. Ghi chú vẫn ở trong thư mục của nó."
         },
         "sceneNormalizerSection": {
             "unchangedCount": "{{count}} không thay đổi",

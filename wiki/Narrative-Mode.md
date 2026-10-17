@@ -54,7 +54,7 @@ Right-click any scene on the timeline to open a context menu that lets you add a
 
 **Flag Triplet Pulse** — sets `Pulse Update: Yes` on the scene so the next [Scene pulse analysis](Commands#scene-pulse-analysis-manuscript-order) run will reprocess it.
 
-**Remove from book** — takes the scene off the timeline and out of the manuscript without moving or deleting the note. Only its `Class` property is removed; the note stays in its folder with its text, ID and every other property. The [Timetable](Timetable) keeps listing it in place as a note with no Class, and **Promote to scene** puts it back as the same scene.
+**Remove from timeline** — takes the scene off the timeline and out of the manuscript without moving or deleting the note. Only its `Class` property is removed; the note stays in its folder with its text, ID and every other property. The [Timetable](Timetable) keeps listing it in place as a note with no Class, and **Promote to scene** puts it back as the same scene.
 
 The timeline refreshes immediately to reflect the change.
 

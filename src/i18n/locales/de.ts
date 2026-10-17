@@ -6605,8 +6605,8 @@ export const de: DeepPartial<TranslationKeys> = {
             stageSet: 'Veröffentlichungsphase von {{name}} auf {{stage}} gesetzt.',
             flagTripletPulse: 'Für Triplet-Puls markieren',
             flaggedTripletPulse: '{{name}} für Triplet-Puls markiert.',
-            removeFromBook: 'Aus dem Buch entfernen',
-            removedFromBook: '{{name}} aus dem Buch entfernt. Die Notiz bleibt in ihrem Ordner und in der Timetable; „Zur Szene machen“ holt sie zurück.',
+            removeFromTimeline: 'Von der Timeline entfernen',
+            removedFromTimeline: '{{name}} von der Timeline entfernt. Die Notiz bleibt in ihrem Ordner und in der Timetable; „Zur Szene machen“ holt sie zurück.',
         },
         sceneNormalizerSection: {
             unchangedCount: '{{count}} unverändert',

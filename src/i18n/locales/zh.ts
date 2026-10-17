@@ -6607,8 +6607,8 @@ export const zh: DeepPartial<TranslationKeys> = {
             stageSet: '已将 {{name}} 的发布阶段设为 {{stage}}。',
             flagTripletPulse: '标记三联脉动',
             flaggedTripletPulse: '已将 {{name}} 标记为待进行三联脉动分析。',
-            removeFromBook: '从书籍中移出',
-            removedFromBook: '已将 {{name}} 从书籍中移出。笔记仍保留在原文件夹和时间表中；使用“提升为场景”可将其恢复。',
+            removeFromTimeline: '从时间轴移出',
+            removedFromTimeline: '已将 {{name}} 从时间轴移出。笔记仍保留在原文件夹和时间表中；使用“提升为场景”可将其恢复。',
         },
         sceneNormalizerSection: {
             unchangedCount: '{{count}} 个未更改',

@@ -6606,8 +6606,8 @@ export const ja: DeepPartial<TranslationKeys> = {
             stageSet: '{{name}} の Publish Stage を {{stage}} に設定しました。',
             flagTripletPulse: '三連パルスのフラグを付ける',
             flaggedTripletPulse: '{{name}} に三連パルスのフラグを付けました。',
-            removeFromBook: '書籍から外す',
-            removedFromBook: '{{name}} を書籍から外しました。ノートはフォルダーとタイムテーブルに残ります。「シーンに昇格」で元に戻せます。',
+            removeFromTimeline: 'タイムラインから外す',
+            removedFromTimeline: '{{name}} をタイムラインから外しました。ノートはフォルダーとタイムテーブルに残ります。「シーンに昇格」で元に戻せます。',
         },
         sceneNormalizerSection: {
             unchangedCount: '変更なし {{count}} 件',

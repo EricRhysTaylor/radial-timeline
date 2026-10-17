@@ -6605,8 +6605,8 @@ export const ko: DeepPartial<TranslationKeys> = {
             stageSet: '{{name}}의 Publish Stage를 {{stage}}(으)로 설정했습니다.',
             flagTripletPulse: '트리플렛 펄스 표시',
             flaggedTripletPulse: '{{name}}을(를) 트리플렛 펄스 대상으로 표시했습니다.',
-            removeFromBook: '책에서 제외',
-            removedFromBook: '{{name}}을(를) 책에서 제외했습니다. 노트는 폴더와 타임테이블에 그대로 남습니다. \'장면으로 승격\'으로 되돌릴 수 있습니다.',
+            removeFromTimeline: '타임라인에서 제외',
+            removedFromTimeline: '{{name}}을(를) 타임라인에서 제외했습니다. 노트는 폴더와 타임테이블에 그대로 남습니다. \'장면으로 승격\'으로 되돌릴 수 있습니다.',
         },
         sceneNormalizerSection: {
             unchangedCount: '{{count}}개 변경 없음',

@@ -47,7 +47,7 @@ export interface TimetableRow {
     act: number | null;
     /** Subplot memberships. Scenes always have at least Main Plot; sketches list planned rings. */
     subplots: string[];
-    /** An unclassed note that still carries a scene ID: a scene taken out of the book (right-click → Remove from book). */
+    /** An unclassed note that still carries a scene ID: a scene taken off the timeline (right-click → Remove from timeline). */
     removedScene: boolean;
 }
 
@@ -100,7 +100,7 @@ export function buildTableRow(
 
 /**
  * Whether a note belongs in the Timetable view. Scenes, beats, sketches and
- * scenes taken out of the book do wherever they sit in a book folder, as on
+ * scenes taken off the timeline do wherever they sit in a book folder, as on
  * the wheel. Other notes (drafts
  * waiting for Promote, front matter) do at a book folder's top level, but not
  * in its subfolders, where a book keeps its feedback, cuts and publishing

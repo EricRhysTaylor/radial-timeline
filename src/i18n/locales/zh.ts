@@ -7072,6 +7072,8 @@ export const zh: DeepPartial<TranslationKeys> = {
             legendSceneMarks: '场景标记',
             legendOpenQuery: '未解决的问题',
             legendOpenQueryDetail: '场景正文中的 %%query%%',
+            legendTimeReference: '时间引用',
+            legendTimeReferenceDetail: '场景正文中的另一个日期；点击打开该段落',
             legendWithTimetable: '打开时间表时',
             legendClickActLabel: '点击幕标签',
             legendClickActLabelDetail: '在时间表中显示该幕',

@@ -7071,6 +7071,8 @@ export const ja: DeepPartial<TranslationKeys> = {
             legendSceneMarks: 'シーンのマーク',
             legendOpenQuery: '未解決のクエリ',
             legendOpenQueryDetail: 'シーン本文の %%query%%',
+            legendTimeReference: '時間参照',
+            legendTimeReferenceDetail: 'シーン本文中の別の日付。クリックで該当箇所を開く',
             legendWithTimetable: 'タイムテーブル表示中',
             legendClickActLabel: '幕ラベルをクリック',
             legendClickActLabelDetail: 'タイムテーブルでその幕を表示',

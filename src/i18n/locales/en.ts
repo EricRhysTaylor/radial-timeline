@@ -6754,6 +6754,8 @@ export const en = {
             legendSceneMarks: 'Scene Marks',
             legendOpenQuery: 'Open query',
             legendOpenQueryDetail: '%%query%% in the scene’s text',
+            legendTimeReference: 'Time reference',
+            legendTimeReferenceDetail: 'another date in a scene’s text; click to open the passage',
             legendWithTimetable: 'With a Timetable',
             legendClickActLabel: 'Click act label',
             legendClickActLabelDetail: 'show that act in the Timetable',

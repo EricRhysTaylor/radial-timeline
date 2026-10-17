@@ -7070,6 +7070,8 @@ export const ko: DeepPartial<TranslationKeys> = {
             legendSceneMarks: '장면 표시',
             legendOpenQuery: '열린 질의',
             legendOpenQueryDetail: '장면 본문의 %%query%%',
+            legendTimeReference: '시간 참조',
+            legendTimeReferenceDetail: '장면 본문 속 다른 날짜. 클릭하면 해당 구절이 열림',
             legendWithTimetable: '타임테이블이 열려 있을 때',
             legendClickActLabel: '막 라벨 클릭',
             legendClickActLabelDetail: '타임테이블에서 그 막 보기',

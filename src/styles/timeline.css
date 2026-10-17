@@ -2504,6 +2504,32 @@
   box-shadow: inset 0 0 0 1px var(--text-muted);
 }
 
+/* A time reference as the wheel draws it: the larger source square, the connector, the smaller date square. */
+.ert-timeline-legend__icon--reference {
+  gap: 0;
+}
+
+.ert-timeline-legend__reference-source {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  background: var(--ert-legend-reference);
+}
+
+.ert-timeline-legend__reference-line {
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ert-legend-reference);
+}
+
+.ert-timeline-legend__reference-date {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--ert-legend-reference);
+}
+
 /* Compact key (the Timetable's): one line per row, label then detail. */
 .ert-timeline-legend--compact .ert-timeline-legend__surface {
   padding: var(--size-4-2) var(--size-4-3) var(--size-4-3);

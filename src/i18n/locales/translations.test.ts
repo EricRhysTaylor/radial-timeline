@@ -50,7 +50,8 @@ describe.each(Object.keys(locales))('%s translations', locale => {
 describe.each(['es', 'fr', 'th', 'vi'])('%s protected author syntax', locale => {
     it('preserves inline code examples verbatim', () => {
         const translated = flatten(locales[locale]);
-        const snippets = (value: string): string[] => (value.match(/`[^`]+`/g) ?? []).sort();
+        // Inline code and %%…%% author markers are syntax the author types.
+        const snippets = (value: string): string[] => (value.match(/`[^`]+`|%%[^%]+%%/g) ?? []).sort();
         const changed = Object.keys(english).filter(key =>
             JSON.stringify(snippets(english[key])) !== JSON.stringify(snippets(translated[key])));
         expect(changed).toEqual([]);

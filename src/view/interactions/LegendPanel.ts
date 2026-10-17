@@ -32,6 +32,8 @@ export interface LegendRow {
     swatch?: LegendSwatch;
     /** Ring squares in these colors; a null entry is an outlined (planned) square. */
     rings?: Array<string | null>;
+    /** A time reference as drawn on the wheel, in this color: source square, connector, date square. */
+    timeReference?: string;
     label: string;
     detail?: string;
     detailSegments?: LegendDetailSegment[];
@@ -78,6 +80,12 @@ function renderRow(sectionEl: HTMLElement, row: LegendRow): void {
             if (color) square.setCssProps({ '--ert-legend-ring': color });
             else square.addClass('is-planned');
         }
+    } else if (row.timeReference) {
+        iconEl.addClass('ert-timeline-legend__icon--reference');
+        iconEl.setCssProps({ '--ert-legend-reference': row.timeReference });
+        iconEl.createSpan({ cls: 'ert-timeline-legend__reference-source' });
+        iconEl.createSpan({ cls: 'ert-timeline-legend__reference-line' });
+        iconEl.createSpan({ cls: 'ert-timeline-legend__reference-date' });
     } else if (row.icon) {
         setIcon(iconEl, row.icon);
     }

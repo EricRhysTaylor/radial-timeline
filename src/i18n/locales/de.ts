@@ -7070,6 +7070,8 @@ export const de: DeepPartial<TranslationKeys> = {
             legendSceneMarks: 'Szenenmarken',
             legendOpenQuery: 'Offene Rückfrage',
             legendOpenQueryDetail: '%%query%% im Szenentext',
+            legendTimeReference: 'Zeitbezug',
+            legendTimeReferenceDetail: 'ein anderes Datum im Szenentext; klicken öffnet die Passage',
             legendWithTimetable: 'Mit einem Timetable',
             legendClickActLabel: 'Klick auf Aktlabel',
             legendClickActLabelDetail: 'diesen Akt im Timetable zeigen',

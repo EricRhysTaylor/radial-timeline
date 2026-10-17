@@ -3,12 +3,12 @@ import { queryMarkFor } from './TimetableLink';
 
 describe('queryMarkFor', () => {
     it('draws the full-size icon in a roomy cell', () => {
-        expect(queryMarkFor(140, 200)).toEqual({ kind: 'icon', size: 28 });
+        expect(queryMarkFor(140, 200)).toEqual({ kind: 'icon', size: expect.closeTo(22.4) });
     });
 
     it('shrinks the icon to fit a thin ring or a narrow cell', () => {
-        expect(queryMarkFor(40, 200)).toEqual({ kind: 'icon', size: 18 });
-        expect(queryMarkFor(140, 30)).toEqual({ kind: 'icon', size: 18 });
+        expect(queryMarkFor(40, 200)).toEqual({ kind: 'icon', size: 14.4 });
+        expect(queryMarkFor(140, 30)).toEqual({ kind: 'icon', size: 14.4 });
     });
 
     it('falls back to a dot when the icon would be too small to read', () => {

@@ -25,3 +25,7 @@ No release-blocking, high or medium findings in this change. No refactor, dead-c
 ## Follow-up: Question marks in sub-modes
 
 At the author's request, a scoped rule in `scenes.css` now hides `.rt-query-mark` only when a Chronologue SVG has a sub-mode attribute. This includes both the bubble and compact dot; normal Chronologue and other modes preserve them. Native QA inspected seven marks: seven visible in normal Chronologue, zero in Shift, zero in Runtime, and zero in Alien Calendar. Narrative retained all seven. Scene title occurrences remained at 67 in the Chronologue sub-modes. The temporary calendar settings were restored. Evidence is in `Demo Vaults/Testing Vaults/2026-10-17 Chronologue query submodes/`. The Time References guide now notes this behavior; its normal-mode screenshots remain current. The four query-mark tests and all 14 verification gates passed.
+
+## Follow-up: smaller Question icons
+
+The requested 20% reduction scales the fitted bubble dimensions by 0.8 before positioning, preserving its center and the existing compact-dot threshold. Dot geometry and sub-mode hiding are unchanged. Native QA measured all seven full-size icons at 28 × 28 wheel units before and 22.4 × 22.4 after, and reviewed the top-seam detail. The four query-mark tests passed; evidence and the prior QA bundle are in `Demo Vaults/Testing Vaults/2026-10-17 Chronologue query size/`.

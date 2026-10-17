@@ -128,9 +128,10 @@ export function applyColoringToSvg(svg: Element, coloring: TimelineColoring | nu
 
 const QUERY_MARK = 'rt-query-mark';
 
-/** The query icon's size in wheel units, at most and at least; a cell too small for the least gets a dot. */
+/** Cell-fit bounds in wheel units; the painted icon is scaled down after fitting. */
 const QUERY_ICON_MAX = 28;
 const QUERY_ICON_MIN = 14;
+const QUERY_ICON_SCALE = 0.8;
 
 /**
  * Open author queries (`%%query: …%%`) show at the center of each of a
@@ -180,12 +181,12 @@ export function applyQueryMarks(svg: Element, queries: Map<string, string[]>): v
 
 /**
  * What fits in a cell of this radial thickness and arc length (wheel units):
- * the icon, up to QUERY_ICON_MAX, while it can be at least QUERY_ICON_MIN; else
- * a small dot; nothing in a sliver.
+ * fit the icon between QUERY_ICON_MIN and QUERY_ICON_MAX, then scale its paint;
+ * otherwise a small dot, or nothing in a sliver.
  */
 export function queryMarkFor(thickness: number, arcLength: number): { kind: 'icon'; size: number } | { kind: 'dot'; radius: number } | null {
     const size = Math.min(QUERY_ICON_MAX, thickness * 0.45, arcLength * 0.6);
-    if (size >= QUERY_ICON_MIN) return { kind: 'icon', size };
+    if (size >= QUERY_ICON_MIN) return { kind: 'icon', size: size * QUERY_ICON_SCALE };
     const radius = Math.min(5, thickness * 0.3, arcLength * 0.3);
     return radius >= 1.5 ? { kind: 'dot', radius } : null;
 }

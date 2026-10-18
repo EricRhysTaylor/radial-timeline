@@ -1792,46 +1792,53 @@ export class DesignedStyleWizardModal extends Modal {
             ], this.spec.parts.mode, (v) => {
                 this.mutateSpec((s) => { s.parts.mode = v as DesignedStyleSpec['parts']['mode']; });
             });
+
+            // Part-only formatting stays dormant while Part pages are off.
+            const togglesRow = this.compactRow(body);
+            const breakCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.pageBreakBeforePart'));
+            this.toggleInput(breakCell, this.spec.parts.pageBreak, (v) => {
+                this.mutateSpec((s) => { s.parts.pageBreak = v; });
+            });
+
+            const titleCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.printPartTitle'));
+            this.toggleInput(titleCell, !!this.spec.parts.title, (v) => {
+                this.mutateSpec((s) => { s.parts.title = v; });
+            });
+
+            const epCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.epigraphAfterPart'));
+            this.toggleInput(epCell, this.spec.parts.epigraph, (v) => {
+                this.mutateSpec((s) => { s.parts.epigraph = v; });
+                this.refreshConfigOnly();
+            });
+
+            if (this.spec.parts.epigraph || this.spec.epigraph.enabled) {
+                const placementCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.epigraphPlacement'));
+                this.makeRadioGroup(placementCell, [
+                    { value: 'inline',   label: t('ui.designedStyleWizardModal.placementInline') },
+                    { value: 'own-page', label: t('ui.designedStyleWizardModal.placementOwnPage') },
+                ], this.spec.parts.epigraphPlacement ?? 'inline', (v) => {
+                    this.mutateSpec((s) => {
+                        s.parts.epigraphPlacement = v as 'inline' | 'own-page';
+                    });
+                });
+            }
         }
 
-        // Compact row: page-break, epigraph, openAny toggles + placement radio.
-        const togglesRow = this.compactRow(body);
-        const breakCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.pageBreakBeforePart'));
-        this.toggleInput(breakCell, this.spec.parts.pageBreak, (v) => {
-            this.mutateSpec((s) => { s.parts.pageBreak = v; });
-        });
-
-        const titleCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.printPartTitle'));
-        this.toggleInput(titleCell, !!this.spec.parts.title, (v) => {
-            this.mutateSpec((s) => { s.parts.title = v; });
-        });
-
-        const epCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.epigraphAfterPart'));
-        this.toggleInput(epCell, this.spec.parts.epigraph, (v) => {
-            this.mutateSpec((s) => { s.parts.epigraph = v; });
-        });
-
-        const openAnyCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.allowOpenAny'));
+        // This also sets the document class binding policy, even with Parts off.
+        const bindingRow = this.compactRow(body);
+        const openAnyCell = this.compactCell(bindingRow, t('ui.designedStyleWizardModal.allowOpenAny'));
         this.toggleInput(openAnyCell, !!this.spec.parts.openAny, (v) => {
             this.mutateSpec((s) => { s.parts.openAny = v; });
         });
 
-        const placementCell = this.compactCell(togglesRow, t('ui.designedStyleWizardModal.epigraphPlacement'));
-        this.makeRadioGroup(placementCell, [
-            { value: 'inline',   label: t('ui.designedStyleWizardModal.placementInline') },
-            { value: 'own-page', label: t('ui.designedStyleWizardModal.placementOwnPage') },
-        ], this.spec.parts.epigraphPlacement ?? 'inline', (v) => {
-            this.mutateSpec((s) => {
-                s.parts.epigraphPlacement = v as 'inline' | 'own-page';
-            });
-        });
-
         this.renderPanelGlossary(body, [
             { term: t('ui.designedStyleWizardModal.glossaryPartActTerm'),         definition: t('ui.designedStyleWizardModal.glossaryPartActDef') },
-            { term: t('ui.designedStyleWizardModal.numeralStyleLabel'),      definition: t('ui.designedStyleWizardModal.glossaryNumeralStyleDef') },
-            { term: t('ui.designedStyleWizardModal.glossaryPartTitleTerm'),         definition: t('ui.designedStyleWizardModal.glossaryPartTitleDef') },
-            { term: t('ui.designedStyleWizardModal.glossaryPageBreakTerm'),         definition: t('ui.designedStyleWizardModal.glossaryPageBreakDef') },
-            { term: t('ui.designedStyleWizardModal.categoryEpigraph'),           definition: t('ui.designedStyleWizardModal.glossaryPartEpigraphDef') },
+            ...(partsOn ? [
+                { term: t('ui.designedStyleWizardModal.numeralStyleLabel'),      definition: t('ui.designedStyleWizardModal.glossaryNumeralStyleDef') },
+                { term: t('ui.designedStyleWizardModal.glossaryPartTitleTerm'),         definition: t('ui.designedStyleWizardModal.glossaryPartTitleDef') },
+                { term: t('ui.designedStyleWizardModal.glossaryPageBreakTerm'),         definition: t('ui.designedStyleWizardModal.glossaryPageBreakDef') },
+                { term: t('ui.designedStyleWizardModal.categoryEpigraph'),           definition: t('ui.designedStyleWizardModal.glossaryPartEpigraphDef') },
+            ] : []),
             { term: t('ui.designedStyleWizardModal.glossaryOpenAnyTerm'),            definition: t('ui.designedStyleWizardModal.glossaryOpenAnyDef') },
         ]);
     }
@@ -1842,33 +1849,38 @@ export class DesignedStyleWizardModal extends Modal {
         // Visual chapter-style preset cards (replaces the radio).
         this.renderChapterStylePresets(body);
 
-        const breakRow = this.fieldRow(body, t('ui.designedStyleWizardModal.pageBreakBeforeChapter'));
-        this.toggleInput(breakRow, this.spec.chapters.pageBreak, (v) => {
-            this.mutateSpec((s) => { s.chapters.pageBreak = v; });
-        });
-
-        const resetRow = this.fieldRow(body, t('ui.designedStyleWizardModal.resetSceneCounterLabel'));
-        this.toggleInput(resetRow, this.spec.chapters.resetSceneCounter, (v) => {
-            this.mutateSpec((s) => { s.chapters.resetSceneCounter = v; });
-        });
-
-        // Heading position slider — 0% = top of page, 50% = centered (the
-        // sensible default), 100% = near bottom. When the spec hasn't set
-        // an explicit topFraction, default the slider to 50% so the user
-        // sees the centered baseline rather than a 0% snap-to-top reading.
-        const topRow = this.fieldRow(body, t('ui.designedStyleWizardModal.headingTopPositionLabel'));
-        const currentTop = this.spec.chapters.spacing?.topFraction ?? 0.5;
-        this.sliderInput(topRow, currentTop, 0, 1, 0.02, (n) => {
-            this.mutateSpec((s) => {
-                s.chapters.spacing = { ...(s.chapters.spacing ?? {}), topFraction: n };
+        const chaptersOn = this.spec.chapters.mode !== 'off';
+        if (chaptersOn) {
+            const breakRow = this.fieldRow(body, t('ui.designedStyleWizardModal.pageBreakBeforeChapter'));
+            this.toggleInput(breakRow, this.spec.chapters.pageBreak, (v) => {
+                this.mutateSpec((s) => { s.chapters.pageBreak = v; });
             });
-        }, (v) => `${Math.round(v * 100)}%`);
+
+            const resetRow = this.fieldRow(body, t('ui.designedStyleWizardModal.resetSceneCounterLabel'));
+            this.toggleInput(resetRow, this.spec.chapters.resetSceneCounter, (v) => {
+                this.mutateSpec((s) => { s.chapters.resetSceneCounter = v; });
+            });
+
+            // Heading position slider — 0% = top of page, 50% = centered (the
+            // sensible default), 100% = near bottom. When the spec hasn't set
+            // an explicit topFraction, default the slider to 50% so the user
+            // sees the centered baseline rather than a 0% snap-to-top reading.
+            const topRow = this.fieldRow(body, t('ui.designedStyleWizardModal.headingTopPositionLabel'));
+            const currentTop = this.spec.chapters.spacing?.topFraction ?? 0.5;
+            this.sliderInput(topRow, currentTop, 0, 1, 0.02, (n) => {
+                this.mutateSpec((s) => {
+                    s.chapters.spacing = { ...(s.chapters.spacing ?? {}), topFraction: n };
+                });
+            }, (v) => `${Math.round(v * 100)}%`);
+        }
 
         this.renderPanelGlossary(body, [
             { term: t('ui.designedStyleWizardModal.glossaryChapterStyleTerm'),           definition: t('ui.designedStyleWizardModal.glossaryChapterStyleDef') },
-            { term: t('ui.designedStyleWizardModal.glossaryHeadingTopTerm'),    definition: t('ui.designedStyleWizardModal.glossaryHeadingTopDef') },
-            { term: t('ui.designedStyleWizardModal.pageBreakBeforeChapter'), definition: t('ui.designedStyleWizardModal.glossaryChapterPageBreakDef') },
-            { term: t('ui.designedStyleWizardModal.glossaryResetSceneCounterTerm'),     definition: t('ui.designedStyleWizardModal.glossaryResetSceneCounterDef') },
+            ...(chaptersOn ? [
+                { term: t('ui.designedStyleWizardModal.glossaryHeadingTopTerm'),    definition: t('ui.designedStyleWizardModal.glossaryHeadingTopDef') },
+                { term: t('ui.designedStyleWizardModal.pageBreakBeforeChapter'), definition: t('ui.designedStyleWizardModal.glossaryChapterPageBreakDef') },
+                { term: t('ui.designedStyleWizardModal.glossaryResetSceneCounterTerm'),     definition: t('ui.designedStyleWizardModal.glossaryResetSceneCounterDef') },
+            ] : []),
         ]);
     }
 

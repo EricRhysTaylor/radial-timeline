@@ -138,3 +138,7 @@ It includes failing/green cases, fault permissions/restoration records, native
 AX/screenshots, actual exports, all-page renders, proof comparison, source
 hashes and gate/localization logs. It also contains the two retained QA saved
 records used to test preset/source persistence.
+
+
+Part and Chapter visibility received the same native-verified follow-up on
+October 18; see [Part and Chapter controls](2026-10-18-publish-part-chapter-controls.md).

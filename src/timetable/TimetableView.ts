@@ -358,10 +358,10 @@ export class TimetableView extends BasesView {
 
     /** Saved widths, under the same `columnSize` key Obsidian's own table uses. */
     private columnSizes(): Record<string, number> {
-        const raw = this.config.get('columnSize');
+        const raw: unknown = this.config.get('columnSize');
         const sizes: Record<string, number> = {};
         if (!raw || typeof raw !== 'object') return sizes;
-        for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+        for (const [key, value] of Object.entries(raw)) {
             if (typeof value === 'number' && Number.isFinite(value)) sizes[key] = value;
         }
         return sizes;

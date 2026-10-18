@@ -248,14 +248,17 @@ export class PlanetaryTimeModal extends Modal {
             .setName(t('planetary.modal.planetTimeLabel'))
             .setDesc(t('planetary.modal.planetTimeDesc'));
         timeSetting.settingEl.addClass('ert-planetary-time-input-setting');
-        const timeControls = timeSetting.controlEl.createDiv({ cls: 'ert-planetary-field-row' });
+        const timeControls = timeSetting.controlEl;
+        timeControls.addClass('ert-planetary-field-row');
         const time = this.parsePlanetTime(this.planetTimeValue) ?? { hours: 0, minutes: 0 };
         this.addPlanetarySelectField(timeControls, 'clock-3', t('planetary.modal.hourField'), this.buildHourOptions(profile), String(time.hours), value => {
-            this.planetTimeValue = `${String(Number(value)).padStart(2, '0')}:${String(time.minutes).padStart(2, '0')}`;
+            const [, currentMinutes] = this.planetTimeValue.split(':');
+            this.planetTimeValue = `${String(Number(value)).padStart(2, '0')}:${currentMinutes}`;
             this.renderResult();
         }, 'ert-planetary-field--hour');
         this.addPlanetarySelectField(timeControls, 'timer', t('planetary.modal.minuteField'), this.buildMinuteOptions(), String(time.minutes), value => {
-            this.planetTimeValue = `${String(time.hours).padStart(2, '0')}:${String(Number(value)).padStart(2, '0')}`;
+            const [currentHours] = this.planetTimeValue.split(':');
+            this.planetTimeValue = `${currentHours}:${String(Number(value)).padStart(2, '0')}`;
             this.renderResult();
         }, 'ert-planetary-field--minute');
     }

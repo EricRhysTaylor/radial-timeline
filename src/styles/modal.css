@@ -345,7 +345,7 @@
 .ert-planetary-modal-inputs .ert-planetary-time-input-setting > .setting-item-control {
   grid-column: 2;
   grid-row: 1;
-  display: contents;
+  gap: var(--ert-gap-xs);
 }
 
 .ert-planetary-field-row {

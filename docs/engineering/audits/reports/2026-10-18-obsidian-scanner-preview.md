@@ -61,8 +61,9 @@ row/column pair into the equivalent `gap` shorthand. Preserve both dimensions,
 selectors, ordering, wrapping, and controls. No TypeScript or persisted data
 changes are involved. The CSS stage of the next preview (`92e330ac`) confirms
 both timeline locations no longer appear; the multicolumn group falls from six
-locations to four, and total CSS locations from 48 to 46. The complete preview
-is still pending.
+locations to four, and total CSS locations from 48 to 46. The preview is now
+Completed: dependencies pass, settings search remains the only source warning,
+and no new source findings appeared.
 
 The fixture comparison uses the actual before/after timeline stylesheet with
 representative component markup at normal and narrow widths, light and dark.

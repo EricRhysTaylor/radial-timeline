@@ -235,6 +235,9 @@ const context = await esbuild.context({
 		...builtins.map(b => `node:${b}`),
 	],
 	format: 'cjs',
+	// Obsidian loads this file as UTF-8; keep translated text literal instead
+	// of expanding non-ASCII characters into six-byte Unicode escapes.
+	charset: 'utf8',
 	target: 'es2018',
 	logLevel: 'info',
 	sourcemap: prod ? false : 'inline',

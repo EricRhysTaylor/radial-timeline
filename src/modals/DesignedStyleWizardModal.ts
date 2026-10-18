@@ -1950,49 +1950,55 @@ export class DesignedStyleWizardModal extends Modal {
             });
         }
 
-        // Visual heading-mode preset cards.
-        this.renderHeadingModePresets(body);
+        // These fields style dedicated opener pages. Keep their values when
+        // another treatment is selected so switching back restores the design.
+        if (this.spec.scene.opener === 'dedicated-page') {
+            // Visual heading-mode preset cards.
+            this.renderHeadingModePresets(body);
 
-        const suppressRow = this.fieldRow(body, t('ui.designedStyleWizardModal.suppressHeaderFooterLabel'));
-        this.toggleInput(suppressRow, this.spec.scene.suppressHeaderFooterOnOpener, (v) => {
-            this.mutateSpec((s) => { s.scene.suppressHeaderFooterOnOpener = v; });
-        });
-
-        const firstWordRow = this.fieldRow(body, t('ui.designedStyleWizardModal.firstWordEmphasisLabel'));
-        this.toggleInput(firstWordRow, !!this.spec.scene.firstWordEmphasisOnOpener, (v) => {
-            this.mutateSpec((s) => { s.scene.firstWordEmphasisOnOpener = v; });
-        });
-
-        // Multi-mode opener pages (the `scene.openerHeadingModes` array) is
-        // intentionally NOT exposed in the v1 wizard — it overlapped with the
-        // singular "Heading mode" row above and confused the model. The spec
-        // field still flows through the generator + pictogram for bundled
-        // Signature Literary (which sets it inline), but custom user designs
-        // can't enable it from this UI in v1. Defer to v2.
-
-        // Match the dedicated-opener generator's starting geometry. Literary
-        // section openers use 20%/20%; ordinary openers use 16%/12%.
-        const literaryOpener = (this.spec.scene.openerHeadingModes?.length ?? 0) > 0;
-        const topRow = this.fieldRow(body, t('ui.designedStyleWizardModal.spaceAboveOpener'));
-        const currentOpenerTop = this.spec.scene.openerSpacing?.topFraction ?? (literaryOpener ? 0.2 : 0.16);
-        this.sliderInput(topRow, currentOpenerTop, 0, 0.5, 0.02, (n) => {
-            this.mutateSpec((s) => {
-                s.scene.openerSpacing = { ...(s.scene.openerSpacing ?? {}), topFraction: n };
+            const suppressRow = this.fieldRow(body, t('ui.designedStyleWizardModal.suppressHeaderFooterLabel'));
+            this.toggleInput(suppressRow, this.spec.scene.suppressHeaderFooterOnOpener, (v) => {
+                this.mutateSpec((s) => { s.scene.suppressHeaderFooterOnOpener = v; });
             });
-        }, (v) => `${Math.round(v * 100)}%`);
-        const botRow = this.fieldRow(body, t('ui.designedStyleWizardModal.spaceBelowOpener'));
-        const currentOpenerBottom = this.spec.scene.openerSpacing?.bottomFraction ?? (literaryOpener ? 0.2 : 0.12);
-        this.sliderInput(botRow, currentOpenerBottom, 0, 0.5, 0.02, (n) => {
-            this.mutateSpec((s) => {
-                s.scene.openerSpacing = { ...(s.scene.openerSpacing ?? {}), bottomFraction: n };
+
+            const firstWordRow = this.fieldRow(body, t('ui.designedStyleWizardModal.firstWordEmphasisLabel'));
+            this.toggleInput(firstWordRow, !!this.spec.scene.firstWordEmphasisOnOpener, (v) => {
+                this.mutateSpec((s) => { s.scene.firstWordEmphasisOnOpener = v; });
             });
-        }, (v) => `${Math.round(v * 100)}%`);
+
+            // Multi-mode opener pages (the `scene.openerHeadingModes` array) is
+            // intentionally NOT exposed in the v1 wizard — it overlapped with the
+            // singular "Heading mode" row above and confused the model. The spec
+            // field still flows through the generator + pictogram for bundled
+            // Signature Literary (which sets it inline), but custom user designs
+            // can't enable it from this UI in v1. Defer to v2.
+
+            // Match the dedicated-opener generator's starting geometry. Literary
+            // section openers use 20%/20%; ordinary openers use 16%/12%.
+            const literaryOpener = (this.spec.scene.openerHeadingModes?.length ?? 0) > 0;
+            const topRow = this.fieldRow(body, t('ui.designedStyleWizardModal.spaceAboveOpener'));
+            const currentOpenerTop = this.spec.scene.openerSpacing?.topFraction ?? (literaryOpener ? 0.2 : 0.16);
+            this.sliderInput(topRow, currentOpenerTop, 0, 0.5, 0.02, (n) => {
+                this.mutateSpec((s) => {
+                    s.scene.openerSpacing = { ...(s.scene.openerSpacing ?? {}), topFraction: n };
+                });
+            }, (v) => `${Math.round(v * 100)}%`);
+            const botRow = this.fieldRow(body, t('ui.designedStyleWizardModal.spaceBelowOpener'));
+            const currentOpenerBottom = this.spec.scene.openerSpacing?.bottomFraction ?? (literaryOpener ? 0.2 : 0.12);
+            this.sliderInput(botRow, currentOpenerBottom, 0, 0.5, 0.02, (n) => {
+                this.mutateSpec((s) => {
+                    s.scene.openerSpacing = { ...(s.scene.openerSpacing ?? {}), bottomFraction: n };
+                });
+            }, (v) => `${Math.round(v * 100)}%`);
+        }
 
         this.renderPanelGlossary(body, [
-            { term: t('ui.designedStyleWizardModal.glossaryOpenerTerm'),             definition: t('ui.designedStyleWizardModal.glossaryOpenerDef') },
-            { term: t('ui.designedStyleWizardModal.headingModeLabel'),       definition: t('ui.designedStyleWizardModal.glossaryHeadingModeDef') },
-            { term: t('ui.designedStyleWizardModal.spaceAboveOpener'), definition: t('ui.designedStyleWizardModal.glossarySpaceAboveDef') },
-            { term: t('ui.designedStyleWizardModal.spaceBelowOpener'), definition: t('ui.designedStyleWizardModal.glossarySpaceBelowDef') },
+            { term: t('ui.designedStyleWizardModal.glossaryOpenerTerm'), definition: t('ui.designedStyleWizardModal.glossaryOpenerDef') },
+            ...(this.spec.scene.opener === 'dedicated-page' ? [
+                { term: t('ui.designedStyleWizardModal.headingModeLabel'), definition: t('ui.designedStyleWizardModal.glossaryHeadingModeDef') },
+                { term: t('ui.designedStyleWizardModal.spaceAboveOpener'), definition: t('ui.designedStyleWizardModal.glossarySpaceAboveDef') },
+                { term: t('ui.designedStyleWizardModal.spaceBelowOpener'), definition: t('ui.designedStyleWizardModal.glossarySpaceBelowDef') },
+            ] : []),
         ]);
     }
 

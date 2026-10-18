@@ -4,7 +4,8 @@ This pass closes the interrupted-save, larger structured-book, cross-book warnin
 and broader wizard-output gaps from the preceding Publish reports. It delivers
 verified fixes, not a public release or an exhaustive certification of every
 platform and template permutation. Overall Publish acceptance remains open for
-owner guidance and the native interaction checks listed below.
+the native interaction checks listed below. The owner approved hiding
+inapplicable scene controls; that follow-up is implemented and verified.
 
 ## Confirmed problems corrected
 
@@ -102,10 +103,15 @@ plugins installed. No author manuscript or live AI provider was used as a fixtur
 
 ## Guidance and coverage still open
 
-1. **Scene controls:** Roman and inline treatments still show some page-opener
-   controls with no effect. Owner choice requested: hide controls that do not
-   apply (recommended), or define new behavior for those treatments. No new
-   typography behavior was inferred.
+1. **Scene controls — resolved:** Owner approved hiding inapplicable controls.
+   Heading mode, chrome suppression, first-word emphasis and opener spacing
+   now appear only for dedicated pages; their glossary entries follow the same
+   visibility. Inline retains its separator glyph. Native Roman/inline/dedicated
+   switching and Save/reopen passed; hidden values survived persistence and
+   returned when dedicated pages were selected again. The QA layout was restored
+   to its original spec. No generator, template, or rendering behavior changed.
+   Follow-up build and all 14 gates pass (419 files / 4,716 tests). Native
+   screenshots and persistence evidence are in `scene-controls-*` files.
 2. **Native drag and Escape:** Automated Book Pages drags did not persist a new
    order. A Book Details Escape experiment committed on blur instead of
    establishing cancellation. These observations need manual reproduction to
@@ -123,7 +129,7 @@ plugins installed. No author manuscript or live AI provider was used as a fixtur
    output rendering/content evidence remains in the mixed cleanup report;
    visible Word comment-balloon navigation is still uncertified.
 
-Do not call the whole Publish audit complete while the requested guidance and
+Do not call the whole Publish audit complete while
 these explicit interaction checks remain unresolved. No beta gate was opened
 for release and no public release was published.
 

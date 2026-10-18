@@ -77,6 +77,10 @@ export interface ModernClassicStructureOptions {
   enabled: boolean;
   partEpigraphs?: string[];
   partEpigraphAttributions?: string[];
+  /** Designed styles share structural macros but choose their own scene treatment. */
+  sceneOpener?: 'dedicated-page' | 'roman-with-rule' | 'inline-separator';
+  suppressPartMarkers?: boolean;
+  resetSceneCounterOnChapter?: boolean;
 }
 
 export interface AssembleManuscriptOptions {
@@ -1273,7 +1277,8 @@ export async function assembleManuscript(
       // Chapter opens on a `Chapter:` field. Numbering is sequential by marker
       // order, and the epigraph pairs by position: the first marker takes the
       // first stored entry.
-      const partMarker = readPartMarker(sceneFrontmatter ?? undefined);
+      const partMarker = options?.modernClassicStructure?.suppressPartMarkers
+        ? null : readPartMarker(sceneFrontmatter ?? undefined);
       if (partMarker) {
         modernClassicState.partIndex += 1;
         const partRoman = toRomanNumeral(modernClassicState.partIndex);
@@ -1303,13 +1308,29 @@ export async function assembleManuscript(
           modernClassicState.chapterIndex += 1;
           if (documentContents?.format === 'pdf') textParts.push(queueNavigation(chapterLevel, marker.title));
           textParts.push(buildRawLatexBlock(`\\rtChapter{${modernClassicState.chapterIndex}}{${chapterTitle}}`));
+          if (options?.modernClassicStructure?.resetSceneCounterOnChapter) modernClassicState.sceneIndexInPart = 0;
         }
       }
 
       if (documentContents?.format === 'pdf') textParts.push(queueNavigation(sceneLevel, resolveSceneTitleForPublishing(title, sceneFrontmatter)));
       modernClassicState.sceneIndexInPart += 1;
       const sceneRoman = toRomanNumeral(modernClassicState.sceneIndexInPart).toLowerCase();
-      textParts.push(buildRawLatexBlock(`\\rtSceneSep{${sceneRoman}}`));
+      const opener = options?.modernClassicStructure?.sceneOpener ?? 'roman-with-rule';
+      if (opener === 'dedicated-page') {
+        const publishTitle = resolveSceneTitleForPublishing(title, sceneFrontmatter);
+        const heading = resolveLatexSceneHeading(publishTitle, sceneHeadingMode, modernClassicState.sceneIndexInPart);
+        textParts.push(buildRawLatexBlock(`\\rtSceneOpener{${heading}}`));
+      } else if (opener === 'inline-separator') {
+        if (i === 0) textParts.push(buildRawLatexBlock('\\ifrtMainStarted\\else\\rtBeginMainArabic\\fi'));
+        else if (!partMarker && chapterMarkers.length === 0) textParts.push(buildRawLatexBlock('\\rtSceneSep'));
+        textParts.push(buildRawLatexBlock('\\rtNavigationFlush'));
+      } else {
+        textParts.push(buildRawLatexBlock(`\\rtSceneSep{${sceneRoman}}`));
+      }
+      if (options?.modernClassicStructure?.sceneOpener) {
+        const runningTitle = resolveLatexSceneRunningMark(resolveSceneTitleForPublishing(title, sceneFrontmatter), i + 1);
+        textParts.push(buildRawLatexBlock(`\\rtSetSceneRunningTitle{${runningTitle}}`));
+      }
 
       scenes.push({ title, bodyText, wordCount, sceneId, sourcePath: file.path });
       totalWords += wordCount;

@@ -1,7 +1,7 @@
 import { makeFile } from './helpers/obsidianFixtures';
 import { describe, expect, it } from 'vitest';
 import type { TFile, Vault } from 'obsidian';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -134,6 +134,45 @@ describe.skipIf(!runAssemblyPdf)('assembled Contemporary Literary PDF contract',
       expect(sawBookTitleOnEvenPage, 'an even/left page should show the book title header').toBe(true);
     } finally {
       rmSync(workDir, { recursive: true, force: true });
+    }
+  }, 60_000);
+});
+
+describe.skipIf(!runAssemblyPdf)('assembled designed PDF contracts', () => {
+  it.each(['dedicated-page', 'roman-with-rule', 'inline-separator'] as const)('compiles actual %s scene assembly', async opener => {
+    const spec = structuredClone(BUNDLED_FICTION_SPECS['bundled-fiction-modern-classic']);
+    spec.scene = { opener, headingMode: 'scene-number', suppressHeaderFooterOnOpener: false };
+    spec.body.font = 'latin-modern';
+    spec.parts.mode = opener === 'roman-with-rule' ? 'roman' : 'off';
+    spec.chapters.resetSceneCounter = true;
+    const first = makeFile('Scenes/1 Arrival.md');
+    const second = makeFile('Scenes/2 Garden.md');
+    const third = makeFile('Scenes/3 Departure.md');
+    const marker = (file: TFile, title: string, position: number) => ({ sourcePath: file.path, sourceType: 'Scene' as const, title, resolvedScenePath: file.path, resolvedTimelinePosition: position });
+    const assembled = await assembleManuscript([first, second, third], makeVault({
+      [first.path]: '---\nClass: Scene\nPart: true\n---\n\nDESIGN_START. Café costs $5.50.',
+      [second.path]: 'DESIGN_MIDDLE. The garden waits.',
+      [third.path]: 'DESIGN_END. The boat leaves.',
+    }), undefined, false, undefined, false, undefined, undefined, {
+      chapterMarkersByScenePath: { [first.path]: [marker(first, 'Opening Chapter', 1)], [third.path]: [marker(third, 'Closing Chapter', 3)] },
+      modernClassicStructure: { enabled: true, sceneOpener: opener, suppressPartMarkers: spec.parts.mode === 'off', resetSceneCounterOnChapter: true, partEpigraphs: ['DESIGN_QUOTE'], partEpigraphAttributions: ['QA AUTHOR'] },
+    });
+    const artifactRoot = process.env.RT_PUBLISH_PDF_ARTIFACT_DIR;
+    const workDir = artifactRoot ? join(artifactRoot, opener) : mkdtempSync(join(tmpdir(), 'rt-designed-assembly-'));
+    mkdirSync(workDir, { recursive: true });
+    try {
+      const markdown = sanitizeCompiledManuscriptForPdf(assembled.text, {});
+      expect(markdown).not.toMatch(/^## /m);
+      writeFileSync(join(workDir, 'manuscript.md'), markdown);
+      writeFileSync(join(workDir, 'template.tex'), generateDesignedStyleTex(spec));
+      run('pandoc', ['manuscript.md', '--from=markdown+raw_tex', '--pdf-engine=xelatex', '--template=template.tex', '-V', 'title=Designed Assembly Audit', '-V', 'author=QA Author', '-o', 'manuscript.pdf'], workDir);
+      const text = run('pdftotext', ['-layout', 'manuscript.pdf', '-'], workDir);
+      for (const token of ['DESIGN_START', 'DESIGN_MIDDLE', 'DESIGN_END', 'Opening Chapter', 'Closing Chapter']) expect(text).toContain(token);
+      expect(text).not.toContain('0.0.');
+      if (opener === 'roman-with-rule') expect(text).toContain('DESIGN_QUOTE');
+      else expect(markdown).not.toContain('\\rtPart{');
+    } finally {
+      if (!artifactRoot) rmSync(workDir, { recursive: true, force: true });
     }
   }, 60_000);
 });

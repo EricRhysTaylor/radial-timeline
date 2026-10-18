@@ -128,3 +128,7 @@ Local evidence: Command Center/Agent Runs/2026-10-17 Publish PDF customizer audi
 It contains source hashes, pre/post JSON/TeX reproductions, failing/green logs,
 native AX/screenshots and the two inspected PDFs (`customizer-a4.pdf`,
 `imported-template.pdf`). This is focused acceptance, not exhaustive release QA.
+
+Follow-up: [current-system stress test](2026-10-17-publish-stress.md) found and
+fixed four further persistence/output defects. Keep custom import beta gated;
+see that report for the native proof findings and importer promotion threshold.

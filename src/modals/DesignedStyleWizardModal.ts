@@ -457,6 +457,7 @@ export class DesignedStyleWizardModal extends Modal {
     private categorySelect: HTMLSelectElement | null = null;
     private categoryIconEl: HTMLElement | null = null;
     private saveButton: ButtonComponent | null = null;
+    private saving = false;
     private validationBannerEl: HTMLElement | null = null;
     /**
      * Refs to the modal title + subtitle in the header. Updated in
@@ -2345,17 +2346,20 @@ export class DesignedStyleWizardModal extends Modal {
 
         // Disable save when there are errors.
         if (this.saveButton) {
-            this.saveButton.setDisabled(validation.errors.length > 0);
+            this.saveButton.setDisabled(this.saving || validation.errors.length > 0);
         }
     }
 
     private async handleSave(): Promise<void> {
+        if (this.saving) return;
         const validation = validateDesignedStyleSpec(this.spec, this.styleName);
         if (validation.errors.length > 0) {
             new Notice(t('ui.designedStyleWizardModal.cannotSave', { error: validation.errors[0] }));
             return;
         }
 
+        this.saving = true;
+        this.saveButton?.setDisabled(true);
         try {
             const result = await this.persistLayout();
             await this.options.onSave(result);
@@ -2364,6 +2368,9 @@ export class DesignedStyleWizardModal extends Modal {
         } catch (err) {
             const msg = (err as Error)?.message ?? String(err);
             new Notice(t('ui.designedStyleWizardModal.saveFailed', { message: msg }));
+        } finally {
+            this.saving = false;
+            this.saveButton?.setDisabled(validateDesignedStyleSpec(this.spec, this.styleName).errors.length > 0);
         }
     }
 
@@ -2407,10 +2414,16 @@ export class DesignedStyleWizardModal extends Modal {
         const plugin = this.plugin;
         const layouts = plugin.settings.pandocLayouts || [];
         const existingIds = new Set(layouts.map(l => l.id));
-        const slug = generateUniqueDesignedSlug(trimmedName, existingIds);
-        const id = `designed-${slug}`;
         const pandocFolder = getPandocFolder(plugin);
         const designedFolder = `${pandocFolder}/designed`;
+        let slug = generateUniqueDesignedSlug(trimmedName, existingIds);
+        // Files can outlive their settings entry or be created by the author.
+        // Reserve those names too; a new design must never replace such a file.
+        while (plugin.app.vault.getAbstractFileByPath(`${designedFolder}/${slug}.tex`)) {
+            existingIds.add(`designed-${slug}`);
+            slug = generateUniqueDesignedSlug(trimmedName, existingIds);
+        }
+        const id = `designed-${slug}`;
         const vaultPath = `${designedFolder}/${slug}.tex`;
 
         const newLayout: PandocLayoutTemplate = {
@@ -2427,7 +2440,9 @@ export class DesignedStyleWizardModal extends Modal {
         };
 
         const tex = generateDesignedStyleTex(this.spec, { bundledLayoutId: id });
-        await this.writeTexFile(vaultPath, tex);
+        await this.ensureFolder(designedFolder);
+        // Exclusive creation also protects a file added after name selection.
+        await plugin.app.vault.create(vaultPath, tex);
 
         plugin.settings.pandocLayouts = [...layouts, newLayout];
         await plugin.saveSettings();

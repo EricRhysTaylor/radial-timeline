@@ -10,6 +10,48 @@ function makeVault(contents: Record<string, string>): Vault {
     } as unknown as Vault;
 }
 
+describe('designed style manuscript assembly', () => {
+    const files = [makeFile('Scenes/1 Arrival.md'), makeFile('Scenes/2 Garden.md'), makeFile('Scenes/3 Departure.md')];
+    const vault = makeVault(Object.fromEntries(files.map((file, i) => [file.path,
+        `---\nClass: Scene\nPart: true\n---\n\nDESIGN_BODY_${i + 1}.`])));
+
+    it.each(['roman-with-rule', 'dedicated-page', 'inline-separator'] as const)(
+        'uses %s macros instead of Pandoc headings and honors disabled parts', async opener => {
+            const result = await assembleManuscript(files, vault, undefined, false, undefined, false, undefined, undefined, {
+                sceneHeadingMode: 'scene-number',
+                modernClassicStructure: { enabled: true, sceneOpener: opener, suppressPartMarkers: true },
+            });
+            expect(result.text).not.toContain('\\rtPart{');
+            expect(result.text).not.toMatch(/^## /m);
+            expect(result.text).toContain('\\rtSetSceneRunningTitle{Arrival}');
+            for (let n = 1; n <= 3; n++) expect(result.text).toContain(`DESIGN_BODY_${n}.`);
+            if (opener === 'roman-with-rule') {
+                expect([...result.text.matchAll(/\\rtSceneSep\{(.*?)\}/g)].map(m => m[1])).toEqual(['i', 'ii', 'iii']);
+            } else if (opener === 'dedicated-page') {
+                expect([...result.text.matchAll(/\\rtSceneOpener\{(.*?)\}/g)].map(m => m[1])).toEqual(['1', '2', '3']);
+            } else {
+                expect(result.text.match(/\\rtSceneSep/g)).toHaveLength(2);
+                expect(result.text).not.toContain('\\rtSceneSep{');
+                expect(result.text).toContain('\\ifrtMainStarted\\else\\rtBeginMainArabic\\fi');
+            }
+        });
+
+    it('resets designed Roman scene numbers on chapters only when requested', async () => {
+        const chapterMarkersByScenePath = { [files[2].path]: [{
+            sourcePath: files[2].path, sourceType: 'Scene' as const, title: 'Second Chapter',
+            resolvedScenePath: files[2].path, resolvedTimelinePosition: 3,
+        }] };
+        for (const reset of [true, false]) {
+            const result = await assembleManuscript(files, vault, undefined, false, undefined, false, undefined, undefined, {
+                chapterMarkersByScenePath,
+                modernClassicStructure: { enabled: true, sceneOpener: 'roman-with-rule', suppressPartMarkers: true, resetSceneCounterOnChapter: reset },
+            });
+            expect(result.text).toContain('\\rtChapter{1}{Second Chapter}');
+            expect([...result.text.matchAll(/\\rtSceneSep\{(.*?)\}/g)].map(m => m[1])).toEqual(['i', 'ii', reset ? 'i' : 'iii']);
+        }
+    });
+});
+
 describe('assembleManuscript scene heading formatting', () => {
     it('renders title-only scene headings when requested', async () => {
         const file = makeFile('Scenes/10 Opening Beat.md', '10 Opening Beat');

@@ -36,6 +36,15 @@ describe('actual PDF page preview', () => {
         await viewer.destroy();
         expect(destroy).toHaveBeenCalledOnce();
     });
+    it('registers embedded fonts in the popout document that owns the proof canvas', async () => {
+        const { app } = fixture();
+        const ownerDocument = { fonts: new Set() } as unknown as Document;
+        const pdfJs = await obsidian.loadPdfJs();
+        const viewer = new ManuscriptProofPreview();
+        await viewer.load(app, 'Proof.pdf', ownerDocument);
+        expect(pdfJs.getDocument).toHaveBeenCalledWith(expect.objectContaining({ ownerDocument, isEvalSupported: false }));
+        await viewer.destroy();
+    });
     it('renders at the display pixel density with bounded canvas memory', async () => {
         const { app, canvas } = fixture();
         const viewer = new ManuscriptProofPreview();

@@ -8,11 +8,11 @@ interface PdfPage {
 }
 interface PdfDocument { numPages: number; getPage(number: number): Promise<PdfPage> }
 interface PdfLoadingTask { promise: Promise<PdfDocument>; destroy(): Promise<void> }
-interface PdfJs { getDocument(options: { data: Uint8Array; isEvalSupported: boolean }): PdfLoadingTask }
+interface PdfJs { getDocument(options: { data: Uint8Array; isEvalSupported: boolean; ownerDocument?: Document }): PdfLoadingTask }
 
-async function loadLocalPdf(data: Uint8Array): Promise<PdfLoadingTask> {
+async function loadLocalPdf(data: Uint8Array, ownerDocument?: Document): Promise<PdfLoadingTask> {
     const pdfJs = await loadPdfJs() as PdfJs; // SAFE: typed public PDF.js facade; local document bytes only.
-    return pdfJs.getDocument({ data: data.slice(), isEvalSupported: false });
+    return pdfJs.getDocument({ data: data.slice(), isEvalSupported: false, ...(ownerDocument ? { ownerDocument } : {}) });
 }
 
 /** Parse actual PDF bytes; page count does not come from export options or metadata. */
@@ -32,13 +32,15 @@ export class ManuscriptProofPreview {
     private renderTask?: PdfRenderTask;
     private revision = 0;
 
-    async load(app: App, proofPath: string): Promise<number | null> {
+    async load(app: App, proofPath: string, ownerDocument?: Document): Promise<number | null> {
         const revision = this.revision + 1;
         await this.destroy();
         if (revision !== this.revision) return null;
         const data = new Uint8Array(await app.vault.adapter.readBinary(proofPath)); // SAFE: proof byte reads and sidecar writes use exact local job paths, including PDFs not yet indexed by Obsidian.
         if (revision !== this.revision) return null;
-        const loadingTask = await loadLocalPdf(data);
+        // PDF.js must register embedded fonts in the document that owns the
+        // canvas, including when Settings is open in an Obsidian popout.
+        const loadingTask = await loadLocalPdf(data, ownerDocument);
         if (revision !== this.revision) { await loadingTask.destroy(); return null; }
         this.loadingTask = loadingTask;
         const document = await loadingTask.promise;

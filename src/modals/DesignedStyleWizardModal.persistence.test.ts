@@ -93,4 +93,47 @@ describe('designed style update persistence', () => {
         expect(contents.has(created!.path)).toBe(true);
         expect(contents.get('designed/qa-new.tex')).toBe('unrelated root file');
     });
+
+    it('does not overwrite an unregistered template already at the new design path', async () => {
+        const { plugin, files, contents } = fixture('designed/qa-copy.tex');
+        const occupied = 'Radial Timeline/Pandoc/designed/qa-new.tex';
+        files.set(occupied, new TFile(occupied));
+        contents.set(occupied, 'author-owned template');
+        const modal = new DesignedStyleWizardModal(plugin.app, plugin, {
+            initialSpec: cloneArchetypeSpec('submission'), initialName: 'QA New', onSave: () => undefined,
+        });
+        const result = await modal['persistLayout']();
+        expect(contents.get(occupied)).toBe('author-owned template');
+        expect(result.layoutId).toBe('designed-qa-new-2');
+        expect(contents.has('Radial Timeline/Pandoc/designed/qa-new-2.tex')).toBe(true);
+    });
+
+    it('ignores repeated Save while a slow save is still in progress', async () => {
+        const path = 'Radial Timeline/Pandoc/designed/qa-copy.tex';
+        const { modal, saveSettings } = fixture(path, path);
+        let finishSave!: () => void;
+        const pending = new Promise<void>(resolve => { finishSave = resolve; });
+        saveSettings.mockImplementation(() => pending);
+        const first = modal['handleSave']();
+        await vi.waitFor(() => expect(saveSettings).toHaveBeenCalledOnce());
+        const second = modal['handleSave']();
+        finishSave();
+        await Promise.all([first, second]);
+        expect(saveSettings).toHaveBeenCalledOnce();
+    });
+
+    it('preserves the existing design when the template write fails and allows a retry', async () => {
+        const path = 'Radial Timeline/Pandoc/designed/qa-copy.tex';
+        const { modal, layout, contents, plugin, saveSettings } = fixture(path, path);
+        const original = structuredClone(layout);
+        const modify = vi.spyOn(plugin.app.vault, 'modify');
+        modify.mockRejectedValueOnce(new Error('QA disk write denied'));
+        await modal['handleSave']();
+        expect(layout).toEqual(original);
+        expect(contents.get(path)).toBe('original template');
+        expect(saveSettings).not.toHaveBeenCalled();
+        await modal['handleSave']();
+        expect(layout.designedSpec?.paperSize).toBe('a4');
+        expect(saveSettings).toHaveBeenCalledOnce();
+    });
 });

@@ -786,7 +786,8 @@ export class CommandRegistrar {
             const shouldSaveMarkdown = !isProof && (result.saveMarkdownArtifact ?? true);
             if (isProof) dependencies.set(templatePath, { kind: 'file', path: templatePath, sha256: hashProofInput(await fs.readFile(templatePath)) });
             const layoutExportBehavior = getManuscriptLayoutExportBehavior(layout);
-            const useModernClassicStructure = layout.usesModernClassicStructure === true;
+            const designedSpec = layout.origin === 'designed' ? layout.designedSpec : undefined;
+            const useModernClassicStructure = layout.usesModernClassicStructure === true || !!designedSpec;
             const modernClassicLayoutOptions = useModernClassicStructure
                 ? this.resolveModernClassicLayoutOptions(layout.id, bookSnapshot)
                 : undefined;
@@ -884,7 +885,12 @@ export class CommandRegistrar {
                             ? {
                                 enabled: true,
                                 partEpigraphs: modernClassicLayoutOptions?.partEpigraphs,
-                                partEpigraphAttributions: modernClassicLayoutOptions?.partEpigraphAttributions
+                                partEpigraphAttributions: modernClassicLayoutOptions?.partEpigraphAttributions,
+                                ...(designedSpec ? {
+                                    sceneOpener: designedSpec.scene.opener,
+                                    suppressPartMarkers: layoutExportBehavior.suppressPartMarkers,
+                                    resetSceneCounterOnChapter: designedSpec.chapters.resetSceneCounter,
+                                } : {}),
                             }
                             : undefined,
                         bookPageOrder,

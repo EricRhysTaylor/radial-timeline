@@ -740,7 +740,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.updateProofUi();
         try {
             await this.checkProofFreshness();
-            const pages = await this.proofViewer.load(this.app, proofPath);
+            const pages = await this.proofViewer.load(this.app, proofPath, this.contentEl.ownerDocument);
             if (pages === null || this.proofClosed || epoch !== this.proofEpoch) return;
             this.proofPages = pages;
             await this.renderProofPage(1);

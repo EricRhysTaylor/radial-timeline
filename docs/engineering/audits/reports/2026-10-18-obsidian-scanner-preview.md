@@ -59,16 +59,30 @@ Two of the six multicolumn locations flag `column-gap` on grid/flex components:
 the timeline search option rows and compact legend copy. Combine each existing
 row/column pair into the equivalent `gap` shorthand. Preserve both dimensions,
 selectors, ordering, wrapping, and controls. No TypeScript or persisted data
-changes are involved. Whether the scanner removes these locations is pending
-the next completed official preview.
+changes are involved. The CSS stage of the next preview (`92e330ac`) confirms
+both timeline locations no longer appear; the multicolumn group falls from six
+locations to four, and total CSS locations from 48 to 46. The complete preview
+is still pending.
 
 The fixture comparison uses the actual before/after timeline stylesheet with
 representative component markup at normal and narrow widths, light and dark.
 Computed gaps and element rectangles match exactly. Screenshot comparisons of
 the component area (0,0 to 500,560) have zero differing pixels in both themes;
-the enabled checkbox can still toggle. This is browser fixture evidence, not
-an installed Obsidian acceptance test. Native acceptance remains pending because
-the Mac is locked. The production build and all 14 gates pass.
+the enabled checkbox can still toggle. This is browser fixture evidence.
+The production build and all 14 gates pass.
+
+Native follow-up in Output QA Vault: the initial locked response was display
+sleep. Waiting three seconds and retrying `getApp('Obsidian')` once restored
+access without a password. On this Mac, retry that response up to three times
+with three-second intervals before asking the owner to intervene.
+
+Installed JavaScript and manifest already matched the current build; copied
+only the updated stylesheet into this controlled QA vault. Native search
+matched all 12 scenes, Scene body toggled on and back off, and disabled AI
+controls retained their explanations. The actual compact Timetable legend
+renders readable labels/details and wraps its longer descriptions in the
+narrow pane. This native check covers the current dark theme; the light/normal
+layout comparisons above remain browser fixture evidence.
 
 Do not rewrite the intentional underlines, multicolumn prose or flattened grid
 wrappers merely to lower the tally. Settings definitions also require an actual

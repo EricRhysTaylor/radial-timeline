@@ -1,10 +1,10 @@
 # Codebase Health Report — 2026-10-17
 
-**Cadence:** Weekly / release stabilization continuation  
-**Audited by:** Codex  
-**Branch / commit:** `main` @ `98c534f9`  
-**Verification:** 14 standard gates pass; separate release-i18n check passes  
-**Tests:** 416 passed files / 4,676 tests; 6 files / 24 tests intentionally skipped  
+**Cadence:** Weekly / release stabilization continuation
+**Audited by:** Codex
+**Branch / commit:** `main` @ `98c534f9`
+**Verification:** 14 standard gates pass; separate release-i18n check passes
+**Tests:** 416 passed files / 4,676 tests; 6 files / 24 tests intentionally skipped
 **Previous report:** `2026-09-04-codebase-health.md`
 
 ## Executive summary

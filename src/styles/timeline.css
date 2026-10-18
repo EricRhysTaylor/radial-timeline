@@ -2094,8 +2094,7 @@
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: baseline;
-  column-gap: 7px;
-  row-gap: 1px;
+  gap: 1px 7px;
   cursor: pointer;
 }
 
@@ -2569,8 +2568,7 @@
   flex-direction: row;
   flex-wrap: wrap;
   align-items: baseline;
-  column-gap: var(--size-4-2);
-  row-gap: 0;
+  gap: 0 var(--size-4-2);
 }
 
 .ert-timeline-legend--compact .ert-timeline-legend__label {

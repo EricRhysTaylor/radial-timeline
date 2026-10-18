@@ -46,14 +46,53 @@ or warnings. No runtime code changes: shipped artifacts remain byte-identical.
 - No native UI behavior changed. No CSS, license, languages, fonts, publishing
   capability or settings implementation was changed.
 
-## Next acceptance
+## Completed corrected preview
 
-Submit the latest corrected commit once, covering both type-only fixes. Allow
-the owner-reported 6-10 minutes per scan; do not duplicate a pending review.
-Use its completed findings before choosing any broader batch. CSS changes need
-native visual acceptance; the Mac was last reported locked, with an unlock
-question pending. The public Caution rating remains unresolved and no public
-release was made during this pass.
+The preview of `ab0f31ed9af23c8f10a8f14b992554568bae8f30` is Completed.
+The numeric-operand pair and Timetable assertion no longer appear. Dependencies
+pass. The only remaining source warning is missing settings-search definitions;
+license and 48 CSS compatibility locations remain.
+
+## CSS spacing batch
+
+Two of the six multicolumn locations flag `column-gap` on grid/flex components:
+the timeline search option rows and compact legend copy. Combine each existing
+row/column pair into the equivalent `gap` shorthand. Preserve both dimensions,
+selectors, ordering, wrapping, and controls. No TypeScript or persisted data
+changes are involved. Whether the scanner removes these locations is pending
+the next completed official preview.
+
+The fixture comparison uses the actual before/after timeline stylesheet with
+representative component markup at normal and narrow widths, light and dark.
+Computed gaps and element rectangles match exactly. Screenshot comparisons of
+the component area (0,0 to 500,560) have zero differing pixels in both themes;
+the enabled checkbox can still toggle. This is browser fixture evidence, not
+an installed Obsidian acceptance test. Native acceptance remains pending because
+the Mac is locked. The production build and all 14 gates pass.
+
+Do not rewrite the intentional underlines, multicolumn prose or flattened grid
+wrappers merely to lower the tally. Settings definitions also require an actual
+migration: on Obsidian 1.13+, non-empty definitions bypass `display()`. A dummy
+method or partial replacement would either hide the warning without solving
+search or replace the existing settings UI.
+
+## Rating and next acceptance
+
+The official directory documentation describes errors, warnings,
+recommendations, passes and capability disclosures, but gives no numerical
+Caution/Satisfactory cutoff or weighting formula. Warnings do not block
+submission. Do not infer a threshold from the number of listed locations or
+claim a preview Completed state is Satisfactory.
+
+References:
+- https://docs.obsidian.md/community-directory/manage-entry
+- https://obsidian.md/help/community-directory
+- https://docs.obsidian.md/plugins/guides/migrate-declarative-settings
+- https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/gap
+
+Allow the owner-reported 6-10 minutes per scan; do not duplicate a pending
+review. The public Caution rating remains unresolved and no public release was
+made during this pass.
 
 Private evidence: Command Center / Agent Runs /
 2026-10-18 Obsidian scanner previews.

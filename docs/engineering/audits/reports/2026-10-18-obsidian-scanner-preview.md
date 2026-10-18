@@ -111,3 +111,25 @@ made during this pass.
 
 Private evidence: Command Center / Agent Runs /
 2026-10-18 Obsidian scanner previews.
+
+## Owner decision: defer settings-search migration
+
+The owner explicitly deferred `getSettingDefinitions()` on October 18. Preserve
+the tabbed, styled settings interface and keep integrated suites together,
+including PDF styles, the Design Wizard, previews and export controls. Global
+search is useful only if it leads into a complete workflow; isolated controls
+are not a sufficient benefit to justify replacing the current interface.
+
+Do not add empty definitions, partial replacement panels, warning suppressions
+or a broad settings refactor to pursue this warning. Revisit only when a
+prototype demonstrates a useful route into the existing workflows, with native
+search navigation and visual/persistence acceptance. This warning is deferred
+for the upcoming release; no overall rating change is promised.
+
+## Completed planetary/Unicode preview
+
+`8b198a6c4510cd160e64c09054012cf5f18edac8` is Completed. Dependencies pass,
+settings search is the only source-code warning, and the license warning
+remains. CSS compatibility locations fall from 46 to 45: 38 text-decoration,
+three display-contents, and four multicolumn locations. The planetary modal
+location no longer appears. The preview does not report an overall rating.

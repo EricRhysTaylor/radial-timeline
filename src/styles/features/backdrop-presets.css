@@ -41,10 +41,6 @@
   padding: 0 var(--ert-gap-2xs);
 }
 
-.ert-ui.ert-scope--settings .ert-platform-presets__custom-inline {
-  display: contents;
-}
-
 .ert-ui.ert-scope--settings .ert-platform-swatch {
   display: inline-flex;
   align-items: center;

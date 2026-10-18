@@ -1502,22 +1502,25 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     // Separator between platform and custom presets
     platformSwatches.createSpan({ cls: 'ert-platform-presets__divider', text: '—' });
 
-    // Custom preset pills (inline after the divider)
-    const customSwatchContainer = platformSwatches.createSpan({ cls: 'ert-platform-presets__custom-inline' });
+    // Keep custom pills as flex items so they wrap with the platform presets.
+    const customSwatchButtons: HTMLButtonElement[] = [];
 
     const renderCustomPills = () => {
-        customSwatchContainer.empty();
+        customSwatchButtons.forEach(button => button.remove());
+        customSwatchButtons.length = 0;
         const customs = getCustomPresets();
 
         for (let i = 0; i < MAX_CUSTOM_PRESETS; i++) {
             const saved = customs[i];
-            const btn = customSwatchContainer.createEl('button', {
+            const btn = platformSwatches.createEl('button', {
                 cls: `ert-platform-swatch${saved ? '' : ' ert-platform-swatch--empty'}`,
                 attr: {
                     'aria-label': saved ? `${saved.label} (${saved.color})` : t('ui.authorProgressSection.customSlotEmptyAriaLabel', { number: i + 1 }),
                     type: 'button'
                 }
             });
+
+            customSwatchButtons.push(btn);
 
             if (saved) {
                 btn.style.setProperty('--swatch-color', saved.color);

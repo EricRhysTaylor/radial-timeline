@@ -152,3 +152,31 @@ Radial Timeline runtime change is performed here.
 - Next focused pass: native scanner CSS controls, then output/export round trips;
   verify at narrow/normal widths and both themes where relevant.
 - Recheck after meaningful changes or at the next weekly cycle, October 24.
+
+## Focused continuation — actual manuscript outputs
+
+Native Manuscript export in Obsidian 1.14.4 generated Readers Word, Basic PDF
+and clean Markdown from a synthetic three-scene book while imported review
+blocks were still present. The configured reverse-narrative order was retained.
+All expected prose, Unicode and long fenced/indented literals survived; review
+blocks, stripped queries, cut archives, custom scene YAML and the other book were
+excluded. The Markdown Open file action and reading view passed. All two Word
+and five PDF rendered pages were visually inspected; literals fit the margins.
+
+A separate Editor round Word output after cleanup retained the three scene IDs
+and exported one author query as one correctly anchored comment, absent from
+body text. Both rendered pages were inspected. The presets updated Words in the
+three source scenes; comparisons prove all other original fields, prose, queries
+and feedback survived export. This is not a byte-unchanged-source claim.
+
+Local evidence: Command Center/Agent Runs/2026-10-17 mixed cleanup cut export
+acceptance, including artifacts, PNGs and machine-readable content comparisons.
+The accompanying Editorialist report records a fixed positional-ID decision leak
+and an open recovered-round total-count issue. No Radial Timeline runtime code
+changed. Remaining export coverage includes other layouts, split/outline outputs,
+mobile and Word import round trip; no public release is certified by this pass.
+
+Editor Word opened natively as a two-page document, but comment-balloon navigation
+remains unverified because native automation lost the Word window. The comment
+content and matching start/end/reference IDs passed structural inspection; the
+rendered document pages passed visual review. No Word import round trip is claimed.

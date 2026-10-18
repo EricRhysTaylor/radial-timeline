@@ -165,7 +165,7 @@ export async function buildImportedTemplateCandidate(
     // (resolvedPath is kept for the pandoc-engine check below; that's a
     // separate concern from reading vault content.)
     const content = input.sourceContent ?? await readVaultFile(plugin, rawPath);
-    if (content && !/\$body\$/i.test(content)) {
+    if (!/\$body\$/i.test(content)) {
         issues.push({
             code: 'import_missing_body',
             level: 'error',

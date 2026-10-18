@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { normalizePath, TFile, TFolder } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { RadialTimelineSettings } from '../types';
@@ -51,6 +51,21 @@ function createPluginWithFiles(files: Record<string, string>): RadialTimelinePlu
 }
 
 describe('templateImport helper', () => {
+    it('blocks an empty template instead of reporting it ready to activate', async () => {
+        const plugin = createPluginWithFiles({ 'Templates/empty.tex': '' });
+        const candidate = await buildImportedTemplateCandidate(plugin, { sourcePath: 'Templates/empty.tex' });
+        expect(candidate.canActivate).toBe(false);
+        expect(candidate.issues.some(issue => issue.code === 'import_missing_body')).toBe(true);
+    });
+
+    it('blocks activation when an existing template could not be read', async () => {
+        const plugin = createPluginWithFiles({ 'Templates/unreadable.tex': '$body$' });
+        vi.spyOn(plugin.app.vault, 'read').mockRejectedValue(new Error('Read failed'));
+        const candidate = await buildImportedTemplateCandidate(plugin, { sourcePath: 'Templates/unreadable.tex' });
+        expect(candidate.canActivate).toBe(false);
+        expect(candidate.issues.some(issue => issue.level === 'error')).toBe(true);
+    });
+
     it('infers screenplay classification and preserves profile IDs', async () => {
         const plugin = createPluginWithFiles({
             'Templates/screenplay.tex': [

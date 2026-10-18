@@ -568,7 +568,7 @@ export class ImportTemplateModal extends Modal {
         });
 
         const rows = [
-            { label: t('ui.importTemplateModal.nameLabel'), value: candidate?.profile.name || this.templateName || t('ui.importTemplateModal.templateFallbackName') },
+            { label: t('ui.importTemplateModal.nameLabel'), value: this.templateName.trim() || candidate?.profile.name || t('ui.importTemplateModal.templateFallbackName') },
             { label: t('ui.importTemplateModal.usageLabel'), value: this.formatUsageContext(this.usageContext) },
             { label: t('ui.importTemplateModal.fileLabel'), value: this.getCandidatePath() || candidate?.layout.path || t('ui.importTemplateModal.noFileSelected') },
             { label: t('ui.importTemplateModal.descriptionLabel'), value: this.templateDescription.trim() || candidate?.layout.description || t('ui.importTemplateModal.noDescriptionAdded') },

@@ -180,3 +180,13 @@ Editor Word opened natively as a two-page document, but comment-balloon navigati
 remains unverified because native automation lost the Word window. The comment
 content and matching start/end/reference IDs passed structural inspection; the
 rendered document pages passed visual review. No Word import round trip is claimed.
+
+## Publish PDF customizer audit and triage
+
+See `2026-10-17-publish-pdf-customizer.md`. The existing-template customization
+flow and separate beta `.tex` importer were traced and exercised natively. Three
+confirmed defects were fixed, including wrong-location style updates and empty
+imports reported Ready. Actual custom/imported PDFs passed six-page visual and
+content checks. Final full gates pass 4,683 tests; source manuscript hashes match.
+The report retains remaining combinations, portability/failure coverage and tier
+limits; no gate removal, workflow redesign or public release is included.

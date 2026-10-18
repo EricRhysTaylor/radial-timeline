@@ -37,6 +37,7 @@ import {
     type DesignedStyleSpec,
 } from '../publishing/designedStyle';
 import { BUNDLED_FICTION_SPECS, type BundledFictionId } from '../publishing/bundledStyleSpecs';
+import { resolveExistingTemplateVaultPath } from '../publishing/starterSetup';
 import {
     getLayoutFeaturesFromSpec,
     getPictogramRowsFromSpec,
@@ -44,7 +45,6 @@ import {
     renderLayoutPictograms,
 } from '../publishing/layoutVisuals';
 import type { ManuscriptSceneHeadingMode, PandocLayoutTemplate } from '../types';
-import { compactTemplatePathForStorage } from '../utils/templateImport';
 import { clearFontAvailabilityCache, getFontDiagnosticForFontKey, getPandocFolder } from '../utils/exportFormats';
 import { assertNever } from '../utils/assertNever';
 import { LatexPreviewModal } from './LatexPreviewModal';
@@ -2379,11 +2379,18 @@ export class DesignedStyleWizardModal extends Modal {
                 // Fall through to create flow if missing.
                 return this.createNewLayout(trimmedName);
             }
+            const targetPath = resolveExistingTemplateVaultPath(plugin, existing.path);
+            if (!targetPath) {
+                throw new Error(t('ui.exportFormats.templateFileNotFound', { path: existing.path }));
+            }
+            const tex = generateDesignedStyleTex(this.spec, { bundledLayoutId: existing.id });
+            await this.writeTexFile(targetPath, tex);
             existing.name = trimmedName;
             existing.description = this.description.trim() || undefined;
             existing.designedSpec = structuredClone(this.spec);
-            const tex = generateDesignedStyleTex(this.spec, { bundledLayoutId: existing.id });
-            await this.writeTexFile(existing.path, tex);
+            // Pin the exact vault file so an older root-level duplicate cannot
+            // shadow this template when the export resolver reads it.
+            existing.path = targetPath;
             await plugin.saveSettings();
             return {
                 name: trimmedName,
@@ -2405,14 +2412,13 @@ export class DesignedStyleWizardModal extends Modal {
         const pandocFolder = getPandocFolder(plugin);
         const designedFolder = `${pandocFolder}/designed`;
         const vaultPath = `${designedFolder}/${slug}.tex`;
-        const storedPath = compactTemplatePathForStorage(plugin, vaultPath);
 
         const newLayout: PandocLayoutTemplate = {
             id,
             name: trimmedName,
             description: this.description.trim() || undefined,
             preset: 'novel',
-            path: storedPath,
+            path: vaultPath,
             tier: 'pro',
             templateKind: 'custom',
             origin: 'designed',

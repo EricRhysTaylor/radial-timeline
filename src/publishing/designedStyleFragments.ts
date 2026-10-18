@@ -98,6 +98,9 @@ function standardPageBreak(): string {
 export function escapeForLatex(value: string): string {
     return value.replace(/[\\{}#$%&_^~]/g, (m) => {
         switch (m) {
+            // Pandoc templates parse dollars before LaTeX sees the text.
+            // $$ survives that pass as $, then LaTeX receives the escaped \$.
+            case '$':  return '\\$$';
             case '\\': return '\\textbackslash{}';
             case '^':  return '\\textasciicircum{}';
             case '~':  return '\\textasciitilde{}';
@@ -138,7 +141,8 @@ export function renderDocumentClass(spec: DesignedStyleSpec): string {
     const opts: string[] = [pickDocumentClassSize(spec.body.sizePt)];
     const needsTwoside = spec.margins.mirrored
         || spec.runningHeader.mode === 'split-author-page-title-page'
-        || spec.runningHeader.mode === 'left-title-right-context';
+        || spec.runningHeader.mode === 'left-title-right-context'
+        || HEADER_CORNER_POSITIONS.some(([, key]) => spec.runningHeader[key] !== undefined);
     opts.push(needsTwoside ? 'twoside' : 'oneside');
     if (spec.parts.openAny) opts.push('openany');
     return `\\documentclass[${opts.join(',')}]{book}`;
@@ -227,7 +231,7 @@ function renderHeaderField(field: DesignedHeaderField | undefined): string {
         case 'author':        return '\\AuthorName';
         case 'title':         return '\\BookTitle';
         case 'scene-context': return '\\rtSceneRunningTitle';
-        case 'chapter':       return '\\leftmark';
+        case 'chapter':       return '\\rtChapterRunningTitle';
         case 'empty':         return '';
         default:              return '';
     }
@@ -241,6 +245,7 @@ export function renderFancyhdr(spec: DesignedStyleSpec): string {
     lines.push('\\newcommand{\\BookTitle}{$if(title)$$title$$endif$}');
     lines.push('\\newcommand{\\AuthorName}{$if(author)$$for(author)$$author$$sep$, $endfor$$endif$}');
     lines.push('\\newcommand{\\rtSceneRunningTitle}{}');
+    lines.push('\\newcommand{\\rtChapterRunningTitle}{}');
     // Modern Classic / Contemporary set the running scene title via \rtSetSceneRunningTitle.
     // Define the setter as a hard contract: if the body or another template
     // fragment defines it first, LaTeX must fail instead of silently compiling
@@ -266,7 +271,7 @@ export function renderFancyhdr(spec: DesignedStyleSpec): string {
         // content explicitly (which the wizard's Customize-per-corner section
         // allows). Honor those if present; otherwise stay clean.
         if (cornerOverrides.length === 0) {
-            lines.push('\\pagestyle{empty}');
+            lines.push(spec.folio.position === 'bottom-center' ? '\\pagestyle{fancy}' : '\\pagestyle{empty}');
             return lines.join('\n');
         }
         // Fall through to the corner-emission block below; skip the named-mode
@@ -332,10 +337,10 @@ export function renderFolio(spec: DesignedStyleSpec): string {
  * which switches to arabic and resets the page counter to 1. Subsequent
  * openers no-op via the `\ifrtMainStarted` flag.
  */
-export function renderPageNumberingControl(_spec: DesignedStyleSpec): string {
+export function renderPageNumberingControl(spec: DesignedStyleSpec): string {
     return [
         '\\providecommand{\\rtNavigationFlush}{}',
-        '\\pagenumbering{roman}',
+        `\\pagenumbering{${spec.folio.format === 'arabic' ? 'arabic' : 'roman'}}`,
         '\\newif\\ifrtMainStarted',
         '\\rtMainStartedfalse',
         '\\newcommand{\\rtBeginMainArabic}{%',
@@ -495,6 +500,7 @@ export function renderChapterTitle(spec: DesignedStyleSpec): string {
     lines.push('  \\ifrtMainStarted\\else\\rtBeginMainArabic\\fi%');
     if (spec.chapters.pageBreak) lines.push(`  ${breakCommand}`);
     lines.push('  \\refstepcounter{chapter}%');
+    lines.push('  \\gdef\\rtChapterRunningTitle{#2}%');
     lines.push('  \\null%');
     lines.push('  \\rtNavigationFlush%');
     lines.push('  \\thispagestyle{rtEmpty}%');
@@ -577,9 +583,9 @@ export function renderSceneOpener(spec: DesignedStyleSpec): string {
             lines.push('  \\null%');
             lines.push('  \\rtNavigationFlush%');
             if (spec.scene.suppressHeaderFooterOnOpener) lines.push('  \\thispagestyle{empty}%');
-            lines.push('  \\vspace*{0.16\\textheight}%');
+            lines.push(`  \\vspace*{${(spec.scene.openerSpacing?.topFraction ?? 0.16).toFixed(2)}\\textheight}%`);
             lines.push(`  \\begin{center}{\\normalfont\\bfseries\\Large ${titleExpr}}\\end{center}`);
-            lines.push('  \\vspace*{0.12\\textheight}%');
+            lines.push(`  \\vspace*{${(spec.scene.openerSpacing?.bottomFraction ?? 0.12).toFixed(2)}\\textheight}%`);
             lines.push('}');
         }
     } else if (spec.scene.opener === 'roman-with-rule') {

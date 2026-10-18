@@ -7,7 +7,7 @@
  * preview-card warnings stay consistent across surfaces.
  */
 import type RadialTimelinePlugin from '../main';
-import type { PandocLayoutTemplate } from '../types';
+import type { BookProfile, PandocLayoutTemplate } from '../types';
 import { getActiveBook } from '../utils/books';
 import type {
     LayoutPictogramRows,
@@ -16,6 +16,8 @@ import type {
 } from './layoutVisuals';
 
 export interface SpreadValidationInputs {
+    /** Explicit export source; null means plain notes rather than the active book. */
+    book?: BookProfile | null;
     /** Layout being validated (its spec advertises which features are promised). */
     layout?: PandocLayoutTemplate;
     /** Selected scene paths — drives chapter-field/title aggregations. */
@@ -124,7 +126,7 @@ export function buildSpreadValidationContext(
         : populatedTitles.length / selectedTitles.length;
 
     // partEpigraphPopulatedCount — book-settings-derived; always available.
-    const partEpigraphPopulatedCount = countPartEpigraphsForLayout(plugin, inputs.layout);
+    const partEpigraphPopulatedCount = countPartEpigraphsForLayout(plugin, inputs.layout, inputs.book);
 
     const ctx: SpreadValidationContext = {
         partMarkerCount,
@@ -149,9 +151,10 @@ export function buildSpreadValidationContext(
 function countPartEpigraphsForLayout(
     plugin: RadialTimelinePlugin,
     layout: PandocLayoutTemplate | undefined,
+    sourceBook?: BookProfile | null,
 ): number {
     if (!layout) return 0;
-    const book = getActiveBook(plugin.settings);
+    const book = sourceBook === undefined ? getActiveBook(plugin.settings) : sourceBook;
     if (!book) return 0;
     const epigraphs = book.layoutOptions?.[layout.id]?.partEpigraphs;
     if (!Array.isArray(epigraphs)) return 0;

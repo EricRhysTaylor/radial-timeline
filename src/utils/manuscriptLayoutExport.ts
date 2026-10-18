@@ -52,9 +52,11 @@ function layoutIdentity(layout: Pick<PandocLayoutTemplate, 'id' | 'name' | 'path
 }
 
 export function getManuscriptLayoutExportBehavior(
-    layout: Pick<PandocLayoutTemplate, 'id' | 'name' | 'path'> & { designedSpec?: DesignedStyleSpec; hasSceneOpenerHeadingOptions?: boolean }
+    layout: Pick<PandocLayoutTemplate, 'id' | 'name' | 'path'> & { designedSpec?: DesignedStyleSpec; hasSceneOpenerHeadingOptions?: boolean; origin?: PandocLayoutTemplate['origin'] }
 ): ManuscriptLayoutExportBehavior {
-    const identity = layoutIdentity(layout);
+    // A designed style's editable label must not opt it into legacy template
+    // behavior. Its spec remains authoritative after copying or renaming.
+    const identity = layout.origin === 'designed' ? '' : layoutIdentity(layout);
     const isStandardManuscript = layout.id === STANDARD_MANUSCRIPT_LAYOUT_ID
         || /\bstandard manuscript\b/.test(identity)
         || /rt_classic_manuscript\.tex/.test(identity);

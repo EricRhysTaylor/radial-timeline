@@ -252,6 +252,8 @@ export class FuzzySuggestModal<T> extends Modal {
   getItemText(_item: T): string { return ''; }
 }
 
+export class SuggestModal<T> extends Modal {}
+
 export class PluginSettingTab {
   app: unknown;
   plugin: unknown;

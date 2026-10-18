@@ -4750,6 +4750,7 @@ export const fr: TranslationKeys = {
             "searchPlaceholder": "Rechercher des modèles LaTeX",
             "dropTexNotice": "Supprimez un fichier de modèle .tex à importer.",
             "droppedPathUnreadable": "Impossible de lire le chemin d'accès du fichier supprimé.",
+            saveFailed: "Impossible d’enregistrer le modèle : {{message}}",
             "badge": "Importer",
             "title": "Importer un modèle",
             "subtitle": "Apportez un existant LaTeX Modèle (.tex) dans la publication en tant que mise en page personnalisée statique. Utilisez-le lorsque vous avez réglé à la main LaTeX ou un modèle tiers que la spécification de l'assistant ne peut pas exprimer. Pour les styles visuels et modifiables, fermez ceci et utilisez \"Créez votre propre…\" à la place.",
@@ -5333,6 +5334,7 @@ export const fr: TranslationKeys = {
             "sagaNeedsTwoBooks": "Ajoutez au moins deux livres dans Book Manager pour utiliser Saga Timeline.",
             "sceneIdsAdded": "🔑 ID de scène ajoutés à {{scenes}}. Aucune action requise.",
             "settingsSaveBlocked": "Radial Timeline n'enregistre pas les paramètres cette session : son fichier de paramètres (data.json) n'a pas pu être lu. Réparer ou renommer le fichier et recharger Obsidian — Toute modification que vous apportez maintenant sera perdue.",
+            settingsWriteNotConfirmed: "Le fichier de paramètres sur le disque ne correspond pas aux modifications enregistrées",
             "settingsSaveFailed": "Radial Timeline Impossible d'enregistrer les paramètres : {{reason}}. Votre dernière modification n'a pas été écrite sur le disque. Vérifiez que le coffre est accessible en écriture et dispose d'un espace libre, puis effectuez à nouveau le changement.",
             "settingsUnreadable": "Radial Timeline Impossible de lire son fichier de paramètres (data.json). Vos paramètres n'ont pas été chargés et rien n'a été écrasé. Renommer ou réparer {{path}}, puis recharger Obsidian."
         },

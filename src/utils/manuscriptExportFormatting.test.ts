@@ -1,7 +1,9 @@
 import { makeFile } from '../../tests/helpers/obsidianFixtures';
 import { describe, expect, it } from 'vitest';
-import type { TFile, Vault } from 'obsidian';
-import { assembleManuscript } from './manuscript';
+import type { App, TFile, Vault } from 'obsidian';
+import { assembleManuscript, getSceneFilesByOrder } from './manuscript';
+import type RadialTimelinePlugin from '../main';
+import type { TimelineItem } from '../types';
 import { getManuscriptLayoutExportBehavior } from './manuscriptLayoutExport';
 
 function makeVault(contents: Record<string, string>): Vault {
@@ -35,6 +37,14 @@ describe('designed style manuscript assembly', () => {
                 expect(result.text).toContain('\\ifrtMainStarted\\else\\rtBeginMainArabic\\fi');
             }
         });
+
+    it.each([['arabic', '1', '2'], ['word', 'One', 'Two'], ['roman', 'I', 'II']] as const)('honors %s part numbering', async (style, first, second) => {
+        const result = await assembleManuscript(files.slice(0, 2), vault, undefined, false, undefined, false, undefined, undefined, {
+            modernClassicStructure: { enabled: true, sceneOpener: 'roman-with-rule', partNumberStyle: style },
+        });
+        expect(result.text).toContain(`\\rtPart{${first}}`);
+        expect(result.text).toContain(`\\rtPart{${second}}`);
+    });
 
     it('resets designed Roman scene numbers on chapters only when requested', async () => {
         const chapterMarkersByScenePath = { [files[2].path]: [{
@@ -645,5 +655,21 @@ describe('assembleManuscript SceneId surfacing', () => {
 
         expect(assembled.text).toContain('`scn_a1b2c3`'); // in TOC
         expect(assembled.text).toContain('## 1 Opening\n'); // heading clean
+    });
+});
+
+
+describe('manuscript selection structural warnings', () => {
+    it('carries only authored Part boundaries from the selected book into range validation', async () => {
+        const files = [makeFile('Selected/1 Opening.md'), makeFile('Selected/2 Middle.md'), makeFile('Selected/3 End.md')];
+        const items = files.map((file, i) => ({ path: file.path, title: file.basename, itemType: 'Scene', number: i + 1,
+            rawFrontmatter: { Class: 'Scene', Part: [true, false, 'Last Part'][i] } })) as TimelineItem[];
+        const calls: unknown[] = [];
+        const plugin = { settings: { books: [{ id: 'active', title: 'Other', sourceFolder: 'Other' }], activeBookId: 'active' },
+            getSceneData: async (options: unknown) => { calls.push(options); return items; } } as unknown as RadialTimelinePlugin;
+        const app = { vault: { getAbstractFileByPath: (path: string) => files.find(file => file.path === path) } } as unknown as App;
+        const selection = await getSceneFilesByOrder(app, plugin, 'narrative', undefined, false, 'Selected');
+        expect(calls).toEqual([{ sourcePath: 'Selected' }]);
+        expect(selection.partMarkerScenePaths).toEqual([files[0].path, files[2].path]);
     });
 });

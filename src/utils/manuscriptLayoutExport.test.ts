@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { getManuscriptLayoutExportBehavior } from './manuscriptLayoutExport';
+import { BUNDLED_FICTION_SPECS } from '../publishing/bundledStyleSpecs';
 
 describe('getManuscriptLayoutExportBehavior', () => {
+    it.each(['Standard Manuscript Copy', 'Signature Literary Copy', 'Contemporary Literary Copy'])(
+        'honors the designed spec regardless of the label %s', name => {
+            const behavior = getManuscriptLayoutExportBehavior({
+                id: 'designed-copy', name, path: 'Pandoc/designed/copy.tex', origin: 'designed',
+                designedSpec: BUNDLED_FICTION_SPECS['bundled-fiction-modern-classic'],
+            });
+            expect(behavior.suppressChapterMarkers).toBe(false);
+            expect(behavior.suppressPartMarkers).toBe(false);
+        });
     it('uses number-only raw LaTeX scene openers and suppresses both part + chapter markers for Standard Manuscript', () => {
         const behavior = getManuscriptLayoutExportBehavior({
             id: 'bundled-fiction-classic-manuscript',

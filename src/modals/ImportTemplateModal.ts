@@ -1,7 +1,7 @@
 import { App, ButtonComponent, DropdownComponent, Modal, Notice, SuggestModal, TFile, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { ImportedTemplateCandidate } from '../utils/templateImport';
-import { buildImportedTemplateCandidate, buildImportedTemplateId, compactTemplatePathForStorage } from '../utils/templateImport';
+import { buildImportedTemplateCandidate, buildImportedTemplateId } from '../utils/templateImport';
 import type { PandocLayoutTemplate, UsageContext } from '../types';
 import type { DetectedTemplateConfidence, DetectedTemplateMockPreviewKind, DetectedTemplateStyleHint } from '../publishing/templateDetection';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
@@ -69,7 +69,6 @@ class TemplateFileSuggestModal extends SuggestModal<TFile> {
 export class ImportTemplateModal extends Modal {
     private step: ImportTemplateStep = 1;
     private sourcePath = '';
-    private sourceContentOverride: string | null = null;
     private usageContext: UsageContext = 'novel';
     private usageContextTouched = false;
     private templateName = '';
@@ -101,7 +100,6 @@ export class ImportTemplateModal extends Modal {
     onOpen(): void {
         this.step = 1;
         this.sourcePath = '';
-        this.sourceContentOverride = null;
         this.usageContext = 'novel';
         this.usageContextTouched = false;
         this.templateName = '';
@@ -186,7 +184,6 @@ export class ImportTemplateModal extends Modal {
         try {
             const candidate = await buildImportedTemplateCandidate(this.plugin, {
                 sourcePath,
-                sourceContent: this.sourceContentOverride || undefined,
                 name: this.getCandidateName(),
                 preset: this.usageContextTouched ? this.usageContext : undefined,
                 description: this.getCandidateDescription(),
@@ -219,7 +216,6 @@ export class ImportTemplateModal extends Modal {
     private async chooseFile(): Promise<void> {
         new TemplateFileSuggestModal(this.app, (selectedPath) => {
             this.sourcePath = selectedPath;
-            this.sourceContentOverride = null;
             void this.refreshCandidate();
         }).open();
     }
@@ -228,22 +224,20 @@ export class ImportTemplateModal extends Modal {
         const dropped = files?.[0];
         if (!dropped) return;
 
-        const filePath = (dropped as File & { path?: string }).path?.trim() || '';
-        const fileName = dropped.name || filePath.split(/[\\/]/).pop() || '';
+        const fileName = dropped.name;
         if (!/\.(tex|ltx|latex)$/i.test(fileName)) {
             new Notice(t('ui.importTemplateModal.dropTexNotice'));
             return;
         }
-        if (!filePath) {
+        let filePath: string;
+        try {
+            const electron = (window as unknown as { require(name: 'electron'): { webUtils: { getPathForFile(file: File): string } } }).require('electron'); // SAFE: public Electron API resolves only the local file explicitly dropped by the user.
+            filePath = electron.webUtils.getPathForFile(dropped).trim();
+        } catch {
             new Notice(t('ui.importTemplateModal.droppedPathUnreadable'));
             return;
         }
-
-        try {
-            this.sourceContentOverride = await dropped.text();
-        } catch {
-            this.sourceContentOverride = null;
-        }
+        if (!filePath) { new Notice(t('ui.importTemplateModal.droppedPathUnreadable')); return; }
 
         this.sourcePath = filePath;
         await this.refreshCandidate();
@@ -253,25 +247,28 @@ export class ImportTemplateModal extends Modal {
         if (!this.candidate || this.commitInFlight) return;
         this.commitInFlight = true;
         this.updateActionButtons();
-
-        const existingIds = this.resolveExistingIds();
-        const id = buildImportedTemplateId(
-            this.candidate.layout.name,
-            this.candidate.layout.preset,
-            existingIds
-        );
-        const finalLayout: PandocLayoutTemplate = {
-            ...this.candidate.layout,
-            id,
-            name: this.templateName.trim() || this.candidate.layout.name,
-            preset: this.usageContext,
-            description: this.templateDescription.trim() || this.candidate.layout.description,
-            path: compactTemplatePathForStorage(this.plugin, this.getCandidatePath()) || this.candidate.layout.path.trim(),
-            draft: false,
-            origin: 'imported',
-        };
-
         try {
+            // Checks may have run several wizard steps ago. Re-read the selected
+            // file so deletion/replacement cannot activate a stale candidate.
+            await this.refreshCandidate();
+            if (!this.candidate?.canActivate || this.candidateLoading) return;
+            const existingIds = this.resolveExistingIds();
+            const id = buildImportedTemplateId(
+                this.candidate.layout.name,
+                this.candidate.layout.preset,
+                existingIds
+            );
+            const finalLayout: PandocLayoutTemplate = {
+                ...this.candidate.layout,
+                id,
+                name: this.templateName.trim() || this.candidate.layout.name,
+                preset: this.usageContext,
+                description: this.templateDescription.trim() || this.candidate.layout.description,
+                path: this.candidate.layout.path,
+                draft: false,
+                origin: 'imported',
+            };
+
             await this.onCommit({
                 layout: finalLayout,
                 draft: false,
@@ -279,6 +276,8 @@ export class ImportTemplateModal extends Modal {
                 candidate: this.candidate,
             });
             this.close();
+        } catch (error) {
+            new Notice(t('ui.importTemplateModal.saveFailed', { message: error instanceof Error ? error.message : String(error) }));
         } finally {
             this.commitInFlight = false;
             this.updateActionButtons();

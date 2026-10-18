@@ -4750,6 +4750,7 @@ export const es: TranslationKeys = {
             "searchPlaceholder": "Buscar LaTeX Plantillas",
             "dropTexNotice": "Suelte un archivo de plantilla .tex para importar.",
             "droppedPathUnreadable": "No se pudo leer la ruta del archivo descartado.",
+            saveFailed: "No se pudo guardar la plantilla: {{message}}",
             "badge": "Importar",
             "title": "importador plantilla",
             "subtitle": "Trae una existente LaTeX plantilla (.tex) en la publicación como un diseño personalizado estático. Usa esto cuando tengas afinado a mano LaTeX o una plantilla de terceros que la especificación del asistente no puede expresar. Para los estilos visuales y editables por el asistente, cierre esto y use \"Diseñe el suyo propio...\" en cambio.",
@@ -5333,6 +5334,7 @@ export const es: TranslationKeys = {
             "sagaNeedsTwoBooks": "Agregue al menos dos libros en el Administrador de libros para usar la línea de tiempo de Saga.",
             "sceneIdsAdded": "🔑 ID de escena agregados a {{scenes}}. No se requiere ninguna acción.",
             "settingsSaveBlocked": "Radial Timeline no está guardando la configuración de esta sesión: no se pudo leer su archivo de configuración (data.json). reparar o cambiar el nombre del archivo y volver a cargar Obsidian — Cualquier cambio que hagas ahora se perderá.",
+            settingsWriteNotConfirmed: "El archivo de ajustes del disco no coincide con los cambios guardados",
             "settingsSaveFailed": "Radial Timeline No se pudo guardar la configuración: {{reason}}. Su último cambio no fue escrito en el disco. Verifique que la bóveda sea grabable y tenga espacio libre, luego realice el cambio nuevamente.",
             "settingsUnreadable": "Radial Timeline No se pudo leer su archivo de configuración (data.json). Su configuración no se ha cargado y no se ha sobrescrito nada. Renombrar o reparar {{path}}, luego recargar Obsidian."
         },

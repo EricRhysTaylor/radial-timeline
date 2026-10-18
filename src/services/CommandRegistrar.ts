@@ -890,6 +890,7 @@ export class CommandRegistrar {
                                     sceneOpener: designedSpec.scene.opener,
                                     suppressPartMarkers: layoutExportBehavior.suppressPartMarkers,
                                     resetSceneCounterOnChapter: designedSpec.chapters.resetSceneCounter,
+                                    partNumberStyle: designedSpec.parts.mode === 'off' ? undefined : designedSpec.parts.mode,
                                 } : {}),
                             }
                             : undefined,

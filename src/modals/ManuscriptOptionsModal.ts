@@ -325,6 +325,7 @@ export class ManuscriptOptionsModal extends Modal {
     private sceneNumbers: number[] = [];
     private sceneWordCounts: (number | null)[] = [];
     private sceneActs: (number | null)[] = [];
+    private partMarkerScenePaths: string[] = [];
     private chapterMarkersByScenePath: Record<string, unknown[]> = {};
     private totalScenes = 0;
     private rangeStart = 1;
@@ -3342,6 +3343,8 @@ export class ManuscriptOptionsModal extends Modal {
         );
         return buildSpreadValidationContext(this.plugin, {
             layout,
+            book: this.getSourceBook() ?? null,
+            partMarkerScenePaths: this.partMarkerScenePaths,
             selectedScenePaths: slice(this.scenePaths),
             selectedSceneTitles: slice(this.sceneTitles),
             chapterMarkersByScenePath: this.chapterMarkersByScenePath,
@@ -3888,6 +3891,7 @@ export class ManuscriptOptionsModal extends Modal {
             this.sceneWordCounts = wordCounts;
             this.sceneActs = acts;
             this.chapterMarkersByScenePath = (result.chapterMarkersByScenePath ?? {});
+            this.partMarkerScenePaths = 'partMarkerScenePaths' in result ? result.partMarkerScenePaths ?? [] : [];
             this.totalScenes = titles.length;
             this.rangeStart = 1;
             this.rangeEnd = Math.max(1, this.totalScenes);

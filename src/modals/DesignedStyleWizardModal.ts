@@ -1685,7 +1685,7 @@ export class DesignedStyleWizardModal extends Modal {
         this.makeRadioGroup(formatCell, [
             { value: 'arabic',            label: t('ui.designedStyleWizardModal.numeralArabic') },
             { value: 'roman-frontmatter', label: t('ui.designedStyleWizardModal.numeralRomanFrontmatter') },
-        ], this.spec.folio.format ?? 'arabic', (v) => {
+        ], this.spec.folio.format ?? 'roman-frontmatter', (v) => {
             this.mutateSpec((s) => { s.folio.format = v as DesignedStyleSpec['folio']['format']; });
         });
 
@@ -1970,21 +1970,18 @@ export class DesignedStyleWizardModal extends Modal {
         // Signature Literary (which sets it inline), but custom user designs
         // can't enable it from this UI in v1. Defer to v2.
 
-        // Slider defaults match the .tex generator's fallback (0.2 above,
-        // 0.2 below). Templates can override; the slider now reads the
-        // template's actual value rather than snapping to 0%.
-        // Slider defaults match the .tex generator's fallback (0.2 above,
-        // 0.2 below). Templates can override; the slider now reads the
-        // template's actual value rather than snapping to 0%.
+        // Match the dedicated-opener generator's starting geometry. Literary
+        // section openers use 20%/20%; ordinary openers use 16%/12%.
+        const literaryOpener = (this.spec.scene.openerHeadingModes?.length ?? 0) > 0;
         const topRow = this.fieldRow(body, t('ui.designedStyleWizardModal.spaceAboveOpener'));
-        const currentOpenerTop = this.spec.scene.openerSpacing?.topFraction ?? 0.2;
+        const currentOpenerTop = this.spec.scene.openerSpacing?.topFraction ?? (literaryOpener ? 0.2 : 0.16);
         this.sliderInput(topRow, currentOpenerTop, 0, 0.5, 0.02, (n) => {
             this.mutateSpec((s) => {
                 s.scene.openerSpacing = { ...(s.scene.openerSpacing ?? {}), topFraction: n };
             });
         }, (v) => `${Math.round(v * 100)}%`);
         const botRow = this.fieldRow(body, t('ui.designedStyleWizardModal.spaceBelowOpener'));
-        const currentOpenerBottom = this.spec.scene.openerSpacing?.bottomFraction ?? 0.2;
+        const currentOpenerBottom = this.spec.scene.openerSpacing?.bottomFraction ?? (literaryOpener ? 0.2 : 0.12);
         this.sliderInput(botRow, currentOpenerBottom, 0, 0.5, 0.02, (n) => {
             this.mutateSpec((s) => {
                 s.scene.openerSpacing = { ...(s.scene.openerSpacing ?? {}), bottomFraction: n };
@@ -2376,6 +2373,7 @@ export class DesignedStyleWizardModal extends Modal {
 
     private async persistLayout(): Promise<DesignedStyleWizardResult> {
         const plugin = this.plugin;
+        if (plugin.isSettingsPersistenceBlocked()) throw new Error(t('ui.main.settingsSaveBlocked'));
         const layouts = plugin.settings.pandocLayouts || [];
         const trimmedName = this.styleName.trim();
 
@@ -2390,18 +2388,36 @@ export class DesignedStyleWizardModal extends Modal {
             if (!targetPath) {
                 throw new Error(t('ui.exportFormats.templateFileNotFound', { path: existing.path }));
             }
-            const tex = generateDesignedStyleTex(this.spec, { bundledLayoutId: existing.id });
-            await this.writeTexFile(targetPath, tex);
+            const file = plugin.app.vault.getAbstractFileByPath(targetPath);
+            if (!(file instanceof TFile)) throw new Error(t('ui.exportFormats.templateFileNotFound', { path: targetPath }));
+            const spec = structuredClone(this.spec);
+            const description = this.description.trim();
+            const originalTex = await plugin.app.vault.read(file);
+            const originalLayout = { name: existing.name, description: existing.description, designedSpec: existing.designedSpec, path: existing.path };
+            const tex = generateDesignedStyleTex(spec, { bundledLayoutId: existing.id });
+            await plugin.app.vault.modify(file, tex);
             existing.name = trimmedName;
-            existing.description = this.description.trim() || undefined;
-            existing.designedSpec = structuredClone(this.spec);
+            existing.description = description || undefined;
+            existing.designedSpec = spec;
             // Pin the exact vault file so an older root-level duplicate cannot
             // shadow this template when the export resolver reads it.
             existing.path = targetPath;
-            await plugin.saveSettings();
+            try {
+                await plugin.saveSettings();
+            } catch (error) {
+                Object.assign(existing, originalLayout);
+                try {
+                    // Roll back our bytes only; preserve a newer external edit.
+                    await plugin.app.vault.process(file, current => current === tex ? originalTex : current);
+                }
+                catch (restoreError) {
+                    throw new Error([error, restoreError].map(String).join('\n'));
+                }
+                throw error;
+            }
             return {
                 name: trimmedName,
-                description: this.description.trim(),
+                description,
                 spec: existing.designedSpec,
                 layoutId: existing.id,
             };
@@ -2442,10 +2458,19 @@ export class DesignedStyleWizardModal extends Modal {
         const tex = generateDesignedStyleTex(this.spec, { bundledLayoutId: id });
         await this.ensureFolder(designedFolder);
         // Exclusive creation also protects a file added after name selection.
-        await plugin.app.vault.create(vaultPath, tex);
+        const file = await plugin.app.vault.create(vaultPath, tex);
 
         plugin.settings.pandocLayouts = [...layouts, newLayout];
-        await plugin.saveSettings();
+        try {
+            await plugin.saveSettings();
+        } catch (error) {
+            plugin.settings.pandocLayouts = plugin.settings.pandocLayouts.filter(layout => layout !== newLayout);
+            try { await plugin.app.fileManager.trashFile(file); }
+            catch (cleanupError) {
+                throw new Error([error, cleanupError].map(String).join('\n'));
+            }
+            throw error;
+        }
 
         return {
             name: trimmedName,
@@ -2453,21 +2478,6 @@ export class DesignedStyleWizardModal extends Modal {
             spec: newLayout.designedSpec!,
             layoutId: id,
         };
-    }
-
-    private async writeTexFile(targetPath: string, content: string): Promise<void> {
-        const vault = this.plugin.app.vault;
-        const normalized = normalizePath(targetPath);
-        const folder = normalized.split('/').slice(0, -1).join('/');
-        if (folder) {
-            await this.ensureFolder(folder);
-        }
-        const existing = vault.getAbstractFileByPath(normalized);
-        if (existing instanceof TFile) {
-            await vault.modify(existing, content);
-        } else {
-            await vault.create(normalized, content);
-        }
     }
 
     private async ensureFolder(folderPath: string): Promise<void> {

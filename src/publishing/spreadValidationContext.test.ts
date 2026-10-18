@@ -90,6 +90,15 @@ describe('buildSpreadValidationContext', () => {
         expect(ctx.chapterTitlePopulatedCount).toBeUndefined();
     });
 
+    it('uses the selected source book for epigraph warnings rather than the active timeline book', () => {
+        const layout = makeLayout();
+        const active = makeBook({ layoutOptions: { [layout.id]: { partEpigraphs: ['active'] } } });
+        const source = makeBook({ id: 'source', layoutOptions: { [layout.id]: { partEpigraphs: ['one', 'two', 'three'] } } });
+        const plugin = makePlugin([active, source], active.id);
+        expect(buildSpreadValidationContext(plugin, { layout, book: source }).partEpigraphPopulatedCount).toBe(3);
+        expect(buildSpreadValidationContext(plugin, { layout, book: null }).partEpigraphPopulatedCount).toBe(0);
+    });
+
     it('returns 0 epigraphs when no active book / no layoutOptions', () => {
         const plugin = makePlugin([], undefined);
         const ctx = buildSpreadValidationContext(plugin, { layout: makeLayout() });

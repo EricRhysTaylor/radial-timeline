@@ -52,6 +52,7 @@ import { migrateSceneFrontmatterIds } from './migrations/sceneIds';
 import { normalizeTimelineMode } from './migrations/timelineMode';
 import { ensureBeatInThisBookTemplateField } from './utils/beatsTemplates';
 import { SettingsService } from './services/SettingsService';
+import { saveSettingsVerified } from './settings/verifiedSave';
 import { DEFAULT_SETTINGS } from './settings/defaults';
 import { migrateAiSettings, stripLegacyAiSettings } from './ai/settings/migrateAiSettings';
 import { validateAiSettings } from './ai/settings/validateAiSettings';
@@ -1443,7 +1444,8 @@ export default class RadialTimelinePlugin extends Plugin {
         // brief store has exactly one persisted home.
         const persistedSettings = { ...this.settings };
         delete persistedSettings.inquirySessionCache;
-        await this.saveData(persistedSettings);
+        await saveSettingsVerified(persistedSettings, data => this.saveData(data),
+            () => this.app.vault.adapter.read(this.getSettingsFilePath())); // SAFE: verify only this plugin's own settings file; Obsidian saveData suppresses write errors.
     }
 
     // Helper method to validate and remember folder paths

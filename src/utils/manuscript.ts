@@ -10,7 +10,7 @@ import { getActiveBookExportContext } from './exportContext';
 import { normalizeMatterBodyMode, parseMatterMetaFromFrontmatter, type MatterBodyMode } from './matterMeta';
 import { extractFrontmatterObject } from './frontmatter';
 import { groupTimelineChapterMarkersByScenePath, resolveTimelineChapterMarkers, type TimelineChapterMarker } from './timelineChapters';
-import { readPartMarker } from './timelineParts';
+import { readPartMarker, resolveTimelinePartMarkers } from './timelineParts';
 import { cleanEvidenceBody } from '../inquiry/utils/evidenceCleaning';
 import { stripEditorialistReviewBlocks } from './manuscriptSanitize';
 import { readSceneId } from './sceneIds';
@@ -65,6 +65,7 @@ export interface ManuscriptSceneSelection {
   synopses: (string | null)[];
   runtimes: (number | null)[];
   wordCounts: (number | null)[];
+  partMarkerScenePaths?: string[];
   matterMetaByPath?: Map<string, MatterMeta>;
   chapterMarkersByScenePath?: Record<string, TimelineChapterMarker[]>;
 }
@@ -81,6 +82,7 @@ export interface ModernClassicStructureOptions {
   sceneOpener?: 'dedicated-page' | 'roman-with-rule' | 'inline-separator';
   suppressPartMarkers?: boolean;
   resetSceneCounterOnChapter?: boolean;
+  partNumberStyle?: 'roman' | 'arabic' | 'word';
 }
 
 export interface AssembleManuscriptOptions {
@@ -773,6 +775,7 @@ export async function getSceneFilesByOrder(
     runtimes,
     wordCounts,
     matterMetaByPath,
+    partMarkerScenePaths: resolveTimelinePartMarkers(sortedScenes).map(marker => marker.resolvedScenePath),
     chapterMarkersByScenePath
   };
 }
@@ -933,6 +936,20 @@ function createModernClassicState(options?: ModernClassicStructureOptions): Mode
     partEpigraphs: normalizeList(options?.partEpigraphs),
     partEpigraphAttributions: normalizeList(options?.partEpigraphAttributions),
   };
+}
+
+function partNumberInWords(value: number): string {
+  const small = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+  const words = (n: number): string => {
+    if (n < 20) return small[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? `-${small[n % 10]}` : '');
+    const scales: Array<[number, string]> = [[1e12, 'trillion'], [1e9, 'billion'], [1e6, 'million'], [1000, 'thousand'], [100, 'hundred']];
+    const [scale, label] = scales.find(([scale]) => n >= scale)!;
+    return `${words(Math.floor(n / scale))} ${label}${n % scale ? ` ${words(n % scale)}` : ''}`;
+  };
+  const result = words(value);
+  return result[0].toUpperCase() + result.slice(1);
 }
 
 
@@ -1281,7 +1298,9 @@ export async function assembleManuscript(
         ? null : readPartMarker(sceneFrontmatter ?? undefined);
       if (partMarker) {
         modernClassicState.partIndex += 1;
-        const partRoman = toRomanNumeral(modernClassicState.partIndex);
+        const style = options?.modernClassicStructure?.partNumberStyle;
+        const partRoman = style === 'word' ? partNumberInWords(modernClassicState.partIndex)
+          : style === 'arabic' ? String(modernClassicState.partIndex) : toRomanNumeral(modernClassicState.partIndex);
         if (partRoman) {
           const slot = modernClassicState.partIndex - 1;
           const partTitle = partMarker.titled

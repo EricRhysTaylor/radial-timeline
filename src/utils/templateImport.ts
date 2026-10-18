@@ -1,5 +1,6 @@
 import { slugifyToFileStem } from './slug';
 import { normalizePath, TFile } from 'obsidian';
+import { readFile } from 'fs/promises';
 import type RadialTimelinePlugin from '../main';
 import type {
     PandocLayoutTemplate,
@@ -109,6 +110,15 @@ export function buildImportedTemplateId(name: string, preset: UsageContext, exis
     return candidate;
 }
 
+/** Register only after a durable settings save; failed imports stay inactive. */
+export async function persistImportedTemplate(plugin: RadialTimelinePlugin, layout: PandocLayoutTemplate): Promise<void> {
+    if (plugin.isSettingsPersistenceBlocked()) throw new Error(t('ui.main.settingsSaveBlocked'));
+    const previous = plugin.settings.pandocLayouts;
+    plugin.settings.pandocLayouts = [...(previous || []).filter(item => item.id !== layout.id), layout];
+    try { await plugin.saveSettings(); }
+    catch (error) { plugin.settings.pandocLayouts = previous; throw error; }
+}
+
 export async function buildImportedTemplateCandidate(
     plugin: RadialTimelinePlugin,
     input: TemplateImportInput
@@ -130,7 +140,9 @@ export async function buildImportedTemplateCandidate(
         });
     }
 
-    const layoutPath = storedPath || rawPath;
+    // Pin the exact selected vault file; compact paths can resolve to a
+    // different root-level file with the same name during export.
+    const layoutPath = isAbsolutePath(rawPath) ? rawPath : normalizePath(rawPath);
     const layout: PandocLayoutTemplate = {
         id: buildImportedTemplateId(inferredName, input.preset || 'novel', plugin.settings.pandocLayouts?.map(item => item.id) || []),
         name: inferredName,
@@ -165,7 +177,7 @@ export async function buildImportedTemplateCandidate(
     // (resolvedPath is kept for the pandoc-engine check below; that's a
     // separate concern from reading vault content.)
     const content = input.sourceContent ?? await readVaultFile(plugin, rawPath);
-    if (!/\$body\$/i.test(content)) {
+    if (!/\$body\$/.test(content)) {
         issues.push({
             code: 'import_missing_body',
             level: 'error',
@@ -267,6 +279,10 @@ function buildPreviewLines(content: string): string[] {
 
 async function readVaultFile(plugin: RadialTimelinePlugin, vaultPath: string): Promise<string> {
     if (!vaultPath) return '';
+    if (isAbsolutePath(vaultPath)) {
+        try { return await readFile(vaultPath, 'utf8'); }
+        catch { return ''; } // SAFE: empty content adds a blocking import issue; it is never activated.
+    }
     const file = plugin.app.vault.getAbstractFileByPath(normalizePath(vaultPath));
     if (!(file instanceof TFile)) return '';
     try {

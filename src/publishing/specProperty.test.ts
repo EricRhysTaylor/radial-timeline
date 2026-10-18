@@ -354,7 +354,7 @@ describe('generateDesignedStyleTex — property tests', () => {
         // glyphs so user-typed `f(x){y}` doesn't lose information.
         expect(escapeForLatex('a & b')).toBe('a \\& b');
         expect(escapeForLatex('100% off')).toBe('100\\% off');
-        expect(escapeForLatex('$cost')).toBe('\\$cost');
+        expect(escapeForLatex('$cost')).toBe('\\$$cost');
         expect(escapeForLatex('snake_case')).toBe('snake\\_case');
         expect(escapeForLatex('#hash')).toBe('\\#hash');
         expect(escapeForLatex('{open}')).toBe('\\{open\\}');
@@ -363,7 +363,7 @@ describe('generateDesignedStyleTex — property tests', () => {
         expect(escapeForLatex('back\\slash')).toBe('back\\textbackslash{}slash');
         // Combined: every special char survives in one pass.
         expect(escapeForLatex('${&%}_#^~\\'))
-            .toBe('\\$\\{\\&\\%\\}\\_\\#\\textasciicircum{}\\textasciitilde{}\\textbackslash{}');
+            .toBe('\\$$\\{\\&\\%\\}\\_\\#\\textasciicircum{}\\textasciitilde{}\\textbackslash{}');
     });
 
     it('regression: scene separator glyph with special chars escapes through generator', () => {

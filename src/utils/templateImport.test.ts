@@ -51,6 +51,10 @@ function createPluginWithFiles(files: Record<string, string>): RadialTimelinePlu
 }
 
 describe('templateImport helper', () => {
+    it('requires the case-sensitive Pandoc body variable', async () => {
+        const plugin = createPluginWithFiles({ 'Templates/uppercase.tex': '$BODY$' });
+        expect((await buildImportedTemplateCandidate(plugin, { sourcePath: 'Templates/uppercase.tex' })).canActivate).toBe(false);
+    });
     it('blocks an empty template instead of reporting it ready to activate', async () => {
         const plugin = createPluginWithFiles({ 'Templates/empty.tex': '' });
         const candidate = await buildImportedTemplateCandidate(plugin, { sourcePath: 'Templates/empty.tex' });
@@ -148,7 +152,7 @@ describe('templateImport helper', () => {
 
         const candidate = await buildImportedTemplateCandidate(plugin, { sourcePath: pickedPath });
 
-        expect(candidate.layout.path).toBe('rt_modern_classic.tex');
+        expect(candidate.layout.path).toBe(pickedPath);
         expect(candidate.detectedTemplate.styleHint).not.toBe('custom');
         expect(candidate.detectedTemplate.confidence).not.toBe('low');
         expect(candidate.detectedTemplate.traits.length).toBeGreaterThanOrEqual(3);

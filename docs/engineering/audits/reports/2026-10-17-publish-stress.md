@@ -88,3 +88,5 @@ remain a separate queued issue.
 Private evidence: Command Center/Agent Runs/2026-10-17 Publish stress test.
 It includes retained PDFs/PNGs, native AX/screenshots, before/after hashes,
 failure/green test logs, build/gate logs, and output verification JSON.
+
+Continuation: [Publish acceptance follow-up](2026-10-17-publish-completion.md) closes the interrupted-save and broader output gaps, and records the remaining owner guidance/native interaction checks.

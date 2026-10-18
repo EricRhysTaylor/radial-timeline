@@ -21,13 +21,16 @@ function fixture(storedPath: string, existingPath?: string) {
     const plugin = {
         settings: { ...DEFAULT_SETTINGS, pandocFolder: 'Radial Timeline/Pandoc', pandocLayouts: [layout] },
         saveSettings,
-        app: { vault: {
+        isSettingsPersistenceBlocked: () => false,
+        app: { fileManager: { trashFile: async (file: TFile) => { files.delete(file.path); contents.delete(file.path); } }, vault: {
             getAbstractFileByPath: (path: string) => files.get(normalizePath(path)) ?? null,
             createFolder: async (path: string) => { files.set(path, new TFolder(path)); },
             create: async (path: string, text: string) => {
                 const file = new TFile(path); files.set(path, file); contents.set(path, text); return file;
             },
             modify: async (file: TFile, text: string) => { contents.set(file.path, text); },
+            read: async (file: TFile) => contents.get(file.path)!,
+            process: async (file: TFile, change: (text: string) => string) => { const text = change(contents.get(file.path)!); contents.set(file.path, text); return text; },
         } },
     } as unknown as RadialTimelinePlugin;
     const edited = structuredClone(originalSpec);
@@ -40,6 +43,62 @@ function fixture(storedPath: string, existingPath?: string) {
 }
 
 describe('designed style update persistence', () => {
+    it('saves the spec captured when Save starts even if inputs change during the read', async () => {
+        const path = 'Radial Timeline/Pandoc/designed/qa-copy.tex';
+        const { modal, layout, plugin } = fixture(path, path);
+        let release!: (value: string) => void;
+        vi.spyOn(plugin.app.vault, 'read').mockReturnValueOnce(new Promise(resolve => { release = resolve; }));
+        const pending = modal['persistLayout']();
+        modal['spec'].body.sizePt = 20;
+        release('original template');
+        await pending;
+        expect(layout.designedSpec?.body.sizePt).toBe(14);
+    });
+
+    it('preserves a later external template edit if settings persistence fails', async () => {
+        const path = 'Radial Timeline/Pandoc/designed/qa-copy.tex';
+        const { modal, contents, saveSettings } = fixture(path, path);
+        saveSettings.mockImplementationOnce(async () => { contents.set(path, 'newer external edit'); throw new Error('settings denied'); });
+        await expect(modal['persistLayout']()).rejects.toThrow('settings denied');
+        expect(contents.get(path)).toBe('newer external edit');
+    });
+
+    it('restores the template and existing layout when settings persistence fails', async () => {
+        const path = 'Radial Timeline/Pandoc/designed/qa-copy.tex';
+        const { modal, layout, contents, saveSettings } = fixture(path, path);
+        const original = structuredClone(layout);
+        saveSettings.mockRejectedValueOnce(new Error('QA settings write denied'));
+        await expect(modal['persistLayout']()).rejects.toThrow('QA settings write denied');
+        expect(layout).toEqual(original);
+        expect(contents.get(path)).toBe('original template');
+        await modal['persistLayout']();
+        expect(layout.name).toBe('QA Updated');
+        expect(contents.get(path)).toContain('paperwidth=210mm');
+    });
+
+    it('removes a failed new registration and trashes only its generated template before retry', async () => {
+        const { plugin, contents, saveSettings } = fixture('designed/qa-copy.tex');
+        const original = structuredClone(plugin.settings.pandocLayouts);
+        const modal = new DesignedStyleWizardModal(plugin.app, plugin, {
+            initialSpec: cloneArchetypeSpec('submission'), initialName: 'QA New', onSave: () => undefined,
+        });
+        saveSettings.mockRejectedValueOnce(new Error('QA settings write denied'));
+        await expect(modal['persistLayout']()).rejects.toThrow('QA settings write denied');
+        expect(plugin.settings.pandocLayouts).toEqual(original);
+        expect(contents.size).toBe(0);
+        const result = await modal['persistLayout']();
+        expect(result.layoutId).toBe('designed-qa-new');
+    });
+
+    it('does not write a template when this session cannot persist settings', async () => {
+        const path = 'Radial Timeline/Pandoc/designed/qa-copy.tex';
+        const { modal, plugin, contents, saveSettings } = fixture(path, path);
+        vi.spyOn(plugin, 'isSettingsPersistenceBlocked').mockReturnValue(true);
+        await expect(modal['persistLayout']()).rejects.toThrow();
+        expect(contents.get(path)).toBe('original template');
+        expect(saveSettings).not.toHaveBeenCalled();
+    });
+
     it('updates the existing Pandoc template when its stored path is compact', async () => {
         const path = 'Radial Timeline/Pandoc/designed/qa-copy.tex';
         const { modal, layout, contents, saveSettings } = fixture('designed/qa-copy.tex', path);

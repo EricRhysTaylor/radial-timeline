@@ -4750,6 +4750,7 @@ export const vi: TranslationKeys = {
             "searchPlaceholder": "Tìm kiếm các mẫu LaTeX",
             "dropTexNotice": "thả tệp mẫu .tex để nhập.",
             "droppedPathUnreadable": "Không thể đọc đường dẫn tệp bị rơi.",
+            saveFailed: "Không thể lưu mẫu: {{message}}",
             "badge": "Nhập khẩu",
             "title": "Nhập mẫu",
             "subtitle": "Mang theo một hiện có LaTeX mẫu (.tex) thành xuất bản dưới dạng bố cục tùy chỉnh tĩnh. Sử dụng điều này khi bạn đã điều chỉnh bằng tay LaTeX hoặc một mẫu của bên thứ ba Thông số kỹ thuật của trình hướng dẫn không thể thể hiện. Đối với các kiểu trực quan, có thể chỉnh sửa theo trình hướng dẫn, hãy đóng cái này và sử dụng \"Thiết kế của riêng bạn ...\" Thay vào đó.",
@@ -5333,6 +5334,7 @@ export const vi: TranslationKeys = {
             "sagaNeedsTwoBooks": "Thêm ít nhất hai cuốn sách trong Trình quản lý sách để sử dụng dòng thời gian Saga.",
             "sceneIdsAdded": "🔑 ID cảnh được thêm vào {{scenes}}. Không cần hành động.",
             "settingsSaveBlocked": "Radial Timeline không thể lưu cài đặt phiên này: Không thể đọc tệp cài đặt của nó (data.json). sửa chữa hoặc đổi tên tệp và tải lại Obsidian - Bất kỳ thay đổi nào bạn thực hiện bây giờ sẽ bị mất.",
+            settingsWriteNotConfirmed: "Tệp cài đặt trên đĩa không khớp với các thay đổi đã lưu",
             "settingsSaveFailed": "Radial Timeline Không thể lưu cài đặt: {{reason}}. Thay đổi cuối cùng của bạn không được ghi vào đĩa. Kiểm tra xem kho có thể ghi và có dung lượng trống không, sau đó thực hiện lại thay đổi.",
             "settingsUnreadable": "Radial Timeline Không thể đọc tệp cài đặt của nó (data.json). Cài đặt của bạn chưa được tải và không có gì được ghi đè. đổi tên hoặc sửa chữa {{path}}, sau đó tải lại Obsidian."
         },

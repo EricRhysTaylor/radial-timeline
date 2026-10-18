@@ -68,7 +68,7 @@ import { applyMatterRepairPlan, buildMatterRepairPlan } from '../../publishing/m
 import { getActiveBookMatterNoteSummaries, getActiveBookMetaStatus } from '../../publishing/activeBookNotes';
 import { getMatterPreviewSummary, getPublishingProgressContext, getPublishingValidationSnapshot, type MatterPreviewItem } from '../../publishing/readinessSummary';
 import { createBookMetaOnly, ensurePublishingEnvironment, generateSampleTemplates, maybeRenameTemplateFileForPathChange } from '../../publishing/starterSetup';
-import { compactTemplatePathForStorage } from '../../utils/templateImport';
+import { compactTemplatePathForStorage, persistImportedTemplate } from '../../utils/templateImport';
 import { t, tCount } from '../../i18n';
 
 // Example shown in the Custom Pandoc metadata field. This is literal Pandoc
@@ -668,6 +668,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             // Book-wide counts prefetched in `refreshBookChapterCounts` so the
             // CHAPTER status / warning surfaces here. `actCount` already falls
             // back to `plugin.settings.actCount` inside the helper.
+            bookPartMarkerCount: cachedBookPartMarkerCount,
             bookChapterFieldCount: cachedBookChapterFieldCount,
             bookChapterTitlePopulatedCount: cachedBookChapterTitlePopulatedCount,
         });
@@ -930,6 +931,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     // the panel closure so each layout-row render can read them sync. When the
     // cache is empty (initial mount, before prefetch returns), the helper falls
     // back to its data-less defaults — no warning regression vs. before.
+    let cachedBookPartMarkerCount: number | undefined;
     let cachedBookChapterFieldCount: number | undefined;
     let cachedBookChapterTitlePopulatedCount: number | undefined;
 
@@ -943,6 +945,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             // elsewhere in the plugin.
             const sceneItems = await plugin.getSceneData();
             const resolverItems = buildTimelineChapterResolverItems(sceneItems);
+            cachedBookPartMarkerCount = resolveTimelinePartMarkers(resolverItems).length;
             const uniqueMarkers = collapseTimelineChapterMarkersByResolvedBoundary(
                 resolveTimelineChapterMarkers(resolverItems)
             );
@@ -1331,7 +1334,6 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     });
 
     const commitImportedTemplate = async (commit: ImportedTemplateCommit): Promise<void> => {
-        const existing = plugin.settings.pandocLayouts || [];
         const nextLayout = {
             ...commit.layout,
             draft: commit.draft,
@@ -1345,14 +1347,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 confidence: commit.candidate.detectedTemplate.confidence,
             },
         };
-        const currentIndex = existing.findIndex(layout => layout.id === nextLayout.id);
-        if (currentIndex >= 0) {
-            existing[currentIndex] = nextLayout;
-        } else {
-            existing.push(nextLayout);
-        }
-        plugin.settings.pandocLayouts = existing;
-        await plugin.saveSettings();
+        await persistImportedTemplate(plugin, nextLayout);
         new Notice(commit.activate
             ? t('ui.publishSection.templateActivated', { name: nextLayout.name })
             : t('ui.publishSection.templateDraftSaved', { name: nextLayout.name }));
@@ -1783,7 +1778,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             field: EditableBookMetaFieldKey,
             mode: 'enter' | 'blur'
         ) => {
-            if (activeBookMetaEditBusy) return;
+            if (activeBookMetaEditBusy || activeBookMetaEditField !== field) return;
             const editPath = sourcePath || activeBookMetaEditSourcePath || '';
             const file = plugin.app.vault.getAbstractFileByPath(editPath);
             if (!(file instanceof TFile)) {
@@ -1793,8 +1788,15 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             }
 
             activeBookMetaEditBusy = true;
-            const result = await updateBookMetaField(plugin.app, file, field, activeBookMetaDraft);
-            activeBookMetaEditBusy = false;
+            let result: Awaited<ReturnType<typeof updateBookMetaField>>;
+            try {
+                result = await updateBookMetaField(plugin.app, file, field, activeBookMetaDraft);
+            } catch (error) {
+                new Notice(t('ui.publishSection.updateFailed', { error: error instanceof Error ? error.message : String(error) }));
+                return;
+            } finally {
+                activeBookMetaEditBusy = false;
+            }
 
             if (!result.ok) {
                 new Notice(result.error);
@@ -1811,6 +1813,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             activeBookMetaEditSourcePath = file.path;
             activeBookMetaPreviewOverride = applyBookMetaEditToPreview(meta, field, result.normalizedValue, file.path);
             renderBookMetaPreview();
+            void renderMatterPreview();
         };
 
         const clearBookMetaField = async (field: EditableBookMetaFieldKey) => {
@@ -1824,8 +1827,15 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             }
 
             activeBookMetaEditBusy = true;
-            const result = await updateBookMetaField(plugin.app, file, field, '');
-            activeBookMetaEditBusy = false;
+            let result: Awaited<ReturnType<typeof updateBookMetaField>>;
+            try {
+                result = await updateBookMetaField(plugin.app, file, field, '');
+            } catch (error) {
+                new Notice(t('ui.publishSection.updateFailed', { error: error instanceof Error ? error.message : String(error) }));
+                return;
+            } finally {
+                activeBookMetaEditBusy = false;
+            }
 
             if (!result.ok) {
                 new Notice(result.error);
@@ -1838,6 +1848,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             activeBookMetaEditSourcePath = file.path;
             activeBookMetaPreviewOverride = applyBookMetaEditToPreview(meta, field, result.normalizedValue, file.path);
             renderBookMetaPreview();
+            void renderMatterPreview();
         };
 
         const normalizeValue = (value?: string | number | null): string | null => {
@@ -2504,23 +2515,36 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     const setNoteEnabled = async (notePath: string, nextEnabled: boolean): Promise<void> => {
         const file = plugin.app.vault.getAbstractFileByPath(notePath);
         if (!(file instanceof TFile)) return;
-        await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
-            const fm = frontmatter as Record<string, unknown>;
-            fm.Enabled = nextEnabled;
-        });
-        await renderMatterPreview();
+        try {
+            await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
+                const fm = frontmatter as Record<string, unknown>;
+                fm.Enabled = nextEnabled;
+            });
+            await renderMatterPreview({ path: notePath, enabled: nextEnabled });
+        } catch (error) {
+            new Notice(t('ui.publishSection.updateFailed', { error: error instanceof Error ? error.message : String(error) }));
+            await renderMatterPreview();
+        }
     };
 
-    const renderMatterPreview = async () => {
+    let matterPreviewGeneration = 0;
+    const renderMatterPreview = async (committedNote?: { path: string; enabled: boolean }) => {
+        const generation = ++matterPreviewGeneration;
         matterPreviewBody.empty();
         try {
             const activeBookMetaStatus = getActiveBookMetaStatus(plugin);
             const validationSnapshot = getPublishingValidationSnapshot(plugin);
-            const bookMetaAvailable = !!activeBookMetaStatus.bookMeta;
+            const currentBookMeta = activeBookMetaPreviewOverride ?? activeBookMetaStatus.bookMeta;
+            const bookMetaAvailable = !!currentBookMeta;
             const preview = await getMatterPreviewSummary(plugin);
-            const matterNotes = getActiveBookMatterNoteSummaries(plugin);
+            if (generation !== matterPreviewGeneration) return;
+            // processFrontMatter can resolve before metadataCache catches up.
+            // Reflect this confirmed write without changing the shared cache.
+            const matterNotes = getActiveBookMatterNoteSummaries(plugin).map(note =>
+                committedNote?.path === note.path ? { ...note, enabled: committedNote.enabled } : note
+            );
             const resolvedCanonical = resolveBookPages(
-                activeBookMetaStatus.bookMeta || undefined,
+                currentBookMeta || undefined,
                 matterNotes
             );
             const activeBook = getActiveBook(plugin.settings);

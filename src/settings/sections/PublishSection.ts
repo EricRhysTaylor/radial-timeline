@@ -1925,7 +1925,6 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             const missing = !normalized;
             const valueEl = target.createDiv({
                 cls: `${className} ert-bookmeta-preview-value--clickable${missing ? ' ert-bookmeta-preview-value--empty ert-bookmeta-preview-value--missing' : ''}`,
-                text: normalized || placeholder,
                 attr: {
                     role: 'button',
                     tabindex: '0',
@@ -1933,6 +1932,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     title: normalized ? t('ui.publishSection.editFieldAria', { field: label.toLowerCase() }) : t('ui.publishSection.addFieldAria', { field: label.toLowerCase() })
                 }
             });
+            // Keep the underline on each text fragment when a value wraps.
+            valueEl.createSpan({ cls: 'ert-bookmeta-preview-text', text: normalized || placeholder });
 
             valueEl.classList.toggle('ert-bookmeta-preview-value--required', missing && required);
             valueEl.classList.toggle('ert-bookmeta-preview-value--optional', missing && !required);
@@ -2696,9 +2697,9 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     const item = previewByPath.get(page.path);
                     const titleLink = main.createEl('a', {
                         cls: 'ert-matter-preview-link',
-                        text: page.title,
                         attr: { href: '#', title: page.path }
                     });
+                    titleLink.createSpan({ cls: 'ert-matter-preview-label', text: page.title });
                     titleLink.addEventListener('click', (evt: MouseEvent) => {
                         evt.preventDefault();
                         if (page.path) void plugin.app.workspace.openLinkText(page.path, '', false);
@@ -2745,7 +2746,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     // BookMeta-generated row.
                     row.createSpan({ cls: 'ert-matter-preview-enable-spacer', attr: { 'aria-hidden': 'true' } });
                     const main = row.createDiv({ cls: 'ert-matter-preview-main' });
-                    main.createSpan({ cls: 'ert-matter-preview-link', text: page.title });
+                    main.createSpan({ cls: 'ert-matter-preview-link' })
+                        .createSpan({ cls: 'ert-matter-preview-label', text: page.title });
                     const badges = main.createDiv({ cls: 'ert-matter-preview-badges' });
                     badges.createSpan({ cls: 'ert-matter-preview-badge ert-matter-preview-badge--source', text: 'BOOKMETA' });
                     badges.createSpan({ cls: 'ert-matter-preview-badge ert-matter-preview-badge--state', text: t('ui.publishSection.badgeGenerated') });
@@ -2837,9 +2839,9 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     const dMain = drow.createDiv({ cls: 'ert-matter-preview-main' });
                     const dLink = dMain.createEl('a', {
                         cls: 'ert-matter-preview-link',
-                        text: note.title || note.path,
                         attr: { href: '#', title: note.path },
                     });
+                    dLink.createSpan({ cls: 'ert-matter-preview-label', text: note.title || note.path });
                     plugin.registerDomEvent(dLink, 'click', (evt: MouseEvent) => {
                         evt.preventDefault();
                         void plugin.app.workspace.openLinkText(note.path, '', false);

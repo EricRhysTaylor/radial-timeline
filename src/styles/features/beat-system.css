@@ -302,14 +302,16 @@
 
 /* ── Click-to-rename system name link ────────────────────────────── */
 .ert-ui.ert-scope--settings .ert-book-name--clickable {
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 2px;
+  text-decoration: none;
+  background-image: linear-gradient(to right, currentColor 50%, transparent 50%);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 2px 1px;
   cursor: pointer;
   color: var(--text-accent);
 }
 .ert-ui.ert-scope--settings .ert-book-name--clickable:hover {
-  text-decoration-style: solid;
+  background-image: linear-gradient(currentColor, currentColor);
   color: var(--text-accent-hover);
 }
 
@@ -484,12 +486,14 @@
   font-size: inherit;
   font-weight: 600;
   cursor: pointer;
-  text-decoration: underline;
-  text-decoration-style: dashed;
-  text-underline-offset: 2px;
+  text-decoration: none;
+  background-image: linear-gradient(to right, currentColor 50%, transparent 50%);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 6px 1px;
 }
 .ert-ui.ert-scope--settings .ert-starter-dirty-link:hover {
-  text-decoration-style: solid;
+  background-image: linear-gradient(currentColor, currentColor);
 }
 
 /* ── Preview card dirty accent ──────────────────────────────────── */

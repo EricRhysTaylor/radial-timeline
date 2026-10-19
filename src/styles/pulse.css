@@ -2336,9 +2336,11 @@
 
 .ert-gossamer-footer__vault-link {
   color: inherit;
-  text-decoration: underline dashed;
-  text-underline-offset: 2px;
-  text-decoration-thickness: 1px;
+  text-decoration: none;
+  background-image: linear-gradient(to right, currentColor 50%, transparent 50%);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 6px 1px;
   cursor: pointer;
 }
 

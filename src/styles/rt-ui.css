@@ -7006,14 +7006,15 @@
 
 .ert-ui.ert-scope--settings .ert-campaign-name--clickable {
   cursor: pointer;
-  text-decoration: underline dashed;
-  text-underline-offset: 3px;
-  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-decoration: none;
+  background-image: linear-gradient(to right, color-mix(in srgb, currentColor 40%, transparent) 50%, transparent 50%);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 6px 1px;
 }
 
 .ert-ui.ert-scope--settings .ert-campaign-name--clickable:hover {
-  text-decoration-style: solid;
-  text-decoration-color: currentColor;
+  background-image: linear-gradient(currentColor, currentColor);
 }
 
 .ert-ui.ert-scope--settings .ert-campaign-name--clickable:focus-visible {
@@ -7582,15 +7583,16 @@
 
 .ert-ui.ert-scope--settings .ert-layout-row-title-display {
   cursor: pointer;
-  text-decoration: underline dashed;
-  text-underline-offset: 3px;
-  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
-  transition: text-decoration-color 120ms ease;
+  text-decoration: none;
+  background-image: linear-gradient(to right, color-mix(in srgb, currentColor 40%, transparent) 50%, transparent 50%);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 6px 1px;
+  transition: color 120ms ease;
 }
 
 .ert-ui.ert-scope--settings .ert-layout-row-title-display:hover {
-  text-decoration-style: solid;
-  text-decoration-color: currentColor;
+  background-image: linear-gradient(currentColor, currentColor);
 }
 
 .ert-ui.ert-scope--settings .ert-layout-row-title-display:focus-visible {
@@ -8848,16 +8850,22 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-decoration-line: underline;
-  text-decoration-style: dashed;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-  text-decoration-color: color-mix(in srgb, var(--text-muted) 65%, transparent);
+  text-decoration: none;
+}
+
+.ert-ui.ert-scope--settings .ert-matter-preview-label {
+  background-image: linear-gradient(to right, color-mix(in srgb, var(--text-muted) 65%, transparent) 50%, transparent 50%);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 6px 1px;
 }
 
 .ert-ui.ert-scope--settings .ert-matter-preview-link:hover {
   color: var(--interactive-accent);
-  text-decoration-color: currentColor;
+}
+
+.ert-ui.ert-scope--settings .ert-matter-preview-link:hover .ert-matter-preview-label {
+  background-image: linear-gradient(to right, currentColor 50%, transparent 50%);
 }
 
 .ert-ui.ert-scope--settings .ert-matter-preview-badges {
@@ -9335,17 +9343,25 @@
 .ert-ui.ert-scope--settings :is(.ert-bookmeta-primary-value, .ert-bookmeta-detail-value, .ert-bookmeta-matter-value).ert-bookmeta-preview-value--clickable {
   cursor: pointer;
   display: inline-block;
-  text-decoration: underline dashed;
-  text-underline-offset: 3px;
-  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
-  transition: color var(--duration-fast, 120ms) ease, text-decoration-color 120ms ease;
+  transition: color var(--duration-fast, 120ms) ease;
 }
 
-.ert-ui.ert-scope--settings :is(.ert-bookmeta-primary-value, .ert-bookmeta-detail-value, .ert-bookmeta-matter-value).ert-bookmeta-preview-value--clickable:hover,
-.ert-ui.ert-scope--settings :is(.ert-bookmeta-primary-value, .ert-bookmeta-detail-value, .ert-bookmeta-matter-value).ert-bookmeta-preview-value--clickable:focus-visible {
+.ert-ui.ert-scope--settings .ert-bookmeta-preview-text {
+  text-decoration: none;
+  background-image: linear-gradient(to right, color-mix(in srgb, currentColor 40%, transparent) 50%, transparent 50%);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 6px 1px;
+}
+
+.ert-ui.ert-scope--settings :is(.ert-bookmeta-primary-value, .ert-bookmeta-detail-value, .ert-bookmeta-matter-value).ert-bookmeta-preview-value--clickable:hover .ert-bookmeta-preview-text,
+.ert-ui.ert-scope--settings :is(.ert-bookmeta-primary-value, .ert-bookmeta-detail-value, .ert-bookmeta-matter-value).ert-bookmeta-preview-value--clickable:focus-visible .ert-bookmeta-preview-text {
+  background-image: linear-gradient(currentColor, currentColor);
+}
+
+.ert-ui.ert-scope--settings .ert-bookmeta-preview-value--clickable:hover,
+.ert-ui.ert-scope--settings .ert-bookmeta-preview-value--clickable:focus-visible {
   color: color-mix(in srgb, var(--interactive-accent) 72%, var(--text-normal));
-  text-decoration-style: solid;
-  text-decoration-color: currentColor;
   outline: none;
 }
 
@@ -9574,10 +9590,11 @@
 
 .ert-ui.ert-scope--settings .ert-bookmeta-source-link {
   color: var(--text-muted);
-  text-decoration-line: underline;
-  text-decoration-style: dashed;
-  text-underline-offset: 3px;
-  text-decoration-color: color-mix(in srgb, var(--text-muted) 70%, transparent);
+  text-decoration: none;
+  background-image: linear-gradient(to right, color-mix(in srgb, var(--text-muted) 70%, transparent) 50%, transparent 50%);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 6px 1px;
   overflow-wrap: anywhere;
 }
 
@@ -9605,7 +9622,7 @@
 
 .ert-ui.ert-scope--settings .ert-bookmeta-source-link:hover {
   color: var(--interactive-accent);
-  text-decoration-color: currentColor;
+  background-image: linear-gradient(to right, currentColor 50%, transparent 50%);
 }
 
 @media (max-width: 980px) {

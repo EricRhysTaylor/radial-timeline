@@ -616,15 +616,18 @@
     color: var(--color-blue);
     white-space: nowrap;
     line-height: 1.5;
-    text-decoration: underline;
-    text-decoration-style: dashed;
-    text-underline-offset: 2px;
+    text-decoration: none;
+    background-image: linear-gradient(to right, currentColor 50%, transparent 50%);
+    background-position: left bottom;
+    background-origin: content-box;
+    background-repeat: repeat-x;
+    background-size: 6px 1px;
     cursor: pointer;
 }
 
 .ert-timeline-repair-cue-chip:hover {
-    background: color-mix(in srgb, var(--color-blue) 28%, transparent);
-    text-decoration-style: solid;
+    background-color: color-mix(in srgb, var(--color-blue) 28%, transparent);
+    background-image: linear-gradient(currentColor, currentColor);
 }
 
 /* Warning badges */

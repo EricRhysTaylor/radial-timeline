@@ -656,14 +656,15 @@
 
 .ert-book-name--clickable {
   cursor: pointer;
-  text-decoration: underline dashed;
-  text-underline-offset: 3px;
-  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-decoration: none;
+  background-image: linear-gradient(to right, color-mix(in srgb, currentColor 40%, transparent) 50%, transparent 50%);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 6px 1px;
 }
 
 .ert-book-name--clickable:hover {
-  text-decoration-style: solid;
-  text-decoration-color: currentColor;
+  background-image: linear-gradient(currentColor, currentColor);
 }
 
 .ert-book-name--clickable:focus-visible {

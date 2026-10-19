@@ -211,23 +211,23 @@ export class InquiryBriefingModal extends Modal {
             if (source.path) {
                 const link = titleRow.createEl('a', {
                     cls: 'ert-briefing-source-title ert-briefing-link',
-                    text: title,
                     href: '#'
                 });
+                link.createSpan({ cls: 'ert-briefing-link-label', text: title });
                 link.addEventListener('click', event => {
                     event.preventDefault();
                     void this.openPathAndClose(source.path as string);
                 });
             } else if (source.url) {
-                titleRow.createEl('a', {
+                const link = titleRow.createEl('a', {
                     cls: 'ert-briefing-source-title ert-briefing-link',
-                    text: title,
                     href: source.url,
                     attr: {
                         target: '_blank',
                         rel: 'noopener'
                     }
                 });
+                link.createSpan({ cls: 'ert-briefing-link-label', text: title });
             } else {
                 titleRow.createDiv({ cls: 'ert-briefing-source-title', text: title });
             }

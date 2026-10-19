@@ -383,9 +383,11 @@ a.ert-briefing-scene-ref {
 .ert-briefing-quote--double {
   color: var(--ert-briefing-text);
   font-style: italic;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.12em;
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 100% 1px;
 }
 
 .ert-briefing-group {
@@ -455,14 +457,18 @@ a.ert-briefing-scene-ref {
 
 .ert-briefing-link {
   color: var(--ert-briefing-text);
-  text-decoration-line: underline;
-  text-decoration-thickness: 1px;
-  text-decoration-color: currentColor;
-  text-underline-offset: 0.18em;
+  text-decoration: none;
 }
 
-.ert-briefing-link:hover {
-  text-decoration-thickness: 1.5px;
+.ert-briefing-link-label {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 100% 1px;
+}
+
+.ert-briefing-link:hover .ert-briefing-link-label {
+  background-size: 100% 1.5px;
 }
 
 .ert-briefing-source-meta {

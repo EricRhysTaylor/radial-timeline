@@ -5,7 +5,8 @@
       "title": "7.6.2",
       "body": "## Fixes and improvements\n\n- Styled underlines use compatible CSS while retaining dashed and dotted cues, wrapping, and hover colors.\n- Book Details, Book Pages, and briefing links keep their text, click targets, and keyboard access.\n- The full-changelog button opens the permanent release page.",
       "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.6.2",
-      "publishedAt": "2026-10-19T15:44:23.897Z"
+      "publishedAt": "2026-10-19T15:46:51.376Z",
+      "isDraft": true
     },
     {
       "version": "7.6.1",
@@ -134,16 +135,10 @@
     "title": "7.6.2",
     "body": "## Fixes and improvements\n\n- Styled underlines use compatible CSS while retaining dashed and dotted cues, wrapping, and hover colors.\n- Book Details, Book Pages, and briefing links keep their text, click targets, and keyboard access.\n- The full-changelog button opens the permanent release page.",
     "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.6.2",
-    "publishedAt": "2026-10-19T15:44:23.897Z"
+    "publishedAt": "2026-10-19T15:46:51.376Z",
+    "isDraft": true
   },
   "patches": [
-    {
-      "version": "7.6.2",
-      "title": "7.6.2",
-      "body": "## Fixes and improvements\n\n- Styled underlines use compatible CSS while retaining dashed and dotted cues, wrapping, and hover colors.\n- Book Details, Book Pages, and briefing links keep their text, click targets, and keyboard access.\n- The full-changelog button opens the permanent release page.",
-      "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.6.2",
-      "publishedAt": "2026-10-19T15:44:23.897Z"
-    },
     {
       "version": "7.6.1",
       "title": "7.6.1",

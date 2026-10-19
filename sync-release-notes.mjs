@@ -17,14 +17,15 @@ function parseSemver(version) {
 
 function fetchRelease(tag) {
     try {
-        const json = execSync(`gh release view ${tag} --json name,body,publishedAt,url,isDraft`, { encoding: 'utf8' });
+        const json = execSync(`gh release view ${tag} --json name,body,publishedAt,isDraft`, { encoding: 'utf8' });
         const data = JSON.parse(json);
         const isDraft = data.isDraft || false;
         return {
             version: tag,
             title: data.name || tag,
             body: data.body || '',
-            url: data.url || `https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/${tag}`,
+            // Draft URLs use temporary untagged IDs that stop working after publication.
+            url: `https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/${encodeURIComponent(tag)}`,
             publishedAt: data.publishedAt || new Date().toISOString(),
             isDraft
         };

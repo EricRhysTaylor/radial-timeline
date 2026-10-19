@@ -1,3 +1,4 @@
+import { setAccessibleLabel } from '../utils/domTooltip';
 import { openSettingsTab } from '../utils/obsidianInternals';
 import { sleep } from '../utils/sleep';
 import {
@@ -2331,12 +2332,13 @@ export class InquiryView extends ItemView {
         y: number,
         size: number,
         iconName: string,
-        _label: string,
+        label: string,
         extraClass = ''
     ): SVGGElement {
         const group = createSvgGroup(parent, `ert-inquiry-icon-btn ${extraClass}`.trim(), x, y);
         group.setAttribute('role', 'button');
         group.setAttribute('tabindex', '0');
+        setAccessibleLabel(group, label);
         const rect = createSvgElement('rect');
         rect.classList.add('ert-inquiry-icon-btn-bg');
         rect.setAttribute('width', String(size));

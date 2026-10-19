@@ -1,3 +1,4 @@
+import { withAccessibleLabel, withTooltip } from '../utils/domTooltip';
 import { App, Modal, Setting as Settings, DropdownComponent, TextComponent, ButtonComponent, ExtraButtonComponent, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { PlanetaryProfile, PlanetaryTimeConversionDirection } from '../types';
@@ -107,9 +108,8 @@ export class PlanetaryTimeModal extends Modal {
         const iconEl = this.resultEl.createDiv({ cls: 'ert-planetary-result-icon' });
         setIcon(iconEl, 'orbit');
         this.resultTextEl = this.resultEl.createDiv({ cls: 'ert-planetary-result-text' });
-        const copyButton = new ExtraButtonComponent(resultRow)
-            .setIcon('copy')
-            .setTooltip(t('ui.planetaryTimeModal.copyYamlTooltip'))
+        const copyButton = withAccessibleLabel(new ExtraButtonComponent(resultRow)
+            .setIcon('copy'), t('ui.planetaryTimeModal.copyYamlTooltip'))
             .onClick(() => this.copyYaml());
         copyButton.extraSettingsEl.addClass('ert-iconBtn', 'ert-planetary-copy-button');
         this.renderResult();
@@ -198,7 +198,7 @@ export class PlanetaryTimeModal extends Modal {
 
         inputSetting.addExtraButton((button: ExtraButtonComponent) => {
             button.setIcon('clock');
-            button.setTooltip(t('planetary.modal.now'));
+            withAccessibleLabel(button, t('planetary.modal.now'));
             button.extraSettingsEl.addClass('ert-iconBtn', 'ert-planetary-earth-now-button');
             button.onClick(() => {
                 const now = new Date();
@@ -238,9 +238,8 @@ export class PlanetaryTimeModal extends Modal {
             this.planetDayValue = value;
             this.renderResult();
         }, 'ert-planetary-field--day');
-        const nowButton = new ExtraButtonComponent(dateControls)
-            .setIcon('clock')
-            .setTooltip(t('planetary.modal.todayTooltip'))
+        const nowButton = withTooltip(new ExtraButtonComponent(dateControls)
+            .setIcon('clock'), t('planetary.modal.todayTooltip'))
             .onClick(() => this.setPlanetaryFieldsFromEarthNow());
         nowButton.extraSettingsEl.addClass('ert-iconBtn', 'ert-planetary-now-button');
 
@@ -276,10 +275,9 @@ export class PlanetaryTimeModal extends Modal {
         const iconEl = field.createSpan({ cls: 'ert-planetary-field__icon' });
         setIcon(iconEl, icon);
         const labelEl = field.createSpan({ cls: 'ert-planetary-field__label', text: label });
-        const selectEl = field.createEl('select', {
+        const selectEl = withAccessibleLabel(field.createEl('select', {
             cls: 'ert-input ert-planetary-field__select',
-            attr: { 'aria-label': label },
-        });
+        }), label);
         options.forEach(option => {
             selectEl.createEl('option', { text: option.label, value: option.value });
         });

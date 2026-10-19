@@ -1,3 +1,4 @@
+import { setAccessibleLabel, withAccessibleLabel } from '../utils/domTooltip';
 import { App, Component, Notice, PluginSettingTab, setIcon, TextComponent } from 'obsidian';
 import { renderGeneralSection } from './sections/GeneralSection';
 import { renderCompletionEstimatePreview, renderProgressSection } from './sections/ProgressSection';
@@ -445,10 +446,9 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
         // Dismiss button (X) - only for non-critical alerts
         if (alert.severity !== 'critical') {
-            const dismissBtn = actionSide.createEl('button', {
+            const dismissBtn = withAccessibleLabel(actionSide.createEl('button', {
                 cls: 'ert-iconBtn ert-refactor-alert__btn--dismiss',
-                attr: { 'aria-label': t('ui.settingsTab.dismissAlert') }
-            });
+            }), t('ui.settingsTab.dismissAlert'));
             setIcon(dismissBtn, 'x');
             this.plugin.registerDomEvent(dismissBtn, 'click', async () => {
                 if (alert.id === TEMPLATE_HOTFIX_ALERT_ID) {
@@ -474,10 +474,9 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
         // Auto Update button - for migration alerts
         if (alert.migrations?.length) {
-            const autoUpdateBtn = actionSide.createEl('button', {
+            const autoUpdateBtn = withAccessibleLabel(actionSide.createEl('button', {
                 cls: 'ert-iconBtn ert-refactor-alert__btn--update',
-                attr: { 'aria-label': t('ui.settingsTab.applyUpdate') }
-            });
+            }), t('ui.settingsTab.applyUpdate'));
             setIcon(autoUpdateBtn, 'check');
             this.plugin.registerDomEvent(autoUpdateBtn, 'click', async () => {
                 const template = this.plugin.settings.sceneYamlTemplates?.advanced ?? '';
@@ -514,10 +513,9 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
             // View YAML button (↓)
             {
-                const viewBtn = actionSide.createEl('button', {
+                const viewBtn = withAccessibleLabel(actionSide.createEl('button', {
                     cls: 'ert-iconBtn ert-refactor-alert__btn--view',
-                    attr: { 'aria-label': t('ui.settingsTab.viewInYamlEditor') }
-                });
+                }), t('ui.settingsTab.viewInYamlEditor'));
                 setIcon(viewBtn, 'chevron-down');
                 this.plugin.registerDomEvent(viewBtn, 'click', async () => {
                     // Enable advanced YAML editor if not already
@@ -554,10 +552,9 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         // Header row (always visible) - clickable to toggle
         const headerRow = historyWrapper.createDiv({ cls: 'ert-notification-history__header' });
 
-        const toggleBtn = headerRow.createEl('button', {
+        const toggleBtn = withAccessibleLabel(headerRow.createEl('button', {
             cls: 'ert-iconBtn ert-notification-history__toggle',
-            attr: { 'aria-label': t('ui.settingsTab.toggleHistory') }
-        });
+        }), t('ui.settingsTab.toggleHistory'));
         setIcon(toggleBtn, startCollapsed ? 'chevron-right' : 'chevron-down');
 
         const headerText = headerRow.createSpan({
@@ -645,15 +642,11 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         setIcon(badgeIcon, options.badgeIcon);
         badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: options.badgeLabel });
         // Place wiki link inline with the badge label, not far right
-        const wikiLink = badge.createEl('a', {
+        const wikiLink = withAccessibleLabel(badge.createEl('a', {
             href: options.wikiHref,
             cls: ERT_CLASSES.BADGE_PILL_WIKI,
-            attr: {
-                'aria-label': t('ui.settingsTab.wikiAria'),
-                'target': '_blank',
-                'rel': 'noopener'
-            }
-        });
+            attr: { 'target': '_blank', 'rel': 'noopener' }
+        }), t('ui.settingsTab.wikiAria'));
         setIcon(wikiLink, 'external-link');
 
         // Wrap hero title in a title row for inline/legacy layout
@@ -689,7 +682,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
                 if (feature.targetSection) {
                     li.setAttr('role', 'button');
                     li.setAttr('tabindex', '0');
-                    li.setAttr('aria-label', t('ui.settingsTab.jumpToAria', { section: feature.text }));
+                    setAccessibleLabel(li, t('ui.settingsTab.jumpToAria', { section: feature.text }));
                     this.plugin.registerDomEvent(li, 'click', () => this.scrollToSettingsSection(feature.targetSection!));
                     this.plugin.registerDomEvent(li, 'keydown', (evt: KeyboardEvent) => {
                         if (evt.key !== 'Enter' && evt.key !== ' ') return;

@@ -1,3 +1,4 @@
+import { setTooltip, setAccessibleLabel, withAccessibleLabel } from '../utils/domTooltip';
 /*
  * OnboardingModal — imports an existing manuscript into a new book.
  *
@@ -348,7 +349,7 @@ export class OnboardingModal extends Modal {
     found.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingModal.lookingForExports') });
 
     const other = panel.createDiv({ cls: 'ert-onb-bookrow' });
-    const input = other.createEl('input', { type: 'text', cls: 'ert-input', attr: { placeholder: t('ui.onboardingModal.folderInputPlaceholder'), 'aria-label': t('ui.onboardingModal.folderInputAria') } });
+    const input = withAccessibleLabel(other.createEl('input', { type: 'text', cls: 'ert-input', attr: { placeholder: t('ui.onboardingModal.folderInputPlaceholder') } }), t('ui.onboardingModal.folderInputAria'));
     const error = panel.createDiv({ cls: 'ert-section-desc ert-section-desc--alert' });
     const selectFolder = async (path: string) => {
       const folder = normalizePath(path.trim());
@@ -637,7 +638,7 @@ export class OnboardingModal extends Modal {
     new DropdownComponent(modeRow)
       .addOptions({ structure: t('ui.onboardingModal.modeStructureOnly'), ai: t('ui.onboardingModal.modeAiAssisted') })
       .setValue(this.useAi ? 'ai' : 'structure')
-      .then((dropdown) => dropdown.selectEl.setAttribute('aria-label', t('ui.onboardingModal.importModeAria')))
+      .then((dropdown) => setAccessibleLabel(dropdown.selectEl, t('ui.onboardingModal.importModeAria')))
       .onChange((value) => {
         this.useAi = value === 'ai';
         void this.showPreflight();
@@ -1485,7 +1486,7 @@ export class OnboardingModal extends Modal {
       return;
     }
     this.spendEl.setText(spend.text);
-    this.spendEl.setAttr('aria-label', spend.ariaLabel);
+    setTooltip(this.spendEl, spend.ariaLabel);
     this.spendEl.toggleClass('is-free', spend.free);
   }
 
@@ -1579,13 +1580,12 @@ export class OnboardingModal extends Modal {
     topbar.createSpan({ cls: 'ert-modal-badge', text: badgeText });
     const spend = this.buildSpendLabel();
     this.spendEl = spend
-      ? topbar.createSpan({
+      ? withAccessibleLabel(topbar.createSpan({
         cls: `ert-modal-badge ert-onb-spend${spend.free ? ' is-free' : ''}`,
         text: spend.text,
-        attr: { 'aria-label': spend.ariaLabel }
-      })
+      }), spend.ariaLabel)
       : null;
-    const steps = topbar.createDiv({ cls: 'ert-onb-steps', attr: { 'aria-label': t('ui.onboardingModal.stepAria', { stage, total }) } });
+    const steps = withAccessibleLabel(topbar.createDiv({ cls: 'ert-onb-steps', attr: {  } }), t('ui.onboardingModal.stepAria', { stage, total }));
     for (let i = 1; i <= total; i++) {
       const pip = steps.createSpan({ cls: 'ert-onb-step' });
       if (i < stage) pip.addClass('is-done');

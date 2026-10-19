@@ -1,3 +1,4 @@
+import { setAccessibleLabel } from '../utils/domTooltip';
 import { ButtonComponent, DropdownComponent, ToggleComponent, TextComponent, SliderComponent, ColorComponent, setIcon } from 'obsidian';
 import { ERT_CLASSES, ERT_CLASS_SET, ERT_DATA, type ErtVariant } from './classes';
 
@@ -218,7 +219,7 @@ export function colorSwatch(slot: HTMLElement, opts: ColorSwatchOpts = {}): Colo
   const swatchEl = slot.createEl('button', { cls: swatchCls });
   warnUnknownErtClasses([ERT_CLASSES.SWATCH], swatchEl);
   swatchEl.type = 'button';
-  if (opts.ariaLabel) swatchEl.setAttribute('aria-label', opts.ariaLabel);
+  if (opts.ariaLabel) setAccessibleLabel(swatchEl, opts.ariaLabel);
 
   let isSetting = false;
   const applyColor = (value?: string) => {

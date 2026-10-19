@@ -1,3 +1,4 @@
+import { setTooltip, withAccessibleLabel } from '../utils/domTooltip';
 import { App, Modal, Setting, Notice, normalizePath, ButtonComponent, DropdownComponent, TextAreaComponent, TextComponent, setIcon } from 'obsidian';
 import { t } from '../i18n';
 import type RadialTimelinePlugin from '../main';
@@ -361,11 +362,11 @@ export class BookDesignerModal extends Modal {
         yesPill.toggleClass('is-warn', exists);
         (yesPill as HTMLButtonElement).disabled = exists || noBeatSystem;
         if (exists) {
-            yesPill.setAttribute('aria-label', t('bookDesigner.fields.generateBeats.existsAria'));
+            setTooltip(yesPill, t('bookDesigner.fields.generateBeats.existsAria'));
         } else if (noBeatSystem) {
-            yesPill.setAttribute('aria-label', t('bookDesigner.fields.generateBeats.noSystemAria'));
+            setTooltip(yesPill, t('bookDesigner.fields.generateBeats.noSystemAria'));
         } else {
-            yesPill.removeAttribute('aria-label');
+            setTooltip(yesPill, '');
         }
         // If beats exist (or no system) and Yes was selected, switch to No
         if ((exists || noBeatSystem) && this.generateBeats) {
@@ -784,15 +785,11 @@ export class BookDesignerModal extends Modal {
         this.heroLocationMeta = heroBadge.createSpan({ cls: 'ert-book-designer-badge-detail', text: this.getSelectedBookTitle() });
         heroBadge.createSpan({ cls: 'ert-book-designer-badge-sep', text: '•' });
         this.heroModeMeta = heroBadge.createSpan({ cls: 'ert-book-designer-badge-detail ert-book-designer-badge-mode ert-meta-auto', text: t('bookDesigner.meta.autoMode') });
-        const wikiLink = heroBadge.createEl('a', {
+        const wikiLink = withAccessibleLabel(heroBadge.createEl('a', {
             href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Book-Designer',
             cls: 'ert-modal-badge__wikiLink',
-            attr: {
-                'aria-label': t('bookDesigner.modal.wikiAriaLabel'),
-                'target': '_blank',
-                'rel': 'noopener'
-            }
-        });
+            attr: { 'target': '_blank', 'rel': 'noopener' }
+        }), t('bookDesigner.modal.wikiAriaLabel'));
         setIcon(wikiLink, 'external-link');
         hero.createDiv({ cls: 'ert-modal-title', text: t('bookDesigner.modal.title') });
         hero.createDiv({ cls: 'ert-modal-subtitle', text: t('bookDesigner.modal.subtitle') });
@@ -1128,7 +1125,7 @@ export class BookDesignerModal extends Modal {
             cls: 'ert-manuscript-setting-label',
             text: beatLabelText
         });
-        beatLabelEl.setAttribute('title', beatLabelTooltip);
+        setTooltip(beatLabelEl, beatLabelTooltip);
         const beatPills = beatSetting.createDiv({ cls: 'ert-manuscript-pill-row ert-book-designer-yesno-row' });
 
         // If no beat system is active, force generateBeats off so the toggle reflects reality.

@@ -1,3 +1,4 @@
+import { setAccessibleLabel } from '../utils/domTooltip';
 import { readTimeReferences, referenceDateLabel, TIME_REFERENCES_KEY, type TimeReference } from '../chronologue/timeReferences/model';
 import { manageTimeReferences, openTimeReference } from '../chronologue/timeReferences/editor';
 import { currentReferenceSelection, hoverTimeReference, onReferenceSelection, pinTimeReference } from '../chronologue/timeReferences/selection';
@@ -785,7 +786,7 @@ export class TimetableView extends BasesView {
         if (promotable > 0) button('promote', t('ui.timetable.bulkPromote', { notes: tCount('note', promotable) }), 'file-up', false);
         const clear = bar.createEl('button', { cls: 'ert-timetable__bulk-clear clickable-icon' });
         clear.dataset.bulk = 'clear';
-        clear.setAttr('aria-label', t('ui.timetable.bulkClear'));
+        setAccessibleLabel(clear, t('ui.timetable.bulkClear'));
         setIcon(clear, 'x');
     }
 
@@ -1380,22 +1381,22 @@ export class TimetableView extends BasesView {
     private renderCorner(cell: HTMLElement, state: TimelineModeState): void {
         const corner = cell.createDiv({ cls: 'ert-timetable__corner' });
         const add = corner.createEl('button', { cls: 'ert-timetable__new-sketch clickable-icon' });
-        add.setAttr('aria-label', t('ui.timetable.newSketch'));
+        setAccessibleLabel(add, t('ui.timetable.newSketch'));
         setIcon(add, 'plus');
-        tooltip(add, t('ui.timetable.newSketch'), 'bottom');
+        setAccessibleLabel(add, t('ui.timetable.newSketch'));
 
         const lensOn = currentTimelineLens()?.owner === this;
         const lens = corner.createEl('button', { cls: 'ert-timetable__lens-toggle clickable-icon' });
         lens.toggleClass('is-active', lensOn);
         lens.setAttr('aria-pressed', String(lensOn));
-        lens.setAttr('aria-label', t('ui.timetable.optionLens'));
+        setAccessibleLabel(lens, t('ui.timetable.optionLens'));
         setIcon(lens, 'scan-eye');
         tooltip(lens, lensOn ? t('ui.timetable.lensOn') : t('ui.timetable.lensOff'), 'bottom');
 
         const modeButton = corner.createEl('button', { cls: 'ert-timetable__mode clickable-icon' });
         modeButton.toggleClass('is-pinned', this.modePin !== null);
         modeButton.setAttr('aria-haspopup', 'menu');
-        modeButton.setAttr('aria-label', this.modeTooltip(state));
+        setAccessibleLabel(modeButton, this.modeTooltip(state));
         setIcon(modeButton, modeIcon(state.mode));
         tooltip(modeButton, this.modeTooltip(state), 'bottom');
 
@@ -1522,9 +1523,9 @@ export class TimetableView extends BasesView {
         const button = container.createEl('button', { cls: 'ert-timetable__new-sketch ert-timetable__new-sketch--inline clickable-icon' });
         if (act !== undefined && act !== null) button.dataset.act = String(act);
         button.dataset.bookId = bookId;
-        button.setAttr('aria-label', t('ui.timetable.newSketchIn', { group: label }));
+        setAccessibleLabel(button, t('ui.timetable.newSketchIn', { group: label }));
         setIcon(button, 'plus');
-        tooltip(button, t('ui.timetable.newSketchIn', { group: label }), 'right');
+        setAccessibleLabel(button, t('ui.timetable.newSketchIn', { group: label }));
     }
 
     private renderDrawer(body: HTMLElement, item: TableItem, layout: RingLayout | null, columnCount: number): void {
@@ -1698,7 +1699,7 @@ export class TimetableView extends BasesView {
         if (SELECTABLE_KINDS.has(row.kind)) {
             const checkbox = cell.createEl('input', { cls: 'ert-timetable__select', type: 'checkbox' });
             checkbox.checked = this.selected.has(row.path);
-            tooltip(checkbox, t('ui.timetable.bulkPick', { name: displayName(row.basename) }), 'right');
+            setAccessibleLabel(checkbox, t('ui.timetable.bulkPick', { name: displayName(row.basename) }));
             cell.closest('tr')?.toggleClass('is-selected', checkbox.checked);
         } else {
             cell.createSpan({ cls: 'ert-timetable__select-spacer' });
@@ -1707,14 +1708,14 @@ export class TimetableView extends BasesView {
             const open = this.drawerIsOpen(row.path);
             const toggle = cell.createEl('button', { cls: 'ert-timetable__drawer-toggle clickable-icon' });
             toggle.setAttr('aria-expanded', String(open));
-            toggle.setAttr('aria-label', t('ui.timetable.toggleSketch'));
+            setAccessibleLabel(toggle, t('ui.timetable.toggleSketch'));
             setIcon(toggle, open ? 'chevron-down' : 'chevron-right');
         }
         if (row.kind === 'scene' && frontmatter?.[TIME_REFERENCES_KEY] !== undefined) {
             const toggle = cell.createEl('button', { cls: 'ert-time-reference-toggle clickable-icon' });
             const count = readTimeReferences(frontmatter[TIME_REFERENCES_KEY], row.path).references.length;
             toggle.setAttr('aria-expanded', String(this.expandedReferences.has(row.path)));
-            toggle.setAttr('aria-label', t('timeReferences.references', { count }));
+            setAccessibleLabel(toggle, t('timeReferences.references', { count }));
             setIcon(toggle, this.expandedReferences.has(row.path) ? 'chevron-down' : 'history');
         }
         const chip = cell.createDiv({ cls: 'ert-timetable__chip' });
@@ -1736,9 +1737,9 @@ export class TimetableView extends BasesView {
 
         if (row.kind === 'sketch' || row.kind === 'unclassed') {
             const promote = cell.createEl('button', { cls: 'ert-timetable__promote clickable-icon' });
-            promote.setAttr('aria-label', t('ui.timetable.promote'));
+            setAccessibleLabel(promote, t('ui.timetable.promote'));
             setIcon(promote, 'file-up');
-            tooltip(promote, t('ui.timetable.promote'), 'right');
+            setAccessibleLabel(promote, t('ui.timetable.promote'));
         }
     }
 

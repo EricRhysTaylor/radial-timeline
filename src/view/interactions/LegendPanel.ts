@@ -1,3 +1,4 @@
+import { withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -107,7 +108,7 @@ function renderRow(sectionEl: HTMLElement, row: LegendRow): void {
     }
     if (row.detailIcon) {
         const label = row.detailIconLabel ?? row.detailIcon;
-        const detailIconEl = detailEl.createSpan({ cls: 'ert-timeline-legend__detail-icon', attr: { 'aria-label': label, title: label } });
+        const detailIconEl = withTooltip(withAccessibleLabel(detailEl.createSpan({ cls: 'ert-timeline-legend__detail-icon', attr: {  } }), label), label);
         setIcon(detailIconEl, row.detailIcon);
     }
 }

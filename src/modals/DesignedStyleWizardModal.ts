@@ -1,3 +1,4 @@
+import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 /*
  * Designed Style Wizard — single-page, two-column modal that lets a Pro user
  * author or edit a DesignedStyleSpec. The spec is the source of truth; the
@@ -881,8 +882,8 @@ export class DesignedStyleWizardModal extends Modal {
             cls: `${ERT_CLASSES.ICON_BTN} ert-style-wizard__reset-btn`,
         });
         resetBtn.type = 'button';
-        resetBtn.setAttribute('aria-label', t('ui.designedStyleWizardModal.resetAria'));
-        resetBtn.setAttribute('title', t('ui.designedStyleWizardModal.resetTitle'));
+        setAccessibleLabel(resetBtn, t('ui.designedStyleWizardModal.resetAria'));
+        setTooltip(resetBtn, t('ui.designedStyleWizardModal.resetTitle'));
         try { setIcon(resetBtn, 'rotate-ccw'); } catch { /* test env */ }
         resetBtn.addEventListener('click', () => this.resetActiveCategory());
 
@@ -897,8 +898,8 @@ export class DesignedStyleWizardModal extends Modal {
             cls: `${ERT_CLASSES.ICON_BTN} ert-style-wizard__category-nav-btn`,
         });
         prevBtn.type = 'button';
-        prevBtn.setAttribute('aria-label', t('ui.designedStyleWizardModal.prevCategoryAria'));
-        prevBtn.setAttribute('title', prevCategory ? t('ui.designedStyleWizardModal.prevCategoryTitle', { category: prevCategory.label }) : t('ui.designedStyleWizardModal.atFirstCategory'));
+        setAccessibleLabel(prevBtn, t('ui.designedStyleWizardModal.prevCategoryAria'));
+        setTooltip(prevBtn, prevCategory ? t('ui.designedStyleWizardModal.prevCategoryTitle', { category: prevCategory.label }) : t('ui.designedStyleWizardModal.atFirstCategory'));
         try { setIcon(prevBtn, 'chevron-left'); } catch { /* test env */ }
         if (!prevCategory) {
             prevBtn.disabled = true;
@@ -910,8 +911,8 @@ export class DesignedStyleWizardModal extends Modal {
             cls: `${ERT_CLASSES.ICON_BTN} ert-style-wizard__category-nav-btn`,
         });
         nextBtn.type = 'button';
-        nextBtn.setAttribute('aria-label', t('ui.designedStyleWizardModal.nextCategoryAria'));
-        nextBtn.setAttribute('title', nextCategory ? t('ui.designedStyleWizardModal.nextCategoryTitle', { category: nextCategory.label }) : t('ui.designedStyleWizardModal.atLastCategory'));
+        setAccessibleLabel(nextBtn, t('ui.designedStyleWizardModal.nextCategoryAria'));
+        setTooltip(nextBtn, nextCategory ? t('ui.designedStyleWizardModal.nextCategoryTitle', { category: nextCategory.label }) : t('ui.designedStyleWizardModal.atLastCategory'));
         try { setIcon(nextBtn, 'chevron-right'); } catch { /* test env */ }
         if (!nextCategory) {
             nextBtn.disabled = true;
@@ -1063,7 +1064,7 @@ export class DesignedStyleWizardModal extends Modal {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.marginsPresetAria', { preset: label }));
+            setAccessibleLabel(card, t('ui.designedStyleWizardModal.marginsPresetAria', { preset: label }));
             if (current === value) card.addClass('is-active');
             // Mini page diagram: outer page rectangle (paper) + inner bordered
             // block (text frame). Four measurement ticks span each margin so the
@@ -1123,7 +1124,7 @@ export class DesignedStyleWizardModal extends Modal {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.lineSpacingPresetAria', { preset: label }));
+            setAccessibleLabel(card, t('ui.designedStyleWizardModal.lineSpacingPresetAria', { preset: label }));
             if (current === value) card.addClass('is-active');
             const stack = card.createDiv({ cls: `ert-style-wizard__preset-lines ert-style-wizard__preset-lines--${value}` });
             for (let i = 0; i < lineCount; i += 1) {
@@ -1150,7 +1151,7 @@ export class DesignedStyleWizardModal extends Modal {
         const customCard = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
         customCard.tabIndex = 0;
         customCard.setAttribute('role', 'button');
-        customCard.setAttribute('aria-label', t('ui.designedStyleWizardModal.customLineSpacing'));
+        setAccessibleLabel(customCard, t('ui.designedStyleWizardModal.customLineSpacing'));
         if (current === 'custom') customCard.addClass('is-active');
         const customStack = customCard.createDiv({ cls: 'ert-style-wizard__preset-lines ert-style-wizard__preset-lines--standard' });
         for (let i = 0; i < 5; i += 1) {
@@ -1229,7 +1230,7 @@ export class DesignedStyleWizardModal extends Modal {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.headerPresetAria', { preset: label }));
+            setAccessibleLabel(card, t('ui.designedStyleWizardModal.headerPresetAria', { preset: label }));
             if (current === value) {
                 card.addClass('is-active');
                 if (modified) card.addClass('is-modified');
@@ -1533,8 +1534,8 @@ export class DesignedStyleWizardModal extends Modal {
             const card = cornerBody.createDiv({ cls: 'ert-style-wizard__preset-card ert-style-wizard__corner-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', tooltip);
-            card.setAttribute('title', tooltip);
+            setAccessibleLabel(card, tooltip);
+            setTooltip(card, tooltip);
             if (this.activeCornerKey === key) card.addClass('is-active');
             const strip = card.createDiv({ cls: 'ert-style-wizard__preset-header-strip' });
             const cell = strip.createDiv({ cls: `ert-style-wizard__preset-header-cell ert-style-wizard__preset-header-cell--${slot}` });
@@ -1737,7 +1738,7 @@ export class DesignedStyleWizardModal extends Modal {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.folioPositionAria', { position: label }));
+            setAccessibleLabel(card, t('ui.designedStyleWizardModal.folioPositionAria', { position: label }));
             if (current === value) card.addClass('is-active');
             render(card);
             card.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: label });
@@ -1926,7 +1927,7 @@ export class DesignedStyleWizardModal extends Modal {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.chapterStyleAria', { style: label }));
+            setAccessibleLabel(card, t('ui.designedStyleWizardModal.chapterStyleAria', { style: label }));
             if (current === value) card.addClass('is-active');
             render(card);
             card.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: label });
@@ -2055,7 +2056,7 @@ export class DesignedStyleWizardModal extends Modal {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.openerStyleAria', { style: label }));
+            setAccessibleLabel(card, t('ui.designedStyleWizardModal.openerStyleAria', { style: label }));
             if (current === value) card.addClass('is-active');
             render(card);
             card.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: label });
@@ -2105,7 +2106,7 @@ export class DesignedStyleWizardModal extends Modal {
             const card = row.createDiv({ cls: 'ert-style-wizard__preset-card' });
             card.tabIndex = 0;
             card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', t('ui.designedStyleWizardModal.headingModeAria', { mode: label }));
+            setAccessibleLabel(card, t('ui.designedStyleWizardModal.headingModeAria', { mode: label }));
             if (current === value) card.addClass('is-active');
             render(card);
             card.createDiv({ cls: 'ert-style-wizard__preset-card-label', text: label });

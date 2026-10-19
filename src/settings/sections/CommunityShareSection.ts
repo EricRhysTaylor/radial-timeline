@@ -1,3 +1,4 @@
+import { withAccessibleLabel } from '../../utils/domTooltip';
 import { App, ButtonComponent, Notice, Setting, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import {
@@ -227,15 +228,11 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const badge = badgeRow.createSpan({ cls: ERT_CLASSES.BADGE_PILL });
     setIcon(badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON }), isConnected ? 'satellite-dish' : settings.enabled ? 'shield-check' : 'shield');
     badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.communityShareSection.badgeText', { status: formatStatus(settings) }) });
-    const wikiLink = badge.createEl('a', {
+    const wikiLink = withAccessibleLabel(badge.createEl('a', {
         href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Community',
         cls: ERT_CLASSES.BADGE_PILL_WIKI,
-        attr: {
-            'aria-label': t('ui.communityShareSection.wikiAriaLabel'),
-            'target': '_blank',
-            'rel': 'noopener'
-        }
-    });
+        attr: { 'target': '_blank', 'rel': 'noopener' }
+    }), t('ui.communityShareSection.wikiAriaLabel'));
     setIcon(wikiLink, 'external-link');
 
     const titleRow = hero.createDiv({ cls: 'ert-hero-titleRow' });
@@ -367,15 +364,11 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         .setHeading()
         .setDesc(t('ui.communityShareSection.whatYouShareDesc'));
     addHeadingIcon(sharingHeading, 'share-2');
-    const profileLink = sharingHeading.nameEl.createEl('a', {
+    const profileLink = withAccessibleLabel(sharingHeading.nameEl.createEl('a', {
         href: COMMUNITY_MY_SHARE_URL,
         cls: 'ert-wiki-link',
-        attr: {
-            'aria-label': t('ui.communityShareSection.openProfileAriaLabel'),
-            'target': '_blank',
-            'rel': 'noopener'
-        }
-    });
+        attr: { 'target': '_blank', 'rel': 'noopener' }
+    }), t('ui.communityShareSection.openProfileAriaLabel'));
     setIcon(profileLink, 'external-link');
     applyErtHeaderLayout(sharingHeading);
 

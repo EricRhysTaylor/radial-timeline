@@ -1,3 +1,4 @@
+import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -7,7 +8,7 @@
  * Two-phase modal: configuration wizard + review/edit UI for rapid human correction.
  */
 
-import { App, Modal, Menu, ButtonComponent, Notice, debounce, setIcon, setTooltip, ToggleComponent } from 'obsidian';
+import { App, Modal, Menu, ButtonComponent, Notice, debounce, setIcon, ToggleComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { EventRef, TFile, WorkspaceLeaf } from 'obsidian';
 import type { TimelineItem } from '../types';
@@ -1169,12 +1170,12 @@ export class TimelineScaffoldModal extends Modal {
         if (entry.hasBackwardTime) {
             const warningBadge = line1.createSpan({ cls: 'ert-timeline-repair-warning-badge' });
             setIcon(warningBadge, 'alert-triangle');
-            warningBadge.setAttribute('aria-label', t('timelineScaffoldModal.review.warningBackwardTime'));
+            setTooltip(warningBadge, t('timelineScaffoldModal.review.warningBackwardTime'));
         }
         if (entry.hasLargeGap) {
             const gapBadge = line1.createSpan({ cls: 'ert-timeline-repair-gap-badge' });
             setIcon(gapBadge, 'clock');
-            gapBadge.setAttribute('aria-label', t('timelineScaffoldModal.review.warningLargeGap'));
+            setTooltip(gapBadge, t('timelineScaffoldModal.review.warningLargeGap'));
         }
         if (this.duplicateWhenIndices.has(idx)) {
             const dupBadge = line1.createSpan({ cls: 'ert-timeline-repair-duplicate-badge' });
@@ -1196,7 +1197,7 @@ export class TimelineScaffoldModal extends Modal {
             for (const cue of entry.cues) {
                 const cueChip = line1.createEl('a', { cls: 'ert-timeline-repair-cue-chip' });
                 cueChip.setText(`"${cue.match}"`);
-                cueChip.setAttribute('aria-label', t('ui.timelineScaffoldModal.cueChipAria', { match: cue.match }));
+                setAccessibleLabel(cueChip, t('ui.timelineScaffoldModal.cueChipAria', { match: cue.match }));
                 cueChip.addEventListener('click', (e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -1271,7 +1272,7 @@ export class TimelineScaffoldModal extends Modal {
                 cls: 'ert-iconBtn ert-timeline-repair-bucket-pill'
             });
             setIcon(pill, bucket.icon);
-            setTooltip(pill, TIME_BUCKET_LABELS[bucket.id]);
+            setAccessibleLabel(pill, TIME_BUCKET_LABELS[bucket.id]);
 
             if (bucket.id === currentBucket) {
                 pill.addClass('ert-is-active');

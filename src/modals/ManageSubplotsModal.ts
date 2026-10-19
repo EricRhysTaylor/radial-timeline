@@ -1,3 +1,4 @@
+import { withAccessibleLabel, withTooltip } from '../utils/domTooltip';
 /*
  * Subplot manager modal
  * 
@@ -109,17 +110,15 @@ export class ManageSubplotsModal extends Modal {
             const actions = row.createDiv({ cls: 'ert-manage-subplots-actions' });
 
             // Rename Button (the main plot can be renamed, never deleted)
-            const renameBtn = new ButtonComponent(actions)
-                .setIcon('pencil-line')
-                .setTooltip(t('ui.manageSubplotsModal.renameTooltip'))
+            const renameBtn = withAccessibleLabel(new ButtonComponent(actions)
+                .setIcon('pencil-line'), t('ui.manageSubplotsModal.renameTooltip'))
                 .onClick(() => this.handleRename(subplot.name));
 
             renameBtn.buttonEl.classList.add('ert-pulse-icon-button', 'ert-manage-subplots-btn');
 
             // Delete Button (Disable for the main plot)
-            const deleteBtn = new ButtonComponent(actions)
-                .setIcon('eraser')
-                .setTooltip(isMainPlot ? t('ui.manageSubplotsModal.mainPlotCannotDelete') : t('ui.manageSubplotsModal.deleteTooltip'))
+            const deleteBtn = withTooltip(new ButtonComponent(actions)
+                .setIcon('eraser'), isMainPlot ? t('ui.manageSubplotsModal.mainPlotCannotDelete') : t('ui.manageSubplotsModal.deleteTooltip'))
                 .setDisabled(isMainPlot)
                 .onClick(() => this.handleDelete(subplot.name));
 

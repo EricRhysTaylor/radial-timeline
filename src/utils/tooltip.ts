@@ -10,13 +10,14 @@
  * Provides consistent bubble tooltips throughout the plugin.
  * 
  * STRATEGY:
- * 1. For HTML components (Settings, Modals): Uses Obsidian's native `setTooltip` or `component.setTooltip()`.
+ * 1. HTML uses the audited Obsidian tooltip adapter; names alone never create hover help.
  * 2. For SVG elements (Timeline View): Uses a CUSTOM DOM implementation (.rt-tooltip)
  *    because Obsidian's API relies on getBoundingClientRect() which can be flaky with SVG transforms,
  *    and the previous hack of creating anchor elements caused modal focus issues.
  */
 
-import { setTooltip, ButtonComponent, ExtraButtonComponent } from 'obsidian';
+import { type ButtonComponent, type ExtraButtonComponent } from 'obsidian';
+import { setAccessibleLabel, setTooltip, withTooltip } from './domTooltip';
 import { splitIntoBalancedLinesOptimal } from './text';
 
 export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
@@ -38,33 +39,9 @@ const TOOLTIP_ACTIVE_CLASS = 'rt-tooltip-active';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-/**
- * Set (or clear, with `null`) the accessible name of an SVG element via a
- * `<title>` child — the SVG-native accessible name, which also yields a
- * native hover tooltip.
- *
- * NEVER put `aria-label` (or call `setTooltip`) on an SVG element. Obsidian's
- * global tooltip handler shows a tooltip for any aria-labelled element and, on
- * its hover-delay timer, calls `HTMLElement.isShown()` — a method Obsidian
- * adds to `HTMLElement.prototype` (its `enhance.js`) that `SVGElement` does NOT
- * inherit. The result is the recurring `e.isShown is not a function` crash.
- * `<title>` involves no Obsidian code path, so it is crash-safe on SVG.
- */
+/** Name SVG controls without adding a second, browser-native hover bubble. */
 export function setSvgAccessibleName(el: Element, name: string | null): void {
-    const existing = Array.from(el.children).find(
-        child => child.tagName.toLowerCase() === 'title'
-    ) ?? null;
-    if (name === null || name === '') {
-        existing?.remove();
-        return;
-    }
-    if (existing) {
-        if (existing.textContent !== name) existing.textContent = name;
-        return;
-    }
-    const title = el.ownerDocument.createElementNS(SVG_NS, 'title');
-    title.textContent = name;
-    el.insertBefore(title, el.firstChild);
+    setAccessibleLabel(el, name ?? '');
 }
 
 // Singleton tooltip element
@@ -107,8 +84,7 @@ function setActiveTooltipTarget(target: Element | null): void {
 }
 
 function isSvgLikeElement(element: Element): element is SVGElement {
-    if (element.instanceOf(SVGElement)) return true;
-    return element.namespaceURI === 'http://www.w3.org/2000/svg';
+    return element.namespaceURI === SVG_NS;
 }
 
 function readAttr(target: Element, rtAttr: string, fallbackAttr: string): string {
@@ -145,6 +121,9 @@ function resolveTooltipTarget(start: EventTarget | null, rtOnly = false): Elemen
     const selector = rtOnly
         ? `[${RT_TOOLTIP_ATTR}]`
         : `[${RT_TOOLTIP_ATTR}], [${TOOLTIP_ATTR}], .rt-tooltip-target`;
+    // HTML help inside a custom SVG target owns the hover at that point.
+    const nativeTarget = start.closest('[aria-label]');
+    if (nativeTarget && nativeTarget.namespaceURI !== SVG_NS) return null;
     const target = start.closest(selector);
     if (!target) return null;
     return getTooltipText(target, rtOnly) ? target : null;
@@ -190,13 +169,7 @@ export function tooltipForComponent(
     placement: TooltipPlacement = 'bottom'
 ): void {
     const balancedText = balanceTooltipText(text);
-    // Access the underlying button element
-    const buttonEl = (component as unknown as { buttonEl?: HTMLElement }).buttonEl;
-    if (buttonEl) {
-        setTooltip(buttonEl, balancedText, { placement });
-    } else {
-        component.setTooltip(balancedText);
-    }
+    withTooltip(component, balancedText, { placement });
 }
 
 export function balanceTooltipText(text: string, maxWidth: number = DEFAULT_TOOLTIP_BALANCE_WIDTH): string {
@@ -240,6 +213,18 @@ export function addTooltipData(
     text: string,
     placement: TooltipPlacement = 'bottom'
 ): void {
+    if (isSvgLikeElement(element)) setAccessibleLabel(element, text);
+    else setTooltip(element, '');
+    element.removeAttribute('title');
+    element.removeAttribute('aria-label');
+    // Serialized SVG controls may already have a native title. Keep its name
+    // through desc/labelledby while the custom renderer owns hover help.
+    for (const title of Array.from(element.querySelectorAll('title'))) {
+        if (title.parentElement?.namespaceURI === SVG_NS) {
+            setAccessibleLabel(title.parentElement, title.textContent ?? '');
+            title.remove();
+        }
+    }
     if (isSvgLikeElement(element)) {
         // Avoid Obsidian native tooltip interception on SVG nodes.
         element.classList.remove('rt-tooltip-target');
@@ -247,14 +232,17 @@ export function addTooltipData(
         element.setAttribute(RT_TOOLTIP_PLACEMENT_ATTR, placement);
         element.removeAttribute(TOOLTIP_ATTR);
         element.removeAttribute(TOOLTIP_PLACEMENT_ATTR);
-        element.removeAttribute(TOOLTIP_ANCHOR_ATTR);
-        element.removeAttribute(TOOLTIP_OFFSET_X_ATTR);
-        element.removeAttribute(TOOLTIP_OFFSET_Y_ATTR);
+        for (const [legacy, own] of [[TOOLTIP_ANCHOR_ATTR, RT_TOOLTIP_ANCHOR_ATTR], [TOOLTIP_OFFSET_X_ATTR, RT_TOOLTIP_OFFSET_X_ATTR], [TOOLTIP_OFFSET_Y_ATTR, RT_TOOLTIP_OFFSET_Y_ATTR]]) {
+            const value = element.getAttribute(legacy);
+            if (value !== null) element.setAttribute(own, value);
+            element.removeAttribute(legacy);
+        }
         return;
     }
-    element.classList.add('rt-tooltip-target');
-    element.setAttribute(TOOLTIP_ATTR, text);
-    element.setAttribute(TOOLTIP_PLACEMENT_ATTR, placement);
+    element.classList.remove('rt-tooltip-target');
+    element.removeAttribute(TOOLTIP_ATTR);
+    element.setAttribute(RT_TOOLTIP_ATTR, text);
+    element.setAttribute(RT_TOOLTIP_PLACEMENT_ATTR, placement);
 }
 
 /**
@@ -271,6 +259,15 @@ export function setupTooltipsFromDataAttributes(
 ): void {
     const svgElement = isSvgLikeElement(container) ? container : container.querySelector('svg');
     if (!svgElement) return;
+    for (const title of Array.from(svgElement.querySelectorAll('title'))) {
+        if (title.parentElement) {
+            setAccessibleLabel(title.parentElement, title.textContent ?? '');
+            title.remove();
+        }
+    }
+    for (const target of Array.from(svgElement.querySelectorAll<SVGElement>(`[${TOOLTIP_ATTR}], [${RT_TOOLTIP_ATTR}]`))) {
+        addTooltipData(target, getTooltipText(target), getTooltipPlacement(target));
+    }
     const rtOnly = options?.rtOnly === true;
     const resolveTarget = (start: EventTarget | null): Element | null => resolveTooltipTarget(start, rtOnly);
 
@@ -278,6 +275,10 @@ export function setupTooltipsFromDataAttributes(
 
     const handleMouseOver = (e: Event) => {
         const target = resolveTarget(e.target);
+        if (!target) {
+            hideCustomTooltip();
+            return;
+        }
         if (target) {
             // Cancel any pending hide immediately when entering a tooltip target
             if (hideTimeout) {

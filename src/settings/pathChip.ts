@@ -1,3 +1,4 @@
+import { withAccessibleLabel, withTooltip } from '../utils/domTooltip';
 import { App, Notice, Setting, TAbstractFile, TFolder, normalizePath, setIcon } from 'obsidian';
 import { RT_SYSTEM_FOLDER } from '../utils/systemFolder';
 import { t } from '../i18n';
@@ -70,17 +71,12 @@ export function addPathChip(
 ): PathChipHandle {
     const display = options?.label ?? shortenVaultPath(vaultPath);
     const container = getOrCreateChipContainer(setting);
-    const chip = container.createEl('a', {
+    const chip = withTooltip(withAccessibleLabel(container.createEl('a', {
         cls: 'ert-path-chip',
-        attr: {
-            href: '#',
-            role: 'button',
-            'aria-label': options?.onClick
+        attr: { href: '#', role: 'button' }
+    }), options?.onClick
                 ? t('ui.pathChip.changeAriaLabel', { path: vaultPath })
-                : t('ui.pathChip.revealAriaLabel', { path: vaultPath }),
-            title: vaultPath
-        }
-    });
+                : t('ui.pathChip.revealAriaLabel', { path: vaultPath })), vaultPath);
     const countEl = chip.createSpan({ cls: 'ert-path-chip__count' });
     const iconEl = chip.createSpan({ cls: 'ert-path-chip__icon' });
     setIcon(iconEl, 'folder');

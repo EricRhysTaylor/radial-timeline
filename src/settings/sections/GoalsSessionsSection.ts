@@ -1,3 +1,4 @@
+import { setAccessibleLabel, withAccessibleLabel } from '../../utils/domTooltip';
 import { setIcon, Setting, TextComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { RuntimeRateProfile } from '../../types';
@@ -275,14 +276,10 @@ function renderWritingStatsPanel(plugin: RadialTimelinePlugin, containerEl: HTML
     const friendsOnline = community.createSpan({ cls: 'ert-goals-stats-summary__community-pill' });
     setIcon(friendsOnline.createSpan(), 'users');
     friendsOnline.createSpan({ text: t('ui.goalsSessionsSection.friendsPill', { count: 3 }) });
-    const chevron = summary.createEl('button', {
+    const chevron = withAccessibleLabel(summary.createEl('button', {
         cls: 'ert-iconBtn ert-goals-stats-summary__chevron',
-        attr: {
-            type: 'button',
-            'aria-label': t('ui.goalsSessionsSection.expandStats'),
-            'aria-expanded': details.open ? 'true' : 'false',
-        },
-    });
+        attr: { type: 'button', 'aria-expanded': details.open ? 'true' : 'false' },
+    }), t('ui.goalsSessionsSection.expandStats'));
     setIcon(chevron, details.open ? 'chevron-down' : 'chevron-right');
     chevron.onclick = (event: MouseEvent) => {
         event.preventDefault();
@@ -290,7 +287,7 @@ function renderWritingStatsPanel(plugin: RadialTimelinePlugin, containerEl: HTML
         details.open = !details.open;
     };
     details.ontoggle = () => {
-        chevron.setAttribute('aria-label', details.open ? t('ui.goalsSessionsSection.collapseStats') : t('ui.goalsSessionsSection.expandStats'));
+        setAccessibleLabel(chevron, details.open ? t('ui.goalsSessionsSection.collapseStats') : t('ui.goalsSessionsSection.expandStats'));
         chevron.setAttribute('aria-expanded', details.open ? 'true' : 'false');
         setIcon(chevron, details.open ? 'chevron-down' : 'chevron-right');
         const settings = plugin.getWritingSessionService().getSettings();

@@ -1,3 +1,4 @@
+import { setTooltip } from '../utils/domTooltip';
 import { MarkdownRenderChild, MarkdownView, TFile, type MarkdownPostProcessorContext } from 'obsidian';
 import type { SceneTimeService } from './SceneTimeService';
 import { createDurationLine, createTimeTick } from './editorRuler';
@@ -60,7 +61,7 @@ export async function renderReadingTime(service: SceneTimeService, el: HTMLEleme
         onload(): void {
             el.addClass('ert-time-reading-block');
             this.rail = el.createDiv({ cls: 'ert-time-reading-rail' });
-            this.rail.title = t('sceneTime.ruler.railTitle');
+            setTooltip(this.rail, t('sceneTime.ruler.railTitle'));
             this.rail.addEventListener('click', event => {
                 if (event.target !== this.rail) return;
                 const current = service.snapshot(sceneFile, source);

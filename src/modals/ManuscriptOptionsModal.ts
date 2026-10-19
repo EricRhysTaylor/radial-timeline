@@ -1,3 +1,4 @@
+import { setAccessibleLabel, withAccessibleLabel, withTooltip } from '../utils/domTooltip';
 import { contentsDepth } from '../publishing/documentContents';
 /*
  * Manuscript Options Modal
@@ -632,7 +633,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.proofPrevious = new ButtonComponent(nav).setButtonText(t('ui.manuscriptOptionsModal.previous')).onClick(() => { void this.renderProofPage(this.proofPage - 1); });
         const label = nav.createEl('label');
         label.createSpan({ text: `${t('ui.manuscriptOptionsModal.proofPageLabel')} ` });
-        this.proofPageInput = label.createEl('input', { cls: 'ert-input', attr: { type: 'number', min: '1', step: '1', 'aria-label': t('ui.manuscriptOptionsModal.proofPageAria') } });
+        this.proofPageInput = withAccessibleLabel(label.createEl('input', { cls: 'ert-input', attr: { type: 'number', min: '1', step: '1' } }), t('ui.manuscriptOptionsModal.proofPageAria'));
         this.proofPageInput.addEventListener('change', () => {
             const number = Number(this.proofPageInput?.value);
             if (!Number.isInteger(number) || number < 1 || number > this.proofPages) {
@@ -759,7 +760,7 @@ export class ManuscriptOptionsModal extends Modal {
         this.updateProofUi();
         const canvas = this.proofFrame.ownerDocument.win.createEl('canvas');
         canvas.setAttribute('role', 'img');
-        canvas.setAttribute('aria-label', t('ui.manuscriptOptionsModal.proofCanvasAria', { page: number, total: this.proofPages }));
+        setAccessibleLabel(canvas, t('ui.manuscriptOptionsModal.proofCanvasAria', { page: number, total: this.proofPages }));
         try {
             await this.checkProofFreshness();
             if (await this.proofViewer.renderPage(number, canvas, { width: this.proofFrame.clientWidth, pixelRatio: this.proofFrame.ownerDocument.win.devicePixelRatio }) && !this.proofClosed && epoch === this.proofEpoch) {
@@ -1046,8 +1047,7 @@ export class ManuscriptOptionsModal extends Modal {
                 });
                 const actions = row.createDiv({ cls: 'ert-control' });
                 for (const direction of [-1, 1]) {
-                    new ButtonComponent(actions).setIcon(direction < 0 ? 'arrow-up' : 'arrow-down')
-                        .setTooltip(direction < 0 ? t('ui.manuscriptOptionsModal.moveNoteEarlier') : t('ui.manuscriptOptionsModal.moveNoteLater'))
+                    withTooltip(new ButtonComponent(actions).setIcon(direction < 0 ? 'arrow-up' : 'arrow-down'), direction < 0 ? t('ui.manuscriptOptionsModal.moveNoteEarlier') : t('ui.manuscriptOptionsModal.moveNoteLater'))
                         .setDisabled(index + direction < 0 || index + direction >= this.sourceCandidates.length)
                         .onClick(() => {
                             const included = new Set(source.paths);
@@ -1073,16 +1073,16 @@ export class ManuscriptOptionsModal extends Modal {
                 .setDisabled(this.sourceReviewed || source.paths.length === 0)
                 .onClick(() => { this.sourceReviewed = true; this.renderSourceCard(); this.syncExportUi(); });
         }
-        const saveGroup = sourceDetails.createDiv({ cls: 'ert-manuscript-source-save', attr: { role: 'group', 'aria-label': t('ui.manuscriptOptionsModal.savedManuscriptNameAria') } });
+        const saveGroup = withAccessibleLabel(sourceDetails.createDiv({ cls: 'ert-manuscript-source-save', attr: { role: 'group' } }), t('ui.manuscriptOptionsModal.savedManuscriptNameAria'));
         const nameRow = saveGroup.createEl('label', { cls: 'ert-row ert-manuscript-source-field' });
         nameRow.createSpan({ text: t('ui.manuscriptOptionsModal.saveAs') });
-        const nameInput = nameRow.createEl('input', { cls: 'ert-input', attr: { type: 'text', 'aria-label': t('ui.manuscriptOptionsModal.savedManuscriptNameAria') } });
+        const nameInput = withAccessibleLabel(nameRow.createEl('input', { cls: 'ert-input', attr: { type: 'text' } }), t('ui.manuscriptOptionsModal.savedManuscriptNameAria'));
         nameInput.value = this.savedSourceName;
         nameInput.addEventListener('input', () => { this.savedSourceName = nameInput.value; this.markSourceChanged(); this.updateSourceActions(); });
         const saveActions = saveGroup.createDiv({ cls: 'ert-manuscript-pill-row ert-manuscript-source-save-actions' });
         this.sourceSaveButton = new ButtonComponent(saveActions).setButtonText(this.savedSourceId ? t('ui.manuscriptOptionsModal.updateSavedManuscript') : t('ui.manuscriptOptionsModal.saveManuscript')).onClick(() => { void this.saveSource(false); });
         if (this.savedSourceId) {
-            this.sourceSaveAsButton = new ButtonComponent(saveActions).setButtonText(t('ui.manuscriptOptionsModal.saveManuscript')).setTooltip(t('ui.manuscriptOptionsModal.saveAsNew')).onClick(() => { void this.saveSource(true); });
+            this.sourceSaveAsButton = withTooltip(new ButtonComponent(saveActions).setButtonText(t('ui.manuscriptOptionsModal.saveManuscript')), t('ui.manuscriptOptionsModal.saveAsNew')).onClick(() => { void this.saveSource(true); });
             const id = this.savedSourceId;
             new ButtonComponent(saveActions).setButtonText(t('ui.manuscriptOptionsModal.removeSavedManuscript')).onClick(() => {
                 const record = this.savedManuscripts.find(item => item.id === id);
@@ -1318,8 +1318,8 @@ export class ManuscriptOptionsModal extends Modal {
         const trackWrap = rangeShell.createDiv({ cls: 'ert-manuscript-range-track-wrap' });
         this.trackEl = trackWrap.createDiv({ cls: 'ert-manuscript-range-track' });
         this.rangeFillEl = this.trackEl.createDiv({ cls: 'ert-manuscript-range-fill' });
-        this.startHandleEl = this.trackEl.createDiv({ cls: 'ert-manuscript-range-handle', attr: { 'data-handle': 'start', 'aria-label': t('ui.manuscriptOptionsModal.rangeStartAria') } });
-        this.endHandleEl = this.trackEl.createDiv({ cls: 'ert-manuscript-range-handle', attr: { 'data-handle': 'end', 'aria-label': t('ui.manuscriptOptionsModal.rangeEndAria') } });
+        this.startHandleEl = withAccessibleLabel(this.trackEl.createDiv({ cls: 'ert-manuscript-range-handle', attr: { 'data-handle': 'start' } }), t('ui.manuscriptOptionsModal.rangeStartAria'));
+        this.endHandleEl = withAccessibleLabel(this.trackEl.createDiv({ cls: 'ert-manuscript-range-handle', attr: { 'data-handle': 'end' } }), t('ui.manuscriptOptionsModal.rangeEndAria'));
         this.registerPointerEvents();
         this.loadingEl = this.scopeCard.createDiv({ cls: 'ert-manuscript-loading', text: t('manuscriptModal.rangeLoading') });
 
@@ -2674,7 +2674,7 @@ export class ManuscriptOptionsModal extends Modal {
                 dd.addOption(l.id, this.formatTemplateProfileNameForDropdown(l) || l.name);
                 const option = dd.selectEl.querySelector<HTMLOptionElement>(`option[value="${CSS.escape(l.id)}"]`);
                 if (option) {
-                    option.setAttribute('aria-label', l.name);
+                    setAccessibleLabel(option, l.name);
                 }
             }
             const hasTemplateSelection = activeProfileId && layouts.some(l => l.id === activeProfileId);
@@ -3517,7 +3517,7 @@ export class ManuscriptOptionsModal extends Modal {
         card.createEl('h4', { cls: 'ert-section-title', text: t('ui.manuscriptOptionsModal.destination') });
         const label = card.createEl('label', { cls: 'ert-row ert-manuscript-source-field' });
         label.createSpan({ text: t('ui.manuscriptOptionsModal.vaultFolder') });
-        const input = label.createEl('input', { cls: 'ert-input', attr: { type: 'text', 'aria-label': t('ui.manuscriptOptionsModal.exportDestinationAria') } });
+        const input = withAccessibleLabel(label.createEl('input', { cls: 'ert-input', attr: { type: 'text' } }), t('ui.manuscriptOptionsModal.exportDestinationAria'));
         input.value = this.destination;
         this.destinationInput = input;
         const choose = (value: string) => { this.destination = value; this.updateDestinationUi(); this.syncExportUi(); };

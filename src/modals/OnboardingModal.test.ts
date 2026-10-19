@@ -1,3 +1,4 @@
+import { TooltipElement } from '../../tests/mocks/tooltipDom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type RadialTimelinePlugin from '../main';
 import type { App } from 'obsidian';
@@ -20,7 +21,7 @@ vi.mock('../onboarding/promptSync', () => ({ refreshOnboardingPrompt: probes.ref
 vi.mock('../../tests/mocks/obsidian', async (importOriginal) => {
   const original = await importOriginal<typeof import('obsidian')>();
   class Control {
-    selectEl = { setAttribute() {} };
+    selectEl = new TooltipElement();
     addOptions() { return this; }
     setValue() { return this; }
     then(callback: (control: Control) => void) { callback(this); return this; }

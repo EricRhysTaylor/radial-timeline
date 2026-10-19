@@ -1,4 +1,5 @@
-import { Setting as ObsidianSetting, setIcon, setTooltip } from 'obsidian';
+import { setAccessibleLabel, setTooltip, withAccessibleLabel } from '../../utils/domTooltip';
+import { Setting as ObsidianSetting, setIcon} from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { GlobalPovMode } from '../../types/settings';
 import { resolveScenePov } from '../../utils/pov';
@@ -111,17 +112,14 @@ export function renderPovSection(params: {
         previewContainer.toggleClass('ert-settings-hidden', !previewExpanded);
     };
 
-    const previewToggle = yamlOverridesSetting.controlEl.createEl('button', {
+    const previewToggle = withAccessibleLabel(yamlOverridesSetting.controlEl.createEl('button', {
         cls: ERT_CLASSES.ICON_BTN,
-        attr: {
-            type: 'button',
-            'aria-label': 'Hide POV preview'
-        }
-    });
+        attr: { type: 'button' }
+    }), 'Hide POV preview');
     const refreshPreviewButton = () => {
         setIcon(previewToggle, previewExpanded ? 'chevron-down' : 'chevron-right');
         setTooltip(previewToggle, previewExpanded ? 'Hide POV preview' : 'Show POV preview');
-        previewToggle.setAttribute('aria-label', previewExpanded ? 'Hide POV preview' : 'Show POV preview');
+        setAccessibleLabel(previewToggle, previewExpanded ? 'Hide POV preview' : 'Show POV preview');
         previewToggle.setAttribute('aria-expanded', previewExpanded ? 'true' : 'false');
     };
     refreshPreviewToggle();

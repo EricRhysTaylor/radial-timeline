@@ -1,5 +1,6 @@
+import { setAccessibleLabel, setTooltip, withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 import type { App } from 'obsidian';
-import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, ExtraButtonComponent, TextComponent, setIcon, setTooltip, TFile, TFolder } from 'obsidian';
+import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, ExtraButtonComponent, TextComponent, setIcon, TFile, TFolder } from 'obsidian';
 import { OnboardingModal, candidateParts } from '../../modals/OnboardingModal';
 import { OnboardingService } from '../../onboarding/OnboardingService';
 import { basename } from '../../onboarding/paths';
@@ -117,10 +118,10 @@ export function renderGeneralSection(params: {
     booksHeading.settingEl.addClass('ert-books-heading');
 
     // "+" add-book button in the setting row's control column (far right)
-    const addBookBtn = booksHeading.controlEl.createEl('button', {
+    const addBookBtn = withAccessibleLabel(booksHeading.controlEl.createEl('button', {
         cls: 'ert-iconBtn ert-mod-cta ert-books-add-btn',
-        attr: { 'aria-label': t('ui.generalSection.addBook'), type: 'button' }
-    });
+        attr: { type: 'button' }
+    }), t('ui.generalSection.addBook'));
     setIcon(addBookBtn, 'plus');
 
     // Existing books and manuscripts: a folder of scene notes is added as it
@@ -357,7 +358,7 @@ export function renderGeneralSection(params: {
             });
             titleSpan.setAttr('role', 'button');
             titleSpan.setAttr('tabindex', '0');
-            titleSpan.setAttr('aria-label', t('ui.generalSection.renameAria', { title: label }));
+            setAccessibleLabel(titleSpan, t('ui.generalSection.renameAria', { title: label }));
             const openRename = () => {
                 new NamePromptModal(app, {
                     badge: t('ui.generalSection.renameBadge'),
@@ -388,8 +389,7 @@ export function renderGeneralSection(params: {
             row.controlEl.createSpan({ cls: 'setting-item-description', text: t('ui.generalSection.includeInSaga') });
             row.addToggle(toggle => {
                 toggle.setValue(isBookIncludedInSaga(book));
-                toggle.toggleEl.setAttr('aria-label', t('ui.generalSection.includeInSagaAria', { title: label }));
-                setTooltip(toggle.toggleEl, t('ui.generalSection.includeInSaga'));
+                setAccessibleLabel(toggle.toggleEl, t('ui.generalSection.includeInSagaAria', { title: label }));
                 toggle.onChange(async value => {
                     book.includeInSaga = value;
                     await plugin.persistBookSettings();
@@ -503,9 +503,9 @@ export function renderGeneralSection(params: {
                 draftButtonRef = button;
                 button.buttonEl.empty();
                 button.buttonEl.addClass('ert-iconBtn');
-                button.buttonEl.setAttr('aria-label', t('ui.generalSection.createCopyAria'));
+                setAccessibleLabel(button.buttonEl, t('ui.generalSection.createCopyAria'));
                 setIcon(button.buttonEl, 'book-dashed');
-                button.setTooltip(t('ui.generalSection.createCopyTooltip'));
+                withTooltip(button, t('ui.generalSection.createCopyTooltip'));
                 button.onClick(() => {
                     if (creatingDraft) return;
 
@@ -587,9 +587,9 @@ export function renderGeneralSection(params: {
             row.addButton(button => {
                 button.buttonEl.empty();
                 button.buttonEl.addClass('ert-iconBtn');
-                button.buttonEl.setAttr('aria-label', t('ui.generalSection.metadataTitle'));
+                setAccessibleLabel(button.buttonEl, t('ui.generalSection.metadataTitle'));
                 setIcon(button.buttonEl, 'tags');
-                button.setTooltip(t('ui.generalSection.metadataTooltip'));
+                withTooltip(button, t('ui.generalSection.metadataTooltip'));
                 button.onClick(() => {
                     new BookMetadataModal(app, book, async metadata => {
                         book.genre = metadata.genre?.trim() || undefined;
@@ -696,7 +696,7 @@ export function renderGeneralSection(params: {
 
             const trashButton = new ExtraButtonComponent(folderRow);
             trashButton.setIcon('trash-2');
-            trashButton.setTooltip(t('ui.generalSection.removeProfileTooltip'));
+            withTooltip(trashButton, t('ui.generalSection.removeProfileTooltip'));
             trashButton.extraSettingsEl.addClass('ert-book-card__trash');
             trashButton.onClick(async () => {
                 plugin.settings.books = books.filter(b => b.id !== book.id);

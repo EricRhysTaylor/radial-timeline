@@ -1,3 +1,4 @@
+import { withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 /*
  * Radial Timeline Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -273,7 +274,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
                         })
                         .addExtraButton(btn => {
                             btn.setIcon('rotate-ccw');
-                            btn.setTooltip(t('settings.runtime.parenthetical.resetTooltip'));
+                            withTooltip(btn, t('settings.runtime.parenthetical.resetTooltip'));
                             btn.onClick(async () => {
                                 await updateProfile((profile) => {
                                     (profile as unknown as Record<string, unknown>)[p.key] = p.defaultVal; // SAFE: the field table keys are the profile's own numeric keys
@@ -353,7 +354,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
 
             headerSetting.addExtraButton(btn => {
                 btn.setIcon('plus');
-                btn.setTooltip(t('settings.runtime.profile.duplicateTooltip'));
+                withAccessibleLabel(btn, t('settings.runtime.profile.duplicateTooltip'));
                 btn.onClick(async () => {
                     const base = selectedProfile || currentProfiles[0];
                     if (!base) return;
@@ -372,7 +373,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
 
             headerSetting.addExtraButton(btn => {
                 btn.setIcon('pencil');
-                btn.setTooltip(t('settings.runtime.profile.renameTooltip'));
+                withAccessibleLabel(btn, t('settings.runtime.profile.renameTooltip'));
                 btn.setDisabled(!selectedProfile);
                 btn.onClick(() => {
                     if (!selectedProfile) return;
@@ -431,7 +432,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
 
             headerSetting.addExtraButton(btn => {
                 btn.setIcon('trash');
-                btn.setTooltip(t('settings.runtime.profile.deleteTooltip'));
+                withAccessibleLabel(btn, t('settings.runtime.profile.deleteTooltip'));
                 btn.setDisabled(currentProfiles.length <= 1);
                 btn.onClick(async () => {
                     if (currentProfiles.length <= 1) return;
@@ -451,7 +452,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
 
             headerSetting.addExtraButton(btn => {
                 btn.setIcon('star');
-                btn.setTooltip(isDefault ? t('settings.runtime.profile.alreadyDefaultTooltip') : t('settings.runtime.profile.setDefaultTooltip'));
+                withAccessibleLabel(btn, isDefault ? t('settings.runtime.profile.alreadyDefaultTooltip') : t('settings.runtime.profile.setDefaultTooltip'));
                 btn.setDisabled(!selectedProfile || isDefault);
                 btn.onClick(async () => {
                     if (!selectedProfile) return;

@@ -1,3 +1,4 @@
+import { TooltipElement } from '../../../tests/mocks/tooltipDom';
 import { describe, expect, it, vi } from 'vitest';
 import { SearchPanelController } from './SearchPanelController';
 import { RadialTimelineView } from '../TimeLineView';
@@ -5,7 +6,7 @@ import { createSearchState } from '../../services/searchState';
 
 function availabilityHarness(options = { timelineFields: true, body: false, llmAssist: true, semanticIndex: true }) {
     const panel = Object.create(SearchPanelController.prototype); // SAFE: exercise the controller state machine without an Obsidian leaf
-    const checkbox = () => ({ disabled: false, checked: false, parentElement: { title: '', classList: { toggle: vi.fn() } } });
+    const checkbox = () => ({ disabled: false, checked: false, parentElement: Object.assign(new TooltipElement(), { classList: { toggle: vi.fn() } }) });
     const localProbe = vi.fn(async () => ({ available: true, modelId: 'model' }));
     const setSearchOptions = vi.fn((next: typeof options) => { options = next; });
     Object.assign(panel, { statusProbeId: 0, scopeRows: [], assistCheckbox: checkbox(), indexCheckbox: checkbox(),
@@ -26,7 +27,7 @@ describe('single-server local search availability', () => {
         expect(h.panel.indexIndicator.hidden).toBe(false);
         expect(h.panel.assistCheckbox.disabled).toBe(false);
         expect(h.panel.indexCheckbox.disabled).toBe(false);
-        expect(h.panel.assistCheckbox.parentElement.title).toContain('Uncheck');
+        expect(h.panel.assistCheckbox.parentElement.getAttribute('aria-label')).toContain('Uncheck');
         h.panel.assistCheckbox.checked = false; h.panel.indexCheckbox.checked = true;
         h.panel.commitOptions(); h.panel.syncAvailability();
         expect(h.options().llmAssist).toBe(false);
@@ -122,11 +123,11 @@ it('makes coverage failures inspectable and resets Cancel for a replacement run'
     const state = { ...createSearchState(), runId: 2, status: 'running', pendingTerm: 'same query',
         options: { timelineFields: true, body: false, llmAssist: true },
         unreadableNotes: [{ path: 'missing.md', reason: 'read failed' }] };
-    const statusText = { textContent: '', title: '' }, cancelButton = { hidden: true, disabled: true };
+    const statusText = new TooltipElement(), cancelButton = { hidden: true, disabled: true };
     Object.assign(panel, { syncAvailability: vi.fn(), cancelRequested: true, cancelRunId: 1, scopeRows: [], indexCheckbox: { checked: false, disabled: false }, assistCheckbox: { checked: true }, statusText, cancelButton,
         host: { getSearchState: () => state } });
     panel.syncFromState();
-    expect(statusText.title).toBe('missing.md: read failed'); expect(statusText.textContent).toBe('Searching…');
+    expect(statusText.getAttribute('aria-label')).toBe('missing.md: read failed'); expect(statusText.textContent).toBe('Searching…');
     expect(cancelButton.disabled).toBe(false); expect(cancelButton.hidden).toBe(false);
 });
 

@@ -1,5 +1,6 @@
+import { setAccessibleLabel, setTooltip, withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 import { buildBeatActColumns, stripActPrefix, type ActGridColumn } from './beats/actGrid';
-import { App, ButtonComponent, Component, getIconIds, Menu, Modal, normalizePath, Notice, setIcon, Setting as Settings, setTooltip, TFile } from 'obsidian';
+import { App, ButtonComponent, Component, getIconIds, Menu, Modal, normalizePath, Notice, setIcon, Setting as Settings, TFile } from 'obsidian';
 import { t, tCount } from '../../i18n';
 import type RadialTimelinePlugin from '../../main';
 import { CreateBeatSetModal } from '../../modals/CreateBeatsTemplatesModal';
@@ -786,7 +787,7 @@ export function renderBeatPropertiesSection(params: {
             });
             nameLink.setAttr('role', 'button');
             nameLink.setAttr('tabindex', '0');
-            nameLink.setAttr('aria-label', t('ui.beatPropertiesSection.editSystemAria', { name: customSystemName }));
+            setAccessibleLabel(nameLink, t('ui.beatPropertiesSection.editSystemAria', { name: customSystemName }));
             const openSystemEdit = () => openCustomSystemDetailsModal(activeId);
             nameLink.addEventListener('click', (e) => { e.stopPropagation(); openSystemEdit(); }); // SAFE: direct addEventListener; Settings lifecycle manages cleanup
             nameLink.addEventListener('keydown', (e: KeyboardEvent) => { // SAFE: direct addEventListener; Settings lifecycle manages cleanup
@@ -1283,7 +1284,7 @@ export function renderBeatPropertiesSection(params: {
             updateAddActTooltip();
             plugin.registerDomEvent(addActSelect, 'change', updateAddActTooltip);
 
-            const addBtn = addRow.createEl('button', { cls: ['ert-iconBtn', 'ert-beat-add-btn'], attr: { 'aria-label': t('settings.beats.design.addBeatAriaLabel') } });
+            const addBtn = withAccessibleLabel(addRow.createEl('button', { cls: ['ert-iconBtn', 'ert-beat-add-btn'], attr: {  } }), t('settings.beats.design.addBeatAriaLabel'));
             setIcon(addBtn, 'plus');
 
             const commitAdd = () => {
@@ -1640,16 +1641,14 @@ export function renderBeatPropertiesSection(params: {
         .setDesc(t('settings.beats.beatNotes.desc'))
         .addButton(button => {
             createTemplatesButton = button;
-            button
-                .setButtonText(t('settings.beats.beatNotes.createText'))
-                .setTooltip(t('settings.beats.beatNotes.createTooltip'))
+            withTooltip(button
+                .setButtonText(t('settings.beats.beatNotes.createText')), t('settings.beats.beatNotes.createTooltip'))
                 .onClick(() => { void primaryDesignAction(); });
         })
         .addButton(button => {
             repairBeatNotesButton = button;
-            button
-                .setButtonText(t('settings.beats.beatNotes.repairText'))
-                .setTooltip(t('settings.beats.beatNotes.repairTooltip'))
+            withTooltip(button
+                .setButtonText(t('settings.beats.beatNotes.repairText')), t('settings.beats.beatNotes.repairTooltip'))
                 .onClick(async () => {
                     await mergeExistingBeatNotes();
                 });
@@ -1874,7 +1873,7 @@ export function renderBeatPropertiesSection(params: {
             setTooltip(iconEl, status.tooltip);
             btn.createSpan({ cls: 'ert-mini-tab-label', text: tab.name });
             tabBtnByIndex.push(btn);
-            const closeEl = btn.createSpan({ cls: 'ert-mini-tab-close', attr: { role: 'button', 'aria-label': t('ui.beatPropertiesSection.removeTabAria', { name: tab.name }) } });
+            const closeEl = withAccessibleLabel(btn.createSpan({ cls: 'ert-mini-tab-close', attr: { role: 'button' } }), t('ui.beatPropertiesSection.removeTabAria', { name: tab.name }));
             setIcon(closeEl, 'x');
             setTooltip(closeEl, t('ui.beatPropertiesSection.removeTabTooltip', { name: tab.name }));
             closeEl.addEventListener('click', (event) => {
@@ -1891,10 +1890,10 @@ export function renderBeatPropertiesSection(params: {
 
         // Overflow chip ("+N") — inserted between the loaded tabs and "+ Add system".
         // Opens a Menu listing tabs that didn't fit; updated by recomputeOverflow().
-        const overflowBtn = beatSystemTabs.createEl('button', {
+        const overflowBtn = withAccessibleLabel(beatSystemTabs.createEl('button', {
             cls: 'ert-mini-tab ert-mini-tab--custom ert-mini-tab--overflow',
-            attr: { type: 'button', 'aria-label': t('ui.beatPropertiesSection.moreBeatSystemsAria'), 'aria-haspopup': 'menu' }
-        });
+            attr: { type: 'button', 'aria-haspopup': 'menu' }
+        }), t('ui.beatPropertiesSection.moreBeatSystemsAria'));
         const overflowLabel = overflowBtn.createSpan({ cls: 'ert-mini-tab-label', text: '+0' });
         overflowBtn.classList.add('ert-settings-hidden');
         let hiddenTabs: LoadedBeatTab[] = [];
@@ -1909,15 +1908,10 @@ export function renderBeatPropertiesSection(params: {
             menu.showAtMouseEvent(event);
         });
 
-        const addBtn = beatSystemTabs.createEl('button', {
+        const addBtn = withAccessibleLabel(beatSystemTabs.createEl('button', {
             cls: `ert-mini-tab ert-mini-tab--custom${libraryMode ? ` ${ERT_CLASSES.IS_ACTIVE}` : ''}`,
-            attr: {
-                type: 'button',
-                role: 'tab',
-                'aria-selected': libraryMode ? 'true' : 'false',
-                'aria-label': t('settings.beats.library.addSystemLabel')
-            }
-        });
+            attr: { type: 'button', role: 'tab', 'aria-selected': libraryMode ? 'true' : 'false' }
+        }), t('settings.beats.library.addSystemLabel'));
         const addIcon = addBtn.createSpan({ cls: 'ert-mini-tab-icon ert-beat-health-icon' });
         setIcon(addIcon, 'plus');
         addBtn.appendText(t('settings.beats.library.addSystemLabel'));
@@ -2221,9 +2215,9 @@ export function renderBeatPropertiesSection(params: {
                 }
 
                 // Delete button (matches scene: ert-iconBtn + trash icon)
-                const delBtn = row.createEl('button', { cls: 'ert-iconBtn', attr: { type: 'button', 'aria-label': t('settings.beats.beatFields.removeFieldLabel') } });
+                const delBtn = withAccessibleLabel(row.createEl('button', { cls: 'ert-iconBtn', attr: { type: 'button' } }), t('settings.beats.beatFields.removeFieldLabel'));
                 setIcon(delBtn, 'trash');
-                setTooltip(delBtn, t('settings.beats.beatFields.removeFieldLabel'));
+                setAccessibleLabel(delBtn, t('settings.beats.beatFields.removeFieldLabel'));
                 delBtn.onclick = () => {
                     removeBeatHoverMetadata(entry.key);
                     const nextList = list.filter((_, i) => i !== idx);
@@ -2307,7 +2301,7 @@ export function renderBeatPropertiesSection(params: {
 
             const addBtn = btnWrap.createEl('button', { cls: ['ert-iconBtn', 'ert-mod-cta'] });
             setIcon(addBtn, 'plus');
-            setTooltip(addBtn, t('settings.beats.beatFields.addPropertyTooltip'));
+            setAccessibleLabel(addBtn, t('settings.beats.beatFields.addPropertyTooltip'));
 
             const doAddBeatField = () => {
                 const newKey = normalizeBeatFieldKeyInput(addKeyInput.value);
@@ -2785,10 +2779,9 @@ export function renderBeatPropertiesSection(params: {
         const selectorCard = savedControlsContainer.createDiv({ cls: 'ert-set-preview ert-set-selector-card' });
         const selectorRow = selectorCard.createDiv({ cls: 'ert-set-selector-row' });
         selectorRow.createSpan({ text: t('settings.beats.library.selectLabel'), cls: 'ert-set-preview-title' });
-        const selectEl = selectorRow.createEl('select', {
+        const selectEl = withAccessibleLabel(selectorRow.createEl('select', {
             cls: 'ert-input ert-input--lg',
-            attr: { 'aria-label': t('ui.beatPropertiesSection.selectSetAria') }
-        });
+        }), t('ui.beatPropertiesSection.selectSetAria'));
 
         const appendOptionGroup = (label: string, items: LoadableEntry[]) => {
             if (items.length === 0) return;
@@ -3072,15 +3065,14 @@ export function renderBeatPropertiesSection(params: {
     const backdropYamlHeading = new Settings(backdropYamlSection)
         .setName(t('settings.beats.backdrop.name'))
         .setDesc(t('settings.beats.backdrop.desc'));
-    const backdropYamlToggleBtn = backdropYamlHeading.controlEl.createEl('button', {
+    const backdropYamlToggleBtn = withAccessibleLabel(backdropYamlHeading.controlEl.createEl('button', {
         cls: ERT_CLASSES.ICON_BTN,
-        attr: { type: 'button', 'aria-label': t('settings.beats.backdrop.showLabel') }
-    });
+        attr: { type: 'button' }
+    }), t('settings.beats.backdrop.showLabel'));
     const refreshBackdropYamlToggle = () => {
         const expanded = plugin.settings.enableBackdropYamlEditor ?? false;
         setIcon(backdropYamlToggleBtn, expanded ? 'chevron-down' : 'chevron-right');
-        setTooltip(backdropYamlToggleBtn, expanded ? t('settings.beats.backdrop.hideLabel') : t('settings.beats.backdrop.showLabel'));
-        backdropYamlToggleBtn.setAttribute('aria-label', expanded ? t('settings.beats.backdrop.hideLabel') : t('settings.beats.backdrop.showLabel'));
+        setAccessibleLabel(backdropYamlToggleBtn, expanded ? t('settings.beats.backdrop.hideLabel') : t('settings.beats.backdrop.showLabel'));
     };
     refreshBackdropYamlToggle();
 
@@ -3283,7 +3275,7 @@ export function renderBeatPropertiesSection(params: {
                 // Delete button
                 const delBtn = row.createEl('button', { cls: ERT_CLASSES.ICON_BTN });
                 setIcon(delBtn, 'trash');
-                setTooltip(delBtn, t('settings.beats.beatFields.removeFieldLabel'));
+                setAccessibleLabel(delBtn, t('settings.beats.beatFields.removeFieldLabel'));
                 delBtn.addEventListener('click', () => {
                     removeBackdropHoverMetadata(entry.key);
                     const next = list.filter((_, i) => i !== idx);
@@ -3421,7 +3413,7 @@ export function renderBeatPropertiesSection(params: {
 
             const addBtn = btnWrap.createEl('button', { cls: ['ert-iconBtn', 'ert-mod-cta'] });
             setIcon(addBtn, 'plus');
-            setTooltip(addBtn, t('settings.beats.backdrop.addFieldTooltip'));
+            setAccessibleLabel(addBtn, t('settings.beats.backdrop.addFieldTooltip'));
             addBtn.addEventListener('click', () => {
                 const k = normalizeBackdropFieldKey(addKeyInput.value || '');
                 if (!k || !hasBeatReadableText(k)) {
@@ -3812,7 +3804,7 @@ export function renderBeatPropertiesSection(params: {
                         : (repairCount > 1
                             ? t('ui.beatPropertiesSection.repairTooltipMissingModelOther', { count: missingModel })
                             : t('ui.beatPropertiesSection.repairTooltipMissingModelOne', { count: missingModel }));
-                repairBeatNotesButton.setTooltip(repairTooltip);
+                withTooltip(repairBeatNotesButton, repairTooltip);
             }
 
 

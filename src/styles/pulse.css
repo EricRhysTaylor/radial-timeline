@@ -2083,9 +2083,9 @@
   top: 0;
   z-index: 9999;
   /* High z-index to sit above everything */
-  background-color: var(--background-modifier-message);
-  /* Dark background matching Obsidian toast/tooltip */
-  color: var(--text-normal);
+  background-color: var(--tooltip-background, var(--background-modifier-message));
+  /* Use the theme's paired tooltip colors in both light and dark modes. */
+  color: var(--tooltip-color, var(--text-on-accent));
   padding: 5px 9px;
   border-radius: 5px;
   font-size: 12px;
@@ -2132,7 +2132,7 @@
   font-size: 13px;
   text-align: center;
   margin-bottom: 6px;
-  color: var(--text-normal);
+  color: inherit;
 }
 
 .rt-tooltip.rt-tooltip--titled {
@@ -2147,7 +2147,7 @@
   hyphens: auto;
   white-space: normal;
   line-height: 1.4;
-  color: var(--text-muted);
+  color: inherit;
 }
 
 /* Tooltip Arrow */
@@ -2169,7 +2169,7 @@
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  border-bottom-color: var(--background-modifier-message);
+  border-bottom-color: var(--tooltip-background, var(--background-modifier-message));
 }
 
 /* Top placement (arrow on bottom) */
@@ -2181,7 +2181,7 @@
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  border-top-color: var(--background-modifier-message);
+  border-top-color: var(--tooltip-background, var(--background-modifier-message));
 }
 
 /* Right placement (arrow on left) */
@@ -2193,7 +2193,7 @@
   right: 100%;
   top: 50%;
   transform: translateY(-50%);
-  border-right-color: var(--background-modifier-message);
+  border-right-color: var(--tooltip-background, var(--background-modifier-message));
 }
 
 /* Left placement (arrow on right) */
@@ -2205,7 +2205,7 @@
   left: 100%;
   top: 50%;
   transform: translateY(-50%);
-  border-left-color: var(--background-modifier-message);
+  border-left-color: var(--tooltip-background, var(--background-modifier-message));
 }
 
 /* Gossamer Score Entry Styles - restored from Dec 26 backup */

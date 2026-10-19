@@ -1,3 +1,4 @@
+import { TooltipElement } from '../../../../tests/mocks/tooltipDom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Component } from 'obsidian';
 import { renderYamlAuditPanel } from './YamlAuditPanel';
@@ -6,7 +7,7 @@ import { collectFilesForAudit, collectFilesForAuditWithScope, runYamlAudit } fro
 import type RadialTimelinePlugin from '../../../main';
 import type { BeatAuditWorkspace } from './YamlAuditPanel';
 
-class ElementStub {
+class ElementStub extends TooltipElement {
     textContent = '';
     classList = { add: vi.fn(), remove: vi.fn() };
     addClass() {} setAttribute() {}

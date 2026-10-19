@@ -1,3 +1,4 @@
+import { setAccessibleLabel, withAccessibleLabel } from '../../utils/domTooltip';
 import { setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
@@ -132,25 +133,25 @@ function renderCard(
         const btnIcon = btn.createSpan({ cls: 'ert-bonus-card__btn-icon' });
         setIcon(btnIcon, 'folder-plus');
         btn.createSpan({ text: t('ui.bonusVaultsSection.exploreDemo') });
-        btn.setAttr('aria-label', t('ui.bonusVaultsSection.exploreDemoAria', { title: vault.title }));
+        setAccessibleLabel(btn, t('ui.bonusVaultsSection.exploreDemoAria', { title: vault.title }));
         plugin.registerDomEvent(btn, 'click', () => {
             new DemoLibraryModal(plugin.app, plugin, vault).open();
         });
         if (vault.pageUrl) {
-            action.createEl('a', {
+            withAccessibleLabel(action.createEl('a', {
                 cls: 'ert-bonus-card__link',
                 text: t('ui.bonusVaultsSection.viewDemoPage'),
                 href: vault.pageUrl,
-                attr: { target: '_blank', rel: 'noopener noreferrer', 'aria-label': t('ui.bonusVaultsSection.viewDemoPageAria', { title: vault.title }) }
-            });
+                attr: { target: '_blank', rel: 'noopener noreferrer' }
+            }), t('ui.bonusVaultsSection.viewDemoPageAria', { title: vault.title }));
         }
         if (vault.archive) {
-            action.createEl('a', {
+            withAccessibleLabel(action.createEl('a', {
                 cls: 'ert-bonus-card__link',
                 text: t('ui.demoLibraryModal.downloadZip', { size: (vault.archive.bytes / 1048576).toFixed(1) }),
                 href: vault.archive.downloadUrl,
-                attr: { target: '_blank', rel: 'noopener noreferrer', 'aria-label': t('ui.demoLibraryModal.downloadAria', { title: vault.title }) }
-            });
+                attr: { target: '_blank', rel: 'noopener noreferrer' }
+            }), t('ui.demoLibraryModal.downloadAria', { title: vault.title }));
         }
     }
 }

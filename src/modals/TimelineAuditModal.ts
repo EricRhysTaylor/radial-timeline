@@ -1,3 +1,4 @@
+import { setTooltip } from '../utils/domTooltip';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -6,7 +7,7 @@
  * Timeline Auditor Modal
  */
 
-import { App, ButtonComponent, Modal, Notice, setIcon, setTooltip } from 'obsidian';
+import { App, ButtonComponent, Modal, Notice, setIcon} from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { formatLocalDateKey, formatWhenForYaml } from '../utils/date';
 import { t } from '../i18n';
@@ -799,7 +800,7 @@ export class TimelineAuditModal extends Modal {
                 block.addClass('ert-is-active');
             }
             block.type = 'button';
-            block.setAttr('aria-label', t('ui.timelineAuditModal.overviewBlockAria', { number: sceneNumber, title: sceneTitle, summary: entry.issueSummary }));
+            setTooltip(block, t('ui.timelineAuditModal.overviewBlockAria', { number: sceneNumber, title: sceneTitle, summary: entry.issueSummary }));
             block.addEventListener('click', () => {
                 this.expandFinding(entry.finding.path, true);
             });

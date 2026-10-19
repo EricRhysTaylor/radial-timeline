@@ -1,3 +1,4 @@
+import { TooltipElement } from '../../tests/mocks/tooltipDom';
 import { describe, expect, it } from 'vitest';
 import type { PandocLayoutTemplate } from '../types';
 import { getBundledPandocLayouts } from '../utils/pandocBundledLayouts';
@@ -34,7 +35,7 @@ type FakeElementEvent = {
     preventDefault: () => void;
 };
 
-class FakeElement {
+class FakeElement extends TooltipElement {
     public children: FakeElement[] = [];
     public classes = new Set<string>();
     public attributes = new Map<string, string>();
@@ -77,7 +78,7 @@ class FakeElement {
         const matches: FakeElement[] = [];
         if (this.classes.has(cls)) matches.push(this);
         for (const child of this.children) {
-            matches.push(...child.findByClass(cls));
+            if (!child.hasAttribute('hidden')) matches.push(...child.findByClass(cls));
         }
         return matches;
     }

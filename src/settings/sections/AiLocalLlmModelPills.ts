@@ -1,4 +1,5 @@
-import { Component, setTooltip } from 'obsidian';
+import { setAccessibleLabel, setTooltip } from '../../utils/domTooltip';
+import { Component} from 'obsidian';
 import type { LocalLlmCapabilityAssessment, LocalLlmFeatureSupport } from '../../ai/localLlm/capabilityInference';
 import { ERT_CLASSES } from '../../ui/classes';
 import { t } from '../../i18n';
@@ -102,7 +103,7 @@ export function createLocalLlmModelPills(
             }
             pill.setAttribute('role', 'button');
             pill.setAttribute('tabindex', '0');
-            pill.setAttribute('aria-label', `Use local model ${model.id}. ${capability.tierName} ${capability.tierSummary}.`);
+            setAccessibleLabel(pill, `Use local model ${model.id}. ${capability.tierName} ${capability.tierSummary}.`);
             setTooltip(pill, buildLocalCapabilityTooltip(capability), { placement: 'top' });
             const applyModel = (): void => { void onSelect(model.id); };
             renderScope.registerDomEvent(pill, 'click', applyModel);

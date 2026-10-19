@@ -1,3 +1,4 @@
+import { withAccessibleLabel } from '../utils/domTooltip';
 /*
  * Radial Timeline Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -302,9 +303,8 @@ export class RuntimeProcessingModal extends ErtModal {
         // Action buttons
         const buttonRow = contentEl.createDiv({ cls: 'ert-modal-actions' });
 
-        const settingsBtn = new ButtonComponent(buttonRow)
-            .setIcon('settings')
-            .setTooltip(t('sceneAnalysis.runtimeModal.buttons.settingsTooltip'))
+        const settingsBtn = withAccessibleLabel(new ButtonComponent(buttonRow)
+            .setIcon('settings'), t('sceneAnalysis.runtimeModal.buttons.settingsTooltip'))
             .onClick(() => {
                 this.close();
                 // Set active tab before display() so core tab renders

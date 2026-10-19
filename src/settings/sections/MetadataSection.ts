@@ -1,3 +1,4 @@
+import { withAccessibleLabel } from '../../utils/domTooltip';
 import { App, Setting as Settings, Notice } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { ERT_CLASSES } from '../../ui/classes';
@@ -133,9 +134,8 @@ export function renderMetadataSection(params: { app: App; plugin: RadialTimeline
             });
 
             // Delete button
-            setting.addButton(button => button
-                .setIcon('trash')
-                .setTooltip(t('ui.metadataSection.deleteMappingTooltip'))
+            setting.addButton(button => withAccessibleLabel(button
+                .setIcon('trash'), t('ui.metadataSection.deleteMappingTooltip'))
                 .onClick(async () => {
                     if (plugin.settings.frontmatterMappings) {
                         delete plugin.settings.frontmatterMappings[userKey];
@@ -219,9 +219,8 @@ export function renderMetadataSection(params: { app: App; plugin: RadialTimeline
             });
 
             // Delete draft button
-            setting.addButton(button => button
-                .setIcon('trash')
-                .setTooltip(t('ui.metadataSection.discardDraftTooltip'))
+            setting.addButton(button => withAccessibleLabel(button
+                .setIcon('trash'), t('ui.metadataSection.discardDraftTooltip'))
                 .onClick(() => {
                     const idx = pendingMappings.indexOf(pending);
                     if (idx >= 0) pendingMappings.splice(idx, 1);

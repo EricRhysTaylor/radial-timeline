@@ -437,3 +437,7 @@ export class MarkdownRenderer {
 export async function loadPdfJs(): Promise<unknown> {
   throw new Error('Provide the PDF.js test implementation.');
 }
+
+export function setTooltip(element: HTMLElement, text: string): void {
+  element.setAttribute('aria-label', text);
+}

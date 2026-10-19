@@ -1,4 +1,5 @@
-import { Component, MarkdownView, setTooltip } from 'obsidian';
+import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
+import { Component, MarkdownView} from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
 import { sceneTimeLabel } from '../utils/sceneTimeLabel';
@@ -79,7 +80,7 @@ export class SceneTimeHeader extends Component {
             }
             if (badge.textContent !== label.text) badge.setText(label.text);
             if (badge.getAttribute('aria-label') !== label.description) {
-                badge.setAttribute('aria-label', label.description);
+                setAccessibleLabel(badge, label.description);
                 setTooltip(badge, label.description);
             }
         });

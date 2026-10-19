@@ -1,3 +1,4 @@
+import { setAccessibleLabel, setTooltip } from '../../utils/domTooltip';
 /*
  * Radial Timeline — Session Log List renderer
  *
@@ -155,7 +156,7 @@ function appendSceneChip(parent: HTMLElement, path: string, options: SessionLogL
         // click target. In compact mode the chip is non-interactive and the
         // row carries the aria-label — setting a chip title here would
         // double-fire two tooltips on hover.
-        chip.setAttribute('title', path);
+        setTooltip(chip, path);
         chip.classList.add('ert-session-log-row__chip--clickable');
         chip.onclick = (event: MouseEvent) => {
             event.preventDefault();
@@ -218,8 +219,8 @@ function renderCompactRow(parent: HTMLElement, row: PrivateSessionLogRow, option
     li.createSpan({ cls: 'ert-session-log-row__date', text: formatCompactDate(row, reference) });
     li.createSpan({ cls: 'ert-session-log-row__duration', text: formatDurationMs(row.durationMs) });
     const modeDot = li.createSpan({ cls: `ert-session-log-row__mode-dot ert-session-log-row__mode-dot--${row.mode}` });
-    modeDot.setAttribute('aria-label', MODE_LABEL[row.mode]);
-    modeDot.setAttribute('title', MODE_LABEL[row.mode]);
+    setAccessibleLabel(modeDot, MODE_LABEL[row.mode]);
+    setTooltip(modeDot, MODE_LABEL[row.mode]);
 
     const allChipPaths = [
         ...row.scenesCompletedPaths.map(path => ({ path, kind: 'completed' as const })),
@@ -242,7 +243,7 @@ function renderCompactRow(parent: HTMLElement, row: PrivateSessionLogRow, option
         li.classList.add('ert-session-log-row--clickable');
         li.setAttribute('role', 'button');
         li.setAttribute('tabindex', '0');
-        li.setAttribute('aria-label', t('ui.sessionLogList.openSceneAria', { path: primaryPath }));
+        setAccessibleLabel(li, t('ui.sessionLogList.openSceneAria', { path: primaryPath }));
         li.onclick = (event: MouseEvent) => {
             event.preventDefault();
             event.stopPropagation();

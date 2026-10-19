@@ -1,3 +1,4 @@
+import { withAccessibleLabel } from '../../utils/domTooltip';
 import { App, Platform, Setting as Settings, TextComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { parseDateRangeInput } from '../../utils/date';
@@ -92,9 +93,8 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
 
         const isExpanded = expandedIndex === index;
         row.addButton(button => {
-            button
-                .setIcon(isExpanded ? 'chevron-down' : 'chevron-right')
-                .setTooltip(isExpanded ? t('ui.backdropSection.collapseTooltip') : t('ui.backdropSection.editTooltip'))
+            withAccessibleLabel(button
+                .setIcon(isExpanded ? 'chevron-down' : 'chevron-right'), isExpanded ? t('ui.backdropSection.collapseTooltip') : t('ui.backdropSection.editTooltip'))
                 .onClick(() => {
                     expandedIndex = isExpanded ? null : index;
                     renderMicroBackdrops();
@@ -102,9 +102,8 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
         });
 
         row.addButton(button => {
-            button
-                .setIcon('trash')
-                .setTooltip(t('ui.backdropSection.deleteTooltip'))
+            withAccessibleLabel(button
+                .setIcon('trash'), t('ui.backdropSection.deleteTooltip'))
                 .onClick(async () => {
                     const current = getMicroBackdrops();
                     const next = current.filter((_, idx) => idx !== index);

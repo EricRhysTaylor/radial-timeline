@@ -1,3 +1,4 @@
+import { setAccessibleLabel } from '../utils/domTooltip';
 import { App, Notice, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { ErtModal } from '../ui/ErtModal';
@@ -60,7 +61,7 @@ export class DemoLibraryModal extends ErtModal {
             attr: { type: 'button' }
         });
         button.disabled = !installed && !available;
-        button.setAttr('aria-label', `${button.textContent}: ${demo.title}`);
+        setAccessibleLabel(button, `${button.textContent}: ${demo.title}`);
         this.buttons.push(button);
         button.addEventListener('click', () => { void this.addDemo(demo); });
         if (available && demo.archive) {
@@ -69,7 +70,7 @@ export class DemoLibraryModal extends ErtModal {
                 href: demo.archive.downloadUrl,
                 attr: { target: '_blank', rel: 'noopener noreferrer' }
             });
-            download.setAttr('aria-label', t('ui.demoLibraryModal.downloadAria', { title: demo.title }));
+            setAccessibleLabel(download, t('ui.demoLibraryModal.downloadAria', { title: demo.title }));
         }
     }
 

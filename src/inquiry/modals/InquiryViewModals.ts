@@ -1,9 +1,9 @@
+import { setTooltip } from '../../utils/domTooltip';
 import {
     App,
     ButtonComponent,
     Modal,
-    ToggleComponent,
-    setTooltip
+    ToggleComponent
 } from 'obsidian';
 import type { AIRunAdvancedContext } from '../../ai/types';
 import { formatExactUsdCost } from '../../ai/cost/estimateCorpusCost';

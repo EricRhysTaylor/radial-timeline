@@ -1,3 +1,4 @@
+import { TooltipElement } from '../../tests/mocks/tooltipDom';
 import { describe, expect, it, vi } from 'vitest';
 import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
@@ -8,7 +9,7 @@ import { PlanetaryTimeModal } from './PlanetaryTimeModal';
 // conversion and YAML output without rebuilding its controls between edits.
 vi.mock('../../tests/mocks/obsidian', async importOriginal => {
     const actual = await importOriginal<typeof import('obsidian')>();
-    const element = () => ({ addClass() {}, createDiv: () => element() });
+    const element = () => Object.assign(new TooltipElement(), { addClass() {}, createDiv: () => element() });
     return {
         ...actual,
         Setting: class extends actual.Setting {

@@ -1,6 +1,7 @@
+import { setTooltip } from '../utils/domTooltip';
 import { StateEffect } from '@codemirror/state';
 import { EditorView, GutterMarker, ViewPlugin, gutter, type ViewUpdate } from '@codemirror/view';
-import { editorInfoField, setTooltip, setIcon } from 'obsidian';
+import { editorInfoField, setIcon } from 'obsidian';
 import { cueDescription, cueState, cueMarkerLabel, durationSegment, elapsedLabel, type DurationSegment, type ResolvedCue, type SceneTimeSnapshot } from './model';
 import type { SceneTimeService } from './SceneTimeService';
 import { openSceneLineTime } from './ManualTimeModal';
@@ -154,7 +155,7 @@ export function sceneTimeEditorExtension(service: SceneTimeService) {
             mouseover: (_view, _line, event) => {
                 const target = event.target as HTMLElement | null; // SAFE: gutter events originate in our HTML marker elements.
                 const rail = target?.closest<HTMLElement>('.ert-time-rail');
-                if (rail) rail.title = t('sceneTime.ruler.railTitle');
+                if (rail) setTooltip(rail, t('sceneTime.ruler.railTitle'));
                 return false;
             },
             click: (view, line, event) => {

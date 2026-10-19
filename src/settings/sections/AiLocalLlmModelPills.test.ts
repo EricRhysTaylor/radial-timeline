@@ -1,3 +1,4 @@
+import { TooltipElement } from '../../../tests/mocks/tooltipDom';
 import { describe, expect, it, vi } from 'vitest';
 import { Component, setTooltip } from 'obsidian';
 import { abbreviateLocalModelId, buildLocalFeatureSummary, createLocalLlmModelPills } from './AiLocalLlmModelPills';
@@ -5,11 +6,11 @@ import type { LocalLlmCapabilityAssessment } from '../../ai/localLlm/capabilityI
 vi.mock('../../../tests/mocks/obsidian.ts', async original => ({
     ...await original<typeof import('obsidian')>(), setTooltip: vi.fn()
 }));
-class ElementStub extends EventTarget {
+class ElementStub extends TooltipElement {
     children: ElementStub[] = []; text = ''; classes = new Set<string>(); attributes = new Map<string, string>();
     createSpan(options: { text?: string; cls?: string }) {
         const child = new ElementStub(); child.text = options.text ?? '';
-        (options.cls ?? '').split(' ').forEach(cls => child.classes.add(cls)); this.children.push(child); return child;
+        (options.cls ?? '').split(' ').forEach(cls => child.classes.add(cls)); child.parentElement = this; this.children.push(child); return child;
     }
     addClass(cls: string) { this.classes.add(cls); }
     setAttribute(name: string, value: string) { this.attributes.set(name, value); }
@@ -33,7 +34,8 @@ describe('Local LLM model choices', () => {
         const pill = p.list.children[0];
         expect(pill.children[0].text).toBe('Example-Model'); expect(pill.children).toHaveLength(2);
         expect(pill.classes.has('ert-ai-local-model-pill--tier3')).toBe(true);
-        expect(pill.attributes.get('aria-label')).toContain(id);
+        expect(pill.attributes.get('aria-labelledby')).toBeTruthy();
+        expect(p.list.children.find(child => child.id === pill.attributes.get('aria-labelledby'))?.textContent).toContain(id);
         expect(pill.attributes.get('role')).toBe('button'); expect(pill.attributes.get('tabindex')).toBe('0');
         expect(p.legend.children).toHaveLength(4);
         expect(setTooltip).toHaveBeenLastCalledWith(pill, expect.stringContaining('Gossamer — ✗ Not supported'), { placement: 'top' });

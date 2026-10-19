@@ -1,3 +1,4 @@
+import { setAccessibleLabel, withAccessibleLabel } from '../../utils/domTooltip';
 import { setIcon } from 'obsidian';
 import { tooltip } from '../../utils/tooltip';
 import type { InquiryZone } from '../state';
@@ -43,7 +44,7 @@ export function renderInquiryBriefingSessionItem(args: {
         cls: `ert-inquiry-briefing-status ert-inquiry-briefing-status--${args.status}`,
         text: args.status
     });
-    statusEl.setAttribute('aria-label', `History status: ${args.status}`);
+    setAccessibleLabel(statusEl, `History status: ${args.status}`);
 
     const actionGroup = actionRow.createDiv({ cls: 'ert-inquiry-briefing-actions' });
     const isError = args.status === 'error';
@@ -56,12 +57,9 @@ export function renderInquiryBriefingSessionItem(args: {
                 : args.pendingEditsEmpty
                     ? 'No pending edits'
                     : (args.autoPopulateEnabled ? `Update ${args.fieldLabel}` : `Write to ${args.fieldLabel}`));
-    const updateButton = actionGroup.createEl('button', {
+    const updateButton = withAccessibleLabel(actionGroup.createEl('button', {
         cls: 'ert-inquiry-briefing-update',
-        attr: {
-            'aria-label': pendingLabel
-        }
-    });
+    }), pendingLabel);
     const pendingIcon = args.pendingEditsApplied ? 'check' : (args.pendingEditsEmpty || isError) ? 'minus' : 'plus';
     setIcon(updateButton, pendingIcon);
     updateButton.disabled = args.blocked || args.pendingEditsEmpty || isError || args.pendingEditsApplied;
@@ -75,10 +73,9 @@ export function renderInquiryBriefingSessionItem(args: {
 
     let openButton: HTMLButtonElement | undefined;
     if (args.hasBriefPath) {
-        openButton = actionGroup.createEl('button', {
+        openButton = withAccessibleLabel(actionGroup.createEl('button', {
             cls: 'ert-inquiry-briefing-open',
-            attr: { 'aria-label': 'Open saved brief' }
-        });
+        }), 'Open saved brief');
         setIcon(openButton, 'file-text');
         openButton.disabled = args.blocked;
     }

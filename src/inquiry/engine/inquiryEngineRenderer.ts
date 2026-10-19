@@ -1,3 +1,4 @@
+import { setTooltip } from '../../utils/domTooltip';
 import type { InquiryAdvisoryContext } from '../services/inquiryAdvisory';
 import type { InquiryEnginePopoverState, InquiryReadinessUiState, PassPlanResult } from '../types';
 import type { TokenUsage } from '../../ai/usage/providerUsage';
@@ -411,7 +412,7 @@ function renderEnginePostRunPills(
             cls: `ert-inquiry-engine-pill ert-inquiry-engine-pill--cache is-${cachePill.state}`,
             text: cachePill.label
         });
-        el.setAttr('title', cachePill.tooltip);
+        setTooltip(el, cachePill.tooltip);
     }
 
     // DOCTRINE: the TTL countdown is only honest once the provider payload
@@ -428,7 +429,7 @@ function renderEnginePostRunPills(
             cls: `ert-inquiry-engine-pill ert-inquiry-engine-pill--ttl is-ttl-${ttlPill.state}`,
             text: ttlPill.label
         });
-        el.setAttr('title', ttlPill.tooltip);
+        setTooltip(el, ttlPill.tooltip);
     }
 
     const actualCostPill = computeActualCostPillState(args.recentRun?.actualCostUSD);
@@ -437,7 +438,7 @@ function renderEnginePostRunPills(
             cls: 'ert-inquiry-engine-pill ert-inquiry-engine-pill--actual-cost is-confirmed',
             text: actualCostPill.label
         });
-        el.setAttr('title', actualCostPill.tooltip);
+        setTooltip(el, actualCostPill.tooltip);
     }
 
     // Citation pill is hard-disabled while inline provider citations are
@@ -459,6 +460,6 @@ function renderEnginePostRunPills(
             cls: `ert-inquiry-engine-pill ert-inquiry-engine-pill--citations is-${citationPill.state}`,
             text: citationPill.label
         });
-        citationEl.setAttr('title', citationPill.tooltip);
+        setTooltip(citationEl, citationPill.tooltip);
     }
 }

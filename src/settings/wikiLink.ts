@@ -1,3 +1,4 @@
+import { withAccessibleLabel } from '../utils/domTooltip';
 import { Setting, setIcon } from 'obsidian';
 import { ERT_CLASSES } from '../ui/classes';
 
@@ -88,15 +89,11 @@ export function addWikiLinkToElement(el: HTMLElement, wikiPage: string): void {
     // e.g. https://github.com/user/repo/wiki/Page-Name
     const pageName = wikiPage.replace(/\.md$/, '');
     
-    const link = el.createEl('a', {
+    const link = withAccessibleLabel(el.createEl('a', {
         href: `https://github.com/EricRhysTaylor/radial-timeline/wiki/${pageName}`,
         cls: 'ert-wiki-link',
-        attr: {
-            'aria-label': 'Read more in the wiki',
-            'target': '_blank',
-            'rel': 'noopener'
-        }
-    });
+        attr: { 'target': '_blank', 'rel': 'noopener' }
+    }), 'Read more in the wiki');
 
     // Add the diagonal arrow icon
     setIcon(link, 'external-link');

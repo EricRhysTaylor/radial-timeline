@@ -1,3 +1,4 @@
+import { setTooltip, withTooltip } from '../utils/domTooltip';
 /*
  * Radial Timeline Plugin for Obsidian — Bug Report Modal
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -117,7 +118,7 @@ export class BugReportModal extends ErtModal {
         captureBtn.buttonEl.prepend(captureIcon);
         if (Platform.isMobile) {
             captureBtn.buttonEl.disabled = true;
-            captureBtn.buttonEl.setAttr('title', t('ui.bugReportModal.captureDesktopOnlyTooltip'));
+            setTooltip(captureBtn.buttonEl, t('ui.bugReportModal.captureDesktopOnlyTooltip'));
         }
 
         const attachBtn = new ButtonComponent(screenshotRow)
@@ -161,9 +162,8 @@ export class BugReportModal extends ErtModal {
         this.sendButton = send;
         this.updateSendEnabled();
 
-        const emailBtn = new ButtonComponent(actions)
-            .setButtonText(t('ui.bugReportModal.emailButton'))
-            .setTooltip(t('ui.bugReportModal.emailTooltip'))
+        const emailBtn = withTooltip(new ButtonComponent(actions)
+            .setButtonText(t('ui.bugReportModal.emailButton')), t('ui.bugReportModal.emailTooltip'))
             .onClick(() => void this.handleSend('email'));
         emailBtn.buttonEl.addClass('ert-btn', 'ert-btn--standard-pro', 'ert-bug-report-secondary');
 

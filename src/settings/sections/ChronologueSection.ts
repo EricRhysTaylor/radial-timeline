@@ -1,3 +1,4 @@
+import { withTooltip } from '../../utils/domTooltip';
 import { App, Setting as Settings, Notice, DropdownComponent, TextComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { TimelineItem } from '../../types';
@@ -296,9 +297,8 @@ export function renderChronologueSection(params: { app: App; plugin: RadialTimel
     });
 
     // Add a reset button
-    discontinuitySetting.addExtraButton(button => button
-        .setIcon('reset')
-        .setTooltip(t('ui.chronologueSection.resetTooltip'))
+    discontinuitySetting.addExtraButton(button => withTooltip(button
+        .setIcon('reset'), t('ui.chronologueSection.resetTooltip'))
         .onClick(async () => {
             plugin.settings.discontinuityThreshold = undefined;
             await plugin.saveSettings();

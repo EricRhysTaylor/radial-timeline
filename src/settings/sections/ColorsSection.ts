@@ -1,3 +1,4 @@
+import { setAccessibleLabel, withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 import { sleep } from '../../utils/sleep';
 import { Setting as Settings, TextComponent, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
@@ -149,7 +150,7 @@ function renderCustomPatternsCard(
             item.createSpan({ cls: 'ert-custom-patterns-item-name', text: p.name });
             const removeBtn = item.createEl('button', { cls: 'clickable-icon ert-custom-patterns-remove' });
             setIcon(removeBtn, 'trash-2');
-            removeBtn.setAttr('aria-label', t('ui.colorsSection.removePatternAriaLabel', { name: p.name }));
+            setAccessibleLabel(removeBtn, t('ui.colorsSection.removePatternAriaLabel', { name: p.name }));
             plugin.registerDomEvent(removeBtn, 'click', async () => {
                 const next = (plugin.settings.customWorkingPatterns ?? []).filter(x => x.id !== p.id);
                 plugin.settings.customWorkingPatterns = next;
@@ -267,7 +268,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
         patternDesc.addClass('ert-color-section-desc');
         patternDesc.setText(t('ui.colorsSection.workingPatternsDescLead'));
         const pill = patternDesc.createSpan({ cls: 'ert-yaml-pill', text: '"Working"' });
-        pill.setAttr('aria-label', t('ui.colorsSection.workingStatusAriaLabel'));
+        setAccessibleLabel(pill, t('ui.colorsSection.workingStatusAriaLabel'));
         patternDesc.appendText(t('ui.colorsSection.workingPatternsDescMiddle'));
         const link = patternDesc.createEl('a', { text: 'heropatterns.com', href: 'https://heropatterns.com' });
         link.setAttr('target', '_blank');
@@ -340,8 +341,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
         });
     });
     innerRow.addExtraButton(button => {
-        button.setIcon('reset')
-            .setTooltip(t('ui.colorsSection.resetTooltip'))
+        withTooltip(button.setIcon('reset'), t('ui.colorsSection.resetTooltip'))
             .onClick(async () => {
                 plugin.settings.workingPatternId = DEFAULT_WORKING_PATTERN_ID;
                 await plugin.saveSettings();
@@ -411,8 +411,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
                     });
             })
             .addExtraButton(button => {
-                button.setIcon('reset')
-                    .setTooltip(t('ui.colorsSection.resetTooltip'))
+                withTooltip(button.setIcon('reset'), t('ui.colorsSection.resetTooltip'))
                     .onClick(async () => {
                         const defaultColor = DEFAULT_SETTINGS.publishStageColors[stage as keyof typeof DEFAULT_SETTINGS.publishStageColors];
                         (plugin.settings.publishStageColors as Record<string, string>)[stage] = defaultColor;
@@ -446,7 +445,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
         const label = cell.createDiv({ cls: 'ert-color-grid-label' });
         if (i === 0) {
             // Ring 1 is the main plot's, pinned there whatever it is called.
-            const pin = label.createSpan({ cls: 'ert-main-plot-pin', attr: { 'aria-label': t('ui.colorsSection.mainPlotPin') } });
+            const pin = withAccessibleLabel(label.createSpan({ cls: 'ert-main-plot-pin', attr: {  } }), t('ui.colorsSection.mainPlotPin'));
             setIcon(pin, 'map-pin');
         }
         subplotLabels.push(label.createSpan({ text: labelText }));
@@ -490,8 +489,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
                     });
             })
             .addExtraButton(button => {
-                button.setIcon('reset')
-                    .setTooltip(t('ui.colorsSection.resetTooltip'))
+                withTooltip(button.setIcon('reset'), t('ui.colorsSection.resetTooltip'))
                     .onClick(async () => {
                         const value = DEFAULT_SETTINGS.subplotColors[i];
                         const next = [...(plugin.settings.subplotColors || DEFAULT_SETTINGS.subplotColors)];

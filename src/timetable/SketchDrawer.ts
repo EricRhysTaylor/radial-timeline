@@ -1,3 +1,4 @@
+import { setAccessibleLabel } from '../utils/domTooltip';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -285,7 +286,7 @@ export class SketchDrawer extends Component {
         this.bodyEl.empty();
         const preview = this.bodyEl.createDiv({ cls: 'ert-timetable__drawer-preview markdown-rendered' });
         preview.setAttr('tabindex', '0');
-        preview.setAttr('aria-label', t('ui.timetable.drawerEditHint'));
+        setAccessibleLabel(preview, t('ui.timetable.drawerEditHint'));
         void MarkdownRenderer.render(this.plugin.app, text, preview, this.file.path, this);
     }
 

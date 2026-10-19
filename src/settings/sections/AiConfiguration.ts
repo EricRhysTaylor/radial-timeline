@@ -1,4 +1,5 @@
-import { Component, Setting as Settings, Notice, setIcon, setTooltip } from 'obsidian';
+import { setAccessibleLabel, setTooltip, withAccessibleLabel } from '../../utils/domTooltip';
+import { Component, Setting as Settings, Notice, setIcon} from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { t } from '../../i18n';
 import { getSynopsisGenerationWordLimit } from '../../utils/synopsisLimits';
@@ -79,7 +80,7 @@ export function renderAiConfiguration(aiConfigBody: HTMLElement, plugin: RadialT
             // verbatim quote per finding in the Sources block.
             setting.addToggle(toggle => {
                 toggle.setValue(false).setDisabled(true);
-                toggle.toggleEl.setAttr('title', t('ui.aiConfiguration.citationsDisabledTooltip'));
+                setTooltip(toggle.toggleEl, t('ui.aiConfiguration.citationsDisabledTooltip'));
             });
         }
     });
@@ -107,15 +108,12 @@ export function renderAiConfiguration(aiConfigBody: HTMLElement, plugin: RadialT
     const summaryRefreshGroup = aiConfigBody.createDiv({ cls: 'ert-config-group' });
     const summaryRefreshHeading = summaryRefreshGroup.createDiv({ cls: 'ert-config-group-heading' });
     summaryRefreshHeading.createSpan({ cls: 'ert-config-group-title', text: t('settings.ai.config.summaryRefreshTitle') });
-    const summaryRefreshOpenButton = summaryRefreshHeading.createEl('button', {
+    const summaryRefreshOpenButton = withAccessibleLabel(summaryRefreshHeading.createEl('button', {
         cls: 'ert-config-group-modal-link',
-        attr: {
-            type: 'button',
-            'aria-label': t('ui.aiConfiguration.openSummaryRefreshLabel')
-        }
-    });
+        attr: { type: 'button' }
+    }), t('ui.aiConfiguration.openSummaryRefreshLabel'));
     setIcon(summaryRefreshOpenButton, 'panel-top-open');
-    setTooltip(summaryRefreshOpenButton, t('ui.aiConfiguration.openSummaryRefreshLabel'));
+    setAccessibleLabel(summaryRefreshOpenButton, t('ui.aiConfiguration.openSummaryRefreshLabel'));
     scope.registerDomEvent(summaryRefreshOpenButton, 'click', (evt: MouseEvent) => {
         evt.preventDefault();
         if (!executeCommandById(plugin.app, 'radial-timeline:refresh-scene-synopses-ai')) {

@@ -1,4 +1,5 @@
-import { App, ButtonComponent, Modal, Notice, Setting as Settings, getIconIds, setIcon, setTooltip } from 'obsidian';
+import { setAccessibleLabel, setTooltip, withAccessibleLabel, withTooltip } from '../../../utils/domTooltip';
+import { App, ButtonComponent, Modal, Notice, Setting as Settings, getIconIds, setIcon} from 'obsidian';
 import type RadialTimelinePlugin from '../../../main';
 import { t, tCount } from '../../../i18n';
 import { DEFAULT_SETTINGS } from '../../defaults';
@@ -113,8 +114,7 @@ export function renderScenePropertiesSection(params: {
     advancedSetting.nameEl.prepend(advancedStatusEl);
     const advancedStateEl = advancedSetting.controlEl.createSpan({ cls: 'ert-scene-properties-state' });
     advancedSetting.addToggle((toggle) => {
-        toggle
-            .setTooltip(t('ui.scenePropertiesSection.maintainToggleTooltip'))
+        withTooltip(toggle, t('ui.scenePropertiesSection.maintainToggleTooltip'))
             .setValue(plugin.settings.sceneAdvancedPropertiesEnabled ?? true)
             .onChange(async (value) => {
                 plugin.settings.sceneAdvancedPropertiesEnabled = value;
@@ -134,13 +134,10 @@ export function renderScenePropertiesSection(params: {
     const advancedDivider = advancedSetting.controlEl.createSpan({ cls: 'ert-scene-properties-divider' });
     advancedDivider.setAttribute('aria-hidden', 'true');
 
-    const advancedToggleButton = advancedSetting.controlEl.createEl('button', {
+    const advancedToggleButton = withAccessibleLabel(advancedSetting.controlEl.createEl('button', {
         cls: ERT_CLASSES.ICON_BTN,
-        attr: {
-            type: 'button',
-            'aria-label': t('ui.scenePropertiesSection.showEditor')
-        }
-    });
+        attr: { type: 'button' }
+    }), t('ui.scenePropertiesSection.showEditor'));
     const advancedPanel = sectionStack.createDiv({ cls: ['ert-panel', 'ert-advanced-template-card', 'ert-scene-properties-panel', 'ert-scene-properties-subordinate'] });
     const hoverPreviewContainer = sectionStack.createDiv({
         cls: ['ert-previewFrame', 'ert-previewFrame--center', 'ert-previewFrame--flush', 'ert-scene-properties-subordinate'],
@@ -200,15 +197,13 @@ export function renderScenePropertiesSection(params: {
         setIcon(advancedStatusEl, maintained ? 'check-circle-2' : 'circle');
         advancedStateEl.setText('');
         const tooltip = maintained ? t('ui.scenePropertiesSection.advancedEnabledTooltip') : t('ui.scenePropertiesSection.advancedDisabledTooltip');
-        setTooltip(advancedSetting.settingEl, tooltip);
         setTooltip(advancedStatusEl, tooltip);
     };
 
     const refreshAdvancedToggle = () => {
         const expanded = plugin.settings.enableAdvancedYamlEditor ?? false;
         setIcon(advancedToggleButton, expanded ? 'chevron-down' : 'chevron-right');
-        setTooltip(advancedToggleButton, expanded ? t('ui.scenePropertiesSection.hideEditor') : t('ui.scenePropertiesSection.showEditor'));
-        advancedToggleButton.setAttribute('aria-label', expanded ? t('ui.scenePropertiesSection.hideEditor') : t('ui.scenePropertiesSection.showEditor'));
+        setAccessibleLabel(advancedToggleButton, expanded ? t('ui.scenePropertiesSection.hideEditor') : t('ui.scenePropertiesSection.showEditor'));
     };
     refreshAdvancedRowState();
     refreshAdvancedToggle();
@@ -433,10 +428,9 @@ export function renderScenePropertiesSection(params: {
                 }
 
                 if (migration && alert) {
-                    const migrateBtn = row.createEl('button', {
+                    const migrateBtn = withAccessibleLabel(row.createEl('button', {
                         cls: ['ert-iconBtn', 'ert-migrate-btn', `ert-migrate-btn--${alert.severity}`],
-                        attr: { 'aria-label': migration.tooltip }
-                    });
+                    }), migration.tooltip);
                     setIcon(migrateBtn, 'arrow-right-circle');
                     setTooltip(migrateBtn, migration.tooltip);
                     migrateBtn.onclick = async () => {
@@ -459,7 +453,7 @@ export function renderScenePropertiesSection(params: {
                 } else {
                     const deleteBtn = row.createEl('button', { cls: 'ert-iconBtn' });
                     setIcon(deleteBtn, 'trash');
-                    setTooltip(deleteBtn, t('ui.scenePropertiesSection.removeTooltip'));
+                    setAccessibleLabel(deleteBtn, t('ui.scenePropertiesSection.removeTooltip'));
                     deleteBtn.onclick = () => {
                         removeHoverMetadata(entry.key);
                         const nextList = list.filter((_, itemIdx) => itemIdx !== idx);
@@ -549,7 +543,7 @@ export function renderScenePropertiesSection(params: {
 
             const addBtn = buttonWrap.createEl('button', { cls: ['ert-iconBtn', 'ert-mod-cta'] });
             setIcon(addBtn, 'plus');
-            setTooltip(addBtn, t('ui.scenePropertiesSection.addTooltip'));
+            setAccessibleLabel(addBtn, t('ui.scenePropertiesSection.addTooltip'));
             addBtn.onclick = () => {
                 const key = keyInput.value.trim();
                 if (!key) return;

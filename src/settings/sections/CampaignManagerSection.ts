@@ -1,9 +1,10 @@
+import { setAccessibleLabel, setTooltip, withAccessibleLabel } from '../../utils/domTooltip';
 /**
  * Campaign Manager Section (Pro Feature)
  * Allows managing multiple APR campaigns with independent refresh schedules
  */
 
-import { App, Setting, setIcon, setTooltip, ButtonComponent, Notice, Modal, DropdownComponent } from 'obsidian';
+import { App, Setting, setIcon, ButtonComponent, Notice, Modal, DropdownComponent } from 'obsidian';
 import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
 import type { AprStyleProfile, AuthorProgressCampaign, TeaserPreset, TeaserRevealLevel } from '../../types/settings';
@@ -435,7 +436,7 @@ function renderCampaignRow(
         setTooltip(statusIndicator, t('ui.campaignManagerSection.upToDateTooltip'));
     } else {
         setIcon(statusIndicator, 'pause-circle');
-        setTooltip(statusIndicator, t('ui.campaignManagerSection.statusPaused'));
+        setAccessibleLabel(statusIndicator, t('ui.campaignManagerSection.statusPaused'));
     }
 
     // Campaign info
@@ -446,7 +447,7 @@ function renderCampaignRow(
     setTooltip(nameEl, t('ui.campaignManagerSection.renameTooltip'));
     nameEl.setAttr('role', 'button');
     nameEl.setAttr('tabindex', '0');
-    nameEl.setAttr('aria-label', t('ui.campaignManagerSection.renameAriaLabel', { name: campaign.name }));
+    setAccessibleLabel(nameEl, t('ui.campaignManagerSection.renameAriaLabel', { name: campaign.name }));
     const openRenameModal = () => {
         const modal = new NamePromptModal(plugin.app, {
             badge: t('ui.campaignManagerSection.editBadge'),
@@ -544,7 +545,7 @@ function renderCampaignRow(
     const toggleBtn = actionGroup.createEl('button', { cls: ERT_CLASSES.ICON_BTN });
     setIcon(toggleBtn, campaign.isActive ? 'pause' : 'play');
     toggleBtn.addClass(campaign.isActive ? 'ert-iconBtn--active' : 'ert-iconBtn--paused');
-    setTooltip(toggleBtn, campaign.isActive ? t('ui.campaignManagerSection.pauseTooltip') : t('ui.campaignManagerSection.resumeTooltip'));
+    setAccessibleLabel(toggleBtn, campaign.isActive ? t('ui.campaignManagerSection.pauseTooltip') : t('ui.campaignManagerSection.resumeTooltip'));
     toggleBtn.onclick = async () => {
         if (!plugin.settings.authorProgress?.campaigns) return;
         plugin.settings.authorProgress.campaigns[index].isActive = !campaign.isActive;
@@ -555,7 +556,7 @@ function renderCampaignRow(
     // Edit (expand to show more options)
     const editBtn = actionGroup.createEl('button', { cls: ERT_CLASSES.ICON_BTN });
     setIcon(editBtn, 'settings');
-    setTooltip(editBtn, t('ui.campaignManagerSection.editTooltip'));
+    setAccessibleLabel(editBtn, t('ui.campaignManagerSection.editTooltip'));
     editBtn.onclick = async () => {
         // Toggle expanded state - add details to wrapper, not row
         const existingDetails = wrapper.querySelector('.ert-campaign-details');
@@ -585,7 +586,7 @@ function renderCampaignRow(
     // Delete
     const deleteBtn = actionGroup.createEl('button', { cls: `${ERT_CLASSES.ICON_BTN} ert-iconBtn--danger` });
     setIcon(deleteBtn, 'trash-2');
-    setTooltip(deleteBtn, t('ui.campaignManagerSection.deleteTooltip'));
+    setAccessibleLabel(deleteBtn, t('ui.campaignManagerSection.deleteTooltip'));
     deleteBtn.onclick = async () => {
         if (!plugin.settings.authorProgress?.campaigns) return;
         if (styleService.isDesignerCampaignActive(campaignKey)) {
@@ -845,12 +846,12 @@ function renderCampaignDetails(
             saveNewBtn.buttonEl.addClass('ert-apr-presetBtn');
         }
 
-        const deleteStyleBtn = actionsRow.createEl('button', {
+        const deleteStyleBtn = withAccessibleLabel(actionsRow.createEl('button', {
             cls: `${ERT_CLASSES.ICON_BTN} ert-iconBtn--danger`,
-            attr: { type: 'button', 'aria-label': t('ui.campaignManagerSection.deletePreset') }
-        });
+            attr: { type: 'button' }
+        }), t('ui.campaignManagerSection.deletePreset'));
         setIcon(deleteStyleBtn, 'trash-2');
-        setTooltip(deleteStyleBtn, selectedProfile ? t('ui.campaignManagerSection.deletePresetNamed', { name: selectedProfile.name }) : t('ui.campaignManagerSection.deletePreset'));
+        setAccessibleLabel(deleteStyleBtn, selectedProfile ? t('ui.campaignManagerSection.deletePresetNamed', { name: selectedProfile.name }) : t('ui.campaignManagerSection.deletePreset'));
         deleteStyleBtn.disabled = !selectedProfile;
         deleteStyleBtn.onclick = () => {
             if (!selectedProfile) return;
@@ -1011,12 +1012,12 @@ function renderCampaignDetails(
         type: 'range',
         attr: { min: String(refreshMin), max: String(refreshMax), step: '1', value: String(getRefreshValue()) }
     });
-    const refreshValueInput = refreshControl.createEl('input', {
+    const refreshValueInput = withAccessibleLabel(refreshControl.createEl('input', {
         type: 'number',
         cls: 'ert-input ert-input--2digit',
         value: String(getRefreshValue()),
-        attr: { min: String(refreshMin), max: String(refreshMax), step: '1', 'aria-label': t('ui.campaignManagerSection.refreshThresholdAriaLabel') }
-    });
+        attr: { min: String(refreshMin), max: String(refreshMax), step: '1' }
+    }), t('ui.campaignManagerSection.refreshThresholdAriaLabel'));
 
     const syncRefreshDisplay = (val: number) => {
         if (refreshValueInput.ownerDocument.activeElement !== refreshValueInput) refreshValueInput.value = String(val);

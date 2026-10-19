@@ -1,3 +1,4 @@
+import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -292,7 +293,7 @@ export class RadialTimelineView extends ItemView {
             const body = el.createSpan({ cls: 'ert-timeline-lens__legend' });
             const close = el.createEl('button', { cls: 'ert-timeline-lens__close clickable-icon' });
             close.dataset.overlay = kind;
-            close.setAttribute('aria-label', kind === 'lens' ? t('ui.timetable.lensClose') : t('ui.timetable.coloringClose'));
+            setAccessibleLabel(close, kind === 'lens' ? t('ui.timetable.lensClose') : t('ui.timetable.coloringClose'));
             setIcon(close, 'x');
             return body;
         };
@@ -431,7 +432,6 @@ export class RadialTimelineView extends ItemView {
             searchInput.placeholder = t('timeline.search.placeholder');
             searchInput.autocomplete = 'off';
             searchInput.spellcheck = false;
-            searchInput.setAttribute('aria-label', t('timeline.search.inputLabel'));
 
             this.registerDomEvent(searchBtn, 'mousedown', (evt: MouseEvent) => {
                 evt.preventDefault();
@@ -490,7 +490,6 @@ export class RadialTimelineView extends ItemView {
 
             const select = doc.win.createEl('select');
             select.className = 'rt-book-switcher__select';
-            select.setAttribute('aria-label', t('ui.timeLineView.bookSelector'));
             this.registerDomEvent(select, 'change', async () => {
                 const nextId = select.value;
                 if (nextId === SAGA_SCOPE_OPTION) {
@@ -532,9 +531,8 @@ export class RadialTimelineView extends ItemView {
                 const btn = doc.win.createEl('button');
                 btn.className = 'ert-timeline-title-action clickable-icon';
                 btn.type = 'button';
-                btn.setAttribute('aria-label', action.label);
                 setIcon(btn, action.icon);
-                applyTooltip(btn, action.label, 'bottom');
+                setAccessibleLabel(btn, action.label);
                 this.registerDomEvent(btn, 'click', (evt: MouseEvent) => {
                     evt.preventDefault();
                     evt.stopPropagation();
@@ -546,10 +544,10 @@ export class RadialTimelineView extends ItemView {
             const actionsMenuBtn = doc.win.createEl('button');
             actionsMenuBtn.className = 'ert-timeline-title-menu clickable-icon';
             actionsMenuBtn.type = 'button';
-            actionsMenuBtn.setAttribute('aria-label', t('ui.timeLineView.timelineActions'));
+            setAccessibleLabel(actionsMenuBtn, t('ui.timeLineView.timelineActions'));
             actionsMenuBtn.setAttribute('aria-haspopup', 'menu');
             setIcon(actionsMenuBtn, 'menu');
-            applyTooltip(actionsMenuBtn, t('ui.timeLineView.timelineActions'), 'bottom');
+            setAccessibleLabel(actionsMenuBtn, t('ui.timeLineView.timelineActions'));
             this.registerDomEvent(actionsMenuBtn, 'click', (evt: MouseEvent) => {
                 evt.preventDefault();
                 evt.stopPropagation();
@@ -565,7 +563,7 @@ export class RadialTimelineView extends ItemView {
             const sessionBtn = doc.win.createEl('button');
             sessionBtn.className = 'ert-timeline-session clickable-icon';
             sessionBtn.type = 'button';
-            sessionBtn.setAttribute('aria-label', t('ui.timeLineView.startWritingSession'));
+            setAccessibleLabel(sessionBtn, t('ui.timeLineView.startWritingSession'));
             const sessionLabel = doc.win.createSpan();
             sessionLabel.className = 'ert-timeline-session__label';
             this.renderWritingSessionIdleIcon(sessionLabel);
@@ -586,8 +584,10 @@ export class RadialTimelineView extends ItemView {
 
             searchShell.appendChild(searchBtn);
             searchShell.appendChild(searchInput);
+            setAccessibleLabel(searchInput, t('timeline.search.inputLabel'));
             booksGroup.appendChild(booksIcon);
             booksGroup.appendChild(select);
+            setAccessibleLabel(select, t('ui.timeLineView.bookSelector'));
             // Right cluster order: legend · search · books · ⌘ · printer · bug · gear
             // (or the one actions menu in their place on a narrow bar)
             wrapper.appendChild(legendBtn);
@@ -695,7 +695,7 @@ export class RadialTimelineView extends ItemView {
             const modeNav = doc.win.createDiv();
             modeNav.className = 'ert-timeline-mode-nav';
             modeNav.setAttribute('role', 'tablist');
-            modeNav.setAttribute('aria-label', t('ui.timeLineView.timelineModeNav'));
+            setAccessibleLabel(modeNav, t('ui.timeLineView.timelineModeNav'));
             const modeButtons = new Map<string, HTMLButtonElement>();
             let chronologueModeBtn: HTMLButtonElement | undefined;
             getToggleableModes().forEach((mode, index) => {
@@ -720,7 +720,7 @@ export class RadialTimelineView extends ItemView {
                 labelSpan.textContent = label;
                 btn.appendChild(num);
                 btn.appendChild(labelSpan);
-                btn.setAttribute('aria-label', t('ui.timeLineView.modeNavAria', { mode: label, number: index + 1 }));
+                setAccessibleLabel(btn, t('ui.timeLineView.modeNavAria', { mode: label, number: index + 1 }));
                 applyTooltip(btn, t('ui.timeLineView.modeNavTooltip', { mode: label, number: index + 1 }), 'bottom');
                 this.registerDomEvent(btn, 'click', (evt: MouseEvent) => {
                     evt.preventDefault();
@@ -842,7 +842,7 @@ export class RadialTimelineView extends ItemView {
         const group = doc.win.createDiv();
         group.className = 'ert-timeline-subnav ert-timeline-alignment-toggle';
         group.setAttribute('role', 'group');
-        group.setAttribute('aria-label', t('timeline.subplotAlignment.groupLabel'));
+        setAccessibleLabel(group, t('timeline.subplotAlignment.groupLabel'));
         group.hidden = true;
 
         const btn = doc.win.createEl('button');
@@ -895,7 +895,7 @@ export class RadialTimelineView extends ItemView {
         if (glyphEl) glyphEl.textContent = active === 'sequence' ? '\u25D4' : '\u25CD';
         const labelEl = btn.querySelector('.ert-timeline-subnav__label');
         if (labelEl) labelEl.textContent = activeLabel;
-        btn.setAttribute('aria-label', hint);
+        setAccessibleLabel(btn, hint);
         applyTooltip(btn, hint, 'bottom');
         // Always the current state, never an unchosen option — the chip reads
         // as a value, so the dashed "inactive" styling would misrepresent it.
@@ -925,7 +925,7 @@ export class RadialTimelineView extends ItemView {
         const subNav = doc.win.createDiv();
         subNav.className = 'ert-timeline-subnav';
         subNav.setAttribute('role', 'group');
-        subNav.setAttribute('aria-label', t('ui.timeLineView.chronologueSubModes'));
+        setAccessibleLabel(subNav, t('ui.timeLineView.chronologueSubModes'));
         subNav.hidden = true;
 
         const makeBtn = (submode: 'shift' | 'alt' | 'runtime', label: string, glyph: string, aria: string): HTMLButtonElement => {
@@ -934,7 +934,7 @@ export class RadialTimelineView extends ItemView {
             btn.type = 'button';
             btn.dataset.submode = submode;
             btn.setAttribute('aria-pressed', 'false');
-            btn.setAttribute('aria-label', aria);
+            setAccessibleLabel(btn, aria);
             const glyphEl = doc.win.createSpan();
             glyphEl.className = 'ert-timeline-subnav__glyph';
             glyphEl.setAttribute('aria-hidden', 'true');
@@ -944,7 +944,6 @@ export class RadialTimelineView extends ItemView {
             labelEl.textContent = label;
             btn.appendChild(glyphEl);
             btn.appendChild(labelEl);
-            applyTooltip(btn, aria, 'bottom');
             return btn;
         };
 
@@ -1337,7 +1336,8 @@ export class RadialTimelineView extends ItemView {
         // author's public community feed.
         this.writingSessionButton.classList.toggle('is-community-shared', this.isSessionFeedShareArmed());
         this.applySessionProgressClass(this.writingSessionButton, snapshot.progressStep);
-        this.writingSessionButton.setAttribute('aria-label', snapshot.detail);
+        setAccessibleLabel(this.writingSessionButton, snapshot.detail);
+        setTooltip(this.writingSessionButton, snapshot.detail);
         if (shouldPulseCount && snapshot.pulseKey && pulseColor) {
             this.pulseWritingSessionTitleCount(pulseColor);
         }
@@ -1565,8 +1565,7 @@ export class RadialTimelineView extends ItemView {
         const button = parent.createEl('button', { cls: className });
         button.type = 'button';
         setIcon(button, icon);
-        button.setAttribute('aria-label', label);
-        applyTooltip(button, label, 'bottom');
+        setAccessibleLabel(button, label);
         button.onclick = (event: MouseEvent) => {
             event.preventDefault();
             event.stopPropagation();
@@ -1615,8 +1614,7 @@ export class RadialTimelineView extends ItemView {
         const settingsBtn = header.createEl('button', { cls: 'ert-timeline-session-panel__icon clickable-icon' });
         settingsBtn.type = 'button';
         setIcon(settingsBtn, 'settings');
-        settingsBtn.setAttribute('aria-label', t('ui.timeLineView.goalsSessionsSettings'));
-        applyTooltip(settingsBtn, t('ui.timeLineView.goalsSessionsSettings'), 'bottom');
+        setAccessibleLabel(settingsBtn, t('ui.timeLineView.goalsSessionsSettings'));
         settingsBtn.onclick = (event: MouseEvent) => {
             event.preventDefault();
             event.stopPropagation();
@@ -2322,8 +2320,7 @@ export class RadialTimelineView extends ItemView {
         this.timelineSearchButton.empty();
         setIcon(this.timelineSearchButton, mode === 'clear' ? 'search-x' : 'search');
         const buttonLabel = mode === 'clear' ? t('timeline.search.clearAction') : t('timeline.search.searchAction');
-        this.timelineSearchButton.setAttribute('aria-label', buttonLabel);
-        this.timelineSearchButton.setAttribute('title', buttonLabel);
+        setAccessibleLabel(this.timelineSearchButton, buttonLabel);
         this.timelineSearchButton.classList.toggle('is-clear', mode === 'clear');
     }
 

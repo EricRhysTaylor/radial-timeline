@@ -1,3 +1,4 @@
+import { TooltipElement } from '../../../tests/mocks/tooltipDom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Component } from 'obsidian';
 import { renderAiConfiguration } from './AiConfiguration';
@@ -9,7 +10,7 @@ interface ToggleStub { value: boolean; disabled: boolean; toggleEl: ElementStub;
     onChange(callback: (value: boolean) => void): ToggleStub; change(value: boolean): void; }
 interface RowStub { name: string; desc: string; text?: TextStub; toggle?: ToggleStub; }
 const ui = vi.hoisted(() => ({ rows: [] as RowStub[], notices: [] as string[] }));
-class ElementStub extends EventTarget {
+class ElementStub extends TooltipElement {
     children: ElementStub[] = [];
     type = ''; min = ''; max = ''; step = '';
     addClass() {} setAttr() {}

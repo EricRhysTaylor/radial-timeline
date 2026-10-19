@@ -1,3 +1,4 @@
+import { withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 import { Notice, Setting, setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
@@ -82,10 +83,10 @@ export function renderProEntitlementPanel({
 
     const createToggle = (parent: HTMLElement, ariaLabel: string): HTMLInputElement => {
         const toggleWrap = parent.createDiv({ cls: `${ERT_CLASSES.TOGGLE_ITEM} ert-pro-mode__toggle` });
-        const toggleInput = toggleWrap.createEl('input', {
+        const toggleInput = withAccessibleLabel(toggleWrap.createEl('input', {
             cls: 'ert-toggle-input',
-            attr: { type: 'checkbox', 'aria-label': ariaLabel }
-        });
+            attr: { type: 'checkbox' }
+        }), ariaLabel);
         toggleInputs.push(toggleInput);
         plugin.registerDomEvent(toggleInput, 'click', (evt) => evt.stopPropagation());
         plugin.registerDomEvent(toggleWrap, 'click', (evt) => evt.stopPropagation());
@@ -148,9 +149,8 @@ export function renderProEntitlementPanel({
             text.inputEl.type = 'password';
         })
         .addButton(button => {
-            button
-                .setButtonText(t('ui.proEntitlementPanel.validateButton'))
-                .setTooltip(t('ui.proEntitlementPanel.validateTooltip'))
+            withTooltip(button
+                .setButtonText(t('ui.proEntitlementPanel.validateButton')), t('ui.proEntitlementPanel.validateTooltip'))
                 .setDisabled(true);
         });
 

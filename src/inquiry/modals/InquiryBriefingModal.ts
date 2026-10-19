@@ -1,3 +1,4 @@
+import { setAccessibleLabel, withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 import { App, Modal, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { InquiryBriefModel } from '../types/inquiryViewTypes';
@@ -145,11 +146,10 @@ export class InquiryBriefingModal extends Modal {
                 const tooltip = this.staleDiagnosis?.tooltipLines.length
                     ? t('ui.inquiryBriefingModal.staleTooltipWithLines', { lines: this.staleDiagnosis.tooltipLines.join('\n') })
                     : t('ui.inquiryBriefingModal.staleTooltip');
-                primaryLine.createSpan({
+                withTooltip(primaryLine.createSpan({
                     cls: 'ert-briefing-stale-badge',
                     text: labelText,
-                    attr: { title: tooltip }
-                });
+                }), tooltip);
             }
         }
         if (this.brief.pills.length) {
@@ -261,15 +261,11 @@ export class InquiryBriefingModal extends Modal {
             labelRow.createDiv({ cls: 'ert-briefing-note-label', text: note.header });
             const anchorTarget = this.briefFile;
             if (note.anchorId && anchorTarget) {
-                const anchorAction = labelRow.createEl('a', {
+                const anchorAction = withTooltip(withAccessibleLabel(labelRow.createEl('a', {
                     cls: 'ert-briefing-note-link',
                     text: '↗',
-                    attr: {
-                        href: '#',
-                        'aria-label': t('ui.inquiryBriefingModal.openNoteInBriefAria', { header: note.header }),
-                        title: t('ui.inquiryBriefingModal.openInBriefTitle')
-                    }
-                });
+                    attr: { href: '#' }
+                }), t('ui.inquiryBriefingModal.openNoteInBriefAria', { header: note.header })), t('ui.inquiryBriefingModal.openInBriefTitle'));
                 anchorAction.addEventListener('click', (event) => {
                     event.preventDefault();
                     void this.openSubpathAndClose(anchorTarget, `#^${note.anchorId}`);
@@ -482,7 +478,7 @@ export class InquiryBriefingModal extends Modal {
                 event.preventDefault();
                 this.scrollToSceneReference(anchorId);
             });
-            el.setAttribute('aria-label', t('ui.inquiryBriefingModal.jumpToAria', { label }));
+            setAccessibleLabel(el, t('ui.inquiryBriefingModal.jumpToAria', { label }));
         }
         const numberEl = doc.win.createSpan();
         numberEl.className = 'ert-briefing-scene-ref-num';

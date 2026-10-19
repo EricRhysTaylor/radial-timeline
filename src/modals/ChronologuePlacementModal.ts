@@ -1,3 +1,4 @@
+import { setAccessibleLabel } from '../utils/domTooltip';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -266,7 +267,7 @@ export class ChronologuePlacementModal extends ErtModal {
         const label = followers.length === 1 ? t('ui.chronologuePlacementModal.keepOne') : t('ui.chronologuePlacementModal.keepMany');
         new ToggleComponent(row)
             .setValue(this.keepFollowers)
-            .then(toggle => toggle.toggleEl.setAttribute('aria-label', label))
+            .then(toggle => setAccessibleLabel(toggle.toggleEl, label))
             .onChange(on => {
                 this.keepFollowers = on;
                 this.renderBody();

@@ -1,4 +1,5 @@
-import { App, ButtonComponent, Component, Modal, normalizePath, Notice, setIcon, Setting as Settings, setTooltip, TFile } from 'obsidian';
+import { setAccessibleLabel, setTooltip, withTooltip } from '../../../utils/domTooltip';
+import { App, ButtonComponent, Component, Modal, normalizePath, Notice, setIcon, Setting as Settings, TFile } from 'obsidian';
 import { t, tCount } from '../../../i18n';
 import type RadialTimelinePlugin from '../../../main';
 import { describeStructuralStatus } from '../../../storyBeats/beatSystemStatus';
@@ -129,9 +130,8 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
     // Copy button (hidden until audit runs)
     let copyBtn: HTMLButtonElement | undefined;
     auditSetting.addButton(button => {
-        button
-            .setIcon('clipboard-copy')
-            .setTooltip(t('settings.beats.audit.copyTooltip'))
+        withTooltip(button
+            .setIcon('clipboard-copy'), t('settings.beats.audit.copyTooltip'))
             .onClick(() => {
                 if (!auditResult) return;
                 const report = formatAuditReport(auditResult, noteType);
@@ -146,9 +146,8 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
     // Insert missing fields button (hidden until audit finds missing fields)
     let backfillBtn: HTMLButtonElement | undefined;
     auditSetting.addButton(button => {
-        button
-            .setButtonText(t('settings.beats.audit.insertFieldsText'))
-            .setTooltip(t('settings.beats.audit.insertFieldsTooltip'))
+        withTooltip(button
+            .setButtonText(t('settings.beats.audit.insertFieldsText')), t('settings.beats.audit.insertFieldsTooltip'))
             .onClick(() => void handleBackfill());
         backfillBtn = button.buttonEl;
         backfillBtn.classList.add('ert-settings-hidden');
@@ -156,27 +155,24 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
     // Insert missing IDs button (hidden until audit finds missing IDs)
     let insertMissingIdsBtn: HTMLButtonElement | undefined;
     auditSetting.addButton(button => {
-        button
-            .setButtonText(t('settings.beats.audit.insertIdsText'))
-            .setTooltip(t('settings.beats.audit.insertIdsTooltip'))
+        withTooltip(button
+            .setButtonText(t('settings.beats.audit.insertIdsText')), t('settings.beats.audit.insertIdsTooltip'))
             .onClick(() => void handleInsertMissingIds());
         insertMissingIdsBtn = button.buttonEl;
         insertMissingIdsBtn.classList.add('ert-settings-hidden');
     });
     let fixDuplicateIdsBtn: HTMLButtonElement | undefined;
     auditSetting.addButton(button => {
-        button
-            .setButtonText(t('settings.beats.audit.fixDuplicateIdsText'))
-            .setTooltip(t('settings.beats.audit.fixDuplicateIdsTooltip'))
+        withTooltip(button
+            .setButtonText(t('settings.beats.audit.fixDuplicateIdsText')), t('settings.beats.audit.fixDuplicateIdsTooltip'))
             .onClick(() => void handleFixDuplicateIds());
         fixDuplicateIdsBtn = button.buttonEl;
         fixDuplicateIdsBtn.classList.add('ert-settings-hidden');
     });
     let fillEmptyBtn: HTMLButtonElement | undefined;
     auditSetting.addButton(button => {
-        button
-            .setButtonText(t('settings.beats.audit.fillEmptyText'))
-            .setTooltip(t('settings.beats.audit.fillEmptyTooltip'))
+        withTooltip(button
+            .setButtonText(t('settings.beats.audit.fillEmptyText')), t('settings.beats.audit.fillEmptyTooltip'))
             .onClick(() => void handleFillEmptyValues());
         fillEmptyBtn = button.buttonEl;
         fillEmptyBtn.classList.add('ert-settings-hidden');
@@ -185,9 +181,8 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
     // Migrate deprecated fields button (hidden until audit finds legacy keys with safe migration path)
     let migrateDeprecatedBtn: HTMLButtonElement | undefined;
     auditSetting.addButton(button => {
-        button
-            .setButtonText(t('settings.beats.audit.migrateDeprecatedText'))
-            .setTooltip(t('settings.beats.audit.migrateDeprecatedTooltip'))
+        withTooltip(button
+            .setButtonText(t('settings.beats.audit.migrateDeprecatedText')), t('settings.beats.audit.migrateDeprecatedTooltip'))
             .onClick(() => void handleMigrateDeprecatedFields());
         migrateDeprecatedBtn = button.buttonEl;
         migrateDeprecatedBtn.classList.add('ert-settings-hidden');
@@ -196,9 +191,8 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
     // Delete custom fields button (hidden until custom template has keys)
     let deleteAdvancedBtn: HTMLButtonElement | undefined;
     auditSetting.addButton(button => {
-        button
-            .setButtonText(t('settings.beats.audit.deleteCustomText'))
-            .setTooltip(t('settings.beats.audit.deleteCustomTooltip'))
+        withTooltip(button
+            .setButtonText(t('settings.beats.audit.deleteCustomText')), t('settings.beats.audit.deleteCustomTooltip'))
             .onClick(() => void handleDeleteAdvancedFields());
         deleteAdvancedBtn = button.buttonEl;
         deleteAdvancedBtn.classList.add('ert-settings-hidden');
@@ -207,9 +201,8 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
     // Reorder fields button (hidden until audit finds order drift)
     let reorderBtn: HTMLButtonElement | undefined;
     auditSetting.addButton(button => {
-        button
-            .setButtonText(t('settings.beats.audit.reorderText'))
-            .setTooltip(t('settings.beats.audit.reorderTooltip'))
+        withTooltip(button
+            .setButtonText(t('settings.beats.audit.reorderText')), t('settings.beats.audit.reorderTooltip'))
             .onClick(() => void handleReorderFields());
         reorderBtn = button.buttonEl;
         reorderBtn.classList.add('ert-settings-hidden');
@@ -224,7 +217,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         if (isBeatFieldsStage && (workspace?.isDirty() ?? false)) {
             auditBtn.setDisabled(false);
             auditBtn.setButtonText(t('settings.beats.audit.saveChangesText'));
-            auditBtn.setTooltip(t('settings.beats.audit.saveChangesTooltip'));
+            withTooltip(auditBtn, t('settings.beats.audit.saveChangesTooltip'));
             auditBtn.buttonEl.classList.add('ert-save-changes-btn--attention');
             auditPrimaryAction = () => { void workspace?.save(); };
             return;
@@ -235,23 +228,22 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         if (preCheckScope.reason) {
             auditBtn.setDisabled(true);
             auditBtn.setButtonText(t('settings.beats.audit.checkNotesText'));
-            auditBtn.setTooltip(preCheckScope.reason);
+            withTooltip(auditBtn, preCheckScope.reason);
         } else if (preCheckScope.files.length === 0) {
             auditBtn.setDisabled(true);
             auditBtn.setButtonText(t('settings.beats.audit.checkNotesText'));
-            auditBtn.setTooltip(t('ui.yamlAuditPanel.noNotesCreateFirst', { type: noteTypeWord }));
+            withTooltip(auditBtn, t('ui.yamlAuditPanel.noNotesCreateFirst', { type: noteTypeWord }));
         } else {
             auditBtn.setDisabled(false);
             auditBtn.setButtonText(t('settings.beats.audit.checkNotesText'));
-            auditBtn.setTooltip(t('ui.yamlAuditPanel.checkScopeTooltip', { scope: preCheckScope.scopeSummary }));
+            withTooltip(auditBtn, t('ui.yamlAuditPanel.checkScopeTooltip', { scope: preCheckScope.scopeSummary }));
         }
         auditPrimaryAction = () => runAudit();
     };
     auditSetting.addButton(button => {
         auditBtn = button;
-        button
-            .setButtonText(t('settings.beats.audit.checkNotesText'))
-            .setTooltip(t('ui.yamlAuditPanel.checkAllTooltip', { type: noteTypeWord }))
+        withTooltip(button
+            .setButtonText(t('settings.beats.audit.checkNotesText')), t('ui.yamlAuditPanel.checkAllTooltip', { type: noteTypeWord }))
             .onClick(() => auditPrimaryAction?.());
     });
 
@@ -349,10 +341,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         fillEmptyPlan = buildFillEmptyPlan(files, activeBeatSystemKey);
         if (fillEmptyPlan) {
             fillEmptyBtn?.classList.remove('ert-settings-hidden');
-            fillEmptyBtn?.setAttribute(
-                'aria-label',
-                t('ui.yamlAuditPanel.fillEmptyAria', { values: tCount('emptyValue', fillEmptyPlan.filledFields), notes: tCount('note', fillEmptyPlan.files.length) })
-            );
+            if (fillEmptyBtn) setAccessibleLabel(fillEmptyBtn, t('ui.yamlAuditPanel.fillEmptyAria', { values: tCount('emptyValue', fillEmptyPlan.filledFields), notes: tCount('note', fillEmptyPlan.files.length) }));
         } else {
             fillEmptyBtn?.classList.add('ert-settings-hidden');
         }
@@ -362,10 +351,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             const actionable = deprecatedMigrationPlan.moveCount + deprecatedMigrationPlan.removeEmptyCount;
             migrateDeprecatedBtn?.classList.remove('ert-settings-hidden');
             const migrateVars = { count: actionable, legacyKey: deprecatedMigrationPlan.legacyKey, canonicalKey: deprecatedMigrationPlan.canonicalKey };
-            migrateDeprecatedBtn?.setAttribute(
-                'aria-label',
-                actionable !== 1 ? t('ui.yamlAuditPanel.migrateAriaOther', migrateVars) : t('ui.yamlAuditPanel.migrateAriaOne', migrateVars)
-            );
+            if (migrateDeprecatedBtn) setAccessibleLabel(migrateDeprecatedBtn, actionable !== 1 ? t('ui.yamlAuditPanel.migrateAriaOther', migrateVars) : t('ui.yamlAuditPanel.migrateAriaOne', migrateVars));
         } else {
             migrateDeprecatedBtn?.classList.add('ert-settings-hidden');
         }
@@ -382,10 +368,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             });
             if (notesWithAdvKeys.length > 0) {
                 deleteAdvancedBtn?.classList.remove('ert-settings-hidden');
-                deleteAdvancedBtn?.setAttribute(
-                    'aria-label',
-                    t('ui.yamlAuditPanel.deleteCustomAria', { notes: tCount('note', notesWithAdvKeys.length) })
-                );
+                if (deleteAdvancedBtn) setAccessibleLabel(deleteAdvancedBtn, t('ui.yamlAuditPanel.deleteCustomAria', { notes: tCount('note', notesWithAdvKeys.length) }));
             } else {
                 deleteAdvancedBtn?.classList.add('ert-settings-hidden');
             }
@@ -399,10 +382,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         );
         if (safeDriftNotes.length > 0) {
             reorderBtn?.classList.remove('ert-settings-hidden');
-            reorderBtn?.setAttribute(
-                'aria-label',
-                t('ui.yamlAuditPanel.reorderAria', { notes: tCount('note', safeDriftNotes.length) })
-            );
+            if (reorderBtn) setAccessibleLabel(reorderBtn, t('ui.yamlAuditPanel.reorderAria', { notes: tCount('note', safeDriftNotes.length) }));
         } else {
             reorderBtn?.classList.add('ert-settings-hidden');
         }
@@ -1336,10 +1316,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
         fillEmptyPlan = buildFillEmptyPlan(files, activeBeatSystemKey);
         if (fillEmptyPlan) {
             fillEmptyBtn?.classList.remove('ert-settings-hidden');
-            fillEmptyBtn?.setAttribute(
-                'aria-label',
-                t('ui.yamlAuditPanel.fillEmptyAria', { values: tCount('emptyValue', fillEmptyPlan.filledFields), notes: tCount('note', fillEmptyPlan.files.length) })
-            );
+            if (fillEmptyBtn) setAccessibleLabel(fillEmptyBtn, t('ui.yamlAuditPanel.fillEmptyAria', { values: tCount('emptyValue', fillEmptyPlan.filledFields), notes: tCount('note', fillEmptyPlan.files.length) }));
         } else {
             fillEmptyBtn?.classList.add('ert-settings-hidden');
         }

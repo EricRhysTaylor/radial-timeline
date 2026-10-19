@@ -1,6 +1,7 @@
+import { setAccessibleLabel, setTooltip, withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 import { formatDateRange, parseDateRange } from './authorProgress/dateRange';
 import { CustomBgPresetModal } from '../../modals/CustomBgPresetModal';
-import { App, Setting, setIcon, setTooltip, normalizePath, DropdownComponent, TextComponent, Modal, ButtonComponent } from 'obsidian';
+import { App, Setting, setIcon, normalizePath, DropdownComponent, TextComponent, Modal, ButtonComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { buildDefaultAuthorProgressDefaults } from '../../authorProgress/authorProgressConfig';
 import { AuthorProgressService } from '../../services/AuthorProgressService';
@@ -105,15 +106,11 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: badgeText });
 
     // Right Icon (Wiki Link) - Manually constructed for ERT styling
-    const wikiLink = badge.createEl('a', {
+    const wikiLink = withAccessibleLabel(badge.createEl('a', {
         href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Author-Progress-Report',
         cls: ERT_CLASSES.BADGE_PILL_WIKI,
-        attr: {
-            'aria-label': t('settings.authorProgress.hero.wikiAriaLabel'),
-            'target': '_blank',
-            'rel': 'noopener'
-        }
-    });
+        attr: { 'target': '_blank', 'rel': 'noopener' }
+    }), t('settings.authorProgress.hero.wikiAriaLabel'));
     setIcon(wikiLink, 'external-link');
 
     // Big headline
@@ -259,10 +256,9 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     // Author Progress modal (the single publish surface) rather than writing
     // a file in place, so static snapshots, campaign targeting, and reveal are
     // all reachable from one hub.
-    const publishBtn = new ButtonComponent(sizeSelectorControls)
+    const publishBtn = withTooltip(new ButtonComponent(sizeSelectorControls)
         .setButtonText(t('settings.authorProgress.preview.publish'))
-        .setCta()
-        .setTooltip(t('settings.authorProgress.preview.publishTooltip'))
+        .setCta(), t('settings.authorProgress.preview.publishTooltip'))
         .onClick(() => {
             new AuthorProgressModal(app, plugin).open();
         });
@@ -349,11 +345,11 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     targetCountInput.inputEl.step = '1';
     targetCountInput.inputEl.addClass('ert-input', 'ert-input--xs');
     targetCountInput.setPlaceholder('—');
-    setTooltip(targetCountInput.inputEl, t('ui.authorProgressSection.sceneGoalTooltip'));
-    const targetCountResetBtn = targetCountGroup.createEl('button', {
+    setAccessibleLabel(targetCountInput.inputEl, t('ui.authorProgressSection.sceneGoalTooltip'));
+    const targetCountResetBtn = withAccessibleLabel(targetCountGroup.createEl('button', {
         cls: ERT_CLASSES.ICON_BTN,
-        attr: { type: 'button', 'aria-label': t('ui.authorProgressSection.matchTargetLabel') }
-    });
+        attr: { type: 'button' }
+    }), t('ui.authorProgressSection.matchTargetLabel'));
     setIcon(targetCountResetBtn, 'refresh-cw');
     setTooltip(targetCountResetBtn, t('ui.authorProgressSection.matchTargetLabel'));
 
@@ -681,15 +677,14 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
         modal.open();
     });
     // Collapse / expand toggle for the styling body
-    const stylingToggleBtn = themeControl.createEl('button', {
+    const stylingToggleBtn = withAccessibleLabel(themeControl.createEl('button', {
         cls: ERT_CLASSES.ICON_BTN,
-        attr: { type: 'button', 'aria-label': t('ui.authorProgressSection.showStyling') }
-    });
+        attr: { type: 'button' }
+    }), t('ui.authorProgressSection.showStyling'));
     const refreshStylingToggle = () => {
         const expanded = plugin.settings.authorProgress?.defaults.aprStylingExpanded ?? false;
         setIcon(stylingToggleBtn, expanded ? 'chevron-down' : 'chevron-right');
-        setTooltip(stylingToggleBtn, expanded ? t('ui.authorProgressSection.hideStyling') : t('ui.authorProgressSection.showStyling'));
-        stylingToggleBtn.setAttribute('aria-label', expanded ? t('ui.authorProgressSection.hideStyling') : t('ui.authorProgressSection.showStyling'));
+        setAccessibleLabel(stylingToggleBtn, expanded ? t('ui.authorProgressSection.hideStyling') : t('ui.authorProgressSection.showStyling'));
         themeBody.toggleClass('ert-settings-hidden', !expanded);
     };
     refreshStylingToggle();
@@ -902,9 +897,9 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             const showWarning = isCustomFont(normalized) && !isFontLoaded(normalized);
             drop.selectEl.classList.toggle('ert-typography-select--warning', showWarning);
             if (showWarning) {
-                drop.selectEl.title = t('ui.authorProgressSection.fontNotLoaded', { font: normalized });
+                setTooltip(drop.selectEl, t('ui.authorProgressSection.fontNotLoaded', { font: normalized }));
             } else {
-                drop.selectEl.removeAttribute('title');
+                setTooltip(drop.selectEl, '');
             }
         };
 
@@ -1489,10 +1484,10 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     };
 
     for (const preset of platformPresets) {
-        const btn = platformSwatches.createEl('button', {
+        const btn = withAccessibleLabel(platformSwatches.createEl('button', {
             cls: 'ert-platform-swatch',
-            attr: { 'aria-label': `${preset.label} (${preset.color})`, type: 'button' }
-        });
+            attr: { type: 'button' }
+        }), `${preset.label} (${preset.color})`);
         btn.style.setProperty('--swatch-color', preset.color);
         btn.createSpan({ cls: 'ert-platform-swatch__color' });
         btn.createSpan({ cls: 'ert-platform-swatch__name', text: preset.label });
@@ -1512,13 +1507,10 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 
         for (let i = 0; i < MAX_CUSTOM_PRESETS; i++) {
             const saved = customs[i];
-            const btn = platformSwatches.createEl('button', {
+            const btn = withAccessibleLabel(platformSwatches.createEl('button', {
                 cls: `ert-platform-swatch${saved ? '' : ' ert-platform-swatch--empty'}`,
-                attr: {
-                    'aria-label': saved ? `${saved.label} (${saved.color})` : t('ui.authorProgressSection.customSlotEmptyAriaLabel', { number: i + 1 }),
-                    type: 'button'
-                }
-            });
+                attr: { type: 'button' }
+            }), saved ? `${saved.label} (${saved.color})` : t('ui.authorProgressSection.customSlotEmptyAriaLabel', { number: i + 1 }));
 
             customSwatchButtons.push(btn);
 
@@ -1842,7 +1834,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 
             exportPathSetting.addExtraButton(button => {
                 button.setIcon('rotate-ccw');
-                button.setTooltip(t('ui.authorProgressSection.resetToPath', { path: defaultPath }));
+                withTooltip(button, t('ui.authorProgressSection.resetToPath', { path: defaultPath }));
                 button.onClick(async () => {
                     text.setValue(defaultPath);
                     if (!plugin.settings.authorProgress) {

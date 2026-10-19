@@ -1,3 +1,4 @@
+import { setAccessibleLabel } from '../utils/domTooltip';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -300,7 +301,7 @@ export function paintDeskLampButton(button: HTMLElement, badgeEl: HTMLElement, v
     badgeEl.setText(count > 99 ? '99+' : String(count));
     button.classList.toggle('is-stale', view.error !== null);
     const label = deskLampsTooltip(view);
-    button.setAttribute('aria-label', label);
+    setAccessibleLabel(button, label);
     applyTooltip(button, label, 'bottom');
 }
 

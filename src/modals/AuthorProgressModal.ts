@@ -1,5 +1,6 @@
+import { setTooltip, withAccessibleLabel, withTooltip } from '../utils/domTooltip';
 import { openSettingsTab } from '../utils/obsidianInternals';
-import { App, Modal, ButtonComponent, FileSystemAdapter, Notice, setIcon, setTooltip, normalizePath } from 'obsidian';
+import { App, Modal, ButtonComponent, FileSystemAdapter, Notice, setIcon, normalizePath } from 'obsidian';
 import * as path from 'path'; // SAFE: Node path needed to build absolute paths for native Finder reveal
 import type RadialTimelinePlugin from '../main';
 import { TimelineItem } from '../types/timeline';
@@ -177,9 +178,8 @@ export class AuthorProgressModal extends Modal {
 
         // Footer actions
         const footer = contentEl.createDiv({ cls: 'ert-modal-actions' });
-        const settingsBtn = new ButtonComponent(footer)
-            .setIcon('settings')
-            .setTooltip(t('ui.authorProgressModal.settingsTooltip'))
+        const settingsBtn = withAccessibleLabel(new ButtonComponent(footer)
+            .setIcon('settings'), t('ui.authorProgressModal.settingsTooltip'))
             .onClick(() => {
                 this.close();
                 this.plugin.settingsTab?.setActiveTab('social');
@@ -333,7 +333,7 @@ export class AuthorProgressModal extends Modal {
                 text: target.label,
                 cls: 'ert-apr-status-title'
             });
-            aprLabel.setAttr('title', target.label);
+            setTooltip(aprLabel, target.label);
 
             const bookCell = dataRow.createDiv({ cls: 'ert-apr-status-cell ert-apr-status-cell--book' });
             const bookLabel = bookCell.createSpan({
@@ -341,7 +341,7 @@ export class AuthorProgressModal extends Modal {
                 cls: `${ERT_CLASSES.FIELD_NOTE} ert-apr-status-book`
             });
             if (target.projectPath) {
-                bookLabel.setAttr('title', t('ui.authorProgressModal.projectTooltip', { path: target.projectPath }));
+                setTooltip(bookLabel, t('ui.authorProgressModal.projectTooltip', { path: target.projectPath }));
             }
 
             if (includeFormatColumn) {
@@ -477,7 +477,7 @@ export class AuthorProgressModal extends Modal {
             });
             const label = btn.createSpan({ cls: ERT_CLASSES.PILL_BTN_LABEL });
             label.append(label.ownerDocument.createTextNode(option.label));
-            btn.setAttr('title', option.detail);
+            setTooltip(btn, option.detail);
             if (isActive) {
                 btn.setAttr('aria-pressed', 'true');
             }
@@ -503,14 +503,10 @@ export class AuthorProgressModal extends Modal {
             settings.exportPath = defaultPath;
             void this.plugin.saveSettings();
         }
-        const pathDisplay = pathRow.createEl('a', {
+        const pathDisplay = withTooltip(pathRow.createEl('a', {
             cls: `${ERT_CLASSES.FIELD_NOTE} ert-apr-output-link`,
-            attr: {
-                href: '#',
-                role: 'button',
-                title: t('ui.authorProgressModal.revealTooltip', { path: defaultPath })
-            }
-        });
+            attr: { href: '#', role: 'button' }
+        }), t('ui.authorProgressModal.revealTooltip', { path: defaultPath }));
         pathDisplay.setText(this.summarizePath(defaultPath));
         pathDisplay.addEventListener('click', (evt) => {
             evt.preventDefault();
@@ -595,7 +591,7 @@ export class AuthorProgressModal extends Modal {
             text: bookTitle,
             cls: `${ERT_CLASSES.FIELD_NOTE} ert-apr-status-book`
         });
-        bookLabel.setAttr('title', t('ui.authorProgressModal.projectTooltip', { path: projectPath }));
+        setTooltip(bookLabel, t('ui.authorProgressModal.projectTooltip', { path: projectPath }));
 
         const formatCell = statusRow.createDiv({ cls: 'ert-apr-status-cell' });
         const formatPill = formatCell.createSpan({
@@ -633,15 +629,11 @@ export class AuthorProgressModal extends Modal {
         });
         pathRow.createSpan({ text: t('ui.authorProgressModal.outputFileLabel'), cls: ERT_CLASSES.LABEL });
         const pathValue = pathRow.createDiv({ cls: ERT_CLASSES.INLINE });
-        const pathText = pathValue.createEl('a', {
+        const pathText = withTooltip(pathValue.createEl('a', {
             cls: `${ERT_CLASSES.FIELD_NOTE} ert-mono ert-truncate ert-apr-output-link`,
             text: this.summarizePath(campaign.exportPath),
-            attr: {
-                href: '#',
-                role: 'button',
-                title: t('ui.authorProgressModal.revealTooltip', { path: campaign.exportPath })
-            }
-        });
+            attr: { href: '#', role: 'button' }
+        }), t('ui.authorProgressModal.revealTooltip', { path: campaign.exportPath }));
         pathText.addEventListener('click', (evt) => {
             evt.preventDefault();
             void this.revealOutputFileInOS(campaign.exportPath);

@@ -1,3 +1,4 @@
+import { setAccessibleLabel } from '../utils/domTooltip';
 /*
  * Scrivener import review — the one screen between choosing an export and
  * having a book. Everything the author decides is here: the book's title and
@@ -143,7 +144,7 @@ function decode(value: string): ScrivenerFieldTarget {
 function renderTargetSelect(parent: HTMLElement, field: string, decision: ScrivenerFieldTarget, onPick: (decision: ScrivenerFieldTarget) => void): void {
   const dropdown = new DropdownComponent(parent);
   const select = dropdown.selectEl;
-  select.setAttribute('aria-label', t('ui.onboardingScrivenerReview.targetAria', { field: bareFieldName(field) }));
+  setAccessibleLabel(select, t('ui.onboardingScrivenerReview.targetAria', { field: bareFieldName(field) }));
   const group = (label: string, options: Array<[value: string, text: string]>): void => {
     const optgroup = select.createEl('optgroup', { attr: { label } });
     for (const [value, text] of options) optgroup.createEl('option', { value, text });
@@ -317,7 +318,7 @@ export function renderScrivenerReview(container: HTMLElement, state: ScrivenerRe
       const toggleRow = value.createDiv({ cls: 'ert-onb-check' });
       new ToggleComponent(toggleRow)
         .setValue(entry.on)
-        .then((toggle) => toggle.toggleEl.setAttribute('aria-label', entry.toggleAria))
+        .then((toggle) => setAccessibleLabel(toggle.toggleEl, entry.toggleAria))
         .onChange((on) => {
           entry.set(on);
           host.onEdit();

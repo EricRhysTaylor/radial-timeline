@@ -1,10 +1,11 @@
+import { setTooltip, withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 import { createLocalLlmDiscovery } from './LocalLlmDiscovery';
 import { buildLocalStatus, formatLocalLlmUiError, formatLocalTimestamp } from './aiLocalStatus';
 import { createLocalLlmModelPills, abbreviateLocalModelId, buildLocalFeatureSummary } from './AiLocalLlmModelPills';
 import { renderAiLocalLlmValidation } from './AiLocalLlmValidation';
 import { renderAiCredentialPanel, type ProviderKeyUiState } from './AiCredentialPanel';
 import { renderAiConfiguration } from './AiConfiguration';
-import { Component, Setting as Settings, Notice, DropdownComponent,setIcon, setTooltip } from 'obsidian';
+import { Component, Setting as Settings, Notice, DropdownComponent,setIcon} from 'obsidian';
 import type { App, TextComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { buildCostComparisonRows, costComparisonRowKey, listCostComparisonModels, type CostComparisonRow } from '../../ai/cost/costComparison';
@@ -124,23 +125,19 @@ export function renderAiSection(params: {
     const badgeIcon = badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
     setIcon(badgeIcon, 'cpu');
     badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('settings.ai.hero.badgeText') });
-    const badgeWikiLink = badge.createEl('a', {
+    const badgeWikiLink = withAccessibleLabel(badge.createEl('a', {
         href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-AI',
         cls: ERT_CLASSES.BADGE_PILL_WIKI,
-        attr: {
-            'aria-label': t('settings.ai.hero.wikiAriaLabel'),
-            'target': '_blank',
-            'rel': 'noopener'
-        }
-    });
+        attr: { 'target': '_blank', 'rel': 'noopener' }
+    }), t('settings.ai.hero.wikiAriaLabel'));
     setIcon(badgeWikiLink, 'external-link');
 
     const heroToggleWrap = heroBadgeRow.createDiv({ cls: 'ert-toggle-item ert-ai-hero-toggle' });
     const heroToggleLabel = heroToggleWrap.createSpan({ cls: 'ert-toggle-label', text: t('settings.ai.hero.toggleInactive') });
-    const heroToggleInput = heroToggleWrap.createEl('input', {
+    const heroToggleInput = withAccessibleLabel(heroToggleWrap.createEl('input', {
         cls: 'ert-toggle-input',
-        attr: { type: 'checkbox', 'aria-label': t('settings.ai.hero.toggleAriaLabel') }
-    });
+        attr: { type: 'checkbox' }
+    }), t('settings.ai.hero.toggleAriaLabel'));
 
     const heroTitle = aiHero.createEl('h3', {
         cls: `${ERT_CLASSES.SECTION_TITLE} ert-hero-title`,
@@ -624,9 +621,8 @@ export function renderAiSection(params: {
     const contextTemplateSetting = new Settings(roleContextSection)
         .setName(t('settings.ai.contextTemplate.name'))
         .setDesc(t('ui.aiSection.activeTemplate', { name: getActiveTemplateName() }))
-        .addExtraButton(button => button
-            .setIcon('gear')
-            .setTooltip(t('settings.ai.contextTemplate.tooltip'))
+        .addExtraButton(button => withTooltip(button
+            .setIcon('gear'), t('settings.ai.contextTemplate.tooltip'))
             .onClick(() => {
                 const modal = new AiContextModal(app, plugin, () => {
                     contextTemplateSetting.setDesc(t('ui.aiSection.activeTemplate', { name: getActiveTemplateName() }));
@@ -2466,10 +2462,10 @@ export function renderAiSection(params: {
     const localLlmStatusHeader = localLlmStatusSection.createDiv({ cls: 'ert-ai-local-llm-status-header' });
     localLlmStatusHeader.createDiv({ cls: 'ert-section-title', text: t('settings.ai.localLlm.statusTitle') });
     const localLlmStatusHeaderSummary = localLlmStatusHeader.createDiv({ cls: 'ert-ai-local-llm-status-header-summary' });
-    const localLlmStatusChevron = localLlmStatusHeader.createEl('button', {
+    const localLlmStatusChevron = withAccessibleLabel(localLlmStatusHeader.createEl('button', {
         cls: 'clickable-icon ert-ai-local-llm-status-chevron',
-        attr: { type: 'button', 'aria-label': t('ui.aiSection.toggleStatusDetails') }
-    });
+        attr: { type: 'button' }
+    }), t('ui.aiSection.toggleStatusDetails'));
     let localLlmStatusManuallyExpanded = false;
     localLlmScope.registerDomEvent(localLlmStatusHeader, 'click', () => {
         if (!localLlmStatusSection.hasClass('is-collapsible')) return;
@@ -3092,9 +3088,8 @@ export function renderAiSection(params: {
     });
 
     localLlmModelSetting.addExtraButton(button => {
-        button
-            .setIcon('refresh-ccw')
-            .setTooltip(t('settings.ai.localLlm.loadModelsTooltip'))
+        withTooltip(button
+            .setIcon('refresh-ccw'), t('settings.ai.localLlm.loadModelsTooltip'))
             .onClick(async () => {
                 button.setDisabled(true);
                 button.setIcon('loader-2');

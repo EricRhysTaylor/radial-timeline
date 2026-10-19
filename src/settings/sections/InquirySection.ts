@@ -1,6 +1,7 @@
+import { setAccessibleLabel, setTooltip, withAccessibleLabel } from '../../utils/domTooltip';
 import { buildPresetClassConfig } from './inquiry/sourcePresets';
 import { openSettingsTab } from '../../utils/obsidianInternals';
-import { App, ButtonComponent, DropdownComponent, Modal, Setting as Settings, TextComponent, TextAreaComponent, normalizePath, Notice, setIcon, setTooltip } from 'obsidian';
+import { App, ButtonComponent, DropdownComponent, Modal, Setting as Settings, TextComponent, TextAreaComponent, normalizePath, Notice, setIcon} from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { DEFAULT_SETTINGS } from '../defaults';
 import type {
@@ -259,10 +260,10 @@ export function renderInquirySection(params: SectionParams): void {
         cls: 'setting-item-description',
         text: t('settings.inquiry.booksForInquiry.desc')
     });
-    const manageBooksBtn = booksForInquiryHeader.createEl('button', {
+    const manageBooksBtn = withAccessibleLabel(booksForInquiryHeader.createEl('button', {
         text: t('settings.inquiry.booksForInquiry.buttonText'),
-        attr: { type: 'button', 'aria-label': t('settings.inquiry.booksForInquiry.ariaLabel') }
-    });
+        attr: { type: 'button' }
+    }), t('settings.inquiry.booksForInquiry.ariaLabel'));
     plugin.registerDomEvent(manageBooksBtn, 'click', (evt) => {
         evt.preventDefault();
         openBookManager();
@@ -641,7 +642,7 @@ export function renderInquirySection(params: SectionParams): void {
                 countCell.addClass('ert-controlGroup__cell--faint');
             }
 
-            nameCell.setAttribute('title', config.className);
+            setTooltip(nameCell, config.className);
             Array.from(row.children).forEach((cell, index) => {
                 cell.setAttribute('data-label', header.children[index]?.textContent ?? '');
             });
@@ -1306,7 +1307,7 @@ export function renderInquirySection(params: SectionParams): void {
 
                     const applyCanonicalButton = pickerWrap.createEl('button', { cls: ERT_CLASSES.ICON_BTN });
                     setIcon(applyCanonicalButton, 'sparkles');
-                    setTooltip(applyCanonicalButton, t('settings.inquiry.prompts.applyCanonical'));
+                    setAccessibleLabel(applyCanonicalButton, t('settings.inquiry.prompts.applyCanonical'));
                     applyCanonicalButton.onclick = () => {
                         const selectedId = canonicalPicker.getValue();
                         if (!selectedId) return;
@@ -1318,7 +1319,7 @@ export function renderInquirySection(params: SectionParams): void {
                 if (canonicalQuestion && slotState === 'customized') {
                     const resetButton = rowActions.createEl('button', { cls: ERT_CLASSES.ICON_BTN });
                     setIcon(resetButton, 'rotate-ccw');
-                    setTooltip(resetButton, t('settings.inquiry.prompts.resetToCanonical'));
+                    setAccessibleLabel(resetButton, t('settings.inquiry.prompts.resetToCanonical'));
                     resetButton.onclick = () => {
                         labelInput.setValue(canonicalQuestion.label ?? '');
                         questionInput.setValue(canonicalQuestion.standardPrompt ?? '');
@@ -1331,7 +1332,7 @@ export function renderInquirySection(params: SectionParams): void {
                 } else if (canRemoveSlot) {
                     const deleteBtn = rowActions.createEl('button', { cls: ERT_CLASSES.ICON_BTN });
                     setIcon(deleteBtn, 'trash');
-                    setTooltip(deleteBtn, t('settings.inquiry.prompts.deleteQuestion'));
+                    setAccessibleLabel(deleteBtn, t('settings.inquiry.prompts.deleteQuestion'));
                     deleteBtn.onclick = () => {
                         void removeSlot(zone, slotIndex);
                     };
@@ -1465,7 +1466,7 @@ export function renderInquirySection(params: SectionParams): void {
             const refreshToggle = () => {
                 const expanded = zoneExpanded[zone];
                 setIcon(toggleButton, expanded ? 'chevron-down' : 'chevron-right');
-                setTooltip(toggleButton, expanded ? t('inquiry.settingsExtra.collapse') : t('inquiry.settingsExtra.expand'));
+                setAccessibleLabel(toggleButton, expanded ? t('inquiry.settingsExtra.collapse') : t('inquiry.settingsExtra.expand'));
                 listCard.toggleClass('ert-settings-hidden', !expanded);
             };
             refreshToggle();
@@ -1543,7 +1544,7 @@ export function renderInquirySection(params: SectionParams): void {
                 const addActions = topRow.createDiv({ cls: ERT_CLASSES.ICON_BTN_GROUP });
                 const addBtn = addActions.createEl('button', { cls: [ERT_CLASSES.ICON_BTN, 'ert-mod-cta'] });
                 setIcon(addBtn, 'plus');
-                setTooltip(addBtn, t('settings.inquiry.prompts.addQuestion'));
+                setAccessibleLabel(addBtn, t('settings.inquiry.prompts.addQuestion'));
 
                 const questionMain = questionCol.createDiv({ cls: 'ert-inquiry-prompt-questionRow' });
                 const questionInput = new TextComponent(questionMain);
@@ -1682,16 +1683,12 @@ export function renderInquirySection(params: SectionParams): void {
             cell.appendChild(input);
             const actionCell = row.createDiv({ cls: ['ert-controlGroup__cell', 'ert-controlGroup__cell--action'] });
             if (key === 'substantiveMin') {
-                const resetButton = actionCell.createDiv({
+                const resetButton = withAccessibleLabel(actionCell.createDiv({
                     cls: ['clickable-icon', 'ert-corpus-reset-button'],
-                    attr: {
-                        role: 'button',
-                        tabindex: '0',
-                        'aria-label': t('settings.inquiry.corpus.resetTooltip')
-                    }
-                });
+                    attr: { role: 'button', tabindex: '0' }
+                }), t('settings.inquiry.corpus.resetTooltip'));
                 setIcon(resetButton, 'rotate-ccw');
-                setTooltip(resetButton, t('settings.inquiry.corpus.resetTooltip'));
+                setAccessibleLabel(resetButton, t('settings.inquiry.corpus.resetTooltip'));
                 const resetThresholds = async () => {
                     const reset = normalizeCorpusThresholds(DEFAULT_SETTINGS.inquiryCorpusThresholds);
                     await commitThresholds(reset);

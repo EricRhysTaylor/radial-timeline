@@ -249,14 +249,14 @@ Obsidian augments `HTMLElement.prototype` with helpers — including `isShown()`
 svgGroup.setAttribute('aria-label', 'Run question');
 setTooltip(svgGroup, 'Run question');
 
-// Allowed — SVG-native accessible name + native hover tooltip, no Obsidian code path
-setSvgAccessibleName(svgGroup, 'Run question');   // src/utils/tooltip.ts (<title> child)
+// Allowed — SVG accessible name with no hover tooltip
+setSvgAccessibleName(svgGroup, 'Run question');   // src/utils/tooltip.ts (<desc> + aria-labelledby)
 
-// Allowed — RT's own SVG-safe styled tooltip system
-svgGroup.setAttribute('data-rt-tip', 'Run question');
+// Allowed — Radial Timeline's SVG-safe styled tooltip system
+addTooltipData(svgGroup, 'Runs this question against the selected corpus.');
 ```
 
-`aria-label` on **HTML** elements (buttons, inputs, divs) is fine and expected — the rule is SVG-specific. `src/utils/tooltip.ts` already documents that Obsidian's tooltip API is unreliable on SVG; this is the same boundary, stated as a hard rule. Enforced for the glyph by the source-grep guard in [`InquiryGlyph.aria.test.ts`](../../../src/inquiry/components/InquiryGlyph.aria.test.ts).
+**HTML** names use `setAccessibleLabel` / `withAccessibleLabel` from `src/utils/domTooltip.ts`; these keep names accessible through hidden labels and `aria-labelledby` without creating hover help. Explanations use that module's `setTooltip` / `withTooltip`. Never write native `title` attributes or call Obsidian/component `setTooltip` directly. Identical visible labels are suppressed by the shared adapter. Serialized SVG descriptions use `<desc>`, never `<title>`; custom tooltip setup supplies accessible names and owns hover help. HTML help inside an SVG custom target takes precedence so both renderers cannot appear together. `src/utils/tooltip.ts` already documents that Obsidian's tooltip API is unreliable on SVG; this is the same boundary, stated as a hard rule. Enforced across production UI by `tooltipOwnership.test.ts` and for the glyph by the source-grep guard in [`InquiryGlyph.aria.test.ts`](../../../src/inquiry/components/InquiryGlyph.aria.test.ts).
 
 ### Source-Grep Regression Guards
 

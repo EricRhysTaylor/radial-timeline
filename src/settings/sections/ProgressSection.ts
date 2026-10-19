@@ -1,5 +1,6 @@
+import { setAccessibleLabel, setTooltip, withAccessibleLabel } from '../../utils/domTooltip';
 import type { App, Component } from 'obsidian';
-import { Setting as ObsidianSetting, Notice, setIcon, setTooltip } from 'obsidian';
+import { Setting as ObsidianSetting, Notice, setIcon} from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { t, getFormattingLocale } from '../../i18n';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
@@ -233,16 +234,12 @@ export function renderCompletionEstimatePreview(params: {
             return;
         }
 
-        const toggleButton = summaryRow.createEl('button', {
+        const toggleButton = withAccessibleLabel(summaryRow.createEl('button', {
             cls: 'ert-iconBtn ert-completion-summary-toggle',
-            attr: {
-                type: 'button',
-                'aria-label': isExpanded ? t('ui.progressSection.collapsePreview') : t('ui.progressSection.expandPreview'),
-                'aria-expanded': String(isExpanded)
-            }
-        });
+            attr: { type: 'button', 'aria-expanded': String(isExpanded) }
+        }), isExpanded ? t('ui.progressSection.collapsePreview') : t('ui.progressSection.expandPreview'));
         setIcon(toggleButton, isExpanded ? 'chevron-down' : 'chevron-right');
-        setTooltip(toggleButton, isExpanded ? t('ui.progressSection.collapsePreview') : t('ui.progressSection.expandPreview'));
+        setAccessibleLabel(toggleButton, isExpanded ? t('ui.progressSection.collapsePreview') : t('ui.progressSection.expandPreview'));
         toggleButton.addEventListener('click', () => {
             isExpanded = !isExpanded;
             saveExpandedState(isExpanded);

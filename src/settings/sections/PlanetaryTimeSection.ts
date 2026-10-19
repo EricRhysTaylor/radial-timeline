@@ -1,4 +1,5 @@
-import { App, Setting as Settings, TextAreaComponent, TextComponent, setIcon, setTooltip } from 'obsidian';
+import { setAccessibleLabel, setTooltip, withAccessibleLabel } from '../../utils/domTooltip';
+import { App, Setting as Settings, TextAreaComponent, TextComponent, setIcon} from 'obsidian';
 import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
 import type { PlanetaryProfile } from '../../types';
@@ -54,19 +55,14 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
         .setDesc(t('ui.planetaryTimeSection.enableDesc'))
     visibilitySetting.settingEl.addClass('ert-settingRow');
 
-    const visibilityToggle = visibilitySetting.controlEl.createEl('button', {
+    const visibilityToggle = withAccessibleLabel(visibilitySetting.controlEl.createEl('button', {
         cls: ERT_CLASSES.ICON_BTN,
-        attr: {
-            type: 'button',
-            'aria-label': sectionExpanded ? t('ui.planetaryTimeSection.hideDetails') : t('ui.planetaryTimeSection.showDetails'),
-            'aria-expanded': sectionExpanded ? 'true' : 'false'
-        }
-    });
+        attr: { type: 'button', 'aria-expanded': sectionExpanded ? 'true' : 'false' }
+    }), sectionExpanded ? t('ui.planetaryTimeSection.hideDetails') : t('ui.planetaryTimeSection.showDetails'));
 
     const refreshVisibilityButton = () => {
         setIcon(visibilityToggle, sectionExpanded ? 'chevron-down' : 'chevron-right');
-        setTooltip(visibilityToggle, sectionExpanded ? t('ui.planetaryTimeSection.hideDetails') : t('ui.planetaryTimeSection.showDetails'));
-        visibilityToggle.setAttribute('aria-label', sectionExpanded ? t('ui.planetaryTimeSection.hideDetails') : t('ui.planetaryTimeSection.showDetails'));
+        setAccessibleLabel(visibilityToggle, sectionExpanded ? t('ui.planetaryTimeSection.hideDetails') : t('ui.planetaryTimeSection.showDetails'));
         visibilityToggle.setAttribute('aria-expanded', sectionExpanded ? 'true' : 'false');
     };
 
@@ -150,7 +146,7 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
         });
         selectorSetting.addExtraButton(btn => {
             btn.setIcon('plus');
-            btn.setTooltip(t('planetary.actions.add'));
+            withAccessibleLabel(btn, t('planetary.actions.add'));
             btn.onClick(() => {
                 new NamePromptModal(app, {
                     title: t('ui.planetaryTimeSection.createTitle'),
@@ -178,7 +174,7 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
         });
         selectorSetting.addExtraButton(btn => {
             btn.setIcon('pencil');
-            btn.setTooltip(t('ui.planetaryTimeSection.renameProfile'));
+            withAccessibleLabel(btn, t('ui.planetaryTimeSection.renameProfile'));
             btn.setDisabled(!activeProfileId);
             btn.onClick(() => {
                 const profile = getActiveProfile();
@@ -204,7 +200,7 @@ export function renderPlanetaryTimeSection({ app, plugin, containerEl }: Section
         selectorSetting.addExtraButton(btn => {
             btn.setIcon('trash');
             const deleteDisabled = profiles.length === 0 || !activeProfileId;
-            btn.setTooltip(t('planetary.actions.delete'));
+            withAccessibleLabel(btn, t('planetary.actions.delete'));
             btn.setDisabled(deleteDisabled);
             btn.onClick(async () => {
                 if (!activeProfileId) return;

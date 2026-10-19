@@ -1,3 +1,4 @@
+import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 /*
  * Shared layout visual system for the Radial Timeline publishing pipeline.
  *
@@ -1177,7 +1178,7 @@ function renderLayoutSpread(parent: HTMLElement, spread: PictogramSpread): HTMLE
     if (spread.warningLevel === 'warning') {
         spreadEl.addClass('ert-layout-spread--warning');
         if (spread.warningTooltip) {
-            spreadEl.setAttribute('title', spread.warningTooltip);
+            setTooltip(spreadEl, spread.warningTooltip);
         }
     }
     const pagesEl = spreadEl.createDiv({ cls: 'ert-layout-spread-pages' });
@@ -1241,9 +1242,9 @@ export function renderLayoutPictograms(
                 spreadEl.setAttribute('role', 'button');
                 spreadEl.setAttribute('tabindex', '0');
                 spreadEl.setAttribute('aria-pressed', selected ? 'true' : 'false');
-                spreadEl.setAttribute('aria-label', t('ui.layoutVisuals.useSceneOpenerHeading', { label: spread.label }));
+                setAccessibleLabel(spreadEl, t('ui.layoutVisuals.useSceneOpenerHeading', { label: spread.label }));
                 if (!spread.warningTooltip) {
-                    spreadEl.setAttribute('title', t('ui.layoutVisuals.useSceneOpenerHeading', { label: spread.label }));
+                    setTooltip(spreadEl, t('ui.layoutVisuals.useSceneOpenerHeading', { label: spread.label }));
                 }
                 spreadEl.addEventListener('click', () => options.onSceneModeSelect?.(mode));
                 spreadEl.addEventListener('keydown', (event: KeyboardEvent) => {

@@ -1,3 +1,4 @@
+import { setAccessibleLabel, setTooltip } from '../../utils/domTooltip';
 import { t } from '../../i18n';
 import type { TimelineSearchOptions, TimelineSearchState } from '../../services/searchState';
 import { hasSearchScope } from '../../services/searchState';
@@ -66,7 +67,7 @@ export class SearchPanelController {
         this.panel.className = 'ert-timeline-search-panel';
         this.panel.id = panelId;
         this.panel.setAttribute('role', 'group');
-        this.panel.setAttribute('aria-label', t('timeline.search.panelLabel'));
+        setAccessibleLabel(this.panel, t('timeline.search.panelLabel'));
         this.panel.hidden = true;
 
         input.setAttribute('aria-expanded', 'false');
@@ -296,7 +297,7 @@ export class SearchPanelController {
             const row = checkbox.parentElement;
             if (row) {
                 row.classList.toggle('is-disabled', checkbox.disabled || unavailable || dependent);
-                row.title = message;
+                setTooltip(row, message);
             }
         };
         const localText = !this.localStatus ? t('timeline.search.assistChecking') : this.localStatus.available
@@ -344,7 +345,7 @@ export class SearchPanelController {
         const state = this.host.getSearchState();
         this.indexCheckbox.checked = state.options.semanticIndex === true;
         this.syncAvailability();
-        this.statusText.title = state.unreadableNotes ? state.unreadableNotes.map(note => `${note.path}: ${note.reason}`).join('\n') : '';
+        setTooltip(this.statusText, state.unreadableNotes ? state.unreadableNotes.map(note => `${note.path}: ${note.reason}`).join('\n') : '');
 
         for (const row of this.scopeRows) {
             row.checkbox.checked = state.options[row.key];

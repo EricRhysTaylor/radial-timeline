@@ -1,3 +1,4 @@
+import { setAccessibleLabel, setTooltip, withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 import { compactLayoutOptions, readLayoutOptions } from './publish/layoutOptions';
 import { renderImportedLayoutSummary } from './publish/ImportedLayoutSummary';
 /*
@@ -118,7 +119,7 @@ function buildFontPillsNotice(ownerDoc: Document, headline: string, fonts: Bundl
             const pill = row.createEl('button', { cls: 'ert-font-pill', attr: { type: 'button' } });
             pill.createSpan({ cls: 'ert-font-pill-name', text: file.file });
             pill.createSpan({ cls: 'ert-font-pill-meta', text: `fonts/${family} · ${formatFontFileSize(file.sizeBytes)}` });
-            pill.setAttribute('title', t('ui.publishSection.fontPillTooltip', { path: file.absolutePath }));
+            setTooltip(pill, t('ui.publishSection.fontPillTooltip', { path: file.absolutePath }));
             pill.addEventListener('click', () => revealAbsolutePathInFileManager(file.absolutePath));
         }
     }
@@ -400,7 +401,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         });
     pandocFolderSetting.addExtraButton(button => {
         button.setIcon('rotate-ccw');
-        button.setTooltip(t('ui.publishSection.pandocFolderResetTooltip'));
+        withTooltip(button, t('ui.publishSection.pandocFolderResetTooltip'));
         button.extraSettingsEl.addClass('ert-iconBtn');
         button.onClick(async () => {
             if (pandocFolderText) {
@@ -537,8 +538,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         });
         display.setAttr('role', 'button');
         display.setAttr('tabindex', '0');
-        display.setAttr('aria-label', t('ui.publishSection.clickToEdit'));
-        display.setAttr('title', t('ui.publishSection.clickToEdit'));
+        setAccessibleLabel(display, t('ui.publishSection.clickToEdit'));
+        setTooltip(display, t('ui.publishSection.clickToEdit'));
 
         const swapToEditor = () => {
             const current = display.textContent || '';
@@ -1050,7 +1051,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     cls: `ert-layout-status-pill ${installed ? 'is-installed' : 'is-not-installed'}`,
                     text: installed ? t('ui.publishSection.installed') : t('ui.publishSection.notInstalled')
                 });
-                pill.setAttr('aria-label', installed ? t('ui.publishSection.installed') : t('ui.publishSection.notInstalled'));
+                setAccessibleLabel(pill, installed ? t('ui.publishSection.installed') : t('ui.publishSection.notInstalled'));
                 const tierPill = s.nameEl.createSpan({
                     cls: `ert-badgePill ert-badgePill--sm ${isProLayout ? ERT_CLASSES.BADGE_PILL_PRO : ERT_CLASSES.BADGE_PILL_NEUTRAL}`,
                 });
@@ -1148,7 +1149,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             if (isBundled && !installed) {
                 s.addButton(btn => {
                     btn.setButtonText(t('ui.publishSection.installButton'));
-                    btn.setTooltip(t('ui.publishSection.installLayoutTooltip'));
+                    withTooltip(btn, t('ui.publishSection.installLayoutTooltip'));
                     btn.onClick(async () => {
                         btn.setDisabled(true);
                         btn.setButtonText(t('ui.publishSection.installingBusy'));
@@ -1188,7 +1189,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 s.addExtraButton(btn => {
                     btn.extraSettingsEl.addClass('ert-iconBtn', 'ert-layout-special-toggle');
                     btn.setIcon(expanded ? 'minus' : 'plus');
-                    btn.setTooltip(expanded ? t('ui.publishSection.hideSpecialFeatures') : t('ui.publishSection.showSpecialFeatures'));
+                    withAccessibleLabel(btn, expanded ? t('ui.publishSection.hideSpecialFeatures') : t('ui.publishSection.showSpecialFeatures'));
                     btn.onClick(() => {
                         expandedSpecialLayoutId = expandedSpecialLayoutId === layout.id ? null : layout.id;
                         renderLayoutRows();
@@ -1214,7 +1215,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         isCustomizingBundled ? 'ert-layout-bundled-customize' : 'ert-layout-designed-edit',
                     );
                     btn.setIcon('pencil');
-                    btn.setTooltip(isCustomizingBundled
+                    withTooltip(btn, isCustomizingBundled
                         ? t('ui.publishSection.customizeBundledTooltip', { name: layout.name })
                         : t('ui.publishSection.editDesignedTooltip'));
                     if (!isActive) {
@@ -1254,7 +1255,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         btn.extraSettingsEl.addClass('ert-iconBtn', 'ert-layout-imported-trash');
                     }
                     btn.setIcon('trash');
-                    btn.setTooltip(t('ui.publishSection.removeLayoutTooltip'));
+                    withAccessibleLabel(btn, t('ui.publishSection.removeLayoutTooltip'));
                     btn.onClick(async () => {
                         plugin.settings.pandocLayouts = (plugin.settings.pandocLayouts || []).filter(item => item.id !== layout.id);
                         await plugin.saveSettings();
@@ -1379,15 +1380,13 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 : needsInstall ? t('ui.publishSection.installAllButton')
                 : t('ui.publishSection.installed')
             );
-            installAllButton.setTooltip(
-                hasFontIssue
+            withTooltip(installAllButton, hasFontIssue
                     ? t('ui.publishSection.installFontsTooltip')
                     : hasUnacknowledgedTemplateUpdate
                         ? t('ui.publishSection.updateTemplatesTooltip')
                         : needsInstall
                             ? t('ui.publishSection.installAllNeededTooltip')
-                            : t('ui.publishSection.installAllDoneTooltip')
-            );
+                            : t('ui.publishSection.installAllDoneTooltip'));
         }
     };
     // Two complementary entry points sit on the same row, opposite the
@@ -1408,17 +1407,17 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     // spec on save.
     layoutHeading.addButton(button => {
         button.setButtonText(t('ui.publishSection.designOwnButton'));
-        button.setTooltip(t('ui.publishSection.designOwnTooltip'));
+        withTooltip(button, t('ui.publishSection.designOwnTooltip'));
         button.buttonEl.addClass(ERT_CLASSES.PILL_BTN, ERT_CLASSES.PILL_BTN_PRO);
         if (!plugin.betaFeatures) {
             button.setDisabled(true);
-            button.setTooltip(t('ui.publishSection.designOwnBetaTooltip'));
+            withTooltip(button, t('ui.publishSection.designOwnBetaTooltip'));
             button.onClick(() => { /* no-op: BETA release pending */ });
             return;
         }
         if (!isActive) {
             button.buttonEl.addClass('ert-pro-locked');
-            button.setTooltip(t('ui.publishSection.proWorkflowTooltip'));
+            withTooltip(button, t('ui.publishSection.proWorkflowTooltip'));
         }
         button.onClick(() => {
             if (!isActive) {
@@ -1441,17 +1440,17 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     // Imported layouts are static — they don't open in the wizard.
     layoutHeading.addButton(button => {
         button.setButtonText(t('ui.publishSection.importTemplateButton'));
-        button.setTooltip(t('ui.publishSection.importTemplateTooltip'));
+        withTooltip(button, t('ui.publishSection.importTemplateTooltip'));
         button.buttonEl.addClass(ERT_CLASSES.PILL_BTN, ERT_CLASSES.PILL_BTN_PRO);
         if (!plugin.betaFeatures) {
             button.setDisabled(true);
-            button.setTooltip(t('ui.publishSection.importTemplateBetaTooltip'));
+            withTooltip(button, t('ui.publishSection.importTemplateBetaTooltip'));
             button.onClick(() => { /* no-op: BETA release pending */ });
             return;
         }
         if (!isActive) {
             button.buttonEl.addClass('ert-pro-locked');
-            button.setTooltip(t('ui.publishSection.proWorkflowTooltip'));
+            withTooltip(button, t('ui.publishSection.proWorkflowTooltip'));
         }
         button.onClick(() => {
             if (!isActive) {
@@ -1464,7 +1463,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     layoutHeading.addButton(button => {
         installAllButton = button;
         button.setButtonText(t('ui.publishSection.installAllButton'));
-        button.setTooltip(t('ui.publishSection.installAllInitialTooltip'));
+        withTooltip(button, t('ui.publishSection.installAllInitialTooltip'));
         installAllButtonEl = button.buttonEl;
         installAllButtonEl.addClass('ert-layout-install-all-button');
         refreshInstallAllButtonState();
@@ -1877,20 +1876,14 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     'other-works',
                 ]);
                 const input = multilineFields.has(field)
-                    ? target.createEl('textarea', {
+                    ? withAccessibleLabel(target.createEl('textarea', {
                         cls: `${className} ert-bookmeta-inline-input ert-bookmeta-inline-input--textarea`,
-                        attr: {
-                            rows: '3',
-                            'aria-label': label,
-                        }
-                    })
-                    : target.createEl('input', {
+                        attr: { rows: '3' }
+                    }), label)
+                    : withAccessibleLabel(target.createEl('input', {
                         cls: `${className} ert-bookmeta-inline-input ${className === 'ert-bookmeta-primary-value' ? 'ert-bookmeta-inline-input--primary' : 'ert-bookmeta-inline-input--detail'}`,
-                        attr: {
-                            type: 'text',
-                            'aria-label': label,
-                        }
-                    });
+                        attr: { type: 'text' }
+                    }), label);
                 input.value = activeBookMetaDraft;
                 window.setTimeout(() => {
                     input.focus();
@@ -1923,15 +1916,10 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
             const normalized = normalizeValue(value);
             const missing = !normalized;
-            const valueEl = target.createDiv({
+            const valueEl = withTooltip(withAccessibleLabel(target.createDiv({
                 cls: `${className} ert-bookmeta-preview-value--clickable${missing ? ' ert-bookmeta-preview-value--empty ert-bookmeta-preview-value--missing' : ''}`,
-                attr: {
-                    role: 'button',
-                    tabindex: '0',
-                    'aria-label': normalized ? t('ui.publishSection.editFieldAria', { field: label.toLowerCase() }) : t('ui.publishSection.addFieldAria', { field: label.toLowerCase() }),
-                    title: normalized ? t('ui.publishSection.editFieldAria', { field: label.toLowerCase() }) : t('ui.publishSection.addFieldAria', { field: label.toLowerCase() })
-                }
-            });
+                attr: { role: 'button', tabindex: '0' }
+            }), normalized ? t('ui.publishSection.editFieldAria', { field: label.toLowerCase() }) : t('ui.publishSection.addFieldAria', { field: label.toLowerCase() })), normalized ? t('ui.publishSection.editFieldAria', { field: label.toLowerCase() }) : t('ui.publishSection.addFieldAria', { field: label.toLowerCase() }));
             // Keep the underline on each text fragment when a value wraps.
             valueEl.createSpan({ cls: 'ert-bookmeta-preview-text', text: normalized || placeholder });
 
@@ -2071,15 +2059,10 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 cls: `ert-bookmeta-module ert-bookmeta-module--matter${expanded ? ' is-expanded' : ''}`,
                 attr: { 'data-bookmeta-section': key }
             });
-            const header = panel.createDiv({
+            const header = withAccessibleLabel(panel.createDiv({
                 cls: 'ert-bookmeta-module-header',
-                attr: {
-                    role: 'button',
-                    tabindex: '0',
-                    'aria-expanded': String(expanded),
-                    'aria-label': expanded ? t('ui.publishSection.collapseSectionAria', { section: title }) : t('ui.publishSection.expandSectionAria', { section: title })
-                }
-            });
+                attr: { role: 'button', tabindex: '0', 'aria-expanded': String(expanded) }
+            }), expanded ? t('ui.publishSection.collapseSectionAria', { section: title }) : t('ui.publishSection.expandSectionAria', { section: title }));
             const headerLeft = header.createDiv({ cls: 'ert-bookmeta-module-header-left' });
             const chevron = headerLeft.createSpan({ cls: 'ert-bookmeta-module-chevron' });
             chevron.setAttr('aria-hidden', 'true');
@@ -2170,14 +2153,10 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 metaRow.createDiv({ cls: 'ert-bookmeta-matter-role', text: fieldDef.pageLabel.toUpperCase() });
                 const previewCol = row.createDiv({ cls: 'ert-bookmeta-matter-preview-cell' });
                 if (hasValue) {
-                    const clearButton = previewCol.createEl('button', {
+                    const clearButton = withTooltip(withAccessibleLabel(previewCol.createEl('button', {
                         cls: 'ert-iconBtn ert-bookmeta-matter-clear',
-                        attr: {
-                            type: 'button',
-                            'aria-label': t('ui.publishSection.resetFieldAria', { field: fieldDef.label.toLowerCase() }),
-                            title: t('ui.publishSection.resetFieldAria', { field: fieldDef.label.toLowerCase() })
-                        }
-                    });
+                        attr: { type: 'button' }
+                    }), t('ui.publishSection.resetFieldAria', { field: fieldDef.label.toLowerCase() })), t('ui.publishSection.resetFieldAria', { field: fieldDef.label.toLowerCase() }));
                     setIcon(clearButton, 'rotate-ccw');
                     clearButton.addEventListener('click', (evt) => {
                         evt.preventDefault();
@@ -2294,11 +2273,11 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             previewActions.createSpan({ cls: 'ert-bookmeta-preview-actions-text', text: t('ui.publishSection.clickAnyFieldToEdit') });
             const sourceRow = bookDetailsPanel.createDiv({ cls: 'ert-bookmeta-source-row' });
             sourceRow.createSpan({ cls: 'ert-bookmeta-source-label', text: t('ui.publishSection.sourceLabel') });
-            const sourceLink = sourceRow.createEl('a', {
+            const sourceLink = withTooltip(sourceRow.createEl('a', {
                 cls: 'ert-bookmeta-source-link',
                 text: sourcePath,
-                attr: { href: '#', title: sourcePath }
-            });
+                attr: { href: '#' }
+            }), sourcePath);
             sourceLink.addEventListener('click', (evt) => {
                 evt.preventDefault();
                 void plugin.app.workspace.openLinkText(sourcePath, '', false);
@@ -2393,9 +2372,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         const allReady = stages.every(stage => stage.statusKey === 'ready' || stage.statusKey === 'optional');
 
         // Auto configure — rendered first (left position)
-        setupButtonComponent = new ButtonComponent(setupActionRow)
-            .setButtonText(t('ui.publishSection.autoConfigureButton'))
-            .setTooltip(t('ui.publishSection.autoConfigureTooltip'))
+        setupButtonComponent = withTooltip(new ButtonComponent(setupActionRow)
+            .setButtonText(t('ui.publishSection.autoConfigureButton')), t('ui.publishSection.autoConfigureTooltip'))
             .onClick(() => {
                 void runAutoConfigurePublishing();
             });
@@ -2671,7 +2649,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                 // Drag handle (visual affordance — entire row is draggable).
                 const handle = row.createDiv({ cls: 'ert-drag-handle ert-matter-preview-handle' });
                 setIcon(handle, 'grip-vertical');
-                handle.setAttr('aria-label', t('ui.publishSection.dragToReorder'));
+                setAccessibleLabel(handle, t('ui.publishSection.dragToReorder'));
 
                 if (page.source === 'note' && page.path) {
                     // Enable/disable toggle — only note-backed pages have a
@@ -2681,10 +2659,10 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     // note steps aside and any BookMeta page for its role
                     // resurfaces. stopPropagation keeps the row drag intact.
                     const notePath = page.path;
-                    const toggle = row.createEl('input', {
+                    const toggle = withTooltip(row.createEl('input', {
                         cls: 'ert-matter-preview-enable',
-                        attr: { type: 'checkbox', title: t('ui.publishSection.pageEnabledTooltip') },
-                    });
+                        attr: { type: 'checkbox' },
+                    }), t('ui.publishSection.pageEnabledTooltip'));
                     toggle.checked = true;
                     plugin.registerDomEvent(toggle, 'click', (e: MouseEvent) => {
                         e.stopPropagation();
@@ -2695,10 +2673,10 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
                     const main = row.createDiv({ cls: 'ert-matter-preview-main' });
                     const item = previewByPath.get(page.path);
-                    const titleLink = main.createEl('a', {
+                    const titleLink = withTooltip(main.createEl('a', {
                         cls: 'ert-matter-preview-link',
-                        attr: { href: '#', title: page.path }
-                    });
+                        attr: { href: '#' }
+                    }), page.path);
                     titleLink.createSpan({ cls: 'ert-matter-preview-label', text: page.title });
                     titleLink.addEventListener('click', (evt: MouseEvent) => {
                         evt.preventDefault();
@@ -2731,7 +2709,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                             cls: 'ert-matter-preview-badge ert-matter-preview-badge--state',
                             text: readiness.label
                         });
-                        readinessBadge.setAttr('title', readiness.detail);
+                        setTooltip(readinessBadge, readiness.detail);
                     }
 
                     if (page.role) {
@@ -2827,20 +2805,20 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         cls: 'ert-matter-preview-handle ert-matter-preview-handle--placeholder',
                         attr: { 'aria-hidden': 'true' },
                     });
-                    const dToggle = drow.createEl('input', {
+                    const dToggle = withTooltip(drow.createEl('input', {
                         cls: 'ert-matter-preview-enable',
-                        attr: { type: 'checkbox', title: t('ui.publishSection.pageDisabledTooltip') },
-                    });
+                        attr: { type: 'checkbox' },
+                    }), t('ui.publishSection.pageDisabledTooltip'));
                     dToggle.checked = false;
                     const dNotePath = note.path;
                     plugin.registerDomEvent(dToggle, 'change', () => {
                         void setNoteEnabled(dNotePath, true);
                     });
                     const dMain = drow.createDiv({ cls: 'ert-matter-preview-main' });
-                    const dLink = dMain.createEl('a', {
+                    const dLink = withTooltip(dMain.createEl('a', {
                         cls: 'ert-matter-preview-link',
-                        attr: { href: '#', title: note.path },
-                    });
+                        attr: { href: '#' },
+                    }), note.path);
                     dLink.createSpan({ cls: 'ert-matter-preview-label', text: note.title || note.path });
                     plugin.registerDomEvent(dLink, 'click', (evt: MouseEvent) => {
                         evt.preventDefault();
@@ -2914,7 +2892,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             .setDesc(t('ui.publishSection.repairMatterDesc'));
         repairSetting.addButton(button => {
             button.setButtonText(t('ui.publishSection.repairActiveBookButton'));
-            button.setTooltip(t('ui.publishSection.repairActiveBookTooltip'));
+            withTooltip(button, t('ui.publishSection.repairActiveBookTooltip'));
             if (repairPlan.repairableIssues.length === 0) {
                 button.setDisabled(true);
             }

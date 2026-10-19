@@ -1,4 +1,5 @@
-import { App, ButtonComponent, Modal, Notice, TFile, setIcon, setTooltip, Setting as Settings } from 'obsidian';
+import { setTooltip, withAccessibleLabel } from '../../../utils/domTooltip';
+import { App, ButtonComponent, Modal, Notice, TFile, setIcon, Setting as Settings } from 'obsidian';
 import { ERT_CLASSES } from '../../../ui/classes';
 import { confirmWithErtModal } from '../../../modals/ErtConfirmModal';
 import type RadialTimelinePlugin from '../../../main';
@@ -498,10 +499,10 @@ export function renderSceneNormalizerSection(params: {
         renderResults();
     };
 
-    copyBtn = cleanupGroup.createEl('button', {
+    copyBtn = withAccessibleLabel(cleanupGroup.createEl('button', {
         cls: [ERT_CLASSES.ICON_BTN],
-        attr: { type: 'button', 'aria-label': t('ui.sceneNormalizerSection.copyReportTooltip') }
-    });
+        attr: { type: 'button' }
+    }), t('ui.sceneNormalizerSection.copyReportTooltip'));
     setIcon(copyBtn, 'clipboard-copy');
     setTooltip(copyBtn, t('ui.sceneNormalizerSection.copyReportTooltip'));
     copyBtn.addEventListener('click', () => {

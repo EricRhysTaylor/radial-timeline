@@ -1,3 +1,4 @@
+import { setAccessibleLabel } from '../utils/domTooltip';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -159,7 +160,7 @@ export function paintMailboxButton(button: HTMLElement, badgeEl: HTMLElement, vi
     paintBadge(badgeEl, mailboxBadge(view.answer));
     button.classList.toggle('is-stale', view.error !== null);
     const label = mailboxTooltip(view);
-    button.setAttribute('aria-label', label);
+    setAccessibleLabel(button, label);
     applyTooltip(button, label, 'bottom');
 }
 

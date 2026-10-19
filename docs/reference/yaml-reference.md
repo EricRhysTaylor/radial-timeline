@@ -260,6 +260,8 @@ When: July 2045       # Month name + year → Jul 1, 2045 @ 12:00 PM
 
 Brief description of what happens in the scene. Displayed on hover in the timeline.
 
+AI-generated synopses summarize actions and turning points without days of the week, calendar dates, or clock times. Keep scheduling in `When`, `End`, and `Duration`. Generated replies containing recognized scheduling references are rejected with an explanation, preserving the existing synopsis. Author-written text and structure-only imports remain under author control.
+
 ---
 
 ### Subplot

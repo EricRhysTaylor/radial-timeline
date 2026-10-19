@@ -10,6 +10,7 @@
 
 import { clampActNumber } from '../utils/acts';
 import type { Stage } from '../utils/constants';
+import { getSynopsisContentProblem } from '../utils/synopsisContent';
 
 export interface SurveyResult {
   /** The book's capped subplot vocabulary (4–14, "Main Plot" first). */
@@ -121,6 +122,8 @@ export function parseSceneExtraction(raw: string | null | undefined): ParseResul
   if (typeof obj.synopsis !== 'string') {
     return { ok: false, error: 'Scene response is missing a synopsis.' };
   }
+  const synopsisProblem = getSynopsisContentProblem(obj.synopsis);
+  if (synopsisProblem) return { ok: false, error: synopsisProblem };
   return {
     ok: true,
     value: {

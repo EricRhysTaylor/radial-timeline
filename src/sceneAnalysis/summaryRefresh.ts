@@ -28,6 +28,7 @@ import { describeAiRunModel } from '../utils/modelResolver';
 import { snapshotFrontmatterFields } from '../utils/logVaultOps';
 import { normalizeBooleanValue } from '../utils/sceneHelpers';
 import { truncateToWordLimit } from '../utils/synopsisLimits';
+import { getSynopsisContentProblem } from '../utils/synopsisContent';
 import { getSummaryUpdateFlag } from './data';
 import type { SceneData } from './types';
 import type { RadialTimelineSettings } from '../types';
@@ -114,7 +115,9 @@ export function parseSummaryReply(reply: string): SummaryRefreshReply {
 
 export function parseSynopsisReply(reply: string, maxWords: number): SummaryRefreshReply {
     const result = readReplyField(reply, 'synopsis');
-    return result.ok ? { ok: true, text: truncateToWordLimit(result.text, maxWords) } : result;
+    if (!result.ok) return result;
+    const problem = getSynopsisContentProblem(result.text);
+    return problem ? { ok: false, problem } : { ok: true, text: truncateToWordLimit(result.text, maxWords) };
 }
 
 /**

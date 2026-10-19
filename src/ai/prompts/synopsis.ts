@@ -4,6 +4,8 @@
  * Synopsis = concise, skimmable navigation text (strict max word cap)
  */
 
+import { SYNOPSIS_CONTENT_RULE } from '../../utils/synopsisContent';
+
 const SUMMARY_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -22,7 +24,7 @@ const SYNOPSIS_JSON_SCHEMA = {
   properties: {
     "synopsis": {
       type: "string",
-      description: "Concise scene synopsis for navigation and hovers (strict word cap)"
+      description: `Concise scene synopsis for navigation and hovers (strict word cap). ${SYNOPSIS_CONTENT_RULE}`
     }
   },
   required: ["synopsis"]
@@ -104,7 +106,8 @@ Rules:
 2. LENGTH: Maximum ${maxWords} words. Hard cap; do not exceed it.
 3. TONE: Neutral, objective, concise. No flowery prose.
 4. CONTENT: Capture the key action or turning point. Prefer one compact paragraph. Do NOT include analysis or "The scene is about...".
-5. FORMAT: Output ONLY valid JSON. No markdown fencing around the JSON.
+5. SCHEDULING: ${SYNOPSIS_CONTENT_RULE}
+6. FORMAT: Output ONLY valid JSON. No markdown fencing around the JSON.
 
 Scene ${sceneNumber}:
 ${sceneBody || 'N/A'}

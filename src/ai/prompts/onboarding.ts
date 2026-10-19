@@ -12,6 +12,8 @@
  * See docs/engineering/plans/one-button-onboarding-local-llm-plan.md (Appendix A).
  */
 
+import { SYNOPSIS_CONTENT_RULE } from '../../utils/synopsisContent';
+
 /** Bump when the output schemas below change in a parser-breaking way. */
 export const ONBOARDING_SCHEMA_VERSION = 1;
 
@@ -62,7 +64,7 @@ Set Act by structural read; if the book runs past 3 acts, raise the act count in
 
 STAGE 3 — CORE METADATA
 - When: the in-world date, YYYY-MM-DD (a bare year is enough)
-- Synopsis: 1-2 sentences of what happens in the scene
+- Synopsis: 1-2 sentences of what happens in the scene. ${SYNOPSIS_CONTENT_RULE}
 - Character: wiki links — e.g. "[[Odysseus]]"
 - Place: wiki links — e.g. "[[Ithaca]]"
 - Create a stub note for every character and place you link.
@@ -157,7 +159,7 @@ const ONBOARDING_SCENE_SCHEMA = {
         'A short scene title, 2-4 words drawn from the scene\'s action (e.g. "Leaving home", ' +
         '"The Cyclops blinded"). Plain words — no numbering, no punctuation-heavy styling.',
     },
-    synopsis: { type: 'string', description: '1-2 sentences of what happens in the scene.' },
+    synopsis: { type: 'string', description: `1-2 sentences of what happens in the scene. ${SYNOPSIS_CONTENT_RULE}` },
     subplot: {
       type: 'array',
       maxItems: 1,
@@ -209,6 +211,7 @@ export function getOnboardingSceneInstructions(): string {
     'Extract Radial Timeline scene metadata from one scene of a manuscript. Never rewrite prose.',
     'Write a 1-2 sentence Synopsis, and a short 2-4 word Title',
     'drawn from the scene\'s action ("Leaving home", "The Cyclops blinded").',
+    SYNOPSIS_CONTENT_RULE,
     'Assign the scene to exactly ONE subplot — the single thread it most advances, chosen from the',
     'given vocabulary verbatim. Never invent a subplot name. (The author can layer more later.)',
     'When a scene advances the CENTRAL storyline, assign "Main Plot" — reserve the named threads for',

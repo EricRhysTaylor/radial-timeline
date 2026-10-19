@@ -9359,8 +9359,8 @@
   background-image: linear-gradient(currentColor, currentColor);
 }
 
-.ert-ui.ert-scope--settings .ert-bookmeta-preview-value--clickable:hover,
-.ert-ui.ert-scope--settings .ert-bookmeta-preview-value--clickable:focus-visible {
+.ert-ui.ert-scope--settings :is(.ert-bookmeta-primary-value, .ert-bookmeta-detail-value, .ert-bookmeta-matter-value).ert-bookmeta-preview-value--clickable:hover,
+.ert-ui.ert-scope--settings :is(.ert-bookmeta-primary-value, .ert-bookmeta-detail-value, .ert-bookmeta-matter-value).ert-bookmeta-preview-value--clickable:focus-visible {
   color: color-mix(in srgb, var(--interactive-accent) 72%, var(--text-normal));
   outline: none;
 }

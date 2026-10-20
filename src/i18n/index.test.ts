@@ -117,4 +117,18 @@ describe('i18n locale resolution', () => {
         expect(t('ui.manuscriptOptionsModal.close')).toBe(close);
         expect(t('ui.layoutVisuals.partsNumberingWord')).not.toBe('Word');
     });
+
+    it.each(SUPPORTED_LOCALES)('keeps recovery instructions tied to real vault paths in %s', locale => {
+        setMomentLocale(locale);
+        const instructions = t('ui.refactorAlerts.recoveryFilesDescription');
+        for (const path of [
+            'Radial Timeline/Recover',
+            'Radial Timeline/Logs',
+            'Radial Timeline/Logs/Snapshots',
+            'Radial Timeline/Logs/Gossamer Archive',
+            'Radial Timeline/Snapshots',
+        ]) {
+            expect(instructions).toContain(path);
+        }
+    });
 });

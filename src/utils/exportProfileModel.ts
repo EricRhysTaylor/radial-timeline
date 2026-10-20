@@ -4,9 +4,10 @@ import type {
     ExportProfile,
     ManuscriptExportCleanupOptions,
     TemplateProfile,
+    RadialTimelineSettings,
 } from '../types';
 import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions } from './manuscriptSanitize';
-import { normalizeExportProfile } from './publishingMigration';
+import { normalizeBookPublishingPreferences, normalizeExportProfile } from './publishingMigration';
 import { contentsDepth } from '../publishing/documentContents';
 export { adaptPandocLayoutsToPublishingModel } from './publishingModel';
 
@@ -14,6 +15,21 @@ export interface ModalExportProfile extends ExportProfile {
     order: ManuscriptOrder;
     subplot: string;
     selectedLayoutId?: string;
+}
+
+type ExportPresetSettings = Pick<RadialTimelineSettings, 'exportProfiles' | 'bookPublishingPreferences' | 'lastUsedExportProfileId'>;
+
+/** Remove a saved preset and its assignments, retaining each book's other choices. */
+export function removeExportPreset(settings: ExportPresetSettings, presetId: string): ExportPresetSettings {
+    return {
+        exportProfiles: (settings.exportProfiles || []).filter(profile => profile.id !== presetId),
+        bookPublishingPreferences: (settings.bookPublishingPreferences || []).map(preferences => normalizeBookPublishingPreferences({
+            ...preferences,
+            defaultExportProfileId: preferences.defaultExportProfileId === presetId ? undefined : preferences.defaultExportProfileId,
+            lastUsedExportProfileId: preferences.lastUsedExportProfileId === presetId ? undefined : preferences.lastUsedExportProfileId,
+        })).filter((preferences): preferences is NonNullable<typeof preferences> => !!preferences),
+        lastUsedExportProfileId: settings.lastUsedExportProfileId === presetId ? undefined : settings.lastUsedExportProfileId,
+    };
 }
 
 function resolveTemplateProfileId(

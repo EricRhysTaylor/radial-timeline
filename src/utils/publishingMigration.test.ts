@@ -33,6 +33,34 @@ function buildLayout(id: string, preset: TemplateProfile['usageContexts'][number
 }
 
 describe('publishing migration', () => {
+    it('preserves each migrated book default when another preset becomes globally last used', () => {
+        const first = normalizeExportProfile({ id: 'first', name: 'First', usageContext: 'novel', templateProfileId: 'layout-a' });
+        const second = normalizeExportProfile({ id: 'second', name: 'Second', usageContext: 'novel', templateProfileId: 'layout-b' });
+        const preferences = [
+            { bookId: 'book-a', defaultExportProfileId: 'first', lastUsedExportProfileId: 'first' },
+            { bookId: 'book-b', defaultExportProfileId: 'second', lastUsedExportProfileId: 'second' },
+        ];
+        const result = migratePublishingModelState({
+            books: [{ id: 'book-a', title: 'A', sourceFolder: 'A' }, { id: 'book-b', title: 'B', sourceFolder: 'B' }],
+            activeBookId: 'book-a', exportProfiles: [first, second], bookPublishingPreferences: preferences,
+            lastUsedExportProfileId: 'second',
+        });
+        expect(result.bookPublishingPreferences).toEqual(preferences);
+        expect(migratePublishingModelState({ books: [], ...result }).bookPublishingPreferences).toEqual(preferences);
+    });
+
+    it('does not reassign an explicitly unset book preset on the next save', () => {
+        const result = migratePublishingModelState({
+            books: [{ id: 'book-a', title: 'A', sourceFolder: 'A', lastUsedPandocLayoutByPreset: { novel: 'layout-a' } }],
+            activeBookId: 'book-a',
+            exportProfiles: [normalizeExportProfile({ id: 'other', name: 'Other', usageContext: 'novel', templateProfileId: 'layout-a' })],
+            bookPublishingPreferences: [{ bookId: 'book-a' }], lastUsedExportProfileId: 'other',
+        });
+        expect(result.bookPublishingPreferences[0]?.defaultExportProfileId).toBeUndefined();
+        expect(result.bookPublishingPreferences[0]?.lastUsedExportProfileId).toBeUndefined();
+        expect(result.bookPublishingPreferences[0]?.preferredTemplateProfileIdByContext?.novel).toBe('layout-a');
+    });
+
     it('normalizes export profiles without coercing usage context to novel', () => {
         const profile = normalizeExportProfile({
             id: 'preset-screenplay',

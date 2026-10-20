@@ -1,7 +1,35 @@
 import { describe, expect, it } from 'vitest';
-import { buildModalExportProfile, buildPersistedExportProfileFromModalExportProfile, buildTransientModalExportProfile, exportProfilesMatch, getModalExportProfileSummary, resolveIncludeSceneId, type ModalExportProfile } from './exportProfileModel';
+import { buildModalExportProfile, buildPersistedExportProfileFromModalExportProfile, buildTransientModalExportProfile, exportProfilesMatch, getModalExportProfileSummary, resolveIncludeSceneId, removeExportPreset, type ModalExportProfile } from './exportProfileModel';
+import { migratePublishingModelState, normalizeExportProfile } from './publishingMigration';
 
 describe('exportProfileModel', () => {
+    it('removes every assignment of a deleted preset without changing unrelated book choices or snapshots', () => {
+        const profile = normalizeExportProfile({ id: 'remove', name: 'Remove', usageContext: 'novel', templateProfileId: 'layout' });
+        const retained = normalizeExportProfile({ id: 'keep', name: 'Keep', usageContext: 'novel', templateProfileId: 'layout' });
+        const settings = {
+            exportProfiles: [profile, retained], lastUsedExportProfileId: 'remove',
+            bookPublishingPreferences: [
+                { bookId: 'a', defaultExportProfileId: 'remove', lastUsedExportProfileId: 'remove', lastUsedExportProfileSnapshot: profile },
+                { bookId: 'b', defaultExportProfileId: 'keep', lastUsedExportProfileId: 'remove' },
+                { bookId: 'c', defaultExportProfileId: 'keep', lastUsedExportProfileId: 'keep' },
+            ],
+        };
+        const original = structuredClone(settings);
+        const removed = removeExportPreset(settings, 'remove');
+        expect(settings).toEqual(original);
+        expect(removed.exportProfiles).toEqual([retained]);
+        expect(removed.lastUsedExportProfileId).toBeUndefined();
+        expect(removed.bookPublishingPreferences?.[0]).toMatchObject({ bookId: 'a', lastUsedExportProfileSnapshot: profile });
+        expect(removed.bookPublishingPreferences?.[0]?.defaultExportProfileId).toBeUndefined();
+        expect(removed.bookPublishingPreferences?.[0]?.lastUsedExportProfileId).toBeUndefined();
+        expect(removed.bookPublishingPreferences?.[1]).toMatchObject({ bookId: 'b', defaultExportProfileId: 'keep' });
+        expect(removed.bookPublishingPreferences?.[1]?.lastUsedExportProfileId).toBeUndefined();
+        expect(removed.bookPublishingPreferences?.[2]).toEqual(original.bookPublishingPreferences[2]);
+        const reloaded = migratePublishingModelState({ ...removed, books: [{ id: 'a', title: 'A', sourceFolder: 'A', lastUsedPandocLayoutByPreset: { novel: 'layout' } }], activeBookId: 'a' });
+        expect(reloaded.bookPublishingPreferences[0]?.defaultExportProfileId).toBeUndefined();
+        expect(reloaded.bookPublishingPreferences[0]?.lastUsedExportProfileSnapshot).toEqual(profile);
+    });
+
     const templateProfiles = [
         {
             id: 'bundled-fiction-signature-literary',

@@ -231,26 +231,6 @@ export function migratePublishingModelState(
         ? legacyTemplates.map(template => convertLegacyManuscriptExportTemplateToExportProfile(template, layouts))
         : existingExportProfiles.map(profile => normalizeExportProfile(profile));
 
-    const bookPrefsById = new Map(existingBookPublishingPreferences.map(entry => [entry.bookId, entry]));
-    (Array.isArray(settings.books) ? settings.books : []).forEach(book => {
-        const derived = deriveBookPublishingPreferences(book, exportProfiles, settings.lastUsedExportProfileId);
-        if (!derived) return;
-        const existing = bookPrefsById.get(derived.bookId);
-        bookPrefsById.set(derived.bookId, existing ? {
-            ...existing,
-            ...derived,
-            preferredTemplateProfileIdByContext: {
-                ...(existing.preferredTemplateProfileIdByContext || {}),
-                ...(derived.preferredTemplateProfileIdByContext || {}),
-            },
-            profileOverrides: {
-                ...(existing.profileOverrides || {}),
-                ...(derived.profileOverrides || {}),
-            },
-        } : derived);
-    });
-    const bookPublishingPreferences = Array.from(bookPrefsById.values());
-
     const activeBookId = settings.activeBookId && Array.isArray(settings.books) && settings.books.some(book => book.id === settings.activeBookId)
         ? settings.activeBookId
         : undefined;
@@ -259,15 +239,33 @@ export function migratePublishingModelState(
             ? exportProfiles.find(profile => profile.id === settings.lastUsedManuscriptExportTemplateId)?.id
             : undefined);
 
+    const bookPrefsById = new Map(existingBookPublishingPreferences.map(entry => [entry.bookId, entry]));
+    (Array.isArray(settings.books) ? settings.books : []).forEach(book => {
+        const derived = deriveBookPublishingPreferences(book, exportProfiles, book.id === activeBookId ? lastUsedExportProfileId : undefined);
+        if (!derived) return;
+        const existing = bookPrefsById.get(derived.bookId);
+        bookPrefsById.set(derived.bookId, existing ? {
+            ...existing,
+            // Defaults and last-used presets are owned by each book after
+            // migration. Global modal activity must not overwrite them.
+            preferredTemplateProfileIdByContext: {
+                ...(existing.preferredTemplateProfileIdByContext || {}),
+                ...(derived.preferredTemplateProfileIdByContext || {}),
+            },
+            profileOverrides: {
+                ...(existing.profileOverrides || {}),
+                ...(derived.profileOverrides || {}),
+            },
+        } : {
+            ...derived,
+            ...(book.id === activeBookId && lastUsedExportProfileId ? { lastUsedExportProfileId } : {}),
+        });
+    });
+    const bookPublishingPreferences = Array.from(bookPrefsById.values());
+
     return {
         exportProfiles,
-        bookPublishingPreferences: bookPublishingPreferences.map(preferences => {
-            if (!activeBookId || preferences.bookId !== activeBookId || !lastUsedExportProfileId) return preferences;
-            return {
-                ...preferences,
-                lastUsedExportProfileId,
-            };
-        }),
+        bookPublishingPreferences: bookPublishingPreferences.map(normalizeBookPublishingPreferences).filter((entry): entry is BookPublishingPreferences => !!entry),
         lastUsedExportProfileId,
         changed:
             legacyTemplates.length > 0

@@ -37,6 +37,7 @@ import {
     clampSplitParts,
     exportProfilesMatch,
     resolveIncludeSceneId,
+    removeExportPreset,
     type ModalExportProfile,
 } from '../utils/exportProfileModel';
 import { getPandocLayoutSortRank, getPandocLayoutTier } from '../publishing/templateTiering';
@@ -1635,9 +1636,9 @@ export class ManuscriptOptionsModal extends Modal {
         this.defaultExportProfileId = transientDefault.id;
 
         const activePreferences = this.getActiveBookPublishingPreferences();
-        const lastUsedId = activePreferences?.lastUsedExportProfileId
-            || this.plugin.settings.lastUsedExportProfileId
-            || null;
+        const lastUsedId = (activePreferences
+            ? activePreferences.lastUsedExportProfileId
+            : this.plugin.settings.lastUsedExportProfileId) || null;
         this.lastUsedPresetId = lastUsedId;
         this.lastUsedExportProfile = lastUsedId ? this.exportProfiles.find(profile => profile.id === lastUsedId) : undefined;
 
@@ -2163,14 +2164,30 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private async deleteTemplate(templateId: string): Promise<void> {
-        const filtered = this.getTemplateList().filter(item => item.id !== templateId);
-        await this.persistTemplateList(filtered);
+        const previous = {
+            exportProfiles: this.plugin.settings.exportProfiles,
+            bookPublishingPreferences: this.plugin.settings.bookPublishingPreferences,
+            lastUsedExportProfileId: this.plugin.settings.lastUsedExportProfileId,
+        };
+        const next = removeExportPreset(previous, templateId);
+        Object.assign(this.plugin.settings, next);
+        try {
+            await this.plugin.saveSettings();
+        } catch (error) {
+            // Preserve a newer settings change if another action happened while
+            // the save was waiting. Otherwise retain the still-saved preset.
+            const current = {
+                exportProfiles: this.plugin.settings.exportProfiles,
+                bookPublishingPreferences: this.plugin.settings.bookPublishingPreferences,
+                lastUsedExportProfileId: this.plugin.settings.lastUsedExportProfileId,
+            };
+            if (JSON.stringify(current) === JSON.stringify(next)) Object.assign(this.plugin.settings, previous);
+            throw error;
+        }
+        this.exportProfiles = this.getTemplateList().filter(item => item.id !== templateId);
         if (this.selectedExportProfileId === templateId) {
             this.selectedExportProfileId = null;
             this.selectedExportProfile = this.defaultExportProfile;
-        }
-        if (this.plugin.settings.lastUsedExportProfileId === templateId) {
-            await this.rememberLastUsedTemplate(null);
         }
         this.refreshTemplateDropdown();
         this.updateExportProfileSummary();

@@ -182,7 +182,7 @@ export class ChronologueDragController {
     }
 
     private onPointerMove(evt: PointerEvent): void {
-        if (!this.sourceGroup) return;
+        if (this.committing || !this.sourceGroup) return;
 
         if (!this.dragging) {
             const dx = evt.clientX - this.startX;
@@ -199,6 +199,10 @@ export class ChronologueDragController {
     }
 
     private async onPointerUp(evt: PointerEvent): Promise<void> {
+        // The window listener also receives clicks inside the placement dialog.
+        // Keep those releases from opening another modal for the pending drop.
+        if (this.committing) return;
+
         if (this.holdTimer !== null) {
             window.clearTimeout(this.holdTimer);
             this.holdTimer = null;

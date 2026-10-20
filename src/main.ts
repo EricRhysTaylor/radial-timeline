@@ -475,8 +475,8 @@ export default class RadialTimelinePlugin extends Plugin {
     }
 
     /** Light up a scene on every open timeline (a Timetable row is hovered); null clears it. */
-    public highlightSceneOnTimeline(path: string | null): void {
-        this.sceneHighlighter.spotlight(path);
+    public highlightSceneOnTimeline(path: string | null): string | null {
+        return this.sceneHighlighter.spotlight(path);
     }
 
     /**

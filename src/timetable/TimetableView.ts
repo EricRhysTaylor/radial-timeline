@@ -329,6 +329,11 @@ export class TimetableView extends BasesView {
         // Hovering a scene's row lights it up on the wheel.
         this.registerDomEvent(this.rootEl, 'mouseover', (evt: MouseEvent) => {
             if (evt.target instanceof Element && evt.target.closest('.ert-time-reference-row')) {
+                if (this.hoveredPath !== null) {
+                    this.hoveredPath = null;
+                    this.plugin.highlightSceneOnTimeline(null);
+                    this.markLinkedRow(null, null, false);
+                }
                 const reference = this.referenceAt(evt.target);
                 hoverTimeReference(reference ? { path: reference.path, key: reference.key } : null);
                 return;
@@ -338,7 +343,8 @@ export class TimetableView extends BasesView {
             hoverTimeReference(null);
             if (path === this.hoveredPath) return;
             this.hoveredPath = path;
-            this.plugin.highlightSceneOnTimeline(path);
+            const color = this.plugin.highlightSceneOnTimeline(path);
+            this.markLinkedRow(color ? path : null, color, false);
         });
         this.registerDomEvent(this.rootEl, 'focusin', evt => {
             const reference = this.referenceAt(evt.target);
@@ -352,6 +358,7 @@ export class TimetableView extends BasesView {
             if (this.hoveredPath === null) return;
             this.hoveredPath = null;
             this.plugin.highlightSceneOnTimeline(null);
+            this.markLinkedRow(null, null, false);
         });
     }
 

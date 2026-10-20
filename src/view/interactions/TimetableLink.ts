@@ -9,8 +9,9 @@
  */
 
 import { getIcon } from 'obsidian';
-import { currentTimelineColoring, markTimetableRows, revealTimetableSegment, type TimelineColoring, type TimelineLens } from '../../timetable/timetableRegistry';
+import { markTimetableRows, revealTimetableSegment, type TimelineColoring, type TimelineLens } from '../../timetable/timetableRegistry';
 import { formatNumber } from '../../utils/svg';
+import { sceneCellColor } from '../../utils/sceneCellColor';
 
 type TimetableLinkView = {
     renderScope: {
@@ -36,7 +37,8 @@ export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGEl
         const path = scenePathOf(event.target);
         if (!path) return;
         // The same scene in another ring is another cell, with its own color.
-        const color = cellColor(event.target, path);
+        const group = event.target instanceof Element ? event.target.closest('.rt-scene-group[data-path]') : null;
+        const color = group ? sceneCellColor(group) : null;
         if (path === current && color === currentColor) return;
         current = path;
         currentColor = color;
@@ -49,22 +51,6 @@ export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGEl
         currentColor = null;
         markTimetableRows(null);
     });
-}
-
-/**
- * The color the hovered cell shows: its value's color while a Timetable colors
- * the wheel (neutral without one), otherwise its ring's color.
- */
-function cellColor(target: EventTarget | null, path: string): string | null {
-    const coloring = currentTimelineColoring();
-    if (coloring) {
-        const value = coloring.values.get(path);
-        const slot = value === undefined ? undefined : coloring.legend.find(entry => entry.value === value)?.colorIndex;
-        return slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`;
-    }
-    const group = target instanceof Element ? target.closest('.rt-scene-group[data-path]') : null;
-    const slot = Number(group?.getAttribute('data-subplot-color-index') ?? Number.NaN);
-    return Number.isInteger(slot) ? `var(--rt-subplot-colors-${slot})` : null;
 }
 
 /** Clicking an act label (a book label in saga scope) shows that part of any open Timetable. */

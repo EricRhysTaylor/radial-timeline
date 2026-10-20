@@ -661,9 +661,10 @@
   background: var(--background-modifier-active-hover);
 }
 
-/* The row of the scene hovered on the wheel, in the hovered cell's color: a wash and a bar.
+/* Hovering a scene on the wheel or in the table: a wash and a solid leading bar.
    After the open-note and picked-row rules, so a hover always shows. */
-.ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row.is-linked > td {
+.ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row.is-linked > td,
+.ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row.is-linked > td.ert-timetable__pick:hover {
   background: color-mix(in srgb, var(--ert-timetable-link-color, var(--interactive-accent)) 30%, transparent);
 }
 

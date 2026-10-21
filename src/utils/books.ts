@@ -136,10 +136,10 @@ export function getBookSequenceNumber(
   return match?.sequenceNumber;
 }
 
-/** A registered book whose folder sits inside this folder: a book here would overlap it. */
-export function getBookInsideFolder(books: BookProfile[] | undefined, folder: string): BookProfile | null {
-    return (books ?? []).find(book => book.sourceFolder.trim() !== '' && book.sourceFolder !== folder // SAFE: a new vault has no books
-        && isPathInFolderScope(book.sourceFolder, folder)) ?? null; // SAFE: null when no book sits inside
+/** Equal, parent and child folders share scene ownership; an edited card ignores itself. */
+export function getOverlappingBook(books: BookProfile[] | undefined, folder: string, excludeBookId?: string): BookProfile | null {
+    return (books ?? []).find(book => book.id !== excludeBookId // SAFE: a new vault has no books
+        && (isPathInFolderScope(book.sourceFolder, folder) || isPathInFolderScope(folder, book.sourceFolder))) ?? null; // SAFE: null means no overlap
 }
 
 export function getActiveBook(settings: RadialTimelineSettings): BookProfile | null {

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type RadialTimelinePlugin from '../main';
 import { OnboardingService } from './OnboardingService';
-import { getBookInsideFolder } from '../utils/books';
+import { getOverlappingBook } from '../utils/books';
 
 function serviceWith(folders: string[]) {
     const plugin = {
@@ -13,13 +13,17 @@ function serviceWith(folders: string[]) {
 }
 
 describe('adding a book never overlaps a registered one', () => {
-    it('finds a registered book inside the chosen folder, not the folder itself or a sibling', () => {
+    it('finds equal, parent and child book scopes, but allows siblings and the card itself', () => {
         const { plugin } = serviceWith(['Saga/Book 1']);
-        const books = plugin.settings.books as Parameters<typeof getBookInsideFolder>[0];
-        expect(getBookInsideFolder(books, 'Saga')?.title).toBe('Book 1');
-        expect(getBookInsideFolder(books, 'Saga/Book 1')).toBeNull();
-        expect(getBookInsideFolder(books, 'Saga/Book 2')).toBeNull();
-        expect(getBookInsideFolder(books, 'Sagas')).toBeNull();
+        const books = plugin.settings.books as Parameters<typeof getOverlappingBook>[0];
+        expect(getOverlappingBook(books, 'Saga')?.title).toBe('Book 1');
+        expect(getOverlappingBook(books, 'Saga/Book 1')?.id).toBe('b0');
+        expect(getOverlappingBook(books, 'Saga/Book 1/Chapter 1')?.id).toBe('b0');
+        expect(getOverlappingBook(books, 'Saga//Book 1/Chapter 1/')?.id).toBe('b0');
+        expect(getOverlappingBook(books, 'Saga/Book 1', 'b0')).toBeNull();
+        expect(getOverlappingBook(books, '')).toBeNull();
+        expect(getOverlappingBook(books, 'Saga/Book 2')).toBeNull();
+        expect(getOverlappingBook(books, 'Sagas')).toBeNull();
     });
 
     it('refuses to add a parent folder of a registered book', async () => {
@@ -27,6 +31,21 @@ describe('adding a book never overlaps a registered one', () => {
         await expect(service.addBook({ title: 'Saga', sourceFolder: 'Saga' })).rejects.toThrow();
         expect(plugin.settings.books).toHaveLength(1);
         expect(plugin.persistBookSettings).not.toHaveBeenCalled();
+    });
+
+    it.each(['Saga/Book 1', 'Saga/Book 1/Chapter 1'])('refuses overlapping folder %s at the service boundary', async sourceFolder => {
+        const { service, plugin } = serviceWith(['Saga/Book 1']);
+        await expect(service.addBook({ title: 'Overlap', sourceFolder })).rejects.toThrow();
+        expect(plugin.settings.books).toHaveLength(1);
+        expect(plugin.persistBookSettings).not.toHaveBeenCalled();
+    });
+
+    it('refuses an overlapping import destination before creating files', async () => {
+        const { service, plugin } = serviceWith(['Saga']);
+        const createFolder = vi.fn();
+        Object.assign(plugin, { app: { vault: { createFolder } } });
+        await expect(service.materialize({ id: 'source', title: 'Novel', sourceFolder: 'Saga/Export' }, [], [])).rejects.toThrow();
+        expect(createFolder).not.toHaveBeenCalled();
     });
 
     it('adds a sibling folder', async () => {

@@ -5678,7 +5678,7 @@ export const vi: TranslationKeys = {
             "existingBookScenes": "{{scenes}}, đã là sách Radial Timeline",
             "existingBookSubtitle": "Đã là sách Radial Timeline.",
             "existingBookNothingToImport": "Các cảnh đã sẵn sàng nguyên trạng nên không có gì để nhập. Thêm nó làm sách để xem trên dòng thời gian.",
-            "containsRegisteredBook": "Thư mục này chứa “{{title}}”, đã có trong Quản lý Sách. Thư mục sách không thể chứa một cuốn sách khác, vì vậy hãy chọn một thư mục bên cạnh.",
+            "containsRegisteredBook": "Thư mục này chồng lấn với “{{title}}” trong Quản lý Sách. Hãy chọn thư mục riêng cho mỗi cuốn sách.",
             "registeredBookSubtitle": "Đã có trong Quản lý Sách với tên “{{title}}”.",
             "showOnTimeline": "Hiển thị trên dòng thời gian",
             "bookAddedNotice": "Đã thêm “{{title}}” vào Quản lý Sách.",
@@ -6906,8 +6906,8 @@ export const vi: TranslationKeys = {
             "removedFromScenes": "Đã xóa \"{{name}}\" khỏi {{scenes}}.",
             "renamedInScenes": "đổi tên thành \"{{oldName}}\" thành \"{{newName}}\" trong {{scenes}}.",
             "renameFailed": "Không thể cập nhật {{files}}. Trường Subplot vẫn ghi \"{{oldName}}\".",
-            "mainPlotRenameUndone": "Cốt truyện chính vẫn là \"{{oldName}}\". Các cảnh đã đổi tên được đổi lại, nên mọi cảnh vẫn ở vòng 1. Hãy sửa các tệp ở trên rồi đổi tên lại.",
-            "renameNotUndone": "Không thể đổi lại {{files}}. Trường Subplot của chúng là \"{{newName}}\"."
+            "mainPlotRenameUndone": "Cốt truyện chính vẫn là \"{{oldName}}\". Các cảnh bị thay đổi bởi lần đổi tên này đã được khôi phục. Hãy sửa các tệp ở trên rồi đổi tên lại.",
+            "renameNotUndone": "Không thể khôi phục {{files}}: trường Subplot đã thay đổi hoặc không thể ghi. Cốt truyện chính vẫn là \"{{oldName}}\". Hãy kiểm tra các cảnh này trước khi thử lại."
         },
         "subplotMembership": {
             "addChange": "Thêm {{to}}",

@@ -5678,7 +5678,7 @@ export const th: TranslationKeys = {
             "existingBookScenes": "{{scenes}} เป็นหนังสือของ Radial Timeline อยู่แล้ว",
             "existingBookSubtitle": "เป็นหนังสือของ Radial Timeline อยู่แล้ว",
             "existingBookNothingToImport": "ฉากต่างๆ พร้อมใช้งานตามเดิม จึงไม่มีอะไรต้องนำเข้า เพิ่มเป็นหนังสือเพื่อดูบนไทม์ไลน์",
-            "containsRegisteredBook": "โฟลเดอร์นี้มี “{{title}}” ซึ่งอยู่ในผู้จัดการหนังสือแล้ว โฟลเดอร์หนังสือไม่สามารถมีหนังสือเล่มอื่นได้ โปรดเลือกโฟลเดอร์ที่อยู่ข้างกัน",
+            "containsRegisteredBook": "โฟลเดอร์นี้ทับซ้อนกับ “{{title}}” ในผู้จัดการหนังสือ โปรดเลือกโฟลเดอร์แยกสำหรับหนังสือแต่ละเล่ม",
             "registeredBookSubtitle": "อยู่ในผู้จัดการหนังสือแล้วในชื่อ “{{title}}”",
             "showOnTimeline": "แสดงบนไทม์ไลน์",
             "bookAddedNotice": "เพิ่ม “{{title}}” ลงในผู้จัดการหนังสือแล้ว",
@@ -6906,8 +6906,8 @@ export const th: TranslationKeys = {
             "removedFromScenes": "ลบ \"{{name}}\" จาก {{scenes}}",
             "renamedInScenes": "เปลี่ยนชื่อเป็น \"{{oldName}}\" เป็น \"{{newName}}\" ใน {{scenes}}",
             "renameFailed": "อัปเดต {{files}} ไม่ได้ ฟิลด์ Subplot ยังเป็น \"{{oldName}}\"",
-            "mainPlotRenameUndone": "พล็อตหลักยังคงชื่อ \"{{oldName}}\" ฉากที่เปลี่ยนชื่อไปแล้วถูกเปลี่ยนกลับ ทุกฉากจึงยังอยู่บนวงแหวน 1 แก้ไขไฟล์ด้านบนแล้วเปลี่ยนชื่ออีกครั้ง",
-            "renameNotUndone": "ไม่สามารถเปลี่ยน {{files}} กลับได้ ฟิลด์ Subplot ของไฟล์เหล่านี้เป็น \"{{newName}}\""
+            "mainPlotRenameUndone": "พล็อตหลักยังคงชื่อ \"{{oldName}}\" ฉากที่แก้ไขโดยการเปลี่ยนชื่อนี้ได้รับการคืนค่าแล้ว โปรดแก้ไขไฟล์ด้านบนแล้วเปลี่ยนชื่ออีกครั้ง",
+            "renameNotUndone": "ไม่สามารถคืนค่า {{files}} ได้ เนื่องจากฟิลด์ Subplot เปลี่ยนแปลงหรือเขียนไม่ได้ พล็อตหลักยังคงชื่อ \"{{oldName}}\" โปรดตรวจสอบฉากเหล่านี้ก่อนลองอีกครั้ง"
         },
         "subplotMembership": {
             "addChange": "เพิ่ม {{to}}",

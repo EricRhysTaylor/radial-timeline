@@ -5678,7 +5678,7 @@ export const es: TranslationKeys = {
             "existingBookScenes": "{{scenes}}, ya es un libro de Radial Timeline",
             "existingBookSubtitle": "Ya es un libro de Radial Timeline.",
             "existingBookNothingToImport": "Sus escenas ya están listas, así que no hay nada que importar. Añádalo como libro para verlo en la línea de tiempo.",
-            "containsRegisteredBook": "Esta carpeta contiene «{{title}}», que ya está en el Administrador de Libros. Una carpeta de libro no puede contener otro libro, así que elija una carpeta junto a ella.",
+            "containsRegisteredBook": "Esta carpeta se solapa con «{{title}}» en el Administrador de Libros. Elija una carpeta independiente para cada libro.",
             "registeredBookSubtitle": "Ya está en el Administrador de Libros como “{{title}}”.",
             "showOnTimeline": "Mostrar en la línea de tiempo",
             "bookAddedNotice": "Se añadió “{{title}}” al Administrador de Libros.",
@@ -6906,8 +6906,8 @@ export const es: TranslationKeys = {
             "removedFromScenes": "eliminado \"{{name}}\" de {{scenes}}.",
             "renamedInScenes": "renombrado \"{{oldName}}\" a \"{{newName}}\" en {{scenes}}.",
             "renameFailed": "No se pudo actualizar {{files}}. Su campo Subplot sigue diciendo \"{{oldName}}\".",
-            "mainPlotRenameUndone": "La trama principal sigue siendo «{{oldName}}». Las escenas ya renombradas se restauraron, así que todas siguen en el anillo 1. Corrija los archivos anteriores y vuelva a renombrar.",
-            "renameNotUndone": "No se pudo restaurar {{files}}. Su campo Subplot dice «{{newName}}»."
+            "mainPlotRenameUndone": "La trama principal sigue siendo «{{oldName}}». Se restauraron las escenas modificadas por este cambio de nombre. Corrija los archivos anteriores y vuelva a renombrar.",
+            "renameNotUndone": "No se pudo restaurar {{files}}: su campo Subplot cambió o no se pudo guardar. La trama principal sigue siendo «{{oldName}}». Revise estas escenas antes de reintentar."
         },
         "subplotMembership": {
             "addChange": "Añadir {{to}}",

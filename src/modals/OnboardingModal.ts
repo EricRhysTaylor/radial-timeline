@@ -42,7 +42,7 @@ import {
 import { basename } from '../onboarding/paths';
 import { refreshOnboardingPrompt } from '../onboarding/promptSync';
 import { proposeScrivenerAutomap, type ScrivenerFieldTarget } from '../onboarding/adapters/scrivenerAdapter';
-import { createBookId, getBookInsideFolder, normalizeBookProfile } from '../utils/books';
+import { createBookId, getOverlappingBook, normalizeBookProfile } from '../utils/books';
 import { isPathInFolderScope } from '../utils/pathScope';
 import { countSceneNotes, discoverOnboardingCandidates, type OnboardingCandidate } from '../onboarding/discovery';
 import { missingOutlineText, renderScrivenerExportHelp, renderScrivenerProblems, renderScrivenerReview, renderSourceParts, type ScrivenerReviewState } from './OnboardingScrivenerReview';
@@ -236,12 +236,13 @@ export class OnboardingModal extends Modal {
   /** The split+mapping-applied model extraction actually ran against (for resume). */
   private extractModel: ManuscriptModel | null = null;
   private abortController: AbortController | null = null;
+  private importReport?: MaterializeReport;
 
   /**
    * `folder` opens straight on a source the opener already found; `onClosed`
    * lets the opener refresh after an import (Book Manager redraws its list).
    */
-  constructor(app: App, plugin: RadialTimelinePlugin, private readonly options: { folder?: string; onClosed?: () => void } = {}) {
+  constructor(app: App, plugin: RadialTimelinePlugin, private readonly options: { folder?: string; onClosed?: (report?: MaterializeReport) => void } = {}) {
     super(app);
     this.plugin = plugin;
     this.service = new OnboardingService(plugin);
@@ -331,7 +332,7 @@ export class OnboardingModal extends Modal {
   onClose(): void {
     this.abortController?.abort();
     this.contentEl.empty();
-    this.options.onClosed?.();
+    this.options.onClosed?.(this.importReport);
   }
 
   // ---- Views -------------------------------------------------------------
@@ -396,8 +397,8 @@ export class OnboardingModal extends Modal {
       .filter(book => isPathInFolderScope(folder, book.sourceFolder))
       .sort((a, b) => b.sourceFolder.length - a.sourceFolder.length)[0] ?? null; // SAFE: null when no book in Book Manager holds this folder
     const sceneCount = countSceneNotes(this.app, folder);
-    if (registered || sceneCount > 0) {
-      this.showExistingBook(folder, registered, sceneCount, registered ? null : getBookInsideFolder(this.plugin.settings.books, folder));
+    if (sceneCount > 0 || (registered && countSceneNotes(this.app, registered.sourceFolder) > 0)) {
+      this.showExistingBook(folder, registered, sceneCount, registered ? null : getOverlappingBook(this.plugin.settings.books, folder));
       return;
     }
     activeSession = null;
@@ -540,6 +541,7 @@ export class OnboardingModal extends Modal {
       if (this.createPlaces) kinds.push('place');
       const entities = await this.service.enrichEntities(proposals, { kinds, generateSummaries: false });
       report = await this.service.materialize(book, proposals, entities);
+      this.importReport = report;
     } catch (error) {
       this.renderMessage(t('ui.onboardingModal.importFailed'), error instanceof Error ? error.message : String(error), true);
       return;
@@ -1396,6 +1398,7 @@ export class OnboardingModal extends Modal {
     let report: MaterializeReport;
     try {
       report = await this.service.materialize(this.book, this.proposals, this.entityProposals);
+      this.importReport = report;
     } catch (error) {
       this.renderMessage(t('ui.onboardingModal.onboardingFailed'), error instanceof Error ? error.message : String(error), true);
       return;

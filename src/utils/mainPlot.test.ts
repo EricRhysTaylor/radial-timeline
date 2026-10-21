@@ -155,7 +155,7 @@ describe('SubplotManagementService.renameSubplot', () => {
         };
         // SAFE: the service reads only getSettings() from SceneDataService
         const service = new SubplotManagementService(app, { getSettings: () => settings } as unknown as SceneDataService);
-        return { service, settings };
+        return { service, settings, app };
     }
 
     it("renames the main plot in the active book only, on that book's profile", async () => {
@@ -208,6 +208,60 @@ describe('SubplotManagementService.renameSubplot', () => {
         expect(settings.books[0].mainPlotName).toBeUndefined();
         expect(frontmatter['Book A/1 Opening.md'].Subplot).toEqual(['Main Plot', 'Romance']);
         expect(frontmatter['Book A/3 Close.md'].Subplot).toBe('Main Plot');
+    });
+
+    it('preserves a later author edit when a main-plot rename rolls back', async () => {
+        const frontmatter = {
+            'Book A/1.md': { Class: 'Scene', Subplot: ['Main Plot', 'Romance'], Synopsis: 'Original' },
+            'Book A/2.md': { Class: 'Scene', Subplot: 'Main Plot' },
+        };
+        const { service, settings, app } = vaultWith(frontmatter);
+        const process = app.fileManager.processFrontMatter.bind(app.fileManager);
+        app.fileManager.processFrontMatter = async (file, edit) => {
+            if (file.path === 'Book A/2.md') {
+                frontmatter['Book A/1.md'].Subplot = ['The Heist', 'Author added'];
+                throw new Error('write blocked');
+            }
+            await process(file, edit);
+        };
+        expect(await service.renameSubplot('Main Plot', 'The Heist')).toEqual({ renamed: 1, failed: ['2'] });
+        expect(frontmatter['Book A/1.md'].Subplot).toEqual(['The Heist', 'Author added']);
+        expect(settings.books[0].mainPlotName).toBeUndefined();
+    });
+
+    it('restores its own Subplot write while keeping edits to other properties', async () => {
+        const frontmatter = {
+            'Book A/1.md': { Class: 'Scene', Subplot: ['Main Plot', 'Romance'], Synopsis: 'Original' },
+            'Book A/2.md': { Class: 'Scene', Subplot: 'Main Plot' },
+        };
+        const { service, app } = vaultWith(frontmatter);
+        const process = app.fileManager.processFrontMatter.bind(app.fileManager);
+        app.fileManager.processFrontMatter = async (file, edit) => {
+            if (file.path === 'Book A/2.md') {
+                frontmatter['Book A/1.md'].Synopsis = 'Author revised';
+                throw new Error('write blocked');
+            }
+            await process(file, edit);
+        };
+        expect(await service.renameSubplot('Main Plot', 'The Heist')).toEqual({ renamed: 0, failed: ['2'] });
+        expect(frontmatter['Book A/1.md']).toMatchObject({ Subplot: ['Main Plot', 'Romance'], Synopsis: 'Author revised' });
+    });
+
+    it('keeps the old main-plot setting when a restore cannot be written', async () => {
+        const frontmatter = {
+            'Book A/1.md': { Class: 'Scene', Subplot: 'Main Plot' },
+            'Book A/2.md': { Class: 'Scene', Subplot: 'Main Plot' },
+        };
+        const { service, settings, app } = vaultWith(frontmatter);
+        const process = app.fileManager.processFrontMatter.bind(app.fileManager);
+        let writes = 0;
+        app.fileManager.processFrontMatter = async (file, edit) => {
+            if (++writes > 1) throw new Error('write blocked');
+            await process(file, edit);
+        };
+        expect(await service.renameSubplot('Main Plot', 'The Heist')).toEqual({ renamed: 1, failed: ['2'] });
+        expect(frontmatter['Book A/1.md'].Subplot).toBe('The Heist');
+        expect(settings.books[0].mainPlotName).toBeUndefined();
     });
 
     it('reports a subplot scene it could not update and still renames the rest', async () => {

@@ -104,12 +104,24 @@ describe('onboarding AI opt-in', () => {
   });
   it('shows a folder Book Manager already has instead of importing it', async () => {
     const registered = { id: 'b1', title: 'Book One', sourceFolder: 'Saga/Book 1' };
-    const harness = modal(vault(), { books: [registered] });
+    const harness = modal(vault(['Saga/Book 1/01 Opening.md']), { books: [registered] });
     harness.showPreflight = vi.fn(async () => undefined);
     harness.showExistingBook = vi.fn();
     await harness.selectSourceFolder('Saga/Book 1/Exports');
     expect(harness.showExistingBook).toHaveBeenCalledWith('Saga/Book 1/Exports', registered, 0, null);
     expect(harness.showPreflight).not.toHaveBeenCalled();
+  });
+  it('imports an export folder saved on a card when that folder has no scene notes', async () => {
+    const registered = { id: 'b1', title: 'Novel', sourceFolder: 'Imports/Novel' };
+    const app = vault();
+    app.vault.getFiles = () => [{ path: 'Imports/Novel/Novel.docx', name: 'Novel.docx', extension: 'docx' }] as never;
+    const harness = modal(app, { books: [registered] });
+    harness.showPreflight = vi.fn(async () => undefined);
+    harness.showExistingBook = vi.fn();
+    await harness.selectSourceFolder('Imports/Novel');
+    expect(harness.showPreflight).toHaveBeenCalledTimes(1);
+    expect(harness.showExistingBook).not.toHaveBeenCalled();
+    expect(harness.plugin.settings).toEqual({ books: [registered] });
   });
   it('names the registered book inside a chosen parent folder, so it is never added as an overlapping book', async () => {
     const registered = { id: 'b1', title: 'Book One', sourceFolder: 'Saga/Book 1' };

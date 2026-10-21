@@ -10,7 +10,7 @@ import type RadialTimelinePlugin from '../../main';
 import { CreateBookCopyModal } from '../../modals/CreateBookCopyModal';
 import type { BookProfile } from '../../types/settings';
 import { ModalFolderSuggest } from '../FolderSuggest';
-import { DEFAULT_BOOK_TITLE, createBookId, getBookSequenceNumber, normalizeBookProfile, isBookIncludedInSaga } from '../../utils/books';
+import { DEFAULT_BOOK_TITLE, createBookId, getBookSequenceNumber, normalizeBookProfile, isBookIncludedInSaga, getOverlappingBook } from '../../utils/books';
 import {
     copyFolderRecursive,
     createBookCopyProfile,
@@ -162,11 +162,10 @@ export function renderGeneralSection(params: {
     };
     /** Import a manuscript; afterwards Book Manager and any scan results redraw. */
     const openImport = (folder?: string, onImported?: () => void) => {
-        const before = (plugin.settings.books ?? []).length; // SAFE: a new vault has no books
         new OnboardingModal(app, plugin, {
             folder,
-            onClosed: () => {
-                if ((plugin.settings.books ?? []).length > before) onImported?.(); // SAFE: a new vault has no books
+            onClosed: (report) => {
+                if (report && report.notesCreated > 0 && report.errors.length === 0) onImported?.();
                 renderBooksManager();
                 if (scanned) void scan();
             },
@@ -616,7 +615,8 @@ export function renderGeneralSection(params: {
                 exportHint.createSpan({ cls: 'ert-section-desc ert-section-desc--alert', text: t('ui.generalSection.folderHoldsExport') });
                 new ButtonComponent(exportHint).setButtonText(t('ui.generalSection.importAction')).onClick(() => openImport(folder, () => {
                     // The import made the book this card was waiting for (beside the export).
-                    if (book.sourceFolder.trim() && countSceneNotes(app, book.sourceFolder) > 0) return;
+                    const current = plugin.settings.books?.find(candidate => candidate.id === book.id);
+                    if (!current || normalizePath(current.sourceFolder) !== folder || countSceneNotes(app, current.sourceFolder) > 0) return;
                     plugin.settings.books = (plugin.settings.books ?? []).filter(candidate => candidate.id !== book.id); // SAFE: the list holds at least the imported book
                     void plugin.persistBookSettings();
                 }));
@@ -638,6 +638,14 @@ export function renderGeneralSection(params: {
                     const isValid = await plugin.validateAndRememberPath(normalizedValue);
                     const sceneCount = isValid ? countSceneNotes(app, normalizedValue) : 0;
                     if (isValid) {
+                        const overlap = getOverlappingBook(plugin.settings.books, normalizedValue, book.id);
+                        if (overlap) {
+                            inputEl.addClass('ert-setting-input-error');
+                            new Notice(t('ui.onboardingModal.containsRegisteredBook', { title: overlap.title }));
+                            text.setValue(book.sourceFolder);
+                            window.setTimeout(() => inputEl.removeClass('ert-setting-input-error'), 2000);
+                            return;
+                        }
                         const firstFolder = !book.sourceFolder.trim();
                         book.sourceFolder = normalizedValue;
                         await plugin.persistBookSettings();

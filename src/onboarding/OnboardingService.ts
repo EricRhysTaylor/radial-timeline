@@ -21,7 +21,7 @@ import { getCredential } from '../ai/credentials/credentials';
 import type { AIProviderId } from '../ai/types';
 import { getLocalLlmClient } from '../ai/localLlm/client';
 import { inferLocalLlmCapability } from '../ai/localLlm/capabilityInference';
-import { createBookId, getBookInsideFolder, normalizeBookProfile } from '../utils/books';
+import { createBookId, getOverlappingBook, normalizeBookProfile } from '../utils/books';
 import type { BookProfile } from '../types/settings';
 import { t } from '../i18n';
 import {
@@ -816,6 +816,8 @@ export class OnboardingService {
   ): Promise<MaterializeReport> {
     const vault = this.plugin.app.vault;
     const destFolder = this.destinationFor(sourceBook);
+    const overlap = getOverlappingBook(this.plugin.settings.books, destFolder);
+    if (overlap) throw new Error(t('ui.onboardingModal.containsRegisteredBook', { title: overlap.title }));
     // Never merge into an existing folder: a second import would collide note
     // by note and register a duplicate book. Block before writing anything.
     if (vault.getAbstractFileByPath(destFolder)) {
@@ -948,7 +950,7 @@ export class OnboardingService {
    * Book Manager.
    */
   async addBook(fields: Pick<BookProfile, 'title' | 'sourceFolder'> & Partial<Pick<BookProfile, 'genre' | 'projectStage'>>): Promise<BookProfile> {
-    const inside = getBookInsideFolder(this.plugin.settings.books, fields.sourceFolder);
+    const inside = getOverlappingBook(this.plugin.settings.books, fields.sourceFolder);
     if (inside) throw new Error(t('ui.onboardingModal.containsRegisteredBook', { title: inside.title }));
     const newBook = normalizeBookProfile({ id: createBookId(), ...fields });
     this.plugin.settings.books = [...(this.plugin.settings.books ?? []), newBook]; // SAFE: the first book seeds an empty list

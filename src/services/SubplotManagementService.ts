@@ -177,7 +177,7 @@ export class SubplotManagementService {
         let renamed = 0;
         const failed: string[] = [];
         // What each renamed scene said before, to change it back if the main plot rename cannot finish.
-        const originals: { file: TFile; key: string; value: unknown }[] = [];
+        const originals: { file: TFile; key: string; before: unknown; after: unknown }[] = [];
         for (const file of this.getSceneFiles()) {
             let processed = false;
             try {
@@ -185,16 +185,13 @@ export class SubplotManagementService {
                     const subplotKey = Object.keys(fm).find(k => k.toLowerCase() === 'subplot');
                     if (!subplotKey) return;
                     const value = fm[subplotKey];
-                    originals.push({ file, key: subplotKey, value: Array.isArray(value) ? (value as unknown[]).slice() : value });
                     const currentSubplots = this.listedSubplots({ Subplot: value });
-                    if (!currentSubplots.includes(oldName)) {
-                        originals.pop();
-                        return;
-                    }
+                    if (!currentSubplots.includes(oldName)) return;
                     // Renaming onto a name the scene already lists keeps one entry.
                     const newSubplots = Array.from(new Set(currentSubplots.map(s => s === oldName ? newName : s)));
                     // Keep the author's shape: a list stays a list.
                     fm[subplotKey] = Array.isArray(value) || newSubplots.length > 1 ? newSubplots : newSubplots[0];
+                    originals.push({ file, key: subplotKey, before: structuredClone(value), after: structuredClone(fm[subplotKey]) });
                     processed = true;
                 });
             } catch {
@@ -209,17 +206,22 @@ export class SubplotManagementService {
         // back and keep the old name, so the author can fix the failed files and retry.
         if (renamingMainPlot && failed.length > 0) {
             const notRestored: string[] = [];
-            for (const { file, key, value } of originals) {
+            for (const { file, key, before, after } of originals) {
                 try {
-                    await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => { fm[key] = value; });
+                    await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+                        // Only undo our own write; an author's later Subplot edit belongs to them.
+                        if (JSON.stringify(fm[key]) !== JSON.stringify(after)) throw new Error('Subplot changed after rename.');
+                        fm[key] = before;
+                    });
                 } catch {
                     notRestored.push(file.basename);
                 }
             }
             new Notice(t('ui.subplotManagementService.renameFailed', { files: failed.join(', '), oldName }), 0);
-            new Notice(t('ui.subplotManagementService.mainPlotRenameUndone', { oldName }), 0);
             if (notRestored.length > 0) {
-                new Notice(t('ui.subplotManagementService.renameNotUndone', { files: notRestored.join(', '), newName }), 0);
+                new Notice(t('ui.subplotManagementService.renameNotUndone', { files: notRestored.join(', '), oldName }), 0);
+            } else {
+                new Notice(t('ui.subplotManagementService.mainPlotRenameUndone', { oldName }), 0);
             }
             return { renamed: notRestored.length, failed };
         }

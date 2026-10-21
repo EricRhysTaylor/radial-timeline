@@ -5678,7 +5678,7 @@ export const fr: TranslationKeys = {
             "existingBookScenes": "{{scenes}}, déjà un livre Radial Timeline",
             "existingBookSubtitle": "Déjà un livre Radial Timeline.",
             "existingBookNothingToImport": "Ses scènes sont prêtes telles quelles : il n'y a rien à importer. Ajoutez-le comme livre pour le voir sur la chronologie.",
-            "containsRegisteredBook": "Ce dossier contient « {{title}} », déjà présent dans Book Manager. Un dossier de livre ne peut pas contenir un autre livre : choisissez un dossier à côté.",
+            "containsRegisteredBook": "Ce dossier chevauche « {{title}} » dans Book Manager. Choisissez un dossier distinct pour chaque livre.",
             "registeredBookSubtitle": "Déjà dans Book Manager sous le nom « {{title}} ».",
             "showOnTimeline": "Afficher sur la chronologie",
             "bookAddedNotice": "« {{title}} » ajouté à Book Manager.",
@@ -6906,8 +6906,8 @@ export const fr: TranslationKeys = {
             "removedFromScenes": "Supprimé \"{{name}}\" de {{scenes}}.",
             "renamedInScenes": "Renommé \"{{oldName}}\" en \"{{newName}}\" dans {{scenes}}.",
             "renameFailed": "Impossible de mettre à jour {{files}}. Leur champ Subplot indique toujours « {{oldName}} ».",
-            "mainPlotRenameUndone": "L’intrigue principale s’appelle toujours « {{oldName}} ». Les scènes déjà renommées ont été rétablies, toutes restent donc sur l’anneau 1. Corrigez les fichiers ci-dessus et renommez à nouveau.",
-            "renameNotUndone": "Impossible de rétablir {{files}}. Leur champ Subplot indique « {{newName}} »."
+            "mainPlotRenameUndone": "L’intrigue principale reste « {{oldName}} ». Les scènes modifiées par ce renommage ont été rétablies. Corrigez les fichiers ci-dessus et renommez à nouveau.",
+            "renameNotUndone": "Impossible de rétablir {{files}} : leur champ Subplot a changé ou n’a pas pu être enregistré. L’intrigue principale reste « {{oldName}} ». Vérifiez ces scènes avant de réessayer."
         },
         "subplotMembership": {
             "addChange": "Ajouter {{to}}",

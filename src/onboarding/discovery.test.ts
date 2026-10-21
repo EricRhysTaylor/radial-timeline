@@ -68,6 +68,16 @@ describe('read-only onboarding discovery', () => {
       { kind: 'book', folder: 'Saga/Book 4', sceneCount: 2 },
     ]);
   });
+  it('never offers a folder holding a registered book as a book', async () => {
+    const vault = app({
+      'Saga/Intro.md': SCENE,
+      'Saga/Book 1/01 Opening.md': SCENE,
+      'Saga/Book 2/01 Storm.md': SCENE,
+    });
+    expect(await discoverOnboardingCandidates(vault, ['Saga/Book 1'])).toEqual([
+      { kind: 'book', folder: 'Saga/Book 2', sceneCount: 1 },
+    ]);
+  });
   it('tells a book folder from a manuscript export', () => {
     const vault = app({ 'Book/01 Arrival.md': SCENE, 'Book/Act 2/02 Storm.md': SCENE, 'Export/01 Arrival.txt': 'prose', 'Export/Notes.md': 'plain' });
     expect(countSceneNotes(vault, 'Book')).toBe(2);

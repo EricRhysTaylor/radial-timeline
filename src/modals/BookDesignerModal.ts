@@ -1682,7 +1682,7 @@ export class BookDesignerModal extends Modal {
             }
         }
 
-        const plan = buildNonlinearDemoProjectPlan(startDate);
+        const plan = buildNonlinearDemoProjectPlan(startDate, this.getSelectedMainPlot());
         const sceneTemplate = getTemplateParts('Scene', this.plugin.settings).merged;
 
         let createdScenes = 0;

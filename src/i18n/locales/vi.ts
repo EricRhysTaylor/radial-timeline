@@ -4609,7 +4609,7 @@ export const vi: TranslationKeys = {
             "scanVault": "Quét kho",
             "scanningVault": "Đang quét kho này…",
             "importAction": "Nhập",
-            "folderHoldsExport": "Thư mục này chứa bản xuất bản thảo, không phải ghi chú cảnh.",
+            "folderHoldsExport": "Chưa có ghi chú cảnh nào ở đây. Nếu các tệp này là bản xuất bản thảo, hãy nhập chúng.",
             "noExportsFound": "Không tìm thấy thư mục sách hoặc bản xuất mới. Sao chép bản xuất Scrivener của bạn vào kho này, sau đó quét lại.",
             "noBooksTitle": "Không có sách được cấu hình",
             "noBooksDesc": "Thêm hồ sơ sách và đặt tiêu đề và thư mục.",
@@ -5678,6 +5678,7 @@ export const vi: TranslationKeys = {
             "existingBookScenes": "{{scenes}}, đã là sách Radial Timeline",
             "existingBookSubtitle": "Đã là sách Radial Timeline.",
             "existingBookNothingToImport": "Các cảnh đã sẵn sàng nguyên trạng nên không có gì để nhập. Thêm nó làm sách để xem trên dòng thời gian.",
+            "containsRegisteredBook": "Thư mục này chứa “{{title}}”, đã có trong Quản lý Sách. Thư mục sách không thể chứa một cuốn sách khác, vì vậy hãy chọn một thư mục bên cạnh.",
             "registeredBookSubtitle": "Đã có trong Quản lý Sách với tên “{{title}}”.",
             "showOnTimeline": "Hiển thị trên dòng thời gian",
             "bookAddedNotice": "Đã thêm “{{title}}” vào Quản lý Sách.",
@@ -6904,7 +6905,9 @@ export const vi: TranslationKeys = {
             "cannotDeleteMainPlot": "Không thể xóa cốt truyện chính.",
             "removedFromScenes": "Đã xóa \"{{name}}\" khỏi {{scenes}}.",
             "renamedInScenes": "đổi tên thành \"{{oldName}}\" thành \"{{newName}}\" trong {{scenes}}.",
-            "renameFailed": "Không thể cập nhật {{files}}. Trường Subplot vẫn ghi \"{{oldName}}\"."
+            "renameFailed": "Không thể cập nhật {{files}}. Trường Subplot vẫn ghi \"{{oldName}}\".",
+            "mainPlotRenameUndone": "Cốt truyện chính vẫn là \"{{oldName}}\". Các cảnh đã đổi tên được đổi lại, nên mọi cảnh vẫn ở vòng 1. Hãy sửa các tệp ở trên rồi đổi tên lại.",
+            "renameNotUndone": "Không thể đổi lại {{files}}. Trường Subplot của chúng là \"{{newName}}\"."
         },
         "subplotMembership": {
             "addChange": "Thêm {{to}}",

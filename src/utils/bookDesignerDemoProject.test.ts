@@ -19,6 +19,15 @@ describe('bookDesignerDemoProject', () => {
         expect(plan.scenes[3]).toMatchObject({ sceneNumber: 4, act: 1, when: '2085-04-01 07:00', subplot: 'A' });
     });
 
+    it("writes the target book's main plot name, never a literal Main Plot", () => {
+        const plan = buildNonlinearDemoProjectPlan(undefined, 'The Heist');
+        expect(plan.scenes[0].subplots).toEqual(['The Heist']);
+        expect(plan.scenes[9].subplots).toEqual(['The Heist', 'Objective']);
+        expect(plan.scenes.some(scene => scene.subplots.includes('Main Plot'))).toBe(false);
+        expect(plan.instructionNote.content).toContain('**The Heist**');
+        expect(plan.instructionNote.content).not.toContain('Main Plot');
+    });
+
     it('keeps the chronologue cadence at two scenes per day with alternating slot lengths', () => {
         const plan = buildNonlinearDemoProjectPlan();
         const scenesByWhen = [...plan.scenes].sort((left, right) => left.when.localeCompare(right.when));

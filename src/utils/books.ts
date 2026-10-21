@@ -5,6 +5,7 @@ import { slugifyToFileStem } from './slug';
 import type { BeatDefinition, BeatSystemConfig, BeatWorkspaceState, BookProfile, LoadedBeatTab, ManuscriptSceneHeadingMode, RadialTimelineSettings } from '../types/settings';
 import type { TimelineItem } from '../types/timeline';
 import { normalizeRecentStructuralMoves } from './recentStructuralMoves';
+import { isPathInFolderScope } from './pathScope';
 
 export const DEFAULT_BOOK_TITLE = 'Untitled Manuscript';
 
@@ -133,6 +134,12 @@ export function getBookSequenceNumber(
   if (!bookId) return undefined;
   const match = getSequencedBooks(settings.books).find(entry => entry.book.id === bookId);
   return match?.sequenceNumber;
+}
+
+/** A registered book whose folder sits inside this folder: a book here would overlap it. */
+export function getBookInsideFolder(books: BookProfile[] | undefined, folder: string): BookProfile | null {
+    return (books ?? []).find(book => book.sourceFolder.trim() !== '' && book.sourceFolder !== folder // SAFE: a new vault has no books
+        && isPathInFolderScope(book.sourceFolder, folder)) ?? null; // SAFE: null when no book sits inside
 }
 
 export function getActiveBook(settings: RadialTimelineSettings): BookProfile | null {

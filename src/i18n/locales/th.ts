@@ -4609,7 +4609,7 @@ export const th: TranslationKeys = {
             "scanVault": "สแกนห้องนิรภัย",
             "scanningVault": "กำลังสแกนห้องนิรภัยนี้…",
             "importAction": "นำเข้า",
-            "folderHoldsExport": "โฟลเดอร์นี้มีการส่งออกต้นฉบับ ไม่ใช่โน้ตฉาก",
+            "folderHoldsExport": "ยังไม่มีโน้ตฉากที่นี่ หากไฟล์เหล่านี้เป็นการส่งออกต้นฉบับ ให้นำเข้า",
             "noExportsFound": "ไม่พบโฟลเดอร์หนังสือหรือการส่งออกใหม่ คัดลอกการส่งออก Scrivener ของคุณไปยังห้องนิรภัยนี้ จากนั้นสแกนอีกครั้ง",
             "noBooksTitle": "ไม่มีการกำหนดค่าหนังสือ",
             "noBooksDesc": "เพิ่มโปรไฟล์หนังสือและตั้งชื่อและโฟลเดอร์",
@@ -5678,6 +5678,7 @@ export const th: TranslationKeys = {
             "existingBookScenes": "{{scenes}} เป็นหนังสือของ Radial Timeline อยู่แล้ว",
             "existingBookSubtitle": "เป็นหนังสือของ Radial Timeline อยู่แล้ว",
             "existingBookNothingToImport": "ฉากต่างๆ พร้อมใช้งานตามเดิม จึงไม่มีอะไรต้องนำเข้า เพิ่มเป็นหนังสือเพื่อดูบนไทม์ไลน์",
+            "containsRegisteredBook": "โฟลเดอร์นี้มี “{{title}}” ซึ่งอยู่ในผู้จัดการหนังสือแล้ว โฟลเดอร์หนังสือไม่สามารถมีหนังสือเล่มอื่นได้ โปรดเลือกโฟลเดอร์ที่อยู่ข้างกัน",
             "registeredBookSubtitle": "อยู่ในผู้จัดการหนังสือแล้วในชื่อ “{{title}}”",
             "showOnTimeline": "แสดงบนไทม์ไลน์",
             "bookAddedNotice": "เพิ่ม “{{title}}” ลงในผู้จัดการหนังสือแล้ว",
@@ -6904,7 +6905,9 @@ export const th: TranslationKeys = {
             "cannotDeleteMainPlot": "ลบพล็อตหลักไม่ได้",
             "removedFromScenes": "ลบ \"{{name}}\" จาก {{scenes}}",
             "renamedInScenes": "เปลี่ยนชื่อเป็น \"{{oldName}}\" เป็น \"{{newName}}\" ใน {{scenes}}",
-            "renameFailed": "อัปเดต {{files}} ไม่ได้ ฟิลด์ Subplot ยังเป็น \"{{oldName}}\""
+            "renameFailed": "อัปเดต {{files}} ไม่ได้ ฟิลด์ Subplot ยังเป็น \"{{oldName}}\"",
+            "mainPlotRenameUndone": "พล็อตหลักยังคงชื่อ \"{{oldName}}\" ฉากที่เปลี่ยนชื่อไปแล้วถูกเปลี่ยนกลับ ทุกฉากจึงยังอยู่บนวงแหวน 1 แก้ไขไฟล์ด้านบนแล้วเปลี่ยนชื่ออีกครั้ง",
+            "renameNotUndone": "ไม่สามารถเปลี่ยน {{files}} กลับได้ ฟิลด์ Subplot ของไฟล์เหล่านี้เป็น \"{{newName}}\""
         },
         "subplotMembership": {
             "addChange": "เพิ่ม {{to}}",

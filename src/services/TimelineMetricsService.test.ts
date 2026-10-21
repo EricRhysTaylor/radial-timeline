@@ -103,7 +103,15 @@ describe('TimelineMetricsService', () => {
         expect(service.calculateCompletionEstimate([
             scene({ title: '1 Finished', status: 'Complete' }),
             scene({ title: '2 Revising', status: 'Working' })
-        ])).toMatchObject({ total: 2, remaining: 1, rate: 0, date: null, lastProgressDate: null, labelText: '?' });
+        ])).toMatchObject({ total: 2, remaining: 1, rate: 0, date: null, lastProgressDate: null, labelText: '?', staleness: 'fresh' });
+    });
+
+    it('does not call a new project with no completions stalled', () => {
+        const { service } = makeService();
+        expect(service.calculateCompletionEstimate([
+            scene({ title: '1 Opening', status: 'Todo' }),
+            scene({ title: '2 Middle', status: 'Todo' })
+        ])).toMatchObject({ staleness: 'fresh', lastProgressDate: null, labelText: '?' });
     });
 
     it('keeps the milestone path for a completed stage and excludes non-scene notes', () => {

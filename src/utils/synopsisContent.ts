@@ -5,7 +5,9 @@ const MONTH = '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?
 const CLOCK_HOUR = '(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\\d{1,2})';
 const SCHEDULING_PATTERNS = [
     /\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/i,
-    /\b(?:Mon|Tue(?:s)?|Wed|Thu(?:rs)?|Fri|Sat|Sun)\.(?=\s|$)/i,
+    // Abbreviations are capitalized; Sat, Sun and Wed are also words, so they need a date or time after them.
+    /\b(?:Mon|Tues?|Thu(?:rs)?|Fri)\.(?=\s|$)/,
+    new RegExp(`\\b(?:Wed|Sat|Sun)\\.,?\\s+(?:\\d|${MONTH}\\b)`),
     /\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/,
     /\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/,
     new RegExp(`\\b${MONTH}\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?\\b`, 'i'),

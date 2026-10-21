@@ -48,6 +48,7 @@ const SUBPLOT_FIELD = {
     'ui.manageSubplotsModal.mainPlotRenameNote': 'Subplot',
     'ui.manageSubplotsModal.renameScenesNote': 'Subplot',
     'ui.subplotManagementService.renameFailed': 'Subplot',
+    'ui.subplotManagementService.renameNotUndone': 'Subplot',
 };
 
 const BEAT_FIELD = {

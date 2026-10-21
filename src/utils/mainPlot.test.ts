@@ -194,18 +194,31 @@ describe('SubplotManagementService.renameSubplot', () => {
         expect(frontmatter['Book B/1.md'].Subplot).toBe('Romance');
     });
 
-    it('reports a scene it could not update and still renames the rest', async () => {
+    it('changes the main plot back when a scene cannot be updated, so ring 1 never splits', async () => {
         const frontmatter = {
-            'Book A/1 Opening.md': { Class: 'Scene', Subplot: 'Main Plot' },
+            'Book A/1 Opening.md': { Class: 'Scene', Subplot: ['Main Plot', 'Romance'] },
             'Book A/2 Broken.md': { Class: 'Scene', Subplot: 'Main Plot' },
+            'Book A/3 Close.md': { Class: 'Scene', Subplot: 'Main Plot' },
         };
         const { service, settings } = vaultWith(frontmatter, ['Book A/2 Broken.md']);
 
         const result = await service.renameSubplot('Main Plot', 'The Heist');
 
-        expect(result).toEqual({ renamed: 1, failed: ['2 Broken'] });
-        expect(settings.books[0].mainPlotName).toBe('The Heist');
-        expect(frontmatter['Book A/1 Opening.md'].Subplot).toBe('The Heist');
+        expect(result).toEqual({ renamed: 0, failed: ['2 Broken'] });
+        expect(settings.books[0].mainPlotName).toBeUndefined();
+        expect(frontmatter['Book A/1 Opening.md'].Subplot).toEqual(['Main Plot', 'Romance']);
+        expect(frontmatter['Book A/3 Close.md'].Subplot).toBe('Main Plot');
+    });
+
+    it('reports a subplot scene it could not update and still renames the rest', async () => {
+        const frontmatter = {
+            'Book A/1 Opening.md': { Class: 'Scene', Subplot: 'Romance' },
+            'Book A/2 Broken.md': { Class: 'Scene', Subplot: 'Romance' },
+        };
+        const { service } = vaultWith(frontmatter, ['Book A/2 Broken.md']);
+
+        expect(await service.renameSubplot('Romance', 'Courtship')).toEqual({ renamed: 1, failed: ['2 Broken'] });
+        expect(frontmatter['Book A/1 Opening.md'].Subplot).toBe('Courtship');
     });
 
     it("never lets the main plot take another subplot's name", () => {

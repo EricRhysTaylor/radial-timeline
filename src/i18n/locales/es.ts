@@ -4609,7 +4609,7 @@ export const es: TranslationKeys = {
             "scanVault": "Escanear bóveda",
             "scanningVault": "Escaneando esta bóveda…",
             "importAction": "Importar",
-            "folderHoldsExport": "Esta carpeta contiene una exportación de manuscrito, no notas de escena.",
+            "folderHoldsExport": "Aún no hay notas de escena aquí. Si estos archivos son una exportación de manuscrito, impórtelos.",
             "noExportsFound": "No se encontraron carpetas de libros ni exportaciones nuevas. Copie su exportación de Scrivener en esta bóveda y vuelva a escanear.",
             "noBooksTitle": "No hay libros configurados",
             "noBooksDesc": "Agregue un perfil de libro y establezca el título y la carpeta.",
@@ -5678,6 +5678,7 @@ export const es: TranslationKeys = {
             "existingBookScenes": "{{scenes}}, ya es un libro de Radial Timeline",
             "existingBookSubtitle": "Ya es un libro de Radial Timeline.",
             "existingBookNothingToImport": "Sus escenas ya están listas, así que no hay nada que importar. Añádalo como libro para verlo en la línea de tiempo.",
+            "containsRegisteredBook": "Esta carpeta contiene «{{title}}», que ya está en el Administrador de Libros. Una carpeta de libro no puede contener otro libro, así que elija una carpeta junto a ella.",
             "registeredBookSubtitle": "Ya está en el Administrador de Libros como “{{title}}”.",
             "showOnTimeline": "Mostrar en la línea de tiempo",
             "bookAddedNotice": "Se añadió “{{title}}” al Administrador de Libros.",
@@ -6904,7 +6905,9 @@ export const es: TranslationKeys = {
             "cannotDeleteMainPlot": "No se puede eliminar la trama principal.",
             "removedFromScenes": "eliminado \"{{name}}\" de {{scenes}}.",
             "renamedInScenes": "renombrado \"{{oldName}}\" a \"{{newName}}\" en {{scenes}}.",
-            "renameFailed": "No se pudo actualizar {{files}}. Su campo Subplot sigue diciendo \"{{oldName}}\"."
+            "renameFailed": "No se pudo actualizar {{files}}. Su campo Subplot sigue diciendo \"{{oldName}}\".",
+            "mainPlotRenameUndone": "La trama principal sigue siendo «{{oldName}}». Las escenas ya renombradas se restauraron, así que todas siguen en el anillo 1. Corrija los archivos anteriores y vuelva a renombrar.",
+            "renameNotUndone": "No se pudo restaurar {{files}}. Su campo Subplot dice «{{newName}}»."
         },
         "subplotMembership": {
             "addChange": "Añadir {{to}}",

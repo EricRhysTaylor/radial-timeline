@@ -65,7 +65,10 @@ export async function discoverOnboardingCandidates(app: App, registeredFolders: 
   const sceneNotes = files.filter(file => file.extension === 'md' && file.path.includes('/') && !registered(file.path)
     && isSceneClassFrontmatter(app.metadataCache.getFileCache(file)?.frontmatter));
   const bookFolders: string[] = [];
+  // A folder holding a registered book is never a book itself: it would overlap that book.
+  const holdsRegistered = (folder: string) => registeredFolders.some(book => isPathInFolderScope(book, folder));
   for (const folder of [...new Set(sceneNotes.map(file => parentOf(file.path)))].sort((a, b) => a.length - b.length)) {
+    if (holdsRegistered(folder)) continue;
     if (!bookFolders.some(book => isPathInFolderScope(folder, book))) bookFolders.push(folder);
   }
   for (const folder of bookFolders) {

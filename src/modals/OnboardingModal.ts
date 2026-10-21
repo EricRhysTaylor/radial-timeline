@@ -42,7 +42,7 @@ import {
 import { basename } from '../onboarding/paths';
 import { refreshOnboardingPrompt } from '../onboarding/promptSync';
 import { proposeScrivenerAutomap, type ScrivenerFieldTarget } from '../onboarding/adapters/scrivenerAdapter';
-import { createBookId, normalizeBookProfile } from '../utils/books';
+import { createBookId, getBookInsideFolder, normalizeBookProfile } from '../utils/books';
 import { isPathInFolderScope } from '../utils/pathScope';
 import { countSceneNotes, discoverOnboardingCandidates, type OnboardingCandidate } from '../onboarding/discovery';
 import { missingOutlineText, renderScrivenerExportHelp, renderScrivenerProblems, renderScrivenerReview, renderSourceParts, type ScrivenerReviewState } from './OnboardingScrivenerReview';
@@ -397,7 +397,7 @@ export class OnboardingModal extends Modal {
       .sort((a, b) => b.sourceFolder.length - a.sourceFolder.length)[0] ?? null; // SAFE: null when no book in Book Manager holds this folder
     const sceneCount = countSceneNotes(this.app, folder);
     if (registered || sceneCount > 0) {
-      this.showExistingBook(folder, registered, sceneCount);
+      this.showExistingBook(folder, registered, sceneCount, registered ? null : getBookInsideFolder(this.plugin.settings.books, folder));
       return;
     }
     activeSession = null;
@@ -423,7 +423,7 @@ export class OnboardingModal extends Modal {
    * A folder that is already a Radial Timeline book: add it to Book Manager as
    * it is, or show it when Book Manager already has it.
    */
-  private showExistingBook(folder: string, registered: BookProfile | null, sceneCount: number): void {
+  private showExistingBook(folder: string, registered: BookProfile | null, sceneCount: number, inside: BookProfile | null): void {
     const { contentEl } = this;
     contentEl.empty();
     const header = contentEl.createDiv({ cls: 'ert-modal-header' });
@@ -434,9 +434,18 @@ export class OnboardingModal extends Modal {
       : t('ui.onboardingModal.existingBookSubtitle') });
     const panel = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     renderSourceParts(panel, [{ label: t('ui.onboardingScrivenerReview.sourceScenes'), value: tCount('sceneNote', sceneCount) }]);
-    if (!registered) panel.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingModal.existingBookNothingToImport') });
+    if (inside) {
+      // Adding it would make a book overlapping one already in Book Manager.
+      panel.createDiv({ cls: 'ert-section-desc ert-section-desc--alert', text: t('ui.onboardingModal.containsRegisteredBook', { title: inside.title }) });
+    } else if (!registered) {
+      panel.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingModal.existingBookNothingToImport') });
+    }
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-    new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.chooseAnotherManuscript')).onClick(() => void this.showSourceSelection());
+    const another = new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.chooseAnotherManuscript')).onClick(() => void this.showSourceSelection());
+    if (inside) {
+      another.setCta();
+      return;
+    }
     new ButtonComponent(actions)
       .setButtonText(registered ? t('ui.onboardingModal.showOnTimeline') : t('ui.generalSection.addBook'))
       .setCta()

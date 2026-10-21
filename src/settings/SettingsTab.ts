@@ -128,6 +128,8 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         progressStack.empty();
         this.renderProgressStatus(progressStack, scope);
         beatsWrapper.empty();
+        // The beats panel also renders the Backdrop properties editor here.
+        this._backdropYamlTarget?.empty();
         this.renderBeatProperties(beatsWrapper, scope);
     }
 

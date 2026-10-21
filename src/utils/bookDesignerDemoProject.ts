@@ -1,3 +1,5 @@
+import { DEFAULT_MAIN_PLOT_NAME } from './mainPlot';
+
 export const NONLINEAR_DEMO_DEFAULT_START_DATE = '2085-03-30';
 export const NONLINEAR_DEMO_ACT_COUNT = 5;
 export const NONLINEAR_DEMO_SCENE_COUNT = 20;
@@ -249,7 +251,7 @@ function buildAct(sceneNumber: number): number {
     return Math.floor((sceneNumber - 1) / 4) + 1;
 }
 
-function buildInstructionNote(): { filename: string; content: string } {
+function buildInstructionNote(mainPlot: string): { filename: string; content: string } {
     return {
         filename: 'START HERE - Nonlinear Example.md',
         content: [
@@ -269,12 +271,12 @@ function buildInstructionNote(): { filename: string; content: string } {
             '',
             '## Subplot threads',
             '',
-            '- **Main Plot** — the spine of the story. Five scenes anchor here, some on Main Plot alone and some shared with another thread.',
+            `- **${mainPlot}** — the spine of the story. Five scenes anchor here, some on ${mainPlot} alone and some shared with another thread.`,
             '- **Objective** — the outer goal each character is chasing.',
             '- **Relationship** — the interpersonal stakes between characters.',
             '- **Hidden Pressure** — the undisclosed force complicating the story.',
             '',
-            'A scene can belong to more than one thread — for example, scene 10 sits on **Main Plot** and **Objective** at once.',
+            `A scene can belong to more than one thread — for example, scene 10 sits on **${mainPlot}** and **Objective** at once.`,
             '',
             '## Save The Cat beats',
             '',
@@ -283,8 +285,10 @@ function buildInstructionNote(): { filename: string; content: string } {
     };
 }
 
+/** `mainPlot` is the target book's main plot name, written where the demo anchors scenes to ring 1. */
 export function buildNonlinearDemoProjectPlan(
-    startDate = NONLINEAR_DEMO_DEFAULT_START_DATE
+    startDate = NONLINEAR_DEMO_DEFAULT_START_DATE,
+    mainPlot = DEFAULT_MAIN_PLOT_NAME
 ): NonlinearDemoProjectPlan {
     const normalizedStartDate = startDate.trim() || NONLINEAR_DEMO_DEFAULT_START_DATE;
     if (!isValidIsoDateOnly(normalizedStartDate)) {
@@ -299,7 +303,7 @@ export function buildNonlinearDemoProjectPlan(
         const subplotMeta = DEMO_SUBPLOT_LEGEND.find((entry) => entry.key === subplot) ?? DEMO_SUBPLOT_LEGEND[0];
 
         const subplots = DEMO_SCENE_SUBPLOT_OVERRIDES[index]
-            ? [...DEMO_SCENE_SUBPLOT_OVERRIDES[index]]
+            ? DEMO_SCENE_SUBPLOT_OVERRIDES[index].map(name => name === DEFAULT_MAIN_PLOT_NAME ? mainPlot : name)
             : [subplotMeta.label];
 
         return {
@@ -325,7 +329,7 @@ export function buildNonlinearDemoProjectPlan(
         cast: [...DEMO_CAST],
         subplotLegend: DEMO_SUBPLOT_LEGEND.map((entry) => ({ ...entry })),
         scenes,
-        instructionNote: buildInstructionNote(),
+        instructionNote: buildInstructionNote(mainPlot),
         builtinBeatSystemName: 'Save The Cat',
         builtinBeatAnchors: [
             'Opening Image',

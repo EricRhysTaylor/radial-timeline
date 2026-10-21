@@ -274,7 +274,8 @@ export class TimelineMetricsService {
     }
 
     private classifyStaleness(lastProgressDate: Date | null, today: Date): CompletionEstimate['staleness'] {
-        if (!lastProgressDate) return 'stalled';
+        // No dated completion yet (a new project): nothing has stalled.
+        if (!lastProgressDate) return 'fresh';
         const msInDay = 24 * 60 * 60 * 1000;
         const daysSince = Math.floor((today.getTime() - lastProgressDate.getTime()) / msInDay);
         if (daysSince <= 7) return 'fresh';

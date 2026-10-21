@@ -608,15 +608,15 @@ export function renderGeneralSection(params: {
 
             const inputEl = text.inputEl;
             folderInputs.set(book.id, inputEl);
-            // A folder holding a Scrivener or Word export, not scene notes, is
-            // a manuscript to import, not a book folder.
+            // A sceneless folder holding .txt or .docx files may be an export:
+            // the hint offers the import.
             const exportHint = row.settingEl.createDiv({ cls: 'ert-book-card__hint' });
             const showExportHint = (folder: string) => {
                 exportHint.empty();
                 exportHint.createSpan({ cls: 'ert-section-desc ert-section-desc--alert', text: t('ui.generalSection.folderHoldsExport') });
                 new ButtonComponent(exportHint).setButtonText(t('ui.generalSection.importAction')).onClick(() => openImport(folder, () => {
-                    // The import made the book this card was waiting for.
-                    if (book.sourceFolder.trim()) return;
+                    // The import made the book this card was waiting for (beside the export).
+                    if (book.sourceFolder.trim() && countSceneNotes(app, book.sourceFolder) > 0) return;
                     plugin.settings.books = (plugin.settings.books ?? []).filter(candidate => candidate.id !== book.id); // SAFE: the list holds at least the imported book
                     void plugin.persistBookSettings();
                 }));
@@ -637,16 +637,16 @@ export function renderGeneralSection(params: {
                 if (raw) {
                     const isValid = await plugin.validateAndRememberPath(normalizedValue);
                     const sceneCount = isValid ? countSceneNotes(app, normalizedValue) : 0;
-                    if (isValid && sceneCount === 0 && holdsManuscriptExport(app, normalizedValue)) {
-                        inputEl.addClass('ert-setting-input-error');
-                        showExportHint(normalizedValue);
-                    } else if (isValid) {
+                    if (isValid) {
                         const firstFolder = !book.sourceFolder.trim();
                         book.sourceFolder = normalizedValue;
                         await plugin.persistBookSettings();
                         // A new book shows on the timeline once its folder holds scenes.
                         if (firstFolder && sceneCount > 0) await plugin.setActiveBookId(book.id);
                         updateAddBtnPulse();
+                        // A loose .txt or .docx may be research or an export: the folder is
+                        // kept, and the hint offers the import for the author to decide.
+                        if (sceneCount === 0 && holdsManuscriptExport(app, normalizedValue)) showExportHint(normalizedValue);
                         inputEl.addClass('ert-setting-input-success');
                         window.setTimeout(() => { inputEl.removeClass('ert-setting-input-success'); renderBooksManager(); }, 1000);
                     } else {

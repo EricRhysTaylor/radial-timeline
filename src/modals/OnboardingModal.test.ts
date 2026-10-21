@@ -99,7 +99,7 @@ describe('onboarding AI opt-in', () => {
     harness.showPreflight = vi.fn(async () => undefined);
     harness.showExistingBook = vi.fn();
     await harness.selectSourceFolder('Saga/Book 4');
-    expect(harness.showExistingBook).toHaveBeenCalledWith('Saga/Book 4', null, 2);
+    expect(harness.showExistingBook).toHaveBeenCalledWith('Saga/Book 4', null, 2, null);
     expect(harness.showPreflight).not.toHaveBeenCalled();
   });
   it('shows a folder Book Manager already has instead of importing it', async () => {
@@ -108,8 +108,16 @@ describe('onboarding AI opt-in', () => {
     harness.showPreflight = vi.fn(async () => undefined);
     harness.showExistingBook = vi.fn();
     await harness.selectSourceFolder('Saga/Book 1/Exports');
-    expect(harness.showExistingBook).toHaveBeenCalledWith('Saga/Book 1/Exports', registered, 0);
+    expect(harness.showExistingBook).toHaveBeenCalledWith('Saga/Book 1/Exports', registered, 0, null);
     expect(harness.showPreflight).not.toHaveBeenCalled();
+  });
+  it('names the registered book inside a chosen parent folder, so it is never added as an overlapping book', async () => {
+    const registered = { id: 'b1', title: 'Book One', sourceFolder: 'Saga/Book 1' };
+    const harness = modal(vault(['Saga/Book 1/01 Opening.md', 'Saga/Intro.md']), { books: [registered] });
+    harness.showPreflight = vi.fn(async () => undefined);
+    harness.showExistingBook = vi.fn();
+    await harness.selectSourceFolder('Saga');
+    expect(harness.showExistingBook).toHaveBeenCalledWith('Saga', null, 2, registered);
   });
   it('checks providers only after explicit opt-in and stops when structure-only is selected', async () => {
     const harness = modal();

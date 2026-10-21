@@ -11,6 +11,8 @@ describe('AI-generated Synopsis scheduling boundary', () => {
         'Friday. Shail repairs Char.',
         'Shail repairs Char on tuesday.',
         'Fri. Shail repairs Char.',
+        'Sat. 14 March. Shail repairs Char.',
+        'Sun., 7:40, Shail repairs Char.',
         'March 31, 2085. Shail repairs Char.',
         '31st of March. Shail repairs Char.',
         'April 1st. Shail repairs Char.',
@@ -48,6 +50,11 @@ describe('AI-generated Synopsis scheduling boundary', () => {
         'Shail climbs 2085 feet and finds shelter.',
         'After repairing Char, Trisan faces the consequences.',
         'Shail races to save Char before the deadline.',
+        'Marco sat. Nobody spoke.',
+        'She watches the sun. Then she leaves.',
+        'They will wed. The town gathers.',
+        'Under the Sun. Shail keeps walking.',
+        'He gave a mon. salute.',
     ])('keeps plot details and non-calendar numbers: %s', synopsis => {
         expect(parseSynopsisReply(JSON.stringify({ synopsis }), 30)).toEqual({ ok: true, text: synopsis });
         const result = parseSceneExtraction(JSON.stringify({ synopsis, when: '2085-03-31', duration: '75 minutes' }));

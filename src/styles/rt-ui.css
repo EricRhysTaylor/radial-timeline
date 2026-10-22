@@ -3277,7 +3277,7 @@
 }
 
 .ert-ui.ert-scope--settings .ert-ai-quick-grid {
-  grid-template-columns: repeat(3, minmax(190px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--ert-gap-sm) var(--ert-gap-md);
 }
 
@@ -3290,8 +3290,8 @@
 
 .ert-ui.ert-scope--settings :is(.ert-ai-quick-grid, .ert-ai-step3-grid, .ert-ai-step-card) .setting-item.ert-ai-strategy-row.ert-ai-grid-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: calc(var(--ert-gap-xs) / 2) var(--ert-gap-sm);
   align-items: start;
   align-content: start;
@@ -3304,7 +3304,7 @@
   overflow: visible;
 }
 
-/* Provider / Model / Access dropdowns all use canonical --ert-input-width-md */
+/* Stack each label, dropdown, and description so three cards fit the settings pane. */
 
 .ert-ui.ert-scope--settings :is(.ert-ai-quick-grid, .ert-ai-step3-grid, .ert-ai-step-card) .setting-item.ert-ai-strategy-row > .setting-item-info {
   grid-column: 1 / 2;
@@ -3329,25 +3329,21 @@
   text-overflow: clip;
 }
 
-.ert-ui.ert-scope--settings :is(.ert-ai-quick-grid, .ert-ai-step3-grid, .ert-ai-step-card) .setting-item.ert-ai-strategy-row > .setting-item-control {
-  grid-column: 2 / 3;
-  justify-self: end;
+.ert-ui.ert-scope--settings :is(.ert-ai-quick-grid, .ert-ai-step3-grid, .ert-ai-step-card) .setting-item.ert-ai-strategy-row.ert-ai-grid-item > .setting-item-control {
+  grid-column: 1 / -1;
+  justify-self: stretch;
   align-self: start;
   margin: 0;
   padding: 0;
   min-width: 0;
 }
 
-.ert-ui.ert-scope--settings :is(.ert-ai-quick-grid, .ert-ai-step3-grid, .ert-ai-step-card) .setting-item.ert-ai-strategy-row {
-  --ert-ai-strategy-select-width: 14ch;
-}
-
 .ert-ui.ert-scope--settings :is(.ert-ai-quick-grid, .ert-ai-step3-grid, .ert-ai-step-card) .setting-item.ert-ai-strategy-row > .setting-item-control :is(select, .dropdown).ert-ai-strategy-select {
-  width: var(--ert-ai-strategy-select-width);
-  min-width: var(--ert-ai-strategy-select-width);
-  max-width: var(--ert-ai-strategy-select-width);
-  flex: 0 0 var(--ert-ai-strategy-select-width);
-  --ert-control-width: var(--ert-ai-strategy-select-width);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto;
+  --ert-control-width: 100%;
   font-family: var(--font-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
   white-space: nowrap;
   overflow: hidden;
@@ -4258,19 +4254,8 @@
 @container ert-settings (max-width: 760px) {
   .ert-ui.ert-scope--settings .ert-ai-steps-row,
   .ert-ui.ert-scope--settings .ert-ai-step3-grid,
-  .ert-ui.ert-scope--settings .ert-ai-quick-grid,
   .ert-ui.ert-scope--settings .ert-ai-feature-grid {
     grid-template-columns: 1fr;
-  }
-
-  .ert-ui.ert-scope--settings :is(.ert-ai-quick-grid, .ert-ai-step3-grid, .ert-ai-step-card) .setting-item.ert-ai-strategy-row.ert-ai-grid-item {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: var(--ert-gap-xs);
-  }
-
-  .ert-ui.ert-scope--settings :is(.ert-ai-quick-grid, .ert-ai-step3-grid, .ert-ai-step-card) .setting-item.ert-ai-strategy-row > .setting-item-control {
-    grid-column: 1 / -1;
-    justify-self: stretch;
   }
 
   .ert-ui.ert-scope--settings .ert-ai-capacity-grid {
@@ -4279,6 +4264,12 @@
 
   .ert-ui.ert-scope--settings .ert-ai-status-row {
     grid-template-columns: 1fr auto;
+  }
+}
+
+@container ert-settings (max-width: 600px) {
+  .ert-ui.ert-scope--settings .ert-ai-quick-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

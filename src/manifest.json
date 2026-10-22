@@ -1,7 +1,7 @@
 {
 	"id": "radial-timeline",
 	"name": "Radial timeline",
-	"version": "7.6.2",
+	"version": "7.6.3",
 	"minAppVersion": "1.13.0",
 	"description": "Lay out your manuscript as an interactive radial timeline, then see every scene by act, subplot, and narrative or chronological order.",
 	"author": "Eric Rhys Taylor",

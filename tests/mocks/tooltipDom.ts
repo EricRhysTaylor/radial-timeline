@@ -9,7 +9,9 @@ export class TooltipElement extends EventTarget {
     attributes = new Map<string, string>();
     ownerDocument = {
         createElement: () => new TooltipElement(),
-        createElementNS: (ns: string) => { const e = new TooltipElement(); e.namespaceURI = ns; return e; }
+        createElementNS: (ns: string) => { const e = new TooltipElement(); e.namespaceURI = ns; return e; },
+        // Obsidian installs createSpan on each window; production code reaches it through ownerDocument.win.
+        win: { createSpan: () => new TooltipElement() }
     };
     get childNodes() { return this.children; }
     setAttribute(name: string, value: string) { this.attributes.set(name, value); }

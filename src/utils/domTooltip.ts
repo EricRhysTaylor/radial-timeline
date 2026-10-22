@@ -13,7 +13,7 @@ export function setAccessibleLabel<T extends Element>(element: T, text: string):
         label?.remove();
         label = svg
             ? element.ownerDocument.createElementNS(SVG_NS, 'desc')
-            : element.ownerDocument.createElement('span');
+            : element.ownerDocument.win.createSpan();
         label.id = `ert-label-${crypto.randomUUID()}`;
         if (!svg) label.setAttribute('hidden', '');
         parent.appendChild(label);

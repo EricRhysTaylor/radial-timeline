@@ -5,15 +5,16 @@
       "title": "7.6.3",
       "body": "## Radial Timeline 7.6.3\n\nA bug-fix release.\n\n### Fixes\n\n- **Export presets stay with their book.** Saving a new export preset no longer changes other books' default preset, and deleting one no longer leaves them pointing at a preset that's gone.\n- **A failed main-plot rename can't split ring 1.** If any scene can't be updated, the renamed scenes change back and the main plot keeps its old name. Edits you made in the meantime are kept.\n- **Book folders can't overlap.** Adding a book or changing its folder refuses a folder that holds, sits inside, or matches another book's folder.\n- **One placement at a time in Chronologue.** Clicking inside the **Place scene in time** dialog, such as entering a date or pressing **Cancel**, no longer starts a second placement.\n- **Synopses pass their check.** Ordinary words such as \"sat.\" or \"sun.\" no longer reject a refreshed or imported synopsis, and generated summaries leave out scheduling details.\n- **Clearer help text.** Hover help no longer appears twice on one control, and reads clearly in light themes. Spanish, French, Thai, and Vietnamese settings tabs and recovery messages read correctly.",
       "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.6.3",
-      "publishedAt": "2026-10-22T18:49:17.482Z"
+      "publishedAt": "2026-10-22T18:51:41.833Z",
+      "isDraft": true
     },
     {
       "version": "7.6.2",
       "title": "7.6.2",
       "body": "## Fixes and improvements\n\n- Styled underlines use compatible CSS while retaining dashed and dotted cues, wrapping, and hover colors.\n- Book Details, Book Pages, and briefing links keep their text, click targets, and keyboard access.\n- The full-changelog button opens the permanent release page.",
       "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.6.2",
-      "publishedAt": "2026-10-19T15:46:51.376Z",
-      "isDraft": true
+      "publishedAt": "2026-10-19T15:57:29Z",
+      "isDraft": false
     },
     {
       "version": "7.6.1",
@@ -142,23 +143,17 @@
     "title": "7.6.3",
     "body": "## Radial Timeline 7.6.3\n\nA bug-fix release.\n\n### Fixes\n\n- **Export presets stay with their book.** Saving a new export preset no longer changes other books' default preset, and deleting one no longer leaves them pointing at a preset that's gone.\n- **A failed main-plot rename can't split ring 1.** If any scene can't be updated, the renamed scenes change back and the main plot keeps its old name. Edits you made in the meantime are kept.\n- **Book folders can't overlap.** Adding a book or changing its folder refuses a folder that holds, sits inside, or matches another book's folder.\n- **One placement at a time in Chronologue.** Clicking inside the **Place scene in time** dialog, such as entering a date or pressing **Cancel**, no longer starts a second placement.\n- **Synopses pass their check.** Ordinary words such as \"sat.\" or \"sun.\" no longer reject a refreshed or imported synopsis, and generated summaries leave out scheduling details.\n- **Clearer help text.** Hover help no longer appears twice on one control, and reads clearly in light themes. Spanish, French, Thai, and Vietnamese settings tabs and recovery messages read correctly.",
     "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.6.3",
-    "publishedAt": "2026-10-22T18:49:17.482Z"
+    "publishedAt": "2026-10-22T18:51:41.833Z",
+    "isDraft": true
   },
   "patches": [
-    {
-      "version": "7.6.3",
-      "title": "7.6.3",
-      "body": "## Radial Timeline 7.6.3\n\nA bug-fix release.\n\n### Fixes\n\n- **Export presets stay with their book.** Saving a new export preset no longer changes other books' default preset, and deleting one no longer leaves them pointing at a preset that's gone.\n- **A failed main-plot rename can't split ring 1.** If any scene can't be updated, the renamed scenes change back and the main plot keeps its old name. Edits you made in the meantime are kept.\n- **Book folders can't overlap.** Adding a book or changing its folder refuses a folder that holds, sits inside, or matches another book's folder.\n- **One placement at a time in Chronologue.** Clicking inside the **Place scene in time** dialog, such as entering a date or pressing **Cancel**, no longer starts a second placement.\n- **Synopses pass their check.** Ordinary words such as \"sat.\" or \"sun.\" no longer reject a refreshed or imported synopsis, and generated summaries leave out scheduling details.\n- **Clearer help text.** Hover help no longer appears twice on one control, and reads clearly in light themes. Spanish, French, Thai, and Vietnamese settings tabs and recovery messages read correctly.",
-      "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.6.3",
-      "publishedAt": "2026-10-22T18:49:17.482Z"
-    },
     {
       "version": "7.6.2",
       "title": "7.6.2",
       "body": "## Fixes and improvements\n\n- Styled underlines use compatible CSS while retaining dashed and dotted cues, wrapping, and hover colors.\n- Book Details, Book Pages, and briefing links keep their text, click targets, and keyboard access.\n- The full-changelog button opens the permanent release page.",
       "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/7.6.2",
-      "publishedAt": "2026-10-19T15:46:51.376Z",
-      "isDraft": true
+      "publishedAt": "2026-10-19T15:57:29Z",
+      "isDraft": false
     },
     {
       "version": "7.6.1",

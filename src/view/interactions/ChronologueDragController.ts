@@ -44,7 +44,7 @@ import {
 } from './dragGeometry';
 
 export interface ChronologueDragViewAdapter {
-    chronologueState: { shift: boolean; alien: boolean; runtime: boolean };
+    chronologueState: { shift: boolean; alien: boolean };
     plugin: RadialTimelinePlugin;
     sceneData: TimelineItem[];
     renderScope: {
@@ -118,7 +118,7 @@ export class ChronologueDragController {
             this.view.renderScope.registerDomEvent(scenePath as unknown as HTMLElement, 'pointerdown', (evt: PointerEvent) => this.startDrag(evt, group));
         });
 
-        // Shift / Alien / Runtime hide the indicator in CSS (svg[data-shift-mode]),
+        // Shift / Alien hide the indicator in CSS (svg[data-shift-mode]),
         // so it vanishes the moment a sub-mode starts and returns when it ends.
         this.view.renderScope.registerDomEvent(this.svg as unknown as HTMLElement, 'pointerover', (evt: PointerEvent) => {
             if (this.dragging) return;
@@ -136,11 +136,11 @@ export class ChronologueDragController {
     }
 
     /**
-     * Shift / Alien / Runtime own the pointer and rewrite the date labels while
+     * Shift / Alien own the pointer and rewrite the date labels while
      * active. A drag underneath them would be incoherent, so it is suppressed.
      */
     private subModeActive(): boolean {
-        return this.view.chronologueState.shift || this.view.chronologueState.alien || this.view.chronologueState.runtime;
+        return this.view.chronologueState.shift || this.view.chronologueState.alien;
     }
 
     // ── gesture ────────────────────────────────────────────────────────────

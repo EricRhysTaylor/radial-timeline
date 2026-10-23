@@ -52,8 +52,8 @@
   /* Sequence alignment: empty cells are most of a subplot ring, so they step
      back from the scenes — a shade, not a different colour */
 
-  /* Chronologue sub-mode overlay hues — the same colours the in-view Runtime
-     and Alt (planetary/alien) overlays and keycaps already use, promoted from
+  /* Sub-mode overlay hues — the same colours the in-view Runtime (Narrative)
+     and Alt (Chronologue planetary/alien) overlays and keycaps already use, promoted from
      scattered raw rgba() literals to tokens (single source). Base colour at
      full opacity; callers apply transparency via color-mix as needed. */
   --rt-color-runtime: rgb(60, 140, 220);

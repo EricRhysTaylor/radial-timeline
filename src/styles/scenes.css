@@ -631,7 +631,7 @@
 .radial-timeline-svg[data-gossamer-mode="true"] .rt-subplot-dominance-flag,
 .radial-timeline-svg[data-shift-mode="active"] .rt-subplot-dominance-flag,
 .radial-timeline-svg[data-shift-mode="alien"] .rt-subplot-dominance-flag,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-subplot-dominance-flag,
+.radial-timeline-svg[data-runtime-view="true"] .rt-subplot-dominance-flag,
 .radial-timeline-svg.scene-hover .rt-subplot-dominance-flag {
   display: none;
 }

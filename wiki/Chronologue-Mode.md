@@ -41,7 +41,7 @@ In the regular Chronologue view, drag a scene on the **outer All Scenes ring** a
 
 If undated scenes follow the scene you are moving, the panel names them. Leave **Keep it where it is** / **Keep them where they are** off to let them travel with the moved scene while their `When` fields stay blank. Turn it on to leave them in place: this writes each follower a `When` date at its current displayed time. Review those dates before placing the scene.
 
-Date dragging is available in the regular view, not the Shift, planetary, or Runtime overlays. To change subplot membership, drag from a subplot ring instead; see [Move scenes between subplots](How-to#move-scenes-between-subplots).
+Date dragging works in the regular view; the Shift and planetary overlays use clicks to compare scenes. To change subplot membership, drag from a subplot ring instead; see [Move scenes between subplots](How-to#move-scenes-between-subplots).
 
 ### Why this matters
 Chronologue orders scenes by story time to help you find:
@@ -51,8 +51,10 @@ Chronologue orders scenes by story time to help you find:
 *   Missing transition scenes
 
 **Mode**: Chronologue (key `3`)
-**Sub-modes**: Shift (key `Shift`), Alt (key `Alt`), Runtime ✦ (click `RT`)
-**Settings**: Discontinuity gap threshold, Runtime estimation
+**Sub-modes**: Shift (key `Shift`), Alt (key `Alt`)
+**Settings**: Discontinuity gap threshold
+
+Runtime lives in [Narrative Mode](Narrative-Mode#runtime-view), where it follows the order the book presents its scenes.
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/feature-discontinuity.png" alt="Discontinuity infinity symbols in Chronologue Mode" style="width: 380; max-width: 100%;" />
@@ -74,7 +76,7 @@ The **alignment chip** at the left of the mode row switches subplot rings betwee
 
 ## Sub-modes
 
-Chronologue mode includes three sub-modes, each rendering a distinct wireframe overlay.
+Chronologue mode includes two sub-modes, each rendering a distinct wireframe overlay.
 
 <a name="shift-sub-mode"></a>
 ### Shift sub-mode (x-ray view)
@@ -86,36 +88,6 @@ Chronologue mode includes three sub-modes, each rendering a distinct wireframe o
   <img src="images/mode-chronologue-shift.png" alt="Shift sub-mode wireframe in Chronologue" style="width: 420; max-width: 100%;" />
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Shift sub-mode — gray wireframe view</div>
 </div>
-
-<a name="runtime-sub-mode"></a>
-<a name="runtime-mode-pro"></a>
-### Runtime sub-mode ✦ Pro
-
-The Runtime sub-mode replaces elapsed story time with **runtime duration arcs** — showing how long each scene takes to read or perform rather than how much story time passes.
-
-- Toggle with the `RT` button in Chronologue mode (requires Runtime Estimation to be enabled in Settings → Core)
-- Blue wireframe overlay distinguishes it from Shift (gray) and Alt (red)
-- Duration arcs scale automatically to show relative scene runtime — longer scenes have larger arcs
-- Click scenes to compare their runtime visually
-
-**Use cases:**
-- **Screenplay pacing** — Verify act timing and scene balance for screen time
-- **Audiobook planning** — Estimate chapter and scene durations for narration
-- **Podcast structure** — Plan episode segments with time awareness
-
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/mode-chronologue-runtime.png" alt="Chronologue Runtime sub-mode with blue wireframe duration arcs" style="width: 420px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Runtime sub-mode — blue wireframe with scene duration arcs</div>
-</div>
-
-**How to use:**
-1. Enable Runtime Estimation in **Settings → Core**
-2. Configure a runtime profile matching your content type (Novel or Screenplay)
-3. Switch to Chronologue mode (`3`)
-4. Click the `RT` button to enter the Runtime sub-mode
-
-> [!NOTE]
-> Runtime estimates appear in scene hover tooltips when Runtime Estimation is enabled. See [Settings → Runtime estimation](Settings-Core#runtime-estimation) for configuration and [Pro](Pro) for full Pro documentation.
 
 ---
 

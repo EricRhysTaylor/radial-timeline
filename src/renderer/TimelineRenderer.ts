@@ -33,15 +33,13 @@ import { computeCacheableValues } from './utils/Precompute';
 import {
     SVG_SIZE,
     INNER_RADIUS,
-    SUBPLOT_OUTER_RADIUS_MAINPLOT,
-    SUBPLOT_OUTER_RADIUS_STANDARD,
-    SUBPLOT_OUTER_RADIUS_CHRONOLOGUE,
     MONTH_LABEL_RADIUS,
     CHRONOLOGUE_DATE_RADIUS,
     MONTH_TICK_END,
     MONTH_TICK_START,
     ACT_LABEL_RADIUS,
     CHRONOLOGUE_DURATION_ARC_RADIUS,
+    NARRATIVE_RUNTIME_ARC_RADIUS,
     MICRO_RING_GAP,
     MICRO_RING_WIDTH,
     PROGRESS_RING_RADIUS_OFFSET,
@@ -61,7 +59,9 @@ import { renderTargetDateTick, type TargetTickEnhancedData } from './components/
 import { renderProgressRing, resolveProgressEstimate, resolveProgressRingDate } from './components/ProgressRing';
 import { serializeSynopsesToString } from './components/Synopses';
 import { renderCalendarSpokesLayer } from './utils/MonthSpokes';
-import { shouldShowSubplotRings, shouldShowAllScenesInOuterRing, usesSequenceAlignment } from './modules/ModeRenderingHelpers';
+import { resolveSubplotOuterRadius, shouldShowSubplotRings, shouldShowAllScenesInOuterRing, usesSequenceAlignment } from './modules/ModeRenderingHelpers';
+import { collectNarrativeRuntimeEntries } from './utils/NarrativeRuntime';
+import { renderNarrativeRuntimeOverlay } from './components/NarrativeRuntimeOverlay';
 import { collectChronologueSceneEntries, type ChronologueSceneEntry } from './components/ChronologueTimeline';
 import { appendSynopsisElementForScene } from './utils/SynopsisBuilder';
 import { renderGossamerOverlay, type StageColorMap } from './utils/Gossamer';
@@ -261,8 +261,12 @@ export function createTimelineSVG(
 
     // Synopses are hidden by CSS until hover - no need to log anything
 
+    // The runtime view belongs to Narrative mode: runtime follows the order the
+    // book presents its scenes.
+    const isNarrativeRuntime = (settings.currentMode || 'narrative') === 'narrative' && options?.runtimeModeActive === true;
+
     const stopPrepPerf = startPerfSegment(plugin, 'timeline.scene-prep');
-    const precomputed = computeCacheableValues(plugin, scenes);
+    const precomputed = computeCacheableValues(plugin, scenes, { runtimeView: isNarrativeRuntime });
     stopPrepPerf();
 
     // Extract precomputed values
@@ -305,18 +309,18 @@ export function createTimelineSVG(
     const actLabels = timelineSegments.map(segment => segment.label);
     const segmentKind = timelineSegments[0]?.kind ?? 'act';
     const isChronologueMode = currentMode === 'chronologue';
-    const isProgressMode = currentMode === 'progress';
     const isSagaScope = getTimelineScope(settings) === 'saga';
     const sortByWhen = usesWhenOrdering(settings);
     const forceChronological = isChronologueMode;
-    const showChapterMarkers = isNarrativeMode && !sortByWhen && (settings.showChapterMarkers ?? false);
+    // Chapter badges sit on the perimeter the runtime view uses for its running totals.
+    const showChapterMarkers = isNarrativeMode && !isNarrativeRuntime && !sortByWhen && (settings.showChapterMarkers ?? false);
     const chronologueSceneEntries: ChronologueSceneEntry[] | undefined = isChronologueMode
         ? collectChronologueSceneEntries(scenes)
         : undefined;
 
     // Create SVG root and expose the dominant publish-stage colour for CSS via a hidden <g> element
     let svg = `<svg width="${size}" height="${size}" viewBox="-${size / 2} -${size / 2} ${size} ${size}" 
-                       xmlns="http://www.w3.org/2000/svg" class="radial-timeline-svg ${readabilityClass}" data-font-scale="${readabilityScale}" data-num-acts="${numActs}" data-segment-count="${numActs}" data-segment-kind="${segmentKind}" data-subplot-alignment="${usesSequenceAlignment(plugin) ? 'sequence' : 'fill'}" data-line-inner-radius="${lineInnerRadius}"
+                       xmlns="http://www.w3.org/2000/svg" class="radial-timeline-svg ${readabilityClass}" data-font-scale="${readabilityScale}" data-num-acts="${numActs}" data-segment-count="${numActs}" data-segment-kind="${segmentKind}" data-subplot-alignment="${usesSequenceAlignment(plugin) ? 'sequence' : 'fill'}" data-line-inner-radius="${lineInnerRadius}"${isNarrativeRuntime ? ' data-runtime-view="true"' : ''}
                        preserveAspectRatio="xMidYMid meet">`;
 
 
@@ -330,11 +334,7 @@ export function createTimelineSVG(
     const sceneNumbersMap = new Map<string, SceneNumberInfo>();
 
     // Use appropriate subplot outer radius based on mode and readability scale
-    const subplotOuterRadius = isChronologueMode
-        ? SUBPLOT_OUTER_RADIUS_CHRONOLOGUE
-        : isProgressMode
-            ? SUBPLOT_OUTER_RADIUS_MAINPLOT
-            : SUBPLOT_OUTER_RADIUS_STANDARD[readabilityScale];
+    const subplotOuterRadius = resolveSubplotOuterRadius(currentMode, readabilityScale, isNarrativeRuntime);
 
     const standardMonths = Array.from({ length: 12 }, (_, i) => {
         const angle = (i / 12) * 2 * Math.PI - Math.PI / 2;
@@ -344,7 +344,7 @@ export function createTimelineSVG(
     });
     const months = standardMonths;
 
-    let outerLabels: { name: string; shortName: string; angle: number; isMajor?: boolean; isFirst?: boolean; isLast?: boolean; sceneIndex?: number }[];
+    let outerLabels: { name: string; shortName: string; angle: number; isMajor?: boolean; isFirst?: boolean; isLast?: boolean }[];
     if (isChronologueMode) {
         outerLabels = buildChronologueOuterLabels(plugin, scenes, ringStartRadii[NUM_RINGS - 1], ringStartRadii[NUM_RINGS - 1] + ringWidths[NUM_RINGS - 1]);
     } else {
@@ -560,12 +560,10 @@ export function createTimelineSVG(
     // Initialize beat angles map for Gossamer (clear any stale data from previous render)
     plugin._beatAngles = new Map();
 
-    // Store manuscript-order scene positions for Level 4 duration arcs (keyed by scene path or title)
-    // Initialize map if in Chronologue mode so RingRenderer can populate it
     // Where each scene sits on the all-scenes outer ring, keyed canonically.
-    // Chronologue's duration and backbone arcs draw from it; RingRenderer fills
-    // it from the sequence it already built.
-    const outerRingPositionByKey: Map<string, PositionInfo> | undefined = isChronologueMode ? new Map() : undefined;
+    // Chronologue's duration and backbone arcs and the Narrative runtime view
+    // draw from it; RingRenderer fills it from the sequence it already built.
+    const outerRingPositionByKey: Map<string, PositionInfo> | undefined = (isChronologueMode || isNarrativeRuntime) ? new Map() : undefined;
 
     // Determine how many acts to render based on sorting method
     // When date sorting: Use full 360° circle (only "act 0")
@@ -720,6 +718,17 @@ export function createTimelineSVG(
         });
     }
 
+    // Narrative runtime view: drawn inside the rotatable layer so it turns with the scenes.
+    if (isNarrativeRuntime && outerRingPositionByKey) {
+        svg += renderNarrativeRuntimeOverlay({
+            entries: collectNarrativeRuntimeEntries(scenes, outerRingPositionByKey),
+            arcRadius: NARRATIVE_RUNTIME_ARC_RADIUS,
+            labelRadius: MONTH_LABEL_RADIUS,
+            tickStart: monthTickStart,
+            tickEnd: monthTickEnd
+        });
+    }
+
     // Close rotatable container
     svg += `</g>`;
 
@@ -753,7 +762,6 @@ export function createTimelineSVG(
             durationArcRadius: CHRONOLOGUE_DURATION_ARC_RADIUS,
             synopsesElements,
             maxTextWidth,
-            useRuntimeMode: options?.runtimeModeActive ?? false,
             microRingLayout,
             microRingBaseRadius,
             backdropLayout

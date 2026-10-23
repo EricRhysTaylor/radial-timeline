@@ -1,4 +1,5 @@
 import { CHRONOLOGUE_MODE } from '../modes/definitions/ChronologueMode';
+import { NARRATIVE_MODE } from '../modes/definitions/AllScenesMode';
 import { describe, expect, it, vi } from 'vitest';
 import { Component } from 'obsidian';
 import { RadialTimelineView } from './TimeLineView';
@@ -28,11 +29,34 @@ describe('RadialTimelineView render scope', () => {
     it('keeps Chronologue modes isolated across views and stable across rerenders', () => {
         const first = makeView();
         const second = makeView();
-        first.chronologueState.runtime = true;
+        first.chronologueState.shift = true;
         second.chronologueState.alien = true;
         resetRenderScope(first);
-        expect(first.chronologueState).toEqual({ shift: false, alien: false, runtime: true });
-        expect(second.chronologueState).toEqual({ shift: false, alien: true, runtime: false });
+        expect(first.chronologueState).toEqual({ shift: true, alien: false });
+        expect(second.chronologueState).toEqual({ shift: false, alien: true });
+        first.unload();
+        second.unload();
+    });
+
+    it('keeps the Narrative runtime view per view and stable across rerenders', () => {
+        const first = makeView();
+        const second = makeView();
+        first.narrativeState.runtime = true;
+        resetRenderScope(first);
+        expect(first.narrativeState).toEqual({ runtime: true });
+        expect(second.narrativeState).toEqual({ runtime: false });
+        first.unload();
+        second.unload();
+    });
+
+    it('exiting Narrative turns off only the departing view\'s runtime view', async () => {
+        const first = makeView();
+        const second = makeView();
+        first.narrativeState.runtime = true;
+        second.narrativeState.runtime = true;
+        await NARRATIVE_MODE.onExit?.(first);
+        expect(first.narrativeState.runtime).toBe(false);
+        expect(second.narrativeState.runtime).toBe(true);
         first.unload();
         second.unload();
     });
@@ -40,7 +64,7 @@ describe('RadialTimelineView render scope', () => {
     it('exiting Chronologue resets only the departing view', async () => {
         const first = makeView();
         const second = makeView();
-        first.chronologueState.runtime = true;
+        first.chronologueState.alien = true;
         second.chronologueState.shift = true;
         first._chronologueShiftCleanup = vi.fn();
         const cleanup = first._chronologueShiftCleanup;
@@ -49,7 +73,7 @@ describe('RadialTimelineView render scope', () => {
         await CHRONOLOGUE_MODE.onExit?.(first);
         expect(cleanup).toHaveBeenCalledOnce();
         expect(first._chronologueShiftCleanup).toBeUndefined();
-        expect(first.chronologueState).toEqual({ shift: false, alien: false, runtime: false });
+        expect(first.chronologueState).toEqual({ shift: false, alien: false });
         expect(second.chronologueState.shift).toBe(true);
         first.unload();
         second.unload();

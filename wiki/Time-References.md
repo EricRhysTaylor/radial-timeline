@@ -38,7 +38,7 @@ References describe passages within their source scene. They do not create new s
 
 ## Read the timeline
 
-Time-reference marks appear **only in normal Chronologue**, on the outer **All Scenes** ring. They disappear in Shift, Alien Calendar / Planetary Time, and Runtime, and in other timeline modes. Question icons also hide in these Chronologue sub-modes. A source that belongs to several subplots still has only one set of reference marks.
+Time-reference marks appear **only in normal Chronologue**, on the outer **All Scenes** ring. They disappear in Shift and Alien Calendar / Planetary Time, and in other timeline modes. Question icons also hide in these Chronologue sub-modes. A source that belongs to several subplots still has only one set of reference marks.
 
 ![A selected time reference connects its larger source square to a smaller date square on the outer ring](images/time-references-timeline.png)
 

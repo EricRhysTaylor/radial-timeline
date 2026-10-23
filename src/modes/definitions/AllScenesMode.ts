@@ -5,6 +5,7 @@
  */
 
 import { ModeDefinition, TimelineMode } from '../ModeDefinition';
+import type { RadialTimelineView } from '../../view/TimeLineView';
 
 /**
  * Narrative Mode Definition
@@ -40,5 +41,14 @@ export const NARRATIVE_MODE: ModeDefinition = {
         tooltip: 'Switch to Narrative mode',
         showInToggleButton: true,
         order: 2
+    },
+
+    /**
+     * Exit lifecycle hook - the runtime view belongs to Narrative, so leaving
+     * the mode turns it off for this view only.
+     */
+    onExit: (view: RadialTimelineView) => {
+        view.narrativeState.runtime = false;
+        view.narrativeSubNav = undefined;
     }
 };

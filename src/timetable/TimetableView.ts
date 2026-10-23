@@ -159,18 +159,17 @@ interface TableGroup {
     items: TableItem[];
 }
 
-/** A table column: one of the Base's properties, or a column a Chronologue micro-mode adds. */
+/** A table column: one of the Base's properties, or a column a micro-mode adds. */
 type Column =
     | { kind: 'property'; property: BasesPropertyId }
     | { kind: 'gap' }
     | { kind: 'running' };
 
-/** What Chronologue order computes for the rows: story order, gaps (Shift) and running time (Runtime). */
+/** What Chronologue order computes for the rows: story order and gaps (Shift). */
 interface ChronologueContext {
     group: TableGroup;
     lines: TimetableLine[];
     gap: Map<string, number | null>;
-    running: Map<string, number>;
     /** The planetary calendar, when Alt is on and a profile is active. */
     profile: PlanetaryProfile | null;
 }
@@ -179,6 +178,8 @@ interface ChronologueContext {
 interface ModeContext {
     state: TimelineModeState;
     chronologue: ChronologueContext | null;
+    /** Narrative's runtime view: the running time through each row, in the table's order. */
+    running: Map<string, number> | null;
 }
 
 interface WheelRings {
@@ -527,9 +528,8 @@ export class TimetableView extends BasesView {
 
     /**
      * Chronologue order: the rows in story order (beats left out, as on the
-     * wheel), with a divider for each new day, the gap since the previous
-     * dated row (Shift) and the running time (Runtime). A sort the author set
-     * in the Bases toolbar still wins.
+     * wheel), with a divider for each new day and the gap since the previous
+     * dated row (Shift). A sort the author set in the Bases toolbar still wins.
      */
     private chronologueContext(groups: TableGroup[], state: TimelineModeState): ChronologueContext {
         const { settings } = this.plugin;
@@ -540,14 +540,24 @@ export class TimetableView extends BasesView {
             .map(item => ({ item, row: item.row, when: readWhen(item.frontmatter, settings).when }));
         if (!authorSorted) keyed.sort(compareChronologicalRows);
         const gaps = elapsedSincePrevious(keyed.map(entry => entry.when));
-        const totals = runningTotals(keyed.map(entry => entry.row.kind === 'scene' ? readRuntimeSeconds(entry.item.frontmatter, settings) : null));
         return {
             group: { id: 'chronologue', label: null, items: keyed.map(entry => entry.item) },
             lines: authorSorted ? keyed.map(entry => ({ type: 'row' as const, row: entry.row })) : withDayDividers(keyed),
             gap: new Map(keyed.map((entry, index) => [entry.row.path, gaps[index]])),
-            running: new Map(keyed.map((entry, index) => [entry.row.path, totals[index]])),
             profile: state.alt ? getActivePlanetaryProfile(settings) : null,
         };
+    }
+
+    /**
+     * Narrative's runtime view: the running time through each scene row in
+     * manuscript order — the same totals the wheel shows — however the table is
+     * grouped or sorted.
+     */
+    private narrativeRunning(groups: TableGroup[]): Map<string, number> {
+        const { settings } = this.plugin;
+        const items = groups.flatMap(group => group.items).sort((a, b) => compareManuscriptRows(a.row, b.row));
+        const totals = runningTotals(items.map(item => item.row.kind === 'scene' ? readRuntimeSeconds(item.frontmatter, settings) : null));
+        return new Map(items.map((item, index) => [item.row.path, totals[index]]));
     }
 
     /** A When in the table: the shared When format, or the planetary calendar when Alt is on. */
@@ -1245,7 +1255,8 @@ export class TimetableView extends BasesView {
         let groups = this.buildGroups();
         const chronologue = state.mode === 'chronologue' ? this.chronologueContext(groups, state) : null;
         if (chronologue) groups = [chronologue.group];
-        const mode: ModeContext = { state, chronologue };
+        const running = state.mode === 'narrative' && state.runtime ? this.narrativeRunning(groups) : null;
+        const mode: ModeContext = { state, chronologue, running };
 
         const scrollParent = this.rootEl.parentElement;
         const scrollTop = scrollParent?.scrollTop ?? 0;
@@ -1357,13 +1368,12 @@ export class TimetableView extends BasesView {
         void this.decorateFromBodies(allItems);
     }
 
-    /** The Base's columns, plus the columns a Chronologue micro-mode adds just after When. */
+    /** The Base's columns, plus the columns a micro-mode adds just after When. */
     private columnsFor(mode: ModeContext): Column[] {
         const columns: Column[] = this.config.getOrder().map(property => ({ kind: 'property', property }));
-        if (!mode.chronologue) return columns;
         const added: Column[] = [];
-        if (mode.state.shift) added.push({ kind: 'gap' });
-        if (mode.state.runtime) added.push({ kind: 'running' });
+        if (mode.chronologue && mode.state.shift) added.push({ kind: 'gap' });
+        if (mode.running) added.push({ kind: 'running' });
         if (added.length === 0) return columns;
         const whenIndex = columns.findIndex(column => column.kind === 'property' && this.isWhenColumn(column.property));
         columns.splice(whenIndex + 1, 0, ...added);
@@ -1485,13 +1495,15 @@ export class TimetableView extends BasesView {
         ];
     }
 
-    /** What the mode the table follows changes in it; Narrative changes nothing to explain. */
+    /** What the mode the table follows changes in it; plain Narrative changes nothing to explain. */
     private keyModeSection(state: TimelineModeState): LegendSection | null {
         const title = modeName(state.mode);
+        if (state.mode === 'narrative' && state.runtime) {
+            return { title, rows: [{ icon: 'timer', label: t('ui.timetable.colRunningTime'), detail: t('ui.timetable.keyRunningDetail') }] };
+        }
         if (state.mode === 'chronologue') {
             const rows = [{ icon: 'calendar-days', label: t('ui.timetable.keyDayDividers'), detail: t('ui.timetable.keyDayDividersDetail') }];
             if (state.shift) rows.push({ icon: 'arrow-left-right', label: t('ui.timetable.colGap'), detail: t('ui.timetable.keyGapDetail') });
-            if (state.runtime) rows.push({ icon: 'timer', label: t('ui.timetable.colRunningTime'), detail: t('ui.timetable.keyRunningDetail') });
             if (state.alt) rows.push({ icon: 'orbit', label: t('ui.timetable.keyAlt'), detail: t('ui.timetable.keyAltDetail') });
             return { title, rows };
         }
@@ -1671,7 +1683,7 @@ export class TimetableView extends BasesView {
             for (const column of columns) {
                 const cell = tr.createEl('td');
                 if (column.kind === 'property') this.renderValueCell(cell, item, column.property, mode);
-                else this.renderMicroCell(cell, row, column.kind, mode.chronologue);
+                else this.renderMicroCell(cell, row, column.kind, mode);
             }
         }
     }
@@ -1797,18 +1809,19 @@ export class TimetableView extends BasesView {
         tooltip(grid, text, 'right');
     }
 
-    /** Shift's gap since the previous dated row, or Runtime's running time. */
-    private renderMicroCell(cell: HTMLElement, row: TimetableRow, kind: 'gap' | 'running', chronologue: ChronologueContext | null): void {
+    /** Shift's gap since the previous dated row, or the runtime view's running time. */
+    private renderMicroCell(cell: HTMLElement, row: TimetableRow, kind: 'gap' | 'running', mode: ModeContext): void {
         cell.addClass('ert-timetable__micro');
-        if (!chronologue) return;
+        const { chronologue } = mode;
         if (kind === 'gap') {
+            if (!chronologue) return;
             const gap = chronologue.gap.get(row.path);
             if (typeof gap !== 'number') return;
             const text = chronologue.profile ? formatElapsedTimePlanetary(gap, chronologue.profile) : formatElapsedTime(gap);
             cell.setText(`+${text}`);
             return;
         }
-        const total = chronologue.running.get(row.path);
+        const total = mode.running?.get(row.path);
         if (row.kind === 'scene' && typeof total === 'number' && total > 0) cell.setText(formatRuntimeValue(total));
     }
 

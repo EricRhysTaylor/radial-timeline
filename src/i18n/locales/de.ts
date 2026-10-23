@@ -477,7 +477,7 @@ export const de: DeepPartial<TranslationKeys> = {
         runtime: {
             header: {
                 name: 'Laufzeitschätzung',
-                desc: 'Schätzt Lese-, Hörbuch- und Drehbuchlaufzeit für den Chronologue-Modus, den Timeline-Hover und die Laufzeit-Werkzeuge.',
+                desc: 'Schätzt Lese-, Hörbuch- und Drehbuchlaufzeit für den Erzählung-Modus, den Timeline-Hover und die Laufzeit-Werkzeuge.',
                 badgeText: 'Pro',
             },
             contentType: {
@@ -3718,6 +3718,8 @@ export const de: DeepPartial<TranslationKeys> = {
             shiftTooltip: 'Vergleich der verstrichenen Szenenzeit & Visualisierung von Lücken',
             altButton: 'ALT',
             altTooltip: 'Planetarischen Kalender umschalten',
+        },
+        narrativeRuntimeController: {
             runtimeNoData: 'Keine Laufzeitdaten gefunden. Führen Sie „Laufzeiten schätzen“ über die Befehlspalette aus, um Szenenlaufzeiten zu erzeugen.',
             runtimeScreenplay: 'Laufzeitmodus umschalten (Drehbuch)',
             runtimeNovel: 'Laufzeitmodus umschalten (Hörbuch/Roman)',
@@ -6954,6 +6956,7 @@ export const de: DeepPartial<TranslationKeys> = {
             modeNavAria: 'Modus {{mode}} ({{number}})',
             modeNavTooltip: '{{mode}} — {{number}} drücken',
             chronologueSubModes: 'Chronologue-Untermodi',
+            narrativeSubModes: 'Erzählungs-Untermodi',
             subNavShift: 'Umschalt',
             subNavShiftAria: 'Umschalt — Vergleich der verstrichenen Zeit',
             subNavAlt: 'Alt',

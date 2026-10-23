@@ -7,7 +7,6 @@
 import { formatNumber } from '../../utils/svg';
 import type { TimelineItem } from '../../types';
 import { parseWhenField, calculateTimeSpan, parseDuration, detectDiscontinuities, detectSceneOverlaps, prepareScenesForDiscontinuityDetection, calculateAutoDiscontinuityThreshold } from '../../utils/date';
-import { parseRuntimeField, formatRuntimeValue } from '../../utils/runtimeEstimator';
 import { sceneKey } from '../../utils/sceneHelpers';
 
 export interface ChronologueSceneEntry {
@@ -59,8 +58,7 @@ export function renderChronologueTimelineArc(
     scenePositions?: Map<string, { startAngle: number; endAngle: number }>,
     _durationCapMs?: number | null, // DEPRECATED: cap slider removed, kept for API compatibility
     arcRadius: number = 758,  // Absolute radius for duration arcs
-    precomputedEntries?: ChronologueSceneEntry[],
-    useRuntimeMode: boolean = false
+    precomputedEntries?: ChronologueSceneEntry[]
 ): string {
     const sceneEntries = precomputedEntries ?? collectChronologueSceneEntries(scenes);
     const validDates = sceneEntries.map(entry => entry.date);
@@ -78,14 +76,13 @@ export function renderChronologueTimelineArc(
     // Use the passed arcRadius directly (no longer calculating as offset)
     svg += `<g class="rt-chronologue-timeline-arc">`;
     
-    // Level 4 - Scene Duration/Runtime Arcs (manuscript-order positions) - RENDER FIRST (behind ticks)
+    // Level 4 - Scene Duration Arcs (manuscript-order positions) - RENDER FIRST (behind ticks)
     if (scenePositions) {
         const durationSegments = renderDurationTickArcs({
             sceneEntries,
             arcRadius,
             timeSpanTotalMs: timeSpan.totalMs,
-            scenePositions,
-            useRuntimeMode
+            scenePositions
         });
         if (durationSegments) {
             svg += durationSegments;
@@ -103,11 +100,10 @@ interface DurationTickArcParams {
     arcRadius: number;
     timeSpanTotalMs: number;
     scenePositions: Map<string, { startAngle: number; endAngle: number }>;
-    useRuntimeMode?: boolean;
 }
 
 function renderDurationTickArcs(params: DurationTickArcParams): string | null {
-    const { sceneEntries, arcRadius, timeSpanTotalMs, scenePositions, useRuntimeMode } = params;
+    const { sceneEntries, arcRadius, timeSpanTotalMs, scenePositions } = params;
     if (sceneEntries.length === 0 || timeSpanTotalMs <= 0) {
         return null;
     }
@@ -116,34 +112,22 @@ function renderDurationTickArcs(params: DurationTickArcParams): string | null {
         .slice()
         .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-    // Parse all durations/runtimes and categorize them
+    // Parse all durations and categorize them
     interface DurationInfo {
         durationMs: number | null; // null = unparseable, 0 = no duration, >0 = valid
         rawDuration: string | undefined;
     }
-    
+
     const parsedDurations: DurationInfo[] = sortedEntries.map(entry => {
-        // In runtime mode, use Runtime field; otherwise use Duration
-        const raw = useRuntimeMode ? entry.scene.Runtime : entry.scene.Duration;
+        const raw = entry.scene.Duration;
         if (!raw) {
             return { durationMs: 0, rawDuration: raw }; // No field
         }
-        
-        if (useRuntimeMode) {
-            // Parse Runtime (seconds-based) and convert to ms
-            const seconds = parseRuntimeField(raw);
-            if (seconds === null) {
-                return { durationMs: null, rawDuration: raw }; // Unparseable
-            }
-            return { durationMs: seconds * 1000, rawDuration: raw };
-        } else {
-            // Parse Duration (ms-based)
-            const value = parseDuration(raw);
-            if (value === null) {
-                return { durationMs: null, rawDuration: raw }; // Unparseable (e.g., "ongoing")
-            }
-            return { durationMs: value, rawDuration: raw };
+        const value = parseDuration(raw);
+        if (value === null) {
+            return { durationMs: null, rawDuration: raw }; // Unparseable (e.g., "ongoing")
         }
+        return { durationMs: value, rawDuration: raw };
     });
 
     // Collect valid (parseable, positive) durations
@@ -171,11 +155,8 @@ function renderDurationTickArcs(params: DurationTickArcParams): string | null {
     })));
 
     const durationPaths: string[] = [];
-    const runtimeLabels: string[] = []; // Runtime tick labels (mm:ss) at arc ends
 
-    const TWO_PI = Math.PI * 2;
     const STUB_FILL_RATIO = 0.20; // Red stub fills 20% of scene arc
-    const TICK_MARK_LENGTH = 6; // Short tick mark at arc end
 
     sortedEntries.forEach((entry, idx) => {
         const durationInfo = parsedDurations[idx];
@@ -231,12 +212,11 @@ function renderDurationTickArcs(params: DurationTickArcParams): string | null {
         if (isUnparseable) {
             arcClass += ' rt-duration-arc-unparseable'; // Red stub for unparseable
         }
-        // In Runtime mode, overlaps don't apply (Runtime is scene duration, not temporal overlap)
-        if (isOverlap && !useRuntimeMode) {
+        if (isOverlap) {
             arcClass += ' rt-duration-arc-overlap'; // Yellow dotted for overlaps and ongoing
         }
-        if (isOngoing && !useRuntimeMode) {
-            arcClass += ' rt-duration-arc-ongoing'; // Additional tag for ongoing durations (not for Runtime)
+        if (isOngoing) {
+            arcClass += ' rt-duration-arc-ongoing'; // Additional tag for ongoing durations
         }
 
         const x1 = formatNumber(arcRadius * Math.cos(arcStart));
@@ -247,80 +227,14 @@ function renderDurationTickArcs(params: DurationTickArcParams): string | null {
         durationPaths.push(
             `<path d="M ${x1} ${y1} A ${formatNumber(arcRadius)} ${formatNumber(arcRadius)} 0 ${largeArcFlag} 1 ${x2} ${y2}" class="${arcClass}" />`
         );
-
-        // In runtime mode, add tick mark and mm:ss label at arc end for valid runtimes
-        if (useRuntimeMode && durationMs && durationMs > 0 && !isUnparseable) {
-            const runtimeSeconds = durationMs / 1000;
-            const runtimeLabel = formatRuntimeValue(runtimeSeconds);
-            
-            // Tick mark at arc end - positioned 3px inward, extended 4px outward
-            const tickInnerRadius = arcRadius - 3; // 3px inward from arc
-            const tickOuterRadius = arcRadius + TICK_MARK_LENGTH + 4; // 4px longer outward
-            const tickInnerX = formatNumber(tickInnerRadius * Math.cos(arcEnd));
-            const tickInnerY = formatNumber(tickInnerRadius * Math.sin(arcEnd));
-            const tickOuterX = formatNumber(tickOuterRadius * Math.cos(arcEnd));
-            const tickOuterY = formatNumber(tickOuterRadius * Math.sin(arcEnd));
-            
-            runtimeLabels.push(
-                `<line x1="${tickInnerX}" y1="${tickInnerY}" x2="${tickOuterX}" y2="${tickOuterY}" class="rt-runtime-tick-mark" />`
-            );
-            
-            // ═══════════════════════════════════════════════════════════════════
-            // DURATION RUNTIME LABEL POSITIONING (e.g., "12:06" at end of scene arc)
-            // ═══════════════════════════════════════════════════════════════════
-            // 
-            // LABEL_OFFSET_RAD: Angular offset from arc end (in radians)
-            //   - Positive = clockwise (after arc end, toward next scene)
-            //   - Negative = counter-clockwise (before arc end, toward scene start)
-            //   - Current: 0.003 rad ≈ 0.17° - just past the tick mark
-            //
-            // labelRadius: Distance from center to label position
-            //   - DECREASE = closer to center (inward toward arc)
-            //   - INCREASE = further from center (outward away from arc)
-            //   - arcRadius is the duration arc's radius (~758px)
-            //   - Current: arcRadius - 2 = label starts 2px inside the arc
-            //
-            const LABEL_OFFSET_RAD = 0.01;
-            const labelAngle = arcEnd + LABEL_OFFSET_RAD;
-            const labelRadius = arcRadius - 5; // 2px inside the arc (DECREASE to move inward)
-            const labelX = formatNumber(labelRadius * Math.cos(labelAngle));
-            const labelY = formatNumber(labelRadius * Math.sin(labelAngle));
-            
-            // Rotation: text oriented radially (perpendicular to arc tangent)
-            // rotationDeg = angle in degrees, text baseline follows the radius
-            const normalizedAngle = ((labelAngle % TWO_PI) + TWO_PI) % TWO_PI;
-            let rotationDeg = labelAngle * 180 / Math.PI;
-            
-            // Flip text on left side of circle (9 o'clock to 3 o'clock via bottom)
-            // so it's always readable (not upside down)
-            const isLeftSide = normalizedAngle > Math.PI * 0.5 && normalizedAngle < Math.PI * 1.5;
-            // text-anchor controls which end of text is at the position:
-            //   'start' = left edge of text at position (text extends rightward/outward)
-            //   'end' = right edge of text at position (text extends leftward/inward)
-            let textAnchor = 'start';
-            if (isLeftSide) {
-                rotationDeg += 180; // Flip text so it reads correctly
-                textAnchor = 'end'; // Swap anchor to maintain visual consistency
-            }
-            
-            runtimeLabels.push(
-                `<text x="${labelX}" y="${labelY}" text-anchor="${textAnchor}" dominant-baseline="middle" transform="rotate(${formatNumber(rotationDeg)}, ${labelX}, ${labelY})" class="rt-runtime-tick-label">${runtimeLabel}</text>`
-            );
-        }
     });
     
     if (durationPaths.length === 0) {
         return null;
     }
     
-    // Include runtime labels in the output if any
-    const labelsGroup = runtimeLabels.length > 0 
-        ? `<g class="rt-runtime-tick-labels">${runtimeLabels.join('')}</g>` 
-        : '';
-    
     return `<g class="rt-chronologue-duration-ticks">
         ${durationPaths.join('')}
-        ${labelsGroup}
     </g>`;
 }
 

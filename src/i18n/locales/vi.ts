@@ -458,7 +458,7 @@ export const vi: TranslationKeys = {
         "runtime": {
             "header": {
                 "name": "Ước lượng thời gian chạy",
-                "desc": "Ước lượng thời gian đọc, kể chuyện và kịch bản trên chế độ Chronologue, khi di chuột qua đường thời gian và các công cụ thời gian chạy.",
+                "desc": "Ước lượng thời gian đọc, kể chuyện và kịch bản trên chế độ Tự sự, khi di chuột qua đường thời gian và các công cụ thời gian chạy.",
                 "badgeText": "Pro"
             },
             "contentType": {
@@ -3720,7 +3720,9 @@ export const vi: TranslationKeys = {
             "shiftButton": "↑ Shift",
             "shiftTooltip": "So sánh thời gian cảnh đã trôi qua và hình dung khoảng trống",
             "altButton": "alt",
-            "altTooltip": "Chuyển đổi lịch hành tinh",
+            "altTooltip": "Chuyển đổi lịch hành tinh"
+        },
+        "narrativeRuntimeController": {
             "runtimeNoData": "Không tìm thấy dữ liệu thời gian chạy. Chạy \"ước tính thời gian chạy\" từ bảng lệnh đến thời gian chạy cảnh hạt giống.",
             "runtimeScreenplay": "Chuyển đổi chế độ thời gian chạy (Screenplay)",
             "runtimeNovel": "Chuyển đổi chế độ thời gian chạy (AudioBook / Novel)"
@@ -6957,6 +6959,7 @@ export const vi: TranslationKeys = {
             "modeNavAria": "Chế độ {{mode}} ({{number}})",
             "modeNavTooltip": "{{mode}} — Nhấn {{number}}",
             "chronologueSubModes": "Chronologue các chế độ phụ",
+            "narrativeSubModes": "Các chế độ phụ của Tự sự",
             "subNavShift": "sự thay đổi",
             "subNavShiftAria": "Shift - So sánh thời gian đã trôi qua",
             "subNavAlt": "alt",

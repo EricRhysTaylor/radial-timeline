@@ -473,7 +473,7 @@ export const en = {
         runtime: {
             header: {
                 name: 'Runtime estimation',
-                desc: 'Estimate reading, narration, and screenplay runtime across Chronologue Mode, timeline hover, and runtime tools.',
+                desc: 'Estimate reading, narration, and screenplay runtime across Narrative mode, timeline hover, and runtime tools.',
                 badgeText: 'Pro',
             },
             contentType: {
@@ -3402,6 +3402,8 @@ export const en = {
             shiftTooltip: 'Elapsed scene time comparison & gap visualization',
             altButton: 'ALT',
             altTooltip: 'Toggle Planetary Calendar',
+        },
+        narrativeRuntimeController: {
             runtimeNoData: 'No Runtime data found. Run "Estimate Runtime" from Command Palette to seed scene runtimes.',
             runtimeScreenplay: 'Toggle Runtime Mode (Screenplay)',
             runtimeNovel: 'Toggle Runtime Mode (Audiobook/Novel)',
@@ -6638,6 +6640,7 @@ export const en = {
             modeNavAria: '{{mode}} mode ({{number}})',
             modeNavTooltip: '{{mode}} — press {{number}}',
             chronologueSubModes: 'Chronologue sub-modes',
+            narrativeSubModes: 'Narrative sub-modes',
             subNavShift: 'Shift',
             subNavShiftAria: 'Shift — elapsed time comparison',
             subNavAlt: 'Alt',

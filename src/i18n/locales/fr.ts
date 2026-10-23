@@ -458,7 +458,7 @@ export const fr: TranslationKeys = {
         "runtime": {
             "header": {
                 "name": "Estimation du temps d'exécution",
-                "desc": "Estimer le temps de lecture, de narration et de scénario à travers le mode Chronologue, le survol de la chronologie et les outils de durée.",
+                "desc": "Estimer le temps de lecture, de narration et de scénario à travers le mode Narration, le survol de la chronologie et les outils de durée.",
                 "badgeText": "Pro"
             },
             "contentType": {
@@ -3720,7 +3720,9 @@ export const fr: TranslationKeys = {
             "shiftButton": "↑ quart de travail",
             "shiftTooltip": "Comparaison de temps de scène écoulée et visualisation des écarts",
             "altButton": "ALT",
-            "altTooltip": "Basculer le calendrier planétaire",
+            "altTooltip": "Basculer le calendrier planétaire"
+        },
+        "narrativeRuntimeController": {
             "runtimeNoData": "Aucune donnée d'exécution trouvée. Exécutez \"Estimate Runtime\" de la palette de commandes aux temps d'exécution de la scène de départ.",
             "runtimeScreenplay": "Basculer le mode d'exécution (scénario)",
             "runtimeNovel": "Basculer le mode d'exécution (livre audio/roman)"
@@ -6957,6 +6959,7 @@ export const fr: TranslationKeys = {
             "modeNavAria": "{{mode}} Mode ({{number}})",
             "modeNavTooltip": "{{mode}} — Appuyez sur {{number}}",
             "chronologueSubModes": "Chronologue Sous-modes",
+            "narrativeSubModes": "Sous-modes de Narration",
             "subNavShift": "Décalage",
             "subNavShiftAria": "Shift — Comparaison de temps écoulé",
             "subNavAlt": "ALT",

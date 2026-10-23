@@ -31,7 +31,10 @@ export interface LiveTimetable {
     revealSegment(index: number): void;
 }
 
-/** The timeline's mode, and Chronologue's micro-modes (each false outside Chronologue). */
+/**
+ * The timeline's mode with its micro-modes: Chronologue's Shift and Alt, and
+ * Narrative's runtime view. Each is false outside its own mode.
+ */
 export interface TimelineModeState {
     mode: string;
     shift: boolean;
@@ -114,9 +117,14 @@ export function currentTimelineMode(): TimelineModeState | null {
     return timelineMode;
 }
 
-/** Called by the timeline whenever its mode or a Chronologue micro-mode changes. */
+/** Called by the timeline whenever its mode or one of its micro-modes changes. */
 export function publishTimelineMode(state: TimelineModeState): void {
-    const next = state.mode === 'chronologue' ? state : { mode: state.mode, shift: false, alt: false, runtime: false };
+    const next: TimelineModeState = {
+        mode: state.mode,
+        shift: state.mode === 'chronologue' && state.shift,
+        alt: state.mode === 'chronologue' && state.alt,
+        runtime: state.mode === 'narrative' && state.runtime,
+    };
     if (timelineMode
         && timelineMode.mode === next.mode
         && timelineMode.shift === next.shift

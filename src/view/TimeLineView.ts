@@ -165,7 +165,9 @@ export class RadialTimelineView extends ItemView {
     private bookSwitcherSelect?: HTMLSelectElement;
     private modeNavButtons?: Map<string, HTMLButtonElement>;
     private chronologueSubNavEl?: HTMLElement;
-    private chronologueSubNavBtns?: { shift: HTMLButtonElement; alt: HTMLButtonElement; runtime: HTMLButtonElement };
+    private chronologueSubNavBtns?: { shift: HTMLButtonElement; alt: HTMLButtonElement };
+    private narrativeSubNavEl?: HTMLElement;
+    private narrativeRuntimeBtn?: HTMLButtonElement;
     private alignmentToggleEl?: HTMLElement;
     private alignmentToggleBtn?: HTMLButtonElement;
     // Populated by ChronologueShiftController each render (the single source of
@@ -173,9 +175,12 @@ export class RadialTimelineView extends ItemView {
     // sub-nav routes clicks through these so keyboard/click stay unified.
     public chronologueSubNav?: {
         hasAlt: boolean;
-        runtimeNoData: boolean;
         toggleShift: () => void;
         toggleAlt: () => void;
+    };
+    // Populated by NarrativeRuntimeController each Narrative render (the single
+    // owner of the runtime view toggle); the header chip routes through it.
+    public narrativeSubNav?: {
         toggleRuntime: () => void;
     };
     private timelineSearchInput?: HTMLInputElement;
@@ -241,13 +246,13 @@ export class RadialTimelineView extends ItemView {
         this.publishModeToTimetables();
     }
 
-    /** Open Timetables follow the timeline's mode and Chronologue micro-modes. */
+    /** Open Timetables follow the timeline's mode, Chronologue's micro-modes and Narrative's runtime view. */
     private publishModeToTimetables(): void {
         publishTimelineMode({
             mode: this._currentMode,
             shift: this.chronologueState.shift,
             alt: this.chronologueState.alien,
-            runtime: this.chronologueState.runtime,
+            runtime: this.narrativeState.runtime,
         });
     }
 
@@ -365,7 +370,10 @@ export class RadialTimelineView extends ItemView {
     }
 
 
-    readonly chronologueState = { shift: false, alien: false, runtime: false };
+    readonly chronologueState = { shift: false, alien: false };
+
+    /** Narrative's runtime view: runtime arcs and running totals in the order the book presents its scenes. */
+    readonly narrativeState = { runtime: false };
 
     constructor(leaf: WorkspaceLeaf, plugin: RadialTimelinePlugin) {
         super(leaf);
@@ -698,6 +706,7 @@ export class RadialTimelineView extends ItemView {
             setAccessibleLabel(modeNav, t('ui.timeLineView.timelineModeNav'));
             const modeButtons = new Map<string, HTMLButtonElement>();
             let chronologueModeBtn: HTMLButtonElement | undefined;
+            let narrativeModeBtn: HTMLButtonElement | undefined;
             getToggleableModes().forEach((mode, index) => {
                 const modeKey = `timeline.modes.${mode.id}.name`;
                 const translated = t(modeKey);
@@ -730,6 +739,7 @@ export class RadialTimelineView extends ItemView {
                 modeNav.appendChild(btn);
                 modeButtons.set(mode.id, btn);
                 if (mode.id === TimelineMode.CHRONOLOGUE) chronologueModeBtn = btn;
+                if (mode.id === TimelineMode.NARRATIVE) narrativeModeBtn = btn;
             });
             headerEl.insertBefore(modeNav, wrapper);
             // Scopes the header layout rules in timeline.css to this view
@@ -737,6 +747,7 @@ export class RadialTimelineView extends ItemView {
             // there is nothing to remove.
             headerEl.classList.add('ert-timeline-header');
             this.modeNavButtons = modeButtons;
+            this.buildNarrativeSubNav(doc, modeNav, narrativeModeBtn);
             this.buildChronologueSubNav(doc, modeNav, chronologueModeBtn);
             this.buildAlignmentToggle(doc, modeNav);
             setupTitleBarFit(
@@ -820,9 +831,10 @@ export class RadialTimelineView extends ItemView {
             btn.classList.toggle('is-active', isActive);
             btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
         });
-        // Leaving Chronologue: hide its sub-nav immediately (the controller
+        // Leaving a mode: hide its sub-nav immediately (the controller
         // teardown also hides it, but the mode setter fires before re-render).
         if (this._currentMode !== 'chronologue') this.hideChronologueSubNav();
+        if (this._currentMode !== 'narrative') this.hideNarrativeSubNav();
         this.syncAlignmentToggle();
     }
 
@@ -830,7 +842,7 @@ export class RadialTimelineView extends ItemView {
      * Build the subplot alignment toggle once, leading the mode row.
      *
      * Alignment is a saved layout preference, not a momentary sub-mode like
-     * Chronologue's Shift / Alt / Runtime, and it applies to every mode that
+     * Chronologue's Shift / Alt or Narrative's Runtime, and it applies to every mode that
      * draws an all-scenes outer ring — all but Progress. So it leads the row
      * rather than nesting under one mode button, which also keeps it clear of
      * the Chronologue chips on the far side.
@@ -914,12 +926,41 @@ export class RadialTimelineView extends ItemView {
         this.refreshTimeline();
     }
 
+    /** One header sub-mode chip: a glyph and a label, pressed state kept in aria-pressed. */
+    private makeSubNavButton(doc: Document, submode: string, label: string, glyph: string, aria: string): HTMLButtonElement {
+        const btn = doc.win.createEl('button');
+        btn.className = 'ert-timeline-subnav__btn';
+        btn.type = 'button';
+        btn.dataset.submode = submode;
+        btn.setAttribute('aria-pressed', 'false');
+        setAccessibleLabel(btn, aria);
+        const glyphEl = doc.win.createSpan();
+        glyphEl.className = 'ert-timeline-subnav__glyph';
+        glyphEl.setAttribute('aria-hidden', 'true');
+        glyphEl.textContent = glyph;
+        const labelEl = doc.win.createSpan();
+        labelEl.className = 'ert-timeline-subnav__label';
+        labelEl.textContent = label;
+        btn.appendChild(glyphEl);
+        btn.appendChild(labelEl);
+        return btn;
+    }
+
+    /** Place a sub-nav right after its mode's button. */
+    private insertSubNav(modeNav: HTMLElement, subNav: HTMLElement, anchorBtn?: HTMLButtonElement): void {
+        if (anchorBtn && anchorBtn.parentElement === modeNav) {
+            modeNav.insertBefore(subNav, anchorBtn.nextSibling);
+        } else {
+            modeNav.appendChild(subNav);
+        }
+    }
+
     /**
-     * Build the persistent Chronologue sub-nav (Shift / Alt / Runtime) once,
-     * anchored right after the Chronologue mode button. Hidden until the
+     * Build the persistent Chronologue sub-nav (Shift / Alt) once, anchored
+     * right after the Chronologue mode button. Hidden until the
      * ChronologueShiftController wires it up via showChronologueSubNav().
      * Clicks route through this.chronologueSubNav (the controller's toggles);
-     * physical Shift/CapsLock/Alt and the RT click keep working untouched.
+     * physical Shift/CapsLock/Alt keep working untouched.
      */
     private buildChronologueSubNav(doc: Document, modeNav: HTMLElement, anchorBtn?: HTMLButtonElement): void {
         const subNav = doc.win.createDiv();
@@ -928,28 +969,8 @@ export class RadialTimelineView extends ItemView {
         setAccessibleLabel(subNav, t('ui.timeLineView.chronologueSubModes'));
         subNav.hidden = true;
 
-        const makeBtn = (submode: 'shift' | 'alt' | 'runtime', label: string, glyph: string, aria: string): HTMLButtonElement => {
-            const btn = doc.win.createEl('button');
-            btn.className = 'ert-timeline-subnav__btn';
-            btn.type = 'button';
-            btn.dataset.submode = submode;
-            btn.setAttribute('aria-pressed', 'false');
-            setAccessibleLabel(btn, aria);
-            const glyphEl = doc.win.createSpan();
-            glyphEl.className = 'ert-timeline-subnav__glyph';
-            glyphEl.setAttribute('aria-hidden', 'true');
-            glyphEl.textContent = glyph;
-            const labelEl = doc.win.createSpan();
-            labelEl.className = 'ert-timeline-subnav__label';
-            labelEl.textContent = label;
-            btn.appendChild(glyphEl);
-            btn.appendChild(labelEl);
-            return btn;
-        };
-
-        const shift = makeBtn('shift', t('ui.timeLineView.subNavShift'), '⇧', t('ui.timeLineView.subNavShiftAria'));
-        const alt = makeBtn('alt', t('ui.timeLineView.subNavAlt'), '⌥', t('ui.timeLineView.subNavAltAria'));
-        const runtime = makeBtn('runtime', t('ui.timeLineView.subNavRuntime'), 'RT', t('ui.timeLineView.subNavRuntimeAria'));
+        const shift = this.makeSubNavButton(doc, 'shift', t('ui.timeLineView.subNavShift'), '⇧', t('ui.timeLineView.subNavShiftAria'));
+        const alt = this.makeSubNavButton(doc, 'alt', t('ui.timeLineView.subNavAlt'), '⌥', t('ui.timeLineView.subNavAltAria'));
 
         this.registerDomEvent(shift, 'click', (evt: MouseEvent) => {
             evt.preventDefault();
@@ -961,40 +982,26 @@ export class RadialTimelineView extends ItemView {
             evt.stopPropagation();
             this.chronologueSubNav?.toggleAlt();
         });
-        this.registerDomEvent(runtime, 'click', (evt: MouseEvent) => {
-            evt.preventDefault();
-            evt.stopPropagation();
-            this.chronologueSubNav?.toggleRuntime();
-        });
 
         subNav.appendChild(shift);
         subNav.appendChild(alt);
-        subNav.appendChild(runtime);
-
-        if (anchorBtn && anchorBtn.parentElement === modeNav) {
-            modeNav.insertBefore(subNav, anchorBtn.nextSibling);
-        } else {
-            modeNav.appendChild(subNav);
-        }
+        this.insertSubNav(modeNav, subNav, anchorBtn);
 
         this.chronologueSubNavEl = subNav;
-        this.chronologueSubNavBtns = { shift, alt, runtime };
+        this.chronologueSubNavBtns = { shift, alt };
     }
 
     /**
      * Reveal the Chronologue sub-nav and reflect per-book availability. Called
      * by the controller once its buttons exist. Alt is shown only when a valid
-     * planetary profile exists; Runtime carries a no-data hint when no scene
-     * has Runtime data (mirroring the in-view keycap — the overlay itself is
-     * not click-gated).
+     * planetary profile exists.
      */
-    public showChronologueSubNav(opts: { hasAlt: boolean; runtimeNoData: boolean }): void {
+    public showChronologueSubNav(opts: { hasAlt: boolean }): void {
         const el = this.chronologueSubNavEl;
         const btns = this.chronologueSubNavBtns;
         if (!el || !btns) return;
         el.hidden = false;
         btns.alt.hidden = !opts.hasAlt;
-        btns.runtime.classList.toggle('is-no-data', opts.runtimeNoData);
     }
 
     /** Hide the Chronologue sub-nav and clear its active states. */
@@ -1004,7 +1011,7 @@ export class RadialTimelineView extends ItemView {
         if (el) el.hidden = true;
         const btns = this.chronologueSubNavBtns;
         if (!btns) return;
-        for (const btn of [btns.shift, btns.alt, btns.runtime]) {
+        for (const btn of [btns.shift, btns.alt]) {
             btn.classList.remove('is-active');
             btn.setAttribute('aria-pressed', 'false');
         }
@@ -1015,7 +1022,7 @@ export class RadialTimelineView extends ItemView {
      * controller's own state, so it reflects activation via keyboard (Shift /
      * CapsLock / Alt), the in-view keycaps, or these header chips alike.
      */
-    public syncChronologueSubNav(state: { shift: boolean; alt: boolean; runtime: boolean }): void {
+    public syncChronologueSubNav(state: { shift: boolean; alt: boolean }): void {
         this.publishModeToTimetables();
         const btns = this.chronologueSubNavBtns;
         if (!btns) return;
@@ -1025,7 +1032,66 @@ export class RadialTimelineView extends ItemView {
         };
         apply(btns.shift, state.shift);
         apply(btns.alt, state.alt);
-        apply(btns.runtime, state.runtime);
+    }
+
+    /**
+     * Build the persistent Narrative sub-nav (Runtime) once, anchored right
+     * after the Narrative mode button. Hidden until the
+     * NarrativeRuntimeController wires it up via showNarrativeSubNav(). The
+     * chip and the in-view RT keycap run the same toggle.
+     */
+    private buildNarrativeSubNav(doc: Document, modeNav: HTMLElement, anchorBtn?: HTMLButtonElement): void {
+        const subNav = doc.win.createDiv();
+        subNav.className = 'ert-timeline-subnav';
+        subNav.setAttribute('role', 'group');
+        setAccessibleLabel(subNav, t('ui.timeLineView.narrativeSubModes'));
+        subNav.hidden = true;
+
+        const runtime = this.makeSubNavButton(doc, 'runtime', t('ui.timeLineView.subNavRuntime'), 'RT', t('ui.timeLineView.subNavRuntimeAria'));
+        this.registerDomEvent(runtime, 'click', (evt: MouseEvent) => {
+            evt.preventDefault();
+            evt.stopPropagation();
+            this.narrativeSubNav?.toggleRuntime();
+        });
+
+        subNav.appendChild(runtime);
+        this.insertSubNav(modeNav, subNav, anchorBtn);
+
+        this.narrativeSubNavEl = subNav;
+        this.narrativeRuntimeBtn = runtime;
+    }
+
+    /**
+     * Reveal the Narrative sub-nav. Runtime carries a no-data hint when no
+     * scene has Runtime data, mirroring the in-view keycap; the view itself
+     * still opens, showing every scene's missing-runtime stub.
+     */
+    public showNarrativeSubNav(opts: { runtimeNoData: boolean }): void {
+        const el = this.narrativeSubNavEl;
+        const btn = this.narrativeRuntimeBtn;
+        if (!el || !btn) return;
+        el.hidden = false;
+        btn.classList.toggle('is-no-data', opts.runtimeNoData);
+    }
+
+    /** Hide the Narrative sub-nav and clear its active state. */
+    public hideNarrativeSubNav(): void {
+        this.publishModeToTimetables();
+        const el = this.narrativeSubNavEl;
+        if (el) el.hidden = true;
+        const btn = this.narrativeRuntimeBtn;
+        if (!btn) return;
+        btn.classList.remove('is-active');
+        btn.setAttribute('aria-pressed', 'false');
+    }
+
+    /** Mirror the runtime view's state onto the Narrative sub-nav. */
+    public syncNarrativeSubNav(state: { runtime: boolean }): void {
+        this.publishModeToTimetables();
+        const btn = this.narrativeRuntimeBtn;
+        if (!btn) return;
+        btn.classList.toggle('is-active', state.runtime);
+        btn.setAttribute('aria-pressed', state.runtime ? 'true' : 'false');
     }
 
     /**
@@ -2793,7 +2859,7 @@ export class RadialTimelineView extends ItemView {
                     this._currentMode,
                     this.plugin.settings,
                     this.plugin._gossamerLastRun,
-                    this.chronologueState.runtime
+                    this.narrativeState.runtime
                 );
                 
                 // Detect changes from last render
@@ -3090,7 +3156,7 @@ export class RadialTimelineView extends ItemView {
         try {
             // Generate the SVG content and get the max stage color
             const renderer = this.rendererService ?? this.plugin.getRendererService();
-            const { svgString, maxStageColor: calculatedMaxStageColor } = renderer.renderTimeline(scenes, this.chronologueState);
+            const { svgString, maxStageColor: calculatedMaxStageColor } = renderer.renderTimeline(scenes, { runtime: this.narrativeState.runtime, alien: this.chronologueState.alien });
 
             // Expose the dominant publish-stage colour to CSS so rules can use var(--rt-max-publish-stage-color)
             if (calculatedMaxStageColor) {

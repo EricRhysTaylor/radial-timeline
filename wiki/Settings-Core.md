@@ -82,7 +82,7 @@ Scene completion stats use scenes with `Status = Complete` and a `Due` date. `Pu
 
 Runtime estimation is a Pro workflow configured from the Core tab.
 
-*   **Enable runtime estimation**: Activates runtime calculations for scenes and the Chronologue Runtime sub-mode.
+*   **Enable runtime estimation**: Activates runtime calculations for scenes and the Narrative Runtime view.
 *   **Default runtime profile**: The profile used when no per-scene override is set.
 *   **Edit profile**: Manage multiple profiles with different settings for various project types.
 *   **Profile label**: Display name shown in selectors and the runtime panel.
@@ -99,7 +99,7 @@ Runtime estimation is a Pro workflow configured from the Core tab.
 *   **Narration words per minute**: Reading pace for all content (default 150).
 
 > [!NOTE]
-> See [Pro](Pro) for the full runtime workflow and [Runtime](Chronologue-Mode#runtime-mode-pro) for the visualization.
+> See [Pro](Pro) for the full runtime workflow and [Runtime view](Narrative-Mode#runtime-view) for the visualization.
 
 <a name="story-beats-system"></a>
 ## Story Beats System

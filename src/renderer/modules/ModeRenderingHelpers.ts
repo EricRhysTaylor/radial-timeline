@@ -16,6 +16,12 @@ import type { PluginRendererFacade } from '../../utils/sceneHelpers';
 import { t } from '../../i18n';
 import { getTimelineScope } from '../../utils/books';
 import { DEFAULT_MAIN_PLOT_NAME } from '../../utils/mainPlot';
+import type { ReadabilityScale } from '../../types/settings';
+import {
+    SUBPLOT_OUTER_RADIUS_CHRONOLOGUE,
+    SUBPLOT_OUTER_RADIUS_MAINPLOT,
+    SUBPLOT_OUTER_RADIUS_STANDARD
+} from '../layout/LayoutConstants';
 
 // Type alias for compatibility
 type PluginFacade = PluginRendererFacade;
@@ -77,6 +83,20 @@ export function modeHasAllScenesOuterRing(mode: TimelineMode): boolean {
     const modeDef = getModeDefinition(mode);
     return modeDef.rendering.outerRingContent === 'narrative' ||
            modeDef.rendering.outerRingContent === 'chronologue';
+}
+
+/**
+ * Where the subplot rings end. Chronologue and the Narrative runtime view pull
+ * the rings in to the same radius to make room for their scene arcs and the
+ * labels around the perimeter; Progress widens Main Plot; every other view uses
+ * the standard radius for the readability size.
+ *
+ * One answer for the renderer, the ring layout and synopsis placement.
+ */
+export function resolveSubplotOuterRadius(mode: string, readabilityScale: ReadabilityScale, runtimeView: boolean): number {
+    if (mode === 'chronologue' || runtimeView) return SUBPLOT_OUTER_RADIUS_CHRONOLOGUE;
+    if (mode === 'progress') return SUBPLOT_OUTER_RADIUS_MAINPLOT;
+    return SUBPLOT_OUTER_RADIUS_STANDARD[readabilityScale];
 }
 
 /**

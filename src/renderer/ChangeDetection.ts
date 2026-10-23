@@ -90,7 +90,7 @@ export interface TimelineSnapshot {
     // Plugin Update Status
     updateAvailable: boolean;
 
-    // Runtime mode state (affects Chronologue duration arcs)
+    // Narrative runtime view on/off (changes ring radius and draws the runtime overlay)
     runtimeModeActive: boolean;
 
     // Recent structural moves (Recent Moves overlay panel)
@@ -133,7 +133,7 @@ export function createSnapshot(
                 s.number || '',
                 s.when instanceof Date ? s.when.getTime() : (s.when || ''),
                 s.Duration || '',
-                // Runtime affects Chronologue duration arcs when in runtime mode
+                // Runtime drives the Narrative runtime view
                 s.Runtime || '',
                 s.synopsis || '',
                 // Pending Edits affects number square color (gray)
@@ -384,7 +384,7 @@ export function detectChanges(
         changeTypes.add(ChangeType.UPDATE_STATUS);
     }
     
-    // Detect runtime mode changes (affects Chronologue duration arcs)
+    // Detect the Narrative runtime view turning on or off
     if (prev.runtimeModeActive !== current.runtimeModeActive) {
         changeTypes.add(ChangeType.SETTINGS);
     }

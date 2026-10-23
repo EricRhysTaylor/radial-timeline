@@ -571,7 +571,7 @@ export class ExportStyleClasses {
  *     (a) Chromium taints any canvas that draws an SVG <image> containing a
  *         foreignObject, so `canvas.toBlob` throws "Tainted canvases may not be
  *         exported" and PNG export fails; (b) every foreignObject the renderer
- *         injects is interaction chrome (the Chronologue runtime toggle icon,
+ *         injects is interaction chrome (the Narrative runtime toggle icon,
  *         the Recent-moves overlay, the Gossamer-runs overlay) — none is part
  *         of the still artwork.
  *  2. `.rt-measure-text` — an invisible <text> node the hover engine reuses for

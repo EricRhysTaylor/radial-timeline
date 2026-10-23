@@ -107,6 +107,14 @@ export class ModeInteractionController {
             setupSceneInteractions(this.view, group, svg, this.view.sceneData || []);
         });
 
+        // The runtime view's keycap, header chip and two-scene selection
+        const { setupNarrativeRuntimeController } = await import('../view/interactions/NarrativeRuntimeController');
+        setupNarrativeRuntimeController(this.view, svg);
+
+        // While the runtime view is on, clicks select scenes to compare, so
+        // reordering waits until it is off.
+        if (this.view.narrativeState.runtime) return;
+
         // Setup drag-to-reorder on the outer ring (narrative mode only)
         setupOuterRingDrag(this.view, svg);
         await this.setupSubplotRingDrag(svg);

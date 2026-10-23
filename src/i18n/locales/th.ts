@@ -458,7 +458,7 @@ export const th: TranslationKeys = {
         "runtime": {
             "header": {
                 "name": "การประมาณค่ารันไทม์",
-                "desc": "ประมาณการการอ่าน การบรรยาย และรันไทม์ของบทภาพยนตร์ในโหมด Chronologue, ไทม์ไลน์โฮเวอร์ และเครื่องมือรันไทม์",
+                "desc": "ประมาณการการอ่าน การบรรยาย และรันไทม์ของบทภาพยนตร์ในโหมดการเล่าเรื่อง, ไทม์ไลน์โฮเวอร์ และเครื่องมือรันไทม์",
                 "badgeText": "ซึ่งสนับสนุน"
             },
             "contentType": {
@@ -3720,7 +3720,9 @@ export const th: TranslationKeys = {
             "shiftButton": "↑ กะ",
             "shiftTooltip": "การเปรียบเทียบเวลาฉากที่ผ่านไปและการแสดงภาพช่องว่าง",
             "altButton": "เปลี่ยน",
-            "altTooltip": "สลับปฏิทินดาวเคราะห์",
+            "altTooltip": "สลับปฏิทินดาวเคราะห์"
+        },
+        "narrativeRuntimeController": {
             "runtimeNoData": "ไม่พบข้อมูลรันไทม์ เรียกใช้ \"ประมาณการรันไทม์\" จากพาเลทคำสั่งไปยังรันไทม์ของฉากเมล็ดพันธุ์",
             "runtimeScreenplay": "สลับโหมดรันไทม์ (บทภาพยนตร์)",
             "runtimeNovel": "สลับโหมดรันไทม์ (หนังสือเสียง/นวนิยาย)"
@@ -6957,6 +6959,7 @@ export const th: TranslationKeys = {
             "modeNavAria": "{{mode}}โหมด ({{number}})",
             "modeNavTooltip": "{{mode}} — กด {{number}}",
             "chronologueSubModes": "Chronologueโหมดย่อย",
+            "narrativeSubModes": "โหมดย่อยการเล่าเรื่อง",
             "subNavShift": "เปลี่ยน",
             "subNavShiftAria": "กะ - การเปรียบเทียบเวลาที่ผ่านไป",
             "subNavAlt": "เปลี่ยน",

@@ -34,7 +34,8 @@ The Timetable draws itself in the timeline’s mode, and the mode button in its 
 
 | Timeline mode | What the table shows |
 |---|---|
-| **Chronologue** | Rows in story order with a divider for each day; beats are left out, as on the wheel. **Shift** adds a **Gap** column (time since the previous dated row), **Runtime** adds a **Running time** column, and the Alt calendar shows dates, days, and gaps in the planetary calendar. |
+| **Narrative** | Rows in manuscript order. The **Runtime** view adds a **Running time** column: the runtime through each scene in reading order. |
+| **Chronologue** | Rows in story order with a divider for each day; beats are left out, as on the wheel. **Shift** adds a **Gap** column (time since the previous dated row), and the Alt calendar shows dates, days, and gaps in the planetary calendar. |
 | **Progress** | Each heading counts complete scenes, words, and overdue scenes; overdue Due cells stand out. |
 | **Gossamer** | Beats come forward with their latest score for the selected signal, its change since the previous run, the expected range (flagged when a score is outside it), and the justification. Other rows recede. |
 

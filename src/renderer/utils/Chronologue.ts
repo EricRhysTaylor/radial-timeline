@@ -83,7 +83,6 @@ export type ChronologueOverlayOptions = {
     durationArcRadius?: number;
     synopsesElements?: SVGGElement[];
     maxTextWidth?: number;
-    useRuntimeMode?: boolean;
     microRingLayout?: BackdropMicroRingLayout;
     microRingBaseRadius?: number;
     backdropLayout?: BackdropRingLayout;
@@ -101,7 +100,6 @@ export function renderChronologueOverlays({
     durationArcRadius = 0,
     synopsesElements = [],
     maxTextWidth = 0,
-    useRuntimeMode = false,
     microRingLayout,
     microRingBaseRadius,
     backdropLayout
@@ -109,18 +107,14 @@ export function renderChronologueOverlays({
     const stopChronoOverlays = startPerfSegment(plugin, 'timeline.chronologue-overlays');
     let svg = '';
 
-    // Calculate cap: use null (auto) for runtime mode, duration setting for duration mode
-    const durationCapMs: number | null = useRuntimeMode 
-        ? null  // Runtime mode: auto-scale based on observed max
-        : durationSelectionToMs(plugin.settings.chronologueDurationCapSelection);
+    const durationCapMs = durationSelectionToMs(plugin.settings.chronologueDurationCapSelection);
     const chronologueTimelineArc = renderChronologueTimelineArc(
         scenes,
         subplotOuterRadius,
         manuscriptOrderPositions,
         durationCapMs,
         durationArcRadius,
-        chronologueSceneEntries,
-        useRuntimeMode
+        chronologueSceneEntries
     );
     if (chronologueTimelineArc) {
         svg += chronologueTimelineArc;
@@ -212,7 +206,7 @@ export function renderOuterLabelTexts({
     let labelsSvg = '';
     let boundaryLabelsHtml = '';
 
-    outerLabels.forEach(({ shortName, isFirst, isLast, earthDate, sceneIndex }, index) => {
+    outerLabels.forEach(({ shortName, isFirst, isLast, earthDate }, index) => {
         const pathId = `monthLabelPath-${index}`;
 
         // Only apply past month dimming in non-chronologue modes
@@ -235,11 +229,9 @@ export function renderOuterLabelTexts({
 
         // Add data-earth-date so alien (planetary) mode can swap labels
         const earthDateAttr = earthDate ? ` data-earth-date="${earthDate}"` : '';
-        // Add data-scene-index so runtime mode can associate labels with scene runtimes
-        const sceneIndexAttr = sceneIndex !== undefined ? ` data-scene-index="${sceneIndex}"` : '';
 
         const labelHtml = `
-            <text class="${labelClass}"${earthDateAttr}${sceneIndexAttr} ${isPastMonth ? 'opacity="0.5"' : ''}>
+            <text class="${labelClass}"${earthDateAttr} ${isPastMonth ? 'opacity="0.5"' : ''}>
                 <textPath href="#${pathId}" startOffset="0" text-anchor="start">
                     ${labelContent}
                 </textPath>
@@ -280,9 +272,8 @@ export function renderChronologueOuterTicks({
     }
 
     let svg = '<g class="rt-chronological-outer-ticks">';
-    outerLabels.forEach(({ angle, isMajor, shortName, isFirst, isLast, sceneIndex }) => {
+    outerLabels.forEach(({ angle, isMajor, shortName, isFirst, isLast }) => {
         const tickStart = monthTickStart;
-        const dataAttrs = sceneIndex !== undefined ? ` data-scene-index="${sceneIndex}"` : '';
 
         if (isMajor) {
             const tickEnd = monthTickEnd;
@@ -293,7 +284,7 @@ export function renderChronologueOuterTicks({
             const boundaryClass = isFirst ? ' rt-date-first' : (isLast ? ' rt-date-last' : '');
 
             svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" 
-                class="rt-chronological-tick rt-chronological-tick-major${boundaryClass}"${dataAttrs}/>`;
+                class="rt-chronological-tick rt-chronological-tick-major${boundaryClass}"/>`;
         } else if (shortName === '') {
             const tickEnd = (monthTickStart + monthTickEnd) / 2;
             const x1 = formatNumber(tickStart * Math.cos(angle));
@@ -302,7 +293,7 @@ export function renderChronologueOuterTicks({
             const y2 = formatNumber(tickEnd * Math.sin(angle));
 
             svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" 
-                class="rt-chronological-tick rt-chronological-tick-minor"${dataAttrs}/>`;
+                class="rt-chronological-tick rt-chronological-tick-minor"/>`;
         }
     });
 

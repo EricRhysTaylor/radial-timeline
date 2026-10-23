@@ -479,7 +479,7 @@ export const zh: DeepPartial<TranslationKeys> = {
         runtime: {
             header: {
                 name: '时长估算',
-                desc: '在 Chronologue 模式、时间轴悬停和时长工具中估算阅读、朗读和剧本时长。',
+                desc: '在叙事模式、时间轴悬停和时长工具中估算阅读、朗读和剧本时长。',
                 badgeText: 'Pro',
             },
             contentType: {
@@ -3720,6 +3720,8 @@ export const zh: DeepPartial<TranslationKeys> = {
             shiftTooltip: '场景经过时间比较与间隔可视化',
             altButton: 'ALT',
             altTooltip: '切换行星历法',
+        },
+        narrativeRuntimeController: {
             runtimeNoData: '未找到时长数据。请从命令面板运行“估算时长”以生成场景时长。',
             runtimeScreenplay: '切换时长模式（剧本）',
             runtimeNovel: '切换时长模式（有声书/小说）',
@@ -6956,6 +6958,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             modeNavAria: '{{mode}}模式（{{number}}）',
             modeNavTooltip: '{{mode}} — 按 {{number}}',
             chronologueSubModes: 'Chronologue 子模式',
+            narrativeSubModes: '叙事子模式',
             subNavShift: 'Shift',
             subNavShiftAria: 'Shift — 经过时间比较',
             subNavAlt: 'Alt',

@@ -17,7 +17,7 @@
         "src/styles/drag.css",
         "src/styles/base.css",
         "src/styles/chronologue-base.css",
-        "src/styles/chronologue-runtime.css",
+        "src/styles/runtime-view.css",
         "src/styles/chronologue-shift.css",
         "src/styles/chronologue-alt.css",
         "src/view/modes",

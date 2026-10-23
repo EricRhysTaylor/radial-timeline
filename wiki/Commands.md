@@ -208,7 +208,7 @@ Opens the runtime estimation panel.
 
 Used for novels, audiobooks, and screenplays. The panel works with runtime profiles and can estimate duration across different scopes and filters. Available only when **Pro** is active.
 
-Related: [Settings → Core → Runtime estimation](Settings-Core#runtime-estimation), [Chronologue Runtime sub-mode](Chronologue-Mode#runtime-sub-mode).
+Related: [Settings → Core → Runtime estimation](Settings-Core#runtime-estimation), [Narrative Runtime view](Narrative-Mode#runtime-view).
 
 ---
 

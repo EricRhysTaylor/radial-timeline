@@ -211,7 +211,7 @@
 }
 
 /* Hide subplot ring labels in runtime mode (top left quadrant behavior) */
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-subplot-ring-label-text {
+.radial-timeline-svg[data-runtime-view="true"] .rt-subplot-ring-label-text {
   opacity: 0;
 }
 
@@ -839,76 +839,75 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* RUNTIME MODE ([data-shift-mode="runtime"])                                 */
-/* Shows Runtime field values instead of Duration on arc display              */
+/* NARRATIVE RUNTIME VIEW ([data-runtime-view="true"])                       */
+/* Runtime arcs and running totals in narrative order                         */
 /* Blue-tinted styling to distinguish from normal (gray) and alien (red)      */
 /* -------------------------------------------------------------------------- */
 
 /* 1. Act Borders with blue tint */
-.radial-timeline-svg[data-shift-mode="runtime"] .act-border,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-month-spoke-line.rt-act-boundary {
+.radial-timeline-svg[data-runtime-view="true"] .act-border,
+.radial-timeline-svg[data-runtime-view="true"] .rt-month-spoke-line.rt-act-boundary {
   stroke: rgba(60, 120, 200, 0.8);
   opacity: 0.7;
 }
 
 /* 2. Scene paths with muted blue tint — void cells included, same declaration. */
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-void-cell {
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path,
+.radial-timeline-svg[data-runtime-view="true"] .rt-void-cell {
   fill: rgba(60, 120, 180, 0.20);
   stroke: rgba(60, 120, 180, 0.35);
   stroke-width: 1px;
 }
 
 /* 3. Number Squares with blue-muted styling */
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-square {
+.radial-timeline-svg[data-runtime-view="true"] .rt-number-square {
   fill: var(--interactive-normal);
   stroke: none;
   opacity: 0.6;
 }
 
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-text {
+.radial-timeline-svg[data-runtime-view="true"] .rt-number-text {
   fill: rgba(60, 140, 200, 0.9);
   opacity: 0.8;
 }
 
 /* Runtime mode: Mute open scenes, pending edits, and grade colors */
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-square.rt-scene-is-open,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-square.rt-has-edits {
+.radial-timeline-svg[data-runtime-view="true"] .rt-number-square.rt-scene-is-open,
+.radial-timeline-svg[data-runtime-view="true"] .rt-number-square.rt-has-edits {
   fill: var(--interactive-normal);
   stroke: none;
   opacity: 0.6;
 }
 
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-text.rt-scene-is-open,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-text.rt-has-edits,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-text.rt-grade-A,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-text.rt-grade-B,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-number-text.rt-grade-C {
+.radial-timeline-svg[data-runtime-view="true"] .rt-number-text.rt-scene-is-open,
+.radial-timeline-svg[data-runtime-view="true"] .rt-number-text.rt-has-edits,
+.radial-timeline-svg[data-runtime-view="true"] .rt-number-text.rt-grade-A,
+.radial-timeline-svg[data-runtime-view="true"] .rt-number-text.rt-grade-B,
+.radial-timeline-svg[data-runtime-view="true"] .rt-number-text.rt-grade-C {
   fill: rgba(60, 140, 200, 0.9);
   opacity: 0.8;
 }
 
 /* 4. Scene Text: Match number square text color */
-.radial-timeline-svg[data-shift-mode="runtime"] {
+.radial-timeline-svg[data-runtime-view="true"] {
   --ert-scene-title-fill: rgba(60, 140, 200, 0.9);
   --ert-scene-title-opacity: 0.8;
 }
 
 /* 5. Spokes/Radial Lines/Month Lines: Blue tint */
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-ring,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-radial-line,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-month-spoke-line {
+.radial-timeline-svg[data-runtime-view="true"] .rt-ring,
+.radial-timeline-svg[data-runtime-view="true"] .rt-radial-line,
+.radial-timeline-svg[data-runtime-view="true"] .rt-month-spoke-line {
   stroke: rgba(60, 120, 180, 0.5);
 }
 
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-month-label,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-act-label {
+.radial-timeline-svg[data-runtime-view="true"] .rt-month-label {
   fill: rgba(60, 120, 180, 0.5);
 }
 
 /* Outer ring labels show cumulative runtime values - bright blue for readability */
 /* Exclude boundary labels which keep their Zero/Press stage colors */
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-month-label-outer:not(.rt-date-boundary) {
+.radial-timeline-svg[data-runtime-view="true"] .rt-month-label-outer:not(.rt-date-boundary) {
   fill: rgba(80, 180, 255, 1);
   stroke: #000000;
   stroke-width: 0.5px;
@@ -918,34 +917,34 @@
 /* Runtime mode: boundary labels keep their Zero/Press stage colors */
 /* (No override needed - base styles apply) */
 
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-chronological-tick-major,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-chronological-tick-minor {
+.radial-timeline-svg[data-runtime-view="true"] .rt-chronological-tick-major,
+.radial-timeline-svg[data-runtime-view="true"] .rt-chronological-tick-minor {
   stroke: rgba(60, 120, 180, 0.5);
 }
 
 /* 6. Hover State: Full Opacity, Brighter Blue with glow (matches ALT red glow pattern) */
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"]:hover,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"].rt-shift-locked {
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"]:hover,
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover,
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"].rt-shift-locked {
   opacity: 1;
   transition: none;
 }
 
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"]:hover .rt-scene-path,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-scene-path,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path.rt-shift-locked {
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"]:hover .rt-scene-path,
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-scene-path,
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"] .rt-scene-path.rt-shift-locked {
   fill: rgba(80, 160, 255, 1);
   stroke: rgba(80, 160, 255, 1);
   stroke-width: 2px;
 }
 
 /* 7. Duration/Runtime arcs get blue tint in runtime mode */
-.radial-timeline-container .radial-timeline-svg[data-shift-mode="runtime"] .rt-duration-arc {
+.radial-timeline-container .radial-timeline-svg[data-runtime-view="true"] .rt-duration-arc {
   stroke: rgba(60, 160, 220, 0.8);
 }
 
 /* Unparseable arcs (no Runtime value) stay RED even in runtime mode */
-.radial-timeline-container .radial-timeline-svg[data-shift-mode="runtime"] .rt-duration-arc.rt-duration-arc-unparseable {
+.radial-timeline-container .radial-timeline-svg[data-runtime-view="true"] .rt-duration-arc.rt-duration-arc-unparseable {
   stroke: var(--rt-color-due);
 }
 
@@ -979,35 +978,35 @@
 
 /* Runtime hover: keep number squares/text tinted instead of turning white */
 /* High specificity via attribute + attribute + class chain */
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"]:hover .rt-number-square,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-number-square,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"] .rt-number-square.rt-shift-locked {
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"]:hover .rt-number-square,
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-number-square,
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"] .rt-number-square.rt-shift-locked {
   fill: var(--interactive-normal);
   stroke: none;
   opacity: 0.6;
 }
 
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"]:hover .rt-number-text,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-number-text,
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-group[data-item-type="Scene"] .rt-number-text.rt-shift-locked {
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"]:hover .rt-number-text,
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"].rt-shift-hover .rt-number-text,
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Scene"] .rt-number-text.rt-shift-locked {
   fill: rgba(60, 140, 200, 0.9);
   opacity: 0.8;
 }
 
 /* Runtime scene-hover (global .scene-hover flag): keep AI grade squares/text tinted */
-.radial-timeline-svg[data-shift-mode="runtime"].scene-hover .rt-number-square {
+.radial-timeline-svg[data-runtime-view="true"].scene-hover .rt-number-square {
   fill: var(--interactive-normal);
   stroke: none;
   opacity: 0.6;
 }
 
-.radial-timeline-svg[data-shift-mode="runtime"].scene-hover .rt-number-text {
+.radial-timeline-svg[data-runtime-view="true"].scene-hover .rt-number-text {
   fill: rgba(60, 140, 200, 0.9);
   opacity: 0.8;
 }
 
 /* Runtime hover: synopsis/info text stays blue-tinted */
-.radial-timeline-svg[data-shift-mode="runtime"] .rt-scene-info.rt-visible {
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-info.rt-visible {
   opacity: 1;
   color: rgba(60, 140, 200, 0.9);
   fill: rgba(60, 140, 200, 0.9);
@@ -1162,8 +1161,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--size-2-1);
-  /* Sit tight to the Chronologue button, with a clear gap before "4 Gossamer",
-     so the sub-group reads as nested under Chronologue, not part of the row. */
+  /* Sit tight to its mode button, with a clear gap before the next mode, so
+     the sub-group reads as nested under that mode, not part of the row. */
   margin-inline-start: var(--size-2-2);
   margin-inline-end: var(--size-4-3);
 }

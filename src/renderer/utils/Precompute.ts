@@ -4,14 +4,11 @@
  */
 
 import type { TimelineItem } from '../../types';
-import { shouldRenderStoryBeats } from '../modules/ModeRenderingHelpers';
+import { resolveSubplotOuterRadius, shouldRenderStoryBeats } from '../modules/ModeRenderingHelpers';
 import { isBeatNote, isMatterNote, sortScenes, usesWhenOrdering, type PluginRendererFacade } from '../../utils/sceneHelpers';
 import {
     SVG_SIZE,
     INNER_RADIUS,
-    SUBPLOT_OUTER_RADIUS_MAINPLOT,
-    SUBPLOT_OUTER_RADIUS_STANDARD,
-    SUBPLOT_OUTER_RADIUS_CHRONOLOGUE,
     MONTH_LABEL_RADIUS,
     BACKDROP_RING_HEIGHT,
     MICRO_RING_GAP,
@@ -113,13 +110,13 @@ export interface PrecomputedRenderValues {
 
 export function computeCacheableValues(
     plugin: PluginRendererFacade,
-    scenes: TimelineItem[]
+    scenes: TimelineItem[],
+    options: { runtimeView?: boolean } = {}
 ): PrecomputedRenderValues {
     const stopPrecompute = startPerfSegment(plugin, 'timeline.precompute');
 
     const currentMode = plugin.settings.currentMode || 'narrative';
     const isChronologueMode = currentMode === 'chronologue';
-    const isProgressMode = currentMode === 'progress';
     const isSagaScope = getTimelineScope(plugin.settings) === 'saga';
     const segmentCount = getTimelineSegmentCount(plugin.settings);
     const readabilityScale = getReadabilityScale(plugin.settings);
@@ -274,11 +271,7 @@ export function computeCacheableValues(
         dominantSubplots: plugin.settings.dominantSubplots
     });
 
-    const subplotOuterRadius = isChronologueMode
-        ? SUBPLOT_OUTER_RADIUS_CHRONOLOGUE
-        : isProgressMode
-            ? SUBPLOT_OUTER_RADIUS_MAINPLOT
-            : SUBPLOT_OUTER_RADIUS_STANDARD[readabilityScale];
+    const subplotOuterRadius = resolveSubplotOuterRadius(currentMode, readabilityScale, options.runtimeView === true);
 
     const fixedRings: Array<{ index: number; width: number }> = [];
     const backdropSubplotIndex = masterSubplotOrder.indexOf('Backdrop');

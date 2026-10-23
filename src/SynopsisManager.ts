@@ -19,10 +19,8 @@ import { getPublishStageStyle, splitSynopsisLines, decodeContentLines, isOverdue
 import { createSynopsisContainer, createTextGroup, createText } from './synopsis/SynopsisView';
 import { convertFromEarth, getActivePlanetaryProfile } from './utils/planetaryTime';
 import { t } from './i18n';
+import { resolveSubplotOuterRadius } from './renderer/modules/ModeRenderingHelpers';
 import {
-  SUBPLOT_OUTER_RADIUS_MAINPLOT,
-  SUBPLOT_OUTER_RADIUS_STANDARD,
-  SUBPLOT_OUTER_RADIUS_CHRONOLOGUE,
   SYNOPSIS_INSET,
   MAX_TEXT_WIDTH,
   INNER_RADIUS
@@ -1601,15 +1599,10 @@ export default class SynopsisManager {
     const quadrant = this.getQuadrant(svgP.x, svgP.y);
 
     const currentMode = this.plugin.settings.currentMode || 'narrative';
-    const isChronologueMode = currentMode === 'chronologue';
-    const isProgressMode = currentMode === 'progress';
     const readabilityScale = getReadabilityScale(this.plugin.settings);
-
-    const subplotOuterRadius = isChronologueMode
-      ? SUBPLOT_OUTER_RADIUS_CHRONOLOGUE
-      : isProgressMode
-        ? SUBPLOT_OUTER_RADIUS_MAINPLOT
-        : SUBPLOT_OUTER_RADIUS_STANDARD[readabilityScale];
+    // The rendered SVG says whether the Narrative runtime view pulled the rings in.
+    const runtimeView = svg.getAttribute('data-runtime-view') === 'true';
+    const subplotOuterRadius = resolveSubplotOuterRadius(currentMode, readabilityScale, runtimeView);
 
     const adjustedRadius = subplotOuterRadius - SYNOPSIS_INSET;
 

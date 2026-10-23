@@ -1,0 +1,156 @@
+/* Narrative: runtime view ([data-runtime-view="true"]) */
+
+/* Base tinting - matches ALT mode visibility with blue theme */
+.radial-timeline-container .radial-timeline-svg[data-runtime-view="true"] .rt-backdrop-ring-background {
+  stroke: rgba(60, 140, 220, 0.5);
+  stroke-opacity: 0.15;
+}
+
+.radial-timeline-container .radial-timeline-svg[data-runtime-view="true"] .rt-backdrop-micro-ring-background {
+  stroke: rgba(60, 140, 220, 0.5);
+  stroke-opacity: 0.15;
+}
+
+.radial-timeline-container .radial-timeline-svg[data-runtime-view="true"] .rt-backdrop-border {
+  stroke: rgba(60, 140, 220, 0.5);
+  opacity: 1;
+}
+
+.radial-timeline-container .radial-timeline-svg[data-runtime-view="true"] .rt-backdrop-label {
+  fill: rgba(60, 140, 220, 0.8);
+  opacity: 0.3;
+}
+
+.radial-timeline-container .radial-timeline-svg[data-runtime-view="true"] .rt-backdrop-segment {
+  fill: rgba(60, 140, 220, 0.05);
+  stroke: rgba(60, 140, 220, 0.3);
+  stroke-width: 1px;
+}
+
+.radial-timeline-container .radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Backdrop"],
+.radial-timeline-container .radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Backdrop"] * {
+  pointer-events: none;
+}
+
+.radial-timeline-container .radial-timeline-svg[data-runtime-view="true"] .rt-backdrop-micro-ring,
+.radial-timeline-container .radial-timeline-svg[data-runtime-view="true"] .rt-backdrop-micro-tick {
+  stroke: rgba(60, 140, 220, 0.8);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Runtime mode elapsed time arc and label - blue styling */
+.radial-timeline-svg[data-runtime-view="true"] .rt-elapsed-arc-path {
+  stroke: rgba(60, 160, 220, 0.9);
+  stroke-width: 3px;
+}
+
+.radial-timeline-svg[data-runtime-view="true"] .rt-elapsed-endpoint-marker {
+  stroke: rgba(60, 160, 220, 1);
+  stroke-width: 2px;
+}
+
+.radial-timeline-svg[data-runtime-view="true"] .rt-elapsed-time-label {
+  fill: rgba(60, 160, 220, 1);
+  stroke: white;
+  stroke-width: 5px;
+}
+
+/* Runtime tick labels at arc heads */
+.rt-runtime-tick-label {
+  font-size: 11px;
+  font-weight: 600;
+  fill: rgba(60, 160, 220, 1);
+  stroke: var(--background-primary);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  paint-order: stroke fill;
+  pointer-events: none;
+}
+
+.radial-timeline-container .radial-timeline-svg .rt-runtime-tick-mark {
+  stroke: rgba(60, 160, 220, 1);
+  stroke-width: 2px;
+}
+
+/* RT Button Warning State (no runtime data) - clean, no glow */
+.rt-runtime-button.rt-runtime-no-data .rt-runtime-icon-bg {
+  fill: rgba(200, 60, 60, 0.15);
+  stroke: var(--text-error);
+}
+
+.rt-runtime-button.rt-runtime-no-data .rt-runtime-lucide-icon {
+  stroke: var(--text-error);
+}
+
+.rt-runtime-button.rt-runtime-no-data:hover .rt-runtime-icon-bg {
+  fill: rgba(200, 60, 60, 0.3);
+  stroke: var(--text-error);
+}
+
+.rt-runtime-button.rt-runtime-no-data:hover .rt-runtime-lucide-icon {
+  stroke: var(--text-error);
+}
+
+/* Runtime view overlay: scene arcs inside each equal slice, and the running
+   totals around the perimeter. Pointer events pass through to the scenes. */
+.rt-runtime-overlay {
+  pointer-events: none;
+}
+
+.rt-runtime-arcs .rt-duration-arc {
+  fill: none;
+  stroke: color-mix(in srgb, var(--rt-color-runtime) 80%, transparent);
+  stroke-width: 6px;
+}
+
+/* A scene with no Runtime shows a short red stub */
+.rt-runtime-arcs .rt-duration-arc.rt-duration-arc-unparseable {
+  stroke: var(--rt-color-due);
+}
+
+.rt-runtime-outer-label {
+  font-size: 16px;
+  fill: var(--rt-color-runtime);
+  stroke: var(--background-primary);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+
+/* Opening 0:00 and the closing total keep the Zero and Press stage colours */
+.rt-runtime-outer-label-first {
+  fill: var(--rt-publishStageColors-Zero);
+  font-weight: 500;
+}
+
+.rt-runtime-outer-label-last {
+  fill: var(--rt-publishStageColors-Press);
+  font-weight: 500;
+}
+
+/* Act and beat labels share the perimeter lane the running totals take, and
+   chapter badges are left out of the render, while the runtime view is on. */
+.radial-timeline-svg[data-runtime-view="true"] .rt-act-label,
+.radial-timeline-svg[data-runtime-view="true"] .rt-storybeat-title {
+  opacity: 0;
+}
+
+/* RT keycap icon: centred in its rounded square; the keycap group takes the
+   pointer so its tooltip never sticks. */
+.rt-runtime-icon-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.rt-runtime-icon-wrapper .rt-runtime-lucide-icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+  fill: none;
+}

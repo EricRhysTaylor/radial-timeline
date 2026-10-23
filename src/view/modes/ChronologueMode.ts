@@ -278,9 +278,9 @@ function setupSceneHoverInteractions(view: RadialTimelineView, svg: SVGSVGElemen
 
     // Register hover handlers for Scene elements
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
-        // Suspend hover synopsis reveal when shift/alt/runtime mode is active
+        // Suspend hover synopsis reveal when shift/alt mode is active
         // CHECK THIS FIRST before any other work!
-        if (view.chronologueState.shift || view.chronologueState.alien || view.chronologueState.runtime || isSubplotDragActive()) {
+        if (view.chronologueState.shift || view.chronologueState.alien || isSubplotDragActive()) {
             return;
         }
 
@@ -392,8 +392,8 @@ function setupSceneClickInteractions(view: RadialTimelineView, svg: SVGSVGElemen
             return;
         }
 
-        // When shift/alt/runtime mode is active, delegate to shift controller
-        if (view.chronologueState.shift || view.chronologueState.alien || view.chronologueState.runtime) {
+        // When shift/alt mode is active, delegate to shift controller
+        if (view.chronologueState.shift || view.chronologueState.alien) {
             const handled = view.handleShiftModeClick?.(e, g);
             if (handled) {
                 return; // Shift/ALT mode handled the click

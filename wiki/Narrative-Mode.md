@@ -17,6 +17,7 @@ Narrative Mode is your primary manuscript-order workspace. It displays all scene
 *   **Interactive Reordering**: You can drag scenes on the outer ring to reorder them. See [Reorder Scenes](How-to#reorder-scenes) for details.
 *   **Scene right-click menu**: Add a scene after the current one, set a chapter marker, change Status, change Publish Stage, or flag it for Pulse — see below.
 *   **Recent moves overlay**: Narrative Mode can show a top-left list of recent committed scene and beat moves. Toggle it in [Settings → Advanced → Configuration](Settings-Advanced#configuration).
+*   **Runtime view** ✦ Pro: Click **RT** to see how long each scene runs and the running time of the book in reading order. See [Runtime view](#runtime-view).
 
 <div style="text-align: center; margin: 20px 0;">
   <img src="images/mode-narrative-beats.png" alt="Narrative Mode with Save the Cat beats around the outer ring and the recent moves overlay at top left" style="width: 480px; max-width: 100%; border-radius: 8px;" />
@@ -34,6 +35,35 @@ The **alignment chip** at the left of the mode row switches how subplot rings la
   <img src="images/mode-sequence.webp" alt="Sequence alignment: subplot rings aligned to manuscript position with dormant stretches left empty" style="width: 640px; max-width: 100%; border-radius: 8px;" />
   <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Sequence alignment — each subplot ring aligned to manuscript position; empty cells show where a thread is dormant</div>
 </div>
+
+<a name="runtime-view"></a>
+<a name="runtime-mode-pro"></a>
+## Runtime View ✦ Pro
+
+Runtime follows **narrative order** — the order a reader, listener, or audience meets your scenes. The Runtime view shows how long each scene runs and how the minutes add up across the book.
+
+- Turn it on with the `RT` keycap at the top left of the timeline, or the **Runtime** chip beside **Narrative** in the mode row. Click either again to turn it off.
+- Every scene keeps its equal slice of the ring. Inside each slice, a blue arc grows with that scene's runtime, measured against the longest scene, with the scene's runtime at the arc's tip.
+- A scene with no `Runtime` value shows a short red stub, so you can see which scenes still need an estimate.
+- Around the perimeter, each tick shows the running time when that scene begins: `0:00` at the first scene, and the book's total at the end of the last.
+- Click any two scenes to see the runtime from the first through the second, both scenes included. Click a selected scene again to release it.
+- The book's total runtime appears at the center of the timeline.
+
+While the Runtime view is on, clicks select scenes for comparison; turn it off to open scenes or drag them into a new order. Act labels, beat labels, and chapter placards rest while the running totals use the perimeter.
+
+**Use cases:**
+- **Screenplay pacing** — Check act timing and scene balance in screen time
+- **Audiobook planning** — See where each chapter starts in the listening time
+- **Podcast structure** — Plan episode segments with time awareness
+
+**How to use:**
+1. Enable Runtime Estimation in **Settings → Core**
+2. Configure a runtime profile matching your content type (Novel or Screenplay)
+3. Run **Runtime estimator** from the command palette to fill each scene's `Runtime`
+4. Switch to Narrative mode (`2`) and click `RT`
+
+> [!NOTE]
+> Runtime estimates appear in scene hover tooltips when Runtime Estimation is enabled. See [Settings → Runtime estimation](Settings-Core#runtime-estimation) for configuration and [Pro](Pro) for full Pro documentation. With a [Timetable](Timetable) open, the Runtime view adds a **Running time** column.
 
 ## Scene Right-Click Menu
 

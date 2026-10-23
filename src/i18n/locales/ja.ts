@@ -478,7 +478,7 @@ export const ja: DeepPartial<TranslationKeys> = {
         runtime: {
             header: {
                 name: 'ランタイム推定',
-                desc: 'Chronologue モード、タイムラインのホバー、ランタイムツール全体で、読書・ナレーション・脚本のランタイムを推定します。',
+                desc: '叙事モード、タイムラインのホバー、ランタイムツール全体で、読書・ナレーション・脚本のランタイムを推定します。',
                 badgeText: 'Pro',
             },
             contentType: {
@@ -3719,6 +3719,8 @@ export const ja: DeepPartial<TranslationKeys> = {
             shiftTooltip: 'シーンの経過時間の比較と間隔の可視化',
             altButton: 'ALT',
             altTooltip: '惑星カレンダーを切り替え',
+        },
+        narrativeRuntimeController: {
             runtimeNoData: 'ランタイムのデータが見つかりません。コマンドパレットから「ランタイムを推定」を実行して、シーンのランタイムを設定してください。',
             runtimeScreenplay: 'ランタイムモードを切り替え（脚本）',
             runtimeNovel: 'ランタイムモードを切り替え（オーディオブック/小説）',
@@ -6955,6 +6957,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             modeNavAria: '{{mode}} モード（{{number}}）',
             modeNavTooltip: '{{mode}} — {{number}} キーを押す',
             chronologueSubModes: 'Chronologue のサブモード',
+            narrativeSubModes: '叙事のサブモード',
             subNavShift: 'Shift',
             subNavShiftAria: 'Shift — 経過時間の比較',
             subNavAlt: 'Alt',

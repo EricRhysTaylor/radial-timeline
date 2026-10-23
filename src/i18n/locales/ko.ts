@@ -477,7 +477,7 @@ export const ko: DeepPartial<TranslationKeys> = {
         runtime: {
             header: {
                 name: '런타임 추정',
-                desc: '연대기 모드, 타임라인 호버, 런타임 도구 전반에서 읽기, 나레이션, 시나리오 런타임을 추정합니다.',
+                desc: '서사 모드, 타임라인 호버, 런타임 도구 전반에서 읽기, 나레이션, 시나리오 런타임을 추정합니다.',
                 badgeText: 'Pro',
             },
             contentType: {
@@ -3718,6 +3718,8 @@ export const ko: DeepPartial<TranslationKeys> = {
             shiftTooltip: '장면 경과 시간 비교 및 간격 시각화',
             altButton: 'ALT',
             altTooltip: '행성 달력 전환',
+        },
+        narrativeRuntimeController: {
             runtimeNoData: '런타임 데이터가 없습니다. 명령 팔레트에서 "런타임 추정"을 실행하여 장면 런타임을 생성하세요.',
             runtimeScreenplay: '런타임 모드 전환 (시나리오)',
             runtimeNovel: '런타임 모드 전환 (오디오북/소설)',
@@ -6954,6 +6956,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             modeNavAria: '{{mode}} 모드 ({{number}})',
             modeNavTooltip: '{{mode}} — {{number}} 키',
             chronologueSubModes: '연대기 하위 모드',
+            narrativeSubModes: '서사 하위 모드',
             subNavShift: 'Shift',
             subNavShiftAria: 'Shift — 경과 시간 비교',
             subNavAlt: 'Alt',

@@ -162,7 +162,14 @@ export const NARRATIVE_CHAPTER_MARKER_RADIUS = 792;
 /** Absolute radius for chronologue duration arcs (750 + 8px offset) */
 export const CHRONOLOGUE_DURATION_ARC_RADIUS = 758;
 
-/** Absolute radius for elapsed time arc (SHIFT mode) - based on standard outer radius */
+/**
+ * Absolute radius for the Narrative runtime view's scene arcs. The runtime view
+ * pulls the rings in to the Chronologue radius (750), so its arcs take the same
+ * lane as Chronologue's duration arcs.
+ */
+export const NARRATIVE_RUNTIME_ARC_RADIUS = 758;
+
+/** Absolute radius for the two-scene comparison arc (Shift, and the Narrative runtime view) */
 export const ELAPSED_ARC_RADIUS = 766;
 
 /** Length of elapsed time arc endpoint markers (px) */

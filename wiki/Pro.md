@@ -15,7 +15,7 @@ Pro workflows appear throughout Radial Timeline in magenta.
 
 *   **Timetable and sketches** — a Bases view beside the wheel, with scene properties, sketch drawers, and note promotion. Available to everyone in 7.5.0; enable the Bases core plugin. See [Timetable](Timetable).
 *   **Inquiry+** — the extended question set and a higher custom-question ceiling per zone. See [Settings → Inquiry](Settings-Inquiry) and [Inquiry](Inquiry).
-*   **Runtime estimation** — screen time, audiobook duration, and manuscript-length analysis. See [Runtime estimator](Commands#runtime-estimator), [Chronologue Runtime](Chronologue-Mode#runtime-mode-pro), and [Settings → Core](Settings-Core#runtime-estimation).
+*   **Runtime estimation** — screen time, audiobook duration, and manuscript-length analysis. See [Runtime estimator](Commands#runtime-estimator), [Runtime view](Narrative-Mode#runtime-view), and [Settings → Core](Settings-Core#runtime-estimation).
 *   **Advanced publishing layouts** — the Professional, Signature, Screenplay, and Podcast Script templates, plus designed-style editing, template import, and custom Pandoc/LaTeX metadata. See [Publishing](Publishing) and [Manuscript Export](Manuscript-Export).
 *   **Campaign Manager / Teaser Reveal** — multiple APR campaigns and staged public reveals. See [Author Progress Report](Author-Progress-Report).
 *   **Saga timeline scope** — view an entire multi-book saga on one timeline.

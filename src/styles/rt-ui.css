@@ -3333,7 +3333,7 @@
   grid-column: 1 / -1;
   justify-self: stretch;
   align-self: start;
-  margin: 0;
+  margin: var(--ert-gap-xs) 0;
   padding: 0;
   min-width: 0;
 }

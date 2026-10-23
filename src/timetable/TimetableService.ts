@@ -26,6 +26,7 @@ import {
     buildSagaTimetableContent,
     findTimetableViewName,
     retargetFolderFilter,
+    retargetSagaFolderFilter,
     SAGA_TIMETABLE_KEY,
     tableFilePath,
     tableFileStem,
@@ -177,18 +178,18 @@ export class TimetableService {
 
     /**
      * Keep the table's folder filter on the book's folder when the book has
-     * moved. Only the filter term RT wrote changes; if the author edited it,
-     * the file is left alone.
+     * moved, or on the saga's books when the saga changes. Only the filter RT
+     * wrote changes; if the author edited it, the file is left alone.
      */
     private async followFolders(file: TFile, record: TimetableFileRecord, target: TimetableTarget): Promise<void> {
         if (record.folders.join('\n') === target.folders.join('\n')) return;
         const { app } = this.plugin;
         if (target.key === SAGA_TIMETABLE_KEY) {
-            // The saga's book list changed: replace the filter, keep everything else.
             await app.vault.process(file, content => {
                 const parsed = parseYaml(content) as Record<string, unknown> | null;
                 if (!parsed || typeof parsed !== 'object') return content;
-                return stringifyYaml({ ...parsed, filters: target.build().filters });
+                const next = retargetSagaFolderFilter(parsed, record.folders, target.folders);
+                return next ? stringifyYaml(next) : content;
             });
         } else if (record.folders.length === 1) {
             await app.vault.process(file, content => retargetFolderFilter(content, record.folders[0], target.folders[0]) ?? content);

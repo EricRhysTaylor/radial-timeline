@@ -6,6 +6,7 @@ import {
     buildSagaTimetableContent,
     findTimetableViewName,
     retargetFolderFilter,
+    retargetSagaFolderFilter,
     tableColumns,
     tableFileStem,
     TIMETABLE_VIEW_TYPE,
@@ -89,6 +90,49 @@ describe('retargetFolderFilter', () => {
 
     it('rewrites nothing when the author changed the filter', () => {
         expect(retargetFolderFilter('- file.inFolder("Elsewhere")', 'Book 2', 'B')).toBeNull();
+    });
+});
+
+describe('retargetSagaFolderFilter', () => {
+    const group = (...folders: string[]) => ({ or: folders.map(folder => `file.inFolder("${folder}")`) });
+
+    it('adds a joining book and keeps the author’s own All views filters', () => {
+        const parsed = {
+            filters: { and: ['POV == "Kade"', group('Book 1', 'Book 2'), 'file.ext == "md"'] },
+            views: [{ type: TIMETABLE_VIEW_TYPE, name: 'Timetable', order: ['file.name'] }],
+        };
+        expect(retargetSagaFolderFilter(parsed, ['Book 1', 'Book 2'], ['Book 1', 'Book 2', 'Book 3'])).toEqual({
+            filters: { and: ['POV == "Kade"', group('Book 1', 'Book 2', 'Book 3'), 'file.ext == "md"'] },
+            views: [{ type: TIMETABLE_VIEW_TYPE, name: 'Timetable', order: ['file.name'] }],
+        });
+    });
+
+    it('follows the group into the one view the author moved it to', () => {
+        const parsed = {
+            filters: { and: ['file.ext == "md"'] },
+            views: [
+                { type: TIMETABLE_VIEW_TYPE, name: 'Timetable', filters: { and: ['Words > 0', group('Book 2', 'Book 1')] } },
+                { type: 'table', name: 'Table' },
+            ],
+        };
+        const next = retargetSagaFolderFilter(parsed, ['Book 1', 'Book 2'], ['Book 1']);
+        expect(next?.filters).toEqual({ and: ['file.ext == "md"'] });
+        expect(next?.views).toEqual([
+            { type: TIMETABLE_VIEW_TYPE, name: 'Timetable', filters: { and: ['Words > 0', group('Book 1')] } },
+            { type: 'table', name: 'Table' },
+        ]);
+    });
+
+    it('also finds the single-quoted form Obsidian may save', () => {
+        const parsed = { filters: { and: [{ or: ["file.inFolder('Book 1')", "file.inFolder('Book 2')"] }] } };
+        expect(retargetSagaFolderFilter(parsed, ['Book 1', 'Book 2'], ['Book 3'])?.filters).toEqual({ and: [group('Book 3')] });
+    });
+
+    it('rewrites nothing when the author changed the group', () => {
+        const extraTerm = { filters: { and: [{ or: ['file.inFolder("Book 1")', 'file.inFolder("Book 2")', 'file.inFolder("Notes")'] }] } };
+        const droppedBook = { filters: { and: [group('Book 1')] } };
+        expect(retargetSagaFolderFilter(extraTerm, ['Book 1', 'Book 2'], ['Book 3'])).toBeNull();
+        expect(retargetSagaFolderFilter(droppedBook, ['Book 1', 'Book 2'], ['Book 3'])).toBeNull();
     });
 });
 

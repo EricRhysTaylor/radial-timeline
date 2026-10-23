@@ -183,6 +183,11 @@ export function buildSagaTimetableContent(
     };
 }
 
+/** The folder filter term for `folder` in each form Obsidian may save: RT's double quotes, or single quotes. */
+function folderFilterTerms(folder: string): string[] {
+    return [folderFilter(folder), `file.inFolder('${folder.replace(/'/g, "''")}')`];
+}
+
 /**
  * Point a table file's folder filter at a book's new folder. Only the exact
  * filter term RT wrote is replaced, so the author's own filters, views and
@@ -190,12 +195,52 @@ export function buildSagaTimetableContent(
  * isn't in the file (the author changed the filter), so nothing is rewritten.
  */
 export function retargetFolderFilter(content: string, fromFolder: string, toFolder: string): string | null {
-    const quoted = (folder: string) => [JSON.stringify(folder), `'${folder.replace(/'/g, "''")}'`];
-    for (const from of quoted(fromFolder)) {
-        const term = `file.inFolder(${from})`;
+    for (const term of folderFilterTerms(fromFolder)) {
         if (content.includes(term)) return content.split(term).join(folderFilter(toFolder));
     }
     return null;
+}
+
+/** True when `items` is the saga's book-folder group: one folder term per folder in `folders`, in any order. */
+function isFolderGroup(items: unknown[], folders: string[]): boolean {
+    if (items.length !== folders.length) return false;
+    const unmatched = [...folders];
+    for (const item of items) {
+        if (typeof item !== 'string') return false;
+        const index = unmatched.findIndex(folder => folderFilterTerms(folder).includes(item.trim()));
+        if (index === -1) return false;
+        unmatched.splice(index, 1);
+    }
+    return true;
+}
+
+/**
+ * Point the saga table at the saga's books after a book joins, leaves or
+ * moves. Only the `or` group of book folders RT wrote is replaced, wherever
+ * the author has dragged it: among All views' filters or one view's, at any
+ * position. The author's other filters stay. Returns null when no group lists
+ * exactly the old folders (the author changed it), so nothing is rewritten.
+ */
+export function retargetSagaFolderFilter(parsed: Record<string, unknown>, fromFolders: string[], toFolders: string[]): Record<string, unknown> | null {
+    let found = false;
+    const retarget = (node: unknown): unknown => {
+        if (Array.isArray(node)) return node.map(retarget);
+        if (!node || typeof node !== 'object') return node;
+        const group = node as Record<string, unknown>;
+        if (Array.isArray(group.or) && isFolderGroup(group.or, fromFolders)) {
+            found = true;
+            return { ...group, or: toFolders.map(folderFilter) };
+        }
+        return Object.fromEntries(Object.entries(group).map(([key, value]) => [key, retarget(value)]));
+    };
+    const withFilters = <T extends object>(owner: T): T =>
+        'filters' in owner ? { ...owner, filters: retarget((owner as { filters?: unknown }).filters) } : owner;
+
+    const next: Record<string, unknown> = { ...withFilters(parsed) };
+    if (Array.isArray(parsed.views)) {
+        next.views = parsed.views.map(view => (view && typeof view === 'object' ? withFilters(view as object) : view));
+    }
+    return found ? next : null;
 }
 
 /** The name of the first Timetable view in a parsed `.base` file, if it has one. */

@@ -549,12 +549,13 @@ export class TimetableView extends BasesView {
     }
 
     /**
-     * Narrative's runtime view: the running time through each scene row, in the
-     * order the table lists them — manuscript order unless the author sorted.
+     * Narrative's runtime view: the running time through each scene row in
+     * manuscript order — the same totals the wheel shows — however the table is
+     * grouped or sorted.
      */
     private narrativeRunning(groups: TableGroup[]): Map<string, number> {
         const { settings } = this.plugin;
-        const items = groups.flatMap(group => group.items);
+        const items = groups.flatMap(group => group.items).sort((a, b) => compareManuscriptRows(a.row, b.row));
         const totals = runningTotals(items.map(item => item.row.kind === 'scene' ? readRuntimeSeconds(item.frontmatter, settings) : null));
         return new Map(items.map((item, index) => [item.row.path, totals[index]]));
     }

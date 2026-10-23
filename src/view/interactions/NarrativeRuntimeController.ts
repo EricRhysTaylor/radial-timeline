@@ -80,7 +80,9 @@ export function setupNarrativeRuntimeController(view: RadialTimelineView, svg: S
     view.showNarrativeSubNav({ runtimeNoData: !hasRuntimeData });
     syncHeader();
 
-    if (!state.runtime) return;
+    // Selection follows what the renderer drew, so it never wires up over a
+    // wheel that has no runtime overlay.
+    if (svg.getAttribute('data-runtime-view') !== 'true') return;
     setupRuntimeSelection(view, svg);
 }
 
@@ -97,7 +99,8 @@ function setupRuntimeSelection(view: RadialTimelineView, svg: SVGSVGElement): vo
         startAngle: parseFloat(group.getAttribute('data-start-angle') ?? 'NaN'),
         endAngle: parseFloat(group.getAttribute('data-end-angle') ?? 'NaN')
     }));
-    const sliceIndexByPath = new Map(slices.map((slice, index) => [slice.path, index]));
+    // Scenes without a path can't be matched to a slice, so they stay out of the lookup.
+    const sliceIndexByPath = new Map(slices.flatMap((slice, index): Array<[string, number]> => (slice.path ? [[slice.path, index]] : [])));
     const runtimes = slices.map(slice => (slice.seconds > 0 ? slice.seconds : null));
     const layer = svg.querySelector('.rt-runtime-overlay');
     let selected: TimelineItem[] = [];

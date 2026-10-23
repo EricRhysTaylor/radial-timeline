@@ -30,7 +30,6 @@ export type ChronologueLabel = {
     isMajor?: boolean;
     isFirst?: boolean;
     isLast?: boolean;
-    sceneIndex?: number;
     earthDate?: string;
 };
 
@@ -63,7 +62,6 @@ export function buildChronologueOuterLabels(
         isMajor: tick.isMajor,
         isFirst: tick.isFirst,
         isLast: tick.isLast,
-        sceneIndex: tick.sceneIndex,
         earthDate: tick.earthDate
     }));
     // Reference dates live on their overlay tooltip and Timetable subrow.

@@ -111,9 +111,10 @@ export class ModeInteractionController {
         const { setupNarrativeRuntimeController } = await import('../view/interactions/NarrativeRuntimeController');
         setupNarrativeRuntimeController(this.view, svg);
 
-        // While the runtime view is on, clicks select scenes to compare, so
-        // reordering waits until it is off.
-        if (this.view.narrativeState.runtime) return;
+        // While the runtime view is drawn, clicks select scenes to compare, so
+        // reordering waits until it is off. Read from the SVG so interaction
+        // always matches what was rendered.
+        if (svg.getAttribute('data-runtime-view') === 'true') return;
 
         // Setup drag-to-reorder on the outer ring (narrative mode only)
         setupOuterRingDrag(this.view, svg);

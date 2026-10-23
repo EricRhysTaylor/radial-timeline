@@ -2301,6 +2301,7 @@
 /* Right-justify the Full Manuscript / Stage Tracking dropdown row inside its grid cell. */
 .ert-ui .ert-apr-modeCell .ert-typography-controls {
   justify-content: flex-end;
+  margin: var(--ert-gap-xs) 0;
 }
 
 .ert-ui .ert-apr-flow__track {
@@ -7096,6 +7097,7 @@
   justify-self: end;
   align-self: center;
   min-width: 0;
+  margin: var(--ert-gap-xs) 0;
 }
 
 .ert-ui.ert-scope--settings .ert-campaign-refresh-controls {
@@ -7104,6 +7106,7 @@
   align-items: center;
   gap: var(--ert-gap-sm);
   width: 220px;
+  max-width: 100%;
 }
 
 .ert-ui.ert-scope--settings .ert-campaign-refresh-controls input[type="range"] {
@@ -7173,10 +7176,33 @@
   display: flex;
   align-items: center;
   min-width: 0;
+  margin: var(--ert-gap-xs) 0;
 }
 
 .ert-ui.ert-scope--settings .ert-campaign-style-card__control select {
   max-width: 100%;
+}
+
+@container ert-settings (max-width: 680px) {
+  .ert-ui.ert-scope--settings .ert-apr-progressModeGrid,
+  .ert-ui.ert-scope--settings .ert-campaign-style-grid,
+  .ert-ui.ert-scope--settings .ert-campaign-frequency-setting__row {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--ert-gap-sm);
+  }
+
+  .ert-ui.ert-scope--settings .ert-apr-progressModeGrid > .ert-divider--vertical {
+    display: none;
+  }
+
+  .ert-ui.ert-scope--settings .ert-apr-modeCell .ert-typography-controls {
+    justify-content: flex-start;
+  }
+
+  .ert-ui.ert-scope--settings .ert-settingComposite__control {
+    justify-self: start;
+    max-width: 100%;
+  }
 }
 
 .ert-ui.ert-scope--settings .ert-campaign-style-card__actions {
@@ -7782,7 +7808,7 @@
   background: color-mix(in srgb, var(--background-primary) 88%, transparent);
 }
 
-@media (max-width: 980px) {
+@container ert-settings (max-width: 980px) {
   .ert-ui.ert-scope--settings .ert-layout-imported {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -7905,6 +7931,7 @@
 
 .ert-ui.ert-scope--settings .ert-layout-visual-cols {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--ert-gap-md);
   align-items: flex-start;
 }
@@ -7912,7 +7939,7 @@
 /* -- LEFT: Feature List -- */
 
 .ert-ui.ert-scope--settings .ert-layout-visual-features {
-  flex: 1 1 auto;
+  flex: 1 1 14rem;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -9616,7 +9643,7 @@
   background-image: linear-gradient(to right, currentColor 50%, transparent 50%);
 }
 
-@media (max-width: 980px) {
+@container ert-settings (max-width: 980px) {
   .ert-ui.ert-scope--settings .ert-bookmeta-module--details .ert-bookmeta-primary,
   .ert-ui.ert-scope--settings .ert-bookmeta-module--details .ert-bookmeta-detail-grid {
     grid-row: auto;
@@ -9627,7 +9654,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@container ert-settings (max-width: 720px) {
   .ert-ui.ert-scope--settings .ert-publishing-status-grid {
     grid-template-columns: 1fr;
   }
@@ -10593,7 +10620,7 @@
 
 .ert-ui.ert-scope--settings .ert-goals-stat-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 6rem), 1fr));
   gap: var(--ert-gap-xs);
 }
 
@@ -10708,7 +10735,7 @@
   font-weight: 700;
 }
 
-@media (max-width: 720px) {
+@container ert-settings (max-width: 720px) {
   .ert-ui.ert-scope--settings .ert-goals-stats-summary {
     align-items: flex-start;
   }
@@ -10716,10 +10743,6 @@
   .ert-ui.ert-scope--settings .ert-goals-stats-summary__community {
     flex-basis: 100%;
     margin-left: calc(2rem + var(--ert-gap-md));
-  }
-
-  .ert-ui.ert-scope--settings .ert-goals-stat-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

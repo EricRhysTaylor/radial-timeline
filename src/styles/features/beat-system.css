@@ -843,9 +843,9 @@
 
 :is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .setting-item.setting-item-heading {
   margin: var(--ert-pad-md) 0 var(--ert-gap-sm);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0 var(--ert-gap-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ert-gap-sm) var(--ert-gap-md);
   align-items: start;
 }
 

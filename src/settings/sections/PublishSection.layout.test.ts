@@ -18,7 +18,7 @@ describe('Publish settings Book Pages row layout', () => {
         const rowRule = css.match(/\.ert-ui\.ert-scope--settings \.ert-matter-preview-row \{[\s\S]*?\n\}/)?.[0] ?? '';
         const mainRule = css.match(/\.ert-ui\.ert-scope--settings \.ert-matter-preview-main \{[\s\S]*?\n\}/)?.[0] ?? '';
         const publishingMobileStart = css.indexOf(
-            '@media (max-width: 720px)',
+            '@container ert-settings (max-width: 720px)',
             css.indexOf('.ert-ui.ert-scope--settings .ert-bookmeta-source-link:hover')
         );
         const publishingMobileCss = css.slice(publishingMobileStart, publishingMobileStart + 1600);

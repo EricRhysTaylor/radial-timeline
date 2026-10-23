@@ -2,6 +2,20 @@
 /* Settings helpers (ERT)                                                     */
 /* -------------------------------------------------------------------------- */
 
+/* Heading actions wrap below the copy before they squeeze it into a narrow strip. */
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .setting-item.setting-item-heading > .setting-item-info {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .setting-item.setting-item-heading > .setting-item-control {
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+  gap: var(--ert-gap-sm);
+}
+
 :is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root, .ert-ui.ert-scope--modal, .ert-ui.ert-scope--modal .ert-modal-container) .ert-setting-input-success {
   border-color: var(--text-success);
   background-color: color-mix(in srgb, var(--text-success) 10%, transparent);

@@ -30,6 +30,11 @@ const SLICE_MARGIN_PX = 2;
 const PERIMETER_LABEL_SPAN_RAD = Math.PI / 6;
 /** Labels start just past their tick. */
 const PERIMETER_LABEL_NUDGE_RAD = 0.01;
+/**
+ * The opening 0:00 and the closing total sit at 12 o'clock, the top edge of the
+ * view, so they ride a few pixels inside the other labels to stay clear of it.
+ */
+const BOUNDARY_LABEL_INSET_PX = 6;
 
 /**
  * The Narrative runtime view. Each scene keeps its equal slice; inside it a
@@ -98,7 +103,8 @@ export function renderNarrativeRuntimeOverlay(params: NarrativeRuntimeOverlayPar
             ? tick.angle - PERIMETER_LABEL_NUDGE_RAD - PERIMETER_LABEL_SPAN_RAD
             : tick.angle + PERIMETER_LABEL_NUDGE_RAD;
         const end = start + PERIMETER_LABEL_SPAN_RAD;
-        labelDefs += `<path id="${pathId}" d="${arcPath(labelRadius, start, end)}" fill="none" />`;
+        const radius = tick.isFirst || tick.isLast ? labelRadius - BOUNDARY_LABEL_INSET_PX : labelRadius;
+        labelDefs += `<path id="${pathId}" d="${arcPath(radius, start, end)}" fill="none" />`;
         let labelClass = 'rt-runtime-outer-label';
         if (tick.isFirst) labelClass += ' rt-runtime-outer-label-first';
         if (tick.isLast) labelClass += ' rt-runtime-outer-label-last';

@@ -86,7 +86,7 @@ export function renderRings(ctx: RingRenderContext): string {
         const clip = `clip-path="url(#clip-${sceneId})"`;
         const title = `<text id="${id}" class="rt-scene-title${isOpen ? ' rt-scene-is-open' : ''}" ${isChronologueMode ? '' : clip} data-scene-id="${sceneId}"><textPath href="#${pathId}" startOffset="${TEXTPATH_START_OFFSET_PX}">${text}</textPath></text>`;
         if (!isChronologueMode) return title;
-        ctx.foregroundElements.push(`<use href="#${id}" ${clip} pointer-events="none" />`);
+        ctx.foregroundElements.push(`<use href="#${id}" ${clip} class="rt-scene-title-use" data-scene-id="${sceneId}" pointer-events="none" />`);
         return `<defs>${title}</defs>`;
     };
     const fontScale = getReadabilityMultiplier(plugin.settings);

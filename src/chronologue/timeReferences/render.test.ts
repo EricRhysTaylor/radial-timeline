@@ -37,6 +37,8 @@ describe('reference occurrences across actual ring layouts', () => {
         // the scene path. The source remains in its scene group for live updates.
         const paintedTitles = [...foreground.matchAll(/<use href="#scene-title-([^"]+)" clip-path="url\(#clip-([^)]+)\)"/g)];
         expect(paintedTitles).toHaveLength(3);
+        // Each painted title carries its scene id so Shift can light it with the scene.
+        expect(foreground.match(/class="rt-scene-title-use" data-scene-id="/g)).toHaveLength(3);
         for (const match of paintedTitles) {
             expect(match[1]).toBe(match[2]);
             expect(scenesMarkup).toContain(`<clipPath id="clip-${match[1]}">`);

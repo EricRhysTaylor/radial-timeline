@@ -41,6 +41,13 @@ export interface NarrativeRuntimeTick {
  */
 export const NARRATIVE_RUNTIME_LABEL_GAP_RAD = 0.09;
 
+/**
+ * Clearance a scene-start label needs before the closing total. That label reads
+ * forward from its tick and the total reads back from the end, so both widths
+ * must fit between them.
+ */
+export const NARRATIVE_RUNTIME_TOTAL_GAP_RAD = NARRATIVE_RUNTIME_LABEL_GAP_RAD * 2;
+
 /** A scene's Runtime in seconds, or null when it is missing, unreadable or zero. */
 export function readSceneRuntimeSeconds(scene: Pick<TimelineItem, 'Runtime'>): number | null {
     const parsed = parseRuntimeField(scene.Runtime);
@@ -108,7 +115,8 @@ export function inclusiveRuntimeBetween(runtimes: Array<number | null>, indexA: 
  * Perimeter ticks for the runtime view: one at each scene's start, labelled with
  * the runtime presented before it, and a closing tick at the end of the last
  * scene labelled with the total. Labels are spaced at least
- * NARRATIVE_RUNTIME_LABEL_GAP_RAD apart; the rest stay unlabelled ticks.
+ * NARRATIVE_RUNTIME_LABEL_GAP_RAD apart, and NARRATIVE_RUNTIME_TOTAL_GAP_RAD
+ * before the total; the rest stay unlabelled ticks.
  */
 export function buildNarrativeRuntimeTicks(entries: NarrativeRuntimeEntry[]): NarrativeRuntimeTick[] {
     if (entries.length === 0) return [];
@@ -120,7 +128,7 @@ export function buildNarrativeRuntimeTicks(entries: NarrativeRuntimeEntry[]): Na
     entries.forEach((entry, index) => {
         const isFirst = index === 0;
         const clearOfPrevious = entry.startAngle - lastLabelledAngle >= NARRATIVE_RUNTIME_LABEL_GAP_RAD;
-        const clearOfTotal = endAngle - entry.startAngle >= NARRATIVE_RUNTIME_LABEL_GAP_RAD;
+        const clearOfTotal = endAngle - entry.startAngle >= NARRATIVE_RUNTIME_TOTAL_GAP_RAD;
         if (isFirst || (clearOfPrevious && clearOfTotal)) {
             ticks.push({ angle: entry.startAngle, label: formatRuntimeValue(before[index]), isFirst: isFirst || undefined });
             lastLabelledAngle = entry.startAngle;

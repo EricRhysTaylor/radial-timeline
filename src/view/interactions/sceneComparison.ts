@@ -15,10 +15,11 @@ import type { TimelineItem } from '../../types';
 import { normalizeAngleSigned, normalizeAngleUnsigned } from '../../renderer/utils/angles';
 import { ELAPSED_ARC_RADIUS, ELAPSED_TICK_LENGTH } from '../../renderer/layout/LayoutConstants';
 
-/** Number squares, their text and subplot color slot, by scene id. */
+/** Number squares, their text, Chronologue's foreground title and subplot color slot, by scene id. */
 export interface SceneNumberLookup {
     squares: Map<string, SVGElement>;
     texts: Map<string, SVGElement>;
+    titles: Map<string, SVGElement>;
     subplotIndex: Map<string, number>;
 }
 
@@ -29,7 +30,7 @@ export function sceneIdOfGroup(group: Element): string | null {
 
 /** Index every scene's number square, text and subplot slot once per render. */
 export function buildSceneNumberLookup(svg: SVGSVGElement): SceneNumberLookup {
-    const lookup: SceneNumberLookup = { squares: new Map(), texts: new Map(), subplotIndex: new Map() };
+    const lookup: SceneNumberLookup = { squares: new Map(), texts: new Map(), titles: new Map(), subplotIndex: new Map() };
     svg.querySelectorAll('.rt-scene-group[data-item-type="Scene"]').forEach(group => {
         const sceneId = sceneIdOfGroup(group);
         if (!sceneId) return;
@@ -40,8 +41,12 @@ export function buildSceneNumberLookup(svg: SVGSVGElement): SceneNumberLookup {
         }
         const square = svg.querySelector<SVGElement>(`.rt-number-square[data-scene-id="${sceneId}"]`);
         const text = svg.querySelector<SVGElement>(`.rt-number-text[data-scene-id="${sceneId}"]`);
+        // Chronologue paints each title above the rings through a <use>, outside
+        // the scene group, so the title lights with the scene's number square.
+        const title = svg.querySelector<SVGElement>(`.rt-scene-title-use[data-scene-id="${sceneId}"]`);
         if (square) lookup.squares.set(sceneId, square);
         if (text) lookup.texts.set(sceneId, text);
+        if (title) lookup.titles.set(sceneId, title);
     });
     return lookup;
 }
@@ -66,6 +71,7 @@ export function setNumberSquareActive(sceneId: string | null | undefined, active
     }
 
     if (text) text.classList.toggle('rt-shift-active', active);
+    lookup.titles.get(sceneId)?.classList.toggle('rt-shift-active', active);
 }
 
 /** Clear hover and locked states so every scene starts unselected. */
@@ -90,6 +96,7 @@ export function removeSceneHighlights(svg: SVGSVGElement): void {
     });
     svg.querySelectorAll('.rt-number-square.rt-shift-active').forEach(el => el.classList.remove('rt-shift-active'));
     svg.querySelectorAll('.rt-number-text.rt-shift-active').forEach(el => el.classList.remove('rt-shift-active'));
+    svg.querySelectorAll('.rt-scene-title-use.rt-shift-active').forEach(el => el.classList.remove('rt-shift-active'));
 }
 
 /** Lock the selected scenes' highlights; every other scene returns to unselected. */

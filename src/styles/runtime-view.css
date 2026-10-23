@@ -132,9 +132,15 @@
 
 /* Act and beat labels share the perimeter lane the running totals take, and
    chapter badges are left out of the render, while the runtime view is on. */
-.radial-timeline-svg[data-runtime-view="true"] .rt-act-label,
-.radial-timeline-svg[data-runtime-view="true"] .rt-storybeat-title {
+.radial-timeline-svg[data-runtime-view="true"] .rt-act-label {
   opacity: 0;
+}
+
+/* Beats carry no runtime: their slices, titles and hover reveals step aside
+   while the runtime view is on and return with it off. */
+.radial-timeline-svg[data-runtime-view="true"] .rt-scene-group[data-item-type="Beat"],
+.radial-timeline-svg[data-runtime-view="true"] .rt-storybeat-title {
+  display: none;
 }
 
 /* RT keycap icon: centred in its rounded square; the keycap group takes the

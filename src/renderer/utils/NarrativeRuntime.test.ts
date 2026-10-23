@@ -5,6 +5,7 @@ import {
     collectNarrativeRuntimeEntries,
     inclusiveRuntimeBetween,
     NARRATIVE_RUNTIME_LABEL_GAP_RAD,
+    NARRATIVE_RUNTIME_TOTAL_GAP_RAD,
     runtimeBeforeEachScene,
     type NarrativeRuntimeEntry
 } from './NarrativeRuntime';
@@ -118,6 +119,20 @@ describe('buildNarrativeRuntimeTicks', () => {
             expect(labelled[i].angle - labelled[i - 1].angle).toBeGreaterThanOrEqual(NARRATIVE_RUNTIME_LABEL_GAP_RAD - 1e-9);
         }
         expect(labelled.length).toBeLessThan(200);
+    });
+
+    it('leaves the scene start before the total unlabelled when both labels would overlap', () => {
+        const paths = ['a.md', 'b.md', 'c.md', 'd.md'];
+        const positions = new Map(paths.map((path, index) => {
+            const start = -Math.PI / 2 + index * 0.12;
+            return [path, { startAngle: start, endAngle: start + 0.12 }] as const;
+        }));
+        const ticks = buildNarrativeRuntimeTicks(collectNarrativeRuntimeEntries(paths.map(path => scene(path, '1:00')), positions));
+        const end = ticks.at(-1)!.angle;
+        ticks.filter(tick => tick.label !== null && !tick.isLast && !tick.isFirst).forEach(tick => {
+            expect(end - tick.angle).toBeGreaterThanOrEqual(NARRATIVE_RUNTIME_TOTAL_GAP_RAD - 1e-9);
+        });
+        expect(ticks.at(-2)?.label).toBeNull();
     });
 
     it('is empty for a book with no scenes on the ring', () => {

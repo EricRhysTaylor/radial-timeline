@@ -416,9 +416,19 @@
 
 .radial-timeline-svg[data-shift-mode="active"] .rt-number-text {
   fill: var(--text-muted);
-  /* Dark muted text to match dark theme */
-  opacity: 0.5;
-  /* Dim the text to match the faded scenes */
+  /* Muted to the spoke lines' level, like the faded scenes */
+  opacity: 0.25;
+}
+
+/* Chronologue paints scene titles above the rings through a <use> outside the
+   scene group, so the group's fade misses them; mute them here and bring back
+   the hovered and selected scenes' titles with their number squares. */
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-title-use {
+  opacity: 0.15;
+}
+
+.radial-timeline-svg[data-shift-mode="active"] .rt-scene-title-use.rt-shift-active {
+  opacity: 1;
 }
 
 .radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-scene-is-open:not(.rt-shift-active) {
@@ -428,7 +438,7 @@
 
 .radial-timeline-svg[data-shift-mode="active"] .rt-number-text.rt-scene-is-open:not(.rt-shift-active) {
   fill: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.25;
 }
 
 /* Shift mode: Mute pending edits and grade colors when not active */
@@ -442,7 +452,7 @@
 .radial-timeline-svg[data-shift-mode="active"] .rt-number-text.rt-grade-B:not(.rt-shift-active),
 .radial-timeline-svg[data-shift-mode="active"] .rt-number-text.rt-grade-C:not(.rt-shift-active) {
   fill: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.25;
 }
 
 /* Shift mode: Hover/selected scenes restore full opacity and disable transition */

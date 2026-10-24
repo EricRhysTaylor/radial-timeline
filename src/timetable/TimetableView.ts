@@ -1879,9 +1879,14 @@ export class TimetableView extends BasesView {
                 title: t('ui.timetable.keyRows'),
                 rows: [
                     { swatch: { fill: stage.Press, stroke: stage.Press, text: '12', textColor: 'var(--rt-legacy-black)' }, label: t('ui.timetable.keyScene'), detail: t('ui.timetable.keySceneDetail') },
+                    // The vitals beside a scene's number.
+                    { swatch: { fill: 'transparent', stroke: 'transparent', text: 'A', textColor: stage.Author }, label: t('ui.timetable.keyStage'), detail: t('ui.timetable.keyStageDetail') },
+                    { icon: 'pencil-line', label: t('ui.timetable.keyPending'), detail: t('ui.timetable.keyPendingDetail') },
+                    { icon: 'dot', label: t('ui.timetable.keyDueDot'), detail: t('ui.timetable.keyDueDotDetail') },
                     { swatch: { fill: 'transparent', stroke: 'var(--text-muted)', text: '–', textColor: 'var(--text-muted)', dashed: true }, label: t('ui.timetable.keySketch'), detail: t('ui.timetable.keySketchDetail') },
                     { swatch: { fill: 'transparent', stroke: 'var(--text-faint)', text: '–', textColor: 'var(--text-faint)' }, label: t('ui.timetable.keyNote'), detail: t('ui.timetable.keyNoteDetail') },
                     { rings: ['var(--rt-subplot-colors-0)', 'var(--rt-subplot-colors-1)', null], label: t('ui.timetable.keyRings'), detail: t('ui.timetable.keyRingsDetail') },
+                    { icon: 'pilcrow', label: t('ui.timetable.keyWordsBar'), detail: t('ui.timetable.keyWordsBarDetail') },
                     { icon: 'message-circle-question', label: t('ui.timetable.keyQueries'), detail: t('ui.timetable.keyQueriesDetail') },
                     { icon: 'file-up', label: t('ui.timetable.keyPromote'), detail: t('ui.timetable.keyPromoteDetail') },
                 ],

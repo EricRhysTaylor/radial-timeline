@@ -22,6 +22,7 @@ import { generateSceneContent } from '../utils/sceneGenerator';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
 import { extractPrefixToken } from '../utils/prefixOrder';
 import { formatLocalDateKey } from '../utils/date';
+import { safeTitle, splitNumberPrefix } from '../utils/noteTitle';
 import { buildDecimalSceneInsertionPrefix } from './SceneInsertService';
 import { ensureSceneIds, reorderSceneFields } from '../sceneProperties/sceneNormalizer';
 import { sleep } from '../utils/sleep';
@@ -66,6 +67,8 @@ export interface PromotionOptions {
     /** The book's scenes in manuscript order, required when `anchorPath` is set. */
     sceneData?: TimelineItem[];
     beatModel?: string;
+    /** Single-note promotion only: the scene's title, replacing a placeholder name. Any number prefix stays. */
+    title?: string | null;
     onProgress?: (current: number, total: number, name: string) => void;
 }
 
@@ -310,15 +313,32 @@ export async function applyPromotion(
         await reorderSceneFields({ app, settings, files: result.promoted });
     }
 
-    // Numbering applies to a single unnumbered note promoted after an anchor.
+    // A single note may be renamed: numbered after an anchor (when it has no
+    // number yet), given the title the author typed, or both.
     const only = single ? plan.entries[0] : undefined;
-    if (only && !only.prefix && options.anchorPath && options.sceneData && result.promoted.includes(only.file)) {
-        const prefix = buildDecimalSceneInsertionPrefix(options.sceneData, options.anchorPath, options.beatModel);
-        const from = only.file.path;
-        const to = uniqueSiblingPath(app, only.file, `${prefix} ${only.file.basename}`);
-        await app.fileManager.renameFile(only.file, to);
-        result.renamed.push({ from, to });
+    if (only && result.promoted.includes(only.file)) {
+        const prefix = !only.prefix && options.anchorPath && options.sceneData
+            ? buildDecimalSceneInsertionPrefix(options.sceneData, options.anchorPath, options.beatModel)
+            : null;
+        const basename = promotedBasename(only.file.basename, prefix, options.title ?? null);
+        if (basename !== only.file.basename) {
+            const from = only.file.path;
+            const to = uniqueSiblingPath(app, only.file, basename);
+            await app.fileManager.renameFile(only.file, to);
+            result.renamed.push({ from, to });
+        }
     }
 
     return result;
+}
+
+/**
+ * A promoted note's file name: the anchor's new number (else the number it
+ * already had), then the title the author typed (else the name it had).
+ */
+export function promotedBasename(basename: string, prefix: string | null, title: string | null): string {
+    const typed = title ? safeTitle(title) : '';
+    if (!typed) return prefix ? `${prefix} ${basename}` : basename;
+    const { lead } = splitNumberPrefix(basename);
+    return prefix ? `${prefix} ${typed}` : `${lead}${typed}`;
 }

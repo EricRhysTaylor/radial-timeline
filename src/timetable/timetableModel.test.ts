@@ -9,15 +9,19 @@ import {
     compareManuscriptRows,
     displayName,
     distinctColorSlots,
+    dueStatus,
     elapsedSincePrevious,
     groupProgress,
+    medianOf,
     planColoring,
     readRuntimeSeconds,
     readWhen,
     runningTotals,
     sceneNumberFill,
+    sceneVitals,
     withActDividers,
     withDayDividers,
+    wordBar,
 } from './timetableModel';
 
 const settings = { ...DEFAULT_SETTINGS, enableCustomMetadataMapping: false } as RadialTimelineSettings;
@@ -242,5 +246,62 @@ describe('belongsInTimetable', () => {
     it('keeps notes outside every book folder, and lets the deepest book folder decide', () => {
         expect(belongsInTimetable(at('Research/Ships.md'), books)).toBe(true);
         expect(belongsInTimetable(at('Book 2/Book 2b/Notes.md'), [...books, 'Book 2/Book 2b'])).toBe(true);
+    });
+});
+
+describe('dueStatus', () => {
+    const today = new Date(2026, 9, 24, 15, 30);
+
+    it('counts calendar days from today', () => {
+        expect(dueStatus('2026-10-20', false, today)).toMatchObject({ kind: 'late', days: -4 });
+        expect(dueStatus('2026-10-24', false, today)).toMatchObject({ kind: 'soon', days: 0 });
+        expect(dueStatus('2026-10-31', false, today)).toMatchObject({ kind: 'soon', days: 7 });
+        expect(dueStatus('2026-11-05', false, today)).toMatchObject({ kind: 'later', days: 12 });
+    });
+
+    it('is never late across a daylight-saving change', () => {
+        expect(dueStatus('2026-11-02', false, new Date(2026, 10, 1, 23, 0))).toMatchObject({ kind: 'soon', days: 1 });
+    });
+
+    it('treats a complete scene’s Due as the day it was done', () => {
+        expect(dueStatus('2026-10-02', true, today).kind).toBe('done');
+    });
+
+    it('has nothing to say about an empty or unreadable Due', () => {
+        expect(dueStatus(undefined, false, today).kind).toBe('none');
+        expect(dueStatus('soon', false, today).kind).toBe('none');
+    });
+});
+
+describe('sceneVitals', () => {
+    const today = new Date(2026, 9, 24);
+
+    it('reads the stage whatever its case, and defaults to Zero', () => {
+        expect(sceneVitals({ Class: 'Scene', 'Publish Stage': 'author' }, settings, today).stage).toBe('Author');
+        expect(sceneVitals({ Class: 'Scene' }, settings, today).stage).toBe('Zero');
+    });
+
+    it('takes the first line of Pending Edits, or null when it is empty', () => {
+        expect(sceneVitals({ 'Pending Edits': '\n  Cut the bell scene\nThen fix Act 2' }, settings, today).pending).toBe('Cut the bell scene');
+        expect(sceneVitals({ 'Pending Edits': '' }, settings, today).pending).toBeNull();
+    });
+
+    it('marks a complete scene done rather than late', () => {
+        expect(sceneVitals({ Status: 'Complete', Due: '2026-10-02' }, settings, today).due.kind).toBe('done');
+        expect(sceneVitals({ Status: 'Working', Due: '2026-10-02' }, settings, today).due.kind).toBe('late');
+    });
+});
+
+describe('medianOf and wordBar', () => {
+    it('finds the median of odd and even lists', () => {
+        expect(medianOf([2140, 980, 1650])).toBe(1650);
+        expect(medianOf([1000, 2000])).toBe(1500);
+        expect(medianOf([])).toBeNull();
+    });
+
+    it('puts the median at the midpoint and caps the bar at twice it', () => {
+        expect(wordBar(1650, 1650)).toEqual({ fill: 0.5, over: false });
+        expect(wordBar(3420, 1650)).toEqual({ fill: 1, over: true });
+        expect(wordBar(825, 1650).fill).toBeCloseTo(0.25);
     });
 });

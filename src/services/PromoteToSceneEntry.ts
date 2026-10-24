@@ -12,6 +12,7 @@ import { applyPromotion, isPromotable, planPromotion, type PromotionPlan } from 
 import { PromoteToSceneModal, type PromotionAnchorOption } from '../modals/PromoteToSceneModal';
 import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
 import { basename } from '../utils/paths';
+import { isUntitledName } from '../utils/noteTitle';
 import { t, tCount } from '../i18n';
 import type { TimelineItem } from '../types';
 
@@ -97,6 +98,8 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[])
         advancedDefault: settings.sceneAdvancedPropertiesEnabled ?? true,
         bookLabel,
         anchors,
+        // "Untitled sketch" never becomes "12.5 Untitled sketch": the scene gets a title first.
+        askTitle: only !== undefined && isUntitledName(only.file.basename, t('ui.timetable.newSketchName')),
     });
     const choice = await modal.waitForBegin();
     if (!choice) return;
@@ -106,6 +109,7 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[])
         anchorPath: choice.anchorPath,
         sceneData,
         beatModel: resolveSelectedBeatModelFromSettings(settings),
+        title: choice.title,
         onProgress: (current, total, name) => modal.updateProgress(t('ui.promoteToScene.progress', { name, current, total })),
     });
     plugin.refreshTimelineIfNeeded(null);

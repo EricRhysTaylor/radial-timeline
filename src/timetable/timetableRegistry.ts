@@ -29,6 +29,10 @@ export interface LiveTimetable {
     markRing(subplot: string | null): void;
     /** An act label (or, in saga scope, a book label) was clicked: show that part of the table. */
     revealSegment(index: number): void;
+    /** The reset command: whether this table shows its own `.base` file (an embed doesn't). */
+    canResetColumns(): boolean;
+    /** The reset command: give this table's view the recommended columns, after a confirm. */
+    resetColumns(): void;
 }
 
 /**
@@ -92,6 +96,11 @@ export function hasOpenTimetable(): boolean {
 /** Each open Timetable's element. */
 export function openTimetableElements(): HTMLElement[] {
     return [...liveTimetables].map(view => view.rootEl);
+}
+
+/** The Timetable in the active pane, if any, for commands. */
+export function activeTimetable(): LiveTimetable | null {
+    return [...liveTimetables].find(view => view.rootEl.closest('.workspace-leaf')?.classList.contains('mod-active')) ?? null;
 }
 
 /** The timeline hears when Timetables open or close. */

@@ -4,12 +4,14 @@ import { DEFAULT_SETTINGS } from '../settings/defaults';
 import {
     buildBookTimetableContent,
     buildSagaTimetableContent,
+    countColumnFill,
     findTimetableViewName,
     retargetFolderFilter,
     retargetSagaFolderFilter,
     tableColumns,
     tableFileStem,
     TIMETABLE_VIEW_TYPE,
+    withRecommendedColumns,
 } from './timetableFiles';
 
 const settings = { ...DEFAULT_SETTINGS, enableCustomMetadataMapping: false, actCount: 3 } as RadialTimelineSettings;
@@ -35,6 +37,38 @@ describe('tableColumns', () => {
         expect(columns.table).toContain('Act');
         expect(columns.table).toContain('Status');
         expect(columns.table).toContain('Subplot');
+    });
+
+    it('leads with When, Character, Place, Due and Words, and ends with Synopsis', () => {
+        const { timetable } = tableColumns(settings);
+        expect(timetable.slice(0, 6)).toEqual(['file.name', 'When', 'Character', 'Place', 'Due', 'Words']);
+        expect(timetable[timetable.length - 1]).toBe('Synopsis');
+    });
+
+    it('starts without Duration, Chapter, Runtime and Iteration, which the built-in Table keeps', () => {
+        const { timetable, table } = tableColumns(settings);
+        for (const key of ['Duration', 'Chapter', 'Runtime', 'Iteration']) {
+            expect(timetable).not.toContain(key);
+            expect(table).toContain(key);
+        }
+    });
+
+    it('leaves out columns fewer than half of the book’s scenes fill, but never When or Synopsis', () => {
+        const scene = (extra: Record<string, unknown>) => ({ Class: 'Scene', When: '', Synopsis: '', Character: 'Mara', ...extra });
+        const fill = countColumnFill([
+            scene({ POV: 'Mara' }), scene({}), scene({}), scene({}), scene({}),
+            { Class: 'Sketch', POV: 'Ilse' },
+        ], settings);
+        const { timetable } = tableColumns(settings, fill);
+        expect(timetable).toContain('Character');
+        expect(timetable).not.toContain('POV');
+        expect(timetable).toContain('When');
+        expect(timetable).toContain('Synopsis');
+    });
+
+    it('keeps every column while a book has too few scenes to tell', () => {
+        const fill = countColumnFill([{ Class: 'Scene' }, { Class: 'Scene' }], settings);
+        expect(tableColumns(settings, fill).timetable).toEqual(tableColumns(settings).timetable);
     });
 
     it('uses the author’s mapped key names', () => {
@@ -140,5 +174,42 @@ describe('findTimetableViewName', () => {
     it('finds the Timetable view even after the author reorders views', () => {
         expect(findTimetableViewName({ views: [{ type: 'table', name: 'Table' }, { type: TIMETABLE_VIEW_TYPE, name: 'My TT' }] })).toBe('My TT');
         expect(findTimetableViewName({ views: [{ type: 'table', name: 'Table' }] })).toBeNull();
+    });
+});
+
+describe('countColumnFill', () => {
+    it('counts only scenes, and only values with something in them', () => {
+        const fill = countColumnFill([
+            { Class: 'Scene', Place: 'North Light', POV: '  ', Character: [] },
+            { class: 'scene', place: 'Harbor Office', Character: ['Ilse'] },
+            { Class: 'Sketch', Place: 'Lantern Row' },
+            undefined,
+        ], settings);
+        expect(fill.scenes).toBe(2);
+        expect(fill.filled.get('place')).toBe(2);
+        expect(fill.filled.get('character')).toBe(1);
+        expect(fill.filled.get('pov')).toBeUndefined();
+    });
+});
+
+describe('withRecommendedColumns', () => {
+    const parsed = {
+        filters: { and: ['file.inFolder("B")'] },
+        views: [
+            { type: 'table', name: 'Table', order: ['file.name', 'Act'], columnSize: { 'note.Act': 60 } },
+            { type: TIMETABLE_VIEW_TYPE, name: 'Timetable', order: ['file.name', 'Chapter'], columnSize: { 'note.Chapter': 200 }, sort: [{ property: 'file.name', direction: 'ASC' }] },
+        ],
+    };
+
+    it('replaces only that view’s columns and drops its saved widths', () => {
+        const next = withRecommendedColumns(parsed, 'Timetable', ['file.name', 'When']) as typeof parsed;
+        expect(next.views[1]).toEqual({ type: TIMETABLE_VIEW_TYPE, name: 'Timetable', order: ['file.name', 'When'], sort: [{ property: 'file.name', direction: 'ASC' }] });
+        expect(next.views[0]).toEqual(parsed.views[0]);
+        expect(next.filters).toEqual(parsed.filters);
+    });
+
+    it('changes nothing when the file has no Timetable view of that name', () => {
+        expect(withRecommendedColumns(parsed, 'Table', ['file.name'])).toBeNull();
+        expect(withRecommendedColumns({ views: 'broken' }, 'Timetable', ['file.name'])).toBeNull();
     });
 });

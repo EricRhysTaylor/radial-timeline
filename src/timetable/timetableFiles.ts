@@ -14,9 +14,11 @@
 import type { RadialTimelineSettings } from '../types';
 import type { BookProfile } from '../types/settings';
 import { buildScenePropertyDefinitions } from '../sceneProperties/scenePropertyAdapter';
+import { classifyForPromotion } from '../services/PromoteToSceneService';
 import { systemFolderPath } from '../utils/systemFolder';
-import { getActiveFrontmatterMappings } from '../utils/frontmatter';
+import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
 import { getConfiguredActCount } from '../utils/acts';
+import { safeTitle } from '../utils/noteTitle';
 
 /** The Bases view type the Timetable registers. */
 export const TIMETABLE_VIEW_TYPE = 'radial-timeline-timetable';
@@ -54,11 +56,9 @@ export interface BaseFileContent {
 /** Every table is limited to notes; images and PDFs in a book folder are never rows. */
 const MARKDOWN_ONLY = 'file.ext == "md"';
 
-const FILENAME_UNSAFE = /[\\/:*?"<>|#^[\]]+/g;
-
 /** A file name for a book's table: the book title, made safe for every platform. */
 export function tableFileStem(title: string): string {
-    const stem = title.replace(FILENAME_UNSAFE, ' ').replace(/\s+/g, ' ').trim();
+    const stem = safeTitle(title);
     return stem.length > 0 ? stem : 'Untitled';
 }
 
@@ -92,20 +92,111 @@ export function authorKeyFor(canonical: string, settings: RadialTimelineSettings
 const LEFT_OUT_OF_TIMETABLE = new Set(['Class', 'Act', 'Subplot', 'Status', 'Publish Stage', 'Pulse Update', 'Summary Update', 'Summary', 'Pending Edits']);
 
 /**
- * Columns for the views, from the scene template (core, plus advanced when
- * enabled), so the table mirrors the YAML. The Timetable leaves out what
- * its number cell and Rings column already show and the long-form fields;
- * the built-in Table keeps every key for spreadsheet editing.
+ * Template keys a new Timetable starts without: its When cell shows the
+ * Duration, and Chapter, Runtime and Iteration are seldom read in a row.
+ * The Properties menu adds them back.
  */
-export function tableColumns(settings: RadialTimelineSettings): { timetable: string[]; table: string[] } {
+const HIDDEN_IN_NEW_TIMETABLE = new Set(['Duration', 'Chapter', 'Runtime', 'Iteration']);
+/** The Timetable's first columns after the name, in order. The rest follow in template order. */
+const LEADING_TIMETABLE_KEYS = ['When', 'Character', 'Place', 'Due', 'Words'];
+/** The Timetable's last column: its long text reads best at the end of the row. */
+const LAST_TIMETABLE_KEY = 'Synopsis';
+/** Columns a new Timetable shows however few scenes fill them. */
+const ALWAYS_IN_TIMETABLE = new Set(['When', 'Synopsis']);
+/** A book needs this many scenes before an empty-looking column is left out; a new book's are all empty. */
+export const SPARSE_COLUMN_MIN_SCENES = 5;
+
+/** How many of a book's scenes fill each property, by lookup key (see fillKey). */
+export interface ColumnFill {
+    scenes: number;
+    filled: Map<string, number>;
+}
+
+/** A property name as fill counts compare it: case, spaces, `_` and `-` ignored. */
+function fillKey(key: string): string {
+    return key.toLowerCase().replace(/[\s_-]/g, '');
+}
+
+function hasValue(value: unknown): boolean {
+    if (value === null || value === undefined) return false;
+    if (typeof value === 'string') return value.trim().length > 0;
+    if (Array.isArray(value)) return value.some(hasValue);
+    return true;
+}
+
+/** Count, over the scenes among these notes, how many fill each property. Other notes don't count. */
+export function countColumnFill(frontmatters: Array<Record<string, unknown> | undefined>, settings: RadialTimelineSettings): ColumnFill {
+    const mappings = getActiveFrontmatterMappings(settings);
+    const fill: ColumnFill = { scenes: 0, filled: new Map() };
+    for (const frontmatter of frontmatters) {
+        if (!frontmatter || classifyForPromotion(frontmatter).kind !== 'alreadyScene') continue;
+        fill.scenes += 1;
+        for (const [key, value] of Object.entries(normalizeFrontmatterKeys(frontmatter, mappings))) {
+            if (!hasValue(value)) continue;
+            const lookup = fillKey(key);
+            fill.filled.set(lookup, (fill.filled.get(lookup) ?? 0) + 1);
+        }
+    }
+    return fill;
+}
+
+/** True when fewer than half of the scenes fill `key` (and there are enough scenes to tell). */
+function isSparse(key: string, fill: ColumnFill | undefined): boolean {
+    if (!fill || fill.scenes < SPARSE_COLUMN_MIN_SCENES || ALWAYS_IN_TIMETABLE.has(key)) return false;
+    return (fill.filled.get(fillKey(key)) ?? 0) * 2 < fill.scenes;
+}
+
+/**
+ * The Timetable's recommended columns: the name, When, Character, Place, Due
+ * and Words, the rest of the template in its order, then Synopsis. Keys its
+ * number cell and Rings column already show, the long-form fields and the
+ * seldom-read ones are left out, and so is any column most of the book's
+ * scenes leave empty.
+ */
+function timetableColumns(keys: string[], settings: RadialTimelineSettings, fill: ColumnFill | undefined): string[] {
+    const shown = keys.filter(key => !LEFT_OUT_OF_TIMETABLE.has(key) && !HIDDEN_IN_NEW_TIMETABLE.has(key) && !isSparse(key, fill));
+    const leading = LEADING_TIMETABLE_KEYS.filter(key => shown.includes(key));
+    const middle = shown.filter(key => !LEADING_TIMETABLE_KEYS.includes(key) && key !== LAST_TIMETABLE_KEY);
+    const last = shown.includes(LAST_TIMETABLE_KEY) ? [LAST_TIMETABLE_KEY] : [];
+    return ['file.name', ...[...leading, ...middle, ...last].map(key => authorKeyFor(key, settings))];
+}
+
+/**
+ * Columns for the views, from the scene template (core, plus advanced when
+ * enabled), so the table mirrors the YAML. The Timetable gets its
+ * recommended columns (see timetableColumns); the built-in Table keeps
+ * every key for spreadsheet editing.
+ */
+export function tableColumns(settings: RadialTimelineSettings, fill?: ColumnFill): { timetable: string[]; table: string[] } {
     const { core, advanced } = buildScenePropertyDefinitions(settings);
     const includeAdvanced = settings.sceneAdvancedPropertiesEnabled ?? true;
     const keys = [...core, ...(includeAdvanced ? advanced : [])].map(definition => definition.key);
     const unique = [...new Set(keys)];
     return {
-        timetable: ['file.name', ...unique.filter(key => !LEFT_OUT_OF_TIMETABLE.has(key)).map(key => authorKeyFor(key, settings))],
+        timetable: timetableColumns(unique, settings, fill),
         table: ['file.name', ...unique.filter(key => key !== 'Pulse Update' && key !== 'Summary Update').map(key => authorKeyFor(key, settings))],
     };
+}
+
+/**
+ * Give one Timetable view its recommended columns: its column list is
+ * replaced and its saved widths dropped. Everything else in the file (the
+ * other views, filters, sorts, grouping) stays. Null when the file has no
+ * Timetable view of that name.
+ */
+export function withRecommendedColumns(parsed: Record<string, unknown>, viewName: string, order: string[]): Record<string, unknown> | null {
+    if (!Array.isArray(parsed.views)) return null;
+    let found = false;
+    const views = parsed.views.map((view: unknown) => {
+        if (found || !view || typeof view !== 'object') return view;
+        const entry = view as Record<string, unknown>;
+        if (entry.type !== TIMETABLE_VIEW_TYPE || entry.name !== viewName) return view;
+        found = true;
+        const next: Record<string, unknown> = { ...entry, order };
+        delete next.columnSize;
+        return next;
+    });
+    return found ? { ...parsed, views } : null;
 }
 
 /**
@@ -124,9 +215,10 @@ export function buildBookTimetableContent(
     book: Pick<BookProfile, 'sourceFolder'>,
     settings: RadialTimelineSettings,
     names: TimetableViewNames,
-    includeBoards: boolean
+    includeBoards: boolean,
+    fill?: ColumnFill
 ): BaseFileContent {
-    const columns = tableColumns(settings);
+    const columns = tableColumns(settings, fill);
     const act = authorKeyFor('Act', settings);
     const status = authorKeyFor('Status', settings);
     const subplot = authorKeyFor('Subplot', settings);
@@ -171,9 +263,10 @@ export function buildBookTimetableContent(
 export function buildSagaTimetableContent(
     books: Array<Pick<BookProfile, 'sourceFolder'>>,
     settings: RadialTimelineSettings,
-    names: Pick<TimetableViewNames, 'timetable' | 'table'>
+    names: Pick<TimetableViewNames, 'timetable' | 'table'>,
+    fill?: ColumnFill
 ): BaseFileContent {
-    const columns = tableColumns(settings);
+    const columns = tableColumns(settings, fill);
     return {
         filters: { and: [{ or: books.map(book => folderFilter(book.sourceFolder)) }, MARKDOWN_ONLY] },
         views: [

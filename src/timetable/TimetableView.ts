@@ -1,4 +1,4 @@
-import { setAccessibleLabel } from '../utils/domTooltip';
+import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { readTimeReferences, referenceDateLabel, TIME_REFERENCES_KEY, type TimeReference } from '../chronologue/timeReferences/model';
 import { manageTimeReferences, openTimeReference } from '../chronologue/timeReferences/editor';
 import { currentReferenceSelection, hoverTimeReference, onReferenceSelection, pinTimeReference } from '../chronologue/timeReferences/selection';
@@ -27,6 +27,7 @@ import {
     getFrontMatterInfo,
     normalizePath,
     parsePropertyId,
+    parseYaml,
     setIcon,
     stringifyYaml,
     type App,
@@ -45,9 +46,11 @@ import { getConfiguredActCount, parseActLabels, resolveActLabel } from '../utils
 import { canonicalizeFrontmatterKey, getActiveFrontmatterMappings, readBeatPurpose } from '../utils/frontmatter';
 import { listAuthorQueries } from '../utils/authorQueryComments';
 import { formatElapsedTime, parseWhenField } from '../utils/date';
-import { formatSceneWhen, whenTextHasClock } from '../utils/whenFormat';
+import { formatCompactDuration, formatDueLabel, formatLongDate, formatSceneWhen, formatTableWhen, whenTextHasClock } from '../utils/whenFormat';
 import { normalizeStatus } from '../utils/text';
 import { isOverdueDateString } from '../utils/date';
+import { safeTitle, splitNumberPrefix } from '../utils/noteTitle';
+import { confirmWithErtModal } from '../modals/ErtConfirmModal';
 import { convertFromEarth, formatElapsedTimePlanetary, getActivePlanetaryProfile } from '../utils/planetaryTime';
 import { formatRuntimeValue } from '../utils/runtimeEstimator';
 import { latestGossamerScore } from '../utils/gossamer';
@@ -67,21 +70,29 @@ import {
     compareManuscriptRows,
     displayName,
     distinctColorSlots,
+    dueStatus,
     elapsedSincePrevious,
     groupProgress,
+    medianOf,
     planColoring,
     readRuntimeSeconds,
     readWhen,
     runningTotals,
     sceneNumberFill,
+    sceneVitals,
     withActDividers,
     withDayDividers,
+    wordBar,
+    type DueStatus,
     type RingLayout,
     type TimetableLine,
     type TimetableRow,
 } from './timetableModel';
-import { authorKeyFor, TIMETABLE_VIEW_TYPE } from './timetableFiles';
+import { authorKeyFor, countColumnFill, tableColumns, TIMETABLE_VIEW_TYPE, withRecommendedColumns } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
+import { CellPeek } from './cellPeek';
+import { beatNamePeekAction } from '../view/interactions/BeatNameKeyController';
+import { isTypingInField } from '../utils/domFocus';
 import { openInReadingPane } from './readingPane';
 import { renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
 import {
@@ -113,12 +124,51 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const RINGS_PER_LINE_DEFAULT = 5;
 const RINGS_REFRESH_DELAY_MS = 300;
 
-/** Column widths (px). The number column holds the chevron, number cell, Promote and query count. */
+/**
+ * Column widths (px). The number column fits what its rows hold (the number,
+ * the vitals or a sketch's controls, query counts) once the table is laid out;
+ * this is its width until then.
+ */
 const NUMBER_COLUMN_WIDTH = 150;
 const OTHER_COLUMN_WIDTH = 140;
 const MIN_COLUMN_WIDTH = 48;
+/** A fitted column is never wider than this; the note holds the rest. */
+const MAX_FITTED_WIDTH = 300;
 const DEFAULT_COLUMN_WIDTHS: Record<string, number> = { When: 220, Duration: 100, Chapter: 150, Synopsis: 360, Act: 56 };
 const NAME_COLUMN_WIDTH = 220;
+/** Long text keeps its width: fitted, it would only grow to the cap or shrink to ellipses. */
+const LONG_TEXT_COLUMNS = new Set(['Synopsis', 'Summary', 'Pending Edits']);
+
+/** Lucide icons for the template's columns (canonical keys). The author's own fields have none. */
+const COLUMN_ICONS: Record<string, string> = {
+    When: 'calendar-clock',
+    Duration: 'hourglass',
+    Character: 'users',
+    Place: 'map-pin',
+    POV: 'eye',
+    Due: 'calendar-check',
+    Words: 'pilcrow',
+    Runtime: 'timer',
+    Iteration: 'repeat',
+    Chapter: 'book-open',
+    Synopsis: 'align-left',
+};
+
+function clampFittedWidth(width: number): number {
+    return Math.min(MAX_FITTED_WIDTH, Math.max(MIN_COLUMN_WIDTH, Math.ceil(width)));
+}
+
+/** The width of an element's laid-out contents, clipped or not. 0 when nothing is laid out. */
+function contentWidth(element: HTMLElement): number {
+    const range = element.doc.createRange();
+    range.selectNodeContents(element);
+    return range.getBoundingClientRect().width;
+}
+
+function horizontalPadding(element: HTMLElement): number {
+    const style = element.win.getComputedStyle(element);
+    return (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+}
 
 /** Rows a bulk edit can change: scenes, sketches and notes the timeline can't see yet. */
 const SELECTABLE_KINDS = new Set(['scene', 'sketch', 'unclassed']);
@@ -141,6 +191,7 @@ interface ColumnResize {
     tableWidth: number;
     col: HTMLElement;
     table: HTMLElement;
+    header: HTMLElement;
 }
 
 interface TableItem {
@@ -180,6 +231,18 @@ interface ModeContext {
     chronologue: ChronologueContext | null;
     /** Narrative's runtime view: the running time through each row, in the table's order. */
     running: Map<string, number> | null;
+}
+
+/** What the cells of one draw share. */
+interface CellContext {
+    mode: ModeContext;
+    /** The year every When shares, shown once in the header; null when they span years, so each cell shows its own. */
+    whenYear: number | null;
+    /** The When cell shows the Duration while the Duration column is hidden. */
+    durationInWhen: boolean;
+    /** The median Words of each book's scenes, by book id ('' outside every book). */
+    wordMedians: Map<string, number>;
+    today: Date;
 }
 
 interface WheelRings {
@@ -255,8 +318,17 @@ export class TimetableView extends BasesView {
     private readonly openDrawers = new Set<string>();
     /** Drawers the author closed while "Open every sketch" is on. */
     private readonly closedDrawers = new Set<string>();
-    /** A sketch just created here: open its drawer and put the cursor in it. */
+    /** A sketch just created or renamed here: open its drawer and put the cursor in its title or its text. */
     private focusPath: string | null = null;
+    private focusField: 'title' | 'text' = 'text';
+    /** Widths fitted to columns the author hasn't sized. Not saved; while the table is open they only grow, so a column doesn't twitch during an edit. */
+    private readonly autoWidths = new Map<BasesPropertyId, number>();
+    /** The number column's fitted width, kept across redraws. */
+    private numberWidth: number | null = null;
+    /** Shift-hover: the full text of a cut-off cell. */
+    private peek: CellPeek | null = null;
+    /** The row and column under the pointer, so the peek finds its cell again after a redraw. */
+    private peekKey: { path: string; column: string } | null = null;
     /** A redraw that waited for the author to stop typing in a drawer. */
     private renderDeferred = false;
     private decorateGeneration = 0;
@@ -287,6 +359,7 @@ export class TimetableView extends BasesView {
         promote: file => { void runPromotion(this.plugin, [file]); },
         openNote: (file, evt) => { void openFromTimetable(this.plugin.app, file, evt, this.rootEl); },
         close: path => this.closeDrawer(path),
+        rename: (file, title) => { void this.renameSketch(file, title); },
         editingEnded: () => {
             if (this.renderDeferred) this.render();
         },
@@ -327,6 +400,26 @@ export class TimetableView extends BasesView {
         this.registerDomEvent(this.rootEl, 'pointermove', (evt: PointerEvent) => this.moveResize(evt));
         this.registerDomEvent(this.rootEl, 'pointerup', () => this.endResize());
         this.registerDomEvent(this.rootEl, 'pointercancel', () => this.endResize());
+        // Double-click a resize handle to fit its column to what it holds.
+        this.registerDomEvent(this.rootEl, 'dblclick', (evt: MouseEvent) => {
+            const handle = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__resize') : null;
+            const property = handle?.dataset.property as BasesPropertyId | undefined;
+            if (!property || !this.isFittable(property)) return;
+            evt.preventDefault();
+            this.fitColumns([property]);
+        });
+        // A renamed note keeps its open drawer, its pick and its expanded references.
+        this.registerEvent(this.plugin.app.vault.on('rename', (file, oldPath) => this.followRename(file.path, oldPath)));
+        // Shift-hover: read a cut-off cell in full.
+        this.peek = new CellPeek(this.rootEl.doc);
+        this.register(() => this.peek?.destroy());
+        this.registerDomEvent(this.rootEl, 'mouseover', (evt: MouseEvent) => this.hoverPeek(evt.target, evt.shiftKey));
+        this.registerDomEvent(this.rootEl, 'mouseleave', () => this.hoverPeek(null, false));
+        this.registerDomEvent(this.rootEl.win, 'keydown', (evt: KeyboardEvent) => this.peekKeyEvent(evt, 'down'));
+        this.registerDomEvent(this.rootEl.win, 'keyup', (evt: KeyboardEvent) => this.peekKeyEvent(evt, 'up'));
+        this.registerDomEvent(this.rootEl.win, 'blur', () => this.peek?.shift(false));
+        // Scrolling moves the cell out from under the panel.
+        this.registerDomEvent(this.rootEl.doc, 'scroll', () => this.peek?.hide(), { capture: true });
         // Hovering a scene's row lights it up on the wheel.
         this.registerDomEvent(this.rootEl, 'mouseover', (evt: MouseEvent) => {
             if (evt.target instanceof Element && evt.target.closest('.ert-time-reference-row')) {
@@ -363,6 +456,35 @@ export class TimetableView extends BasesView {
         });
     }
 
+    // ── Shift-hover ─────────────────────────────────────────────────────
+
+    /** The pointer moved: the peek follows the cell under it (number and Rings cells have no text to read). */
+    private hoverPeek(target: EventTarget | null, shift: boolean): void {
+        const cell = target instanceof Element ? target.closest<HTMLElement>('tr.ert-timetable__row > td[data-column]') : null;
+        const path = cell?.closest<HTMLElement>('tr')?.dataset.path;
+        const column = cell?.dataset.column;
+        this.peekKey = cell && path && column ? { path, column } : null;
+        this.peek?.hover(cell, shift && !isTypingInField(this.rootEl.doc));
+    }
+
+    /** Shift alone opens the peek. Shift in a chord (Cmd-Shift-P), or while typing in a field, doesn't. */
+    private peekKeyEvent(evt: KeyboardEvent, phase: 'down' | 'up'): void {
+        const peek = this.peek;
+        if (!peek?.hoveredCell()) return;
+        const action = beatNamePeekAction(evt, phase);
+        if (action === 'show' && !isTypingInField(this.rootEl.doc)) peek.shift(true);
+        else if (action === 'hide') peek.shift(false);
+    }
+
+    /** After a redraw, the peek follows its row and column to the new cell (Chronologue's Shift adds a column, for one). */
+    private refindPeekCell(): void {
+        const peek = this.peek;
+        if (!peek) return;
+        const key = this.peekKey;
+        const cell = key ? this.rowEls.get(key.path)?.querySelector<HTMLElement>(`td[data-column="${CSS.escape(key.column)}"]`) ?? null : null;
+        peek.hover(cell, peek.isHeld());
+    }
+
     // ── Column widths ───────────────────────────────────────────────────
 
     /** Saved widths, under the same `columnSize` key Obsidian's own table uses. */
@@ -394,7 +516,7 @@ export class TimetableView extends BasesView {
         evt.preventDefault();
         handle.setPointerCapture(evt.pointerId);
         const startWidth = header.getBoundingClientRect().width;
-        this.resizing = { property, startX: evt.clientX, startWidth, width: startWidth, tableWidth: table.getBoundingClientRect().width, col, table };
+        this.resizing = { property, startX: evt.clientX, startWidth, width: startWidth, tableWidth: table.getBoundingClientRect().width, col, table, header };
     }
 
     private moveResize(evt: PointerEvent): void {
@@ -403,6 +525,7 @@ export class TimetableView extends BasesView {
         resize.width = Math.max(MIN_COLUMN_WIDTH, Math.round(resize.startWidth + evt.clientX - resize.startX));
         resize.col.setCssProps({ '--ert-timetable-col-width': `${resize.width}px` });
         resize.table.setCssProps({ '--ert-timetable-width': `${Math.round(resize.tableWidth + resize.width - resize.startWidth)}px` });
+        this.fitHeaderLabel(resize.header);
     }
 
     /** Save the new width in the .base file, as Obsidian's table does. */
@@ -412,6 +535,178 @@ export class TimetableView extends BasesView {
         this.resizing = null;
         if (resize.width === Math.round(resize.startWidth)) return;
         this.config.set('columnSize', { ...this.columnSizes(), [resize.property]: resize.width });
+    }
+
+    // ── Fitting columns to their content ────────────────────────────────
+
+    /** Columns that fit to their content: every column but long text. */
+    private isFittable(property: BasesPropertyId): boolean {
+        const { type, name } = parsePropertyId(property);
+        if (type !== 'note') return true;
+        return !LONG_TEXT_COLUMNS.has(canonicalizeFrontmatterKey(name, getActiveFrontmatterMappings(this.plugin.settings)));
+    }
+
+    /** The width a column's content needs: its header or its widest drawn cell, clamped. 0 while the table isn't laid out. */
+    private measureColumn(table: HTMLElement, property: BasesPropertyId): number {
+        const header = table.querySelector<HTMLElement>(`th[data-property="${CSS.escape(property)}"]`);
+        const inner = header?.querySelector<HTMLElement>('.ert-timetable__prop-head-inner');
+        if (!header || !inner || header.clientWidth === 0) return 0;
+        let widest = contentWidth(inner) + horizontalPadding(header);
+        const cells = table.querySelectorAll<HTMLElement>(`td[data-col="${header.dataset.col ?? ''}"]`);
+        const padding = cells.length > 0 ? horizontalPadding(cells[0]) : 0;
+        cells.forEach(cell => { widest = Math.max(widest, contentWidth(cell) + padding); });
+        return clampFittedWidth(widest + 1);
+    }
+
+    /** The number column's width: its corner controls or its widest row. 0 while the table isn't laid out. */
+    private measureNumberColumn(table: HTMLElement): number {
+        const head = table.querySelector<HTMLElement>('.ert-timetable__num-head');
+        const corner = head?.querySelector<HTMLElement>('.ert-timetable__corner');
+        if (!head || !corner || head.clientWidth === 0) return 0;
+        let widest = contentWidth(corner) + horizontalPadding(head);
+        const cells = table.querySelectorAll<HTMLElement>('td.ert-timetable__num');
+        const padding = cells.length > 0 ? horizontalPadding(cells[0]) : 0;
+        cells.forEach(cell => {
+            const inner = cell.querySelector<HTMLElement>('.ert-timetable__num-inner');
+            if (inner) widest = Math.max(widest, contentWidth(inner) + padding);
+        });
+        return Math.ceil(widest + 1);
+    }
+
+    /**
+     * Once the table is laid out: fit the number column to what its rows hold,
+     * and each column the author hasn't sized to its content (long text keeps
+     * its width). Neither is saved, and while the table is open neither
+     * shrinks, so nothing twitches during an edit. A hidden table is left as is.
+     */
+    private fitAfterRender(table: HTMLElement, sizes: Record<string, number>): void {
+        if (table.clientWidth === 0) return;
+        this.showHeaderLabels(table);
+        const numberCol = table.querySelector<HTMLElement>('col[data-role="number"]');
+        const numberWidth = this.measureNumberColumn(table);
+        if (numberCol && numberWidth > 0) {
+            this.numberWidth = this.numberWidth === null ? numberWidth : Math.max(this.numberWidth, numberWidth);
+            numberCol.setCssProps({ '--ert-timetable-col-width': `${this.numberWidth}px` });
+        }
+        table.querySelectorAll<HTMLElement>('col[data-property]').forEach(col => {
+            const property = col.dataset.property as BasesPropertyId;
+            if (sizes[property] !== undefined || !this.isFittable(property)) return;
+            const width = this.measureColumn(table, property);
+            if (width === 0) return;
+            const fitted = Math.max(width, this.autoWidths.get(property) ?? 0);
+            this.autoWidths.set(property, fitted);
+            col.setCssProps({ '--ert-timetable-col-width': `${fitted}px` });
+        });
+        this.updateTableWidth(table);
+        this.fitHeaderLabels(table);
+    }
+
+    /** The header menu's Fit items and a handle's double-click: fit these columns now and save their widths, as a drag would. */
+    private fitColumns(properties: BasesPropertyId[]): void {
+        const table = this.rootEl.querySelector<HTMLElement>('.ert-timetable__table');
+        if (!table) return;
+        this.showHeaderLabels(table);
+        const sizes = this.columnSizes();
+        let changed = false;
+        for (const property of properties) {
+            const width = this.measureColumn(table, property);
+            if (width === 0 || sizes[property] === width) continue;
+            sizes[property] = width;
+            changed = true;
+        }
+        if (!changed) {
+            this.fitHeaderLabels(table);
+            return;
+        }
+        this.config.set('columnSize', sizes);
+        this.render();
+    }
+
+    /** The table is as wide as its columns. */
+    private updateTableWidth(table: HTMLElement): void {
+        let width = 0;
+        table.querySelectorAll<HTMLElement>('col').forEach(col => {
+            width += parseFloat(col.style.getPropertyValue('--ert-timetable-col-width')) || 0;
+        });
+        table.setCssProps({ '--ert-timetable-width': `${Math.round(width)}px` });
+    }
+
+    /** Measuring needs every header label showing. */
+    private showHeaderLabels(table: HTMLElement): void {
+        table.querySelectorAll<HTMLElement>('.ert-timetable__prop-head.is-icon-only').forEach(header => header.removeClass('is-icon-only'));
+    }
+
+    private fitHeaderLabels(table: HTMLElement): void {
+        table.querySelectorAll<HTMLElement>('.ert-timetable__prop-head[data-property]').forEach(header => this.fitHeaderLabel(header));
+    }
+
+    /** A header narrower than its label shows only its icon, with the column's name on hover. */
+    private fitHeaderLabel(header: HTMLElement): void {
+        const label = header.querySelector<HTMLElement>('.ert-timetable__prop-label');
+        const icon = header.querySelector<HTMLElement>('.ert-timetable__prop-icon');
+        if (!label || !icon) return;
+        header.removeClass('is-icon-only');
+        const iconOnly = label.scrollWidth > label.clientWidth + 1;
+        header.toggleClass('is-icon-only', iconOnly);
+        // On the icon: the header's own text still holds the hidden label, which would make the tooltip look redundant.
+        setTooltip(icon, iconOnly ? label.getText() : '', { placement: 'bottom' });
+    }
+
+    // ── Resetting the columns ───────────────────────────────────────────
+
+    /** The `.base` file this table shows, when it has a tab of its own (not an embed). */
+    private tableFile(): TFile | null {
+        const file = (this.tableLeaf()?.getViewState().state as { file?: unknown } | undefined)?.file;
+        return typeof file === 'string' ? this.plugin.app.vault.getFileByPath(file) : null;
+    }
+
+    /** For the command: whether this table can be reset (it has a file of its own). */
+    canResetColumns(): boolean {
+        return this.tableFile() !== null;
+    }
+
+    resetColumns(): void {
+        void this.confirmResetColumns();
+    }
+
+    /**
+     * Give this view the columns a new Timetable would get from this table's
+     * scenes now, after a confirm. Its saved widths go too. The file's other
+     * views, its filters, sorts and grouping stay as they are.
+     */
+    private async confirmResetColumns(): Promise<void> {
+        const file = this.tableFile();
+        if (!file) return;
+        const { app, settings } = this.plugin;
+        const viewName = this.config.name;
+        const confirmed = await confirmWithErtModal(app, {
+            title: t('ui.timetable.resetColumnsTitle'),
+            message: t('ui.timetable.resetColumnsMessage', { view: viewName }),
+            confirmText: t('ui.timetable.resetColumnsButton'),
+            cancelText: t('common.cancel'),
+            badge: { text: t('ui.timetable.viewName'), icon: 'table-2' },
+        });
+        if (!confirmed) return;
+        const frontmatters = (this.data?.data ?? []).map(entry => app.metadataCache.getFileCache(entry.file)?.frontmatter);
+        const order = tableColumns(settings, countColumnFill(frontmatters, settings)).timetable;
+        let found = false;
+        try {
+            await app.vault.process(file, content => {
+                const parsed: unknown = parseYaml(content);
+                const next = parsed && typeof parsed === 'object' ? withRecommendedColumns(parsed as Record<string, unknown>, viewName, order) : null;
+                found = next !== null;
+                return next ? stringifyYaml(next) : content;
+            });
+        } catch (error) {
+            console.error('[Timetable] Could not reset the columns:', error);
+            new Notice(t('ui.timetable.writeFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
+            return;
+        }
+        if (!found) {
+            new Notice(t('ui.timetable.resetColumnsMissing', { view: viewName, file: file.basename }), 8000);
+            return;
+        }
+        this.autoWidths.clear();
     }
 
     /** The wheel is hovering this scene: light up its row and bring it into view. */
@@ -891,7 +1186,7 @@ export class TimetableView extends BasesView {
 
     // ── Coloring the timeline by a column ───────────────────────────────
 
-    /** Right-click a column header: color the timeline's scenes by its values (or stop). */
+    /** Right-click a column header: color the timeline by it, fit it or every column, or reset the columns. */
     private showColumnMenu(evt: MouseEvent, property: BasesPropertyId): void {
         const name = this.config.getDisplayName(property);
         const menu = new Menu();
@@ -918,6 +1213,17 @@ export class TimetableView extends BasesView {
                         : t('ui.timetable.coloringNone', { property: name })).setDisabled(true);
                 }
             });
+        }
+        menu.addSeparator();
+        if (this.isFittable(property)) {
+            menu.addItem(item => item.setTitle(t('ui.timetable.fitColumn')).setIcon('move-horizontal').onClick(() => this.fitColumns([property])));
+        }
+        menu.addItem(item => item.setTitle(t('ui.timetable.fitAllColumns')).setIcon('unfold-horizontal').onClick(() => {
+            this.fitColumns(this.config.getOrder().filter(candidate => this.isFittable(candidate)));
+        }));
+        if (this.canResetColumns()) {
+            menu.addSeparator();
+            menu.addItem(item => item.setTitle(t('ui.timetable.resetColumns')).setIcon('list-restart').onClick(() => this.resetColumns()));
         }
         menu.showAtMouseEvent(evt);
     }
@@ -1070,7 +1376,7 @@ export class TimetableView extends BasesView {
     /**
      * + New sketch: a `Class: Sketch` note in the book's folder (never in
      * Obsidian's new-note location), with the act prefilled from where it was
-     * asked for. Its drawer opens with the cursor in it.
+     * asked for. Its drawer opens with the cursor in its Title.
      */
     private async createSketch(act: number | null, bookId: string | undefined): Promise<void> {
         const { app, settings } = this.plugin;
@@ -1087,6 +1393,7 @@ export class TimetableView extends BasesView {
         if (act !== null) frontmatter[authorKeyFor('Act', settings)] = act;
         this.openDrawers.add(path);
         this.focusPath = path;
+        this.focusField = 'title';
         try {
             await app.vault.create(path, `---\n${stringifyYaml(frontmatter)}---\n\n`);
         } catch (error) {
@@ -1095,6 +1402,57 @@ export class TimetableView extends BasesView {
             console.error('[Timetable] Could not create the sketch:', error);
             new Notice(t('ui.timetable.writeFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
         }
+    }
+
+    /**
+     * The drawer's Title: rename the sketch's file through Obsidian, so links
+     * to it follow. A number prefix stays; a name already taken gets a counter.
+     */
+    private async renameSketch(file: TFile, title: string): Promise<void> {
+        const stem = safeTitle(title);
+        const { lead, title: current } = splitNumberPrefix(file.basename);
+        if (!stem || stem === current) return;
+        const folder = file.parent && !file.parent.isRoot() ? `${file.parent.path}/` : '';
+        let path = `${folder}${lead}${stem}.md`;
+        for (let counter = 2; this.plugin.app.vault.getAbstractFileByPath(path); counter++) path = `${folder}${lead}${stem} ${counter}.md`;
+        try {
+            await this.plugin.app.fileManager.renameFile(file, path);
+        } catch (error) {
+            console.error('[Timetable] Could not rename the sketch:', error);
+            new Notice(t('ui.timetable.writeFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
+        }
+    }
+
+    /**
+     * A note was renamed: its drawer, pick and expanded references move with
+     * it. Its row takes the new name at once, even while a redraw waits for
+     * the author to finish typing in a drawer.
+     */
+    private followRename(path: string, oldPath: string): void {
+        let moved = false;
+        const row = this.rowEls.get(oldPath);
+        if (row) {
+            this.rowEls.delete(oldPath);
+            this.rowEls.set(path, row);
+            row.dataset.path = path;
+            const basename = path.slice(path.lastIndexOf('/') + 1).replace(/\.md$/, '');
+            row.querySelector('.ert-timetable__name')?.setText(displayName(basename));
+        }
+        const drawer = this.drawers.get(oldPath);
+        if (drawer) {
+            this.drawers.delete(oldPath);
+            this.drawers.set(path, drawer);
+            moved = true;
+        }
+        for (const paths of [this.openDrawers, this.closedDrawers, this.selected, this.expandedReferences]) {
+            if (paths.delete(oldPath)) {
+                paths.add(path);
+                moved = true;
+            }
+        }
+        if (this.lastToggled === oldPath) this.lastToggled = path;
+        if (this.focusPath === oldPath) this.focusPath = path;
+        if (moved) this.render();
     }
 
     private toggleGroup(id: string): void {
@@ -1261,6 +1619,8 @@ export class TimetableView extends BasesView {
         const scrollParent = this.rootEl.parentElement;
         const scrollTop = scrollParent?.scrollTop ?? 0;
         this.rootEl.empty();
+        // The peek's cell is gone; refindPeekCell brings it back once the rows are drawn.
+        this.peek?.hide();
         this.mountPatternDefs();
         this.renderBookNotice(groups);
 
@@ -1277,6 +1637,7 @@ export class TimetableView extends BasesView {
         const layout = this.rings ? buildRingLayout(this.rings.order, this.rings.colorIndex, allItems.map(item => item.row)) : null;
         const columns = this.columnsFor(mode);
         const columnCount = 1 + (showRings ? 1 : 0) + columns.length;
+        const cells = this.cellContext(mode, allItems, columns);
 
         const table = this.rootEl.createEl('table', { cls: 'ert-timetable__table' });
         table.toggleClass('is-gossamer', state.mode === 'gossamer');
@@ -1284,20 +1645,21 @@ export class TimetableView extends BasesView {
         const present = new Set(allItems.map(item => item.row.path));
         for (const path of [...this.selected]) if (!present.has(path)) this.selected.delete(path);
         table.toggleClass('has-selection', this.selected.size > 0);
-        // Fixed widths, like Obsidian's own table: the author's saved sizes, or defaults.
+        // Fixed widths, like Obsidian's own table: the author's saved sizes, else fitted widths (fitAfterRender), else defaults.
         const sizes = this.columnSizes();
         const colgroup = table.createEl('colgroup');
         let tableWidth = 0;
-        const addColumn = (width: number, property?: BasesPropertyId): void => {
+        const addColumn = (width: number, property?: BasesPropertyId): HTMLElement => {
             const col = colgroup.createEl('col');
             col.setCssProps({ '--ert-timetable-col-width': `${width}px` });
             if (property) col.dataset.property = property;
             tableWidth += width;
+            return col;
         };
-        addColumn(NUMBER_COLUMN_WIDTH);
+        addColumn(this.numberWidth ?? NUMBER_COLUMN_WIDTH).dataset.role = 'number';
         if (showRings) addColumn(perLine * 12 + 18);
         for (const column of columns) {
-            if (column.kind === 'property') addColumn(sizes[column.property] ?? this.defaultColumnWidth(column.property), column.property);
+            if (column.kind === 'property') addColumn(sizes[column.property] ?? this.autoWidths.get(column.property) ?? this.defaultColumnWidth(column.property), column.property);
             else addColumn(MICRO_COLUMN_WIDTH);
         }
         table.setCssProps({ '--ert-timetable-rings-per-line': String(perLine), '--ert-timetable-width': `${tableWidth}px` });
@@ -1306,22 +1668,15 @@ export class TimetableView extends BasesView {
         // The corner: + New sketch, the lens, and the mode the table follows. It stays in reach while scrolling.
         this.renderCorner(headRow.createEl('th', { cls: 'ert-timetable__num-head' }), state);
         if (showRings && layout) this.renderRingsHeader(headRow.createEl('th', { cls: 'ert-timetable__rings-head' }), layout);
-        for (const column of columns) {
+        columns.forEach((column, index) => {
             const header = headRow.createEl('th', { cls: 'ert-timetable__prop-head' });
-            if (column.kind === 'property') {
-                header.dataset.property = column.property;
-                if (this.coloringProperty === column.property) {
-                    header.addClass('is-coloring');
-                    setIcon(header.createSpan({ cls: 'ert-timetable__coloring-icon' }), 'palette');
-                }
-                header.createSpan({ cls: 'ert-timetable__prop-label', text: this.config.getDisplayName(column.property) });
-                const handle = header.createDiv({ cls: 'ert-timetable__resize' });
-                handle.dataset.property = column.property;
-            } else {
+            header.dataset.col = String(index);
+            if (column.kind === 'property') this.renderPropertyHeader(header, column.property, cells);
+            else {
                 header.addClass('is-micro');
                 header.setText(column.kind === 'gap' ? t('ui.timetable.colGap') : t('ui.timetable.colRunningTime'));
             }
-        }
+        });
 
         const isProgress = state.mode === 'progress';
         const showGroupHeaders = !chronologue && (groups.length > 1 || groups[0].label !== null || isProgress);
@@ -1352,7 +1707,7 @@ export class TimetableView extends BasesView {
                 }
                 const item = byPath.get(line.row.path);
                 if (!item) continue;
-                this.renderRow(body, item, columns, showRings ? layout : null, columnCount, mode);
+                this.renderRow(body, item, columns, showRings ? layout : null, columnCount, cells);
                 if (item.row.kind === 'scene') this.renderTimeReferences(body, item, columnCount);
                 if (item.row.kind === 'sketch' && this.drawerIsOpen(item.row.path)) {
                     this.renderDrawer(body, item, layout, columnCount);
@@ -1364,8 +1719,67 @@ export class TimetableView extends BasesView {
         this.setCurrentRow(currentNotePath());
         this.markRing(this.ringSpotlight);
         this.renderBulkBar();
+        this.fitAfterRender(table, sizes);
         if (scrollParent) scrollParent.scrollTop = scrollTop;
-        void this.decorateFromBodies(allItems);
+        this.refindPeekCell();
+        void this.decorateFromBodies(allItems).then(done => {
+            // Query counts arrive after the first fit; the number column makes room for them.
+            if (done && table.isConnected) this.fitAfterRender(table, sizes);
+        });
+    }
+
+    /** What the cells of this draw share: the When year, whether When shows Duration, each book's median Words. */
+    private cellContext(mode: ModeContext, items: TableItem[], columns: Column[]): CellContext {
+        const { settings } = this.plugin;
+        const mappings = getActiveFrontmatterMappings(settings);
+        const shows = (canonical: string): boolean => columns.some(column => {
+            if (column.kind !== 'property') return false;
+            const { type, name } = parsePropertyId(column.property);
+            return type === 'note' && canonicalizeFrontmatterKey(name, mappings) === canonical;
+        });
+        const years = new Set<number>();
+        const words = new Map<string, number[]>();
+        const books = settings.books ?? [];
+        for (const item of items) {
+            const { when } = readWhen(item.frontmatter, settings);
+            if (when) years.add(when.getFullYear());
+            if (item.row.kind !== 'scene') continue;
+            const count = Number(frontmatterKey(item.frontmatter, authorKeyFor('Words', settings)));
+            if (!Number.isFinite(count) || count <= 0) continue;
+            const book = getBookIdForPath(books, item.row.path) ?? '';
+            words.set(book, [...(words.get(book) ?? []), count]);
+        }
+        const wordMedians = new Map<string, number>();
+        for (const [book, counts] of words) {
+            const median = medianOf(counts);
+            if (median !== null) wordMedians.set(book, median);
+        }
+        return {
+            mode,
+            // Alt's planetary calendar has years of its own; each cell keeps them.
+            whenYear: years.size === 1 && !mode.chronologue?.profile ? [...years][0] : null,
+            durationInWhen: !shows('Duration'),
+            wordMedians,
+            today: new Date(),
+        };
+    }
+
+    /** A property's header: its icon (template fields), its name, and the When column's shared year. */
+    private renderPropertyHeader(header: HTMLElement, property: BasesPropertyId, cells: CellContext): void {
+        header.dataset.property = property;
+        const inner = header.createSpan({ cls: 'ert-timetable__prop-head-inner' });
+        if (this.coloringProperty === property) {
+            header.addClass('is-coloring');
+            setIcon(inner.createSpan({ cls: 'ert-timetable__coloring-icon' }), 'palette');
+        }
+        const { type, name } = parsePropertyId(property);
+        const canonical = type === 'note' ? canonicalizeFrontmatterKey(name, getActiveFrontmatterMappings(this.plugin.settings)) : '';
+        const icon = COLUMN_ICONS[canonical];
+        if (icon) setIcon(inner.createSpan({ cls: 'ert-timetable__prop-icon' }), icon);
+        inner.createSpan({ cls: 'ert-timetable__prop-label', text: this.config.getDisplayName(property) });
+        if (canonical === 'When' && cells.whenYear !== null) inner.createSpan({ cls: 'ert-timetable__prop-year', text: `· ${cells.whenYear}` });
+        const handle = header.createDiv({ cls: 'ert-timetable__resize' });
+        handle.dataset.property = property;
     }
 
     /** The Base's columns, plus the columns a micro-mode adds just after When. */
@@ -1465,9 +1879,14 @@ export class TimetableView extends BasesView {
                 title: t('ui.timetable.keyRows'),
                 rows: [
                     { swatch: { fill: stage.Press, stroke: stage.Press, text: '12', textColor: 'var(--rt-legacy-black)' }, label: t('ui.timetable.keyScene'), detail: t('ui.timetable.keySceneDetail') },
+                    // The vitals beside a scene's number.
+                    { swatch: { fill: 'transparent', stroke: 'transparent', text: 'A', textColor: stage.Author }, label: t('ui.timetable.keyStage'), detail: t('ui.timetable.keyStageDetail') },
+                    { icon: 'pencil-line', label: t('ui.timetable.keyPending'), detail: t('ui.timetable.keyPendingDetail') },
+                    { icon: 'dot', label: t('ui.timetable.keyDueDot'), detail: t('ui.timetable.keyDueDotDetail') },
                     { swatch: { fill: 'transparent', stroke: 'var(--text-muted)', text: '–', textColor: 'var(--text-muted)', dashed: true }, label: t('ui.timetable.keySketch'), detail: t('ui.timetable.keySketchDetail') },
                     { swatch: { fill: 'transparent', stroke: 'var(--text-faint)', text: '–', textColor: 'var(--text-faint)' }, label: t('ui.timetable.keyNote'), detail: t('ui.timetable.keyNoteDetail') },
                     { rings: ['var(--rt-subplot-colors-0)', 'var(--rt-subplot-colors-1)', null], label: t('ui.timetable.keyRings'), detail: t('ui.timetable.keyRingsDetail') },
+                    { icon: 'pilcrow', label: t('ui.timetable.keyWordsBar'), detail: t('ui.timetable.keyWordsBarDetail') },
                     { icon: 'message-circle-question', label: t('ui.timetable.keyQueries'), detail: t('ui.timetable.keyQueriesDetail') },
                     { icon: 'file-up', label: t('ui.timetable.keyPromote'), detail: t('ui.timetable.keyPromoteDetail') },
                 ],
@@ -1482,6 +1901,7 @@ export class TimetableView extends BasesView {
                     { icon: 'chevron-down', label: t('ui.timetable.keyPick'), detail: t('ui.timetable.keyPickDetail') },
                     { icon: 'square-check', label: t('ui.timetable.keyCheckboxes'), detail: t('ui.timetable.keyCheckboxesDetail') },
                     { icon: 'square-mouse-pointer', label: t('ui.timetable.keyHover'), detail: t('ui.timetable.keyHoverDetail') },
+                    { icon: 'text-select', label: t('ui.timetable.keyShiftHover'), detail: t('ui.timetable.keyShiftHoverDetail') },
                 ],
             },
             {
@@ -1555,7 +1975,9 @@ export class TimetableView extends BasesView {
         drawer.renderBar(item.row, item.frontmatter, layout);
         if (this.focusPath === item.row.path) {
             this.focusPath = null;
-            drawer.focusEditor();
+            if (this.focusField === 'title') drawer.focusTitle();
+            else drawer.focusEditor();
+            this.focusField = 'text';
         }
     }
 
@@ -1571,13 +1993,14 @@ export class TimetableView extends BasesView {
     /**
      * Fill in what only the note text knows: each row's open author queries
      * (`%%query: …%%`), and a sketch's first line when its Synopsis is empty.
+     * False when a newer draw took over before this one finished.
      */
-    private async decorateFromBodies(items: TableItem[]): Promise<void> {
+    private async decorateFromBodies(items: TableItem[]): Promise<boolean> {
         const generation = ++this.decorateGeneration;
         for (const item of items) {
             if (item.row.kind === 'beat' || item.row.kind === 'otherClass') continue;
             const content = await this.plugin.app.vault.cachedRead(item.entry.file);
-            if (generation !== this.decorateGeneration) return;
+            if (generation !== this.decorateGeneration) return false;
             const info = getFrontMatterInfo(content);
             const body = content.slice(info.exists ? info.contentStart : 0);
             const queries = listAuthorQueries(body);
@@ -1595,6 +2018,7 @@ export class TimetableView extends BasesView {
                 synopsisCell.setText(firstLine.replace(/^#+\s*/, ''));
             }
         }
+        return true;
     }
 
     /** The wheel's Working and Todo patterns, under this table's own ID prefix. */
@@ -1656,8 +2080,9 @@ export class TimetableView extends BasesView {
         if (group.act !== undefined || group.id.startsWith('book:')) this.renderNewSketchButton(line, group.act, bookId, group.label ?? '');
     }
 
-    private renderRow(body: HTMLElement, item: TableItem, columns: Column[], layout: RingLayout | null, columnCount: number, mode: ModeContext): void {
+    private renderRow(body: HTMLElement, item: TableItem, columns: Column[], layout: RingLayout | null, columnCount: number, cells: CellContext): void {
         const { row, frontmatter } = item;
+        const { mode } = cells;
         const tr = body.createEl('tr', { cls: ['ert-timetable__row', `is-${row.kind === 'otherClass' ? 'other-class' : row.kind}`] });
         tr.setAttr('data-path', row.path);
         this.rowEls.set(row.path, tr);
@@ -1665,12 +2090,13 @@ export class TimetableView extends BasesView {
         // Gossamer: beats come forward, everything else recedes.
         const gossamer = mode.state.mode === 'gossamer';
         if (gossamer && row.kind !== 'beat') tr.addClass('is-receded');
-        this.renderNumberCell(tr.createEl('td', { cls: 'ert-timetable__num' }).createDiv({ cls: 'ert-timetable__num-inner' }), item);
+        this.renderNumberCell(tr.createEl('td', { cls: 'ert-timetable__num' }).createDiv({ cls: 'ert-timetable__num-inner' }), item, cells.today);
 
         if (row.kind === 'beat') {
             // Beats run across the table as quiet dividers, as on the wheel.
             const cell = tr.createEl('td', { cls: 'ert-timetable__beat' });
             cell.colSpan = columnCount - 1;
+            cell.dataset.column = 'beat';
             cell.createSpan({ cls: 'ert-timetable__beat-title', text: displayName(row.basename) });
             const model = firstText(frontmatterKey(frontmatter, 'Beat Model'));
             if (model) cell.createSpan({ cls: 'ert-timetable__beat-model', text: model });
@@ -1680,11 +2106,13 @@ export class TimetableView extends BasesView {
             if (purpose) cell.createSpan({ cls: 'ert-timetable__beat-purpose', text: purpose });
         } else {
             if (layout) this.renderRingsCell(tr.createEl('td', { cls: 'ert-timetable__rings' }), row, layout);
-            for (const column of columns) {
+            columns.forEach((column, index) => {
                 const cell = tr.createEl('td');
-                if (column.kind === 'property') this.renderValueCell(cell, item, column.property, mode);
+                cell.dataset.col = String(index);
+                cell.dataset.column = column.kind === 'property' ? column.property : column.kind;
+                if (column.kind === 'property') this.renderValueCell(cell, item, column.property, cells);
                 else this.renderMicroCell(cell, row, column.kind, mode);
-            }
+            });
         }
     }
 
@@ -1712,31 +2140,14 @@ export class TimetableView extends BasesView {
         manage.dataset.timeReferenceManage = item.row.path;
     }
 
-    private renderNumberCell(cell: HTMLElement, item: TableItem): void {
+    /**
+     * The number cell: the number on the scene's status fill, then a slot with
+     * the scene's vitals (or a sketch's chevron). On hover, and while rows are
+     * picked, the row's checkbox takes the slot. Time references, Promote and
+     * query counts follow on the rows that have them.
+     */
+    private renderNumberCell(cell: HTMLElement, item: TableItem, today: Date): void {
         const { row, frontmatter } = item;
-        // Pick rows for a bulk edit; other rows keep the space so numbers line up.
-        if (SELECTABLE_KINDS.has(row.kind)) {
-            const checkbox = cell.createEl('input', { cls: 'ert-timetable__select', type: 'checkbox' });
-            checkbox.checked = this.selected.has(row.path);
-            setAccessibleLabel(checkbox, t('ui.timetable.bulkPick', { name: displayName(row.basename) }));
-            cell.closest('tr')?.toggleClass('is-selected', checkbox.checked);
-        } else {
-            cell.createSpan({ cls: 'ert-timetable__select-spacer' });
-        }
-        if (row.kind === 'sketch') {
-            const open = this.drawerIsOpen(row.path);
-            const toggle = cell.createEl('button', { cls: 'ert-timetable__drawer-toggle clickable-icon' });
-            toggle.setAttr('aria-expanded', String(open));
-            setAccessibleLabel(toggle, t('ui.timetable.toggleSketch'));
-            setIcon(toggle, open ? 'chevron-down' : 'chevron-right');
-        }
-        if (row.kind === 'scene' && frontmatter?.[TIME_REFERENCES_KEY] !== undefined) {
-            const toggle = cell.createEl('button', { cls: 'ert-time-reference-toggle clickable-icon' });
-            const count = readTimeReferences(frontmatter[TIME_REFERENCES_KEY], row.path).references.length;
-            toggle.setAttr('aria-expanded', String(this.expandedReferences.has(row.path)));
-            setAccessibleLabel(toggle, t('timeReferences.references', { count }));
-            setIcon(toggle, this.expandedReferences.has(row.path) ? 'chevron-down' : 'history');
-        }
         const chip = cell.createDiv({ cls: 'ert-timetable__chip' });
         const svg = chip.createSvg('svg', { attr: { viewBox: '0 0 40 22', width: '40', height: '22', 'aria-hidden': 'true' } });
         const rect = svg.createSvg('rect', { cls: 'ert-timetable__chip-cell', attr: { x: '1', y: '1', width: '38', height: '20', rx: '3' } });
@@ -1746,7 +2157,7 @@ export class TimetableView extends BasesView {
             attr: { x: '20', y: '11.5', 'text-anchor': 'middle', 'dominant-baseline': 'central' },
         });
         label.textContent = row.prefix ?? '–';
-        tooltip(chip, this.chipTooltip(row, frontmatter), 'right');
+        tooltip(chip, this.chipTooltip(row, frontmatter, today), 'right');
         if (row.kind === 'scene') {
             chip.addClass('ert-timetable__pick');
             chip.dataset.pick = 'status';
@@ -1754,6 +2165,28 @@ export class TimetableView extends BasesView {
             chip.setAttr('aria-haspopup', 'menu');
         }
 
+        if (SELECTABLE_KINDS.has(row.kind)) {
+            const slot = cell.createSpan({ cls: 'ert-timetable__slot' });
+            if (row.kind === 'scene') this.renderVitals(slot, frontmatter, today);
+            if (row.kind === 'sketch') {
+                const open = this.drawerIsOpen(row.path);
+                const toggle = slot.createEl('button', { cls: 'ert-timetable__drawer-toggle clickable-icon' });
+                toggle.setAttr('aria-expanded', String(open));
+                setAccessibleLabel(toggle, t('ui.timetable.toggleSketch'));
+                setIcon(toggle, open ? 'chevron-down' : 'chevron-right');
+            }
+            const checkbox = slot.createEl('input', { cls: 'ert-timetable__select', type: 'checkbox' });
+            checkbox.checked = this.selected.has(row.path);
+            setAccessibleLabel(checkbox, t('ui.timetable.bulkPick', { name: displayName(row.basename) }));
+            cell.closest('tr')?.toggleClass('is-selected', checkbox.checked);
+        }
+        if (row.kind === 'scene' && frontmatter?.[TIME_REFERENCES_KEY] !== undefined) {
+            const toggle = cell.createEl('button', { cls: 'ert-time-reference-toggle clickable-icon' });
+            const count = readTimeReferences(frontmatter[TIME_REFERENCES_KEY], row.path).references.length;
+            toggle.setAttr('aria-expanded', String(this.expandedReferences.has(row.path)));
+            setAccessibleLabel(toggle, t('timeReferences.references', { count }));
+            setIcon(toggle, this.expandedReferences.has(row.path) ? 'chevron-down' : 'history');
+        }
         if (row.kind === 'sketch' || row.kind === 'unclassed') {
             const promote = cell.createEl('button', { cls: 'ert-timetable__promote clickable-icon' });
             setAccessibleLabel(promote, t('ui.timetable.promote'));
@@ -1762,15 +2195,34 @@ export class TimetableView extends BasesView {
         }
     }
 
-    private chipTooltip(row: TimetableRow, frontmatter: Record<string, unknown> | undefined): string {
+    /**
+     * A scene's vitals beside its number: the publish stage's letter in the
+     * stage's color, a pencil while Pending Edits holds text, and a dot when
+     * Due is late or within a week. The number's tooltip spells them out.
+     */
+    private renderVitals(slot: HTMLElement, frontmatter: Record<string, unknown> | undefined, today: Date): void {
+        const { settings } = this.plugin;
+        const vitals = sceneVitals(frontmatter, settings, today);
+        const el = slot.createSpan({ cls: 'ert-timetable__vitals' });
+        const letter = el.createSpan({ cls: 'ert-timetable__stage', text: vitals.stage.charAt(0).toUpperCase() });
+        const colors: Record<string, string> = settings.publishStageColors;
+        const color = colors[vitals.stage];
+        if (color) letter.setCssProps({ '--ert-timetable-stage': color });
+        if (vitals.pending !== null) setIcon(el.createSpan({ cls: 'ert-timetable__pending' }), 'pencil-line');
+        if (vitals.due.kind === 'late' || vitals.due.kind === 'soon') el.createSpan({ cls: ['ert-timetable__due-dot', `is-${vitals.due.kind}`] });
+    }
+
+    private chipTooltip(row: TimetableRow, frontmatter: Record<string, unknown> | undefined, today: Date): string {
         switch (row.kind) {
             case 'scene': {
                 const status = normalizeStatus(frontmatterKey(frontmatter, 'Status'));
-                const stage = firstText(frontmatterKey(frontmatter, 'Publish Stage')) || 'Zero';
-                const due = frontmatterKey(frontmatter, 'Due');
-                const overdue = status !== 'Completed' && typeof due === 'string' && isOverdueDateString(due);
+                const vitals = sceneVitals(frontmatter, this.plugin.settings, today);
+                const overdue = vitals.due.kind === 'late';
                 const label = overdue ? t('ui.timetable.statusOverdue') : (status === 'Completed' ? 'Complete' : (status || 'Todo'));
-                return t('ui.timetable.sceneStatus', { status: label, stage });
+                const parts = [t('ui.timetable.sceneStatus', { status: label, stage: vitals.stage })];
+                if (vitals.due.kind === 'late' || vitals.due.kind === 'soon') parts.push(t('ui.timetable.vitalsDue', { when: formatDueLabel(vitals.due, today) }));
+                if (vitals.pending !== null) parts.push(t('ui.timetable.vitalsPending', { text: vitals.pending }));
+                return parts.join(' · ');
             }
             case 'beat': return t('ui.timetable.beatRow');
             case 'sketch': return t('ui.timetable.sketchRow');
@@ -1847,8 +2299,9 @@ export class TimetableView extends BasesView {
         return latest;
     }
 
-    private renderValueCell(cell: HTMLElement, item: TableItem, property: BasesPropertyId, mode: ModeContext): void {
+    private renderValueCell(cell: HTMLElement, item: TableItem, property: BasesPropertyId, cells: CellContext): void {
         const { entry, frontmatter, row } = item;
+        const { mode } = cells;
         const { type, name } = parsePropertyId(property);
         if (type === 'file' && name === 'name') {
             cell.addClass('ert-timetable__name');
@@ -1856,18 +2309,14 @@ export class TimetableView extends BasesView {
             return;
         }
         if (type === 'note' && this.isWhenProperty(name)) {
-            const raw = frontmatterKey(frontmatter, name);
-            const text = typeof raw === 'string' ? raw.trim() : '';
-            const when = text ? parseWhenField(text) : null;
-            cell.addClass('ert-timetable__when');
-            cell.setText(when ? this.formatWhen(when, whenTextHasClock(text), mode.chronologue?.profile ?? null) : text);
+            this.renderWhenCell(cell, item, name, cells);
             return;
         }
         const value = entry.getValue(property);
         const empty = !value || !value.isTruthy();
-        if (!empty) value.renderTo(cell, this.plugin.app.renderContext);
         const mappings = getActiveFrontmatterMappings(this.plugin.settings);
         const canonical = type === 'note' ? canonicalizeFrontmatterKey(name, mappings) : '';
+        if (!empty && !this.renderReadout(cell, item, canonical, name, cells)) value.renderTo(cell, this.plugin.app.renderContext);
         // Status, Publish Stage and Act have fixed values: a click offers them. Beats and other classes are left alone.
         if (PICKABLE_PROPERTIES.has(canonical) && row.kind !== 'otherClass' && (canonical === 'Act' || row.kind === 'scene')) {
             cell.addClass('ert-timetable__pick');
@@ -1884,6 +2333,98 @@ export class TimetableView extends BasesView {
         if (empty && row.kind === 'sketch' && canonical === 'Synopsis') {
             this.synopsisFromBody.set(row.path, cell);
         }
+    }
+
+    /**
+     * When, short: "Fri Apr 6 · 7PM", the year left to the header when every
+     * row shares it, and the Duration beside it while its own column is hidden.
+     * Hover shows the long form and the Duration as written.
+     */
+    private renderWhenCell(cell: HTMLElement, item: TableItem, name: string, cells: CellContext): void {
+        const raw = frontmatterKey(item.frontmatter, name);
+        const text = typeof raw === 'string' ? raw.trim() : '';
+        const when = text ? parseWhenField(text) : null;
+        cell.addClass('ert-timetable__when');
+        if (!when) {
+            cell.setText(text);
+            return;
+        }
+        const hasClock = whenTextHasClock(text);
+        const profile = cells.mode.chronologue?.profile ?? null;
+        const full = this.formatWhen(when, hasClock, profile);
+        cell.createSpan({ text: profile ? full : formatTableWhen(when, hasClock, cells.whenYear === null) });
+        const durationRaw = cells.durationInWhen ? frontmatterKey(item.frontmatter, authorKeyFor('Duration', this.plugin.settings)) : undefined;
+        const duration = typeof durationRaw === 'string' ? durationRaw.trim() : '';
+        const compact = duration ? formatCompactDuration(duration) : null;
+        if (compact) cell.createSpan({ cls: 'ert-timetable__duration', text: compact });
+        tooltip(cell, compact ? `${full} · ${duration}` : full, 'bottom');
+    }
+
+    /**
+     * Columns that read better drawn than written: Due as relative time, Words
+     * with a bar against the book's median, Runtime and Iteration as badges.
+     * False leaves the cell to Obsidian's own rendering.
+     */
+    private renderReadout(cell: HTMLElement, item: TableItem, canonical: string, name: string, cells: CellContext): boolean {
+        const { settings } = this.plugin;
+        const { frontmatter, row } = item;
+        if (canonical === 'Due') {
+            const complete = normalizeStatus(frontmatterKey(frontmatter, authorKeyFor('Status', settings))) === 'Completed';
+            const due = dueStatus(frontmatterKey(frontmatter, name), complete, cells.today);
+            if (due.kind === 'none') return false;
+            this.renderDue(cell, due, cells.today);
+            return true;
+        }
+        if (canonical === 'Words' && row.kind === 'scene') {
+            const words = Number(frontmatterKey(frontmatter, name));
+            const median = cells.wordMedians.get(getBookIdForPath(settings.books ?? [], row.path) ?? '');
+            if (!Number.isFinite(words) || words <= 0 || median === undefined) return false;
+            this.renderWords(cell, words, median);
+            return true;
+        }
+        if (canonical === 'Runtime') {
+            const seconds = readRuntimeSeconds(frontmatter, settings);
+            if (seconds === null || seconds <= 0) return false;
+            this.renderBadge(cell, 'timer', formatRuntimeValue(seconds));
+            return true;
+        }
+        if (canonical === 'Iteration') {
+            const iteration = Number(firstText(frontmatterKey(frontmatter, name)));
+            if (!Number.isFinite(iteration)) return false;
+            this.renderBadge(cell, 'repeat', iteration.toLocaleString(getFormattingLocale()));
+            return true;
+        }
+        return false;
+    }
+
+    /** Due: "4 days ago" (late), "tomorrow" (within a week), the date further out, a check and the day for a complete scene. */
+    private renderDue(cell: HTMLElement, due: Exclude<DueStatus, { kind: 'none' }>, today: Date): void {
+        const label = cell.createSpan({ cls: ['ert-timetable__due', `is-${due.kind}`] });
+        if (due.kind === 'done') setIcon(label.createSpan({ cls: 'ert-timetable__due-icon' }), 'check');
+        label.createSpan({ text: formatDueLabel(due, today) });
+        tooltip(label, formatLongDate(due.date), 'bottom');
+    }
+
+    /** Words: the count, and a bar whose midpoint is the book's median scene (a full bar is twice it). */
+    private renderWords(cell: HTMLElement, words: number, median: number): void {
+        const locale = getFormattingLocale();
+        const bar = wordBar(words, median);
+        const wrap = cell.createSpan({ cls: 'ert-timetable__words' });
+        wrap.createSpan({ cls: 'ert-timetable__words-count', text: words.toLocaleString(locale) });
+        const track = wrap.createSpan({ cls: 'ert-timetable__words-bar' });
+        track.toggleClass('is-over', bar.over);
+        track.createSpan({ cls: 'ert-timetable__words-fill' }).setCssProps({ '--ert-timetable-words-fill': `${Math.round(bar.fill * 100)}%` });
+        tooltip(wrap, t('ui.timetable.wordsVsMedian', {
+            words: words.toLocaleString(locale),
+            ratio: new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(words / median),
+            median: Math.round(median).toLocaleString(locale),
+        }), 'bottom');
+    }
+
+    private renderBadge(cell: HTMLElement, icon: string, text: string): void {
+        const badge = cell.createSpan({ cls: 'ert-timetable__badge' });
+        setIcon(badge.createSpan({ cls: 'ert-timetable__badge-icon' }), icon);
+        badge.createSpan({ text });
     }
 
     /** The When column, under the author's own key name when they mapped one. */

@@ -19,6 +19,7 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { getConfiguredActCount, parseActLabels, resolveActLabel } from '../utils/acts';
 import { canonicalizeFrontmatterKey, getActiveFrontmatterMappings } from '../utils/frontmatter';
+import { isUntitledName, splitNumberPrefix } from '../utils/noteTitle';
 import { authorKeyFor } from './timetableFiles';
 import type { RingLayout, TimetableRow } from './timetableModel';
 
@@ -28,7 +29,9 @@ export interface SketchDrawerHost {
     promote(file: TFile): void;
     openNote(file: TFile, evt: MouseEvent): void;
     close(path: string): void;
-    /** The drawer's editor lost focus; the table may redraw now. */
+    /** The Title field: rename the sketch's file to this title (its number prefix stays). */
+    rename(file: TFile, title: string): void;
+    /** The drawer's editor or one of its text fields lost focus; the table may redraw now. */
     editingEnded(): void;
 }
 
@@ -78,9 +81,24 @@ export class SketchDrawer extends Component {
             if (evt.target === this.textarea) this.handleInput();
         });
         this.registerDomEvent(this.el, 'focusout', (evt: FocusEvent) => {
-            if (evt.target === this.textarea) this.handleEditorBlur();
+            if (evt.target === this.textarea) {
+                this.handleEditorBlur();
+                return;
+            }
+            // A bar field lost focus: once focus has settled outside the drawer's fields, the table may redraw.
+            if (evt.target instanceof HTMLInputElement) {
+                window.setTimeout(() => {
+                    if (!this.isEditing()) this.host.editingEnded();
+                }, 0);
+            }
         });
         this.registerDomEvent(this.el, 'keydown', (evt: KeyboardEvent) => {
+            if (evt.key === 'Enter' && evt.target instanceof HTMLInputElement && evt.target.matches('.ert-timetable__drawer-title')) {
+                // Enter names the sketch and moves on to its text; the change event does the renaming.
+                evt.preventDefault();
+                this.showEditor();
+                return;
+            }
             if (evt.key === 'Escape') {
                 evt.preventDefault();
                 void this.flush().then(() => this.host.close(this.file.path));
@@ -146,12 +164,15 @@ export class SketchDrawer extends Component {
         } else if (target instanceof HTMLInputElement && target.matches('.ert-timetable__drawer-when')) {
             const value = target.value.trim();
             void this.writeProperty('When', value === '' ? null : value);
+        } else if (target instanceof HTMLInputElement && target.matches('.ert-timetable__drawer-title')) {
+            this.host.rename(this.file, target.value);
         }
     }
 
-    /** True while the author is typing in the drawer, so the table holds off redrawing. */
+    /** True while the author is typing in the drawer (its text or a bar field), so the table holds off redrawing. */
     isEditing(): boolean {
-        return this.textarea !== null && this.textarea.ownerDocument.activeElement === this.textarea;
+        const active = this.el.ownerDocument.activeElement;
+        return active instanceof HTMLElement && this.el.contains(active) && active.matches('textarea, input[type="text"]');
     }
 
     /** Put the cursor in the editor as soon as the body has loaded. */
@@ -160,12 +181,26 @@ export class SketchDrawer extends Component {
         if (this.savedBody !== null) this.showEditor();
     }
 
+    /** Put the cursor in the Title field (a new sketch starts there). */
+    focusTitle(): void {
+        this.wantsFocus = false;
+        this.barEl.querySelector<HTMLInputElement>('.ert-timetable__drawer-title')?.focus();
+    }
+
     // ── Properties bar ─────────────────────────────────────────────────
 
-    /** Redraw the Act and When chips and the ring toggles from the note's current frontmatter. */
+    /** Redraw the Title, Act and When fields and the ring toggles from the note's current name and frontmatter. */
     renderBar(row: TimetableRow, frontmatter: Record<string, unknown> | undefined, layout: RingLayout | null): void {
         const { settings } = this.plugin;
         this.barEl.empty();
+
+        // The title is the file name without its number; a placeholder name shows as an empty field.
+        const titleField = this.barEl.createEl('label', { cls: 'ert-timetable__drawer-field' });
+        titleField.createSpan({ text: t('ui.timetable.drawerTitle') });
+        const titleInput = titleField.createEl('input', { type: 'text', cls: 'ert-timetable__drawer-title' });
+        const sketchName = t('ui.timetable.newSketchName');
+        titleInput.placeholder = sketchName;
+        titleInput.value = isUntitledName(this.file.basename, sketchName) ? '' : splitNumberPrefix(this.file.basename).title;
 
         const actField = this.barEl.createEl('label', { cls: 'ert-timetable__drawer-field' });
         actField.createSpan({ text: t('ui.timetable.drawerAct') });

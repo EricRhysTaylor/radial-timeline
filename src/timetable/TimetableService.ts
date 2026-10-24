@@ -20,10 +20,11 @@ import { openSettingsTab } from '../utils/obsidianInternals';
 import { confirmWithErtModal } from '../modals/ErtConfirmModal';
 import { TIMELINE_VIEW_TYPE } from '../view/TimeLineView';
 import { TimetableView, timetableViewOptions } from './TimetableView';
-import { refreshTimetableViews } from './timetableRegistry';
+import { activeTimetable, refreshTimetableViews } from './timetableRegistry';
 import {
     buildBookTimetableContent,
     buildSagaTimetableContent,
+    countColumnFill,
     findTimetableViewName,
     retargetFolderFilter,
     retargetSagaFolderFilter,
@@ -33,6 +34,7 @@ import {
     TIMETABLES_FOLDER,
     TIMETABLE_VIEW_TYPE,
     type BaseFileContent,
+    type ColumnFill,
     type TimetableFileRecord,
 } from './timetableFiles';
 
@@ -62,6 +64,17 @@ export class TimetableService {
             id: 'open-timetable',
             name: t('commands.openTimetable'),
             callback: () => { void this.open(); },
+        });
+        // Defaults reach only new tables; this brings an existing one in line (after a confirm).
+        this.plugin.addCommand({
+            id: 'reset-timetable-columns',
+            name: t('commands.resetTimetableColumns'),
+            checkCallback: (checking: boolean) => {
+                const table = activeTimetable();
+                if (!table?.canResetColumns()) return false;
+                if (!checking) table.resetColumns();
+                return true;
+            },
         });
         // After a restart, a table tab that matches the timeline's scope follows it again.
         this.plugin.app.workspace.onLayoutReady(() => this.adoptOpenTables());
@@ -123,7 +136,7 @@ export class TimetableService {
                 key: SAGA_TIMETABLE_KEY,
                 title: t('ui.timetable.sagaTitle'),
                 folders: books.map(book => book.sourceFolder),
-                build: () => buildSagaTimetableContent(books, settings, names),
+                build: () => buildSagaTimetableContent(books, settings, names, this.columnFill(books.map(book => book.sourceFolder))),
             };
         }
         const book = getActiveBook(settings);
@@ -140,8 +153,18 @@ export class TimetableService {
             key: book.id,
             title: book.title,
             folders: [book.sourceFolder],
-            build: () => buildBookTimetableContent(book, settings, names, requireApiVersion(KANBAN_MIN_API)),
+            build: () => buildBookTimetableContent(book, settings, names, requireApiVersion(KANBAN_MIN_API), this.columnFill([book.sourceFolder])),
         };
+    }
+
+    /** How many of the scenes in these folders fill each property, so a new table can leave out the mostly empty ones. */
+    private columnFill(folders: string[]): ColumnFill {
+        const { app, settings } = this.plugin;
+        const roots = folders.map(folder => `${normalizePath(folder)}/`);
+        const frontmatters = app.vault.getMarkdownFiles()
+            .filter(file => roots.some(root => file.path.startsWith(root)))
+            .map(file => app.metadataCache.getFileCache(file)?.frontmatter);
+        return countColumnFill(frontmatters, settings);
     }
 
     /** The table file for a target: found, kept pointed at the book's folder, or created after a confirm. */

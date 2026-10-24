@@ -310,6 +310,71 @@ export function groupProgress(
     return progress;
 }
 
+// ── Readouts: Due, Words and the vitals beside the number ──────────────
+
+/** Due within this many days (and not late) counts as soon. */
+export const DUE_SOON_DAYS = 7;
+
+/**
+ * Where a Due date stands. A complete scene's Due is the day it was
+ * completed; any other is late, soon (within a week) or later. `days` counts
+ * calendar days from today (negative when late).
+ */
+export type DueStatus =
+    | { kind: 'none' }
+    | { kind: 'done'; date: Date }
+    | { kind: 'late' | 'soon' | 'later'; date: Date; days: number };
+
+const DATE_KEY = /^(\d{4})-(\d{2})-(\d{2})/;
+
+export function dueStatus(raw: unknown, complete: boolean, today: Date): DueStatus {
+    const match = typeof raw === 'string' ? DATE_KEY.exec(raw.trim()) : null;
+    if (!match) return { kind: 'none' };
+    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    if (!Number.isFinite(date.getTime())) return { kind: 'none' };
+    if (complete) return { kind: 'done', date };
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    // Calendar days, rounded so a daylight-saving change doesn't shift the count.
+    const days = Math.round((date.getTime() - start.getTime()) / 86_400_000);
+    return { kind: days < 0 ? 'late' : (days <= DUE_SOON_DAYS ? 'soon' : 'later'), date, days };
+}
+
+export interface SceneVitals {
+    /** The publish stage, as the stage colors name it (Zero when unset). */
+    stage: string;
+    /** The first line of Pending Edits, or null when it is empty. */
+    pending: string | null;
+    due: DueStatus;
+}
+
+/** What the number cell shows beside a scene's number: its stage, pending edits and Due. */
+export function sceneVitals(rawFrontmatter: Record<string, unknown> | undefined, settings: RadialTimelineSettings, today: Date): SceneVitals {
+    const fm = rawFrontmatter ? normalizeFrontmatterKeys(rawFrontmatter, getActiveFrontmatterMappings(settings)) : {};
+    const stages = Object.keys(settings.publishStageColors);
+    const rawStage = frontmatterValueToText(Array.isArray(fm['Publish Stage']) ? fm['Publish Stage'][0] : fm['Publish Stage']).trim().toLowerCase();
+    const stage = stages.find(candidate => candidate.toLowerCase() === rawStage) ?? (stages.includes('Zero') ? 'Zero' : (stages[0] ?? 'Zero'));
+    const pendingRaw = fm['Pending Edits'];
+    const pendingText = (Array.isArray(pendingRaw) ? pendingRaw : [pendingRaw]).map(value => frontmatterValueToText(value)).join('\n');
+    const pending = pendingText.split(/\r?\n/).map(line => line.trim()).find(line => line.length > 0) ?? null;
+    const complete = normalizeStatus(fm.Status) === 'Completed';
+    return { stage, pending, due: dueStatus(fm.Due, complete, today) };
+}
+
+/** The median of some numbers, or null for none. */
+export function medianOf(values: number[]): number | null {
+    if (values.length === 0) return null;
+    const sorted = [...values].sort((a, b) => a - b);
+    const middle = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+/** A scene's Words bar: the median sits at the midpoint and a full bar is twice it; `over` past that. */
+export function wordBar(words: number, median: number): { fill: number; over: boolean } {
+    if (median <= 0) return { fill: 0, over: false };
+    const ratio = words / (2 * median);
+    return { fill: Math.min(1, Math.max(0, ratio)), over: ratio > 1 };
+}
+
 // ── Coloring the timeline by a column ──────────────────────────────────
 
 /** A column with more values than this can't color the timeline legibly. */

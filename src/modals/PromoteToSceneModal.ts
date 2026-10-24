@@ -1,7 +1,8 @@
-import { App, DropdownComponent, ToggleComponent, setIcon } from 'obsidian';
+import { App, DropdownComponent, TextComponent, ToggleComponent, setIcon } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import type { PromotionPlan } from '../services/PromoteToSceneService';
 import { t, tCount } from '../i18n';
+import { safeTitle } from '../utils/noteTitle';
 
 /** A scene the author can number a promoted note after. */
 export interface PromotionAnchorOption {
@@ -13,6 +14,8 @@ export interface PromotionChoice {
     advanced: boolean;
     /** Number the note after this scene; null keeps its current name. */
     anchorPath: string | null;
+    /** The title typed for a note that still had a placeholder name; null otherwise. */
+    title: string | null;
 }
 
 export interface PromoteToSceneModalOptions {
@@ -21,6 +24,8 @@ export interface PromoteToSceneModalOptions {
     bookLabel: string;
     /** Single unnumbered note only: scenes in manuscript order. */
     anchors: PromotionAnchorOption[] | null;
+    /** Single note with a placeholder name ("Untitled sketch"): ask for its title, and promote only once it has one. */
+    askTitle: boolean;
 }
 
 const NAME_LIST_LIMIT = 6;
@@ -35,6 +40,7 @@ export class PromoteToSceneModal extends ErtModal {
     private closed = false;
     private advanced: boolean;
     private anchorPath: string | null = null;
+    private title = '';
     private beginResolver: ((choice: PromotionChoice | null) => void) | null = null;
     private dismissResolver: (() => void) | null = null;
     private primaryButtonEl: HTMLButtonElement | null = null;
@@ -86,9 +92,22 @@ export class PromoteToSceneModal extends ErtModal {
         const section = listDiv.createDiv({ cls: 'ert-drag-confirm-section' });
         section.createDiv({ cls: 'ert-drag-confirm-section-title', text: t('ui.promoteToScene.summaryTitle') });
 
+        let titleInput: TextComponent | null = null;
         if (only) {
             this.addRow(section, 'file-up', t('ui.promoteToScene.promoteOne', { name: only.file.basename, book: this.options.bookLabel }));
             if (only.fromSketch) this.addRow(section, 'pencil-line', t('ui.promoteToScene.fromSketch'));
+            if (this.options.askTitle) {
+                const titleRow = this.addRow(section, 'text-cursor-input', t('ui.promoteToScene.titleLabel'));
+                const titleSlot = titleRow.parentElement?.createDiv({ cls: 'ert-drag-confirm-row-control' });
+                if (titleSlot) {
+                    titleInput = new TextComponent(titleSlot)
+                        .setPlaceholder(t('ui.promoteToScene.titlePlaceholder'))
+                        .onChange(value => {
+                            this.title = value;
+                            this.updateConfirmState();
+                        });
+                }
+            }
         } else {
             this.addRow(section, 'file-up', t('ui.promoteToScene.promoteMany', {
                 notes: tCount('note', this.plan.entries.length),
@@ -155,14 +174,24 @@ export class PromoteToSceneModal extends ErtModal {
         this.primaryButtonEl = confirmButton;
         this.cancelButtonEl = cancelButton;
 
+        this.updateConfirmState();
+        // Enter in the title field promotes, once there is a title.
+        titleInput?.inputEl.addEventListener('keydown', (evt: KeyboardEvent) => {
+            if (evt.key !== 'Enter' || confirmButton.disabled) return;
+            evt.preventDefault();
+            confirmButton.click();
+        });
+        titleInput?.inputEl.focus();
+
         confirmButton.addEventListener('click', () => {
             if (this.phase === 'confirm') {
+                if (!this.hasTitle()) return;
                 this.phase = 'running';
                 this.showStatusRow('is-live');
                 confirmButton.disabled = true;
                 confirmButton.textContent = t('ui.promoteToScene.workingButton');
                 cancelButton.classList.add('is-hidden-action');
-                this.resolveBegin({ advanced: this.advanced, anchorPath: this.anchorPath });
+                this.resolveBegin({ advanced: this.advanced, anchorPath: this.anchorPath, title: this.options.askTitle ? safeTitle(this.title) : null });
                 return;
             }
             if (this.phase === 'done') {
@@ -213,6 +242,15 @@ export class PromoteToSceneModal extends ErtModal {
             this.primaryButtonEl.textContent = t('ui.promoteToScene.doneButton');
         }
         await new Promise<void>(resolve => { this.dismissResolver = resolve; });
+    }
+
+    /** A note with a placeholder name promotes only once it has a usable title. */
+    private hasTitle(): boolean {
+        return !this.options.askTitle || safeTitle(this.title).length > 0;
+    }
+
+    private updateConfirmState(): void {
+        if (this.phase === 'confirm' && this.primaryButtonEl) this.primaryButtonEl.disabled = !this.hasTitle();
     }
 
     private renderFieldsText(): void {

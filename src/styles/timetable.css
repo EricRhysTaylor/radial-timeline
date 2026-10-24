@@ -85,11 +85,51 @@
   background: var(--interactive-accent);
 }
 
-/* The corner: + New sketch, the lens toggle, and the mode the table follows. */
+/* The corner: + New sketch, the lens toggle, and the mode the table follows.
+   Inline, so the number column can measure it. */
 .ert-timetable__corner {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--size-2-1);
+  vertical-align: middle;
+}
+
+/* A header: the template field's icon, its name, and When's shared year.
+   A header narrower than its name shows only the icon. */
+.ert-timetable__prop-head-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.ert-timetable__prop-icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-faint);
+}
+
+.ert-timetable__prop-icon svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
+.ert-timetable__prop-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ert-timetable__prop-year {
+  flex: none;
+  color: var(--text-faint);
+  font-weight: var(--font-normal);
+}
+
+.ert-timetable__prop-head.is-icon-only .ert-timetable__prop-label,
+.ert-timetable__prop-head.is-icon-only .ert-timetable__prop-year {
+  display: none;
 }
 
 .ert-timetable__corner .clickable-icon {
@@ -131,12 +171,172 @@
   white-space: nowrap;
 }
 
-/* Number cell: the scene number on the wheel's status fill. */
+/* When's Duration, quietly beside it. */
+.ert-timetable__duration {
+  margin-inline-start: var(--size-2-3);
+  padding: 0 var(--size-2-2);
+  border: var(--border-width) solid var(--background-modifier-border);
+  border-radius: var(--radius-l);
+  color: var(--text-muted);
+  font-size: var(--font-smallest);
+}
+
+/* Due as relative time: late, within a week, or done. */
+.ert-timetable__due {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-1);
+}
+
+.ert-timetable__due.is-late {
+  color: var(--text-error);
+  font-weight: var(--font-medium);
+}
+
+.ert-timetable__due.is-soon {
+  color: var(--color-orange);
+  font-weight: var(--font-medium);
+}
+
+.ert-timetable__due.is-done {
+  color: var(--text-muted);
+}
+
+.ert-timetable__due-icon {
+  display: inline-flex;
+  color: var(--color-green);
+}
+
+.ert-timetable__due-icon svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
+/* Words: the count, and a bar whose tick is the book's median scene. */
+.ert-timetable__words {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ert-timetable__words-bar {
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--background-modifier-border);
+}
+
+.ert-timetable__words-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--ert-timetable-words-fill, 0%);
+  border-radius: 2px;
+  background: var(--text-muted);
+}
+
+.ert-timetable__words-bar.is-over .ert-timetable__words-fill {
+  background: var(--text-normal);
+}
+
+.ert-timetable__words-bar::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  width: 1px;
+  height: 8px;
+  background: var(--text-normal);
+  opacity: 0.5;
+}
+
+/* Runtime and Iteration as small badges. */
+.ert-timetable__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-1);
+  padding: 0 var(--size-2-3);
+  border: var(--border-width) solid var(--background-modifier-border);
+  border-radius: var(--radius-l);
+  color: var(--text-muted);
+  font-size: var(--font-smallest);
+  font-variant-numeric: tabular-nums;
+}
+
+.ert-timetable__badge-icon {
+  display: inline-flex;
+}
+
+.ert-timetable__badge-icon svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
+/* Number cell: the scene number on the wheel's status fill, then its slot.
+   As wide as its contents, so the column can fit them. */
 
 .ert-timetable__num-inner {
   display: flex;
   align-items: center;
   gap: var(--size-2-2);
+  width: max-content;
+}
+
+.ert-timetable__num-inner > * {
+  flex: none;
+}
+
+/* The slot beside the number: the vitals (or a sketch's chevron) and the
+   checkbox share one place. Stacked, so the slot keeps its width when the
+   checkbox takes over on hover or while rows are picked. */
+.ert-timetable__slot {
+  display: inline-grid;
+  align-items: center;
+  justify-items: start;
+}
+
+.ert-timetable__slot > * {
+  grid-area: 1 / 1;
+}
+
+.ert-timetable__vitals {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-1);
+}
+
+.ert-timetable__stage {
+  min-width: 0.7em;
+  color: var(--ert-timetable-stage, var(--text-muted));
+  font-size: var(--font-smallest);
+  font-weight: var(--font-bold);
+  text-align: center;
+}
+
+.ert-timetable__pending {
+  display: inline-flex;
+  color: var(--text-accent);
+}
+
+.ert-timetable__pending svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
+.ert-timetable__due-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.ert-timetable__due-dot.is-late {
+  background: var(--color-red);
+}
+
+.ert-timetable__due-dot.is-soon {
+  background: var(--color-orange);
 }
 
 .ert-timetable__chip {
@@ -373,6 +573,12 @@
 
 .ert-timetable__drawer-when {
   width: 13em;
+}
+
+.ert-timetable__drawer-title {
+  width: 18em;
+  color: var(--text-normal);
+  font-weight: var(--font-medium);
 }
 
 .ert-timetable__drawer-rings {
@@ -639,22 +845,23 @@
   padding: var(--size-2-1);
 }
 
-/* Bulk edits: a checkbox on each row that can be picked, and a bar while rows are picked. */
-.ert-timetable__select,
-.ert-timetable__select-spacer {
-  flex: none;
+/* Bulk edits: a checkbox in each pickable row's slot, and a bar while rows are picked.
+   On hover, and while any row is picked, the checkbox takes the slot from the vitals or chevron. */
+.ert-timetable__select {
   width: 14px;
   height: 14px;
   margin: 0;
-}
-
-.ert-timetable__select {
   visibility: hidden;
 }
 
 .ert-timetable__row:hover .ert-timetable__select,
 .ert-timetable__table.has-selection .ert-timetable__select {
   visibility: visible;
+}
+
+.ert-timetable__row:hover .ert-timetable__slot > :not(.ert-timetable__select),
+.ert-timetable__table.has-selection .ert-timetable__slot > :not(.ert-timetable__select) {
+  visibility: hidden;
 }
 
 .ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row.is-selected > td {

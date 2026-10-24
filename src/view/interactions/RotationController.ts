@@ -25,7 +25,10 @@ export function setupRotationController(view: RotationView, svg: SVGSVGElement):
         return;
     }
 
-    let rotated = view.getRotationState();
+    // The Narrative runtime view counts from 0:00 at 12 o'clock, so it shows the
+    // wheel unrotated and leaves the saved rotation for when the view is off.
+    const rotationSuspended = svg.getAttribute('data-runtime-view') === 'true';
+    let rotated = rotationSuspended ? false : view.getRotationState();
 
     const applyRotation = () => {
         const segmentCount = parseInt(svg.getAttribute('data-segment-count') || svg.getAttribute('data-num-acts') || '3', 10);
@@ -74,7 +77,7 @@ export function setupRotationController(view: RotationView, svg: SVGSVGElement):
         
         // Check if rotation is allowed in current mode
         // Allow rotation in 'allscenes' and 'mainplot', disable in 'gossamer'
-        if (view.currentMode === 'gossamer') {
+        if (view.currentMode === 'gossamer' || rotationSuspended) {
             return;
         }
         

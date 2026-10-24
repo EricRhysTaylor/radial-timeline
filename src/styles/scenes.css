@@ -79,6 +79,11 @@
   display: none;
 }
 
+/* Hide rotation toggle in the Narrative runtime view (0:00 stays at 12 o'clock) */
+.radial-timeline-svg[data-runtime-view="true"] #rotation-toggle {
+  display: none;
+}
+
 /* Mode toggle button styles */
 
 .rt-scene-info {

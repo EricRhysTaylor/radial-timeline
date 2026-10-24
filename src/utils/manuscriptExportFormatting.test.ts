@@ -261,6 +261,44 @@ describe('assembleManuscript scene heading formatting', () => {
         expect(bodyIndex).toBeGreaterThan(markIndex);
     });
 
+    it('escapes author backslashes once, so they print as a backslash in raw LaTeX', async () => {
+        const scene = makeFile('Scenes/1 Either.md', '1 Either\\Or {draft}');
+        const vault = makeVault({
+            [scene.path]: '---\nClass: Scene\nPart: true\n---\n\nBody.'
+        });
+
+        const latexSection = await assembleManuscript(
+            [scene], vault, undefined, false, undefined, false, undefined, undefined,
+            { sceneHeadingMode: 'title-only', sceneHeadingRenderMode: 'latex-section-starred' }
+        );
+        expect(latexSection.text).toContain('\\rtSetSceneRunningTitle{Either\\textbackslash{}Or \\{draft\\}}');
+
+        const modernClassic = await assembleManuscript(
+            [scene], vault, undefined, false, undefined, false, undefined, undefined,
+            {
+                sceneHeadingMode: 'scene-number-title',
+                sceneHeadingRenderMode: 'markdown-h2',
+                chapterMarkersByScenePath: {
+                    [scene.path]: [{
+                        sourcePath: scene.path,
+                        sourceType: 'Scene',
+                        title: 'Either\\Or {draft}',
+                        resolvedScenePath: scene.path,
+                        resolvedTimelinePosition: 1,
+                    }]
+                },
+                modernClassicStructure: {
+                    enabled: true,
+                    partEpigraphs: ['A\\ B'],
+                    partEpigraphAttributions: ['C:\\Users'],
+                }
+            }
+        );
+        // Macro arguments drop author braces; the backslash keeps its own `{}`.
+        expect(modernClassic.text).toContain('\\rtChapter{1}{Either\\textbackslash{}Or draft}');
+        expect(modernClassic.text).toContain('\\rtPart{I}{}{A\\textbackslash{} B}{C:\\textbackslash{}Users}');
+    });
+
     it('injects scene Chapter field headings before scene content and suppresses scene headings in Modern Classic mode', async () => {
         // Scenes self-declare their Act via the canonical `Act:` frontmatter
         // field — the same source the timeline ring uses. Modern Classic emits

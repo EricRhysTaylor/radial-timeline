@@ -198,12 +198,19 @@ function extractMatterMeta(content: string): MatterMeta | null {
   }
 }
 
+/**
+ * Escape author text for raw LaTeX in the manuscript body. Single pass, so the
+ * braces of an inserted `\textbackslash{}` are never escaped again.
+ */
 function escapeLatex(value: string): string {
-  return value
-    .replace(/\\/g, '\\textbackslash{}')
-    .replace(/([{}$&#_%])/g, '\\$1')
-    .replace(/\^/g, '\\textasciicircum{}')
-    .replace(/~/g, '\\textasciitilde{}');
+  return value.replace(/[\\{}$&#_%^~]/g, (char) => {
+    switch (char) {
+      case '\\': return '\\textbackslash{}';
+      case '^': return '\\textasciicircum{}';
+      case '~': return '\\textasciitilde{}';
+      default: return `\\${char}`;
+    }
+  });
 }
 
 function processBody(bodyText: string, bodyMode: MatterBodyMode): string {
@@ -844,17 +851,9 @@ function toRomanNumeral(value: number): string {
   return output;
 }
 
+/** Macro arguments drop author braces before escaping, so inserted ones survive. */
 function escapeModernClassicMacroText(value: string): string {
-  return value
-    .replace(/\\/g, '\\textbackslash{}')
-    .replace(/[{}]/g, '')
-    .replace(/&/g, '\\&')
-    .replace(/%/g, '\\%')
-    .replace(/\$/g, '\\$')
-    .replace(/#/g, '\\#')
-    .replace(/_/g, '\\_')
-    .replace(/\^/g, '\\textasciicircum{}')
-    .replace(/~/g, '\\textasciitilde{}');
+  return escapeLatex(value.replace(/[{}]/g, ''));
 }
 
 function sanitizeModernClassicMacroArg(value: string): string {

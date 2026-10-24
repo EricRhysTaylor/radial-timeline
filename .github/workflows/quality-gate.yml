@@ -9,6 +9,11 @@ on:
     branches:
       - main
 
+# Read-only token: this workflow only checks out, builds and tests. Pinned here
+# so a change to the repo's default workflow permissions can never widen it.
+permissions:
+  contents: read
+
 jobs:
   quality:
     runs-on: ubuntu-latest

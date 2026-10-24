@@ -6,6 +6,12 @@ on:
     branches:
       - main
 
+# Read-only token: the audit lane only reads the tree and uploads an artifact
+# (which uses the runtime token, not this one). Pinned so a change to the repo's
+# default workflow permissions can never widen it.
+permissions:
+  contents: read
+
 jobs:
   sanitation-audit:
     runs-on: ubuntu-latest

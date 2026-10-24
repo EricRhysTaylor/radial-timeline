@@ -6,11 +6,10 @@
  * Runtime Estimation Commands
  */
 
-import { stripFrontmatter } from './utils/frontmatterDocument';
 import { TFile, Notice } from 'obsidian';
 import type RadialTimelinePlugin from './main';
 import { RuntimeProcessingModal, type RuntimeScope, type RuntimeStatusFilters, type RuntimeMode, type RuntimeProcessResult } from './modals/RuntimeProcessingModal';
-import { estimateRuntime, getRuntimeSettings, formatRuntimeValue, parseRuntimeField } from './utils/runtimeEstimator';
+import { estimateRuntime, extractRuntimeBody, getRuntimeSettings, formatRuntimeValue, hasPerformableText, parseRuntimeField } from './utils/runtimeEstimator';
 import { isNonSceneItem } from './utils/sceneHelpers';
 import { normalizeStatus } from './utils/text';
 import type { TimelineItem } from './types';
@@ -127,9 +126,10 @@ async function getScenesForScope(
         const file = vault.getAbstractFileByPath(scene.path);
         if (!(file instanceof TFile)) continue;
 
-        // Read file content to get the body (excluding frontmatter)
+        // Read file content to get the performable body; an empty placeholder scene gets no Runtime
         const content = await vault.read(file);
-        const body = stripFrontmatter(content);
+        const body = extractRuntimeBody(content);
+        if (!hasPerformableText(body)) continue;
 
         result.push({
             file,

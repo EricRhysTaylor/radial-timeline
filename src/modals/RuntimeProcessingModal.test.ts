@@ -29,4 +29,9 @@ describe('RuntimeProcessingModal progress chrome', () => {
         expect(startProcessing).toContain('this.aiAdvancedContext = null;');
         expect(startProcessing.indexOf('this.aiAdvancedContext = null;')).toBeLessThan(startProcessing.indexOf('this.showProgressView();'));
     });
+
+    it('includes Todo scenes in the default status filter', () => {
+        const source = readFileSync(sourcePath, 'utf8');
+        expect(source).toMatch(/statusFilters: RuntimeStatusFilters = \{\s*includeTodo: true,\s*includeWorking: true,\s*includeComplete: true\s*\}/);
+    });
 });

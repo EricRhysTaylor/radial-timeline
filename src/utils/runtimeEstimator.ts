@@ -7,8 +7,34 @@
  * Parses scene content to estimate screenplay time / reading time
  */
 
-import type { RadialTimelineSettings, RuntimeContentType, RuntimeRateProfile } from '../types';
+import type { ManuscriptExportCleanupOptions, RadialTimelineSettings, RuntimeContentType, RuntimeRateProfile } from '../types';
+import { stripFrontmatter } from './frontmatterDocument';
+import { sanitizeCompiledManuscript } from './manuscriptSanitize';
 import { countWords } from './text';
+
+// Nothing outside the manuscript is read aloud, so the estimator applies the
+// strictest export cleanup: author queries go along with the private notes.
+const RUNTIME_CLEANUP: ManuscriptExportCleanupOptions = {
+    stripComments: true,
+    stripAiComments: true,
+    stripLinks: true,
+    stripCallouts: true,
+    stripBlockIds: true,
+};
+
+/**
+ * The part of a scene note that takes time to perform: frontmatter, Editorialist
+ * review blocks, comments, callouts, link syntax and block IDs are removed with
+ * the manuscript export's own sanitizer.
+ */
+export function extractRuntimeBody(noteContent: string): string {
+    return sanitizeCompiledManuscript(stripFrontmatter(noteContent), RUNTIME_CLEANUP);
+}
+
+/** True when the text has a letter or digit to perform; empty placeholder scenes get no estimate. */
+export function hasPerformableText(text: string): boolean {
+    return /[\p{L}\p{N}]/u.test(text);
+}
 
 export interface RuntimeEstimateResult {
     totalSeconds: number;
@@ -158,49 +184,50 @@ function parseExplicitDuration(text: string): number | null {
     return null;
 }
 
+const PARENTHETICAL_PATTERN = /\([^)]*\)/g;
+
+/**
+ * The timing directive a parenthetical spells out, e.g. "(beat)" or "(30s)";
+ * null when it is ordinary text.
+ */
+function parseDirective(parenthetical: string, settings: RuntimeSettings): { type: string; seconds: number } | null {
+    // Check for explicit duration first
+    const explicitSeconds = parseExplicitDuration(parenthetical);
+    if (explicitSeconds !== null) {
+        return { type: 'explicit', seconds: explicitSeconds };
+    }
+
+    // Check for standard parentheticals
+    const text = parenthetical.slice(1, -1).trim().toLowerCase();
+    if (/^long\s+pause$/.test(text)) return { type: 'long pause', seconds: settings.longPauseSeconds };
+    if (/^a\s+moment$/.test(text)) return { type: 'a moment', seconds: settings.momentSeconds };
+    if (/^beat$/.test(text)) return { type: 'beat', seconds: settings.beatSeconds };
+    if (/^pause$/.test(text)) return { type: 'pause', seconds: settings.pauseSeconds };
+    if (/^silence$/.test(text)) return { type: 'silence', seconds: settings.silenceSeconds };
+    return null;
+}
+
 /**
  * Parse parenthetical directives from content
  * Returns array of { type: string, seconds: number }
  */
 function parseDirectives(content: string, settings: RuntimeSettings): { type: string; seconds: number }[] {
     const directives: { type: string; seconds: number }[] = [];
-    
-    // Find all parentheticals
-    const parentheticalRegex = /\(([^)]+)\)/gi;
-    let match;
-    
-    while ((match = parentheticalRegex.exec(content)) !== null) {
-        const text = match[1].trim().toLowerCase();
-        
-        // Check for explicit duration first
-        const explicitSeconds = parseExplicitDuration(match[0]);
-        if (explicitSeconds !== null) {
-            directives.push({ type: 'explicit', seconds: explicitSeconds });
-            continue;
-        }
-        
-        // Check for standard parentheticals
-        if (/^long\s+pause$/.test(text)) {
-            directives.push({ type: 'long pause', seconds: settings.longPauseSeconds });
-        } else if (/^a\s+moment$/.test(text)) {
-            directives.push({ type: 'a moment', seconds: settings.momentSeconds });
-        } else if (/^beat$/.test(text)) {
-            directives.push({ type: 'beat', seconds: settings.beatSeconds });
-        } else if (/^pause$/.test(text)) {
-            directives.push({ type: 'pause', seconds: settings.pauseSeconds });
-        } else if (/^silence$/.test(text)) {
-            directives.push({ type: 'silence', seconds: settings.silenceSeconds });
-        }
+    for (const [parenthetical] of content.matchAll(PARENTHETICAL_PATTERN)) {
+        const directive = parseDirective(parenthetical, settings);
+        if (directive) directives.push(directive);
     }
-    
     return directives;
 }
 
 /**
- * Remove parentheticals from text for word counting
+ * Remove the parentheticals that aren't performed as words. Screenplay
+ * parentheticals (wrylies, V.O.) are never spoken, so all of them go; in prose
+ * only timing directives go, and an aside in brackets is narrated like the rest.
  */
-function removeParentheticals(text: string): string {
-    return text.replace(/\([^)]*\)/g, ' ');
+function removeUnspokenParentheticals(text: string, settings: RuntimeSettings): string {
+    if (settings.contentType === 'screenplay') return text.replace(PARENTHETICAL_PATTERN, ' ');
+    return text.replace(PARENTHETICAL_PATTERN, parenthetical => parseDirective(parenthetical, settings) ? ' ' : parenthetical);
 }
 
 /**
@@ -229,8 +256,8 @@ export function estimateRuntime(content: string, settings: RuntimeSettings): Run
         directiveCounts[d.type] = (directiveCounts[d.type] || 0) + 1;
     }
     
-    // Remove parentheticals for word counting
-    const cleanContent = removeParentheticals(content);
+    // Remove unspoken parentheticals for word counting
+    const cleanContent = removeUnspokenParentheticals(content, settings);
     
     let dialogueWords = 0;
     let actionWords = 0;

@@ -55,8 +55,9 @@ export class RuntimeProcessingModal extends ErtModal {
     private selectedSubplot: string = '';
     private overrideExisting: boolean = false;
     private selectedMode: RuntimeMode = 'local';
+    // Todo is included: a Todo scene with text still has a runtime, and empty placeholders are skipped anyway
     private statusFilters: RuntimeStatusFilters = {
-        includeTodo: false,
+        includeTodo: true,
         includeWorking: true,
         includeComplete: true
     };

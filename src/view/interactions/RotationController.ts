@@ -25,9 +25,12 @@ export function setupRotationController(view: RotationView, svg: SVGSVGElement):
         return;
     }
 
-    // The Narrative runtime view counts from 0:00 at 12 o'clock, so it shows the
-    // wheel unrotated and leaves the saved rotation for when the view is off.
-    const rotationSuspended = svg.getAttribute('data-runtime-view') === 'true';
+    // Chronologue, Gossamer and the Narrative runtime view (0:00 at 12 o'clock)
+    // never rotate: they show the wheel unrotated, hide the toggle in CSS, and
+    // leave the saved rotation for the views that use it.
+    const rotationSuspended = view.currentMode === 'chronologue'
+        || view.currentMode === 'gossamer'
+        || svg.getAttribute('data-runtime-view') === 'true';
     let rotated = rotationSuspended ? false : view.getRotationState();
 
     const applyRotation = () => {
@@ -75,9 +78,7 @@ export function setupRotationController(view: RotationView, svg: SVGSVGElement):
     const clickHandler = (e: Event) => {
         e.stopPropagation();
         
-        // Check if rotation is allowed in current mode
-        // Allow rotation in 'allscenes' and 'mainplot', disable in 'gossamer'
-        if (view.currentMode === 'gossamer' || rotationSuspended) {
+        if (rotationSuspended) {
             return;
         }
         

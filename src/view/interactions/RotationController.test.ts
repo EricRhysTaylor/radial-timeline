@@ -17,7 +17,7 @@ function fakeElement() {
     };
 }
 
-function mountRotation({ runtimeView, savedRotation }: { runtimeView: boolean; savedRotation: boolean }) {
+function mountRotation({ mode = 'narrative', runtimeView = false, savedRotation }: { mode?: string; runtimeView?: boolean; savedRotation: boolean }) {
     const parts: Record<string, ReturnType<typeof fakeElement>> = {
         '#timeline-rotatable': fakeElement(),
         '.ert-scene-foreground': fakeElement(),
@@ -35,7 +35,7 @@ function mountRotation({ runtimeView, savedRotation }: { runtimeView: boolean; s
 
     let onToggleClick: (e: Event) => void = () => {};
     const view = {
-        currentMode: 'narrative',
+        currentMode: mode,
         getRotationState: () => savedRotation,
         setRotationState: vi.fn(),
         applyRotationToNumberSquares: vi.fn(),
@@ -54,30 +54,43 @@ function mountRotation({ runtimeView, savedRotation }: { runtimeView: boolean; s
     };
 }
 
+const NON_ROTATING = [
+    { name: 'the Narrative runtime view', mode: 'narrative', runtimeView: true },
+    { name: 'Chronologue', mode: 'chronologue', runtimeView: false },
+    { name: 'Gossamer', mode: 'gossamer', runtimeView: false },
+];
+
 describe('rotation controller', () => {
     it('applies a saved rotation in the Narrative view', () => {
-        const { rotatable, svg } = mountRotation({ runtimeView: false, savedRotation: true });
+        const { rotatable, svg } = mountRotation({ savedRotation: true });
         expect(rotatable.getAttribute('transform')).toBe('rotate(-120)');
         expect(svg.getAttribute('data-rotated')).toBe('true');
     });
 
-    it('shows the runtime view unrotated and keeps the saved rotation for later', () => {
-        const { rotatable, svg, view } = mountRotation({ runtimeView: true, savedRotation: true });
+    it('rotates on toggle click in the Narrative view', () => {
+        const { rotatable, view, clickToggle } = mountRotation({ savedRotation: false });
+        clickToggle();
+        expect(rotatable.getAttribute('transform')).toBe('rotate(-120)');
+        expect(view.setRotationState).toHaveBeenCalledWith(true);
+    });
+
+    it.each(NON_ROTATING)('shows $name unrotated and keeps the saved rotation for later', ({ mode, runtimeView }) => {
+        const { rotatable, svg, view } = mountRotation({ mode, runtimeView, savedRotation: true });
         expect(rotatable.getAttribute('transform')).toBeNull();
         expect(svg.getAttribute('data-rotated')).toBe('false');
         expect(view.applyRotationToNumberSquares).toHaveBeenCalledWith(svg, false);
         expect(view.setRotationState).not.toHaveBeenCalled();
     });
 
-    it('ignores toggle clicks in the runtime view', () => {
-        const { rotatable, view, clickToggle } = mountRotation({ runtimeView: true, savedRotation: false });
+    it.each(NON_ROTATING)('ignores toggle clicks in $name', ({ mode, runtimeView }) => {
+        const { rotatable, view, clickToggle } = mountRotation({ mode, runtimeView, savedRotation: false });
         clickToggle();
         expect(rotatable.getAttribute('transform')).toBeNull();
         expect(view.setRotationState).not.toHaveBeenCalled();
     });
 
-    it('hides the toggle in the runtime view', () => {
+    it.each(['data-runtime-view', 'data-chronologue-mode', 'data-gossamer-mode'])('hides the toggle on [%s="true"]', attribute => {
         const css = readFileSync(resolve(process.cwd(), 'src/styles/scenes.css'), 'utf8');
-        expect(css).toMatch(/\.radial-timeline-svg\[data-runtime-view="true"\] #rotation-toggle \{\s*display: none;\s*\}/);
+        expect(css).toMatch(new RegExp(`\\.radial-timeline-svg\\[${attribute}="true"\\] #rotation-toggle \\{\\s*display: none;\\s*\\}`));
     });
 });

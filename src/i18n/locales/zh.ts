@@ -6052,6 +6052,8 @@ export const zh: DeepPartial<TranslationKeys> = {
             keyCheckboxesDetail: '批量编辑 · Shift：范围 · Esc：清除',
             keyHover: '悬停',
             keyHoverDetail: '在轮盘上突出该场景',
+            keyShiftHover: 'Shift-悬停',
+            keyShiftHoverDetail: '查看被截断单元格的全文',
             keyCorner: '角落',
             keyNewSketch: '新建草图',
             keyNewSketchDetail: '或幕旁的 +',

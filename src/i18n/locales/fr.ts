@@ -6053,6 +6053,8 @@ export const fr: TranslationKeys = {
             "keyCheckboxesDetail": "Édition en masse · Maj : Plage · ESC : Effacer",
             "keyHover": "Flotter",
             "keyHoverDetail": "Illuminez la scène sur le volant",
+            "keyShiftHover": "Maj + survol",
+            "keyShiftHoverDetail": "Lire en entier une cellule tronquée",
             "keyCorner": "Coin",
             "keyNewSketch": "nouveau croquis",
             "keyNewSketchDetail": "ou + à côté d'un acte",

@@ -90,6 +90,9 @@ import {
 } from './timetableModel';
 import { authorKeyFor, countColumnFill, tableColumns, TIMETABLE_VIEW_TYPE, withRecommendedColumns } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
+import { CellPeek } from './cellPeek';
+import { beatNamePeekAction } from '../view/interactions/BeatNameKeyController';
+import { isTypingInField } from '../utils/domFocus';
 import { openInReadingPane } from './readingPane';
 import { renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
 import {
@@ -322,6 +325,10 @@ export class TimetableView extends BasesView {
     private readonly autoWidths = new Map<BasesPropertyId, number>();
     /** The number column's fitted width, kept across redraws. */
     private numberWidth: number | null = null;
+    /** Shift-hover: the full text of a cut-off cell. */
+    private peek: CellPeek | null = null;
+    /** The row and column under the pointer, so the peek finds its cell again after a redraw. */
+    private peekKey: { path: string; column: string } | null = null;
     /** A redraw that waited for the author to stop typing in a drawer. */
     private renderDeferred = false;
     private decorateGeneration = 0;
@@ -403,6 +410,16 @@ export class TimetableView extends BasesView {
         });
         // A renamed note keeps its open drawer, its pick and its expanded references.
         this.registerEvent(this.plugin.app.vault.on('rename', (file, oldPath) => this.followRename(file.path, oldPath)));
+        // Shift-hover: read a cut-off cell in full.
+        this.peek = new CellPeek(this.rootEl.doc);
+        this.register(() => this.peek?.destroy());
+        this.registerDomEvent(this.rootEl, 'mouseover', (evt: MouseEvent) => this.hoverPeek(evt.target, evt.shiftKey));
+        this.registerDomEvent(this.rootEl, 'mouseleave', () => this.hoverPeek(null, false));
+        this.registerDomEvent(this.rootEl.win, 'keydown', (evt: KeyboardEvent) => this.peekKeyEvent(evt, 'down'));
+        this.registerDomEvent(this.rootEl.win, 'keyup', (evt: KeyboardEvent) => this.peekKeyEvent(evt, 'up'));
+        this.registerDomEvent(this.rootEl.win, 'blur', () => this.peek?.shift(false));
+        // Scrolling moves the cell out from under the panel.
+        this.registerDomEvent(this.rootEl.doc, 'scroll', () => this.peek?.hide(), { capture: true });
         // Hovering a scene's row lights it up on the wheel.
         this.registerDomEvent(this.rootEl, 'mouseover', (evt: MouseEvent) => {
             if (evt.target instanceof Element && evt.target.closest('.ert-time-reference-row')) {
@@ -437,6 +454,35 @@ export class TimetableView extends BasesView {
             this.plugin.highlightSceneOnTimeline(null);
             this.markLinkedRow(null, null, false);
         });
+    }
+
+    // ── Shift-hover ─────────────────────────────────────────────────────
+
+    /** The pointer moved: the peek follows the cell under it (number and Rings cells have no text to read). */
+    private hoverPeek(target: EventTarget | null, shift: boolean): void {
+        const cell = target instanceof Element ? target.closest<HTMLElement>('tr.ert-timetable__row > td[data-column]') : null;
+        const path = cell?.closest<HTMLElement>('tr')?.dataset.path;
+        const column = cell?.dataset.column;
+        this.peekKey = cell && path && column ? { path, column } : null;
+        this.peek?.hover(cell, shift && !isTypingInField(this.rootEl.doc));
+    }
+
+    /** Shift alone opens the peek. Shift in a chord (Cmd-Shift-P), or while typing in a field, doesn't. */
+    private peekKeyEvent(evt: KeyboardEvent, phase: 'down' | 'up'): void {
+        const peek = this.peek;
+        if (!peek?.hoveredCell()) return;
+        const action = beatNamePeekAction(evt, phase);
+        if (action === 'show' && !isTypingInField(this.rootEl.doc)) peek.shift(true);
+        else if (action === 'hide') peek.shift(false);
+    }
+
+    /** After a redraw, the peek follows its row and column to the new cell (Chronologue's Shift adds a column, for one). */
+    private refindPeekCell(): void {
+        const peek = this.peek;
+        if (!peek) return;
+        const key = this.peekKey;
+        const cell = key ? this.rowEls.get(key.path)?.querySelector<HTMLElement>(`td[data-column="${CSS.escape(key.column)}"]`) ?? null : null;
+        peek.hover(cell, peek.isHeld());
     }
 
     // ── Column widths ───────────────────────────────────────────────────
@@ -1573,6 +1619,8 @@ export class TimetableView extends BasesView {
         const scrollParent = this.rootEl.parentElement;
         const scrollTop = scrollParent?.scrollTop ?? 0;
         this.rootEl.empty();
+        // The peek's cell is gone; refindPeekCell brings it back once the rows are drawn.
+        this.peek?.hide();
         this.mountPatternDefs();
         this.renderBookNotice(groups);
 
@@ -1673,6 +1721,7 @@ export class TimetableView extends BasesView {
         this.renderBulkBar();
         this.fitAfterRender(table, sizes);
         if (scrollParent) scrollParent.scrollTop = scrollTop;
+        this.refindPeekCell();
         void this.decorateFromBodies(allItems).then(done => {
             // Query counts arrive after the first fit; the number column makes room for them.
             if (done && table.isConnected) this.fitAfterRender(table, sizes);
@@ -1847,6 +1896,7 @@ export class TimetableView extends BasesView {
                     { icon: 'chevron-down', label: t('ui.timetable.keyPick'), detail: t('ui.timetable.keyPickDetail') },
                     { icon: 'square-check', label: t('ui.timetable.keyCheckboxes'), detail: t('ui.timetable.keyCheckboxesDetail') },
                     { icon: 'square-mouse-pointer', label: t('ui.timetable.keyHover'), detail: t('ui.timetable.keyHoverDetail') },
+                    { icon: 'text-select', label: t('ui.timetable.keyShiftHover'), detail: t('ui.timetable.keyShiftHoverDetail') },
                 ],
             },
             {
@@ -2041,6 +2091,7 @@ export class TimetableView extends BasesView {
             // Beats run across the table as quiet dividers, as on the wheel.
             const cell = tr.createEl('td', { cls: 'ert-timetable__beat' });
             cell.colSpan = columnCount - 1;
+            cell.dataset.column = 'beat';
             cell.createSpan({ cls: 'ert-timetable__beat-title', text: displayName(row.basename) });
             const model = firstText(frontmatterKey(frontmatter, 'Beat Model'));
             if (model) cell.createSpan({ cls: 'ert-timetable__beat-model', text: model });
@@ -2053,6 +2104,7 @@ export class TimetableView extends BasesView {
             columns.forEach((column, index) => {
                 const cell = tr.createEl('td');
                 cell.dataset.col = String(index);
+                cell.dataset.column = column.kind === 'property' ? column.property : column.kind;
                 if (column.kind === 'property') this.renderValueCell(cell, item, column.property, cells);
                 else this.renderMicroCell(cell, row, column.kind, mode);
             });

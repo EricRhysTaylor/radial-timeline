@@ -6053,6 +6053,8 @@ export const es: TranslationKeys = {
             "keyCheckboxesDetail": "Edición a granel · Mayús: Rango · ESC: Claro",
             "keyHover": "Flotar",
             "keyHoverDetail": "Enciende la escena en la rueda",
+            "keyShiftHover": "Mayús + pasar el cursor",
+            "keyShiftHoverDetail": "Leer completa una celda recortada",
             "keyCorner": "Esquina",
             "keyNewSketch": "Nuevo boceto",
             "keyNewSketchDetail": "o + al lado de un acto",

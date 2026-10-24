@@ -5734,6 +5734,8 @@ export const en = {
             keyCheckboxesDetail: 'bulk edit · Shift: range · Esc: clear',
             keyHover: 'Hover',
             keyHoverDetail: 'light the scene on the wheel',
+            keyShiftHover: 'Shift-hover',
+            keyShiftHoverDetail: 'read a cut-off cell in full',
             keyCorner: 'Corner',
             keyNewSketch: 'New sketch',
             keyNewSketchDetail: 'or + beside an act',

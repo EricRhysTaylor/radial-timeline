@@ -6053,6 +6053,8 @@ export const vi: TranslationKeys = {
             "keyCheckboxesDetail": "Chỉnh sửa hàng loạt · Shift: Phạm vi · ESC: rõ ràng",
             "keyHover": "di chuột",
             "keyHoverDetail": "Thắp sáng khung cảnh trên bánh xe",
+            "keyShiftHover": "Shift + di chuột",
+            "keyShiftHoverDetail": "Đọc toàn bộ ô bị cắt ngắn",
             "keyCorner": "Góc phố",
             "keyNewSketch": "Phác thảo mới",
             "keyNewSketchDetail": "hoặc + bên cạnh một hồi",

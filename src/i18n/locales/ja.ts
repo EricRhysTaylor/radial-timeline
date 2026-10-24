@@ -6051,6 +6051,8 @@ export const ja: DeepPartial<TranslationKeys> = {
             keyCheckboxesDetail: '一括編集・Shift：範囲・Esc：解除',
             keyHover: 'ホバー',
             keyHoverDetail: 'ホイール上のシーンを強調',
+            keyShiftHover: 'Shift＋ホバー',
+            keyShiftHoverDetail: '切れたセルの全文を表示',
             keyCorner: 'コーナー',
             keyNewSketch: '新しいスケッチ',
             keyNewSketchDetail: 'または幕の横の＋',

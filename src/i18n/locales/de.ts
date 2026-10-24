@@ -6050,6 +6050,8 @@ export const de: DeepPartial<TranslationKeys> = {
             keyCheckboxesDetail: 'Sammelbearbeitung · Umschalt: Bereich · Esc: leeren',
             keyHover: 'Darüberfahren',
             keyHoverDetail: 'Szene auf dem Rad hervorheben',
+            keyShiftHover: 'Umschalt-Hover',
+            keyShiftHoverDetail: 'abgeschnittene Zelle ganz lesen',
             keyCorner: 'Ecke',
             keyNewSketch: 'Neue Skizze',
             keyNewSketchDetail: 'oder + neben einem Akt',

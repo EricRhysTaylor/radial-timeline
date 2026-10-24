@@ -6050,6 +6050,8 @@ export const ko: DeepPartial<TranslationKeys> = {
             keyCheckboxesDetail: '일괄 편집 · Shift: 범위 · Esc: 해제',
             keyHover: '호버',
             keyHoverDetail: '휠에서 장면 강조',
+            keyShiftHover: 'Shift-호버',
+            keyShiftHoverDetail: '잘린 셀의 전체 내용 보기',
             keyCorner: '모서리',
             keyNewSketch: '새 스케치',
             keyNewSketchDetail: '또는 막 옆의 +',

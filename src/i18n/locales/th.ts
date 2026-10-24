@@ -6053,6 +6053,8 @@ export const th: TranslationKeys = {
             "keyCheckboxesDetail": "แก้ไขจำนวนมาก · กะ: ช่วง · ESC: ล้าง",
             "keyHover": "โฉบ",
             "keyHoverDetail": "จุดฉากบนล้อ",
+            "keyShiftHover": "Shift + วางเมาส์",
+            "keyShiftHoverDetail": "อ่านข้อความเต็มของช่องที่ถูกตัด",
             "keyCorner": "มุม",
             "keyNewSketch": "ร่างใหม่",
             "keyNewSketchDetail": "หรือ + ข้างองก์",

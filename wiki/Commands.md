@@ -31,7 +31,8 @@ These are the main command-palette entries.
 20. **[Timeline share export](#timeline-share-export)**
 21. **[Open timetable](#open-timetable)**
 22. **[Promote note to scene](#promote-note-to-scene)**
-23. **[Scene time assignment](Scene-Time)** ← standalone guide
+23. **[Reset timetable columns to recommended](#reset-timetable-columns-to-recommended)**
+24. **[Scene time assignment](Scene-Time)** ← standalone guide
 
 ## Conditional Visibility
 
@@ -282,3 +283,9 @@ Related: [Settings → Community](Settings-Community).
 ## Promote note to scene
 
 **Radial timeline: Promote note to scene** reviews a sketch or unclassified note for conversion to a scene, preserving its text and existing properties. See [Promoting notes](Timetable#promote-a-note-to-a-scene).
+
+---
+
+## Reset timetable columns to recommended
+
+**Radial timeline: Reset timetable columns to recommended** gives the active Timetable view the recommended columns for its scenes, after a confirm, and clears its saved column widths. Filters, sorts, grouping, and the file’s other views stay as they are. The same action is in the column header menu. See [Columns](Timetable#columns).

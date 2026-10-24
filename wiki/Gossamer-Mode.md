@@ -5,33 +5,25 @@ Gossamer Mode visualizes beat-level scoring across your active story beat system
 *   **Top-left traces panel**: Switch signals, show **LATEST** or all traces, and toggle individual saved traces on or off.
 *   **Ideal Range**: Beat `Range` values provide a visual target for **Momentum** only. They are not sent to the AI.
 *   **Manual score entry**: Enter scores for the current signal yourself, with or without external AI assistance.
-*   **Justification capture**: Each score line now records a brief justification so you know what the score was based on.
+*   **Justification capture**: Each score line records a brief justification so you know what the score was based on.
 *   **Normalize & repair**: Use **Normalize history** inside the score manager panel to compact gaps and repair orphaned entries.
 
 **Timeline mode**: Gossamer (key **4**)
 **Command**: `Gossamer score manager`
 **Settings**: [Story beats system](Settings-Core#story-beats-system)
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/mode-gossamer.jpeg" alt="Gossamer with saved traces and signal controls" style="width: 400px; max-width: 100%;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Gossamer — saved traces, signal switching, and beat-level scoring</div>
-</div>
+<p align="center"><img src="images/mode-gossamer.jpeg" alt="Gossamer with saved traces and signal controls" width="400"></p>
+<p align="center"><sub>Gossamer — saved traces, signal switching, and beat-level scoring</sub></p>
 
-<div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
-  <div style="text-align: center;">
-    <img src="images/feature-gossamer-ranges.jpg" alt="Gossamer ideal ranges visualization" style="width: 300px; max-width: 100%; border-radius: 8px;" />
-    <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Ideal ranges for story beats</div>
-  </div>
-  <div style="text-align: center;">
-    <img src="images/feature-gossamer-callouts.png" alt="Gossamer callouts with scoring details" style="width: 300px; max-width: 100%; border-radius: 8px;" />
-    <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Callouts showing score details</div>
-  </div>
-</div>
+<table>
+<tr>
+<td width="50%"><img src="images/feature-gossamer-ranges.jpg" alt="Gossamer ideal ranges visualization"><br>Ideal ranges for story beats</td>
+<td width="50%"><img src="images/feature-gossamer-callouts.png" alt="Gossamer callouts with scoring details"><br>Callouts showing score details</td>
+</tr>
+</table>
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-gossamer-score-manager.png" alt="Gossamer score entry panel for manual signal scoring" style="width: 500px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Gossamer score manager — manual entry for the active signal</div>
-</div>
+<p align="center"><img src="images/panel-gossamer-score-manager.png" alt="Gossamer score entry panel for manual signal scoring" width="500"></p>
+<p align="center"><sub>Gossamer score manager — manual entry for the active signal</sub></p>
 
 ## Subplot Alignment
 
@@ -58,32 +50,4 @@ Use **Gossamer analysis** to run the built-in AI evaluation for the active signa
 <a name="story-beats-configuration"></a>
 ## Story Beats Configuration
 
-You can configure the underlying system that powers Gossamer Mode in **Settings → Core → Story beats system**.
-
-### 1. Select a System
-Choose a preset structure:
-*   **Save The Cat** (15 beats)
-*   **Hero's Journey** (12 beats)
-*   **Custom**: Define your own structure.
-
-### 2. Custom Beat System
-When "Custom" is selected, the beat system editor appears:
-*   **Name**: Give your system a name (e.g., "7 Point Structure"). This is written to the `Beat Model` YAML field.
-*   **Add beats**: Type a name and click **+** to add a new beat. Assign each beat to an act using the dropdown.
-*   **Reorder**: Drag and drop beats to change their order within or across acts.
-*   **Rename**: Edit beat names inline. After renaming or reordering, use **Merge** to update existing files.
-*   **Beat properties editor**: Customize additional beat properties and select which fields appear in beat hover metadata (stored per system).
-*   **Saved sets**: Save and switch between multiple custom beat systems. Each system stores beats plus Beat properties editor fields and hover metadata.
-
-Row colors show the sync status between your beat list and the actual note files:
-*   **Green** — beat note exists and is aligned.
-*   **Orange** — beat note exists but is misaligned (wrong act). Merge to fix.
-*   **Red** — duplicate title or multiple files match. Resolve manually.
-*   **No highlight** — new beat, no file yet.
-
-### 3. Create & Merge
-*   **Create**: Generates beat notes in the active book folder, one per beat. Notes come pre-populated with properties (`Class: Beat`, `Purpose`, `Beat Model`, `Range`, etc.) so they are immediately recognized by Gossamer Mode. The button is disabled when all beats already have files, and shows how many new notes will be created.
-*   **Merge**: Appears when beats are misaligned. Updates existing beat note frontmatter to match current act assignments (and fills missing Beat Model/Beat Id where applicable). Existing filenames are preserved.
-
-> [!NOTE]
-> Custom beat notes use the same properties structure as preset systems. Use the Beat properties editor to extend this with your own fields.
+Gossamer scores the beats of the active beat system. Choose a built-in system or build your own, then create, audit, and repair its beat notes in [Settings → Core → Story beats system](Settings-Core#story-beats-system).

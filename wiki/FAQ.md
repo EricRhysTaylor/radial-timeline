@@ -24,8 +24,8 @@ Track character arcs as colored subplots and use POV indicators in scene hovers.
 
 **A:** Yes. Use a custom beat system for signposts and scene properties for Throughline data.
 
-1.  **Beats System**: Set **Settings → Core → Story beats system** to **"Custom"**. Name your system (e.g., "Dramatica Signposts"), add your beats, and assign them to acts. Use **Create** to generate beat set notes, or manually create notes with `Class: Beat` and `Beat Model: Your System Name`.
-2.  **Advanced Metadata**: Use the **Scene properties editor** (in Settings) to add Dramatica-specific keys to your advanced scene properties. See [Scene Properties Editor](YAML-Frontmatter#advanced-yaml-editor). For example, you can add fields like:
+1.  **Beats System**: Set **Settings → Core → Story beats system** to **"Custom"**. Name your system (e.g., "Dramatica Signposts"), add your beats, and assign them to acts. Use **Create beat notes** to generate beat notes, or manually create notes with `Class: Beat` and `Beat Model: Your System Name`.
+2.  **Advanced Metadata**: Under **Settings → Core → Scene properties**, use **Show advanced properties editor** to add Dramatica-specific keys to your advanced scene properties. See [Advanced properties editor](YAML-Frontmatter#advanced-yaml-editor). For example, you can add fields like:
     ```yaml
     dramatica:
       MC: Universe

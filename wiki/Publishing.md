@@ -1,14 +1,16 @@
-Radial Timeline publishes a Radial Timeline book, a folder of Markdown notes, or a standalone Markdown file as Markdown, Word, or PDF. In 7.5.0, folders and single files can become documents without timeline scene properties: review their contents and order, supply a title and author, and save the selection for reuse. See [Manuscript export](Manuscript-Export) for source selection, reader presets, PDF proofs, and delivery review.
+Radial Timeline publishes a Radial Timeline book, a folder of Markdown notes, or a standalone Markdown file as Markdown, Word, or PDF. Folders and single files can become documents without timeline scene properties: review their contents and order, supply a title and author, and save the selection for reuse. See [Manuscript export](Manuscript-Export) for source selection, reader presets, PDF proofs, and delivery review.
 
 For PDF, choose a layout defining fonts, headers, chapter openers, and part dividers. Pandoc and LaTeX typeset the assembled document. Word requires Pandoc; Markdown needs neither tool.
 
 **Pandoc-based PDF export ships with the plugin.** The Core surface exports PDFs with the bundled Core publishing layouts. **Pro** covers extra bundled PDF layouts and deeper publishing customization. See [Pro](Pro).
 
-> **Prerequisites**: Pandoc installed (all Pandoc-based exports, including Word), plus LaTeX for PDF output. See below for the two-installer setup, and [Exporting a Manuscript](#exporting-a-manuscript) for the export workflow and checks.
+> [!NOTE]
+> **Prerequisites**: Pandoc installed (all Pandoc-based exports, including Word), plus LaTeX for PDF output. See below for the two-installer setup, and [Manuscript export](Manuscript-Export#exporting-a-manuscript) for the export workflow and checks.
 
 ---
 
-![Actual PDF proof of A Study in Scarlet, with page navigation and the rendered Professional layout](images/release-7-5-document-proof.png)
+<p align="center"><img src="images/release-7-5-document-proof.png" alt="Actual PDF proof of A Study in Scarlet, with page navigation and the rendered Professional layout" width="720"></p>
+<p align="center"><sub>The PDF proof in the export panel: <i>A Study in Scarlet</i> in the Professional layout</sub></p>
 
 ## Installing Pandoc and LaTeX
 
@@ -47,10 +49,8 @@ The Core surface includes the standard publishing layouts needed for Pandoc PDF 
 
 Narrative Mode shows **C** and **P** placards at author-placed `Chapter:` and `Part:` markers. The selected PDF layout determines how those markers print. See [Chapter and Part Placards](Narrative-Mode#chapter-and-part-placards).
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/feature-parts-chapters.png" alt="Chapter and part placards around the Narrative Mode perimeter" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Narrative Mode perimeter markers — chapter starts, part boundaries, and combined Part/Chapter breaks</div>
-</div>
+<p align="center"><img src="images/feature-parts-chapters.png" alt="Chapter and part placards around the Narrative Mode perimeter" width="560"></p>
+<p align="center"><sub>Narrative Mode perimeter markers — chapter starts, part boundaries, and combined Part/Chapter breaks</sub></p>
 
 PDF layouts use the fonts listed below. Installing PDF styles copies bundled fonts into `Radial Timeline/Pandoc/fonts/`; Basic uses system Arial.
 
@@ -232,32 +232,15 @@ The template file writes to `Radial Timeline/Pandoc/rt_modern_classic.tex` in yo
 
 ### Step 2 — Mark your parts
 
-Right-click the scene that opens each part in Narrative mode and choose **Set part…**, or add the field directly:
-
-```yaml
-Part: true            # numeral only
-Part: The Crossing    # numeral and title
-```
-
-Parts are optional. Each `Part:` marker starts a numbered part, beginning with Part I.
+Add a `Part:` marker to the scene that opens each part, from the scene right-click menu in Narrative mode (**Set part…**) or in the note. Parts are optional. See [The `Part:` Field](#the-part-field).
 
 ### Step 3 — Add part epigraphs (optional)
 
-**Settings → Publish → Signature → Part epigraphs**
-
-Entries pair with your markers by position. If the counts disagree in either direction, the Publish panel and the export checks say so before you generate a PDF.
-
-See [Scene Properties](YAML-Frontmatter) for the full frontmatter schema.
+**Settings → Publish → Signature → Part epigraphs**. Entries pair with your markers by position; see [Part Epigraphs](#part-epigraphs).
 
 ### Step 4 — Add `Chapter:` markers
 
-Decide where each chapter should begin. On the first scene of each chapter, add:
-
-```yaml
-Chapter: The Gathering Storm
-```
-
-Choose chapter titles and boundaries that fit your book.
+Add a `Chapter:` value to the first scene of each chapter. See [The `Chapter:` Field](#the-chapter-field).
 
 ### Step 5 — Assign Signature to the Novel format
 
@@ -301,24 +284,6 @@ Find this in **Settings → Publish → PDF Styles → [template] → +** (expan
 
 ---
 
-## Exporting a Manuscript
-
-**Command Palette → Manuscript export**
-
-The export panel lets you:
-- Select the output format (Novel, Screenplay, Podcast Script)
-- Choose the template for that format
-- Select which scenes to include (all, or filtered by act/subplot)
-- Choose Markdown, PDF, or Word (DOCX) output
-- Review export checks for missing templates, missing fonts, template compatibility, and layout-specific warnings
-- Preview the selected layout's page structure before generating a PDF
-
-Files land in `Radial Timeline/Export/` by default, or in whatever vault folder you set under **Settings → Advanced → Configuration → Export folder**.
-
-For the end-to-end export workflow and troubleshooting, start here and use the checks in the export panel to catch missing Pandoc, LaTeX, templates, or fonts before rendering.
-
----
-
 ## What Survives Export — the Content Contract
 
 If you're migrating a manuscript that already carries Pandoc/LaTeX markup, this is the exact contract the exporter honors:
@@ -349,9 +314,7 @@ If you're migrating a manuscript that already carries Pandoc/LaTeX markup, this 
 
 **I set a part but no badge appears on the timeline.** Turn on **Settings → Advanced → Configuration → Show part and chapter markers**. The markers are saved either way; that toggle only controls whether the ring displays them.
 
-**Chapter numbering is wrong.** The exporter numbers chapters by the order `Chapter:` values appear in the timeline. If a `Chapter:` value appears out of order, renumbering will reflect that. Check narrative order via [Timeline Modes](Radial-Timeline-View#modes-at-a-glance).
-
-**Duplicated template looks different from the original.** If you're on an older plugin build, duplicates lost their preview card due to a bug. Update to the latest build — duplicates now render with the same preview card as the original and can be edited in place.
+**Chapter numbering is wrong.** The exporter numbers chapters by the order `Chapter:` values appear in the timeline. If a `Chapter:` value appears out of order, renumbering will reflect that. Check narrative order in [Narrative Mode](Narrative-Mode).
 
 **Epigraph fields are greyed out.** Epigraphs are per-book. Make sure you have an **active book** selected before editing them.
 

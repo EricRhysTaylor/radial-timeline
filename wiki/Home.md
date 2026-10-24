@@ -1,48 +1,30 @@
 Radial Timeline maps your manuscript in Obsidian. Explore scenes, subplots, story time, and revision progress in four timeline modes, and use Inquiry for AI-assisted analysis across a book or saga.
 
-<a href="https://youtu.be/YO6hWevwSWc?si=SilQ6xgnQYReGgd0" target="_blank" rel="noopener">
-  <p align="center">
-    <img src="https://i.ytimg.com/vi/YO6hWevwSWc/maxresdefault.jpg" alt="Radial Timeline Release 6 overview of new features" style="max-width: 80%; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-  </p>
-  <p align="center" style="font-family: sans-serif; font-size: 16px; margin-top: 10px;">
-    Release 6 Overview<br>
-    Overview of New Features
-  </p>
-</a>
+<p align="center"><a href="https://youtu.be/n53fYUejH44"><img src="https://i.ytimg.com/vi/n53fYUejH44/maxresdefault.jpg" width="560" alt="Radial Timeline Quick Start, Volume 10"></a></p>
+<p align="center"><sub>Quick Start · Volume 10</sub></p>
 
-### YouTube Video Suite
+## YouTube Video Suite
 
-*   **[Volume 1: Intro](Getting-Started)**: [Original home page intro video](https://youtu.be/7noTSFaj8Eo)
-*   **[Volume 2: Chronologue Mode](Chronologue-Mode)**: [Chronologue Mode Volume 2](https://youtu.be/5DsKdFLLeOU)
-*   **[Volume 3: Release 6 Overview](Getting-Started)**: [Overview of New Features](https://youtu.be/YO6hWevwSWc?si=SilQ6xgnQYReGgd0)
-*   **[Volume 4: Inquiry View](Inquiry)**: [Inquiry View Volume 4](https://youtu.be/xfX0rP4-Hv4?si=gSTRnPwbM0wsnlEZ)
-*   **[Volume 5: Author Progress Report (APR)](Author-Progress-Report)**: [Author Progress Report (APR) Volume 5](https://youtu.be/euJ2qOUZgco?si=hjx3aegx7bka7Z61)
-*   **[Volume 6: Gossamer Mode](Gossamer-Mode)**: [Gossamer Mode Volume 6](https://youtu.be/DOUVYXFwigM?si=vBuzvxPteXVjVFmM)
-*   **Volume 8: Community**: [Radial Timeline Community Volume 8](https://youtu.be/2srEjNRs6X4)
-*   **Volume 9: Editorialist**: [Turn Your Editor's Notes Into a Revision Schedule](https://youtu.be/uoGUkF6RQ2E)
-*   **Volume 10: Quick Start**: [Quick Start Volume 10](https://youtu.be/n53fYUejH44)
-*   **Volume 11: Manuscript Export**: [Obsidian Writers: Turn Your Notes into a Finished Manuscript](https://radialtimeline.com/go/wiki-manuscript-export-video)
-*   **[Short: Book Designer](Book-Designer)**: [Build Your Novel Structure Instantly](https://youtu.be/0vkLaI_LewM)
-*   **Short: Timelapse**: [Watch a Novel Progress Across Scenes & Subplots](https://youtu.be/tBErpewO1wQ)
+| Volume | Video | Guide |
+|---|---|---|
+| 2 | [Chronologue Mode](https://youtu.be/5DsKdFLLeOU) | [Chronologue Mode](Chronologue-Mode) |
+| 3 | [Release 6 Overview](https://youtu.be/YO6hWevwSWc) | |
+| 4 | [Inquiry View](https://youtu.be/xfX0rP4-Hv4) | [Inquiry](Inquiry) |
+| 5 | [Author Progress Report](https://youtu.be/euJ2qOUZgco) | [Author Progress Report](Author-Progress-Report) |
+| 6 | [Gossamer Mode](https://youtu.be/DOUVYXFwigM) | [Gossamer Mode](Gossamer-Mode) |
+| 8 | [Radial Timeline Community](https://youtu.be/2srEjNRs6X4) | [Community](Settings-Community) |
+| 9 | [Turn Your Editor's Notes Into a Revision Schedule](https://youtu.be/uoGUkF6RQ2E) | |
+| 10 | [Quick Start](https://youtu.be/n53fYUejH44) | [Getting Started](Getting-Started) |
+| 11 | [Turn Your Notes into a Finished Manuscript](https://radialtimeline.com/go/wiki-manuscript-export-video) | [Manuscript export](Manuscript-Export) |
+| Short | [Build Your Novel Structure Instantly](https://youtu.be/0vkLaI_LewM) | [Book Designer](Book-Designer) |
+| Short | [Watch a Novel Progress Across Scenes & Subplots](https://youtu.be/tBErpewO1wQ) | |
 
-### Volume 1 Intro
-
-<a href="https://youtu.be/7noTSFaj8Eo" target="_blank" rel="noopener">
-  <p align="center">
-    <img src="https://i.ytimg.com/vi/7noTSFaj8Eo/maxresdefault.jpg" alt="Original Radial Timeline introduction video" style="max-width: 80%; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-  </p>
-  <p align="center" style="font-family: sans-serif; font-size: 16px; margin-top: 10px;">
-    Volume 1 Intro<br>
-    Original home page walkthrough
-  </p>
-</a>
-
-### What It Does
+## What It Does
 Arrange scenes by act, subplot, and manuscript or chronological order. Hover for a synopsis and saved Pulse feedback; highlight a scene across its subplots to follow connected story threads.
 
-The [Timetable](Timetable) opens beside the wheel: review scene properties, write sketches, and promote notes to scenes. [Manuscript export](Manuscript-Export) also publishes folders and standalone Markdown files. These additions are available in 7.5.0.
+The [Timetable](Timetable) opens beside the wheel: review scene properties, write sketches, and promote notes to scenes. [Manuscript export](Manuscript-Export) also publishes folders and standalone Markdown files.
 
-### The 4 Critical Timelines
+## The 4 Critical Timelines
 Radial Timeline™ captures and visualizes all 4 critical timelines:
 *   **Narrative time**: the sequence you reveal events to readers.
 *   **Chronological time**: when events happen in your story's world.
@@ -53,42 +35,24 @@ Radial Timeline™ captures and visualizes all 4 critical timelines:
 
 ---
 
-### Visual Overview
+## Visual Overview
 
-<div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
-  <div style="text-align: center;">
-    <img src="images/mode-narrative.jpeg" alt="Narrative Mode: all scenes outer ring, subplot rings, and story beats (e.g., Save the Cat)" style="width: 300px; max-width: 100%; border-radius: 8px;" />
-    <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Narrative Mode — story beats + subplot rings (dominant subplot shown via folded corners)</div>
-  </div>
-  <div style="text-align: center;">
-    <img src="images/ui-synopsis.jpeg" alt="Hover synopsis: metadata + AI pulse triplet analysis (previous/current/next)" style="width: 300px; max-width: 100%; border-radius: 8px;" />
-    <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Hover synopsis — information-dense metadata + pulse triplet feedback</div>
-  </div>
-</div>
+<table>
+<tr>
+<td width="50%"><img src="images/mode-narrative.jpeg" alt="Narrative Mode: all scenes outer ring, subplot rings, and story beats (e.g., Save the Cat)"><br><b>Narrative Mode</b> — story beats + subplot rings (dominant subplot shown via folded corners)</td>
+<td width="50%"><img src="images/ui-synopsis.jpeg" alt="Hover synopsis: metadata + AI pulse triplet analysis (previous/current/next)"><br><b>Hover synopsis</b> — information-dense metadata + pulse triplet feedback</td>
+</tr>
+<tr>
+<td width="50%"><img src="images/mode-progress.png" alt="Progress Mode: author status (Todo/Working/Overdue/Complete) and progress stage colors"><br><b>Progress Mode</b> — schedule/status + progress stage view</td>
+<td width="50%"><img src="images/mode-chronologue.jpeg" alt="Chronologue Mode: scenes ordered by When/Duration with overlaps and adaptive time labeling"><br><b>Chronologue Mode</b> — story chronology with duration arcs and overlaps plus adaptive time scale</td>
+</tr>
+<tr>
+<td width="50%"><img src="images/mode-chronologue-shift.png" alt="Chronologue Shift mode: elapsed-time arc between selected scenes and infinity gap markers"><br><b>Chronologue Shift</b> — compare elapsed time between scenes and surface discontinuity gaps</td>
+<td width="50%"><img src="images/mode-gossamer.jpeg" alt="Gossamer Mode: beat-level scoring with multiple signals, saved traces, and momentum ranges"><br><b>Gossamer Mode</b> — compare Momentum, Tension, Activity, and Interiority across beats</td>
+</tr>
+</table>
 
-<div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
-  <div style="text-align: center;">
-    <img src="images/mode-progress.png" alt="Progress Mode: author status (Todo/Working/Overdue/Complete) and progress stage colors" style="width: 300px; max-width: 100%; border-radius: 8px;" />
-    <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Progress Mode — schedule/status + progress stage view</div>
-  </div>
-  <div style="text-align: center;">
-    <img src="images/mode-chronologue.jpeg" alt="Chronologue Mode: scenes ordered by When/Duration with overlaps and adaptive time labeling" style="width: 300px; max-width: 100%; border-radius: 8px;" />
-    <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Chronologue Mode — story chronology with duration arcs and overlaps plus adaptive time scale</div>
-  </div>
-</div>
-
-<div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
-  <div style="text-align: center;">
-    <img src="images/mode-chronologue-shift.png" alt="Chronologue Shift mode: elapsed-time arc between selected scenes and infinity gap markers" style="width: 300px; max-width: 100%; border-radius: 8px;" />
-    <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Chronologue Shift — compare elapsed time between scenes and surface discontinuity gaps</div>
-  </div>
-  <div style="text-align: center;">
-    <img src="images/mode-gossamer.jpeg" alt="Gossamer Mode: beat-level scoring with multiple signals, saved traces, and momentum ranges" style="width: 300px; max-width: 100%; border-radius: 8px;" />
-    <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Gossamer Mode — compare Momentum, Tension, Activity, and Interiority across beats</div>
-  </div>
-</div>
-
-### Getting Started
+## Getting Started
 
 *   **[Getting Started](Getting-Started)** — fresh vault setup, existing vault setup, migrating from Scrivener, and the core workflow.
 *   **[Book Designer](Book-Designer)** — instantly generate a manuscript set with acts, subplots, and beats.

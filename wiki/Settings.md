@@ -1,5 +1,7 @@
 Access Radial Timeline settings in Obsidian via **Settings → Community Plugins → Radial Timeline**.
 
+The tab strip uses short labels: **Cor**, **Soc**, **Com**, **Inq**, **Pub**, **AI**, **Adv**, and **PRO**. This wiki uses the full names, so **Settings → Core** means the **Cor** tab.
+
 ## Settings Tabs
 
 *   [Core](Settings-Core) — Books, progress and status, runtime estimation, story beats, scene properties, chronology, POV, planetary time, and ring colors.
@@ -9,11 +11,11 @@ Access Radial Timeline settings in Obsidian via **Settings → Community Plugins
 *   [Publish](Publishing) — Pandoc, PDF styles, bundled layouts, chapter markers, Parts, and manuscript export workflow.
 *   [AI](Settings-AI) — Provider setup, model selection, local/OpenAI-compatible settings, and analysis behavior.
 *   [Advanced](Settings-Advanced) — Timeline display options, remap frontmatter field keys, ripple rename, logs, and export-path readouts.
-*   [PRO](Pro) — Pro workflows: runtime, advanced publishing layouts, APR campaigns, and runtime mode.
+*   [Pro](Pro) — Pro workflows: runtime estimation, advanced publishing layouts, and APR campaigns.
 
 ## Reference Pages
 
 For schema and YAML/property details, use:
 
 *   [Scene Properties (Core + Advanced)](YAML-Frontmatter)
-*   [Beat Audit + Heal](Beat-Audit-Heal)
+*   [Story beats system](Settings-Core#story-beats-system): beat notes, the beat audit, and repair

@@ -1,9 +1,7 @@
 Inquiry analyzes manuscript and worldbuilding material across a book or saga. Ask structured questions, review evidence and scene citations, and save findings as briefings.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/inquiry-odyssey.webp" alt="The Inquiry view on The Odyssey: the glyph with its three zones, the minimap of scene pages across the top, and the corpus strip of page icons on the right" style="width: 600px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Inquiry view — the glyph, the minimap of scene pages, and the corpus strip (The Odyssey demo vault)</div>
-</div>
+<p align="center"><img src="images/inquiry-odyssey.webp" alt="The Inquiry view on The Odyssey: the glyph with its three zones, the minimap of scene pages across the top, and the corpus strip of page icons on the right" width="600"></p>
+<p align="center"><sub>Inquiry view — the glyph, the minimap of scene pages, and the corpus strip (The Odyssey demo vault)</sub></p>
 
 <a name="overview"></a>
 ## Overview
@@ -31,7 +29,7 @@ Inquiry organizes questions into three narrative zones that correspond to the st
 | **Pressure** | Escalation and conflict | Rising tension, subplot intersections, pacing |
 | **Payoff** | Resolution and conclusion | Loose ends, thematic resonance, climactic impact |
 
-### Modes
+### Lenses
 
 Each Inquiry run produces two complementary analyses:
 
@@ -90,10 +88,8 @@ Any Corpus Manager overrides applied in the view affect the current Inquiry sess
 
 The corpus strip at the right of the view draws every note in the corpus as a page. One look tells you how each scene is sent, how far along it is, and how much material it holds.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/inquiry-corpus-pages.webp" alt="The Odyssey's corpus strip beside its legend: green filled pages for full scenes, three faded red pages for excluded scenes, and six blue outlined pages with a red corner X for summary scenes with thin summaries" style="width: 440px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">The corpus strip and its legend. Hover the asterisk (*) above the strip to open the legend.</div>
-</div>
+<p align="center"><img src="images/inquiry-corpus-pages.webp" alt="The Odyssey's corpus strip beside its legend: green filled pages for full scenes, three faded red pages for excluded scenes, and six blue outlined pages with a red corner X for summary scenes with thin summaries" width="440"></p>
+<p align="center"><sub>The corpus strip and its legend. Hover the asterisk (*) above the strip to open the legend.</sub></p>
 
 | What you see | What it means |
 | :--- | :--- |
@@ -157,7 +153,7 @@ Inquiry builds a "corpus" from your manuscript files before sending them to the 
 | :--- | :--- | :--- |
 | **Full** | Note prose after frontmatter, comments, and imported editorial review blocks are removed | Scenes you want deep analysis on |
 | **Summary** | `Summary` field only | Lower token usage while preserving high-level context |
-| **None** | Excluded entirely | Reference notes, worldbuilding docs you want to skip |
+| **Exclude** | Nothing; the note is left out | Reference notes, worldbuilding docs you want to skip |
 
 Configure per-class material modes in [Inquiry sources](Settings-Inquiry#sources).
 
@@ -238,37 +234,20 @@ Inquiry can write findings directly into your scene frontmatter:
 <a name="prompts"></a>
 ## Prompts
 
-Each zone ships with built-in questions: **4 core questions** per zone, plus **5 more** per zone with Pro — **9 built-in questions** per zone in total.
-
-You can also add your own custom questions on top of the built-ins:
-
-*   **Core surface**: Up to 3 custom questions per zone.
-*   **Pro**: Up to 8 custom questions per zone.
-*   Drag to reorder questions within a zone.
-*   Toggle individual questions on/off.
-*   Reset to built-in defaults using the restore button.
-
-Choose **Standard** or **Focused** in a question’s menu to select its prompt form. Configure questions in [Inquiry prompts](Settings-Inquiry#prompts).
+Each zone ships with built-in questions, with more under Pro, and you can add your own. Choose **Standard** or **Focused** in a question’s menu to select its prompt form. Question counts, custom questions, and ordering are set in [Inquiry prompts](Settings-Inquiry#prompts).
 
 ---
 
 <a name="scan-folders-and-class-scope"></a>
 ## Sources & Material Rules
 
-Control which vault content Inquiry can access:
-
-*   **Books for Inquiry**: Choose which book profiles Inquiry scans.
-*   **Material rules**: Toggle which YAML classes are scanned per scope (Book, Saga, Reference).
-*   **Supporting material folders**: Add support-material paths beyond the book folders. Supports wildcards (e.g., `/Book 1-7 */`) and `/` for vault root.
-*   **Presets**: Choose Default (recommended), Light (fast, lower token usage), or Deep (comprehensive, higher token usage).
-
-Configure sources in [Inquiry sources](Settings-Inquiry#sources).
+Inquiry reads the books, YAML classes, and supporting folders you choose, with **Default**, **Light**, and **Deep** presets for the trade-off between depth and token use. Configure them in [Inquiry sources](Settings-Inquiry#sources).
 
 ---
 
 ## Tips
 
-*   Start with **Book** scope and a single question to calibrate before running an Omnibus Pass.
+*   Start with **Book** scope and a single question.
 *   Use **Summary** material mode for large manuscripts to reduce token usage while maintaining context.
 *   Review the **token estimate** indicator before running — amber and red tiers indicate high token consumption.
 *   Combine Inquiry findings with [AI Pulse Triplet Analysis](AI-Pulse-Analysis) for both macro and micro-level feedback.
@@ -284,5 +263,5 @@ If the Inquiry view looks disabled or won't run, work down this list:
 *   **AI toggle.** Inquiry opens with AI off, and saved sessions stay readable. To run a new question, turn on **Settings → AI → Enable AI LLM features**.
 *   **Provider setup.** Add a cloud provider key or configure and validate a **Local LLM** under **Settings → AI** to run new inquiries. Saved briefings and session history remain browsable while you set up a provider, including in the [demo vault](Sample-Vault).
 *   **The selected model isn't Inquiry-eligible.** Not every provider/model can run Inquiry — it needs structured output and a large context. Open the [AI Engine popover](#ai-engine-popover) and check the readiness strip; if it shows blocked, it names the reason. Local models can qualify (the validation card in Settings → AI shows an "Inquiry eligible" badge), but smaller local models may not.
-*   **Empty corpus.** If the scanned corpus finds no scenes, check [Scan Folders & Class Scope](#scan-folders-and-class-scope) and the Corpus Manager — the scan folder must contain your scene notes, and the class scope must include them.
-*   **Costs look wrong mid-run.** The Omnibus panel shows live cost and includes a cache-health kill-switch; if cached-input pricing misbehaves, disable caching there and re-run.
+*   **Empty corpus.** If the scanned corpus finds no scenes, check [Sources & Material Rules](#scan-folders-and-class-scope) and the Corpus Manager — the scan folder must contain your scene notes, and the class scope must include them.
+*   **Costs look wrong mid-run** *(Omnibus Pass, in testing — not yet released)*. The Omnibus panel shows live cost and includes a cache-health kill-switch; if cached-input pricing misbehaves, disable caching there and re-run.

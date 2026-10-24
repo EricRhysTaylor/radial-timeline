@@ -1,7 +1,5 @@
 **Manuscript export** opens the export panel for a Radial Timeline book, a folder of Markdown notes, or a single Markdown file. Publish a novel, an essay, a report, or another document without first turning every note into a timeline scene.
 
-> **Available in 7.5.0:** folder and single-file sources, saved manuscript selections, and the PDF proof workspace.
-
 ![A saved folder manuscript with title, author, reviewed note selection, and a rendered PDF proof beside the export controls](images/release-7-5-publishing-proof.png)
 
 ## What It Can Export
@@ -14,9 +12,23 @@ Choose from:
 *   outline-style exports
 *   filtered or ranged exports by order and subplot
 
-Core includes compiled Markdown, Pandoc PDF export with the Basic and Standard layouts, and Word submission export. Pro adds the Professional, Signature, Screenplay, and Podcast Script layouts plus deeper publishing customization (custom Pandoc metadata, custom LaTeX preamble, the PDF style designer).
+Core includes compiled Markdown, Pandoc PDF export with the Basic and Standard layouts, and Word submission export. Pro adds the Professional, Signature, Screenplay, and Podcast Script layouts plus deeper publishing customization (custom Pandoc metadata and a custom LaTeX preamble). The PDF style designer (**Design your own…**) and **Import template…** are in beta and not yet in release builds.
 
 The panel supports ordering, selection range, output presets, and publishing-oriented layout decisions in one place.
+
+## Exporting a Manuscript
+
+**Command Palette → Manuscript export**
+
+The export panel lets you:
+- Select the output format (Novel, Screenplay, Podcast Script)
+- Choose the template for that format
+- Select which scenes to include (all, or filtered by act/subplot)
+- Choose Markdown, PDF, or Word (DOCX) output
+- Review export checks for missing templates, missing fonts, template compatibility, and layout-specific warnings
+- Preview the selected layout's page structure before generating a PDF
+
+Files land in `Radial Timeline/Export/` by default, or in whatever vault folder you set under **Settings → Advanced → Configuration → Export folder**. Use the checks in the export panel to catch missing Pandoc, LaTeX, templates, or fonts before rendering.
 
 ## Choose and Review the Source
 
@@ -52,7 +64,7 @@ Radial Timeline books use authored **Part** boundaries, resolved **Chapter** mar
 
 For a printed act division, use an authored part title such as `Part: Act II`. The analytical scene `Act` field does not create publishing boundaries. Folder and single-file manuscripts instead use their existing Markdown heading hierarchy, such as `# Act I`, `## Chapter One` and `### Scene One`; they need no scene YAML.
 
-Saved export presets retain contents mode and depth. Each split output has contents for the material included in that file. Existing custom PDF templates with custom opener commands may need regeneration in the style designer before they can place navigation correctly; export reports this rather than producing misleading links.
+Saved export presets retain contents mode and depth. Each split output has contents for the material included in that file. Existing custom PDF templates with custom opener commands may need regeneration in the style designer (beta) before they can place navigation correctly; export reports this rather than producing misleading links.
 
 ## Word (DOCX) Submission Export
 
@@ -95,4 +107,4 @@ After export, the delivery review lists the files saved to the destination, and 
 ## Related Docs
 
 *   [Publishing](Publishing)
-*   [Publishing → Exporting a Manuscript](Publishing#exporting-a-manuscript)
+*   [Publishing → Setting Up Signature](Publishing#setting-up-signature)

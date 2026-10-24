@@ -1,9 +1,7 @@
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/settings-ai.png" alt="Settings → AI tab" style="width: 600px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Settings → AI</div>
-</div>
-
 The AI tab controls provider setup, model selection, prompt framing, cost awareness, and the defaults used by Inquiry, Pulse, Gossamer, and Summary scene refresh.
+
+<p align="center"><img src="images/settings-ai.png" alt="Settings → AI tab" width="600"></p>
+<p align="center"><sub>Settings → AI</sub></p>
 
 ## AI Toggle
 
@@ -126,7 +124,7 @@ Pulse sends three scenes together and requires structured JSON results. Choose a
 
 ### Onboarding And Local Model Hardware
 
-[Manuscript onboarding](Onboard-Existing-Manuscript) defaults to **Structure only — no AI**, which needs no model or special AI hardware. Choose **AI assisted** explicitly to use an available local or configured cloud engine. See the onboarding page for build availability.
+[Import a manuscript](Onboard-Existing-Manuscript) defaults to **Structure only — no AI**, which needs no model or special AI hardware. Choose **AI assisted** explicitly to use an available local or configured cloud engine.
 
 The verified hardware setup is a **Mac Studio M4 Max with 64GB unified memory** running **Qwen3-Next-80B-A3B-Instruct (4-bit)**. Earlier testing also used **Qwen3-30B-A3B-2507 (4-bit)**, with weaker results. Treat these as tested setups and validate your chosen model before importing a manuscript.
 

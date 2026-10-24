@@ -2,9 +2,7 @@
 
 Narrative Mode is your primary manuscript-order workspace. It displays all scenes from all subplots on the outer ring, organized by **act divisions** (default 3 acts, configurable in **Settings → Core → Acts**). Each act spans an equal segment of the 360° circle. This view emphasizes **Narrative time** (the order readers will experience the story). Subplot colors show story structure and balance.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/mode-narrative.jpeg" alt="Narrative Mode Timeline" style="width: 300px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/mode-narrative.jpeg" alt="Narrative Mode Timeline" width="300"></p>
 
 ## Key Features
 
@@ -19,10 +17,8 @@ Narrative Mode is your primary manuscript-order workspace. It displays all scene
 *   **Recent moves overlay**: Narrative Mode can show a top-left list of recent committed scene and beat moves. Toggle it in [Settings → Advanced → Configuration](Settings-Advanced#configuration).
 *   **Runtime view** ✦ Pro: Click **RT** to see how long each scene runs and the running time of the book in reading order. See [Runtime view](#runtime-view).
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/mode-narrative-beats.png" alt="Narrative Mode with Save the Cat beats around the outer ring and the recent moves overlay at top left" style="width: 480px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Save the Cat beats around the outer ring, with the recent moves overlay at top left</div>
-</div>
+<p align="center"><img src="images/mode-narrative-beats.png" alt="Narrative Mode with Save the Cat beats around the outer ring and the recent moves overlay at top left" width="480"></p>
+<p align="center"><sub>Save the Cat beats around the outer ring, with the recent moves overlay at top left</sub></p>
 
 ## Subplot Alignment: Fill vs Sequence
 
@@ -31,10 +27,8 @@ The **alignment chip** at the left of the mode row switches how subplot rings la
 *   **Fill** (default) — subplot scenes spread evenly across each act, so every ring uses its full arc. Best for reading each thread on its own.
 *   **Sequence** — every subplot scene sits at its true position in the full manuscript, aligned with the outer ring. Empty cells mark where a thread is dormant, so you can see at a glance where each subplot is active, where it disappears, and how the threads interleave across acts.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/mode-sequence.webp" alt="Sequence alignment: subplot rings aligned to manuscript position with dormant stretches left empty" style="width: 640px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Sequence alignment — each subplot ring aligned to manuscript position; empty cells show where a thread is dormant</div>
-</div>
+<p align="center"><img src="images/mode-sequence.webp" alt="Sequence alignment: subplot rings aligned to manuscript position with dormant stretches left empty" width="640"></p>
+<p align="center"><sub>Sequence alignment — each subplot ring aligned to manuscript position; empty cells show where a thread is dormant</sub></p>
 
 <a name="runtime-view"></a>
 <a name="runtime-mode-pro"></a>
@@ -69,14 +63,12 @@ While the Runtime view is on, clicks select scenes for comparison; turn it off t
 
 Right-click any scene on the timeline to open a context menu that lets you add a scene or update scene frontmatter without opening the note. The current value in each group is marked with a checkmark.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/menu-rightclick-chapter.png" alt="Narrative scene right-click context menu" style="width: 282px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Scene right-click menu — Add scene, chapter markers, Status, Publish Stage, and Pulse actions</div>
-</div>
+<p align="center"><img src="images/menu-rightclick-chapter.png" alt="Narrative scene right-click context menu" width="282"></p>
+<p align="center"><sub>Scene right-click menu — Add scene, chapter markers, Status, Publish Stage, and Pulse actions</sub></p>
 
 **Add scene** — inserts a new scene after the selected one, using that scene as the anchor for placement and context.
 
-**Set chapter** — adds, edits, or clears the `Chapter:` marker on the selected scene. The modal previews current chapter containers so you can see how the marker affects the manuscript structure.
+**Set chapter** — adds, edits, or clears the `Chapter:` marker on the selected scene. The panel previews current chapter containers so you can see how the marker affects the manuscript structure.
 
 **Status** — set `Status` to **Todo**, **Working**, or **Complete**. When you mark a scene **Complete**, the `Due` date is automatically set to today, keeping the [Progress Mode](Progress-Mode) completion estimate and pace tracker accurate.
 
@@ -97,10 +89,8 @@ The title-bar book selector controls which manuscript the timeline shows.
 *   Saga scope is available when more than one Book Manager profile is configured.
 *   Saga scope displays the combined manuscript order in Narrative Mode.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/feature-saga.png" alt="Narrative Mode saga view across multiple books" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Saga view in Narrative Mode — multiple books combined into one manuscript-order timeline</div>
-</div>
+<p align="center"><img src="images/feature-saga.png" alt="Narrative Mode saga view across multiple books" width="560"></p>
+<p align="center"><sub>Saga view in Narrative Mode — multiple books combined into one manuscript-order timeline</sub></p>
 
 ## Chapter and Part Placards
 
@@ -116,10 +106,8 @@ Placards appear whether or not the selected PDF layout prints them — the marke
 
 Turn placards on with **Settings → Advanced → Configuration → Show part and chapter markers**.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/feature-parts-chapters.png" alt="Narrative Mode chapter and part markers around the perimeter" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Publishing markers on the perimeter — chapter starts, part boundaries, and combined Part/Chapter breaks</div>
-</div>
+<p align="center"><img src="images/feature-parts-chapters.png" alt="Narrative Mode chapter and part markers around the perimeter" width="560"></p>
+<p align="center"><sub>Publishing markers on the perimeter — chapter starts, part boundaries, and combined Part/Chapter breaks</sub></p>
 
 ## Dominant Subplots
 

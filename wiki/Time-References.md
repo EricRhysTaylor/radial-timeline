@@ -1,6 +1,6 @@
 Keep a scene’s `When` as the date when its main action happens. Add **Time References** for other periods inside that scene: a remembered fire, a quoted letter, an enacted flashback, or an imagined future.
 
-> **Available in 7.6.0.** The screenshots use a synthetic study manuscript, **Time Reference Study**.
+The screenshots use a synthetic study manuscript, **Time Reference Study**.
 
 ## Add references to a scene
 
@@ -38,7 +38,7 @@ References describe passages within their source scene. They do not create new s
 
 ## Read the timeline
 
-Time-reference marks appear **only in normal Chronologue**, on the outer **All Scenes** ring. They disappear in Shift and Alien Calendar / Planetary Time, and in other timeline modes. Question icons also hide in these Chronologue sub-modes. A source that belongs to several subplots still has only one set of reference marks.
+Time-reference marks appear **only in normal Chronologue**, on the outer **All Scenes** ring. They disappear in the Shift and Alt (planet calendar) sub-modes, and in other timeline modes. Question icons also hide in these Chronologue sub-modes. A source that belongs to several subplots still has only one set of reference marks.
 
 ![A selected time reference connects its larger source square to a smaller date square on the outer ring](images/time-references-timeline.png)
 

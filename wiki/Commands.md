@@ -1,15 +1,9 @@
-Radial Timeline provides commands through the Obsidian Command Palette.
-
-To open the Command Palette:
+Open the Obsidian Command Palette and type `Radial timeline` to filter the list:
 *   **Mac**: `Cmd + P`
 *   **Windows/Linux**: `Ctrl + P`
 
-Type `Radial timeline` to filter the list.
-
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/ui-commands.png" alt="Radial Timeline Commands" style="max-width: 100%;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Radial Timeline Commands in the palette</div>
-</div>
+<p align="center"><img src="images/ui-commands.png" alt="Radial Timeline Commands" width="600"></p>
+<p align="center"><sub>Radial Timeline Commands in the palette</sub></p>
 
 ## Command Index
 
@@ -19,8 +13,8 @@ These are the main command-palette entries.
 2. **[Create note…](#create-note)**
 3. **Open inquiry** — opens the [Inquiry View](Inquiry).
 4. **[Book designer](Book-Designer)** ← standalone guide
-5. **[Manuscript onboarding](#onboard-manuscript)**
-6. **[Timeline date scaffold](#timeline-order)**
+5. **[Import manuscript](#onboard-manuscript)**
+6. **[Timeline date scaffold](#timeline-order)** *(beta)*
 7. **[Timeline date audit](#timeline-audit)** *(beta)*
 8. **[Subplot manager](#manage-subplots)**
 9. **[Summary scene refresh](#summary-refresh)**
@@ -35,8 +29,9 @@ These are the main command-palette entries.
 18. **[Scene pulse analysis (subplot order)](#scene-pulse-analysis-subplot-order)**
 19. **[Scene pulse analysis (manuscript order)](#scene-pulse-analysis-manuscript-order)**
 20. **[Timeline share export](#timeline-share-export)**
-
-> **Reassign two hotkeys.** In release 7.4.0, **Open** and **Timeline date scaffold** got new command IDs. If you had assigned a hotkey to either, assign it again in **Settings → Hotkeys**.
+21. **[Open timetable](#open-timetable)**
+22. **[Promote note to scene](#promote-note-to-scene)**
+23. **[Scene time assignment](Scene-Time)** ← standalone guide
 
 ## Conditional Visibility
 
@@ -57,9 +52,7 @@ Some commands are hidden until their required feature is enabled. Others remain 
 
 Opens the guided Radial Timeline note selector.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-create-note.png" alt="Create note command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-create-note.png" alt="Create note command panel" width="560"></p>
 
 The selector is organized into three families:
 
@@ -74,24 +67,22 @@ Related: [Scene Properties (Core + Advanced)](YAML-Frontmatter).
 ---
 
 <a name="onboard-manuscript"></a>
-## Manuscript onboarding
+## Import manuscript
 
 Opens the guided flow for importing a Scrivener export, a Word document, or one large text file. **Structure only — no AI** is the default; AI assistance is an explicit choice.
 
 Choose the source, check export readiness and narrative order, confirm scene boundaries and metadata mappings, then review before applying. The Welcome flow accepts a source folder without prior Book Manager setup. Imports create a separate book folder and preserve the original source.
 
-See [Manuscript onboarding](Onboard-Existing-Manuscript) for build availability, Scrivener export instructions, and one-time metadata mapping.
+See [Import a manuscript](Onboard-Existing-Manuscript) for Scrivener export instructions and one-time metadata mapping.
 
 ---
 
 <a name="timeline-order"></a>
-## Timeline date scaffold
+## Timeline date scaffold *(beta)*
 
 Opens Timeline Date Scaffold, an optional tool for assigning provisional `When` dates in story order. No AI is involved. Chronologue already keeps undated scenes with their narrative neighbors, so scaffolding is not required to use it.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-timeline-order.png" alt="Timeline date scaffold command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-timeline-order.png" alt="Timeline date scaffold command panel" width="560"></p>
 
 The wizard helps you normalize `When` values in manuscript order, then review the proposed timeline before writing changes back to frontmatter. It supports scaffold-based chronology setup, anchor date and time selection, time-bucket adjustments (morning/afternoon/evening/night), ripple mode for cascading changes, needs-review filtering, and undo/redo before applying.
 
@@ -106,9 +97,7 @@ Related: [Chronologue Mode](Chronologue-Mode).
 
 Opens the Timeline Date Audit panel.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-timeline-audit.webp" alt="Timeline date audit panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-timeline-audit.webp" alt="Timeline date audit panel" width="560"></p>
 
 Surfaces contradictions, invalid dates, summary/body disagreement, continuity problems, and unresolved findings. Undated scenes remain visible in their Chronologue display order and have their own **Undated** count and filter; a blank `When` alone is not a warning or an unresolved problem. The panel shows overview stats, finding filters, and finding cards with evidence and suggested actions.
 
@@ -125,23 +114,19 @@ Related: [Timeline date scaffold](#timeline-order), [Chronologue Mode](Chronolog
 
 Opens the subplot manager for bulk cleanup. Use it when subplot names have drifted.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-manage-subplots.png" alt="Subplot manager panel" style="width: 500px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-manage-subplots.png" alt="Subplot manager panel" width="500"></p>
 
 Lists active subplots with scene counts and gives you bulk actions:
 
 *   **Rename** a subplot in the active book's scene files.
 *   **Remove** a subplot from the timeline.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-manage-subplots-rename.png" alt="Subplot manager — rename detail" style="width: 450px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Rename a subplot — updates the Subplot field of every scene in the active book that uses it</div>
-</div>
+<p align="center"><img src="images/panel-manage-subplots-rename.png" alt="Subplot manager — rename detail" width="450"></p>
+<p align="center"><sub>Rename a subplot — updates the Subplot field of every scene in the active book that uses it</sub></p>
 
 The main plot is marked with a map pin. It stays in ring 1 whatever it is called and includes any scene without a Subplot. Each book names its own main plot (**Main Plot** until you rename it): renaming it updates only the active book's scenes, the dialog says how many before anything is written, and a name another subplot already uses is refused. The main plot can't be deleted. Removing a subplot moves any scenes that only belonged to it back to the main plot.
 
-Related: [Narrative Mode](Narrative-Mode), [How to](How-to#manage-subplots-in-bulk).
+Related: [Narrative Mode](Narrative-Mode).
 
 ---
 
@@ -150,9 +135,7 @@ Related: [Narrative Mode](Narrative-Mode), [How to](How-to#manage-subplots-in-bu
 
 Regenerates scene summaries with AI.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-summary-refresh.png" alt="Summary scene refresh command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-summary-refresh.png" alt="Summary scene refresh command panel" width="560"></p>
 
 Writes:
 
@@ -172,9 +155,7 @@ Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Inquiry View](Inquiry)
 
 Opens the timeline search bar.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-search-timeline.png" alt="Timeline search panel" style="width: 500px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-search-timeline.png" alt="Timeline search panel" width="500"></p>
 
 Choose **Timeline fields**, **Scene body**, or both in **Search options**. Press **Enter** for text search, or enable **Local LLM assist** for concept matching with verified evidence quotes. See [Search](How-to#search) for scope, highlighting, and local AI setup.
 
@@ -187,9 +168,7 @@ Related: [How to → Search](How-to#search).
 
 Runs the built-in AI scoring workflow for the active Gossamer signal. Appears only when AI LLM features are on; to score by hand, use [Gossamer score manager](#gossamer-score-manager).
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-gossamer-analysis.png" alt="Gossamer analysis command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-gossamer-analysis.png" alt="Gossamer analysis command panel" width="560"></p>
 
 Works against the active beat system and the active signal — Momentum, Tension, Activity, or Interiority. AI scores the supplied manuscript material independently of your visual Momentum ranges.
 
@@ -202,9 +181,7 @@ Related: [Gossamer Mode → AI Analysis](Gossamer-Mode#ai-analysis).
 
 Opens the runtime estimation panel.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-runtime-estimator.png" alt="Runtime estimator panel" style="width: 520px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-runtime-estimator.png" alt="Runtime estimator panel" width="520"></p>
 
 Used for novels, audiobooks, and screenplays. The panel works with runtime profiles and can estimate duration across different scopes and filters. Available only when **Pro** is active.
 
@@ -220,9 +197,7 @@ Runs all enabled Inquiry questions in one batch.
 > [!NOTE]
 > Undergoing testing and not released yet — it does not appear in release builds of the plugin.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-inquiry-omnibus.png" alt="Inquiry omnibus command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-inquiry-omnibus.png" alt="Inquiry omnibus command panel" width="560"></p>
 
 Executes enabled questions across the Inquiry zones and returns a combined set of findings for the current corpus. Works with the active scope (Book or Saga). Depending on provider and engine path, the run may execute as a combined omnibus flow or as sequential provider calls behind the scenes.
 
@@ -235,9 +210,7 @@ Related: [Inquiry View](Inquiry), [Running an Inquiry](Inquiry#running-an-inquir
 
 Opens the manual score-entry panel for the active signal.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-gossamer-score-manager.png" alt="Gossamer score manager panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-gossamer-score-manager.png" alt="Gossamer score manager panel" width="560"></p>
 
 Supports manual score entry, score justifications, run history cleanup and normalization, and working with saved beat runs. Create beat notes for the active beat system before opening the panel.
 
@@ -250,11 +223,9 @@ Related: [Gossamer Mode → Manual Entry](Gossamer-Mode#manual-entry).
 
 Opens the planetary conversion panel.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-planet-calculator.png" alt="Planetary time calculator panel" style="width: 440px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-planet-calculator.png" alt="Planetary time calculator panel" width="440"></p>
 
-Uses the active planetary profile from [Settings → Core](Settings-Core) and lets you select a date and time, convert that Earth timestamp to local planetary time, and copy a YAML-friendly result block. The refreshed panel is designed for quick Alien Calendar checks while writing. Select an active planetary profile in Settings → Core before converting dates.
+Uses the active planetary profile from [Settings → Core](Settings-Core) and lets you select a date and time, convert that Earth timestamp to local planetary time, and copy a YAML-friendly result block. The panel is designed for quick planet calendar checks while writing. Select an active planetary profile in Settings → Core before converting dates.
 
 Related: [Planetary Calendar](Chronologue-Mode#alt-sub-mode).
 
@@ -265,9 +236,7 @@ Related: [Planetary Calendar](Chronologue-Mode#alt-sub-mode).
 
 Opens the subplot pulse selector first, then runs pulse analysis for a selected subplot.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-scene-pulse-subplot.png" alt="Scene pulse analysis subplot order command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-scene-pulse-subplot.png" alt="Scene pulse analysis subplot order command panel" width="560"></p>
 
 The subplot selector shows flagged scenes, processable scenes, and total scenes. From there you can choose **Process flagged scenes**, **Process entire subplot**, or **Purge all pulse** for that subplot.
 
@@ -280,9 +249,7 @@ Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Subplot manager](#mana
 
 Opens the pulse command panel for manuscript-order analysis.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-scene-pulse-manuscript.png" alt="Scene pulse analysis manuscript order command panel" style="width: 560px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/panel-scene-pulse-manuscript.png" alt="Scene pulse analysis manuscript order command panel" width="560"></p>
 
 Run modes: process open scenes, process flagged scenes, process unprocessed scenes, or reprocess all scenes.
 
@@ -304,9 +271,13 @@ If your subplot names could themselves reveal plot, turn on **Generic ring names
 
 Related: [Settings → Community](Settings-Community).
 
+---
+
 ## Open timetable
 
 **Radial timeline: Open timetable** opens or focuses the Bases view for the timeline’s current book or saga. Enable the Bases core plugin first. See [Timetable](Timetable).
+
+---
 
 ## Promote note to scene
 

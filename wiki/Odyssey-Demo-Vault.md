@@ -1,9 +1,7 @@
 *The Odyssey* is the second free demo vault: the epic traditionally attributed to Homer, in Samuel Butler's public-domain prose translation, mapped as 89 scenes across all 24 books with its analysis already saved. Like the [Pride & Prejudice demo vault](Sample-Vault), it's free, and you can explore its saved analysis without an API key.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/odyssey-narrative.webp" alt="The Odyssey in Narrative mode: 89 scenes on the outer ring, four motif rings inside it, three act labels and the Hero's Journey beats around the edge" style="width: 600px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Narrative mode: the outer ring carries every scene; four motif rings read the poem along other paths</div>
-</div>
+<p align="center"><img src="images/odyssey-narrative.webp" alt="The Odyssey in Narrative mode: 89 scenes on the outer ring, four motif rings inside it, three act labels and the Hero's Journey beats around the edge" width="600"></p>
+<p align="center"><sub>Narrative mode: the outer ring carries every scene; four motif rings read the poem along other paths</sub></p>
 
 ## How to get it
 
@@ -27,10 +25,8 @@ The poem doesn't run in a straight line, which makes it a good test of a radial 
 
 ## A story told out of order
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/odyssey-chronologue.webp" alt="The Odyssey in Chronologue mode: the scenes of Ulysses's wanderings, numbered 28 to 45, sit at the start of the timeline, ahead of scene 1" style="width: 600px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Chronologue mode: Ulysses's account of his wanderings moves back years, ahead of scene 1</div>
-</div>
+<p align="center"><img src="images/odyssey-chronologue.webp" alt="The Odyssey in Chronologue mode: the scenes of Ulysses's wanderings, numbered 28 to 45, sit at the start of the timeline, ahead of scene 1" width="600"></p>
+<p align="center"><sub>Chronologue mode: Ulysses's account of his wanderings moves back years, ahead of scene 1</sub></p>
 
 Books 9–12 are Ulysses's own account of his wanderings, told at the Phaeacian court years after the events. The vault dates those scenes to when their events happened, so **Chronologue** moves them to the start of the timeline, ahead of scene 1. Shorter stories told inside a scene, such as Nestor's and Menelaus's, keep the date of the telling.
 
@@ -38,10 +34,8 @@ Books 9–12 are Ulysses's own account of his wanderings, told at the Phaeacian 
 
 ## Every scene annotated
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/odyssey-scene-hover.webp" alt="Hovering scene 30, Blinding Polyphemus: its date, synopsis, Pulse analysis of the scene and its neighbors, subplots, and characters" style="width: 600px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Hover a scene for its synopsis, Pulse analysis, subplots, and characters</div>
-</div>
+<p align="center"><img src="images/odyssey-scene-hover.webp" alt="Hovering scene 30, Blinding Polyphemus: its date, synopsis, Pulse analysis of the scene and its neighbors, subplots, and characters" width="600"></p>
+<p align="center"><sub>Hover a scene for its synopsis, Pulse analysis, subplots, and characters</sub></p>
 
 Hover any scene to read its synopsis and Pulse analysis. The AI readings are curated interpretations; compare their judgments with the complete source text in the vault.
 

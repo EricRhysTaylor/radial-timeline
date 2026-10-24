@@ -24,17 +24,15 @@ Words:                    # Optional word count/statistics
 Runtime:                  # Optional runtime estimate or override
 Publish Stage: Zero       # Progress stage (Zero/Author/House/Press)
 Status: Todo              # Scene status (Todo/Working/Complete)
-Due:                      # Target completion date (YYYY-MM-DD). When setting Scene to Complete, change this to that day's date for better novel completion estimate
+Due:                      # Target completion date (YYYY-MM-DD). Marking a scene Complete from the wheel or the Timetable sets it to that day
 Pulse Update:             # AI-generated scene pulse analysis flag
 Summary Update:           # Summary scene refresh flag
 ```
 
-Book Designer and Create note generate the core scaffold above. `ID` is inserted automatically for stable scene citations, and the scene properties editor can maintain the current core and advanced field order.
+Book Designer and Create note generate the core scaffold above. `ID` is inserted automatically for stable scene citations, and the advanced properties editor can maintain the current core and advanced field order.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/scene-properties.png" alt="A scene note's core properties in Obsidian's Properties view" style="width: 420px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">A scene’s core properties as Obsidian shows them at the top of the note</div>
-</div>
+<p align="center"><img src="images/scene-properties.png" alt="A scene note's core properties in Obsidian's Properties view" width="420"></p>
+<p align="center"><sub>A scene’s core properties as Obsidian shows them at the top of the note</sub></p>
 
 **For multiple subplots or characters, use YAML list format:**
 ```yaml
@@ -101,11 +99,11 @@ Internal: How do the characters change?
 ```
 
 <a name="advanced-yaml-editor"></a>
-### Scene Properties Editor
+### Advanced Properties Editor
 
-The Scene properties editor lets you tailor the advanced scene properties while keeping required base keys intact. Add, remove, or reorder optional fields to match your workflow.
+The advanced properties editor lets you tailor the advanced scene properties while keeping required base keys intact. Add, remove, or reorder optional fields to match your workflow.
 
-*   Enable **Settings → Core → Scene properties → Scene properties editor**.
+*   Open **Settings → Core → Scene properties** and choose **Show advanced properties editor**.
 *   Required base keys stay locked and auto-included in order.
 *   Optional keys can be drag-reordered, renamed, deleted, or added.
 *   Radial Timeline-managed maintenance only governs the core and current advanced scene-property fields.
@@ -115,7 +113,7 @@ The Scene properties editor lets you tailor the advanced scene properties while 
 
 ## Sketch Notes (YAML)
 
-`Class: Sketch` keeps a planning note in the [Timetable](Timetable), off the wheel until you promote it to a scene. Write the sketch in the note body; Act, Subplot, and When can record its intended placement. The drawer edits these author-facing properties and the body directly. Sketches and promotion are available in 7.5.0.
+`Class: Sketch` keeps a planning note in the [Timetable](Timetable), off the wheel until you promote it to a scene. Write the sketch in the note body; Act, Subplot, and When can record its intended placement. The drawer edits these author-facing properties and the body directly.
 
 ```yaml
 Class: Sketch
@@ -145,7 +143,7 @@ Gossamer2 Justification:
 
 > **Beat order** follows `Act` and the filename prefix (`sceneInteger.minor`, for example `7.01`).
 
-**In This Book** says what a beat is in your novel, where `Purpose` says what the beat does in any story. When it's filled, the beat hover opens with your line and shows the generic `Purpose` beneath it in smaller, dimmer text, and timeline search finds the beat by its words. Unfilled beats hover as before. In Narrative mode, hold **Shift** to swap the beat labels around the outer ring to their In This Book names (a long line is cut short on the ring; the hover keeps all of it). New beat notes include the field; to add it to existing beat notes, run **Insert missing fields** from the beat properties audit in **Settings → Core → Story beats system**.
+**In This Book** says what a beat is in your novel, where `Purpose` says what the beat does in any story. When it's filled, the beat hover opens with your line and shows the generic `Purpose` beneath it in smaller, dimmer text, and timeline search finds the beat by its words. Unfilled beats show `Purpose` alone. In Narrative mode, hold **Shift** to swap the beat labels around the outer ring to their In This Book names (a long line is cut short on the ring; the hover keeps all of it). New beat notes include the field; to add it to existing beat notes, run **Insert missing fields** from the beat properties audit in **Settings → Core → Story beats system**.
 
 Beat notes have their own **Beat properties editor** in **Settings → Core → Story beats system**. Use it to add custom keys and choose which fields appear in beat hovers. Beat properties are stored per beat system.
 
@@ -162,7 +160,7 @@ Backdrop notes can be extended using the **Backdrop properties editor** in Setti
 
 ## YAML Managers in Settings
 
-*   **Scene properties editor**: In **Settings -> Core**, customize advanced scene properties and hover metadata.
+*   **Advanced properties editor**: In **Settings → Core → Scene properties**, choose **Show advanced properties editor** to customize advanced scene properties and hover metadata.
 *   **Beat properties editor**: Customize beat note fields and beat hover metadata.
 *   **Remap frontmatter field keys**: In **Settings -> Advanced -> Configuration**, map your existing keys to Radial Timeline keys without rewriting your files.
 

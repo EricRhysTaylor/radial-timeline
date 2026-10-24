@@ -1,8 +1,6 @@
 Onboarding imports your draft as scene notes with frontmatter. Review scene boundaries, narrative order, and metadata before creating the imported book. Your source manuscript stays untouched.
 
-Start from **Manuscript onboarding** on the Welcome screen or **Radial timeline: Manuscript onboarding** in the Command Palette. The Welcome flow lets you choose an export directly; you do not need to configure Book Manager first.
-
-> **Available in 7.5.0:** the direct source chooser, export discovery, and CSV-first ordering described here require 7.5.0 or a later release.
+Start from **Import a manuscript** on the Welcome screen or **Radial timeline: Import manuscript** in the Command Palette. The Welcome flow lets you choose an export directly; you do not need to configure Book Manager first.
 
 ## Import sources
 

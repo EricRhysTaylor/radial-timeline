@@ -1,4 +1,4 @@
-The Community tab connects Radial Timeline to the public Community area on the Radial Timeline website. It is designed for author-to-author progress sharing: public profiles, project shells, optional Author Progress Report graphics, and optional writing activity, with a clear view of what you chose to share.
+The Community tab connects Radial Timeline to the public Community area on the Radial Timeline website for author-to-author progress sharing: public profiles, project shells, optional Author Progress Report graphics, and optional writing activity, with a clear view of what you chose to share.
 
 Community Share is opt-in. Nothing publishes from your vault until you connect the website, choose a sharing level, and press **Begin sharing**.
 
@@ -85,13 +85,4 @@ Rotating the connection secret from My Share does not repair this case. Rotation
 
 ## Sharing An APR
 
-The [Author Progress Report](Author-Progress-Report) remains a local visual/social export tool, with a controlled route to Community available from Level 2 upward (Level 2 and Level 3):
-
-1. In **Social**, choose a campaign and its target book.
-2. Enable **Send to Community** for that campaign.
-3. Use **Send now** for a private upload, or let Daily, Weekly, or Monthly campaign updates refresh it while Obsidian is open.
-4. Open **My Share** on the website to inspect the exact graphic and activate it. The book must already be public before its APR can be activated.
-
-Selecting Level 2 or Level 3 never uploads an APR by itself. The campaign destination is separately opt-in and defaults off. Uploaded APRs arrive privately; public activation and deactivation happen only on My Share.
-
-APR schedules are client-side. Radial Timeline checks on plugin startup and hourly while the vault is open. Updates missed while Obsidian is closed run on the next plugin startup.
+From Level 2 upward, an [Author Progress Report](Author-Progress-Report) campaign can send its graphic to Community, where it arrives privately on My Share. See [Send a campaign to Community](Author-Progress-Report#send-a-campaign-to-community).

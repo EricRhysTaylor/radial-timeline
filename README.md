@@ -72,7 +72,6 @@ If you want the "how-to" details (setup, sets, properties, reordering, advanced 
 
 Ongoing series on the [Radial Timeline YouTube channel](https://www.youtube.com/@RadialTimeline):
 
-- **Volume 1 — Intro**: [Original home page intro video](https://youtu.be/7noTSFaj8Eo)
 - **Volume 2 — Chronologue Mode**: [Chronologue Mode Volume 2](https://youtu.be/5DsKdFLLeOU)
 - **Volume 3 — Release 6 Overview**: [Overview of New Features](https://youtu.be/YO6hWevwSWc?si=SilQ6xgnQYReGgd0)
 - **Volume 4 — Inquiry View**: [Inquiry View Volume 4](https://youtu.be/xfX0rP4-Hv4?si=gSTRnPwbM0wsnlEZ)

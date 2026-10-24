@@ -2,9 +2,7 @@
 
 Progress Mode gives each subplot a ring and colors scenes by writing status and revision stage.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/mode-progress.png" alt="Progress Mode" style="width: 300px; max-width: 100%; border-radius: 8px;" />
-</div>
+<p align="center"><img src="images/mode-progress.png" alt="Progress Mode" width="300"></p>
 
 ## Key Features
 
@@ -38,7 +36,5 @@ Together they turn the radial view into a project-management dashboard, highligh
 
 **Zero Draft Mode** opens **Pending Edits** when you click a scene with **Publish Stage = Zero** and **Status = Complete**. Capture revision ideas there while you finish the first draft. Enable it in [Settings → Core](Settings-Core).
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-zero-draft.png" alt="Zero Draft Mode panel" style="width: 480px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Zero Draft Mode — capture ideas for the next revision</div>
-</div>
+<p align="center"><img src="images/panel-zero-draft.png" alt="Zero Draft Mode panel" width="480"></p>
+<p align="center"><sub>Zero Draft Mode — capture ideas for the next revision</sub></p>

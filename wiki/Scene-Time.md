@@ -1,13 +1,9 @@
-# Scene Time
-
 Scene Time helps you check how much story time passes inside a scene. It reads the time phrases in your prose, such as "three hours later" or "a few minutes", and marks them beside the text. You decide which ones count. The running total appears in the note's title bar, next to the scene's `When` and `Duration`.
 
 Scene Time is optional. It never changes your prose or your scene properties.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/scene-time-cue-bar.png" alt="A scene with the time cue bar beside the prose and the scene time summary in the title bar" style="width: 720px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">The title bar shows when the scene starts and how much time is accounted for. The bar beside the prose marks each time phrase.</div>
-</div>
+<p align="center"><img src="images/scene-time-cue-bar.png" alt="A scene with the time cue bar beside the prose and the scene time summary in the title bar" width="720"></p>
+<p align="center"><sub>The title bar shows when the scene starts and how much time is accounted for. The bar beside the prose marks each time phrase.</sub></p>
 
 ## The title bar
 
@@ -41,10 +37,8 @@ Written-out numbers are read in full. "Thirty-one days" counts as 31 days, and "
 
 ## Checking elapsed time
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/scene-time-panel.png" alt="The Scene Time panel listing time phrases with their paragraphs and a confirmed contribution" style="width: 600px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">The Scene Time panel: each time phrase with its paragraph, what it adds, and the story clock after it.</div>
-</div>
+<p align="center"><img src="images/scene-time-panel.png" alt="The Scene Time panel listing time phrases with their paragraphs and a confirmed contribution" width="600"></p>
+<p align="center"><sub>The Scene Time panel: each time phrase with its paragraph, what it adds, and the story clock after it.</sub></p>
 
 The panel lists every time phrase in the scene. For each one, choose what it means and confirm it:
 

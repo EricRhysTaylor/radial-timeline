@@ -1,6 +1,7 @@
 Keep the book’s notes beside the wheel in an Obsidian Bases view. The Timetable shows scenes, story beats, sketches, and other manuscript notes in rows, with scene status, subplot membership, dates, durations, and synopses visible together. Scenes, beats, and sketches appear wherever they sit in the book folder; other notes appear only from the book folder’s top level, so feedback, cuts, and publishing material kept in subfolders stay out of the way. The **Table** view in the same file lists everything.
 
-> **Available in 7.5.0.** Enable **Bases** under **Settings → Core plugins**. The Timetable works with Obsidian 1.13; the Act and Status boards require Obsidian 1.14 or later. Mode following, the lens, coloring by a column, and bulk edits arrived in 7.5.1.
+> [!NOTE]
+> Enable **Bases** under **Settings → Core plugins**. The Timetable works with Obsidian 1.13; the Act and Status boards require Obsidian 1.14 or later.
 
 ![The Timetable beside the radial timeline, with scene numbers, colored subplot squares, dates, durations, and synopses](images/timetable-sidebyside.webp)
 
@@ -59,7 +60,7 @@ Notes you open from the Timetable appear in a pane below the table, so the wheel
 - A note that is already open somewhere is shown where it is, not opened twice.
 - **Cmd-click** (Ctrl-click on Windows and Linux) opens a new tab instead.
 - Pin the note in the pane to keep it: the next note opens in a tab beside it.
-- With no Timetable showing, the wheel opens notes as before.
+- The reading pane is used only while a Timetable is showing.
 
 ## Write sketches beside scenes
 

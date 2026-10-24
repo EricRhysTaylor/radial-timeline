@@ -1,14 +1,7 @@
-Book Designer is the guided setup panel behind the **`Book designer`** command. It generates a manuscript scaffold tailored to your project: scene files, act distribution, subplot rotation, characters, and optional beat notes.
+The **`Book designer`** command opens a guided setup panel that generates a manuscript scaffold for your project: scene files, act distribution, subplot rotation, characters, and optional beat notes.
 
-<a href="https://youtu.be/0vkLaI_LewM?si=-02Gem1HQwbI0E9E" target="_blank" rel="noopener">
-  <p align="center">
-    <img src="https://i.ytimg.com/vi/0vkLaI_LewM/maxresdefault.jpg" alt="Book Designer walkthrough" style="max-width: 80%; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
-  </p>
-  <p align="center" style="font-family: sans-serif; font-size: 16px; margin-top: 10px;">
-    Book Designer walkthrough<br>
-    Full video on YouTube
-  </p>
-</a>
+<p align="center"><a href="https://youtu.be/0vkLaI_LewM"><img src="https://i.ytimg.com/vi/0vkLaI_LewM/maxresdefault.jpg" width="560" alt="Book Designer walkthrough"></a></p>
+<p align="center"><sub>Book Designer walkthrough · Full video on YouTube</sub></p>
 
 ## Open Book Designer
 
@@ -16,10 +9,8 @@ You can open Book Designer in two ways:
 1.  **Command Palette**: Open the Command Palette (`Cmd + P` on Mac, `Ctrl + P` on Windows/Linux) and search for **`Radial timeline: Book designer`**.
 2.  **Welcome Screen**: Under **Set Book Project**, choose **→ or open Book Designer**.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-book-designer.png" alt="Book Designer panel: target book, scene count, three acts, three subplots and the live preview" style="width: 480px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Book Designer — configure structure, subplots, and scene sets with a live preview you can drag scenes in</div>
-</div>
+<p align="center"><img src="images/panel-book-designer.png" alt="Book Designer panel: target book, scene count, three acts, three subplots and the live preview" width="480"></p>
+<p align="center"><sub>Book Designer — configure structure, subplots, and scene sets with a live preview you can drag scenes in</sub></p>
 
 ## Workflow
 
@@ -55,45 +46,13 @@ You'll see a notification confirming the number of scenes and files created. You
 ## Customizing Scene Properties
 
 Book Designer supports two built-in scene property profiles:
-1.  **Core properties** (the **Base Scene Set**): A minimal profile with the essential fields required for Radial Timeline.
+1.  **Core properties**: A minimal profile with the essential fields required for Radial Timeline.
 2.  **Advanced properties**: A richer profile with analysis, stats, and additional workflow fields.
 
 ### Adding Custom Properties
-If your writing methodology uses fields beyond the built-in keys (for example Dramatica signposts or your own custom labels), you can add them to the advanced scene properties:
-1.  Go to **Settings → Core → Scene properties**.
-2.  Enable **Scene properties editor**.
-3.  Add your custom keys to the list.
-4.  In Book Designer, select **Advanced properties**.
 
-> **Note**: Radial Timeline already tracks draft status (`Status` and `Publish Stage`), point of view (`POV`), and many other metadata fields in the built-in properties. Only add custom keys for data that your methodology requires beyond what the plugin already provides. See [Scene Properties](YAML-Frontmatter) for the full list of built-in fields.
+To track fields beyond the built-in keys, such as Dramatica signposts or your own labels, add them as advanced properties with **Show advanced properties editor** under **Settings → Core → Scene properties**, then choose **Advanced properties** in Book Designer. Check the built-in fields first: `Status`, `Publish Stage`, `POV` and many others are already tracked. See [Advanced properties editor](YAML-Frontmatter#advanced-yaml-editor).
 
 ## Custom Beat Systems
 
-If you use a story structure not listed in the standard options:
-1.  Go to **Settings → Core → Story beats system** and select **Custom**.
-2.  Name your beat system and add beats in the **Custom story beat system editor**. Assign each beat to an act.
-3.  In the Book Designer, set **Generate … beats** to **Yes** to generate beat notes for your custom system.
-
-After generating beats, you can reorder or rename them in the editor. Row colors indicate sync status (green = aligned, orange = needs merge, red = duplicate). Use **Merge** to realign existing files after changes.
-
-You can also create custom beat notes manually:
-*   Create a new note for each major beat (e.g., "Pinch Point 1").
-*   Add the following frontmatter (replace `Custom` with your system name):
-    ```yaml
-    Class: Beat
-    Purpose: Why this beat exists in the structure.
-    Beat Model: Your System Name
-    ```
-*   Radial Timeline will detect these notes and display them in Gossamer mode. The `Beat Model` value must match the system name in settings to be recognized.
-
-> [!NOTE]
-> Custom beat notes use the same properties structure as preset systems. Use the **Beat properties editor** in Settings → Core → Story beats system to add your own beat-specific fields and hover metadata. You can also save and switch between custom beat systems (saved sets).
-
-## Advanced Metadata
-
-Use **Advanced properties** to track fields specific to your writing method:
-
-1.  Go to **Settings → Core → Scene properties**.
-2.  Enable **Scene properties editor**.
-3.  Add custom keys for your methodology.
-4.  When you generate or edit scenes, these properties will be preserved, allowing you to use the plugin's timeline to visualize your story while maintaining your specific data structure in the notes.
+To use a structure that isn't in the built-in list, set up a **Custom** system in [Settings → Core → Story beats system](Settings-Core#story-beats-system), then set **Generate … beats** to **Yes** in Book Designer to create its beat notes.

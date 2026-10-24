@@ -1,13 +1,11 @@
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/settings-core.png" alt="Settings → Core tab" style="width: 600px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Settings → Core</div>
-</div>
+<p align="center"><img src="images/settings-core.png" alt="Settings → Core tab" width="600"></p>
+<p align="center"><sub>Settings → Core</sub></p>
 
 Configure book profiles, progress tracking, runtime estimation, story beats, scene properties, chronology, POV, planetary time, and ring colors.
 
 ## Books
 
-To import an existing draft, use **Choose manuscript**. **Scan for exports** suggests potential local exports; scanning runs automatically when no configured book folder is usable. Review export completeness, narrative order, and metadata in [Manuscript onboarding](Onboard-Existing-Manuscript), which also lists build availability.
+To import an existing draft, use **Choose manuscript**. **Scan for exports** suggests potential local exports; scanning runs automatically when no configured book folder is usable. Review export completeness, narrative order, and metadata in [Import a manuscript](Onboard-Existing-Manuscript).
 
 
 *   **Book profile manager**: Create one profile per book, set the title, and link each profile to its manuscript folder.
@@ -19,10 +17,8 @@ To import an existing draft, use **Choose manuscript**. **Scan for exports** sug
 *   **Create draft**: Make a sibling draft copy of a book folder and add it as a new book profile.
 *   **Remove profile**: Removes the book profile and preserves its files.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-project-metadata.png" alt="Project metadata dialog: genre, project stage, public label and description" style="width: 380px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Project metadata — the description adds optional details on the Community website</div>
-</div>
+<p align="center"><img src="images/panel-project-metadata.png" alt="Project metadata dialog: genre, project stage, public label and description" width="380"></p>
+<p align="center"><sub>Project metadata — the description adds optional details on the Community website</sub></p>
 
 ## Progress And Status
 
@@ -37,10 +33,8 @@ Manage your project milestones and status tracking.
 
 Target dates are validated to ensure proper stage ordering. Overdue dates are highlighted in red. Each stage has its own color-coded marker on the timeline.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/progress-target-ticks.png" alt="Stage target markers on the year ring at the centre of the timeline, with the Author target tooltip" style="width: 400px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Stage target markers on the centre year ring — hover one to see its date</div>
-</div>
+<p align="center"><img src="images/progress-target-ticks.png" alt="Stage target markers on the year ring at the centre of the timeline, with the Author target tooltip" width="400"></p>
+<p align="center"><sub>Stage target markers on the centre year ring — hover one to see its date</sub></p>
 
 *   **Show estimated completion date**: Toggles the predicted completion tick mark on the timeline.
 *   **Zero draft mode**: A focused mode for first-draft writing. Intercepts clicks on scenes with `Publish Stage = Zero` and `Status = Complete` to open a `Pending Edits` panel instead of the full note.
@@ -71,7 +65,7 @@ Sessions is a Core workflow for writing accountability and basic planning.
 *   **Writing stats**: A collapsible local stats panel summarizes today, the last 7 days, and the last 30 days from timer records and scene completion dates.
 *   **Timeline count/session button**: The compact title-bar button opens the writing-session popover. Start an open-ended session or a countdown sprint, then pause, resume, stop, or discard it there.
 *   **Session ring**: While a session is active, a thin timer ring appears just outside the rainbow progress ring. It fills toward the active time or word target.
-*   **Save session details**: Saving a timer session opens a confirmation modal for minutes, words added, scenes completed, pages edited, and an optional note.
+*   **Save session details**: Saving a timer session opens a confirmation panel for minutes, words added, scenes completed, pages edited, and an optional note.
 
 Runtime and export tools may read these values, but Sessions owns the writing/session estimate settings.
 
@@ -99,23 +93,59 @@ Runtime estimation is a Pro workflow configured from the Core tab.
 *   **Narration words per minute**: Reading pace for all content (default 150).
 
 > [!NOTE]
-> See [Pro](Pro) for the full runtime workflow and [Runtime view](Narrative-Mode#runtime-view) for the visualization.
+> Runtime estimation is a [Pro](Pro) feature. See [Runtime estimator](Commands#runtime-estimator) for the estimate and [Runtime view](Narrative-Mode#runtime-view) for the visualization.
 
 <a name="story-beats-system"></a>
 ## Story Beats System
 
-Configure the structural pacing guide for your story.
+Configure the structural pacing guide for your story. [Gossamer Mode](Gossamer-Mode) scores the beats you set up here.
 
-*   **Story beats system**: Select a preset structure (**Save The Cat**, **Hero's Journey**) or choose **Custom**.
-*   **Custom story beat system editor**: Name your beat system, add beats, assign each beat to an act, and drag to reorder.
-*   **Create beat notes**: Generate beat notes in the active book folder.
+*   **Story beats system**: Choose a built-in structure (**Save the Cat**, **Hero's Journey**, **Classic Dramatic Structure**, **Podcast Narrative Arc**, **YouTube Explainer Arc**, **Documentary Narrative Arc**, **Romance Tropes Ladder**, **Thriller Escalation Ladder**) or a custom system.
+*   **Custom story beat system editor**: Name your system (the name is written to each beat note's `Beat Model` field), add beats with **+**, assign each beat to an act, and drag to reorder within or across acts. Edit names inline; after renaming or reordering, use **Repair beat notes** to update existing files.
+*   **Create beat notes**: Generates one beat note per beat in the active book folder, with `Class: Beat`, `Purpose`, `Beat Model`, `Range` and the other beat properties filled in, so Gossamer recognizes them at once. The button is disabled when every beat already has a note, and shows how many notes it will create.
 *   **Beat filename numbering**: Generated beat notes use decimal minor prefixes (for example, `7.01 Midpoint.md`) so scene integer slots remain canonical.
-*   **Repair beat notes**: Updates `Act`, `Beat Model`, and `Class`, preserving filenames.
+*   **Repair beat notes**: Updates `Act`, `Beat Model`, and `Class` on existing beat notes, preserving filenames.
 *   **Beat properties editor**: Customize additional beat properties and choose which fields appear in beat hover metadata. Stored per beat system.
-*   **Saved sets**: Save and switch between multiple custom beat systems.
+*   **Saved sets**: Save and switch between multiple custom beat systems. Each set stores its beats, beat properties, and hover fields.
 
-> [!NOTE]
-> Learn more in [Gossamer Mode](Gossamer-Mode) and [Beat Audit + Heal](Beat-Audit-Heal).
+Row colors in the editor show how your beat list matches the beat notes:
+
+*   **Green**: the beat note exists and is aligned.
+*   **Orange**: the beat note exists but sits in the wrong act. **Repair beat notes** fixes it.
+*   **Red**: a duplicate title, or more than one file matches. Resolve it by hand.
+*   **No highlight**: a new beat with no note yet.
+
+<a name="beat-audit-and-repair"></a>
+### Beat Audit and Repair
+
+The beat audit checks your beat notes against the active beat system. **Repair beat notes** brings existing notes into line with the beat list. It changes frontmatter only and never renames files.
+
+| Check | Description |
+|-------|-------------|
+| **Beat identity** | Matching is by **canonical beat name** (normalized title; prefix numbers are stripped for matching). |
+| **Act placement** | The audit compares each note's `Act` with the beat's act in the system. A mismatch is **misaligned**. |
+| **Manuscript sequence** | Beats are ranked by filename prefix and compared with the system's beat order. A beat whose position diverges is flagged **out of manuscript sequence**. |
+| **Duplicates** | Several beat notes normalize to the same canonical name. Flagged as **duplicate**; resolve by hand (delete or rename one). |
+| **Missing** | Expected beats with no matching note. Flagged as **new**. |
+| **Missing Beat Model** | Notes that match a beat but lack `Beat Model`, or carry a different one. Repair fixes these. |
+
+A beat is **synced** when exactly one note matches it, its `Act` matches, and it sits in the system's order within the manuscript.
+
+**Repair beat notes** sets `Act` to the beat's act, `Beat Model` to the active system name, and `Class` to `Beat` when missing. It never touches `Purpose`, custom fields, or the note body, and it skips duplicates, path conflicts, and beats with no note.
+
+Prefix numbers matter for **relative order**, not their exact value: `5.01 Midpoint` is fine as long as it sorts into the right place among the other beats. To fix a beat flagged out of sequence, rename its file yourself; repair doesn't rename files.
+
+### Beat Notes by Hand
+
+You can also create beat notes yourself. Give each one this frontmatter, with your system's name as the `Beat Model`:
+
+```yaml
+Class: Beat
+Purpose: Why this beat exists in the structure.
+Beat Model: Your System Name
+```
+
+The `Beat Model` value must match the system name in settings for the note to be recognized. Custom beat notes use the same properties as the built-in systems, so the beat properties editor can extend them with your own fields.
 
 <a name="acts"></a>
 ## Acts
@@ -144,7 +174,7 @@ Important behavior:
 *   Radial Timeline-maintained scene normalization only manages the **core** and current **advanced** scene-property fields.
 *   Scene-property maintenance preserves your custom fields and fields from other plugins.
 *   Reordering keeps custom fields beside the managed property directly above them.
-*   **Remap frontmatter field keys** now lives in [Settings → Advanced → Configuration](Settings-Advanced#configuration).
+*   **Remap frontmatter field keys** lives in [Settings → Advanced → Configuration](Settings-Advanced#configuration).
 
 > [!NOTE]
 > Use [Scene Properties (Core + Advanced)](YAML-Frontmatter) for the full schema and examples.

@@ -1,10 +1,10 @@
-### Reorder Scenes
+## Reorder Scenes
 
 Scenes in Radial Timeline can be reordered in two ways: **by renaming the scene title** or **by dragging scenes in Narrative Mode**.
 
 ---
 
-#### Prefix Numbering Convention
+### Prefix Numbering Convention
 
 - **Scenes** use canonical integer prefixes: `1`, `2`, `3`, ...
 - **Beats** use decimal minor prefixes between scene integers: `1.01`, `1.02`, ...
@@ -13,7 +13,7 @@ Scenes in Radial Timeline can be reordered in two ways: **by renaming the scene 
 
 ---
 
-#### Method 1: Reorder by Scene Title (All Versions)
+### Method 1: Reorder by Scene Title (All Versions)
 
 Radial Timeline uses the **leading scene number in the scene title** to determine order.
 
@@ -33,7 +33,7 @@ Only the number controls ordering—the text after it is the title.
 
 ---
 
-#### Acts and Scene Order
+### Acts and Scene Order
 
 Scene order is **act-specific**.
 
@@ -55,7 +55,7 @@ Always update both:
 
 ---
 
-#### Method 2: Drag & Drop (Narrative Mode Only)
+### Method 2: Drag & Drop (Narrative Mode Only)
 
 - Switch to **Narrative Mode**
 - Drag a **scene** or **beat note** on the **outer ring** (cursor becomes double arrow)
@@ -72,26 +72,24 @@ This method automatically updates ordering for you.
 
 **Note:** Reordering works on the **outer ring only**. You can drag into an empty act by dropping onto one of the empty **void** cells for that act.
 
-### Move Scenes Between Subplots
-
-**Move a scene to another subplot** (Narrative, Chronologue and Progress modes): drag the scene where it sits on one subplot ring and drop it on another subplot's ring, on a scene or an empty cell. It leaves the subplot you grabbed it from and joins the one you dropped it on; its other subplots stay. Hold **Shift** as you drop to add the subplot and keep the one you grabbed. The ring you're over is outlined in its subplot color. On a move, the scene takes that color too; with Shift it keeps its own, since it stays where it is. A label by the pointer says what the drop will do, and the confirmation uses the destination's color. In Narrative and Chronologue the outer ring lists every scene and keeps its own drag (reorder, re-date), so start from the scene's subplot ring. In Progress mode the outer ring is Main Plot and works like any subplot ring. A scene with no Subplot is in Main Plot. Only the scene's Subplot field changes: nothing is renamed or reordered, and its act stays put even if you drop it in another act. Each change offers **Undo**, and right-clicking a scene gives the same Move, Add and Remove actions.
-
----
-
-#### Summary
+### Summary
 
 - Scene order is controlled by the **number at the start of the title**
 - Scene order is **scoped to the Act**
 - Changing acts requires updating the **YAML `Act:` field**
 - Narrative Mode supports **drag-and-drop reordering**
 
+## Move Scenes Between Subplots
+
+**Move a scene to another subplot** (Narrative, Chronologue and Progress modes): drag the scene where it sits on one subplot ring and drop it on another subplot's ring, on a scene or an empty cell. It leaves the subplot you grabbed it from and joins the one you dropped it on; its other subplots stay. Hold **Shift** as you drop to add the subplot and keep the one you grabbed. The ring you're over is outlined in its subplot color. On a move, the scene takes that color too; with Shift it keeps its own, since it stays where it is. A label by the pointer says what the drop will do, and the confirmation uses the destination's color. In Narrative and Chronologue the outer ring lists every scene and keeps its own drag (reorder, re-date), so start from the scene's subplot ring. In Progress mode the outer ring is Main Plot and works like any subplot ring. A scene with no Subplot is in Main Plot. Only the scene's Subplot field changes: nothing is renamed or reordered, and its act stays put even if you drop it in another act. Each change offers **Undo**, and right-clicking a scene gives the same Move, Add and Remove actions.
+
 ![Dragging a scene from Relationship to Investigation: the destination ring highlights and the pointer label previews the membership change](images/release-7-5-subplot-drag.png)
 
-### Change a Scene’s Date
+## Change a Scene’s Date
 
 Drag a scene on Chronologue’s outer All Scenes ring, then review its new date and whether undated followers should travel with it. See [Chronologue placement](Chronologue-Mode#drag-a-scene-to-change-its-date).
 
-### Manage Subplots in Bulk
+## Manage Subplots in Bulk
 
 Need to rename or delete a subplot across dozens of scenes? Use the **[Subplot manager](Commands#manage-subplots)** command (command palette → "Radial timeline: Subplot manager"). The panel lets you:
 
@@ -100,12 +98,10 @@ Need to rename or delete a subplot across dozens of scenes? Use the **[Subplot m
 
 Use it to keep subplot names consistent after reorganizing your story.
 
-### Search
+## Search
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/ui-search-results.png" alt="Search results with highlighted scene numbers on the timeline" style="width: 500px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Search — matching scenes highlighted in yellow across all subplot rings</div>
-</div>
+<p align="center"><img src="images/ui-search-results.png" alt="Search results with highlighted scene numbers on the timeline" width="500"></p>
+<p align="center"><sub>Search — matching scenes highlighted in yellow across all subplot rings</sub></p>
 
 Open **Radial timeline: Timeline search**, choose **Search options**, and press **Enter** to search.
 
@@ -117,5 +113,5 @@ Timeline fields is selected by default. Your scope choices are saved. Matching s
 
 Local LLM assist sends the selected material to your configured Local LLM endpoint. Use a server on the same machine to keep manuscript text on-device.
 
-### Rotate the timeline
+## Rotate the timeline
 In Narrative and Progress modes you can use the **rotation toggle** (arrow icon near the outer ring) to rotate the timeline for easier reading. The rotation offset is **act-aware** (based on your configured **Act count**) and keeps scene number squares oriented correctly.

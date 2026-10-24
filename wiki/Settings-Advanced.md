@@ -1,13 +1,9 @@
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/settings-advanced.png" alt="Settings → Advanced tab" style="width: 600px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Settings → Advanced</div>
-</div>
+Timeline display options, frontmatter key remapping, ripple rename, and log locations.
 
-The Advanced tab holds lower-level system and workflow controls.
+<p align="center"><img src="images/settings-advanced.png" alt="Settings → Advanced tab" width="600"></p>
+<p align="center"><sub>Settings → Advanced</sub></p>
 
 ## Configuration
-
-Advanced is currently grouped into three areas:
 
 ### Timeline Display
 

@@ -1,14 +1,10 @@
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/settings-social.jpg" alt="Settings → Social tab" style="width: 600px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Settings → Social</div>
-</div>
+<p align="center"><img src="images/settings-social.jpg" alt="Settings → Social tab" width="600"></p>
+<p align="center"><sub>Settings → Social</sub></p>
 
 The Author Progress Report (APR) creates a spoiler-safe progress graphic for newsletters, social posts, Patreon, and Kickstarter updates.
 
-<div style="text-align: center; margin: 20px 0;">
-  <img src="images/panel-apr.png" alt="Author Progress Report panel with preview and export options" style="width: 500px; max-width: 100%; border-radius: 8px;" />
-  <div style="font-size: 0.85em; margin-top: 8px; color: #666;">Author Progress Report — configure, preview, and export your progress graphic</div>
-</div>
+<p align="center"><img src="images/panel-apr.png" alt="Author Progress Report panel with preview and export options" width="500"></p>
+<p align="center"><sub>Author Progress Report — configure, preview, and export your progress graphic</sub></p>
 
 ## Progress Tracking
 
@@ -32,7 +28,8 @@ Full Manuscript measures the book across the full revision path from **Zero** to
 
 Date Goal measures progress through a date range. Set a start date and target date, and APR will show how far you have moved through that range.
 
-> **Note**: APR tracking is separate from the timeline's Estimated Completion feature, which projects pace inside the working manuscript view.
+> [!NOTE]
+> APR tracking is separate from the timeline's Estimated Completion feature, which projects pace inside the working manuscript view.
 
 ## Reveal Options
 
@@ -42,7 +39,7 @@ Control how much of your story structure is visible:
 |--------|---------------|
 | **Subplots** | Multiple concentric rings for each subplot |
 | **Acts** | Act boundary spokes dividing the timeline |
-| **Status Colors** | Scene stage/status colors (Todo, Draft, Complete, etc.) |
+| **Status Colors** | Scene stage/status colors (Todo, Working, Complete, etc.) |
 | **% Complete** | Large percentage number in the center |
 
 **Tip**: Uncheck all options for a simple progress ring—perfect for early teasers or minimal updates. Manual reveal options are disabled when Teaser Reveal is enabled.
@@ -70,7 +67,7 @@ You can click the middle stages in the preview (Scenes, Colors) to skip them and
 
 ## Preview Size
 
-The **Size** selector (Small, Medium, Large) controls the **design intent** of the graphic — which elements are shown and how dense the layout is — not the final export resolution. The dimensions below refer to the in-modal preview only. For a bare progress ring with no text or labels, switch the view mode to **Ring**.
+The **Size** selector (Small, Medium, Large) controls the **design intent** of the graphic — which elements are shown and how dense the layout is — not the final export resolution. The dimensions below refer to the panel's preview only. For a bare progress ring with no text or labels, switch the view mode to **Ring**.
 
 | Size | Preview | Design Intent |
 |------|---------|---------------|
@@ -92,17 +89,17 @@ The combination of **Size** (design intent) and **Export quality** (resolution) 
 
 ## Styling Options
 
-- **Transparent Background**: Recommended for embedding on any background
-- **Background Color**: Use when transparency isn't supported
-- **Theme Contrast**: Light or dark strokes for visibility against your background
-- **Book/Author Color**: Color for the perimeter text ring
-- **Branding Color**: Color for the "RT" badge
+- **Choose Palette**: Applies curated colors across the text elements, seeded from the Title color.
+- **Title**, **Author**, **% Number**, **Stage / RT**: Font, weight, and color for each text element. The Radial Timeline logo follows the Publish Stage color.
+- **Transparent mode**: No background fill, so the graphic adapts to any page. Works for PNG and SVG on platforms that keep transparency.
+- **Background color**: Bakes in a solid background for email newsletters, Kickstarter, PDF exports, or platforms that rasterize SVGs.
+- **Borders**: Scene borders and act division lines in white, black, none, or a custom color.
 
 ## Export And Refresh
 
 APR exports a static **PNG or SVG** file. The **Output file** row in the panel is clickable and reveals the current export file in your system file manager.
 
-*   **Update frequency**: Manual Only, Daily, Weekly, or Monthly. Manual mode requires clicking the update button in the modal.
+*   **Update frequency**: Manual Only, Daily, Weekly, or Monthly. Manual mode requires clicking the update button in the APR panel.
 *   **Refresh alert threshold**: Days before showing a refresh reminder in the Radial Timeline View.
 *   **Output file**: Shows the current export file path for the default report or the selected campaign. Click it to reveal the file.
 *   **Auto-update export paths**: When size or schedule changes, updates the default export path if it still matches the default pattern.
@@ -120,7 +117,7 @@ Each campaign can have its own update frequency, refresh alert threshold, output
 
 ### Send A Campaign To Community
 
-Community sharing is available when this vault is connected and **Profile, books + progress report** (Level 2) or **Profile, books + writing activity** (Level 3) is selected in Community settings.
+Community sharing is available when this vault is connected and **Level 2 — Profile, books + APR** or **Level 3 — Profile, books + writing activity** is selected in Community settings.
 
 For each campaign:
 

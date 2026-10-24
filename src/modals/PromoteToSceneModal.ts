@@ -136,7 +136,8 @@ export class PromoteToSceneModal extends ErtModal {
             const dropdownSlot = positionRow.parentElement?.createDiv({ cls: 'ert-drag-confirm-row-control' });
             if (dropdownSlot) {
                 const dropdown = new DropdownComponent(dropdownSlot);
-                dropdown.addOption('', t('ui.promoteToScene.keepName'));
+                // With a title to give, the name changes anyway; the choice is only whether it gets a number.
+                dropdown.addOption('', this.options.askTitle ? t('ui.promoteToScene.noNumber') : t('ui.promoteToScene.keepName'));
                 for (const anchor of this.options.anchors) {
                     dropdown.addOption(anchor.path, t('ui.promoteToScene.afterScene', { scene: anchor.label }));
                 }

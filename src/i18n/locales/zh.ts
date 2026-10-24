@@ -3286,6 +3286,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             titleColorName: '标题 + 颜色',
             titleColorDesc: '为微型环命名并设置颜色。',
             titlePlaceholder: '标题',
+            noNumber: '不编号',
             colorAriaLabel: '{{title}} 颜色',
             microBackdropFallback: '微型背景',
             dateRangeName: '日期范围',

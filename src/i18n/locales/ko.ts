@@ -3284,6 +3284,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             titleColorName: '제목 + 색상',
             titleColorDesc: '마이크로링의 이름을 정하고 색상을 설정하세요.',
             titlePlaceholder: '제목',
+            noNumber: '번호 붙이지 않기',
             colorAriaLabel: '{{title}} 색상',
             microBackdropFallback: '마이크로 백드롭',
             dateRangeName: '날짜 범위',

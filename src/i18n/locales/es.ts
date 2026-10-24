@@ -3287,6 +3287,7 @@ export const es: TranslationKeys = {
             "titleColorName": "Título + Color",
             "titleColorDesc": "Nombra el microanillo y establece su color.",
             "titlePlaceholder": "Título",
+            "noNumber": "No numerarla",
             "colorAriaLabel": "{{title}} Color",
             "microBackdropFallback": "Microtelón de fondo",
             "dateRangeName": "Rango de fechas",

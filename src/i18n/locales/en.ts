@@ -2968,6 +2968,7 @@ export const en = {
             titleColorName: 'Title + color',
             titleColorDesc: 'Name the microring and set its color.',
             titlePlaceholder: 'Title',
+            noNumber: 'Don’t number it',
             colorAriaLabel: '{{title}} color',
             microBackdropFallback: 'Micro backdrop',
             dateRangeName: 'Date range',

@@ -3287,6 +3287,7 @@ export const vi: TranslationKeys = {
             "titleColorName": "Tiêu đề + Màu sắc",
             "titleColorDesc": "Đặt tên cho microring và đặt màu của nó.",
             "titlePlaceholder": "Tiêu đề",
+            "noNumber": "Không đánh số",
             "colorAriaLabel": "{{title}} màu",
             "microBackdropFallback": "phông nền siêu nhỏ",
             "dateRangeName": "phạm vi ngày",

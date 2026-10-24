@@ -3285,6 +3285,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             titleColorName: 'タイトル + 色',
             titleColorDesc: 'マイクロリングに名前を付け、色を設定します。',
             titlePlaceholder: 'タイトル',
+            noNumber: '番号を付けない',
             colorAriaLabel: '{{title}} の色',
             microBackdropFallback: 'マイクロバックドロップ',
             dateRangeName: '期間',

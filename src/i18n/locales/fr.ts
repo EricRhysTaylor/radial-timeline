@@ -3287,6 +3287,7 @@ export const fr: TranslationKeys = {
             "titleColorName": "Titre + Couleur",
             "titleColorDesc": "Nommez le microring et définissez sa couleur.",
             "titlePlaceholder": "Titre",
+            "noNumber": "Ne pas la numéroter",
             "colorAriaLabel": "{{title}} Couleur",
             "microBackdropFallback": "micro-campagne",
             "dateRangeName": "plage de dates",

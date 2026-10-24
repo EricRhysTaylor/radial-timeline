@@ -597,11 +597,13 @@ export class TimetableView extends BasesView {
     /** A header narrower than its label shows only its icon, with the column's name on hover. */
     private fitHeaderLabel(header: HTMLElement): void {
         const label = header.querySelector<HTMLElement>('.ert-timetable__prop-label');
-        if (!label || !header.querySelector('.ert-timetable__prop-icon')) return;
+        const icon = header.querySelector<HTMLElement>('.ert-timetable__prop-icon');
+        if (!label || !icon) return;
         header.removeClass('is-icon-only');
         const iconOnly = label.scrollWidth > label.clientWidth + 1;
         header.toggleClass('is-icon-only', iconOnly);
-        setTooltip(header, iconOnly ? label.getText() : '', { placement: 'bottom' });
+        // On the icon: the header's own text still holds the hidden label, which would make the tooltip look redundant.
+        setTooltip(icon, iconOnly ? label.getText() : '', { placement: 'bottom' });
     }
 
     // ── Resetting the columns ───────────────────────────────────────────
@@ -1375,9 +1377,21 @@ export class TimetableView extends BasesView {
         }
     }
 
-    /** A note was renamed: its drawer, pick and expanded references move with it. */
+    /**
+     * A note was renamed: its drawer, pick and expanded references move with
+     * it. Its row takes the new name at once, even while a redraw waits for
+     * the author to finish typing in a drawer.
+     */
     private followRename(path: string, oldPath: string): void {
         let moved = false;
+        const row = this.rowEls.get(oldPath);
+        if (row) {
+            this.rowEls.delete(oldPath);
+            this.rowEls.set(path, row);
+            row.dataset.path = path;
+            const basename = path.slice(path.lastIndexOf('/') + 1).replace(/\.md$/, '');
+            row.querySelector('.ert-timetable__name')?.setText(displayName(basename));
+        }
         const drawer = this.drawers.get(oldPath);
         if (drawer) {
             this.drawers.delete(oldPath);

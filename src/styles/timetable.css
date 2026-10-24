@@ -181,11 +181,13 @@
   font-size: var(--font-smallest);
 }
 
-/* Due as relative time: late, within a week, or done. */
+/* Due as relative time: late, within a week, or done.
+   Middle-aligned: a leading check icon would otherwise set the baseline and lift the text. */
 .ert-timetable__due {
   display: inline-flex;
   align-items: center;
   gap: var(--size-2-1);
+  vertical-align: middle;
 }
 
 .ert-timetable__due.is-late {
@@ -263,6 +265,7 @@
   color: var(--text-muted);
   font-size: var(--font-smallest);
   font-variant-numeric: tabular-nums;
+  vertical-align: middle;
 }
 
 .ert-timetable__badge-icon {

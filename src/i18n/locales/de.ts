@@ -3284,6 +3284,7 @@ export const de: DeepPartial<TranslationKeys> = {
             titleColorName: 'Titel + Farbe',
             titleColorDesc: 'Benennen Sie den Mikroring und legen Sie seine Farbe fest.',
             titlePlaceholder: 'Titel',
+            noNumber: 'Nicht nummerieren',
             colorAriaLabel: 'Farbe für {{title}}',
             microBackdropFallback: 'Mikro-Backdrop',
             dateRangeName: 'Datumsbereich',

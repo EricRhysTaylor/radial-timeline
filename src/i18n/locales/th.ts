@@ -3287,6 +3287,7 @@ export const th: TranslationKeys = {
             "titleColorName": "ชื่อเรื่อง + สี",
             "titleColorDesc": "ตั้งชื่อไมโครริงและกำหนดสี",
             "titlePlaceholder": "ชื่อเรื่อง",
+            "noNumber": "ไม่ใส่หมายเลข",
             "colorAriaLabel": "{{title}}สี",
             "microBackdropFallback": "ฉากหลังไมโคร",
             "dateRangeName": "ช่วงวันที่",

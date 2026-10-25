@@ -6077,7 +6077,7 @@ export const de: DeepPartial<TranslationKeys> = {
             keyNewSketch: 'Neue Skizze',
             keyNewSketchDetail: 'oder + neben einem Akt',
             keyLens: 'Linse',
-            keyLensDetail: 'Zeilen dieser Tabelle auf dem Rad hervorheben',
+            keyLensDetail: 'Zeilen dieser Tabelle auf dem Rad hervorheben; von selbst an, solange die Ansicht einen Filter hat',
             keyMode: 'Modus',
             keyModeDetail: 'folgt der Timeline; klicken, um einen festzulegen',
             keyDayDividers: 'Datumstrenner',

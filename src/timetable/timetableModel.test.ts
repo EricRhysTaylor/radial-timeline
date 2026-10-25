@@ -12,6 +12,7 @@ import {
     dueStatus,
     dueStepNeedsConfirm,
     elapsedSincePrevious,
+    filterSignature,
     groupProgress,
     medianOf,
     planColoring,
@@ -345,5 +346,23 @@ describe('dueStepNeedsConfirm', () => {
         expect(dueStepNeedsConfirm(dueStatus('2026-10-27', false, today))).toBe(true);
         expect(dueStepNeedsConfirm(dueStatus('2026-12-01', false, today))).toBe(true);
         expect(dueStepNeedsConfirm(dueStatus(undefined, false, today))).toBe(true);
+    });
+});
+
+describe('filterSignature', () => {
+    it('names a filter with at least one condition, however it is grouped', () => {
+        expect(filterSignature({ and: ['date(When).hour >= 12'] })).toBe('{"and":["date(When).hour >= 12"]}');
+        expect(filterSignature('Status == "Todo"')).toBe('"Status == \\"Todo\\""');
+        expect(filterSignature({ or: [{ and: [] }, { not: ['file.hasTag("cut")'] }] })).not.toBeNull();
+    });
+
+    it('is null for no filter, or one whose groups are all empty', () => {
+        expect(filterSignature(undefined)).toBeNull();
+        expect(filterSignature({ and: [] })).toBeNull();
+        expect(filterSignature({ or: [{ and: [] }, '  '] })).toBeNull();
+    });
+
+    it('changes when the filter changes', () => {
+        expect(filterSignature({ and: ['date(When).hour >= 12'] })).not.toBe(filterSignature({ and: ['date(When).hour >= 18'] }));
     });
 });

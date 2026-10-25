@@ -6077,7 +6077,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             keyNewSketch: '새 스케치',
             keyNewSketchDetail: '또는 막 옆의 +',
             keyLens: '렌즈',
-            keyLensDetail: '이 표의 행들을 휠에서 강조',
+            keyLensDetail: '이 표의 행들을 휠에서 강조. 보기에 필터가 있으면 자동으로 켜짐',
             keyMode: '모드',
             keyModeDetail: '타임라인을 따름 · 클릭해 고정',
             keyDayDividers: '날짜 구분선',

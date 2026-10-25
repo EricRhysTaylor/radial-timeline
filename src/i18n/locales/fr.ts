@@ -6080,7 +6080,7 @@ export const fr: TranslationKeys = {
             "keyNewSketch": "nouveau croquis",
             "keyNewSketchDetail": "ou + à côté d'un acte",
             "keyLens": "Lentille",
-            "keyLensDetail": "Allumez les rangées de cette table sur le volant",
+            "keyLensDetail": "Met en évidence sur la roue les lignes de ce tableau ; s’active seul tant que la vue a un filtre",
             "keyMode": "Mode",
             "keyModeDetail": "suit la chronologie ; Cliquez pour en épingler un",
             "keyDayDividers": "Diviseurs de date",

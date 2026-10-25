@@ -5761,7 +5761,7 @@ export const en = {
             keyNewSketch: 'New sketch',
             keyNewSketchDetail: 'or + beside an act',
             keyLens: 'Lens',
-            keyLensDetail: 'light this table’s rows on the wheel',
+            keyLensDetail: 'light this table’s rows on the wheel; on by itself while the view has a filter',
             keyMode: 'Mode',
             keyModeDetail: 'follows the timeline; click to pin one',
             keyDayDividers: 'Date dividers',

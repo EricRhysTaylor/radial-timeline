@@ -6078,7 +6078,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             keyNewSketch: '新しいスケッチ',
             keyNewSketchDetail: 'または幕の横の＋',
             keyLens: 'レンズ',
-            keyLensDetail: 'このテーブルの行をホイールで強調',
+            keyLensDetail: 'このテーブルの行をホイールで強調。ビューにフィルターがある間は自動でオン',
             keyMode: 'モード',
             keyModeDetail: 'タイムラインに連動・クリックで固定',
             keyDayDividers: '日付の区切り',

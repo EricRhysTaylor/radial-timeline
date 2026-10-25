@@ -6080,7 +6080,7 @@ export const es: TranslationKeys = {
             "keyNewSketch": "Nuevo boceto",
             "keyNewSketchDetail": "o + al lado de un acto",
             "keyLens": "Lente",
-            "keyLensDetail": "Enciende las filas de esta mesa en la rueda",
+            "keyLensDetail": "Resalta en la rueda las filas de esta tabla; se activa sola mientras la vista tiene un filtro",
             "keyMode": "Modo",
             "keyModeDetail": "sigue la línea de tiempo; Haga clic para anclar uno",
             "keyDayDividers": "Divisores de fecha",

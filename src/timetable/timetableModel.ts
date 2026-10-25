@@ -408,6 +408,21 @@ export function wordBar(words: number, median: number): { fill: number; over: bo
     return { fill: Math.min(1, Math.max(0, ratio)), over: ratio > 1 };
 }
 
+// ── Lens ───────────────────────────────────────────────────────────────
+
+/**
+ * A view filter's identity, so a change to it can be told from a redraw; null
+ * when it holds no condition (none set, or only empty groups).
+ */
+export function filterSignature(filter: unknown): string | null {
+    const hasCondition = (node: unknown): boolean => {
+        if (typeof node === 'string') return node.trim().length > 0;
+        if (!node || typeof node !== 'object') return false;
+        return Object.values(node).some(value => Array.isArray(value) ? value.some(hasCondition) : hasCondition(value));
+    };
+    return hasCondition(filter) ? JSON.stringify(filter) : null;
+}
+
 // ── Coloring the timeline by a column ──────────────────────────────────
 
 /** A column with more values than this can't color the timeline legibly. */

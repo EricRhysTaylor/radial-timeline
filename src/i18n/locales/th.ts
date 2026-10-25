@@ -6080,7 +6080,7 @@ export const th: TranslationKeys = {
             "keyNewSketch": "ร่างใหม่",
             "keyNewSketchDetail": "หรือ + ข้างองก์",
             "keyLens": "เลนซ์",
-            "keyLensDetail": "จุดไฟแถวของตารางนี้บนวงล้อ",
+            "keyLensDetail": "เน้นแถวของตารางนี้บนวงล้อ เปิดเองเมื่อมุมมองมีตัวกรอง",
             "keyMode": "โหมด",
             "keyModeDetail": "ตามไทม์ไลน์ คลิกเพื่อปักหมุดหนึ่ง",
             "keyDayDividers": "ตัวแบ่งวันที่",

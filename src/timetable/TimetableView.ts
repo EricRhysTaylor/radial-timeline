@@ -45,7 +45,7 @@ import { getActiveBook, getBookIdForPath, getSagaBooks, getTimelineScope } from 
 import { getConfiguredActCount, parseActLabels, resolveActLabel } from '../utils/acts';
 import { canonicalizeFrontmatterKey, getActiveFrontmatterMappings, readBeatPurpose } from '../utils/frontmatter';
 import { listAuthorQueries } from '../utils/authorQueryComments';
-import { formatElapsedTime, parseWhenField } from '../utils/date';
+import { formatElapsedTime, parseLocalDateKey, parseWhenField } from '../utils/date';
 import { formatCompactDuration, formatDueLabel, formatLongDate, formatSceneWhen, formatTableWhen, whenTextHasClock } from '../utils/whenFormat';
 import { normalizeStatus } from '../utils/text';
 import { isOverdueDateString } from '../utils/date';
@@ -71,6 +71,7 @@ import {
     displayName,
     distinctColorSlots,
     dueStatus,
+    dueStepNeedsConfirm,
     elapsedSincePrevious,
     groupProgress,
     medianOf,
@@ -330,6 +331,8 @@ export class TimetableView extends BasesView {
     private peek: CellPeek | null = null;
     /** The row and column under the pointer, so the peek finds its cell again after a redraw. */
     private peekKey: { path: string; column: string } | null = null;
+    /** The Synopsis or Pending Edits icon under the pointer, so Shift can switch the Synopsis to the Summary. */
+    private peekControl: HTMLElement | null = null;
     /** A redraw that waited for the author to stop typing in a drawer. */
     private renderDeferred = false;
     private decorateGeneration = 0;
@@ -461,28 +464,48 @@ export class TimetableView extends BasesView {
 
     /**
      * The pointer moved: over a row's Synopsis or Pending Edits icon, the peek
-     * shows that text at once; elsewhere it follows the cell under the pointer
-     * for Shift (number and Rings cells have no text to read).
+     * shows that text at once (with Shift, the Synopsis icon shows the
+     * Summary); elsewhere it follows the cell under the pointer for Shift
+     * (number and Rings cells have no text to read).
      */
     private hoverPeek(target: EventTarget | null, shift: boolean): void {
+        const held = shift && !isTypingInField(this.rootEl.doc);
         const control = target instanceof Element ? target.closest<HTMLElement>('.ert-timetable__text-control[data-peek]') : null;
-        const item = this.rowItems.get(control?.closest<HTMLElement>('tr')?.dataset.path ?? '');
-        const vitals = control && item ? sceneVitals(item.frontmatter, this.plugin.settings, new Date()) : null;
-        this.peek?.showText(control, (control?.dataset.peek === 'synopsis' ? vitals?.synopsis : vitals?.pending) ?? '');
+        this.peekControl = control;
+        this.peek?.showText(control, control ? this.controlText(control, held) : '');
         const cell = target instanceof Element ? target.closest<HTMLElement>('tr.ert-timetable__row > td[data-column]') : null;
         const path = cell?.closest<HTMLElement>('tr')?.dataset.path;
         const column = cell?.dataset.column;
         this.peekKey = cell && path && column ? { path, column } : null;
-        this.peek?.hover(cell, shift && !isTypingInField(this.rootEl.doc));
+        this.peek?.hover(cell, held);
+    }
+
+    /**
+     * A control's text: Pending Edits; the Synopsis, or with Shift the Summary.
+     * An empty Synopsis or Summary says so rather than showing nothing.
+     */
+    private controlText(control: HTMLElement, shift: boolean): string {
+        const item = this.rowItems.get(control.closest<HTMLElement>('tr')?.dataset.path ?? '');
+        if (!item) return '';
+        const vitals = sceneVitals(item.frontmatter, this.plugin.settings, new Date());
+        if (control.dataset.peek === 'pending') return vitals.pending ?? '';
+        if (shift) return vitals.summary ?? t('ui.timetable.summaryEmpty');
+        return vitals.synopsis ?? t('ui.timetable.synopsisEmpty');
     }
 
     /** Shift alone opens the peek. Shift in a chord (Cmd-Shift-P), or while typing in a field, doesn't. */
     private peekKeyEvent(evt: KeyboardEvent, phase: 'down' | 'up'): void {
         const peek = this.peek;
-        if (!peek?.hoveredCell()) return;
         const action = beatNamePeekAction(evt, phase);
-        if (action === 'show' && !isTypingInField(this.rootEl.doc)) peek.shift(true);
-        else if (action === 'hide') peek.shift(false);
+        if (!peek || action === 'none') return;
+        const held = action === 'show';
+        if (held && isTypingInField(this.rootEl.doc)) return;
+        const control = this.peekControl;
+        if (control?.isConnected) {
+            peek.showText(control, this.controlText(control, held));
+            return;
+        }
+        if (peek.hoveredCell()) peek.shift(held);
     }
 
     /** After a redraw, the peek follows its row and column to the new cell (Chronologue's Shift adds a column, for one). */
@@ -1437,10 +1460,32 @@ export class TimetableView extends BasesView {
         }
     }
 
-    /** + and ++: the scene's Due a day or a week later, counting from today when it is late. */
+    /**
+     * + and ++: the scene's Due a day or a week later, counting from today when
+     * it is late. A late scene moves at once; any other asks first, showing
+     * the new date, since its Due may be deliberate.
+     */
     private async stepDue(file: TFile, days: number): Promise<void> {
-        const { settings } = this.plugin;
+        const { app, settings } = this.plugin;
         const mappings = getActiveFrontmatterMappings(settings);
+        const today = new Date();
+        const frontmatter: Record<string, unknown> | undefined = app.metadataCache.getFileCache(file)?.frontmatter;
+        const { due } = sceneVitals(frontmatter, settings, today);
+        if (dueStepNeedsConfirm(due)) {
+            const nextKey = steppedDue(frontmatterKey(frontmatter, authorKeyFor('Due', settings)), days, today);
+            const next = formatLongDate(parseLocalDateKey(nextKey) ?? today);
+            const scene = displayName(file.basename);
+            const confirmed = await confirmWithErtModal(app, {
+                title: t('ui.timetable.dueStepConfirmTitle'),
+                message: due.kind === 'none'
+                    ? t('ui.timetable.dueStepConfirmNone', { scene, next })
+                    : t('ui.timetable.dueStepConfirmMessage', { scene, due: formatDueLabel(due, today), next }),
+                confirmText: t('ui.timetable.dueStepConfirmButton'),
+                cancelText: t('common.cancel'),
+                badge: { text: t('ui.timetable.viewName'), icon: 'calendar-plus' },
+            });
+            if (!confirmed) return;
+        }
         try {
             // Read inside the write, so quick clicks each build on the last one.
             await this.plugin.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
@@ -2243,8 +2288,8 @@ export class TimetableView extends BasesView {
         setAccessibleLabel(checkbox, t('ui.timetable.bulkPick', { name: displayName(row.basename) }));
         cell.closest('tr')?.toggleClass('is-selected', checkbox.checked);
 
-        this.renderTextControl(cell, 'pending', 'pencil-line', vitals.pending, t('ui.timetable.vitalsPending', { text: vitals.pending ?? '' }));
-        this.renderTextControl(cell, 'synopsis', 'align-left', vitals.synopsis, t('ui.timetable.synopsisFull', { text: vitals.synopsis ?? '' }));
+        this.renderTextControl(cell, 'pending', 'pencil-line', vitals.pending === null ? null : t('ui.timetable.vitalsPending', { text: vitals.pending }));
+        this.renderTextControl(cell, 'synopsis', 'align-left', t('ui.timetable.synopsisFull', { text: vitals.synopsis ?? t('ui.timetable.synopsisEmpty') }), vitals.synopsis === null);
 
         const last = cell.createSpan({ cls: 'ert-timetable__due-slot' });
         if (row.kind !== 'scene') {
@@ -2263,11 +2308,16 @@ export class TimetableView extends BasesView {
         }
     }
 
-    /** The pencil or the Synopsis icon. A row without that text keeps the place empty, so the icons line up. */
-    private renderTextControl(cell: HTMLElement, kind: 'pending' | 'synopsis', icon: string, text: string | null, label: string): void {
+    /**
+     * The pencil, only while Pending Edits holds text (otherwise its place
+     * stays empty, so the icons line up), or the Synopsis icon, on every row
+     * and fainter when the Synopsis is empty.
+     */
+    private renderTextControl(cell: HTMLElement, kind: 'pending' | 'synopsis', icon: string, label: string | null, empty = false): void {
         const control = cell.createSpan({ cls: ['ert-timetable__text-control', `is-${kind}`] });
-        if (text === null) return;
+        if (label === null) return;
         control.dataset.peek = kind;
+        control.toggleClass('is-empty', empty);
         setIcon(control, icon);
         setAccessibleLabel(control, label);
     }

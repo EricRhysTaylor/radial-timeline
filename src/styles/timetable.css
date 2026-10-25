@@ -329,6 +329,12 @@
   color: var(--text-accent);
 }
 
+/* No Synopsis yet: the icon stays, fainter, and its hover says so. */
+.ert-timetable__text-control.is-empty {
+  color: var(--text-faint);
+  opacity: 0.6;
+}
+
 .ert-timetable__text-control svg {
   width: var(--icon-xs);
   height: var(--icon-xs);

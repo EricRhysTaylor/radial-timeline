@@ -7449,7 +7449,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             currentEmpty: '아직 대기 중인 편집이 없습니다.',
             newEditsLabel: '새 대기 중인 편집',
             helpLabel: '제로 초고 모드 안내',
-            helpTooltip: '새 대기 중인 편집을 입력하고 저장을 클릭하세요. 이 장면의 기존 Pending Edits 뒤에 추가되며, 기존 내용은 바뀌지 않습니다. 재정의를 클릭하면 노트를 바로 엽니다.\n\n제로 초고 모드가 켜져 있고 이 장면이 Publish Stage = Zero, Status = Complete이므로 노트 대신 이 창이 열렸습니다. 설정 → 제로 초고 모드에서 끌 수 있습니다.',
+            helpTooltip: '새 대기 중인 편집을 입력하고 저장을 클릭하세요. 이 장면의 기존 Pending Edits 뒤에 추가되며, 기존 내용은 바뀌지 않습니다. 재정의를 클릭하면 노트를 바로 엽니다.\n\n제로 초고 모드가 켜져 있고 이 장면이 Publish Stage = Zero, Status = Complete이므로 노트 대신 이 창이 열렸습니다. 설정 → Core → 제로 초고 모드에서 끌 수 있습니다.',
             warningBadge: '경고',
             overrideButton: '재정의',
             discardTitle: '변경 사항을 버리시겠습니까?',

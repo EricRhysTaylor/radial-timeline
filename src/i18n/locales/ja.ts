@@ -7450,7 +7450,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             currentEmpty: '保留中の編集はまだありません。',
             newEditsLabel: '新しい保留中の編集',
             helpLabel: 'ゼロ稿モードについて',
-            helpTooltip: '新しい保留中の編集を入力して「保存」をクリックします。このシーンの既存の Pending Edits の後に追加され、既存の内容は置き換えられません。「上書き」をクリックするとノートを直接開きます。\n\nゼロ稿モードが有効で、このシーンは Publish Stage = Zero、Status = Complete のため、ノートの代わりにこの画面が開きました。設定 → ゼロ稿モードでオフにできます。',
+            helpTooltip: '新しい保留中の編集を入力して「保存」をクリックします。このシーンの既存の Pending Edits の後に追加され、既存の内容は置き換えられません。「上書き」をクリックするとノートを直接開きます。\n\nゼロ稿モードが有効で、このシーンは Publish Stage = Zero、Status = Complete のため、ノートの代わりにこの画面が開きました。設定 → Core → ゼロ稿モードでオフにできます。',
             warningBadge: '警告',
             overrideButton: '上書き',
             discardTitle: '変更を破棄しますか？',

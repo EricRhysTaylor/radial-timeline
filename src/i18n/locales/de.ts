@@ -7449,7 +7449,7 @@ export const de: DeepPartial<TranslationKeys> = {
             currentEmpty: 'Noch keine Pending Edits.',
             newEditsLabel: 'Neue Pending Edits',
             helpLabel: 'Über den Zero-Entwurfsmodus',
-            helpTooltip: 'Geben Sie neue Pending Edits ein und klicken Sie auf „Speichern“. Sie werden an die vorhandenen Pending Edits dieser Szene angehängt; bereits Vorhandenes wird nicht überschrieben. Klicken Sie auf „Übersteuern“, um die Notiz direkt zu öffnen.\n\nDieses Fenster öffnet sich statt der Notiz, weil der Zero-Entwurfsmodus aktiv ist und die Szene Publish Stage = Zero und Status = Complete hat. Deaktivieren Sie ihn unter Einstellungen → Zero-Entwurfsmodus.',
+            helpTooltip: 'Geben Sie neue Pending Edits ein und klicken Sie auf „Speichern“. Sie werden an die vorhandenen Pending Edits dieser Szene angehängt; bereits Vorhandenes wird nicht überschrieben. Klicken Sie auf „Übersteuern“, um die Notiz direkt zu öffnen.\n\nDieses Fenster öffnet sich statt der Notiz, weil der Zero-Entwurfsmodus aktiv ist und die Szene Publish Stage = Zero und Status = Complete hat. Deaktivieren Sie ihn unter Einstellungen → Core → Zero-Entwurfsmodus.',
             warningBadge: 'Warnung',
             overrideButton: 'Übersteuern',
             discardTitle: 'Änderungen verwerfen?',

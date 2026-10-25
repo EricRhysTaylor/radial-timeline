@@ -7133,7 +7133,7 @@ export const en = {
             currentEmpty: 'No pending edits yet.',
             newEditsLabel: 'New pending edits',
             helpLabel: 'About zero draft mode',
-            helpTooltip: 'Type new pending edits and click Save. They are added after this scene’s existing Pending Edits; nothing already there is overwritten. Click Override to open the note directly.\n\nThis opened instead of the note because zero draft mode is on and the scene has Publish Stage = Zero and Status = Complete. Turn it off in Settings → Zero draft mode.',
+            helpTooltip: 'Type new pending edits and click Save. They are added after this scene’s existing Pending Edits; nothing already there is overwritten. Click Override to open the note directly.\n\nThis opened instead of the note because zero draft mode is on and the scene has Publish Stage = Zero and Status = Complete. Turn it off in Settings → Core → Zero draft mode.',
             warningBadge: 'Warning',
             overrideButton: 'Override',
             discardTitle: 'Discard changes?',

@@ -7452,7 +7452,7 @@ export const es: TranslationKeys = {
             "currentEmpty": "Aún no hay ediciones pendientes.",
             "newEditsLabel": "Nuevas ediciones pendientes",
             "helpLabel": "Acerca del modo de borrador cero",
-            "helpTooltip": "Escriba nuevas ediciones pendientes y haga clic en Guardar. Se añaden después de las Pending Edits existentes de esta escena; no se sobrescribe nada de lo que ya hay. Haga clic en Anular para abrir la nota directamente.\n\nEsto se abre en lugar de la nota porque el modo de borrador cero está activado y la escena tiene Publish Stage = Zero y Status = Complete. Desactívelo en Configuración → Modo de tiro cero.",
+            "helpTooltip": "Escriba nuevas ediciones pendientes y haga clic en Guardar. Se añaden después de las Pending Edits existentes de esta escena; no se sobrescribe nada de lo que ya hay. Haga clic en Anular para abrir la nota directamente.\n\nEsto se abre en lugar de la nota porque el modo de borrador cero está activado y la escena tiene Publish Stage = Zero y Status = Complete. Desactívelo en Configuración → Núcleo → Modo de tiro cero.",
             "warningBadge": "Advertencia",
             "overrideButton": "Anular",
             "discardTitle": "descartar cambios?",

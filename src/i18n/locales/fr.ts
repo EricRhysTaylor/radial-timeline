@@ -7452,7 +7452,7 @@ export const fr: TranslationKeys = {
             "currentEmpty": "Aucune modification en attente pour l’instant.",
             "newEditsLabel": "Nouvelles modifications en attente",
             "helpLabel": "À propos du mode brouillon zéro",
-            "helpTooltip": "Saisissez de nouvelles modifications en attente puis cliquez sur Enregistrer. Elles sont ajoutées après les Pending Edits existantes de cette scène ; rien de ce qui s’y trouve n’est écrasé. Cliquez sur Passer outre pour ouvrir la note directement.\n\nCette fenêtre s’ouvre à la place de la note parce que le mode brouillon zéro est activé et que la scène a Publish Stage = Zero et Status = Complete. Désactivez-le dans Paramètres → Mode de brouillon zéro.",
+            "helpTooltip": "Saisissez de nouvelles modifications en attente puis cliquez sur Enregistrer. Elles sont ajoutées après les Pending Edits existantes de cette scène ; rien de ce qui s’y trouve n’est écrasé. Cliquez sur Passer outre pour ouvrir la note directement.\n\nCette fenêtre s’ouvre à la place de la note parce que le mode brouillon zéro est activé et que la scène a Publish Stage = Zero et Status = Complete. Désactivez-le dans Paramètres → Core → Mode de brouillon zéro.",
             "warningBadge": "Avertissement",
             "overrideButton": "Passer outre",
             "discardTitle": "annuler les modifications ?",

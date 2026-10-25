@@ -7452,7 +7452,7 @@ export const vi: TranslationKeys = {
             "currentEmpty": "Chưa có chỉnh sửa đang chờ nào.",
             "newEditsLabel": "Chỉnh sửa đang chờ mới",
             "helpLabel": "Về chế độ bản nháp số không",
-            "helpTooltip": "Nhập các chỉnh sửa đang chờ mới rồi nhấp Lưu. Chúng được thêm vào sau Pending Edits hiện có của cảnh này; nội dung đã có sẽ không bị thay thế. Nhấp Ghi đè để mở ghi chú trực tiếp.\n\nCửa sổ này mở thay cho ghi chú vì chế độ bản nháp số không đang bật và cảnh có Publish Stage = Zero và Status = Complete. Tắt trong Cài đặt → chế độ không nháp.",
+            "helpTooltip": "Nhập các chỉnh sửa đang chờ mới rồi nhấp Lưu. Chúng được thêm vào sau Pending Edits hiện có của cảnh này; nội dung đã có sẽ không bị thay thế. Nhấp Ghi đè để mở ghi chú trực tiếp.\n\nCửa sổ này mở thay cho ghi chú vì chế độ bản nháp số không đang bật và cảnh có Publish Stage = Zero và Status = Complete. Tắt trong Cài đặt → Core → chế độ không nháp.",
             "warningBadge": "Cảnh báo",
             "overrideButton": "Ghi đè",
             "discardTitle": "loại bỏ các thay đổi?",

@@ -7451,7 +7451,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             currentEmpty: '暂无待编辑内容。',
             newEditsLabel: '新的待编辑内容',
             helpLabel: '关于零稿模式',
-            helpTooltip: '输入新的待编辑内容，然后点击“保存”。它们会追加到此场景现有的 Pending Edits 之后，不会替换已有内容。点击“覆盖”可直接打开笔记。\n\n由于零稿模式已启用，且此场景的 Publish Stage = Zero、Status = Complete，因此打开了此窗口而不是笔记。可在 设置 → 零稿模式 中关闭。',
+            helpTooltip: '输入新的待编辑内容，然后点击“保存”。它们会追加到此场景现有的 Pending Edits 之后，不会替换已有内容。点击“覆盖”可直接打开笔记。\n\n由于零稿模式已启用，且此场景的 Publish Stage = Zero、Status = Complete，因此打开了此窗口而不是笔记。可在 设置 → 核心 → 零稿模式 中关闭。',
             warningBadge: '警告',
             overrideButton: '覆盖',
             discardTitle: '放弃更改？',

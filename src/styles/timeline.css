@@ -1496,6 +1496,11 @@
 }
 
 .ert-timeline-session-panel {
+  /* One accent for the whole panel: the theme's, or social yellow when shared. */
+  --ert-session-accent: var(--interactive-accent);
+  --ert-session-accent-text: var(--text-accent);
+  --checkbox-color: var(--ert-session-accent);
+  --checkbox-color-hover: color-mix(in srgb, var(--ert-session-accent) 85%, var(--text-normal));
   position: fixed;
   width: 18.75rem;
   max-width: calc(100vw - var(--size-4-6));
@@ -1530,47 +1535,58 @@
   gap: var(--size-4-2);
 }
 
-.ert-timeline-session-panel__idle-card {
+/* The idle panel's title block — a summary, not a control, so no card and no
+   hover. Its ring previews the clock: a full accent ring counts down, a gray
+   ring with an accent notch at twelve counts up. */
+.ert-timeline-session-panel__intro {
   display: flex;
-  align-items: center;
-  gap: var(--size-4-2);
-  padding: var(--size-4-2);
-  border: thin solid transparent;
-  border-radius: var(--radius-m);
-  background: color-mix(in srgb, var(--background-secondary) 82%, var(--background-primary));
+  align-items: flex-start;
+  gap: var(--size-4-3);
+  padding: var(--size-2-2) var(--size-4-2);
 }
 
-.ert-timeline-session-panel__idle-card:hover {
-  border-color: color-mix(in srgb, var(--interactive-accent) 70%, transparent);
-  background: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary));
-}
-
-.ert-timeline-session-panel__idle-icon {
-  width: var(--size-4-8);
-  height: var(--size-4-8);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.ert-timeline-session-panel__count-ring {
+  width: calc(var(--size-4-6) + var(--size-2-2));
+  height: calc(var(--size-4-6) + var(--size-2-2));
   flex: 0 0 auto;
-  color: var(--text-on-accent);
-  background: var(--interactive-accent);
-  border-radius: var(--radius-s);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 
-.ert-timeline-session-panel__idle-copy {
+.ert-timeline-session-panel__count-ring-track {
+  stroke: color-mix(in srgb, var(--text-muted) 40%, transparent);
+}
+
+.ert-timeline-session-panel__count-ring-notch {
+  stroke: var(--ert-session-accent);
+  stroke-width: 2.5;
+}
+
+.ert-timeline-session-panel__intro.is-countdown .ert-timeline-session-panel__count-ring-track {
+  stroke: var(--ert-session-accent);
+}
+
+.ert-timeline-session-panel__intro-copy {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--size-2-1);
 }
 
-.ert-timeline-session-panel__idle-title {
+.ert-timeline-session-panel__intro-title {
   color: var(--text-normal);
   font-size: var(--font-ui-small);
   font-weight: var(--font-semibold);
 }
 
-.ert-timeline-session-panel__idle-meta {
+.ert-timeline-session-panel__intro-time {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+}
+
+.ert-timeline-session-panel__intro-meta {
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
@@ -1589,8 +1605,12 @@
 }
 
 /* Community-shared state: sessions saved while armed post a progress summary
-   to the author's public feed. Social accent per brand. */
+   to the author's public feed. Social accent per brand, replacing the theme
+   accent everywhere in the panel. */
 .ert-timeline-session-panel.is-community-shared {
+  --ert-session-accent: var(--ert-social-accent-color-base);
+  --ert-session-accent-text: var(--ert-social-accent-color-base);
+  --background-modifier-border-focus: rgba(var(--ert-social-accent-rgb-base), 0.6);
   border-color: rgba(var(--ert-social-accent-rgb-base), 0.55);
 }
 
@@ -1634,13 +1654,13 @@
   gap: var(--size-2-2);
   padding: var(--size-4-2);
   background: color-mix(in srgb, var(--background-secondary) 82%, var(--background-primary));
-  border: thin solid transparent;
+  border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
 }
 
 .ert-timeline-session-panel__section:hover,
 .ert-timeline-session-panel__section:focus-within {
-  border-color: color-mix(in srgb, var(--interactive-accent) 70%, transparent);
+  border-color: color-mix(in srgb, var(--ert-session-accent) 70%, transparent);
   background: color-mix(in srgb, var(--background-secondary) 88%, var(--background-primary));
 }
 
@@ -1662,10 +1682,6 @@
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-}
-
-.ert-timeline-session-panel__row--toggle {
-  justify-content: space-between;
 }
 
 .ert-timeline-session-panel__label {
@@ -1753,28 +1769,34 @@
   height: var(--font-ui-small);
 }
 
-.ert-timeline-session-panel__goal-controls {
+/* Minutes and words side by side; a field alone spans the row. */
+.ert-timeline-session-panel__goals {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-4);
+}
+
+.ert-timeline-session-panel__goal-field {
+  flex: 1 1 0;
   min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: var(--size-2-2);
-  flex: 0 1 auto;
+  justify-content: space-between;
+  gap: var(--size-2-3);
 }
 
-.ert-timeline-session-panel__goal-controls.is-countdown-disabled .ert-timeline-session-panel__number {
+.ert-timeline-session-panel__goal-field.is-countdown-disabled .ert-timeline-session-panel__number {
   opacity: 0.62;
 }
 
-/* Begin Session: the single action of the idle panel. Centered on its own row
-   closing the Target block, wearing the same accent border that carries the
-   panel title — and switching to the social accent with the title and the
-   "Shared" pill whenever saving this session will post to the feed. */
+/* Countdown sprint on the left, Begin on the right — the idle panel's single
+   action, in the panel accent (social yellow whenever the session is shared). */
 .ert-timeline-session-panel__begin-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-block-start: var(--size-2-2);
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  margin-block-start: var(--size-2-1);
 }
 
 .ert-timeline-session-panel .ert-timeline-session-panel__begin,
@@ -1788,18 +1810,18 @@
   align-items: center;
   justify-content: center;
   width: auto;
-  min-width: 12ch;
-  height: var(--size-4-8);
-  padding: 0 var(--size-4-4);
-  border: 1px solid color-mix(in srgb, var(--interactive-accent) 70%, transparent);
+  height: calc(var(--size-4-6) + var(--size-2-2));
+  margin-inline-start: auto;
+  padding: 0 var(--size-4-3);
+  border: 1px solid color-mix(in srgb, var(--ert-session-accent) 70%, transparent);
   border-radius: var(--radius-s);
   box-shadow: none;
-  background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+  background: color-mix(in srgb, var(--ert-session-accent) 14%, transparent);
   background-image: none;
   filter: none;
   text-shadow: none;
   transform: none;
-  color: var(--text-accent);
+  color: var(--ert-session-accent-text);
   cursor: pointer;
   font-size: var(--font-ui-small);
   font-weight: var(--font-semibold);
@@ -1809,8 +1831,8 @@
 
 .ert-timeline-session-panel .ert-timeline-session-panel__begin:hover,
 .ert-timeline-session-panel button.ert-timeline-session-panel__begin:hover {
-  border-color: var(--interactive-accent);
-  background: color-mix(in srgb, var(--interactive-accent) 26%, transparent);
+  border-color: var(--ert-session-accent);
+  background: color-mix(in srgb, var(--ert-session-accent) 26%, transparent);
   background-image: none;
   box-shadow: none;
   filter: none;
@@ -1821,19 +1843,6 @@
 .ert-timeline-session-panel button.ert-timeline-session-panel__begin:focus-visible {
   outline: thin solid currentColor;
   outline-offset: var(--size-2-1);
-}
-
-.ert-timeline-session-panel.is-community-shared .ert-timeline-session-panel__begin,
-.ert-timeline-session-panel.is-community-shared button.ert-timeline-session-panel__begin {
-  border-color: rgba(var(--ert-social-accent-rgb-base), 0.55);
-  background: rgba(var(--ert-social-accent-rgb-base), 0.12);
-  color: var(--ert-social-accent-color-base);
-}
-
-.ert-timeline-session-panel.is-community-shared .ert-timeline-session-panel__begin:hover,
-.ert-timeline-session-panel.is-community-shared button.ert-timeline-session-panel__begin:hover {
-  border-color: var(--ert-social-accent-color-base);
-  background: rgba(var(--ert-social-accent-rgb-base), 0.22);
 }
 
 .ert-timeline-session-panel__actions {

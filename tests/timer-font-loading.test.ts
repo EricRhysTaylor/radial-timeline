@@ -64,13 +64,17 @@ describe('writing session timer font loading', () => {
             '.ert-timeline-session-panel__chip:hover',
         ].map(selector => readRuleBlock(timelineCss, selector));
 
-        // Begin Session: the panel's one action — a centered, accent-bordered
-        // text button, never a bare icon and never a moving one.
+        // Begin: the panel's one action — an accent-bordered text button at the
+        // right of the countdown row, never a bare icon and never a moving one.
+        // Sharing swaps the panel's single accent to social yellow, so Begin,
+        // borders and checkboxes never mix the theme accent with yellow.
         expect(beginBlock).not.toMatch(/transition:[^;]*transform/);
-        expect(beginBlock).toContain('border: 1px solid color-mix(in srgb, var(--interactive-accent) 70%, transparent)');
+        expect(beginBlock).toContain('border: 1px solid color-mix(in srgb, var(--ert-session-accent) 70%, transparent)');
         expect(beginBlock).toContain('border-radius: var(--radius-s)');
-        expect(beginRowBlock).toContain('justify-content: center');
-        expect(timelineCss).toContain('.ert-timeline-session-panel.is-community-shared .ert-timeline-session-panel__begin');
+        expect(beginBlock).toContain('margin-inline-start: auto');
+        expect(beginRowBlock).toContain('justify-content: space-between');
+        expect(readRuleBlock(timelineCss, '.ert-timeline-session-panel.is-community-shared {'))
+            .toContain('--ert-session-accent: var(--ert-social-accent-color-base)');
         expect(timelineCss).not.toContain('ert-timeline-session-panel__ratio');
         expect(timelineCss).not.toContain('ert-timeline-session-panel__quick');
         buttonBlocks.forEach(block => expect(block).not.toMatch(/transition:[^;]*transform/));

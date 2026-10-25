@@ -850,6 +850,16 @@ export class WritingSessionService {
         return this.plugin.isSceneFile(path) ? path : undefined;
     }
 
+    /** When today's writing began: the start of today's first saved session, if any. */
+    getTodayFirstSessionStart(at = new Date()): Date | undefined {
+        const todayKey = formatLocalDateKey(at);
+        const starts = this.getSettings().records
+            .filter(record => recordDateKey(record) === todayKey)
+            .map(record => Date.parse(record.startedAt))
+            .filter(Number.isFinite);
+        return starts.length > 0 ? new Date(Math.min(...starts)) : undefined;
+    }
+
     /**
      * Per-scene time + typed-word totals for the local day — today's saved
      * records plus the in-progress session — newest-effort first. A memory aid

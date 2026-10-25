@@ -1111,3 +1111,31 @@ describe('portable session log corruption handling', () => {
         expect(JSON.parse(created).records).toHaveLength(1);
     });
 });
+
+describe('today’s first session start', () => {
+    const record = (id: string, startedAt: string, endedAt: string): WritingSessionRecord => ({
+        id, mode: 'drafting', startedAt, endedAt, elapsedMs: Date.parse(endedAt) - Date.parse(startedAt), source: 'timer',
+    });
+    const serviceWith = (records: WritingSessionRecord[]) => new WritingSessionService({
+        settings: { writingSessions: { defaults: { defaultMode: 'drafting' }, records } },
+        saveSettings: async () => undefined,
+    } as any);
+    const noon = new Date(2026, 4, 12, 12, 0);
+
+    it('is the earliest start among today’s saved sessions', () => {
+        const service = serviceWith([
+            record('later', new Date(2026, 4, 12, 10, 15).toISOString(), new Date(2026, 4, 12, 11, 0).toISOString()),
+            record('first', new Date(2026, 4, 12, 8, 42).toISOString(), new Date(2026, 4, 12, 9, 30).toISOString()),
+            record('yesterday', new Date(2026, 4, 11, 7, 0).toISOString(), new Date(2026, 4, 11, 8, 0).toISOString()),
+        ]);
+        expect(service.getTodayFirstSessionStart(noon)?.getHours()).toBe(8);
+        expect(service.getTodayFirstSessionStart(noon)?.getMinutes()).toBe(42);
+    });
+
+    it('is undefined before the first session of the day', () => {
+        const service = serviceWith([
+            record('yesterday', new Date(2026, 4, 11, 7, 0).toISOString(), new Date(2026, 4, 11, 8, 0).toISOString()),
+        ]);
+        expect(service.getTodayFirstSessionStart(noon)).toBeUndefined();
+    });
+});

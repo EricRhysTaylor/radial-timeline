@@ -1169,23 +1169,30 @@ export class RadialTimelineView extends ItemView {
         return tCount('word', value);
     }
 
+    private formatWritingSessionModeTitle(mode: WritingSessionMode): string {
+        if (mode === 'drafting') return t('ui.timeLineView.modeFreshDrafting');
+        if (mode === 'revising') return t('ui.timeLineView.modeRevision');
+        if (mode === 'editing') return t('ui.timeLineView.modeLineEdit');
+        return t('ui.timeLineView.modePlanning');
+    }
+
+    /** The idle panel's summary: "400 words + 40 min" over "Planning · Author". */
     private formatIdleWritingSessionMeta(
         goalMinutes: number,
         goalWords: number,
         targetMode: WritingSessionTargetMode,
         mode: WritingSessionMode,
         stage: WritingSessionStagePreference
-    ): string {
+    ): { target: string; detail: string } {
         const target = targetMode === 'time'
             ? t('ui.timeLineView.minTarget', { minutes: goalMinutes })
             : targetMode === 'words'
                 ? t('ui.timeLineView.wordTarget', { words: goalWords })
                 : t('ui.timeLineView.wordsPlusMinutes', { words: goalWords, minutes: goalMinutes });
-        return [
+        return {
             target,
-            this.formatWritingSessionMode(mode),
-            this.formatWritingSessionStage(stage),
-        ].join(' · ');
+            detail: [this.formatWritingSessionModeTitle(mode), this.formatWritingSessionStage(stage)].join(' · '),
+        };
     }
 
     private formatCompletedSessionSummary(active: ActiveWritingSession, elapsedMs: number): string {
@@ -1732,22 +1739,34 @@ export class RadialTimelineView extends ItemView {
         const service = this.plugin.getWritingSessionService();
         const sessionGoalMinutes = this.getSessionGoalMinutesForToday();
         const sessionGoalWords = this.getSessionGoalWordsForToday();
-        const intro = panel.createDiv({ cls: 'ert-timeline-session-panel__idle-card' });
-        const introIcon = intro.createDiv({ cls: 'ert-timeline-session-panel__idle-icon' });
-        setIcon(introIcon, 'play');
-        const introText = intro.createDiv({ cls: 'ert-timeline-session-panel__idle-copy' });
+        // A title, not a control: no hover, and the icon is the clock this
+        // session will run — a full accent ring counts down, a gray ring with
+        // an accent notch at twelve counts up.
+        const intro = panel.createDiv({ cls: 'ert-timeline-session-panel__intro' });
+        const ring = intro.createSvg('svg', {
+            cls: 'ert-timeline-session-panel__count-ring',
+            attr: { viewBox: '0 0 24 24', 'aria-hidden': 'true' },
+        });
+        ring.createSvg('circle', { cls: 'ert-timeline-session-panel__count-ring-track', attr: { cx: '12', cy: '12', r: '9.5' } });
+        ring.createSvg('path', { cls: 'ert-timeline-session-panel__count-ring-notch', attr: { d: 'M 8.75 3.07 A 9.5 9.5 0 0 1 15.25 3.07' } });
+        const introText = intro.createDiv({ cls: 'ert-timeline-session-panel__intro-copy' });
         const sessionSettings = service.getSettings();
         const defaultMode = sessionSettings.defaults.defaultMode;
         const defaultStage = this.resolveWritingSessionStageSelection(defaultMode, sessionSettings.defaults.defaultStage ?? 'auto');
         const defaultTargetMode = service.getDefaultTargetMode();
         introText.createDiv({
-            cls: 'ert-timeline-session-panel__idle-title',
+            cls: 'ert-timeline-session-panel__intro-title',
             text: service.getDailySessionProgress().sessionsCompleted > 0 ? t('ui.timeLineView.resumeToday') : t('ui.timeLineView.readyToWrite'),
         });
-        const idleMeta = introText.createDiv({
-            cls: 'ert-timeline-session-panel__idle-meta',
-            text: this.formatIdleWritingSessionMeta(sessionGoalMinutes, sessionGoalWords, defaultTargetMode, defaultMode, defaultStage),
+        // When today's writing began; before the first session, the moment this one would.
+        const dayStart = service.getTodayFirstSessionStart() ?? new Date();
+        introText.createDiv({
+            cls: 'ert-timeline-session-panel__intro-time',
+            text: `${dayStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} ${dayStart.toLocaleDateString([], { weekday: 'short' })}`,
         });
+        const initialMeta = this.formatIdleWritingSessionMeta(sessionGoalMinutes, sessionGoalWords, defaultTargetMode, defaultMode, defaultStage);
+        const introTarget = introText.createDiv({ cls: 'ert-timeline-session-panel__intro-meta', text: initialMeta.target });
+        const introDetail = introText.createDiv({ cls: 'ert-timeline-session-panel__intro-meta', text: initialMeta.detail });
         // Intentionally NO daily-progress strip ("140m logged · 100m over · 0w
         // logged · 400w left"). The session log below shows today's actual
         // sessions; that's where running totals belong. The intro card answers
@@ -1827,18 +1846,11 @@ export class RadialTimelineView extends ItemView {
         targetModeSelect.value = defaultTargetMode;
         this.isolateSessionPanelControl(targetModeSelect);
 
-        const countdownRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row ert-timeline-session-panel__row--toggle' });
-        const countdownLabel = countdownRow.createEl('label', { cls: 'ert-timeline-session-panel__toggle-label' });
-        countdownToggle = countdownLabel.createEl('input', { cls: 'ert-timeline-session-panel__toggle' });
-        countdownToggle.type = 'checkbox';
-        countdownToggle.checked = service.isCountdownSprintEnabled();
-        countdownLabel.createSpan({ text: t('ui.timeLineView.countdownSprint') });
-        this.isolateSessionPanelControl(countdownToggle);
-
-        const goalRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
-        goalRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: t('ui.timeLineView.minutesLabel') });
-        const goalControls = goalRow.createDiv({ cls: 'ert-timeline-session-panel__goal-controls' });
-        goalInput = goalControls.createEl('input', { cls: 'ert-input ert-input--xs ert-timeline-session-panel__number' });
+        // Minutes and words share one row; each takes the full row when alone.
+        const goalsRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__goals' });
+        const goalField = goalsRow.createDiv({ cls: 'ert-timeline-session-panel__goal-field' });
+        goalField.createDiv({ cls: 'ert-timeline-session-panel__label', text: t('ui.timeLineView.minutesLabel') });
+        goalInput = goalField.createEl('input', { cls: 'ert-input ert-input--xs ert-timeline-session-panel__number' });
         goalInput.type = 'number';
         goalInput.min = '1';
         goalInput.max = '600';
@@ -1846,10 +1858,9 @@ export class RadialTimelineView extends ItemView {
         goalInput.value = String(sessionGoalMinutes);
         this.isolateSessionPanelControl(goalInput);
 
-        const wordGoalRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
-        wordGoalRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: t('settings.goalsSessions.targetMode.words') });
-        const wordGoalControls = wordGoalRow.createDiv({ cls: 'ert-timeline-session-panel__goal-controls' });
-        wordGoalInput = wordGoalControls.createEl('input', { cls: 'ert-input ert-input--sm ert-timeline-session-panel__number' });
+        const wordGoalField = goalsRow.createDiv({ cls: 'ert-timeline-session-panel__goal-field' });
+        wordGoalField.createDiv({ cls: 'ert-timeline-session-panel__label', text: t('settings.goalsSessions.targetMode.words') });
+        wordGoalInput = wordGoalField.createEl('input', { cls: 'ert-input ert-input--sm ert-timeline-session-panel__number' });
         wordGoalInput.type = 'number';
         wordGoalInput.min = '1';
         wordGoalInput.max = '50000';
@@ -1857,9 +1868,14 @@ export class RadialTimelineView extends ItemView {
         wordGoalInput.value = String(sessionGoalWords);
         this.isolateSessionPanelControl(wordGoalInput);
 
-        // The one action in the panel, spelled out: a centered accent button
-        // closing the Target block, not an icon the author has to decode.
+        // Countdown choice on the left, the panel's one action on the right.
         const beginRow = sprintSection.createDiv({ cls: 'ert-timeline-session-panel__begin-row' });
+        const countdownLabel = beginRow.createEl('label', { cls: 'ert-timeline-session-panel__toggle-label' });
+        countdownToggle = countdownLabel.createEl('input', { cls: 'ert-timeline-session-panel__toggle' });
+        countdownToggle.type = 'checkbox';
+        countdownToggle.checked = service.isCountdownSprintEnabled();
+        countdownLabel.createSpan({ text: t('ui.timeLineView.countdownSprint') });
+        this.isolateSessionPanelControl(countdownToggle);
         const beginButton = this.createSessionButton(beginRow, t('ui.timeLineView.beginSession'), 'ert-timeline-session-panel__begin', startSession);
         this.isolateSessionPanelControl(beginButton);
 
@@ -1869,15 +1885,9 @@ export class RadialTimelineView extends ItemView {
         const modeRow = sessionSection.createDiv({ cls: 'ert-timeline-session-panel__row' });
         modeRow.createDiv({ cls: 'ert-timeline-session-panel__label', text: t('ui.timeLineView.modeLabel') });
         modeSelect = modeRow.createEl('select', { cls: 'ert-input ert-input--md ert-timeline-session-panel__select' });
-        const modeOptions: Array<{ value: WritingSessionMode; label: string }> = [
-            { value: 'drafting', label: t('ui.timeLineView.modeFreshDrafting') },
-            { value: 'revising', label: t('ui.timeLineView.modeRevision') },
-            { value: 'editing', label: t('ui.timeLineView.modeLineEdit') },
-            { value: 'planning', label: t('ui.timeLineView.modePlanning') },
-        ];
-        modeOptions.forEach(option => {
-            const opt = modeSelect.createEl('option', { text: option.label });
-            opt.value = option.value;
+        (['drafting', 'revising', 'editing', 'planning'] as const).forEach(mode => {
+            const opt = modeSelect.createEl('option', { text: this.formatWritingSessionModeTitle(mode) });
+            opt.value = mode;
         });
         modeSelect.value = defaultMode;
         this.isolateSessionPanelControl(modeSelect);
@@ -1956,23 +1966,26 @@ export class RadialTimelineView extends ItemView {
         updateIdleMeta = () => {
             const parsedMinutes = Number(goalInput.value);
             const parsedWords = Number(wordGoalInput.value);
-            idleMeta.setText(this.formatIdleWritingSessionMeta(
+            const meta = this.formatIdleWritingSessionMeta(
                 Number.isFinite(parsedMinutes) && parsedMinutes > 0 ? Math.round(parsedMinutes) : sessionGoalMinutes,
                 Number.isFinite(parsedWords) && parsedWords > 0 ? Math.round(parsedWords) : sessionGoalWords,
                 (targetModeSelect.value as WritingSessionTargetMode) || 'time',
                 (modeSelect.value as WritingSessionMode) || 'drafting',
                 (stageSelect.value as WritingSessionStagePreference) || 'auto',
-            ));
+            );
+            introTarget.setText(meta.target);
+            introDetail.setText(meta.detail);
         };
 
         const syncTargetControls = () => {
             const targetMode = (targetModeSelect.value as WritingSessionTargetMode) || 'time';
             const usesTime = targetMode !== 'words';
             const usesWords = targetMode !== 'time';
-            countdownRow.classList.toggle('ert-hidden', !usesTime);
-            goalRow.classList.toggle('ert-hidden', !usesTime);
-            wordGoalRow.classList.toggle('ert-hidden', !usesWords);
-            goalControls.classList.toggle('is-countdown-disabled', usesTime && !countdownToggle.checked);
+            countdownLabel.classList.toggle('ert-hidden', !usesTime);
+            goalField.classList.toggle('ert-hidden', !usesTime);
+            wordGoalField.classList.toggle('ert-hidden', !usesWords);
+            goalField.classList.toggle('is-countdown-disabled', usesTime && !countdownToggle.checked);
+            intro.classList.toggle('is-countdown', usesTime && countdownToggle.checked);
             updateIdleMeta();
         };
 

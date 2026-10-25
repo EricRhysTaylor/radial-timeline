@@ -4,12 +4,12 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  *
  * The undocumented Obsidian surfaces the plugin reaches for: the settings
- * pane, the command manager and a leaf's tab header. Every call site goes
- * through here so the cast lives in one place and a future API change is one
- * edit.
+ * pane, the command manager, a leaf's tab header and a Bases view's own
+ * filters. Every call site goes through here so the cast lives in one place
+ * and a future API change is one edit.
  */
 
-import type { App, WorkspaceLeaf } from 'obsidian';
+import type { App, BasesConfigFileFilter, BasesViewConfig, WorkspaceLeaf } from 'obsidian';
 
 export const PLUGIN_SETTINGS_TAB_ID = 'radial-timeline';
 
@@ -40,4 +40,14 @@ export function leafForTabHeader(app: App, header: Element): WorkspaceLeaf | nul
         if ((leaf as unknown as { tabHeaderEl?: Element }).tabHeaderEl === header) found = leaf; // SAFE: a leaf's tab header is not in Obsidian's public typings; this is the one cast for it
     });
     return found;
+}
+
+/**
+ * A Bases view's own filters ("This view" in the filter menu), in the form a
+ * `.base` file stores them; undefined when the view has none. The public
+ * config has no getter for them.
+ */
+export function basesViewFilters(config: BasesViewConfig): BasesConfigFileFilter | undefined {
+    const filters = (config as unknown as { filters?: { serialize?: () => BasesConfigFileFilter } }).filters; // SAFE: a view's own filters are not in Obsidian's public typings; this is the one cast for them
+    return typeof filters?.serialize === 'function' ? filters.serialize() : undefined;
 }

@@ -73,6 +73,7 @@ import {
     dueStatus,
     dueStepNeedsConfirm,
     elapsedSincePrevious,
+    filterSignature,
     groupProgress,
     medianOf,
     planColoring,
@@ -95,6 +96,7 @@ import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { CellPeek } from './cellPeek';
 import { beatNamePeekAction } from '../view/interactions/BeatNameKeyController';
 import { isTypingInField } from '../utils/domFocus';
+import { basesViewFilters } from '../utils/obsidianInternals';
 import { openInReadingPane } from './readingPane';
 import { renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
 import {
@@ -346,8 +348,12 @@ export class TimetableView extends BasesView {
     private modePin: string | null = null;
     /** The ring the timeline's subplot key spotlights, if any. */
     private ringSpotlight: string | null = null;
-    /** The lens toggle was just pressed here, so this table takes the lens from any other. */
+    /** The lens toggle was just pressed here (or a filter set), so this table takes the lens from any other. */
     private claimLens = false;
+    /** This view's own filter (signature), or null when it has none. Not saved. */
+    private viewFilter: string | null = null;
+    /** The filter the author turned the lens off for; the automatic lens stays off until the filter changes. */
+    private lensDismissedFor: string | null = null;
     /** The column this table colors the timeline by, if any. Not saved. */
     private coloringProperty: BasesPropertyId | null = null;
     private claimColoring = false;
@@ -895,9 +901,29 @@ export class TimetableView extends BasesView {
 
     // ── Lens ────────────────────────────────────────────────────────────
 
+    /**
+     * The lens is on when its toggle is, and on its own while this view has a
+     * filter of its own: a filtered table is a question asked of the wheel.
+     * Turning it off holds for that filter; a new or changed filter lights it
+     * again, and removing the filter leaves the toggle as it was.
+     */
+    private lensWanted(): boolean {
+        return this.config.get('lens') === true || (this.viewFilter !== null && this.viewFilter !== this.lensDismissedFor);
+    }
+
+    /** Notice the view's own filter changing. A new filter takes the lens from any other table. */
+    private trackViewFilter(): void {
+        const filter = filterSignature(basesViewFilters(this.config));
+        if (filter === this.viewFilter) return;
+        this.viewFilter = filter;
+        if (filter === null) this.lensDismissedFor = null;
+        else this.claimLens = true;
+    }
+
     /** With its lens on, this table's rows light up on the timeline. */
     private syncLens(): void {
-        if (this.config.get('lens') !== true) {
+        this.trackViewFilter();
+        if (!this.lensWanted()) {
             clearTimelineLens(this);
             return;
         }
@@ -911,17 +937,26 @@ export class TimetableView extends BasesView {
             .filter(entry => entry.file.extension === 'md')
             .filter(entry => belongsInTimetable(buildTableRow(entry.file.path, entry.file.basename, app.metadataCache.getFileCache(entry.file)?.frontmatter, settings), bookFolders))
             .map(entry => entry.file.path));
-        setTimelineLens({ owner: this, paths, label: this.config.name, turnOff: () => this.config.set('lens', false) });
+        setTimelineLens({ owner: this, paths, label: this.config.name, turnOff: () => this.turnLensOff() });
     }
 
     private toggleLens(): void {
         if (currentTimelineLens()?.owner === this) {
-            this.config.set('lens', false);
-            clearTimelineLens(this);
-        } else {
-            this.claimLens = true;
-            this.config.set('lens', true);
+            this.turnLensOff();
+            return;
         }
+        this.claimLens = true;
+        // A filtered view's lens follows its filter; an unfiltered one keeps the choice in the toggle.
+        if (this.viewFilter !== null) this.lensDismissedFor = null;
+        else this.config.set('lens', true);
+        this.render();
+    }
+
+    /** The lens button or the timeline's pill: off, and off for the current filter too. */
+    private turnLensOff(): void {
+        this.config.set('lens', false);
+        if (this.viewFilter !== null) this.lensDismissedFor = this.viewFilter;
+        clearTimelineLens(this);
         this.render();
     }
 

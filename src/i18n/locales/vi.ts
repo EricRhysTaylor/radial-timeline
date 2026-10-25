@@ -6080,7 +6080,7 @@ export const vi: TranslationKeys = {
             "keyNewSketch": "Phác thảo mới",
             "keyNewSketchDetail": "hoặc + bên cạnh một hồi",
             "keyLens": "thấu kính",
-            "keyLensDetail": "thắp sáng các hàng của bảng này trên bánh xe",
+            "keyLensDetail": "Làm nổi các hàng của bảng này trên bánh xe; tự bật khi chế độ xem có bộ lọc",
             "keyMode": "Chế độ",
             "keyModeDetail": "theo dòng thời gian; Nhấp để ghim một",
             "keyDayDividers": "Bộ chia ngày tháng",

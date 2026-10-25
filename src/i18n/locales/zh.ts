@@ -6079,7 +6079,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             keyNewSketch: '新建草图',
             keyNewSketchDetail: '或幕旁的 +',
             keyLens: '透镜',
-            keyLensDetail: '在轮盘上突出此表格的行',
+            keyLensDetail: '在轮盘上突出此表格的行；视图有筛选时自动开启',
             keyMode: '模式',
             keyModeDetail: '跟随时间轴；点击可固定',
             keyDayDividers: '日期分隔',

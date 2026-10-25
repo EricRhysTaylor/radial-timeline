@@ -862,8 +862,9 @@ export class RadialTimelineView extends ItemView {
         const btn = doc.win.createEl('button');
         btn.className = 'ert-timeline-subnav__btn';
         btn.type = 'button';
+        // A drawn icon, not a character: a font's ◍ and ◔ sit off-center and read poorly at this size.
         const glyphEl = doc.win.createSpan();
-        glyphEl.className = 'ert-timeline-subnav__glyph';
+        glyphEl.className = 'ert-timeline-subnav__glyph ert-timeline-subnav__glyph--icon';
         glyphEl.setAttribute('aria-hidden', 'true');
         const labelEl = doc.win.createSpan();
         labelEl.className = 'ert-timeline-subnav__label';
@@ -905,8 +906,9 @@ export class RadialTimelineView extends ItemView {
         const hint = `${t(`timeline.subplotAlignment.${active}.tooltip`)} ${t('timeline.subplotAlignment.switchTo', { name: otherLabel })}`;
 
         btn.dataset.alignment = active;
-        const glyphEl = btn.querySelector('.ert-timeline-subnav__glyph');
-        if (glyphEl) glyphEl.textContent = active === 'sequence' ? '\u25D4' : '\u25CD';
+        // Fill leaves no gaps in a subplot ring; Sequence leaves gaps where other rings' scenes sit.
+        const glyphEl = btn.querySelector<HTMLElement>('.ert-timeline-subnav__glyph');
+        if (glyphEl) setIcon(glyphEl, active === 'sequence' ? 'circle-dashed' : 'circle');
         const labelEl = btn.querySelector('.ert-timeline-subnav__label');
         if (labelEl) labelEl.textContent = activeLabel;
         setAccessibleLabel(btn, hint);

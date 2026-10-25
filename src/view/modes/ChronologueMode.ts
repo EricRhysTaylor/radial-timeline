@@ -421,7 +421,7 @@ function setupSceneClickInteractions(view: RadialTimelineView, svg: SVGSVGElemen
                 const zeroDraftHandled = await maybeHandleZeroDraftClick({
                     app: view.plugin.app,
                     file,
-                    enableZeroDraftMode: view.plugin.settings.enableZeroDraftMode,
+                    settings: view.plugin.settings,
                     sceneTitle: file.basename || t('ui.chronologueMode.sceneFallback'),
                     onOverrideOpen: async () => openFromWheel(view.plugin.app, file, svg, highlight, e)
                 });

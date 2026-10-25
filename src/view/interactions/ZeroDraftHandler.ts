@@ -1,15 +1,32 @@
 import { App, Notice, TFile } from 'obsidian';
-import { frontmatterValueToText, normalizeFrontmatterKeys } from '../../utils/frontmatter';
+import { canonicalizeFrontmatterKey, frontmatterValueToText, normalizeFrontmatterKeys } from '../../utils/frontmatter';
 import { normalizeStatus } from '../../utils/text';
 import { prepareFrontmatterRewrite, verifyFrontmatterRewrite } from '../../utils/frontmatterWriteSafety';
+import { getActiveBookTitle } from '../../utils/books';
+import type { RadialTimelineSettings } from '../../types/settings';
 import { t } from '../../i18n';
 
 type ZeroDraftOptions = {
     app: App;
     file: TFile;
-    enableZeroDraftMode?: boolean;
+    settings: RadialTimelineSettings;
     sceneTitle?: string;
     onOverrideOpen: () => Promise<void>;
+};
+
+const PENDING_EDITS = 'Pending Edits';
+
+/** Pending Edits as display text: a YAML list reads one entry per line. */
+export const pendingEditsText = (value: unknown): string =>
+    Array.isArray(value)
+        ? value.map(entry => frontmatterValueToText(entry).trim()).filter(Boolean).join('\n')
+        : frontmatterValueToText(value).trim();
+
+/** Adds new edits after the existing ones, keeping a YAML list a list. */
+export const appendPendingEdits = (current: unknown, addition: string): unknown => {
+    if (Array.isArray(current)) return [...current, addition];
+    const existing = frontmatterValueToText(current).trim();
+    return existing ? `${existing}\n${addition}` : addition;
 };
 
 const normalizeYamlValue = (value: unknown): string | undefined => {
@@ -38,8 +55,8 @@ const isStatusComplete = (value: unknown): boolean => {
 };
 
 export async function maybeHandleZeroDraftClick(options: ZeroDraftOptions): Promise<boolean> {
-    const { app, file, enableZeroDraftMode, sceneTitle, onOverrideOpen } = options;
-    if (!enableZeroDraftMode) return false;
+    const { app, file, settings, sceneTitle, onOverrideOpen } = options;
+    if (!settings.enableZeroDraftMode) return false;
 
     const cache = app.metadataCache.getFileCache(file);
     const rawFrontmatter = (cache?.frontmatter ?? {}) as Record<string, unknown>;
@@ -51,13 +68,13 @@ export async function maybeHandleZeroDraftClick(options: ZeroDraftOptions): Prom
         return false;
     }
 
-    const pendingEdits = normalizeYamlValue(frontmatter['Pending Edits']) ?? '';
     const title = sceneTitle || file.basename || t('ui.zeroDraftHandler.sceneFallback');
     const { default: ZeroDraftModal } = await import('../../modals/ZeroDraftModal');
     const modal = new ZeroDraftModal(app, {
-        titleText: title,
-        initialText: pendingEdits,
-        onOk: async (nextText: string) => {
+        bookTitle: getActiveBookTitle(settings),
+        sceneTitle: title,
+        currentEdits: pendingEditsText(frontmatter[PENDING_EDITS]),
+        onSave: async (addition: string) => {
             try {
                 const originalContent = await app.vault.read(file);
                 const prepared = prepareFrontmatterRewrite(originalContent);
@@ -65,17 +82,18 @@ export async function maybeHandleZeroDraftClick(options: ZeroDraftOptions): Prom
                     new Notice(t('ui.zeroDraftHandler.unsafeStructureNotice'), 7000);
                     return false;
                 }
+                // Append to the value on disk now, under the author's own spelling of the key.
+                let expected = '';
                 await app.fileManager.processFrontMatter(file, (yaml: Record<string, unknown>) => {
-                    yaml['Pending Edits'] = nextText;
+                    const key = Object.keys(yaml).find(k => canonicalizeFrontmatterKey(k) === PENDING_EDITS) ?? PENDING_EDITS;
+                    yaml[key] = appendPendingEdits(yaml[key], addition);
+                    expected = pendingEditsText(yaml[key]);
                 });
                 const verifiedContent = await app.vault.read(file);
                 const verification = verifyFrontmatterRewrite(verifiedContent, {
                     originalBody: prepared.body,
-                    verifyParsed: (verifiedFrontmatter) => {
-                        const normalizedVerified = normalizeFrontmatterKeys(verifiedFrontmatter);
-                        const verifiedValue = normalizedVerified['Pending Edits'];
-                        return typeof verifiedValue === 'string' ? verifiedValue.trim() === nextText.trim() : nextText.trim() === '';
-                    }
+                    verifyParsed: (verifiedFrontmatter) =>
+                        pendingEditsText(normalizeFrontmatterKeys(verifiedFrontmatter)[PENDING_EDITS]) === expected
                 });
                 if (!verification.ok) {
                     new Notice(t('ui.zeroDraftHandler.potentialIssueNotice'), 8000);

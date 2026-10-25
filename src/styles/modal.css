@@ -2522,3 +2522,46 @@
   color: var(--text-muted);
   padding: 0 var(--ert-gap-2xs);
 }
+
+/* Zero draft: the scene's current Pending Edits, read-only above the new-edit field */
+.ert-ui.ert-scope--modal .ert-zero-draft-current {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ert-gap-xs);
+  padding: var(--ert-gap-sm) var(--ert-gap-md);
+  border: 1px dashed color-mix(in srgb, var(--text-muted) 40%, transparent);
+  border-radius: var(--ert-control-radius);
+}
+
+.ert-ui.ert-scope--modal .ert-zero-draft-current__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.ert-ui.ert-scope--modal .ert-zero-draft-current__text {
+  max-height: 8rem;
+  overflow-y: auto;
+  font-family: var(--font-text);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ert-ui.ert-scope--modal .ert-zero-draft-current__text.is-empty {
+  font-style: italic;
+  color: var(--text-faint);
+}
+
+/* Square "?" in the actions row (canonical .ert-iconBtn sized to the row's buttons);
+   its tooltip carries the modal's instructions */
+.ert-ui.ert-scope--modal .ert-zero-draft-help {
+  --ert-iconBtn-size: var(--ert-control-height);
+  font-size: var(--ert-control-font-size);
+  font-weight: 600;
+  cursor: help;
+}

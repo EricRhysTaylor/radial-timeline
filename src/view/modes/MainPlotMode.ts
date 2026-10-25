@@ -118,7 +118,7 @@ export function setupMainPlotMode(view: RadialTimelineView, svg: SVGSVGElement):
             const zeroDraftHandled = await maybeHandleZeroDraftClick({
                 app: view.plugin.app,
                 file,
-                enableZeroDraftMode: view.plugin.settings.enableZeroDraftMode,
+                settings: view.plugin.settings,
                 sceneTitle: file.basename || 'Scene',
                 onOverrideOpen: async () => openFromWheel(view.plugin.app, file, svg, highlight, e)
             });

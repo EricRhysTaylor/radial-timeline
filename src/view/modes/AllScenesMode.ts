@@ -42,7 +42,7 @@ export function setupSceneInteractions(view: RadialTimelineView, group: Element,
             const zeroDraftHandled = await maybeHandleZeroDraftClick({
                 app: view.plugin.app,
                 file,
-                enableZeroDraftMode: view.plugin.settings.enableZeroDraftMode,
+                settings: view.plugin.settings,
                 sceneTitle: file.basename || 'Scene',
                 onOverrideOpen: async () => openFromWheel(view.plugin.app, file, svgElement, highlight, evt)
             });

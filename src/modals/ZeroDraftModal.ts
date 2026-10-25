@@ -7,16 +7,18 @@ import { App, Modal, ButtonComponent } from 'obsidian';
 import { t } from '../i18n';
 import { ErtModal } from '../ui/ErtModal';
 import { scheduleFocusAfterPaint } from '../utils/domFocus';
-import { setAccessibleLabel } from '../utils/domTooltip';
+import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 
 /**
- * ZeroDraftModal presents a large textarea for editing the "Pending Edits" field.
- * OK overwrites the field (with delete-confirm if clearing). Cancel/Override confirm discards when dirty.
+ * ZeroDraftModal shows a scene's current "Pending Edits" read-only and takes new ones.
+ * Save appends the new text to the field; it never rewrites what is already there.
+ * Cancel/Override confirm a discard when new text has been typed.
  */
 export class ZeroDraftModal extends ErtModal {
-    private readonly titleText: string;
-    private readonly originalText: string;
-    private readonly onOk: (nextText: string) => Promise<boolean> | boolean;
+    private readonly bookTitle: string;
+    private readonly sceneTitle: string;
+    private readonly currentEdits: string;
+    private readonly onSave: (addition: string) => Promise<boolean>;
     private readonly onOverride: () => void;
 
     private textareaEl!: HTMLTextAreaElement;
@@ -24,16 +26,18 @@ export class ZeroDraftModal extends ErtModal {
     constructor(
         app: App,
         options: {
-            titleText: string;
-            initialText: string;
-            onOk: (nextText: string) => Promise<boolean> | boolean;
+            bookTitle: string;
+            sceneTitle: string;
+            currentEdits: string;
+            onSave: (addition: string) => Promise<boolean>;
             onOverride: () => void;
         }
     ) {
         super(app);
-        this.titleText = options.titleText;
-        this.originalText = (options.initialText || '').trim();
-        this.onOk = options.onOk;
+        this.bookTitle = options.bookTitle;
+        this.sceneTitle = options.sceneTitle;
+        this.currentEdits = options.currentEdits.trim();
+        this.onSave = options.onSave;
         this.onOverride = options.onOverride;
     }
 
@@ -88,10 +92,13 @@ export class ZeroDraftModal extends ErtModal {
         });
     }
 
-    /** Resolves true when there is nothing to lose, or the author agrees to discard their edits. */
+    private newText(): string {
+        return (this.textareaEl.value || '').trim();
+    }
+
+    /** Resolves true when nothing new was typed, or the author agrees to discard it. */
     private async confirmDiscardIfDirty(): Promise<boolean> {
-        const current = (this.textareaEl.value || '').trim();
-        if (current === this.originalText) return true;
+        if (!this.newText()) return true;
         return await this.confirmAction({
             badge: t('ui.zeroDraftModal.warningBadge'),
             title: t('ui.zeroDraftModal.discardTitle'),
@@ -104,22 +111,28 @@ export class ZeroDraftModal extends ErtModal {
     onOpen(): void {
         this.contentEl.empty();
         this.applyShell();
-        // The scene is the title; the badge and subtitle already say this is Pending Edits.
-        const header = this.mountHeader({
-            badge: { text: t('ui.zeroDraftModal.badge') },
-            title: this.titleText,
-            subtitle: t('ui.zeroDraftModal.subtitle')
+        this.mountHeader({
+            badge: { text: t('ui.zeroDraftModal.badge', { title: this.bookTitle }) },
+            title: this.sceneTitle
         });
-        header.createDiv({ cls: 'ert-field-note', text: t('ui.zeroDraftModal.infoNote') });
+
+        // The scene's existing Pending Edits, read-only, so new edits are written in context.
+        const current = this.contentEl.createDiv({ cls: 'ert-zero-draft-current' });
+        if (this.currentEdits) {
+            current.createDiv({ cls: 'ert-zero-draft-current__label', text: t('ui.zeroDraftModal.currentLabel') });
+            current.createDiv({ cls: 'ert-zero-draft-current__text', text: this.currentEdits });
+        } else {
+            current.createDiv({ cls: 'ert-zero-draft-current__text is-empty', text: t('ui.zeroDraftModal.currentEmpty') });
+        }
 
         this.textareaEl = this.contentEl.createEl('textarea', { cls: 'ert-textarea ert-textarea--prose' });
-        setAccessibleLabel(this.textareaEl, t('ui.zeroDraftModal.pendingEditsLabel'));
-        this.textareaEl.value = this.originalText;
+        this.textareaEl.placeholder = t('ui.zeroDraftModal.newEditsLabel');
+        setAccessibleLabel(this.textareaEl, t('ui.zeroDraftModal.newEditsLabel'));
         scheduleFocusAfterPaint(this.textareaEl);
 
         const actions = this.mountActions();
 
-        // Override opens the note without saving; it sits apart from Cancel/Save.
+        // Override opens the note without saving; it sits apart from the rest.
         new ButtonComponent(actions)
             .setButtonText(t('ui.zeroDraftModal.overrideButton'))
             .setDestructive()
@@ -130,6 +143,11 @@ export class ZeroDraftModal extends ErtModal {
             });
         actions.createDiv({ cls: 'ert-modal-actions-spacer' });
 
+        // How the modal works lives on hover, not in the body.
+        const help = actions.createEl('button', { cls: 'ert-iconBtn ert-zero-draft-help', text: '?' });
+        setAccessibleLabel(help, t('ui.zeroDraftModal.helpLabel'));
+        setTooltip(help, t('ui.zeroDraftModal.helpTooltip'), { placement: 'top' });
+
         new ButtonComponent(actions)
             .setButtonText(t('common.cancel'))
             .onClick(async () => {
@@ -137,27 +155,16 @@ export class ZeroDraftModal extends ErtModal {
                 this.close();
             });
 
-        new ButtonComponent(actions)
+        const saveBtn = new ButtonComponent(actions)
             .setButtonText(t('common.save'))
             .setCta()
+            .setDisabled(true)
             .onClick(async () => {
-                const next = (this.textareaEl.value || '').trim();
-                // If we are clearing existing non-empty content, confirm deletion
-                if (this.originalText.length > 0 && next.length === 0) {
-                    const confirmed = await this.confirmAction({
-                        badge: t('ui.zeroDraftModal.warningBadge'),
-                        title: t('ui.zeroDraftModal.deleteTitle'),
-                        subtitle: t('ui.zeroDraftModal.deleteSubtitle'),
-                        confirmText: t('ui.zeroDraftModal.deleteButton'),
-                        confirmWarning: true
-                    });
-                    if (!confirmed) return; // Do not close or write
-                }
-                const written = await this.onOk(next);
-                if (written !== false) {
-                    this.close();
-                }
+                const addition = this.newText();
+                if (!addition) return;
+                if (await this.onSave(addition)) this.close();
             });
+        this.textareaEl.addEventListener('input', () => saveBtn.setDisabled(!this.newText()));
     }
 }
 

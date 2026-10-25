@@ -97,6 +97,10 @@
   pointer-events: none;
 }
 
+.rt-scene-info [data-bottom-hidden] {
+  display: none;
+}
+
 .ert-hover-strips {
   fill: var(--rt-color-empty);
   stroke: none;

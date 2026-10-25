@@ -33,6 +33,7 @@ import { applySearchTermHighlightsInRoot, clearSearchHighlightsInRoot } from './
 import { shouldHighlightMetadataTerm } from './services/searchState';
 import { getIcon } from 'obsidian';
 import { getSynopsisHoverLineLimit } from './utils/synopsisLimits';
+import { getSynopsisRowOffsets, getBottomSynopsisSpace } from './synopsis/SynopsisLayout';
 
 /**
  * Handles generating synopsis SVG/HTML blocks and positioning logic.
@@ -320,6 +321,7 @@ export default class SynopsisManager {
     fontScale: number;
     pulseLineHeight: number;
     lineInnerRadius: number;
+    expandedWidth?: boolean;
   }): boolean {
     const {
       textRows,
@@ -329,14 +331,12 @@ export default class SynopsisManager {
       isTopHalf,
       fontScale,
       pulseLineHeight,
-      lineInnerRadius
+      lineInnerRadius,
+      expandedWidth = false
     } = params;
 
     let didWrap = false;
-    let yOffset = 0;
-    const titleLineHeight = 32 * fontScale;
-    const synopsisLineHeight = 22 * fontScale;
-    const scorePreGap = 46 * fontScale;
+    const rowOffsets = this.getRowOffsets(textRows, fontScale, pulseLineHeight);
     const defaultMaxWidth = MAX_TEXT_WIDTH * fontScale;
 
     for (let rowIndex = 0; rowIndex < textRows.length; rowIndex++) {
@@ -344,25 +344,7 @@ export default class SynopsisManager {
       const primaryEl = rowElements[0];
       if (!primaryEl) continue;
 
-      // Match row spacing logic used during layout
-      if (rowIndex > 0) {
-        const currentEl = rowElements[0];
-        const isGossamerLine = currentEl.classList.contains('ert-gossamer-score-line');
-        const isBeatsText = currentEl.classList.contains('pulse-text');
-        const prevEl = textRows[rowIndex - 1][0];
-        const isPrevLineSynopsis = prevEl.classList.contains('rt-title-text-secondary');
-        const isPrevLineBeats = prevEl.classList.contains('pulse-text');
-
-        if (rowIndex === 1) {
-          yOffset += titleLineHeight;
-        } else if (isGossamerLine && isPrevLineSynopsis) {
-          yOffset += scorePreGap;
-        } else if (isBeatsText || isPrevLineBeats) {
-          yOffset += pulseLineHeight;
-        } else {
-          yOffset += synopsisLineHeight;
-        }
-      }
+      const yOffset = rowOffsets[rowIndex];
 
       if (primaryEl.getAttribute('data-synopsis-line') !== 'true') {
         continue;
@@ -372,7 +354,8 @@ export default class SynopsisManager {
       if (!raw.trim()) continue;
 
       const anchorY = baseY + yOffset;
-      const radiusDiff = radius * radius - anchorY * anchorY;
+      const wrapY = expandedWidth ? Math.min(anchorY, getBottomSynopsisSpace(radius, fontScale).footerBottom) : anchorY;
+      const radiusDiff = radius * radius - wrapY * wrapY;
       if (radiusDiff <= 0) continue;
 
       const circleX = Math.sqrt(radiusDiff);
@@ -405,7 +388,12 @@ export default class SynopsisManager {
         maxWidth = leftBoundary - leftEdge;
       }
 
-      maxWidth += SynopsisManager.WRAP_OVERFLOW_TOLERANCE * fontScale;
+      if (expandedWidth) {
+        const space = getBottomSynopsisSpace(radius, fontScale);
+        maxWidth = Math.min(circleX + radius * 0.4, circleX * 2) - 12 * fontScale - this.getHoverIconTotalOffset(primaryEl);
+      } else {
+        maxWidth += SynopsisManager.WRAP_OVERFLOW_TOLERANCE * fontScale;
+      }
 
       if (!Number.isFinite(maxWidth) || maxWidth <= 0) {
         continue;
@@ -455,10 +443,7 @@ export default class SynopsisManager {
     } = params;
 
     let didWrap = false;
-    let yOffset = 0;
-    const titleLineHeight = 32 * fontScale;
-    const synopsisLineHeight = 22 * fontScale;
-    const scorePreGap = 46 * fontScale;
+    const rowOffsets = this.getRowOffsets(textRows, fontScale, pulseLineHeight);
     const defaultMaxWidth = MAX_TEXT_WIDTH * fontScale;
 
     for (let rowIndex = 0; rowIndex < textRows.length; rowIndex++) {
@@ -466,24 +451,7 @@ export default class SynopsisManager {
       const primaryEl = rowElements[0];
       if (!primaryEl) continue;
 
-      if (rowIndex > 0) {
-        const currentEl = rowElements[0];
-        const isGossamerLine = currentEl.classList.contains('ert-gossamer-score-line');
-        const isBeatsText = currentEl.classList.contains('pulse-text');
-        const prevEl = textRows[rowIndex - 1][0];
-        const isPrevLineSynopsis = prevEl.classList.contains('rt-title-text-secondary');
-        const isPrevLineBeats = prevEl.classList.contains('pulse-text');
-
-        if (rowIndex === 1) {
-          yOffset += titleLineHeight;
-        } else if (isGossamerLine && isPrevLineSynopsis) {
-          yOffset += scorePreGap;
-        } else if (isBeatsText || isPrevLineBeats) {
-          yOffset += pulseLineHeight;
-        } else {
-          yOffset += synopsisLineHeight;
-        }
-      }
+      const yOffset = rowOffsets[rowIndex];
 
       if (primaryEl.getAttribute('data-pending-line') !== 'true') {
         continue;
@@ -568,6 +536,7 @@ export default class SynopsisManager {
     fontScale: number;
     pulseLineHeight: number;
     lineInnerRadius: number;
+    expandedWidth?: boolean;
   }): boolean {
     const {
       textRows,
@@ -577,14 +546,12 @@ export default class SynopsisManager {
       isTopHalf,
       fontScale,
       pulseLineHeight,
-      lineInnerRadius
+      lineInnerRadius,
+      expandedWidth = false
     } = params;
 
     let didWrap = false;
-    let yOffset = 0;
-    const titleLineHeight = 32 * fontScale;
-    const synopsisLineHeight = 22 * fontScale;
-    const scorePreGap = 46 * fontScale;
+    const rowOffsets = this.getRowOffsets(textRows, fontScale, pulseLineHeight);
     const defaultMaxWidth = MAX_TEXT_WIDTH * fontScale;
 
     for (let rowIndex = 0; rowIndex < textRows.length; rowIndex++) {
@@ -592,25 +559,7 @@ export default class SynopsisManager {
       const primaryEl = rowElements[0];
       if (!primaryEl) continue;
 
-      // Match row spacing logic used during layout
-      if (rowIndex > 0) {
-        const currentEl = rowElements[0];
-        const isGossamerLine = currentEl.classList.contains('ert-gossamer-score-line');
-        const isBeatsText = currentEl.classList.contains('pulse-text');
-        const prevEl = textRows[rowIndex - 1][0];
-        const isPrevLineSynopsis = prevEl.classList.contains('rt-title-text-secondary');
-        const isPrevLineBeats = prevEl.classList.contains('pulse-text');
-
-        if (rowIndex === 1) {
-          yOffset += titleLineHeight;
-        } else if (isGossamerLine && isPrevLineSynopsis) {
-          yOffset += scorePreGap;
-        } else if (isBeatsText || isPrevLineBeats) {
-          yOffset += pulseLineHeight;
-        } else {
-          yOffset += synopsisLineHeight;
-        }
-      }
+      const yOffset = rowOffsets[rowIndex];
 
       const lineGroup = primaryEl.closest('.rt-hover-metadata-line');
       if (!lineGroup) continue;
@@ -618,7 +567,8 @@ export default class SynopsisManager {
       if (!raw.trim()) continue;
 
       const anchorY = baseY + yOffset;
-      const radiusDiff = radius * radius - anchorY * anchorY;
+      const wrapY = expandedWidth ? Math.min(anchorY, getBottomSynopsisSpace(radius, fontScale).footerBottom) : anchorY;
+      const radiusDiff = radius * radius - wrapY * wrapY;
       if (radiusDiff <= 0) continue;
 
       const circleX = Math.sqrt(radiusDiff);
@@ -653,7 +603,12 @@ export default class SynopsisManager {
         maxWidth = leftBoundary - leftEdge;
       }
 
-      maxWidth += SynopsisManager.WRAP_OVERFLOW_TOLERANCE * fontScale;
+      if (expandedWidth) {
+        const space = getBottomSynopsisSpace(radius, fontScale);
+        maxWidth = Math.min(circleX + radius * 0.4, circleX * 2) - 12 * fontScale - this.getHoverIconTotalOffset(primaryEl);
+      } else {
+        maxWidth += SynopsisManager.WRAP_OVERFLOW_TOLERANCE * fontScale;
+      }
 
       if (!Number.isFinite(maxWidth) || maxWidth <= 0) {
         continue;
@@ -685,6 +640,7 @@ export default class SynopsisManager {
     fontScale: number;
     pulseLineHeight: number;
     lineInnerRadius: number;
+    expandedWidth?: boolean;
   }): boolean {
     const {
       textRows,
@@ -694,14 +650,12 @@ export default class SynopsisManager {
       isTopHalf,
       fontScale,
       pulseLineHeight,
-      lineInnerRadius
+      lineInnerRadius,
+      expandedWidth = false
     } = params;
 
     let didWrap = false;
-    let yOffset = 0;
-    const titleLineHeight = 32 * fontScale;
-    const synopsisLineHeight = 22 * fontScale;
-    const scorePreGap = 46 * fontScale;
+    const rowOffsets = this.getRowOffsets(textRows, fontScale, pulseLineHeight);
     const defaultMaxWidth = MAX_TEXT_WIDTH * fontScale;
 
     for (let rowIndex = 0; rowIndex < textRows.length; rowIndex++) {
@@ -709,33 +663,16 @@ export default class SynopsisManager {
       const primaryEl = rowElements[0];
       if (!primaryEl || primaryEl.getAttribute('data-list-wrap') === 'true') continue;
 
-      if (rowIndex > 0) {
-        const currentEl = rowElements[0];
-        const isGossamerLine = currentEl.classList.contains('ert-gossamer-score-line');
-        const isBeatsText = currentEl.classList.contains('pulse-text');
-        const prevEl = textRows[rowIndex - 1][0];
-        const isPrevLineSynopsis = prevEl.classList.contains('rt-title-text-secondary');
-        const isPrevLineBeats = prevEl.classList.contains('pulse-text');
-
-        if (rowIndex === 1) {
-          yOffset += titleLineHeight;
-        } else if (isGossamerLine && isPrevLineSynopsis) {
-          yOffset += scorePreGap;
-        } else if (isBeatsText || isPrevLineBeats) {
-          yOffset += pulseLineHeight;
-        } else {
-          yOffset += synopsisLineHeight;
-        }
-      }
+      const yOffset = rowOffsets[rowIndex];
 
       const listData = this.getWrappedListData(primaryEl);
       if (!listData) continue;
 
       const anchorY = baseY + yOffset;
       const radiusDiff = radius * radius - anchorY * anchorY;
-      if (radiusDiff <= 0) continue;
+      if (radiusDiff <= 0 && !expandedWidth) continue;
 
-      const circleX = Math.sqrt(radiusDiff);
+      const circleX = Math.sqrt(Math.max(0, radiusDiff));
       const direction = isRightAligned ? 1 : -1;
 
       let inset = 0;
@@ -765,7 +702,12 @@ export default class SynopsisManager {
         maxWidth = leftBoundary - leftEdge;
       }
 
-      maxWidth += SynopsisManager.WRAP_OVERFLOW_TOLERANCE * fontScale;
+      if (expandedWidth) {
+        const space = getBottomSynopsisSpace(radius, fontScale);
+        maxWidth = space.footerWidth;
+      } else {
+        maxWidth += SynopsisManager.WRAP_OVERFLOW_TOLERANCE * fontScale;
+      }
 
       if (!Number.isFinite(maxWidth) || maxWidth <= 0) {
         continue;
@@ -1752,23 +1694,16 @@ export default class SynopsisManager {
     const shouldRewrap = prevWrapMode !== wrapMode;
 
     if (shouldRewrap) {
+      synopsis.querySelectorAll<SVGTextElement>('[data-bottom-hidden]').forEach(text => {
+        text.removeAttribute('data-bottom-hidden');
+      });
+      synopsis.querySelectorAll('[data-bottom-ellipsis]').forEach(el => el.remove());
+      synopsis.removeAttribute('data-bottom-expanded');
       this.resetWrappedListLines(synopsis);
       this.resetAdvancedYamlWrap(synopsis);
       this.resetPendingEditsWrap(synopsis);
       this.resetMainSynopsisWrap(synopsis);
     }
-
-    const buildTextRows = (elements: SVGTextElement[]): SVGTextElement[][] => {
-      const rows: SVGTextElement[][] = [];
-      elements.forEach((textEl) => {
-        if (textEl.getAttribute('data-metadata-block') === 'true' && rows.length > 0) {
-          rows[rows.length - 1].push(textEl);
-        } else {
-          rows.push([textEl]);
-        }
-      });
-      return rows;
-    };
 
     const applyTextAnchors = (elements: SVGTextElement[]): void => {
       const textAnchor = isRightAligned ? 'end' : 'start';
@@ -1781,7 +1716,7 @@ export default class SynopsisManager {
       });
     };
 
-    let textElements = Array.from(synopsis.querySelectorAll('text'));
+    let textElements = Array.from(synopsis.querySelectorAll<SVGTextElement>('text:not([data-bottom-hidden])'));
     if (textElements.length === 0) return;
 
     applyTextAnchors(textElements);
@@ -1797,9 +1732,6 @@ export default class SynopsisManager {
 
     const fontScale = this.getReadabilityScale();
     // Circle parameters scale with readability to avoid overlaps
-    const titleLineHeight = 32 * fontScale; // Increased spacing for title/date line
-    const synopsisLineHeight = 22 * fontScale; // Reduced spacing for synopsis text
-    const scorePreGap = 46 * fontScale; // Manual gap before the Gossamer score line; adjust as needed
     const metadataSpacing = 14 * fontScale; // Default horizontal gap between title and metadata block
 
     // Get pulse line height from CSS for beats text
@@ -1818,7 +1750,7 @@ export default class SynopsisManager {
     const baseX = parseFloat(translateMatch[1]);
     const baseY = parseFloat(translateMatch[2]);
 
-    let textRows = buildTextRows(textElements);
+    let textRows = this.buildTextRows(textElements);
 
     if (shouldRewrap) {
       const mainWrapped = this.applyMainSynopsisWrap({
@@ -1832,10 +1764,10 @@ export default class SynopsisManager {
         lineInnerRadius
       });
       if (mainWrapped) {
-        textElements = Array.from(synopsis.querySelectorAll('text'));
+        textElements = Array.from(synopsis.querySelectorAll<SVGTextElement>('text:not([data-bottom-hidden])'));
         if (textElements.length === 0) return;
         applyTextAnchors(textElements);
-        textRows = buildTextRows(textElements);
+        textRows = this.buildTextRows(textElements);
       }
 
       const pendingWrapped = this.applyPendingEditsWrap({
@@ -1849,10 +1781,10 @@ export default class SynopsisManager {
         lineInnerRadius
       });
       if (pendingWrapped) {
-        textElements = Array.from(synopsis.querySelectorAll('text'));
+        textElements = Array.from(synopsis.querySelectorAll<SVGTextElement>('text:not([data-bottom-hidden])'));
         if (textElements.length === 0) return;
         applyTextAnchors(textElements);
-        textRows = buildTextRows(textElements);
+        textRows = this.buildTextRows(textElements);
       }
 
       // Pulse triplet rows intentionally skip inner-radius wrapping.
@@ -1870,10 +1802,10 @@ export default class SynopsisManager {
         lineInnerRadius
       });
       if (advancedWrapped) {
-        textElements = Array.from(synopsis.querySelectorAll('text'));
+        textElements = Array.from(synopsis.querySelectorAll<SVGTextElement>('text:not([data-bottom-hidden])'));
         if (textElements.length === 0) return;
         applyTextAnchors(textElements);
-        textRows = buildTextRows(textElements);
+        textRows = this.buildTextRows(textElements);
       }
 
       const listWrapped = this.applyWrappedListLineWrap({
@@ -1887,11 +1819,36 @@ export default class SynopsisManager {
         lineInnerRadius
       });
       if (listWrapped) {
-        textElements = Array.from(synopsis.querySelectorAll('text'));
+        textElements = Array.from(synopsis.querySelectorAll<SVGTextElement>('text:not([data-bottom-hidden])'));
         if (textElements.length === 0) return;
         applyTextAnchors(textElements);
-        textRows = buildTextRows(textElements);
+        textRows = this.buildTextRows(textElements);
       }
+    }
+
+    if (shouldRewrap && !isTopHalf && this.bottomLayoutOverflows(textRows, radius, baseY, fontScale, pulseLineHeight)) {
+      // Keep successful layouts unchanged. Overflowing bottom layouts get more width
+      // before any excerpts are shortened, and a fixed chord for the complete footer.
+      this.resetWrappedListLines(synopsis);
+      this.resetAdvancedYamlWrap(synopsis);
+      this.resetPendingEditsWrap(synopsis);
+      this.resetMainSynopsisWrap(synopsis);
+      const rebuild = (): void => {
+        textElements = Array.from(synopsis.querySelectorAll<SVGTextElement>('text:not([data-bottom-hidden])'));
+        applyTextAnchors(textElements);
+        textRows = this.buildTextRows(textElements);
+      };
+      rebuild();
+      const wrapParams = { baseY, radius, isRightAligned, isTopHalf, fontScale, pulseLineHeight, lineInnerRadius, expandedWidth: true };
+      this.applyMainSynopsisWrap({ ...wrapParams, textRows });
+      rebuild();
+      this.applyPendingEditsWrap({ ...wrapParams, textRows });
+      rebuild();
+      this.applyAdvancedYamlWrap({ ...wrapParams, textRows });
+      rebuild();
+      this.applyWrappedListLineWrap({ ...wrapParams, textRows });
+      rebuild();
+      synopsis.setAttribute('data-bottom-expanded', 'true');
     }
 
     if (shouldRewrap) {
@@ -1903,45 +1860,22 @@ export default class SynopsisManager {
       radius,
       baseY,
       fontScale,
-      pulseLineHeight
+      pulseLineHeight,
+      isTopHalf
     });
 
     if (budgetChanged) {
-      textElements = Array.from(synopsis.querySelectorAll('text'));
+      textElements = Array.from(synopsis.querySelectorAll<SVGTextElement>('text:not([data-bottom-hidden])'));
       if (textElements.length === 0) return;
       applyTextAnchors(textElements);
-      textRows = buildTextRows(textElements);
+      textRows = this.buildTextRows(textElements);
     }
 
-    // Position each row using Pythagorean theorem relative to circle center
-    let yOffset = 0;
-
+    // Wrapping, budget checks and final positioning share exactly the same row spacing.
+    const rowOffsets = this.getRowOffsets(textRows, fontScale, pulseLineHeight);
     textRows.forEach((rowElements, rowIndex) => {
       const primaryEl = rowElements[0] ?? null;
-
-      // Calculate absolute position for this row with variable line heights
-      if (rowIndex > 0) {
-        const currentEl = rowElements[0];
-        const isGossamerLine = currentEl.classList.contains('ert-gossamer-score-line');
-        const isBeatsText = currentEl.classList.contains('pulse-text');
-        const prevEl = textRows[rowIndex - 1][0];
-        const isPrevLineSynopsis = prevEl.classList.contains('rt-title-text-secondary');
-        const isPrevLineBeats = prevEl.classList.contains('pulse-text');
-
-        if (rowIndex === 1) {
-          // Always use title spacing right after the title line
-          yOffset += titleLineHeight;
-        } else if (isGossamerLine && isPrevLineSynopsis) {
-          // Fixed manual gap before the Gossamer score line
-          yOffset += scorePreGap;
-        } else if (isBeatsText || isPrevLineBeats) {
-          // Use pulse line height for beats/analysis text
-          yOffset += pulseLineHeight;
-        } else {
-          // Default spacing between regular synopsis/metadata lines
-          yOffset += synopsisLineHeight;
-        }
-      }
+      const yOffset = rowOffsets[rowIndex];
 
       let anchorY = baseY + yOffset;
 
@@ -2004,6 +1938,39 @@ export default class SynopsisManager {
       isRightAligned,
       fontScale
     );
+  }
+
+  private buildTextRows(elements: SVGTextElement[]): SVGTextElement[][] {
+    const rows: SVGTextElement[][] = [];
+    elements.forEach(text => {
+      if (text.getAttribute('data-metadata-block') === 'true' && rows.length > 0) rows[rows.length - 1].push(text);
+      else rows.push([text]);
+    });
+    return rows;
+  }
+
+  private getRowOffsets(rows: SVGTextElement[][], fontScale: number, pulseLineHeight: number): number[] {
+    return getSynopsisRowOffsets(rows.map(([text]) => ({
+      pulse: text.classList.contains('pulse-text'),
+      synopsis: text.classList.contains('rt-title-text-secondary'),
+      gossamer: text.classList.contains('ert-gossamer-score-line')
+    })), fontScale, pulseLineHeight);
+  }
+
+  private bottomLayoutOverflows(rows: SVGTextElement[][], radius: number, baseY: number, fontScale: number, pulseLineHeight: number): boolean {
+    const offsets = this.getRowOffsets(rows, fontScale, pulseLineHeight);
+    const { footerBottom } = getBottomSynopsisSpace(radius, fontScale);
+    return rows.some((row, index) => row.some(text => {
+      if (!text.textContent?.trim()) return false;
+      const box = text.getBBox();
+      const fontSize = parseFloat(text.ownerDocument.win.getComputedStyle(text).fontSize);
+      const baseline = text.getStartPositionOfChar(0).y;
+      const bottom = baseY + offsets[index] + Math.max(box.y + box.height - baseline, fontSize * 0.2) + 1.5 * fontScale;
+      const isFooter = text.hasAttribute('data-list-wrap-kind');
+      if (bottom > (isFooter ? footerBottom : radius - 3 * fontScale)) return true;
+      // Footer lines must fit in their entirety, including padding on both sides.
+      return isFooter && box.width + 6 * fontScale > 2 * Math.sqrt(Math.max(0, radius ** 2 - bottom ** 2));
+    }));
   }
 
   private measureRowLayout(rowElements: SVGTextElement[], defaultGap: number, isRightAligned: boolean): { primaryWidth: number; metadataWidth: number; gap: number } {
@@ -2178,24 +2145,13 @@ export default class SynopsisManager {
     baseY: number;
     fontScale: number;
     pulseLineHeight: number;
+    isTopHalf: boolean;
   }): boolean {
-    const { synopsis, radius, baseY, fontScale, pulseLineHeight } = params;
-    const titleLineHeight = 32 * fontScale;
-    const synopsisLineHeight = 22 * fontScale;
-    const scorePreGap = 46 * fontScale;
+    const { synopsis, radius, baseY, fontScale, pulseLineHeight, isTopHalf } = params;
 
-    const buildRows = (): SVGTextElement[][] => {
-      const elements = Array.from(synopsis.querySelectorAll('text'));
-      const rows: SVGTextElement[][] = [];
-      elements.forEach((textEl) => {
-        if (textEl.getAttribute('data-metadata-block') === 'true' && rows.length > 0) {
-          rows[rows.length - 1].push(textEl);
-        } else {
-          rows.push([textEl]);
-        }
-      });
-      return rows;
-    };
+    const buildRows = (): SVGTextElement[][] => this.buildTextRows(
+      Array.from(synopsis.querySelectorAll<SVGTextElement>('text:not([data-bottom-hidden])'))
+    );
 
     const getCategory = (textEl: SVGTextElement): { category: 'synopsis' | 'pending' | 'advanced' | 'other'; key?: string } => {
       if (
@@ -2216,28 +2172,10 @@ export default class SynopsisManager {
     };
 
     const hasOverflow = (rows: SVGTextElement[][]): boolean => {
-      let yOffset = 0;
+      if (!isTopHalf) return this.bottomLayoutOverflows(rows, radius, baseY, fontScale, pulseLineHeight);
+      const rowOffsets = this.getRowOffsets(rows, fontScale, pulseLineHeight);
       for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-        const rowElements = rows[rowIndex];
-        if (rowIndex > 0) {
-          const currentEl = rowElements[0];
-          const isGossamerLine = currentEl.classList.contains('ert-gossamer-score-line');
-          const isBeatsText = currentEl.classList.contains('pulse-text');
-          const prevEl = rows[rowIndex - 1][0];
-          const isPrevLineSynopsis = prevEl.classList.contains('rt-title-text-secondary');
-          const isPrevLineBeats = prevEl.classList.contains('pulse-text');
-
-          if (rowIndex === 1) {
-            yOffset += titleLineHeight;
-          } else if (isGossamerLine && isPrevLineSynopsis) {
-            yOffset += scorePreGap;
-          } else if (isBeatsText || isPrevLineBeats) {
-            yOffset += pulseLineHeight;
-          } else {
-            yOffset += synopsisLineHeight;
-          }
-        }
-
+        const yOffset = rowOffsets[rowIndex];
         const anchorY = baseY + yOffset;
         if (Math.abs(anchorY) >= radius) {
           return true;
@@ -2246,12 +2184,12 @@ export default class SynopsisManager {
       return false;
     };
 
-    const removeOne = (): { category: 'synopsis' | 'pending' | 'advanced'; key?: string } | null => {
+    const removeOne = (): { category: 'synopsis' | 'pending' | 'advanced' | 'other'; key?: string } | null => {
       const rows = buildRows();
       if (rows.length === 0) return null;
 
-      const synopsisMin = Math.max(3, getSynopsisHoverLineLimit(this.plugin.settings));
-      const pendingMin = 3;
+      const synopsisMin = isTopHalf ? Math.max(3, getSynopsisHoverLineLimit(this.plugin.settings)) : 1;
+      const pendingMin = isTopHalf ? 3 : 1;
 
       let synopsisCount = 0;
       let pendingCount = 0;
@@ -2301,6 +2239,25 @@ export default class SynopsisManager {
         if (info.category === 'synopsis' && synopsisCount > synopsisMin) {
           primary.remove();
           return { category: 'synopsis' };
+        }
+      }
+
+      if (!isTopHalf) {
+        // Reserve the complete footer. Neighbor reviews yield before the active review.
+        for (const section of ['previousSceneAnalysis', 'nextSceneAnalysis', 'currentSceneAnalysis']) {
+          const lines = rows.map(row => row[0]).filter(text => text.getAttribute('data-pulse-section') === section);
+          if (lines.length > 1) {
+            const last = lines[lines.length - 1];
+            last.setAttribute('data-bottom-hidden', 'true');
+            const retained = lines[lines.length - 2];
+            if (!retained.querySelector('[data-bottom-ellipsis]')) {
+              const ellipsis = retained.ownerDocument.win.createSvg('tspan');
+              ellipsis.setAttribute('data-bottom-ellipsis', 'true');
+              ellipsis.textContent = '...';
+              retained.appendChild(ellipsis);
+            }
+            return { category: 'other' };
+          }
         }
       }
 

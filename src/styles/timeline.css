@@ -1275,6 +1275,13 @@
   line-height: 1;
 }
 
+/* The alignment toggle's glyph is a drawn icon (a full ring for Fill, a
+   dashed one for Sequence), sized to fill the chip's height. */
+.ert-timeline-subnav__glyph--icon svg {
+  width: 14px;
+  height: 14px;
+}
+
 .ert-timeline-session.clickable-icon {
   width: auto;
   height: 24px;

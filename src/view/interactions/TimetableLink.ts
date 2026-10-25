@@ -63,52 +63,65 @@ export function linkActLabelsToTimetable(view: TimetableLinkView, svg: SVGSVGEle
     });
 }
 
-const LENS_DIMMED = 'rt-lens-out';
+const OVERLAY_ATTR = 'data-timetable-overlay';
+const LIT = 'rt-overlay-lit';
+const COLORED = 'rt-colored-by';
 
-/**
- * A Timetable's lens: every scene, beat and backdrop that isn't among the
- * table's rows is dimmed, so the table's filter reads as a pattern on the
- * wheel. A separate class from hover's rt-non-selected, which hover clears.
- */
-export function applyLensToSvg(svg: Element, lens: TimelineLens | null): void {
-    svg.querySelectorAll(`.${LENS_DIMMED}`).forEach(element => element.classList.remove(LENS_DIMMED));
-    if (!lens) return;
-    const dimmedIds = new Set<string>();
-    svg.querySelectorAll('.rt-scene-group').forEach(group => {
-        const path = scenePathOf(group);
-        if (path && lens.paths.has(path)) return;
-        group.querySelectorAll('.rt-scene-path, .rt-scene-title').forEach(element => element.classList.add(LENS_DIMMED));
-        const sceneId = group.querySelector('.rt-scene-path')?.id;
-        if (sceneId) dimmedIds.add(sceneId);
-    });
-    svg.querySelectorAll('.rt-number-square, .rt-number-text').forEach(element => {
-        if (dimmedIds.has(element.getAttribute('data-scene-id') ?? '')) element.classList.add(LENS_DIMMED);
+/** The scenes a lens and a coloring light, and the color slot of each colored one (undefined under a lens alone). */
+export function litScenes(
+    scenes: Array<{ path: string | null; itemType: string | null }>,
+    lens: Pick<TimelineLens, 'paths'> | null,
+    coloring: Pick<TimelineColoring, 'values' | 'legend'> | null
+): Array<{ lit: boolean; slot?: number }> {
+    const slotOf = new Map(coloring?.legend.map(entry => [entry.value, entry.colorIndex]) ?? []);
+    return scenes.map(({ path, itemType }) => {
+        if (!path || (lens && !lens.paths.has(path))) return { lit: false };
+        if (!coloring) return { lit: true };
+        // A coloring lights only scenes with a value; beats and backdrops have none.
+        const value = itemType === 'Scene' ? coloring.values.get(path) : undefined;
+        const slot = value !== undefined ? slotOf.get(value) : undefined;
+        return slot === undefined ? { lit: false } : { lit: true, slot };
     });
 }
 
-const COLORED = 'rt-colored-by';
-
 /**
- * A Timetable column colors the scenes: each scene cell takes its value's
- * color, and a scene without a value is drawn neutral. The fill is set inline
- * so it sits above the status and subplot fills without replacing them; clearing
- * the coloring restores them.
+ * A Timetable's lens or coloring over the wheel. The scenes it lights (the
+ * table's rows; under a coloring, the scenes with a value, in the value's
+ * color) stand out, and everything else recedes as in Chronologue's Shift
+ * mode: other scenes, beats and backdrops with their numbers and titles, void
+ * cells, spokes and the subplot ring titles. The CSS keys on the wheel's
+ * data-timetable-overlay attribute; lit elements carry rt-overlay-lit. A
+ * coloring's fill is set inline, above the status and subplot fills, and
+ * clearing it restores them.
  */
-export function applyColoringToSvg(svg: Element, coloring: TimelineColoring | null): void {
+export function applyTimetableOverlayToSvg(svg: Element, lens: TimelineLens | null, coloring: TimelineColoring | null): void {
+    svg.querySelectorAll(`.${LIT}`).forEach(element => element.classList.remove(LIT));
     svg.querySelectorAll<SVGElement>(`.${COLORED}`).forEach(element => {
         element.setCssProps({ fill: '' });
         element.classList.remove(COLORED);
     });
-    if (!coloring) return;
-    const slotOf = new Map(coloring.legend.map(entry => [entry.value, entry.colorIndex]));
-    svg.querySelectorAll('.rt-scene-group[data-item-type="Scene"]').forEach(group => {
+    if (!lens && !coloring) {
+        svg.removeAttribute(OVERLAY_ATTR);
+        return;
+    }
+    svg.setAttribute(OVERLAY_ATTR, coloring ? 'coloring' : 'lens');
+    const groups = Array.from(svg.querySelectorAll('.rt-scene-group'));
+    const lit = litScenes(groups.map(group => ({ path: scenePathOf(group), itemType: group.getAttribute('data-item-type') })), lens, coloring);
+    const litIds = new Set<string>();
+    groups.forEach((group, index) => {
+        const { lit: isLit, slot } = lit[index];
+        if (!isLit) return;
+        group.classList.add(LIT);
         const cell = group.querySelector<SVGElement>('.rt-scene-path');
         if (!cell) return;
-        const path = scenePathOf(group);
-        const value = path ? coloring.values.get(path) : undefined;
-        const slot = value !== undefined ? slotOf.get(value) : undefined;
-        cell.setCssProps({ fill: slot !== undefined ? `var(--rt-subplot-colors-${slot})` : 'var(--background-modifier-border-hover)' });
+        if (cell.id) litIds.add(cell.id);
+        if (slot === undefined) return;
+        cell.setCssProps({ fill: `var(--rt-subplot-colors-${slot})` });
         cell.classList.add(COLORED);
+    });
+    // Numbers, and Chronologue's titles drawn above the rings, sit outside the scene groups.
+    svg.querySelectorAll('.rt-number-square, .rt-number-text, .rt-scene-title-use').forEach(element => {
+        if (litIds.has(element.getAttribute('data-scene-id') ?? '')) element.classList.add(LIT);
     });
 }
 

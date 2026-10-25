@@ -16,7 +16,7 @@ import {
 } from './utils/hoverMetadata';
 import { decodeHtmlEntities, parseSceneTitleComponents } from './utils/text';
 import { getPublishStageStyle, splitSynopsisLines, decodeContentLines, isOverdueAndIncomplete, readBeatPurposeSecondary } from './synopsis/SynopsisData';
-import { createSynopsisContainer, createTextGroup, createText } from './synopsis/SynopsisView';
+import { createSynopsisContainer, createTextGroup, createText, renderSynopsisStrips } from './synopsis/SynopsisView';
 import { convertFromEarth, getActivePlanetaryProfile } from './utils/planetaryTime';
 import { t } from './i18n';
 import { resolveSubplotOuterRadius } from './renderer/modules/ModeRenderingHelpers';
@@ -1747,7 +1747,7 @@ export default class SynopsisManager {
     sceneId: string,
     lineInnerRadius: number
   ): void {
-    const wrapMode = isRightAligned ? 'right' : 'left';
+    const wrapMode = `${isRightAligned ? 'right' : 'left'}-${isTopHalf ? 'top' : 'bottom'}-${radius}-${this.getReadabilityScale()}`;
     const prevWrapMode = (synopsis as SVGElement).getAttribute('data-hover-synopsis-wrap') || '';
     const shouldRewrap = prevWrapMode !== wrapMode;
 
@@ -1997,6 +1997,13 @@ export default class SynopsisManager {
 
     // After positioning text, reposition advanced YAML icons to match the row start
     this.updateHoverMetadataIcons(synopsis);
+    renderSynopsisStrips(
+      synopsisTextGroup as SVGGElement,
+      textRows,
+      { x: -baseX, y: -baseY, radius },
+      isRightAligned,
+      fontScale
+    );
   }
 
   private measureRowLayout(rowElements: SVGTextElement[], defaultGap: number, isRightAligned: boolean): { primaryWidth: number; metadataWidth: number; gap: number } {

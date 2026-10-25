@@ -93,9 +93,13 @@
 }
 
 .rt-scene-info text {
-  stroke: white;
-  stroke-width: 4px;
-  paint-order: stroke;
+  stroke: none;
+  pointer-events: none;
+}
+
+.ert-hover-strips {
+  fill: var(--rt-color-empty);
+  stroke: none;
   pointer-events: none;
 }
 
@@ -354,13 +358,10 @@
 }
 
 /* Allow inline subplot/character colors to apply in synopsis */
-/* Tspans don't inherit stroke from parent text elements, so set explicitly */
 .rt-info-text.rt-metadata-text tspan[data-item-type=subplot],
 .rt-info-text.rt-metadata-text tspan[data-item-type=character] {
   fill: var(--rt-dynamic-color, var(--text-normal));
-  stroke: white;
-  stroke-width: 4px;
-  paint-order: stroke;
+  stroke: none;
 }
 
 .rt-info-text.rt-metadata-text tspan.rt-pov-character {

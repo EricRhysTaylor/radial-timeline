@@ -403,6 +403,13 @@
   padding: var(--ert-control-pad-y) var(--ert-control-pad-x);
 }
 
+/* Author prose (notes, pending edits) — the writer's text font, not code. */
+.ert-ui textarea.ert-textarea--prose {
+  font-family: var(--font-text);
+  font-size: var(--font-ui-medium);
+  line-height: 1.5;
+}
+
 .ert-ui textarea.ert-textarea--compact {
   width: min(100%, var(--ert-input-width-xl));
   resize: vertical;

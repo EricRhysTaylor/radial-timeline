@@ -7440,7 +7440,6 @@ export const ko: DeepPartial<TranslationKeys> = {
         },
         zeroDraftHandler: {
             sceneFallback: '장면',
-            modalTitle: 'Pending Edits — {{title}}',
             unsafeStructureNotice: '예상치 못한 구조 때문에 Pending Edits를 안전하게 업데이트할 수 없습니다. Pending Edits 섹션을 검토하거나 초기화하세요.',
             potentialIssueNotice: 'RT가 이 작업 후 잠재적인 문제를 감지했습니다. 영향을 받은 노트를 검토하세요. 필요하면 백업이나 동기화/버전 기록을 사용해 복원하세요.',
         },

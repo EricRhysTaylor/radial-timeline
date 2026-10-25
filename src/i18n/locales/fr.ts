@@ -7443,7 +7443,6 @@ export const fr: TranslationKeys = {
         },
         "zeroDraftHandler": {
             "sceneFallback": "Scène",
-            "modalTitle": "Pending Edits — {{title}}",
             "unsafeStructureNotice": "Pending Edits n'a pas pu être mis à jour en toute sécurité en raison d'une structure inattendue. Veuillez consulter ou réinitialiser la section Pending Edits.",
             "potentialIssueNotice": "Radial Timeline a détecté un problème potentiel après cette opération. Veuillez examiner la note concernée. Si nécessaire, utilisez une sauvegarde ou l'historique des versions pour restaurer."
         },

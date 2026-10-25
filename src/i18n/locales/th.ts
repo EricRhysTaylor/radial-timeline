@@ -7443,7 +7443,6 @@ export const th: TranslationKeys = {
         },
         "zeroDraftHandler": {
             "sceneFallback": "ฉาก",
-            "modalTitle": "Pending Edits — {{title}}",
             "unsafeStructureNotice": "Pending Edits ไม่สามารถอัปเดตได้อย่างปลอดภัยเนื่องจากโครงสร้างที่ไม่คาดคิด โปรดตรวจสอบหรือรีเซ็ตส่วน Pending Edits",
             "potentialIssueNotice": "Radial Timeline ตรวจพบปัญหาที่เป็นไปได้หลังการดำเนินการนี้ โปรดทบทวนโน้ตที่ได้รับผลกระทบ หากจำเป็น ให้ใช้สำเนาสำรองหรือประวัติเวอร์ชันเพื่อคืนค่า"
         },

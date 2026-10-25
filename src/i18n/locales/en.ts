@@ -7124,7 +7124,6 @@ export const en = {
         },
         zeroDraftHandler: {
             sceneFallback: 'Scene',
-            modalTitle: 'Pending Edits — {{title}}',
             unsafeStructureNotice: 'Pending Edits could not be safely updated due to unexpected structure. Please review or reset the Pending Edits section.',
             potentialIssueNotice: 'RT detected a potential issue after this operation. Please review the affected note. If needed, use backup or sync/version history to restore.',
         },

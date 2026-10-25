@@ -7443,7 +7443,6 @@ export const vi: TranslationKeys = {
         },
         "zeroDraftHandler": {
             "sceneFallback": "Cảnh",
-            "modalTitle": "Pending Edits - {{title}}",
             "unsafeStructureNotice": "Pending Edits không thể được cập nhật an toàn do cấu trúc không mong muốn. Vui lòng xem lại hoặc đặt lại phần Pending Edits.",
             "potentialIssueNotice": "Radial Timeline đã phát hiện một vấn đề tiềm ẩn sau thao tác này. Vui lòng xem lại ghi chú bị ảnh hưởng. Nếu cần, hãy sử dụng bản sao lưu hoặc lịch sử đồng bộ/phiên bản để khôi phục."
         },

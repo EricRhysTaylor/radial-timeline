@@ -7441,7 +7441,6 @@ export const ja: DeepPartial<TranslationKeys> = {
         },
         zeroDraftHandler: {
             sceneFallback: 'シーン',
-            modalTitle: 'Pending Edits — {{title}}',
             unsafeStructureNotice: '予期しない構造のため、Pending Edits を安全に更新できませんでした。Pending Edits のセクションを確認するか、リセットしてください。',
             potentialIssueNotice: 'この操作の後に RT が問題の可能性を検出しました。影響を受けたノートを確認してください。必要に応じて、バックアップまたは同期／バージョン履歴から復元してください。',
         },

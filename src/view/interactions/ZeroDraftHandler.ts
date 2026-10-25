@@ -55,7 +55,7 @@ export async function maybeHandleZeroDraftClick(options: ZeroDraftOptions): Prom
     const title = sceneTitle || file.basename || t('ui.zeroDraftHandler.sceneFallback');
     const { default: ZeroDraftModal } = await import('../../modals/ZeroDraftModal');
     const modal = new ZeroDraftModal(app, {
-        titleText: t('ui.zeroDraftHandler.modalTitle', { title }),
+        titleText: title,
         initialText: pendingEdits,
         onOk: async (nextText: string) => {
             try {

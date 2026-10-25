@@ -7440,7 +7440,6 @@ export const de: DeepPartial<TranslationKeys> = {
         },
         zeroDraftHandler: {
             sceneFallback: 'Szene',
-            modalTitle: 'Pending Edits — {{title}}',
             unsafeStructureNotice: 'Pending Edits konnten wegen einer unerwarteten Struktur nicht sicher aktualisiert werden. Bitte prüfen Sie den Abschnitt Pending Edits oder setzen Sie ihn zurück.',
             potentialIssueNotice: 'RT hat nach diesem Vorgang ein mögliches Problem erkannt. Bitte prüfen Sie die betroffene Notiz. Stellen Sie sie bei Bedarf über ein Backup oder den Sync-/Versionsverlauf wieder her.',
         },

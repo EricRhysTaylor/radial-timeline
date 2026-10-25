@@ -7442,7 +7442,6 @@ export const zh: DeepPartial<TranslationKeys> = {
         },
         zeroDraftHandler: {
             sceneFallback: '场景',
-            modalTitle: 'Pending Edits — {{title}}',
             unsafeStructureNotice: '由于结构异常，无法安全更新 Pending Edits。请审阅或重置 Pending Edits 部分。',
             potentialIssueNotice: 'RT 在此操作后检测到潜在问题。请审阅受影响的笔记。如有需要，请使用备份或同步/版本历史进行恢复。',
         },

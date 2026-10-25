@@ -116,7 +116,8 @@ export class CellPeek {
     }
 
     private show(anchor: HTMLElement, text: string): void {
-        if (this.shown === anchor) return;
+        // The same anchor can change text: the Synopsis icon shows the Summary while Shift is held.
+        if (this.shown === anchor && this.panel.getText() === text) return;
         this.panel.setText(text);
         this.panel.addClass('is-visible');
         const box = anchor.getBoundingClientRect();

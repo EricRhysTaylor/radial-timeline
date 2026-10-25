@@ -359,8 +359,15 @@ export interface SceneVitals {
     pending: string | null;
     /** The Synopsis in full, or null when it is empty. */
     synopsis: string | null;
+    /** The Summary in full, or null when it is empty (Shift on the Synopsis icon). */
+    summary: string | null;
     complete: boolean;
     due: DueStatus;
+}
+
+/** + and ++ move a late Due at once; any other (soon, later, none) may be deliberate, so they ask first. */
+export function dueStepNeedsConfirm(due: DueStatus): boolean {
+    return due.kind !== 'late';
 }
 
 /** A property's text as the author wrote it (a list one item per line), or null when there is none. */
@@ -380,6 +387,7 @@ export function sceneVitals(rawFrontmatter: Record<string, unknown> | undefined,
         stage,
         pending: fullText(fm['Pending Edits']),
         synopsis: fullText(fm.Synopsis),
+        summary: fullText(fm.Summary),
         complete,
         due: dueStatus(fm.Due, complete, today),
     };

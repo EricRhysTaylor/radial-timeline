@@ -10,6 +10,7 @@ import {
     displayName,
     distinctColorSlots,
     dueStatus,
+    dueStepNeedsConfirm,
     elapsedSincePrevious,
     groupProgress,
     medianOf,
@@ -288,6 +289,8 @@ describe('sceneVitals', () => {
         expect(sceneVitals({ Synopsis: 'Mara finds the lamp log torn out.' }, settings, today).synopsis).toBe('Mara finds the lamp log torn out.');
         expect(sceneVitals({ Synopsis: ['First beat', 'Second beat'] }, settings, today).synopsis).toBe('First beat\nSecond beat');
         expect(sceneVitals({}, settings, today).synopsis).toBeNull();
+        expect(sceneVitals({ Summary: 'Mara learns the log was torn out by her predecessor.' }, settings, today).summary).toBe('Mara learns the log was torn out by her predecessor.');
+        expect(sceneVitals({ Summary: '' }, settings, today).summary).toBeNull();
     });
 
     it('marks a complete scene done rather than late', () => {
@@ -331,5 +334,16 @@ describe('steppedDue', () => {
 
     it('crosses month and year ends', () => {
         expect(steppedDue('2026-12-30', 7, today)).toBe('2027-01-06');
+    });
+});
+
+describe('dueStepNeedsConfirm', () => {
+    const today = new Date(2026, 9, 25);
+
+    it('moves a late Due at once and asks first for any other', () => {
+        expect(dueStepNeedsConfirm(dueStatus('2026-10-20', false, today))).toBe(false);
+        expect(dueStepNeedsConfirm(dueStatus('2026-10-27', false, today))).toBe(true);
+        expect(dueStepNeedsConfirm(dueStatus('2026-12-01', false, today))).toBe(true);
+        expect(dueStepNeedsConfirm(dueStatus(undefined, false, today))).toBe(true);
     });
 });

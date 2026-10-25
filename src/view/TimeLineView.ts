@@ -1740,8 +1740,8 @@ export class RadialTimelineView extends ItemView {
         const sessionGoalMinutes = this.getSessionGoalMinutesForToday();
         const sessionGoalWords = this.getSessionGoalWordsForToday();
         // A title, not a control: no hover, and the icon is the clock this
-        // session will run — a full accent ring counts down, a gray ring with
-        // an accent notch at twelve counts up.
+        // session will run — a gray ring with an accent notch at twelve counts
+        // up; inverted (accent ring, gray notch), a countdown starts full.
         const intro = panel.createDiv({ cls: 'ert-timeline-session-panel__intro' });
         const ring = intro.createSvg('svg', {
             cls: 'ert-timeline-session-panel__count-ring',

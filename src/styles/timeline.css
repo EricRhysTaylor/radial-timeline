@@ -1536,8 +1536,9 @@
 }
 
 /* The idle panel's title block — a summary, not a control, so no card and no
-   hover. Its ring previews the clock: a full accent ring counts down, a gray
-   ring with an accent notch at twelve counts up. */
+   hover. Its ring previews the clock: a gray ring with an accent notch at
+   twelve counts up; inverted — accent ring, gray notch — a countdown sprint
+   starts full and shrinks. */
 .ert-timeline-session-panel__intro {
   display: flex;
   align-items: flex-start;
@@ -1546,6 +1547,8 @@
 }
 
 .ert-timeline-session-panel__count-ring {
+  /* Opaque, so the gray notch fully covers the accent track beneath it. */
+  --ert-count-ring-gray: color-mix(in srgb, var(--text-muted) 40%, var(--background-secondary));
   width: calc(var(--size-4-6) + var(--size-2-2));
   height: calc(var(--size-4-6) + var(--size-2-2));
   flex: 0 0 auto;
@@ -1555,7 +1558,7 @@
 }
 
 .ert-timeline-session-panel__count-ring-track {
-  stroke: color-mix(in srgb, var(--text-muted) 40%, transparent);
+  stroke: var(--ert-count-ring-gray);
 }
 
 .ert-timeline-session-panel__count-ring-notch {
@@ -1565,6 +1568,10 @@
 
 .ert-timeline-session-panel__intro.is-countdown .ert-timeline-session-panel__count-ring-track {
   stroke: var(--ert-session-accent);
+}
+
+.ert-timeline-session-panel__intro.is-countdown .ert-timeline-session-panel__count-ring-notch {
+  stroke: var(--ert-count-ring-gray);
 }
 
 .ert-timeline-session-panel__intro-copy {

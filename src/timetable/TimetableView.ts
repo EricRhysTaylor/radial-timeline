@@ -80,6 +80,7 @@ import {
     runningTotals,
     sceneNumberFill,
     sceneVitals,
+    steppedDue,
     withActDividers,
     withDayDividers,
     wordBar,
@@ -458,8 +459,16 @@ export class TimetableView extends BasesView {
 
     // ── Shift-hover ─────────────────────────────────────────────────────
 
-    /** The pointer moved: the peek follows the cell under it (number and Rings cells have no text to read). */
+    /**
+     * The pointer moved: over a row's Synopsis or Pending Edits icon, the peek
+     * shows that text at once; elsewhere it follows the cell under the pointer
+     * for Shift (number and Rings cells have no text to read).
+     */
     private hoverPeek(target: EventTarget | null, shift: boolean): void {
+        const control = target instanceof Element ? target.closest<HTMLElement>('.ert-timetable__text-control[data-peek]') : null;
+        const item = this.rowItems.get(control?.closest<HTMLElement>('tr')?.dataset.path ?? '');
+        const vitals = control && item ? sceneVitals(item.frontmatter, this.plugin.settings, new Date()) : null;
+        this.peek?.showText(control, (control?.dataset.peek === 'synopsis' ? vitals?.synopsis : vitals?.pending) ?? '');
         const cell = target instanceof Element ? target.closest<HTMLElement>('tr.ert-timetable__row > td[data-column]') : null;
         const path = cell?.closest<HTMLElement>('tr')?.dataset.path;
         const column = cell?.dataset.column;
@@ -1009,6 +1018,11 @@ export class TimetableView extends BasesView {
         const path = row?.dataset.path;
         const file = path ? this.plugin.app.vault.getFileByPath(path) : null;
         if (!row || !path || !file) return;
+        const step = target.closest<HTMLElement>('.ert-timetable__due-step');
+        if (step?.dataset.days) {
+            void this.stepDue(file, Number(step.dataset.days));
+            return;
+        }
         if (target.closest('.ert-timetable__promote')) {
             void runPromotion(this.plugin, [file]);
             return;
@@ -1421,6 +1435,24 @@ export class TimetableView extends BasesView {
             console.error('[Timetable] Could not rename the sketch:', error);
             new Notice(t('ui.timetable.writeFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
         }
+    }
+
+    /** + and ++: the scene's Due a day or a week later, counting from today when it is late. */
+    private async stepDue(file: TFile, days: number): Promise<void> {
+        const { settings } = this.plugin;
+        const mappings = getActiveFrontmatterMappings(settings);
+        try {
+            // Read inside the write, so quick clicks each build on the last one.
+            await this.plugin.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+                const key = Object.keys(fm).find(candidate => canonicalizeFrontmatterKey(candidate, mappings) === 'Due') ?? authorKeyFor('Due', settings);
+                fm[key] = steppedDue(fm[key], days, new Date());
+            });
+        } catch (error) {
+            console.error('[Timetable] Could not change Due:', error);
+            new Notice(t('ui.timetable.writeFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
+            return;
+        }
+        this.plugin.refreshTimelineIfNeeded(file, 100);
     }
 
     /**
@@ -1882,7 +1914,9 @@ export class TimetableView extends BasesView {
                     // The vitals beside a scene's number.
                     { swatch: { fill: 'transparent', stroke: 'transparent', text: 'A', textColor: stage.Author }, label: t('ui.timetable.keyStage'), detail: t('ui.timetable.keyStageDetail') },
                     { icon: 'pencil-line', label: t('ui.timetable.keyPending'), detail: t('ui.timetable.keyPendingDetail') },
+                    { icon: 'align-left', label: t('ui.timetable.keySynopsis'), detail: t('ui.timetable.keySynopsisDetail') },
                     { icon: 'dot', label: t('ui.timetable.keyDueDot'), detail: t('ui.timetable.keyDueDotDetail') },
+                    { icon: 'calendar-plus', label: t('ui.timetable.keyDueStep'), detail: t('ui.timetable.keyDueStepDetail') },
                     { swatch: { fill: 'transparent', stroke: 'var(--text-muted)', text: '–', textColor: 'var(--text-muted)', dashed: true }, label: t('ui.timetable.keySketch'), detail: t('ui.timetable.keySketchDetail') },
                     { swatch: { fill: 'transparent', stroke: 'var(--text-faint)', text: '–', textColor: 'var(--text-faint)' }, label: t('ui.timetable.keyNote'), detail: t('ui.timetable.keyNoteDetail') },
                     { rings: ['var(--rt-subplot-colors-0)', 'var(--rt-subplot-colors-1)', null], label: t('ui.timetable.keyRings'), detail: t('ui.timetable.keyRingsDetail') },
@@ -2141,10 +2175,9 @@ export class TimetableView extends BasesView {
     }
 
     /**
-     * The number cell: the number on the scene's status fill, then a slot with
-     * the scene's vitals (or a sketch's chevron). On hover, and while rows are
-     * picked, the row's checkbox takes the slot. Time references, Promote and
-     * query counts follow on the rows that have them.
+     * The number cell: the number on the scene's status fill, then the row's
+     * control panel (see renderControls). Time references and query counts
+     * follow on the rows that have them.
      */
     private renderNumberCell(cell: HTMLElement, item: TableItem, today: Date): void {
         const { row, frontmatter } = item;
@@ -2165,21 +2198,7 @@ export class TimetableView extends BasesView {
             chip.setAttr('aria-haspopup', 'menu');
         }
 
-        if (SELECTABLE_KINDS.has(row.kind)) {
-            const slot = cell.createSpan({ cls: 'ert-timetable__slot' });
-            if (row.kind === 'scene') this.renderVitals(slot, frontmatter, today);
-            if (row.kind === 'sketch') {
-                const open = this.drawerIsOpen(row.path);
-                const toggle = slot.createEl('button', { cls: 'ert-timetable__drawer-toggle clickable-icon' });
-                toggle.setAttr('aria-expanded', String(open));
-                setAccessibleLabel(toggle, t('ui.timetable.toggleSketch'));
-                setIcon(toggle, open ? 'chevron-down' : 'chevron-right');
-            }
-            const checkbox = slot.createEl('input', { cls: 'ert-timetable__select', type: 'checkbox' });
-            checkbox.checked = this.selected.has(row.path);
-            setAccessibleLabel(checkbox, t('ui.timetable.bulkPick', { name: displayName(row.basename) }));
-            cell.closest('tr')?.toggleClass('is-selected', checkbox.checked);
-        }
+        if (SELECTABLE_KINDS.has(row.kind)) this.renderControls(cell, item, today);
         if (row.kind === 'scene' && frontmatter?.[TIME_REFERENCES_KEY] !== undefined) {
             const toggle = cell.createEl('button', { cls: 'ert-time-reference-toggle clickable-icon' });
             const count = readTimeReferences(frontmatter[TIME_REFERENCES_KEY], row.path).references.length;
@@ -2187,29 +2206,70 @@ export class TimetableView extends BasesView {
             setAccessibleLabel(toggle, t('timeReferences.references', { count }));
             setIcon(toggle, this.expandedReferences.has(row.path) ? 'chevron-down' : 'history');
         }
-        if (row.kind === 'sketch' || row.kind === 'unclassed') {
-            const promote = cell.createEl('button', { cls: 'ert-timetable__promote clickable-icon' });
-            setAccessibleLabel(promote, t('ui.timetable.promote'));
-            setIcon(promote, 'file-up');
-            setAccessibleLabel(promote, t('ui.timetable.promote'));
-        }
     }
 
     /**
-     * A scene's vitals beside its number: the publish stage's letter in the
-     * stage's color, a pencil while Pending Edits holds text, and a dot when
-     * Due is late or within a week. The number's tooltip spells them out.
+     * A row's control panel beside its number, each control in its own place
+     * so they line up down the table:
+     * - the stage letter (a sketch's chevron), which the checkbox replaces on
+     *   hover and while rows are picked;
+     * - a pencil while Pending Edits holds text, and a Synopsis icon: hover
+     *   either to read it in full without scrolling to its column;
+     * - for a scene, the due dot, which + (a day later) and ++ (a week later)
+     *   replace on hover until the scene is complete; for a sketch or an
+     *   unclassed note, Promote.
      */
-    private renderVitals(slot: HTMLElement, frontmatter: Record<string, unknown> | undefined, today: Date): void {
+    private renderControls(cell: HTMLElement, item: TableItem, today: Date): void {
+        const { row, frontmatter } = item;
         const { settings } = this.plugin;
         const vitals = sceneVitals(frontmatter, settings, today);
-        const el = slot.createSpan({ cls: 'ert-timetable__vitals' });
-        const letter = el.createSpan({ cls: 'ert-timetable__stage', text: vitals.stage.charAt(0).toUpperCase() });
-        const colors: Record<string, string> = settings.publishStageColors;
-        const color = colors[vitals.stage];
-        if (color) letter.setCssProps({ '--ert-timetable-stage': color });
-        if (vitals.pending !== null) setIcon(el.createSpan({ cls: 'ert-timetable__pending' }), 'pencil-line');
-        if (vitals.due.kind === 'late' || vitals.due.kind === 'soon') el.createSpan({ cls: ['ert-timetable__due-dot', `is-${vitals.due.kind}`] });
+
+        const slot = cell.createSpan({ cls: 'ert-timetable__slot' });
+        if (row.kind === 'scene') {
+            const letter = slot.createSpan({ cls: 'ert-timetable__stage', text: vitals.stage.charAt(0).toUpperCase() });
+            const colors: Record<string, string> = settings.publishStageColors;
+            const color = colors[vitals.stage];
+            if (color) letter.setCssProps({ '--ert-timetable-stage': color });
+        }
+        if (row.kind === 'sketch') {
+            const open = this.drawerIsOpen(row.path);
+            const toggle = slot.createEl('button', { cls: 'ert-timetable__drawer-toggle clickable-icon' });
+            toggle.setAttr('aria-expanded', String(open));
+            setAccessibleLabel(toggle, t('ui.timetable.toggleSketch'));
+            setIcon(toggle, open ? 'chevron-down' : 'chevron-right');
+        }
+        const checkbox = slot.createEl('input', { cls: 'ert-timetable__select', type: 'checkbox' });
+        checkbox.checked = this.selected.has(row.path);
+        setAccessibleLabel(checkbox, t('ui.timetable.bulkPick', { name: displayName(row.basename) }));
+        cell.closest('tr')?.toggleClass('is-selected', checkbox.checked);
+
+        this.renderTextControl(cell, 'pending', 'pencil-line', vitals.pending, t('ui.timetable.vitalsPending', { text: vitals.pending ?? '' }));
+        this.renderTextControl(cell, 'synopsis', 'align-left', vitals.synopsis, t('ui.timetable.synopsisFull', { text: vitals.synopsis ?? '' }));
+
+        const last = cell.createSpan({ cls: 'ert-timetable__due-slot' });
+        if (row.kind !== 'scene') {
+            const promote = last.createEl('button', { cls: 'ert-timetable__promote clickable-icon' });
+            setIcon(promote, 'file-up');
+            setAccessibleLabel(promote, t('ui.timetable.promote'));
+            return;
+        }
+        if (vitals.due.kind === 'late' || vitals.due.kind === 'soon') last.createSpan({ cls: ['ert-timetable__due-dot', `is-${vitals.due.kind}`] });
+        if (vitals.complete) return;
+        const steps = last.createSpan({ cls: 'ert-timetable__due-steps' });
+        for (const [text, days, label] of [['+', 1, t('ui.timetable.dueStepDay')], ['++', 7, t('ui.timetable.dueStepWeek')]] as const) {
+            const step = steps.createEl('button', { cls: 'ert-timetable__due-step', text });
+            step.dataset.days = String(days);
+            tooltip(step, label, 'bottom');
+        }
+    }
+
+    /** The pencil or the Synopsis icon. A row without that text keeps the place empty, so the icons line up. */
+    private renderTextControl(cell: HTMLElement, kind: 'pending' | 'synopsis', icon: string, text: string | null, label: string): void {
+        const control = cell.createSpan({ cls: ['ert-timetable__text-control', `is-${kind}`] });
+        if (text === null) return;
+        control.dataset.peek = kind;
+        setIcon(control, icon);
+        setAccessibleLabel(control, label);
     }
 
     private chipTooltip(row: TimetableRow, frontmatter: Record<string, unknown> | undefined, today: Date): string {
@@ -2221,7 +2281,6 @@ export class TimetableView extends BasesView {
                 const label = overdue ? t('ui.timetable.statusOverdue') : (status === 'Completed' ? 'Complete' : (status || 'Todo'));
                 const parts = [t('ui.timetable.sceneStatus', { status: label, stage: vitals.stage })];
                 if (vitals.due.kind === 'late' || vitals.due.kind === 'soon') parts.push(t('ui.timetable.vitalsDue', { when: formatDueLabel(vitals.due, today) }));
-                if (vitals.pending !== null) parts.push(t('ui.timetable.vitalsPending', { text: vitals.pending }));
                 return parts.join(' · ');
             }
             case 'beat': return t('ui.timetable.beatRow');

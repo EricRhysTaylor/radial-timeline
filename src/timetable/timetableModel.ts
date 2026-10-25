@@ -17,7 +17,7 @@ import { frontmatterValueToText, getActiveFrontmatterMappings, normalizeFrontmat
 import { comparePrefixTokens, extractPrefixToken } from '../utils/prefixOrder';
 import { isStoryBeat } from '../utils/sceneHelpers';
 import { getFillForScene } from '../renderer/utils/SceneFill';
-import { isOverdueDateString, parseWhenField } from '../utils/date';
+import { formatLocalDateKey, isOverdueDateString, parseWhenField } from '../utils/date';
 import { normalizeStatus } from '../utils/text';
 import { whenTextHasClock } from '../utils/whenFormat';
 import { parseRuntimeField } from '../utils/runtimeEstimator';
@@ -339,25 +339,50 @@ export function dueStatus(raw: unknown, complete: boolean, today: Date): DueStat
     return { kind: days < 0 ? 'late' : (days <= DUE_SOON_DAYS ? 'soon' : 'later'), date, days };
 }
 
+/**
+ * + and ++ in a row's control panel: the Due a number of days later. A late
+ * Due, or none, counts from today, so one click brings a late scene back
+ * into the future.
+ */
+export function steppedDue(raw: unknown, days: number, today: Date): string {
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const match = typeof raw === 'string' ? DATE_KEY.exec(raw.trim()) : null;
+    const due = match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+    const base = due && Number.isFinite(due.getTime()) && due.getTime() > start.getTime() ? due : start;
+    return formatLocalDateKey(new Date(base.getFullYear(), base.getMonth(), base.getDate() + days));
+}
+
 export interface SceneVitals {
     /** The publish stage, as the stage colors name it (Zero when unset). */
     stage: string;
-    /** The first line of Pending Edits, or null when it is empty. */
+    /** Pending Edits in full, or null when it is empty. */
     pending: string | null;
+    /** The Synopsis in full, or null when it is empty. */
+    synopsis: string | null;
+    complete: boolean;
     due: DueStatus;
 }
 
-/** What the number cell shows beside a scene's number: its stage, pending edits and Due. */
+/** A property's text as the author wrote it (a list one item per line), or null when there is none. */
+function fullText(value: unknown): string | null {
+    const text = (Array.isArray(value) ? value : [value]).map(item => frontmatterValueToText(item)).join('\n').trim();
+    return text.length > 0 ? text : null;
+}
+
+/** What a row's control panel shows beside its number: the stage, pending edits, Synopsis and Due. */
 export function sceneVitals(rawFrontmatter: Record<string, unknown> | undefined, settings: RadialTimelineSettings, today: Date): SceneVitals {
     const fm = rawFrontmatter ? normalizeFrontmatterKeys(rawFrontmatter, getActiveFrontmatterMappings(settings)) : {};
     const stages = Object.keys(settings.publishStageColors);
     const rawStage = frontmatterValueToText(Array.isArray(fm['Publish Stage']) ? fm['Publish Stage'][0] : fm['Publish Stage']).trim().toLowerCase();
     const stage = stages.find(candidate => candidate.toLowerCase() === rawStage) ?? (stages.includes('Zero') ? 'Zero' : (stages[0] ?? 'Zero'));
-    const pendingRaw = fm['Pending Edits'];
-    const pendingText = (Array.isArray(pendingRaw) ? pendingRaw : [pendingRaw]).map(value => frontmatterValueToText(value)).join('\n');
-    const pending = pendingText.split(/\r?\n/).map(line => line.trim()).find(line => line.length > 0) ?? null;
     const complete = normalizeStatus(fm.Status) === 'Completed';
-    return { stage, pending, due: dueStatus(fm.Due, complete, today) };
+    return {
+        stage,
+        pending: fullText(fm['Pending Edits']),
+        synopsis: fullText(fm.Synopsis),
+        complete,
+        due: dueStatus(fm.Due, complete, today),
+    };
 }
 
 /** The median of some numbers, or null for none. */

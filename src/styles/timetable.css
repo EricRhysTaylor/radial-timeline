@@ -283,7 +283,7 @@
 .ert-timetable__num-inner {
   display: flex;
   align-items: center;
-  gap: var(--size-2-2);
+  gap: var(--size-2-1);
   width: max-content;
 }
 
@@ -291,41 +291,83 @@
   flex: none;
 }
 
-/* The slot beside the number: the vitals (or a sketch's chevron) and the
-   checkbox share one place. Stacked, so the slot keeps its width when the
-   checkbox takes over on hover or while rows are picked. */
-.ert-timetable__slot {
+/* The row's control panel beside the number. Each control keeps its own
+   place, so they line up down the table. The stage letter (or a sketch's
+   chevron) and the checkbox share the first place, and the due dot and
+   + / ++ share the last: stacked, so a place keeps its width when the
+   other control takes over on hover. */
+.ert-timetable__slot,
+.ert-timetable__due-slot {
   display: inline-grid;
   align-items: center;
-  justify-items: start;
+  justify-items: center;
 }
 
-.ert-timetable__slot > * {
+.ert-timetable__slot > *,
+.ert-timetable__due-slot > * {
   grid-area: 1 / 1;
 }
 
-.ert-timetable__vitals {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--size-2-1);
-}
-
 .ert-timetable__stage {
-  min-width: 0.7em;
+  min-width: 14px;
   color: var(--ert-timetable-stage, var(--text-muted));
   font-size: var(--font-smallest);
   font-weight: var(--font-bold);
   text-align: center;
 }
 
-.ert-timetable__pending {
+/* The pencil (Pending Edits) and the Synopsis icon: hover either to read it in full.
+   A row without one keeps the place empty. */
+.ert-timetable__text-control {
   display: inline-flex;
+  width: var(--icon-xs);
+  color: var(--text-muted);
+  cursor: help;
+}
+
+.ert-timetable__text-control.is-pending {
   color: var(--text-accent);
 }
 
-.ert-timetable__pending svg {
+.ert-timetable__text-control svg {
   width: var(--icon-xs);
   height: var(--icon-xs);
+}
+
+.ert-timetable__text-control:hover {
+  color: var(--text-normal);
+}
+
+/* + and ++: Due a day or a week later. They take the dot's place on hover. */
+.ert-timetable__due-steps {
+  display: inline-flex;
+  gap: 1px;
+  visibility: hidden;
+}
+
+.ert-timetable__row:hover .ert-timetable__due-steps {
+  visibility: visible;
+}
+
+.ert-timetable__row:hover .ert-timetable__due-dot {
+  visibility: hidden;
+}
+
+.ert-timetable .ert-timetable__due-step {
+  height: 18px;
+  padding: 0 var(--size-2-1);
+  border-radius: var(--radius-s);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: var(--font-smallest);
+  font-weight: var(--font-semibold);
+  line-height: 1;
+}
+
+.ert-timetable .ert-timetable__due-step:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
 }
 
 .ert-timetable__due-dot {
@@ -344,6 +386,7 @@
 
 .ert-timetable__chip {
   display: inline-flex;
+  margin-inline-end: var(--size-2-1);
   line-height: 0;
 }
 
@@ -850,7 +893,8 @@
 
 /* Bulk edits: a checkbox in each pickable row's slot, and a bar while rows are picked.
    On hover, and while any row is picked, the checkbox takes the slot from the vitals or chevron. */
-.ert-timetable__select {
+/* Specific enough to win over Obsidian's own checkbox size and margin. */
+.ert-timetable .ert-timetable__select {
   width: 14px;
   height: 14px;
   margin: 0;

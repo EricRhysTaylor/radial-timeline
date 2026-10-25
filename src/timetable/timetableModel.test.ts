@@ -19,6 +19,7 @@ import {
     runningTotals,
     sceneNumberFill,
     sceneVitals,
+    steppedDue,
     withActDividers,
     withDayDividers,
     wordBar,
@@ -281,9 +282,12 @@ describe('sceneVitals', () => {
         expect(sceneVitals({ Class: 'Scene' }, settings, today).stage).toBe('Zero');
     });
 
-    it('takes the first line of Pending Edits, or null when it is empty', () => {
-        expect(sceneVitals({ 'Pending Edits': '\n  Cut the bell scene\nThen fix Act 2' }, settings, today).pending).toBe('Cut the bell scene');
+    it('keeps Pending Edits and the Synopsis in full, or null when empty', () => {
+        expect(sceneVitals({ 'Pending Edits': '\n  Cut the bell scene\nThen fix Act 2' }, settings, today).pending).toBe('Cut the bell scene\nThen fix Act 2');
         expect(sceneVitals({ 'Pending Edits': '' }, settings, today).pending).toBeNull();
+        expect(sceneVitals({ Synopsis: 'Mara finds the lamp log torn out.' }, settings, today).synopsis).toBe('Mara finds the lamp log torn out.');
+        expect(sceneVitals({ Synopsis: ['First beat', 'Second beat'] }, settings, today).synopsis).toBe('First beat\nSecond beat');
+        expect(sceneVitals({}, settings, today).synopsis).toBeNull();
     });
 
     it('marks a complete scene done rather than late', () => {
@@ -303,5 +307,29 @@ describe('medianOf and wordBar', () => {
         expect(wordBar(1650, 1650)).toEqual({ fill: 0.5, over: false });
         expect(wordBar(3420, 1650)).toEqual({ fill: 1, over: true });
         expect(wordBar(825, 1650).fill).toBeCloseTo(0.25);
+    });
+});
+
+describe('steppedDue', () => {
+    const today = new Date(2026, 9, 25, 9, 0);
+
+    it('counts a late Due, or none, from today', () => {
+        expect(steppedDue('2026-10-20', 1, today)).toBe('2026-10-26');
+        expect(steppedDue('2026-10-20', 7, today)).toBe('2026-11-01');
+        expect(steppedDue(undefined, 1, today)).toBe('2026-10-26');
+        expect(steppedDue('someday', 7, today)).toBe('2026-11-01');
+    });
+
+    it('moves a future Due on from where it is, so each click adds up', () => {
+        expect(steppedDue('2026-10-28', 1, today)).toBe('2026-10-29');
+        expect(steppedDue(steppedDue('2026-10-28', 7, today), 7, today)).toBe('2026-11-11');
+    });
+
+    it('treats a Due of today like a late one', () => {
+        expect(steppedDue('2026-10-25', 1, today)).toBe('2026-10-26');
+    });
+
+    it('crosses month and year ends', () => {
+        expect(steppedDue('2026-12-30', 7, today)).toBe('2027-01-06');
     });
 });

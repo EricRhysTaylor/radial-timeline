@@ -63,7 +63,7 @@ import { GOSSAMER_SIGNAL_METADATA, GOSSAMER_SIGNAL_TYPES, type GossamerSignalTyp
 import { formatGossamerCacheClock, formatGossamerCacheCostHint, getGossamerCacheContext, resolveGossamerCacheWindow } from '../gossamer/cacheWindow';
 import { tooltip as applyTooltip } from '../utils/tooltip';
 import { currentTimelineColoring, currentTimelineLens, hasOpenTimetable, onTimelineOverlayChange, onTimetablePresenceChange, publishTimelineMode } from '../timetable/timetableRegistry';
-import { applyColoringToSvg, applyLensToSvg, applyQueryMarks, linkActLabelsToTimetable } from './interactions/TimetableLink';
+import { applyQueryMarks, applyTimetableOverlayToSvg, linkActLabelsToTimetable } from './interactions/TimetableLink';
 import { renderLegendSurface, wireLegendTrigger, type LegendDetailSegment, type LegendSection } from './interactions/LegendPanel';
 import { listAuthorQueries } from '../utils/authorQueryComments';
 import { referenceMarkColor } from '../chronologue/timeReferences/render';
@@ -259,17 +259,20 @@ export class RadialTimelineView extends ItemView {
     private overlaysEl: HTMLElement | null = null;
 
     /**
-     * What open Timetables lay over the wheel: a lens dims every scene outside
-     * a table's rows, and a coloring paints scenes by a table column. Each shows
-     * a pill with a button that turns it off at its source.
+     * What open Timetables lay over the wheel: a lens lights a table's rows,
+     * and a coloring paints scenes by a table column; either way the rest of
+     * the wheel recedes. Each shows a pill with a button that turns it off at
+     * its source. A full render passes its new wheel and container, which are
+     * not in the view yet when this runs.
      */
-    private applyTimetableOverlays(): void {
+    private applyTimetableOverlays(
+        svg: Element | null = this.contentEl.querySelector('.radial-timeline-svg'),
+        container: HTMLElement | null = this.contentEl.querySelector<HTMLElement>('.radial-timeline-container')
+    ): void {
         const lens = currentTimelineLens();
         const coloring = currentTimelineColoring();
-        const svg = this.contentEl.querySelector('.radial-timeline-svg');
         if (svg) {
-            applyLensToSvg(svg, lens);
-            applyColoringToSvg(svg, coloring);
+            applyTimetableOverlayToSvg(svg, lens, coloring);
             // Act labels link to an open Timetable; only then do they look clickable.
             svg.classList.toggle('rt-timetable-linked', hasOpenTimetable());
         }
@@ -278,7 +281,6 @@ export class RadialTimelineView extends ItemView {
             this.overlaysEl = null;
             return;
         }
-        const container = this.contentEl.querySelector<HTMLElement>('.radial-timeline-container');
         if (!container) return;
         if (!this.overlaysEl || !this.overlaysEl.isConnected) {
             const overlays = container.createDiv({ cls: 'ert-timeline-overlays' });
@@ -3245,7 +3247,7 @@ export class RadialTimelineView extends ItemView {
 
                 // Timetable: act labels show their part of the table; a Timetable lens or coloring lies over the scenes.
                 linkActLabelsToTimetable(this, svgElement);
-                this.applyTimetableOverlays();
+                this.applyTimetableOverlays(svgElement, timelineContainer);
                 // Open author queries: a dot on each scene's number square.
                 this.scheduleQueryDots(0);
 

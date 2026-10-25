@@ -8,8 +8,9 @@
  * Hold Shift while hovering a cell its column cuts off (a long Synopsis, a
  * list of characters) to read all of it in a panel under the cell. Letting go
  * of Shift, or leaving the cell, puts it away. A cell that already shows
- * everything never opens it. The panel hangs from the window, so a short
- * table pane never clips it, and it never takes a click.
+ * everything never opens it. The Synopsis and Pending Edits icons in a row's
+ * control panel use the same panel, without Shift. The panel hangs from the
+ * window, so a short table pane never clips it, and it never takes a click.
  */
 
 export interface PeekBox {
@@ -50,9 +51,18 @@ export class CellPeek {
     private cell: HTMLElement | null = null;
     private shown: HTMLElement | null = null;
     private held = false;
+    /** A control-panel icon under the pointer and its text: shown at once, Shift or not. */
+    private icon: { anchor: HTMLElement; text: string } | null = null;
 
     constructor(doc: Document) {
         this.panel = doc.body.createDiv({ cls: 'ert-timetable-peek', attr: { role: 'tooltip' } });
+    }
+
+    /** The pointer is over a Synopsis or Pending Edits icon (or has left it). */
+    showText(anchor: HTMLElement | null, text = ''): void {
+        const trimmed = text.trim();
+        this.icon = anchor && trimmed ? { anchor, text: trimmed } : null;
+        this.update();
     }
 
     /** The pointer is over this cell (or none), with Shift held or not. */
@@ -87,23 +97,32 @@ export class CellPeek {
     }
 
     private update(): void {
+        if (this.icon && !this.icon.anchor.isConnected) this.icon = null;
+        if (this.icon) {
+            this.show(this.icon.anchor, this.icon.text);
+            return;
+        }
         const cell = this.cell;
         if (!this.held || !cell || !cell.isConnected || !isCutOff(cell)) {
             this.hide();
             return;
         }
-        if (this.shown === cell) return;
         const text = cell.innerText.trim();
         if (!text) {
             this.hide();
             return;
         }
+        this.show(cell, text);
+    }
+
+    private show(anchor: HTMLElement, text: string): void {
+        if (this.shown === anchor) return;
         this.panel.setText(text);
         this.panel.addClass('is-visible');
-        const box = cell.getBoundingClientRect();
-        const win = cell.win;
+        const box = anchor.getBoundingClientRect();
+        const win = anchor.win;
         const { left, top } = placePeek(box, { width: this.panel.offsetWidth, height: this.panel.offsetHeight }, { width: win.innerWidth, height: win.innerHeight });
         this.panel.setCssProps({ '--ert-peek-left': `${left}px`, '--ert-peek-top': `${top}px` });
-        this.shown = cell;
+        this.shown = anchor;
     }
 }

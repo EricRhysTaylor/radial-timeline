@@ -3,7 +3,7 @@ Keep the book’s notes beside the wheel in an Obsidian Bases view. The Timetabl
 > [!NOTE]
 > Enable **Bases** under **Settings → Core plugins**. The Timetable works with Obsidian 1.13; the Act and Status boards require Obsidian 1.14 or later.
 
-![The Timetable beside the radial timeline, with scene numbers, colored subplot squares, dates, durations, and synopses](images/timetable-sidebyside.webp)
+![The Timetable beside the radial timeline: Act 1 of Pride and Prejudice with stage letters and row controls by each number, colored subplot squares, short dates under the year, relative Due dates, Words bars, and a scene open in the reading pane below](images/timetable-sidebyside.webp)
 
 ## Open the Timetable
 

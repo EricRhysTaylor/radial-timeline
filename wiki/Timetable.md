@@ -14,7 +14,11 @@ The `.base` file is yours to customize. Change its columns, filters, sorting, or
 ## Read the rows
 
 - **Scene number:** the number cell carries writing status and Publish Stage colors. Story beats have their own number treatment; sketches remain distinct from scenes. Click a scene's number cell to set its Status or Publish Stage, or click a Status, Publish Stage, or Act cell for that property's values. Marking a scene Complete sets Due to today, as it does from the wheel.
-- **Vitals:** beside each scene’s number, the stage letter (**Z** Zero, **A** Author, **H** House, **P** Press) in its stage color, a pencil when Pending Edits has text (hover the number to read it), and a dot when Due is late (red) or within a week (amber). The number column is only as wide as its rows need.
+- **Row controls:** beside each number, each control in its own place so they line up down the table:
+  - the stage letter (**Z** Zero, **A** Author, **H** House, **P** Press) in its stage color, or a sketch’s chevron;
+  - a pencil while Pending Edits has text: hover it to read them;
+  - the Synopsis icon, on every row: hover it to read the Synopsis in full, or hold **Shift** for the Summary. It is fainter when the Synopsis is empty;
+  - a dot when Due is late (red) or within a week (amber). On hover, **+** and **++** take its place and advance Due by a day or a week until the scene is complete. A late Due moves at once, counting from today; a Due that isn’t late, or a missing one, asks first and names the new date. Each click builds on the last. Sketches and notes with no Class show Promote in this place.
 - **Rings:** colored squares show subplot membership in the wheel’s ring order. Hover for the subplot names. Outlined squares can show a subplot planned for a sketch before it appears on the wheel. **Rings per line** controls wrapping.
 - **Properties:** columns come from your scene property templates and respect your field-name mappings. Template columns carry an icon in their header, and a column narrower than its name shows only the icon, with the name on hover. Use **Properties** to show or hide columns; see [Columns](#columns) for their order, widths, and reset.
 - **When:** a short date and time, such as *Fri Apr 6 · 7PM*. When every row shares a year, the year moves to the column header. While the Duration column is hidden, the duration sits beside the date (*2h*). Hover for the full date and the duration as written. The Alt calendar shows its planetary dates.
@@ -23,7 +27,7 @@ The `.base` file is yours to customize. Change its columns, filters, sorting, or
 - **Runtime and Iteration:** shown as badges with a timer and a repeat mark.
 - **Open queries:** a marker identifies unresolved author queries in a note; hover to read them. On the wheel, the same scene shows a question bubble in each of its cells.
 
-The **✱** button in the table’s corner opens the Timetable keys: what the row marks mean (including the vitals and the Words bar), what each click does, and the corner buttons. A badge names the mode the table follows, and a section on top explains what that mode changes (Chronologue’s date dividers and its Gap or Running time column, Progress’s act totals and overdue dates, Gossamer’s beats and scores). The timeline’s own **✱** key covers the wheel, including the open-query mark and the clicks that link to a Timetable.
+The **✱** button in the table’s corner opens the Timetable keys: what the row marks mean (including the row controls, **+** and **++**, and the Words bar), what each click does, and the corner buttons. A badge names the mode the table follows, and a section on top explains what that mode changes (Chronologue’s date dividers and its Gap or Running time column, Progress’s act totals and overdue dates, Gossamer’s beats and scores). The timeline’s own **✱** key covers the wheel, including the open-query mark and the clicks that link to a Timetable.
 
 Hover a scene row to highlight it on the wheel and give its row a solid leading accent and a muted color wash. The color follows the rendered scene: subplot color in Narrative and Chronologue, status or Publish Stage color in Progress, or the active column coloring. Hover a scene on the wheel to reveal its row in that specific cell’s color. Click a scene row to open its note; **Shift-click** brings the timeline forward and highlights that scene. Right-click a scene row for the timeline’s scene menu.
 
@@ -57,15 +61,21 @@ The Timetable draws itself in the timeline’s mode, and the mode button in its 
 
 ### Light up the table on the timeline
 
-Turn on the lens in the Timetable’s corner, or as a view option saved in the `.base` file. Every scene, beat, and backdrop outside the table’s rows dims on the wheel, and a pill names the view, with a button that turns the lens off. Any Bases filter becomes a pattern on the wheel, so a saved view is a saved lens.
+Turn on the lens in the Timetable’s corner, or as a view option saved in the `.base` file. The table’s scenes stay lit on the wheel and the rest recedes, as in Chronologue’s Shift mode: scenes outside the table, their numbers and titles, void cells and spokes fade, and the subplot ring titles hide. Hovering a receded scene still shows it. A pill names the view, with a button that turns the lens off. Any Bases filter becomes a pattern on the wheel, so a saved view is a saved lens.
+
+A view with a filter of its own (**This view** in the Filter menu) turns the lens on by itself. Turning the lens off holds for that filter; a new or changed filter lights it again, and removing the filter returns the lens to its toggle. A new filter takes the lens from any other table.
 
 ### Color the timeline by a column
 
-Right-click a column header to color the timeline’s scenes by that column’s values, such as POV or Location: any field with up to eight values. Each value takes a ring color, scenes without one are drawn neutral, and a pill on the wheel shows the legend. **Stop coloring** restores the status and subplot colors. Coloring isn’t saved, and one table colors the timeline at a time.
+Right-click a column header to color the timeline’s scenes by that column’s values, such as POV or Location: any field with up to eight values. Each value takes a ring color, scenes without one are drawn neutral, and the rest of the wheel recedes as it does under the lens. Unfilled template fields such as `{{Character}}` count as no value.
+
+The color key on the wheel lists the values, and its names are buttons. Pick one to show only the scenes that list it anywhere in the column; pick more to narrow to the scenes that list them all, each in the color of the pick it lists first. The key counts the scenes, Timetable rows that don’t match fade, and in Chronologue the time references outside the picks recede. Click a picked name to drop it.
+
+**Stop coloring**, in the header menu or on the key, restores the status and subplot colors and clears the picks. The coloring and its picks are saved with the view, like the lens, and one table colors the timeline at a time.
 
 ### Edit many rows at once
 
-Each scene, sketch, and not-yet-promoted row has a checkbox, which takes the place of the row’s vitals on hover. Once a row is picked, every row shows its checkbox until the selection clears. **Shift** picks a range and **Esc** clears the selection. While rows are picked, a bar under the table sets Status, Stage, or Act on all of them, adds them to a ring or removes them from one, or promotes the ones that aren’t scenes yet. Status and Stage follow the wheel menu’s rules, so Complete sets Due. Ring changes come with one notice and one **Undo** for every note changed.
+Each scene, sketch, and not-yet-promoted row has a checkbox, which takes the stage letter’s place on hover. Once a row is picked, every row shows its checkbox until the selection clears. **Shift** picks a range and **Esc** clears the selection. While rows are picked, a bar under the table sets Status, Stage, or Act on all of them, adds them to a ring or removes them from one, or promotes the ones that aren’t scenes yet. Status and Stage follow the wheel menu’s rules, so Complete sets Due. Ring changes come with one notice and one **Undo** for every note changed.
 
 ### The reading pane
 

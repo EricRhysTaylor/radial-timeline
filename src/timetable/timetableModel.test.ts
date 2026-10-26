@@ -15,13 +15,16 @@ import {
     filterSignature,
     groupProgress,
     medianOf,
+    narrowColoring,
     planColoring,
     readRuntimeSeconds,
+    readSavedColoring,
     readWhen,
     runningTotals,
     sceneNumberFill,
     sceneVitals,
     steppedDue,
+    toggledPicks,
     withActDividers,
     withDayDividers,
     wordBar,
@@ -199,6 +202,71 @@ describe('planColoring', () => {
     it('refuses a column with too many values, or none', () => {
         expect(planColoring([{ path: 'a', value: 'x' }, { path: 'b', value: 'y' }], 1)).toEqual({ kind: 'tooMany', count: 2 });
         expect(planColoring([{ path: 'a', value: undefined }])).toEqual({ kind: 'none' });
+    });
+
+    it('treats an unfilled template field as no value, and colors a list by its first real item', () => {
+        const plan = planColoring([
+            { path: 'a', value: '{{Character}}' },
+            { path: 'b', value: ['{{Character}}', 'Chae Ban'] },
+            { path: 'c', value: ['Trisan', ' {{ Character }} '] },
+        ]);
+        expect(plan.kind).toBe('ok');
+        if (plan.kind !== 'ok') return;
+        expect(plan.legend.map(entry => entry.value)).toEqual(['Chae Ban', 'Trisan']);
+        expect(plan.values.has('a')).toBe(false);
+        expect(plan.values.get('b')).toBe('Chae Ban');
+        expect(plan.members.get('c')).toEqual(['Trisan']);
+    });
+
+    it('keeps every item a scene lists, in order', () => {
+        const plan = planColoring([{ path: 'a', value: ['[[Characters/Shail|Shail]]', 'Trisan', 'Chae Ban'] }]);
+        expect(plan.kind === 'ok' && plan.members.get('a')).toEqual(['Shail', 'Trisan', 'Chae Ban']);
+    });
+});
+
+describe('narrowColoring', () => {
+    const members = new Map([
+        ['a', ['Trisan', 'Chae Ban']],
+        ['b', ['Chae Ban', 'Shail', 'Trisan']],
+        ['c', ['Shail', 'Chae Ban']],
+        ['d', ['Trisan']],
+    ]);
+
+    it('keeps the scenes that list a pick anywhere, in its color', () => {
+        expect([...narrowColoring(members, ['Chae Ban'])]).toEqual([['a', 'Chae Ban'], ['b', 'Chae Ban'], ['c', 'Chae Ban']]);
+    });
+
+    it('keeps only the scenes that list every pick, each in the color of the pick it lists first', () => {
+        expect([...narrowColoring(members, ['Trisan', 'Chae Ban'])]).toEqual([['a', 'Trisan'], ['b', 'Chae Ban']]);
+        expect(narrowColoring(members, ['Trisan', 'Shail', 'Chae Ban']).size).toBe(1);
+    });
+
+    it('is empty when no scene lists them all', () => {
+        expect(narrowColoring(members, ['Shail', 'Trisan', 'Nobody']).size).toBe(0);
+    });
+});
+
+describe('readSavedColoring', () => {
+    it('reads the column and the picks, dropping anything that is not a name and repeats', () => {
+        expect(readSavedColoring({ property: 'note.Character', picks: ['Trisan', 3, 'Chae Ban', 'Trisan'] }))
+            .toEqual({ property: 'note.Character', picks: ['Trisan', 'Chae Ban'] });
+        expect(readSavedColoring({ property: 'note.Place' })).toEqual({ property: 'note.Place', picks: [] });
+    });
+
+    it('is null when nothing usable is saved', () => {
+        expect(readSavedColoring(null)).toBeNull();
+        expect(readSavedColoring(undefined)).toBeNull();
+        expect(readSavedColoring('note.Character')).toBeNull();
+        expect(readSavedColoring({ property: '' })).toBeNull();
+        expect(readSavedColoring({ picks: ['Trisan'] })).toBeNull();
+    });
+});
+
+describe('toggledPicks', () => {
+    it('adds a value at the end, or drops it when picked', () => {
+        expect(toggledPicks([], 'Trisan')).toEqual(['Trisan']);
+        expect(toggledPicks(['Trisan'], 'Chae Ban')).toEqual(['Trisan', 'Chae Ban']);
+        expect(toggledPicks(['Trisan', 'Chae Ban'], 'Trisan')).toEqual(['Chae Ban']);
     });
 });
 

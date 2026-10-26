@@ -754,6 +754,7 @@
 
 /* The subplot key spotlights a ring: rows outside it fade, as on the wheel. */
 .ert-timetable__row.is-out-of-ring,
+.ert-timetable__row.is-out-of-picks,
 .ert-timetable__row.is-receded {
   opacity: 0.38;
 }
@@ -865,19 +866,55 @@
 .ert-timeline-lens__legend {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   flex: 0 1 auto;
   min-width: 0;
-  gap: var(--size-2-2) var(--size-4-2);
+  gap: var(--size-2-1) var(--size-2-2);
 }
 
 .ert-timeline-lens__legend:empty {
   display: none;
 }
 
-.ert-timeline-lens__item {
+/* A coloring's values are buttons: click to show only the scenes that list every picked value.
+   Specific enough to win over Obsidian's own button look. */
+.ert-timeline-lens button.ert-timeline-lens__item {
   display: inline-flex;
   align-items: center;
   gap: var(--size-2-2);
+  height: auto;
+  padding: var(--size-2-1) var(--size-2-3);
+  border: none;
+  border-radius: var(--radius-s);
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  cursor: var(--cursor);
+}
+
+.ert-timeline-lens button.ert-timeline-lens__item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.ert-timeline-lens button.ert-timeline-lens__item.is-picked {
+  background: hsla(var(--interactive-accent-hsl), 0.18);
+  box-shadow: inset 0 0 0 1px var(--interactive-accent);
+}
+
+.ert-timeline-lens button.ert-timeline-lens__item.is-unpicked {
+  opacity: 0.45;
+}
+
+.ert-timeline-lens button.ert-timeline-lens__item.is-unpicked:hover {
+  opacity: 0.8;
+}
+
+.ert-timeline-lens__count {
+  padding-left: var(--size-2-2);
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .ert-timeline-lens__swatch {

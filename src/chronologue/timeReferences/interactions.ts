@@ -30,17 +30,20 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
     };
     const update = (): void => {
         const lens = currentTimelineLens(), coloring = currentTimelineColoring();
+        // Outside the lens, or (while names are picked in the color key) a scene that doesn't list them all.
+        const picking = !!coloring && coloring.picks.length > 0;
+        const outside = (path: string): boolean => (!!lens && !lens.paths.has(path)) || (picking && !coloring.values.has(path));
         svg.querySelectorAll<SVGElement>('.ert-time-reference-connector').forEach(connector => {
             const reference = references.get(keysOf(connector)[0]);
             const value = reference ? coloring?.values.get(reference.path) : undefined;
             const slot = value === undefined ? undefined : coloring?.legend.find(entry => entry.value === value)?.colorIndex;
             connector.setCssProps({ stroke: coloring ? referenceMarkColor(slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`) : '' });
-            connector.classList.toggle('ert-time-reference-filtered', !!reference && !!lens && !lens.paths.has(reference.path));
+            connector.classList.toggle('ert-time-reference-filtered', !!reference && outside(reference.path));
         });
         svg.querySelectorAll<SVGElement>('.ert-time-reference, .ert-time-reference-origin').forEach(group => {
             const candidates = keysOf(group).map(key => references.get(key)).filter((ref): ref is TimeReference => !!ref);
-            const ref = candidates.find(candidate => !lens || lens.paths.has(candidate.path)) ?? candidates[0];
-            group.classList.toggle('ert-time-reference-filtered', !!lens && candidates.every(candidate => !lens.paths.has(candidate.path)));
+            const ref = candidates.find(candidate => !outside(candidate.path)) ?? candidates[0];
+            group.classList.toggle('ert-time-reference-filtered', (!!lens || picking) && candidates.every(candidate => outside(candidate.path)));
             if (!ref) return;
             const value = coloring?.values.get(ref.path);
             const slot = value === undefined ? undefined : coloring?.legend.find(entry => entry.value === value)?.colorIndex;

@@ -64,8 +64,9 @@ export function linkActLabelsToTimetable(view: TimetableLinkView, svg: SVGSVGEle
 }
 
 const OVERLAY_ATTR = 'data-timetable-overlay';
-const LIT = 'rt-overlay-lit';
-const COLORED = 'rt-colored-by';
+/** What an overlay recedes, by role (scene, cell, void, square, number, title, label, line); the CSS keys on it. */
+const RECEDE_ATTR = 'data-timetable-recede';
+const COLORED = 'ert-colored-by';
 
 /** The scenes a lens and a coloring light, and the color slot of each colored one (undefined under a lens alone). */
 export function litScenes(
@@ -89,13 +90,13 @@ export function litScenes(
  * table's rows; under a coloring, the scenes with a value, in the value's
  * color) stand out, and everything else recedes as in Chronologue's Shift
  * mode: other scenes, beats and backdrops with their numbers and titles, void
- * cells, spokes and the subplot ring titles. The CSS keys on the wheel's
- * data-timetable-overlay attribute; lit elements carry rt-overlay-lit. A
- * coloring's fill is set inline, above the status and subplot fills, and
- * clearing it restores them.
+ * cells, spokes and the subplot ring titles. Receding elements carry
+ * data-timetable-recede with their role, and the CSS keys on that under the
+ * wheel's data-timetable-overlay attribute. A coloring's fill is set inline,
+ * above the status and subplot fills, and clearing it restores them.
  */
 export function applyTimetableOverlayToSvg(svg: Element, lens: TimelineLens | null, coloring: TimelineColoring | null): void {
-    svg.querySelectorAll(`.${LIT}`).forEach(element => element.classList.remove(LIT));
+    svg.querySelectorAll(`[${RECEDE_ATTR}]`).forEach(element => element.removeAttribute(RECEDE_ATTR));
     svg.querySelectorAll<SVGElement>(`.${COLORED}`).forEach(element => {
         element.setCssProps({ fill: '' });
         element.classList.remove(COLORED);
@@ -105,13 +106,17 @@ export function applyTimetableOverlayToSvg(svg: Element, lens: TimelineLens | nu
         return;
     }
     svg.setAttribute(OVERLAY_ATTR, coloring ? 'coloring' : 'lens');
+    const recede = (element: Element, role: string): void => element.setAttribute(RECEDE_ATTR, role);
     const groups = Array.from(svg.querySelectorAll('.rt-scene-group'));
     const lit = litScenes(groups.map(group => ({ path: scenePathOf(group), itemType: group.getAttribute('data-item-type') })), lens, coloring);
     const litIds = new Set<string>();
     groups.forEach((group, index) => {
         const { lit: isLit, slot } = lit[index];
-        if (!isLit) return;
-        group.classList.add(LIT);
+        if (!isLit) {
+            recede(group, 'scene');
+            group.querySelectorAll('.rt-scene-path:not(.rt-backdrop-segment)').forEach(cell => recede(cell, 'cell'));
+            return;
+        }
         const cell = group.querySelector<SVGElement>('.rt-scene-path');
         if (!cell) return;
         if (cell.id) litIds.add(cell.id);
@@ -120,9 +125,15 @@ export function applyTimetableOverlayToSvg(svg: Element, lens: TimelineLens | nu
         cell.classList.add(COLORED);
     });
     // Numbers, and Chronologue's titles drawn above the rings, sit outside the scene groups.
-    svg.querySelectorAll('.rt-number-square, .rt-number-text, .rt-scene-title-use').forEach(element => {
-        if (litIds.has(element.getAttribute('data-scene-id') ?? '')) element.classList.add(LIT);
-    });
+    const roles: Array<[string, string]> = [['rt-number-square', 'square'], ['rt-number-text', 'number'], ['rt-scene-title-use', 'title']];
+    for (const [cls, role] of roles) {
+        svg.querySelectorAll(`.${cls}`).forEach(element => {
+            if (!litIds.has(element.getAttribute('data-scene-id') ?? '')) recede(element, role);
+        });
+    }
+    svg.querySelectorAll('.rt-void-cell').forEach(element => recede(element, 'void'));
+    svg.querySelectorAll('.rt-subplot-ring-label-text').forEach(element => recede(element, 'label'));
+    svg.querySelectorAll('.act-border, .rt-month-spoke-line').forEach(element => recede(element, 'line'));
 }
 
 const QUERY_MARK = 'rt-query-mark';

@@ -714,46 +714,44 @@
 }
 
 /* A Timetable lens or coloring ([data-timetable-overlay]): the scenes it lights
-   (rt-overlay-lit) stand out and the rest of the wheel recedes, as in
-   Chronologue's Shift mode. Separate from hover's rt-non-selected, which hover clears. */
-.radial-timeline-svg[data-timetable-overlay] .rt-scene-group:not(.rt-overlay-lit) {
+   stand out and the rest of the wheel recedes, as in Chronologue's Shift mode.
+   The overlay pass marks each receding element with its role
+   (data-timetable-recede); lit scenes carry none. Separate from hover's
+   rt-non-selected, which hover clears. */
+.radial-timeline-container .radial-timeline-svg[data-timetable-overlay] [data-timetable-recede="scene"],
+.radial-timeline-container .radial-timeline-svg[data-timetable-overlay] [data-timetable-recede="title"] {
   opacity: 0.15;
 }
 
-.radial-timeline-svg[data-timetable-overlay] .rt-scene-group:not(.rt-overlay-lit) .rt-scene-path:not(.rt-backdrop-segment) {
+.radial-timeline-container .radial-timeline-svg[data-timetable-overlay] [data-timetable-recede="scene"] [data-timetable-recede="cell"] {
   fill: var(--interactive-normal);
 }
 
 /* A receded scene still answers the pointer, so its title can be read. */
-.radial-timeline-svg[data-timetable-overlay] .rt-scene-group:not(.rt-overlay-lit):hover {
+.radial-timeline-container .radial-timeline-svg[data-timetable-overlay] [data-timetable-recede="scene"]:hover {
   opacity: 1;
 }
 
-.radial-timeline-svg[data-timetable-overlay] .rt-void-cell {
+.radial-timeline-svg[data-timetable-overlay] [data-timetable-recede="void"] {
   fill: var(--interactive-normal);
   opacity: 0.15;
 }
 
-.radial-timeline-svg[data-timetable-overlay] .rt-number-square:not(.rt-overlay-lit) {
+.radial-timeline-container .radial-timeline-svg[data-timetable-overlay] [data-timetable-recede="square"] {
   fill: var(--interactive-normal);
   stroke: none;
 }
 
-.radial-timeline-svg[data-timetable-overlay] .rt-number-text:not(.rt-overlay-lit) {
+.radial-timeline-container .radial-timeline-svg[data-timetable-overlay] [data-timetable-recede="number"] {
   fill: var(--text-muted);
   opacity: 0.25;
 }
 
-.radial-timeline-svg[data-timetable-overlay] .rt-scene-title-use:not(.rt-overlay-lit) {
-  opacity: 0.15;
-}
-
-.radial-timeline-svg[data-timetable-overlay] .rt-subplot-ring-label-text {
+.radial-timeline-svg[data-timetable-overlay] [data-timetable-recede="label"] {
   opacity: 0;
 }
 
-.radial-timeline-svg[data-timetable-overlay] .act-border,
-.radial-timeline-svg[data-timetable-overlay] .rt-month-spoke-line {
+.radial-timeline-svg[data-timetable-overlay] [data-timetable-recede="line"] {
   opacity: 0.25;
 }
 

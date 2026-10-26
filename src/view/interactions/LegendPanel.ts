@@ -35,6 +35,8 @@ export interface LegendRow {
     rings?: Array<string | null>;
     /** A time reference as drawn on the wheel, in this color: source square, connector, date square. */
     timeReference?: string;
+    /** A filled dot in this color, like the Timetable's Due dot. */
+    dot?: string;
     label: string;
     detail?: string;
     detailSegments?: LegendDetailSegment[];
@@ -87,6 +89,8 @@ function renderRow(sectionEl: HTMLElement, row: LegendRow): void {
         iconEl.createSpan({ cls: 'ert-timeline-legend__reference-source' });
         iconEl.createSpan({ cls: 'ert-timeline-legend__reference-line' });
         iconEl.createSpan({ cls: 'ert-timeline-legend__reference-date' });
+    } else if (row.dot) {
+        iconEl.createSpan({ cls: 'ert-timeline-legend__dot' }).setCssProps({ '--ert-legend-dot': row.dot });
     } else if (row.icon) {
         setIcon(iconEl, row.icon);
     }

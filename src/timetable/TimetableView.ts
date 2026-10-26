@@ -2022,7 +2022,7 @@ export class TimetableView extends BasesView {
                     { swatch: { fill: 'transparent', stroke: 'transparent', text: 'A', textColor: stage.Author }, label: t('ui.timetable.keyStage'), detail: t('ui.timetable.keyStageDetail') },
                     { icon: 'pencil-line', label: t('ui.timetable.keyPending'), detail: t('ui.timetable.keyPendingDetail') },
                     { icon: 'align-left', label: t('ui.timetable.keySynopsis'), detail: t('ui.timetable.keySynopsisDetail') },
-                    { icon: 'dot', label: t('ui.timetable.keyDueDot'), detail: t('ui.timetable.keyDueDotDetail') },
+                    { dot: 'var(--color-red)', label: t('ui.timetable.keyDueDot'), detail: t('ui.timetable.keyDueDotDetail') },
                     { icon: 'calendar-plus', label: t('ui.timetable.keyDueStep'), detail: t('ui.timetable.keyDueStepDetail') },
                     { swatch: { fill: 'transparent', stroke: 'var(--text-muted)', text: '–', textColor: 'var(--text-muted)', dashed: true }, label: t('ui.timetable.keySketch'), detail: t('ui.timetable.keySketchDetail') },
                     { swatch: { fill: 'transparent', stroke: 'var(--text-faint)', text: '–', textColor: 'var(--text-faint)' }, label: t('ui.timetable.keyNote'), detail: t('ui.timetable.keyNoteDetail') },

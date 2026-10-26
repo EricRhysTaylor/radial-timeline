@@ -2535,6 +2535,13 @@
   box-shadow: inset 0 0 0 1px var(--text-muted);
 }
 
+.ert-timeline-legend__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ert-legend-dot);
+}
+
 /* A time reference as the wheel draws it: the larger source square, the connector, the smaller date square. */
 .ert-timeline-legend__icon--reference {
   gap: 0;

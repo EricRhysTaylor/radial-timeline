@@ -285,9 +285,12 @@ export class RadialTimelineView extends ItemView {
         if (!this.overlaysEl || !this.overlaysEl.isConnected) {
             const overlays = container.createDiv({ cls: 'ert-timeline-overlays' });
             this.renderScope.registerDomEvent(overlays, 'click', (evt: MouseEvent) => {
-                const close = evt.target instanceof Element ? evt.target.closest<HTMLElement>('[data-overlay]') : null;
+                const target = evt.target instanceof Element ? evt.target : null;
+                const close = target?.closest<HTMLElement>('[data-overlay]');
                 if (close?.dataset.overlay === 'lens') currentTimelineLens()?.turnOff();
                 if (close?.dataset.overlay === 'coloring') currentTimelineColoring()?.turnOff();
+                const pick = target?.closest<HTMLElement>('[data-pick]')?.dataset.pick;
+                if (pick !== undefined) currentTimelineColoring()?.togglePick(pick);
             });
             this.overlaysEl = overlays;
         }
@@ -306,12 +309,21 @@ export class RadialTimelineView extends ItemView {
         };
         if (lens) pill('lens', 'scan-eye', t('ui.timetable.lensPill', { view: lens.label, count: lens.paths.size }));
         if (coloring) {
+            // Click names in the key to show only the scenes that list them all; click again to drop one.
             const legend = pill('coloring', 'palette', t('ui.timetable.coloredBy', { property: coloring.property }));
+            const picking = coloring.picks.length > 0;
             for (const entry of coloring.legend) {
-                const item = legend.createSpan({ cls: 'ert-timeline-lens__item' });
+                const picked = coloring.picks.includes(entry.value);
+                const item = legend.createEl('button', { cls: 'ert-timeline-lens__item' });
+                item.toggleClass('is-picked', picked);
+                item.toggleClass('is-unpicked', picking && !picked);
+                item.dataset.pick = entry.value;
+                item.setAttr('aria-pressed', String(picked));
+                setTooltip(item, t(picked ? 'ui.timetable.pickDrop' : picking ? 'ui.timetable.pickAlso' : 'ui.timetable.pickOnly', { value: entry.value }));
                 item.createSpan({ cls: 'ert-timeline-lens__swatch' }).setCssProps({ '--ert-timeline-swatch': `var(--rt-subplot-colors-${entry.colorIndex})` });
                 item.createSpan({ text: entry.value });
             }
+            if (picking) legend.createSpan({ cls: 'ert-timeline-lens__count', text: tCount('scene', coloring.values.size) });
         }
     }
 

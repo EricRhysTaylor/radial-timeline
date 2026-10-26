@@ -431,8 +431,11 @@ export const MAX_COLOR_VALUES = 8;
 /** A value that reads as a number (an act, a chapter): the legend lists these in order. */
 const NUMBER_VALUE = /^-?\d+(\.\d+)?$/;
 
+/** A template field nobody filled in, such as "{{Character}}": no value at all. */
+const UNFILLED_PLACEHOLDER = /^\{\{[^{}]*\}\}$/;
+
 export type ColoringPlan =
-    | { kind: 'ok'; values: Map<string, string>; legend: Array<{ value: string; colorIndex: number }> }
+    | { kind: 'ok'; values: Map<string, string>; legend: Array<{ value: string; colorIndex: number }>; members: Map<string, string[]> }
     | { kind: 'none' }
     | { kind: 'tooMany'; count: number };
 
@@ -441,7 +444,8 @@ export type ColoringPlan =
  * (a link shows its name; a list counts its first item), one color slot per
  * value, most frequent first, taking slots in `slotOrder` (see
  * distinctColorSlots). The legend lists numbers in order. More than
- * MAX_COLOR_VALUES values is refused.
+ * MAX_COLOR_VALUES values is refused. `members` keeps every item each scene
+ * lists, in order, for narrowing to the values picked in the key.
  */
 export function planColoring(
     rows: Array<{ path: string; value: unknown }>,
@@ -449,13 +453,16 @@ export function planColoring(
     slotOrder: number[] = [],
 ): ColoringPlan {
     const values = new Map<string, string>();
+    const members = new Map<string, string[]>();
     const counts = new Map<string, number>();
     for (const { path, value } of rows) {
-        const first: unknown = Array.isArray(value) ? value[0] : value;
-        const text = formatHoverMetadataValue(first);
-        if (!text) continue;
-        values.set(path, text);
-        counts.set(text, (counts.get(text) ?? 0) + 1);
+        const items = (Array.isArray(value) ? value : [value])
+            .map(item => formatHoverMetadataValue(item).trim())
+            .filter(text => text !== '' && !UNFILLED_PLACEHOLDER.test(text));
+        if (items.length === 0) continue;
+        members.set(path, items);
+        values.set(path, items[0]);
+        counts.set(items[0], (counts.get(items[0]) ?? 0) + 1);
     }
     if (counts.size === 0) return { kind: 'none' };
     if (counts.size > max) return { kind: 'tooMany', count: counts.size };
@@ -464,7 +471,43 @@ export function planColoring(
         .map(([value], index) => ({ value, colorIndex: slotOrder[index] ?? index }));
     // Numbers (acts, chapters) read best in order; other values most frequent first.
     if (legend.every(entry => NUMBER_VALUE.test(entry.value))) legend.sort((a, b) => Number(a.value) - Number(b.value));
-    return { kind: 'ok', values, legend };
+    return { kind: 'ok', values, legend, members };
+}
+
+/**
+ * A coloring narrowed to the values picked in the timeline's key: only the
+ * scenes that list every pick, anywhere in their list, each in the color of
+ * the first pick it lists.
+ */
+export function narrowColoring(members: Map<string, string[]>, picks: readonly string[]): Map<string, string> {
+    const values = new Map<string, string>();
+    for (const [path, items] of members) {
+        if (!picks.every(pick => items.includes(pick))) continue;
+        const lead = items.find(item => picks.includes(item));
+        if (lead !== undefined) values.set(path, lead);
+    }
+    return values;
+}
+
+/** The coloring a view saves: the column, and the values picked in the timeline's key. */
+export interface SavedColoring {
+    property: string;
+    picks: string[];
+}
+
+/** A view's saved coloring, or null when it has none (or something unreadable). */
+export function readSavedColoring(raw: unknown): SavedColoring | null {
+    if (!raw || typeof raw !== 'object' || !('property' in raw) || typeof raw.property !== 'string' || raw.property === '') return null;
+    const picks: unknown = 'picks' in raw ? raw.picks : undefined;
+    return {
+        property: raw.property,
+        picks: Array.isArray(picks) ? [...new Set(picks.filter((pick): pick is string => typeof pick === 'string'))] : [],
+    };
+}
+
+/** Click a value in the key: pick it, or drop it when it is picked. */
+export function toggledPicks(picks: readonly string[], value: string): string[] {
+    return picks.includes(value) ? picks.filter(pick => pick !== value) : [...picks, value];
 }
 
 /** Below this chroma a ring color reads as grey, too close to an uncolored scene. */

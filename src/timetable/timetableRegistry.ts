@@ -66,6 +66,10 @@ export interface TimelineColoring {
     values: Map<string, string>;
     /** Values in legend order, each with its color slot (0–15, the ring palette). */
     legend: Array<{ value: string; colorIndex: number }>;
+    /** Values picked in the key. While any are, `values` holds only the scenes that list them all. */
+    picks: string[];
+    /** A value in the key was clicked: pick it, or drop it. */
+    togglePick: (value: string) => void;
     turnOff: () => void;
 }
 
@@ -197,6 +201,7 @@ export function setTimelineColoring(next: TimelineColoring): void {
     if (coloring
         && coloring.owner === next.owner
         && coloring.property === next.property
+        && coloring.picks.join('\u0000') === next.picks.join('\u0000')
         && sameMap(coloring.values, next.values)
         && coloring.legend.map(entry => `${entry.value}\u0000${entry.colorIndex}`).join('|') === next.legend.map(entry => `${entry.value}\u0000${entry.colorIndex}`).join('|')) return;
     coloring = next;

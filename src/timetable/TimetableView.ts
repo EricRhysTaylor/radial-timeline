@@ -76,13 +76,16 @@ import {
     filterSignature,
     groupProgress,
     medianOf,
+    narrowColoring,
     planColoring,
     readRuntimeSeconds,
+    readSavedColoring,
     readWhen,
     runningTotals,
     sceneNumberFill,
     sceneVitals,
     steppedDue,
+    toggledPicks,
     withActDividers,
     withDayDividers,
     wordBar,
@@ -354,9 +357,11 @@ export class TimetableView extends BasesView {
     private viewFilter: string | null = null;
     /** The filter the author turned the lens off for; the automatic lens stays off until the filter changes. */
     private lensDismissedFor: string | null = null;
-    /** The column this table colors the timeline by, if any. Not saved. */
+    /** The column this table is coloring the timeline by right now, if any. The choice is saved with the view. */
     private coloringProperty: BasesPropertyId | null = null;
     private claimColoring = false;
+    /** While names are picked in the timeline's color key, the scenes that list them all; null otherwise. */
+    private pickedPaths: Set<string> | null = null;
     /** Rows picked for a bulk edit, by path. Not saved. */
     private readonly selected = new Set<string>();
     private lastToggled: string | null = null;
@@ -1264,18 +1269,14 @@ export class TimetableView extends BasesView {
         const menu = new Menu();
         const coloring = currentTimelineColoring();
         if (coloring?.owner === this && this.coloringProperty === property) {
-            menu.addItem(item => item.setTitle(t('ui.timetable.coloringStop')).setIcon('palette').onClick(() => {
-                this.coloringProperty = null;
-                clearTimelineColoring(this);
-                this.render();
-            }));
+            menu.addItem(item => item.setTitle(t('ui.timetable.coloringStop')).setIcon('palette').onClick(() => this.stopColoring()));
         } else {
             const plan = this.planColoringFor(property);
             menu.addItem(item => {
                 item.setIcon('palette');
                 if (plan.kind === 'ok') {
                     item.setTitle(t('ui.timetable.coloringStart', { property: name })).onClick(() => {
-                        this.coloringProperty = property;
+                        this.config.set('coloring', { property, picks: [] });
                         this.claimColoring = true;
                         this.render();
                     });
@@ -1317,33 +1318,58 @@ export class TimetableView extends BasesView {
         return planColoring(rows, undefined, distinctColorSlots(palette));
     }
 
-    /** Keep the timeline's coloring in step with this table's values; another table's coloring replaces it. */
+    /**
+     * Keep the timeline's coloring in step with this table's values and the
+     * names picked in the key, both saved with the view like the lens.
+     * Another table's coloring stays until this one's is chosen again.
+     */
     private syncColoring(): void {
-        const property = this.coloringProperty;
-        if (property === null) return;
-        const active = currentTimelineColoring();
-        if (active && active.owner !== this && !this.claimColoring) {
-            this.coloringProperty = null;
-            return;
-        }
-        this.claimColoring = false;
-        const plan = this.planColoringFor(property);
-        if (plan.kind !== 'ok') {
-            this.coloringProperty = null;
+        this.coloringProperty = null;
+        this.pickedPaths = null;
+        const saved = readSavedColoring(this.config.get('coloring'));
+        if (!saved) {
             clearTimelineColoring(this);
             return;
         }
+        const active = currentTimelineColoring();
+        if (active && active.owner !== this && !this.claimColoring) return;
+        this.claimColoring = false;
+        const property = saved.property as BasesPropertyId;
+        const plan = this.planColoringFor(property);
+        if (plan.kind !== 'ok') {
+            clearTimelineColoring(this);
+            return;
+        }
+        this.coloringProperty = property;
+        // A pick whose value has gone from the column (renamed, or no longer first anywhere) drops out.
+        const picks = saved.picks.filter(pick => plan.legend.some(entry => entry.value === pick));
+        const values = picks.length > 0 ? narrowColoring(plan.members, picks) : plan.values;
+        if (picks.length > 0) this.pickedPaths = new Set(values.keys());
         setTimelineColoring({
             owner: this,
             property: this.config.getDisplayName(property),
-            values: plan.values,
+            values,
             legend: plan.legend,
-            turnOff: () => {
-                this.coloringProperty = null;
-                clearTimelineColoring(this);
+            picks,
+            togglePick: value => {
+                this.config.set('coloring', { property, picks: toggledPicks(picks, value) });
                 this.render();
             },
+            turnOff: () => this.stopColoring(),
         });
+    }
+
+    private stopColoring(): void {
+        this.config.set('coloring', null);
+        clearTimelineColoring(this);
+        this.render();
+    }
+
+    /** Names picked in the timeline's color key: rows that don't list them all fade, as on the wheel. */
+    private markPicks(): void {
+        for (const [path, element] of this.rowEls) {
+            element.toggleClass('is-out-of-picks', this.pickedPaths !== null && !this.pickedPaths.has(path));
+        }
     }
 
     // ── Quick picks ─────────────────────────────────────────────────────
@@ -1830,6 +1856,7 @@ export class TimetableView extends BasesView {
         this.pruneDrawers(openDrawers);
         this.setCurrentRow(currentNotePath());
         this.markRing(this.ringSpotlight);
+        this.markPicks();
         this.renderBulkBar();
         this.fitAfterRender(table, sizes);
         if (scrollParent) scrollParent.scrollTop = scrollTop;
@@ -2012,6 +2039,7 @@ export class TimetableView extends BasesView {
                     { icon: 'command', label: Platform.isMacOS ? t('ui.timetable.keyModClickMac') : t('ui.timetable.keyModClick'), detail: t('ui.timetable.keyModClickDetail') },
                     { icon: 'arrow-big-up', label: t('ui.timetable.keyShiftClick'), detail: t('ui.timetable.keyShiftClickDetail') },
                     { icon: 'mouse', label: t('ui.timetable.keyRightClick'), detail: t('ui.timetable.keyRightClickDetail') },
+                    { icon: 'palette', label: t('ui.timetable.keyColorKey'), detail: t('ui.timetable.keyColorKeyDetail') },
                     { icon: 'chevron-down', label: t('ui.timetable.keyPick'), detail: t('ui.timetable.keyPickDetail') },
                     { icon: 'square-check', label: t('ui.timetable.keyCheckboxes'), detail: t('ui.timetable.keyCheckboxesDetail') },
                     { icon: 'square-mouse-pointer', label: t('ui.timetable.keyHover'), detail: t('ui.timetable.keyHoverDetail') },

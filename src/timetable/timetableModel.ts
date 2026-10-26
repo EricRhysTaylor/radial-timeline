@@ -23,6 +23,7 @@ import { whenTextHasClock } from '../utils/whenFormat';
 import { parseRuntimeField } from '../utils/runtimeEstimator';
 import { formatHoverMetadataValue } from '../utils/hoverMetadata';
 import { hexToRgb } from '../utils/colour';
+import { compareDateCategories, dateColoringRows, readDateGrouping, type DateGrouping } from './coloringDates';
 import { getMainPlotName } from '../utils/mainPlot';
 import { readSceneId } from '../utils/sceneIds';
 
@@ -425,7 +426,7 @@ export function filterSignature(filter: unknown): string | null {
 
 // ── Coloring the timeline by a column ──────────────────────────────────
 
-/** A column with more values than this can't color the timeline legibly. */
+/** Maximum categories painted simultaneously; every category remains available in the chooser. */
 export const MAX_COLOR_VALUES = 8;
 
 /** A value that reads as a number (an act, a chapter): the legend lists these in order. */
@@ -434,75 +435,106 @@ const NUMBER_VALUE = /^-?\d+(\.\d+)?$/;
 /** A template field nobody filled in, such as "{{Character}}": no value at all. */
 const UNFILLED_PLACEHOLDER = /^\{\{[^{}]*\}\}$/;
 
+export interface ColoringCategory { value: string; count: number }
+export type ColoringMatch = 'all' | 'any';
 export type ColoringPlan =
-    | { kind: 'ok'; values: Map<string, string>; legend: Array<{ value: string; colorIndex: number }>; members: Map<string, string[]> }
-    | { kind: 'none' }
-    | { kind: 'tooMany'; count: number };
+    | { kind: 'ok'; values: Map<string, string>; legend: Array<ColoringCategory & { colorIndex: number }>; members: Map<string, string[]>; categories: ColoringCategory[]; multiValue: boolean }
+    | { kind: 'none' };
 
-/**
- * Plan coloring scenes by a column: each scene's value as the author reads it
- * (a link shows its name; a list counts its first item), one color slot per
- * value, most frequent first, taking slots in `slotOrder` (see
- * distinctColorSlots). The legend lists numbers in order. More than
- * MAX_COLOR_VALUES values is refused. `members` keeps every item each scene
- * lists, in order, for narrowing to the values picked in the key.
- */
+/** Discover every list member; paint up to eight chosen categories, keeping author list order per cell. */
 export function planColoring(
     rows: Array<{ path: string; value: unknown }>,
     max: number = MAX_COLOR_VALUES,
     slotOrder: number[] = [],
+    palette?: readonly string[],
 ): ColoringPlan {
     const values = new Map<string, string>();
     const members = new Map<string, string[]>();
     const counts = new Map<string, number>();
+    let multiValue = false;
     for (const { path, value } of rows) {
-        const items = (Array.isArray(value) ? value : [value])
+        const items = [...new Set((Array.isArray(value) ? value : [value])
             .map(item => formatHoverMetadataValue(item).trim())
-            .filter(text => text !== '' && !UNFILLED_PLACEHOLDER.test(text));
+            .filter(text => text !== '' && !UNFILLED_PLACEHOLDER.test(text)))];
         if (items.length === 0) continue;
+        multiValue ||= Array.isArray(value);
         members.set(path, items);
-        values.set(path, items[0]);
-        counts.set(items[0], (counts.get(items[0]) ?? 0) + 1);
+        for (const item of items) counts.set(item, (counts.get(item) ?? 0) + 1);
     }
     if (counts.size === 0) return { kind: 'none' };
-    if (counts.size > max) return { kind: 'tooMany', count: counts.size };
-    const legend = [...counts.entries()]
+    const categories = [...counts.entries()]
         .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .map(([value], index) => ({ value, colorIndex: slotOrder[index] ?? index }));
-    // Numbers (acts, chapters) read best in order; other values most frequent first.
+        .map(([value, count]) => ({ value, count }));
+    const chosen = palette === undefined ? categories.slice(0, max).map(entry => entry.value)
+        : [...new Set(palette)].filter(value => counts.has(value)).slice(0, max);
+    const legend = chosen.map((value, index) => ({ value, count: counts.get(value)!, colorIndex: slotOrder[index] ?? index }));
     if (legend.every(entry => NUMBER_VALUE.test(entry.value))) legend.sort((a, b) => Number(a.value) - Number(b.value));
-    return { kind: 'ok', values, legend, members };
+    for (const [path, items] of members) {
+        const lead = items.find(item => chosen.includes(item));
+        if (lead !== undefined) values.set(path, lead);
+    }
+    return { kind: 'ok', values, legend, members, categories, multiValue };
 }
 
-/**
- * A coloring narrowed to the values picked in the timeline's key: only the
- * scenes that list every pick, anywhere in their list, each in the color of
- * the first pick it lists.
- */
-export function narrowColoring(members: Map<string, string[]>, picks: readonly string[]): Map<string, string> {
+/** Narrow list membership by all picks (characters together), or any pick (alternative periods/values). */
+export function narrowColoring(members: Map<string, string[]>, picks: readonly string[], match: ColoringMatch = 'all'): Map<string, string> {
     const values = new Map<string, string>();
     for (const [path, items] of members) {
-        if (!picks.every(pick => items.includes(pick))) continue;
+        const matches = match === 'all' ? picks.every(pick => items.includes(pick)) : picks.some(pick => items.includes(pick));
+        if (!matches) continue;
         const lead = items.find(item => picks.includes(item));
         if (lead !== undefined) values.set(path, lead);
     }
     return values;
 }
 
-/** The coloring a view saves: the column, and the values picked in the timeline's key. */
+/** View-owned coloring state. Unversioned pre-1 selections are read at this boundary. */
 export interface SavedColoring {
+    schemaVersion: 1;
     property: string;
     picks: string[];
+    palette?: string[];
+    match?: ColoringMatch;
+    grouping?: DateGrouping;
 }
 
-/** A view's saved coloring, or null when it has none (or something unreadable). */
+/** One planner serves the saved view and its draft editor. */
+export function planConfiguredColoring(rows: Array<{ path: string; value: unknown; complete?: boolean }>, config: Pick<SavedColoring, 'palette' | 'grouping'> & { picks?: readonly string[] }, slots: number[], today: Date): ColoringPlan {
+    const grouped = config.grouping ? dateColoringRows(rows, config.grouping, today) : rows;
+    let plan = planColoring(grouped, MAX_COLOR_VALUES, slots, config.palette);
+    // Preserve old saved picks when complete list discovery adds more than eight categories.
+    if (plan.kind === 'ok' && config.palette === undefined && config.picks?.length) {
+        const available = new Set(plan.categories.map(entry => entry.value));
+        const chosen = [...new Set([...config.picks.filter(pick => available.has(pick)), ...plan.legend.map(entry => entry.value)])].slice(0, MAX_COLOR_VALUES);
+        plan = planColoring(grouped, MAX_COLOR_VALUES, slots, chosen);
+    }
+    if (plan.kind === 'ok' && config.grouping) {
+        plan.categories.sort((a, b) => compareDateCategories(a.value, b.value));
+        plan.legend.sort((a, b) => compareDateCategories(a.value, b.value));
+    }
+    return plan;
+}
+
 export function readSavedColoring(raw: unknown): SavedColoring | null {
     if (!raw || typeof raw !== 'object' || !('property' in raw) || typeof raw.property !== 'string' || raw.property === '') return null;
-    const picks: unknown = 'picks' in raw ? raw.picks : undefined;
-    return {
-        property: raw.property,
-        picks: Array.isArray(picks) ? [...new Set(picks.filter((pick): pick is string => typeof pick === 'string'))] : [],
-    };
+    if ('schemaVersion' in raw && raw.schemaVersion !== 1) return null;
+    const names = (value: unknown) => Array.isArray(value) ? [...new Set(value.filter((pick): pick is string => typeof pick === 'string'))] : [];
+    const result: SavedColoring = { schemaVersion: 1, property: raw.property, picks: names('picks' in raw ? raw.picks : undefined) };
+    if ('palette' in raw) {
+        if (!Array.isArray(raw.palette) || raw.palette.length === 0 || raw.palette.length > MAX_COLOR_VALUES) return null;
+        result.palette = names(raw.palette);
+        if (result.palette.length === 0) return null;
+    }
+    if ('match' in raw) {
+        if (raw.match !== 'all' && raw.match !== 'any') return null;
+        result.match = raw.match;
+    }
+    if ('grouping' in raw) {
+        const grouping = readDateGrouping(raw.grouping);
+        if (!grouping) return null;
+        result.grouping = grouping;
+    }
+    return result;
 }
 
 /** Click a value in the key: pick it, or drop it when it is picked. */

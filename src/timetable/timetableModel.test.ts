@@ -17,6 +17,7 @@ import {
     medianOf,
     narrowColoring,
     planColoring,
+    planConfiguredColoring,
     readRuntimeSeconds,
     readSavedColoring,
     readWhen,
@@ -180,27 +181,29 @@ describe('planColoring', () => {
         ]);
         expect(plan.kind).toBe('ok');
         if (plan.kind !== 'ok') return;
-        expect(plan.legend).toEqual([{ value: 'Shail', colorIndex: 0 }, { value: 'Trisan', colorIndex: 1 }]);
+        expect(plan.legend).toEqual([{ value: 'Shail', colorIndex: 0, count: 3 }, { value: 'Trisan', colorIndex: 1, count: 2 }]);
         expect(plan.values.get('b')).toBe('Shail');
         expect(plan.values.has('d')).toBe(false);
     });
 
     it('takes color slots in the order it is given', () => {
         const plan = planColoring([{ path: 'a', value: 'x' }, { path: 'b', value: 'x' }, { path: 'c', value: 'y' }], 8, [10, 3]);
-        expect(plan.kind === 'ok' && plan.legend).toEqual([{ value: 'x', colorIndex: 10 }, { value: 'y', colorIndex: 3 }]);
+        expect(plan.kind === 'ok' && plan.legend).toEqual([{ value: 'x', colorIndex: 10, count: 2 }, { value: 'y', colorIndex: 3, count: 1 }]);
     });
 
     it('lists numbers in order, keeping the most frequent value’s color', () => {
         const plan = planColoring([{ path: 'a', value: 2 }, { path: 'b', value: 2 }, { path: 'c', value: 1 }, { path: 'd', value: 3 }], 8, [5, 3, 15]);
         expect(plan.kind === 'ok' && plan.legend).toEqual([
-            { value: '1', colorIndex: 3 },
-            { value: '2', colorIndex: 5 },
-            { value: '3', colorIndex: 15 },
+            { value: '1', colorIndex: 3, count: 1 },
+            { value: '2', colorIndex: 5, count: 2 },
+            { value: '3', colorIndex: 15, count: 1 },
         ]);
     });
 
-    it('refuses a column with too many values, or none', () => {
-        expect(planColoring([{ path: 'a', value: 'x' }, { path: 'b', value: 'y' }], 1)).toEqual({ kind: 'tooMany', count: 2 });
+    it('caps painted categories while keeping all categories available, and rejects an empty column', () => {
+        const plan = planColoring([{ path: 'a', value: 'x' }, { path: 'b', value: 'y' }], 1);
+        expect(plan.kind === 'ok' && plan.legend).toHaveLength(1);
+        expect(plan.kind === 'ok' && plan.categories).toHaveLength(2);
         expect(planColoring([{ path: 'a', value: undefined }])).toEqual({ kind: 'none' });
     });
 
@@ -216,6 +219,25 @@ describe('planColoring', () => {
         expect(plan.values.has('a')).toBe(false);
         expect(plan.values.get('b')).toBe('Chae Ban');
         expect(plan.members.get('c')).toEqual(['Trisan']);
+    });
+
+    it('offers a supporting character that is never listed first and counts duplicates once per scene', () => {
+        const plan = planColoring([{ path: 'a', value: ['Shail', 'Trisan', 'Trisan'] }, { path: 'b', value: ['Shail', 'Trisan'] }]);
+        expect(plan.kind === 'ok' && plan.categories).toEqual([{ value: 'Shail', count: 2 }, { value: 'Trisan', count: 2 }]);
+    });
+
+    it('uses an explicit palette beyond the eight most frequent, painting a secondary member when chosen', () => {
+        const rows = Array.from({ length: 12 }, (_, index) => ({ path: String(index), value: ['Lead', `Supporting ${index}`] }));
+        const plan = planColoring(rows, 8, [5], ['Supporting 11']);
+        expect(plan.kind === 'ok' && [...plan.values]).toEqual([['11', 'Supporting 11']]);
+        expect(plan.kind === 'ok' && plan.legend).toEqual([{ value: 'Supporting 11', count: 1, colorIndex: 5 }]);
+        expect(plan.kind === 'ok' && plan.categories).toHaveLength(13);
+    });
+
+    it('keeps an old saved pick available after full discovery moves it outside the most frequent eight', () => {
+        const rows = Array.from({ length: 12 }, (_, i) => ({ path: String(i), value: ['Lead', `Supporting ${i}`] }));
+        const plan = planConfiguredColoring(rows, { picks: ['Supporting 11'] }, [], new Date(2026, 9, 26));
+        expect(plan.kind === 'ok' && plan.legend.some(entry => entry.value === 'Supporting 11')).toBe(true);
     });
 
     it('keeps every item a scene lists, in order', () => {
@@ -241,6 +263,11 @@ describe('narrowColoring', () => {
         expect(narrowColoring(members, ['Trisan', 'Shail', 'Chae Ban']).size).toBe(1);
     });
 
+    it('supports alternative scalar values and periods with any matching pick', () => {
+        const periods = new Map([['a', ['month:2085-04']], ['b', ['month:2085-05']], ['c', ['month:2085-06']]]);
+        expect([...narrowColoring(periods, ['month:2085-04', 'month:2085-06'], 'any').keys()]).toEqual(['a', 'c']);
+    });
+
     it('is empty when no scene lists them all', () => {
         expect(narrowColoring(members, ['Shail', 'Trisan', 'Nobody']).size).toBe(0);
     });
@@ -249,8 +276,16 @@ describe('narrowColoring', () => {
 describe('readSavedColoring', () => {
     it('reads the column and the picks, dropping anything that is not a name and repeats', () => {
         expect(readSavedColoring({ property: 'note.Character', picks: ['Trisan', 3, 'Chae Ban', 'Trisan'] }))
-            .toEqual({ property: 'note.Character', picks: ['Trisan', 'Chae Ban'] });
-        expect(readSavedColoring({ property: 'note.Place' })).toEqual({ property: 'note.Place', picks: [] });
+            .toEqual({ schemaVersion: 1, property: 'note.Character', picks: ['Trisan', 'Chae Ban'] });
+        expect(readSavedColoring({ property: 'note.Place' })).toEqual({ schemaVersion: 1, property: 'note.Place', picks: [] });
+    });
+
+    it('reads versioned choices and rejects unknown versions, invalid ranges and oversized palettes', () => {
+        const saved = { schemaVersion: 1, property: 'note.When', picks: ['range:inside'], palette: ['range:inside'], match: 'any', grouping: { kind: 'range', start: '2085-04-01', end: '2085-05-31' } };
+        expect(readSavedColoring(saved)).toEqual(saved);
+        expect(readSavedColoring({ ...saved, schemaVersion: 2 })).toBeNull();
+        expect(readSavedColoring({ ...saved, grouping: { ...saved.grouping, end: '2085-02-30' } })).toBeNull();
+        expect(readSavedColoring({ ...saved, palette: Array.from({ length: 9 }, (_, i) => String(i)) })).toBeNull();
     });
 
     it('is null when nothing usable is saved', () => {

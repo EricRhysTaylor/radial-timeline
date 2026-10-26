@@ -842,96 +842,240 @@
   gap: var(--size-4-1);
   width: max-content;
   max-width: 80%;
+  max-height: calc(100% - var(--size-4-4));
+  overflow-y: auto;
   transform: translateX(-50%);
 }
 
 .ert-timeline-lens {
   display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: var(--size-4-1);
-  padding: var(--size-2-1) var(--size-2-1) var(--size-2-1) var(--size-4-2);
+  flex-direction: column;
+  gap: var(--size-4-2);
+  max-width: 100%;
+  min-width: 0;
+  padding: var(--size-4-2) var(--size-4-3);
   border-radius: var(--radius-l);
   background: var(--background-secondary);
-  border: var(--border-width) solid var(--interactive-accent);
+  border: var(--border-width) solid var(--background-modifier-border);
   color: var(--text-normal);
   font-size: var(--font-ui-small);
 }
 
+.ert-timeline-lens__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-4-2);
+  min-width: 0;
+}
+
 .ert-timeline-lens__label {
-  flex: none;
-  white-space: nowrap;
+  flex: 1 0 10ch;
+  max-width: 100%;
+  font-weight: var(--font-semibold);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.ert-timeline-lens__tools {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: var(--size-4-2);
+  margin-left: auto;
+}
+
+.ert-timeline-lens__tools button {
+  height: auto;
+  padding: var(--size-2-1) var(--size-2-3);
+  background: transparent;
+  box-shadow: none;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.ert-timeline-lens__status {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
 }
 
 .ert-timeline-lens__legend {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  flex: 0 1 auto;
   min-width: 0;
-  gap: var(--size-2-1) var(--size-2-2);
+  gap: var(--size-2-3);
 }
 
 .ert-timeline-lens__legend:empty {
   display: none;
 }
 
-/* A coloring's values are buttons: click to show only the scenes that list every picked value.
-   Specific enough to win over Obsidian's own button look. */
 .ert-timeline-lens button.ert-timeline-lens__item {
   display: inline-flex;
   align-items: center;
-  gap: var(--size-2-2);
+  gap: var(--size-2-3);
+  min-width: 0;
+  max-width: 100%;
   height: auto;
-  padding: var(--size-2-1) var(--size-2-3);
-  border: none;
-  border-radius: var(--radius-s);
-  background: none;
+  padding: var(--size-2-2) var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  background: var(--background-primary);
   box-shadow: none;
-  color: inherit;
+  color: var(--text-normal);
   font-size: inherit;
   font-weight: inherit;
   cursor: var(--cursor);
 }
 
 .ert-timeline-lens button.ert-timeline-lens__item:hover {
+  border-color: var(--text-muted);
   background: var(--background-modifier-hover);
 }
 
 .ert-timeline-lens button.ert-timeline-lens__item.is-picked {
-  background: hsla(var(--interactive-accent-hsl), 0.18);
-  box-shadow: inset 0 0 0 1px var(--interactive-accent);
+  background: color-mix(in srgb, var(--ert-timeline-swatch) 16%, var(--background-primary));
+  border-color: var(--ert-timeline-swatch);
+}
+
+.ert-timeline-lens button.ert-timeline-lens__item:focus-visible,
+.ert-timeline-lens__tools button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
 }
 
 .ert-timeline-lens button.ert-timeline-lens__item.is-unpicked {
-  opacity: 0.45;
+  color: var(--text-muted);
 }
 
-.ert-timeline-lens button.ert-timeline-lens__item.is-unpicked:hover {
-  opacity: 0.8;
+.ert-timeline-lens__name {
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .ert-timeline-lens__count {
-  padding-left: var(--size-2-2);
   color: var(--text-muted);
-  white-space: nowrap;
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
 }
 
 .ert-timeline-lens__swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   background: var(--ert-timeline-swatch);
+}
+
+.ert-timeline-lens__check {
+  display: inline-flex;
+  flex: none;
+  width: 12px;
+  visibility: hidden;
+}
+
+.ert-timeline-lens__check svg {
+  width: 12px;
+  height: 12px;
+}
+
+.ert-timeline-lens__item.is-picked .ert-timeline-lens__check {
+  visibility: visible;
 }
 
 .ert-timeline-lens__icon {
   display: inline-flex;
-  color: var(--interactive-accent);
+  flex: none;
+  color: var(--text-muted);
 }
 
 .ert-timeline-lens__close {
   flex: none;
+  margin-left: auto;
   padding: var(--size-2-1);
+}
+
+.ert-timeline-lens--coloring .ert-timeline-lens__close {
+  margin-left: 0;
+}
+
+.ert-ui .ert-modal-container.ert-color-key-editor {
+  padding: var(--size-4-4) var(--size-4-4);
+  gap: var(--size-4-3);
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.ert-ui.ert-scope--modal .ert-color-key-editor .ert-modal-header {
+  margin-bottom: 0;
+  flex: none;
+}
+
+.ert-ui .ert-color-key-editor .ert-modal-title {
+  font-size: var(--font-ui-larger);
+  line-height: 1.3;
+}
+
+.ert-ui .ert-color-key-editor__form {
+  min-height: 0;
+  overflow-y: auto;
+  gap: var(--size-4-2);
+}
+
+.ert-ui .ert-color-key-editor__form .setting-item {
+  padding: var(--size-4-2) 0;
+  border-top: none;
+}
+
+.ert-ui .ert-color-key-editor .ert-modal-actions {
+  flex: none;
+}
+
+.ert-color-key-editor__range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--size-4-3);
+}
+
+.ert-color-key-editor__range input {
+  width: 100%;
+  min-width: 0;
+}
+
+.ert-color-key-editor__list {
+  max-height: 35vh;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+}
+
+.ert-color-key-editor__category {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--size-4-2);
+  padding: var(--size-4-2) var(--size-4-3);
+  overflow-wrap: anywhere;
+  cursor: var(--cursor);
+}
+
+.ert-color-key-editor__category:hover {
+  background: var(--background-modifier-hover);
+}
+
+.ert-color-key-editor__message,
+.ert-color-key-editor__count {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Bulk edits: a checkbox in each pickable row's slot, and a bar while rows are picked.

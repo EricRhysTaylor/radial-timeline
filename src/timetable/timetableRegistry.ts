@@ -65,8 +65,14 @@ export interface TimelineColoring {
     /** Each scene's value. Scenes without one are drawn neutral. */
     values: Map<string, string>;
     /** Values in legend order, each with its color slot (0–15, the ring palette). */
-    legend: Array<{ value: string; colorIndex: number }>;
-    /** Values picked in the key. While any are, `values` holds only the scenes that list them all. */
+    legend: Array<{ value: string; colorIndex: number; count: number; label: string }>;
+    categoryCount: number;
+    match: 'all' | 'any';
+    grouping: string;
+    groupingLabel: string;
+    clearPicks: () => void;
+    configure: () => void;
+    /** Values picked in the key. While any are, `values` contains the scenes passing the configured match. */
     picks: string[];
     /** A value in the key was clicked: pick it, or drop it. */
     togglePick: (value: string) => void;
@@ -198,13 +204,17 @@ export function currentTimelineColoring(): TimelineColoring | null {
 
 /** A Timetable colors the timeline by a column, or its values changed. The newest wins. */
 export function setTimelineColoring(next: TimelineColoring): void {
-    if (coloring
-        && coloring.owner === next.owner
-        && coloring.property === next.property
-        && coloring.picks.join('\u0000') === next.picks.join('\u0000')
-        && sameMap(coloring.values, next.values)
-        && coloring.legend.map(entry => `${entry.value}\u0000${entry.colorIndex}`).join('|') === next.legend.map(entry => `${entry.value}\u0000${entry.colorIndex}`).join('|')) return;
+    const previous = coloring;
+    // Always replace callbacks, even if the painted cells are unchanged.
     coloring = next;
+    if (previous
+        && previous.owner === next.owner
+        && previous.property === next.property
+        && previous.match === next.match && previous.grouping === next.grouping && previous.groupingLabel === next.groupingLabel
+        && previous.categoryCount === next.categoryCount
+        && previous.picks.join('\u0000') === next.picks.join('\u0000')
+        && sameMap(previous.values, next.values)
+        && JSON.stringify(previous.legend) === JSON.stringify(next.legend)) return;
     overlayListeners.forEach(listener => listener());
 }
 

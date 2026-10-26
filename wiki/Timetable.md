@@ -67,11 +67,15 @@ A view with a filter of its own (**This view** in the Filter menu) turns the len
 
 ### Color the timeline by a column
 
-Right-click a column header to color the timeline’s scenes by that column’s values, such as POV or Location: any field with up to eight values. Each value takes a ring color, scenes without one are drawn neutral, and the rest of the wheel recedes as it does under the lens. Unfilled template fields such as `{{Character}}` count as no value.
+Right-click a stored scene-property column header to color the timeline’s scenes by values such as Character, Place, POV, Type, or your own categories. Every list member is available, including a character never listed first. Unfilled template fields such as `{{Character}}` count as no value.
 
-The color key on the wheel lists the values, and its names are buttons. Pick one to show only the scenes that list it anywhere in the column; pick more to narrow to the scenes that list them all, each in the color of the pick it lists first. The key counts the scenes, Timetable rows that don’t match fade, and in Chronologue the time references outside the picks recede. Click a picked name to drop it.
+Up to eight categories can be colored at once. A column with more categories opens a searchable chooser; pick the categories you want, then **Apply**. Other scenes stay muted. **Edit key** changes those choices later. The key shows each category’s scene count and states when only part of the column is colored.
 
-**Stop coloring**, in the header menu or on the key, restores the status and subplot colors and clears the picks. The coloring and its picks are saved with the view, like the lens, and one table colors the timeline at a time.
+Click category chips to narrow the timeline and fade nonmatching Timetable rows. List properties default to **Contains all selected**: picking two characters shows scenes containing both, anywhere in their lists. Scalar properties default to **Contains any selected**. Change that rule in **Edit key**. A scene uses the color of the first matching category in its own list. **Clear selection** restores all categories in the chosen palette without turning coloring off.
+
+**When** starts with month groups. **Edit key** also offers day, year, and a custom date range with inclusive start/end days and separate before/after groups. **Due** starts with Overdue, Today, Next 7 days, Later, Completed, and Not set, showing only groups present in the column. A completed scene’s Due is its completion date, so it belongs in Completed rather than Overdue. Invalid dates are shown separately. Date groups always use **Contains any selected**, so choosing April and June includes scenes in either month. Date-compatible custom properties can use the same grouping options.
+
+**Stop coloring**, in the header menu or the key’s close button, restores the status and subplot colors and clears the selection. Palette choices, date groups, and selections are saved with the Timetable view. **Cancel** in the chooser leaves the saved view unchanged. One table colors the timeline at a time.
 
 ### Edit many rows at once
 

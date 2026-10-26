@@ -289,8 +289,16 @@ export class RadialTimelineView extends ItemView {
                 const close = target?.closest<HTMLElement>('[data-overlay]');
                 if (close?.dataset.overlay === 'lens') currentTimelineLens()?.turnOff();
                 if (close?.dataset.overlay === 'coloring') currentTimelineColoring()?.turnOff();
-                const pick = target?.closest<HTMLElement>('[data-pick]')?.dataset.pick;
-                if (pick !== undefined) currentTimelineColoring()?.togglePick(pick);
+                const action = target?.closest<HTMLElement>('[data-color-key-action]')?.dataset.colorKeyAction;
+                if (action === 'configure') currentTimelineColoring()?.configure();
+                if (action === 'clear') currentTimelineColoring()?.clearPicks();
+                const pickButton = target?.closest<HTMLElement>('[data-pick]');
+                const pick = pickButton?.dataset.pick;
+                if (pick !== undefined) {
+                    const focused = pickButton === overlays.ownerDocument.activeElement;
+                    currentTimelineColoring()?.togglePick(pick);
+                    if (focused) this.overlaysEl?.querySelector<HTMLElement>(`[data-pick="${CSS.escape(pick)}"]`)?.focus();
+                }
             });
             this.overlaysEl = overlays;
         }
@@ -298,10 +306,11 @@ export class RadialTimelineView extends ItemView {
         overlays.empty();
         const pill = (kind: 'lens' | 'coloring', icon: string, label: string): HTMLElement => {
             const el = overlays.createDiv({ cls: 'ert-timeline-lens' });
-            setIcon(el.createSpan({ cls: 'ert-timeline-lens__icon' }), icon);
-            el.createSpan({ cls: 'ert-timeline-lens__label', text: label });
-            const body = el.createSpan({ cls: 'ert-timeline-lens__legend' });
-            const close = el.createEl('button', { cls: 'ert-timeline-lens__close clickable-icon' });
+            const header = el.createDiv({ cls: 'ert-timeline-lens__header' });
+            setIcon(header.createSpan({ cls: 'ert-timeline-lens__icon' }), icon);
+            header.createSpan({ cls: 'ert-timeline-lens__label', text: label });
+            const close = header.createEl('button', { cls: 'ert-timeline-lens__close clickable-icon' });
+            const body = el.createDiv({ cls: 'ert-timeline-lens__legend' });
             close.dataset.overlay = kind;
             setAccessibleLabel(close, kind === 'lens' ? t('ui.timetable.lensClose') : t('ui.timetable.coloringClose'));
             setIcon(close, 'x');
@@ -309,21 +318,39 @@ export class RadialTimelineView extends ItemView {
         };
         if (lens) pill('lens', 'scan-eye', t('ui.timetable.lensPill', { view: lens.label, count: lens.paths.size }));
         if (coloring) {
-            // Click names in the key to show only the scenes that list them all; click again to drop one.
-            const legend = pill('coloring', 'palette', t('ui.timetable.coloredBy', { property: coloring.property }));
+            const legend = pill('coloring', 'palette', coloring.property);
+            const panel = legend.parentElement!; // SAFE: pill creates the legend directly in its panel.
+            const header = panel.querySelector('.ert-timeline-lens__header')!; // SAFE: pill always mounts its header.
+            panel.addClass('ert-timeline-lens--coloring');
             const picking = coloring.picks.length > 0;
+            const tools = header.createDiv({ cls: 'ert-timeline-lens__tools' });
+            header.insertBefore(tools, header.querySelector('.ert-timeline-lens__close'));
+            const edit = tools.createEl('button', { cls: 'ert-timeline-lens__edit', text: t('ui.timetable.colorKey.edit') });
+            edit.dataset.colorKeyAction = 'configure';
+            if (picking) {
+                const clear = tools.createEl('button', { cls: 'ert-timeline-lens__clear', text: t('ui.timetable.colorKey.clear') });
+                clear.dataset.colorKeyAction = 'clear';
+            }
+            const status = panel.createDiv({ cls: 'ert-timeline-lens__status', attr: { role: 'status', 'aria-live': 'polite' } });
+            status.setText(`${tCount('scene', coloring.values.size)} · ${t(coloring.match === 'all' ? 'ui.timetable.colorKey.matchAll' : 'ui.timetable.colorKey.matchAny')}`);
+            if (coloring.categoryCount > coloring.legend.length) status.createSpan({ text: ` · ${t('ui.timetable.colorKey.showing', { count: coloring.legend.length, total: coloring.categoryCount })}` });
+            if (coloring.grouping !== 'categories') status.createSpan({ text: ` · ${coloring.groupingLabel}` });
+            panel.insertBefore(status, legend);
             for (const entry of coloring.legend) {
                 const picked = coloring.picks.includes(entry.value);
-                const item = legend.createEl('button', { cls: 'ert-timeline-lens__item' });
+                const item = legend.createEl('button', { cls: 'ert-timeline-lens__item', attr: { type: 'button' } });
+                item.setCssProps({ '--ert-timeline-swatch': `var(--rt-subplot-colors-${entry.colorIndex})` });
                 item.toggleClass('is-picked', picked);
                 item.toggleClass('is-unpicked', picking && !picked);
                 item.dataset.pick = entry.value;
                 item.setAttr('aria-pressed', String(picked));
-                setTooltip(item, t(picked ? 'ui.timetable.pickDrop' : picking ? 'ui.timetable.pickAlso' : 'ui.timetable.pickOnly', { value: entry.value }));
-                item.createSpan({ cls: 'ert-timeline-lens__swatch' }).setCssProps({ '--ert-timeline-swatch': `var(--rt-subplot-colors-${entry.colorIndex})` });
-                item.createSpan({ text: entry.value });
+                setTooltip(item, t(picked ? 'ui.timetable.pickDrop' : picking ? coloring.match === 'all' ? 'ui.timetable.pickAlso' : 'ui.timetable.pickEither' : 'ui.timetable.pickOnly', { value: entry.label }));
+                item.createSpan({ cls: 'ert-timeline-lens__swatch' });
+                item.createSpan({ cls: 'ert-timeline-lens__name', text: entry.label });
+                item.createSpan({ cls: 'ert-timeline-lens__count', text: String(entry.count) });
+                const check = item.createSpan({ cls: 'ert-timeline-lens__check', attr: { 'aria-hidden': 'true' } });
+                setIcon(check, 'check');
             }
-            if (picking) legend.createSpan({ cls: 'ert-timeline-lens__count', text: tCount('scene', coloring.values.size) });
         }
     }
 

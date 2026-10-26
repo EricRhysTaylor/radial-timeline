@@ -77,7 +77,9 @@ import {
     groupProgress,
     medianOf,
     narrowColoring,
-    planColoring,
+    planConfiguredColoring,
+    MAX_COLOR_VALUES,
+    type SavedColoring,
     readRuntimeSeconds,
     readSavedColoring,
     readWhen,
@@ -96,6 +98,8 @@ import {
 } from './timetableModel';
 import { authorKeyFor, countColumnFill, tableColumns, TIMETABLE_VIEW_TYPE, withRecommendedColumns } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
+import { coloringDateLabel } from './coloringDates';
+import { TimetableColoringModal } from './TimetableColoringModal';
 import { CellPeek } from './cellPeek';
 import { beatNamePeekAction } from '../view/interactions/BeatNameKeyController';
 import { isTypingInField } from '../utils/domFocus';
@@ -1271,20 +1275,16 @@ export class TimetableView extends BasesView {
         if (coloring?.owner === this && this.coloringProperty === property) {
             menu.addItem(item => item.setTitle(t('ui.timetable.coloringStop')).setIcon('palette').onClick(() => this.stopColoring()));
         } else {
-            const plan = this.planColoringFor(property);
+            const initial = this.initialColoring(property);
+            const plan = this.planColoringFor(property, initial);
             menu.addItem(item => {
                 item.setIcon('palette');
                 if (plan.kind === 'ok') {
                     item.setTitle(t('ui.timetable.coloringStart', { property: name })).onClick(() => {
-                        this.config.set('coloring', { property, picks: [] });
-                        this.claimColoring = true;
-                        this.render();
+                        if (initial.grouping || plan.categories.length > MAX_COLOR_VALUES) this.configureColoring(initial);
+                        else this.saveColoring(initial);
                     });
-                } else {
-                    item.setTitle(plan.kind === 'tooMany'
-                        ? t('ui.timetable.coloringTooMany', { property: name, count: plan.count })
-                        : t('ui.timetable.coloringNone', { property: name })).setDisabled(true);
-                }
+                } else item.setTitle(t('ui.timetable.coloringNone', { property: name })).setDisabled(true);
             });
         }
         menu.addSeparator();
@@ -1301,60 +1301,82 @@ export class TimetableView extends BasesView {
         menu.showAtMouseEvent(evt);
     }
 
-    /** Each scene row's value in a column (only scenes are colored on the timeline). */
-    private planColoringFor(property: BasesPropertyId): ReturnType<typeof planColoring> {
-        const { type, name } = parsePropertyId(property);
-        if (type !== 'note') return { kind: 'none' };
-        const { app, settings } = this.plugin;
-        const rows = (this.data?.data ?? [])
-            .filter(entry => entry.file.extension === 'md')
-            .map(entry => {
-                const frontmatter: Record<string, unknown> | undefined = app.metadataCache.getFileCache(entry.file)?.frontmatter;
-                return { entry, frontmatter, row: buildTableRow(entry.file.path, entry.file.basename, frontmatter, settings) };
-            })
-            .filter(item => item.row.kind === 'scene')
-            .map(item => ({ path: item.row.path, value: frontmatterKey(item.frontmatter, name) }));
-        const palette = Array.from({ length: SUBPLOT_COLOR_SLOTS }, (_, slot) => readSubplotColor(this.rootEl.ownerDocument, slot));
-        return planColoring(rows, undefined, distinctColorSlots(palette));
+    private initialColoring(property: BasesPropertyId): SavedColoring {
+        const { name } = parsePropertyId(property);
+        const canonical = canonicalizeFrontmatterKey(name, getActiveFrontmatterMappings(this.plugin.settings));
+        const config: SavedColoring = { schemaVersion: 1, property, picks: [] };
+        if (canonical === 'When') config.grouping = { kind: 'month' };
+        if (canonical === 'Due') config.grouping = { kind: 'due' };
+        return config;
     }
 
-    /**
-     * Keep the timeline's coloring in step with this table's values and the
-     * names picked in the key, both saved with the view like the lens.
-     * Another table's coloring stays until this one's is chosen again.
-     */
+    /** Read the current view's scene property values once for each plan/editor snapshot. */
+    private coloringRows(property: BasesPropertyId): Array<{ path: string; value: unknown; complete: boolean }> {
+        const { type, name } = parsePropertyId(property);
+        if (type !== 'note') return [];
+        const { app, settings } = this.plugin;
+        return (this.data?.data ?? []).filter(entry => entry.file.extension === 'md').map(entry => {
+            const fm: Record<string, unknown> | undefined = app.metadataCache.getFileCache(entry.file)?.frontmatter;
+            const row = buildTableRow(entry.file.path, entry.file.basename, fm, settings);
+            return { path: row.path, kind: row.kind, value: frontmatterKey(fm, name), complete: normalizeStatus(frontmatterKey(fm, authorKeyFor('Status', settings))) === 'Completed' };
+        }).filter(row => row.kind === 'scene');
+    }
+
+    private coloringSlots(): number[] {
+        return distinctColorSlots(Array.from({ length: SUBPLOT_COLOR_SLOTS }, (_, slot) => readSubplotColor(this.rootEl.ownerDocument, slot)));
+    }
+
+    private planColoringFor(property: BasesPropertyId, config: SavedColoring) {
+        return planConfiguredColoring(this.coloringRows(property), config, this.coloringSlots(), new Date());
+    }
+
+    private saveColoring(config: SavedColoring): void {
+        if (!config.palette) {
+            const plan = this.planColoringFor(config.property as BasesPropertyId, config);
+            if (plan.kind !== 'ok' || plan.legend.length === 0) return;
+            config = { ...config, palette: plan.legend.map(entry => entry.value) };
+        }
+        this.config.set('coloring', config);
+        this.claimColoring = true;
+        this.render();
+    }
+
+    private configureColoring(config: SavedColoring): void {
+        const property = config.property as BasesPropertyId;
+        new TimetableColoringModal(this.plugin.app, this.config.getDisplayName(property), this.coloringRows(property), this.coloringSlots(), config,
+            next => this.saveColoring(next)).open();
+    }
+
+    /** The saved view owns coloring; the timeline key only sends edits back to it. */
     private syncColoring(): void {
         this.coloringProperty = null;
         this.pickedPaths = null;
         const saved = readSavedColoring(this.config.get('coloring'));
-        if (!saved) {
-            clearTimelineColoring(this);
-            return;
-        }
+        if (!saved) { clearTimelineColoring(this); return; }
         const active = currentTimelineColoring();
         if (active && active.owner !== this && !this.claimColoring) return;
         this.claimColoring = false;
         const property = saved.property as BasesPropertyId;
-        const plan = this.planColoringFor(property);
-        if (plan.kind !== 'ok') {
-            clearTimelineColoring(this);
-            return;
-        }
+        const plan = this.planColoringFor(property, saved);
+        if (plan.kind !== 'ok' || plan.legend.length === 0) { clearTimelineColoring(this); return; }
         this.coloringProperty = property;
-        // A pick whose value has gone from the column (renamed, or no longer first anywhere) drops out.
         const picks = saved.picks.filter(pick => plan.legend.some(entry => entry.value === pick));
-        const values = picks.length > 0 ? narrowColoring(plan.members, picks) : plan.values;
+        const match = saved.grouping ? 'any' : saved.match ?? (plan.multiValue ? 'all' : 'any');
+        const values = picks.length > 0 ? narrowColoring(plan.members, picks, match) : plan.values;
         if (picks.length > 0) this.pickedPaths = new Set(values.keys());
         setTimelineColoring({
             owner: this,
             property: this.config.getDisplayName(property),
             values,
-            legend: plan.legend,
+            legend: plan.legend.map(entry => ({ ...entry, label: coloringDateLabel(entry.value, saved.grouping) })),
+            categoryCount: plan.categories.length,
+            match,
+            grouping: saved.grouping?.kind ?? 'categories',
+            groupingLabel: saved.grouping?.kind === 'range' ? `${saved.grouping.start} – ${saved.grouping.end}` : saved.grouping ? t(`ui.timetable.colorKey.group.${saved.grouping.kind}`) : '',
             picks,
-            togglePick: value => {
-                this.config.set('coloring', { property, picks: toggledPicks(picks, value) });
-                this.render();
-            },
+            togglePick: value => this.saveColoring({ ...saved, picks: toggledPicks(picks, value) }),
+            clearPicks: () => this.saveColoring({ ...saved, picks: [] }),
+            configure: () => this.configureColoring({ ...saved, match }),
             turnOff: () => this.stopColoring(),
         });
     }
@@ -1365,7 +1387,7 @@ export class TimetableView extends BasesView {
         this.render();
     }
 
-    /** Names picked in the timeline's color key: rows that don't list them all fade, as on the wheel. */
+    /** Rows outside the color key's selected values fade, as on the wheel. */
     private markPicks(): void {
         for (const [path, element] of this.rowEls) {
             element.toggleClass('is-out-of-picks', this.pickedPaths !== null && !this.pickedPaths.has(path));

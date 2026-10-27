@@ -81,6 +81,7 @@ Ongoing series on the [Radial Timeline YouTube channel](https://www.youtube.com/
 - **Volume 9 — Editorialist**: [Turn Your Editor's Notes Into a Revision Schedule](https://youtu.be/uoGUkF6RQ2E)
 - **Volume 10 — Quick Start**: [Quick Start Volume 10](https://youtu.be/n53fYUejH44)
 - **Volume 11 — Manuscript Export**: [Obsidian Writers: Turn Your Notes into a Finished Manuscript](https://radialtimeline.com/go/readme-manuscript-export-video)
+- **Volume 13 — November Writers' Month**: [Writing a Novel This November? Come Write With Me](https://radialtimeline.com/go/readme-november-video)
 
 Shorts:
 

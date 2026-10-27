@@ -16,6 +16,7 @@ Radial Timeline maps your manuscript in Obsidian. Explore scenes, subplots, stor
 | 9 | [Turn Your Editor's Notes Into a Revision Schedule](https://youtu.be/uoGUkF6RQ2E) | |
 | 10 | [Quick Start](https://youtu.be/n53fYUejH44) | [Getting Started](Getting-Started) |
 | 11 | [Turn Your Notes into a Finished Manuscript](https://radialtimeline.com/go/wiki-manuscript-export-video) | [Manuscript export](Manuscript-Export) |
+| 13 | [Writing a Novel This November? Come Write With Me](https://radialtimeline.com/go/wiki-november-video) | [Community](Settings-Community) |
 | Short | [Build Your Novel Structure Instantly](https://youtu.be/0vkLaI_LewM) | [Book Designer](Book-Designer) |
 | Short | [Watch a Novel Progress Across Scenes & Subplots](https://youtu.be/tBErpewO1wQ) | |
 

@@ -61,7 +61,7 @@ The title bar also includes the compact count/session button used for Sessions.
 *   If you have [Desk Lamps](Desk-Lamps), tick the friends who should see this session under **Desk Lamps** before you press **Begin Session**. While you write, the panel shows who your lamp is lit for.
 *   Use the settings icon in that panel to jump straight to **Settings → Core → Sessions**.
 
-<p align="center"><img src="images/panel-session-start.png" alt="Radial Timeline writing session and count popover" width="600"></p>
+<p align="center"><img src="images/panel-session-start.png" alt="The Writing Session panel: Ready to write? with a countdown ring, the target time, and the session's mode and stage" width="312"></p>
 <p align="center"><sub>Writing Session panel — timer, daily goal context, and session controls</sub></p>
 
 ## Community Mailbox

@@ -34,7 +34,7 @@ Together they turn the radial view into a project-management dashboard, highligh
 <a name="zero-draft-mode"></a>
 ## Zero Draft Mode
 
-**Zero Draft Mode** opens **Pending Edits** when you click a scene with **Publish Stage = Zero** and **Status = Complete**. Capture revision ideas there while you finish the first draft. Enable it in [Settings → Core](Settings-Core).
+**Zero Draft Mode** opens **Pending Edits** when you click a scene with **Publish Stage = Zero** and **Status = Complete**. Capture revision ideas there while you finish the first draft. The scene's current Pending Edits show above the field; what you type is added after them when you click **Save**, so earlier ideas are kept. Enable it in [Settings → Core](Settings-Core).
 
 <p align="center"><img src="images/panel-zero-draft.png" alt="Zero Draft Mode panel" width="480"></p>
 <p align="center"><sub>Zero Draft Mode — capture ideas for the next revision</sub></p>

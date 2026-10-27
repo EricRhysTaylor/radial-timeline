@@ -43,6 +43,9 @@ Runtime follows **narrative order** — the order a reader, listener, or audienc
 - Click any two scenes to see the runtime from the first through the second, both scenes included. Click a selected scene again to release it.
 - The book's total runtime appears at the center of the timeline.
 
+<p align="center"><img src="images/runtime-narrative.webp" alt="The Runtime view in Narrative mode: a blue runtime arc in every scene, running times around the perimeter, and the book's total of 13:30:34 at the center" width="600"></p>
+<p align="center"><sub>Runtime view — each scene's arc and the running time around the book</sub></p>
+
 While the Runtime view is on, clicks select scenes for comparison; turn it off to open scenes or drag them into a new order. Act labels, beat labels, and chapter placards rest while the running totals use the perimeter.
 
 **Use cases:**

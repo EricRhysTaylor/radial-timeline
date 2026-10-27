@@ -27,6 +27,9 @@ The `.base` file is yours to customize. Change its columns, filters, sorting, or
 - **Runtime and Iteration:** shown as badges with a timer and a repeat mark.
 - **Open queries:** a marker identifies unresolved author queries in a note; hover to read them. On the wheel, the same scene shows a question bubble in each of its cells.
 
+<p align="center"><img src="images/timetable-row-panel.webp" alt="Row controls on scene 6 of Pride and Prejudice: hovering the pencil shows its Pending Edits, with + and ++ beside the Synopsis icon" width="586"></p>
+<p align="center"><sub>Row controls — hover the pencil to read Pending Edits; + and ++ advance Due</sub></p>
+
 The **✱** button in the table’s corner opens the Timetable keys: what the row marks mean (including the row controls, **+** and **++**, and the Words bar), what each click does, and the corner buttons. A badge names the mode the table follows, and a section on top explains what that mode changes (Chronologue’s date dividers and its Gap or Running time column, Progress’s act totals and overdue dates, Gossamer’s beats and scores). The timeline’s own **✱** key covers the wheel, including the open-query mark and the clicks that link to a Timetable.
 
 Hover a scene row to highlight it on the wheel and give its row a solid leading accent and a muted color wash. The color follows the rendered scene: subplot color in Narrative and Chronologue, status or Publish Stage color in Progress, or the active column coloring. Hover a scene on the wheel to reveal its row in that specific cell’s color. Click a scene row to open its note; **Shift-click** brings the timeline forward and highlights that scene. Right-click a scene row for the timeline’s scene menu.

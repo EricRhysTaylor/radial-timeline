@@ -114,6 +114,7 @@ Secondary pages should summarize in one line and link to the canonical page.
 - Put screenshots where they support the nearby explanation.
 - Do not add images as decoration only.
 - If a screenshot becomes obsolete, remove or replace it.
+- Give every screenshot rounded corners, about 12px at its display size (24px in a 2x capture), baked into the file as transparent corners (PNG or WebP with alpha). GitHub strips inline `style` and `border-radius` from wiki pages and release notes, so CSS cannot round them. The same applies to release-note images, which link to files in `wiki/images/`.
 
 ## Repetition
 

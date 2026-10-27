@@ -164,7 +164,7 @@ export class ZeroDraftModal extends ErtModal {
                 if (!addition) return;
                 if (await this.onSave(addition)) this.close();
             });
-        this.textareaEl.addEventListener('input', () => saveBtn.setDisabled(!this.newText()));
+        this.textareaEl.addEventListener('input', () => { saveBtn.setDisabled(!this.newText()); });
     }
 }
 

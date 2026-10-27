@@ -389,7 +389,6 @@ export default class SynopsisManager {
       }
 
       if (expandedWidth) {
-        const space = getBottomSynopsisSpace(radius, fontScale);
         maxWidth = Math.min(circleX + radius * 0.4, circleX * 2) - 12 * fontScale - this.getHoverIconTotalOffset(primaryEl);
       } else {
         maxWidth += SynopsisManager.WRAP_OVERFLOW_TOLERANCE * fontScale;
@@ -604,7 +603,6 @@ export default class SynopsisManager {
       }
 
       if (expandedWidth) {
-        const space = getBottomSynopsisSpace(radius, fontScale);
         maxWidth = Math.min(circleX + radius * 0.4, circleX * 2) - 12 * fontScale - this.getHoverIconTotalOffset(primaryEl);
       } else {
         maxWidth += SynopsisManager.WRAP_OVERFLOW_TOLERANCE * fontScale;

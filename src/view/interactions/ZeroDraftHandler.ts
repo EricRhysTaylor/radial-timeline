@@ -24,7 +24,7 @@ export const pendingEditsText = (value: unknown): string =>
 
 /** Adds new edits after the existing ones, keeping a YAML list a list. */
 export const appendPendingEdits = (current: unknown, addition: string): unknown => {
-    if (Array.isArray(current)) return [...current, addition];
+    if (Array.isArray(current)) return [...(current as unknown[]), addition];
     const existing = frontmatterValueToText(current).trim();
     return existing ? `${existing}\n${addition}` : addition;
 };

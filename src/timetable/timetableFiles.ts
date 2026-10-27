@@ -331,7 +331,7 @@ export function retargetSagaFolderFilter(parsed: Record<string, unknown>, fromFo
 
     const next: Record<string, unknown> = { ...withFilters(parsed) };
     if (Array.isArray(parsed.views)) {
-        next.views = parsed.views.map(view => (view && typeof view === 'object' ? withFilters(view as object) : view));
+        next.views = (parsed.views as unknown[]).map(view => (view && typeof view === 'object' ? withFilters(view) : view));
     }
     return found ? next : null;
 }

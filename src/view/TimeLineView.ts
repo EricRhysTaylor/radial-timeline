@@ -1690,11 +1690,16 @@ export class RadialTimelineView extends ItemView {
         return button;
     }
 
-    private createSessionSectionTitle(parent: HTMLElement, icon: string, title: string): HTMLElement {
+    private createSessionSectionTitle(parent: HTMLElement, icon: string, title: string, help?: string): HTMLElement {
         const titleEl = parent.createDiv({ cls: 'ert-timeline-session-panel__section-title' });
         const iconEl = titleEl.createSpan({ cls: 'ert-timeline-session-panel__section-icon' });
         setIcon(iconEl, icon);
         titleEl.createSpan({ text: title });
+        if (help) {
+            const helpEl = titleEl.createSpan({ cls: 'ert-timeline-session-panel__section-help' });
+            setIcon(helpEl, 'help-circle');
+            applyTooltip(helpEl, help, 'bottom');
+        }
         return titleEl;
     }
 
@@ -1975,7 +1980,7 @@ export class RadialTimelineView extends ItemView {
 
         if (lampFriends.length > 0) {
             const lampSection = form.createDiv({ cls: 'ert-timeline-session-panel__section' });
-            this.createSessionSectionTitle(lampSection, 'lamp-ceiling', t('ui.timeLineView.deskLamps'));
+            this.createSessionSectionTitle(lampSection, 'lamp-ceiling', t('ui.timeLineView.deskLamps'), DESK_LAMP_PANEL_NOTE);
             const remembered = new Set(deskLamps.rememberedAudience());
             const allLabel = lampSection.createEl('label', { cls: 'ert-timeline-session-panel__toggle-label' });
             const allBox = allLabel.createEl('input', { cls: 'ert-timeline-session-panel__toggle' });
@@ -2003,7 +2008,6 @@ export class RadialTimelineView extends ItemView {
             });
             lampBoxes.forEach(entry => this.sessionPanelScope.registerDomEvent(entry.box, 'change', syncAllBox));
             syncAllBox();
-            lampSection.createDiv({ cls: 'ert-timeline-session-panel__lamp-note', text: DESK_LAMP_PANEL_NOTE });
         }
 
         updateIdleMeta = () => {

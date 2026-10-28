@@ -1745,10 +1745,20 @@
   padding-inline-start: var(--size-4-4);
 }
 
-.ert-timeline-session-panel__lamp-note {
+/* "?" at the right end of a section title; hover explains the section. */
+.ert-timeline-session-panel__section-help {
+  width: var(--font-ui-small);
+  height: var(--font-ui-small);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline-start: auto;
   color: var(--text-faint);
-  font-size: var(--font-ui-smaller);
-  line-height: var(--line-height-tight);
+  cursor: help;
+}
+
+.ert-timeline-session-panel__section-help:hover {
+  color: var(--text-muted);
 }
 
 /* The running session's line: "Lamp lit for Maya and Priya" + edit. */

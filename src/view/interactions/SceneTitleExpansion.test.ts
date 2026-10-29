@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildTextPath, calculateTargetSize, expandIntoGap, needsExpansion, HOVER_EXPAND_FACTOR, PADDING_PX, type SceneAngleData } from './SceneTitleExpansion';
+import { calculateTargetSize, expandIntoGap, needsExpansion, HOVER_EXPAND_FACTOR, PADDING_PX, type SceneAngleData } from './SceneTitleExpansion';
 import { TEXTPATH_START_NUDGE_PX, TEXTPATH_START_OFFSET_PX } from '../../renderer/layout/LayoutConstants';
+import { buildTextPath } from '../../renderer/components/SceneTitlePath';
 
 const SEGMENT_END = 10;
 

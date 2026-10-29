@@ -10,7 +10,6 @@ import {
 } from '../../utils/sceneHelpers';
 import { makeSceneId } from '../../utils/numberSquareHelpers';
 import {
-    TEXTPATH_START_NUDGE_PX,
     TEXTPATH_START_OFFSET_PX,
     BEAT_TEXT_RADIUS,
     BEAT_FONT_PX,
@@ -23,6 +22,7 @@ import { buildOuterRingSequence } from '../utils/OuterRingSequence';
 import { getFillForScene } from '../utils/SceneFill';
 import { estimatePixelsFromTitle, toBeatRingLabel } from '../utils/LabelMetrics';
 import { sceneArcPath, renderVoidCellPath } from '../components/SceneArcs';
+import { buildTextPath, FLIPPED_TITLE_DY, isTitleFlipped } from '../components/SceneTitlePath';
 import { renderSceneGroup } from '../components/Scenes';
 import { shouldRenderStoryBeats, shouldShowAllScenesInOuterRing, usesSequenceAlignment } from '../modules/ModeRenderingHelpers';
 import { appendSynopsisElementForScene } from '../utils/SynopsisBuilder';
@@ -81,10 +81,12 @@ export function renderRings(ctx: RingRenderContext): string {
     let svg = '';
     // Keep the live title in its scene group for hover, clipping and updates.
     // A single SVG use paints that same title above the fixed subplot headlines.
-    const renderTitle = (sceneId: string, pathId: string, text: string, isOpen: boolean): string => {
+    // Rendered unrotated; RotationController re-orients titles when the wheel turns.
+    const renderTitle = (sceneId: string, pathId: string, text: string, isOpen: boolean, flipped: boolean): string => {
         const id = `scene-title-${sceneId}`;
         const clip = `clip-path="url(#clip-${sceneId})"`;
-        const title = `<text id="${id}" class="rt-scene-title${isOpen ? ' rt-scene-is-open' : ''}" ${isChronologueMode ? '' : clip} data-scene-id="${sceneId}"><textPath href="#${pathId}" startOffset="${TEXTPATH_START_OFFSET_PX}">${text}</textPath></text>`;
+        const dy = flipped ? ` dy="${FLIPPED_TITLE_DY}"` : '';
+        const title = `<text id="${id}" class="rt-scene-title${isOpen ? ' rt-scene-is-open' : ''}" ${isChronologueMode ? '' : clip}${dy} data-scene-id="${sceneId}"><textPath href="#${pathId}" startOffset="${TEXTPATH_START_OFFSET_PX}">${text}</textPath></text>`;
         if (!isChronologueMode) return title;
         ctx.foregroundElements.push(`<use href="#${id}" ${clip} class="rt-scene-title-use" data-scene-id="${sceneId}" pointer-events="none" />`);
         return `<defs>${title}</defs>`;
@@ -203,8 +205,7 @@ export function renderRings(ctx: RingRenderContext): string {
 
                     const sceneTitleInset = SCENE_TITLE_INSET + ((fontScale - 1) * 18);
                     const textPathRadius = Math.max(innerR, outerR - sceneTitleInset);
-                    const textStartAngle = sceneStartAngle + TEXTPATH_START_NUDGE_PX / textPathRadius;
-                    const textPathLargeArcFlag = (sceneEndAngle - textStartAngle) > Math.PI ? 1 : 0;
+                    const titleFlipped = isTitleFlipped(sceneStartAngle, sceneEndAngle);
 
                     const color = getFillForScene(scene, PUBLISH_STAGE_COLORS, subplotColorFor, true, forceSubplotFillColors);
                     const arcPathStr = sceneArcPath(innerR, effectiveOuterR, sceneStartAngle, sceneEndAngle);
@@ -297,11 +298,10 @@ export function renderRings(ctx: RingRenderContext): string {
                                   class="${sceneClasses}"/>
                             ${!isBeatNote(scene) ? `
                             <path id="textPath-${act}-${ring}-outer-${idx}" 
-                                  d="M ${formatNumber(textPathRadius * Math.cos(textStartAngle))} ${formatNumber(textPathRadius * Math.sin(textStartAngle))} 
-                                     A ${formatNumber(textPathRadius)} ${formatNumber(textPathRadius)} 0 ${textPathLargeArcFlag} 1 ${formatNumber(textPathRadius * Math.cos(sceneEndAngle))} ${formatNumber(textPathRadius * Math.sin(sceneEndAngle))}" 
+                                  d="${buildTextPath(textPathRadius, sceneStartAngle, sceneEndAngle, titleFlipped)}" 
                                   fill="none"/>
                             <clipPath id="clip-${sceneId}"><use href="#${sceneId}"/></clipPath>
-                            ${renderTitle(sceneId, `textPath-${act}-${ring}-outer-${idx}`, text, !!scene.path && plugin.openScenePaths.has(scene.path))}` : isBeatNote(scene) ? `
+                            ${renderTitle(sceneId, `textPath-${act}-${ring}-outer-${idx}`, text, !!scene.path && plugin.openScenePaths.has(scene.path), titleFlipped)}` : isBeatNote(scene) ? `
                             <path id="plot-label-arc-${act}-${ring}-outer-${idx}" 
                                   d="M ${formatNumber(beatTextRadius * Math.cos(labelStartAngle))} ${formatNumber(beatTextRadius * Math.sin(labelStartAngle))} 
                                      A ${formatNumber(beatTextRadius)} ${formatNumber(beatTextRadius)} 0 ${largeArcFlag} 1 ${formatNumber(beatTextRadius * Math.cos(labelEndAngle))} ${formatNumber(beatTextRadius * Math.sin(labelEndAngle))}" 
@@ -358,8 +358,7 @@ export function renderRings(ctx: RingRenderContext): string {
                     const sceneEndAngle = position.endAngle;
                     const sceneTitleInset = SCENE_TITLE_INSET + ((fontScale - 1) * 18);
                     const textPathRadius = Math.max(innerR, outerR - sceneTitleInset);
-                    const textStartAngle = sceneStartAngle + TEXTPATH_START_NUDGE_PX / textPathRadius;
-                    const textPathLargeArcFlag = (sceneEndAngle - textStartAngle) > Math.PI ? 1 : 0;
+                    const titleFlipped = isTitleFlipped(sceneStartAngle, sceneEndAngle);
 
                     const color = getFillForScene(
                         scene,
@@ -405,11 +404,10 @@ export function renderRings(ctx: RingRenderContext): string {
 
                             ${!isBeatNote(scene) ? `
                             <path id="textPath-${act}-${ring}-${idx}" 
-                                  d="M ${formatNumber(textPathRadius * Math.cos(textStartAngle))} ${formatNumber(textPathRadius * Math.sin(textStartAngle))} 
-                                     A ${formatNumber(textPathRadius)} ${formatNumber(textPathRadius)} 0 ${textPathLargeArcFlag} 1 ${formatNumber(textPathRadius * Math.cos(sceneEndAngle))} ${formatNumber(textPathRadius * Math.sin(sceneEndAngle))}" 
+                                  d="${buildTextPath(textPathRadius, sceneStartAngle, sceneEndAngle, titleFlipped)}" 
                                   fill="none"/>
                             <clipPath id="clip-${sceneId}"><use href="#${sceneId}"/></clipPath>
-                            ${renderTitle(sceneId, `textPath-${act}-${ring}-${idx}`, text, !!scene.path && plugin.openScenePaths.has(scene.path))}` : ``}
+                            ${renderTitle(sceneId, `textPath-${act}-${ring}-${idx}`, text, !!scene.path && plugin.openScenePaths.has(scene.path), titleFlipped)}` : ``}
                         </g>`;
                 });
 

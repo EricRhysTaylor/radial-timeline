@@ -209,18 +209,3 @@ export function buildArcPath(
         A ${innerRadiusFmt} ${innerRadiusFmt} 0 ${largeArcFlag} 0 ${startCosInner} ${startSinInner}
     `;
 }
-
-/**
- * Build SVG text path for a scene title
- */
-export function buildTextPath(
-    radius: number,
-    startAngle: number,
-    endAngle: number
-): string {
-    const formatNumber = (n: number) => n.toFixed(6);
-    const textStart = startAngle + TEXTPATH_START_NUDGE_PX / radius;
-    const largeArcFlag = (endAngle - textStart) > Math.PI ? 1 : 0;
-    
-    return `M ${formatNumber(radius * Math.cos(textStart))} ${formatNumber(radius * Math.sin(textStart))} A ${formatNumber(radius)} ${formatNumber(radius)} 0 ${largeArcFlag} 1 ${formatNumber(radius * Math.cos(endAngle))} ${formatNumber(radius * Math.sin(endAngle))}`;
-}

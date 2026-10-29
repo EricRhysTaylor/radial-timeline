@@ -22,9 +22,9 @@ import {
     getSegmentBoundaries,
     redistributeAngles,
     expandIntoGap,
-    buildArcPath,
-    buildTextPath
+    buildArcPath
 } from './SceneTitleExpansion';
+import { applySceneTitleGeometry, getTimelineRotationRad } from '../../renderer/dom/SceneTitleOrientation';
 import { SCENE_TITLE_INSET } from '../../renderer/layout/LayoutConstants';
 
 export class SceneInteractionManager {
@@ -385,6 +385,7 @@ export class SceneInteractionManager {
     }
     
     private resetAngularRedistribution(): void {
+        const rotationRad = getTimelineRotationRad(this.svg);
         this.originalAngles.forEach((angles, groupId) => {
             const group = this.svg.getElementById(groupId);
             if (!group) return;
@@ -399,13 +400,7 @@ export class SceneInteractionManager {
             }
             
             // Reset text path
-            const textPath = group.querySelector('path[id^="textPath-"]') as SVGPathElement;
-            if (textPath) {
-                const insetAttr = group.getAttribute('data-title-inset');
-                const titleInset = insetAttr ? Number(insetAttr) : SCENE_TITLE_INSET;
-                const textPathRadius = Math.max(innerR, outerR - titleInset);
-                textPath.setAttribute('d', buildTextPath(textPathRadius, angles.start, angles.end));
-            }
+            applySceneTitleGeometry(group, angles.start, angles.end, rotationRad);
             
             // Reset number square transform
             const scenePathEl = group.querySelector('.rt-scene-path') as SVGPathElement;
@@ -538,6 +533,7 @@ export class SceneInteractionManager {
         if (redistribution.length === 0) return; // Nothing to grow into
         
         // Apply redistribution
+        const rotationRad = getTimelineRotationRad(this.svg);
         redistribution.forEach(result => {
             const group = this.svg.getElementById(result.id);
             if (!group) return;
@@ -552,13 +548,7 @@ export class SceneInteractionManager {
             }
 
             // Update text path (use redistributed angles for correct text positioning)
-            const textPath = group.querySelector('path[id^="textPath-"]') as SVGPathElement;
-            if (textPath) {
-                const insetAttr = group.getAttribute('data-title-inset');
-                const titleInset = insetAttr ? Number(insetAttr) : SCENE_TITLE_INSET;
-                const textPathRadius = Math.max(innerR, outerR - titleInset);
-                textPath.setAttribute('d', buildTextPath(textPathRadius, result.newStartAngle, result.newEndAngle));
-            }
+            applySceneTitleGeometry(group, result.newStartAngle, result.newEndAngle, rotationRad);
 
             // Update number square position
             const scenePathEl = group.querySelector('.rt-scene-path') as SVGPathElement;

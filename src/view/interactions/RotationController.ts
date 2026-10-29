@@ -1,3 +1,5 @@
+import { orientSceneTitles } from '../../renderer/dom/SceneTitleOrientation';
+
 interface RotationView {
     currentMode: string;
     getRotationState(): boolean;
@@ -50,6 +52,7 @@ export function setupRotationController(view: RotationView, svg: SVGSVGElement):
         else foreground?.removeAttribute('transform');
         svg.setAttribute('data-rotated', rotated ? 'true' : 'false');
         view.applyRotationToNumberSquares(svg, rotated);
+        orientSceneTitles(svg);
 
         const counterSelectors = [
             '.color-key-center',

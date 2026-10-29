@@ -2083,11 +2083,9 @@ export class InquiryView extends ItemView {
     }
 
     private openBriefingPresentation(payload: InquiryBriefingPayload): void {
-        // Docking needs the saved brief: the side panel restores from its path after a reload.
-        const onDock = payload.briefFile
-            ? () => { void openInquiryBriefingPane(this.app, payload); }
-            : null;
-        new InquiryBriefingModal(this.app, payload, onDock).open();
+        new InquiryBriefingModal(this.app, payload, () => {
+            void openInquiryBriefingPane(this.app, payload);
+        }).open();
     }
 
     /**

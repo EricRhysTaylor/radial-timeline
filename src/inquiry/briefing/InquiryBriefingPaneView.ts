@@ -50,14 +50,15 @@ export class InquiryBriefingPaneView extends ItemView {
     }
 
     async onOpen(): Promise<void> {
-        this.containerEl.addClass('ert-briefing-pane');
+        // The colour scope sits on the leaf, so the blocked state reads the same tokens as the article.
+        this.containerEl.addClass('ert-briefing-pane', 'ert-briefing-theme-root');
         this.render();
     }
 
 
     showBriefing(payload: InquiryBriefingPayload): void {
         this.payload = payload;
-        this.briefPath = payload.briefFile?.path ?? null;
+        this.briefPath = payload.briefFile.path;
         this.render();
         this.app.workspace.requestSaveLayout();
     }
@@ -67,6 +68,8 @@ export class InquiryBriefingPaneView extends ItemView {
         if (this.payload || !briefPath) return;
         for (const leaf of this.app.workspace.getLeavesOfType(INQUIRY_VIEW_TYPE)) {
             await leaf.loadIfDeferred();
+            // A briefing docked while Inquiry was loading wins over this restore.
+            if (this.payload || this.briefPath !== briefPath) return;
             if (leaf.view.getViewType() !== INQUIRY_VIEW_TYPE) continue;
             const payload = (leaf.view as InquiryView).buildBriefingPayloadForPath(briefPath);
             if (payload) {
@@ -141,7 +144,9 @@ export async function openInquiryBriefingPane(app: App, payload: InquiryBriefing
     const inquiry = workspace.getLeavesOfType(INQUIRY_VIEW_TYPE).find(leaf => leaf.getRoot() === workspace.rootSplit);
     const leaf = existing ?? (inquiry ? workspace.createLeafBySplit(inquiry, 'vertical') : workspace.getLeaf('split', 'vertical'));
     await leaf.setViewState({ type: INQUIRY_BRIEFING_VIEW_TYPE, active: true });
-    if (!(leaf.view instanceof InquiryBriefingPaneView)) return;
+    if (!(leaf.view instanceof InquiryBriefingPaneView)) {
+        throw new Error(`Inquiry briefing panel did not load: leaf shows "${leaf.view.getViewType()}".`);
+    }
     leaf.view.showBriefing(payload);
     await workspace.revealLeaf(leaf);
 }

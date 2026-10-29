@@ -9,7 +9,7 @@ export class InquiryBriefingModal extends Modal {
     constructor(
         app: App,
         private readonly payload: InquiryBriefingPayload,
-        private readonly onDock: (() => void) | null
+        private readonly onDock: () => void
     ) {
         super(app);
     }
@@ -17,21 +17,18 @@ export class InquiryBriefingModal extends Modal {
     onOpen(): void {
         const { contentEl, titleEl, modalEl } = this;
         titleEl.setText('');
-        modalEl.addClass('ert-briefing-modal');
-        const onDock = this.onDock;
+        modalEl.addClass('ert-briefing-modal', 'ert-briefing-theme-root');
         this.article = new InquiryBriefingArticle(this.app, contentEl, this.payload, {
             themeRoot: modalEl,
             afterNavigate: () => this.close(),
-            layoutAction: onDock
-                ? {
-                    icon: 'panel-right',
-                    label: t('ui.inquiryBriefingModal.dockBesideInquiry'),
-                    run: () => {
-                        this.close();
-                        onDock();
-                    }
+            layoutAction: {
+                icon: 'panel-right',
+                label: t('ui.inquiryBriefingModal.dockBesideInquiry'),
+                run: () => {
+                    this.close();
+                    this.onDock();
                 }
-                : null
+            }
         });
         this.article.load();
     }

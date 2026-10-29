@@ -10,7 +10,7 @@ import { t, tCount } from '../../i18n';
 /** Everything a briefing article needs, whether it shows in the modal or the side panel. */
 export type InquiryBriefingPayload = {
     brief: InquiryBriefModel;
-    briefFile: TFile | null;
+    briefFile: TFile;
     generatedAt: number | string | null;
     focusAnchorId: string | null;
     isCorpusStale: boolean;
@@ -25,11 +25,11 @@ export type InquiryBriefingLayoutAction = {
 };
 
 type InquiryBriefingHost = {
-    /** Carries the light/dark token scope (`ert-briefing-theme-root`). */
+    /** The host's `ert-briefing-theme-root` element; the article sets its light/dark attribute. */
     themeRoot: HTMLElement;
     /** Runs after a link opens a note: the modal closes, the side panel stays. */
     afterNavigate: () => void;
-    layoutAction: InquiryBriefingLayoutAction | null;
+    layoutAction: InquiryBriefingLayoutAction;
 };
 
 const ARTICLE_DATE_FORMAT = new Intl.DateTimeFormat('en-US', {
@@ -47,7 +47,7 @@ const ARTICLE_DATE_FORMAT = new Intl.DateTimeFormat('en-US', {
  */
 export class InquiryBriefingArticle extends Component {
     private readonly brief: InquiryBriefModel;
-    private readonly briefFile: TFile | null;
+    private readonly briefFile: TFile;
     private readonly generatedAt: number | string | null;
     private readonly focusAnchorId: string | null;
     private readonly isCorpusStale: boolean;
@@ -73,7 +73,6 @@ export class InquiryBriefingArticle extends Component {
     onload(): void {
         this.surface.empty();
         this.surface.addClass('ert-briefing-surface');
-        this.host.themeRoot.addClass('ert-briefing-theme-root');
         this.applyTheme();
         this.installThemeObserver();
 
@@ -116,15 +115,13 @@ export class InquiryBriefingArticle extends Component {
 
         const actions = header.createDiv({ cls: 'ert-briefing-actions' });
         const layoutAction = this.host.layoutAction;
-        if (layoutAction) {
-            const layoutButton = withTooltip(withAccessibleLabel(actions.createEl('button', {
-                cls: 'ert-briefing-action ert-briefing-action--icon'
-            }), layoutAction.label), layoutAction.label);
-            setIcon(layoutButton, layoutAction.icon);
-            this.registerDomEvent(layoutButton, 'click', () => {
-                layoutAction.run();
-            });
-        }
+        const layoutButton = withTooltip(withAccessibleLabel(actions.createEl('button', {
+            cls: 'ert-briefing-action ert-briefing-action--icon'
+        }), layoutAction.label), layoutAction.label);
+        setIcon(layoutButton, layoutAction.icon);
+        this.registerDomEvent(layoutButton, 'click', () => {
+            layoutAction.run();
+        });
         const pdfAction = actions.createEl('button', {
             cls: 'ert-briefing-action',
             text: t('ui.inquiryBriefingModal.savePdf')
@@ -132,16 +129,13 @@ export class InquiryBriefingArticle extends Component {
         this.registerDomEvent(pdfAction, 'click', () => {
             this.printBriefing();
         });
-        const briefFile = this.briefFile;
-        if (briefFile) {
-            const noteAction = actions.createEl('button', {
-                cls: 'ert-briefing-action',
-                text: t('ui.inquiryBriefingModal.openMarkdown')
-            });
-            this.registerDomEvent(noteAction, 'click', () => {
-                void this.openFileFromBriefing(briefFile);
-            });
-        }
+        const noteAction = actions.createEl('button', {
+            cls: 'ert-briefing-action',
+            text: t('ui.inquiryBriefingModal.openMarkdown')
+        });
+        this.registerDomEvent(noteAction, 'click', () => {
+            void this.openFileFromBriefing(this.briefFile);
+        });
     }
 
     private renderHero(container: HTMLElement): void {
@@ -284,8 +278,7 @@ export class InquiryBriefingArticle extends Component {
             });
             const labelRow = article.createDiv({ cls: 'ert-briefing-note-label-row' });
             labelRow.createDiv({ cls: 'ert-briefing-note-label', text: note.header });
-            const anchorTarget = this.briefFile;
-            if (note.anchorId && anchorTarget) {
+            if (note.anchorId) {
                 const anchorAction = withTooltip(withAccessibleLabel(labelRow.createEl('a', {
                     cls: 'ert-briefing-note-link',
                     text: '↗',
@@ -293,7 +286,7 @@ export class InquiryBriefingArticle extends Component {
                 }), t('ui.inquiryBriefingModal.openNoteInBriefAria', { header: note.header })), t('ui.inquiryBriefingModal.openInBriefTitle'));
                 this.registerDomEvent(anchorAction, 'click', (event) => {
                     event.preventDefault();
-                    void this.openSubpathFromBriefing(anchorTarget, `#^${note.anchorId}`);
+                    void this.openSubpathFromBriefing(this.briefFile, `#^${note.anchorId}`);
                 });
             }
 
@@ -629,14 +622,6 @@ export class InquiryBriefingArticle extends Component {
     }
 
     private resolvePrintTitle(): string {
-        const baseName = this.briefFile?.basename?.trim();
-        if (baseName) return baseName;
-
-        const questionText = this.brief.questionText?.trim();
-        if (questionText) {
-            return `Inquiry Brief — ${questionText.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim()}`;
-        }
-
-        return 'Inquiry Brief';
+        return this.briefFile.basename;
     }
 }

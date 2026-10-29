@@ -1,6 +1,10 @@
 .ert-briefing-modal {
   width: min(1180px, calc(100vw - 56px));
   max-width: 1180px;
+}
+
+/* Token scope shared by the modal and the side panel. */
+.ert-briefing-theme-root {
   --ert-briefing-bg: var(--background-primary, #fcfcfc);
   --ert-briefing-bg-accent: var(--background-secondary, #f5f5f5);
   --ert-briefing-text: var(--text-normal, #222222);
@@ -22,7 +26,7 @@
   --ert-briefing-active-text: var(--text-normal, #222222);
 }
 
-.ert-briefing-modal[data-ert-briefing-theme="dark"] {
+.ert-briefing-theme-root[data-ert-briefing-theme="dark"] {
   --ert-briefing-bg: var(--background-primary, #202020);
   --ert-briefing-bg-accent: var(--background-secondary, #262626);
   --ert-briefing-text: var(--text-normal, #dcddde);
@@ -50,9 +54,28 @@
 }
 
 .ert-briefing-surface {
+  /* Sizes follow the briefing's own width, so a narrow side panel gets the narrow layout. */
+  container: ert-briefing / inline-size;
   padding: 0;
   background: var(--ert-briefing-bg);
   color: var(--ert-briefing-text);
+}
+
+.ert-briefing-pane .view-content.ert-briefing-surface {
+  padding: 0;
+  overflow-y: auto;
+}
+
+.ert-briefing-pane .ert-briefing-shell {
+  min-height: 100%;
+}
+
+.ert-briefing-pane-empty {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  padding: 32px 24px;
+  color: var(--ert-briefing-muted);
 }
 
 .ert-briefing-shell {
@@ -86,7 +109,7 @@
   object-fit: contain;
 }
 
-.ert-briefing-modal[data-ert-briefing-theme="light"] .ert-briefing-brand-logo {
+.ert-briefing-theme-root[data-ert-briefing-theme="light"] .ert-briefing-brand-logo {
   filter: brightness(0) saturate(100%);
   opacity: 0.94;
 }
@@ -150,6 +173,18 @@
   color: var(--ert-briefing-active-text);
 }
 
+.ert-briefing-action--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 14px;
+}
+
+.ert-briefing-action--icon .svg-icon {
+  width: 16px;
+  height: 16px;
+}
+
 .ert-briefing-hero {
   max-width: 700px;
   margin: 0 auto;
@@ -179,7 +214,7 @@
   margin: 12px 0 0;
   color: var(--ert-briefing-title);
   font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
-  font-size: clamp(46px, 6.2vw, 72px);
+  font-size: clamp(46px, 6.2cqi, 72px);
   font-weight: 500;
   letter-spacing: -0.03em;
   line-height: 0.96;
@@ -411,7 +446,7 @@ a.ert-briefing-scene-ref {
 .ert-briefing-finding-title {
   margin: 0;
   font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
-  font-size: clamp(25px, 2.8vw, 32px);
+  font-size: clamp(25px, 2.8cqi, 32px);
   font-weight: 500;
   letter-spacing: -0.03em;
   line-height: 1.06;
@@ -670,7 +705,7 @@ a.ert-briefing-scene-ref {
   }
 }
 
-@media (max-width: 720px) {
+@container ert-briefing (max-width: 720px) {
   .ert-briefing-shell {
     padding: 22px 20px 42px;
   }
@@ -685,7 +720,7 @@ a.ert-briefing-scene-ref {
   }
 
   .ert-briefing-title {
-    font-size: clamp(34px, 12vw, 52px);
+    font-size: clamp(34px, 12cqi, 52px);
   }
 
   .ert-briefing-paragraph,

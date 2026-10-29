@@ -114,6 +114,10 @@ export class InquirySessionStore {
         return this.cache.sessions.find(s => s.key === key);
     }
 
+    findSessionByBriefPath(briefPath: string): InquirySession | undefined {
+        return this.cache.sessions.find(s => s.briefPath === briefPath);
+    }
+
     getLatestByBaseKey(baseKey: string): InquirySession | undefined {
         const matches = this.cache.sessions.filter(s => s.baseKey === baseKey);
         if (!matches.length) return undefined;

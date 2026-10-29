@@ -28,7 +28,8 @@ import type { InquirySession } from './inquiry/sessionTypes';
 import { InquiryService } from './inquiry/InquiryService';
 import { InquiryEstimateService } from './inquiry/services/inquiryEstimateService';
 import { OutputProfileStore } from './ai/cost/outputProfile';
-import { INQUIRY_VIEW_TYPE } from './inquiry/constants';
+import { INQUIRY_BRIEFING_VIEW_TYPE, INQUIRY_VIEW_TYPE } from './inquiry/constants';
+import { InquiryBriefingPaneView } from './inquiry/briefing/InquiryBriefingPaneView';
 import { RendererService } from './services/RendererService';
 import { RadialTimelineSettingsTab } from './settings/SettingsTab';
 import { cleanupTooltipAnchors } from './utils/tooltip';
@@ -738,6 +739,11 @@ export default class RadialTimelinePlugin extends Plugin {
             (leaf: WorkspaceLeaf) => {
                 return new InquiryView(leaf, this);
             }
+        );
+        // The Inquiry briefing article, docked beside the Inquiry view.
+        this.registerView(
+            INQUIRY_BRIEFING_VIEW_TYPE,
+            (leaf: WorkspaceLeaf) => new InquiryBriefingPaneView(leaf)
         );
         // Timetable: a Bases view of the book, beside the timeline.
         this.timetableService = new TimetableService(this);

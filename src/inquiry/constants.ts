@@ -2,6 +2,7 @@ import { systemFolderPath } from '../utils/systemFolder';
 
 export const INQUIRY_VIEW_TYPE = 'radial-inquiry';
 export const INQUIRY_VIEW_DISPLAY_TEXT = 'Inquiry';
+export const INQUIRY_BRIEFING_VIEW_TYPE = 'radial-inquiry-briefing';
 export const DEFAULT_INQUIRY_ARTIFACT_FOLDER = systemFolderPath('Inquiry', 'Briefing');
 export const DEFAULT_INQUIRY_HISTORY_LIMIT = 30;
 export const INQUIRY_SCHEMA_VERSION = 1;

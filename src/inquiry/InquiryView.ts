@@ -274,6 +274,8 @@ import {
     InquiryPurgeConfirmationModal
 } from './modals/InquiryViewModals';
 import { InquiryBriefingModal } from './modals/InquiryBriefingModal';
+import type { InquiryBriefingPayload } from './briefing/InquiryBriefingArticle';
+import { openInquiryBriefingPane } from './briefing/InquiryBriefingPaneView';
 import type {
     AiSettingsFocus,
     CorpusCcEntry,
@@ -2054,46 +2056,38 @@ export class InquiryView extends ItemView {
             return;
         }
         if (!anchorId) {
-            const staleDiagnosis = this.diagnoseSessionStaleness(session);
-            this.openBriefingPresentation(this.buildInquiryBriefModel(session.result, session.logPath), {
-                briefFile: file,
-                logFile: this.getArtifactFileAtPath(session.logPath),
-                generatedAt: session.result.completedAt ?? session.createdAt,
-                isCorpusStale: !!staleDiagnosis,
-                staleDiagnosis
-            });
+            this.openBriefingPresentation(this.buildSessionBriefingPayload(session, file, null));
             return;
         }
         await openOrRevealFileAtSubpath(this.app, file, `#^${anchorId}`);
     }
 
-    private getArtifactFileAtPath(path?: string | null): TFile | null {
-        if (!path) return null;
-        const file = this.app.vault.getAbstractFileByPath(path);
-        return file instanceof TFile ? file : null;
+    private buildSessionBriefingPayload(session: InquirySession, briefFile: TFile, focusAnchorId: string | null): InquiryBriefingPayload {
+        const staleDiagnosis = this.diagnoseSessionStaleness(session);
+        return {
+            brief: this.buildInquiryBriefModel(session.result, session.logPath),
+            briefFile,
+            generatedAt: session.result.completedAt ?? session.createdAt,
+            focusAnchorId,
+            isCorpusStale: !!staleDiagnosis,
+            staleDiagnosis
+        };
     }
 
-    private openBriefingPresentation(
-        brief: InquiryBriefModel,
-        options?: {
-            briefFile?: TFile | null;
-            logFile?: TFile | null;
-            generatedAt?: number | string | null;
-            focusAnchorId?: string | null;
-            isCorpusStale?: boolean;
-            staleDiagnosis?: InquiryStaleDiagnosis | null;
-        }
-    ): void {
-        new InquiryBriefingModal(this.app, {
-            brief,
-            plugin: this.plugin,
-            briefFile: options?.briefFile ?? null,
-            logFile: options?.logFile ?? null,
-            generatedAt: options?.generatedAt ?? null,
-            focusAnchorId: options?.focusAnchorId ?? null,
-            isCorpusStale: options?.isCorpusStale ?? false, // SAFE: optional modal flag — omitted means corpus is not stale
-            staleDiagnosis: options?.staleDiagnosis ?? null
-        }).open();
+    /** Rebuilds a docked briefing after a reload, when the side panel has only its file path. */
+    buildBriefingPayloadForPath(briefPath: string): InquiryBriefingPayload | null {
+        const session = this.sessionStore.findSessionByBriefPath(briefPath);
+        const file = this.app.vault.getAbstractFileByPath(briefPath);
+        if (!session || !(file instanceof TFile)) return null;
+        return this.buildSessionBriefingPayload(session, file, null);
+    }
+
+    private openBriefingPresentation(payload: InquiryBriefingPayload): void {
+        // Docking needs the saved brief: the side panel restores from its path after a reload.
+        const onDock = payload.briefFile
+            ? () => { void openInquiryBriefingPane(this.app, payload); }
+            : null;
+        new InquiryBriefingModal(this.app, payload, onDock).open();
     }
 
     /**
@@ -8025,14 +8019,7 @@ export class InquiryView extends ItemView {
             new Notice(t('inquiry.notice.briefNotFound'));
             return;
         }
-        const staleDiagnosis = this.diagnoseSessionStaleness(session);
-        this.openBriefingPresentation(this.buildInquiryBriefModel(session.result, session.logPath), {
-            briefFile: file,
-            logFile: this.getArtifactFileAtPath(session.logPath),
-            generatedAt: session.result.completedAt ?? session.createdAt,
-            isCorpusStale: !!staleDiagnosis,
-            staleDiagnosis
-        });
+        this.openBriefingPresentation(this.buildSessionBriefingPayload(session, file, null));
     }
 
     private openActiveBriefArticleForItem(item: InquiryCorpusItem): void {
@@ -8053,15 +8040,7 @@ export class InquiryView extends ItemView {
         }
         const anchorSource = getMinimapItemFilePath(item) || item.id || item.displayLabel;
         const anchorId = this.getBriefSceneAnchorId(anchorSource);
-        const staleDiagnosis = this.diagnoseSessionStaleness(session);
-        this.openBriefingPresentation(this.buildInquiryBriefModel(session.result, session.logPath), {
-            briefFile: file,
-            logFile: this.getArtifactFileAtPath(session.logPath),
-            generatedAt: session.result.completedAt ?? session.createdAt,
-            focusAnchorId: anchorId,
-            isCorpusStale: !!staleDiagnosis,
-            staleDiagnosis
-        });
+        this.openBriefingPresentation(this.buildSessionBriefingPayload(session, file, anchorId));
     }
 
     private handleMinimapTickContextMenu(item: InquiryCorpusItem, event: MouseEvent): void {
@@ -10584,10 +10563,13 @@ export class InquiryView extends ItemView {
         try {
             const file = await this.app.vault.create(filePath, content);
             if (options.openFile) {
-                this.openBriefingPresentation(brief, {
+                this.openBriefingPresentation({
+                    brief,
                     briefFile: file,
-                    logFile: this.getArtifactFileAtPath(sessionLogPath),
-                    generatedAt: result.completedAt ?? Date.now()
+                    generatedAt: result.completedAt ?? Date.now(),
+                    focusAnchorId: null,
+                    isCorpusStale: false,
+                    staleDiagnosis: null
                 });
             }
             if (!options.silent) {

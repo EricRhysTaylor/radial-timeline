@@ -6644,9 +6644,6 @@ export const vi: TranslationKeys = {
             "unavailable": "Ghi chú phát hành không có sẵn trong bản dựng này. ",
             "viewOnGithub": "Xem các bản phát hành trên GitHub."
         },
-        "rotationToggle": {
-            "rotateTimeline": "Xoay dòng thời gian"
-        },
         "rttsValidation": {
             "partArityMismatch": "Mẫu này xác định \\rtpart với {{arity}} đối số, nhưng xuất ra phát ra {{required}} (số, tiêu đề, trích dẫn, phân bổ). Nhập lại bố cục được đóng gói hoặc cập nhật macro để thực hiện {{required}} tranh luận.",
             "missingBody": "mẫu bị thiếu $ body $; Pandoc không có nơi nào để đặt bản thảo."

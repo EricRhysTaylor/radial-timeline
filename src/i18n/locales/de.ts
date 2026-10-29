@@ -6641,9 +6641,6 @@ export const de: DeepPartial<TranslationKeys> = {
             unavailable: 'Versionshinweise sind in diesem Build nicht verfügbar. ',
             viewOnGithub: 'Versionen auf GitHub ansehen.',
         },
-        rotationToggle: {
-            rotateTimeline: 'Timeline drehen',
-        },
         rttsValidation: {
             partArityMismatch: 'Diese Vorlage definiert \\rtPart mit {{arity}} Argumenten, der Export übergibt jedoch {{required}} (Ziffer, Titel, Zitat, Quellenangabe). Importieren Sie das mitgelieferte Layout erneut oder passen Sie das Makro auf {{required}} Argumente an.',
             missingBody: 'Der Vorlage fehlt $body$; Pandoc hat keine Stelle, an der das Manuskript eingefügt werden kann.',

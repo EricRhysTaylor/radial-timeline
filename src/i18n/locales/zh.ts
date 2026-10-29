@@ -6643,9 +6643,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             unavailable: '此版本不包含发布说明。 ',
             viewOnGithub: '在 GitHub 上查看版本发布。',
         },
-        rotationToggle: {
-            rotateTimeline: '旋转时间轴',
-        },
         rttsValidation: {
             partArityMismatch: '此模板定义的 \\rtPart 带有 {{arity}} 个参数，但导出会传入 {{required}} 个（编号、标题、引文、出处）。请重新导入内置版式，或将该宏更新为接受 {{required}} 个参数。',
             missingBody: '模板缺少 $body$；Pandoc 无处放置手稿内容。',

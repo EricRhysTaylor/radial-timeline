@@ -6644,9 +6644,6 @@ export const es: TranslationKeys = {
             "unavailable": "Las notas de la versión no están disponibles en esta compilación. ",
             "viewOnGithub": "Ver lanzamientos en GitHub."
         },
-        "rotationToggle": {
-            "rotateTimeline": "Girar la línea de tiempo"
-        },
         "rttsValidation": {
             "partArityMismatch": "Esta plantilla define \\rtpart con {{arity}} argumentos, pero la exportación emite {{required}} (número, título, cotización, atribución). Vuelva a importar el diseño empaquetado o actualice la macro para tomar {{required}} argumentos.",
             "missingBody": "a la plantilla le falta $body$; Pandoc no tiene dónde colocar el manuscrito."

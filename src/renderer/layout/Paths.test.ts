@@ -46,10 +46,4 @@ describe('arcPath', () => {
         expect(arcFlags(arcPath(R, OPENING, OPENING + Math.PI * 1.5))).toEqual(['1', CLOCKWISE]);
         expect(arcFlags(arcPath(R, OPENING + Math.PI * 1.5, OPENING))).toEqual(['1', COUNTER_CLOCKWISE]);
     });
-
-    it('is unaffected by the overlay rotation offset', () => {
-        // Rotated timelines add the same offset to both ends.
-        const offset = -(2 * Math.PI) / 3;
-        expect(arcFlags(arcPath(R, 4 + offset, -1 + offset))).toEqual(arcFlags(arcPath(R, 4, -1)));
-    });
 });

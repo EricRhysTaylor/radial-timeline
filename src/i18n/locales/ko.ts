@@ -6641,9 +6641,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             unavailable: '이 빌드에서는 릴리스 노트를 사용할 수 없습니다. ',
             viewOnGithub: 'GitHub에서 릴리스 보기.',
         },
-        rotationToggle: {
-            rotateTimeline: '타임라인 회전',
-        },
         rttsValidation: {
             partArityMismatch: '이 템플릿은 \\rtPart를 인수 {{arity}}개로 정의하지만, 내보내기는 인수 {{required}}개(번호, 제목, 인용문, 출처)를 전달합니다. 번들 레이아웃을 다시 가져오거나, 매크로가 인수 {{required}}개를 받도록 업데이트하세요.',
             missingBody: '템플릿에 $body$가 없어 Pandoc이 원고를 넣을 위치가 없습니다.',

@@ -6644,9 +6644,6 @@ export const fr: TranslationKeys = {
             "unavailable": "Les notes de version ne sont pas disponibles dans cette version. ",
             "viewOnGithub": "Voir les versions sur GitHub."
         },
-        "rotationToggle": {
-            "rotateTimeline": "Tourner la chronologie"
-        },
         "rttsValidation": {
             "partArityMismatch": "Ce modèle définit \\rtpart avec {{arity}} arguments, mais l'exportation émet {{required}} (Numéro, titre, devis, attribution). Réimportez la mise en page groupée ou mettez à jour la macro à prendre {{required}} arguments.",
             "missingBody": "Le modèle est manquant $BODY$ ; Pandoc n'a nulle part où placer le manuscrit."

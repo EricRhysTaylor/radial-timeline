@@ -6644,9 +6644,6 @@ export const th: TranslationKeys = {
             "unavailable": "บันทึกประจำรุ่นไม่สามารถใช้ได้ในบิลด์นี้ ",
             "viewOnGithub": "ดูข่าวประชาสัมพันธ์บน GitHub"
         },
-        "rotationToggle": {
-            "rotateTimeline": "หมุนไทม์ไลน์"
-        },
         "rttsValidation": {
             "partArityMismatch": "เทมเพลตนี้กำหนด \\rtpart ด้วย {{arity}} อาร์กิวเมนต์ แต่การส่งออกจะปล่อยออกมา {{required}} (ตัวเลข, ชื่อ, คำพูด, การระบุแหล่งที่มา). นำเข้าเลย์เอาต์ที่รวมอีกครั้ง หรืออัปเดตแมโครเพื่อใช้ {{required}} ข้อโต้แย้ง",
             "missingBody": "เทมเพลตไม่มี $body$; Pandoc ไม่มีที่วางต้นฉบับ"

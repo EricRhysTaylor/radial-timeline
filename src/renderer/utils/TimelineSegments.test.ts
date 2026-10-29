@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS } from '../../settings/defaults';
 import type { RadialTimelineSettings } from '../../types';
 import { buildTimelineSegments } from './TimelineSegments';
-import { getRotationStepDegrees } from '../../view/interactions/RotationController';
 import { getSegmentBoundaries, redistributeAngles, type SceneAngleData } from '../../view/interactions/SceneTitleExpansion';
 
 describe('timeline segments', () => {
@@ -33,12 +32,6 @@ describe('timeline segments', () => {
                 expect(segment.endAngle - segment.startAngle).toBeCloseTo(width, 8);
             });
         });
-    });
-
-    it('uses saga book count for rotation step', () => {
-        expect(getRotationStepDegrees(2)).toBe(180);
-        expect(getRotationStepDegrees(3)).toBe(120);
-        expect(getRotationStepDegrees(4)).toBe(90);
     });
 
     it('keeps hover title expansion inside one book sector', () => {

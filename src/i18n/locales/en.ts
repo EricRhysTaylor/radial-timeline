@@ -6303,9 +6303,6 @@ export const en = {
             unavailable: 'Release notes are not available in this build. ',
             viewOnGithub: 'View releases on GitHub.',
         },
-        rotationToggle: {
-            rotateTimeline: 'Rotate timeline',
-        },
         rttsValidation: {
             partArityMismatch: 'This template defines \\rtPart with {{arity}} arguments, but the export emits {{required}} (numeral, title, quote, attribution). Re-import the bundled layout, or update the macro to take {{required}} arguments.',
             missingBody: 'Template is missing $body$; Pandoc has nowhere to place the manuscript.',

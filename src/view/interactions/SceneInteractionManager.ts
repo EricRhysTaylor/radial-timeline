@@ -24,7 +24,7 @@ import {
     expandIntoGap,
     buildArcPath
 } from './SceneTitleExpansion';
-import { applySceneTitleGeometry, getTimelineRotationRad } from '../../renderer/dom/SceneTitleOrientation';
+import { applySceneTitleGeometry } from '../../renderer/dom/SceneTitleOrientation';
 import { SCENE_TITLE_INSET } from '../../renderer/layout/LayoutConstants';
 
 export class SceneInteractionManager {
@@ -385,7 +385,6 @@ export class SceneInteractionManager {
     }
     
     private resetAngularRedistribution(): void {
-        const rotationRad = getTimelineRotationRad(this.svg);
         this.originalAngles.forEach((angles, groupId) => {
             const group = this.svg.getElementById(groupId);
             if (!group) return;
@@ -400,7 +399,7 @@ export class SceneInteractionManager {
             }
             
             // Reset text path
-            applySceneTitleGeometry(group, angles.start, angles.end, rotationRad);
+            applySceneTitleGeometry(group, angles.start, angles.end);
             
             // Reset number square transform
             const scenePathEl = group.querySelector('.rt-scene-path') as SVGPathElement;
@@ -533,7 +532,6 @@ export class SceneInteractionManager {
         if (redistribution.length === 0) return; // Nothing to grow into
         
         // Apply redistribution
-        const rotationRad = getTimelineRotationRad(this.svg);
         redistribution.forEach(result => {
             const group = this.svg.getElementById(result.id);
             if (!group) return;
@@ -548,7 +546,7 @@ export class SceneInteractionManager {
             }
 
             // Update text path (use redistributed angles for correct text positioning)
-            applySceneTitleGeometry(group, result.newStartAngle, result.newEndAngle, rotationRad);
+            applySceneTitleGeometry(group, result.newStartAngle, result.newEndAngle);
 
             // Update number square position
             const scenePathEl = group.querySelector('.rt-scene-path') as SVGPathElement;

@@ -83,6 +83,3 @@ export function getSegmentBoundaries(index: number, totalSegments: number): { st
     };
 }
 
-export function getRotationStepDegrees(segmentCount: number): number {
-    return segmentCount > 0 ? 360 / segmentCount : 120;
-}

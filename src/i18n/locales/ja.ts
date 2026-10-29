@@ -6642,9 +6642,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             unavailable: 'このビルドではリリースノートを利用できません。 ',
             viewOnGithub: 'GitHub でリリースを表示します。',
         },
-        rotationToggle: {
-            rotateTimeline: 'タイムラインを回転',
-        },
         rttsValidation: {
             partArityMismatch: 'このテンプレートは \\rtPart を {{arity}} 個の引数で定義していますが、エクスポートは {{required}} 個（番号、タイトル、引用文、出典）を出力します。同梱レイアウトを再インポートするか、マクロが {{required}} 個の引数を受け取るよう更新してください。',
             missingBody: 'テンプレートに $body$ がありません。Pandoc が原稿を配置する場所がありません。',

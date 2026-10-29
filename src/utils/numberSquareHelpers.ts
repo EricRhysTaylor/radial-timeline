@@ -62,26 +62,24 @@ export function generateNumberSquareGroup(
 
     return `
         <g class="number-square-group"${dataAttrs} transform="translate(${squareX}, ${squareY})">
-            <g class="number-square-orient">
-                <rect 
-                    x="-${squareSize.width/2}" 
-                    y="-${squareSize.height/2}" 
-                    width="${squareSize.width}" 
-                    height="${squareSize.height}" 
-                    class="${squareClasses}" 
-                    data-scene-id="${escapeXml(sceneId)}"
-                    ${radiusAttr}${subplotAttr}
-                />
-                <text 
-                    x="0" 
-                    y="0" 
-                    text-anchor="middle" 
-                    dominant-baseline="middle" 
-                    class="${textClasses}"
-                    data-scene-id="${escapeXml(sceneId)}"
-                    dy="0.1em"
-                >${number}</text>
-            </g>
+            <rect 
+                x="-${squareSize.width/2}" 
+                y="-${squareSize.height/2}" 
+                width="${squareSize.width}" 
+                height="${squareSize.height}" 
+                class="${squareClasses}" 
+                data-scene-id="${escapeXml(sceneId)}"
+                ${radiusAttr}${subplotAttr}
+            />
+            <text 
+                x="0" 
+                y="0" 
+                text-anchor="middle" 
+                dominant-baseline="middle" 
+                class="${textClasses}"
+                data-scene-id="${escapeXml(sceneId)}"
+                dy="0.1em"
+            >${number}</text>
         </g>
     `;
 }

@@ -33,23 +33,6 @@ export function cssEscape(value: string): string {
     return value.replace(/[^a-zA-Z0-9_-]/g, '\\$&');
 }
 
-/**
- * Rotation offset in radians.
- *
- * When the timeline is rotated, `#timeline-rotatable` turns by -360/numActs
- * degrees. Overlay elements live outside that group, so their angles must add
- * this offset to line up with the scene arcs the author sees.
- */
-export function getRotationOffsetRad(svg: SVGSVGElement): number {
-    if (svg.getAttribute('data-rotated') !== 'true') return 0;
-    const numActs = parseInt(
-        svg.getAttribute('data-segment-count') || svg.getAttribute('data-num-acts') || '3', // SAFE: three acts is the documented minimum and the settings default
-        10
-    );
-    const angleDeg = numActs > 0 ? 360 / numActs : 120;
-    return -(angleDeg * Math.PI) / 180;
-}
-
 /** Highest ring index present — the only ring either drag mode operates on. */
 export function getOuterRingIndex(svg: SVGSVGElement): number {
     const rings = Array.from(svg.querySelectorAll<SVGGElement>('.rt-scene-group'))
@@ -147,7 +130,7 @@ export class DragOverlays {
         const outerR = Number(group.getAttribute('data-outer-r') ?? '');
         if (!Number.isFinite(startAngle) || !Number.isFinite(endAngle) || !Number.isFinite(outerR)) return;
 
-        const centerAngle = (startAngle + endAngle) / 2 + getRotationOffsetRad(this.svg);
+        const centerAngle = (startAngle + endAngle) / 2;
         const r = outerR + INDICATOR_OFFSET;
         const x = r * Math.cos(centerAngle);
         const y = r * Math.sin(centerAngle);
@@ -169,15 +152,14 @@ export class DragOverlays {
     }
 
     showTick(startAngle: number, color: string | undefined): void {
-        const angle = startAngle + getRotationOffsetRad(this.svg);
         const rOuter = this.arcRadius - DRAG_DROP_TICK_INSET;
         const rInner = rOuter - DRAG_DROP_TICK_LENGTH;
         const tick = this.ensureTick();
         tick.classList.remove('ert-hidden');
         tick.setAttribute(
             'd',
-            `M ${rInner * Math.cos(angle)} ${rInner * Math.sin(angle)} `
-            + `L ${rOuter * Math.cos(angle)} ${rOuter * Math.sin(angle)}`
+            `M ${rInner * Math.cos(startAngle)} ${rInner * Math.sin(startAngle)} `
+            + `L ${rOuter * Math.cos(startAngle)} ${rOuter * Math.sin(startAngle)}`
         );
         applyStroke(tick, color);
     }
@@ -187,13 +169,11 @@ export class DragOverlays {
      * clockwise to a later point, counter-clockwise to an earlier one. It never
      * crosses the seam at the book's opening — reaching an earlier scene by
      * running forward past the closing scene would picture time wrapping round.
-     * The rotation offset shifts both ends equally, so it never flips direction.
      */
     showArc(startAngle: number, endAngle: number, color: string | undefined): void {
         const arc = this.ensureArc();
         arc.classList.remove('ert-hidden');
-        const offset = getRotationOffsetRad(this.svg);
-        arc.setAttribute('d', arcPath(this.arcRadius, startAngle + offset, endAngle + offset));
+        arc.setAttribute('d', arcPath(this.arcRadius, startAngle, endAngle));
         applyStroke(arc, color);
     }
 

@@ -89,17 +89,6 @@ export function renderDefs(
       <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z" fill="none" stroke="${iconStroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="m9 10 2 2 4-4" fill="none" stroke="${iconStroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
-    <!-- Arrow Up/Down From Line (toggle rotation) -->
-    <symbol id="icon-arrow-up-from-line" viewBox="0 0 24 24">
-      <path d="m18 9-6-6-6 6" fill="none" stroke="${iconStroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-      <path d="M12 3v14" fill="none" stroke="${iconStroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-      <path d="M5 21h14" fill="none" stroke="${iconStroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-    </symbol>
-    <symbol id="icon-arrow-down-from-line" viewBox="0 0 24 24">
-      <path d="M19 3H5" fill="none" stroke="${iconStroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-      <path d="M12 21V7" fill="none" stroke="${iconStroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-      <path d="m6 15 6 6 6-6" fill="none" stroke="${iconStroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-    </symbol>
   `;
 
   return plaid + icons;

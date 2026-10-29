@@ -18,12 +18,9 @@ import { TEXTPATH_START_NUDGE_PX } from '../layout/LayoutConstants';
  */
 export const FLIPPED_TITLE_DY = '0.5em';
 
-/**
- * True when the title should run counter-clockwise. `rotationRad` is the turn
- * applied to the timeline layer, so the test follows what is on screen.
- */
-export function isTitleFlipped(startAngle: number, endAngle: number, rotationRad = 0): boolean {
-    return Math.sin((startAngle + endAngle) / 2 + rotationRad) > 0;
+/** True when the title should run counter-clockwise. */
+export function isTitleFlipped(startAngle: number, endAngle: number): boolean {
+    return Math.sin((startAngle + endAngle) / 2) > 0;
 }
 
 /**

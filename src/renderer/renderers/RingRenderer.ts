@@ -81,7 +81,6 @@ export function renderRings(ctx: RingRenderContext): string {
     let svg = '';
     // Keep the live title in its scene group for hover, clipping and updates.
     // A single SVG use paints that same title above the fixed subplot headlines.
-    // Rendered unrotated; RotationController re-orients titles when the wheel turns.
     const renderTitle = (sceneId: string, pathId: string, text: string, isOpen: boolean, flipped: boolean): string => {
         const id = `scene-title-${sceneId}`;
         const clip = `clip-path="url(#clip-${sceneId})"`;

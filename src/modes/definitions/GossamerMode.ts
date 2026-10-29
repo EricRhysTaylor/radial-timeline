@@ -70,7 +70,7 @@ export const GOSSAMER_MODE: ModeDefinition = {
         }
         
         // Build and store Gossamer runs
-        const { setBaseModeAllScenes, resetRotation, syncGossamerPresentationState } = await import('../../GossamerCommands');
+        const { setBaseModeAllScenes, syncGossamerPresentationState } = await import('../../GossamerCommands');
         
         const selectedBeatModel = resolveSelectedBeatModelFromSettings(plugin.settings);
         const allRuns = await syncGossamerPresentationState(plugin, scenes);
@@ -92,7 +92,6 @@ export const GOSSAMER_MODE: ModeDefinition = {
         
         // Setup mode
         setBaseModeAllScenes(plugin);
-        resetRotation(plugin);
         plugin.clearSearch();
     },
     

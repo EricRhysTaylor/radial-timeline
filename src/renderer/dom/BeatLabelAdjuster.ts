@@ -116,10 +116,10 @@ function getLabelSignature(container: HTMLElement): string {
 }
 
 function bringChapterMarkersToFront(container: HTMLElement): void {
-    const markerLayer = container.querySelector<SVGGElement>('#timeline-rotatable > .ert-chapter-markers');
-    const rotatable = markerLayer?.parentElement;
-    if (markerLayer && rotatable) {
-        rotatable.appendChild(markerLayer);
+    const markerLayer = container.querySelector<SVGGElement>('#timeline-scene-layer > .ert-chapter-markers');
+    const sceneLayer = markerLayer?.parentElement;
+    if (markerLayer && sceneLayer) {
+        sceneLayer.appendChild(markerLayer);
     }
 }
 

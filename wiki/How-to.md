@@ -112,6 +112,3 @@ Open **Radial timeline: Timeline search**, choose **Search options**, and press 
 Timeline fields is selected by default. Your scope choices are saved. Matching scene numbers light up across subplot rings; hover highlights apply to matches in timeline fields. Use **Clear timeline search** to clear the results.
 
 Local LLM assist sends the selected material to your configured Local LLM endpoint. Use a server on the same machine to keep manuscript text on-device.
-
-## Rotate the timeline
-In Narrative and Progress modes you can use the **rotation toggle** (arrow icon near the outer ring) to rotate the timeline for easier reading. The rotation offset is **act-aware** (based on your configured **Act count**) and keeps scene number squares oriented correctly.

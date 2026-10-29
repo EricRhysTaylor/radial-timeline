@@ -14,7 +14,7 @@ import { t, tCount } from '../i18n';
 import type { SubplotAlignment, TimelineItem } from '../types';
 import { renderSvgFromString } from '../utils/svgDom';
 import { openOrRevealFileByPath } from '../utils/fileUtils';
-import { setupRotationController, setupSearchControls as setupSearchControlsExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController, setupBeatNameKeyController, setupTitleBarFit } from './interactions';
+import { setupSearchControls as setupSearchControlsExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController, setupBeatNameKeyController, setupTitleBarFit } from './interactions';
 import { RendererService } from '../services/RendererService';
 import { ModeManager, createModeManager } from '../modes/ModeManager';
 import { getModeDefinition, getToggleableModes } from '../modes/ModeRegistry';
@@ -201,9 +201,6 @@ export class RadialTimelineView extends ItemView {
     private writingSessionLastPulseColor?: string;
     private writingSessionRingRenderKey?: string;
     private writingSessionRingPulseTimeout?: number;
-    
-    // Store rotation state to persist across timeline refreshes
-    private rotationState: boolean = false;
 
     // Chronologue shift-mode hooks installed per-render by ChronologueShiftController
     public handleShiftModeClick?: (e: MouseEvent, sceneGroup: Element) => boolean;
@@ -2764,24 +2761,7 @@ export class RadialTimelineView extends ItemView {
         this.updateViewTitle();
     }
 
-    // --- Helpers for number-square orientation/position (shared across modes) ---
-    public applyRotationToNumberSquares(svg: SVGSVGElement, rotated: boolean): void {
-        const segmentCount = parseInt(svg.getAttribute('data-segment-count') || svg.getAttribute('data-num-acts') || '3', 10);
-        const angle = segmentCount > 0 ? 360 / segmentCount : 120; // Dynamic counter-rotation based on active segment count
-        const orients = svg.querySelectorAll<SVGGElement>('.number-square-orient');
-        orients.forEach((el) => {
-            const base = (el.getAttribute('transform') || '').replace(/\s*rotate\([^)]*\)/g, '').trim();
-            if (rotated) {
-                el.setAttribute('transform', `${base} rotate(${angle})`.trim());
-            } else {
-                if (base) el.setAttribute('transform', base); else el.removeAttribute('transform');
-            }
-        });
-    }
-
-    public getRotationState(): boolean { return this.rotationState; }
-    public setRotationState(rotated: boolean): void { this.rotationState = rotated; }
-
+    // --- Helpers for number-square position (shared across modes) ---
     public getSquareGroupForSceneId(svg: SVGSVGElement, sceneId: string): SVGGElement | null {
         const rect = svg.querySelector(`.rt-number-square[data-scene-id="${sceneId}"]`);
         if (!rect) return null;
@@ -3235,7 +3215,7 @@ export class RadialTimelineView extends ItemView {
                         svgElement.setAttribute('data-shift-mode', 'active');
                     }
                     
-                    // Set data-chronologue-mode for CSS targeting (hides rotation toggle, etc.)
+                    // Set data-chronologue-mode for CSS targeting
                     if (this.currentMode === 'chronologue') {
                         svgElement.setAttribute('data-chronologue-mode', 'true');
                     } else {
@@ -3275,9 +3255,6 @@ export class RadialTimelineView extends ItemView {
                     }
                 });
                 
-                // Attach rotation toggle behavior (inline SVG scripts won't run here)
-                setupRotationController(this, svgElement);
-
                 // Attach mode toggle behavior
                 setupModeToggleController(this, svgElement);
 

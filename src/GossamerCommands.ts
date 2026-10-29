@@ -696,7 +696,6 @@ export async function toggleGossamerMode(plugin: RadialTimelinePlugin): Promise<
     }
     
     setBaseModeAllScenes(plugin);
-    resetRotation(plugin);
     plugin.clearSearch();
     void enterGossamerMode(plugin);
   }
@@ -756,10 +755,6 @@ export function restoreBaseMode(plugin: RadialTimelinePlugin): string {
   }
   // Default to narrative if no saved mode
   return 'narrative';
-}
-
-export function resetRotation(plugin: RadialTimelinePlugin) {
-  getAllViews(plugin).forEach((view) => view.setRotationState(false));
 }
 
 // --- View access helpers ---

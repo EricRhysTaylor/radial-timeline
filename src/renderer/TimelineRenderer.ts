@@ -65,7 +65,6 @@ import { renderNarrativeRuntimeOverlay } from './components/NarrativeRuntimeOver
 import { collectChronologueSceneEntries, type ChronologueSceneEntry } from './components/ChronologueTimeline';
 import { appendSynopsisElementForScene } from './utils/SynopsisBuilder';
 import { renderGossamerOverlay, type StageColorMap } from './utils/Gossamer';
-import { renderRotationToggle } from './utils/RotationToggle';
 import { renderVersionIndicator } from './components/VersionIndicator';
 import { renderHelpIcon } from './components/HelpIcon';
 import { renderAuthorProgressIndicator } from './components/AuthorProgressIndicator';
@@ -402,7 +401,7 @@ export function createTimelineSVG(
     });
     boundaryLabelsHtml = outerLabelRender.boundaryLabelsHtml;
 
-    // --- Draw Act labels early (below story beat labels) into rotatable group later ---
+    // --- Draw Act labels early (below story beat labels) into the scene layer later ---
 
     // First add the progress ring (RAINBOW YEAR PROGRESS)
     // Calculate year progress
@@ -542,8 +541,8 @@ export function createTimelineSVG(
         });
     });
 
-    // Open rotatable container – scenes and act labels/borders only
-    svg += `<g id="timeline-rotatable">`;
+    // Open the scene layer – scenes and act labels/borders only
+    svg += `<g id="timeline-scene-layer">`;
 
     // Only show Act labels when using manuscript order (not When date sorting)
     if (!sortByWhen) {
@@ -718,7 +717,7 @@ export function createTimelineSVG(
         });
     }
 
-    // Narrative runtime view: drawn inside the rotatable layer so it turns with the scenes.
+    // Narrative runtime view: drawn inside the scene layer, under the subplot headlines.
     if (isNarrativeRuntime && outerRingPositionByKey) {
         svg += renderNarrativeRuntimeOverlay({
             entries: collectNarrativeRuntimeEntries(scenes, outerRingPositionByKey),
@@ -729,22 +728,21 @@ export function createTimelineSVG(
         });
     }
 
-    // Close rotatable container
+    // Close the scene layer
     svg += `</g>`;
 
-    // Add tick mark for the estimated completion date outside the rotatable scene layer.
-    // It belongs to calendar time, so manual timeline rotation must not move it.
+    // Add tick mark for the estimated completion date outside the scene layer.
     if (estimateResult && settings.showCompletionEstimate !== false) {
         svg += renderEstimatedDateElements({ estimate: estimateResult, progressRadius });
     }
 
-    // Subplot labels - rendered OUTSIDE rotatable so they stay fixed when rotation is applied
+    // Subplot labels - rendered outside the scene layer, above it
     svg += `<g class="background-layer subplot-labels-fixed">`;
     svg += renderSubplotLabels({ NUM_RINGS, ringStartRadii, ringWidths, masterSubplotOrder, colorIndexBySubplot, plugin });
     svg += `</g>`;
 
     // Scene-title sources stay with their scenes; paint them and the reference
-    // controls after the headlines, in the same rotation space as the scenes.
+    // controls after the headlines.
     svg += `<g class="ert-scene-foreground">${foregroundElements.join('')}</g>`;
 
     let chronologueOverlaysHtml = '';
@@ -794,10 +792,6 @@ export function createTimelineSVG(
 
     // Close static root container
     svg += `</g>`;
-
-    // Add rotation toggle control (non-rotating UI), positioned above top edge (Act 2 marker vicinity)
-    // Place the button near the Act 2 label (start of Act 2 boundary) and slightly outside along local y-axis
-    svg += renderRotationToggle({ numActs, actualOuterRadius });
 
     // Add version indicator (bottom-left corner)
     // Returns computed X position for aligning APR indicator above it

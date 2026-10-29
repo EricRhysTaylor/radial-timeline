@@ -13,11 +13,6 @@ describe('isTitleFlipped', () => {
         expect(isTitleFlipped(Math.PI / 2 - 0.1, Math.PI / 2 + 0.1)).toBe(true);
         expect(isTitleFlipped(-Math.PI / 2 - 0.1, -Math.PI / 2 + 0.1)).toBe(false);
     });
-
-    it('judges by where the slice sits after the wheel turns', () => {
-        // A slice at six o'clock turned a half turn sits at twelve.
-        expect(isTitleFlipped(Math.PI / 2 - 0.1, Math.PI / 2 + 0.1, Math.PI)).toBe(false);
-    });
 });
 
 describe('buildTextPath', () => {

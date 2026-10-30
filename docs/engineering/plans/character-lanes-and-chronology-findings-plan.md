@@ -4,7 +4,10 @@ Date: 2026-10-29
 Status: proposal. Two mockups on the Pride & Prejudice demo were reviewed with Eric on 2026-10-29: the whole wheel, then close-ups of the outer band. Eric decided:
 - where Character and POV come from;
 - that character lanes go in Narrative;
-- that chronology findings stay in Chronologue, on the duration arcs (option C).
+- that chronology findings stay in Chronologue, on the duration arcs (option C);
+- that the lanes stay out of Progress and Gossamer, which stay simple.
+
+Open on 2026-10-29: Eric has not yet confirmed the recommended finding colors or the automatic choice of characters.
 
 Nothing is built yet, and no public release is implied.
 
@@ -33,9 +36,9 @@ Chronologue already has a lot going on: Backdrop and micro-backdrop rings, time 
 - **The runtime view** pulls the Narrative rings in to 750 and draws its arcs at 758. The lanes stay inside the band, so they should not collide, but check this when building.
 - **Data needed.** The lanes need only Character, with the POV character first, so they work on almost any book without Place, times or Duration. The Pride & Prejudice demo can show them as it is.
 - **Place colors are optional.** They come from the Timetable's color key when it colors by Place. With no Place key, marks use one neutral color.
-- **Choosing characters.** The author picks up to four from the values of Character. The Timetable already lists every distinct value of a column and keeps a palette of up to eight chosen values (`src/timetable/timetableModel.ts`). Reuse that list rather than building a second picker.
+- **Choosing characters (recommended, not yet confirmed).** There is one lane per character, and a book can name thirty people in Character, so something has to pick which four get lanes. The first name in each scene's list decides whether a mark is POV; it does not decide which lanes exist. The recommendation is no picker: the lanes go to the four characters who hold POV in the most scenes. If fewer than four characters ever hold POV, as in a single first-person narrator, the rest go to the characters who appear in the most scenes. Ties go to the earlier first appearance. The order is deterministic and needs no stored choice. A picker can come later if authors ask for one.
 - **Hovering a mark** lights the scene, as hovering a scene does.
-- **Off by default.** The lanes take no space until the author chooses characters.
+- **Off by default.** One setting turns the lanes on. Until then they take no space.
 
 **Cost.** Four lanes take about 36px of Narrative's 566px band:
 
@@ -54,8 +57,8 @@ Past about ten rings, even four lanes make titles tight, so the cap may need to 
 **What the duration arcs already do.** Chronologue draws a 6px arc for every scene at radius 758, just outside the All Scenes ring (`renderDurationTickArcs` in `src/renderer/components/ChronologueTimeline.ts`):
 
 - **Length** shows the scene's Duration, scaled so the longest scene fills its slot.
-- **A red stub** means the Duration is missing or can't be read.
-- **Orange** means the scene is still running when the next scene in time starts: its When plus its Duration is later than the next scene's When (`detectSceneOverlaps` in `src/utils/date.ts`). An `ongoing` duration is also orange.
+- **A red stub** (`--rt-color-due`) means the Duration is missing or can't be read.
+- **Orange** means the scene is still running when the next scene in time starts: its When plus its Duration is later than the next scene's When (`detectSceneOverlaps` in `src/utils/date.ts`). An `ongoing` duration is also orange. The orange is a hardcoded `#ff9900` in `src/styles/chronologue-base.css`, which the no-hex rule forbids.
 
 **What the two-places check adds.** Orange answers "do these scenes run at the same time?" Often they're meant to, as in parallel action with different people. The two-places check answers a narrower question: does an overlap put the same character in two different Places? That can't happen. Every two-places conflict is an overlap, but most overlaps are not conflicts.
 
@@ -68,7 +71,7 @@ So the check doesn't add a new kind of mark. It refines the orange one:
 
 ### Date Audit findings
 
-- **A Date Audit contradiction or warning is a small diamond on that scene's duration arc.** The colors are not settled yet, but they must stay distinct from the red "no Duration" stub.
+- **A Date Audit contradiction or warning is a small diamond on that scene's duration arc.**
 - **Undated scenes are not marked again.** The red number square already marks undated Working and Complete scenes.
 - **Saving results.** The wheel shows the last run's results without running the audit again on every render. Results are saved in plugin data or a sidecar, keyed by scene ID and schema-stamped, with the run's timestamp. They are never written to scene frontmatter. A scene edited since the run keeps its diamond until the next run, and the hover card says when the audit ran.
 - **The two-places check is a Date Audit finding** in `src/timelineAudit/`. The Date Audit stays the one owner of chronology findings, and the wheel only displays them.
@@ -82,19 +85,33 @@ A close-up mockup on 2026-10-29 compared these placements:
 - **B: move the time-reference squares to the outer edge of the All Scenes ring.** They would land on the titles and number squares. Not workable.
 - **C: no flag lane, with findings on the duration arcs. Chosen.** Later, Eric moved the character lanes to Narrative, so Chronologue gets no lanes at all.
 
+### Colors (recommended, not yet confirmed)
+
+Each color answers one question, and the colors follow the Date Audit's own scale, so a finding looks the same on the wheel and in the Date Audit dialog.
+
+| Mark | Meaning | Color |
+|---|---|---|
+| Arc, muted | Normal duration | `--text-muted` (unchanged) |
+| Short red stub | Duration missing or unreadable | `--rt-color-due` (unchanged) |
+| Arc, orange | Runs into the next scene in time; often intended | `--text-warning`, replacing the hardcoded `#ff9900` |
+| Arc, red, full length | Same character in two Places at once | `--text-error`, the Date Audit's "impossible" color |
+| Diamond | Date Audit warning or contradiction | The Date Audit strip's color for that severity, with a thin `--background-primary` outline so it shows against an orange arc |
+
+- **The two reds are told apart by shape.** The missing-Duration stub is short and sits at the scene's start. The two-places arc runs the scene's full Duration into the scene it collides with. If they still read alike once built, change the stub, because missing data is the lesser problem.
+- **One source for severity colors.** The Date Audit's strip mixes its colors inline today (`src/styles/timeline-audit.css`). Lift them into shared variables that the strip and the diamond both use, rather than copying them.
+
 ## Shift and visibility
 
 Nothing here adds Shift or Alt behavior. Once chosen, character lanes are always visible in Narrative. Findings show in Chronologue whenever they exist. Shift keeps its x-ray, elapsed comparison and discontinuity marks.
 
 ## Open questions
 
-- **Finding colors on the duration arc.** Settle the two-places red and the Date Audit diamond's colors against the existing red stub.
-- **Where the character picker lives.** The options are the timeline's key area, the Timetable, or settings.
-- **Other modes.** Whether character lanes also appear in Progress and Gossamer, or only in Narrative.
+- **Confirm the finding colors** in the table above.
+- **Confirm automatic character choice**, with no picker.
 
 ## Phases
 
-1. Add character lanes in Narrative, with POV from `resolveScenePov`, and the characters and optional Place colors taken from the Timetable.
-2. Move overlap detection into the Date Audit as all-pairs, and have the duration arcs read it. Nothing changes visibly except overlaps the adjacent-only check missed.
+1. Add character lanes in Narrative, with POV from `resolveScenePov`, the four characters chosen automatically, and optional Place colors from the Timetable.
+2. Move overlap detection into the Date Audit as all-pairs, and have the duration arcs read it. Swap `#ff9900` for `--text-warning`. Nothing else changes visibly except overlaps the adjacent-only check missed.
 3. Save Date Audit results and show them as diamonds on the duration arcs.
 4. Add the two-places check, turning the overlap arc red.

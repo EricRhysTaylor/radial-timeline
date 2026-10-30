@@ -2158,15 +2158,47 @@ export class TimetableView extends BasesView {
         const keep = new Set<string>();
         const list = this.rootEl.createDiv({ cls: 'ert-timetable-panels' });
         for (const group of groups) {
-            if (group.label) list.createEl('h3', { cls: 'ert-timetable-panels__group', text: group.label });
-            for (const item of group.items) {
+            if (group.label) {
+                const heading = list.createEl('h3', { cls: 'ert-timetable-panels__group', text: group.label });
+                if (typeof group.act === 'number') this.actDividerEls.set(group.act, heading);
+            }
+            const itemsByPath = new Map(group.items.map(item => [item.row.path, item]));
+            const lines = mode.state.mode === 'chronologue'
+                ? group.items.map(item => ({ type: 'row' as const, row: item.row }))
+                : withActDividers(group.items.map(item => item.row));
+            for (const line of lines) {
+                if (line.type === 'act') {
+                    const heading = list.createEl('h3', { cls: 'ert-timetable-panels__group', text: this.actLabel(line.act) });
+                    if (line.act !== null) this.actDividerEls.set(line.act, heading);
+                    continue;
+                }
+                if (line.type !== 'row') continue;
+                const item = itemsByPath.get(line.row.path);
+                if (!item) continue;
                 const { row, frontmatter, entry } = item;
                 const panel = list.createDiv({ cls: ['ert-timetable__row', 'ert-timetable-panels__panel', `is-${row.kind === 'otherClass' ? 'other-class' : row.kind}`] });
                 panel.dataset.path = row.path;
                 this.rowEls.set(row.path, panel);
                 this.rowItems.set(row.path, item);
+                const characters = frontmatterKey(frontmatter, authorKeyFor('Character', this.plugin.settings));
+                const names = (Array.isArray(characters) ? characters : [characters]).filter((name): name is string => typeof name === 'string' && name.trim().length > 0);
+                const people = this.panelCharacters(row.path, names);
+                const portrait = people.find(person => person.image)?.image;
+                if (row.kind === 'scene') {
+                    const fill = sceneNumberFill(frontmatter, this.plugin.settings, this.patternPrefix);
+                    const stage = sceneVitals(frontmatter, this.plugin.settings, new Date()).stage;
+                    const stageColors: Record<string, string> = this.plugin.settings.publishStageColors;
+                    const color = fill.startsWith('url(') ? stageColors[stage] : fill;
+                    if (color) panel.setCssProps({ '--ert-timetable-portrait-color': color });
+                }
                 const header = panel.createDiv({ cls: 'ert-timetable-panels__header' });
-                if (row.kind === 'scene') this.attachSceneDrag(panel, header, row.path, mode.state);
+                if (portrait) {
+                    const handle = row.kind === 'scene' ? this.attachSceneDrag(panel, header, row.path, mode.state) : null;
+                    const cover = handle ?? header.createDiv();
+                    cover.addClass('ert-timetable-panels__cover');
+                    const image = cover.createEl('img', { cls: 'ert-timetable-panels__cover-image', attr: { alt: '', src: portrait, draggable: 'false' } });
+                    this.panelEvents?.registerDomEvent(image, 'error', () => cover.addClass('is-missing'));
+                } else if (row.kind === 'scene') this.attachSceneDrag(panel, header, row.path, mode.state);
                 if (row.prefix) header.createSpan({ cls: 'ert-timetable-panels__number', text: row.prefix });
                 header.createEl('strong', { cls: 'ert-timetable-panels__title', text: displayName(row.basename) });
                 if (row.kind === 'sketch') header.createSpan({ cls: 'ert-timetable-panels__kind', text: t('ui.timetable.panelSketch') });
@@ -2178,9 +2210,18 @@ export class TimetableView extends BasesView {
                     const color = layout?.colorIndex.get(name);
                     if (color !== undefined) chip.setCssProps({ '--ert-timetable-panel-color': `var(--rt-subplot-colors-${color})` });
                 }
-                const characters = frontmatterKey(frontmatter, authorKeyFor('Character', this.plugin.settings));
-                const names = (Array.isArray(characters) ? characters : [characters]).filter((name): name is string => typeof name === 'string' && name.trim().length > 0);
-                if (names.length) this.renderPanelCharacters(panel, row.path, names);
+                if (mode.state.mode === 'chronologue' && row.act !== null) meta.createSpan({ cls: 'ert-timetable-panels__act', text: this.actLabel(row.act) });
+                if (people.length) {
+                    const peopleList = panel.createDiv({ cls: 'ert-timetable-panels__characters' });
+                    for (const person of people) {
+                        const character = peopleList.createSpan({ cls: 'ert-timetable-panels__character' });
+                        if (person.image && person.image !== portrait) {
+                            const image = character.createEl('img', { cls: 'ert-timetable-panels__portrait', attr: { alt: '', src: person.image } });
+                            this.panelEvents?.registerDomEvent(image, 'error', () => image.remove());
+                        }
+                        character.createSpan({ text: person.name });
+                    }
+                }
                 const when = readWhen(frontmatter, this.plugin.settings);
                 const durationRaw = frontmatterKey(frontmatter, authorKeyFor('Duration', this.plugin.settings));
                 const duration = typeof durationRaw === 'string' ? formatCompactDuration(durationRaw) ?? durationRaw : null;
@@ -2225,13 +2266,12 @@ export class TimetableView extends BasesView {
     }
 
     /** Character notes may optionally name a vault image in their Image property. */
-    private renderPanelCharacters(panel: HTMLElement, scenePath: string, names: string[]): void {
-        const list = panel.createDiv({ cls: 'ert-timetable-panels__characters' });
-        for (const raw of names) {
+    private panelCharacters(scenePath: string, names: string[]): Array<{ name: string; image: string | null }> {
+        return names.map(raw => {
             const link = raw.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '');
             const [path, alias] = link.split('|');
             const character = this.plugin.app.metadataCache.getFirstLinkpathDest(path.trim(), scenePath);
-            const entry = list.createSpan({ cls: 'ert-timetable-panels__character' });
+            let imageUrl: string | null = null;
             if (character) {
                 const fm = this.plugin.app.metadataCache.getFileCache(character)?.frontmatter;
                 const imageValue = frontmatterKey(fm, 'Image');
@@ -2239,13 +2279,12 @@ export class TimetableView extends BasesView {
                     const imagePath = imageValue.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
                     const image = this.plugin.app.metadataCache.getFirstLinkpathDest(imagePath, character.path);
                     if (image && /^(png|jpe?g|gif|webp|avif)$/i.test(image.extension)) {
-                        const thumbnail = entry.createEl('img', { cls: 'ert-timetable-panels__portrait', attr: { alt: '', src: this.plugin.app.vault.getResourcePath(image) } });
-                        this.panelEvents?.registerDomEvent(thumbnail, 'error', () => thumbnail.remove());
+                        imageUrl = this.plugin.app.vault.getResourcePath(image);
                     }
                 }
             }
-            entry.createSpan({ text: (alias ?? path).trim() });
-        }
+            return { name: (alias ?? path).trim(), image: imageUrl };
+        });
     }
 
     private editPanelSynopsis(item: TableItem, button: HTMLButtonElement): void {
@@ -2288,10 +2327,10 @@ export class TimetableView extends BasesView {
     }
 
     /** Drop immediately before a scene using the active timeline's placement operation. */
-    private attachSceneDrag(row: HTMLElement, host: HTMLElement, path: string, state: TimelineModeState): void {
+    private attachSceneDrag(row: HTMLElement, host: HTMLElement, path: string, state: TimelineModeState): HTMLButtonElement | null {
         if ((state.mode !== 'narrative' && state.mode !== 'chronologue') || state.runtime || state.shift || state.alt
             || this.config.getSort().length > 0 || getTimelineScope(this.plugin.settings) !== 'book'
-            || currentTimelineMode()?.mode !== state.mode) return;
+            || currentTimelineMode()?.mode !== state.mode) return null;
         const handle = host.createEl('button', { cls: 'ert-timetable__drag clickable-icon', attr: { draggable: 'true', type: 'button' } });
         setAccessibleLabel(handle, t('ui.timetable.panelDrag'));
         setIcon(handle, 'grip-vertical');
@@ -2328,6 +2367,7 @@ export class TimetableView extends BasesView {
                 if (!handled) new Notice(t('ui.timetable.panelDragUnavailable'));
             }).catch(error => { console.error('Timetable scene placement failed', error); new Notice(t('ui.timetable.panelDragUnavailable')); });
         });
+        return handle;
     }
 
     /** A small + that creates a sketch in this act (and this book). */

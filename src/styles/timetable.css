@@ -1210,12 +1210,18 @@
   box-shadow: inset 4px 0 0 var(--ert-timetable-link-color, var(--interactive-accent));
 }
 .ert-timetable-panels__header, .ert-timetable-panels__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-4-2); }
+.ert-timetable .ert-timetable-panels__cover { position: relative; flex: 0 0 88px; width: 88px; height: 88px; padding: 0; overflow: hidden; border: 2px solid var(--ert-timetable-link-color, var(--ert-timetable-portrait-color, var(--background-modifier-border))); border-radius: var(--radius-s); background: var(--background-secondary); box-shadow: none; }
+.ert-timetable-panels__cover-image { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ert-timetable-panels__cover.is-missing .ert-timetable-panels__cover-image { visibility: hidden; }
+.ert-timetable-panels__cover .svg-icon { position: absolute; top: 4px; left: 4px; z-index: 1; width: 22px; height: 22px; padding: 3px; border-radius: var(--radius-s); color: white; background: rgb(0 0 0 / 55%); }
+.ert-timetable-panels__cover:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
 .ert-timetable-panels__header strong { flex: 1; min-width: min(8em, 100%); }
 .ert-timetable-panels__title { font-family: Inter, var(--font-interface), sans-serif; font-size: 1.45em; font-weight: 800; letter-spacing: -0.035em; line-height: 1.1; overflow-wrap: anywhere; }
 .ert-timetable-panels__date { font-size: var(--font-ui-small); font-weight: 600; color: var(--text-muted); }
 .ert-timetable-panels__characters { display: flex; flex-wrap: wrap; gap: var(--size-4-2); }
 .ert-timetable-panels__character { display: inline-flex; align-items: center; gap: var(--size-4-1); color: var(--text-muted); font-size: var(--font-ui-small); }
-.ert-timetable-panels__portrait { width: 28px; height: 28px; object-fit: cover; border-radius: 50%; }
+.ert-timetable-panels__portrait { width: 44px; height: 44px; object-fit: cover; border-radius: var(--radius-s); }
+.ert-timetable-panels__act { color: var(--text-muted); }
 .ert-timetable-panels__number, .ert-timetable-panels__kind, .ert-timetable-panels__meta { color: var(--text-muted); font-size: var(--font-ui-small); }
 .ert-timetable-panels__subplot { border-left: 3px solid var(--ert-timetable-panel-color, var(--background-modifier-border)); padding-left: var(--size-4-2); }
 .ert-timetable button.ert-timetable-panels__synopsis { height: auto; min-height: 3em; justify-content: flex-start; white-space: pre-wrap; text-align: left; line-height: 1.5; background: transparent; box-shadow: none; color: var(--text-normal); }

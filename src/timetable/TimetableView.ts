@@ -2241,7 +2241,10 @@ export class TimetableView extends BasesView {
                         character.createSpan({ text: person.name });
                     }
                 }
-                if (row.kind === 'scene') {
+                if (row.kind === 'beat') {
+                    const purpose = readBeatPurpose(frontmatter ?? null);
+                    if (purpose) panel.createDiv({ cls: 'ert-timetable-panels__purpose', text: purpose });
+                } else if (row.kind === 'scene') {
                     const vitals = sceneVitals(frontmatter, this.plugin.settings, new Date());
                     meta.createSpan({ text: vitals.stage });
                     const synopsis = panel.createEl('button', { cls: 'ert-timetable-panels__synopsis', text: vitals.synopsis ?? t('ui.timetable.panelAddSynopsis') });

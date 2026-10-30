@@ -1255,6 +1255,7 @@
 .ert-timetable button.ert-timetable-panels__synopsis { height: auto; min-height: 3em; justify-content: flex-start; white-space: pre-wrap; text-align: left; line-height: 1.5; background: transparent; box-shadow: none; color: var(--text-normal); }
 .ert-timetable button.ert-timetable-panels__synopsis.is-empty { align-self: flex-start; min-height: 0; padding: var(--size-4-1) var(--size-4-3); border-radius: 999px; background: var(--background-secondary); color: var(--text-muted); }
 .ert-timetable button.ert-timetable-panels__synopsis.is-empty:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
+.ert-timetable-panels__purpose { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
 .ert-timetable-panels__preview { white-space: pre-wrap; overflow: hidden; max-height: 5em; color: var(--text-muted); }
 .ert-timetable-panels__editor textarea { width: 100%; min-height: 7em; resize: vertical; }
 .ert-timetable-panels__editor button { margin: var(--size-4-2) var(--size-4-2) 0 0; }

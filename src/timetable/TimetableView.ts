@@ -460,7 +460,7 @@ export class TimetableView extends BasesView {
             const row = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__row.is-scene') : null;
             const path = row?.dataset.path ?? null;
             hoverTimeReference(null);
-            if (path === this.hoveredPath) return;
+            if (path === this.hoveredPath && (!row || this.linkedRow === row)) return;
             this.hoveredPath = path;
             const color = this.plugin.highlightSceneOnTimeline(path);
             this.markLinkedRow(color ? path : null, color, false);
@@ -2218,7 +2218,10 @@ export class TimetableView extends BasesView {
                     setIcon(dateLine.createSpan({ cls: 'ert-timetable-panels__date-icon' }), 'calendar-days');
                     dateLine.createSpan({ text: duration ? `${date} · ${duration}` : date });
                 }
-                const open = header.createEl('button', { text: t('ui.timetable.panelOpen') });
+                const open = panel.createEl('button', { cls: 'ert-timetable-panels__open clickable-icon', attr: { type: 'button' } });
+                setIcon(open, 'external-link');
+                setAccessibleLabel(open, t('ui.timetable.panelOpen'));
+                setTooltip(open, t('ui.timetable.panelOpen'));
                 this.panelEvents?.registerDomEvent(open, 'click', (evt: MouseEvent) => { evt.stopPropagation(); void openFromTimetable(this.plugin.app, entry.file, evt, this.rootEl); });
                 const meta = panel.createDiv({ cls: 'ert-timetable-panels__meta' });
                 for (const name of row.subplots) {

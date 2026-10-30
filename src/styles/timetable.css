@@ -1224,13 +1224,16 @@
 .ert-timetable-panels__toolbar button[aria-pressed="true"] { background: var(--interactive-accent); color: var(--text-on-accent); }
 .ert-timetable-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: stretch; gap: var(--size-4-3); max-width: 1500px; margin: 0 auto; padding: var(--size-4-3); }
 .ert-timetable-panels__group { grid-column: 1 / -1; margin: var(--size-4-3) 0 0; color: var(--text-muted); }
-.ert-timetable-panels__panel { display: flex; flex-direction: column; gap: var(--size-4-2); min-width: 0; padding: var(--size-4-5); border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-primary); }
+.ert-timetable-panels__panel { position: relative; display: flex; flex-direction: column; gap: var(--size-4-2); min-width: 0; padding: var(--size-4-5); border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-primary); }
 .ert-timetable .ert-timetable-panels__panel { height: auto; cursor: default; }
 .ert-timetable .ert-timetable-panels__panel.is-linked {
   background: color-mix(in srgb, var(--ert-timetable-link-color, var(--interactive-accent)) 30%, transparent);
   box-shadow: inset 4px 0 0 var(--ert-timetable-link-color, var(--interactive-accent));
 }
 .ert-timetable-panels__header, .ert-timetable-panels__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-4-2); }
+.ert-timetable-panels__header { padding-right: 24px; }
+.ert-timetable button.ert-timetable-panels__open { position: absolute; top: var(--size-4-3); right: var(--size-4-3); width: 28px; height: 28px; padding: 5px; color: var(--text-muted); background: transparent; box-shadow: none; }
+.ert-timetable button.ert-timetable-panels__open:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
 .ert-timetable .ert-timetable-panels__cover { position: relative; flex: 0 0 88px; width: 88px; height: 88px; padding: 0; overflow: hidden; border: 2px solid var(--ert-timetable-link-color, var(--ert-timetable-portrait-color, var(--background-modifier-border))); border-radius: var(--radius-s); background: var(--background-secondary); box-shadow: none; }
 .ert-timetable-panels__cover-image { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ert-timetable-panels__cover.is-missing .ert-timetable-panels__cover-image { visibility: hidden; }

@@ -218,6 +218,8 @@ Inquiry can save results as markdown briefings for later review. Briefings are s
 
 Inquiry can also produce **Briefing Articles** — HTML-formatted presentation output for reading or sharing in a more polished layout than the markdown briefing.
 
+To read a Briefing Article while you work, choose **Open beside Inquiry** in the article's header. The article moves into a side panel next to Inquiry and stays on that briefing as you explore other sessions; **Open full briefing** brings it back to the full-size view.
+
 ---
 
 <a name="action-notes"></a>

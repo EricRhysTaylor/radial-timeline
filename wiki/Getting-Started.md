@@ -43,7 +43,7 @@ The four modes in the Radial Timeline View — switch with `1`/`2`/`3`/`4` or th
 *   **Chronologue** (`3`) — story-world time, duration, and gaps
 *   **Gossamer** (`4`) — beat-level scoring across Momentum, Tension, Activity, Interiority
 
-**Day to day:** write scenes, keep `Synopsis` current, update `Status` from Todo → Working → Complete. Use **Timeline search** to find scenes across metadata. See [How to](How-to) for task recipes (reordering, subplots, rotation, search).
+**Day to day:** write scenes, keep `Synopsis` current, update `Status` from Todo → Working → Complete. Use **Timeline search** to find scenes across metadata. See [How to](How-to) for task recipes (reordering, subplots, search).
 
 **When you're ready to share:** run **Radial timeline: Manuscript export** to compile to Markdown, an outline, Word (DOCX), or PDF. Word requires Pandoc; PDF requires [Pandoc](https://pandoc.org/installing.html) and a LaTeX distribution; configure under **Settings → Publish**. See [Publishing](Publishing) for templates and Signature setup.
 

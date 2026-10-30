@@ -42,7 +42,7 @@ Store each cloud provider’s key in **Obsidian secret storage** on this device.
 
 Running an AI feature sends its selected manuscript material and instructions to your configured cloud provider or Local LLM server. Inquiry's [material modes](Inquiry#corpus-material-modes) determine which notes contribute prose or summaries.
 
-Cloud providers process submitted content under their own retention, caching, and model-training policies. See [Anthropic's data retention policy](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data), [OpenAI's data controls](https://developers.openai.com/api/docs/guides/your-data), and [Gemini's terms](https://ai.google.dev/gemini-api/terms).
+Cloud providers process submitted content under their own retention, caching, and model-training policies. Every Gemini request opts out of Google's request storage (`store: false`), which is on by default for new paid Google projects. See [Anthropic's data retention policy](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data), [OpenAI's data controls](https://developers.openai.com/api/docs/guides/your-data), and [Gemini's terms](https://ai.google.dev/gemini-api/terms).
 
 ## Configuration
 

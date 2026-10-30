@@ -6983,7 +6983,8 @@ export const fr: TranslationKeys = {
         },
         "subplotKeyController": {
             "ringKey": "Légende des anneaux",
-            "outerToInner": "Extérieur → intérieur"
+            "outerToInner": "Extérieur → intérieur",
+            "characterLanes": "Couloirs des personnages"
         },
         "subplotManagementService": {
             "cannotDeleteMainPlot": "Impossible de supprimer l'intrigue principale.",

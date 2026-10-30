@@ -6981,6 +6981,7 @@ export const ko: DeepPartial<TranslationKeys> = {
         subplotKeyController: {
             ringKey: '링 범례',
             outerToInner: '바깥 → 안쪽',
+            characterLanes: '인물 레인',
         },
         subplotManagementService: {
             cannotDeleteMainPlot: '메인 플롯은 삭제할 수 없습니다.',

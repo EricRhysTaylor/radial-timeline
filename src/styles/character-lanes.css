@@ -1,6 +1,12 @@
 /* Narrative: character lanes under the All Scenes ring (src/renderer/components/CharacterLanes.ts).
    No transitions here: the lanes sit on the scene-hover path. */
 
+/* Lane colors are defined in variables.css. */
+.ert-character-lane[data-lane="0"] { --ert-character-lane-color: var(--ert-character-lane-color-0); }
+.ert-character-lane[data-lane="1"] { --ert-character-lane-color: var(--ert-character-lane-color-1); }
+.ert-character-lane[data-lane="2"] { --ert-character-lane-color: var(--ert-character-lane-color-2); }
+.ert-character-lane[data-lane="3"] { --ert-character-lane-color: var(--ert-character-lane-color-3); }
+
 .ert-character-lane-track {
   fill: none;
   stroke: var(--background-modifier-border);
@@ -10,22 +16,10 @@
 
 /* A POV mark fills the lane; any other appearance fills its inner half. */
 .ert-character-lane-mark {
-  fill: var(--text-muted);
+  fill: var(--ert-character-lane-color);
 }
 
-.ert-character-lane-label {
-  fill: var(--text-normal);
-  font-size: 8px;
-  font-weight: 600;
-  dominant-baseline: central;
-  stroke: var(--background-primary);
-  stroke-width: 2.5px;
-  paint-order: stroke;
-  pointer-events: none;
-}
-
-/* Names hide while a scene is hovered or spotlighted, as the subplot names do. */
-.radial-timeline-svg.scene-hover .ert-character-lane-labels,
-.radial-timeline-svg.ert-scene-spotlight .ert-character-lane-labels {
-  display: none;
+/* The ring key's character spotlight dims the other lanes. */
+.ert-character-lane.rt-non-selected .ert-character-lane-mark {
+  fill-opacity: 0.15;
 }

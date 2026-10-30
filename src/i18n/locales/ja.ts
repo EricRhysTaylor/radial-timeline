@@ -6982,6 +6982,7 @@ export const ja: DeepPartial<TranslationKeys> = {
         subplotKeyController: {
             ringKey: 'リングの凡例',
             outerToInner: '外側 → 内側',
+            characterLanes: 'キャラクターレーン',
         },
         subplotManagementService: {
             cannotDeleteMainPlot: 'メインプロットは削除できません。',

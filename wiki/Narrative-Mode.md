@@ -114,7 +114,7 @@ Turn placards on with **Settings → Advanced → Configuration → Show part an
 
 ## Character Lanes
 
-Character lanes follow the main characters through the book, in the order a reader meets the scenes. Up to four thin lanes sit just inside the outer ring, one per character, with that character's name at 12 o'clock.
+Character lanes follow the main characters through the book, in the order a reader meets the scenes. Up to four thin lanes sit just inside the outer ring, one per character, each in its own color.
 
 *   **Who gets a lane**: the four characters who are POV in the most scenes. If fewer than four characters ever hold POV, the remaining lanes go to the characters who appear in the most scenes.
 *   **Tall mark**: a scene told from that character's point of view.
@@ -122,6 +122,8 @@ Character lanes follow the main characters through the book, in the order a read
 *   **No mark**: the character is absent, so a run of empty lane shows how long they are gone.
 
 A scene's characters come from its `Character:` list. The first name is the POV character, or the first several when the scene's `POV:` asks for more, following the **Global POV** setting. Hover a mark to light its scene.
+
+The names are in the **ring key**: hover or click the layers icon in the title bar, or hold **Shift**. The key lists the lanes between **All Scenes** and the first subplot, each beside its color. Hover a character there to light every scene they're in, across all the rings.
 
 The lanes take a little room from the rings. Turn them on with **Settings → Core → Point of view → Character lanes**.
 

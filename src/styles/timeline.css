@@ -2893,6 +2893,16 @@
   background: var(--background-modifier-hover);
 }
 
+/* "Character lanes": groups the lane rows, which sit between the outer ring and the first subplot ring. */
+.ert-timeline-subplot-key__group {
+  padding: var(--size-4-1) var(--size-2-2) var(--size-2-1);
+  border-bottom: 1px dashed var(--background-modifier-border);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
 .ert-timeline-subplot-key__num {
   font-size: 10px;
   font-weight: 700;

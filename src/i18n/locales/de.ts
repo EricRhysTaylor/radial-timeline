@@ -6981,6 +6981,7 @@ export const de: DeepPartial<TranslationKeys> = {
         subplotKeyController: {
             ringKey: 'Ring-Legende',
             outerToInner: 'Außen → innen',
+            characterLanes: 'Figurenspuren',
         },
         subplotManagementService: {
             cannotDeleteMainPlot: 'Die Haupthandlung kann nicht gelöscht werden.',

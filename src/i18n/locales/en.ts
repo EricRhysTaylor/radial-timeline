@@ -6643,6 +6643,7 @@ export const en = {
         subplotKeyController: {
             ringKey: 'Ring key',
             outerToInner: 'Outer → inner',
+            characterLanes: 'Character lanes',
         },
         subplotManagementService: {
             cannotDeleteMainPlot: 'Cannot delete Main Plot.',

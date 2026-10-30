@@ -48,6 +48,13 @@
   /* becomes gray when transparent added */
   --rt-color-empty-selected: #EFEFEF;
   /* Slightly darker gray for selected empty cells */
+
+  /* Character lanes (Narrative): one per lane, from the theme's named colors so
+     they read in light and dark themes. The ring key's swatches use them too. */
+  --ert-character-lane-color-0: var(--color-cyan);
+  --ert-character-lane-color-1: var(--color-orange);
+  --ert-character-lane-color-2: var(--color-green);
+  --ert-character-lane-color-3: var(--color-pink);
   --rt-color-empty-recessed: #E3E3E3;
   /* Sequence alignment: empty cells are most of a subplot ring, so they step
      back from the scenes — a shade, not a different colour */

@@ -22,9 +22,14 @@
  * scenes, number squares, and titles with the existing rt-non-selected
  * treatment — the same visual grammar as scene hover.
  *
+ * In Narrative, character lanes sit between the All Scenes ring and the first
+ * subplot ring, so the key lists them there, each beside its lane color.
+ * Hovering a character spotlights the scenes that character is in.
+ *
  * Ring data is read from the rendered SVG's subplot ring labels (stamped by
  * SubplotLabels.ts from Precompute's masterSubplotOrder/colorIndexBySubplot),
- * so the key can never drift from what the rings actually show.
+ * and lane data from the lane groups (stamped by CharacterLanes.ts), so the
+ * key can never drift from what the wheel actually shows.
  */
 
 import { RadialTimelineView } from '../TimeLineView';
@@ -40,6 +45,22 @@ interface SubplotKeyEntry {
     ringLabel: string;
     /** Underlying subplot name (original casing). */
     subplotName: string;
+}
+
+interface CharacterLaneKeyEntry {
+    lane: Element;
+    index: string;
+    name: string;
+}
+
+function collectCharacterLanes(svg: SVGSVGElement): CharacterLaneKeyEntry[] {
+    return Array.from(svg.querySelectorAll('.ert-character-lane[data-lane][data-character]')).map(lane => ({
+        lane,
+        // SAFE: the selector above guarantees both attributes
+        index: lane.getAttribute('data-lane')!,
+        // SAFE: the selector above guarantees both attributes
+        name: lane.getAttribute('data-character')!
+    }));
 }
 
 // The trigger (title bar) and panel (timeline container) are spatially apart,
@@ -86,7 +107,8 @@ export function setupSubplotKeyController(
     // Gossamer hides ring labels entirely; a single ring needs no key.
     if (view.currentMode === 'gossamer') return;
     const entries = collectEntries(svg);
-    if (entries.length < 2) return;
+    const characterLanes = collectCharacterLanes(svg);
+    if (entries.length < 2 && characterLanes.length === 0) return;
 
     const doc = container.ownerDocument;
     // SAFE: the container is part of a live view; its document always has a window (popout-safe)
@@ -128,20 +150,14 @@ export function setupSubplotKeyController(
         dimmed = [];
         markTimetableRing(null);
     };
-    const spotlightRing = (ring: number) => {
-        clearSpotlight();
-        // Open Timetables dim their rows outside this ring too (none for a ring of every scene).
-        markTimetableRing(membershipOfRing(svg, ring, view.currentMode));
-        // Scene paths and titles live inside ring-stamped groups; number
-        // squares/text live in their own layer keyed by data-scene-id, which
-        // matches the group path's id — same lookup scene hover uses.
-        svg.querySelectorAll('.ert-time-reference, .ert-time-reference-connector').forEach(reference => {
-            if (reference.getAttribute('data-ring') !== String(ring)) dim(reference);
-        });
+    // Scene paths and titles live inside ring-stamped groups; number
+    // squares/text live in their own layer keyed by data-scene-id, which
+    // matches the group path's id — same lookup scene hover uses.
+    const spotlightSceneGroups = (keep: (group: Element) => boolean) => {
         const keepSceneIds = new Set<string>();
         svg.querySelectorAll('.rt-scene-group').forEach(group => {
             const path = group.querySelector('.rt-scene-path');
-            if (group.getAttribute('data-ring') === String(ring)) {
+            if (keep(group)) {
                 if (path?.id) keepSceneIds.add(path.id);
                 return;
             }
@@ -151,6 +167,46 @@ export function setupSubplotKeyController(
             const sceneId = el.getAttribute('data-scene-id');
             if (sceneId && keepSceneIds.has(sceneId)) return;
             dim(el);
+        });
+    };
+    const spotlightRing = (ring: number) => {
+        clearSpotlight();
+        // Open Timetables dim their rows outside this ring too (none for a ring of every scene).
+        markTimetableRing(membershipOfRing(svg, ring, view.currentMode));
+        svg.querySelectorAll('.ert-time-reference, .ert-time-reference-connector').forEach(reference => {
+            if (reference.getAttribute('data-ring') !== String(ring)) dim(reference);
+        });
+        spotlightSceneGroups(group => group.getAttribute('data-ring') === String(ring));
+    };
+    // A character's scenes, in every ring, and that character's lane.
+    const spotlightCharacter = (entry: CharacterLaneKeyEntry) => {
+        clearSpotlight();
+        characterLanes.forEach(other => {
+            if (other.lane !== entry.lane) dim(other.lane);
+        });
+        const paths = new Set(Array.from(entry.lane.querySelectorAll('.ert-character-lane-mark[data-path]'))
+            .map(mark => mark.getAttribute('data-path')));
+        spotlightSceneGroups(group => paths.has(group.getAttribute('data-path')));
+    };
+    const appendCharacterLaneRows = () => {
+        const group = doc.win.createDiv();
+        group.className = 'ert-timeline-subplot-key__group';
+        group.textContent = t('ui.subplotKeyController.characterLanes');
+        rows.appendChild(group);
+        characterLanes.forEach(entry => {
+            const row = doc.win.createDiv();
+            row.className = 'ert-timeline-subplot-key__row';
+            row.appendChild(doc.win.createSpan()); // empty number column: lanes are not rings
+            const swatch = doc.win.createSpan();
+            swatch.className = 'ert-timeline-subplot-key__swatch';
+            swatch.style.setProperty('--ert-subplot-key-swatch', `var(--ert-character-lane-color-${entry.index})`);
+            row.appendChild(swatch);
+            const name = doc.win.createSpan();
+            name.className = 'ert-timeline-subplot-key__name';
+            name.textContent = entry.name;
+            row.appendChild(name);
+            row.addEventListener('mouseenter', () => spotlightCharacter(entry)); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
+            rows.appendChild(row);
         });
     };
 
@@ -185,6 +241,8 @@ export function setupSubplotKeyController(
         // pointer leaves the whole list — see the rows mouseleave below.
         row.addEventListener('mouseenter', () => spotlightRing(entry.ring)); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
         rows.appendChild(row);
+        // The lanes sit just inside the outer ring.
+        if (isOuterRow && characterLanes.length > 0) appendCharacterLaneRows();
     });
     rows.addEventListener('mouseleave', clearSpotlight); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
 

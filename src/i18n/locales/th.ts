@@ -6983,7 +6983,8 @@ export const th: TranslationKeys = {
         },
         "subplotKeyController": {
             "ringKey": "คำอธิบายวงแหวน",
-            "outerToInner": "ด้านนอก → ภายใน"
+            "outerToInner": "ด้านนอก → ภายใน",
+            "characterLanes": "เลนตัวละคร"
         },
         "subplotManagementService": {
             "cannotDeleteMainPlot": "ลบพล็อตหลักไม่ได้",

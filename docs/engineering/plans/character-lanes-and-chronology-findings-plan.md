@@ -34,7 +34,8 @@ Chronologue already has a lot going on: Backdrop and micro-backdrop rings, time 
 - **Beats.** Beats sit in the All Scenes ring, so the lanes show a gap under each beat.
 - **The runtime view** pulls the Narrative rings in to 750 and draws its arcs at 758. The lanes stay inside the band, so they should not collide, but check this when building.
 - **Data needed.** The lanes need only Character, with the POV character first, so they work on almost any book without Place, times or Duration. The Pride & Prejudice demo can show them as it is.
-- **Place colors are optional, and not built yet.** They would come from the Timetable's color key when it colors by Place. Phase 1 draws every mark in one neutral color.
+- **Lane colors and names.** Each lane has its own color (the theme's cyan, orange, green and pink). The names are not drawn on the wheel, where they were unreadable at small sizes; the ring key lists them between All Scenes and the first subplot, each beside its color, and hovering one spotlights that character's scenes (Eric, 2026-10-29).
+- **Place colors are not built.** Lanes are colored by character, so coloring marks by Place would need another channel. Revisit only if authors ask.
 - **Choosing characters.** There is one lane per character, and a book can name thirty people in Character, so something has to pick which four get lanes. The first name in each scene's list decides whether a mark is POV; it does not decide which lanes exist. The recommendation is no picker: the lanes go to the four characters who hold POV in the most scenes. If fewer than four characters ever hold POV, as in a single first-person narrator, the rest go to the characters who appear in the most scenes. Ties go to the earlier first appearance. The order is deterministic and needs no stored choice. A picker can come later if authors ask for one.
 - **Hovering a mark** lights the scene, as hovering a scene does.
 - **Off by default.** One setting turns the lanes on. Until then they take no space.
@@ -105,7 +106,7 @@ Nothing here adds Shift or Alt behavior. Once chosen, character lanes are always
 
 ## Phases
 
-1. Add character lanes in Narrative, with POV from `resolveScenePov` and the four characters chosen automatically. **Built 2026-10-29**: `src/renderer/utils/CharacterLanes.ts` (choice and geometry), `src/renderer/components/CharacterLanes.ts` (drawing), space reserved by `outerRingInset` in `computeRingGeometry`, setting under Core → Point of view. Place colors from the Timetable remain to do.
+1. Add character lanes in Narrative, with POV from `resolveScenePov` and the four characters chosen automatically. **Built 2026-10-29**: `src/renderer/utils/CharacterLanes.ts` (choice and geometry), `src/renderer/components/CharacterLanes.ts` (drawing), space reserved by `outerRingInset` in `computeRingGeometry`, setting under Core → Point of view. Names live in the ring key (`SubplotKeyController.ts`), with per-lane colors.
 2. Move overlap detection into the Date Audit as all-pairs, and have the duration arcs read it. Swap `#ff9900` for `--text-warning`. Nothing else changes visibly except overlaps the adjacent-only check missed.
 3. Save Date Audit results and show them as diamonds on the duration arcs.
 4. Add the two-places check, turning the overlap arc red.

@@ -4422,6 +4422,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             ownOnBreakOne: '{{names}} にはあなたが休憩中と表示されています。',
             ownOnBreakOther: '{{names}} にはあなたが休憩中と表示されています。',
             ownRefused: 'ランプが点いていません：{{reason}}',
+            panelHelp: 'デスクランプは共有レベルとは別の機能です：どのレベルでも（非公開を含む）、選んだ友人とだけライブセッションを共有します。',
             panelNote: 'チェックを入れた友人には、セッションを保存または終了するまで、あなたが執筆中であること、あなたの都市、執筆の種類、執筆時間が表示されます。',
             sessionLighting: '{{names}} に向けてランプを点灯中…',
             sessionLit: '{{names}} に向けてランプ点灯中',

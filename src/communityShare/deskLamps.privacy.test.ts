@@ -12,6 +12,8 @@
  * Adding a field to ActiveWritingSession requires adding its tracer here.
  */
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('obsidian', () => ({
@@ -129,5 +131,15 @@ describe('Desk Lamp exit: syncDeskLamps sends the lamp and the credentials only'
         expect(Object.keys(sent).sort()).toEqual(['connection_id', 'current_secret', 'light']);
         expect(Object.keys(sent.light as object).sort()).toEqual(['audience', 'lit_at', 'mode', 'state']);
         assertNoTracers(sent);
+    });
+});
+
+describe('Desk Lamp disclosure in the Begin Session panel', () => {
+    // Opt-in at the source: an author reads what ticked friends see before lighting a lamp,
+    // on mobile and by keyboard too, so the line is never only a hover tooltip.
+    it('keeps the "what ticked friends see" line visible under the checkboxes', () => {
+        const view = readFileSync(resolve(process.cwd(), 'src/view/TimeLineView.ts'), 'utf8');
+        expect(view).toContain("lampSection.createDiv({ cls: 'ert-timeline-session-panel__lamp-note', text: DESK_LAMP_PANEL_NOTE });");
+        expect(view).toContain("t('ui.timeLineView.deskLamps'), DESK_LAMP_PANEL_HELP)");
     });
 });

@@ -4424,6 +4424,7 @@ export const fr: TranslationKeys = {
             "ownOnBreakOne": "{{names}} vous voit en pause.",
             "ownOnBreakOther": "{{names}} Rendez-vous en pause.",
             "ownRefused": "Votre lampe n'est pas allumée : {{reason}}",
+            "panelHelp": "Desk Lamps est indépendant de votre niveau de partage : il partage des sessions en direct uniquement avec les amis de votre choix, à n'importe quel niveau, privé inclus.",
             "panelNote": "Les amis cochés voient que vous écrivez, votre ville, le genre d'écriture et combien de temps, jusqu'à ce que vous enregistriez ou terminiez la session.",
             "sessionLighting": "Lampe d'éclairage pour {{names}}…",
             "sessionLit": "Lampe allumée pour {{names}}",

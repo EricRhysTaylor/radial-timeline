@@ -4105,6 +4105,7 @@ export const en = {
             ownOnBreakOne: '{{names}} sees you on a break.',
             ownOnBreakOther: '{{names}} see you on a break.',
             ownRefused: 'Your lamp isn\'t lit: {{reason}}',
+            panelHelp: 'Desk Lamps is separate from your sharing level: it shares live sessions only with the friends you choose, at any level, Private included.',
             panelNote: 'Ticked friends see that you\'re writing, your city, the kind of writing, and how long, until you save or end the session.',
             sessionLighting: 'Lighting lamp for {{names}}…',
             sessionLit: 'Lamp lit for {{names}}',

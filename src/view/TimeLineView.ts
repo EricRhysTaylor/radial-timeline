@@ -42,7 +42,7 @@ import {
 import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletionModal';
 import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
 import { openMailboxMenu, paintMailboxButton } from '../communityShare/communityMailbox';
-import { DESK_LAMP_PANEL_NOTE, openDeskLampsMenu, openSessionDeskLampMenu, paintDeskLampButton } from '../communityShare/deskLamps';
+import { DESK_LAMP_PANEL_HELP, DESK_LAMP_PANEL_NOTE, openDeskLampsMenu, openSessionDeskLampMenu, paintDeskLampButton } from '../communityShare/deskLamps';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { SearchPanelController } from './interactions/SearchPanelController';
@@ -1979,7 +1979,7 @@ export class RadialTimelineView extends ItemView {
 
         if (lampFriends.length > 0) {
             const lampSection = form.createDiv({ cls: 'ert-timeline-session-panel__section' });
-            this.createSessionSectionTitle(lampSection, 'lamp-ceiling', t('ui.timeLineView.deskLamps'), DESK_LAMP_PANEL_NOTE);
+            this.createSessionSectionTitle(lampSection, 'lamp-ceiling', t('ui.timeLineView.deskLamps'), DESK_LAMP_PANEL_HELP);
             const remembered = new Set(deskLamps.rememberedAudience());
             const allLabel = lampSection.createEl('label', { cls: 'ert-timeline-session-panel__toggle-label' });
             const allBox = allLabel.createEl('input', { cls: 'ert-timeline-session-panel__toggle' });
@@ -2007,6 +2007,8 @@ export class RadialTimelineView extends ItemView {
             });
             lampBoxes.forEach(entry => this.sessionPanelScope.registerDomEvent(entry.box, 'change', syncAllBox));
             syncAllBox();
+            // What ticked friends see stays on screen, so it is read before a lamp is lit (opt-in at the source).
+            lampSection.createDiv({ cls: 'ert-timeline-session-panel__lamp-note', text: DESK_LAMP_PANEL_NOTE });
         }
 
         updateIdleMeta = () => {

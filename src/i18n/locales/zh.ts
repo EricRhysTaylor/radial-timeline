@@ -4423,6 +4423,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             ownOnBreakOne: '{{names}} 看到您正在休息。',
             ownOnBreakOther: '{{names}} 看到您正在休息。',
             ownRefused: '您的台灯未点亮：{{reason}}',
+            panelHelp: '台灯独立于您的分享级别：它仅与您选择的好友分享实时会话，适用于任何级别，包括私密级别。',
             panelNote: '勾选的好友可以看到您正在写作、您所在的城市、写作类型以及已写多久，直到您保存或结束会话为止。',
             sessionLighting: '正在为 {{names}} 点亮台灯…',
             sessionLit: '已为 {{names}} 点亮台灯',

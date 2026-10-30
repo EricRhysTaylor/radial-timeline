@@ -4421,6 +4421,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             ownOnBreakOne: '{{names}}에게 휴식 중으로 표시됩니다.',
             ownOnBreakOther: '{{names}}에게 휴식 중으로 표시됩니다.',
             ownRefused: '내 램프가 켜지지 않았습니다: {{reason}}',
+            panelHelp: 'Desk Lamps는 공유 레벨과 별개입니다. 비공개를 포함한 모든 레벨에서, 직접 선택한 친구에게만 실시간 세션을 공유합니다.',
             panelNote: '체크한 친구들은 세션을 저장하거나 종료할 때까지 내가 집필 중이라는 사실, 내 도시, 집필 종류, 집필 시간을 볼 수 있습니다.',
             sessionLighting: '{{names}}에게 램프를 켜는 중…',
             sessionLit: '{{names}}에게 램프 켜짐',

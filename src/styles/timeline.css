@@ -1745,6 +1745,13 @@
   padding-inline-start: var(--size-4-4);
 }
 
+/* The first-use line under the Desk Lamps checkboxes: what ticked friends see. */
+.ert-timeline-session-panel__lamp-note {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--line-height-tight);
+}
+
 /* "?" at the right end of a section title; hover explains the section. */
 .ert-timeline-session-panel__section-help {
   width: var(--font-ui-small);

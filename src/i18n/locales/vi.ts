@@ -4424,6 +4424,7 @@ export const vi: TranslationKeys = {
             "ownOnBreakOne": "{{names}} hẹn gặp bạn đang nghỉ ngơi.",
             "ownOnBreakOther": "{{names}} hẹn gặp lại bạn.",
             "ownRefused": "Đèn của bạn không sáng: {{reason}}",
+            "panelHelp": "Desk Lamps tách biệt với cấp độ chia sẻ của bạn: nó chỉ chia sẻ các phiên trực tiếp với những người bạn bạn chọn, ở bất kỳ cấp độ nào, bao gồm cả riêng tư.",
             "panelNote": "Bạn bè được đánh dấu thấy rằng bạn đang viết, thành phố của bạn, kiểu viết và thời gian, cho đến khi bạn lưu hoặc kết thúc phiên.",
             "sessionLighting": "Đèn chiếu sáng {{names}}…",
             "sessionLit": "Đèn sáng cho {{names}}",

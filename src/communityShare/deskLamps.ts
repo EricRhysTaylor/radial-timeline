@@ -50,8 +50,10 @@ import { deskLampChoices, hasCommunityConnection, normalizeCommunityShareSetting
 
 /** The popover's row limit (D15). */
 const DESK_LAMP_MAX_ROWS = 12;
-/** Session panel Desk Lamps "?" tooltip (plan "Session panel"). */
+/** Session panel first-use line, always visible under the checkboxes (plan "Session panel"). */
 export const DESK_LAMP_PANEL_NOTE = t('ui.deskLamps.panelNote');
+/** Session panel Desk Lamps "?" tooltip: how lamps relate to the sharing level. */
+export const DESK_LAMP_PANEL_HELP = t('ui.deskLamps.panelHelp');
 
 const FIVE_MINUTES_MS = 5 * 60e3;
 const LAMP_REFRESH_MS = 60e3;

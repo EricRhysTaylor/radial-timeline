@@ -4421,6 +4421,7 @@ export const de: DeepPartial<TranslationKeys> = {
             ownOnBreakOne: '{{names}} sieht, dass Sie Pause machen.',
             ownOnBreakOther: '{{names}} sehen, dass Sie Pause machen.',
             ownRefused: 'Ihre Lampe leuchtet nicht: {{reason}}',
+            panelHelp: 'Desk Lamps ist von Ihrer Freigabestufe getrennt: Es teilt Live-Sitzungen nur mit den Freunden, die Sie auswählen – auf jeder Stufe, auch auf Privat.',
             panelNote: 'Ausgewählte Freunde sehen, dass Sie schreiben, Ihre Stadt, die Art des Schreibens und wie lange – bis Sie die Sitzung speichern oder beenden.',
             sessionLighting: 'Lampe wird für {{names}} eingeschaltet…',
             sessionLit: 'Lampe leuchtet für {{names}}',

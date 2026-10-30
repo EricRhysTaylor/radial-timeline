@@ -4424,6 +4424,7 @@ export const es: TranslationKeys = {
             "ownOnBreakOne": "{{names}} te ve en un descanso.",
             "ownOnBreakOther": "{{names}} Nos vemos en un descanso.",
             "ownRefused": "Tu lámpara no está encendida: {{reason}}",
+            "panelHelp": "Desk Lamps es independiente de su nivel de intercambio: comparte sesiones en vivo solo con los amigos que elija, en cualquier nivel, privado incluido.",
             "panelNote": "Los amigos que están en el tic que están escribiendo, su ciudad, el tipo de escritura y cuánto tiempo, hasta que guardan o finalizan la sesión.",
             "sessionLighting": "Lámpara de iluminación para {{names}}…",
             "sessionLit": "Lámpara encendida para {{names}}",

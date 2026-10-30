@@ -14,6 +14,7 @@ import {
     type ChronologueSceneEntry
 } from '../components/ChronologueTimeline';
 import { renderBackdropRing, type BackdropRingLayout } from '../components/BackdropRing';
+import { outerLabelArc } from '../components/Months';
 import { BACKDROP_RING_HEIGHT, CHRONOLOGUE_BOUNDARY_LINE_SPACING } from '../layout/LayoutConstants';
 import {
     renderBackdropMicroRings,
@@ -204,8 +205,11 @@ export function renderOuterLabelTexts({
     let labelsSvg = '';
     let boundaryLabelsHtml = '';
 
-    outerLabels.forEach(({ shortName, isFirst, isLast, earthDate }, index) => {
+    outerLabels.forEach((label, index) => {
+        const { shortName, isFirst, isLast, earthDate } = label;
         const pathId = `monthLabelPath-${index}`;
+        // A flipped label's path runs back toward its tick, so it ends there
+        const anchor = outerLabelArc(label).flipped ? 'startOffset="100%" text-anchor="end"' : 'startOffset="0" text-anchor="start"';
 
         // Only apply past month dimming in non-chronologue modes
         const isPastMonth = !isChronologueMode && index < currentMonthIndex;
@@ -230,7 +234,7 @@ export function renderOuterLabelTexts({
 
         const labelHtml = `
             <text class="${labelClass}"${earthDateAttr} ${isPastMonth ? 'opacity="0.5"' : ''}>
-                <textPath href="#${pathId}" startOffset="0" text-anchor="start">
+                <textPath href="#${pathId}" ${anchor}>
                     ${labelContent}
                 </textPath>
             </text>

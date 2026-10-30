@@ -25,6 +25,10 @@
 
 - **Desk Lamps help.** A **?** beside Desk Lamps in the session panel explains that lamps share live sessions with the friends you choose, at any sharing level, Private included. The line under the checkboxes says what ticked friends see.
 
+### Demo vaults
+
+- **Demo vaults know their edition.** When a newer edition of a demo is ready, the Welcome screen and **Settings → Demo vaults** offer it as a separate download, and your current vault stays as it is.
+
 ### AI
 
 - **Gemini requests opt out of Google's request storage.** Radial Timeline sends every Gemini request with `store: false`. Google turned request storage on by default for new paid projects on October 26; your manuscript text stays out of it.

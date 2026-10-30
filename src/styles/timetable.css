@@ -438,7 +438,7 @@
   position: absolute;
   top: 1px;
   left: 1px;
-  width: 19px;
+  width: 16px;
   height: 20px;
   padding: 2px;
   color: var(--rt-legacy-black);
@@ -446,7 +446,7 @@
   box-shadow: none;
 }
 
-.ert-timetable__chip-drag .svg-icon { width: 14px; height: 14px; }
+.ert-timetable__chip-drag .svg-icon { width: 12px; height: 14px; }
 .ert-timetable .ert-timetable__chip-drag:hover { background: rgb(0 0 0 / 12%); }
 
 /* On a status fill or a white beat cell, the number is black, as on the wheel. */

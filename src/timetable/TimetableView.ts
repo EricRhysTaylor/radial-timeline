@@ -726,6 +726,10 @@ export class TimetableView extends BasesView {
      * Give this view the columns a new Timetable would get from this table's
      * scenes now, after a confirm. Its saved widths go too. The file's other
      * views, its filters, sorts and grouping stay as they are.
+     *
+     * The whole-file YAML round-trip matches Obsidian's own Bases saves, which
+     * re-serialize the file on every edit (checked in 1.15.0). The open file
+     * view reloads on modify, so a later resize saves the reset columns.
      */
     private async confirmResetColumns(): Promise<void> {
         const file = this.tableFile();

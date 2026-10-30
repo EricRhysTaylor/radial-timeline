@@ -162,6 +162,11 @@
   white-space: nowrap;
 }
 
+.ert-timetable .ert-timetable__table tbody > tr.ert-timetable__row > td.ert-timetable__characters { text-overflow: clip; }
+.ert-timetable__character { display: inline-flex; align-items: center; gap: var(--size-4-1); vertical-align: middle; }
+.ert-timetable__character-image { width: 20px; height: 20px; object-fit: cover; border-radius: var(--radius-s); flex: none; }
+.ert-timetable__character-separator { white-space: pre; color: var(--text-muted); }
+
 .ert-timetable__name {
   font-weight: var(--font-medium);
   white-space: nowrap;

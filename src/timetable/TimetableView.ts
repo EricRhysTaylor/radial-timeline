@@ -2187,7 +2187,7 @@ export class TimetableView extends BasesView {
                 this.rowItems.set(row.path, item);
                 const characters = frontmatterKey(frontmatter, authorKeyFor('Character', this.plugin.settings));
                 const names = (Array.isArray(characters) ? characters : [characters]).filter((name): name is string => typeof name === 'string' && name.trim().length > 0);
-                const people = this.panelCharacters(row.path, names);
+                const people = this.characterDetails(row.path, names);
                 const portrait = people.find(person => person.image)?.image;
                 if (row.kind === 'scene') {
                     const fill = sceneNumberFill(frontmatter, this.plugin.settings, this.patternPrefix);
@@ -2282,7 +2282,7 @@ export class TimetableView extends BasesView {
     }
 
     /** Character notes may optionally name a vault image in their Image property. */
-    private panelCharacters(scenePath: string, names: string[]): Array<{ name: string; image: string | null }> {
+    private characterDetails(scenePath: string, names: string[]): Array<{ name: string; image: string | null }> {
         return names.map(raw => {
             const link = raw.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '');
             const [path, alias] = link.split('|');
@@ -2789,6 +2789,7 @@ export class TimetableView extends BasesView {
         const mappings = getActiveFrontmatterMappings(this.plugin.settings);
         const canonical = type === 'note' ? canonicalizeFrontmatterKey(name, mappings) : '';
         if (!empty && !this.renderReadout(cell, item, canonical, name, cells)) value.renderTo(cell, this.plugin.app.renderContext);
+        if (!empty && canonical === 'Character') this.renderCompactCharacters(cell, item, name);
         // Status, Publish Stage and Act have fixed values: a click offers them. Beats and other classes are left alone.
         if (PICKABLE_PROPERTIES.has(canonical) && row.kind !== 'otherClass' && (canonical === 'Act' || row.kind === 'scene')) {
             cell.addClass('ert-timetable__pick');
@@ -2805,6 +2806,31 @@ export class TimetableView extends BasesView {
         if (empty && row.kind === 'sketch' && canonical === 'Synopsis') {
             this.synopsisFromBody.set(row.path, cell);
         }
+    }
+
+    /** Retain the Bases-rendered links while compacting the visible character names. */
+    private renderCompactCharacters(cell: HTMLElement, item: TableItem, property: string): void {
+        const raw = frontmatterKey(item.frontmatter, property);
+        const values = Array.isArray(raw) ? raw : [raw];
+        if (!values.every((value): value is string => typeof value === 'string' && value.trim().length > 0)) return;
+        const people = this.characterDetails(item.row.path, values);
+        const links = Array.from(cell.querySelectorAll<HTMLAnchorElement>('a'));
+        if (links.length > 0 && links.length !== people.length) return;
+        cell.empty();
+        cell.addClass('ert-timetable__characters');
+        setTooltip(cell, people.map(person => person.name).join(' / '));
+        people.forEach((person, index) => {
+            if (index > 0) cell.createSpan({ cls: 'ert-timetable__character-separator', text: ' / ' });
+            const character = cell.createSpan({ cls: 'ert-timetable__character' });
+            if (person.image) {
+                const image = character.createEl('img', { cls: 'ert-timetable__character-image', attr: { alt: '', src: person.image } });
+                this.panelEvents?.registerDomEvent(image, 'error', () => image.remove());
+            }
+            const shortName = Array.from(person.name).slice(0, 6).join('');
+            const link = links[index];
+            if (link) { link.setText(shortName); character.appendChild(link); }
+            else character.createSpan({ text: shortName });
+        });
     }
 
     /**

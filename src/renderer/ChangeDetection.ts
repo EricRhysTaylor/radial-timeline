@@ -264,7 +264,7 @@ export function createSnapshot(
         chronologueLastCalendarView: settings.chronologueLastCalendarView ?? 'earth',
         discontinuityThreshold: settings.discontinuityThreshold,
         showBackdropRing: settings.showBackdropRing ?? true,
-        showCharacterLanes: settings.showCharacterLanes ?? false,
+        showCharacterLanes: settings.showCharacterLanes === true,
         microBackdropHash,
         publishStageColorsHash,
         subplotColorsHash,

@@ -107,8 +107,8 @@ export interface PrecomputedRenderValues {
     subplotDominanceStates: Map<string, SubplotDominanceState>;
     microRingLayout?: BackdropMicroRingLayout;
     backdropLayout?: BackdropRingLayout;
-    /** Character lanes reserved under the All Scenes ring (Narrative); 0 when off. */
-    characterLaneCount: number;
+    /** Characters with a lane under the All Scenes ring, outermost first (Narrative); empty when off. */
+    characterLanes: string[];
 }
 
 export function computeCacheableValues(
@@ -303,11 +303,11 @@ export function computeCacheableValues(
         }
     }
 
-    // Only the number of lanes matters here, and it does not depend on scene
-    // order; the renderer picks the names from the outer ring's order.
-    const characterLaneCount = characterLanesActive(plugin.settings)
-        ? chooseLaneCharacters(laneScenes(scenes).map(scene => readSceneCharacters(scene, plugin.settings.globalPovMode))).length
-        : 0;
+    // Chosen in the order the wheel presents the book, which breaks ties.
+    const characterLanes = characterLanesActive(plugin.settings)
+        ? chooseLaneCharacters(sortScenes(laneScenes(scenes), sortByWhen, forceChronological, scenes)
+            .map(scene => readSceneCharacters(scene, plugin.settings.globalPovMode)))
+        : [];
 
     const ringGeo = computeRingGeometry({
         size: SVG_SIZE,
@@ -318,7 +318,7 @@ export function computeCacheableValues(
         monthTickTerminal: 0,
         monthTextInset: 0,
         fixedRings,
-        outerRingInset: characterLaneBandWidth(characterLaneCount)
+        outerRingInset: characterLaneBandWidth(characterLanes.length)
     });
 
     const maxStageColor = getMostAdvancedStageColor(scenes, plugin.settings.publishStageColors);
@@ -339,6 +339,6 @@ export function computeCacheableValues(
         subplotDominanceStates,
         microRingLayout,
         backdropLayout,
-        characterLaneCount
+        characterLanes
     };
 }

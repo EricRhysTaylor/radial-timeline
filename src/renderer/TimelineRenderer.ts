@@ -62,7 +62,7 @@ import { renderCalendarSpokesLayer } from './utils/MonthSpokes';
 import { resolveSubplotOuterRadius, shouldShowSubplotRings, shouldShowAllScenesInOuterRing, usesSequenceAlignment } from './modules/ModeRenderingHelpers';
 import { collectNarrativeRuntimeEntries } from './utils/NarrativeRuntime';
 import { renderCharacterLanes } from './components/CharacterLanes';
-import { chooseLaneCharacters, collectCharacterLaneEntries } from './utils/CharacterLanes';
+import { collectCharacterLaneEntries } from './utils/CharacterLanes';
 import { renderNarrativeRuntimeOverlay } from './components/NarrativeRuntimeOverlay';
 import { collectChronologueSceneEntries, type ChronologueSceneEntry } from './components/ChronologueTimeline';
 import { appendSynopsisElementForScene } from './utils/SynopsisBuilder';
@@ -282,7 +282,7 @@ export function createTimelineSVG(
         subplotDominanceStates,
         microRingLayout,
         backdropLayout,
-        characterLaneCount
+        characterLanes
     } = precomputed;
 
     const NUM_RINGS = masterSubplotOrder.length;
@@ -565,7 +565,7 @@ export function createTimelineSVG(
     // Where each scene sits on the all-scenes outer ring, keyed canonically.
     // Chronologue's duration and backbone arcs and the Narrative runtime view
     // draw from it; RingRenderer fills it from the sequence it already built.
-    const outerRingPositionByKey: Map<string, PositionInfo> | undefined = (isChronologueMode || isNarrativeRuntime || characterLaneCount > 0) ? new Map() : undefined;
+    const outerRingPositionByKey: Map<string, PositionInfo> | undefined = (isChronologueMode || isNarrativeRuntime || characterLanes.length > 0) ? new Map() : undefined;
 
     // Determine how many acts to render based on sorting method
     // When date sorting: Use full 360° circle (only "act 0")
@@ -731,11 +731,10 @@ export function createTimelineSVG(
         });
     }
 
-    if (characterLaneCount > 0 && outerRingPositionByKey) {
-        const laneEntries = collectCharacterLaneEntries(scenes, outerRingPositionByKey, settings.globalPovMode);
+    if (characterLanes.length > 0 && outerRingPositionByKey) {
         svg += renderCharacterLanes({
-            entries: laneEntries,
-            characters: chooseLaneCharacters(laneEntries.map(entry => entry.characters)),
+            entries: collectCharacterLaneEntries(scenes, outerRingPositionByKey, settings.globalPovMode),
+            characters: characterLanes,
             ringInnerRadius: ringStartRadii[NUM_RINGS - 1],
             outerRing: NUM_RINGS - 1
         });

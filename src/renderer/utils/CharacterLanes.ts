@@ -79,7 +79,7 @@ export function readSceneCharacters(
     scene: Pick<TimelineItem, 'Character' | 'pov'>,
     globalPovMode: GlobalPovMode | undefined
 ): SceneCharacters {
-    const names = (scene.Character || []).map(name => (typeof name === 'string' ? name.trim() : ''));
+    const names = (scene.Character ?? []).map(name => name.trim()); // SAFE: a scene with no Character list puts no one on the lanes
     const present = [...new Set(names.filter(name => name.length > 0))];
     const pov = new Set<string>();
     resolveScenePov(scene, { globalMode: globalPovMode }).characterMarkers.forEach(marker => {
@@ -93,7 +93,7 @@ export function readSceneCharacters(
  * The characters that get a lane, outermost first: the ones who hold POV in
  * the most scenes; if fewer than MAX_CHARACTER_LANES ever hold POV, the rest
  * are the ones who appear in the most scenes. Ties go to the character who
- * appears first. `scenes` must be in the order the wheel presents them.
+ * appears first. `scenes` must be in the order the wheel presents the book.
  */
 export function chooseLaneCharacters(scenes: SceneCharacters[]): string[] {
     const stats = new Map<string, { pov: number; appearances: number; first: number }>();

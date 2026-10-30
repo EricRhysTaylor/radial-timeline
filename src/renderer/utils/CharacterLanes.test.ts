@@ -90,7 +90,7 @@ describe('characterLanesActive', () => {
 
 describe('character lane geometry', () => {
     it('reserves the band just inside the outermost ring and keeps the core where it was', () => {
-        const base = { size: 1600, innerRadius: 200, subplotOuterRadius: 766, outerRadius: 800, numRings: 7, monthTickTerminal: 0, monthTextInset: 0 };
+        const base = { size: 1600, innerRadius: 200, subplotOuterRadius: 766, outerRadius: 800, numRings: 7, monthTickTerminal: 0, monthTextInset: 0, outerRingInset: 0 };
         const band = characterLaneBandWidth(4);
         const plain = computeRingGeometry(base);
         const inset = computeRingGeometry({ ...base, outerRingInset: band });

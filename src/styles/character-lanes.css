@@ -15,7 +15,7 @@
 
 .ert-character-lane-label {
   fill: var(--text-normal);
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 600;
   dominant-baseline: central;
   stroke: var(--background-primary);

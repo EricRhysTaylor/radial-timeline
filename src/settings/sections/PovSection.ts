@@ -22,7 +22,7 @@ const POV_VALUE_KEYWORDS = [
 ];
 
 /** Backticked YAML keys become key chips; POV keywords are bolded only when asked. */
-function renderPovOverrideDesc(descEl: HTMLElement, raw: string, boldKeywords = true): void {
+function renderPovDesc(descEl: HTMLElement, raw: string, boldKeywords = true): void {
     descEl.empty();
     const keywordRe = new RegExp(`\\b(${POV_VALUE_KEYWORDS.join('|')})\\b`, 'g');
     // Split on backtick-wrapped tokens; odd indices are inside backticks.
@@ -99,18 +99,18 @@ export function renderPovSection(params: {
     const characterLanesSetting = new ObsidianSetting(containerEl)
         .setName(t('settings.pov.characterLanes.name'))
         .addToggle(toggle => toggle
-            .setValue(plugin.settings.showCharacterLanes ?? false)
+            .setValue(plugin.settings.showCharacterLanes === true)
             .onChange(async (value) => {
                 plugin.settings.showCharacterLanes = value;
                 await plugin.saveSettings();
                 plugin.onSettingChanged(IMPACT_FULL); // Tier 3: the lanes take ring space
             }));
-    renderPovOverrideDesc(characterLanesSetting.descEl, t('settings.pov.characterLanes.desc'), false);
+    renderPovDesc(characterLanesSetting.descEl, t('settings.pov.characterLanes.desc'), false);
     characterLanesSetting.settingEl.addClass('ert-settingRow');
 
     const yamlOverridesSetting = new ObsidianSetting(containerEl)
         .setName(t('settings.pov.yamlOverrides.name'));
-    renderPovOverrideDesc(yamlOverridesSetting.descEl, t('settings.pov.yamlOverrides.desc'));
+    renderPovDesc(yamlOverridesSetting.descEl, t('settings.pov.yamlOverrides.desc'));
     yamlOverridesSetting.settingEl.addClass(ERT_CLASSES.ELEMENT_BLOCK_SKIP, 'ert-settingRow');
 
     // Preview section

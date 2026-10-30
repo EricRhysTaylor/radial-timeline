@@ -7,11 +7,10 @@ export function computeRingGeometry(params: {
   monthTickTerminal: number;
   monthTextInset: number;
   fixedRings?: Array<{ index: number; width: number }>;
-  /** Space kept free just inside the outermost ring (Narrative's character lanes). */
-  outerRingInset?: number;
+  /** Space kept free just inside the outermost ring (Narrative's character lanes); 0 for none. */
+  outerRingInset: number;
 }) {
-  const { innerRadius, subplotOuterRadius, outerRadius, numRings, monthTextInset, fixedRings } = params;
-  const outerRingInset = Math.max(0, params.outerRingInset ?? 0);
+  const { innerRadius, subplotOuterRadius, outerRadius, numRings, monthTextInset, fixedRings, outerRingInset } = params;
   // Guard against zero rings to avoid NaNs downstream
   if (!Number.isFinite(numRings) || numRings <= 0) {
     const lineInnerRadius = innerRadius;

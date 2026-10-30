@@ -10,6 +10,7 @@ import { isSubplotDragActive, wasRecentlyHandledBySubplotDrag } from '../interac
 import { setupSceneContextMenu } from '../interactions/SceneContextMenu';
 import { linkSceneHoverToTimetable } from '../interactions/TimetableLink';
 import type { RadialTimelineView } from '../TimeLineView';
+import { characterLaneNameBeside } from '../../renderer/components/CharacterLanes';
 
 export function setupSceneInteractions(view: RadialTimelineView, group: Element, svgElement: SVGSVGElement, scenes: TimelineItem[]): void {
     if (view.currentMode !== 'narrative') return;
@@ -81,6 +82,28 @@ function sceneGroupFor(svg: SVGSVGElement, target: Element | null): Element | nu
     return svg.querySelector(`.rt-scene-group[data-ring="${ring}"][data-path="${path}"]`);
 }
 
+/** Names a hovered lane mark's character right beside the mark; any other target hides the name. */
+function updateLaneNameBeside(svg: SVGSVGElement, target: Element | null): void {
+    const beside = svg.querySelector('.ert-character-lane-beside');
+    if (!beside) return;
+    const mark = target?.closest('.ert-character-lane-mark');
+    const lane = mark?.closest('.ert-character-lane');
+    const name = lane?.getAttribute('data-character');
+    const radius = lane?.getAttribute('data-radius');
+    const end = mark?.getAttribute('data-end');
+    const laneIndex = lane?.getAttribute('data-lane');
+    const text = beside.querySelector('text');
+    const textPath = beside.querySelector('textPath');
+    if (!name || !radius || !end || !laneIndex || !text || !textPath) {
+        beside.setAttribute('display', 'none');
+        return;
+    }
+    beside.querySelector('path')?.setAttribute('d', characterLaneNameBeside(Number(radius), Number(end), name));
+    text.setAttribute('data-lane', laneIndex);
+    textPath.textContent = name;
+    beside.removeAttribute('display');
+}
+
 export function setupAllScenesDelegatedHover(view: RadialTimelineView, container: HTMLElement, scenes: TimelineItem[]): void {
     const svg = container.querySelector<SVGSVGElement>('.radial-timeline-svg');
     if (!svg) return;
@@ -106,6 +129,7 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
     const clearSelection = () => {
         manager.onSceneLeave();
         currentGroup = null;
+        updateLaneNameBeside(svg, null);
     };
 
     // Custom event name isn't part of HTMLElementEventMap, so register directly.
@@ -138,8 +162,12 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
         const svgMode = svg.getAttribute('data-mode');
         if (svgMode === 'gossamer') return;
         
-        const g = sceneGroupFor(svg, e.target as Element);
-        if (!g || g === currentGroup) return;
+        const target = e.target as Element;
+        const g = sceneGroupFor(svg, target);
+        if (!g || g === currentGroup) {
+            updateLaneNameBeside(svg, target);
+            return;
+        }
         clearSelection();
         const sid = getSceneIdFromGroup(g);
         if (!sid) return;
@@ -148,6 +176,7 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
         
         // Use manager for hover interactions - pass mouse event to position synopsis immediately
         manager.onSceneHover(g, sid, e);
+        updateLaneNameBeside(svg, target);
     });
 
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {

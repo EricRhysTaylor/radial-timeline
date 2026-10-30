@@ -19,6 +19,12 @@
   fill: var(--ert-character-lane-color);
 }
 
+/* The mark under the pointer gets an outline, so it is clear which slice the hover found. */
+.ert-character-lane-mark:hover {
+  stroke: var(--text-normal);
+  stroke-width: 1.5px;
+}
+
 /* The ring key's character spotlight dims the other lanes and their names. */
 .ert-character-lane.rt-non-selected .ert-character-lane-mark {
   fill-opacity: 0.15;
@@ -29,7 +35,8 @@
 }
 
 /* Names show on the wheel only while the ring key is open (SubplotKeyController
-   sets the class), and step aside while a scene is hovered. */
+   sets the class), and step aside while a scene is hovered. A hovered mark's
+   name shows beside it instead (.ert-character-lane-beside, AllScenesMode). */
 .ert-character-lane-names {
   display: none;
 }

@@ -198,7 +198,10 @@ export function setupSubplotKeyController(
             .map(mark => mark.getAttribute('data-path')));
         spotlightSceneGroups(group => paths.has(group.getAttribute('data-path')));
     };
+    // Below the rings, past a rule: the lanes are not rings, so they never sit between them.
     const appendCharacterLaneRows = () => {
+        const section = doc.win.createDiv();
+        section.className = 'ert-timeline-subplot-key__lanes';
         const group = doc.win.createDiv();
         group.className = 'ert-timeline-subplot-key__group';
         group.createSpan({ text: t('ui.subplotKeyController.characterLanes') });
@@ -221,7 +224,7 @@ export function setupSubplotKeyController(
                 view.plugin.onSettingChanged(IMPACT_FULL); // the lanes take ring space
             })();
         });
-        rows.appendChild(group);
+        section.appendChild(group);
         characterLanes.forEach(entry => {
             const row = doc.win.createDiv();
             row.className = 'ert-timeline-subplot-key__row';
@@ -235,8 +238,10 @@ export function setupSubplotKeyController(
             name.textContent = entry.name;
             row.appendChild(name);
             row.addEventListener('mouseenter', () => spotlightCharacter(entry)); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
-            rows.appendChild(row);
+            section.appendChild(row);
         });
+        section.addEventListener('mouseleave', clearSpotlight); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
+        surface.appendChild(section);
     };
 
     entries.forEach((entry, i) => {
@@ -270,10 +275,9 @@ export function setupSubplotKeyController(
         // pointer leaves the whole list — see the rows mouseleave below.
         row.addEventListener('mouseenter', () => spotlightRing(entry.ring)); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
         rows.appendChild(row);
-        // The lanes sit just inside the outer ring.
-        if (isOuterRow && offersCharacterLanes) appendCharacterLaneRows();
     });
     rows.addEventListener('mouseleave', clearSpotlight); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
+    if (offersCharacterLanes) appendCharacterLaneRows();
 
     let hideTimer: number | null = null;
     const cancelHide = () => {

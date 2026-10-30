@@ -30,6 +30,20 @@ const NAME_CHAR_EM = 0.62;
 const NAME_GAP_PX = 10;
 const TWELVE_O_CLOCK = -Math.PI / 2;
 
+/** Angle a name takes along a lane of radius `mid`. */
+function nameSpan(name: string, mid: number): number {
+    return (name.length * NAME_FONT_PX * NAME_CHAR_EM) / mid;
+}
+
+/**
+ * Where a hovered mark's name goes: along its lane, starting just clockwise of
+ * the mark's end, so the name sits beside the scene it labels.
+ */
+export function characterLaneNameBeside(mid: number, markEndAngle: number, name: string): string {
+    const start = markEndAngle + NAME_GAP_PX / mid;
+    return arcPath(mid, start, start + nameSpan(name, mid));
+}
+
 /**
  * One lane per character under the All Scenes ring, each in its own color.
  * Each scene the character is in gets a mark in its slice: full height when
@@ -38,7 +52,8 @@ const TWELVE_O_CLOCK = -Math.PI / 2;
  * scene. Each lane group carries its character's name for the ring key,
  * which lists the names beside their colors. While the key is open, the names
  * also show on the wheel: each rides its own lane, stepping back from
- * 12 o'clock one after another so the larger text never stacks.
+ * 12 o'clock one after another so the larger text never stacks. Hovering a
+ * mark shows its character's name right beside it instead.
  */
 export function renderCharacterLanes(params: CharacterLanesParams): string {
     const { entries, characters, ringInnerRadius, outerRing } = params;
@@ -60,18 +75,22 @@ export function renderCharacterLanes(params: CharacterLanesParams): string {
             const isPov = entry.characters.pov.has(name);
             const top = isPov ? outer : inner + CHARACTER_LANE_HEIGHT / 2;
             const path = entry.scene.path ? encodeURIComponent(entry.scene.path) : '';
-            lane += `<path class="ert-character-lane-mark${isPov ? ' ert-character-lane-mark-pov' : ''}" d="${sceneArcPath(inner, top, start, end)}" data-path="${path}" />`;
+            lane += `<path class="ert-character-lane-mark${isPov ? ' ert-character-lane-mark-pov' : ''}" d="${sceneArcPath(inner, top, start, end)}" data-path="${path}" data-end="${formatNumber(end)}" />`;
         });
 
         const nameEndAngle = nameEnd - NAME_GAP_PX / mid;
-        const nameStartAngle = nameEndAngle - (name.length * NAME_FONT_PX * NAME_CHAR_EM) / mid;
+        const nameStartAngle = nameEndAngle - nameSpan(name, mid);
         nameEnd = nameStartAngle;
         const pathId = `ert-character-lane-name-${index}`;
         names += `<path id="${pathId}" d="${arcPath(mid, nameStartAngle, nameEndAngle)}" fill="none" />`
             + `<text class="ert-character-lane-name" data-lane="${index}"><textPath href="#${pathId}" startOffset="100%" text-anchor="end">${escapeXml(name)}</textPath></text>`;
 
-        return `<g class="ert-character-lane" data-lane="${index}" data-character="${escapeXml(name)}">${lane}</g>`;
+        return `<g class="ert-character-lane" data-lane="${index}" data-character="${escapeXml(name)}" data-radius="${formatNumber(mid)}">${lane}</g>`;
     });
 
-    return `<g class="ert-character-lanes" data-ring="${outerRing}">${lanes.join('')}<g class="ert-character-lane-names">${names}</g></g>`;
+    // The hovered mark's name; the scene hover fills it (AllScenesMode).
+    const beside = `<g class="ert-character-lane-beside" display="none"><path id="ert-character-lane-beside-path" fill="none" />`
+        + `<text class="ert-character-lane-name"><textPath href="#ert-character-lane-beside-path"></textPath></text></g>`;
+
+    return `<g class="ert-character-lanes" data-ring="${outerRing}">${lanes.join('')}<g class="ert-character-lane-names">${names}</g>${beside}</g>`;
 }

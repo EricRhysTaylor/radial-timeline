@@ -1,13 +1,12 @@
 # Character lanes and chronology findings
 
 Date: 2026-10-29
-Status: proposal. Two mockups on the Pride & Prejudice demo were reviewed with Eric on 2026-10-29: the whole wheel, then close-ups of the outer band. Eric decided:
+Status: design settled, ready to build. Two mockups on the Pride & Prejudice demo were reviewed with Eric on 2026-10-29: the whole wheel, then close-ups of the outer band. Eric decided:
 - where Character and POV come from;
 - that character lanes go in Narrative;
 - that chronology findings stay in Chronologue, on the duration arcs (option C);
-- that the lanes stay out of Progress and Gossamer, which stay simple.
-
-Open on 2026-10-29: Eric has not yet confirmed the recommended finding colors or the automatic choice of characters.
+- that the lanes stay out of Progress and Gossamer, which stay simple;
+- the finding colors, and that the four characters are chosen automatically, with no picker.
 
 Nothing is built yet, and no public release is implied.
 
@@ -36,7 +35,7 @@ Chronologue already has a lot going on: Backdrop and micro-backdrop rings, time 
 - **The runtime view** pulls the Narrative rings in to 750 and draws its arcs at 758. The lanes stay inside the band, so they should not collide, but check this when building.
 - **Data needed.** The lanes need only Character, with the POV character first, so they work on almost any book without Place, times or Duration. The Pride & Prejudice demo can show them as it is.
 - **Place colors are optional.** They come from the Timetable's color key when it colors by Place. With no Place key, marks use one neutral color.
-- **Choosing characters (recommended, not yet confirmed).** There is one lane per character, and a book can name thirty people in Character, so something has to pick which four get lanes. The first name in each scene's list decides whether a mark is POV; it does not decide which lanes exist. The recommendation is no picker: the lanes go to the four characters who hold POV in the most scenes. If fewer than four characters ever hold POV, as in a single first-person narrator, the rest go to the characters who appear in the most scenes. Ties go to the earlier first appearance. The order is deterministic and needs no stored choice. A picker can come later if authors ask for one.
+- **Choosing characters.** There is one lane per character, and a book can name thirty people in Character, so something has to pick which four get lanes. The first name in each scene's list decides whether a mark is POV; it does not decide which lanes exist. The recommendation is no picker: the lanes go to the four characters who hold POV in the most scenes. If fewer than four characters ever hold POV, as in a single first-person narrator, the rest go to the characters who appear in the most scenes. Ties go to the earlier first appearance. The order is deterministic and needs no stored choice. A picker can come later if authors ask for one.
 - **Hovering a mark** lights the scene, as hovering a scene does.
 - **Off by default.** One setting turns the lanes on. Until then they take no space.
 
@@ -85,7 +84,7 @@ A close-up mockup on 2026-10-29 compared these placements:
 - **B: move the time-reference squares to the outer edge of the All Scenes ring.** They would land on the titles and number squares. Not workable.
 - **C: no flag lane, with findings on the duration arcs. Chosen.** Later, Eric moved the character lanes to Narrative, so Chronologue gets no lanes at all.
 
-### Colors (recommended, not yet confirmed)
+### Colors
 
 Each color answers one question, and the colors follow the Date Audit's own scale, so a finding looks the same on the wheel and in the Date Audit dialog.
 
@@ -103,11 +102,6 @@ Each color answers one question, and the colors follow the Date Audit's own scal
 ## Shift and visibility
 
 Nothing here adds Shift or Alt behavior. Once chosen, character lanes are always visible in Narrative. Findings show in Chronologue whenever they exist. Shift keeps its x-ray, elapsed comparison and discontinuity marks.
-
-## Open questions
-
-- **Confirm the finding colors** in the table above.
-- **Confirm automatic character choice**, with no picker.
 
 ## Phases
 

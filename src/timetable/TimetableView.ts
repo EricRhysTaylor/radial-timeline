@@ -2238,7 +2238,7 @@ export class TimetableView extends BasesView {
                             const image = character.createEl('img', { cls: 'ert-timetable-panels__portrait', attr: { alt: '', src: person.image } });
                             this.panelEvents?.registerDomEvent(image, 'error', () => image.remove());
                         }
-                        character.createSpan({ text: person.name });
+                        this.renderCharacterName(character, person, person.name);
                     }
                 }
                 if (row.kind === 'beat') {
@@ -2282,7 +2282,7 @@ export class TimetableView extends BasesView {
     }
 
     /** Character notes may optionally name a vault image in their Image property. */
-    private characterDetails(scenePath: string, names: string[]): Array<{ name: string; image: string | null }> {
+    private characterDetails(scenePath: string, names: string[]): Array<{ name: string; image: string | null; file: TFile | null }> {
         return names.map(raw => {
             const link = raw.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '');
             const [path, alias] = link.split('|');
@@ -2299,7 +2299,21 @@ export class TimetableView extends BasesView {
                     }
                 }
             }
-            return { name: (alias ?? path).trim(), image: imageUrl };
+            return { name: (alias ?? path).trim(), image: imageUrl, file: character };
+        });
+    }
+
+    private renderCharacterName(host: HTMLElement, person: { name: string; file: TFile | null }, label: string): void {
+        if (!person.file) {
+            host.createSpan({ text: label });
+            return;
+        }
+        const file = person.file;
+        const link = host.createEl('a', { cls: 'ert-timetable__character-link', text: label, attr: { href: file.path } });
+        this.panelEvents?.registerDomEvent(link, 'click', (evt: MouseEvent) => {
+            evt.preventDefault();
+            evt.stopPropagation();
+            void openFromTimetable(this.plugin.app, file, evt, this.rootEl);
         });
     }
 
@@ -2808,14 +2822,12 @@ export class TimetableView extends BasesView {
         }
     }
 
-    /** Retain the Bases-rendered links while compacting the visible character names. */
+    /** Compact character names and open their notes in the timetable reading pane. */
     private renderCompactCharacters(cell: HTMLElement, item: TableItem, property: string): void {
         const raw = frontmatterKey(item.frontmatter, property);
         const values = Array.isArray(raw) ? raw : [raw];
         if (!values.every((value): value is string => typeof value === 'string' && value.trim().length > 0)) return;
         const people = this.characterDetails(item.row.path, values);
-        const links = Array.from(cell.querySelectorAll<HTMLAnchorElement>('a'));
-        if (links.length > 0 && links.length !== people.length) return;
         cell.empty();
         cell.addClass('ert-timetable__characters');
         setTooltip(cell, people.map(person => person.name).join(' / '));
@@ -2827,9 +2839,7 @@ export class TimetableView extends BasesView {
                 this.panelEvents?.registerDomEvent(image, 'error', () => image.remove());
             }
             const shortName = Array.from(person.name).slice(0, 6).join('');
-            const link = links[index];
-            if (link) { link.setText(shortName); character.appendChild(link); }
-            else character.createSpan({ text: shortName });
+            this.renderCharacterName(character, person, shortName);
         });
     }
 

@@ -15,6 +15,7 @@ import { basename } from '../utils/paths';
 import { isUntitledName } from '../utils/noteTitle';
 import { t, tCount } from '../i18n';
 import type { TimelineItem } from '../types';
+import { sortByManuscriptOrder } from '../utils/sceneHelpers';
 
 const PROMOTE_ICON = 'file-up';
 
@@ -89,9 +90,7 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[])
     let anchors: PromotionAnchorOption[] | null = null;
     if (only && !only.prefix) {
         sceneData = await plugin.getSceneData({ sourcePath: only.book.sourceFolder });
-        anchors = sceneData
-            .filter(item => item.itemType === 'Scene' && typeof item.path === 'string')
-            .map(item => ({ path: item.path as string, label: basename(item.path as string).replace(/\.md$/, '') }));
+        anchors = promotionAnchors(sceneData);
     }
 
     const modal = new PromoteToSceneModal(app, plan, {
@@ -130,4 +129,19 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[])
         return;
     }
     await modal.finishWithDismiss(t('ui.promoteToScene.doneMany', { notes: tCount('note', result.promoted.length) }));
+}
+
+/**
+ * The scenes a promoted note can follow. getSceneData lists a scene once per
+ * subplot ring it belongs to; the Position menu offers each scene once, in
+ * reading order.
+ */
+export function promotionAnchors(sceneData: TimelineItem[]): PromotionAnchorOption[] {
+    const scenes = new Map<string, TimelineItem>();
+    for (const item of sceneData) {
+        if (item.itemType === 'Scene' && typeof item.path === 'string' && !scenes.has(item.path)) scenes.set(item.path, item);
+    }
+    return [...scenes.values()]
+        .sort(sortByManuscriptOrder)
+        .map(item => ({ path: item.path as string, label: basename(item.path as string).replace(/\.md$/, '') }));
 }

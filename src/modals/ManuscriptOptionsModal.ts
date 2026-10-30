@@ -36,6 +36,8 @@ import {
     buildTransientModalExportProfile,
     clampSplitParts,
     exportProfilesMatch,
+    restoreSceneRange,
+    savedSceneRange,
     resolveIncludeSceneId,
     removeExportPreset,
     type ModalExportProfile,
@@ -1758,8 +1760,7 @@ export class ManuscriptOptionsModal extends Modal {
             // Non-PDF modes clear selectedLayoutId; keep the selected preset's layout then.
             selectedLayoutId: this.selectedLayoutId ?? this.resolveLayoutIdForProfile(this.selectedExportProfile),
             templateProfiles: this.templateProfiles,
-            rangeStart: includeRange ? this.rangeStart : undefined,
-            rangeEnd: includeRange ? this.rangeEnd : undefined,
+            ...(includeRange ? savedSceneRange(this.rangeStart, this.rangeEnd, this.totalScenes) : {}),
         });
     }
 
@@ -2258,14 +2259,13 @@ export class ManuscriptOptionsModal extends Modal {
         this.syncExportUi();
         await this.loadScenesForOrder();
         // loadScenesForOrder resets range to the full book; restore the
-        // template's saved range (if any), clamped to the current scene count.
-        const restoreSavedRange = this.source?.kind === 'book' && !requestedOpenScenes;
-        if (restoreSavedRange && typeof template.rangeStart === 'number' && typeof template.rangeEnd === 'number' && this.totalScenes > 0) {
-            const total = Math.max(1, this.totalScenes);
-            const savedStart = Math.max(1, Math.min(Math.floor(template.rangeStart), total));
-            const savedEnd = Math.max(savedStart, Math.min(Math.floor(template.rangeEnd), total));
-            this.rangeStart = savedStart;
-            this.rangeEnd = savedEnd;
+        // template's saved range (if any) against the book as it stands now.
+        const savedRange = this.source?.kind === 'book' && !requestedOpenScenes
+            ? restoreSceneRange(template.rangeStart, template.rangeEnd, this.totalScenes)
+            : null;
+        if (savedRange) {
+            this.rangeStart = savedRange.start;
+            this.rangeEnd = savedRange.end;
             this.updateRangeUI();
             this.updateBadgeSceneCount();
         }

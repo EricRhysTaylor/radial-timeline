@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildModalExportProfile, buildPersistedExportProfileFromModalExportProfile, buildTransientModalExportProfile, exportProfilesMatch, getModalExportProfileSummary, resolveIncludeSceneId, removeExportPreset, type ModalExportProfile } from './exportProfileModel';
+import { buildModalExportProfile, buildPersistedExportProfileFromModalExportProfile, buildTransientModalExportProfile, exportProfilesMatch, getModalExportProfileSummary, resolveIncludeSceneId, removeExportPreset, restoreSceneRange, savedSceneRange, type ModalExportProfile } from './exportProfileModel';
 import { migratePublishingModelState, normalizeExportProfile } from './publishingMigration';
 
 describe('exportProfileModel', () => {
@@ -162,5 +162,25 @@ describe('exportProfileModel', () => {
             expect(exportProfilesMatch({ ...reloaded, tocDepth: 3 }, preset)).toBe(false);
             expect(exportProfilesMatch({ ...reloaded, tocMode: 'none' }, preset)).toBe(false);
         });
+    });
+});
+
+describe('saved scene range', () => {
+    it('saves a range that reaches the last scene without an end', () => {
+        expect(savedSceneRange(1, 61, 61)).toEqual({ rangeStart: 1 });
+        expect(savedSceneRange(5, 61, 61)).toEqual({ rangeStart: 5 });
+        expect(savedSceneRange(1, 20, 61)).toEqual({ rangeStart: 1, rangeEnd: 20 });
+    });
+
+    it('keeps a scene added after saving inside a range that ran to the end', () => {
+        const saved = savedSceneRange(1, 61, 61);
+        expect(restoreSceneRange(saved.rangeStart, saved.rangeEnd, 62)).toEqual({ start: 1, end: 62 });
+    });
+
+    it('clamps a saved range with an end to the book as it stands', () => {
+        expect(restoreSceneRange(1, 20, 62)).toEqual({ start: 1, end: 20 });
+        expect(restoreSceneRange(10, 40, 30)).toEqual({ start: 10, end: 30 });
+        expect(restoreSceneRange(undefined, undefined, 62)).toBeNull();
+        expect(restoreSceneRange(1, 20, 0)).toBeNull();
     });
 });

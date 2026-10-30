@@ -129,6 +129,27 @@ export function buildTransientModalExportProfile(params: {
     }, params.templateProfiles);
 }
 
+/**
+ * The scene range a profile saves. A range that reaches the last scene is
+ * saved without an end, so scenes added to the book later stay inside it
+ * (a saved 1–61 would otherwise drop a 62nd scene from the next export).
+ */
+export function savedSceneRange(start: number, end: number, totalScenes: number): { rangeStart: number; rangeEnd?: number } {
+    return end >= totalScenes ? { rangeStart: start } : { rangeStart: start, rangeEnd: end };
+}
+
+/**
+ * A saved range against the book as it stands: clamped to the scene count,
+ * and a range saved without an end runs to the last scene. Null when nothing
+ * was saved, which leaves the whole book selected.
+ */
+export function restoreSceneRange(rangeStart: number | undefined, rangeEnd: number | undefined, totalScenes: number): { start: number; end: number } | null {
+    if (typeof rangeStart !== 'number' || totalScenes <= 0) return null;
+    const start = Math.max(1, Math.min(Math.floor(rangeStart), totalScenes));
+    const end = typeof rangeEnd === 'number' ? Math.max(start, Math.min(Math.floor(rangeEnd), totalScenes)) : totalScenes;
+    return { start, end };
+}
+
 export function clampSplitParts(value: number): number {
     if (!Number.isFinite(value)) return 2;
     return Math.max(2, Math.min(20, Math.floor(value)));

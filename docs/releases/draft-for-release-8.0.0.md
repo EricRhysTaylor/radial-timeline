@@ -1,4 +1,4 @@
-## Radial Timeline 7.7.1
+## Radial Timeline 8.0.0
 
 ### Timeline
 
@@ -14,6 +14,12 @@
 ### Timetable
 
 - **Due coloring keeps up with the calendar.** Color a Timetable by **Due** or a date range and every group colors as scenes reach it: a scene that turns Overdue or due Today takes that group's color on the wheel and in the key, and each group keeps its own color. **Edit key** lists every group, empty ones included. Coloring by day, month, or year shows the eight busiest periods, or the ones you pick. Views you colored by date in 7.7.0 color every group again; choose groups in **Edit key** to narrow them.
+
+- **Promote lists each scene once, in reading order.** When you promote a sketch, its **Position** menu offers every scene of the book once, from the first scene to the last, so the place you want is where you expect it.
+
+### Manuscript export
+
+- **A saved range keeps up with the book.** A scene range that runs to the last scene now stays open-ended, so scenes you add later are included in the next export. A range that stops earlier is kept as you set it.
 
 ### Writing Session
 

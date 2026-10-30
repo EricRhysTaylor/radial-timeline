@@ -205,7 +205,7 @@ export interface ExportProfile {
     selectionPolicy: 'full-book' | 'manual-range';
     /** 1-based scene range start (inclusive). Restored on next modal open; clamped to current scene count. */
     rangeStart?: number;
-    /** 1-based scene range end (inclusive). Restored on next modal open; clamped to current scene count. */
+    /** 1-based scene range end (inclusive). Restored on next modal open; clamped to current scene count. Absent with a start: the range runs to the last scene. */
     rangeEnd?: number;
 }
 

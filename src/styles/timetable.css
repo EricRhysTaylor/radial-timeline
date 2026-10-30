@@ -390,6 +390,12 @@
   background: var(--color-orange);
 }
 
+.ert-timetable__chip-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
 .ert-timetable__chip {
   display: inline-flex;
   margin-inline-end: var(--size-2-1);
@@ -427,6 +433,21 @@
   font-size: 11px;
   font-weight: var(--font-semibold);
 }
+
+.ert-timetable .ert-timetable__chip-drag {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 19px;
+  height: 20px;
+  padding: 2px;
+  color: var(--rt-legacy-black);
+  background: transparent;
+  box-shadow: none;
+}
+
+.ert-timetable__chip-drag .svg-icon { width: 14px; height: 14px; }
+.ert-timetable .ert-timetable__chip-drag:hover { background: rgb(0 0 0 / 12%); }
 
 /* On a status fill or a white beat cell, the number is black, as on the wheel. */
 .ert-timetable__row.is-scene .ert-timetable__chip-text,
@@ -1215,9 +1236,13 @@
 .ert-timetable-panels__cover.is-missing .ert-timetable-panels__cover-image { visibility: hidden; }
 .ert-timetable-panels__cover .svg-icon { position: absolute; top: 4px; left: 4px; z-index: 1; width: 22px; height: 22px; padding: 3px; border-radius: var(--radius-s); color: white; background: rgb(0 0 0 / 55%); }
 .ert-timetable-panels__cover:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
-.ert-timetable-panels__header strong { flex: 1; min-width: min(8em, 100%); }
+.ert-timetable-panels__heading { flex: 1 1 120px; min-width: 0; display: flex; flex-direction: column; gap: var(--size-4-2); }
+.ert-timetable-panels__title-line { display: flex; align-items: baseline; gap: var(--size-4-2); min-width: 0; }
+.ert-timetable-panels__title-line strong { min-width: 0; }
 .ert-timetable-panels__title { font-family: Inter, var(--font-interface), sans-serif; font-size: 1.45em; font-weight: 800; letter-spacing: -0.035em; line-height: 1.1; overflow-wrap: anywhere; }
-.ert-timetable-panels__date { font-size: var(--font-ui-small); font-weight: 600; color: var(--text-muted); }
+.ert-timetable-panels__date { display: flex; align-items: center; gap: var(--size-4-1); font-size: var(--font-ui-small); font-weight: 600; color: var(--text-muted); }
+.ert-timetable-panels__date-icon { display: inline-flex; flex: none; }
+.ert-timetable-panels__date-icon .svg-icon { width: 14px; height: 14px; }
 .ert-timetable-panels__characters { display: flex; flex-wrap: wrap; gap: var(--size-4-2); }
 .ert-timetable-panels__character { display: inline-flex; align-items: center; gap: var(--size-4-1); color: var(--text-muted); font-size: var(--font-ui-small); }
 .ert-timetable-panels__portrait { width: 44px; height: 44px; object-fit: cover; border-radius: var(--radius-s); }
@@ -1225,6 +1250,8 @@
 .ert-timetable-panels__number, .ert-timetable-panels__kind, .ert-timetable-panels__meta { color: var(--text-muted); font-size: var(--font-ui-small); }
 .ert-timetable-panels__subplot { border-left: 3px solid var(--ert-timetable-panel-color, var(--background-modifier-border)); padding-left: var(--size-4-2); }
 .ert-timetable button.ert-timetable-panels__synopsis { height: auto; min-height: 3em; justify-content: flex-start; white-space: pre-wrap; text-align: left; line-height: 1.5; background: transparent; box-shadow: none; color: var(--text-normal); }
+.ert-timetable button.ert-timetable-panels__synopsis.is-empty { align-self: flex-start; min-height: 0; padding: var(--size-4-1) var(--size-4-3); border-radius: 999px; background: var(--background-secondary); color: var(--text-muted); }
+.ert-timetable button.ert-timetable-panels__synopsis.is-empty:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
 .ert-timetable-panels__preview { white-space: pre-wrap; overflow: hidden; max-height: 5em; color: var(--text-muted); }
 .ert-timetable-panels__editor textarea { width: 100%; min-height: 7em; resize: vertical; }
 .ert-timetable-panels__editor button { margin: var(--size-4-2) var(--size-4-2) 0 0; }

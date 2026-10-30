@@ -2199,9 +2199,20 @@ export class TimetableView extends BasesView {
                     const image = cover.createEl('img', { cls: 'ert-timetable-panels__cover-image', attr: { alt: '', src: portrait, draggable: 'false' } });
                     this.panelEvents?.registerDomEvent(image, 'error', () => cover.addClass('is-missing'));
                 } else if (row.kind === 'scene') this.attachSceneDrag(panel, header, row.path, mode.state);
-                if (row.prefix) header.createSpan({ cls: 'ert-timetable-panels__number', text: row.prefix });
-                header.createEl('strong', { cls: 'ert-timetable-panels__title', text: displayName(row.basename) });
-                if (row.kind === 'sketch') header.createSpan({ cls: 'ert-timetable-panels__kind', text: t('ui.timetable.panelSketch') });
+                const heading = header.createDiv({ cls: 'ert-timetable-panels__heading' });
+                const title = heading.createDiv({ cls: 'ert-timetable-panels__title-line' });
+                if (row.prefix) title.createSpan({ cls: 'ert-timetable-panels__number', text: row.prefix });
+                title.createEl('strong', { cls: 'ert-timetable-panels__title', text: displayName(row.basename) });
+                if (row.kind === 'sketch') title.createSpan({ cls: 'ert-timetable-panels__kind', text: t('ui.timetable.panelSketch') });
+                const when = readWhen(frontmatter, this.plugin.settings);
+                const durationRaw = frontmatterKey(frontmatter, authorKeyFor('Duration', this.plugin.settings));
+                const duration = typeof durationRaw === 'string' ? formatCompactDuration(durationRaw) ?? durationRaw : null;
+                if (when.when) {
+                    const date = this.formatWhen(when.when, when.hasClock, mode.chronologue?.profile ?? null);
+                    const dateLine = heading.createDiv({ cls: 'ert-timetable-panels__date' });
+                    setIcon(dateLine.createSpan({ cls: 'ert-timetable-panels__date-icon' }), 'calendar-days');
+                    dateLine.createSpan({ text: duration ? `${date} · ${duration}` : date });
+                }
                 const open = header.createEl('button', { text: t('ui.timetable.panelOpen') });
                 this.panelEvents?.registerDomEvent(open, 'click', (evt: MouseEvent) => { evt.stopPropagation(); void openFromTimetable(this.plugin.app, entry.file, evt, this.rootEl); });
                 const meta = panel.createDiv({ cls: 'ert-timetable-panels__meta' });
@@ -2222,17 +2233,11 @@ export class TimetableView extends BasesView {
                         character.createSpan({ text: person.name });
                     }
                 }
-                const when = readWhen(frontmatter, this.plugin.settings);
-                const durationRaw = frontmatterKey(frontmatter, authorKeyFor('Duration', this.plugin.settings));
-                const duration = typeof durationRaw === 'string' ? formatCompactDuration(durationRaw) ?? durationRaw : null;
-                if (when.when) {
-                    const date = this.formatWhen(when.when, when.hasClock, mode.chronologue?.profile ?? null);
-                    panel.createDiv({ cls: 'ert-timetable-panels__date', text: duration ? `${date} · ${duration}` : date });
-                }
                 if (row.kind === 'scene') {
                     const vitals = sceneVitals(frontmatter, this.plugin.settings, new Date());
                     meta.createSpan({ text: vitals.stage });
                     const synopsis = panel.createEl('button', { cls: 'ert-timetable-panels__synopsis', text: vitals.synopsis ?? t('ui.timetable.panelAddSynopsis') });
+                    synopsis.toggleClass('is-empty', vitals.synopsis === null);
                     this.panelEvents?.registerDomEvent(synopsis, 'click', evt => { evt.stopPropagation(); this.editPanelSynopsis(item, synopsis); });
                 } else if (row.kind === 'sketch') {
                     const toggle = panel.createEl('button', { cls: 'ert-timetable__drawer-toggle', text: this.drawerIsOpen(row.path) ? t('ui.timetable.panelCloseSketch') : t('ui.timetable.panelExpandSketch') });
@@ -2505,7 +2510,19 @@ export class TimetableView extends BasesView {
         const gossamer = mode.state.mode === 'gossamer';
         if (gossamer && row.kind !== 'beat') tr.addClass('is-receded');
         this.renderNumberCell(tr.createEl('td', { cls: 'ert-timetable__num' }).createDiv({ cls: 'ert-timetable__num-inner' }), item, cells.today);
-        if (row.kind === 'scene') this.attachSceneDrag(tr, tr.querySelector<HTMLElement>('.ert-timetable__num-inner') ?? tr, row.path, mode.state);
+        if (row.kind === 'scene') {
+            const wrap = tr.querySelector<HTMLElement>('.ert-timetable__chip-wrap');
+            const handle = wrap ? this.attachSceneDrag(tr, wrap, row.path, mode.state) : null;
+            if (handle && wrap) {
+                wrap.addClass('has-drag');
+                handle.addClass('ert-timetable__chip-drag');
+                const svg = wrap.querySelector<SVGSVGElement>('svg');
+                svg?.setAttribute('viewBox', '0 0 54 22');
+                svg?.setAttribute('width', '54');
+                svg?.querySelector('rect')?.setAttribute('width', '52');
+                svg?.querySelector('text')?.setAttribute('x', '36');
+            }
+        }
 
         if (row.kind === 'beat') {
             // Beats run across the table as quiet dividers, as on the wheel.
@@ -2562,7 +2579,7 @@ export class TimetableView extends BasesView {
      */
     private renderNumberCell(cell: HTMLElement, item: TableItem, today: Date): void {
         const { row, frontmatter } = item;
-        const chip = cell.createDiv({ cls: 'ert-timetable__chip' });
+        const chip = cell.createDiv({ cls: 'ert-timetable__chip-wrap' }).createDiv({ cls: 'ert-timetable__chip' });
         const svg = chip.createSvg('svg', { attr: { viewBox: '0 0 40 22', width: '40', height: '22', 'aria-hidden': 'true' } });
         const rect = svg.createSvg('rect', { cls: 'ert-timetable__chip-cell', attr: { x: '1', y: '1', width: '38', height: '20', rx: '3' } });
         if (row.kind === 'scene') rect.setAttribute('fill', sceneNumberFill(frontmatter, this.plugin.settings, this.patternPrefix));

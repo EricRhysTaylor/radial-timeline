@@ -1310,7 +1310,7 @@ export class TimetableView extends BasesView {
     private initialColoring(property: BasesPropertyId): SavedColoring {
         const { name } = parsePropertyId(property);
         const canonical = canonicalizeFrontmatterKey(name, getActiveFrontmatterMappings(this.plugin.settings));
-        const config: SavedColoring = { schemaVersion: 1, property, picks: [] };
+        const config: SavedColoring = { schemaVersion: 2, property, picks: [] };
         if (canonical === 'When') config.grouping = { kind: 'month' };
         if (canonical === 'Due') config.grouping = { kind: 'due' };
         return config;
@@ -1337,7 +1337,8 @@ export class TimetableView extends BasesView {
     }
 
     private saveColoring(config: SavedColoring): void {
-        if (!config.palette) {
+        // Categories keep the eight shown today; date groups stay open (planConfiguredColoring).
+        if (!config.palette && !config.grouping) {
             const plan = this.planColoringFor(config.property as BasesPropertyId, config);
             if (plan.kind !== 'ok' || plan.legend.length === 0) return;
             config = { ...config, palette: plan.legend.map(entry => entry.value) };

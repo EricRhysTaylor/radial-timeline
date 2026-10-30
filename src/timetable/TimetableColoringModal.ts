@@ -2,8 +2,8 @@ import { App, ButtonComponent, Setting } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import { setAccessibleLabel } from '../utils/domTooltip';
 import { t } from '../i18n';
-import { coloringDateLabel, hasColoringDates, readDateGrouping } from './coloringDates';
-import { MAX_COLOR_VALUES, planConfiguredColoring, type ColoringMatch, type SavedColoring } from './timetableModel';
+import { coloringDateLabel, fixedColoringGroups, hasColoringDates, readDateGrouping } from './coloringDates';
+import { MAX_COLOR_VALUES, appliedPalette, planConfiguredColoring, type ColoringMatch, type SavedColoring } from './timetableModel';
 
 /** Draft the categories/date groups for one view; only Apply writes the view. */
 export class TimetableColoringModal extends ErtModal {
@@ -23,6 +23,7 @@ export class TimetableColoringModal extends ErtModal {
         const initial = planConfiguredColoring(this.rows, this.saved, this.slots, today);
         let match: ColoringMatch = this.saved.match ?? (this.saved.grouping || (initial.kind === 'ok' && !initial.multiValue) ? 'any' : 'all');
         let palette = this.saved.palette ? [...this.saved.palette] : undefined;
+        let handPicked = false;
         let search = '';
         let selected = new Set<string>();
 
@@ -36,7 +37,8 @@ export class TimetableColoringModal extends ErtModal {
         const configuration = (): SavedColoring | null => {
             const dateGrouping = grouping === 'categories' ? undefined : readDateGrouping({ kind: grouping, start, end });
             if (dateGrouping === null) return null;
-            const config: SavedColoring = { schemaVersion: 1, property: this.saved.property, picks: [], match, palette };
+            const config: SavedColoring = { schemaVersion: 2, property: this.saved.property, picks: [], match };
+            if (palette) config.palette = palette;
             if (dateGrouping) config.grouping = dateGrouping;
             return config;
         };
@@ -55,10 +57,13 @@ export class TimetableColoringModal extends ErtModal {
                 save.setDisabled(true);
                 return;
             }
-            if (reset) selected = new Set(plan.legend.map(entry => entry.value));
-            message.setText(t('ui.timetable.colorKey.chosen', { count: selected.size, max: MAX_COLOR_VALUES, total: plan.categories.length }));
+            // Due and a range list every group, including one no scene has reached yet.
+            const fixed = fixedColoringGroups(config.grouping);
+            const categories = fixed ? fixed.map(value => plan.categories.find(entry => entry.value === value) ?? { value, count: 0 }) : plan.categories;
+            if (reset) selected = new Set(fixed ? palette ?? fixed : plan.legend.map(entry => entry.value));
+            message.setText(t('ui.timetable.colorKey.chosen', { count: selected.size, max: MAX_COLOR_VALUES, total: categories.length }));
             save.setDisabled(selected.size === 0);
-            const visible = plan.categories.filter(entry => coloringDateLabel(entry.value, config.grouping).toLocaleLowerCase().includes(search.toLocaleLowerCase()));
+            const visible = categories.filter(entry => coloringDateLabel(entry.value, config.grouping).toLocaleLowerCase().includes(search.toLocaleLowerCase()));
             if (visible.length === 0) list.createDiv({ text: t('ui.timetable.colorKey.noMatches'), cls: 'ert-section-desc' });
             for (const category of visible) {
                 const label = list.createEl('label', { cls: 'ert-color-key-editor__category' });
@@ -69,6 +74,7 @@ export class TimetableColoringModal extends ErtModal {
                 label.createSpan({ cls: 'ert-color-key-editor__count', text: String(category.count) });
                 checkbox.addEventListener('change', () => {
                     if (checkbox.checked) selected.add(category.value); else selected.delete(category.value);
+                    handPicked = true;
                     refresh();
                     const inputs = list.querySelectorAll<HTMLInputElement>('input');
                     inputs[visible.indexOf(category)]?.focus();
@@ -83,6 +89,7 @@ export class TimetableColoringModal extends ErtModal {
                 matchSelect.setValue(match);
                 matchSetting.settingEl.toggle(value === 'categories');
                 palette = undefined;
+                handPicked = false;
                 refresh(true);
             });
         });
@@ -105,6 +112,7 @@ export class TimetableColoringModal extends ErtModal {
             input.addEventListener('change', () => {
                 if (boundary === 'start') start = input.value; else end = input.value;
                 palette = undefined;
+                handPicked = false;
                 refresh(true);
             });
         }
@@ -115,7 +123,8 @@ export class TimetableColoringModal extends ErtModal {
         save.onClick(() => {
             const config = configuration();
             if (!config || selected.size === 0 || selected.size > MAX_COLOR_VALUES) return;
-            config.palette = [...selected];
+            const chosen = appliedPalette(config.grouping, selected, handPicked, palette);
+            if (chosen) config.palette = chosen; else delete config.palette;
             const unchangedGroups = JSON.stringify(config.grouping) === JSON.stringify(this.saved.grouping);
             config.picks = unchangedGroups ? this.saved.picks.filter(pick => selected.has(pick)) : [];
             this.apply(config);

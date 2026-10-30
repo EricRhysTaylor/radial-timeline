@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compareDateCategories, dateColoringRows, readDateGrouping } from './coloringDates';
+import { compareDateCategories, dateColoringRows, fixedColoringGroups, readDateGrouping } from './coloringDates';
 import { planConfiguredColoring } from './timetableModel';
 
 const today = new Date(2026, 9, 26, 14);
@@ -38,6 +38,30 @@ describe('date coloring', () => {
         expect(readDateGrouping({ kind: 'range', start: '2023-02-29', end: '2023-03-01' })).toBeNull();
         expect(readDateGrouping({ kind: 'range', start: '2026-11-01', end: '2026-10-01' })).toBeNull();
         expect(readDateGrouping({ kind: 'unknown' })).toBeNull();
+    });
+
+    it('colors a scene that turns Overdue or Today after Due coloring was applied, keeping each group\'s color', () => {
+        const due = [{ path: 'a', value: '2026-10-27' }, { path: 'b', value: '2026-10-28' }, { path: 'c', value: '2026-12-01' }];
+        const slots = [4, 8, 12, 2, 6, 10, 14];
+        const applied = planConfiguredColoring(due, { grouping: { kind: 'due' } }, slots, today);
+        expect(applied.kind === 'ok' && applied.legend.map(item => item.value)).toEqual(['due:week', 'due:later']);
+        const later = planConfiguredColoring(due, { grouping: { kind: 'due' } }, slots, new Date(2026, 9, 28, 9));
+        expect(later.kind === 'ok' && later.legend.map(item => [item.value, item.colorIndex])).toEqual([['due:overdue', 4], ['due:today', 8], ['due:later', 2]]);
+        expect(later.kind === 'ok' && [...later.values]).toEqual([['a', 'due:overdue'], ['b', 'due:today'], ['c', 'due:later']]);
+        expect(applied.kind === 'ok' && applied.legend.find(item => item.value === 'due:later')?.colorIndex).toBe(2);
+    });
+
+    it('colors only the Due groups the author kept, wherever scenes are', () => {
+        const due = [{ path: 'a', value: '2026-10-20' }, { path: 'b', value: '2026-10-20', complete: true }];
+        const plan = planConfiguredColoring(due, { grouping: { kind: 'due' }, palette: ['due:overdue', 'due:today'] }, [4, 8], today);
+        expect(plan.kind === 'ok' && [...plan.values]).toEqual([['a', 'due:overdue']]);
+    });
+
+    it('lists every Due and range group in key order, and none for day, month or year', () => {
+        expect(fixedColoringGroups({ kind: 'due' })).toEqual(['due:overdue', 'due:today', 'due:week', 'due:later', 'due:completed', 'date:unset', 'date:invalid']);
+        expect(fixedColoringGroups({ kind: 'range', start: '2085-04-01', end: '2085-04-30' })).toEqual(['range:before', 'range:inside', 'range:after', 'date:unset', 'date:invalid']);
+        expect(fixedColoringGroups({ kind: 'month' })).toBeUndefined();
+        expect(fixedColoringGroups()).toBeUndefined();
     });
 
     it('orders calendar categories chronologically with missing and invalid dates last', () => {

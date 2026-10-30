@@ -68,9 +68,20 @@ export function coloringDateLabel(value: string, grouping?: DateGrouping): strin
         ? { month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short', year: 'numeric' }).format(date) : value;
 }
 
+const RANGE_GROUPS = ['range:before', 'range:inside', 'range:after'];
+const DUE_GROUPS = ['due:overdue', 'due:today', 'due:week', 'due:later', 'due:completed'];
+const DATE_GAPS = ['date:unset', 'date:invalid'];
+
+/** Due and a custom range sort scenes into a known set of groups; day, month and year groups come from the dates themselves. */
+export function fixedColoringGroups(grouping?: DateGrouping): string[] | undefined {
+    if (grouping?.kind === 'due') return [...DUE_GROUPS, ...DATE_GAPS];
+    if (grouping?.kind === 'range') return [...RANGE_GROUPS, ...DATE_GAPS];
+    return undefined;
+}
+
 /** Calendar categories stay in time order, with missing/invalid dates last. */
 export function compareDateCategories(a: string, b: string): number {
-    const fixed = ['range:before', 'range:inside', 'range:after', 'due:overdue', 'due:today', 'due:week', 'due:later', 'due:completed', 'date:unset', 'date:invalid'];
+    const fixed = [...RANGE_GROUPS, ...DUE_GROUPS, ...DATE_GAPS];
     if (a.startsWith('date:') !== b.startsWith('date:')) return a.startsWith('date:') ? 1 : -1;
     if (fixed.includes(a) && fixed.includes(b)) return fixed.indexOf(a) - fixed.indexOf(b);
     return a.localeCompare(b, undefined, { numeric: true });

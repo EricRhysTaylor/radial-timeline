@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { RadialTimelineSettings } from '../types';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import {
+    appliedPalette,
     belongsInTimetable,
     buildRingLayout,
     buildTableRow,
@@ -276,16 +277,23 @@ describe('narrowColoring', () => {
 describe('readSavedColoring', () => {
     it('reads the column and the picks, dropping anything that is not a name and repeats', () => {
         expect(readSavedColoring({ property: 'note.Character', picks: ['Trisan', 3, 'Chae Ban', 'Trisan'] }))
-            .toEqual({ schemaVersion: 1, property: 'note.Character', picks: ['Trisan', 'Chae Ban'] });
-        expect(readSavedColoring({ property: 'note.Place' })).toEqual({ schemaVersion: 1, property: 'note.Place', picks: [] });
+            .toEqual({ schemaVersion: 2, property: 'note.Character', picks: ['Trisan', 'Chae Ban'] });
+        expect(readSavedColoring({ property: 'note.Place' })).toEqual({ schemaVersion: 2, property: 'note.Place', picks: [] });
     });
 
     it('reads versioned choices and rejects unknown versions, invalid ranges and oversized palettes', () => {
-        const saved = { schemaVersion: 1, property: 'note.When', picks: ['range:inside'], palette: ['range:inside'], match: 'any', grouping: { kind: 'range', start: '2085-04-01', end: '2085-05-31' } };
+        const saved = { schemaVersion: 2, property: 'note.When', picks: ['range:inside'], palette: ['range:inside'], match: 'any', grouping: { kind: 'range', start: '2085-04-01', end: '2085-05-31' } };
         expect(readSavedColoring(saved)).toEqual(saved);
-        expect(readSavedColoring({ ...saved, schemaVersion: 2 })).toBeNull();
+        expect(readSavedColoring({ ...saved, schemaVersion: 3 })).toBeNull();
         expect(readSavedColoring({ ...saved, grouping: { ...saved.grouping, end: '2085-02-30' } })).toBeNull();
         expect(readSavedColoring({ ...saved, palette: Array.from({ length: 9 }, (_, i) => String(i)) })).toBeNull();
+    });
+
+    it('reopens every date group of a version 1 choice, which saved only the groups present on the day it was applied', () => {
+        const due = { schemaVersion: 1, property: 'note.Due', picks: [], palette: ['due:week', 'due:later'], match: 'any', grouping: { kind: 'due' } };
+        expect(readSavedColoring(due)).toEqual({ schemaVersion: 2, property: 'note.Due', picks: [], match: 'any', grouping: { kind: 'due' } });
+        expect(readSavedColoring({ ...due, palette: ['month:2085-04'], grouping: { kind: 'month' } })?.palette).toBeUndefined();
+        expect(readSavedColoring({ schemaVersion: 1, property: 'note.Place', picks: [], palette: ['Mars'] })?.palette).toEqual(['Mars']);
     });
 
     it('is null when nothing usable is saved', () => {
@@ -294,6 +302,28 @@ describe('readSavedColoring', () => {
         expect(readSavedColoring('note.Character')).toBeNull();
         expect(readSavedColoring({ property: '' })).toBeNull();
         expect(readSavedColoring({ picks: ['Trisan'] })).toBeNull();
+    });
+});
+
+describe('appliedPalette', () => {
+    const dueGroups = ['due:overdue', 'due:today', 'due:week', 'due:later', 'due:completed', 'date:unset', 'date:invalid'];
+
+    it('saves no palette when every Due or range group is kept, so groups reached later still color', () => {
+        expect(appliedPalette({ kind: 'due' }, new Set(dueGroups), false, undefined)).toBeUndefined();
+        expect(appliedPalette({ kind: 'range', start: '2085-04-01', end: '2085-04-30' }, new Set(['range:before', 'range:inside', 'range:after', 'date:unset', 'date:invalid']), true, undefined)).toBeUndefined();
+    });
+
+    it('keeps a Due group the author left checked even when no scene is in it today', () => {
+        const kept = new Set(dueGroups.filter(value => value !== 'due:completed'));
+        expect(appliedPalette({ kind: 'due' }, kept, true, undefined)).toEqual(['due:overdue', 'due:today', 'due:week', 'due:later', 'date:unset', 'date:invalid']);
+    });
+
+    it('leaves day, month and year open unless chosen by hand, and always saves categories', () => {
+        const months = new Set(['month:2085-04', 'month:2085-05']);
+        expect(appliedPalette({ kind: 'month' }, months, false, undefined)).toBeUndefined();
+        expect(appliedPalette({ kind: 'month' }, months, false, ['month:2085-04'])).toEqual(['month:2085-04']);
+        expect(appliedPalette({ kind: 'month' }, months, true, undefined)).toEqual(['month:2085-04', 'month:2085-05']);
+        expect(appliedPalette(undefined, new Set(['Shail']), false, undefined)).toEqual(['Shail']);
     });
 });
 

@@ -23,7 +23,7 @@ import { whenTextHasClock } from '../utils/whenFormat';
 import { parseRuntimeField } from '../utils/runtimeEstimator';
 import { formatHoverMetadataValue } from '../utils/hoverMetadata';
 import { hexToRgb } from '../utils/colour';
-import { compareDateCategories, dateColoringRows, readDateGrouping, type DateGrouping } from './coloringDates';
+import { compareDateCategories, dateColoringRows, fixedColoringGroups, readDateGrouping, type DateGrouping } from './coloringDates';
 import { getMainPlotName } from '../utils/mainPlot';
 import { readSceneId } from '../utils/sceneIds';
 
@@ -488,9 +488,13 @@ export function narrowColoring(members: Map<string, string[]>, picks: readonly s
     return values;
 }
 
-/** View-owned coloring state. Unversioned pre-1 selections are read at this boundary. */
+/**
+ * View-owned coloring state. Unversioned and version 1 selections are read at
+ * this boundary. With date groups, `palette` holds only groups the author
+ * chose by hand; without it, every group colors as scenes reach it.
+ */
 export interface SavedColoring {
-    schemaVersion: 1;
+    schemaVersion: 2;
     property: string;
     picks: string[];
     palette?: string[];
@@ -501,12 +505,21 @@ export interface SavedColoring {
 /** One planner serves the saved view and its draft editor. */
 export function planConfiguredColoring(rows: Array<{ path: string; value: unknown; complete?: boolean }>, config: Pick<SavedColoring, 'palette' | 'grouping'> & { picks?: readonly string[] }, slots: number[], today: Date): ColoringPlan {
     const grouped = config.grouping ? dateColoringRows(rows, config.grouping, today) : rows;
-    let plan = planColoring(grouped, MAX_COLOR_VALUES, slots, config.palette);
+    // Due and range groups each keep one color, so a group a scene reaches later (Overdue, Today) does not repaint the others.
+    const fixed = fixedColoringGroups(config.grouping);
+    const palette = config.palette ?? fixed;
+    let plan = planColoring(grouped, MAX_COLOR_VALUES, slots, palette);
     // Preserve old saved picks when complete list discovery adds more than eight categories.
-    if (plan.kind === 'ok' && config.palette === undefined && config.picks?.length) {
+    if (plan.kind === 'ok' && palette === undefined && config.picks?.length) {
         const available = new Set(plan.categories.map(entry => entry.value));
         const chosen = [...new Set([...config.picks.filter(pick => available.has(pick)), ...plan.legend.map(entry => entry.value)])].slice(0, MAX_COLOR_VALUES);
         plan = planColoring(grouped, MAX_COLOR_VALUES, slots, chosen);
+    }
+    if (plan.kind === 'ok' && fixed) {
+        for (const entry of plan.legend) {
+            const index = fixed.indexOf(entry.value);
+            entry.colorIndex = slots[index] ?? index;
+        }
     }
     if (plan.kind === 'ok' && config.grouping) {
         plan.categories.sort((a, b) => compareDateCategories(a.value, b.value));
@@ -517,9 +530,9 @@ export function planConfiguredColoring(rows: Array<{ path: string; value: unknow
 
 export function readSavedColoring(raw: unknown): SavedColoring | null {
     if (!raw || typeof raw !== 'object' || !('property' in raw) || typeof raw.property !== 'string' || raw.property === '') return null;
-    if ('schemaVersion' in raw && raw.schemaVersion !== 1) return null;
+    if ('schemaVersion' in raw && raw.schemaVersion !== 1 && raw.schemaVersion !== 2) return null;
     const names = (value: unknown) => Array.isArray(value) ? [...new Set(value.filter((pick): pick is string => typeof pick === 'string'))] : [];
-    const result: SavedColoring = { schemaVersion: 1, property: raw.property, picks: names('picks' in raw ? raw.picks : undefined) };
+    const result: SavedColoring = { schemaVersion: 2, property: raw.property, picks: names('picks' in raw ? raw.picks : undefined) };
     if ('palette' in raw) {
         if (!Array.isArray(raw.palette) || raw.palette.length === 0 || raw.palette.length > MAX_COLOR_VALUES) return null;
         result.palette = names(raw.palette);
@@ -534,7 +547,24 @@ export function readSavedColoring(raw: unknown): SavedColoring | null {
         if (!grouping) return null;
         result.grouping = grouping;
     }
+    // Version 1 saved the date groups present on the day it was applied, so a group reached later stayed grey.
+    if (result.grouping && !('schemaVersion' in raw && raw.schemaVersion === 2)) delete result.palette;
     return result;
+}
+
+/**
+ * The palette Apply saves. Due and range groups are a fixed set: the groups
+ * the author kept, or none when all are kept, so a group no scene has reached
+ * yet still colors when one does. Day, month and year keep a choice made by
+ * hand; otherwise the most-used eight color each time the view draws.
+ */
+export function appliedPalette(grouping: DateGrouping | undefined, selected: ReadonlySet<string>, handPicked: boolean, saved: string[] | undefined): string[] | undefined {
+    const fixed = fixedColoringGroups(grouping);
+    if (fixed) {
+        const kept = fixed.filter(value => selected.has(value));
+        return kept.length === fixed.length ? undefined : kept;
+    }
+    return !grouping || handPicked ? [...selected] : saved;
 }
 
 /** Click a value in the key: pick it, or drop it when it is picked. */

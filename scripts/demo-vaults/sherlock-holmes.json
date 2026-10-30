@@ -1,5 +1,6 @@
 {
   "sample_id": "sherlock-holmes",
+  "edition": "2026-10-30",
   "display_name": "Obsidian Vault Sherlock Holmes Demo",
   "book_folder": "01 A Study in Scarlet",
   "source_layout": "gutenberg-holmes-html",

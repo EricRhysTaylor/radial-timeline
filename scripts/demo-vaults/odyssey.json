@@ -1,5 +1,6 @@
 {
   "sample_id": "odyssey",
+  "edition": "2026-10-30",
   "display_name": "Obsidian Vault Odyssey Demo",
   "book_folder": "The Odyssey",
   "source_layout": "gutenberg-odyssey-html",

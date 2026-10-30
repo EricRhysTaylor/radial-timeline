@@ -10,11 +10,19 @@ import { systemFolderPath } from '../utils/systemFolder';
 export const DEMO_EDITION_PATH = systemFolderPath('Demo', 'edition.json');
 export const DEMO_EDITION_SCHEMA_VERSION = 1;
 
-const EDITION_DATE = /^\d{4}-\d{2}-\d{2}$/;
+// The release date, plus `.N` (N ≥ 2) for a second edition released the same day.
+const EDITION = /^(\d{4}-\d{2}-\d{2})(?:\.([2-9]|[1-9]\d+))?$/;
 
-/** True for a YYYY-MM-DD edition date; ISO dates compare correctly as strings. */
-export const isDemoEditionDate = (value: unknown): value is string =>
-    typeof value === 'string' && EDITION_DATE.test(value);
+/** True for an edition such as `2026-10-30` or a same-day revision `2026-10-30.2`. */
+export const isDemoEdition = (value: unknown): value is string =>
+    typeof value === 'string' && EDITION.test(value);
+
+/** Release date and same-day revision; ISO dates compare correctly as strings. */
+const editionOrder = (edition: string): [string, number] => {
+    const match = EDITION.exec(edition);
+    if (!match) throw new Error(`Invalid demo edition: ${edition}`);
+    return [match[1], match[2] ? Number(match[2]) : 1];
+};
 
 /** The edition date in a stamp file, or null when the file is not a valid stamp. */
 export function parseDemoEditionStamp(raw: string): string | null {
@@ -26,7 +34,7 @@ export function parseDemoEditionStamp(raw: string): string | null {
     }
     if (!parsed || typeof parsed !== 'object') return null;
     const stamp = parsed as { schemaVersion?: unknown; edition?: unknown };
-    return stamp.schemaVersion === DEMO_EDITION_SCHEMA_VERSION && isDemoEditionDate(stamp.edition) ? stamp.edition : null;
+    return stamp.schemaVersion === DEMO_EDITION_SCHEMA_VERSION && isDemoEdition(stamp.edition) ? stamp.edition : null;
 }
 
 /** Reads the edition stamp of a packaged demo opened as its own vault. */
@@ -42,7 +50,10 @@ export async function readDemoEditionStamp(app: App): Promise<string | null> {
  */
 export function isNewerDemoEdition(catalogEdition: string | undefined, vaultEdition: string | null): boolean {
     if (!catalogEdition) return false;
-    return vaultEdition === null || catalogEdition > vaultEdition;
+    if (vaultEdition === null) return true;
+    const [catalogDate, catalogRevision] = editionOrder(catalogEdition);
+    const [vaultDate, vaultRevision] = editionOrder(vaultEdition);
+    return catalogDate > vaultDate || (catalogDate === vaultDate && catalogRevision > vaultRevision);
 }
 
 /** The catalog demo that ships this book folder, matched exactly as the packaged vault names it. */

@@ -8,7 +8,7 @@ A public ZIP contains manuscript notes, author-facing scene/beat metadata, chara
 
 The Inquiry sessions sidecar carries saved results and the active book identity. `InquiryArtifactStore` reads it; `WelcomeScreen` detects the sample, and the explicit **Open the sample vault** action configures the book. Existing user settings are not silently replaced on plugin load. Single-book samples need no additional manifest.
 
-Packaged editions also carry `Radial Timeline/Demo/edition.json`, written by the packager: `{ "schemaVersion": 1, "sampleId": "…", "edition": "YYYY-MM-DD" }`. The plugin only reads it (`src/demoVaults/demoEdition.ts`). On the detected-sample card, the catalog demo is matched by the sample's book folder; when its archive's catalog `edition` is newer than the vault's stamp, one line offers the new edition through the counted download link. A vault without a stamp counts as older, and an archive without a catalog `edition` offers nothing. The new edition downloads as its own vault, so the reader's files stay as they are. This is a comparison with the catalog bundled in the installed plugin; the plugin makes no request to learn about editions. The card appears only until the sample's book is set up, so the line reaches copies that have not been opened yet.
+Packaged editions also carry `Radial Timeline/Demo/edition.json`, written by the packager: `{ "schemaVersion": 1, "sampleId": "…", "edition": "YYYY-MM-DD" }` (a same-day revision adds `.2`, `.3`…). The plugin only reads it (`src/demoVaults/demoEdition.ts`). On the detected-sample card, the catalog demo is matched by the sample's book folder; when its archive's catalog `edition` is newer than the vault's stamp, one line offers the new edition through the counted download link. A vault without a stamp counts as older, and an archive without a catalog `edition` offers nothing. The new edition downloads as its own vault, so the reader's files stay as they are. This is a comparison with the catalog bundled in the installed plugin; the plugin makes no request to learn about editions. The card appears only until the sample's book is set up, so the line reaches copies that have not been opened yet.
 
 ## In-vault demo library
 
@@ -87,9 +87,9 @@ Test the exact extracted ZIP in a fresh profile: sample detection, book initiali
 
 | Sample | Included analysis | Release |
 |---|---|---|
-| Pride & Prejudice | 61 chapters with Pulse, 15 beats with four reviewed October Gossamer signals, 3 saved Inquiry sessions | Published direct download; catalog pins the live ZIP |
-| The Odyssey | 89 scenes with Pulse, 12 beats with four Gossamer signals, 3 saved Inquiry sessions | October 3, 2026; published direct download |
-| Sherlock Holmes | Four novels / 56 chapters with Pulse, 41 beats with four Gossamer signals, 12 saved Inquiry sessions | Published direct download; catalog pins the live ZIP |
+| Pride & Prejudice | 61 chapters with Pulse and Places, 15 beats with four reviewed October Gossamer signals, 3 saved Inquiry sessions | Edition `2026-10-30.2` (stamped); published direct download; catalog pins the live ZIP |
+| The Odyssey | 89 scenes with Pulse, 12 beats with four Gossamer signals, 3 saved Inquiry sessions | Edition `2026-10-30` (stamped, unwrapped paragraphs); published direct download |
+| Sherlock Holmes | Four novels / 56 chapters with Pulse, 41 beats with four Gossamer signals, 12 saved Inquiry sessions | Edition `2026-10-30` (stamped); published direct download; catalog pins the live ZIP |
 
 Older Gossamer runs remain explicitly identified as history in the guide. The updated readings are the October 2 Claude Opus 5.5 runs. No blanket claim is made that every historical analysis used that model.
 

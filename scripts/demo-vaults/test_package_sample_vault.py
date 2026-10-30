@@ -207,8 +207,9 @@ class PackagingBoundaries(unittest.TestCase):
 
     def test_edition_must_be_a_release_date_the_packager_writes(self):
         config = {'sample_id': 'book', 'include_files': ['a.md']}
-        self.assertEqual(json.loads(edition_stamp({**config, 'edition': '2026-10-30'}))['edition'], '2026-10-30')
-        for edition in [None, '', '2026-10', '2026-02-30', '20261030', '30-10-2026', 20261030]:
+        for edition in ['2026-10-30', '2026-10-30.2', '2026-10-30.10']:
+            self.assertEqual(json.loads(edition_stamp({**config, 'edition': edition}))['edition'], edition)
+        for edition in [None, '', '2026-10', '2026-02-30', '20261030', '30-10-2026', 20261030, '2026-10-30.1', '2026-10-30.02', '2026-02-30.2']:
             with self.subTest(edition=edition), self.assertRaisesRegex(ValueError, 'edition date'):
                 edition_stamp({**config, 'edition': edition})
         with self.assertRaisesRegex(ValueError, 'written by the packager'):

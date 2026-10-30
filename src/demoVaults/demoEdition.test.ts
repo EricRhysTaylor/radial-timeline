@@ -6,7 +6,7 @@ import { BONUS_VAULTS, type BonusVaultDef } from '../settings/bonusVaults';
 import {
     DEMO_EDITION_PATH,
     findDemoByBookFolder,
-    isDemoEditionDate,
+    isDemoEdition,
     isNewerDemoEdition,
     parseDemoEditionStamp,
     readDemoEditionStamp
@@ -27,6 +27,14 @@ describe('demo edition comparison', () => {
         expect(isNewerDemoEdition('2027-01-02', '2026-12-31')).toBe(true);
     });
 
+    it('orders a same-day revision after the first edition of that day', () => {
+        expect(isNewerDemoEdition('2026-10-30.2', '2026-10-30')).toBe(true);
+        expect(isNewerDemoEdition('2026-10-30.10', '2026-10-30.9')).toBe(true);
+        expect(isNewerDemoEdition('2026-10-30', '2026-10-30.2')).toBe(false);
+        expect(isNewerDemoEdition('2026-10-31', '2026-10-30.2')).toBe(true);
+        expect(isNewerDemoEdition('2026-10-30.2', null)).toBe(true);
+    });
+
     it('stays quiet when the catalog archive carries no edition', () => {
         expect(isNewerDemoEdition(undefined, null)).toBe(false);
         expect(isNewerDemoEdition(undefined, '2026-10-30')).toBe(false);
@@ -36,10 +44,12 @@ describe('demo edition comparison', () => {
 describe('demo edition stamp', () => {
     it('reads the edition date from a valid stamp', () => {
         expect(parseDemoEditionStamp(stamp('2026-10-30'))).toBe('2026-10-30');
+        expect(parseDemoEditionStamp(stamp('2026-10-30.2'))).toBe('2026-10-30.2');
     });
 
     it('treats a malformed or unknown stamp as no stamp', () => {
-        for (const raw of ['', 'not json', 'null', '[]', stamp('October 30'), stamp('2026-10-30', 2), stamp(20261030)]) {
+        for (const raw of ['', 'not json', 'null', '[]', stamp('October 30'), stamp('2026-10-30', 2), stamp(20261030),
+            stamp('2026-10-30.1'), stamp('2026-10-30.02'), stamp('2026-10-30.')]) {
             expect(parseDemoEditionStamp(raw)).toBeNull();
         }
     });
@@ -92,7 +102,7 @@ describe('catalog editions', () => {
         for (const demo of BONUS_VAULTS) {
             const edition = demo.archive?.edition;
             if (edition === undefined) continue;
-            expect(isDemoEditionDate(edition)).toBe(true);
+            expect(isDemoEdition(edition)).toBe(true);
             expect(demo.archive!.url).toContain(`/${demo.id}/${edition}/`);
         }
     });

@@ -11,9 +11,9 @@ export interface DemoArchive {
     bytes: number;
     root: string;
     /**
-     * Edition date stamped inside this ZIP (see demoVaults/demoEdition.ts), the
-     * same date as its dated object path. Set it only for an archive that
-     * carries the stamp: older vaults are offered this edition on the Welcome screen.
+     * Edition stamped inside this ZIP (see demoVaults/demoEdition.ts), the same
+     * as its dated object path. Set it only for an archive that carries the
+     * stamp: older vaults are offered this edition on the Welcome screen.
      */
     edition?: string;
 }
@@ -44,11 +44,12 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         get description() { return t('ui.bonusVaults.prideDescription'); },
         books: [{ title: 'Pride & Prejudice', sourceFolder: 'Pride & Prejudice' }],
         archive: {
-            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/pride-and-prejudice/2026-10-30/pride-and-prejudice-demo-vault.zip',
+            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/pride-and-prejudice/2026-10-30.2/pride-and-prejudice-demo-vault.zip',
             downloadUrl: 'https://community.radialtimeline.com/go/rt-welcome-demo-download',
-            sha256: '32c043c9cce505ec98efcdd297f66b235b4280036f1645cd22a06812bf4900c7',
-            bytes: 729755,
-            root: 'Pride & Prejudice Demo Vault'
+            sha256: '5d6f6ba952aec833525dc942e775f73b887bcd4a68614651f494e661526a328c',
+            bytes: 730036,
+            root: 'Pride & Prejudice Demo Vault',
+            edition: '2026-10-30.2'
         }
     },
     {
@@ -62,11 +63,12 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         get description() { return t('ui.bonusVaults.odysseyDescription'); },
         books: [{ title: 'The Odyssey', sourceFolder: 'The Odyssey' }],
         archive: {
-            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/odyssey-demo-vault.zip',
+            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/odyssey/2026-10-30/odyssey-demo-vault.zip',
             downloadUrl: 'https://community.radialtimeline.com/go/rt-welcome-odyssey-download',
-            sha256: '13c21a3f60e823bfbb67521160060916bba6c13d26611d67f79994e636ba8e82',
-            bytes: 1098230,
-            root: 'Obsidian Vault Odyssey Demo'
+            sha256: 'bbce39e69ed818c5ff3cfe101126e3d5b6893961d762654e9311d6d52c61c430',
+            bytes: 1091408,
+            root: 'Obsidian Vault Odyssey Demo',
+            edition: '2026-10-30'
         }
     },
     {
@@ -85,11 +87,12 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
             { title: 'The Valley of Fear', sourceFolder: '04 The Valley of Fear' }
         ],
         archive: {
-            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/sherlock-holmes-demo-vault.zip',
+            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/sherlock-holmes/2026-10-30/sherlock-holmes-demo-vault.zip',
             downloadUrl: 'https://community.radialtimeline.com/go/rt-welcome-sherlock-download',
-            sha256: 'aace53768d279cd6f8f881712aedcf94e7f444985caf892d89ade0e0d579b9cb',
-            bytes: 5483077,
-            root: 'Obsidian Vault Sherlock Holmes Demo'
+            sha256: '81095e9e911c74e117f1c73fa176b766be964b62d41b43998039249c75d7978a',
+            bytes: 5483224,
+            root: 'Obsidian Vault Sherlock Holmes Demo',
+            edition: '2026-10-30'
         }
     },
     {

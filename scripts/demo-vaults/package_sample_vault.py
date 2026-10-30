@@ -92,14 +92,16 @@ def edition_stamp(config):
     """The edition stamp the plugin compares with its catalog (src/demoVaults/demoEdition.ts).
 
     The packager writes it; the source vault never supplies it. The edition is the
-    release date and names the dated object path the ZIP is published under.
+    release date (with `.N` for a second edition released the same day) and names
+    the dated object path the ZIP is published under.
     """
     edition = config.get('edition')
     try:
-        dated = re.fullmatch(r'\d{4}-\d{2}-\d{2}', edition) is not None and bool(datetime.date.fromisoformat(edition))
+        match = re.fullmatch(r'(\d{4}-\d{2}-\d{2})(?:\.(?:[2-9]|[1-9]\d+))?', edition)
+        dated = match is not None and bool(datetime.date.fromisoformat(match.group(1)))
     except (TypeError, ValueError):
         dated = False
-    require(dated, 'Config needs the edition date (YYYY-MM-DD) of the release being packaged')
+    require(dated, 'Config needs the edition date (YYYY-MM-DD, or YYYY-MM-DD.N for a same-day revision) of the release being packaged')
     require(EDITION_STAMP_PATH not in config['include_files'], f'{EDITION_STAMP_PATH} is written by the packager, not included from the source')
     stamp = {'schemaVersion': 1, 'sampleId': config['sample_id'], 'edition': edition}
     return (json.dumps(stamp, indent=2) + '\n').encode('utf-8')

@@ -197,6 +197,7 @@ Control how narrative perspective is visualized.
 
 *   **Global POV**: Sets a default POV mode for the entire project.
 *   **Scene level YAML overrides**: Override the global default on a per-scene basis using the `POV` YAML key.
+*   **Character lanes**: In Narrative mode, shows a lane under the outer ring for each of the four characters who are POV in the most scenes. See [Character Lanes](Narrative-Mode#character-lanes).
 
 > [!NOTE]
 > See [POV Keywords](YAML-Frontmatter#pov-keywords).

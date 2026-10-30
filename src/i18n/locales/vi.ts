@@ -17,6 +17,10 @@ export const vi: TranslationKeys = {
                 "name": "Góc nhìn toàn cầu",
                 "desc": "Chọn chế độ mặc định để áp dụng. Góc nhìn ở cấp độ cảnh sẽ ghi đè cài đặt toàn cầu này."
             },
+            "characterLanes": {
+                "name": "Làn nhân vật",
+                "desc": "Trong chế độ Kịch bản, hiển thị một làn dưới vòng ngoài cho mỗi nhân vật trong bốn nhân vật giữ góc nhìn ở nhiều cảnh nhất, đọc từ danh sách `Character:` của từng cảnh. Dấu cao là cảnh theo góc nhìn của nhân vật; dấu thấp là cảnh có nhân vật xuất hiện."
+            },
             "yamlOverrides": {
                 "name": "Ví dụ ghi đè cảnh",
                 "desc": "Trong cảnh trước, bạn có thể sử dụng `POV:` thứ nhất, thứ hai, thứ ba, omni, khách quan, hoặc một số như hai, bốn, đếm, hoặc tất cả để chỉ định nhiều hơn một ký tự đang mang cảnh pov. đếm giá trị đánh dấu n tên đầu tiên trong `Character:` và sử dụng chế độ POV toàn cầu để chọn điểm đánh dấu."

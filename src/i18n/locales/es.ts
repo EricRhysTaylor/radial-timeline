@@ -17,6 +17,10 @@ export const es: TranslationKeys = {
                 "name": "Punto de vista global",
                 "desc": "Elija un modo predeterminado para aplicar. El punto de vista a nivel de escena anulará esta configuración global."
             },
+            "characterLanes": {
+                "name": "Carriles de personajes",
+                "desc": "En el modo Narrativa, muestra un carril bajo el anillo exterior para cada uno de los cuatro personajes que llevan el punto de vista en más escenas, según la lista `Character:` de cada escena. Una marca alta es una escena desde su punto de vista; una marca baja, una escena en la que aparece el personaje."
+            },
             "yamlOverrides": {
                 "name": "Ejemplos de anulación en YAML",
                 "desc": "En Scene Frontmatter, puede usar `POV:` primero, segundo, tercero, omni, objetivo, o un número como dos, cuatro, cuenta, o todo para designar a más de un personaje que lleva el POV de la escena. Los valores de conteo marquen los n nombres de n en `Character:` y use el modo POV global para elegir el marcador."

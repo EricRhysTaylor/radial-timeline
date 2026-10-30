@@ -36,6 +36,10 @@ export const de: DeepPartial<TranslationKeys> = {
                 name: 'Globale Perspektive',
                 desc: 'Optional. Wählen Sie einen Standardmodus aus. Die Perspektive auf Szenenebene überschreibt diese globale Einstellung.',
             },
+            characterLanes: {
+                name: 'Figurenspuren',
+                desc: 'Zeigt im Modus Erzählung unter dem äußeren Ring eine Spur für jede der vier Figuren, die in den meisten Szenen die Perspektive tragen, gelesen aus der `Character:`-Liste jeder Szene. Eine hohe Markierung ist eine Szene aus ihrer Perspektive; eine kurze Markierung eine Szene, in der die Figur vorkommt.',
+            },
             yamlOverrides: {
                 name: 'YAML-Überschreibungen auf Szenenebene',
                 desc: 'In der Szenen-Frontmatter kann `POV:` als first, second, third, omni, objective oder als Zahl wie two, four, count oder all angegeben werden. Zahlenwerte markieren die ersten N Einträge in `Character:` und verwenden den Marker der globalen Perspektive.',

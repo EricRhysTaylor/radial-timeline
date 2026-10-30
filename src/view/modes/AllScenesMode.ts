@@ -66,6 +66,21 @@ export function setupSceneInteractions(view: RadialTimelineView, group: Element,
     }
 }
 
+/**
+ * The scene cell a pointer target belongs to. A character-lane mark stands for
+ * its scene's cell on the All Scenes ring, so hovering it hovers that scene.
+ */
+function sceneGroupFor(svg: SVGSVGElement, target: Element | null): Element | null {
+    if (!target) return null;
+    const group = target.closest('.rt-scene-group');
+    if (group) return group;
+    const mark = target.closest('.ert-character-lane-mark[data-path]');
+    const ring = mark?.closest('.ert-character-lanes')?.getAttribute('data-ring');
+    const path = mark?.getAttribute('data-path');
+    if (!ring || !path) return null;
+    return svg.querySelector(`.rt-scene-group[data-ring="${ring}"][data-path="${path}"]`);
+}
+
 export function setupAllScenesDelegatedHover(view: RadialTimelineView, container: HTMLElement, scenes: TimelineItem[]): void {
     const svg = container.querySelector<SVGSVGElement>('.radial-timeline-svg');
     if (!svg) return;
@@ -123,7 +138,7 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
         const svgMode = svg.getAttribute('data-mode');
         if (svgMode === 'gossamer') return;
         
-        const g = (e.target as Element).closest('.rt-scene-group');
+        const g = sceneGroupFor(svg, e.target as Element);
         if (!g || g === currentGroup) return;
         clearSelection();
         const sid = getSceneIdFromGroup(g);
@@ -151,7 +166,7 @@ export function setupAllScenesDelegatedHover(view: RadialTimelineView, container
         if (svgMode === 'gossamer') return;
         
         const toEl = e.relatedTarget as Element | null;
-        if (currentGroup && toEl && currentGroup.contains(toEl)) return;
+        if (currentGroup && toEl && (currentGroup.contains(toEl) || sceneGroupFor(svg, toEl) === currentGroup)) return;
         svg.classList.remove('scene-hover');
         clearSelection();
     });

@@ -112,6 +112,19 @@ Turn placards on with **Settings → Advanced → Configuration → Show part an
 <p align="center"><img src="images/feature-parts-chapters.png" alt="Narrative Mode chapter and part markers around the perimeter" width="560"></p>
 <p align="center"><sub>Publishing markers on the perimeter — chapter starts, part boundaries, and combined Part/Chapter breaks</sub></p>
 
+## Character Lanes
+
+Character lanes follow the main characters through the book, in the order a reader meets the scenes. Up to four thin lanes sit just inside the outer ring, one per character, with that character's name at 12 o'clock.
+
+*   **Who gets a lane**: the four characters who are POV in the most scenes. If fewer than four characters ever hold POV, the remaining lanes go to the characters who appear in the most scenes.
+*   **Tall mark**: a scene told from that character's point of view.
+*   **Short mark**: a scene the character is in.
+*   **No mark**: the character is absent, so a run of empty lane shows how long they are gone.
+
+A scene's characters come from its `Character:` list. The first name is the POV character, or the first several when the scene's `POV:` asks for more, following the **Global POV** setting. Hover a mark to light its scene.
+
+The lanes take a little room from the rings. Turn them on with **Settings → Core → Point of view → Character lanes**.
+
 ## Dominant Subplots
 
 When a scene belongs to multiple subplots, the outer All Scenes ring must choose one color. You control which subplot wins:

@@ -24,6 +24,7 @@ import { getReadabilityScale } from '../../utils/readability';
 import { getTimelineScope } from '../../utils/books';
 import { getTimelineSegmentCount } from './TimelineSegments';
 import { getMainPlotName } from '../../utils/mainPlot';
+import { characterLaneBandWidth, characterLanesActive, chooseLaneCharacters, laneScenes, readSceneCharacters } from './CharacterLanes';
 
 /** One subplot's aggregated scene count, the unit {@link compareSubplotOrder} orders. */
 export interface SubplotCountEntry {
@@ -106,6 +107,8 @@ export interface PrecomputedRenderValues {
     subplotDominanceStates: Map<string, SubplotDominanceState>;
     microRingLayout?: BackdropMicroRingLayout;
     backdropLayout?: BackdropRingLayout;
+    /** Character lanes reserved under the All Scenes ring (Narrative); 0 when off. */
+    characterLaneCount: number;
 }
 
 export function computeCacheableValues(
@@ -300,6 +303,12 @@ export function computeCacheableValues(
         }
     }
 
+    // Only the number of lanes matters here, and it does not depend on scene
+    // order; the renderer picks the names from the outer ring's order.
+    const characterLaneCount = characterLanesActive(plugin.settings)
+        ? chooseLaneCharacters(laneScenes(scenes).map(scene => readSceneCharacters(scene, plugin.settings.globalPovMode))).length
+        : 0;
+
     const ringGeo = computeRingGeometry({
         size: SVG_SIZE,
         innerRadius: INNER_RADIUS,
@@ -308,7 +317,8 @@ export function computeCacheableValues(
         numRings: NUM_RINGS,
         monthTickTerminal: 0,
         monthTextInset: 0,
-        fixedRings
+        fixedRings,
+        outerRingInset: characterLaneBandWidth(characterLaneCount)
     });
 
     const maxStageColor = getMostAdvancedStageColor(scenes, plugin.settings.publishStageColors);
@@ -328,6 +338,7 @@ export function computeCacheableValues(
         maxStageColor,
         subplotDominanceStates,
         microRingLayout,
-        backdropLayout
+        backdropLayout,
+        characterLaneCount
     };
 }

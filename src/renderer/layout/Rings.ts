@@ -7,8 +7,11 @@ export function computeRingGeometry(params: {
   monthTickTerminal: number;
   monthTextInset: number;
   fixedRings?: Array<{ index: number; width: number }>;
+  /** Space kept free just inside the outermost ring (Narrative's character lanes). */
+  outerRingInset?: number;
 }) {
   const { innerRadius, subplotOuterRadius, outerRadius, numRings, monthTextInset, fixedRings } = params;
+  const outerRingInset = Math.max(0, params.outerRingInset ?? 0);
   // Guard against zero rings to avoid NaNs downstream
   if (!Number.isFinite(numRings) || numRings <= 0) {
     const lineInnerRadius = innerRadius;
@@ -16,7 +19,7 @@ export function computeRingGeometry(params: {
     const monthLabelRadius = lineOuterRadius - monthTextInset;
     return { ringWidths: [] as number[], ringStartRadii: [] as number[], lineInnerRadius, lineOuterRadius, monthLabelRadius };
   }
-  const availableSpace = subplotOuterRadius - innerRadius;
+  const availableSpace = subplotOuterRadius - innerRadius - outerRingInset;
 
   let ringWidths: number[] = [];
   const fixedRingEntries = (fixedRings ?? [])
@@ -49,10 +52,10 @@ export function computeRingGeometry(params: {
 
   const ringStartRadii = ringWidths.reduce((acc, width, i) => {
     const previousRadius = i === 0 ? innerRadius : acc[i - 1] + ringWidths[i - 1];
-    acc.push(previousRadius);
+    acc.push(i === numRings - 1 ? previousRadius + outerRingInset : previousRadius);
     return acc;
   }, [] as number[]);
-  const lineInnerRadius = ringStartRadii[0] - 20;
+  const lineInnerRadius = innerRadius - 20;
   const lineOuterRadius = outerRadius;  // Use the explicit outerRadius for month labels
   const monthLabelRadius = lineOuterRadius - monthTextInset;
   return { ringWidths, ringStartRadii, lineInnerRadius, lineOuterRadius, monthLabelRadius };

@@ -124,6 +124,19 @@ export const DRAG_DROP_TICK_LENGTH = 10;
 export const SUBPLOT_OUTER_RADIUS_CHRONOLOGUE = 750;
 
 // =============================================================================
+// RADII - CHARACTER LANES (Narrative)
+// =============================================================================
+
+/** Thickness of one character lane; a POV mark fills it, any other appearance half. */
+export const CHARACTER_LANE_HEIGHT = 7;
+
+/** Space between neighbouring character lanes. */
+export const CHARACTER_LANE_GAP = 2;
+
+/** Space kept clear above the outermost lane and below the innermost. */
+export const CHARACTER_LANE_PADDING = 3;
+
+// =============================================================================
 // RADII - BACKDROP RING
 // =============================================================================
 

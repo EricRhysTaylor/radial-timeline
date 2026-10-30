@@ -1224,6 +1224,8 @@ export interface RadialTimelineSettings {
     /** Timetable `.base` files RT wrote, by book ID (or 'saga'), with the folders their filter names. Plugin data, not a setting. */
     timetableFiles?: Record<string, { path: string; folders: string[] }>;
     globalPovMode?: GlobalPovMode;
+    /** Narrative mode: draw lanes for the four characters who hold POV most often. */
+    showCharacterLanes?: boolean;
     readabilityScale?: ReadabilityScale;
     _isResuming?: boolean;
     _resumingMode?: 'flagged' | 'unprocessed' | 'force-all';

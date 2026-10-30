@@ -37,6 +37,10 @@ export const ja: DeepPartial<TranslationKeys> = {
                 name: 'グローバルPOV',
                 desc: 'オプション。適用するデフォルトモードを選択します。シーンレベルのPOVはこのグローバル設定を上書きします。',
             },
+            characterLanes: {
+                name: 'キャラクターレーン',
+                desc: '叙事モードで、外側のリングの下に、最も多くのシーンで POV を担う4人のキャラクターごとのレーンを表示します。各シーンの `Character:` リストから読み取ります。高いマークは POV シーン、低いマークはそのキャラクターが登場するシーンです。',
+            },
             yamlOverrides: {
                 name: 'シーンレベルのYAML上書き',
                 desc: 'シーンのフロントマターでは、`POV:` に first, second, third, omni, objective、または two, four, count, all などの数値を指定できます。count系は `Character:` の先頭N人に印を付け、グローバルPOVのマーカーを使います。',

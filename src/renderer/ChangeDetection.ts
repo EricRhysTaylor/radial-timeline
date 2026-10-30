@@ -69,6 +69,7 @@ export interface TimelineSnapshot {
     chronologueLastCalendarView: string;
     discontinuityThreshold: string | undefined;
     showBackdropRing: boolean;
+    showCharacterLanes: boolean;
     microBackdropHash: string;
     publishStageColorsHash: string;
     subplotColorsHash: string;
@@ -263,6 +264,7 @@ export function createSnapshot(
         chronologueLastCalendarView: settings.chronologueLastCalendarView ?? 'earth',
         discontinuityThreshold: settings.discontinuityThreshold,
         showBackdropRing: settings.showBackdropRing ?? true,
+        showCharacterLanes: settings.showCharacterLanes ?? false,
         microBackdropHash,
         publishStageColorsHash,
         subplotColorsHash,
@@ -348,6 +350,7 @@ export function detectChanges(
         prev.chronologueLastCalendarView !== current.chronologueLastCalendarView ||
         prev.discontinuityThreshold !== current.discontinuityThreshold ||
         prev.showBackdropRing !== current.showBackdropRing ||
+        prev.showCharacterLanes !== current.showCharacterLanes ||
         prev.microBackdropHash !== current.microBackdropHash ||
         prev.publishStageColorsHash !== current.publishStageColorsHash ||
         prev.subplotColorsHash !== current.subplotColorsHash ||

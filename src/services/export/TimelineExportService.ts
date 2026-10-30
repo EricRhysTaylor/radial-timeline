@@ -111,6 +111,7 @@ export interface TimelineExportRenderConfig {
     dominantSubplots?: Record<string, string>;
     discontinuityThreshold?: string;
     globalPovMode?: GlobalPovMode;
+    showCharacterLanes?: boolean;
     runtimeContentType?: RuntimeContentType;
     currentMode?: string;
     sortByWhenDate?: boolean;
@@ -263,6 +264,7 @@ export function snapshotRenderConfig(settings: RadialTimelineSettings): Timeline
         dominantSubplots: settings.dominantSubplots,
         discontinuityThreshold: settings.discontinuityThreshold,
         globalPovMode: settings.globalPovMode,
+        showCharacterLanes: settings.showCharacterLanes,
         runtimeContentType: settings.runtimeContentType,
         currentMode: settings.currentMode,
         sortByWhenDate: settings.sortByWhenDate,

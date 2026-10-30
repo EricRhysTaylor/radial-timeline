@@ -57,6 +57,7 @@ const files = [
     'chronologue-shift.css',
     'chronologue-alt.css',
     'runtime-view.css',
+    'character-lanes.css',
     'modal.css',
     'bug-report.css',
     'briefing.css',

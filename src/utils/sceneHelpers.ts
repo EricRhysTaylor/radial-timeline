@@ -198,6 +198,7 @@ export interface PluginRendererFacade {
         dominantSubplots?: Record<string, string>;
         discontinuityThreshold?: string;
         globalPovMode?: GlobalPovMode;
+        showCharacterLanes?: boolean;
         runtimeContentType?: 'novel' | 'screenplay';
         currentMode?: string;
         sortByWhenDate?: boolean;

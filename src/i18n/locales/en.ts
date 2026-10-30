@@ -31,6 +31,10 @@ export const en = {
                 name: 'Global POV',
                 desc: 'Choose a default mode to apply. Scene level POV will override this global setting.',
             },
+            characterLanes: {
+                name: 'Character lanes',
+                desc: 'In Narrative mode, show a lane under the outer ring for each of the four characters who are POV in the most scenes, read from each scene\'s `Character:` list. A tall mark is a POV scene; a short mark is a scene the character is in.',
+            },
             yamlOverrides: {
                 name: 'Scene override examples',
                 desc: 'In scene frontmatter, you can use `POV:` first, second, third, omni, objective, or a number such as two, four, count, or all to designate more than one character is carrying the scene POV. Count values mark the first N names in `Character:` and use the Global POV mode to choose the marker.',

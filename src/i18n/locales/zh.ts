@@ -38,6 +38,10 @@ export const zh: DeepPartial<TranslationKeys> = {
                 name: '全局视角',
                 desc: '可选。选择默认应用的模式。场景级视角将覆盖此全局设置。',
             },
+            characterLanes: {
+                name: '角色轨道',
+                desc: '在叙事模式中，为在最多场景中担任视角的四个角色各显示一条轨道，位于外环之下，读取自每个场景的 `Character:` 列表。高标记表示该角色的视角场景；低标记表示该角色出场的场景。',
+            },
             yamlOverrides: {
                 name: '场景级 YAML 覆盖',
                 desc: '在场景的前置元数据中，`POV:` 可以是 first、second、third、omni、objective，或者数字如 two、four、count、all。数字类会标记 `Character:` 中的前 N 个角色，并使用全局视角的标记。',

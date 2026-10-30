@@ -25,6 +25,7 @@ function makeSnapshot(overrides: Partial<TimelineSnapshot> = {}): TimelineSnapsh
     chronologueDurationCap: undefined,
     discontinuityThreshold: undefined,
     showBackdropRing: true,
+    showCharacterLanes: false,
     microBackdropHash: '',
     publishStageColorsHash: '',
     subplotColorsHash: '',

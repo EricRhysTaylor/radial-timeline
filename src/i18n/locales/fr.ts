@@ -17,6 +17,10 @@ export const fr: TranslationKeys = {
                 "name": "Point de vue global",
                 "desc": "Choisissez un mode par défaut à appliquer. Le point de vue au niveau de la scène remplace ce paramètre global."
             },
+            "characterLanes": {
+                "name": "Couloirs des personnages",
+                "desc": "En mode Narratif, affiche un couloir sous l'anneau extérieur pour chacun des quatre personnages qui portent le point de vue dans le plus de scènes, d'après la liste `Character:` de chaque scène. Une marque haute est une scène de son point de vue ; une marque basse, une scène où le personnage apparaît."
+            },
             "yamlOverrides": {
                 "name": "Exemples de surcharge YAML",
                 "desc": "Dans Scene Frontmatter, vous pouvez utiliser `POV:` premier, deuxième, troisième, omni, objectif ou un nombre tel que deux, quatre, comptent ou tous pour désigner plus d'un personnage porte le Scène POV. Compter les valeurs Marquez les noms premiers dans `Character:` Et utilisez le mode POV global pour choisir le marqueur."

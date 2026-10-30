@@ -1,0 +1,31 @@
+/* Narrative: character lanes under the All Scenes ring (src/renderer/components/CharacterLanes.ts).
+   No transitions here: the lanes sit on the scene-hover path. */
+
+.ert-character-lane-track {
+  fill: none;
+  stroke: var(--background-modifier-border);
+  stroke-opacity: 0.5;
+  pointer-events: none;
+}
+
+/* A POV mark fills the lane; any other appearance fills its inner half. */
+.ert-character-lane-mark {
+  fill: var(--text-muted);
+}
+
+.ert-character-lane-label {
+  fill: var(--text-normal);
+  font-size: 9px;
+  font-weight: 600;
+  dominant-baseline: central;
+  stroke: var(--background-primary);
+  stroke-width: 2.5px;
+  paint-order: stroke;
+  pointer-events: none;
+}
+
+/* Names hide while a scene is hovered or spotlighted, as the subplot names do. */
+.radial-timeline-svg.scene-hover .ert-character-lane-labels,
+.radial-timeline-svg.ert-scene-spotlight .ert-character-lane-labels {
+  display: none;
+}

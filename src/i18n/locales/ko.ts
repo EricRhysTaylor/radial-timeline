@@ -36,6 +36,10 @@ export const ko: DeepPartial<TranslationKeys> = {
                 name: '전역 시점',
                 desc: '선택 사항. 적용할 기본 모드를 선택하세요. 장면 수준의 시점이 이 전역 설정을 재정의합니다.',
             },
+            characterLanes: {
+                name: '인물 레인',
+                desc: '서사 모드에서 가장 많은 장면의 시점을 맡은 인물 네 명마다 바깥쪽 링 아래에 레인을 표시합니다. 각 장면의 `Character:` 목록에서 읽습니다. 높은 표시는 그 인물의 시점 장면이고, 낮은 표시는 그 인물이 등장하는 장면입니다.',
+            },
             yamlOverrides: {
                 name: '장면 수준 YAML 재정의',
                 desc: '장면 프론트매터에서 `POV:` 값으로 first, second, third, omni, objective 또는 two, four, count, all 같은 숫자를 지정할 수 있습니다. 숫자 계열은 `Character:` 목록의 첫 N명에 표시를 적용하고 전역 시점의 마커를 사용합니다.',

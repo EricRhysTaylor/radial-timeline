@@ -122,6 +122,7 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     beatSelectionMigrationComplete: false,
     dominantSubplots: {}, // Default: empty map, will use outermost subplot for scenes in multiple subplots
     globalPovMode: 'off',
+    showCharacterLanes: false,
     lastSeenReleaseNotesVersion: '',
     cachedReleaseNotes: null,
     releaseNotesLastFetched: undefined,

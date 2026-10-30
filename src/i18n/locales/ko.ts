@@ -7293,6 +7293,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             sampleOpenTitle: '{{name}} 감지됨',
             sampleOpenDesc: '이 보관함에는 바로 살펴볼 수 있는 {{name}}이(가) 포함되어 있습니다. 열면 타임라인에서 완성된 이야기로 바로 들어갑니다.',
             sampleOpenCta: '샘플 보관함 열기',
+            sampleNewerEdition: '{{title}}의 새 판이 준비되었습니다. [다운로드]하여 이 보관함 옆에 별도의 보관함으로 여세요.',
             designTitle: '책 프로젝트 설정',
             designDesc: '타임라인, 내보내기, Inquiry 범위, Book Manager의 기준이 되는 원고 폴더를 선택하세요.',
             designCta: 'Book Manager 열기',

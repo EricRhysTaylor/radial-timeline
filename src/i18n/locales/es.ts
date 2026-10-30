@@ -7296,6 +7296,7 @@ export const es: TranslationKeys = {
             "sampleOpenTitle": "{{name}} detectado",
             "sampleOpenDesc": "Esta bóveda envía un {{name}} listo para explorar. Ábrelo para caer directamente a una historia terminada en la línea de tiempo.",
             "sampleOpenCta": "Abra la bóveda de muestra",
+            "sampleNewerEdition": "Una nueva edición de {{title}} está lista. [Descárguela] para abrirla como una bóveda propia, junto a esta.",
             "designTitle": "Establecer proyecto de libro",
             "designDesc": "Elija la carpeta del manuscrito que impulsa el cronograma, las exportaciones, el ámbito Inquiry y el administrador de libros.",
             "designCta": "Abrir Administrador de Libros",

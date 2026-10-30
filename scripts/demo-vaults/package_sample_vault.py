@@ -14,6 +14,7 @@ uv run scripts/demo-vaults/package_sample_vault.py --source PATH --dist NEW_PATH
     --config scripts/demo-vaults/pride-and-prejudice.json
 """
 import argparse
+import datetime
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
@@ -84,6 +85,26 @@ def public_inquiry_files(files, config=None):
     return public
 
 
+EDITION_STAMP_PATH = 'Radial Timeline/Demo/edition.json'
+
+
+def edition_stamp(config):
+    """The edition stamp the plugin compares with its catalog (src/demoVaults/demoEdition.ts).
+
+    The packager writes it; the source vault never supplies it. The edition is the
+    release date and names the dated object path the ZIP is published under.
+    """
+    edition = config.get('edition')
+    try:
+        dated = re.fullmatch(r'\d{4}-\d{2}-\d{2}', edition) is not None and bool(datetime.date.fromisoformat(edition))
+    except (TypeError, ValueError):
+        dated = False
+    require(dated, 'Config needs the edition date (YYYY-MM-DD) of the release being packaged')
+    require(EDITION_STAMP_PATH not in config['include_files'], f'{EDITION_STAMP_PATH} is written by the packager, not included from the source')
+    stamp = {'schemaVersion': 1, 'sampleId': config['sample_id'], 'edition': edition}
+    return (json.dumps(stamp, indent=2) + '\n').encode('utf-8')
+
+
 def build(source, dist, config):
     source = source.resolve(); dist = dist.resolve()
     require(source.is_dir() and not dist.exists(), 'Source must exist and output directory must be new')
@@ -91,8 +112,10 @@ def build(source, dist, config):
     name = config['display_name']
     require(len(safe_relative(name).parts) == 1, 'Output name must be one path component')
     require(re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', config['sample_id']) is not None, 'Sample ID must be a lowercase slug')
+    stamp = edition_stamp(config)
     original = select_files(source, config)
     included = public_inquiry_files(original, config)
+    included[EDITION_STAMP_PATH] = stamp
     # The helper import is mandatory. Any failed check aborts before publication.
     with tempfile.TemporaryDirectory(prefix='rt-demo-build-') as temp:
         stage = Path(temp) / name
@@ -110,12 +133,14 @@ def build(source, dist, config):
         dist.mkdir(parents=True, exist_ok=False)
         zip_path = dist / f"{config['sample_id']}-demo-vault.zip"
         zip_path.write_bytes(archive_path.read_bytes())
-        manifest = {'schema_version': 1, 'sample_id': config['sample_id'], 'archive': zip_path.name,
-                    'sha256': hashlib.sha256(zip_path.read_bytes()).hexdigest(), 'qa': qa,
+        manifest = {'schema_version': 1, 'sample_id': config['sample_id'], 'edition': config['edition'], 'archive': zip_path.name,
+                    'object_path': f"{config['sample_id']}/{config['edition']}/{zip_path.name}",
+                    'sha256': hashlib.sha256(zip_path.read_bytes()).hexdigest(), 'bytes': zip_path.stat().st_size, 'qa': qa,
                     'files': {rel: hashlib.sha256(data).hexdigest() for rel, data in included.items()},
                     'source_files': {rel: hashlib.sha256(data).hexdigest() for rel, data in original.items()}}
         (dist / 'release-inventory.json').write_text(json.dumps(manifest, indent=2) + '\n')
-        print(json.dumps({'archive': str(zip_path), 'sha256': manifest['sha256'], 'files': len(included), 'qa': qa}, indent=2))
+        print(json.dumps({'archive': str(zip_path), 'object_path': manifest['object_path'], 'edition': manifest['edition'],
+                          'sha256': manifest['sha256'], 'bytes': manifest['bytes'], 'files': len(included), 'qa': qa}, indent=2))
         return manifest
 
 

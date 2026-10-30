@@ -6955,6 +6955,7 @@ export const en = {
             sampleOpenTitle: '{{name}} detected',
             sampleOpenDesc: 'This vault ships a ready-to-explore {{name}}. Open it to drop straight into a finished story on the timeline.',
             sampleOpenCta: 'Open the sample vault',
+            sampleNewerEdition: 'A new edition of {{title}} is ready. [Download it] to open as its own vault beside this one.',
             designTitle: 'Set Book Project',
             designDesc: 'Choose the manuscript folder that drives the timeline, exports, Inquiry scope, and Book Manager.',
             designCta: 'Open Book Manager',

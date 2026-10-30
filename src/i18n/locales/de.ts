@@ -7293,6 +7293,7 @@ export const de: DeepPartial<TranslationKeys> = {
             sampleOpenTitle: '{{name}} erkannt',
             sampleOpenDesc: 'Dieser Vault enthält {{name}}, sofort bereit zum Erkunden. Öffnen Sie das Beispiel, um direkt in eine fertige Geschichte auf der Timeline einzutauchen.',
             sampleOpenCta: 'Beispiel-Vault öffnen',
+            sampleNewerEdition: 'Eine neue Ausgabe von {{title}} ist bereit. [Laden Sie sie herunter], um sie als eigenen Vault neben diesem zu öffnen.',
             designTitle: 'Buchprojekt festlegen',
             designDesc: 'Wählen Sie den Manuskriptordner, der Timeline, Exporte, Inquiry-Bereich und Book Manager steuert.',
             designCta: 'Book Manager öffnen',

@@ -338,6 +338,12 @@
   margin-top: 10px;
 }
 
+/* Quiet note on a detected sample when the catalog offers a newer edition */
+.rt-welcome-card-edition {
+  margin-top: 10px;
+  font-size: 12.5px;
+}
+
 .rt-welcome-card-cta {
   position: relative;
   z-index: 1;

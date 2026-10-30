@@ -7296,6 +7296,7 @@ export const fr: TranslationKeys = {
             "sampleOpenTitle": "{{name}} détecté",
             "sampleOpenDesc": "Ce coffre est livré prêt-à-explorer {{name}}. Ouvrez-le pour tomber directement dans une histoire finie sur la chronologie.",
             "sampleOpenCta": "Ouvrir l'exemple de coffre",
+            "sampleNewerEdition": "Une nouvelle édition de {{title}} est prête. [Téléchargez-la] pour l'ouvrir comme un coffre à part, à côté de celui-ci.",
             "designTitle": "Définir le projet de livre",
             "designDesc": "Choisissez le dossier de manuscrits qui pilote la chronologie, les exportations, la portée Inquiry et le gestionnaire de livres.",
             "designCta": "Ouvrir Book Manager",

@@ -7295,6 +7295,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             sampleOpenTitle: '已检测到 {{name}}',
             sampleOpenDesc: '此仓库附带可直接探索的 {{name}}。打开它，即可直接在时间轴上进入一个完整的故事。',
             sampleOpenCta: '打开示例仓库',
+            sampleNewerEdition: '{{title}} 的新版本已就绪。[下载]后可在此仓库旁作为独立仓库打开。',
             designTitle: '设置书籍项目',
             designDesc: '选择驱动时间轴、导出、Inquiry 范围和 Book Manager 的手稿文件夹。',
             designCta: '打开 Book Manager',

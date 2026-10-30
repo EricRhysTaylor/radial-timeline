@@ -8,11 +8,13 @@ A public ZIP contains manuscript notes, author-facing scene/beat metadata, chara
 
 The Inquiry sessions sidecar carries saved results and the active book identity. `InquiryArtifactStore` reads it; `WelcomeScreen` detects the sample, and the explicit **Open the sample vault** action configures the book. Existing user settings are not silently replaced on plugin load. Single-book samples need no additional manifest.
 
+Packaged editions also carry `Radial Timeline/Demo/edition.json`, written by the packager: `{ "schemaVersion": 1, "sampleId": "…", "edition": "YYYY-MM-DD" }`. The plugin only reads it (`src/demoVaults/demoEdition.ts`). On the detected-sample card, the catalog demo is matched by the sample's book folder; when its archive's catalog `edition` is newer than the vault's stamp, one line offers the new edition through the counted download link. A vault without a stamp counts as older, and an archive without a catalog `edition` offers nothing. The new edition downloads as its own vault, so the reader's files stay as they are. This is a comparison with the catalog bundled in the installed plugin; the plugin makes no request to learn about editions. The card appears only until the sample's book is set up, so the line reaches copies that have not been opened yet.
+
 ## In-vault demo library
 
 The welcome hero **Explore a finished book** opens the demo chooser directly. A detected sample retains its open action and a secondary **Browse demo projects** action. Settings → Demo vaults opens the same chooser for nonempty vaults. Manual ZIP downloads remain direct links; the website is optional.
 
-The shared catalog in `src/settings/bonusVaults.ts` owns availability, manuscript folders, counted download URLs, archive roots, exact byte sizes and SHA-256 digests. Only reviewed public editions are importable. P&P, Odyssey and the four-novel Sherlock collection are available. The Faerie Queene remains coming soon, without an archive in the catalog. Publishing a revised ZIP requires updating the pinned catalog digest and size.
+The shared catalog in `src/settings/bonusVaults.ts` owns availability, manuscript folders, counted download URLs, archive roots, exact byte sizes and SHA-256 digests. Only reviewed public editions are importable. P&P, Odyssey and the four-novel Sherlock collection are available. The Faerie Queene remains coming soon, without an archive in the catalog. Publishing a revised ZIP requires updating the pinned catalog digest and size, plus `edition` for a stamped archive.
 
 **Add demo to this vault** validates and unpacks the complete archive before writes. It rejects unsafe paths, unsupported files, oversized archives, duplicate manuscript IDs, missing books and invalid saved evidence. Files are written into a uniquely owned staging folder under `Radial Timeline/Demo Imports/`, then the complete folder is moved to:
 

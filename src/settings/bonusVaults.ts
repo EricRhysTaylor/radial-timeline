@@ -10,6 +10,12 @@ export interface DemoArchive {
     sha256: string;
     bytes: number;
     root: string;
+    /**
+     * Edition date stamped inside this ZIP (see demoVaults/demoEdition.ts), the
+     * same date as its dated object path. Set it only for an archive that
+     * carries the stamp: older vaults are offered this edition on the Welcome screen.
+     */
+    edition?: string;
 }
 
 /** Curated demo library. Only published collections have an active action. */

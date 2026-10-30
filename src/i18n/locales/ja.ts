@@ -7294,6 +7294,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             sampleOpenTitle: '{{name}} を検出しました',
             sampleOpenDesc: 'この保管庫には、すぐに探索できる {{name}} が含まれています。開くと、タイムライン上の完成した物語にすぐに入れます。',
             sampleOpenCta: 'サンプル保管庫を開く',
+            sampleNewerEdition: '{{title}} の新しい版を用意しました。[ダウンロード]して、この保管庫の隣に専用の保管庫として開けます。',
             designTitle: '書籍プロジェクトを設定',
             designDesc: 'タイムライン、エクスポート、Inquiry のスコープ、ブックマネージャーの基になる原稿フォルダを選択します。',
             designCta: 'ブックマネージャーを開く',

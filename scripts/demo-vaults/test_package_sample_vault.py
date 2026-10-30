@@ -3,7 +3,8 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from package_sample_vault import build, public_inquiry_files, safe_relative, select_files, write_zip
+import zipfile
+from package_sample_vault import EDITION_STAMP_PATH, build, edition_stamp, public_inquiry_files, safe_relative, select_files, write_zip
 from vault_qa import validate_inquiry, validate_source
 
 
@@ -178,7 +179,7 @@ class PackagingBoundaries(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); source = root / 'source'; source.mkdir()
             (source / 'a.md').write_text('Chapter')
-            config = {'display_name': 'Book', 'sample_id': 'book', 'include_files': ['a.md']}
+            config = {'display_name': 'Book', 'sample_id': 'book', 'edition': '2026-10-30', 'include_files': ['a.md']}
             output = root / 'output'
             with patch('package_sample_vault.validate', side_effect=ValueError('Incomplete Inquiry')):
                 with self.assertRaises(ValueError): build(source, output, config)
@@ -187,6 +188,36 @@ class PackagingBoundaries(unittest.TestCase):
             output.mkdir(); (output / 'keep').write_text('Keep')
             with self.assertRaises(ValueError): build(source, output, config)
             self.assertEqual((output / 'keep').read_text(), 'Keep')
+
+    def test_edition_stamp_ships_inside_the_zip_and_names_the_dated_path(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); source = root / 'source'; source.mkdir()
+            (source / 'a.md').write_text('Chapter')
+            config = {'display_name': 'Book', 'sample_id': 'book', 'edition': '2026-10-30', 'include_files': ['a.md']}
+            with patch('package_sample_vault.validate', return_value={}):
+                manifest = build(source, root / 'output', config)
+            with zipfile.ZipFile(root / 'output' / 'book-demo-vault.zip') as archive:
+                stamp = json.loads(archive.read(f'Book/{EDITION_STAMP_PATH}'))
+            self.assertEqual(stamp, {'schemaVersion': 1, 'sampleId': 'book', 'edition': '2026-10-30'})
+            self.assertEqual(manifest['edition'], '2026-10-30')
+            self.assertEqual(manifest['object_path'], 'book/2026-10-30/book-demo-vault.zip')
+            self.assertIn(EDITION_STAMP_PATH, manifest['files'])
+            self.assertNotIn(EDITION_STAMP_PATH, manifest['source_files'])
+            self.assertFalse((source / 'Radial Timeline').exists())
+
+    def test_edition_must_be_a_release_date_the_packager_writes(self):
+        config = {'sample_id': 'book', 'include_files': ['a.md']}
+        self.assertEqual(json.loads(edition_stamp({**config, 'edition': '2026-10-30'}))['edition'], '2026-10-30')
+        for edition in [None, '', '2026-10', '2026-02-30', '20261030', '30-10-2026', 20261030]:
+            with self.subTest(edition=edition), self.assertRaisesRegex(ValueError, 'edition date'):
+                edition_stamp({**config, 'edition': edition})
+        with self.assertRaisesRegex(ValueError, 'written by the packager'):
+            edition_stamp({**config, 'edition': '2026-10-30', 'include_files': ['a.md', EDITION_STAMP_PATH]})
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); source = root / 'source'; source.mkdir(); (source / 'a.md').write_text('Chapter')
+            with self.assertRaisesRegex(ValueError, 'edition date'):
+                build(source, root / 'output', {**config, 'display_name': 'Book'})
+            self.assertFalse((root / 'output').exists())
 
 
 if __name__ == '__main__':

@@ -7296,6 +7296,7 @@ export const vi: TranslationKeys = {
             "sampleOpenTitle": "{{name}} được phát hiện",
             "sampleOpenDesc": "Kho này cung cấp một {{name}} đã sẵn sàng để khám phá. Mở nó để thả thẳng vào một câu chuyện đã hoàn thành trên dòng thời gian.",
             "sampleOpenCta": "Mở kho mẫu",
+            "sampleNewerEdition": "Đã có ấn bản mới của {{title}}. [Tải xuống] để mở thành một kho riêng bên cạnh kho này.",
             "designTitle": "Đặt dự án sách",
             "designDesc": "Chọn thư mục bản thảo điều khiển dòng thời gian, xuất, phạm vi Inquiry và Trình quản lý sách.",
             "designCta": "Mở Quản lý Sách",

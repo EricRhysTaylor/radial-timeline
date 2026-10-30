@@ -2232,13 +2232,15 @@ export class TimetableView extends BasesView {
                 if (mode.state.mode === 'chronologue' && row.act !== null) meta.createSpan({ cls: 'ert-timetable-panels__act', text: this.actLabel(row.act) });
                 if (people.length) {
                     const peopleList = panel.createDiv({ cls: 'ert-timetable-panels__characters' });
-                    for (const person of people) {
+                    setTooltip(peopleList, people.map(person => person.name).join(' / '));
+                    for (const [index, person] of people.entries()) {
+                        if (index > 0) peopleList.createSpan({ cls: 'ert-timetable__character-separator', text: '/' });
                         const character = peopleList.createSpan({ cls: 'ert-timetable-panels__character' });
                         if (person.image && person.image !== portrait) {
                             const image = character.createEl('img', { cls: 'ert-timetable-panels__portrait', attr: { alt: '', src: person.image } });
                             this.panelEvents?.registerDomEvent(image, 'error', () => image.remove());
                         }
-                        this.renderCharacterName(character, person, person.name);
+                        this.renderCharacterName(character, person, this.shortCharacterName(person.name));
                     }
                 }
                 if (row.kind === 'beat') {
@@ -2315,6 +2317,10 @@ export class TimetableView extends BasesView {
             evt.stopPropagation();
             void openFromTimetable(this.plugin.app, file, evt, this.rootEl);
         });
+    }
+
+    private shortCharacterName(name: string): string {
+        return Array.from(name).slice(0, 6).join('').trimEnd();
     }
 
     private editPanelSynopsis(item: TableItem, button: HTMLButtonElement): void {
@@ -2838,7 +2844,7 @@ export class TimetableView extends BasesView {
                 const image = character.createEl('img', { cls: 'ert-timetable__character-image', attr: { alt: '', src: person.image } });
                 this.panelEvents?.registerDomEvent(image, 'error', () => image.remove());
             }
-            const shortName = Array.from(person.name).slice(0, 6).join('');
+            const shortName = this.shortCharacterName(person.name);
             this.renderCharacterName(character, person, shortName);
         });
     }

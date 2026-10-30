@@ -1,10 +1,36 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+    OuterRingDragController,
     dedupeOuterRingOrderEntries,
     planEmptyActDropOrder,
     reorderScenesPreservingBeatGaps,
     type OuterRingOrderEntry,
 } from './OuterRingDragController';
+
+describe('Timetable Narrative placement', () => {
+    it('routes encoded scene paths to the existing wheel placement operation', async () => {
+        const group = (path: string, id: string) => ({
+            getAttribute: (name: string) => ({ 'data-path': encodeURIComponent(path), 'data-ring': '2', 'data-act': '1' } as Record<string, string>)[name] ?? null,
+            querySelector: () => ({ id }),
+        });
+        const from = group('Book/A scene.md', 'scene-a');
+        const to = group('Book/B scene.md', 'scene-b');
+        const finish = vi.fn().mockResolvedValue(undefined);
+        const controller = Object.assign(Object.create(OuterRingDragController.prototype), {
+            confirming: false, dragging: false,
+            svg: { querySelectorAll: () => [from, to] },
+            getOuterRingIndex: () => 2,
+            resolvePublishStageColorFromGroup: () => undefined,
+            resolveSubplotColorFromGroup: () => undefined,
+            finishDropOnScene: finish,
+        }) as OuterRingDragController;
+        expect(await controller.placeFromTimetable('Book/A scene.md', 'Book/B scene.md')).toBe(true);
+        expect(finish).toHaveBeenCalledWith({ type: 'scene', group: to, sceneId: 'scene-b', act: 1, ring: 2 });
+        expect(await controller.placeFromTimetable('Book/A scene.md', 'missing.md')).toBe(false);
+        expect(await controller.placeFromTimetable('Book/A scene.md', 'Book/A scene.md')).toBe(false);
+        expect(finish).toHaveBeenCalledTimes(1);
+    });
+});
 
 describe('dedupeOuterRingOrderEntries', () => {
     it('keeps only the first occurrence of each manuscript path', () => {

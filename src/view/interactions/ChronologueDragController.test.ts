@@ -100,3 +100,40 @@ describe('Chronologue placement owns the pointer while confirmation is open', ()
         expect(targetWhileChoosing).toBe(originalTarget);
     });
 });
+
+describe('Timetable Chronologue placement', () => {
+    it('opens the existing confirmation and cancellation performs no writes', async () => {
+        const drag = harness();
+        Object.assign(drag, { dragging: false });
+        Object.assign((drag as unknown as { view: object }).view, { chronologueState: { shift: false, alien: false } });
+        const place = (drag as unknown as ChronologueDragController).placeFromTimetable('A.md', 'C.md');
+        expect(pending.resolvers).toHaveLength(1);
+        pending.resolvers[0](null);
+        expect(await place).toBe(true);
+        expect(pending.writes).not.toHaveBeenCalled();
+    });
+
+    it('uses the existing date write after confirmation', async () => {
+        const drag = harness();
+        Object.assign(drag, { dragging: false });
+        Object.assign((drag as unknown as { view: object }).view, { chronologueState: { shift: false, alien: false } });
+        const place = (drag as unknown as ChronologueDragController).placeFromTimetable('A.md', 'C.md');
+        expect(pending.resolvers).toHaveLength(1);
+        pending.resolvers[0]({ when: new Date(2026, 0, 2, 12), storedWhen: '2026-01-02 12:00', keepFollowers: false });
+        expect(await place).toBe(true);
+        expect(pending.writes).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects missing scenes and active Chronologue submodes', async () => {
+        const drag = harness();
+        Object.assign(drag, { dragging: false });
+        const view = (drag as unknown as { view: { chronologueState: { shift: boolean; alien: boolean } } }).view;
+        view.chronologueState = { shift: false, alien: false };
+        const controller = drag as unknown as ChronologueDragController;
+        expect(await controller.placeFromTimetable('missing.md', 'C.md')).toBe(false);
+        view.chronologueState.shift = true;
+        expect(await controller.placeFromTimetable('A.md', 'C.md')).toBe(false);
+        expect(pending.resolvers).toHaveLength(0);
+        expect(pending.writes).not.toHaveBeenCalled();
+    });
+});

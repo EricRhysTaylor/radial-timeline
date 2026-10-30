@@ -10,6 +10,7 @@ import { setupChronologueShiftController } from '../interactions/ChronologueShif
 import { ChronologueDragController, wasRecentlyHandledByChronologueDrag } from '../interactions/ChronologueDragController';
 import { isSubplotDragActive, wasRecentlyHandledBySubplotDrag } from '../interactions/SubplotRingDragController';
 import { openFromWheel } from '../../timetable/readingPane';
+import { registerSceneDrop } from '../../timetable/timetableRegistry';
 import { buildSearchHighlight } from '../../services/searchHighlight';
 import { handleDominantSubplotSelection } from '../interactions/DominantSubplotHandler';
 import { SceneInteractionManager } from '../interactions/SceneInteractionManager';
@@ -60,6 +61,7 @@ function setupChronologueDrag(view: RadialTimelineView, svg: SVGSVGElement): voi
         onRefresh: () => view.refreshTimeline()
     });
     controller.attach();
+    view.renderScope.register(registerSceneDrop('chronologue', (source, target) => controller.placeFromTimetable(source, target)));
 }
 
 /**

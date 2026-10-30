@@ -1,5 +1,6 @@
 import { TFile } from 'obsidian';
 import { openFromWheel } from '../../timetable/readingPane';
+import { registerSceneDrop } from '../../timetable/timetableRegistry';
 import { buildSearchHighlight } from '../../services/searchHighlight';
 import type { TimelineItem } from '../../types';
 import { handleDominantSubplotSelection } from '../interactions/DominantSubplotHandler';
@@ -242,4 +243,5 @@ export function setupOuterRingDrag(view: RadialTimelineView, svg: SVGSVGElement)
         mode: view.currentMode,
     });
     controller.attach();
+    view.renderScope.register(registerSceneDrop('narrative', (source, target) => controller.placeFromTimetable(source, target)));
 }

@@ -80,6 +80,20 @@ export interface TimelineColoring {
 }
 
 const liveTimetables = new Set<LiveTimetable>();
+type SceneDropHandler = (source: string, target: string) => Promise<boolean>;
+let sceneDropHandler: { mode: string; drop: SceneDropHandler } | null = null;
+
+/** The active wheel owns scene placement, including its confirmation and write rules. */
+export function registerSceneDrop(mode: string, drop: SceneDropHandler): () => void {
+    const registration = { mode, drop };
+    sceneDropHandler = registration;
+    return () => { if (sceneDropHandler === registration) sceneDropHandler = null; };
+}
+
+export async function dropTimetableScene(mode: string, source: string, target: string): Promise<boolean> {
+    if (!sceneDropHandler || sceneDropHandler.mode !== mode) return false;
+    return sceneDropHandler.drop(source, target);
+}
 let timelineMode: TimelineModeState | null = null;
 let currentNote: string | null = null;
 let lens: TimelineLens | null = null;

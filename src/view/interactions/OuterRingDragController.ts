@@ -279,6 +279,28 @@ export class OuterRingDragController {
         return getOuterRingIndex(this.svg);
     }
 
+    /** Reuse the wheel's placement and confirmation for a Timetable drop. */
+    async placeFromTimetable(source: string, target: string): Promise<boolean> {
+        if (this.confirming || this.dragging || source === target) return false;
+        const ring = this.getOuterRingIndex();
+        const groups = Array.from(this.svg.querySelectorAll<SVGGElement>('.rt-scene-group[data-item-type="Scene"]'))
+            .filter(group => Number(group.getAttribute('data-ring')) === ring);
+        const find = (path: string): SVGGElement | undefined => groups.find(group => group.getAttribute('data-path') === encodeURIComponent(path));
+        const from = find(source);
+        const to = find(target);
+        const sourceId = this.getSceneIdFromSceneGroup(from ?? null);
+        const targetId = this.getSceneIdFromSceneGroup(to ?? null);
+        if (!from || !to || !sourceId || !targetId) return false;
+        this.sourceSceneId = sourceId;
+        this.sourceSceneGroup = from;
+        this.sourcePath = source;
+        this.sourceItemType = 'Scene';
+        this.originColor = this.resolvePublishStageColorFromGroup(from);
+        this.originModalColor = this.resolveSubplotColorFromGroup(from);
+        await this.finishDropOnScene({ type: 'scene', group: to, sceneId: targetId, act: Number(to.getAttribute('data-act') ?? 0), ring });
+        return true;
+    }
+
     private cssEscape(value: string): string {
         return cssEscape(value);
     }

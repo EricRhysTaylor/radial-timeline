@@ -19,6 +19,7 @@ import { currentReferenceSelection, hoverTimeReference, onReferenceSelection, pi
 
 import {
     BasesView,
+    Component,
     Keymap,
     Menu,
     Notice,
@@ -98,6 +99,7 @@ import {
 } from './timetableModel';
 import { authorKeyFor, countColumnFill, tableColumns, TIMETABLE_VIEW_TYPE, withRecommendedColumns } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
+import { synopsisKey, updateSynopsis } from './panelSynopsis';
 import { coloringDateLabel } from './coloringDates';
 import { TimetableColoringModal } from './TimetableColoringModal';
 import { CellPeek } from './cellPeek';
@@ -113,6 +115,7 @@ import {
     currentTimelineColoring,
     currentTimelineLens,
     currentTimelineMode,
+    dropTimetableScene,
     setTimelineColoring,
     setTimelineLens,
     trackTimetable,
@@ -344,6 +347,9 @@ export class TimetableView extends BasesView {
     private peekControl: HTMLElement | null = null;
     /** A redraw that waited for the author to stop typing in a drawer. */
     private renderDeferred = false;
+    private panelEditing: { path: string; original: unknown } | null = null;
+    private panelEvents: Component | null = null;
+    private draggedScene: string | null = null;
     private decorateGeneration = 0;
     private readonly rowEls = new Map<string, HTMLElement>();
     private readonly synopsisFromBody = new Map<string, HTMLElement>();
@@ -1622,6 +1628,8 @@ export class TimetableView extends BasesView {
     }
 
     onunload(): void {
+        this.panelEvents?.unload();
+        this.panelEvents = null;
         clearTimelineLens(this);
         clearTimelineColoring(this);
         if (this.hoveredPath !== null) this.plugin.highlightSceneOnTimeline(null);
@@ -1753,11 +1761,14 @@ export class TimetableView extends BasesView {
     private render(): void {
         if (!this.data) return;
         // Never pull the editor out from under the author mid-sentence.
-        if ([...this.drawers.values()].some(drawer => drawer.isEditing())) {
+        if (this.panelEditing || [...this.drawers.values()].some(drawer => drawer.isEditing())) {
             this.renderDeferred = true;
             return;
         }
         this.renderDeferred = false;
+        this.panelEvents?.unload();
+        this.panelEvents = new Component();
+        this.panelEvents.load();
         this.rowEls.clear();
         this.rowItems.clear();
         this.groupHeaderEls.clear();
@@ -1784,11 +1795,19 @@ export class TimetableView extends BasesView {
         this.mountPatternDefs();
         this.renderBookNotice(groups);
 
+        this.renderLayoutSwitch(state);
+
         const allItems = groups.flatMap(group => group.items);
         if (allItems.length === 0) {
             this.renderNewSketchToolbar();
             this.rootEl.createDiv({ cls: 'ert-timetable__empty', text: t('ui.timetable.empty') });
             this.pruneDrawers(new Set());
+            return;
+        }
+
+        if (this.config.get('panels') === true) {
+            this.renderPanels(groups, mode, allItems);
+            if (scrollParent) scrollParent.scrollTop = scrollTop;
             return;
         }
 
@@ -2120,6 +2139,170 @@ export class TimetableView extends BasesView {
         button.createSpan({ text: t('ui.timetable.newSketch') });
     }
 
+    /** Switch the presentation while retaining the same Bases view and filters. */
+    private renderLayoutSwitch(state: TimelineModeState): void {
+        const toolbar = this.rootEl.createDiv({ cls: 'ert-timetable-panels__toolbar' });
+        for (const [panels, label] of [[false, t('ui.timetable.layoutTable')], [true, t('ui.timetable.layoutPanels')]] as const) {
+            const button = toolbar.createEl('button', { text: label });
+            button.setAttr('aria-pressed', String((this.config.get('panels') === true) === panels));
+            this.panelEvents?.registerDomEvent(button, 'click', () => {
+                if (this.panelEditing) return;
+                this.config.set('panels', panels); this.render();
+            });
+        }
+        if (this.config.get('panels') === true) this.renderCorner(toolbar, state);
+    }
+
+    private renderPanels(groups: TableGroup[], mode: ModeContext, allItems: TableItem[]): void {
+        const layout = this.rings ? buildRingLayout(this.rings.order, this.rings.colorIndex, allItems.map(item => item.row)) : null;
+        const keep = new Set<string>();
+        const list = this.rootEl.createDiv({ cls: 'ert-timetable-panels' });
+        for (const group of groups) {
+            if (group.label) list.createEl('h3', { cls: 'ert-timetable-panels__group', text: group.label });
+            for (const item of group.items) {
+                const { row, frontmatter, entry } = item;
+                const panel = list.createDiv({ cls: ['ert-timetable__row', 'ert-timetable-panels__panel', `is-${row.kind === 'otherClass' ? 'other-class' : row.kind}`] });
+                panel.dataset.path = row.path;
+                this.rowEls.set(row.path, panel);
+                this.rowItems.set(row.path, item);
+                const header = panel.createDiv({ cls: 'ert-timetable-panels__header' });
+                if (row.kind === 'scene') this.attachSceneDrag(panel, header, row.path, mode.state);
+                if (row.prefix) header.createSpan({ cls: 'ert-timetable-panels__number', text: row.prefix });
+                header.createEl('strong', { text: displayName(row.basename) });
+                if (row.kind === 'sketch') header.createSpan({ cls: 'ert-timetable-panels__kind', text: t('ui.timetable.panelSketch') });
+                const open = header.createEl('button', { text: t('ui.timetable.panelOpen') });
+                this.panelEvents?.registerDomEvent(open, 'click', (evt: MouseEvent) => { evt.stopPropagation(); void openFromTimetable(this.plugin.app, entry.file, evt, this.rootEl); });
+                const meta = panel.createDiv({ cls: 'ert-timetable-panels__meta' });
+                for (const name of row.subplots) {
+                    const chip = meta.createSpan({ cls: 'ert-timetable-panels__subplot', text: name });
+                    const color = layout?.colorIndex.get(name);
+                    if (color !== undefined) chip.setCssProps({ '--ert-timetable-panel-color': `var(--rt-subplot-colors-${color})` });
+                }
+                const characters = frontmatterKey(frontmatter, authorKeyFor('Character', this.plugin.settings));
+                const names = (Array.isArray(characters) ? characters : [characters]).filter((name): name is string => typeof name === 'string' && name.trim().length > 0);
+                if (names.length) meta.createSpan({ text: names.join(' · ') });
+                if (mode.state.mode === 'chronologue') {
+                    const when = readWhen(frontmatter, this.plugin.settings);
+                    if (when.when) meta.createSpan({ text: this.formatWhen(when.when, when.hasClock, mode.chronologue?.profile ?? null) });
+                }
+                if (row.kind === 'scene') {
+                    const vitals = sceneVitals(frontmatter, this.plugin.settings, new Date());
+                    meta.createSpan({ text: vitals.stage });
+                    const synopsis = panel.createEl('button', { cls: 'ert-timetable-panels__synopsis', text: vitals.synopsis ?? t('ui.timetable.panelAddSynopsis') });
+                    this.panelEvents?.registerDomEvent(synopsis, 'click', evt => { evt.stopPropagation(); this.editPanelSynopsis(item, synopsis); });
+                } else if (row.kind === 'sketch') {
+                    const toggle = panel.createEl('button', { cls: 'ert-timetable__drawer-toggle', text: this.drawerIsOpen(row.path) ? t('ui.timetable.panelCloseSketch') : t('ui.timetable.panelExpandSketch') });
+                    toggle.setAttr('aria-expanded', String(this.drawerIsOpen(row.path)));
+                    if (this.drawerIsOpen(row.path)) {
+                        const holder = panel.createDiv({ cls: 'ert-timetable__drawer-row' });
+                        const drawer = this.drawerFor(entry.file);
+                        holder.appendChild(drawer.el);
+                        drawer.renderBar(row, frontmatter, layout);
+                        keep.add(row.path);
+                        if (this.focusPath === row.path) {
+                            this.focusPath = null;
+                            if (this.focusField === 'title') drawer.focusTitle(); else drawer.focusEditor();
+                            this.focusField = 'text';
+                        }
+                    } else {
+                        const preview = panel.createDiv({ cls: 'ert-timetable-panels__preview' });
+                        void this.plugin.app.vault.cachedRead(entry.file).then(content => {
+                            if (!preview.isConnected) return;
+                            const info = getFrontMatterInfo(content);
+                            preview.setText(content.slice(info.exists ? info.contentStart : 0).trim());
+                        });
+                    }
+                }
+            }
+        }
+        this.pruneDrawers(keep);
+        this.setCurrentRow(currentNotePath());
+        this.markRing(this.ringSpotlight);
+        this.markPicks();
+    }
+
+    private editPanelSynopsis(item: TableItem, button: HTMLButtonElement): void {
+        if (this.panelEditing) return;
+        const fm = item.frontmatter ?? {};
+        const original = fm[synopsisKey(fm, this.plugin.settings)];
+        if (original !== undefined && typeof original !== 'string') {
+            new Notice(t('ui.timetable.panelSynopsisType'));
+            return;
+        }
+        this.panelEditing = { path: item.row.path, original };
+        const editor = button.parentElement?.createDiv({ cls: 'ert-timetable-panels__editor' });
+        if (!editor) { this.panelEditing = null; return; }
+        button.hide();
+        const input = editor.createEl('textarea');
+        input.value = original ?? '';
+        setAccessibleLabel(input, t('ui.timetable.panelSynopsis'));
+        const save = editor.createEl('button', { text: t('ui.timetable.panelSave'), cls: 'ert-timetable-panels__save' });
+        const cancel = editor.createEl('button', { text: t('ui.timetable.panelCancel') });
+        this.panelEvents?.registerDomEvent(cancel, 'click', evt => { evt.stopPropagation(); this.panelEditing = null; this.render(); });
+        this.panelEvents?.registerDomEvent(save, 'click', evt => { evt.stopPropagation(); void (async () => {
+            save.disabled = true;
+            cancel.disabled = true;
+            let updated = false;
+            try {
+                await this.plugin.app.fileManager.processFrontMatter(item.entry.file, fmNow => {
+                    updated = updateSynopsis(fmNow, this.plugin.settings, original, input.value);
+                });
+                if (!updated) { new Notice(t('ui.timetable.panelConflict')); save.disabled = false; cancel.disabled = false; return; }
+                this.panelEditing = null;
+                this.render();
+            } catch (error) {
+                console.error('Synopsis save failed', error);
+                new Notice(t('ui.timetable.panelSaveFailed'));
+                save.disabled = false;
+                cancel.disabled = false;
+            }
+        })(); });
+        input.focus();
+    }
+
+    /** Drop immediately before a scene using the active timeline's placement operation. */
+    private attachSceneDrag(row: HTMLElement, host: HTMLElement, path: string, state: TimelineModeState): void {
+        if ((state.mode !== 'narrative' && state.mode !== 'chronologue') || state.runtime || state.shift || state.alt
+            || this.config.getSort().length > 0 || getTimelineScope(this.plugin.settings) !== 'book'
+            || currentTimelineMode()?.mode !== state.mode) return;
+        const handle = host.createEl('button', { cls: 'ert-timetable__drag clickable-icon', attr: { draggable: 'true', type: 'button' } });
+        setAccessibleLabel(handle, t('ui.timetable.panelDrag'));
+        setIcon(handle, 'grip-vertical');
+        this.panelEvents?.registerDomEvent(handle, 'dragstart', (evt: DragEvent) => {
+            if (!evt.dataTransfer) return;
+            this.draggedScene = path;
+            evt.dataTransfer.effectAllowed = 'move';
+            evt.dataTransfer.setData('text/plain', path);
+        });
+        this.panelEvents?.registerDomEvent(handle, 'dragend', () => {
+            this.draggedScene = null;
+            this.rootEl.querySelectorAll('.ert-timetable__drop-before').forEach(el => el.removeClass('ert-timetable__drop-before'));
+        });
+        this.panelEvents?.registerDomEvent(row, 'dragover', (evt: DragEvent) => {
+            if (!this.draggedScene || this.draggedScene === path) return;
+            const books = this.plugin.settings.books ?? [];
+            const sourceBook = getBookIdForPath(books, this.draggedScene);
+            if (!sourceBook || sourceBook !== getBookIdForPath(books, path)) return;
+            evt.preventDefault();
+            if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move';
+            row.addClass('ert-timetable__drop-before');
+        });
+        this.panelEvents?.registerDomEvent(row, 'dragleave', (evt: DragEvent) => {
+            if (!(evt.relatedTarget instanceof Node) || !row.contains(evt.relatedTarget)) row.removeClass('ert-timetable__drop-before');
+        });
+        this.panelEvents?.registerDomEvent(row, 'drop', evt => {
+            const source = this.draggedScene;
+            if (!source || source === path || !row.hasClass('ert-timetable__drop-before')) return;
+            evt.preventDefault();
+            evt.stopPropagation();
+            row.removeClass('ert-timetable__drop-before');
+            this.draggedScene = null;
+            void dropTimetableScene(state.mode, source, path).then(handled => {
+                if (!handled) new Notice(t('ui.timetable.panelDragUnavailable'));
+            }).catch(error => { console.error('Timetable scene placement failed', error); new Notice(t('ui.timetable.panelDragUnavailable')); });
+        });
+    }
+
     /** A small + that creates a sketch in this act (and this book). */
     private renderNewSketchButton(container: HTMLElement, act: number | null | undefined, bookId: string | undefined, label: string): void {
         if (!bookId) return;
@@ -2255,6 +2438,7 @@ export class TimetableView extends BasesView {
         const gossamer = mode.state.mode === 'gossamer';
         if (gossamer && row.kind !== 'beat') tr.addClass('is-receded');
         this.renderNumberCell(tr.createEl('td', { cls: 'ert-timetable__num' }).createDiv({ cls: 'ert-timetable__num-inner' }), item, cells.today);
+        if (row.kind === 'scene') this.attachSceneDrag(tr, tr.querySelector<HTMLElement>('.ert-timetable__num-inner') ?? tr, row.path, mode.state);
 
         if (row.kind === 'beat') {
             // Beats run across the table as quiet dividers, as on the wheel.

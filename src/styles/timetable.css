@@ -1198,3 +1198,26 @@
   max-height: var(--ert-key-max-height, 70vh);
   overflow-y: auto;
 }
+/* Panels retain the active Obsidian theme and the timeline's subplot colors. */
+.ert-timetable-panels__toolbar { display: flex; gap: var(--size-4-2); align-items: center; padding: var(--size-4-2); }
+.ert-timetable-panels__toolbar button[aria-pressed="true"] { background: var(--interactive-accent); color: var(--text-on-accent); }
+.ert-timetable-panels { display: flex; flex-direction: column; gap: var(--size-4-3); padding: var(--size-4-3); }
+.ert-timetable-panels__group { margin: var(--size-4-3) 0 0; color: var(--text-muted); }
+.ert-timetable-panels__panel { display: flex; flex-direction: column; gap: var(--size-4-2); padding: var(--size-4-4); border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-primary); }
+.ert-timetable .ert-timetable-panels__panel { height: auto; cursor: default; }
+.ert-timetable .ert-timetable-panels__panel.is-linked {
+  background: color-mix(in srgb, var(--ert-timetable-link-color, var(--interactive-accent)) 30%, transparent);
+  box-shadow: inset 4px 0 0 var(--ert-timetable-link-color, var(--interactive-accent));
+}
+.ert-timetable-panels__header, .ert-timetable-panels__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-4-2); }
+.ert-timetable-panels__header strong { flex: 1; min-width: 8em; }
+.ert-timetable-panels__number, .ert-timetable-panels__kind, .ert-timetable-panels__meta { color: var(--text-muted); font-size: var(--font-ui-small); }
+.ert-timetable-panels__subplot { border-left: 3px solid var(--ert-timetable-panel-color, var(--background-modifier-border)); padding-left: var(--size-4-2); }
+.ert-timetable button.ert-timetable-panels__synopsis { height: auto; min-height: 3em; justify-content: flex-start; white-space: pre-wrap; text-align: left; line-height: 1.5; background: transparent; box-shadow: none; color: var(--text-normal); }
+.ert-timetable-panels__preview { white-space: pre-wrap; overflow: hidden; max-height: 5em; color: var(--text-muted); }
+.ert-timetable-panels__editor textarea { width: 100%; min-height: 7em; resize: vertical; }
+.ert-timetable-panels__editor button { margin: var(--size-4-2) var(--size-4-2) 0 0; }
+.ert-timetable-panels__editor .ert-timetable-panels__save { background: var(--interactive-accent); color: var(--text-on-accent); }
+.ert-timetable__drag { cursor: grab; flex: none; }
+.ert-timetable__drag:active { cursor: grabbing; }
+.ert-timetable__drop-before { box-shadow: inset 0 3px var(--interactive-accent); }

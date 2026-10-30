@@ -90,6 +90,15 @@ export class ChronologueDragController {
     private startY = 0;
     private committing = false;
 
+    /** Use exactly the wheel's date-placement dialog for a Timetable drop. */
+    async placeFromTimetable(source: string, target: string): Promise<boolean> {
+        if (this.committing || this.dragging || this.subModeActive() || source === target) return false;
+        const paths = new Set(this.view.sceneData.filter(item => item.itemType === 'Scene').map(item => item.path));
+        if (!paths.has(source) || !paths.has(target)) return false;
+        await this.commitDrop(source, target);
+        return true;
+    }
+
     constructor(
         private readonly view: ChronologueDragViewAdapter,
         private readonly svg: SVGSVGElement,

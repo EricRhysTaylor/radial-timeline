@@ -123,9 +123,9 @@ Character lanes follow the main characters through the book, in the order a read
 
 A scene's characters come from its `Character:` list. The first name is the POV character, or the first several when the scene's `POV:` asks for more, following the **Global POV** setting. Hover a mark to light its scene.
 
-The names are in the **ring key**: hover or click the layers icon in the title bar, or hold **Shift**. The key lists the lanes between **All Scenes** and the first subplot, each beside its color. Hover a character there to light every scene they're in, across all the rings.
+The names are in the **ring key**: hover or click the layers icon in the title bar, or hold **Shift**. The key lists the lanes between **All Scenes** and the first subplot, each beside its color, and while it is open the names also appear on the wheel, stepped back from 12 o'clock along their lanes. Hover a character in the key to light every scene they're in, across all the rings. The eye button beside **Character lanes** in the key shows or hides the lanes.
 
-The lanes take a little room from the rings. Turn them on with **Settings → Core → Point of view → Character lanes**.
+The lanes take a little room from the rings. Turn them on with the eye button in the ring key, or with **Settings → Core → Point of view → Character lanes**.
 
 ## Dominant Subplots
 

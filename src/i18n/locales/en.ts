@@ -6644,6 +6644,8 @@ export const en = {
             ringKey: 'Ring key',
             outerToInner: 'Outer → inner',
             characterLanes: 'Character lanes',
+            showCharacterLanes: 'Show character lanes',
+            hideCharacterLanes: 'Hide character lanes',
         },
         subplotManagementService: {
             cannotDeleteMainPlot: 'Cannot delete Main Plot.',

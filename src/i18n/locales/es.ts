@@ -6984,7 +6984,9 @@ export const es: TranslationKeys = {
         "subplotKeyController": {
             "ringKey": "llave de anillo",
             "outerToInner": "Exterior → Interior",
-            "characterLanes": "Carriles de personajes"
+            "characterLanes": "Carriles de personajes",
+            "showCharacterLanes": "Mostrar carriles de personajes",
+            "hideCharacterLanes": "Ocultar carriles de personajes"
         },
         "subplotManagementService": {
             "cannotDeleteMainPlot": "No se puede eliminar la trama principal.",

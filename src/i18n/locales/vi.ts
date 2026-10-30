@@ -6984,7 +6984,9 @@ export const vi: TranslationKeys = {
         "subplotKeyController": {
             "ringKey": "Chú giải vòng",
             "outerToInner": "Bên ngoài → Bên trong",
-            "characterLanes": "Làn nhân vật"
+            "characterLanes": "Làn nhân vật",
+            "showCharacterLanes": "Hiện làn nhân vật",
+            "hideCharacterLanes": "Ẩn làn nhân vật"
         },
         "subplotManagementService": {
             "cannotDeleteMainPlot": "Không thể xóa cốt truyện chính.",

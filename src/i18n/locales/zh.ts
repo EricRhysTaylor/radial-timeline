@@ -6984,6 +6984,8 @@ export const zh: DeepPartial<TranslationKeys> = {
             ringKey: '环图例',
             outerToInner: '外 → 内',
             characterLanes: '角色轨道',
+            showCharacterLanes: '显示角色轨道',
+            hideCharacterLanes: '隐藏角色轨道',
         },
         subplotManagementService: {
             cannotDeleteMainPlot: '无法删除主情节。',

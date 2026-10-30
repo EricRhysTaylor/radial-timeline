@@ -1,11 +1,11 @@
 /* Narrative: character lanes under the All Scenes ring (src/renderer/components/CharacterLanes.ts).
    No transitions here: the lanes sit on the scene-hover path. */
 
-/* Lane colors are defined in variables.css. */
-.ert-character-lane[data-lane="0"] { --ert-character-lane-color: var(--ert-character-lane-color-0); }
-.ert-character-lane[data-lane="1"] { --ert-character-lane-color: var(--ert-character-lane-color-1); }
-.ert-character-lane[data-lane="2"] { --ert-character-lane-color: var(--ert-character-lane-color-2); }
-.ert-character-lane[data-lane="3"] { --ert-character-lane-color: var(--ert-character-lane-color-3); }
+/* Lane colors are defined on .radial-timeline-container in base.css. */
+.ert-character-lane[data-lane="0"], .ert-character-lane-name[data-lane="0"] { --ert-character-lane-color: var(--ert-character-lane-color-0); }
+.ert-character-lane[data-lane="1"], .ert-character-lane-name[data-lane="1"] { --ert-character-lane-color: var(--ert-character-lane-color-1); }
+.ert-character-lane[data-lane="2"], .ert-character-lane-name[data-lane="2"] { --ert-character-lane-color: var(--ert-character-lane-color-2); }
+.ert-character-lane[data-lane="3"], .ert-character-lane-name[data-lane="3"] { --ert-character-lane-color: var(--ert-character-lane-color-3); }
 
 .ert-character-lane-track {
   fill: none;
@@ -19,7 +19,36 @@
   fill: var(--ert-character-lane-color);
 }
 
-/* The ring key's character spotlight dims the other lanes. */
+/* The ring key's character spotlight dims the other lanes and their names. */
 .ert-character-lane.rt-non-selected .ert-character-lane-mark {
   fill-opacity: 0.15;
+}
+
+.ert-character-lane-name.rt-non-selected {
+  opacity: 0.25;
+}
+
+/* Names show on the wheel only while the ring key is open (SubplotKeyController
+   sets the class), and step aside while a scene is hovered. */
+.ert-character-lane-names {
+  display: none;
+}
+
+.radial-timeline-svg.ert-show-lane-names .ert-character-lane-names {
+  display: inline;
+}
+
+.radial-timeline-svg.ert-show-lane-names.scene-hover .ert-character-lane-names {
+  display: none;
+}
+
+.ert-character-lane-name {
+  fill: var(--ert-character-lane-color);
+  font-size: 16px;
+  font-weight: 700;
+  dominant-baseline: central;
+  stroke: var(--background-primary);
+  stroke-width: 3px;
+  paint-order: stroke;
+  pointer-events: none;
 }

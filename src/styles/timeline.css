@@ -2895,6 +2895,10 @@
 
 /* "Character lanes": groups the lane rows, which sit between the outer ring and the first subplot ring. */
 .ert-timeline-subplot-key__group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
   padding: var(--size-4-1) var(--size-2-2) var(--size-2-1);
   border-bottom: 1px dashed var(--background-modifier-border);
   font-size: 10px;
@@ -2936,6 +2940,16 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--text-muted);
+}
+
+/* Shows or hides the character lanes. */
+.ert-timeline-subplot-key__toggle.clickable-icon {
+  padding: var(--size-2-1);
+  color: var(--text-muted);
+}
+
+.ert-timeline-subplot-key__toggle.clickable-icon[aria-pressed="false"] {
+  color: var(--text-faint);
 }
 
 /* ============================================================

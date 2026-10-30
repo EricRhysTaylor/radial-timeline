@@ -210,6 +210,8 @@ export class RadialTimelineView extends ItemView {
     // the title-bar trigger button is persistent (created in ensureBookSwitcher)
     public _subplotKeyCleanup?: () => void;
     public subplotKeyPinned: boolean = false;
+    /** Reopen the key after the re-render its own lanes toggle caused. */
+    public subplotKeyHoldOpen: boolean = false;
     public subplotKeyTriggerEl?: HTMLButtonElement;
     
     // Mode system

@@ -24,7 +24,9 @@
  *
  * In Narrative, character lanes sit between the All Scenes ring and the first
  * subplot ring, so the key lists them there, each beside its lane color.
- * Hovering a character spotlights the scenes that character is in.
+ * Hovering a character spotlights the scenes that character is in. The
+ * group's eye button shows or hides the lanes (the same setting as Core →
+ * Point of view → Character lanes).
  *
  * Ring data is read from the rendered SVG's subplot ring labels (stamped by
  * SubplotLabels.ts from Precompute's masterSubplotOrder/colorIndexBySubplot),
@@ -32,7 +34,10 @@
  * key can never drift from what the wheel actually shows.
  */
 
+import { setIcon } from 'obsidian';
 import { RadialTimelineView } from '../TimeLineView';
+import { IMPACT_FULL } from '../../settings/SettingImpact';
+import { setAccessibleLabel, setTooltip } from '../../utils/domTooltip';
 import { isTypingInField } from '../../utils/domFocus';
 import { t } from '../../i18n';
 import { markTimetableRing } from '../../timetable/timetableRegistry';
@@ -108,7 +113,9 @@ export function setupSubplotKeyController(
     if (view.currentMode === 'gossamer') return;
     const entries = collectEntries(svg);
     const characterLanes = collectCharacterLanes(svg);
-    if (entries.length < 2 && characterLanes.length === 0) return;
+    // Narrative always offers the lanes toggle, so its key shows even for a single ring.
+    const offersCharacterLanes = view.currentMode === 'narrative';
+    if (entries.length === 0 || (entries.length < 2 && !offersCharacterLanes)) return;
 
     const doc = container.ownerDocument;
     // SAFE: the container is part of a live view; its document always has a window (popout-safe)
@@ -184,6 +191,9 @@ export function setupSubplotKeyController(
         characterLanes.forEach(other => {
             if (other.lane !== entry.lane) dim(other.lane);
         });
+        svg.querySelectorAll('.ert-character-lane-name').forEach(name => {
+            if (name.getAttribute('data-lane') !== entry.index) dim(name);
+        });
         const paths = new Set(Array.from(entry.lane.querySelectorAll('.ert-character-lane-mark[data-path]'))
             .map(mark => mark.getAttribute('data-path')));
         spotlightSceneGroups(group => paths.has(group.getAttribute('data-path')));
@@ -191,7 +201,26 @@ export function setupSubplotKeyController(
     const appendCharacterLaneRows = () => {
         const group = doc.win.createDiv();
         group.className = 'ert-timeline-subplot-key__group';
-        group.textContent = t('ui.subplotKeyController.characterLanes');
+        group.createSpan({ text: t('ui.subplotKeyController.characterLanes') });
+        const showing = view.plugin.settings.showCharacterLanes === true;
+        const toggle = group.createEl('button', {
+            cls: 'clickable-icon ert-timeline-subplot-key__toggle',
+            attr: { type: 'button', 'aria-pressed': String(showing) }
+        });
+        setIcon(toggle, showing ? 'eye' : 'eye-off');
+        const toggleText = t(showing ? 'ui.subplotKeyController.hideCharacterLanes' : 'ui.subplotKeyController.showCharacterLanes');
+        setAccessibleLabel(toggle, toggleText);
+        setTooltip(toggle, toggleText);
+        toggle.addEventListener('click', (evt: MouseEvent) => { // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
+            evt.preventDefault();
+            evt.stopPropagation();
+            view.subplotKeyHoldOpen = true;
+            view.plugin.settings.showCharacterLanes = !showing;
+            void (async () => {
+                await view.plugin.saveSettings();
+                view.plugin.onSettingChanged(IMPACT_FULL); // the lanes take ring space
+            })();
+        });
         rows.appendChild(group);
         characterLanes.forEach(entry => {
             const row = doc.win.createDiv();
@@ -242,7 +271,7 @@ export function setupSubplotKeyController(
         row.addEventListener('mouseenter', () => spotlightRing(entry.ring)); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
         rows.appendChild(row);
         // The lanes sit just inside the outer ring.
-        if (isOuterRow && characterLanes.length > 0) appendCharacterLaneRows();
+        if (isOuterRow && offersCharacterLanes) appendCharacterLaneRows();
     });
     rows.addEventListener('mouseleave', clearSpotlight); // SAFE: torn down with the element by _subplotKeyCleanup on re-render/close
 
@@ -256,12 +285,14 @@ export function setupSubplotKeyController(
     const show = () => {
         cancelHide();
         panel.classList.add('is-visible');
+        svg.classList.add('ert-show-lane-names');
         trigger.setAttribute('aria-expanded', 'true');
     };
     const hide = () => {
         cancelHide();
         if (view.subplotKeyPinned) return;
         panel.classList.remove('is-visible', 'is-key-held');
+        svg.classList.remove('ert-show-lane-names');
         trigger.setAttribute('aria-expanded', 'false');
         clearSpotlight();
     };
@@ -320,9 +351,10 @@ export function setupSubplotKeyController(
 
     // Restore pinned state across re-renders.
     trigger.classList.toggle('is-pinned', view.subplotKeyPinned);
-    if (view.subplotKeyPinned) {
+    if (view.subplotKeyPinned || view.subplotKeyHoldOpen) {
         show();
     }
+    view.subplotKeyHoldOpen = false;
 
     view._subplotKeyCleanup = () => {
         cancelHide();
@@ -334,6 +366,7 @@ export function setupSubplotKeyController(
         trigger.removeEventListener('mouseleave', scheduleHide);
         trigger.removeEventListener('click', handleTriggerClick);
         trigger.hidden = true;
+        svg.classList.remove('ert-show-lane-names');
         panel.remove();
     };
 }

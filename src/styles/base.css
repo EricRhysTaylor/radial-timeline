@@ -476,6 +476,12 @@
 
 /* Timeline Container Wrapper */
 .radial-timeline-container {
+  /* Character lane colors (Narrative), shared by the lanes and the ring key.
+     Obsidian's --color-* variables live on body, so these cannot sit on :root. */
+  --ert-character-lane-color-0: var(--color-cyan);
+  --ert-character-lane-color-1: var(--color-orange);
+  --ert-character-lane-color-2: var(--color-green);
+  --ert-character-lane-color-3: var(--color-pink);
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -2540,9 +2540,8 @@ export class TimetableView extends BasesView {
             cell.createSpan({ cls: 'ert-timetable__beat-title', text: displayName(row.basename) });
             const model = firstText(frontmatterKey(frontmatter, 'Beat Model'));
             if (model) cell.createSpan({ cls: 'ert-timetable__beat-model', text: model });
-            const score = gossamer ? this.renderGossamerScore(cell, frontmatter) : null;
-            // In Gossamer, the score's justification says more than the beat's Purpose.
-            const purpose = score?.justification ?? readBeatPurpose(frontmatter ?? null);
+            if (gossamer) this.renderGossamerScore(cell, frontmatter);
+            const purpose = readBeatPurpose(frontmatter ?? null);
             if (purpose) cell.createSpan({ cls: 'ert-timetable__beat-purpose', text: purpose });
         } else {
             if (layout) this.renderRingsCell(tr.createEl('td', { cls: 'ert-timetable__rings' }), row, layout);
@@ -2748,13 +2747,13 @@ export class TimetableView extends BasesView {
     }
 
     /** Gossamer: a beat's latest score for the selected signal, its change, and its expected range. */
-    private renderGossamerScore(cell: HTMLElement, frontmatter: Record<string, unknown> | undefined): { justification?: string } | null {
+    private renderGossamerScore(cell: HTMLElement, frontmatter: Record<string, unknown> | undefined): void {
         const badge = cell.createSpan({ cls: 'ert-timetable__gossamer' });
         const latest = latestGossamerScore(frontmatter ?? {}, this.plugin.gossamerSelectedSignal);
         if (!latest) {
             badge.addClass('is-empty');
             badge.setText(t('ui.timetable.gossamerNotScored'));
-            return null;
+            return;
         }
         badge.createSpan({ cls: 'ert-timetable__gossamer-score', text: String(latest.score) });
         if (latest.previous !== undefined && latest.previous !== latest.score) {
@@ -2766,7 +2765,7 @@ export class TimetableView extends BasesView {
             badge.createSpan({ cls: 'ert-timetable__gossamer-range', text: t('ui.timetable.gossamerRange', { min: range.min, max: range.max }) });
             badge.toggleClass('is-out-of-range', !isScoreInRange(latest.score, range));
         }
-        return latest;
+        if (latest.justification) tooltip(badge, t('ui.gossamerScoreModal.latestJustification', { justification: latest.justification }), 'bottom');
     }
 
     private renderValueCell(cell: HTMLElement, item: TableItem, property: BasesPropertyId, cells: CellContext): void {

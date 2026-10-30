@@ -1,19 +1,40 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { strFromU8, unzipSync } from 'fflate';
 import type { App } from 'obsidian';
+import type RadialTimelinePlugin from '../main';
 import { BONUS_VAULTS, type BonusVaultDef } from '../settings/bonusVaults';
+import { en } from '../i18n/locales/en';
+import { de } from '../i18n/locales/de';
+import { es } from '../i18n/locales/es';
+import { fr } from '../i18n/locales/fr';
+import { ja } from '../i18n/locales/ja';
+import { ko } from '../i18n/locales/ko';
+import { th } from '../i18n/locales/th';
+import { vi as viLocale } from '../i18n/locales/vi';
+import { zh } from '../i18n/locales/zh';
 import {
     DEMO_EDITION_PATH,
     findDemoByBookFolder,
+    findNewerDemoEdition,
     isDemoEdition,
     isNewerDemoEdition,
     parseDemoEditionStamp,
-    readDemoEditionStamp
+    readDemoEditionStamp,
+    renderNewerEditionLine,
+    type PublishedDemo
 } from './demoEdition';
 
 const stamp = (edition: unknown, schemaVersion: unknown = 1) =>
     JSON.stringify({ schemaVersion, sampleId: 'pride-and-prejudice', edition });
+
+/** A vault holding only the files given, for the two calls the stamp reader makes. */
+const vaultWith = (files: Map<string, string>) => ({
+    vault: {
+        getFileByPath: (path: string) => files.has(path) ? { path } : null,
+        cachedRead: async (file: { path: string }) => files.get(file.path)!
+    }
+} as unknown as App); // SAFE: minimal vault stub
 
 describe('demo edition comparison', () => {
     it('offers the catalog edition to a vault with no stamp', () => {
@@ -56,12 +77,7 @@ describe('demo edition stamp', () => {
 
     it('reads the stamp from the packaged vault root and finds none when it is absent', async () => {
         const files = new Map([[DEMO_EDITION_PATH, stamp('2026-10-30')]]);
-        const app = {
-            vault: {
-                getFileByPath: (path: string) => files.has(path) ? { path } : null,
-                cachedRead: async (file: { path: string }) => files.get(file.path)!
-            }
-        } as unknown as App; // SAFE: minimal vault stub for the two calls the reader makes
+        const app = vaultWith(files);
         expect(DEMO_EDITION_PATH).toBe('Radial Timeline/Demo/edition.json');
         expect(await readDemoEditionStamp(app)).toBe('2026-10-30');
         files.clear();
@@ -93,6 +109,55 @@ describe('detected demo identity', () => {
     it('identifies each published demo by the folder its own vault opens at', () => {
         for (const demo of BONUS_VAULTS.filter(entry => entry.books?.length)) {
             expect(findDemoByBookFolder(BONUS_VAULTS, demo.books![0].sourceFolder)).toBe(demo);
+        }
+    });
+});
+
+describe('newer edition offer', () => {
+    const archive = { url: 'https://example.com/a/2026-10-30/a.zip', downloadUrl: 'https://example.com/go/a', sha256: 'h', bytes: 1, root: 'A' };
+    const demos: BonusVaultDef[] = [
+        { id: 'a', title: 'A', author: 'X', countLabel: '', status: 'available', books: [{ title: 'A', sourceFolder: 'A' }], archive: { ...archive, edition: '2026-10-30' } },
+        { id: 'b', title: 'B', author: 'Y', countLabel: '', status: 'available', books: [{ title: 'B', sourceFolder: 'B' }], archive }
+    ];
+
+    it('offers the catalog demo to its vault without a stamp or with an older one', async () => {
+        expect((await findNewerDemoEdition(vaultWith(new Map()), demos, 'A'))?.id).toBe('a');
+        expect((await findNewerDemoEdition(vaultWith(new Map([[DEMO_EDITION_PATH, stamp('2026-10-03')]])), demos, 'A'))?.id).toBe('a');
+    });
+
+    it('offers nothing to a current vault, an unknown book, or an archive without an edition', async () => {
+        expect(await findNewerDemoEdition(vaultWith(new Map([[DEMO_EDITION_PATH, stamp('2026-10-30')]])), demos, 'A')).toBeNull();
+        expect(await findNewerDemoEdition(vaultWith(new Map()), demos, 'My Novel')).toBeNull();
+        expect(await findNewerDemoEdition(vaultWith(new Map()), demos, 'B')).toBeNull();
+    });
+
+    it('renders one line whose bracketed phrase links to the counted download', () => {
+        const parts: Array<{ text?: string; link?: { cls?: string; text: string; href: string; attr?: Record<string, string> } }> = [];
+        const line = {
+            appendText: (text: string) => parts.push({ text }),
+            createEl: (_tag: string, info: { cls?: string; text: string; href: string; attr?: Record<string, string> }) => { parts.push({ link: info }); return info; }
+        };
+        const parent = { createDiv: vi.fn(() => line) };
+        const handlers: Array<(evt: { stopPropagation: () => void }) => void> = [];
+        const plugin = { registerDomEvent: (_el: unknown, type: string, handler: (evt: { stopPropagation: () => void }) => void) => { if (type === 'click') handlers.push(handler); } };
+        const demo = demos[0] as PublishedDemo;
+        renderNewerEditionLine(parent as unknown as HTMLElement, plugin as unknown as RadialTimelinePlugin, demo, { line: 'ert-test-note', link: 'ert-test-link' }); // SAFE: DOM and plugin stubs for a node test
+        expect(parent.createDiv).toHaveBeenCalledWith({ cls: 'ert-test-note' });
+        expect(parts).toEqual([
+            { text: 'A new edition of A is ready. ' },
+            { link: { cls: 'ert-test-link', text: 'Download it', href: 'https://example.com/go/a', attr: { target: '_blank', rel: 'noopener noreferrer' } } },
+            { text: ' to open as its own vault beside this one.' }
+        ]);
+        const stopPropagation = vi.fn();
+        handlers[0]({ stopPropagation });
+        expect(stopPropagation).toHaveBeenCalled();
+    });
+
+    it('keeps exactly one link and the title in every language', () => {
+        for (const locale of [en, de, es, fr, ja, ko, th, viLocale, zh]) {
+            const text = locale.ui.bonusVaults.newerEdition;
+            expect(text.match(/\[[^\]]+\]/g)).toHaveLength(1);
+            expect(text).toContain('{{title}}');
         }
     });
 });

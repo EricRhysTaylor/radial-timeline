@@ -3445,6 +3445,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             blankCustomExamples: '少なくとも 3 つのビートから始めましょう。各ビートにはテーマではなく機能で名前を付けます。オープニング -> 圧力 -> 転換のような明確な進行を使います。ビートの追加や並べ替えは、それぞれが明確な構造上の目的を果たす場合に限りましょう。',
         },
         bonusVaults: {
+            newerEdition: '{{title}} の新しい版を用意しました。[ダウンロード]して、この保管庫の隣に専用の保管庫として開けます。',
             prideCountLabel: '61 章',
             prideDescription: '最初のデモにおすすめ。保存済みのパルス、4 つの Gossamer シグナル、3 つの Inquiry Briefing を収録。',
             odysseyCountLabel: '89 シーン',
@@ -7295,7 +7296,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             sampleOpenTitle: '{{name}} を検出しました',
             sampleOpenDesc: 'この保管庫には、すぐに探索できる {{name}} が含まれています。開くと、タイムライン上の完成した物語にすぐに入れます。',
             sampleOpenCta: 'サンプル保管庫を開く',
-            sampleNewerEdition: '{{title}} の新しい版を用意しました。[ダウンロード]して、この保管庫の隣に専用の保管庫として開けます。',
             designTitle: '書籍プロジェクトを設定',
             designDesc: 'タイムライン、エクスポート、Inquiry のスコープ、ブックマネージャーの基になる原稿フォルダを選択します。',
             designCta: 'ブックマネージャーを開く',

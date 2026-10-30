@@ -3447,6 +3447,7 @@ export const vi: TranslationKeys = {
             "blankCustomExamples": "Bắt đầu với ít nhất 3 nhịp. Đặt tên cho từng nhịp theo chức năng, không phải chủ đề. Sử dụng một tiến trình rõ ràng như mở -> áp lực -> dịch chuyển. Thêm hoặc Sắp xếp lại chỉ đánh khi mỗi cái phục vụ một mục đích cấu trúc riêng biệt."
         },
         "bonusVaults": {
+            "newerEdition": "Đã có ấn bản mới của {{title}}. [Tải xuống] để mở thành một kho riêng bên cạnh kho này.",
             "prideCountLabel": "61 chương",
             "prideDescription": "Đề xuất bản demo đầu tiên. Đã lưu xung, bốn tín hiệu Gossamer và ba bản tóm tắt Inquiry.",
             "odysseyCountLabel": "89 cảnh",
@@ -7297,7 +7298,6 @@ export const vi: TranslationKeys = {
             "sampleOpenTitle": "{{name}} được phát hiện",
             "sampleOpenDesc": "Kho này cung cấp một {{name}} đã sẵn sàng để khám phá. Mở nó để thả thẳng vào một câu chuyện đã hoàn thành trên dòng thời gian.",
             "sampleOpenCta": "Mở kho mẫu",
-            "sampleNewerEdition": "Đã có ấn bản mới của {{title}}. [Tải xuống] để mở thành một kho riêng bên cạnh kho này.",
             "designTitle": "Đặt dự án sách",
             "designDesc": "Chọn thư mục bản thảo điều khiển dòng thời gian, xuất, phạm vi Inquiry và Trình quản lý sách.",
             "designCta": "Mở Quản lý Sách",

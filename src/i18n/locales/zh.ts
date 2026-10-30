@@ -3446,6 +3446,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             blankCustomExamples: '至少从 3 个节拍开始。按功能而非主题为每个节拍命名。使用清晰的递进，例如 开场 -> 施压 -> 转变。仅当每个节拍都承担独特的结构作用时，才添加或重新排序节拍。',
         },
         bonusVaults: {
+            newerEdition: '{{title}} 的新版本已就绪。[下载]后可在此仓库旁作为独立仓库打开。',
             prideCountLabel: '61 章',
             prideDescription: '推荐的第一个演示。包含已保存的脉动结果、四个 Gossamer 信号和三份 Inquiry 简报。',
             odysseyCountLabel: '89 个场景',
@@ -7296,7 +7297,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             sampleOpenTitle: '已检测到 {{name}}',
             sampleOpenDesc: '此仓库附带可直接探索的 {{name}}。打开它，即可直接在时间轴上进入一个完整的故事。',
             sampleOpenCta: '打开示例仓库',
-            sampleNewerEdition: '{{title}} 的新版本已就绪。[下载]后可在此仓库旁作为独立仓库打开。',
             designTitle: '设置书籍项目',
             designDesc: '选择驱动时间轴、导出、Inquiry 范围和 Book Manager 的手稿文件夹。',
             designCta: '打开 Book Manager',

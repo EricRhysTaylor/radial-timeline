@@ -3447,6 +3447,7 @@ export const fr: TranslationKeys = {
             "blankCustomExamples": "Commencez avec au moins 3 beats. Nommez chaque beat par fonction, pas par thème. Utilisez une progression claire telle que l'ouverture -> la pression -> le décalage. Ajouter ou La réorganisation ne bat uniquement lorsque chacun a un objectif structurel distinct."
         },
         "bonusVaults": {
+            "newerEdition": "Une nouvelle édition de {{title}} est prête. [Téléchargez-la] pour l'ouvrir comme un coffre à part, à côté de celui-ci.",
             "prideCountLabel": "61 chapitres",
             "prideDescription": "Première démo recommandée. impulsion sauvegardée, quatre signaux Gossamer et trois Inquiry briefings.",
             "odysseyCountLabel": "89 scènes",
@@ -7297,7 +7298,6 @@ export const fr: TranslationKeys = {
             "sampleOpenTitle": "{{name}} détecté",
             "sampleOpenDesc": "Ce coffre est livré prêt-à-explorer {{name}}. Ouvrez-le pour tomber directement dans une histoire finie sur la chronologie.",
             "sampleOpenCta": "Ouvrir l'exemple de coffre",
-            "sampleNewerEdition": "Une nouvelle édition de {{title}} est prête. [Téléchargez-la] pour l'ouvrir comme un coffre à part, à côté de celui-ci.",
             "designTitle": "Définir le projet de livre",
             "designDesc": "Choisissez le dossier de manuscrits qui pilote la chronologie, les exportations, la portée Inquiry et le gestionnaire de livres.",
             "designCta": "Ouvrir Book Manager",

@@ -13,7 +13,7 @@ import { WELCOME_AUTHOR_IMAGE } from '../branding/welcomeAuthorImage';
 import { hasInquirySessionSidecarInVault, readInquirySidecarVaultIdentity } from '../inquiry/InquiryArtifactStore';
 import { mergeSampleInquirySources } from '../inquiry/sampleInquirySources';
 import { DemoLibraryModal } from '../modals/DemoLibraryModal';
-import { findDemoByBookFolder, isNewerDemoEdition, readDemoEditionStamp } from '../demoVaults/demoEdition';
+import { findNewerDemoEdition, renderNewerEditionLine } from '../demoVaults/demoEdition';
 import { BONUS_VAULTS } from '../settings/bonusVaults';
 import { markBookManagerAutoloadHighlight } from '../settings/bookManagerAutoloadHighlight';
 import {
@@ -445,10 +445,7 @@ const hydrateSampleVaultCard = async (
     const name = displayNameToBookTitle(config?.displayName, config?.bookFolder).toLowerCase() === DEFAULT_BOOK_TITLE.toLowerCase()
         ? t('ui.welcomeScreen.sampleVaultName')
         : displayNameToBookTitle(config?.displayName, config?.bookFolder);
-    // A local comparison with the bundled catalog: the vault's packaged edition
-    // stamp against the edition this plugin release offers.
-    const demo = findDemoByBookFolder(BONUS_VAULTS, config?.bookFolder);
-    const vaultEdition = await readDemoEditionStamp(plugin.app);
+    const newerEdition = await findNewerDemoEdition(plugin.app, BONUS_VAULTS, config?.bookFolder);
 
     refs.root.removeClass('rt-welcome-card-pending');
     refs.root.addClass('rt-welcome-card-detected');
@@ -459,14 +456,8 @@ const hydrateSampleVaultCard = async (
     refs.desc.setText(config?.books && config.books.length > 1
         ? t('ui.welcomeScreen.exploreAllBooks', { count: config.books.length, name })
         : WELCOME_COPY.cards.sampleOpen.desc(name));
-    if (demo?.archive && isNewerDemoEdition(demo.archive.edition, vaultEdition)) {
-        // The new edition downloads as its own vault, so this one stays as the reader left it.
-        const editionLine = refs.desc.createDiv({ cls: 'rt-welcome-card-edition' });
-        appendTextWithLinks(editionLine, t('ui.welcomeScreen.sampleNewerEdition', { title: demo.title }),
-            [demo.archive.downloadUrl], 'rt-welcome-card-secondary');
-        // The card itself opens this vault; a click on the download link stays with the link.
-        const downloadLink = editionLine.querySelector('a');
-        if (downloadLink) plugin.registerDomEvent(downloadLink, 'click', (evt) => evt.stopPropagation());
+    if (newerEdition) {
+        renderNewerEditionLine(refs.desc, plugin, newerEdition, { line: 'rt-welcome-card-edition', link: 'rt-welcome-card-secondary' });
     }
     refs.cta.setText(WELCOME_COPY.cards.sampleOpen.cta);
     refs.setActivate(() => { void openSampleVault(plugin, config, refreshTimeline); });

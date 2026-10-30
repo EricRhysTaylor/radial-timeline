@@ -3447,6 +3447,7 @@ export const es: TranslationKeys = {
             "blankCustomExamples": "Comience con al menos 3 beats. Nombra cada beat por función, no por tema. Use una progresión clara como Apertura -> Presión -> Mayús. agregar o Reordenar late solo cuando cada uno tiene un propósito estructural distinto."
         },
         "bonusVaults": {
+            "newerEdition": "Una nueva edición de {{title}} está lista. [Descárguela] para abrirla como una bóveda propia, junto a esta.",
             "prideCountLabel": "61 capítulos",
             "prideDescription": "Primera demostración recomendada. Pulso guardado, cuatro señales Gossamer y tres Inquiry informaciones.",
             "odysseyCountLabel": "89 escenas",
@@ -7297,7 +7298,6 @@ export const es: TranslationKeys = {
             "sampleOpenTitle": "{{name}} detectado",
             "sampleOpenDesc": "Esta bóveda envía un {{name}} listo para explorar. Ábrelo para caer directamente a una historia terminada en la línea de tiempo.",
             "sampleOpenCta": "Abra la bóveda de muestra",
-            "sampleNewerEdition": "Una nueva edición de {{title}} está lista. [Descárguela] para abrirla como una bóveda propia, junto a esta.",
             "designTitle": "Establecer proyecto de libro",
             "designDesc": "Elija la carpeta del manuscrito que impulsa el cronograma, las exportaciones, el ámbito Inquiry y el administrador de libros.",
             "designCta": "Abrir Administrador de Libros",

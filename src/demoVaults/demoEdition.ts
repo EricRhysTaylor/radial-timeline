@@ -1,5 +1,7 @@
 import type { App } from 'obsidian';
-import type { BonusVaultDef } from '../settings/bonusVaults';
+import type RadialTimelinePlugin from '../main';
+import type { BonusVaultDef, DemoArchive } from '../settings/bonusVaults';
+import { t } from '../i18n';
 import { systemFolderPath } from '../utils/systemFolder';
 
 /**
@@ -61,4 +63,52 @@ export function findDemoByBookFolder(demos: readonly BonusVaultDef[], bookFolder
     const folder = bookFolder?.trim();
     if (!folder) return undefined;
     return demos.find(demo => demo.books?.some(book => book.sourceFolder === folder));
+}
+
+export type PublishedDemo = BonusVaultDef & { archive: DemoArchive };
+
+const isPublished = (demo: BonusVaultDef | undefined): demo is PublishedDemo => !!demo?.archive;
+
+/**
+ * The catalog demo to offer when this vault holds an older edition of it. The
+ * demo is matched by book folder; the vault's stamp is compared with the
+ * catalog edition bundled in this plugin release, so nothing is requested.
+ */
+export async function findNewerDemoEdition(
+    app: App,
+    demos: readonly BonusVaultDef[],
+    bookFolder: string | undefined
+): Promise<PublishedDemo | null> {
+    const demo = findDemoByBookFolder(demos, bookFolder);
+    if (!isPublished(demo) || !isNewerDemoEdition(demo.archive.edition, await readDemoEditionStamp(app))) return null;
+    return demo;
+}
+
+/**
+ * One quiet line offering the newer edition through the demo's counted
+ * download. It arrives as its own vault, so the reader's files stay as they
+ * are. A click on the link stays with the link, for lines inside a clickable card.
+ */
+export function renderNewerEditionLine(
+    parent: HTMLElement,
+    plugin: RadialTimelinePlugin,
+    demo: PublishedDemo,
+    cls: { line: string; link?: string }
+): HTMLElement {
+    const line = parent.createDiv({ cls: cls.line });
+    // [Bracketed] text is the link, so each translation keeps one sentence.
+    t('ui.bonusVaults.newerEdition', { title: demo.title }).split(/\[([^\]]+)\]/).forEach((part, index) => {
+        if (index % 2 === 0) {
+            if (part) line.appendText(part);
+            return;
+        }
+        const link = line.createEl('a', {
+            cls: cls.link,
+            text: part,
+            href: demo.archive.downloadUrl,
+            attr: { target: '_blank', rel: 'noopener noreferrer' }
+        });
+        plugin.registerDomEvent(link, 'click', (evt) => evt.stopPropagation());
+    });
+    return line;
 }

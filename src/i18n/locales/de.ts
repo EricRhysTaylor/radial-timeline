@@ -3444,6 +3444,7 @@ export const de: DeepPartial<TranslationKeys> = {
             blankCustomExamples: 'Beginnen Sie mit mindestens 3 Beats. Benennen Sie jeden Beat nach seiner Funktion, nicht nach dem Thema. Verwenden Sie eine klare Abfolge wie Eröffnung -> Druck -> Wendung. Fügen Sie Beats nur hinzu oder ordnen Sie sie um, wenn jeder einem eigenen strukturellen Zweck dient.',
         },
         bonusVaults: {
+            newerEdition: 'Eine neue Ausgabe von {{title}} ist bereit. [Laden Sie sie herunter], um sie als eigenen Vault neben diesem zu öffnen.',
             prideCountLabel: '61 Kapitel',
             prideDescription: 'Empfohlene erste Demo. Gespeicherter Pulse, vier Gossamer-Signale und drei Inquiry-Briefings.',
             odysseyCountLabel: '89 Szenen',
@@ -7294,7 +7295,6 @@ export const de: DeepPartial<TranslationKeys> = {
             sampleOpenTitle: '{{name}} erkannt',
             sampleOpenDesc: 'Dieser Vault enthält {{name}}, sofort bereit zum Erkunden. Öffnen Sie das Beispiel, um direkt in eine fertige Geschichte auf der Timeline einzutauchen.',
             sampleOpenCta: 'Beispiel-Vault öffnen',
-            sampleNewerEdition: 'Eine neue Ausgabe von {{title}} ist bereit. [Laden Sie sie herunter], um sie als eigenen Vault neben diesem zu öffnen.',
             designTitle: 'Buchprojekt festlegen',
             designDesc: 'Wählen Sie den Manuskriptordner, der Timeline, Exporte, Inquiry-Bereich und Book Manager steuert.',
             designCta: 'Book Manager öffnen',

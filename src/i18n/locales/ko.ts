@@ -3444,6 +3444,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             blankCustomExamples: '최소 3개의 비트로 시작하세요. 각 비트의 이름은 주제가 아닌 기능에 따라 지으세요. 도입 -> 압박 -> 전환처럼 명확한 전개를 사용하세요. 각 비트가 고유한 구조적 목적을 가질 때만 비트를 추가하거나 순서를 바꾸세요.',
         },
         bonusVaults: {
+            newerEdition: '{{title}}의 새 판이 준비되었습니다. [다운로드]하여 이 보관함 옆에 별도의 보관함으로 여세요.',
             prideCountLabel: '61개 장',
             prideDescription: '처음 보기에 추천하는 데모입니다. 저장된 펄스, Gossamer 신호 4개, Inquiry Brief 3개가 포함되어 있습니다.',
             odysseyCountLabel: '장면 89개',
@@ -7294,7 +7295,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             sampleOpenTitle: '{{name}} 감지됨',
             sampleOpenDesc: '이 보관함에는 바로 살펴볼 수 있는 {{name}}이(가) 포함되어 있습니다. 열면 타임라인에서 완성된 이야기로 바로 들어갑니다.',
             sampleOpenCta: '샘플 보관함 열기',
-            sampleNewerEdition: '{{title}}의 새 판이 준비되었습니다. [다운로드]하여 이 보관함 옆에 별도의 보관함으로 여세요.',
             designTitle: '책 프로젝트 설정',
             designDesc: '타임라인, 내보내기, Inquiry 범위, Book Manager의 기준이 되는 원고 폴더를 선택하세요.',
             designCta: 'Book Manager 열기',

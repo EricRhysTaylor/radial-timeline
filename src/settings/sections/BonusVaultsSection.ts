@@ -3,6 +3,8 @@ import { setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { DemoLibraryModal } from '../../modals/DemoLibraryModal';
+import { findNewerDemoEdition, renderNewerEditionLine } from '../../demoVaults/demoEdition';
+import { readInquirySidecarVaultIdentity } from '../../inquiry/InquiryArtifactStore';
 import { ERT_CLASSES } from '../../ui/classes';
 import { t } from '../../i18n';
 import {
@@ -76,12 +78,25 @@ export function renderBonusVaultsSection({
         cls: ERT_CLASSES.SECTION_DESC,
         text: t('ui.bonusVaultsSection.description')
     });
+    void appendNewerEditionNote(header, plugin);
 
     // ── Card grid ────────────────────────────────────────────
     const grid = section.createDiv({ cls: 'ert-bonus-grid' });
     BONUS_VAULTS.forEach((vault) => renderCard(grid, plugin, vault));
 
     return section;
+}
+
+/**
+ * A demo opened as its own vault keeps its book identity in the Inquiry
+ * sidecar, before and after the reader sets up the book. When the catalog
+ * offers a newer edition of that demo, say so under the heading.
+ */
+async function appendNewerEditionNote(header: HTMLElement, plugin: RadialTimelinePlugin): Promise<void> {
+    const bookFolder = (await readInquirySidecarVaultIdentity(plugin.app))?.bookFolder;
+    if (!bookFolder || !plugin.app.vault.getFolderByPath(bookFolder)) return;
+    const newerEdition = await findNewerDemoEdition(plugin.app, BONUS_VAULTS, bookFolder);
+    if (newerEdition) renderNewerEditionLine(header, plugin, newerEdition, { line: ERT_CLASSES.SECTION_DESC });
 }
 
 function renderCard(

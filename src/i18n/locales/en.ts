@@ -3128,6 +3128,7 @@ export const en = {
             blankCustomExamples: 'Start with at least 3 beats. Name each beat by function, not theme. Use a clear progression such as opening -> pressure -> shift. Add or reorder beats only when each one serves a distinct structural purpose.',
         },
         bonusVaults: {
+            newerEdition: 'A new edition of {{title}} is ready. [Download it] to open as its own vault beside this one.',
             prideCountLabel: '61 chapters',
             prideDescription: 'Recommended first demo. Saved Pulse, four Gossamer signals, and three Inquiry briefings.',
             odysseyCountLabel: '89 scenes',
@@ -6956,7 +6957,6 @@ export const en = {
             sampleOpenTitle: '{{name}} detected',
             sampleOpenDesc: 'This vault ships a ready-to-explore {{name}}. Open it to drop straight into a finished story on the timeline.',
             sampleOpenCta: 'Open the sample vault',
-            sampleNewerEdition: 'A new edition of {{title}} is ready. [Download it] to open as its own vault beside this one.',
             designTitle: 'Set Book Project',
             designDesc: 'Choose the manuscript folder that drives the timeline, exports, Inquiry scope, and Book Manager.',
             designCta: 'Open Book Manager',

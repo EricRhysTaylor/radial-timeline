@@ -14,7 +14,8 @@ import { setAccessibleLabel } from '../utils/domTooltip';
 
 import { App, ToggleComponent } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
-import { formatElapsedTime, formatWhenForYaml, parseWhenField } from '../utils/date';
+import { formatElapsedTime, parseWhenField } from '../utils/date';
+import { formatSceneWhen } from '../utils/whenFormat';
 import { validatePlacement } from '../chronologue/placement/validatePlacement';
 import { t, tCount } from '../i18n';
 import type {
@@ -211,7 +212,7 @@ export class ChronologuePlacementModal extends ErtModal {
         strip.createDiv({
             cls: 'ert-place-context-cell',
             text: interval.lowerNeighbor
-                ? `${interval.lowerNeighbor.title} · ${formatWhenForYaml(interval.lowerNeighbor.when)}`
+                ? `${interval.lowerNeighbor.title} · ${formatSceneWhen(interval.lowerNeighbor.when, interval.lowerNeighbor.whenHasClock ?? true)}`
                 : t('ui.chronologuePlacementModal.nothingBefore')
         });
         strip.createDiv({ cls: 'ert-place-context-arrow', text: '→' });
@@ -223,7 +224,7 @@ export class ChronologuePlacementModal extends ErtModal {
         strip.createDiv({
             cls: 'ert-place-context-cell',
             text: interval.upperNeighbor
-                ? `${interval.upperNeighbor.title} · ${formatWhenForYaml(interval.upperNeighbor.when)}`
+                ? `${interval.upperNeighbor.title} · ${formatSceneWhen(interval.upperNeighbor.when, interval.upperNeighbor.whenHasClock ?? true)}`
                 : t('ui.chronologuePlacementModal.nothingAfter')
         });
 
@@ -303,7 +304,7 @@ export class ChronologuePlacementModal extends ErtModal {
 
         const main = row.createDiv({ cls: 'ert-place-row-main' });
         main.createDiv({ cls: 'ert-place-row-label', text: candidate.label });
-        main.createDiv({ cls: 'ert-place-row-when', text: candidate.storedWhen });
+        main.createDiv({ cls: 'ert-place-row-when', text: formatSceneWhen(candidate.when, true) });
         main.createDiv({ cls: 'ert-place-row-elapsed', text: this.describeElapsed(candidate.when) });
 
         if (candidate.overlapWarning) {
@@ -524,9 +525,11 @@ function describeKeepWrite(keepDates: string[]): string {
     const distinct = new Set(keepDates);
     if (distinct.size > 1) return t('ui.chronologuePlacementModal.keepWriteEachOwn');
     const [storedWhen] = distinct;
+    const date = parseWhenField(storedWhen);
+    const when = date ? formatSceneWhen(date, true) : storedWhen;
     return keepDates.length === 1
-        ? t('ui.chronologuePlacementModal.keepWriteOne', { when: storedWhen })
-        : t('ui.chronologuePlacementModal.keepWriteMany', { when: storedWhen });
+        ? t('ui.chronologuePlacementModal.keepWriteOne', { when })
+        : t('ui.chronologuePlacementModal.keepWriteMany', { when });
 }
 
 function describeOverlap(warning: OverlapWarning): string {

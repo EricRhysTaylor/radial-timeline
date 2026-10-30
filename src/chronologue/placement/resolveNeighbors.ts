@@ -19,6 +19,7 @@ export interface PlacementSceneInput {
     path?: string;
     title?: string;
     when?: Date;
+    whenHasClock?: boolean;
     Duration?: string;
 }
 
@@ -125,6 +126,7 @@ function toNeighbor(scene: PlacementSceneInput): PlacementNeighbor | null {
         path: scene.path ?? '', // SAFE: identity is only used for display here; the interval is numeric
         title: describeScene(scene),
         when: scene.when,
+        whenHasClock: scene.whenHasClock,
         durationMs: parseDuration(scene.Duration)
     };
 }

@@ -2168,7 +2168,7 @@ export class TimetableView extends BasesView {
                 const header = panel.createDiv({ cls: 'ert-timetable-panels__header' });
                 if (row.kind === 'scene') this.attachSceneDrag(panel, header, row.path, mode.state);
                 if (row.prefix) header.createSpan({ cls: 'ert-timetable-panels__number', text: row.prefix });
-                header.createEl('strong', { text: displayName(row.basename) });
+                header.createEl('strong', { cls: 'ert-timetable-panels__title', text: displayName(row.basename) });
                 if (row.kind === 'sketch') header.createSpan({ cls: 'ert-timetable-panels__kind', text: t('ui.timetable.panelSketch') });
                 const open = header.createEl('button', { text: t('ui.timetable.panelOpen') });
                 this.panelEvents?.registerDomEvent(open, 'click', (evt: MouseEvent) => { evt.stopPropagation(); void openFromTimetable(this.plugin.app, entry.file, evt, this.rootEl); });
@@ -2180,10 +2180,13 @@ export class TimetableView extends BasesView {
                 }
                 const characters = frontmatterKey(frontmatter, authorKeyFor('Character', this.plugin.settings));
                 const names = (Array.isArray(characters) ? characters : [characters]).filter((name): name is string => typeof name === 'string' && name.trim().length > 0);
-                if (names.length) meta.createSpan({ text: names.join(' · ') });
-                if (mode.state.mode === 'chronologue') {
-                    const when = readWhen(frontmatter, this.plugin.settings);
-                    if (when.when) meta.createSpan({ text: this.formatWhen(when.when, when.hasClock, mode.chronologue?.profile ?? null) });
+                if (names.length) this.renderPanelCharacters(panel, row.path, names);
+                const when = readWhen(frontmatter, this.plugin.settings);
+                const durationRaw = frontmatterKey(frontmatter, authorKeyFor('Duration', this.plugin.settings));
+                const duration = typeof durationRaw === 'string' ? formatCompactDuration(durationRaw) ?? durationRaw : null;
+                if (when.when) {
+                    const date = this.formatWhen(when.when, when.hasClock, mode.chronologue?.profile ?? null);
+                    panel.createDiv({ cls: 'ert-timetable-panels__date', text: duration ? `${date} · ${duration}` : date });
                 }
                 if (row.kind === 'scene') {
                     const vitals = sceneVitals(frontmatter, this.plugin.settings, new Date());
@@ -2219,6 +2222,30 @@ export class TimetableView extends BasesView {
         this.setCurrentRow(currentNotePath());
         this.markRing(this.ringSpotlight);
         this.markPicks();
+    }
+
+    /** Character notes may optionally name a vault image in their Image property. */
+    private renderPanelCharacters(panel: HTMLElement, scenePath: string, names: string[]): void {
+        const list = panel.createDiv({ cls: 'ert-timetable-panels__characters' });
+        for (const raw of names) {
+            const link = raw.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '');
+            const [path, alias] = link.split('|');
+            const character = this.plugin.app.metadataCache.getFirstLinkpathDest(path.trim(), scenePath);
+            const entry = list.createSpan({ cls: 'ert-timetable-panels__character' });
+            if (character) {
+                const fm = this.plugin.app.metadataCache.getFileCache(character)?.frontmatter;
+                const imageValue = frontmatterKey(fm, 'Image');
+                if (typeof imageValue === 'string') {
+                    const imagePath = imageValue.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
+                    const image = this.plugin.app.metadataCache.getFirstLinkpathDest(imagePath, character.path);
+                    if (image && /^(png|jpe?g|gif|webp|avif)$/i.test(image.extension)) {
+                        const thumbnail = entry.createEl('img', { cls: 'ert-timetable-panels__portrait', attr: { alt: '', src: this.plugin.app.vault.getResourcePath(image) } });
+                        this.panelEvents?.registerDomEvent(thumbnail, 'error', () => thumbnail.remove());
+                    }
+                }
+            }
+            entry.createSpan({ text: (alias ?? path).trim() });
+        }
     }
 
     private editPanelSynopsis(item: TableItem, button: HTMLButtonElement): void {

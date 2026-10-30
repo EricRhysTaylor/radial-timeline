@@ -15,6 +15,8 @@ export interface PlacementNeighbor {
     path: string;
     title: string;
     when: Date;
+    /** Whether the author supplied a time, rather than a date alone. */
+    whenHasClock?: boolean;
     /** Parsed `Duration` in milliseconds; null when the scene declares none. */
     durationMs: number | null;
 }

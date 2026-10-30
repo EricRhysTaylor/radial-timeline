@@ -19,6 +19,14 @@ const SEQUENCE: PlacementSceneInput[] = [
 ];
 
 describe('resolvePlacementNeighbors', () => {
+    it('preserves whether neighboring dates include an authored clock time', () => {
+        const sequence = SEQUENCE.map((item, index) => ({ ...item, whenHasClock: index !== 2 }));
+        const result = resolvePlacementNeighbors(sequence, 'Scenes/A.md', 'Scenes/D.md');
+        expect(result.kind).toBe('ok');
+        if (result.kind !== 'ok') return;
+        expect(result.interval.lowerNeighbor?.whenHasClock).toBe(false);
+        expect(result.interval.upperNeighbor?.whenHasClock).toBe(true);
+    });
     it('bounds a forward drop with the target and the scene before it', () => {
         const result = resolvePlacementNeighbors(SEQUENCE, 'Scenes/A.md', 'Scenes/D.md');
         expect(result.kind).toBe('ok');

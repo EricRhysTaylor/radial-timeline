@@ -208,7 +208,18 @@ describe('gemini grounding citation extraction', () => {
             },
             systemInstruction: {
                 parts: [{ text: 'You are precise.' }]
-            }
+            },
+            store: false
         });
+    });
+
+    it('opts every request out of Google request storage, cached runs included', async () => {
+        mockedRequestUrl.mockResolvedValue({ status: 200, text: '', json: { candidates: [{ content: { parts: [{ text: 'ok' }] } }] } } as never);
+        await callGeminiApi('test-key', 'gemini-3.8-flash', 'System.', 'Manuscript.', 256, undefined, undefined, undefined, undefined, false, true);
+        await callGeminiApi('test-key', 'gemini-3.8-flash', null, 'Question.', 256, undefined, undefined, 'cachedContents/abc', undefined, false, true);
+        for (const [request] of mockedRequestUrl.mock.calls) {
+            expect(JSON.parse((request as { body?: string }).body ?? '{}')).toMatchObject({ store: false });
+        }
+        expect(mockedRequestUrl).toHaveBeenCalledTimes(2);
     });
 });

@@ -237,6 +237,7 @@ export async function callGeminiApi(
     systemInstruction?: { parts: { text: string }[] };
     cachedContent?: string;
     tools?: GeminiSearchTool[];
+    store: false;
   };
   const body: GeminiRequest = {
     contents: [
@@ -246,6 +247,10 @@ export async function callGeminiApi(
       },
     ],
     generationConfig: {},
+    // Since 2026-10-26 Google stores Generate Content requests by default for
+    // new paid-tier projects; this keeps manuscript text out of that store.
+    // cachedContents.create rejects the field (a cache ends at its TTL).
+    store: false,
   };
   if (cachedContentName) {
     body.cachedContent = cachedContentName;

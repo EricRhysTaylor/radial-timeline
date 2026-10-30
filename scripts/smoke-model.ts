@@ -293,6 +293,7 @@ async function smokeGoogle(model: string, key: string): Promise<ProbeResult> {
             parts: [{ text: 'You are a precise narrative analyst.' }],
         },
         generationConfig,
+        store: false, // as the plugin sends (src/api/geminiApi.ts)
     };
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;

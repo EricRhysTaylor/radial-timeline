@@ -4,7 +4,7 @@ A free, fully analyzed demo vault built around Jane Austen's *Pride & Prejudice*
 
 ### Inside your own vault
 
-1.  Click **Explore a finished book** on the Welcome screen, or **Explore demo** under **Settings → PRO → Demo vaults**.
+1.  Click **Explore a finished book** on the Welcome screen, or **Explore demo** under **Settings → Resources → Demo vaults**.
 2.  In the demo chooser, click **Add demo to this vault** on Pride & Prejudice.
 
 Radial Timeline downloads the demo, checks it, adds it to a **Demo Projects** folder, and opens it on the timeline. Nothing in your vault is replaced: the book joins Book Manager beside yours, and your AI settings stay as they are. If the folder is already there, the card shows **Open demo** instead.

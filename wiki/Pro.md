@@ -1,6 +1,3 @@
-<p align="center"><img src="images/settings-pro.png" alt="Settings → PRO tab" width="600"></p>
-<p align="center"><sub>Settings → PRO</sub></p>
-
 Everything the plugin does is free to use right now — Pro included.
 
 Pro labels advanced workflows for Inquiry questions, runtime estimates, publishing layouts, multi-book timelines, and APR campaigns.
@@ -22,7 +19,7 @@ Pro workflows appear throughout Radial Timeline in magenta.
 
 ## Demo vaults
 
-The **Demo vaults** section at the bottom of the PRO tab lists complete worked examples with saved analysis. [Pride & Prejudice](Sample-Vault), [The Odyssey](Odyssey-Demo-Vault), and *Sherlock Holmes* are free: **Explore demo** opens the demo chooser, where **Add demo to this vault** adds one to a **Demo Projects** folder and **Download ZIP** downloads it as a separate vault. *The Faerie Queene* is listed as **Coming soon**.
+The **Demo vaults** section under **Settings → Resources** lists complete worked examples with saved analysis. [Pride & Prejudice](Sample-Vault), [The Odyssey](Odyssey-Demo-Vault), and *Sherlock Holmes* are free: **Explore demo** opens the demo chooser, where **Add demo to this vault** adds one to a **Demo Projects** folder and **Download ZIP** downloads it as a separate vault. *The Faerie Queene* is listed as **Coming soon**.
 
 ---
 

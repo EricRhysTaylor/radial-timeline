@@ -5,7 +5,7 @@
 
 ## How to get it
 
-1.  Click **Explore a finished book** on the Welcome screen, or **Explore demo** under **Settings → PRO → Demo vaults**.
+1.  Click **Explore a finished book** on the Welcome screen, or **Explore demo** under **Settings → Resources → Demo vaults**.
 2.  In the demo chooser, click **Add demo to this vault** on The Odyssey. Radial Timeline downloads it, checks it, adds it to a **Demo Projects** folder, and opens it on the timeline. Nothing in your vault is replaced.
 
 To keep it as a separate vault instead, click **Download ZIP** on the same card, or download it from the [Odyssey demo vault page](https://www.radialtimeline.com/resources/odyssey). Unzip it, choose **Open another vault → Open folder as vault** in Obsidian, turn on community plugins, and install **Radial Timeline** from **Settings → Community plugins → Browse**. The download holds the book and its notes only, with no Obsidian settings or plugin files.

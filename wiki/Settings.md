@@ -1,6 +1,6 @@
 Access Radial Timeline settings in Obsidian via **Settings → Community Plugins → Radial Timeline**.
 
-The tab strip uses short labels: **Cor**, **Soc**, **Com**, **Inq**, **Pub**, **AI**, **Adv**, and **PRO**. This wiki uses the full names, so **Settings → Core** means the **Cor** tab.
+The tab strip uses short labels: **Cor**, **Soc**, **Com**, **Inq**, **Pub**, **AI**, **Adv**, and **Res**. This wiki uses the full names, so **Settings → Core** means the **Cor** tab.
 
 ## Settings Tabs
 
@@ -11,7 +11,7 @@ The tab strip uses short labels: **Cor**, **Soc**, **Com**, **Inq**, **Pub**, **
 *   [Publish](Publishing) — Pandoc, PDF styles, bundled layouts, chapter markers, Parts, and manuscript export workflow.
 *   [AI](Settings-AI) — Provider setup, model selection, local/OpenAI-compatible settings, and analysis behavior.
 *   [Advanced](Settings-Advanced) — Timeline display options, remap frontmatter field keys, ripple rename, logs, and export-path readouts.
-*   [Pro](Pro) — Pro workflows: runtime estimation, advanced publishing layouts, and APR campaigns.
+*   **Resources** — Demo vaults, getting started, the wiki, and tutorial videos.
 
 ## Reference Pages
 

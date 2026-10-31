@@ -19,9 +19,7 @@ import { renderPlanetaryTimeSection } from './sections/PlanetaryTimeSection';
 
 import { renderRuntimeSection } from './sections/RuntimeSection';
 import { renderGoalsSessionsSection } from './sections/GoalsSessionsSection';
-import { renderProEntitlementPanel } from './sections/ProEntitlementPanel';
 import { renderBonusVaultsSection } from './sections/BonusVaultsSection';
-import { getProEntitlement } from './proEntitlement';
 import { renderPublishSection } from './sections/PublishSection';
 import { FolderSuggest } from './FolderSuggest';
 import { t, tCount } from '../i18n';
@@ -895,9 +893,9 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const advancedIcon = advancedTab.createSpan({ cls: 'ert-settings-tab-icon' });
         setIcon(advancedIcon, 'pyramid');
         advancedTab.createSpan({ text: t('ui.settingsTab.tabAdvanced'), cls: 'ert-settings-tab-label' });
-        const proTab = tabBar.createDiv({ cls: 'ert-settings-tab ert-settings-tab-pro' });
+        const proTab = tabBar.createDiv({ cls: 'ert-settings-tab ert-settings-tab-pro is-pro-active' });
         const proIcon = proTab.createSpan({ cls: 'ert-settings-tab-icon' });
-        setIcon(proIcon, 'signature');
+        setIcon(proIcon, 'library');
         proTab.createSpan({ text: t('ui.settingsTab.tabPro'), cls: 'ert-settings-tab-label' });
 
         const coreContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-settings-core-content ert-scope--settings' });
@@ -957,11 +955,6 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         this.plugin.registerDomEvent(advancedTab, 'click', () => persistTab('advanced'));
         this.plugin.registerDomEvent(proTab, 'click', () => persistTab('pro'));
         this.updateRenderedTabState();
-
-        const proEntitlement = getProEntitlement(this.plugin);
-        proTab.toggleClass('is-pro-active', proEntitlement.isProActive);
-        proTab.toggleClass('is-pro-disabled', !proEntitlement.isProActive);
-        const refreshProDependentSections = () => this.update();
 
         const coreStack = coreContent.createDiv({ cls: ERT_CLASSES.STACK });
         this.renderCoreHero(coreStack);
@@ -1171,20 +1164,24 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         });
 
         const proStack = proContent.createDiv({ cls: ERT_CLASSES.STACK });
-        this.renderGuarded(t('ui.settingsTab.guardPro'), proStack, () => {
-            renderProEntitlementPanel({
-                app: this.app,
-                plugin: this.plugin,
-                containerEl: proStack,
-                onEntitlementChanged: refreshProDependentSections
-            });
-        });
-
         this.renderGuarded(t('ui.settingsTab.guardBonusVaults'), proStack, () => {
             renderBonusVaultsSection({
                 app: this.app,
                 plugin: this.plugin,
                 containerEl: proStack
+            });
+        });
+
+        const resources = proStack.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.STACK}` });
+        resources.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: t('ui.settingsTab.resourcesHelp') });
+        const resourceLinks = resources.createEl('ul');
+        [
+            { label: t('ui.settingsTab.resourcesGettingStarted'), href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Getting-Started' },
+            { label: t('ui.settingsTab.resourcesWiki'), href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki' },
+            { label: t('ui.settingsTab.resourcesVideos'), href: 'https://www.youtube.com/@RadialTimeline' }
+        ].forEach(({ label, href }) => {
+            resourceLinks.createEl('li').createEl('a', {
+                text: label, href, attr: { target: '_blank', rel: 'noopener noreferrer' }
             });
         });
 

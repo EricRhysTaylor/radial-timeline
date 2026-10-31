@@ -41,13 +41,15 @@ def select_files(source, config):
         path = source.joinpath(*relative.parts)
         require(not any(source.joinpath(*relative.parts[:i]).is_symlink() for i in range(1, len(relative.parts) + 1)), f'Symlink inclusion refused: {rel}')
         require(path.is_file() and path.resolve().is_relative_to(source.resolve()), f'Missing/outside source file: {rel}')
-        allowed = {'.md', '.json'}
+        allowed = {'.md', '.json', '.webp'}  # WebP: character portraits, listed one by one like every other file
         if config.get('source_layout') == 'gutenberg-odyssey-html':
             allowed.update(('.html', '.jpg'))
         elif config.get('source_layout') == 'gutenberg-holmes-html':
             allowed.update(('.html', '.jpg'))
         require(path.suffix in allowed, f'Unsupported public content type: {rel}')
         data = path.read_bytes()
+        if path.suffix == '.webp':
+            require(data[:4] == b'RIFF' and data[8:12] == b'WEBP', f'Not a WebP image: {rel}')
         require(not re.search(rb'(?:sk-ant-api\w*-|sk-proj-|sb_secret_)[A-Za-z0-9_-]{16,}', data), f'Credential-shaped content: {rel}')
         result[rel] = data
     return result

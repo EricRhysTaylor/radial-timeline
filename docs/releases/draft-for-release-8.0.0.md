@@ -28,6 +28,7 @@
 ### Demo vaults
 
 - **Demo vaults know their edition.** When a newer edition of a demo is ready, the Welcome screen and **Settings → Demo vaults** offer it as a separate download, and your current vault stays as it is.
+- **Character portraits in Pride & Prejudice.** The Pride & Prejudice demo shows a portrait beside each character in the Timetable, from Hugh Thomson's and C. E. Brock's illustrations of the 1890s.
 
 ### AI
 

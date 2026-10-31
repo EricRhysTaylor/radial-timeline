@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 import zipfile
 from package_sample_vault import EDITION_STAMP_PATH, build, edition_stamp, public_inquiry_files, safe_relative, select_files, write_zip
-from vault_qa import validate_inquiry, validate_source
+from vault_qa import validate_inquiry, validate_source, validate_wiki_links
 
 
 class PackagingBoundaries(unittest.TestCase):
@@ -50,6 +50,32 @@ class PackagingBoundaries(unittest.TestCase):
         files['Radial Timeline/Inquiry/Sessions/sessions.json'] = json.dumps(artifact).encode()
         with self.assertRaisesRegex(ValueError, 'missing or duplicated'):
             public_inquiry_files(files, config)
+
+    def test_webp_portraits_are_allowed_only_as_real_webp_images(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); (root / 'Portraits').mkdir()
+            webp = b'RIFF' + (24).to_bytes(4, 'little') + b'WEBPVP8 ' + bytes(12)
+            (root / 'Portraits/Elizabeth.webp').write_bytes(webp)
+            self.assertEqual(select_files(root, {'include_files': ['Portraits/Elizabeth.webp']}), {'Portraits/Elizabeth.webp': webp})
+            (root / 'Portraits/Fake.webp').write_bytes(b'<svg onload="x"></svg>')
+            with self.assertRaisesRegex(ValueError, 'Not a WebP image'):
+                select_files(root, {'include_files': ['Portraits/Fake.webp']})
+
+    def test_wiki_links_resolve_to_one_note_or_packaged_image(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); (root / 'Characters/Portraits').mkdir(parents=True)
+            (root / 'Characters/Portraits/Mr. Darcy.webp').write_bytes(b'RIFF')
+            (root / 'Pemberley.md').write_text('A place.')
+            note = root / 'Characters/Mr. Darcy.md'
+            note.write_text('---\nImage: "[[Mr. Darcy.webp]]"\n---\nOwns [[Pemberley]].')
+            self.assertEqual(validate_wiki_links(root), 2)
+            note.write_text('---\nImage: "[[Mr. Bingley.webp]]"\n---\n')
+            with self.assertRaisesRegex(ValueError, 'Broken/ambiguous link'):
+                validate_wiki_links(root)
+            # An image link never resolves to a note that happens to share the name.
+            (root / 'Mr. Bingley.webp.md').write_text('Not an image.')
+            with self.assertRaisesRegex(ValueError, 'Broken/ambiguous link'):
+                validate_wiki_links(root)
 
     def test_holmes_source_checks_each_chapter_and_epilogue_without_captions(self):
         source = '<div class="chapter"><h2>CHAPTER I.</h2><p>A &amp; B.</p><p class="caption">Illustration caption.</p></div><div class="chapter"><h2>EPILOGUE</h2><p>The end.</p></div>'

@@ -44,12 +44,12 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         get description() { return t('ui.bonusVaults.prideDescription'); },
         books: [{ title: 'Pride & Prejudice', sourceFolder: 'Pride & Prejudice' }],
         archive: {
-            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/pride-and-prejudice/2026-10-30.2/pride-and-prejudice-demo-vault.zip',
+            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/pride-and-prejudice/2026-10-30.3/pride-and-prejudice-demo-vault.zip',
             downloadUrl: 'https://community.radialtimeline.com/go/rt-welcome-demo-download',
-            sha256: '5d6f6ba952aec833525dc942e775f73b887bcd4a68614651f494e661526a328c',
-            bytes: 730036,
+            sha256: '245fd9d86856da7b7e7b749d4e86d2ba19e6d5927efa069047073b32fdab25c6',
+            bytes: 1505588,
             root: 'Pride & Prejudice Demo Vault',
-            edition: '2026-10-30.2'
+            edition: '2026-10-30.3'
         }
     },
     {

@@ -200,6 +200,30 @@ def validate_book(vault, config):
     return scenes, beats, {'scenes': count, 'beats': len(beats), 'source_full_chapters_matched': source_books, 'latest_gossamer_runs': runs}
 
 
+IMAGE_SUFFIXES = ('.webp', '.jpg', '.png')
+
+
+def validate_wiki_links(vault):
+    """Every wiki link in every note resolves to exactly one packaged note or image."""
+    links = 0
+    md_paths = list(vault.rglob('*.md'))
+    image_paths = [p for p in vault.rglob('*') if p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES]
+    for path in md_paths:
+        for target in re.findall(r'\[\[([^\]|]+)(?:\|[^\]]*)?\]\]', path.read_text().replace('\\|', '|')):
+            target = target.split('#', 1)[0]
+            if not target:
+                continue
+            # An image link names its file; a note link may omit `.md`.
+            image = target.lower().endswith(IMAGE_SUFFIXES)
+            relative = Path(target if image or target.endswith('.md') else target + '.md')
+            require(not relative.is_absolute() and '..' not in relative.parts, 'Unsafe wiki target')
+            candidates = image_paths if image else md_paths
+            matches = [p for p in candidates if p == vault / relative or ('/' not in target and p.name == relative.name)]
+            require(len(matches) == 1, f'Broken/ambiguous link in {path.relative_to(vault)}: {target}')
+            links += 1
+    return links
+
+
 def validate(vault, config):
     collection = config.get('source_layout') == 'gutenberg-holmes-html'
     contracts = config['books'] if collection else [config]
@@ -215,18 +239,7 @@ def validate(vault, config):
         require(manifest.get('rt_sample_vault') is True and manifest.get('schema_version') == 1, 'Sample detection manifest is invalid')
         require(manifest.get('book_folder') == config['book_folder'] and manifest.get('books') == [{'title': b['title'], 'source_folder': b['book_folder']} for b in contracts], 'Sample book profiles differ from release contract')
     session_count, refs = validate_inquiry(vault, config, scenes)
-    links = 0
-    md_paths = list(vault.rglob('*.md'))
-    for path in md_paths:
-        for target in re.findall(r'\[\[([^\]|]+)(?:\|[^\]]*)?\]\]', path.read_text().replace('\\|', '|')):
-            target = target.split('#', 1)[0]
-            if not target:
-                continue
-            relative = Path(target if target.endswith('.md') else target + '.md')
-            require(not relative.is_absolute() and '..' not in relative.parts, 'Unsafe wiki target')
-            matches = [p for p in md_paths if p == vault / relative or ('/' not in target and p.name == relative.name)]
-            require(len(matches) == 1, f'Broken/ambiguous link in {path.relative_to(vault)}: {target}')
-            links += 1
+    links = validate_wiki_links(vault)
     qa = {'scenes': len(scenes), 'beats': len(beats), 'source_full_chapters_matched': sum(b['source_full_chapters_matched'] for b in books.values()),
           'inquiry_sessions': session_count, 'evidence_references': refs, 'wiki_links': links}
     if collection:

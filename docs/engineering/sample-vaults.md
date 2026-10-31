@@ -4,7 +4,7 @@ Updated October 17, 2026. The Inquiry sidecar remains the demo-detection and sav
 
 ## Portable content
 
-A public ZIP contains manuscript notes, author-facing scene/beat metadata, character notes, source text, guides, saved Inquiry briefings, and `Radial Timeline/Inquiry/Sessions/sessions.json`. It excludes `.obsidian`, plugin binaries, private settings, provider credentials, logs, recovery archives, old exports, and unfinished publishing templates. Install the plugin separately.
+A public ZIP contains manuscript notes, author-facing scene/beat metadata, character notes (with WebP portraits where a demo has them), source text, guides, saved Inquiry briefings, and `Radial Timeline/Inquiry/Sessions/sessions.json`. It excludes `.obsidian`, plugin binaries, private settings, provider credentials, logs, recovery archives, old exports, and unfinished publishing templates. Install the plugin separately.
 
 The Inquiry sessions sidecar carries saved results and the active book identity. `InquiryArtifactStore` reads it; `WelcomeScreen` detects the sample, and the explicit **Open the sample vault** action configures the book. Existing user settings are not silently replaced on plugin load. Single-book samples need no additional manifest.
 
@@ -87,7 +87,7 @@ Test the exact extracted ZIP in a fresh profile: sample detection, book initiali
 
 | Sample | Included analysis | Release |
 |---|---|---|
-| Pride & Prejudice | 61 chapters with Pulse and Places, 15 beats with four reviewed October Gossamer signals, 3 saved Inquiry sessions | Edition `2026-10-30.2` (stamped); published direct download; catalog pins the live ZIP |
+| Pride & Prejudice | 61 chapters with Pulse and Places, 15 beats with four reviewed October Gossamer signals, 3 saved Inquiry sessions, 29 character portraits | Edition `2026-10-30.3` (stamped); published direct download; catalog pins the live ZIP |
 | The Odyssey | 89 scenes with Pulse, 12 beats with four Gossamer signals, 3 saved Inquiry sessions | Edition `2026-10-30` (stamped, unwrapped paragraphs); published direct download |
 | Sherlock Holmes | Four novels / 56 chapters with Pulse, 41 beats with four Gossamer signals, 12 saved Inquiry sessions | Edition `2026-10-30` (stamped); published direct download; catalog pins the live ZIP |
 

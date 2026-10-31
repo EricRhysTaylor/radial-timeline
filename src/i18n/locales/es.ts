@@ -5977,8 +5977,8 @@ export const es: TranslationKeys = {
         },
         "timetable": {
             "panelDrag": "Arrastra para colocar antes de otra escena",
-            "panelDragHint": "Para reordenar escenas, selecciona Narrative o Chronologue en la línea temporal, usa un solo libro y desactiva la ordenación y las capas alternativas.",
-            "panelDragUnavailable": "La línea de tiempo no puede colocar estas escenas. Abre el libro y modo correspondientes e inténtalo de nuevo.",
+            "panelDragHint": "Para reordenar escenas, selecciona Narrative o Chronologue en Timetable, el libro activo y desactiva la ordenación y las capas alternativas.",
+            "panelDragUnavailable": "No se pudieron colocar estas escenas. Comprueba que pertenezcan al libro activo y vuelve a intentarlo.",
             "layoutTable": "Tabla",
             "layoutPanels": "Paneles",
             "panelSketch": "Boceto",

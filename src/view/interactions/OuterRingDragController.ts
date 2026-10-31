@@ -297,7 +297,20 @@ export class OuterRingDragController {
         this.sourceItemType = 'Scene';
         this.originColor = this.resolvePublishStageColorFromGroup(from);
         this.originModalColor = this.resolveSubplotColorFromGroup(from);
-        await this.finishDropOnScene({ type: 'scene', group: to, sceneId: targetId, act: Number(to.getAttribute('data-act') ?? 0), ring });
+        await this.finishDropOnScene({ type: 'scene', sceneId: targetId, act: Number(to.getAttribute('data-act') ?? 0), ring });
+        return true;
+    }
+
+    /** Place from a complete book order without depending on a rendered wheel. */
+    async placeFromTimetableOrder(source: string, target: string, order: OuterRingOrderEntry[]): Promise<boolean> {
+        if (this.confirming || this.dragging || source === target) return false;
+        const from = order.find(entry => entry.path === source && entry.itemType === 'Scene');
+        const to = order.find(entry => entry.path === target && entry.itemType === 'Scene');
+        if (!from || !to) return false;
+        this.sourceSceneId = from.sceneId;
+        this.sourcePath = source;
+        this.sourceItemType = 'Scene';
+        await this.finishDropOnScene({ type: 'scene', sceneId: to.sceneId, act: to.act, ring: to.ring }, order);
         return true;
     }
 
@@ -691,14 +704,14 @@ export class OuterRingDragController {
         await this.finishDropOnScene(target);
     }
 
-    private async finishDropOnScene(target: { type: 'scene'; group: SVGGElement; sceneId: string; act: number; ring: number }): Promise<void> {
+    private async finishDropOnScene(target: { type: 'scene'; sceneId: string; act: number; ring: number }, orderOverride?: OuterRingOrderEntry[]): Promise<void> {
         const targetId = target.sceneId;
         if (!this.sourceSceneId || !targetId || this.sourceSceneId === targetId) {
             this.resetState();
             return;
         }
 
-        const order = this.buildOuterRingOrder();
+        const order = orderOverride ?? this.buildOuterRingOrder();
         const fromIdx = order.findIndex(o => o.sceneId === this.sourceSceneId);
         const toIdx = order.findIndex(o => o.sceneId === targetId);
         if (fromIdx === -1 || toIdx === -1) {
@@ -733,13 +746,13 @@ export class OuterRingDragController {
 
         const targetPathEl = this.svg.querySelector<SVGPathElement>(`#${this.cssEscape(targetId)}`);
         const targetGroup = targetPathEl?.closest('.rt-scene-group');
-        const targetActIdx = targetGroup ? Number(targetGroup.getAttribute('data-act') ?? 0) : 0;
+        const targetActIdx = orderOverride ? target.act : (targetGroup ? Number(targetGroup.getAttribute('data-act') ?? 0) : 0);
         const targetActNumber = Number.isFinite(targetActIdx) ? (targetActIdx + 1) : undefined;
         const sourcePath = moved.path;
         const sourceType = moved.itemType;
 
         // Determine source act for comparison (only show Act row if it changes)
-        const sourceActIdx = this.sourceSceneGroup ? Number(this.sourceSceneGroup.getAttribute('data-act') ?? 0) : 0;
+        const sourceActIdx = orderOverride ? moved.act : (this.sourceSceneGroup ? Number(this.sourceSceneGroup.getAttribute('data-act') ?? 0) : 0);
         const sourceActNumber = sourceActIdx + 1;
         const actChanged = targetActNumber !== undefined && targetActNumber !== sourceActNumber;
 

@@ -101,6 +101,10 @@ import { authorKeyFor, countColumnFill, tableColumns, TIMETABLE_VIEW_TYPE, withR
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { synopsisKey, updateSynopsis } from './panelSynopsis';
 import { leadPortrait } from './panelPortrait';
+import { timetableNarrativeOrder } from './timetablePlacement';
+import { OuterRingDragController } from '../view/interactions/OuterRingDragController';
+import { ChronologueDragController } from '../view/interactions/ChronologueDragController';
+import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
 import { coloringDateLabel } from './coloringDates';
 import { TimetableColoringModal } from './TimetableColoringModal';
 import { CellPeek } from './cellPeek';
@@ -116,7 +120,6 @@ import {
     currentTimelineColoring,
     currentTimelineLens,
     currentTimelineMode,
-    dropTimetableScene,
     setTimelineColoring,
     setTimelineLens,
     trackTimetable,
@@ -351,6 +354,7 @@ export class TimetableView extends BasesView {
     private panelEditing: { path: string; original: unknown } | null = null;
     private panelEvents: Component | null = null;
     private draggedScene: string | null = null;
+    private scenePlacementInProgress = false;
     private decorateGeneration = 0;
     private readonly rowEls = new Map<string, HTMLElement>();
     private readonly synopsisFromBody = new Map<string, HTMLElement>();
@@ -841,7 +845,7 @@ export class TimetableView extends BasesView {
     /** The mode the table is drawn in: the timeline's, unless the author pinned another. */
     private modeState(): TimelineModeState {
         const timeline = currentTimelineMode() ?? { mode: this.plugin.settings.currentMode || 'narrative', shift: false, alt: false, runtime: false };
-        if (this.modePin === null || this.modePin === timeline.mode) return timeline;
+        if (this.modePin === null) return timeline;
         return { mode: this.modePin, shift: false, alt: false, runtime: false };
     }
 
@@ -2157,6 +2161,8 @@ export class TimetableView extends BasesView {
                 this.config.set('panels', panels); this.render();
             });
         }
+        const modeLabel = toolbar.createSpan({ cls: 'ert-timetable-panels__mode-label', text: modeName(state.mode) });
+        tooltip(modeLabel, this.modeTooltip(state), 'bottom');
         if (this.config.get('panels') === true) this.renderCorner(toolbar, state);
         const updateHeight = () => this.rootEl.setCssProps({ '--ert-timetable-switch-height': `${toolbar.offsetHeight}px` });
         updateHeight();
@@ -2374,11 +2380,12 @@ export class TimetableView extends BasesView {
         input.focus();
     }
 
-    /** Drop immediately before a scene using the active timeline's placement operation. */
+    /** Drop immediately before a scene using the selected mode's placement operation. */
     private attachSceneDrag(row: HTMLElement, host: HTMLElement, path: string, state: TimelineModeState): HTMLButtonElement | null {
+        const activeBook = getActiveBook(this.plugin.settings);
         const unavailable = (state.mode !== 'narrative' && state.mode !== 'chronologue') || state.runtime || state.shift || state.alt
             || this.config.getSort().length > 0 || getTimelineScope(this.plugin.settings) !== 'book'
-            || currentTimelineMode()?.mode !== state.mode;
+            || !activeBook || getBookIdForPath(this.plugin.settings.books, path) !== activeBook.id;
         const handle = host.createEl('button', { cls: 'ert-timetable__drag clickable-icon', attr: { draggable: String(!unavailable), type: 'button' } });
         const label = t(unavailable ? 'ui.timetable.panelDragHint' : 'ui.timetable.panelDrag');
         setAccessibleLabel(handle, label);
@@ -2419,11 +2426,37 @@ export class TimetableView extends BasesView {
             evt.stopPropagation();
             row.removeClass('ert-timetable__drop-before');
             this.draggedScene = null;
-            void dropTimetableScene(state.mode, source, path).then(handled => {
+            void this.placeTimetableScene(state.mode, source, path).then(handled => {
                 if (!handled) new Notice(t('ui.timetable.panelDragUnavailable'));
             }).catch(error => { console.error('Timetable scene placement failed', error); new Notice(t('ui.timetable.panelDragUnavailable')); });
         });
         return handle;
+    }
+
+    /** Use the same move dialogs and write paths even when no timeline is visible. */
+    private async placeTimetableScene(mode: string, source: string, target: string): Promise<boolean> {
+        if (this.scenePlacementInProgress || (mode !== 'narrative' && mode !== 'chronologue')) return false;
+        const books = this.plugin.settings.books ?? [];
+        const bookId = getBookIdForPath(books, source);
+        const book = books.find(candidate => candidate.id === bookId);
+        if (!book || book.id !== getActiveBook(this.plugin.settings)?.id || bookId !== getBookIdForPath(books, target)) return false;
+        this.scenePlacementInProgress = true;
+        try {
+            const sceneData = await this.plugin.getSceneData({ sourcePath: book.sourceFolder });
+            const svg = this.rootEl.doc.win.createSvg('svg');
+            const renderScope = new Component();
+            const onRefresh = () => { this.plugin.refreshTimelineIfNeeded(null, 100); this.refresh(); };
+            if (mode === 'chronologue') {
+                const controller = new ChronologueDragController({ plugin: this.plugin, sceneData, renderScope,
+                    chronologueState: { shift: false, alien: false } }, svg, { onRefresh });
+                return await controller.placeFromTimetable(source, target);
+            }
+            const controller = new OuterRingDragController({ plugin: this.plugin, renderScope }, svg, { onRefresh, mode });
+            const order = timetableNarrativeOrder(sceneData, resolveSelectedBeatModelFromSettings(this.plugin.settings));
+            return await controller.placeFromTimetableOrder(source, target, order);
+        } finally {
+            this.scenePlacementInProgress = false;
+        }
     }
 
     /** A small + that creates a sketch in this act (and this book). */

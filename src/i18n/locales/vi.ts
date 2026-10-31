@@ -5977,8 +5977,8 @@ export const vi: TranslationKeys = {
         },
         "timetable": {
             "panelDrag": "Kéo để đặt trước cảnh khác",
-            "panelDragHint": "Để sắp xếp lại cảnh, chọn Narrative hoặc Chronologue trên dòng thời gian, dùng một sách và tắt sắp xếp cùng các lớp phủ thay thế.",
-            "panelDragUnavailable": "Dòng thời gian không thể đặt các cảnh này. Mở đúng sách và chế độ rồi thử lại.",
+            "panelDragHint": "Để sắp xếp lại cảnh, chọn Narrative hoặc Chronologue trong Timetable, chọn sách đang hoạt động và tắt sắp xếp cùng các lớp phủ thay thế.",
+            "panelDragUnavailable": "Không thể đặt các cảnh này. Hãy kiểm tra chúng thuộc sách đang hoạt động rồi thử lại.",
             "layoutTable": "Bảng",
             "layoutPanels": "Khung",
             "panelSketch": "Bản phác thảo",

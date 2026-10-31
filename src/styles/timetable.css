@@ -1229,6 +1229,7 @@
 /* Panels retain the active Obsidian theme and the timeline's subplot colors. */
 .ert-timetable-panels__toolbar { position: sticky; top: 0; left: 0; z-index: 4; display: flex; gap: var(--size-4-2); align-items: center; padding: var(--size-4-2); background: var(--background-primary); }
 .ert-timetable-panels__toolbar button[aria-pressed="true"] { background: var(--interactive-accent); color: var(--text-on-accent); }
+.ert-timetable-panels__mode-label { color: var(--text-muted); font-size: var(--font-ui-small); padding-inline: var(--size-4-1); }
 .ert-timetable-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: stretch; gap: var(--size-4-3); max-width: 1500px; margin: 0 auto; padding: var(--size-4-3); }
 .ert-timetable-panels__group { grid-column: 1 / -1; margin: var(--size-4-3) 0 0; color: var(--text-muted); }
 .ert-timetable-panels__panel { position: relative; display: flex; flex-direction: column; gap: var(--size-4-2); min-width: 0; padding: var(--size-4-5); border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-primary); }
@@ -1271,6 +1272,7 @@
 .ert-timetable-panels__editor button { margin: var(--size-4-2) var(--size-4-2) 0 0; }
 .ert-timetable-panels__editor .ert-timetable-panels__save { background: var(--interactive-accent); color: var(--text-on-accent); }
 .ert-timetable__drag { cursor: grab; flex: none; }
+.ert-timetable .ert-timetable__drag[aria-disabled="true"] { opacity: 1; }
 .ert-timetable__drag.is-unavailable { cursor: not-allowed; }
 .ert-timetable__drag.is-unavailable .svg-icon { opacity: 0.55; }
 .ert-timetable__drag:active { cursor: grabbing; }

@@ -25,10 +25,24 @@ describe('Timetable Narrative placement', () => {
             finishDropOnScene: finish,
         }) as OuterRingDragController;
         expect(await controller.placeFromTimetable('Book/A scene.md', 'Book/B scene.md')).toBe(true);
-        expect(finish).toHaveBeenCalledWith({ type: 'scene', group: to, sceneId: 'scene-b', act: 1, ring: 2 });
+        expect(finish).toHaveBeenCalledWith({ type: 'scene', sceneId: 'scene-b', act: 1, ring: 2 });
         expect(await controller.placeFromTimetable('Book/A scene.md', 'missing.md')).toBe(false);
         expect(await controller.placeFromTimetable('Book/A scene.md', 'Book/A scene.md')).toBe(false);
         expect(finish).toHaveBeenCalledTimes(1);
+    });
+
+    it('uses a book order for placement without a wheel and retains the target act', async () => {
+        const finish = vi.fn().mockResolvedValue(undefined);
+        const controller = Object.assign(Object.create(OuterRingDragController.prototype), {
+            confirming: false, dragging: false, finishDropOnScene: finish,
+        }) as OuterRingDragController;
+        const order: OuterRingOrderEntry[] = [
+            { sceneId: 'a', path: 'a', basename: '1 A', numberText: '1', act: 0, ring: 0, itemType: 'Scene', startAngle: 0 },
+            { sceneId: 'b', path: 'b', basename: '2 B', numberText: '2', act: 1, ring: 0, itemType: 'Scene', startAngle: 1 },
+        ];
+        expect(await controller.placeFromTimetableOrder('a', 'b', order)).toBe(true);
+        expect(finish).toHaveBeenCalledWith({ type: 'scene', sceneId: 'b', act: 1, ring: 0 }, order);
+        expect(await controller.placeFromTimetableOrder('a', 'missing', order)).toBe(false);
     });
 });
 

@@ -2198,8 +2198,9 @@ export class TimetableView extends BasesView {
                 this.config.set('panels', panels); this.render();
             });
         }
-        const mode = modeName(state.mode);
-        const modeLabel = toolbar.createSpan({ cls: 'ert-timetable-panels__mode-label', text: this.modePin === null ? mode : `[${mode}]` });
+        const modeLabel = toolbar.createSpan({ cls: 'ert-timetable-panels__mode-label' });
+        if (this.modePin !== null) setIcon(modeLabel.createSpan({ cls: 'ert-timetable-panels__mode-lock', attr: { 'aria-hidden': 'true' } }), 'lock');
+        modeLabel.createSpan({ text: modeName(state.mode) });
         tooltip(modeLabel, this.modeTooltip(state), 'bottom');
         if (this.config.get('panels') === true) this.renderCorner(toolbar, state);
         const updateHeight = () => this.rootEl.setCssProps({ '--ert-timetable-switch-height': `${toolbar.offsetHeight}px` });

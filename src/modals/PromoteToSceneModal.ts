@@ -24,6 +24,7 @@ export interface PromoteToSceneModalOptions {
     bookLabel: string;
     /** Single unnumbered note only: scenes in manuscript order. */
     anchors: PromotionAnchorOption[] | null;
+    defaultAnchorPath?: string | null;
     /** Single note with a placeholder name ("Untitled sketch"): ask for its title, and promote only once it has one. */
     askTitle: boolean;
 }
@@ -53,6 +54,7 @@ export class PromoteToSceneModal extends ErtModal {
     constructor(app: App, private readonly plan: PromotionPlan, private readonly options: PromoteToSceneModalOptions) {
         super(app);
         this.advanced = options.advancedDefault;
+        this.anchorPath = options.defaultAnchorPath ?? null;
     }
 
     onOpen(): void {
@@ -141,7 +143,7 @@ export class PromoteToSceneModal extends ErtModal {
                 for (const anchor of this.options.anchors) {
                     dropdown.addOption(anchor.path, t('ui.promoteToScene.afterScene', { scene: anchor.label }));
                 }
-                dropdown.setValue('');
+                dropdown.setValue(this.anchorPath ?? '');
                 dropdown.onChange(value => { this.anchorPath = value || null; });
             }
         } else if (only?.prefix) {

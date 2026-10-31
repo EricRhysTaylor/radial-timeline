@@ -63,6 +63,7 @@ import { renderDefs } from '../renderer/components/Defs';
 import { computeCacheableValues } from '../renderer/utils/Precompute';
 import type { PluginRendererFacade } from '../utils/sceneHelpers';
 import { runPromotion } from '../services/PromoteToSceneEntry';
+import { classifyForPromotion } from '../services/PromoteToSceneService';
 import {
     belongsInTimetable,
     buildRingLayout,
@@ -102,6 +103,8 @@ import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { synopsisKey, updateSynopsis } from './panelSynopsis';
 import { leadPortrait } from './panelPortrait';
 import { timetableNarrativeOrder } from './timetablePlacement';
+import { orderSketches, planSketchActDrop, planSketchDrop, sketchAnchor, SKETCH_AFTER_SCENE, SKETCH_ORDER, type PlacementItem, type PlacementProblem, type SketchDropPlan } from './sketchPlacement';
+import { readSceneId } from '../utils/sceneIds';
 import { OuterRingDragController } from '../view/interactions/OuterRingDragController';
 import { ChronologueDragController } from '../view/interactions/ChronologueDragController';
 import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
@@ -354,6 +357,8 @@ export class TimetableView extends BasesView {
     private panelEditing: { path: string; original: unknown } | null = null;
     private panelEvents: Component | null = null;
     private draggedScene: string | null = null;
+    private draggedSketch: string | null = null;
+    private sketchProblems = new Map<string, PlacementProblem>();
     private scenePlacementInProgress = false;
     private decorateGeneration = 0;
     private readonly rowEls = new Map<string, HTMLElement>();
@@ -1666,6 +1671,13 @@ export class TimetableView extends BasesView {
         const { app, settings } = this.plugin;
         const authorSorted = this.config.getSort().length > 0;
         const bookFolders = (settings.books ?? []).map(book => book.sourceFolder);
+        this.sketchProblems.clear();
+        const positions = new Map<string, number>();
+        for (const book of settings.books ?? []) {
+            const ordered = orderSketches(this.sketchPlacementItems(book.id));
+            ordered.items.forEach((item, index) => positions.set(item.row.path, index));
+            ordered.problems.forEach((problem, path) => this.sketchProblems.set(path, problem));
+        }
         const toItems = (entries: BasesEntry[]): TableItem[] => {
             const items = entries
                 .filter(entry => entry.file.extension === 'md')
@@ -1675,7 +1687,16 @@ export class TimetableView extends BasesView {
                 })
                 .filter(item => belongsInTimetable(item.row, bookFolders));
             // A sort the author sets in the Bases toolbar wins; otherwise wheel order.
-            return authorSorted ? items : items.sort((a, b) => compareManuscriptRows(a.row, b.row));
+            if (authorSorted) return items;
+            // Order against the entire book, so a Bases filter hiding an anchor
+            // does not make its sketches look orphaned or change their order.
+            return items.sort((a, b) => {
+                const bookA = getBookIdForPath(settings.books, a.row.path);
+                const bookB = getBookIdForPath(settings.books, b.row.path);
+                return bookA && bookA === bookB
+                    ? (positions.get(a.row.path) ?? Number.MAX_SAFE_INTEGER) - (positions.get(b.row.path) ?? Number.MAX_SAFE_INTEGER)
+                    : compareManuscriptRows(a.row, b.row);
+            });
         };
 
         const grouped: BasesEntryGroup[] = this.data.groupedData;
@@ -1688,6 +1709,17 @@ export class TimetableView extends BasesView {
             const label = act !== undefined ? this.actLabel(act) : (group.hasKey() && group.key ? group.key.toString() : t('ui.timetable.noValue'));
             return { id: `group:${index}:${group.key?.toString() ?? ''}`, label, act, items };
         }).filter(group => group.items.length > 0);
+    }
+
+    private sketchPlacementItems(bookId: string): PlacementItem[] {
+        const { app, settings } = this.plugin;
+        return app.vault.getMarkdownFiles()
+            .filter(file => getBookIdForPath(settings.books, file.path) === bookId)
+            .map(file => {
+                const frontmatter = app.metadataCache.getFileCache(file)?.frontmatter;
+                return { row: buildTableRow(file.path, file.basename, frontmatter, settings), frontmatter };
+            })
+            .filter(item => belongsInTimetable(item.row, (settings.books ?? []).map(book => book.sourceFolder)));
     }
 
     /** An ungrouped table that spans books (the saga table) groups by book, in saga order. */
@@ -1875,7 +1907,11 @@ export class TimetableView extends BasesView {
             const body = table.createEl('tbody', { cls: 'ert-timetable__group' });
             const collapsed = this.collapsed.has(group.id);
             const groupBook = this.singleBook(group.items);
-            if (showGroupHeaders) this.renderGroupHeader(body, group, collapsed, columnCount, groupBook, isProgress);
+            if (showGroupHeaders) {
+                this.renderGroupHeader(body, group, collapsed, columnCount, groupBook, isProgress);
+                const heading = body.lastElementChild;
+                if (heading instanceof HTMLElement && group.act !== undefined) this.attachSketchActDrop(heading, group.act, groupBook, state);
+            }
             if (collapsed) continue;
             const byPath = new Map(group.items.map(item => [item.row.path, item]));
             const lines = chronologue ? chronologue.lines : withActDividers(group.items.map(item => item.row));
@@ -1885,6 +1921,7 @@ export class TimetableView extends BasesView {
                     const cell = divider.createEl('td');
                     cell.colSpan = columnCount;
                     cell.createSpan({ text: this.actLabel(line.act) });
+                    this.attachSketchActDrop(divider, line.act, groupBook, state);
                     this.renderNewSketchButton(cell, line.act, groupBook, this.actLabel(line.act));
                     if (line.act !== null) this.actDividerEls.set(line.act, divider);
                     continue;
@@ -2178,6 +2215,7 @@ export class TimetableView extends BasesView {
         for (const group of groups) {
             if (group.label) {
                 const heading = list.createEl('h3', { cls: 'ert-timetable-panels__group', text: group.label });
+                if (group.act !== undefined) this.attachSketchActDrop(heading, group.act, this.singleBook(group.items), mode.state);
                 if (typeof group.act === 'number') this.actDividerEls.set(group.act, heading);
             }
             const itemsByPath = new Map(group.items.map(item => [item.row.path, item]));
@@ -2187,6 +2225,7 @@ export class TimetableView extends BasesView {
             for (const line of lines) {
                 if (line.type === 'act') {
                     const heading = list.createEl('h3', { cls: 'ert-timetable-panels__group', text: this.actLabel(line.act) });
+                    this.attachSketchActDrop(heading, line.act, this.singleBook(group.items), mode.state);
                     if (line.act !== null) this.actDividerEls.set(line.act, heading);
                     continue;
                 }
@@ -2222,6 +2261,9 @@ export class TimetableView extends BasesView {
                         this.panelEvents?.registerDomEvent(image, 'error', () => cover.addClass('is-missing'));
                     }
                 } else if (row.kind === 'scene') this.attachSceneDrag(panel, header, row.path, mode.state);
+                if (row.kind === 'sketch') this.attachSketchDrag(panel, header, row.path, mode.state);
+                if (row.kind === 'sketch') this.renderSketchProblem(header, item);
+                if (row.kind === 'scene' || row.kind === 'sketch') this.attachSketchDrop(panel, row.path, mode.state);
                 const heading = header.createDiv({ cls: 'ert-timetable-panels__heading' });
                 const title = heading.createDiv({ cls: 'ert-timetable-panels__title-line' });
                 if (row.prefix) title.createSpan({ cls: 'ert-timetable-panels__number', text: row.prefix });
@@ -2433,6 +2475,151 @@ export class TimetableView extends BasesView {
         return handle;
     }
 
+    private attachSketchDrag(row: HTMLElement, host: HTMLElement, path: string, state: TimelineModeState): void {
+        const book = getActiveBook(this.plugin.settings);
+        const unavailable = state.mode !== 'narrative' || state.runtime || state.shift || state.alt
+            || this.config.getSort().length > 0 || getTimelineScope(this.plugin.settings) !== 'book'
+            || !book || getBookIdForPath(this.plugin.settings.books, path) !== book.id;
+        const handle = host.createEl('button', { cls: 'ert-timetable__drag clickable-icon', attr: { draggable: String(!unavailable), type: 'button' } });
+        const label = t(unavailable ? 'ui.timetable.sketchDragHint' : 'ui.timetable.sketchDrag');
+        setAccessibleLabel(handle, label);
+        setTooltip(handle, label);
+        setIcon(handle, 'grip-vertical');
+        if (unavailable) {
+            handle.addClass('is-unavailable');
+            handle.setAttr('aria-disabled', 'true');
+            return;
+        }
+        this.panelEvents?.registerDomEvent(handle, 'dragstart', (event: DragEvent) => {
+            if (!event.dataTransfer) return;
+            this.draggedSketch = path;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', path);
+        });
+        this.panelEvents?.registerDomEvent(handle, 'dragend', () => {
+            this.draggedSketch = null;
+            this.rootEl.querySelectorAll('.ert-timetable__drop-before, .ert-timetable__drop-after').forEach(el => {
+                el.removeClass('ert-timetable__drop-before', 'ert-timetable__drop-after');
+            });
+        });
+    }
+
+    private attachSketchDrop(row: HTMLElement, path: string, state: TimelineModeState): void {
+        const clear = () => row.removeClass('ert-timetable__drop-before', 'ert-timetable__drop-after');
+        this.panelEvents?.registerDomEvent(row, 'dragover', (event: DragEvent) => {
+            if (!this.draggedSketch || this.draggedSketch === path || state.mode !== 'narrative') return;
+            const books = this.plugin.settings.books ?? [];
+            if (getBookIdForPath(books, this.draggedSketch) !== getBookIdForPath(books, path)) return;
+            event.preventDefault();
+            if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+            const target = this.rowItems.get(path);
+            const after = target?.row.kind === 'scene' || event.clientY >= row.getBoundingClientRect().top + row.offsetHeight / 2;
+            clear();
+            row.addClass(after ? 'ert-timetable__drop-after' : 'ert-timetable__drop-before');
+        });
+        this.panelEvents?.registerDomEvent(row, 'dragleave', (event: DragEvent) => {
+            if (!(event.relatedTarget instanceof Node) || !row.contains(event.relatedTarget)) clear();
+        });
+        this.panelEvents?.registerDomEvent(row, 'drop', event => {
+            const source = this.draggedSketch;
+            if (!source || (!row.hasClass('ert-timetable__drop-before') && !row.hasClass('ert-timetable__drop-after'))) return;
+            const after = row.hasClass('ert-timetable__drop-after');
+            event.preventDefault();
+            event.stopPropagation();
+            clear();
+            this.draggedSketch = null;
+            void this.placeSketch(source, path, after);
+        });
+    }
+
+    private async placeSketch(source: string, target: string, after: boolean): Promise<void> {
+        const bookId = getBookIdForPath(this.plugin.settings.books, source);
+        if (!bookId || bookId !== getActiveBook(this.plugin.settings)?.id || bookId !== getBookIdForPath(this.plugin.settings.books, target)) return;
+        const plan = planSketchDrop(this.sketchPlacementItems(bookId), source, target, after);
+        if (!plan) { new Notice(t('ui.timetable.sketchPlacementUnavailable'), 7000); return; }
+        await this.applySketchPlan(plan);
+    }
+
+    private attachSketchActDrop(heading: HTMLElement, act: number | null, bookId: string | undefined, state: TimelineModeState): void {
+        this.panelEvents?.registerDomEvent(heading, 'dragover', (event: DragEvent) => {
+            if (!this.draggedSketch || !bookId || state.mode !== 'narrative'
+                || getBookIdForPath(this.plugin.settings.books, this.draggedSketch) !== bookId) return;
+            event.preventDefault();
+            heading.addClass('ert-timetable__drop-after');
+            if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+        });
+        this.panelEvents?.registerDomEvent(heading, 'dragleave', (event: DragEvent) => {
+            if (!(event.relatedTarget instanceof Node) || !heading.contains(event.relatedTarget)) heading.removeClass('ert-timetable__drop-after');
+        });
+        this.panelEvents?.registerDomEvent(heading, 'drop', event => {
+            const source = this.draggedSketch;
+            if (!source || !bookId || !heading.hasClass('ert-timetable__drop-after')) return;
+            event.preventDefault(); event.stopPropagation();
+            heading.removeClass('ert-timetable__drop-after');
+            this.draggedSketch = null;
+            const plan = planSketchActDrop(this.sketchPlacementItems(bookId), source, act);
+            if (plan) void this.applySketchPlan(plan);
+        });
+    }
+
+    private async applySketchPlan(plan: SketchDropPlan): Promise<void> {
+        try {
+            for (const [index, path] of plan.orderedPaths.entries()) {
+                const file = this.plugin.app.vault.getAbstractFileByPath(path);
+                if (!(file instanceof TFile)) throw new Error(`Sketch no longer exists: ${path}`);
+                await this.plugin.app.fileManager.processFrontMatter(file, fm => {
+                    const classification = classifyForPromotion(fm);
+                    if (classification.kind !== 'eligible' || !classification.fromSketch) throw new Error(`Not a sketch: ${path}`);
+                    const set = (key: string, value: unknown) => {
+                        const existing = Object.keys(fm).find(candidate => candidate.toLowerCase() === key.toLowerCase()) ?? key;
+                        if (value === null) delete fm[existing];
+                        else fm[existing] = value;
+                    };
+                    set(authorKeyFor('Act', this.plugin.settings), plan.act);
+                    set(SKETCH_AFTER_SCENE, plan.anchorId);
+                    set(SKETCH_ORDER, (index + 1) * 10);
+                });
+            }
+            this.refresh();
+        } catch (error) {
+            console.error('Sketch placement failed', error);
+            new Notice(t('ui.timetable.sketchPlacementFailed'), 8000);
+            this.refresh();
+        }
+    }
+
+    private renderSketchProblem(host: HTMLElement, item: TableItem): void {
+        const problem = this.sketchProblems.get(item.row.path);
+        if (!problem) return;
+        const label = t(problem === 'different-act' ? 'ui.timetable.sketchDifferentAct' : 'ui.timetable.sketchAnchorProblem');
+        const button = host.createEl('button', { cls: 'ert-timetable__sketch-warning clickable-icon', attr: { type: 'button' } });
+        setIcon(button, 'triangle-alert');
+        setAccessibleLabel(button, label);
+        setTooltip(button, label);
+        this.panelEvents?.registerDomEvent(button, 'click', (event: MouseEvent) => {
+            event.stopPropagation();
+            const menu = new Menu();
+            if (problem === 'different-act') {
+                const book = getBookIdForPath(this.plugin.settings.books, item.row.path);
+                const anchor = sketchAnchor(item.frontmatter);
+                const scene = book ? this.sketchPlacementItems(book).find(candidate => candidate.row.kind === 'scene' && readSceneId(candidate.frontmatter) === anchor) : undefined;
+                if (scene?.row.act != null) menu.addItem(option => option.setTitle(t('ui.timetable.sketchMoveFollow')).onClick(() => {
+                    void this.plugin.app.fileManager.processFrontMatter(item.entry.file, fm => {
+                        const actKey = authorKeyFor('Act', this.plugin.settings);
+                        const key = Object.keys(fm).find(k => k.toLowerCase() === actKey.toLowerCase()) ?? actKey;
+                        fm[key] = scene.row.act;
+                    }).then(() => this.refresh());
+                }));
+            }
+            menu.addItem(option => option.setTitle(t('ui.timetable.sketchMoveStay')).onClick(() => {
+                void this.plugin.app.fileManager.processFrontMatter(item.entry.file, fm => {
+                    for (const key of Object.keys(fm)) if ([SKETCH_AFTER_SCENE.toLowerCase(), SKETCH_ORDER.toLowerCase()].includes(key.toLowerCase())) delete fm[key];
+                }).then(() => this.refresh());
+            }));
+            menu.showAtMouseEvent(event);
+        });
+    }
+
     /** Use the same move dialogs and write paths even when no timeline is visible. */
     private async placeTimetableScene(mode: string, source: string, target: string): Promise<boolean> {
         if (this.scenePlacementInProgress || (mode !== 'narrative' && mode !== 'chronologue')) return false;
@@ -2594,6 +2781,11 @@ export class TimetableView extends BasesView {
         const gossamer = mode.state.mode === 'gossamer';
         if (gossamer && row.kind !== 'beat') tr.addClass('is-receded');
         this.renderNumberCell(tr.createEl('td', { cls: 'ert-timetable__num' }).createDiv({ cls: 'ert-timetable__num-inner' }), item, cells.today);
+        if (row.kind === 'sketch') {
+            const wrap = tr.querySelector<HTMLElement>('.ert-timetable__chip-wrap');
+            if (wrap) { this.attachSketchDrag(tr, wrap, row.path, mode.state); this.renderSketchProblem(wrap, item); }
+        }
+        if (row.kind === 'scene' || row.kind === 'sketch') this.attachSketchDrop(tr, row.path, mode.state);
         if (row.kind === 'scene') {
             const wrap = tr.querySelector<HTMLElement>('.ert-timetable__chip-wrap');
             const handle = wrap ? this.attachSceneDrag(tr, wrap, row.path, mode.state) : null;

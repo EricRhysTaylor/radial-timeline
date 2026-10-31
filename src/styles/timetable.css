@@ -1277,3 +1277,6 @@
 .ert-timetable__drag.is-unavailable .svg-icon { opacity: 0.55; }
 .ert-timetable__drag:active { cursor: grabbing; }
 .ert-timetable__drop-before { box-shadow: inset 0 3px var(--interactive-accent); }
+.ert-timetable__drop-after { box-shadow: inset 0 -3px var(--interactive-accent); }
+.ert-timetable__row.is-sketch .ert-timetable__chip-wrap { display: flex; align-items: center; }
+.ert-timetable__row.is-sketch .ert-timetable__chip-wrap .ert-timetable__drag { margin-left: 2px; }

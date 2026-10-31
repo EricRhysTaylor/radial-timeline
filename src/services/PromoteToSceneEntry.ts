@@ -16,6 +16,10 @@ import { isUntitledName } from '../utils/noteTitle';
 import { t, tCount } from '../i18n';
 import type { TimelineItem } from '../types';
 import { sortByManuscriptOrder } from '../utils/sceneHelpers';
+import { buildTableRow } from '../timetable/timetableModel';
+import { orderSketches, sketchAnchor } from '../timetable/sketchPlacement';
+import { readSceneId } from '../utils/sceneIds';
+import { getBookIdForPath } from '../utils/books';
 
 const PROMOTE_ICON = 'file-up';
 
@@ -88,15 +92,42 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[])
 
     let sceneData: TimelineItem[] | undefined;
     let anchors: PromotionAnchorOption[] | null = null;
+    let defaultAnchorPath: string | null = null;
+    let followingSketches: string[] = [];
     if (only && !only.prefix) {
         sceneData = await plugin.getSceneData({ sourcePath: only.book.sourceFolder });
         anchors = promotionAnchors(sceneData);
+        const fm = app.metadataCache.getFileCache(only.file)?.frontmatter;
+        const anchorId = only.fromSketch ? sketchAnchor(fm) : null;
+        if (anchorId) {
+            const items = app.vault.getMarkdownFiles().filter(file => getBookIdForPath(settings.books, file.path) === only.book.id)
+                .map(file => {
+                    const frontmatter = app.metadataCache.getFileCache(file)?.frontmatter;
+                    return { row: buildTableRow(file.path, file.basename, frontmatter, settings), frontmatter };
+                });
+            const matching = items.filter(item => item.row.kind === 'scene' && readSceneId(item.frontmatter) === anchorId);
+            const ordered = orderSketches(items);
+            if (matching.length !== 1 || ordered.problems.has(only.file.path)) {
+                new Notice(t('ui.timetable.sketchPromotionAnchorProblem'), 8000);
+                return;
+            }
+            defaultAnchorPath = matching[0].row.path;
+            const gap = ordered.items.filter(item => item.row.kind === 'sketch' && sketchAnchor(item.frontmatter) === anchorId
+                && item.row.act === matching[0].row.act);
+            const position = gap.findIndex(item => item.row.path === only.file.path);
+            followingSketches = gap.slice(position + 1).map(item => item.row.path);
+        }
+    }
+    if ((!only || only.prefix) && plan.entries.some(entry => entry.fromSketch && sketchAnchor(app.metadataCache.getFileCache(entry.file)?.frontmatter))) {
+        new Notice(t('ui.timetable.sketchPromotionSingle'), 8000);
+        return;
     }
 
     const modal = new PromoteToSceneModal(app, plan, {
         advancedDefault: settings.sceneAdvancedPropertiesEnabled ?? true,
         bookLabel,
         anchors,
+        defaultAnchorPath,
         // "Untitled sketch" never becomes "12.5 Untitled sketch": the scene gets a title first.
         askTitle: only !== undefined && isUntitledName(only.file.basename, t('ui.timetable.newSketchName')),
     });
@@ -109,6 +140,8 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[])
         sceneData,
         beatModel: resolveSelectedBeatModelFromSettings(settings),
         title: choice.title,
+        sketchPlacement: defaultAnchorPath && choice.anchorPath === defaultAnchorPath
+            ? { anchorId: sketchAnchor(app.metadataCache.getFileCache(only!.file)?.frontmatter)!, followingSketches } : undefined,
         onProgress: (current, total, name) => modal.updateProgress(t('ui.promoteToScene.progress', { name, current, total })),
     });
     plugin.refreshTimelineIfNeeded(null);
@@ -117,6 +150,9 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[])
         console.error(`[PromoteToScene] ${failure.file.path}: ${failure.message}`);
     }
     if (result.failed.length > 0) {
+        if (result.failed.some(failure => failure.message === 'No safe scene number is available at this position.')) {
+            new Notice(t('ui.timetable.sketchNoSafeNumber'), 10000);
+        }
         await modal.finishWithDismiss(t('ui.promoteToScene.doneWithErrors', {
             promoted: tCount('note', result.promoted.length),
             names: result.failed.map(failure => failure.file.basename).join(', '),

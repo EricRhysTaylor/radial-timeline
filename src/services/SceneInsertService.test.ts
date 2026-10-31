@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from '../settings/defaults';
 import type { RadialTimelineSettings, TimelineItem } from '../types';
 import {
     buildDecimalSceneInsertionPrefix,
+    isSafeSceneInsertionPrefix,
     insertSceneAfterAnchor
 } from './SceneInsertService';
 
@@ -65,6 +66,12 @@ describe('SceneInsertService', () => {
         ];
 
         expect(buildDecimalSceneInsertionPrefix(items, 'Book/36 Bears Breakfast.md')).toBe('36.25');
+    });
+
+    it('rejects a midpoint that sorts after the following scene', () => {
+        const items = [scene('Book/12.5 A.md'), scene('Book/12.25 B.md'), scene('Book/13 C.md')];
+        expect(isSafeSceneInsertionPrefix(items, 'Book/12.5 A.md', '12.75')).toBe(false);
+        expect(isSafeSceneInsertionPrefix(items, 'Book/12.5 A.md', '12.10')).toBe(true);
     });
 
     it('creates a basic scene with copied When and one primary subplot', async () => {

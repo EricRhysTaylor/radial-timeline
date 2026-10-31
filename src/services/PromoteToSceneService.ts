@@ -23,7 +23,9 @@ import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils
 import { extractPrefixToken } from '../utils/prefixOrder';
 import { formatLocalDateKey } from '../utils/date';
 import { safeTitle, splitNumberPrefix } from '../utils/noteTitle';
-import { buildDecimalSceneInsertionPrefix } from './SceneInsertService';
+import { buildDecimalSceneInsertionPrefix, isSafeSceneInsertionPrefix } from './SceneInsertService';
+import { generateSceneId, readSceneId } from '../utils/sceneIds';
+import { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor } from '../timetable/sketchPlacementFields';
 import { ensureSceneIds, reorderSceneFields } from '../sceneProperties/sceneNormalizer';
 import { sleep } from '../utils/sleep';
 
@@ -69,6 +71,7 @@ export interface PromotionOptions {
     beatModel?: string;
     /** Single-note promotion only: the scene's title, replacing a placeholder name. Any number prefix stays. */
     title?: string | null;
+    sketchPlacement?: { anchorId: string; followingSketches: string[] };
     onProgress?: (current: number, total: number, name: string) => void;
 }
 
@@ -268,6 +271,17 @@ export async function applyPromotion(
     const due = formatLocalDateKey();
     const single = plan.entries.length === 1;
 
+    // Validate the filename before changing Class or touching any note. The
+    // numeric midpoint is not always between two natural-sort prefixes.
+    let insertionPrefix: string | null = null;
+    if (single && !plan.entries[0].prefix && options.anchorPath && options.sceneData) {
+        insertionPrefix = buildDecimalSceneInsertionPrefix(options.sceneData, options.anchorPath, options.beatModel);
+        if (!isSafeSceneInsertionPrefix(options.sceneData, options.anchorPath, insertionPrefix, options.beatModel)) {
+            result.failed.push({ file: plan.entries[0].file, message: 'No safe scene number is available at this position.' });
+            return result;
+        }
+    }
+
     const anchorItem = single && options.anchorPath
         ? options.sceneData?.find(item => item.path === options.anchorPath)
         : undefined;
@@ -287,8 +301,16 @@ export async function applyPromotion(
             const templateKeys = templateKeysOf(template);
 
             await app.fileManager.processFrontMatter(entry.file, (fm: Record<string, unknown>) => {
+                if (options.sketchPlacement && sketchAnchor(fm) !== options.sketchPlacement.anchorId) throw new Error('Sketch placement changed.');
                 const classKey = findKeyCaseInsensitive(fm, CLASS_KEY) ?? CLASS_KEY;
                 fm[classKey] = 'Scene';
+                if (entry.fromSketch) {
+                    for (const key of [SKETCH_AFTER_SCENE, SKETCH_ORDER]) {
+                        const existing = findKeyCaseInsensitive(fm, key);
+                        if (existing) delete fm[existing];
+                    }
+                    if (!readSceneId(fm)) fm.ID = generateSceneId();
+                }
                 // Recompute against the live frontmatter, not the cached plan.
                 for (const key of findMissingTemplateKeys(templateKeys, fm, mappings)) {
                     // A blank template value stays blank (`When:`), as in a new
@@ -317,15 +339,30 @@ export async function applyPromotion(
     // number yet), given the title the author typed, or both.
     const only = single ? plan.entries[0] : undefined;
     if (only && result.promoted.includes(only.file)) {
-        const prefix = !only.prefix && options.anchorPath && options.sceneData
-            ? buildDecimalSceneInsertionPrefix(options.sceneData, options.anchorPath, options.beatModel)
-            : null;
-        const basename = promotedBasename(only.file.basename, prefix, options.title ?? null);
+        const basename = promotedBasename(only.file.basename, insertionPrefix, options.title ?? null);
         if (basename !== only.file.basename) {
             const from = only.file.path;
             const to = uniqueSiblingPath(app, only.file, basename);
             await app.fileManager.renameFile(only.file, to);
             result.renamed.push({ from, to });
+        }
+        if (options.sketchPlacement?.followingSketches.length) {
+            try {
+                let sceneId: string | undefined;
+                await app.fileManager.processFrontMatter(only.file, fm => { sceneId = readSceneId(fm); });
+                if (!sceneId) throw new Error('Promoted scene has no ID.');
+                for (const path of options.sketchPlacement.followingSketches) {
+                    const sketch = app.vault.getAbstractFileByPath(path);
+                    if (!(sketch instanceof TFile)) throw new Error(`Sketch no longer exists: ${path}`);
+                    await app.fileManager.processFrontMatter(sketch, fm => {
+                        if (sketchAnchor(fm) !== options.sketchPlacement?.anchorId) throw new Error(`Sketch placement changed: ${path}`);
+                        const key = findKeyCaseInsensitive(fm, SKETCH_AFTER_SCENE) ?? SKETCH_AFTER_SCENE;
+                        fm[key] = sceneId;
+                    });
+                }
+            } catch (error) {
+                result.failed.push({ file: only.file, message: error instanceof Error ? error.message : String(error) });
+            }
         }
     }
 

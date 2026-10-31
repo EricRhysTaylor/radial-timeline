@@ -251,6 +251,42 @@ describe('applyPromotion', () => {
         expect(result.promoted).toEqual([b]);
         expect(result.failed).toEqual([{ file: a, message: 'Malformed YAML' }]);
     });
+
+    it('keeps later sketches after the promoted scene', async () => {
+        const { app, file, frontmatter } = fakeApp({
+            'Book 2/1 First.md': { Class: 'Scene', ID: 'scn_first', Act: 1 },
+            'Book 2/Draft.md': { Class: 'Sketch', ID: 'scn_draft', Act: 1, 'Place after scene': 'scn_first', 'Sketch order': 10 },
+            'Book 2/Later.md': { Class: 'Sketch', Act: 1, 'Place after scene': 'scn_first', 'Sketch order': 20 },
+        });
+        const note = file('Book 2/Draft.md'); file('Book 2/1 First.md'); file('Book 2/Later.md');
+        const settings = settingsWithBook();
+        const result = await applyPromotion(app, settings, planPromotion(app, settings, [note]), {
+            advanced: false, anchorPath: 'Book 2/1 First.md',
+            sceneData: [{ path: 'Book 2/1 First.md', itemType: 'Scene', actNumber: 1 }] as TimelineItem[],
+            sketchPlacement: { anchorId: 'scn_first', followingSketches: ['Book 2/Later.md'] },
+        });
+        expect(result.failed).toEqual([]);
+        expect(frontmatter['Book 2/Draft.md']).not.toHaveProperty('Place after scene');
+        expect(frontmatter['Book 2/Later.md']?.['Place after scene']).toBe('scn_draft');
+    });
+
+    it('does not modify the sketch when the generated position sorts into the wrong gap', async () => {
+        const { app, file, frontmatter } = fakeApp({
+            'Book 2/12.5 First.md': { Class: 'Scene', ID: 'scn_first', Act: 1 },
+            'Book 2/Draft.md': { Class: 'Sketch', Act: 1, 'Place after scene': 'scn_first' },
+        });
+        const note = file('Book 2/Draft.md'); file('Book 2/12.5 First.md');
+        const settings = settingsWithBook();
+        const result = await applyPromotion(app, settings, planPromotion(app, settings, [note]), {
+            advanced: false, anchorPath: 'Book 2/12.5 First.md', sceneData: [
+                { path: 'Book 2/12.5 First.md', itemType: 'Scene', actNumber: 1 },
+                { path: 'Book 2/12.25 Next.md', itemType: 'Scene', actNumber: 1 },
+            ] as TimelineItem[],
+        });
+        expect(result.promoted).toEqual([]);
+        expect(result.failed).toHaveLength(1);
+        expect(frontmatter['Book 2/Draft.md']?.Class).toBe('Sketch');
+    });
 });
 
 describe('promotedBasename', () => {

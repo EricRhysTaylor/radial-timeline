@@ -174,6 +174,23 @@ export function buildDecimalSceneInsertionPrefix(
     return formatPrefixNumber(fallback);
 }
 
+/** Only accept a generated prefix if the manuscript comparator puts it in the intended gap. */
+export function isSafeSceneInsertionPrefix(items: TimelineItem[], anchorPath: string, prefix: string, beatModel?: string): boolean {
+    const ordered = sortCandidatesByManuscriptOrder(collectCandidates(items, beatModel));
+    const anchorIndex = ordered.findIndex(entry => entry.path === anchorPath && entry.itemType === 'Scene');
+    if (anchorIndex < 0) return false;
+    const insertIndex = findInsertionIndexAfterSceneBeatGap(ordered, anchorPath);
+    const previous = ordered[insertIndex - 1];
+    const next = ordered[insertIndex];
+    const anchor = ordered[anchorIndex];
+    const previousPrefix = extractPrefixToken(previous?.basename);
+    if (!previousPrefix || previous.actNumber !== anchor.actNumber || comparePrefixTokens(previousPrefix, prefix) >= 0) return false;
+    if (ordered.some(entry => extractPrefixToken(entry.basename) === prefix)) return false;
+    if (!next || next.actNumber !== anchor.actNumber) return true;
+    const nextPrefix = extractPrefixToken(next.basename);
+    return nextPrefix !== null && comparePrefixTokens(prefix, nextPrefix) < 0;
+}
+
 function extractRawFrontmatterScalar(frontmatter: string, keys: string[]): string {
     const lines = frontmatter.split(/\r?\n/);
     for (const key of keys) {

@@ -24,6 +24,7 @@ import type { RadialTimelineSettings } from '../../types/settings';
 import { fileStem } from '../../utils/paths';
 import { DRAG_DROP_ARC_RADIUS } from '../../renderer/layout/LayoutConstants';
 import { t } from '../../i18n';
+import { askAboutAttachedSketches, applyAttachedSketchMove } from '../../timetable/sketchSceneMove';
 
 export interface OuterRingViewAdapter {
     plugin: RadialTimelinePlugin;
@@ -783,6 +784,10 @@ export class OuterRingDragController {
         const rippleRename = this.isRippleRenameEnabled();
         const recentMoves = getActiveRecentStructuralMoves(this.view.plugin.settings);
 
+        const sketchMove = actChanged && targetActNumber !== undefined && sourceType === 'Scene'
+            ? await askAboutAttachedSketches(this.view.plugin, sourcePath, targetActNumber) : undefined;
+        if (sketchMove === null) { this.resetState(); return; }
+
         this.confirming = true;
         const modal = new DragConfirmModal(
             this.view.plugin.app,
@@ -844,6 +849,7 @@ export class OuterRingDragController {
                 },
             });
             reorderApplied = true;
+            await applyAttachedSketchMove(this.view.plugin.app, sketchMove);
             const historySummary = `${sourceDescriptor} | ${targetDescriptor}`;
             const noticeText = t('ui.outerRingDragController.movedBefore', { source: sourceDescriptor, target: targetDescriptor });
             await this.recordRecentMove({
@@ -948,6 +954,10 @@ export class OuterRingDragController {
         const recentMoves = getActiveRecentStructuralMoves(this.view.plugin.settings);
         const destinationLabel = t('timeline.acts.actFallback', { number: targetActNumber });
 
+        const sketchMove = actChanged && sourceType === 'Scene'
+            ? await askAboutAttachedSketches(this.view.plugin, sourcePath, targetActNumber) : undefined;
+        if (sketchMove === null) { this.resetState(); return; }
+
         this.confirming = true;
         const modal = new DragConfirmModal(
             this.view.plugin.app,
@@ -986,6 +996,7 @@ export class OuterRingDragController {
                 },
             });
             reorderApplied = true;
+            await applyAttachedSketchMove(this.view.plugin.app, sketchMove);
             await this.recordRecentMove({
                 itemType: sourceType,
                 filePath: sourcePath,

@@ -3,6 +3,7 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { getActiveBook } from '../utils/books';
 import { CanvasSketchModal, type OpenCanvas } from './CanvasSketchModal';
+import { registerCanvasCardPresentation } from './CanvasCardPresentation';
 
 function canvasForView(source: View | undefined): OpenCanvas | null {
     if (!source || source.getViewType() !== 'canvas') return null;
@@ -28,6 +29,7 @@ function openCanvasSketches(plugin: RadialTimelinePlugin, canvas = activeCanvas(
 }
 
 export function registerCanvasSketches(plugin: RadialTimelinePlugin): void {
+    registerCanvasCardPresentation(plugin);
     // Track each open Canvas, including inactive and split leaves. Bind the
     // action to its own view rather than whichever leaf happens to have focus.
     const actions = new Map<View, HTMLElement>();

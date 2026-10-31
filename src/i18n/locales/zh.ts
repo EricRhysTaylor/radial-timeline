@@ -5946,6 +5946,10 @@ export const zh: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: '快速预览（地球 → {{planet}}）',
         },
         canvasSketch: {
+            cardViews: '画布卡片视图',
+            cardFull: '完整笔记',
+            cardPreview: '预览',
+            cardTitle: '标题',
             "badge": "CANVAS",
             "title": "将想法转为草稿",
             subtitle: "选择文本卡片转换为草稿。文字、位置和连接都会保留。",

@@ -5947,6 +5947,10 @@ export const th: TranslationKeys = {
             "previewHeadingNamed": "ตัวอย่างด่วน (โลก → {{planet}})"
         },
         canvasSketch: {
+            cardViews: 'มุมมองการ์ด Canvas',
+            cardFull: 'โน้ตฉบับเต็ม',
+            cardPreview: 'ตัวอย่าง',
+            cardTitle: 'ชื่อเรื่อง',
             "badge": "CANVAS",
             "title": "เปลี่ยนไอเดียเป็นแบบร่าง",
             subtitle: "เลือกการ์ดข้อความเพื่อแปลงเป็นภาพร่าง ข้อความ ตำแหน่ง และการเชื่อมต่อจะยังคงอยู่",

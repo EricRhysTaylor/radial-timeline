@@ -5947,6 +5947,10 @@ export const fr: TranslationKeys = {
             "previewHeadingNamed": "Aperçu rapide (Terre → {{planet}})"
         },
         canvasSketch: {
+            cardViews: 'Affichage des cartes Canvas',
+            cardFull: 'Note complète',
+            cardPreview: 'Aperçu',
+            cardTitle: 'Titre',
             "badge": "CANVAS",
             "title": "Transformer des idées en esquisses",
             subtitle: "Choisissez les cartes texte à convertir. Leur texte, position et connexions sont conservés.",

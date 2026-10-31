@@ -5944,6 +5944,10 @@ export const de: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: 'Schnellvorschau (Erde → {{planet}})',
         },
         canvasSketch: {
+            cardViews: 'Canvas-Kartenansicht',
+            cardFull: 'Vollständige Notiz',
+            cardPreview: 'Vorschau',
+            cardTitle: 'Titel',
             "badge": "CANVAS",
             "title": "Ideen in Skizzen umwandeln",
             subtitle: "Wähle Textkarten für Skizzen. Text, Positionen und Verbindungen bleiben erhalten.",

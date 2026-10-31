@@ -5945,6 +5945,10 @@ export const ja: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: 'クイックプレビュー（地球 → {{planet}}）',
         },
         canvasSketch: {
+            cardViews: 'Canvasカード表示',
+            cardFull: 'ノート全体',
+            cardPreview: 'プレビュー',
+            cardTitle: 'タイトル',
             "badge": "CANVAS",
             "title": "アイデアをスケッチに変換",
             subtitle: "テキストカードをスケッチに変換します。テキスト、位置、接続は維持されます。",

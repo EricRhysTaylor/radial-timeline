@@ -5628,6 +5628,10 @@ export const en = {
             previewHeadingNamed: 'Quick preview (Earth → {{planet}})',
         },
         canvasSketch: {
+            cardViews: 'Canvas card view',
+            cardFull: 'Full note',
+            cardPreview: 'Preview',
+            cardTitle: 'Title',
             badge: 'CANVAS',
             title: 'Turn ideas into sketches',
             subtitle: "Choose text cards to turn into sketches. Their text, positions and connections stay with them.",

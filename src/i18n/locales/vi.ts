@@ -5947,6 +5947,10 @@ export const vi: TranslationKeys = {
             "previewHeadingNamed": "Xem trước nhanh (Trái đất → {{planet}})"
         },
         canvasSketch: {
+            cardViews: 'Chế độ thẻ Canvas',
+            cardFull: 'Ghi chú đầy đủ',
+            cardPreview: 'Xem trước',
+            cardTitle: 'Tiêu đề',
             "badge": "CANVAS",
             "title": "Chuyển ý tưởng thành bản phác thảo",
             subtitle: "Chọn thẻ văn bản để chuyển thành bản phác thảo. Văn bản, vị trí và kết nối được giữ nguyên.",

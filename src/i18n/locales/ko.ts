@@ -5944,6 +5944,10 @@ export const ko: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: '빠른 미리보기 (지구 → {{planet}})',
         },
         canvasSketch: {
+            cardViews: '캔버스 카드 보기',
+            cardFull: '전체 노트',
+            cardPreview: '미리보기',
+            cardTitle: '제목',
             "badge": "CANVAS",
             "title": "아이디어를 스케치로 변환",
             subtitle: "텍스트 카드를 스케치로 바꿉니다. 텍스트, 위치와 연결은 유지됩니다.",

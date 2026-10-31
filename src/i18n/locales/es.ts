@@ -5947,6 +5947,10 @@ export const es: TranslationKeys = {
             "previewHeadingNamed": "Vista previa rápida (Tierra → {{planet}})"
         },
         canvasSketch: {
+            cardViews: 'Vista de tarjetas del Canvas',
+            cardFull: 'Nota completa',
+            cardPreview: 'Vista previa',
+            cardTitle: 'Título',
             "badge": "CANVAS",
             "title": "Convertir ideas en bocetos",
             subtitle: "Elige tarjetas de texto para convertirlas en bocetos. Se conservan el texto, la posición y las conexiones.",

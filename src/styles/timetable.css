@@ -1299,7 +1299,8 @@
 .ert-canvas-story-node > [class~="canvas-node-content"] { visibility: hidden; }
 .ert-canvas-story-node [class~="canvas-node-label"] { display: none; }
 .ert-canvas-story-card {
-    border: 1px solid var(--background-modifier-border);
+    border: 1px solid var(--background-modifier-border-hover);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
     box-sizing: border-box;
     position: absolute;
     inset: 0;
@@ -1324,3 +1325,17 @@
 .ert-canvas-story-card__kind { margin-bottom: 5px; color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .ert-canvas-story-card__title { font-size: 23px; line-height: 1.12; font-weight: 800; letter-spacing: -.035em; overflow-wrap: anywhere; }
 .ert-canvas-story-card__preview { margin-top: 17px; color: var(--text-muted); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+
+/* Keep Canvas selection and connection hit targets native. */
+.ert-canvas-story-node:not(.is-selected) {
+    box-shadow: 0 4px 14px rgb(0 0 0 / 18%);
+}
+.ert-canvas-card-view [class~="canvas-display-path"],
+.ert-canvas-card-view [class~="canvas-arrow"] {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ert-canvas-card-view [class~="canvas-display-path"] {
+    stroke-width: 1.5px;
+}

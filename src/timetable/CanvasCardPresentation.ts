@@ -50,6 +50,7 @@ class CanvasCards {
             ];
             for (const [mode, label] of choices) menu.addItem(item => item.setTitle(label).setChecked(this.mode === mode).onClick(() => {
                 this.mode = mode;
+                this.view.containerEl.toggleClass('ert-canvas-card-view', mode !== 'full');
                 this.schedule();
             }));
             menu.showAtMouseEvent(event);
@@ -127,6 +128,7 @@ class CanvasCards {
         this.revision++;
         if (this.timer) window.clearTimeout(this.timer);
         this.observer.disconnect();
+        this.view.containerEl.removeClass('ert-canvas-card-view');
         for (const el of this.cards.keys()) this.remove(el);
         this.action.remove();
     }

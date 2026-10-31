@@ -5959,6 +5959,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             "openCanvas": "先にCanvasを開いてください。",
             "noBook": "先に本のフォルダを設定してください。",
             "missingFolder": "選択した本のフォルダが見つかりません。",
+            "portalBlocked": "選択したカードはAdvanced Canvasのポータルで接続されています。変換する前に接続を削除してください。",
             "changed": "変換中にCanvasが変更されました。確認して再試行してください。",
             "done": "{{count}}件のスケッチを作成し、Canvasにリンクしました。",
             "failed": "Canvasへのリンクを完了できませんでした。作成済みの{{count}}件は本のフォルダに残っています。{{message}}"

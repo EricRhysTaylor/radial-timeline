@@ -14,7 +14,7 @@ export interface StoryCanvasData {
 }
 
 export function canvasTextCards(data: StoryCanvasData): CanvasCard[] {
-    return (data.nodes ?? []).filter(node => node.type === 'text' && typeof node.text === 'string' && node.text.trim().length > 0);
+    return (data.nodes ?? []).filter(node => node.type === 'text' && !node.id.startsWith('acportal||') && typeof node.text === 'string' && node.text.trim().length > 0);
 }
 
 export function sketchTitle(text: string): string {

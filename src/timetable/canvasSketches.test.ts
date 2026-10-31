@@ -7,6 +7,7 @@ describe('Canvas sketches', () => {
             { id: 'a', type: 'text', text: '# A / new scene\n\nBody' },
             { id: 'b', type: 'text', text: '  ' },
             { id: 'c', type: 'file', file: 'scene.md' },
+            { id: 'acportal||portal||remote', type: 'text', text: 'Another canvas' },
         ];
         expect(canvasTextCards({ nodes }).map(node => node.id)).toEqual(['a']);
         expect(sketchTitle(nodes[0].text!)).toBe('A new scene');

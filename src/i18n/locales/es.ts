@@ -5961,6 +5961,7 @@ export const es: TranslationKeys = {
             "openCanvas": "Abra primero un Canvas.",
             "noBook": "Configure primero una carpeta de libro.",
             "missingFolder": "La carpeta del libro seleccionado ya no existe.",
+            "portalBlocked": "Una tarjeta seleccionada está conectada mediante un portal de Advanced Canvas. Quite esa conexión antes de convertirla.",
             "changed": "El Canvas cambió durante la conversión. Revíselo e inténtelo de nuevo.",
             "done": "Se crearon {{count}} bocetos y se vincularon al Canvas.",
             "failed": "No se pudo completar el enlace. Se conservaron {{count}} bocetos en la carpeta del libro. {{message}}"

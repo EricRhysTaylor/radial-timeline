@@ -5642,6 +5642,7 @@ export const en = {
             openCanvas: 'Open a Canvas first.',
             noBook: 'Set up a book folder before creating sketches.',
             missingFolder: 'The selected book folder no longer exists.',
+            portalBlocked: 'A selected card is connected through an Advanced Canvas portal. Remove that portal connection before converting it.',
             changed: 'The Canvas changed during conversion. Review it and try again.',
             done: 'Created {{count}} sketches and linked them to the Canvas.',
             failed: 'Could not finish linking the Canvas. {{count}} sketches were created in the book folder and have been kept. {{message}}',

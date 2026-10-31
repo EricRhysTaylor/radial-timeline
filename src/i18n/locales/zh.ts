@@ -5960,6 +5960,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             "openCanvas": "请先打开 Canvas。",
             "noBook": "请先设置书籍文件夹。",
             "missingFolder": "所选书籍文件夹已不存在。",
+            "portalBlocked": "所选卡片通过 Advanced Canvas 门户连接。转换前请移除该门户连接。",
             "changed": "转换期间 Canvas 发生了变化。请检查后重试。",
             "done": "已创建 {{count}} 个草稿并链接到 Canvas。",
             "failed": "无法完成 Canvas 链接。已创建的 {{count}} 个草稿保留在书籍文件夹中。{{message}}"

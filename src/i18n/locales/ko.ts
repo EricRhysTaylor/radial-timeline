@@ -5958,6 +5958,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             "openCanvas": "먼저 Canvas를 여세요.",
             "noBook": "먼저 책 폴더를 설정하세요.",
             "missingFolder": "선택한 책 폴더가 더 이상 없습니다.",
+            "portalBlocked": "선택한 카드가 Advanced Canvas 포털로 연결되어 있습니다. 변환하기 전에 포털 연결을 제거하세요.",
             "changed": "변환 중 Canvas가 변경되었습니다. 확인하고 다시 시도하세요.",
             "done": "스케치 {{count}}개를 만들고 Canvas에 연결했습니다.",
             "failed": "Canvas 연결을 완료하지 못했습니다. 생성한 스케치 {{count}}개는 책 폴더에 보관됩니다. {{message}}"

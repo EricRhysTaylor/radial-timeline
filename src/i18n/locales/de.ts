@@ -5958,6 +5958,7 @@ export const de: DeepPartial<TranslationKeys> = {
             "openCanvas": "Öffne zuerst ein Canvas.",
             "noBook": "Richte zuerst einen Buchordner ein.",
             "missingFolder": "Der ausgewählte Buchordner existiert nicht mehr.",
+            "portalBlocked": "Eine ausgewählte Karte ist über ein Advanced-Canvas-Portal verbunden. Entferne zuerst die Portalverbindung.",
             "changed": "Das Canvas wurde während der Umwandlung geändert. Prüfe es und versuche es erneut.",
             "done": "{{count}} Skizzen erstellt und mit dem Canvas verknüpft.",
             "failed": "Die Verknüpfung konnte nicht abgeschlossen werden. {{count}} Skizzen bleiben im Buchordner erhalten. {{message}}"

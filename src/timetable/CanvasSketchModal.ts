@@ -5,6 +5,7 @@ import { ErtModal } from '../ui/ErtModal';
 import { authorKeyFor } from './timetableFiles';
 import { getConfiguredActCount } from '../utils/acts';
 import { canvasTextCards, linkSketches, sketchTitle, type StoryCanvasData } from './canvasSketches';
+import { hasPortalReferences } from './canvasPortals';
 import { t } from '../i18n';
 
 /** Minimal, runtime-checked surface of Obsidian's Canvas view. */
@@ -84,6 +85,13 @@ export class CanvasSketchModal extends ErtModal {
         }
         const paths = new Map<string, string>();
         try {
+            // Replacing a card changes its ID. Cross-canvas portal edges can
+            // refer to that ID in another file, so refuse rather than break them.
+            if (await hasPortalReferences(this.app, initial, this.selected)) {
+                new Notice(t('ui.canvasSketch.portalBlocked'), 10000);
+                return;
+            }
+            if (!this.canvasIsOpen() || JSON.stringify(initial) !== JSON.stringify(this.canvas.getData())) throw new Error(t('ui.canvasSketch.changed'));
             for (const card of cards) {
                 const title = sketchTitle(card.text ?? '');
                 let path = `${folder}/${title}.md`;

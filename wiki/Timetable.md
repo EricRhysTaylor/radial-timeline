@@ -96,9 +96,9 @@ Notes you open from the Timetable appear in a pane below the table, so the wheel
 
 ## Bring ideas from Canvas
 
-Open an Obsidian Canvas and run **Turn Canvas cards into sketches** from the command palette. You can also find the action in the active Canvas file’s menu. Choose the text cards, the book and an optional act, then select **Create sketches**. Each selected card becomes a Markdown sketch in the book folder; its text stays in the note body, and its Canvas card becomes a link to the same note. Its position, color and connections stay in place. Existing file cards are left alone.
+Open an Obsidian Canvas and select **Turn Canvas cards into sketches** in its title bar, or run the command from the command palette. You can also find the action in the active Canvas file’s menu. Choose the text cards, the book and an optional act, then select **Create sketches**. Each selected card becomes a Markdown sketch in the book folder; its text stays in the note body, and its Canvas card becomes a link to the same note. Its position, color and connections stay in place. Existing file cards are left alone.
 
-The first line suggests the sketch’s title. Sketches without an act appear unassigned in the Timetable. Canvas positions and arrows do not set manuscript order or dates. Review a sketch’s placement when you promote it to a scene. If the Canvas changes during conversion, the action stops instead of overwriting the map. Any sketches already created remain in the book folder. Canvas undo restores the text card but does not delete the sketch note; converting it again creates another note.
+The first line suggests the sketch’s title. Sketches without an act appear unassigned in the Timetable. Canvas positions and arrows do not set manuscript order or dates. Review a sketch’s placement when you promote it to a scene. If the Canvas changes during conversion, the action stops instead of overwriting the map. Any sketches already created remain in the book folder. Canvas undo restores the text card but does not delete the sketch note; converting it again creates another note. Advanced Canvas text cards can be converted too. If a selected card is connected through an Advanced Canvas portal, conversion stops so that connection is not broken.
 
 ## Write sketches beside scenes
 

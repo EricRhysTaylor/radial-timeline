@@ -5961,6 +5961,7 @@ export const vi: TranslationKeys = {
             "openCanvas": "Hãy mở Canvas trước.",
             "noBook": "Hãy thiết lập thư mục sách trước.",
             "missingFolder": "Thư mục sách đã chọn không còn tồn tại.",
+            "portalBlocked": "Thẻ đã chọn được kết nối qua cổng Advanced Canvas. Hãy xóa kết nối đó trước khi chuyển đổi.",
             "changed": "Canvas đã thay đổi trong khi chuyển đổi. Hãy kiểm tra và thử lại.",
             "done": "Đã tạo {{count}} bản phác thảo và liên kết với Canvas.",
             "failed": "Không thể hoàn tất liên kết Canvas. Đã giữ {{count}} bản phác thảo trong thư mục sách. {{message}}"

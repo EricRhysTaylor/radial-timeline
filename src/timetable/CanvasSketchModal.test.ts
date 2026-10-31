@@ -15,7 +15,7 @@ function setup(changeDuringCreate = false) {
         saved.set(path, text);
         if (changeDuringCreate) data = { ...data, extra: 'edited by author' };
     });
-    const app = { vault: { getFolderByPath: () => ({}), getAbstractFileByPath: (path: string) => path === 'Book/A scene.md' ? {} : null, create } } as unknown as App;
+    const app = { workspace: { getLeavesOfType: () => [] }, vault: { getFiles: () => [], getFolderByPath: () => ({}), getAbstractFileByPath: (path: string) => path === 'Book/A scene.md' ? {} : null, create } } as unknown as App;
     const plugin = { settings: {}, refreshTimelineIfNeeded: vi.fn() } as unknown as RadialTimelinePlugin;
     const setData = vi.fn((next: StoryCanvasData) => { data = next; });
     const requestSave = vi.fn();

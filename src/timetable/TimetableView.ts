@@ -2202,7 +2202,21 @@ export class TimetableView extends BasesView {
         if (this.modePin !== null) setIcon(modeLabel.createSpan({ cls: 'ert-timetable-panels__mode-lock', attr: { 'aria-hidden': 'true' } }), 'lock');
         modeLabel.createSpan({ text: modeName(state.mode) });
         tooltip(modeLabel, this.modeTooltip(state), 'bottom');
-        if (this.config.get('panels') === true) this.renderCorner(toolbar, state);
+        if (this.config.get('panels') === true) {
+            this.renderCorner(toolbar, state);
+            const sizeLabel = toolbar.createEl('label', { cls: 'ert-timetable-panels__size', text: t('ui.timetable.panelSize') });
+            const size = sizeLabel.createEl('select');
+            setAccessibleLabel(size, t('ui.timetable.panelSize'));
+            for (const [value, label] of [['small', t('ui.timetable.panelSizeSmall')], ['medium', t('ui.timetable.panelSizeMedium')], ['large', t('ui.timetable.panelSizeLarge')]] as const) {
+                size.createEl('option', { value, text: label });
+            }
+            const saved = this.config.get('panelSize');
+            size.value = saved === 'small' || saved === 'large' ? saved : 'medium';
+            this.panelEvents?.registerDomEvent(size, 'change', () => {
+                this.config.set('panelSize', size.value);
+                this.render();
+            });
+        }
         const updateHeight = () => this.rootEl.setCssProps({ '--ert-timetable-switch-height': `${toolbar.offsetHeight}px` });
         updateHeight();
         const observer = new ResizeObserver(updateHeight);
@@ -2214,6 +2228,8 @@ export class TimetableView extends BasesView {
         const layout = this.rings ? buildRingLayout(this.rings.order, this.rings.colorIndex, allItems.map(item => item.row)) : null;
         const keep = new Set<string>();
         const list = this.rootEl.createDiv({ cls: 'ert-timetable-panels' });
+        const size = this.config.get('panelSize');
+        if (size === 'small' || size === 'large') list.addClass(`is-${size}`);
         for (const group of groups) {
             if (group.label) {
                 const heading = list.createEl('h3', { cls: 'ert-timetable-panels__group', text: group.label });

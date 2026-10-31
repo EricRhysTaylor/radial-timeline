@@ -6007,6 +6007,10 @@ export const ja: DeepPartial<TranslationKeys> = {
         timetable: {
             layoutTable: 'テーブル',
             layoutPanels: 'パネル',
+            panelSize: 'パネルサイズ',
+            panelSizeSmall: '小',
+            panelSizeMedium: '中',
+            panelSizeLarge: '大',
             panelSketch: 'スケッチ',
             panelOpen: 'ノートを開く',
             panelExpandSketch: 'スケッチを展開',

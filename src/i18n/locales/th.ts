@@ -6007,6 +6007,10 @@ export const th: TranslationKeys = {
             "noticeNothing": "ไม่มีอะไรที่นี่ต้องการการส่งเสริม"
         },
         "timetable": {
+            "panelSize": "ขนาดแผง",
+            "panelSizeSmall": "เล็ก",
+            "panelSizeMedium": "กลาง",
+            "panelSizeLarge": "ใหญ่",
             "panelDrag": "ลากเพื่อวางก่อนฉากอื่น",
             "panelDragHint": "หากต้องการจัดลำดับฉาก ให้เลือก Narrative หรือ Chronologue ใน Timetable เลือกหนังสือที่ใช้งาน และปิดการจัดเรียงและโอเวอร์เลย์ทางเลือก",
             "panelDragUnavailable": "ไม่สามารถจัดวางฉากเหล่านี้ได้ ตรวจสอบว่าอยู่ในหนังสือที่ใช้งาน แล้วลองอีกครั้ง",

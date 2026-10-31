@@ -6007,6 +6007,10 @@ export const vi: TranslationKeys = {
             "noticeNothing": "Không có gì ở đây cần quảng bá."
         },
         "timetable": {
+            "panelSize": "Kích thước bảng",
+            "panelSizeSmall": "Nhỏ",
+            "panelSizeMedium": "Vừa",
+            "panelSizeLarge": "Lớn",
             "panelDrag": "Kéo để đặt trước cảnh khác",
             "panelDragHint": "Để sắp xếp lại cảnh, chọn Narrative hoặc Chronologue trong Timetable, chọn sách đang hoạt động và tắt sắp xếp cùng các lớp phủ thay thế.",
             "panelDragUnavailable": "Không thể đặt các cảnh này. Hãy kiểm tra chúng thuộc sách đang hoạt động rồi thử lại.",

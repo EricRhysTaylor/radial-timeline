@@ -6006,6 +6006,10 @@ export const de: DeepPartial<TranslationKeys> = {
         timetable: {
             layoutTable: 'Tabelle',
             layoutPanels: 'Paneele',
+            panelSize: 'Paneelgröße',
+            panelSizeSmall: 'Klein',
+            panelSizeMedium: 'Mittel',
+            panelSizeLarge: 'Groß',
             panelSketch: 'Skizze',
             panelOpen: 'Notiz öffnen',
             panelExpandSketch: 'Skizze erweitern',

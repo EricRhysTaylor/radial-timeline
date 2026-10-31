@@ -6007,6 +6007,10 @@ export const es: TranslationKeys = {
             "noticeNothing": "Aquí nada necesita promover."
         },
         "timetable": {
+            "panelSize": "Tamaño de panel",
+            "panelSizeSmall": "Pequeño",
+            "panelSizeMedium": "Mediano",
+            "panelSizeLarge": "Grande",
             "panelDrag": "Arrastra para colocar antes de otra escena",
             "panelDragHint": "Para reordenar escenas, selecciona Narrative o Chronologue en Timetable, el libro activo y desactiva la ordenación y las capas alternativas.",
             "panelDragUnavailable": "No se pudieron colocar estas escenas. Comprueba que pertenezcan al libro activo y vuelve a intentarlo.",

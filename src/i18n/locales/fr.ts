@@ -6007,6 +6007,10 @@ export const fr: TranslationKeys = {
             "noticeNothing": "Rien n'a besoin de promouvoir ici."
         },
         "timetable": {
+            "panelSize": "Taille des panneaux",
+            "panelSizeSmall": "Petit",
+            "panelSizeMedium": "Moyen",
+            "panelSizeLarge": "Grand",
             "panelDrag": "Faites glisser avant une autre scène",
             "panelDragHint": "Pour réorganiser les scènes, choisissez Narrative ou Chronologue dans Timetable, sélectionnez le livre actif et désactivez le tri et les superpositions alternatives.",
             "panelDragUnavailable": "Ces scènes ne peuvent pas être placées. Vérifiez qu’elles appartiennent au livre actif, puis réessayez.",

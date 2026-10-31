@@ -6006,6 +6006,10 @@ export const ko: DeepPartial<TranslationKeys> = {
         timetable: {
             layoutTable: '표',
             layoutPanels: '패널',
+            panelSize: '패널 크기',
+            panelSizeSmall: '작게',
+            panelSizeMedium: '보통',
+            panelSizeLarge: '크게',
             panelSketch: '스케치',
             panelOpen: '노트 열기',
             panelExpandSketch: '스케치 펼치기',

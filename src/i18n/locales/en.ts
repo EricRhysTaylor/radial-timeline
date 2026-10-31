@@ -5690,6 +5690,10 @@ export const en = {
         timetable: {
             layoutTable: 'Table',
             layoutPanels: 'Panels',
+            panelSize: 'Panel size',
+            panelSizeSmall: 'Small',
+            panelSizeMedium: 'Medium',
+            panelSizeLarge: 'Large',
             panelSketch: 'Sketch',
             panelOpen: 'Open note',
             panelExpandSketch: 'Expand sketch',

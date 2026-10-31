@@ -6008,6 +6008,10 @@ export const zh: DeepPartial<TranslationKeys> = {
         timetable: {
             layoutTable: '表格',
             layoutPanels: '面板',
+            panelSize: '面板大小',
+            panelSizeSmall: '小',
+            panelSizeMedium: '中',
+            panelSizeLarge: '大',
             panelSketch: '草图',
             panelOpen: '打开笔记',
             panelExpandSketch: '展开草图',

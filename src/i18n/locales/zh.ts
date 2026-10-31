@@ -6030,6 +6030,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             sketchDragHint: "选择 Narrative 和当前书籍，关闭排序和叠加层。",
             sketchPlacementUnavailable: "选择具有唯一 ID 的场景或已放置的草稿。",
             sketchPlacementFailed: "无法完成放置，请检查位置。",
+            'emptyActDrop': '将场景或草稿拖到这里',
             sketchMoveTitle: "移动关联草稿？",
             sketchMoveMessage: "有 {{count}} 个草稿跟随 {{scene}}。将它们随场景移至第 {{act}} 幕，还是留在当前幕？",
             sketchMoveCancel: "取消移动",

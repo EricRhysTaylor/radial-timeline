@@ -6018,6 +6018,7 @@ export const es: TranslationKeys = {
             sketchDragHint: "Elige Narrative y el libro activo, y desactiva la ordenación y las capas.",
             sketchPlacementUnavailable: "Elige una escena con ID único o un boceto ya colocado.",
             sketchPlacementFailed: "No se pudo completar la colocación. Comprueba las posiciones.",
+            'emptyActDrop': 'Arrastra aquí una escena o un boceto',
             sketchMoveTitle: "¿Mover bocetos asociados?",
             sketchMoveMessage: "{{count}} boceto(s) siguen a {{scene}}. ¿Moverlos al acto {{act}} o dejarlos en su acto actual?",
             sketchMoveCancel: "Cancelar",

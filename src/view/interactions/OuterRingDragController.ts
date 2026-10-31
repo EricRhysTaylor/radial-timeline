@@ -315,6 +315,19 @@ export class OuterRingDragController {
         return true;
     }
 
+    /** Place at the end of an act, including one with no scenes. */
+    async placeFromTimetableAct(source: string, act: number, order: OuterRingOrderEntry[]): Promise<boolean> {
+        if (this.confirming || this.dragging || !Number.isInteger(act) || act < 1) return false;
+        const from = order.find(entry => entry.path === source && entry.itemType === 'Scene');
+        if (!from) return false;
+        this.sourceSceneId = from.sceneId;
+        this.sourcePath = source;
+        this.sourceItemType = 'Scene';
+        const next = order.find(entry => entry.act >= act && entry.path !== source);
+        await this.finishDropOnEmptyAct({ act: act - 1, startAngle: next?.startAngle ?? Infinity }, order);
+        return true;
+    }
+
     private cssEscape(value: string): string {
         return cssEscape(value);
     }
@@ -902,7 +915,7 @@ export class OuterRingDragController {
      * A drop on an empty act of the outer ring: the item moves into that act at
      * the drop position. Its subplots never change here.
      */
-    private async finishDropOnEmptyAct(target: { act: number; startAngle: number }): Promise<void> {
+    private async finishDropOnEmptyAct(target: { act: number; startAngle: number }, orderOverride?: OuterRingOrderEntry[]): Promise<void> {
         if (!this.sourceSceneId || !this.sourcePath) {
             this.resetState();
             return;
@@ -911,7 +924,7 @@ export class OuterRingDragController {
         const sourceSceneId = this.sourceSceneId;
 
         const targetActNumber = target.act + 1; // Convert 0-indexed to 1-indexed
-        const order = this.buildOuterRingOrder();
+        const order = orderOverride ?? this.buildOuterRingOrder();
         const fromIdx = order.findIndex(o => o.path === sourcePath);
         if (fromIdx === -1) {
             this.resetState();

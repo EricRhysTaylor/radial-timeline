@@ -1238,6 +1238,9 @@
 .ert-timetable-panels.is-small { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
 .ert-timetable-panels.is-large { grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); }
 .ert-timetable-panels__group { grid-column: 1 / -1; margin: var(--size-4-3) 0 0; color: var(--text-muted); }
+.ert-timetable-panels__empty-act, .ert-timetable__empty-act td { color: var(--text-muted); border: 1px dashed var(--background-modifier-border); border-radius: var(--radius-m); padding: var(--size-4-4); }
+.ert-ui button.ert-sketch-move-primary { background: var(--interactive-accent); color: var(--text-on-accent); }
+.ert-ui button.ert-sketch-move-primary:hover { background: var(--interactive-accent-hover); }
 .ert-timetable-panels__panel { position: relative; display: flex; flex-direction: column; gap: var(--size-4-2); min-width: 0; padding: var(--size-4-5); border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-primary); }
 .ert-timetable .ert-timetable-panels__panel { height: auto; cursor: default; }
 .ert-timetable .ert-timetable-panels__panel.is-linked {

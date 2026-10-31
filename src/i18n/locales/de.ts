@@ -6028,6 +6028,7 @@ export const de: DeepPartial<TranslationKeys> = {
             sketchDragHint: "Wähle Narrative und das aktive Buch und deaktiviere Sortierung und Überlagerungen.",
             sketchPlacementUnavailable: "Wähle eine Szene mit eindeutiger ID oder eine bereits platzierte Skizze.",
             sketchPlacementFailed: "Die Skizze konnte nicht vollständig platziert werden. Prüfe die Positionen.",
+            'emptyActDrop': 'Szene oder Skizze hier ablegen',
             sketchMoveTitle: "Zugeordnete Skizzen verschieben?",
             sketchMoveMessage: "{{count}} Skizze(n) folgen {{scene}}. Mit der Szene in Akt {{act}} verschieben oder im bisherigen Akt lassen?",
             sketchMoveCancel: "Abbrechen",

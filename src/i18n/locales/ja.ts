@@ -6029,6 +6029,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             sketchDragHint: "Narrative と現在の本を選び、並べ替えとオーバーレイをオフにしてください。",
             sketchPlacementUnavailable: "一意の ID を持つシーンか、配置済みのスケッチを選んでください。",
             sketchPlacementFailed: "配置を完了できませんでした。位置を確認してください。",
+            'emptyActDrop': 'シーンまたはスケッチをここにドロップ',
             sketchMoveTitle: "関連するスケッチを移動しますか？",
             sketchMoveMessage: "{{count}} 件のスケッチが {{scene}} に関連しています。第 {{act}} 幕へ移動しますか、それとも現在の幕に残しますか？",
             sketchMoveCancel: "キャンセル",

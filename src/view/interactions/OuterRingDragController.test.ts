@@ -44,6 +44,22 @@ describe('Timetable Narrative placement', () => {
         expect(finish).toHaveBeenCalledWith({ type: 'scene', sceneId: 'b', act: 1, ring: 0 }, order);
         expect(await controller.placeFromTimetableOrder('a', 'missing', order)).toBe(false);
     });
+
+    it('routes a scene to an empty act at the boundary before the next act', async () => {
+        const finish = vi.fn().mockResolvedValue(undefined);
+        const controller = Object.assign(Object.create(OuterRingDragController.prototype), {
+            confirming: false, dragging: false, finishDropOnEmptyAct: finish,
+        }) as OuterRingDragController;
+        const order: OuterRingOrderEntry[] = [
+            { sceneId: 'a', path: 'a', basename: '1 A', numberText: '1', act: 0, ring: 0, itemType: 'Scene', startAngle: 0 },
+            { sceneId: 'b', path: 'b', basename: '2 B', numberText: '2', act: 2, ring: 0, itemType: 'Scene', startAngle: 1 },
+        ];
+        expect(await controller.placeFromTimetableAct('a', 2, order)).toBe(true);
+        expect(finish).toHaveBeenCalledWith({ act: 1, startAngle: 1 }, order);
+        expect(await controller.placeFromTimetableAct('a', 3, order)).toBe(true);
+        expect(finish).toHaveBeenLastCalledWith({ act: 2, startAngle: Infinity }, order);
+        expect(await controller.placeFromTimetableAct('missing', 2, order)).toBe(false);
+    });
 });
 
 describe('dedupeOuterRingOrderEntries', () => {

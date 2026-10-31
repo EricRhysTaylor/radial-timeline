@@ -6018,6 +6018,7 @@ export const fr: TranslationKeys = {
             sketchDragHint: "Choisissez Narrative et le livre actif, puis désactivez le tri et les superpositions.",
             sketchPlacementUnavailable: "Choisissez une scène avec un identifiant unique ou une esquisse déjà placée.",
             sketchPlacementFailed: "Le placement n’a pas pu être terminé. Vérifiez les positions.",
+            'emptyActDrop': 'Déposez une scène ou une esquisse ici',
             sketchMoveTitle: "Déplacer les esquisses liées ?",
             sketchMoveMessage: "{{count}} esquisse(s) suivent {{scene}}. Les déplacer à l’acte {{act}} ou les laisser dans leur acte actuel ?",
             sketchMoveCancel: "Annuler",

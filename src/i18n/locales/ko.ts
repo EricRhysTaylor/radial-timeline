@@ -6028,6 +6028,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             sketchDragHint: "Narrative와 활성 책을 선택하고 정렬과 오버레이를 끄세요.",
             sketchPlacementUnavailable: "고유 ID가 있는 장면이나 이미 배치된 스케치를 선택하세요.",
             sketchPlacementFailed: "배치를 완료하지 못했습니다. 위치를 확인하세요.",
+            'emptyActDrop': '장면이나 스케치를 여기에 놓으세요',
             sketchMoveTitle: "연결된 스케치를 이동할까요?",
             sketchMoveMessage: "{{count}}개의 스케치가 {{scene}}에 연결되어 있습니다. {{act}}막으로 함께 이동할까요, 현재 막에 둘까요?",
             sketchMoveCancel: "취소",

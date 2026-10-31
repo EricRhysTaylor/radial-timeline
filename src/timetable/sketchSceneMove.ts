@@ -42,13 +42,14 @@ export async function askAboutAttachedSketches(plugin: RadialTimelinePlugin, pat
         class Choice extends ErtModal {
             private answered = false;
             onOpen(): void {
-                this.titleEl.setText(t('ui.timetable.sketchMoveTitle'));
-                this.contentEl.createEl('p', { text: t('ui.timetable.sketchMoveMessage', { count: files.length, scene: sceneName, act: destinationAct }) });
+                this.contentEl.empty();
+                this.applyShell({ size: 'md' });
+                this.mountHeader({ title: t('ui.timetable.sketchMoveTitle'), subtitle: t('ui.timetable.sketchMoveMessage', { count: files.length, scene: sceneName, act: destinationAct }) });
                 const actions = this.mountActions();
                 const choose = (value: boolean | null) => { this.answered = true; this.close(); resolve(value); };
                 actions.createEl('button', { text: t('ui.timetable.sketchMoveCancel') }).addEventListener('click', () => choose(null));
                 actions.createEl('button', { text: t('ui.timetable.sketchMoveStay') }).addEventListener('click', () => choose(false));
-                actions.createEl('button', { text: t('ui.timetable.sketchMoveFollow'), cls: 'ert-mod-cta' }).addEventListener('click', () => choose(true));
+                actions.createEl('button', { text: t('ui.timetable.sketchMoveFollow'), cls: 'ert-sketch-move-primary' }).addEventListener('click', () => choose(true));
             }
             onClose(): void { if (!this.answered) resolve(null); }
         }

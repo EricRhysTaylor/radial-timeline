@@ -6018,6 +6018,7 @@ export const vi: TranslationKeys = {
             sketchDragHint: "Chọn Narrative và sách hiện tại, tắt sắp xếp và lớp phủ.",
             sketchPlacementUnavailable: "Chọn cảnh có ID duy nhất hoặc phác thảo đã được đặt.",
             sketchPlacementFailed: "Không thể hoàn tất việc đặt. Hãy kiểm tra vị trí.",
+            'emptyActDrop': 'Thả cảnh hoặc bản phác thảo vào đây',
             sketchMoveTitle: "Di chuyển phác thảo liên kết?",
             sketchMoveMessage: "Có {{count}} phác thảo theo {{scene}}. Chuyển đến hồi {{act}} hay giữ trong hồi hiện tại?",
             sketchMoveCancel: "Hủy",

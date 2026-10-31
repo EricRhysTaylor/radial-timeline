@@ -1711,6 +1711,29 @@ export class TimetableView extends BasesView {
         }).filter(group => group.items.length > 0);
     }
 
+    /** Keep every configured act visible in the active book's act-based views. */
+    private completeNarrativeActs(groups: TableGroup[], state: TimelineModeState): TableGroup[] {
+        const book = getActiveBook(this.plugin.settings);
+        if ((state.mode !== 'narrative' && state.mode !== 'progress') || state.runtime || state.shift || state.alt || this.config.getSort().length
+            || getTimelineScope(this.plugin.settings) !== 'book' || !book) return groups;
+        const items = groups.flatMap(group => group.items);
+        if (items.some(item => getBookIdForPath(this.plugin.settings.books, item.row.path) !== book.id)) return groups;
+        const ungrouped = groups.length === 1 && groups[0].label === null;
+        if (!ungrouped && groups.some(group => group.act === undefined)) return groups;
+        const actGroups: TableGroup[] = [];
+        for (let act = 1; act <= getConfiguredActCount(this.plugin.settings); act++) {
+            const existing = groups.find(group => group.act === act);
+            actGroups.push(existing ?? { id: `act:${act}`, label: this.actLabel(act), act, items: items.filter(item => item.row.act === act) });
+        }
+        if (ungrouped) {
+            const extra = items.filter(item => item.row.act === null || item.row.act < 1 || item.row.act > getConfiguredActCount(this.plugin.settings));
+            if (extra.length) actGroups.push({ id: 'act:other', label: this.actLabel(null), act: null, items: extra });
+        } else {
+            actGroups.push(...groups.filter(group => group.act === null || (typeof group.act === 'number' && (group.act < 1 || group.act > getConfiguredActCount(this.plugin.settings)))));
+        }
+        return actGroups;
+    }
+
     private sketchPlacementItems(bookId: string): PlacementItem[] {
         const { app, settings } = this.plugin;
         return app.vault.getMarkdownFiles()
@@ -1824,7 +1847,7 @@ export class TimetableView extends BasesView {
         this.syncColoring();
 
         const state = this.modeState();
-        let groups = this.buildGroups();
+        let groups = this.completeNarrativeActs(this.buildGroups(), state);
         const chronologue = state.mode === 'chronologue' ? this.chronologueContext(groups, state) : null;
         if (chronologue) groups = [chronologue.group];
         const running = state.mode === 'narrative' && state.runtime ? this.narrativeRunning(groups) : null;
@@ -1841,7 +1864,7 @@ export class TimetableView extends BasesView {
         this.renderLayoutSwitch(state);
 
         const allItems = groups.flatMap(group => group.items);
-        if (allItems.length === 0) {
+        if (allItems.length === 0 && !groups.some(group => group.act !== undefined)) {
             this.renderNewSketchToolbar();
             this.rootEl.createDiv({ cls: 'ert-timetable__empty', text: t('ui.timetable.empty') });
             this.pruneDrawers(new Set());
@@ -1906,11 +1929,14 @@ export class TimetableView extends BasesView {
         for (const group of groups) {
             const body = table.createEl('tbody', { cls: 'ert-timetable__group' });
             const collapsed = this.collapsed.has(group.id);
-            const groupBook = this.singleBook(group.items);
+            const groupBook = this.singleBook(group.items) ?? (group.items.length === 0 && group.act !== undefined ? getActiveBook(this.plugin.settings)?.id : undefined);
             if (showGroupHeaders) {
                 this.renderGroupHeader(body, group, collapsed, columnCount, groupBook, isProgress);
                 const heading = body.lastElementChild;
-                if (heading instanceof HTMLElement && group.act !== undefined) this.attachSketchActDrop(heading, group.act, groupBook, state);
+                if (heading instanceof HTMLElement && group.act !== undefined) {
+                    this.attachSketchActDrop(heading, group.act, groupBook, state);
+                    this.attachSceneActDrop(heading, group.act, groupBook, state);
+                }
             }
             if (collapsed) continue;
             const byPath = new Map(group.items.map(item => [item.row.path, item]));
@@ -1940,6 +1966,13 @@ export class TimetableView extends BasesView {
                     this.renderDrawer(body, item, layout, columnCount);
                     openDrawers.add(item.row.path);
                 }
+            }
+            if (group.items.length === 0 && group.act !== undefined && state.mode === 'narrative') {
+                const placeholder = body.createEl('tr', { cls: 'ert-timetable__empty-act' });
+                const cell = placeholder.createEl('td', { text: t('ui.timetable.emptyActDrop') });
+                cell.colSpan = columnCount;
+                this.attachSketchActDrop(placeholder, group.act, groupBook, state);
+                this.attachSceneActDrop(placeholder, group.act, groupBook, state);
             }
         }
         this.pruneDrawers(openDrawers);
@@ -2233,7 +2266,16 @@ export class TimetableView extends BasesView {
         for (const group of groups) {
             if (group.label) {
                 const heading = list.createEl('h3', { cls: 'ert-timetable-panels__group', text: group.label });
-                if (group.act !== undefined) this.attachSketchActDrop(heading, group.act, this.singleBook(group.items), mode.state);
+                if (group.act !== undefined) {
+                    const bookId = this.singleBook(group.items) ?? (group.items.length === 0 ? getActiveBook(this.plugin.settings)?.id : undefined);
+                    this.attachSketchActDrop(heading, group.act, bookId, mode.state);
+                    this.attachSceneActDrop(heading, group.act, bookId, mode.state);
+                    if (group.items.length === 0 && mode.state.mode === 'narrative') {
+                        const placeholder = list.createDiv({ cls: 'ert-timetable-panels__empty-act', text: t('ui.timetable.emptyActDrop') });
+                        this.attachSketchActDrop(placeholder, group.act, bookId, mode.state);
+                        this.attachSceneActDrop(placeholder, group.act, bookId, mode.state);
+                    }
+                }
                 if (typeof group.act === 'number') this.actDividerEls.set(group.act, heading);
             }
             const itemsByPath = new Map(group.items.map(item => [item.row.path, item]));
@@ -2280,6 +2322,7 @@ export class TimetableView extends BasesView {
                     }
                 } else if (row.kind === 'scene') this.attachSceneDrag(panel, header, row.path, mode.state);
                 if (row.kind === 'sketch') this.attachSketchDrag(panel, header, row.path, mode.state);
+                if (row.kind === 'sketch') this.attachSceneActDrop(panel, row.act, getBookIdForPath(this.plugin.settings.books, row.path), mode.state);
                 if (row.kind === 'sketch') this.renderSketchProblem(header, item);
                 if (row.kind === 'scene' || row.kind === 'sketch') this.attachSketchDrop(panel, row.path, mode.state);
                 const heading = header.createDiv({ cls: 'ert-timetable-panels__heading' });
@@ -2465,7 +2508,7 @@ export class TimetableView extends BasesView {
         });
         this.panelEvents?.registerDomEvent(handle, 'dragend', () => {
             this.draggedScene = null;
-            this.rootEl.querySelectorAll('.ert-timetable__drop-before').forEach(el => el.removeClass('ert-timetable__drop-before'));
+            this.rootEl.querySelectorAll('.ert-timetable__drop-before, .ert-timetable__drop-after').forEach(el => el.removeClass('ert-timetable__drop-before', 'ert-timetable__drop-after'));
         });
         this.panelEvents?.registerDomEvent(row, 'dragover', (evt: DragEvent) => {
             if (!this.draggedScene || this.draggedScene === path) return;
@@ -2581,6 +2624,30 @@ export class TimetableView extends BasesView {
         });
     }
 
+    /** A scene dropped on an act or its sketch goes at the end of that act. */
+    private attachSceneActDrop(target: HTMLElement, act: number | null, bookId: string | undefined, state: TimelineModeState): void {
+        this.panelEvents?.registerDomEvent(target, 'dragover', (event: DragEvent) => {
+            if (!this.draggedScene || act === null || !bookId || state.mode !== 'narrative'
+                || getBookIdForPath(this.plugin.settings.books, this.draggedScene) !== bookId) return;
+            event.preventDefault();
+            target.addClass('ert-timetable__drop-after');
+            if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+        });
+        this.panelEvents?.registerDomEvent(target, 'dragleave', (event: DragEvent) => {
+            if (!(event.relatedTarget instanceof Node) || !target.contains(event.relatedTarget)) target.removeClass('ert-timetable__drop-after');
+        });
+        this.panelEvents?.registerDomEvent(target, 'drop', event => {
+            const source = this.draggedScene;
+            if (!source || act === null || !bookId || !target.hasClass('ert-timetable__drop-after')) return;
+            event.preventDefault(); event.stopPropagation();
+            target.removeClass('ert-timetable__drop-after');
+            this.draggedScene = null;
+            void this.placeTimetableAct(source, act, bookId).then(handled => {
+                if (!handled) new Notice(t('ui.timetable.panelDragUnavailable'));
+            }).catch(error => { console.error('Timetable act placement failed', error); new Notice(t('ui.timetable.panelDragUnavailable')); });
+        });
+    }
+
     private async applySketchPlan(plan: SketchDropPlan): Promise<void> {
         try {
             for (const [index, path] of plan.orderedPaths.entries()) {
@@ -2660,6 +2727,23 @@ export class TimetableView extends BasesView {
             const controller = new OuterRingDragController({ plugin: this.plugin, renderScope }, svg, { onRefresh, mode });
             const order = timetableNarrativeOrder(sceneData, resolveSelectedBeatModelFromSettings(this.plugin.settings));
             return await controller.placeFromTimetableOrder(source, target, order);
+        } finally {
+            this.scenePlacementInProgress = false;
+        }
+    }
+
+    private async placeTimetableAct(source: string, act: number, bookId: string): Promise<boolean> {
+        const book = (this.plugin.settings.books ?? []).find(candidate => candidate.id === bookId);
+        if (this.scenePlacementInProgress || !book || book.id !== getActiveBook(this.plugin.settings)?.id
+            || getBookIdForPath(this.plugin.settings.books, source) !== bookId) return false;
+        this.scenePlacementInProgress = true;
+        try {
+            const sceneData = await this.plugin.getSceneData({ sourcePath: book.sourceFolder });
+            const svg = this.rootEl.doc.win.createSvg('svg');
+            const renderScope = new Component();
+            const onRefresh = () => { this.plugin.refreshTimelineIfNeeded(null, 100); this.refresh(); };
+            const controller = new OuterRingDragController({ plugin: this.plugin, renderScope }, svg, { onRefresh, mode: 'narrative' });
+            return await controller.placeFromTimetableAct(source, act, timetableNarrativeOrder(sceneData, resolveSelectedBeatModelFromSettings(this.plugin.settings)));
         } finally {
             this.scenePlacementInProgress = false;
         }
@@ -2815,6 +2899,7 @@ export class TimetableView extends BasesView {
             }
         }
         if (row.kind === 'scene' || row.kind === 'sketch') this.attachSketchDrop(tr, row.path, mode.state);
+        if (row.kind === 'sketch') this.attachSceneActDrop(tr, row.act, getBookIdForPath(this.plugin.settings.books, row.path), mode.state);
         if (row.kind === 'scene') {
             const wrap = tr.querySelector<HTMLElement>('.ert-timetable__chip-wrap');
             const handle = wrap ? this.attachSceneDrag(tr, wrap, row.path, mode.state) : null;

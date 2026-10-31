@@ -6018,6 +6018,7 @@ export const th: TranslationKeys = {
             sketchDragHint: "เลือก Narrative และหนังสือปัจจุบัน แล้วปิดการเรียงและโอเวอร์เลย์",
             sketchPlacementUnavailable: "เลือกฉากที่มี ID ไม่ซ้ำหรือสเก็ตช์ที่จัดวางแล้ว",
             sketchPlacementFailed: "จัดวางไม่สำเร็จ โปรดตรวจสอบตำแหน่ง",
+            'emptyActDrop': 'วางฉากหรือภาพร่างที่นี่',
             sketchMoveTitle: "ย้ายสเก็ตช์ที่เชื่อมโยงหรือไม่",
             sketchMoveMessage: "มีสเก็ตช์ {{count}} รายการตาม {{scene}} จะย้ายไปองก์ {{act}} หรือให้อยู่ในองก์เดิม",
             sketchMoveCancel: "ยกเลิก",

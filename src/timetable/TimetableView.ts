@@ -1998,9 +1998,9 @@ export class TimetableView extends BasesView {
     private renderCorner(cell: HTMLElement, state: TimelineModeState): void {
         const corner = cell.createDiv({ cls: 'ert-timetable__corner' });
         const add = corner.createEl('button', { cls: 'ert-timetable__new-sketch clickable-icon' });
-        setAccessibleLabel(add, t('ui.timetable.newSketch'));
         setIcon(add, 'plus');
         setAccessibleLabel(add, t('ui.timetable.newSketch'));
+        tooltip(add, t('ui.timetable.newSketch'), 'bottom');
 
         const lensOn = currentTimelineLens()?.owner === this;
         const lens = corner.createEl('button', { cls: 'ert-timetable__lens-toggle clickable-icon' });

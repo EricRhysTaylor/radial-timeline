@@ -5947,6 +5947,12 @@ export const fr: TranslationKeys = {
             "previewHeadingNamed": "Aperçu rapide (Terre → {{planet}})"
         },
         canvasSketch: {
+            fileCardsExplanation: 'Seules les cartes texte peuvent être converties. Les cartes de fichier renvoient déjà à des notes et ne sont pas modifiées.',
+            showTimetable: 'RT : Afficher dans le tableau',
+            showTimeline: 'RT : Afficher sur la chronologie',
+            promote: 'RT : Promouvoir en scène',
+
+            cardLabel: 'Carte',
             cardViews: 'Affichage des cartes Canvas',
             cardFull: 'Note complète',
             cardPreview: 'Aperçu',

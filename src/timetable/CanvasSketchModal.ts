@@ -4,7 +4,7 @@ import type { BookProfile } from '../types';
 import { ErtModal } from '../ui/ErtModal';
 import { authorKeyFor } from './timetableFiles';
 import { getConfiguredActCount } from '../utils/acts';
-import { canvasTextCards, linkSketches, sketchTitle, type StoryCanvasData } from './canvasSketches';
+import { canvasTextCards, linkSketches, sketchTitle, type StoryCanvasData, type CanvasCard } from './canvasSketches';
 import { hasPortalReferences } from './canvasPortals';
 import { t } from '../i18n';
 import { getBookIdForPath } from '../utils/books';
@@ -19,10 +19,11 @@ export interface OpenCanvas {
     getData(): StoryCanvasData;
     setData(data: StoryCanvasData): void;
     requestSave(pushHistory?: boolean): void;
+    selection?: Set<{ getData?: () => { id?: string; type?: string } }>;
 }
 
 export class CanvasSketchModal extends ErtModal {
-    private readonly cards;
+    private readonly cards: CanvasCard[];
     private readonly selected = new Set<string>();
     private book: BookProfile;
     private busy = false;
@@ -33,6 +34,11 @@ export class CanvasSketchModal extends ErtModal {
         super(app);
         this.book = activeBook;
         this.cards = canvasReadingOrder(canvasTextCards(JSON.parse(JSON.stringify(canvas.getData())) as StoryCanvasData));
+        const selected = canvas.selection instanceof Set ? [...canvas.selection] : [];
+        for (const node of selected) {
+            const data = node.getData?.();
+            if (data?.type === 'text' && data.id && this.cards.some(card => card.id === data.id)) this.selected.add(data.id);
+        }
     }
 
     private bookItems(): PlacementItem[] {
@@ -97,12 +103,13 @@ export class CanvasSketchModal extends ErtModal {
             }
         });
         this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.canvasSketch.orderHint') });
+        this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.canvasSketch.fileCardsExplanation') });
         const list = this.contentEl.createDiv({ cls: 'ert-canvas-sketch-list' });
         const actions = this.mountActions();
         const cancel = actions.createEl('button', { text: t('ui.canvasSketch.cancel') });
         cancel.addEventListener('click', () => this.close());
         const submit = actions.createEl('button', { text: t('ui.canvasSketch.create'), cls: 'ert-canvas-sketch-submit mod-cta' });
-        submit.disabled = true;
+        submit.disabled = this.selected.size === 0;
         const renderCards = () => {
             list.empty();
             if (!this.cards.length) list.createDiv({ text: t('ui.canvasSketch.empty') });

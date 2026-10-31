@@ -5946,6 +5946,12 @@ export const zh: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: '快速预览（地球 → {{planet}}）',
         },
         canvasSketch: {
+            fileCardsExplanation: '此处只能转换文本卡片。文件卡片已链接到笔记，不会被更改。',
+            showTimetable: 'RT：在时间表中显示',
+            showTimeline: 'RT：在时间线上显示',
+            promote: 'RT：提升为场景',
+
+            cardLabel: '卡片',
             cardViews: '画布卡片视图',
             cardFull: '完整笔记',
             cardPreview: '预览',

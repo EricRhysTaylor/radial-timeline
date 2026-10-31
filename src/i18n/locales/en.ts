@@ -5628,6 +5628,12 @@ export const en = {
             previewHeadingNamed: 'Quick preview (Earth → {{planet}})',
         },
         canvasSketch: {
+            fileCardsExplanation: 'Only text cards can be converted here. File cards already link to notes; they are not copied or changed.',
+            showTimetable: 'RT: Show in Timetable',
+            showTimeline: 'RT: Show on timeline',
+            promote: 'RT: Promote to scene',
+
+            cardLabel: 'Card',
             cardViews: 'Canvas card view',
             cardFull: 'Full note',
             cardPreview: 'Preview',

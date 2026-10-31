@@ -7,7 +7,7 @@ import type { StoryCanvasData } from './canvasSketches';
 import type { TimetableRow } from './timetableModel';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 
-function setup(changeDuringCreate = false) {
+function setup(changeDuringCreate = false, selectedIds: string[] = []) {
     let data: StoryCanvasData = { nodes: [
         { id: '1', type: 'text', text: 'A scene\n\nSome ideas', x: 1, y: 2 },
         { id: '2', type: 'text', text: 'Other idea' },
@@ -21,7 +21,7 @@ function setup(changeDuringCreate = false) {
     const plugin = { settings: {}, refreshTimelineIfNeeded: vi.fn() } as unknown as RadialTimelinePlugin;
     const setData = vi.fn((next: StoryCanvasData) => { data = next; });
     const requestSave = vi.fn();
-    const canvas: OpenCanvas = { getData: () => data, setData, requestSave };
+    const canvas: OpenCanvas = { getData: () => data, setData, requestSave, selection: new Set(selectedIds.map(id => ({ getData: () => ({ id, type: 'text' }) }))) };
     const book = { id: 'book', title: 'Book', sourceFolder: 'Book' } as BookProfile;
     const modal = new CanvasSketchModal(app, plugin, canvas, [book], book, () => true);
     (Reflect.get(modal, 'selected') as Set<string>).add('1');
@@ -29,6 +29,11 @@ function setup(changeDuringCreate = false) {
 }
 
 describe('Canvas sketch conversion', () => {
+    it('preselects all selected text cards for review', () => {
+        const test = setup(false, ['1', '2']);
+        expect([...Reflect.get(test.modal, 'selected') as Set<string>]).toEqual(['1', '2']);
+    });
+
     it('creates a distinct sketch preserving the card body and replaces only that card', async () => {
         const test = setup();
         await Reflect.get(test.modal, 'convert').call(test.modal);

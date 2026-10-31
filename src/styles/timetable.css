@@ -1339,3 +1339,8 @@
 .ert-canvas-card-view [class~="canvas-display-path"] {
     stroke-width: 1.5px;
 }
+
+.ert-canvas-linked .ert-canvas-story-card {
+    outline: 3px solid var(--interactive-accent);
+    outline-offset: -3px;
+}

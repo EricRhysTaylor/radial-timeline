@@ -5945,6 +5945,12 @@ export const ja: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: 'クイックプレビュー（地球 → {{planet}}）',
         },
         canvasSketch: {
+            fileCardsExplanation: 'ここではテキストカードのみ変換できます。ファイルカードは既存のノートにリンクしており、変更されません。',
+            showTimetable: 'RT: タイムテーブルで表示',
+            showTimeline: 'RT: タイムラインで表示',
+            promote: 'RT: シーンに昇格',
+
+            cardLabel: 'カード',
             cardViews: 'Canvasカード表示',
             cardFull: 'ノート全体',
             cardPreview: 'プレビュー',

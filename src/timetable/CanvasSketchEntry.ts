@@ -1,7 +1,10 @@
 import { ItemView, Notice, type Menu, type TAbstractFile, TFile, type View } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
-import { getActiveBook } from '../utils/books';
+import { getActiveBook, getBookIdForPath } from '../utils/books';
+import { markTimetableRows } from './timetableRegistry';
+import { isPromotable } from '../services/PromoteToSceneService';
+import { runPromotion } from '../services/PromoteToSceneEntry';
 import { CanvasSketchModal, type OpenCanvas } from './CanvasSketchModal';
 import { registerCanvasCardPresentation } from './CanvasCardPresentation';
 
@@ -74,6 +77,25 @@ export function registerCanvasSketches(plugin: RadialTimelinePlugin): void {
         },
     });
     plugin.registerEvent(plugin.app.workspace.on('file-menu', (menu: Menu, file: TAbstractFile) => {
+        const sourceView = plugin.app.workspace.activeLeaf?.view;
+        const nodes = sourceView?.getViewType() === 'canvas' ? (sourceView as unknown as { canvas?: { nodes?: Map<string, { getData?: () => { file?: string } }> } }).canvas?.nodes : undefined;
+        if (file instanceof TFile && file.extension === 'md' && nodes instanceof Map && [...nodes.values()].some(node => node.getData?.().file === file.path)) {
+            const bookId = getBookIdForPath(plugin.settings.books, file.path);
+            if (!bookId) return;
+            menu.addSeparator();
+            menu.addItem(item => item.setTitle(t('ui.canvasSketch.showTimetable')).setIcon('table').onClick(() => {
+                void (async () => {
+                    await plugin.setActiveBookId(bookId);
+                    await plugin.openTimetable();
+                    window.setTimeout(() => markTimetableRows(file.path, null, true), 300);
+                })();
+            }));
+            if (plugin.isSceneFile(file.path)) menu.addItem(item => item.setTitle(t('ui.canvasSketch.showTimeline')).setIcon('circle-dot').onClick(() => {
+                void (async () => { await plugin.setActiveBookId(bookId); await plugin.revealSceneOnTimeline(file.path); })();
+            }));
+            if (isPromotable(plugin.app, plugin.settings, file)) menu.addItem(item => item.setTitle(t('ui.canvasSketch.promote')).setIcon('file-up').onClick(() => { void runPromotion(plugin, [file]); }));
+            return;
+        }
         if (!(file instanceof TFile) || file.extension !== 'canvas' || plugin.app.workspace.getActiveFile()?.path !== file.path || !activeCanvas(plugin)) return;
         menu.addItem(item => item.setTitle(t('ui.canvasSketch.command')).setIcon('pencil-line').onClick(() => openCanvasSketches(plugin)));
     }));

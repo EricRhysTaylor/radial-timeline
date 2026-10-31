@@ -5944,6 +5944,12 @@ export const de: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: 'Schnellvorschau (Erde → {{planet}})',
         },
         canvasSketch: {
+            fileCardsExplanation: 'Hier können nur Textkarten umgewandelt werden. Dateikarten verweisen bereits auf Notizen und bleiben unverändert.',
+            showTimetable: 'RT: In der Tabelle anzeigen',
+            showTimeline: 'RT: Auf der Zeitleiste anzeigen',
+            promote: 'RT: Zur Szene machen',
+
+            cardLabel: 'Karte',
             cardViews: 'Canvas-Kartenansicht',
             cardFull: 'Vollständige Notiz',
             cardPreview: 'Vorschau',

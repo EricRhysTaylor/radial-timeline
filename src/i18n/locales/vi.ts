@@ -5947,6 +5947,12 @@ export const vi: TranslationKeys = {
             "previewHeadingNamed": "Xem trước nhanh (Trái đất → {{planet}})"
         },
         canvasSketch: {
+            fileCardsExplanation: 'Chỉ có thể chuyển thẻ văn bản tại đây. Thẻ tệp đã liên kết với ghi chú và không bị thay đổi.',
+            showTimetable: 'RT: Hiện trong bảng thời gian',
+            showTimeline: 'RT: Hiện trên dòng thời gian',
+            promote: 'RT: Chuyển thành cảnh',
+
+            cardLabel: 'Thẻ',
             cardViews: 'Chế độ thẻ Canvas',
             cardFull: 'Ghi chú đầy đủ',
             cardPreview: 'Xem trước',

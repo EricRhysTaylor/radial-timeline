@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { currentTimelineMode, dropTimetableScene, publishTimelineMode, registerSceneDrop } from './timetableRegistry';
+import { currentTimelineMode, dropTimetableScene, markTimetableRows, onLinkedScene, publishTimelineMode, registerSceneDrop } from './timetableRegistry';
 
 describe('publishTimelineMode', () => {
     it('carries the runtime view in Narrative', () => {
@@ -31,5 +31,18 @@ describe('Timetable scene placement registration', () => {
         expect(second).toHaveBeenCalledWith('A', 'B');
         disposeSecond();
         expect(await dropTimetableScene('chronologue', 'A', 'B')).toBe(false);
+    });
+});
+
+
+describe('linked scene notifications', () => {
+    it('notifies Canvas subscribers and stops after cleanup', () => {
+        const listener = vi.fn();
+        const dispose = onLinkedScene(listener);
+        markTimetableRows('Story/1 The Letter.md', null, false);
+        markTimetableRows(null, null, false);
+        dispose();
+        markTimetableRows('Story/2 Other.md', null, false);
+        expect(listener.mock.calls).toEqual([['Story/1 The Letter.md'], [null]]);
     });
 });

@@ -5947,6 +5947,12 @@ export const es: TranslationKeys = {
             "previewHeadingNamed": "Vista previa rápida (Tierra → {{planet}})"
         },
         canvasSketch: {
+            fileCardsExplanation: 'Solo se convierten tarjetas de texto. Las tarjetas de archivo ya enlazan a notas y no se modifican.',
+            showTimetable: 'RT: Mostrar en la tabla',
+            showTimeline: 'RT: Mostrar en la línea temporal',
+            promote: 'RT: Convertir en escena',
+
+            cardLabel: 'Tarjeta',
             cardViews: 'Vista de tarjetas del Canvas',
             cardFull: 'Nota completa',
             cardPreview: 'Vista previa',

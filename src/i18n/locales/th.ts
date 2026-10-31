@@ -5947,6 +5947,12 @@ export const th: TranslationKeys = {
             "previewHeadingNamed": "ตัวอย่างด่วน (โลก → {{planet}})"
         },
         canvasSketch: {
+            fileCardsExplanation: 'ที่นี่แปลงได้เฉพาะการ์ดข้อความ การ์ดไฟล์เชื่อมกับโน้ตอยู่แล้วและจะไม่ถูกเปลี่ยน',
+            showTimetable: 'RT: แสดงในตารางเวลา',
+            showTimeline: 'RT: แสดงบนไทม์ไลน์',
+            promote: 'RT: เปลี่ยนเป็นฉาก',
+
+            cardLabel: 'การ์ด',
             cardViews: 'มุมมองการ์ด Canvas',
             cardFull: 'โน้ตฉบับเต็ม',
             cardPreview: 'ตัวอย่าง',

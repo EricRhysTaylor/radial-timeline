@@ -5944,6 +5944,12 @@ export const ko: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: '빠른 미리보기 (지구 → {{planet}})',
         },
         canvasSketch: {
+            fileCardsExplanation: '여기서는 텍스트 카드만 변환할 수 있습니다. 파일 카드는 기존 노트에 연결되어 있으며 변경되지 않습니다.',
+            showTimetable: 'RT: 시간표에 표시',
+            showTimeline: 'RT: 타임라인에 표시',
+            promote: 'RT: 장면으로 승격',
+
+            cardLabel: '카드',
             cardViews: '캔버스 카드 보기',
             cardFull: '전체 노트',
             cardPreview: '미리보기',

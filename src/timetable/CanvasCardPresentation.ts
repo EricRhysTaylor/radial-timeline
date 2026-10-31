@@ -1,8 +1,10 @@
-import { getFrontMatterInfo, ItemView, Menu, setIcon, TFile, type View } from 'obsidian';
+import { Component, getFrontMatterInfo, ItemView, Menu, setIcon, TFile, type View } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { authorKeyFor } from './timetableFiles';
 import { synopsisKey } from './panelSynopsis';
 import { t } from '../i18n';
+import { getBookIdForPath } from '../utils/books';
+import { markTimetableRows, onLinkedScene } from './timetableRegistry';
 
 type Mode = 'full' | 'preview' | 'title';
 type CanvasNode = { nodeEl?: HTMLElement; getData?: () => { type?: string; file?: string; subpath?: string } };
@@ -41,6 +43,8 @@ class CanvasCards {
     private revision = 0;
     private stopped = false;
     readonly action: HTMLElement;
+    private readonly unlink: () => void;
+    private readonly events = new Component();
 
     constructor(private plugin: RadialTimelinePlugin, private view: ItemView) {
         this.action = view.addAction('layout-template', t('ui.canvasSketch.cardViews'), event => {
@@ -54,6 +58,25 @@ class CanvasCards {
                 this.schedule();
             }));
             menu.showAtMouseEvent(event);
+        });
+        this.unlink = onLinkedScene(path => {
+            const nodes = (this.view as CanvasView).canvas?.nodes;
+            if (!(nodes instanceof Map)) return;
+            for (const node of nodes.values()) node.nodeEl?.toggleClass('ert-canvas-linked', !!path && node.getData?.().file === path);
+        });
+        this.events.load();
+        this.events.registerDomEvent(view.containerEl, 'click', event => {
+            if (!(event.target instanceof Element)) return;
+            const nodes = (this.view as CanvasView).canvas?.nodes;
+            if (!(nodes instanceof Map)) return;
+            for (const node of nodes.values()) {
+                if (!node.nodeEl?.contains(event.target)) continue;
+                const data = node.getData?.();
+                const path = data?.type === 'file' ? data.file : undefined;
+                const color = path ? this.plugin.highlightSceneOnTimeline(path) : null;
+                markTimetableRows(path ?? null, color, true);
+                break;
+            }
         });
         this.observer = new MutationObserver(() => this.schedule());
         this.observer.observe(view.containerEl, { childList: true, subtree: true });
@@ -84,11 +107,11 @@ class CanvasCards {
                 keep.add(el);
                 const fm = this.plugin.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
                 const kindValue = value(fm, authorKeyFor('Class', this.plugin.settings));
-                const kind = typeof kindValue === 'string' ? kindValue.trim() : '';
+                const kind = getBookIdForPath(this.plugin.settings.books, file.path) && typeof kindValue === 'string' ? kindValue.trim() : t('ui.canvasSketch.cardLabel');
                 const image = portrait(this.plugin, file, fm);
                 let preview = '';
                 if (this.mode === 'preview') {
-                    if (kind.toLowerCase() === 'scene') {
+                    if (typeof kindValue === 'string' && kindValue.trim().toLowerCase() === 'scene') {
                         const synopsis = fm[synopsisKey(fm, this.plugin.settings)];
                         preview = typeof synopsis === 'string' ? synopsis : '';
                     } else {
@@ -128,6 +151,8 @@ class CanvasCards {
         this.revision++;
         if (this.timer) window.clearTimeout(this.timer);
         this.observer.disconnect();
+        this.unlink();
+        this.events.unload();
         this.view.containerEl.removeClass('ert-canvas-card-view');
         for (const el of this.cards.keys()) this.remove(el);
         this.action.remove();

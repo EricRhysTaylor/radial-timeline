@@ -117,6 +117,7 @@ import { basesViewFilters } from '../utils/obsidianInternals';
 import { openInReadingPane } from './readingPane';
 import { renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
 import {
+    markTimetableRows,
     clearTimelineColoring,
     clearTimelineLens,
     currentNotePath,
@@ -467,13 +468,13 @@ export class TimetableView extends BasesView {
                 hoverTimeReference(reference ? { path: reference.path, key: reference.key } : null);
                 return;
             }
-            const row = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__row.is-scene') : null;
+            const row = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__row.is-scene, .ert-timetable__row.is-sketch') : null;
             const path = row?.dataset.path ?? null;
             hoverTimeReference(null);
             if (path === this.hoveredPath && (!row || this.linkedRow === row)) return;
             this.hoveredPath = path;
             const color = this.plugin.highlightSceneOnTimeline(path);
-            this.markLinkedRow(color ? path : null, color, false);
+            markTimetableRows(path, color, false);
         });
         this.registerDomEvent(this.rootEl, 'focusin', evt => {
             const reference = this.referenceAt(evt.target);
@@ -487,7 +488,7 @@ export class TimetableView extends BasesView {
             if (this.hoveredPath === null) return;
             this.hoveredPath = null;
             this.plugin.highlightSceneOnTimeline(null);
-            this.markLinkedRow(null, null, false);
+            markTimetableRows(null, null, false);
         });
     }
 

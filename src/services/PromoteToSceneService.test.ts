@@ -270,17 +270,34 @@ describe('applyPromotion', () => {
         expect(frontmatter['Book 2/Later.md']?.['Place after scene']).toBe('scn_draft');
     });
 
-    it('does not modify the sketch when the generated position sorts into the wrong gap', async () => {
-        const { app, file, frontmatter } = fakeApp({
-            'Book 2/12.5 First.md': { Class: 'Scene', ID: 'scn_first', Act: 1 },
+    it('finds a safe natural-sort position when the numeric midpoint sorts into the wrong gap', async () => {
+        const { app, file, renames } = fakeApp({
+            'Book 2/1 First.md': { Class: 'Scene', ID: 'scn_first', Act: 1 },
             'Book 2/Draft.md': { Class: 'Sketch', Act: 1, 'Place after scene': 'scn_first' },
         });
-        const note = file('Book 2/Draft.md'); file('Book 2/12.5 First.md');
+        const note = file('Book 2/Draft.md'); file('Book 2/1 First.md');
         const settings = settingsWithBook();
         const result = await applyPromotion(app, settings, planPromotion(app, settings, [note]), {
-            advanced: false, anchorPath: 'Book 2/12.5 First.md', sceneData: [
-                { path: 'Book 2/12.5 First.md', itemType: 'Scene', actNumber: 1 },
-                { path: 'Book 2/12.25 Next.md', itemType: 'Scene', actNumber: 1 },
+            advanced: false, anchorPath: 'Book 2/1 First.md', sceneData: [
+                { path: 'Book 2/1 First.md', itemType: 'Scene', actNumber: 1 },
+                { path: 'Book 2/1.5 Next.md', itemType: 'Scene', actNumber: 1 },
+            ] as TimelineItem[],
+        });
+        expect(result.failed).toEqual([]);
+        expect(renames[0].to).toBe('Book 2/1.1 Draft.md');
+    });
+
+    it('does not modify the sketch when no safe position exists in the gap', async () => {
+        const { app, file, frontmatter } = fakeApp({
+            'Book 2/12.1 First.md': { Class: 'Scene', ID: 'scn_first', Act: 1 },
+            'Book 2/Draft.md': { Class: 'Sketch', Act: 1, 'Place after scene': 'scn_first' },
+        });
+        const note = file('Book 2/Draft.md'); file('Book 2/12.1 First.md');
+        const settings = settingsWithBook();
+        const result = await applyPromotion(app, settings, planPromotion(app, settings, [note]), {
+            advanced: false, anchorPath: 'Book 2/12.1 First.md', sceneData: [
+                { path: 'Book 2/12.1 First.md', itemType: 'Scene', actNumber: 1 },
+                { path: 'Book 2/12.2 Next.md', itemType: 'Scene', actNumber: 1 },
             ] as TimelineItem[],
         });
         expect(result.promoted).toEqual([]);

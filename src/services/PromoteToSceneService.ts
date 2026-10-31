@@ -276,6 +276,21 @@ export async function applyPromotion(
     let insertionPrefix: string | null = null;
     if (single && !plan.entries[0].prefix && options.anchorPath && options.sceneData) {
         insertionPrefix = buildDecimalSceneInsertionPrefix(options.sceneData, options.anchorPath, options.beatModel);
+        // Numeric midpoints can sort outside the gap under Obsidian's natural
+        // filename ordering. Try other decimal suffixes before giving up.
+        if (!isSafeSceneInsertionPrefix(options.sceneData, options.anchorPath, insertionPrefix, options.beatModel)) {
+            const anchorName = options.anchorPath.split('/').pop() ?? '';
+            const major = extractPrefixToken(anchorName)?.split('.')[0];
+            if (major) {
+                for (let suffix = 1; suffix <= 999; suffix++) {
+                    const candidate = `${major}.${suffix}`;
+                    if (isSafeSceneInsertionPrefix(options.sceneData, options.anchorPath, candidate, options.beatModel)) {
+                        insertionPrefix = candidate;
+                        break;
+                    }
+                }
+            }
+        }
         if (!isSafeSceneInsertionPrefix(options.sceneData, options.anchorPath, insertionPrefix, options.beatModel)) {
             result.failed.push({ file: plan.entries[0].file, message: 'No safe scene number is available at this position.' });
             return result;

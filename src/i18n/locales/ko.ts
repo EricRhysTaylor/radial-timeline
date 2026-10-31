@@ -5944,7 +5944,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: '빠른 미리보기 (지구 → {{planet}})',
         },
         subplotCanvas: {
-            command: '서브플롯 캔버스 만들기',
+            command: 'Canvas: 서브플롯 지도 만들기',
             badge: '캔버스 맵',
             title: '서브플롯 맵 만들기',
             subtitle: '연결된 장면 노트로 캔버스를 만듭니다. 선은 각 서브플롯의 서사 순서를 나타내며 카드를 옮겨도 원고 순서는 바뀌지 않습니다.',
@@ -5989,6 +5989,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             "cancel": "취소",
             "create": "스케치 만들기",
             "command": "Canvas 카드를 스케치로 변환",
+            paletteCommand: 'Canvas: 카드를 스케치로 변환',
             "openCanvas": "먼저 Canvas를 여세요.",
             "noBook": "먼저 책 폴더를 설정하세요.",
             "missingFolder": "선택한 책 폴더가 더 이상 없습니다.",

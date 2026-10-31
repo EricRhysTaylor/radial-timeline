@@ -5947,7 +5947,7 @@ export const th: TranslationKeys = {
             "previewHeadingNamed": "ตัวอย่างด่วน (โลก → {{planet}})"
         },
         subplotCanvas: {
-            command: 'สร้างแคนวาสพล็อตย่อย',
+            command: 'Canvas: สร้างแผนผังพล็อตย่อย',
             badge: 'แผนที่แคนวาส',
             title: 'สร้างแผนที่พล็อตย่อย',
             subtitle: 'สร้างแคนวาสจากโน้ตฉากที่เชื่อมโยงกัน เส้นแสดงลำดับเรื่องในแต่ละพล็อตย่อย การย้ายการ์ดไม่เปลี่ยนลำดับต้นฉบับ',
@@ -5992,6 +5992,7 @@ export const th: TranslationKeys = {
             "cancel": "ยกเลิก",
             "create": "สร้างแบบร่าง",
             "command": "เปลี่ยนการ์ด Canvas เป็นแบบร่าง",
+            paletteCommand: 'Canvas: แปลงการ์ดเป็นแบบร่าง',
             "openCanvas": "เปิด Canvas ก่อน",
             "noBook": "ตั้งค่าโฟลเดอร์หนังสือก่อน",
             "missingFolder": "ไม่พบโฟลเดอร์หนังสือที่เลือก",

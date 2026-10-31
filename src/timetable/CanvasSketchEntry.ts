@@ -71,7 +71,7 @@ export function registerCanvasSketches(plugin: RadialTimelinePlugin): void {
     });
     plugin.addCommand({
         id: 'canvas-cards-to-sketches',
-        name: t('ui.canvasSketch.command'),
+        name: t('ui.canvasSketch.paletteCommand'),
         checkCallback: checking => {
             if (!activeCanvas(plugin)) return false;
             if (!checking) openCanvasSketches(plugin);

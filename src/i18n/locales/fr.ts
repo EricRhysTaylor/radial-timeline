@@ -5947,7 +5947,7 @@ export const fr: TranslationKeys = {
             "previewHeadingNamed": "Aperçu rapide (Terre → {{planet}})"
         },
         subplotCanvas: {
-            command: 'Créer un canevas de sous-intrigues',
+            command: 'Canvas : créer une carte des sous-intrigues',
             badge: 'CARTE CANVAS',
             title: 'Créer une carte des sous-intrigues',
             subtitle: 'Créez un canevas de notes de scènes liées. Les lignes indiquent l’ordre narratif dans chaque sous-intrigue ; déplacer les cartes ne modifie pas le manuscrit.',
@@ -5992,6 +5992,7 @@ export const fr: TranslationKeys = {
             "cancel": "Annuler",
             "create": "Créer des esquisses",
             "command": "Transformer des cartes Canvas en esquisses",
+            paletteCommand: 'Canvas : convertir les cartes en esquisses',
             "openCanvas": "Ouvrez d’abord un Canvas.",
             "noBook": "Configurez d’abord un dossier de livre.",
             "missingFolder": "Le dossier du livre sélectionné n’existe plus.",

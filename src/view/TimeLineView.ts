@@ -9,6 +9,7 @@ import { executeCommandById, openSettingsTab } from '../utils/obsidianInternals'
 import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Notice, setIcon, Menu, Component, getFrontMatterInfo } from 'obsidian';
 import { TimelineScaffoldModal } from '../modals/TimelineScaffoldModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
+import { SubplotCanvasModal } from '../timetable/SubplotCanvasModal';
 import RadialTimelinePlugin from '../main';
 import { t, tCount } from '../i18n';
 import type { SubplotAlignment, TimelineItem } from '../types';
@@ -559,6 +560,7 @@ export class RadialTimelineView extends ItemView {
             // folds them into one menu built from this same list.
             const titleActions: Array<{ label: string; icon: string; run: () => void }> = [
                 { label: t('ui.timetable.viewName'), icon: 'table-2', run: () => { void this.plugin.openTimetable(); } },
+                { label: t('ui.subplotCanvas.command'), icon: 'layout-dashboard', run: () => new SubplotCanvasModal(this.app, this.plugin).open() },
                 { label: t('ui.timeLineView.radialTimelineCommands'), icon: 'command', run: () => this.openRadialTimelineCommands() },
                 { label: t('commands.manuscriptExport'), icon: 'printer', run: () => this.plugin.openManuscriptExportModal() },
                 // Same action as the version-indicator fallback; only the

@@ -5947,7 +5947,7 @@ export const es: TranslationKeys = {
             "previewHeadingNamed": "Vista previa rápida (Tierra → {{planet}})"
         },
         subplotCanvas: {
-            command: 'Crear lienzo de subtramas',
+            command: 'Canvas: crear mapa de subtramas',
             badge: 'MAPA DE LIENZO',
             title: 'Crear mapa de subtramas',
             subtitle: 'Crea un lienzo con notas de escenas vinculadas. Las líneas muestran el orden narrativo de cada subtrama; mover tarjetas no cambia el manuscrito.',
@@ -5992,6 +5992,7 @@ export const es: TranslationKeys = {
             "cancel": "Cancelar",
             "create": "Crear bocetos",
             "command": "Convertir tarjetas de Canvas en bocetos",
+            paletteCommand: 'Canvas: convertir tarjetas en bocetos',
             "openCanvas": "Abra primero un Canvas.",
             "noBook": "Configure primero una carpeta de libro.",
             "missingFolder": "La carpeta del libro seleccionado ya no existe.",

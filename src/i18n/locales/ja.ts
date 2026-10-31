@@ -5945,7 +5945,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: 'クイックプレビュー（地球 → {{planet}}）',
         },
         subplotCanvas: {
-            command: 'サブプロットのキャンバスを作成',
+            command: 'Canvas：サブプロットマップを作成',
             badge: 'キャンバスマップ',
             title: 'サブプロットマップを作成',
             subtitle: 'リンクされたシーンノートのキャンバスを作成します。線は各サブプロットの物語順を表します。カードを移動しても原稿の順序は変わりません。',
@@ -5990,6 +5990,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             "cancel": "キャンセル",
             "create": "スケッチを作成",
             "command": "Canvasカードをスケッチに変換",
+            paletteCommand: 'Canvas：カードをスケッチに変換',
             "openCanvas": "先にCanvasを開いてください。",
             "noBook": "先に本のフォルダを設定してください。",
             "missingFolder": "選択した本のフォルダが見つかりません。",

@@ -5946,7 +5946,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: '快速预览（地球 → {{planet}}）',
         },
         subplotCanvas: {
-            command: '创建支线画布',
+            command: 'Canvas：创建支线地图',
             badge: '画布地图',
             title: '创建支线地图',
             subtitle: '创建包含关联场景笔记的画布。线条表示每条支线的叙事顺序；移动卡片不会改变手稿顺序。',
@@ -5991,6 +5991,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             "cancel": "取消",
             "create": "创建草稿",
             "command": "将 Canvas 卡片转为草稿",
+            paletteCommand: 'Canvas：将卡片转换为草稿',
             "openCanvas": "请先打开 Canvas。",
             "noBook": "请先设置书籍文件夹。",
             "missingFolder": "所选书籍文件夹已不存在。",

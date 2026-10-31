@@ -5947,7 +5947,7 @@ export const vi: TranslationKeys = {
             "previewHeadingNamed": "Xem trước nhanh (Trái đất → {{planet}})"
         },
         subplotCanvas: {
-            command: 'Tạo Canvas cốt truyện phụ',
+            command: 'Canvas: tạo bản đồ cốt truyện phụ',
             badge: 'BẢN ĐỒ CANVAS',
             title: 'Tạo bản đồ cốt truyện phụ',
             subtitle: 'Tạo Canvas từ các ghi chú cảnh được liên kết. Đường nối thể hiện thứ tự kể trong từng cốt truyện phụ; di chuyển thẻ không đổi thứ tự bản thảo.',
@@ -5992,6 +5992,7 @@ export const vi: TranslationKeys = {
             "cancel": "Hủy",
             "create": "Tạo bản phác thảo",
             "command": "Chuyển thẻ Canvas thành bản phác thảo",
+            paletteCommand: 'Canvas: chuyển thẻ thành bản phác thảo',
             "openCanvas": "Hãy mở Canvas trước.",
             "noBook": "Hãy thiết lập thư mục sách trước.",
             "missingFolder": "Thư mục sách đã chọn không còn tồn tại.",

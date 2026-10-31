@@ -5944,7 +5944,7 @@ export const de: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: 'Schnellvorschau (Erde → {{planet}})',
         },
         subplotCanvas: {
-            command: 'Nebenhandlungs-Canvas erstellen',
+            command: 'Canvas: Nebenhandlungskarte erstellen',
             badge: 'CANVAS-KARTE',
             title: 'Nebenhandlungen als Karte',
             subtitle: 'Ein neues Canvas mit verknüpften Szenennotizen erstellen. Linien zeigen die Erzählfolge in jeder Nebenhandlung; das Verschieben ändert nicht die Manuskriptreihenfolge.',
@@ -5989,6 +5989,7 @@ export const de: DeepPartial<TranslationKeys> = {
             "cancel": "Abbrechen",
             "create": "Skizzen erstellen",
             "command": "Canvas-Karten in Skizzen umwandeln",
+            paletteCommand: 'Canvas: Karten in Skizzen umwandeln',
             "openCanvas": "Öffne zuerst ein Canvas.",
             "noBook": "Richte zuerst einen Buchordner ein.",
             "missingFolder": "Der ausgewählte Buchordner existiert nicht mehr.",

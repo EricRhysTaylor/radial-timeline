@@ -6605,7 +6605,7 @@ export const en = {
             resourcesHelp: 'Learn more',
             resourcesGettingStarted: 'Getting started',
             resourcesWiki: 'RT Wiki',
-            resourcesVideos: 'YouTube Videos',
+            resourcesVideos: 'YouTube Video',
             guardCompletionEstimate: 'Completion estimate',
             guardGeneral: 'General settings',
             guardProgress: 'Progress status',

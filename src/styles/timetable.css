@@ -167,7 +167,7 @@
 .ert-timetable__character-image { width: 20px; height: 20px; object-fit: cover; border-radius: var(--radius-s); flex: none; }
 .ert-timetable__character-link { color: var(--link-color); text-decoration: none; cursor: pointer; }
 .ert-timetable__character-link:hover { color: var(--link-color-hover); text-decoration: underline; }
-.ert-timetable__character-separator { white-space: pre; color: var(--text-muted); }
+.ert-timetable__character-separator { display: inline-block; padding: 0 var(--size-4-1); color: var(--text-faint); }
 
 .ert-timetable__name {
   font-weight: var(--font-medium);
@@ -1253,9 +1253,9 @@
 .ert-timetable-panels__date { display: flex; align-items: center; gap: var(--size-4-1); font-size: var(--font-ui-small); font-weight: 600; color: var(--text-muted); }
 .ert-timetable-panels__date-icon { display: inline-flex; flex: none; }
 .ert-timetable-panels__date-icon .svg-icon { width: 14px; height: 14px; }
-.ert-timetable-panels__characters { display: flex; flex-wrap: wrap; gap: var(--size-4-2); }
+.ert-timetable-panels__characters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-4-1); }
 .ert-timetable-panels__character { display: inline-flex; align-items: center; gap: var(--size-4-1); color: var(--text-muted); font-size: var(--font-ui-small); }
-.ert-timetable-panels__portrait { width: 44px; height: 44px; object-fit: cover; border-radius: var(--radius-s); }
+.ert-timetable-panels__portrait { width: 20px; height: 20px; object-fit: cover; border-radius: var(--radius-s); }
 .ert-timetable-panels__act { color: var(--text-muted); }
 .ert-timetable-panels__number, .ert-timetable-panels__kind, .ert-timetable-panels__meta { color: var(--text-muted); font-size: var(--font-ui-small); }
 .ert-timetable-panels__subplot { border-left: 3px solid var(--ert-timetable-panel-color, var(--background-modifier-border)); padding-left: var(--size-4-2); }
@@ -1268,5 +1268,7 @@
 .ert-timetable-panels__editor button { margin: var(--size-4-2) var(--size-4-2) 0 0; }
 .ert-timetable-panels__editor .ert-timetable-panels__save { background: var(--interactive-accent); color: var(--text-on-accent); }
 .ert-timetable__drag { cursor: grab; flex: none; }
+.ert-timetable__drag.is-unavailable { cursor: not-allowed; }
+.ert-timetable__drag.is-unavailable .svg-icon { opacity: 0.55; }
 .ert-timetable__drag:active { cursor: grabbing; }
 .ert-timetable__drop-before { box-shadow: inset 0 3px var(--interactive-accent); }

@@ -5977,6 +5977,7 @@ export const fr: TranslationKeys = {
         },
         "timetable": {
             "panelDrag": "Faites glisser avant une autre scène",
+            "panelDragHint": "Pour réorganiser les scènes, choisissez Narrative ou Chronologue sur la chronologie, utilisez un seul livre et désactivez le tri et les superpositions alternatives.",
             "panelDragUnavailable": "La chronologie ne peut pas placer ces scènes. Ouvrez le livre et le mode correspondants, puis réessayez.",
             "layoutTable": "Tableau",
             "layoutPanels": "Panneaux",

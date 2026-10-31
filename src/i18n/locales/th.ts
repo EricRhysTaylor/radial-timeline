@@ -5977,6 +5977,7 @@ export const th: TranslationKeys = {
         },
         "timetable": {
             "panelDrag": "ลากเพื่อวางก่อนฉากอื่น",
+            "panelDragHint": "หากต้องการจัดลำดับฉาก ให้เลือก Narrative หรือ Chronologue บนไทม์ไลน์ ใช้หนังสือเล่มเดียว และปิดการจัดเรียงและโอเวอร์เลย์ทางเลือก",
             "panelDragUnavailable": "ไทม์ไลน์ไม่สามารถจัดวางฉากเหล่านี้ได้ เปิดหนังสือและโหมดที่ตรงกัน แล้วลองอีกครั้ง",
             "layoutTable": "ตาราง",
             "layoutPanels": "แผง",

@@ -5987,6 +5987,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             panelConflict: '시놉시스가 다른 곳에서 변경되었습니다. 편집 내용은 여기에 남아 있습니다. 취소하고 다시 열기 전에 복사하세요.',
             panelSaveFailed: '시놉시스를 저장하지 못했습니다. 편집 내용은 여기에 남아 있습니다.',
             panelDrag: '드래그하여 다른 장면 앞에 배치',
+            panelDragHint: '장면 순서를 바꾸려면 타임라인에서 Narrative 또는 Chronologue를 선택하고, 책 하나를 사용하며, 정렬과 대체 오버레이를 끄세요.',
             panelDragUnavailable: '타임라인에서 이 장면들을 배치할 수 없습니다. 해당 책과 모드를 열고 다시 시도하세요.',
             viewName: '타임테이블',
             viewTable: '표',

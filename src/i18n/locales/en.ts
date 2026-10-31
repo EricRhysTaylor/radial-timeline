@@ -5671,6 +5671,7 @@ export const en = {
             panelConflict: 'The synopsis changed elsewhere. Your edit is still here; copy it before cancelling and reopening.',
             panelSaveFailed: 'Could not save the synopsis. Your edit is still here.',
             panelDrag: 'Drag to place before another scene',
+            panelDragHint: 'To reorder scenes, select Narrative or Chronologue on the timeline, use one book, and turn off sorting and alternate overlays.',
             panelDragUnavailable: 'The timeline cannot place these scenes. Open the matching book and mode on the timeline, then try again.',
             viewName: 'Timetable',
             viewTable: 'Table',

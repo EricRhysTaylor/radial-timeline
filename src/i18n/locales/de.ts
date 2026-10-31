@@ -5987,6 +5987,7 @@ export const de: DeepPartial<TranslationKeys> = {
             panelConflict: 'Die Zusammenfassung wurde an anderer Stelle geändert. Deine Bearbeitung ist noch hier; kopiere sie vor dem Abbrechen und erneuten Öffnen.',
             panelSaveFailed: 'Die Zusammenfassung konnte nicht gespeichert werden. Deine Bearbeitung ist noch hier.',
             panelDrag: 'Ziehen, um vor einer anderen Szene einzufügen',
+            panelDragHint: 'Zum Verschieben von Szenen wählen Sie auf der Timeline Narrative oder Chronologue, verwenden Sie ein Buch und deaktivieren Sie Sortierung und alternative Überlagerungen.',
             panelDragUnavailable: 'Die Zeitleiste kann diese Szenen nicht platzieren. Öffne das passende Buch und den passenden Modus und versuche es erneut.',
             viewName: 'Timetable',
             viewTable: 'Tabelle',

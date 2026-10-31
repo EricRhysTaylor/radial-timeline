@@ -2232,10 +2232,10 @@ export class TimetableView extends BasesView {
                 if (mode.state.mode === 'chronologue' && row.act !== null) meta.createSpan({ cls: 'ert-timetable-panels__act', text: this.actLabel(row.act) });
                 if (people.length) {
                     const peopleList = panel.createDiv({ cls: 'ert-timetable-panels__characters' });
-                    setTooltip(peopleList, people.map(person => person.name).join(' / '));
+                    setTooltip(peopleList, people.map(person => person.name).join(' · '));
                     for (const [index, person] of people.entries()) {
-                        if (index > 0) peopleList.createSpan({ cls: 'ert-timetable__character-separator', text: '/' });
                         const character = peopleList.createSpan({ cls: 'ert-timetable-panels__character' });
+                        if (index > 0) character.createSpan({ cls: 'ert-timetable__character-separator', text: '·', attr: { 'aria-hidden': 'true' } });
                         if (person.image && person.image !== portrait) {
                             const image = character.createEl('img', { cls: 'ert-timetable-panels__portrait', attr: { alt: '', src: person.image } });
                             this.panelEvents?.registerDomEvent(image, 'error', () => image.remove());
@@ -2364,12 +2364,20 @@ export class TimetableView extends BasesView {
 
     /** Drop immediately before a scene using the active timeline's placement operation. */
     private attachSceneDrag(row: HTMLElement, host: HTMLElement, path: string, state: TimelineModeState): HTMLButtonElement | null {
-        if ((state.mode !== 'narrative' && state.mode !== 'chronologue') || state.runtime || state.shift || state.alt
+        const unavailable = (state.mode !== 'narrative' && state.mode !== 'chronologue') || state.runtime || state.shift || state.alt
             || this.config.getSort().length > 0 || getTimelineScope(this.plugin.settings) !== 'book'
-            || currentTimelineMode()?.mode !== state.mode) return null;
-        const handle = host.createEl('button', { cls: 'ert-timetable__drag clickable-icon', attr: { draggable: 'true', type: 'button' } });
-        setAccessibleLabel(handle, t('ui.timetable.panelDrag'));
+            || currentTimelineMode()?.mode !== state.mode;
+        const handle = host.createEl('button', { cls: 'ert-timetable__drag clickable-icon', attr: { draggable: String(!unavailable), type: 'button' } });
+        const label = t(unavailable ? 'ui.timetable.panelDragHint' : 'ui.timetable.panelDrag');
+        setAccessibleLabel(handle, label);
         setIcon(handle, 'grip-vertical');
+        if (unavailable) {
+            handle.addClass('is-unavailable');
+            handle.setAttr('aria-disabled', 'true');
+            setTooltip(handle, label);
+            this.panelEvents?.registerDomEvent(handle, 'click', evt => { evt.preventDefault(); evt.stopPropagation(); new Notice(label); });
+            return handle;
+        }
         this.panelEvents?.registerDomEvent(handle, 'dragstart', (evt: DragEvent) => {
             if (!evt.dataTransfer) return;
             this.draggedScene = path;
@@ -2836,10 +2844,10 @@ export class TimetableView extends BasesView {
         const people = this.characterDetails(item.row.path, values);
         cell.empty();
         cell.addClass('ert-timetable__characters');
-        setTooltip(cell, people.map(person => person.name).join(' / '));
+        setTooltip(cell, people.map(person => person.name).join(' · '));
         people.forEach((person, index) => {
-            if (index > 0) cell.createSpan({ cls: 'ert-timetable__character-separator', text: ' / ' });
             const character = cell.createSpan({ cls: 'ert-timetable__character' });
+            if (index > 0) character.createSpan({ cls: 'ert-timetable__character-separator', text: '·', attr: { 'aria-hidden': 'true' } });
             if (person.image) {
                 const image = character.createEl('img', { cls: 'ert-timetable__character-image', attr: { alt: '', src: person.image } });
                 this.panelEvents?.registerDomEvent(image, 'error', () => image.remove());

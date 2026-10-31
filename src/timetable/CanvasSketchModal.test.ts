@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { App } from 'obsidian';
+import { TFile, type App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { BookProfile } from '../types';
 import { CanvasSketchModal, type OpenCanvas } from './CanvasSketchModal';
 import type { StoryCanvasData } from './canvasSketches';
+import type { TimetableRow } from './timetableModel';
+import { DEFAULT_SETTINGS } from '../settings/defaults';
 
 function setup(changeDuringCreate = false) {
     let data: StoryCanvasData = { nodes: [
@@ -15,7 +17,7 @@ function setup(changeDuringCreate = false) {
         saved.set(path, text);
         if (changeDuringCreate) data = { ...data, extra: 'edited by author' };
     });
-    const app = { workspace: { getLeavesOfType: () => [] }, vault: { getFiles: () => [], getFolderByPath: () => ({}), getAbstractFileByPath: (path: string) => path === 'Book/A scene.md' ? {} : null, create } } as unknown as App;
+    const app = { workspace: { getLeavesOfType: () => [] }, metadataCache: { getFileCache: () => ({}) }, vault: { getMarkdownFiles: () => [], getFiles: () => [], getFolderByPath: () => ({}), getAbstractFileByPath: (path: string) => path === 'Book/A scene.md' ? {} : null, create } } as unknown as App;
     const plugin = { settings: {}, refreshTimelineIfNeeded: vi.fn() } as unknown as RadialTimelinePlugin;
     const setData = vi.fn((next: StoryCanvasData) => { data = next; });
     const requestSave = vi.fn();
@@ -23,7 +25,7 @@ function setup(changeDuringCreate = false) {
     const book = { id: 'book', title: 'Book', sourceFolder: 'Book' } as BookProfile;
     const modal = new CanvasSketchModal(app, plugin, canvas, [book], book, () => true);
     (Reflect.get(modal, 'selected') as Set<string>).add('1');
-    return { modal, saved, setData, requestSave, getData: () => data };
+    return { modal, saved, setData, requestSave, app, plugin, getData: () => data };
 }
 
 describe('Canvas sketch conversion', () => {
@@ -49,5 +51,57 @@ describe('Canvas sketch conversion', () => {
         expect(test.requestSave).not.toHaveBeenCalled();
         expect(test.getData().nodes?.[0]).toMatchObject({ type: 'text', text: 'A scene\n\nSome ideas' });
         error.mockRestore();
+    });
+
+    it('writes selected sketches in the reviewed order at the end of the chosen act', async () => {
+        const test = setup();
+        (Reflect.get(test.modal, 'selected') as Set<string>).add('2');
+        const cards = Reflect.get(test.modal, 'cards') as Array<{ id: string }>;
+        cards.reverse();
+        Reflect.set(test.modal, 'act', 2);
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(test.saved.get('Book/Other idea.md')).toContain('Sketch order: 10');
+        expect(test.saved.get('Book/A scene 2.md')).toContain('Sketch order: 20');
+        expect(test.saved.get('Book/Other idea.md')).toContain('Act: 2');
+    });
+
+    it('places converted sketches after the chosen scene using its ID and act', async () => {
+        const test = setup();
+        Reflect.set(test.modal, 'anchorPath', 'Book/1 The Letter.md');
+        Reflect.set(test.modal, 'bookItems', () => [{
+            row: { path: 'Book/1 The Letter.md', basename: '1 The Letter', kind: 'scene', act: 2 } as TimetableRow,
+            frontmatter: { ID: 'scene_letter' },
+        }]);
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        const content = test.saved.get('Book/A scene 2.md');
+        expect(content).toContain('Place after scene: scene_letter');
+        expect(content).toContain('Act: 2');
+        expect(content).toContain('Sketch order: 10');
+    });
+
+    it('does not create sketches if the chosen scene has a duplicate ID', async () => {
+        const test = setup();
+        Reflect.set(test.modal, 'anchorPath', 'Book/1 The Letter.md');
+        const scene = (path: string) => ({ row: { path, basename: path, kind: 'scene', act: 1 } as TimetableRow, frontmatter: { ID: 'duplicate' } });
+        Reflect.set(test.modal, 'bookItems', () => [scene('Book/1 The Letter.md'), scene('Book/2 Another.md')]);
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(test.saved.size).toBe(0);
+        expect(test.setData).not.toHaveBeenCalled();
+        error.mockRestore();
+    });
+
+    it('gives an existing unranked sketch a position before the new cards', async () => {
+        const test = setup();
+        const file = new TFile('Book/Existing.md');
+        const frontmatter: Record<string, unknown> = { Class: 'Sketch', Act: 1 };
+        test.plugin.settings = { ...DEFAULT_SETTINGS, books: [{ id: 'book', title: 'Book', sourceFolder: 'Book' }] };
+        test.app.vault.getAbstractFileByPath = path => path === file.path ? file : null;
+        test.app.fileManager = { processFrontMatter: async (_file: TFile, cb: (fm: Record<string, unknown>) => void) => cb(frontmatter) } as App['fileManager'];
+        Reflect.set(test.modal, 'act', 1);
+        Reflect.set(test.modal, 'bookItems', () => [{ row: { path: file.path, basename: file.basename, kind: 'sketch', act: 1 } as TimetableRow, frontmatter }]);
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(frontmatter['Sketch order']).toBe(10);
+        expect(test.saved.get('Book/A scene.md')).toContain('Sketch order: 20');
     });
 });

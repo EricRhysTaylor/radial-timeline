@@ -1244,7 +1244,10 @@
 .ert-timetable .ert-timetable-panels__cover { position: relative; flex: 0 0 88px; width: 88px; height: 88px; padding: 0; overflow: hidden; border: 2px solid var(--ert-timetable-link-color, var(--ert-timetable-portrait-color, var(--background-modifier-border))); border-radius: var(--radius-s); background: var(--background-secondary); box-shadow: none; }
 .ert-timetable-panels__cover-image { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ert-timetable-panels__cover.is-missing .ert-timetable-panels__cover-image { visibility: hidden; }
-.ert-timetable-panels__cover .svg-icon { position: absolute; top: 4px; left: 4px; z-index: 1; width: 22px; height: 22px; padding: 3px; border-radius: var(--radius-s); color: white; background: rgb(0 0 0 / 55%); }
+.ert-timetable-panels__cover > .svg-icon { position: absolute; top: 4px; left: 4px; z-index: 1; width: 22px; height: 22px; padding: 3px; border-radius: var(--radius-s); color: white; background: rgb(0 0 0 / 55%); }
+.ert-timetable-panels__cover-placeholder { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; color: var(--text-faint); }
+.ert-timetable-panels__cover.is-missing .ert-timetable-panels__cover-placeholder { display: flex; }
+.ert-timetable-panels__cover-placeholder .svg-icon { width: 32px; height: 32px; }
 .ert-timetable-panels__cover:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
 .ert-timetable-panels__heading { flex: 1 1 120px; min-width: 0; display: flex; flex-direction: column; gap: var(--size-4-2); }
 .ert-timetable-panels__title-line { display: flex; align-items: baseline; gap: var(--size-4-2); min-width: 0; }

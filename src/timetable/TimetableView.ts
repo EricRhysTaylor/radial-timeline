@@ -100,6 +100,7 @@ import {
 import { authorKeyFor, countColumnFill, tableColumns, TIMETABLE_VIEW_TYPE, withRecommendedColumns } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { synopsisKey, updateSynopsis } from './panelSynopsis';
+import { leadPortrait } from './panelPortrait';
 import { coloringDateLabel } from './coloringDates';
 import { TimetableColoringModal } from './TimetableColoringModal';
 import { CellPeek } from './cellPeek';
@@ -2194,7 +2195,7 @@ export class TimetableView extends BasesView {
                 const characters = frontmatterKey(frontmatter, authorKeyFor('Character', this.plugin.settings));
                 const names = (Array.isArray(characters) ? characters : [characters]).filter((name): name is string => typeof name === 'string' && name.trim().length > 0);
                 const people = this.characterDetails(row.path, names);
-                const portrait = people.find(person => person.image)?.image;
+                const portrait = leadPortrait(people);
                 if (row.kind === 'scene') {
                     const fill = sceneNumberFill(frontmatter, this.plugin.settings, this.patternPrefix);
                     const stage = sceneVitals(frontmatter, this.plugin.settings, new Date()).stage;
@@ -2203,12 +2204,17 @@ export class TimetableView extends BasesView {
                     if (color) panel.setCssProps({ '--ert-timetable-portrait-color': color });
                 }
                 const header = panel.createDiv({ cls: 'ert-timetable-panels__header' });
-                if (portrait) {
+                if (portrait || (row.kind === 'scene' && people.length > 0)) {
                     const handle = row.kind === 'scene' ? this.attachSceneDrag(panel, header, row.path, mode.state) : null;
                     const cover = handle ?? header.createDiv();
                     cover.addClass('ert-timetable-panels__cover');
-                    const image = cover.createEl('img', { cls: 'ert-timetable-panels__cover-image', attr: { alt: '', src: portrait, draggable: 'false' } });
-                    this.panelEvents?.registerDomEvent(image, 'error', () => cover.addClass('is-missing'));
+                    cover.toggleClass('is-missing', !portrait);
+                    const placeholder = cover.createSpan({ cls: 'ert-timetable-panels__cover-placeholder', attr: { 'aria-hidden': 'true' } });
+                    setIcon(placeholder, 'user-round');
+                    if (portrait) {
+                        const image = cover.createEl('img', { cls: 'ert-timetable-panels__cover-image', attr: { alt: '', src: portrait, draggable: 'false' } });
+                        this.panelEvents?.registerDomEvent(image, 'error', () => cover.addClass('is-missing'));
+                    }
                 } else if (row.kind === 'scene') this.attachSceneDrag(panel, header, row.path, mode.state);
                 const heading = header.createDiv({ cls: 'ert-timetable-panels__heading' });
                 const title = heading.createDiv({ cls: 'ert-timetable-panels__title-line' });

@@ -3454,6 +3454,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             sherlockCountLabel: '4 部小说 · 56 章',
             sherlockDescription: '我们的第一个合集：在四部完整的小说及其已保存的分析之间切换。',
             inPreparation: '准备中',
+            secretDescription: '一位游侠、一片魔法森林，还有一个兜兜转转的故事。仔细看看：这些道路或许正环绕着什么。',
         },
         bonusVaultsSection: {
             secretVault: '神秘仓库',

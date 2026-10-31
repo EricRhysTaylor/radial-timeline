@@ -3454,7 +3454,8 @@ export const es: TranslationKeys = {
             "odysseyDescription": "Explore el viaje completo con pulso guardado, cuatro señales Gossamer y tres sesiones Inquiry.",
             "sherlockCountLabel": "4 novelas · 56 capítulos",
             "sherlockDescription": "Nuestra primera colección: Cambiar entre cuatro novelas completas y sus análisis guardados.",
-            "inPreparation": "en preparación"
+            "inPreparation": "en preparación",
+            "secretDescription": "Un caballero errante, un bosque encantado y una historia que vuelve sobre sí misma. Mira de cerca: puede que los caminos rodeen algo.",
         },
         "bonusVaultsSection": {
             "secretVault": "Bóveda secreta",

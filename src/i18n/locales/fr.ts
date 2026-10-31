@@ -3454,7 +3454,8 @@ export const fr: TranslationKeys = {
             "odysseyDescription": "Explorez le parcours complet avec Pulse sauvegardé, quatre signaux Gossamer et trois briefings Inquiry.",
             "sherlockCountLabel": "4 romans · 56 chapitres",
             "sherlockDescription": "Notre première collection : basculez entre quatre romans complets et leurs analyses enregistrées.",
-            "inPreparation": "en préparation"
+            "inPreparation": "en préparation",
+            "secretDescription": "Un chevalier errant, une forêt enchantée et une histoire qui revient sur elle-même. Regardez bien : les chemins entourent peut-être quelque chose.",
         },
         "bonusVaultsSection": {
             "secretVault": "Coffre secret",

@@ -63,6 +63,11 @@ export const EMBEDDED_ASSET_MANIFEST = [
         note: 'Demo card artwork from radialtimeline.com/resources/sherlock (512px JPEG)',
     },
     {
+        key: 'demo-vaults/mystery-vault-gray.webp',
+        src: 'assets/demo-vaults/mystery-vault-gray.webp',
+        note: 'Secret vault artwork from the Radial Timeline literary Resources page',
+    },
+    {
         key: 'icons/radial-inquiry.svg',
         src: 'assets/icons/radial-inquiry.svg',
         note: 'Theme-aware Radial Inquiry mark for ribbons, tabs, and settings',
@@ -137,6 +142,7 @@ export const LICENCE_FILE_NAMES = new Set(['OFL.txt', 'LICENSE.txt', 'LICENSE.md
 /** MIME types for data-URI consumers (images). Fonts/docx are written as bytes. */
 const MIME_BY_EXTENSION = {
     '.jpg': 'image/jpeg',
+    '.webp': 'image/webp',
     '.png': 'image/png',
     '.svg': 'image/svg+xml',
     '.ttf': 'font/ttf',

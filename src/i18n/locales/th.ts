@@ -3454,7 +3454,8 @@ export const th: TranslationKeys = {
             "odysseyDescription": "สำรวจการเดินทางที่สมบูรณ์ด้วย Pulse ที่บันทึกไว้ สัญญาณ Gossamer สี่สัญญาณ และการบรรยายสรุป Inquiry สามครั้ง",
             "sherlockCountLabel": "นิยาย 4 เรื่อง · 56 บท",
             "sherlockDescription": "คอลเลกชันแรกของเรา: สลับไปมาระหว่างนวนิยายทั้งสี่เล่มและการวิเคราะห์ที่บันทึกไว้",
-            "inPreparation": "ในการเตรียมตัว"
+            "inPreparation": "ในการเตรียมตัว",
+            "secretDescription": "อัศวินพเนจร ป่าต้องมนตร์ และเรื่องราวที่วนกลับมาหาตัวเอง ลองมองให้ดี เส้นทางเหล่านั้นอาจกำลังโอบล้อมบางสิ่งอยู่",
         },
         "bonusVaultsSection": {
             "secretVault": "ห้องนิรภัยลับ",

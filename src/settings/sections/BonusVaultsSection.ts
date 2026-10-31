@@ -18,46 +18,6 @@ interface BonusVaultsSectionParams {
     containerEl: HTMLElement;
 }
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
-
-/**
- * Incognito glyph (fedora + spectacles) used as the muted placeholder behind
- * coming-soon vaults, mirroring the marketing site's locked cards. Drawn inline
- * so no extra raster asset is bundled.
- */
-function buildIncognitoGlyph(parent: HTMLElement): void {
-    const doc = parent.ownerDocument;
-    const svg = doc.createElementNS(SVG_NS, 'svg');
-    svg.setAttr('class', 'ert-bonus-card__glyph');
-    svg.setAttr('viewBox', '0 0 24 24');
-    svg.setAttr('aria-hidden', 'true');
-    svg.setAttr('fill', 'none');
-    svg.setAttr('stroke', 'currentColor');
-    svg.setAttr('stroke-width', '1.6');
-    svg.setAttr('stroke-linecap', 'round');
-    svg.setAttr('stroke-linejoin', 'round');
-
-    // Hat brim + crown
-    const hat = doc.createElementNS(SVG_NS, 'path');
-    hat.setAttr('d', 'M3 13h18M7 13c0-3.5 1.8-6 5-6s5 2.5 5 6');
-    svg.append(hat);
-
-    // Spectacle lenses
-    const leftLens = doc.createElementNS(SVG_NS, 'circle');
-    leftLens.setAttr('cx', '8');
-    leftLens.setAttr('cy', '17');
-    leftLens.setAttr('r', '2.6');
-    const rightLens = doc.createElementNS(SVG_NS, 'circle');
-    rightLens.setAttr('cx', '16');
-    rightLens.setAttr('cy', '17');
-    rightLens.setAttr('r', '2.6');
-    const bridge = doc.createElementNS(SVG_NS, 'path');
-    bridge.setAttr('d', 'M10.6 17h2.8');
-    svg.append(leftLens, rightLens, bridge);
-
-    parent.appendChild(svg);
-}
-
 export function renderBonusVaultsSection({
     app: _app,
     plugin,
@@ -112,14 +72,14 @@ function renderCard(
 
     // Thumbnail / placeholder
     const thumbWrap = card.createDiv({ cls: 'ert-bonus-card__thumbWrap' });
-    if (vault.thumb && !isComingSoon) {
+    if (vault.thumb) {
         thumbWrap.createEl('img', {
             cls: 'ert-bonus-card__thumb',
             attr: { src: vault.thumb, alt: '', 'aria-hidden': 'true', loading: 'lazy' }
         });
     } else {
         const placeholder = thumbWrap.createDiv({ cls: 'ert-bonus-card__placeholder' });
-        buildIncognitoGlyph(placeholder);
+        setIcon(placeholder, 'sparkles');
     }
     // Title + meta
     card.createDiv({ cls: 'ert-bonus-card__title', text: isComingSoon ? t('ui.bonusVaultsSection.secretVault') : vault.title });
@@ -127,7 +87,7 @@ function renderCard(
         cls: 'ert-bonus-card__meta',
         text: isComingSoon ? vault.countLabel : `${vault.author} · ${vault.countLabel}`
     });
-    if (!isComingSoon && vault.description) {
+    if (vault.description) {
         card.createEl('p', { cls: 'ert-bonus-card__description', text: vault.description });
     }
 

@@ -3452,6 +3452,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             sherlockCountLabel: '장편 4편 · 56개 장',
             sherlockDescription: '첫 번째 컬렉션: 네 편의 완결 장편과 저장된 분석 사이를 전환해 보세요.',
             inPreparation: '준비 중',
+            secretDescription: '방랑하는 기사와 마법의 숲, 그리고 제자리로 돌아오는 이야기. 자세히 보세요. 길들이 무언가를 둘러싸고 있을지도 모릅니다.',
         },
         bonusVaultsSection: {
             secretVault: '비밀 보관함',

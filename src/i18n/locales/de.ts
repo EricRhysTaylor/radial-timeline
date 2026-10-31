@@ -3452,6 +3452,7 @@ export const de: DeepPartial<TranslationKeys> = {
             sherlockCountLabel: '4 Romane · 56 Kapitel',
             sherlockDescription: 'Unsere erste Sammlung: Wechseln Sie zwischen vier vollständigen Romanen und ihren gespeicherten Analysen.',
             inPreparation: 'In Vorbereitung',
+            secretDescription: 'Ein wandernder Ritter, ein verzauberter Wald und eine Geschichte, die zu sich selbst zurückkehrt. Schau genau hin: Die Wege könnten etwas umkreisen.',
         },
         bonusVaultsSection: {
             secretVault: 'Geheimer Vault',

@@ -3454,7 +3454,8 @@ export const vi: TranslationKeys = {
             "odysseyDescription": "Khám phá hành trình hoàn chỉnh với xung đã lưu, bốn tín hiệu Gossamer và ba bản tóm tắt Inquiry.",
             "sherlockCountLabel": "4 tiểu thuyết · 56 chương",
             "sherlockDescription": "Bộ sưu tập đầu tiên của chúng tôi: Chuyển đổi giữa bốn tiểu thuyết hoàn chỉnh và phân tích đã lưu của chúng.",
-            "inPreparation": "Đang chuẩn bị"
+            "inPreparation": "Đang chuẩn bị",
+            "secretDescription": "Một hiệp sĩ lang thang, một khu rừng phép thuật và một câu chuyện quay trở về chính nó. Hãy nhìn kỹ: những con đường có thể đang bao quanh điều gì đó.",
         },
         "bonusVaultsSection": {
             "secretVault": "Kho bí mật",

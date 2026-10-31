@@ -100,6 +100,8 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         title: 'The Faerie Queene',
         author: 'Spenser',
         get countLabel() { return t('ui.bonusVaults.inPreparation'); },
-        status: 'coming-soon'
+        status: 'coming-soon',
+        get thumb() { return getEmbeddedAssetDataUri('demo-vaults/mystery-vault-gray.webp'); },
+        get description() { return t('ui.bonusVaults.secretDescription'); }
     }
 ];

@@ -594,10 +594,6 @@
   border-color: color-mix(in srgb, var(--ert-pro-accent-color) 55%, transparent);
 }
 
-.ert-ui.ert-scope--settings .ert-bonus-card.is-coming-soon {
-  opacity: 0.62;
-}
-
 .ert-ui.ert-scope--settings .ert-bonus-card__thumbWrap {
   position: relative;
   width: 100%;
@@ -624,13 +620,6 @@
     radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--text-muted) 14%, transparent) 0%, transparent 70%),
     var(--background-secondary);
   filter: grayscale(1);
-}
-
-.ert-ui.ert-scope--settings .ert-bonus-card__glyph {
-  width: 42%;
-  height: 42%;
-  color: var(--text-muted);
-  opacity: 0.7;
 }
 
 .ert-ui.ert-scope--settings .ert-bonus-card__title {

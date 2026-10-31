@@ -3136,6 +3136,7 @@ export const en = {
             sherlockCountLabel: '4 novels · 56 chapters',
             sherlockDescription: 'Our first collection: switch between four complete novels and their saved analyses.',
             inPreparation: 'In preparation',
+            secretDescription: 'A wandering knight, an enchanted forest, and a story that circles back upon itself. Look closely: the paths may be encircling something.',
         },
         bonusVaultsSection: {
             secretVault: 'Secret vault',

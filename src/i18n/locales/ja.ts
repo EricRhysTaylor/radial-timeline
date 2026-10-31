@@ -3453,6 +3453,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             sherlockCountLabel: '長編 4 作 · 56 章',
             sherlockDescription: '最初のコレクション：4 つの長編全作と、それぞれの保存済み分析を切り替えて閲覧できます。',
             inPreparation: '準備中',
+            secretDescription: 'さまよう騎士、魔法の森、そして巡り巡って戻ってくる物語。よく見ると、その道は何かを取り囲んでいるのかもしれません。',
         },
         bonusVaultsSection: {
             secretVault: 'シークレット保管庫',

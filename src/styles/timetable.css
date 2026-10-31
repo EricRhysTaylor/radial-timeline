@@ -1309,7 +1309,7 @@
     padding: 22px;
     pointer-events: none;
     color: var(--text-normal);
-    background: var(--background-primary);
+    background: color-mix(in srgb, var(--background-primary) 84%, var(--text-normal) 16%);
     border-radius: var(--radius-m);
 }
 .ert-canvas-story-card__header { display: flex; gap: 16px; align-items: center; min-width: 0; }

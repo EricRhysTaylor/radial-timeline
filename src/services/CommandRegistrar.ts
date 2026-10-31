@@ -56,6 +56,7 @@ import { t } from '../i18n';
 import { writeManagedOutput } from '../utils/logVaultOps';
 import { getExportValidationIssues } from './PublishingValidationService';
 import { registerPromoteToScene } from './PromoteToSceneEntry';
+import { registerCanvasSketches } from '../timetable/CanvasSketchEntry';
 import { getMainPlotName } from '../utils/mainPlot';
 
 export class CommandRegistrar {
@@ -71,6 +72,7 @@ export class CommandRegistrar {
         sceneAnalysisService.registerCommands();
         registerRuntimeCommands(this.plugin);
         registerPromoteToScene(this.plugin);
+        registerCanvasSketches(this.plugin);
     }
 
     public openManuscriptExportModal(): void {

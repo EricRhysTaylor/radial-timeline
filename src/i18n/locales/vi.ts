@@ -5946,6 +5946,25 @@ export const vi: TranslationKeys = {
             "weekdayNamesDesc": "tùy chọn. Đặt nhãn các ngày trong tuần. Nhập một tên trên mỗi dòng hoặc được phân tách bằng dấu phẩy. Tên đầu tiên là tuần 1, vì vậy năm 1 ngày 1 bắt đầu ở đó.",
             "previewHeadingNamed": "Xem trước nhanh (Trái đất → {{planet}})"
         },
+        canvasSketch: {
+            "badge": "CANVAS",
+            "title": "Chuyển ý tưởng thành bản phác thảo",
+            "subtitle": "Chọn thẻ văn bản để tạo bản phác thảo. Nội dung, vị trí và kết nối được giữ nguyên; ghi chú hiện có không thay đổi.",
+            "book": "Thêm vào sách",
+            "act": "Hồi",
+            "noAct": "Chưa chỉ định",
+            "actNumber": "Hồi {{act}}",
+            "empty": "Canvas này không có thẻ văn bản để chuyển đổi.",
+            "cancel": "Hủy",
+            "create": "Tạo bản phác thảo",
+            "command": "Chuyển thẻ Canvas thành bản phác thảo",
+            "openCanvas": "Hãy mở Canvas trước.",
+            "noBook": "Hãy thiết lập thư mục sách trước.",
+            "missingFolder": "Thư mục sách đã chọn không còn tồn tại.",
+            "changed": "Canvas đã thay đổi trong khi chuyển đổi. Hãy kiểm tra và thử lại.",
+            "done": "Đã tạo {{count}} bản phác thảo và liên kết với Canvas.",
+            "failed": "Không thể hoàn tất liên kết Canvas. Đã giữ {{count}} bản phác thảo trong thư mục sách. {{message}}"
+        },
         "promoteToScene": {
             "menuItem": "Quảng cáo cho cảnh",
             "menuItemMany": "Quảng cáo {{notes}} sang cảnh",

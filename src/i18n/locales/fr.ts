@@ -5946,6 +5946,25 @@ export const fr: TranslationKeys = {
             "weekdayNamesDesc": "facultatif. Définit les étiquettes en semaine. Entrez un nom par ligne ou séparé par des virgules. Le premier nom est le jour de la semaine 1, donc l'année 1 du jour 1 commence là-bas.",
             "previewHeadingNamed": "Aperçu rapide (Terre → {{planet}})"
         },
+        canvasSketch: {
+            "badge": "CANVAS",
+            "title": "Transformer des idées en esquisses",
+            "subtitle": "Choisissez les cartes texte à convertir. Leur texte, position et liens sont conservés. Les notes existantes ne changent pas.",
+            "book": "Ajouter au livre",
+            "act": "Acte",
+            "noAct": "Non attribué",
+            "actNumber": "Acte {{act}}",
+            "empty": "Ce Canvas ne contient aucune carte texte à convertir.",
+            "cancel": "Annuler",
+            "create": "Créer des esquisses",
+            "command": "Transformer des cartes Canvas en esquisses",
+            "openCanvas": "Ouvrez d’abord un Canvas.",
+            "noBook": "Configurez d’abord un dossier de livre.",
+            "missingFolder": "Le dossier du livre sélectionné n’existe plus.",
+            "changed": "Le Canvas a changé pendant la conversion. Vérifiez-le et réessayez.",
+            "done": "{{count}} esquisses créées et liées au Canvas.",
+            "failed": "La liaison au Canvas a échoué. {{count}} esquisses ont été conservées dans le dossier du livre. {{message}}"
+        },
         "promoteToScene": {
             "menuItem": "Promouvoir sur scène",
             "menuItemMany": "Promouvoir {{notes}} en scènes",

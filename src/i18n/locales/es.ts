@@ -5946,6 +5946,25 @@ export const es: TranslationKeys = {
             "weekdayNamesDesc": "opcional. Establece etiquetas entre semana. Introduzca un nombre por línea o separado por comas. El primer nombre es Weekday 1, por lo que el año 1 Día 1 comienza allí.",
             "previewHeadingNamed": "Vista previa rápida (Tierra → {{planet}})"
         },
+        canvasSketch: {
+            "badge": "CANVAS",
+            "title": "Convertir ideas en bocetos",
+            "subtitle": "Elija tarjetas de texto para crear bocetos. Se conservan el texto, la posición y las conexiones. Las notas existentes no cambian.",
+            "book": "Añadir al libro",
+            "act": "Acto",
+            "noAct": "Sin asignar",
+            "actNumber": "Acto {{act}}",
+            "empty": "Este Canvas no tiene tarjetas de texto para convertir.",
+            "cancel": "Cancelar",
+            "create": "Crear bocetos",
+            "command": "Convertir tarjetas de Canvas en bocetos",
+            "openCanvas": "Abra primero un Canvas.",
+            "noBook": "Configure primero una carpeta de libro.",
+            "missingFolder": "La carpeta del libro seleccionado ya no existe.",
+            "changed": "El Canvas cambió durante la conversión. Revíselo e inténtelo de nuevo.",
+            "done": "Se crearon {{count}} bocetos y se vincularon al Canvas.",
+            "failed": "No se pudo completar el enlace. Se conservaron {{count}} bocetos en la carpeta del libro. {{message}}"
+        },
         "promoteToScene": {
             "menuItem": "Promover a la escena",
             "menuItemMany": "Promocionar {{notes}} a escenas",

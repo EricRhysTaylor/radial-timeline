@@ -94,6 +94,12 @@ Notes you open from the Timetable appear in a pane below the table, so the wheel
 - Pin the note in the pane to keep it: the next note opens in a tab beside it.
 - The reading pane is used only while a Timetable is showing.
 
+## Bring ideas from Canvas
+
+Open an Obsidian Canvas and run **Turn Canvas cards into sketches** from the command palette. You can also find the action in the active Canvas file’s menu. Choose the text cards, the book and an optional act, then select **Create sketches**. Each selected card becomes a Markdown sketch in the book folder; its text stays in the note body, and its Canvas card becomes a link to the same note. Its position, color and connections stay in place. Existing file cards are left alone.
+
+The first line suggests the sketch’s title. Sketches without an act appear unassigned in the Timetable. Canvas positions and arrows do not set manuscript order or dates. Review a sketch’s placement when you promote it to a scene. If the Canvas changes during conversion, the action stops instead of overwriting the map. Any sketches already created remain in the book folder. Canvas undo restores the text card but does not delete the sketch note; converting it again creates another note.
+
 ## Write sketches beside scenes
 
 Use **New sketch**, or the **+** beside an act heading, to create a sketch in the book’s manuscript folder. A sketch has `Class: Sketch` and appears in the Timetable, keeping a place for an idea without putting it on the wheel yet. In Saga scope, use a book heading’s **+** to choose the book.

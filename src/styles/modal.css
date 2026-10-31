@@ -2565,3 +2565,31 @@
   font-weight: 600;
   cursor: help;
 }
+
+/* Canvas cards selected for conversion to Timetable sketches. */
+.ert-canvas-sketch-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-2);
+    max-height: 40vh;
+    overflow-y: auto;
+}
+.ert-canvas-sketch-card {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-3);
+    padding: var(--size-4-3);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+}
+.ert-canvas-sketch-title {
+    overflow-wrap: anywhere;
+    font-weight: var(--font-medium);
+}
+
+.ert-canvas-sketch-preview {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+    overflow-wrap: anywhere;
+}

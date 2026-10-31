@@ -2556,10 +2556,11 @@ export class TimetableView extends BasesView {
                 wrap.addClass('has-drag');
                 handle.addClass('ert-timetable__chip-drag');
                 const svg = wrap.querySelector<SVGSVGElement>('svg');
-                svg?.setAttribute('viewBox', '0 0 46 22');
-                svg?.setAttribute('width', '46');
-                svg?.querySelector('rect')?.setAttribute('width', '44');
-                svg?.querySelector('text')?.setAttribute('x', '32');
+                const width = 38 + Math.max(0, (row.prefix?.length ?? 0) - 3) * 7;
+                svg?.setAttribute('viewBox', `0 0 ${width} 22`);
+                svg?.setAttribute('width', String(width));
+                svg?.querySelector('rect')?.setAttribute('width', String(width - 2));
+                svg?.querySelector('text')?.setAttribute('x', String((width + 16) / 2));
             }
         }
 

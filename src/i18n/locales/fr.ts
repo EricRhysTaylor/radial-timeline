@@ -5946,6 +5946,23 @@ export const fr: TranslationKeys = {
             "weekdayNamesDesc": "facultatif. Définit les étiquettes en semaine. Entrez un nom par ligne ou séparé par des virgules. Le premier nom est le jour de la semaine 1, donc l'année 1 du jour 1 commence là-bas.",
             "previewHeadingNamed": "Aperçu rapide (Terre → {{planet}})"
         },
+        subplotCanvas: {
+            command: 'Créer un canevas de sous-intrigues',
+            badge: 'CARTE CANVAS',
+            title: 'Créer une carte des sous-intrigues',
+            subtitle: 'Créez un canevas de notes de scènes liées. Les lignes indiquent l’ordre narratif dans chaque sous-intrigue ; déplacer les cartes ne modifie pas le manuscrit.',
+            book: 'Livre',
+            act: 'Acte',
+            subplot: 'Sous-intrigue',
+            allActs: 'Tous les actes',
+            allSubplots: 'Toutes les sous-intrigues',
+            actNumber: 'Acte {{act}}',
+            count: '{{scenes}} scènes · {{cards}} cartes',
+            cancel: 'Annuler',
+            create: 'Créer le canevas',
+            empty: 'Aucune scène correspondante.',
+            failed: 'Impossible de créer le canevas.',
+        },
         canvasSketch: {
             fileCardsExplanation: 'Seules les cartes texte peuvent être converties. Les cartes de fichier renvoient déjà à des notes et ne sont pas modifiées.',
             showTimetable: 'RT : Afficher dans le tableau',

@@ -7,6 +7,7 @@ import { isPromotable } from '../services/PromoteToSceneService';
 import { runPromotion } from '../services/PromoteToSceneEntry';
 import { CanvasSketchModal, type OpenCanvas } from './CanvasSketchModal';
 import { registerCanvasCardPresentation } from './CanvasCardPresentation';
+import { SubplotCanvasModal } from './SubplotCanvasModal';
 
 function canvasForView(source: View | undefined): OpenCanvas | null {
     if (!source || source.getViewType() !== 'canvas') return null;
@@ -33,6 +34,7 @@ function openCanvasSketches(plugin: RadialTimelinePlugin, canvas = activeCanvas(
 
 export function registerCanvasSketches(plugin: RadialTimelinePlugin): void {
     registerCanvasCardPresentation(plugin);
+    plugin.addCommand({ id: 'create-subplot-canvas', name: t('ui.subplotCanvas.command'), callback: () => new SubplotCanvasModal(plugin.app, plugin).open() });
     // Track each open Canvas, including inactive and split leaves. Bind the
     // action to its own view rather than whichever leaf happens to have focus.
     const actions = new Map<View, HTMLElement>();

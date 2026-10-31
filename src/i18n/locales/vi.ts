@@ -5946,6 +5946,23 @@ export const vi: TranslationKeys = {
             "weekdayNamesDesc": "tùy chọn. Đặt nhãn các ngày trong tuần. Nhập một tên trên mỗi dòng hoặc được phân tách bằng dấu phẩy. Tên đầu tiên là tuần 1, vì vậy năm 1 ngày 1 bắt đầu ở đó.",
             "previewHeadingNamed": "Xem trước nhanh (Trái đất → {{planet}})"
         },
+        subplotCanvas: {
+            command: 'Tạo Canvas cốt truyện phụ',
+            badge: 'BẢN ĐỒ CANVAS',
+            title: 'Tạo bản đồ cốt truyện phụ',
+            subtitle: 'Tạo Canvas từ các ghi chú cảnh được liên kết. Đường nối thể hiện thứ tự kể trong từng cốt truyện phụ; di chuyển thẻ không đổi thứ tự bản thảo.',
+            book: 'Sách',
+            act: 'Hồi',
+            subplot: 'Cốt truyện phụ',
+            allActs: 'Tất cả các hồi',
+            allSubplots: 'Tất cả cốt truyện phụ',
+            actNumber: 'Hồi {{act}}',
+            count: '{{scenes}} cảnh · {{cards}} thẻ',
+            cancel: 'Hủy',
+            create: 'Tạo Canvas',
+            empty: 'Không có cảnh phù hợp.',
+            failed: 'Không thể tạo Canvas.',
+        },
         canvasSketch: {
             fileCardsExplanation: 'Chỉ có thể chuyển thẻ văn bản tại đây. Thẻ tệp đã liên kết với ghi chú và không bị thay đổi.',
             showTimetable: 'RT: Hiện trong bảng thời gian',

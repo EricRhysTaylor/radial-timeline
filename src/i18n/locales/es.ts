@@ -5946,6 +5946,23 @@ export const es: TranslationKeys = {
             "weekdayNamesDesc": "opcional. Establece etiquetas entre semana. Introduzca un nombre por línea o separado por comas. El primer nombre es Weekday 1, por lo que el año 1 Día 1 comienza allí.",
             "previewHeadingNamed": "Vista previa rápida (Tierra → {{planet}})"
         },
+        subplotCanvas: {
+            command: 'Crear lienzo de subtramas',
+            badge: 'MAPA DE LIENZO',
+            title: 'Crear mapa de subtramas',
+            subtitle: 'Crea un lienzo con notas de escenas vinculadas. Las líneas muestran el orden narrativo de cada subtrama; mover tarjetas no cambia el manuscrito.',
+            book: 'Libro',
+            act: 'Acto',
+            subplot: 'Subtrama',
+            allActs: 'Todos los actos',
+            allSubplots: 'Todas las subtramas',
+            actNumber: 'Acto {{act}}',
+            count: '{{scenes}} escenas · {{cards}} tarjetas',
+            cancel: 'Cancelar',
+            create: 'Crear lienzo',
+            empty: 'No hay escenas coincidentes.',
+            failed: 'No se pudo crear el lienzo.',
+        },
         canvasSketch: {
             fileCardsExplanation: 'Solo se convierten tarjetas de texto. Las tarjetas de archivo ya enlazan a notas y no se modifican.',
             showTimetable: 'RT: Mostrar en la tabla',

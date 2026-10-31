@@ -10,6 +10,11 @@ type Mode = 'full' | 'preview' | 'title';
 type CanvasNode = { nodeEl?: HTMLElement; getData?: () => { type?: string; file?: string; subpath?: string } };
 type CanvasView = View & { canvas?: { nodes?: Map<string, CanvasNode> } };
 
+const pendingTitleMaps = new Set<string>();
+
+/** New generated maps open in the compact card presentation once. */
+export function preferTitleForCanvas(path: string): void { pendingTitleMaps.add(path); }
+
 function value(fm: Record<string, unknown>, name: string): unknown {
     const key = Object.keys(fm).find(item => item.toLowerCase() === name.toLowerCase());
     return key ? fm[key] : undefined;
@@ -80,6 +85,7 @@ class CanvasCards {
         });
         this.observer = new MutationObserver(() => this.schedule());
         this.observer.observe(view.containerEl, { childList: true, subtree: true });
+        this.schedule();
     }
 
     schedule(): void {
@@ -95,6 +101,11 @@ class CanvasCards {
 
     private async refresh(): Promise<void> {
         const revision = ++this.revision;
+        const file = (this.view as unknown as { file?: TFile | null }).file;
+        if (file && pendingTitleMaps.delete(file.path)) {
+            this.mode = 'title';
+            this.view.containerEl.addClass('ert-canvas-card-view');
+        }
         const nodes = (this.view as CanvasView).canvas?.nodes;
         const keep = new Set<HTMLElement>();
         if (this.mode !== 'full' && nodes instanceof Map) {

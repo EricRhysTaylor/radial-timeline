@@ -455,6 +455,7 @@
 
 .ert-timetable__chip-drag .svg-icon { width: 10px; height: 14px; }
 .ert-timetable .ert-timetable__chip-drag:hover { background: rgb(0 0 0 / 12%); }
+.ert-timetable .ert-timetable__row.is-sketch .ert-timetable__chip-drag { color: var(--text-muted); }
 
 /* On a status fill or a white beat cell, the number is black, as on the wheel. */
 .ert-timetable__row.is-scene .ert-timetable__chip-text,
@@ -1280,5 +1281,3 @@
 .ert-timetable__drag:active { cursor: grabbing; }
 .ert-timetable__drop-before { box-shadow: inset 0 3px var(--interactive-accent); }
 .ert-timetable__drop-after { box-shadow: inset 0 -3px var(--interactive-accent); }
-.ert-timetable__row.is-sketch .ert-timetable__chip-wrap { display: flex; align-items: center; }
-.ert-timetable__row.is-sketch .ert-timetable__chip-wrap .ert-timetable__drag { margin-left: 2px; }

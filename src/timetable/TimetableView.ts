@@ -2477,7 +2477,7 @@ export class TimetableView extends BasesView {
         return handle;
     }
 
-    private attachSketchDrag(row: HTMLElement, host: HTMLElement, path: string, state: TimelineModeState): void {
+    private attachSketchDrag(row: HTMLElement, host: HTMLElement, path: string, state: TimelineModeState): HTMLButtonElement {
         const book = getActiveBook(this.plugin.settings);
         const unavailable = state.mode !== 'narrative' || state.runtime || state.shift || state.alt
             || this.config.getSort().length > 0 || getTimelineScope(this.plugin.settings) !== 'book'
@@ -2490,7 +2490,7 @@ export class TimetableView extends BasesView {
         if (unavailable) {
             handle.addClass('is-unavailable');
             handle.setAttr('aria-disabled', 'true');
-            return;
+            return handle;
         }
         this.panelEvents?.registerDomEvent(handle, 'dragstart', (event: DragEvent) => {
             if (!event.dataTransfer) return;
@@ -2504,6 +2504,7 @@ export class TimetableView extends BasesView {
                 el.removeClass('ert-timetable__drop-before', 'ert-timetable__drop-after');
             });
         });
+        return handle;
     }
 
     private attachSketchDrop(row: HTMLElement, path: string, state: TimelineModeState): void {
@@ -2785,7 +2786,17 @@ export class TimetableView extends BasesView {
         this.renderNumberCell(tr.createEl('td', { cls: 'ert-timetable__num' }).createDiv({ cls: 'ert-timetable__num-inner' }), item, cells.today);
         if (row.kind === 'sketch') {
             const wrap = tr.querySelector<HTMLElement>('.ert-timetable__chip-wrap');
-            if (wrap) { this.attachSketchDrag(tr, wrap, row.path, mode.state); this.renderSketchProblem(wrap, item); }
+            if (wrap) {
+                const handle = this.attachSketchDrag(tr, wrap, row.path, mode.state);
+                handle.addClass('ert-timetable__chip-drag');
+                const svg = wrap.querySelector<SVGSVGElement>('.ert-timetable__chip svg');
+                const width = 38 + Math.max(0, (row.prefix?.length ?? 0) - 3) * 7;
+                svg?.setAttribute('viewBox', `0 0 ${width} 22`);
+                svg?.setAttribute('width', String(width));
+                svg?.querySelector('rect')?.setAttribute('width', String(width - 2));
+                svg?.querySelector('text')?.setAttribute('x', String((width + 16) / 2));
+                this.renderSketchProblem(wrap, item);
+            }
         }
         if (row.kind === 'scene' || row.kind === 'sketch') this.attachSketchDrop(tr, row.path, mode.state);
         if (row.kind === 'scene') {

@@ -1174,15 +1174,20 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
         const resources = proStack.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.STACK}` });
         resources.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: t('ui.settingsTab.resourcesHelp') });
-        const resourceLinks = resources.createEl('ul');
+        const resourceLinks = resources.createDiv({ cls: 'ert-resource-links' });
         [
-            { label: t('ui.settingsTab.resourcesGettingStarted'), href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Getting-Started' },
-            { label: t('ui.settingsTab.resourcesWiki'), href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki' },
-            { label: t('ui.settingsTab.resourcesVideos'), href: 'https://www.youtube.com/@RadialTimeline' }
-        ].forEach(({ label, href }) => {
-            resourceLinks.createEl('li').createEl('a', {
-                text: label, href, attr: { target: '_blank', rel: 'noopener noreferrer' }
+            { label: t('ui.settingsTab.resourcesGettingStarted'), icon: 'compass', href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Getting-Started' },
+            { label: t('ui.settingsTab.resourcesWiki'), icon: 'book-open', href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki' },
+            { label: t('ui.settingsTab.resourcesVideos'), icon: 'circle-play', href: 'https://www.youtube.com/@RadialTimeline' }
+        ].forEach(({ label, icon, href }) => {
+            const link = resourceLinks.createEl('a', {
+                cls: 'ert-resource-link', href, attr: { target: '_blank', rel: 'noopener noreferrer' }
             });
+            const leadingIcon = link.createSpan({ cls: 'ert-resource-link__icon', attr: { 'aria-hidden': 'true' } });
+            setIcon(leadingIcon, icon);
+            link.createSpan({ cls: 'ert-resource-link__label', text: label });
+            const externalIcon = link.createSpan({ cls: 'ert-resource-link__external', attr: { 'aria-hidden': 'true' } });
+            setIcon(externalIcon, 'external-link');
         });
 
         this.applyElementBlockLayout(containerEl);

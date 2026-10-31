@@ -488,6 +488,67 @@
   color: var(--text-normal);
 }
 
+/* Resource links use the same quiet card treatment as the demo gallery. */
+.ert-ui.ert-scope--settings .ert-resource-links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ert-gap-sm);
+}
+
+.ert-ui.ert-scope--settings .ert-resource-link {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-xs);
+  min-width: 0;
+  padding: var(--ert-pad-sm);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--background-secondary) 60%, transparent);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  text-decoration: none;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.ert-ui.ert-scope--settings .ert-resource-link:hover {
+  border-color: var(--ert-pro-accent-color);
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.ert-ui.ert-scope--settings .ert-resource-link:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.ert-ui.ert-scope--settings :is(.ert-resource-link__icon, .ert-resource-link__external) {
+  display: flex;
+  flex: none;
+  color: var(--ert-pro-accent-color);
+}
+
+.ert-ui.ert-scope--settings .ert-resource-link__icon svg {
+  width: 20px;
+  height: 20px;
+}
+.ert-ui.ert-scope--settings .ert-resource-link__external {
+  margin-left: auto;
+  color: var(--text-muted);
+}
+.ert-ui.ert-scope--settings .ert-resource-link__external svg {
+  width: 14px;
+  height: 14px;
+}
+.ert-ui.ert-scope--settings .ert-resource-link__label {
+  font-weight: 600;
+}
+
+@container ert-settings (max-width: 520px) {
+  .ert-ui.ert-scope--settings .ert-resource-links {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Demo vault cards share the artwork used on the resource pages. */
 .ert-ui.ert-scope--settings .ert-bonus-section {
   width: 100%;

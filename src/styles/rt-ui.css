@@ -491,16 +491,16 @@
 /* Resource links use the same quiet card treatment as the demo gallery. */
 .ert-ui.ert-scope--settings .ert-resource-links {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.8fr) minmax(0, 1.15fr);
   gap: var(--ert-gap-sm);
 }
 
 .ert-ui.ert-scope--settings .ert-resource-link {
   display: flex;
   align-items: center;
-  gap: var(--ert-gap-xs);
+  gap: 6px;
   min-width: 0;
-  padding: var(--ert-pad-sm);
+  padding: 10px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 10px;
   background: color-mix(in srgb, var(--background-secondary) 60%, transparent);

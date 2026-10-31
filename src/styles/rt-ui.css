@@ -638,6 +638,23 @@
   color: var(--text-muted);
 }
 
+.ert-ui.ert-scope--settings .ert-bonus-card__edition-status:empty {
+  display: none;
+}
+
+.ert-ui.ert-scope--settings .ert-bonus-edition {
+  padding: var(--ert-gap-xs) var(--ert-gap-sm);
+  border-left: 2px solid var(--ert-pro-accent-color);
+  background: var(--background-primary-alt);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+}
+
+.ert-ui.ert-scope--settings .ert-bonus-edition a {
+  color: var(--text-accent);
+}
+
 .ert-ui.ert-scope--settings .ert-bonus-card__description {
   flex: 1 1 auto;
   margin: var(--ert-gap-xs) 0 0;

@@ -13,7 +13,7 @@ import { WELCOME_AUTHOR_IMAGE } from '../branding/welcomeAuthorImage';
 import { hasInquirySessionSidecarInVault, readInquirySidecarVaultIdentity } from '../inquiry/InquiryArtifactStore';
 import { mergeSampleInquirySources } from '../inquiry/sampleInquirySources';
 import { DemoLibraryModal } from '../modals/DemoLibraryModal';
-import { findNewerDemoEdition, renderNewerEditionLine } from '../demoVaults/demoEdition';
+import { getDemoEditionStatus, renderDemoEditionStatus } from '../demoVaults/demoEdition';
 import { BONUS_VAULTS } from '../settings/bonusVaults';
 import { markBookManagerAutoloadHighlight } from '../settings/bookManagerAutoloadHighlight';
 import {
@@ -445,7 +445,7 @@ const hydrateSampleVaultCard = async (
     const name = displayNameToBookTitle(config?.displayName, config?.bookFolder).toLowerCase() === DEFAULT_BOOK_TITLE.toLowerCase()
         ? t('ui.welcomeScreen.sampleVaultName')
         : displayNameToBookTitle(config?.displayName, config?.bookFolder);
-    const newerEdition = await findNewerDemoEdition(plugin.app, BONUS_VAULTS, config?.bookFolder);
+    const editionStatus = await getDemoEditionStatus(plugin.app, BONUS_VAULTS, config?.bookFolder);
 
     refs.root.removeClass('rt-welcome-card-pending');
     refs.root.addClass('rt-welcome-card-detected');
@@ -456,8 +456,8 @@ const hydrateSampleVaultCard = async (
     refs.desc.setText(config?.books && config.books.length > 1
         ? t('ui.welcomeScreen.exploreAllBooks', { count: config.books.length, name })
         : WELCOME_COPY.cards.sampleOpen.desc(name));
-    if (newerEdition) {
-        renderNewerEditionLine(refs.desc, plugin, newerEdition, { line: 'rt-welcome-card-edition', link: 'rt-welcome-card-secondary' });
+    if (editionStatus) {
+        renderDemoEditionStatus(refs.desc, plugin, editionStatus, { line: 'rt-welcome-card-edition', link: 'rt-welcome-card-secondary' });
     }
     refs.cta.setText(WELCOME_COPY.cards.sampleOpen.cta);
     refs.setActivate(() => { void openSampleVault(plugin, config, refreshTimeline); });

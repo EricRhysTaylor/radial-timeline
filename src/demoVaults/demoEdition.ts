@@ -27,7 +27,7 @@ const editionOrder = (edition: string): [string, number] => {
 };
 
 /** The edition date in a stamp file, or null when the file is not a valid stamp. */
-export function parseDemoEditionStamp(raw: string): string | null {
+export function parseDemoEditionStamp(raw: string, expectedSampleId?: string): string | null {
     let parsed: unknown;
     try {
         parsed = JSON.parse(raw);
@@ -35,14 +35,20 @@ export function parseDemoEditionStamp(raw: string): string | null {
         return null;
     }
     if (!parsed || typeof parsed !== 'object') return null;
-    const stamp = parsed as { schemaVersion?: unknown; edition?: unknown };
-    return stamp.schemaVersion === DEMO_EDITION_SCHEMA_VERSION && isDemoEdition(stamp.edition) ? stamp.edition : null;
+    const stamp = parsed as { schemaVersion?: unknown; edition?: unknown; sampleId?: unknown };
+    return stamp.schemaVersion === DEMO_EDITION_SCHEMA_VERSION && isDemoEdition(stamp.edition)
+        && (!expectedSampleId || stamp.sampleId === expectedSampleId) ? stamp.edition : null;
 }
 
 /** Reads the edition stamp of a packaged demo opened as its own vault. */
-export async function readDemoEditionStamp(app: App): Promise<string | null> {
+export async function readDemoEditionStamp(app: App, expectedSampleId?: string): Promise<string | null> {
     const file = app.vault.getFileByPath(DEMO_EDITION_PATH);
-    return file ? parseDemoEditionStamp(await app.vault.cachedRead(file)) : null;
+    if (!file) return null;
+    try {
+        return parseDemoEditionStamp(await app.vault.cachedRead(file), expectedSampleId);
+    } catch {
+        return null;
+    }
 }
 
 /**
@@ -69,46 +75,53 @@ export type PublishedDemo = BonusVaultDef & { archive: DemoArchive };
 
 const isPublished = (demo: BonusVaultDef | undefined): demo is PublishedDemo => !!demo?.archive;
 
-/**
- * The catalog demo to offer when this vault holds an older edition of it. The
- * demo is matched by book folder; the vault's stamp is compared with the
- * catalog edition bundled in this plugin release, so nothing is requested.
- */
-export async function findNewerDemoEdition(
+export interface DemoEditionStatus {
+    demo: PublishedDemo;
+    available: string;
+    installed: string | null;
+    state: 'unknown' | 'update' | 'current' | 'ahead';
+}
+
+/** Compare only a recognized standalone demo with the catalog bundled in this plugin. */
+export async function getDemoEditionStatus(
     app: App,
     demos: readonly BonusVaultDef[],
     bookFolder: string | undefined
-): Promise<PublishedDemo | null> {
+): Promise<DemoEditionStatus | null> {
     const demo = findDemoByBookFolder(demos, bookFolder);
-    if (!isPublished(demo) || !isNewerDemoEdition(demo.archive.edition, await readDemoEditionStamp(app))) return null;
-    return demo;
+    if (!isPublished(demo) || !demo.archive.edition) return null;
+    const available = demo.archive.edition;
+    const installed = await readDemoEditionStamp(app, demo.id);
+    const state = installed === null ? 'unknown'
+        : isNewerDemoEdition(available, installed) ? 'update'
+        : isNewerDemoEdition(installed, available) ? 'ahead' : 'current';
+    return { demo, available, installed, state };
 }
 
-/**
- * One quiet line offering the newer edition through the demo's counted
- * download. It arrives as its own vault, so the reader's files stay as they
- * are. A click on the link stays with the link, for lines inside a clickable card.
- */
-export function renderNewerEditionLine(
+/** An update opens as a separate vault and does not modify the current copy. */
+export function renderDemoEditionStatus(
     parent: HTMLElement,
     plugin: RadialTimelinePlugin,
-    demo: PublishedDemo,
+    status: DemoEditionStatus,
     cls: { line: string; link?: string }
 ): HTMLElement {
     const line = parent.createDiv({ cls: cls.line });
-    // [Bracketed] text is the link, so each translation keeps one sentence.
-    t('ui.bonusVaults.newerEdition', { title: demo.title }).split(/\[([^\]]+)\]/).forEach((part, index) => {
-        if (index % 2 === 0) {
-            if (part) line.appendText(part);
-            return;
-        }
+    const installed = status.installed ?? t('ui.bonusVaults.editionUnknown');
+    if (status.state === 'current') {
+        line.setText(t('ui.bonusVaults.editionCurrent', { edition: installed }));
+    } else if (status.state === 'ahead') {
+        line.setText(t('ui.bonusVaults.editionAhead', { edition: installed, available: status.available }));
+    } else {
+        line.createDiv({ text: t(status.state === 'update' ? 'ui.bonusVaults.editionUpdateTitle' : 'ui.bonusVaults.editionUnknownTitle') });
+        line.createDiv({ text: t('ui.bonusVaults.editionComparison', { edition: installed, available: status.available }) });
         const link = line.createEl('a', {
             cls: cls.link,
-            text: part,
-            href: demo.archive.downloadUrl,
+            text: t(status.state === 'update' ? 'ui.bonusVaults.editionDownload' : 'ui.bonusVaults.editionDownloadAvailable'),
+            href: status.demo.archive.downloadUrl,
             attr: { target: '_blank', rel: 'noopener noreferrer' }
         });
-        plugin.registerDomEvent(link, 'click', (evt) => evt.stopPropagation());
-    });
+        plugin.registerDomEvent(link, 'click', evt => evt.stopPropagation());
+        line.createDiv({ text: t('ui.bonusVaults.editionSeparateVault') });
+    }
     return line;
 }

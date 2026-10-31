@@ -4,25 +4,15 @@ import { strFromU8, unzipSync } from 'fflate';
 import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { BONUS_VAULTS, type BonusVaultDef } from '../settings/bonusVaults';
-import { en } from '../i18n/locales/en';
-import { de } from '../i18n/locales/de';
-import { es } from '../i18n/locales/es';
-import { fr } from '../i18n/locales/fr';
-import { ja } from '../i18n/locales/ja';
-import { ko } from '../i18n/locales/ko';
-import { th } from '../i18n/locales/th';
-import { vi as viLocale } from '../i18n/locales/vi';
-import { zh } from '../i18n/locales/zh';
 import {
     DEMO_EDITION_PATH,
     findDemoByBookFolder,
-    findNewerDemoEdition,
     isDemoEdition,
     isNewerDemoEdition,
     parseDemoEditionStamp,
     readDemoEditionStamp,
-    renderNewerEditionLine,
-    type PublishedDemo
+    getDemoEditionStatus,
+    renderDemoEditionStatus
 } from './demoEdition';
 
 const stamp = (edition: unknown, schemaVersion: unknown = 1) =>
@@ -120,46 +110,34 @@ describe('newer edition offer', () => {
         { id: 'b', title: 'B', author: 'Y', countLabel: '', status: 'available', books: [{ title: 'B', sourceFolder: 'B' }], archive }
     ];
 
-    it('offers the catalog demo to its vault without a stamp or with an older one', async () => {
-        expect((await findNewerDemoEdition(vaultWith(new Map()), demos, 'A'))?.id).toBe('a');
-        expect((await findNewerDemoEdition(vaultWith(new Map([[DEMO_EDITION_PATH, stamp('2026-10-03')]])), demos, 'A'))?.id).toBe('a');
+    it('distinguishes unknown, older, current and newer installed editions', async () => {
+        const edition = (value: string, sampleId = 'a') => JSON.stringify({ schemaVersion: 1, sampleId, edition: value });
+        const status = (value?: string) => getDemoEditionStatus(vaultWith(new Map(value ? [[DEMO_EDITION_PATH, value]] : [])), demos, 'A');
+        expect((await status())?.state).toBe('unknown');
+        expect((await status(edition('2026-10-29')))?.state).toBe('update');
+        expect((await status(edition('2026-10-30')))?.state).toBe('current');
+        expect((await status(edition('2026-10-30.2')))?.state).toBe('ahead');
+        expect((await status(edition('2026-10-30', 'b')))?.state).toBe('unknown');
+        expect(await getDemoEditionStatus(vaultWith(new Map()), demos, 'Demo Projects/A/A')).toBeNull();
     });
 
-    it('offers nothing to a current vault, an unknown book, or an archive without an edition', async () => {
-        expect(await findNewerDemoEdition(vaultWith(new Map([[DEMO_EDITION_PATH, stamp('2026-10-30')]])), demos, 'A')).toBeNull();
-        expect(await findNewerDemoEdition(vaultWith(new Map()), demos, 'My Novel')).toBeNull();
-        expect(await findNewerDemoEdition(vaultWith(new Map()), demos, 'B')).toBeNull();
-    });
-
-    it('renders one line whose bracketed phrase links to the counted download', () => {
-        const parts: Array<{ text?: string; link?: { cls?: string; text: string; href: string; attr?: Record<string, string> } }> = [];
+    it('offers a separate download without touching the installed edition', async () => {
+        const demo = demos[0];
+        const status = await getDemoEditionStatus(vaultWith(new Map()), demos, 'A');
+        const lines: string[] = [];
+        const links: Array<{ href: string; text: string }> = [];
         const line = {
-            appendText: (text: string) => parts.push({ text }),
-            createEl: (_tag: string, info: { cls?: string; text: string; href: string; attr?: Record<string, string> }) => { parts.push({ link: info }); return info; }
+            createDiv: ({ text }: { text: string }) => { lines.push(text); },
+            createEl: (_tag: string, info: { href: string; text: string }) => { links.push(info); return {}; }
         };
-        const parent = { createDiv: vi.fn(() => line) };
-        const handlers: Array<(evt: { stopPropagation: () => void }) => void> = [];
-        const plugin = { registerDomEvent: (_el: unknown, type: string, handler: (evt: { stopPropagation: () => void }) => void) => { if (type === 'click') handlers.push(handler); } };
-        const demo = demos[0] as PublishedDemo;
-        renderNewerEditionLine(parent as unknown as HTMLElement, plugin as unknown as RadialTimelinePlugin, demo, { line: 'ert-test-note', link: 'ert-test-link' }); // SAFE: DOM and plugin stubs for a node test
-        expect(parent.createDiv).toHaveBeenCalledWith({ cls: 'ert-test-note' });
-        expect(parts).toEqual([
-            { text: 'A new edition of A is ready. ' },
-            { link: { cls: 'ert-test-link', text: 'Download it', href: 'https://example.com/go/a', attr: { target: '_blank', rel: 'noopener noreferrer' } } },
-            { text: ' to open as its own vault beside this one.' }
-        ]);
-        const stopPropagation = vi.fn();
-        handlers[0]({ stopPropagation });
-        expect(stopPropagation).toHaveBeenCalled();
+        const parent = { createDiv: () => line };
+        const plugin = { registerDomEvent: vi.fn() };
+        renderDemoEditionStatus(parent as unknown as HTMLElement, plugin as unknown as RadialTimelinePlugin, status!, { line: 'test' }); // SAFE: minimal DOM and plugin stubs
+        expect(lines).toContain('Your edition: Unknown · Available: 2026-10-30');
+        expect(lines).toContain('Opens as a separate vault; your current copy stays intact.');
+        expect(links[0]).toMatchObject({ text: 'Download available edition ↗', href: demo.archive!.downloadUrl });
     });
 
-    it('keeps exactly one link and the title in every language', () => {
-        for (const locale of [en, de, es, fr, ja, ko, th, viLocale, zh]) {
-            const text = locale.ui.bonusVaults.newerEdition;
-            expect(text.match(/\[[^\]]+\]/g)).toHaveLength(1);
-            expect(text).toContain('{{title}}');
-        }
-    });
 });
 
 describe('catalog editions', () => {

@@ -3,7 +3,7 @@ import { setIcon } from 'obsidian';
 import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { DemoLibraryModal } from '../../modals/DemoLibraryModal';
-import { findNewerDemoEdition, renderNewerEditionLine } from '../../demoVaults/demoEdition';
+import { getDemoEditionStatus, renderDemoEditionStatus } from '../../demoVaults/demoEdition';
 import { readInquirySidecarVaultIdentity } from '../../inquiry/InquiryArtifactStore';
 import { ERT_CLASSES } from '../../ui/classes';
 import { t } from '../../i18n';
@@ -38,32 +38,20 @@ export function renderBonusVaultsSection({
         cls: ERT_CLASSES.SECTION_DESC,
         text: t('ui.bonusVaultsSection.description')
     });
-    void appendNewerEditionNote(header, plugin);
 
     // ── Card grid ────────────────────────────────────────────
     const grid = section.createDiv({ cls: 'ert-bonus-grid' });
-    BONUS_VAULTS.forEach((vault) => renderCard(grid, plugin, vault));
+    const cards = new Map(BONUS_VAULTS.map(vault => [vault.id, renderCard(grid, plugin, vault)]));
+    void appendStandaloneEditionStatus(cards, plugin);
 
     return section;
-}
-
-/**
- * A demo opened as its own vault keeps its book identity in the Inquiry
- * sidecar, before and after the reader sets up the book. When the catalog
- * offers a newer edition of that demo, say so under the heading.
- */
-async function appendNewerEditionNote(header: HTMLElement, plugin: RadialTimelinePlugin): Promise<void> {
-    const bookFolder = (await readInquirySidecarVaultIdentity(plugin.app))?.bookFolder;
-    if (!bookFolder || !plugin.app.vault.getFolderByPath(bookFolder)) return;
-    const newerEdition = await findNewerDemoEdition(plugin.app, BONUS_VAULTS, bookFolder);
-    if (newerEdition) renderNewerEditionLine(header, plugin, newerEdition, { line: ERT_CLASSES.SECTION_DESC });
 }
 
 function renderCard(
     grid: HTMLElement,
     plugin: RadialTimelinePlugin,
     vault: BonusVaultDef
-): void {
+): HTMLElement {
     const isComingSoon = vault.status === 'coming-soon';
 
     const card = grid.createDiv({ cls: 'ert-bonus-card' });
@@ -87,6 +75,10 @@ function renderCard(
         cls: 'ert-bonus-card__meta',
         text: isComingSoon ? vault.countLabel : `${vault.author} · ${vault.countLabel}`
     });
+    if (vault.archive?.edition) {
+        card.createDiv({ cls: 'ert-bonus-card__meta', text: t('ui.bonusVaults.editionAvailable', { edition: vault.archive.edition }) });
+    }
+    const editionStatus = card.createDiv({ cls: 'ert-bonus-card__edition-status' });
     if (vault.description) {
         card.createEl('p', { cls: 'ert-bonus-card__description', text: vault.description });
     }
@@ -129,4 +121,13 @@ function renderCard(
             }), t('ui.demoLibraryModal.downloadAria', { title: vault.title }));
         }
     }
+    return editionStatus;
+}
+
+async function appendStandaloneEditionStatus(cards: Map<string, HTMLElement>, plugin: RadialTimelinePlugin): Promise<void> {
+    const bookFolder = (await readInquirySidecarVaultIdentity(plugin.app))?.bookFolder;
+    if (!bookFolder || !plugin.app.vault.getFolderByPath(bookFolder)) return;
+    const status = await getDemoEditionStatus(plugin.app, BONUS_VAULTS, bookFolder);
+    const target = status && cards.get(status.demo.id);
+    if (status && target) renderDemoEditionStatus(target, plugin, status, { line: 'ert-bonus-edition' });
 }

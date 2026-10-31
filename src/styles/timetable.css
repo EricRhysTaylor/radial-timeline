@@ -43,10 +43,16 @@
   border-collapse: collapse;
   table-layout: fixed;
   width: var(--ert-timetable-width, 100%);
+  min-width: 100%;
 }
 
 .ert-timetable__table col {
   width: var(--ert-timetable-col-width, auto);
+}
+
+/* Let the final column absorb spare pane width without stretching the number chip. */
+.ert-timetable__table col:last-child {
+  width: auto;
 }
 
 .ert-timetable__table th,

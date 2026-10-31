@@ -2297,7 +2297,7 @@ export class TimetableView extends BasesView {
                     dateLine.createSpan({ text: duration ? `${date} · ${duration}` : date });
                 }
                 const open = panel.createEl('button', { cls: 'ert-timetable-panels__open clickable-icon', attr: { type: 'button' } });
-                setIcon(open, 'external-link');
+                setIcon(open, 'file-text');
                 setAccessibleLabel(open, t('ui.timetable.panelOpen'));
                 setTooltip(open, t('ui.timetable.panelOpen'));
                 this.panelEvents?.registerDomEvent(open, 'click', (evt: MouseEvent) => { evt.stopPropagation(); void openFromTimetable(this.plugin.app, entry.file, evt, this.rootEl); });

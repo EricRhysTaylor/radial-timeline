@@ -795,7 +795,8 @@ export class TimetableView extends BasesView {
         }
         const box = row.getBoundingClientRect();
         const view = scroller.getBoundingClientRect();
-        const header = row.closest('table')?.querySelector('thead')?.getBoundingClientRect().height ?? 0;
+        const header = (row.closest('table')?.querySelector('thead')?.getBoundingClientRect().height ?? 0)
+            + (this.rootEl.querySelector<HTMLElement>('.ert-timetable-panels__toolbar')?.getBoundingClientRect().height ?? 0);
         if (box.top >= view.top + header && box.bottom <= view.bottom) return;
         row.scrollIntoView({ block: 'center' });
     }
@@ -2156,6 +2157,11 @@ export class TimetableView extends BasesView {
             });
         }
         if (this.config.get('panels') === true) this.renderCorner(toolbar, state);
+        const updateHeight = () => this.rootEl.setCssProps({ '--ert-timetable-switch-height': `${toolbar.offsetHeight}px` });
+        updateHeight();
+        const observer = new ResizeObserver(updateHeight);
+        observer.observe(toolbar);
+        this.panelEvents?.register(() => observer.disconnect());
     }
 
     private renderPanels(groups: TableGroup[], mode: ModeContext, allItems: TableItem[]): void {

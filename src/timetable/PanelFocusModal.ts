@@ -17,15 +17,15 @@ export class PanelFocusModal extends ErtModal {
         const preview = frame.createDiv({ cls: 'ert-panel-focus-image' });
         const image = preview.createEl('img', { attr: { src: this.url, alt: '', draggable: 'false' } });
         const marker = preview.createSpan({ cls: 'ert-panel-focus-marker', attr: { 'aria-hidden': 'true' } });
-        const controls = this.contentEl.createDiv({ cls: 'ert-panel-focus-controls' });
-        const slider = (label: string): HTMLInputElement => {
-            const wrapper = controls.createEl('label', { text: label });
+        const slider = (label: string, axis: 'horizontal' | 'vertical'): HTMLInputElement => {
+            const wrapper = frame.createEl('label', { cls: `ert-panel-focus-${axis}` });
+            wrapper.createSpan({ text: label });
             const input = wrapper.createEl('input', { type: 'range', attr: { min: '0', max: '100', step: '1' } });
             setAccessibleLabel(input, label);
             return input;
         };
-        const horizontal = slider(t('ui.timetable.panelFocusHorizontal'));
-        const vertical = slider(t('ui.timetable.panelFocusVertical'));
+        const vertical = slider(t('ui.timetable.panelFocusVertical'), 'vertical');
+        const horizontal = slider(t('ui.timetable.panelFocusHorizontal'), 'horizontal');
         const refresh = () => {
             marker.setCssProps({ '--ert-focus-x': `${this.point.x * 100}%`, '--ert-focus-y': `${this.point.y * 100}%` });
             horizontal.value = String(Math.round(this.point.x * 100)); vertical.value = String(Math.round(this.point.y * 100));
@@ -39,6 +39,7 @@ export class PanelFocusModal extends ErtModal {
         vertical.addEventListener('input', () => { this.point.y = Number(vertical.value) / 100; refresh(); });
         refresh();
         const actions = this.mountActions();
+        actions.addClass('ert-panel-focus-actions');
         actions.createEl('button', { text: t('ui.timetable.panelFocusReset') }).addEventListener('click', () => { this.point = { x: 0.5, y: 0.5 }; refresh(); });
         actions.createEl('button', { text: t('common.cancel') }).addEventListener('click', () => this.close());
         actions.createEl('button', { text: t('common.save'), cls: 'ert-panel-focus-save mod-cta' }).addEventListener('click', () => { this.save(this.point); this.close(); });

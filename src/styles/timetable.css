@@ -1413,9 +1413,15 @@
 .ert-timetable .ert-timetable-panels__focus { position: absolute; z-index: 2; top: var(--size-4-3); right: 44px; width: 28px; height: 28px; padding: 5px; color: var(--text-muted); background: var(--background-secondary); box-shadow: none; }
 .ert-timetable .ert-timetable-panels__focus:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
 .ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__focus { top: 8px; right: 44px; color: white; background: rgb(0 0 0 / 55%); }
-.ert-panel-focus-frame { display: flex; justify-content: center; min-height: 100px; }
-.ert-panel-focus-image { position: relative; display: inline-flex; max-width: 100%; }
+.ert-panel-focus-frame { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; gap: var(--size-4-3); min-height: 100px; }
+.ert-panel-focus-image { position: relative; display: inline-flex; max-width: 100%; justify-self: center; }
 .ert-panel-focus-image img { display: block; max-width: 100%; max-height: 45vh; width: auto; height: auto; cursor: crosshair; }
 .ert-panel-focus-marker { position: absolute; left: var(--ert-focus-x, 50%); top: var(--ert-focus-y, 50%); width: 18px; height: 18px; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 2px black; transform: translate(-50%, -50%); pointer-events: none; }
-.ert-panel-focus-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-4-4); }
-.ert-panel-focus-controls label { display: flex; flex-direction: column; gap: var(--size-4-1); }
+.ert-panel-focus-horizontal { grid-column: 1; display: flex; flex-direction: column; align-items: center; gap: var(--size-4-1); }
+.ert-panel-focus-horizontal input { width: min(240px, 100%); }
+.ert-panel-focus-vertical { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: var(--size-4-1); }
+.ert-panel-focus-vertical span { writing-mode: vertical-rl; transform: rotate(180deg); }
+.ert-panel-focus-vertical input { writing-mode: vertical-lr; direction: ltr; width: 24px; height: min(180px, 30vh); padding: 0; background: transparent; box-shadow: none; }
+.ert-panel-focus-actions { margin-top: var(--size-4-6); }
+.ert-panel-focus-vertical input::-webkit-slider-runnable-track { width: 4px; height: 100%; border-radius: 999px; background: var(--background-modifier-border-hover); }
+.ert-panel-focus-vertical input::-webkit-slider-thumb { width: 18px; height: 18px; border-radius: 50%; }

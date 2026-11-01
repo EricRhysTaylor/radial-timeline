@@ -1422,6 +1422,8 @@
 .ert-panel-focus-vertical { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: var(--size-4-1); }
 .ert-panel-focus-vertical span { writing-mode: vertical-rl; transform: rotate(180deg); }
 .ert-panel-focus-vertical input { writing-mode: vertical-lr; direction: ltr; width: 24px; height: min(180px, 30vh); padding: 0; background: transparent; box-shadow: none; }
-.ert-panel-focus-actions { margin-top: var(--size-4-6); }
+.ert-ui.ert-scope--modal .ert-modal-actions.ert-panel-focus-actions { margin-top: var(--size-4-8); }
 .ert-panel-focus-vertical input::-webkit-slider-runnable-track { width: 4px; height: 100%; border-radius: 999px; background: var(--background-modifier-border-hover); }
-.ert-panel-focus-vertical input::-webkit-slider-thumb { width: 18px; height: 30px; margin-left: -7px; border-radius: 999px; }
+.ert-panel-focus-vertical input[type="range"]::-webkit-slider-thumb,
+.ert-panel-focus-vertical input[type="range"]:active::-webkit-slider-thumb,
+.ert-panel-focus-vertical input[type="range"]:hover::-webkit-slider-thumb { width: 18px; height: 30px; margin-left: -7px; border-radius: 999px; }

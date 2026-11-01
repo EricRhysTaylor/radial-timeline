@@ -105,6 +105,8 @@ import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { synopsisKey, updateSynopsis } from './panelSynopsis';
 import { leadPortrait } from './panelPortrait';
 import { panelPlaceImage } from './panelPlaceImage';
+import { coverPosition, validPanelFocus } from './panelFocus';
+import { PanelFocusModal } from './PanelFocusModal';
 import { timetableNarrativeOrder } from './timetablePlacement';
 import { orderSketches, planSketchActDrop, planSketchDrop, sketchAnchor, SKETCH_AFTER_SCENE, SKETCH_ORDER, type PlacementItem, type PlacementProblem, type SketchDropPlan } from './sketchPlacement';
 import { readSceneId } from '../utils/sceneIds';
@@ -2300,6 +2302,13 @@ export class TimetableView extends BasesView {
             const imageSetting = this.config.get('panelImage');
             imageChoice.value = imageSetting === 'place' || imageSetting === 'none' ? imageSetting : 'character';
             this.panelEvents?.registerDomEvent(imageChoice, 'change', () => { this.config.set('panelImage', imageChoice.value); this.render(); });
+            const fitLabel = toolbar.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelFit') });
+            const fitChoice = fitLabel.createEl('select');
+            setAccessibleLabel(fitChoice, t('ui.timetable.panelFit'));
+            fitChoice.createEl('option', { value: 'fill', text: t('ui.timetable.panelFitFill') });
+            fitChoice.createEl('option', { value: 'fit', text: t('ui.timetable.panelFitFit') });
+            fitChoice.value = this.config.get('panelFit') === 'fit' ? 'fit' : 'fill';
+            this.panelEvents?.registerDomEvent(fitChoice, 'change', () => { this.config.set('panelFit', fitChoice.value); this.render(); });
             const sizeLabel = toolbar.createEl('label', { cls: 'ert-timetable-panels__size', text: t('ui.timetable.panelSize') });
             const size = sizeLabel.createEl('select');
             setAccessibleLabel(size, t('ui.timetable.panelSize'));
@@ -2597,6 +2606,11 @@ export class TimetableView extends BasesView {
                 const imageMode = outline ? 'character' : this.config.get('panelImage');
                 const location = imageMode === 'place' && row.kind === 'scene' ? panelPlaceImage(this.plugin.app, entry.file, frontmatter, authorKeyFor('Place', this.plugin.settings)) : null;
                 const panelImage = imageMode === 'place' ? location?.url ?? null : imageMode === 'none' ? null : portrait;
+                const imagePath = imageMode === 'place' ? location?.path : imageMode === 'none' ? undefined : people[0]?.imagePath;
+                const imageFit = !outline && this.config.get('panelFit') === 'fit' ? 'fit' : 'fill';
+                const storedFocus = this.config.get('panelFocus');
+                const focusMap = storedFocus && typeof storedFocus === 'object' && !Array.isArray(storedFocus) ? storedFocus as Record<string, unknown> : {};
+                const focus = validPanelFocus(imagePath ? focusMap[imagePath] : null);
                 if (row.kind === 'scene') {
                     const fill = sceneNumberFill(frontmatter, this.plugin.settings, this.patternPrefix);
                     const stage = sceneVitals(frontmatter, this.plugin.settings, new Date()).stage;
@@ -2614,6 +2628,19 @@ export class TimetableView extends BasesView {
                     setIcon(placeholder, imageMode === 'place' ? 'map-pin' : imageMode === 'none' ? 'file-text' : 'user-round');
                     if (panelImage) {
                         const image = cover.createEl('img', { cls: 'ert-timetable-panels__cover-image', attr: { alt: '', src: panelImage, draggable: 'false' } });
+                        image.toggleClass('is-fit', imageFit === 'fit');
+                        if (imageFit === 'fill') {
+                            const position = () => {
+                                const bounds = image.getBoundingClientRect();
+                                const point = coverPosition(bounds.width, bounds.height, image.naturalWidth, image.naturalHeight, focus);
+                                image.setCssProps({ '--ert-image-x': `${point.x}px`, '--ert-image-y': `${point.y}px` });
+                            };
+                            this.panelEvents?.registerDomEvent(image, 'load', position);
+                            const resize = new ResizeObserver(position);
+                            resize.observe(image);
+                            this.panelEvents?.register(() => resize.disconnect());
+                            if (image.complete) position();
+                        }
                         if (location) setTooltip(image, location.source === 'scene' ? t('ui.timetable.panelImageSceneSource', { name: location.name }) : t('ui.timetable.panelImagePlaceSource', { name: location.name }));
                         this.panelEvents?.registerDomEvent(image, 'error', () => cover.addClass('is-missing'));
                     }
@@ -2644,6 +2671,19 @@ export class TimetableView extends BasesView {
                     const dateLine = heading.createDiv({ cls: 'ert-timetable-panels__date' });
                     setIcon(dateLine.createSpan({ cls: 'ert-timetable-panels__date-icon' }), 'calendar-days');
                     dateLine.createSpan({ text: duration ? `${date} · ${duration}` : date });
+                }
+                if (!outline && row.kind === 'scene' && panelImage && imagePath && imageFit === 'fill') {
+                    const focusButton = panel.createEl('button', { cls: 'ert-timetable-panels__focus clickable-icon', attr: { type: 'button' } });
+                    setIcon(focusButton, 'focus');
+                    setAccessibleLabel(focusButton, t('ui.timetable.panelFocusTitle'));
+                    setTooltip(focusButton, t('ui.timetable.panelFocusTitle'));
+                    this.panelEvents?.registerDomEvent(focusButton, 'click', evt => {
+                        evt.stopPropagation();
+                        new PanelFocusModal(this.plugin.app, panelImage, focus, point => {
+                            this.config.set('panelFocus', { ...focusMap, [imagePath]: point });
+                            this.render();
+                        }).open();
+                    });
                 }
                 const open = panel.createEl('button', { cls: 'ert-timetable-panels__open clickable-icon', attr: { type: 'button' } });
                 setIcon(open, 'file-text');
@@ -2711,24 +2751,26 @@ export class TimetableView extends BasesView {
     }
 
     /** Character notes may optionally name a vault image in their Image property. */
-    private characterDetails(scenePath: string, names: string[]): Array<{ name: string; image: string | null; file: TFile | null }> {
+    private characterDetails(scenePath: string, names: string[]): Array<{ name: string; image: string | null; imagePath: string | null; file: TFile | null }> {
         return names.map(raw => {
             const link = raw.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '');
             const [path, alias] = link.split('|');
             const character = this.plugin.app.metadataCache.getFirstLinkpathDest(path.trim(), scenePath);
             let imageUrl: string | null = null;
+            let imagePath: string | null = null;
             if (character) {
                 const fm = this.plugin.app.metadataCache.getFileCache(character)?.frontmatter;
                 const imageValue = frontmatterKey(fm, 'Image');
                 if (typeof imageValue === 'string') {
-                    const imagePath = imageValue.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
-                    const image = this.plugin.app.metadataCache.getFirstLinkpathDest(imagePath, character.path);
+                    const imageLinkPath = imageValue.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
+                    const image = this.plugin.app.metadataCache.getFirstLinkpathDest(imageLinkPath, character.path);
                     if (image && /^(png|jpe?g|gif|webp|avif)$/i.test(image.extension)) {
                         imageUrl = this.plugin.app.vault.getResourcePath(image);
+                        imagePath = image.path;
                     }
                 }
             }
-            return { name: (alias ?? path).trim(), image: imageUrl, file: character };
+            return { name: (alias ?? path).trim(), image: imageUrl, imagePath, file: character };
         });
     }
 

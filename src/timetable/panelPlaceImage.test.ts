@@ -16,10 +16,10 @@ const app = {
 
 describe('panel place image', () => {
     it('uses the scene image instead of the place default', () => {
-        expect(panelPlaceImage(app, scene, { Place: ['[[Tourney]]'], 'Place image': '[[Final.webp]]' }, 'Place')).toEqual({ url: override.path, source: 'scene', name: override.name });
+        expect(panelPlaceImage(app, scene, { Place: ['[[Tourney]]'], 'Place image': '[[Final.webp]]' }, 'Place')).toEqual({ url: override.path, path: override.path, source: 'scene', name: override.name });
     });
     it('uses the first place default when the override is missing or broken', () => {
-        expect(panelPlaceImage(app, scene, { Place: ['[[Tourney]]'], 'Place image': '[[missing.png]]' }, 'Place')).toEqual({ url: fallback.path, source: 'place', name: 'Tourney' });
+        expect(panelPlaceImage(app, scene, { Place: ['[[Tourney]]'], 'Place image': '[[missing.png]]' }, 'Place')).toEqual({ url: fallback.path, path: fallback.path, source: 'place', name: 'Tourney' });
     });
     it('does not substitute another place if the first is missing', () => {
         expect(panelPlaceImage(app, scene, { Place: ['[[Missing]]', '[[Tourney]]'] }, 'Place')).toBeNull();

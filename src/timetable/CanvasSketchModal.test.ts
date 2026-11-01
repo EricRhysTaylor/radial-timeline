@@ -109,4 +109,59 @@ describe('Canvas sketch conversion', () => {
         expect(frontmatter['Sketch order']).toBe(10);
         expect(test.saved.get('Book/A scene.md')).toContain('Sketch order: 20');
     });
+
+    it('restores an existing sketch order when creating the first note fails', async () => {
+        const test = setup();
+        const file = new TFile('Book/Existing.md');
+        const frontmatter: Record<string, unknown> = { Class: 'Sketch', Act: 1, 'Sketch order': 'unset' };
+        test.plugin.settings = { ...DEFAULT_SETTINGS, books: [{ id: 'book', title: 'Book', sourceFolder: 'Book' }] };
+        test.app.vault.getAbstractFileByPath = path => path === file.path ? file : null;
+        test.app.vault.create = vi.fn(async () => { throw new Error('Disk full'); });
+        test.app.fileManager = { processFrontMatter: async (_file: TFile, cb: (fm: Record<string, unknown>) => void) => cb(frontmatter) } as App['fileManager'];
+        Reflect.set(test.modal, 'act', 1);
+        Reflect.set(test.modal, 'bookItems', () => [{ row: { path: file.path, basename: file.basename, kind: 'sketch', act: 1 } as TimetableRow, frontmatter: { ...frontmatter } }]);
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(frontmatter['Sketch order']).toBe('unset');
+        expect(test.setData).not.toHaveBeenCalled();
+        error.mockRestore();
+    });
+
+    it('does not overwrite another edit when restoring an order after failure', async () => {
+        const test = setup();
+        const file = new TFile('Book/Existing.md');
+        const frontmatter: Record<string, unknown> = { Class: 'Sketch', Act: 1 };
+        test.plugin.settings = { ...DEFAULT_SETTINGS, books: [{ id: 'book', title: 'Book', sourceFolder: 'Book' }] };
+        test.app.vault.getAbstractFileByPath = path => path === file.path ? file : null;
+        test.app.vault.create = vi.fn(async () => { frontmatter['Sketch order'] = 99; throw new Error('Disk full'); });
+        test.app.fileManager = { processFrontMatter: async (_file: TFile, cb: (fm: Record<string, unknown>) => void) => cb(frontmatter) } as App['fileManager'];
+        Reflect.set(test.modal, 'act', 1);
+        Reflect.set(test.modal, 'bookItems', () => [{ row: { path: file.path, basename: file.basename, kind: 'sketch', act: 1 } as TimetableRow, frontmatter: { ...frontmatter } }]);
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(frontmatter['Sketch order']).toBe(99);
+        error.mockRestore();
+    });
+
+    it('keeps existing ranks when some new sketches were created before a failure', async () => {
+        const test = setup();
+        const file = new TFile('Book/Existing.md');
+        const frontmatter: Record<string, unknown> = { Class: 'Sketch', Act: 1 };
+        test.plugin.settings = { ...DEFAULT_SETTINGS, books: [{ id: 'book', title: 'Book', sourceFolder: 'Book' }] };
+        test.app.vault.getAbstractFileByPath = path => path === file.path ? file : null;
+        let created = 0;
+        test.app.vault.create = vi.fn(async () => {
+            if (++created === 2) throw new Error('Disk full');
+            return new TFile('Book/A scene.md');
+        });
+        test.app.fileManager = { processFrontMatter: async (_file: TFile, cb: (fm: Record<string, unknown>) => void) => cb(frontmatter) } as App['fileManager'];
+        Reflect.set(test.modal, 'act', 1);
+        (Reflect.get(test.modal, 'selected') as Set<string>).add('2');
+        Reflect.set(test.modal, 'bookItems', () => [{ row: { path: file.path, basename: file.basename, kind: 'sketch', act: 1 } as TimetableRow, frontmatter: { ...frontmatter } }]);
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(frontmatter['Sketch order']).toBe(10);
+        expect(test.setData).not.toHaveBeenCalled();
+        error.mockRestore();
+    });
 });

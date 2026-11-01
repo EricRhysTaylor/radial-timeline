@@ -167,6 +167,7 @@ export class CanvasSketchModal extends ErtModal {
             return;
         }
         const paths = new Map<string, string>();
+        const ranked: Array<{ file: TFile; key: string; rank: number; existed: boolean; value: unknown; act: number | null; anchor: string | null }> = [];
         try {
             // Replacing a card changes its ID. Cross-canvas portal edges can
             // refer to that ID in another file, so refuse rather than break them.
@@ -186,13 +187,16 @@ export class CanvasSketchModal extends ErtModal {
                 if (!(file instanceof TFile)) throw new Error(t('ui.canvasSketch.placementChanged'));
                 const original = items.find(candidate => candidate.row.path === item.path);
                 if (!original) throw new Error(t('ui.canvasSketch.placementChanged'));
+                let previous: { key: string; existed: boolean; value: unknown } | undefined;
                 await this.app.fileManager.processFrontMatter(file, fm => {
                     const key = Object.keys(fm).find(name => name.toLowerCase() === SKETCH_ORDER.toLowerCase()) ?? SKETCH_ORDER;
                     const row = buildTableRow(file.path, file.basename, fm, this.plugin.settings);
                     if (row.kind !== 'sketch' || row.act !== original.row.act || sketchAnchor(fm) !== sketchAnchor(original.frontmatter)
                         || (typeof fm[key] === 'number' && Number.isFinite(fm[key]))) throw new Error(t('ui.canvasSketch.placementChanged'));
+                    previous = { key, existed: Object.prototype.hasOwnProperty.call(fm, key), value: fm[key] };
                     fm[key] = item.rank;
                 });
+                if (previous) ranked.push({ file, ...previous, rank: item.rank, act: original.row.act, anchor: sketchAnchor(original.frontmatter) });
             }
             for (const [index, card] of cards.entries()) {
                 const title = sketchTitle(card.text ?? '');
@@ -226,7 +230,27 @@ export class CanvasSketchModal extends ErtModal {
             this.plugin.refreshTimelineIfNeeded(null);
         } catch (error) {
             console.error('[Canvas sketches]', error);
-            new Notice(t('ui.canvasSketch.failed', { count: paths.size, message: error instanceof Error ? error.message : String(error) }), 12000);
+            let retainedRanks = paths.size > 0 && ranked.length > 0;
+            if (paths.size === 0) {
+                for (const item of ranked.reverse()) {
+                    try {
+                        await this.app.fileManager.processFrontMatter(item.file, fm => {
+                            const row = buildTableRow(item.file.path, item.file.basename, fm, this.plugin.settings);
+                            if (fm[item.key] !== item.rank || row.kind !== 'sketch' || row.act !== item.act || sketchAnchor(fm) !== item.anchor) {
+                                retainedRanks = true;
+                                return;
+                            }
+                            if (item.existed) fm[item.key] = item.value;
+                            else delete fm[item.key];
+                        });
+                    } catch (rollbackError) {
+                        retainedRanks = true;
+                        console.error('[Canvas sketches] Could not restore sketch ordering', rollbackError);
+                    }
+                }
+            }
+            const message = (error instanceof Error ? error.message : String(error)) + (retainedRanks ? ` ${t('ui.canvasSketch.orderRetained')}` : '');
+            new Notice(t('ui.canvasSketch.failed', { count: paths.size, message }), 12000);
         }
     }
 }

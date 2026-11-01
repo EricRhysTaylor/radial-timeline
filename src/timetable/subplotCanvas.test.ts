@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { planSubplotCanvas } from './subplotCanvas';
+import { planSubplotCanvas, storyRangeRows } from './subplotCanvas';
 import type { TimetableRow } from './timetableModel';
 
 function scene(n: number, act: number, subplots: string[]): TimetableRow {
@@ -37,6 +37,19 @@ describe('subplot Canvas layout', () => {
         expect(plan.appearanceCount).toBe(2);
         expect(plan.nodes.some(node => node.type === 'group' && node.label === 'No subplot')).toBe(true);
         expect(plan.nodes.some(node => node.file === 'Book/1 Scene.md')).toBe(true);
+    });
+    it('divides a story into ordered, non-overlapping thirds before filtering subplots', () => {
+        const rows = Array.from({ length: 10 }, (_, i) => scene(i + 1, 1, i % 2 ? ['Mara'] : ['Main'])).reverse();
+        const ranges = (['beginning', 'middle', 'end'] as const).map(range => storyRangeRows(rows, null, range));
+        expect(ranges.map(part => part.length)).toEqual([4, 3, 3]);
+        expect(ranges.flat().map(row => row.prefix)).toEqual(Array.from({ length: 10 }, (_, i) => String(i + 1)));
+        const plan = planSubplotCanvas(rows, { act: null, subplot: 'Mara', range: 'middle' }, () => 'id');
+        expect(plan.nodes.filter(node => node.type === 'file').map(node => node.file)).toEqual(['Book/6 Scene.md']);
+    });
+    it('applies the selected act before dividing the range', () => {
+        const rows = [scene(1, 1, ['Main']), scene(2, 1, ['Main']), scene(3, 2, ['Main']), scene(4, 2, ['Main']), scene(5, 2, ['Main'])];
+        expect(storyRangeRows(rows, 2, 'beginning').map(row => row.prefix)).toEqual(['3']);
+        expect(storyRangeRows(rows.slice(0, 1), null, 'beginning')).toHaveLength(1);
     });
     it.each([25, 100, 200])('keeps %i scene cards in non-overlapping bounded strips', count => {
         const rows = Array.from({ length: count }, (_, i) => scene(i + 1, Math.floor(i / 40) + 1, ['Main', ...(i % 3 === 0 ? ['Mara'] : [])]));

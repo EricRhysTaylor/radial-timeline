@@ -17,12 +17,21 @@ export interface SubplotCanvasPlan {
     appearanceCount: number;
 }
 
+export type StoryRange = 'all' | 'beginning' | 'middle' | 'end';
+
+/** Slice narrative order before subplot filtering, so each third has a stable meaning. */
+export function storyRangeRows(rows: TimetableRow[], act: number | null, range: StoryRange): TimetableRow[] {
+    const ordered = rows.filter(row => row.kind === 'scene' && (act === null || row.act === act)).sort(compareManuscriptRows);
+    if (range === 'all') return ordered;
+    const part = range === 'beginning' ? 0 : range === 'middle' ? 1 : 2;
+    return ordered.slice(Math.ceil(ordered.length * part / 3), Math.ceil(ordered.length * (part + 1) / 3));
+}
+
 /** Build bounded narrative strips. A card's column is its position in the act,
  * so a scene on multiple lanes aligns vertically without duplicating its note. */
-export function planSubplotCanvas(rows: TimetableRow[], options: { act: number | null; subplot: string | null }, id: () => string): SubplotCanvasPlan {
-    const scenes = rows.filter(row => row.kind === 'scene' && (options.act === null || row.act === options.act))
-        .filter(row => options.subplot === null || row.subplots.includes(options.subplot))
-        .sort(compareManuscriptRows);
+export function planSubplotCanvas(rows: TimetableRow[], options: { act: number | null; subplot: string | null; range?: StoryRange }, id: () => string): SubplotCanvasPlan {
+    const scenes = storyRangeRows(rows, options.act, options.range ?? 'all')
+        .filter(row => options.subplot === null || row.subplots.includes(options.subplot));
     // A scene without a subplot still belongs on the map. Keep it in its own
     // lane rather than silently dropping it from the generated Canvas.
     const unassigned = Symbol('unassigned');
@@ -41,7 +50,7 @@ export function planSubplotCanvas(rows: TimetableRow[], options: { act: number |
             const lanes = laneNames.filter(lane => segment.some(row => lanesFor(row).includes(lane)));
             const width = LEFT * 2 + (segment.length - 1) * STEP_X + CARD_W;
             nodes.push({ id: id(), type: 'text', x: 0, y: sectionY, width: Math.max(width, 500), height: 115,
-                text: `**${act === null ? 'No act' : `Act ${act}`} · scenes ${start + 1}–${start + segment.length} of ${actScenes.length}**\n\nLines show narrative order within each subplot.` });
+                text: `**${act === null ? 'No act' : `Act ${act}`} · ${options.range && options.range !== 'all' ? 'selected scenes' : 'scenes'} ${start + 1}–${start + segment.length} of ${actScenes.length}**\n\nLines show narrative order within each subplot.` });
             lanes.forEach((lane, laneIndex) => {
                 const y = sectionY + TOP + laneIndex * STEP_Y;
                 nodes.push({ id: id(), type: 'group', x: 0, y, width, height: 220, label: lane === unassigned ? 'No subplot' : String(lane) });

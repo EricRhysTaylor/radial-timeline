@@ -1378,8 +1378,12 @@
 }
 
 /* Outline keeps the Timetable's shared editing and placement controls. */
-.ert-timetable-panels.is-outline { grid-template-columns: minmax(0, 1fr); max-width: 900px; gap: 0; }
+.ert-timetable-panels.is-outline { grid-template-columns: minmax(0, 1fr); gap: 0; }
 .ert-timetable .is-outline .ert-timetable-panels__panel { border: 0; border-bottom: 1px solid var(--background-modifier-border); border-radius: 0; padding: var(--size-4-3) var(--size-4-4); }
+.ert-timetable .is-outline .ert-timetable-panels__synopsis:not(.is-empty),
+.ert-timetable .is-outline .ert-timetable-panels__preview,
+.ert-timetable .is-outline .ert-timetable-panels__purpose { width: 100%; max-width: 75ch; align-self: flex-start; }
+.ert-timetable .is-outline .ert-timetable__drawer-toggle { align-self: flex-start; padding: var(--size-4-1) var(--size-4-3); }
 .ert-timetable .is-outline .ert-timetable-panels__cover { flex-basis: 28px; width: 28px; height: 28px; border: 0; background: transparent; }
 .ert-timetable .is-outline .ert-timetable-panels__cover-image, .ert-timetable .is-outline .ert-timetable-panels__cover-placeholder { display: none; }
 .ert-timetable .is-outline .ert-timetable-panels__cover > .svg-icon { inset: 0; color: var(--text-muted); background: transparent; }

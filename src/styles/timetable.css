@@ -1358,8 +1358,8 @@
 .ert-outline-documents__label { color: var(--text-muted); font-size: var(--font-ui-small); }
 
 /* Outline reference tray and insertion target */
-.ert-outline-documents__card { display: inline-flex; align-items: center; gap: var(--size-2-1); }
-.ert-outline-documents__file { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: center; gap: var(--size-4-2); min-height: 48px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-secondary); }
+.ert-outline-documents__card { display: inline-flex; align-items: center; gap: var(--size-2-1); max-width: 100%; min-width: 0; }
+.ert-outline-documents__file { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: center; gap: var(--size-4-2); min-width: 0; min-height: 48px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-secondary); }
 .ert-outline-documents__icon { display: inline-flex; color: var(--text-accent); }
 .ert-outline-documents__icon .svg-icon { width: 22px; height: 22px; }
 .ert-outline-documents__position { color: var(--text-muted); font-size: var(--font-ui-small); }
@@ -1377,3 +1377,15 @@
 
 .ert-timetable .is-outline .ert-timetable-panels__group { display: flex; align-items: center; gap: var(--size-4-1); }
 .ert-timetable .is-outline .ert-timetable-panels__group .ert-outline-act-insert[aria-pressed="true"] { color: var(--text-accent); }
+.ert-outline-import-controls { display: flex; flex-wrap: wrap; gap: var(--size-4-4); }
+.ert-outline-import-controls label { display: flex; flex-direction: column; gap: var(--size-4-1); color: var(--text-muted); }
+.ert-outline-import-list { display: flex; flex-direction: column; gap: var(--size-4-2); max-height: 25vh; overflow-y: auto; }
+.ert-outline-import-row { display: flex; align-items: flex-start; gap: var(--size-4-3); padding: var(--size-4-3); border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); }
+.ert-outline-import-details { flex: 1; min-width: 0; }
+.ert-outline-import-details input { width: 100%; }
+.ert-outline-import-preview { color: var(--text-muted); white-space: pre-wrap; margin-top: var(--size-4-2); }
+.ert-outline-import-hint { color: var(--text-muted); font-size: var(--font-ui-small); }
+.ert-outline-import-selection { display: flex; gap: var(--size-4-2); }
+
+.ert-outline-documents__file span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ert-outline-import-editor { width: 100%; margin-top: var(--size-4-2); resize: vertical; }

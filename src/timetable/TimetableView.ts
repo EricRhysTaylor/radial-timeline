@@ -120,6 +120,7 @@ import { openInReadingPane } from './readingPane';
 import { outlineDocumentPaths } from './outlineDocuments';
 import { planOutlineActInsertion, planOutlineInsertion } from './outlineInspiration';
 import { vaultDragPaths } from './outlineDrop';
+import { OutlineImportModal } from './OutlineImportModal';
 import { renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
 import {
     markTimetableRows,
@@ -2343,6 +2344,16 @@ export class TimetableView extends BasesView {
             open.createSpan({ text: file.basename });
             setTooltip(open, file.path);
             this.panelEvents?.registerDomEvent(open, 'click', () => { void this.openOutlineWorkspace(file); });
+            if (book) {
+                const convert = card.createEl('button', { cls: 'ert-outline-documents__convert clickable-icon', attr: { type: 'button' } });
+                setIcon(convert, 'list-plus');
+                setAccessibleLabel(convert, `Create sketches from ${file.basename}`);
+                setTooltip(convert, 'Create sketches from this document');
+                this.panelEvents?.registerDomEvent(convert, 'click', () => {
+                    void app.vault.read(file).then(snapshot => new OutlineImportModal(app, this.plugin, book, file, snapshot).open())
+                        .catch((error: unknown) => new Notice(`Cannot read the source document: ${error instanceof Error ? error.message : String(error)}`, 8000));
+                });
+            }
             if (attached.includes(file.path)) {
                 const remove = card.createEl('button', { cls: 'ert-outline-documents__remove clickable-icon' });
                 setIcon(remove, 'x'); setTooltip(remove, t('ui.timetable.outlineUnlink'));

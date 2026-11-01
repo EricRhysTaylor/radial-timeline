@@ -1356,4 +1356,14 @@
 .ert-timetable .is-outline .ert-timetable-panels__group button { color: var(--text-muted); background: transparent; box-shadow: none; font-weight: var(--font-semibold); }
 .ert-outline-documents { display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-4-2); padding: var(--size-4-3); border-bottom: 1px solid var(--background-modifier-border); }
 .ert-outline-documents__label { color: var(--text-muted); font-size: var(--font-ui-small); }
-.ert-outline-documents__file { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Outline reference tray and insertion target */
+.ert-outline-documents__card { display: inline-flex; align-items: center; gap: var(--size-2-1); }
+.ert-outline-documents__file { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: center; gap: var(--size-4-2); min-height: 48px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-secondary); }
+.ert-outline-documents__icon { display: inline-flex; color: var(--text-accent); }
+.ert-outline-documents__icon .svg-icon { width: 22px; height: 22px; }
+.ert-outline-documents__position { color: var(--text-muted); font-size: var(--font-ui-small); }
+.ert-outline-documents__position-icon { display: none; }
+.ert-timetable .is-outline .is-outline-target { background: var(--background-modifier-hover); box-shadow: inset 3px 0 var(--interactive-accent); }
+.ert-outline-insert { color: var(--text-muted); }
+.ert-outline-insert[aria-pressed="true"] { color: var(--text-accent); }

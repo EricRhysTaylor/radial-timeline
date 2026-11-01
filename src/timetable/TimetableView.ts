@@ -1908,7 +1908,7 @@ export class TimetableView extends BasesView {
         this.mountPatternDefs();
         this.renderBookNotice(groups);
 
-        this.renderLayoutSwitch(state);
+        this.renderLayoutSwitch(this.modeState());
 
         const allItems = groups.flatMap(group => group.items);
         if (outline) this.renderOutlineDocuments(allItems);
@@ -1959,7 +1959,7 @@ export class TimetableView extends BasesView {
 
         const headRow = table.createEl('thead').createEl('tr');
         // The corner: + New sketch, the lens, and the mode the table follows. It stays in reach while scrolling.
-        this.renderCorner(headRow.createEl('th', { cls: 'ert-timetable__num-head' }), state);
+        this.renderCorner(headRow.createEl('th', { cls: 'ert-timetable__num-head' }));
         if (showRings && layout) this.renderRingsHeader(headRow.createEl('th', { cls: 'ert-timetable__rings-head' }), layout);
         columns.forEach((column, index) => {
             const header = headRow.createEl('th', { cls: 'ert-timetable__prop-head' });
@@ -2118,7 +2118,7 @@ export class TimetableView extends BasesView {
     }
 
     /** The table's control corner: + New sketch, the lens, and the mode the table follows. */
-    private renderCorner(cell: HTMLElement, state: TimelineModeState): void {
+    private renderCorner(cell: HTMLElement): void {
         const corner = cell.createDiv({ cls: 'ert-timetable__corner' });
         const add = corner.createEl('button', { cls: 'ert-timetable__new-sketch clickable-icon' });
         setIcon(add, 'plus');
@@ -2132,15 +2132,6 @@ export class TimetableView extends BasesView {
         setAccessibleLabel(lens, t('ui.timetable.optionLens'));
         setIcon(lens, 'scan-eye');
         tooltip(lens, lensOn ? t('ui.timetable.lensOn') : t('ui.timetable.lensOff'), 'bottom');
-
-        if (this.config.get('outline') !== true && this.config.get('panels') !== true) {
-            const modeButton = corner.createEl('button', { cls: 'ert-timetable__mode clickable-icon' });
-            modeButton.toggleClass('is-pinned', this.modePin !== null);
-            modeButton.setAttr('aria-haspopup', 'menu');
-            setAccessibleLabel(modeButton, this.modeTooltip(state));
-            setIcon(modeButton, modeIcon(state.mode));
-            tooltip(modeButton, this.modeTooltip(state), 'bottom');
-        }
 
         if (this.keyButton) corner.appendChild(this.keyButton);
     }
@@ -2304,16 +2295,20 @@ export class TimetableView extends BasesView {
             menu.showAtPosition({ x: rect.left, y: rect.bottom }, workspace.ownerDocument);
         });
         const outlineMode = this.config.get('outline') === true;
-        const modeLabel = outlineMode
-            ? toolbar.createSpan({ cls: 'ert-timetable-panels__mode-label' })
-            : toolbar.createEl('button', { cls: 'ert-timetable-panels__mode-label ert-timetable__mode', attr: { type: 'button', 'aria-haspopup': 'menu' } });
-        setIcon(modeLabel.createSpan({ attr: { 'aria-hidden': 'true' } }), !outlineMode && this.modePin !== null ? 'lock' : 'circle');
+        const modeLabel = toolbar.createEl('button', { cls: 'ert-timetable-panels__mode-label ert-timetable__mode', attr: { type: 'button', 'aria-haspopup': 'menu' } });
+        setIcon(modeLabel.createSpan({ attr: { 'aria-hidden': 'true' } }), this.modePin !== null ? 'lock' : 'circle');
         modeLabel.createSpan({ cls: 'ert-timetable-panels__mode-caption', text: t('ui.timetable.modeCaption') });
         modeLabel.createSpan({ text: modeName(state.mode) });
-        if (!outlineMode) setAccessibleLabel(modeLabel, this.modeTooltip(state));
-        tooltip(modeLabel, outlineMode ? t('ui.timetable.outlineNarrativeOrder') : this.modeTooltip(state), 'bottom');
+        setIcon(modeLabel.createSpan({ attr: { 'aria-hidden': 'true' } }), 'chevron-down');
+        const modeHelp = outlineMode ? `${this.modeTooltip(state)}. ${t('ui.timetable.outlineNarrativeOrder')}` : this.modeTooltip(state);
+        setAccessibleLabel(modeLabel, modeHelp);
+        tooltip(modeLabel, modeHelp, 'bottom');
+        if (outlineMode && state.mode !== 'narrative') {
+            const order = toolbar.createSpan({ cls: 'ert-timetable-panels__outline-order', text: `${t('ui.timetable.layoutOutline')}: ${modeName('narrative')}` });
+            tooltip(order, t('ui.timetable.outlineNarrativeOrder'), 'bottom');
+        }
         if (this.config.get('panels') === true || this.config.get('outline') === true) {
-            this.renderCorner(toolbar, state);
+            this.renderCorner(toolbar);
         }
         if (this.config.get('panels') === true) {
             const imageLabel = toolbar.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelImage') });
@@ -2376,7 +2371,9 @@ export class TimetableView extends BasesView {
                 void this.attachOutlineReferences(bookId, [file], paths, []);
             }).open();
         };
-        const heading = tray.createDiv({ cls: 'ert-outline-documents__heading' });
+        const content = tray.createDiv({ cls: 'ert-outline-documents__content' });
+        const heading = content.createDiv({ cls: 'ert-outline-documents__heading' });
+        setIcon(heading.createSpan({ cls: 'ert-outline-documents__drop-icon', attr: { 'aria-hidden': 'true' } }), 'folder-input');
         heading.createSpan({ cls: 'ert-outline-documents__label', text: t('ui.timetable.outlineDocuments') });
         if (bookId) {
             heading.createSpan({ cls: 'ert-outline-documents__drop-hint', text: t('ui.timetable.outlineDropOrBrowse') });
@@ -2386,7 +2383,7 @@ export class TimetableView extends BasesView {
             this.panelEvents?.registerDomEvent(tray, 'keydown', (evt: KeyboardEvent) => { if (evt.target === tray && (evt.key === 'Enter' || evt.key === ' ')) { evt.preventDefault(); picker(); } });
             this.attachOutlineDocumentDrop(tray, bookId, paths);
         }
-        const shelf = tray.createDiv({ cls: 'ert-outline-documents__shelf' });
+        const shelf = content.createDiv({ cls: 'ert-outline-documents__shelf' });
         for (const file of files) {
             const card = shelf.createDiv({ cls: 'ert-outline-documents__card' });
             const open = card.createEl('button', { cls: 'ert-outline-documents__file' });
@@ -2432,7 +2429,7 @@ export class TimetableView extends BasesView {
                 this.config.set('outlineReferences', { ...references, [bookId]: attached.filter(item => item !== path) }); this.render();
             });
         }
-        const tools = bar.createDiv({ cls: 'ert-outline-documents__tools' });
+        const tools = tray.createDiv({ cls: 'ert-outline-documents__tools' });
         if (bookId) {
             const add = tools.createEl('button', { cls: 'ert-outline-documents__tool clickable-icon', attr: { type: 'button' } });
             setIcon(add, 'file-plus-2'); setAccessibleLabel(add, t('ui.timetable.outlineAttach')); setTooltip(add, t('ui.timetable.outlineAttach'));

@@ -1391,13 +1391,17 @@
 .ert-timetable .is-outline .ert-timetable-panels__meta, .ert-timetable .is-outline .ert-timetable-panels__characters, .ert-timetable .is-outline .ert-timetable-panels__date { display: none; }
 .ert-timetable .is-outline .ert-timetable-panels__group button { color: var(--text-muted); background: transparent; box-shadow: none; font-weight: var(--font-semibold); }
 .ert-outline-documents { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--size-4-2); padding: var(--size-4-3); border-bottom: 1px solid var(--background-modifier-border); }
-.ert-outline-documents__tray { flex: 1 1 280px; min-width: 0; padding: 12px 14px; border: 1px dashed var(--background-modifier-border-hover); border-radius: var(--radius-m); background: var(--background-secondary); cursor: pointer; }
+.ert-outline-documents__tray { flex: 1 1 280px; min-width: 0; min-height: 128px; display: flex; align-items: center; gap: 16px; padding: 12px 14px; border: 1px dashed var(--background-modifier-border-hover); border-radius: var(--radius-m); background: var(--background-secondary); cursor: pointer; }
+.ert-outline-documents__content { flex: 1 1 auto; min-width: 0; }
+.ert-outline-documents__drop-icon { display: inline-flex; align-self: center; color: var(--text-muted); }
+.ert-outline-documents__drop-icon .svg-icon { width: 24px; height: 24px; }
 .ert-outline-documents__tray:hover, .ert-outline-documents__tray:focus-visible { border-color: var(--interactive-accent); }
 .ert-outline-documents__heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
 .ert-outline-documents__heading .ert-outline-documents__label { color: var(--text-normal); font-weight: var(--font-semibold); }
 .ert-outline-documents__shelf { display: flex; flex-wrap: wrap; gap: 8px; }
 .ert-outline-documents__shelf:not(:empty) { margin-top: 10px; }
-.ert-outline-documents__tools { display: flex; flex: none; gap: 4px; align-items: flex-start; }
+.ert-outline-documents__tools { display: flex; flex: none; flex-direction: column; gap: 4px; align-items: center; }
+.ert-timetable-panels__outline-order { color: var(--text-muted); font-size: var(--font-ui-smaller); }
 .ert-timetable button.ert-outline-documents__tool { width: 36px; height: 36px; padding: 8px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-s); background: var(--background-secondary); }
 .ert-outline-documents__label { color: var(--text-muted); font-size: var(--font-ui-small); }
 

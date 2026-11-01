@@ -51,3 +51,11 @@ export function basesViewFilters(config: BasesViewConfig): BasesConfigFileFilter
     const filters = (config as unknown as { filters?: { serialize?: () => BasesConfigFileFilter } }).filters; // SAFE: a view's own filters are not in Obsidian's public typings; this is the one cast for them
     return typeof filters?.serialize === 'function' ? filters.serialize() : undefined;
 }
+
+/** Obsidian's file explorer drag payload is not part of its public API. */
+export function internalDraggedFiles(app: App): unknown[] {
+    const manager = (app as unknown as { dragManager?: { draggable?: { file?: unknown; files?: unknown[] }; draggedItems?: Array<{ file?: unknown }> } }).dragManager;
+    const single = manager?.draggable?.file;
+    const multiple = manager?.draggable?.files;
+    return [single, ...(Array.isArray(multiple) ? multiple : []), ...(Array.isArray(manager?.draggedItems) ? manager.draggedItems.map(item => item.file) : [])].filter(Boolean);
+}

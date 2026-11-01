@@ -115,10 +115,11 @@ import { TimetableColoringModal } from './TimetableColoringModal';
 import { CellPeek } from './cellPeek';
 import { beatNamePeekAction } from '../view/interactions/BeatNameKeyController';
 import { isTypingInField } from '../utils/domFocus';
-import { basesViewFilters } from '../utils/obsidianInternals';
+import { basesViewFilters, internalDraggedFiles } from '../utils/obsidianInternals';
 import { openInReadingPane } from './readingPane';
 import { outlineDocumentPaths } from './outlineDocuments';
 import { planOutlineInsertion } from './outlineInspiration';
+import { vaultDragPaths } from './outlineDrop';
 import { renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
 import {
     markTimetableRows,
@@ -348,6 +349,7 @@ export class TimetableView extends BasesView {
     private outlineWorkspacePane: WorkspaceLeaf | null = null;
     private outlineInsertionPath: string | null = null;
     private outlineItems: TableItem[] = [];
+    private outlineDraggedText: { text: string; sourcePath: string } | null = null;
     private rings: WheelRings | null = null;
     private ringsTimer: number | null = null;
     private ringsGeneration = 0;
@@ -433,6 +435,17 @@ export class TimetableView extends BasesView {
                 row.toggleClass('is-reference-selected', row.dataset.referenceKey === selection?.key));
         }));
         this.setUpKey();
+        this.registerDomEvent(this.rootEl.ownerDocument, 'dragstart', (event: DragEvent) => {
+            this.outlineDraggedText = null;
+            const view = this.outlineWorkspacePane?.view;
+            if (this.config.get('outline') !== true || !(view instanceof MarkdownView) || !view.file
+                || !(event.target instanceof Node) || !view.containerEl.contains(event.target)) return;
+            const selected = this.outlineSelectedText(view);
+            if (!selected.trim()) return;
+            this.outlineDraggedText = { text: selected, sourcePath: view.file.path };
+            if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy';
+        });
+        this.registerDomEvent(this.rootEl.ownerDocument, 'dragend', () => { this.outlineDraggedText = null; });
         // One set of delegated handlers: rows are redrawn on every data update.
         this.registerDomEvent(this.rootEl, 'click', (evt: MouseEvent) => this.handleClick(evt));
         this.registerDomEvent(this.rootEl, 'keydown', (evt: KeyboardEvent) => {
@@ -2308,6 +2321,11 @@ export class TimetableView extends BasesView {
         const files = paths.map(path => app.vault.getAbstractFileByPath(path)).filter((file): file is TFile => file instanceof TFile);
         const bar = this.rootEl.createDiv({ cls: 'ert-outline-documents' });
         bar.createSpan({ cls: 'ert-outline-documents__label', text: t('ui.timetable.outlineDocuments') });
+        if (bookId) {
+            bar.createSpan({ cls: 'ert-outline-documents__drop-hint', text: 'Drop vault notes here' });
+            this.attachOutlineDocumentDrop(bar, bookId, references, attached);
+        }
+
         for (const file of files) {
             const card = bar.createDiv({ cls: 'ert-outline-documents__card' });
             const open = card.createEl('button', { cls: 'ert-outline-documents__file' });
@@ -2352,6 +2370,38 @@ export class TimetableView extends BasesView {
         this.outlineWorkspaceTarget = files[0] ?? items.find(item => item.row.kind === 'scene' || item.row.kind === 'sketch')?.entry.file ?? null;
     }
 
+    /** Accept only existing Markdown files from this vault, never import an external file. */
+    private attachOutlineDocumentDrop(bar: HTMLElement, bookId: string, references: Record<string, unknown>, attached: string[]): void {
+        const clear = () => bar.removeClass('is-drag-over');
+        this.panelEvents?.registerDomEvent(bar, 'dragover', (event: DragEvent) => {
+            if (this.draggedScene || this.draggedSketch || this.outlineDraggedText) return;
+            event.preventDefault(); event.stopPropagation();
+            if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+            bar.addClass('is-drag-over');
+        });
+        this.panelEvents?.registerDomEvent(bar, 'dragleave', (event: DragEvent) => {
+            if (!(event.relatedTarget instanceof Node) || !bar.contains(event.relatedTarget)) clear();
+        });
+        this.panelEvents?.registerDomEvent(bar, 'drop', (event: DragEvent) => {
+            if (this.draggedScene || this.draggedSketch || this.outlineDraggedText) return;
+            event.preventDefault(); event.stopPropagation(); clear();
+            const { app } = this.plugin;
+            const files: TFile[] = [];
+            for (const file of internalDraggedFiles(app)) {
+                if (file instanceof TFile && file.extension.toLowerCase() === 'md' && app.vault.getAbstractFileByPath(file.path) === file) files.push(file);
+            }
+            const transfer = event.dataTransfer;
+            const links = `${transfer?.getData('text/plain') ?? ''}\n${transfer?.getData('text/uri-list') ?? ''}`;
+            for (const path of vaultDragPaths(links, app.vault.getName())) {
+                const file = app.vault.getAbstractFileByPath(path) ?? app.vault.getAbstractFileByPath(`${path}.md`);
+                if (file instanceof TFile && file.extension.toLowerCase() === 'md') files.push(file);
+            }
+            if (!files.length) { new Notice('Drop a Markdown note from this vault’s file explorer.'); return; }
+            this.config.set('outlineReferences', { ...references, [bookId]: [...new Set([...attached, ...files.map(file => file.path)])] });
+            this.render();
+        });
+    }
+
     /** Open a dedicated adjacent pane without replacing an existing note. */
     private async openOutlineWorkspace(selected?: TFile): Promise<void> {
         const file = selected ?? this.outlineWorkspaceTarget;
@@ -2381,15 +2431,23 @@ export class TimetableView extends BasesView {
         await openFromTimetable(this.plugin.app, file, evt, this.rootEl);
     }
 
-    private async createOutlineSelection(): Promise<void> {
-        const pane = this.outlineWorkspacePane;
-        const view = pane?.view;
-        if (!(view instanceof MarkdownView) || !view.file) { new Notice('Open a reference document first.'); return; }
+    private outlineSelectedText(view: MarkdownView): string {
         const selection = view.containerEl.ownerDocument.getSelection();
         const inPane = selection?.anchorNode && selection.focusNode && view.containerEl.contains(selection.anchorNode) && view.containerEl.contains(selection.focusNode);
-        const text = view.getMode() === 'source' ? view.editor.getSelection() : inPane ? selection?.toString() ?? '' : '';
+        return view.getMode() === 'source' ? view.editor.getSelection() : inPane ? selection?.toString() ?? '' : '';
+    }
+
+    private async createOutlineSelection(): Promise<void> {
+        const view = this.outlineWorkspacePane?.view;
+        if (!(view instanceof MarkdownView) || !view.file) { new Notice('Open a reference document first.'); return; }
+        const text = this.outlineSelectedText(view);
         if (!text.trim()) { new Notice('Select text in the reference document first.'); return; }
-        const target = this.outlineItems.find(item => item.row.path === this.outlineInsertionPath);
+        if (!this.outlineInsertionPath) { new Notice('Choose where to insert the sketch in the outline.'); return; }
+        await this.createOutlineSketch(text, view.file.path, this.outlineInsertionPath);
+    }
+
+    private async createOutlineSketch(text: string, sourcePath: string, targetPath: string): Promise<void> {
+        const target = this.outlineItems.find(item => item.row.path === targetPath);
         if (!target) { new Notice('Choose where to insert the sketch in the outline.'); return; }
         const bookId = getBookIdForPath(this.plugin.settings.books, target.row.path);
         const book = this.sketchBook(bookId);
@@ -2406,7 +2464,7 @@ export class TimetableView extends BasesView {
         const name = t('ui.timetable.newSketchName');
         let path = `${folder}/${name}.md`;
         for (let counter = 2; this.plugin.app.vault.getAbstractFileByPath(path); counter++) path = `${folder}/${name} ${counter}.md`;
-        const fm: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch', [authorKeyFor('Act', this.plugin.settings)]: plan.act, [SKETCH_ORDER]: plan.rank, Source: `[[${view.file.path.replace(/\.md$/i, '')}]]` };
+        const fm: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch', [authorKeyFor('Act', this.plugin.settings)]: plan.act, [SKETCH_ORDER]: plan.rank, Source: `[[${sourcePath.replace(/\.md$/i, '')}]]` };
         if (plan.anchorId) fm[SKETCH_AFTER_SCENE] = plan.anchorId;
         try {
             await this.plugin.app.vault.create(path, `---\n${stringifyYaml(fm)}---\n\n${text}\n`);
@@ -2414,6 +2472,26 @@ export class TimetableView extends BasesView {
         } catch (error) {
             new Notice(t('ui.timetable.writeFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
         }
+    }
+
+    private attachOutlineTextDrop(row: HTMLElement, targetPath: string): void {
+        const clear = () => row.removeClass('ert-outline-text-drop');
+        this.panelEvents?.registerDomEvent(row, 'dragover', (event: DragEvent) => {
+            if (!this.outlineDraggedText || this.draggedScene || this.draggedSketch) return;
+            event.preventDefault(); event.stopPropagation();
+            if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+            row.addClass('ert-outline-text-drop');
+        });
+        this.panelEvents?.registerDomEvent(row, 'dragleave', (event: DragEvent) => {
+            if (!(event.relatedTarget instanceof Node) || !row.contains(event.relatedTarget)) clear();
+        });
+        this.panelEvents?.registerDomEvent(row, 'drop', (event: DragEvent) => {
+            const dragged = this.outlineDraggedText;
+            if (!dragged || this.draggedScene || this.draggedSketch) return;
+            event.preventDefault(); event.stopPropagation(); clear();
+            this.outlineDraggedText = null;
+            void this.createOutlineSketch(dragged.text, dragged.sourcePath, targetPath);
+        });
     }
 
     private renderPanels(groups: TableGroup[], mode: ModeContext, allItems: TableItem[]): void {
@@ -2494,6 +2572,7 @@ export class TimetableView extends BasesView {
                 if (row.kind === 'sketch') this.attachSceneActDrop(panel, row.act, getBookIdForPath(this.plugin.settings.books, row.path), mode.state);
                 if (row.kind === 'sketch') this.renderSketchProblem(header, item);
                 if (row.kind === 'scene' || row.kind === 'sketch') this.attachSketchDrop(panel, row.path, mode.state);
+                if (outline && (row.kind === 'scene' || row.kind === 'sketch')) this.attachOutlineTextDrop(panel, row.path);
                 if (outline && (row.kind === 'scene' || row.kind === 'sketch')) {
                     panel.toggleClass('is-outline-target', this.outlineInsertionPath === row.path);
                     const insert = header.createEl('button', { cls: 'ert-outline-insert clickable-icon', attr: { type: 'button', 'aria-pressed': String(this.outlineInsertionPath === row.path) } });

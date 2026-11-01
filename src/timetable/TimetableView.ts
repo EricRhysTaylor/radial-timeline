@@ -2320,7 +2320,8 @@ export class TimetableView extends BasesView {
             menu.showAtPosition({ x: rect.left, y: rect.bottom }, workspace.ownerDocument);
         });
         const outlineMode = this.config.get('outline') === true;
-        const modeLabel = toolbar.createEl('button', { cls: 'ert-timetable-panels__mode-label ert-timetable__mode', attr: { type: 'button', 'aria-haspopup': 'menu' } });
+        const modeGroup = toolbar.createDiv({ cls: 'ert-timetable-panels__mode-group' });
+        const modeLabel = modeGroup.createEl('button', { cls: 'ert-timetable-panels__mode-label ert-timetable__mode', attr: { type: 'button', 'aria-haspopup': 'menu' } });
         setIcon(modeLabel.createSpan({ attr: { 'aria-hidden': 'true' } }), this.modePin !== null ? 'lock' : 'circle');
         modeLabel.createSpan({ cls: 'ert-timetable-panels__mode-caption', text: t('ui.timetable.modeCaption') });
         modeLabel.createSpan({ text: modeName(state.mode) });
@@ -2329,7 +2330,7 @@ export class TimetableView extends BasesView {
         setAccessibleLabel(modeLabel, modeHelp);
         tooltip(modeLabel, modeHelp, 'bottom');
         if (outlineMode && state.mode !== 'narrative') {
-            const order = toolbar.createSpan({ cls: 'ert-timetable-panels__outline-order', text: `${t('ui.timetable.layoutOutline')}: ${modeName('narrative')}` });
+            const order = modeGroup.createSpan({ cls: 'ert-timetable-panels__outline-order', text: `${t('ui.timetable.layoutOutline')}: ${modeName('narrative')}` });
             tooltip(order, t('ui.timetable.outlineNarrativeOrder'), 'bottom');
         }
         if (this.config.get('panels') === true || this.config.get('outline') === true) {

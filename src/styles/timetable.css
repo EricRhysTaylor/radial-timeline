@@ -1241,13 +1241,14 @@
 .ert-timetable .ert-outline-workspace-button { border: 1px solid var(--interactive-accent); color: var(--text-accent); background: var(--background-secondary); font-weight: var(--font-semibold); }
 .ert-outline-workspace-button__caret { display: inline-flex; margin-left: 3px; }
 .ert-timetable .ert-timetable-panels__mode-label { display: inline-flex; align-items: center; gap: 6px; background: transparent; box-shadow: none; color: var(--text-muted); }
+.ert-timetable-panels__mode-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--size-4-2); max-width: 100%; }
 .ert-timetable__book-selector { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); min-width: 0; }
-.ert-timetable__book-selector > span { display: inline-flex; }
+.ert-timetable__book-selector > span:not([hidden]) { display: inline-flex; }
 .ert-timetable__book-selector .svg-icon { width: 16px; height: 16px; }
-.ert-timetable__book-selector select { max-width: 190px; }
+.ert-timetable__book-selector select { max-width: 190px; font-size: var(--font-ui-small); }
 .ert-timetable-panels__mode-label .svg-icon { width: 15px; height: 15px; }
-.ert-timetable-panels__mode-caption { font-size: var(--font-ui-smaller); font-weight: var(--font-semibold); text-transform: uppercase; letter-spacing: .06em; }
-.ert-timetable-panels__mode-label { display: inline-flex; align-items: center; gap: var(--size-4-1); color: var(--text-muted); font-size: var(--font-ui-small); padding-inline: var(--size-4-1); }
+.ert-timetable-panels__mode-caption { font-size: inherit; font-weight: var(--font-semibold); text-transform: uppercase; letter-spacing: .06em; }
+.ert-timetable-panels__mode-label { display: inline-flex; align-items: center; gap: var(--size-4-1); color: var(--text-muted); font-size: var(--font-ui-small); line-height: 1.3; padding-inline: var(--size-4-1); }
 .ert-timetable-panels__image-choice, .ert-timetable-panels__size { display: inline-flex; align-items: center; gap: var(--size-4-1); color: var(--text-muted); font-size: var(--font-ui-small); white-space: nowrap; }
 .ert-timetable-panels__image-choice { margin-left: auto; }
 .ert-timetable-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: stretch; gap: var(--size-4-3); padding: var(--size-4-3); }
@@ -1405,7 +1406,7 @@
 .ert-outline-documents__shelf { display: flex; flex-wrap: wrap; gap: 8px; }
 .ert-outline-documents__shelf:not(:empty) { margin-top: 10px; }
 .ert-outline-documents__tools { display: flex; flex: none; flex-direction: column; gap: 4px; align-items: center; }
-.ert-timetable-panels__outline-order { color: var(--text-muted); font-size: var(--font-ui-smaller); }
+.ert-timetable-panels__outline-order { display: inline-flex; align-items: center; align-self: center; color: var(--text-muted); font-size: var(--font-ui-small); line-height: 1.3; }
 .ert-timetable button.ert-outline-documents__tool { width: 36px; height: 36px; padding: 8px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-s); background: var(--background-secondary); }
 .ert-outline-documents__label { color: var(--text-muted); font-size: var(--font-ui-small); }
 

@@ -39,8 +39,7 @@ export function storyRangeRows(rows: TimetableRow[], act: number | null, range: 
     return ordered.slice(Math.ceil(ordered.length * part / 3), Math.ceil(ordered.length * (part + 1) / 3));
 }
 
-/** Build bounded narrative strips. A card's column is its position in the act,
- * so a scene on multiple lanes aligns vertically without duplicating its note. */
+/** Build continuous narrative lanes with one column per scene. */
 export function planSubplotCanvas(rows: TimetableRow[], options: { act: number | null; subplot: string | null; range?: StoryRange }, id: () => string): SubplotCanvasPlan {
     const scenes = storyRangeRows(rows, options.act, options.range ?? 'all')
         .filter(row => options.subplot === null || row.subplots.includes(options.subplot));
@@ -51,34 +50,28 @@ export function planSubplotCanvas(rows: TimetableRow[], options: { act: number |
     const laneNames = [...new Set(scenes.flatMap(row => options.subplot ? [options.subplot] : lanesFor(row)))];
     const nodes: SubplotCanvasNode[] = [];
     const edges: SubplotCanvasEdge[] = [];
-    const CARD_W = 300, CARD_H = 170, STEP_X = 350, STEP_Y = 300, LEFT = 36, TOP = 170, COLS = 8;
-    let sectionY = 0;
+    const CARD_W = 300, CARD_H = 170, STEP_X = 350, STEP_Y = 300, LEFT = 36, TOP = 170;
     let appearanceCount = 0;
-    const acts = [...new Set(scenes.map(row => row.act))];
-    for (const act of acts) {
-        const actScenes = scenes.filter(row => row.act === act);
-        for (let start = 0; start < actScenes.length; start += COLS) {
-            const segment = actScenes.slice(start, start + COLS);
-            const lanes = laneNames.filter(lane => segment.some(row => lanesFor(row).includes(lane)));
-            const width = LEFT * 2 + (segment.length - 1) * STEP_X + CARD_W;
-            nodes.push({ id: id(), type: 'text', x: 0, y: sectionY, width: Math.max(width, 500), height: 115,
-                text: `**${act === null ? 'No act' : `Act ${act}`} · ${options.range && options.range !== 'all' ? 'selected scenes' : 'scenes'} ${start + 1}–${start + segment.length} of ${actScenes.length}**\n\nLines show narrative order within each subplot.` });
-            lanes.forEach((lane, laneIndex) => {
-                const y = sectionY + TOP + laneIndex * STEP_Y;
-                nodes.push({ id: id(), type: 'group', x: 0, y, width, height: 220, label: lane === unassigned ? 'No subplot' : String(lane) });
-                let previous: string | null = null;
-                segment.forEach((row, index) => {
-                    if (!lanesFor(row).includes(lane)) return;
-                    const nodeId = id();
-                    nodes.push({ id: nodeId, type: 'file', file: row.path, x: LEFT + index * STEP_X, y: y + 35, width: CARD_W, height: CARD_H });
-                    appearanceCount++;
-                    if (previous) edges.push({ id: id(), fromNode: previous, toNode: nodeId, fromSide: 'right', toSide: 'left' });
-                    previous = nodeId;
-                });
-            });
-            sectionY += TOP + lanes.length * STEP_Y + 70;
-        }
-    }
+    const width = LEFT * 2 + Math.max(0, scenes.length - 1) * STEP_X + CARD_W;
+    // A new heading marks each contiguous act, including repeated or unassigned acts.
+    scenes.forEach((row, index) => {
+        if (index > 0 && row.act === scenes[index - 1].act) return;
+        nodes.push({ id: id(), type: 'text', x: LEFT + index * STEP_X, y: 0, width: CARD_W, height: 100,
+            text: `**${row.act === null ? 'No act' : `Act ${row.act}`}**` });
+    });
+    laneNames.forEach((lane, laneIndex) => {
+        const y = TOP + laneIndex * STEP_Y;
+        nodes.push({ id: id(), type: 'group', x: 0, y, width, height: 220, label: lane === unassigned ? 'No subplot' : String(lane) });
+        let previous: string | null = null;
+        scenes.forEach((row, index) => {
+            if (!lanesFor(row).includes(lane)) return;
+            const nodeId = id();
+            nodes.push({ id: nodeId, type: 'file', file: row.path, x: LEFT + index * STEP_X, y: y + 35, width: CARD_W, height: CARD_H });
+            appearanceCount++;
+            if (previous) edges.push({ id: id(), fromNode: previous, toNode: nodeId, fromSide: 'right', toSide: 'left' });
+            previous = nodeId;
+        });
+    });
     // JSON Canvas renders nodes in array order. Groups must sit behind cards.
     return { nodes: [...nodes.filter(node => node.type !== 'file'), ...nodes.filter(node => node.type === 'file')], edges, sceneCount: scenes.length, appearanceCount };
 }

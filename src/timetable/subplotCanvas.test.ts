@@ -27,6 +27,11 @@ describe('subplot Canvas layout', () => {
             expect(from.x).toBeLessThan(to.x);
         }
     });
+    it('connects a subplot across act boundaries', () => {
+        const plan = makePlan([scene(1, 1, ['Main']), scene(2, 2, ['Main']), scene(3, 3, ['Main'])]);
+        expect(plan.edges).toHaveLength(2);
+        expect(plan.nodes.filter(node => node.type === 'text').map(node => node.text)).toEqual(['**Act 1**', '**Act 2**', '**Act 3**']);
+    });
     it('limits scope to selected act and subplot', () => {
         const result = makePlan([scene(1, 1, ['Main']), scene(2, 1, ['Mara']), scene(3, 2, ['Mara'])], 1, 'Mara');
         expect(result.sceneCount).toBe(1);
@@ -61,7 +66,7 @@ describe('subplot Canvas layout', () => {
         expect(focused.map(node => node.file)).toEqual(rows.slice(4, 8).map(row => row.path));
         expect(storyRangeBounds(plan.nodes, rows, 1, null, 'all')).toBeNull();
     });
-    it.each([25, 100, 200])('keeps %i scene cards in non-overlapping bounded strips', count => {
+    it.each([25, 100, 200])('keeps %i scene cards in continuous non-overlapping lanes', count => {
         const rows = Array.from({ length: count }, (_, i) => scene(i + 1, Math.floor(i / 40) + 1, ['Main', ...(i % 3 === 0 ? ['Mara'] : [])]));
         const plan = makePlan(rows);
         expect(plan.sceneCount).toBe(count);
@@ -71,7 +76,8 @@ describe('subplot Canvas layout', () => {
         for (let i = 1; i < groups.length; i++) {
             expect(groups[i].y - (groups[i - 1].y + groups[i - 1].height)).toBeGreaterThanOrEqual(50);
         }
-        expect(Math.max(...cards.map(card => card.x + card.width))).toBeLessThan(3000);
+        expect(Math.max(...cards.map(card => card.x + card.width))).toBeGreaterThan(3000);
+        expect(plan.edges).toHaveLength(plan.appearanceCount - groups.length);
         for (let i = 0; i < cards.length; i++) for (let j = i + 1; j < cards.length; j++) {
             const a = cards[i], b = cards[j];
             expect(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y).toBe(true);

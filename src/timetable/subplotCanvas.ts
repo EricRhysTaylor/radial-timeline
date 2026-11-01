@@ -8,7 +8,7 @@ export interface SubplotCanvasNode {
 }
 export interface SubplotCanvasEdge {
     id: string; fromNode: string; toNode: string;
-    fromSide: 'right'; toSide: 'left';
+    fromSide: 'right' | 'bottom'; toSide: 'left' | 'top';
 }
 export interface SubplotCanvasPlan {
     nodes: SubplotCanvasNode[];
@@ -40,14 +40,15 @@ export function storyRangeRows(rows: TimetableRow[], act: number | null, range: 
 }
 
 /** Build continuous narrative lanes with one column per scene. */
-export function planSubplotCanvas(rows: TimetableRow[], options: { act: number | null; subplot: string | null; range?: StoryRange }, id: () => string): SubplotCanvasPlan {
+export function planSubplotCanvas(rows: TimetableRow[], options: { act: number | null; subplot: string | null; range?: StoryRange; layout?: 'horizontal' | 'vertical' | 'story' }, id: () => string): SubplotCanvasPlan {
     const scenes = storyRangeRows(rows, options.act, options.range ?? 'all')
         .filter(row => options.subplot === null || row.subplots.includes(options.subplot));
     // A scene without a subplot still belongs on the map. Keep it in its own
     // lane rather than silently dropping it from the generated Canvas.
     const unassigned = Symbol('unassigned');
     const lanesFor = (row: TimetableRow): (string | symbol)[] => row.subplots.length ? row.subplots : [unassigned];
-    const laneNames = [...new Set(scenes.flatMap(row => options.subplot ? [options.subplot] : lanesFor(row)))];
+    const storyLane = Symbol('story');
+    const laneNames = options.layout === 'story' ? [storyLane] : [...new Set(scenes.flatMap(row => options.subplot ? [options.subplot] : lanesFor(row)))];
     const nodes: SubplotCanvasNode[] = [];
     const edges: SubplotCanvasEdge[] = [];
     const CARD_W = 300, CARD_H = 170, STEP_X = 350, STEP_Y = 300, LEFT = 36, TOP = 170;
@@ -61,10 +62,10 @@ export function planSubplotCanvas(rows: TimetableRow[], options: { act: number |
     });
     laneNames.forEach((lane, laneIndex) => {
         const y = TOP + laneIndex * STEP_Y;
-        nodes.push({ id: id(), type: 'group', x: 0, y, width, height: 220, label: lane === unassigned ? 'No subplot' : String(lane) });
+        nodes.push({ id: id(), type: 'group', x: 0, y, width, height: 220, label: lane === storyLane ? 'Story' : lane === unassigned ? 'No subplot' : String(lane) });
         let previous: string | null = null;
         scenes.forEach((row, index) => {
-            if (!lanesFor(row).includes(lane)) return;
+            if (lane !== storyLane && !lanesFor(row).includes(lane)) return;
             const nodeId = id();
             nodes.push({ id: nodeId, type: 'file', file: row.path, x: LEFT + index * STEP_X, y: y + 35, width: CARD_W, height: CARD_H });
             appearanceCount++;
@@ -72,6 +73,16 @@ export function planSubplotCanvas(rows: TimetableRow[], options: { act: number |
             previous = nodeId;
         });
     });
+    if (options.layout === 'vertical') {
+        for (const node of nodes) {
+            const x = node.x;
+            node.x = node.y * 1.25;
+            node.y = x;
+            if (node.type === 'group') { node.height = node.width; node.width = 360; }
+            if (node.type === 'text') node.width = 200;
+        }
+        for (const edge of edges) { edge.fromSide = 'bottom'; edge.toSide = 'top'; }
+    }
     // JSON Canvas renders nodes in array order. Groups must sit behind cards.
     return { nodes: [...nodes.filter(node => node.type !== 'file'), ...nodes.filter(node => node.type === 'file')], edges, sceneCount: scenes.length, appearanceCount };
 }

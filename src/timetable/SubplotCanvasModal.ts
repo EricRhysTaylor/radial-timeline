@@ -13,6 +13,7 @@ export class SubplotCanvasModal extends ErtModal {
     private act: number | null = null;
     private subplot: string | null = null;
     private range: StoryRange = 'all';
+    private layout: 'horizontal' | 'vertical' | 'story' = 'horizontal';
     private busy = false;
 
     constructor(app: App, private readonly plugin: RadialTimelinePlugin) {
@@ -40,6 +41,13 @@ export class SubplotCanvasModal extends ErtModal {
         const actRow = this.contentEl.createDiv({ cls: 'setting-item' });
         actRow.createDiv({ cls: 'setting-item-name', text: t('ui.subplotCanvas.act') });
         const actSelect = new DropdownComponent(actRow.createDiv({ cls: 'setting-item-control' }));
+        const layoutRow = this.contentEl.createDiv({ cls: 'setting-item' });
+        layoutRow.createDiv({ cls: 'setting-item-name', text: t('ui.subplotCanvas.layout') });
+        const layoutSelect = new DropdownComponent(layoutRow.createDiv({ cls: 'setting-item-control' }));
+        layoutSelect.addOption('horizontal', t('ui.subplotCanvas.layoutHorizontal'));
+        layoutSelect.addOption('vertical', t('ui.subplotCanvas.layoutVertical'));
+        layoutSelect.addOption('story', t('ui.subplotCanvas.layoutStory'));
+        layoutSelect.setValue(this.layout);
         const rangeRow = this.contentEl.createDiv({ cls: 'setting-item' });
         rangeRow.createDiv({ cls: 'setting-item-name', text: t('ui.subplotCanvas.range') });
         const rangeSelect = new DropdownComponent(rangeRow.createDiv({ cls: 'setting-item-control' }));
@@ -69,13 +77,14 @@ export class SubplotCanvasModal extends ErtModal {
             laneSelect.setValue(this.subplot ?? '');
             let serial = 0;
             rangeSelect.setValue(this.range);
-            const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot }, () => String(++serial));
+            const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot, layout: this.layout }, () => String(++serial));
             count.setText(t('ui.subplotCanvas.count', { scenes: plan.sceneCount, cards: plan.appearanceCount }));
             create.disabled = !this.bookId || plan.sceneCount === 0 || this.busy;
         };
         const defaultRange = (): void => { this.range = storyRangeRows(this.rows(), this.act, 'all').length > 24 ? 'beginning' : 'all'; };
         bookSelect.onChange(value => { this.bookId = value; this.act = null; this.subplot = null; defaultRange(); update(); });
         actSelect.onChange(value => { this.act = value ? Number(value) : null; defaultRange(); update(); });
+        layoutSelect.onChange(value => { this.layout = value as typeof this.layout; update(); });
         rangeSelect.onChange(value => { this.range = value as StoryRange; update(); });
         laneSelect.onChange(value => { this.subplot = value || null; update(); });
         create.addEventListener('click', () => {
@@ -91,7 +100,7 @@ export class SubplotCanvasModal extends ErtModal {
         const book = (this.plugin.settings.books ?? []).find(item => item.id === this.bookId);
         if (!book) return;
         const rows = this.rows();
-        const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot }, () => crypto.randomUUID().replace(/-/g, ''));
+        const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot, layout: this.layout }, () => crypto.randomUUID().replace(/-/g, ''));
         const bounds = storyRangeBounds(plan.nodes, rows, this.act, this.subplot, this.range);
         if (!plan.sceneCount) { new Notice(t('ui.subplotCanvas.empty')); return; }
         try {

@@ -5,6 +5,7 @@ import { synopsisKey } from './panelSynopsis';
 import { t } from '../i18n';
 import { getBookIdForPath } from '../utils/books';
 import { markTimetableRows, onLinkedScene } from './timetableRegistry';
+import { CanvasStoryNavigator } from './CanvasStoryNavigator';
 
 type Mode = 'full' | 'preview' | 'title';
 type CanvasNode = { nodeEl?: HTMLElement; getData?: () => { type?: string; file?: string; subpath?: string } };
@@ -50,8 +51,10 @@ class CanvasCards {
     readonly action: HTMLElement;
     private readonly unlink: () => void;
     private readonly events = new Component();
+    private readonly navigator: CanvasStoryNavigator;
 
     constructor(private plugin: RadialTimelinePlugin, private view: ItemView) {
+        this.navigator = new CanvasStoryNavigator(plugin, view);
         this.action = view.addAction('layout-template', t('ui.canvasSketch.cardViews'), event => {
             const menu = new Menu();
             const choices: Array<[Mode, string]> = [
@@ -101,6 +104,7 @@ class CanvasCards {
 
     private async refresh(): Promise<void> {
         const revision = ++this.revision;
+        this.navigator.refresh();
         const file = (this.view as unknown as { file?: TFile | null }).file;
         if (file && pendingTitleMaps.delete(file.path)) {
             this.mode = 'title';
@@ -164,6 +168,7 @@ class CanvasCards {
         this.observer.disconnect();
         this.unlink();
         this.events.unload();
+        this.navigator.destroy();
         this.view.containerEl.removeClass('ert-canvas-card-view');
         for (const el of this.cards.keys()) this.remove(el);
         this.action.remove();

@@ -32,6 +32,21 @@ describe('subplot Canvas layout', () => {
         expect(plan.edges).toHaveLength(2);
         expect(plan.nodes.filter(node => node.type === 'text').map(node => node.text)).toEqual(['**Act 1**', '**Act 2**', '**Act 3**']);
     });
+    it('offers a vertical layout with readable cards and downward connections', () => {
+        let id = 0;
+        const plan = planSubplotCanvas([scene(1, 1, ['Main', 'Mara']), scene(2, 2, ['Main'])], { act: null, subplot: null, layout: 'vertical' }, () => String(++id));
+        const cards = plan.nodes.filter(node => node.type === 'file');
+        expect(cards.every(node => node.width === 300 && node.height === 170)).toBe(true);
+        expect(plan.edges.every(edge => edge.fromSide === 'bottom' && edge.toSide === 'top')).toBe(true);
+        expect(cards.find(node => node.file === 'Book/1 Scene.md')!.y).toBeLessThan(cards.find(node => node.file === 'Book/2 Scene.md')!.y);
+    });
+    it('offers a single story line without duplicate subplot appearances', () => {
+        let id = 0;
+        const plan = planSubplotCanvas([scene(1, 1, ['Main', 'Mara']), scene(2, 2, ['Main'])], { act: null, subplot: null, layout: 'story' }, () => String(++id));
+        expect(plan.appearanceCount).toBe(2);
+        expect(plan.edges).toHaveLength(1);
+        expect(plan.nodes.filter(node => node.type === 'group')).toHaveLength(1);
+    });
     it('limits scope to selected act and subplot', () => {
         const result = makePlan([scene(1, 1, ['Main']), scene(2, 1, ['Mara']), scene(3, 2, ['Mara'])], 1, 'Mara');
         expect(result.sceneCount).toBe(1);

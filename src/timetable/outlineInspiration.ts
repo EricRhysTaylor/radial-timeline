@@ -28,3 +28,19 @@ export function planOutlineInsertion(items: PlacementItem[], targetPath: string)
     if (!Number.isFinite(value) || value <= before || value >= after) return null;
     return { act: target.row.act, anchorId, rank: value };
 }
+
+/** Append a new sketch to an act without renumbering or rewriting its notes. */
+export function planOutlineActInsertion(items: PlacementItem[], act: number): { act: number; anchorId: null; rank: number } | null {
+    if (!Number.isInteger(act) || act < 1) return null;
+    const ordered = orderSketches(items);
+    const tail = ordered.items.filter(item => item.row.kind === 'sketch' && item.row.act === act
+        && (!sketchAnchor(item.frontmatter) || ordered.problems.has(item.row.path)));
+    const ranks = tail.map(item => {
+        const key = Object.keys(item.frontmatter ?? {}).find(candidate => candidate.toLowerCase() === SKETCH_ORDER.toLowerCase());
+        return key ? item.frontmatter?.[key] : undefined;
+    });
+    if (ranks.some(rank => typeof rank !== 'number' || !Number.isFinite(rank))) return null;
+    const last = ranks.length ? Math.max(...(ranks as number[])) : 0;
+    const rank = last + 10;
+    return Number.isFinite(rank) && rank > last ? { act, anchorId: null, rank } : null;
+}

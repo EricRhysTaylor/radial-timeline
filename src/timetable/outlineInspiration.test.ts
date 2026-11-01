@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { planOutlineInsertion } from './outlineInspiration';
+import { planOutlineActInsertion, planOutlineInsertion } from './outlineInspiration';
 import { SKETCH_AFTER_SCENE, SKETCH_ORDER, type PlacementItem } from './sketchPlacement';
 import type { TimetableRow } from './timetableModel';
 
@@ -26,5 +26,18 @@ describe('outline inspiration placement', () => {
         expect(planOutlineInsertion([scene, item('Another', 'scene', { ID: 'scene' })], 'Scene.md')).toBeNull();
         expect(planOutlineInsertion([scene, item('Unranked', 'sketch', { [SKETCH_AFTER_SCENE]: 'scene' })], 'Unranked.md')).toBeNull();
         expect(planOutlineInsertion([item('Missing', 'scene')], 'Missing.md')).toBeNull();
+    });
+});
+
+describe('empty act insertion', () => {
+    it('starts an empty act and appends after ordered unanchored sketches', () => {
+        expect(planOutlineActInsertion([], 1)).toEqual({ act: 1, anchorId: null, rank: 10 });
+        const sketch = item('First', 'sketch', { [SKETCH_ORDER]: 10 });
+        expect(planOutlineActInsertion([sketch], 1)).toEqual({ act: 1, anchorId: null, rank: 20 });
+        expect(planOutlineInsertion([sketch], 'First.md')).toEqual({ act: 1, anchorId: null, rank: 20 });
+    });
+    it('refuses ambiguous unordered tails rather than silently changing their order', () => {
+        expect(planOutlineActInsertion([item('Unordered', 'sketch')], 1)).toBeNull();
+        expect(planOutlineActInsertion([], 0)).toBeNull();
     });
 });

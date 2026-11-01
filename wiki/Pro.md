@@ -17,9 +17,9 @@ Pro workflows appear throughout Radial Timeline in magenta.
 
 ---
 
-## Demo vaults
+## Story Vaults
 
-The **Demo vaults** section under **Settings → Resources** lists complete worked examples with saved analysis. [Pride & Prejudice](Sample-Vault), [The Odyssey](Odyssey-Demo-Vault), and *Sherlock Holmes* are free: **Explore demo** opens the demo chooser, where **Add demo to this vault** adds one to a **Demo Projects** folder and **Download ZIP** downloads it as a separate vault. *The Faerie Queene* is listed as **Coming soon**.
+The **Story Vaults** section under **Settings → Resources** lists complete worked examples with saved analysis. [Pride & Prejudice](Sample-Vault), [The Odyssey](Odyssey-Demo-Vault), and *Sherlock Holmes* are free: **Explore story** opens the Story Vault chooser, where **Add story to this vault** adds one to a **Demo Projects** folder and **Download ZIP** downloads it as a separate vault. *The Faerie Queene* is listed as **Coming soon**.
 
 ---
 

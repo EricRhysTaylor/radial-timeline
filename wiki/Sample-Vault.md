@@ -1,17 +1,17 @@
-A free, fully analyzed demo vault built around Jane Austen's *Pride & Prejudice*. All 61 chapters are scene notes with full properties, alongside 15 Save the Cat beat notes, 28 character notes, and saved AI analysis you can read without an API key: Pulse analysis on every chapter, four Gossamer signals, and three Inquiry sessions. It's the fastest way to see what Radial Timeline produces from a full-length novel.
+A free, fully analyzed Story Vault in the Classics collection, built around Jane Austen's *Pride & Prejudice*. All 61 chapters are scene notes with full properties, alongside 15 Save the Cat beat notes, 28 character notes, and saved AI analysis you can read without an API key: Pulse analysis on every chapter, four Gossamer signals, and three Inquiry sessions. It's the fastest way to see what Radial Timeline produces from a full-length novel.
 
 ## How to get it
 
 ### Inside your own vault
 
-1.  Click **Explore a finished book** on the Welcome screen, or **Explore demo** under **Settings → Resources → Demo vaults**.
-2.  In the demo chooser, click **Add demo to this vault** on Pride & Prejudice.
+1.  Click **Explore a finished book** on the Welcome screen, or **Explore story** under **Settings → Resources → Story Vaults**.
+2.  In the Story Vault chooser, click **Add story to this vault** on Pride & Prejudice.
 
-Radial Timeline downloads the demo, checks it, adds it to a **Demo Projects** folder, and opens it on the timeline. Nothing in your vault is replaced: the book joins Book Manager beside yours, and your AI settings stay as they are. If the folder is already there, the card shows **Open demo** instead.
+Radial Timeline downloads the story, checks it, adds it to a **Demo Projects** folder, and opens it on the timeline. Nothing in your vault is replaced: the book joins Book Manager beside yours, and your AI settings stay as they are. If the folder is already there, the card shows **Open story** instead.
 
 ### As a separate vault
 
-Click **Download ZIP** on the same card in the demo chooser, or download it from the [Pride & Prejudice demo vault page](https://www.radialtimeline.com/resources/pride) on radialtimeline.com.
+Click **Download ZIP** on the same card in the Story Vault chooser, or download it from the [Pride & Prejudice Story Vault page](https://www.radialtimeline.com/resources/pride) on radialtimeline.com.
 
 1.  Unzip the download. You'll get a folder named **Pride & Prejudice Demo Vault**.
 2.  In Obsidian, choose **Open another vault → Open folder as vault** and select that folder.
@@ -34,8 +34,8 @@ The download holds the book and its notes only, with no Obsidian settings or plu
 *   Try Chronologue's **Shift** sub-mode to see elapsed time between scenes across the novel's calendar.
 *   Open the [Inquiry view](Inquiry) to read the saved sessions. Inquiry opens with AI turned off, so every saved answer is readable without an API key. To run new questions, turn on AI and set up a cloud provider or a validated Local LLM in **Settings → AI**.
 
-## More demo vaults
+## More Story Vaults
 
-[The Odyssey](Odyssey-Demo-Vault) and *Sherlock Holmes* are free demos too, added the same way from the demo chooser or downloaded from their pages on radialtimeline.com. *Sherlock Holmes* collects four novels, *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*: 56 chapters, each novel in its own manuscript folder with three acts and its own **Mystery and Revelation** beats. *The Faerie Queene* is listed there as **Coming soon**.
+[The Odyssey](Odyssey-Demo-Vault) and *Sherlock Holmes* are free Story Vaults too, added the same way from the Story Vault chooser or downloaded from their pages on radialtimeline.com. *Sherlock Holmes* collects four novels, *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*: 56 chapters, each novel in its own manuscript folder with three acts and its own **Mystery and Revelation** beats. *The Faerie Queene* is listed there as **Coming soon**.
 
 You're welcome to fork it, edit it, write in it, or strip it for parts. The source text and all included analysis are free to read, copy, and reuse.

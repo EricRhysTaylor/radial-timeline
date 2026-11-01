@@ -1,14 +1,14 @@
-*The Odyssey* is the second free demo vault: the epic traditionally attributed to Homer, in Samuel Butler's public-domain prose translation, mapped as 89 scenes across all 24 books with its analysis already saved. Like the [Pride & Prejudice demo vault](Sample-Vault), it's free, and you can explore its saved analysis without an API key.
+*The Odyssey* is a free Story Vault in the Classics collection: the epic traditionally attributed to Homer, in Samuel Butler's public-domain prose translation, mapped as 89 scenes across all 24 books with its analysis already saved. Like the [Pride & Prejudice Story Vault](Sample-Vault), it's free, and you can explore its saved analysis without an API key.
 
 <p align="center"><img src="images/odyssey-narrative.webp" alt="The Odyssey in Narrative mode: 89 scenes on the outer ring, four motif rings inside it, three act labels and the Hero's Journey beats around the edge" width="600"></p>
 <p align="center"><sub>Narrative mode: the outer ring carries every scene; four motif rings read the poem along other paths</sub></p>
 
 ## How to get it
 
-1.  Click **Explore a finished book** on the Welcome screen, or **Explore demo** under **Settings → Resources → Demo vaults**.
-2.  In the demo chooser, click **Add demo to this vault** on The Odyssey. Radial Timeline downloads it, checks it, adds it to a **Demo Projects** folder, and opens it on the timeline. Nothing in your vault is replaced.
+1.  Click **Explore a finished book** on the Welcome screen, or **Explore story** under **Settings → Resources → Story Vaults**.
+2.  In the Story Vault chooser, click **Add story to this vault** on The Odyssey. Radial Timeline downloads it, checks it, adds it to a **Demo Projects** folder, and opens it on the timeline. Nothing in your vault is replaced.
 
-To keep it as a separate vault instead, click **Download ZIP** on the same card, or download it from the [Odyssey demo vault page](https://www.radialtimeline.com/resources/odyssey). Unzip it, choose **Open another vault → Open folder as vault** in Obsidian, turn on community plugins, and install **Radial Timeline** from **Settings → Community plugins → Browse**. The download holds the book and its notes only, with no Obsidian settings or plugin files.
+To keep it as a separate vault instead, click **Download ZIP** on the same card, or download it from the [Odyssey Story Vault page](https://www.radialtimeline.com/resources/odyssey). Unzip it, choose **Open another vault → Open folder as vault** in Obsidian, turn on community plugins, and install **Radial Timeline** from **Settings → Community plugins → Browse**. The download holds the book and its notes only, with no Obsidian settings or plugin files.
 
 ## Why The Odyssey
 
@@ -45,4 +45,4 @@ Hover any scene to read its synopsis and Pulse analysis. The AI readings are cur
 *   **The Hero's Journey is an interpretation.** The beats follow manuscript order. They are a reading of the poem, not a claim that it fits a modern template.
 *   **Selective notes.** Character and place notes cover the figures that matter to the story, not every name that appears once.
 
-The scene divisions, properties, and notes are editorial material made for the demo. You're welcome to copy them, change them, or use them as a starting point for learning Radial Timeline.
+The scene divisions, properties, and notes are editorial material made for the Story Vault. You're welcome to copy them, change them, or use them as a starting point for learning Radial Timeline.

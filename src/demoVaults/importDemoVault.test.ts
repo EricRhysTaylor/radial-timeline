@@ -102,7 +102,7 @@ describe('demo import orchestration', () => {
     it('explains a download timeout without staging files or changing book settings', async () => {
         const { plugin, entries, fileManager, authorBook } = fixture();
         mocks.request.mockRejectedValue(new Error('net::ERR_TIMED_OUT'));
-        await expect(importDemoVault(plugin as never, demo)).rejects.toThrow('The demo download timed out. Nothing was added.');
+        await expect(importDemoVault(plugin as never, demo)).rejects.toThrow('The story download timed out. Nothing was added.');
         expect(Array.from(entries.keys())).toEqual(['Author/Chapter.md']);
         expect(plugin.settings.books).toEqual([authorBook]);
         expect(fileManager.trashFile).not.toHaveBeenCalled();
@@ -179,7 +179,7 @@ describe('demo import orchestration', () => {
         let resolve!: (value: unknown) => void;
         mocks.request.mockReturnValueOnce(new Promise(done => { resolve = done; }));
         const first = importDemoVault(plugin as never, demo);
-        await expect(importDemoVault(plugin as never, demo)).rejects.toThrow('Another demo');
+        await expect(importDemoVault(plugin as never, demo)).rejects.toThrow('Another story');
         resolve({ status: 200, arrayBuffer: new Uint8Array([1]).buffer });
         await first;
     });

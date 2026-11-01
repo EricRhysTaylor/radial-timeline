@@ -120,7 +120,7 @@ import { beatNamePeekAction } from '../view/interactions/BeatNameKeyController';
 import { isTypingInField } from '../utils/domFocus';
 import { basesViewFilters, internalDraggedFiles } from '../utils/obsidianInternals';
 import { openInReadingPane } from './readingPane';
-import { outlineDocumentPaths } from './outlineDocuments';
+import { outlineDocumentPaths, outlineReferenceType, planOutlineReferences } from './outlineDocuments';
 import { planOutlineActInsertion, planOutlineInsertion } from './outlineInspiration';
 import { vaultDragPaths } from './outlineDrop';
 import { OutlineImportModal } from './OutlineImportModal';
@@ -2373,7 +2373,7 @@ export class TimetableView extends BasesView {
         const picker = () => {
             if (!bookId) return;
             new OutlineDocumentPicker(app, file => {
-                this.config.set('outlineReferences', { ...references, [bookId]: [...new Set([...attached, file.path])] }); this.render();
+                void this.attachOutlineReferences(bookId, [file], paths, []);
             }).open();
         };
         const heading = tray.createDiv({ cls: 'ert-outline-documents__heading' });
@@ -2384,14 +2384,24 @@ export class TimetableView extends BasesView {
             setAccessibleLabel(tray, t('ui.timetable.outlineDropOrBrowse'));
             this.panelEvents?.registerDomEvent(tray, 'click', evt => { if (!(evt.target instanceof Element) || !evt.target.closest('button')) picker(); });
             this.panelEvents?.registerDomEvent(tray, 'keydown', (evt: KeyboardEvent) => { if (evt.target === tray && (evt.key === 'Enter' || evt.key === ' ')) { evt.preventDefault(); picker(); } });
-            this.attachOutlineDocumentDrop(tray, bookId, references, attached);
+            this.attachOutlineDocumentDrop(tray, bookId, paths);
         }
         const shelf = tray.createDiv({ cls: 'ert-outline-documents__shelf' });
         for (const file of files) {
             const card = shelf.createDiv({ cls: 'ert-outline-documents__card' });
             const open = card.createEl('button', { cls: 'ert-outline-documents__file' });
-            setIcon(open.createSpan({ cls: 'ert-outline-documents__icon' }), 'file-text');
-            open.createSpan({ text: file.basename });
+            const type = outlineReferenceType(frontmatterKey(app.metadataCache.getFileCache(file)?.frontmatter, 'Class'));
+            const types = {
+                outline: { icon: 'list-tree', label: t('ui.timetable.layoutOutline') },
+                scene: { icon: 'clapperboard', label: t('ui.timetable.outlineRefScene') },
+                sketch: { icon: 'pencil', label: t('ui.timetable.panelSketch') },
+                character: { icon: 'user-round', label: t('ui.timetable.panelImageCharacter') },
+                place: { icon: 'map-pin', label: t('ui.timetable.panelImagePlace') },
+                note: { icon: 'file-text', label: t('ui.timetable.outlineRefNote') },
+            };
+            setIcon(open.createSpan({ cls: 'ert-outline-documents__icon' }), types[type].icon);
+            open.createSpan({ cls: 'ert-outline-documents__filename', text: file.basename });
+            open.createSpan({ cls: 'ert-outline-documents__type', text: types[type].label });
             setTooltip(open, file.path);
             this.panelEvents?.registerDomEvent(open, 'click', () => { void this.openOutlineWorkspace(file); });
             if (book) {
@@ -2445,7 +2455,7 @@ export class TimetableView extends BasesView {
     }
 
     /** Accept only existing Markdown files from this vault, never import an external file. */
-    private attachOutlineDocumentDrop(bar: HTMLElement, bookId: string, references: Record<string, unknown>, attached: string[]): void {
+    private attachOutlineDocumentDrop(bar: HTMLElement, bookId: string, existing: string[]): void {
         const clear = () => bar.removeClass('is-drag-over');
         this.panelEvents?.registerDomEvent(bar, 'dragover', (event: DragEvent) => {
             if (this.draggedScene || this.draggedSketch || this.outlineDraggedText) return;
@@ -2461,19 +2471,59 @@ export class TimetableView extends BasesView {
             event.preventDefault(); event.stopPropagation(); clear();
             const { app } = this.plugin;
             const files: TFile[] = [];
-            for (const file of internalDraggedFiles(app)) {
+            const invalid = new Set<string>();
+            const internal = internalDraggedFiles(app);
+            for (const file of internal) {
                 if (file instanceof TFile && file.extension.toLowerCase() === 'md' && app.vault.getAbstractFileByPath(file.path) === file) files.push(file);
+                else if (file && typeof file === 'object' && 'path' in file && typeof file.path === 'string') invalid.add(file.path);
+                else invalid.add('');
             }
             const transfer = event.dataTransfer;
             const links = `${transfer?.getData('text/plain') ?? ''}\n${transfer?.getData('text/uri-list') ?? ''}`;
             for (const path of vaultDragPaths(links, app.vault.getName())) {
                 const file = app.vault.getAbstractFileByPath(path) ?? app.vault.getAbstractFileByPath(`${path}.md`);
                 if (file instanceof TFile && file.extension.toLowerCase() === 'md') files.push(file);
+                else invalid.add(path);
             }
-            if (!files.length) { new Notice('Drop a Markdown note from this vault’s file explorer.'); return; }
-            this.config.set('outlineReferences', { ...references, [bookId]: [...new Set([...attached, ...files.map(file => file.path)])] });
-            this.render();
+            if (!internal.length && transfer?.files.length) {
+                for (const file of Array.from(transfer.files)) invalid.add(file.name);
+            }
+            if (!files.length && !invalid.size) invalid.add('');
+            void this.attachOutlineReferences(bookId, files, existing, [...invalid]);
         });
+    }
+
+    private async attachOutlineReferences(bookId: string, files: TFile[], displayed: string[], invalid: string[]): Promise<void> {
+        const { app } = this.plugin;
+        const planned = planOutlineReferences(files.map(file => file.path), displayed);
+        const scenes = planned.add.filter(path => this.outlineItems.some(item => item.row.path === path && item.row.kind === 'scene'));
+        let add = planned.add;
+        if (scenes.length) {
+            const accepted = await confirmWithErtModal(app, {
+                title: t('ui.timetable.outlineAlreadyListedTitle'),
+                message: t('ui.timetable.outlineAlreadyListedMessage', { names: scenes.map(path => app.vault.getFileByPath(path)?.basename ?? path).join(', ') }),
+                confirmText: t('ui.timetable.outlineAttachAnyway'), cancelText: t('ui.timetable.outlineSkip'),
+            });
+            if (!accepted) add = add.filter(path => !scenes.includes(path));
+        }
+        const stored = this.config.get('outlineReferences');
+        const references = stored && typeof stored === 'object' && !Array.isArray(stored) ? stored as Record<string, unknown> : {};
+        const current = Array.isArray(references[bookId]) ? (references[bookId] as unknown[]).filter((path): path is string => typeof path === 'string') : [];
+        const stillNew = add.filter(path => !current.includes(path) && !!app.vault.getFileByPath(path));
+        if (stillNew.length) {
+            this.config.set('outlineReferences', { ...references, [bookId]: [...current, ...stillNew] });
+            this.render();
+        }
+        const named = (message: string, paths: string[]) => {
+            const names = paths.filter(Boolean).map(path => app.vault.getFileByPath(path)?.basename ?? path);
+            return names.length ? `${message} (${names.join(', ')})` : message;
+        };
+        const messages = [
+            stillNew.length ? named(t('ui.timetable.outlineAddedCount', { count: stillNew.length }), stillNew) : '',
+            planned.duplicates.length ? named(t('ui.timetable.outlineDuplicateCount', { count: planned.duplicates.length }), planned.duplicates) : '',
+            invalid.length ? named(t('ui.timetable.outlineUnsupportedCount', { count: invalid.length }), invalid) : '',
+        ].filter(Boolean);
+        if (messages.length) new Notice(messages.join('\n'), 7000);
     }
 
     /** Open a dedicated adjacent pane without replacing an existing note. */

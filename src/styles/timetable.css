@@ -1404,7 +1404,8 @@
 /* Outline reference tray and insertion target */
 .ert-outline-documents__card { position: relative; display: inline-flex; align-items: center; max-width: 100%; min-width: 0; }
 .ert-outline-documents__file { width: 128px; max-width: 100%; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 0; min-height: 84px; padding: 8px; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-primary); }
-.ert-outline-documents__file > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ert-outline-documents__filename { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ert-outline-documents__type { color: var(--text-muted); font-size: var(--font-ui-smaller); }
 .ert-outline-documents__card .ert-outline-documents__convert, .ert-outline-documents__card .ert-outline-documents__remove { position: absolute; top: 2px; z-index: 1; opacity: 0; }
 .ert-outline-documents__card .ert-outline-documents__convert { left: 2px; }
 .ert-outline-documents__card .ert-outline-documents__remove { right: 2px; }

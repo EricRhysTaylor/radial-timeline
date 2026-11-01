@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { outlineDocumentPaths } from './outlineDocuments';
+import { outlineDocumentPaths, outlineReferenceType, planOutlineReferences } from './outlineDocuments';
 
 describe('outline document discovery', () => {
     const notes = [
@@ -12,5 +12,12 @@ describe('outline document discovery', () => {
     });
     it('does not discover vault-wide notes when no book is selected', () => {
         expect(outlineDocumentPaths(undefined, notes, [])).toEqual([]);
+    });
+    it('recognizes existing class labels without guessing from the filename', () => {
+        expect([' Outline ', 'SCENE', 'Sketch', 'Character', 'Place', 'Beat', undefined].map(outlineReferenceType))
+            .toEqual(['outline', 'scene', 'sketch', 'character', 'place', 'note', 'note']);
+    });
+    it('detects notes already displayed and duplicate items in a batch', () => {
+        expect(planOutlineReferences(['a.md', 'b.md', 'b.md'], ['a.md'])).toEqual({ add: ['b.md'], duplicates: ['a.md'] });
     });
 });

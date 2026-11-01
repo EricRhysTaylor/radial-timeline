@@ -1270,6 +1270,19 @@
 .ert-timetable-panels__panel.is-sketch .ert-timetable-panels__header:has(.ert-timetable-panels__sketch-actions) { padding-right: 0; }
 .ert-timetable-panels__sketch-actions { display: flex; align-items: center; gap: var(--size-4-2); }
 .ert-timetable .ert-timetable-panels__sketch-actions button.ert-timetable-panels__open { position: static; flex: none; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) { overflow: hidden; padding-top: calc(var(--size-4-6) + var(--size-4-2)); }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) .ert-timetable-panels__header { padding-right: 0; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drag { position: absolute; z-index: 2; top: 4px; left: 4px; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) .ert-timetable-panels__open { position: absolute; z-index: 2; top: 4px; right: 4px; opacity: 0; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene):hover .ert-timetable-panels__open,
+.ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene):focus-within .ert-timetable-panels__open { opacity: 1; }
+.ert-timetable-panels__watermark { position: absolute; right: var(--size-4-4); bottom: var(--size-4-4); color: var(--text-muted); opacity: 0.09; pointer-events: none; }
+.ert-timetable-panels__watermark .svg-icon { width: 64px; height: 64px; }
+.ert-timetable .ert-timetable-panels__image-insets { position: absolute; z-index: 2; top: 42px; right: 8px; display: flex; flex-direction: column; gap: 6px; }
+.ert-timetable button.ert-timetable-panels__inset { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; padding: 0; overflow: hidden; border: 2px solid var(--background-primary); border-radius: var(--radius-s); background: var(--background-secondary); color: var(--text-muted); box-shadow: var(--shadow-s); }
+.ert-timetable-panels__inset img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: var(--ert-image-x, 50%) var(--ert-image-y, 50%); }
+.ert-timetable-panels__inset img.is-fit { object-fit: contain; object-position: center; }
+.ert-timetable-panels__inset.is-missing .svg-icon { width: 24px; height: 24px; }
 .ert-timetable-panels__title-line { display: flex; align-items: baseline; gap: var(--size-4-2); min-width: 0; }
 .ert-timetable-panels__title-line strong { min-width: 0; }
 .ert-timetable-panels__title { font-family: Inter, var(--font-interface), sans-serif; font-size: 1.45em; font-weight: 800; letter-spacing: -0.035em; line-height: 1.1; overflow-wrap: anywhere; }

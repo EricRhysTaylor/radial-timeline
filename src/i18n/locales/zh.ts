@@ -6074,6 +6074,8 @@ export const zh: DeepPartial<TranslationKeys> = {
             "panelFocusHorizontal": "水平位置",
             "panelFocusVertical": "垂直位置",
             "panelFocusReset": "居中",
+            panelImageCombined: '地点 + 角色',
+            panelImageArtwork: '场景图片',
             panelImageCharacter: '角色',
             panelImagePlace: '地点',
             panelImageNone: '无',

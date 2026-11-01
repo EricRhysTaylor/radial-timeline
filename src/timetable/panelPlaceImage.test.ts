@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { App, TFile } from 'obsidian';
-import { panelPlaceImage } from './panelPlaceImage';
+import { panelPlaceImage, panelSceneImage } from './panelPlaceImage';
 
 const scene = { path: 'Story/Scene.md' } as TFile;
 const place = { path: 'Places/Tourney.md', basename: 'Tourney' } as TFile;
@@ -15,6 +15,11 @@ const app = {
 } as unknown as App;
 
 describe('panel place image', () => {
+    it('resolves optional scene artwork independently of the place image', () => {
+        expect(panelSceneImage(app, scene, { 'Scene image': '[[Final.webp]]', 'Place image': '[[Tourney.jpg]]' })).toEqual({ url: override.path, path: override.path, name: override.name });
+        expect(panelSceneImage(app, scene, { 'Scene image': '[[Missing.png]]' })).toBeNull();
+        expect(panelSceneImage(app, scene, {})).toBeNull();
+    });
     it('uses the scene image instead of the place default', () => {
         expect(panelPlaceImage(app, scene, { Place: ['[[Tourney]]'], 'Place image': '[[Final.webp]]' }, 'Place')).toEqual({ url: override.path, path: override.path, source: 'scene', name: override.name });
     });

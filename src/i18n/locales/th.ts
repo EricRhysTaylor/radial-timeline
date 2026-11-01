@@ -6066,6 +6066,8 @@ export const th: TranslationKeys = {
             "panelFocusHorizontal": "ตำแหน่งแนวนอน",
             "panelFocusVertical": "ตำแหน่งแนวตั้ง",
             "panelFocusReset": "ตรงกลาง",
+            panelImageCombined: 'สถานที่ + ตัวละคร',
+            panelImageArtwork: 'ภาพฉาก',
             "panelImageCharacter": "ตัวละคร",
             "panelImagePlace": "สถานที่",
             "panelImageNone": "ไม่มี",

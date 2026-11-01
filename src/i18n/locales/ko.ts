@@ -6072,6 +6072,8 @@ export const ko: DeepPartial<TranslationKeys> = {
             "panelFocusHorizontal": "가로 위치",
             "panelFocusVertical": "세로 위치",
             "panelFocusReset": "가운데",
+            panelImageCombined: '장소 + 등장인물',
+            panelImageArtwork: '장면 이미지',
             panelImageCharacter: '인물',
             panelImagePlace: '장소',
             panelImageNone: '없음',

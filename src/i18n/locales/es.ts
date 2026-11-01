@@ -6066,6 +6066,8 @@ export const es: TranslationKeys = {
             "panelFocusHorizontal": "Posición horizontal",
             "panelFocusVertical": "Posición vertical",
             "panelFocusReset": "Centrar",
+            panelImageCombined: 'Lugar + personaje',
+            panelImageArtwork: 'Imagen de escena',
             "panelImageCharacter": "Personaje",
             "panelImagePlace": "Lugar",
             "panelImageNone": "Ninguna",

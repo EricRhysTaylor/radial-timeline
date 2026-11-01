@@ -6073,6 +6073,8 @@ export const ja: DeepPartial<TranslationKeys> = {
             "panelFocusHorizontal": "水平位置",
             "panelFocusVertical": "垂直位置",
             "panelFocusReset": "中央",
+            panelImageCombined: '場所 + 登場人物',
+            panelImageArtwork: 'シーン画像',
             panelImageCharacter: 'キャラクター',
             panelImagePlace: '場所',
             panelImageNone: 'なし',

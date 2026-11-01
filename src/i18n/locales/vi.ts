@@ -6066,6 +6066,8 @@ export const vi: TranslationKeys = {
             "panelFocusHorizontal": "Vị trí ngang",
             "panelFocusVertical": "Vị trí dọc",
             "panelFocusReset": "Căn giữa",
+            panelImageCombined: 'Địa điểm + nhân vật',
+            panelImageArtwork: 'Ảnh cảnh',
             "panelImageCharacter": "Nhân vật",
             "panelImagePlace": "Địa điểm",
             "panelImageNone": "Không có",

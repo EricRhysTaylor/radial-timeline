@@ -6072,6 +6072,8 @@ export const de: DeepPartial<TranslationKeys> = {
             "panelFocusHorizontal": "Horizontale Position",
             "panelFocusVertical": "Vertikale Position",
             "panelFocusReset": "Zentrieren",
+            panelImageCombined: 'Ort + Figur',
+            panelImageArtwork: 'Szenenbild',
             panelImageCharacter: 'Figur',
             panelImagePlace: 'Ort',
             panelImageNone: 'Keines',

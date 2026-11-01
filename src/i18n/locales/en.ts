@@ -5756,6 +5756,8 @@ export const en = {
             "panelFocusHorizontal": "Horizontal position",
             "panelFocusVertical": "Vertical position",
             "panelFocusReset": "Center",
+            panelImageCombined: 'Place + character',
+            panelImageArtwork: 'Scene artwork',
             panelImageCharacter: 'Character',
             panelImagePlace: 'Place',
             panelImageNone: 'None',

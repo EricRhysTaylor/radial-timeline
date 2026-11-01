@@ -1300,6 +1300,10 @@
 .ert-timetable button.ert-timetable-panels__synopsis.is-empty:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
 .ert-timetable-panels__purpose { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
 .ert-timetable-panels__preview { white-space: pre-wrap; overflow: hidden; max-height: 5em; color: var(--text-muted); }
+.ert-timetable-panels__panel .ert-timetable__drawer-row, .ert-timetable-panels__panel .ert-timetable__drawer, .ert-timetable-panels__panel .ert-timetable__drawer-bar { min-width: 0; max-width: 100%; }
+.ert-timetable-panels__panel .ert-timetable__drawer-field { min-width: 0; max-width: 100%; }
+.ert-timetable-panels__panel .ert-timetable__drawer-field input { min-width: 0; max-width: 100%; }
+.ert-timetable-panels__panel .ert-timetable__drawer-actions { max-width: 100%; flex-wrap: wrap; }
 .ert-timetable-panels__editor textarea { width: 100%; min-height: 7em; resize: vertical; }
 .ert-timetable-panels__editor button { margin: var(--size-4-2) var(--size-4-2) 0 0; }
 .ert-timetable-panels__editor .ert-timetable-panels__save { background: var(--interactive-accent); color: var(--text-on-accent); }
@@ -1408,7 +1412,7 @@
 .ert-outline-import-editor { width: 100%; margin-top: var(--size-4-2); resize: vertical; }
 
 /* Small scene panels use the image as the card, with legible controls above it. */
-.ert-timetable .ert-timetable-panels.is-small .ert-timetable-panels__panel.is-scene { aspect-ratio: 1; min-height: 190px; padding: 0; overflow: hidden; background: var(--background-secondary); }
+.ert-timetable .ert-timetable-panels.is-small .ert-timetable-panels__panel.is-scene { align-self: start; width: 100%; aspect-ratio: 1; min-height: 190px; padding: 0; overflow: hidden; background: var(--background-secondary); }
 .ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__header { position: static; display: block; padding: 0; }
 .ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__cover { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; border-radius: 0; }
 .ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__cover::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, rgb(0 0 0 / 90%), rgb(0 0 0 / 8%) 75%); }

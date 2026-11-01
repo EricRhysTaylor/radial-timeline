@@ -1267,6 +1267,9 @@
 .ert-timetable-panels__cover-placeholder .svg-icon { width: 32px; height: 32px; }
 .ert-timetable-panels__cover:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
 .ert-timetable-panels__heading { flex: 1 1 120px; min-width: 0; display: flex; flex-direction: column; gap: var(--size-4-2); }
+.ert-timetable-panels__panel.is-sketch .ert-timetable-panels__header:has(.ert-timetable-panels__sketch-actions) { padding-right: 0; }
+.ert-timetable-panels__sketch-actions { display: flex; align-items: center; gap: var(--size-4-2); }
+.ert-timetable .ert-timetable-panels__sketch-actions button.ert-timetable-panels__open { position: static; flex: none; }
 .ert-timetable-panels__title-line { display: flex; align-items: baseline; gap: var(--size-4-2); min-width: 0; }
 .ert-timetable-panels__title-line strong { min-width: 0; }
 .ert-timetable-panels__title { font-family: Inter, var(--font-interface), sans-serif; font-size: 1.45em; font-weight: 800; letter-spacing: -0.035em; line-height: 1.1; overflow-wrap: anywhere; }

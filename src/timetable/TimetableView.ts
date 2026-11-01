@@ -2662,7 +2662,11 @@ export class TimetableView extends BasesView {
                 const title = heading.createDiv({ cls: 'ert-timetable-panels__title-line' });
                 if (row.prefix) title.createSpan({ cls: 'ert-timetable-panels__number', text: row.prefix });
                 title.createEl('strong', { cls: 'ert-timetable-panels__title', text: displayName(row.basename) });
-                if (row.kind === 'sketch') title.createSpan({ cls: 'ert-timetable-panels__kind', text: t('ui.timetable.panelSketch') });
+                if (row.kind === 'sketch' && outline) title.createSpan({ cls: 'ert-timetable-panels__kind', text: t('ui.timetable.panelSketch') });
+                const sketchActions = row.kind === 'sketch' && !outline
+                    ? heading.createDiv({ cls: 'ert-timetable-panels__sketch-actions' })
+                    : null;
+                if (sketchActions) sketchActions.createSpan({ cls: 'ert-timetable-panels__kind', text: t('ui.timetable.panelSketch') });
                 const when = readWhen(frontmatter, this.plugin.settings);
                 const durationRaw = frontmatterKey(frontmatter, authorKeyFor('Duration', this.plugin.settings));
                 const duration = typeof durationRaw === 'string' ? formatCompactDuration(durationRaw) ?? durationRaw : null;
@@ -2685,7 +2689,7 @@ export class TimetableView extends BasesView {
                         }).open();
                     });
                 }
-                const open = panel.createEl('button', { cls: 'ert-timetable-panels__open clickable-icon', attr: { type: 'button' } });
+                const open = (sketchActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__open clickable-icon', attr: { type: 'button' } });
                 setIcon(open, 'file-text');
                 setAccessibleLabel(open, t('ui.timetable.panelOpen'));
                 setTooltip(open, t('ui.timetable.panelOpen'));

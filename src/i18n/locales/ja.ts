@@ -6065,7 +6065,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             outlineWorkspace: 'アウトラインワークスペース',
             panelImage: '画像',
             panelImageLabel: 'パネル画像',
-            panelImagePov: '視点',
+            panelImageCharacter: 'キャラクター',
             panelImagePlace: '場所',
             panelImageNone: 'なし',
             panelImageSceneSource: 'シーンの場所の画像：{{name}}',

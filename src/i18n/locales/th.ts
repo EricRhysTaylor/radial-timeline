@@ -6058,7 +6058,7 @@ export const th: TranslationKeys = {
         "timetable": {
             "panelImage": "ภาพ",
             "panelImageLabel": "ภาพแผง",
-            "panelImagePov": "มุมมอง",
+            "panelImageCharacter": "ตัวละคร",
             "panelImagePlace": "สถานที่",
             "panelImageNone": "ไม่มี",
             "panelImageSceneSource": "ภาพสถานที่ของฉาก: {{name}}",

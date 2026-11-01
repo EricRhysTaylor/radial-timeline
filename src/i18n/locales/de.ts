@@ -6064,7 +6064,7 @@ export const de: DeepPartial<TranslationKeys> = {
             outlineWorkspace: 'Gliederungsbereich',
             panelImage: 'Bild',
             panelImageLabel: 'Panelbild',
-            panelImagePov: 'Perspektive',
+            panelImageCharacter: 'Figur',
             panelImagePlace: 'Ort',
             panelImageNone: 'Keines',
             panelImageSceneSource: 'Ortsbild der Szene: {{name}}',

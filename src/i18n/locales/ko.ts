@@ -6064,7 +6064,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             outlineWorkspace: '개요 작업 공간',
             panelImage: '이미지',
             panelImageLabel: '패널 이미지',
-            panelImagePov: '시점',
+            panelImageCharacter: '인물',
             panelImagePlace: '장소',
             panelImageNone: '없음',
             panelImageSceneSource: '장면 장소 이미지: {{name}}',

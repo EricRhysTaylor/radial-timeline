@@ -2296,7 +2296,7 @@ export class TimetableView extends BasesView {
             const imageLabel = toolbar.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelImage') });
             const imageChoice = imageLabel.createEl('select');
             setAccessibleLabel(imageChoice, t('ui.timetable.panelImageLabel'));
-            for (const [value, label] of [['character', t('ui.timetable.panelImagePov')], ['place', t('ui.timetable.panelImagePlace')], ['none', t('ui.timetable.panelImageNone')]] as const) imageChoice.createEl('option', { value, text: label });
+            for (const [value, label] of [['character', t('ui.timetable.panelImageCharacter')], ['place', t('ui.timetable.panelImagePlace')], ['none', t('ui.timetable.panelImageNone')]] as const) imageChoice.createEl('option', { value, text: label });
             const imageSetting = this.config.get('panelImage');
             imageChoice.value = imageSetting === 'place' || imageSetting === 'none' ? imageSetting : 'character';
             this.panelEvents?.registerDomEvent(imageChoice, 'change', () => { this.config.set('panelImage', imageChoice.value); this.render(); });

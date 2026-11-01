@@ -6058,7 +6058,7 @@ export const fr: TranslationKeys = {
         "timetable": {
             "panelImage": "Image",
             "panelImageLabel": "Image du panneau",
-            "panelImagePov": "Point de vue",
+            "panelImageCharacter": "Personnage",
             "panelImagePlace": "Lieu",
             "panelImageNone": "Aucune",
             "panelImageSceneSource": "Image du lieu de la scène : {{name}}",

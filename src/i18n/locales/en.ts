@@ -5748,7 +5748,7 @@ export const en = {
             outlineWorkspace: 'Outline workspace',
             panelImage: 'Image',
             panelImageLabel: 'Panel image',
-            panelImagePov: 'POV',
+            panelImageCharacter: 'Character',
             panelImagePlace: 'Place',
             panelImageNone: 'None',
             panelImageSceneSource: 'Scene place image: {{name}}',

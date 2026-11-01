@@ -6058,7 +6058,7 @@ export const vi: TranslationKeys = {
         "timetable": {
             "panelImage": "Hình ảnh",
             "panelImageLabel": "Hình ảnh của bảng",
-            "panelImagePov": "Góc nhìn",
+            "panelImageCharacter": "Nhân vật",
             "panelImagePlace": "Địa điểm",
             "panelImageNone": "Không có",
             "panelImageSceneSource": "Hình địa điểm của cảnh: {{name}}",

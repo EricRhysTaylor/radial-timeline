@@ -6066,7 +6066,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             outlineWorkspace: '大纲工作区',
             panelImage: '图像',
             panelImageLabel: '面板图像',
-            panelImagePov: '视角',
+            panelImageCharacter: '角色',
             panelImagePlace: '地点',
             panelImageNone: '无',
             panelImageSceneSource: '场景地点图像：{{name}}',

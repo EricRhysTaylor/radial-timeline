@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { promotionAnchors } from './PromoteToSceneEntry';
+import { anchorsInSketchAct, promotionAnchors } from './PromoteToSceneEntry';
 import type { TimelineItem } from '../types';
 
 const scene = (title: string, subplot: string): TimelineItem =>
     ({ itemType: 'Scene', title, path: `Book/${title}.md`, subplot } as unknown as TimelineItem); // SAFE: test fixture with only the fields promotionAnchors reads
 
 describe('promotionAnchors', () => {
+    it('only offers scene anchors in the sketch act, excluding missing or unassigned scenes', () => {
+        const anchors = ['first', 'second', 'unknown'].map(path => ({ path, label: path }));
+        const acts: Record<string, number | null> = { first: 1, second: 2, unknown: null };
+        expect(anchorsInSketchAct(anchors, 2, anchor => acts[anchor.path])).toEqual([anchors[1]]);
+    });
     it('offers each scene once, in reading order, however many rings it is in', () => {
         // getSceneData groups by ring, so scenes repeat and arrive out of order.
         const data = [

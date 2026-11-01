@@ -1250,6 +1250,12 @@
 .ert-ui button.ert-sketch-move-primary:hover { background: var(--interactive-accent-hover); }
 .ert-timetable-panels__panel { position: relative; display: flex; flex-direction: column; gap: var(--size-4-2); min-width: 0; padding: var(--size-4-5); border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-primary); }
 .ert-timetable .ert-timetable-panels__panel { height: auto; cursor: default; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel.is-sketch { border-style: dashed; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel.is-current { outline: 2px solid var(--interactive-accent); outline-offset: -2px; }
+.ert-timetable button.ert-timetable-panels__promote { position: absolute; z-index: 3; top: 4px; right: 36px; width: 28px; height: 28px; padding: 5px; color: var(--text-muted); background: transparent; box-shadow: none; opacity: 0; }
+.ert-timetable .ert-timetable-panels__panel:hover .ert-timetable-panels__promote,
+.ert-timetable .ert-timetable-panels__panel:focus-within .ert-timetable-panels__promote { opacity: 1; }
+.ert-timetable button.ert-timetable-panels__promote:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
 .ert-timetable .ert-timetable-panels__panel.is-linked {
   background: color-mix(in srgb, var(--ert-timetable-link-color, var(--interactive-accent)) 30%, transparent);
   box-shadow: inset 4px 0 0 var(--ert-timetable-link-color, var(--interactive-accent));

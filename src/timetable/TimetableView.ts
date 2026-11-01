@@ -1147,7 +1147,10 @@ export class TimetableView extends BasesView {
             return;
         }
         if (target.closest('.ert-timetable__promote')) {
-            void runPromotion(this.plugin, [file]);
+            void runPromotion(this.plugin, [file], async promoted => {
+                await this.openOutlineFile(promoted);
+                this.markCurrentNote(promoted.path);
+            });
             return;
         }
         if (target.closest('.ert-timetable__select')) {
@@ -2673,6 +2676,12 @@ export class TimetableView extends BasesView {
                     ? heading.createDiv({ cls: 'ert-timetable-panels__sketch-actions' })
                     : null;
                 if (sketchActions) sketchActions.createSpan({ cls: 'ert-timetable-panels__kind', text: t('ui.timetable.panelSketch') });
+                if (row.kind === 'sketch') {
+                    const promote = panel.createEl('button', { cls: 'ert-timetable__promote ert-timetable-panels__promote clickable-icon', attr: { type: 'button' } });
+                    setIcon(promote, 'file-up');
+                    setAccessibleLabel(promote, t('ui.promoteToScene.menuItem'));
+                    setTooltip(promote, t('ui.promoteToScene.menuItem'));
+                }
                 const when = readWhen(frontmatter, this.plugin.settings);
                 const durationRaw = frontmatterKey(frontmatter, authorKeyFor('Duration', this.plugin.settings));
                 const duration = typeof durationRaw === 'string' ? formatCompactDuration(durationRaw) ?? durationRaw : null;

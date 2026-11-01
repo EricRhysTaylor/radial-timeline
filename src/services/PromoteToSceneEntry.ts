@@ -81,7 +81,7 @@ function explainNothingToPromote(plan: PromotionPlan, files: TFile[]): string {
 }
 
 /** Plan, confirm and apply a promotion for the given notes. */
-export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[]): Promise<void> {
+export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[], openPromoted?: (file: TFile) => Promise<void>): Promise<void> {
     const { app, settings } = plugin;
     const plan = planPromotion(app, settings, files);
     if (plan.entries.length === 0) {
@@ -101,6 +101,13 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[])
         sceneData = await plugin.getSceneData({ sourcePath: only.book.sourceFolder });
         anchors = promotionAnchors(sceneData);
         const fm = app.metadataCache.getFileCache(only.file)?.frontmatter;
+        const sketchAct = only.fromSketch ? buildTableRow(only.file.path, only.file.basename, fm, settings).act : null;
+        if (sketchAct !== null) {
+            anchors = anchorsInSketchAct(anchors, sketchAct, anchor => {
+                const file = app.vault.getFileByPath(anchor.path);
+                return file ? buildTableRow(file.path, file.basename, app.metadataCache.getFileCache(file)?.frontmatter, settings).act : null;
+            });
+        }
         const anchorId = only.fromSketch ? sketchAnchor(fm) : null;
         if (anchorId) {
             const items = app.vault.getMarkdownFiles().filter(file => getBookIdForPath(settings.books, file.path) === only.book.id)
@@ -115,6 +122,10 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[])
                 return;
             }
             defaultAnchorPath = matching[0].row.path;
+            if (!anchors.some(anchor => anchor.path === defaultAnchorPath)) {
+                new Notice(t('ui.timetable.sketchPromotionAnchorProblem'), 8000);
+                return;
+            }
             const gap = ordered.items.filter(item => item.row.kind === 'sketch' && sketchAnchor(item.frontmatter) === anchorId
                 && item.row.act === matching[0].row.act);
             const position = gap.findIndex(item => item.row.path === only.file.path);
@@ -164,10 +175,17 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[])
     }
     if (only) {
         const finalName = result.renamed[0] ? basename(result.renamed[0].to).replace(/\.md$/, '') : only.file.basename;
-        await modal.finishWithDismiss(t('ui.promoteToScene.doneOne', { name: finalName }));
+        const promoted = result.promoted[0];
+        await modal.finishWithDismiss(t('ui.promoteToScene.doneOne', { name: finalName }), false,
+            promoted ? () => openPromoted ? openPromoted(promoted) : app.workspace.openLinkText(promoted.path, '', false) : undefined);
         return;
     }
     await modal.finishWithDismiss(t('ui.promoteToScene.doneMany', { notes: tCount('note', result.promoted.length) }));
+}
+
+/** A position offered for a sketch must agree with its existing act. */
+export function anchorsInSketchAct(anchors: PromotionAnchorOption[], act: number, actFor: (anchor: PromotionAnchorOption) => number | null): PromotionAnchorOption[] {
+    return anchors.filter(anchor => actFor(anchor) === act);
 }
 
 /**

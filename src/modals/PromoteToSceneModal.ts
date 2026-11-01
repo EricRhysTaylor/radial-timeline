@@ -97,7 +97,10 @@ export class PromoteToSceneModal extends ErtModal {
         let titleInput: TextComponent | null = null;
         if (only) {
             this.addRow(section, 'file-up', t('ui.promoteToScene.promoteOne', { name: only.file.basename, book: this.options.bookLabel }));
-            if (only.fromSketch) this.addRow(section, 'pencil-line', t('ui.promoteToScene.fromSketch'));
+            if (only.fromSketch) {
+                this.addRow(section, 'pencil-line', t('ui.promoteToScene.fromSketch'));
+                this.addRow(section, 'file-text', t('ui.promoteToScene.sketchBody'));
+            }
             if (this.options.askTitle) {
                 const titleRow = this.addRow(section, 'text-cursor-input', t('ui.promoteToScene.titleLabel'));
                 const titleSlot = titleRow.parentElement?.createDiv({ cls: 'ert-drag-confirm-row-control' });
@@ -134,18 +137,26 @@ export class PromoteToSceneModal extends ErtModal {
         }
 
         if (only && !only.prefix && this.options.anchors && this.options.anchors.length > 0) {
+            let unnumberedHint: HTMLElement | undefined;
             const positionRow = this.addRow(section, 'list-ordered', t('ui.promoteToScene.positionLabel'));
             const dropdownSlot = positionRow.parentElement?.createDiv({ cls: 'ert-drag-confirm-row-control' });
             if (dropdownSlot) {
                 const dropdown = new DropdownComponent(dropdownSlot);
                 // With a title to give, the name changes anyway; the choice is only whether it gets a number.
-                dropdown.addOption('', this.options.askTitle ? t('ui.promoteToScene.noNumber') : t('ui.promoteToScene.keepName'));
+                if (!this.options.defaultAnchorPath) dropdown.addOption('', this.options.askTitle ? t('ui.promoteToScene.noNumber') : t('ui.promoteToScene.keepName'));
                 for (const anchor of this.options.anchors) {
                     dropdown.addOption(anchor.path, t('ui.promoteToScene.afterScene', { scene: anchor.label }));
                 }
                 dropdown.setValue(this.anchorPath ?? '');
-                dropdown.onChange(value => { this.anchorPath = value || null; });
+                dropdown.onChange(value => { this.anchorPath = value || null; unnumberedHint?.toggleClass('is-hidden', !!this.anchorPath); });
             }
+            if (only.fromSketch) {
+                const text = this.addRow(section, 'info', t('ui.promoteToScene.sketchUnnumbered'));
+                unnumberedHint = text.parentElement ?? undefined;
+                unnumberedHint?.toggleClass('is-hidden', !!this.anchorPath);
+            }
+        } else if (only?.fromSketch && !only.prefix) {
+            this.addRow(section, 'info', t('ui.promoteToScene.sketchUnnumbered'));
         } else if (only?.prefix) {
             this.addRow(section, 'list-ordered', t('ui.promoteToScene.keepsNumber', { prefix: only.prefix }));
         } else if (!single) {
@@ -234,7 +245,7 @@ export class PromoteToSceneModal extends ErtModal {
         this.statusTextEl?.setText(message);
     }
 
-    async finishWithDismiss(message: string, isError = false): Promise<void> {
+    async finishWithDismiss(message: string, isError = false, openScene?: () => Promise<void>): Promise<void> {
         if (this.closed) return;
         this.phase = 'done';
         this.showStatusRow(isError ? 'is-error' : 'is-complete');
@@ -243,6 +254,14 @@ export class PromoteToSceneModal extends ErtModal {
         if (this.primaryButtonEl) {
             this.primaryButtonEl.disabled = false;
             this.primaryButtonEl.textContent = t('ui.promoteToScene.doneButton');
+        }
+        if (openScene && this.primaryButtonEl?.parentElement) {
+            const openButton = this.primaryButtonEl.parentElement.createEl('button', { text: t('ui.promoteToScene.openScene') });
+            openButton.addEventListener('click', () => {
+                this.resolveDismiss();
+                this.close();
+                void openScene();
+            });
         }
         await new Promise<void>(resolve => { this.dismissResolver = resolve; });
     }

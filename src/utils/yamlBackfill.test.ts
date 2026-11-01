@@ -1,7 +1,7 @@
 import { makeFile } from '../../tests/helpers/obsidianFixtures';
 import { describe, expect, it } from 'vitest';
 import type { App, TFile } from 'obsidian';
-import { planDeprecatedFieldMigration, planFillEmptyValues, runBackdropSynopsisToContextMigration, runBeatDescriptionToPurposeMigration } from './yamlBackfill';
+import { normalizeDefault, planDeprecatedFieldMigration, planFillEmptyValues, runBackdropSynopsisToContextMigration, runBeatDescriptionToPurposeMigration, runYamlBackfill, runYamlFillEmptyValues } from './yamlBackfill';
 
 function makeApp(frontmatterByPath: Record<string, Record<string, unknown>>): App {
     return {
@@ -150,5 +150,52 @@ describe('planDeprecatedFieldMigration', () => {
         const move = makeFile('bd2.md');
         const app2 = makeCacheApp({ [move.path]: { Synopsis: 'legacy' } });
         expect(planDeprecatedFieldMigration({ app: app2, files: [move], noteType: 'Backdrop', mappings: null })?.canonicalKey).toBe('Context');
+    });
+});
+
+describe('template placeholders never reach a note', () => {
+    it('normalizes {{Placeholder}} defaults to empty and drops placeholder list items', () => {
+        expect(normalizeDefault('{{Character}}')).toBe('');
+        expect(normalizeDefault(' {{Due}} ')).toBe('');
+        expect(normalizeDefault(['{{Character}}', 'Chae Ban'])).toEqual(['Chae Ban']);
+        expect(normalizeDefault('Zero')).toBe('Zero');
+        expect(normalizeDefault('See {{Character}} notes')).toBe('See {{Character}} notes');
+    });
+
+    it('inserts a missing Character key as empty, not as {{Character}}', async () => {
+        const file = makeFile('Book/36 Scene.md');
+        const frontmatterByPath: Record<string, Record<string, unknown>> = {
+            [file.path]: { Class: 'Scene', Sashaacter: ['[[Sasha]]'] }
+        };
+        const app = makeApp(frontmatterByPath);
+
+        const result = await runYamlBackfill({
+            app,
+            files: [file],
+            fieldsToInsert: { Character: '{{Character}}', Act: '{{Act}}', Duration: '1 hour' }
+        });
+
+        expect(result.updated).toBe(1);
+        expect(frontmatterByPath[file.path].Character).toBe('');
+        expect(frontmatterByPath[file.path].Act).toBe('');
+        expect(frontmatterByPath[file.path].Duration).toBe('1 hour');
+    });
+
+    it('never fills an empty key with a placeholder default', async () => {
+        const file = makeFile('Book/37 Scene.md');
+        const frontmatterByPath: Record<string, Record<string, unknown>> = {
+            [file.path]: { Class: 'Scene', Character: '', Due: '' }
+        };
+        const app = makeApp(frontmatterByPath);
+
+        const result = await runYamlFillEmptyValues({
+            app,
+            files: [file],
+            fieldsToInsert: { Character: '{{Character}}', Due: '{{Due}}' }
+        });
+
+        expect(result.filledFields).toBe(0);
+        expect(frontmatterByPath[file.path].Character).toBe('');
+        expect(frontmatterByPath[file.path].Due).toBe('');
     });
 });

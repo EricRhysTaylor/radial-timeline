@@ -11,7 +11,7 @@ import { getActiveFrontmatterMappings } from '../../../utils/frontmatter';
 import { writeDeletionSnapshot } from '../../../utils/logVaultOps';
 import { runReferenceIdBackfill, runReferenceIdDuplicateRepair } from '../../../utils/referenceIdBackfill';
 import { collectFilesForAudit, collectFilesForAuditWithScope, formatAuditReport, formatSemanticWarningChipText, formatSemanticWarningReason, getSemanticWarningType, groupSemanticWarningEntries, runYamlAudit, type NoteAuditEntry, type YamlAuditResult, } from '../../../utils/yamlAudit';
-import { planDeprecatedFieldMigration, planFillEmptyValues, runBackdropSynopsisToContextMigration, runBeatDescriptionToPurposeMigration, runYamlBackfill, runYamlFillEmptyValues, type BackfillResult, type DeprecatedMigrationPlan, type FillEmptyPlan } from '../../../utils/yamlBackfill';
+import { normalizeDefault, planDeprecatedFieldMigration, planFillEmptyValues, runBackdropSynopsisToContextMigration, runBeatDescriptionToPurposeMigration, runYamlBackfill, runYamlFillEmptyValues, type BackfillResult, type DeprecatedMigrationPlan, type FillEmptyPlan } from '../../../utils/yamlBackfill';
 import { previewDeleteFields, previewReorder, runYamlDeleteFields, runYamlReorder, summarizeDeletePreview, type DeleteResult, type ReorderResult } from '../../../utils/yamlManager';
 import { formatSafetyIssues } from '../../../utils/yamlSafety';
 import { computeCanonicalOrder, getCustomDefaults, getCustomKeys, getExcludeKeyPredicate, getTemplateParts, RESERVED_OBSIDIAN_KEYS, extractKeysInOrder as sharedExtractKeysInOrder, type NoteType } from '../../../utils/yamlTemplateNormalize';
@@ -833,7 +833,8 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             renderBody: body => {
                 body.createDiv({ text: t('ui.yamlAuditPanel.insertFieldsBody') });
                 const fieldListEl = body.createEl('ul');
-                for (const [key, val] of Object.entries(fieldsToInsert)) {
+                for (const [key, raw] of Object.entries(fieldsToInsert)) {
+                    const val = normalizeDefault(raw);
                     const valStr = Array.isArray(val) ? val.join(', ') : val;
                     fieldListEl.createEl('li', { text: valStr ? `${key}: ${valStr}` : t('ui.yamlAuditPanel.emptyFieldValue', { key }) });
                 }

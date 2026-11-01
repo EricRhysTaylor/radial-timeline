@@ -85,15 +85,20 @@ interface LegacyFieldMigrationResult {
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
+/** A template placeholder such as `{{Character}}`, filled only when a scene is created. */
+const TEMPLATE_PLACEHOLDER = /^\s*\{\{[^{}\n]+\}\}\s*$/;
+
 /**
- * Normalize a default value so we never write `null` or `undefined`.
+ * Normalize a default value so we never write `null`, `undefined`, or a raw
+ * template placeholder into a note.
  * - `undefined` / `null` → `''`
- * - Arrays are preserved (empty arrays stay empty).
- * - Strings are preserved.
+ * - `{{Placeholder}}` strings → `''`; placeholder list items are dropped.
+ * - Other strings and list items are preserved.
  */
-function normalizeDefault(value: FieldEntryValue | undefined | null): string | string[] {
+export function normalizeDefault(value: FieldEntryValue | undefined | null): string | string[] {
     if (value === undefined || value === null) return '';
-    if (Array.isArray(value)) return value;
+    if (Array.isArray(value)) return value.filter(item => !TEMPLATE_PLACEHOLDER.test(item));
+    if (TEMPLATE_PLACEHOLDER.test(value)) return '';
     return value;
 }
 
@@ -385,8 +390,9 @@ function isEmptyFrontmatterValue(value: unknown): boolean {
 }
 
 function hasDefaultValue(value: FieldEntryValue): boolean {
-    if (Array.isArray(value)) return value.length > 0;
-    return value.trim().length > 0;
+    const normalized = normalizeDefault(value);
+    if (Array.isArray(normalized)) return normalized.length > 0;
+    return normalized.trim().length > 0;
 }
 
 /**
@@ -410,7 +416,7 @@ export function planFillEmptyValues(options: {
     const fieldsToInsert: Record<string, FieldEntryValue> = {};
     for (const key of options.customKeys) {
         const value = options.defaults[key] ?? '';
-        if (hasDefaultValue(value)) fieldsToInsert[key] = value;
+        if (hasDefaultValue(value)) fieldsToInsert[key] = normalizeDefault(value);
     }
     const keys = Object.keys(fieldsToInsert);
     if (keys.length === 0) return null;

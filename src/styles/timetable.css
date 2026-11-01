@@ -1433,7 +1433,7 @@
 .ert-panel-focus-image { position: relative; display: inline-flex; max-width: 100%; justify-self: center; }
 .ert-panel-focus-image img { display: block; max-width: 100%; max-height: 45vh; width: auto; height: auto; cursor: crosshair; }
 .ert-panel-focus-marker { position: absolute; left: var(--ert-focus-x, 50%); top: var(--ert-focus-y, 50%); width: 18px; height: 18px; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 2px black; transform: translate(-50%, -50%); pointer-events: none; }
-.ert-panel-focus-horizontal { grid-column: 1; display: flex; flex-direction: column; align-items: center; gap: var(--size-4-1); }
+.ert-panel-focus-horizontal { grid-column: 1; display: flex; flex-direction: column; align-items: center; gap: var(--size-4-3); }
 .ert-panel-focus-horizontal input { width: min(240px, 100%); }
 .ert-panel-focus-vertical { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: var(--size-4-1); }
 .ert-panel-focus-vertical span { writing-mode: vertical-rl; transform: rotate(180deg); }

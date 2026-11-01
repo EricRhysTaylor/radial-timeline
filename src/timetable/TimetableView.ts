@@ -2286,22 +2286,13 @@ export class TimetableView extends BasesView {
                 if (layout === 'outline') this.resetOutlineScroll();
             });
         }
-        const workspace = toolbar.createEl('button', { cls: 'ert-outline-workspace-button' });
+        const workspace = toolbar.createEl('button', { cls: 'ert-outline-workspace-button', attr: { type: 'button', 'aria-haspopup': 'menu' } });
         setIcon(workspace.createSpan(), 'panels-left-right');
         workspace.createSpan({ text: t('ui.timetable.outlineWorkspace') });
+        setIcon(workspace.createSpan({ cls: 'ert-outline-workspace-button__caret', attr: { 'aria-hidden': 'true' } }), 'chevron-down');
         this.panelEvents?.registerDomEvent(workspace, 'click', () => {
-            if (this.panelEditing) return;
-            this.config.set('outline', true); this.config.set('panels', false); this.render();
-            this.resetOutlineScroll();
-            void this.openOutlineWorkspace();
-        });
-        const workspaceMenu = toolbar.createEl('button', { cls: 'ert-outline-workspace-menu clickable-icon', attr: { type: 'button', 'aria-haspopup': 'menu' } });
-        setIcon(workspaceMenu, 'chevron-down');
-        setAccessibleLabel(workspaceMenu, t('ui.timetable.outlineWorkspaceLayouts'));
-        setTooltip(workspaceMenu, t('ui.timetable.outlineWorkspaceLayouts'));
-        this.panelEvents?.registerDomEvent(workspaceMenu, 'click', () => {
-            const menu = new Menu();
-            for (const [direction, label, icon] of [['vertical', t('ui.timetable.outlineWorkspaceBeside'), 'columns-2'], ['horizontal', t('ui.timetable.outlineWorkspaceBelow'), 'rows-2']] as const) {
+            const menu = new Menu().setUseNativeMenu(false);
+            for (const [direction, label, icon] of [['vertical', t('ui.timetable.outlineWorkspaceBeside'), 'panels-left-right'], ['horizontal', t('ui.timetable.outlineWorkspaceBelow'), 'panels-top-bottom']] as const) {
                 menu.addItem(item => item.setTitle(label).setIcon(icon).onClick(() => {
                     if (this.panelEditing) return;
                     this.config.set('outline', true); this.config.set('panels', false); this.render();
@@ -2309,8 +2300,8 @@ export class TimetableView extends BasesView {
                     void this.openOutlineWorkspace(undefined, direction);
                 }));
             }
-            const rect = workspaceMenu.getBoundingClientRect();
-            menu.showAtPosition({ x: rect.left, y: rect.bottom }, workspaceMenu.ownerDocument);
+            const rect = workspace.getBoundingClientRect();
+            menu.showAtPosition({ x: rect.left, y: rect.bottom }, workspace.ownerDocument);
         });
         const outlineMode = this.config.get('outline') === true;
         const modeLabel = outlineMode

@@ -6056,6 +6056,13 @@ export const fr: TranslationKeys = {
             "noticeNothing": "Rien n'a besoin de promouvoir ici."
         },
         "timetable": {
+            "panelImage": "Image",
+            "panelImageLabel": "Image du panneau",
+            "panelImagePov": "Point de vue",
+            "panelImagePlace": "Lieu",
+            "panelImageNone": "Aucune",
+            "panelImageSceneSource": "Image du lieu de la scène : {{name}}",
+            "panelImagePlaceSource": "Image du lieu : {{name}}",
             "panelSize": "Taille des panneaux",
             "panelSizeSmall": "Petit",
             "panelSizeMedium": "Moyen",

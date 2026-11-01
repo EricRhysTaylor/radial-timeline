@@ -1239,9 +1239,10 @@
 .ert-timetable-panels__mode-label { display: inline-flex; align-items: center; gap: var(--size-4-1); color: var(--text-muted); font-size: var(--font-ui-small); padding-inline: var(--size-4-1); }
 .ert-timetable-panels__mode-lock { display: inline-flex; }
 .ert-timetable-panels__mode-lock .svg-icon { width: 14px; height: 14px; }
-.ert-timetable-panels__size { display: inline-flex; align-items: center; gap: var(--size-4-1); margin-left: auto; color: var(--text-muted); font-size: var(--font-ui-small); white-space: nowrap; }
-.ert-timetable-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: stretch; gap: var(--size-4-3); max-width: 1500px; margin: 0 auto; padding: var(--size-4-3); }
-.ert-timetable-panels.is-small { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.ert-timetable-panels__image-choice, .ert-timetable-panels__size { display: inline-flex; align-items: center; gap: var(--size-4-1); color: var(--text-muted); font-size: var(--font-ui-small); white-space: nowrap; }
+.ert-timetable-panels__image-choice { margin-left: auto; }
+.ert-timetable-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: stretch; gap: var(--size-4-3); padding: var(--size-4-3); }
+.ert-timetable-panels.is-small { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
 .ert-timetable-panels.is-large { grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); }
 .ert-timetable-panels__group { grid-column: 1 / -1; margin: var(--size-4-3) 0 0; color: var(--text-muted); }
 .ert-timetable-panels__empty-act, .ert-timetable__empty-act td { color: var(--text-muted); border: 1px dashed var(--background-modifier-border); border-radius: var(--radius-m); padding: var(--size-4-4); }
@@ -1389,3 +1390,16 @@
 
 .ert-outline-documents__file span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ert-outline-import-editor { width: 100%; margin-top: var(--size-4-2); resize: vertical; }
+
+/* Small panels form a visual overview; editing stays available at larger sizes. */
+.ert-timetable .ert-timetable-panels.is-small .ert-timetable-panels__panel.is-scene { padding: var(--size-4-3); }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__header { padding-right: 0; }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__cover { flex: 0 0 100%; width: 100%; height: auto; aspect-ratio: 3 / 2; }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__heading { flex-basis: 100%; }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__title { font-size: 1.1em; }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__date,
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__meta,
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__characters,
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__synopsis { display: none; }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__open { color: white; background: rgb(0 0 0 / 55%); }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__open:hover { color: white; background: rgb(0 0 0 / 75%); }

@@ -6056,6 +6056,13 @@ export const th: TranslationKeys = {
             "noticeNothing": "ไม่มีอะไรที่นี่ต้องการการส่งเสริม"
         },
         "timetable": {
+            "panelImage": "ภาพ",
+            "panelImageLabel": "ภาพแผง",
+            "panelImagePov": "มุมมอง",
+            "panelImagePlace": "สถานที่",
+            "panelImageNone": "ไม่มี",
+            "panelImageSceneSource": "ภาพสถานที่ของฉาก: {{name}}",
+            "panelImagePlaceSource": "ภาพสถานที่: {{name}}",
             "panelSize": "ขนาดแผง",
             "panelSizeSmall": "เล็ก",
             "panelSizeMedium": "กลาง",

@@ -6056,6 +6056,13 @@ export const vi: TranslationKeys = {
             "noticeNothing": "Không có gì ở đây cần quảng bá."
         },
         "timetable": {
+            "panelImage": "Hình ảnh",
+            "panelImageLabel": "Hình ảnh của bảng",
+            "panelImagePov": "Góc nhìn",
+            "panelImagePlace": "Địa điểm",
+            "panelImageNone": "Không có",
+            "panelImageSceneSource": "Hình địa điểm của cảnh: {{name}}",
+            "panelImagePlaceSource": "Hình địa điểm: {{name}}",
             "panelSize": "Kích thước bảng",
             "panelSizeSmall": "Nhỏ",
             "panelSizeMedium": "Vừa",

@@ -2262,6 +2262,12 @@ export class TimetableView extends BasesView {
     }
 
     /** Switch the presentation while retaining the same Bases view and filters. */
+    public setLayout(layout: 'table' | 'panels' | 'outline'): void {
+        this.config.set('outline', layout === 'outline');
+        this.config.set('panels', layout === 'panels');
+        this.render();
+    }
+
     private renderLayoutSwitch(state: TimelineModeState): void {
         const toolbar = this.rootEl.createDiv({ cls: 'ert-timetable-panels__toolbar' });
         for (const [layout, label, icon] of [['table', t('ui.timetable.layoutTable'), 'table-2'], ['panels', t('ui.timetable.layoutPanels'), 'layout-grid'], ['outline', t('ui.timetable.layoutOutline'), 'list-tree']] as const) {
@@ -2272,9 +2278,28 @@ export class TimetableView extends BasesView {
             button.setAttr('aria-pressed', String(current === layout));
             this.panelEvents?.registerDomEvent(button, 'click', () => {
                 if (this.panelEditing) return;
-                this.config.set('outline', layout === 'outline');
-                this.config.set('panels', layout === 'panels'); this.render();
+                this.setLayout(layout);
                 if (layout === 'outline') this.resetOutlineScroll();
+            });
+        }
+        const books = this.plugin.settings.books ?? [];
+        if (books.length) {
+            const bookControl = toolbar.createDiv({ cls: 'ert-timetable__book-selector' });
+            setIcon(bookControl.createSpan({ attr: { 'aria-hidden': 'true' } }), 'book');
+            const select = bookControl.createEl('select');
+            setAccessibleLabel(select, t('ui.timeLineView.bookSelector'));
+            const ids = this.bookIdsInView();
+            const shownBook = ids.length === 1 ? ids[0] : ids.length === 0 && getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings)?.id : undefined;
+            if (!shownBook) select.createEl('option', { value: '', text: t('ui.timeLineView.bookSelector'), attr: { disabled: 'true' } });
+            for (const book of books) select.createEl('option', { value: book.id, text: book.title?.trim() || book.sourceFolder });
+            select.value = shownBook ?? '';
+            this.panelEvents?.registerDomEvent(select, 'change', () => {
+                if (this.panelEditing) { this.render(); return; }
+                const layout = this.config.get('outline') === true ? 'outline' : this.config.get('panels') === true ? 'panels' : 'table';
+                select.disabled = true;
+                void this.plugin.selectTimetableBook(select.value, this.rootEl, layout).finally(() => {
+                    if (this.rootEl.isConnected) this.render();
+                });
             });
         }
         const workspace = toolbar.createEl('button', { cls: 'ert-outline-workspace-button', attr: { type: 'button', 'aria-haspopup': 'menu' } });

@@ -467,12 +467,16 @@ export default class RadialTimelinePlugin extends Plugin {
         this.updateTimelineBookHeaders();
         this.inquiryService?.notifyBookSettingsChanged();
         this.settingsTab?.refreshActiveBookSections();
-        void this.timetableService?.followTimeline();
+        await this.timetableService?.followTimeline();
     }
 
     /** Open (or focus) the Timetable for the timeline's current book or saga. */
     public openTimetable(): Promise<void> {
         return this.timetableService.open();
+    }
+
+    public selectTimetableBook(bookId: string, fromEl: HTMLElement, layout: 'table' | 'panels' | 'outline'): Promise<void> {
+        return this.timetableService.selectBook(bookId, fromEl, layout);
     }
 
     /** Light up a scene on every open timeline (a Timetable row is hovered); null clears it. */

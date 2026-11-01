@@ -20,7 +20,7 @@ import { openSettingsTab } from '../utils/obsidianInternals';
 import { confirmWithErtModal } from '../modals/ErtConfirmModal';
 import { TIMELINE_VIEW_TYPE } from '../view/TimeLineView';
 import { TimetableView, timetableViewOptions } from './TimetableView';
-import { activeTimetable, refreshTimetableViews } from './timetableRegistry';
+import { activeTimetable, refreshTimetableViews, timetableInElement } from './timetableRegistry';
 import {
     buildBookTimetableContent,
     buildSagaTimetableContent,
@@ -105,6 +105,25 @@ export class TimetableService {
         await this.show(file);
     }
 
+    /** Select a book from a Timetable and keep that pane following the timeline. */
+    async selectBook(bookId: string, fromEl: HTMLElement, layout: 'table' | 'panels' | 'outline'): Promise<void> {
+        const leaf = this.plugin.app.workspace.getLeavesOfType(BASES_LEAF_TYPE).find(candidate => candidate.view.containerEl.contains(fromEl));
+        const target = this.resolveTarget({ bookId });
+        if (!leaf || !target) return;
+        const file = await this.ensureFile(target);
+        if (!file) return;
+        this.following.add(leaf);
+        const alreadyActive = this.plugin.settings.activeBookId === bookId && getTimelineScope(this.plugin.settings) === 'book';
+        await this.plugin.setActiveBookId(bookId);
+        if (alreadyActive) await this.followTimeline();
+        if (this.leafFilePath(leaf) !== file.path) {
+            const viewName = await this.timetableViewName(file);
+            await leaf.setViewState({ type: BASES_LEAF_TYPE, state: { file: file.path, viewName }, active: true });
+            this.following.add(leaf);
+        }
+        timetableInElement(leaf.view.containerEl)?.setLayout(layout);
+    }
+
     /** Called when the timeline switches books or scope: re-target the tabs that follow it. */
     async followTimeline(): Promise<void> {
         refreshTimetableViews();
@@ -121,7 +140,7 @@ export class TimetableService {
         }
     }
 
-    private resolveTarget(options: { quiet?: boolean } = {}): TimetableTarget | null {
+    private resolveTarget(options: { quiet?: boolean; bookId?: string } = {}): TimetableTarget | null {
         const { settings } = this.plugin;
         const names = {
             timetable: t('ui.timetable.viewName'),
@@ -130,7 +149,7 @@ export class TimetableService {
             actBoard: t('ui.timetable.viewActBoard'),
             statusBoard: t('ui.timetable.viewStatusBoard'),
         };
-        if (getTimelineScope(settings) === 'saga') {
+        if (!options.bookId && getTimelineScope(settings) === 'saga') {
             const books = getSagaBooks(settings);
             return {
                 key: SAGA_TIMETABLE_KEY,
@@ -139,7 +158,7 @@ export class TimetableService {
                 build: () => buildSagaTimetableContent(books, settings, names, this.columnFill(books.map(book => book.sourceFolder))),
             };
         }
-        const book = getActiveBook(settings);
+        const book = options.bookId ? settings.books?.find(candidate => candidate.id === options.bookId) : getActiveBook(settings);
         if (!book || !book.sourceFolder.trim()) {
             // No fallback to a vault-wide table: say why, and open Book Manager.
             if (!options.quiet) {

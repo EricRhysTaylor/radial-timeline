@@ -21,6 +21,7 @@ export interface LiveTimetable {
     /** The table's element, so the timeline can find the pane it shows in (see readingPane). */
     readonly rootEl: HTMLElement;
     refresh(): void;
+    setLayout(layout: 'table' | 'panels' | 'outline'): void;
     /** The wheel is hovering this scene (or nothing): light up its row in the hovered cell's color (a CSS color). */
     markLinkedRow(path: string | null, color: string | null, reveal?: boolean): void;
     /** This note is open in an editor (or none is): mark its row. */
@@ -127,6 +128,11 @@ export function hasOpenTimetable(): boolean {
 /** Each open Timetable's element. */
 export function openTimetableElements(): HTMLElement[] {
     return [...liveTimetables].map(view => view.rootEl);
+}
+
+/** Find a Timetable inside a particular Bases pane. */
+export function timetableInElement(element: HTMLElement): LiveTimetable | undefined {
+    return [...liveTimetables].find(view => element.contains(view.rootEl));
 }
 
 /** The Timetable in the active pane, if any, for commands. */

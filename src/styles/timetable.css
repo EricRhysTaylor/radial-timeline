@@ -1241,6 +1241,10 @@
 .ert-timetable .ert-outline-workspace-button { border: 1px solid var(--interactive-accent); color: var(--text-accent); background: var(--background-secondary); font-weight: var(--font-semibold); }
 .ert-outline-workspace-button__caret { display: inline-flex; margin-left: 3px; }
 .ert-timetable .ert-timetable-panels__mode-label { display: inline-flex; align-items: center; gap: 6px; background: transparent; box-shadow: none; color: var(--text-muted); }
+.ert-timetable__book-selector { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); min-width: 0; }
+.ert-timetable__book-selector > span { display: inline-flex; }
+.ert-timetable__book-selector .svg-icon { width: 16px; height: 16px; }
+.ert-timetable__book-selector select { max-width: 190px; }
 .ert-timetable-panels__mode-label .svg-icon { width: 15px; height: 15px; }
 .ert-timetable-panels__mode-caption { font-size: var(--font-ui-smaller); font-weight: var(--font-semibold); text-transform: uppercase; letter-spacing: .06em; }
 .ert-timetable-panels__mode-label { display: inline-flex; align-items: center; gap: var(--size-4-1); color: var(--text-muted); font-size: var(--font-ui-small); padding-inline: var(--size-4-1); }

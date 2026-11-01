@@ -19,6 +19,18 @@ export interface SubplotCanvasPlan {
 
 export type StoryRange = 'all' | 'beginning' | 'middle' | 'end';
 
+export function storyRangeBounds(nodes: SubplotCanvasNode[], rows: TimetableRow[], act: number | null, subplot: string | null, range: StoryRange): { minX: number; minY: number; maxX: number; maxY: number } | null {
+    if (range === 'all') return null;
+    const selected = rows.filter(row => subplot === null || row.subplots.includes(subplot));
+    const paths = new Set(storyRangeRows(selected, act, range).map(row => row.path));
+    const cards = nodes.filter(node => node.type === 'file' && node.file && paths.has(node.file));
+    if (!cards.length) return null;
+    return {
+        minX: Math.min(...cards.map(node => node.x)), minY: Math.min(...cards.map(node => node.y)),
+        maxX: Math.max(...cards.map(node => node.x + node.width)), maxY: Math.max(...cards.map(node => node.y + node.height)),
+    };
+}
+
 /** Slice narrative order before subplot filtering, so each third has a stable meaning. */
 export function storyRangeRows(rows: TimetableRow[], act: number | null, range: StoryRange): TimetableRow[] {
     const ordered = rows.filter(row => row.kind === 'scene' && (act === null || row.act === act)).sort(compareManuscriptRows);

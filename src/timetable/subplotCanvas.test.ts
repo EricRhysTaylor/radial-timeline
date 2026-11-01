@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { planSubplotCanvas, storyRangeRows } from './subplotCanvas';
+import { planSubplotCanvas, storyRangeBounds, storyRangeRows } from './subplotCanvas';
 import type { TimetableRow } from './timetableModel';
 
 function scene(n: number, act: number, subplots: string[]): TimetableRow {
@@ -50,6 +50,16 @@ describe('subplot Canvas layout', () => {
         const rows = [scene(1, 1, ['Main']), scene(2, 1, ['Main']), scene(3, 2, ['Main']), scene(4, 2, ['Main']), scene(5, 2, ['Main'])];
         expect(storyRangeRows(rows, 2, 'beginning').map(row => row.prefix)).toEqual(['3']);
         expect(storyRangeRows(rows.slice(0, 1), null, 'beginning')).toHaveLength(1);
+    });
+    it('keeps the entire map while calculating a focus for a selected third', () => {
+        const rows = Array.from({ length: 12 }, (_, i) => scene(i + 1, 1, ['Main']));
+        const plan = makePlan(rows);
+        const bounds = storyRangeBounds(plan.nodes, rows, 1, null, 'middle')!;
+        const cards = plan.nodes.filter(node => node.type === 'file');
+        expect(cards).toHaveLength(12);
+        const focused = cards.filter(node => node.x >= bounds.minX && node.x + node.width <= bounds.maxX && node.y >= bounds.minY && node.y + node.height <= bounds.maxY);
+        expect(focused.map(node => node.file)).toEqual(rows.slice(4, 8).map(row => row.path));
+        expect(storyRangeBounds(plan.nodes, rows, 1, null, 'all')).toBeNull();
     });
     it.each([25, 100, 200])('keeps %i scene cards in non-overlapping bounded strips', count => {
         const rows = Array.from({ length: count }, (_, i) => scene(i + 1, Math.floor(i / 40) + 1, ['Main', ...(i % 3 === 0 ? ['Mara'] : [])]));

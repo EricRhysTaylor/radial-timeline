@@ -5,7 +5,7 @@ import { getActiveBook, getBookIdForPath } from '../utils/books';
 import { safeTitle } from '../utils/noteTitle';
 import { t } from '../i18n';
 import { buildTableRow, type TimetableRow } from './timetableModel';
-import { planSubplotCanvas, storyRangeRows, type StoryRange } from './subplotCanvas';
+import { planSubplotCanvas, storyRangeBounds, storyRangeRows, type StoryRange } from './subplotCanvas';
 import { preferTitleForCanvas } from './CanvasCardPresentation';
 
 export class SubplotCanvasModal extends ErtModal {
@@ -69,7 +69,7 @@ export class SubplotCanvasModal extends ErtModal {
             laneSelect.setValue(this.subplot ?? '');
             let serial = 0;
             rangeSelect.setValue(this.range);
-            const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot, range: this.range }, () => String(++serial));
+            const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot }, () => String(++serial));
             count.setText(t('ui.subplotCanvas.count', { scenes: plan.sceneCount, cards: plan.appearanceCount }));
             create.disabled = !this.bookId || plan.sceneCount === 0 || this.busy;
         };
@@ -91,20 +91,30 @@ export class SubplotCanvasModal extends ErtModal {
         const book = (this.plugin.settings.books ?? []).find(item => item.id === this.bookId);
         if (!book) return;
         const rows = this.rows();
-        const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot, range: this.range }, () => crypto.randomUUID().replace(/-/g, ''));
+        const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot }, () => crypto.randomUUID().replace(/-/g, ''));
+        const bounds = storyRangeBounds(plan.nodes, rows, this.act, this.subplot, this.range);
         if (!plan.sceneCount) { new Notice(t('ui.subplotCanvas.empty')); return; }
         try {
             const folder = 'Radial Timeline/Story Maps';
             if (!this.app.vault.getFolderByPath('Radial Timeline')) await this.app.vault.createFolder('Radial Timeline');
             if (!this.app.vault.getFolderByPath(folder)) await this.app.vault.createFolder(folder);
             const stem = safeTitle(book.title) || 'Book';
-            const rangeName = this.range === 'all' ? '' : ` - ${safeTitle(t(this.range === 'beginning' ? 'ui.subplotCanvas.rangeBeginning' : this.range === 'middle' ? 'ui.subplotCanvas.rangeMiddle' : 'ui.subplotCanvas.rangeEnd'))}`;
-            let path = `${folder}/${stem} - Subplot Map${rangeName}.canvas`;
-            for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${folder}/${stem} - Subplot Map${rangeName} ${n}.canvas`;
+            let path = `${folder}/${stem} - Subplot Map.canvas`;
+            for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${folder}/${stem} - Subplot Map ${n}.canvas`;
             const file = await this.app.vault.create(path, JSON.stringify({ nodes: plan.nodes, edges: plan.edges }, null, 2));
             preferTitleForCanvas(file.path);
             await this.app.workspace.openLinkText(file.path, '', true);
             this.close();
+            if (bounds) {
+                // Canvas viewport methods are not part of Obsidian's public API. If
+                // unavailable, keep the complete map and leave its default view intact.
+                for (let attempt = 0; attempt < 20; attempt++) {
+                    const leaf = this.app.workspace.getLeavesOfType('canvas').find(item => (item.view as { file?: { path: string } }).file?.path === file.path);
+                    const canvas = (leaf?.view as unknown as { canvas?: { nodes?: Map<string, unknown>; zoomToBbox?: (box: typeof bounds) => void } })?.canvas;
+                    if (canvas?.nodes?.size && typeof canvas.zoomToBbox === 'function') { canvas.zoomToBbox(bounds); break; }
+                    await new Promise(resolve => window.setTimeout(resolve, 100));
+                }
+            }
         } catch (error) {
             console.error('[Subplot Canvas]', error);
             new Notice(t('ui.subplotCanvas.failed'), 8000);

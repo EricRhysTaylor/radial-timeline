@@ -20,6 +20,7 @@ import { currentReferenceSelection, hoverTimeReference, onReferenceSelection, pi
 import {
     BasesView,
     Component,
+    FuzzySuggestModal,
     Keymap,
     Menu,
     Notice,
@@ -115,6 +116,7 @@ import { beatNamePeekAction } from '../view/interactions/BeatNameKeyController';
 import { isTypingInField } from '../utils/domFocus';
 import { basesViewFilters } from '../utils/obsidianInternals';
 import { openInReadingPane } from './readingPane';
+import { outlineDocumentPaths } from './outlineDocuments';
 import { renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
 import {
     markTimetableRows,
@@ -232,6 +234,13 @@ interface TableGroup {
     items: TableItem[];
 }
 
+class OutlineDocumentPicker extends FuzzySuggestModal<TFile> {
+    constructor(app: App, private readonly chosen: (file: TFile) => void) { super(app); }
+    getItems(): TFile[] { return this.app.vault.getMarkdownFiles(); }
+    getItemText(file: TFile): string { return file.path; }
+    onChooseItem(file: TFile): void { this.chosen(file); }
+}
+
 /** A table column: one of the Base's properties, or a column a micro-mode adds. */
 type Column =
     | { kind: 'property'; property: BasesPropertyId }
@@ -332,6 +341,9 @@ export class TimetableView extends BasesView {
     private keyButton: HTMLButtonElement | null = null;
     private readonly patternPrefix = `ert-timetable-${Math.random().toString(36).slice(2, 9)}-`;
     private readonly collapsed = new Set<string>();
+    private readonly outlineCollapsed = new Set<string>();
+    private outlineWorkspaceTarget: TFile | null = null;
+    private outlineWorkspacePane: WorkspaceLeaf | null = null;
     private rings: WheelRings | null = null;
     private ringsTimer: number | null = null;
     private ringsGeneration = 0;
@@ -393,7 +405,7 @@ export class TimetableView extends BasesView {
     private readonly actDividerEls = new Map<number, HTMLElement>();
     private readonly drawerHost: SketchDrawerHost = {
         promote: file => { void runPromotion(this.plugin, [file]); },
-        openNote: (file, evt) => { void openFromTimetable(this.plugin.app, file, evt, this.rootEl); },
+        openNote: (file, evt) => { void this.openOutlineFile(file, evt); },
         close: path => this.closeDrawer(path),
         rename: (file, title) => { void this.renameSketch(file, title); },
         editingEnded: () => {
@@ -1143,7 +1155,7 @@ export class TimetableView extends BasesView {
             this.toggleDrawer(path);
             return;
         }
-        void openFromTimetable(this.plugin.app, file, evt, this.rootEl);
+        void this.openOutlineFile(file, evt);
     }
 
     // ── Bulk edits ──────────────────────────────────────────────────────
@@ -1847,7 +1859,8 @@ export class TimetableView extends BasesView {
         this.syncLens();
         this.syncColoring();
 
-        const state = this.modeState();
+        const outline = this.config.get('outline') === true;
+        const state = outline ? { mode: 'narrative', shift: false, alt: false, runtime: false } : this.modeState();
         let groups = this.completeNarrativeActs(this.buildGroups(), state);
         const chronologue = state.mode === 'chronologue' ? this.chronologueContext(groups, state) : null;
         if (chronologue) groups = [chronologue.group];
@@ -1865,6 +1878,7 @@ export class TimetableView extends BasesView {
         this.renderLayoutSwitch(state);
 
         const allItems = groups.flatMap(group => group.items);
+        if (outline) this.renderOutlineDocuments(allItems);
         if (allItems.length === 0 && !groups.some(group => group.act !== undefined)) {
             this.renderNewSketchToolbar();
             this.rootEl.createDiv({ cls: 'ert-timetable__empty', text: t('ui.timetable.empty') });
@@ -1872,7 +1886,7 @@ export class TimetableView extends BasesView {
             return;
         }
 
-        if (this.config.get('panels') === true) {
+        if (outline || this.config.get('panels') === true) {
             this.renderPanels(groups, mode, allItems);
             if (scrollParent) scrollParent.scrollTop = scrollTop;
             return;
@@ -2086,12 +2100,14 @@ export class TimetableView extends BasesView {
         setIcon(lens, 'scan-eye');
         tooltip(lens, lensOn ? t('ui.timetable.lensOn') : t('ui.timetable.lensOff'), 'bottom');
 
-        const modeButton = corner.createEl('button', { cls: 'ert-timetable__mode clickable-icon' });
-        modeButton.toggleClass('is-pinned', this.modePin !== null);
-        modeButton.setAttr('aria-haspopup', 'menu');
-        setAccessibleLabel(modeButton, this.modeTooltip(state));
-        setIcon(modeButton, modeIcon(state.mode));
-        tooltip(modeButton, this.modeTooltip(state), 'bottom');
+        if (this.config.get('outline') !== true) {
+            const modeButton = corner.createEl('button', { cls: 'ert-timetable__mode clickable-icon' });
+            modeButton.toggleClass('is-pinned', this.modePin !== null);
+            modeButton.setAttr('aria-haspopup', 'menu');
+            setAccessibleLabel(modeButton, this.modeTooltip(state));
+            setIcon(modeButton, modeIcon(state.mode));
+            tooltip(modeButton, this.modeTooltip(state), 'bottom');
+        }
 
         if (this.keyButton) corner.appendChild(this.keyButton);
     }
@@ -2224,20 +2240,32 @@ export class TimetableView extends BasesView {
     /** Switch the presentation while retaining the same Bases view and filters. */
     private renderLayoutSwitch(state: TimelineModeState): void {
         const toolbar = this.rootEl.createDiv({ cls: 'ert-timetable-panels__toolbar' });
-        for (const [panels, label] of [[false, t('ui.timetable.layoutTable')], [true, t('ui.timetable.layoutPanels')]] as const) {
+        for (const [layout, label] of [['table', t('ui.timetable.layoutTable')], ['panels', t('ui.timetable.layoutPanels')], ['outline', t('ui.timetable.layoutOutline')]] as const) {
             const button = toolbar.createEl('button', { text: label });
-            button.setAttr('aria-pressed', String((this.config.get('panels') === true) === panels));
+            const current = this.config.get('outline') === true ? 'outline' : this.config.get('panels') === true ? 'panels' : 'table';
+            button.setAttr('aria-pressed', String(current === layout));
             this.panelEvents?.registerDomEvent(button, 'click', () => {
                 if (this.panelEditing) return;
-                this.config.set('panels', panels); this.render();
+                this.config.set('outline', layout === 'outline');
+                this.config.set('panels', layout === 'panels'); this.render();
+                if (layout === 'outline') this.resetOutlineScroll();
             });
         }
+        const workspace = toolbar.createEl('button', { text: t('ui.timetable.outlineWorkspace') });
+        this.panelEvents?.registerDomEvent(workspace, 'click', () => {
+            if (this.panelEditing) return;
+            this.config.set('outline', true); this.config.set('panels', false); this.render();
+            this.resetOutlineScroll();
+            void this.openOutlineWorkspace();
+        });
         const modeLabel = toolbar.createSpan({ cls: 'ert-timetable-panels__mode-label' });
-        if (this.modePin !== null) setIcon(modeLabel.createSpan({ cls: 'ert-timetable-panels__mode-lock', attr: { 'aria-hidden': 'true' } }), 'lock');
+        if (this.modePin !== null && this.config.get('outline') !== true) setIcon(modeLabel.createSpan({ cls: 'ert-timetable-panels__mode-lock', attr: { 'aria-hidden': 'true' } }), 'lock');
         modeLabel.createSpan({ text: modeName(state.mode) });
-        tooltip(modeLabel, this.modeTooltip(state), 'bottom');
-        if (this.config.get('panels') === true) {
+        if (this.config.get('outline') !== true) tooltip(modeLabel, this.modeTooltip(state), 'bottom');
+        if (this.config.get('panels') === true || this.config.get('outline') === true) {
             this.renderCorner(toolbar, state);
+        }
+        if (this.config.get('panels') === true) {
             const sizeLabel = toolbar.createEl('label', { cls: 'ert-timetable-panels__size', text: t('ui.timetable.panelSize') });
             const size = sizeLabel.createEl('select');
             setAccessibleLabel(size, t('ui.timetable.panelSize'));
@@ -2258,15 +2286,108 @@ export class TimetableView extends BasesView {
         this.panelEvents?.register(() => observer.disconnect());
     }
 
+    /** Discover book outlines and retain explicit links without changing their notes. */
+    private renderOutlineDocuments(items: TableItem[]): void {
+        const { app, settings } = this.plugin;
+        const bookId = this.singleBook(items) ?? (getTimelineScope(settings) === 'book' ? getActiveBook(settings)?.id : undefined);
+        const book = (settings.books ?? []).find(candidate => candidate.id === bookId);
+        const stored = this.config.get('outlineReferences');
+        const references = stored && typeof stored === 'object' && !Array.isArray(stored) ? stored as Record<string, unknown> : {};
+        const attached = bookId && Array.isArray(references[bookId]) ? (references[bookId] as unknown[]).filter((path): path is string => typeof path === 'string') : [];
+        const notes = book?.sourceFolder ? app.vault.getMarkdownFiles().filter(file => getBookIdForPath(settings.books, file.path) === bookId).map(file => ({
+            path: file.path,
+            bookId: getBookIdForPath(settings.books, file.path),
+            className: frontmatterKey(app.metadataCache.getFileCache(file)?.frontmatter, 'Class'),
+        })) : [];
+        const paths = outlineDocumentPaths(bookId, notes, attached);
+        const files = paths.map(path => app.vault.getAbstractFileByPath(path)).filter((file): file is TFile => file instanceof TFile);
+        const bar = this.rootEl.createDiv({ cls: 'ert-outline-documents' });
+        bar.createSpan({ cls: 'ert-outline-documents__label', text: t('ui.timetable.outlineDocuments') });
+        for (const file of files) {
+            const open = bar.createEl('button', { cls: 'ert-outline-documents__file', text: file.basename });
+            setTooltip(open, file.path);
+            this.panelEvents?.registerDomEvent(open, 'click', (evt: MouseEvent) => { void this.openOutlineFile(file, evt); });
+            if (attached.includes(file.path)) {
+                const remove = bar.createEl('button', { cls: 'ert-outline-documents__remove clickable-icon' });
+                setIcon(remove, 'x'); setTooltip(remove, t('ui.timetable.outlineUnlink'));
+                this.panelEvents?.registerDomEvent(remove, 'click', () => {
+                    if (!bookId) return;
+                    this.config.set('outlineReferences', { ...references, [bookId]: attached.filter(path => path !== file.path) }); this.render();
+                });
+            }
+        }
+        for (const path of attached.filter(path => !app.vault.getAbstractFileByPath(path))) {
+            bar.createSpan({ cls: 'ert-outline-documents__label', text: t('ui.timetable.outlineMissing', { path }) });
+            const remove = bar.createEl('button', { cls: 'ert-outline-documents__remove clickable-icon' });
+            setIcon(remove, 'x'); setTooltip(remove, t('ui.timetable.outlineUnlink'));
+            this.panelEvents?.registerDomEvent(remove, 'click', () => {
+                if (!bookId) return;
+                this.config.set('outlineReferences', { ...references, [bookId]: attached.filter(item => item !== path) }); this.render();
+            });
+        }
+        if (bookId) {
+            const add = bar.createEl('button', { text: t('ui.timetable.outlineAttach') });
+            this.panelEvents?.registerDomEvent(add, 'click', () => new OutlineDocumentPicker(app, file => {
+                this.config.set('outlineReferences', { ...references, [bookId]: [...new Set([...attached, file.path])] }); this.render();
+            }).open());
+        }
+        const beats = bar.createEl('button', { text: t('ui.timetable.outlineBeats') });
+        beats.setAttr('aria-pressed', String(this.config.get('outlineHideBeats') !== true));
+        this.panelEvents?.registerDomEvent(beats, 'click', () => { this.config.set('outlineHideBeats', this.config.get('outlineHideBeats') !== true); this.render(); });
+        this.outlineWorkspaceTarget = files[0] ?? items.find(item => item.row.kind === 'scene' || item.row.kind === 'sketch')?.entry.file ?? null;
+    }
+
+    /** Open a dedicated adjacent pane without replacing an existing note. */
+    private async openOutlineWorkspace(): Promise<void> {
+        const file = this.outlineWorkspaceTarget;
+        if (!file) return;
+        const table = this.plugin.app.workspace.getLeavesOfType('bases').find(leaf => leaf.view.containerEl.contains(this.rootEl));
+        if (!table) return;
+        const current = this.outlineWorkspacePane;
+        if (current && this.plugin.app.workspace.getLeavesOfType('markdown').includes(current) && !current.getViewState().pinned) {
+            if ((current.view as { file?: TFile | null }).file?.path !== file.path) {
+                await current.openFile(file, { active: true }); // SAFE: reuse only the dedicated Outline workspace pane, never a pinned pane.
+            }
+            await this.plugin.app.workspace.revealLeaf(current); return;
+        }
+        const pane = this.plugin.app.workspace.createLeafBySplit(table, 'vertical');
+        this.outlineWorkspacePane = pane;
+        await pane.openFile(file, { active: true }); // SAFE: new split, no existing note is replaced.
+        this.resetOutlineScroll();
+    }
+
+    private resetOutlineScroll(): void {
+        const stop = this.tableLeaf()?.view.containerEl;
+        let el: HTMLElement | null = this.rootEl.parentElement;
+        while (el && el !== stop) { el.scrollLeft = 0; el = el.parentElement; }
+    }
+
+    private async openOutlineFile(file: TFile, evt?: MouseEvent): Promise<void> {
+        const pane = this.outlineWorkspacePane;
+        if (this.config.get('outline') === true && pane && !(evt && Keymap.isModEvent(evt))
+            && !pane.getViewState().pinned && this.plugin.app.workspace.getLeavesOfType('markdown').includes(pane)) {
+            await pane.openFile(file, { active: true }); // SAFE: explicitly opened Outline workspace pane; pinned panes stay untouched.
+            return;
+        }
+        await openFromTimetable(this.plugin.app, file, evt, this.rootEl);
+    }
+
     private renderPanels(groups: TableGroup[], mode: ModeContext, allItems: TableItem[]): void {
         const layout = this.rings ? buildRingLayout(this.rings.order, this.rings.colorIndex, allItems.map(item => item.row)) : null;
         const keep = new Set<string>();
         const list = this.rootEl.createDiv({ cls: 'ert-timetable-panels' });
+        const outline = this.config.get('outline') === true;
+        list.toggleClass('is-outline', outline);
         const size = this.config.get('panelSize');
         if (size === 'small' || size === 'large') list.addClass(`is-${size}`);
         for (const group of groups) {
             if (group.label) {
-                const heading = list.createEl('h3', { cls: 'ert-timetable-panels__group', text: group.label });
+                const heading = list.createEl('h3', { cls: 'ert-timetable-panels__group' });
+                if (outline) {
+                    const toggle = heading.createEl('button', { text: `${this.outlineCollapsed.has(group.id) ? '▸' : '▾'} ${group.label}` });
+                    toggle.setAttr('aria-expanded', String(!this.outlineCollapsed.has(group.id)));
+                    this.panelEvents?.registerDomEvent(toggle, 'click', () => { if (this.outlineCollapsed.has(group.id)) this.outlineCollapsed.delete(group.id); else this.outlineCollapsed.add(group.id); this.render(); });
+                } else heading.setText(group.label);
                 if (group.act !== undefined) {
                     const bookId = this.singleBook(group.items) ?? (group.items.length === 0 ? getActiveBook(this.plugin.settings)?.id : undefined);
                     this.attachSketchActDrop(heading, group.act, bookId, mode.state);
@@ -2278,6 +2399,7 @@ export class TimetableView extends BasesView {
                     }
                 }
                 if (typeof group.act === 'number') this.actDividerEls.set(group.act, heading);
+                if (outline && this.outlineCollapsed.has(group.id)) continue;
             }
             const itemsByPath = new Map(group.items.map(item => [item.row.path, item]));
             const lines = mode.state.mode === 'chronologue'
@@ -2294,6 +2416,8 @@ export class TimetableView extends BasesView {
                 const item = itemsByPath.get(line.row.path);
                 if (!item) continue;
                 const { row, frontmatter, entry } = item;
+                if (outline && !['scene', 'sketch', 'beat'].includes(row.kind)) continue;
+                if (outline && row.kind === 'beat' && this.config.get('outlineHideBeats') === true) continue;
                 const panel = list.createDiv({ cls: ['ert-timetable__row', 'ert-timetable-panels__panel', `is-${row.kind === 'otherClass' ? 'other-class' : row.kind}`] });
                 panel.dataset.path = row.path;
                 this.rowEls.set(row.path, panel);
@@ -2344,7 +2468,7 @@ export class TimetableView extends BasesView {
                 setIcon(open, 'file-text');
                 setAccessibleLabel(open, t('ui.timetable.panelOpen'));
                 setTooltip(open, t('ui.timetable.panelOpen'));
-                this.panelEvents?.registerDomEvent(open, 'click', (evt: MouseEvent) => { evt.stopPropagation(); void openFromTimetable(this.plugin.app, entry.file, evt, this.rootEl); });
+                this.panelEvents?.registerDomEvent(open, 'click', (evt: MouseEvent) => { evt.stopPropagation(); void this.openOutlineFile(entry.file, evt); });
                 const meta = panel.createDiv({ cls: 'ert-timetable-panels__meta' });
                 for (const name of row.subplots) {
                     const chip = meta.createSpan({ cls: 'ert-timetable-panels__subplot', text: name });

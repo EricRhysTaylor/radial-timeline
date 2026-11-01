@@ -6056,6 +6056,13 @@ export const ja: DeepPartial<TranslationKeys> = {
         timetable: {
             layoutTable: 'テーブル',
             layoutPanels: 'パネル',
+            layoutOutline: 'アウトライン',
+            outlineDocuments: 'アウトライン文書',
+            outlineAttach: '文書を関連付ける',
+            outlineUnlink: 'リンクを削除',
+            outlineMissing: '見つかりません: {{path}}',
+            outlineBeats: 'ビートを表示',
+            outlineWorkspace: 'アウトラインワークスペース',
             panelSize: 'パネルサイズ',
             panelSizeSmall: '小',
             panelSizeMedium: '中',

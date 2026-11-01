@@ -6055,6 +6055,13 @@ export const ko: DeepPartial<TranslationKeys> = {
         timetable: {
             layoutTable: '표',
             layoutPanels: '패널',
+            layoutOutline: '개요',
+            outlineDocuments: '개요 문서',
+            outlineAttach: '문서 연결',
+            outlineUnlink: '문서 연결 해제',
+            outlineMissing: '찾을 수 없음: {{path}}',
+            outlineBeats: '비트 표시',
+            outlineWorkspace: '개요 작업 공간',
             panelSize: '패널 크기',
             panelSizeSmall: '작게',
             panelSizeMedium: '보통',

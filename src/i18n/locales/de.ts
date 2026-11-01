@@ -6055,6 +6055,13 @@ export const de: DeepPartial<TranslationKeys> = {
         timetable: {
             layoutTable: 'Tabelle',
             layoutPanels: 'Paneele',
+            layoutOutline: 'Gliederung',
+            outlineDocuments: 'Gliederungsdokumente',
+            outlineAttach: 'Dokument verknüpfen',
+            outlineUnlink: 'Verknüpfung entfernen',
+            outlineMissing: 'Fehlt: {{path}}',
+            outlineBeats: 'Beats anzeigen',
+            outlineWorkspace: 'Gliederungsbereich',
             panelSize: 'Paneelgröße',
             panelSizeSmall: 'Klein',
             panelSizeMedium: 'Mittel',

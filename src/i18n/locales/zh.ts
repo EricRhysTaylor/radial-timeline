@@ -6057,6 +6057,13 @@ export const zh: DeepPartial<TranslationKeys> = {
         timetable: {
             layoutTable: '表格',
             layoutPanels: '面板',
+            layoutOutline: '大纲',
+            outlineDocuments: '大纲文档',
+            outlineAttach: '关联文档',
+            outlineUnlink: '移除文档链接',
+            outlineMissing: '未找到：{{path}}',
+            outlineBeats: '显示节拍',
+            outlineWorkspace: '大纲工作区',
             panelSize: '面板大小',
             panelSizeSmall: '小',
             panelSizeMedium: '中',

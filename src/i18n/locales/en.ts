@@ -5739,6 +5739,13 @@ export const en = {
         timetable: {
             layoutTable: 'Table',
             layoutPanels: 'Panels',
+            layoutOutline: 'Outline',
+            outlineDocuments: 'Outline documents',
+            outlineAttach: 'Attach document',
+            outlineUnlink: 'Remove document link',
+            outlineMissing: 'Missing: {{path}}',
+            outlineBeats: 'Show beats',
+            outlineWorkspace: 'Outline workspace',
             panelSize: 'Panel size',
             panelSizeSmall: 'Small',
             panelSizeMedium: 'Medium',

@@ -1391,15 +1391,20 @@
 .ert-outline-documents__file span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ert-outline-import-editor { width: 100%; margin-top: var(--size-4-2); resize: vertical; }
 
-/* Small panels form a visual overview; editing stays available at larger sizes. */
-.ert-timetable .ert-timetable-panels.is-small .ert-timetable-panels__panel.is-scene { padding: var(--size-4-3); }
-.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__header { padding-right: 0; }
-.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__cover { flex: 0 0 100%; width: 100%; height: auto; aspect-ratio: 3 / 2; }
-.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__heading { flex-basis: 100%; }
-.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__title { font-size: 1.1em; }
+/* Small scene panels use the image as the card, with legible controls above it. */
+.ert-timetable .ert-timetable-panels.is-small .ert-timetable-panels__panel.is-scene { aspect-ratio: 1; min-height: 190px; padding: 0; overflow: hidden; background: var(--background-secondary); }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__header { position: static; display: block; padding: 0; }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__cover { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; border-radius: 0; }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__cover::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, rgb(0 0 0 / 90%), rgb(0 0 0 / 8%) 75%); }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__cover > .svg-icon { top: 8px; left: 8px; z-index: 2; }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__heading { position: absolute; z-index: 1; inset: auto var(--size-4-3) var(--size-4-3); pointer-events: none; }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__title-line { align-items: baseline; color: white; }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__number { color: rgb(255 255 255 / 85%); }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__title { font-size: 1.1em; color: white; }
 .ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__date,
 .ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__meta,
 .ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__characters,
 .ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__synopsis { display: none; }
-.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__open { color: white; background: rgb(0 0 0 / 55%); }
+.ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__open { z-index: 2; top: 8px; right: 8px; color: white; background: rgb(0 0 0 / 55%); }
 .ert-timetable .ert-timetable-panels.is-small .is-scene .ert-timetable-panels__open:hover { color: white; background: rgb(0 0 0 / 75%); }
+.ert-timetable .ert-timetable-panels.is-small .ert-timetable-panels__panel.is-scene.is-linked { outline: 3px solid var(--ert-timetable-link-color, var(--interactive-accent)); outline-offset: -3px; }

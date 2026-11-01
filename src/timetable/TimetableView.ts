@@ -2605,13 +2605,13 @@ export class TimetableView extends BasesView {
                     if (color) panel.setCssProps({ '--ert-timetable-portrait-color': color });
                 }
                 const header = panel.createDiv({ cls: 'ert-timetable-panels__header' });
-                if (panelImage || (row.kind === 'scene' && imageMode === 'place') || (row.kind === 'scene' && imageMode !== 'none' && people.length > 0)) {
+                if (panelImage || (row.kind === 'scene' && !outline && size === 'small') || (row.kind === 'scene' && imageMode === 'place') || (row.kind === 'scene' && imageMode !== 'none' && people.length > 0)) {
                     const handle = row.kind === 'scene' ? this.attachSceneDrag(panel, header, row.path, mode.state) : null;
                     const cover = handle ?? header.createDiv();
                     cover.addClass('ert-timetable-panels__cover');
                     cover.toggleClass('is-missing', !panelImage);
                     const placeholder = cover.createSpan({ cls: 'ert-timetable-panels__cover-placeholder', attr: { 'aria-hidden': 'true' } });
-                    setIcon(placeholder, imageMode === 'place' ? 'map-pin' : 'user-round');
+                    setIcon(placeholder, imageMode === 'place' ? 'map-pin' : imageMode === 'none' ? 'file-text' : 'user-round');
                     if (panelImage) {
                         const image = cover.createEl('img', { cls: 'ert-timetable-panels__cover-image', attr: { alt: '', src: panelImage, draggable: 'false' } });
                         if (location) setTooltip(image, location.source === 'scene' ? t('ui.timetable.panelImageSceneSource', { name: location.name }) : t('ui.timetable.panelImagePlaceSource', { name: location.name }));

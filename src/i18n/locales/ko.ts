@@ -5974,6 +5974,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             failed: '캔버스를 만들지 못했습니다.',
         },
         canvasSketch: {
+            showOverdue: '기한이 지난 장면 표시',
             fileCardsExplanation: '여기서는 텍스트 카드만 변환할 수 있습니다. 파일 카드는 기존 노트에 연결되어 있으며 변경되지 않습니다.',
             showTimetable: 'RT: 시간표에 표시',
             showTimeline: 'RT: 타임라인에 표시',

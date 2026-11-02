@@ -5976,6 +5976,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             failed: '无法创建画布。',
         },
         canvasSketch: {
+            showOverdue: '显示逾期场景',
             fileCardsExplanation: '此处只能转换文本卡片。文件卡片已链接到笔记，不会被更改。',
             showTimetable: 'RT：在时间表中显示',
             showTimeline: 'RT：在时间线上显示',

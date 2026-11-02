@@ -5658,6 +5658,7 @@ export const en = {
             failed: 'Could not create the Canvas. Check the console for details.',
         },
         canvasSketch: {
+            showOverdue: 'Show overdue scenes',
             fileCardsExplanation: 'Only text cards can be converted here. File cards already link to notes; they are not copied or changed.',
             showTimetable: 'RT: Show in Timetable',
             showTimeline: 'RT: Show on timeline',

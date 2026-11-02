@@ -5977,6 +5977,7 @@ export const th: TranslationKeys = {
             failed: 'ไม่สามารถสร้างแคนวาสได้',
         },
         canvasSketch: {
+            showOverdue: 'แสดงฉากที่เกินกำหนด',
             fileCardsExplanation: 'ที่นี่แปลงได้เฉพาะการ์ดข้อความ การ์ดไฟล์เชื่อมกับโน้ตอยู่แล้วและจะไม่ถูกเปลี่ยน',
             showTimetable: 'RT: แสดงในตารางเวลา',
             showTimeline: 'RT: แสดงบนไทม์ไลน์',

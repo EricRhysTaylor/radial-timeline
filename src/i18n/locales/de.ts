@@ -5974,6 +5974,7 @@ export const de: DeepPartial<TranslationKeys> = {
             failed: 'Canvas konnte nicht erstellt werden.',
         },
         canvasSketch: {
+            showOverdue: 'Überfällige Szenen anzeigen',
             fileCardsExplanation: 'Hier können nur Textkarten umgewandelt werden. Dateikarten verweisen bereits auf Notizen und bleiben unverändert.',
             showTimetable: 'RT: In der Tabelle anzeigen',
             showTimeline: 'RT: Auf der Zeitleiste anzeigen',

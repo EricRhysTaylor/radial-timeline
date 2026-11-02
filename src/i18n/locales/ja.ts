@@ -5975,6 +5975,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             failed: 'キャンバスを作成できませんでした。',
         },
         canvasSketch: {
+            showOverdue: '期限超過のシーンを表示',
             fileCardsExplanation: 'ここではテキストカードのみ変換できます。ファイルカードは既存のノートにリンクしており、変更されません。',
             showTimetable: 'RT: タイムテーブルで表示',
             showTimeline: 'RT: タイムラインで表示',

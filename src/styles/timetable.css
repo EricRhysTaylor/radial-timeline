@@ -1351,6 +1351,13 @@
     border-radius: var(--radius-m);
 }
 .ert-canvas-story-card.is-sketch { border-style: dashed; border-color: var(--text-muted); }
+.ert-canvas-story-card.has-subplot { border-left: 5px solid var(--ert-canvas-subplot); }
+.ert-canvas-story-card.is-sketch.has-subplot { border-left-style: dashed; }
+.ert-canvas-story-card__subplots { display: flex; align-items: center; gap: 5px; margin-bottom: 9px; }
+.ert-canvas-story-card__subplot { width: 10px; height: 10px; border-radius: 50%; background: var(--ert-canvas-subplot); pointer-events: auto; }
+.ert-canvas-story-card__subplot-more { color: var(--text-muted); font-size: 10px; line-height: 1; pointer-events: auto; }
+.ert-canvas-story-card__overdue { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: var(--radius-s); background: var(--background-secondary); color: var(--text-error); font-size: 10px; line-height: 1; pointer-events: auto; }
+.ert-canvas-story-card__overdue .svg-icon { width: 13px; height: 13px; }
 .ert-canvas-story-card__header { display: flex; gap: 16px; align-items: center; min-width: 0; }
 .ert-canvas-story-card__art {
     display: flex; align-items: center; justify-content: center;

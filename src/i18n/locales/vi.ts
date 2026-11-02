@@ -5977,6 +5977,7 @@ export const vi: TranslationKeys = {
             failed: 'Không thể tạo Canvas.',
         },
         canvasSketch: {
+            showOverdue: 'Hiện các cảnh quá hạn',
             fileCardsExplanation: 'Chỉ có thể chuyển thẻ văn bản tại đây. Thẻ tệp đã liên kết với ghi chú và không bị thay đổi.',
             showTimetable: 'RT: Hiện trong bảng thời gian',
             showTimeline: 'RT: Hiện trên dòng thời gian',

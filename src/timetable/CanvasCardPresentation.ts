@@ -6,9 +6,16 @@ import { t } from '../i18n';
 import { getBookIdForPath } from '../utils/books';
 import { markTimetableRows, onLinkedScene } from './timetableRegistry';
 import { CanvasStoryNavigator } from './CanvasStoryNavigator';
+import { buildTableRow, sceneVitals } from './timetableModel';
+import { computeCacheableValues } from '../renderer/utils/Precompute';
+import type { PluginRendererFacade } from '../utils/sceneHelpers';
+import { normalizeSubplotColorIndex } from '../renderer/utils/subplotColors';
+import { cardSubplots } from './canvasCardSubplots';
+import { setTooltip } from '../utils/domTooltip';
 
 type Mode = 'full' | 'preview' | 'title';
-type CanvasNode = { nodeEl?: HTMLElement; getData?: () => { type?: string; file?: string; subpath?: string } };
+type NodeData = { type?: string; file?: string; subpath?: string; label?: string; x?: number; y?: number; width?: number; height?: number };
+type CanvasNode = { nodeEl?: HTMLElement; getData?: () => NodeData };
 type CanvasView = View & { canvas?: { nodes?: Map<string, CanvasNode> } };
 
 const pendingTitleMaps = new Set<string>();
@@ -48,6 +55,8 @@ class CanvasCards {
     private timer: number | undefined;
     private revision = 0;
     private stopped = false;
+    private showOverdue = true;
+    private readonly ringColors = new Map<string, Promise<Map<string, number>>>();
     readonly action: HTMLElement;
     private readonly unlink: () => void;
     private readonly events = new Component();
@@ -63,6 +72,11 @@ class CanvasCards {
             for (const [mode, label] of choices) menu.addItem(item => item.setTitle(label).setChecked(this.mode === mode).onClick(() => {
                 this.mode = mode;
                 this.view.containerEl.toggleClass('ert-canvas-card-view', mode !== 'full');
+                this.schedule();
+            }));
+            menu.addSeparator();
+            menu.addItem(item => item.setTitle(t('ui.canvasSketch.showOverdue')).setIcon('calendar-clock').setChecked(this.showOverdue).onClick(() => {
+                this.showOverdue = !this.showOverdue;
                 this.schedule();
             }));
             menu.showAtMouseEvent(event);
@@ -96,6 +110,19 @@ class CanvasCards {
         this.timer = window.setTimeout(() => { this.timer = undefined; void this.refresh(); }, 80);
     }
 
+    invalidateColors(): void { this.ringColors.clear(); this.schedule(); }
+
+    private colorsForBook(bookId: string): Promise<Map<string, number>> {
+        const existing = this.ringColors.get(bookId);
+        if (existing) return existing;
+        const book = this.plugin.settings.books.find(item => item.id === bookId);
+        const pending = book ? this.plugin.getSceneData({ sourcePath: book.sourceFolder }).then(scenes =>
+            computeCacheableValues(this.plugin as unknown as PluginRendererFacade, scenes.map(scene => ({ ...scene, bookId, bookIndex: 0 }))).colorIndexBySubplot
+        ) : Promise.resolve(new Map<string, number>());
+        this.ringColors.set(bookId, pending);
+        return pending;
+    }
+
     private remove(node: HTMLElement): void {
         this.cards.get(node)?.overlay.remove();
         this.cards.delete(node);
@@ -113,6 +140,7 @@ class CanvasCards {
         const nodes = (this.view as CanvasView).canvas?.nodes;
         const keep = new Set<HTMLElement>();
         if (this.mode !== 'full' && nodes instanceof Map) {
+            const groups = [...nodes.values()].map(node => node.getData?.()).filter((data): data is NodeData => data?.type === 'group');
             for (const node of nodes.values()) {
                 const data = node.getData?.();
                 const el = node.nodeEl;
@@ -122,8 +150,14 @@ class CanvasCards {
                 keep.add(el);
                 const fm = this.plugin.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
                 const kindValue = value(fm, authorKeyFor('Class', this.plugin.settings));
-                const kind = getBookIdForPath(this.plugin.settings.books, file.path) && typeof kindValue === 'string' ? kindValue.trim() : t('ui.canvasSketch.cardLabel');
+                const bookId = getBookIdForPath(this.plugin.settings.books, file.path);
+                const kind = bookId && typeof kindValue === 'string' ? kindValue.trim() : t('ui.canvasSketch.cardLabel');
                 const image = portrait(this.plugin, file, fm);
+                const row = bookId ? buildTableRow(file.path, file.basename, fm, this.plugin.settings) : null;
+                const slots = bookId && row && (row.kind === 'scene' || row.kind === 'sketch') ? await this.colorsForBook(bookId) : new Map<string, number>();
+                const subplotNames = row?.subplots.filter(name => slots.has(name)) ?? [];
+                const shownSubplots = cardSubplots(data, groups, subplotNames);
+                const overdue = this.showOverdue && row?.kind === 'scene' && sceneVitals(fm, this.plugin.settings, new Date()).due.kind === 'late';
                 let preview = '';
                 if (this.mode === 'preview') {
                     if (typeof kindValue === 'string' && kindValue.trim().toLowerCase() === 'scene') {
@@ -140,12 +174,32 @@ class CanvasCards {
                 if (this.stopped || revision !== this.revision) return;
                 const title = file.basename.replace(/^\d+(?:\.\d+)?\s+/, '');
                 const description = plainText(preview);
-                const signature = JSON.stringify([this.mode, title, kind, image, description, file.path]);
+                const signature = JSON.stringify([this.mode, title, kind, image, description, file.path, shownSubplots.map(name => [name, slots.get(name)]), overdue]);
                 const existing = this.cards.get(el);
                 if (existing?.signature === signature && el.contains(existing.overlay)) continue;
                 this.remove(el);
                 const cardType = kind.toLowerCase();
                 const overlay = el.createDiv({ cls: `ert-canvas-story-card${cardType === 'sketch' ? ' is-sketch' : ''}` });
+                if (shownSubplots.length) {
+                    overlay.setCssProps({ '--ert-canvas-subplot': `var(--rt-subplot-colors-${normalizeSubplotColorIndex(slots.get(shownSubplots[0])!)})` });
+                    overlay.addClass('has-subplot');
+                    const markers = overlay.createDiv({ cls: 'ert-canvas-story-card__subplots' });
+                    for (const name of shownSubplots.slice(0, 3)) {
+                        const marker = markers.createSpan({ cls: 'ert-canvas-story-card__subplot' });
+                        setTooltip(marker, name);
+                        marker.setCssProps({ '--ert-canvas-subplot': `var(--rt-subplot-colors-${normalizeSubplotColorIndex(slots.get(name)!)})` });
+                    }
+                    if (shownSubplots.length > 3) {
+                        const more = markers.createSpan({ cls: 'ert-canvas-story-card__subplot-more', text: `+${shownSubplots.length - 3}` });
+                        setTooltip(more, shownSubplots.slice(3).join(', '));
+                    }
+                }
+                if (overdue) {
+                    const badge = overlay.createDiv({ cls: 'ert-canvas-story-card__overdue' });
+                    setTooltip(badge, t('ui.timetable.keyOverdueDetail'));
+                    setIcon(badge, 'calendar-x');
+                    badge.createSpan({ text: t('ui.timetable.statusOverdue') });
+                }
                 const header = overlay.createDiv({ cls: 'ert-canvas-story-card__header' });
                 const artwork = header.createDiv({ cls: 'ert-canvas-story-card__art' });
                 if (image) artwork.createEl('img', { attr: { src: image, alt: '' } });
@@ -197,7 +251,7 @@ export function registerCanvasCardPresentation(plugin: RadialTimelinePlugin): vo
     plugin.registerEvent(workspace.on('layout-change', refresh));
     plugin.registerEvent(workspace.on('active-leaf-change', refresh));
     plugin.registerEvent(workspace.on('file-open', refresh));
-    plugin.registerEvent(plugin.app.metadataCache.on('changed', refresh));
+    plugin.registerEvent(plugin.app.metadataCache.on('changed', () => { for (const controller of controllers.values()) controller.invalidateColors(); refresh(); }));
     workspace.onLayoutReady(refresh);
     plugin.register(() => { running = false; for (const controller of controllers.values()) controller.destroy(); controllers.clear(); });
 }

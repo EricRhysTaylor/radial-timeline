@@ -5977,6 +5977,7 @@ export const es: TranslationKeys = {
             failed: 'No se pudo crear el lienzo.',
         },
         canvasSketch: {
+            showOverdue: 'Mostrar escenas atrasadas',
             fileCardsExplanation: 'Solo se convierten tarjetas de texto. Las tarjetas de archivo ya enlazan a notas y no se modifican.',
             showTimetable: 'RT: Mostrar en la tabla',
             showTimeline: 'RT: Mostrar en la línea temporal',

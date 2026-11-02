@@ -5977,6 +5977,7 @@ export const fr: TranslationKeys = {
             failed: 'Impossible de créer le canevas.',
         },
         canvasSketch: {
+            showOverdue: 'Afficher les scènes en retard',
             fileCardsExplanation: 'Seules les cartes texte peuvent être converties. Les cartes de fichier renvoient déjà à des notes et ne sont pas modifiées.',
             showTimetable: 'RT : Afficher dans le tableau',
             showTimeline: 'RT : Afficher sur la chronologie',

@@ -106,12 +106,20 @@ export class TimetableService {
     }
 
     /** Select a book from a Timetable and keep that pane following the timeline. */
-    async selectBook(bookId: string, fromEl: HTMLElement, layout: 'table' | 'panels' | 'outline'): Promise<void> {
+    async selectBook(bookId: string, fromEl: HTMLElement, layout: 'table' | 'panels' | 'outline', sourceBookId?: string): Promise<void> {
         const leaf = this.plugin.app.workspace.getLeavesOfType(BASES_LEAF_TYPE).find(candidate => candidate.view.containerEl.contains(fromEl));
         const target = this.resolveTarget({ bookId });
         if (!leaf || !target) return;
         const file = await this.ensureFile(target);
         if (!file) return;
+        // Keep a directly opened book-specific table (and its references) reachable
+        // when returning, without replacing an already registered timetable.
+        const source = this.plugin.settings.books?.find(book => book.id === sourceBookId);
+        const sourcePath = this.leafFilePath(leaf);
+        if (source && sourcePath && !this.plugin.settings.timetableFiles?.[source.id]
+            && this.plugin.app.vault.getFileByPath(sourcePath)) {
+            await this.remember(source.id, { path: sourcePath, folders: [source.sourceFolder] });
+        }
         this.following.add(leaf);
         const alreadyActive = this.plugin.settings.activeBookId === bookId && getTimelineScope(this.plugin.settings) === 'book';
         await this.plugin.setActiveBookId(bookId);

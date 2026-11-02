@@ -475,8 +475,8 @@ export default class RadialTimelinePlugin extends Plugin {
         return this.timetableService.open();
     }
 
-    public selectTimetableBook(bookId: string, fromEl: HTMLElement, layout: 'table' | 'panels' | 'outline'): Promise<void> {
-        return this.timetableService.selectBook(bookId, fromEl, layout);
+    public selectTimetableBook(bookId: string, fromEl: HTMLElement, layout: 'table' | 'panels' | 'outline', sourceBookId?: string): Promise<void> {
+        return this.timetableService.selectBook(bookId, fromEl, layout, sourceBookId);
     }
 
     /** Light up a scene on every open timeline (a Timetable row is hovered); null clears it. */

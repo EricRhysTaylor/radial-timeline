@@ -2297,7 +2297,7 @@ export class TimetableView extends BasesView {
                 if (this.panelEditing) { this.render(); return; }
                 const layout = this.config.get('outline') === true ? 'outline' : this.config.get('panels') === true ? 'panels' : 'table';
                 select.disabled = true;
-                void this.plugin.selectTimetableBook(select.value, this.rootEl, layout).finally(() => {
+                void this.plugin.selectTimetableBook(select.value, this.rootEl, layout, ids.length === 1 ? ids[0] : undefined).finally(() => {
                     if (this.rootEl.isConnected) this.render();
                 });
             });

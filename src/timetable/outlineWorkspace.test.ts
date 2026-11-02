@@ -93,6 +93,18 @@ describe('outline workspace', () => {
         expect(f.workspace.getLeavesOfType('radial-timeline')).toEqual([timeline]);
     });
 
+    it('keeps the existing timeline and reference if switching layouts fails', async () => {
+        const f = fixture();
+        const reference = await openOutlineReference(f.workspace, f.table, file('original.md'), 'horizontal', true);
+        const timeline = f.workspace.getLeavesOfType('radial-timeline')[0];
+        const failed = { openFile: vi.fn().mockRejectedValue(new Error('open failed')), detach: vi.fn() };
+        f.createLeafBySplit.mockReturnValueOnce(failed as unknown as WorkspaceLeaf);
+        await expect(openOutlineReference(f.workspace, f.table, file('other.md'), 'vertical', false)).rejects.toThrow('open failed');
+        expect(f.workspace.getLeavesOfType('radial-timeline')).toEqual([timeline]);
+        expect(f.workspace.getLeavesOfType('markdown')).toEqual([reference]);
+        expect(currentOutlineReference(f.workspace, f.table)?.path).toBe('original.md');
+    });
+
     it('restores the reference if the timeline fails to open', async () => {
         const f = fixture();
         await openOutlineReference(f.workspace, f.table, file('original.md'), 'vertical');

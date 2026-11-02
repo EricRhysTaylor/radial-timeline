@@ -1,5 +1,14 @@
 import type { App, TFile } from 'obsidian';
 
+export type PanelImage = { url: string; path: string };
+
+/** Prefer a place for the background, while still showing available art when it is missing. */
+export function combinedPanelImage(place: PanelImage | null, character: PanelImage | null, artwork: PanelImage | null): { kind: 'place' | 'character' | 'artwork'; image: PanelImage } | null {
+    if (place) return { kind: 'place', image: place };
+    if (character) return { kind: 'character', image: character };
+    return artwork ? { kind: 'artwork', image: artwork } : null;
+}
+
 const key = (fm: Record<string, unknown> | undefined, name: string): unknown => {
     const found = Object.keys(fm ?? {}).find(item => item.toLowerCase() === name.toLowerCase());
     return found ? fm?.[found] : undefined;

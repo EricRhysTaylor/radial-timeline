@@ -105,7 +105,7 @@ import { authorKeyFor, countColumnFill, tableColumns, TIMETABLE_VIEW_TYPE, withR
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { synopsisKey, updateSynopsis } from './panelSynopsis';
 import { leadPortrait } from './panelPortrait';
-import { panelPlaceImage, panelSceneImage } from './panelPlaceImage';
+import { combinedPanelImage, panelPlaceImage, panelSceneImage } from './panelPlaceImage';
 import { coverPosition, validPanelFocus } from './panelFocus';
 import { PanelFocusModal } from './PanelFocusModal';
 import { timetableNarrativeOrder } from './timetablePlacement';
@@ -2729,8 +2729,10 @@ export class TimetableView extends BasesView {
                 const imageMode = outline ? 'character' : this.config.get('panelImage');
                 const location = (imageMode === 'place' || imageMode === 'combined') && row.kind === 'scene' ? panelPlaceImage(this.plugin.app, entry.file, frontmatter, authorKeyFor('Place', this.plugin.settings)) : null;
                 const artwork = (imageMode === 'artwork' || imageMode === 'combined') && row.kind === 'scene' ? panelSceneImage(this.plugin.app, entry.file, frontmatter) : null;
-                const panelImage = imageMode === 'place' || imageMode === 'combined' ? location?.url ?? null : imageMode === 'artwork' ? artwork?.url ?? null : imageMode === 'none' ? null : portrait;
-                const imagePath = imageMode === 'place' || imageMode === 'combined' ? location?.path : imageMode === 'artwork' ? artwork?.path : imageMode === 'none' ? undefined : people[0]?.imagePath;
+                const characterImage = portrait && people[0]?.imagePath ? { url: portrait, path: people[0].imagePath } : null;
+                const combined = imageMode === 'combined' ? combinedPanelImage(location, characterImage, artwork) : null;
+                const panelImage = imageMode === 'combined' ? combined?.image.url ?? null : imageMode === 'place' ? location?.url ?? null : imageMode === 'artwork' ? artwork?.url ?? null : imageMode === 'none' ? null : portrait;
+                const imagePath = imageMode === 'combined' ? combined?.image.path : imageMode === 'place' ? location?.path : imageMode === 'artwork' ? artwork?.path : imageMode === 'none' ? undefined : people[0]?.imagePath;
                 const imageFit = !outline && this.config.get('panelFit') === 'fit' ? 'fit' : 'fill';
                 const storedFocus = this.config.get('panelFocus');
                 const focusMap = storedFocus && typeof storedFocus === 'object' && !Array.isArray(storedFocus) ? storedFocus as Record<string, unknown> : {};
@@ -2765,7 +2767,7 @@ export class TimetableView extends BasesView {
                             this.panelEvents?.register(() => resize.disconnect());
                             if (image.complete) position();
                         }
-                        if (location) setTooltip(image, location.source === 'scene' ? t('ui.timetable.panelImageSceneSource', { name: location.name }) : t('ui.timetable.panelImagePlaceSource', { name: location.name }));
+                        if (location && (imageMode === 'place' || combined?.kind === 'place')) setTooltip(image, location.source === 'scene' ? t('ui.timetable.panelImageSceneSource', { name: location.name }) : t('ui.timetable.panelImagePlaceSource', { name: location.name }));
                         this.panelEvents?.registerDomEvent(image, 'error', () => cover.addClass('is-missing'));
                     }
                 } else if (row.kind === 'scene') this.attachSceneDrag(panel, header, row.path, mode.state);
@@ -2819,7 +2821,9 @@ export class TimetableView extends BasesView {
                         }).open();
                     });
                 }
-                if (!outline && row.kind === 'scene' && imageMode === 'combined') {
+                const characterInset = people.length > 0 && combined?.kind !== 'character';
+                const artworkInset = !!artwork && combined?.kind !== 'artwork';
+                if (!outline && row.kind === 'scene' && imageMode === 'combined' && (characterInset || artworkInset)) {
                     const images = panel.createDiv({ cls: 'ert-timetable-panels__image-insets' });
                     const addInset = (url: string | null, path: string | null | undefined, label: string, icon: string) => {
                         const inset = images.createEl('button', { cls: 'ert-timetable-panels__inset', attr: { type: 'button' } });
@@ -2839,8 +2843,8 @@ export class TimetableView extends BasesView {
                         }
                         this.panelEvents?.registerDomEvent(img, 'error', () => { img.remove(); inset.addClass('is-missing'); setIcon(inset, icon); });
                     };
-                    if (people.length) addInset(portrait, people[0]?.imagePath, t('ui.timetable.panelImageCharacter'), 'user-round');
-                    if (artwork) addInset(artwork.url, artwork.path, t('ui.timetable.panelImageArtwork'), 'image');
+                    if (characterInset) addInset(portrait, people[0]?.imagePath, t('ui.timetable.panelImageCharacter'), 'user-round');
+                    if (artworkInset && artwork) addInset(artwork.url, artwork.path, t('ui.timetable.panelImageArtwork'), 'image');
                 }
                 const open = (sketchActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__open clickable-icon', attr: { type: 'button' } });
                 setIcon(open, !outline && row.kind !== 'scene' ? 'arrow-up-right' : 'file-text');

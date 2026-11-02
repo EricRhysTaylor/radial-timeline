@@ -49,7 +49,6 @@ export async function openOutlineReference(workspace: Workspace, table: Workspac
             try { await restored.openFile(previousFile, { active: true }); state.pane = restored; }
             catch { restored.detach(); }
         };
-        if (ownsTimeline && !wantsTimeline) { timeline.detach(); state.timeline = null; }
         if (wantsTimeline && !ownsTimeline) {
             if (owned) { current.detach(); state.pane = null; displacedReference = true; }
             const newTimeline = workspace.createLeafBySplit(table, 'vertical', true);
@@ -71,6 +70,7 @@ export async function openOutlineReference(workspace: Workspace, table: Workspac
             await restoreReference();
             throw error;
         }
+        if (ownsTimeline && !wantsTimeline) { timeline.detach(); state.timeline = null; }
         if (owned && state.pane === current) current.detach();
         state.pane = pane;
         state.path = file.path;

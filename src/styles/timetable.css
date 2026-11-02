@@ -1287,6 +1287,7 @@
 .ert-timetable-panels__sketch-actions { display: flex; align-items: center; gap: var(--size-4-2); }
 .ert-timetable .ert-timetable-panels__sketch-actions button.ert-timetable-panels__open { position: static; flex: none; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) { overflow: hidden; padding-top: calc(var(--size-4-6) + var(--size-4-2)); }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene):not(.is-linked) { background: var(--background-secondary); border-color: var(--background-modifier-border-hover); }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) .ert-timetable-panels__header { padding-right: 0; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drag { position: absolute; z-index: 2; top: 4px; left: 4px; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) .ert-timetable-panels__open { position: absolute; z-index: 2; top: 4px; right: 4px; opacity: 0; }
@@ -1349,6 +1350,7 @@
     background: color-mix(in srgb, var(--background-primary) 84%, var(--text-normal) 16%);
     border-radius: var(--radius-m);
 }
+.ert-canvas-story-card.is-sketch { border-style: dashed; border-color: var(--text-muted); }
 .ert-canvas-story-card__header { display: flex; gap: 16px; align-items: center; min-width: 0; }
 .ert-canvas-story-card__art {
     display: flex; align-items: center; justify-content: center;

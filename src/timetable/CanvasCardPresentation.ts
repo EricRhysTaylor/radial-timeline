@@ -144,11 +144,12 @@ class CanvasCards {
                 const existing = this.cards.get(el);
                 if (existing?.signature === signature && el.contains(existing.overlay)) continue;
                 this.remove(el);
-                const overlay = el.createDiv({ cls: 'ert-canvas-story-card' });
+                const cardType = kind.toLowerCase();
+                const overlay = el.createDiv({ cls: `ert-canvas-story-card${cardType === 'sketch' ? ' is-sketch' : ''}` });
                 const header = overlay.createDiv({ cls: 'ert-canvas-story-card__header' });
                 const artwork = header.createDiv({ cls: 'ert-canvas-story-card__art' });
                 if (image) artwork.createEl('img', { attr: { src: image, alt: '' } });
-                else setIcon(artwork, 'notebook-pen');
+                else setIcon(artwork, ({ scene: 'clapperboard', sketch: 'pencil', outline: 'list-tree', character: 'user-round', place: 'map-pin' } as Record<string, string>)[cardType] ?? 'notebook-pen');
                 const heading = header.createDiv({ cls: 'ert-canvas-story-card__heading' });
                 if (kind) heading.createDiv({ cls: 'ert-canvas-story-card__kind', text: kind });
                 heading.createDiv({ cls: 'ert-canvas-story-card__title', text: title });

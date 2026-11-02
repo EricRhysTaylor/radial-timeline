@@ -42,6 +42,7 @@ import {
     type WorkspaceLeaf,
 } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
+import { currentOutlineReference, openOutlineReference } from './outlineWorkspace';
 import type { TimelineItem } from '../types';
 import { getFormattingLocale, t, tCount } from '../i18n';
 import { getActiveBook, getBookIdForPath, getSagaBooks, getTimelineScope } from '../utils/books';
@@ -2551,26 +2552,17 @@ export class TimetableView extends BasesView {
 
     /** Open a dedicated adjacent pane without replacing an existing note. */
     private async openOutlineWorkspace(selected?: TFile, direction = this.outlineWorkspaceDirection): Promise<void> {
-        const file = selected ?? this.outlineWorkspaceTarget;
-        if (!file) { new Notice(t('ui.timetable.outlineWorkspaceNeedsNote')); return; }
         const table = this.plugin.app.workspace.getLeavesOfType('bases').find(leaf => leaf.view.containerEl.contains(this.rootEl));
         if (!table) return;
-        const current = this.outlineWorkspacePane;
-        if (current && direction === this.outlineWorkspaceDirection && this.plugin.app.workspace.getLeavesOfType('markdown').includes(current) && !current.getViewState().pinned) {
-            if ((current.view as { file?: TFile | null }).file?.path !== file.path) {
-                await current.openFile(file, { active: true }); // SAFE: reuse only the dedicated Outline workspace pane, never a pinned pane.
-            }
-            await this.plugin.app.workspace.revealLeaf(current); return;
+        const file = selected ?? currentOutlineReference(this.plugin.app.workspace, table) ?? this.outlineWorkspaceTarget;
+        if (!file) { new Notice(t('ui.timetable.outlineWorkspaceNeedsNote')); return; }
+        try {
+            this.outlineWorkspacePane = await openOutlineReference(this.plugin.app.workspace, table, file, direction);
+            this.outlineWorkspaceDirection = direction;
+            this.resetOutlineScroll();
+        } catch (error) {
+            new Notice(`Could not open the outline workspace: ${error instanceof Error ? error.message : String(error)}`, 8000);
         }
-        const pane = this.plugin.app.workspace.createLeafBySplit(table, direction);
-        await pane.openFile(file, { active: true }); // SAFE: new split, no existing note is replaced.
-        // Only replace our previous reference pane when it still shows this same
-        // note. A pane the author repurposed or pinned is theirs to keep.
-        if (current && direction !== this.outlineWorkspaceDirection && this.plugin.app.workspace.getLeavesOfType('markdown').includes(current) && !current.getViewState().pinned
-            && (current.view as { file?: TFile | null }).file?.path === file.path) current.detach();
-        this.outlineWorkspacePane = pane;
-        this.outlineWorkspaceDirection = direction;
-        this.resetOutlineScroll();
     }
 
     private resetOutlineScroll(): void {

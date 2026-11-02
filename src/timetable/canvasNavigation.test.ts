@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isStoryActHeading, storyAxis, storyPosition } from './canvasNavigation';
+import { isStoryActHeading, storyAxis, storyPosition, storyProgress } from './canvasNavigation';
 
 describe('story map navigation', () => {
     it('recognizes act headings on older and current generated maps', () => {
@@ -24,5 +24,20 @@ describe('story map navigation', () => {
         expect(storyAxis(cards)).toEqual({ axis: 'x', min: 100, max: 1200 });
         expect(storyAxis([{ x: 0, y: 0, width: 100, height: 100 }, { x: 300, y: 2000, width: 100, height: 100 }])).toEqual({ axis: 'y', min: 50, max: 2050 });
         expect(storyAxis([{ x: 0 }])).toBeNull();
+    });
+    it('tracks the visible scene on unevenly spaced 200-scene maps, including both endpoints', () => {
+        const many = Array.from({ length: 200 }, (_, i) => ({ x: i * i * 10, y: 0, width: 200, height: 100 }));
+        for (const position of [0, 0.25, 72.5, 134, 199]) {
+            const point = storyPosition(many, position)!;
+            expect(storyProgress(many, 'x', point.x)).toBeCloseTo(position);
+        }
+        expect(storyProgress(many, 'x', -500)).toBe(0);
+        expect(storyProgress(many, 'x', 500000)).toBe(199);
+    });
+    it('follows a vertical map and ignores invalid input', () => {
+        const vertical = [{ x: 0, y: 100, width: 100, height: 100 }, { x: 0, y: 700, width: 100, height: 100 }];
+        expect(storyProgress(vertical, 'y', 450)).toBe(0.5);
+        expect(storyProgress([], 'x', 0)).toBeNull();
+        expect(storyProgress(vertical, 'y', NaN)).toBeNull();
     });
 });

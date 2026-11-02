@@ -3,7 +3,7 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { buildTableRow, compareManuscriptRows } from './timetableModel';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
-import { isStoryActHeading, storyAxis, storyPosition } from './canvasNavigation';
+import { isStoryActHeading, storyAxis, storyPosition, storyProgress } from './canvasNavigation';
 
 type NodeData = { type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
 type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void };
@@ -55,11 +55,13 @@ export class CanvasStoryNavigator {
         let scenes: Array<{ data: NodeData; title: string }> = [];
         let cards: NodeData[] = [];
         let axis: ReturnType<typeof storyAxis> = null;
-        let dragViewport: { x: number; y: number; zoom: number; value: number } | null = null;
+        let dragViewport: { x: number; y: number; zoom: number } | null = null;
         let lastLabel = '';
+        let lastViewportCoordinate: number | null = null;
         const update = (navigate: boolean, rescan = false): void => {
             if (rescan || !scenes.length) {
                 scenes = items(); cards = scenes.map(scene => scene.data); axis = storyAxis(cards);
+                lastViewportCoordinate = null;
                 slider.max = String(Math.max(0, (scenes.length - 1) * 100));
                 slider.disabled = scenes.length === 0;
             }
@@ -77,25 +79,34 @@ export class CanvasStoryNavigator {
             const view = canvas();
             if (!axis || !view?.setViewport || !Number.isFinite(view.x) || !Number.isFinite(view.y) || !Number.isFinite(view.zoom)) return;
             const viewport = dragViewport ?? { x: view.x!, y: view.y!, zoom: view.zoom! };
-            const fraction = Number(slider.value) / Math.max(1, Number(slider.max));
-            const coordinate = dragViewport
-                ? dragViewport[axis.axis] + (Number(slider.value) - dragViewport.value) / Math.max(1, Number(slider.max)) * (axis.max - axis.min)
-                : axis.min + (axis.max - axis.min) * fraction;
+            const coordinate = point[axis.axis];
             view.setViewport(axis.axis === 'x' ? coordinate : viewport.x, axis.axis === 'y' ? coordinate : viewport.y, viewport.zoom);
+        };
+        const followViewport = (): void => {
+            if (dragViewport || !axis) return;
+            const view = canvas();
+            const coordinate = view?.[axis.axis];
+            if (typeof coordinate !== 'number' || !Number.isFinite(coordinate) || coordinate === lastViewportCoordinate) return;
+            lastViewportCoordinate = coordinate;
+            const position = storyProgress(cards, axis.axis, coordinate);
+            if (position === null) return;
+            const next = String(Math.round(position * 100));
+            if (slider.value !== next) { slider.value = next; update(false); }
         };
         this.events.registerDomEvent(slider, 'pointerdown', () => {
             update(false, true);
             const view = canvas();
             dragViewport = view && Number.isFinite(view.x) && Number.isFinite(view.y) && Number.isFinite(view.zoom)
-                ? { x: view.x!, y: view.y!, zoom: view.zoom!, value: Number(slider.value) } : null;
+                ? { x: view.x!, y: view.y!, zoom: view.zoom! } : null;
         });
-        this.events.registerDomEvent(slider, 'pointerup', () => { dragViewport = null; });
+        this.events.registerDomEvent(slider, 'pointerup', () => { if (dragViewport) update(true); dragViewport = null; });
         this.events.registerDomEvent(slider, 'pointercancel', () => { dragViewport = null; });
         this.events.registerDomEvent(slider, 'focus', () => { if (!dragViewport) update(false, true); });
         this.events.registerDomEvent(slider, 'input', () => update(true));
         this.events.registerDomEvent(fit, 'click', () => canvas()?.zoomToFit?.());
+        this.events.registerInterval(window.setInterval(followViewport, 250));
         // The Canvas can still be loading when its view is first attached.
-        window.setTimeout(() => { if (this.root === root) update(false); }, 500);
+        window.setTimeout(() => { if (this.root === root) { update(false); followViewport(); } }, 500);
     }
     destroy(): void { this.events.unload(); this.root?.remove(); this.root = null; }
 }

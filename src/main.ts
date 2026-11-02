@@ -8,7 +8,7 @@ import { registerManualTime } from './sceneTime/ManualTimeModal';
  */
 
 import type { StageTargetDates } from './types/settings';
-import { ButtonComponent, Plugin, Notice, TAbstractFile, WorkspaceLeaf, addIcon } from "obsidian";
+import { ButtonComponent, Plugin, Notice, TAbstractFile, TFile, WorkspaceLeaf, addIcon } from "obsidian";
 import { EditorView, type ViewUpdate } from '@codemirror/view';
 import { getEmbeddedAssetBytes } from './utils/embeddedAssets';
 import { TimelineService } from './services/TimelineService';
@@ -473,6 +473,10 @@ export default class RadialTimelinePlugin extends Plugin {
     /** Open (or focus) the Timetable for the timeline's current book or saga. */
     public openTimetable(): Promise<void> {
         return this.timetableService.open();
+    }
+
+    public restoreTimetableView(file: TFile): Promise<void> {
+        return this.timetableService.restoreView(file);
     }
 
     public selectTimetableBook(bookId: string, fromEl: HTMLElement, layout: 'table' | 'panels' | 'outline', sourceBookId?: string): Promise<void> {

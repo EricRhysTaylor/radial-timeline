@@ -2283,6 +2283,18 @@ export class TimetableView extends BasesView {
                 if (layout === 'outline') this.resetOutlineScroll();
             });
         }
+        const basesHelp = toolbar.createEl('button', { cls: 'ert-timetable__bases-help', attr: { type: 'button', 'aria-haspopup': 'menu' } });
+        setIcon(basesHelp, 'circle-help');
+        setAccessibleLabel(basesHelp, t('ui.timetable.basesHelpTitle'));
+        setTooltip(basesHelp, t('ui.timetable.basesHelp'));
+        this.panelEvents?.registerDomEvent(basesHelp, 'click', () => {
+            const menu = new Menu().setUseNativeMenu(false);
+            menu.addItem(item => item.setTitle(t('ui.timetable.basesHelp')).setDisabled(true));
+            const file = this.tableFile();
+            if (file) menu.addItem(item => item.setTitle(t('ui.timetable.restoreView')).setIcon('list-restart').onClick(() => { void this.plugin.restoreTimetableView(file); }));
+            const rect = basesHelp.getBoundingClientRect();
+            menu.showAtPosition({ x: rect.left, y: rect.bottom }, basesHelp.ownerDocument);
+        });
         const books = this.plugin.settings.books ?? [];
         if (books.length) {
             const bookControl = toolbar.createDiv({ cls: 'ert-timetable__book-selector' });

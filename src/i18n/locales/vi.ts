@@ -2,7 +2,7 @@
  * Machine translated with local on-device models; automated coverage,
  * placeholder and author-syntax checks. English source: en.ts.
  */
-import type { TranslationKeys } from './en';
+import { en, type TranslationKeys } from './en';
 
 export const vi: TranslationKeys = {
     "settings": {
@@ -1193,6 +1193,7 @@ export const vi: TranslationKeys = {
         "openInquiry": "Mở cuộc điều tra xuyên tâm"
     },
     "commands": {
+        ...en.commands,
         "openTimetable": "Mở lịch trình",
         "resetTimetableColumns": "Đặt lại các cột lịch trình về mặc định đề xuất",
         "promoteToScene": "Nâng ghi chú lên cảnh",
@@ -6060,6 +6061,7 @@ export const vi: TranslationKeys = {
             "noticeNothing": "Không có gì ở đây cần quảng bá."
         },
         "timetable": {
+            ...en.ui.timetable,
             "panelImage": "Hình ảnh",
             "panelImageLabel": "Hình ảnh của bảng",
             "panelFit": "Kích thước ảnh",

@@ -2,7 +2,7 @@
  * Machine translated with local on-device models; automated coverage,
  * placeholder and author-syntax checks. English source: en.ts.
  */
-import type { TranslationKeys } from './en';
+import { en, type TranslationKeys } from './en';
 
 export const es: TranslationKeys = {
     "settings": {
@@ -1193,6 +1193,7 @@ export const es: TranslationKeys = {
         "openInquiry": "Consulta radial abierta"
     },
     "commands": {
+        ...en.commands,
         "openTimetable": "Abrir horario",
         "resetTimetableColumns": "Restablecer las columnas recomendadas del horario",
         "promoteToScene": "Promover nota a escena",
@@ -6060,6 +6061,7 @@ export const es: TranslationKeys = {
             "noticeNothing": "Aquí nada necesita promover."
         },
         "timetable": {
+            ...en.ui.timetable,
             "panelImage": "Imagen",
             "panelImageLabel": "Imagen del panel",
             "panelFit": "Tamaño de imagen",

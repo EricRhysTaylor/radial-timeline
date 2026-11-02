@@ -12,10 +12,27 @@ import {
     tableFileStem,
     TIMETABLE_VIEW_TYPE,
     withRecommendedColumns,
+    withRestoredTimetableView,
 } from './timetableFiles';
 
 const settings = { ...DEFAULT_SETTINGS, enableCustomMetadataMapping: false, actCount: 3 } as RadialTimelineSettings;
 const names = { timetable: 'Timetable', table: 'Table', notOnTimeline: 'Not on the timeline', actBoard: 'Act board', statusBoard: 'Status board' };
+
+describe('restoring a Timetable view', () => {
+    it('adds a uniquely named view while retaining filters, custom views and their settings', () => {
+        const source = { filters: { and: ['file.inFolder("Story")'] }, views: [{ type: 'table', name: 'Radial Timetable', filters: { and: ['Status == "Draft"'] } }, { type: 'kanban', name: 'Custom' }], formulas: { custom: '1' } };
+        const result = withRestoredTimetableView(source, settings, 'Radial Timetable');
+        expect(result?.name).toBe('Radial Timetable 2');
+        expect(result?.content).toMatchObject({ filters: source.filters, formulas: source.formulas });
+        expect((result?.content.views as unknown[]).slice(1)).toEqual(source.views);
+        expect((result?.content.views as Array<{ type: string }>)[0].type).toBe(TIMETABLE_VIEW_TYPE);
+        expect(findTimetableViewName(result!.content)).toBe('Radial Timetable 2');
+        expect(source.views).toHaveLength(2);
+    });
+    it('rejects a Base without a views list', () => {
+        expect(withRestoredTimetableView({ views: 'invalid' }, settings, 'Radial Timetable')).toBeNull();
+    });
+});
 
 describe('tableFileStem', () => {
     it('keeps the book title, made safe for file names', () => {

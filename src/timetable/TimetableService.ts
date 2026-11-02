@@ -33,6 +33,7 @@ import {
     tableFileStem,
     TIMETABLES_FOLDER,
     TIMETABLE_VIEW_TYPE,
+    withRestoredTimetableView,
     type BaseFileContent,
     type ColumnFill,
     type TimetableFileRecord,
@@ -65,6 +66,22 @@ export class TimetableService {
             name: t('commands.openTimetable'),
             callback: () => { void this.open(); },
         });
+        this.plugin.addCommand({
+            id: 'restore-timetable-view',
+            name: t('commands.restoreTimetableView'),
+            checkCallback: (checking: boolean) => {
+                const leaf = this.plugin.app.workspace.getMostRecentLeaf();
+                const path = leaf ? this.leafFilePath(leaf) : null;
+                const file = path ? this.plugin.app.vault.getFileByPath(path) : null;
+                if (!file || file.extension !== 'base') return false;
+                if (!checking) void this.restoreView(file);
+                return true;
+            },
+        });
+        this.plugin.registerEvent(this.plugin.app.workspace.on('file-menu', (menu, file) => {
+            if (!(file instanceof TFile) || file.extension !== 'base') return;
+            menu.addItem(item => item.setTitle(t('ui.timetable.restoreView')).setIcon('list-restart').onClick(() => { void this.restoreView(file); }));
+        }));
         // Defaults reach only new tables; this brings an existing one in line (after a confirm).
         this.plugin.addCommand({
             id: 'reset-timetable-columns',
@@ -80,11 +97,43 @@ export class TimetableService {
         this.plugin.app.workspace.onLayoutReady(() => this.adoptOpenTables());
     }
 
+    /** Restore by adding a new view; the original Base and its other views stay intact. */
+    async restoreView(file: TFile): Promise<void> {
+        try {
+            const before = await this.plugin.app.vault.read(file);
+            const parsed = parseYaml(before) as Record<string, unknown> | null;
+            const restored = parsed && typeof parsed === 'object' ? withRestoredTimetableView(parsed, this.plugin.settings, t('ui.timetable.radialViewName')) : null;
+            if (!restored) throw new Error(t('ui.timetable.restoreInvalid'));
+            const confirmed = await confirmWithErtModal(this.plugin.app, {
+                title: t('ui.timetable.restoreView'),
+                message: t('ui.timetable.restorePreview', { name: restored.name, file: file.path }),
+                confirmText: t('ui.timetable.restoreButton'), cancelText: t('common.cancel'),
+                badge: { text: t('ui.timetable.viewName'), icon: TIMETABLE_ICON },
+            });
+            if (!confirmed) return;
+            let changed = false;
+            await this.plugin.app.vault.process(file, current => {
+                if (current !== before) return current;
+                changed = true;
+                return stringifyYaml(restored.content);
+            });
+            if (!changed) { new Notice(t('ui.timetable.restoreChanged'), 8000); return; }
+            const leaf = this.plugin.app.workspace.getLeavesOfType(BASES_LEAF_TYPE).find(candidate => this.leafFilePath(candidate) === file.path);
+            if (leaf) {
+                await leaf.setViewState({ type: BASES_LEAF_TYPE, state: { file: file.path, viewName: restored.name }, active: true });
+                await this.plugin.app.workspace.revealLeaf(leaf);
+            }
+            new Notice(t('ui.timetable.restoreSuccess', { name: restored.name }));
+        } catch (error) {
+            new Notice(t('ui.timetable.writeFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
+        }
+    }
+
     /** Register the Bases view. False while the Bases core plugin is off. */
     private ensureRegistered(): boolean {
         if (this.registered) return true;
         this.registered = this.plugin.registerBasesView(TIMETABLE_VIEW_TYPE, {
-            name: t('ui.timetable.viewName'),
+            name: t('ui.timetable.radialViewName'),
             icon: TIMETABLE_ICON,
             factory: (controller, containerEl) => new TimetableView(controller, containerEl, this.plugin),
             options: timetableViewOptions,
@@ -151,8 +200,8 @@ export class TimetableService {
     private resolveTarget(options: { quiet?: boolean; bookId?: string } = {}): TimetableTarget | null {
         const { settings } = this.plugin;
         const names = {
-            timetable: t('ui.timetable.viewName'),
-            table: t('ui.timetable.viewTable'),
+            timetable: t('ui.timetable.radialViewName'),
+            table: t('ui.timetable.spreadsheetViewName'),
             notOnTimeline: t('ui.timetable.viewNotOnTimeline'),
             actBoard: t('ui.timetable.viewActBoard'),
             statusBoard: t('ui.timetable.viewStatusBoard'),

@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { parseOutlineHeadings } from './outlineImport';
+import { parseOutlineHeadings, preserveOutlineEdits } from './outlineImport';
 
 describe('formatted outline import', () => {
+    it('keeps edited titles and text while recalculating acts', () => {
+        const original = [{ id: '2', title: 'Revised title', body: 'Reviewed text', act: null }];
+        const parsed = [{ id: '2', title: 'Old title', body: 'Original text', act: 2 }];
+        expect(preserveOutlineEdits(parsed, original)).toEqual([{ id: '2', title: 'Revised title', body: 'Reviewed text', act: 2 }]);
+    });
     it('maps act headings, keeps nested content, and leaves prose before the first heading alone', () => {
         const source = '---\nClass: Outline\n---\nIntro\n## Act 1\n### First\nText\n#### Detail\nMore\n### Second\nNext\n## Act 2\n### Third\nEnding';
         expect(parseOutlineHeadings(source, 3, 2, 3)).toEqual([

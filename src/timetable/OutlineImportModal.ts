@@ -10,7 +10,7 @@ import { authorKeyFor } from './timetableFiles';
 import { buildTableRow } from './timetableModel';
 import { SKETCH_ORDER } from './sketchPlacement';
 import { planCanvasSketchAppend } from './canvasSketchOrdering';
-import { parseOutlineHeadings, type OutlineImportEntry } from './outlineImport';
+import { parseOutlineHeadings, preserveOutlineEdits, type OutlineImportEntry } from './outlineImport';
 
 /** Preview a Markdown outline and create independent, source-linked sketches. */
 export class OutlineImportModal extends ErtModal {
@@ -34,7 +34,10 @@ export class OutlineImportModal extends ErtModal {
         const controls = this.contentEl.createDiv({ cls: 'ert-outline-import-controls' });
         const headingLabel = controls.createEl('label', { text: 'Sketch heading level' });
         const heading = new DropdownComponent(headingLabel);
-        for (let level = 1; level <= 6; level++) heading.addOption(String(level), `Heading ${level}`);
+        for (let level = 1; level <= 6; level++) {
+            const count = parseOutlineHeadings(this.snapshot, level, null, getConfiguredActCount(this.plugin.settings)).length;
+            heading.addOption(String(level), `Heading ${level} · ${count}`);
+        }
         heading.setValue(String(this.sketchLevel));
         const actLabel = controls.createEl('label', { text: 'Act heading level' });
         const acts = new DropdownComponent(actLabel);
@@ -51,6 +54,7 @@ export class OutlineImportModal extends ErtModal {
         const selectionTools = this.contentEl.createDiv({ cls: 'ert-outline-import-selection' });
         const selectAll = selectionTools.createEl('button', { text: 'Select all' });
         const selectNone = selectionTools.createEl('button', { text: 'Clear selection' });
+        const selectionCount = selectionTools.createSpan({ cls: 'ert-outline-import-hint' });
         const list = this.contentEl.createDiv({ cls: 'ert-outline-import-list' });
         const actions = this.mountActions();
         const cancel = actions.createEl('button', { text: 'Cancel' });
@@ -82,19 +86,24 @@ export class OutlineImportModal extends ErtModal {
                 act.addOption('', 'Unassigned');
                 for (let n = 1; n <= getConfiguredActCount(this.plugin.settings); n++) act.addOption(String(n), `Act ${n}`);
                 act.setValue(entry.act === null ? '' : String(entry.act)).onChange(value => { entry.act = value ? Number(value) : null; });
-                check.addEventListener('change', () => { if (check.checked) this.selected.add(entry.id); else this.selected.delete(entry.id); create.disabled = this.selected.size === 0; });
+                check.addEventListener('change', () => { if (check.checked) this.selected.add(entry.id); else this.selected.delete(entry.id); updateSelection(); });
             }
+            updateSelection();
+        };
+        const updateSelection = () => {
+            selectionCount.setText(`${this.selected.size} of ${this.entries.length} selected`);
             create.disabled = this.selected.size === 0;
         };
-        const reparse = () => {
-            this.entries = parseOutlineHeadings(this.snapshot, this.sketchLevel, this.actLevel, getConfiguredActCount(this.plugin.settings));
-            this.selected = new Set(this.entries.map(entry => entry.id));
+        const reparse = (preserve = false) => {
+            const entries = parseOutlineHeadings(this.snapshot, this.sketchLevel, this.actLevel, getConfiguredActCount(this.plugin.settings));
+            this.entries = preserve ? preserveOutlineEdits(entries, this.entries) : entries;
+            if (!preserve) this.selected = new Set(this.entries.map(entry => entry.id));
             render();
         };
         selectAll.addEventListener('click', () => { this.selected = new Set(this.entries.map(entry => entry.id)); render(); });
         selectNone.addEventListener('click', () => { this.selected.clear(); render(); });
         heading.onChange(value => { this.sketchLevel = Number(value); reparse(); });
-        acts.onChange(value => { this.actLevel = value ? Number(value) : null; reparse(); });
+        acts.onChange(value => { this.actLevel = value ? Number(value) : null; reparse(true); });
         reparse();
         create.addEventListener('click', () => {
             if (this.busy || !this.selected.size) return;

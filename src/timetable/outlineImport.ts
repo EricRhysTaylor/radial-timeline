@@ -1,6 +1,15 @@
 export interface OutlineImportEntry { id: string; title: string; body: string; act: number | null; }
 interface Heading { line: number; level: number; title: string; }
 
+/** Keep reviewed text when only the act-heading interpretation changes. */
+export function preserveOutlineEdits(entries: OutlineImportEntry[], previous: OutlineImportEntry[]): OutlineImportEntry[] {
+    const edits = new Map(previous.map(entry => [entry.id, entry]));
+    return entries.map(entry => {
+        const prior = edits.get(entry.id);
+        return prior ? { ...entry, title: prior.title, body: prior.body } : entry;
+    });
+}
+
 /** ATX headings outside fenced code and frontmatter; never infer structure from prose. */
 export function parseOutlineHeadings(markdown: string, sketchLevel: number, actLevel: number | null, actCount: number): OutlineImportEntry[] {
     const frontmatter = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/.exec(markdown);

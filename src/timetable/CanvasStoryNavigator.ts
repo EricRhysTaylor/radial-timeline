@@ -3,6 +3,7 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { buildTableRow, compareManuscriptRows } from './timetableModel';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
+import { storyPosition } from './canvasNavigation';
 
 type NodeData = { type?: string; file?: string; x?: number; y?: number; width?: number; height?: number };
 type Canvas = { nodes?: Map<string, { getData?: () => NodeData }>; zoomToBbox?: (box: { minX: number; minY: number; maxX: number; maxY: number }) => void; zoomToFit?: () => void };
@@ -44,19 +45,19 @@ export class CanvasStoryNavigator {
             }).sort((a, b) => compareManuscriptRows(a.row, b.row));
         };
         let scenes: Array<{ data: NodeData; title: string }> = [];
+        let cards: NodeData[] = [];
         const update = (navigate: boolean, rescan = false): void => {
-            if (rescan || !scenes.length) scenes = items();
-            slider.max = String(Math.max(0, scenes.length - 1));
+            if (rescan || !scenes.length) { scenes = items(); cards = scenes.map(scene => scene.data); }
+            slider.max = String(Math.max(0, (scenes.length - 1) * 100));
             slider.disabled = scenes.length === 0;
-            const index = Math.min(Number(slider.value), scenes.length - 1);
-            if (index < 0) return;
+            const point = storyPosition(cards, Number(slider.value) / 100);
+            if (!point) return;
+            const index = point.index;
             const scene = scenes[index];
             label.setText(`${t('ui.subplotCanvas.navigatorPosition', { current: index + 1, total: scenes.length })} · ${scene.title}`);
             slider.setAttribute('aria-valuetext', scene.title);
             if (!navigate) return;
-            const { x, y, width, height } = scene.data;
-            if ([x, y, width, height].some(n => typeof n !== 'number' || !Number.isFinite(n))) return;
-            const cx = x! + width! / 2, cy = y! + height! / 2;
+            const { x: cx, y: cy } = point;
             canvas()?.zoomToBbox?.({ minX: cx - 650, maxX: cx + 650, minY: cy - 350, maxY: cy + 350 });
         };
         this.events.registerDomEvent(slider, 'pointerdown', () => update(false, true));

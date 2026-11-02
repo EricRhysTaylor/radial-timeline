@@ -61,4 +61,10 @@ describe('sketch drop planning', () => {
         expect(planSketchActDrop(notes, 'Moving.md', 2)).toEqual({ anchorId: null, act: 2, orderedPaths: ['Tail.md', 'Moving.md'] });
         expect(notes[0].row.prefix).toBe('2');
     });
+    it('places a previously anchored sketch into a completely empty act', () => {
+        const notes = [item('Scene', 'scene', 1, '1', { ID: 'scene' }),
+            item('Moving', 'sketch', 1, null, { [SKETCH_AFTER_SCENE]: 'scene', [SKETCH_ORDER]: 10 })];
+        expect(planSketchActDrop(notes, 'Moving.md', 3)).toEqual({ anchorId: null, act: 3, orderedPaths: ['Moving.md'] });
+        expect(notes[1].frontmatter?.[SKETCH_AFTER_SCENE]).toBe('scene');
+    });
 });

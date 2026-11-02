@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { storyPosition } from './canvasNavigation';
+import { storyAxis, storyPosition } from './canvasNavigation';
 
 describe('story map navigation', () => {
     const cards = [{ x: 0, y: 0, width: 200, height: 100 }, { x: 1000, y: 400, width: 400, height: 200 }];
@@ -13,5 +13,10 @@ describe('story map navigation', () => {
         expect(storyPosition(cards, 3)).toEqual({ x: 1200, y: 500, index: 1 });
         expect(storyPosition([], 0)).toBeNull();
         expect(storyPosition([{ x: 0 }], 0)).toBeNull();
+    });
+    it('chooses a stable horizontal or vertical axis for the whole map', () => {
+        expect(storyAxis(cards)).toEqual({ axis: 'x', min: 100, max: 1200 });
+        expect(storyAxis([{ x: 0, y: 0, width: 100, height: 100 }, { x: 300, y: 2000, width: 100, height: 100 }])).toEqual({ axis: 'y', min: 50, max: 2050 });
+        expect(storyAxis([{ x: 0 }])).toBeNull();
     });
 });

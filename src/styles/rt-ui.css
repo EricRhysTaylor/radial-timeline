@@ -11041,6 +11041,6 @@
 
 /* Story position on generated Canvas maps. */
 .ert-story-navigator { position: absolute; z-index: 10; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; width: min(480px, 70%); padding: 8px 10px; border: 1px solid var(--background-modifier-border); border-radius: 10px; background: var(--background-secondary); box-shadow: var(--shadow-s); }
-.ert-story-navigator__label { font-size: var(--font-ui-smaller); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
+.ert-story-navigator__label { font-size: var(--font-ui-smaller); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 0 45%; min-width: 0; }
 .ert-story-navigator__slider { flex: 1; min-width: 50px; }
 .ert-story-navigator__fit { flex: none; }

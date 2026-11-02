@@ -3,10 +3,10 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { buildTableRow, compareManuscriptRows } from './timetableModel';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
-import { storyPosition } from './canvasNavigation';
+import { storyAxis, storyPosition } from './canvasNavigation';
 
 type NodeData = { type?: string; file?: string; x?: number; y?: number; width?: number; height?: number };
-type Canvas = { nodes?: Map<string, { getData?: () => NodeData }>; zoomToBbox?: (box: { minX: number; minY: number; maxX: number; maxY: number }) => void; zoomToFit?: () => void };
+type Canvas = { nodes?: Map<string, { getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void };
 
 /** A navigator only for generated story maps; it does not alter the Canvas data. */
 export class CanvasStoryNavigator {
@@ -46,8 +46,10 @@ export class CanvasStoryNavigator {
         };
         let scenes: Array<{ data: NodeData; title: string }> = [];
         let cards: NodeData[] = [];
+        let axis: ReturnType<typeof storyAxis> = null;
+        let dragViewport: { x: number; y: number; zoom: number; value: number } | null = null;
         const update = (navigate: boolean, rescan = false): void => {
-            if (rescan || !scenes.length) { scenes = items(); cards = scenes.map(scene => scene.data); }
+            if (rescan || !scenes.length) { scenes = items(); cards = scenes.map(scene => scene.data); axis = storyAxis(cards); }
             slider.max = String(Math.max(0, (scenes.length - 1) * 100));
             slider.disabled = scenes.length === 0;
             const point = storyPosition(cards, Number(slider.value) / 100);
@@ -57,10 +59,23 @@ export class CanvasStoryNavigator {
             label.setText(`${t('ui.subplotCanvas.navigatorPosition', { current: index + 1, total: scenes.length })} · ${scene.title}`);
             slider.setAttribute('aria-valuetext', scene.title);
             if (!navigate) return;
-            const { x: cx, y: cy } = point;
-            canvas()?.zoomToBbox?.({ minX: cx - 650, maxX: cx + 650, minY: cy - 350, maxY: cy + 350 });
+            const view = canvas();
+            if (!axis || !view?.setViewport || !Number.isFinite(view.x) || !Number.isFinite(view.y) || !Number.isFinite(view.zoom)) return;
+            const viewport = dragViewport ?? { x: view.x!, y: view.y!, zoom: view.zoom! };
+            const fraction = Number(slider.value) / Math.max(1, Number(slider.max));
+            const coordinate = dragViewport
+                ? dragViewport[axis.axis] + (Number(slider.value) - dragViewport.value) / Math.max(1, Number(slider.max)) * (axis.max - axis.min)
+                : axis.min + (axis.max - axis.min) * fraction;
+            view.setViewport(axis.axis === 'x' ? coordinate : viewport.x, axis.axis === 'y' ? coordinate : viewport.y, viewport.zoom);
         };
-        this.events.registerDomEvent(slider, 'pointerdown', () => update(false, true));
+        this.events.registerDomEvent(slider, 'pointerdown', () => {
+            update(false, true);
+            const view = canvas();
+            dragViewport = view && Number.isFinite(view.x) && Number.isFinite(view.y) && Number.isFinite(view.zoom)
+                ? { x: view.x!, y: view.y!, zoom: view.zoom!, value: Number(slider.value) } : null;
+        });
+        this.events.registerDomEvent(slider, 'pointerup', () => { dragViewport = null; });
+        this.events.registerDomEvent(slider, 'pointercancel', () => { dragViewport = null; });
         this.events.registerDomEvent(slider, 'focus', () => update(false, true));
         this.events.registerDomEvent(slider, 'input', () => update(true));
         this.events.registerDomEvent(fit, 'click', () => canvas()?.zoomToFit?.());

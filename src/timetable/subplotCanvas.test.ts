@@ -30,7 +30,7 @@ describe('subplot Canvas layout', () => {
     it('connects a subplot across act boundaries', () => {
         const plan = makePlan([scene(1, 1, ['Main']), scene(2, 2, ['Main']), scene(3, 3, ['Main'])]);
         expect(plan.edges).toHaveLength(2);
-        expect(plan.nodes.filter(node => node.type === 'text').map(node => node.text)).toEqual(['**Act 1**', '**Act 2**', '**Act 3**']);
+        expect(plan.nodes.filter(node => node.type === 'text').map(node => node.text)).toEqual(['# Act 1', '# Act 2', '# Act 3']);
     });
     it('offers a vertical layout with readable cards and downward connections', () => {
         let id = 0;

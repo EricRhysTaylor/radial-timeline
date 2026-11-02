@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { storyAxis, storyPosition } from './canvasNavigation';
+import { isStoryActHeading, storyAxis, storyPosition } from './canvasNavigation';
 
 describe('story map navigation', () => {
+    it('recognizes act headings on older and current generated maps', () => {
+        expect(isStoryActHeading('# Act 1 · 1–5\nLines show narrative order.')).toBe(true);
+        expect(isStoryActHeading('**Act 2**')).toBe(true);
+        expect(isStoryActHeading('# No act')).toBe(true);
+        expect(isStoryActHeading('Act 2 arrives at the station')).toBe(false);
+    });
     const cards = [{ x: 0, y: 0, width: 200, height: 100 }, { x: 1000, y: 400, width: 400, height: 200 }];
     it('moves continuously between card centers, in both axes', () => {
         expect(storyPosition(cards, 0)).toEqual({ x: 100, y: 50, index: 0 });

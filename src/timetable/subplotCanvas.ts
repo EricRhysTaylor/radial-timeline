@@ -58,7 +58,7 @@ export function planSubplotCanvas(rows: TimetableRow[], options: { act: number |
     scenes.forEach((row, index) => {
         if (index > 0 && row.act === scenes[index - 1].act) return;
         nodes.push({ id: id(), type: 'text', x: LEFT + index * STEP_X, y: 0, width: CARD_W, height: 100,
-            text: `**${row.act === null ? 'No act' : `Act ${row.act}`}**` });
+            text: `# ${row.act === null ? 'No act' : `Act ${row.act}`}` });
     });
     laneNames.forEach((lane, laneIndex) => {
         const y = TOP + laneIndex * STEP_Y;

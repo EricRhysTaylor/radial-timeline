@@ -3,10 +3,10 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { buildTableRow, compareManuscriptRows } from './timetableModel';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
-import { storyAxis, storyPosition } from './canvasNavigation';
+import { isStoryActHeading, storyAxis, storyPosition } from './canvasNavigation';
 
-type NodeData = { type?: string; file?: string; x?: number; y?: number; width?: number; height?: number };
-type Canvas = { nodes?: Map<string, { getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void };
+type NodeData = { type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
+type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void };
 
 /** A navigator only for generated story maps; it does not alter the Canvas data. */
 export class CanvasStoryNavigator {
@@ -18,10 +18,18 @@ export class CanvasStoryNavigator {
     refresh(): void {
         const file = (this.view as unknown as { file?: TFile | null }).file;
         const path = file?.path ?? '';
+        const isStoryMap = path.startsWith('Radial Timeline/Story Maps/') && path.endsWith('.canvas');
+        const canvasView = (this.view as unknown as { canvas?: Canvas }).canvas;
+        for (const node of canvasView?.nodes?.values() ?? []) {
+            const data = node.getData?.();
+            const isActHeading = isStoryMap && data?.type === 'text' && typeof data.text === 'string' && isStoryActHeading(data.text);
+            node.nodeEl?.toggleClass('ert-story-act-heading', isActHeading);
+            node.nodeEl?.toggleClass('ert-story-act-heading--bold', !!isActHeading && typeof data?.text === 'string' && data.text.trimStart().startsWith('**'));
+        }
         if (path === this.path) return;
         this.events.unload(); this.events = new Component(); this.events.load();
         this.root?.remove(); this.root = null; this.path = path;
-        if (!path.startsWith('Radial Timeline/Story Maps/') || !path.endsWith('.canvas')) return;
+        if (!isStoryMap) return;
         const root = this.view.contentEl.createDiv({ cls: 'ert-story-navigator' });
         this.root = root;
         const label = root.createDiv({ cls: 'ert-story-navigator__label', text: t('ui.subplotCanvas.navigator') });
@@ -48,16 +56,23 @@ export class CanvasStoryNavigator {
         let cards: NodeData[] = [];
         let axis: ReturnType<typeof storyAxis> = null;
         let dragViewport: { x: number; y: number; zoom: number; value: number } | null = null;
+        let lastLabel = '';
         const update = (navigate: boolean, rescan = false): void => {
-            if (rescan || !scenes.length) { scenes = items(); cards = scenes.map(scene => scene.data); axis = storyAxis(cards); }
-            slider.max = String(Math.max(0, (scenes.length - 1) * 100));
-            slider.disabled = scenes.length === 0;
+            if (rescan || !scenes.length) {
+                scenes = items(); cards = scenes.map(scene => scene.data); axis = storyAxis(cards);
+                slider.max = String(Math.max(0, (scenes.length - 1) * 100));
+                slider.disabled = scenes.length === 0;
+            }
             const point = storyPosition(cards, Number(slider.value) / 100);
             if (!point) return;
             const index = point.index;
             const scene = scenes[index];
-            label.setText(`${t('ui.subplotCanvas.navigatorPosition', { current: index + 1, total: scenes.length })} · ${scene.title}`);
-            slider.setAttribute('aria-valuetext', scene.title);
+            const nextLabel = `${t('ui.subplotCanvas.navigatorPosition', { current: index + 1, total: scenes.length })} · ${scene.title}`;
+            if (nextLabel !== lastLabel) {
+                label.setText(nextLabel);
+                slider.setAttribute('aria-valuetext', scene.title);
+                lastLabel = nextLabel;
+            }
             if (!navigate) return;
             const view = canvas();
             if (!axis || !view?.setViewport || !Number.isFinite(view.x) || !Number.isFinite(view.y) || !Number.isFinite(view.zoom)) return;
@@ -76,7 +91,7 @@ export class CanvasStoryNavigator {
         });
         this.events.registerDomEvent(slider, 'pointerup', () => { dragViewport = null; });
         this.events.registerDomEvent(slider, 'pointercancel', () => { dragViewport = null; });
-        this.events.registerDomEvent(slider, 'focus', () => update(false, true));
+        this.events.registerDomEvent(slider, 'focus', () => { if (!dragViewport) update(false, true); });
         this.events.registerDomEvent(slider, 'input', () => update(true));
         this.events.registerDomEvent(fit, 'click', () => canvas()?.zoomToFit?.());
         // The Canvas can still be loading when its view is first attached.

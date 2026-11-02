@@ -100,7 +100,9 @@ class CanvasCards {
                 break;
             }
         });
-        this.observer = new MutationObserver(() => this.schedule());
+        this.observer = new MutationObserver(mutations => {
+            if (mutations.some(mutation => !(mutation.target instanceof Element) || !mutation.target.closest('.ert-story-navigator'))) this.schedule();
+        });
         this.observer.observe(view.containerEl, { childList: true, subtree: true });
         this.schedule();
     }

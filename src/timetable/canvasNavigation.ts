@@ -1,3 +1,9 @@
+/** Recognize the act headings created by both generations of story maps. */
+export function isStoryActHeading(text: string): boolean {
+    const first = text.split('\n')[0].trim().replace(/^#{1,6}\s+/, '').replace(/^\*\*|\*\*$/g, '').trim();
+    return /^(?:act\s+\d+|no act)(?:\s*[·–-]\s*[^\n]+)?$/i.test(first);
+}
+
 /** Interpolate between card centers as the story navigator moves. */
 export function storyPosition(
     cards: Array<{ x?: number; y?: number; width?: number; height?: number }>,

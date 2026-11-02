@@ -6078,6 +6078,7 @@ export const de: DeepPartial<TranslationKeys> = {
             outlineWorkspaceLayouts: 'Arbeitsbereichslayouts',
             outlineWorkspaceBeside: 'Gliederung und Referenz nebeneinander',
             outlineWorkspaceBelow: 'Gliederung über Referenz',
+            outlineWorkspaceTimeline: 'Zeitleiste mit Gliederung und Referenz',
             outlineWorkspaceNeedsNote: 'Füge zuerst ein Dokument oder eine Szene hinzu.',
             modeCaption: 'Modus',
             outlineNarrativeOrder: 'Die Gliederung folgt immer der Erzählreihenfolge.',

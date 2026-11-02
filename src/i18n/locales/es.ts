@@ -6120,6 +6120,7 @@ export const es: TranslationKeys = {
             outlineWorkspaceLayouts: 'Diseños del espacio de trabajo',
             outlineWorkspaceBeside: 'Esquema y referencia lado a lado',
             outlineWorkspaceBelow: 'Esquema sobre referencia',
+            outlineWorkspaceTimeline: 'Cronología con esquema y referencia',
             outlineWorkspaceNeedsNote: 'Primero adjunta un documento o añade una escena.',
             modeCaption: 'Modo',
             outlineNarrativeOrder: 'El esquema sigue siempre el orden narrativo.',

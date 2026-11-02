@@ -2309,12 +2309,12 @@ export class TimetableView extends BasesView {
         setIcon(workspace.createSpan({ cls: 'ert-outline-workspace-button__caret', attr: { 'aria-hidden': 'true' } }), 'chevron-down');
         this.panelEvents?.registerDomEvent(workspace, 'click', () => {
             const menu = new Menu().setUseNativeMenu(false);
-            for (const [direction, label, icon] of [['vertical', t('ui.timetable.outlineWorkspaceBeside'), 'panels-left-right'], ['horizontal', t('ui.timetable.outlineWorkspaceBelow'), 'panels-top-bottom']] as const) {
+            for (const [direction, timeline, label, icon] of [['vertical', false, t('ui.timetable.outlineWorkspaceBeside'), 'panels-left-right'], ['horizontal', false, t('ui.timetable.outlineWorkspaceBelow'), 'panels-top-bottom'], ['horizontal', true, t('ui.timetable.outlineWorkspaceTimeline'), 'panel-left']] as const) {
                 menu.addItem(item => item.setTitle(label).setIcon(icon).onClick(() => {
                     if (this.panelEditing) return;
                     this.config.set('outline', true); this.config.set('panels', false); this.render();
                     this.resetOutlineScroll();
-                    void this.openOutlineWorkspace(undefined, direction);
+                    void this.openOutlineWorkspace(undefined, direction, timeline);
                 }));
             }
             const rect = workspace.getBoundingClientRect();
@@ -2551,13 +2551,13 @@ export class TimetableView extends BasesView {
     }
 
     /** Open a dedicated adjacent pane without replacing an existing note. */
-    private async openOutlineWorkspace(selected?: TFile, direction = this.outlineWorkspaceDirection): Promise<void> {
+    private async openOutlineWorkspace(selected?: TFile, direction = this.outlineWorkspaceDirection, timelineLayout?: boolean): Promise<void> {
         const table = this.plugin.app.workspace.getLeavesOfType('bases').find(leaf => leaf.view.containerEl.contains(this.rootEl));
         if (!table) return;
         const file = selected ?? currentOutlineReference(this.plugin.app.workspace, table) ?? this.outlineWorkspaceTarget;
         if (!file) { new Notice(t('ui.timetable.outlineWorkspaceNeedsNote')); return; }
         try {
-            this.outlineWorkspacePane = await openOutlineReference(this.plugin.app.workspace, table, file, direction);
+            this.outlineWorkspacePane = await openOutlineReference(this.plugin.app.workspace, table, file, direction, timelineLayout);
             this.outlineWorkspaceDirection = direction;
             this.resetOutlineScroll();
         } catch (error) {

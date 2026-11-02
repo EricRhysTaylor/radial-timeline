@@ -6120,6 +6120,7 @@ export const th: TranslationKeys = {
             outlineWorkspaceLayouts: 'รูปแบบพื้นที่ทำงาน',
             outlineWorkspaceBeside: 'โครงเรื่องและเอกสารอ้างอิงเคียงกัน',
             outlineWorkspaceBelow: 'โครงเรื่องอยู่เหนือเอกสารอ้างอิง',
+            outlineWorkspaceTimeline: 'ไทม์ไลน์พร้อมโครงเรื่องและเอกสารอ้างอิง',
             outlineWorkspaceNeedsNote: 'เพิ่มเอกสารหรือฉากก่อน',
             modeCaption: 'โหมด',
             outlineNarrativeOrder: 'โครงเรื่องเรียงตามลำดับการเล่าเรื่องเสมอ',

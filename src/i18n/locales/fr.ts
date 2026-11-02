@@ -6120,6 +6120,7 @@ export const fr: TranslationKeys = {
             outlineWorkspaceLayouts: 'Dispositions de l’espace de travail',
             outlineWorkspaceBeside: 'Plan et référence côte à côte',
             outlineWorkspaceBelow: 'Plan au-dessus de la référence',
+            outlineWorkspaceTimeline: 'Chronologie avec plan et référence',
             outlineWorkspaceNeedsNote: 'Ajoutez d’abord un document ou une scène.',
             modeCaption: 'Mode',
             outlineNarrativeOrder: 'Le plan suit toujours l’ordre narratif.',

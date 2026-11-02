@@ -6078,6 +6078,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             outlineWorkspaceLayouts: '작업 공간 레이아웃',
             outlineWorkspaceBeside: '개요와 참조를 나란히',
             outlineWorkspaceBelow: '개요 아래 참조',
+            outlineWorkspaceTimeline: '타임라인, 개요 및 참조',
             outlineWorkspaceNeedsNote: '먼저 문서나 장면을 추가하세요.',
             modeCaption: '모드',
             outlineNarrativeOrder: '개요는 항상 서사 순서를 따릅니다.',

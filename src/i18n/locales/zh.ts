@@ -6080,6 +6080,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             outlineWorkspaceLayouts: '工作区布局',
             outlineWorkspaceBeside: '大纲和参考并排',
             outlineWorkspaceBelow: '大纲在参考上方',
+            outlineWorkspaceTimeline: '时间线、大纲和参考资料',
             outlineWorkspaceNeedsNote: '请先添加文档或场景。',
             modeCaption: '模式',
             outlineNarrativeOrder: '大纲始终按叙事顺序排列。',

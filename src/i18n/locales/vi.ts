@@ -6120,6 +6120,7 @@ export const vi: TranslationKeys = {
             outlineWorkspaceLayouts: 'Bố cục không gian làm việc',
             outlineWorkspaceBeside: 'Dàn ý và tài liệu bên cạnh nhau',
             outlineWorkspaceBelow: 'Dàn ý ở trên tài liệu',
+            outlineWorkspaceTimeline: 'Dòng thời gian với dàn ý và tài liệu',
             outlineWorkspaceNeedsNote: 'Trước tiên hãy thêm tài liệu hoặc cảnh.',
             modeCaption: 'Chế độ',
             outlineNarrativeOrder: 'Dàn ý luôn theo thứ tự tự sự.',

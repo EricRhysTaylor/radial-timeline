@@ -5762,6 +5762,7 @@ export const en = {
             outlineWorkspaceLayouts: 'Workspace layouts',
             outlineWorkspaceBeside: 'Outline and reference side by side',
             outlineWorkspaceBelow: 'Outline above reference',
+            outlineWorkspaceTimeline: 'Timeline with outline and reference',
             outlineWorkspaceNeedsNote: 'Attach a document or add a scene first.',
             modeCaption: 'Mode',
             outlineNarrativeOrder: 'Outline always follows narrative order.',

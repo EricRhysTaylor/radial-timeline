@@ -6079,6 +6079,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             outlineWorkspaceLayouts: 'ワークスペースのレイアウト',
             outlineWorkspaceBeside: 'アウトラインと参照を横に並べる',
             outlineWorkspaceBelow: 'アウトラインの下に参照',
+            outlineWorkspaceTimeline: 'タイムライン、アウトライン、参照',
             outlineWorkspaceNeedsNote: '先に文書またはシーンを追加してください。',
             modeCaption: 'モード',
             outlineNarrativeOrder: 'アウトラインは常に物語順に表示されます。',

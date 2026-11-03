@@ -345,6 +345,7 @@ function firstText(value: unknown): string {
 export class TimetableView extends BasesView {
     type = TIMETABLE_VIEW_TYPE;
     readonly rootEl: HTMLElement;
+    private basesHeaderControls: HTMLElement[] = [];
     /** The ✱ key's button, made once and moved into each redrawn corner. */
     private keyButton: HTMLButtonElement | null = null;
     private readonly patternPrefix = `ert-timetable-${Math.random().toString(36).slice(2, 9)}-`;
@@ -1689,6 +1690,7 @@ export class TimetableView extends BasesView {
     }
 
     onunload(): void {
+        this.clearBasesHeaderControls();
         this.panelEvents?.unload();
         this.panelEvents = null;
         clearTimelineLens(this);
@@ -2271,6 +2273,7 @@ export class TimetableView extends BasesView {
 
     private renderLayoutSwitch(state: TimelineModeState): void {
         const toolbar = this.rootEl.createDiv({ cls: 'ert-timetable-panels__toolbar' });
+        toolbar.createSpan({ cls: 'ert-timetable__layout-caption', text: t('ui.timetable.radialViewName') });
         for (const [layout, label, icon] of [['table', t('ui.timetable.layoutTable'), 'table-2'], ['panels', t('ui.timetable.layoutPanels'), 'layout-grid'], ['outline', t('ui.timetable.layoutOutline'), 'list-tree']] as const) {
             const button = toolbar.createEl('button', { cls: 'ert-timetable-panels__view-switch' });
             setIcon(button.createSpan(), icon);
@@ -2283,7 +2286,16 @@ export class TimetableView extends BasesView {
                 if (layout === 'outline') this.resetOutlineScroll();
             });
         }
+        this.clearBasesHeaderControls();
+        const baseContainer = this.rootEl.closest('.bases-view')?.parentElement;
+        const viewSelector = baseContainer?.querySelector<HTMLElement>(':scope > .bases-header .bases-toolbar-views-menu');
         const basesHelp = toolbar.createEl('button', { cls: 'ert-timetable__bases-help', attr: { type: 'button', 'aria-haspopup': 'menu' } });
+        if (viewSelector?.parentElement) {
+            const caption = viewSelector.parentElement.createSpan({ cls: 'ert-timetable__bases-caption', text: t('ui.timetable.basesSavedViews') });
+            viewSelector.before(caption);
+            viewSelector.after(basesHelp);
+            this.basesHeaderControls = [caption, basesHelp];
+        }
         setIcon(basesHelp, 'circle-help');
         setAccessibleLabel(basesHelp, t('ui.timetable.basesHelpTitle'));
         setTooltip(basesHelp, t('ui.timetable.basesHelp'));
@@ -2382,6 +2394,11 @@ export class TimetableView extends BasesView {
         const observer = new ResizeObserver(updateHeight);
         observer.observe(toolbar);
         this.panelEvents?.register(() => observer.disconnect());
+    }
+
+    private clearBasesHeaderControls(): void {
+        this.basesHeaderControls.forEach(element => element.remove());
+        this.basesHeaderControls = [];
     }
 
     /** Discover book outlines and retain explicit links without changing their notes. */

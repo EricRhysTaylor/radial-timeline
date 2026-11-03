@@ -156,7 +156,7 @@ Each scene appears in every subplot lane it belongs to, as a card linked to its 
 <p align="center"><img src="images/canvas-subplot-map.webp" alt="Wickham's Story hovered on the wheel, and its four cards lit across the subplot lanes of the Canvas map beside it, with the story navigation bar reading Scene 16 of 61" width="800"></p>
 
 - **Story navigation**, the bar along the top of the map: drag the slider to travel scene by scene (*Scene 16 of 61 · Wickham’s Story*), **Zoom to selection** to frame the selected cards, or **Fit all**. Act labels stay readable when you zoom out.
-- **Canvas card view**, in the Canvas title bar: **Full note**, **Preview** (synopsis or opening text), or **Title**. The same menu has **Show overdue scenes**, which marks late scenes, and **Follow timeline hover in Canvas**, which moves the map to a scene you hover on the wheel. Cards carry their subplot colors.
+- **Canvas card view**, in the Canvas title bar: **Preview** (synopsis or opening text), **Title**, or **Full note**. The same menu has **Show overdue scenes**, which marks late scenes, and **Follow timeline hover in Canvas**, which moves the map to a scene you hover on the wheel. Cards carry their subplot colors.
 - **The map and the wheel point at each other.** Hover a scene on the wheel and its cards light up on the map; click a card and its scene lights on the wheel and in the Timetable. A card’s menu adds **Radial Timeline: Show in Timetable**, **Radial Timeline: Show on timeline** and, for sketches and notes without a Class, **Radial Timeline: Promote to scene**.
 
 ## Bring ideas from Canvas

@@ -19,7 +19,13 @@ Pro workflows appear throughout Radial Timeline in magenta.
 
 ## Story Vaults
 
-The **Story Vaults** section under **Settings → Resources** lists complete worked examples with saved analysis. [Pride & Prejudice](Sample-Vault), [The Odyssey](Odyssey-Demo-Vault), and *Sherlock Holmes* are free: **Explore story** opens the Story Vault chooser, where **Add story to this vault** adds one to a **Demo Projects** folder and **Download ZIP** downloads it as a separate vault. *The Faerie Queene* is listed as **Coming soon**.
+The **Story Vaults** section under **Settings → Resources** (the **Res** tab) lists complete worked examples with saved analysis. [Pride & Prejudice](Sample-Vault), [The Odyssey](Odyssey-Demo-Vault), and *Sherlock Holmes* are free: **Explore story** opens the Story Vault chooser, where **Add story to this vault** adds one to a **Demo Projects** folder and **Download ZIP** downloads it as a separate vault. A fourth card, the **Secret vault**, is **In preparation**.
+
+<p align="center"><img src="images/settings-resources.webp" alt="Settings → Resources: the Res tab selected, the Story Vaults heading with its CLASSICS badge, and the Pride and Prejudice and Odyssey cards with their editions" width="600"></p>
+
+Each card names its edition. Once you have a story, its card compares yours with the latest (**Your edition: … · Up to date**). When a newer edition is out, **Download new edition ↗** downloads it as a separate vault, and your copy stays as it is. The Welcome screen offers the same download.
+
+Below the vaults, **Learn more** links to **Getting started**, the **Radial Timeline Wiki**, and the **YouTube Video** tutorials.
 
 ---
 

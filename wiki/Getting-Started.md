@@ -7,7 +7,7 @@ You get two workspaces: the **[Radial Timeline View](Radial-Timeline-View)** for
 
 The Welcome screen offers these starting points:
 
-1.  **Explore a finished book** — add a free, fully analyzed demo such as [Pride & Prejudice](Sample-Vault) or [The Odyssey](Odyssey-Demo-Vault) to this vault from the demo chooser. No API key needed to explore it.
+1.  **Explore a finished book** — add a free, fully analyzed Story Vault such as [Pride & Prejudice](Sample-Vault) or [The Odyssey](Odyssey-Demo-Vault) to this vault with **Choose a story**. No API key needed to explore it.
 2.  **Set Book Project** — choose the manuscript folder that drives the timeline, exports, Inquiry scope, and Book Manager. Use this when starting scene notes yourself, or follow **→ or open Book Designer** to plan the book first.
 3.  **Import a manuscript** — bring an existing draft in from a [Scrivener export, a Word document, or one big file](Onboard-Existing-Manuscript), with **Structure only — no AI** as the default.
 4.  **Visit the website** — [radialtimeline.com](https://radialtimeline.com) for support docs and the [Community](Settings-Community), where you can share your writing journey at your own comfort level.

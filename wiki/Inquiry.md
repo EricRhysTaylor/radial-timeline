@@ -1,7 +1,7 @@
 Inquiry analyzes manuscript and worldbuilding material across a book or saga. Ask structured questions, review evidence and scene citations, and save findings as briefings.
 
 <p align="center"><img src="images/inquiry-odyssey.webp" alt="The Inquiry view on The Odyssey: the glyph with its three zones, the minimap of scene pages across the top, and the corpus strip of page icons on the right" width="600"></p>
-<p align="center"><sub>Inquiry view — the glyph, the minimap of scene pages, and the corpus strip (The Odyssey demo vault)</sub></p>
+<p align="center"><sub>Inquiry view — the glyph, the minimap of scene pages, and the corpus strip (The Odyssey Story Vault)</sub></p>
 
 <a name="overview"></a>
 ## Overview
@@ -13,7 +13,7 @@ Inquiry sends your selected manuscript material to your configured cloud provide
 
 **Settings**: [Inquiry settings](Settings-Inquiry)
 
-Inquiry opens whether or not AI is turned on. With AI off you can still read every saved session and briefing, including the ones in the [demo vault](Sample-Vault). To run a new question, turn on **Settings → AI → Enable AI LLM features** and set up a provider.
+Inquiry opens whether or not AI is turned on. With AI off you can still read every saved session and briefing, including the ones in the [Story Vaults](Sample-Vault). To run a new question, turn on **Settings → AI → Enable AI LLM features** and set up a provider.
 
 ---
 
@@ -261,9 +261,9 @@ Inquiry reads the books, YAML classes, and supporting folders you choose, with *
 
 If the Inquiry view looks disabled or won't run, work down this list:
 
-*   **No book selected yet.** Inquiry scopes to the active book, so opening it in a fresh vault — before the plugin knows where your manuscript lives — leaves it with nothing to scan. Step 1 is always: point the plugin at your book in **Settings → Core → Books** (Book Manager). In the [demo vault](Sample-Vault), skip the settings trip entirely: open the **Welcome screen** and click **Open the sample vault** — it detects the packaged book and drops you straight into the timeline.
+*   **No book selected yet.** Inquiry scopes to the active book, so opening it in a fresh vault — before the plugin knows where your manuscript lives — leaves it with nothing to scan. Step 1 is always: point the plugin at your book in **Settings → Core → Books** (Book Manager). In a downloaded [Story Vault](Sample-Vault), skip the settings trip entirely: open the **Welcome screen** and click **Open the sample vault** — it detects the packaged book and drops you straight into the timeline.
 *   **AI toggle.** Inquiry opens with AI off, and saved sessions stay readable. To run a new question, turn on **Settings → AI → Enable AI LLM features**.
-*   **Provider setup.** Add a cloud provider key or configure and validate a **Local LLM** under **Settings → AI** to run new inquiries. Saved briefings and session history remain browsable while you set up a provider, including in the [demo vault](Sample-Vault).
+*   **Provider setup.** Add a cloud provider key or configure and validate a **Local LLM** under **Settings → AI** to run new inquiries. Saved briefings and session history remain browsable while you set up a provider, including in the [Story Vaults](Sample-Vault).
 *   **The selected model isn't Inquiry-eligible.** Not every provider/model can run Inquiry — it needs structured output and a large context. Open the [AI Engine popover](#ai-engine-popover) and check the readiness strip; if it shows blocked, it names the reason. Local models can qualify (the validation card in Settings → AI shows an "Inquiry eligible" badge), but smaller local models may not.
 *   **Empty corpus.** If the scanned corpus finds no scenes, check [Sources & Material Rules](#scan-folders-and-class-scope) and the Corpus Manager — the scan folder must contain your scene notes, and the class scope must include them.
 *   **Costs look wrong mid-run** *(Omnibus Pass, in testing — not yet released)*. The Omnibus panel shows live cost and includes a cache-health kill-switch; if cached-input pricing misbehaves, disable caching there and re-run.

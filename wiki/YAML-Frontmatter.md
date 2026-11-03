@@ -124,6 +124,37 @@ When:
 
 Use **Promote to scene** when it is ready; existing values and prose are preserved. See [Promoting notes](Timetable#promote-a-note-to-a-scene).
 
+When you place a sketch in the Timetable, Canvas or Outline, Radial Timeline records where it sits:
+
+```yaml
+Place after scene: scn_8f3a2c1e   # the ID of the scene it follows
+Sketch order: 20                  # its order among sketches at that spot
+Source: "[[Story Outline]]"       # only for sketches created from an outline document
+```
+
+Leave these to the Timetable: dragging a sketch, or **Move up** and **Move down** when converting Canvas cards, rewrites them. A sketch without **Place after scene** sits at the end of its act. See [Place scenes and sketches from the table](Timetable#place-scenes-and-sketches-from-the-table).
+
+## Outline Notes (YAML)
+
+`Class: Outline` marks a planning document in a book folder, such as a chapter outline or a synopsis. The Timetable’s **Outline** layout lists it under **Outline documents** without attaching it by hand, and **Create sketches from this document** turns its headings into sketches. See [Outline](Timetable#outline).
+
+```yaml
+Class: Outline
+```
+
+## Images for Timetable Panels
+
+The Timetable’s **Panels** layout shows an image on each card. It reads them from these properties:
+
+| Property | On | Shows |
+|---|---|---|
+| `Image` | a character note | that character’s portrait, for the first character in a scene’s **Character** list (the POV character) |
+| `Image` | a Place note | the place, for the first place in a scene’s **Place** list |
+| `Place image` | a scene | the place art for that scene only, instead of the Place note’s image |
+| `Scene image` | a scene | artwork for the scene itself |
+
+Each value is a link to an image in the vault, such as `"[[Longbourn.webp]]"`. PNG, JPEG, GIF, WebP and AVIF work. See [Panels](Timetable#panels).
+
 ## Beat Notes (YAML)
 
 ```yaml

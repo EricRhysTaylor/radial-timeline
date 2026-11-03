@@ -1,10 +1,10 @@
-A free, fully analyzed Story Vault in the Classics collection, built around Jane Austen's *Pride & Prejudice*. All 61 chapters are scene notes with full properties, alongside 15 Save the Cat beat notes, 28 character notes, and saved AI analysis you can read without an API key: Pulse analysis on every chapter, four Gossamer signals, and three Inquiry sessions. It's the fastest way to see what Radial Timeline produces from a full-length novel.
+A free, fully analyzed Story Vault in the Classics collection, built around Jane Austen's *Pride & Prejudice*. All 61 chapters are scene notes with full properties, alongside 15 Save the Cat beat notes, 29 character notes with portraits, 9 place notes, and saved AI analysis you can read without an API key: Pulse analysis on every chapter, four Gossamer signals, and three Inquiry sessions. It's the fastest way to see what Radial Timeline produces from a full-length novel.
 
 ## How to get it
 
 ### Inside your own vault
 
-1.  Click **Explore a finished book** on the Welcome screen, or **Explore story** under **Settings → Resources → Story Vaults**.
+1.  Click **Choose a story** under **Explore a finished book** on the Welcome screen, or **Explore story** under **Settings → Resources → Story Vaults**.
 2.  In the Story Vault chooser, click **Add story to this vault** on Pride & Prejudice.
 
 Radial Timeline downloads the story, checks it, adds it to a **Demo Projects** folder, and opens it on the timeline. Nothing in your vault is replaced: the book joins Book Manager beside yours, and your AI settings stay as they are. If the folder is already there, the card shows **Open story** instead.
@@ -23,7 +23,8 @@ The download holds the book and its notes only, with no Obsidian settings or plu
 ## What's inside
 
 *   **`Pride & Prejudice/`** — the novel as 61 chapter notes plus 15 Save the Cat beat notes. Every chapter carries full properties (`Act`, `When`, `Duration`, `Synopsis`, `Subplot`, `Character`, `POV`, `Status`, `Publish Stage`, and more) and a saved **Pulse** analysis. The beat notes hold four Gossamer signals: momentum, tension, activity, and interiority.
-*   **`Characters/`** — notes for 28 characters, linked from every chapter they appear in.
+*   **`Characters/`** — notes for 29 characters, linked from every chapter they appear in, each with a portrait from Hugh Thomson’s and C. E. Brock’s illustrations of the 1890s in `Characters/Portraits/`. The Timetable’s [Panels](Timetable#panels) show them beside each scene.
+*   **`Places/`** — notes for the nine places the story moves between, from Longbourn and Netherfield to Pemberley and Rosings.
 *   **`Radial Timeline/Inquiry/`** — three saved Inquiry sessions, ready to read in the [Inquiry view](Inquiry).
 *   **`Source Manuscript/`** — the public-domain text of the novel and a plain-text synopsis.
 *   **`Welcome`**, **`README`**, **`Chronology`**, and **`Story Structure`** — short guides to the vault and its editorial choices.
@@ -36,6 +37,8 @@ The download holds the book and its notes only, with no Obsidian settings or plu
 
 ## More Story Vaults
 
-[The Odyssey](Odyssey-Demo-Vault) and *Sherlock Holmes* are free Story Vaults too, added the same way from the Story Vault chooser or downloaded from their pages on radialtimeline.com. *Sherlock Holmes* collects four novels, *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*: 56 chapters, each novel in its own manuscript folder with three acts and its own **Mystery and Revelation** beats. *The Faerie Queene* is listed there as **Coming soon**.
+[The Odyssey](Odyssey-Demo-Vault) and *Sherlock Holmes* are free Story Vaults too, added the same way from the Story Vault chooser or downloaded from their pages on radialtimeline.com. *Sherlock Holmes* collects four novels, *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*: 56 chapters, each novel in its own manuscript folder with three acts and its own **Mystery and Revelation** beats. A fourth card, the **Secret vault**, is in preparation.
+
+Each story has an edition. When a newer one is ready, the Welcome screen and **Settings → Resources** offer it as a separate download, and the copy you have stays as it is. See [Story Vaults](Pro#story-vaults).
 
 You're welcome to fork it, edit it, write in it, or strip it for parts. The source text and all included analysis are free to read, copy, and reuse.

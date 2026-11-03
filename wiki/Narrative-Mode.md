@@ -116,6 +116,9 @@ Turn placards on with **Settings → Advanced → Configuration → Show part an
 
 Character lanes follow the main characters through the book, in the order a reader meets the scenes. Up to four thin lanes sit just inside the outer ring, one per character, each in its own color.
 
+<p align="center"><img src="images/character-lanes.webp" alt="Pride and Prejudice in Narrative mode with four character lanes inside the outer ring, and the ring key open listing the six rings and the lanes for Elizabeth Bennet, Mr. Bennet, Jane Bennet and Mrs. Bennet, their names also shown on the wheel" width="600"></p>
+<p align="center"><sub>Character lanes with the ring key open — titles across the bottom of the wheel read upright</sub></p>
+
 *   **Who gets a lane**: the four characters who are POV in the most scenes. If fewer than four characters ever hold POV, the remaining lanes go to the characters who appear in the most scenes.
 *   **Tall mark**: a scene told from that character's point of view.
 *   **Short mark**: a scene the character is in.

@@ -29,17 +29,20 @@ These are the main command-palette entries.
 18. **[Scene pulse analysis (subplot order)](#scene-pulse-analysis-subplot-order)**
 19. **[Scene pulse analysis (manuscript order)](#scene-pulse-analysis-manuscript-order)**
 20. **[Timeline share export](#timeline-share-export)**
-21. **[Open timetable](#open-timetable)**
-22. **[Promote note to scene](#promote-note-to-scene)**
-23. **[Reset timetable columns to recommended](#reset-timetable-columns-to-recommended)**
-24. **[Scene time assignment](Scene-Time)** ← standalone guide
+21. **[Timetable: Open](#timetable-open)**
+22. **[Timetable: Reset columns to recommended](#timetable-reset-columns-to-recommended)**
+23. **[Timetable: Restore a Radial Timetable view](#timetable-restore-a-radial-timetable-view)**
+24. **[Scene: Promote note](#scene-promote-note)**
+25. **[Canvas: Create subplot map](#canvas-create-subplot-map)**
+26. **[Canvas: Convert cards to sketches](#canvas-convert-cards-to-sketches)**
+27. **[Scene time assignment](Scene-Time)** ← standalone guide
 
 ## Conditional Visibility
 
 Some commands are hidden until their required feature is enabled. Others remain visible but stop with a setup message if prerequisites are missing:
 
 *   **Scene pulse analysis**, **Summary scene refresh**, and **Gossamer analysis** appear only when **AI LLM features** are enabled in [Settings → AI](Settings-AI).
-*   **Open inquiry** stays listed and opens with AI off, so you can read saved sessions, including the demo vaults', without an API key. Running a new question needs AI turned on and a provider. See [Inquiry](Inquiry).
+*   **Open inquiry** stays listed and opens with AI off, so you can read saved sessions, including the Story Vaults', without an API key. Running a new question needs AI turned on and a provider. See [Inquiry](Inquiry).
 *   **Gossamer analysis** also needs an active beat system, story beats, and scene content. To score by hand without AI, use **[Gossamer score manager](#gossamer-score-manager)**.
 *   **Runtime estimator** is a **Pro** workflow. Runtime configuration lives in [Settings → Core](Settings-Core#runtime-estimation).
 *   With AI off, the **Timeline date audit** AI scan and the runtime estimator's AI mode tell you AI is off instead of running.
@@ -274,18 +277,36 @@ Related: [Settings → Community](Settings-Community).
 
 ---
 
-## Open timetable
+## Timetable: Open
 
-**Radial timeline: Open timetable** opens or focuses the Bases view for the timeline’s current book or saga. Enable the Bases core plugin first. See [Timetable](Timetable).
-
----
-
-## Promote note to scene
-
-**Radial timeline: Promote note to scene** reviews a sketch or unclassified note for conversion to a scene, preserving its text and existing properties. See [Promoting notes](Timetable#promote-a-note-to-a-scene).
+**Radial timeline: Timetable: Open** opens or focuses the Bases view for the timeline’s current book or saga. Enable the Bases core plugin first. See [Timetable](Timetable).
 
 ---
 
-## Reset timetable columns to recommended
+## Timetable: Reset columns to recommended
 
-**Radial timeline: Reset timetable columns to recommended** gives the active Timetable view the recommended columns for its scenes, after a confirm, and clears its saved column widths. Filters, sorts, grouping, and the file’s other views stay as they are. The same action is in the column header menu. See [Columns](Timetable#columns).
+**Radial timeline: Timetable: Reset columns to recommended** gives the active Timetable view the recommended columns for its scenes, after a confirm, and clears its saved column widths. Filters, sorts, grouping, and the file’s other views stay as they are. The same action is in the column header menu. See [Columns](Timetable#columns).
+
+---
+
+## Timetable: Restore a Radial Timetable view
+
+**Radial timeline: Timetable: Restore a Radial Timetable view** adds a fresh **Radial Timetable** view to the open `.base` file with the recommended settings, for when you have deleted or reshaped yours. Your other views, the Base filters and your notes stay as they are. The same action is in the `.base` file’s menu and under the **?** beside **Saved views**. See [Saved views](Timetable#saved-views).
+
+---
+
+## Scene: Promote note
+
+**Radial timeline: Scene: Promote note** reviews a sketch or unclassified note for conversion to a scene, preserving its text and existing properties. See [Promoting notes](Timetable#promote-a-note-to-a-scene).
+
+---
+
+## Canvas: Create subplot map
+
+**Radial timeline: Canvas: Create subplot map** builds a new Canvas of the book’s scenes, one lane per subplot. The same dialog opens from the timeline title bar and the Timetable’s **Canvas map** button. See [Canvas story maps](Timetable#canvas-story-maps).
+
+---
+
+## Canvas: Convert cards to sketches
+
+**Radial timeline: Canvas: Convert cards to sketches** turns text cards on the open Canvas into sketch notes in a book. See [Bring ideas from Canvas](Timetable#bring-ideas-from-canvas).

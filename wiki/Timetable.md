@@ -3,13 +3,31 @@ Keep the book’s notes beside the wheel in an Obsidian Bases view. The Timetabl
 > [!NOTE]
 > Enable **Bases** under **Settings → Core plugins**. The Timetable works with Obsidian 1.13; the Act and Status boards require Obsidian 1.14 or later.
 
-![The Timetable beside the radial timeline: Act 1 of Pride and Prejudice with stage letters and row controls by each number, colored subplot squares, short dates under the year, relative Due dates, Words bars, and a scene open in the reading pane below](images/timetable-sidebyside.webp)
+![The Timetable beside the radial timeline: Act 1 of Pride and Prejudice in the Table layout, with the toolbar above, drag grips and stage letters by each number, colored subplot squares, dates, and character portraits](images/timetable-sidebyside.webp)
 
 ## Open the Timetable
 
-Click the table button in the timeline title bar, or run **Radial timeline: Open timetable**. On first use, confirm creation of the book’s `.base` file in `Radial Timeline/Timetables/`. It opens beside the timeline. Switching books on the timeline switches a following Timetable tab to that book; Saga scope opens a combined table grouped by book and act.
+Click the table button in the timeline title bar, or run **Radial timeline: Timetable: Open**. On first use, confirm creation of the book’s `.base` file in `Radial Timeline/Timetables/`. It opens beside the timeline. Switching books on the timeline switches a following Timetable tab to that book, and the book button in the Timetable’s toolbar switches it from the table. Saga scope opens a combined table grouped by book and act.
 
 The `.base` file is yours to customize. Change its columns, filters, sorting, or views in Bases. Radial Timeline preserves those choices. When a book’s manuscript folder changes, or a book joins or leaves the saga, it updates only the folder filter it wrote, wherever you have moved it, provided you have not replaced that filter yourself.
+
+## The toolbar
+
+Under Obsidian’s Bases toolbar, the Timetable has a row of its own:
+
+- **Quick Workspace** opens a reference document next to the table. Choose **Timetable and reference side by side**, **Timetable above reference**, or **Timeline with timetable and reference**. The reference is the first [outline document](#outline), or the first scene when the book has none.
+- **Radial Timetable** switches the layout: **Table** for rows, **[Panels](#panels)** for cards with images, and **[Outline](#outline)** for the book in reading order beside your planning documents.
+- **Canvas map** builds a subplot map of the book. See [Canvas story maps](#canvas-story-maps).
+- The book button names the book the table shows (**Book: …**) and switches it. A table that spans several books shows **Choose book**.
+- **Mode** names the timeline mode the table follows. See [Follow the timeline’s mode](#follow-the-timelines-mode).
+
+The **+**, lens and **✱** buttons below it add a sketch, light the table’s rows on the wheel, and open the Timetable keys.
+
+### Saved views
+
+A `.base` file can hold several views, and **Saved views** in the Bases toolbar switches between them. Obsidian manages that list; **Table**, **Panels** and **Outline** change the layout of the Radial Timetable view itself. New files name their views **Radial Timetable**, **Spreadsheet**, **Not on the timeline**, **Act board** and **Status board**.
+
+If you delete the Radial Timetable view or change it beyond repair, choose **Restore Radial Timetable view** from the **?** beside Saved views, from the `.base` file’s menu, or run **Radial timeline: Timetable: Restore a Radial Timetable view**. It adds a fresh view with the recommended settings. Your other views, the Base filters and your notes stay in place; the file is reformatted and YAML comments in it are removed.
 
 ## Read the rows
 
@@ -45,7 +63,7 @@ A new Timetable lists **When**, **Character**, **Place**, **Due**, and **Words**
 - **Fit to content:** right-click a column header and choose **Fit to content**, or **Fit every column**. Double-click a column’s resize handle to fit that column. Fitted widths stay between 48 and 300 px and are saved like a dragged width.
 - **Automatic fit:** a column you haven’t sized fits its header and cells while the table is open. It grows as you edit but shrinks only when the table reopens, and it isn’t saved to the `.base` file.
 - **Long text:** Synopsis, Summary, and Pending Edits keep their width and never fit automatically.
-- **Reset columns to recommended:** in the column header menu, or run **Radial timeline: Reset timetable columns to recommended**. After you confirm, that Timetable view gets the recommended columns for its scenes and loses its saved widths. Filters, sorts, grouping, and the file’s other views stay as they are.
+- **Reset columns to recommended:** in the column header menu, or run **Radial timeline: Timetable: Reset columns to recommended**. After you confirm, that Timetable view gets the recommended columns for its scenes and loses its saved widths. Filters, sorts, grouping, and the file’s other views stay as they are.
 
 ### Time references within a scene
 
@@ -53,7 +71,7 @@ Expand the reference control beside a scene number to see its dated passages, th
 
 ### Follow the timeline’s mode
 
-The Timetable draws itself in the timeline’s mode, and the mode button in its corner shows which. Click it to pin a mode instead. A sort set in the Bases toolbar still wins over the mode’s order.
+The Timetable draws itself in the timeline’s mode, and **Mode** in its toolbar shows which. Choose a mode from its menu to pin the table to it; a lock marks a pinned mode, and **Follow the timeline** releases it. A sort set in the Bases toolbar still wins over the mode’s order. The Outline layout always follows narrative order.
 
 | Timeline mode | What the table shows |
 |---|---|
@@ -94,9 +112,56 @@ Notes you open from the Timetable appear in a pane below the table, so the wheel
 - Pin the note in the pane to keep it: the next note opens in a tab beside it.
 - The reading pane is used only while a Timetable is showing.
 
+## Panels
+
+**Panels** shows each scene, beat and sketch as a card, act by act: number, title, date, rings, characters and the synopsis, with an image beside them. Beats show their purpose; sketches show their text, and **Expand sketch** opens the rest.
+
+<p align="center"><img src="images/timetable-panels.webp" alt="Timetable Panels beside the wheel: Pride and Prejudice scene cards with a character portrait, date, rings, characters and synopsis, and the Image, Image sizing and Panel size controls above them" width="800"></p>
+
+- **Image** chooses what each card shows: **Character** (the portrait of the first character listed, the scene’s POV character; no other portrait stands in when that one is missing), **Place**, **Place + character** (the place, or the character when the scene has no place image), **Scene artwork**, or **None**. The images come from properties on your notes; see [Images for Timetable Panels](YAML-Frontmatter#images-for-timetable-panels).
+- **Image sizing:** **Fill** crops the image to the card, **Fit** shows all of it. **Set image focus**, on a card, picks the part of the image that stays in view: click the image or use the sliders, or **Center** to reset.
+- **Panel size:** **Small**, **Medium** or **Large**.
+- **Synopsis:** click it, or **Add synopsis** on a card without one, to edit it in place, then **Save**. If the note changed elsewhere meanwhile, your edit stays in the field so you can copy it.
+
+The layout, image and size choices are saved with the view.
+
+## Outline
+
+**Outline** lists the book act by act in narrative order, whatever mode the timeline is in, with each scene’s synopsis. **Show beats** adds the story beats between them.
+
+<p align="center"><img src="images/timetable-outline.webp" alt="The Outline layout: an Outline documents tray holding the Synopsis note above Act 1, listed scene by scene in reading order with synopses and a story beat" width="600"></p>
+
+The **Outline documents** tray on top holds your planning material. Notes with `Class: Outline` in the book folder appear there by themselves. Attach any other note by clicking the tray, dropping notes on it, or with **Attach document**. **Remove document link** takes one off the tray without changing the note. Click a document to open it as the reference in a [Quick Workspace](#the-toolbar).
+
+To turn a planning document into sketches:
+
+- **Choose where it goes.** Click a scene, sketch or act in the outline. The line above the list confirms the spot (**Insert after: …**, or the end of an act).
+- **From a selection:** select text in the open reference document, then click **Add selection as sketch**. You can also drop selected text, a scene or a sketch onto a row, or onto an empty act. **Place new sketch after this** on a row starts an empty one there.
+- **From headings:** **Create sketches from this document** on a document opens **Create sketches from outline**. Pick the heading level that marks each sketch, and the level of headings named *Act 1*, *Act 2* and so on if the document has them. Review each entry’s title, text and act, then **Create sketches**. The sketches link back to the document in their **Source** property, and the document stays as it is.
+
+## Place scenes and sketches from the table
+
+Each scene in Table and Panels has a grip. Drag it onto another scene to place it just before that scene. In Narrative this changes the manuscript order, as dragging on the wheel does, and dropping on an act heading moves the scene to the end of that act. In Chronologue it opens the same placement as [dragging in time](Chronologue-Mode#drag-a-scene-to-change-its-date). The grip works for the timeline’s active book, in Narrative or Chronologue, with no sort set in Bases and no alternate view on (Runtime, Shift or Alt). Otherwise it explains what to change.
+
+Sketches have a grip too, in Narrative. Drop a sketch on a scene to place it after that scene, on another sketch to sit beside it, or on an act heading to move it to the end of that act. An empty act shows **Drop a scene or sketch here**. When you move a scene to another act and sketches are placed after it, **Move attached sketches?** asks whether they **Follow scene** or **Keep in current act**. A sketch whose scene went missing, or moved to another act, shows a warning with the same choices.
+
+## Canvas story maps
+
+**Canvas map** in the Timetable toolbar, the Canvas icon in the timeline title bar, or **Radial timeline: Canvas: Create subplot map** opens **Create a subplot map**. Choose the **Book**, an **Act** or **All acts**, a **Subplot** or **All subplots**, and a **Layout**: **Horizontal lanes**, **Vertical lanes**, or **Single story line**. **Start focused on** picks the part of the book the map opens on (**Entire selection**, or the beginning, middle or final third); every scene is on the map either way. **Create Canvas** saves it in `Radial Timeline/Story Maps/`.
+
+<p align="center"><img src="images/canvas-subplot-map-dialog.webp" alt="The Create a subplot map dialog for Pride and Prejudice: Book, Act, Layout set to Horizontal lanes, Start focused on Beginning third, Subplot, and a count of 61 scenes and 127 card appearances" width="500"></p>
+
+Each scene appears in every subplot lane it belongs to, as a card linked to its note, and lines connect the scenes of a lane in narrative order. Moving cards does not reorder your manuscript.
+
+<p align="center"><img src="images/canvas-subplot-map.webp" alt="Wickham's Story hovered on the wheel, and its four cards lit across the subplot lanes of the Canvas map beside it, with the story navigation bar reading Scene 16 of 61" width="800"></p>
+
+- **Story navigation**, the bar along the top of the map: drag the slider to travel scene by scene (*Scene 16 of 61 · Wickham’s Story*), **Zoom to selection** to frame the selected cards, or **Fit all**. Act labels stay readable when you zoom out.
+- **Canvas card view**, in the Canvas title bar: **Full note**, **Preview** (synopsis or opening text), or **Title**. The same menu has **Show overdue scenes**, which marks late scenes, and **Follow timeline hover in Canvas**, which moves the map to a scene you hover on the wheel. Cards carry their subplot colors.
+- **The map and the wheel point at each other.** Hover a scene on the wheel and its cards light up on the map; click a card and its scene lights on the wheel and in the Timetable. A card’s menu adds **Radial Timeline: Show in Timetable**, **Radial Timeline: Show on timeline** and, for sketches and notes without a Class, **Radial Timeline: Promote to scene**.
+
 ## Bring ideas from Canvas
 
-Open an Obsidian Canvas and select **Turn Canvas cards into sketches** in its title bar, or run the command from the command palette. You can also find the action in the active Canvas file’s menu. Choose the text cards, the book and an optional act, then select **Create sketches**. Each selected card becomes a Markdown sketch in the book folder; its text stays in the note body, and its Canvas card becomes a link to the same note. Its position, color and connections stay in place. Existing file cards are left alone.
+Open an Obsidian Canvas and select **Turn Canvas cards into sketches** in its title bar, or run **Radial timeline: Canvas: Convert cards to sketches**. You can also find the action in the active Canvas file’s menu. Choose the text cards, the book and an optional act, then where they go: **Place after scene** puts them after a scene you choose, and **End of act or unassigned** at the end of the act. **Move up** and **Move down** set their order. Select **Create sketches**. Each selected card becomes a Markdown sketch in the book folder; its text stays in the note body, and its Canvas card becomes a link to the same note. Its position, color and connections stay in place. Existing file cards are left alone.
 
 The first line suggests the sketch’s title. Sketches without an act appear unassigned in the Timetable. Canvas positions and arrows do not set manuscript order or dates. Review a sketch’s placement when you promote it to a scene. If the Canvas changes during conversion, the action stops instead of overwriting the map. Any sketches already created remain in the book folder. Canvas undo restores the text card but does not delete the sketch note; converting it again creates another note. Advanced Canvas text cards can be converted too. If a selected card is connected through an Advanced Canvas portal, conversion stops so that connection is not broken.
 
@@ -112,7 +177,9 @@ Write directly in the drawer and edit its Act and When there. The text is saved 
 
 Use **Promote to scene** on a sketch or a note with no Class. Review the proposed properties and placement, then promote it. Promoted on its own, a note that still has a placeholder name (**Untitled sketch**, or Obsidian’s **Untitled**) asks for a **Scene title** first and promotes once it has one; in the **Position** menu, **Don’t number it** keeps the new title without a number prefix. Existing property values and body text are preserved; missing scene-template properties are added. A note already classified as a scene, beat, or another kind of note is not reclassified by this action.
 
-You can also run **Radial timeline: Promote note to scene** or use the file-explorer context menu, including a folder’s direct children or a multi-selection. Notes must be inside a registered book’s manuscript folder; notes outside every book are explained and skipped. The scene then appears on the wheel and in the Timetable.
+A sketch placed after a scene is promoted into that spot, with a scene number that fits between its neighbors without renumbering them; when none fits, it is left as a sketch and says so. Promote placed sketches one at a time. **Open scene** in the finished dialog opens the new scene.
+
+You can also run **Radial timeline: Scene: Promote note** or use the file-explorer context menu, including a folder’s direct children or a multi-selection. Notes must be inside a registered book’s manuscript folder; notes outside every book are explained and skipped. The scene then appears on the wheel and in the Timetable.
 
 To go the other way, right-click a scene and choose **Remove from timeline**. Only its `Class` is removed: the note stays where it is, keeps its ID, act, subplots and text, and stays in its row here as a note with no Class, wherever it sits in the book folder. Promote it to bring the same scene back.
 
@@ -120,10 +187,10 @@ To go the other way, right-click a scene and choose **Remove from timeline**. On
 
 | View | What it provides |
 |---|---|
-| **Timetable** | The compact book view with status numbers, Rings, and sketch drawers |
-| **Table** | Obsidian’s editable property table for spreadsheet-style changes |
+| **Radial Timetable** | The book view with status numbers, Rings, and sketch drawers, in the Table, Panels or Outline layout |
+| **Spreadsheet** | Obsidian’s editable property table for spreadsheet-style changes |
 | **Not on the timeline** | Notes without a Class, ready to review or promote |
 | **Act board** | A board grouped by Act, on Obsidian 1.14 or later |
 | **Status board** | A board grouped by Todo, Working, and Complete, on Obsidian 1.14 or later |
 
-The Saga file provides Timetable and Table views. To change scene order or subplot membership on the wheel, see [How to](How-to). For story-time placement, see [Chronologue Mode](Chronologue-Mode#drag-a-scene-to-change-its-date).
+Files made before 8.0.0 keep their **Timetable** and **Table** names. The Saga file provides Radial Timetable and Spreadsheet views. To change scene order or subplot membership on the wheel, see [How to](How-to). For story-time placement, see [Chronologue Mode](Chronologue-Mode#drag-a-scene-to-change-its-date).

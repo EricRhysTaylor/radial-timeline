@@ -70,7 +70,7 @@ class CanvasCards {
         this.action = view.addAction('layout-template', t('ui.canvasSketch.cardViews'), event => {
             const menu = new Menu();
             const choices: Array<[Mode, string]> = [
-                ['full', t('ui.canvasSketch.cardFull')], ['preview', t('ui.canvasSketch.cardPreview')], ['title', t('ui.canvasSketch.cardTitle')],
+                ['preview', t('ui.canvasSketch.cardPreview')], ['title', t('ui.canvasSketch.cardTitle')], ['full', t('ui.canvasSketch.cardFull')],
             ];
             for (const [mode, label] of choices) menu.addItem(item => item.setTitle(label).setChecked(this.mode === mode).onClick(() => {
                 this.mode = mode;

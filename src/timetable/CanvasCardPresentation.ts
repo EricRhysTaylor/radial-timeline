@@ -57,7 +57,7 @@ class CanvasCards {
     private revision = 0;
     private stopped = false;
     private showOverdue = true;
-    private followTimeline = false;
+    private followTimeline = true;
     private followTimer: number | undefined;
     private readonly ringColors = new Map<string, Promise<Map<string, number>>>();
     readonly action: HTMLElement;
@@ -98,10 +98,12 @@ class CanvasCards {
                 const data = node.getData?.();
                 const linked = !!path && data?.type === 'file' && data.file === path;
                 node.nodeEl?.toggleClass('ert-canvas-linked', linked);
-                if (linked && node.nodeEl) {
-                    if (color) node.nodeEl.style.setProperty('--ert-canvas-linked-color', color);
-                    else node.nodeEl.style.removeProperty('--ert-canvas-linked-color');
+                if (linked) {
                     matches.push(data);
+                    if (node.nodeEl) {
+                        if (color) node.nodeEl.style.setProperty('--ert-canvas-linked-color', color);
+                        else node.nodeEl.style.removeProperty('--ert-canvas-linked-color');
+                    }
                 }
             }
             if (source !== 'timeline' || !path || !this.followTimeline || !matches.length) return;

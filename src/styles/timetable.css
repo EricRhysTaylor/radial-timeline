@@ -1396,6 +1396,7 @@
 .ert-canvas-linked .ert-canvas-story-card {
     outline: 3px solid var(--ert-canvas-linked-color, var(--interactive-accent));
     outline-offset: -3px;
+    background: color-mix(in srgb, var(--ert-canvas-linked-color, var(--interactive-accent)) 32%, var(--background-primary));
 }
 .ert-canvas-linked:not(.ert-canvas-story-node) { outline: 3px solid var(--ert-canvas-linked-color, var(--interactive-accent)); outline-offset: 2px; }
 

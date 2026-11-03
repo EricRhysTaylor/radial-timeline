@@ -6,7 +6,6 @@ import { safeTitle } from '../utils/noteTitle';
 import { t } from '../i18n';
 import { buildTableRow, type TimetableRow } from './timetableModel';
 import { planSubplotCanvas, storyRangeBounds, storyRangeRows, type StoryRange } from './subplotCanvas';
-import { preferTitleForCanvas } from './CanvasCardPresentation';
 
 export class SubplotCanvasModal extends ErtModal {
     private bookId: string;
@@ -111,7 +110,6 @@ export class SubplotCanvasModal extends ErtModal {
             let path = `${folder}/${stem} - Subplot Map.canvas`;
             for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${folder}/${stem} - Subplot Map ${n}.canvas`;
             const file = await this.app.vault.create(path, JSON.stringify({ nodes: plan.nodes, edges: plan.edges }, null, 2));
-            preferTitleForCanvas(file.path);
             await this.app.workspace.openLinkText(file.path, '', true);
             this.close();
             if (bounds) {

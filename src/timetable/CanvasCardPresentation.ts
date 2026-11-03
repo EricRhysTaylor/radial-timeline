@@ -24,11 +24,6 @@ type NodeData = { type?: string; file?: string; subpath?: string; label?: string
 type CanvasNode = { nodeEl?: HTMLElement; getData?: () => NodeData };
 type CanvasView = View & { canvas?: { nodes?: Map<string, CanvasNode>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void } };
 
-const pendingTitleMaps = new Set<string>();
-
-/** New generated maps open in the compact card presentation once. */
-export function preferTitleForCanvas(path: string): void { pendingTitleMaps.add(path); }
-
 function plainText(text: string): string {
     return text.replace(/!\[\[[^\]]+\]\]/g, '').replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
         .replace(/\[\[([^\]]+)\]\]/g, '$1').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
@@ -50,7 +45,7 @@ function portrait(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, 
 }
 
 class CanvasCards {
-    private mode: Mode = 'full';
+    private mode: Mode = 'preview';
     private readonly cards = new Map<HTMLElement, { overlay: HTMLElement; signature: string }>();
     private observer: MutationObserver;
     private timer: number | undefined;
@@ -66,6 +61,7 @@ class CanvasCards {
     private readonly navigator: CanvasStoryNavigator;
 
     constructor(private plugin: RadialTimelinePlugin, private view: ItemView) {
+        this.view.containerEl.addClass('ert-canvas-card-view');
         this.navigator = new CanvasStoryNavigator(plugin, view);
         this.action = view.addAction('layout-template', t('ui.canvasSketch.cardViews'), event => {
             const menu = new Menu();
@@ -161,11 +157,6 @@ class CanvasCards {
     private async refresh(): Promise<void> {
         const revision = ++this.revision;
         this.navigator.refresh();
-        const file = (this.view as unknown as { file?: TFile | null }).file;
-        if (file && pendingTitleMaps.delete(file.path)) {
-            this.mode = 'title';
-            this.view.containerEl.addClass('ert-canvas-card-view');
-        }
         const nodes = (this.view as CanvasView).canvas?.nodes;
         const keep = new Set<HTMLElement>();
         if (this.mode !== 'full' && nodes instanceof Map) {

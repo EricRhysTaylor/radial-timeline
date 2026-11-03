@@ -3,7 +3,7 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { buildTableRow, compareManuscriptRows } from './timetableModel';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
-import { isStoryActHeading, storyAxis, storyPosition, storyProgress } from './canvasNavigation';
+import { storyActHeadingLabel, storyAxis, storyPosition, storyProgress } from './canvasNavigation';
 
 type NodeData = { type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
 type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void };
@@ -13,6 +13,7 @@ export class CanvasStoryNavigator {
     private root: HTMLElement | null = null;
     private path = '';
     private events = new Component();
+    private readonly actLabels = new Map<HTMLElement, HTMLElement>();
     constructor(private readonly plugin: RadialTimelinePlugin, private readonly view: ItemView) {}
 
     refresh(): void {
@@ -20,11 +21,34 @@ export class CanvasStoryNavigator {
         const path = file?.path ?? '';
         const isStoryMap = path.startsWith('Radial Timeline/Story Maps/') && path.endsWith('.canvas');
         const canvasView = (this.view as unknown as { canvas?: Canvas }).canvas;
+        const visibleActNodes = new Set<HTMLElement>();
         for (const node of canvasView?.nodes?.values() ?? []) {
             const data = node.getData?.();
-            const isActHeading = isStoryMap && data?.type === 'text' && typeof data.text === 'string' && isStoryActHeading(data.text);
-            node.nodeEl?.toggleClass('ert-story-act-heading', isActHeading);
-            node.nodeEl?.toggleClass('ert-story-act-heading--bold', !!isActHeading && typeof data?.text === 'string' && data.text.trimStart().startsWith('**'));
+            const el = node.nodeEl;
+            if (!el) continue;
+            const label = isStoryMap && data?.type === 'text' && typeof data.text === 'string' ? storyActHeadingLabel(data.text) : null;
+            el.toggleClass('ert-story-act-heading', !!label);
+            el.toggleClass('ert-story-act-heading--bold', !!label && typeof data?.text === 'string' && data.text.trimStart().startsWith('**'));
+            if (!label) continue;
+            visibleActNodes.add(el);
+            let overlay = this.actLabels.get(el);
+            if (!overlay || !el.contains(overlay)) {
+                overlay = el.createDiv({ cls: 'ert-story-act-label', attr: { 'aria-hidden': 'true' } });
+                const heading = overlay.createDiv({ cls: 'ert-story-act-label__heading' });
+                setIcon(heading.createSpan({ cls: 'ert-story-act-label__icon' }), 'book-open');
+                heading.createSpan({ cls: 'ert-story-act-label__text' });
+                overlay.createDiv({ cls: 'ert-story-act-label__description' });
+                this.actLabels.set(el, overlay);
+            }
+            const text = overlay.querySelector('.ert-story-act-label__text');
+            if (text && text.textContent !== label) text.textContent = label;
+            const description = overlay.querySelector('.ert-story-act-label__description');
+            const remainder = typeof data?.text === 'string' ? data.text.split('\n').slice(1).join('\n').trim() : '';
+            if (description && description.textContent !== remainder) description.textContent = remainder;
+        }
+        for (const [el, overlay] of this.actLabels) {
+            if (visibleActNodes.has(el)) continue;
+            overlay.remove(); this.actLabels.delete(el);
         }
         if (path === this.path) return;
         this.events.unload(); this.events = new Component(); this.events.load();
@@ -108,5 +132,11 @@ export class CanvasStoryNavigator {
         // The Canvas can still be loading when its view is first attached.
         window.setTimeout(() => { if (this.root === root) { update(false); followViewport(); } }, 500);
     }
-    destroy(): void { this.events.unload(); this.root?.remove(); this.root = null; }
+    destroy(): void {
+        this.events.unload(); this.root?.remove(); this.root = null;
+        for (const [el, overlay] of this.actLabels) {
+            overlay.remove(); el.removeClass('ert-story-act-heading', 'ert-story-act-heading--bold');
+        }
+        this.actLabels.clear();
+    }
 }

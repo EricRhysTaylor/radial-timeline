@@ -11048,6 +11048,13 @@
 .ert-story-navigator input.ert-story-navigator__slider:active::-webkit-slider-thumb { width: 30px; height: 18px; border-radius: 999px; }
 .ert-story-navigator__fit { flex: none; }
 [class~="canvas-node"].ert-story-act-heading:not([class~="is-selected"]):not(:hover):not(:focus-within) > [class~="canvas-node-container"] { background: transparent; border-color: transparent; box-shadow: none; }
+.ert-story-act-heading:not(:focus-within) > [class~="canvas-node-container"] > [class~="canvas-node-content"] { opacity: 0; }
+.ert-story-act-label { position: absolute; inset: 0; z-index: 2; padding: 16px; overflow: hidden; pointer-events: none; color: var(--text-normal); }
+.ert-story-act-label__heading { display: flex; align-items: flex-start; gap: 12px; font-size: 40px; line-height: 1; font-weight: 750; }
+.ert-story-act-label__icon { display: inline-flex; flex: none; color: var(--text-accent); }
+.ert-story-act-label__icon .svg-icon { width: 29px; height: 29px; }
+.ert-story-act-label__description { margin-top: 2px; white-space: pre-wrap; font-size: 12px; line-height: 1.1; }
+.ert-story-act-heading:focus-within > .ert-story-act-label { display: none; }
 .ert-story-act-heading .markdown-rendered h1,
 .ert-story-act-heading--bold .markdown-rendered p:first-child,
 .ert-story-act-heading .cm-content > .cm-line:first-child { margin: 0; font-size: 40px; line-height: 1; font-weight: 750; }

@@ -351,7 +351,6 @@ export class TimetableView extends BasesView {
     private readonly patternPrefix = `ert-timetable-${Math.random().toString(36).slice(2, 9)}-`;
     private readonly collapsed = new Set<string>();
     private readonly outlineCollapsed = new Set<string>();
-    private outlineWorkspaceTarget: TFile | null = null;
     private outlineWorkspacePane: WorkspaceLeaf | null = null;
     private outlineWorkspaceDirection: 'vertical' | 'horizontal' = 'vertical';
     private outlineInsertionPath: string | null = null;
@@ -2328,6 +2327,7 @@ export class TimetableView extends BasesView {
             });
         }
         const workspace = toolbar.createEl('button', { cls: 'ert-outline-workspace-button', attr: { type: 'button', 'aria-haspopup': 'menu' } });
+        toolbar.prepend(workspace);
         setIcon(workspace.createSpan(), 'panels-left-right');
         workspace.createSpan({ text: t('ui.timetable.outlineWorkspace') });
         setIcon(workspace.createSpan({ cls: 'ert-outline-workspace-button__caret', attr: { 'aria-hidden': 'true' } }), 'chevron-down');
@@ -2336,8 +2336,6 @@ export class TimetableView extends BasesView {
             for (const [direction, timeline, label, icon] of [['vertical', false, t('ui.timetable.outlineWorkspaceBeside'), 'panels-left-right'], ['horizontal', false, t('ui.timetable.outlineWorkspaceBelow'), 'panels-top-bottom'], ['horizontal', true, t('ui.timetable.outlineWorkspaceTimeline'), 'panel-left']] as const) {
                 menu.addItem(item => item.setTitle(label).setIcon(icon).onClick(() => {
                     if (this.panelEditing) return;
-                    this.config.set('outline', true); this.config.set('panels', false); this.render();
-                    this.resetOutlineScroll();
                     void this.openOutlineWorkspace(undefined, direction, timeline);
                 }));
             }
@@ -2347,7 +2345,7 @@ export class TimetableView extends BasesView {
         const outlineMode = this.config.get('outline') === true;
         const modeGroup = toolbar.createDiv({ cls: 'ert-timetable-panels__mode-group' });
         const modeLabel = modeGroup.createEl('button', { cls: 'ert-timetable-panels__mode-label ert-timetable__mode', attr: { type: 'button', 'aria-haspopup': 'menu' } });
-        setIcon(modeLabel.createSpan({ attr: { 'aria-hidden': 'true' } }), this.modePin !== null ? 'lock' : 'circle');
+        setIcon(modeLabel.createSpan({ attr: { 'aria-hidden': 'true' } }), this.modePin !== null ? 'lock' : 'rt-circle-letter-o');
         modeLabel.createSpan({ cls: 'ert-timetable-panels__mode-caption', text: t('ui.timetable.modeCaption') });
         modeLabel.createSpan({ text: modeName(state.mode) });
         setIcon(modeLabel.createSpan({ attr: { 'aria-hidden': 'true' } }), 'chevron-down');
@@ -2505,7 +2503,6 @@ export class TimetableView extends BasesView {
         setIcon(beats, 'list-music'); setAccessibleLabel(beats, beatsLabel); setTooltip(beats, beatsLabel);
         beats.setAttr('aria-pressed', String(this.config.get('outlineHideBeats') !== true));
         this.panelEvents?.registerDomEvent(beats, 'click', () => { this.config.set('outlineHideBeats', this.config.get('outlineHideBeats') !== true); this.render(); });
-        this.outlineWorkspaceTarget = files[0] ?? items.find(item => item.row.kind === 'scene' || item.row.kind === 'sketch')?.entry.file ?? null;
     }
 
     /** Accept only existing Markdown files from this vault, never import an external file. */
@@ -2584,15 +2581,30 @@ export class TimetableView extends BasesView {
     private async openOutlineWorkspace(selected?: TFile, direction = this.outlineWorkspaceDirection, timelineLayout?: boolean): Promise<void> {
         const table = this.plugin.app.workspace.getLeavesOfType('bases').find(leaf => leaf.view.containerEl.contains(this.rootEl));
         if (!table) return;
-        const file = selected ?? currentOutlineReference(this.plugin.app.workspace, table) ?? this.outlineWorkspaceTarget;
+        const file = selected ?? currentOutlineReference(this.plugin.app.workspace, table) ?? this.findWorkspaceTarget();
         if (!file) { new Notice(t('ui.timetable.outlineWorkspaceNeedsNote')); return; }
         try {
             this.outlineWorkspacePane = await openOutlineReference(this.plugin.app.workspace, table, file, direction, timelineLayout);
             this.outlineWorkspaceDirection = direction;
-            this.resetOutlineScroll();
+            if (this.config.get('outline') === true) this.resetOutlineScroll();
         } catch (error) {
             new Notice(`Could not open the outline workspace: ${error instanceof Error ? error.message : String(error)}`, 8000);
         }
+    }
+
+    private findWorkspaceTarget(): TFile | null {
+        const { app, settings } = this.plugin;
+        const items = this.buildGroups().flatMap(group => group.items);
+        const viewBookIds = this.bookIdsInView();
+        const bookId = this.singleBook(items) ?? (viewBookIds.length === 1 ? viewBookIds[0] : viewBookIds.length === 0 && getTimelineScope(settings) === 'book' ? getActiveBook(settings)?.id : undefined);
+        const stored = this.config.get('outlineReferences');
+        const refs = stored && typeof stored === 'object' && !Array.isArray(stored) ? stored as Record<string, unknown> : {};
+        const attached = bookId && Array.isArray(refs[bookId]) ? (refs[bookId] as unknown[]).filter((path): path is string => typeof path === 'string') : [];
+        const notes = bookId ? app.vault.getMarkdownFiles().filter(file => getBookIdForPath(settings.books, file.path) === bookId).map(file => ({
+            path: file.path, bookId, className: frontmatterKey(app.metadataCache.getFileCache(file)?.frontmatter, 'Class'),
+        })) : [];
+        const firstReference = outlineDocumentPaths(bookId, notes, attached).map(path => app.vault.getAbstractFileByPath(path)).find((file): file is TFile => file instanceof TFile);
+        return firstReference ?? items.find(item => item.row.kind === 'scene' || item.row.kind === 'sketch')?.entry.file ?? null;
     }
 
     private resetOutlineScroll(): void {

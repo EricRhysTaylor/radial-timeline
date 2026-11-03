@@ -1241,6 +1241,7 @@
 .ert-timetable__bases-help .svg-icon { width: 16px; height: 16px; }
 .ert-timetable-panels__toolbar button[aria-pressed="true"] { background: var(--interactive-accent); color: var(--text-on-accent); }
 .ert-timetable .ert-timetable-panels__view-switch, .ert-timetable .ert-outline-workspace-button { display: inline-flex; align-items: center; gap: 7px; }
+.ert-timetable-panels__view-switch > span, .ert-outline-workspace-button > span, .ert-timetable-panels__mode-label > span { display: inline-flex; align-items: center; }
 .ert-timetable .ert-timetable-panels__view-switch .svg-icon, .ert-timetable .ert-outline-workspace-button .svg-icon { width: 16px; height: 16px; }
 .ert-timetable .ert-outline-workspace-button { border: 1px solid var(--interactive-accent); color: var(--text-accent); background: var(--background-secondary); font-weight: var(--font-semibold); }
 .ert-outline-workspace-button__caret { display: inline-flex; margin-left: 3px; }

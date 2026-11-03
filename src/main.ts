@@ -611,6 +611,17 @@ export default class RadialTimelinePlugin extends Plugin {
         const inquiryIconBody = getEmbeddedAssetBytes('icons/radial-inquiry.svg').toString('utf8')
             .replace(/^\s*<svg\b[^>]*>|<\/svg>\s*$/g, '');
         addIcon('ri-logo', inquiryIconBody);
+        /*! Lucide circle-letter-o: Copyright (c) 2026 Lucide Icons and Contributors.
+         * Permission to use, copy, modify, and/or distribute this software for any purpose
+         * with or without fee is hereby granted, provided that the above copyright notice
+         * and this permission notice appear in all copies.
+         * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+         * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+         * FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT,
+         * OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+         * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
+         * ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+        addIcon('rt-circle-letter-o', '<g fill="none" stroke="currentColor" stroke-width="8.333"><circle cx="50" cy="50" r="16.667"/><circle cx="50" cy="50" r="41.667"/></g>');
 
         // Resolve the vault-local Pandoc font destination. Bundled templates
         // point at Radial Timeline/Pandoc/fonts, not MacTeX, Font Book, or

@@ -2847,7 +2847,10 @@ export class TimetableView extends BasesView {
                 const sketchActions = row.kind === 'sketch' && !outline
                     ? heading.createDiv({ cls: 'ert-timetable-panels__sketch-actions' })
                     : null;
-                if (sketchActions) sketchActions.createSpan({ cls: 'ert-timetable-panels__kind', text: t('ui.timetable.panelSketch') });
+                if (sketchActions) {
+                    header.addClass('has-sketch-actions');
+                    sketchActions.createSpan({ cls: 'ert-timetable-panels__kind', text: t('ui.timetable.panelSketch') });
+                }
                 if (row.kind === 'sketch') {
                     const promote = panel.createEl('button', { cls: 'ert-timetable__promote ert-timetable-panels__promote clickable-icon', attr: { type: 'button' } });
                     setIcon(promote, 'file-up');
@@ -2879,6 +2882,7 @@ export class TimetableView extends BasesView {
                 const characterInset = people.length > 0 && combined?.kind !== 'character';
                 const artworkInset = !!artwork && combined?.kind !== 'artwork';
                 if (!outline && row.kind === 'scene' && imageMode === 'combined' && (characterInset || artworkInset)) {
+                    panel.addClass('has-image-insets');
                     const images = panel.createDiv({ cls: 'ert-timetable-panels__image-insets' });
                     const addInset = (url: string | null, path: string | null | undefined, label: string, icon: string) => {
                         const inset = images.createEl('button', { cls: 'ert-timetable-panels__inset', attr: { type: 'button' } });

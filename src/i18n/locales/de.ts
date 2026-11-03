@@ -5977,6 +5977,7 @@ export const de: DeepPartial<TranslationKeys> = {
         },
         canvasSketch: {
             showOverdue: 'Überfällige Szenen anzeigen',
+            followTimeline: 'Szene beim Überfahren der Zeitleiste folgen',
             fileCardsExplanation: 'Hier können nur Textkarten umgewandelt werden. Dateikarten verweisen bereits auf Notizen und bleiben unverändert.',
             showTimetable: 'RT: In der Tabelle anzeigen',
             showTimeline: 'RT: Auf der Zeitleiste anzeigen',

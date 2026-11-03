@@ -6,6 +6,7 @@ import { t } from '../i18n';
 import { getBookIdForPath } from '../utils/books';
 import { markTimetableRows, onLinkedScene } from './timetableRegistry';
 import { CanvasStoryNavigator } from './CanvasStoryNavigator';
+import { linkedSceneViewport } from './canvasNavigation';
 import { buildTableRow, sceneVitals } from './timetableModel';
 import { computeCacheableValues } from '../renderer/utils/Precompute';
 import type { PluginRendererFacade } from '../utils/sceneHelpers';
@@ -16,7 +17,7 @@ import { setTooltip } from '../utils/domTooltip';
 type Mode = 'full' | 'preview' | 'title';
 type NodeData = { type?: string; file?: string; subpath?: string; label?: string; x?: number; y?: number; width?: number; height?: number };
 type CanvasNode = { nodeEl?: HTMLElement; getData?: () => NodeData };
-type CanvasView = View & { canvas?: { nodes?: Map<string, CanvasNode> } };
+type CanvasView = View & { canvas?: { nodes?: Map<string, CanvasNode>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void } };
 
 const pendingTitleMaps = new Set<string>();
 
@@ -56,6 +57,8 @@ class CanvasCards {
     private revision = 0;
     private stopped = false;
     private showOverdue = true;
+    private followTimeline = false;
+    private followTimer: number | undefined;
     private readonly ringColors = new Map<string, Promise<Map<string, number>>>();
     readonly action: HTMLElement;
     private readonly unlink: () => void;
@@ -79,12 +82,34 @@ class CanvasCards {
                 this.showOverdue = !this.showOverdue;
                 this.schedule();
             }));
+            menu.addItem(item => item.setTitle(t('ui.canvasSketch.followTimeline')).setIcon('locate-fixed').setChecked(this.followTimeline).onClick(() => {
+                this.followTimeline = !this.followTimeline;
+                if (this.followTimer) window.clearTimeout(this.followTimer);
+            }));
             menu.showAtMouseEvent(event);
         });
-        this.unlink = onLinkedScene(path => {
-            const nodes = (this.view as CanvasView).canvas?.nodes;
+        this.unlink = onLinkedScene((path, color, source) => {
+            if (this.followTimer) window.clearTimeout(this.followTimer);
+            const canvas = (this.view as CanvasView).canvas;
+            const nodes = canvas?.nodes;
             if (!(nodes instanceof Map)) return;
-            for (const node of nodes.values()) node.nodeEl?.toggleClass('ert-canvas-linked', !!path && node.getData?.().file === path);
+            const matches: NodeData[] = [];
+            for (const node of nodes.values()) {
+                const data = node.getData?.();
+                const linked = !!path && data?.type === 'file' && data.file === path;
+                node.nodeEl?.toggleClass('ert-canvas-linked', linked);
+                if (linked && node.nodeEl) {
+                    if (color) node.nodeEl.style.setProperty('--ert-canvas-linked-color', color);
+                    else node.nodeEl.style.removeProperty('--ert-canvas-linked-color');
+                    matches.push(data);
+                }
+            }
+            if (source !== 'timeline' || !path || !this.followTimeline || !matches.length) return;
+            this.followTimer = window.setTimeout(() => {
+                if (!canvas?.setViewport || !Number.isFinite(canvas.x) || !Number.isFinite(canvas.y) || !Number.isFinite(canvas.zoom)) return;
+                const target = linkedSceneViewport(matches, { x: canvas.x!, y: canvas.y!, zoom: canvas.zoom! });
+                if (target) canvas.setViewport(target.x, target.y, target.zoom);
+            }, 350);
         });
         this.events.load();
         this.events.registerDomEvent(view.containerEl, 'click', event => {
@@ -176,7 +201,8 @@ class CanvasCards {
                 if (this.stopped || revision !== this.revision) return;
                 const title = file.basename.replace(/^\d+(?:\.\d+)?\s+/, '');
                 const description = plainText(preview);
-                const signature = JSON.stringify([this.mode, title, kind, image, description, file.path, shownSubplots.map(name => [name, slots.get(name)]), overdue]);
+                const number = row?.kind === 'scene' ? row.prefix : null;
+                const signature = JSON.stringify([this.mode, title, kind, number, image, description, file.path, shownSubplots.map(name => [name, slots.get(name)]), overdue]);
                 const existing = this.cards.get(el);
                 if (existing?.signature === signature && el.contains(existing.overlay)) continue;
                 this.remove(el);
@@ -207,7 +233,7 @@ class CanvasCards {
                 if (image) artwork.createEl('img', { attr: { src: image, alt: '' } });
                 else setIcon(artwork, ({ scene: 'clapperboard', sketch: 'pencil', outline: 'list-tree', character: 'user-round', place: 'map-pin' } as Record<string, string>)[cardType] ?? 'notebook-pen');
                 const heading = header.createDiv({ cls: 'ert-canvas-story-card__heading' });
-                if (kind) heading.createDiv({ cls: 'ert-canvas-story-card__kind', text: kind });
+                if (kind) heading.createDiv({ cls: 'ert-canvas-story-card__kind', text: number ? `${kind} ${number}` : kind });
                 heading.createDiv({ cls: 'ert-canvas-story-card__title', text: title });
                 if (this.mode === 'preview' && description) overlay.createDiv({ cls: 'ert-canvas-story-card__preview', text: description });
                 el.addClass('ert-canvas-story-node');
@@ -222,6 +248,7 @@ class CanvasCards {
         this.stopped = true;
         this.revision++;
         if (this.timer) window.clearTimeout(this.timer);
+        if (this.followTimer) window.clearTimeout(this.followTimer);
         this.observer.disconnect();
         this.unlink();
         this.events.unload();

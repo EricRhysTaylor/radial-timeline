@@ -40,9 +40,10 @@ describe('linked scene notifications', () => {
         const listener = vi.fn();
         const dispose = onLinkedScene(listener);
         markTimetableRows('Story/1 The Letter.md', null, false);
+        markTimetableRows('Story/1 The Letter.md', 'red', true, 'timeline');
         markTimetableRows(null, null, false);
         dispose();
         markTimetableRows('Story/2 Other.md', null, false);
-        expect(listener.mock.calls).toEqual([['Story/1 The Letter.md'], [null]]);
+        expect(listener.mock.calls).toEqual([['Story/1 The Letter.md', null, 'other'], ['Story/1 The Letter.md', 'red', 'timeline'], [null, null, 'other']]);
     });
 });

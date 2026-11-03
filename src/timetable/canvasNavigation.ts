@@ -6,6 +6,20 @@ export function storyActHeadingLabel(text: string): string | null {
 
 export function isStoryActHeading(text: string): boolean { return storyActHeadingLabel(text) !== null; }
 
+/** Center the nearest appearance of a scene while preserving the Canvas zoom. */
+export function linkedSceneViewport(
+    cards: Array<{ x?: number; y?: number; width?: number; height?: number }>,
+    viewport: { x: number; y: number; zoom: number },
+): { x: number; y: number; zoom: number } | null {
+    if (![viewport.x, viewport.y, viewport.zoom].every(Number.isFinite)) return null;
+    const centers = cards.flatMap(card => {
+        const point = storyPosition([card], 0);
+        return point ? [point] : [];
+    });
+    centers.sort((a, b) => Math.hypot(a.x - viewport.x, a.y - viewport.y) - Math.hypot(b.x - viewport.x, b.y - viewport.y));
+    return centers.length ? { x: centers[0].x, y: centers[0].y, zoom: viewport.zoom } : null;
+}
+
 /** Interpolate between card centers as the story navigator moves. */
 export function storyPosition(
     cards: Array<{ x?: number; y?: number; width?: number; height?: number }>,

@@ -5661,6 +5661,7 @@ export const en = {
         },
         canvasSketch: {
             showOverdue: 'Show overdue scenes',
+            followTimeline: 'Follow timeline hover in Canvas',
             fileCardsExplanation: 'Only text cards can be converted here. File cards already link to notes; they are not copied or changed.',
             showTimetable: 'RT: Show in Timetable',
             showTimeline: 'RT: Show on timeline',

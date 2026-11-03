@@ -5980,6 +5980,7 @@ export const es: TranslationKeys = {
         },
         canvasSketch: {
             showOverdue: 'Mostrar escenas atrasadas',
+            followTimeline: 'Seguir la escena señalada en la línea temporal',
             fileCardsExplanation: 'Solo se convierten tarjetas de texto. Las tarjetas de archivo ya enlazan a notas y no se modifican.',
             showTimetable: 'RT: Mostrar en la tabla',
             showTimeline: 'RT: Mostrar en la línea temporal',

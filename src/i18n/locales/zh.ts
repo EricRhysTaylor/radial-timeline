@@ -5979,6 +5979,7 @@ export const zh: DeepPartial<TranslationKeys> = {
         },
         canvasSketch: {
             showOverdue: '显示逾期场景',
+            followTimeline: '跟随时间线上悬停的场景',
             fileCardsExplanation: '此处只能转换文本卡片。文件卡片已链接到笔记，不会被更改。',
             showTimetable: 'RT：在时间表中显示',
             showTimeline: 'RT：在时间线上显示',

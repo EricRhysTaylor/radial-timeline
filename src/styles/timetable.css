@@ -1394,9 +1394,10 @@
 }
 
 .ert-canvas-linked .ert-canvas-story-card {
-    outline: 3px solid var(--interactive-accent);
+    outline: 3px solid var(--ert-canvas-linked-color, var(--interactive-accent));
     outline-offset: -3px;
 }
+.ert-canvas-linked:not(.ert-canvas-story-node) { outline: 3px solid var(--ert-canvas-linked-color, var(--interactive-accent)); outline-offset: 2px; }
 
 /* Outline keeps the Timetable's shared editing and placement controls. */
 .ert-timetable-panels.is-outline { grid-template-columns: minmax(0, 1fr); gap: 0; }

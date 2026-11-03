@@ -5980,6 +5980,7 @@ export const fr: TranslationKeys = {
         },
         canvasSketch: {
             showOverdue: 'Afficher les scènes en retard',
+            followTimeline: 'Suivre la scène survolée sur la chronologie',
             fileCardsExplanation: 'Seules les cartes texte peuvent être converties. Les cartes de fichier renvoient déjà à des notes et ne sont pas modifiées.',
             showTimetable: 'RT : Afficher dans le tableau',
             showTimeline: 'RT : Afficher sur la chronologie',

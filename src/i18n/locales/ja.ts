@@ -5978,6 +5978,7 @@ export const ja: DeepPartial<TranslationKeys> = {
         },
         canvasSketch: {
             showOverdue: '期限超過のシーンを表示',
+            followTimeline: 'タイムライン上のシーンに追従',
             fileCardsExplanation: 'ここではテキストカードのみ変換できます。ファイルカードは既存のノートにリンクしており、変更されません。',
             showTimetable: 'RT: タイムテーブルで表示',
             showTimeline: 'RT: タイムラインで表示',

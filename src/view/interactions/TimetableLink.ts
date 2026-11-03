@@ -42,14 +42,14 @@ export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGEl
         if (path === current && color === currentColor) return;
         current = path;
         currentColor = color;
-        markTimetableRows(path, color);
+        markTimetableRows(path, color, true, 'timeline');
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (event: Event) => {
         if (current === null) return;
         if (scenePathOf((event as PointerEvent).relatedTarget) === current) return;
         current = null;
         currentColor = null;
-        markTimetableRows(null);
+        markTimetableRows(null, null, true, 'timeline');
     });
 }
 

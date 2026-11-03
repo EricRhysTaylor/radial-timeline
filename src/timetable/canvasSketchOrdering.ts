@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { orderSketches, sketchAnchor, SKETCH_ORDER, type PlacementItem } from './sketchPlacement';
 import type { CanvasCard } from './canvasSketches';
 
@@ -26,13 +27,13 @@ export function planCanvasSketchAppend(items: PlacementItem[], act: number | nul
     for (const item of existing) {
         if (rank(item.frontmatter) !== null) continue;
         next += 10;
-        if (!Number.isFinite(next) || next > Number.MAX_SAFE_INTEGER) throw new Error('Sketch order values are too large to append safely.');
+        if (!Number.isFinite(next) || next > Number.MAX_SAFE_INTEGER) throw new Error(t('ui.timetable.sketchOrderTooLarge'));
         missing.push({ path: item.row.path, rank: next });
     }
     const ranks: number[] = [];
     for (let index = 0; index < count; index++) {
         next += 10;
-        if (!Number.isFinite(next) || next > Number.MAX_SAFE_INTEGER) throw new Error('Sketch order values are too large to append safely.');
+        if (!Number.isFinite(next) || next > Number.MAX_SAFE_INTEGER) throw new Error(t('ui.timetable.sketchOrderTooLarge'));
         ranks.push(next);
     }
     return { missing, ranks };

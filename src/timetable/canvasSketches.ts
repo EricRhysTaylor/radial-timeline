@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { safeTitle } from '../utils/noteTitle';
 
 /** Canvas data is intentionally open: other plugins may add their own fields. */
@@ -19,7 +20,7 @@ export function canvasTextCards(data: StoryCanvasData): CanvasCard[] {
 
 export function sketchTitle(text: string): string {
     const line = text.split(/\r?\n/).find(part => part.trim()) ?? '';
-    return safeTitle(line.replace(/^\s*#{1,6}\s+/, '').slice(0, 100)) || 'Untitled sketch';
+    return safeTitle(line.replace(/^\s*#{1,6}\s+/, '').slice(0, 100)) || t('ui.timetable.newSketchName');
 }
 
 /** Give file cards new IDs, as Canvas requires when changing a node's type.

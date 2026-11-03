@@ -2478,11 +2478,11 @@ export class TimetableView extends BasesView {
             if (book) {
                 const convert = card.createEl('button', { cls: 'ert-outline-documents__convert clickable-icon', attr: { type: 'button' } });
                 setIcon(convert, 'list-plus');
-                setAccessibleLabel(convert, `Create sketches from ${file.basename}`);
-                setTooltip(convert, 'Create sketches from this document');
+                setAccessibleLabel(convert, t('ui.timetable.outlineConvertLabel', { name: file.basename }));
+                setTooltip(convert, t('ui.timetable.outlineConvertTooltip'));
                 this.panelEvents?.registerDomEvent(convert, 'click', () => {
                     void app.vault.read(file).then(snapshot => new OutlineImportModal(app, this.plugin, book, file, snapshot).open())
-                        .catch((error: unknown) => new Notice(`Cannot read the source document: ${error instanceof Error ? error.message : String(error)}`, 8000));
+                        .catch((error: unknown) => new Notice(t('ui.timetable.outlineSourceReadFailed', { message: error instanceof Error ? error.message : String(error) }), 8000));
                 });
             }
             if (attached.includes(file.path)) {
@@ -2510,11 +2510,16 @@ export class TimetableView extends BasesView {
             this.panelEvents?.registerDomEvent(add, 'click', picker);
         }
         const target = items.find(item => item.row.path === this.outlineInsertionPath);
-        const position = bar.createDiv({ cls: 'ert-outline-documents__position', text: target ? `Insert after: ${displayName(target.row.basename)}` : this.outlineInsertionAct ? `Insert at end of ${this.actLabel(this.outlineInsertionAct.act)}` : 'Choose an act, scene, or sketch below' });
+        const positionText = target
+            ? t('ui.timetable.outlineInsertAfter', { name: displayName(target.row.basename) })
+            : this.outlineInsertionAct
+                ? t('ui.timetable.outlineInsertAtEnd', { act: this.actLabel(this.outlineInsertionAct.act) })
+                : t('ui.timetable.outlineChooseInsertion');
+        const position = bar.createDiv({ cls: 'ert-outline-documents__position', text: positionText });
         setIcon(position.createSpan({ cls: 'ert-outline-documents__position-icon' }), 'corner-down-right');
         const create = tools.createEl('button', { cls: 'ert-outline-documents__tool ert-outline-documents__create clickable-icon', attr: { type: 'button' } });
-        setIcon(create, 'file-input'); setAccessibleLabel(create, 'Add selection as sketch');
-        setTooltip(create, 'Copy the selected text from the open reference document into a new sketch');
+        setIcon(create, 'file-input'); setAccessibleLabel(create, t('ui.timetable.outlineAddSelection'));
+        setTooltip(create, t('ui.timetable.outlineAddSelectionTooltip'));
         this.panelEvents?.registerDomEvent(create, 'mousedown', evt => evt.preventDefault());
         this.panelEvents?.registerDomEvent(create, 'click', () => { void this.createOutlineSelection(); });
         const beats = tools.createEl('button', { cls: 'ert-outline-documents__tool clickable-icon', attr: { type: 'button' } });
@@ -2607,7 +2612,7 @@ export class TimetableView extends BasesView {
             this.outlineWorkspaceDirection = direction;
             if (this.config.get('outline') === true) this.resetOutlineScroll();
         } catch (error) {
-            new Notice(`Could not open the outline workspace: ${error instanceof Error ? error.message : String(error)}`, 8000);
+            new Notice(t('ui.timetable.outlineWorkspaceOpenFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
         }
     }
 
@@ -2644,17 +2649,17 @@ export class TimetableView extends BasesView {
 
     private async createOutlineSelection(): Promise<void> {
         const view = this.outlineWorkspacePane?.view;
-        if (!(view instanceof MarkdownView) || !view.file) { new Notice('Open a reference document first.'); return; }
+        if (!(view instanceof MarkdownView) || !view.file) { new Notice(t('ui.timetable.outlineNeedsReference')); return; }
         const text = this.outlineSelectedText(view);
-        if (!text.trim()) { new Notice('Select text in the reference document first.'); return; }
+        if (!text.trim()) { new Notice(t('ui.timetable.outlineNeedsSelection')); return; }
         const destination = this.outlineInsertionPath ?? this.outlineInsertionAct;
-        if (!destination) { new Notice('Choose where to insert the sketch in the outline.'); return; }
+        if (!destination) { new Notice(t('ui.timetable.outlineNeedsInsertion')); return; }
         await this.createOutlineSketch(text, view.file.path, destination);
     }
 
     private async createOutlineSketch(text: string, sourcePath: string, destination: string | { act: number; bookId: string }): Promise<void> {
         const target = typeof destination === 'string' ? this.outlineItems.find(item => item.row.path === destination) : null;
-        if (typeof destination === 'string' && !target) { new Notice('Choose where to insert the sketch in the outline.'); return; }
+        if (typeof destination === 'string' && !target) { new Notice(t('ui.timetable.outlineNeedsInsertion')); return; }
         const bookId = typeof destination === 'string' ? getBookIdForPath(this.plugin.settings.books, destination) : destination.bookId;
         const book = this.sketchBook(bookId);
         // Placement must account for notes hidden by Bases filters, too.
@@ -2667,8 +2672,8 @@ export class TimetableView extends BasesView {
         const plan = typeof destination === 'string' ? planOutlineInsertion(allBookItems, destination) : planOutlineActInsertion(allBookItems, destination.act);
         if (!book?.sourceFolder || !plan) {
             new Notice(typeof destination === 'string'
-                ? 'This position cannot be used safely. Check the scene ID or sketch order, then try again.'
-                : 'Cannot place this sketch at the end of the act because an existing sketch has no order. Reorder those sketches in the Timetable first.', 8000);
+                ? t('ui.timetable.outlinePositionUnsafe')
+                : t('ui.timetable.outlineActEndUnordered'), 8000);
             return;
         }
         const folder = normalizePath(book.sourceFolder);
@@ -2679,7 +2684,7 @@ export class TimetableView extends BasesView {
         if (plan.anchorId) fm[SKETCH_AFTER_SCENE] = plan.anchorId;
         try {
             await this.plugin.app.vault.create(path, `---\n${stringifyYaml(fm)}---\n\n${text}\n`);
-            new Notice('Sketch added to the outline.');
+            new Notice(t('ui.timetable.outlineSketchAdded'));
         } catch (error) {
             new Notice(t('ui.timetable.writeFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
         }
@@ -2731,12 +2736,13 @@ export class TimetableView extends BasesView {
                         this.attachOutlineTextDrop(heading, { act, bookId });
                         const insert = heading.createEl('button', { cls: 'ert-outline-act-insert clickable-icon', attr: { type: 'button', 'aria-pressed': String(this.outlineInsertionAct?.act === act && this.outlineInsertionAct.bookId === bookId) } });
                         setIcon(insert, 'circle-plus');
-                        setAccessibleLabel(insert, `Place new sketch at end of ${group.label}`);
-                        setTooltip(insert, `Place new sketch at end of ${group.label}`);
+                        const placeAtEnd = t('ui.timetable.outlinePlaceAtEnd', { group: group.label });
+                        setAccessibleLabel(insert, placeAtEnd);
+                        setTooltip(insert, placeAtEnd);
                         this.panelEvents?.registerDomEvent(insert, 'click', evt => { evt.stopPropagation(); this.outlineInsertionPath = null; this.outlineInsertionAct = { act, bookId }; this.render(); });
                     }
                     if (group.items.length === 0 && mode.state.mode === 'narrative') {
-                        const placeholder = list.createDiv({ cls: 'ert-timetable-panels__empty-act', text: outline ? 'Drop selected text, a scene, or a sketch here' : t('ui.timetable.emptyActDrop') });
+                        const placeholder = list.createDiv({ cls: 'ert-timetable-panels__empty-act', text: outline ? t('ui.timetable.outlineDropHere') : t('ui.timetable.emptyActDrop') });
                         this.attachSketchActDrop(placeholder, group.act, bookId, mode.state);
                         this.attachSceneActDrop(placeholder, group.act, bookId, mode.state);
                         if (outline && typeof group.act === 'number' && bookId) this.attachOutlineTextDrop(placeholder, { act: group.act, bookId });
@@ -2829,8 +2835,8 @@ export class TimetableView extends BasesView {
                     panel.toggleClass('is-outline-target', this.outlineInsertionPath === row.path);
                     const insert = header.createEl('button', { cls: 'ert-outline-insert clickable-icon', attr: { type: 'button', 'aria-pressed': String(this.outlineInsertionPath === row.path) } });
                     setIcon(insert, 'circle-plus');
-                    setTooltip(insert, 'Place new sketch after this');
-                    setAccessibleLabel(insert, 'Place new sketch after this');
+                    setTooltip(insert, t('ui.timetable.outlinePlaceAfter'));
+                    setAccessibleLabel(insert, t('ui.timetable.outlinePlaceAfter'));
                     this.panelEvents?.registerDomEvent(insert, 'click', evt => { evt.stopPropagation(); this.outlineInsertionAct = null; this.outlineInsertionPath = row.path; this.render(); });
                 }
                 const heading = header.createDiv({ cls: 'ert-timetable-panels__heading' });

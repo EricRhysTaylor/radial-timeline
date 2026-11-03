@@ -1,4 +1,5 @@
 import type { TFile, Workspace, WorkspaceLeaf } from 'obsidian';
+import { t } from '../i18n';
 
 type Direction = 'vertical' | 'horizontal';
 type Entry = { pane: WorkspaceLeaf | null; timeline: WorkspaceLeaf | null; path: string; direction: Direction; pending: Promise<void> };
@@ -79,6 +80,6 @@ export async function openOutlineReference(workspace: Workspace, table: Workspac
     });
     state.pending = request;
     await request;
-    if (!result) throw new Error('Could not open outline reference');
+    if (!result) throw new Error(t('ui.timetable.outlineReferenceOpenFailed'));
     return result;
 }

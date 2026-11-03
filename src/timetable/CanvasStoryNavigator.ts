@@ -63,7 +63,7 @@ export class CanvasStoryNavigator {
         const fit = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit' });
         setAccessibleLabel(slider, t('ui.subplotCanvas.navigator'));
         setTooltip(selection, t('ui.subplotCanvas.navigatorSelection'));
-        setIcon(selection, 'scan-search');
+        setIcon(selection, 'zoom-to-selection');
         setTooltip(fit, t('ui.subplotCanvas.navigatorFit'));
         setIcon(fit, 'maximize');
         const canvas = (): Canvas | undefined => (this.view as unknown as { canvas?: Canvas }).canvas;

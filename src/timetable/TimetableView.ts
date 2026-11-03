@@ -125,6 +125,7 @@ import { outlineDocumentPaths, outlineReferenceType, planOutlineReferences } fro
 import { planOutlineActInsertion, planOutlineInsertion } from './outlineInspiration';
 import { vaultDragPaths } from './outlineDrop';
 import { OutlineImportModal } from './OutlineImportModal';
+import { SubplotCanvasModal } from './SubplotCanvasModal';
 import { renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
 import {
     markTimetableRows,
@@ -2331,6 +2332,16 @@ export class TimetableView extends BasesView {
         setIcon(workspace.createSpan(), 'panels-left-right');
         workspace.createSpan({ text: t('ui.timetable.outlineWorkspace') });
         setIcon(workspace.createSpan({ cls: 'ert-outline-workspace-button__caret', attr: { 'aria-hidden': 'true' } }), 'chevron-down');
+        const canvasButton = toolbar.createEl('button', { cls: 'ert-timetable__canvas-action clickable-icon', attr: { type: 'button' } });
+        workspace.after(canvasButton);
+        setIcon(canvasButton, 'layout-dashboard');
+        setAccessibleLabel(canvasButton, t('ui.subplotCanvas.command'));
+        setTooltip(canvasButton, t('ui.subplotCanvas.command'));
+        this.panelEvents?.registerDomEvent(canvasButton, 'click', () => {
+            if (this.panelEditing) return;
+            const ids = this.bookIdsInView();
+            new SubplotCanvasModal(this.plugin.app, this.plugin, ids.length === 1 ? ids[0] : undefined).open();
+        });
         this.panelEvents?.registerDomEvent(workspace, 'click', () => {
             const menu = new Menu().setUseNativeMenu(false);
             for (const [direction, timeline, label, icon] of [['vertical', false, t('ui.timetable.outlineWorkspaceBeside'), 'panels-left-right'], ['horizontal', false, t('ui.timetable.outlineWorkspaceBelow'), 'panels-top-bottom'], ['horizontal', true, t('ui.timetable.outlineWorkspaceTimeline'), 'panel-left']] as const) {

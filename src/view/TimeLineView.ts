@@ -583,6 +583,7 @@ export class RadialTimelineView extends ItemView {
                 btn.type = 'button';
                 setIcon(btn, action.icon);
                 setAccessibleLabel(btn, action.label);
+                setTooltip(btn, action.label);
                 this.registerDomEvent(btn, 'click', (evt: MouseEvent) => {
                     evt.preventDefault();
                     evt.stopPropagation();
@@ -597,7 +598,7 @@ export class RadialTimelineView extends ItemView {
             setAccessibleLabel(actionsMenuBtn, t('ui.timeLineView.timelineActions'));
             actionsMenuBtn.setAttribute('aria-haspopup', 'menu');
             setIcon(actionsMenuBtn, 'menu');
-            setAccessibleLabel(actionsMenuBtn, t('ui.timeLineView.timelineActions'));
+            setTooltip(actionsMenuBtn, t('ui.timeLineView.timelineActions'));
             this.registerDomEvent(actionsMenuBtn, 'click', (evt: MouseEvent) => {
                 evt.preventDefault();
                 evt.stopPropagation();
@@ -2450,6 +2451,7 @@ export class RadialTimelineView extends ItemView {
         setIcon(this.timelineSearchButton, mode === 'clear' ? 'search-x' : 'search');
         const buttonLabel = mode === 'clear' ? t('timeline.search.clearAction') : t('timeline.search.searchAction');
         setAccessibleLabel(this.timelineSearchButton, buttonLabel);
+        setTooltip(this.timelineSearchButton, buttonLabel);
         this.timelineSearchButton.classList.toggle('is-clear', mode === 'clear');
     }
 

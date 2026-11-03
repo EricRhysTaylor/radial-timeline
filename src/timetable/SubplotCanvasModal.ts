@@ -16,9 +16,9 @@ export class SubplotCanvasModal extends ErtModal {
     private layout: 'horizontal' | 'vertical' | 'story' = 'horizontal';
     private busy = false;
 
-    constructor(app: App, private readonly plugin: RadialTimelinePlugin) {
+    constructor(app: App, private readonly plugin: RadialTimelinePlugin, initialBookId?: string) {
         super(app);
-        this.bookId = getActiveBook(plugin.settings)?.id ?? plugin.settings.books?.[0]?.id ?? '';
+        this.bookId = initialBookId ?? getActiveBook(plugin.settings)?.id ?? plugin.settings.books?.[0]?.id ?? '';
     }
 
     private rows(): TimetableRow[] {

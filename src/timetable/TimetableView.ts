@@ -2286,6 +2286,15 @@ export class TimetableView extends BasesView {
                 if (layout === 'outline') this.resetOutlineScroll();
             });
         }
+        const canvasButton = toolbar.createEl('button', { cls: 'ert-timetable-panels__view-switch ert-timetable__canvas-action', attr: { type: 'button' } });
+        setIcon(canvasButton.createSpan({ attr: { 'aria-hidden': 'true' } }), 'layout-dashboard');
+        canvasButton.createSpan({ text: t('ui.subplotCanvas.toolbarLabel') });
+        setTooltip(canvasButton, t('ui.subplotCanvas.command'));
+        this.panelEvents?.registerDomEvent(canvasButton, 'click', () => {
+            if (this.panelEditing) return;
+            const ids = this.bookIdsInView();
+            new SubplotCanvasModal(this.plugin.app, this.plugin, ids.length === 1 ? ids[0] : undefined).open();
+        });
         this.clearBasesHeaderControls();
         const baseContainer = this.rootEl.closest('.bases-view')?.parentElement;
         const viewSelector = baseContainer?.querySelector<HTMLElement>(':scope > .bases-header .bases-toolbar-views-menu');
@@ -2309,22 +2318,31 @@ export class TimetableView extends BasesView {
         });
         const books = this.plugin.settings.books ?? [];
         if (books.length) {
-            const bookControl = toolbar.createDiv({ cls: 'ert-timetable__book-selector' });
-            setIcon(bookControl.createSpan({ attr: { 'aria-hidden': 'true' } }), 'book');
-            const select = bookControl.createEl('select');
-            setAccessibleLabel(select, t('ui.timeLineView.bookSelector'));
             const ids = this.bookIdsInView();
             const shownBook = ids.length === 1 ? ids[0] : ids.length === 0 && getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings)?.id : undefined;
-            if (!shownBook) select.createEl('option', { value: '', text: t('ui.timeLineView.bookSelector'), attr: { disabled: 'true' } });
-            for (const book of books) select.createEl('option', { value: book.id, text: book.title?.trim() || book.sourceFolder });
-            select.value = shownBook ?? '';
-            this.panelEvents?.registerDomEvent(select, 'change', () => {
-                if (this.panelEditing) { this.render(); return; }
-                const layout = this.config.get('outline') === true ? 'outline' : this.config.get('panels') === true ? 'panels' : 'table';
-                select.disabled = true;
-                void this.plugin.selectTimetableBook(select.value, this.rootEl, layout, ids.length === 1 ? ids[0] : undefined).finally(() => {
-                    if (this.rootEl.isConnected) this.render();
-                });
+            const currentBook = books.find(book => book.id === shownBook);
+            const bookName = currentBook ? currentBook.title?.trim() || currentBook.sourceFolder : '';
+            const label = bookName ? t('ui.timetable.currentBook', { book: bookName }) : t('ui.timetable.chooseBook');
+            const bookControl = toolbar.createEl('button', { cls: 'ert-timetable__book-selector', attr: { type: 'button', 'aria-haspopup': 'menu' } });
+            setIcon(bookControl.createSpan({ attr: { 'aria-hidden': 'true' } }), 'book');
+            if (!bookName) bookControl.createSpan({ text: t('ui.timetable.chooseBook') });
+            setIcon(bookControl.createSpan({ attr: { 'aria-hidden': 'true' } }), 'chevron-down');
+            setAccessibleLabel(bookControl, label);
+            setTooltip(bookControl, label);
+            this.panelEvents?.registerDomEvent(bookControl, 'click', () => {
+                if (this.panelEditing) return;
+                const menu = new Menu().setUseNativeMenu(false);
+                menu.addItem(item => item.setTitle(label).setDisabled(true));
+                menu.addSeparator();
+                for (const book of books) menu.addItem(item => item.setTitle(book.title?.trim() || book.sourceFolder).setChecked(book.id === shownBook).onClick(() => {
+                    const layout = this.config.get('outline') === true ? 'outline' : this.config.get('panels') === true ? 'panels' : 'table';
+                    bookControl.disabled = true;
+                    void this.plugin.selectTimetableBook(book.id, this.rootEl, layout, ids.length === 1 ? ids[0] : undefined).finally(() => {
+                        if (this.rootEl.isConnected) this.render();
+                    });
+                }));
+                const rect = bookControl.getBoundingClientRect();
+                menu.showAtPosition({ x: rect.left, y: rect.bottom }, bookControl.ownerDocument);
             });
         }
         const workspace = toolbar.createEl('button', { cls: 'ert-outline-workspace-button', attr: { type: 'button', 'aria-haspopup': 'menu' } });
@@ -2332,16 +2350,6 @@ export class TimetableView extends BasesView {
         setIcon(workspace.createSpan(), 'panels-left-right');
         workspace.createSpan({ text: t('ui.timetable.outlineWorkspace') });
         setIcon(workspace.createSpan({ cls: 'ert-outline-workspace-button__caret', attr: { 'aria-hidden': 'true' } }), 'chevron-down');
-        const canvasButton = toolbar.createEl('button', { cls: 'ert-timetable__canvas-action clickable-icon', attr: { type: 'button' } });
-        workspace.after(canvasButton);
-        setIcon(canvasButton, 'layout-dashboard');
-        setAccessibleLabel(canvasButton, t('ui.subplotCanvas.command'));
-        setTooltip(canvasButton, t('ui.subplotCanvas.command'));
-        this.panelEvents?.registerDomEvent(canvasButton, 'click', () => {
-            if (this.panelEditing) return;
-            const ids = this.bookIdsInView();
-            new SubplotCanvasModal(this.plugin.app, this.plugin, ids.length === 1 ? ids[0] : undefined).open();
-        });
         this.panelEvents?.registerDomEvent(workspace, 'click', () => {
             const menu = new Menu().setUseNativeMenu(false);
             for (const [direction, timeline, label, icon] of [['vertical', false, t('ui.timetable.outlineWorkspaceBeside'), 'panels-left-right'], ['horizontal', false, t('ui.timetable.outlineWorkspaceBelow'), 'panels-top-bottom'], ['horizontal', true, t('ui.timetable.outlineWorkspaceTimeline'), 'panel-left']] as const) {

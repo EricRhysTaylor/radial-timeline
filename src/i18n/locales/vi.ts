@@ -5948,6 +5948,7 @@ export const vi: TranslationKeys = {
             "previewHeadingNamed": "Xem trước nhanh (Trái đất → {{planet}})"
         },
         subplotCanvas: {
+            toolbarLabel: 'Bản đồ Canvas',
             command: 'Canvas: tạo bản đồ cốt truyện phụ',
             badge: 'BẢN ĐỒ CANVAS',
             title: 'Tạo bản đồ cốt truyện phụ',
@@ -6120,6 +6121,8 @@ export const vi: TranslationKeys = {
             outlineBeats: 'Hiện nhịp truyện',
             outlineHideBeats: 'Ẩn nhịp truyện',
             outlineWorkspace: 'Không gian nhanh',
+            chooseBook: 'Chọn sách',
+            currentBook: 'Sách: {{book}}',
             outlineWorkspaceLayouts: 'Bố cục không gian làm việc',
             outlineWorkspaceBeside: 'Bảng thời gian và tài liệu bên cạnh nhau',
             outlineWorkspaceBelow: 'Bảng thời gian ở trên tài liệu',

@@ -5948,6 +5948,7 @@ export const es: TranslationKeys = {
             "previewHeadingNamed": "Vista previa rápida (Tierra → {{planet}})"
         },
         subplotCanvas: {
+            toolbarLabel: 'Mapa Canvas',
             command: 'Canvas: crear mapa de subtramas',
             badge: 'MAPA DE LIENZO',
             title: 'Crear mapa de subtramas',
@@ -6120,6 +6121,8 @@ export const es: TranslationKeys = {
             outlineBeats: 'Mostrar beats',
             outlineHideBeats: 'Ocultar beats',
             outlineWorkspace: 'Espacio rápido',
+            chooseBook: 'Elegir libro',
+            currentBook: 'Libro: {{book}}',
             outlineWorkspaceLayouts: 'Diseños del espacio de trabajo',
             outlineWorkspaceBeside: 'Horario y referencia lado a lado',
             outlineWorkspaceBelow: 'Horario sobre referencia',

@@ -5948,6 +5948,7 @@ export const th: TranslationKeys = {
             "previewHeadingNamed": "ตัวอย่างด่วน (โลก → {{planet}})"
         },
         subplotCanvas: {
+            toolbarLabel: 'แผนผัง Canvas',
             command: 'Canvas: สร้างแผนผังพล็อตย่อย',
             badge: 'แผนที่แคนวาส',
             title: 'สร้างแผนที่พล็อตย่อย',
@@ -6120,6 +6121,8 @@ export const th: TranslationKeys = {
             outlineBeats: 'แสดงบีท',
             outlineHideBeats: 'ซ่อนบีท',
             outlineWorkspace: 'พื้นที่ทำงานด่วน',
+            chooseBook: 'เลือกหนังสือ',
+            currentBook: 'หนังสือ: {{book}}',
             outlineWorkspaceLayouts: 'รูปแบบพื้นที่ทำงาน',
             outlineWorkspaceBeside: 'ตารางเวลาและเอกสารอ้างอิงเคียงกัน',
             outlineWorkspaceBelow: 'ตารางเวลาอยู่เหนือเอกสารอ้างอิง',

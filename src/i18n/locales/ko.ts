@@ -5945,6 +5945,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: '빠른 미리보기 (지구 → {{planet}})',
         },
         subplotCanvas: {
+            toolbarLabel: '캔버스 맵',
             command: 'Canvas: 서브플롯 지도 만들기',
             badge: '캔버스 맵',
             title: '서브플롯 맵 만들기',
@@ -6058,6 +6059,8 @@ export const ko: DeepPartial<TranslationKeys> = {
             noticeNothing: '승격할 노트가 없습니다.',
         },
         timetable: {
+            chooseBook: '책 선택',
+            currentBook: '책: {{book}}',
             layoutTable: '표',
             layoutPanels: '패널',
             layoutOutline: '개요',

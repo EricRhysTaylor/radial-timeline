@@ -5946,6 +5946,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: 'クイックプレビュー（地球 → {{planet}}）',
         },
         subplotCanvas: {
+            toolbarLabel: 'キャンバスマップ',
             command: 'Canvas：サブプロットマップを作成',
             badge: 'キャンバスマップ',
             title: 'サブプロットマップを作成',
@@ -6059,6 +6060,8 @@ export const ja: DeepPartial<TranslationKeys> = {
             noticeNothing: '昇格が必要なノートはありません。',
         },
         timetable: {
+            chooseBook: '本を選択',
+            currentBook: '本: {{book}}',
             layoutTable: 'テーブル',
             layoutPanels: 'パネル',
             layoutOutline: 'アウトライン',

@@ -5947,6 +5947,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: '快速预览（地球 → {{planet}}）',
         },
         subplotCanvas: {
+            toolbarLabel: '画布地图',
             command: 'Canvas：创建支线地图',
             badge: '画布地图',
             title: '创建支线地图',
@@ -6060,6 +6061,8 @@ export const zh: DeepPartial<TranslationKeys> = {
             noticeNothing: '这里没有需要提升的笔记。',
         },
         timetable: {
+            chooseBook: '选择书籍',
+            currentBook: '书籍：{{book}}',
             layoutTable: '表格',
             layoutPanels: '面板',
             layoutOutline: '大纲',

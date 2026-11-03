@@ -5630,6 +5630,7 @@ export const en = {
         },
         subplotCanvas: {
             command: 'Canvas: Create subplot map',
+            toolbarLabel: 'Canvas map',
             badge: 'CANVAS MAP',
             title: 'Create a subplot map',
             subtitle: 'Create a new Canvas of linked scene notes. Lines show narrative order within each subplot; moving cards will not reorder your manuscript.',
@@ -5761,6 +5762,8 @@ export const en = {
             outlineBeats: 'Show beats',
             outlineHideBeats: 'Hide beats',
             outlineWorkspace: 'Quick Workspace',
+            chooseBook: 'Choose book',
+            currentBook: 'Book: {{book}}',
             outlineWorkspaceLayouts: 'Workspace layouts',
             outlineWorkspaceBeside: 'Timetable and reference side by side',
             outlineWorkspaceBelow: 'Timetable above reference',

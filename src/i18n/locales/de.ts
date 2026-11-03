@@ -5945,6 +5945,7 @@ export const de: DeepPartial<TranslationKeys> = {
             previewHeadingNamed: 'Schnellvorschau (Erde → {{planet}})',
         },
         subplotCanvas: {
+            toolbarLabel: 'Canvas-Karte',
             command: 'Canvas: Nebenhandlungskarte erstellen',
             badge: 'CANVAS-KARTE',
             title: 'Nebenhandlungen als Karte',
@@ -6058,6 +6059,8 @@ export const de: DeepPartial<TranslationKeys> = {
             noticeNothing: 'Hier muss nichts umgewandelt werden.',
         },
         timetable: {
+            chooseBook: 'Buch auswählen',
+            currentBook: 'Buch: {{book}}',
             layoutTable: 'Tabelle',
             layoutPanels: 'Paneele',
             layoutOutline: 'Gliederung',

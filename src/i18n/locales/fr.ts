@@ -5948,6 +5948,7 @@ export const fr: TranslationKeys = {
             "previewHeadingNamed": "Aperçu rapide (Terre → {{planet}})"
         },
         subplotCanvas: {
+            toolbarLabel: 'Carte Canvas',
             command: 'Canvas : créer une carte des sous-intrigues',
             badge: 'CARTE CANVAS',
             title: 'Créer une carte des sous-intrigues',
@@ -6120,6 +6121,8 @@ export const fr: TranslationKeys = {
             outlineBeats: 'Afficher les beats',
             outlineHideBeats: 'Masquer les beats',
             outlineWorkspace: 'Espace rapide',
+            chooseBook: 'Choisir un livre',
+            currentBook: 'Livre : {{book}}',
             outlineWorkspaceLayouts: 'Dispositions de l’espace de travail',
             outlineWorkspaceBeside: 'Tableau et référence côte à côte',
             outlineWorkspaceBelow: 'Tableau au-dessus de la référence',

@@ -2,7 +2,7 @@
  * Machine translated with local on-device models; automated coverage,
  * placeholder and author-syntax checks. English source: en.ts.
  */
-import { en, type TranslationKeys } from './en';
+import type { TranslationKeys } from './en';
 
 export const es: TranslationKeys = {
     "settings": {
@@ -1193,10 +1193,10 @@ export const es: TranslationKeys = {
         "openInquiry": "Consulta radial abierta"
     },
     "commands": {
-        ...en.commands,
         "openTimetable": "Abrir horario",
         "resetTimetableColumns": "Restablecer las columnas recomendadas del horario",
         "promoteToScene": "Promover nota a escena",
+        "restoreTimetableView": "Horario: restaurar una vista Radial Timetable",
         "openTimeline": "Abrir",
         "openInquiry": "Abrir investigación",
         "inquiryOmnibusPass": "Investigación omnibus",
@@ -6068,7 +6068,6 @@ export const es: TranslationKeys = {
             "noticeNothing": "Aquí nada necesita promover."
         },
         "timetable": {
-            ...en.ui.timetable,
             "panelImage": "Imagen",
             "panelImageLabel": "Imagen del panel",
             "panelFit": "Tamaño de imagen",
@@ -6193,7 +6192,18 @@ export const es: TranslationKeys = {
             "panelConflict": "La sinopsis cambió en otro lugar. Copia tu edición antes de cancelar y volver a abrir.",
             "panelSaveFailed": "No se pudo guardar la sinopsis. Tu edición sigue aquí.",
             "viewName": "Calendario",
-            "viewTable": "Mesa",
+            "radialViewName": "Radial Timetable",
+            "spreadsheetViewName": "Hoja de cálculo",
+            "basesHelpTitle": "Acerca de las vistas de Bases",
+            "basesSavedViews": "Vistas guardadas",
+            "basesHelp": "Obsidian gestiona las vistas guardadas. Tabla, Paneles y Esquema, abajo, cambian el diseño de Radial Timetable.",
+            "restoreView": "Restaurar la vista Radial Timetable",
+            "restorePreview": "Añade «{{name}}» a {{file}} con la configuración recomendada del horario. Las vistas existentes, los filtros de la Base y las notas se mantienen. El archivo Base se reformateará y se eliminarán sus comentarios YAML.",
+            "restoreButton": "Añadir vista restaurada",
+            "restoreInvalid": "Esta Base no contiene una lista de vistas válida.",
+            "restoreChanged": "La Base cambió mientras el cuadro de diálogo estaba abierto. Vuelve a intentarlo para revisar el archivo actual.",
+            "restoreSuccess": "Se añadió {{name}}. Las vistas existentes y los filtros de la Base se mantuvieron.",
+            "viewTable": "Tabla",
             "viewNotOnTimeline": "no en la línea de tiempo",
             "viewActBoard": "tablero de actos",
             "viewStatusBoard": "Junta de estado",

@@ -2,7 +2,7 @@
  * Machine translated with local on-device models; automated coverage,
  * placeholder and author-syntax checks. English source: en.ts.
  */
-import { en, type TranslationKeys } from './en';
+import type { TranslationKeys } from './en';
 
 export const fr: TranslationKeys = {
     "settings": {
@@ -1193,10 +1193,10 @@ export const fr: TranslationKeys = {
         "openInquiry": "Ouvrir une enquête radiale"
     },
     "commands": {
-        ...en.commands,
         "openTimetable": "Ouvrir le planning",
         "resetTimetableColumns": "Rétablir les colonnes recommandées du planning",
         "promoteToScene": "Promouvoir la note en scène",
+        "restoreTimetableView": "Planning : restaurer une vue Radial Timetable",
         "openTimeline": "Ouvrir",
         "openInquiry": "Ouvrir l'enquête",
         "inquiryOmnibusPass": "Enquête omnibus",
@@ -6068,7 +6068,6 @@ export const fr: TranslationKeys = {
             "noticeNothing": "Rien n'a besoin de promouvoir ici."
         },
         "timetable": {
-            ...en.ui.timetable,
             "panelImage": "Image",
             "panelImageLabel": "Image du panneau",
             "panelFit": "Taille de l’image",
@@ -6193,6 +6192,17 @@ export const fr: TranslationKeys = {
             "panelConflict": "Le synopsis a changé ailleurs. Copiez votre modification avant d’annuler et de rouvrir.",
             "panelSaveFailed": "Impossible d’enregistrer le synopsis. Votre modification est toujours ici.",
             "viewName": "Calendrier",
+            "radialViewName": "Radial Timetable",
+            "spreadsheetViewName": "Feuille de calcul",
+            "basesHelpTitle": "À propos des vues Bases",
+            "basesSavedViews": "Vues enregistrées",
+            "basesHelp": "Obsidian gère les vues enregistrées. Tableau, Panneaux et Plan, ci-dessous, changent la disposition de Radial Timetable.",
+            "restoreView": "Restaurer la vue Radial Timetable",
+            "restorePreview": "Ajouter « {{name}} » à {{file}} avec les réglages recommandés du planning. Les vues existantes, les filtres de la Base et les notes restent en place. Le fichier Base sera reformaté et ses commentaires YAML supprimés.",
+            "restoreButton": "Ajouter la vue restaurée",
+            "restoreInvalid": "Cette Base ne contient pas de liste de vues valide.",
+            "restoreChanged": "La Base a changé pendant que la boîte de dialogue était ouverte. Réessayez pour vérifier le fichier actuel.",
+            "restoreSuccess": "{{name}} ajoutée. Les vues existantes et les filtres de la Base ont été conservés.",
             "viewTable": "Table",
             "viewNotOnTimeline": "pas sur la chronologie",
             "viewActBoard": "Tableau d'acte",

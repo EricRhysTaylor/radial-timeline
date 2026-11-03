@@ -2,7 +2,7 @@
  * Machine translated with local on-device models; automated coverage,
  * placeholder and author-syntax checks. English source: en.ts.
  */
-import { en, type TranslationKeys } from './en';
+import type { TranslationKeys } from './en';
 
 export const vi: TranslationKeys = {
     "settings": {
@@ -1193,10 +1193,10 @@ export const vi: TranslationKeys = {
         "openInquiry": "Mở cuộc điều tra xuyên tâm"
     },
     "commands": {
-        ...en.commands,
         "openTimetable": "Mở lịch trình",
         "resetTimetableColumns": "Đặt lại các cột lịch trình về mặc định đề xuất",
         "promoteToScene": "Nâng ghi chú lên cảnh",
+        "restoreTimetableView": "Lịch trình: Khôi phục một chế độ xem Radial Timetable",
         "openTimeline": "Mở",
         "openInquiry": "Mở truy vấn",
         "inquiryOmnibusPass": "Truy vấn tổng hợp",
@@ -6068,7 +6068,6 @@ export const vi: TranslationKeys = {
             "noticeNothing": "Không có gì ở đây cần quảng bá."
         },
         "timetable": {
-            ...en.ui.timetable,
             "panelImage": "Hình ảnh",
             "panelImageLabel": "Hình ảnh của bảng",
             "panelFit": "Kích thước ảnh",
@@ -6193,7 +6192,18 @@ export const vi: TranslationKeys = {
             "panelConflict": "Tóm tắt đã thay đổi ở nơi khác. Hãy sao chép phần sửa trước khi hủy và mở lại.",
             "panelSaveFailed": "Không thể lưu tóm tắt. Phần sửa vẫn còn ở đây.",
             "viewName": "Thời khóa biểu",
-            "viewTable": "Cái bàn",
+            "radialViewName": "Radial Timetable",
+            "spreadsheetViewName": "Bảng tính",
+            "basesHelpTitle": "Giới thiệu về các chế độ xem Bases",
+            "basesSavedViews": "Chế độ xem đã lưu",
+            "basesHelp": "Obsidian quản lý các chế độ xem đã lưu. Bảng, Khung và Dàn ý bên dưới thay đổi bố cục của Radial Timetable.",
+            "restoreView": "Khôi phục chế độ xem Radial Timetable",
+            "restorePreview": "Thêm “{{name}}” vào {{file}} với các thiết lập lịch trình được đề xuất. Các chế độ xem hiện có, bộ lọc Base và ghi chú vẫn giữ nguyên. Tệp Base sẽ được định dạng lại và mọi chú thích YAML sẽ bị xóa.",
+            "restoreButton": "Thêm chế độ xem đã khôi phục",
+            "restoreInvalid": "Base này không chứa danh sách chế độ xem hợp lệ.",
+            "restoreChanged": "Base đã thay đổi khi hộp thoại đang mở. Hãy thử lại để xem tệp hiện tại.",
+            "restoreSuccess": "Đã thêm {{name}}. Các chế độ xem hiện có và bộ lọc Base vẫn được giữ.",
+            "viewTable": "Bảng",
             "viewNotOnTimeline": "Không có trên dòng thời gian",
             "viewActBoard": "Bảng hồi",
             "viewStatusBoard": "Bảng trạng thái",

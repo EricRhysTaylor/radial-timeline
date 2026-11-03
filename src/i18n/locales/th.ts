@@ -2,7 +2,7 @@
  * Machine translated with local on-device models; automated coverage,
  * placeholder and author-syntax checks. English source: en.ts.
  */
-import { en, type TranslationKeys } from './en';
+import type { TranslationKeys } from './en';
 
 export const th: TranslationKeys = {
     "settings": {
@@ -1193,10 +1193,10 @@ export const th: TranslationKeys = {
         "openInquiry": "เปิดคำถามเรเดียล"
     },
     "commands": {
-        ...en.commands,
         "openTimetable": "เปิดตารางเวลา",
         "resetTimetableColumns": "รีเซ็ตคอลัมน์ตารางเวลาเป็นค่าที่แนะนำ",
         "promoteToScene": "ยกระดับบันทึกเป็นฉาก",
+        "restoreTimetableView": "ตารางเวลา: กู้คืนมุมมอง Radial Timetable",
         "openTimeline": "เปิด",
         "openInquiry": "เปิดการสอบถาม",
         "inquiryOmnibusPass": "การสอบถามแบบรวม",
@@ -6068,7 +6068,6 @@ export const th: TranslationKeys = {
             "noticeNothing": "ไม่มีอะไรที่นี่ต้องการการส่งเสริม"
         },
         "timetable": {
-            ...en.ui.timetable,
             "panelImage": "ภาพ",
             "panelImageLabel": "ภาพแผง",
             "panelFit": "ขนาดภาพ",
@@ -6193,6 +6192,17 @@ export const th: TranslationKeys = {
             "panelConflict": "เรื่องย่อถูกแก้ไขจากที่อื่น คัดลอกข้อความก่อนยกเลิกและเปิดใหม่",
             "panelSaveFailed": "บันทึกเรื่องย่อไม่ได้ ข้อความที่แก้ไขยังอยู่ที่นี่",
             "viewName": "ตารางเรียน",
+            "radialViewName": "Radial Timetable",
+            "spreadsheetViewName": "สเปรดชีต",
+            "basesHelpTitle": "เกี่ยวกับมุมมอง Bases",
+            "basesSavedViews": "มุมมองที่บันทึกไว้",
+            "basesHelp": "Obsidian จัดการมุมมองที่บันทึกไว้ ส่วนตาราง แผง และโครงเรื่องด้านล่างจะเปลี่ยนรูปแบบของ Radial Timetable",
+            "restoreView": "กู้คืนมุมมอง Radial Timetable",
+            "restorePreview": "เพิ่ม “{{name}}” ลงใน {{file}} พร้อมการตั้งค่าตารางเวลาที่แนะนำ มุมมองที่มีอยู่ ตัวกรองของ Base และโน้ตจะคงอยู่ที่เดิม ไฟล์ Base จะถูกจัดรูปแบบใหม่และความคิดเห็น YAML จะถูกลบออก",
+            "restoreButton": "เพิ่มมุมมองที่กู้คืน",
+            "restoreInvalid": "Base นี้ไม่มีรายการมุมมองที่ถูกต้อง",
+            "restoreChanged": "Base เปลี่ยนไประหว่างที่หน้าต่างเปิดอยู่ ลองอีกครั้งเพื่อตรวจสอบไฟล์ปัจจุบัน",
+            "restoreSuccess": "เพิ่ม {{name}} แล้ว มุมมองและตัวกรองของ Base ที่มีอยู่ยังคงอยู่",
             "viewTable": "ตาราง",
             "viewNotOnTimeline": "ไม่ได้อยู่บนไทม์ไลน์",
             "viewActBoard": "กระดานองก์",

@@ -334,8 +334,10 @@ describe('collectSpreadStatuses', () => {
         const baseRows = getLayoutPictogramRows('modernClassic');
         const strippedSpecial = baseRows.special.map(s => {
             if (s.label !== 'PART' || !s.rightPage) return s;
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { epigraphText, epigraphAttribution, specialRule, ...rest } = s.rightPage;
+            const rest = { ...s.rightPage };
+            delete rest.epigraphText;
+            delete rest.epigraphAttribution;
+            delete rest.specialRule;
             return { ...s, rightPage: rest };
         });
         const rows = { ...baseRows, special: strippedSpecial };

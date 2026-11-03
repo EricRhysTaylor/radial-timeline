@@ -2,10 +2,8 @@ import { TFile } from 'obsidian';
 import { openFromWheel } from '../../timetable/readingPane';
 import { buildSearchHighlight } from '../../services/searchHighlight';
 import { RadialTimelineView } from '../TimeLineView';
-import { linkSceneHoverToTimetable } from '../interactions/TimetableLink';
 
 export function setupGossamerMode(view: RadialTimelineView, svg: SVGSVGElement): void {
-    linkSceneHoverToTimetable(view, svg);
     let currentGroup: Element | null = null;
     let currentSynopsis: Element | null = null;
 

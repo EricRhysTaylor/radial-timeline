@@ -93,6 +93,12 @@ External requests occur in these areas:
 - A version check against the GitHub Releases API, once at plugin load and
   at most once a day. It carries no vault data or identity; it compares
   version numbers so the timeline can show an update indicator.
+- **Story Vault download** — only when the author chooses **Add story to
+  this vault**: one GET of that story's ZIP from the public `demo-vault`
+  bucket in Radial Timeline's Supabase storage. It carries no vault data or
+  identity. The ZIP must match the SHA-256 fingerprint listed for that
+  edition in `src/settings/bonusVaults.ts` before anything is written to the
+  vault. **Download ZIP** and the edition links open in the browser instead.
 - **Community Share** — report publishing and the `community-daily-sync`
   call, sent only after the author connects to Community and selects a
   sharing level above Private. See below.

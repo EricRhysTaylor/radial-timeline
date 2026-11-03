@@ -28,7 +28,7 @@
 ## Try It
 
 - **[Website](https://community.radialtimeline.com/go/readme-site)** — Radial Timeline and its companion plugin, Editorialist, feature by feature.
-- **[Demo vault](https://community.radialtimeline.com/go/readme-demo)** — *Pride & Prejudice*, a finished novel fully mapped in the timeline with AI analysis included.
+- **[Story Vaults](https://community.radialtimeline.com/go/readme-demo)** — *Pride & Prejudice*, *The Odyssey*, and *Sherlock Holmes*: finished books fully mapped in the timeline with saved AI analysis included. Add one from **Settings → Resources**.
 - **[Newsletter](https://community.radialtimeline.com/go/readme-newsletter)** — release news and notes from the workshop.
 - **[Community](https://community.radialtimeline.com/go/readme-community)** — writers sharing books in progress and answering each other's questions.
 
@@ -48,6 +48,8 @@ Radial Timeline® captures and visualizes four core timelines, letting you see m
 - **Progress stages**: manuscript revision stages from Zero draft through Press-ready.
 
 The mode buttons run in this order: Progress, Narrative, Chronologue, and Gossamer. Narrative and Chronologue keep subplot colors front-and-center so you can compare structure without workflow noise. When you need to see Todo/Working/Overdue status or progress stage colors, switch to Progress Mode, where the combined outer ring is replaced by a single-subplot view and scenes inherit the author-status and progress-stage palette.
+
+Beside the wheel, the **[Timetable](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Timetable)** lays the same book out in an Obsidian Bases view: as rows, as Panels with character portraits, or as an Outline next to your planning documents, where you place scenes and sketches by dragging them. **Canvas story maps** give each subplot its own lane on an Obsidian Canvas, and the map lights up the scene you hover on the wheel.
 
 ## Docs (How-to & Setup)
 
@@ -132,6 +134,7 @@ Radial Timeline may contact external services in these workflows:
 - AI provider requests when you actively use enabled AI features
 - Optional provider/model/pricing metadata refreshes governed by AI privacy settings
 - A version check against the GitHub Releases API runs once at plugin load (throttled to once a day). It carries no vault data or identity; it only compares version numbers so the timeline can show an update indicator.
+- Story Vault downloads: **Add story to this vault** downloads that story's ZIP from Radial Timeline's public storage. The request carries no vault data or identity, and the file must match a SHA-256 fingerprint shipped in the plugin before anything is added to your vault.
 - Community mailbox: on a vault connected to the Community, while a timeline is open, the plugin asks the Community about once an hour (and when Obsidian regains focus) whether you have unread replies. It sends the connection's id and secret and gets back counts. Turn it off with **Show Community mailbox** in Settings → Advanced
 - Community Share calls: once you connect, your Book Manager book titles (or public labels), loglines, and target dates sync to your private My Share list as project shells at every level; report publishing and daily-activity sync are sent only at a sharing level above Private — see [Settings → Community](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Settings-Community)
 

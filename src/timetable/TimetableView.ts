@@ -2362,21 +2362,22 @@ export class TimetableView extends BasesView {
             this.renderCorner(toolbar);
         }
         if (this.config.get('panels') === true) {
-            const imageLabel = toolbar.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelImage') });
+            const panelOptions = toolbar.createDiv({ cls: 'ert-timetable-panels__options' });
+            const imageLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelImage') });
             const imageChoice = imageLabel.createEl('select');
             setAccessibleLabel(imageChoice, t('ui.timetable.panelImageLabel'));
             for (const [value, label] of [['character', t('ui.timetable.panelImageCharacter')], ['place', t('ui.timetable.panelImagePlace')], ['combined', t('ui.timetable.panelImageCombined')], ['artwork', t('ui.timetable.panelImageArtwork')], ['none', t('ui.timetable.panelImageNone')]] as const) imageChoice.createEl('option', { value, text: label });
             const imageSetting = this.config.get('panelImage');
             imageChoice.value = ['place', 'combined', 'artwork', 'none'].includes(String(imageSetting)) ? String(imageSetting) : 'character';
             this.panelEvents?.registerDomEvent(imageChoice, 'change', () => { this.config.set('panelImage', imageChoice.value); this.render(); });
-            const fitLabel = toolbar.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelFit') });
+            const fitLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelFit') });
             const fitChoice = fitLabel.createEl('select');
             setAccessibleLabel(fitChoice, t('ui.timetable.panelFit'));
             fitChoice.createEl('option', { value: 'fill', text: t('ui.timetable.panelFitFill') });
             fitChoice.createEl('option', { value: 'fit', text: t('ui.timetable.panelFitFit') });
             fitChoice.value = this.config.get('panelFit') === 'fit' ? 'fit' : 'fill';
             this.panelEvents?.registerDomEvent(fitChoice, 'change', () => { this.config.set('panelFit', fitChoice.value); this.render(); });
-            const sizeLabel = toolbar.createEl('label', { cls: 'ert-timetable-panels__size', text: t('ui.timetable.panelSize') });
+            const sizeLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__size', text: t('ui.timetable.panelSize') });
             const size = sizeLabel.createEl('select');
             setAccessibleLabel(size, t('ui.timetable.panelSize'));
             for (const [value, label] of [['small', t('ui.timetable.panelSizeSmall')], ['medium', t('ui.timetable.panelSizeMedium')], ['large', t('ui.timetable.panelSizeLarge')]] as const) {

@@ -37,7 +37,7 @@ function plainText(text: string): string {
 
 function portrait(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, unknown>): string | null {
     const characters = value(fm, authorKeyFor('Character', plugin.settings));
-    const first = Array.isArray(characters) ? characters[0] : characters;
+    const first: unknown = Array.isArray(characters) ? characters[0] : characters;
     if (typeof first !== 'string' || !first.trim()) return null;
     const link = first.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
     const character = plugin.app.metadataCache.getFirstLinkpathDest(link, file.path);
@@ -128,7 +128,7 @@ class CanvasCards {
             }
         });
         this.observer = new MutationObserver(mutations => {
-            if (mutations.some(mutation => !(mutation.target instanceof Element) || !mutation.target.closest('.ert-story-navigator'))) this.schedule();
+            if (mutations.some(mutation => !mutation.target.instanceOf(Element) || !mutation.target.closest('.ert-story-navigator'))) this.schedule();
         });
         this.observer.observe(view.containerEl, { childList: true, subtree: true });
         this.schedule();
@@ -190,7 +190,7 @@ class CanvasCards {
                 let preview = '';
                 if (this.mode === 'preview') {
                     if (typeof kindValue === 'string' && kindValue.trim().toLowerCase() === 'scene') {
-                        const synopsis = fm[synopsisKey(fm, this.plugin.settings)];
+                        const synopsis: unknown = fm[synopsisKey(fm, this.plugin.settings)];
                         preview = typeof synopsis === 'string' ? synopsis : '';
                     } else {
                         const content = await this.plugin.app.vault.cachedRead(file);

@@ -61,7 +61,7 @@ export async function askAboutAttachedSketches(plugin: RadialTimelinePlugin, pat
 export async function applyAttachedSketchMove(app: App, move: AttachedSketchMove | undefined): Promise<void> {
     if (!move) return;
     for (const file of move.files) {
-        await app.fileManager.processFrontMatter(file, fm => {
+        await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
             if (sketchAnchor(fm) !== move.anchorId) throw new Error(`Sketch anchor changed: ${file.path}`);
             const key = (name: string) => Object.keys(fm).find(k => k.toLowerCase() === name.toLowerCase()) ?? name;
             if (move.follow) fm[key(move.actKey ?? 'Act')] = move.destinationAct;

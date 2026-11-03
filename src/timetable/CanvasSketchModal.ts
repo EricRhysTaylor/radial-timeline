@@ -188,7 +188,7 @@ export class CanvasSketchModal extends ErtModal {
                 const original = items.find(candidate => candidate.row.path === item.path);
                 if (!original) throw new Error(t('ui.canvasSketch.placementChanged'));
                 let previous: { key: string; existed: boolean; value: unknown } | undefined;
-                await this.app.fileManager.processFrontMatter(file, fm => {
+                await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
                     const key = Object.keys(fm).find(name => name.toLowerCase() === SKETCH_ORDER.toLowerCase()) ?? SKETCH_ORDER;
                     const row = buildTableRow(file.path, file.basename, fm, this.plugin.settings);
                     if (row.kind !== 'sketch' || row.act !== original.row.act || sketchAnchor(fm) !== sketchAnchor(original.frontmatter)
@@ -234,7 +234,7 @@ export class CanvasSketchModal extends ErtModal {
             if (paths.size === 0) {
                 for (const item of ranked.reverse()) {
                     try {
-                        await this.app.fileManager.processFrontMatter(item.file, fm => {
+                        await this.app.fileManager.processFrontMatter(item.file, (fm: Record<string, unknown>) => {
                             const row = buildTableRow(item.file.path, item.file.basename, fm, this.plugin.settings);
                             if (fm[item.key] !== item.rank || row.kind !== 'sketch' || row.act !== item.act || sketchAnchor(fm) !== item.anchor) {
                                 retainedRanks = true;

@@ -5983,9 +5983,9 @@ export const vi: TranslationKeys = {
             showOverdue: 'Hiện các cảnh quá hạn',
             followTimeline: 'Theo cảnh đang trỏ trên dòng thời gian',
             fileCardsExplanation: 'Chỉ có thể chuyển thẻ văn bản tại đây. Thẻ tệp đã liên kết với ghi chú và không bị thay đổi.',
-            showTimetable: 'RT: Hiện trong bảng thời gian',
-            showTimeline: 'RT: Hiện trên dòng thời gian',
-            promote: 'RT: Chuyển thành cảnh',
+            showTimetable: 'Radial Timeline: Hiện trong bảng thời gian',
+            showTimeline: 'Radial Timeline: Hiện trên dòng thời gian',
+            promote: 'Radial Timeline: Chuyển thành cảnh',
 
             cardLabel: 'Thẻ',
             cardViews: 'Chế độ thẻ Canvas',

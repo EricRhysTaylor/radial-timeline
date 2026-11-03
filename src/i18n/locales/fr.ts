@@ -5983,9 +5983,9 @@ export const fr: TranslationKeys = {
             showOverdue: 'Afficher les scènes en retard',
             followTimeline: 'Suivre la scène survolée sur la chronologie',
             fileCardsExplanation: 'Seules les cartes texte peuvent être converties. Les cartes de fichier renvoient déjà à des notes et ne sont pas modifiées.',
-            showTimetable: 'RT : Afficher dans le tableau',
-            showTimeline: 'RT : Afficher sur la chronologie',
-            promote: 'RT : Promouvoir en scène',
+            showTimetable: 'Radial Timeline : Afficher dans le tableau',
+            showTimeline: 'Radial Timeline : Afficher sur la chronologie',
+            promote: 'Radial Timeline : Promouvoir en scène',
 
             cardLabel: 'Carte',
             cardViews: 'Affichage des cartes Canvas',

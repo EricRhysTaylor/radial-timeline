@@ -6,7 +6,7 @@
  * All of them run the same flow: plan, confirm, apply, refresh the timeline.
  */
 
-import { Notice, TFile, TFolder, type Menu, type TAbstractFile } from 'obsidian';
+import { ItemView, Notice, TFile, TFolder, type Menu, type TAbstractFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { applyPromotion, isPromotable, planPromotion, type PromotionPlan } from './PromoteToSceneService';
 import { PromoteToSceneModal, type PromotionAnchorOption } from '../modals/PromoteToSceneModal';
@@ -37,7 +37,7 @@ export function registerPromoteToScene(plugin: RadialTimelinePlugin): void {
 
     plugin.registerEvent(plugin.app.workspace.on('file-menu', (menu: Menu, target: TAbstractFile) => {
         if (target instanceof TFile) {
-            const view = plugin.app.workspace.activeLeaf?.view as { getViewType?: () => string; canvas?: { nodes?: Map<string, { getData?: () => { file?: string } }> } } | undefined;
+            const view = plugin.app.workspace.getActiveViewOfType(ItemView) as { getViewType?: () => string; canvas?: { nodes?: Map<string, { getData?: () => { file?: string } }> } } | null;
             if (view?.getViewType?.() === 'canvas' && view.canvas?.nodes instanceof Map
                 && [...view.canvas.nodes.values()].some(node => node.getData?.().file === target.path)) return;
             if (!isPromotable(plugin.app, plugin.settings, target)) return;

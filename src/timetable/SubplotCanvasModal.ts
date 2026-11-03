@@ -36,7 +36,7 @@ export class SubplotCanvasModal extends ErtModal {
         const bookRow = this.contentEl.createDiv({ cls: 'setting-item' });
         bookRow.createDiv({ cls: 'setting-item-name', text: t('ui.subplotCanvas.book') });
         const bookSelect = new DropdownComponent(bookRow.createDiv({ cls: 'setting-item-control' }));
-        books.forEach(book => bookSelect.addOption(book.id, book.title));
+        books.forEach(book => { bookSelect.addOption(book.id, book.title); });
         bookSelect.setValue(this.bookId);
         const actRow = this.contentEl.createDiv({ cls: 'setting-item' });
         actRow.createDiv({ cls: 'setting-item-name', text: t('ui.subplotCanvas.act') });
@@ -68,11 +68,11 @@ export class SubplotCanvasModal extends ErtModal {
             const rows = this.rows();
             actSelect.selectEl.empty(); actSelect.addOption('', t('ui.subplotCanvas.allActs'));
             [...new Set(rows.flatMap(row => row.act === null ? [] : [row.act]))].sort((a, b) => a - b)
-                .forEach(act => actSelect.addOption(String(act), t('ui.subplotCanvas.actNumber', { act })));
+                .forEach(act => { actSelect.addOption(String(act), t('ui.subplotCanvas.actNumber', { act })); });
             actSelect.setValue(this.act === null ? '' : String(this.act));
             laneSelect.selectEl.empty(); laneSelect.addOption('', t('ui.subplotCanvas.allSubplots'));
             [...new Set(rows.filter(row => this.act === null || row.act === this.act).flatMap(row => row.subplots))]
-                .forEach(lane => laneSelect.addOption(lane, lane));
+                .forEach(lane => { laneSelect.addOption(lane, lane); });
             if (this.subplot && !Array.from(laneSelect.selectEl.options).some(option => option.value === this.subplot)) this.subplot = null;
             laneSelect.setValue(this.subplot ?? '');
             let serial = 0;

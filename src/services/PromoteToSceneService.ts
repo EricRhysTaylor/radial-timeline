@@ -364,12 +364,12 @@ export async function applyPromotion(
         if (options.sketchPlacement?.followingSketches.length) {
             try {
                 let sceneId: string | undefined;
-                await app.fileManager.processFrontMatter(only.file, fm => { sceneId = readSceneId(fm); });
+                await app.fileManager.processFrontMatter(only.file, (fm: Record<string, unknown>) => { sceneId = readSceneId(fm); });
                 if (!sceneId) throw new Error('Promoted scene has no ID.');
                 for (const path of options.sketchPlacement.followingSketches) {
                     const sketch = app.vault.getAbstractFileByPath(path);
                     if (!(sketch instanceof TFile)) throw new Error(`Sketch no longer exists: ${path}`);
-                    await app.fileManager.processFrontMatter(sketch, fm => {
+                    await app.fileManager.processFrontMatter(sketch, (fm: Record<string, unknown>) => {
                         if (sketchAnchor(fm) !== options.sketchPlacement?.anchorId) throw new Error(`Sketch placement changed: ${path}`);
                         const key = findKeyCaseInsensitive(fm, SKETCH_AFTER_SCENE) ?? SKETCH_AFTER_SCENE;
                         fm[key] = sceneId;

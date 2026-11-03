@@ -9,7 +9,7 @@ import { CanvasSketchModal, type OpenCanvas } from './CanvasSketchModal';
 import { registerCanvasCardPresentation } from './CanvasCardPresentation';
 import { SubplotCanvasModal } from './SubplotCanvasModal';
 
-function canvasForView(source: View | undefined): OpenCanvas | null {
+function canvasForView(source: View | null | undefined): OpenCanvas | null {
     if (!source || source.getViewType() !== 'canvas') return null;
     const view = source as unknown as { canvas?: Partial<OpenCanvas> };
     const canvas = view.canvas;
@@ -18,7 +18,7 @@ function canvasForView(source: View | undefined): OpenCanvas | null {
 }
 
 function activeCanvas(plugin: RadialTimelinePlugin): OpenCanvas | null {
-    return canvasForView(plugin.app.workspace.activeLeaf?.view);
+    return canvasForView(plugin.app.workspace.getActiveViewOfType(ItemView));
 }
 
 function openCanvasSketches(plugin: RadialTimelinePlugin, canvas = activeCanvas(plugin)): void {
@@ -79,7 +79,7 @@ export function registerCanvasSketches(plugin: RadialTimelinePlugin): void {
         },
     });
     plugin.registerEvent(plugin.app.workspace.on('file-menu', (menu: Menu, file: TAbstractFile) => {
-        const sourceView = plugin.app.workspace.activeLeaf?.view;
+        const sourceView = plugin.app.workspace.getActiveViewOfType(ItemView);
         const nodes = sourceView?.getViewType() === 'canvas' ? (sourceView as unknown as { canvas?: { nodes?: Map<string, { getData?: () => { file?: string } }> } }).canvas?.nodes : undefined;
         if (file instanceof TFile && file.extension === 'md' && nodes instanceof Map && [...nodes.values()].some(node => node.getData?.().file === file.path)) {
             const bookId = getBookIdForPath(plugin.settings.books, file.path);

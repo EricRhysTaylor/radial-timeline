@@ -5983,9 +5983,9 @@ export const th: TranslationKeys = {
             showOverdue: 'แสดงฉากที่เกินกำหนด',
             followTimeline: 'ติดตามฉากที่ชี้บนไทม์ไลน์',
             fileCardsExplanation: 'ที่นี่แปลงได้เฉพาะการ์ดข้อความ การ์ดไฟล์เชื่อมกับโน้ตอยู่แล้วและจะไม่ถูกเปลี่ยน',
-            showTimetable: 'RT: แสดงในตารางเวลา',
-            showTimeline: 'RT: แสดงบนไทม์ไลน์',
-            promote: 'RT: เปลี่ยนเป็นฉาก',
+            showTimetable: 'Radial Timeline: แสดงในตารางเวลา',
+            showTimeline: 'Radial Timeline: แสดงบนไทม์ไลน์',
+            promote: 'Radial Timeline: เปลี่ยนเป็นฉาก',
 
             cardLabel: 'การ์ด',
             cardViews: 'มุมมองการ์ด Canvas',

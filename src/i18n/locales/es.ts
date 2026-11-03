@@ -5983,9 +5983,9 @@ export const es: TranslationKeys = {
             showOverdue: 'Mostrar escenas atrasadas',
             followTimeline: 'Seguir la escena señalada en la línea temporal',
             fileCardsExplanation: 'Solo se convierten tarjetas de texto. Las tarjetas de archivo ya enlazan a notas y no se modifican.',
-            showTimetable: 'RT: Mostrar en la tabla',
-            showTimeline: 'RT: Mostrar en la línea temporal',
-            promote: 'RT: Convertir en escena',
+            showTimetable: 'Radial Timeline: Mostrar en la tabla',
+            showTimeline: 'Radial Timeline: Mostrar en la línea temporal',
+            promote: 'Radial Timeline: Convertir en escena',
 
             cardLabel: 'Tarjeta',
             cardViews: 'Vista de tarjetas del Canvas',

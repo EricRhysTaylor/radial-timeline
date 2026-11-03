@@ -3025,7 +3025,7 @@ export class TimetableView extends BasesView {
             cancel.disabled = true;
             let updated = false;
             try {
-                await this.plugin.app.fileManager.processFrontMatter(item.entry.file, fmNow => {
+                await this.plugin.app.fileManager.processFrontMatter(item.entry.file, (fmNow: Record<string, unknown>) => {
                     updated = updateSynopsis(fmNow, this.plugin.settings, original, input.value);
                 });
                 if (!updated) { new Notice(t('ui.timetable.panelConflict')); save.disabled = false; cancel.disabled = false; return; }
@@ -3211,7 +3211,7 @@ export class TimetableView extends BasesView {
             for (const [index, path] of plan.orderedPaths.entries()) {
                 const file = this.plugin.app.vault.getAbstractFileByPath(path);
                 if (!(file instanceof TFile)) throw new Error(`Sketch no longer exists: ${path}`);
-                await this.plugin.app.fileManager.processFrontMatter(file, fm => {
+                await this.plugin.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
                     const classification = classifyForPromotion(fm);
                     if (classification.kind !== 'eligible' || !classification.fromSketch) throw new Error(`Not a sketch: ${path}`);
                     const set = (key: string, value: unknown) => {
@@ -3248,7 +3248,7 @@ export class TimetableView extends BasesView {
                 const anchor = sketchAnchor(item.frontmatter);
                 const scene = book ? this.sketchPlacementItems(book).find(candidate => candidate.row.kind === 'scene' && readSceneId(candidate.frontmatter) === anchor) : undefined;
                 if (scene?.row.act != null) menu.addItem(option => option.setTitle(t('ui.timetable.sketchMoveFollow')).onClick(() => {
-                    void this.plugin.app.fileManager.processFrontMatter(item.entry.file, fm => {
+                    void this.plugin.app.fileManager.processFrontMatter(item.entry.file, (fm: Record<string, unknown>) => {
                         const actKey = authorKeyFor('Act', this.plugin.settings);
                         const key = Object.keys(fm).find(k => k.toLowerCase() === actKey.toLowerCase()) ?? actKey;
                         fm[key] = scene.row.act;
@@ -3256,7 +3256,7 @@ export class TimetableView extends BasesView {
                 }));
             }
             menu.addItem(option => option.setTitle(t('ui.timetable.sketchMoveStay')).onClick(() => {
-                void this.plugin.app.fileManager.processFrontMatter(item.entry.file, fm => {
+                void this.plugin.app.fileManager.processFrontMatter(item.entry.file, (fm: Record<string, unknown>) => {
                     for (const key of Object.keys(fm)) if ([SKETCH_AFTER_SCENE.toLowerCase(), SKETCH_ORDER.toLowerCase()].includes(key.toLowerCase())) delete fm[key];
                 }).then(() => this.refresh());
             }));

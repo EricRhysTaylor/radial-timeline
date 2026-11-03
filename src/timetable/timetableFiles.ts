@@ -55,12 +55,13 @@ export interface BaseFileContent {
 
 /** Add a fresh view without replacing the author's existing views or Base filters. */
 export function withRestoredTimetableView(parsed: Record<string, unknown>, settings: RadialTimelineSettings, label: string): { content: Record<string, unknown>; name: string } | null {
-    if (!Array.isArray(parsed.views) || !label.trim()) return null;
-    const existing = new Set(parsed.views.flatMap((view: unknown) => view && typeof view === 'object' && typeof (view as { name?: unknown }).name === 'string' ? [(view as { name: string }).name] : []));
+    const views: unknown[] | null = Array.isArray(parsed.views) ? parsed.views : null;
+    if (!views || !label.trim()) return null;
+    const existing = new Set(views.flatMap((view: unknown) => view && typeof view === 'object' && typeof (view as { name?: unknown }).name === 'string' ? [(view as { name: string }).name] : []));
     let name = label;
     for (let number = 2; existing.has(name); number++) name = `${label} ${number}`;
     const view = { type: TIMETABLE_VIEW_TYPE, name, groupBy: { property: authorKeyFor('Act', settings), direction: 'ASC' }, order: tableColumns(settings).timetable };
-    return { content: { ...parsed, views: [view, ...parsed.views] }, name };
+    return { content: { ...parsed, views: [view, ...views] }, name };
 }
 
 /** Every table is limited to notes; images and PDFs in a book folder are never rows. */

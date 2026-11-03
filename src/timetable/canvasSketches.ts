@@ -14,12 +14,15 @@ export interface StoryCanvasData {
     [key: string]: unknown;
 }
 
-export function canvasTextCards(data: StoryCanvasData): CanvasCard[] {
-    return (data.nodes ?? []).filter(node => node.type === 'text' && !node.id.startsWith('acportal||') && typeof node.text === 'string' && node.text.trim().length > 0);
+/** A text card that carries writing: the only kind the sketch import reads. */
+export type CanvasTextCard = CanvasCard & { text: string };
+
+export function canvasTextCards(data: StoryCanvasData): CanvasTextCard[] {
+    return (data.nodes ?? []).filter((node): node is CanvasTextCard => node.type === 'text' && !node.id.startsWith('acportal||') && typeof node.text === 'string' && node.text.trim().length > 0); // SAFE: canvas JSON may omit nodes; none = no text cards
 }
 
 export function sketchTitle(text: string): string {
-    const line = text.split(/\r?\n/).find(part => part.trim()) ?? '';
+    const line = text.split(/\r?\n/).find(part => part.trim()) ?? ''; // SAFE: an all-blank card yields '' and takes the new-sketch name below
     return safeTitle(line.replace(/^\s*#{1,6}\s+/, '').slice(0, 100)) || t('ui.timetable.newSketchName');
 }
 

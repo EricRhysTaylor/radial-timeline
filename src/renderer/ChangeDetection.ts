@@ -257,7 +257,7 @@ export function createSnapshot(
         currentDate: now.toISOString().split('T')[0],
         sortByWhen: settings.sortByWhenDate ?? false,
         subplotAlignment: settings.subplotAlignment ?? 'fill',
-        aiEnabled: settings.enableAiSceneAnalysis ?? false,
+        aiEnabled: settings.enableAiSceneAnalysis,
         stageTargetDatesHash,
         chronologueDurationCap: settings.chronologueDurationCapSelection,
         chronologueCalendarDefault: settings.chronologueCalendarDefault ?? 'earth',

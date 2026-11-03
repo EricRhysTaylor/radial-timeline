@@ -1613,7 +1613,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         previewBody.empty();
         const activeBookMetaStatus = getActiveBookMetaStatus(plugin);
         const meta = activeBookMetaPreviewOverride ?? activeBookMetaStatus.bookMeta ?? null;
-        const sourcePath = (activeBookMetaEditSourcePath || meta?.sourcePath || activeBookMetaStatus.path || '').trim();
+        const sourcePath = (activeBookMetaEditSourcePath || meta?.sourcePath || activeBookMetaStatus.path || '').trim(); // SAFE: open edit wins over the parsed note, then the resolved status path; '' renders the no-source branch
         const hasSourcePath = sourcePath.length > 0;
         // Roles overridden by physical notes — used to dim BookMeta rows + show "Overridden by custom page".
         const matterNotes = getActiveBookMatterNoteSummaries(plugin);

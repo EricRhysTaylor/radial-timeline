@@ -15,7 +15,7 @@ import { getManuscriptProofConfigurationKey, getManuscriptProofStaleReason, type
 import { ManuscriptProofPreview } from '../publishing/ManuscriptProofPreview';
 import { readSavedManuscripts, restoreSavedManuscript, saveManuscriptRecord } from '../publishing/savedManuscripts';
 import { randomUUID } from 'crypto'; // SAFE: local saved manuscript identities, never credentials.
-import { deliveryFormat, readDeliveryReceipt, validateExportDestination, type ExportDeliveryReceipt } from '../publishing/exportDelivery';
+import { deliveryFormat, outcomeFiles, readDeliveryReceipt, validateExportDestination, type ExportDeliveryReceipt } from '../publishing/exportDelivery';
 import { ExportDeliveryReviewModal } from './ExportDeliveryReviewModal';
 import { RecentExportsModal } from './RecentExportsModal';
 import { openExportedFile } from '../publishing/openExportedFile';
@@ -1803,7 +1803,7 @@ export class ManuscriptOptionsModal extends Modal {
             }
             const blocker = issues.find(issue => issue.level === 'error');
             if (blocker && !(blocker.scope === 'book-meta' && this.source?.kind !== 'book')) {
-                const needsStyle = blocker.code.includes('font') || blocker.code.includes('template') || blocker.code.includes('layout') || blocker.code.includes('profile');
+                const needsStyle = blocker.code.includes('font') || blocker.code.includes('template') || blocker.code.includes('layout') || blocker.code.includes('profile'); // SAFE: boolean predicate over blocker-code keywords, not a value fallback
                 const target = blocker.scope === 'book-meta' ? 'book-details' : needsStyle ? 'pdf-style' : 'export-check';
                 new ButtonComponent(readiness)
                     .setButtonText(blocker.scope === 'book-meta' ? t('ui.manuscriptOptionsModal.editBookDetails') : needsStyle ? t('ui.manuscriptOptionsModal.reviewPdfStyle') : t('ui.manuscriptOptionsModal.openExportTools'))
@@ -3637,10 +3637,7 @@ export class ManuscriptOptionsModal extends Modal {
         if (this.lastOutcome?.outputFolder) {
             return this.lastOutcome.outputFolder;
         }
-        const path = this.lastOutcome?.renderedPaths?.[0]
-            || this.lastOutcome?.savedPaths?.[0]
-            || this.lastOutcome?.renderedPath
-            || this.lastOutcome?.savedPath;
+        const path = this.getOutcomeFilePath();
         if (!path) return null;
         const idx = path.lastIndexOf('/');
         if (idx <= 0) return null;
@@ -3725,12 +3722,11 @@ export class ManuscriptOptionsModal extends Modal {
         }
     }
 
+    /** The export's primary file: its first rendered output, else its first saved Markdown. */
     private getOutcomeFilePath(): string | null {
-        return this.lastOutcome?.renderedPath
-            || this.lastOutcome?.savedPath
-            || this.lastOutcome?.renderedPaths?.[0]
-            || this.lastOutcome?.savedPaths?.[0]
-            || null;
+        if (!this.lastOutcome) return null;
+        const { rendered, saved } = outcomeFiles(this.lastOutcome);
+        return rendered[0] ?? saved[0] ?? null;
     }
 
     private async openOutcomeFile(): Promise<void> {
@@ -4141,12 +4137,8 @@ export class ManuscriptOptionsModal extends Modal {
             if (this.proofReceipt) await this.checkProofFreshness();
             const outcome = await this.onSubmit(request);
             if (this.proofClosed) return;
-            const hasOutcome = Boolean(
-                outcome.savedPath
-                || outcome.renderedPath
-                || (outcome.savedPaths && outcome.savedPaths.length > 0)
-                || (outcome.renderedPaths && outcome.renderedPaths.length > 0)
-            );
+            const { rendered, saved } = outcomeFiles(outcome);
+            const hasOutcome = rendered.length > 0 || saved.length > 0;
             if (!hasOutcome) {
                 this.exportCompleted = false;
                 this.lastOutcome = null;

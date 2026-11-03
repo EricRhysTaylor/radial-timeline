@@ -16,20 +16,20 @@ function setup() {
 describe('attached sketches after a scene changes act', () => {
     it('moves them with their scene while preserving order', async () => {
         const { a, b, fields, app } = setup();
-        await applyAttachedSketchMove(app, { files: [a, b], anchorId: 'scn_a', destinationAct: 2, follow: true });
+        await applyAttachedSketchMove(app, { files: [a, b], anchorId: 'scn_a', destinationAct: 2, follow: true, actKey: 'Act' });
         expect(fields[a.path]).toMatchObject({ Act: 2, 'Place after scene': 'scn_a', 'Sketch order': 10 });
         expect(fields[b.path]).toMatchObject({ Act: 2, 'Place after scene': 'scn_a', 'Sketch order': 20 });
     });
     it('leaves them in their old act when detached', async () => {
         const { a, b, fields, app } = setup();
-        await applyAttachedSketchMove(app, { files: [a, b], anchorId: 'scn_a', destinationAct: 2, follow: false });
+        await applyAttachedSketchMove(app, { files: [a, b], anchorId: 'scn_a', destinationAct: 2, follow: false, actKey: 'Act' });
         expect(fields[a.path]).toEqual({ Class: 'Sketch', Act: 1 });
         expect(fields[b.path]).toEqual({ Class: 'Sketch', Act: 1 });
     });
     it('does not overwrite a changed anchor', async () => {
         const { a, fields, app } = setup();
         fields[a.path]['Place after scene'] = 'scn_other';
-        await expect(applyAttachedSketchMove(app, { files: [a], anchorId: 'scn_a', destinationAct: 2, follow: true })).rejects.toThrow('Sketch anchor changed');
+        await expect(applyAttachedSketchMove(app, { files: [a], anchorId: 'scn_a', destinationAct: 2, follow: true, actKey: 'Act' })).rejects.toThrow('Sketch anchor changed');
         expect(fields[a.path].Act).toBe(1);
     });
 });

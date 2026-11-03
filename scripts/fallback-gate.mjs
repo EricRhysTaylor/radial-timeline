@@ -10,7 +10,7 @@
  *
  * Rules:
  *   silent-catch          (block) — try/catch returning empty/null/undefined
- *   or-chain-3            (block) — `a || b || c || d` (3+ OR operators)
+ *   or-chain-3            (block) — `a || b || c || d` value chain (3+ OR operators)
  *   nullish-literal       (warn)  — `?? 'literal'`, `?? 0`, `?? false`
  *   or-literal            (warn)  — `|| 'literal'`, `|| 0`, `|| false`
  *   switch-default-return (block) — `default: return ...;` not preceded by assertNever/throw
@@ -28,6 +28,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import ts from "typescript";
 
 const ROOT = process.cwd();
 const SRC_DIR = path.join(ROOT, "src");
@@ -111,24 +112,82 @@ function scanSilentCatch(file, text, lineStarts) {
   return hits;
 }
 
-function scanOrChain3(file, text, lineStarts) {
-  const hits = [];
-  // 3+ `||` operators on the same logical expression line
-  // Heuristic: a single line containing `||` at least 3 times
-  const lines = text.split("\n");
-  for (let i = 0; i < lines.length; i += 1) {
-    const ln = lines[i];
-    if (lineHasSafeAnnotation(ln)) continue;
-    // strip line comments and strings to avoid false positives
-    const stripped = ln
-      .replace(/\/\/.*$/, "")
-      .replace(/(["'`])(?:\\.|(?!\1)[^\\])*\1/g, "''");
-    // count `||` occurrences (avoid `|||` which won't appear, but still)
-    const count = (stripped.match(/\|\|/g) || []).length;
-    if (count >= 3) {
-      hits.push({ file, line: i + 1, sample: ln.trim().slice(0, 200), rule: "or-chain-3" });
-    }
+// or-chain-3 targets value-precedence chains (`a || b || c || 'Untitled'`).
+// A chain whose result is only tested for truthiness is a predicate, not a
+// fallback, so it is exempt when it feeds a condition (if/while/do/for test,
+// ternary test, `!`, `Boolean(...)`) or when any operand is a comparison or a
+// negation, which a precedence list never contains. Chains are found with the
+// TypeScript parser and counted once each, so a value chain split across
+// lines is still caught. `// SAFE:` on the chain's first or last line exempts it.
+const K = ts.SyntaxKind;
+const PREDICATE_OPERATORS = new Set([
+  K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken,
+  K.LessThanToken, K.GreaterThanToken, K.LessThanEqualsToken, K.GreaterThanEqualsToken,
+  K.InstanceOfKeyword, K.InKeyword,
+]);
+
+function isOrExpression(node) {
+  return ts.isBinaryExpression(node) && node.operatorToken.kind === K.BarBarToken;
+}
+function isLogicalExpression(node) {
+  return ts.isBinaryExpression(node)
+    && (node.operatorToken.kind === K.BarBarToken || node.operatorToken.kind === K.AmpersandAmpersandToken);
+}
+function skipParentheses(node) {
+  while (ts.isParenthesizedExpression(node)) node = node.expression;
+  return node;
+}
+function orOperands(node, out) {
+  const inner = skipParentheses(node);
+  if (isOrExpression(inner)) {
+    orOperands(inner.left, out);
+    orOperands(inner.right, out);
+  } else {
+    out.push(inner);
   }
+  return out;
+}
+function isPredicateOperand(node) {
+  if (ts.isPrefixUnaryExpression(node)) return node.operator === K.ExclamationToken;
+  return ts.isBinaryExpression(node) && PREDICATE_OPERATORS.has(node.operatorToken.kind);
+}
+function feedsTruthinessTest(chain) {
+  // Truthiness flows through parentheses and enclosing && / || expressions.
+  let child = chain;
+  let parent = chain.parent;
+  while (ts.isParenthesizedExpression(parent) || isLogicalExpression(parent)) {
+    child = parent;
+    parent = parent.parent;
+  }
+  if (ts.isPrefixUnaryExpression(parent)) return parent.operator === K.ExclamationToken;
+  if (ts.isIfStatement(parent) || ts.isWhileStatement(parent) || ts.isDoStatement(parent)) return parent.expression === child;
+  if (ts.isForStatement(parent)) return parent.condition === child;
+  if (ts.isConditionalExpression(parent)) return parent.condition === child;
+  if (ts.isCallExpression(parent)) return ts.isIdentifier(parent.expression) && parent.expression.text === "Boolean";
+  return false;
+}
+
+function scanOrChain3(file, text) {
+  const hits = [];
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
+  const lines = text.split("\n");
+  const visit = (node) => {
+    let parent = node.parent;
+    while (parent && ts.isParenthesizedExpression(parent)) parent = parent.parent;
+    const isChainRoot = isOrExpression(node) && !(parent && isOrExpression(parent));
+    if (isChainRoot) {
+      const operands = orOperands(node, []);
+      if (operands.length >= 4 && !feedsTruthinessTest(node) && !operands.some(isPredicateOperand)) {
+        const firstLine = source.getLineAndCharacterOfPosition(node.getStart(source)).line;
+        const lastLine = source.getLineAndCharacterOfPosition(node.getEnd()).line;
+        if (!lineHasSafeAnnotation(lines[firstLine]) && !lineHasSafeAnnotation(lines[lastLine])) {
+          hits.push({ file, line: firstLine + 1, sample: node.getText(source).replace(/\s+/g, " ").slice(0, 200), rule: "or-chain-3" });
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
   return hits;
 }
 
@@ -193,7 +252,7 @@ for (const file of files) {
   const text = fs.readFileSync(file, "utf8");
   const lineStarts = buildLineIndex(text);
   allHits.push(...scanSilentCatch(file, text, lineStarts));
-  allHits.push(...scanOrChain3(file, text, lineStarts));
+  allHits.push(...scanOrChain3(file, text));
   allHits.push(...scanNullishLiteral(file, text, lineStarts));
   allHits.push(...scanOrLiteral(file, text, lineStarts));
   allHits.push(...scanSwitchDefaultReturn(file, text, lineStarts));

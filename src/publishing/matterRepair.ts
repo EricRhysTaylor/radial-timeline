@@ -95,7 +95,7 @@ function resolveLegacySide(normalized: Record<string, unknown>, legacyMatterValu
     return normalizeSideToken(legacy.side)
         || normalizeSideToken(legacy.Side)
         || normalizeSideToken(legacy.class)
-        || normalizeSideToken(legacy.Class);
+        || normalizeSideToken(legacy.Class); // SAFE: legacy Matter objects stored the side under any of these four spellings; first recognized token wins, none = null
 }
 
 function roleRepair(value: unknown): { invalid: boolean; clearRole?: boolean } {

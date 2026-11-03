@@ -111,6 +111,66 @@ describe('fallback-gate scanner', () => {
         expect(s.byRule['or-chain-3']).toBe(0);
     });
 
+    it('matches or-chain-3 value chains wherever their value is used', async () => {
+        const ws = await createTempWorkspace();
+        await writeSource(ws, 'a.ts', `
+            declare const a: string | undefined, b: string | undefined, c: string | undefined, ready: boolean;
+            export const literalTail = a || b || c || 'Untitled';
+            export const splitAcrossLines = a
+                || b
+                || c
+                || 'Untitled';
+            export const behindAnd = ready && (a || b || c || 'Untitled');
+            export function compared(target: string) {
+                if ((a || b || c || 'Untitled') === target) return true;
+                return false;
+            }
+        `);
+        const r = runGate(ws, ['--report', '--quiet']);
+        const s = parseSummary(r.stdout);
+        expect(s.byRule['or-chain-3']).toBe(4);
+    });
+
+    it('does not match or-chain-3 predicates used only for truthiness', async () => {
+        const ws = await createTempWorkspace();
+        await writeSource(ws, 'a.ts', `
+            declare const a: string | undefined, b: string | undefined, c: string | undefined, d: number;
+            export function guard(): void {
+                if (!a || !b || !c || d < 1) return;
+                if (a || b || c || d) return;
+                if (a
+                    || b
+                    || c
+                    || d) return;
+                while (a || b || c || d) break;
+            }
+            export const ternary = a || b || c || d ? 'yes' : 'no';
+            export const negated = !(a || b || c || d);
+            export const coerced = Boolean(a || b || c || d);
+            export const comparisons = a === 'x' || b !== 'y' || c === undefined || d > 2;
+            export const anyNegation = a || b || !c || d;
+            export const quoted = 'a || b || c || d';
+        `);
+        const r = runGate(ws, ['--report', '--quiet']);
+        const s = parseSummary(r.stdout);
+        expect(s.byRule['or-chain-3']).toBe(0);
+    });
+
+    it('exempts an or-chain-3 value chain with // SAFE: on its first or last line', async () => {
+        const ws = await createTempWorkspace();
+        await writeSource(ws, 'a.ts', `
+            declare const a: string | undefined, b: string | undefined, c: string | undefined;
+            export const sameLine = a || b || c || 'Untitled'; // SAFE: UX default
+            export const lastLine = a
+                || b
+                || c
+                || 'Untitled'; // SAFE: UX default
+        `);
+        const r = runGate(ws, ['--report', '--quiet']);
+        const s = parseSummary(r.stdout);
+        expect(s.byRule['or-chain-3']).toBe(0);
+    });
+
     it('matches nullish-literal `?? "default"`', async () => {
         const ws = await createTempWorkspace();
         await writeSource(ws, 'a.ts', `

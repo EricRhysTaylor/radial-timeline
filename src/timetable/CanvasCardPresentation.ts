@@ -13,8 +13,13 @@ import type { PluginRendererFacade } from '../utils/sceneHelpers';
 import { normalizeSubplotColorIndex } from '../renderer/utils/subplotColors';
 import { cardSubplots } from './canvasCardSubplots';
 import { setTooltip } from '../utils/domTooltip';
+import { readFrontmatterProperty } from '../utils/frontmatterKeys';
+import { outlineReferenceType, type OutlineReferenceType } from './outlineDocuments';
 
 type Mode = 'full' | 'preview' | 'title';
+const CARD_ICONS: Record<OutlineReferenceType, string> = {
+    scene: 'clapperboard', sketch: 'pencil', outline: 'list-tree', character: 'user-round', place: 'map-pin', note: 'notebook-pen',
+};
 type NodeData = { type?: string; file?: string; subpath?: string; label?: string; x?: number; y?: number; width?: number; height?: number };
 type CanvasNode = { nodeEl?: HTMLElement; getData?: () => NodeData };
 type CanvasView = View & { canvas?: { nodes?: Map<string, CanvasNode>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void } };
@@ -24,11 +29,6 @@ const pendingTitleMaps = new Set<string>();
 /** New generated maps open in the compact card presentation once. */
 export function preferTitleForCanvas(path: string): void { pendingTitleMaps.add(path); }
 
-function value(fm: Record<string, unknown>, name: string): unknown {
-    const key = Object.keys(fm).find(item => item.toLowerCase() === name.toLowerCase());
-    return key ? fm[key] : undefined;
-}
-
 function plainText(text: string): string {
     return text.replace(/!\[\[[^\]]+\]\]/g, '').replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
         .replace(/\[\[([^\]]+)\]\]/g, '$1').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
@@ -36,13 +36,13 @@ function plainText(text: string): string {
 }
 
 function portrait(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, unknown>): string | null {
-    const characters = value(fm, authorKeyFor('Character', plugin.settings));
+    const characters = readFrontmatterProperty(fm, authorKeyFor('Character', plugin.settings));
     const first: unknown = Array.isArray(characters) ? characters[0] : characters;
     if (typeof first !== 'string' || !first.trim()) return null;
     const link = first.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
     const character = plugin.app.metadataCache.getFirstLinkpathDest(link, file.path);
     if (!character) return null;
-    const imageValue = value(plugin.app.metadataCache.getFileCache(character)?.frontmatter ?? {}, 'Image');
+    const imageValue = readFrontmatterProperty(plugin.app.metadataCache.getFileCache(character)?.frontmatter, 'Image');
     if (typeof imageValue !== 'string') return null;
     const imagePath = imageValue.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
     const image = plugin.app.metadataCache.getFirstLinkpathDest(imagePath, character.path);
@@ -177,14 +177,14 @@ class CanvasCards {
                 const file = this.plugin.app.vault.getAbstractFileByPath(data.file);
                 if (!(file instanceof TFile) || file.extension !== 'md') continue;
                 keep.add(el);
-                const fm = this.plugin.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
-                const kindValue = value(fm, authorKeyFor('Class', this.plugin.settings));
+                const fm = this.plugin.app.metadataCache.getFileCache(file)?.frontmatter ?? {}; // SAFE: a note without YAML has no cached frontmatter; empty = no properties
+                const kindValue = readFrontmatterProperty(fm, authorKeyFor('Class', this.plugin.settings));
                 const bookId = getBookIdForPath(this.plugin.settings.books, file.path);
                 const kind = bookId && typeof kindValue === 'string' ? kindValue.trim() : t('ui.canvasSketch.cardLabel');
                 const image = portrait(this.plugin, file, fm);
                 const row = bookId ? buildTableRow(file.path, file.basename, fm, this.plugin.settings) : null;
                 const slots = bookId && row && (row.kind === 'scene' || row.kind === 'sketch') ? await this.colorsForBook(bookId) : new Map<string, number>();
-                const subplotNames = row?.subplots.filter(name => slots.has(name)) ?? [];
+                const subplotNames = row?.subplots.filter(name => slots.has(name)) ?? []; // SAFE: a card outside every book has no row and shows no subplot chips
                 const shownSubplots = cardSubplots(data, groups, subplotNames);
                 const overdue = this.showOverdue && row?.kind === 'scene' && sceneVitals(fm, this.plugin.settings, new Date()).due.kind === 'late';
                 let preview = '';
@@ -208,7 +208,7 @@ class CanvasCards {
                 const existing = this.cards.get(el);
                 if (existing?.signature === signature && el.contains(existing.overlay)) continue;
                 this.remove(el);
-                const cardType = kind.toLowerCase();
+                const cardType = outlineReferenceType(kind);
                 const overlay = el.createDiv({ cls: `ert-canvas-story-card${cardType === 'sketch' ? ' is-sketch' : ''}` });
                 if (shownSubplots.length) {
                     overlay.setCssProps({ '--ert-canvas-subplot': `var(--rt-subplot-colors-${normalizeSubplotColorIndex(slots.get(shownSubplots[0])!)})` });
@@ -233,7 +233,7 @@ class CanvasCards {
                 const header = overlay.createDiv({ cls: 'ert-canvas-story-card__header' });
                 const artwork = header.createDiv({ cls: 'ert-canvas-story-card__art' });
                 if (image) artwork.createEl('img', { attr: { src: image, alt: '' } });
-                else setIcon(artwork, ({ scene: 'clapperboard', sketch: 'pencil', outline: 'list-tree', character: 'user-round', place: 'map-pin' } as Record<string, string>)[cardType] ?? 'notebook-pen');
+                else setIcon(artwork, CARD_ICONS[cardType]);
                 const heading = header.createDiv({ cls: 'ert-canvas-story-card__heading' });
                 if (kind) heading.createDiv({ cls: 'ert-canvas-story-card__kind', text: number ? `${kind} ${number}` : kind });
                 heading.createDiv({ cls: 'ert-canvas-story-card__title', text: title });

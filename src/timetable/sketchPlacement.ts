@@ -1,5 +1,6 @@
 import { compareManuscriptRows, type TimetableRow } from './timetableModel';
 import { readSceneId } from '../utils/sceneIds';
+import { readFrontmatterProperty } from '../utils/frontmatterKeys';
 
 import { SKETCH_ORDER, sketchAnchor } from './sketchPlacementFields';
 export { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor } from './sketchPlacementFields';
@@ -14,13 +15,8 @@ export interface OrderedSketches<T> {
     problems: Map<string, PlacementProblem>;
 }
 
-function property(frontmatter: Record<string, unknown> | undefined, key: string): unknown {
-    const actual = Object.keys(frontmatter ?? {}).find(candidate => candidate.toLowerCase() === key.toLowerCase());
-    return actual ? frontmatter?.[actual] : undefined;
-}
-
 function sketchRank(frontmatter?: Record<string, unknown>): number {
-    const value = property(frontmatter, SKETCH_ORDER);
+    const value = readFrontmatterProperty(frontmatter, SKETCH_ORDER);
     return typeof value === 'number' && Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
 }
 
@@ -31,7 +27,7 @@ export function orderSketches<T extends PlacementItem>(items: T[]): OrderedSketc
     for (const item of base) {
         if (item.row.kind !== 'scene') continue;
         const id = readSceneId(item.frontmatter);
-        if (id) scenes.set(id, [...(scenes.get(id) ?? []), item]);
+        if (id) scenes.set(id, [...(scenes.get(id) ?? []), item]); // SAFE: the first scene with this id starts its group
     }
     const byAnchor = new Map<string, T[]>();
     const problems = new Map<string, PlacementProblem>();
@@ -40,12 +36,12 @@ export function orderSketches<T extends PlacementItem>(items: T[]): OrderedSketc
         if (item.row.kind !== 'sketch') continue;
         const id = sketchAnchor(item.frontmatter);
         if (!id) { unplaced.add(item); continue; }
-        const matches = scenes.get(id) ?? [];
+        const matches = scenes.get(id) ?? []; // SAFE: an anchor no scene carries matches none and is reported as missing
         const problem = matches.length === 0 ? 'missing' : matches.length > 1 ? 'duplicate'
             : matches[0].row.act !== item.row.act ? 'different-act' : null;
         if (problem) { problems.set(item.row.path, problem); unplaced.add(item); continue; }
         const key = matches[0].row.path;
-        byAnchor.set(key, [...(byAnchor.get(key) ?? []), item]);
+        byAnchor.set(key, [...(byAnchor.get(key) ?? []), item]); // SAFE: the first sketch after this scene starts its group
     }
     for (const group of byAnchor.values()) group.sort((a, b) => sketchRank(a.frontmatter) - sketchRank(b.frontmatter)
         || a.row.path.localeCompare(b.row.path, undefined, { numeric: true, sensitivity: 'base' }));
@@ -63,7 +59,7 @@ export function orderSketches<T extends PlacementItem>(items: T[]): OrderedSketc
         if (item.row.act !== act) { flush(); act = item.row.act; }
         if (item.row.kind === 'sketch') { if (unplaced.has(item)) trailing.push(item); continue; }
         result.push(item);
-        result.push(...(byAnchor.get(item.row.path) ?? []));
+        result.push(...(byAnchor.get(item.row.path) ?? [])); // SAFE: a scene with no attached sketches emits none
     }
     flush();
     return { items: result, problems };

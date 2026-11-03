@@ -147,7 +147,7 @@ export class PromoteToSceneModal extends ErtModal {
                 for (const anchor of this.options.anchors) {
                     dropdown.addOption(anchor.path, t('ui.promoteToScene.afterScene', { scene: anchor.label }));
                 }
-                dropdown.setValue(this.anchorPath ?? '');
+                dropdown.setValue(this.anchorPath ?? ''); // SAFE: no anchor selects the '' no-number option added above
                 dropdown.onChange(value => { this.anchorPath = value || null; unnumberedHint?.toggleClass('is-hidden', !!this.anchorPath); });
             }
             if (only.fromSketch) {

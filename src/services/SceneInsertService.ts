@@ -10,6 +10,7 @@ import { formatLocalDateKey } from '../utils/date';
 import { escapeRegExp } from '../utils/regex';
 import { fileStem } from '../utils/paths';
 import { getMainPlotName } from '../utils/mainPlot';
+import { timelineItemAct } from '../utils/acts';
 
 export interface SceneInsertOptions {
     app: App;
@@ -73,13 +74,6 @@ function normalizePrimarySubplot(primarySubplot?: string): string[] {
     return [normalized];
 }
 
-function getActNumber(item: TimelineItem): number {
-    const fromActNumber = Number(item.actNumber);
-    if (Number.isFinite(fromActNumber) && fromActNumber > 0) return fromActNumber;
-    const fromAct = Number(item.act ?? 1);
-    return Number.isFinite(fromAct) && fromAct > 0 ? fromAct : 1;
-}
-
 function getActiveBeatPaths(items: TimelineItem[], beatModel?: string): Set<string> | undefined {
     const beats = items.filter((item): item is TimelineItem & { path: string } =>
         item.itemType === 'Beat' && typeof item.path === 'string' && item.path.length > 0
@@ -107,7 +101,7 @@ function collectCandidates(items: TimelineItem[], beatModel?: string): Insertion
             path: item.path,
             itemType: item.itemType,
             basename: fileStem(item.path),
-            actNumber: getActNumber(item),
+            actNumber: timelineItemAct(item),
             sourceIndex
         });
     });
@@ -249,7 +243,7 @@ async function readAnchorWhen(app: App, settings: RadialTimelineSettings, file: 
 
 async function resolveAnchorActNumber(items: TimelineItem[], anchorPath: string, app: App, file: TFile): Promise<number> {
     const fromSceneData = items.find((item) => item.path === anchorPath && item.itemType === 'Scene');
-    if (fromSceneData) return getActNumber(fromSceneData);
+    if (fromSceneData) return timelineItemAct(fromSceneData);
     const cache = app.metadataCache.getFileCache(file);
     const rawAct: unknown = cache?.frontmatter?.Act;
     const act = Number(rawAct ?? 1);

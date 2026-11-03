@@ -18,7 +18,7 @@ export class SubplotCanvasModal extends ErtModal {
 
     constructor(app: App, private readonly plugin: RadialTimelinePlugin, initialBookId?: string) {
         super(app);
-        this.bookId = initialBookId ?? getActiveBook(plugin.settings)?.id ?? plugin.settings.books?.[0]?.id ?? '';
+        this.bookId = initialBookId ?? getActiveBook(plugin.settings)?.id ?? ''; // SAFE: '' = no book yet; onOpen settles on the first book with a source folder
     }
 
     private rows(): TimetableRow[] {
@@ -31,8 +31,8 @@ export class SubplotCanvasModal extends ErtModal {
     onOpen(): void {
         this.applyShell({ size: 'lg' });
         this.mountHeader({ badge: { text: t('ui.subplotCanvas.badge') }, title: t('ui.subplotCanvas.title'), subtitle: t('ui.subplotCanvas.subtitle') });
-        const books = (this.plugin.settings.books ?? []).filter(book => book.sourceFolder.trim());
-        if (!books.some(book => book.id === this.bookId)) this.bookId = books[0]?.id ?? '';
+        const books = this.plugin.settings.books.filter(book => book.sourceFolder.trim());
+        if (!books.some(book => book.id === this.bookId)) this.bookId = books[0]?.id ?? ''; // SAFE: '' = no book has a source folder, so rows() and createCanvas() find nothing
         const bookRow = this.contentEl.createDiv({ cls: 'setting-item' });
         bookRow.createDiv({ cls: 'setting-item-name', text: t('ui.subplotCanvas.book') });
         const bookSelect = new DropdownComponent(bookRow.createDiv({ cls: 'setting-item-control' }));
@@ -74,7 +74,7 @@ export class SubplotCanvasModal extends ErtModal {
             [...new Set(rows.filter(row => this.act === null || row.act === this.act).flatMap(row => row.subplots))]
                 .forEach(lane => { laneSelect.addOption(lane, lane); });
             if (this.subplot && !Array.from(laneSelect.selectEl.options).some(option => option.value === this.subplot)) this.subplot = null;
-            laneSelect.setValue(this.subplot ?? '');
+            laneSelect.setValue(this.subplot ?? ''); // SAFE: no subplot selects the '' All subplots option added above
             let serial = 0;
             rangeSelect.setValue(this.range);
             const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot, layout: this.layout }, () => String(++serial));
@@ -97,7 +97,7 @@ export class SubplotCanvasModal extends ErtModal {
     }
 
     private async createCanvas(): Promise<void> {
-        const book = (this.plugin.settings.books ?? []).find(item => item.id === this.bookId);
+        const book = this.plugin.settings.books.find(item => item.id === this.bookId);
         if (!book) return;
         const rows = this.rows();
         const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot, layout: this.layout }, () => crypto.randomUUID().replace(/-/g, ''));

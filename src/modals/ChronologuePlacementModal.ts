@@ -212,7 +212,7 @@ export class ChronologuePlacementModal extends ErtModal {
         strip.createDiv({
             cls: 'ert-place-context-cell',
             text: interval.lowerNeighbor
-                ? `${interval.lowerNeighbor.title} · ${formatSceneWhen(interval.lowerNeighbor.when, interval.lowerNeighbor.whenHasClock ?? true)}`
+                ? `${interval.lowerNeighbor.title} · ${formatSceneWhen(interval.lowerNeighbor.when, interval.lowerNeighbor.whenHasClock ?? true)}` // SAFE: a neighbor without the clock flag shows its time rather than hide an authored one
                 : t('ui.chronologuePlacementModal.nothingBefore')
         });
         strip.createDiv({ cls: 'ert-place-context-arrow', text: '→' });
@@ -224,7 +224,7 @@ export class ChronologuePlacementModal extends ErtModal {
         strip.createDiv({
             cls: 'ert-place-context-cell',
             text: interval.upperNeighbor
-                ? `${interval.upperNeighbor.title} · ${formatSceneWhen(interval.upperNeighbor.when, interval.upperNeighbor.whenHasClock ?? true)}`
+                ? `${interval.upperNeighbor.title} · ${formatSceneWhen(interval.upperNeighbor.when, interval.upperNeighbor.whenHasClock ?? true)}` // SAFE: a neighbor without the clock flag shows its time rather than hide an authored one
                 : t('ui.chronologuePlacementModal.nothingAfter')
         });
 

@@ -687,8 +687,7 @@ export class PublishingValidationService {
         const exportProfiles = Array.isArray(this.plugin.settings.exportProfiles) ? this.plugin.settings.exportProfiles : [];
         const prioritizedExportProfileId = preferences?.lastUsedExportProfileId
             || this.plugin.settings.lastUsedExportProfileId
-            || preferences?.defaultExportProfileId
-            || undefined;
+            || preferences?.defaultExportProfileId;
         if (prioritizedExportProfileId) {
             const exportProfile = exportProfiles.find(profile => profile.id === prioritizedExportProfileId);
             const templateProfileId = exportProfile?.templateProfileId;

@@ -8,6 +8,7 @@ import {
     formatIntegerPrefix
 } from '../utils/prefixOrder';
 import { readReferenceId } from '../utils/sceneIds';
+import { timelineItemAct } from '../utils/acts';
 
 export interface SceneUpdate {
     path: string;
@@ -223,11 +224,7 @@ function dedupeAndCollectEligible(items: TimelineItem[], activeBeatPaths?: Set<s
         if (item.itemType !== 'Scene' && item.itemType !== 'Beat') return;
         if (item.itemType === 'Beat' && activeBeatPaths && !activeBeatPaths.has(path)) return;
         if (byPath.has(path)) return;
-        const actFromNumber = item.actNumber;
-        const parsedAct = Number(item.act ?? 1);
-        const actNumber = Number.isFinite(actFromNumber) && (actFromNumber as number) > 0
-            ? (actFromNumber as number)
-            : (Number.isFinite(parsedAct) && parsedAct > 0 ? parsedAct : 1);
+        const actNumber = timelineItemAct(item);
         byPath.set(path, {
             path,
             itemType: item.itemType,

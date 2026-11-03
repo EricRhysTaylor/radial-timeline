@@ -4,6 +4,7 @@ import { t } from '../i18n';
 import type RadialTimelinePlugin from '../main';
 import { getBookIdForPath } from '../utils/books';
 import { isSceneClassFrontmatter, readSceneId } from '../utils/sceneIds';
+import { findFrontmatterKey } from '../utils/frontmatterKeys';
 import { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor } from './sketchPlacement';
 import { classifyForPromotion } from '../services/PromoteToSceneService';
 import { authorKeyFor } from './timetableFiles';
@@ -13,7 +14,8 @@ export interface AttachedSketchMove {
     anchorId: string;
     destinationAct: number;
     follow: boolean;
-    actKey?: string;
+    /** The author's own spelling of the Act property, from authorKeyFor. */
+    actKey: string;
 }
 
 /** Ask before a scene changes acts; closing the dialog cancels the scene move. */
@@ -63,8 +65,8 @@ export async function applyAttachedSketchMove(app: App, move: AttachedSketchMove
     for (const file of move.files) {
         await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
             if (sketchAnchor(fm) !== move.anchorId) throw new Error(`Sketch anchor changed: ${file.path}`);
-            const key = (name: string) => Object.keys(fm).find(k => k.toLowerCase() === name.toLowerCase()) ?? name;
-            if (move.follow) fm[key(move.actKey ?? 'Act')] = move.destinationAct;
+            const key = (name: string) => findFrontmatterKey(fm, name) ?? name;
+            if (move.follow) fm[key(move.actKey)] = move.destinationAct;
             else { delete fm[key(SKETCH_AFTER_SCENE)]; delete fm[key(SKETCH_ORDER)]; }
         });
     }

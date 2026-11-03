@@ -620,7 +620,7 @@ function renderCampaignDetails(
     // ─────────────────────────────────────────────────────────────────────────
 
     const isPro = hasProFeatureAccess(plugin);
-    const books = plugin.settings.books ?? [];
+    const books = plugin.settings.books;
     const activeBook = getActiveBook(plugin.settings);
     const activeLabel = activeBook?.title?.trim() || t('ui.campaignManagerSection.untitled');
 

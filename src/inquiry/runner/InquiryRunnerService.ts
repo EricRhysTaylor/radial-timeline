@@ -6,7 +6,7 @@ import { extractSummary, normalizeFrontmatterKeys } from '../../utils/frontmatte
 import { INQUIRY_MAX_OUTPUT_TOKENS, INQUIRY_SCHEMA_VERSION } from '../constants';
 import { PROVIDER_MAX_OUTPUT_TOKENS } from '../../constants/tokenLimits';
 import type { CitationIntegrityWarning, CitationRepairDiagnostic, EvidenceDocumentMeta, InquiryAiStatus, InquiryCitation, InquiryFinding, InquiryResult, InquiryRoleValidation, InquiryTokenUsageScope, UnverifiedCitation } from '../state';
-import { computeCitationIntegritySummary } from '../state';
+import { computeCitationIntegritySummary, describeCitedRef } from '../state';
 import type {
     CorpusManifestEntry,
     InquiryClientRun,
@@ -2375,7 +2375,7 @@ export class InquiryRunnerService implements InquiryRunner {
             const span = typeof raw.span === 'string' ? raw.span.trim() : '';
 
             if (normalized.unresolved) {
-                const offendingRef = rawRefId || rawRefLabel || rawRefPath || t('ui.inquiryRunnerService.missingRef');
+                const offendingRef = describeCitedRef({ rawRefId, rawRefLabel, rawRefPath }, t('ui.inquiryRunnerService.missingRef'));
                 const warningMessage = normalized.warning
                     || t('inquiry.runner.integrityNoVerified', { ref: offendingRef });
                 if (normalized.warning) {
@@ -2430,7 +2430,7 @@ export class InquiryRunnerService implements InquiryRunner {
                 // original is auditable, but do NOT push an author-facing
                 // citation-integrity warning (which would falsely flag the
                 // finding as untrusted). The finding stays fully usable.
-                const rawRefForDiag = rawRefId || rawRefLabel || rawRefPath || '(missing ref)';
+                const rawRefForDiag = describeCitedRef({ rawRefId, rawRefLabel, rawRefPath }, '(missing ref)');
                 repairs.push({ rawRef: rawRefForDiag, canonicalRef: normalized.ref.ref_id });
                 console.warn(`[Inquiry] AI citation "${rawRefForDiag}" could not be matched directly; repaired to ${normalized.ref.ref_id} via label/path.`);
             }
@@ -2509,7 +2509,7 @@ export class InquiryRunnerService implements InquiryRunner {
                 return;
             }
 
-            const offendingRef = rawRefId || rawRefLabel || rawRefPath || t('ui.inquiryRunnerService.missingSupportingRef');
+            const offendingRef = describeCitedRef({ rawRefId, rawRefLabel, rawRefPath }, t('ui.inquiryRunnerService.missingSupportingRef'));
             warnings.push({
                 stage: 'unresolved_ref',
                 message: t('ui.inquiryRunnerService.supportingCitationUnmatched', { ref: offendingRef })

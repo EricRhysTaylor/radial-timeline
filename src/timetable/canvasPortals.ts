@@ -6,7 +6,7 @@ export function hasPortalReference(data: StoryCanvasData, ids: Set<string>, loca
     const matches = (value: unknown, allowPlain: boolean): boolean => {
         if (typeof value !== 'string') return false;
         if (allowPlain && ids.has(value)) return true;
-        return value.startsWith('acportal||') && ids.has(value.split('||').at(-1) ?? '');
+        return value.startsWith('acportal||') && ids.has(value.slice(value.lastIndexOf('||') + 2));
     };
     const edgeMatches = (value: unknown, allowPlain: boolean): boolean => {
         if (!value || typeof value !== 'object') return false;
@@ -16,7 +16,7 @@ export function hasPortalReference(data: StoryCanvasData, ids: Set<string>, loca
     if (data.edges?.some(edge => edgeMatches(edge, false)
         || (local && ((ids.has(edge.fromNode) && edge.toNode.startsWith('acportal||'))
             || (ids.has(edge.toNode) && edge.fromNode.startsWith('acportal||')))))) return true;
-    return (data.nodes ?? []).some(node => Array.isArray(node.interdimensionalEdges)
+    return (data.nodes ?? []).some(node => Array.isArray(node.interdimensionalEdges) // SAFE: canvas JSON may omit nodes; none = no portal edges
         && node.interdimensionalEdges.some(edge => edgeMatches(edge, local)));
 }
 

@@ -78,7 +78,7 @@ export function detectTemplateProfile(texContent: string): DetectedTemplateProfi
     const hasLiterarySignals = hasTitlesec
         || (hasFontspec && hasRunningHeaders)
         || hasMicrotype
-        || hasDropCapSignals;
+        || hasDropCapSignals; // SAFE: boolean predicate over detected LaTeX signals, not a value fallback
 
     const traits: string[] = [];
     const addTrait = (trait: string, confidenceBoost = 0) => {

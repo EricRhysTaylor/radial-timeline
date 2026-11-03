@@ -23,7 +23,7 @@ function activeCanvas(plugin: RadialTimelinePlugin): OpenCanvas | null {
 
 function openCanvasSketches(plugin: RadialTimelinePlugin, canvas = activeCanvas(plugin)): void {
     if (!canvas) { new Notice(t('ui.canvasSketch.openCanvas')); return; }
-    const books = (plugin.settings.books ?? []).filter(book => book.sourceFolder.trim());
+    const books = plugin.settings.books.filter(book => book.sourceFolder.trim());
     const active = getActiveBook(plugin.settings);
     const selected = books.find(book => book.id === active?.id) ?? books[0];
     if (!selected) { new Notice(t('ui.canvasSketch.noBook')); return; }

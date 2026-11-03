@@ -49,7 +49,7 @@ async function awaitDemoIndex(plugin: RadialTimelinePlugin, paths: string[]): Pr
 async function openDemo(plugin: RadialTimelinePlugin, demo: BonusVaultDef): Promise<void> {
     assertIdle(plugin);
     const definitions = demoBookDefinitions(demo);
-    const current = plugin.settings.books ?? [];
+    const current = plugin.settings.books;
     const registration = registerSampleBookProfiles(current, definitions, definitions[0].sourceFolder);
     // Demo books must not silently become evidence in an author's existing saga.
     if (current.some(book => book.sourceFolder.trim() && !book.sourceFolder.startsWith('Demo Projects/'))) {
@@ -111,7 +111,7 @@ export async function importDemoVault(
             throw error;
         });
         if (response.status !== 200) throw new Error(t('ui.importDemoVault.downloadFailed'));
-        const registered = registerSampleBookProfiles(plugin.settings.books ?? [], demoBookDefinitions(demo), demoBookDefinitions(demo)[0].sourceFolder);
+        const registered = registerSampleBookProfiles(plugin.settings.books, demoBookDefinitions(demo), demoBookDefinitions(demo)[0].sourceFolder);
         const bookNumbers = new Map(registered.books.map((book, index) => [book.sourceFolder, index + 1]));
         report(t('ui.importDemoVault.statusChecking'));
         const plan = await prepareDemoImport(new Uint8Array(response.arrayBuffer), demo, bookNumbers);

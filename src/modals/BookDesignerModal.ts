@@ -297,7 +297,7 @@ export class BookDesignerModal extends Modal {
     }
 
     private getBookProfiles() {
-        return this.plugin.settings.books ?? [];
+        return this.plugin.settings.books;
     }
 
     private getSelectedBook() {

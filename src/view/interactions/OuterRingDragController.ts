@@ -298,7 +298,7 @@ export class OuterRingDragController {
         this.sourceItemType = 'Scene';
         this.originColor = this.resolvePublishStageColorFromGroup(from);
         this.originModalColor = this.resolveSubplotColorFromGroup(from);
-        await this.finishDropOnScene({ type: 'scene', sceneId: targetId, act: Number(to.getAttribute('data-act') ?? 0), ring });
+        await this.finishDropOnScene({ type: 'scene', sceneId: targetId, act: Number(to.getAttribute('data-act')), ring });
         return true;
     }
 
@@ -525,7 +525,7 @@ export class OuterRingDragController {
             const prefixMatch = basename.match(/^\s*(\d+(?:\.\d+)?)\s+/);
             numberText = prefixMatch ? prefixMatch[1] : '';
             
-            const act = Number(group.getAttribute('data-act') ?? 0);
+            const act = Number(group.getAttribute('data-act'));
             const ring = Number(group.getAttribute('data-ring') ?? 0);
             const startAngle = Number(group.getAttribute('data-start-angle') ?? 0);
             return { sceneId, path, basename, numberText, act, ring, itemType, startAngle };
@@ -760,13 +760,13 @@ export class OuterRingDragController {
 
         const targetPathEl = this.svg.querySelector<SVGPathElement>(`#${this.cssEscape(targetId)}`);
         const targetGroup = targetPathEl?.closest('.rt-scene-group');
-        const targetActIdx = orderOverride ? target.act : (targetGroup ? Number(targetGroup.getAttribute('data-act') ?? 0) : 0);
+        const targetActIdx = orderOverride ? target.act : (targetGroup ? Number(targetGroup.getAttribute('data-act')) : 0);
         const targetActNumber = Number.isFinite(targetActIdx) ? (targetActIdx + 1) : undefined;
         const sourcePath = moved.path;
         const sourceType = moved.itemType;
 
         // Determine source act for comparison (only show Act row if it changes)
-        const sourceActIdx = orderOverride ? moved.act : (this.sourceSceneGroup ? Number(this.sourceSceneGroup.getAttribute('data-act') ?? 0) : 0);
+        const sourceActIdx = orderOverride ? moved.act : (this.sourceSceneGroup ? Number(this.sourceSceneGroup.getAttribute('data-act')) : 0);
         const sourceActNumber = sourceActIdx + 1;
         const actChanged = targetActNumber !== undefined && targetActNumber !== sourceActNumber;
 

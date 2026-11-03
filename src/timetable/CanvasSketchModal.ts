@@ -4,11 +4,12 @@ import type { BookProfile } from '../types';
 import { ErtModal } from '../ui/ErtModal';
 import { authorKeyFor } from './timetableFiles';
 import { getConfiguredActCount } from '../utils/acts';
-import { canvasTextCards, linkSketches, sketchTitle, type StoryCanvasData, type CanvasCard } from './canvasSketches';
+import { canvasTextCards, linkSketches, sketchTitle, type StoryCanvasData, type CanvasTextCard } from './canvasSketches';
 import { hasPortalReferences } from './canvasPortals';
 import { t } from '../i18n';
 import { getBookIdForPath } from '../utils/books';
 import { readSceneId } from '../utils/sceneIds';
+import { findFrontmatterKey } from '../utils/frontmatterKeys';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { buildTableRow } from './timetableModel';
 import { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor, type PlacementItem } from './sketchPlacement';
@@ -23,7 +24,7 @@ export interface OpenCanvas {
 }
 
 export class CanvasSketchModal extends ErtModal {
-    private readonly cards: CanvasCard[];
+    private readonly cards: CanvasTextCard[];
     private readonly selected = new Set<string>();
     private book: BookProfile;
     private busy = false;
@@ -53,12 +54,12 @@ export class CanvasSketchModal extends ErtModal {
         const ids = new Map<string, number>();
         for (const item of items) {
             const id = item.row.kind === 'scene' ? readSceneId(item.frontmatter) : undefined;
-            if (id) ids.set(id, (ids.get(id) ?? 0) + 1);
+            if (id) ids.set(id, (ids.get(id) ?? 0) + 1); // SAFE: the first sighting of a scene id counts from zero
         }
-        return items.filter(item => {
+        return items.filter((item): item is PlacementItem & { row: { act: number } } => {
             const id = item.row.kind === 'scene' ? readSceneId(item.frontmatter) : undefined;
             return !!id && ids.get(id) === 1 && item.row.act !== null && (this.act === null || item.row.act === this.act);
-        }).sort((a, b) => (a.row.act ?? 0) - (b.row.act ?? 0) || a.row.basename.localeCompare(b.row.basename, undefined, { numeric: true }));
+        }).sort((a, b) => a.row.act - b.row.act || a.row.basename.localeCompare(b.row.basename, undefined, { numeric: true }));
     }
 
     onOpen(): void {
@@ -90,7 +91,7 @@ export class CanvasSketchModal extends ErtModal {
             anchorSelect.selectEl.empty();
             anchorSelect.addOption('', t('ui.canvasSketch.endOfAct'));
             for (const item of this.scenes(this.bookItems())) anchorSelect.addOption(item.row.path, item.row.basename);
-            anchorSelect.setValue(this.anchorPath ?? '');
+            anchorSelect.setValue(this.anchorPath ?? ''); // SAFE: no anchor selects the '' End of act option added above
         };
         updateScenes();
         anchorSelect.onChange(value => {
@@ -120,8 +121,8 @@ export class CanvasSketchModal extends ErtModal {
                 const check = label.createEl('input', { type: 'checkbox' });
                 check.checked = this.selected.has(card.id);
                 const details = label.createDiv();
-                details.createDiv({ cls: 'ert-canvas-sketch-title', text: sketchTitle(card.text ?? '') });
-                const preview = (card.text ?? '').split(/\r?\n/).slice(1).join(' ').trim();
+                details.createDiv({ cls: 'ert-canvas-sketch-title', text: sketchTitle(card.text) });
+                const preview = card.text.split(/\r?\n/).slice(1).join(' ').trim();
                 if (preview) details.createDiv({ cls: 'ert-canvas-sketch-preview', text: preview.slice(0, 160) });
                 check.addEventListener('change', () => {
                     if (check.checked) this.selected.add(card.id); else this.selected.delete(card.id);
@@ -131,7 +132,7 @@ export class CanvasSketchModal extends ErtModal {
                 for (const [delta, icon, hint] of [[-1, 'chevron-up', t('ui.canvasSketch.moveUp')], [1, 'chevron-down', t('ui.canvasSketch.moveDown')]] as const) {
                     const button = controls.createEl('button', { cls: 'ert-canvas-sketch-move clickable-icon', attr: { type: 'button' } });
                     setIcon(button, icon);
-                    setAccessibleLabel(button, `${hint}: ${sketchTitle(card.text ?? '')}`);
+                    setAccessibleLabel(button, `${hint}: ${sketchTitle(card.text)}`);
                     setTooltip(button, hint);
                     button.disabled = index + delta < 0 || index + delta >= this.cards.length;
                     button.addEventListener('click', () => {
@@ -189,7 +190,7 @@ export class CanvasSketchModal extends ErtModal {
                 if (!original) throw new Error(t('ui.canvasSketch.placementChanged'));
                 let previous: { key: string; existed: boolean; value: unknown } | undefined;
                 await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
-                    const key = Object.keys(fm).find(name => name.toLowerCase() === SKETCH_ORDER.toLowerCase()) ?? SKETCH_ORDER;
+                    const key = findFrontmatterKey(fm, SKETCH_ORDER) ?? SKETCH_ORDER;
                     const row = buildTableRow(file.path, file.basename, fm, this.plugin.settings);
                     if (row.kind !== 'sketch' || row.act !== original.row.act || sketchAnchor(fm) !== sketchAnchor(original.frontmatter)
                         || (typeof fm[key] === 'number' && Number.isFinite(fm[key]))) throw new Error(t('ui.canvasSketch.placementChanged'));
@@ -199,14 +200,14 @@ export class CanvasSketchModal extends ErtModal {
                 if (previous) ranked.push({ file, ...previous, rank: item.rank, act: original.row.act, anchor: sketchAnchor(original.frontmatter) });
             }
             for (const [index, card] of cards.entries()) {
-                const title = sketchTitle(card.text ?? '');
+                const title = sketchTitle(card.text);
                 let path = `${folder}/${title}.md`;
                 for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${folder}/${title} ${n}.md`;
                 const frontmatter: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch' };
                 if (act !== null) frontmatter[authorKeyFor('Act', this.plugin.settings)] = act;
                 if (anchorId) frontmatter[SKETCH_AFTER_SCENE] = anchorId;
                 frontmatter[SKETCH_ORDER] = placement.ranks[index];
-                await this.app.vault.create(path, `---\n${stringifyYaml(frontmatter)}---\n\n${card.text ?? ''}`);
+                await this.app.vault.create(path, `---\n${stringifyYaml(frontmatter)}---\n\n${card.text}`);
                 paths.set(card.id, path);
             }
             // Never replace cards if the author (or another plugin) changed the map while files were being created.

@@ -3,6 +3,7 @@ import { buildRippleRenamePlan } from '../services/SceneReorderService';
 import type { OuterRingOrderEntry } from '../view/interactions/OuterRingDragController';
 import { extractPrefixToken } from '../utils/prefixOrder';
 import { fileStem } from '../utils/paths';
+import { timelineItemAct } from '../utils/acts';
 
 /** Use the whole book and the same act, prefix, and active-beat ordering as manuscript renumbering. */
 export function timetableNarrativeOrder(items: TimelineItem[], beatModel?: string): OuterRingOrderEntry[] {
@@ -13,8 +14,7 @@ export function timetableNarrativeOrder(items: TimelineItem[], beatModel?: strin
         const item = byPath.get(path);
         if (!item || (item.itemType !== 'Scene' && item.itemType !== 'Beat')) return [];
         const basename = fileStem(path);
-        const act = Number(item.actNumber ?? item.act ?? 1);
-        return [{ sceneId: path, path, basename, numberText: extractPrefixToken(basename) ?? '',
-            act: Number.isFinite(act) && act > 0 ? act - 1 : 0, ring: 0, itemType: item.itemType, startAngle: index }];
+        return [{ sceneId: path, path, basename, numberText: extractPrefixToken(basename) ?? '', // SAFE: an unnumbered file has no prefix text
+            act: timelineItemAct(item) - 1, ring: 0, itemType: item.itemType, startAngle: index }];
     });
 }

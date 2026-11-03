@@ -13,7 +13,7 @@ export function preserveOutlineEdits(entries: OutlineImportEntry[], previous: Ou
 /** ATX headings outside fenced code and frontmatter; never infer structure from prose. */
 export function parseOutlineHeadings(markdown: string, sketchLevel: number, actLevel: number | null, actCount: number): OutlineImportEntry[] {
     const frontmatter = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/.exec(markdown);
-    const body = markdown.slice(frontmatter?.[0].length ?? 0);
+    const body = markdown.slice(frontmatter?.[0].length ?? 0); // SAFE: no frontmatter block = headings start at offset 0
     const lines = body.split(/\r?\n/);
     const headings: Heading[] = [];
     let fence: { char: string; length: number } | null = null;

@@ -309,7 +309,7 @@ export async function runYamlAudit(options: YamlAuditOptions): Promise<YamlAudit
     let canonicalOrder = computeCanonicalOrder(noteType, settings, beatSystemKey);
     const allTemplateKeys = new Set([...baseKeys, ...customKeys]);
     const excludeKey = getExcludeKeyPredicate(noteType, settings);
-    const aiEnabled = settings.enableAiSceneAnalysis ?? true;
+    const aiEnabled = settings.enableAiSceneAnalysis;
     const sceneAiSchemaKeys = new Set([
         'Pulse Update',
         'Summary Update',

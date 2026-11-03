@@ -338,7 +338,7 @@ export function getBeatSystemStructuralStatus(params: {
         const present = hasActiveMatch
             || hasUnresolvedMissingModel
             || hasUnresolvedWrongModel
-            || hasUnresolvedNonBeatClass;
+            || hasUnresolvedNonBeatClass; // SAFE: boolean predicate — any structural-beat signal marks the beat present, not a value fallback
         const kind: BeatStructuralBeatStatus['kind'] = hasActiveMatch && hasAligned && !hasDuplicate
             ? 'complete'
             : present

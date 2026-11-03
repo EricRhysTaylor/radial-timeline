@@ -349,7 +349,7 @@ function resolveEnvelopeParts(request: AIRunRequest): {
         request.featureModeInstructions
         || compiledPrompt.systemPrompt
         || request.systemPrompt
-        || ''
+        || '' // SAFE: feature instructions override the template's system prompt, then the raw one; none = no system block
     ).trim();
     const isInquiry = request.feature.toLowerCase().includes('inquiry');
     const hasUserQuestion = typeof request.userQuestion === 'string' && request.userQuestion.trim().length > 0;

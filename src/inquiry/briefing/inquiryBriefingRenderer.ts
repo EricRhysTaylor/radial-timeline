@@ -62,7 +62,7 @@ export function renderInquiryBriefingSessionItem(args: {
     }), pendingLabel);
     const pendingIcon = args.pendingEditsApplied ? 'check' : (args.pendingEditsEmpty || isError) ? 'minus' : 'plus';
     setIcon(updateButton, pendingIcon);
-    updateButton.disabled = args.blocked || args.pendingEditsEmpty || isError || args.pendingEditsApplied;
+    updateButton.disabled = args.blocked || args.pendingEditsEmpty || isError || args.pendingEditsApplied; // SAFE: boolean predicate over four disabling states, not a value fallback
     tooltip(updateButton, pendingLabel, 'top');
     if (args.pendingEditsApplied) {
         updateButton.classList.add('is-applied');

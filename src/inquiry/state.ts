@@ -111,6 +111,17 @@ export interface UnverifiedCitation {
     warning: string;
 }
 
+/**
+ * How the AI cited a ref, for author-facing and diagnostic text: its ref_id,
+ * else its label, else its path. `missingLabel` names a citation that gave none.
+ */
+export function describeCitedRef(
+    ref: Pick<UnverifiedCitation, 'rawRefId' | 'rawRefLabel' | 'rawRefPath'>,
+    missingLabel: string
+): string {
+    return ref.rawRefId || ref.rawRefLabel || ref.rawRefPath || missingLabel; // SAFE: the one home of the id → label → path citation precedence; empty strings count as not given
+}
+
 export type CitationIntegrityStage = 'unresolved_ref' | 'ref_label_mismatch';
 
 /**

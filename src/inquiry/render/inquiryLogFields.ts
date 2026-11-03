@@ -76,7 +76,7 @@ export function resolveLogModelLabel(
     return briefModelLabel
         || result.aiModelResolved
         || result.aiModelRequested
-        || 'unknown';
+        || 'unknown'; // SAFE: documented label precedence for the run-summary log line; 'unknown' marks a result that recorded no model
 }
 
 /**

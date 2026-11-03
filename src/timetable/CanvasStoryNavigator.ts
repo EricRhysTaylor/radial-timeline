@@ -18,11 +18,11 @@ export class CanvasStoryNavigator {
 
     refresh(): void {
         const file = (this.view as unknown as { file?: TFile | null }).file;
-        const path = file?.path ?? '';
+        const path = file?.path ?? ''; // SAFE: a canvas view without a file is never a Story Map
         const isStoryMap = path.startsWith('Radial Timeline/Story Maps/') && path.endsWith('.canvas');
         const canvasView = (this.view as unknown as { canvas?: Canvas }).canvas;
         const visibleActNodes = new Set<HTMLElement>();
-        for (const node of canvasView?.nodes?.values() ?? []) {
+        for (const node of canvasView?.nodes?.values() ?? []) { // SAFE: Canvas internals are undocumented; no canvas or node map = nothing to mark
             const data = node.getData?.();
             const el = node.nodeEl;
             if (!el) continue;
@@ -69,7 +69,7 @@ export class CanvasStoryNavigator {
         const canvas = (): Canvas | undefined => (this.view as unknown as { canvas?: Canvas }).canvas;
         const items = (): Array<{ data: NodeData; title: string }> => {
             const unique = new Map<string, NodeData>();
-            for (const node of canvas()?.nodes?.values() ?? []) {
+            for (const node of canvas()?.nodes?.values() ?? []) { // SAFE: Canvas internals are undocumented; no canvas or node map = no cards to list
                 const data = node.getData?.();
                 if (data?.type === 'file' && data.file && !unique.has(data.file)) unique.set(data.file, data);
             }
@@ -112,7 +112,7 @@ export class CanvasStoryNavigator {
         };
         const followViewport = (): void => {
             const selected = canvas()?.selection;
-            selection.disabled = !(selected instanceof Set && selectedCanvasBounds([...selected].flatMap(node => node.getData?.() ?? [])));
+            selection.disabled = !(selected instanceof Set && selectedCanvasBounds([...selected].flatMap(node => node.getData?.() ?? []))); // SAFE: a node without the undocumented getData adds no bounds
             if (dragViewport || !axis) return;
             const view = canvas();
             const coordinate = view?.[axis.axis];
@@ -136,7 +136,7 @@ export class CanvasStoryNavigator {
         this.events.registerDomEvent(selection, 'click', () => {
             const view = canvas();
             const selected = view?.selection;
-            const bounds = selected instanceof Set ? selectedCanvasBounds([...selected].flatMap(node => node.getData?.() ?? [])) : null;
+            const bounds = selected instanceof Set ? selectedCanvasBounds([...selected].flatMap(node => node.getData?.() ?? [])) : null; // SAFE: a node without the undocumented getData adds no bounds
             if (bounds) view?.zoomToBbox?.(bounds);
         });
         this.events.registerDomEvent(fit, 'click', () => canvas()?.zoomToFit?.());

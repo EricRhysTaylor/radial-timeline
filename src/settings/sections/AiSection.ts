@@ -257,11 +257,11 @@ export function renderAiSection(params: {
         updateAiHeroState(value);
     };
 
-    heroToggleInput.checked = plugin.settings.enableAiSceneAnalysis ?? true;
+    heroToggleInput.checked = plugin.settings.enableAiSceneAnalysis;
     plugin.registerDomEvent(heroToggleInput, 'change', () => {
         void onAiToggleChanged(heroToggleInput.checked);
     });
-    updateAiHeroState(plugin.settings.enableAiSceneAnalysis ?? true);
+    updateAiHeroState(plugin.settings.enableAiSceneAnalysis);
 
     const aiSettingsGroup = aiStateContent.createDiv({ cls: ERT_CLASSES.STACK });
     params.addAiRelatedElement(aiSettingsGroup);
@@ -3147,7 +3147,7 @@ export function renderAiSection(params: {
     });
 
     // Set initial visibility state
-    params.toggleAiSettingsVisibility(plugin.settings.enableAiSceneAnalysis ?? true);
+    params.toggleAiSettingsVisibility(plugin.settings.enableAiSceneAnalysis);
 
     return {
         dispose: () => {

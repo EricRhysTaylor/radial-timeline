@@ -111,6 +111,7 @@ import { PanelFocusModal } from './PanelFocusModal';
 import { timetableNarrativeOrder } from './timetablePlacement';
 import { orderSketches, planSketchActDrop, planSketchDrop, sketchAnchor, SKETCH_AFTER_SCENE, SKETCH_ORDER, type PlacementItem, type PlacementProblem, type SketchDropPlan } from './sketchPlacement';
 import { readSceneId } from '../utils/sceneIds';
+import { findFrontmatterKey, readFrontmatterProperty } from '../utils/frontmatterKeys';
 import { OuterRingDragController } from '../view/interactions/OuterRingDragController';
 import { ChronologueDragController } from '../view/interactions/ChronologueDragController';
 import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
@@ -196,6 +197,15 @@ function contentWidth(element: HTMLElement): number {
     const range = element.doc.createRange();
     range.selectNodeContents(element);
     return range.getBoundingClientRect().width;
+}
+
+/** Widen a scene or sketch number chip so prefixes longer than three characters fit. */
+function sizeNumberChip(svg: SVGSVGElement | null, prefix: string | null): void {
+    const width = 38 + Math.max(0, (prefix?.length ?? 0) - 3) * 7; // SAFE: an unnumbered row keeps the base three-character chip
+    svg?.setAttribute('viewBox', `0 0 ${width} 22`);
+    svg?.setAttribute('width', String(width));
+    svg?.querySelector('rect')?.setAttribute('width', String(width - 2));
+    svg?.querySelector('text')?.setAttribute('x', String((width + 16) / 2));
 }
 
 function horizontalPadding(element: HTMLElement): number {
@@ -314,14 +324,6 @@ async function openFromTimetable(app: App, file: TFile, evt: MouseEvent | undefi
         return;
     }
     await openInReadingPane(app, file, tableLeaf, { evt });
-}
-
-function frontmatterKey(frontmatter: Record<string, unknown> | undefined, name: string): unknown {
-    if (!frontmatter) return undefined;
-    if (Object.prototype.hasOwnProperty.call(frontmatter, name)) return frontmatter[name];
-    const lower = name.toLowerCase();
-    const key = Object.keys(frontmatter).find(candidate => candidate.toLowerCase() === lower);
-    return key === undefined ? undefined : frontmatter[key];
 }
 
 /** A menu title with the wheel menu's check mark for the current value. */
@@ -843,8 +845,8 @@ export class TimetableView extends BasesView {
         }
         const box = row.getBoundingClientRect();
         const view = scroller.getBoundingClientRect();
-        const header = (row.closest('table')?.querySelector('thead')?.getBoundingClientRect().height ?? 0)
-            + (this.rootEl.querySelector<HTMLElement>('.ert-timetable-panels__toolbar')?.getBoundingClientRect().height ?? 0);
+        const header = (row.closest('table')?.querySelector('thead')?.getBoundingClientRect().height ?? 0) // SAFE: no sticky header = no top offset
+            + (this.rootEl.querySelector<HTMLElement>('.ert-timetable-panels__toolbar')?.getBoundingClientRect().height ?? 0); // SAFE: no panel toolbar = no top offset
         if (box.top >= view.top + header && box.bottom <= view.bottom) return;
         row.scrollIntoView({ block: 'center' });
     }
@@ -1000,7 +1002,7 @@ export class TimetableView extends BasesView {
         if (active && active.owner !== this && !this.claimLens) return;
         this.claimLens = false;
         const { app, settings } = this.plugin;
-        const bookFolders = (settings.books ?? []).map(book => book.sourceFolder);
+        const bookFolders = settings.books.map(book => book.sourceFolder);
         const paths = new Set((this.data?.data ?? [])
             .filter(entry => entry.file.extension === 'md')
             .filter(entry => belongsInTimetable(buildTableRow(entry.file.path, entry.file.basename, app.metadataCache.getFileCache(entry.file)?.frontmatter, settings), bookFolders))
@@ -1380,7 +1382,7 @@ export class TimetableView extends BasesView {
         return (this.data?.data ?? []).filter(entry => entry.file.extension === 'md').map(entry => {
             const fm: Record<string, unknown> | undefined = app.metadataCache.getFileCache(entry.file)?.frontmatter;
             const row = buildTableRow(entry.file.path, entry.file.basename, fm, settings);
-            return { path: row.path, kind: row.kind, value: frontmatterKey(fm, name), complete: normalizeStatus(frontmatterKey(fm, authorKeyFor('Status', settings))) === 'Completed' };
+            return { path: row.path, kind: row.kind, value: readFrontmatterProperty(fm, name), complete: normalizeStatus(readFrontmatterProperty(fm, authorKeyFor('Status', settings))) === 'Completed' };
         }).filter(row => row.kind === 'scene');
     }
 
@@ -1547,7 +1549,7 @@ export class TimetableView extends BasesView {
 
     /** The book a new sketch goes into: the given one, or the one book this table shows. */
     private sketchBook(bookId: string | undefined): BookProfile | null {
-        const books = this.plugin.settings.books ?? [];
+        const books = this.plugin.settings.books;
         if (bookId) return books.find(book => book.id === bookId) ?? null;
         const ids = this.bookIdsInView();
         if (ids.length === 1) return books.find(book => book.id === ids[0]) ?? null;
@@ -1623,7 +1625,7 @@ export class TimetableView extends BasesView {
         const frontmatter: Record<string, unknown> | undefined = app.metadataCache.getFileCache(file)?.frontmatter;
         const { due } = sceneVitals(frontmatter, settings, today);
         if (dueStepNeedsConfirm(due)) {
-            const nextKey = steppedDue(frontmatterKey(frontmatter, authorKeyFor('Due', settings)), days, today);
+            const nextKey = steppedDue(readFrontmatterProperty(frontmatter, authorKeyFor('Due', settings)), days, today);
             const next = formatLongDate(parseLocalDateKey(nextKey) ?? today);
             const scene = displayName(file.basename);
             const confirmed = await confirmWithErtModal(app, {
@@ -1717,10 +1719,10 @@ export class TimetableView extends BasesView {
     private buildGroups(): TableGroup[] {
         const { app, settings } = this.plugin;
         const authorSorted = this.config.getSort().length > 0;
-        const bookFolders = (settings.books ?? []).map(book => book.sourceFolder);
+        const bookFolders = settings.books.map(book => book.sourceFolder);
         this.sketchProblems.clear();
         const positions = new Map<string, number>();
-        for (const book of settings.books ?? []) {
+        for (const book of settings.books) {
             const ordered = orderSketches(this.sketchPlacementItems(book.id));
             ordered.items.forEach((item, index) => positions.set(item.row.path, index));
             ordered.problems.forEach((problem, path) => this.sketchProblems.set(path, problem));
@@ -1789,12 +1791,12 @@ export class TimetableView extends BasesView {
                 const frontmatter = app.metadataCache.getFileCache(file)?.frontmatter;
                 return { row: buildTableRow(file.path, file.basename, frontmatter, settings), frontmatter };
             })
-            .filter(item => belongsInTimetable(item.row, (settings.books ?? []).map(book => book.sourceFolder)));
+            .filter(item => belongsInTimetable(item.row, settings.books.map(book => book.sourceFolder)));
     }
 
     /** An ungrouped table that spans books (the saga table) groups by book, in saga order. */
     private splitByBook(items: TableItem[]): TableGroup[] {
-        const books = this.plugin.settings.books ?? [];
+        const books = this.plugin.settings.books;
         const bookOf = new Map(items.map(item => [item, getBookIdForPath(books, item.row.path)]));
         const ids = new Set([...bookOf.values()].filter((id): id is string => typeof id === 'string'));
         if (ids.size <= 1) return [{ id: 'all', label: null, items }];
@@ -1830,7 +1832,7 @@ export class TimetableView extends BasesView {
     // ── Wheel ring order ────────────────────────────────────────────────
 
     private bookIdsInView(): string[] {
-        const books = this.plugin.settings.books ?? [];
+        const books = this.plugin.settings.books;
         const ids = new Set<string>();
         for (const entry of this.data?.data ?? []) {
             const id = getBookIdForPath(books, entry.file.path);
@@ -1852,7 +1854,7 @@ export class TimetableView extends BasesView {
     private async loadRings(): Promise<void> {
         const generation = ++this.ringsGeneration;
         const ids = this.bookIdsInView();
-        const books = (this.plugin.settings.books ?? []).filter(book => ids.includes(book.id));
+        const books = this.plugin.settings.books.filter(book => ids.includes(book.id));
         const scenes: TimelineItem[] = [];
         for (const [bookIndex, book] of books.entries()) {
             const bookScenes = await this.plugin.getSceneData({ sourcePath: book.sourceFolder });
@@ -2051,12 +2053,12 @@ export class TimetableView extends BasesView {
         });
         const years = new Set<number>();
         const words = new Map<string, number[]>();
-        const books = settings.books ?? [];
+        const books = settings.books;
         for (const item of items) {
             const { when } = readWhen(item.frontmatter, settings);
             if (when) years.add(when.getFullYear());
             if (item.row.kind !== 'scene') continue;
-            const count = Number(frontmatterKey(item.frontmatter, authorKeyFor('Words', settings)));
+            const count = Number(readFrontmatterProperty(item.frontmatter, authorKeyFor('Words', settings)));
             if (!Number.isFinite(count) || count <= 0) continue;
             const book = getBookIdForPath(books, item.row.path) ?? '';
             words.set(book, [...(words.get(book) ?? []), count]);
@@ -2113,7 +2115,7 @@ export class TimetableView extends BasesView {
 
     /** The one book a set of rows belongs to, if there is exactly one. */
     private singleBook(items: TableItem[]): string | undefined {
-        const books = this.plugin.settings.books ?? [];
+        const books = this.plugin.settings.books;
         const ids = new Set(items.map(item => getBookIdForPath(books, item.row.path)));
         if (ids.size !== 1) return undefined;
         const [id] = [...ids];
@@ -2316,7 +2318,7 @@ export class TimetableView extends BasesView {
             const rect = basesHelp.getBoundingClientRect();
             menu.showAtPosition({ x: rect.left, y: rect.bottom }, basesHelp.ownerDocument);
         });
-        const books = this.plugin.settings.books ?? [];
+        const books = this.plugin.settings.books;
         if (books.length) {
             const ids = this.bookIdsInView();
             const shownBook = ids.length === 1 ? ids[0] : ids.length === 0 && getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings)?.id : undefined;
@@ -2425,7 +2427,7 @@ export class TimetableView extends BasesView {
         this.outlineItems = items;
         const viewBookIds = this.bookIdsInView();
         const bookId = this.singleBook(items) ?? (viewBookIds.length === 1 ? viewBookIds[0] : viewBookIds.length === 0 && getTimelineScope(settings) === 'book' ? getActiveBook(settings)?.id : undefined);
-        const book = (settings.books ?? []).find(candidate => candidate.id === bookId);
+        const book = settings.books.find(candidate => candidate.id === bookId);
         if (this.outlineInsertionAct && this.outlineInsertionAct.bookId !== bookId) this.outlineInsertionAct = null;
         const stored = this.config.get('outlineReferences');
         const references = stored && typeof stored === 'object' && !Array.isArray(stored) ? stored as Record<string, unknown> : {};
@@ -2433,7 +2435,7 @@ export class TimetableView extends BasesView {
         const notes = book?.sourceFolder ? app.vault.getMarkdownFiles().filter(file => getBookIdForPath(settings.books, file.path) === bookId).map(file => ({
             path: file.path,
             bookId: getBookIdForPath(settings.books, file.path),
-            className: frontmatterKey(app.metadataCache.getFileCache(file)?.frontmatter, 'Class'),
+            className: readFrontmatterProperty(app.metadataCache.getFileCache(file)?.frontmatter, 'Class'),
         })) : [];
         const paths = outlineDocumentPaths(bookId, notes, attached);
         const files = paths.map(path => app.vault.getAbstractFileByPath(path)).filter((file): file is TFile => file instanceof TFile);
@@ -2461,7 +2463,7 @@ export class TimetableView extends BasesView {
         for (const file of files) {
             const card = shelf.createDiv({ cls: 'ert-outline-documents__card' });
             const open = card.createEl('button', { cls: 'ert-outline-documents__file' });
-            const type = outlineReferenceType(frontmatterKey(app.metadataCache.getFileCache(file)?.frontmatter, 'Class'));
+            const type = outlineReferenceType(readFrontmatterProperty(app.metadataCache.getFileCache(file)?.frontmatter, 'Class'));
             const types = {
                 outline: { icon: 'list-tree', label: t('ui.timetable.layoutOutline') },
                 scene: { icon: 'clapperboard', label: t('ui.timetable.outlineRefScene') },
@@ -2554,7 +2556,7 @@ export class TimetableView extends BasesView {
                 else invalid.add('');
             }
             const transfer = event.dataTransfer;
-            const links = `${transfer?.getData('text/plain') ?? ''}\n${transfer?.getData('text/uri-list') ?? ''}`;
+            const links = `${transfer?.getData('text/plain') ?? ''}\n${transfer?.getData('text/uri-list') ?? ''}`; // SAFE: a drag without dataTransfer carries no link text
             for (const path of vaultDragPaths(links, app.vault.getName())) {
                 const file = app.vault.getAbstractFileByPath(path) ?? app.vault.getAbstractFileByPath(`${path}.md`);
                 if (file instanceof TFile && file.extension.toLowerCase() === 'md') files.push(file);
@@ -2625,7 +2627,7 @@ export class TimetableView extends BasesView {
         const refs = stored && typeof stored === 'object' && !Array.isArray(stored) ? stored as Record<string, unknown> : {};
         const attached = bookId && Array.isArray(refs[bookId]) ? (refs[bookId] as unknown[]).filter((path): path is string => typeof path === 'string') : [];
         const notes = bookId ? app.vault.getMarkdownFiles().filter(file => getBookIdForPath(settings.books, file.path) === bookId).map(file => ({
-            path: file.path, bookId, className: frontmatterKey(app.metadataCache.getFileCache(file)?.frontmatter, 'Class'),
+            path: file.path, bookId, className: readFrontmatterProperty(app.metadataCache.getFileCache(file)?.frontmatter, 'Class'),
         })) : [];
         const firstReference = outlineDocumentPaths(bookId, notes, attached).map(path => app.vault.getAbstractFileByPath(path)).find((file): file is TFile => file instanceof TFile);
         return firstReference ?? items.find(item => item.row.kind === 'scene' || item.row.kind === 'sketch')?.entry.file ?? null;
@@ -2644,7 +2646,7 @@ export class TimetableView extends BasesView {
     private outlineSelectedText(view: MarkdownView): string {
         const selection = view.containerEl.ownerDocument.getSelection();
         const inPane = selection?.anchorNode && selection.focusNode && view.containerEl.contains(selection.anchorNode) && view.containerEl.contains(selection.focusNode);
-        return view.getMode() === 'source' ? view.editor.getSelection() : inPane ? selection?.toString() ?? '' : '';
+        return view.getMode() === 'source' ? view.editor.getSelection() : inPane ? selection.toString() : '';
     }
 
     private async createOutlineSelection(): Promise<void> {
@@ -2770,14 +2772,14 @@ export class TimetableView extends BasesView {
                 if (outline && row.kind === 'beat' && this.config.get('outlineHideBeats') === true) continue;
                 const panel = list.createDiv({ cls: ['ert-timetable__row', 'ert-timetable-panels__panel', `is-${row.kind === 'otherClass' ? 'other-class' : row.kind}`] });
                 if (!outline && row.kind !== 'scene') {
-                    const noteClass = frontmatterKey(frontmatter, 'Class');
+                    const noteClass = readFrontmatterProperty(frontmatter, 'Class');
                     const icon = row.kind === 'sketch' ? 'file-pen' : row.kind === 'beat' ? 'list-music' : typeof noteClass === 'string' && noteClass.toLowerCase() === 'outline' ? 'list-tree' : 'file-text';
                     setIcon(panel.createSpan({ cls: 'ert-timetable-panels__watermark', attr: { 'aria-hidden': 'true' } }), icon);
                 }
                 panel.dataset.path = row.path;
                 this.rowEls.set(row.path, panel);
                 this.rowItems.set(row.path, item);
-                const characters = frontmatterKey(frontmatter, authorKeyFor('Character', this.plugin.settings));
+                const characters = readFrontmatterProperty(frontmatter, authorKeyFor('Character', this.plugin.settings));
                 const names = (Array.isArray(characters) ? characters : [characters]).filter((name): name is string => typeof name === 'string' && name.trim().length > 0);
                 const people = this.characterDetails(row.path, names);
                 const portrait = leadPortrait(people);
@@ -2858,7 +2860,7 @@ export class TimetableView extends BasesView {
                     setTooltip(promote, t('ui.promoteToScene.menuItem'));
                 }
                 const when = readWhen(frontmatter, this.plugin.settings);
-                const durationRaw = frontmatterKey(frontmatter, authorKeyFor('Duration', this.plugin.settings));
+                const durationRaw = readFrontmatterProperty(frontmatter, authorKeyFor('Duration', this.plugin.settings));
                 const duration = typeof durationRaw === 'string' ? formatCompactDuration(durationRaw) ?? durationRaw : null;
                 if (when.when) {
                     const date = this.formatWhen(when.when, when.hasClock, mode.chronologue?.profile ?? null);
@@ -2980,7 +2982,7 @@ export class TimetableView extends BasesView {
             let imagePath: string | null = null;
             if (character) {
                 const fm = this.plugin.app.metadataCache.getFileCache(character)?.frontmatter;
-                const imageValue = frontmatterKey(fm, 'Image');
+                const imageValue = readFrontmatterProperty(fm, 'Image');
                 if (typeof imageValue === 'string') {
                     const imageLinkPath = imageValue.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
                     const image = this.plugin.app.metadataCache.getFirstLinkpathDest(imageLinkPath, character.path);
@@ -3014,7 +3016,7 @@ export class TimetableView extends BasesView {
 
     private editPanelSynopsis(item: TableItem, button: HTMLButtonElement): void {
         if (this.panelEditing) return;
-        const fm = item.frontmatter ?? {};
+        const fm = item.frontmatter ?? {}; // SAFE: a note without YAML has no frontmatter; empty = no synopsis yet
         const original = fm[synopsisKey(fm, this.plugin.settings)];
         if (original !== undefined && typeof original !== 'string') {
             new Notice(t('ui.timetable.panelSynopsisType'));
@@ -3025,7 +3027,7 @@ export class TimetableView extends BasesView {
         if (!editor) { this.panelEditing = null; return; }
         button.hide();
         const input = editor.createEl('textarea');
-        input.value = original ?? '';
+        input.value = original ?? ''; // SAFE: a note without a synopsis opens an empty editor
         setAccessibleLabel(input, t('ui.timetable.panelSynopsis'));
         const save = editor.createEl('button', { text: t('ui.timetable.panelSave'), cls: 'ert-timetable-panels__save' });
         const cancel = editor.createEl('button', { text: t('ui.timetable.panelCancel') });
@@ -3080,7 +3082,7 @@ export class TimetableView extends BasesView {
         });
         this.panelEvents?.registerDomEvent(row, 'dragover', (evt: DragEvent) => {
             if (!this.draggedScene || this.draggedScene === path) return;
-            const books = this.plugin.settings.books ?? [];
+            const books = this.plugin.settings.books;
             const sourceBook = getBookIdForPath(books, this.draggedScene);
             if (!sourceBook || sourceBook !== getBookIdForPath(books, path)) return;
             evt.preventDefault();
@@ -3138,7 +3140,7 @@ export class TimetableView extends BasesView {
         const clear = () => row.removeClass('ert-timetable__drop-before', 'ert-timetable__drop-after');
         this.panelEvents?.registerDomEvent(row, 'dragover', (event: DragEvent) => {
             if (!this.draggedSketch || this.draggedSketch === path || state.mode !== 'narrative') return;
-            const books = this.plugin.settings.books ?? [];
+            const books = this.plugin.settings.books;
             if (getBookIdForPath(books, this.draggedSketch) !== getBookIdForPath(books, path)) return;
             event.preventDefault();
             if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
@@ -3225,7 +3227,7 @@ export class TimetableView extends BasesView {
                     const classification = classifyForPromotion(fm);
                     if (classification.kind !== 'eligible' || !classification.fromSketch) throw new Error(`Not a sketch: ${path}`);
                     const set = (key: string, value: unknown) => {
-                        const existing = Object.keys(fm).find(candidate => candidate.toLowerCase() === key.toLowerCase()) ?? key;
+                        const existing = findFrontmatterKey(fm, key) ?? key;
                         if (value === null) delete fm[existing];
                         else fm[existing] = value;
                     };
@@ -3260,7 +3262,7 @@ export class TimetableView extends BasesView {
                 if (scene?.row.act != null) menu.addItem(option => option.setTitle(t('ui.timetable.sketchMoveFollow')).onClick(() => {
                     void this.plugin.app.fileManager.processFrontMatter(item.entry.file, (fm: Record<string, unknown>) => {
                         const actKey = authorKeyFor('Act', this.plugin.settings);
-                        const key = Object.keys(fm).find(k => k.toLowerCase() === actKey.toLowerCase()) ?? actKey;
+                        const key = findFrontmatterKey(fm, actKey) ?? actKey;
                         fm[key] = scene.row.act;
                     }).then(() => this.refresh());
                 }));
@@ -3277,7 +3279,7 @@ export class TimetableView extends BasesView {
     /** Use the same move dialogs and write paths even when no timeline is visible. */
     private async placeTimetableScene(mode: string, source: string, target: string): Promise<boolean> {
         if (this.scenePlacementInProgress || (mode !== 'narrative' && mode !== 'chronologue')) return false;
-        const books = this.plugin.settings.books ?? [];
+        const books = this.plugin.settings.books;
         const bookId = getBookIdForPath(books, source);
         const book = books.find(candidate => candidate.id === bookId);
         if (!book || book.id !== getActiveBook(this.plugin.settings)?.id || bookId !== getBookIdForPath(books, target)) return false;
@@ -3301,7 +3303,7 @@ export class TimetableView extends BasesView {
     }
 
     private async placeTimetableAct(source: string, act: number, bookId: string): Promise<boolean> {
-        const book = (this.plugin.settings.books ?? []).find(candidate => candidate.id === bookId);
+        const book = this.plugin.settings.books.find(candidate => candidate.id === bookId);
         if (this.scenePlacementInProgress || !book || book.id !== getActiveBook(this.plugin.settings)?.id
             || getBookIdForPath(this.plugin.settings.books, source) !== bookId) return false;
         this.scenePlacementInProgress = true;
@@ -3398,7 +3400,7 @@ export class TimetableView extends BasesView {
         const ids = this.bookIdsInView();
         const showsOtherBook = active !== null && groups.length > 0 && ids.length === 1 && ids[0] !== active.id;
         if (!showsOtherBook) return;
-        const shown = (settings.books ?? []).find(book => book.id === ids[0]);
+        const shown = settings.books.find(book => book.id === ids[0]);
         if (!shown) return;
         const notice = this.rootEl.createDiv({ cls: 'ert-timetable__notice' });
         notice.createSpan({ text: t('ui.timetable.bookMismatch', { table: shown.title, timeline: active.title }) });
@@ -3457,12 +3459,7 @@ export class TimetableView extends BasesView {
             if (wrap) {
                 const handle = this.attachSketchDrag(tr, wrap, row.path, mode.state);
                 handle.addClass('ert-timetable__chip-drag');
-                const svg = wrap.querySelector<SVGSVGElement>('.ert-timetable__chip svg');
-                const width = 38 + Math.max(0, (row.prefix?.length ?? 0) - 3) * 7;
-                svg?.setAttribute('viewBox', `0 0 ${width} 22`);
-                svg?.setAttribute('width', String(width));
-                svg?.querySelector('rect')?.setAttribute('width', String(width - 2));
-                svg?.querySelector('text')?.setAttribute('x', String((width + 16) / 2));
+                sizeNumberChip(wrap.querySelector<SVGSVGElement>('.ert-timetable__chip svg'), row.prefix);
                 this.renderSketchProblem(wrap, item);
             }
         }
@@ -3474,12 +3471,7 @@ export class TimetableView extends BasesView {
             if (handle && wrap) {
                 wrap.addClass('has-drag');
                 handle.addClass('ert-timetable__chip-drag');
-                const svg = wrap.querySelector<SVGSVGElement>('svg');
-                const width = 38 + Math.max(0, (row.prefix?.length ?? 0) - 3) * 7;
-                svg?.setAttribute('viewBox', `0 0 ${width} 22`);
-                svg?.setAttribute('width', String(width));
-                svg?.querySelector('rect')?.setAttribute('width', String(width - 2));
-                svg?.querySelector('text')?.setAttribute('x', String((width + 16) / 2));
+                sizeNumberChip(wrap.querySelector<SVGSVGElement>('svg'), row.prefix);
             }
         }
 
@@ -3489,7 +3481,7 @@ export class TimetableView extends BasesView {
             cell.colSpan = columnCount - 1;
             cell.dataset.column = 'beat';
             cell.createSpan({ cls: 'ert-timetable__beat-title', text: displayName(row.basename) });
-            const model = firstText(frontmatterKey(frontmatter, 'Beat Model'));
+            const model = firstText(readFrontmatterProperty(frontmatter, 'Beat Model'));
             if (model) cell.createSpan({ cls: 'ert-timetable__beat-model', text: model });
             if (gossamer) this.renderGossamerScore(cell, frontmatter);
             const purpose = readBeatPurpose(frontmatter ?? null);
@@ -3636,7 +3628,7 @@ export class TimetableView extends BasesView {
     private chipTooltip(row: TimetableRow, frontmatter: Record<string, unknown> | undefined, today: Date): string {
         switch (row.kind) {
             case 'scene': {
-                const status = normalizeStatus(frontmatterKey(frontmatter, 'Status'));
+                const status = normalizeStatus(readFrontmatterProperty(frontmatter, 'Status'));
                 const vitals = sceneVitals(frontmatter, this.plugin.settings, today);
                 const overdue = vitals.due.kind === 'late';
                 const label = overdue ? t('ui.timetable.statusOverdue') : (status === 'Completed' ? 'Complete' : (status || 'Todo'));
@@ -3711,7 +3703,7 @@ export class TimetableView extends BasesView {
             const delta = latest.score - latest.previous;
             badge.createSpan({ cls: ['ert-timetable__gossamer-delta', delta > 0 ? 'is-up' : 'is-down'], text: `${delta > 0 ? '+' : '−'}${Math.abs(delta)}` });
         }
-        const range = parseRange(firstText(frontmatterKey(frontmatter, 'Range')));
+        const range = parseRange(firstText(readFrontmatterProperty(frontmatter, 'Range')));
         if (range) {
             badge.createSpan({ cls: 'ert-timetable__gossamer-range', text: t('ui.timetable.gossamerRange', { min: range.min, max: range.max }) });
             badge.toggleClass('is-out-of-range', !isScoreInRange(latest.score, range));
@@ -3746,8 +3738,8 @@ export class TimetableView extends BasesView {
         }
         // Progress: an overdue scene's Due stands out.
         if (mode.state.mode === 'progress' && canonical === 'Due' && row.kind === 'scene') {
-            const due = frontmatterKey(frontmatter, name);
-            const complete = normalizeStatus(frontmatterKey(frontmatter, 'Status')) === 'Completed';
+            const due = readFrontmatterProperty(frontmatter, name);
+            const complete = normalizeStatus(readFrontmatterProperty(frontmatter, 'Status')) === 'Completed';
             cell.toggleClass('is-overdue', !complete && typeof due === 'string' && isOverdueDateString(due));
         }
         // A sketch without a Synopsis shows its first line of text instead.
@@ -3758,7 +3750,7 @@ export class TimetableView extends BasesView {
 
     /** Compact character names and open their notes in the timetable reading pane. */
     private renderCompactCharacters(cell: HTMLElement, item: TableItem, property: string): void {
-        const raw = frontmatterKey(item.frontmatter, property);
+        const raw = readFrontmatterProperty(item.frontmatter, property);
         const values = Array.isArray(raw) ? raw : [raw];
         if (!values.every((value): value is string => typeof value === 'string' && value.trim().length > 0)) return;
         const people = this.characterDetails(item.row.path, values);
@@ -3783,7 +3775,7 @@ export class TimetableView extends BasesView {
      * Hover shows the long form and the Duration as written.
      */
     private renderWhenCell(cell: HTMLElement, item: TableItem, name: string, cells: CellContext): void {
-        const raw = frontmatterKey(item.frontmatter, name);
+        const raw = readFrontmatterProperty(item.frontmatter, name);
         const text = typeof raw === 'string' ? raw.trim() : '';
         const when = text ? parseWhenField(text) : null;
         cell.addClass('ert-timetable__when');
@@ -3795,7 +3787,7 @@ export class TimetableView extends BasesView {
         const profile = cells.mode.chronologue?.profile ?? null;
         const full = this.formatWhen(when, hasClock, profile);
         cell.createSpan({ text: profile ? full : formatTableWhen(when, hasClock, cells.whenYear === null) });
-        const durationRaw = cells.durationInWhen ? frontmatterKey(item.frontmatter, authorKeyFor('Duration', this.plugin.settings)) : undefined;
+        const durationRaw = cells.durationInWhen ? readFrontmatterProperty(item.frontmatter, authorKeyFor('Duration', this.plugin.settings)) : undefined;
         const duration = typeof durationRaw === 'string' ? durationRaw.trim() : '';
         const compact = duration ? formatCompactDuration(duration) : null;
         if (compact) cell.createSpan({ cls: 'ert-timetable__duration', text: compact });
@@ -3811,15 +3803,16 @@ export class TimetableView extends BasesView {
         const { settings } = this.plugin;
         const { frontmatter, row } = item;
         if (canonical === 'Due') {
-            const complete = normalizeStatus(frontmatterKey(frontmatter, authorKeyFor('Status', settings))) === 'Completed';
-            const due = dueStatus(frontmatterKey(frontmatter, name), complete, cells.today);
+            const complete = normalizeStatus(readFrontmatterProperty(frontmatter, authorKeyFor('Status', settings))) === 'Completed';
+            const due = dueStatus(readFrontmatterProperty(frontmatter, name), complete, cells.today);
             if (due.kind === 'none') return false;
             this.renderDue(cell, due, cells.today);
             return true;
         }
         if (canonical === 'Words' && row.kind === 'scene') {
-            const words = Number(frontmatterKey(frontmatter, name));
-            const median = cells.wordMedians.get(getBookIdForPath(settings.books ?? [], row.path) ?? '');
+            const words = Number(readFrontmatterProperty(frontmatter, name));
+            const bookId = getBookIdForPath(settings.books, row.path);
+            const median = bookId ? cells.wordMedians.get(bookId) : undefined;
             if (!Number.isFinite(words) || words <= 0 || median === undefined) return false;
             this.renderWords(cell, words, median);
             return true;
@@ -3831,7 +3824,7 @@ export class TimetableView extends BasesView {
             return true;
         }
         if (canonical === 'Iteration') {
-            const iteration = Number(firstText(frontmatterKey(frontmatter, name)));
+            const iteration = Number(firstText(readFrontmatterProperty(frontmatter, name)));
             if (!Number.isFinite(iteration)) return false;
             this.renderBadge(cell, 'repeat', iteration.toLocaleString(getFormattingLocale()));
             return true;

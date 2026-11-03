@@ -1,3 +1,5 @@
+import { findFrontmatterKey } from './frontmatterKeys';
+
 export const SCENE_ID_PREFIX = 'scn_';
 const DEFAULT_HEX_LENGTH = 8;
 const MIN_HEX_LENGTH = 8;
@@ -38,7 +40,7 @@ const SCENE_ID_LOOKUP_KEYS = [SCENE_ID_KEY, 'sceneid', 'scene id', 'scene_id', '
 export function readSceneId(frontmatter: Record<string, unknown> | null | undefined): string | undefined {
     if (!frontmatter || typeof frontmatter !== 'object') return undefined;
     for (const candidate of SCENE_ID_LOOKUP_KEYS) {
-        const key = findCaseInsensitiveKey(frontmatter, candidate);
+        const key = findFrontmatterKey(frontmatter, candidate);
         if (!key) continue;
         const value = frontmatter[key];
         if (typeof value !== 'string') continue;
@@ -52,7 +54,7 @@ export const readReferenceId = readSceneId;
 
 export function isSceneClassFrontmatter(frontmatter: Record<string, unknown> | null | undefined): boolean {
     if (!frontmatter || typeof frontmatter !== 'object') return false;
-    const classKey = findCaseInsensitiveKey(frontmatter, SCENE_CLASS_KEY);
+    const classKey = findFrontmatterKey(frontmatter, SCENE_CLASS_KEY);
     if (!classKey) return false;
     const raw = frontmatter[classKey];
     const values = Array.isArray(raw) ? raw : [raw];
@@ -85,8 +87,8 @@ export function ensureReferenceIdFrontmatter(
     const existingId = readReferenceId(frontmatter);
     const forcedId = normalizeSceneIdValue(options.forceId);
     const id = forcedId ?? existingId ?? normalizeSceneIdValue(options.providedId) ?? generateSceneId();
-    const classKey = findCaseInsensitiveKey(frontmatter, SCENE_CLASS_KEY);
-    const idKey = findCaseInsensitiveKey(frontmatter, SCENE_ID_KEY);
+    const classKey = findFrontmatterKey(frontmatter, SCENE_CLASS_KEY);
+    const idKey = findFrontmatterKey(frontmatter, SCENE_ID_KEY);
     const ordered: Record<string, unknown> = {};
 
     ordered[CANONICAL_REFERENCE_ID_KEY] = id;
@@ -157,11 +159,6 @@ export function resolveSceneReferenceId(sceneId: string | undefined, filePath: s
     const normalized = normalizeSceneIdValue(sceneId);
     if (normalized) return normalized;
     return filePath;
-}
-
-function findCaseInsensitiveKey(frontmatter: Record<string, unknown>, key: string): string | undefined {
-    const lower = key.toLowerCase();
-    return Object.keys(frontmatter).find(entry => entry.toLowerCase() === lower);
 }
 
 function normalizeSceneIdValue(value: string | undefined): string | undefined {

@@ -41,7 +41,7 @@ export function storyRangeRows(rows: TimetableRow[], act: number | null, range: 
 
 /** Build continuous narrative lanes with one column per scene. */
 export function planSubplotCanvas(rows: TimetableRow[], options: { act: number | null; subplot: string | null; range?: StoryRange; layout?: 'horizontal' | 'vertical' | 'story' }, id: () => string): SubplotCanvasPlan {
-    const scenes = storyRangeRows(rows, options.act, options.range ?? 'all')
+    const scenes = storyRangeRows(rows, options.act, options.range ?? 'all') // SAFE: range is optional; omitted = the whole act
         .filter(row => options.subplot === null || row.subplots.includes(options.subplot));
     // A scene without a subplot still belongs on the map. Keep it in its own
     // lane rather than silently dropping it from the generated Canvas.

@@ -124,6 +124,14 @@ export async function writeDeliveryReceipt(app: App, receipt: ExportDeliveryRece
     await app.vault.adapter.write(receipt.receiptPath, JSON.stringify(receipt, null, 2)); // SAFE: portable schema-stamped job record at its exact vault-local path.
 }
 
+/** An export's rendered and saved files. Producers fill the arrays; a single-file outcome may carry only the singular path. */
+export function outcomeFiles(outcome: ManuscriptExportOutcome): { rendered: string[]; saved: string[] } {
+    return {
+        rendered: outcome.renderedPaths || (outcome.renderedPath ? [outcome.renderedPath] : []),
+        saved: outcome.savedPaths || (outcome.savedPath ? [outcome.savedPath] : []),
+    };
+}
+
 /** Check actual outputs, including all requested split parts and optional working artifacts. */
 export async function checkExportDelivery(plugin: RadialTimelinePlugin, result: ManuscriptModalResult, outcome: ManuscriptExportOutcome, sourceTitle: string, sourcePaths: string[], generationFailure?: string): Promise<ExportDeliveryReceipt> {
     const destination = validateExportDestination(result.outputFolder || outcome.outputFolder || '');
@@ -131,8 +139,7 @@ export async function checkExportDelivery(plugin: RadialTimelinePlugin, result: 
     if (folder !== destination && !isPathInFolderScope(folder, destination)) throw new Error(t('ui.exportDelivery.outputFolderMismatch'));
     const format = deliveryFormat(result);
     const count = result.splitMode === 'parts' ? clampSplitParts(result.splitParts ?? 2) : 1;
-    const rendered = outcome.renderedPaths || (outcome.renderedPath ? [outcome.renderedPath] : []);
-    const saved = outcome.savedPaths || (outcome.savedPath ? [outcome.savedPath] : []);
+    const { rendered, saved } = outcomeFiles(outcome);
     const primaryPaths = format === 'pdf' || format === 'docx' ? rendered : saved;
     const workingPaths = format === 'pdf' ? saved : [];
     const files: DeliveryFile[] = [];

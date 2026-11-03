@@ -253,8 +253,8 @@ export class InquiryBriefingArticle extends Component {
 
             const metaParts = [
                 source.classLabel?.trim() || '',
-                Number.isFinite(source.citationCount) && (source.citationCount ?? 0) > 0
-                    ? tCount('citation', source.citationCount ?? 0)
+                typeof source.citationCount === 'number' && Number.isFinite(source.citationCount) && source.citationCount > 0
+                    ? tCount('citation', source.citationCount)
                     : ''
             ].filter(Boolean);
             if (metaParts.length) {

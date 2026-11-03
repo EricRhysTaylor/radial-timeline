@@ -1,4 +1,4 @@
-import type { RadialTimelineSettings } from '../types';
+import type { RadialTimelineSettings, TimelineItem } from '../types';
 import { t } from '../i18n';
 
 const MIN_ACTS = 3;
@@ -26,6 +26,14 @@ export function resolveActLabel(
 ): string {
     const label = labels[actIndex];
     return label && label.length > 0 ? label : t('timeline.acts.actFallback', { number: actIndex + 1 });
+}
+
+/** A timeline item's 1-based act as manuscript renumbering reads it: actNumber, else the Act text, else act 1. */
+export function timelineItemAct(item: Pick<TimelineItem, 'act' | 'actNumber'>): number {
+    const fromActNumber = Number(item.actNumber);
+    if (Number.isFinite(fromActNumber) && fromActNumber > 0) return fromActNumber;
+    const fromAct = Number(item.act);
+    return Number.isFinite(fromAct) && fromAct > 0 ? fromAct : 1;
 }
 
 export function clampActNumber(actNumber: number | undefined, actCount: number): number {

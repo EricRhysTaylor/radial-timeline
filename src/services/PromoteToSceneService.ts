@@ -279,7 +279,7 @@ export async function applyPromotion(
         // Numeric midpoints can sort outside the gap under Obsidian's natural
         // filename ordering. Try other decimal suffixes before giving up.
         if (!isSafeSceneInsertionPrefix(options.sceneData, options.anchorPath, insertionPrefix, options.beatModel)) {
-            const anchorName = options.anchorPath.split('/').pop() ?? '';
+            const anchorName = options.anchorPath.slice(options.anchorPath.lastIndexOf('/') + 1);
             const major = extractPrefixToken(anchorName)?.split('.')[0];
             if (major) {
                 for (let suffix = 1; suffix <= 999; suffix++) {

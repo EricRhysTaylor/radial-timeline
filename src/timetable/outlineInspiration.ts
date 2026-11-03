@@ -1,4 +1,5 @@
 import { readSceneId } from '../utils/sceneIds';
+import { readFrontmatterProperty } from '../utils/frontmatterKeys';
 import { orderSketches, sketchAnchor, SKETCH_ORDER, type PlacementItem } from './sketchPlacement';
 
 /** Plan one insertion without changing the source, scenes, or existing sketches. */
@@ -14,8 +15,7 @@ export function planOutlineInsertion(items: PlacementItem[], targetPath: string)
         && (anchorId ? !ordered.problems.has(item.row.path) && sketchAnchor(item.frontmatter) === anchorId
             : !sketchAnchor(item.frontmatter) || ordered.problems.has(item.row.path)));
     const rank = (item: PlacementItem): number => {
-        const key = Object.keys(item.frontmatter ?? {}).find(key => key.toLowerCase() === SKETCH_ORDER.toLowerCase());
-        const value = key ? item.frontmatter?.[key] : undefined;
+        const value = readFrontmatterProperty(item.frontmatter, SKETCH_ORDER);
         return typeof value === 'number' && Number.isFinite(value) ? value : Infinity;
     };
     const index = target.row.kind === 'scene' ? -1 : gap.findIndex(item => item.row.path === targetPath);
@@ -35,10 +35,7 @@ export function planOutlineActInsertion(items: PlacementItem[], act: number): { 
     const ordered = orderSketches(items);
     const tail = ordered.items.filter(item => item.row.kind === 'sketch' && item.row.act === act
         && (!sketchAnchor(item.frontmatter) || ordered.problems.has(item.row.path)));
-    const ranks = tail.map(item => {
-        const key = Object.keys(item.frontmatter ?? {}).find(candidate => candidate.toLowerCase() === SKETCH_ORDER.toLowerCase());
-        return key ? item.frontmatter?.[key] : undefined;
-    });
+    const ranks = tail.map(item => readFrontmatterProperty(item.frontmatter, SKETCH_ORDER));
     if (ranks.some(rank => typeof rank !== 'number' || !Number.isFinite(rank))) return null;
     const last = ranks.length ? Math.max(...(ranks as number[])) : 0;
     const rank = last + 10;

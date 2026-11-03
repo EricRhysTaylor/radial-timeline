@@ -10,6 +10,7 @@
  * No DOM, no timers, no plugin/state access, no vault I/O.
  */
 import type { FindingRole, InquiryFinding, InquiryLens, InquiryResult, InquiryRoleValidation, InquirySelectionMode } from '../state';
+import { describeCitedRef } from '../state';
 import { normalizeInquiryHeadline } from './inquiryViewText';
 import { formatBriefLabel } from './inquiryViewText';
 import { getFindingRole } from './inquiryBriefModel';
@@ -99,7 +100,7 @@ export function buildUnverifiedFindingRowData(
 } {
     return {
         headline: normalizeInquiryHeadline(item.headline),
-        citedAsDescriptor: item.rawRefId || item.rawRefLabel || item.rawRefPath || '(missing ref)',
+        citedAsDescriptor: describeCitedRef(item, '(missing ref)'),
         bullets: (item.bullets || []).filter(Boolean).slice(0, 2)
     };
 }

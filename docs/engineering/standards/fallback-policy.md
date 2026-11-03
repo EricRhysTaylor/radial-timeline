@@ -99,7 +99,7 @@ hits:
 | Rule | Severity | What it matches |
 |---|---|---|
 | `silent-catch` | block | `catch { return ''/null/undefined/; }` |
-| `or-chain-3` | block | 3+ `\|\|` operators on one line |
+| `or-chain-3` | block | a value chain of 3+ `\|\|` operators, even across lines |
 | `nullish-literal` | warn | `?? 'literal'`, `?? 0`, `?? false`, etc. |
 | `or-literal` | warn | `\|\| 'literal'`, `\|\| 0`, `\|\| false`, etc. |
 | `switch-default-return` | block | `default: return …;` not preceded by `assertNever`/`throw` |
@@ -135,6 +135,21 @@ const name = manuscript.title || frontmatter.title || file.basename || 'Untitled
 // After
 const name = resolveManuscriptTitle(manuscript, frontmatter, file); // SAFE: helper centralizes the precedence rule
 ```
+
+The rule targets chains that pick a value. A predicate is not a fallback, so
+the gate exempts a chain whose result only feeds a truthiness test (an
+`if`/`while`/`for` or ternary condition, `!`, `Boolean(...)`) and a chain with
+any comparison or negation operand:
+
+```ts
+if (!file || !view || !canvas || !bounds) return;          // exempt: guard clause
+const blocked = mode !== 'narrative' || runtime || shift || alt; // exempt: has a comparison
+const label = custom || meta.title || file.basename || 'Untitled'; // flagged: picks a value
+```
+
+A predicate built only from boolean flags (`a || b || c || d` assigned to a
+`boolean`) looks the same as a value chain to the parser, so it needs a
+`// SAFE:` note saying it is a boolean predicate.
 
 **nullish-literal / or-literal** — annotate, or rework into a discriminated union:
 

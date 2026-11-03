@@ -46,7 +46,7 @@ export async function readDemoEditionStamp(app: App, expectedSampleId?: string):
     if (!file) return null;
     try {
         return parseDemoEditionStamp(await app.vault.cachedRead(file), expectedSampleId);
-    } catch {
+    } catch { // SAFE: an unreadable stamp shows "Edition not identified"; the card only offers a download and never changes the vault
         return null;
     }
 }

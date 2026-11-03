@@ -1351,7 +1351,7 @@
     inset: 0;
     z-index: 2;
     overflow: hidden;
-    padding: 22px;
+    padding: 16px 18px;
     pointer-events: none;
     color: var(--text-normal);
     background: color-mix(in srgb, var(--background-primary) 84%, var(--text-normal) 16%);
@@ -1360,7 +1360,8 @@
 .ert-canvas-story-card.is-sketch { border-style: dashed; border-color: var(--text-muted); }
 .ert-canvas-story-card.has-subplot { border-left: 5px solid var(--ert-canvas-subplot); }
 .ert-canvas-story-card.is-sketch.has-subplot { border-left-style: dashed; }
-.ert-canvas-story-card__subplots { display: flex; align-items: center; gap: 5px; margin-bottom: 9px; }
+.ert-canvas-story-card__meta { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; min-width: 0; }
+.ert-canvas-story-card__subplots { display: flex; align-items: center; gap: 5px; flex: none; }
 .ert-canvas-story-card__subplot { width: 10px; height: 10px; border-radius: 50%; background: var(--ert-canvas-subplot); pointer-events: auto; }
 .ert-canvas-story-card__subplot-more { color: var(--text-muted); font-size: 10px; line-height: 1; pointer-events: auto; }
 .ert-canvas-story-card__overdue { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: var(--radius-s); background: var(--background-secondary); color: var(--text-error); font-size: 10px; line-height: 1; pointer-events: auto; }
@@ -1375,9 +1376,9 @@
 .ert-canvas-story-card__art svg { width: 27px; height: 27px; }
 .ert-canvas-story-card__art img { width: 100%; height: 100%; object-fit: cover; }
 .ert-canvas-story-card__heading { min-width: 0; }
-.ert-canvas-story-card__kind { margin-bottom: 5px; color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.ert-canvas-story-card__kind { color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .ert-canvas-story-card__title { font-size: 23px; line-height: 1.12; font-weight: 800; letter-spacing: -.035em; overflow-wrap: anywhere; }
-.ert-canvas-story-card__preview { margin-top: 17px; color: var(--text-muted); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.ert-canvas-story-card__preview { margin-top: 8px; color: var(--text-muted); font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
 
 /* Keep Canvas selection and connection hit targets native. */
 .ert-canvas-story-node:not(.is-selected) {

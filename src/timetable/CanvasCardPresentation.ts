@@ -201,10 +201,16 @@ class CanvasCards {
                 this.remove(el);
                 const cardType = outlineReferenceType(kind);
                 const overlay = el.createDiv({ cls: `ert-canvas-story-card${cardType === 'sketch' ? ' is-sketch' : ''}` });
+                const header = overlay.createDiv({ cls: 'ert-canvas-story-card__header' });
+                const artwork = header.createDiv({ cls: 'ert-canvas-story-card__art' });
+                if (image) artwork.createEl('img', { attr: { src: image, alt: '' } });
+                else setIcon(artwork, CARD_ICONS[cardType]);
+                const heading = header.createDiv({ cls: 'ert-canvas-story-card__heading' });
+                const meta = heading.createDiv({ cls: 'ert-canvas-story-card__meta' });
                 if (shownSubplots.length) {
                     overlay.setCssProps({ '--ert-canvas-subplot': `var(--rt-subplot-colors-${normalizeSubplotColorIndex(slots.get(shownSubplots[0])!)})` });
                     overlay.addClass('has-subplot');
-                    const markers = overlay.createDiv({ cls: 'ert-canvas-story-card__subplots' });
+                    const markers = meta.createDiv({ cls: 'ert-canvas-story-card__subplots' });
                     for (const name of shownSubplots.slice(0, 3)) {
                         const marker = markers.createSpan({ cls: 'ert-canvas-story-card__subplot' });
                         setTooltip(marker, name);
@@ -215,19 +221,14 @@ class CanvasCards {
                         setTooltip(more, shownSubplots.slice(3).join(', '));
                     }
                 }
+                if (kind) meta.createDiv({ cls: 'ert-canvas-story-card__kind', text: number ? `${kind} ${number}` : kind });
+                heading.createDiv({ cls: 'ert-canvas-story-card__title', text: title });
                 if (overdue) {
                     const badge = overlay.createDiv({ cls: 'ert-canvas-story-card__overdue' });
                     setTooltip(badge, t('ui.timetable.keyOverdueDetail'));
                     setIcon(badge, 'calendar-x');
                     badge.createSpan({ text: t('ui.timetable.statusOverdue') });
                 }
-                const header = overlay.createDiv({ cls: 'ert-canvas-story-card__header' });
-                const artwork = header.createDiv({ cls: 'ert-canvas-story-card__art' });
-                if (image) artwork.createEl('img', { attr: { src: image, alt: '' } });
-                else setIcon(artwork, CARD_ICONS[cardType]);
-                const heading = header.createDiv({ cls: 'ert-canvas-story-card__heading' });
-                if (kind) heading.createDiv({ cls: 'ert-canvas-story-card__kind', text: number ? `${kind} ${number}` : kind });
-                heading.createDiv({ cls: 'ert-canvas-story-card__title', text: title });
                 if (this.mode === 'preview' && description) overlay.createDiv({ cls: 'ert-canvas-story-card__preview', text: description });
                 el.addClass('ert-canvas-story-node');
                 this.cards.set(el, { overlay, signature });

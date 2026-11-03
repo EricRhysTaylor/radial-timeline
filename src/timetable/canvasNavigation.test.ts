@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isStoryActHeading, linkedSceneViewport, storyAxis, storyPosition, storyProgress } from './canvasNavigation';
+import { isStoryActHeading, linkedSceneViewport, selectedCanvasBounds, storyAxis, storyPosition, storyProgress } from './canvasNavigation';
 
 describe('story map navigation', () => {
     it('recognizes act headings on older and current generated maps', () => {
@@ -9,6 +9,10 @@ describe('story map navigation', () => {
         expect(isStoryActHeading('Act 2 arrives at the station')).toBe(false);
     });
     const cards = [{ x: 0, y: 0, width: 200, height: 100 }, { x: 1000, y: 400, width: 400, height: 200 }];
+    it('bounds selected cards and ignores invalid selection geometry', () => {
+        expect(selectedCanvasBounds(cards)).toEqual({ minX: 0, minY: 0, maxX: 1400, maxY: 600 });
+        expect(selectedCanvasBounds([{ x: 0 }, { x: 0, y: 0, width: 0, height: 1 }])).toBeNull();
+    });
     it('follows the nearest appearance without changing zoom and ignores invalid geometry', () => {
         expect(linkedSceneViewport([{ x: 0 }, ...cards], { x: 1150, y: 480, zoom: 0.4 })).toEqual({ x: 1200, y: 500, zoom: 0.4 });
         expect(linkedSceneViewport([{ x: 0 }], { x: 0, y: 0, zoom: 1 })).toBeNull();

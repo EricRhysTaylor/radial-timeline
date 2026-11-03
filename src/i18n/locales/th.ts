@@ -5962,6 +5962,7 @@ export const th: TranslationKeys = {
             navigator: 'นำทางเรื่อง',
             navigatorPosition: 'ฉาก {{current}} จาก {{total}}',
             navigatorFit: 'แสดงทั้งหมด',
+            navigatorSelection: 'ซูมไปยังส่วนที่เลือก',
             range: 'เริ่มแสดงที่',
             rangeAll: "ทั้งหมดที่เลือก",
             rangeBeginning: "หนึ่งในสามแรก",

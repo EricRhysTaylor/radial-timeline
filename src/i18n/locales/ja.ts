@@ -5960,6 +5960,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             navigator: 'ストーリー移動',
             navigatorPosition: 'シーン {{current}} / {{total}}',
             navigatorFit: '全体表示',
+            navigatorSelection: '選択範囲にズーム',
             range: '最初の表示範囲',
             rangeAll: "選択範囲全体",
             rangeBeginning: "最初の3分の1",

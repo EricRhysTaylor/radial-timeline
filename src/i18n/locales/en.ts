@@ -5643,6 +5643,7 @@ export const en = {
             navigator: 'Story navigation',
             navigatorPosition: 'Scene {{current}} of {{total}}',
             navigatorFit: 'Fit all',
+            navigatorSelection: 'Zoom to selection',
             range: 'Start focused on',
             rangeAll: "Entire selection",
             rangeBeginning: "Beginning third",

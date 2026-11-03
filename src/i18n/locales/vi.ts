@@ -5962,6 +5962,7 @@ export const vi: TranslationKeys = {
             navigator: 'Điều hướng truyện',
             navigatorPosition: 'Cảnh {{current}} / {{total}}',
             navigatorFit: 'Vừa toàn bộ',
+            navigatorSelection: 'Phóng to vùng chọn',
             range: 'Vùng hiển thị ban đầu',
             rangeAll: "Toàn bộ lựa chọn",
             rangeBeginning: "Một phần ba đầu",

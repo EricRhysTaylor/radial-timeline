@@ -5961,6 +5961,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             navigator: '故事导航',
             navigatorPosition: '场景 {{current}} / {{total}}',
             navigatorFit: '适应全部',
+            navigatorSelection: '缩放至所选内容',
             range: '初始聚焦范围',
             rangeAll: "全部所选内容",
             rangeBeginning: "开头三分之一",

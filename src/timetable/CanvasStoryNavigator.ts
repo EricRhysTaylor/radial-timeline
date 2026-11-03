@@ -3,10 +3,10 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { buildTableRow, compareManuscriptRows } from './timetableModel';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
-import { storyActHeadingLabel, storyAxis, storyPosition, storyProgress } from './canvasNavigation';
+import { selectedCanvasBounds, storyActHeadingLabel, storyAxis, storyPosition, storyProgress } from './canvasNavigation';
 
 type NodeData = { type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
-type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void };
+type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; selection?: Set<{ getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void; zoomToBbox?: (bounds: { minX: number; minY: number; maxX: number; maxY: number }) => void };
 
 /** A navigator only for generated story maps; it does not alter the Canvas data. */
 export class CanvasStoryNavigator {
@@ -58,8 +58,12 @@ export class CanvasStoryNavigator {
         this.root = root;
         const label = root.createDiv({ cls: 'ert-story-navigator__label', text: t('ui.subplotCanvas.navigator') });
         const slider = root.createEl('input', { cls: 'ert-story-navigator__slider', attr: { type: 'range', min: '0', max: '0', value: '0' } });
+        const selection = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit' });
+        selection.disabled = true;
         const fit = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit' });
         setAccessibleLabel(slider, t('ui.subplotCanvas.navigator'));
+        setTooltip(selection, t('ui.subplotCanvas.navigatorSelection'));
+        setIcon(selection, 'scan-search');
         setTooltip(fit, t('ui.subplotCanvas.navigatorFit'));
         setIcon(fit, 'maximize');
         const canvas = (): Canvas | undefined => (this.view as unknown as { canvas?: Canvas }).canvas;
@@ -107,6 +111,8 @@ export class CanvasStoryNavigator {
             view.setViewport(axis.axis === 'x' ? coordinate : viewport.x, axis.axis === 'y' ? coordinate : viewport.y, viewport.zoom);
         };
         const followViewport = (): void => {
+            const selected = canvas()?.selection;
+            selection.disabled = !(selected instanceof Set && selectedCanvasBounds([...selected].flatMap(node => node.getData?.() ?? [])));
             if (dragViewport || !axis) return;
             const view = canvas();
             const coordinate = view?.[axis.axis];
@@ -127,6 +133,12 @@ export class CanvasStoryNavigator {
         this.events.registerDomEvent(slider, 'pointercancel', () => { dragViewport = null; });
         this.events.registerDomEvent(slider, 'focus', () => { if (!dragViewport) update(false, true); });
         this.events.registerDomEvent(slider, 'input', () => update(true));
+        this.events.registerDomEvent(selection, 'click', () => {
+            const view = canvas();
+            const selected = view?.selection;
+            const bounds = selected instanceof Set ? selectedCanvasBounds([...selected].flatMap(node => node.getData?.() ?? [])) : null;
+            if (bounds) view?.zoomToBbox?.(bounds);
+        });
         this.events.registerDomEvent(fit, 'click', () => canvas()?.zoomToFit?.());
         this.events.registerInterval(window.setInterval(followViewport, 250));
         // The Canvas can still be loading when its view is first attached.

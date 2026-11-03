@@ -5959,6 +5959,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             navigator: '스토리 탐색',
             navigatorPosition: '장면 {{current}} / {{total}}',
             navigatorFit: '전체 맞춤',
+            navigatorSelection: '선택 영역 확대',
             range: '처음 표시할 범위',
             rangeAll: "전체 선택",
             rangeBeginning: "처음 3분의 1",

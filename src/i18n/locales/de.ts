@@ -5959,6 +5959,7 @@ export const de: DeepPartial<TranslationKeys> = {
             navigator: 'Handlungsnavigation',
             navigatorPosition: 'Szene {{current}} von {{total}}',
             navigatorFit: 'Alles einpassen',
+            navigatorSelection: 'Auswahl vergrößern',
             range: 'Zu Beginn anzeigen',
             rangeAll: "Gesamte Auswahl",
             rangeBeginning: "Erstes Drittel",

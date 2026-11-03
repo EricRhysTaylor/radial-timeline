@@ -5962,6 +5962,7 @@ export const es: TranslationKeys = {
             navigator: 'Navegación de la historia',
             navigatorPosition: 'Escena {{current}} de {{total}}',
             navigatorFit: 'Ajustar todo',
+            navigatorSelection: 'Acercar a la selección',
             range: 'Enfocar al abrir',
             rangeAll: "Selección completa",
             rangeBeginning: "Primer tercio",

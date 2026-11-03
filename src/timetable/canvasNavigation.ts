@@ -6,6 +6,16 @@ export function storyActHeadingLabel(text: string): string | null {
 
 export function isStoryActHeading(text: string): boolean { return storyActHeadingLabel(text) !== null; }
 
+/** Bounds of selected Canvas cards with usable geometry. */
+export function selectedCanvasBounds(cards: Array<{ x?: number; y?: number; width?: number; height?: number }>): { minX: number; minY: number; maxX: number; maxY: number } | null {
+    const boxes = cards.filter(card => [card.x, card.y, card.width, card.height].every(value => typeof value === 'number' && Number.isFinite(value)) && card.width! > 0 && card.height! > 0);
+    if (!boxes.length) return null;
+    return {
+        minX: Math.min(...boxes.map(card => card.x!)), minY: Math.min(...boxes.map(card => card.y!)),
+        maxX: Math.max(...boxes.map(card => card.x! + card.width!)), maxY: Math.max(...boxes.map(card => card.y! + card.height!)),
+    };
+}
+
 /** Center the nearest appearance of a scene while preserving the Canvas zoom. */
 export function linkedSceneViewport(
     cards: Array<{ x?: number; y?: number; width?: number; height?: number }>,

@@ -5962,6 +5962,7 @@ export const fr: TranslationKeys = {
             navigator: 'Navigation dans le récit',
             navigatorPosition: 'Scène {{current}} sur {{total}}',
             navigatorFit: 'Tout afficher',
+            navigatorSelection: 'Zoomer sur la sélection',
             range: 'Cadrage initial',
             rangeAll: "Sélection entière",
             rangeBeginning: "Premier tiers",

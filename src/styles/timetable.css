@@ -1405,12 +1405,20 @@
 
 /* Outline keeps the Timetable's shared editing and placement controls. */
 .ert-timetable-panels.is-outline { grid-template-columns: minmax(0, 1fr); gap: 0; }
-.ert-timetable .is-outline .ert-timetable-panels__panel { border: 0; border-bottom: 1px solid var(--background-modifier-border); border-radius: 0; padding: var(--size-4-3) var(--size-4-4); }
+.ert-timetable .is-outline .ert-timetable-panels__panel { border: 0; border-bottom: 1px solid var(--background-modifier-border); border-radius: 0; padding: var(--size-4-3) 0; }
+.ert-timetable .is-outline .ert-timetable-panels__header { gap: 4px; }
+.ert-timetable .is-outline .ert-timetable__drag { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; }
+.ert-timetable .is-outline .ert-timetable__drag .svg-icon { position: static; width: 36px; height: 36px; padding: 0; }
+.ert-timetable .is-outline .ert-timetable-panels__synopsis,
+.ert-timetable .is-outline .ert-timetable-panels__preview,
+.ert-timetable .is-outline .ert-timetable-panels__purpose,
+.ert-timetable .is-outline .ert-timetable__drawer-toggle,
+.ert-timetable .is-outline .ert-timetable__drawer-row { margin-inline-start: 40px; max-width: calc(100% - 40px); }
 .ert-timetable .is-outline .ert-timetable-panels__synopsis:not(.is-empty),
 .ert-timetable .is-outline .ert-timetable-panels__preview,
-.ert-timetable .is-outline .ert-timetable-panels__purpose { width: 100%; max-width: 75ch; align-self: flex-start; }
+.ert-timetable .is-outline .ert-timetable-panels__purpose { width: calc(100% - 40px); max-width: 75ch; align-self: flex-start; }
 .ert-timetable .is-outline .ert-timetable__drawer-toggle { align-self: flex-start; padding: var(--size-4-1) var(--size-4-3); }
-.ert-timetable .is-outline .ert-timetable-panels__cover { flex-basis: 28px; width: 28px; height: 28px; border: 0; background: transparent; }
+.ert-timetable .is-outline .ert-timetable-panels__cover { flex-basis: 36px; width: 36px; height: 36px; border: 0; background: transparent; }
 .ert-timetable .is-outline .ert-timetable-panels__cover-image, .ert-timetable .is-outline .ert-timetable-panels__cover-placeholder { display: none; }
 .ert-timetable .is-outline .ert-timetable-panels__cover > .svg-icon { inset: 0; color: var(--text-muted); background: transparent; }
 .ert-timetable .is-outline .ert-timetable-panels__title { font-size: var(--font-ui-medium); letter-spacing: normal; }
@@ -1462,6 +1470,10 @@
 .ert-timetable .is-outline .ert-timetable-panels__empty-act.ert-outline-text-drop { box-shadow: inset 0 -3px var(--interactive-accent); background: var(--background-modifier-hover); }
 
 .ert-timetable .is-outline .ert-timetable-panels__group { display: flex; align-items: center; gap: var(--size-4-1); }
+.ert-timetable .is-outline .ert-timetable-panels__group .ert-outline-act-insert { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 4px; border-radius: var(--radius-s); }
+.ert-timetable .is-outline .ert-timetable-panels__group .ert-outline-act-insert .svg-icon { width: 24px; height: 24px; }
+.ert-timetable .is-outline .ert-timetable-panels__group .ert-outline-act-insert:hover,
+.ert-timetable .is-outline .ert-timetable-panels__group .ert-outline-act-insert:focus-visible { color: var(--text-normal); background: var(--background-modifier-hover); }
 .ert-timetable .is-outline .ert-timetable-panels__group .ert-outline-act-insert[aria-pressed="true"] { color: var(--text-accent); }
 .ert-outline-import-controls { display: flex; flex-wrap: wrap; gap: var(--size-4-4); }
 .ert-outline-import-controls label { display: flex; flex-direction: column; gap: var(--size-4-1); color: var(--text-muted); }

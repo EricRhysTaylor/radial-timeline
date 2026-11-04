@@ -5984,6 +5984,7 @@ export const es: TranslationKeys = {
             failed: 'No se pudo crear el lienzo.',
         },
         canvasSketch: {
+            placeBackground: 'Mostrar fondo del lugar',
             showOverdue: 'Mostrar escenas atrasadas',
             followTimeline: 'Seguir la escena señalada en la línea temporal',
             fileCardsExplanation: 'Solo se convierten tarjetas de texto. Las tarjetas de archivo ya enlazan a notas y no se modifican.',
@@ -6068,6 +6069,15 @@ export const es: TranslationKeys = {
             "noticeNothing": "Aquí nada necesita promover."
         },
         "timetable": {
+            portraitShape: 'Forma del retrato',
+            portraitSquare: 'Cuadrado',
+            portraitLandscape: 'Horizontal',
+            placeFocus: 'Ajustar el enfoque del lugar',
+            captureSketchTitle: 'Crear boceto',
+            captureSketchName: 'Título del boceto',
+            captureSketchText: 'Texto del boceto',
+            captureSketchDrop: 'Suelta el texto para crear un boceto',
+            "panelImageLayered": 'Fondo del lugar + personaje',
             "panelImage": "Imagen",
             "panelImageLabel": "Imagen del panel",
             "panelFit": "Tamaño de imagen",

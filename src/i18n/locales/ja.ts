@@ -5982,6 +5982,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             failed: 'キャンバスを作成できませんでした。',
         },
         canvasSketch: {
+            placeBackground: '場所の背景を表示',
             showOverdue: '期限超過のシーンを表示',
             followTimeline: 'タイムライン上のシーンに追従',
             fileCardsExplanation: 'ここではテキストカードのみ変換できます。ファイルカードは既存のノートにリンクしており、変更されません。',
@@ -6066,6 +6067,15 @@ export const ja: DeepPartial<TranslationKeys> = {
             noticeNothing: '昇格が必要なノートはありません。',
         },
         timetable: {
+            portraitShape: '人物画像の形',
+            portraitSquare: '正方形',
+            portraitLandscape: '横長',
+            placeFocus: '場所の画像の焦点を設定',
+            captureSketchTitle: 'スケッチを作成',
+            captureSketchName: 'スケッチのタイトル',
+            captureSketchText: 'スケッチの本文',
+            captureSketchDrop: 'テキストをドロップしてスケッチを作成',
+            panelImageLayered: '場所の背景 + 登場人物',
             chooseBook: '本を選択',
             currentBook: '本: {{book}}',
             layoutTable: 'テーブル',

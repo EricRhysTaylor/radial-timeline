@@ -1,3 +1,4 @@
+import { registerTextSketchCapture } from './TextSketchCapture';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { readTimeReferences, referenceDateLabel, TIME_REFERENCES_KEY, type TimeReference } from '../chronologue/timeReferences/model';
 import { manageTimeReferences, openTimeReference } from '../chronologue/timeReferences/editor';
@@ -436,6 +437,7 @@ export class TimetableView extends BasesView {
 
     onload(): void {
         this.register(trackTimetable(this));
+        registerTextSketchCapture(this, this.rootEl, this.plugin);
         this.register(onReferenceSelection(selection => {
             if (selection?.reveal && this.rowEls.has(selection.path) && !this.expandedReferences.has(selection.path)) {
                 this.expandedReferences.add(selection.path); this.render();
@@ -2385,9 +2387,9 @@ export class TimetableView extends BasesView {
             const imageLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelImage') });
             const imageChoice = imageLabel.createEl('select');
             setAccessibleLabel(imageChoice, t('ui.timetable.panelImageLabel'));
-            for (const [value, label] of [['character', t('ui.timetable.panelImageCharacter')], ['place', t('ui.timetable.panelImagePlace')], ['combined', t('ui.timetable.panelImageCombined')], ['artwork', t('ui.timetable.panelImageArtwork')], ['none', t('ui.timetable.panelImageNone')]] as const) imageChoice.createEl('option', { value, text: label });
+            for (const [value, label] of [['character', t('ui.timetable.panelImageCharacter')], ['place', t('ui.timetable.panelImagePlace')], ['combined', t('ui.timetable.panelImageCombined')], ['layered', t('ui.timetable.panelImageLayered')], ['artwork', t('ui.timetable.panelImageArtwork')], ['none', t('ui.timetable.panelImageNone')]] as const) imageChoice.createEl('option', { value, text: label });
             const imageSetting = this.config.get('panelImage');
-            imageChoice.value = ['place', 'combined', 'artwork', 'none'].includes(String(imageSetting)) ? String(imageSetting) : 'character';
+            imageChoice.value = ['place', 'combined', 'layered', 'artwork', 'none'].includes(String(imageSetting)) ? String(imageSetting) : 'character';
             this.panelEvents?.registerDomEvent(imageChoice, 'change', () => { this.config.set('panelImage', imageChoice.value); this.render(); });
             const fitLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelFit') });
             const fitChoice = fitLabel.createEl('select');
@@ -2396,6 +2398,13 @@ export class TimetableView extends BasesView {
             fitChoice.createEl('option', { value: 'fit', text: t('ui.timetable.panelFitFit') });
             fitChoice.value = this.config.get('panelFit') === 'fit' ? 'fit' : 'fill';
             this.panelEvents?.registerDomEvent(fitChoice, 'change', () => { this.config.set('panelFit', fitChoice.value); this.render(); });
+            const shapeLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.portraitShape') });
+            const shape = shapeLabel.createEl('select');
+            setAccessibleLabel(shape, t('ui.timetable.portraitShape'));
+            shape.createEl('option', { value: 'square', text: t('ui.timetable.portraitSquare') });
+            shape.createEl('option', { value: 'landscape', text: t('ui.timetable.portraitLandscape') });
+            shape.value = this.config.get('portraitShape') === 'landscape' ? 'landscape' : 'square';
+            this.panelEvents?.registerDomEvent(shape, 'change', () => { this.config.set('portraitShape', shape.value); this.render(); });
             const sizeLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__size', text: t('ui.timetable.panelSize') });
             const size = sizeLabel.createEl('select');
             setAccessibleLabel(size, t('ui.timetable.panelSize'));
@@ -2409,6 +2418,55 @@ export class TimetableView extends BasesView {
                 this.render();
             });
         }
+        // Preserve the existing controls as the single source of behavior. At narrow
+        // widths the menu invokes those same buttons rather than duplicating actions.
+        const compact = toolbar.createEl('button', { cls: 'ert-timetable__compact-menu', attr: { type: 'button', 'aria-haspopup': 'menu' } });
+        setIcon(compact.createSpan(), 'menu');
+        const compactLabel = this.config.get('outline') === true ? t('ui.timetable.layoutOutline') : this.config.get('panels') === true ? t('ui.timetable.layoutPanels') : t('ui.timetable.layoutTable');
+        compact.createSpan({ text: compactLabel });
+        setAccessibleLabel(compact, `${t('ui.timetable.radialViewName')}: ${compactLabel}`);
+        setTooltip(compact, t('ui.timetable.radialViewName'));
+        this.panelEvents?.registerDomEvent(compact, 'click', () => {
+            const menu = new Menu().setUseNativeMenu(false);
+            const controls = [...Array.from(toolbar.querySelectorAll<HTMLButtonElement>('.ert-timetable-panels__view-switch'))];
+            for (const control of controls) {
+                const label = control.textContent?.trim();
+                if (!label) continue;
+                menu.addItem(item => item.setTitle(label).setChecked(control.getAttribute('aria-pressed') === 'true').onClick(() => control.click()));
+            }
+            const rect = compact.getBoundingClientRect();
+            menu.showAtPosition({ x: rect.left, y: rect.bottom }, compact.ownerDocument);
+        });
+        const options = toolbar.querySelector<HTMLElement>('.ert-timetable-panels__options');
+        if (options) {
+            const button = toolbar.createEl('button', { cls: 'ert-timetable__panel-options-menu', attr: { type: 'button', 'aria-haspopup': 'menu' } });
+            setIcon(button.createSpan(), 'sliders-horizontal');
+            setAccessibleLabel(button, `${t('ui.timetable.panelImage')} / ${t('ui.timetable.panelFit')} / ${t('ui.timetable.panelSize')}`);
+            setTooltip(button, `${t('ui.timetable.panelImage')} / ${t('ui.timetable.panelFit')} / ${t('ui.timetable.panelSize')}`);
+            this.panelEvents?.registerDomEvent(button, 'click', () => {
+                const menu = new Menu().setUseNativeMenu(false);
+                for (const select of Array.from(options.querySelectorAll<HTMLSelectElement>('select'))) {
+                    const label = select.getAttribute('aria-label') ?? '';
+                    menu.addItem(item => item.setTitle(label).setDisabled(true));
+                    for (const option of Array.from(select.options)) menu.addItem(item => item.setTitle(option.text).setChecked(option.value === select.value).onClick(() => {
+                        select.value = option.value;
+                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                    }));
+                    menu.addSeparator();
+                }
+                const rect = button.getBoundingClientRect();
+                menu.showAtPosition({ x: rect.left, y: rect.bottom }, button.ownerDocument);
+            });
+        }
+        const updateCompact = () => {
+            const width = this.rootEl.clientWidth;
+            this.rootEl.toggleClass('ert-timetable--compact', width > 0 && width < 1350);
+            this.rootEl.toggleClass('ert-timetable--compact-options', width > 0 && width < 2100);
+        };
+        updateCompact();
+        const compactObserver = new ResizeObserver(updateCompact);
+        compactObserver.observe(this.rootEl);
+        this.panelEvents?.register(() => compactObserver.disconnect());
         const updateHeight = () => this.rootEl.setCssProps({ '--ert-timetable-switch-height': `${toolbar.offsetHeight}px` });
         updateHeight();
         const observer = new ResizeObserver(updateHeight);
@@ -2784,7 +2842,7 @@ export class TimetableView extends BasesView {
                 const people = this.characterDetails(row.path, names);
                 const portrait = leadPortrait(people);
                 const imageMode = outline ? 'character' : this.config.get('panelImage');
-                const location = (imageMode === 'place' || imageMode === 'combined') && row.kind === 'scene' ? panelPlaceImage(this.plugin.app, entry.file, frontmatter, authorKeyFor('Place', this.plugin.settings)) : null;
+                const location = (imageMode === 'place' || imageMode === 'combined' || imageMode === 'layered') && row.kind === 'scene' ? panelPlaceImage(this.plugin.app, entry.file, frontmatter, authorKeyFor('Place', this.plugin.settings)) : null;
                 const artwork = (imageMode === 'artwork' || imageMode === 'combined') && row.kind === 'scene' ? panelSceneImage(this.plugin.app, entry.file, frontmatter) : null;
                 const characterImage = portrait && people[0]?.imagePath ? { url: portrait, path: people[0].imagePath } : null;
                 const combined = imageMode === 'combined' ? combinedPanelImage(location, characterImage, artwork) : null;
@@ -2801,6 +2859,26 @@ export class TimetableView extends BasesView {
                     const color = fill.startsWith('url(') ? stageColors[stage] : fill;
                     if (color) panel.setCssProps({ '--ert-timetable-portrait-color': color });
                 }
+                if (!outline && imageMode === 'layered' && location) {
+                    panel.addClass('has-place-background');
+                    const backdrop = panel.createDiv({ cls: 'ert-timetable-panels__backdrop', attr: { 'aria-hidden': 'true' } });
+                    const backdropImage = backdrop.createEl('img', { attr: { src: location.url, alt: '', draggable: 'false' } });
+                    const placeFocus = validPanelFocus(focusMap[location.path]);
+                    backdropImage.setCssProps({ '--ert-place-focus-x': `${placeFocus.x * 100}%`, '--ert-place-focus-y': `${placeFocus.y * 100}%` });
+                    this.panelEvents?.registerDomEvent(backdropImage, 'error', () => { backdrop.remove(); panel.removeClass('has-place-background'); });
+                    const adjust = panel.createEl('button', { cls: 'ert-timetable-panels__place-focus', attr: { type: 'button' } });
+                    setIcon(adjust, 'focus');
+                    setAccessibleLabel(adjust, t('ui.timetable.placeFocus'));
+                    setTooltip(adjust, t('ui.timetable.placeFocus'));
+                    this.panelEvents?.registerDomEvent(adjust, 'click', event => {
+                        event.stopPropagation();
+                        new PanelFocusModal(this.plugin.app, location.url, placeFocus, point => {
+                            this.config.set('panelFocus', { ...focusMap, [location.path]: point });
+                            this.render();
+                        }).open();
+                    });
+                }
+                if (!outline && this.config.get('portraitShape') === 'landscape') panel.addClass('has-landscape-portrait');
                 const header = panel.createDiv({ cls: 'ert-timetable-panels__header' });
                 if (row.kind === 'scene' && (panelImage || (!outline && size === 'small') || imageMode === 'place' || imageMode === 'combined' || imageMode === 'artwork' || (imageMode !== 'none' && people.length > 0))) {
                     const handle = row.kind === 'scene' ? this.attachSceneDrag(panel, header, row.path, mode.state) : null;

@@ -1,3 +1,4 @@
+import { registerTextSketchCapture } from '../timetable/TextSketchCapture';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
@@ -3022,6 +3023,7 @@ export class RadialTimelineView extends ItemView {
     
     async onOpen(): Promise<void> {
         this.contentEl.addClass('radial-timeline-view');
+        registerTextSketchCapture(this, this.contentEl, this.plugin);
         this.publishModeToTimetables();
         this.register(onTimelineOverlayChange(() => this.applyTimetableOverlays()));
         this.register(onTimetablePresenceChange(() => this.applyTimetableOverlays()));

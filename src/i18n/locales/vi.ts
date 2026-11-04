@@ -5984,6 +5984,7 @@ export const vi: TranslationKeys = {
             failed: 'Không thể tạo Canvas.',
         },
         canvasSketch: {
+            placeBackground: 'Hiện ảnh địa điểm làm nền',
             showOverdue: 'Hiện các cảnh quá hạn',
             followTimeline: 'Theo cảnh đang trỏ trên dòng thời gian',
             fileCardsExplanation: 'Chỉ có thể chuyển thẻ văn bản tại đây. Thẻ tệp đã liên kết với ghi chú và không bị thay đổi.',
@@ -6068,6 +6069,15 @@ export const vi: TranslationKeys = {
             "noticeNothing": "Không có gì ở đây cần quảng bá."
         },
         "timetable": {
+            portraitShape: 'Khung ảnh nhân vật',
+            portraitSquare: 'Vuông',
+            portraitLandscape: 'Ngang',
+            placeFocus: 'Chỉnh điểm lấy nét địa điểm',
+            captureSketchTitle: 'Tạo bản phác thảo',
+            captureSketchName: 'Tiêu đề bản phác thảo',
+            captureSketchText: 'Nội dung bản phác thảo',
+            captureSketchDrop: 'Thả văn bản để tạo bản phác thảo',
+            "panelImageLayered": 'Nền địa điểm + nhân vật',
             "panelImage": "Hình ảnh",
             "panelImageLabel": "Hình ảnh của bảng",
             "panelFit": "Kích thước ảnh",

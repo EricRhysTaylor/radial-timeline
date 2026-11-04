@@ -5984,6 +5984,7 @@ export const th: TranslationKeys = {
             failed: 'ไม่สามารถสร้างแคนวาสได้',
         },
         canvasSketch: {
+            placeBackground: 'แสดงภาพสถานที่เป็นพื้นหลัง',
             showOverdue: 'แสดงฉากที่เกินกำหนด',
             followTimeline: 'ติดตามฉากที่ชี้บนไทม์ไลน์',
             fileCardsExplanation: 'ที่นี่แปลงได้เฉพาะการ์ดข้อความ การ์ดไฟล์เชื่อมกับโน้ตอยู่แล้วและจะไม่ถูกเปลี่ยน',
@@ -6068,6 +6069,15 @@ export const th: TranslationKeys = {
             "noticeNothing": "ไม่มีอะไรที่นี่ต้องการการส่งเสริม"
         },
         "timetable": {
+            portraitShape: 'รูปทรงภาพบุคคล',
+            portraitSquare: 'สี่เหลี่ยมจัตุรัส',
+            portraitLandscape: 'แนวนอน',
+            placeFocus: 'ตั้งจุดโฟกัสภาพสถานที่',
+            captureSketchTitle: 'สร้างเค้าโครง',
+            captureSketchName: 'ชื่อเค้าโครง',
+            captureSketchText: 'ข้อความเค้าโครง',
+            captureSketchDrop: 'วางข้อความเพื่อสร้างเค้าโครง',
+            "panelImageLayered": 'พื้นหลังสถานที่ + ตัวละคร',
             "panelImage": "ภาพ",
             "panelImageLabel": "ภาพแผง",
             "panelFit": "ขนาดภาพ",

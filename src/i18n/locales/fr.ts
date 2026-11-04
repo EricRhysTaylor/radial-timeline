@@ -5984,6 +5984,7 @@ export const fr: TranslationKeys = {
             failed: 'Impossible de créer le canevas.',
         },
         canvasSketch: {
+            placeBackground: 'Afficher le lieu en arrière-plan',
             showOverdue: 'Afficher les scènes en retard',
             followTimeline: 'Suivre la scène survolée sur la chronologie',
             fileCardsExplanation: 'Seules les cartes texte peuvent être converties. Les cartes de fichier renvoient déjà à des notes et ne sont pas modifiées.',
@@ -6068,6 +6069,15 @@ export const fr: TranslationKeys = {
             "noticeNothing": "Rien n'a besoin de promouvoir ici."
         },
         "timetable": {
+            portraitShape: 'Format du portrait',
+            portraitSquare: 'Carré',
+            portraitLandscape: 'Paysage',
+            placeFocus: 'Régler le cadrage du lieu',
+            captureSketchTitle: 'Créer une esquisse',
+            captureSketchName: 'Titre de l’esquisse',
+            captureSketchText: 'Texte de l’esquisse',
+            captureSketchDrop: 'Déposer le texte pour créer une esquisse',
+            "panelImageLayered": 'Arrière-plan du lieu + personnage',
             "panelImage": "Image",
             "panelImageLabel": "Image du panneau",
             "panelFit": "Taille de l’image",

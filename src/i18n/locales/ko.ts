@@ -5981,6 +5981,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             failed: '캔버스를 만들지 못했습니다.',
         },
         canvasSketch: {
+            placeBackground: '장소 배경 표시',
             showOverdue: '기한이 지난 장면 표시',
             followTimeline: '타임라인에서 가리킨 장면 따라가기',
             fileCardsExplanation: '여기서는 텍스트 카드만 변환할 수 있습니다. 파일 카드는 기존 노트에 연결되어 있으며 변경되지 않습니다.',
@@ -6065,6 +6066,15 @@ export const ko: DeepPartial<TranslationKeys> = {
             noticeNothing: '승격할 노트가 없습니다.',
         },
         timetable: {
+            portraitShape: '인물 사진 형태',
+            portraitSquare: '정사각형',
+            portraitLandscape: '가로형',
+            placeFocus: '장소 이미지 초점 설정',
+            captureSketchTitle: '스케치 만들기',
+            captureSketchName: '스케치 제목',
+            captureSketchText: '스케치 내용',
+            captureSketchDrop: '텍스트를 놓아 스케치 만들기',
+            panelImageLayered: '장소 배경 + 인물',
             chooseBook: '책 선택',
             currentBook: '책: {{book}}',
             layoutTable: '표',

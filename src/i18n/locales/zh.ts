@@ -5983,6 +5983,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             failed: '无法创建画布。',
         },
         canvasSketch: {
+            placeBackground: '显示地点背景',
             showOverdue: '显示逾期场景',
             followTimeline: '跟随时间线上悬停的场景',
             fileCardsExplanation: '此处只能转换文本卡片。文件卡片已链接到笔记，不会被更改。',
@@ -6067,6 +6068,15 @@ export const zh: DeepPartial<TranslationKeys> = {
             noticeNothing: '这里没有需要提升的笔记。',
         },
         timetable: {
+            portraitShape: '人物图片形状',
+            portraitSquare: '正方形',
+            portraitLandscape: '横向',
+            placeFocus: '设置地点图片焦点',
+            captureSketchTitle: '创建草稿',
+            captureSketchName: '草稿标题',
+            captureSketchText: '草稿内容',
+            captureSketchDrop: '拖放文本以创建草稿',
+            panelImageLayered: '地点背景 + 人物',
             chooseBook: '选择书籍',
             currentBook: '书籍：{{book}}',
             layoutTable: '表格',

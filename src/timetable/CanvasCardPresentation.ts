@@ -14,6 +14,7 @@ import { normalizeSubplotColorIndex } from '../renderer/utils/subplotColors';
 import { cardSubplots } from './canvasCardSubplots';
 import { setTooltip } from '../utils/domTooltip';
 import { readFrontmatterProperty } from '../utils/frontmatterKeys';
+import { panelPlaceImage } from './panelPlaceImage';
 import { outlineReferenceType, type OutlineReferenceType } from './outlineDocuments';
 
 type Mode = 'full' | 'preview' | 'title';
@@ -45,6 +46,8 @@ function portrait(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, 
 }
 
 class CanvasCards {
+    private showPlaceBackground = false;
+    private landscapePortrait = false;
     private mode: Mode = 'preview';
     private hasBookCards = false;
     private readonly cards = new Map<HTMLElement, { overlay: HTMLElement; signature: string }>();
@@ -73,6 +76,14 @@ class CanvasCards {
                 this.schedule();
             }));
             menu.addSeparator();
+            menu.addItem(item => item.setTitle(t('ui.canvasSketch.placeBackground')).setChecked(this.showPlaceBackground).onClick(() => {
+                this.showPlaceBackground = !this.showPlaceBackground;
+                this.schedule();
+            }));
+            menu.addItem(item => item.setTitle(t('ui.timetable.portraitLandscape')).setChecked(this.landscapePortrait).onClick(() => {
+                this.landscapePortrait = !this.landscapePortrait;
+                this.schedule();
+            }));
             menu.addItem(item => item.setTitle(t('ui.canvasSketch.showOverdue')).setIcon('calendar-clock').setChecked(this.showOverdue).onClick(() => {
                 this.showOverdue = !this.showOverdue;
                 this.schedule();
@@ -182,6 +193,7 @@ class CanvasCards {
                 const kindValue = readFrontmatterProperty(fm, authorKeyFor('Class', this.plugin.settings));
                 const kind = typeof kindValue === 'string' ? kindValue.trim() : t('ui.canvasSketch.cardLabel');
                 const image = portrait(this.plugin, file, fm);
+                const place = this.showPlaceBackground ? panelPlaceImage(this.plugin.app, file, fm, authorKeyFor('Place', this.plugin.settings)) : null;
                 const row = buildTableRow(file.path, file.basename, fm, this.plugin.settings);
                 const slots = row.kind === 'scene' || row.kind === 'sketch' ? await this.colorsForBook(bookId) : new Map<string, number>();
                 const subplotNames = row.subplots.filter(name => slots.has(name));
@@ -204,12 +216,19 @@ class CanvasCards {
                 const title = file.basename.replace(/^\d+(?:\.\d+)?\s+/, '');
                 const description = plainText(preview);
                 const number = row.kind === 'scene' ? row.prefix : null;
-                const signature = JSON.stringify([this.mode, title, kind, number, image, description, file.path, shownSubplots.map(name => [name, slots.get(name)]), overdue]);
+                const signature = JSON.stringify([this.mode, title, kind, number, image, place?.url, this.landscapePortrait, description, file.path, shownSubplots.map(name => [name, slots.get(name)]), overdue]);
                 const existing = this.cards.get(el);
                 if (existing?.signature === signature && el.contains(existing.overlay)) continue;
                 this.remove(el);
                 const cardType = outlineReferenceType(kind);
                 const overlay = el.createDiv({ cls: `ert-canvas-story-card${cardType === 'sketch' ? ' is-sketch' : ''}` });
+                if (place) {
+                    overlay.addClass('has-place-background');
+                    const backdrop = overlay.createDiv({ cls: 'ert-canvas-story-card__backdrop', attr: { 'aria-hidden': 'true' } });
+                    const backdropImage = backdrop.createEl('img', { attr: { src: place.url, alt: '', draggable: 'false' } });
+                    this.events.registerDomEvent(backdropImage, 'error', () => { backdrop.remove(); overlay.removeClass('has-place-background'); });
+                }
+                if (this.landscapePortrait) overlay.addClass('has-landscape-portrait');
                 const header = overlay.createDiv({ cls: 'ert-canvas-story-card__header' });
                 const artwork = header.createDiv({ cls: 'ert-canvas-story-card__art' });
                 if (image) artwork.createEl('img', { attr: { src: image, alt: '' } });

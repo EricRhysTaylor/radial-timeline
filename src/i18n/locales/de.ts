@@ -5981,6 +5981,7 @@ export const de: DeepPartial<TranslationKeys> = {
             failed: 'Canvas konnte nicht erstellt werden.',
         },
         canvasSketch: {
+            placeBackground: 'Ortsbild als Hintergrund',
             showOverdue: 'Überfällige Szenen anzeigen',
             followTimeline: 'Szene beim Überfahren der Zeitleiste folgen',
             fileCardsExplanation: 'Hier können nur Textkarten umgewandelt werden. Dateikarten verweisen bereits auf Notizen und bleiben unverändert.',
@@ -6065,6 +6066,15 @@ export const de: DeepPartial<TranslationKeys> = {
             noticeNothing: 'Hier muss nichts umgewandelt werden.',
         },
         timetable: {
+            portraitShape: 'Porträtformat',
+            portraitSquare: 'Quadratisch',
+            portraitLandscape: 'Querformat',
+            placeFocus: 'Bildausschnitt des Ortes festlegen',
+            captureSketchTitle: 'Skizze erstellen',
+            captureSketchName: 'Skizzentitel',
+            captureSketchText: 'Skizzentext',
+            captureSketchDrop: 'Text ablegen, um eine Skizze zu erstellen',
+            panelImageLayered: 'Ortshintergrund + Figur',
             chooseBook: 'Buch auswählen',
             currentBook: 'Buch: {{book}}',
             layoutTable: 'Tabelle',

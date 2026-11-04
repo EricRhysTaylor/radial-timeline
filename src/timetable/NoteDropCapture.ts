@@ -27,7 +27,7 @@ export function addNoteClass(content: string, kind: 'Scene' | 'Sketch', anchor?:
 }
 
 class NoteDropModal extends ErtModal {
-    constructor(private readonly plugin: RadialTimelinePlugin, private readonly file: TFile, private readonly initialBook?: string) { super(plugin.app); }
+    constructor(private readonly plugin: RadialTimelinePlugin, private readonly file: TFile, private readonly initialBook?: string, private readonly defaultKind: 'Scene' | 'Sketch' = 'Scene') { super(plugin.app); }
     onOpen(): void {
         this.applyShell({ size: 'lg' });
         this.mountHeader({ title: t('ui.timetable.noteDropTitle'), subtitle: this.file.path });
@@ -42,11 +42,12 @@ class NoteDropModal extends ErtModal {
         kindRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropType') });
         const kind = new DropdownComponent(kindRow.createDiv({ cls: 'setting-item-control' }));
         kind.addOption('Scene', t('ui.timetable.noteDropScene')); kind.addOption('Sketch', t('ui.timetable.noteDropSketch'));
-        const numberRow = this.contentEl.createDiv({ cls: 'setting-item' });
+        kind.setValue(this.defaultKind);
+        const numberRow = this.contentEl.createDiv({ cls: 'setting-item ert-note-drop-number' });
         numberRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropNumber') });
         const number = numberRow.createDiv({ cls: 'setting-item-control' }).createEl('input', { type: 'text', attr: { placeholder: '72' } });
         setAccessibleLabel(number, t('ui.timetable.noteDropNumber'));
-        const anchorRow = this.contentEl.createDiv({ cls: 'setting-item' });
+        const anchorRow = this.contentEl.createDiv({ cls: 'setting-item ert-note-drop-anchor' });
         anchorRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropAfter') });
         anchorRow.createDiv({ cls: 'setting-item-description', text: t('ui.timetable.noteDropAnchorHint') });
         const anchor = new DropdownComponent(anchorRow.createDiv({ cls: 'setting-item-control' }));
@@ -107,7 +108,7 @@ class NoteDropModal extends ErtModal {
 }
 
 /** Handle file-explorer drags without intercepting selected text or existing scene drags. */
-export function registerNoteDropCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, bookId: () => string | undefined): void {
+export function registerNoteDropCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, bookId: () => string | undefined, options?: { defaultKind?: 'Scene' | 'Sketch'; acceptPoint?: (event: DragEvent) => boolean }): void {
     let explorerFile: TFile | null = null;
     const target = host.createDiv({ cls: 'ert-text-sketch-drop', attr: { role: 'status' } });
     if (target) { setIcon(target.createSpan(), 'file-plus-2'); target.createSpan({ text: t('ui.timetable.noteDropHint') }); }
@@ -125,7 +126,7 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
         if (!host.isConnected) return false;
         const area = host.closest<HTMLElement>('.bases-view') ?? host;
         const rect = area.getBoundingClientRect();
-        return event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+        return event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom && (options?.acceptPoint?.(event) ?? true);
     };
     owner.registerDomEvent(host.ownerDocument, 'dragstart', (event: DragEvent) => {
         explorerFile = null;
@@ -146,7 +147,7 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
         const file = dragged(); clear();
         if (!file) return;
         event.preventDefault(); event.stopImmediatePropagation();
-        window.setTimeout(() => new NoteDropModal(plugin, file, bookId()).open(), 0);
+        window.setTimeout(() => new NoteDropModal(plugin, file, bookId(), options?.defaultKind).open(), 0);
     }, true);
     owner.registerDomEvent(host.ownerDocument, 'dragend', () => { clear(); explorerFile = null; }, true);
     owner.register(() => target?.remove());

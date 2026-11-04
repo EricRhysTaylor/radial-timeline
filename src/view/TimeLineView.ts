@@ -1,4 +1,5 @@
 import { registerTextSketchCapture } from '../timetable/TextSketchCapture';
+import { registerNoteDropCapture } from '../timetable/NoteDropCapture';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
@@ -50,7 +51,7 @@ import { isRenderedOnTimeline } from '../utils/sceneHelpers';
 import { SearchPanelController } from './interactions/SearchPanelController';
 import { getLocalLlmAvailability } from '../ai/localLlm/availability';
 import { searchOptionsSignature, writeTimelineSearchSettings, type TimelineSearchOptions } from '../services/searchState';
-import { DEFAULT_BOOK_TITLE, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable } from '../utils/books';
+import { DEFAULT_BOOK_TITLE, getActiveBook, getTimelineScope, getTimelineScopeTitle, isSagaScopeAvailable } from '../utils/books';
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
 import type {
     ActiveWritingSession,
@@ -3024,6 +3025,11 @@ export class RadialTimelineView extends ItemView {
     async onOpen(): Promise<void> {
         this.contentEl.addClass('radial-timeline-view');
         registerTextSketchCapture(this, this.contentEl, this.plugin);
+        registerNoteDropCapture(this, this.contentEl, this.plugin, () => getActiveBook(this.plugin.settings)?.id, {
+            defaultKind: 'Sketch',
+            acceptPoint: event => !this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)
+                .some(element => this.contentEl.contains(element) && !!element.closest('.rt-scene-group, .rt-void-cell')),
+        });
         this.publishModeToTimetables();
         this.register(onTimelineOverlayChange(() => this.applyTimetableOverlays()));
         this.register(onTimetablePresenceChange(() => this.applyTimetableOverlays()));

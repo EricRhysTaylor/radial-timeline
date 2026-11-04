@@ -1451,6 +1451,11 @@
 .ert-outline-documents__tray.is-drag-over { outline: 2px dashed var(--interactive-accent); outline-offset: -3px; background: var(--background-modifier-hover); }
 .ert-timetable .is-outline .ert-outline-text-drop { box-shadow: inset 0 -3px var(--interactive-accent); background: var(--background-modifier-hover); }
 .ert-outline-documents__drop-hint { color: var(--text-faint); font-size: var(--font-ui-smaller); }
+.ert-outline-documents__tray.is-empty .ert-outline-documents__heading { display: grid; grid-template-columns: auto minmax(0, auto); align-items: center; justify-content: center; gap: var(--size-2-1) var(--size-4-4); }
+.ert-outline-documents__tray.is-empty .ert-outline-documents__drop-icon { grid-row: span 2; }
+.ert-outline-documents__tray.is-empty .ert-outline-documents__drop-icon .svg-icon { width: 58px; height: 58px; }
+.ert-outline-documents__tray.is-empty .ert-outline-documents__heading .ert-outline-documents__label { font-size: clamp(22px, 2.3vw, 32px); line-height: 1.15; }
+.ert-outline-documents__tray.is-empty .ert-outline-documents__drop-hint { font-size: var(--font-ui-small); }
 .ert-outline-act-insert { color: var(--text-muted); margin-inline-start: var(--size-4-2); }
 .ert-outline-act-insert[aria-pressed="true"] { color: var(--text-accent); }
 .ert-timetable .is-outline .ert-timetable-panels__group.ert-outline-text-drop,
@@ -1535,6 +1540,16 @@
 .ert-text-sketch-drop .svg-icon { width: 34px; height: 34px; stroke-width: 2.5px; }
 .ert-timetable, .radial-timeline-view { position: relative; }
 .ert-text-sketch-drop > span { pointer-events: none; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drawer-toggle { align-self: flex-start; width: auto; height: auto; padding: var(--size-2-2) var(--size-4-2); font-size: var(--font-ui-small); }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drawer { gap: var(--size-4-2); padding: var(--size-4-3); border: 0; background: var(--background-primary); }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drawer-bar { display: grid; grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr); gap: var(--size-4-2); }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drawer-field { display: flex; min-width: 0; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drawer-field:has(.ert-timetable__drawer-title),
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drawer-rings { grid-column: 1 / -1; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drawer-field input,
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drawer-field select { flex: 1 1 0; width: 0; min-width: 0; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drawer-actions { display: none; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch:has(.ert-timetable__drawer-row) .ert-timetable-panels__watermark { display: none; }
 .ert-timetable__compact-menu { gap: 7px; }
 .ert-timetable .has-landscape-portrait .ert-timetable-panels__cover { flex-basis: 120px; width: 120px; }
 .ert-timetable button.ert-timetable-panels__place-focus { position: absolute; z-index: 3; top: 4px; right: 36px; width: 28px; height: 28px; padding: 5px; color: var(--text-muted); background: var(--background-primary); opacity: 0; }

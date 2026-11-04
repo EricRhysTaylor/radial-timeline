@@ -2499,6 +2499,7 @@ export class TimetableView extends BasesView {
         const files = paths.map(path => app.vault.getAbstractFileByPath(path)).filter((file): file is TFile => file instanceof TFile);
         const bar = this.rootEl.createDiv({ cls: 'ert-outline-documents' });
         const tray = bar.createDiv({ cls: 'ert-outline-documents__tray' });
+        tray.toggleClass('is-empty', paths.length === 0);
         const picker = () => {
             if (!bookId) return;
             new OutlineDocumentPicker(app, file => {

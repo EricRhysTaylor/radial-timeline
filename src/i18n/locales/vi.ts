@@ -1212,7 +1212,7 @@ export const vi: TranslationKeys = {
         "gossamerAnalysis": "Phân tích Gossamer",
         "authorProgressReport": "Báo cáo tiến độ tác giả (APR)",
         "exportTimelineImage": "Xuất hình ảnh thời gian (SVG / PNG)",
-        "exportTimelineData": "Xuất dữ liệu thời gian để chia sẻ",
+        "exportTimelineData": "Community Xuất dữ liệu thời gian để chia sẻ",
         "assignSceneTime": "Gán thời gian cảnh",
         "copyPerformanceReport": "Sao chép báo cáo hiệu suất (phát triển)",
         "onboardManuscript": "Nhập bản thảo"

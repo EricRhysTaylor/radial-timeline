@@ -1212,7 +1212,7 @@ export const th: TranslationKeys = {
         "gossamerAnalysis": "การวิเคราะห์ Gossamer",
         "authorProgressReport": "รายงานความคืบหน้าผู้แต่ง (APR)",
         "exportTimelineImage": "ส่งออกภาพไทม์ไลน์ (SVG / PNG)",
-        "exportTimelineData": "ส่งออกข้อมูลไทม์ไลน์เพื่อแชร์",
+        "exportTimelineData": "Community ส่งออกข้อมูลไทม์ไลน์เพื่อแชร์",
         "assignSceneTime": "กำหนดเวลาฉาก",
         "copyPerformanceReport": "คัดลอกรายงานประสิทธิภาพ (พัฒนา)",
         "onboardManuscript": "นำเข้าต้นฉบับ"

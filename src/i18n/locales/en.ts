@@ -1110,7 +1110,7 @@ export const en = {
         gossamerAnalysis: 'Gossamer analysis',
         authorProgressReport: 'Author progress report (APR)',
         exportTimelineImage: 'Timeline image export (SVG / PNG)',
-        exportTimelineData: 'Timeline share export',
+        exportTimelineData: 'Community timeline share export',
         assignSceneTime: 'Scene time assignment',
         copyPerformanceReport: 'Copy performance report (dev)',
         onboardManuscript: 'Import manuscript',

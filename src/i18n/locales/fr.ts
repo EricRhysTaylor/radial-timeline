@@ -1212,7 +1212,7 @@ export const fr: TranslationKeys = {
         "gossamerAnalysis": "Analyse Gossamer",
         "authorProgressReport": "Rapport de progrès de l'auteur (APR)",
         "exportTimelineImage": "Exporter l'image du Radial Timeline (SVG / PNG)",
-        "exportTimelineData": "Exporter les données du Radial Timeline",
+        "exportTimelineData": "Community Exporter les données du Radial Timeline",
         "assignSceneTime": "Assigner l'heure de la scène",
         "copyPerformanceReport": "Copier le rapport de performance (développeur)",
         "onboardManuscript": "Importer le manuscrit"

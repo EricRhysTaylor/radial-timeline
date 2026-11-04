@@ -1233,7 +1233,7 @@ export const ja: DeepPartial<TranslationKeys> = {
         gossamerAnalysis: 'Gossamer 分析',
         authorProgressReport: '著者進捗レポート (APR)',
         exportTimelineImage: 'タイムライン画像エクスポート（SVG / PNG）',
-        exportTimelineData: 'タイムライン共有エクスポート',
+        exportTimelineData: 'Community タイムライン共有エクスポート',
         assignSceneTime: 'シーン時間の割り当て',
         copyPerformanceReport: 'パフォーマンスレポートをコピー（開発用）',
         onboardManuscript: '原稿をインポート',

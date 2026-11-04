@@ -1232,7 +1232,7 @@ export const de: DeepPartial<TranslationKeys> = {
         gossamerAnalysis: 'Gossamer-Analyse',
         authorProgressReport: 'Autoren-Fortschrittsbericht (APR)',
         exportTimelineImage: 'Timeline-Bildexport (SVG / PNG)',
-        exportTimelineData: 'Timeline-Freigabe-Export',
+        exportTimelineData: 'Community Timeline-Freigabe-Export',
         assignSceneTime: 'Szenenzeit-Zuweisung',
         copyPerformanceReport: 'Leistungsbericht kopieren (Dev)',
         onboardManuscript: 'Manuskript importieren',

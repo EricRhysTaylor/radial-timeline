@@ -1234,7 +1234,7 @@ export const zh: DeepPartial<TranslationKeys> = {
         gossamerAnalysis: 'Gossamer 分析',
         authorProgressReport: '作者进度报告 (APR)',
         exportTimelineImage: '时间轴图片导出（SVG / PNG）',
-        exportTimelineData: '时间轴分享导出',
+        exportTimelineData: 'Community 时间轴分享导出',
         assignSceneTime: '场景时间指定',
         copyPerformanceReport: '复制性能报告（开发）',
         onboardManuscript: '导入手稿',

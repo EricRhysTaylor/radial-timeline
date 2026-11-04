@@ -1232,7 +1232,7 @@ export const ko: DeepPartial<TranslationKeys> = {
         gossamerAnalysis: 'Gossamer 분석',
         authorProgressReport: '저자 진행 보고서 (APR)',
         exportTimelineImage: '타임라인 이미지 내보내기 (SVG / PNG)',
-        exportTimelineData: '타임라인 공유 내보내기',
+        exportTimelineData: 'Community 타임라인 공유 내보내기',
         assignSceneTime: '장면 시간 지정',
         copyPerformanceReport: '성능 보고서 복사 (개발용)',
         onboardManuscript: '원고 가져오기',

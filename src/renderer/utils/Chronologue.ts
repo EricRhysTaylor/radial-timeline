@@ -32,6 +32,7 @@ export type ChronologueLabel = {
     isFirst?: boolean;
     isLast?: boolean;
     earthDate?: string;
+    boundaryAtSeam?: boolean;
 };
 
 export function buildChronologueOuterLabels(
@@ -63,7 +64,8 @@ export function buildChronologueOuterLabels(
         isMajor: tick.isMajor,
         isFirst: tick.isFirst,
         isLast: tick.isLast,
-        earthDate: tick.earthDate
+        earthDate: tick.earthDate,
+        boundaryAtSeam: !!(tick.isFirst || tick.isLast)
     }));
     // Reference dates live on their overlay tooltip and Timetable subrow.
     stopChronoLabels();
@@ -209,7 +211,7 @@ export function renderOuterLabelTexts({
         const { shortName, isFirst, isLast, earthDate } = label;
         const pathId = `monthLabelPath-${index}`;
         // A flipped label's path runs back toward its tick, so it ends there
-        const anchor = outerLabelArc(label).flipped ? 'startOffset="100%" text-anchor="end"' : 'startOffset="0" text-anchor="start"';
+        const anchor = outerLabelArc(label).flipped || (label.boundaryAtSeam && isLast) ? 'startOffset="100%" text-anchor="end"' : 'startOffset="0" text-anchor="start"';
 
         // Only apply past month dimming in non-chronologue modes
         const isPastMonth = !isChronologueMode && index < currentMonthIndex;
@@ -274,7 +276,8 @@ export function renderChronologueOuterTicks({
     }
 
     let svg = '<g class="rt-chronological-outer-ticks">';
-    outerLabels.forEach(({ angle, isMajor, shortName, isFirst, isLast }) => {
+    outerLabels.forEach(({ angle: sceneAngle, isMajor, shortName, isFirst, isLast, boundaryAtSeam }) => {
+        const angle = boundaryAtSeam && (isFirst || isLast) ? -Math.PI / 2 : sceneAngle;
         const tickStart = monthTickStart;
 
         if (isMajor) {

@@ -1409,8 +1409,8 @@
 /* Outline keeps the Timetable's shared editing and placement controls. */
 .ert-timetable-panels.is-outline { grid-template-columns: minmax(0, 1fr); gap: 0; }
 .ert-timetable .is-outline .ert-timetable-panels__panel { border: 0; border-bottom: 1px solid var(--background-modifier-border); border-radius: 0; padding: var(--size-4-3) 0; }
-.ert-timetable .is-outline .ert-timetable-panels__header { gap: 4px; }
-.ert-timetable .is-outline .ert-timetable__drag { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; }
+.ert-timetable .is-outline .ert-timetable-panels__header { gap: 4px; padding-inline-start: 40px; }
+.ert-timetable .is-outline .ert-timetable__drag { position: absolute; left: 0; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; }
 .ert-timetable .is-outline .ert-timetable__drag .svg-icon { position: static; width: 36px; height: 36px; padding: 0; }
 .ert-timetable .is-outline .ert-timetable-panels__synopsis,
 .ert-timetable .is-outline .ert-timetable-panels__preview,
@@ -1473,6 +1473,8 @@
 .ert-timetable .is-outline .ert-timetable-panels__empty-act.ert-outline-text-drop { box-shadow: inset 0 -3px var(--interactive-accent); background: var(--background-modifier-hover); }
 
 .ert-timetable .is-outline .ert-timetable-panels__group { display: flex; align-items: center; gap: var(--size-4-1); }
+.ert-timetable .is-outline .ert-timetable-panels__group.is-act { margin: var(--size-4-4) 0 var(--size-4-2); padding: var(--size-4-2) var(--size-4-3); background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border); color: var(--text-normal); font-size: 24px; line-height: 1.25; }
+.ert-timetable .is-outline .ert-timetable-panels__group.is-act > button:first-child { color: inherit; font-size: inherit; line-height: inherit; }
 .ert-timetable .is-outline .ert-timetable-panels__group .ert-outline-act-insert { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 4px; border-radius: var(--radius-s); }
 .ert-timetable .is-outline .ert-timetable-panels__group .ert-outline-act-insert .svg-icon { width: 24px; height: 24px; }
 .ert-timetable .is-outline .ert-timetable-panels__group .ert-outline-act-insert:hover,

@@ -21,6 +21,19 @@ describe('outerLabelArc', () => {
         expect(outerLabelArc({ ...sixOClock, isFirst: true }).flipped).toBe(false);
         expect(outerLabelArc({ ...sixOClock, isLast: true }).flipped).toBe(false);
     });
+
+    it('places Chronologue boundary labels on opposite sides of twelve even when dated scenes are elsewhere', () => {
+        const first = outerLabelArc({ ...sixOClock, isFirst: true, boundaryAtSeam: true });
+        const last = outerLabelArc({ ...sixOClock, isLast: true, boundaryAtSeam: true });
+        expect(first.startAngle).toBeCloseTo(-Math.PI / 2 + 0.01);
+        expect(last.endAngle).toBeCloseTo(-Math.PI / 2 - 0.01);
+        const { boundaryLabelsHtml } = renderOuterLabelTexts({ outerLabels: [
+            { ...sixOClock, isFirst: true, boundaryAtSeam: true },
+            { ...sixOClock, isLast: true, boundaryAtSeam: true },
+        ], isChronologueMode: true, currentMonthIndex: 0 });
+        expect(boundaryLabelsHtml).toContain('startOffset="0" text-anchor="start"');
+        expect(boundaryLabelsHtml).toContain('startOffset="100%" text-anchor="end"');
+    });
 });
 
 describe('renderMonthLabelDefs', () => {

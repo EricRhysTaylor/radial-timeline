@@ -2874,6 +2874,7 @@ export class TimetableView extends BasesView {
         for (const group of groups) {
             if (group.label) {
                 const heading = list.createEl('h3', { cls: 'ert-timetable-panels__group' });
+                heading.toggleClass('is-act', group.act !== undefined);
                 if (outline) {
                     const toggle = heading.createEl('button', { text: `${this.outlineCollapsed.has(group.id) ? '▸' : '▾'} ${group.label}` });
                     toggle.setAttr('aria-expanded', String(!this.outlineCollapsed.has(group.id)));
@@ -2910,7 +2911,7 @@ export class TimetableView extends BasesView {
                 : withActDividers(group.items.map(item => item.row));
             for (const line of lines) {
                 if (line.type === 'act') {
-                    const heading = list.createEl('h3', { cls: 'ert-timetable-panels__group', text: this.actLabel(line.act) });
+                    const heading = list.createEl('h3', { cls: 'ert-timetable-panels__group is-act', text: this.actLabel(line.act) });
                     this.attachSketchActDrop(heading, line.act, this.singleBook(group.items), mode.state);
                     if (line.act !== null) this.actDividerEls.set(line.act, heading);
                     continue;

@@ -1,7 +1,7 @@
 import { arcPath } from '../layout/Paths';
 import { isTitleFlipped } from './SceneTitlePath';
 
-type OuterLabelPosition = { angle: number; isFirst?: boolean; isLast?: boolean };
+type OuterLabelPosition = { angle: number; isFirst?: boolean; isLast?: boolean; boundaryAtSeam?: boolean };
 
 /**
  * The arc an outer date label rides, starting just past its tick. A clockwise
@@ -10,7 +10,9 @@ type OuterLabelPosition = { angle: number; isFirst?: boolean; isLast?: boolean }
  * (renderOuterLabelTexts anchors it there). The first and last dates sit at
  * the top and keep their clockwise, multi-line layout.
  */
-export function outerLabelArc({ angle, isFirst, isLast }: OuterLabelPosition): { startAngle: number; endAngle: number; flipped: boolean } {
+export function outerLabelArc({ angle, isFirst, isLast, boundaryAtSeam }: OuterLabelPosition): { startAngle: number; endAngle: number; flipped: boolean } {
+  if (boundaryAtSeam && isFirst) return { startAngle: -Math.PI / 2 + 0.01, endAngle: -Math.PI / 2 + Math.PI / 4, flipped: false };
+  if (boundaryAtSeam && isLast) return { startAngle: -Math.PI / 2 - Math.PI / 4, endAngle: -Math.PI / 2 - 0.01, flipped: false };
   const isBoundary = isFirst || isLast;
   const startAngle = angle + 0.01;
   // Longer arc for chronologue boundary labels (can span multiple lines)

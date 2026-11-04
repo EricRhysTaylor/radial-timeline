@@ -8,6 +8,10 @@ type Entry = { pane: WorkspaceLeaf | null; timeline: WorkspaceLeaf | null; path:
 // the leaf, and serialize requests so rapid selections cannot create duplicates.
 const entries = new WeakMap<WorkspaceLeaf, Entry>();
 
+export function adoptOutlineReference(table: WorkspaceLeaf, pane: WorkspaceLeaf, file: TFile, direction: Direction, timeline: WorkspaceLeaf | null): void {
+    entries.set(table, { pane, timeline, path: file.path, direction, pending: Promise.resolve() });
+}
+
 export function currentOutlineReference(workspace: Workspace, table: WorkspaceLeaf): TFile | null {
     const entry = entries.get(table);
     const pane = entry?.pane;

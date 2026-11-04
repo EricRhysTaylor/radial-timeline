@@ -22,6 +22,7 @@ export interface LiveTimetable {
     readonly rootEl: HTMLElement;
     refresh(): void;
     setLayout(layout: 'table' | 'panels' | 'outline'): void;
+    setWorkspaceReference?(leaf: import('obsidian').WorkspaceLeaf, direction: 'vertical' | 'horizontal'): void;
     /** The wheel is hovering this scene (or nothing): light up its row in the hovered cell's color (a CSS color). */
     markLinkedRow(path: string | null, color: string | null, reveal?: boolean): void;
     /** This note is open in an editor (or none is): mark its row. */

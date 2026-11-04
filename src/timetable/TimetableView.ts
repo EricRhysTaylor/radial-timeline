@@ -43,8 +43,8 @@ import {
     type WorkspaceLeaf,
 } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import { currentOutlineReference, openOutlineReference } from './outlineWorkspace';
-import { openCanvasBelow } from './canvasWorkspace';
+import { adoptOutlineReference, currentOutlineReference, openOutlineReference } from './outlineWorkspace';
+import { applyMainWorkspace } from './mainWorkspace';
 import type { TimelineItem } from '../types';
 import { getFormattingLocale, t, tCount } from '../i18n';
 import { getActiveBook, getBookIdForPath, getSagaBooks, getTimelineScope } from '../utils/books';
@@ -144,6 +144,7 @@ import {
     setTimelineColoring,
     setTimelineLens,
     trackTimetable,
+    timetableInElement,
     type TimelineModeState,
 } from './timetableRegistry';
 import {
@@ -2371,7 +2372,7 @@ export class TimetableView extends BasesView {
             for (const [direction, timeline, label, icon] of [['vertical', false, t('ui.timetable.outlineWorkspaceBeside'), 'panels-left-right'], ['horizontal', false, t('ui.timetable.outlineWorkspaceBelow'), 'panels-top-bottom'], ['horizontal', true, t('ui.timetable.outlineWorkspaceTimeline'), 'panel-left']] as const) {
                 menu.addItem(item => item.setTitle(label).setIcon(icon).onClick(() => {
                     if (this.panelEditing) return;
-                    void this.openOutlineWorkspace(undefined, direction, timeline);
+                    void this.openMainReferenceWorkspace(direction, timeline);
                 }));
             }
             menu.addItem(item => item.setTitle(t('ui.timetable.canvasWorkspaceBelow')).setIcon('panels-top-bottom').onClick(() => {
@@ -2379,8 +2380,8 @@ export class TimetableView extends BasesView {
                 const table = this.tableLeaf();
                 if (!table) return;
                 const open = async (file: TFile) => {
-                    await openCanvasBelow(this.plugin.app.workspace, table, file);
                     this.setLayout('table');
+                    await applyMainWorkspace(this.plugin.app.workspace, table, file, 'canvas');
                 };
                 new CanvasWorkspacePicker(this.plugin.app, file => {
                     if (file) void open(file).catch(error => new Notice(t('ui.timetable.outlineWorkspaceOpenFailed', { message: error instanceof Error ? error.message : String(error) }), 8000));
@@ -2701,6 +2702,27 @@ export class TimetableView extends BasesView {
     }
 
     /** Open a dedicated adjacent pane without replacing an existing note. */
+    public setWorkspaceReference(leaf: WorkspaceLeaf, direction: 'vertical' | 'horizontal'): void {
+        this.outlineWorkspacePane = leaf;
+        this.outlineWorkspaceDirection = direction;
+    }
+
+    private async openMainReferenceWorkspace(direction: 'vertical' | 'horizontal', timeline: boolean): Promise<void> {
+        const workspace = this.plugin.app.workspace;
+        const table = this.tableLeaf();
+        if (!table) return;
+        const file = currentOutlineReference(workspace, table) ?? this.findWorkspaceTarget();
+        if (!file) { new Notice(t('ui.timetable.outlineWorkspaceNeedsNote')); return; }
+        try {
+            const result = await applyMainWorkspace(workspace, table, file, timeline ? 'timeline' : direction === 'vertical' ? 'beside' : 'below');
+            const wheel = timeline ? workspace.getLeavesOfType('radial-timeline').find(leaf => leaf.getRoot() === workspace.rootSplit) ?? null : null;
+            adoptOutlineReference(result.table, result.reference, file, direction, wheel);
+            timetableInElement(result.table.view.containerEl)?.setWorkspaceReference?.(result.reference, direction);
+        } catch (error) {
+            new Notice(t('ui.timetable.outlineWorkspaceOpenFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
+        }
+    }
+
     private async openOutlineWorkspace(selected?: TFile, direction = this.outlineWorkspaceDirection, timelineLayout?: boolean): Promise<void> {
         const table = this.plugin.app.workspace.getLeavesOfType('bases').find(leaf => leaf.view.containerEl.contains(this.rootEl));
         if (!table) return;

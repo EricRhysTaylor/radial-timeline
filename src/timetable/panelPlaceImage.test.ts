@@ -30,6 +30,11 @@ describe('panel place image', () => {
     it('uses the scene image instead of the place default', () => {
         expect(panelPlaceImage(app, scene, { Place: ['[[Tourney]]'], 'Place image': '[[Final.webp]]' }, 'Place')).toEqual({ url: override.path, path: override.path, source: 'scene', name: override.name });
     });
+    it('matches the Place property directly to an image without a place note', () => {
+        const named = { path: 'Pictures/Harbor 2.png', basename: 'Harbor 2', name: 'Harbor 2.png', extension: 'png' } as TFile;
+        expect(panelPlaceImage(app, scene, { Place: ['[[Places/Harbor|The Harbor]]'] }, 'Place', [named])).toEqual({ url: named.path, path: named.path, source: 'place', name: 'Harbor' });
+        expect(panelPlaceImage(app, scene, { Place: ['[[Places/Harbor]]'], 'Place image': '[[Final.webp]]' }, 'Place', [named])?.path).toBe(override.path);
+    });
     it('uses the first place default when the override is missing or broken', () => {
         expect(panelPlaceImage(app, scene, { Place: ['[[Tourney]]'], 'Place image': '[[missing.png]]' }, 'Place')).toEqual({ url: fallback.path, path: fallback.path, source: 'place', name: 'Tourney' });
     });

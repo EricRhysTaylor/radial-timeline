@@ -107,6 +107,9 @@ import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { synopsisKey, updateSynopsis } from './panelSynopsis';
 import { leadPortrait } from './panelPortrait';
 import { combinedPanelImage, panelPlaceImage, panelSceneImage } from './panelPlaceImage';
+import { imageSubjectName, stableStoryImage } from './storyImageMatching';
+import { storyCharacterSelections } from './storyImageSelection';
+import { explicitCardImage, showStoryImageMenu } from './storyImageMenu';
 import { coverPosition, validPanelFocus } from './panelFocus';
 import { PanelFocusModal } from './PanelFocusModal';
 import { timetableNarrativeOrder } from './timetablePlacement';
@@ -460,6 +463,7 @@ export class TimetableView extends BasesView {
         this.registerDomEvent(this.rootEl.ownerDocument, 'dragend', () => { this.outlineDraggedText = null; });
         // One set of delegated handlers: rows are redrawn on every data update.
         this.registerDomEvent(this.rootEl, 'click', (evt: MouseEvent) => this.handleClick(evt));
+        this.registerDomEvent(this.rootEl.win, 'rt-story-image-strategy-changed', () => this.render());
         this.registerDomEvent(this.rootEl, 'keydown', (evt: KeyboardEvent) => {
             if (evt.key !== 'Enter' && evt.key !== ' ') return;
             const toggle = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__group-toggle') : null;
@@ -2391,6 +2395,16 @@ export class TimetableView extends BasesView {
             const imageSetting = this.config.get('panelImage');
             imageChoice.value = ['place', 'combined', 'layered', 'artwork', 'none'].includes(String(imageSetting)) ? String(imageSetting) : 'character';
             this.panelEvents?.registerDomEvent(imageChoice, 'change', () => { this.config.set('panelImage', imageChoice.value); this.render(); });
+            const strategyLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.storyImageStrategy') });
+            const strategyChoice = strategyLabel.createEl('select');
+            setAccessibleLabel(strategyChoice, t('ui.timetable.storyImageStrategy'));
+            for (const [value, label] of [['distinctive', t('ui.timetable.storyImageDistinctive')], ['first', t('ui.timetable.storyImageFirst')], ['pov', t('ui.timetable.storyImagePov')], ['balanced', t('ui.timetable.storyImageBalanced')]] as const) strategyChoice.createEl('option', { value, text: label });
+            strategyChoice.value = this.plugin.settings.storyImageStrategy ?? 'distinctive';
+            this.panelEvents?.registerDomEvent(strategyChoice, 'change', () => {
+                const value = strategyChoice.value;
+                if (value === 'distinctive' || value === 'first' || value === 'pov' || value === 'balanced') this.plugin.settings.storyImageStrategy = value;
+                void this.plugin.saveSettings(); this.rootEl.win.dispatchEvent(new Event('rt-story-image-strategy-changed'));
+            });
             const fitLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelFit') });
             const fitChoice = fitLabel.createEl('select');
             setAccessibleLabel(fitChoice, t('ui.timetable.panelFit'));
@@ -2772,6 +2786,8 @@ export class TimetableView extends BasesView {
     }
 
     private renderPanels(groups: TableGroup[], mode: ModeContext, allItems: TableItem[]): void {
+        const imageFiles = this.plugin.app.vault.getFiles();
+        const imageSelections = storyCharacterSelections(this.plugin, imageFiles, this.plugin.settings.storyImageStrategy ?? 'distinctive');
         const layout = this.rings ? buildRingLayout(this.rings.order, this.rings.colorIndex, allItems.map(item => item.row)) : null;
         const keep = new Set<string>();
         const list = this.rootEl.createDiv({ cls: 'ert-timetable-panels' });
@@ -2840,15 +2856,20 @@ export class TimetableView extends BasesView {
                 this.rowItems.set(row.path, item);
                 const characters = readFrontmatterProperty(frontmatter, authorKeyFor('Character', this.plugin.settings));
                 const names = (Array.isArray(characters) ? characters : [characters]).filter((name): name is string => typeof name === 'string' && name.trim().length > 0);
-                const people = this.characterDetails(row.path, names);
-                const portrait = leadPortrait(people);
+                const people = this.characterDetails(row.path, names, imageFiles);
+                const selectedSubject = imageSubjectName(readFrontmatterProperty(frontmatter, 'Card character')) ?? imageSelections.get(row.path);
+                const selectedIndex = selectedSubject ? names.findIndex(name => imageSubjectName(name) === selectedSubject) : -1;
+                const selectedPerson = people[selectedIndex < 0 ? 0 : selectedIndex];
+                const overrideImage = explicitCardImage(this.plugin.app, entry.file, frontmatter);
+                const portrait = overrideImage ? this.plugin.app.vault.getResourcePath(overrideImage) : selectedPerson?.image ?? leadPortrait(people);
                 const imageMode = outline ? 'character' : this.config.get('panelImage');
-                const location = (imageMode === 'place' || imageMode === 'combined' || imageMode === 'layered') && row.kind === 'scene' ? panelPlaceImage(this.plugin.app, entry.file, frontmatter, authorKeyFor('Place', this.plugin.settings)) : null;
+                const location = (imageMode === 'place' || imageMode === 'combined' || imageMode === 'layered') && (row.kind === 'scene' || (row.kind === 'sketch' && !!readFrontmatterProperty(frontmatter, 'Place image'))) ? panelPlaceImage(this.plugin.app, entry.file, frontmatter, authorKeyFor('Place', this.plugin.settings), imageFiles) : null;
                 const artwork = (imageMode === 'artwork' || imageMode === 'combined') && row.kind === 'scene' ? panelSceneImage(this.plugin.app, entry.file, frontmatter) : null;
-                const characterImage = portrait && people[0]?.imagePath ? { url: portrait, path: people[0].imagePath } : null;
+                const portraitPath = overrideImage?.path ?? selectedPerson?.imagePath;
+                const characterImage = portrait && portraitPath ? { url: portrait, path: portraitPath } : null;
                 const combined = imageMode === 'combined' ? combinedPanelImage(location, characterImage, artwork) : null;
-                const panelImage = imageMode === 'combined' ? combined?.image.url ?? null : imageMode === 'place' ? location?.url ?? null : imageMode === 'artwork' ? artwork?.url ?? null : imageMode === 'none' ? null : portrait;
-                const imagePath = imageMode === 'combined' ? combined?.image.path : imageMode === 'place' ? location?.path : imageMode === 'artwork' ? artwork?.path : imageMode === 'none' ? undefined : people[0]?.imagePath;
+                const panelImage = row.kind === 'sketch' ? (imageMode === 'place' ? location?.url ?? null : imageMode === 'combined' ? combined?.image.url ?? null : imageMode !== 'none' && overrideImage ? portrait : null) : imageMode === 'combined' ? combined?.image.url ?? null : imageMode === 'place' ? location?.url ?? null : imageMode === 'artwork' ? artwork?.url ?? null : imageMode === 'none' ? null : portrait;
+                const imagePath = row.kind === 'sketch' ? (imageMode === 'place' ? location?.path : imageMode === 'combined' ? combined?.image.path : overrideImage?.path) : imageMode === 'combined' ? combined?.image.path : imageMode === 'place' ? location?.path : imageMode === 'artwork' ? artwork?.path : imageMode === 'none' ? undefined : portraitPath;
                 const imageFit = !outline && this.config.get('panelFit') === 'fit' ? 'fit' : 'fill';
                 const storedFocus = this.config.get('panelFocus');
                 const focusMap = storedFocus && typeof storedFocus === 'object' && !Array.isArray(storedFocus) ? storedFocus as Record<string, unknown> : {};
@@ -2881,7 +2902,7 @@ export class TimetableView extends BasesView {
                 }
                 if (!outline && this.config.get('portraitShape') === 'landscape') panel.addClass('has-landscape-portrait');
                 const header = panel.createDiv({ cls: 'ert-timetable-panels__header' });
-                if (row.kind === 'scene' && (panelImage || (!outline && size === 'small') || imageMode === 'place' || imageMode === 'combined' || imageMode === 'artwork' || (imageMode !== 'none' && people.length > 0))) {
+                if ((row.kind === 'scene' || (row.kind === 'sketch' && !!panelImage)) && (panelImage || (!outline && size === 'small') || imageMode === 'place' || imageMode === 'combined' || imageMode === 'artwork' || (imageMode !== 'none' && people.length > 0))) {
                     const handle = row.kind === 'scene' ? this.attachSceneDrag(panel, header, row.path, mode.state) : null;
                     const cover = handle ?? header.createDiv();
                     cover.addClass('ert-timetable-panels__cover');
@@ -2921,6 +2942,13 @@ export class TimetableView extends BasesView {
                     this.panelEvents?.registerDomEvent(insert, 'click', evt => { evt.stopPropagation(); this.outlineInsertionAct = null; this.outlineInsertionPath = row.path; this.render(); });
                 }
                 const heading = header.createDiv({ cls: 'ert-timetable-panels__heading' });
+                if (!outline && (row.kind === 'scene' || row.kind === 'sketch')) {
+                    const imageOptions = panel.createEl('button', { cls: 'ert-timetable-panels__image-menu clickable-icon', attr: { type: 'button' } });
+                    setIcon(imageOptions, 'image-plus');
+                    setAccessibleLabel(imageOptions, t('ui.timetable.storyImageChoose'));
+                    setTooltip(imageOptions, t('ui.timetable.storyImageChoose'));
+                    this.panelEvents?.registerDomEvent(imageOptions, 'click', (event: MouseEvent) => { event.stopPropagation(); showStoryImageMenu(this.plugin, entry.file, frontmatter, imageFiles, event, () => this.render(), selectedSubject ?? undefined); });
+                }
                 const title = heading.createDiv({ cls: 'ert-timetable-panels__title-line' });
                 if (row.prefix) title.createSpan({ cls: 'ert-timetable-panels__number', text: row.prefix });
                 title.createEl('strong', { cls: 'ert-timetable-panels__title', text: displayName(row.basename) });
@@ -2983,7 +3011,7 @@ export class TimetableView extends BasesView {
                         }
                         this.panelEvents?.registerDomEvent(img, 'error', () => { img.remove(); inset.addClass('is-missing'); setIcon(inset, icon); });
                     };
-                    if (characterInset) addInset(portrait, people[0]?.imagePath, t('ui.timetable.panelImageCharacter'), 'user-round');
+                    if (characterInset) addInset(portrait, selectedPerson?.imagePath, t('ui.timetable.panelImageCharacter'), 'user-round');
                     if (artworkInset && artwork) addInset(artwork.url, artwork.path, t('ui.timetable.panelImageArtwork'), 'image');
                 }
                 const open = (sketchActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__open clickable-icon', attr: { type: 'button' } });
@@ -3052,14 +3080,17 @@ export class TimetableView extends BasesView {
     }
 
     /** Character notes may optionally name a vault image in their Image property. */
-    private characterDetails(scenePath: string, names: string[]): Array<{ name: string; image: string | null; imagePath: string | null; file: TFile | null }> {
+    private characterDetails(scenePath: string, names: string[], imageFiles?: readonly TFile[]): Array<{ name: string; image: string | null; imagePath: string | null; file: TFile | null }> {
         return names.map(raw => {
             const link = raw.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '');
             const [path, alias] = link.split('|');
             const character = this.plugin.app.metadataCache.getFirstLinkpathDest(path.trim(), scenePath);
             let imageUrl: string | null = null;
             let imagePath: string | null = null;
-            if (character) {
+            const subject = imageSubjectName(raw);
+            const named = subject && imageFiles ? stableStoryImage(imageFiles, scenePath, subject) : null;
+            if (named) { imagePath = named.path; imageUrl = this.plugin.app.vault.getResourcePath(named); }
+            if (character && !imageUrl) {
                 const fm = this.plugin.app.metadataCache.getFileCache(character)?.frontmatter;
                 const imageValue = readFrontmatterProperty(fm, 'Image');
                 if (typeof imageValue === 'string') {

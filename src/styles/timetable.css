@@ -1571,3 +1571,11 @@
 .ert-canvas-story-card.has-landscape-portrait .ert-canvas-story-card__art { width: 104px; flex-basis: 104px; }
 .ert-timetable--compact .ert-timetable-panels__toolbar { flex-wrap: nowrap; overflow-x: auto; }
 .ert-timetable--compact .ert-timetable-panels__mode-group { flex-wrap: nowrap; flex: none; }
+
+/* Image choices remain close to the card and do not obscure its text. */
+.ert-timetable button.ert-timetable-panels__image-menu { position: absolute; z-index: 4; top: var(--size-4-1); right: 72px; width: 28px; height: 28px; padding: var(--size-4-1); opacity: 0; color: var(--text-muted); }
+.ert-timetable-panels__panel:hover .ert-timetable-panels__image-menu,
+.ert-timetable-panels__panel:focus-within .ert-timetable-panels__image-menu { opacity: 1; }
+.ert-canvas-story-card__image-menu { position: absolute; z-index: 5; right: var(--size-4-2); bottom: var(--size-4-2); width: 32px; height: 32px; padding: var(--size-4-1); pointer-events: auto; opacity: 0; }
+.ert-canvas-story-node:hover .ert-canvas-story-card__image-menu,
+.ert-canvas-story-node:focus-within .ert-canvas-story-card__image-menu { opacity: 1; }

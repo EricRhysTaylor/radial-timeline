@@ -6069,6 +6069,17 @@ export const th: TranslationKeys = {
             "noticeNothing": "ไม่มีอะไรที่นี่ต้องการการส่งเสริม"
         },
         "timetable": {
+            "storyImageChoose": "Choose card image…",
+            "storyImageChoosePlace": "Choose place background…",
+            "storyImageChooseCharacter": "Choose character",
+            "storyImageNext": "Next portrait",
+            "storyImageAutomatic": "Return to automatic images",
+            "storyImageSaveFailed": "Could not save the image choice.",
+            "storyImageStrategy": "Character selection",
+            "storyImageFirst": "First listed",
+            "storyImageDistinctive": "Most distinctive",
+            "storyImagePov": "POV character",
+            "storyImageBalanced": "Balanced variety",
             portraitShape: 'รูปทรงภาพบุคคล',
             portraitSquare: 'สี่เหลี่ยมจัตุรัส',
             portraitLandscape: 'แนวนอน',

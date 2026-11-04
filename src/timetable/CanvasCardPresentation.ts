@@ -12,9 +12,12 @@ import { computeCacheableValues } from '../renderer/utils/Precompute';
 import type { PluginRendererFacade } from '../utils/sceneHelpers';
 import { normalizeSubplotColorIndex } from '../renderer/utils/subplotColors';
 import { cardSubplots } from './canvasCardSubplots';
-import { setTooltip } from '../utils/domTooltip';
+import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { readFrontmatterProperty } from '../utils/frontmatterKeys';
 import { panelPlaceImage } from './panelPlaceImage';
+import { imageSubjectName, stableStoryImage } from './storyImageMatching';
+import { storyCharacterSelections } from './storyImageSelection';
+import { explicitCardImage, showStoryImageMenu } from './storyImageMenu';
 import { outlineReferenceType, type OutlineReferenceType } from './outlineDocuments';
 
 type Mode = 'full' | 'preview' | 'title';
@@ -31,10 +34,13 @@ function plainText(text: string): string {
         .replace(/^\s*#{1,6}\s+/gm, '').replace(/[*_`~]/g, '').replace(/\s+/g, ' ').trim();
 }
 
-function portrait(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, unknown>): string | null {
+function portrait(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, unknown>, imageFiles: readonly TFile[], selected: string | undefined): string | null {
     const characters = readFrontmatterProperty(fm, authorKeyFor('Character', plugin.settings));
-    const first: unknown = Array.isArray(characters) ? characters[0] : characters;
+    const first: unknown = Array.isArray(characters) ? (characters.find(value => imageSubjectName(value) === selected) ?? characters[0]) : characters;
     if (typeof first !== 'string' || !first.trim()) return null;
+    const subject = imageSubjectName(first);
+    const named = subject ? stableStoryImage(imageFiles, file.path, subject) : null;
+    if (named) return plugin.app.vault.getResourcePath(named);
     const link = first.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
     const character = plugin.app.metadataCache.getFirstLinkpathDest(link, file.path);
     if (!character) return null;
@@ -75,6 +81,13 @@ class CanvasCards {
                 this.mode = mode;
                 this.schedule();
             }));
+            menu.addSeparator();
+            for (const [strategy, label] of [['distinctive', t('ui.timetable.storyImageDistinctive')], ['first', t('ui.timetable.storyImageFirst')], ['pov', t('ui.timetable.storyImagePov')], ['balanced', t('ui.timetable.storyImageBalanced')]] as const) {
+                menu.addItem(item => item.setTitle(`${t('ui.timetable.storyImageStrategy')}: ${label}`).setChecked((this.plugin.settings.storyImageStrategy ?? 'distinctive') === strategy).onClick(() => {
+                    this.plugin.settings.storyImageStrategy = strategy;
+                    void this.plugin.saveSettings(); this.view.containerEl.win.dispatchEvent(new Event('rt-story-image-strategy-changed'));
+                }));
+            }
             menu.addSeparator();
             menu.addItem(item => item.setTitle(t('ui.canvasSketch.placeBackground')).setChecked(this.showPlaceBackground).onClick(() => {
                 this.showPlaceBackground = !this.showPlaceBackground;
@@ -121,6 +134,7 @@ class CanvasCards {
             }, 350);
         });
         this.events.load();
+        this.events.registerDomEvent(view.containerEl.win, 'rt-story-image-strategy-changed', () => this.schedule());
         this.events.registerDomEvent(view.containerEl, 'click', event => {
             if (!this.hasBookCards || !(event.target instanceof Element)) return;
             const nodes = (this.view as CanvasView).canvas?.nodes;
@@ -178,9 +192,11 @@ class CanvasCards {
 
     private async refresh(): Promise<void> {
         const revision = ++this.revision;
+        const imageFiles = this.plugin.app.vault.getFiles();
         this.navigator.refresh();
         const nodes = (this.view as CanvasView).canvas?.nodes;
         const bookCards = this.bookCards();
+        const imageSelections = bookCards.length ? storyCharacterSelections(this.plugin, imageFiles, this.plugin.settings.storyImageStrategy ?? 'distinctive', new Set(bookCards.map(card => card.bookId))) : new Map<string, string>();
         this.hasBookCards = bookCards.length > 0;
         this.action.toggle(this.hasBookCards);
         this.view.containerEl.toggleClass('ert-canvas-card-view', this.hasBookCards && this.mode !== 'full');
@@ -192,9 +208,11 @@ class CanvasCards {
                 const fm = this.plugin.app.metadataCache.getFileCache(file)?.frontmatter ?? {}; // SAFE: a note without YAML has no cached frontmatter; empty = no properties
                 const kindValue = readFrontmatterProperty(fm, authorKeyFor('Class', this.plugin.settings));
                 const kind = typeof kindValue === 'string' ? kindValue.trim() : t('ui.canvasSketch.cardLabel');
-                const image = portrait(this.plugin, file, fm);
-                const place = this.showPlaceBackground ? panelPlaceImage(this.plugin.app, file, fm, authorKeyFor('Place', this.plugin.settings)) : null;
                 const row = buildTableRow(file.path, file.basename, fm, this.plugin.settings);
+                const overrideImage = explicitCardImage(this.plugin.app, file, fm);
+                const selected = imageSubjectName(readFrontmatterProperty(fm, 'Card character')) ?? imageSelections.get(file.path);
+                const image = overrideImage ? this.plugin.app.vault.getResourcePath(overrideImage) : row.kind === 'scene' ? portrait(this.plugin, file, fm, imageFiles, selected) : null;
+                const place = this.showPlaceBackground && (row.kind === 'scene' || (row.kind === 'sketch' && !!readFrontmatterProperty(fm, 'Place image'))) ? panelPlaceImage(this.plugin.app, file, fm, authorKeyFor('Place', this.plugin.settings), imageFiles) : null;
                 const slots = row.kind === 'scene' || row.kind === 'sketch' ? await this.colorsForBook(bookId) : new Map<string, number>();
                 const subplotNames = row.subplots.filter(name => slots.has(name));
                 const shownSubplots = cardSubplots(data, groups, subplotNames);
@@ -216,12 +234,20 @@ class CanvasCards {
                 const title = file.basename.replace(/^\d+(?:\.\d+)?\s+/, '');
                 const description = plainText(preview);
                 const number = row.kind === 'scene' ? row.prefix : null;
-                const signature = JSON.stringify([this.mode, title, kind, number, image, place?.url, this.landscapePortrait, description, file.path, shownSubplots.map(name => [name, slots.get(name)]), overdue]);
+                const signature = JSON.stringify([this.mode, title, kind, number, image, place?.url, selected, readFrontmatterProperty(fm, 'Card image'), readFrontmatterProperty(fm, 'Place image'), this.landscapePortrait, description, file.path, shownSubplots.map(name => [name, slots.get(name)]), overdue]);
                 const existing = this.cards.get(el);
                 if (existing?.signature === signature && el.contains(existing.overlay)) continue;
                 this.remove(el);
                 const cardType = outlineReferenceType(kind);
                 const overlay = el.createDiv({ cls: `ert-canvas-story-card${cardType === 'sketch' ? ' is-sketch' : ''}` });
+                if (row.kind === 'scene' || row.kind === 'sketch') {
+                    const imageOptions = overlay.createEl('button', { cls: 'ert-canvas-story-card__image-menu', attr: { type: 'button' } });
+                    setAccessibleLabel(imageOptions, t('ui.timetable.storyImageChoose'));
+                    setIcon(imageOptions, 'image-plus');
+                    setTooltip(imageOptions, t('ui.timetable.storyImageChoose'));
+                    imageOptions.onclick = event => { event.stopPropagation(); showStoryImageMenu(this.plugin, file, fm, imageFiles, event, () => this.schedule(), selected ?? undefined); };
+                    imageOptions.onpointerdown = event => event.stopPropagation();
+                }
                 if (place) {
                     overlay.addClass('has-place-background');
                     const backdrop = overlay.createDiv({ cls: 'ert-canvas-story-card__backdrop', attr: { 'aria-hidden': 'true' } });

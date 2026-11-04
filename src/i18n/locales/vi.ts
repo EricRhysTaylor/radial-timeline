@@ -6069,6 +6069,17 @@ export const vi: TranslationKeys = {
             "noticeNothing": "Không có gì ở đây cần quảng bá."
         },
         "timetable": {
+            "storyImageChoose": "Choose card image…",
+            "storyImageChoosePlace": "Choose place background…",
+            "storyImageChooseCharacter": "Choose character",
+            "storyImageNext": "Next portrait",
+            "storyImageAutomatic": "Return to automatic images",
+            "storyImageSaveFailed": "Could not save the image choice.",
+            "storyImageStrategy": "Character selection",
+            "storyImageFirst": "First listed",
+            "storyImageDistinctive": "Most distinctive",
+            "storyImagePov": "POV character",
+            "storyImageBalanced": "Balanced variety",
             portraitShape: 'Khung ảnh nhân vật',
             portraitSquare: 'Vuông',
             portraitLandscape: 'Ngang',

@@ -1,5 +1,6 @@
 import { readFrontmatterProperty } from '../utils/frontmatterKeys';
 import type { App, TFile } from 'obsidian';
+import { imageSubjectName, stableStoryImage } from './storyImageMatching';
 
 export type PanelImage = { url: string; path: string };
 
@@ -24,7 +25,7 @@ export function panelSceneImage(app: App, scene: TFile, fm: Record<string, unkno
 }
 
 /** Resolve a scene-specific image first, then the first Place note's Image. */
-export function panelPlaceImage(app: App, scene: TFile, fm: Record<string, unknown> | undefined, placeKey: string): { url: string; path: string; source: 'scene' | 'place'; name: string } | null {
+export function panelPlaceImage(app: App, scene: TFile, fm: Record<string, unknown> | undefined, placeKey: string, imageFiles?: readonly TFile[]): { url: string; path: string; source: 'scene' | 'place'; name: string } | null {
     const image = (value: unknown, sourcePath: string): TFile | null => {
         const path = linkPath(value);
         const file = path ? app.metadataCache.getFirstLinkpathDest(path, sourcePath) : null;
@@ -34,6 +35,9 @@ export function panelPlaceImage(app: App, scene: TFile, fm: Record<string, unkno
     if (override) return { url: app.vault.getResourcePath(override), path: override.path, source: 'scene', name: override.name };
     const places = readFrontmatterProperty(fm, placeKey);
     const placePath = linkPath(Array.isArray(places) ? places[0] : places);
+    const subject = imageSubjectName(placePath);
+    const named = subject && imageFiles ? stableStoryImage(imageFiles, scene.path, subject) : null;
+    if (named) return { url: app.vault.getResourcePath(named), path: named.path, source: 'place', name: subject! };
     const place = placePath ? app.metadataCache.getFirstLinkpathDest(placePath, scene.path) : null;
     if (!place) return null;
     const fallback = image(readFrontmatterProperty(app.metadataCache.getFileCache(place)?.frontmatter, 'Image'), place.path);

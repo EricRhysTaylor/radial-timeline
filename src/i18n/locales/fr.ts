@@ -6069,6 +6069,17 @@ export const fr: TranslationKeys = {
             "noticeNothing": "Rien n'a besoin de promouvoir ici."
         },
         "timetable": {
+            "storyImageChoose": "Choose card image…",
+            "storyImageChoosePlace": "Choose place background…",
+            "storyImageChooseCharacter": "Choose character",
+            "storyImageNext": "Next portrait",
+            "storyImageAutomatic": "Return to automatic images",
+            "storyImageSaveFailed": "Could not save the image choice.",
+            "storyImageStrategy": "Character selection",
+            "storyImageFirst": "First listed",
+            "storyImageDistinctive": "Most distinctive",
+            "storyImagePov": "POV character",
+            "storyImageBalanced": "Balanced variety",
             portraitShape: 'Format du portrait',
             portraitSquare: 'Carré',
             portraitLandscape: 'Paysage',

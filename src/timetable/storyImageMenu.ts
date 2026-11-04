@@ -1,7 +1,7 @@
 import { FuzzySuggestModal, Menu, Notice, TFile, type App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
-import { readFrontmatterProperty } from '../utils/frontmatterKeys';
+import { findFrontmatterKey, readFrontmatterProperty } from '../utils/frontmatterKeys';
 import { authorKeyFor } from './timetableFiles';
 import { imageSubjectName, matchingStoryImages, stableStoryImage } from './storyImageMatching';
 
@@ -13,6 +13,11 @@ export function explicitCardImage(app: App, file: TFile, fm: Record<string, unkn
     const path = value.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
     const image = app.metadataCache.getFirstLinkpathDest(path, file.path);
     return image && isImage(image) ? image : null;
+}
+
+/** Remove every case variant of a property so none is left behind. */
+function clear(frontmatter: Record<string, unknown>, name: string): void {
+    for (let key = findFrontmatterKey(frontmatter, name); key !== undefined; key = findFrontmatterKey(frontmatter, name)) delete frontmatter[key];
 }
 
 class StoryImagePicker extends FuzzySuggestModal<TFile> {
@@ -27,8 +32,9 @@ export function showStoryImageMenu(plugin: RadialTimelinePlugin, file: TFile, fm
     const menu = new Menu();
     const write = (key: string, value: string | null) => {
         void plugin.app.fileManager.processFrontMatter(file, frontmatter => {
-            if (value === null) delete frontmatter[key]; else frontmatter[key] = value;
-            if (key === 'Card character') delete frontmatter['Card image'];
+            const existing = findFrontmatterKey(frontmatter, key) ?? key;
+            if (value === null) delete frontmatter[existing]; else frontmatter[existing] = value;
+            if (key === 'Card character') clear(frontmatter, 'Card image');
         }).then(refresh).catch(() => new Notice(t('ui.timetable.storyImageSaveFailed')));
     };
     const raw = readFrontmatterProperty(fm, authorKeyFor('Character', plugin.settings));
@@ -50,7 +56,7 @@ export function showStoryImageMenu(plugin: RadialTimelinePlugin, file: TFile, fm
     menu.addItem(item => item.setTitle(t('ui.timetable.storyImageChoosePlace')).onClick(() => new StoryImagePicker(plugin.app, images, chosen => write('Place image', `[[${chosen.path}]]`)).open()));
     menu.addSeparator();
     menu.addItem(item => item.setTitle(t('ui.timetable.storyImageAutomatic')).onClick(() => {
-        void plugin.app.fileManager.processFrontMatter(file, frontmatter => { delete frontmatter['Card image']; delete frontmatter['Card character']; delete frontmatter['Place image']; }).then(refresh).catch(() => new Notice(t('ui.timetable.storyImageSaveFailed')));
+        void plugin.app.fileManager.processFrontMatter(file, frontmatter => { clear(frontmatter, 'Card image'); clear(frontmatter, 'Card character'); clear(frontmatter, 'Place image'); }).then(refresh).catch(() => new Notice(t('ui.timetable.storyImageSaveFailed')));
     }));
     menu.showAtMouseEvent(event);
 }

@@ -36,6 +36,12 @@ describe('character image strategy', () => {
         expect(chooseImageSubject(['Trisan', 'Michi'], 'pov', counts, 'Michi', null)).toBe('Michi');
         expect(chooseImageSubject(['Trisan'], 'pov', counts, 'Michi', null)).toBe('Trisan');
     });
+    it('selects the second listed character, falling back when that portrait is unavailable', () => {
+        expect(chooseImageSubject(['Trisan', 'Michi'], 'second', counts, null, null, 'Michi')).toBe('Michi');
+        expect(chooseImageSubject(['Trisan'], 'second', counts, null, null, 'Michi')).toBe('Trisan');
+        expect(chooseImageSubject(['Michi', 'Chroma'], 'second', counts, null, null, 'Michi')).toBe('Michi');
+        expect(chooseImageSubject(['Trisan'], 'second', counts, null, null)).toBe('Trisan');
+    });
     it('avoids repeating the previous character in balanced mode', () => {
         expect(chooseImageSubject(['Trisan', 'Michi'], 'balanced', counts, null, 'Michi')).toBe('Trisan');
     });

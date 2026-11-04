@@ -82,7 +82,7 @@ class CanvasCards {
                 this.schedule();
             }));
             menu.addSeparator();
-            for (const [strategy, label] of [['distinctive', t('ui.timetable.storyImageDistinctive')], ['first', t('ui.timetable.storyImageFirst')], ['pov', t('ui.timetable.storyImagePov')], ['balanced', t('ui.timetable.storyImageBalanced')]] as const) {
+            for (const [strategy, label] of [['distinctive', t('ui.timetable.storyImageDistinctive')], ['first', t('ui.timetable.storyImageFirst')], ['second', t('ui.timetable.storyImageSecond')], ['pov', t('ui.timetable.storyImagePov')], ['balanced', t('ui.timetable.storyImageBalanced')]] as const) {
                 menu.addItem(item => item.setTitle(`${t('ui.timetable.storyImageStrategy')}: ${label}`).setChecked((this.plugin.settings.storyImageStrategy ?? 'distinctive') === strategy).onClick(() => {
                     this.plugin.settings.storyImageStrategy = strategy;
                     void this.plugin.saveSettings(); this.view.containerEl.win.dispatchEvent(new Event('rt-story-image-strategy-changed'));

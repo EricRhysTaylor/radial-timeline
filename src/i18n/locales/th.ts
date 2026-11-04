@@ -6077,6 +6077,7 @@ export const th: TranslationKeys = {
             "storyImageSaveFailed": "Could not save the image choice.",
             "storyImageStrategy": "Character selection",
             "storyImageFirst": "First listed",
+            "storyImageSecond": "ตัวละครลำดับที่สอง",
             "storyImageDistinctive": "Most distinctive",
             "storyImagePov": "POV character",
             "storyImageBalanced": "Balanced variety",

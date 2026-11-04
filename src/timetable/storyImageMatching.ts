@@ -53,12 +53,13 @@ export function stableStoryImage(files: readonly TFile[], scenePath: string, sub
     return candidates[(hash >>> 0) % candidates.length];
 }
 
-export type StoryImageStrategy = 'first' | 'distinctive' | 'pov' | 'balanced';
+export type StoryImageStrategy = 'first' | 'second' | 'distinctive' | 'pov' | 'balanced';
 
 /** Rank candidates using whole-book counts supplied by the caller. */
-export function chooseImageSubject(candidates: readonly string[], strategy: StoryImageStrategy, frequencies: ReadonlyMap<string, number>, pov: string | null, previous: string | null): string | null {
+export function chooseImageSubject(candidates: readonly string[], strategy: StoryImageStrategy, frequencies: ReadonlyMap<string, number>, pov: string | null, previous: string | null, second: string | null = null): string | null {
     if (!candidates.length) return null;
     const normalize = (value: string) => value.normalize('NFC').toLocaleLowerCase();
+    if (strategy === 'second') return candidates.find(name => second && normalize(name) === normalize(second)) ?? candidates[0];
     if (strategy === 'pov' && pov) {
         const match = candidates.find(name => normalize(name) === normalize(pov));
         if (match) return match;

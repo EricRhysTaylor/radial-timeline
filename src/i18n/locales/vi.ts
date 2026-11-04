@@ -6077,6 +6077,7 @@ export const vi: TranslationKeys = {
             "storyImageSaveFailed": "Could not save the image choice.",
             "storyImageStrategy": "Character selection",
             "storyImageFirst": "First listed",
+            "storyImageSecond": "Nhân vật thứ hai",
             "storyImageDistinctive": "Most distinctive",
             "storyImagePov": "POV character",
             "storyImageBalanced": "Balanced variety",

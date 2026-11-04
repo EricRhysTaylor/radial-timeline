@@ -31,7 +31,7 @@ export function storyCharacterSelections(plugin: RadialTimelinePlugin, images: r
         for (const scene of scenes) {
             const candidates = scene.names.filter(name => matchingStoryImages(images, name).length > 0);
             // In this project the POV character is the first entry in Character.
-            const selected = chooseImageSubject(candidates, strategy, counts, scene.names[0] ?? null, previous);
+            const selected = chooseImageSubject(candidates, strategy, counts, scene.names[0] ?? null, previous, scene.names[1] ?? null);
             if (selected) { result.set(scene.path, selected); previous = selected; }
         }
     }

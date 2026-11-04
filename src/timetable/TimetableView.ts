@@ -2398,11 +2398,11 @@ export class TimetableView extends BasesView {
             const strategyLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.storyImageStrategy') });
             const strategyChoice = strategyLabel.createEl('select');
             setAccessibleLabel(strategyChoice, t('ui.timetable.storyImageStrategy'));
-            for (const [value, label] of [['distinctive', t('ui.timetable.storyImageDistinctive')], ['first', t('ui.timetable.storyImageFirst')], ['pov', t('ui.timetable.storyImagePov')], ['balanced', t('ui.timetable.storyImageBalanced')]] as const) strategyChoice.createEl('option', { value, text: label });
+            for (const [value, label] of [['distinctive', t('ui.timetable.storyImageDistinctive')], ['first', t('ui.timetable.storyImageFirst')], ['second', t('ui.timetable.storyImageSecond')], ['pov', t('ui.timetable.storyImagePov')], ['balanced', t('ui.timetable.storyImageBalanced')]] as const) strategyChoice.createEl('option', { value, text: label });
             strategyChoice.value = this.plugin.settings.storyImageStrategy ?? 'distinctive';
             this.panelEvents?.registerDomEvent(strategyChoice, 'change', () => {
                 const value = strategyChoice.value;
-                if (value === 'distinctive' || value === 'first' || value === 'pov' || value === 'balanced') this.plugin.settings.storyImageStrategy = value;
+                if (value === 'distinctive' || value === 'first' || value === 'second' || value === 'pov' || value === 'balanced') this.plugin.settings.storyImageStrategy = value;
                 void this.plugin.saveSettings(); this.rootEl.win.dispatchEvent(new Event('rt-story-image-strategy-changed'));
             });
             const fitLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelFit') });

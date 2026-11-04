@@ -6074,6 +6074,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             storyImageSaveFailed: 'Could not save the image choice.',
             storyImageStrategy: 'Character selection',
             storyImageFirst: 'First listed',
+            storyImageSecond: '두 번째 인물',
             storyImageDistinctive: 'Most distinctive',
             storyImagePov: 'POV character',
             storyImageBalanced: 'Balanced variety',

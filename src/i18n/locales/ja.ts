@@ -6070,6 +6070,10 @@ export const ja: DeepPartial<TranslationKeys> = {
             noticeNothing: '昇格が必要なノートはありません。',
         },
         timetable: {
+            imageSettings: '画像設定',
+            imageCombinations: '画像の組み合わせ',
+            backgroundTreatment: '背景の調整',
+            imageFormatting: '書式',
             storyImageChoose: 'Choose card image…',
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',

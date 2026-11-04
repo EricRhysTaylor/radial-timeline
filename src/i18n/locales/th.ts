@@ -6072,6 +6072,10 @@ export const th: TranslationKeys = {
             "noticeNothing": "ไม่มีอะไรที่นี่ต้องการการส่งเสริม"
         },
         "timetable": {
+            imageSettings: 'การตั้งค่ารูปภาพ',
+            imageCombinations: 'การจัดวางรูปภาพ',
+            backgroundTreatment: 'การปรับพื้นหลัง',
+            imageFormatting: 'การจัดรูปแบบ',
             "storyImageChoose": "Choose card image…",
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",

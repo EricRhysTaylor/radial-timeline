@@ -2431,6 +2431,7 @@ export class TimetableView extends BasesView {
             const panelOptions = toolbar.createDiv({ cls: 'ert-timetable-panels__options' });
             const imageLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelImage') });
             const imageChoice = imageLabel.createEl('select');
+            imageChoice.dataset.imageSection = t('ui.timetable.imageCombinations');
             setAccessibleLabel(imageChoice, t('ui.timetable.panelImageLabel'));
             for (const [value, label] of [['character', t('ui.timetable.panelImageCharacter')], ['place', t('ui.timetable.panelImagePlace')], ['combined', t('ui.timetable.panelImageCombined')], ['layered', t('ui.timetable.panelImageLayered')], ['artwork', t('ui.timetable.panelImageArtwork')], ['none', t('ui.timetable.panelImageNone')]] as const) imageChoice.createEl('option', { value, text: label });
             const imageSetting = this.config.get('panelImage');
@@ -2439,6 +2440,7 @@ export class TimetableView extends BasesView {
             if (imageChoice.value === 'layered') {
                 const backingLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.placeTextBacking') });
                 const backing = backingLabel.createEl('select');
+                backing.dataset.imageSection = t('ui.timetable.backgroundTreatment');
                 setAccessibleLabel(backing, t('ui.timetable.placeTextBacking'));
                 for (const [value, label] of [['subtle', t('ui.timetable.placeTextSubtle')], ['balanced', t('ui.timetable.placeTextBalanced')], ['strong', t('ui.timetable.placeTextStrong')]] as const) backing.createEl('option', { value, text: label });
                 const saved = this.config.get('placeTextBacking');
@@ -2447,6 +2449,7 @@ export class TimetableView extends BasesView {
             }
             const strategyLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.storyImageStrategy') });
             const strategyChoice = strategyLabel.createEl('select');
+            strategyChoice.dataset.imageSection = t('ui.timetable.storyImageStrategy');
             setAccessibleLabel(strategyChoice, t('ui.timetable.storyImageStrategy'));
             for (const [value, label] of [['distinctive', t('ui.timetable.storyImageDistinctive')], ['first', t('ui.timetable.storyImageFirst')], ['second', t('ui.timetable.storyImageSecond')], ['pov', t('ui.timetable.storyImagePov')], ['balanced', t('ui.timetable.storyImageBalanced')]] as const) strategyChoice.createEl('option', { value, text: label });
             strategyChoice.value = this.plugin.settings.storyImageStrategy ?? 'distinctive';
@@ -2457,6 +2460,7 @@ export class TimetableView extends BasesView {
             });
             const fitLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelFit') });
             const fitChoice = fitLabel.createEl('select');
+            fitChoice.dataset.imageSection = t('ui.timetable.imageFormatting');
             setAccessibleLabel(fitChoice, t('ui.timetable.panelFit'));
             fitChoice.createEl('option', { value: 'fill', text: t('ui.timetable.panelFitFill') });
             fitChoice.createEl('option', { value: 'fit', text: t('ui.timetable.panelFitFit') });
@@ -2464,6 +2468,7 @@ export class TimetableView extends BasesView {
             this.panelEvents?.registerDomEvent(fitChoice, 'change', () => { this.config.set('panelFit', fitChoice.value); this.render(); });
             const shapeLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.portraitShape') });
             const shape = shapeLabel.createEl('select');
+            shape.dataset.imageSection = t('ui.timetable.imageFormatting');
             setAccessibleLabel(shape, t('ui.timetable.portraitShape'));
             shape.createEl('option', { value: 'square', text: t('ui.timetable.portraitSquare') });
             shape.createEl('option', { value: 'landscape', text: t('ui.timetable.portraitLandscape') });
@@ -2471,6 +2476,7 @@ export class TimetableView extends BasesView {
             this.panelEvents?.registerDomEvent(shape, 'change', () => { this.config.set('portraitShape', shape.value); this.render(); });
             const sizeLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__size', text: t('ui.timetable.panelSize') });
             const size = sizeLabel.createEl('select');
+            size.dataset.imageSection = t('ui.timetable.imageFormatting');
             setAccessibleLabel(size, t('ui.timetable.panelSize'));
             for (const [value, label] of [['small', t('ui.timetable.panelSizeSmall')], ['medium', t('ui.timetable.panelSizeMedium')], ['large', t('ui.timetable.panelSizeLarge')]] as const) {
                 size.createEl('option', { value, text: label });
@@ -2504,14 +2510,18 @@ export class TimetableView extends BasesView {
         const options = toolbar.querySelector<HTMLElement>('.ert-timetable-panels__options');
         if (options) {
             const button = toolbar.createEl('button', { cls: 'ert-timetable__panel-options-menu', attr: { type: 'button', 'aria-haspopup': 'menu' } });
-            setIcon(button.createSpan(), 'sliders-horizontal');
-            setAccessibleLabel(button, `${t('ui.timetable.panelImage')} / ${t('ui.timetable.panelFit')} / ${t('ui.timetable.panelSize')}`);
-            setTooltip(button, `${t('ui.timetable.panelImage')} / ${t('ui.timetable.panelFit')} / ${t('ui.timetable.panelSize')}`);
+            setIcon(button.createSpan(), 'image');
+            setAccessibleLabel(button, t('ui.timetable.imageSettings'));
+            setTooltip(button, t('ui.timetable.imageSettings'));
             this.panelEvents?.registerDomEvent(button, 'click', () => {
                 const menu = new Menu().setUseNativeMenu(false);
+                let previousSection: string | undefined;
                 for (const select of Array.from(options.querySelectorAll<HTMLSelectElement>('select'))) {
-                    const label = select.getAttribute('aria-label') ?? '';
-                    menu.addItem(item => item.setTitle(label).setDisabled(true));
+                    const section = select.dataset.imageSection;
+                    if (section && section !== previousSection) {
+                        menu.addItem(item => item.setTitle(section).setIsLabel(true));
+                        previousSection = section;
+                    }
                     for (const option of Array.from(select.options)) menu.addItem(item => item.setTitle(option.text).setChecked(option.value === select.value).onClick(() => {
                         select.value = option.value;
                         select.dispatchEvent(new Event('change', { bubbles: true }));

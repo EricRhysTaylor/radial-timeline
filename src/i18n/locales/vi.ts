@@ -6072,6 +6072,10 @@ export const vi: TranslationKeys = {
             "noticeNothing": "Không có gì ở đây cần quảng bá."
         },
         "timetable": {
+            imageSettings: 'Cài đặt hình ảnh',
+            imageCombinations: 'Kết hợp hình ảnh',
+            backgroundTreatment: 'Xử lý nền',
+            imageFormatting: 'Định dạng',
             "storyImageChoose": "Choose card image…",
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",

@@ -6069,6 +6069,10 @@ export const de: DeepPartial<TranslationKeys> = {
             noticeNothing: 'Hier muss nichts umgewandelt werden.',
         },
         timetable: {
+            imageSettings: 'Bildeinstellungen',
+            imageCombinations: 'Bildkombinationen',
+            backgroundTreatment: 'Hintergrundgestaltung',
+            imageFormatting: 'Formatierung',
             storyImageChoose: 'Choose card image…',
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',

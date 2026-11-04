@@ -6069,6 +6069,10 @@ export const ko: DeepPartial<TranslationKeys> = {
             noticeNothing: '승격할 노트가 없습니다.',
         },
         timetable: {
+            imageSettings: '이미지 설정',
+            imageCombinations: '이미지 조합',
+            backgroundTreatment: '배경 처리',
+            imageFormatting: '서식',
             storyImageChoose: 'Choose card image…',
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',

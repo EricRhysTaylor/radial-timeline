@@ -6072,6 +6072,10 @@ export const fr: TranslationKeys = {
             "noticeNothing": "Rien n'a besoin de promouvoir ici."
         },
         "timetable": {
+            imageSettings: 'Réglages des images',
+            imageCombinations: 'Combinaisons d’images',
+            backgroundTreatment: 'Traitement de l’arrière-plan',
+            imageFormatting: 'Mise en forme',
             "storyImageChoose": "Choose card image…",
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",

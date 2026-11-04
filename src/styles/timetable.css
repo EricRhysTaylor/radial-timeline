@@ -1340,9 +1340,11 @@
 .ert-timetable__drop-after { box-shadow: inset 0 -3px var(--interactive-accent); }
 
 /* Optional story-focused presentation for native Canvas file nodes. */
-.ert-canvas-story-node > [class~="canvas-node-container"] > [class~="canvas-node-content"],
-.ert-canvas-story-node > [class~="canvas-node-content"] { visibility: hidden; }
+.ert-canvas-story-node:not(.is-editing) > [class~="canvas-node-container"] > [class~="canvas-node-content"],
+.ert-canvas-story-node:not(.is-editing) > [class~="canvas-node-content"] { visibility: hidden; }
 .ert-canvas-story-node [class~="canvas-node-label"] { display: none; }
+/* Editing a card's note shows Obsidian's editor; the card must never cover it. */
+.ert-canvas-story-node.is-editing .ert-canvas-story-card { display: none; }
 .ert-canvas-story-card {
     border: 1px solid var(--background-modifier-border-hover);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);

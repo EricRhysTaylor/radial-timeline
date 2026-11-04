@@ -5987,7 +5987,7 @@ export const es: TranslationKeys = {
             selectIdea: 'Selecciona primero una tarjeta de idea en el Canvas. Los encabezados de acto y las tarjetas que ya abren notas no se pueden convertir.',
             placeBackground: 'Mostrar fondo del lugar',
             showOverdue: 'Mostrar escenas atrasadas',
-            followTimeline: 'Seguir la escena señalada en la línea temporal',
+            followTimeline: 'Seguir en Canvas la escena señalada con Mayús',
             fileCardsExplanation: 'Solo se convierten tarjetas de texto. Las tarjetas de archivo ya enlazan a notas y no se modifican.',
             showTimetable: 'Radial Timeline: Mostrar en la tabla',
             showTimeline: 'Radial Timeline: Mostrar en la línea temporal',

@@ -1,5 +1,31 @@
-import { describe, expect, it } from 'vitest';
-import { litScenes, queryMarkFor } from './TimetableLink';
+import { describe, expect, it, vi } from 'vitest';
+import { linkSceneHoverToTimetable, litScenes, queryMarkFor } from './TimetableLink';
+import { onLinkedScene } from '../../timetable/timetableRegistry';
+
+describe('timeline to Canvas', () => {
+    it('pins the hovered scene on Shift and keeps normal hover events distinct', () => {
+        class SceneElement {
+            ownerDocument = { defaultView: {} };
+            closest() { return this; }
+            getAttribute() { return 'Story%2FScene.md'; }
+            querySelector() { return null; }
+        }
+        vi.stubGlobal('Element', SceneElement);
+        const handlers = new Map<string, (event: Event) => void>();
+        const svg = { ownerDocument: { defaultView: {} } } as unknown as SVGSVGElement;
+        const view = { renderScope: { registerDomEvent: (_el: HTMLElement, name: string, handler: (event: Event) => void) => { handlers.set(name, handler); } } };
+        const listener = vi.fn();
+        const dispose = onLinkedScene(listener);
+        try {
+            linkSceneHoverToTimetable(view, svg);
+            handlers.get('pointerover')!({ target: new SceneElement(), shiftKey: false } as unknown as Event);
+            handlers.get('keydown')!({ key: 'Shift', repeat: false } as unknown as Event);
+            handlers.get('pointerout')!({ relatedTarget: null } as unknown as Event);
+            expect(listener.mock.calls.map(call => call[2])).toEqual(['timeline', 'timeline-pin', 'timeline']);
+            expect(listener.mock.calls[1][0]).toBe('Story/Scene.md');
+        } finally { dispose(); vi.unstubAllGlobals(); }
+    });
+});
 
 describe('queryMarkFor', () => {
     it('draws the full-size icon in a roomy cell', () => {

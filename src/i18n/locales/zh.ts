@@ -5986,7 +5986,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             selectIdea: '请先在画布上选择一张想法卡片。幕标题和已关联笔记的卡片无法转换。',
             placeBackground: '显示地点背景',
             showOverdue: '显示逾期场景',
-            followTimeline: '跟随时间线上悬停的场景',
+            followTimeline: '在画布中跟随按住 Shift 悬停的场景',
             fileCardsExplanation: '此处只能转换文本卡片。文件卡片已链接到笔记，不会被更改。',
             showTimetable: 'Radial Timeline：在时间表中显示',
             showTimeline: 'Radial Timeline：在时间线上显示',

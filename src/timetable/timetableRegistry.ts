@@ -81,9 +81,10 @@ export interface TimelineColoring {
 }
 
 const liveTimetables = new Set<LiveTimetable>();
-const linkedSceneListeners = new Set<(path: string | null, color: string | null, source: 'timeline' | 'other') => void>();
+type LinkedSceneSource = 'timeline' | 'timeline-pin' | 'other';
+const linkedSceneListeners = new Set<(path: string | null, color: string | null, source: LinkedSceneSource) => void>();
 
-export function onLinkedScene(listener: (path: string | null, color: string | null, source: 'timeline' | 'other') => void): () => void {
+export function onLinkedScene(listener: (path: string | null, color: string | null, source: LinkedSceneSource) => void): () => void {
     linkedSceneListeners.add(listener);
     return () => { linkedSceneListeners.delete(listener); };
 }
@@ -152,7 +153,7 @@ export function refreshTimetableViews(): void {
 }
 
 /** The wheel is hovering this scene (or nothing): light up its row, in the hovered cell's color, in every open Timetable. */
-export function markTimetableRows(path: string | null, color: string | null = null, reveal = true, source: 'timeline' | 'other' = 'other'): void {
+export function markTimetableRows(path: string | null, color: string | null = null, reveal = true, source: LinkedSceneSource = 'other'): void {
     liveTimetables.forEach(view => view.markLinkedRow(path, color, reveal));
     linkedSceneListeners.forEach(listener => listener(path, color, source));
 }

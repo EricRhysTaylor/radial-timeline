@@ -64,6 +64,7 @@ class CanvasCards {
     private showOverdue = true;
     private followTimeline = true;
     private followTimer: number | undefined;
+    private timelinePinned = false;
     private readonly ringColors = new Map<string, Promise<Map<string, number>>>();
     readonly action: HTMLElement;
     private readonly unlink: () => void;
@@ -109,6 +110,8 @@ class CanvasCards {
         });
         this.action.hide();
         this.unlink = onLinkedScene((path, color, source) => {
+            if (source === 'timeline' || (source === 'other' && this.timelinePinned)) return;
+            if (source === 'timeline-pin') this.timelinePinned = true;
             if (this.followTimer) window.clearTimeout(this.followTimer);
             const canvas = (this.view as CanvasView).canvas;
             const nodes = canvas?.nodes;
@@ -126,7 +129,7 @@ class CanvasCards {
                     }
                 }
             }
-            if (source !== 'timeline' || !path || !this.followTimeline || !matches.length) return;
+            if (source !== 'timeline-pin' || !path || !this.followTimeline || !matches.length) return;
             this.followTimer = window.setTimeout(() => {
                 if (!canvas?.setViewport || !Number.isFinite(canvas.x) || !Number.isFinite(canvas.y) || !Number.isFinite(canvas.zoom)) return;
                 const target = linkedSceneViewport(matches, { x: canvas.x!, y: canvas.y!, zoom: canvas.zoom! });
@@ -144,6 +147,7 @@ class CanvasCards {
                 const data = node.getData?.();
                 const path = data?.type === 'file' ? data.file : undefined;
                 const color = path ? this.plugin.highlightSceneOnTimeline(path) : null;
+                this.timelinePinned = false;
                 markTimetableRows(path ?? null, color, true);
                 break;
             }

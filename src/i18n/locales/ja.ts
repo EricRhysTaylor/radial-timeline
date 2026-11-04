@@ -5985,7 +5985,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             selectIdea: 'まずキャンバスでアイデアカードを選択してください。幕の見出しや既存のノートを開くカードは変換できません。',
             placeBackground: '場所の背景を表示',
             showOverdue: '期限超過のシーンを表示',
-            followTimeline: 'タイムライン上のシーンに追従',
+            followTimeline: 'Shiftキーを押して指したシーンをキャンバスで追跡',
             fileCardsExplanation: 'ここではテキストカードのみ変換できます。ファイルカードは既存のノートにリンクしており、変更されません。',
             showTimetable: 'Radial Timeline: タイムテーブルで表示',
             showTimeline: 'Radial Timeline: タイムラインで表示',

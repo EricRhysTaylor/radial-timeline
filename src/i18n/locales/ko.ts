@@ -5984,7 +5984,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             selectIdea: '먼저 캔버스에서 아이디어 카드를 선택하세요. 막 제목과 기존 노트를 여는 카드는 변환할 수 없습니다.',
             placeBackground: '장소 배경 표시',
             showOverdue: '기한이 지난 장면 표시',
-            followTimeline: '타임라인에서 가리킨 장면 따라가기',
+            followTimeline: 'Shift를 누르고 가리킨 장면을 캔버스에서 따라가기',
             fileCardsExplanation: '여기서는 텍스트 카드만 변환할 수 있습니다. 파일 카드는 기존 노트에 연결되어 있으며 변경되지 않습니다.',
             showTimetable: 'Radial Timeline: 시간표에 표시',
             showTimeline: 'Radial Timeline: 타임라인에 표시',

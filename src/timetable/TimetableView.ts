@@ -210,7 +210,7 @@ function sizeNumberChip(svg: SVGSVGElement | null, prefix: string | null): void 
     svg?.setAttribute('viewBox', `0 0 ${width} 22`);
     svg?.setAttribute('width', String(width));
     svg?.querySelector('rect')?.setAttribute('width', String(width - 2));
-    svg?.querySelector('text')?.setAttribute('x', String((width + 16) / 2));
+    svg?.querySelector('text')?.setAttribute('x', String((width + 10) / 2));
 }
 
 function horizontalPadding(element: HTMLElement): number {

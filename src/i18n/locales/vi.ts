@@ -5987,7 +5987,7 @@ export const vi: TranslationKeys = {
             selectIdea: 'Trước tiên hãy chọn thẻ ý tưởng trên Canvas. Không thể chuyển tiêu đề hồi hoặc thẻ đã mở ghi chú.',
             placeBackground: 'Hiện ảnh địa điểm làm nền',
             showOverdue: 'Hiện các cảnh quá hạn',
-            followTimeline: 'Theo cảnh đang trỏ trên dòng thời gian',
+            followTimeline: 'Theo cảnh trỏ cùng phím Shift trên Canvas',
             fileCardsExplanation: 'Chỉ có thể chuyển thẻ văn bản tại đây. Thẻ tệp đã liên kết với ghi chú và không bị thay đổi.',
             showTimetable: 'Radial Timeline: Hiện trong bảng thời gian',
             showTimeline: 'Radial Timeline: Hiện trên dòng thời gian',

@@ -15,7 +15,7 @@ import { sceneCellColor } from '../../utils/sceneCellColor';
 
 type TimetableLinkView = {
     renderScope: {
-        registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void) => void;
+        registerDomEvent: (el: HTMLElement, event: string, handler: (ev: Event) => void, options?: AddEventListenerOptions) => void;
     };
 };
 
@@ -43,6 +43,7 @@ export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGEl
         current = path;
         currentColor = color;
         markTimetableRows(path, color, true, 'timeline');
+        if ((event as PointerEvent).shiftKey) markTimetableRows(path, color, true, 'timeline-pin');
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (event: Event) => {
         if (current === null) return;
@@ -51,6 +52,10 @@ export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGEl
         currentColor = null;
         markTimetableRows(null, null, true, 'timeline');
     });
+    view.renderScope.registerDomEvent(svg.ownerDocument.defaultView as unknown as HTMLElement, 'keydown', (event: Event) => {
+        const key = event as KeyboardEvent;
+        if (key.key === 'Shift' && !key.repeat && current) markTimetableRows(current, currentColor, true, 'timeline-pin');
+    }, { capture: true });
 }
 
 /** Clicking an act label (a book label in saga scope) shows that part of any open Timetable. */

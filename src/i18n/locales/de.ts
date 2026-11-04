@@ -5984,7 +5984,7 @@ export const de: DeepPartial<TranslationKeys> = {
             selectIdea: 'Wähle zuerst eine Ideenkarte auf dem Canvas. Aktüberschriften und Karten mit bestehenden Notizen können nicht umgewandelt werden.',
             placeBackground: 'Ortsbild als Hintergrund',
             showOverdue: 'Überfällige Szenen anzeigen',
-            followTimeline: 'Szene beim Überfahren der Zeitleiste folgen',
+            followTimeline: 'Umschalt-Zeigen auf der Zeitleiste im Canvas folgen',
             fileCardsExplanation: 'Hier können nur Textkarten umgewandelt werden. Dateikarten verweisen bereits auf Notizen und bleiben unverändert.',
             showTimetable: 'Radial Timeline: In der Tabelle anzeigen',
             showTimeline: 'Radial Timeline: Auf der Zeitleiste anzeigen',

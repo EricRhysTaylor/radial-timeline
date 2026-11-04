@@ -5665,7 +5665,7 @@ export const en = {
             selectIdea: 'Select an idea card on the Canvas first. Act headings and cards that already open notes cannot be converted.',
             placeBackground: 'Show place background',
             showOverdue: 'Show overdue scenes',
-            followTimeline: 'Follow timeline hover in Canvas',
+            followTimeline: 'Follow Shift-hover from timeline in Canvas',
             fileCardsExplanation: 'Only text cards can be converted here. File cards already link to notes; they are not copied or changed.',
             showTimetable: 'Radial Timeline: Show in Timetable',
             showTimeline: 'Radial Timeline: Show on timeline',

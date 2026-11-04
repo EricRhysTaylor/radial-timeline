@@ -1547,9 +1547,10 @@
     background: linear-gradient(90deg, color-mix(in srgb, var(--background-primary) 92%, transparent), color-mix(in srgb, var(--background-primary) 72%, transparent));
 }
 
-.ert-text-sketch-drop { display: none; align-items: center; gap: 12px; margin: var(--size-4-2); padding: var(--size-4-4); border: 2px dashed var(--interactive-accent); border-radius: var(--radius-m); background: var(--background-secondary); color: var(--text-normal); box-shadow: var(--shadow-s); pointer-events: none; }
+.ert-text-sketch-drop { display: none; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--size-4-4); min-height: 128px; margin: var(--size-4-2); padding: var(--size-4-4); border: 2px dashed var(--interactive-accent); border-radius: var(--radius-m); background: var(--background-secondary); color: var(--text-normal); box-shadow: var(--shadow-s); pointer-events: none; text-align: center; }
 .ert-text-sketch-drop.is-visible { display: flex; position: sticky; top: var(--ert-timetable-switch-height, 0px); z-index: 8; }
-.ert-text-sketch-drop .svg-icon { width: 34px; height: 34px; stroke-width: 2.5px; }
+.ert-text-sketch-drop .svg-icon { width: 58px; height: 58px; }
+.ert-text-sketch-drop > span:last-child { font-size: clamp(22px, 2.3vw, 32px); font-weight: var(--font-semibold); line-height: 1.15; }
 .ert-timetable, .radial-timeline-view { position: relative; }
 .ert-text-sketch-drop > span { pointer-events: none; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drawer-toggle { align-self: flex-start; width: auto; height: auto; padding: var(--size-2-2) var(--size-4-2); font-size: var(--font-ui-small); }

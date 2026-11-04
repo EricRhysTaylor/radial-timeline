@@ -3,7 +3,7 @@ import type RadialTimelinePlugin from '../main';
 import { authorKeyFor } from './timetableFiles';
 import { synopsisKey } from './panelSynopsis';
 import { t } from '../i18n';
-import { getBookIdForPath } from '../utils/books';
+import { bookCardFor } from './canvasBookCards';
 import { markTimetableRows, onLinkedScene } from './timetableRegistry';
 import { CanvasStoryNavigator } from './CanvasStoryNavigator';
 import { linkedSceneViewport } from './canvasNavigation';
@@ -46,6 +46,7 @@ function portrait(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, 
 
 class CanvasCards {
     private mode: Mode = 'preview';
+    private hasBookCards = false;
     private readonly cards = new Map<HTMLElement, { overlay: HTMLElement; signature: string }>();
     private observer: MutationObserver;
     private timer: number | undefined;
@@ -61,7 +62,6 @@ class CanvasCards {
     private readonly navigator: CanvasStoryNavigator;
 
     constructor(private plugin: RadialTimelinePlugin, private view: ItemView) {
-        this.view.containerEl.addClass('ert-canvas-card-view');
         this.navigator = new CanvasStoryNavigator(plugin, view);
         this.action = view.addAction('layout-template', t('ui.canvasSketch.cardViews'), event => {
             const menu = new Menu();
@@ -70,7 +70,6 @@ class CanvasCards {
             ];
             for (const [mode, label] of choices) menu.addItem(item => item.setTitle(label).setChecked(this.mode === mode).onClick(() => {
                 this.mode = mode;
-                this.view.containerEl.toggleClass('ert-canvas-card-view', mode !== 'full');
                 this.schedule();
             }));
             menu.addSeparator();
@@ -84,6 +83,7 @@ class CanvasCards {
             }));
             menu.showAtMouseEvent(event);
         });
+        this.action.hide();
         this.unlink = onLinkedScene((path, color, source) => {
             if (this.followTimer) window.clearTimeout(this.followTimer);
             const canvas = (this.view as CanvasView).canvas;
@@ -111,7 +111,7 @@ class CanvasCards {
         });
         this.events.load();
         this.events.registerDomEvent(view.containerEl, 'click', event => {
-            if (!(event.target instanceof Element)) return;
+            if (!this.hasBookCards || !(event.target instanceof Element)) return;
             const nodes = (this.view as CanvasView).canvas?.nodes;
             if (!(nodes instanceof Map)) return;
             for (const node of nodes.values()) {
@@ -154,30 +154,39 @@ class CanvasCards {
         node.removeClass('ert-canvas-story-node');
     }
 
+    private bookCards(): Array<{ data: NodeData; el: HTMLElement; file: TFile; bookId: string }> {
+        const nodes = (this.view as CanvasView).canvas?.nodes;
+        if (!(nodes instanceof Map)) return [];
+        return [...nodes.values()].flatMap(node => {
+            const data = node.getData?.();
+            const card = bookCardFor(this.plugin.settings.books, data);
+            const file = card && this.plugin.app.vault.getAbstractFileByPath(card.path);
+            return data && node.nodeEl && card && file instanceof TFile ? [{ data, el: node.nodeEl, file, bookId: card.bookId }] : [];
+        });
+    }
+
     private async refresh(): Promise<void> {
         const revision = ++this.revision;
         this.navigator.refresh();
         const nodes = (this.view as CanvasView).canvas?.nodes;
+        const bookCards = this.bookCards();
+        this.hasBookCards = bookCards.length > 0;
+        this.action.toggle(this.hasBookCards);
+        this.view.containerEl.toggleClass('ert-canvas-card-view', this.hasBookCards && this.mode !== 'full');
         const keep = new Set<HTMLElement>();
         if (this.mode !== 'full' && nodes instanceof Map) {
             const groups = [...nodes.values()].map(node => node.getData?.()).filter((data): data is NodeData => data?.type === 'group');
-            for (const node of nodes.values()) {
-                const data = node.getData?.();
-                const el = node.nodeEl;
-                if (!el || data?.type !== 'file' || !data.file || data.subpath) continue;
-                const file = this.plugin.app.vault.getAbstractFileByPath(data.file);
-                if (!(file instanceof TFile) || file.extension !== 'md') continue;
+            for (const { data, el, file, bookId } of bookCards) {
                 keep.add(el);
                 const fm = this.plugin.app.metadataCache.getFileCache(file)?.frontmatter ?? {}; // SAFE: a note without YAML has no cached frontmatter; empty = no properties
                 const kindValue = readFrontmatterProperty(fm, authorKeyFor('Class', this.plugin.settings));
-                const bookId = getBookIdForPath(this.plugin.settings.books, file.path);
-                const kind = bookId && typeof kindValue === 'string' ? kindValue.trim() : t('ui.canvasSketch.cardLabel');
+                const kind = typeof kindValue === 'string' ? kindValue.trim() : t('ui.canvasSketch.cardLabel');
                 const image = portrait(this.plugin, file, fm);
-                const row = bookId ? buildTableRow(file.path, file.basename, fm, this.plugin.settings) : null;
-                const slots = bookId && row && (row.kind === 'scene' || row.kind === 'sketch') ? await this.colorsForBook(bookId) : new Map<string, number>();
-                const subplotNames = row?.subplots.filter(name => slots.has(name)) ?? []; // SAFE: a card outside every book has no row and shows no subplot chips
+                const row = buildTableRow(file.path, file.basename, fm, this.plugin.settings);
+                const slots = row.kind === 'scene' || row.kind === 'sketch' ? await this.colorsForBook(bookId) : new Map<string, number>();
+                const subplotNames = row.subplots.filter(name => slots.has(name));
                 const shownSubplots = cardSubplots(data, groups, subplotNames);
-                const overdue = this.showOverdue && row?.kind === 'scene' && sceneVitals(fm, this.plugin.settings, new Date()).due.kind === 'late';
+                const overdue = this.showOverdue && row.kind === 'scene' && sceneVitals(fm, this.plugin.settings, new Date()).due.kind === 'late';
                 let preview = '';
                 if (this.mode === 'preview') {
                     if (typeof kindValue === 'string' && kindValue.trim().toLowerCase() === 'scene') {
@@ -194,7 +203,7 @@ class CanvasCards {
                 if (this.stopped || revision !== this.revision) return;
                 const title = file.basename.replace(/^\d+(?:\.\d+)?\s+/, '');
                 const description = plainText(preview);
-                const number = row?.kind === 'scene' ? row.prefix : null;
+                const number = row.kind === 'scene' ? row.prefix : null;
                 const signature = JSON.stringify([this.mode, title, kind, number, image, description, file.path, shownSubplots.map(name => [name, slots.get(name)]), overdue]);
                 const existing = this.cards.get(el);
                 if (existing?.signature === signature && el.contains(existing.overlay)) continue;

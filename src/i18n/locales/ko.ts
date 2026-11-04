@@ -1215,7 +1215,7 @@ export const ko: DeepPartial<TranslationKeys> = {
     commands: {
         openTimetable: '타임테이블 열기',
         resetTimetableColumns: '타임테이블 열을 권장 설정으로 재설정',
-        restoreTimetableView: "타임테이블: Radial Timetable 보기 복원",
+        restoreTimetableView: "타임테이블 Radial Timetable 보기 복원",
         promoteToScene: '노트를 장면으로 승격',
         openTimeline: '열기',
         openInquiry: 'Inquiry 열기',
@@ -1236,6 +1236,7 @@ export const ko: DeepPartial<TranslationKeys> = {
         assignSceneTime: '장면 시간 지정',
         copyPerformanceReport: '성능 보고서 복사 (개발용)',
         onboardManuscript: '원고 가져오기',
+        manuscriptImport: '원고 가져오기',
     },
     timelineDataExportModal: {
         badge: '내보내기',
@@ -5951,6 +5952,7 @@ export const ko: DeepPartial<TranslationKeys> = {
         subplotCanvas: {
             toolbarLabel: '캔버스 맵',
             command: 'Canvas: 서브플롯 지도 만들기',
+            paletteCommand: 'Canvas 서브플롯 지도 만들기',
             badge: '캔버스 맵',
             title: '서브플롯 맵 만들기',
             subtitle: '연결된 장면 노트로 캔버스를 만듭니다. 선은 각 서브플롯의 서사 순서를 나타내며 카드를 옮겨도 원고 순서는 바뀌지 않습니다.',
@@ -6013,7 +6015,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             "cancel": "취소",
             "create": "스케치 만들기",
             "command": "Canvas 카드를 스케치로 변환",
-            paletteCommand: 'Canvas: 카드를 스케치로 변환',
+            paletteCommand: 'Canvas 카드를 스케치로 변환',
             orderRetained: '기존 스케치의 일부 순서 값이 유지되었습니다. 배치를 확인하세요.',
             "openCanvas": "먼저 Canvas를 여세요.",
             "noBook": "먼저 책 폴더를 설정하세요.",
@@ -7544,7 +7546,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             onboardDesc: 'Scrivener 내보내기 파일이나 Word 문서를 가져오세요. 장면, 순서, 시놉시스, 메타데이터가 함께 들어옵니다.',
             workflowLead: '새 보관함을 시작하시나요?',
             workflowStepBookManager: '[Book Manager]로 보관함 안에 소설 폴더를 설정하세요.',
-            workflowStepCreateNote: '명령 팔레트 `⌘ + P`를 열고 `Create note`를 실행하거나, `Book Designer`로 빠르게 골격을 만드세요.',
+            workflowStepCreateNote: '명령 팔레트 `⌘ + P`를 열고 `Note create`를 실행하거나, `Book Designer`로 빠르게 골격을 만드세요.',
             workflowStepPopulate: '장면을 채운 다음 서브플롯, 비트 시스템 등으로 확장하세요.',
             workflowStepDecide: '일찍 정해 두세요: 막은 몇 개인가요? 시간 범위는 어느 정도인가요? 백드롭 노트나 마이크로 백드롭으로 도움이 되는 맥락 마커를 고려하세요.',
             workflowStepTrack: '리듬이 잡히면 집필 세션 시간과 단어 수를 추적하고, 장면이나 게시 단계의 기한을 설정하는 것을 잊지 마세요.',

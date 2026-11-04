@@ -41,7 +41,7 @@ function openCanvasSketches(plugin: RadialTimelinePlugin, canvas = activeCanvas(
 
 export function registerCanvasSketches(plugin: RadialTimelinePlugin): void {
     registerCanvasCardPresentation(plugin);
-    plugin.addCommand({ id: 'create-subplot-canvas', name: t('ui.subplotCanvas.command'), callback: () => new SubplotCanvasModal(plugin.app, plugin).open() });
+    plugin.addCommand({ id: 'create-subplot-canvas', name: t('ui.subplotCanvas.paletteCommand'), callback: () => new SubplotCanvasModal(plugin.app, plugin).open() });
     // Track each open Canvas, including inactive and split leaves. Bind the
     // action to its own view rather than whichever leaf happens to have focus.
     const actions = new Map<View, HTMLElement>();

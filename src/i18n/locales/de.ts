@@ -1215,7 +1215,7 @@ export const de: DeepPartial<TranslationKeys> = {
     commands: {
         openTimetable: 'Timetable öffnen',
         resetTimetableColumns: 'Timetable-Spalten auf die Empfehlung zurücksetzen',
-        restoreTimetableView: "Timetable: Radial Timetable wiederherstellen",
+        restoreTimetableView: "Timetable Radial Timetable wiederherstellen",
         promoteToScene: 'Notiz zur Szene machen',
         openTimeline: 'Öffnen',
         openInquiry: 'Inquiry öffnen',
@@ -1236,6 +1236,7 @@ export const de: DeepPartial<TranslationKeys> = {
         assignSceneTime: 'Szenenzeit-Zuweisung',
         copyPerformanceReport: 'Leistungsbericht kopieren (Dev)',
         onboardManuscript: 'Manuskript importieren',
+        manuscriptImport: 'Manuskript importieren',
     },
     timelineDataExportModal: {
         badge: 'Export',
@@ -5951,6 +5952,7 @@ export const de: DeepPartial<TranslationKeys> = {
         subplotCanvas: {
             toolbarLabel: 'Canvas-Karte',
             command: 'Canvas: Nebenhandlungskarte erstellen',
+            paletteCommand: 'Canvas Nebenhandlungskarte erstellen',
             badge: 'CANVAS-KARTE',
             title: 'Nebenhandlungen als Karte',
             subtitle: 'Ein neues Canvas mit verknüpften Szenennotizen erstellen. Linien zeigen die Erzählfolge in jeder Nebenhandlung; das Verschieben ändert nicht die Manuskriptreihenfolge.',
@@ -6013,7 +6015,7 @@ export const de: DeepPartial<TranslationKeys> = {
             "cancel": "Abbrechen",
             "create": "Skizzen erstellen",
             "command": "Canvas-Karten in Skizzen umwandeln",
-            paletteCommand: 'Canvas: Karten in Skizzen umwandeln',
+            paletteCommand: 'Canvas Karten in Skizzen umwandeln',
             orderRetained: 'Einige Reihenfolgen bestehender Skizzen wurden beibehalten. Bitte prüfe ihre Platzierung.',
             "openCanvas": "Öffne zuerst ein Canvas.",
             "noBook": "Richte zuerst einen Buchordner ein.",

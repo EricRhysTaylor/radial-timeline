@@ -1238,6 +1238,7 @@ export const zh: DeepPartial<TranslationKeys> = {
         assignSceneTime: '场景时间指定',
         copyPerformanceReport: '复制性能报告（开发）',
         onboardManuscript: '导入手稿',
+        manuscriptImport: '导入手稿',
     },
     timelineDataExportModal: {
         badge: '导出',
@@ -5953,6 +5954,7 @@ export const zh: DeepPartial<TranslationKeys> = {
         subplotCanvas: {
             toolbarLabel: '画布地图',
             command: 'Canvas：创建支线地图',
+            paletteCommand: 'Canvas：创建支线地图',
             badge: '画布地图',
             title: '创建支线地图',
             subtitle: '创建包含关联场景笔记的画布。线条表示每条支线的叙事顺序；移动卡片不会改变手稿顺序。',
@@ -7546,7 +7548,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             onboardDesc: '导入 Scrivener 导出文件或 Word 文档。场景、顺序、梗概和元数据会一并导入。',
             workflowLead: '正在创建新的仓库？',
             workflowStepBookManager: '使用 [Book Manager] 在仓库中设置您的小说文件夹。',
-            workflowStepCreateNote: '打开命令面板 `⌘ + P` 并运行 `Create note`，或使用 `Book Designer` 快速搭建。',
+            workflowStepCreateNote: '打开命令面板 `⌘ + P` 并运行 `Note create`，或使用 `Book Designer` 快速搭建。',
             workflowStepPopulate: '填充场景，然后扩展副情节、节拍系统等内容。',
             workflowStepDecide: '尽早决定：分几幕？时间跨度多长？可考虑用背景笔记或微背景添加有用的上下文标记。',
             workflowStepTrack: '进入节奏后，别忘了记录写作会话的时长和字数，并为场景或发布阶段设置截止日期。',

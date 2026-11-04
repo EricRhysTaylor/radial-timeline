@@ -189,7 +189,7 @@ export class CommandRegistrar {
 
         this.plugin.addCommand({
             id: 'onboard-manuscript',
-            name: t('commands.onboardManuscript'),
+            name: t('commands.manuscriptImport'),
             callback: () => {
                 new OnboardingModal(this.app, this.plugin).open();
             }

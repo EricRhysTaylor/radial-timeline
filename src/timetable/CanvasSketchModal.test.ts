@@ -7,7 +7,7 @@ import type { StoryCanvasData } from './canvasSketches';
 import type { TimetableRow } from './timetableModel';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 
-function setup(changeDuringCreate = false, selectedIds: string[] = []) {
+function setup(changeDuringCreate = false, selectedIds: string[] = ['1']) {
     let data: StoryCanvasData = { nodes: [
         { id: '1', type: 'text', text: 'A scene\n\nSome ideas', x: 1, y: 2 },
         { id: '2', type: 'text', text: 'Other idea' },
@@ -32,6 +32,11 @@ describe('Canvas sketch conversion', () => {
     it('preselects all selected text cards for review', () => {
         const test = setup(false, ['1', '2']);
         expect([...Reflect.get(test.modal, 'selected') as Set<string>]).toEqual(['1', '2']);
+    });
+
+    it('offers only the selected ideas', () => {
+        const test = setup(false, ['2']);
+        expect((Reflect.get(test.modal, 'cards') as Array<{ id: string }>).map(card => card.id)).toEqual(['2']);
     });
 
     it('creates a distinct sketch preserving the card body and replaces only that card', async () => {
@@ -59,7 +64,7 @@ describe('Canvas sketch conversion', () => {
     });
 
     it('writes selected sketches in the reviewed order at the end of the chosen act', async () => {
-        const test = setup();
+        const test = setup(false, ['1', '2']);
         (Reflect.get(test.modal, 'selected') as Set<string>).add('2');
         const cards = Reflect.get(test.modal, 'cards') as Array<{ id: string }>;
         cards.reverse();
@@ -144,7 +149,7 @@ describe('Canvas sketch conversion', () => {
     });
 
     it('keeps existing ranks when some new sketches were created before a failure', async () => {
-        const test = setup();
+        const test = setup(false, ['1', '2']);
         const file = new TFile('Book/Existing.md');
         const frontmatter: Record<string, unknown> = { Class: 'Sketch', Act: 1 };
         test.plugin.settings = { ...DEFAULT_SETTINGS, books: [{ id: 'book', title: 'Book', sourceFolder: 'Book' }] };

@@ -1,5 +1,6 @@
 import { t } from '../i18n';
 import { safeTitle } from '../utils/noteTitle';
+import { isStoryActHeading } from './canvasNavigation';
 
 /** Canvas data is intentionally open: other plugins may add their own fields. */
 export interface CanvasCard {
@@ -18,7 +19,7 @@ export interface StoryCanvasData {
 export type CanvasTextCard = CanvasCard & { text: string };
 
 export function canvasTextCards(data: StoryCanvasData): CanvasTextCard[] {
-    return (data.nodes ?? []).filter((node): node is CanvasTextCard => node.type === 'text' && !node.id.startsWith('acportal||') && typeof node.text === 'string' && node.text.trim().length > 0); // SAFE: canvas JSON may omit nodes; none = no text cards
+    return (data.nodes ?? []).filter((node): node is CanvasTextCard => node.type === 'text' && !node.id.startsWith('acportal||') && typeof node.text === 'string' && node.text.trim().length > 0 && !isStoryActHeading(node.text)); // SAFE: canvas JSON may omit nodes; none = no text cards
 }
 
 export function sketchTitle(text: string): string {

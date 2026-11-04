@@ -34,8 +34,9 @@ export class CanvasSketchModal extends ErtModal {
     constructor(app: App, private readonly plugin: RadialTimelinePlugin, private readonly canvas: OpenCanvas, private readonly books: BookProfile[], activeBook: BookProfile, private readonly canvasIsOpen: () => boolean) {
         super(app);
         this.book = activeBook;
-        this.cards = canvasReadingOrder(canvasTextCards(JSON.parse(JSON.stringify(canvas.getData())) as StoryCanvasData));
         const selected = canvas.selection instanceof Set ? [...canvas.selection] : [];
+        const selectedIds = new Set(selected.map(node => node.getData?.()?.id).filter((id): id is string => !!id));
+        this.cards = canvasReadingOrder(canvasTextCards(JSON.parse(JSON.stringify(canvas.getData())) as StoryCanvasData).filter(card => selectedIds.has(card.id)));
         for (const node of selected) {
             const data = node.getData?.();
             if (data?.type === 'text' && data.id && this.cards.some(card => card.id === data.id)) this.selected.add(data.id);
@@ -103,8 +104,7 @@ export class CanvasSketchModal extends ErtModal {
                 updateScenes();
             }
         });
-        this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.canvasSketch.orderHint') });
-        this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.canvasSketch.fileCardsExplanation') });
+        if (this.cards.length > 1) this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.canvasSketch.orderHint') });
         const list = this.contentEl.createDiv({ cls: 'ert-canvas-sketch-list' });
         const actions = this.mountActions();
         const cancel = actions.createEl('button', { text: t('ui.canvasSketch.cancel') });
@@ -128,6 +128,7 @@ export class CanvasSketchModal extends ErtModal {
                     if (check.checked) this.selected.add(card.id); else this.selected.delete(card.id);
                     submit.disabled = this.selected.size === 0;
                 });
+                if (this.cards.length < 2) return;
                 const controls = row.createDiv({ cls: 'ert-canvas-sketch-order' });
                 for (const [delta, icon, hint] of [[-1, 'chevron-up', t('ui.canvasSketch.moveUp')], [1, 'chevron-down', t('ui.canvasSketch.moveDown')]] as const) {
                     const button = controls.createEl('button', { cls: 'ert-canvas-sketch-move clickable-icon', attr: { type: 'button' } });

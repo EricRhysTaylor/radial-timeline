@@ -8,6 +8,7 @@ import { runPromotion } from '../services/PromoteToSceneEntry';
 import { CanvasSketchModal, type OpenCanvas } from './CanvasSketchModal';
 import { registerCanvasCardPresentation } from './CanvasCardPresentation';
 import { SubplotCanvasModal } from './SubplotCanvasModal';
+import { canvasTextCards } from './canvasSketches';
 
 function canvasForView(source: View | null | undefined): OpenCanvas | null {
     if (!source || source.getViewType() !== 'canvas') return null;
@@ -23,6 +24,12 @@ function activeCanvas(plugin: RadialTimelinePlugin): OpenCanvas | null {
 
 function openCanvasSketches(plugin: RadialTimelinePlugin, canvas = activeCanvas(plugin)): void {
     if (!canvas) { new Notice(t('ui.canvasSketch.openCanvas')); return; }
+    const eligible = new Set(canvasTextCards(canvas.getData()).map(card => card.id));
+    const selectedCards = canvas.selection instanceof Set ? [...canvas.selection] : [];
+    if (!selectedCards.some(node => { const data = node.getData?.(); return data?.id && eligible.has(data.id); })) {
+        new Notice(t('ui.canvasSketch.selectIdea'), 8000);
+        return;
+    }
     const books = plugin.settings.books.filter(book => book.sourceFolder.trim());
     const active = getActiveBook(plugin.settings);
     const selected = books.find(book => book.id === active?.id) ?? books[0];

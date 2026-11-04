@@ -29,7 +29,7 @@ Pulse Update:             # AI-generated scene pulse analysis flag
 Summary Update:           # Summary scene refresh flag
 ```
 
-Book Designer and Create note generate the core scaffold above. `ID` is inserted automatically for stable scene citations, and the advanced properties editor can maintain the current core and advanced field order.
+Book Designer and Note create generate the core scaffold above. `ID` is inserted automatically for stable scene citations, and the advanced properties editor can maintain the current core and advanced field order.
 
 <p align="center"><img src="images/scene-properties.png" alt="A scene note's core properties in Obsidian's Properties view" width="420"></p>
 <p align="center"><sub>A scene’s core properties as Obsidian shows them at the top of the note</sub></p>
@@ -144,14 +144,16 @@ Class: Outline
 
 ## Images for Timetable Panels
 
-The Timetable’s **Panels** layout shows an image on each card. It reads them from these properties:
+The Timetable’s **Panels** layout shows an image on each card. An image file named after a character or place, such as `Elizabeth Bennet.webp`, is found anywhere in the vault; numbered copies such as `Elizabeth Bennet 2.webp` are further portraits of the same character, and each scene keeps the one it was given. Otherwise the cards read these properties:
 
 | Property | On | Shows |
 |---|---|---|
-| `Image` | a character note | that character’s portrait, for the first character in a scene’s **Character** list (the POV character) |
+| `Image` | a character note | that character’s portrait, when **Character selection** picks them for a scene |
 | `Image` | a Place note | the place, for the first place in a scene’s **Place** list |
 | `Place image` | a scene | the place art for that scene only, instead of the Place note’s image |
 | `Scene image` | a scene | artwork for the scene itself |
+| `Card character` | a scene | the character whose portrait this card shows, set with **Choose card image…** |
+| `Card image` | a scene | the image this card shows, set with **Choose card image…** or **Next portrait** |
 
 Each value is a link to an image in the vault, such as `"[[Longbourn.webp]]"`. PNG, JPEG, GIF, WebP and AVIF work. See [Panels](Timetable#panels).
 

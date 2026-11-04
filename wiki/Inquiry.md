@@ -9,7 +9,7 @@ Inquiry analyzes manuscript and worldbuilding material across a book or saga. As
 Inquiry sends your selected manuscript material to your configured cloud provider or Local LLM endpoint and asks structured questions organized into three narrative zones. The AI returns findings with headlines, recommended actions, evidence quotes, and scene citations that are visualized in the Inquiry glyph.
 
 **Commands**:
-*   `Open inquiry` — Opens the Inquiry view
+*   `Inquiry open` — Opens the Inquiry view
 
 **Settings**: [Inquiry settings](Settings-Inquiry)
 

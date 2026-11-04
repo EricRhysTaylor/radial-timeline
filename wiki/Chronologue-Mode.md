@@ -118,7 +118,7 @@ Chronologue mode offers two ways to layer contextual information behind your sce
 ### Backdrop Notes
 Backdrop notes visualize major contextual events — historical wars, planetary alignments, or seasonal changes — that drive your plot but aren't specific scenes.
 
-*   **Create**: Use **Radial timeline: Create note…** and choose **Story world** → **Backdrop** to generate a file with start/end times.
+*   **Create**: Use **Radial timeline: Note create** and choose **Story world** → **Backdrop** to generate a file with start/end times.
 *   **Visualize**: These appear as a dedicated ring in Chronologue mode, grounding your scenes in their temporal context.
 *   **Overlaps**: Two backdrops may overlap partially, shown with a visual plaid pattern.
 

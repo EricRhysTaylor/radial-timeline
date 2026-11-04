@@ -3,7 +3,7 @@ The Radial Timeline View is the main workspace: you work with scenes, subplots, 
 <p align="center"><img src="images/view-radialtimeline-chronologue.png" alt="Radial Timeline View in Chronologue mode" width="720"></p>
 <p align="center"><sub>Radial Timeline View — shown in Chronologue mode</sub></p>
 
-**Open**: Command palette → **`Radial timeline: Open`**, or click the Radial Timeline logo icon in the ribbon.
+**Open**: Command palette → **`Radial timeline: Timeline open`**, or click the Radial Timeline logo icon in the ribbon.
 
 ## Overview
 
@@ -41,7 +41,7 @@ See [Narrative Mode](Narrative-Mode#book-and-saga-scope) for Saga behavior and l
 
 ### In a narrow pane
 
-The title bar fits the pane you give it. When the right side needs room, the mode buttons slide left to make it. In a narrower pane the title bar icons (**Timetable**, **Canvas: Create subplot map**, commands, manuscript export, bug report, and **Manage books**) fold into one **Timeline actions** menu button, then the search field and book selector get shorter. Only in the narrowest panes do the inactive modes shrink to their number, such as **1 2 Narrative 3 4**.
+The title bar fits the pane you give it. When the right side needs room, the mode buttons slide left to make it. In a narrower pane the title bar icons (**Timetable**, **Canvas create subplot map**, commands, manuscript export, bug report, and **Manage books**) fold into one **Timeline actions** menu button, then the search field and book selector get shorter. Only in the narrowest panes do the inactive modes shrink to their number, such as **1 2 Narrative 3 4**.
 
 ## Getting Help
 

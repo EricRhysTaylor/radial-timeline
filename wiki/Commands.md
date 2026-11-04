@@ -9,11 +9,11 @@ Open the Obsidian Command Palette and type `Radial timeline` to filter the list:
 
 These are the main command-palette entries.
 
-1. **Open** — opens the [Radial Timeline View](Radial-Timeline-View).
-2. **[Create note…](#create-note)**
-3. **Open inquiry** — opens the [Inquiry View](Inquiry).
+1. **Timeline open** — opens the [Radial Timeline View](Radial-Timeline-View).
+2. **[Note create](#create-note)**
+3. **Inquiry open** — opens the [Inquiry View](Inquiry).
 4. **[Book designer](Book-Designer)** ← standalone guide
-5. **[Import manuscript](#onboard-manuscript)**
+5. **[Manuscript import](#onboard-manuscript)**
 6. **[Timeline date scaffold](#timeline-order)** *(beta)*
 7. **[Timeline date audit](#timeline-audit)** *(beta)*
 8. **[Subplot manager](#manage-subplots)**
@@ -28,13 +28,13 @@ These are the main command-palette entries.
 17. **[Author progress report (APR)](Author-Progress-Report)** ← standalone guide
 18. **[Scene pulse analysis (subplot order)](#scene-pulse-analysis-subplot-order)**
 19. **[Scene pulse analysis (manuscript order)](#scene-pulse-analysis-manuscript-order)**
-20. **[Timeline share export](#timeline-share-export)**
-21. **[Timetable: Open](#timetable-open)**
-22. **[Timetable: Reset columns to recommended](#timetable-reset-columns-to-recommended)**
-23. **[Timetable: Restore a Radial Timetable view](#timetable-restore-a-radial-timetable-view)**
-24. **[Scene: Promote note](#scene-promote-note)**
-25. **[Canvas: Create subplot map](#canvas-create-subplot-map)**
-26. **[Canvas: Convert cards to sketches](#canvas-convert-cards-to-sketches)**
+20. **[Community timeline share export](#timeline-share-export)**
+21. **[Timetable open](#timetable-open)**
+22. **[Timetable reset columns to recommended](#timetable-reset-columns-to-recommended)**
+23. **[Timetable restore a Radial Timetable view](#timetable-restore-a-radial-timetable-view)**
+24. **[Scene promote note](#scene-promote-note)**
+25. **[Canvas create subplot map](#canvas-create-subplot-map)**
+26. **[Canvas convert cards to sketches](#canvas-convert-cards-to-sketches)**
 27. **[Scene time assignment](Scene-Time)** ← standalone guide
 
 ## Conditional Visibility
@@ -42,7 +42,7 @@ These are the main command-palette entries.
 Some commands are hidden until their required feature is enabled. Others remain visible but stop with a setup message if prerequisites are missing:
 
 *   **Scene pulse analysis**, **Summary scene refresh**, and **Gossamer analysis** appear only when **AI LLM features** are enabled in [Settings → AI](Settings-AI).
-*   **Open inquiry** stays listed and opens with AI off, so you can read saved sessions, including the Story Vaults', without an API key. Running a new question needs AI turned on and a provider. See [Inquiry](Inquiry).
+*   **Inquiry open** stays listed and opens with AI off, so you can read saved sessions, including the Story Vaults', without an API key. Running a new question needs AI turned on and a provider. See [Inquiry](Inquiry).
 *   **Gossamer analysis** also needs an active beat system, story beats, and scene content. To score by hand without AI, use **[Gossamer score manager](#gossamer-score-manager)**.
 *   **Runtime estimator** is a **Pro** workflow. Runtime configuration lives in [Settings → Core](Settings-Core#runtime-estimation).
 *   With AI off, the **Timeline date audit** AI scan and the runtime estimator's AI mode tell you AI is off instead of running.
@@ -52,7 +52,7 @@ Some commands are hidden until their required feature is enabled. Others remain 
 ---
 
 <a name="create-note"></a>
-## Create note…
+## Note create
 
 Opens the guided Radial Timeline note selector.
 
@@ -71,7 +71,7 @@ Related: [Scene Properties (Core + Advanced)](YAML-Frontmatter).
 ---
 
 <a name="onboard-manuscript"></a>
-## Import manuscript
+## Manuscript import
 
 Opens the guided flow for importing a Scrivener export, a Word document, or one large text file. **Structure only — no AI** is the default; AI assistance is an explicit choice.
 
@@ -262,7 +262,7 @@ Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Summary scene refresh]
 ---
 
 <a name="timeline-share-export"></a>
-## Timeline share export
+## Community timeline share export
 
 Writes the file you upload on your Community **My Share** page to build your Interactive Timeline. Exporting shares nothing: the file is written to `Radial Timeline/Community/` in your vault and stays there until you upload it and activate the share.
 
@@ -277,36 +277,36 @@ Related: [Settings → Community](Settings-Community).
 
 ---
 
-## Timetable: Open
+## Timetable open
 
-**Radial timeline: Timetable: Open** opens or focuses the Bases view for the timeline’s current book or saga. Enable the Bases core plugin first. See [Timetable](Timetable).
-
----
-
-## Timetable: Reset columns to recommended
-
-**Radial timeline: Timetable: Reset columns to recommended** gives the active Timetable view the recommended columns for its scenes, after a confirm, and clears its saved column widths. Filters, sorts, grouping, and the file’s other views stay as they are. The same action is in the column header menu. See [Columns](Timetable#columns).
+**Radial timeline: Timetable open** opens or focuses the Bases view for the timeline’s current book or saga. Enable the Bases core plugin first. See [Timetable](Timetable).
 
 ---
 
-## Timetable: Restore a Radial Timetable view
+## Timetable reset columns to recommended
 
-**Radial timeline: Timetable: Restore a Radial Timetable view** adds a fresh **Radial Timetable** view to the open `.base` file with the recommended settings, for when you have deleted or reshaped yours. Your other views, the Base filters and your notes stay as they are. The same action is in the `.base` file’s menu and under the **?** beside **Saved views**. See [Saved views](Timetable#saved-views).
-
----
-
-## Scene: Promote note
-
-**Radial timeline: Scene: Promote note** reviews a sketch or unclassified note for conversion to a scene, preserving its text and existing properties. See [Promoting notes](Timetable#promote-a-note-to-a-scene).
+**Radial timeline: Timetable reset columns to recommended** gives the active Timetable view the recommended columns for its scenes, after a confirm, and clears its saved column widths. Filters, sorts, grouping, and the file’s other views stay as they are. The same action is in the column header menu. See [Columns](Timetable#columns).
 
 ---
 
-## Canvas: Create subplot map
+## Timetable restore a Radial Timetable view
 
-**Radial timeline: Canvas: Create subplot map** builds a new Canvas of the book’s scenes, one lane per subplot. The same dialog opens from the timeline title bar and the Timetable’s **Canvas map** button. See [Canvas story maps](Timetable#canvas-story-maps).
+**Radial timeline: Timetable restore a Radial Timetable view** adds a fresh **Radial Timetable** view to the open `.base` file with the recommended settings, for when you have deleted or reshaped yours. Your other views, the Base filters and your notes stay as they are. The same action is in the `.base` file’s menu and under the **?** beside **Saved views**. See [Saved views](Timetable#saved-views).
 
 ---
 
-## Canvas: Convert cards to sketches
+## Scene promote note
 
-**Radial timeline: Canvas: Convert cards to sketches** turns text cards on the open Canvas into sketch notes in a book. See [Bring ideas from Canvas](Timetable#bring-ideas-from-canvas).
+**Radial timeline: Scene promote note** reviews a sketch or unclassified note for conversion to a scene, preserving its text and existing properties. See [Promoting notes](Timetable#promote-a-note-to-a-scene).
+
+---
+
+## Canvas create subplot map
+
+**Radial timeline: Canvas create subplot map** builds a new Canvas of the book’s scenes, one lane per subplot. The same dialog opens from the timeline title bar and the Timetable’s **Canvas map** button. See [Canvas story maps](Timetable#canvas-story-maps).
+
+---
+
+## Canvas convert cards to sketches
+
+**Radial timeline: Canvas convert cards to sketches** turns text cards on the open Canvas into sketch notes in a book. See [Bring ideas from Canvas](Timetable#bring-ideas-from-canvas).

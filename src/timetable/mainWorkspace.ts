@@ -8,7 +8,7 @@ function leaves(node: LayoutNode): LayoutNode[] {
     return node.type === 'leaf' ? [node] : (node.children ?? []).flatMap(leaves);
 }
 
-/** Rebuild the main area while retaining every existing leaf in a tab group. */
+/** Rebuild the main area, reusing views needed by the chosen layout. */
 export function planMainWorkspace(layout: WorkspaceLayout, tableId: string, file: TFile, kind: LayoutKind, makeId: () => string): { layout: WorkspaceLayout; tableId: string; referenceId: string } {
     const all = leaves(layout.main);
     const table = all.find(node => node.id === tableId);
@@ -18,9 +18,8 @@ export function planMainWorkspace(layout: WorkspaceLayout, tableId: string, file
         ?? { id: makeId(), type: 'leaf', state: { type, state: { file: file.path } } };
     const timeline = kind === 'timeline' ? all.find(node => node.state?.type === 'radial-timeline')
         ?? { id: makeId(), type: 'leaf', state: { type: 'radial-timeline', state: {} } } : null;
-    const remaining = all.filter(node => node !== table && node !== target && node !== timeline);
     const tabs = (children: LayoutNode[]): LayoutNode => ({ id: makeId(), type: 'tabs', children });
-    const tableTabs = tabs([table, ...remaining]);
+    const tableTabs = tabs([table]);
     const referenceTabs = tabs([target]);
     const pair: LayoutNode = { id: makeId(), type: 'split', direction: 'horizontal', children: [tableTabs, referenceTabs] };
     const main: LayoutNode = { id: layout.main.id, type: 'split', direction: 'vertical', children:

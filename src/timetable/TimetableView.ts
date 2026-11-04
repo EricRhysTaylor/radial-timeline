@@ -267,8 +267,8 @@ class OutlineDocumentPicker extends FuzzySuggestModal<TFile> {
 }
 
 class CanvasWorkspacePicker extends FuzzySuggestModal<TFile | null> {
-    constructor(app: App, private readonly chosen: (file: TFile | null) => void) { super(app); this.setPlaceholder(t('ui.timetable.canvasWorkspaceChoose')); }
-    getItems(): Array<TFile | null> { return [null, ...this.app.vault.getFiles().filter(file => file.extension === 'canvas')]; }
+    constructor(app: App, private readonly chosen: (file: TFile | null) => void, private readonly candidates?: TFile[]) { super(app); this.setPlaceholder(t('ui.timetable.canvasWorkspaceChoose')); }
+    getItems(): Array<TFile | null> { return [null, ...(this.candidates ?? this.app.vault.getFiles().filter(file => file.extension === 'canvas'))]; }
     getItemText(file: TFile | null): string { return file?.path ?? t('ui.timetable.canvasWorkspaceCreate'); }
     onChooseItem(file: TFile | null): void { this.chosen(file); }
 }
@@ -2383,13 +2383,22 @@ export class TimetableView extends BasesView {
                     this.setLayout('table');
                     await applyMainWorkspace(this.plugin.app.workspace, table, file, 'canvas');
                 };
-                new CanvasWorkspacePicker(this.plugin.app, file => {
+                const ids = this.bookIdsInView();
+                const bookId = ids.length === 1 ? ids[0] : ids.length === 0 && getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings)?.id : undefined;
+                const book = this.plugin.settings.books.find(candidate => candidate.id === bookId);
+                const stem = book ? safeTitle(book.title) || 'Book' : undefined;
+                const prefix = stem ? `Radial Timeline/Story Maps/${stem} - Subplot Map` : undefined;
+                const candidates = prefix ? this.plugin.app.vault.getFiles().filter(file => file.extension === 'canvas' && (file.path === `${prefix}.canvas` || (file.path.startsWith(`${prefix} `) && /^\d+\.canvas$/.test(file.path.slice(prefix.length + 1))))) : undefined;
+                const openPaths = new Set(this.plugin.app.workspace.getLeavesOfType('canvas').map(leaf => (leaf.view as { file?: TFile }).file?.path));
+                const openMatches = candidates?.filter(file => openPaths.has(file.path)) ?? [];
+                const match = openMatches.length === 1 ? openMatches[0] : candidates?.find(file => file.path === `${prefix}.canvas`) ?? (candidates?.length === 1 ? candidates[0] : undefined);
+                const choose = (file: TFile | null) => {
                     if (file) void open(file).catch(error => new Notice(t('ui.timetable.outlineWorkspaceOpenFailed', { message: error instanceof Error ? error.message : String(error) }), 8000));
-                    else {
-                        const ids = this.bookIdsInView();
-                        new SubplotCanvasModal(this.plugin.app, this.plugin, ids.length === 1 ? ids[0] : undefined, open).open();
-                    }
-                }).open();
+                    else new SubplotCanvasModal(this.plugin.app, this.plugin, bookId, open).open();
+                };
+                if (match) choose(match);
+                else if (book && candidates?.length === 0) choose(null);
+                else new CanvasWorkspacePicker(this.plugin.app, choose, candidates).open();
             }));
             const rect = workspace.getBoundingClientRect();
             menu.showAtPosition({ x: rect.left, y: rect.bottom }, workspace.ownerDocument);

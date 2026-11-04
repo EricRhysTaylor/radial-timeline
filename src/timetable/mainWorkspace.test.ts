@@ -17,22 +17,22 @@ function allIds(node: { id: string; type: string; children?: unknown[] }): strin
 }
 
 describe('central Quick Workspace', () => {
-    it('preserves all tabs and both sidebars while arranging the table and existing canvas', () => {
+    it('reuses the table and canvas, clears other central tabs, and preserves both sidebars', () => {
         const original = sample();
         const plan = planMainWorkspace(original, 'table', file('map.canvas'), 'canvas', ids());
         expect(plan.layout.left).toEqual(original.left);
         expect(plan.layout.right).toEqual(original.right);
         expect(plan.layout.main.children?.[0].direction).toBe('horizontal');
-        expect(allIds(plan.layout.main).sort()).toEqual(['canvas', 'note', 'table', 'wheel', 'wheel2']);
+        expect(allIds(plan.layout.main).sort()).toEqual(['canvas', 'table']);
         expect(plan.referenceId).toBe('canvas');
         expect(plan.layout.active).toBe('table');
         expect(original.main.direction).toBe('vertical');
     });
-    it('uses one existing timeline and creates a reference while keeping the other tabs', () => {
+    it('uses one existing timeline and creates a reference without duplicate views', () => {
         const plan = planMainWorkspace(sample(), 'table', file('reference.md'), 'timeline', ids());
         expect(plan.layout.main.direction).toBe('vertical');
         expect(plan.layout.main.children?.[1].direction).toBe('horizontal');
-        expect(allIds(plan.layout.main).sort()).toEqual(['canvas', 'new-1', 'note', 'table', 'wheel', 'wheel2']);
+        expect(allIds(plan.layout.main).sort()).toEqual(['new-1', 'table', 'wheel']);
     });
     it('rejects an absent timetable', () => {
         expect(() => planMainWorkspace(sample(), 'missing', file('reference.md'), 'beside', ids())).toThrow();

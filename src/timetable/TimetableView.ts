@@ -2881,6 +2881,7 @@ export class TimetableView extends BasesView {
                     const color = fill.startsWith('url(') ? stageColors[stage] : fill;
                     if (color) panel.setCssProps({ '--ert-timetable-portrait-color': color });
                 }
+                const sceneActions = !outline && row.kind === 'scene' ? panel.createDiv({ cls: 'ert-timetable-panels__scene-actions' }) : null;
                 if (!outline && imageMode === 'layered' && location) {
                     panel.addClass('has-place-background');
                     const backdrop = panel.createDiv({ cls: 'ert-timetable-panels__backdrop', attr: { 'aria-hidden': 'true' } });
@@ -2888,7 +2889,7 @@ export class TimetableView extends BasesView {
                     const placeFocus = validPanelFocus(focusMap[location.path]);
                     backdropImage.setCssProps({ '--ert-place-focus-x': `${placeFocus.x * 100}%`, '--ert-place-focus-y': `${placeFocus.y * 100}%` });
                     this.panelEvents?.registerDomEvent(backdropImage, 'error', () => { backdrop.remove(); panel.removeClass('has-place-background'); });
-                    const adjust = panel.createEl('button', { cls: 'ert-timetable-panels__place-focus', attr: { type: 'button' } });
+                    const adjust = (sceneActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__place-focus', attr: { type: 'button' } });
                     setIcon(adjust, 'focus');
                     setAccessibleLabel(adjust, t('ui.timetable.placeFocus'));
                     setTooltip(adjust, t('ui.timetable.placeFocus'));
@@ -2948,7 +2949,7 @@ export class TimetableView extends BasesView {
                 }
                 const heading = header.createDiv({ cls: 'ert-timetable-panels__heading' });
                 if (!outline && (row.kind === 'scene' || row.kind === 'sketch')) {
-                    const imageOptions = panel.createEl('button', { cls: 'ert-timetable-panels__image-menu clickable-icon', attr: { type: 'button' } });
+                    const imageOptions = (sceneActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__image-menu clickable-icon', attr: { type: 'button' } });
                     setIcon(imageOptions, 'image-plus');
                     setAccessibleLabel(imageOptions, t('ui.timetable.storyImageChoose'));
                     setTooltip(imageOptions, t('ui.timetable.storyImageChoose'));
@@ -2981,7 +2982,7 @@ export class TimetableView extends BasesView {
                     dateLine.createSpan({ text: duration ? `${date} · ${duration}` : date });
                 }
                 if (!outline && row.kind === 'scene' && panelImage && imagePath && imageFit === 'fill') {
-                    const focusButton = panel.createEl('button', { cls: 'ert-timetable-panels__focus clickable-icon', attr: { type: 'button' } });
+                    const focusButton = (sceneActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__focus clickable-icon', attr: { type: 'button' } });
                     setIcon(focusButton, 'focus');
                     setAccessibleLabel(focusButton, t('ui.timetable.panelFocusTitle'));
                     setTooltip(focusButton, t('ui.timetable.panelFocusTitle'));
@@ -3019,7 +3020,7 @@ export class TimetableView extends BasesView {
                     if (characterInset) addInset(portrait, selectedPerson?.imagePath, t('ui.timetable.panelImageCharacter'), 'user-round');
                     if (artworkInset && artwork) addInset(artwork.url, artwork.path, t('ui.timetable.panelImageArtwork'), 'image');
                 }
-                const open = (sketchActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__open clickable-icon', attr: { type: 'button' } });
+                const open = (sketchActions ?? sceneActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__open clickable-icon', attr: { type: 'button' } });
                 setIcon(open, !outline && row.kind !== 'scene' ? 'arrow-up-right' : 'file-text');
                 setAccessibleLabel(open, t('ui.timetable.panelOpen'));
                 setTooltip(open, t('ui.timetable.panelOpen'));

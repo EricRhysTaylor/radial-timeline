@@ -43,7 +43,7 @@ import {
     type WorkspaceLeaf,
 } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import { adoptOutlineReference, currentOutlineReference, openOutlineReference } from './outlineWorkspace';
+import { adoptOutlineReference, currentOutlineReference, openOutlineReference, rememberOutlineReference, rememberedOutlineReference } from './outlineWorkspace';
 import { applyMainWorkspace } from './mainWorkspace';
 import type { TimelineItem } from '../types';
 import { getFormattingLocale, t, tCount } from '../i18n';
@@ -2369,17 +2369,19 @@ export class TimetableView extends BasesView {
         setIcon(workspace.createSpan({ cls: 'ert-outline-workspace-button__caret', attr: { 'aria-hidden': 'true' } }), 'chevron-down');
         this.panelEvents?.registerDomEvent(workspace, 'click', () => {
             const menu = new Menu().setUseNativeMenu(false);
-            for (const [direction, timeline, label, icon] of [['vertical', false, t('ui.timetable.outlineWorkspaceBeside'), 'panels-left-right'], ['horizontal', false, t('ui.timetable.outlineWorkspaceBelow'), 'panels-top-bottom'], ['horizontal', true, t('ui.timetable.outlineWorkspaceTimeline'), 'panel-left']] as const) {
+            for (const [direction, timeline, label, icon] of [['vertical', false, t('ui.timetable.outlineWorkspaceBeside'), 'columns-2'], ['horizontal', false, t('ui.timetable.outlineWorkspaceBelow'), 'rows-2'], ['horizontal', true, t('ui.timetable.outlineWorkspaceTimeline'), 'rt-workspace-timeline']] as const) {
                 menu.addItem(item => item.setTitle(label).setIcon(icon).onClick(() => {
                     if (this.panelEditing) return;
                     void this.openMainReferenceWorkspace(direction, timeline);
                 }));
             }
-            menu.addItem(item => item.setTitle(t('ui.timetable.canvasWorkspaceBelow')).setIcon('panels-top-bottom').onClick(() => {
+            menu.addItem(item => item.setTitle(t('ui.timetable.canvasWorkspaceBelow')).setIcon('rows-2').onClick(() => {
                 if (this.panelEditing) return;
                 const table = this.tableLeaf();
                 if (!table) return;
                 const open = async (file: TFile) => {
+                    const reference = currentOutlineReference(this.plugin.app.workspace, table);
+                    if (reference) rememberOutlineReference(this.plugin.app.workspace, reference);
                     this.setLayout('table');
                     await applyMainWorkspace(this.plugin.app.workspace, table, file, 'canvas');
                 };
@@ -2720,10 +2722,15 @@ export class TimetableView extends BasesView {
         const workspace = this.plugin.app.workspace;
         const table = this.tableLeaf();
         if (!table) return;
-        const file = currentOutlineReference(workspace, table) ?? this.findWorkspaceTarget();
+        const previous = rememberedOutlineReference(workspace);
+        const bookIds = this.bookIdsInView();
+        const previousBookId = previous && getBookIdForPath(this.plugin.settings.books, previous.path);
+        const saved = previous && (bookIds.length !== 1 || previousBookId === bookIds[0]) ? this.plugin.app.vault.getFileByPath(previous.path) : null;
+        const file = currentOutlineReference(workspace, table) ?? saved ?? this.findWorkspaceTarget();
         if (!file) { new Notice(t('ui.timetable.outlineWorkspaceNeedsNote')); return; }
         try {
             const result = await applyMainWorkspace(workspace, table, file, timeline ? 'timeline' : direction === 'vertical' ? 'beside' : 'below');
+            rememberOutlineReference(workspace, file);
             const wheel = timeline ? workspace.getLeavesOfType('radial-timeline').find(leaf => leaf.getRoot() === workspace.rootSplit) ?? null : null;
             adoptOutlineReference(result.table, result.reference, file, direction, wheel);
             timetableInElement(result.table.view.containerEl)?.setWorkspaceReference?.(result.reference, direction);

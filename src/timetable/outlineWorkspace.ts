@@ -7,6 +7,15 @@ type Entry = { pane: WorkspaceLeaf | null; timeline: WorkspaceLeaf | null; path:
 // A Bases view can be recreated while its leaf remains open. Keep ownership on
 // the leaf, and serialize requests so rapid selections cannot create duplicates.
 const entries = new WeakMap<WorkspaceLeaf, Entry>();
+const lastReference = new WeakMap<Workspace, TFile>();
+
+export function rememberedOutlineReference(workspace: Workspace): TFile | null {
+    return lastReference.get(workspace) ?? null;
+}
+
+export function rememberOutlineReference(workspace: Workspace, file: TFile): void {
+    lastReference.set(workspace, file);
+}
 
 export function adoptOutlineReference(table: WorkspaceLeaf, pane: WorkspaceLeaf, file: TFile, direction: Direction, timeline: WorkspaceLeaf | null): void {
     entries.set(table, { pane, timeline, path: file.path, direction, pending: Promise.resolve() });
@@ -17,7 +26,11 @@ export function currentOutlineReference(workspace: Workspace, table: WorkspaceLe
     const pane = entry?.pane;
     if (!entry || !pane || !workspace.getLeavesOfType('markdown').includes(pane) || pane.getViewState().pinned) return null;
     const file = (pane.view as { file?: TFile | null }).file;
-    return file?.path === entry.path ? file : null;
+    // The author may navigate to another note in the reference pane. Its leaf
+    // remains the reference even though the file it displays has changed.
+    if (!file) return null;
+    entry.path = file.path;
+    return file;
 }
 
 export async function openOutlineReference(workspace: Workspace, table: WorkspaceLeaf, file: TFile, direction: Direction, timelineLayout?: boolean): Promise<WorkspaceLeaf> {

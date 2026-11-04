@@ -35,16 +35,18 @@ describe('outline workspace', () => {
         expect((second.view as { file: TFile }).file.path).toBe('two.md');
     });
 
-    it('replaces only its own unpinned reference when changing orientation', async () => {
+    it('keeps a note navigated to in the reference pane when changing orientation', async () => {
         const f = fixture();
         const first = await openOutlineReference(f.workspace, f.table, file('one.md'), 'vertical');
         const second = await openOutlineReference(f.workspace, f.table, file('two.md'), 'horizontal');
         expect(f.leaves).toEqual([second]);
         expect(currentOutlineReference(f.workspace, f.table)?.path).toBe('two.md');
         (second.view as { file: TFile }).file = file('author-note.md');
-        expect(currentOutlineReference(f.workspace, f.table)).toBeNull();
-        const third = await openOutlineReference(f.workspace, f.table, file('one.md'), 'vertical');
-        expect(f.leaves).toEqual([second, third]);
+        const current = currentOutlineReference(f.workspace, f.table);
+        expect(current?.path).toBe('author-note.md');
+        const third = await openOutlineReference(f.workspace, f.table, current!, 'vertical');
+        expect(f.leaves).toEqual([third]);
+        expect((third.view as { file: TFile }).file.path).toBe('author-note.md');
         expect(f.leaves).not.toContain(first);
     });
 

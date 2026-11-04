@@ -622,6 +622,7 @@ export default class RadialTimelinePlugin extends Plugin {
          * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
          * ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
         addIcon('rt-circle-letter-o', '<g fill="none" stroke="currentColor" stroke-width="8.333"><circle cx="50" cy="50" r="16.667"/><circle cx="50" cy="50" r="41.667"/></g>');
+        addIcon('rt-workspace-timeline', '<g fill="none" stroke="currentColor" stroke-width="8.333" stroke-linecap="round" stroke-linejoin="round"><rect x="8.333" y="12.5" width="83.334" height="75" rx="8.333"/><path d="M50 12.5v75M50 50h41.667"/></g>');
 
         // Resolve the vault-local Pandoc font destination. Bundled templates
         // point at Radial Timeline/Pandoc/fonts, not MacTeX, Font Book, or

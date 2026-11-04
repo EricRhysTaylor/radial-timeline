@@ -1,4 +1,4 @@
-import { App, DropdownComponent, Notice } from 'obsidian';
+import { App, DropdownComponent, Notice, type TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { ErtModal } from '../ui/ErtModal';
 import { getActiveBook, getBookIdForPath } from '../utils/books';
@@ -15,7 +15,7 @@ export class SubplotCanvasModal extends ErtModal {
     private layout: 'horizontal' | 'vertical' | 'story' = 'horizontal';
     private busy = false;
 
-    constructor(app: App, private readonly plugin: RadialTimelinePlugin, initialBookId?: string) {
+    constructor(app: App, private readonly plugin: RadialTimelinePlugin, initialBookId?: string, private readonly onCreated?: (file: TFile) => Promise<void>) {
         super(app);
         this.bookId = initialBookId ?? getActiveBook(plugin.settings)?.id ?? ''; // SAFE: '' = no book yet; onOpen settles on the first book with a source folder
     }
@@ -110,7 +110,8 @@ export class SubplotCanvasModal extends ErtModal {
             let path = `${folder}/${stem} - Subplot Map.canvas`;
             for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${folder}/${stem} - Subplot Map ${n}.canvas`;
             const file = await this.app.vault.create(path, JSON.stringify({ nodes: plan.nodes, edges: plan.edges }, null, 2));
-            await this.app.workspace.openLinkText(file.path, '', true);
+            if (this.onCreated) await this.onCreated(file);
+            else await this.app.workspace.openLinkText(file.path, '', true);
             this.close();
             if (bounds) {
                 // Canvas viewport methods are not part of Obsidian's public API. If

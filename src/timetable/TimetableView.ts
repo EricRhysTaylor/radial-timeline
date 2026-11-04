@@ -44,6 +44,7 @@ import {
 } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { currentOutlineReference, openOutlineReference } from './outlineWorkspace';
+import { openCanvasBelow } from './canvasWorkspace';
 import type { TimelineItem } from '../types';
 import { getFormattingLocale, t, tCount } from '../i18n';
 import { getActiveBook, getBookIdForPath, getSagaBooks, getTimelineScope } from '../utils/books';
@@ -205,7 +206,7 @@ function contentWidth(element: HTMLElement): number {
 
 /** Widen a scene or sketch number chip so prefixes longer than three characters fit. */
 function sizeNumberChip(svg: SVGSVGElement | null, prefix: string | null): void {
-    const width = 38 + Math.max(0, (prefix?.length ?? 0) - 3) * 7; // SAFE: an unnumbered row keeps the base three-character chip
+    const width = 46 + Math.max(0, (prefix?.length ?? 0) - 3) * 8; // SAFE: an unnumbered row keeps the base three-character chip
     svg?.setAttribute('viewBox', `0 0 ${width} 22`);
     svg?.setAttribute('width', String(width));
     svg?.querySelector('rect')?.setAttribute('width', String(width - 2));
@@ -262,6 +263,13 @@ class OutlineDocumentPicker extends FuzzySuggestModal<TFile> {
     getItems(): TFile[] { return this.app.vault.getMarkdownFiles(); }
     getItemText(file: TFile): string { return file.path; }
     onChooseItem(file: TFile): void { this.chosen(file); }
+}
+
+class CanvasWorkspacePicker extends FuzzySuggestModal<TFile | null> {
+    constructor(app: App, private readonly chosen: (file: TFile | null) => void) { super(app); this.setPlaceholder(t('ui.timetable.canvasWorkspaceChoose')); }
+    getItems(): Array<TFile | null> { return [null, ...this.app.vault.getFiles().filter(file => file.extension === 'canvas')]; }
+    getItemText(file: TFile | null): string { return file?.path ?? t('ui.timetable.canvasWorkspaceCreate'); }
+    onChooseItem(file: TFile | null): void { this.chosen(file); }
 }
 
 /** A table column: one of the Base's properties, or a column a micro-mode adds. */
@@ -2366,6 +2374,22 @@ export class TimetableView extends BasesView {
                     void this.openOutlineWorkspace(undefined, direction, timeline);
                 }));
             }
+            menu.addItem(item => item.setTitle(t('ui.timetable.canvasWorkspaceBelow')).setIcon('panels-top-bottom').onClick(() => {
+                if (this.panelEditing) return;
+                const table = this.tableLeaf();
+                if (!table) return;
+                const open = async (file: TFile) => {
+                    await openCanvasBelow(this.plugin.app.workspace, table, file);
+                    this.setLayout('table');
+                };
+                new CanvasWorkspacePicker(this.plugin.app, file => {
+                    if (file) void open(file).catch(error => new Notice(t('ui.timetable.outlineWorkspaceOpenFailed', { message: error instanceof Error ? error.message : String(error) }), 8000));
+                    else {
+                        const ids = this.bookIdsInView();
+                        new SubplotCanvasModal(this.plugin.app, this.plugin, ids.length === 1 ? ids[0] : undefined, open).open();
+                    }
+                }).open();
+            }));
             const rect = workspace.getBoundingClientRect();
             menu.showAtPosition({ x: rect.left, y: rect.bottom }, workspace.ownerDocument);
         });

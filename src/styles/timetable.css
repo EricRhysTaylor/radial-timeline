@@ -1552,16 +1552,16 @@
 
 /* Local backings protect the writing while leaving the landscape vivid. */
 .ert-timetable .has-place-background {
-    --ert-place-text-surface: color-mix(in srgb, var(--background-primary) var(--ert-place-text-opacity, 88%), transparent);
+    --ert-place-text-surface: color-mix(in srgb, var(--background-primary) var(--ert-place-text-opacity, 78%), transparent);
 }
 .ert-timetable .has-place-background :is(.ert-timetable-panels__title-line, .ert-timetable-panels__date, .ert-timetable-panels__meta, .ert-timetable-panels__characters, .ert-timetable-panels__preview) {
     width: fit-content; max-width: 100%; padding: 3px 6px;
-    border-radius: var(--radius-s); background: var(--ert-place-text-surface); color: var(--text-normal);
+    border: 0; border-radius: var(--radius-s); background: var(--ert-place-text-surface); color: var(--text-normal);
 }
 .ert-timetable .has-place-background :is(.ert-timetable-panels__act, .ert-timetable-panels__character, .ert-timetable__character-separator) { color: var(--text-normal); }
 .ert-timetable .has-place-background button.ert-timetable-panels__synopsis:not(.is-empty) {
     align-self: flex-start; width: fit-content; max-width: 100%; padding: 6px 8px;
-    border-radius: var(--radius-s); background: var(--ert-place-text-surface); color: var(--text-normal);
+    border: 0; border-radius: var(--radius-s); background: var(--ert-place-text-surface); color: var(--text-normal);
 }
 
 .ert-text-sketch-drop { display: none; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--size-4-4); min-height: 128px; margin: var(--size-4-2); padding: var(--size-4-4); border: 2px dashed var(--interactive-accent); border-radius: var(--radius-m); background: var(--background-secondary); color: var(--text-normal); box-shadow: var(--shadow-s); pointer-events: none; text-align: center; }

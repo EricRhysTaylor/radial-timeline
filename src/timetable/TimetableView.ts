@@ -2956,7 +2956,7 @@ export class TimetableView extends BasesView {
                 if (!outline && imageMode === 'layered' && location) {
                     panel.addClass('has-place-background');
                     const backing = this.config.get('placeTextBacking');
-                    panel.setCssProps({ '--ert-place-text-opacity': backing === 'subtle' ? '76%' : backing === 'strong' ? '96%' : '88%' });
+                    panel.setCssProps({ '--ert-place-text-opacity': backing === 'subtle' ? '68%' : backing === 'strong' ? '90%' : '78%' });
                     const backdrop = panel.createDiv({ cls: 'ert-timetable-panels__backdrop', attr: { 'aria-hidden': 'true' } });
                     const backdropImage = backdrop.createEl('img', { attr: { src: location.url, alt: '', draggable: 'false' } });
                     const placeFocus = validPanelFocus(focusMap[location.path]);

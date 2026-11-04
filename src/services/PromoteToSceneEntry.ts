@@ -21,7 +21,7 @@ import { orderSketches, sketchAnchor } from '../timetable/sketchPlacement';
 import { readSceneId } from '../utils/sceneIds';
 import { getBookIdForPath } from '../utils/books';
 
-const PROMOTE_ICON = 'file-up';
+const PROMOTE_ICON = 'rt-logo';
 
 export function registerPromoteToScene(plugin: RadialTimelinePlugin): void {
     plugin.addCommand({
@@ -63,7 +63,8 @@ export function registerPromoteToScene(plugin: RadialTimelinePlugin): void {
 
 function addMenuItem(menu: Menu, title: string, run: () => Promise<void>): void {
     menu.addItem(item => item
-        .setTitle(title)
+        .setTitle(`RT · ${title}`)
+        .setSection('radial-timeline')
         .setIcon(PROMOTE_ICON)
         .onClick(() => { void run(); }));
 }

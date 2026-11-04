@@ -80,7 +80,7 @@ export class TimetableService {
         });
         this.plugin.registerEvent(this.plugin.app.workspace.on('file-menu', (menu, file) => {
             if (!(file instanceof TFile) || file.extension !== 'base') return;
-            menu.addItem(item => item.setTitle(t('ui.timetable.restoreView')).setIcon('list-restart').onClick(() => { void this.restoreView(file); }));
+            menu.addItem(item => item.setTitle(`RT · ${t('ui.timetable.restoreView')}`).setSection('radial-timeline').setIcon('rt-logo').onClick(() => { void this.restoreView(file); }));
         }));
         // Defaults reach only new tables; this brings an existing one in line (after a confirm).
         this.plugin.addCommand({

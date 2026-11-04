@@ -2902,6 +2902,7 @@ export class TimetableView extends BasesView {
                 }
                 if (!outline && this.config.get('portraitShape') === 'landscape') panel.addClass('has-landscape-portrait');
                 const header = panel.createDiv({ cls: 'ert-timetable-panels__header' });
+                let sceneNumberOnCover = false;
                 if ((row.kind === 'scene' || (row.kind === 'sketch' && !!panelImage)) && (panelImage || (!outline && size === 'small') || imageMode === 'place' || imageMode === 'combined' || imageMode === 'artwork' || (imageMode !== 'none' && people.length > 0))) {
                     const handle = row.kind === 'scene' ? this.attachSceneDrag(panel, header, row.path, mode.state) : null;
                     const cover = handle ?? header.createDiv();
@@ -2927,6 +2928,10 @@ export class TimetableView extends BasesView {
                         if (location && (imageMode === 'place' || combined?.kind === 'place')) setTooltip(image, location.source === 'scene' ? t('ui.timetable.panelImageSceneSource', { name: location.name }) : t('ui.timetable.panelImagePlaceSource', { name: location.name }));
                         this.panelEvents?.registerDomEvent(image, 'error', () => cover.addClass('is-missing'));
                     }
+                    if (!outline && size !== 'small' && row.kind === 'scene' && row.prefix) {
+                        cover.createSpan({ cls: 'ert-timetable-panels__cover-number', text: row.prefix });
+                        sceneNumberOnCover = true;
+                    }
                 } else if (row.kind === 'scene') this.attachSceneDrag(panel, header, row.path, mode.state);
                 if (row.kind === 'sketch') this.attachSketchDrag(panel, header, row.path, mode.state);
                 if (row.kind === 'sketch') this.attachSceneActDrop(panel, row.act, getBookIdForPath(this.plugin.settings.books, row.path), mode.state);
@@ -2950,7 +2955,7 @@ export class TimetableView extends BasesView {
                     this.panelEvents?.registerDomEvent(imageOptions, 'click', (event: MouseEvent) => { event.stopPropagation(); showStoryImageMenu(this.plugin, entry.file, frontmatter, imageFiles, event, () => this.render(), selectedSubject ?? undefined); });
                 }
                 const title = heading.createDiv({ cls: 'ert-timetable-panels__title-line' });
-                if (row.prefix) title.createSpan({ cls: 'ert-timetable-panels__number', text: row.prefix });
+                if (row.prefix && !sceneNumberOnCover) title.createSpan({ cls: 'ert-timetable-panels__number', text: row.prefix });
                 title.createEl('strong', { cls: 'ert-timetable-panels__title', text: displayName(row.basename) });
                 if (row.kind === 'sketch' && outline) title.createSpan({ cls: 'ert-timetable-panels__kind', text: t('ui.timetable.panelSketch') });
                 const sketchActions = row.kind === 'sketch' && !outline

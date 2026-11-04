@@ -12,7 +12,7 @@ To keep it as a separate vault instead, click **Download ZIP** on the same card,
 
 ## Why The Odyssey
 
-The poem doesn't run in a straight line, which makes it a good test of a radial timeline. It opens with Telemachus while Ulysses is still missing. Ulysses then tells his own earlier wanderings to the Phaeacians, and the last books return to Ithaca for disguises, recognitions, tests, and reversals.
+The poem doesn't run in a straight line, which makes it a good test of a circular timeline. It opens with Telemachus while Ulysses is still missing. Ulysses then tells his own earlier wanderings to the Phaeacians, and the last books return to Ithaca for disguises, recognitions, tests, and reversals.
 
 ## What's inside
 

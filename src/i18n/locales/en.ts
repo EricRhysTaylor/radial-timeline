@@ -1087,7 +1087,7 @@ export const en = {
         },
     },
     ribbon: {
-        openTimeline: 'Open radial timeline',
+        openTimeline: 'Open Radial Timeline',
         openInquiry: 'Open radial inquiry',
     },
     commands: {

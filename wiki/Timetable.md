@@ -3,7 +3,7 @@ Keep the book’s notes beside the wheel in an Obsidian Bases view. The Timetabl
 > [!NOTE]
 > Enable **Bases** under **Settings → Core plugins**. The Timetable works with Obsidian 1.13; the Act and Status boards require Obsidian 1.14 or later.
 
-![The Timetable beside the radial timeline: Act 1 of Pride and Prejudice in the Table layout, with the toolbar above, drag grips and stage letters by each number, colored subplot squares, dates, and character portraits](images/timetable-sidebyside.webp)
+![The Timetable beside the timeline: Act 1 of Pride and Prejudice in the Table layout, with the toolbar above, drag grips and stage letters by each number, colored subplot squares, dates, and character portraits](images/timetable-sidebyside.webp)
 
 ## Open the Timetable
 
@@ -156,7 +156,7 @@ Each scene appears in every subplot lane it belongs to, as a card linked to its 
 <p align="center"><img src="images/canvas-subplot-map.webp" alt="Wickham's Story hovered on the wheel, and its four cards lit across the subplot lanes of the Canvas map beside it, with the story navigation bar reading Scene 16 of 61" width="800"></p>
 
 - **Story navigation**, the bar along the top of the map: drag the slider to travel scene by scene (*Scene 16 of 61 · Wickham’s Story*), **Zoom to selection** to frame the selected cards, or **Fit all**. Act labels stay readable when you zoom out.
-- **Canvas card view**, in the Canvas title bar: **Preview** (synopsis or opening text), **Title**, or **Full note**. The same menu has **Show overdue scenes**, which marks late scenes, and **Follow timeline hover in Canvas**, which moves the map to a scene you hover on the wheel. Cards carry their subplot colors.
+- **Canvas card view**, in the Canvas title bar: **Preview** (synopsis or opening text), **Title**, or **Full note**. Every Canvas opens in **Preview**, including Canvases outside your books; a choice here lasts until you close that Canvas. Double-click a card to edit its note. The same menu has **Show overdue scenes**, which marks late scenes, and **Follow timeline hover in Canvas**, which moves the map to a scene you hover on the wheel. Cards carry their subplot colors.
 - **The map and the wheel point at each other.** Hover a scene on the wheel and its cards light up on the map; click a card and its scene lights on the wheel and in the Timetable. A card’s menu adds **Radial Timeline: Show in Timetable**, **Radial Timeline: Show on timeline** and, for sketches and notes without a Class, **Radial Timeline: Promote to scene**.
 
 ## Bring ideas from Canvas

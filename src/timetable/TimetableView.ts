@@ -2431,6 +2431,15 @@ export class TimetableView extends BasesView {
             const imageSetting = this.config.get('panelImage');
             imageChoice.value = ['place', 'combined', 'layered', 'artwork', 'none'].includes(String(imageSetting)) ? String(imageSetting) : 'character';
             this.panelEvents?.registerDomEvent(imageChoice, 'change', () => { this.config.set('panelImage', imageChoice.value); this.render(); });
+            if (imageChoice.value === 'layered') {
+                const backingLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.placeTextBacking') });
+                const backing = backingLabel.createEl('select');
+                setAccessibleLabel(backing, t('ui.timetable.placeTextBacking'));
+                for (const [value, label] of [['subtle', t('ui.timetable.placeTextSubtle')], ['balanced', t('ui.timetable.placeTextBalanced')], ['strong', t('ui.timetable.placeTextStrong')]] as const) backing.createEl('option', { value, text: label });
+                const saved = this.config.get('placeTextBacking');
+                backing.value = saved === 'subtle' || saved === 'strong' ? saved : 'balanced';
+                this.panelEvents?.registerDomEvent(backing, 'change', () => { this.config.set('placeTextBacking', backing.value); this.render(); });
+            }
             const strategyLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.storyImageStrategy') });
             const strategyChoice = strategyLabel.createEl('select');
             setAccessibleLabel(strategyChoice, t('ui.timetable.storyImageStrategy'));
@@ -2946,6 +2955,8 @@ export class TimetableView extends BasesView {
                 const sceneActions = !outline && row.kind === 'scene' ? panel.createDiv({ cls: 'ert-timetable-panels__scene-actions' }) : null;
                 if (!outline && imageMode === 'layered' && location) {
                     panel.addClass('has-place-background');
+                    const backing = this.config.get('placeTextBacking');
+                    panel.setCssProps({ '--ert-place-text-opacity': backing === 'subtle' ? '76%' : backing === 'strong' ? '96%' : '88%' });
                     const backdrop = panel.createDiv({ cls: 'ert-timetable-panels__backdrop', attr: { 'aria-hidden': 'true' } });
                     const backdropImage = backdrop.createEl('img', { attr: { src: location.url, alt: '', draggable: 'false' } });
                     const placeFocus = validPanelFocus(focusMap[location.path]);

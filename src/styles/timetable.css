@@ -1545,9 +1545,23 @@
 .ert-timetable-panels__backdrop img, .ert-canvas-story-card__backdrop img {
     width: 100%; height: 100%; object-fit: cover; object-position: var(--ert-place-focus-x, 50%) var(--ert-place-focus-y, 50%); display: block;
 }
-.ert-timetable-panels__backdrop::after, .ert-canvas-story-card__backdrop::after {
+.ert-canvas-story-card__backdrop::after {
     content: ''; position: absolute; inset: 0;
     background: linear-gradient(90deg, color-mix(in srgb, var(--background-primary) 92%, transparent), color-mix(in srgb, var(--background-primary) 72%, transparent));
+}
+
+/* Local backings protect the writing while leaving the landscape vivid. */
+.ert-timetable .has-place-background {
+    --ert-place-text-surface: color-mix(in srgb, var(--background-primary) var(--ert-place-text-opacity, 88%), transparent);
+}
+.ert-timetable .has-place-background :is(.ert-timetable-panels__title-line, .ert-timetable-panels__date, .ert-timetable-panels__meta, .ert-timetable-panels__characters, .ert-timetable-panels__preview) {
+    width: fit-content; max-width: 100%; padding: 3px 6px;
+    border-radius: var(--radius-s); background: var(--ert-place-text-surface); color: var(--text-normal);
+}
+.ert-timetable .has-place-background :is(.ert-timetable-panels__act, .ert-timetable-panels__character, .ert-timetable__character-separator) { color: var(--text-normal); }
+.ert-timetable .has-place-background button.ert-timetable-panels__synopsis:not(.is-empty) {
+    align-self: flex-start; width: fit-content; max-width: 100%; padding: 6px 8px;
+    border-radius: var(--radius-s); background: var(--ert-place-text-surface); color: var(--text-normal);
 }
 
 .ert-text-sketch-drop { display: none; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--size-4-4); min-height: 128px; margin: var(--size-4-2); padding: var(--size-4-4); border: 2px dashed var(--interactive-accent); border-radius: var(--radius-m); background: var(--background-secondary); color: var(--text-normal); box-shadow: var(--shadow-s); pointer-events: none; text-align: center; }
@@ -1579,6 +1593,7 @@
 .ert-timetable button.ert-timetable-panels__image-menu { position: absolute; z-index: 4; top: var(--size-4-1); right: 72px; width: 28px; height: 28px; padding: var(--size-4-1); opacity: 0; color: var(--text-muted); }
 .ert-timetable .ert-timetable-panels__scene-actions { position: absolute; z-index: 4; top: var(--size-4-3); right: var(--size-4-3); display: flex; align-items: center; gap: var(--size-4-1); }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .is-scene .ert-timetable-panels__scene-actions > button { position: static; flex: none; }
+.ert-timetable .has-place-background .ert-timetable-panels__scene-actions > button { color: var(--text-normal); background: var(--ert-place-text-surface); }
 .ert-timetable-panels__panel:hover .ert-timetable-panels__image-menu,
 .ert-timetable-panels__panel:focus-within .ert-timetable-panels__image-menu { opacity: 1; }
 .ert-canvas-story-card__image-menu { position: absolute; z-index: 5; right: var(--size-4-2); bottom: var(--size-4-2); width: 32px; height: 32px; padding: var(--size-4-1); pointer-events: auto; opacity: 0; }

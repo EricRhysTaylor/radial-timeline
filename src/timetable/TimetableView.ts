@@ -1,4 +1,5 @@
 import { registerTextSketchCapture } from './TextSketchCapture';
+import { registerNoteDropCapture } from './NoteDropCapture';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { readTimeReferences, referenceDateLabel, TIME_REFERENCES_KEY, type TimeReference } from '../chronologue/timeReferences/model';
 import { manageTimeReferences, openTimeReference } from '../chronologue/timeReferences/editor';
@@ -450,6 +451,10 @@ export class TimetableView extends BasesView {
     onload(): void {
         this.register(trackTimetable(this));
         registerTextSketchCapture(this, this.rootEl, this.plugin);
+        registerNoteDropCapture(this, this.rootEl, this.plugin, () => {
+            const ids = this.bookIdsInView();
+            return ids.length === 1 ? ids[0] : ids.length === 0 && getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings)?.id : undefined;
+        });
         this.register(onReferenceSelection(selection => {
             if (selection?.reveal && this.rowEls.has(selection.path) && !this.expandedReferences.has(selection.path)) {
                 this.expandedReferences.add(selection.path); this.render();

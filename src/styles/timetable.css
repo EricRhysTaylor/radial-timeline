@@ -1297,6 +1297,11 @@
 .ert-timetable .ert-timetable-panels.is-large:not(.is-outline) .ert-timetable-panels__panel { height: 400px; }
 .ert-timetable .ert-timetable-panels.is-small:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) { box-sizing: border-box; height: 220px; overflow-x: hidden; overflow-y: auto; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel > :not(.ert-timetable-panels__backdrop) { flex-shrink: 0; }
+.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .ert-timetable-panels__panel.is-scene:not(.is-editing-synopsis) { overflow: hidden; }
+.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__header { max-height: 40%; overflow-y: auto; }
+.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__meta { max-height: 3em; overflow-y: auto; }
+.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__characters { max-height: 3.5em; overflow-y: auto; scrollbar-width: thin; }
+.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene button.ert-timetable-panels__synopsis:not(.is-empty) { display: block; flex: 0 1 auto; min-height: 2.5em; overflow-y: auto; scrollbar-width: thin; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene):not(.is-linked) { background: var(--background-secondary); border-color: var(--background-modifier-border-hover); }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) .ert-timetable-panels__header { padding-right: 0; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drag { position: absolute; z-index: 2; top: 4px; left: 4px; }

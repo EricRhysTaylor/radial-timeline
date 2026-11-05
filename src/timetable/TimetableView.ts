@@ -3140,8 +3140,11 @@ export class TimetableView extends BasesView {
                     }
                     if (people.length > 3) {
                         const more = peopleList.createEl('button', { cls: 'ert-timetable-panels__characters-more', attr: { type: 'button' } });
+                        peopleList.insertBefore(more, extraCharacters[0]);
                         const update = (show: boolean) => {
                             for (const character of extraCharacters) character.hidden = !show;
+                            peopleList.insertBefore(more, show ? peopleList.firstChild : extraCharacters[0]);
+                            peopleList.scrollTop = 0;
                             more.setText(show ? t('ui.timetable.panelHideCharacters') : `+${people.length - 3}`);
                             more.setAttr('aria-expanded', String(show));
                             setAccessibleLabel(more, show ? t('ui.timetable.panelHideCharacters') : t('ui.timetable.panelShowCharacters', { count: people.length }));
@@ -3236,6 +3239,7 @@ export class TimetableView extends BasesView {
         this.panelEditing = { path: item.row.path, original };
         const editor = button.parentElement?.createDiv({ cls: 'ert-timetable-panels__editor' });
         if (!editor) { this.panelEditing = null; return; }
+        button.parentElement?.addClass('is-editing-synopsis');
         button.hide();
         const input = editor.createEl('textarea');
         input.value = original ?? ''; // SAFE: a note without a synopsis opens an empty editor

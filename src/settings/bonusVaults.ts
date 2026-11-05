@@ -40,7 +40,7 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         get countLabel() { return t('ui.bonusVaults.prideCountLabel'); },
         status: 'available',
         get thumb() { return getEmbeddedAssetDataUri('demo-vaults/pride-and-prejudice.jpg'); },
-        pageUrl: 'https://www.radialtimeline.com/resources/pride',
+        pageUrl: 'https://community.radialtimeline.com/go/rt-settings-classic-pride',
         get description() { return t('ui.bonusVaults.prideDescription'); },
         books: [{ title: 'Pride & Prejudice', sourceFolder: 'Pride & Prejudice' }],
         archive: {
@@ -59,7 +59,7 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         get countLabel() { return t('ui.bonusVaults.odysseyCountLabel'); },
         status: 'available',
         get thumb() { return getEmbeddedAssetDataUri('demo-vaults/odyssey.jpg'); },
-        pageUrl: 'https://www.radialtimeline.com/resources/odyssey',
+        pageUrl: 'https://community.radialtimeline.com/go/rt-settings-classic-odyssey',
         get description() { return t('ui.bonusVaults.odysseyDescription'); },
         books: [{ title: 'The Odyssey', sourceFolder: 'The Odyssey' }],
         archive: {
@@ -78,7 +78,7 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         get countLabel() { return t('ui.bonusVaults.sherlockCountLabel'); },
         status: 'available',
         get thumb() { return getEmbeddedAssetDataUri('demo-vaults/sherlock-holmes.jpg'); },
-        pageUrl: 'https://www.radialtimeline.com/resources/sherlock',
+        pageUrl: 'https://community.radialtimeline.com/go/rt-settings-classic-sherlock',
         get description() { return t('ui.bonusVaults.sherlockDescription'); },
         books: [
             { title: 'A Study in Scarlet', sourceFolder: '01 A Study in Scarlet' },

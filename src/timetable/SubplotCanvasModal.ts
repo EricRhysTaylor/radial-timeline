@@ -89,7 +89,7 @@ export class SubplotCanvasModal extends ErtModal {
         create.addEventListener('click', () => {
             if (this.busy) return;
             this.busy = true; create.disabled = true;
-            void this.createCanvas().finally(() => { this.busy = false; });
+            void this.createCanvas().finally(() => { this.busy = false; update(); });
         });
         defaultRange();
         update();

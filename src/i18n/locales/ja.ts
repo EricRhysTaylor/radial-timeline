@@ -7596,6 +7596,16 @@ export const ja: DeepPartial<TranslationKeys> = {
             backupNotice: 'データの損失に備えて、Obsidian の保管庫を定期的にバックアップしてください。詳しくは [Obsidian バックアップガイド] をご覧ください。同期ではすべての種類のデータ損失を防げるわけではありません。同期の手段には [Obsidian Sync] や [Obsidian Git] があります',
         },
         writingSessionCompletionModal: {
+            allocateScenes: "このセッションをシーンに割り当てる",
+            updateSceneTotals: "シーンの合計時間を更新する",
+            updateSceneTotalsHint: "下の分数を既存の時間に一度だけ加算します。",
+            sceneTimeApplied: "適用済み：{{after}} 時間",
+            sceneTimePreview: "合計時間：{{before}} → {{after}} 時間",
+            invalidSceneTime: "既存の合計時間を確認してください。",
+            sceneMinutes: "分",
+            sceneWords: "語",
+            invalidAllocation: "各シーンの分数と語数がセッション合計を超えていないか確認してください。",
+
             modeFreshDrafting: '新規の下書き',
             modeRevision: '改稿',
             modeLineEdit: '推敲',

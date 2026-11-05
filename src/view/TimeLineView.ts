@@ -1,3 +1,5 @@
+import { applySessionTimeAllocations, parseRecordedHours, readSessionTimeJournal } from '../services/WritingSessionTimeAllocation';
+import { authorKeyFor } from '../timetable/timetableFiles';
 import { registerTextSketchCapture } from '../timetable/TextSketchCapture';
 import { registerNoteDropCapture } from '../timetable/NoteDropCapture';
 import { getMainPlotName } from '../utils/mainPlot';
@@ -2128,13 +2130,25 @@ export class RadialTimelineView extends ItemView {
             for (const scene of this.sceneData) {
                 if (scene.path && scene.title) titleByPath.set(scene.path, scene.title);
             }
-            const sceneActivity = service.getTodaySceneActivity().map(entry => ({
-                title: titleByPath.get(entry.path)
-                    ?? entry.path.split('/').pop()?.replace(/\.md$/i, '') // SAFE: basename fallback when a scene title isn't loaded
-                    ?? entry.path,
-                activeMs: entry.activeMs,
-                typedWords: entry.typedWords,
-            }));
+            const pendingTime = await readSessionTimeJournal(this.plugin, active.id).catch(error => { new Notice(String(error)); return undefined; });
+            if (pendingTime === undefined) return;
+            const paths = new Set(pendingTime ? pendingTime.entries.map(entry => entry.path) : [...Object.keys(active.sceneActivity ?? {}), ...sceneSuggestions.map(scene => scene.path)]);
+            const sceneActivity = [...paths].map(path => {
+                const pending = pendingTime?.entries.find(item => item.path === path);
+                const entry = active.sceneActivity?.[path];
+                const file = this.app.vault.getFileByPath(path);
+                const fm = file ? this.app.metadataCache.getFileCache(file)?.frontmatter : undefined;
+                const property = authorKeyFor('Total Time', this.plugin.settings);
+                const matches = Object.keys(fm ?? {}).filter(key => key.toLowerCase() === property.toLowerCase());
+                let beforeHours = NaN;
+                try { if (file && matches.length <= 1) beforeHours = parseRecordedHours(fm?.[matches[0] ?? property]); } catch { /* Invalid existing values require author review. */ }
+                return {
+                    path, title: titleByPath.get(path) ?? path.split('/').pop()?.replace(/\.md$/i, '') ?? path,
+                    alreadyApplied: !!pending && (pending.applied || beforeHours === pending.afterHours),
+                    currentHours: beforeHours,
+                    beforeHours: pending?.beforeHours ?? beforeHours, activeMs: pending ? pending.minutes * 60000 : entry?.activeMs ?? 0, typedWords: pending?.words ?? entry?.typedWords ?? 0,
+                };
+            });
             const feedShare = {
                 eligible: canPostSessionsToFeed(this.plugin),
                 defaultOn: service.isPostSessionsToFeedEnabled(),
@@ -2142,31 +2156,39 @@ export class RadialTimelineView extends ItemView {
             new WritingSessionCompletionModal(this.app, active, service.getActiveElapsedMs(), sceneSuggestions, {
                 typedWords: active.typedWords,
                 netWordDelta,
-            }, sceneActivity, feedShare, async (completion) => {
+            }, sceneActivity, feedShare, !!pendingTime, pendingTime?.completion, async (completion) => {
                 try {
+                    if (service.getActiveSession()?.id !== active.id) throw new Error('The writing session has changed. Reopen the save dialog.');
+                    if (completion.updateSceneTotals && completion.sceneAllocations) {
+                        const before = new Map(sceneActivity.map(entry => [entry.path, entry.beforeHours]));
+                        await applySessionTimeAllocations(this.plugin, active.id, completion.sceneAllocations.map(entry => ({ path: entry.path, minutes: entry.activeMs / 60000, words: entry.typedWords, beforeHours: before.get(entry.path) ?? 0 })), completion);
+                    }
+                    if (service.getActiveSession()?.id !== active.id) throw new Error('The writing session changed during the update. Reopen the save dialog.');
                     const record = await service.stop(completion);
                     new Notice(t('ui.timeLineView.savedSession', { mode: this.formatWritingSessionMode(record.mode), clock: this.formatSessionClock(record.elapsedMs) }));
                     if (feedShare.eligible && completion.postToFeed !== undefined) {
                         // Remember the toggle for the next save, then post.
                         // Posting is best-effort: the session is already saved.
-                        await service.setPostSessionsToFeed(completion.postToFeed);
-                        if (completion.postToFeed) {
-                            try {
+                        try {
+                            await service.setPostSessionsToFeed(completion.postToFeed);
+                            if (completion.postToFeed) {
                                 await postSessionToCommunityFeed(this.plugin, projectSessionFeedPost(record));
                                 new Notice(t('ui.timeLineView.postedToFeed'));
-                            } catch (postError) {
-                                new Notice(postError instanceof Error ? postError.message : t('ui.timeLineView.postFailed'));
                             }
+                        } catch (postError) {
+                            new Notice(postError instanceof Error ? postError.message : t('ui.timeLineView.postFailed'));
                         }
                     }
                     this.refreshWritingSessionControl();
                 } catch (error) {
                     new Notice(error instanceof Error ? error.message : t('ui.timeLineView.stopFailed'));
+                    throw error;
                 }
             }).open();
         });
         this.createSessionIconButton(actions, 'trash-2', t('common.cancel'), 'ert-timeline-session-panel__ghost ert-timeline-session-panel__icon-action', async () => {
             try {
+                if (await readSessionTimeJournal(this.plugin, active.id)) throw new Error('This session has pending scene time updates. Save it to finish applying them.');
                 await service.discard();
                 new Notice(t('ui.timeLineView.cancelledSession'));
                 this.refreshWritingSessionControl();

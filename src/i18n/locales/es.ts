@@ -7598,6 +7598,16 @@ export const es: TranslationKeys = {
             "backupNotice": "Haga una copia de seguridad de su bóveda de Obsidian con regularidad para protegerse contra la pérdida de datos. Más información en [Guía de copias de seguridad de Obsidian]. La sincronización no protege contra todas las formas de pérdida de datos. Las opciones de sincronización incluyen [Obsidian Sync] o [Obsidian Git]"
         },
         "writingSessionCompletionModal": {
+            allocateScenes: "Asignar esta sesión a escenas",
+            updateSceneTotals: "Actualizar el tiempo total de las escenas",
+            updateSceneTotalsHint: "Solo se suman una vez los minutos indicados a las horas existentes.",
+            sceneTimeApplied: "Ya aplicado: {{after}} horas",
+            sceneTimePreview: "Tiempo total: {{before}} → {{after}} horas",
+            invalidSceneTime: "Revisa el tiempo total existente.",
+            sceneMinutes: "Minutos",
+            sceneWords: "Palabras",
+            invalidAllocation: "Revisa los valores; los minutos y palabras asignados no pueden superar los totales de la sesión.",
+
             "modeFreshDrafting": "Redacción fresca",
             "modeRevision": "revisión",
             "modeLineEdit": "Editar línea",

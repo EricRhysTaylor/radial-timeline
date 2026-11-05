@@ -1,4 +1,5 @@
-import { ButtonComponent, Modal, Setting, TextAreaComponent, TextComponent } from 'obsidian';
+import { setAccessibleLabel } from '../utils/domTooltip';
+import { ButtonComponent, Modal, Notice, Setting, TextAreaComponent, TextComponent } from 'obsidian';
 import type { App } from 'obsidian';
 import type { ActiveWritingSession } from '../types/settings';
 import type { WritingSessionCompletionInput, WritingSessionSceneSuggestion } from '../services/WritingSessionService';
@@ -29,6 +30,10 @@ export interface WritingSessionCompletionWordStats {
 
 /** Resolved per-scene memory-aid row shown in the save popover (title resolved by caller). */
 export interface WritingSessionSceneActivityEntry {
+    path: string;
+    beforeHours: number;
+    alreadyApplied: boolean;
+    currentHours: number;
     title: string;
     activeMs: number;
     typedWords: number;
@@ -36,17 +41,6 @@ export interface WritingSessionSceneActivityEntry {
 
 function minutesFromElapsed(elapsedMs: number): number {
     return Math.max(1, Math.round(Math.max(0, elapsedMs) / 60000));
-}
-
-function formatActiveDuration(ms: number): string {
-    const minutes = Math.round(Math.max(0, ms) / 60000);
-    if (minutes < 1) return t('ui.writingSessionCompletionModal.durationUnderMinute');
-    if (minutes < 60) return t('ui.writingSessionCompletionModal.durationMinutes', { minutes });
-    const hours = Math.floor(minutes / 60);
-    const rest = minutes % 60;
-    return rest > 0
-        ? t('ui.writingSessionCompletionModal.durationHoursMinutes', { hours, minutes: rest })
-        : t('ui.writingSessionCompletionModal.durationHours', { hours });
 }
 
 function sessionDateFromStartedAt(startedAt: string): string {
@@ -76,6 +70,8 @@ export class WritingSessionCompletionModal extends Modal {
         private wordStats: WritingSessionCompletionWordStats,
         private sceneActivity: WritingSessionSceneActivityEntry[],
         private feedShare: WritingSessionFeedShareOption,
+        private pendingTime: boolean,
+        private recoveredCompletion: WritingSessionCompletionResult | undefined,
         private onSubmit: (result: WritingSessionCompletionResult) => Promise<void>
     ) {
         super(app);
@@ -127,22 +123,22 @@ export class WritingSessionCompletionModal extends Modal {
         });
 
         const form = contentEl.createDiv({ cls: 'ert-writing-session-form ert-stack' });
-        let minutes = minutesFromElapsed(this.elapsedMs);
-        let sessionDate = sessionDateFromStartedAt(this.active.startedAt);
+        let minutes = this.recoveredCompletion?.elapsedMinutes ?? minutesFromElapsed(this.elapsedMs);
+        let sessionDate = this.recoveredCompletion?.sessionDate ?? sessionDateFromStartedAt(this.active.startedAt);
         const typedWords = Math.max(0, Math.round(this.wordStats.typedWords ?? this.active.typedWords ?? 0));
         const hasTypedWords = typedWords > 0;
         const netWordDelta = Number.isFinite(this.wordStats.netWordDelta)
             ? Math.round(this.wordStats.netWordDelta ?? 0)
             : undefined;
-        let wordsAdded: number | undefined = hasTypedWords ? typedWords : undefined;
-        let scenesCompleted: number | undefined;
-        let note = '';
+        let wordsAdded: number | undefined = this.recoveredCompletion ? this.recoveredCompletion.wordsAdded : hasTypedWords ? typedWords : undefined;
+        let scenesCompleted: number | undefined = this.recoveredCompletion?.scenesCompleted;
+        let note = this.recoveredCompletion?.note ?? '';
         // Default-OFF: user opts in to scenes they actually worked on. The
         // suggestion list (currently-active file, open files, working scenes,
         // recently-modified files) is informational — pre-selecting all of
         // them is a trap because the active file is often unrelated to the
         // session work, and "selecting" implies opt-in, not opt-out.
-        const selectedScenePaths = new Set<string>();
+        const selectedScenePaths = new Set<string>(this.recoveredCompletion?.scenePaths ?? []);
 
         const wireNumber = (
             setting: Setting,
@@ -208,25 +204,54 @@ export class WritingSessionCompletionModal extends Modal {
             new Setting(workSummary)
                 .setName(t('ui.writingSessionCompletionModal.scenesCompletedName'))
                 .setDesc(t('ui.writingSessionCompletionModal.scenesCompletedDesc')),
-            '',
+            scenesCompleted === undefined ? '' : String(scenesCompleted),
             value => { scenesCompleted = parseOptionalInteger(value); },
             'ert-writing-session-compact-setting'
         );
 
-        if (this.sceneActivity.length > 0) {
+        let allocateScenes = this.pendingTime;
+        let updateSceneTotals = this.pendingTime;
+        const allocations = this.sceneActivity.map(entry => ({ ...entry, minutes: Math.round(entry.activeMs / 60000), words: entry.typedWords }));
+        if (allocations.length > 0) {
             const activitySection = form.createDiv({ cls: 'ert-writing-session-scenes ert-writing-session-activity' });
-            activitySection.createDiv({ cls: 'ert-writing-session-scenes__title', text: t('ui.writingSessionCompletionModal.todayByScene') });
-            activitySection.createDiv({
-                cls: 'ert-writing-session-activity__hint',
-                text: t('ui.writingSessionCompletionModal.activityHint'),
-            });
-            const activityList = activitySection.createDiv({ cls: 'ert-writing-session-activity__list' });
-            this.sceneActivity.forEach(entry => {
-                const row = activityList.createDiv({ cls: 'ert-writing-session-activity__row' });
-                row.createSpan({ cls: 'ert-writing-session-activity__scene', text: entry.title });
-                row.createSpan({ cls: 'ert-writing-session-activity__metric', text: formatActiveDuration(entry.activeMs) });
-                row.createSpan({ cls: 'ert-writing-session-activity__metric', text: t('ui.writingSessionCompletionModal.activityWords', { count: entry.typedWords }) });
-            });
+            const list = activitySection.createDiv({ cls: 'ert-writing-session-activity__list' });
+            list.hidden = !this.pendingTime;
+            const updateRow = new Setting(activitySection).setName(t('ui.writingSessionCompletionModal.allocateScenes'));
+            const allocateBox = updateRow.controlEl.createEl('input', { type: 'checkbox' });
+            setAccessibleLabel(allocateBox, t('ui.writingSessionCompletionModal.allocateScenes'));
+            allocateBox.checked = this.pendingTime; allocateBox.disabled = this.pendingTime;
+            allocateBox.onchange = () => { allocateScenes = allocateBox.checked; list.hidden = !allocateScenes; updateToggle.settingEl.hidden = !allocateScenes; };
+            const updateToggle = new Setting(activitySection).setName(t('ui.writingSessionCompletionModal.updateSceneTotals')).setDesc(t('ui.writingSessionCompletionModal.updateSceneTotalsHint'));
+            updateToggle.settingEl.hidden = !this.pendingTime;
+            const updateBox = updateToggle.controlEl.createEl('input', { type: 'checkbox' });
+            setAccessibleLabel(updateBox, t('ui.writingSessionCompletionModal.updateSceneTotals'));
+            updateBox.checked = this.pendingTime; updateBox.disabled = this.pendingTime;
+            updateBox.onchange = () => { updateSceneTotals = updateBox.checked; };
+            activitySection.appendChild(list);
+            for (const entry of allocations) {
+                const row = new Setting(list).setName(entry.title);
+                row.settingEl.addClass('ert-writing-session-allocation-row');
+                const summary = row.descEl.createSpan();
+                const refresh = () => {
+                    const after = Math.round((entry.beforeHours + entry.minutes / 60) * 1_000_000) / 1_000_000;
+                    summary.setText(Number.isFinite(after) && (!entry.alreadyApplied || Number.isFinite(entry.currentHours)) ? (entry.alreadyApplied ? t('ui.writingSessionCompletionModal.sceneTimeApplied', { after: entry.currentHours }) : t('ui.writingSessionCompletionModal.sceneTimePreview', { before: entry.beforeHours, after })) : t('ui.writingSessionCompletionModal.invalidSceneTime'));
+                };
+                row.controlEl.createSpan({ text: t('ui.writingSessionCompletionModal.sceneMinutes') });
+                row.addText(input => {
+                    input.inputEl.type = 'number'; input.inputEl.min = '0'; input.inputEl.step = '1';
+                    input.setPlaceholder(t('ui.writingSessionCompletionModal.sceneMinutes')); input.setDisabled(this.pendingTime);
+                    setAccessibleLabel(input.inputEl, t('ui.writingSessionCompletionModal.sceneMinutes'));
+                    input.setValue(String(entry.minutes)).onChange(value => { entry.minutes = Number(value); refresh(); });
+                });
+                row.controlEl.createSpan({ text: t('ui.writingSessionCompletionModal.sceneWords') });
+                row.addText(input => {
+                    input.inputEl.type = 'number'; input.inputEl.min = '0'; input.inputEl.step = '1';
+                    input.setPlaceholder(t('ui.writingSessionCompletionModal.sceneWords')); input.setDisabled(this.pendingTime);
+                    setAccessibleLabel(input.inputEl, t('ui.writingSessionCompletionModal.sceneWords'));
+                    input.setValue(String(entry.words)).onChange(value => { entry.words = Number(value); });
+                });
+                refresh();
+            }
         }
 
         if (this.sceneSuggestions.length > 0) {
@@ -238,7 +263,7 @@ export class WritingSessionCompletionModal extends Modal {
                     .setName(suggestion.title || suggestion.path)
                     .setDesc(this.formatSceneSuggestionDetail(suggestion))
                     .addToggle(toggle => {
-                        toggle.setValue(false);
+                        toggle.setValue(selectedScenePaths.has(suggestion.path));
                         toggle.onChange(value => {
                             if (value) selectedScenePaths.add(suggestion.path);
                             else selectedScenePaths.delete(suggestion.path);
@@ -273,7 +298,7 @@ export class WritingSessionCompletionModal extends Modal {
             'ert-writing-session-compact-setting'
         );
 
-        let postToFeed = this.feedShare.eligible && this.feedShare.defaultOn;
+        let postToFeed = this.feedShare.eligible && (this.recoveredCompletion?.postToFeed ?? this.feedShare.defaultOn);
         const syncFeedAccent = () => {
             // When this save will post, the whole share group and the top pill
             // go community-yellow so it is unmistakable the note is public.
@@ -295,6 +320,7 @@ export class WritingSessionCompletionModal extends Modal {
             .addTextArea((text: TextAreaComponent) => {
                 text.inputEl.addClass('ert-input--full');
                 text.inputEl.rows = 6;
+                text.setValue(note);
                 text.onChange(value => { note = value; });
             });
         noteSetting.settingEl.addClass('ert-writing-session-note');
@@ -315,7 +341,13 @@ export class WritingSessionCompletionModal extends Modal {
         }
 
         const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
+        let saving = false;
         const save = async () => {
+            if (saving) return;
+            if (allocateScenes && (allocations.some(entry => !Number.isFinite(entry.minutes) || entry.minutes < 0 || !Number.isFinite(entry.words) || entry.words < 0 || (updateSceneTotals && entry.minutes > 0 && !Number.isFinite(entry.beforeHours))) || allocations.reduce((total, entry) => total + entry.minutes, 0) > minutes || allocations.reduce((total, entry) => total + entry.words, 0) > (wordsAdded ?? 0))) {
+                new Notice(t('ui.writingSessionCompletionModal.invalidAllocation')); return;
+            }
+            saving = true;
             const elapsedMinutes = Math.max(1, minutes);
             const result: WritingSessionCompletionResult = {
                 elapsedMinutes,
@@ -325,12 +357,13 @@ export class WritingSessionCompletionModal extends Modal {
                 typedWords: hasTypedWords ? typedWords : undefined,
                 netWordDelta,
                 scenesCompleted,
-                scenePaths: [...selectedScenePaths],
+                scenePaths: [...new Set([...selectedScenePaths, ...(allocateScenes ? allocations.filter(entry => entry.minutes > 0 || entry.words > 0).map(entry => entry.path) : [])])],
+                sceneAllocations: allocateScenes ? allocations.filter(entry => entry.minutes > 0 || entry.words > 0).map(entry => ({ path: entry.path, activeMs: Math.round(entry.minutes * 60000), typedWords: Math.round(entry.words) })) : [],
+                updateSceneTotals: allocateScenes && updateSceneTotals,
                 note,
                 postToFeed: this.feedShare.eligible ? postToFeed : undefined,
             };
-            await this.onSubmit(result);
-            this.close();
+            try { await this.onSubmit(result); this.close(); } catch { saving = false; }
         };
 
         new ButtonComponent(actions)

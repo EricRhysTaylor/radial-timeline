@@ -7598,6 +7598,16 @@ export const fr: TranslationKeys = {
             "backupNotice": "Sauvegardez régulièrement votre coffre Obsidian pour vous protéger contre la perte de données. En savoir plus dans [le guide de sauvegarde Obsidian]. La synchronisation ne protège pas contre toutes les formes de perte de données. Les options de synchronisation incluent [Obsidian Sync] ou [Obsidian Git]"
         },
         "writingSessionCompletionModal": {
+            allocateScenes: "Attribuer cette session aux scènes",
+            updateSceneTotals: "Mettre à jour le temps total des scènes",
+            updateSceneTotalsHint: "Seules les minutes indiquées sont ajoutées une fois aux heures existantes.",
+            sceneTimeApplied: "Déjà appliqué : {{after}} heures",
+            sceneTimePreview: "Temps total : {{before}} → {{after}} heures",
+            invalidSceneTime: "Vérifiez le temps total existant.",
+            sceneMinutes: "Minutes",
+            sceneWords: "Mots",
+            invalidAllocation: "Vérifiez les valeurs ; les minutes et mots attribués ne peuvent pas dépasser les totaux de la session.",
+
             "modeFreshDrafting": "Nouvelle rédaction",
             "modeRevision": "révision",
             "modeLineEdit": "Modification de ligne",

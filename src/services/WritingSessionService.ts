@@ -102,6 +102,8 @@ export interface WritingSessionCompletionInput {
     scenesCompleted?: number;
     scenePaths?: string[];
     scenesCompletedPaths?: string[];
+    sceneAllocations?: SceneActivityRecord[];
+    updateSceneTotals?: boolean;
     pagesEdited?: number;
     note?: string;
 }
@@ -1180,12 +1182,14 @@ export class WritingSessionService {
             pagesEdited: positiveInteger(completion.pagesEdited),
             note: completion.note?.trim() || undefined,
             source: 'timer',
-            scenesActivity: sceneActivityToArray(active.sceneActivity),
+            scenesActivity: completion.sceneAllocations === undefined ? sceneActivityToArray(active.sceneActivity) : normalizeSceneActivityArray(completion.sceneAllocations),
         };
         const allRecords = [...settings.records, record];
+        const previousRecords = settings.records;
         settings.records = allRecords.slice(-MAX_SESSION_RECORDS);
         settings.active = undefined;
-        await this.plugin.saveSettings();
+        try { await this.plugin.saveSettings(); }
+        catch (error) { settings.records = previousRecords; settings.active = active; throw error; }
         // Mirror the full history (pre-cap) into the author-owned vault file so
         // records pruned from settings are never permanently lost.
         await this.flushPortableSessionLog(allRecords);

@@ -7598,6 +7598,16 @@ export const vi: TranslationKeys = {
             "backupNotice": "Hãy sao lưu kho Obsidian của bạn thường xuyên để tránh mất dữ liệu. Tìm hiểu thêm tại [Hướng dẫn sao lưu Obsidian]. Đồng bộ không bảo vệ khỏi mọi hình thức mất dữ liệu. Các tùy chọn đồng bộ gồm [Obsidian Sync] hoặc [Obsidian Git]"
         },
         "writingSessionCompletionModal": {
+            allocateScenes: "Phân bổ phiên này cho các cảnh",
+            updateSceneTotals: "Cập nhật tổng thời gian của cảnh",
+            updateSceneTotalsHint: "Chỉ cộng số phút bên dưới một lần vào số giờ hiện có.",
+            sceneTimeApplied: "Đã áp dụng: {{after}} giờ",
+            sceneTimePreview: "Tổng thời gian: {{before}} → {{after}} giờ",
+            invalidSceneTime: "Cần kiểm tra tổng thời gian hiện có.",
+            sceneMinutes: "Phút",
+            sceneWords: "Từ",
+            invalidAllocation: "Kiểm tra số phút và từ phân bổ không vượt tổng của phiên.",
+
             "modeFreshDrafting": "soạn thảo mới",
             "modeRevision": "sửa đổi",
             "modeLineEdit": "Chỉnh sửa dòng",

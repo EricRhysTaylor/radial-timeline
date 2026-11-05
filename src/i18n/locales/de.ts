@@ -7595,6 +7595,16 @@ export const de: DeepPartial<TranslationKeys> = {
             backupNotice: 'Sichern Sie Ihren Obsidian-Vault regelmäßig, um Datenverlust vorzubeugen. Mehr dazu im [Obsidian-Backup-Leitfaden]. Synchronisierung schützt nicht vor allen Arten von Datenverlust. Zu den Sync-Optionen gehören [Obsidian Sync] oder [Obsidian Git]',
         },
         writingSessionCompletionModal: {
+            allocateScenes: "Diese Sitzung Szenen zuordnen",
+            updateSceneTotals: "Gesamtzeit der Szenen aktualisieren",
+            updateSceneTotalsHint: "Nur die angegebenen Minuten werden einmal zu den vorhandenen Stunden addiert.",
+            sceneTimeApplied: "Bereits angewendet: {{after}} Stunden",
+            sceneTimePreview: "Gesamtzeit: {{before}} → {{after}} Stunden",
+            invalidSceneTime: "Vorhandene Gesamtzeit prüfen.",
+            sceneMinutes: "Minuten",
+            sceneWords: "Wörter",
+            invalidAllocation: "Prüfe die Szenenwerte; Minuten und Wörter dürfen die Sitzungssummen nicht überschreiten.",
+
             modeFreshDrafting: 'Rohfassung',
             modeRevision: 'Überarbeitung',
             modeLineEdit: 'Zeilenlektorat',

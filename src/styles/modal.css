@@ -2596,3 +2596,9 @@
     font-size: var(--font-ui-small);
     overflow-wrap: anywhere;
 }
+
+.ert-modal--writing-session .ert-writing-session-activity__list[hidden],
+.ert-modal--writing-session .ert-writing-session-activity .setting-item[hidden] { display: none; }
+.ert-modal--writing-session .ert-writing-session-allocation-row .setting-item-info { flex: 1 1 50%; min-width: 0; }
+.ert-modal--writing-session .ert-writing-session-allocation-row .setting-item-control { flex: 0 1 auto; flex-wrap: wrap; gap: var(--size-4-2); }
+.ert-modal--writing-session .ert-writing-session-allocation-row input[type="number"] { width: 68px; min-width: 0; }

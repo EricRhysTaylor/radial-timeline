@@ -7254,6 +7254,16 @@ export const en = {
             backupNotice: 'Back up your Obsidian vault regularly to protect against data loss. Learn more at [Obsidian backup guide]. Sync does not protect against all forms of data loss. Sync options include [Obsidian Sync] or [Obsidian Git]',
         },
         writingSessionCompletionModal: {
+            allocateScenes: "Allocate this session to scenes",
+            updateSceneTotals: "Update scene Total Time with this session",
+            updateSceneTotalsHint: "Only the minutes below are added, once, to each scene’s existing hours.",
+            sceneTimeApplied: "Already applied: {{after}} hours",
+            sceneTimePreview: "Total Time: {{before}} → {{after}} hours",
+            invalidSceneTime: "Existing Total Time needs review.",
+            sceneMinutes: "Minutes",
+            sceneWords: "Words",
+            invalidAllocation: "Check scene values; allocated minutes and words cannot exceed session totals.",
+
             modeFreshDrafting: 'fresh drafting',
             modeRevision: 'revision',
             modeLineEdit: 'line edit',

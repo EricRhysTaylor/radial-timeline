@@ -229,7 +229,7 @@ points are pure of identity concerns and one less thing can leak.
 
 ## Defaults
 
-- Every session record is `private` by default.
+- Every session record is `private` by default. The per-session scene time ledger is stored locally in the plugin folder and never sent to Community. Its scene paths and approved before/after totals are private.
 - The standing share is per vault connection and off until the author
   chooses a level and presses **Begin sharing**.
 - The `note` field never leaves the device passively; its only exit is the

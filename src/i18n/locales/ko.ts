@@ -7595,6 +7595,16 @@ export const ko: DeepPartial<TranslationKeys> = {
             backupNotice: '데이터 손실을 막으려면 Obsidian 보관함을 정기적으로 백업하세요. 자세한 내용은 [Obsidian 백업 가이드]를 참조하세요. 동기화가 모든 형태의 데이터 손실을 막아 주지는 않습니다. 동기화 옵션으로는 [Obsidian Sync] 또는 [Obsidian Git]이 있습니다',
         },
         writingSessionCompletionModal: {
+            allocateScenes: "이 세션을 장면에 배분",
+            updateSceneTotals: "장면 총 시간 업데이트",
+            updateSceneTotalsHint: "아래 분을 기존 시간에 한 번만 더합니다.",
+            sceneTimeApplied: "이미 적용됨: {{after}}시간",
+            sceneTimePreview: "총 시간: {{before}} → {{after}}시간",
+            invalidSceneTime: "기존 총 시간을 확인하세요.",
+            sceneMinutes: "분",
+            sceneWords: "단어",
+            invalidAllocation: "장면별 분과 단어 수가 세션 합계를 넘지 않는지 확인하세요.",
+
             modeFreshDrafting: '새 초고 작성',
             modeRevision: '수정',
             modeLineEdit: '문장 편집',

@@ -7597,6 +7597,16 @@ export const zh: DeepPartial<TranslationKeys> = {
             backupNotice: '请定期备份您的 Obsidian 仓库，以防数据丢失。详情请参阅 [Obsidian 备份指南]。同步并不能防止所有形式的数据丢失。同步方案包括 [Obsidian Sync] 或 [Obsidian Git]',
         },
         writingSessionCompletionModal: {
+            allocateScenes: "将本次写作分配到场景",
+            updateSceneTotals: "更新场景总时间",
+            updateSceneTotalsHint: "仅将下列分钟数一次性加入已有小时数。",
+            sceneTimeApplied: "已应用：{{after}} 小时",
+            sceneTimePreview: "总时间：{{before}} → {{after}} 小时",
+            invalidSceneTime: "请检查现有总时间。",
+            sceneMinutes: "分钟",
+            sceneWords: "字数",
+            invalidAllocation: "检查场景数据；分配的分钟和字数不能超过本次总数。",
+
             modeFreshDrafting: '全新起草',
             modeRevision: '修订',
             modeLineEdit: '逐行编辑',

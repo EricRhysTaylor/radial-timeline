@@ -7598,6 +7598,16 @@ export const th: TranslationKeys = {
             "backupNotice": "สำรองข้อมูลของคุณ Obsidian ห้องนิรภัยเป็นประจำเพื่อป้องกันการสูญหายของข้อมูล เรียนรู้เพิ่มเติมได้ที่ [Obsidian คู่มือการสำรองข้อมูล]. Sync ไม่ได้ป้องกันการสูญหายของข้อมูลทุกรูปแบบ ตัวเลือกการซิงค์รวมถึง [Obsidian ซิงค์] หรือ [Obsidian Git]"
         },
         "writingSessionCompletionModal": {
+            allocateScenes: "จัดสรรเซสชันนี้ให้แต่ละฉาก",
+            updateSceneTotals: "อัปเดตเวลารวมของฉาก",
+            updateSceneTotalsHint: "เพิ่มนาทีด้านล่างลงในชั่วโมงเดิมเพียงครั้งเดียว",
+            sceneTimeApplied: "เพิ่มแล้ว: {{after}} ชั่วโมง",
+            sceneTimePreview: "เวลารวม: {{before}} → {{after}} ชั่วโมง",
+            invalidSceneTime: "โปรดตรวจสอบเวลารวมเดิม",
+            sceneMinutes: "นาที",
+            sceneWords: "คำ",
+            invalidAllocation: "ตรวจสอบนาทีและคำที่จัดสรรไม่ให้เกินยอดรวมของเซสชัน",
+
             "modeFreshDrafting": "ร่างสด",
             "modeRevision": "การแก้ไข",
             "modeLineEdit": "แก้ไขบรรทัด",

@@ -1,6 +1,30 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { TFile, type App } from 'obsidian';
-import { applyAttachedSketchMove } from './sketchSceneMove';
+import { applyAttachedSketchMove, runSceneMoveWithSketches } from './sketchSceneMove';
+import { SceneReorderVerificationError } from '../services/SceneReorderService';
+
+describe('a scene move with attached sketches', () => {
+    it('moves the sketches after a clean scene move', async () => {
+        const order: string[] = [];
+        await runSceneMoveWithSketches(async () => { order.push('scene'); }, async () => { order.push('sketches'); }, () => order.push('applied'));
+        expect(order).toEqual(['scene', 'applied', 'sketches']);
+    });
+    it('still moves the sketches when the move ends with a verification warning, then reports it', async () => {
+        const warning = new SceneReorderVerificationError('Order differs');
+        const sketches = vi.fn().mockResolvedValue(undefined);
+        const applied = vi.fn();
+        await expect(runSceneMoveWithSketches(async () => { throw warning; }, sketches, applied)).rejects.toBe(warning);
+        expect(sketches).toHaveBeenCalledTimes(1);
+        expect(applied).toHaveBeenCalledTimes(1);
+    });
+    it('leaves the sketches alone when the scene move itself fails', async () => {
+        const sketches = vi.fn();
+        const applied = vi.fn();
+        await expect(runSceneMoveWithSketches(async () => { throw new Error('rename failed'); }, sketches, applied)).rejects.toThrow('rename failed');
+        expect(sketches).not.toHaveBeenCalled();
+        expect(applied).not.toHaveBeenCalled();
+    });
+});
 
 function setup() {
     const a = new TFile('Book/A.md');

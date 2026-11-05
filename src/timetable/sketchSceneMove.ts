@@ -8,6 +8,7 @@ import { findFrontmatterKey } from '../utils/frontmatterKeys';
 import { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor } from './sketchPlacement';
 import { classifyForPromotion } from '../services/PromoteToSceneService';
 import { authorKeyFor } from './timetableFiles';
+import { SceneReorderVerificationError } from '../services/SceneReorderService';
 
 export interface AttachedSketchMove {
     files: TFile[];
@@ -58,6 +59,24 @@ export async function askAboutAttachedSketches(plugin: RadialTimelinePlugin, pat
         new Choice(app).open();
     });
     return follow === null ? null : { files, anchorId: id, destinationAct, follow, actKey: authorKeyFor('Act', settings) };
+}
+
+/**
+ * Run a scene move, then its attached sketches. A verification warning arrives
+ * after every rename and Act write has finished, so the sketches still follow,
+ * and the warning is raised again for the caller to report.
+ */
+export async function runSceneMoveWithSketches(applyMove: () => Promise<void>, moveSketches: () => Promise<void>, onApplied: () => void): Promise<void> {
+    let warning: SceneReorderVerificationError | null = null;
+    try {
+        await applyMove();
+    } catch (error) {
+        if (!(error instanceof SceneReorderVerificationError)) throw error;
+        warning = error;
+    }
+    onApplied();
+    await moveSketches();
+    if (warning) throw warning;
 }
 
 export async function applyAttachedSketchMove(app: App, move: AttachedSketchMove | undefined): Promise<void> {

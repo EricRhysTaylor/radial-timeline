@@ -24,7 +24,7 @@ import type { RadialTimelineSettings } from '../../types/settings';
 import { fileStem } from '../../utils/paths';
 import { DRAG_DROP_ARC_RADIUS } from '../../renderer/layout/LayoutConstants';
 import { t } from '../../i18n';
-import { askAboutAttachedSketches, applyAttachedSketchMove } from '../../timetable/sketchSceneMove';
+import { askAboutAttachedSketches, applyAttachedSketchMove, runSceneMoveWithSketches } from '../../timetable/sketchSceneMove';
 
 export interface OuterRingViewAdapter {
     plugin: RadialTimelinePlugin;
@@ -847,22 +847,20 @@ export class OuterRingDragController {
         let reorderApplied = false;
         try {
             this.log('apply updates', { count: updates.length, from: fromIdx, to: toIdx, itemType: sourceType });
-            await applySceneNumberUpdates(this.view.plugin.app, updates, {
-                onProgress: (progress) => {
-                    modal.updateProgress(this.formatRenameProgressLine(t('ui.outerRingDragController.reorderPrefix'), progress));
-                },
-                verification: {
-                    expectedOrderedPaths,
-                    expectedNumbersByPath,
-                    movedItemPath: sourcePath,
-                    expectedMovedIndex: reordered.findIndex(entry => entry.path === sourcePath),
-                },
+            await runSceneMoveWithSketches(() => applySceneNumberUpdates(this.view.plugin.app, updates, {
+                    onProgress: (progress) => {
+                        modal.updateProgress(this.formatRenameProgressLine(t('ui.outerRingDragController.reorderPrefix'), progress));
+                    },
+                    verification: {
+                        expectedOrderedPaths,
+                        expectedNumbersByPath,
+                        movedItemPath: sourcePath,
+                        expectedMovedIndex: reordered.findIndex(entry => entry.path === sourcePath),
+                    },
                 onWarning: () => {
                     new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
                 },
-            });
-            reorderApplied = true;
-            await applyAttachedSketchMove(this.view.plugin.app, sketchMove);
+            }), () => applyAttachedSketchMove(this.view.plugin.app, sketchMove), () => { reorderApplied = true; });
             const historySummary = `${sourceDescriptor} | ${targetDescriptor}`;
             const noticeText = t('ui.outerRingDragController.movedBefore', { source: sourceDescriptor, target: targetDescriptor });
             await this.recordRecentMove({
@@ -994,22 +992,20 @@ export class OuterRingDragController {
 
         try {
             this.log('apply empty-act drop', { targetAct: targetActNumber, path: sourcePath, itemType: sourceType, renames: renumberUpdates.length });
-            await applySceneNumberUpdates(this.view.plugin.app, updates, {
-                onProgress: (progress) => {
-                    modal.updateProgress(this.formatRenameProgressLine(t('ui.outerRingDragController.reorderPrefix'), progress));
-                },
-                verification: {
-                    expectedOrderedPaths,
-                    expectedNumbersByPath,
-                    movedItemPath: sourcePath,
-                    expectedMovedIndex: reordered.findIndex(entry => entry.path === sourcePath),
-                },
+            await runSceneMoveWithSketches(() => applySceneNumberUpdates(this.view.plugin.app, updates, {
+                    onProgress: (progress) => {
+                        modal.updateProgress(this.formatRenameProgressLine(t('ui.outerRingDragController.reorderPrefix'), progress));
+                    },
+                    verification: {
+                        expectedOrderedPaths,
+                        expectedNumbersByPath,
+                        movedItemPath: sourcePath,
+                        expectedMovedIndex: reordered.findIndex(entry => entry.path === sourcePath),
+                    },
                 onWarning: () => {
                     new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
                 },
-            });
-            reorderApplied = true;
-            await applyAttachedSketchMove(this.view.plugin.app, sketchMove);
+            }), () => applyAttachedSketchMove(this.view.plugin.app, sketchMove), () => { reorderApplied = true; });
             await this.recordRecentMove({
                 itemType: sourceType,
                 filePath: sourcePath,

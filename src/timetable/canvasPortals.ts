@@ -1,4 +1,4 @@
-import type { App } from 'obsidian';
+import type { App, TFile } from 'obsidian';
 import type { StoryCanvasData } from './canvasSketches';
 
 /** Advanced Canvas represents portal endpoints as acportal||portal-id||node-id. */
@@ -20,6 +20,17 @@ export function hasPortalReference(data: StoryCanvasData, ids: Set<string>, loca
         && node.interdimensionalEdges.some(edge => edgeMatches(edge, local)));
 }
 
+/** A file that does not parse as a canvas holds no edges Canvas could follow, so it cannot hold a portal. */
+async function readCanvasData(app: App, file: TFile): Promise<StoryCanvasData | null> {
+    try {
+        const data: unknown = JSON.parse(await app.vault.cachedRead(file));
+        return data && typeof data === 'object' ? data as StoryCanvasData : null;
+    } catch (error) { // SAFE: one damaged or empty .canvas must not stop conversion on a healthy one
+        console.warn(`[Canvas] Skipped unreadable canvas ${file.path}`, error);
+        return null;
+    }
+}
+
 /** Check saved and open canvases: another map can hold an incoming portal edge. */
 export async function hasPortalReferences(app: App, source: StoryCanvasData, ids: Set<string>): Promise<boolean> {
     if (hasPortalReference(source, ids, true)) return true;
@@ -29,8 +40,8 @@ export async function hasPortalReferences(app: App, source: StoryCanvasData, ids
     }
     const canvases = app.vault.getFiles().filter(file => file.extension === 'canvas');
     for (let offset = 0; offset < canvases.length; offset += 24) {
-        const data = await Promise.all(canvases.slice(offset, offset + 24).map(async file => JSON.parse(await app.vault.cachedRead(file)) as StoryCanvasData));
-        if (data.some(canvas => hasPortalReference(canvas, ids, true))) return true;
+        const data = await Promise.all(canvases.slice(offset, offset + 24).map(file => readCanvasData(app, file)));
+        if (data.some(canvas => canvas !== null && hasPortalReference(canvas, ids, true))) return true;
     }
     return false;
 }

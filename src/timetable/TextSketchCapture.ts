@@ -66,15 +66,22 @@ class TextSketchCaptureModal extends ErtModal {
     }
 }
 
-/** Accept a dragged selection from a vault note, without moving the source text. */
-export function registerTextSketchCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin): void {
-    let capture: { text: string; source: TFile } | null = null;
+export type DraggedSelection = { text: string; source: TFile };
+
+/**
+ * Accept a dragged selection from a vault note, without moving the source text.
+ * Elements matching rowSelector place the text themselves: capture stands aside
+ * over them, and the returned getter gives them the selection being dragged.
+ */
+export function registerTextSketchCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, rowSelector?: string): () => DraggedSelection | null {
+    let capture: DraggedSelection | null = null;
     let pressedSelection: { text: string; source: TFile; container: HTMLElement } | null = null;
     const doc = host.ownerDocument;
     const target = host.createDiv({ cls: 'ert-text-sketch-drop', attr: { role: 'status' } });
     setIcon(target.createSpan(), 'file-plus-2');
     target.createSpan({ text: t('ui.timetable.captureSketchDrop') });
     const clear = () => { capture = null; target.removeClass('is-visible'); };
+    const overRow = (event: DragEvent): boolean => !!rowSelector && event.target instanceof Element && !!event.target.closest(rowSelector);
     owner.registerDomEvent(doc, 'pointerdown', (event: PointerEvent) => {
         pressedSelection = null;
         const origin = event.target as Node | null;
@@ -99,6 +106,7 @@ export function registerTextSketchCapture(owner: Component, host: HTMLElement, p
     }, true);
     owner.registerDomEvent(host, 'dragover', (event: DragEvent) => {
         if (!capture) return;
+        if (overRow(event)) { target.removeClass('is-visible'); return; }
         if (!target.isConnected) {
             const toolbar = host.querySelector<HTMLElement>('.ert-timetable-panels__toolbar');
             if (toolbar) toolbar.after(target); else host.appendChild(target);
@@ -111,7 +119,7 @@ export function registerTextSketchCapture(owner: Component, host: HTMLElement, p
         if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
     }, true);
     owner.registerDomEvent(host, 'drop', (event: DragEvent) => {
-        if (!capture) return;
+        if (!capture || overRow(event)) return;
         event.preventDefault(); event.stopPropagation();
         const { text, source } = capture;
         clear();
@@ -119,4 +127,5 @@ export function registerTextSketchCapture(owner: Component, host: HTMLElement, p
     }, true);
     owner.registerDomEvent(doc, 'dragend', clear, true);
     owner.register(() => target.remove());
+    return () => capture;
 }

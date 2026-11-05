@@ -441,3 +441,16 @@ export async function loadPdfJs(): Promise<unknown> {
 export function setTooltip(element: HTMLElement, text: string): void {
   element.setAttribute('aria-label', text);
 }
+
+export function setIcon(_element: unknown, _icon: string): void {}
+
+export class MarkdownView {}
+
+export class DropdownComponent {
+  selectEl = { empty: (): void => {}, options: [] as unknown[] };
+  private value = '';
+  addOption(_value: string, _label: string): this { return this; }
+  setValue(value: string): this { this.value = value; return this; }
+  getValue(): string { return this.value; }
+  onChange(_callback: (value: string) => void): this { return this; }
+}

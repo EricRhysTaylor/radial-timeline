@@ -1,5 +1,5 @@
 import { getInquiryCorpusTier } from '../inquiry/corpus/inquiryCorpusStripSlotRenderer';
-import { registerTextSketchCapture } from './TextSketchCapture';
+import { registerTextSketchCapture, type DraggedSelection } from './TextSketchCapture';
 import { registerNoteDropCapture } from './NoteDropCapture';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { readTimeReferences, referenceDateLabel, TIME_REFERENCES_KEY, type TimeReference } from '../chronologue/timeReferences/model';
@@ -167,6 +167,8 @@ import type { BookProfile, PlanetaryProfile } from '../types/settings';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const RINGS_PER_LINE_DEFAULT = 5;
 const RINGS_REFRESH_DELAY_MS = 300;
+const OUTLINE_TEXT_ROW_ATTRIBUTE = 'data-outline-text-row';
+const OUTLINE_TEXT_ROW = `[${OUTLINE_TEXT_ROW_ATTRIBUTE}]`;
 
 /**
  * Column widths (px). The number column fits what its rows hold (the number,
@@ -376,7 +378,7 @@ export class TimetableView extends BasesView {
     private outlineInsertionPath: string | null = null;
     private outlineInsertionAct: { act: number; bookId: string } | null = null;
     private outlineItems: TableItem[] = [];
-    private outlineDraggedText: { text: string; sourcePath: string } | null = null;
+    private draggedSelection: () => DraggedSelection | null = () => null;
     private rings: WheelRings | null = null;
     private ringsTimer: number | null = null;
     private ringsGeneration = 0;
@@ -454,10 +456,14 @@ export class TimetableView extends BasesView {
 
     onload(): void {
         this.register(trackTimetable(this));
-        registerTextSketchCapture(this, this.rootEl, this.plugin);
+        this.draggedSelection = registerTextSketchCapture(this, this.rootEl, this.plugin, OUTLINE_TEXT_ROW);
         registerNoteDropCapture(this, this.rootEl, this.plugin, () => {
             const ids = this.bookIdsInView();
             return ids.length === 1 ? ids[0] : ids.length === 0 && getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings)?.id : undefined;
+        }, {
+            // The Outline documents tray attaches notes itself, leaving them as they are.
+            ownDropPoint: event => this.rootEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)
+                .some(element => this.rootEl.contains(element) && !!element.closest('.ert-outline-documents__tray')),
         });
         this.register(onReferenceSelection(selection => {
             if (selection?.reveal && this.rowEls.has(selection.path) && !this.expandedReferences.has(selection.path)) {
@@ -468,17 +474,6 @@ export class TimetableView extends BasesView {
                 row.toggleClass('is-reference-selected', row.dataset.referenceKey === selection?.key));
         }));
         this.setUpKey();
-        this.registerDomEvent(this.rootEl.ownerDocument, 'dragstart', (event: DragEvent) => {
-            this.outlineDraggedText = null;
-            const view = this.outlineWorkspacePane?.view;
-            if (this.config.get('outline') !== true || !(view instanceof MarkdownView) || !view.file
-                || !(event.target instanceof Node) || !view.containerEl.contains(event.target)) return;
-            const selected = this.outlineSelectedText(view);
-            if (!selected.trim()) return;
-            this.outlineDraggedText = { text: selected, sourcePath: view.file.path };
-            if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy';
-        });
-        this.registerDomEvent(this.rootEl.ownerDocument, 'dragend', () => { this.outlineDraggedText = null; });
         // One set of delegated handlers: rows are redrawn on every data update.
         this.registerDomEvent(this.rootEl, 'click', (evt: MouseEvent) => this.handleClick(evt));
         this.registerDomEvent(this.rootEl.win, 'rt-story-image-strategy-changed', () => this.render());
@@ -2683,7 +2678,7 @@ export class TimetableView extends BasesView {
     private attachOutlineDocumentDrop(bar: HTMLElement, bookId: string, existing: string[]): void {
         const clear = () => bar.removeClass('is-drag-over');
         this.panelEvents?.registerDomEvent(bar, 'dragover', (event: DragEvent) => {
-            if (this.draggedScene || this.draggedSketch || this.outlineDraggedText) return;
+            if (this.draggedScene || this.draggedSketch) return;
             event.preventDefault(); event.stopPropagation();
             if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
             bar.addClass('is-drag-over');
@@ -2692,7 +2687,7 @@ export class TimetableView extends BasesView {
             if (!(event.relatedTarget instanceof Node) || !bar.contains(event.relatedTarget)) clear();
         });
         this.panelEvents?.registerDomEvent(bar, 'drop', (event: DragEvent) => {
-            if (this.draggedScene || this.draggedSketch || this.outlineDraggedText) return;
+            if (this.draggedScene || this.draggedSketch) return;
             event.preventDefault(); event.stopPropagation(); clear();
             const { app } = this.plugin;
             const files: TFile[] = [];
@@ -2867,9 +2862,10 @@ export class TimetableView extends BasesView {
     }
 
     private attachOutlineTextDrop(row: HTMLElement, target: string | { act: number; bookId: string }): void {
+        row.setAttr(OUTLINE_TEXT_ROW_ATTRIBUTE, 'true');
         const clear = () => row.removeClass('ert-outline-text-drop');
         this.panelEvents?.registerDomEvent(row, 'dragover', (event: DragEvent) => {
-            if (!this.outlineDraggedText || this.draggedScene || this.draggedSketch) return;
+            if (!this.draggedSelection() || this.draggedScene || this.draggedSketch) return;
             event.preventDefault(); event.stopPropagation();
             if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
             row.addClass('ert-outline-text-drop');
@@ -2878,11 +2874,10 @@ export class TimetableView extends BasesView {
             if (!(event.relatedTarget instanceof Node) || !row.contains(event.relatedTarget)) clear();
         });
         this.panelEvents?.registerDomEvent(row, 'drop', (event: DragEvent) => {
-            const dragged = this.outlineDraggedText;
+            const dragged = this.draggedSelection();
             if (!dragged || this.draggedScene || this.draggedSketch) return;
             event.preventDefault(); event.stopPropagation(); clear();
-            this.outlineDraggedText = null;
-            void this.createOutlineSketch(dragged.text, dragged.sourcePath, target);
+            void this.createOutlineSketch(dragged.text, dragged.source.path, target);
         });
     }
 

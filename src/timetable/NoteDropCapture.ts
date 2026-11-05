@@ -9,14 +9,23 @@ import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { buildTableRow } from './timetableModel';
 import { readSceneId } from '../utils/sceneIds';
 import { TimelineNoteDropModal, type TimelineNoteTarget } from './TimelineNoteDrop';
+import { authorKeyFor } from './timetableFiles';
 
 export function sameSceneNumber(a: string | null, b: string | null): boolean {
     return !!a && !!b && Number.isFinite(Number(a)) && Number.isFinite(Number(b)) && Number(a) === Number(b);
 }
 
-/** Insert only the missing Class line, preserving all existing bytes. */
-export function addNoteClass(content: string, kind: 'Scene' | 'Sketch', anchor?: string): string {
-    const placement = anchor ? `Place after scene: ${JSON.stringify(anchor)}\n` : '';
+/** Scenes a dropped note can follow: its own act's, or the whole book's when the note has no Act. */
+export function noteDropAnchors<T extends { row: { kind: string; act: number | null }; id?: string | null }>(items: readonly T[], act: number | null): T[] {
+    const counts = new Map<string, number>();
+    for (const item of items) if (item.row.kind === 'scene' && item.id) counts.set(item.id, (counts.get(item.id) ?? 0) + 1);
+    return items.filter(item => item.row.kind === 'scene' && (act === null || item.row.act === act) && !!item.id && counts.get(item.id) === 1);
+}
+
+/** Insert only the missing lines, preserving all existing bytes; an empty Act is filled in place. */
+export function addNoteClass(content: string, kind: 'Scene' | 'Sketch', anchor?: string, act?: { key: string; value: number }): string {
+    const actLine = act ? `${act.key}: ${act.value}\n` : '';
+    const placement = (anchor ? `Place after scene: ${JSON.stringify(anchor)}\n` : '') + actLine;
     const start = content.match(/^---\s*\r?\n/);
     if (!start) return `---\nClass: ${kind}\n${placement}---\n\n${content}`;
     const tail = content.slice(start[0].length);
@@ -28,6 +37,16 @@ export function addNoteClass(content: string, kind: 'Scene' | 'Sketch', anchor?:
     if (parsed && Object.keys(parsed).some(key => key.toLowerCase() === 'class')) throw new Error(t('ui.timetable.noteDropHasClass'));
     if (anchor && parsed && Object.keys(parsed).some(key => key.toLowerCase() === 'place after scene')) throw new Error(t('ui.timetable.noteDropExistingPlacement'));
     const newline = start[0].endsWith('\r\n') ? '\r\n' : '\n';
+    const existingAct = act && parsed ? Object.entries(parsed).find(([key]) => key.toLowerCase() === act.key.toLowerCase()) : undefined;
+    if (act && existingAct) {
+        const [key, value] = existingAct;
+        if (value !== null && value !== '') throw new Error(t('ui.timetable.noteDropExistingPlacement'));
+        const lines = placement.replace(actLine, '').replace(/\n/g, newline);
+        const line = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:[ \\t]*(#[^\\r\\n]*)?(?=\\r?$)`, 'm');
+        if (!line.test(raw)) throw new Error(t('ui.timetable.noteDropExistingPlacement'));
+        const filled = raw.replace(line, (_match, comment?: string) => `${key}: ${act.value}${comment ? ` ${comment}` : ''}`);
+        return `${start[0]}Class: ${kind}${newline}${lines}${filled}${tail.slice(end.index)}`;
+    }
     return `${start[0]}Class: ${kind}${newline}${placement.replace(/\n/g, newline)}${tail}`;
 }
 
@@ -57,17 +76,14 @@ class NoteDropModal extends ErtModal {
         anchorRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropAfter') });
         anchorRow.createDiv({ cls: 'setting-item-description', text: t('ui.timetable.noteDropAnchorHint') });
         const anchor = new DropdownComponent(anchorRow.createDiv({ cls: 'setting-item-control' }));
+        const noteAct = () => buildTableRow(this.file.path, this.file.basename, this.app.metadataCache.getFileCache(this.file)?.frontmatter, this.plugin.settings).act;
+        const anchors = () => noteDropAnchors(this.app.vault.getMarkdownFiles().filter(file => getBookIdForPath(this.plugin.settings.books, file.path) === book.getValue()).map(file => {
+            const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+            return { file, row: buildTableRow(file.path, file.basename, fm, this.plugin.settings), id: readSceneId(fm) };
+        }), noteAct());
         const updateAnchors = () => {
-            const act = buildTableRow(this.file.path, this.file.basename, this.app.metadataCache.getFileCache(this.file)?.frontmatter, this.plugin.settings).act;
-            const items = this.app.vault.getMarkdownFiles().filter(file => getBookIdForPath(this.plugin.settings.books, file.path) === book.getValue()).map(file => {
-                const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
-                return { file, row: buildTableRow(file.path, file.basename, fm, this.plugin.settings), id: readSceneId(fm) };
-            });
-            const counts = new Map<string, number>();
-            for (const item of items) if (item.row.kind === 'scene' && item.id) counts.set(item.id, (counts.get(item.id) ?? 0) + 1);
             anchor.selectEl.empty(); anchor.addOption('', t('ui.timetable.noteDropEndAct'));
-            items.filter(item => item.row.kind === 'scene' && item.row.act === act && item.id && counts.get(item.id) === 1)
-                .sort((a, b) => a.file.basename.localeCompare(b.file.basename, undefined, { numeric: true }))
+            anchors().sort((a, b) => a.file.basename.localeCompare(b.file.basename, undefined, { numeric: true }))
                 .forEach(item => anchor.addOption(item.id!, item.file.basename));
         };
         const explanation = this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint' });
@@ -96,14 +112,12 @@ class NoteDropModal extends ErtModal {
                 if (!chosen) throw new Error(t('ui.canvasSketch.noBook'));
                 const type = kind.getValue() === 'Sketch' ? 'Sketch' : 'Scene';
                 const after = type === 'Sketch' ? anchor.getValue() || undefined : undefined;
+                let act: { key: string; value: number } | undefined;
                 if (after) {
-                    const act = buildTableRow(this.file.path, this.file.basename, this.app.metadataCache.getFileCache(this.file)?.frontmatter, this.plugin.settings).act;
-                    const matches = this.app.vault.getMarkdownFiles().filter(file => {
-                        const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
-                        const row = buildTableRow(file.path, file.basename, fm, this.plugin.settings);
-                        return getBookIdForPath(this.plugin.settings.books, file.path) === chosen.id && row.kind === 'scene' && row.act === act && readSceneId(fm) === after;
-                    });
-                    if (matches.length !== 1) throw new Error(t('ui.timetable.sketchPromotionAnchorProblem'));
+                    const match = anchors().find(item => item.id === after);
+                    if (!match) throw new Error(t('ui.timetable.sketchPromotionAnchorProblem'));
+                    // A note with no Act joins the act of the scene it now follows.
+                    if (noteAct() === null && match.row.act !== null) act = { key: authorKeyFor('Act', this.plugin.settings), value: match.row.act };
                 }
                 const input = number.value.trim();
                 if (type === 'Scene' && !/^\d+(?:\.\d+)?$/.test(input)) throw new Error(t('ui.timetable.noteDropNumberRequired'));
@@ -118,9 +132,9 @@ class NoteDropModal extends ErtModal {
                 const prefix = input;
                 if (type === 'Scene' && this.app.vault.getMarkdownFiles().some(f => f !== this.file && getBookIdForPath(this.plugin.settings.books, f.path) === chosen.id && sameSceneNumber(filenamePrefix(f.basename), prefix) && classifyForPromotion(this.app.metadataCache.getFileCache(f)?.frontmatter).kind === 'alreadyScene')) throw new Error(t('ui.timetable.noteDropNumberExists'));
                 // Validate before a move and again inside vault.process for concurrent edits.
-                addNoteClass(await this.app.vault.read(this.file), type, after);
+                addNoteClass(await this.app.vault.read(this.file), type, after, act);
                 if (destination !== oldPath) await this.app.fileManager.renameFile(this.file, destination);
-                try { await this.app.vault.process(this.file, content => addNoteClass(content, type, after)); }
+                try { await this.app.vault.process(this.file, content => addNoteClass(content, type, after, act)); }
                 catch (error) { if (destination !== oldPath) await this.app.fileManager.renameFile(this.file, oldPath); throw error; }
                 this.close(); this.plugin.refreshTimelineIfNeeded(null); new Notice(t('ui.timetable.noteDropDone'));
             })().catch((error: unknown) => { submit.disabled = false; explanation.setText(error instanceof Error ? error.message : String(error)); explanation.show(); });
@@ -129,7 +143,7 @@ class NoteDropModal extends ErtModal {
 }
 
 /** Handle file-explorer drags without intercepting selected text or existing scene drags. */
-export function registerNoteDropCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, bookId: () => string | undefined, options?: { defaultKind?: 'Scene' | 'Sketch'; acceptPoint?: (event: DragEvent) => boolean; rejectPoint?: (event: DragEvent) => string | undefined; timelinePoint?: (event: DragEvent) => { target: TimelineNoteTarget; element: Element } | undefined }): void {
+export function registerNoteDropCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, bookId: () => string | undefined, options?: { defaultKind?: 'Scene' | 'Sketch'; ownDropPoint?: (event: DragEvent) => boolean; acceptPoint?: (event: DragEvent) => boolean; rejectPoint?: (event: DragEvent) => string | undefined; timelinePoint?: (event: DragEvent) => { target: TimelineNoteTarget; element: Element } | undefined }): void {
     let explorerFile: TFile | null = null;
     let highlighted: Element | null = null;
     let sceneOutline: SVGElement | null = null;
@@ -175,7 +189,7 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
         if (file instanceof TFile) explorerFile = file;
     }, true);
     owner.registerDomEvent(host.ownerDocument, 'dragover', (event: DragEvent) => {
-        if (!isOverView(event) || !dragged()) { clear(); return; }
+        if (!isOverView(event) || !dragged() || options?.ownDropPoint?.(event)) { clear(); return; }
         if (options?.rejectPoint?.(event)) {
             clear(); event.preventDefault(); event.stopPropagation();
             if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
@@ -198,7 +212,7 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
         event.preventDefault(); event.stopPropagation(); if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
     }, true);
     owner.registerDomEvent(host.ownerDocument, 'drop', (event: DragEvent) => {
-        if (!isOverView(event)) { clear(); return; }
+        if (!isOverView(event) || options?.ownDropPoint?.(event)) { clear(); return; }
         const file = dragged();
         const timeline = options?.timelinePoint?.(event) ?? (lastTimeline && Math.hypot(event.clientX - lastTimeline.x, event.clientY - lastTimeline.y) <= 8 ? lastTimeline : undefined);
         clear();

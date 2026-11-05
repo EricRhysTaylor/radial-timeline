@@ -1,7 +1,81 @@
-import { describe, expect, it } from 'vitest';
-import { addNoteClass, sameSceneNumber } from './NoteDropCapture';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Modal, TFile, type Component } from 'obsidian';
+import type RadialTimelinePlugin from '../main';
+
+import { addNoteClass, noteDropAnchors, registerNoteDropCapture, sameSceneNumber } from './NoteDropCapture';
+
+describe('Place sketch after', () => {
+    const scene = (id: string, act: number | null) => ({ id, row: { kind: 'scene', act } });
+    const items = [scene('scn_1', 1), scene('scn_2', 2), { id: 'scn_note', row: { kind: 'sketch', act: 1 } }, scene('scn_dup', 1), scene('scn_dup', 2), { id: undefined, row: { kind: 'scene', act: 1 } }];
+    it('offers every scene in the book for a note with no Act', () => {
+        expect(noteDropAnchors(items, null).map(item => item.id)).toEqual(['scn_1', 'scn_2']);
+    });
+    it('keeps to the note\'s own act when it has one', () => {
+        expect(noteDropAnchors(items, 2).map(item => item.id)).toEqual(['scn_2']);
+    });
+});
+
+describe('a note dragged over a target of its own', () => {
+    class FakeElement {
+        dataset: Record<string, string> = {};
+        constructor(private readonly path?: string) { if (path) this.dataset.path = path; }
+        closest(): FakeElement | null { return this.path ? this : null; }
+        matches(): boolean { return false; }
+    }
+    const file = new TFile('Notes/Plan.md');
+    function setup(ownDrop: boolean) {
+        const handlers = new Map<string, (event: unknown) => void>();
+        const banner = { createSpan: () => ({}), addClass: vi.fn(), removeClass: vi.fn(), remove: vi.fn(), previousElementSibling: null, isConnected: true };
+        const doc = {};
+        const host = { ownerDocument: doc, isConnected: true, createDiv: () => banner, closest: () => null, querySelector: () => null, appendChild: vi.fn(), getBoundingClientRect: () => ({ left: 0, right: 100, top: 0, bottom: 100 }) };
+        const owner = { registerDomEvent: (_: unknown, type: string, handler: (event: unknown) => void) => handlers.set(type, handler), register: () => undefined };
+        const plugin = { app: { vault: { getAbstractFileByPath: () => file }, metadataCache: { getFileCache: () => ({ frontmatter: {} }) } } } as unknown as RadialTimelinePlugin;
+        registerNoteDropCapture(owner as unknown as Component, host as unknown as HTMLElement, plugin, () => 'book', { ownDropPoint: () => ownDrop });
+        handlers.get('dragstart')!({ target: new FakeElement(file.path) });
+        const event = () => ({ clientX: 10, clientY: 10, target: new FakeElement(), preventDefault: vi.fn(), stopPropagation: vi.fn(), stopImmediatePropagation: vi.fn(), dataTransfer: { dropEffect: 'none' } });
+        return { handlers, banner, event };
+    }
+    const open = vi.spyOn(Modal.prototype, 'open');
+    beforeEach(() => { vi.stubGlobal('Element', FakeElement); vi.useFakeTimers(); open.mockClear(); });
+    afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+    it('reaches the Outline documents tray untouched', () => {
+        const { handlers, banner, event } = setup(true);
+        const over = event();
+        handlers.get('dragover')!(over);
+        expect(over.preventDefault).not.toHaveBeenCalled();
+        expect(banner.addClass).not.toHaveBeenCalled();
+        const drop = event();
+        handlers.get('drop')!(drop);
+        expect(drop.stopImmediatePropagation).not.toHaveBeenCalled();
+        vi.runAllTimers();
+        expect(open).not.toHaveBeenCalled();
+    });
+    it('opens Add note to the book everywhere else', () => {
+        const { handlers, event } = setup(false);
+        const drop = event();
+        handlers.get('drop')!(drop);
+        expect(drop.stopImmediatePropagation).toHaveBeenCalled();
+        vi.runAllTimers();
+        expect(open).toHaveBeenCalledTimes(1);
+    });
+});
 
 describe('adding a note to the book', () => {
+    it('gives a placed sketch the act of its scene, leaving the rest of the note as it was', () => {
+        const source = '---\nSynopsis: Keep # this\n---\n\nBody\n';
+        expect(addNoteClass(source, 'Sketch', 'scn_1', { key: 'Act', value: 2 })).toBe('---\nClass: Sketch\nPlace after scene: "scn_1"\nAct: 2\nSynopsis: Keep # this\n---\n\nBody\n');
+        expect(addNoteClass('Body\n', 'Sketch', 'scn_1', { key: 'Act', value: 2 })).toBe('---\nClass: Sketch\nPlace after scene: "scn_1"\nAct: 2\n---\n\nBody\n');
+    });
+    it('fills an empty Act in place instead of writing a second one', () => {
+        expect(addNoteClass('---\nact:\nWhen: 2085\n---\n', 'Sketch', 'scn_1', { key: 'Act', value: 3 })).toBe('---\nClass: Sketch\nPlace after scene: "scn_1"\nact: 3\nWhen: 2085\n---\n');
+    });
+    it('keeps Windows line endings when it fills an empty Act', () => {
+        expect(addNoteClass('---\r\nAct:\r\n---\r\n', 'Sketch', 'scn_1', { key: 'Act', value: 3 })).toBe('---\r\nClass: Sketch\r\nPlace after scene: "scn_1"\r\nAct: 3\r\n---\r\n');
+    });
+    it('leaves an Act it cannot read for the author to fix', () => {
+        expect(() => addNoteClass('---\nAct: two\n---\n', 'Sketch', 'scn_1', { key: 'Act', value: 3 })).toThrow();
+    });
     it('inserts only the Class line and preserves existing YAML, comments, and prose byte for byte', () => {
         const source = '---\r\nSynopsis: A scene # keep this\r\nAct: 3\r\nWhen: 2085-05-11\r\nCharacter:\r\n  - "[[Entiat Chelan]]"\r\n---\r\n\r\nUnchanged prose.\r\n';
         expect(addNoteClass(source, 'Scene')).toBe(source.replace('---\r\n', '---\r\nClass: Scene\r\n'));

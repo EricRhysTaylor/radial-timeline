@@ -1,5 +1,5 @@
 import { readFrontmatterProperty } from '../utils/frontmatterKeys';
-import type { App, TFile } from 'obsidian';
+import { TFile, type App } from 'obsidian';
 import { imageSubjectName, stableStoryImage } from './storyImageMatching';
 
 export type PanelImage = { url: string; path: string };
@@ -25,12 +25,14 @@ export function panelSceneImage(app: App, scene: TFile, fm: Record<string, unkno
 }
 
 /** Resolve a scene-specific image first, then the first Place note's Image. */
-export function panelPlaceImage(app: App, scene: TFile, fm: Record<string, unknown> | undefined, placeKey: string, imageFiles?: readonly TFile[]): { url: string; path: string; source: 'scene' | 'place'; name: string } | null {
+export function panelPlaceImage(app: App, scene: TFile, fm: Record<string, unknown> | undefined, placeKey: string, imageFiles?: readonly TFile[], chosenPath?: string): { url: string; path: string; source: 'scene' | 'place'; name: string } | null {
     const image = (value: unknown, sourcePath: string): TFile | null => {
         const path = linkPath(value);
         const file = path ? app.metadataCache.getFirstLinkpathDest(path, sourcePath) : null;
         return file && /^(png|jpe?g|gif|webp|avif)$/i.test(file.extension) ? file : null;
     };
+    const selected = chosenPath ? app.vault.getAbstractFileByPath(chosenPath) : null;
+    if (selected instanceof TFile && /^(png|jpe?g|gif|webp|avif)$/i.test(selected.extension)) return { url: app.vault.getResourcePath(selected), path: selected.path, source: 'scene', name: selected.name };
     const override = image(readFrontmatterProperty(fm, 'Place image'), scene.path);
     if (override) return { url: app.vault.getResourcePath(override), path: override.path, source: 'scene', name: override.name };
     const places = readFrontmatterProperty(fm, placeKey);

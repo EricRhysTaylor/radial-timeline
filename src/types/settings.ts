@@ -1097,6 +1097,7 @@ export interface CommunityDailyBackfillRecord {
 export interface RadialTimelineSettings {
     /** How scene cards choose a character portrait across the manuscript. */
     storyImageStrategy?: 'first' | 'second' | 'distinctive' | 'pov' | 'balanced';
+    storyImageChoices?: Record<string, { character?: string; image?: string; placeImage?: string }>;
     books: BookProfile[];
     activeBookId?: string;
     timelineScope?: 'book' | 'saga';

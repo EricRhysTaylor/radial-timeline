@@ -109,9 +109,11 @@ import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { synopsisKey, updateSynopsis } from './panelSynopsis';
 import { leadPortrait } from './panelPortrait';
 import { combinedPanelImage, panelPlaceImage, panelSceneImage } from './panelPlaceImage';
-import { imageSubjectName, stableStoryImage } from './storyImageMatching';
+import { imageSubjectName } from './storyImageMatching';
 import { storyCharacterSelections } from './storyImageSelection';
 import { explicitCardImage, showStoryImageMenu } from './storyImageMenu';
+import { storyImageChoice } from './storyImageStore';
+import { resolveStoryPortrait } from './storyPortrait';
 import { coverPosition, validPanelFocus } from './panelFocus';
 import { PanelFocusModal } from './PanelFocusModal';
 import { timetableNarrativeOrder } from './timetablePlacement';
@@ -2944,13 +2946,13 @@ export class TimetableView extends BasesView {
                 const characters = readFrontmatterProperty(frontmatter, authorKeyFor('Character', this.plugin.settings));
                 const names = (Array.isArray(characters) ? characters : [characters]).filter((name): name is string => typeof name === 'string' && name.trim().length > 0);
                 const people = this.characterDetails(row.path, names, imageFiles);
-                const selectedSubject = imageSubjectName(readFrontmatterProperty(frontmatter, 'Card character')) ?? imageSelections.get(row.path);
+                const selectedSubject = storyImageChoice(this.plugin, row.path).character ?? imageSelections.get(row.path);
                 const selectedIndex = selectedSubject ? names.findIndex(name => imageSubjectName(name) === selectedSubject) : -1;
                 const selectedPerson = people[selectedIndex < 0 ? 0 : selectedIndex];
-                const overrideImage = explicitCardImage(this.plugin.app, entry.file, frontmatter);
+                const overrideImage = explicitCardImage(this.plugin, entry.file);
                 const portrait = overrideImage ? this.plugin.app.vault.getResourcePath(overrideImage) : selectedPerson?.image ?? leadPortrait(people);
                 const imageMode = outline ? 'character' : this.config.get('panelImage');
-                const location = (imageMode === 'place' || imageMode === 'combined' || imageMode === 'layered') && (row.kind === 'scene' || (row.kind === 'sketch' && !!readFrontmatterProperty(frontmatter, 'Place image'))) ? panelPlaceImage(this.plugin.app, entry.file, frontmatter, authorKeyFor('Place', this.plugin.settings), imageFiles) : null;
+                const location = (imageMode === 'place' || imageMode === 'combined' || imageMode === 'layered') && (row.kind === 'scene' || (row.kind === 'sketch' && (!!storyImageChoice(this.plugin, row.path).placeImage || !!readFrontmatterProperty(frontmatter, 'Place image')))) ? panelPlaceImage(this.plugin.app, entry.file, frontmatter, authorKeyFor('Place', this.plugin.settings), imageFiles, storyImageChoice(this.plugin, row.path).placeImage) : null;
                 const artwork = (imageMode === 'artwork' || imageMode === 'combined') && row.kind === 'scene' ? panelSceneImage(this.plugin.app, entry.file, frontmatter) : null;
                 const portraitPath = overrideImage?.path ?? selectedPerson?.imagePath;
                 const characterImage = portrait && portraitPath ? { url: portrait, path: portraitPath } : null;
@@ -3180,23 +3182,9 @@ export class TimetableView extends BasesView {
             const link = raw.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '');
             const [path, alias] = link.split('|');
             const character = this.plugin.app.metadataCache.getFirstLinkpathDest(path.trim(), scenePath);
-            let imageUrl: string | null = null;
-            let imagePath: string | null = null;
-            const subject = imageSubjectName(raw);
-            const named = subject && imageFiles ? stableStoryImage(imageFiles, scenePath, subject) : null;
-            if (named) { imagePath = named.path; imageUrl = this.plugin.app.vault.getResourcePath(named); }
-            if (character && !imageUrl) {
-                const fm = this.plugin.app.metadataCache.getFileCache(character)?.frontmatter;
-                const imageValue = readFrontmatterProperty(fm, 'Image');
-                if (typeof imageValue === 'string') {
-                    const imageLinkPath = imageValue.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
-                    const image = this.plugin.app.metadataCache.getFirstLinkpathDest(imageLinkPath, character.path);
-                    if (image && /^(png|jpe?g|gif|webp|avif)$/i.test(image.extension)) {
-                        imageUrl = this.plugin.app.vault.getResourcePath(image);
-                        imagePath = image.path;
-                    }
-                }
-            }
+            const image = resolveStoryPortrait(this.plugin.app, scenePath, raw, imageFiles ?? []);
+            const imageUrl = image ? this.plugin.app.vault.getResourcePath(image) : null;
+            const imagePath = image?.path ?? null;
             return { name: (alias ?? path).trim(), image: imageUrl, imagePath, file: character };
         });
     }

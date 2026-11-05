@@ -4,12 +4,13 @@ import { getBookIdForPath } from '../utils/books';
 import { readFrontmatterProperty } from '../utils/frontmatterKeys';
 import { authorKeyFor } from './timetableFiles';
 import { buildTableRow } from './timetableModel';
-import { chooseImageSubject, imageSubjectName, matchingStoryImages, type StoryImageStrategy } from './storyImageMatching';
+import { chooseImageSubject, imageSubjectName, type StoryImageStrategy } from './storyImageMatching';
+import { resolveStoryPortrait } from './storyPortrait';
 
 /** Build choices for complete books, independent of the active Bases filter. */
 export function storyCharacterSelections(plugin: RadialTimelinePlugin, images: readonly TFile[], strategy: StoryImageStrategy, bookIds?: ReadonlySet<string>): Map<string, string> {
     const { app, settings } = plugin;
-    const books = new Map<string, Array<{ path: string; act: number; prefix: string; names: string[] }>>();
+    const books = new Map<string, Array<{ path: string; act: number; prefix: string; names: string[]; links: string[] }>>();
     for (const file of app.vault.getMarkdownFiles()) {
         const book = getBookIdForPath(settings.books, file.path);
         if (!book || (bookIds && !bookIds.has(book))) continue;
@@ -17,9 +18,10 @@ export function storyCharacterSelections(plugin: RadialTimelinePlugin, images: r
         const row = buildTableRow(file.path, file.basename, fm, settings);
         if (row.kind !== 'scene') continue;
         const raw = readFrontmatterProperty(fm, authorKeyFor('Character', settings));
-        const names = (Array.isArray(raw) ? raw : [raw]).map(imageSubjectName).filter((name): name is string => !!name);
+        const links = (Array.isArray(raw) ? raw : [raw]).filter((value): value is string => typeof value === 'string' && !!imageSubjectName(value));
+        const names = links.map(imageSubjectName).filter((name): name is string => !!name);
         const group = books.get(book) ?? [];
-        group.push({ path: file.path, act: row.act ?? 0, prefix: row.prefix ?? '', names });
+        group.push({ path: file.path, act: row.act ?? 0, prefix: row.prefix ?? '', names, links });
         books.set(book, group);
     }
     const result = new Map<string, string>();
@@ -29,7 +31,7 @@ export function storyCharacterSelections(plugin: RadialTimelinePlugin, images: r
         scenes.sort((a, b) => a.act - b.act || a.prefix.localeCompare(b.prefix, undefined, { numeric: true }) || a.path.localeCompare(b.path));
         let previous: string | null = null;
         for (const scene of scenes) {
-            const candidates = scene.names.filter(name => matchingStoryImages(images, name).length > 0);
+            const candidates = scene.names.filter((name, index) => !!resolveStoryPortrait(app, scene.path, scene.links[index], images));
             // In this project the POV character is the first entry in Character.
             const selected = chooseImageSubject(candidates, strategy, counts, scene.names[0] ?? null, previous, scene.names[1] ?? null);
             if (selected) { result.set(scene.path, selected); previous = selected; }

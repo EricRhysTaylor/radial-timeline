@@ -1,6 +1,7 @@
 import type RadialTimelinePlugin from '../main';
 import { TFile, TAbstractFile, MarkdownView } from 'obsidian';
 import { bindToAllDocuments, getOpenDocuments } from '../utils/documents';
+import { rebaseStoryImageChoices } from '../timetable/storyImageStore';
 
 export class FileTrackingService {
     private modalStateObservers = new Map<Document, MutationObserver>();
@@ -152,6 +153,14 @@ export class FileTrackingService {
     }
 
     private handleFileRename(file: TAbstractFile, oldPath: string): void {
+        const choices = this.plugin.settings.storyImageChoices;
+        if (choices) {
+            const rebased = rebaseStoryImageChoices(choices, oldPath, file.path);
+            if (JSON.stringify(choices) !== JSON.stringify(rebased)) {
+                this.plugin.settings.storyImageChoices = rebased;
+                void this.plugin.saveSettings().catch(error => console.error('Could not update card image paths:', error));
+            }
+        }
         if (this.plugin.openScenePaths.has(oldPath)) {
             this.plugin.openScenePaths.delete(oldPath);
             if (file instanceof TFile && this.plugin.isSceneFile(file.path)) {

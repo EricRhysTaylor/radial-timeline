@@ -15,9 +15,11 @@ import { cardSubplots } from './canvasCardSubplots';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { readFrontmatterProperty } from '../utils/frontmatterKeys';
 import { panelPlaceImage } from './panelPlaceImage';
-import { imageSubjectName, stableStoryImage } from './storyImageMatching';
+import { imageSubjectName } from './storyImageMatching';
 import { storyCharacterSelections } from './storyImageSelection';
 import { explicitCardImage, showStoryImageMenu } from './storyImageMenu';
+import { storyImageChoice } from './storyImageStore';
+import { resolveStoryPortrait } from './storyPortrait';
 import { outlineReferenceType, type OutlineReferenceType } from './outlineDocuments';
 
 type Mode = 'full' | 'preview' | 'title';
@@ -38,17 +40,8 @@ function portrait(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, 
     const characters = readFrontmatterProperty(fm, authorKeyFor('Character', plugin.settings));
     const first: unknown = Array.isArray(characters) ? (characters.find(value => imageSubjectName(value) === selected) ?? characters[0]) : characters;
     if (typeof first !== 'string' || !first.trim()) return null;
-    const subject = imageSubjectName(first);
-    const named = subject ? stableStoryImage(imageFiles, file.path, subject) : null;
-    if (named) return plugin.app.vault.getResourcePath(named);
-    const link = first.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
-    const character = plugin.app.metadataCache.getFirstLinkpathDest(link, file.path);
-    if (!character) return null;
-    const imageValue = readFrontmatterProperty(plugin.app.metadataCache.getFileCache(character)?.frontmatter, 'Image');
-    if (typeof imageValue !== 'string') return null;
-    const imagePath = imageValue.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
-    const image = plugin.app.metadataCache.getFirstLinkpathDest(imagePath, character.path);
-    return image && /^(png|jpe?g|gif|webp|avif)$/i.test(image.extension) ? plugin.app.vault.getResourcePath(image) : null;
+    const image = resolveStoryPortrait(plugin.app, file.path, first, imageFiles);
+    return image ? plugin.app.vault.getResourcePath(image) : null;
 }
 
 class CanvasCards {
@@ -213,10 +206,10 @@ class CanvasCards {
                 const kindValue = readFrontmatterProperty(fm, authorKeyFor('Class', this.plugin.settings));
                 const kind = typeof kindValue === 'string' ? kindValue.trim() : t('ui.canvasSketch.cardLabel');
                 const row = buildTableRow(file.path, file.basename, fm, this.plugin.settings);
-                const overrideImage = explicitCardImage(this.plugin.app, file, fm);
-                const selected = imageSubjectName(readFrontmatterProperty(fm, 'Card character')) ?? imageSelections.get(file.path);
+                const overrideImage = explicitCardImage(this.plugin, file);
+                const selected = storyImageChoice(this.plugin, file.path).character ?? imageSelections.get(file.path);
                 const image = overrideImage ? this.plugin.app.vault.getResourcePath(overrideImage) : row.kind === 'scene' ? portrait(this.plugin, file, fm, imageFiles, selected) : null;
-                const place = this.showPlaceBackground && (row.kind === 'scene' || (row.kind === 'sketch' && !!readFrontmatterProperty(fm, 'Place image'))) ? panelPlaceImage(this.plugin.app, file, fm, authorKeyFor('Place', this.plugin.settings), imageFiles) : null;
+                const place = this.showPlaceBackground && (row.kind === 'scene' || (row.kind === 'sketch' && (!!storyImageChoice(this.plugin, file.path).placeImage || !!readFrontmatterProperty(fm, 'Place image')))) ? panelPlaceImage(this.plugin.app, file, fm, authorKeyFor('Place', this.plugin.settings), imageFiles, storyImageChoice(this.plugin, file.path).placeImage) : null;
                 const slots = row.kind === 'scene' || row.kind === 'sketch' ? await this.colorsForBook(bookId) : new Map<string, number>();
                 const subplotNames = row.subplots.filter(name => slots.has(name));
                 const shownSubplots = cardSubplots(data, groups, subplotNames);
@@ -238,7 +231,7 @@ class CanvasCards {
                 const title = file.basename.replace(/^\d+(?:\.\d+)?\s+/, '');
                 const description = plainText(preview);
                 const number = row.kind === 'scene' ? row.prefix : null;
-                const signature = JSON.stringify([this.mode, title, kind, number, image, place?.url, selected, readFrontmatterProperty(fm, 'Card image'), readFrontmatterProperty(fm, 'Place image'), this.landscapePortrait, description, file.path, shownSubplots.map(name => [name, slots.get(name)]), overdue]);
+                const signature = JSON.stringify([this.mode, title, kind, number, image, place?.url, selected, storyImageChoice(this.plugin, file.path), readFrontmatterProperty(fm, 'Place image'), this.landscapePortrait, description, file.path, shownSubplots.map(name => [name, slots.get(name)]), overdue]);
                 const existing = this.cards.get(el);
                 if (existing?.signature === signature && el.contains(existing.overlay)) continue;
                 this.remove(el);

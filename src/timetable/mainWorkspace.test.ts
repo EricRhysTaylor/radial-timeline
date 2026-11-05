@@ -34,13 +34,34 @@ describe('central Quick Workspace', () => {
         expect(plan.layout.main.children?.[1].direction).toBe('horizontal');
         expect(allIds(plan.layout.main).sort()).toEqual(['new-1', 'table', 'wheel']);
     });
+    it('keeps pinned tabs behind the Timetable while clearing the rest', () => {
+        const plan = planMainWorkspace(sample(), 'table', file('map.canvas'), 'canvas', ids(), new Set(['note']));
+        expect(allIds(plan.layout.main).sort()).toEqual(['canvas', 'note', 'table']);
+        const pair = plan.layout.main.children?.[0];
+        expect(pair?.children?.[0].children?.map(node => node.id)).toEqual(['table', 'note']);
+        expect(plan.layout.active).toBe('table');
+    });
+    it('does not list a pinned view twice when the layout already uses it', () => {
+        const plan = planMainWorkspace(sample(), 'table', file('other.md'), 'timeline', ids(), new Set(['table', 'note', 'wheel', 'wheel2']));
+        expect(allIds(plan.layout.main).sort()).toEqual(['note', 'table', 'wheel', 'wheel2']);
+    });
+    it('reads which tabs are pinned from the live leaves', async () => {
+        const table = { getViewState: () => ({ type: 'bases' }) } as unknown as WorkspaceLeaf;
+        const pinnedNote = { getViewState: () => ({ type: 'markdown', pinned: true }) } as unknown as WorkspaceLeaf;
+        const other = { getViewState: () => ({ type: 'canvas' }) } as unknown as WorkspaceLeaf;
+        const byId: Record<string, WorkspaceLeaf> = { table, note: pinnedNote, canvas: other };
+        const changeLayout = vi.fn().mockResolvedValue(undefined);
+        const workspace = { getLayout: sample, getLeafById: (id: string) => byId[id] ?? null, changeLayout } as unknown as Workspace;
+        await applyMainWorkspace(workspace, table, file('map.canvas'), 'canvas');
+        expect(allIds(changeLayout.mock.calls[0][0].main).sort()).toEqual(['canvas', 'note', 'table']);
+    });
     it('rejects an absent timetable', () => {
         expect(() => planMainWorkspace(sample(), 'missing', file('reference.md'), 'beside', ids())).toThrow();
     });
 
     it('restores the previous workspace if the requested layout fails', async () => {
         const oldLayout = sample();
-        const table = {} as WorkspaceLeaf;
+        const table = { getViewState: () => ({}) } as unknown as WorkspaceLeaf;
         const changeLayout = vi.fn().mockRejectedValueOnce(new Error('layout failed')).mockResolvedValueOnce(undefined);
         const workspace = { getLayout: () => oldLayout, getLeafById: (id: string) => id === 'table' ? table : null, changeLayout } as unknown as Workspace;
         await expect(applyMainWorkspace(workspace, table, file('map.canvas'), 'canvas')).rejects.toThrow('layout failed');

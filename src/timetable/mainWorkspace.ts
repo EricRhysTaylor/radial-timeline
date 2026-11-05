@@ -8,8 +8,8 @@ function leaves(node: LayoutNode): LayoutNode[] {
     return node.type === 'leaf' ? [node] : (node.children ?? []).flatMap(leaves);
 }
 
-/** Rebuild the main area, reusing views needed by the chosen layout. */
-export function planMainWorkspace(layout: WorkspaceLayout, tableId: string, file: TFile, kind: LayoutKind, makeId: () => string): { layout: WorkspaceLayout; tableId: string; referenceId: string } {
+/** Rebuild the main area, reusing views needed by the chosen layout. Pinned tabs stay, behind the Timetable. */
+export function planMainWorkspace(layout: WorkspaceLayout, tableId: string, file: TFile, kind: LayoutKind, makeId: () => string, pinned: ReadonlySet<string> = new Set()): { layout: WorkspaceLayout; tableId: string; referenceId: string } {
     const all = leaves(layout.main);
     const table = all.find(node => node.id === tableId);
     if (!table || table.state?.type !== 'bases') throw new Error('Timetable is no longer in the main workspace.');
@@ -19,7 +19,8 @@ export function planMainWorkspace(layout: WorkspaceLayout, tableId: string, file
     const timeline = kind === 'timeline' ? all.find(node => node.state?.type === 'radial-timeline')
         ?? { id: makeId(), type: 'leaf', state: { type: 'radial-timeline', state: {} } } : null;
     const tabs = (children: LayoutNode[]): LayoutNode => ({ id: makeId(), type: 'tabs', children });
-    const tableTabs = tabs([table]);
+    const kept = all.filter(node => pinned.has(node.id) && node !== table && node !== target && node !== timeline);
+    const tableTabs = tabs([table, ...kept]);
     const referenceTabs = tabs([target]);
     const pair: LayoutNode = { id: makeId(), type: 'split', direction: 'horizontal', children: [tableTabs, referenceTabs] };
     const main: LayoutNode = { id: layout.main.id, type: 'split', direction: 'vertical', children:
@@ -35,7 +36,8 @@ export async function applyMainWorkspace(workspace: Workspace, table: WorkspaceL
         const original = workspace.getLayout() as WorkspaceLayout;
         const tableNode = leaves(original.main).find(node => workspace.getLeafById(node.id) === table);
         if (!tableNode) throw new Error('Timetable is no longer in the main workspace.');
-        const plan = planMainWorkspace(original, tableNode.id, file, kind, () => crypto.randomUUID().replace(/-/g, ''));
+        const pinned = new Set(leaves(original.main).filter(node => workspace.getLeafById(node.id)?.getViewState().pinned === true).map(node => node.id));
+        const plan = planMainWorkspace(original, tableNode.id, file, kind, () => crypto.randomUUID().replace(/-/g, ''), pinned);
         try {
             await workspace.changeLayout(plan.layout);
             const newTable = workspace.getLeafById(plan.tableId);

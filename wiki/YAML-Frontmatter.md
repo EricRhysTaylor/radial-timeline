@@ -144,18 +144,16 @@ Class: Outline
 
 ## Images for Timetable Panels
 
-The Timetable’s **Panels** layout shows an image on each card. An image file named after a character or place, such as `Elizabeth Bennet.webp`, is found anywhere in the vault; numbered copies such as `Elizabeth Bennet 2.webp` are further portraits of the same character, and each scene keeps the one it was given. Otherwise the cards read these properties:
+The Timetable’s **Panels** layout shows an image on each card. An image file named after a character or place, such as `Elizabeth Bennet.webp`, is found anywhere in the vault; numbered copies such as `Elizabeth Bennet 2.webp` are further portraits of the same character, and each scene keeps the one it was given. To choose the image yourself, name it in an `Image` property, such as `Image: Elizabeth Bennet.png`; it takes the place of the match by name. The cards read these properties:
 
 | Property | On | Shows |
 |---|---|---|
-| `Image` | a character note | that character’s portrait, when **Character selection** picks them for a scene |
+| `Image` | a character note | the portrait to use for that character, instead of the image found by name |
 | `Image` | a Place note | the place, for the first place in a scene’s **Place** list |
 | `Place image` | a scene | the place art for that scene only, instead of the Place note’s image |
 | `Scene image` | a scene | artwork for the scene itself |
-| `Card character` | a scene | the character whose portrait this card shows, set with **Choose card image…** |
-| `Card image` | a scene | the image this card shows, set with **Choose card image…** or **Next portrait** |
 
-Each value is a link to an image in the vault, such as `"[[Longbourn.webp]]"`. PNG, JPEG, GIF, WebP and AVIF work. See [Panels](Timetable#panels).
+Each value names an image in the vault, such as `Elizabeth Bennet.png` or `"[[Longbourn.webp]]"`. PNG, JPEG, GIF, WebP and AVIF work. See [Panels](Timetable#panels).
 
 ## Beat Notes (YAML)
 

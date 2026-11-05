@@ -857,10 +857,10 @@ export class OuterRingDragController {
                         movedItemPath: sourcePath,
                         expectedMovedIndex: reordered.findIndex(entry => entry.path === sourcePath),
                     },
-                onWarning: () => {
-                    new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
-                },
-            }), () => applyAttachedSketchMove(this.view.plugin.app, sketchMove), () => { reorderApplied = true; });
+                    onWarning: () => {
+                        new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
+                    },
+                }), () => applyAttachedSketchMove(this.view.plugin.app, sketchMove), () => { reorderApplied = true; });
             const historySummary = `${sourceDescriptor} | ${targetDescriptor}`;
             const noticeText = t('ui.outerRingDragController.movedBefore', { source: sourceDescriptor, target: targetDescriptor });
             await this.recordRecentMove({
@@ -1002,10 +1002,10 @@ export class OuterRingDragController {
                         movedItemPath: sourcePath,
                         expectedMovedIndex: reordered.findIndex(entry => entry.path === sourcePath),
                     },
-                onWarning: () => {
-                    new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
-                },
-            }), () => applyAttachedSketchMove(this.view.plugin.app, sketchMove), () => { reorderApplied = true; });
+                    onWarning: () => {
+                        new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
+                    },
+                }), () => applyAttachedSketchMove(this.view.plugin.app, sketchMove), () => { reorderApplied = true; });
             await this.recordRecentMove({
                 itemType: sourceType,
                 filePath: sourcePath,

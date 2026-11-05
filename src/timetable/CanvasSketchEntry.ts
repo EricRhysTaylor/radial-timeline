@@ -91,20 +91,20 @@ export function registerCanvasSketches(plugin: RadialTimelinePlugin): void {
         if (file instanceof TFile && file.extension === 'md' && nodes instanceof Map && [...nodes.values()].some(node => node.getData?.().file === file.path)) {
             const bookId = getBookIdForPath(plugin.settings.books, file.path);
             if (!bookId) return;
-            menu.addItem(item => item.setTitle(`RT · ${t('ui.canvasSketch.showTimetable')}`).setSection('radial-timeline').setIcon('rt-logo').onClick(() => {
+            menu.addItem(item => item.setTitle(t('ui.canvasSketch.showTimetable')).setSection('radial-timeline').setIcon('rt-logo').onClick(() => {
                 void (async () => {
                     await plugin.setActiveBookId(bookId);
                     await plugin.openTimetable();
                     window.setTimeout(() => markTimetableRows(file.path, null, true), 300);
                 })();
             }));
-            if (plugin.isSceneFile(file.path)) menu.addItem(item => item.setTitle(`RT · ${t('ui.canvasSketch.showTimeline')}`).setSection('radial-timeline').setIcon('rt-logo').onClick(() => {
+            if (plugin.isSceneFile(file.path)) menu.addItem(item => item.setTitle(t('ui.canvasSketch.showTimeline')).setSection('radial-timeline').setIcon('rt-logo').onClick(() => {
                 void (async () => { await plugin.setActiveBookId(bookId); await plugin.revealSceneOnTimeline(file.path); })();
             }));
-            if (isPromotable(plugin.app, plugin.settings, file)) menu.addItem(item => item.setTitle(`RT · ${t('ui.canvasSketch.promote')}`).setSection('radial-timeline').setIcon('rt-logo').onClick(() => { void runPromotion(plugin, [file]); }));
+            if (isPromotable(plugin.app, plugin.settings, file)) menu.addItem(item => item.setTitle(t('ui.canvasSketch.promote')).setSection('radial-timeline').setIcon('rt-logo').onClick(() => { void runPromotion(plugin, [file]); }));
             return;
         }
         if (!(file instanceof TFile) || file.extension !== 'canvas' || plugin.app.workspace.getActiveFile()?.path !== file.path || !activeCanvas(plugin)) return;
-        menu.addItem(item => item.setTitle(`RT · ${t('ui.canvasSketch.command')}`).setSection('radial-timeline').setIcon('rt-logo').onClick(() => openCanvasSketches(plugin)));
+        menu.addItem(item => item.setTitle(`Radial Timeline: ${t('ui.canvasSketch.command')}`).setSection('radial-timeline').setIcon('rt-logo').onClick(() => openCanvasSketches(plugin)));
     }));
 }

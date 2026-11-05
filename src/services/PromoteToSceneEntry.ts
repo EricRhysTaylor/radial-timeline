@@ -63,7 +63,7 @@ export function registerPromoteToScene(plugin: RadialTimelinePlugin): void {
 
 function addMenuItem(menu: Menu, title: string, run: () => Promise<void>): void {
     menu.addItem(item => item
-        .setTitle(`RT · ${title}`)
+        .setTitle(`Radial Timeline: ${title}`)
         .setSection('radial-timeline')
         .setIcon(PROMOTE_ICON)
         .onClick(() => { void run(); }));

@@ -1,5 +1,7 @@
 import { registerTextSketchCapture } from '../timetable/TextSketchCapture';
 import { registerNoteDropCapture } from '../timetable/NoteDropCapture';
+import { getMainPlotName } from '../utils/mainPlot';
+import { membershipOfRing } from './interactions/subplotRings';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
@@ -3027,11 +3029,26 @@ export class RadialTimelineView extends ItemView {
         registerTextSketchCapture(this, this.contentEl, this.plugin);
         registerNoteDropCapture(this, this.contentEl, this.plugin, () => getActiveBook(this.plugin.settings)?.id, {
             defaultKind: 'Sketch',
-            acceptPoint: event => this.currentMode === 'chronologue' || !this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)
+            acceptPoint: event => ['chronologue', 'narrative', 'progress'].includes(this.currentMode) || !this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)
                 .some(element => this.contentEl.contains(element) && !!element.closest('.rt-scene-group, .rt-void-cell')),
-            rejectPoint: event => this.currentMode === 'chronologue' && this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)
-                .some(element => this.contentEl.contains(element) && !!element.closest('.rt-scene-group, .rt-void-cell'))
-                ? t('ui.timetable.noteDropChronologueUnavailable') : undefined,
+            rejectPoint: event => {
+                const elements = [...(event.target instanceof Element ? [event.target] : []), ...this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)];
+                if (this.currentMode === 'chronologue' && elements.some(element => this.contentEl.contains(element) && !!element.closest('.rt-scene-group, .rt-void-cell'))) return t('ui.timetable.noteDropChronologueUnavailable');
+                if (['narrative', 'progress'].includes(this.currentMode) && !elements.some(element => this.contentEl.contains(element) && !!element.closest('.rt-scene-group[data-item-type="Scene"]')) && elements.some(element => this.contentEl.contains(element) && !!element.closest('.rt-scene-group, .rt-void-cell'))) return t('ui.timetable.timelineDropChooseScene');
+                return undefined;
+            },
+            timelinePoint: event => {
+                if (!['narrative', 'progress'].includes(this.currentMode)) return undefined;
+                const group = [...(event.target instanceof Element ? [event.target] : []), ...this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)]
+                    .map(element => element.closest('.rt-scene-group[data-item-type="Scene"]'))
+                    .find(element => element && this.contentEl.contains(element));
+                const svg = group?.closest('svg');
+                const encoded = group?.getAttribute('data-path');
+                const ring = group?.getAttribute('data-ring');
+                if (!group || !svg || !encoded || ring === null || ring === undefined) return undefined;
+                const label = membershipOfRing(svg, Number(ring), this.currentMode);
+                return { target: { anchorPath: decodeURIComponent(encoded), subplot: label || getMainPlotName() }, element: group.querySelector('.rt-scene-path') ?? group };
+            },
         });
         this.publishModeToTimetables();
         this.register(onTimelineOverlayChange(() => this.applyTimetableOverlays()));

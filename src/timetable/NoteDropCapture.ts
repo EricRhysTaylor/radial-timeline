@@ -8,6 +8,7 @@ import { classifyForPromotion, filenamePrefix } from '../services/PromoteToScene
 import { setAccessibleLabel } from '../utils/domTooltip';
 import { buildTableRow } from './timetableModel';
 import { readSceneId } from '../utils/sceneIds';
+import { TimelineNoteDropModal, type TimelineNoteTarget } from './TimelineNoteDrop';
 
 /** Insert only the missing Class line, preserving all existing bytes. */
 export function addNoteClass(content: string, kind: 'Scene' | 'Sketch', anchor?: string): string {
@@ -108,8 +109,10 @@ class NoteDropModal extends ErtModal {
 }
 
 /** Handle file-explorer drags without intercepting selected text or existing scene drags. */
-export function registerNoteDropCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, bookId: () => string | undefined, options?: { defaultKind?: 'Scene' | 'Sketch'; acceptPoint?: (event: DragEvent) => boolean; rejectPoint?: (event: DragEvent) => string | undefined }): void {
+export function registerNoteDropCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, bookId: () => string | undefined, options?: { defaultKind?: 'Scene' | 'Sketch'; acceptPoint?: (event: DragEvent) => boolean; rejectPoint?: (event: DragEvent) => string | undefined; timelinePoint?: (event: DragEvent) => { target: TimelineNoteTarget; element: Element } | undefined }): void {
     let explorerFile: TFile | null = null;
+    let highlighted: Element | null = null;
+    let lastTimeline: { target: TimelineNoteTarget; element: Element; x: number; y: number } | null = null;
     const target = host.createDiv({ cls: 'ert-text-sketch-drop', attr: { role: 'status' } });
     if (target) { setIcon(target.createSpan(), 'file-plus-2'); target.createSpan({ text: t('ui.timetable.noteDropHint') }); }
     const dragged = (): TFile | null => {
@@ -119,7 +122,7 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
         const classification = classifyForPromotion(plugin.app.metadataCache.getFileCache(files[0])?.frontmatter);
         return classification.kind === 'eligible' && !classification.fromSketch ? files[0] : null;
     };
-    const clear = () => target?.removeClass('is-visible');
+    const clear = () => { target?.removeClass('is-visible'); highlighted?.classList.remove('ert-note-drop-target'); highlighted = null; lastTimeline = null; };
     // Obsidian can place a workspace drop overlay above the view, so the DOM
     // event target is not necessarily inside the view under the pointer.
     const isOverView = (event: DragEvent): boolean => {
@@ -143,19 +146,35 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
             if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
             return;
         }
+        const timeline = options?.timelinePoint?.(event);
+        if (timeline) {
+            if (highlighted !== timeline.element) { clear(); highlighted = timeline.element; highlighted.classList.add('ert-note-drop-target'); }
+            lastTimeline = { ...timeline, x: event.clientX, y: event.clientY };
+            event.preventDefault(); event.stopPropagation(); if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+            return;
+        }
+        if (highlighted) clear();
         if (target && !target.isConnected) host.appendChild(target);
         target?.addClass('is-visible');
         event.preventDefault(); event.stopPropagation(); if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
     }, true);
     owner.registerDomEvent(host.ownerDocument, 'drop', (event: DragEvent) => {
         if (!isOverView(event)) { clear(); return; }
-        const file = dragged(); clear();
+        const file = dragged();
+        const timeline = options?.timelinePoint?.(event) ?? (lastTimeline && Math.hypot(event.clientX - lastTimeline.x, event.clientY - lastTimeline.y) <= 8 ? lastTimeline : undefined);
+        clear();
         if (!file) return;
         event.preventDefault(); event.stopImmediatePropagation();
         const rejection = options?.rejectPoint?.(event);
         if (rejection) { new Notice(rejection, 8000); return; }
+        if (timeline) {
+            const id = bookId();
+            if (!id) { new Notice(t('ui.canvasSketch.noBook')); return; }
+            window.setTimeout(() => new TimelineNoteDropModal(plugin, file, id, timeline.target).open(), 0);
+            return;
+        }
         window.setTimeout(() => new NoteDropModal(plugin, file, bookId(), options?.defaultKind).open(), 0);
     }, true);
     owner.registerDomEvent(host.ownerDocument, 'dragend', () => { clear(); explorerFile = null; }, true);
-    owner.register(() => target?.remove());
+    owner.register(() => { clear(); target?.remove(); });
 }

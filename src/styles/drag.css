@@ -32,6 +32,11 @@
   stroke-width: 3px;
 }
 
+.radial-timeline-view svg [data-item-type="Scene"] > path.ert-note-drop-target {
+  stroke: var(--interactive-accent, #705DCF);
+  stroke-width: 7px;
+}
+
 /* ============================================
    SUBPLOT MEMBERSHIP DROP (drag onto another subplot ring)
    ============================================ */

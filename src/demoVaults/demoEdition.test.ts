@@ -19,8 +19,9 @@ const stamp = (edition: unknown, schemaVersion: unknown = 1) =>
     JSON.stringify({ schemaVersion, sampleId: 'pride-and-prejudice', edition });
 
 /** A vault holding only the files given, for the two calls the stamp reader makes. */
-const vaultWith = (files: Map<string, string>) => ({
+const vaultWith = (files: Map<string, string>, name = 'A') => ({
     vault: {
+        getName: () => name,
         getFileByPath: (path: string) => files.has(path) ? { path } : null,
         cachedRead: async (file: { path: string }) => files.get(file.path)!
     }
@@ -119,6 +120,15 @@ describe('newer edition offer', () => {
         expect((await status(edition('2026-10-30.2')))?.state).toBe('ahead');
         expect((await status(edition('2026-10-30', 'b')))?.state).toBe('unknown');
         expect(await getDemoEditionStatus(vaultWith(new Map()), demos, 'Demo Projects/A/A')).toBeNull();
+    });
+
+    it('leaves an author\'s own book alone when it shares a folder name with a Story Vault', async () => {
+        expect(await getDemoEditionStatus(vaultWith(new Map(), 'My Novel'), demos, 'A')).toBeNull();
+    });
+
+    it('trusts an edition stamp in a vault that has been renamed', async () => {
+        const stamped = new Map([[DEMO_EDITION_PATH, JSON.stringify({ schemaVersion: 1, sampleId: 'a', edition: '2026-10-29' })]]);
+        expect((await getDemoEditionStatus(vaultWith(stamped, 'My copy'), demos, 'A'))?.state).toBe('update');
     });
 
     it('offers a separate download without touching the installed edition', async () => {

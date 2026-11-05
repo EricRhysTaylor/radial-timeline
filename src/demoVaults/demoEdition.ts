@@ -82,7 +82,12 @@ export interface DemoEditionStatus {
     state: 'unknown' | 'update' | 'current' | 'ahead';
 }
 
-/** Compare only a recognized standalone demo with the catalog bundled in this plugin. */
+/**
+ * Compare only a recognized standalone demo with the catalog bundled in this
+ * plugin. A stamp proves the vault is one. Without a stamp, a matching book
+ * folder alone could be the author's own book, so the vault must also still
+ * carry the name its archive unpacked to.
+ */
 export async function getDemoEditionStatus(
     app: App,
     demos: readonly BonusVaultDef[],
@@ -92,6 +97,7 @@ export async function getDemoEditionStatus(
     if (!isPublished(demo) || !demo.archive.edition) return null;
     const available = demo.archive.edition;
     const installed = await readDemoEditionStamp(app, demo.id);
+    if (installed === null && app.vault.getName() !== demo.archive.root) return null;
     const state = installed === null ? 'unknown'
         : isNewerDemoEdition(available, installed) ? 'update'
         : isNewerDemoEdition(installed, available) ? 'ahead' : 'current';

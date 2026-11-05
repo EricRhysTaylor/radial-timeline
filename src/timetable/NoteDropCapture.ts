@@ -154,7 +154,11 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
             return;
         }
         if (highlighted) clear();
-        if (target && !target.isConnected) host.appendChild(target);
+        // Rendering replaces the timetable contents. Restore the indicator
+        // immediately below its sticky toolbar, not after the last card/row.
+        const toolbar = host.querySelector<HTMLElement>('.ert-timetable-panels__toolbar');
+        if (toolbar && target.previousElementSibling !== toolbar) toolbar.after(target);
+        else if (!toolbar && !target.isConnected) host.appendChild(target);
         target?.addClass('is-visible');
         event.preventDefault(); event.stopPropagation(); if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
     }, true);

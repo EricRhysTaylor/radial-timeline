@@ -5,12 +5,14 @@ import { t } from '../i18n';
 import { getActiveBook, getBookIdForPath } from '../utils/books';
 import { internalDraggedFiles } from '../utils/obsidianInternals';
 import { classifyForPromotion, filenamePrefix } from '../services/PromoteToSceneService';
-import { setAccessibleLabel } from '../utils/domTooltip';
+import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { buildTableRow } from './timetableModel';
 import { readSceneId } from '../utils/sceneIds';
 import { TimelineNoteDropModal, type TimelineNoteTarget } from './TimelineNoteDrop';
-import { ringOutlinePath } from '../view/interactions/SubplotRingDragController';
-import { readSubplotColor } from '../renderer/utils/subplotColors';
+
+export function sameSceneNumber(a: string | null, b: string | null): boolean {
+    return !!a && !!b && Number.isFinite(Number(a)) && Number.isFinite(Number(b)) && Number(a) === Number(b);
+}
 
 /** Insert only the missing Class line, preserving all existing bytes. */
 export function addNoteClass(content: string, kind: 'Scene' | 'Sketch', anchor?: string): string {
@@ -50,6 +52,7 @@ class NoteDropModal extends ErtModal {
         numberRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropNumber') });
         const number = numberRow.createDiv({ cls: 'setting-item-control' }).createEl('input', { type: 'text', attr: { placeholder: '72' } });
         setAccessibleLabel(number, t('ui.timetable.noteDropNumber'));
+        number.value = filenamePrefix(this.file.basename) ?? '';
         const anchorRow = this.contentEl.createDiv({ cls: 'setting-item ert-note-drop-anchor' });
         anchorRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropAfter') });
         anchorRow.createDiv({ cls: 'setting-item-description', text: t('ui.timetable.noteDropAnchorHint') });
@@ -67,9 +70,22 @@ class NoteDropModal extends ErtModal {
                 .sort((a, b) => a.file.basename.localeCompare(b.file.basename, undefined, { numeric: true }))
                 .forEach(item => anchor.addOption(item.id!, item.file.basename));
         };
-        const explanation = this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.timetable.noteDropExplanation') });
-        const update = () => { numberRow.hidden = kind.getValue() !== 'Scene' || !!filenamePrefix(this.file.basename); anchorRow.hidden = kind.getValue() !== 'Sketch'; };
-        kind.onChange(update); book.onChange(updateAnchors); updateAnchors(); update();
+        const help = this.contentEl.createEl('button', { cls: 'clickable-icon ert-note-drop-help', attr: { type: 'button' } });
+        setIcon(help, 'circle-help');
+        setAccessibleLabel(help, t('ui.timetable.noteDropExplanation'));
+        setTooltip(help, t('ui.timetable.noteDropExplanation'));
+        const explanation = this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint' });
+        explanation.hide();
+        const conflict = () => {
+            const prefix = number.value.trim();
+            return kind.getValue() === 'Scene' && this.app.vault.getMarkdownFiles().some(f => f !== this.file && getBookIdForPath(this.plugin.settings.books, f.path) === book.getValue() && sameSceneNumber(filenamePrefix(f.basename), prefix) && classifyForPromotion(this.app.metadataCache.getFileCache(f)?.frontmatter).kind === 'alreadyScene');
+        };
+        const update = () => {
+            numberRow.hidden = kind.getValue() !== 'Scene';
+            anchorRow.hidden = kind.getValue() !== 'Sketch';
+            if (conflict()) { explanation.setText(t('ui.timetable.noteDropNumberExists')); explanation.show(); } else explanation.hide();
+        };
+        kind.onChange(update); book.onChange(() => { updateAnchors(); update(); }); number.oninput = update; updateAnchors(); update();
         const actions = this.mountActions();
         actions.createEl('button', { text: t('common.cancel') }).onclick = () => this.close();
         const submit = actions.createEl('button', { text: t('ui.timetable.noteDropConfirm'), cls: 'ert-note-drop-confirm mod-cta' });
@@ -90,22 +106,24 @@ class NoteDropModal extends ErtModal {
                     if (matches.length !== 1) throw new Error(t('ui.timetable.sketchPromotionAnchorProblem'));
                 }
                 const input = number.value.trim();
-                if (type === 'Scene' && !filenamePrefix(this.file.basename) && !/^\d+(?:\.\d+)?$/.test(input)) throw new Error(t('ui.timetable.noteDropNumberRequired'));
+                if (type === 'Scene' && !/^\d+(?:\.\d+)?$/.test(input)) throw new Error(t('ui.timetable.noteDropNumberRequired'));
                 const oldPath = this.file.path;
                 const belongs = getBookIdForPath(this.plugin.settings.books, oldPath) === chosen.id;
-                const name = type === 'Scene' && !filenamePrefix(this.file.basename) ? `${input} ${this.file.name}` : this.file.name;
+                const originalPrefix = filenamePrefix(this.file.basename);
+                const unnumbered = originalPrefix ? this.file.name.slice(originalPrefix.length).trimStart() : this.file.name;
+                const name = type === 'Scene' ? `${input} ${unnumbered}` : this.file.name;
                 const folder = belongs ? this.file.parent?.path ?? chosen.sourceFolder : chosen.sourceFolder;
                 const destination = normalizePath(`${folder}/${name}`);
                 if (destination !== oldPath && this.app.vault.getAbstractFileByPath(destination)) throw new Error(t('ui.timetable.noteDropExists'));
-                const prefix = filenamePrefix(this.file.basename) ?? input;
-                if (type === 'Scene' && this.app.vault.getMarkdownFiles().some(f => f !== this.file && getBookIdForPath(this.plugin.settings.books, f.path) === chosen.id && filenamePrefix(f.basename) === prefix && classifyForPromotion(this.app.metadataCache.getFileCache(f)?.frontmatter).kind === 'alreadyScene')) throw new Error(t('ui.timetable.noteDropNumberExists'));
+                const prefix = input;
+                if (type === 'Scene' && this.app.vault.getMarkdownFiles().some(f => f !== this.file && getBookIdForPath(this.plugin.settings.books, f.path) === chosen.id && sameSceneNumber(filenamePrefix(f.basename), prefix) && classifyForPromotion(this.app.metadataCache.getFileCache(f)?.frontmatter).kind === 'alreadyScene')) throw new Error(t('ui.timetable.noteDropNumberExists'));
                 // Validate before a move and again inside vault.process for concurrent edits.
                 addNoteClass(await this.app.vault.read(this.file), type, after);
                 if (destination !== oldPath) await this.app.fileManager.renameFile(this.file, destination);
                 try { await this.app.vault.process(this.file, content => addNoteClass(content, type, after)); }
                 catch (error) { if (destination !== oldPath) await this.app.fileManager.renameFile(this.file, oldPath); throw error; }
                 this.close(); this.plugin.refreshTimelineIfNeeded(null); new Notice(t('ui.timetable.noteDropDone'));
-            })().catch((error: unknown) => { submit.disabled = false; explanation.setText(error instanceof Error ? error.message : String(error)); });
+            })().catch((error: unknown) => { submit.disabled = false; explanation.setText(error instanceof Error ? error.message : String(error)); explanation.show(); });
         };
     }
 }
@@ -114,7 +132,7 @@ class NoteDropModal extends ErtModal {
 export function registerNoteDropCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, bookId: () => string | undefined, options?: { defaultKind?: 'Scene' | 'Sketch'; acceptPoint?: (event: DragEvent) => boolean; rejectPoint?: (event: DragEvent) => string | undefined; timelinePoint?: (event: DragEvent) => { target: TimelineNoteTarget; element: Element } | undefined }): void {
     let explorerFile: TFile | null = null;
     let highlighted: Element | null = null;
-    let ringOutline: SVGGElement | null = null;
+    let sceneOutline: SVGElement | null = null;
     let lastTimeline: { target: TimelineNoteTarget; element: Element; x: number; y: number } | null = null;
     const target = host.createDiv({ cls: 'ert-text-sketch-drop', attr: { role: 'status' } });
     if (target) { setIcon(target.createSpan(), 'file-plus-2'); target.createSpan({ text: t('ui.timetable.noteDropHint') }); }
@@ -125,29 +143,20 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
         const classification = classifyForPromotion(plugin.app.metadataCache.getFileCache(files[0])?.frontmatter);
         return classification.kind === 'eligible' && !classification.fromSketch ? files[0] : null;
     };
-    const clear = () => { target?.removeClass('is-visible'); highlighted?.classList.remove('rt-drop-target'); highlighted = null; ringOutline?.remove(); ringOutline = null; lastTimeline = null; };
+    const clear = () => { target?.removeClass('is-visible'); highlighted?.classList.remove('rt-drop-target'); highlighted = null; sceneOutline?.remove(); sceneOutline = null; lastTimeline = null; };
     const highlightTimeline = (element: Element) => {
         highlighted = element;
         element.classList.add('rt-drop-target');
-        const group = element.closest('.rt-scene-group[data-ring]');
-        const svg = group?.closest('svg');
-        const ring = Number(group?.getAttribute('data-ring'));
-        if (!svg || !group || !Number.isInteger(ring)) return;
-        const cells = Array.from(svg.querySelectorAll(`.rt-scene-group[data-ring="${ring}"], .rt-void-cell[data-ring="${ring}"]`));
-        const inner = Math.min(...cells.map(cell => Number(cell.getAttribute('data-inner-r'))));
-        const outer = Math.max(...cells.map(cell => Number(cell.getAttribute('data-outer-r'))));
-        if (!Number.isFinite(inner) || !Number.isFinite(outer)) return;
-        const outline = svg.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'g');
-        outline.classList.add('rt-membership-ring-outline');
-        const slot = svg.querySelector(`.rt-subplot-ring-label-text[data-ring="${ring}"]`)?.getAttribute('data-color-index');
-        if (slot != null) outline.style.setProperty('--rt-membership-color', readSubplotColor(svg.ownerDocument, Number(slot)));
-        for (const cls of ['rt-membership-ring-halo', 'rt-membership-ring-line']) {
-            const path = svg.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.classList.add(cls); path.setAttribute('d', ringOutlinePath(inner, outer)); outline.appendChild(path);
-        }
+        const svg = element.closest('svg');
+        const path = element.matches('path') ? element : element.querySelector('path.rt-scene-path');
+        if (!svg || !path) return;
+        const outline = path.cloneNode(false) as SVGElement;
+        outline.removeAttribute('id');
+        outline.setAttribute('class', 'ert-note-drop-scene-outline');
+        outline.setAttribute('pointer-events', 'none');
         const squares = svg.querySelector('.rt-number-squares');
         if (squares) squares.before(outline); else svg.appendChild(outline);
-        ringOutline = outline;
+        sceneOutline = outline;
     };
     // Obsidian can place a workspace drop overlay above the view, so the DOM
     // event target is not necessarily inside the view under the pointer.

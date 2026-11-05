@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addNoteClass } from './NoteDropCapture';
+import { addNoteClass, sameSceneNumber } from './NoteDropCapture';
 
 describe('adding a note to the book', () => {
     it('inserts only the Class line and preserves existing YAML, comments, and prose byte for byte', () => {
@@ -20,5 +20,14 @@ describe('adding a note to the book', () => {
     });
     it('rejects incomplete frontmatter', () => {
         expect(() => addNoteClass('---\nSynopsis: incomplete\n', 'Scene')).toThrow();
+    });
+});
+
+describe('scene number collisions', () => {
+    it('treats equivalent numeric prefixes as the same scene number', () => {
+        expect(sameSceneNumber('5', '5.0')).toBe(true);
+        expect(sameSceneNumber('5.1', '5.10')).toBe(true);
+        expect(sameSceneNumber('5', '5.1')).toBe(false);
+        expect(sameSceneNumber(null, '5')).toBe(false);
     });
 });

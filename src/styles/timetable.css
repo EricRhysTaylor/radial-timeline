@@ -1298,7 +1298,7 @@
 .ert-timetable .ert-timetable-panels.is-small:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) { box-sizing: border-box; height: 220px; overflow-x: hidden; overflow-y: auto; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel > :not(.ert-timetable-panels__backdrop) { flex-shrink: 0; }
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .ert-timetable-panels__panel.is-scene:not(.is-editing-synopsis) { overflow: hidden; }
-.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__header { max-height: 40%; overflow-y: auto; }
+.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__header { max-height: 40%; overflow-y: auto; padding-right: 72px; }
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__meta { max-height: 3em; overflow-y: auto; }
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__characters { max-height: 3.5em; overflow-y: auto; scrollbar-width: thin; }
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene button.ert-timetable-panels__synopsis:not(.is-empty) { display: block; flex: 0 1 auto; min-height: 2.5em; overflow-y: auto; scrollbar-width: thin; }
@@ -1618,3 +1618,11 @@
 .ert-canvas-story-card__image-menu { position: absolute; z-index: 5; right: var(--size-4-2); bottom: var(--size-4-2); width: 32px; height: 32px; padding: var(--size-4-1); pointer-events: auto; opacity: 0; }
 .ert-canvas-story-node:hover .ert-canvas-story-card__image-menu,
 .ert-canvas-story-node:focus-within .ert-canvas-story-card__image-menu { opacity: 1; }
+
+/* Keep scene controls aligned with the card's content inset. */
+.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__scene-actions { top: var(--size-4-5); right: var(--size-4-5); }
+.ert-timetable-panels__subplot[hidden] { display: none; }
+.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__meta:not(.is-expanded) { flex-wrap: nowrap; overflow: hidden; }
+.ert-timetable .ert-timetable-panels__meta:not(.is-expanded) .ert-timetable-panels__subplot { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ert-timetable .ert-timetable-panels__subplots-more, .ert-timetable .ert-timetable-panels__act { flex-shrink: 0; }
+.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene:has(.ert-timetable-panels__scene-actions > button:nth-child(3)) .ert-timetable-panels__header { padding-right: 108px; }

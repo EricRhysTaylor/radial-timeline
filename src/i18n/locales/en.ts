@@ -5754,6 +5754,7 @@ export const en = {
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',
             panelHideCharacters: "Show fewer",
+            panelShowSubplots: "Show all {{count}} subplots",
             panelShowCharacters: "Show all {{count}} characters",
             storyImageNext: 'Next portrait',
             storyImageAutomatic: 'Return to automatic images',

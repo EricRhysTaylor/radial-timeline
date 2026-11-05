@@ -104,3 +104,6 @@
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
+
+/* A note is inserted after this scene; outline only the target wedge. */
+.ert-note-drop-scene-outline { fill: none; stroke: var(--interactive-accent, #705dcf); stroke-width: 3px; vector-effect: non-scaling-stroke; stroke-linejoin: round; pointer-events: none; }

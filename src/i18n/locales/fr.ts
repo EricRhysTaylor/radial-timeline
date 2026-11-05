@@ -6080,6 +6080,7 @@ export const fr: TranslationKeys = {
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",
             "panelHideCharacters": "Afficher moins",
+            panelShowSubplots: "Afficher les {{count}} intrigues secondaires",
             "panelShowCharacters": "Afficher les {{count}} personnages",
             "storyImageNext": "Next portrait",
             "storyImageAutomatic": "Return to automatic images",

@@ -6077,6 +6077,7 @@ export const de: DeepPartial<TranslationKeys> = {
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',
             panelHideCharacters: "Weniger anzeigen",
+            panelShowSubplots: "Alle {{count}} Nebenhandlungen anzeigen",
             panelShowCharacters: "Alle {{count}} Figuren anzeigen",
             storyImageNext: 'Next portrait',
             storyImageAutomatic: 'Return to automatic images',

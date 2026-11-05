@@ -6080,6 +6080,7 @@ export const th: TranslationKeys = {
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",
             "panelHideCharacters": "แสดงน้อยลง",
+            panelShowSubplots: "แสดงพล็อตย่อยทั้งหมด {{count}} รายการ",
             "panelShowCharacters": "แสดงตัวละครทั้งหมด {{count}} คน",
             "storyImageNext": "Next portrait",
             "storyImageAutomatic": "Return to automatic images",

@@ -6079,6 +6079,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',
             panelHideCharacters: "收起",
+            panelShowSubplots: "显示全部 {{count}} 条副线",
             panelShowCharacters: "显示全部 {{count}} 个角色",
             storyImageNext: 'Next portrait',
             storyImageAutomatic: 'Return to automatic images',

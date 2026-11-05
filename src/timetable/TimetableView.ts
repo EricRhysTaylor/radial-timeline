@@ -3118,10 +3118,27 @@ export class TimetableView extends BasesView {
                 setTooltip(open, t('ui.timetable.panelOpen'));
                 this.panelEvents?.registerDomEvent(open, 'click', (evt: MouseEvent) => { evt.stopPropagation(); void this.openOutlineFile(entry.file, evt); });
                 const meta = panel.createDiv({ cls: 'ert-timetable-panels__meta' });
-                for (const name of row.subplots) {
+                const extraSubplots: HTMLElement[] = [];
+                for (const [index, name] of row.subplots.entries()) {
                     const chip = meta.createSpan({ cls: 'ert-timetable-panels__subplot', text: name });
                     const color = layout?.colorIndex.get(name);
                     if (color !== undefined) chip.setCssProps({ '--ert-timetable-panel-color': `var(--rt-subplot-colors-${color})` });
+                    if (!outline && index >= 2) { chip.hidden = true; extraSubplots.push(chip); }
+                }
+                if (extraSubplots.length) {
+                    const more = meta.createEl('button', { cls: 'ert-timetable-panels__characters-more ert-timetable-panels__subplots-more', attr: { type: 'button', 'aria-expanded': 'false' }, text: `+${extraSubplots.length}` });
+                    setAccessibleLabel(more, t('ui.timetable.panelShowSubplots', { count: row.subplots.length }));
+                    this.panelEvents?.registerDomEvent(more, 'click', event => {
+                        event.stopPropagation();
+                        const show = more.getAttribute('aria-expanded') !== 'true';
+                        extraSubplots.forEach(chip => { chip.hidden = !show; });
+                        meta.insertBefore(more, show ? meta.firstChild : extraSubplots[0]);
+                        meta.scrollTop = 0;
+                        meta.toggleClass('is-expanded', show);
+                        more.setAttr('aria-expanded', String(show));
+                        more.setText(show ? t('ui.timetable.panelHideCharacters') : `+${extraSubplots.length}`);
+                        setAccessibleLabel(more, show ? t('ui.timetable.panelHideCharacters') : t('ui.timetable.panelShowSubplots', { count: row.subplots.length }));
+                    });
                 }
                 if (mode.state.mode === 'chronologue' && row.act !== null) meta.createSpan({ cls: 'ert-timetable-panels__act', text: this.actLabel(row.act) });
                 if (people.length) {

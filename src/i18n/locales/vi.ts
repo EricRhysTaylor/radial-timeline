@@ -6080,6 +6080,7 @@ export const vi: TranslationKeys = {
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",
             "panelHideCharacters": "Hiện ít hơn",
+            panelShowSubplots: "Hiện tất cả {{count}} cốt truyện phụ",
             "panelShowCharacters": "Hiện tất cả {{count}} nhân vật",
             "storyImageNext": "Next portrait",
             "storyImageAutomatic": "Return to automatic images",

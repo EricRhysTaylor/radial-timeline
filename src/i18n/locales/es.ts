@@ -6079,6 +6079,8 @@ export const es: TranslationKeys = {
             "storyImageChoose": "Choose card image…",
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",
+            "panelCharacters": "Personajes",
+            "panelShowCharacters": "Mostrar los {{count}} personajes",
             "storyImageNext": "Next portrait",
             "storyImageAutomatic": "Return to automatic images",
             "storyImageSaveFailed": "Could not save the image choice.",

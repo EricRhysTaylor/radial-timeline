@@ -6076,6 +6076,8 @@ export const de: DeepPartial<TranslationKeys> = {
             storyImageChoose: 'Choose card image…',
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',
+            panelCharacters: "Figuren",
+            panelShowCharacters: "Alle {{count}} Figuren anzeigen",
             storyImageNext: 'Next portrait',
             storyImageAutomatic: 'Return to automatic images',
             storyImageSaveFailed: 'Could not save the image choice.',

@@ -6079,6 +6079,8 @@ export const vi: TranslationKeys = {
             "storyImageChoose": "Choose card image…",
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",
+            "panelCharacters": "Nhân vật",
+            "panelShowCharacters": "Hiện tất cả {{count}} nhân vật",
             "storyImageNext": "Next portrait",
             "storyImageAutomatic": "Return to automatic images",
             "storyImageSaveFailed": "Could not save the image choice.",

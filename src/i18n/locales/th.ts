@@ -6079,6 +6079,8 @@ export const th: TranslationKeys = {
             "storyImageChoose": "Choose card image…",
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",
+            "panelCharacters": "ตัวละคร",
+            "panelShowCharacters": "แสดงตัวละครทั้งหมด {{count}} คน",
             "storyImageNext": "Next portrait",
             "storyImageAutomatic": "Return to automatic images",
             "storyImageSaveFailed": "Could not save the image choice.",

@@ -5753,6 +5753,8 @@ export const en = {
             storyImageChoose: 'Choose card image…',
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',
+            panelCharacters: "Characters",
+            panelShowCharacters: "Show all {{count}} characters",
             storyImageNext: 'Next portrait',
             storyImageAutomatic: 'Return to automatic images',
             storyImageSaveFailed: 'Could not save the image choice.',

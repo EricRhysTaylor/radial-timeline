@@ -2122,6 +2122,17 @@ export class TimetableView extends BasesView {
     /** The Base's columns, plus the columns a micro-mode adds just after When. */
     private columnsFor(mode: ModeContext): Column[] {
         const columns: Column[] = this.config.getOrder().map(property => ({ kind: 'property', property }));
+        const wordsIndex = columns.findIndex(column => {
+            if (column.kind !== 'property') return false;
+            const { type, name } = parsePropertyId(column.property);
+            return type === 'note' && canonicalizeFrontmatterKey(name, getActiveFrontmatterMappings(this.plugin.settings)) === 'Words';
+        });
+        const titleIndex = columns.findIndex(column => column.kind === 'property' && column.property === 'file.name');
+        if (wordsIndex >= 0 && titleIndex >= 0 && wordsIndex !== titleIndex + 1) {
+            const [words] = columns.splice(wordsIndex, 1);
+            const title = columns.findIndex(column => column.kind === 'property' && column.property === 'file.name');
+            columns.splice(title + 1, 0, words);
+        }
         const added: Column[] = [];
         if (mode.chronologue && mode.state.shift) added.push({ kind: 'gap' });
         if (mode.running) added.push({ kind: 'running' });

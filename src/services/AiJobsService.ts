@@ -164,7 +164,7 @@ export class AiJobsService {
 
         plugin.addCommand({
             id: 'prepare-ai-jobs',
-            name: t('aiJobs.commands.prepare'),
+            name: `Dev — ${t('aiJobs.commands.prepare')}`,
             checkCallback: (checking) => {
                 if (!plugin.settings.enableAiSceneAnalysis) return false;
                 if (!checking) {

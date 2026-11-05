@@ -106,7 +106,7 @@ export class CommandRegistrar {
         if (this.plugin.betaFeatures) {
             this.plugin.addCommand({
                 id: 'inquiry-omnibus-pass',
-                name: t('commands.inquiryOmnibusPass'),
+                name: `Dev — ${t('commands.inquiryOmnibusPass')}`,
                 callback: async () => {
                     await this.plugin.getInquiryService().runOmnibusPass();
                 },
@@ -127,7 +127,7 @@ export class CommandRegistrar {
         if (this.plugin.betaFeatures) {
             this.plugin.addCommand({
                 id: 'copy-performance-report',
-                name: t('commands.copyPerformanceReport'),
+                name: `Dev — ${t('commands.copyPerformanceReport')}`,
                 callback: async () => {
                     const rows = summarizePerfMeasurements(this.plugin);
                     const view = this.plugin.getTimelineViews()[0];
@@ -281,7 +281,7 @@ export class CommandRegistrar {
             // Export the currently rendered timeline as a self-contained image.
             this.plugin.addCommand({
                 id: 'export-timeline-image',
-                name: t('commands.exportTimelineImage'),
+                name: `Dev — ${t('commands.exportTimelineImage')}`,
                 callback: () => {
                     new TimelineImageExportModal(this.app, async (choice) => {
                         const service = new TimelineExportService(this.plugin, this.app);

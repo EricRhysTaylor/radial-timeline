@@ -7338,6 +7338,8 @@ export const zh: DeepPartial<TranslationKeys> = {
         timeLineView: {
             radialTimelineCommands: 'Radial Timeline 命令',
             reportBug: '报告错误',
+            settingsAction: '设置',
+            helpAction: '帮助',
             manageBooks: '管理书籍',
             timelineActions: '时间轴操作',
             startWritingSession: '开始写作会话',

@@ -7337,6 +7337,8 @@ export const ja: DeepPartial<TranslationKeys> = {
         timeLineView: {
             radialTimelineCommands: 'Radial Timeline のコマンド',
             reportBug: 'バグを報告',
+            settingsAction: '設定',
+            helpAction: 'ヘルプ',
             manageBooks: '書籍を管理',
             timelineActions: 'タイムラインの操作',
             startWritingSession: '執筆セッションを開始',

@@ -7339,6 +7339,8 @@ export const fr: TranslationKeys = {
         "timeLineView": {
             "radialTimelineCommands": "Radial Timeline Commandes",
             "reportBug": "Signaler un bogue",
+            settingsAction: 'Paramètres',
+            helpAction: 'Aide',
             "manageBooks": "Gérer les livres",
             "timelineActions": "Actions de chronologie",
             "startWritingSession": "Démarrer la session d’écriture",

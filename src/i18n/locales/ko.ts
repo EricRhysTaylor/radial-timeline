@@ -7336,6 +7336,8 @@ export const ko: DeepPartial<TranslationKeys> = {
         timeLineView: {
             radialTimelineCommands: 'Radial Timeline 명령',
             reportBug: '버그 신고',
+            settingsAction: '설정',
+            helpAction: '도움말',
             manageBooks: '책 관리',
             timelineActions: '타임라인 작업',
             startWritingSession: '집필 세션 시작',

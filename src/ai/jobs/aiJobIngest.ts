@@ -213,7 +213,7 @@ export function registerAiJobs(
 
     plugin.addCommand({
         id: 'check-ai-job-results',
-        name: t('aiJobs.commands.checkResults'),
+        name: `Dev — ${t('aiJobs.commands.checkResults')}`,
         checkCallback: (checking) => {
             if (!plugin.settings.enableAiSceneAnalysis) return false;
             if (!checking) void run(true);

@@ -68,9 +68,8 @@ import { collectChronologueSceneEntries, type ChronologueSceneEntry } from './co
 import { appendSynopsisElementForScene } from './utils/SynopsisBuilder';
 import { renderGossamerOverlay, type StageColorMap } from './utils/Gossamer';
 import { renderVersionIndicator } from './components/VersionIndicator';
-import { renderHelpIcon } from './components/HelpIcon';
 import { renderAuthorProgressIndicator } from './components/AuthorProgressIndicator';
-import { renderMilestoneIndicator, type MilestoneInfo } from './components/MilestoneIndicator';
+import type { MilestoneInfo } from './components/MilestoneIndicator';
 import type { CompletionEstimate } from './utils/Estimation';
 import { renderProgressRingBaseLayer } from './utils/ProgressRing';
 import { getReadabilityMultiplier, getReadabilityScale } from '../utils/readability';
@@ -825,9 +824,6 @@ export function createTimelineSVG(
         // Will be updated on next render after version check completes
     }
 
-    // Add help icon (bottom-right corner)
-    svg += renderHelpIcon();
-    
     // Add APR refresh indicator if needed (bottom-left, above version indicator)
     // Uses same X as version indicator to ensure vertical alignment
     if (options?.aprNeedsRefresh) {
@@ -835,12 +831,6 @@ export function createTimelineSVG(
             needsRefresh: true,
             x: versionIndicatorX  // Align with version indicator
         });
-    }
-
-    // Add milestone indicator if there's a milestone (right side, above Help icon)
-    // This is the MILESTONES system, separate from estimation/tick tracking
-    if (options?.milestone) {
-        svg += renderMilestoneIndicator({ milestone: options.milestone });
     }
 
     // Add JavaScript to handle synopsis visibility

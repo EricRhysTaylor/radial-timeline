@@ -7339,6 +7339,8 @@ export const vi: TranslationKeys = {
         "timeLineView": {
             "radialTimelineCommands": "Các lệnh Radial Timeline",
             "reportBug": "Báo cáo lỗi",
+            settingsAction: 'Cài đặt',
+            helpAction: 'Trợ giúp',
             "manageBooks": "Quản lý sách",
             "timelineActions": "Hành động dòng thời gian",
             "startWritingSession": "Bắt đầu viết phiên",

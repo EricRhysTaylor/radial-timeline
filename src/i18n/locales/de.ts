@@ -7336,6 +7336,8 @@ export const de: DeepPartial<TranslationKeys> = {
         timeLineView: {
             radialTimelineCommands: 'Radial Timeline-Befehle',
             reportBug: 'Fehler melden',
+            settingsAction: 'Einstellungen',
+            helpAction: 'Hilfe',
             manageBooks: 'Bücher verwalten',
             timelineActions: 'Timeline-Aktionen',
             startWritingSession: 'Schreibsitzung starten',

@@ -19,7 +19,7 @@ import { t, tCount } from '../i18n';
 import type { SubplotAlignment, TimelineItem } from '../types';
 import { renderSvgFromString } from '../utils/svgDom';
 import { openOrRevealFileByPath } from '../utils/fileUtils';
-import { setupSearchControls as setupSearchControlsExt, setupModeToggleController, setupVersionIndicatorController, setupHelpIconController, setupTooltips, setupSubplotKeyController, setupBeatNameKeyController, setupTitleBarFit } from './interactions';
+import { setupSearchControls as setupSearchControlsExt, setupModeToggleController, setupVersionIndicatorController, setupTooltips, setupSubplotKeyController, setupBeatNameKeyController, setupTitleBarFit } from './interactions';
 import { RendererService } from '../services/RendererService';
 import { ModeManager, createModeManager } from '../modes/ModeManager';
 import { getModeDefinition, getToggleableModes } from '../modes/ModeRegistry';
@@ -570,8 +570,9 @@ export class RadialTimelineView extends ItemView {
                 // Same action as the version-indicator fallback; only the
                 // trigger is duplicated here.
                 { label: t('ui.timeLineView.reportBug'), icon: 'bug', run: () => new BugReportModal(this.app, this.plugin, 'rt').open() },
+                { label: t('ui.timeLineView.helpAction'), icon: 'life-buoy', run: () => { window.open('https://community.radialtimeline.com/go/rt-help', '_blank'); } },
                 {
-                    label: t('ui.timeLineView.manageBooks'),
+                    label: t('ui.timeLineView.settingsAction'),
                     icon: 'settings',
                     run: () => {
                         if (this.plugin.settingsTab) {
@@ -3297,9 +3298,6 @@ export class RadialTimelineView extends ItemView {
                 // Attach version indicator click behavior
                 setupVersionIndicatorController(this, svgElement);
 
-                // Attach help icon click behavior
-                setupHelpIconController(this, svgElement);
-
                 // Attach subplot ring key overlay (hover trigger / pin / hold Shift)
                 setupSubplotKeyController(this, svgElement, timelineContainer);
 
@@ -3319,19 +3317,6 @@ export class RadialTimelineView extends ItemView {
                         // Open settings and switch to Social tab
                         if (this.plugin.settingsTab) {
                             this.plugin.settingsTab.setActiveTab('social');
-                        }
-                        openSettingsTab(this.app);
-                    });
-                }
-
-                // Attach Progress Milestone Indicator click behavior - opens Settings Core tab (where progress preview lives)
-                const milestoneIndicator = svgElement.querySelector('.rt-milestone-indicator');
-                if (milestoneIndicator) {
-                    this.renderScope.registerDomEvent(milestoneIndicator as unknown as HTMLElement, 'click', () => {
-                        // Open settings and switch to Core tab (where the progress preview lives)
-                        if (this.plugin.settingsTab) {
-                            this.plugin.settingsTab.forceExpandCoreCompletionPreview();
-                            this.plugin.settingsTab.setActiveTab('core');
                         }
                         openSettingsTab(this.app);
                     });

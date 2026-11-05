@@ -1112,7 +1112,7 @@ export const en = {
         exportTimelineImage: 'Timeline image export (SVG / PNG)',
         exportTimelineData: 'Community timeline share export',
         assignSceneTime: 'Scene time assignment',
-        copyPerformanceReport: 'Copy performance report (dev)',
+        copyPerformanceReport: 'Copy performance report',
         onboardManuscript: 'Import manuscript',
         manuscriptImport: 'Manuscript import',
     },
@@ -2313,8 +2313,8 @@ export const en = {
     },
     aiJobs: {
         commands: {
-            prepare: 'Prepare AI jobs… (AI testing)',
-            checkResults: 'Check for AI job results (AI testing)',
+            prepare: 'Prepare AI jobs…',
+            checkResults: 'Check for AI job results',
         },
         features: {
             summary: 'Scene summaries',
@@ -6995,6 +6995,8 @@ export const en = {
         timeLineView: {
             radialTimelineCommands: 'Radial Timeline commands',
             reportBug: 'Report a bug',
+            settingsAction: 'Settings',
+            helpAction: 'Help',
             manageBooks: 'Manage books',
             timelineActions: 'Timeline actions',
             startWritingSession: 'Start writing session',

@@ -56,9 +56,9 @@ describe('tableColumns', () => {
         expect(columns.table).toContain('Subplot');
     });
 
-    it('leads with When, Character, Place, Due and Words, and ends with Synopsis', () => {
+    it('leads with Words, When, Character, Place and Due, and ends with Synopsis', () => {
         const { timetable } = tableColumns(settings);
-        expect(timetable.slice(0, 6)).toEqual(['file.name', 'When', 'Character', 'Place', 'Due', 'Words']);
+        expect(timetable.slice(0, 6)).toEqual(['file.name', 'Words', 'When', 'Character', 'Place', 'Due']);
         expect(timetable[timetable.length - 1]).toBe('Synopsis');
     });
 

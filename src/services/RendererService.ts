@@ -33,7 +33,6 @@ import { PluginRendererFacade, isBeatNote, isSceneItem } from '../utils/sceneHel
 import type { CompletionEstimate } from './TimelineMetricsService';
 import { STAGE_ORDER, STAGES_FOR_GRID, STATUSES_FOR_GRID } from '../utils/constants';
 import { AuthorProgressService } from './AuthorProgressService';
-import type { MilestoneInfo } from '../renderer/components/MilestoneIndicator';
 
 const STAGE_HEADER_TOOLTIPS: Record<string, string> = {
     Zero: 'Zero stage — The raw first draft. Unpolished ideas on the page, no revisions yet.',
@@ -78,23 +77,7 @@ export class RendererService {
             // AuthorProgressService not available - skip indicator
         }
         
-        // Detect progress milestones (stage completions, staleness encouragement)
-        const milestone = this.detectProgressMilestone(scenes);
-        
-        return buildTimelineSVG(pluginFacade, scenes, { aprNeedsRefresh, milestone, runtimeModeActive: mode.runtime, alienModeActive: mode.alien });
-    }
-
-    /**
-     * Get milestone using the shared MilestonesService.
-     * This ensures the timeline indicator always matches the Progress Tracker in settings.
-     * 
-     * Note: This is the MILESTONES system (stage completions), separate from
-     * TimelineMetricsService which handles estimation/tick tracking.
-     */
-    private detectProgressMilestone(scenes: TimelineItem[]): MilestoneInfo | null {
-        // Use the shared service - single source of truth
-        // This ensures timeline indicator matches ProgressSection progress tracker exactly
-        return this.plugin.milestonesService.detectMilestone(scenes);
+        return buildTimelineSVG(pluginFacade, scenes, { aprNeedsRefresh, runtimeModeActive: mode.runtime, alienModeActive: mode.alien });
     }
 
     public generateTimeline(scenes: TimelineItem[]): RenderResult {

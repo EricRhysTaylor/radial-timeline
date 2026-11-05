@@ -109,7 +109,7 @@ const LEFT_OUT_OF_TIMETABLE = new Set(['Class', 'Act', 'Subplot', 'Status', 'Pub
  */
 const HIDDEN_IN_NEW_TIMETABLE = new Set(['Duration', 'Chapter', 'Runtime', 'Iteration']);
 /** The Timetable's first columns after the name, in order. The rest follow in template order. */
-const LEADING_TIMETABLE_KEYS = ['When', 'Character', 'Place', 'Due', 'Words'];
+const LEADING_TIMETABLE_KEYS = ['Words', 'When', 'Character', 'Place', 'Due'];
 /** The Timetable's last column: its long text reads best at the end of the row. */
 const LAST_TIMETABLE_KEY = 'Synopsis';
 /** Columns a new Timetable shows however few scenes fill them. */
@@ -158,8 +158,8 @@ function isSparse(key: string, fill: ColumnFill | undefined): boolean {
 }
 
 /**
- * The Timetable's recommended columns: the name, When, Character, Place, Due
- * and Words, the rest of the template in its order, then Synopsis. Keys its
+ * The Timetable's recommended columns: the name, Words, When, Character, Place
+ * and Due, the rest of the template in its order, then Synopsis. Keys its
  * number cell and Rings column already show, the long-form fields and the
  * seldom-read ones are left out, and so is any column most of the book's
  * scenes leave empty.

@@ -6487,26 +6487,6 @@ export const fr: TranslationKeys = {
             "drawerUseNote": "Utilisez le texte de la note",
             "writeFailed": "Impossible d'écrire le fichier horaire : {{message}}"
         },
-        "proEntitlementPanel": {
-            "proHiddenNotice": "Flux de travail Pro masqués — Surface centrale uniquement.",
-            "proBadge": "PRO",
-            "toggleAriaLabel": "Toggle flux de travail pro",
-            "accessKeyName": "Clé d'accès Pro",
-            "accessKeyDesc": "Rien à entrer. Pro est activé pour chaque installation et n'a besoin d'aucune clé. Ce champ est inactif.",
-            "validateButton": "Valider",
-            "validateTooltip": "Rien à valider - Pro n'a besoin d'aucune clé",
-            "learnMoreLink": " En savoir plus →",
-            "magentaNote": "Les flux Pro apparaissent partout dans Radial Timeline en magenta.",
-            "heroBodyLead": "Pro est une collection de ",
-            "heroBodyStrong": "Flux de travail professionnels",
-            "heroBodyMiddle": " — la fin profonde de Radial Timeline. Évaluez votre histoire avec des questions plus approfondies avec une enquête +, suivez la structure et l'élan à travers les scènes, et créez des manuscrits raffinés avec Pandoc PDF Exportations et custom LaTeX modèles. Partagez les progrès via les campagnes APR et explorez des coffres-forts de démonstration gratuits tels que ",
-            "heroBodyTail": " avec des exemples sauvegardés, Gossamer et Inquiry. Plus de classiques sont en préparation.",
-            "featurePublishing": "Édition",
-            "featureAprCampaigns": "Campagnes d'APR",
-            "featureInquiryPlus": "Inquiry+",
-            "featureStructure": "Structure",
-            "featureDemoVaults": "Coffres de démonstration gratuits"
-        },
         "progressSection": {
             "pressCelebration1Title": "Vous avez écrit un livre.",
             "pressCelebration1Subtitle": "Laissez cela s'enfoncer.",

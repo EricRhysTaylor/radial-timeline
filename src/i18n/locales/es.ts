@@ -6487,26 +6487,6 @@ export const es: TranslationKeys = {
             "drawerUseNote": "Usa el texto de la nota",
             "writeFailed": "No se pudo escribir el archivo de horario: {{message}}"
         },
-        "proEntitlementPanel": {
-            "proHiddenNotice": "Flujos de trabajo profesionales ocultos: solo superficie central.",
-            "proBadge": "PRO",
-            "toggleAriaLabel": "Alternar flujos de trabajo profesionales",
-            "accessKeyName": "Clave de acceso profesional",
-            "accessKeyDesc": "nada para entrar. Pro está activado para cada instalación y no necesita ninguna clave: este campo está inactivo.",
-            "validateButton": "Validar",
-            "validateTooltip": "Nada que validar: Pro no necesita clave",
-            "learnMoreLink": " Más información →",
-            "magentaNote": "Los flujos Pro aparecen en Radial Timeline en magenta.",
-            "heroBodyLead": "Pro es una colección de ",
-            "heroBodyStrong": "Flujos de trabajo profesionales",
-            "heroBodyMiddle": " — el final más profundo de Radial Timeline. Evalúe su historia con preguntas más profundas de Inquiry+, seguimiento de la estructura y el impulso a través de escenas, y genere manuscritos pulidos con pando añeja PDF Exportaciones y aduana LaTeX plantillas. Comparta el progreso a través de las campañas de APR y explore bóvedas de demostración gratuitas como ",
-            "heroBodyTail": " con pulso guardado, Gossamer y Inquiry Ejemplos. Más clásicos están en preparación.",
-            "featurePublishing": "Publicación",
-            "featureAprCampaigns": "Campañas APR",
-            "featureInquiryPlus": "Inquiry+",
-            "featureStructure": "Estructura",
-            "featureDemoVaults": "bóvedas de demostración gratis"
-        },
         "progressSection": {
             "pressCelebration1Title": "Escribiste un libro.",
             "pressCelebration1Subtitle": "Deja que eso se hunda.",

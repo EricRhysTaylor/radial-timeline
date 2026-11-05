@@ -6487,26 +6487,6 @@ export const th: TranslationKeys = {
             "drawerUseNote": "ใช้ข้อความของโน้ต",
             "writeFailed": "ไม่สามารถเขียนไฟล์ตารางเวลา: {{message}}"
         },
-        "proEntitlementPanel": {
-            "proHiddenNotice": "Pro เวิร์กโฟลว์ที่ซ่อนอยู่ — พื้นผิวหลักเท่านั้น",
-            "proBadge": "PRO",
-            "toggleAriaLabel": "สลับเวิร์กโฟลว์ Pro",
-            "accessKeyName": "คีย์การเข้าถึงโปร",
-            "accessKeyDesc": "ไม่มีอะไรจะเข้า Pro เปิดอยู่สำหรับทุกการติดตั้งและไม่ต้องการคีย์ — ฟิลด์นี้ไม่ได้ใช้งาน",
-            "validateButton": "ทำให้ถูกต้อง",
-            "validateTooltip": "ไม่มีอะไรต้องตรวจสอบ — Pro ไม่ต้องการคีย์",
-            "learnMoreLink": " เรียนรู้เพิ่มเติม →",
-            "magentaNote": "กระบวนงาน Pro จะปรากฏขึ้นทั่ว Radial Timeline ในสีม่วง",
-            "heroBodyLead": "โปรเป็นของสะสมของ ",
-            "heroBodyStrong": "เวิร์กโฟลว์โปร",
-            "heroBodyMiddle": " - ปลายลึกของ Radial Timeline. ประเมินเรื่องราวของคุณด้วยคำถามเชิงลึก+ คำถาม โครงสร้างและโมเมนตัมในฉากต่างๆ และสร้างต้นฉบับที่ขัดเกลาด้วย การส่งออก PDF ด้วย PANDOC และแม่แบบ LaTeX แบบกำหนดเอง แชร์ความคืบหน้าผ่านแคมเปญ APR และสำรวจห้องนิรภัยตัวอย่างฟรี เช่น ",
-            "heroBodyTail": " ด้วยพัลส์ที่บันทึกไว้, Gossamer และตัวอย่าง Inquiry กำลังเตรียมความคลาสสิกมากขึ้น",
-            "featurePublishing": "การประกาศ",
-            "featureAprCampaigns": "แคมเปญ APR",
-            "featureInquiryPlus": "Inquiry+",
-            "featureStructure": "โครงสร้าง",
-            "featureDemoVaults": "ห้องนิรภัยสาธิตฟรี"
-        },
         "progressSection": {
             "pressCelebration1Title": "คุณเขียนหนังสือ",
             "pressCelebration1Subtitle": "ปล่อยให้จมลงไป",

@@ -730,17 +730,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .ert-ui.ert-scope--settings .ert-pro-key-container .setting-item {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: var(--ert-gap-sm);
-  }
-
-  .ert-ui.ert-scope--settings .ert-pro-key-container .setting-item-control {
-    width: 100%;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-  }
-
   .ert-ui.ert-scope--settings .ert-controlGroup--inquiry-books .ert-controlGroup__row {
     grid-template-columns: 5ch minmax(0, 1fr) minmax(0, 1fr);
   }

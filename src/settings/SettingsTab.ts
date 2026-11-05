@@ -893,7 +893,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const advancedIcon = advancedTab.createSpan({ cls: 'ert-settings-tab-icon' });
         setIcon(advancedIcon, 'pyramid');
         advancedTab.createSpan({ text: t('ui.settingsTab.tabAdvanced'), cls: 'ert-settings-tab-label' });
-        const proTab = tabBar.createDiv({ cls: 'ert-settings-tab ert-settings-tab-pro is-pro-active' });
+        const proTab = tabBar.createDiv({ cls: 'ert-settings-tab' });
         const proIcon = proTab.createSpan({ cls: 'ert-settings-tab-icon' });
         setIcon(proIcon, 'library');
         proTab.createSpan({ text: t('ui.settingsTab.tabPro'), cls: 'ert-settings-tab-label' });
@@ -911,9 +911,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         });
         const aiContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-settings-ai-content ert-scope--settings' });
         const advancedContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-settings-advanced-content ert-scope--settings' });
-        const proContent = containerEl.createDiv({
-            cls: `ert-settings-tab-content ert-settings-pro-content ert-scope--settings ${ERT_CLASSES.SKIN_PRO}`
-        });
+        const proContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-scope--settings' });
 
         this._tabEls = {
             core: coreTab,

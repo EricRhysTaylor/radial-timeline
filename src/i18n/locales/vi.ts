@@ -6487,26 +6487,6 @@ export const vi: TranslationKeys = {
             "drawerUseNote": "Sử dụng văn bản của ghi chú",
             "writeFailed": "Không thể viết tệp thời gian biểu: {{message}}"
         },
-        "proEntitlementPanel": {
-            "proHiddenNotice": "Proflows workflow ẩn - Chỉ có bề mặt cốt lõi.",
-            "proBadge": "PRO",
-            "toggleAriaLabel": "Chuyển đổi quy trình làm việc chuyên nghiệp",
-            "accessKeyName": "Khóa truy cập chuyên nghiệp",
-            "accessKeyDesc": "Không có gì để vào. Pro là bật cho mọi cài đặt và không cần khóa - trường này không hoạt động.",
-            "validateButton": "xác thực",
-            "validateTooltip": "Không có gì để xác thực - Pro không cần chìa khóa",
-            "learnMoreLink": " Tìm hiểu thêm →",
-            "magentaNote": "Các quy trình Pro xuất hiện khắp Radial Timeline với màu tím.",
-            "heroBodyLead": "Pro là một tập hợp của ",
-            "heroBodyStrong": "Quy trình làm việc chuyên nghiệp",
-            "heroBodyMiddle": " - phần cuối sâu hơn của Radial Timeline. Đánh giá câu chuyện của bạn bằng câu hỏi sâu hơn + câu hỏi, theo dõi cấu trúc và động lực qua các cảnh, đồng thời tạo ra các bản thảo được đánh bóng với pandoc PDF Xuất khẩu và tùy chỉnh LaTeX khuôn mẫu. Chia sẻ tiến độ thông qua các chiến dịch APR và khám phá các kho demo miễn phí như ",
-            "heroBodyTail": " Với các ví dụ về xung đã lưu, Gossamer và Inquiry. Nhiều tác phẩm kinh điển hơn đang được chuẩn bị.",
-            "featurePublishing": "Xuất bản",
-            "featureAprCampaigns": "Các chiến dịch APR",
-            "featureInquiryPlus": "Inquiry +",
-            "featureStructure": "Cấu trúc",
-            "featureDemoVaults": "Kho demo miễn phí"
-        },
         "progressSection": {
             "pressCelebration1Title": "Bạn đã viết một cuốn sách.",
             "pressCelebration1Subtitle": "Hãy để điều đó chìm vào.",

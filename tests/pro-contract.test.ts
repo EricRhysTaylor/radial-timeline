@@ -53,12 +53,22 @@ describe('Pro contract', () => {
         const settingsTabSource = readFileSync(resolve(process.cwd(), 'src/settings/SettingsTab.ts'), 'utf8');
         const authorProgressSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/AuthorProgressSection.ts'), 'utf8');
         const commandRegistrarSource = readFileSync(resolve(process.cwd(), 'src/services/CommandRegistrar.ts'), 'utf8');
-        const entitlementPanelSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/ProEntitlementPanel.ts'), 'utf8');
 
         expect(settingsTabSource.includes('PRO · SIGNATURE')).toBe(false);
         expect(authorProgressSource.includes('Pro Signature')).toBe(false);
         expect(commandRegistrarSource.includes('Professional license')).toBe(false);
-        expect(entitlementPanelSource.includes('Pro subscription')).toBe(false);
-        expect(entitlementPanelSource.includes('Pro access key')).toBe(true);
+    });
+
+    it('draws the Resources tab like every other settings tab', () => {
+        const settingsTabSource = readFileSync(resolve(process.cwd(), 'src/settings/SettingsTab.ts'), 'utf8');
+        const stylesheet = readFileSync(resolve(process.cwd(), 'src/styles/rt-ui.css'), 'utf8');
+
+        expect(settingsTabSource.includes('ert-settings-tab-pro')).toBe(false);
+        expect(settingsTabSource.includes('ert-settings-tab-content ert-settings-pro-content')).toBe(false);
+        expect(stylesheet.includes('ert-settings-tab-pro')).toBe(false);
+        expect(stylesheet.includes('ert-pro-hero')).toBe(false);
+        const cardRules = stylesheet.match(/[^{}]*ert-bonus[^{}]*\{[^{}]*\}/g) ?? [];
+        expect(cardRules.length).toBeGreaterThan(0);
+        expect(cardRules.filter(rule => rule.includes('--ert-pro-accent'))).toEqual([]);
     });
 });

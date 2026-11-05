@@ -162,8 +162,6 @@ const GLOSSARY: Record<string, Term> = {
             th: ['ห้องนิรภัย'],
             vi: [/(?<!\p{L})kho(?!\p{L})/iu],
         },
-        // "…demo vaults such as" + the next fragment: Japanese says 無料デモ保管庫 in heroBodyTail.
-        movedByWordOrder: { ja: ['ui.proEntitlementPanel.heroBodyMiddle'] },
     },
     apiKey: {
         en: /\bAPI keys?\b/i,

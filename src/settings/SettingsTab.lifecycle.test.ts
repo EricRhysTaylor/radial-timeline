@@ -26,7 +26,6 @@ vi.mock('./sections/PovSection', () => ({ renderPovSection: vi.fn() }));
 vi.mock('./sections/PlanetaryTimeSection', () => ({ renderPlanetaryTimeSection: vi.fn() }));
 vi.mock('./sections/RuntimeSection', () => ({ renderRuntimeSection: vi.fn() }));
 vi.mock('./sections/GoalsSessionsSection', () => ({ renderGoalsSessionsSection: vi.fn() }));
-vi.mock('./sections/ProEntitlementPanel', () => ({ renderProEntitlementPanel: vi.fn() }));
 vi.mock('./sections/BonusVaultsSection', () => ({ renderBonusVaultsSection: vi.fn() }));
 vi.mock('./sections/PublishSection', () => ({ renderPublishSection: vi.fn() }));
 

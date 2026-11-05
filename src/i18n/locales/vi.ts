@@ -6079,7 +6079,7 @@ export const vi: TranslationKeys = {
             "storyImageChoose": "Choose card image…",
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",
-            "panelCharacters": "Nhân vật",
+            "panelHideCharacters": "Hiện ít hơn",
             "panelShowCharacters": "Hiện tất cả {{count}} nhân vật",
             "storyImageNext": "Next portrait",
             "storyImageAutomatic": "Return to automatic images",

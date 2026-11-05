@@ -1317,12 +1317,10 @@
 .ert-timetable-panels__date-icon .svg-icon { width: 14px; height: 14px; }
 .ert-timetable-panels__characters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-4-1); }
 .ert-timetable-panels__character { display: inline-flex; align-items: center; gap: var(--size-4-1); color: var(--text-muted); font-size: var(--font-ui-small); }
+.ert-timetable-panels__character[hidden] { display: none; }
 .ert-timetable-panels__character .ert-timetable__character-separator { color: var(--text-muted); font-size: 1.4em; font-weight: 700; line-height: 1; }
 .ert-timetable-panels__portrait { width: 20px; height: 20px; object-fit: cover; border-radius: var(--radius-s); }
 .ert-timetable button.ert-timetable-panels__characters-more { height: auto; min-height: 24px; padding: var(--size-4-1) var(--size-4-2); border-radius: var(--radius-s); background: var(--background-modifier-hover); color: var(--text-accent); box-shadow: none; font-size: var(--font-ui-small); }
-.ert-timetable-characters-popover { position: fixed; z-index: var(--layer-popover, 1000); left: var(--ert-characters-left); top: var(--ert-characters-top); width: var(--ert-characters-width); max-height: var(--ert-characters-height); overflow-y: auto; padding: var(--size-4-2); border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m); background: var(--background-primary); box-shadow: var(--shadow-l); }
-.ert-timetable-characters-popover__row { display: flex; align-items: center; gap: var(--size-4-2); min-height: 32px; padding: var(--size-4-1); color: var(--text-normal); }
-.ert-timetable-characters-popover__portrait { width: 28px; height: 28px; flex: none; object-fit: cover; border-radius: var(--radius-s); }
 .ert-timetable-panels__act { color: var(--text-muted); }
 .ert-timetable-panels__number, .ert-timetable-panels__kind, .ert-timetable-panels__meta { color: var(--text-muted); font-size: var(--font-ui-small); }
 .ert-timetable-panels__subplot { border-left: 3px solid var(--ert-timetable-panel-color, var(--background-modifier-border)); padding-left: var(--size-4-2); }

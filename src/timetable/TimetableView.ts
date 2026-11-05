@@ -401,7 +401,7 @@ export class TimetableView extends BasesView {
     private renderDeferred = false;
     private panelEditing: { path: string; original: unknown } | null = null;
     private panelEvents: Component | null = null;
-    private closePanelCharacters: (() => void) | null = null;
+    private expandedPanelCharacters = new Set<string>();
     private draggedScene: string | null = null;
     private draggedSketch: string | null = null;
     private sketchProblems = new Map<string, PlacementProblem>();
@@ -3126,8 +3126,11 @@ export class TimetableView extends BasesView {
                 if (mode.state.mode === 'chronologue' && row.act !== null) meta.createSpan({ cls: 'ert-timetable-panels__act', text: this.actLabel(row.act) });
                 if (people.length) {
                     const peopleList = panel.createDiv({ cls: 'ert-timetable-panels__characters' });
-                    for (const [index, person] of people.slice(0, 3).entries()) {
+                    const expanded = this.expandedPanelCharacters.has(row.path);
+                    const extraCharacters: HTMLElement[] = [];
+                    for (const [index, person] of people.entries()) {
                         const character = peopleList.createSpan({ cls: 'ert-timetable-panels__character' });
+                        if (index >= 3) { character.hidden = !expanded; extraCharacters.push(character); }
                         if (index > 0) character.createSpan({ cls: 'ert-timetable__character-separator', text: '·', attr: { 'aria-hidden': 'true' } });
                         if (person.image && person.image !== portrait) {
                             const image = character.createEl('img', { cls: 'ert-timetable-panels__portrait', attr: { alt: '', src: person.image } });
@@ -3136,11 +3139,18 @@ export class TimetableView extends BasesView {
                         this.renderCharacterName(character, person, this.shortCharacterName(person.name));
                     }
                     if (people.length > 3) {
-                        const more = peopleList.createEl('button', { cls: 'ert-timetable-panels__characters-more', text: `+${people.length - 3}`, attr: { type: 'button', 'aria-haspopup': 'dialog', 'aria-expanded': 'false' } });
-                        setAccessibleLabel(more, t('ui.timetable.panelShowCharacters', { count: people.length }));
+                        const more = peopleList.createEl('button', { cls: 'ert-timetable-panels__characters-more', attr: { type: 'button' } });
+                        const update = (show: boolean) => {
+                            for (const character of extraCharacters) character.hidden = !show;
+                            more.setText(show ? t('ui.timetable.panelHideCharacters') : `+${people.length - 3}`);
+                            more.setAttr('aria-expanded', String(show));
+                            setAccessibleLabel(more, show ? t('ui.timetable.panelHideCharacters') : t('ui.timetable.panelShowCharacters', { count: people.length }));
+                            if (show) this.expandedPanelCharacters.add(row.path); else this.expandedPanelCharacters.delete(row.path);
+                        };
+                        update(expanded);
                         this.panelEvents?.registerDomEvent(more, 'click', event => {
                             event.stopPropagation();
-                            this.openPanelCharacters(more, people);
+                            update(more.getAttribute('aria-expanded') !== 'true');
                         });
                     }
                 }
@@ -3185,55 +3195,6 @@ export class TimetableView extends BasesView {
     }
 
     /** Character notes may optionally name a vault image in their Image property. */
-    private openPanelCharacters(anchor: HTMLButtonElement, people: Array<{ name: string; image: string | null; file: TFile | null }>): void {
-        const doc = anchor.ownerDocument;
-        const wasOpen = anchor.getAttribute('aria-expanded') === 'true';
-        this.closePanelCharacters?.();
-        if (wasOpen) return;
-        const popover = doc.body.createDiv({ cls: 'ert-timetable-characters-popover', attr: { role: 'dialog', tabindex: '-1' } });
-        setAccessibleLabel(popover, t('ui.timetable.panelCharacters'));
-        const bounds = anchor.getBoundingClientRect();
-        const win = doc.defaultView;
-        if (!win) { popover.remove(); return; }
-        const width = Math.min(300, win.innerWidth - 16);
-        const below = win.innerHeight - bounds.bottom;
-        const showBelow = below >= bounds.top;
-        const height = Math.max(0, Math.min(320, (showBelow ? below : bounds.top) - 14));
-        popover.setCssProps({ '--ert-characters-left': `${Math.max(8, Math.min(bounds.left, win.innerWidth - width - 8))}px`, '--ert-characters-top': `${showBelow ? bounds.bottom + 6 : bounds.top - height - 6}px`, '--ert-characters-width': `${width}px`, '--ert-characters-height': `${height}px` });
-        anchor.setAttribute('aria-expanded', 'true');
-        const events = new Component();
-        events.load();
-        const close = (restoreFocus = false) => {
-            popover.remove();
-            anchor.setAttribute('aria-expanded', 'false');
-            events.unload();
-            if (this.closePanelCharacters === closePopover) this.closePanelCharacters = null;
-            if (restoreFocus && anchor.isConnected) anchor.focus();
-        };
-        const closePopover = () => close();
-        this.closePanelCharacters = closePopover;
-        const outside = (event: PointerEvent) => { if (!popover.contains(event.target as Node) && !anchor.contains(event.target as Node)) close(); };
-        const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(true); } };
-        const scrolled = (event: Event) => { if (!popover.contains(event.target as Node)) close(); };
-        events.registerDomEvent(doc, 'pointerdown', outside, true);
-        events.registerDomEvent(doc, 'keydown', keydown, true);
-        events.registerDomEvent(doc, 'scroll', scrolled, true);
-        this.panelEvents?.register(closePopover);
-        for (const person of people) {
-            const row = popover.createDiv({ cls: 'ert-timetable-characters-popover__row' });
-            if (person.image) {
-                const image = row.createEl('img', { cls: 'ert-timetable-characters-popover__portrait', attr: { src: person.image, alt: '' } });
-                events.registerDomEvent(image, 'error', () => image.remove(), { once: true });
-            }
-            if (person.file) {
-                const file = person.file;
-                const link = row.createEl('a', { cls: 'ert-timetable__character-link', text: person.name, attr: { href: file.path } });
-                events.registerDomEvent(link, 'click', (event: MouseEvent) => { event.preventDefault(); event.stopPropagation(); close(); void openFromTimetable(this.plugin.app, file, event, this.rootEl); });
-            } else row.createSpan({ text: person.name });
-        }
-        (popover.querySelector<HTMLElement>('a') ?? popover).focus();
-    }
-
     private characterDetails(scenePath: string, names: string[], imageFiles?: readonly TFile[]): Array<{ name: string; image: string | null; imagePath: string | null; file: TFile | null }> {
         return names.map(raw => {
             const link = raw.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '');

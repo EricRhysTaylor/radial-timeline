@@ -6079,7 +6079,7 @@ export const es: TranslationKeys = {
             "storyImageChoose": "Choose card image…",
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",
-            "panelCharacters": "Personajes",
+            "panelHideCharacters": "Mostrar menos",
             "panelShowCharacters": "Mostrar los {{count}} personajes",
             "storyImageNext": "Next portrait",
             "storyImageAutomatic": "Return to automatic images",

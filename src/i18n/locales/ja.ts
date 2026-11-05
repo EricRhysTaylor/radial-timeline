@@ -6077,7 +6077,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             storyImageChoose: 'Choose card image…',
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',
-            panelCharacters: "登場人物",
+            panelHideCharacters: "折りたたむ",
             panelShowCharacters: "登場人物を全員表示（{{count}}人）",
             storyImageNext: 'Next portrait',
             storyImageAutomatic: 'Return to automatic images',

@@ -5753,7 +5753,7 @@ export const en = {
             storyImageChoose: 'Choose card image…',
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',
-            panelCharacters: "Characters",
+            panelHideCharacters: "Show fewer",
             panelShowCharacters: "Show all {{count}} characters",
             storyImageNext: 'Next portrait',
             storyImageAutomatic: 'Return to automatic images',

@@ -6076,7 +6076,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             storyImageChoose: 'Choose card image…',
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',
-            panelCharacters: "등장인물",
+            panelHideCharacters: "간단히 보기",
             panelShowCharacters: "등장인물 {{count}}명 모두 보기",
             storyImageNext: 'Next portrait',
             storyImageAutomatic: 'Return to automatic images',

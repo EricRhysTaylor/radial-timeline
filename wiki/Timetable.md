@@ -118,11 +118,13 @@ Notes you open from the Timetable appear in a pane below the table, so the wheel
 
 <p align="center"><img src="images/timetable-panels.webp" alt="Timetable Panels beside the wheel: Pride and Prejudice scene cards with a character portrait, date, rings, characters and synopsis, and the Image, Image sizing and Panel size controls above them" width="800"></p>
 
-- **Image** chooses what each card shows: **Character** (a portrait of one of the scene’s characters, chosen by **Character selection**), **Place**, **Place + character** (the place, or the character when the scene has no place image), **Scene artwork**, or **None**. The images come from properties on your notes; see [Images for Timetable Panels](YAML-Frontmatter#images-for-timetable-panels).
-- **Character selection** decides whose portrait a card shows, among the scene’s characters who have one: **Most distinctive** (the default, the character who appears in the fewest scenes of the book, so each card tells you something), **First listed**, **Second listed**, **POV character**, or **Balanced variety** (like Most distinctive, but avoids showing the same face on two cards in a row).
+- **Image** chooses what each card shows: **Character** (a portrait of one of the scene’s characters, chosen by **Character selection**), **Place**, **Place + character** (the place, or the character when the scene has no place image), **Place background + character** (the character’s portrait over the place, with the card’s text on a backing you set with **Text backing**: **Subtle**, **Balanced** or **Strong**), **Scene artwork**, or **None**. The images come from properties on your notes; see [Images for Timetable Panels](YAML-Frontmatter#images-for-timetable-panels).
+- **Character selection** decides whose portrait a card shows, among the scene’s characters who have one: **Most distinctive** (the default, the character who appears in the fewest scenes of the book, so each card tells you something), **First listed**, **Second character**, **POV character**, or **Balanced variety** (like Most distinctive, but avoids showing the same face on two cards in a row).
 - **Choose card image…**, on a card, sets that scene’s image by hand: pick one of its characters, **Next portrait** to step through a character’s portraits, choose any image, or **Choose place background…**. **Return to automatic images** hands the choice back to **Character selection**.
 - **Image sizing:** **Fill** crops the image to the card, **Fit** shows all of it. **Set image focus**, on a card, picks the part of the image that stays in view: click the image or use the sliders, or **Center** to reset.
+- **Portrait shape:** **Square** or **Landscape**.
 - **Panel size:** **Small**, **Medium** or **Large**.
+- In a narrow pane these choices fold into **Image settings**, the image button in the toolbar, grouped as **Image combinations**, **Background treatment**, **Character selection** and **Formatting**.
 - **Synopsis:** click it, or **Add synopsis** on a card without one, to edit it in place, then **Save**. If the note changed elsewhere meanwhile, your edit stays in the field so you can copy it.
 
 The layout, image and size choices are saved with the view.
@@ -174,6 +176,12 @@ Use **New sketch**, or the **+** beside an act heading, to create a sketch in th
 Click a sketch row or its drawer control to open it. The drawer starts with a **Title** field: press Enter or leave the field to rename the note through Obsidian, so links to it follow. A number prefix stays, characters a file name can’t hold become spaces, and a name already taken gets a number (` 2`). **New sketch** starts with the cursor in Title, and Enter moves on to the text.
 
 Write directly in the drawer and edit its Act and When there. The text is saved in the note body. If the note changes elsewhere while you type, the drawer asks which text to keep before overwriting anything. **Open every sketch** expands the sketch drawers together.
+
+## Add a note to the book
+
+Drag a note from the file explorer onto the Timetable to add it to the book. **Add note to the book** asks how to **Use this note as**: a **Scene**, which needs a **Scene number** when its filename has none, or a **Sketch**, with **Place sketch after** a scene or **End of act**. Select **Add note**. The note moves into the book’s folder if it isn’t there already, and gains its Class and, for a placed sketch, **Place after scene**; its text and other properties stay as they are. A note that already has a Class is left alone.
+
+On the timeline, drop a note in the empty space around the wheel for the same dialog. In Narrative, drop it on a scene instead to add it as a scene right after that one: it takes a number that fits after the scene, the scene’s act and the subplot of the ring you dropped it on. If the note already names a different act or subplot, the dialog asks whether to change it. Chronologue takes notes only in the empty space.
 
 ## Promote a note to a scene
 

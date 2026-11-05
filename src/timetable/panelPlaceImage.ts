@@ -24,7 +24,7 @@ export function panelSceneImage(app: App, scene: TFile, fm: Record<string, unkno
     return { url: app.vault.getResourcePath(file), path: file.path, name: file.name };
 }
 
-/** Resolve a scene-specific image first, then the first Place note's Image. */
+/** Resolve a scene-specific image first, then the first Place note's Image, then a file named after the place. */
 export function panelPlaceImage(app: App, scene: TFile, fm: Record<string, unknown> | undefined, placeKey: string, imageFiles?: readonly TFile[], chosenPath?: string): { url: string; path: string; source: 'scene' | 'place'; name: string } | null {
     const image = (value: unknown, sourcePath: string): TFile | null => {
         const path = linkPath(value);
@@ -37,11 +37,10 @@ export function panelPlaceImage(app: App, scene: TFile, fm: Record<string, unkno
     if (override) return { url: app.vault.getResourcePath(override), path: override.path, source: 'scene', name: override.name };
     const places = readFrontmatterProperty(fm, placeKey);
     const placePath = linkPath(Array.isArray(places) ? places[0] : places);
+    const place = placePath ? app.metadataCache.getFirstLinkpathDest(placePath, scene.path) : null;
+    const own = place ? image(readFrontmatterProperty(app.metadataCache.getFileCache(place)?.frontmatter, 'Image'), place.path) : null;
+    if (place && own) return { url: app.vault.getResourcePath(own), path: own.path, source: 'place', name: place.basename };
     const subject = imageSubjectName(placePath);
     const named = subject && imageFiles ? stableStoryImage(imageFiles, scene.path, subject) : null;
-    if (named) return { url: app.vault.getResourcePath(named), path: named.path, source: 'place', name: subject! };
-    const place = placePath ? app.metadataCache.getFirstLinkpathDest(placePath, scene.path) : null;
-    if (!place) return null;
-    const fallback = image(readFrontmatterProperty(app.metadataCache.getFileCache(place)?.frontmatter, 'Image'), place.path);
-    return fallback ? { url: app.vault.getResourcePath(fallback), path: fallback.path, source: 'place', name: place.basename } : null;
+    return named ? { url: app.vault.getResourcePath(named), path: named.path, source: 'place', name: subject! } : null;
 }

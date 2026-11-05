@@ -35,6 +35,16 @@ describe('panel place image', () => {
         expect(panelPlaceImage(app, scene, { Place: ['[[Places/Harbor|The Harbor]]'] }, 'Place', [named])).toEqual({ url: named.path, path: named.path, source: 'place', name: 'Harbor' });
         expect(panelPlaceImage(app, scene, { Place: ['[[Places/Harbor]]'], 'Place image': '[[Final.webp]]' }, 'Place', [named])?.path).toBe(override.path);
     });
+    it('prefers the Place note\'s Image over a file named after the place, wherever that file sits', () => {
+        const stray = { path: 'Other Book/Tourney 2.png', basename: 'Tourney 2', name: 'Tourney 2.png', extension: 'png' } as TFile;
+        expect(panelPlaceImage(app, scene, { Place: ['[[Tourney]]'] }, 'Place', [stray])).toEqual({ url: fallback.path, path: fallback.path, source: 'place', name: 'Tourney' });
+    });
+    it('matches by name when the Place note has no usable Image', () => {
+        const named = { path: 'Pictures/Tourney.png', basename: 'Tourney', name: 'Tourney.png', extension: 'png' } as TFile;
+        const without = (frontmatter: Record<string, unknown>) => ({ ...app, metadataCache: { ...app.metadataCache, getFileCache: () => ({ frontmatter }) } }) as unknown as App;
+        expect(panelPlaceImage(without({}), scene, { Place: ['[[Tourney]]'] }, 'Place', [named])?.path).toBe(named.path);
+        expect(panelPlaceImage(without({ Image: '[[missing.png]]' }), scene, { Place: ['[[Tourney]]'] }, 'Place', [named])?.path).toBe(named.path);
+    });
     it('uses the first place default when the override is missing or broken', () => {
         expect(panelPlaceImage(app, scene, { Place: ['[[Tourney]]'], 'Place image': '[[missing.png]]' }, 'Place')).toEqual({ url: fallback.path, path: fallback.path, source: 'place', name: 'Tourney' });
     });

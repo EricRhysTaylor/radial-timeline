@@ -1234,7 +1234,7 @@
   overflow-y: auto;
 }
 /* Panels retain the active Obsidian theme and the timeline's subplot colors. */
-.ert-timetable-panels__toolbar { flex-wrap: wrap; position: sticky; top: 0; left: 0; z-index: 4; display: flex; gap: var(--size-4-2); align-items: center; padding: var(--size-4-2); background: var(--background-primary); }
+.ert-timetable-panels__toolbar { flex-wrap: wrap; position: sticky; top: 0; left: 0; z-index: 10; display: flex; gap: var(--size-4-2); align-items: center; padding: var(--size-4-2); background: var(--background-primary); }
 .ert-timetable__layout-caption, .ert-timetable__bases-caption { color: var(--text-muted); font-size: var(--font-ui-small); white-space: nowrap; }
 .ert-timetable__bases-help { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; color: var(--text-muted); background: transparent; box-shadow: none; }
 .ert-timetable__bases-help:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
@@ -1293,6 +1293,10 @@
 .ert-timetable-panels__sketch-actions { display: flex; align-items: center; gap: var(--size-4-2); }
 .ert-timetable .ert-timetable-panels__sketch-actions button.ert-timetable-panels__open { position: static; flex: none; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) { overflow: hidden; padding-top: calc(var(--size-4-6) + var(--size-4-2)); }
+.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .ert-timetable-panels__panel { box-sizing: border-box; height: 280px; min-height: 0; overflow-x: hidden; overflow-y: auto; }
+.ert-timetable .ert-timetable-panels.is-large:not(.is-outline) .ert-timetable-panels__panel { height: 400px; }
+.ert-timetable .ert-timetable-panels.is-small:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) { box-sizing: border-box; height: 220px; overflow-x: hidden; overflow-y: auto; }
+.ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel > :not(.ert-timetable-panels__backdrop) { flex-shrink: 0; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene):not(.is-linked) { background: var(--background-secondary); border-color: var(--background-modifier-border-hover); }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel:not(.is-scene) .ert-timetable-panels__header { padding-right: 0; }
 .ert-timetable .ert-timetable-panels:not(.is-outline) .is-sketch .ert-timetable__drag { position: absolute; z-index: 2; top: 4px; left: 4px; }

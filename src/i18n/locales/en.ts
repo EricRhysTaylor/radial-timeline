@@ -5778,6 +5778,7 @@ export const en = {
             noteDropExplanation: 'The original note will move into the selected book if needed. Its existing text and properties stay intact; Class and any chosen sketch placement are added. A scene uses its filename number and existing Act and When. An unplaced sketch appears at the end of its act; drag it into position afterwards.',
             noteDropConfirm: 'Add note',
             noteDropHint: 'Drop a note to add it to the book',
+            noteDropChronologueUnavailable: 'Dropping a note onto a Chronologue ring is not available. Drop in empty space to add it to the book.',
             noteDropInvalidYaml: 'The note has invalid frontmatter; no changes were made.',
             noteDropHasClass: 'This note already has a Class property; no changes were made.',
             noteDropNumberRequired: 'Enter a scene number, for example 72 or 72.5.',

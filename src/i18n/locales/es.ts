@@ -6104,6 +6104,7 @@ export const es: TranslationKeys = {
             noteDropExplanation: 'La nota original se moverá a la carpeta del libro si es necesario. Se conservan el texto y las propiedades; se añaden Class y la posición elegida del boceto. La escena utiliza el número del archivo, el acto y When existentes. El boceto aparece al final de su acto y se puede mover después.',
             noteDropConfirm: 'Añadir nota',
             noteDropHint: 'Suelta una nota para añadirla al libro',
+            noteDropChronologueUnavailable: 'No se pueden soltar notas en un anillo de Chronologue. Suéltala en un espacio vacío para añadirla al libro.',
             noteDropInvalidYaml: 'El frontmatter no es válido; no se ha cambiado nada.',
             noteDropHasClass: 'La nota ya tiene una propiedad Class; no se ha cambiado nada.',
             noteDropNumberRequired: 'Introduce un número, por ejemplo 72 o 72.5.',

@@ -6104,6 +6104,7 @@ export const fr: TranslationKeys = {
             noteDropExplanation: 'La note originale sera déplacée dans le dossier du livre si nécessaire. Le texte et les propriétés existantes sont conservés ; Class et le placement choisi sont ajoutés. Une scène utilise son numéro de fichier, son acte et When. Une esquisse apparaît à la fin de son acte et peut ensuite être déplacée.',
             noteDropConfirm: 'Ajouter la note',
             noteDropHint: 'Déposez une note pour l’ajouter au livre',
+            noteDropChronologueUnavailable: 'Le dépôt sur un anneau Chronologue est indisponible. Déposez la note dans un espace vide pour l’ajouter au livre.',
             noteDropInvalidYaml: 'Les propriétés YAML sont invalides ; aucune modification effectuée.',
             noteDropHasClass: 'La note possède déjà une propriété Class ; aucune modification effectuée.',
             noteDropNumberRequired: 'Saisissez un numéro, par exemple 72 ou 72.5.',

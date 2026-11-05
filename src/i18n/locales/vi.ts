@@ -6104,6 +6104,7 @@ export const vi: TranslationKeys = {
             noteDropExplanation: 'Ghi chú gốc sẽ được chuyển vào thư mục sách nếu cần. Văn bản và thuộc tính hiện có được giữ nguyên; chỉ thêm Class và vị trí phác thảo đã chọn. Cảnh dùng số trong tên tệp, hồi và When hiện có. Phác thảo chưa đặt vị trí xuất hiện ở cuối hồi và có thể kéo sau.',
             noteDropConfirm: 'Thêm ghi chú',
             noteDropHint: 'Thả ghi chú để thêm vào sách',
+            noteDropChronologueUnavailable: 'Chưa thể thả ghi chú lên vòng Chronologue. Hãy thả vào vùng trống để thêm vào sách.',
             noteDropInvalidYaml: 'Frontmatter không hợp lệ; không có thay đổi.',
             noteDropHasClass: 'Ghi chú đã có thuộc tính Class; không có thay đổi.',
             noteDropNumberRequired: 'Nhập số cảnh, ví dụ 72 hoặc 72.5.',

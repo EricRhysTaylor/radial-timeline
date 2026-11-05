@@ -108,7 +108,7 @@ class NoteDropModal extends ErtModal {
 }
 
 /** Handle file-explorer drags without intercepting selected text or existing scene drags. */
-export function registerNoteDropCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, bookId: () => string | undefined, options?: { defaultKind?: 'Scene' | 'Sketch'; acceptPoint?: (event: DragEvent) => boolean }): void {
+export function registerNoteDropCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, bookId: () => string | undefined, options?: { defaultKind?: 'Scene' | 'Sketch'; acceptPoint?: (event: DragEvent) => boolean; rejectPoint?: (event: DragEvent) => string | undefined }): void {
     let explorerFile: TFile | null = null;
     const target = host.createDiv({ cls: 'ert-text-sketch-drop', attr: { role: 'status' } });
     if (target) { setIcon(target.createSpan(), 'file-plus-2'); target.createSpan({ text: t('ui.timetable.noteDropHint') }); }
@@ -138,6 +138,11 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
     }, true);
     owner.registerDomEvent(host.ownerDocument, 'dragover', (event: DragEvent) => {
         if (!isOverView(event) || !dragged()) { clear(); return; }
+        if (options?.rejectPoint?.(event)) {
+            clear(); event.preventDefault(); event.stopPropagation();
+            if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+            return;
+        }
         if (target && !target.isConnected) host.appendChild(target);
         target?.addClass('is-visible');
         event.preventDefault(); event.stopPropagation(); if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
@@ -147,6 +152,8 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
         const file = dragged(); clear();
         if (!file) return;
         event.preventDefault(); event.stopImmediatePropagation();
+        const rejection = options?.rejectPoint?.(event);
+        if (rejection) { new Notice(rejection, 8000); return; }
         window.setTimeout(() => new NoteDropModal(plugin, file, bookId(), options?.defaultKind).open(), 0);
     }, true);
     owner.registerDomEvent(host.ownerDocument, 'dragend', () => { clear(); explorerFile = null; }, true);

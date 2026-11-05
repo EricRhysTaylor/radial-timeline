@@ -6101,6 +6101,7 @@ export const de: DeepPartial<TranslationKeys> = {
             noteDropExplanation: 'Die Originalnotiz wird bei Bedarf in den Buchordner verschoben. Text und vorhandene Eigenschaften bleiben erhalten; Class und eine gewählte Skizzenposition werden ergänzt. Szenen verwenden Dateinummer, Akt und When. Eine Skizze erscheint zunächst am Ende ihres Akts und kann danach verschoben werden.',
             noteDropConfirm: 'Notiz hinzufügen',
             noteDropHint: 'Notiz zum Buch ziehen',
+            noteDropChronologueUnavailable: 'Notizen können nicht auf einem Chronologue-Ring abgelegt werden. Lege die Notiz in einem freien Bereich ab, um sie zum Buch hinzuzufügen.',
             noteDropInvalidYaml: 'Das Frontmatter ist ungültig; es wurde nichts geändert.',
             noteDropHasClass: 'Die Notiz hat bereits eine Class-Eigenschaft; es wurde nichts geändert.',
             noteDropNumberRequired: 'Szenennummer eingeben, z. B. 72 oder 72.5.',

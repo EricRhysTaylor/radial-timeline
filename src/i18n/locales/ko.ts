@@ -6101,6 +6101,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             noteDropExplanation: '필요하면 원본 노트를 책 폴더로 이동합니다. 기존 텍스트와 속성은 유지하고 Class와 선택한 스케치 위치만 추가합니다. 장면은 파일 이름의 번호와 기존 막 및 When을 사용합니다. 배치되지 않은 스케치는 해당 막 끝에 표시되며 나중에 이동할 수 있습니다.',
             noteDropConfirm: '노트 추가',
             noteDropHint: '노트를 놓아 책에 추가',
+            noteDropChronologueUnavailable: 'Chronologue 링에는 노트를 놓을 수 없습니다. 빈 공간에 놓아 책에 추가하세요.',
             noteDropInvalidYaml: '프런트매터가 올바르지 않아 변경하지 않았습니다.',
             noteDropHasClass: '이미 Class 속성이 있어 변경하지 않았습니다.',
             noteDropNumberRequired: '72 또는 72.5처럼 번호를 입력하세요.',

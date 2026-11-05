@@ -6102,6 +6102,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             noteDropExplanation: '必要に応じて元のノートを本のフォルダに移動します。本文と既存のプロパティは保持し、Class と選択したスケッチの配置先を追加します。シーンにはファイル名の番号、既存の幕と When を使用します。未配置のスケッチは幕の末尾に表示され、後から移動できます。',
             noteDropConfirm: 'ノートを追加',
             noteDropHint: 'ノートをドロップして本に追加',
+            noteDropChronologueUnavailable: 'Chronologue のリングにはノートをドロップできません。空白部分にドロップして本に追加してください。',
             noteDropInvalidYaml: 'フロントマターが無効です。変更はありません。',
             noteDropHasClass: 'Class プロパティが既にあります。変更はありません。',
             noteDropNumberRequired: '72 または 72.5 のように番号を入力してください。',

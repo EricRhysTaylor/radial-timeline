@@ -3027,8 +3027,11 @@ export class RadialTimelineView extends ItemView {
         registerTextSketchCapture(this, this.contentEl, this.plugin);
         registerNoteDropCapture(this, this.contentEl, this.plugin, () => getActiveBook(this.plugin.settings)?.id, {
             defaultKind: 'Sketch',
-            acceptPoint: event => !this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)
+            acceptPoint: event => this.currentMode === 'chronologue' || !this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)
                 .some(element => this.contentEl.contains(element) && !!element.closest('.rt-scene-group, .rt-void-cell')),
+            rejectPoint: event => this.currentMode === 'chronologue' && this.contentEl.ownerDocument.elementsFromPoint(event.clientX, event.clientY)
+                .some(element => this.contentEl.contains(element) && !!element.closest('.rt-scene-group, .rt-void-cell'))
+                ? t('ui.timetable.noteDropChronologueUnavailable') : undefined,
         });
         this.publishModeToTimetables();
         this.register(onTimelineOverlayChange(() => this.applyTimetableOverlays()));

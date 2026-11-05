@@ -60,6 +60,7 @@ import { isOverdueDateString } from '../utils/date';
 import { safeTitle, splitNumberPrefix } from '../utils/noteTitle';
 import { confirmWithErtModal } from '../modals/ErtConfirmModal';
 import { convertFromEarth, formatElapsedTimePlanetary, getActivePlanetaryProfile } from '../utils/planetaryTime';
+import { formatChronologueGap } from './chronologueGap';
 import { formatRuntimeValue } from '../utils/runtimeEstimator';
 import { latestGossamerScore } from '../utils/gossamer';
 import { parseRange, isScoreInRange } from '../utils/rangeValidation';
@@ -3921,7 +3922,8 @@ export class TimetableView extends BasesView {
             const gap = chronologue.gap.get(row.path);
             if (typeof gap !== 'number') return;
             const text = chronologue.profile ? formatElapsedTimePlanetary(gap, chronologue.profile) : formatElapsedTime(gap);
-            cell.setText(`+${text}`);
+            cell.setText(formatChronologueGap(gap, getFormattingLocale(), chronologue.profile));
+            tooltip(cell, `${gap < 0 ? '−' : ''}${text}`, 'bottom');
             return;
         }
         const total = mode.running?.get(row.path);

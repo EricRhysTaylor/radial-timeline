@@ -15,7 +15,7 @@ The `.base` file is yours to customize. Change its columns, filters, sorting, or
 
 Under Obsidian’s Bases toolbar, the Timetable has a row of its own:
 
-- **Quick Workspace** opens a reference document next to the table. Choose **Timetable and reference side by side**, **Timetable above reference**, **Timeline with timetable and reference**, or **Timetable above Canvas**. The reference is the first [outline document](#outline), or the first scene when the book has none. **Timetable above Canvas** opens the book’s [subplot map](#canvas-story-maps), or offers to create one. Quick Workspace arranges the main area around the Timetable and the views it opens; your sidebars stay as they are.
+- **Quick Workspace** opens a reference document next to the table. Choose **Timetable and reference side by side**, **Timetable above reference**, **Timeline with timetable and reference**, or **Timetable above Canvas**. The reference is the first [outline document](#outline), or the first scene when the book has none. **Timetable above Canvas** opens the book’s [subplot map](#canvas-story-maps), or offers to create one. Quick Workspace clears the main area for the Timetable and the views it opens. Pinned tabs stay open behind the Timetable, and your sidebars stay as they are.
 - **Radial Timetable** switches the layout: **Table** for rows, **[Panels](#panels)** for cards with images, and **[Outline](#outline)** for the book in reading order beside your planning documents.
 - **Canvas map** builds a subplot map of the book. See [Canvas story maps](#canvas-story-maps).
 - The book button names the book the table shows (**Book: …**) and switches it. A table that spans several books shows **Choose book**.
@@ -118,7 +118,7 @@ Notes you open from the Timetable appear in a pane below the table, so the wheel
 
 <p align="center"><img src="images/timetable-panels.webp" alt="Timetable Panels beside the wheel: Pride and Prejudice scene cards with a character portrait, date, rings, characters and synopsis, and the Image, Image sizing and Panel size controls above them" width="800"></p>
 
-- **Image** chooses what each card shows: **Character** (a portrait of one of the scene’s characters, chosen by **Character selection**), **Place**, **Place + character** (the place, or the character when the scene has no place image), **Place background + character** (the character’s portrait over the place, with the card’s text on a backing you set with **Text backing**: **Subtle**, **Balanced** or **Strong**), **Scene artwork**, or **None**. The images come from properties on your notes; see [Images for Timetable Panels](YAML-Frontmatter#images-for-timetable-panels).
+- **Image** chooses what each card shows: **Character** (a portrait of one of the scene’s characters, chosen by **Character selection**), **Place**, **Place + character** (the place, or the character when the scene has no place image), **Place background + character** (the character’s portrait over the place, with the card’s text on a backing you set with **Text backing**: **Subtle**, **Balanced** or **Strong**), **Scene artwork**, or **None**. An image file named after a character or place is matched by itself, and an `Image` on the character or Place note comes first; see [Images for Timetable Panels](YAML-Frontmatter#images-for-timetable-panels).
 - **Character selection** decides whose portrait a card shows, among the scene’s characters who have one: **Most distinctive** (the default, the character who appears in the fewest scenes of the book, so each card tells you something), **First listed**, **Second character**, **POV character**, or **Balanced variety** (like Most distinctive, but avoids showing the same face on two cards in a row).
 - **Choose card image…**, on a card, sets that scene’s image by hand: pick one of its characters, **Next portrait** to step through a character’s portraits, choose any image, or **Choose place background…**. **Return to automatic images** hands the choice back to **Character selection**.
 - **Image sizing:** **Fill** crops the image to the card, **Fit** shows all of it. **Set image focus**, on a card, picks the part of the image that stays in view: click the image or use the sliders, or **Center** to reset.
@@ -127,7 +127,7 @@ Notes you open from the Timetable appear in a pane below the table, so the wheel
 - In a narrow pane these choices fold into **Image settings**, the image button in the toolbar, grouped as **Image combinations**, **Background treatment**, **Character selection** and **Formatting**.
 - **Synopsis:** click it, or **Add synopsis** on a card without one, to edit it in place, then **Save**. If the note changed elsewhere meanwhile, your edit stays in the field so you can copy it.
 
-The layout, image and size choices are saved with the view.
+The layout, image and size choices are saved with the view. **Character selection** applies across your books, and a card’s own image choice stays with that note.
 
 ## Outline
 
@@ -160,8 +160,8 @@ Each scene appears in every subplot lane it belongs to, as a card linked to its 
 <p align="center"><img src="images/canvas-subplot-map.webp" alt="Wickham's Story hovered on the wheel, and its four cards lit across the subplot lanes of the Canvas map beside it, with the story navigation bar reading Scene 16 of 61" width="800"></p>
 
 - **Story navigation**, the bar along the top of the map: drag the slider to travel scene by scene (*Scene 16 of 61 · Wickham’s Story*), **Zoom to selection** to frame the selected cards, or **Fit all**. Act labels stay readable when you zoom out.
-- **Canvas card view**, in the Canvas title bar: **Preview** (synopsis or opening text), **Title**, or **Full note**. Notes in your books open in **Preview** on any Canvas, and a choice here lasts until you close that Canvas. Other notes keep Obsidian's usual look, and a Canvas with no book notes has no **Canvas card view** button. Double-click a card to edit its note. The same menu has **Show overdue scenes**, which marks late scenes, and **Follow Shift-hover from timeline in Canvas**: hold Shift while you hover a scene on the wheel, and the map travels to it and holds it in view. Cards carry their subplot colors.
-- **The map and the wheel point at each other.** Hover a scene on the wheel and its cards light up on the map; click a card and its scene lights on the wheel and in the Timetable. A card’s menu adds **Radial Timeline: Show in Timetable**, **Radial Timeline: Show on timeline** and, for sketches and notes without a Class, **Radial Timeline: Promote to scene**.
+- **Canvas card view**, in the Canvas title bar: **Preview** (synopsis or opening text), **Title**, or **Full note**. Notes in your books open in **Preview** on any Canvas, and a choice here lasts until you close that Canvas. Other notes keep Obsidian's usual look, and a Canvas with no book notes has no **Canvas card view** button. Double-click a card to edit its note. The same menu has **Character selection**, **Show place background**, **Landscape**, **Show overdue scenes**, which marks late scenes, and **Follow Shift-hover from timeline in Canvas**: hold Shift while you hover a scene on the wheel, and the map travels to it and holds it in view. Cards carry their subplot colors.
+- **The map and the wheel point at each other.** Hold Shift as you hover a scene on the timeline and its cards light up on the map; click a card and its scene lights on the timeline and in the Timetable. A card’s menu adds **Radial Timeline: Show in Timetable**, **Radial Timeline: Show on timeline** and, for sketches and notes without a Class, **Radial Timeline: Promote to scene**.
 
 ## Bring ideas from Canvas
 
@@ -177,11 +177,13 @@ Click a sketch row or its drawer control to open it. The drawer starts with a **
 
 Write directly in the drawer and edit its Act and When there. The text is saved in the note body. If the note changes elsewhere while you type, the drawer asks which text to keep before overwriting anything. **Open every sketch** expands the sketch drawers together.
 
+Drag selected text from any note onto the timeline or the Timetable. At **Drop text to create a sketch**, let go, then set the **Book**, **Act**, **Sketch title** and **Sketch text** in **Create sketch**. The text stays in its note, the sketch links back to it in **Source**, and it joins the end of the act. In [Outline](#outline), drop the text on a row or an act to place the sketch right there.
+
 ## Add a note to the book
 
-Drag a note from the file explorer onto the Timetable to add it to the book. **Add note to the book** asks how to **Use this note as**: a **Scene**, which needs a **Scene number** when its filename has none, or a **Sketch**, with **Place sketch after** a scene or **End of act**. Select **Add note**. The note moves into the book’s folder if it isn’t there already, and gains its Class and, for a placed sketch, **Place after scene**; its text and other properties stay as they are. A note that already has a Class is left alone.
+Drag a note from the file explorer onto the Timetable to add it to the book. **Add note to the book** asks how to **Use this note as**: a **Scene**, which needs a **Scene number** when its filename has none, or a **Sketch**, with **Place sketch after** a scene or **End of act**. A note with an Act lists the scenes of that act, and a note with none lists the whole book. Select **Add note**. The note moves into the book’s folder if it isn’t there already, and gains its Class and, for a placed sketch, **Place after scene**, plus that scene’s Act when the note has none; its text and other properties stay as they are. A note that already has a Class is left alone.
 
-On the timeline, drop a note in the empty space around the wheel for the same dialog. In Narrative, drop it on a scene instead to add it as a scene right after that one: it takes a number that fits after the scene, the scene’s act and the subplot of the ring you dropped it on. If the note already names a different act or subplot, the dialog asks whether to change it. Chronologue takes notes only in the empty space.
+On the timeline, drop a note in the empty space around the wheel for the same dialog. In Narrative or Progress, drop it on a scene instead to add it as a scene right after that one: it takes a number that fits after the scene, the scene’s act and the subplot of the ring you dropped it on. If the note already names a different act or subplot, the dialog asks whether to change it. Chronologue takes notes only in the empty space.
 
 ## Promote a note to a scene
 

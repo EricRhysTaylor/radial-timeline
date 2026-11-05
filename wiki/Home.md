@@ -23,7 +23,7 @@ Radial Timeline maps your manuscript in Obsidian. Explore scenes, subplots, stor
 ## What It Does
 Arrange scenes by act, subplot, and manuscript or chronological order. Hover for a synopsis and saved Pulse feedback; highlight a scene across its subplots to follow connected story threads.
 
-The [Timetable](Timetable) opens beside the wheel: review scene properties, write sketches, and promote notes to scenes. [Manuscript export](Manuscript-Export) also publishes folders and standalone Markdown files.
+The [Timetable](Timetable) opens beside the timeline as a table, scene panels, or an outline: review scene properties, write sketches, drag notes into the book, promote notes to scenes, and map subplots on a Canvas. [Manuscript export](Manuscript-Export) also publishes folders and standalone Markdown files.
 
 ## The 4 Critical Timelines
 Radial Timeline™ captures and visualizes all 4 critical timelines:

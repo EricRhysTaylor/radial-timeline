@@ -22,7 +22,7 @@ A radial manuscript workspace with four modes:
 ## What You Can Do
 
 *   write, add, or reorganize scenes
-*   drag a note from the file explorer onto the wheel to add it to the book; in Narrative, drop it on a scene to place it right after that scene (see [Add a note to the book](Timetable#add-a-note-to-the-book))
+*   drag a note from the file explorer onto the wheel to add it to the book; in Narrative or Progress, drop it on a scene to place it right after that scene (see [Add a note to the book](Timetable#add-a-note-to-the-book))
 *   switch between books or view an entire Saga from the title-bar book selector
 *   open a writing session from the title-bar count/session button
 *   use the timeline legend to read scene actions and mode-specific controls

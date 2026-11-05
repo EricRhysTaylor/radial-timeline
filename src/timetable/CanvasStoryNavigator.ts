@@ -3,7 +3,7 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { buildTableRow, compareManuscriptRows } from './timetableModel';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
-import { selectedCanvasBounds, storyActHeadingLabel, storyAxis, storyPosition, storyProgress } from './canvasNavigation';
+import { selectedCanvasBounds, storyActHeadingLabel, storyAxis, storyKeyStep, storyPosition, storyProgress } from './canvasNavigation';
 
 type NodeData = { type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
 type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; selection?: Set<{ getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void; zoomToBbox?: (bounds: { minX: number; minY: number; maxX: number; maxY: number }) => void };
@@ -133,6 +133,13 @@ export class CanvasStoryNavigator {
         this.events.registerDomEvent(slider, 'pointercancel', () => { dragViewport = null; });
         this.events.registerDomEvent(slider, 'focus', () => { if (!dragViewport) update(false, true); });
         this.events.registerDomEvent(slider, 'input', () => update(true));
+        this.events.registerDomEvent(slider, 'keydown', (event: KeyboardEvent) => {
+            const next = storyKeyStep(Number(slider.value), Number(slider.max), event.key);
+            if (next === null) return;
+            event.preventDefault();
+            slider.value = String(next);
+            update(true);
+        });
         this.events.registerDomEvent(selection, 'click', () => {
             const view = canvas();
             const selected = view?.selection;

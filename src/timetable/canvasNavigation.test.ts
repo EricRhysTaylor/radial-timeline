@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { isStoryActHeading, linkedSceneViewport, selectedCanvasBounds, storyAxis, storyPosition, storyProgress } from './canvasNavigation';
+import { isStoryActHeading, linkedSceneViewport, selectedCanvasBounds, storyAxis, storyKeyStep, storyPosition, storyProgress } from './canvasNavigation';
 
 describe('story map navigation', () => {
+    it('moves one whole scene per arrow key, from any point along the slider', () => {
+        expect(storyKeyStep(200, 500, 'ArrowRight')).toBe(300);
+        expect(storyKeyStep(200, 500, 'ArrowLeft')).toBe(100);
+        expect(storyKeyStep(250, 500, 'ArrowUp')).toBe(300);
+        expect(storyKeyStep(250, 500, 'ArrowDown')).toBe(200);
+    });
+    it('stops at the first and last scene, and leaves other keys to the slider', () => {
+        expect(storyKeyStep(500, 500, 'ArrowRight')).toBe(500);
+        expect(storyKeyStep(0, 500, 'ArrowLeft')).toBe(0);
+        expect(storyKeyStep(200, 500, 'Home')).toBeNull();
+    });
     it('recognizes act headings on older and current generated maps', () => {
         expect(isStoryActHeading('# Act 1 · 1–5\nLines show narrative order.')).toBe(true);
         expect(isStoryActHeading('**Act 2**')).toBe(true);

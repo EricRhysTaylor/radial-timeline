@@ -74,3 +74,10 @@ export function storyProgress(cards: Array<{ x?: number; y?: number; width?: num
     }
     return bestPosition;
 }
+
+/** Slider value for a keyboard step to the next or previous scene; each scene spans 100 slider units. */
+export function storyKeyStep(value: number, max: number, key: string): number | null {
+    if (key === 'ArrowRight' || key === 'ArrowUp') return Math.min(max, (Math.floor(value / 100) + 1) * 100);
+    if (key === 'ArrowLeft' || key === 'ArrowDown') return Math.max(0, (Math.ceil(value / 100) - 1) * 100);
+    return null;
+}

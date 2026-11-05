@@ -1,4 +1,4 @@
-import { Notice, TFile, normalizePath, parseYaml } from 'obsidian';
+import { Notice, TFile, normalizePath, parseYaml, setIcon } from 'obsidian';
 import { parseDocument, isMap, isScalar } from 'yaml';
 import type RadialTimelinePlugin from '../main';
 import { ErtModal } from '../ui/ErtModal';
@@ -69,10 +69,21 @@ export function applyTimelineNoteFields(content: string, act: number, subplot: s
 export class TimelineNoteDropModal extends ErtModal {
     constructor(private readonly plugin: RadialTimelinePlugin, private readonly file: TFile, private readonly bookId: string, private readonly target: TimelineNoteTarget) { super(plugin.app); }
     onOpen(): void {
-        this.applyShell({ size: 'lg' });
-        this.mountHeader({ title: t('ui.timetable.noteDropTitle'), subtitle: this.file.path });
+        this.applyShell({ size: 'lg', containerClasses: ['ert-timeline-note-drop'] });
+        this.contentEl.addClass('ert-drag-confirm-modal');
+        this.mountHeader({ title: t('ui.timetable.noteDropTitle'), subtitle: this.file.path, badge: { text: t('ui.timetable.noteDropScene') } });
         const status = this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint' });
-        const conflicts = this.contentEl.createDiv();
+        status.hide();
+        const showError = (error: unknown) => { status.setText(error instanceof Error ? error.message : String(error)); status.show(); };
+        const summary = this.contentEl.createDiv({ cls: 'ert-drag-confirm-list' });
+        const section = summary.createDiv({ cls: 'ert-drag-confirm-section' });
+        section.createDiv({ cls: 'ert-drag-confirm-section-title', text: t('ui.addSceneConfirmModal.summaryTitle') });
+        const grid = section.createDiv({ cls: 'ert-drag-confirm-impact-grid' });
+        const conflicts = this.contentEl.createDiv({ cls: 'ert-drag-confirm-section' });
+        conflicts.hide();
+        const note = this.contentEl.createDiv({ cls: 'ert-drag-confirm-row' });
+        setIcon(note.createDiv({ cls: 'ert-drag-confirm-row-icon' }), 'info');
+        note.createDiv({ cls: 'ert-drag-confirm-row-text', text: t('ui.timetable.timelineDropPreserveNote') });
         const actions = this.mountActions();
         actions.createEl('button', { text: t('common.cancel') }).onclick = () => this.close();
         const confirm = actions.createEl('button', { text: t('ui.timetable.noteDropConfirm'), cls: 'ert-note-drop-confirm mod-cta' });
@@ -99,16 +110,35 @@ export class TimelineNoteDropModal extends ErtModal {
             const fm = noteFrontmatter(initialContent);
             const keyFor = (canonical: string) => Object.keys(fm).find(key => canonicalizeFrontmatterKey(key, mappings) === canonical);
             const actKey = keyFor('Act'); const subplotKey = keyFor('Subplot');
-            status.setText(t('ui.timetable.timelineDropPreview', { book: book.title, scene: target.title || this.target.anchorPath, act: String(act), subplot: this.target.subplot, name }));
+            const card = (label: string, value: string, icon: string): HTMLElement => {
+                const item = grid.createDiv({ cls: 'ert-drag-confirm-impact-card' });
+                setIcon(item.createDiv({ cls: 'ert-drag-confirm-row-icon' }), icon);
+                const text = item.createDiv({ cls: 'ert-drag-confirm-impact-text' });
+                text.createDiv({ cls: 'ert-drag-confirm-impact-label', text: label });
+                return text.createDiv({ cls: 'ert-drag-confirm-impact-value', text: value });
+            };
+            card(t('ui.timetable.timelineDropBookLabel'), book.title, 'book-open');
+            card(t('ui.timetable.timelineDropAfterLabel'), target.title || this.target.anchorPath, 'list-ordered');
+            const actValue = card(t('ui.timetable.timelineDropActLabel'), String(act), 'book-open-text');
+            const subplotValue = card(t('ui.addSceneConfirmModal.subplotLabel'), this.target.subplot, 'orbit');
+            card(t('ui.timetable.timelineDropFilenameLabel'), name, 'file-text');
             const choice = (label: string, oldValue: unknown, desired: string): HTMLInputElement | null => {
                 if (oldValue === undefined || frontmatterValueToText(oldValue) === desired || (Array.isArray(oldValue) && oldValue.includes(desired))) return null;
-                const row = conflicts.createEl('label', { cls: 'setting-item' });
+                if (!conflicts.hasChildNodes()) { conflicts.createDiv({ cls: 'ert-drag-confirm-section-title', text: t('ui.timetable.timelineDropExistingProperties') }); conflicts.show(); }
+                const row = conflicts.createEl('label', { cls: 'ert-drag-confirm-row' });
                 const input = row.createEl('input', { type: 'checkbox' });
-                row.createSpan({ text: t('ui.timetable.timelineDropConflict', { field: label, current: frontmatterValueToText(oldValue), value: desired }) });
+                row.createSpan({ cls: 'ert-drag-confirm-row-text', text: t('ui.timetable.timelineDropConflict', { field: label, current: frontmatterValueToText(oldValue), value: desired }) });
                 return input;
             };
             const replaceAct = choice('Act', actKey ? fm[actKey] : undefined, String(act));
             const replaceSubplot = choice('Subplot', subplotKey ? fm[subplotKey] : undefined, this.target.subplot);
+            const refreshValues = () => {
+                actValue.setText(actKey && !replaceAct?.checked ? frontmatterValueToText(fm[actKey]) || '—' : String(act));
+                subplotValue.setText(subplotKey && !replaceSubplot?.checked ? frontmatterValueToText(fm[subplotKey]) || '—' : this.target.subplot);
+            };
+            if (replaceAct) replaceAct.onchange = refreshValues;
+            if (replaceSubplot) replaceSubplot.onchange = refreshValues;
+            refreshValues();
             confirm.disabled = false;
             confirm.onclick = () => { confirm.disabled = true; void (async () => {
                 const oldPath = this.file.path;
@@ -128,7 +158,7 @@ export class TimelineNoteDropModal extends ErtModal {
                 const keptConflict = (replaceAct && !replaceAct.checked) || (replaceSubplot && !replaceSubplot.checked);
                 this.close(); this.plugin.refreshTimelineIfNeeded(null);
                 new Notice(keptConflict ? t('ui.timetable.timelineDropKept', { name }) : t('ui.timetable.timelineDropDone', { name, scene: target.title || this.target.anchorPath }));
-            })().catch((error: unknown) => { confirm.disabled = false; status.setText(error instanceof Error ? error.message : String(error)); }); };
-        })().catch((error: unknown) => status.setText(error instanceof Error ? error.message : String(error)));
+            })().catch((error: unknown) => { confirm.disabled = false; showError(error); }); };
+        })().catch(showError);
     }
 }

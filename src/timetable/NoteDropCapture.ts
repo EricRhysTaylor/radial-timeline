@@ -9,6 +9,8 @@ import { setAccessibleLabel } from '../utils/domTooltip';
 import { buildTableRow } from './timetableModel';
 import { readSceneId } from '../utils/sceneIds';
 import { TimelineNoteDropModal, type TimelineNoteTarget } from './TimelineNoteDrop';
+import { ringOutlinePath } from '../view/interactions/SubplotRingDragController';
+import { readSubplotColor } from '../renderer/utils/subplotColors';
 
 /** Insert only the missing Class line, preserving all existing bytes. */
 export function addNoteClass(content: string, kind: 'Scene' | 'Sketch', anchor?: string): string {
@@ -112,6 +114,7 @@ class NoteDropModal extends ErtModal {
 export function registerNoteDropCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, bookId: () => string | undefined, options?: { defaultKind?: 'Scene' | 'Sketch'; acceptPoint?: (event: DragEvent) => boolean; rejectPoint?: (event: DragEvent) => string | undefined; timelinePoint?: (event: DragEvent) => { target: TimelineNoteTarget; element: Element } | undefined }): void {
     let explorerFile: TFile | null = null;
     let highlighted: Element | null = null;
+    let ringOutline: SVGGElement | null = null;
     let lastTimeline: { target: TimelineNoteTarget; element: Element; x: number; y: number } | null = null;
     const target = host.createDiv({ cls: 'ert-text-sketch-drop', attr: { role: 'status' } });
     if (target) { setIcon(target.createSpan(), 'file-plus-2'); target.createSpan({ text: t('ui.timetable.noteDropHint') }); }
@@ -122,7 +125,30 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
         const classification = classifyForPromotion(plugin.app.metadataCache.getFileCache(files[0])?.frontmatter);
         return classification.kind === 'eligible' && !classification.fromSketch ? files[0] : null;
     };
-    const clear = () => { target?.removeClass('is-visible'); highlighted?.classList.remove('ert-note-drop-target'); highlighted = null; lastTimeline = null; };
+    const clear = () => { target?.removeClass('is-visible'); highlighted?.classList.remove('rt-drop-target'); highlighted = null; ringOutline?.remove(); ringOutline = null; lastTimeline = null; };
+    const highlightTimeline = (element: Element) => {
+        highlighted = element;
+        element.classList.add('rt-drop-target');
+        const group = element.closest('.rt-scene-group[data-ring]');
+        const svg = group?.closest('svg');
+        const ring = Number(group?.getAttribute('data-ring'));
+        if (!svg || !group || !Number.isInteger(ring)) return;
+        const cells = Array.from(svg.querySelectorAll(`.rt-scene-group[data-ring="${ring}"], .rt-void-cell[data-ring="${ring}"]`));
+        const inner = Math.min(...cells.map(cell => Number(cell.getAttribute('data-inner-r'))));
+        const outer = Math.max(...cells.map(cell => Number(cell.getAttribute('data-outer-r'))));
+        if (!Number.isFinite(inner) || !Number.isFinite(outer)) return;
+        const outline = svg.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'g');
+        outline.classList.add('rt-membership-ring-outline');
+        const slot = svg.querySelector(`.rt-subplot-ring-label-text[data-ring="${ring}"]`)?.getAttribute('data-color-index');
+        if (slot != null) outline.style.setProperty('--rt-membership-color', readSubplotColor(svg.ownerDocument, Number(slot)));
+        for (const cls of ['rt-membership-ring-halo', 'rt-membership-ring-line']) {
+            const path = svg.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.classList.add(cls); path.setAttribute('d', ringOutlinePath(inner, outer)); outline.appendChild(path);
+        }
+        const squares = svg.querySelector('.rt-number-squares');
+        if (squares) squares.before(outline); else svg.appendChild(outline);
+        ringOutline = outline;
+    };
     // Obsidian can place a workspace drop overlay above the view, so the DOM
     // event target is not necessarily inside the view under the pointer.
     const isOverView = (event: DragEvent): boolean => {
@@ -148,7 +174,7 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
         }
         const timeline = options?.timelinePoint?.(event);
         if (timeline) {
-            if (highlighted !== timeline.element) { clear(); highlighted = timeline.element; highlighted.classList.add('ert-note-drop-target'); }
+            if (highlighted !== timeline.element) { clear(); highlightTimeline(timeline.element); }
             lastTimeline = { ...timeline, x: event.clientX, y: event.clientY };
             event.preventDefault(); event.stopPropagation(); if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
             return;

@@ -6473,6 +6473,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             resetColumnsMissing: '{{file}}에서 {{view}} 보기를 찾지 못해 아무것도 변경하지 않았습니다.',
             fitColumn: '내용에 맞추기',
             fitAllColumns: '모든 열을 내용에 맞추기',
+            wordsSubstantiveTick: '녹색 표시: {{count}}단어부터 충실',
             wordsVsMedian: '{{words}}단어 · 중앙값({{median}})의 {{ratio}}배',
             vitalsDue: '마감: {{when}}',
             vitalsPending: '대기 중인 편집: {{text}}',

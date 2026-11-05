@@ -6476,6 +6476,7 @@ export const vi: TranslationKeys = {
             "resetColumnsMissing": "Không tìm thấy chế độ xem {{view}} trong {{file}} nên không có gì thay đổi.",
             "fitColumn": "Vừa với nội dung",
             "fitAllColumns": "Vừa tất cả các cột",
+            wordsSubstantiveTick: 'Vạch xanh: đủ nội dung ở {{count}} từ',
             "wordsVsMedian": "{{words}} từ · {{ratio}}× trung vị ({{median}})",
             "vitalsDue": "Hạn: {{when}}",
             "vitalsPending": "Chỉnh sửa đang chờ: {{text}}",

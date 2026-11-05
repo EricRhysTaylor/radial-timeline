@@ -6473,6 +6473,7 @@ export const de: DeepPartial<TranslationKeys> = {
             resetColumnsMissing: 'Die Ansicht {{view}} wurde in {{file}} nicht gefunden; es wurde nichts geändert.',
             fitColumn: 'An Inhalt anpassen',
             fitAllColumns: 'Alle Spalten anpassen',
+            wordsSubstantiveTick: 'Grüne Markierung: substanziell ab {{count}} Wörtern',
             wordsVsMedian: '{{words}} Wörter · {{ratio}}× der Median ({{median}})',
             vitalsDue: 'Fällig {{when}}',
             vitalsPending: 'Pending Edits: {{text}}',

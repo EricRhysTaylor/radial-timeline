@@ -6476,6 +6476,7 @@ export const th: TranslationKeys = {
             "resetColumnsMissing": "ไม่พบมุมมอง {{view}} ใน {{file}} จึงไม่มีการเปลี่ยนแปลง",
             "fitColumn": "ปรับให้พอดีกับเนื้อหา",
             "fitAllColumns": "ปรับทุกคอลัมน์ให้พอดี",
+            wordsSubstantiveTick: 'ขีดสีเขียว: เนื้อหาครบที่ {{count}} คำ',
             "wordsVsMedian": "{{words}} คำ · {{ratio}}× ของค่ามัธยฐาน ({{median}})",
             "vitalsDue": "กำหนดส่ง {{when}}",
             "vitalsPending": "อยู่ระหว่างการแก้ไข: {{text}}",

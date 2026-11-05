@@ -6132,6 +6132,7 @@ export const en = {
             resetColumnsMissing: 'Couldn’t find the {{view}} view in {{file}}, so nothing changed.',
             fitColumn: 'Fit to content',
             fitAllColumns: 'Fit every column',
+            wordsSubstantiveTick: 'Green tick: substantive at {{count}} words',
             wordsVsMedian: '{{words}} words · {{ratio}}× the median ({{median}})',
             vitalsDue: 'Due {{when}}',
             vitalsPending: 'Pending edits: {{text}}',

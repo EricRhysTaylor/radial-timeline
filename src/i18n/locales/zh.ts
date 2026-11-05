@@ -6475,6 +6475,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             resetColumnsMissing: '在 {{file}} 中找不到 {{view}} 视图，因此未做任何更改。',
             fitColumn: '适应内容',
             fitAllColumns: '所有列适应内容',
+            wordsSubstantiveTick: '绿色标记：达到 {{count}} 字时内容充实',
             wordsVsMedian: '{{words}} 字 · 中位数（{{median}}）的 {{ratio}} 倍',
             vitalsDue: '截止：{{when}}',
             vitalsPending: '待编辑：{{text}}',

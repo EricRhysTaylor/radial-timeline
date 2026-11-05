@@ -70,10 +70,6 @@ class NoteDropModal extends ErtModal {
                 .sort((a, b) => a.file.basename.localeCompare(b.file.basename, undefined, { numeric: true }))
                 .forEach(item => anchor.addOption(item.id!, item.file.basename));
         };
-        const help = this.contentEl.createEl('button', { cls: 'clickable-icon ert-note-drop-help', attr: { type: 'button' } });
-        setIcon(help, 'circle-help');
-        setAccessibleLabel(help, t('ui.timetable.noteDropExplanation'));
-        setTooltip(help, t('ui.timetable.noteDropExplanation'));
         const explanation = this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint' });
         explanation.hide();
         const conflict = () => {
@@ -87,6 +83,10 @@ class NoteDropModal extends ErtModal {
         };
         kind.onChange(update); book.onChange(() => { updateAnchors(); update(); }); number.oninput = update; updateAnchors(); update();
         const actions = this.mountActions();
+        const help = actions.createEl('button', { cls: 'clickable-icon ert-note-drop-help', attr: { type: 'button' } });
+        setIcon(help, 'circle-help');
+        setAccessibleLabel(help, t('ui.timetable.noteDropExplanation'));
+        setTooltip(help, t('ui.timetable.noteDropExplanation'));
         actions.createEl('button', { text: t('common.cancel') }).onclick = () => this.close();
         const submit = actions.createEl('button', { text: t('ui.timetable.noteDropConfirm'), cls: 'ert-note-drop-confirm mod-cta' });
         submit.onclick = () => {

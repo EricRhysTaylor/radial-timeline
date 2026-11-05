@@ -6474,6 +6474,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             resetColumnsMissing: '{{file}} に {{view}} ビューが見つからなかったため、何も変更していません。',
             fitColumn: '内容に合わせる',
             fitAllColumns: 'すべての列を内容に合わせる',
+            wordsSubstantiveTick: '緑の目印：{{count}}語で充実',
             wordsVsMedian: '{{words}} 語 · 中央値（{{median}}）の {{ratio}} 倍',
             vitalsDue: '期限：{{when}}',
             vitalsPending: '保留中の編集：{{text}}',

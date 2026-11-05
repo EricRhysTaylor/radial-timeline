@@ -259,7 +259,7 @@
 .ert-timetable__words-bar::after {
   content: "";
   position: absolute;
-  left: 50%;
+  left: var(--ert-timetable-words-median, 50%);
   top: -2px;
   width: 1px;
   height: 8px;
@@ -1626,3 +1626,9 @@
 .ert-timetable .ert-timetable-panels__meta:not(.is-expanded) .ert-timetable-panels__subplot { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ert-timetable .ert-timetable-panels__subplots-more, .ert-timetable .ert-timetable-panels__act { flex-shrink: 0; }
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene:has(.ert-timetable-panels__scene-actions > button:nth-child(3)) .ert-timetable-panels__header { padding-right: 108px; }
+
+.ert-timetable__words-bar.is-tier-empty .ert-timetable__words-fill { background: var(--text-faint); }
+.ert-timetable__words-bar.is-tier-sketchy .ert-timetable__words-fill { background: var(--color-orange); }
+.ert-timetable__words-bar.is-tier-medium .ert-timetable__words-fill { background: var(--color-blue); }
+.ert-timetable__words-bar.is-tier-substantive .ert-timetable__words-fill { background: var(--color-green); }
+.ert-timetable__words-threshold { position: absolute; left: var(--ert-timetable-words-threshold); top: -3px; width: 2px; height: 10px; background: var(--color-green); }

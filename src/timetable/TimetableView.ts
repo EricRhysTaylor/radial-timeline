@@ -1,3 +1,4 @@
+import { getInquiryCorpusTier } from '../inquiry/corpus/inquiryCorpusStripSlotRenderer';
 import { registerTextSketchCapture } from './TextSketchCapture';
 import { registerNoteDropCapture } from './NoteDropCapture';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
@@ -4083,20 +4084,32 @@ export class TimetableView extends BasesView {
         tooltip(label, formatLongDate(due.date), 'bottom');
     }
 
-    /** Words: the count, and a bar whose midpoint is the book's median scene (a full bar is twice it). */
+    /** Words: draft-length color and threshold, with the book's median marked separately. */
     private renderWords(cell: HTMLElement, words: number, median: number): void {
         const locale = getFormattingLocale();
         const bar = wordBar(words, median);
         const wrap = cell.createSpan({ cls: 'ert-timetable__words' });
         wrap.createSpan({ cls: 'ert-timetable__words-count', text: words.toLocaleString(locale) });
-        const track = wrap.createSpan({ cls: 'ert-timetable__words-bar' });
+        const raw = this.plugin.settings.inquiryCorpusThresholds;
+        const thresholds = {
+            emptyMax: Number.isFinite(raw?.emptyMax) ? raw!.emptyMax : 10,
+            sketchyMin: Number.isFinite(raw?.sketchyMin) ? raw!.sketchyMin : 100,
+            mediumMin: Number.isFinite(raw?.mediumMin) ? raw!.mediumMin : 300,
+            substantiveMin: Number.isFinite(raw?.substantiveMin) ? raw!.substantiveMin : 1000,
+        };
+        const tier = getInquiryCorpusTier(words, thresholds);
+        const track = wrap.createSpan({ cls: `ert-timetable__words-bar is-tier-${tier}` });
         track.toggleClass('is-over', bar.over);
-        track.createSpan({ cls: 'ert-timetable__words-fill' }).setCssProps({ '--ert-timetable-words-fill': `${Math.round(bar.fill * 100)}%` });
-        tooltip(wrap, t('ui.timetable.wordsVsMedian', {
+        const scale = Math.max(median * 2, thresholds.substantiveMin * 1.05);
+        track.setCssProps({ '--ert-timetable-words-median': `${median / scale * 100}%` });
+        track.createSpan({ cls: 'ert-timetable__words-fill' }).setCssProps({ '--ert-timetable-words-fill': `${Math.min(100, words / scale * 100)}%` });
+        track.createSpan({ cls: 'ert-timetable__words-threshold' }).setCssProps({ '--ert-timetable-words-threshold': `${thresholds.substantiveMin / scale * 100}%` });
+        const label = tier === 'empty' ? t('settings.inquiry.corpusTier.empty') : tier === 'sketchy' ? t('settings.inquiry.corpusTier.sketchy') : tier === 'medium' ? t('settings.inquiry.corpusTier.medium') : t('settings.inquiry.corpusTier.substantive');
+        tooltip(wrap, `${label} · ${t('ui.timetable.wordsVsMedian', {
             words: words.toLocaleString(locale),
             ratio: new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(words / median),
             median: Math.round(median).toLocaleString(locale),
-        }), 'bottom');
+        })} · ${t('ui.timetable.wordsSubstantiveTick', { count: thresholds.substantiveMin.toLocaleString(locale) })}`, 'bottom');
     }
 
     private renderBadge(cell: HTMLElement, icon: string, text: string): void {

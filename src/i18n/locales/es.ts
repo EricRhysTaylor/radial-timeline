@@ -6476,6 +6476,7 @@ export const es: TranslationKeys = {
             "resetColumnsMissing": "No se encontró la vista {{view}} en {{file}}, así que no se cambió nada.",
             "fitColumn": "Ajustar al contenido",
             "fitAllColumns": "Ajustar todas las columnas",
+            wordsSubstantiveTick: 'Marca verde: sustancial a partir de {{count}} palabras',
             "wordsVsMedian": "{{words}} palabras · {{ratio}}× la mediana ({{median}})",
             "vitalsDue": "Fecha límite: {{when}}",
             "vitalsPending": "Ediciones pendientes: {{text}}",

@@ -103,7 +103,7 @@ export function applyInquiryCorpusCcSlotViewModel(
     }
 }
 
-function getInquiryCorpusTier(
+export function getInquiryCorpusTier(
     wordCount: number,
     thresholds: InquiryCorpusThresholds
 ): CorpusSubstanceTier {

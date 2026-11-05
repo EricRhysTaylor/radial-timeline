@@ -1,8 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
-import { computeCanonicalOrder, getBaseKeys, getExcludeKeyPredicate, safeParseYaml } from './yamlTemplateNormalize';
+import { computeCanonicalOrder, getBaseKeys, getExcludeKeyPredicate, getTemplateParts, safeParseYaml } from './yamlTemplateNormalize';
 
 describe('yamlTemplateNormalize', () => {
+    it('includes Total Time in core templates for new and existing vaults', () => {
+        const settings = { ...DEFAULT_SETTINGS, sceneYamlTemplates: { base: 'Class: Scene\nAct: 1', advanced: 'Place:' } };
+        expect(getBaseKeys('Scene', DEFAULT_SETTINGS)).toContain('Total Time');
+        const parts = getTemplateParts('Scene', settings);
+        expect(parts.base).toContain('Total Time:');
+        expect(parts.merged).toContain('Total Time:');
+        expect(settings.sceneYamlTemplates.base).toBe('Class: Scene\nAct: 1');
+    });
+
+    it('preserves an existing advanced Total Time default without duplicate fields', () => {
+        const settings = { ...DEFAULT_SETTINGS, sceneYamlTemplates: { base: 'Class: Scene\nTotal Time:', advanced: 'Place:\nTotal Time: 2.5\nQuestions:' } };
+        const parts = getTemplateParts('Scene', settings);
+        expect(parts.base).toContain('Total Time: 2.5');
+        expect(parts.merged.match(/^Total Time:/gm)).toHaveLength(1);
+        expect(parts.advanced).toContain('Questions:');
+        expect(settings.sceneYamlTemplates.advanced).toContain('Total Time: 2.5');
+    });
     it('enforces Pulse Update and Summary Update as required base Scene keys', () => {
         const settings = {
             ...DEFAULT_SETTINGS,

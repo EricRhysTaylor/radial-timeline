@@ -36,6 +36,7 @@ import {
 } from './refactorAlerts';
 import { acknowledgeHotfixHistory } from '../utils/pandocBundledLayouts';
 import { DEFAULT_SETTINGS } from './defaults';
+import { getTemplateParts } from '../utils/yamlTemplateNormalize';
 import { getCredential } from '../ai/credentials/credentials';
 import type { AIProviderId } from '../ai/types';
 import { getCanonicalAiSettings } from '../ai/runtime/runtimeSelection';
@@ -255,7 +256,11 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
      * Shows notification for user to dismiss after reading.
      */
     private autoMigrateAdvancedTemplate(): void {
-        const defaultBase = DEFAULT_SETTINGS.sceneYamlTemplates!.base;
+        const resolvedBase = getTemplateParts('Scene', this.plugin.settings).base;
+        const timeField = /^Total Time[ \t]*:[^\r\n]*(?:\r?\n[ \t]+[^\r\n]*)*/im.exec(resolvedBase)?.[0];
+        const defaultBase = timeField
+            ? DEFAULT_SETTINGS.sceneYamlTemplates!.base.replace(/^Total Time:.*$/m, () => timeField)
+            : DEFAULT_SETTINGS.sceneYamlTemplates!.base;
         const currentBase = this.plugin.settings.sceneYamlTemplates?.base ?? '';
         const currentAdvanced = this.plugin.settings.sceneYamlTemplates?.advanced ?? '';
         

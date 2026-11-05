@@ -26,6 +26,7 @@ describe('scenePropertyAdapter', () => {
             'When',
             'Pulse Update',
             'Summary Update',
+            'Total Time',
         ]);
         expect(definitions.advanced.map((definition) => definition.key)).toEqual([
             'Place',

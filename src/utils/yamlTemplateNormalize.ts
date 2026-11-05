@@ -150,12 +150,23 @@ export function getTemplateParts(
 ): TemplateParts {
     switch (noteType) {
         case 'Scene': {
-            const base = settings.sceneYamlTemplates?.base
+            let base = settings.sceneYamlTemplates?.base
                 ?? DEFAULT_SETTINGS.sceneYamlTemplates!.base;
-            const advanced = stripChapterFieldFromAdvanced(
+            let advanced = stripChapterFieldFromAdvanced(
                 settings.sceneYamlTemplates?.advanced
                 ?? DEFAULT_SETTINGS.sceneYamlTemplates!.advanced
             );
+            // Existing vaults can have an older core template, or an author-defined
+            // Total Time in advanced. Preserve that default while making the field core.
+            const coreTime = /^Total Time[ \t]*:[ \t]*([^\r\n]*)(?:\r?\n[ \t]+[^\r\n]*)*/im.exec(base);
+            const advancedTime = /^Total Time[ \t]*:[ \t]*([^\r\n]*)(?:\r?\n[ \t]+[^\r\n]*)*/im.exec(advanced);
+            const advancedTimeField = advancedTime?.[0].replace(/^Total Time[ \t]*:/i, 'Total Time:');
+            if (!coreTime) {
+                base = `${base.trimEnd()}\n${advancedTimeField ?? 'Total Time:'}`;
+            } else if (!coreTime[1].trim() && advancedTime?.[1].trim() && advancedTimeField) {
+                base = base.replace(coreTime[0], advancedTimeField);
+            }
+            if (advancedTime) advanced = advanced.replace(advancedTime[0], '').replace(/\n{3,}/g, '\n\n').trim();
             const merged = advanced.trim()
                 ? mergeTemplateParts(base, advanced)
                 : base;

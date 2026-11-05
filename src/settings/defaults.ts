@@ -153,6 +153,7 @@ Subplot: {{Subplot}}
 Character: {{Character}}
 POV:
 Words:
+Total Time:
 Runtime:
 Publish Stage: Zero
 Status: Todo

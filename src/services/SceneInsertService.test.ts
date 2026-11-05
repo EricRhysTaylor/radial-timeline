@@ -97,6 +97,7 @@ describe('SceneInsertService', () => {
         expect(content).toContain('When: 2024-01-01 09:00');
         expect(content).toContain(`Due: ${todayString}`);
         expect(content).toContain('Subplot: Romance');
+        expect(content).toContain('Total Time:');
         expect(content).not.toContain('Place:');
     });
 

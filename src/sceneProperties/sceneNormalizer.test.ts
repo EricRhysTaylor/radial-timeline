@@ -30,15 +30,15 @@ function buildSettings(advancedEnabled?: boolean) {
 }
 
 function coreSceneDoc(idLine = 'ID: scn_core'): string {
-    return `---\n${idLine}\nClass: Scene\nAct: 1\nWhen: 2026-01-01\nPulse Update:\nSummary Update:\n---\nBody`;
+    return `---\n${idLine}\nClass: Scene\nAct: 1\nWhen: 2026-01-01\nPulse Update:\nSummary Update:\nTotal Time:\n---\nBody`;
 }
 
 function advancedSceneDocAfterCore(): string {
-    return `---\nID: scn_adv\nClass: Scene\nAct: 1\nWhen: 2026-01-01\nPlace: Somewhere\nQuestions:\n  - Who\nReader Emotion:\nPulse Update:\nSummary Update:\n---\nBody`;
+    return `---\nID: scn_adv\nClass: Scene\nAct: 1\nWhen: 2026-01-01\nPlace: Somewhere\nQuestions:\n  - Who\nReader Emotion:\nPulse Update:\nSummary Update:\nTotal Time:\n---\nBody`;
 }
 
 function advancedSceneDocInterleaved(): string {
-    return `---\nID: scn_adv\nClass: Scene\nAct: 1\nPlace: Somewhere\nWhen: 2026-01-01\nQuestions:\n  - Who\nPulse Update:\nSummary Update:\nReader Emotion:\n---\nBody`;
+    return `---\nID: scn_adv\nClass: Scene\nAct: 1\nPlace: Somewhere\nWhen: 2026-01-01\nQuestions:\n  - Who\nPulse Update:\nSummary Update:\nTotal Time:\nReader Emotion:\n---\nBody`;
 }
 
 async function readFile(app: InMemoryApp, path: string): Promise<string> {
@@ -156,7 +156,7 @@ describe('sceneNormalizer', () => {
 
         expect(result.reordered).toBe(1);
         const content = await readFile(app, 'Books/BookA/01 Advanced.md');
-        expect(content).toContain('ID: scn_adv\nClass: Scene\nAct: 1\nWhen: 2026-01-01\nPulse Update: \nSummary Update: \nPlace: Somewhere\nQuestions:');
+        expect(content).toContain('ID: scn_adv\nClass: Scene\nAct: 1\nWhen: 2026-01-01\nPulse Update: \nSummary Update: \nTotal Time: \nPlace: Somewhere\nQuestions:');
         expect(content).toContain('Questions:\n  - Who\nReader Emotion: ');
     });
 

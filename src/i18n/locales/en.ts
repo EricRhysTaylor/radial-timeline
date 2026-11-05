@@ -5946,7 +5946,7 @@ export const en = {
             spreadsheetViewName: 'Spreadsheet',
             basesHelpTitle: 'About Bases views',
             basesSavedViews: 'Saved views',
-            basesHelp: 'Saved views are managed by Obsidian. Table, Panels and Outline below change the Radial Timetable layout.',
+            basesHelp: 'Saved views are native Obsidian. Table, Panels and Outline below are Radial Timetable curated layouts.',
             restoreView: 'Restore Radial Timetable view',
             restorePreview: 'Add “{{name}}” to {{file}} with recommended Timetable settings. Existing views, Base filters and notes stay in place. The Base file will be reformatted and any YAML comments removed.',
             restoreButton: 'Add restored view',

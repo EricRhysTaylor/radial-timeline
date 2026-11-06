@@ -11,7 +11,7 @@ import { readSceneId } from '../utils/sceneIds';
 import { TimelineNoteDropModal, type TimelineNoteTarget } from './TimelineNoteDrop';
 import { authorKeyFor } from './timetableFiles';
 import { addSceneIntakeTemplate, type SceneIntakeContext } from './sceneIntakeTemplate';
-import { applyFrontmatterEdits, isBlankFrontmatterValue, readFrontmatterText, replaceValueEdit, type TextEdit } from '../utils/frontmatterText';
+import { applyFrontmatterEdits, isBlankFrontmatterValue, readFrontmatterText, replaceValueEdit, yamlKey, type TextEdit } from '../utils/frontmatterText';
 import { scenePropertySetLabel } from '../utils/yamlTemplateNormalize';
 import { readAnchorWhen } from '../services/SceneInsertService';
 
@@ -45,7 +45,7 @@ export function sceneBeforeNumber<T extends { prefix: string | null }>(scenes: r
 export function addNoteClass(content: string, kind: 'Scene' | 'Sketch', anchor?: string, act?: { key: string; value: number }): string {
     const placementLines = (anchor ? [`Place after scene: ${JSON.stringify(anchor)}`] : []);
     const text = readFrontmatterText(content);
-    if (!text) return `---\nClass: ${kind}\n${[...placementLines, ...(act ? [`${act.key}: ${act.value}`] : [])].map(line => `${line}\n`).join('')}---\n\n${content}`;
+    if (!text) return `---\nClass: ${kind}\n${[...placementLines, ...(act ? [`${yamlKey(act.key)}: ${act.value}`] : [])].map(line => `${line}\n`).join('')}---\n\n${content}`;
     const find = (name: string) => text.fields.find(field => field.key.toLowerCase() === name.toLowerCase());
     const classField = find('class');
     if (classField && !isBlankFrontmatterValue(classField.value)) throw new Error(t('ui.timetable.noteDropHasClass'));
@@ -57,7 +57,7 @@ export function addNoteClass(content: string, kind: 'Scene' | 'Sketch', anchor?:
         const actField = find(act.key);
         if (actField && !isBlankFrontmatterValue(actField.value)) throw new Error(t('ui.timetable.noteDropExistingPlacement'));
         if (actField) edits.push(replaceValueEdit(text, actField, String(act.value)));
-        else lines.push(`${act.key}: ${act.value}`);
+        else lines.push(`${yamlKey(act.key)}: ${act.value}`);
     }
     if (lines.length) edits.push({ start: 0, end: 0, text: lines.map(line => line + text.newline).join('') });
     return applyFrontmatterEdits(text, edits);

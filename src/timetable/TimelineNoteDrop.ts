@@ -8,7 +8,7 @@ import { buildDecimalSceneInsertionPrefix, isSafeSceneInsertionPrefix, readAncho
 import { splitNumberPrefix } from '../utils/noteTitle';
 import { timelineItemAct } from '../utils/acts';
 import { addSceneIntakeTemplate } from './sceneIntakeTemplate';
-import { applyFrontmatterEdits, frontmatterValues, isBlankFrontmatterValue, readFrontmatterText, replaceValueEdit, type TextEdit } from '../utils/frontmatterText';
+import { applyFrontmatterEdits, frontmatterValues, isBlankFrontmatterValue, readFrontmatterText, replaceValueEdit, yamlKey, type TextEdit } from '../utils/frontmatterText';
 import { scenePropertySetLabel } from '../utils/yamlTemplateNormalize';
 
 export type TimelineNoteTarget = { anchorPath: string; subplot: string };
@@ -22,9 +22,9 @@ function noteFrontmatter(content: string): Record<string, unknown> {
 export function applyTimelineNoteFields(content: string, act: number, subplot: string, replaceAct: boolean, replaceSubplot: boolean, mappings?: Record<string, string>): string {
     const text = readFrontmatterText(content);
     const lines = (classLine: boolean, hasAct: boolean, hasSubplot: boolean) => [
-        ...(classLine ? [`${authorKeyFromMappings('Class', mappings)}: Scene`] : []),
-        ...(hasAct ? [] : [`${authorKeyFromMappings('Act', mappings)}: ${act}`]),
-        ...(hasSubplot ? [] : [`${authorKeyFromMappings('Subplot', mappings)}: ${JSON.stringify(subplot)}`]),
+        ...(classLine ? [`${yamlKey(authorKeyFromMappings('Class', mappings))}: Scene`] : []),
+        ...(hasAct ? [] : [`${yamlKey(authorKeyFromMappings('Act', mappings))}: ${act}`]),
+        ...(hasSubplot ? [] : [`${yamlKey(authorKeyFromMappings('Subplot', mappings))}: ${JSON.stringify(subplot)}`]),
     ];
     if (!text) return `---\n${lines(true, false, false).join('\n')}\n---\n\n${content}`;
     const edits: TextEdit[] = [];

@@ -240,18 +240,36 @@ export function reorderFrontmatterFields(text: FrontmatterText, keys: string[], 
     return text.open + raw + text.tail;
 }
 
-/** A string as a YAML scalar, quoted only when plain text would change its meaning. */
+/** Words YAML 1.1 tools read as booleans, though the parser here does not. */
+const BOOLEAN_WORDS = /^(?:yes|no|on|off)$/i;
+
+/** Whether the parser reads this YAML as one mapping entry. Asks the parser, so no form of number or tag slips past. */
+function parsesAs(yaml: string, key: string, value: string): boolean {
+    try {
+        const doc = parseDocument(yaml, { logLevel: 'silent' });
+        if (doc.errors.length || !isMap(doc.contents) || doc.contents.items.length !== 1) return false;
+        const [pair] = doc.contents.items;
+        return isScalar(pair.key) && pair.key.value === key
+            && isScalar(pair.value) && pair.value.value === value;
+    } catch {
+        return false;
+    }
+}
+
+/** A string as a YAML value, quoted only when plain text would read back as anything else. */
 export function yamlScalar(value: string): string {
     if (value === '') return '';
-    const needsQuotes = /^[\s&*!|>'"%@`#?:[\]{},-]|: |:$|\s#|\s$|[\r\n]/.test(value)
-        || /^(?:null|true|false|yes|no|on|off|~)$/i.test(value)
-        || /^[+-]?\d+(?:\.\d+)?$/.test(value);
-    return needsQuotes ? JSON.stringify(value) : value;
+    return parsesAs(`k: ${value}`, 'k', value) && !BOOLEAN_WORDS.test(value) ? value : JSON.stringify(value);
+}
+
+/** A string as a YAML property name, quoted only when plain text would read back as anything else. */
+export function yamlKey(key: string): string {
+    return parsesAs(`${key}: v`, key, 'v') && !BOOLEAN_WORDS.test(key) ? key : JSON.stringify(key);
 }
 
 /** One field as YAML lines. An empty value is written `Key:`, as the templates do. */
 export function formatYamlField(key: string, value: string | string[]): string {
-    const name = yamlScalar(key);
+    const name = yamlKey(key);
     if (Array.isArray(value)) {
         if (value.length === 0) return `${name}:`;
         return [`${name}:`, ...value.map(item => `  - ${yamlScalar(item)}`)].join('\n');

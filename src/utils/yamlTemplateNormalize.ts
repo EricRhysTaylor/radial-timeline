@@ -28,7 +28,8 @@ function sanitizeTemplatePlaceholdersForYamlParse(template: string): string {
     return (template || '')
         .split('\n')
         .filter(line => !/^\s*{{[^{}\n]+}}\s*$/.test(line))
-        .map(line => line.replace(/{{[^{}\n]+}}/g, match => JSON.stringify(match)))
+        // A value already in quotes parses as it is; quoting it again would break it.
+        .map(line => /(?::|-)\s+["']/.test(line) ? line : line.replace(/{{[^{}\n]+}}/g, match => JSON.stringify(match)))
         .join('\n');
 }
 
@@ -210,7 +211,8 @@ export function migrateSceneTemplates(stored: { base?: string; advanced?: string
         const wordsIndex = fields.findIndex(field => field.key === 'Words');
         const pulseIndex = fields.findIndex(field => field.key === 'Pulse Update');
         const position = wordsIndex >= 0 ? wordsIndex + 1 : pulseIndex >= 0 ? pulseIndex : fields.length;
-        fields.splice(position, 0, { key: TOTAL_TIME_KEY, lines: movedLines ?? `${TOTAL_TIME_KEY}:` });
+        const lines = movedLines ?? `${TOTAL_TIME_KEY}:`;
+        fields.splice(position, 0, { key: TOTAL_TIME_KEY, lines, rest: lines.slice(TOTAL_TIME_KEY.length) });
     }
     return { base: fields.map(field => field.lines).join('\n'), advanced };
 }

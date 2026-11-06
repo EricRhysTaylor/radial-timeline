@@ -3,6 +3,7 @@
  */
 
 import { yamlScalar } from './frontmatterText';
+import { templateValueStart } from './templateMerge';
 
 export interface SceneCreationData {
     act: number;
@@ -16,39 +17,90 @@ export interface SceneCreationData {
     placeList?: string[];
 }
 
+const PLACEHOLDER = /{{([^{}\n]+)}}/g;
+
 const inlineValues = (values: string[]): string => values.length <= 1
     ? yamlScalar(values[0] ?? '')
     : `[${values.map(value => JSON.stringify(value)).join(', ')}]`;
 
 const listLines = (values: string[]): string => values.map(value => `  - ${JSON.stringify(value)}`).join('\n');
 
+interface PlaceholderValues {
+    /** Each placeholder as plain text. */
+    text: Record<string, string>;
+    /** What a placeholder writes when it is the entire value, where that is more than quoted text. */
+    whole: Record<string, string>;
+}
+
 /**
- * Fill a scene template. Values are written as valid YAML whatever they contain.
- * A placeholder this function does not know resolves to nothing, and a list
- * placeholder with no values leaves no blank line behind.
+ * Fill one YAML value. What a placeholder may write depends on where it sits:
+ * text inside quotes is escaped for those quotes, a list element is quoted on
+ * its own, and a plain value is quoted as a whole once its text is known.
+ */
+function fillValue(value: string, { text, whole }: PlaceholderValues): string {
+    if (!value.includes('{{')) return value;
+    const textOf = (_match: string, name: string): string => text[name] ?? '';
+    const quoted = /^(["'])(.*?)\1(\s+#.*)?$/.exec(value);
+    if (quoted) {
+        const [, quote, body, comment = ''] = quoted;
+        const escape = quote === '"'
+            ? (item: string) => JSON.stringify(item).slice(1, -1)
+            : (item: string) => item.replace(/'/g, "''");
+        return quote + body.replace(PLACEHOLDER, (match, name: string) => escape(textOf(match, name))) + quote + comment.replace(PLACEHOLDER, '');
+    }
+    const [, body, comment = ''] = /^(.*?)(\s+#.*)?$/.exec(value) ?? [];
+    const tail = comment.replace(PLACEHOLDER, '');
+    const only = /^{{([^{}\n]+)}}$/.exec(body)?.[1];
+    if (only !== undefined) return (whole[only] ?? yamlScalar(text[only] ?? '')) + tail;
+    if (body.startsWith('[')) {
+        return body.replace(/(["']?){{([^{}\n]+)}}\1/g, (_match, _quote, name: string) => JSON.stringify(text[name] ?? '')) + tail;
+    }
+    return yamlScalar(body.replace(PLACEHOLDER, textOf)) + tail;
+}
+
+/**
+ * Fill a scene template. Values are written as valid YAML whatever they contain
+ * and wherever the template puts them. A placeholder this function does not
+ * know resolves to nothing, and a list placeholder with no values leaves no
+ * blank line behind.
  */
 export function generateSceneContent(template: string, data: SceneCreationData): string {
     const characters = data.characterList?.length ? data.characterList : [data.character].filter(Boolean);
     const places = data.placeList?.length ? data.placeList : [data.place].filter(Boolean);
-    const values: Record<string, string> = {
-        Act: data.act.toString(),
-        When: yamlScalar(data.when),
-        Due: data.due ?? '',
-        SceneNumber: data.sceneNumber.toString(),
-        Subplot: inlineValues(data.subplots),
+    const values: PlaceholderValues = {
+        text: {
+            Act: data.act.toString(),
+            When: data.when,
+            Due: data.due ?? '',
+            SceneNumber: data.sceneNumber.toString(),
+            Subplot: data.subplots.join(', '),
+            Character: characters.join(', '),
+            Place: data.place,
+        },
+        whole: {
+            Act: data.act.toString(),
+            SceneNumber: data.sceneNumber.toString(),
+            Subplot: inlineValues(data.subplots),
+            Character: inlineValues(characters),
+        },
+    };
+    const lists: Record<string, string> = {
         SubplotList: listLines(data.subplots),
-        Character: inlineValues(characters),
         CharacterList: listLines(characters),
-        Place: yamlScalar(data.place),
         PlaceList: listLines(places),
     };
     return template
         .split('\n')
-        .filter(line => {
-            const onlyPlaceholder = /^\s*{{([^{}\n]+)}}\s*$/.exec(line);
-            return !onlyPlaceholder || !!values[onlyPlaceholder[1]];
+        .flatMap(line => {
+            const alone = /^\s*{{([^{}\n]+)}}\s*$/.exec(line)?.[1];
+            if (alone !== undefined) {
+                const filled = lists[alone] ?? values.text[alone];
+                return filled ? [filled] : [];
+            }
+            const valueStart = /^\s*-\s+/.exec(line)?.[0].length ?? templateValueStart(line);
+            if (valueStart === null) return [line.replace(PLACEHOLDER, (_match, name: string) => values.text[name] ?? '')];
+            return [line.slice(0, valueStart) + fillValue(line.slice(valueStart), values)];
         })
         .join('\n')
-        .replace(/{{([^{}\n]+)}}/g, (_match, name: string) => values[name] ?? '')
         .replace(/[ \t]+$/gm, '');
 }

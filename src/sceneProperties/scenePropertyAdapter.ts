@@ -7,7 +7,7 @@ import {
     type FieldEntryValue
 } from '../utils/yamlTemplateNormalize';
 import { splitTemplateFields, templateFieldKey } from '../utils/templateMerge';
-import { formatYamlField } from '../utils/frontmatterText';
+import { formatYamlField, yamlKey } from '../utils/frontmatterText';
 import type {
     ScenePropertyDefinition,
     ScenePropertyDefinitions,
@@ -119,7 +119,7 @@ export function withEntryValue(entry: AdvancedTemplateEntry, value: FieldEntryVa
 
 /** A row under a new name; its value and comment stay as written. */
 export function withEntryKey(entry: AdvancedTemplateEntry, key: string): AdvancedTemplateEntry {
-    return { ...entry, key, lines: key + entry.lines.slice(entry.key.length) };
+    return { ...entry, key, lines: yamlKey(key) + splitTemplateFields(entry.lines)[0].rest };
 }
 
 export function newAdvancedEntry(key: string, value: string): AdvancedTemplateEntry {
@@ -128,5 +128,7 @@ export function newAdvancedEntry(key: string, value: string): AdvancedTemplateEn
 
 /** Whether a name can be a YAML property the rest of the plugin will read back. */
 export function isValidPropertyName(key: string): boolean {
-    return templateFieldKey(`${key}:`) === key;
+    return !key.includes('{{')
+        && templateFieldKey(`${key}:`) === key
+        && templateFieldKey(`${yamlKey(key)}:`) === key;
 }

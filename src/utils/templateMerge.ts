@@ -2,31 +2,55 @@
  * Canonical template merge helper used by getTemplateParts()/getMergedTemplate().
  */
 
+/** A property name: double quoted, single quoted, or plain. */
+const FIELD_START = /^(?:"((?:[^"\\]|\\.)*)"|'((?:[^']|'')*)'|([^\s#:{}[\]"'-][^:#]*?))[ \t]*:(?:\s|$)/;
+
+function readFieldStart(line: string): { key: string; keyLength: number; matched: string } | null {
+    const match = FIELD_START.exec(line);
+    if (!match) return null;
+    const [matched, double, single, plain] = match;
+    if (double !== undefined) return { key: double.replace(/\\(.)/g, '$1'), keyLength: double.length + 2, matched };
+    if (single !== undefined) return { key: single.replace(/''/g, "'"), keyLength: single.length + 2, matched };
+    return { key: plain, keyLength: plain.length, matched };
+}
+
 /**
  * The field a template line starts, or null for a continuation line, a comment
  * or a placeholder. Every template reader goes through this, so a key the
  * editor accepts can never be invisible to the code that resolves it.
  */
 export function templateFieldKey(line: string): string | null {
-    const match = /^([^\s#:{}[\]"'-][^:#]*?)[ \t]*:(?:\s|$)/.exec(line);
-    return match ? match[1] : null;
+    return readFieldStart(line)?.key ?? null;
+}
+
+/** Where the value starts on a line that begins a field, or null for any other line. */
+export function templateValueStart(line: string): number | null {
+    const start = readFieldStart(line);
+    if (!start) return null;
+    const afterColon = start.matched.trimEnd().length;
+    return afterColon + (/^[ \t]*/.exec(line.slice(afterColon))?.[0].length ?? 0);
 }
 
 export interface TemplateField {
     key: string;
     /** The field's lines, as written. */
     lines: string;
+    /** The same lines without the name, from the colon on. Lets a caller respell the name. */
+    rest: string;
 }
 
 /** A template as its fields, each with its continuation lines. */
 export function splitTemplateFields(template: string): TemplateField[] {
-    const fields: Array<{ key: string; lines: string[] }> = [];
+    const fields: Array<{ key: string; keyLength: number; lines: string[] }> = [];
     for (const line of (template || '').split('\n')) {
-        const key = templateFieldKey(line);
-        if (key !== null) fields.push({ key, lines: [line] });
+        const start = readFieldStart(line);
+        if (start) fields.push({ key: start.key, keyLength: start.keyLength, lines: [line] });
         else fields[fields.length - 1]?.lines.push(line);
     }
-    return fields.map(field => ({ key: field.key, lines: field.lines.join('\n').trimEnd() }));
+    return fields.map(({ key, keyLength, lines }) => {
+        const text = lines.join('\n').trimEnd();
+        return { key, lines: text, rest: text.slice(keyLength) };
+    });
 }
 
 /** The template without the named fields and their continuation lines. */

@@ -1,3 +1,5 @@
+import { parse } from 'yaml';
+
 /**
  * Mock Obsidian API for unit testing
  * 
@@ -45,41 +47,9 @@ export function normalizePath(path: string): string {
   return path.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
 }
 
+/** The parser Obsidian itself uses. A lenient stand-in here hides real YAML bugs. */
 export function parseYaml(yaml: string): unknown {
-  // Minimal YAML parsing for tests - handles "Key: value" and simple lists.
-  const result: Record<string, unknown> = {};
-  const lines = yaml.split(/\r?\n/);
-  let currentListKey: string | null = null;
-  for (const line of lines) {
-    const listMatch = line.match(/^\s*-\s*(.*)$/);
-    if (listMatch && currentListKey) {
-      const current = result[currentListKey];
-      if (Array.isArray(current)) {
-        current.push(listMatch[1]);
-      } else {
-        result[currentListKey] = [listMatch[1]];
-      }
-      continue;
-    }
-
-    const match = line.match(/^([A-Za-z0-9 _'-]+):\s*(.*)$/);
-    if (match) {
-      const [, key, value] = match;
-      const trimmedKey = key.trim();
-      const trimmedValue = value.trim();
-      if (trimmedValue === '') {
-        result[trimmedKey] = '';
-      } else if (/^(true|false)$/i.test(trimmedValue)) {
-        result[trimmedKey] = /^true$/i.test(trimmedValue);
-      } else if (/^-?\d+(?:\.\d+)?$/.test(trimmedValue)) {
-        result[trimmedKey] = Number(trimmedValue);
-      } else {
-        result[trimmedKey] = trimmedValue;
-      }
-      currentListKey = trimmedKey;
-    }
-  }
-  return result;
+  return parse(yaml);
 }
 
 export function stringifyYaml(obj: unknown): string {

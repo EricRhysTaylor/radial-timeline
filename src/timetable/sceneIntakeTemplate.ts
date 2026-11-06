@@ -14,7 +14,7 @@ import { authorKeyFromMappings, canonicalizeFrontmatterKey, findMissingTemplateK
 import { formatLocalDateKey } from '../utils/date';
 import { generateSceneContent } from '../utils/sceneGenerator';
 import { generateSceneId } from '../utils/sceneIds';
-import { applyFrontmatterEdits, frontmatterValues, insertFieldEdits, isBlankFrontmatterValue, readFrontmatterText, removeFieldEdit, replaceValueEdit, yamlScalar, type FrontmatterField, type FrontmatterText, type TextEdit } from '../utils/frontmatterText';
+import { applyFrontmatterEdits, frontmatterValues, insertFieldEdits, isBlankFrontmatterValue, readFrontmatterText, removeFieldEdit, replaceValueEdit, yamlKey, type FrontmatterField, type FrontmatterText, type TextEdit } from '../utils/frontmatterText';
 import { reorderFrontmatterContent } from '../utils/yamlManager';
 import { buildScenePropertyDefinitions } from '../sceneProperties/scenePropertyAdapter';
 import { resolveSceneExpectedKeys, resolveScenePropertyPolicy, sceneDynamicKeys } from '../sceneProperties/scenePropertyPolicy';
@@ -87,7 +87,7 @@ export function addSceneIntakeTemplate(content: string, settings: RadialTimeline
         .filter(field => missing.has(field.key) && field.key.toLowerCase() !== 'id')
         .map(field => {
             const author = authorKeyFromMappings(field.key, mappings);
-            return { key: field.key, lines: yamlScalar(author) + (context.blank ? ':' : field.lines.slice(field.key.length)) };
+            return { key: field.key, lines: yamlKey(author) + (context.blank ? ':' : field.rest) };
         });
     if (!idField) additions.unshift({ key: 'ID', lines: `ID: ${generateSceneId()}` });
 
@@ -112,7 +112,7 @@ export function promoteSceneContent(content: string, settings: RadialTimelineSet
 
     const edits: TextEdit[] = [];
     if (!classField) {
-        edits.push({ start: 0, end: 0, text: `${authorKeyFromMappings('Class', mappings)}: Scene${text.newline}` });
+        edits.push({ start: 0, end: 0, text: `${yamlKey(authorKeyFromMappings('Class', mappings))}: Scene${text.newline}` });
     } else {
         if (!blankClass) {
             const value = Array.isArray(classField.value) && classField.value.length === 1 ? classField.value[0] as unknown : classField.value;

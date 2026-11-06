@@ -1862,10 +1862,8 @@ export class BookDesignerModal extends Modal {
             actList.push(sceneNum);
             actSceneNumbers.set(act, actList);
 
-            // Process characters: inline YAML (string for 1, array for >1)
+            // The generator writes the character list as valid YAML.
             const characterList = this.character.split('\n').map(c => c.trim()).filter(c => c.length > 0);
-            const yamlEscapeDoubleQuoted = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-            const yamlInlineArray = (values: string[]) => `[${values.map(v => `"${yamlEscapeDoubleQuoted(v)}"`).join(', ')}]`;
             // Place list fallback
             const placeListRaw = targetPath ? [targetPath] : [];
             const placeList = placeListRaw.length > 0 ? placeListRaw : ['Unknown'];

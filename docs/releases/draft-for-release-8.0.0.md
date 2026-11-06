@@ -62,7 +62,7 @@ See [Character lanes](https://github.com/EricRhysTaylor/radial-timeline/wiki/Nar
 
 ### Writing Session
 
-- **A formatting key on every note.** The **✱** at the top right of a note lists Obsidian's formatting, with each one's hotkey and what to type. Select some words and click: bold, italic, highlights in color, headings, lists, footnotes, tables and all thirteen callouts go in around your selection. It opens when you hover it and leaves with the pointer, so nothing stays on the page.
+- **A formatting key on every note.** The signature icon at the center of a note's title bar lists Obsidian's formatting, with each one's hotkey and what to type. Select some words and click: bold, italic, highlights in color, headings, lists, footnotes, tables and all thirteen callouts go in around your selection. It opens when you hover it and leaves with the pointer, so nothing stays on the page.
 - **Desk Lamps help.** A **?** beside Desk Lamps in the session panel explains that lamps share live sessions with the friends you choose, at any sharing level, Private included. The line under the checkboxes says what ticked friends see.
 - **Give each scene its share of a session.** Saving a session can split its minutes and words across the scenes you worked on, and add that time to each scene's **Total Time**. **Total Time** is now a core scene property, so the audit lists it on your existing scenes and **Insert missing fields** adds it.
 

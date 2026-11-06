@@ -5,11 +5,12 @@
  *
  * The formatting key
  * ------------------
- * A ✱ on each note's header. It opens the same panel as the timeline's and the
- * Timetable's keys, listing Obsidian's formatting with each one's hotkey and
- * what to type. Clicking a row runs Obsidian's own command on the note, around
- * the selected text. Nothing stays on the page: it opens when asked and leaves
- * with the pointer, so it never competes with Editorialist's review toolbar.
+ * A signature icon at the center of each note's title bar. It opens a key
+ * panel listing Obsidian's formatting with each one's hotkey and what to type.
+ * Clicking a row runs Obsidian's own command on the note, around the selected
+ * text. Nothing stays on the page: it opens when asked and leaves with the
+ * pointer, so it never competes with Editorialist's review toolbar. The panel
+ * is wide and short, so it hangs from the center without covering the writing.
  */
 
 import { Component, MarkdownView, Platform, setIcon, type Editor } from 'obsidian';
@@ -17,7 +18,7 @@ import type RadialTimelinePlugin from '../../main';
 import { t } from '../../i18n';
 import { setAccessibleLabel, setTooltip } from '../../utils/domTooltip';
 import { commandHotkey, executeCommandById, hasCommand } from '../../utils/obsidianInternals';
-import { placeKeyPanel, renderLegendSurface, wireLegendTrigger } from './LegendPanel';
+import { renderLegendSurface, wireLegendTrigger } from './LegendPanel';
 import {
     calloutEdit,
     CALLOUT_TYPES,
@@ -33,20 +34,21 @@ import {
 } from './formattingKeyModel';
 
 const FORMATS = new Map([...TEXT_FORMATS, ...LINE_FORMATS, ...INSERT_FORMATS].map(format => [format.id, format]));
+const PANEL_WIDTH = 780;
+const PANEL_MARGIN = 8;
 
 class FormattingKey extends Component {
     private button!: HTMLElement;
     private panel!: HTMLElement;
 
-    constructor(private readonly plugin: RadialTimelinePlugin, readonly view: MarkdownView) {
+    constructor(private readonly plugin: RadialTimelinePlugin, readonly view: MarkdownView, private readonly header: HTMLElement) {
         super();
     }
 
     onload(): void {
-        // The panel names the key; a title here would show as a second tooltip over it.
-        const button = this.view.addAction('asterisk', '', () => undefined);
-        button.addClass('ert-format-key__trigger');
-        button.setAttribute('aria-expanded', 'false');
+        // No hover tooltip: the panel names the key, and a tooltip would sit over it.
+        const button = this.header.createEl('button', { cls: 'ert-format-key__trigger clickable-icon', attr: { type: 'button', 'aria-expanded': 'false' } });
+        setIcon(button, 'signature');
         setAccessibleLabel(button, t('ui.formatKey.title'));
         const panel = button.doc.body.createDiv({ cls: 'ert-timeline-legend ert-timeline-legend--compact ert-timetable-key ert-format-key' });
         this.button = button;
@@ -78,29 +80,50 @@ class FormattingKey extends Component {
         });
         if (reading) surface.createDiv({ cls: 'ert-format-key__note', text: t('ui.formatKey.readingNote') });
 
-        const text = this.section(surface, t('ui.formatKey.selectedText'));
+        const columns = surface.createDiv({ cls: 'ert-format-key__columns' });
+        const first = columns.createDiv();
+        const second = columns.createDiv();
+        const third = columns.createDiv();
+
+        const text = this.section(first, t('ui.formatKey.selectedText'));
         for (const format of TEXT_FORMATS) {
             this.formatRow(text, format);
             if (format.id === 'highlight') this.highlightColors(text);
         }
 
-        const lines = this.section(surface, t('ui.formatKey.wholeLine'));
+        const lines = this.section(second, t('ui.formatKey.wholeLine'));
         this.headings(lines);
         for (const format of LINE_FORMATS) this.formatRow(lines, format);
 
-        const insert = this.section(surface, t('ui.formatKey.insert'));
+        const insert = this.section(second, t('ui.formatKey.insert'));
         for (const format of INSERT_FORMATS) this.formatRow(insert, format);
 
-        const callouts = this.section(surface, t('ui.formatKey.callouts'));
+        const callouts = this.section(third, t('ui.formatKey.callouts'));
         this.calloutChips(callouts);
-        surface.createDiv({ cls: 'ert-format-key__note', text: t('ui.formatKey.exportNote') });
+        third.createDiv({ cls: 'ert-format-key__note', text: t('ui.formatKey.exportNote') });
 
         for (const control of Array.from(this.panel.querySelectorAll<HTMLButtonElement>('button'))) control.disabled = reading;
-        placeKeyPanel(this.button, this.panel);
+        this.place();
     }
 
-    private section(surface: HTMLElement, title: string): HTMLElement {
-        const section = surface.createEl('section', { cls: 'ert-timeline-legend__section' });
+    /** Hang the panel centered under the button, inside the note. */
+    private place(): void {
+        const button = this.button.getBoundingClientRect();
+        const note = this.view.containerEl.getBoundingClientRect();
+        const width = Math.min(PANEL_WIDTH, note.width - PANEL_MARGIN * 2);
+        const centered = button.left + button.width / 2 - width / 2;
+        const left = Math.max(note.left + PANEL_MARGIN, Math.min(centered, note.right - width - PANEL_MARGIN));
+        const top = button.bottom + 6;
+        this.panel.setCssProps({
+            '--ert-key-top': `${top}px`,
+            '--ert-key-left': `${left}px`,
+            '--ert-key-max-height': `${Math.max(160, this.button.win.innerHeight - top - 12)}px`,
+            '--ert-format-key-width': `${width}px`,
+        });
+    }
+
+    private section(parent: HTMLElement, title: string): HTMLElement {
+        const section = parent.createEl('section', { cls: 'ert-timeline-legend__section' });
         section.createDiv({ cls: 'ert-timeline-legend__section-title', text: title });
         return section;
     }
@@ -127,7 +150,7 @@ class FormattingKey extends Component {
         const levels = HEADING_LEVELS.filter(level => hasCommand(this.plugin.app, headingCommand(level)));
         if (!levels.length) return;
         const heading = t('ui.formatKey.heading');
-        const list = this.choiceRow(parent, 'heading', heading);
+        const list = this.choiceRow(parent, 'heading', '');
         for (const level of levels) {
             const choice = list.createEl('button', { cls: 'ert-format-key__level clickable-icon', text: `H${level}`, attr: { type: 'button', 'data-command': headingCommand(level) } });
             setAccessibleLabel(choice, `${heading} ${level}`);
@@ -202,11 +225,13 @@ export function registerFormattingKey(plugin: RadialTimelinePlugin): void {
         plugin.app.workspace.iterateAllLeaves(leaf => {
             const view = leaf.view;
             if (!(view instanceof MarkdownView)) return;
+            const header = view.containerEl.querySelector<HTMLElement>('.view-header');
+            if (!header) return;
             open.add(view);
             const existing = keys.get(view);
             if (existing?.isMounted()) return;
             if (existing) plugin.removeChild(existing);
-            keys.set(view, plugin.addChild(new FormattingKey(plugin, view)));
+            keys.set(view, plugin.addChild(new FormattingKey(plugin, view, header)));
         });
         for (const [view, key] of keys) {
             if (open.has(view)) continue;

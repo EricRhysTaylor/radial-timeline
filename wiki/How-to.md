@@ -100,9 +100,9 @@ Use it to keep subplot names consistent after reorganizing your story.
 
 ## Format Your Text
 
-Every note has a **✱** at the top right, beside Obsidian's own icons. It lists Obsidian's formatting, with each one's hotkey and what to type, and every row can be clicked.
+Every note has a signature icon at the center of its title bar. It lists Obsidian's formatting, with each one's hotkey and what to type, and every row can be clicked.
 
-Select some words, or put the cursor where you want it, then hover the **✱** and click a row. The key stays open while the pointer is on it, so you can apply several in a row. It closes when the pointer leaves.
+Select some words, or put the cursor where you want it, then hover the icon and click a row. The key stays open while the pointer is on it, so you can apply several in a row. It closes when the pointer leaves.
 
 *   **Selected text** wraps the words you selected: bold, italic, strikethrough, highlight, comment and links. **Clear formatting** takes them off again. Highlights come in six colors with Obsidian 1.14 or later.
 *   **Whole line** applies to the line the cursor is on: headings, bullet and numbered lists, checkboxes and quotes.

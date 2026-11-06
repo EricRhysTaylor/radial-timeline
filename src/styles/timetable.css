@@ -1269,7 +1269,28 @@
   overflow-y: auto;
 }
 
-/* The formatting key on a note's header: the same panel, with rows you can click. */
+/* The formatting key, at the center of a note's title bar. Its background keeps a long title from running through it. */
+.ert-format-key__trigger.clickable-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+}
+.ert-format-key__trigger.clickable-icon:hover,
+.ert-format-key__trigger.clickable-icon[aria-expanded="true"] {
+  color: var(--interactive-accent);
+}
+/* Wide and short, so it hangs from the center without covering the writing. Columns stack in a narrow note. */
+.ert-timeline-legend.ert-format-key {
+  width: var(--ert-format-key-width, 360px);
+}
+.ert-format-key__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0 var(--size-4-4);
+}
 .ert-format-key__row.clickable-icon {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto 76px;

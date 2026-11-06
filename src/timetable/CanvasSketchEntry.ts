@@ -5,7 +5,7 @@ import { getActiveBook, getBookIdForPath } from '../utils/books';
 import { markTimetableRows } from './timetableRegistry';
 import { isPromotable } from '../services/PromoteToSceneService';
 import { runPromotion } from '../services/PromoteToSceneEntry';
-import { CanvasSketchModal, type OpenCanvas } from './CanvasSketchModal';
+import { CanvasConvertModal, type OpenCanvas } from './CanvasConvertModal';
 import { registerCanvasCardPresentation } from './CanvasCardPresentation';
 import { SubplotCanvasModal } from './SubplotCanvasModal';
 import { canvasTextCards } from './canvasSketches';
@@ -34,7 +34,7 @@ function openCanvasSketches(plugin: RadialTimelinePlugin, canvas = activeCanvas(
     const active = getActiveBook(plugin.settings);
     const selected = books.find(book => book.id === active?.id) ?? books[0];
     if (!selected) { new Notice(t('ui.canvasSketch.noBook')); return; }
-    new CanvasSketchModal(plugin.app, plugin, canvas, books, selected, () =>
+    new CanvasConvertModal(plugin.app, plugin, canvas, books, selected, () =>
         plugin.app.workspace.getLeavesOfType('canvas').some(leaf => (leaf.view as unknown as { canvas?: OpenCanvas }).canvas === canvas),
     ).open();
 }

@@ -2594,6 +2594,9 @@
 .ert-canvas-sketch-ring { display: flex; align-items: center; justify-content: center; flex: none; width: 14px; }
 .ert-canvas-sketch-swatch { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--ert-canvas-sketch-swatch); }
 .ert-canvas-sketch-ring-option { display: flex; align-items: center; gap: var(--size-4-2); }
+/* A long map makes a long dialog: its buttons stay in reach. */
+.ert-ui.ert-scope--modal.ert-canvas-convert .ert-modal-actions { position: sticky; bottom: 0; z-index: 1; padding-block: var(--size-4-3); background: var(--background-primary); }
+.ert-canvas-sketch-act { color: var(--text-muted); font-size: var(--font-ui-small); font-weight: var(--font-medium); }
 .ert-canvas-sketch-title {
     overflow-wrap: anywhere;
     font-weight: var(--font-medium);

@@ -34,7 +34,7 @@ These are the main command-palette entries.
 23. **[Timetable restore a Radial Timetable view](#timetable-restore-a-radial-timetable-view)**
 24. **[Scene promote note](#scene-promote-note)**
 25. **[Canvas create subplot map](#canvas-create-subplot-map)**
-26. **[Canvas convert cards to sketches](#canvas-convert-cards-to-sketches)**
+26. **[Canvas convert cards to scenes or sketches](#canvas-convert-cards-to-scenes-or-sketches)**
 27. **[Scene time assignment](Scene-Time)** ← standalone guide
 
 ## Conditional Visibility
@@ -307,6 +307,6 @@ Related: [Settings → Community](Settings-Community).
 
 ---
 
-## Canvas convert cards to sketches
+## Canvas convert cards to scenes or sketches
 
-**Radial timeline: Canvas convert cards to sketches** turns text cards on the open Canvas into sketch notes in a book. See [Bring ideas from Canvas](Timetable#bring-ideas-from-canvas).
+**Radial timeline: Canvas convert cards to scenes or sketches** turns text cards on the open Canvas into scenes or sketches in a book. See [Bring ideas from Canvas](Timetable#bring-ideas-from-canvas).

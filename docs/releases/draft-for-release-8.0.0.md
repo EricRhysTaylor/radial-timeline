@@ -10,9 +10,12 @@ Your book on a Canvas, and a Timetable you can plan in: subplot maps that follow
 
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/a70baad8ebb2b13cf8c28878d8d57e8494fc97ab/wiki/images/canvas-subplot-map.webp" alt="Wickham's Story hovered on the wheel, and its four cards lit across the subplot lanes of the Canvas map beside it, with the story navigation bar reading Scene 16 of 61" width="800">
 
-- **Turn Canvas ideas into placed sketches.** **Canvas convert cards to sketches** now asks where they go: **Place after scene**, or **End of act or unassigned**, with **Move up** and **Move down** to set their order.
-- **Color cards to assign subplots.** When you turn cards into sketches, each card color gets a row: type a new subplot name, or pick one from the book's subplots, shown in their timeline colors. Cards of that color join that subplot, and cards you add to the Canvas later start on the same one.
-- **From a Canvas to the timeline in order.** Sketches promoted together keep the order you gave them: each takes a scene number at the end of its act, so a whole mind map can become a timeline in two steps.
+- **From a mind map to a timeline in one step.** **Turn Canvas cards into scenes or sketches** makes numbered scenes straight from a Canvas: each card joins its act and its subplot, and the timeline opens. The cards you leave out stay on the map.
+- **Color cards by subplot.** Select idea cards and click a swatch on the Canvas bar: your ring colors from Settings, named as they are there. In the dialog, each color gets a row to name a new subplot or pick one of the book's, and a dot shows the color its ring will have. Cards you add to the Canvas later start on the same subplot.
+- **Act cards set the acts.** A card named *Act 2* starts that act, and the cards after it join. With no Act cards, scenes spread evenly across the acts, and the dialog shows where each act starts.
+- **A key for the map.** The **✱** on the Canvas bar sums up the workflow and the map's marks.
+- **Turn Canvas ideas into placed sketches.** Choose **Sketches** for loose ideas: **Place after scene**, or **End of act or unassigned**, with **Move up** and **Move down** to set their order.
+- **Sketches promoted together keep their order.** Each takes a scene number at the end of its act.
 
 See [Canvas story maps](https://github.com/EricRhysTaylor/radial-timeline/wiki/Timetable#canvas-story-maps).
 
@@ -31,7 +34,7 @@ See [Canvas story maps](https://github.com/EricRhysTaylor/radial-timeline/wiki/T
 - **Promote into place.** A sketch placed after a scene is promoted into that spot with a number that fits between its neighbors, and **Open scene** takes you to it.
 - **Due coloring keeps up with the calendar.** Color a Timetable by **Due** or a date range and every group colors as scenes reach it: a scene that turns Overdue or due Today takes that group's color on the wheel and in the key, and each group keeps its own color. **Edit key** lists every group, empty ones included. Coloring by day, month, or year shows the eight busiest periods, or the ones you pick. Views you colored by date in 7.7.0 color every group again; choose groups in **Edit key** to narrow them.
 - **Promote lists each scene once, in reading order.** When you promote a sketch, its **Position** menu offers every scene of the book once, from the first scene to the last.
-- **Commands are grouped by what they act on.** Each name starts with what it works on, so related commands sit together in the Command Palette: **Timeline open**, **Inquiry open**, **Note create**, **Manuscript import**, **Timetable open**, **Timetable reset columns to recommended**, **Timetable restore a Radial Timetable view**, **Scene promote note**, **Canvas create subplot map**, **Canvas convert cards to sketches**, and **Community timeline share export**. Hotkeys you set keep working.
+- **Commands are grouped by what they act on.** Each name starts with what it works on, so related commands sit together in the Command Palette: **Timeline open**, **Inquiry open**, **Note create**, **Manuscript import**, **Timetable open**, **Timetable reset columns to recommended**, **Timetable restore a Radial Timetable view**, **Scene promote note**, **Canvas create subplot map**, **Canvas convert cards to scenes or sketches**, and **Community timeline share export**. Hotkeys you set keep working.
 
 See [Timetable](https://github.com/EricRhysTaylor/radial-timeline/wiki/Timetable).
 

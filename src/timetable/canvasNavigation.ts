@@ -6,6 +6,12 @@ export function storyActHeadingLabel(text: string): string | null {
 
 export function isStoryActHeading(text: string): boolean { return storyActHeadingLabel(text) !== null; }
 
+/** The act an Act card starts. A No act heading starts none. */
+export function actCardNumber(text: string): number | null {
+    const match = /^act\s+(\d+)/i.exec(storyActHeadingLabel(text) ?? ''); // SAFE: a card that is no heading has no label to match
+    return match ? Number(match[1]) : null;
+}
+
 /** Bounds of selected Canvas cards with usable geometry. */
 export function selectedCanvasBounds(cards: Array<{ x?: number; y?: number; width?: number; height?: number }>): { minX: number; minY: number; maxX: number; maxY: number } | null {
     const boxes = cards.filter(card => [card.x, card.y, card.width, card.height].every(value => typeof value === 'number' && Number.isFinite(value)) && card.width! > 0 && card.height! > 0);

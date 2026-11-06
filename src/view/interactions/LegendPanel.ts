@@ -49,6 +49,20 @@ export interface LegendSection {
     rows: LegendRow[];
 }
 
+/** Hang a key panel just below its button, inside the window. */
+export function placeKeyPanel(button: HTMLElement, panel: HTMLElement): void {
+    const box = button.getBoundingClientRect();
+    const win = button.win;
+    const width = Math.min(360, win.innerWidth - 32);
+    const left = Math.max(8, Math.min(box.left, win.innerWidth - width - 8));
+    const top = box.bottom + 6;
+    panel.setCssProps({
+        '--ert-key-top': `${top}px`,
+        '--ert-key-left': `${left}px`,
+        '--ert-key-max-height': `${Math.max(160, win.innerHeight - top - 12)}px`,
+    });
+}
+
 /** Fill a key panel: a header (title and an optional badge), then the sections. */
 export function renderLegendSurface(panel: HTMLElement, content: { title: string; badge?: string; sections: LegendSection[] }): void {
     panel.empty();

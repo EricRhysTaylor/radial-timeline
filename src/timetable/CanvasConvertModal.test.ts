@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { TFile, type App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { BookProfile } from '../types';
-import { CanvasSketchModal, type OpenCanvas } from './CanvasSketchModal';
+import { CanvasConvertModal, type OpenCanvas } from './CanvasConvertModal';
 import type { StoryCanvasData } from './canvasSketches';
 import type { TimetableRow } from './timetableModel';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
@@ -18,15 +18,82 @@ function setup(changeDuringCreate = false, selectedIds: string[] = ['1']) {
         if (changeDuringCreate) data = { ...data, extra: 'edited by author' };
     });
     const app = { workspace: { getLeavesOfType: () => [] }, metadataCache: { getFileCache: () => ({}) }, vault: { getMarkdownFiles: () => [], getFiles: () => [], getFolderByPath: () => ({}), getAbstractFileByPath: (path: string) => path === 'Book/A scene.md' ? {} : null, create } } as unknown as App;
-    const plugin = { settings: {}, refreshTimelineIfNeeded: vi.fn() } as unknown as RadialTimelinePlugin;
+    const activateView = vi.fn(async () => {});
+    const plugin = { settings: {}, refreshTimelineIfNeeded: vi.fn(), getSceneData: vi.fn(async () => []), getTimelineService: () => ({ activateView }) } as unknown as RadialTimelinePlugin;
     const setData = vi.fn((next: StoryCanvasData) => { data = next; });
     const requestSave = vi.fn();
     const canvas: OpenCanvas = { getData: () => data, setData, requestSave, selection: new Set(selectedIds.map(id => ({ getData: () => ({ id, type: 'text' }) }))) };
     const book = { id: 'book', title: 'Book', sourceFolder: 'Book' } as BookProfile;
-    const modal = new CanvasSketchModal(app, plugin, canvas, [book], book, () => true);
+    const modal = new CanvasConvertModal(app, plugin, canvas, [book], book, () => true);
     (Reflect.get(modal, 'selected') as Set<string>).add('1');
-    return { modal, saved, setData, requestSave, app, plugin, getData: () => data };
+    Reflect.set(modal, 'mode', 'sketches');
+    return { modal, saved, setData, requestSave, app, plugin, activateView, getData: () => data };
 }
+
+function scenes(selected: string[] = ['1', '2']) {
+    const test = setup(false, selected);
+    for (const id of selected) (Reflect.get(test.modal, 'selected') as Set<string>).add(id);
+    test.plugin.settings = { ...DEFAULT_SETTINGS, books: [{ id: 'book', title: 'Book', sourceFolder: 'Book' }] };
+    Reflect.set(test.modal, 'mode', 'scenes');
+    return test;
+}
+
+describe('Canvas scene conversion', () => {
+    it('writes each card as a finished, numbered scene in its act and opens the timeline', async () => {
+        const test = scenes();
+        (Reflect.get(test.modal, 'sceneActs') as Map<string, number>).set('1', 1).set('2', 2);
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        const first = test.saved.get('Book/1 A scene.md');
+        expect(first).toContain('Class: Scene');
+        expect(first).toContain('Act: 1');
+        expect(first).toMatch(/^ID: /m);
+        expect(first).toContain('A scene\n\nSome ideas');
+        expect(first).not.toContain('Sketch order');
+        expect(test.saved.get('Book/2 Other idea.md')).toContain('Act: 2');
+        expect(test.getData().nodes?.map(node => node.file)).toEqual(['Book/1 A scene.md', 'Book/2 Other idea.md']);
+        expect(test.activateView).toHaveBeenCalledOnce();
+    });
+
+    it('puts a colored card on the subplot named for its color, in the spelling the book uses', async () => {
+        const test = scenes();
+        (Reflect.get(test.modal, 'cards') as Array<{ id: string; color?: string }>)[0].color = '#AA00FF';
+        test.getData().nodes![0].color = '#AA00FF';
+        Reflect.set(test.modal, 'rings', [{ name: 'The Servant', slot: 2 }]);
+        (Reflect.get(test.modal, 'subplotByColor') as Map<string, string>).set('#aa00ff', ' the servant ');
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(test.saved.get('Book/1 A scene.md')).toContain('Subplot: The Servant');
+    });
+
+    it('leaves a card the author did not select on the Canvas as it was', async () => {
+        const test = scenes(['1']);
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(test.saved.size).toBe(1);
+        expect(test.getData().nodes?.[1]).toMatchObject({ id: '2', type: 'text', text: 'Other idea' });
+    });
+
+    it('creates nothing when an Act card names an act the book does not have', async () => {
+        const test = scenes();
+        (Reflect.get(test.modal, 'sceneActs') as Map<string, number>).set('2', 9);
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(test.saved.size).toBe(0);
+        expect(test.setData).not.toHaveBeenCalled();
+        error.mockRestore();
+    });
+
+    it('moves a card across an act break before it changes the order', () => {
+        const test = scenes();
+        const cards = Reflect.get(test.modal, 'cards') as Array<{ id: string }>;
+        const acts = Reflect.get(test.modal, 'sceneActs') as Map<string, number>;
+        acts.set('1', 1).set('2', 2);
+        const move = Reflect.get(test.modal, 'moveCard') as (index: number, delta: number) => void;
+        move.call(test.modal, 1, -1);
+        expect(acts.get('2')).toBe(1);
+        expect(cards.map(card => card.id)).toEqual(['1', '2']);
+        move.call(test.modal, 1, -1);
+        expect(cards.map(card => card.id)).toEqual(['2', '1']);
+    });
+});
 
 describe('Canvas sketch conversion', () => {
     it('preselects all selected text cards for review', () => {
@@ -75,33 +142,11 @@ describe('Canvas sketch conversion', () => {
         expect(test.saved.get('Book/Other idea.md')).toContain('Act: 2');
     });
 
-    it('puts each card on the subplot named for its color and leaves uncolored cards alone', async () => {
-        const test = setup(false, ['1', '2']);
-        (Reflect.get(test.modal, 'selected') as Set<string>).add('2');
-        (Reflect.get(test.modal, 'cards') as Array<{ id: string; color?: string }>)[0].color = '1';
-        test.getData().nodes![0].color = '1';
-        (Reflect.get(test.modal, 'subplotByColor') as Map<string, string>).set('1', '  The Servant ');
-        await Reflect.get(test.modal, 'convert').call(test.modal);
-        expect(test.saved.get('Book/A scene 2.md')).toContain('Subplot: The Servant');
-        expect(test.saved.get('Book/Other idea.md')).not.toContain('Subplot');
-        expect(test.getData().nodes?.[0]).toMatchObject({ type: 'file', color: '1' });
-    });
-
-    it('uses the ring name as the book spells it', async () => {
-        const test = setup();
-        (Reflect.get(test.modal, 'cards') as Array<{ id: string; color?: string }>)[0].color = '#aa00ff';
-        test.getData().nodes![0].color = '#AA00FF';
-        Reflect.set(test.modal, 'rings', [{ name: 'The Servant', slot: 2 }]);
-        (Reflect.get(test.modal, 'subplotByColor') as Map<string, string>).set('#aa00ff', 'the servant');
-        await Reflect.get(test.modal, 'convert').call(test.modal);
-        expect(test.saved.get('Book/A scene 2.md')).toContain('Subplot: The Servant');
-    });
-
-    it('leaves a card off every subplot when its color has no name', async () => {
+    it('keeps sketches off subplots whatever color their card has', async () => {
         const test = setup();
         (Reflect.get(test.modal, 'cards') as Array<{ id: string; color?: string }>)[0].color = '1';
         test.getData().nodes![0].color = '1';
-        (Reflect.get(test.modal, 'subplotByColor') as Map<string, string>).set('1', '   ');
+        (Reflect.get(test.modal, 'subplotByColor') as Map<string, string>).set('1', 'The Servant');
         await Reflect.get(test.modal, 'convert').call(test.modal);
         expect(test.saved.get('Book/A scene 2.md')).not.toContain('Subplot');
     });

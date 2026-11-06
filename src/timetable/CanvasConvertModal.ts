@@ -4,20 +4,24 @@ import type { BookProfile } from '../types';
 import { ErtModal } from '../ui/ErtModal';
 import { authorKeyFor } from './timetableFiles';
 import { getConfiguredActCount } from '../utils/acts';
-import { canvasTextCards, linkSketches, sketchTitle, type StoryCanvasData, type CanvasTextCard } from './canvasSketches';
+import { canvasTextCards, linkSketches, sketchTitle, type StoryCanvasData, type CanvasCard, type CanvasTextCard } from './canvasSketches';
 import { hasPortalReferences } from './canvasPortals';
 import { t, tCount } from '../i18n';
 import { getBookIdForPath } from '../utils/books';
 import { readSceneId } from '../utils/sceneIds';
 import { findFrontmatterKey } from '../utils/frontmatterKeys';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
-import { buildRingLayout, buildTableRow } from './timetableModel';
+import { buildRingLayout, buildTableRow, type TimetableRow } from './timetableModel';
 import { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor, type PlacementItem } from './sketchPlacement';
-import { canvasReadingOrder, planCanvasSketchAppend } from './canvasSketchOrdering';
-import { bookRingSlots } from './canvasBookCards';
+import { actsFromActCards, canvasReadingOrder, planCanvasSketchAppend, spreadAcrossActs } from './canvasSketchOrdering';
+import { actCardNumber } from './canvasNavigation';
+import { bookRingSlots, ringSlotsWith } from './canvasBookCards';
 import { cardColor, cardColorCounts, cardColorCss, subplotForColor } from './canvasCardSubplots';
 import { normalizeSubplotColorIndex, readSubplotColor } from '../renderer/utils/subplotColors';
 import { getMainPlotName } from '../utils/mainPlot';
+import { planActEndScenePrefixes } from '../services/SceneInsertService';
+import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
+import { addSceneIntakeTemplate } from './sceneIntakeTemplate';
 
 /** Minimal, runtime-checked surface of Obsidian's Canvas view. */
 export interface OpenCanvas {
@@ -29,6 +33,9 @@ export interface OpenCanvas {
 
 /** One of the book's rings, as a card color can be assigned to it. */
 interface RingChoice { name: string; slot: number }
+
+/** An existing sketch given a position during conversion, kept so a failure can restore it. */
+interface RankedSketch { file: TFile; key: string; rank: number; existed: boolean; value: unknown; act: number | null; anchor: string | null }
 
 function ringDot(parent: HTMLElement, slot: number): HTMLElement {
     const dot = parent.createSpan({ cls: 'ert-canvas-sketch-swatch' });
@@ -60,15 +67,21 @@ class RingSuggest extends AbstractInputSuggest<RingChoice> {
     }
 }
 
-export class CanvasSketchModal extends ErtModal {
+/** Turn selected Canvas cards into scenes, which go straight onto the timeline, or into sketches. */
+export class CanvasConvertModal extends ErtModal {
     private readonly cards: CanvasTextCard[];
     private readonly selected = new Set<string>();
     private book: BookProfile;
     private busy = false;
+    private mode: 'scenes' | 'sketches' = 'scenes';
+    /** A chosen act. Null means unassigned for sketches, and the Act cards or an even spread for scenes. */
     private act: number | null = null;
     private anchorPath: string | null = null;
     private rings: RingChoice[] = [];
+    private rows: TimetableRow[] = [];
     private readonly subplotByColor = new Map<string, string>();
+    private sceneActs = new Map<string, number>();
+    private readonly ringDots = new Map<string, HTMLElement>();
 
     constructor(app: App, private readonly plugin: RadialTimelinePlugin, private readonly canvas: OpenCanvas, private readonly books: BookProfile[], activeBook: BookProfile, private readonly canvasIsOpen: () => boolean) {
         super(app);
@@ -80,6 +93,24 @@ export class CanvasSketchModal extends ErtModal {
             const data = node.getData?.();
             if (data?.type === 'text' && data.id && this.cards.some(card => card.id === data.id)) this.selected.add(data.id);
         }
+        this.placeInActs();
+    }
+
+    private actCards(): CanvasCard[] {
+        return (this.canvas.getData().nodes ?? []).filter(node => node.type === 'text' && actCardNumber(node.text ?? '') !== null); // SAFE: canvas JSON may omit nodes; none = no Act cards
+    }
+
+    /** Each scene's act from the map's Act cards, or an even spread when it has none. */
+    private placeInActs(): void {
+        const actCards = this.actCards();
+        this.sceneActs = actCards.length
+            ? actsFromActCards(this.cards, actCards)
+            : spreadAcrossActs(this.cards.map(card => card.id), getConfiguredActCount(this.plugin.settings));
+        this.cards.sort((a, b) => this.sceneAct(a) - this.sceneAct(b));
+    }
+
+    private sceneAct(card: CanvasCard): number {
+        return this.act ?? this.sceneActs.get(card.id) ?? 1; // SAFE: every listed card is placed above; a card that joined the Canvas later starts the book
     }
 
     private bookItems(): PlacementItem[] {
@@ -108,7 +139,8 @@ export class CanvasSketchModal extends ErtModal {
         const slots = await bookRingSlots(this.plugin, book);
         if (book !== this.book) return;
         const items = this.bookItems();
-        const layout = buildRingLayout([...slots.keys()], slots, items.map(item => item.row));
+        this.rows = items.map(item => item.row);
+        const layout = buildRingLayout([...slots.keys()], slots, this.rows);
         this.rings = [...new Set([getMainPlotName(), ...layout.order])].map(name => ({ name, slot: layout.colorIndex.get(name) ?? 0 })); // SAFE: a book with no scenes has no layout yet, and Main Plot always takes the first slot
         const subplotsByPath = new Map(items.map(item => [item.row.path, item.row.subplots]));
         const linked = (this.canvas.getData().nodes ?? []).flatMap(node => { // SAFE: canvas JSON may omit nodes; none = no linked cards
@@ -124,16 +156,33 @@ export class CanvasSketchModal extends ErtModal {
         }
     }
 
-    /** The subplot a card joins through its color, in the book's own spelling when the ring already exists. */
+    /** A subplot name in the book's own spelling when that ring already exists. */
+    private ringName(typed: string): string {
+        return this.rings.find(ring => ring.name.toLowerCase() === typed.toLowerCase())?.name ?? typed;
+    }
+
+    /** The subplot a card joins through its color. */
     private subplotFor(card: CanvasTextCard): string | null {
         const color = cardColor(card);
         const typed = color ? this.subplotByColor.get(color)?.trim() : undefined;
-        if (!typed) return null;
-        return this.rings.find(ring => ring.name.toLowerCase() === typed.toLowerCase())?.name ?? typed;
+        return typed ? this.ringName(typed) : null;
+    }
+
+    /** Beside each name, the color its ring will have: ring order follows scene counts, so a new subplot's isn't known until it is named. */
+    private showRingColors(): void {
+        const additions = this.cards.filter(card => this.selected.has(card.id)).map(card => this.subplotFor(card) ?? getMainPlotName());
+        const slots = ringSlotsWith(this.rows, additions);
+        for (const [color, dot] of this.ringDots) {
+            dot.empty();
+            const typed = this.subplotByColor.get(color)?.trim();
+            const slot = typed ? slots.get(this.ringName(typed)) : undefined;
+            if (slot !== undefined) ringDot(dot, slot);
+        }
     }
 
     private renderColors(container: HTMLElement): void {
         container.empty();
+        this.ringDots.clear();
         const counts = cardColorCounts(this.cards.filter(card => this.selected.has(card.id)));
         if (!counts.size) return;
         container.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.canvasSketch.colorsHint', { mainPlot: getMainPlotName() }) });
@@ -144,21 +193,29 @@ export class CanvasSketchModal extends ErtModal {
             const input = row.createEl('input', { type: 'text', attr: { placeholder: t('ui.canvasSketch.subplotName') } });
             setAccessibleLabel(input, t('ui.canvasSketch.subplotName'));
             input.value = this.subplotByColor.get(color) ?? ''; // SAFE: a color with no subplot yet starts blank, ready to name
-            const ring = row.createDiv({ cls: 'ert-canvas-sketch-ring' });
-            const showRing = () => {
-                ring.empty();
-                const match = this.rings.find(item => item.name.toLowerCase() === input.value.trim().toLowerCase());
-                if (match) ringDot(ring, match.slot);
-            };
-            const remember = (name: string) => { this.subplotByColor.set(color, name); showRing(); };
+            this.ringDots.set(color, row.createDiv({ cls: 'ert-canvas-sketch-ring' }));
+            const remember = (name: string) => { this.subplotByColor.set(color, name); this.showRingColors(); };
             input.addEventListener('input', () => remember(input.value));
             new RingSuggest(this.app, input, () => this.rings, remember);
-            showRing();
         }
+        this.showRingColors();
+    }
+
+    /** Moving past an act break changes the act first; the next move changes the order. */
+    private moveCard(index: number, delta: number): void {
+        const card = this.cards[index];
+        const neighbour = this.cards[index + delta];
+        if (this.mode === 'scenes' && this.act === null && this.sceneAct(card) !== this.sceneAct(neighbour)) {
+            this.sceneActs.set(card.id, this.sceneAct(neighbour));
+            return;
+        }
+        this.cards.splice(index, 1);
+        this.cards.splice(index + delta, 0, card);
     }
 
     onOpen(): void {
         this.applyShell({ size: 'lg' });
+        this.modalEl.addClass('ert-canvas-convert');
         this.mountHeader({ badge: { text: t('ui.canvasSketch.badge') }, title: t('ui.canvasSketch.title'), subtitle: t('ui.canvasSketch.subtitle') });
         const destination = this.contentEl.createDiv({ cls: 'setting-item' });
         destination.createDiv({ cls: 'setting-item-name', text: t('ui.canvasSketch.book') });
@@ -170,15 +227,26 @@ export class CanvasSketchModal extends ErtModal {
             updateScenes();
             updateRings();
         });
+        const modeRow = this.contentEl.createDiv({ cls: 'setting-item' });
+        modeRow.createDiv({ cls: 'setting-item-name', text: t('ui.canvasSketch.createAs') });
+        const modeSelect = new DropdownComponent(modeRow.createDiv({ cls: 'setting-item-control' }));
+        modeSelect.addOption('scenes', t('ui.canvasSketch.modeScenes'));
+        modeSelect.addOption('sketches', t('ui.canvasSketch.modeSketches'));
         const actRow = this.contentEl.createDiv({ cls: 'setting-item' });
         actRow.createDiv({ cls: 'setting-item-name', text: t('ui.canvasSketch.act') });
         const actSelect = new DropdownComponent(actRow.createDiv({ cls: 'setting-item-control' }));
-        actSelect.addOption('', t('ui.canvasSketch.noAct'));
-        for (let act = 1; act <= getConfiguredActCount(this.plugin.settings); act++) actSelect.addOption(String(act), t('ui.canvasSketch.actNumber', { act }));
-        actSelect.setValue('').onChange(value => {
+        const fillActs = () => {
+            actSelect.selectEl.empty();
+            const auto = this.mode === 'sketches' ? t('ui.canvasSketch.noAct') : t(this.actCards().length ? 'ui.canvasSketch.followActCards' : 'ui.canvasSketch.spreadActs');
+            actSelect.addOption('', auto);
+            for (let act = 1; act <= getConfiguredActCount(this.plugin.settings); act++) actSelect.addOption(String(act), t('ui.canvasSketch.actNumber', { act }));
+            actSelect.setValue(this.act === null ? '' : String(this.act));
+        };
+        actSelect.onChange(value => {
             this.act = value ? Number(value) : null;
             this.anchorPath = null;
             updateScenes();
+            renderCards();
         });
         const anchorRow = this.contentEl.createDiv({ cls: 'setting-item' });
         anchorRow.createDiv({ cls: 'setting-item-name', text: t('ui.canvasSketch.afterScene') });
@@ -209,12 +277,20 @@ export class CanvasSketchModal extends ErtModal {
         const actions = this.mountActions();
         const cancel = actions.createEl('button', { text: t('ui.canvasSketch.cancel') });
         cancel.addEventListener('click', () => this.close());
-        const submit = actions.createEl('button', { text: t('ui.canvasSketch.create'), cls: 'ert-canvas-sketch-submit mod-cta' });
-        submit.disabled = this.selected.size === 0;
+        const submit = actions.createEl('button', { cls: 'ert-canvas-sketch-submit mod-cta' });
+        const updateSubmit = () => {
+            submit.disabled = this.selected.size === 0;
+            submit.setText(this.mode === 'scenes' ? t('ui.canvasSketch.createScenes', { scenes: tCount('scene', this.selected.size) }) : t('ui.canvasSketch.create'));
+        };
         const renderCards = () => {
             list.empty();
             if (!this.cards.length) list.createDiv({ text: t('ui.canvasSketch.empty') });
+            let shownAct: number | null = null;
             this.cards.forEach((card, index) => {
+                if (this.mode === 'scenes' && this.act === null && this.sceneAct(card) !== shownAct) {
+                    shownAct = this.sceneAct(card);
+                    list.createDiv({ cls: 'ert-canvas-sketch-act', text: t('ui.canvasSketch.actNumber', { act: shownAct }) });
+                }
                 const row = list.createDiv({ cls: 'ert-canvas-sketch-card' });
                 row.createSpan({ cls: 'ert-canvas-sketch-number', text: String(index + 1) });
                 const color = cardColor(card);
@@ -228,7 +304,7 @@ export class CanvasSketchModal extends ErtModal {
                 if (preview) details.createDiv({ cls: 'ert-canvas-sketch-preview', text: preview.slice(0, 160) });
                 check.addEventListener('change', () => {
                     if (check.checked) this.selected.add(card.id); else this.selected.delete(card.id);
-                    submit.disabled = this.selected.size === 0;
+                    updateSubmit();
                     this.renderColors(colors);
                 });
                 if (this.cards.length < 2) return;
@@ -240,14 +316,27 @@ export class CanvasSketchModal extends ErtModal {
                     setTooltip(button, hint);
                     button.disabled = index + delta < 0 || index + delta >= this.cards.length;
                     button.addEventListener('click', () => {
-                        this.cards.splice(index, 1);
-                        this.cards.splice(index + delta, 0, card);
+                        this.moveCard(index, delta);
                         renderCards();
                     });
                 }
             });
         };
-        renderCards();
+        const applyMode = () => {
+            anchorRow.toggle(this.mode === 'sketches');
+            colors.toggle(this.mode === 'scenes');
+            fillActs();
+            updateSubmit();
+            renderCards();
+        };
+        modeSelect.setValue(this.mode).onChange(value => {
+            this.mode = value === 'sketches' ? 'sketches' : 'scenes';
+            this.act = null;
+            this.anchorPath = null;
+            updateScenes();
+            applyMode();
+        });
+        applyMode();
         submit.addEventListener('click', () => {
             if (this.busy || !this.selected.size) return;
             this.busy = true;
@@ -255,6 +344,76 @@ export class CanvasSketchModal extends ErtModal {
             cancel.disabled = true;
             void this.convert().finally(() => { this.busy = false; this.close(); });
         });
+    }
+
+    private noteBody(frontmatter: Record<string, unknown>, card: CanvasTextCard): string {
+        return `---\n${stringifyYaml(frontmatter).trimEnd()}\n---\n\n${card.text}`;
+    }
+
+    private freePath(folder: string, name: string): string {
+        let path = `${folder}/${name}.md`;
+        for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${folder}/${name} ${n}.md`;
+        return path;
+    }
+
+    /** Each card becomes a finished, numbered scene at the end of its act, in one write. */
+    private async writeScenes(cards: CanvasTextCard[], folder: string, paths: Map<string, string>): Promise<void> {
+        const { settings } = this.plugin;
+        const actCount = getConfiguredActCount(settings);
+        const byAct = new Map<number, string[]>();
+        for (const card of cards) {
+            const act = this.sceneAct(card);
+            if (act > actCount) throw new Error(t('ui.canvasSketch.actTooHigh', { act, acts: actCount }));
+            byAct.set(act, [...(byAct.get(act) ?? []), card.id]); // SAFE: the first scene in an act starts its list
+        }
+        const numbers = planActEndScenePrefixes(await this.plugin.getSceneData({ sourcePath: this.book.sourceFolder }), byAct, resolveSelectedBeatModelFromSettings(settings));
+        if (!numbers) throw new Error(t('ui.promoteToScene.noRoomMany'));
+        for (const card of cards) {
+            const path = this.freePath(folder, `${numbers.get(card.id)} ${sketchTitle(card.text)}`);
+            const frontmatter: Record<string, unknown> = {
+                [authorKeyFor('Class', settings)]: 'Scene',
+                [authorKeyFor('Act', settings)]: this.sceneAct(card),
+            };
+            const subplot = this.subplotFor(card);
+            if (subplot) frontmatter[authorKeyFor('Subplot', settings)] = subplot;
+            await this.app.vault.create(path, addSceneIntakeTemplate(this.noteBody(frontmatter, card), settings));
+            paths.set(card.id, path);
+        }
+    }
+
+    /** Each card becomes a sketch at the chosen place, after ranking any older sketches that lack a position. */
+    private async writeSketches(cards: CanvasTextCard[], folder: string, paths: Map<string, string>, ranked: RankedSketch[]): Promise<void> {
+        const items = this.bookItems();
+        const anchor = this.anchorPath ? this.scenes(items).find(item => item.row.path === this.anchorPath) : undefined;
+        if (this.anchorPath && !anchor) throw new Error(t('ui.canvasSketch.anchorChanged'));
+        const anchorId = anchor ? readSceneId(anchor.frontmatter) ?? null : null;
+        const act = anchor?.row.act ?? this.act;
+        const placement = planCanvasSketchAppend(items, act, anchorId, cards.length);
+        for (const item of placement.missing) {
+            const file = this.app.vault.getAbstractFileByPath(item.path);
+            if (!(file instanceof TFile)) throw new Error(t('ui.canvasSketch.placementChanged'));
+            const original = items.find(candidate => candidate.row.path === item.path);
+            if (!original) throw new Error(t('ui.canvasSketch.placementChanged'));
+            let previous: { key: string; existed: boolean; value: unknown } | undefined;
+            await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+                const key = findFrontmatterKey(fm, SKETCH_ORDER) ?? SKETCH_ORDER;
+                const row = buildTableRow(file.path, file.basename, fm, this.plugin.settings);
+                if (row.kind !== 'sketch' || row.act !== original.row.act || sketchAnchor(fm) !== sketchAnchor(original.frontmatter)
+                    || (typeof fm[key] === 'number' && Number.isFinite(fm[key]))) throw new Error(t('ui.canvasSketch.placementChanged'));
+                previous = { key, existed: Object.prototype.hasOwnProperty.call(fm, key), value: fm[key] };
+                fm[key] = item.rank;
+            });
+            if (previous) ranked.push({ file, ...previous, rank: item.rank, act: original.row.act, anchor: sketchAnchor(original.frontmatter) });
+        }
+        for (const [index, card] of cards.entries()) {
+            const path = this.freePath(folder, sketchTitle(card.text));
+            const frontmatter: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch' };
+            if (act !== null) frontmatter[authorKeyFor('Act', this.plugin.settings)] = act;
+            if (anchorId) frontmatter[SKETCH_AFTER_SCENE] = anchorId;
+            frontmatter[SKETCH_ORDER] = placement.ranks[index];
+            await this.app.vault.create(path, this.noteBody(frontmatter, card));
+            paths.set(card.id, path);
+        }
     }
 
     private async convert(): Promise<void> {
@@ -272,7 +431,7 @@ export class CanvasSketchModal extends ErtModal {
             return;
         }
         const paths = new Map<string, string>();
-        const ranked: Array<{ file: TFile; key: string; rank: number; existed: boolean; value: unknown; act: number | null; anchor: string | null }> = [];
+        const ranked: RankedSketch[] = [];
         try {
             // Replacing a card changes its ID. Cross-canvas portal edges can
             // refer to that ID in another file, so refuse rather than break them.
@@ -281,41 +440,8 @@ export class CanvasSketchModal extends ErtModal {
                 return;
             }
             if (!this.canvasIsOpen() || JSON.stringify(initial) !== JSON.stringify(this.canvas.getData())) throw new Error(t('ui.canvasSketch.changed'));
-            const items = this.bookItems();
-            const anchor = this.anchorPath ? this.scenes(items).find(item => item.row.path === this.anchorPath) : undefined;
-            if (this.anchorPath && !anchor) throw new Error(t('ui.canvasSketch.anchorChanged'));
-            const anchorId = anchor ? readSceneId(anchor.frontmatter) ?? null : null;
-            const act = anchor?.row.act ?? this.act;
-            const placement = planCanvasSketchAppend(items, act, anchorId, cards.length);
-            for (const item of placement.missing) {
-                const file = this.app.vault.getAbstractFileByPath(item.path);
-                if (!(file instanceof TFile)) throw new Error(t('ui.canvasSketch.placementChanged'));
-                const original = items.find(candidate => candidate.row.path === item.path);
-                if (!original) throw new Error(t('ui.canvasSketch.placementChanged'));
-                let previous: { key: string; existed: boolean; value: unknown } | undefined;
-                await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
-                    const key = findFrontmatterKey(fm, SKETCH_ORDER) ?? SKETCH_ORDER;
-                    const row = buildTableRow(file.path, file.basename, fm, this.plugin.settings);
-                    if (row.kind !== 'sketch' || row.act !== original.row.act || sketchAnchor(fm) !== sketchAnchor(original.frontmatter)
-                        || (typeof fm[key] === 'number' && Number.isFinite(fm[key]))) throw new Error(t('ui.canvasSketch.placementChanged'));
-                    previous = { key, existed: Object.prototype.hasOwnProperty.call(fm, key), value: fm[key] };
-                    fm[key] = item.rank;
-                });
-                if (previous) ranked.push({ file, ...previous, rank: item.rank, act: original.row.act, anchor: sketchAnchor(original.frontmatter) });
-            }
-            for (const [index, card] of cards.entries()) {
-                const title = sketchTitle(card.text);
-                let path = `${folder}/${title}.md`;
-                for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${folder}/${title} ${n}.md`;
-                const frontmatter: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch' };
-                if (act !== null) frontmatter[authorKeyFor('Act', this.plugin.settings)] = act;
-                const subplot = this.subplotFor(card);
-                if (subplot) frontmatter[authorKeyFor('Subplot', this.plugin.settings)] = subplot;
-                if (anchorId) frontmatter[SKETCH_AFTER_SCENE] = anchorId;
-                frontmatter[SKETCH_ORDER] = placement.ranks[index];
-                await this.app.vault.create(path, `---\n${stringifyYaml(frontmatter)}---\n\n${card.text}`);
-                paths.set(card.id, path);
-            }
+            if (this.mode === 'scenes') await this.writeScenes(cards, folder, paths);
+            else await this.writeSketches(cards, folder, paths, ranked);
             // Never replace cards if the author (or another plugin) changed the map while files were being created.
             if (!this.canvasIsOpen() || JSON.stringify(initial) !== JSON.stringify(this.canvas.getData())) throw new Error(t('ui.canvasSketch.changed'));
             // Canvas retains the node class for an existing ID. New IDs let
@@ -333,8 +459,9 @@ export class CanvasSketchModal extends ErtModal {
                 this.canvas.requestSave(false);
                 throw error;
             }
-            new Notice(t('ui.canvasSketch.done', { count: paths.size }), 6000);
+            new Notice(this.mode === 'scenes' ? t('ui.canvasSketch.doneScenes', { scenes: tCount('scene', paths.size) }) : t('ui.canvasSketch.done', { count: paths.size }), 6000);
             this.plugin.refreshTimelineIfNeeded(null);
+            if (this.mode === 'scenes') await this.plugin.getTimelineService().activateView();
         } catch (error) {
             console.error('[Canvas sketches]', error);
             let retainedRanks = paths.size > 0 && ranked.length > 0;
@@ -357,7 +484,9 @@ export class CanvasSketchModal extends ErtModal {
                 }
             }
             const message = (error instanceof Error ? error.message : String(error)) + (retainedRanks ? ` ${t('ui.canvasSketch.orderRetained')}` : '');
-            new Notice(t('ui.canvasSketch.failed', { count: paths.size, message }), 12000);
+            if (paths.size === 0) new Notice(message, 12000);
+            else if (this.mode === 'scenes') new Notice(t('ui.canvasSketch.failedScenes', { scenes: tCount('scene', paths.size), message }), 12000);
+            else new Notice(t('ui.canvasSketch.failed', { count: paths.size, message }), 12000);
         }
     }
 }

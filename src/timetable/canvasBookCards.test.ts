@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { BookProfile } from '../types/settings';
-import { bookCardFor } from './canvasBookCards';
+import { bookCardFor, ringSlotsWith } from './canvasBookCards';
+
+describe('Ring colors after new scenes join', () => {
+    const scene = (...subplots: string[]) => ({ kind: 'scene', subplots });
+    it('keeps Main Plot first, then orders rings by scene count', () => {
+        const slots = ringSlotsWith([scene('Main Plot'), scene('Mara'), scene('Mara')], ['Tom', 'Tom', 'Tom']);
+        expect([...slots]).toEqual([['Main Plot', 0], ['Tom', 1], ['Mara', 2]]);
+    });
+    it('leaves sketches out of the count', () => {
+        expect(ringSlotsWith([{ kind: 'sketch', subplots: ['Mara'] }], ['Tom']).has('Mara')).toBe(false);
+    });
+});
 
 describe('Canvas book cards', () => {
     const books = [{ id: 'book-1', sourceFolder: 'Books/Pride' }] as BookProfile[];

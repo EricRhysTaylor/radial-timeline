@@ -1,11 +1,41 @@
 import { describe, expect, it } from 'vitest';
-import { canvasReadingOrder, planCanvasSketchAppend } from './canvasSketchOrdering';
+import { actsFromActCards, canvasReadingOrder, planCanvasSketchAppend, spreadAcrossActs } from './canvasSketchOrdering';
 import type { PlacementItem } from './sketchPlacement';
 import type { TimetableRow } from './timetableModel';
 
 function item(name: string, kind: TimetableRow['kind'], act: number | null, frontmatter: Record<string, unknown>): PlacementItem {
     return { row: { path: `${name}.md`, basename: name, kind, act, prefix: null, className: null, subplots: [], removedScene: false }, frontmatter };
 }
+
+describe('Scenes shared across acts', () => {
+    it('keeps the order and gives earlier acts any cards left over', () => {
+        expect([...spreadAcrossActs(['a', 'b', 'c', 'd', 'e', 'f', 'g'], 3)]).toEqual([['a', 1], ['b', 1], ['c', 1], ['d', 2], ['e', 2], ['f', 3], ['g', 3]]);
+    });
+    it('copes with fewer cards than acts', () => {
+        expect([...spreadAcrossActs(['a'], 3)]).toEqual([['a', 1]]);
+    });
+});
+
+describe('Act cards', () => {
+    const card = (id: string, x: number, y: number) => ({ id, type: 'text', text: id, x, y });
+    const act = (text: string, x: number, y: number) => ({ id: text, type: 'text', text, x, y, width: 300, height: 100 });
+
+    it('puts each card in the last Act card above it', () => {
+        const acts = actsFromActCards([card('a', 0, 100), card('b', 300, 150), card('c', 0, 400)], [act('Act 1', 0, 0), act('Act 2', 0, 300)]);
+        expect([...acts]).toEqual([['a', 1], ['b', 1], ['c', 2]]);
+    });
+    it('reads Act cards along the top left to right', () => {
+        const acts = actsFromActCards([card('a', 100, 300), card('b', 900, 300), card('c', 1900, 100)], [act('Act 1', 0, 0), act('Act 2', 800, 0), act('Act 3', 1800, 0)]);
+        expect([...acts]).toEqual([['a', 1], ['b', 2], ['c', 3]]);
+    });
+    it('starts a card ahead of every Act card in Act 1', () => {
+        expect(actsFromActCards([card('a', 0, 0)], [act('Act 2', 0, 300)]).get('a')).toBe(1);
+    });
+    it('reads a titled or heading Act card, and passes over No act', () => {
+        const acts = actsFromActCards([card('a', 0, 100), card('b', 0, 300)], [act('# Act 2 · The chase', 0, 0), act('No act', 0, 200)]);
+        expect([...acts]).toEqual([['a', 2], ['b', 2]]);
+    });
+});
 
 describe('Canvas sketch ordering', () => {
     it('suggests top-to-bottom, left-to-right order and keeps cards without coordinates stable', () => {

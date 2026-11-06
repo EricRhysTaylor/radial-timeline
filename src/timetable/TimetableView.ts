@@ -137,7 +137,7 @@ import { planOutlineActInsertion, planOutlineInsertion } from './outlineInspirat
 import { vaultDragPaths } from './outlineDrop';
 import { OutlineImportModal } from './OutlineImportModal';
 import { SubplotCanvasModal } from './SubplotCanvasModal';
-import { renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
+import { placeKeyPanel, renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
 import {
     markTimetableRows,
     clearTimelineColoring,
@@ -2195,17 +2195,7 @@ export class TimetableView extends BasesView {
     private fillKey(button: HTMLElement, panel: HTMLElement): void {
         const state = this.modeState();
         renderLegendSurface(panel, { title: t('ui.timetable.keyTitle'), badge: modeName(state.mode), sections: this.keySections(state) });
-        // Just below the button, inside the window.
-        const box = button.getBoundingClientRect();
-        const win = button.win;
-        const width = Math.min(360, win.innerWidth - 32);
-        const left = Math.max(8, Math.min(box.left, win.innerWidth - width - 8));
-        const top = box.bottom + 6;
-        panel.setCssProps({
-            '--ert-key-top': `${top}px`,
-            '--ert-key-left': `${left}px`,
-            '--ert-key-max-height': `${Math.max(160, win.innerHeight - top - 12)}px`,
-        });
+        placeKeyPanel(button, panel);
     }
 
     private keySections(state: TimelineModeState): LegendSection[] {

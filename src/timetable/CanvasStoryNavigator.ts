@@ -3,20 +3,129 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { buildTableRow, compareManuscriptRows } from './timetableModel';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
-import { selectedCanvasBounds, storyActHeadingLabel, storyAxis, storyKeyStep, storyPosition, storyProgress } from './canvasNavigation';
+import { isStoryActHeading, selectedCanvasBounds, storyActHeadingLabel, storyAxis, storyKeyStep, storyPosition, storyProgress } from './canvasNavigation';
+import { placeKeyPanel, renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
+import { readSubplotColor, SUBPLOT_COLOR_SLOTS } from '../renderer/utils/subplotColors';
+import { getActiveBook } from '../utils/books';
+import { getMainPlotName } from '../utils/mainPlot';
 
 type NodeData = { type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
-type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; selection?: Set<{ getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void; zoomToBbox?: (bounds: { minX: number; minY: number; maxX: number; maxY: number }) => void };
+type CanvasColor = string | undefined;
+type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; selection?: Set<{ getData?: () => NodeData & { color?: CanvasColor }; setColor?: (color: string) => void }>; requestSave?: () => void; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void; zoomToBbox?: (bounds: { minX: number; minY: number; maxX: number; maxY: number }) => void };
 
-/** A navigator only for generated story maps; it does not alter the Canvas data. */
+/**
+ * The Radial Timeline bar on a Canvas. Generated story maps get the scene
+ * slider; any map gets the Settings swatches while text cards are selected,
+ * and the key to how a map becomes a timeline.
+ */
 export class CanvasStoryNavigator {
     private root: HTMLElement | null = null;
+    private colors: HTMLElement | null = null;
+    private swatches: HTMLButtonElement[] = [];
     private path = '';
+    private storyMap = false;
+    private hasBookCards = false;
     private events = new Component();
     private readonly actLabels = new Map<HTMLElement, HTMLElement>();
-    constructor(private readonly plugin: RadialTimelinePlugin, private readonly view: ItemView) {}
+    constructor(private readonly plugin: RadialTimelinePlugin, private readonly view: ItemView, private readonly ringSlots: (bookId: string) => Promise<Map<string, number>>) {}
 
-    refresh(): void {
+    private canvas(): Canvas | undefined { return (this.view as unknown as { canvas?: Canvas }).canvas; }
+
+    /** The selected cards a color can mean something on: ideas, never Act cards or linked notes. */
+    private selectedIdeas() {
+        const selected = this.canvas()?.selection;
+        return selected instanceof Set ? [...selected].filter(node => {
+            const data = node.getData?.();
+            return data?.type === 'text' && !isStoryActHeading(data.text ?? ''); // SAFE: an empty card is no heading
+        }) : [];
+    }
+
+    private paint(slot: number): void {
+        const color = readSubplotColor(this.view.containerEl.doc, slot);
+        for (const node of this.selectedIdeas()) node.setColor?.(color);
+        this.canvas()?.requestSave?.();
+        this.updateBar();
+    }
+
+    /** Swatches read as Settings does: Main Plot, then the book's rings, then the free ring numbers. */
+    private async labelSwatches(): Promise<void> {
+        const book = getActiveBook(this.plugin.settings);
+        const slots = book ? await this.ringSlots(book.id) : new Map<string, number>();
+        const names = new Map([...slots].map(([name, slot]) => [slot, name]));
+        this.swatches.forEach((swatch, slot) => {
+            const label = names.get(slot) ?? (slot === 0 ? getMainPlotName() : t('ui.colorsSection.ringLabel', { number: slot + 1 }));
+            setAccessibleLabel(swatch, label);
+            setTooltip(swatch, label);
+        });
+    }
+
+    private updateBar(): void {
+        if (!this.root || !this.colors) return;
+        const ideas = this.selectedIdeas();
+        const coloring = ideas.length > 0;
+        if (coloring && this.colors.isShown() === false) void this.labelSwatches();
+        this.colors.toggle(coloring);
+        this.root.toggle(this.plugin.settings.books.some(book => book.sourceFolder.trim()) && (this.storyMap || this.hasBookCards || coloring));
+        const colors = new Set(ideas.map(node => node.getData?.()?.color?.toLowerCase()));
+        const shared = colors.size === 1 ? [...colors][0] : undefined;
+        this.swatches.forEach((swatch, slot) => swatch.toggleClass('is-active', !!shared && shared === readSubplotColor(this.view.containerEl.doc, slot).toLowerCase()));
+    }
+
+    private mountColors(root: HTMLElement): void {
+        const strip = root.createDiv({ cls: 'ert-story-navigator__colors' });
+        this.colors = strip;
+        strip.hide();
+        this.swatches = Array.from({ length: SUBPLOT_COLOR_SLOTS }, (_, slot) => {
+            const swatch = strip.createEl('button', { cls: 'ert-story-navigator__swatch', attr: { type: 'button' } });
+            swatch.setCssProps({ '--ert-story-swatch': `var(--rt-subplot-colors-${slot})` });
+            this.events.registerDomEvent(swatch, 'click', () => this.paint(slot));
+            return swatch;
+        });
+    }
+
+    private keySections(): LegendSection[] {
+        return [
+            {
+                title: t('ui.canvasSketch.keyWorkflow'),
+                rows: [
+                    { icon: 'square-dashed', label: t('ui.canvasSketch.keySelect'), detail: t('ui.canvasSketch.keySelectDetail') },
+                    { icon: 'palette', label: t('ui.canvasSketch.keyColor'), detail: t('ui.canvasSketch.keyColorDetail') },
+                    { icon: 'book-open', label: t('ui.canvasSketch.keyActs'), detail: t('ui.canvasSketch.keyActsDetail') },
+                    { icon: 'pencil-line', label: t('ui.canvasSketch.keyConvert'), detail: t('ui.canvasSketch.keyConvertDetail') },
+                ],
+            },
+            {
+                title: t('ui.canvasSketch.keyMap'),
+                rows: [
+                    { dot: 'var(--rt-subplot-colors-1)', label: t('ui.canvasSketch.keyEdge'), detail: t('ui.canvasSketch.keyEdgeDetail') },
+                    { icon: 'layout-template', label: t('ui.canvasSketch.cardViews'), detail: t('ui.canvasSketch.keyCardViewDetail') },
+                    { icon: 'arrow-big-up', label: t('ui.canvasSketch.keyHover'), detail: t('ui.canvasSketch.keyHoverDetail') },
+                    ...(this.storyMap ? [
+                        { icon: 'zoom-to-selection', label: t('ui.subplotCanvas.navigatorSelection') },
+                        { icon: 'maximize', label: t('ui.subplotCanvas.navigatorFit') },
+                    ] : []),
+                ],
+            },
+        ];
+    }
+
+    private mountKey(root: HTMLElement): void {
+        const button = root.createEl('button', {
+            cls: 'ert-timeline-legend__trigger ert-story-navigator__key clickable-icon',
+            // No aria-label: Obsidian would show it as a second tooltip over the key panel.
+            attr: { type: 'button', 'aria-expanded': 'false' },
+        });
+        setIcon(button, 'asterisk');
+        const panel = root.doc.body.createDiv({ cls: 'ert-timeline-legend ert-timeline-legend--compact ert-timetable-key', attr: { role: 'tooltip' } });
+        this.events.register(() => panel.remove());
+        wireLegendTrigger(this.events, button, panel, () => {
+            renderLegendSurface(panel, { title: t('ui.canvasSketch.keyTitle'), badge: t('ui.canvasSketch.badge'), sections: this.keySections() });
+            placeKeyPanel(button, panel);
+        });
+    }
+
+    refresh(hasBookCards: boolean): void {
+        this.hasBookCards = hasBookCards;
         const file = (this.view as unknown as { file?: TFile | null }).file;
         const path = file?.path ?? ''; // SAFE: a canvas view without a file is never a Story Map
         const isStoryMap = path.startsWith('Radial Timeline/Story Maps/') && path.endsWith('.canvas');
@@ -50,12 +159,22 @@ export class CanvasStoryNavigator {
             if (visibleActNodes.has(el)) continue;
             overlay.remove(); this.actLabels.delete(el);
         }
-        if (path === this.path) return;
-        this.events.unload(); this.events = new Component(); this.events.load();
-        this.root?.remove(); this.root = null; this.path = path;
-        if (!isStoryMap) return;
-        const root = this.view.contentEl.createDiv({ cls: 'ert-story-navigator' });
-        this.root = root;
+        if (path !== this.path) {
+            this.events.unload(); this.events = new Component(); this.events.load();
+            this.root?.remove(); this.path = path; this.storyMap = isStoryMap;
+            const root = this.view.contentEl.createDiv({ cls: 'ert-story-navigator' });
+            root.toggleClass('is-story-map', isStoryMap);
+            this.root = root;
+            if (isStoryMap) this.mountNavigation(root);
+            this.mountColors(root);
+            this.mountKey(root);
+            this.events.registerInterval(window.setInterval(() => this.updateBar(), 250));
+        }
+        this.updateBar();
+    }
+
+    /** The scene slider and zoom buttons of a generated story map. */
+    private mountNavigation(root: HTMLElement): void {
         const label = root.createDiv({ cls: 'ert-story-navigator__label', text: t('ui.subplotCanvas.navigator') });
         const slider = root.createEl('input', { cls: 'ert-story-navigator__slider', attr: { type: 'range', min: '0', max: '0', value: '0' } });
         const selection = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit' });
@@ -66,7 +185,7 @@ export class CanvasStoryNavigator {
         setIcon(selection, 'zoom-to-selection');
         setTooltip(fit, t('ui.subplotCanvas.navigatorFit'));
         setIcon(fit, 'maximize');
-        const canvas = (): Canvas | undefined => (this.view as unknown as { canvas?: Canvas }).canvas;
+        const canvas = (): Canvas | undefined => this.canvas();
         const items = (): Array<{ data: NodeData; title: string }> => {
             const unique = new Map<string, NodeData>();
             for (const node of canvas()?.nodes?.values() ?? []) { // SAFE: Canvas internals are undocumented; no canvas or node map = no cards to list
@@ -152,7 +271,7 @@ export class CanvasStoryNavigator {
         window.setTimeout(() => { if (this.root === root) { update(false); followViewport(); } }, 500);
     }
     destroy(): void {
-        this.events.unload(); this.root?.remove(); this.root = null;
+        this.events.unload(); this.root?.remove(); this.root = null; this.colors = null;
         for (const [el, overlay] of this.actLabels) {
             overlay.remove(); el.removeClass('ert-story-act-heading', 'ert-story-act-heading--bold');
         }

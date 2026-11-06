@@ -63,7 +63,7 @@ class CanvasCards {
     private readonly navigator: CanvasStoryNavigator;
 
     constructor(private plugin: RadialTimelinePlugin, private view: ItemView) {
-        this.navigator = new CanvasStoryNavigator(plugin, view);
+        this.navigator = new CanvasStoryNavigator(plugin, view, bookId => this.colorsForBook(bookId));
         this.action = view.addAction('layout-template', t('ui.canvasSketch.cardViews'), event => {
             const menu = new Menu();
             const choices: Array<[Mode, string]> = [
@@ -186,9 +186,9 @@ class CanvasCards {
     private async refresh(): Promise<void> {
         const revision = ++this.revision;
         const imageFiles = this.plugin.app.vault.getFiles();
-        this.navigator.refresh();
         const nodes = (this.view as CanvasView).canvas?.nodes;
         const bookCards = this.bookCards();
+        this.navigator.refresh(bookCards.length > 0);
         const imageSelections = bookCards.length ? storyCharacterSelections(this.plugin, imageFiles, this.plugin.settings.storyImageStrategy ?? 'distinctive', new Set(bookCards.map(card => card.bookId))) : new Map<string, string>();
         this.hasBookCards = bookCards.length > 0;
         this.action.toggle(this.hasBookCards);

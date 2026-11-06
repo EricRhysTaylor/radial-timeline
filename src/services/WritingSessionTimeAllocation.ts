@@ -20,6 +20,15 @@ export function updatedHours(before: number, minutes: number): number {
     return Math.round((before + minutes / 60) * 1_000_000) / 1_000_000;
 }
 
+/**
+ * Minutes to show for a scene in the save dialog. A fresh session rounds its
+ * tracked time to whole minutes; a pending ledger keeps its exact minutes, or
+ * the retry would no longer match the ledger and could never finish.
+ */
+export function allocationMinutes(activeMs: number, pendingLedger: boolean): number {
+    return pendingLedger ? activeMs / 60000 : Math.round(activeMs / 60000);
+}
+
 export async function readSessionTimeJournal(plugin: RadialTimelinePlugin, sessionId: string): Promise<TimeJournal | null> {
     if (!/^[a-zA-Z0-9_-]+$/.test(sessionId) || !plugin.manifest.dir) throw new Error('Cannot locate private session ledger.');
     const path = `${plugin.manifest.dir}/session-time-${sessionId}.json`;
@@ -37,7 +46,9 @@ export async function applySessionTimeAllocations(plugin: RadialTimelinePlugin, 
     if (!dir) throw new Error('Cannot locate private session ledger.');
     const path = `${dir}/session-time-${sessionId}.json`;
     const adapter = plugin.app.vault.adapter; // SAFE: private session ledger in the plugin directory.
-    const entries = allocations.filter(a => a.minutes > 0 || a.words > 0);
+    // A words-only entry adds no time, so its Total Time is never read; an
+    // unreadable value there must not block the save.
+    const entries = allocations.filter(a => a.minutes > 0 || a.words > 0).map(a => a.minutes === 0 ? { ...a, beforeHours: 0 } : a);
     if (new Set(entries.map(a => a.path)).size !== entries.length || entries.some(a => !Number.isFinite(a.minutes) || a.minutes < 0 || !Number.isFinite(a.words) || a.words < 0 || !Number.isFinite(a.beforeHours) || a.beforeHours < 0)) throw new Error('Invalid scene time allocation.');
     let journal = await readSessionTimeJournal(plugin, sessionId);
     if (journal) {

@@ -8,6 +8,7 @@ import { placeKeyPanel, renderLegendSurface, wireLegendTrigger, type LegendSecti
 import { readSubplotColor, SUBPLOT_COLOR_SLOTS } from '../renderer/utils/subplotColors';
 import { getActiveBook } from '../utils/books';
 import { getMainPlotName } from '../utils/mainPlot';
+import { cardColor } from './canvasCardSubplots';
 
 type NodeData = { type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
 type CanvasColor = string | undefined;
@@ -36,7 +37,7 @@ export class CanvasStoryNavigator {
         const selected = this.canvas()?.selection;
         return selected instanceof Set ? [...selected].filter(node => {
             const data = node.getData?.();
-            return data?.type === 'text' && !isStoryActHeading(data.text ?? ''); // SAFE: an empty card is no heading
+            return data?.type === 'text' && !(typeof data.text === 'string' && isStoryActHeading(data.text)); // SAFE: a card with no text is no heading
         }) : [];
     }
 
@@ -63,10 +64,10 @@ export class CanvasStoryNavigator {
         if (!this.root || !this.colors) return;
         const ideas = this.selectedIdeas();
         const coloring = ideas.length > 0;
-        if (coloring && this.colors.isShown() === false) void this.labelSwatches();
+        if (coloring && this.colors.isShown() === false) this.labelSwatches().catch((error: unknown) => console.error('[Canvas] Could not label ring swatches', error));
         this.colors.toggle(coloring);
         this.root.toggle(this.plugin.settings.books.some(book => book.sourceFolder.trim()) && (this.storyMap || this.hasBookCards || coloring));
-        const colors = new Set(ideas.map(node => node.getData?.()?.color?.toLowerCase()));
+        const colors = new Set(ideas.map(node => cardColor(node.getData?.() ?? {}) ?? undefined)); // SAFE: no data or no color = uncolored
         const shared = colors.size === 1 ? [...colors][0] : undefined;
         this.swatches.forEach((swatch, slot) => swatch.toggleClass('is-active', !!shared && shared === readSubplotColor(this.view.containerEl.doc, slot).toLowerCase()));
     }

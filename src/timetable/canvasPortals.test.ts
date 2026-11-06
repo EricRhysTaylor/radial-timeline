@@ -16,6 +16,15 @@ describe('Advanced Canvas portal protection', () => {
         const app = vaultOf({ 'Empty.canvas': '', 'Broken.canvas': '{ "nodes": [', 'Null.canvas': 'null', 'Healthy.canvas': '{"nodes":[]}' });
         await expect(hasPortalReferences(app, {}, ids)).resolves.toBe(false);
     });
+    it('keeps converting past a canvas that parses but has the wrong shape', async () => {
+        const app = vaultOf({
+            'Edges.canvas': '{"edges":{}}',
+            'Nodes.canvas': '{"nodes":5}',
+            'NullEdge.canvas': '{"edges":[null,{"fromNode":"story-card","toNode":7}]}',
+            'NullNode.canvas': '{"nodes":[null,{"id":"x","interdimensionalEdges":[null]}]}',
+        });
+        await expect(hasPortalReferences(app, {}, ids)).resolves.toBe(false);
+    });
     it('still finds a portal in a healthy canvas beside a damaged one', async () => {
         vi.spyOn(console, 'warn').mockImplementation(() => undefined);
         const portal = JSON.stringify({ edges: [{ fromNode: 'other', toNode: 'acportal||portal||story-card' }] });

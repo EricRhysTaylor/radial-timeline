@@ -14,6 +14,7 @@ import { addSceneIntakeTemplate, type SceneIntakeContext } from './sceneIntakeTe
 import { applyFrontmatterEdits, isBlankFrontmatterValue, readFrontmatterText, replaceValueEdit, yamlKey, type TextEdit } from '../utils/frontmatterText';
 import { scenePropertySetLabel } from '../utils/yamlTemplateNormalize';
 import { readAnchorWhen } from '../services/SceneInsertService';
+import { ensureActiveBookFolder } from '../modals/EnsureFirstBookModal';
 
 export function sameSceneNumber(a: string | null, b: string | null): boolean {
     return !!a && !!b && Number.isFinite(Number(a)) && Number.isFinite(Number(b)) && Number(a) === Number(b);
@@ -69,7 +70,21 @@ class NoteDropModal extends ErtModal {
         this.applyShell({ size: 'lg' });
         this.mountHeader({ title: t('ui.timetable.noteDropTitle'), subtitle: this.file.path });
         const books = this.plugin.settings.books.filter(book => book.sourceFolder.trim() && this.app.vault.getFolderByPath(book.sourceFolder));
-        if (!books.length) { this.contentEl.createDiv({ text: t('ui.canvasSketch.noBook') }); return; }
+        if (!books.length) {
+            this.contentEl.createDiv({ text: t('ui.canvasSketch.noBook') });
+            const actions = this.mountActions();
+            if (!getActiveBook(this.plugin.settings)?.sourceFolder?.trim()) {
+                const create = actions.createEl('button', { text: t('ui.ensureFirstBookModal.createBook'), cls: 'ert-note-drop-create-book mod-cta' });
+                create.onclick = () => {
+                    this.close();
+                    void ensureActiveBookFolder(this.plugin).then(book => {
+                        if (book) new NoteDropModal(this.plugin, this.file, book.id, this.defaultKind).open();
+                    });
+                };
+            }
+            actions.createEl('button', { text: t('common.cancel') }).onclick = () => this.close();
+            return;
+        }
         const bookRow = this.contentEl.createDiv({ cls: 'setting-item' });
         bookRow.createDiv({ cls: 'setting-item-name', text: t('ui.canvasSketch.book') });
         const book = new DropdownComponent(bookRow.createDiv({ cls: 'setting-item-control' }));

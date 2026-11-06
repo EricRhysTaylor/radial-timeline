@@ -230,6 +230,15 @@ describe('backfill keeps the author\'s YAML', () => {
         expect(content).toBe('---\nClass: Scene # c\nAct:\nSynopsis: Mine # s\nMine: 1\nStatus: Todo\nDue: x\n---\nBody');
     });
 
+    it('adds template fields above plugin-managed keys, below custom fields', async () => {
+        const { content } = await run('---\nClass: Beat\nPurpose: Mine\nMy Note: kept\nGossamer1: 66\nGossamerStage1: Press\n---\nBody', {
+            fieldsToInsert: { 'In This Book': '', Range: '' },
+            order: ['Class', 'Purpose', 'In This Book', 'Range'],
+            isDynamic: key => key.startsWith('Gossamer'),
+        });
+        expect(content).toBe('---\nClass: Beat\nPurpose: Mine\nMy Note: kept\nIn This Book:\nRange:\nGossamer1: 66\nGossamerStage1: Press\n---\nBody');
+    });
+
     it('uses the name the author mapped', async () => {
         const { content } = await run('---\nClass: Scene\n---\nBody', { fieldsToInsert: { Synopsis: '' }, mappings: { 'Scene Blurb': 'Synopsis' } });
         expect(content).toBe('---\nClass: Scene\nScene Blurb:\n---\nBody');

@@ -856,6 +856,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             files: targetFiles,
             fieldsToInsert,
             order: computeCanonicalOrder(noteType, plugin.settings, resolveBeatAuditSystemKey()),
+            isDynamic: getExcludeKeyPredicate(noteType, plugin.settings),
             mappings: getActiveFrontmatterMappings(plugin.settings),
         });
 

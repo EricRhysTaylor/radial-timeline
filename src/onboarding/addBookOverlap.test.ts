@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type RadialTimelinePlugin from '../main';
 import { OnboardingService } from './OnboardingService';
 import { getOverlappingBook } from '../utils/books';
+import { DEFAULT_SETTINGS } from '../settings/defaults';
+import { createInMemoryApp } from '../../tests/helpers/inMemoryObsidian';
 
 function serviceWith(folders: string[]) {
     const plugin = {
@@ -46,6 +48,22 @@ describe('adding a book never overlaps a registered one', () => {
         Object.assign(plugin, { app: { vault: { createFolder } } });
         await expect(service.materialize({ id: 'source', title: 'Novel', sourceFolder: 'Saga/Export' }, [], [])).rejects.toThrow();
         expect(createFolder).not.toHaveBeenCalled();
+    });
+
+    it('finishes every imported scene from the configured template, with nothing invented', async () => {
+        const app = createInMemoryApp({});
+        const { service, plugin } = serviceWith([]);
+        Object.assign(plugin, { app, settings: { ...DEFAULT_SETTINGS, books: [] } });
+        const proposal = { title: 'Arrival', body: 'Prose.', flags: [], frontmatter: { Class: 'Scene', Act: 1, Synopsis: 'Lands', Status: 'Complete', 'Publish Stage': 'Zero' } };
+        const report = await service.materialize({ id: 'source', title: 'Novel', sourceFolder: 'Export' }, [proposal as never], []);
+        expect(report.errors).toEqual([]);
+        const file = app.vault.getMarkdownFiles()[0];
+        const content = await app.vault.read(file);
+        expect(content).toMatch(/^---\nID: scn_/);
+        expect(content).toContain('\nDuration:\n');
+        expect(content).toContain('\nDue:\n');
+        expect(content).toContain('Status: Complete');
+        expect(content).toContain('Prose.');
     });
 
     it('adds a sibling folder', async () => {

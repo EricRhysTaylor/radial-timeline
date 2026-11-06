@@ -17,11 +17,11 @@ import { readReferenceId } from '../utils/sceneIds';
 import { buildScenePropertyDefinitions } from './scenePropertyAdapter';
 import {
     resolveSceneExpectedKeys,
+    sceneDynamicKeys,
     resolveScenePropertyPolicy,
     splitSceneMissingKeys,
 } from './scenePropertyPolicy';
 import type {
-    SceneExpectedKeys,
     SceneNormalizationAudit,
     SceneNormalizationNote,
     SceneNormalizerContext,
@@ -112,7 +112,7 @@ export async function analyzeScenes(
         const orderDrift = policy.advancedEnabled
             ? (rawNote?.orderDrift ?? false)
             : splitMissing.missingCoreKeys.length === 0
-                ? !sceneOrderIsCanonical(noteKeys, expected.canonicalOrder, sceneDynamicKeys(ctx, expected))
+                ? !sceneOrderIsCanonical(noteKeys, expected.canonicalOrder, sceneDynamicKeys(ctx.settings, expected))
                 : false;
         const note: SceneNormalizationNote = {
             file,
@@ -164,22 +164,9 @@ export async function analyzeScenes(
     };
 }
 
-/**
- * RT authority for Scene reorder: the standard exclude predicate (id, scene
- * analysis, repair metadata, etc.) plus any tolerated-inactive advanced keys
- * when advanced mode is disabled. These remain RT-managed and are placed in the
- * dynamic suffix zone; they are NOT foreign. The audit and the reorder share
- * this, so a note flagged for drift is always one reorder can settle.
- */
-export function sceneDynamicKeys(ctx: Pick<SceneNormalizerContext, 'settings'>, expected: SceneExpectedKeys): (key: string) => boolean {
-    const baseDynamic = getExcludeKeyPredicate('Scene', ctx.settings);
-    const inactiveAdvancedSet = new Set(expected.toleratedInactiveKeys);
-    return (key: string) => baseDynamic(key) || inactiveAdvancedSet.has(key);
-}
-
 function backfillPlacement(ctx: SceneNormalizerContext, definitions: ReturnType<typeof buildScenePropertyDefinitions>) {
     const expected = resolveSceneExpectedKeys(ctx.settings, definitions, resolveScenePropertyPolicy(ctx.settings));
-    return { order: expected.canonicalOrder, mappings: getActiveFrontmatterMappings(ctx.settings) };
+    return { order: expected.canonicalOrder, isDynamic: sceneDynamicKeys(ctx.settings, expected), mappings: getActiveFrontmatterMappings(ctx.settings) };
 }
 
 export async function insertMissingCoreFields(
@@ -277,7 +264,7 @@ export async function reorderSceneFields(
         app: ctx.app,
         files,
         canonicalOrder: expected.canonicalOrder,
-        isDynamic: sceneDynamicKeys(ctx, expected),
+        isDynamic: sceneDynamicKeys(ctx.settings, expected),
         mappings: getActiveFrontmatterMappings(ctx.settings),
         safetyResults: audit.safetyResults,
         onProgress: ctx.onProgress,

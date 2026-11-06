@@ -1,5 +1,5 @@
 import type { RadialTimelineSettings } from '../types/settings';
-import { computeCanonicalOrder } from '../utils/yamlTemplateNormalize';
+import { computeCanonicalOrder, getExcludeKeyPredicate } from '../utils/yamlTemplateNormalize';
 import { withOptionalManagedKeys } from '../utils/optionalManagedKeys';
 import type {
     SceneExpectedKeys,
@@ -39,6 +39,19 @@ export function resolveSceneExpectedKeys(
         canonicalOrder,
         toleratedInactiveKeys: policy.advancedEnabled ? [] : [...advancedKeys],
     };
+}
+
+/**
+ * RT authority for Scene reorder: the standard exclude predicate (id, scene
+ * analysis, repair metadata, etc.) plus any tolerated-inactive advanced keys
+ * when advanced mode is disabled. These remain RT-managed and are placed in the
+ * dynamic suffix zone; they are NOT foreign. The audit, the reorder and import
+ * share this, so a note flagged for drift is always one reorder can settle.
+ */
+export function sceneDynamicKeys(settings: RadialTimelineSettings, expected: SceneExpectedKeys): (key: string) => boolean {
+    const baseDynamic = getExcludeKeyPredicate('Scene', settings);
+    const inactiveAdvancedSet = new Set(expected.toleratedInactiveKeys);
+    return (key: string) => baseDynamic(key) || inactiveAdvancedSet.has(key);
 }
 
 export function splitSceneMissingKeys(

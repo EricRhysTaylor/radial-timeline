@@ -24,6 +24,8 @@ export interface BackfillOptions {
     fieldsToInsert: Record<string, FieldEntryValue>;
     /** Canonical key order. New fields go to their place in it; without one they go last. */
     order?: string[];
+    /** Plugin-managed keys kept after the template fields; new fields go above them. */
+    isDynamic?: (key: string) => boolean;
     /** The author's custom property names. */
     mappings?: Record<string, string>;
     onProgress?: (current: number, total: number, filename: string) => void;
@@ -130,7 +132,7 @@ function deprecatedKeyEdits(text: FrontmatterText, requested: string[]): TextEdi
  * note lacks are added and every existing byte stays.
  */
 export async function runYamlBackfill(options: BackfillOptions): Promise<BackfillResult> {
-    const { app, files, fieldsToInsert, order, mappings, onProgress, abortSignal } = options;
+    const { app, files, fieldsToInsert, order, isDynamic, mappings, onProgress, abortSignal } = options;
 
     const keysToInsert = Object.keys(fieldsToInsert);
     if (keysToInsert.length === 0) {
@@ -166,7 +168,7 @@ export async function runYamlBackfill(options: BackfillOptions): Promise<Backfil
                     lines: formatYamlField(authorKeyFromMappings(key, mappings), normalizeDefault(fieldsToInsert[key])),
                 }));
                 return applyFrontmatterEdits(text, [...renames, ...insertFieldEdits(text, additions, order
-                    ? { order, canonicalOf: key => canonicalizeFrontmatterKey(key, mappings) }
+                    ? { order, isDynamic, canonicalOf: key => canonicalizeFrontmatterKey(key, mappings) }
                     : undefined)]);
             });
 

@@ -15,6 +15,9 @@ import { formatLocalDateKey } from '../utils/date';
 import { generateSceneContent } from '../utils/sceneGenerator';
 import { generateSceneId } from '../utils/sceneIds';
 import { applyFrontmatterEdits, frontmatterValues, insertFieldEdits, isBlankFrontmatterValue, readFrontmatterText, removeFieldEdit, replaceValueEdit, yamlScalar, type FrontmatterField, type FrontmatterText, type TextEdit } from '../utils/frontmatterText';
+import { reorderFrontmatterContent } from '../utils/yamlManager';
+import { buildScenePropertyDefinitions } from '../sceneProperties/scenePropertyAdapter';
+import { resolveSceneExpectedKeys, resolveScenePropertyPolicy, sceneDynamicKeys } from '../sceneProperties/scenePropertyPolicy';
 import { SKETCH_AFTER_SCENE, SKETCH_ORDER } from './sketchPlacementFields';
 import { t } from '../i18n';
 
@@ -25,10 +28,33 @@ export interface SceneIntakeContext {
     act?: number;
     /** When for a note that has none, from the scene it follows. */
     when?: string;
+    /** Add each missing field empty instead of with its template default. */
+    blank?: boolean;
 }
 
 function findField(text: FrontmatterText, canonical: string, mappings: Record<string, string> | undefined): FrontmatterField | undefined {
     return text.fields.find(field => canonicalizeFrontmatterKey(field.key, mappings) === canonical);
+}
+
+function hasDuplicateProperty(text: FrontmatterText, mappings: Record<string, string> | undefined): boolean {
+    const keys = text.fields.map(field => canonicalizeFrontmatterKey(field.key, mappings).toLowerCase());
+    return new Set(keys).size !== keys.length;
+}
+
+/**
+ * Finish a scene written by manuscript import: the configured fields it lacks,
+ * left empty, and everything in template order so it arrives with nothing for
+ * the audit to flag. Empty because import never invents a Duration or a Due. A
+ * note carrying one property twice (`status` beside `Status`, from its source)
+ * keeps both and keeps its order: which one the author meant is theirs to say.
+ */
+export function completeImportedScene(content: string, settings: RadialTimelineSettings): string {
+    const filled = addSceneIntakeTemplate(content, settings, { blank: true });
+    const mappings = getActiveFrontmatterMappings(settings);
+    const text = readFrontmatterText(filled);
+    if (!text || hasDuplicateProperty(text, mappings)) return filled;
+    const expected = resolveSceneExpectedKeys(settings, buildScenePropertyDefinitions(settings), resolveScenePropertyPolicy(settings));
+    return reorderFrontmatterContent(filled, expected.canonicalOrder, sceneDynamicKeys(settings, expected), mappings);
 }
 
 /** Add missing configured scene fields without reserializing the original note. */
@@ -37,8 +63,7 @@ export function addSceneIntakeTemplate(content: string, settings: RadialTimeline
     if (!text) throw new Error(t('ui.timetable.noteDropInvalidYaml'));
     const mappings = getActiveFrontmatterMappings(settings);
     const frontmatter = frontmatterValues(text);
-    const canonicalKeys = text.fields.map(field => canonicalizeFrontmatterKey(field.key, mappings).toLowerCase());
-    if (new Set(canonicalKeys).size !== canonicalKeys.length) throw new Error(t('ui.timetable.noteDropInvalidYaml'));
+    if (!context.blank && hasDuplicateProperty(text, mappings)) throw new Error(t('ui.timetable.noteDropInvalidYaml'));
 
     const normalized = normalizeFrontmatterKeys(frontmatter, mappings);
     const noteAct = Number(normalized.Act);
@@ -62,7 +87,7 @@ export function addSceneIntakeTemplate(content: string, settings: RadialTimeline
         .filter(field => missing.has(field.key) && field.key.toLowerCase() !== 'id')
         .map(field => {
             const author = authorKeyFromMappings(field.key, mappings);
-            return { key: field.key, lines: yamlScalar(author) + field.lines.slice(field.key.length) };
+            return { key: field.key, lines: yamlScalar(author) + (context.blank ? ':' : field.lines.slice(field.key.length)) };
         });
     if (!idField) additions.unshift({ key: 'ID', lines: `ID: ${generateSceneId()}` });
 

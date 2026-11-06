@@ -13,6 +13,7 @@
  * See docs/engineering/plans/one-button-onboarding-local-llm-plan.md.
  */
 
+import { completeImportedScene } from '../timetable/sceneIntakeTemplate';
 import { normalizePath, TFile, TFolder } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { getAIClient } from '../ai/runtime/aiClient';
@@ -844,6 +845,7 @@ export class OnboardingService {
           }
         });
         notesCreated += 1;
+        await vault.process(file, (content) => completeImportedScene(content, this.plugin.settings));
       } catch (error) {
         errors.push(`${noteName}: ${error instanceof Error ? error.message : String(error)}`);
       }

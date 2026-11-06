@@ -32,8 +32,8 @@ import {
     reorderSceneFields,
 } from '../../../sceneProperties/sceneNormalizer';
 import type { SceneNormalizationAudit } from '../../../sceneProperties/types';
-import { resolveSceneExpectedKeys, resolveScenePropertyPolicy } from '../../../sceneProperties/scenePropertyPolicy';
-import { getExcludeKeyPredicate, RESERVED_OBSIDIAN_KEYS } from '../../../utils/yamlTemplateNormalize';
+import { resolveSceneExpectedKeys, resolveScenePropertyPolicy, sceneDynamicKeys } from '../../../sceneProperties/scenePropertyPolicy';
+import { RESERVED_OBSIDIAN_KEYS } from '../../../utils/yamlTemplateNormalize';
 import { formatSafetyIssues } from '../../../utils/yamlSafety';
 import { openOrRevealFile } from '../../../utils/fileUtils';
 import { getAdvancedMode, shouldEnableRemoveAdvanced } from '../../../scenes/core/scenePropertyState';
@@ -568,9 +568,7 @@ export function renderSceneNormalizerSection(params: {
                 resolveScenePropertyPolicy(plugin.settings)
             );
             const canonicalOrder = expectedKeys.canonicalOrder;
-            const baseDynamic = getExcludeKeyPredicate('Scene', plugin.settings);
-            const inactiveAdvancedSet = new Set(expectedKeys.toleratedInactiveKeys);
-            const isDynamic = (key: string) => baseDynamic(key) || inactiveAdvancedSet.has(key);
+            const isDynamic = sceneDynamicKeys(plugin.settings, expectedKeys);
             const preview = previewReorder(app, notesWithDrift[0].file, canonicalOrder, isDynamic, getActiveFrontmatterMappings(plugin.settings));
 
             const confirmed = await new Promise<boolean>((resolve) => {

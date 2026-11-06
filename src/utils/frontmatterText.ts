@@ -151,6 +151,8 @@ export interface FieldPlacement {
     order: string[];
     /** A note key's canonical name, so renamed and differently cased keys rank correctly. */
     canonicalOf: (key: string) => string;
+    /** Plugin-managed keys kept after the template fields, such as Gossamer scores. */
+    isDynamic?: (key: string) => boolean;
 }
 
 /**
@@ -172,7 +174,8 @@ function insertionOffset(text: FrontmatterText, key: string, placement: FieldPla
         }
     });
     if (anchor < 0) return 0;
-    while (anchor + 1 < text.fields.length && rankOf(text.fields[anchor + 1]) < 0) anchor += 1;
+    const isAttached = (field: FrontmatterField) => rankOf(field) < 0 && !placement.isDynamic?.(placement.canonicalOf(field.key));
+    while (anchor + 1 < text.fields.length && isAttached(text.fields[anchor + 1])) anchor += 1;
     return text.fields[anchor].lineEnd;
 }
 

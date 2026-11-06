@@ -344,19 +344,28 @@ async function reorderSingleFile(
 ): Promise<boolean> {
     let changed = false;
     await app.vault.process(file, (content) => {
-        const text = readFrontmatterText(content);
-        if (!text) return content;
-        const conflicts = findCanonicalAliasConflicts(frontmatterValues(text), mappings);
-        if (conflicts.length > 0) {
-            throw new Error(`Refused rewrite due to duplicate canonical aliases: ${formatAliasConflictMessage(conflicts)}`);
-        }
-        const plan = planReorder(text.fields.map(field => field.key), canonicalOrder, isDynamic, mappings);
-        if (!plan.changed) return content;
-        const reordered = reorderFrontmatterFields(text, plan.keys, plan.renames);
-        changed = true;
+        const reordered = reorderFrontmatterContent(content, canonicalOrder, isDynamic, mappings);
+        changed = reordered !== content;
         return reordered;
     });
     return changed;
+}
+
+/** A note with its frontmatter in canonical order. Refuses duplicate aliases rather than choose between them. */
+export function reorderFrontmatterContent(
+    content: string,
+    canonicalOrder: string[],
+    isDynamic: (key: string) => boolean,
+    mappings?: Record<string, string>
+): string {
+    const text = readFrontmatterText(content);
+    if (!text) return content;
+    const conflicts = findCanonicalAliasConflicts(frontmatterValues(text), mappings);
+    if (conflicts.length > 0) {
+        throw new Error(`Refused rewrite due to duplicate canonical aliases: ${formatAliasConflictMessage(conflicts)}`);
+    }
+    const plan = planReorder(text.fields.map(field => field.key), canonicalOrder, isDynamic, mappings);
+    return plan.changed ? reorderFrontmatterFields(text, plan.keys, plan.renames) : content;
 }
 
 /**

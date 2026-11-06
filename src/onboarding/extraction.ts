@@ -270,7 +270,8 @@ export interface BuildFrontmatterOptions {
 
 /**
  * Map a validated scene extraction onto the canonical Scene frontmatter object
- * consumed by `processFrontMatter`. Insertion order = YAML key order.
+ * consumed by `processFrontMatter`. The remaining configured fields are added,
+ * empty and in template order, by `completeImportedScene`.
  * Per the canonical prompt: Status is `Complete` (text exists) and Publish Stage
  * defaults to `Zero`; When/Duration are omitted when the model couldn't ground
  * them (never fabricated).

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
-import { addSceneIntakeTemplate, promoteSceneContent, replaceSketchAnchor } from './sceneIntakeTemplate';
+import { addSceneIntakeTemplate, completeImportedScene, promoteSceneContent, replaceSketchAnchor } from './sceneIntakeTemplate';
 
 function frontmatter(content: string): Record<string, unknown> {
     return parse(content.split('---')[1]) as Record<string, unknown>;
@@ -91,5 +91,35 @@ describe('scene intake template', () => {
     it('reanchors a following sketch without changing its other properties', () => {
         const source = '---\nPlace after scene: scn_old # keep\nSynopsis: A # original\n---\n\nBody';
         expect(replaceSketchAnchor(source, 'scn_old', 'scn_new')).toBe('---\nPlace after scene: "scn_new" # keep\nSynopsis: A # original\n---\n\nBody');
+    });
+});
+
+describe('imported scenes', () => {
+    const imported = '---\nClass: Scene\nAct: 2\nSynopsis: From the source\nSubplot:\n  - Main Plot\nCharacter:\n  - "[[Ann]]"\nPlace:\n  - "[[Harbor]]"\nStatus: Complete\nPublish Stage: Zero\nScrivener Label: Draft\n---\n\nImported prose.\n';
+    const templates = { base: 'Class: Scene\nAct: {{Act}}\nWhen: {{When}}\nDuration: 1 hour\nSynopsis:\nSubplot: {{Subplot}}\nCharacter: {{Character}}\nPublish Stage: Zero\nStatus: Todo\nDue: {{Due}}', advanced: 'Place:\nMood: hopeful' };
+
+    it('adds the configured fields empty, inventing nothing', () => {
+        const result = frontmatter(completeImportedScene(imported, { ...DEFAULT_SETTINGS, sceneYamlTemplates: templates, sceneAdvancedPropertiesEnabled: true }));
+        expect(result).toMatchObject({ When: null, Duration: null, Due: null, Mood: null, Status: 'Complete', Act: 2, Synopsis: 'From the source', 'Scrivener Label': 'Draft' });
+        expect(result.ID).toMatch(/^scn_/);
+    });
+    it('honors the Core-only setting and keeps Place the source supplied', () => {
+        const result = frontmatter(completeImportedScene(imported, { ...DEFAULT_SETTINGS, sceneYamlTemplates: templates, sceneAdvancedPropertiesEnabled: false }));
+        expect(result).not.toHaveProperty('Mood');
+        expect(result.Place).toEqual(['[[Harbor]]']);
+    });
+    it('arrives in template order with custom fields kept and the body untouched', () => {
+        const settings = { ...DEFAULT_SETTINGS, sceneYamlTemplates: templates, sceneAdvancedPropertiesEnabled: true };
+        const content = completeImportedScene(imported, settings);
+        expect(Object.keys(frontmatter(content)).slice(0, 7)).toEqual(['ID', 'Class', 'Act', 'When', 'Duration', 'Synopsis', 'Subplot']);
+        expect(Object.keys(frontmatter(content)).indexOf('Publish Stage')).toBeLessThan(Object.keys(frontmatter(content)).indexOf('Status'));
+        expect(frontmatter(content)).toHaveProperty('Scrivener Label', 'Draft');
+        expect(content.endsWith('---\n\nImported prose.\n')).toBe(true);
+    });
+    it('keeps both spellings of a duplicated source property rather than fail the import', () => {
+        const source = imported.replace('Status: Complete', 'Status: Complete\nstatus: Draft');
+        const result = frontmatter(completeImportedScene(source, { ...DEFAULT_SETTINGS, sceneYamlTemplates: templates }));
+        expect(result).toMatchObject({ Status: 'Complete', status: 'Draft' });
+        expect(result).toHaveProperty('When', null);
     });
 });

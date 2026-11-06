@@ -84,6 +84,10 @@ const ALLOWED_CLASS_NAMES = [
   'setting-item-description',
   'setting-input-error',    // Obsidian native form validation class
   'setting-input-success',  // Obsidian native form validation class
+  'callout',                // The formatting key's chips are real callouts, so the theme styles them
+  'callout-title',
+  'callout-icon',
+  'callout-title-inner',
   'modal',
   'modal-container',
   'modal-content',

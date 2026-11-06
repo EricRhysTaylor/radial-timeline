@@ -14,7 +14,9 @@ import type { App, BasesConfigFileFilter, BasesViewConfig, WorkspaceLeaf } from 
 export const PLUGIN_SETTINGS_TAB_ID = 'radial-timeline';
 
 type SettingPane = { open: () => void; openTabById: (id: string) => void };
-type CommandManager = { executeCommandById?: (id: string) => unknown };
+type CommandManager = { commands?: Record<string, unknown>; executeCommandById?: (id: string) => unknown };
+type Hotkey = { modifiers?: string[]; key?: string };
+type HotkeyManager = { getHotkeys?: (id: string) => Hotkey[] | undefined; getDefaultHotkeys?: (id: string) => Hotkey[] | undefined };
 
 /** Open Obsidian's settings pane on `tabId`. False when the private surface is absent. */
 export function openSettingsTab(app: App, tabId: string = PLUGIN_SETTINGS_TAB_ID): boolean {
@@ -31,6 +33,19 @@ export function executeCommandById(app: App, commandId: string): boolean {
     if (!commands?.executeCommandById) return false;
     commands.executeCommandById(commandId);
     return true;
+}
+
+/** Whether this version of Obsidian has a command. */
+export function hasCommand(app: App, commandId: string): boolean {
+    const commands = (app as unknown as { commands?: CommandManager }).commands; // SAFE: the command manager is not in Obsidian's public typings; this is the one cast for it
+    return !!commands?.commands?.[commandId];
+}
+
+/** A command's hotkey: the person's own if they set one, else Obsidian's. Null when it has none. */
+export function commandHotkey(app: App, commandId: string): { modifiers: string[]; key: string } | null {
+    const manager = (app as unknown as { hotkeyManager?: HotkeyManager }).hotkeyManager; // SAFE: the hotkey manager is not in Obsidian's public typings; this is the one cast for it
+    const hotkey = (manager?.getHotkeys?.(commandId) ?? manager?.getDefaultHotkeys?.(commandId))?.[0]; // SAFE: no custom list means the default applies; an empty custom list means the person removed it
+    return hotkey?.key ? { modifiers: hotkey.modifiers ?? [], key: hotkey.key } : null; // SAFE: a bare key has no modifiers
 }
 
 /** The leaf whose tab header is `header`, or null. Tab headers carry no leaf id in the DOM. */

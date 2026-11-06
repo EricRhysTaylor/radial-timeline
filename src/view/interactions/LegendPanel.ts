@@ -64,7 +64,7 @@ export function placeKeyPanel(button: HTMLElement, panel: HTMLElement): void {
 }
 
 /** Fill a key panel: a header (title and an optional badge), then the sections. */
-export function renderLegendSurface(panel: HTMLElement, content: { title: string; badge?: string; sections: LegendSection[] }): void {
+export function renderLegendSurface(panel: HTMLElement, content: { title: string; badge?: string; sections: LegendSection[] }): HTMLElement {
     panel.empty();
     const surface = panel.createDiv({ cls: 'ert-timeline-legend__surface' });
     const header = surface.createDiv({ cls: 'ert-timeline-legend__header' });
@@ -76,6 +76,7 @@ export function renderLegendSurface(panel: HTMLElement, content: { title: string
         sectionEl.createDiv({ cls: 'ert-timeline-legend__section-title', text: section.title });
         for (const row of section.rows) renderRow(sectionEl, row);
     }
+    return surface;
 }
 
 function renderRow(sectionEl: HTMLElement, row: LegendRow): void {

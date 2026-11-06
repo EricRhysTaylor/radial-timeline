@@ -58,6 +58,7 @@ import { writeManagedOutput } from '../utils/logVaultOps';
 import { getExportValidationIssues } from './PublishingValidationService';
 import { registerPromoteToScene } from './PromoteToSceneEntry';
 import { registerCanvasSketches } from '../timetable/CanvasSketchEntry';
+import { registerFormattingKey } from '../view/interactions/FormattingKey';
 import { getMainPlotName } from '../utils/mainPlot';
 
 export class CommandRegistrar {
@@ -74,6 +75,7 @@ export class CommandRegistrar {
         registerRuntimeCommands(this.plugin);
         registerPromoteToScene(this.plugin);
         registerCanvasSketches(this.plugin);
+        registerFormattingKey(this.plugin);
     }
 
     public openManuscriptExportModal(): void {

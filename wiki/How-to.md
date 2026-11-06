@@ -98,6 +98,21 @@ Need to rename or delete a subplot across dozens of scenes? Use the **[Subplot m
 
 Use it to keep subplot names consistent after reorganizing your story.
 
+## Format Your Text
+
+Every note has a **✱** at the top right, beside Obsidian's own icons. It lists Obsidian's formatting, with each one's hotkey and what to type, and every row can be clicked.
+
+Select some words, or put the cursor where you want it, then hover the **✱** and click a row. The key stays open while the pointer is on it, so you can apply several in a row. It closes when the pointer leaves.
+
+*   **Selected text** wraps the words you selected: bold, italic, strikethrough, highlight, comment and links. **Clear formatting** takes them off again. Highlights come in six colors with Obsidian 1.14 or later.
+*   **Whole line** applies to the line the cursor is on: headings, bullet and numbered lists, checkboxes and quotes.
+*   **Insert** adds a footnote after the selected words and moves you to its note, ready to type. Tables and dividers go below the line.
+*   **Callouts** wrap the selected lines in a colored box. With the cursor in a callout, click another type to change it.
+
+The key shows your own hotkey if you've set one. In Reading view it's a sheet to read; switch to editing to apply formatting.
+
+Comments and callouts are left out of PDF and Word exports by default, so they suit notes to yourself. Highlights keep their `==` marks in those exports.
+
 ## Search
 
 <p align="center"><img src="images/ui-search-results.png" alt="Search results with highlighted scene numbers on the timeline" width="500"></p>

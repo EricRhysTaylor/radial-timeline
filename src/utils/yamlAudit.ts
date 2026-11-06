@@ -16,7 +16,7 @@ import {
     getExcludeKeyPredicate,
 } from './yamlTemplateNormalize';
 import type { RadialTimelineSettings } from '../types/settings';
-import { canonicalizeFrontmatterKey, getActiveFrontmatterMappings, normalizeFrontmatterKeys } from './frontmatter';
+import { canonicalizeFrontmatterKey, findMissingTemplateKeys, getActiveFrontmatterMappings, normalizeFrontmatterKeys } from './frontmatter';
 import { getOptionalManagedKeys, isOptionalManagedKey } from './optionalManagedKeys';
 import { normalizeBeatSetNameInput, toBeatModelMatchKey } from './beatsInputNormalize';
 import { STARTER_BEAT_SETS } from './beatsSystems';
@@ -331,6 +331,8 @@ export async function runYamlAudit(options: YamlAuditOptions): Promise<YamlAudit
     const isToleratedAiKey = (key: string): boolean =>
         noteType === 'Scene' && !aiEnabled && sceneAiSchemaKeys.has(key);
 
+    const templateKeysLower = new Set([...allTemplateKeys].map(key => key.toLowerCase()));
+
     const mappings = getActiveFrontmatterMappings(settings);
     const sceneTitleIndex = noteType === 'Backdrop' ? collectSceneTitleIndex(app, settings) : [];
 
@@ -393,8 +395,9 @@ export async function runYamlAudit(options: YamlAuditOptions): Promise<YamlAudit
         // Get the keys actually present in the note's frontmatter
         const noteKeys = Object.keys(fm).filter(k => k !== 'position'); // Obsidian injects 'position'
 
-        // Missing: template keys not present in note
-        const missingFields = [...allTemplateKeys].filter(k => !noteKeys.includes(k));
+        // Missing: template keys not present in note. This is the test Insert
+        // missing uses, so a key in another letter case is present to both.
+        const missingFields = findMissingTemplateKeys([...allTemplateKeys], rawFm, mappings);
         // For Scene notes, legacy aliases like "Beats Update" are deprecated and
         // should not satisfy the canonical "Pulse Update" schema key.
         if (noteType === 'Scene' && aiEnabled && !hasCanonicalPulseUpdateKey(rawFm) && !missingFields.includes('Pulse Update')) {
@@ -416,7 +419,7 @@ export async function runYamlAudit(options: YamlAuditOptions): Promise<YamlAudit
         const extraKeys = Object.keys(rawFm).filter(rawKey => {
             if (rawKey === 'position') return false;
             const k = canonicalizeFrontmatterKey(rawKey, mappings);
-            return !allTemplateKeys.has(k) && !excludeKey(k) && !isToleratedAiKey(k)
+            return !templateKeysLower.has(k.toLowerCase()) && !excludeKey(k) && !isToleratedAiKey(k)
                 && !isOptionalManagedKey(noteType, k);
         });
 

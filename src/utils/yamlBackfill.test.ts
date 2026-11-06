@@ -166,7 +166,9 @@ describe('template placeholders never reach a note', () => {
         expect(normalizeDefault(' {{Due}} ')).toBe('');
         expect(normalizeDefault(['{{Character}}', 'Chae Ban'])).toEqual(['Chae Ban']);
         expect(normalizeDefault('Zero')).toBe('Zero');
-        expect(normalizeDefault('See {{Character}} notes')).toBe('See {{Character}} notes');
+        expect(normalizeDefault('See {{Character}} notes')).toBe('');
+        expect(normalizeDefault('[[{{Place}}]]')).toBe('');
+        expect(normalizeDefault(['[[{{Place}}]]', '[[Rome]]'])).toEqual(['[[Rome]]']);
     });
 
     it('inserts a missing Character key as empty, not as {{Character}}', async () => {

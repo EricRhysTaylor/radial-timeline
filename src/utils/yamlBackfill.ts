@@ -94,13 +94,14 @@ interface LegacyFieldMigrationResult {
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 /** A template placeholder such as `{{Character}}`, filled only when a scene is created. */
-const TEMPLATE_PLACEHOLDER = /^\s*\{\{[^{}\n]+\}\}\s*$/;
+const TEMPLATE_PLACEHOLDER = /\{\{[^{}\n]+\}\}/;
 
 /**
  * Normalize a default value so we never write `null`, `undefined`, or a raw
  * template placeholder into a note.
  * - `undefined` / `null` → `''`
- * - `{{Placeholder}}` strings → `''`; placeholder list items are dropped.
+ * - Strings holding a placeholder, such as `[[{{Place}}]]`, → `''`; list items
+ *   holding one are dropped. Only scene creation can fill them.
  * - Other strings and list items are preserved.
  */
 export function normalizeDefault(value: FieldEntryValue | undefined | null): string | string[] {

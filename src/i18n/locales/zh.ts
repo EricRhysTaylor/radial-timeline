@@ -1258,6 +1258,7 @@ export const zh: DeepPartial<TranslationKeys> = {
         cancel: '取消',
         save: '保存',
         counts: {
+            card: { one: '{{count}} 张卡片', other: '{{count}} 张卡片' },
             scene: {
                 one: '{{count}} 个场景',
                 other: '{{count}} 个场景',
@@ -6004,6 +6005,8 @@ export const zh: DeepPartial<TranslationKeys> = {
             afterScene: "放在场景之后",
             endOfAct: "幕末或未指定",
             orderHint: '选择这些想法在书中的顺序。',
+            colorsHint: '每种卡片颜色都可以成为一条支线：选择现有支线或输入新名称。未命名的卡片归入{{mainPlot}}。',
+            subplotName: '支线名称',
             moveUp: "上移",
             moveDown: "下移",
             anchorChanged: "所选场景已更改或其 ID 不再唯一。",

@@ -3,13 +3,11 @@ import type RadialTimelinePlugin from '../main';
 import { authorKeyFor } from './timetableFiles';
 import { synopsisKey } from './panelSynopsis';
 import { t } from '../i18n';
-import { bookCardFor } from './canvasBookCards';
+import { bookCardFor, bookRingSlots } from './canvasBookCards';
 import { markTimetableRows, onLinkedScene } from './timetableRegistry';
 import { CanvasStoryNavigator } from './CanvasStoryNavigator';
 import { linkedSceneViewport } from './canvasNavigation';
 import { buildTableRow, sceneVitals } from './timetableModel';
-import { computeCacheableValues } from '../renderer/utils/Precompute';
-import type { PluginRendererFacade } from '../utils/sceneHelpers';
 import { normalizeSubplotColorIndex } from '../renderer/utils/subplotColors';
 import { cardSubplots } from './canvasCardSubplots';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
@@ -163,9 +161,7 @@ class CanvasCards {
         const existing = this.ringColors.get(bookId);
         if (existing) return existing;
         const book = this.plugin.settings.books.find(item => item.id === bookId);
-        const pending = book ? this.plugin.getSceneData({ sourcePath: book.sourceFolder }).then(scenes =>
-            computeCacheableValues(this.plugin as unknown as PluginRendererFacade, scenes.map(scene => ({ ...scene, bookId, bookIndex: 0 }))).colorIndexBySubplot
-        ) : Promise.resolve(new Map<string, number>());
+        const pending = book ? bookRingSlots(this.plugin, book) : Promise.resolve(new Map<string, number>());
         this.ringColors.set(bookId, pending);
         return pending;
     }

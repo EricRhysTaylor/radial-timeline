@@ -1,4 +1,4 @@
-import { App, DropdownComponent, Notice, TFile, setIcon, stringifyYaml } from 'obsidian';
+import { AbstractInputSuggest, App, DropdownComponent, Notice, TFile, setIcon, stringifyYaml } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { BookProfile } from '../types';
 import { ErtModal } from '../ui/ErtModal';
@@ -6,14 +6,18 @@ import { authorKeyFor } from './timetableFiles';
 import { getConfiguredActCount } from '../utils/acts';
 import { canvasTextCards, linkSketches, sketchTitle, type StoryCanvasData, type CanvasTextCard } from './canvasSketches';
 import { hasPortalReferences } from './canvasPortals';
-import { t } from '../i18n';
+import { t, tCount } from '../i18n';
 import { getBookIdForPath } from '../utils/books';
 import { readSceneId } from '../utils/sceneIds';
 import { findFrontmatterKey } from '../utils/frontmatterKeys';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
-import { buildTableRow } from './timetableModel';
+import { buildRingLayout, buildTableRow } from './timetableModel';
 import { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor, type PlacementItem } from './sketchPlacement';
 import { canvasReadingOrder, planCanvasSketchAppend } from './canvasSketchOrdering';
+import { bookRingSlots } from './canvasBookCards';
+import { cardColor, cardColorCounts, cardColorCss, subplotForColor } from './canvasCardSubplots';
+import { normalizeSubplotColorIndex, readSubplotColor } from '../renderer/utils/subplotColors';
+import { getMainPlotName } from '../utils/mainPlot';
 
 /** Minimal, runtime-checked surface of Obsidian's Canvas view. */
 export interface OpenCanvas {
@@ -23,6 +27,39 @@ export interface OpenCanvas {
     selection?: Set<{ getData?: () => { id?: string; type?: string } }>;
 }
 
+/** One of the book's rings, as a card color can be assigned to it. */
+interface RingChoice { name: string; slot: number }
+
+function ringDot(parent: HTMLElement, slot: number): HTMLElement {
+    const dot = parent.createSpan({ cls: 'ert-canvas-sketch-swatch' });
+    dot.setCssProps({ '--ert-canvas-sketch-swatch': `var(--rt-subplot-colors-${normalizeSubplotColorIndex(slot)})` });
+    return dot;
+}
+
+/** The book's rings beside a subplot name, each with its timeline color. Any other name starts a new subplot. */
+class RingSuggest extends AbstractInputSuggest<RingChoice> {
+    constructor(app: App, private readonly input: HTMLInputElement, private readonly rings: () => RingChoice[], private readonly onChoose: (name: string) => void) {
+        super(app, input);
+    }
+
+    protected getSuggestions(query: string): RingChoice[] {
+        const typed = query.trim().toLowerCase();
+        return this.rings().filter(ring => ring.name.toLowerCase().includes(typed));
+    }
+
+    renderSuggestion(ring: RingChoice, el: HTMLElement): void {
+        el.addClass('ert-canvas-sketch-ring-option');
+        ringDot(el, ring.slot);
+        el.createSpan({ text: ring.name });
+    }
+
+    selectSuggestion(ring: RingChoice): void {
+        this.input.value = ring.name;
+        this.onChoose(ring.name);
+        this.close();
+    }
+}
+
 export class CanvasSketchModal extends ErtModal {
     private readonly cards: CanvasTextCard[];
     private readonly selected = new Set<string>();
@@ -30,6 +67,8 @@ export class CanvasSketchModal extends ErtModal {
     private busy = false;
     private act: number | null = null;
     private anchorPath: string | null = null;
+    private rings: RingChoice[] = [];
+    private readonly subplotByColor = new Map<string, string>();
 
     constructor(app: App, private readonly plugin: RadialTimelinePlugin, private readonly canvas: OpenCanvas, private readonly books: BookProfile[], activeBook: BookProfile, private readonly canvasIsOpen: () => boolean) {
         super(app);
@@ -63,6 +102,61 @@ export class CanvasSketchModal extends ErtModal {
         }).sort((a, b) => a.row.act - b.row.act || a.row.basename.localeCompare(b.row.basename, undefined, { numeric: true }));
     }
 
+    /** Read the book's rings, then start each card color on the subplot it already stands for. */
+    private async loadRings(): Promise<void> {
+        const book = this.book;
+        const slots = await bookRingSlots(this.plugin, book);
+        if (book !== this.book) return;
+        const items = this.bookItems();
+        const layout = buildRingLayout([...slots.keys()], slots, items.map(item => item.row));
+        this.rings = [...new Set([getMainPlotName(), ...layout.order])].map(name => ({ name, slot: layout.colorIndex.get(name) ?? 0 })); // SAFE: a book with no scenes has no layout yet, and Main Plot always takes the first slot
+        const subplotsByPath = new Map(items.map(item => [item.row.path, item.row.subplots]));
+        const linked = (this.canvas.getData().nodes ?? []).flatMap(node => { // SAFE: canvas JSON may omit nodes; none = no linked cards
+            const color = cardColor(node);
+            const subplots = node.type === 'file' && typeof node.file === 'string' ? subplotsByPath.get(node.file) : undefined;
+            return color && subplots?.length ? [{ color, subplots }] : [];
+        });
+        const ringColors = this.rings.map(ring => ({ name: ring.name, color: readSubplotColor(this.containerEl.doc, ring.slot).toLowerCase() }));
+        this.subplotByColor.clear();
+        for (const color of cardColorCounts(this.cards).keys()) {
+            const subplot = subplotForColor(color, linked, ringColors);
+            if (subplot) this.subplotByColor.set(color, subplot);
+        }
+    }
+
+    /** The subplot a card joins through its color, in the book's own spelling when the ring already exists. */
+    private subplotFor(card: CanvasTextCard): string | null {
+        const color = cardColor(card);
+        const typed = color ? this.subplotByColor.get(color)?.trim() : undefined;
+        if (!typed) return null;
+        return this.rings.find(ring => ring.name.toLowerCase() === typed.toLowerCase())?.name ?? typed;
+    }
+
+    private renderColors(container: HTMLElement): void {
+        container.empty();
+        const counts = cardColorCounts(this.cards.filter(card => this.selected.has(card.id)));
+        if (!counts.size) return;
+        container.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.canvasSketch.colorsHint', { mainPlot: getMainPlotName() }) });
+        for (const [color, count] of counts) {
+            const row = container.createDiv({ cls: 'ert-canvas-sketch-color' });
+            row.createSpan({ cls: 'ert-canvas-sketch-swatch' }).setCssProps({ '--ert-canvas-sketch-swatch': cardColorCss(color) });
+            row.createSpan({ cls: 'ert-canvas-sketch-color-count', text: tCount('card', count) });
+            const input = row.createEl('input', { type: 'text', attr: { placeholder: t('ui.canvasSketch.subplotName') } });
+            setAccessibleLabel(input, t('ui.canvasSketch.subplotName'));
+            input.value = this.subplotByColor.get(color) ?? ''; // SAFE: a color with no subplot yet starts blank, ready to name
+            const ring = row.createDiv({ cls: 'ert-canvas-sketch-ring' });
+            const showRing = () => {
+                ring.empty();
+                const match = this.rings.find(item => item.name.toLowerCase() === input.value.trim().toLowerCase());
+                if (match) ringDot(ring, match.slot);
+            };
+            const remember = (name: string) => { this.subplotByColor.set(color, name); showRing(); };
+            input.addEventListener('input', () => remember(input.value));
+            new RingSuggest(this.app, input, () => this.rings, remember);
+            showRing();
+        }
+    }
+
     onOpen(): void {
         this.applyShell({ size: 'lg' });
         this.mountHeader({ badge: { text: t('ui.canvasSketch.badge') }, title: t('ui.canvasSketch.title'), subtitle: t('ui.canvasSketch.subtitle') });
@@ -74,6 +168,7 @@ export class CanvasSketchModal extends ErtModal {
             this.book = this.books.find(book => book.id === id) ?? this.book;
             this.anchorPath = null;
             updateScenes();
+            updateRings();
         });
         const actRow = this.contentEl.createDiv({ cls: 'setting-item' });
         actRow.createDiv({ cls: 'setting-item-name', text: t('ui.canvasSketch.act') });
@@ -104,6 +199,11 @@ export class CanvasSketchModal extends ErtModal {
                 updateScenes();
             }
         });
+        const colors = this.contentEl.createDiv({ cls: 'ert-canvas-sketch-colors' });
+        const updateRings = () => {
+            this.loadRings().then(() => this.renderColors(colors)).catch((error: unknown) => console.error('[Canvas sketches]', error));
+        };
+        updateRings();
         if (this.cards.length > 1) this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.canvasSketch.orderHint') });
         const list = this.contentEl.createDiv({ cls: 'ert-canvas-sketch-list' });
         const actions = this.mountActions();
@@ -117,6 +217,8 @@ export class CanvasSketchModal extends ErtModal {
             this.cards.forEach((card, index) => {
                 const row = list.createDiv({ cls: 'ert-canvas-sketch-card' });
                 row.createSpan({ cls: 'ert-canvas-sketch-number', text: String(index + 1) });
+                const color = cardColor(card);
+                if (color) row.createSpan({ cls: 'ert-canvas-sketch-swatch' }).setCssProps({ '--ert-canvas-sketch-swatch': cardColorCss(color) });
                 const label = row.createEl('label', { cls: 'ert-canvas-sketch-choice' });
                 const check = label.createEl('input', { type: 'checkbox' });
                 check.checked = this.selected.has(card.id);
@@ -127,6 +229,7 @@ export class CanvasSketchModal extends ErtModal {
                 check.addEventListener('change', () => {
                     if (check.checked) this.selected.add(card.id); else this.selected.delete(card.id);
                     submit.disabled = this.selected.size === 0;
+                    this.renderColors(colors);
                 });
                 if (this.cards.length < 2) return;
                 const controls = row.createDiv({ cls: 'ert-canvas-sketch-order' });
@@ -206,6 +309,8 @@ export class CanvasSketchModal extends ErtModal {
                 for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${folder}/${title} ${n}.md`;
                 const frontmatter: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch' };
                 if (act !== null) frontmatter[authorKeyFor('Act', this.plugin.settings)] = act;
+                const subplot = this.subplotFor(card);
+                if (subplot) frontmatter[authorKeyFor('Subplot', this.plugin.settings)] = subplot;
                 if (anchorId) frontmatter[SKETCH_AFTER_SCENE] = anchorId;
                 frontmatter[SKETCH_ORDER] = placement.ranks[index];
                 await this.app.vault.create(path, `---\n${stringifyYaml(frontmatter)}---\n\n${card.text}`);

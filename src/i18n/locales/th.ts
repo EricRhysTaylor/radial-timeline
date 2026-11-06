@@ -1236,6 +1236,7 @@ export const th: TranslationKeys = {
         "cancel": "ยกเลิก",
         "save": "บันทึก",
         "counts": {
+            "card": { "one": "การ์ด {{count}} ใบ", "other": "การ์ด {{count}} ใบ" },
             "scene": {
                 "one": "{{count}} ฉาก",
                 "other": "{{count}} ฉาก"
@@ -6005,6 +6006,8 @@ export const th: TranslationKeys = {
             afterScene: "วางหลังฉาก",
             endOfAct: "ท้ายองก์หรือยังไม่กำหนด",
             orderHint: 'เลือกลำดับของไอเดียเหล่านี้ในหนังสือ',
+            colorsHint: 'สีของการ์ดแต่ละสีเป็นพล็อตย่อยได้ เลือกพล็อตย่อยที่มีอยู่หรือพิมพ์ชื่อใหม่ การ์ดที่ไม่มีชื่อจะอยู่ใน {{mainPlot}}',
+            subplotName: 'ชื่อพล็อตย่อย',
             moveUp: "ขึ้น",
             moveDown: "ลง",
             anchorChanged: "ฉากที่เลือกเปลี่ยนไปหรือ ID ไม่เป็นเอกลักษณ์",

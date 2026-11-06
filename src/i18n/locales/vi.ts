@@ -1236,6 +1236,7 @@ export const vi: TranslationKeys = {
         "cancel": "Hủy",
         "save": "Lưu",
         "counts": {
+            "card": { "one": "{{count}} thẻ", "other": "{{count}} thẻ" },
             "scene": {
                 "one": "{{count}} cảnh",
                 "other": "{{count}} cảnh"
@@ -6005,6 +6006,8 @@ export const vi: TranslationKeys = {
             afterScene: "Đặt sau cảnh",
             endOfAct: "Cuối hồi hoặc chưa chỉ định",
             orderHint: 'Chọn thứ tự các ý tưởng này trong sách.',
+            colorsHint: 'Mỗi màu thẻ có thể thành một cốt truyện phụ: chọn một cốt truyện phụ có sẵn hoặc nhập tên mới. Thẻ không có tên sẽ vào {{mainPlot}}.',
+            subplotName: 'Tên cốt truyện phụ',
             moveUp: "Lên",
             moveDown: "Xuống",
             anchorChanged: "Cảnh đã chọn thay đổi hoặc ID không còn duy nhất.",

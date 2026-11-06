@@ -2586,6 +2586,14 @@
 .ert-canvas-sketch-order { display: flex; flex-direction: column; flex: none; }
 .ert-canvas-sketch-number { color: var(--text-muted); min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; }
 .ert-canvas-sketch-order-hint { color: var(--text-muted); font-size: var(--font-ui-small); }
+.ert-canvas-sketch-colors { display: flex; flex-direction: column; gap: var(--size-4-2); }
+.ert-canvas-sketch-colors:empty { display: none; }
+.ert-canvas-sketch-color { display: flex; align-items: center; gap: var(--size-4-3); }
+.ert-canvas-sketch-color-count { flex: none; min-width: 7ch; color: var(--text-muted); font-size: var(--font-ui-small); font-variant-numeric: tabular-nums; }
+.ert-canvas-sketch-color input { flex: 1; min-width: 0; }
+.ert-canvas-sketch-ring { display: flex; align-items: center; justify-content: center; flex: none; width: 14px; }
+.ert-canvas-sketch-swatch { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--ert-canvas-sketch-swatch); }
+.ert-canvas-sketch-ring-option { display: flex; align-items: center; gap: var(--size-4-2); }
 .ert-canvas-sketch-title {
     overflow-wrap: anywhere;
     font-weight: var(--font-medium);

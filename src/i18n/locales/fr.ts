@@ -1236,6 +1236,7 @@ export const fr: TranslationKeys = {
         "cancel": "Annuler",
         "save": "Enregistrer",
         "counts": {
+            "card": { "one": "{{count}} carte", "other": "{{count}} cartes" },
             "scene": {
                 "one": "{{count}} scène",
                 "other": "{{count}} scènes"
@@ -6005,6 +6006,8 @@ export const fr: TranslationKeys = {
             afterScene: "Placer après la scène",
             endOfAct: "À la fin de l’acte ou sans affectation",
             orderHint: 'Choisissez l’ordre de ces idées dans votre livre.',
+            colorsHint: 'Chaque couleur de carte peut devenir une sous-intrigue : choisissez l’une de vos sous-intrigues ou saisissez un nouveau nom. Les cartes sans nom rejoignent {{mainPlot}}.',
+            subplotName: 'Nom de la sous-intrigue',
             moveUp: "Monter",
             moveDown: "Descendre",
             anchorChanged: "La scène choisie a changé ou son identifiant n’est plus unique.",

@@ -1256,6 +1256,7 @@ export const de: DeepPartial<TranslationKeys> = {
         cancel: 'Abbrechen',
         save: 'Speichern',
         counts: {
+            card: { one: '{{count}} Karte', other: '{{count}} Karten' },
             scene: {
                 one: '{{count}} Szene',
                 other: '{{count}} Szenen',
@@ -6002,6 +6003,8 @@ export const de: DeepPartial<TranslationKeys> = {
             afterScene: "Nach Szene platzieren",
             endOfAct: "Am Ende des Akts oder ohne Zuordnung",
             orderHint: 'Lege die Reihenfolge dieser Ideen im Buch fest.',
+            colorsHint: 'Jede Kartenfarbe kann zu einer Nebenhandlung werden: Wähle eine deiner Nebenhandlungen oder gib einen neuen Namen ein. Karten ohne Namen kommen zu {{mainPlot}}.',
+            subplotName: 'Name der Nebenhandlung',
             moveUp: "Nach oben",
             moveDown: "Nach unten",
             anchorChanged: "Die gewählte Szene hat sich geändert oder ihre ID ist nicht eindeutig.",

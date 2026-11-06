@@ -1236,6 +1236,7 @@ export const es: TranslationKeys = {
         "cancel": "Cancelar",
         "save": "Guardar",
         "counts": {
+            "card": { "one": "{{count}} tarjeta", "other": "{{count}} tarjetas" },
             "scene": {
                 "one": "{{count}} escena",
                 "other": "{{count}} escenas"
@@ -6005,6 +6006,8 @@ export const es: TranslationKeys = {
             afterScene: "Colocar después de la escena",
             endOfAct: "Al final del acto o sin asignar",
             orderHint: 'Elige el orden de estas ideas en tu libro.',
+            colorsHint: 'Cada color de tarjeta puede ser una subtrama: elige una de tus subtramas o escribe un nombre nuevo. Las tarjetas sin nombre pasan a {{mainPlot}}.',
+            subplotName: 'Nombre de la subtrama',
             moveUp: "Subir",
             moveDown: "Bajar",
             anchorChanged: "La escena cambió o ya no tiene un ID único.",

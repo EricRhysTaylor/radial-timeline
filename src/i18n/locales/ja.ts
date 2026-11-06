@@ -1257,6 +1257,7 @@ export const ja: DeepPartial<TranslationKeys> = {
         cancel: 'キャンセル',
         save: '保存',
         counts: {
+            card: { one: '{{count}} 枚のカード', other: '{{count}} 枚のカード' },
             scene: {
                 one: '{{count}} シーン',
                 other: '{{count}} シーン',
@@ -6003,6 +6004,8 @@ export const ja: DeepPartial<TranslationKeys> = {
             afterScene: "シーンの後に配置",
             endOfAct: "幕の末尾または未割り当て",
             orderHint: '本の中でのアイデアの順序を選びます。',
+            colorsHint: 'カードの色ごとにサブプロットを割り当てられます。既存のサブプロットを選ぶか、新しい名前を入力します。名前のないカードは{{mainPlot}}に入ります。',
+            subplotName: 'サブプロット名',
             moveUp: "上へ",
             moveDown: "下へ",
             anchorChanged: "選択したシーンが変更されたか、IDが重複しています。",

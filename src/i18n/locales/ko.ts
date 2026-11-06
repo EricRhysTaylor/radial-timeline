@@ -1256,6 +1256,7 @@ export const ko: DeepPartial<TranslationKeys> = {
         cancel: '취소',
         save: '저장',
         counts: {
+            card: { one: '카드 {{count}}장', other: '카드 {{count}}장' },
             scene: {
                 one: '장면 {{count}}개',
                 other: '장면 {{count}}개',
@@ -6002,6 +6003,8 @@ export const ko: DeepPartial<TranslationKeys> = {
             afterScene: "장면 뒤에 배치",
             endOfAct: "막의 끝 또는 미지정",
             orderHint: '책에서 이 아이디어의 순서를 정하세요.',
+            colorsHint: '카드 색마다 서브플롯을 지정할 수 있습니다. 기존 서브플롯을 고르거나 새 이름을 입력하세요. 이름이 없는 카드는 {{mainPlot}}에 들어갑니다.',
+            subplotName: '서브플롯 이름',
             moveUp: "위로",
             moveDown: "아래로",
             anchorChanged: "선택한 장면이 변경되었거나 ID가 중복되었습니다.",

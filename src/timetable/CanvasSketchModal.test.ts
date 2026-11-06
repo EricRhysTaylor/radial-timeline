@@ -75,6 +75,37 @@ describe('Canvas sketch conversion', () => {
         expect(test.saved.get('Book/Other idea.md')).toContain('Act: 2');
     });
 
+    it('puts each card on the subplot named for its color and leaves uncolored cards alone', async () => {
+        const test = setup(false, ['1', '2']);
+        (Reflect.get(test.modal, 'selected') as Set<string>).add('2');
+        (Reflect.get(test.modal, 'cards') as Array<{ id: string; color?: string }>)[0].color = '1';
+        test.getData().nodes![0].color = '1';
+        (Reflect.get(test.modal, 'subplotByColor') as Map<string, string>).set('1', '  The Servant ');
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(test.saved.get('Book/A scene 2.md')).toContain('Subplot: The Servant');
+        expect(test.saved.get('Book/Other idea.md')).not.toContain('Subplot');
+        expect(test.getData().nodes?.[0]).toMatchObject({ type: 'file', color: '1' });
+    });
+
+    it('uses the ring name as the book spells it', async () => {
+        const test = setup();
+        (Reflect.get(test.modal, 'cards') as Array<{ id: string; color?: string }>)[0].color = '#aa00ff';
+        test.getData().nodes![0].color = '#AA00FF';
+        Reflect.set(test.modal, 'rings', [{ name: 'The Servant', slot: 2 }]);
+        (Reflect.get(test.modal, 'subplotByColor') as Map<string, string>).set('#aa00ff', 'the servant');
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(test.saved.get('Book/A scene 2.md')).toContain('Subplot: The Servant');
+    });
+
+    it('leaves a card off every subplot when its color has no name', async () => {
+        const test = setup();
+        (Reflect.get(test.modal, 'cards') as Array<{ id: string; color?: string }>)[0].color = '1';
+        test.getData().nodes![0].color = '1';
+        (Reflect.get(test.modal, 'subplotByColor') as Map<string, string>).set('1', '   ');
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(test.saved.get('Book/A scene 2.md')).not.toContain('Subplot');
+    });
+
     it('places converted sketches after the chosen scene using its ID and act', async () => {
         const test = setup();
         Reflect.set(test.modal, 'anchorPath', 'Book/1 The Letter.md');

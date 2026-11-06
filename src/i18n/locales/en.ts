@@ -1139,6 +1139,7 @@ export const en = {
          * inflect it; never build a plural by appending a letter.
          */
         counts: {
+            card: { one: '{{count}} card', other: '{{count}} cards' },
             scene: { one: '{{count}} scene', other: '{{count}} scenes' },
             session: { one: '{{count}} session', other: '{{count}} sessions' },
             beat: { one: '{{count}} beat', other: '{{count}} beats' },
@@ -5683,6 +5684,8 @@ export const en = {
             afterScene: "Place after scene",
             endOfAct: "End of act or unassigned",
             orderHint: "Choose the order for these ideas in your book.",
+            colorsHint: 'Each card color can become a subplot: pick one of your subplots or type a new name. Cards with no name join {{mainPlot}}.',
+            subplotName: 'Subplot name',
             moveUp: "Move up",
             moveDown: "Move down",
             anchorChanged: "The chosen scene changed or no longer has a unique ID.",

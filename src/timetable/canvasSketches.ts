@@ -7,6 +7,7 @@ export interface CanvasCard {
     id: string;
     type: string;
     text?: string;
+    color?: unknown;
     [key: string]: unknown;
 }
 export interface StoryCanvasData {

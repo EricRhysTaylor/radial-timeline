@@ -16,6 +16,10 @@ import {
     filterSignature,
     groupProgress,
     medianOf,
+    activeMatch,
+    coloringMatches,
+    isColoringMatch,
+    matchLabelKey,
     narrowColoring,
     planColoring,
     planConfiguredColoring,
@@ -183,7 +187,7 @@ describe('planColoring', () => {
         expect(plan.kind).toBe('ok');
         if (plan.kind !== 'ok') return;
         expect(plan.legend).toEqual([{ value: 'Shail', colorIndex: 0, count: 3 }, { value: 'Trisan', colorIndex: 1, count: 2 }]);
-        expect(plan.values.get('b')).toBe('Shail');
+        expect(plan.values.get('b')).toBe('Trisan');
         expect(plan.values.has('d')).toBe(false);
     });
 
@@ -227,6 +231,16 @@ describe('planColoring', () => {
         expect(plan.kind === 'ok' && plan.categories).toEqual([{ value: 'Shail', count: 2 }, { value: 'Trisan', count: 2 }]);
     });
 
+    it('paints a scene in its rarest category, so a name in nearly every scene doesn\'t color the whole book', () => {
+        const plan = planColoring([
+            { path: 'a', value: ['Lead', 'Friend'] },
+            { path: 'b', value: ['Lead', 'Friend'] },
+            { path: 'c', value: ['Lead', 'Rival'] },
+            { path: 'd', value: ['Lead'] },
+        ]);
+        expect(plan.kind === 'ok' && [...plan.values]).toEqual([['a', 'Friend'], ['b', 'Friend'], ['c', 'Rival'], ['d', 'Lead']]);
+    });
+
     it('uses an explicit palette beyond the eight most frequent, painting a secondary member when chosen', () => {
         const rows = Array.from({ length: 12 }, (_, index) => ({ path: String(index), value: ['Lead', `Supporting ${index}`] }));
         const plan = planColoring(rows, 8, [5], ['Supporting 11']);
@@ -254,23 +268,71 @@ describe('narrowColoring', () => {
         ['c', ['Shail', 'Chae Ban']],
         ['d', ['Trisan']],
     ]);
+    const plan = { members, categories: [{ value: 'Chae Ban', count: 3 }, { value: 'Trisan', count: 3 }, { value: 'Shail', count: 2 }] };
 
     it('keeps the scenes that list a pick anywhere, in its color', () => {
-        expect([...narrowColoring(members, ['Chae Ban'])]).toEqual([['a', 'Chae Ban'], ['b', 'Chae Ban'], ['c', 'Chae Ban']]);
+        expect([...narrowColoring(plan, ['Chae Ban'])]).toEqual([['a', 'Chae Ban'], ['b', 'Chae Ban'], ['c', 'Chae Ban']]);
     });
 
-    it('keeps only the scenes that list every pick, each in the color of the pick it lists first', () => {
-        expect([...narrowColoring(members, ['Trisan', 'Chae Ban'])]).toEqual([['a', 'Trisan'], ['b', 'Chae Ban']]);
-        expect(narrowColoring(members, ['Trisan', 'Shail', 'Chae Ban']).size).toBe(1);
+    it('keeps only the scenes that list every pick, each in its rarest pick, the first listed on a tie', () => {
+        expect([...narrowColoring(plan, ['Trisan', 'Chae Ban'])]).toEqual([['a', 'Trisan'], ['b', 'Chae Ban']]);
+        expect([...narrowColoring(plan, ['Trisan', 'Shail', 'Chae Ban'])]).toEqual([['b', 'Shail']]);
     });
 
     it('supports alternative scalar values and periods with any matching pick', () => {
         const periods = new Map([['a', ['month:2085-04']], ['b', ['month:2085-05']], ['c', ['month:2085-06']]]);
-        expect([...narrowColoring(periods, ['month:2085-04', 'month:2085-06'], 'any').keys()]).toEqual(['a', 'c']);
+        expect([...narrowColoring({ members: periods, categories: [] }, ['month:2085-04', 'month:2085-06'], 'any').keys()]).toEqual(['a', 'c']);
     });
 
     it('is empty when no scene lists them all', () => {
-        expect(narrowColoring(members, ['Shail', 'Trisan', 'Nobody']).size).toBe(0);
+        expect(narrowColoring(plan, ['Shail', 'Trisan', 'Nobody']).size).toBe(0);
+    });
+
+    it('keeps the scenes with none of the picks, all in the first pick\'s color', () => {
+        expect([...narrowColoring(plan, ['Chae Ban'], 'none')]).toEqual([['d', 'Chae Ban']]);
+        expect([...narrowColoring(plan, ['Shail', 'Chae Ban'], 'none')]).toEqual([['d', 'Shail']]);
+    });
+
+    it('keeps the scenes with the picks and nobody else', () => {
+        expect([...narrowColoring(plan, ['Trisan', 'Chae Ban'], 'only').keys()]).toEqual(['a']);
+        expect([...narrowColoring(plan, ['Chae Ban', 'Shail'], 'only').keys()]).toEqual(['c']);
+    });
+
+    it('leaves out a scene with nothing in the column, whatever the search type', () => {
+        expect(narrowColoring({ members: new Map(), categories: [] }, ['Trisan'], 'none').size).toBe(0);
+    });
+});
+
+describe('the key\'s search types', () => {
+    it('offers with or without for one name, and all four for two or more in a list column', () => {
+        expect(coloringMatches(1, true)).toEqual(['all', 'none']);
+        expect(coloringMatches(2, true)).toEqual(['all', 'any', 'none', 'only']);
+        expect(coloringMatches(3, true)).toEqual(['all', 'any', 'none', 'only']);
+    });
+
+    it('offers only either or neither when a scene holds one value', () => {
+        expect(coloringMatches(1, false)).toEqual(['all', 'none']);
+        expect(coloringMatches(2, false)).toEqual(['any', 'none']);
+    });
+
+    it('keeps the saved search type when the picks allow it, and falls back when they don\'t', () => {
+        expect(activeMatch('any', 2, true)).toBe('any');
+        expect(activeMatch('any', 1, true)).toBe('all');
+        expect(activeMatch('only', 1, true)).toBe('all');
+        expect(activeMatch('none', 1, true)).toBe('none');
+        expect(activeMatch('all', 2, false)).toBe('any');
+    });
+
+    it('words each one for how many names are picked', () => {
+        expect(['all', 'none'].map(match => matchLabelKey(match as 'all' | 'none', 1))).toEqual(['with', 'without']);
+        expect((['all', 'any', 'none', 'only'] as const).map(match => matchLabelKey(match, 2))).toEqual(['both', 'either', 'neither', 'alone']);
+        expect((['all', 'any', 'none', 'only'] as const).map(match => matchLabelKey(match, 3))).toEqual(['all', 'any', 'none', 'only']);
+    });
+
+    it('recognizes only the four search types', () => {
+        expect(isColoringMatch('only')).toBe(true);
+        expect(isColoringMatch('some')).toBe(false);
+        expect(isColoringMatch(undefined)).toBe(false);
     });
 });
 
@@ -284,6 +346,8 @@ describe('readSavedColoring', () => {
     it('reads versioned choices and rejects unknown versions, invalid ranges and oversized palettes', () => {
         const saved = { schemaVersion: 2, property: 'note.When', picks: ['range:inside'], palette: ['range:inside'], match: 'any', grouping: { kind: 'range', start: '2085-04-01', end: '2085-05-31' } };
         expect(readSavedColoring(saved)).toEqual(saved);
+        expect(readSavedColoring({ property: 'note.Character', picks: [], match: 'only' })?.match).toBe('only');
+        expect(readSavedColoring({ property: 'note.Character', picks: [], match: 'some' })).toBeNull();
         expect(readSavedColoring({ ...saved, schemaVersion: 3 })).toBeNull();
         expect(readSavedColoring({ ...saved, grouping: { ...saved.grouping, end: '2085-02-30' } })).toBeNull();
         expect(readSavedColoring({ ...saved, palette: Array.from({ length: 9 }, (_, i) => String(i)) })).toBeNull();

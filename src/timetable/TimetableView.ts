@@ -88,7 +88,8 @@ import {
     medianOf,
     narrowColoring,
     planConfiguredColoring,
-    MAX_COLOR_VALUES,
+    activeMatch,
+    coloringMatches,
     type SavedColoring,
     readRuntimeSeconds,
     readSavedColoring,
@@ -1364,10 +1365,7 @@ export class TimetableView extends BasesView {
             menu.addItem(item => {
                 item.setIcon('palette');
                 if (plan.kind === 'ok') {
-                    item.setTitle(t('ui.timetable.coloringStart', { property: name })).onClick(() => {
-                        if (initial.grouping || plan.categories.length > MAX_COLOR_VALUES) this.configureColoring(initial);
-                        else this.saveColoring(initial);
-                    });
+                    item.setTitle(t('ui.timetable.coloringStart', { property: name })).onClick(() => this.saveColoring(initial));
                 } else item.setTitle(t('ui.timetable.coloringNone', { property: name })).setDisabled(true);
             });
         }
@@ -1391,6 +1389,8 @@ export class TimetableView extends BasesView {
         const config: SavedColoring = { schemaVersion: 2, property, picks: [] };
         if (canonical === 'When') config.grouping = { kind: 'month' };
         if (canonical === 'Due') config.grouping = { kind: 'due' };
+        // A scene is rarely in two places, so two places picked means either one.
+        if (canonical === 'Place') config.match = 'any';
         return config;
     }
 
@@ -1446,8 +1446,9 @@ export class TimetableView extends BasesView {
         if (plan.kind !== 'ok' || plan.legend.length === 0) { clearTimelineColoring(this); return; }
         this.coloringProperty = property;
         const picks = saved.picks.filter(pick => plan.legend.some(entry => entry.value === pick));
-        const match = saved.grouping ? 'any' : saved.match ?? (plan.multiValue ? 'all' : 'any');
-        const values = picks.length > 0 ? narrowColoring(plan.members, picks, match) : plan.values;
+        const chosen = saved.match ?? (plan.multiValue ? 'all' : 'any');
+        const match = saved.grouping ? 'any' : activeMatch(chosen, picks.length, plan.multiValue);
+        const values = picks.length > 0 ? narrowColoring(plan, picks, match) : plan.values;
         if (picks.length > 0) this.pickedPaths = new Set(values.keys());
         setTimelineColoring({
             owner: this,
@@ -1456,12 +1457,16 @@ export class TimetableView extends BasesView {
             legend: plan.legend.map(entry => ({ ...entry, label: coloringDateLabel(entry.value, saved.grouping) })),
             categoryCount: plan.categories.length,
             match,
+            nextMatch: saved.grouping ? 'any' : activeMatch(chosen, picks.length + 1, plan.multiValue),
+            // A scene sits in one date group, so periods only ever add up.
+            matches: saved.grouping ? [] : coloringMatches(picks.length, plan.multiValue),
+            setMatch: next => this.saveColoring({ ...saved, match: next }),
             grouping: saved.grouping?.kind ?? 'categories',
             groupingLabel: saved.grouping?.kind === 'range' ? `${saved.grouping.start} – ${saved.grouping.end}` : saved.grouping ? t(`ui.timetable.colorKey.group.${saved.grouping.kind}`) : '',
             picks,
             togglePick: value => this.saveColoring({ ...saved, picks: toggledPicks(picks, value) }),
             clearPicks: () => this.saveColoring({ ...saved, picks: [] }),
-            configure: () => this.configureColoring({ ...saved, match }),
+            configure: () => this.configureColoring(saved),
             turnOff: () => this.stopColoring(),
         });
     }

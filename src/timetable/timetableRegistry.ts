@@ -59,6 +59,8 @@ export interface TimelineLens {
     turnOff: () => void;
 }
 
+type ColoringMatch = import('./timetableModel').ColoringMatch;
+
 /** A Timetable column coloring the timeline's scenes, one color per value. */
 export interface TimelineColoring {
     owner: object;
@@ -69,12 +71,18 @@ export interface TimelineColoring {
     /** Values in legend order, each with its color slot (0–15, the ring palette). */
     legend: Array<{ value: string; colorIndex: number; count: number; label: string }>;
     categoryCount: number;
-    match: 'all' | 'any';
+    match: ColoringMatch;
+    /** The search type one more pick would use, for the key's tooltips. */
+    nextMatch: ColoringMatch;
+    /** The search types the key offers for these picks; none for date groups. */
+    matches: ColoringMatch[];
+    /** A search type in the key was clicked. */
+    setMatch: (match: ColoringMatch) => void;
     grouping: string;
     groupingLabel: string;
     clearPicks: () => void;
     configure: () => void;
-    /** Values picked in the key. While any are, `values` contains the scenes passing the configured match. */
+    /** Values picked in the key. While any are, `values` contains the scenes passing the search type. */
     picks: string[];
     /** A value in the key was clicked: pick it, or drop it. */
     togglePick: (value: string) => void;

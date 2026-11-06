@@ -70,6 +70,7 @@ import { GOSSAMER_SIGNAL_METADATA, GOSSAMER_SIGNAL_TYPES, type GossamerSignalTyp
 import { formatGossamerCacheClock, formatGossamerCacheCostHint, getGossamerCacheContext, resolveGossamerCacheWindow } from '../gossamer/cacheWindow';
 import { tooltip as applyTooltip } from '../utils/tooltip';
 import { currentTimelineColoring, currentTimelineLens, hasOpenTimetable, onTimelineOverlayChange, onTimetablePresenceChange, publishTimelineMode } from '../timetable/timetableRegistry';
+import { isColoringMatch, matchLabelKey } from '../timetable/timetableModel';
 import { applyQueryMarks, applyTimetableOverlayToSvg, linkActLabelsToTimetable } from './interactions/TimetableLink';
 import { renderLegendSurface, wireLegendTrigger, type LegendDetailSegment, type LegendSection } from './interactions/LegendPanel';
 import { listAuthorQueries } from '../utils/authorQueryComments';
@@ -298,6 +299,13 @@ export class RadialTimelineView extends ItemView {
                 const action = target?.closest<HTMLElement>('[data-color-key-action]')?.dataset.colorKeyAction;
                 if (action === 'configure') currentTimelineColoring()?.configure();
                 if (action === 'clear') currentTimelineColoring()?.clearPicks();
+                const matchButton = target?.closest<HTMLElement>('[data-color-key-match]');
+                const match = matchButton?.dataset.colorKeyMatch;
+                if (isColoringMatch(match)) {
+                    const focused = matchButton === overlays.ownerDocument.activeElement;
+                    currentTimelineColoring()?.setMatch(match);
+                    if (focused) this.overlaysEl?.querySelector<HTMLElement>(`[data-color-key-match="${match}"]`)?.focus();
+                }
                 const pickButton = target?.closest<HTMLElement>('[data-pick]');
                 const pick = pickButton?.dataset.pick;
                 if (pick !== undefined) {
@@ -337,11 +345,23 @@ export class RadialTimelineView extends ItemView {
                 const clear = tools.createEl('button', { cls: 'ert-timeline-lens__clear', text: t('ui.timetable.colorKey.clear') });
                 clear.dataset.colorKeyAction = 'clear';
             }
-            const status = panel.createDiv({ cls: 'ert-timeline-lens__status', attr: { role: 'status', 'aria-live': 'polite' } });
-            status.setText(`${tCount('scene', coloring.values.size)} · ${t(coloring.match === 'all' ? 'ui.timetable.colorKey.matchAll' : 'ui.timetable.colorKey.matchAny')}`);
+            const summary = panel.createDiv({ cls: 'ert-timeline-lens__summary' });
+            const status = summary.createDiv({ cls: 'ert-timeline-lens__status', attr: { role: 'status', 'aria-live': 'polite' } });
+            status.setText(tCount('scene', coloring.values.size));
             if (coloring.categoryCount > coloring.legend.length) status.createSpan({ text: ` · ${t('ui.timetable.colorKey.showing', { count: coloring.legend.length, total: coloring.categoryCount })}` });
             if (coloring.grouping !== 'categories') status.createSpan({ text: ` · ${coloring.groupingLabel}` });
-            panel.insertBefore(status, legend);
+            panel.insertBefore(summary, legend);
+            if (picking && coloring.matches.length > 0) {
+                const name = coloring.legend.find(entry => entry.value === coloring.picks[0])?.label ?? coloring.picks[0];
+                const matches = summary.createDiv({ cls: 'ert-timeline-lens__match', attr: { role: 'group' } });
+                setAccessibleLabel(matches, t('ui.timetable.colorKey.matchGroup'));
+                for (const option of coloring.matches) {
+                    const button = matches.createEl('button', { text: t(`ui.timetable.colorKey.matchLabel.${matchLabelKey(option, coloring.picks.length)}`, { name }), attr: { type: 'button', 'aria-pressed': String(option === coloring.match) } });
+                    button.toggleClass('is-active', option === coloring.match);
+                    button.dataset.colorKeyMatch = option;
+                }
+            }
+            const pickNext = { all: 'ui.timetable.pickAlso', any: 'ui.timetable.pickEither', none: 'ui.timetable.pickOut', only: 'ui.timetable.pickAlone' }[coloring.nextMatch];
             for (const entry of coloring.legend) {
                 const picked = coloring.picks.includes(entry.value);
                 const item = legend.createEl('button', { cls: 'ert-timeline-lens__item', attr: { type: 'button' } });
@@ -350,7 +370,7 @@ export class RadialTimelineView extends ItemView {
                 item.toggleClass('is-unpicked', picking && !picked);
                 item.dataset.pick = entry.value;
                 item.setAttr('aria-pressed', String(picked));
-                setTooltip(item, t(picked ? 'ui.timetable.pickDrop' : picking ? coloring.match === 'all' ? 'ui.timetable.pickAlso' : 'ui.timetable.pickEither' : 'ui.timetable.pickOnly', { value: entry.label }));
+                setTooltip(item, t(picked ? 'ui.timetable.pickDrop' : picking ? pickNext : 'ui.timetable.pickOnly', { value: entry.label }));
                 item.createSpan({ cls: 'ert-timeline-lens__swatch' });
                 item.createSpan({ cls: 'ert-timeline-lens__name', text: entry.label });
                 item.createSpan({ cls: 'ert-timeline-lens__count', text: String(entry.count) });

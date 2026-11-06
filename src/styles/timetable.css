@@ -924,7 +924,8 @@
   margin-left: auto;
 }
 
-.ert-timeline-lens__tools button {
+.ert-timeline-lens__tools button,
+.ert-timeline-lens__match button {
   height: auto;
   padding: var(--size-2-1) var(--size-2-3);
   background: transparent;
@@ -935,18 +936,39 @@
   font-size: var(--font-ui-smaller);
 }
 
+.ert-timeline-lens__match button.is-active {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.ert-timeline-lens__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  min-width: 0;
+}
+
+.ert-timeline-lens__match {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2-2);
+  min-width: 0;
+}
+
 .ert-timeline-lens__status {
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
   line-height: 1.4;
 }
 
+/* Inline names, so text-wrap can even out the lines. */
 .ert-timeline-lens__legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
   min-width: 0;
-  gap: var(--size-2-3);
+  margin-bottom: calc(var(--size-2-3) * -1);
+  text-wrap: balance;
 }
 
 .ert-timeline-lens__legend:empty {
@@ -960,6 +982,7 @@
   min-width: 0;
   max-width: 100%;
   height: auto;
+  margin: 0 var(--size-2-3) var(--size-2-3) 0;
   padding: var(--size-2-2) var(--size-4-2);
   border: 1px solid var(--background-modifier-border);
   border-radius: 999px;
@@ -982,7 +1005,8 @@
 }
 
 .ert-timeline-lens button.ert-timeline-lens__item:focus-visible,
-.ert-timeline-lens__tools button:focus-visible {
+.ert-timeline-lens__tools button:focus-visible,
+.ert-timeline-lens__match button:focus-visible {
   outline: 2px solid var(--interactive-accent);
   outline-offset: 2px;
 }

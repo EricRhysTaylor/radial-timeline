@@ -436,12 +436,23 @@ const NUMBER_VALUE = /^-?\d+(\.\d+)?$/;
 const UNFILLED_PLACEHOLDER = /^\{\{[^{}]*\}\}$/;
 
 export interface ColoringCategory { value: string; count: number }
-export type ColoringMatch = 'all' | 'any';
+export type ColoringMatch = 'all' | 'any' | 'none' | 'only';
+const COLORING_MATCHES: readonly ColoringMatch[] = ['all', 'any', 'none', 'only'];
+export const isColoringMatch = (value: unknown): value is ColoringMatch => COLORING_MATCHES.some(match => match === value);
 export type ColoringPlan =
     | { kind: 'ok'; values: Map<string, string>; legend: Array<ColoringCategory & { colorIndex: number }>; members: Map<string, string[]>; categories: ColoringCategory[]; multiValue: boolean }
     | { kind: 'none' };
 
-/** Discover every list member; paint up to eight chosen categories, keeping author list order per cell. */
+/** The rarest of a scene's values among `from`, the first listed on a tie, so a name in nearly every scene can't color the whole book. */
+function rarestValue(items: readonly string[], from: readonly string[], counts: ReadonlyMap<string, number>): string | undefined {
+    let lead: string | undefined;
+    for (const item of items) {
+        if (from.includes(item) && (lead === undefined || (counts.get(item) ?? 0) < (counts.get(lead) ?? 0))) lead = item;
+    }
+    return lead;
+}
+
+/** Discover every list member and paint up to eight chosen categories, each scene in its rarest one. */
 export function planColoring(
     rows: Array<{ path: string; value: unknown }>,
     max: number = MAX_COLOR_VALUES,
@@ -470,19 +481,48 @@ export function planColoring(
     const legend = chosen.map((value, index) => ({ value, count: counts.get(value)!, colorIndex: slotOrder[index] ?? index }));
     if (legend.every(entry => NUMBER_VALUE.test(entry.value))) legend.sort((a, b) => Number(a.value) - Number(b.value));
     for (const [path, items] of members) {
-        const lead = items.find(item => chosen.includes(item));
+        const lead = rarestValue(items, chosen, counts);
         if (lead !== undefined) values.set(path, lead);
     }
     return { kind: 'ok', values, legend, members, categories, multiValue };
 }
 
-/** Narrow list membership by all picks (characters together), or any pick (alternative periods/values). */
-export function narrowColoring(members: Map<string, string[]>, picks: readonly string[], match: ColoringMatch = 'all'): Map<string, string> {
+/** The search types the key offers: with one name, with or without it; a one-value column can't hold two picks at once. */
+export function coloringMatches(pickCount: number, multiValue: boolean): ColoringMatch[] {
+    if (pickCount < 2) return ['all', 'none'];
+    return multiValue ? ['all', 'any', 'none', 'only'] : ['any', 'none'];
+}
+
+/** The saved search type, or the first one this many picks offers; the saved choice returns when picks allow it. */
+export function activeMatch(match: ColoringMatch, pickCount: number, multiValue: boolean): ColoringMatch {
+    const offered = coloringMatches(pickCount, multiValue);
+    return offered.includes(match) ? match : offered[0];
+}
+
+/** Which label a search type wears: the words follow how many names are picked. */
+export function matchLabelKey(match: ColoringMatch, pickCount: number): string {
+    if (pickCount < 2) return match === 'none' ? 'without' : 'with';
+    if (pickCount > 2) return match;
+    return { all: 'both', any: 'either', none: 'neither', only: 'alone' }[match];
+}
+
+/**
+ * Narrow to the scenes passing the search type: every pick (all), any pick,
+ * no pick (none), or the picks and nobody else (only). A scene with nothing in
+ * the column isn't a match for any of them. Scenes without the picks have no
+ * pick's color to wear, so they all take the first pick's.
+ */
+export function narrowColoring(plan: { members: ReadonlyMap<string, string[]>; categories: ColoringCategory[] }, picks: readonly string[], match: ColoringMatch = 'all'): Map<string, string> {
+    const counts = new Map(plan.categories.map(entry => [entry.value, entry.count]));
     const values = new Map<string, string>();
-    for (const [path, items] of members) {
-        const matches = match === 'all' ? picks.every(pick => items.includes(pick)) : picks.some(pick => items.includes(pick));
-        if (!matches) continue;
-        const lead = items.find(item => picks.includes(item));
+    for (const [path, items] of plan.members) {
+        const listed = picks.filter(pick => items.includes(pick)).length;
+        if (match === 'none') {
+            if (listed === 0) values.set(path, picks[0]);
+            continue;
+        }
+        const matches = match === 'any' ? listed > 0 : listed === picks.length && (match === 'all' || items.length === picks.length);
+        const lead = matches ? rarestValue(items, picks, counts) : undefined;
         if (lead !== undefined) values.set(path, lead);
     }
     return values;
@@ -539,7 +579,7 @@ export function readSavedColoring(raw: unknown): SavedColoring | null {
         if (result.palette.length === 0) return null;
     }
     if ('match' in raw) {
-        if (raw.match !== 'all' && raw.match !== 'any') return null;
+        if (!isColoringMatch(raw.match)) return null;
         result.match = raw.match;
     }
     if ('grouping' in raw) {

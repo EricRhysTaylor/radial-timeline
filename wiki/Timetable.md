@@ -90,13 +90,22 @@ A view with a filter of its own (**This view** in the Filter menu) turns the len
 
 Right-click a stored scene-property column header to color the timeline’s scenes by values such as Character, Place, POV, Type, or your own categories. Every list member is available, including a character never listed first. Unfilled template fields such as `{{Character}}` count as no value.
 
-Up to eight categories can be colored at once. A column with more categories opens a searchable chooser; pick the categories you want, then **Apply**. Other scenes stay muted. **Edit key** changes those choices later. The key shows each category’s scene count and states when only part of the column is colored.
+The timeline takes its colors at once: up to eight categories, starting with the eight that have the most scenes. **Edit key**, in the key above the timeline, chooses others, with a search for a long list. Other scenes stay muted. The key shows each category’s scene count and states when only part of the column is colored. A scene takes the color of its rarest colored category, so a character in nearly every scene leaves room for the others.
 
-Click category chips to narrow the timeline and fade nonmatching Timetable rows. List properties default to **Contains all selected**: picking two characters shows scenes containing both, anywhere in their lists. Scalar properties default to **Contains any selected**. Change that rule in **Edit key**. A scene uses the color of the first matching category in its own list. **Clear selection** restores all categories in the chosen palette without turning coloring off.
+Click names in the key to narrow the timeline and fade nonmatching Timetable rows. Buttons beside the scene count set how the names combine, worded for how many you’ve picked:
 
-**When** starts with month groups, coloring the eight with the most scenes; pick months in **Edit key** to choose your own. **Edit key** also offers day, year, and a custom date range with inclusive start/end days and separate before/after groups. **Due** groups scenes into Overdue, Today, Next 7 days, Later, Completed, and Not set. **Edit key** lists every Due and range group, empty ones included, and each kept group colors as scenes reach it: a scene that turns overdue tomorrow takes the Overdue color, and every group keeps its own color. A completed scene’s Due is its completion date, so it belongs in Completed rather than Overdue. Invalid dates are shown separately. Date groups always use **Contains any selected**, so choosing April and June includes scenes in either month. Date-compatible custom properties can use the same grouping options.
+| The scenes with | One name | Two names | Three or more |
+|---|---|---|---|
+| Every name | **With …** | **Both present** | **All present** |
+| Any of them |  | **Either present** | **Any present** |
+| None of them | **Without …** | **Neither present** | **None present** |
+| Those names and nobody else |  | **Alone together** | **Only these** |
 
-**Stop coloring**, in the header menu or the key’s close button, restores the status and subplot colors and clears the selection. Palette choices, date groups, and selections are saved with the Timetable view. **Cancel** in the chooser leaves the saved view unchanged. One table colors the timeline at a time.
+A list column starts on **Both present**, so picking two characters shows the scenes they share, anywhere in their lists. **Place** starts on **Either present**, as does a column with one value per scene, which offers only **Either present** and **Neither present** for two or more names. **Without** and **Neither** paint their scenes in the first name’s color. A scene with nothing in the column appears in none of these. **Clear selection** restores all categories in the chosen palette without turning coloring off.
+
+**When** starts with month groups, coloring the eight with the most scenes; pick months in **Edit key** to choose your own. **Edit key** also offers day, year, and a custom date range with inclusive start/end days and separate before/after groups. **Due** groups scenes into Overdue, Today, Next 7 days, Later, Completed, and Not set. **Edit key** lists every Due and range group, empty ones included, and each kept group colors as scenes reach it: a scene that turns overdue tomorrow takes the Overdue color, and every group keeps its own color. A completed scene’s Due is its completion date, so it belongs in Completed rather than Overdue. Invalid dates are shown separately. A scene sits in one date group, so choosing April and June shows the scenes in either month. Date-compatible custom properties can use the same grouping options.
+
+**Stop coloring**, in the header menu or the key’s close button, restores the status and subplot colors and clears the selection. Palette choices, date groups, selections and how the names combine are saved with the Timetable view. **Cancel** in **Edit key** leaves the saved view unchanged. One table colors the timeline at a time.
 
 ### Edit many rows at once
 

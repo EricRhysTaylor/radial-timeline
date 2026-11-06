@@ -3,7 +3,7 @@ import { ErtModal } from '../ui/ErtModal';
 import { setAccessibleLabel } from '../utils/domTooltip';
 import { t } from '../i18n';
 import { coloringDateLabel, fixedColoringGroups, hasColoringDates, readDateGrouping } from './coloringDates';
-import { MAX_COLOR_VALUES, appliedPalette, planConfiguredColoring, type ColoringMatch, type SavedColoring } from './timetableModel';
+import { MAX_COLOR_VALUES, appliedPalette, planConfiguredColoring, type SavedColoring } from './timetableModel';
 
 /** Draft the categories/date groups for one view; only Apply writes the view. */
 export class TimetableColoringModal extends ErtModal {
@@ -20,8 +20,6 @@ export class TimetableColoringModal extends ErtModal {
         let grouping: string = this.saved.grouping?.kind ?? 'categories';
         let start = this.saved.grouping?.kind === 'range' ? this.saved.grouping.start : '';
         let end = this.saved.grouping?.kind === 'range' ? this.saved.grouping.end : '';
-        const initial = planConfiguredColoring(this.rows, this.saved, this.slots, today);
-        let match: ColoringMatch = this.saved.match ?? (this.saved.grouping || (initial.kind === 'ok' && !initial.multiValue) ? 'any' : 'all');
         let palette = this.saved.palette ? [...this.saved.palette] : undefined;
         let handPicked = false;
         let search = '';
@@ -37,7 +35,8 @@ export class TimetableColoringModal extends ErtModal {
         const configuration = (): SavedColoring | null => {
             const dateGrouping = grouping === 'categories' ? undefined : readDateGrouping({ kind: grouping, start, end });
             if (dateGrouping === null) return null;
-            const config: SavedColoring = { schemaVersion: 2, property: this.saved.property, picks: [], match };
+            const config: SavedColoring = { schemaVersion: 2, property: this.saved.property, picks: [] };
+            if (this.saved.match) config.match = this.saved.match;
             if (palette) config.palette = palette;
             if (dateGrouping) config.grouping = dateGrouping;
             return config;
@@ -85,9 +84,6 @@ export class TimetableColoringModal extends ErtModal {
             for (const kind of ['categories', 'day', 'month', 'year', 'range', 'due']) dropdown.addOption(kind, t(`ui.timetable.colorKey.group.${kind}`));
             dropdown.setValue(grouping).onChange(value => {
                 grouping = value;
-                match = value === 'categories' ? 'all' : 'any';
-                matchSelect.setValue(match);
-                matchSetting.settingEl.toggle(value === 'categories');
                 palette = undefined;
                 handPicked = false;
                 refresh(true);
@@ -95,14 +91,6 @@ export class TimetableColoringModal extends ErtModal {
         });
         form.prepend(groupingSetting.settingEl);
         groupingSetting.settingEl.toggle(this.saved.grouping !== undefined || hasColoringDates(this.rows));
-        let matchSelect!: import('obsidian').DropdownComponent;
-        const matchSetting = new Setting(form).setName(t('ui.timetable.colorKey.match')).addDropdown(dropdown => {
-            matchSelect = dropdown;
-            dropdown.addOption('all', t('ui.timetable.colorKey.matchAll')).addOption('any', t('ui.timetable.colorKey.matchAny'))
-                .setValue(match).onChange(value => { match = value === 'any' ? 'any' : 'all'; });
-        });
-        matchSetting.settingEl.toggle(grouping === 'categories');
-        groupingSetting.settingEl.after(matchSetting.settingEl);
         for (const boundary of ['start', 'end'] as const) {
             const label = ranges.createEl('label', { cls: 'ert-stack' });
             const text = t(boundary === 'start' ? 'ui.timetable.colorKey.from' : 'ui.timetable.colorKey.to');

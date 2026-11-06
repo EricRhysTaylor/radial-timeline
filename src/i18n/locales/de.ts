@@ -7638,6 +7638,10 @@ export const de: DeepPartial<TranslationKeys> = {
             unparsableDate: 'Das ist kein Datum, das Radial Timeline lesen kann.',
         },
         welcomeScreen: {
+            close: "Willkommen schließen",
+            emptyTitle: "Deine Zeitleiste ist bereit",
+            emptyHint: "Öffne den Zeitplan, wähle Gliederung und füge ein Gliederungsdokument hinzu.",
+            openTimetable: "Zeitplan öffnen",
             intro: 'Radial Timeline verwandelt umfangreiche Erzählungen in eine einzige, navigierbare Story-Karte. Verfolgen Sie Szenen, Nebenhandlungen, Figuren, Beats und Zeitlinien in Romanen, Sagas, Memoiren und anderen umfangreichen Fiction- oder Sachbuchprojekten. Wählen Sie unten einen Ausgangspunkt.',
             websiteTitle: 'Website besuchen',
             websiteDesc: 'Treten Sie der Community bei und teilen Sie Ihren Weg so, wie es Ihnen angenehm ist. Erfahren Sie mehr über die Funktionen des Radial Timeline- & Editorialist-Ökosystems und erhalten Sie Hilfe.',

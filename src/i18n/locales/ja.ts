@@ -7639,6 +7639,10 @@ export const ja: DeepPartial<TranslationKeys> = {
             unparsableDate: 'Radial Timeline が読み取れる日付ではありません。',
         },
         welcomeScreen: {
+            close: "ようこそ画面を閉じる",
+            emptyTitle: "タイムラインの準備ができました",
+            emptyHint: "タイムテーブルを開き、アウトラインを選んで文書を追加します。",
+            openTimetable: "タイムテーブルを開く",
             intro: 'Radial Timeline は、長編の物語をひとつのナビゲーション可能なストーリーマップにします。長編小説、サーガ、回想録など、長期にわたるフィクションやノンフィクションのプロジェクトで、シーン、サブプロット、キャラクター、ビート、タイムラインを追跡できます。以下から始め方を選んでください。',
             websiteTitle: 'ウェブサイトを見る',
             websiteDesc: 'コミュニティに参加し、無理のない範囲で執筆の歩みを共有しましょう。Radial Timeline と Editorialist のエコシステムで使える機能について知り、サポートを受けられます。',

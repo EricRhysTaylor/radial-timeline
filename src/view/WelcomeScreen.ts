@@ -4,7 +4,8 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 import { openSettingsTab } from '../utils/obsidianInternals';
-import { normalizePath, Notice, setIcon, TFolder } from 'obsidian';
+import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
+import { normalizePath, Notice, setIcon, TFolder, type Component } from 'obsidian';
 import RadialTimelinePlugin from '../main';
 import { BookDesignerModal } from '../modals/BookDesignerModal';
 import { OnboardingModal } from '../modals/OnboardingModal';
@@ -28,6 +29,8 @@ interface WelcomeScreenParams {
     container: HTMLElement;
     plugin: RadialTimelinePlugin;
     refreshTimeline: () => void;
+    dismiss: () => void;
+    scope: Component;
 }
 
 // A function, not a constant: the copy resolves in the current language each
@@ -473,9 +476,15 @@ const applyWelcomeCardOrder = (
     });
 };
 
-export function renderWelcomeScreen({ container, plugin, refreshTimeline }: WelcomeScreenParams): void {
+export function renderWelcomeScreen({ container, plugin, refreshTimeline, dismiss, scope }: WelcomeScreenParams): void {
     container.addClass('rt-welcome-view');
     const WELCOME_COPY = getWelcomeCopy();
+
+    const close = container.createEl('button', { cls: 'ert-timeline-welcome-close', attr: { type: 'button' } });
+    setAccessibleLabel(close, t('ui.welcomeScreen.close'));
+    setTooltip(close, t('ui.welcomeScreen.close'));
+    setIcon(close, 'x');
+    scope.registerDomEvent(close, 'click', dismiss);
 
     // Background RT logo - large and faint
     const bgIcon = container.createDiv({ cls: 'rt-welcome-bg-icon' });

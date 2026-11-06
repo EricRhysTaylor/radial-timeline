@@ -18,6 +18,7 @@ import { t } from '../i18n';
 import { getActiveBook, getSagaBooks, getTimelineScope } from '../utils/books';
 import { openSettingsTab } from '../utils/obsidianInternals';
 import { confirmWithErtModal } from '../modals/ErtConfirmModal';
+import { ensureActiveBookFolder } from '../modals/EnsureFirstBookModal';
 import { TIMELINE_VIEW_TYPE } from '../view/TimeLineView';
 import { TimetableView, timetableViewOptions } from './TimetableView';
 import { activeTimetable, refreshTimetableViews, timetableInElement } from './timetableRegistry';
@@ -146,6 +147,10 @@ export class TimetableService {
         if (!this.ensureRegistered()) {
             new Notice(t('ui.timetable.basesDisabled'), 8000);
             return;
+        }
+        const book = getActiveBook(this.plugin.settings);
+        if (getTimelineScope(this.plugin.settings) === 'book' && !book?.sourceFolder.trim()) {
+            if (!await ensureActiveBookFolder(this.plugin)) return;
         }
         const target = this.resolveTarget();
         if (!target) return;

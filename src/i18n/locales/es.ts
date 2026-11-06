@@ -7641,6 +7641,10 @@ export const es: TranslationKeys = {
             "unparsableDate": "Esa no es una fecha Radial Timeline puede leer."
         },
         "welcomeScreen": {
+            close: "Cerrar bienvenida",
+            emptyTitle: "Tu cronología está lista",
+            emptyHint: "Abre la tabla, elige Esquema y añade un documento de esquema.",
+            openTimetable: "Abrir tabla",
             "intro": "Radial Timeline Convierte las narrativas de formato largo en un único mapa de historia navegable. Seguimiento de escenas, tramas secundarias, personajes, beats y cronogramas en todas las novelas, sagas, memorias y otros proyectos de ficción o no ficción. Elija un punto de partida a continuación.",
             "websiteTitle": "Visite el sitio web",
             "websiteDesc": "Únete a la comunidad y comparte tu viaje a tu propio nivel de comodidad. Obtenga información sobre las funciones disponibles utilizando el Radial Timeline & Editorialist ecosistema y obtener ayuda.",

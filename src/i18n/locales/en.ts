@@ -7299,6 +7299,10 @@ export const en = {
             unparsableDate: 'That is not a date Radial Timeline can read.',
         },
         welcomeScreen: {
+            close: "Close welcome",
+            emptyTitle: "Your timeline is ready",
+            emptyHint: "Open Timetable, choose Outline, and add an outline document to begin.",
+            openTimetable: "Open Timetable",
             intro: 'Radial Timeline turns long-form narratives into a single, navigable story map. Track scenes, subplots, characters, beats, and timelines across novels, sagas, memoirs, and other sustained fiction or nonfiction projects. Pick a starting point below.',
             websiteTitle: 'Visit the website',
             websiteDesc: 'Join the community and share your journey at your own comfort level. Learn about the features available using the Radial Timeline & Editorialist ecosystem and get help.',

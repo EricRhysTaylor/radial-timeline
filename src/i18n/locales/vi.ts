@@ -7641,6 +7641,10 @@ export const vi: TranslationKeys = {
             "unparsableDate": "Đó không phải là ngày Radial Timeline có thể đọc được."
         },
         "welcomeScreen": {
+            close: "Đóng màn hình chào mừng",
+            emptyTitle: "Dòng thời gian đã sẵn sàng",
+            emptyHint: "Mở bảng thời gian, chọn Dàn ý và thêm tài liệu dàn ý.",
+            openTimetable: "Mở bảng thời gian",
             "intro": "Radial Timeline biến các câu chuyện dài thành một bản đồ câu chuyện duy nhất, có thể điều hướng được. Theo dõi các cảnh, cốt truyện phụ, nhân vật, nhịp và dòng thời gian trên tiểu thuyết, sagas, hồi ký và các dự án tiểu thuyết hoặc phi hư cấu bền vững khác. Chọn một điểm bắt đầu bên dưới.",
             "websiteTitle": "Truy cập trang web",
             "websiteDesc": "Tham gia cộng đồng và chia sẻ hành trình của bạn ở mức độ thoải mái của riêng bạn. Tìm hiểu về các tính năng có sẵn bằng cách sử dụng Radial Timeline & Editorialist hệ sinh thái và nhận trợ giúp.",

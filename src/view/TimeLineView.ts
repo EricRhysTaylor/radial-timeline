@@ -161,6 +161,7 @@ export class RadialTimelineView extends ItemView {
     
     // Change detection snapshot for optimizing renders
     private lastSnapshot: TimelineSnapshot | null = null;
+    private welcomeDismissed = false;
         
     // Scene data (scenes)
     sceneData: TimelineItem[] = [];
@@ -3250,17 +3251,35 @@ export class RadialTimelineView extends ItemView {
         }
         this.resetRenderScope();
         container.empty();
+        container.removeClass('rt-welcome-view');
         
-        // Check if there are any actual scenes (not just backdrops or beats)
-        // The user wants to see the Welcome Screen until they have at least one Scene note.
+        // A blank book can start in the Outline without manufacturing scene notes.
         const hasScenes = scenes && scenes.some(item => item.itemType === 'Scene');
         
         if (!scenes || scenes.length === 0 || !hasScenes) {
-            renderWelcomeScreen({
-                container,
-                plugin: this.plugin,
-                refreshTimeline: () => this.refreshTimeline()
-            });
+            if (!this.welcomeDismissed && !getActiveBook(this.plugin.settings)?.sourceFolder?.trim()) {
+                renderWelcomeScreen({
+                    container,
+                    plugin: this.plugin,
+                    scope: this.renderScope,
+                    refreshTimeline: () => this.refreshTimeline(),
+                    dismiss: () => {
+                        this.welcomeDismissed = true;
+                        this.lastSnapshot = null;
+                        this.refreshTimeline();
+                    }
+                });
+            } else {
+                this.sceneData = scenes || [];
+                const empty = container.createDiv({ cls: 'ert-timeline-empty' });
+                const wheel = empty.createDiv({ cls: 'ert-timeline-empty__wheel', attr: { 'aria-hidden': 'true' } });
+                for (let i = 0; i < 4; i++) wheel.createDiv({ cls: `ert-timeline-empty__ring ert-timeline-empty__ring--${i}` });
+                const center = empty.createDiv({ cls: 'ert-timeline-empty__center' });
+                center.createDiv({ cls: 'ert-timeline-empty__title', text: t('ui.welcomeScreen.emptyTitle') });
+                center.createDiv({ cls: 'ert-timeline-empty__hint', text: t('ui.welcomeScreen.emptyHint') });
+                const open = center.createEl('button', { text: t('ui.welcomeScreen.openTimetable'), cls: 'ert-timeline-empty__action' });
+                this.renderScope.registerDomEvent(open, 'click', () => { void this.plugin.openTimetable(); });
+            }
             return;
         }
         

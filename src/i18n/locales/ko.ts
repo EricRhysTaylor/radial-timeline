@@ -7638,6 +7638,10 @@ export const ko: DeepPartial<TranslationKeys> = {
             unparsableDate: 'Radial Timeline이 읽을 수 있는 날짜가 아닙니다.',
         },
         welcomeScreen: {
+            close: "환영 화면 닫기",
+            emptyTitle: "타임라인이 준비되었습니다",
+            emptyHint: "시간표를 열고 개요를 선택한 다음 개요 문서를 추가하세요.",
+            openTimetable: "시간표 열기",
             intro: 'Radial Timeline은 장편 서사를 탐색 가능한 하나의 스토리 맵으로 바꿔 줍니다. 소설, 사가, 회고록 및 기타 장기 픽션·논픽션 프로젝트 전반에서 장면, 서브플롯, 캐릭터, 비트, 타임라인을 추적하세요. 아래에서 시작 지점을 선택하세요.',
             websiteTitle: '웹사이트 방문',
             websiteDesc: '커뮤니티에 참여하고 원하는 만큼 여정을 공유하세요. Radial Timeline & Editorialist 생태계에서 사용할 수 있는 기능을 알아보고 도움을 받으세요.',

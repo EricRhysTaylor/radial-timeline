@@ -1,12 +1,36 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TimetableService } from './TimetableService';
 import { timetableInElement } from './timetableRegistry';
+import { ensureActiveBookFolder } from '../modals/EnsureFirstBookModal';
 
 vi.mock('./TimetableView', () => ({ TimetableView: class {}, timetableViewOptions: [] }));
 vi.mock('../view/TimeLineView', () => ({ TIMELINE_VIEW_TYPE: 'radial-timeline' }));
+vi.mock('../modals/EnsureFirstBookModal', () => ({ ensureActiveBookFolder: vi.fn() }));
 vi.mock('./timetableRegistry', () => ({
     activeTimetable: vi.fn(), refreshTimetableViews: vi.fn(), timetableInElement: vi.fn(),
 }));
+
+describe('opening the first Timetable', () => {
+    it('asks for a book before opening and stops if setup is cancelled', async () => {
+        const plugin = { settings: { books: [], timelineScope: 'book' }, registerBasesView: vi.fn(() => true) };
+        const service = new TimetableService(plugin as never);
+        vi.mocked(ensureActiveBookFolder).mockResolvedValueOnce(null);
+        await service.open();
+        expect(ensureActiveBookFolder).toHaveBeenCalledWith(plugin);
+    });
+
+    it('opens the table after first-book setup succeeds', async () => {
+        const plugin = { settings: { books: [], timelineScope: 'book' }, registerBasesView: vi.fn(() => true) };
+        const service = new TimetableService(plugin as never);
+        const internals = service as unknown as { resolveTarget: ReturnType<typeof vi.fn>; ensureFile: ReturnType<typeof vi.fn>; show: ReturnType<typeof vi.fn> };
+        internals.resolveTarget = vi.fn(() => ({ key: 'book' }));
+        internals.ensureFile = vi.fn().mockResolvedValue({ path: 'book.base' });
+        internals.show = vi.fn().mockResolvedValue(undefined);
+        vi.mocked(ensureActiveBookFolder).mockResolvedValueOnce({ id: 'book' } as never);
+        await service.open();
+        expect(internals.show).toHaveBeenCalledWith({ path: 'book.base' });
+    });
+});
 
 describe('selecting a book in a Timetable', () => {
     it('opens the target book in a manually opened table and retains Outline', async () => {

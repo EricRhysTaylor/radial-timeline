@@ -876,12 +876,13 @@
   align-items: center;
   gap: var(--size-4-1);
   width: max-content;
-  max-width: 80%;
+  max-width: calc(100% - var(--size-4-4));
   max-height: calc(100% - var(--size-4-4));
   overflow-y: auto;
   transform: translateX(-50%);
 }
 
+/* See-through, so the top of the timeline stays in view under it. */
 .ert-timeline-lens {
   display: flex;
   flex-direction: column;
@@ -890,7 +891,7 @@
   min-width: 0;
   padding: var(--size-4-2) var(--size-4-3);
   border-radius: var(--radius-l);
-  background: var(--background-secondary);
+  background: color-mix(in srgb, var(--background-secondary) 62%, transparent);
   border: var(--border-width) solid var(--background-modifier-border);
   color: var(--text-normal);
   font-size: var(--font-ui-small);
@@ -942,8 +943,13 @@
   color: var(--text-on-accent);
 }
 
+.ert-timeline-lens--coloring .ert-timeline-lens__label {
+  flex: 0 1 auto;
+}
+
 .ert-timeline-lens__summary {
   display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
@@ -964,11 +970,12 @@
   line-height: 1.4;
 }
 
-/* Inline names, so text-wrap can even out the lines. */
 .ert-timeline-lens__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   min-width: 0;
-  margin-bottom: calc(var(--size-2-3) * -1);
-  text-wrap: balance;
+  gap: var(--size-2-3);
 }
 
 .ert-timeline-lens__legend:empty {
@@ -982,11 +989,10 @@
   min-width: 0;
   max-width: 100%;
   height: auto;
-  margin: 0 var(--size-2-3) var(--size-2-3) 0;
-  padding: var(--size-2-2) var(--size-4-2);
+  padding: var(--size-2-2) var(--size-2-3);
   border: 1px solid var(--background-modifier-border);
   border-radius: 999px;
-  background: var(--background-primary);
+  background: color-mix(in srgb, var(--background-primary) 78%, transparent);
   box-shadow: none;
   color: var(--text-normal);
   font-size: inherit;
@@ -1034,11 +1040,12 @@
   background: var(--ert-timeline-swatch);
 }
 
+/* A picked name's check takes its dot's place, so the names stay on one line. */
 .ert-timeline-lens__check {
-  display: inline-flex;
+  display: none;
   flex: none;
   width: 12px;
-  visibility: hidden;
+  color: var(--ert-timeline-swatch);
 }
 
 .ert-timeline-lens__check svg {
@@ -1047,7 +1054,11 @@
 }
 
 .ert-timeline-lens__item.is-picked .ert-timeline-lens__check {
-  visibility: visible;
+  display: inline-flex;
+}
+
+.ert-timeline-lens__item.is-picked .ert-timeline-lens__swatch {
+  display: none;
 }
 
 .ert-timeline-lens__icon {

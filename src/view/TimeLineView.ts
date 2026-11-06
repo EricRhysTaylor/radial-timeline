@@ -345,12 +345,12 @@ export class RadialTimelineView extends ItemView {
                 const clear = tools.createEl('button', { cls: 'ert-timeline-lens__clear', text: t('ui.timetable.colorKey.clear') });
                 clear.dataset.colorKeyAction = 'clear';
             }
-            const summary = panel.createDiv({ cls: 'ert-timeline-lens__summary' });
+            const summary = header.createDiv({ cls: 'ert-timeline-lens__summary' });
+            header.insertBefore(summary, tools);
             const status = summary.createDiv({ cls: 'ert-timeline-lens__status', attr: { role: 'status', 'aria-live': 'polite' } });
             status.setText(tCount('scene', coloring.values.size));
             if (coloring.categoryCount > coloring.legend.length) status.createSpan({ text: ` · ${t('ui.timetable.colorKey.showing', { count: coloring.legend.length, total: coloring.categoryCount })}` });
             if (coloring.grouping !== 'categories') status.createSpan({ text: ` · ${coloring.groupingLabel}` });
-            panel.insertBefore(summary, legend);
             if (picking && coloring.matches.length > 0) {
                 const name = coloring.legend.find(entry => entry.value === coloring.picks[0])?.label ?? coloring.picks[0];
                 const matches = summary.createDiv({ cls: 'ert-timeline-lens__match', attr: { role: 'group' } });
@@ -372,10 +372,9 @@ export class RadialTimelineView extends ItemView {
                 item.setAttr('aria-pressed', String(picked));
                 setTooltip(item, t(picked ? 'ui.timetable.pickDrop' : picking ? pickNext : 'ui.timetable.pickOnly', { value: entry.label }));
                 item.createSpan({ cls: 'ert-timeline-lens__swatch' });
+                setIcon(item.createSpan({ cls: 'ert-timeline-lens__check', attr: { 'aria-hidden': 'true' } }), 'check');
                 item.createSpan({ cls: 'ert-timeline-lens__name', text: entry.label });
                 item.createSpan({ cls: 'ert-timeline-lens__count', text: String(entry.count) });
-                const check = item.createSpan({ cls: 'ert-timeline-lens__check', attr: { 'aria-hidden': 'true' } });
-                setIcon(check, 'check');
             }
         }
     }

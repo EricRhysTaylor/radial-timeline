@@ -246,3 +246,18 @@ describe('Canvas sketch conversion', () => {
         error.mockRestore();
     });
 });
+
+describe('Canvas conversion on a damaged map', () => {
+    it('opens when a text card on the map holds no text string', () => {
+        const data = { nodes: [
+            { id: '1', type: 'text', text: 'A scene' },
+            { id: 'broken', type: 'text', text: 42 },
+            { id: 'empty', type: 'text' },
+        ] } as unknown as StoryCanvasData;
+        const app = { workspace: { getLeavesOfType: () => [] }, metadataCache: { getFileCache: () => ({}) }, vault: { getMarkdownFiles: () => [], getFiles: () => [] } } as unknown as App;
+        const plugin = { settings: { ...DEFAULT_SETTINGS } } as unknown as RadialTimelinePlugin;
+        const canvas: OpenCanvas = { getData: () => data, setData: vi.fn(), requestSave: vi.fn(), selection: new Set([{ getData: () => ({ id: '1', type: 'text' }) }]) };
+        const book = { id: 'book', title: 'Book', sourceFolder: 'Book' } as BookProfile;
+        expect(() => new CanvasConvertModal(app, plugin, canvas, [book], book, () => true)).not.toThrow();
+    });
+});

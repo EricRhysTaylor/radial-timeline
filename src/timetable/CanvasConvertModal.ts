@@ -97,7 +97,7 @@ export class CanvasConvertModal extends ErtModal {
     }
 
     private actCards(): CanvasCard[] {
-        return (this.canvas.getData().nodes ?? []).filter(node => node.type === 'text' && actCardNumber(node.text ?? '') !== null); // SAFE: canvas JSON may omit nodes; none = no Act cards
+        return (this.canvas.getData().nodes ?? []).filter(node => node.type === 'text' && typeof node.text === 'string' && actCardNumber(node.text) !== null); // SAFE: canvas JSON may omit nodes; none = no Act cards
     }
 
     /** Each scene's act from the map's Act cards, or an even spread when it has none. */

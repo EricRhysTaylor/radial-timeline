@@ -13,11 +13,21 @@ export function hasPortalReference(data: StoryCanvasData, ids: Set<string>, loca
         const edge = value as { fromNode?: unknown; toNode?: unknown };
         return matches(edge.fromNode, allowPlain) || matches(edge.toNode, allowPlain);
     };
-    if (data.edges?.some(edge => edgeMatches(edge, false)
-        || (local && ((ids.has(edge.fromNode) && edge.toNode.startsWith('acportal||'))
-            || (ids.has(edge.toNode) && edge.fromNode.startsWith('acportal||')))))) return true;
-    return (data.nodes ?? []).some(node => Array.isArray(node.interdimensionalEdges) // SAFE: canvas JSON may omit nodes; none = no portal edges
-        && node.interdimensionalEdges.some(edge => edgeMatches(edge, local)));
+    const isPortal = (value: unknown): boolean => typeof value === 'string' && value.startsWith('acportal||');
+    // Saved canvases are read from disk, so their edges and nodes may be any shape.
+    const edges: unknown[] = Array.isArray(data.edges) ? data.edges : [];
+    if (edges.some(value => {
+        if (edgeMatches(value, false)) return true;
+        if (!local || !value || typeof value !== 'object') return false;
+        const edge = value as { fromNode?: unknown; toNode?: unknown };
+        return (typeof edge.fromNode === 'string' && ids.has(edge.fromNode) && isPortal(edge.toNode))
+            || (typeof edge.toNode === 'string' && ids.has(edge.toNode) && isPortal(edge.fromNode));
+    })) return true;
+    const nodes: unknown[] = Array.isArray(data.nodes) ? data.nodes : []; // SAFE: canvas JSON may omit nodes; none = no portal edges
+    return nodes.some(node => {
+        const portals = node && typeof node === 'object' ? (node as { interdimensionalEdges?: unknown }).interdimensionalEdges : undefined;
+        return Array.isArray(portals) && portals.some(edge => edgeMatches(edge, local));
+    });
 }
 
 /** A file that does not parse as a canvas holds no edges Canvas could follow, so it cannot hold a portal. */

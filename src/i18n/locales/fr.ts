@@ -2840,6 +2840,7 @@ export const fr: TranslationKeys = {
         "formatKey": {
             "title": "Mise en forme",
             "readingBadge": "Mode lecture",
+            "typeNote": "Ou sélectionnez des mots et tapez la marque : ** ou == les entoure.",
             "readingNote": "Passez en mode édition pour les appliquer.",
             "selectedText": "Texte sélectionné",
             "wholeLine": "Ligne entière",

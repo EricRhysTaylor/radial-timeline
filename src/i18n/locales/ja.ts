@@ -2838,6 +2838,7 @@ export const ja: DeepPartial<TranslationKeys> = {
         formatKey: {
             title: '書式',
             readingBadge: '閲覧ビュー',
+            typeNote: 'または語句を選択して記号を入力します。** や == で囲まれます。',
             readingNote: '適用するには編集モードに切り替えてください。',
             selectedText: '選択したテキスト',
             wholeLine: '行全体',

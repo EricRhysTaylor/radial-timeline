@@ -2839,6 +2839,7 @@ export const zh: DeepPartial<TranslationKeys> = {
         formatKey: {
             title: '格式',
             readingBadge: '阅读视图',
+            typeNote: '也可以选中文字后输入标记：** 或 == 会包住它们。',
             readingNote: '切换到编辑模式即可应用。',
             selectedText: '选中的文字',
             wholeLine: '整行',

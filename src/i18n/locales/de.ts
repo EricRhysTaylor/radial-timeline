@@ -2837,6 +2837,7 @@ export const de: DeepPartial<TranslationKeys> = {
         formatKey: {
             title: 'Formatierung',
             readingBadge: 'Leseansicht',
+            typeNote: 'Oder Wörter markieren und das Zeichen tippen: ** oder == umschließt sie.',
             readingNote: 'Zum Anwenden in die Bearbeitung wechseln.',
             selectedText: 'Markierter Text',
             wholeLine: 'Ganze Zeile',

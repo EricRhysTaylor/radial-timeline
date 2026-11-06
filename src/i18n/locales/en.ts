@@ -2518,6 +2518,7 @@ export const en = {
         formatKey: {
             title: 'Formatting',
             readingBadge: 'Reading view',
+            typeNote: 'Or select words and type the mark: ** or == wraps them.',
             readingNote: 'Switch to editing to apply these.',
             selectedText: 'Selected text',
             wholeLine: 'Whole line',

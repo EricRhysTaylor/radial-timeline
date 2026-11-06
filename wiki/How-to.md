@@ -100,7 +100,7 @@ Use it to keep subplot names consistent after reorganizing your story.
 
 ## Format Your Text
 
-Every note has a signature icon at the center of its title bar. It lists Obsidian's formatting, with each one's hotkey and what to type, and every row can be clicked.
+Every note has a signature icon at the far right of its title bar. It lists Obsidian's formatting, with each one's hotkey and what to type, and every row can be clicked. The key opens in the right gutter, past the end of your text.
 
 Select some words, or put the cursor where you want it, then hover the icon and click a row. The key stays open while the pointer is on it, so you can apply several in a row. It closes when the pointer leaves.
 
@@ -108,6 +108,8 @@ Select some words, or put the cursor where you want it, then hover the icon and 
 *   **Whole line** applies to the line the cursor is on: headings, bullet and numbered lists, checkboxes and quotes.
 *   **Insert** adds a footnote after the selected words and moves you to its note, ready to type. Tables and dividers go below the line.
 *   **Callouts** wrap the selected lines in a colored box. With the cursor in a callout, click another type to change it.
+
+You can also select words and type the mark. `==`, `**`, `*`, `~~` and `[[` wrap the selection and keep it selected, as long as **Auto pair Markdown syntax** is on in Obsidian's Editor settings.
 
 The key shows your own hotkey if you've set one. In Reading view it's a sheet to read; switch to editing to apply formatting.
 

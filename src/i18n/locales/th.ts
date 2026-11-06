@@ -2840,6 +2840,7 @@ export const th: TranslationKeys = {
         "formatKey": {
             "title": "การจัดรูปแบบ",
             "readingBadge": "มุมมองอ่าน",
+            "typeNote": "หรือเลือกคำแล้วพิมพ์เครื่องหมาย: ** หรือ == จะครอบคำเหล่านั้น",
             "readingNote": "สลับไปโหมดแก้ไขเพื่อใช้รูปแบบเหล่านี้",
             "selectedText": "ข้อความที่เลือก",
             "wholeLine": "ทั้งบรรทัด",

@@ -2837,6 +2837,7 @@ export const ko: DeepPartial<TranslationKeys> = {
         formatKey: {
             title: '서식',
             readingBadge: '읽기 보기',
+            typeNote: '또는 단어를 선택하고 기호를 입력하세요. ** 또는 == 로 감싸집니다.',
             readingNote: '적용하려면 편집 모드로 전환하세요.',
             selectedText: '선택한 텍스트',
             wholeLine: '줄 전체',

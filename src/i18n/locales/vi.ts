@@ -2840,6 +2840,7 @@ export const vi: TranslationKeys = {
         "formatKey": {
             "title": "Định dạng",
             "readingBadge": "Chế độ đọc",
+            "typeNote": "Hoặc chọn từ rồi gõ dấu: ** hoặc == sẽ bao quanh chúng.",
             "readingNote": "Chuyển sang chế độ chỉnh sửa để áp dụng.",
             "selectedText": "Văn bản đã chọn",
             "wholeLine": "Cả dòng",

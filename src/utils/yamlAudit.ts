@@ -16,7 +16,7 @@ import {
     getExcludeKeyPredicate,
 } from './yamlTemplateNormalize';
 import type { RadialTimelineSettings } from '../types/settings';
-import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from './frontmatter';
+import { canonicalizeFrontmatterKey, getActiveFrontmatterMappings, normalizeFrontmatterKeys } from './frontmatter';
 import { getOptionalManagedKeys, isOptionalManagedKey } from './optionalManagedKeys';
 import { normalizeBeatSetNameInput, toBeatModelMatchKey } from './beatsInputNormalize';
 import { STARTER_BEAT_SETS } from './beatsSystems';
@@ -388,7 +388,7 @@ export async function runYamlAudit(options: YamlAuditOptions): Promise<YamlAudit
         }
 
         const rawFm = cache.frontmatter;
-        const fm = mappings ? normalizeFrontmatterKeys(rawFm, mappings) : rawFm;
+        const fm = normalizeFrontmatterKeys(rawFm, mappings);
 
         // Get the keys actually present in the note's frontmatter
         const noteKeys = Object.keys(fm).filter(k => k !== 'position'); // Obsidian injects 'position'
@@ -412,10 +412,13 @@ export async function runYamlAudit(options: YamlAuditOptions): Promise<YamlAudit
         // keys (AI off) are never extra — see the tolerance note above. Neither
         // are optional-managed keys: they ship in no template by design, so
         // "not in a template" is not evidence that they are foreign.
-        const extraKeys = noteKeys.filter(k =>
-            !allTemplateKeys.has(k) && !excludeKey(k) && !isToleratedAiKey(k)
-            && !isOptionalManagedKey(noteType, k)
-        );
+        // Reported as the note spells them, so a delete finds the real key.
+        const extraKeys = Object.keys(rawFm).filter(rawKey => {
+            if (rawKey === 'position') return false;
+            const k = canonicalizeFrontmatterKey(rawKey, mappings);
+            return !allTemplateKeys.has(k) && !excludeKey(k) && !isToleratedAiKey(k)
+                && !isOptionalManagedKey(noteType, k);
+        });
 
         // Order drift: only evaluated when no fields are missing
         const orderDrift = missingFields.length === 0

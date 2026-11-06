@@ -8,62 +8,20 @@ import { IconSuggest } from '../../IconSuggest';
 import type { HoverMetadataField } from '../../../types/settings';
 import { getActiveMigrations, REFACTOR_ALERTS, areAlertMigrationsComplete, dismissAlert } from '../../refactorAlerts';
 import { ERT_CLASSES, ERT_DATA } from '../../../ui/classes';
+import { getBaseKeys, getTemplateParts, safeParseYaml } from '../../../utils/yamlTemplateNormalize';
 import {
-    extractKeysInOrder,
-    safeParseYaml,
-    type FieldEntryValue,
-} from '../../../utils/yamlTemplateNormalize';
-import { buildScenePropertyDefinitions } from '../../../sceneProperties/scenePropertyAdapter';
+    buildScenePropertyDefinitions,
+    isValidPropertyName,
+    newAdvancedEntry,
+    parseAdvancedEntries,
+    serializeAdvancedEntries,
+    withEntryKey,
+    withEntryValue,
+    type AdvancedTemplateEntry,
+} from '../../../sceneProperties/scenePropertyAdapter';
 import { SHARED_CHAPTER_FIELD_KEY } from '../../../utils/timelineChapters';
 
-type FieldEntry = { key: string; value: FieldEntryValue; required: boolean };
-
 const DEFAULT_HOVER_ICON = 'align-vertical-space-around';
-
-function ensureSharedChapterEntry(entries: FieldEntry[]): FieldEntry[] {
-    if (entries.some((entry) => entry.key === SHARED_CHAPTER_FIELD_KEY)) {
-        return entries;
-    }
-    return [{ key: SHARED_CHAPTER_FIELD_KEY, value: '', required: false }, ...entries];
-}
-
-function mergeOrders(primary: string[], secondary: string[]): string[] {
-    const seen = new Set<string>();
-    const result: string[] = [];
-    [...primary, ...secondary].forEach(key => {
-        if (!key || seen.has(key)) return;
-        seen.add(key);
-        result.push(key);
-    });
-    return result;
-}
-
-function buildYamlFromEntries(entries: FieldEntry[], commentMap?: Record<string, string>): string {
-    const lines: string[] = [];
-    entries.forEach(entry => {
-        const comment = commentMap?.[entry.key];
-        if (Array.isArray(entry.value)) {
-            lines.push(comment ? `${entry.key}: # ${comment}` : `${entry.key}:`);
-            entry.value.forEach((value: string) => {
-                lines.push(`  - ${value}`);
-            });
-        } else {
-            const value = entry.value ?? '';
-            lines.push(comment ? `${entry.key}: ${value} # ${comment}` : `${entry.key}: ${value}`);
-        }
-    });
-    return lines.join('\n');
-}
-
-function entriesFromTemplate(template: string, requiredOrder: string[]): FieldEntry[] {
-    const order = mergeOrders(extractKeysInOrder(template), requiredOrder);
-    const obj = safeParseYaml(template);
-    return order.map(key => ({
-        key,
-        value: obj[key] ?? '',
-        required: requiredOrder.includes(key)
-    }));
-}
 
 function createBadge(container: HTMLElement, text: string, variant: 'neutral' | 'success' = 'neutral'): HTMLElement {
     const badge = container.createSpan({
@@ -267,43 +225,39 @@ export function renderScenePropertiesSection(params: {
         if (!expanded) return;
 
         const defaultTemplate = DEFAULT_SETTINGS.sceneYamlTemplates!.advanced;
-        const baseTemplate = DEFAULT_SETTINGS.sceneYamlTemplates!.base;
-        const requiredOrder = extractKeysInOrder(baseTemplate);
-        const defaultObj = safeParseYaml(defaultTemplate);
-        const currentObj = safeParseYaml(currentTemplate);
-        const optionalOrder = mergeOrders(
-            extractKeysInOrder(currentTemplate).filter((key) => !requiredOrder.includes(key)),
-            extractKeysInOrder(defaultTemplate).filter((key) => !requiredOrder.includes(key))
-        );
-
-        const entries = ensureSharedChapterEntry(optionalOrder.map((key) => ({
-            key,
-            value: currentObj[key] ?? defaultObj[key] ?? '',
-            required: false,
-        })));
+        const coreKeys = getBaseKeys('Scene', plugin.settings).map((key) => key.toLowerCase());
+        const isCoreKey = (key: string) => coreKeys.includes(key.toLowerCase());
+        const entries = parseAdvancedEntries(currentTemplate).filter((entry) => !isCoreKey(entry.key));
 
         let workingEntries = entries;
         let dragIndex: number | null = null;
 
-        const advancedComments: Record<string, string> = {
-            Duration: 'Free text duration (e.g., "45 minutes", "2 hours", "PT45M")',
-            'Reader Emotion': 'Describe the intended reader emotion',
-        };
-
-        const saveEntries = (nextEntries: FieldEntry[]) => {
+        const saveEntries = (nextEntries: AdvancedTemplateEntry[]) => {
             workingEntries = nextEntries;
-            const yaml = buildYamlFromEntries(nextEntries, advancedComments);
-            if (!plugin.settings.sceneYamlTemplates) {
-                plugin.settings.sceneYamlTemplates = {
-                    base: DEFAULT_SETTINGS.sceneYamlTemplates!.base,
-                    advanced: '',
-                };
-            }
-            plugin.settings.sceneYamlTemplates.advanced = yaml;
+            plugin.settings.sceneYamlTemplates = {
+                base: getTemplateParts('Scene', plugin.settings).base,
+                advanced: serializeAdvancedEntries(nextEntries),
+            };
             void plugin.saveSettings();
         };
 
-        const rerender = (next?: FieldEntry[]) => {
+        const canUseKey = (key: string, others: AdvancedTemplateEntry[]): boolean => {
+            if (!isValidPropertyName(key)) {
+                new Notice(t('ui.scenePropertiesSection.invalidPropertyNameNotice', { key }));
+                return false;
+            }
+            if (isCoreKey(key)) {
+                new Notice(t('ui.scenePropertiesSection.corePropertyNameNotice', { key }));
+                return false;
+            }
+            if (others.some((item) => item.key.toLowerCase() === key.toLowerCase())) {
+                new Notice(t('ui.scenePropertiesSection.propertyExistsNotice', { key }));
+                return false;
+            }
+            return true;
+        };
+
+        const rerender = (next?: AdvancedTemplateEntry[]) => {
             const data = next ?? workingEntries;
             workingEntries = data;
             advancedPanel.empty();
@@ -312,7 +266,61 @@ export function renderScenePropertiesSection(params: {
 
             const listEl = advancedPanel.createDiv({ cls: ['ert-template-entries', 'ert-template-indent'] });
 
-            const renderEntryRow = (entry: FieldEntry, idx: number, list: FieldEntry[]) => {
+            // Chapter is a Core property. This row only chooses whether hover reveals it.
+            const renderChapterRow = () => {
+                const row = listEl.createDiv({ cls: ['ert-yaml-row', 'ert-yaml-row--hover-meta'] });
+                const hoverMeta = getHoverMetadata(SHARED_CHAPTER_FIELD_KEY);
+                row.createDiv({ cls: ['ert-drag-handle', 'ert-drag-placeholder'] });
+                row.createDiv({ cls: 'ert-grid-spacer' });
+                const iconWrapper = row.createDiv({ cls: 'ert-hover-icon-wrapper' });
+                const iconPreview = iconWrapper.createDiv({ cls: 'ert-hover-icon-preview' });
+                setIcon(iconPreview, hoverMeta?.icon ?? DEFAULT_HOVER_ICON);
+                const iconInput = iconWrapper.createEl('input', {
+                    type: 'text',
+                    cls: 'ert-input ert-input--md ert-icon-input',
+                    attr: { placeholder: t('ui.scenePropertiesSection.iconPlaceholder') }
+                });
+                iconInput.value = hoverMeta?.icon ?? DEFAULT_HOVER_ICON;
+                setTooltip(iconInput, t('ui.scenePropertiesSection.iconTooltip'));
+                const checkbox = row.createDiv({ cls: 'ert-hover-checkbox-wrapper' }).createEl('input', {
+                    type: 'checkbox',
+                    cls: 'ert-hover-checkbox'
+                });
+                checkbox.checked = hoverMeta?.enabled ?? false;
+                setTooltip(checkbox, t('ui.scenePropertiesSection.revealTooltip'));
+                const applyIcon = (iconName: string) => {
+                    iconPreview.empty();
+                    setIcon(iconPreview, iconName);
+                    setHoverMetadata(SHARED_CHAPTER_FIELD_KEY, iconName, checkbox.checked);
+                    renderHoverPreview();
+                };
+                new IconSuggest(app, iconInput, (selectedIcon) => {
+                    iconInput.value = selectedIcon;
+                    applyIcon(selectedIcon);
+                });
+                iconInput.oninput = () => {
+                    const iconName = iconInput.value.trim();
+                    if (iconName && getIconIds().includes(iconName)) applyIcon(iconName);
+                };
+                checkbox.onchange = () => {
+                    setHoverMetadata(SHARED_CHAPTER_FIELD_KEY, iconInput.value.trim() || DEFAULT_HOVER_ICON, checkbox.checked);
+                    renderHoverPreview();
+                };
+                const keyInput = row.createEl('input', { type: 'text', cls: 'ert-input ert-input--md' });
+                keyInput.value = SHARED_CHAPTER_FIELD_KEY;
+                keyInput.disabled = true;
+                const scopeInput = row.createEl('input', { type: 'text', cls: 'ert-input ert-input--md' });
+                scopeInput.value = t('ui.scenePropertiesSection.coreName');
+                scopeInput.disabled = true;
+                const lock = row.createEl('button', { cls: 'ert-iconBtn' });
+                lock.disabled = true;
+                setIcon(lock, 'lock');
+                setAccessibleLabel(lock, t('ui.scenePropertiesSection.alwaysOnBadge'));
+            };
+
+            // Editing a value does not rebuild the rows, so handlers read the live
+            // list. A list captured at render time would undo that edit on the next action.
+            const renderEntryRow = (entry: AdvancedTemplateEntry, idx: number) => {
                 const migration = activeMigrations.find((item) => item.oldKey === entry.key);
                 const alert = migration ? REFACTOR_ALERTS.find((item) => item.id === migration.alertId) : undefined;
                 const rowClasses = ['ert-yaml-row', 'ert-yaml-row--hover-meta'];
@@ -380,24 +388,20 @@ export function renderScenePropertiesSection(params: {
                 keyInput.value = entry.key;
                 keyInput.placeholder = t('ui.scenePropertiesSection.propertyPlaceholder');
                 keyInput.onchange = () => {
+                    const current = workingEntries[idx];
                     const newKey = keyInput.value.trim();
                     if (!newKey) {
-                        keyInput.value = entry.key;
+                        keyInput.value = current.key;
                         return;
                     }
-                    if (requiredOrder.includes(newKey)) {
-                        new Notice(t('ui.scenePropertiesSection.corePropertyNameNotice', { key: newKey }));
-                        keyInput.value = entry.key;
+                    if (newKey === current.key) return;
+                    if (!canUseKey(newKey, workingEntries.filter((_, itemIdx) => itemIdx !== idx))) {
+                        keyInput.value = current.key;
                         return;
                     }
-                    if (list.some((item, itemIdx) => itemIdx !== idx && item.key === newKey)) {
-                        new Notice(t('ui.scenePropertiesSection.propertyExistsNotice', { key: newKey }));
-                        keyInput.value = entry.key;
-                        return;
-                    }
-                    renameHoverMetadataKey(entry.key, newKey);
-                    const nextList = [...list];
-                    nextList[idx] = { ...entry, key: newKey };
+                    renameHoverMetadataKey(current.key, newKey);
+                    const nextList = [...workingEntries];
+                    nextList[idx] = withEntryKey(current, newKey);
                     saveEntries(nextList);
                     rerender(nextList);
                     renderHoverPreview();
@@ -408,11 +412,8 @@ export function renderScenePropertiesSection(params: {
                     valueInput.value = entry.value.join(', ');
                     valueInput.placeholder = t('ui.scenePropertiesSection.commaSeparatedPlaceholder');
                     valueInput.onchange = () => {
-                        const nextList = [...list];
-                        nextList[idx] = {
-                            ...entry,
-                            value: valueInput.value.split(',').map((value) => value.trim()).filter(Boolean)
-                        };
+                        const nextList = [...workingEntries];
+                        nextList[idx] = withEntryValue(nextList[idx], valueInput.value.split(',').map((value) => value.trim()).filter(Boolean));
                         saveEntries(nextList);
                         renderHoverPreview();
                     };
@@ -420,8 +421,8 @@ export function renderScenePropertiesSection(params: {
                     valueInput.value = entry.value ?? '';
                     valueInput.placeholder = t('ui.scenePropertiesSection.valuePlaceholder');
                     valueInput.onchange = () => {
-                        const nextList = [...list];
-                        nextList[idx] = { ...entry, value: valueInput.value };
+                        const nextList = [...workingEntries];
+                        nextList[idx] = withEntryValue(nextList[idx], valueInput.value);
                         saveEntries(nextList);
                         renderHoverPreview();
                     };
@@ -434,10 +435,10 @@ export function renderScenePropertiesSection(params: {
                     setIcon(migrateBtn, 'arrow-right-circle');
                     setTooltip(migrateBtn, migration.tooltip);
                     migrateBtn.onclick = async () => {
-                        const oldKey = entry.key;
-                        entry.key = migration.newKey;
-                        renameHoverMetadataKey(oldKey, migration.newKey);
-                        saveEntries(list);
+                        const nextList = [...workingEntries];
+                        renameHoverMetadataKey(nextList[idx].key, migration.newKey);
+                        nextList[idx] = withEntryKey(nextList[idx], migration.newKey);
+                        saveEntries(nextList);
                         const template = plugin.settings.sceneYamlTemplates?.advanced ?? '';
                         const alertObj = REFACTOR_ALERTS.find((item) => item.id === migration.alertId);
                         if (alertObj && areAlertMigrationsComplete(alertObj, template)) {
@@ -447,7 +448,7 @@ export function renderScenePropertiesSection(params: {
                             if (alertEl) alertEl.remove();
                             new Notice(t('ui.scenePropertiesSection.migrationCompleteNotice'));
                         }
-                        rerender(list);
+                        rerender(nextList);
                         renderHoverPreview();
                     };
                 } else {
@@ -455,8 +456,8 @@ export function renderScenePropertiesSection(params: {
                     setIcon(deleteBtn, 'trash');
                     setAccessibleLabel(deleteBtn, t('ui.scenePropertiesSection.removeTooltip'));
                     deleteBtn.onclick = () => {
-                        removeHoverMetadata(entry.key);
-                        const nextList = list.filter((_, itemIdx) => itemIdx !== idx);
+                        removeHoverMetadata(workingEntries[idx].key);
+                        const nextList = workingEntries.filter((_, itemIdx) => itemIdx !== idx);
                         saveEntries(nextList);
                         rerender(nextList);
                         renderHoverPreview();
@@ -485,11 +486,11 @@ export function renderScenePropertiesSection(params: {
                     event.preventDefault();
                     row.classList.remove('ert-template-dragover');
                     const from = dragIndex ?? parseInt(event.dataTransfer?.getData('text/plain') || '-1', 10);
-                    if (Number.isNaN(from) || from < 0 || from >= list.length || from === idx) {
+                    if (Number.isNaN(from) || from < 0 || from >= workingEntries.length || from === idx) {
                         dragIndex = null;
                         return;
                     }
-                    const nextList = [...list];
+                    const nextList = [...workingEntries];
                     const [moved] = nextList.splice(from, 1);
                     nextList.splice(idx, 0, moved);
                     dragIndex = null;
@@ -500,7 +501,8 @@ export function renderScenePropertiesSection(params: {
                 });
             };
 
-            data.forEach((entry, idx, arr) => renderEntryRow(entry, idx, arr));
+            renderChapterRow();
+            data.forEach((entry, idx) => renderEntryRow(entry, idx));
 
             const addRow = listEl.createDiv({ cls: ['ert-yaml-row', 'ert-yaml-row--add', 'ert-yaml-row--hover-meta'] });
             addRow.createDiv({ cls: ['ert-drag-handle', 'ert-drag-placeholder'] });
@@ -547,19 +549,12 @@ export function renderScenePropertiesSection(params: {
             addBtn.onclick = () => {
                 const key = keyInput.value.trim();
                 if (!key) return;
-                if (requiredOrder.includes(key)) {
-                    new Notice(t('ui.scenePropertiesSection.inCorePropertiesNotice', { key }));
-                    return;
-                }
-                if (data.some((item) => item.key === key)) {
-                    new Notice(t('ui.scenePropertiesSection.propertyExistsNotice', { key }));
-                    return;
-                }
+                if (!canUseKey(key, workingEntries)) return;
                 const iconName = addIconInput.value.trim() || DEFAULT_HOVER_ICON;
                 if (addCheckbox.checked || iconName !== DEFAULT_HOVER_ICON) {
                     setHoverMetadata(key, iconName, addCheckbox.checked);
                 }
-                const nextList = [...data, { key, value: valueInput.value || '', required: false }];
+                const nextList = [...workingEntries, newAdvancedEntry(key, valueInput.value)];
                 saveEntries(nextList);
                 rerender(nextList);
                 renderHoverPreview();
@@ -602,17 +597,13 @@ export function renderScenePropertiesSection(params: {
 
                 if (!confirmed) return;
 
-                if (!plugin.settings.sceneYamlTemplates) {
-                    plugin.settings.sceneYamlTemplates = {
-                        base: DEFAULT_SETTINGS.sceneYamlTemplates!.base,
-                        advanced: '',
-                    };
-                }
-                plugin.settings.sceneYamlTemplates.advanced = defaultTemplate;
+                plugin.settings.sceneYamlTemplates = {
+                    base: getTemplateParts('Scene', plugin.settings).base,
+                    advanced: defaultTemplate,
+                };
                 plugin.settings.hoverMetadataFields = [];
                 await plugin.saveSettings();
-                const resetEntries = entriesFromTemplate(defaultTemplate, requiredOrder).filter((entry) => !entry.required);
-                rerender(resetEntries);
+                rerender(parseAdvancedEntries(defaultTemplate).filter((entry) => !isCoreKey(entry.key)));
                 renderHoverPreview();
             };
         };

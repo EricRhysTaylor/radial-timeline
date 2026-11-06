@@ -1597,14 +1597,13 @@ export class BookDesignerModal extends Modal {
 
     private renderDemoSceneContent(templateString: string, scene: ReturnType<typeof buildNonlinearDemoProjectPlan>['scenes'][number]): string {
         const yamlEscapeDoubleQuoted = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-        const yamlInlineArray = (values: string[]) => `[${values.map(v => `"${yamlEscapeDoubleQuoted(v)}"`).join(', ')}]`;
         const quoted = (value: string) => `"${yamlEscapeDoubleQuoted(value)}"`;
         const data: SceneCreationData = {
             act: scene.act,
             when: scene.when,
             sceneNumber: scene.sceneNumber,
             subplots: scene.subplots,
-            character: scene.characters.length === 1 ? scene.characters[0] : yamlInlineArray(scene.characters),
+            character: scene.characters[0] ?? '',
             place: scene.place,
             characterList: scene.characters,
             placeList: [scene.place],
@@ -1867,11 +1866,6 @@ export class BookDesignerModal extends Modal {
             const characterList = this.character.split('\n').map(c => c.trim()).filter(c => c.length > 0);
             const yamlEscapeDoubleQuoted = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
             const yamlInlineArray = (values: string[]) => `[${values.map(v => `"${yamlEscapeDoubleQuoted(v)}"`).join(', ')}]`;
-            const characterString =
-                characterList.length === 0 ? 'Hero'
-                    : characterList.length === 1 ? characterList[0]
-                        : yamlInlineArray(characterList);
-
             // Place list fallback
             const placeListRaw = targetPath ? [targetPath] : [];
             const placeList = placeListRaw.length > 0 ? placeListRaw : ['Unknown'];
@@ -1881,7 +1875,7 @@ export class BookDesignerModal extends Modal {
                 when,
                 sceneNumber: sceneNum,
                 subplots: assignedSubplots,
-                character: characterString,
+                character: characterList[0] ?? 'Hero',
                 place: 'Unknown',
                 characterList,
                 placeList

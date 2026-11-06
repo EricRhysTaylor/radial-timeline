@@ -156,65 +156,6 @@ function hasRemapperConflict(
 }
 
 /**
- * Check if the advanced template contains legacy base fields that should be removed.
- * Returns the list of base fields found in the template.
- */
-export function getLegacyBaseFieldsInAdvanced(advancedTemplate: string): string[] {
-    const found: string[] = [];
-    for (const field of BASE_BEAT_FIELDS) {
-        // Match field at start of line followed by colon
-        const regex = new RegExp(`^${field}:`, 'm');
-        if (regex.test(advancedTemplate)) {
-            found.push(field);
-        }
-    }
-    return found;
-}
-
-/**
- * Check if advanced template needs cleanup (has legacy base fields)
- */
-export function advancedTemplateNeedsCleanup(advancedTemplate: string): boolean {
-    return getLegacyBaseFieldsInAdvanced(advancedTemplate).length > 0;
-}
-
-/**
- * Remove legacy base fields from an advanced template.
- * This handles the migration from "complete" advanced templates to "extra fields only".
- */
-export function cleanupAdvancedTemplate(advancedTemplate: string): string {
-    const lines = advancedTemplate.split('\n');
-    const result: string[] = [];
-    let skipUntilNextField = false;
-    
-    for (const line of lines) {
-        // Check if this line starts a field
-        const fieldMatch = line.match(/^([A-Za-z][A-Za-z0-9 _'-]*):/);
-        
-        if (fieldMatch) {
-            const fieldName = fieldMatch[1].trim();
-            if (BASE_BEAT_FIELDS.includes(fieldName)) {
-                // Skip this base field and any continuation lines
-                skipUntilNextField = true;
-                continue;
-            } else {
-                // This is an advanced-only field, keep it
-                skipUntilNextField = false;
-                result.push(line);
-            }
-        } else if (skipUntilNextField) {
-            // Skip continuation lines (indented list items, placeholders)
-            continue;
-        } else if (line.trim()) {
-            // Keep non-empty lines that aren't being skipped
-            result.push(line);
-        }
-    }
-    
-    return result.join('\n').trim();
-}
-
-/**
  * Stable id for the synthetic "PDF templates and Book Pages examples updated" alert. The alert is
  * generated dynamically from `settings.templateHotfixHistory` rather than
  * stored in the static `REFACTOR_ALERTS` list, so it can re-appear after a

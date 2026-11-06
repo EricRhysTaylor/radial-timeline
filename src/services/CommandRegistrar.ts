@@ -33,7 +33,8 @@ import { buildEntityNoteContent, entityFolderFor, type EntityKind } from '../uti
 import { ensureActiveBookFolder } from '../modals/EnsureFirstBookModal';
 import { generateSceneContent } from '../utils/sceneGenerator';
 import { sanitizeSourcePath, buildInitialSceneFilename, buildInitialBackdropFilename } from '../utils/sceneCreation';
-import { getTemplateParts } from '../utils/yamlTemplateNormalize';
+import { getSceneTemplate, getTemplateParts } from '../utils/yamlTemplateNormalize';
+import { formatLocalDateKey } from '../utils/date';
 import { ensureManuscriptOutputFolder, ensureOutlineOutputFolder } from '../utils/aiOutput';
 import { BINDING_GUTTER_LATEX, buildExportFilename, buildPrecursorFilename, buildOutlineExport, getExportFormatExtension, getLayoutById, getStructuredFontDiagnostic, getTemplateFontDiagnostics, getVaultAbsolutePath, parseCustomPandocMetadata, resolveTemplatePath, runPandocOnContent, stemToReadable, validatePandocLayout } from '../utils/exportFormats';
 import { isProActive } from '../settings/proEntitlement';
@@ -1297,15 +1298,17 @@ export class CommandRegistrar {
 
             const path = `${sanitizedPath}/${filename}`;
 
-            // YAML template resolution is centralized in `getTemplateParts()`; do not re-merge templates here.
-            const sceneParts = getTemplateParts('Scene', this.plugin.settings);
-            const template = type === 'advanced' ? sceneParts.merged : sceneParts.base;
+            // Basic and Advanced are the author's explicit choice; the format scenes follow the setting.
+            const template = type === 'base' || type === 'advanced'
+                ? getSceneTemplate(this.plugin.settings, type === 'advanced')
+                : getSceneTemplate(this.plugin.settings);
 
             // When is intentionally left blank — the author sets the scene's
             // chronology via Timeline Order Normalizer or by editing the YAML.
             const content = generateSceneContent(template, {
                 act: 1,
                 when: '',
+                due: formatLocalDateKey(),
                 sceneNumber: 1,
                 subplots: [getMainPlotName()],
                 character: type === 'podcast' ? 'HOST' : 'Hero',

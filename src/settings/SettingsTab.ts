@@ -246,17 +246,6 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         });
     }
 
-    /** Add the current core time field without replacing author templates. */
-    private autoMigrateAdvancedTemplate(): void {
-        const resolvedBase = getTemplateParts('Scene', this.plugin.settings).base;
-        const currentBase = this.plugin.settings.sceneYamlTemplates?.base ?? '';
-        const currentAdvanced = this.plugin.settings.sceneYamlTemplates?.advanced ?? '';
-        if (currentBase !== resolvedBase) {
-            this.plugin.settings.sceneYamlTemplates = { base: resolvedBase, advanced: currentAdvanced };
-            void this.plugin.saveSettings();
-        }
-    }
-
     private updateRenderedTabState(): void {
         const tabEntries = Object.entries(this._tabEls) as Array<[RadialTimelineSettingsTabId, HTMLElement | undefined]>;
         const contentEntries = Object.entries(this._tabContentEls) as Array<[RadialTimelineSettingsTabId, HTMLElement | undefined]>;
@@ -454,10 +443,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
                 const updated = applyAlertMigrations(alert, template);
                 const migrationMap = new Map((alert.migrations ?? []).map(migration => [migration.oldKey, migration.newKey]));
 
-                if (!this.plugin.settings.sceneYamlTemplates) {
-                    this.plugin.settings.sceneYamlTemplates = { base: '', advanced: '' };
-                }
-                this.plugin.settings.sceneYamlTemplates.advanced = updated;
+                this.plugin.settings.sceneYamlTemplates = { base: getTemplateParts('Scene', this.plugin.settings).base, advanced: updated };
                 if (migrationMap.size && Array.isArray(this.plugin.settings.hoverMetadataFields)) {
                     this.plugin.settings.hoverMetadataFields = this.plugin.settings.hoverMetadataFields.map(field => {
                         const nextKey = migrationMap.get(field.key);
@@ -832,7 +818,6 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         this._hasExplicitTabRequest = false;
 
         // Auto-migrate: Clean up legacy advanced template if needed
-        this.autoMigrateAdvancedTemplate();
 
         const tabBar = containerEl.createDiv({ cls: 'ert-settings-tab-bar' });
         const coreTab = tabBar.createDiv({ cls: 'ert-settings-tab' });

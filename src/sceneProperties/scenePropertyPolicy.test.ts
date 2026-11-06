@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import {
-    computeSceneOrderDriftWhenAdvancedDisabled,
     resolveSceneExpectedKeys,
     resolveScenePropertyPolicy,
     splitSceneMissingKeys,
@@ -46,35 +45,5 @@ describe('scenePropertyPolicy', () => {
             missingCoreKeys: ['Act'],
             missingAdvancedKeys: [],
         });
-    });
-
-    it('detects drift only when inactive advanced keys break the core-first order', () => {
-        const expected = resolveSceneExpectedKeys(
-            DEFAULT_SETTINGS,
-            definitions,
-            { advancedEnabled: false }
-        );
-
-        expect(computeSceneOrderDriftWhenAdvancedDisabled([
-            'ID',
-            'Class',
-            'Act',
-            'Place',
-            'When',
-            'Pulse Update',
-            'Summary Update',
-            'Questions',
-        ], expected)).toBe(true);
-
-        expect(computeSceneOrderDriftWhenAdvancedDisabled([
-            'ID',
-            'Class',
-            'Act',
-            'When',
-            'Pulse Update',
-            'Summary Update',
-            'Place',
-            'Questions',
-        ], expected)).toBe(false);
     });
 });

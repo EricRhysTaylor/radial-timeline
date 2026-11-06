@@ -855,6 +855,8 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             app,
             files: targetFiles,
             fieldsToInsert,
+            order: computeCanonicalOrder(noteType, plugin.settings, resolveBeatAuditSystemKey()),
+            mappings: getActiveFrontmatterMappings(plugin.settings),
         });
 
         const parts: string[] = [];
@@ -1199,7 +1201,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
 
         // Build a before/after preview from the first affected file
         const previewNote = notesWithDrift[0];
-        const reorderPreview = previewReorder(app, previewNote.file, canonicalOrder, isDynamic);
+        const reorderPreview = previewReorder(app, previewNote.file, canonicalOrder, isDynamic, getActiveFrontmatterMappings(plugin.settings));
 
         const unsafeSkippedCount = auditResult.notes.filter(n =>
             n.orderDrift && n.safetyResult?.status === 'dangerous'
@@ -1297,6 +1299,7 @@ export function renderYamlAuditPanel(parentEl: HTMLElement, options: {
             files: notesWithDrift.map(n => n.file),
             canonicalOrder,
             isDynamic,
+            mappings: getActiveFrontmatterMappings(plugin.settings),
             safetyResults: auditResult.safetyResults,
         });
 

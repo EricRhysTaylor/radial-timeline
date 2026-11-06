@@ -1,4 +1,4 @@
-import { Component, DropdownComponent, Notice, TFile, normalizePath, parseYaml, setIcon } from 'obsidian';
+import { Component, DropdownComponent, Notice, TFile, normalizePath, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { ErtModal } from '../ui/ErtModal';
 import { t } from '../i18n';
@@ -10,7 +10,10 @@ import { buildTableRow } from './timetableModel';
 import { readSceneId } from '../utils/sceneIds';
 import { TimelineNoteDropModal, type TimelineNoteTarget } from './TimelineNoteDrop';
 import { authorKeyFor } from './timetableFiles';
-import { addSceneIntakeTemplate } from './sceneIntakeTemplate';
+import { addSceneIntakeTemplate, type SceneIntakeContext } from './sceneIntakeTemplate';
+import { applyFrontmatterEdits, isBlankFrontmatterValue, readFrontmatterText, replaceValueEdit, type TextEdit } from '../utils/frontmatterText';
+import { scenePropertySetLabel } from '../utils/yamlTemplateNormalize';
+import { readAnchorWhen } from '../services/SceneInsertService';
 
 export function sameSceneNumber(a: string | null, b: string | null): boolean {
     return !!a && !!b && Number.isFinite(Number(a)) && Number.isFinite(Number(b)) && Number(a) === Number(b);
@@ -23,32 +26,41 @@ export function noteDropAnchors<T extends { row: { kind: string; act: number | n
     return items.filter(item => item.row.kind === 'scene' && (act === null || item.row.act === act) && !!item.id && counts.get(item.id) === 1);
 }
 
-/** Insert only the missing lines, preserving all existing bytes; an empty Act is filled in place. */
+/**
+ * The scene a note numbered `number` would follow, so it joins that scene's act
+ * and date the way a scene added after it does. A note numbered before every
+ * scene joins the first scene's act and takes no date from it.
+ */
+export function sceneBeforeNumber<T extends { prefix: string | null }>(scenes: readonly T[], number: string): { scene: T; precedes: boolean } | undefined {
+    const value = Number(number);
+    const numbered = scenes
+        .filter((scene): scene is T & { prefix: string } => scene.prefix !== null && Number.isFinite(Number(scene.prefix)))
+        .sort((a, b) => Number(a.prefix) - Number(b.prefix));
+    const before = numbered.filter(scene => Number(scene.prefix) <= value).pop();
+    if (before) return { scene: before, precedes: true };
+    return numbered[0] ? { scene: numbered[0], precedes: false } : undefined;
+}
+
+/** Insert only the missing lines, preserving all existing bytes; an empty Class or Act is filled in place. */
 export function addNoteClass(content: string, kind: 'Scene' | 'Sketch', anchor?: string, act?: { key: string; value: number }): string {
-    const actLine = act ? `${act.key}: ${act.value}\n` : '';
-    const placement = (anchor ? `Place after scene: ${JSON.stringify(anchor)}\n` : '') + actLine;
-    const start = content.match(/^---\s*\r?\n/);
-    if (!start) return `---\nClass: ${kind}\n${placement}---\n\n${content}`;
-    const tail = content.slice(start[0].length);
-    const end = /^---\s*$/m.exec(tail);
-    if (!end) throw new Error(t('ui.timetable.noteDropInvalidYaml'));
-    const raw = tail.slice(0, end.index);
-    const parsed: unknown = parseYaml(raw);
-    if (parsed !== null && (typeof parsed !== 'object' || Array.isArray(parsed))) throw new Error(t('ui.timetable.noteDropInvalidYaml'));
-    if (parsed && Object.keys(parsed).some(key => key.toLowerCase() === 'class')) throw new Error(t('ui.timetable.noteDropHasClass'));
-    if (anchor && parsed && Object.keys(parsed).some(key => key.toLowerCase() === 'place after scene')) throw new Error(t('ui.timetable.noteDropExistingPlacement'));
-    const newline = start[0].endsWith('\r\n') ? '\r\n' : '\n';
-    const existingAct = act && parsed ? Object.entries(parsed).find(([key]) => key.toLowerCase() === act.key.toLowerCase()) : undefined;
-    if (act && existingAct) {
-        const [key, value] = existingAct;
-        if (value !== null && value !== '') throw new Error(t('ui.timetable.noteDropExistingPlacement'));
-        const lines = placement.replace(actLine, '').replace(/\n/g, newline);
-        const line = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:[ \\t]*(#[^\\r\\n]*)?(?=\\r?$)`, 'm');
-        if (!line.test(raw)) throw new Error(t('ui.timetable.noteDropExistingPlacement'));
-        const filled = raw.replace(line, (_match, comment?: string) => `${key}: ${act.value}${comment ? ` ${comment}` : ''}`);
-        return `${start[0]}Class: ${kind}${newline}${lines}${filled}${tail.slice(end.index)}`;
+    const placementLines = (anchor ? [`Place after scene: ${JSON.stringify(anchor)}`] : []);
+    const text = readFrontmatterText(content);
+    if (!text) return `---\nClass: ${kind}\n${[...placementLines, ...(act ? [`${act.key}: ${act.value}`] : [])].map(line => `${line}\n`).join('')}---\n\n${content}`;
+    const find = (name: string) => text.fields.find(field => field.key.toLowerCase() === name.toLowerCase());
+    const classField = find('class');
+    if (classField && !isBlankFrontmatterValue(classField.value)) throw new Error(t('ui.timetable.noteDropHasClass'));
+    if (anchor && find('place after scene')) throw new Error(t('ui.timetable.noteDropExistingPlacement'));
+    const edits: TextEdit[] = [];
+    if (classField) edits.push(replaceValueEdit(text, classField, kind));
+    const lines = classField ? [...placementLines] : [`Class: ${kind}`, ...placementLines];
+    if (act) {
+        const actField = find(act.key);
+        if (actField && !isBlankFrontmatterValue(actField.value)) throw new Error(t('ui.timetable.noteDropExistingPlacement'));
+        if (actField) edits.push(replaceValueEdit(text, actField, String(act.value)));
+        else lines.push(`${act.key}: ${act.value}`);
     }
-    return `${start[0]}Class: ${kind}${newline}${placement.replace(/\n/g, newline)}${tail}`;
+    if (lines.length) edits.push({ start: 0, end: 0, text: lines.map(line => line + text.newline).join('') });
+    return applyFrontmatterEdits(text, edits);
 }
 
 class NoteDropModal extends ErtModal {
@@ -70,9 +82,7 @@ class NoteDropModal extends ErtModal {
         kind.setValue(this.defaultKind);
         const propertiesRow = this.contentEl.createDiv({ cls: 'setting-item' });
         propertiesRow.createDiv({ cls: 'setting-item-name', text: t('ui.scenePropertiesSection.heading') });
-        propertiesRow.createDiv({ cls: 'setting-item-control', text: (this.plugin.settings.sceneAdvancedPropertiesEnabled ?? true)
-            ? `${t('ui.scenePropertiesSection.coreName')} + ${t('ui.scenePropertiesSection.advancedName')}`
-            : t('ui.scenePropertiesSection.coreName') });
+        propertiesRow.createDiv({ cls: 'setting-item-control', text: scenePropertySetLabel(this.plugin.settings) });
         const numberRow = this.contentEl.createDiv({ cls: 'setting-item ert-note-drop-number' });
         numberRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropNumber') });
         const number = numberRow.createDiv({ cls: 'setting-item-control' }).createEl('input', { type: 'text', attr: { placeholder: '72' } });
@@ -138,10 +148,23 @@ class NoteDropModal extends ErtModal {
                 if (destination !== oldPath && this.app.vault.getAbstractFileByPath(destination)) throw new Error(t('ui.timetable.noteDropExists'));
                 const prefix = input;
                 if (type === 'Scene' && this.app.vault.getMarkdownFiles().some(f => f !== this.file && getBookIdForPath(this.plugin.settings.books, f.path) === chosen.id && sameSceneNumber(filenamePrefix(f.basename), prefix) && classifyForPromotion(this.app.metadataCache.getFileCache(f)?.frontmatter).kind === 'alreadyScene')) throw new Error(t('ui.timetable.noteDropNumberExists'));
+                // A numbered scene joins the act and date of the scene it follows.
+                const intake: SceneIntakeContext = {};
+                if (type === 'Scene') {
+                    const scenes = this.app.vault.getMarkdownFiles()
+                        .filter(f => f !== this.file && getBookIdForPath(this.plugin.settings.books, f.path) === chosen.id && classifyForPromotion(this.app.metadataCache.getFileCache(f)?.frontmatter).kind === 'alreadyScene')
+                        .map(f => ({ file: f, prefix: filenamePrefix(f.basename) }));
+                    const neighbor = sceneBeforeNumber(scenes, input);
+                    if (neighbor) {
+                        const row = buildTableRow(neighbor.scene.file.path, neighbor.scene.file.basename, this.app.metadataCache.getFileCache(neighbor.scene.file)?.frontmatter, this.plugin.settings);
+                        intake.act = row.act ?? undefined;
+                        if (neighbor.precedes) intake.when = await readAnchorWhen(this.app, this.plugin.settings, neighbor.scene.file);
+                    }
+                }
                 // Validate before a move and again inside vault.process for concurrent edits.
                 const prepare = (content: string) => {
                     const classified = addNoteClass(content, type, after, act);
-                    return type === 'Scene' ? addSceneIntakeTemplate(classified, this.plugin.settings) : classified;
+                    return type === 'Scene' ? addSceneIntakeTemplate(classified, this.plugin.settings, intake) : classified;
                 };
                 prepare(await this.app.vault.read(this.file));
                 if (destination !== oldPath) await this.app.fileManager.renameFile(this.file, destination);

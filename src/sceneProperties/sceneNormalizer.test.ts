@@ -15,7 +15,7 @@ function buildSettings(advancedEnabled?: boolean) {
         ...DEFAULT_SETTINGS,
         sceneAdvancedPropertiesEnabled: advancedEnabled,
         sceneYamlTemplates: {
-            base: 'Class: Scene\nAct: 1\nWhen: 2026-01-01\nPulse Update:\nSummary Update:',
+            base: 'Class: Scene\nAct: 1\nWhen: 2026-01-01\nPulse Update:\nSummary Update:\nTotal Time:',
             advanced: 'Place: Somewhere\nQuestions:\nReader Emotion:',
         },
         enableCustomMetadataMapping: false,
@@ -156,8 +156,8 @@ describe('sceneNormalizer', () => {
 
         expect(result.reordered).toBe(1);
         const content = await readFile(app, 'Books/BookA/01 Advanced.md');
-        expect(content).toContain('ID: scn_adv\nClass: Scene\nAct: 1\nWhen: 2026-01-01\nPulse Update: \nSummary Update: \nTotal Time: \nPlace: Somewhere\nQuestions:');
-        expect(content).toContain('Questions:\n  - Who\nReader Emotion: ');
+        expect(content).toContain('ID: scn_adv\nClass: Scene\nAct: 1\nWhen: 2026-01-01\nPulse Update:\nSummary Update:\nTotal Time:\nPlace: Somewhere\nQuestions:');
+        expect(content).toContain('Questions:\n  - Who\nReader Emotion:');
     });
 
     it('ensures scene ids only inside the active-book scope', async () => {

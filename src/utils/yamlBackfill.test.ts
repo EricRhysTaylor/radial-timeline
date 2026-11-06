@@ -1,10 +1,17 @@
 import { makeFile } from '../../tests/helpers/obsidianFixtures';
 import { describe, expect, it } from 'vitest';
+import { parse, stringify } from 'yaml';
 import type { App, TFile } from 'obsidian';
 import { normalizeDefault, planDeprecatedFieldMigration, planFillEmptyValues, runBackdropSynopsisToContextMigration, runBeatDescriptionToPurposeMigration, runYamlBackfill, runYamlFillEmptyValues } from './yamlBackfill';
 
 function makeApp(frontmatterByPath: Record<string, Record<string, unknown>>): App {
     return {
+        vault: {
+            process: async (file: TFile, cb: (content: string) => string) => {
+                const next = cb(`---\n${stringify(frontmatterByPath[file.path] ?? {})}---\nBody`);
+                frontmatterByPath[file.path] = parse(next.split('---')[1]) as Record<string, unknown>;
+            }
+        },
         fileManager: {
             processFrontMatter: async (file: TFile, cb: (fm: Record<string, unknown>) => void) => {
                 const fm = frontmatterByPath[file.path] ?? {};
@@ -176,8 +183,8 @@ describe('template placeholders never reach a note', () => {
         });
 
         expect(result.updated).toBe(1);
-        expect(frontmatterByPath[file.path].Character).toBe('');
-        expect(frontmatterByPath[file.path].Act).toBe('');
+        expect(frontmatterByPath[file.path].Character).toBeNull();
+        expect(frontmatterByPath[file.path].Act).toBeNull();
         expect(frontmatterByPath[file.path].Duration).toBe('1 hour');
     });
 
@@ -197,5 +204,55 @@ describe('template placeholders never reach a note', () => {
         expect(result.filledFields).toBe(0);
         expect(frontmatterByPath[file.path].Character).toBe('');
         expect(frontmatterByPath[file.path].Due).toBe('');
+    });
+});
+
+describe('backfill keeps the author\'s YAML', () => {
+    const run = async (source: string, options: Partial<Parameters<typeof runYamlBackfill>[0]>) => {
+        let content = source;
+        const app = { vault: { process: async (_file: TFile, cb: (data: string) => string) => { content = cb(content); } } } as unknown as App;
+        const result = await runYamlBackfill({ app, files: [makeFile('Book/1 Scene.md')], fieldsToInsert: {}, ...options });
+        return { content, result };
+    };
+
+    it('does not duplicate a property under another case or mapped name', async () => {
+        const source = '---\nClass: Scene\nsynopsis: Mine\nStory Act: 2\n---\nBody';
+        const { content, result } = await run(source, { fieldsToInsert: { Synopsis: '', Act: '' }, mappings: { 'Story Act': 'Act' } });
+        expect(content).toBe(source);
+        expect(result.skipped).toBe(1);
+    });
+
+    it('adds fields in template order and keeps comments and custom fields', async () => {
+        const { content } = await run('---\nClass: Scene # c\nSynopsis: Mine # s\nMine: 1\nDue: x\n---\nBody', {
+            fieldsToInsert: { Act: '', Status: 'Todo' },
+            order: ['Class', 'Act', 'Synopsis', 'Status', 'Due'],
+        });
+        expect(content).toBe('---\nClass: Scene # c\nAct:\nSynopsis: Mine # s\nMine: 1\nStatus: Todo\nDue: x\n---\nBody');
+    });
+
+    it('uses the name the author mapped', async () => {
+        const { content } = await run('---\nClass: Scene\n---\nBody', { fieldsToInsert: { Synopsis: '' }, mappings: { 'Scene Blurb': 'Synopsis' } });
+        expect(content).toBe('---\nClass: Scene\nScene Blurb:\n---\nBody');
+    });
+
+    it('renames a deprecated update key the audit asked for, rather than adding a second one', async () => {
+        const { content, result } = await run('---\nClass: Scene\nBeats Update: Yes # old\n---\nBody', { fieldsToInsert: { 'Pulse Update': '' } });
+        expect(content).toBe('---\nClass: Scene\nPulse Update: Yes # old\n---\nBody');
+        expect(result.updated).toBe(1);
+    });
+
+    it('fails on a broken note and leaves it alone', async () => {
+        const source = '---\nClass: [\n---\nBody';
+        const { content, result } = await run(source, { fieldsToInsert: { Act: '' } });
+        expect(content).toBe(source);
+        expect(result.failed).toBe(1);
+    });
+
+    it('fills an empty value in place and keeps its comment', async () => {
+        let content = '---\nClass: Scene\nStatus: # pick one\nOther: kept\n---\nBody';
+        const app = { vault: { process: async (_file: TFile, cb: (data: string) => string) => { content = cb(content); } } } as unknown as App;
+        const result = await runYamlFillEmptyValues({ app, files: [makeFile('Book/1 Scene.md')], fieldsToInsert: { Status: 'Todo', Other: 'no' } });
+        expect(content).toBe('---\nClass: Scene\nStatus: Todo # pick one\nOther: kept\n---\nBody');
+        expect(result.filledFields).toBe(1);
     });
 });

@@ -17,10 +17,8 @@
 import { type App, TFile, parseYaml } from 'obsidian';
 import type { BookProfile, RadialTimelineSettings, TimelineItem } from '../types';
 import { getBookIdForPath } from '../utils/books';
-import { getTemplateParts } from '../utils/yamlTemplateNormalize';
-import { getActiveFrontmatterMappings } from '../utils/frontmatter';
-import { findMissingTemplateKeys, templateKeysOf } from './sceneTemplateFields';
-export { buildTemplateValues, findMissingTemplateKeys, templateKeysOf } from './sceneTemplateFields';
+import { extractKeysInOrder, getTemplateParts } from '../utils/yamlTemplateNormalize';
+import { findMissingTemplateKeys, getActiveFrontmatterMappings } from '../utils/frontmatter';
 import { extractPrefixToken } from '../utils/prefixOrder';
 import { safeTitle, splitNumberPrefix } from '../utils/noteTitle';
 import { buildDecimalSceneInsertionPrefix, isSafeSceneInsertionPrefix } from './SceneInsertService';
@@ -124,8 +122,8 @@ function frontmatterOf(app: App, file: TFile): Record<string, unknown> | undefin
 export function planPromotion(app: App, settings: RadialTimelineSettings, files: TFile[]): PromotionPlan {
     const mappings = getActiveFrontmatterMappings(settings);
     const templates = getTemplateParts('Scene', settings);
-    const coreKeys = templateKeysOf(templates.base);
-    const allKeys = templateKeysOf(templates.merged);
+    const coreKeys = extractKeysInOrder(templates.base);
+    const allKeys = extractKeysInOrder(templates.merged);
     const advancedOnlyKeys = allKeys.filter(key => !coreKeys.includes(key));
     const plan: PromotionPlan = { entries: [], skipped: [] };
 
@@ -202,8 +200,8 @@ async function waitForSceneClass(app: App, files: TFile[], timeoutMs = 5000, pol
 }
 
 /**
- * Promote every entry in the plan. Writes go through `processFrontMatter`,
- * one note at a time; a failure on one note is reported and the rest continue.
+ * Promote every entry in the plan, one note at a time; a failure on one note is
+ * reported and the rest continue.
  */
 export async function applyPromotion(
     app: App,

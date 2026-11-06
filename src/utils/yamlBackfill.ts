@@ -1,16 +1,18 @@
 /**
  * YAML Backfill engine.
  *
- * Inserts missing custom YAML fields into existing notes using
- * Obsidian's processFrontMatter() for safe, atomic updates.
+ * Inserts missing fields into existing notes by editing the frontmatter text,
+ * so the author's comments and formatting stay as they wrote them.
  *
  * Guarantees:
  * - Never overwrites existing key values
- * - Normalizes undefined/null defaults to '' to prevent `key: null` writes
+ * - Never duplicates a property the note has under another case or mapped name
+ * - Writes an empty default as `Key:`, the way the templates do
  */
 import type { App, TFile } from 'obsidian';
 import type { FieldEntryValue } from './yamlTemplateNormalize';
-import { normalizeFrontmatterKeys, type getActiveFrontmatterMappings } from './frontmatter';
+import { authorKeyFromMappings, canonicalizeFrontmatterKey, findMissingTemplateKeys, normalizeFrontmatterKeys, type getActiveFrontmatterMappings } from './frontmatter';
+import { applyFrontmatterEdits, formatYamlField, frontmatterValues, insertFieldEdits, isBlankFrontmatterValue, readFrontmatterText, replaceValueEdit, yamlScalar, type FrontmatterText, type TextEdit } from './frontmatterText';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -20,6 +22,10 @@ export interface BackfillOptions {
     files: TFile[];
     /** Keys to insert → default values from template.  */
     fieldsToInsert: Record<string, FieldEntryValue>;
+    /** Canonical key order. New fields go to their place in it; without one they go last. */
+    order?: string[];
+    /** The author's custom property names. */
+    mappings?: Record<string, string>;
     onProgress?: (current: number, total: number, filename: string) => void;
     abortSignal?: AbortSignal;
 }
@@ -102,11 +108,17 @@ export function normalizeDefault(value: FieldEntryValue | undefined | null): str
     return value;
 }
 
-function isTrulyEmpty(value: unknown): boolean {
-    if (value === undefined || value === null) return true;
-    if (typeof value === 'string') return value.trim().length === 0;
-    if (Array.isArray(value)) return value.length === 0;
-    return false;
+/** The audit does not accept the old names of these keys, so insert renames them. */
+const RENAMED_WHEN_REQUESTED = ['Pulse Update', 'Summary Update'];
+
+function deprecatedKeyEdits(text: FrontmatterText, requested: string[]): TextEdit[] {
+    const compact = (key: string) => key.toLowerCase().replace(/[\s_-]/g, '');
+    return text.fields.flatMap(field => {
+        const canonical = canonicalizeFrontmatterKey(field.key);
+        const deprecated = RENAMED_WHEN_REQUESTED.includes(canonical) && requested.includes(canonical)
+            && compact(field.key) !== compact(canonical);
+        return deprecated ? [{ start: field.keyStart, end: field.keyEnd, text: canonical }] : [];
+    });
 }
 
 // ─── Main backfill function ─────────────────────────────────────────────
@@ -114,12 +126,11 @@ function isTrulyEmpty(value: unknown): boolean {
 /**
  * Insert missing YAML fields into the supplied files.
  *
- * For each file, uses `app.fileManager.processFrontMatter()` to inspect
- * the live frontmatter and add any keys from `fieldsToInsert` that are
- * absent. Existing values are never touched.
+ * Each file is read and written atomically; keys from `fieldsToInsert` that the
+ * note lacks are added and every existing byte stays.
  */
 export async function runYamlBackfill(options: BackfillOptions): Promise<BackfillResult> {
-    const { app, files, fieldsToInsert, onProgress, abortSignal } = options;
+    const { app, files, fieldsToInsert, order, mappings, onProgress, abortSignal } = options;
 
     const keysToInsert = Object.keys(fieldsToInsert);
     if (keysToInsert.length === 0) {
@@ -143,16 +154,20 @@ export async function runYamlBackfill(options: BackfillOptions): Promise<Backfil
         try {
             let didInsert = false;
 
-            await app.fileManager.processFrontMatter(file, (fm) => {
-                const fmObj = fm as Record<string, unknown>;
-
-                for (const key of keysToInsert) {
-                    // Only insert if the key is truly absent
-                    if (!(key in fmObj)) {
-                        fmObj[key] = normalizeDefault(fieldsToInsert[key]);
-                        didInsert = true;
-                    }
-                }
+            await app.vault.process(file, (content) => {
+                const text = readFrontmatterText(content);
+                if (!text) return content;
+                const missing = findMissingTemplateKeys(keysToInsert, frontmatterValues(text), mappings);
+                const renames = deprecatedKeyEdits(text, keysToInsert);
+                if (missing.length === 0 && renames.length === 0) return content;
+                didInsert = true;
+                const additions = missing.map(key => ({
+                    key,
+                    lines: formatYamlField(authorKeyFromMappings(key, mappings), normalizeDefault(fieldsToInsert[key])),
+                }));
+                return applyFrontmatterEdits(text, [...renames, ...insertFieldEdits(text, additions, order
+                    ? { order, canonicalOf: key => canonicalizeFrontmatterKey(key, mappings) }
+                    : undefined)]);
             });
 
             if (didInsert) {
@@ -331,26 +346,22 @@ export async function runYamlFillEmptyValues(options: BackfillOptions): Promise<
         try {
             let fileFilledCount = 0;
 
-            await app.fileManager.processFrontMatter(file, (fm) => {
-                const fmObj = fm as Record<string, unknown>;
-
+            await app.vault.process(file, (content) => {
+                const text = readFrontmatterText(content);
+                if (!text) return content;
+                const edits: TextEdit[] = [];
                 for (const key of keysToConsider) {
                     // Only mutate keys that already exist and are truly empty
-                    if (!(key in fmObj)) continue;
-                    if (!isTrulyEmpty(fmObj[key])) continue;
-
+                    const field = text.fields.find(candidate => candidate.key === key);
+                    if (!field || !isBlankFrontmatterValue(field.value)) continue;
+                    if (!hasDefaultValue(fieldsToInsert[key])) continue;
                     const defaultValue = normalizeDefault(fieldsToInsert[key]);
-                    // Skip no-op defaults (empty string or empty list)
-                    if (
-                        (typeof defaultValue === 'string' && defaultValue.trim().length === 0)
-                        || (Array.isArray(defaultValue) && defaultValue.length === 0)
-                    ) {
-                        continue;
-                    }
-
-                    fmObj[key] = defaultValue;
-                    fileFilledCount++;
+                    edits.push(replaceValueEdit(text, field, Array.isArray(defaultValue)
+                        ? JSON.stringify(defaultValue)
+                        : yamlScalar(defaultValue)));
                 }
+                fileFilledCount = edits.length;
+                return applyFrontmatterEdits(text, edits);
             });
 
             if (fileFilledCount > 0) {
@@ -380,13 +391,6 @@ export interface FillEmptyPlan {
     filledFields: number;
     touchedKeys: string[];
     sourcePath: string;
-}
-
-function isEmptyFrontmatterValue(value: unknown): boolean {
-    if (value === undefined || value === null) return true;
-    if (typeof value === 'string') return value.trim().length === 0;
-    if (Array.isArray(value)) return value.length === 0;
-    return false;
 }
 
 function hasDefaultValue(value: FieldEntryValue): boolean {
@@ -428,7 +432,7 @@ export function planFillEmptyValues(options: {
     for (const file of scopedFiles) {
         const fm = options.app.metadataCache.getFileCache(file)?.frontmatter;
         if (!fm) continue;
-        const emptyKeys = keys.filter(key => key in fm && isEmptyFrontmatterValue(fm[key]));
+        const emptyKeys = keys.filter(key => key in fm && isBlankFrontmatterValue(fm[key]));
         if (emptyKeys.length === 0) continue;
         filledFields += emptyKeys.length;
         emptyKeys.forEach(key => touchedKeys.add(key));

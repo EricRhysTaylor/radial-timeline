@@ -4,8 +4,8 @@
  * Destructive operations on frontmatter: delete fields and canonical reorder.
  * All operations are safety-gated by the yamlSafety scanner.
  *
- * Uses Obsidian's processFrontMatter() for delete operations and raw
- * file rewrite (vault.read/modify) for reorder (key order control).
+ * Both edit the frontmatter text in place, so comments, formatting and the
+ * note body stay exactly as the author wrote them.
  *
  * Follows the same patterns as yamlBackfill.ts:
  * - Atomic per-file updates
@@ -14,18 +14,21 @@
  * - Progress callbacks
  * - Structured result objects
  */
-import { type App, type TFile, stringifyYaml } from 'obsidian';
+import type { App, TFile } from 'obsidian';
 import {
     type FrontmatterSafetyResult,
     scanFrontmatterSafety,
 } from './yamlSafety';
-import { frontmatterValueToText, normalizeFrontmatterKeys } from './frontmatter';
-import { buildFrontmatterDocument } from './frontmatterDocument';
+import { canonicalizeFrontmatterKey, findCanonicalAliasConflicts, frontmatterValueToText } from './frontmatter';
+import { formatAliasConflictMessage } from './frontmatterWriteSafety';
 import {
-    formatAliasConflictMessage,
-    prepareFrontmatterRewrite,
-    verifyFrontmatterRewrite,
-} from './frontmatterWriteSafety';
+    applyFrontmatterEdits,
+    frontmatterValues,
+    isBlankFrontmatterValue,
+    readFrontmatterText,
+    removeFieldEdit,
+    reorderFrontmatterFields,
+} from './frontmatterText';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -71,6 +74,8 @@ export interface ReorderOptions {
      * foreign / unmanaged keys, which anchor to their preceding key.
      */
     isDynamic: (key: string) => boolean;
+    /** The author's custom property names, so a mapped key sorts as its canonical key. */
+    mappings?: Record<string, string>;
     /** Pre-computed safety results per file. */
     safetyResults?: Map<TFile, FrontmatterSafetyResult>;
     onProgress?: (current: number, total: number, filename: string) => void;
@@ -90,13 +95,6 @@ export interface ReorderResult {
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────
-
-function isTrulyEmpty(value: unknown): boolean {
-    if (value === undefined || value === null) return true;
-    if (typeof value === 'string') return value.trim().length === 0;
-    if (Array.isArray(value)) return value.length === 0;
-    return false;
-}
 
 /**
  * Check if a file's safety result allows destructive operations.
@@ -123,7 +121,7 @@ function isSafeForModification(
  *   passing `fieldsToDelete`.
  * - Skips files flagged as dangerous by the safety scanner
  * - When `onlyEmpty` is true, only removes fields with empty values
- * - Uses processFrontMatter() for atomic updates
+ * - Each file is read and written atomically; only the deleted lines change
  */
 export async function runYamlDeleteFields(
     options: DeleteFieldsOptions
@@ -194,17 +192,14 @@ export async function runYamlDeleteFields(
         try {
             const removedFields: string[] = [];
 
-            await app.fileManager.processFrontMatter(file, (fm) => {
-                const fmObj = fm as Record<string, unknown>;
-
-                for (const key of Object.keys(fmObj)) {
-                    if (!deleteSet.has(key)) continue;
-                    if (protectedKeys?.has(key)) continue;
-                    if (onlyEmpty && !isTrulyEmpty(fmObj[key])) continue;
-
-                    delete fmObj[key];
-                    removedFields.push(key);
-                }
+            await app.vault.process(file, (content) => {
+                const text = readFrontmatterText(content);
+                if (!text) return content;
+                const removing = text.fields.filter(field => deleteSet.has(field.key)
+                    && !protectedKeys?.has(field.key)
+                    && (!onlyEmpty || isBlankFrontmatterValue(field.value)));
+                removedFields.splice(0, removedFields.length, ...removing.map(field => field.key));
+                return applyFrontmatterEdits(text, removing.map(field => removeFieldEdit(field, text.raw)));
             });
 
             if (removedFields.length > 0) {
@@ -230,9 +225,6 @@ export async function runYamlDeleteFields(
 /**
  * Reorder frontmatter fields in the supplied files to match canonical order.
  *
- * Uses raw file read/write because Obsidian's processFrontMatter() does
- * not guarantee key order.
- *
  * Key ordering strategy:
  * 1. Template keys in canonical order
  * 2. Remaining known keys (not in canonical order) in their original order
@@ -240,8 +232,9 @@ export async function runYamlDeleteFields(
  *
  * Safety guarantees:
  * - Skips files flagged as dangerous by the safety scanner
- * - Preserves all values exactly (only key order changes)
- * - Falls back gracefully on parse/write errors
+ * - Moves each field with its comments; values are never rewritten
+ * - Respells a managed key to its canonical name; other keys keep their spelling
+ * - A rewrite that would change any value throws and leaves the note unchanged
  */
 export async function runYamlReorder(
     options: ReorderOptions
@@ -251,6 +244,7 @@ export async function runYamlReorder(
         files,
         canonicalOrder,
         isDynamic,
+        mappings,
         safetyResults,
         onProgress,
         abortSignal,
@@ -294,7 +288,7 @@ export async function runYamlReorder(
         }
 
         try {
-            const didReorder = await reorderSingleFile(app, file, canonicalOrder, isDynamic);
+            const didReorder = await reorderSingleFile(app, file, canonicalOrder, isDynamic, mappings);
             if (didReorder) {
                 result.reordered++;
             } else {
@@ -312,6 +306,32 @@ export async function runYamlReorder(
     return result;
 }
 
+interface ReorderPlan {
+    /** The note's keys, as it spells them, in their new order. */
+    keys: string[];
+    /** Managed keys to respell to their canonical name. */
+    renames: Map<string, string>;
+    changed: boolean;
+}
+
+function planReorder(
+    noteKeys: string[],
+    canonicalOrder: string[],
+    isDynamic: (key: string) => boolean,
+    mappings?: Record<string, string>
+): ReorderPlan {
+    const noteKeyFor = new Map(noteKeys.map(key => [canonicalizeFrontmatterKey(key, mappings), key]));
+    const keys = buildOrderedKeyList([...noteKeyFor.keys()], canonicalOrder, isDynamic)
+        .map(key => noteKeyFor.get(key)!); // SAFE: buildOrderedKeyList only returns keys it was given
+    const canonicalSet = new Set(canonicalOrder);
+    const renames = new Map<string, string>();
+    for (const key of noteKeys) {
+        const canonical = canonicalizeFrontmatterKey(key);
+        if (canonical !== key && canonicalSet.has(canonical)) renames.set(key, canonical);
+    }
+    return { keys, renames, changed: renames.size > 0 || !arraysEqual(noteKeys, keys) };
+}
+
 /**
  * Reorder frontmatter in a single file. Returns true if the file was modified.
  */
@@ -319,65 +339,22 @@ async function reorderSingleFile(
     app: App,
     file: TFile,
     canonicalOrder: string[],
-    isDynamic: (key: string) => boolean
+    isDynamic: (key: string) => boolean,
+    mappings?: Record<string, string>
 ): Promise<boolean> {
-    // Cheap pre-check on a cached snapshot to decide whether a rewrite is
-    // needed at all (avoids a no-op atomic write when order is already canonical).
-    const snapshot = await app.vault.cachedRead(file);
-    const pre = prepareFrontmatterRewrite(snapshot);
-    if (!pre) {
-        return false;
-    }
-    if (pre.aliasConflicts.length > 0) {
-        throw new Error(`Refused rewrite due to duplicate canonical aliases: ${formatAliasConflictMessage(pre.aliasConflicts)}`);
-    }
-    const preNormalized = normalizeFrontmatterKeys(pre.parsed);
-    const preOrdered = buildOrderedKeyList(Object.keys(preNormalized), canonicalOrder, isDynamic);
-    if (arraysEqual(Object.keys(pre.parsed), preOrdered)) {
-        return false;
-    }
-
-    // Atomic read-modify-write. Frontmatter and body are derived from the
-    // authoritative content inside the callback so a concurrent edit to the
-    // note body cannot be clobbered, and verification runs on the exact bytes
-    // about to be written — throwing aborts the write entirely.
     let changed = false;
     await app.vault.process(file, (content) => {
-        const prepared = prepareFrontmatterRewrite(content);
-        if (!prepared) return content;
-        if (prepared.aliasConflicts.length > 0) {
-            throw new Error(`Refused rewrite due to duplicate canonical aliases: ${formatAliasConflictMessage(prepared.aliasConflicts)}`);
+        const text = readFrontmatterText(content);
+        if (!text) return content;
+        const conflicts = findCanonicalAliasConflicts(frontmatterValues(text), mappings);
+        if (conflicts.length > 0) {
+            throw new Error(`Refused rewrite due to duplicate canonical aliases: ${formatAliasConflictMessage(conflicts)}`);
         }
-
-        const rawFrontmatter = prepared.parsed;
-        const normalizedFrontmatter = normalizeFrontmatterKeys(rawFrontmatter);
-        const currentKeys = Object.keys(rawFrontmatter);
-        const normalizedCurrentKeys = Object.keys(normalizedFrontmatter);
-        const orderedKeys = buildOrderedKeyList(normalizedCurrentKeys, canonicalOrder, isDynamic);
-
-        // Order/casing already canonical on disk (race) — no-op.
-        if (arraysEqual(currentKeys, orderedKeys)) return content;
-
-        // Rebuild frontmatter in the new order
-        const reorderedObj: Record<string, unknown> = {};
-        for (const key of orderedKeys) {
-            reorderedObj[key] = normalizedFrontmatter[key];
-        }
-
-        const newYamlStr = stringifyYaml(reorderedObj);
-        const newContent = buildFrontmatterDocument(newYamlStr, prepared.body);
-        const verification = verifyFrontmatterRewrite(newContent, {
-            originalBody: prepared.body,
-            verifyParsed: (verifiedFrontmatter) => {
-                const normalizedVerified = normalizeFrontmatterKeys(verifiedFrontmatter);
-                return arraysEqual(Object.keys(normalizedVerified), orderedKeys);
-            }
-        });
-        if (!verification.ok) {
-            throw new Error(verification.reason ?? 'Frontmatter reorder verification failed.');
-        }
+        const plan = planReorder(text.fields.map(field => field.key), canonicalOrder, isDynamic, mappings);
+        if (!plan.changed) return content;
+        const reordered = reorderFrontmatterFields(text, plan.keys, plan.renames);
         changed = true;
-        return newContent;
+        return reordered;
     });
     return changed;
 }
@@ -452,6 +429,11 @@ export function buildOrderedKeyList(
     return ordered;
 }
 
+/** Whether a note's keys are already where a reorder would leave them. */
+export function sceneOrderIsCanonical(noteKeys: string[], canonicalOrder: string[], isDynamic: (key: string) => boolean): boolean {
+    return arraysEqual(noteKeys, buildOrderedKeyList(noteKeys, canonicalOrder, isDynamic));
+}
+
 function arraysEqual(a: string[], b: string[]): boolean {
     if (a.length !== b.length) return false;
     for (let i = 0; i < a.length; i++) {
@@ -488,7 +470,7 @@ export function previewDeleteFields(
             if (key === 'position') continue;
             if (!deleteSet.has(key)) continue;
             if (protectedKeys?.has(key)) continue;
-            if (onlyEmpty && !isTrulyEmpty(fm[key])) continue;
+            if (onlyEmpty && !isBlankFrontmatterValue(fm[key])) continue;
 
             fields.push(key);
             values[key] = fm[key];
@@ -510,20 +492,16 @@ export function previewReorder(
     app: App,
     file: TFile,
     canonicalOrder: string[],
-    isDynamic: (key: string) => boolean
+    isDynamic: (key: string) => boolean,
+    mappings?: Record<string, string>
 ): { before: string[]; after: string[] } | null {
     const cache = app.metadataCache.getFileCache(file);
     if (!cache?.frontmatter) return null;
 
-    const fm = cache.frontmatter as Record<string, unknown>;
-    const currentKeys = Object.keys(fm).filter(k => k !== 'position');
-    const normalizedFrontmatter = normalizeFrontmatterKeys(
-        Object.fromEntries(Object.entries(fm).filter(([key]) => key !== 'position'))
-    );
-    const orderedKeys = buildOrderedKeyList(Object.keys(normalizedFrontmatter), canonicalOrder, isDynamic);
-
-    if (arraysEqual(currentKeys, orderedKeys)) return null;
-    return { before: currentKeys, after: orderedKeys };
+    const before = Object.keys(cache.frontmatter as Record<string, unknown>).filter(k => k !== 'position');
+    const plan = planReorder(before, canonicalOrder, isDynamic, mappings);
+    if (!plan.changed) return null;
+    return { before, after: plan.keys.map(key => plan.renames.get(key) ?? key) };
 }
 
 export interface DeletePreviewSummary {
@@ -542,7 +520,7 @@ export function summarizeDeletePreview(
     for (const detail of preview.values()) {
         for (const field of detail.fields) {
             const value = detail.values[field];
-            if (isTrulyEmpty(value)) {
+            if (isBlankFrontmatterValue(value)) {
                 summary.emptyFieldCount++;
                 continue;
             }

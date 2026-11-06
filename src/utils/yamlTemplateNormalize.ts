@@ -9,15 +9,18 @@
 import { parseYaml } from 'obsidian';
 import type { RadialTimelineSettings } from '../types/settings';
 import { getBeatConfigForSystem, normalizeBeatBaseTemplateOrder, sanitizeBeatAdvancedForWrite } from './beatsTemplates';
-import { mergeTemplateParts } from './templateMerge';
+import { mergeTemplateParts, removeTemplateFields, splitTemplateFields, templateFieldKey } from './templateMerge';
 import { withOptionalManagedKeys } from './optionalManagedKeys';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
+import { t } from '../i18n';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
 export type FieldEntryValue = string | string[];
 
 export type NoteType = 'Scene' | 'Beat' | 'Backdrop';
+
+const TOTAL_TIME_KEY = 'Total Time';
 
 // ─── Low-level parsers ──────────────────────────────────────────────────
 
@@ -33,73 +36,36 @@ function normalizeParsedTemplateScalar(value: unknown): string {
     return String(value).replace(/^['"]({{[^{}\n]+}})['"]$/, '$1');
 }
 
-function stripChapterFieldFromAdvanced(yaml: string): string {
-    const lines = (yaml || '').split('\n');
-    const result: string[] = [];
-    let skipUntilNextField = false;
-
-    for (const line of lines) {
-        const fieldMatch = line.match(/^([A-Za-z][A-Za-z0-9 _'-]*):/);
-        if (fieldMatch) {
-            const fieldName = fieldMatch[1].trim();
-            if (fieldName === 'Chapter') {
-                skipUntilNextField = true;
-                continue;
-            }
-            skipUntilNextField = false;
-            result.push(line);
-            continue;
-        }
-
-        if (!skipUntilNextField) {
-            result.push(line);
-        }
-    }
-
-    return result.join('\n').trim();
-}
-
-/**
- * Extract YAML keys from a template string in the order they appear.
- * Lines must start with `SomeKey:` (allows letters, digits, spaces, underscores,
- * hyphens, and apostrophes).
- */
+/** The keys a template defines, in the order they appear. */
 export function extractKeysInOrder(template: string): string[] {
     const keys: string[] = [];
-    const lines = (template || '').split('\n');
-    for (const line of lines) {
-        const match = line.match(/^([A-Za-z0-9 _'-]+):/);
-        if (match) {
-            const key = match[1].trim();
-            if (key && !keys.includes(key)) keys.push(key);
-        }
+    for (const line of (template || '').split('\n')) {
+        const key = templateFieldKey(line);
+        if (key !== null && !keys.includes(key)) keys.push(key);
     }
     return keys;
 }
 
 /**
- * Safely parse a YAML template string into a flat key → value record.
- * Arrays are preserved as `string[]`; everything else becomes `string`.
- * `null` / `undefined` values are normalized to `''`.
+ * Parse a YAML template into a flat key → value record. Arrays stay `string[]`;
+ * everything else becomes `string`; empty values become `''`. Fields parse one
+ * at a time, so a single malformed value cannot blank the others.
  */
 export function safeParseYaml(template: string): Record<string, FieldEntryValue> {
-    try {
-        const parsed: unknown = parseYaml(sanitizeTemplatePlaceholdersForYamlParse(template));
-        if (!parsed || typeof parsed !== 'object') return {};
-        const entries: Record<string, FieldEntryValue> = {};
-        Object.entries(parsed).forEach(([key, value]: [string, unknown]) => {
-            if (Array.isArray(value)) {
-                entries[key] = value.map((v) => normalizeParsedTemplateScalar(v));
-            } else if (value === undefined || value === null) {
-                entries[key] = '';
-            } else {
-                entries[key] = normalizeParsedTemplateScalar(value);
-            }
-        });
-        return entries;
-    } catch {
-        return {};
+    const entries: Record<string, FieldEntryValue> = {};
+    for (const field of splitTemplateFields(template)) {
+        let parsed: unknown;
+        try {
+            parsed = parseYaml(sanitizeTemplatePlaceholdersForYamlParse(field.lines));
+        } catch {
+            entries[field.key] = '';
+            continue;
+        }
+        const value = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>)[field.key] : undefined;
+        if (Array.isArray(value)) entries[field.key] = value.map(item => normalizeParsedTemplateScalar(item));
+        else entries[field.key] = value === undefined || value === null ? '' : normalizeParsedTemplateScalar(value);
     }
+    return entries;
 }
 
 /**
@@ -150,23 +116,13 @@ export function getTemplateParts(
 ): TemplateParts {
     switch (noteType) {
         case 'Scene': {
-            let base = settings.sceneYamlTemplates?.base
+            const base = settings.sceneYamlTemplates?.base
                 ?? DEFAULT_SETTINGS.sceneYamlTemplates!.base;
-            let advanced = stripChapterFieldFromAdvanced(
+            const advanced = removeTemplateFields(
                 settings.sceneYamlTemplates?.advanced
-                ?? DEFAULT_SETTINGS.sceneYamlTemplates!.advanced
+                ?? DEFAULT_SETTINGS.sceneYamlTemplates!.advanced,
+                ['Chapter']
             );
-            // Existing vaults can have an older core template, or an author-defined
-            // Total Time in advanced. Preserve that default while making the field core.
-            const coreTime = /^Total Time[ \t]*:[ \t]*([^\r\n]*)(?:\r?\n[ \t]+[^\r\n]*)*/im.exec(base);
-            const advancedTime = /^Total Time[ \t]*:[ \t]*([^\r\n]*)(?:\r?\n[ \t]+[^\r\n]*)*/im.exec(advanced);
-            const advancedTimeField = advancedTime?.[0].replace(/^Total Time[ \t]*:/i, 'Total Time:');
-            if (!coreTime) {
-                base = `${base.trimEnd()}\n${advancedTimeField ?? 'Total Time:'}`;
-            } else if (!coreTime[1].trim() && advancedTime?.[1].trim() && advancedTimeField) {
-                base = base.replace(coreTime[0], advancedTimeField);
-            }
-            if (advancedTime) advanced = advanced.replace(advancedTime[0], '').replace(/\n{3,}/g, '\n\n').trim();
             const merged = advanced.trim()
                 ? mergeTemplateParts(base, advanced)
                 : base;
@@ -181,7 +137,7 @@ export function getTemplateParts(
                 .replace(/\n{3,}/g, '\n\n')
                 .trim();
             const config = getBeatConfigForSystem(settings, beatSystemKey);
-            const advanced = stripChapterFieldFromAdvanced(sanitizeBeatAdvancedForWrite(config.beatYamlAdvanced));
+            const advanced = removeTemplateFields(sanitizeBeatAdvancedForWrite(config.beatYamlAdvanced), ['Chapter']);
             const merged = advanced.trim()
                 ? mergeTemplateParts(base, advanced)
                 : base;
@@ -194,7 +150,7 @@ export function getTemplateParts(
                 ?? 'Class: Backdrop\nWhen:\nEnd:\nContext:';
             const advancedRaw = templates?.advanced ?? '';
             // Filter legacy Synopsis key from advanced writes.
-            const advanced = stripChapterFieldFromAdvanced(filterDeprecatedBackdropKeys(advancedRaw));
+            const advanced = removeTemplateFields(advancedRaw, ['Chapter', 'Synopsis']);
             const merged = advanced.trim()
                 ? mergeTemplateParts(base, advanced)
                 : base;
@@ -215,27 +171,48 @@ export function getMergedTemplate(
     return getTemplateParts(noteType, settings, beatSystemKey).merged;
 }
 
-/** Filter deprecated keys (Synopsis) from backdrop advanced templates. */
-function filterDeprecatedBackdropKeys(advancedRaw: string): string {
-    const lines = advancedRaw.split('\n');
-    const result: string[] = [];
-    let skipUntilNextField = false;
-    for (const line of lines) {
-        const fieldMatch = line.match(/^([A-Za-z][A-Za-z0-9 _'-]*):/);
-        if (fieldMatch) {
-            const fieldName = fieldMatch[1].trim();
-            if (fieldName === 'Synopsis') {
-                skipUntilNextField = true;
-                continue;
-            }
-            skipUntilNextField = false;
-            result.push(line);
-            continue;
-        }
-        if (skipUntilNextField) continue;
-        result.push(line);
+/** The scene template the current settings apply: Core, plus Advanced when enabled. */
+export function getSceneTemplate(
+    settings: RadialTimelineSettings,
+    advanced: boolean = settings.sceneAdvancedPropertiesEnabled ?? true
+): string {
+    const parts = getTemplateParts('Scene', settings);
+    return advanced ? parts.merged : parts.base;
+}
+
+/** Which scene property sets a note receives, for the drop and promotion dialogs. */
+export function scenePropertySetLabel(settings: RadialTimelineSettings): string {
+    const core = t('ui.scenePropertiesSection.coreName');
+    return (settings.sceneAdvancedPropertiesEnabled ?? true)
+        ? `${core} + ${t('ui.scenePropertiesSection.advancedName')}`
+        : core;
+}
+
+/**
+ * Bring stored scene templates up to the current layout, once, when settings
+ * load. Total Time became a Core property: an older vault gets it where a new
+ * vault has it, carrying over any default the author set in Advanced. Every
+ * other field is left exactly as stored.
+ */
+export function migrateSceneTemplates(stored: { base?: string; advanced?: string }): { base: string; advanced: string } {
+    const base = stored.base?.trim() ? stored.base : DEFAULT_SETTINGS.sceneYamlTemplates!.base;
+    const storedAdvanced = stored.advanced ?? '';
+    const movedTime = splitTemplateFields(storedAdvanced).find(field => field.key.toLowerCase() === TOTAL_TIME_KEY.toLowerCase());
+    const advanced = movedTime ? removeTemplateFields(storedAdvanced, [movedTime.key]) : storedAdvanced;
+    const movedLines = movedTime?.lines.replace(/^[^:]*:/, `${TOTAL_TIME_KEY}:`);
+
+    const fields = splitTemplateFields(base);
+    const existing = fields.find(field => field.key.toLowerCase() === TOTAL_TIME_KEY.toLowerCase());
+    if (existing) {
+        const blank = !existing.lines.replace(/^[^:]*:/, '').replace(/#.*$/, '').trim();
+        if (blank && movedLines) existing.lines = movedLines;
+    } else {
+        const wordsIndex = fields.findIndex(field => field.key === 'Words');
+        const pulseIndex = fields.findIndex(field => field.key === 'Pulse Update');
+        const position = wordsIndex >= 0 ? wordsIndex + 1 : pulseIndex >= 0 ? pulseIndex : fields.length;
+        fields.splice(position, 0, { key: TOTAL_TIME_KEY, lines: movedLines ?? `${TOTAL_TIME_KEY}:` });
     }
-    return result.join('\n');
+    return { base: fields.map(field => field.lines).join('\n'), advanced };
 }
 
 // ─── High-level per-note-type helpers ───────────────────────────────────

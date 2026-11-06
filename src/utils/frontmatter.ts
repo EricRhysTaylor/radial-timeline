@@ -159,6 +159,29 @@ export function canonicalizeFrontmatterKey(key: string, customMappings?: Record<
   return keyMappings[normalizedKey] || key;
 }
 
+/** The name the author's notes use for a canonical key, under their custom mappings. */
+export function authorKeyFromMappings(canonical: string, mappings: Record<string, string> | undefined): string {
+  return Object.entries(mappings ?? {}).find(([, target]) => target === canonical)?.[0] ?? canonical;
+}
+
+/**
+ * Template keys (other than Class) that the note does not have. A key counts as
+ * present under any letter case, built-in alias, or custom name the author
+ * mapped to it, so nothing ever adds a duplicate of a property the author has.
+ */
+export function findMissingTemplateKeys(
+  templateKeys: string[],
+  frontmatter: Record<string, unknown> | undefined,
+  mappings: Record<string, string> | undefined
+): string[] {
+  const present = new Set<string>();
+  if (frontmatter) {
+    for (const key of Object.keys(frontmatter)) present.add(key.toLowerCase());
+    for (const key of Object.keys(normalizeFrontmatterKeys(frontmatter, mappings))) present.add(key.toLowerCase());
+  }
+  return templateKeys.filter(key => key.toLowerCase() !== 'class' && !present.has(key.toLowerCase()));
+}
+
 export function findCanonicalAliasConflicts(fm: Record<string, unknown>, customMappings?: Record<string, string>): CanonicalAliasConflict[] {
   const seen = new Map<string, string[]>();
   const legacyConflictCanonical = (key: string): string => {

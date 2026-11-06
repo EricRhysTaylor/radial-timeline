@@ -16,7 +16,7 @@ import type { BookProfile } from '../types/settings';
 import { buildScenePropertyDefinitions } from '../sceneProperties/scenePropertyAdapter';
 import { classifyForPromotion } from '../services/PromoteToSceneService';
 import { systemFolderPath } from '../utils/systemFolder';
-import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
+import { authorKeyFromMappings, getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
 import { getConfiguredActCount } from '../utils/acts';
 import { safeTitle } from '../utils/noteTitle';
 
@@ -88,10 +88,7 @@ export function folderFilter(folder: string): string {
  * maps the author's key to RT's, so a table column must use the author's.
  */
 export function authorKeyFor(canonical: string, settings: RadialTimelineSettings): string {
-    const mappings = getActiveFrontmatterMappings(settings);
-    if (!mappings) return canonical;
-    const mapped = Object.entries(mappings).find(([, target]) => target === canonical);
-    return mapped ? mapped[0] : canonical;
+    return authorKeyFromMappings(canonical, getActiveFrontmatterMappings(settings));
 }
 
 /**

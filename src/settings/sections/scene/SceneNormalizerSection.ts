@@ -1,3 +1,4 @@
+import { getActiveFrontmatterMappings } from '../../../utils/frontmatter';
 import { setTooltip, withAccessibleLabel } from '../../../utils/domTooltip';
 import { App, ButtonComponent, Modal, Notice, TFile, setIcon, Setting as Settings } from 'obsidian';
 import { ERT_CLASSES } from '../../../ui/classes';
@@ -570,7 +571,7 @@ export function renderSceneNormalizerSection(params: {
             const baseDynamic = getExcludeKeyPredicate('Scene', plugin.settings);
             const inactiveAdvancedSet = new Set(expectedKeys.toleratedInactiveKeys);
             const isDynamic = (key: string) => baseDynamic(key) || inactiveAdvancedSet.has(key);
-            const preview = previewReorder(app, notesWithDrift[0].file, canonicalOrder, isDynamic);
+            const preview = previewReorder(app, notesWithDrift[0].file, canonicalOrder, isDynamic, getActiveFrontmatterMappings(plugin.settings));
 
             const confirmed = await new Promise<boolean>((resolve) => {
                 const modal = new Modal(app);

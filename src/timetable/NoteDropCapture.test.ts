@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Modal, TFile, type Component } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 
-import { addNoteClass, noteDropAnchors, registerNoteDropCapture, sameSceneNumber } from './NoteDropCapture';
+import { addNoteClass, noteDropAnchors, registerNoteDropCapture, sameSceneNumber, sceneBeforeNumber } from './NoteDropCapture';
 
 describe('Place sketch after', () => {
     const scene = (id: string, act: number | null) => ({ id, row: { kind: 'scene', act } });
@@ -88,9 +88,17 @@ describe('adding a note to the book', () => {
         expect(addNoteClass(source, 'Sketch', 'scn_12345678')).toBe(source.replace('---\n', '---\nClass: Sketch\nPlace after scene: "scn_12345678"\n'));
         expect(() => addNoteClass('---\nPlace after scene: scn_existing\n---\n', 'Sketch', 'scn_other')).toThrow();
     });
-    it('does not replace any existing class, including empty or differently cased keys', () => {
+    it('does not replace an existing class under any letter case', () => {
         expect(() => addNoteClass('---\nclass: Character\n---\n', 'Scene')).toThrow();
-        expect(() => addNoteClass('---\nClass:\n---\n', 'Sketch')).toThrow();
+    });
+    it('treats an empty Class as no class, as promotion does, and fills it in place', () => {
+        expect(addNoteClass('---\nClass: # mine\nMood: calm\n---\n', 'Sketch')).toBe('---\nClass: Sketch # mine\nMood: calm\n---\n');
+    });
+    it('finds the scene a numbered note follows', () => {
+        const scenes = [{ prefix: '10' }, { prefix: '2' }, { prefix: null }, { prefix: '7.5' }];
+        expect(sceneBeforeNumber(scenes, '8')).toEqual({ scene: { prefix: '7.5' }, precedes: true });
+        expect(sceneBeforeNumber(scenes, '1')).toEqual({ scene: { prefix: '2' }, precedes: false });
+        expect(sceneBeforeNumber([], '1')).toBeUndefined();
     });
     it('rejects incomplete frontmatter', () => {
         expect(() => addNoteClass('---\nSynopsis: incomplete\n', 'Scene')).toThrow();

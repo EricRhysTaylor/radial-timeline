@@ -7,35 +7,6 @@ import type {
     ScenePropertyPolicy,
 } from './types';
 
-function buildOrderedKeyList(currentKeys: string[], canonicalOrder: string[]): string[] {
-    const currentSet = new Set(currentKeys);
-    const ordered: string[] = [];
-    const placed = new Set<string>();
-
-    for (const key of canonicalOrder) {
-        if (currentSet.has(key)) {
-            ordered.push(key);
-            placed.add(key);
-        }
-    }
-
-    for (const key of currentKeys) {
-        if (!placed.has(key)) {
-            ordered.push(key);
-        }
-    }
-
-    return ordered;
-}
-
-function arraysEqual(left: string[], right: string[]): boolean {
-    if (left.length !== right.length) return false;
-    for (let idx = 0; idx < left.length; idx += 1) {
-        if (left[idx] !== right[idx]) return false;
-    }
-    return true;
-}
-
 export function resolveScenePropertyPolicy(
     settings: RadialTimelineSettings
 ): ScenePropertyPolicy {
@@ -84,12 +55,4 @@ export function splitSceneMissingKeys(
         : [];
 
     return { missingCoreKeys, missingAdvancedKeys };
-}
-
-export function computeSceneOrderDriftWhenAdvancedDisabled(
-    noteKeys: string[],
-    expected: SceneExpectedKeys
-): boolean {
-    const orderedKeys = buildOrderedKeyList(noteKeys, expected.canonicalOrder);
-    return !arraysEqual(noteKeys, orderedKeys);
 }

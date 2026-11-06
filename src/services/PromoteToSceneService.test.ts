@@ -1,16 +1,15 @@
+import { extractKeysInOrder } from '../utils/yamlTemplateNormalize';
+import { findMissingTemplateKeys } from '../utils/frontmatter';
 import { describe, expect, it } from 'vitest';
 import { parse, stringify } from 'yaml';
 import { TFile, type App } from 'obsidian';
 import type { RadialTimelineSettings, TimelineItem } from '../types';
 import {
     applyPromotion,
-    buildTemplateValues,
     classifyForPromotion,
     filenamePrefix,
-    findMissingTemplateKeys,
     planPromotion,
     promotedBasename,
-    templateKeysOf,
 } from './PromoteToSceneService';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 
@@ -87,7 +86,7 @@ describe('classifyForPromotion', () => {
 
 describe('template helpers', () => {
     it('reads template keys in order', () => {
-        const keys = templateKeysOf(BASE_TEMPLATE);
+        const keys = extractKeysInOrder(BASE_TEMPLATE);
         expect(keys[0]).toBe('Class');
         expect(keys).toContain('Publish Stage');
         expect(keys.indexOf('Act')).toBeLessThan(keys.indexOf('Status'));
@@ -113,14 +112,6 @@ describe('template helpers', () => {
         expect(filenamePrefix('Dry Tank')).toBeNull();
     });
 
-    it('fills template values from the given act, when and due date', () => {
-        const values = buildTemplateValues(BASE_TEMPLATE, { act: 2, when: '2085-05-10', due: '2026-10-12' });
-        expect(values.Act).toBe(2);
-        expect(values.When).toBe('2085-05-10');
-        expect(values.Due).toBe('2026-10-12');
-        expect(values.Status).toBe('Todo');
-        expect(values['Publish Stage']).toBe('Zero');
-    });
 });
 
 describe('planPromotion', () => {

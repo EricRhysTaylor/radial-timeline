@@ -1,6 +1,6 @@
 import { App, TFile, getFrontMatterInfo } from 'obsidian';
 import type { RadialTimelineSettings, TimelineItem } from '../types';
-import { getTemplateParts } from '../utils/yamlTemplateNormalize';
+import { getSceneTemplate } from '../utils/yamlTemplateNormalize';
 import { generateSceneContent } from '../utils/sceneGenerator';
 import { ensureSceneTemplateFrontmatter } from '../utils/sceneIds';
 import { comparePrefixTokens, extractPrefixToken } from '../utils/prefixOrder';
@@ -227,7 +227,7 @@ function normalizeWhenFallback(value: unknown): string {
     return '';
 }
 
-async function readAnchorWhen(app: App, settings: RadialTimelineSettings, file: TFile): Promise<string> {
+export async function readAnchorWhen(app: App, settings: RadialTimelineSettings, file: TFile): Promise<string> {
     const content = await app.vault.read(file);
     const info = getFrontMatterInfo(content);
     const mappedWhenKeys = Object.entries(getActiveFrontmatterMappings(settings) ?? {})
@@ -273,9 +273,8 @@ export async function planSceneInsertion(options: SceneInsertOptions): Promise<S
     const prefix = buildDecimalSceneInsertionPrefix(sceneData, anchorPath, options.beatModel);
     const parentPath = parentPathFor(options.anchorFile);
     const { path, filename } = buildUniqueScenePath(options.app, parentPath, prefix);
-    const templateParts = getTemplateParts('Scene', options.settings);
     const useAdvanced = options.settings.sceneAdvancedPropertiesEnabled ?? true;
-    const template = useAdvanced ? templateParts.merged : templateParts.base;
+    const template = getSceneTemplate(options.settings);
     const subplots = normalizePrimarySubplot(options.primarySubplot);
     const content = generateSceneContent(template, {
         act: actNumber,

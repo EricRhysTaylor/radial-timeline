@@ -3,8 +3,11 @@ import {
     getBaseKeys,
     getCustomKeys,
     getTemplateParts,
-    safeParseYaml
+    safeParseYaml,
+    type FieldEntryValue
 } from '../utils/yamlTemplateNormalize';
+import { splitTemplateFields, templateFieldKey } from '../utils/templateMerge';
+import { formatYamlField } from '../utils/frontmatterText';
 import type {
     ScenePropertyDefinition,
     ScenePropertyDefinitions,
@@ -88,3 +91,42 @@ export function serializeAdvancedSceneProperties(
     };
 }
 
+/** One row of the Advanced editor. `lines` is the template text it writes back. */
+export interface AdvancedTemplateEntry {
+    key: string;
+    value: FieldEntryValue;
+    lines: string;
+}
+
+/** The Advanced template as editor rows. Rows keep their template text, comments and placeholders included. */
+export function parseAdvancedEntries(template: string): AdvancedTemplateEntry[] {
+    return splitTemplateFields(template).map(({ key, lines }) => ({
+        key,
+        value: safeParseYaml(lines)[key] ?? '',
+        lines,
+    }));
+}
+
+/** Write rows back. Rows the author did not edit are byte-for-byte what they were. */
+export function serializeAdvancedEntries(entries: AdvancedTemplateEntry[]): string {
+    return entries.map(entry => entry.lines).join('\n');
+}
+
+/** A row with a new value, written as valid YAML whatever the author typed. */
+export function withEntryValue(entry: AdvancedTemplateEntry, value: FieldEntryValue): AdvancedTemplateEntry {
+    return { ...entry, value, lines: formatYamlField(entry.key, value) };
+}
+
+/** A row under a new name; its value and comment stay as written. */
+export function withEntryKey(entry: AdvancedTemplateEntry, key: string): AdvancedTemplateEntry {
+    return { ...entry, key, lines: key + entry.lines.slice(entry.key.length) };
+}
+
+export function newAdvancedEntry(key: string, value: string): AdvancedTemplateEntry {
+    return { key, value, lines: formatYamlField(key, value) };
+}
+
+/** Whether a name can be a YAML property the rest of the plugin will read back. */
+export function isValidPropertyName(key: string): boolean {
+    return templateFieldKey(`${key}:`) === key;
+}

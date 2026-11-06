@@ -213,6 +213,10 @@ Case study (2026-07): the beta timeline tools wrote `WhenSource`, `WhenConfidenc
 
 Litmus test for any new frontmatter write: *would an author scanning their own file want this line there?* If the honest answer is "it's for the plugin," it goes in a sidecar.
 
+### Bulk YAML Writes Edit Text, Never Reserialize
+
+`processFrontMatter` rewrites the whole block, so one changed field costs the author every YAML comment and hand formatting in that note. Anything that touches many fields or many notes (scene intake, Insert missing, Fill empty, Delete, Reorder) edits the text through [`frontmatterText.ts`](../../../src/utils/frontmatterText.ts), which changes only the named fields and refuses a write that would leave broken YAML or alter a value another property references. Template fields are read through `templateFieldKey` and `splitTemplateFields` in [`templateMerge.ts`](../../../src/utils/templateMerge.ts), never a local regex: a key one reader misses is a key the next save deletes. Scene notes are filled by `generateSceneContent` from `getSceneTemplate`, so a dropped note and a new scene cannot disagree.
+
 ### Canonical YAML Keys Go Through Helpers, Never String Literals
 
 Note types that have undergone field renames (Beat: `Description → Purpose`; Backdrop: `Synopsis → Context`) must be read through the canonical helpers in [`src/utils/frontmatter.ts`](../../../src/utils/frontmatter.ts) — `readBeatPurpose`, `readBackdropContext`. The legacy-key fallback ladder lives once in those helpers; never inline it.

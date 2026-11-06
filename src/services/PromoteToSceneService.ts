@@ -8,8 +8,8 @@
  *
  * Promotion is additive. It sets Class: Scene, inserts the scene-template
  * properties the note is missing (the same template right-click "Add scene"
- * uses), gives the note a scene ID and puts its properties in template order.
- * It never overwrites a value the author wrote and never touches the note text.
+ * uses) and gives the note a scene ID. Existing properties, comments, and
+ * note text are preserved in place.
  *
  * See docs/engineering/plans/timeline-table-and-sketches-plan.md §1.
  */
@@ -18,15 +18,15 @@ import { type App, TFile, parseYaml } from 'obsidian';
 import type { BookProfile, RadialTimelineSettings, TimelineItem } from '../types';
 import { getBookIdForPath } from '../utils/books';
 import { getTemplateParts } from '../utils/yamlTemplateNormalize';
-import { generateSceneContent } from '../utils/sceneGenerator';
-import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../utils/frontmatter';
+import { getActiveFrontmatterMappings } from '../utils/frontmatter';
+import { findMissingTemplateKeys, templateKeysOf } from './sceneTemplateFields';
+export { buildTemplateValues, findMissingTemplateKeys, templateKeysOf } from './sceneTemplateFields';
 import { extractPrefixToken } from '../utils/prefixOrder';
-import { formatLocalDateKey } from '../utils/date';
 import { safeTitle, splitNumberPrefix } from '../utils/noteTitle';
 import { buildDecimalSceneInsertionPrefix, isSafeSceneInsertionPrefix } from './SceneInsertService';
-import { generateSceneId, readSceneId } from '../utils/sceneIds';
-import { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor } from '../timetable/sketchPlacementFields';
-import { ensureSceneIds, reorderSceneFields } from '../sceneProperties/sceneNormalizer';
+import { readSceneId } from '../utils/sceneIds';
+import { sketchAnchor } from '../timetable/sketchPlacementFields';
+import { promoteSceneContent, replaceSketchAnchor } from '../timetable/sceneIntakeTemplate';
 import { sleep } from '../utils/sleep';
 
 const CLASS_KEY = 'Class';
@@ -112,36 +112,6 @@ export function classifyForPromotion(frontmatter: Record<string, unknown> | unde
     return { kind: 'otherClass', className: values.join(', ') };
 }
 
-/**
- * Template keys (other than Class) that the note does not have. A key counts as
- * present under any letter case and under any custom name the author mapped to
- * it, so promotion never adds a duplicate of a property the author renamed.
- */
-export function findMissingTemplateKeys(
-    templateKeys: string[],
-    frontmatter: Record<string, unknown> | undefined,
-    mappings: Record<string, string> | undefined
-): string[] {
-    const present = new Set<string>();
-    if (frontmatter) {
-        for (const key of Object.keys(frontmatter)) present.add(key.toLowerCase());
-        // Built-in aliases apply even without custom mappings.
-        for (const key of Object.keys(normalizeFrontmatterKeys(frontmatter, mappings))) present.add(key.toLowerCase());
-    }
-    return templateKeys.filter(key =>
-        key.toLowerCase() !== CLASS_KEY.toLowerCase() && !present.has(key.toLowerCase()));
-}
-
-/** The keys a template defines, in template order. */
-export function templateKeysOf(template: string): string[] {
-    const keys: string[] = [];
-    for (const line of template.split('\n')) {
-        const match = line.match(/^([^\s#:][^:]*):/);
-        if (match) keys.push(match[1].trim());
-    }
-    return keys;
-}
-
 export function filenamePrefix(basename: string): string | null {
     return extractPrefixToken(`${basename} `);
 }
@@ -208,29 +178,6 @@ function readField(frontmatter: Record<string, unknown> | undefined, key: string
     return found ? frontmatter[found] : undefined;
 }
 
-/**
- * The values promotion would insert for the given template, using the note's
- * own Act and the anchor scene's Act and When where the note has none.
- */
-export function buildTemplateValues(
-    template: string,
-    context: { act: number; when: string; due: string }
-): Record<string, unknown> {
-    const content = generateSceneContent(template, {
-        act: context.act,
-        when: context.when,
-        due: context.due,
-        sceneNumber: '',
-        subplots: [],
-        character: '',
-        place: '',
-        characterList: [],
-        placeList: [],
-    });
-    const parsed: unknown = parseYaml(content);
-    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {};
-}
-
 function uniqueSiblingPath(app: App, file: TFile, basename: string): string {
     const slash = file.path.lastIndexOf('/');
     const parent = slash >= 0 ? file.path.slice(0, slash + 1) : '';
@@ -265,10 +212,6 @@ export async function applyPromotion(
     options: PromotionOptions
 ): Promise<PromotionResult> {
     const result: PromotionResult = { promoted: [], renamed: [], failed: [] };
-    const templates = getTemplateParts('Scene', settings);
-    const template = options.advanced ? templates.merged : templates.base;
-    const mappings = getActiveFrontmatterMappings(settings);
-    const due = formatLocalDateKey();
     const single = plan.entries.length === 1;
 
     // Validate the filename before changing Class or touching any note. The
@@ -312,27 +255,13 @@ export async function applyPromotion(
         try {
             const frontmatter = frontmatterOf(app, entry.file);
             const act = readNumber(readField(frontmatter, 'Act')) ?? anchorAct ?? 1;
-            const values = buildTemplateValues(template, { act, when: anchorWhen, due });
-            const templateKeys = templateKeysOf(template);
-
-            await app.fileManager.processFrontMatter(entry.file, (fm: Record<string, unknown>) => {
-                if (options.sketchPlacement && sketchAnchor(fm) !== options.sketchPlacement.anchorId) throw new Error('Sketch placement changed.');
-                const classKey = findKeyCaseInsensitive(fm, CLASS_KEY) ?? CLASS_KEY;
-                fm[classKey] = 'Scene';
-                if (entry.fromSketch) {
-                    for (const key of [SKETCH_AFTER_SCENE, SKETCH_ORDER]) {
-                        const existing = findKeyCaseInsensitive(fm, key);
-                        if (existing) delete fm[existing];
-                    }
-                    if (!readSceneId(fm)) fm.ID = generateSceneId();
+            await app.vault.process(entry.file, content => {
+                if (options.sketchPlacement) {
+                    const raw = content.match(/^---\s*\r?\n([\s\S]*?)^---\s*$/m)?.[1];
+                    const fm = raw ? parseYaml(raw) as Record<string, unknown> : undefined;
+                    if (sketchAnchor(fm) !== options.sketchPlacement.anchorId) throw new Error('Sketch placement changed.');
                 }
-                // Recompute against the live frontmatter, not the cached plan.
-                for (const key of findMissingTemplateKeys(templateKeys, fm, mappings)) {
-                    // A blank template value stays blank (`When:`), as in a new
-                    // scene; an empty string would be written as `When: ""`.
-                    const value = values[key];
-                    fm[key] = value === undefined || value === '' ? null : value;
-                }
+                return promoteSceneContent(content, settings, { advanced: options.advanced, act, when: anchorWhen, expectedSketch: entry.fromSketch });
             });
             result.promoted.push(entry.file);
         } catch (error) {
@@ -344,10 +273,7 @@ export async function applyPromotion(
     }
 
     if (result.promoted.length > 0) {
-        await ensureSceneIds({ app, settings, files: result.promoted, includeSafetyScan: false });
-        // The reorder decides from the metadata cache, so let it catch up first.
         await waitForSceneClass(app, result.promoted);
-        await reorderSceneFields({ app, settings, files: result.promoted });
     }
 
     // A single note may be renamed: numbered after an anchor (when it has no
@@ -363,17 +289,13 @@ export async function applyPromotion(
         }
         if (options.sketchPlacement?.followingSketches.length) {
             try {
-                let sceneId: string | undefined;
-                await app.fileManager.processFrontMatter(only.file, (fm: Record<string, unknown>) => { sceneId = readSceneId(fm); });
+                const raw = (await app.vault.read(only.file)).match(/^---\s*\r?\n([\s\S]*?)^---\s*$/m)?.[1];
+                const sceneId = raw ? readSceneId(parseYaml(raw) as Record<string, unknown>) : undefined;
                 if (!sceneId) throw new Error('Promoted scene has no ID.');
                 for (const path of options.sketchPlacement.followingSketches) {
                     const sketch = app.vault.getAbstractFileByPath(path);
                     if (!(sketch instanceof TFile)) throw new Error(`Sketch no longer exists: ${path}`);
-                    await app.fileManager.processFrontMatter(sketch, (fm: Record<string, unknown>) => {
-                        if (sketchAnchor(fm) !== options.sketchPlacement?.anchorId) throw new Error(`Sketch placement changed: ${path}`);
-                        const key = findKeyCaseInsensitive(fm, SKETCH_AFTER_SCENE) ?? SKETCH_AFTER_SCENE;
-                        fm[key] = sceneId;
-                    });
+                    await app.vault.process(sketch, content => replaceSketchAnchor(content, options.sketchPlacement!.anchorId, sceneId));
                 }
             } catch (error) {
                 result.failed.push({ file: only.file, message: error instanceof Error ? error.message : String(error) });

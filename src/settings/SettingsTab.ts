@@ -28,14 +28,11 @@ import {
     getActiveRefactorAlerts,
     getAllNotificationsForHistory,
     applyAlertMigrations,
-    cleanupAdvancedTemplate,
-    advancedTemplateNeedsCleanup,
     dismissAlert,
     TEMPLATE_HOTFIX_ALERT_ID,
     type RefactorAlert
 } from './refactorAlerts';
 import { acknowledgeHotfixHistory } from '../utils/pandocBundledLayouts';
-import { DEFAULT_SETTINGS } from './defaults';
 import { getTemplateParts } from '../utils/yamlTemplateNormalize';
 import { getCredential } from '../ai/credentials/credentials';
 import type { AIProviderId } from '../ai/types';
@@ -249,45 +246,14 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         });
     }
 
-    /**
-     * Auto-migrate templates to latest structure.
-     * - Updates base template to current defaults (field order/names)
-     * - Cleans up advanced template by removing base fields
-     * Shows notification for user to dismiss after reading.
-     */
+    /** Add the current core time field without replacing author templates. */
     private autoMigrateAdvancedTemplate(): void {
         const resolvedBase = getTemplateParts('Scene', this.plugin.settings).base;
-        const timeField = /^Total Time[ \t]*:[^\r\n]*(?:\r?\n[ \t]+[^\r\n]*)*/im.exec(resolvedBase)?.[0];
-        const defaultBase = timeField
-            ? DEFAULT_SETTINGS.sceneYamlTemplates!.base.replace(/^Total Time:.*$/m, () => timeField)
-            : DEFAULT_SETTINGS.sceneYamlTemplates!.base;
         const currentBase = this.plugin.settings.sceneYamlTemplates?.base ?? '';
         const currentAdvanced = this.plugin.settings.sceneYamlTemplates?.advanced ?? '';
-        
-        let needsSave = false;
-        
-        // Update base template to current defaults (ensures field order/names are current)
-        if (currentBase !== defaultBase) {
-            if (!this.plugin.settings.sceneYamlTemplates) {
-                this.plugin.settings.sceneYamlTemplates = { base: '', advanced: '' };
-            }
-            this.plugin.settings.sceneYamlTemplates.base = defaultBase;
-            needsSave = true;
-        }
-        
-        // Clean up advanced template if it has legacy base fields
-        if (currentAdvanced && advancedTemplateNeedsCleanup(currentAdvanced)) {
-            const cleaned = cleanupAdvancedTemplate(currentAdvanced);
-            if (!this.plugin.settings.sceneYamlTemplates) {
-                this.plugin.settings.sceneYamlTemplates = { base: defaultBase, advanced: '' };
-            }
-            this.plugin.settings.sceneYamlTemplates.advanced = cleaned;
-            needsSave = true;
-        }
-        
-        if (needsSave) {
+        if (currentBase !== resolvedBase) {
+            this.plugin.settings.sceneYamlTemplates = { base: resolvedBase, advanced: currentAdvanced };
             void this.plugin.saveSettings();
-            // Notification appears in the alerts panel - user can dismiss after reading
         }
     }
 

@@ -6104,7 +6104,7 @@ export const es: TranslationKeys = {
             noteDropScene: 'Escena',
             noteDropSketch: 'Boceto',
             noteDropNumber: 'Número de escena',
-            noteDropExplanation: 'La nota original se moverá a la carpeta del libro si es necesario. Se conservan el texto y las propiedades; se añaden Class y la posición elegida del boceto. La escena utiliza el número del archivo, el acto y When existentes. El boceto aparece al final de su acto y se puede mover después.',
+            noteDropExplanation: 'La nota original se moverá a la carpeta del libro si es necesario. Se conservan el texto y las propiedades existentes. Una escena recibe las propiedades que falten de la plantilla configurada; un boceto recibe la ubicación elegida. Los bocetos sin ubicación aparecen al final del acto.',
             noteDropConfirm: 'Añadir nota',
             noteDropHint: 'Suelta una nota para añadirla al libro',
             noteDropChronologueUnavailable: 'No se pueden soltar notas en un anillo de Chronologue. Suéltala en un espacio vacío para añadirla al libro.',

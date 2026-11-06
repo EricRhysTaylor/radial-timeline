@@ -10,6 +10,7 @@ import { buildTableRow } from './timetableModel';
 import { readSceneId } from '../utils/sceneIds';
 import { TimelineNoteDropModal, type TimelineNoteTarget } from './TimelineNoteDrop';
 import { authorKeyFor } from './timetableFiles';
+import { addSceneIntakeTemplate } from './sceneIntakeTemplate';
 
 export function sameSceneNumber(a: string | null, b: string | null): boolean {
     return !!a && !!b && Number.isFinite(Number(a)) && Number.isFinite(Number(b)) && Number(a) === Number(b);
@@ -67,6 +68,11 @@ class NoteDropModal extends ErtModal {
         const kind = new DropdownComponent(kindRow.createDiv({ cls: 'setting-item-control' }));
         kind.addOption('Scene', t('ui.timetable.noteDropScene')); kind.addOption('Sketch', t('ui.timetable.noteDropSketch'));
         kind.setValue(this.defaultKind);
+        const propertiesRow = this.contentEl.createDiv({ cls: 'setting-item' });
+        propertiesRow.createDiv({ cls: 'setting-item-name', text: t('ui.scenePropertiesSection.heading') });
+        propertiesRow.createDiv({ cls: 'setting-item-control', text: (this.plugin.settings.sceneAdvancedPropertiesEnabled ?? true)
+            ? `${t('ui.scenePropertiesSection.coreName')} + ${t('ui.scenePropertiesSection.advancedName')}`
+            : t('ui.scenePropertiesSection.coreName') });
         const numberRow = this.contentEl.createDiv({ cls: 'setting-item ert-note-drop-number' });
         numberRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropNumber') });
         const number = numberRow.createDiv({ cls: 'setting-item-control' }).createEl('input', { type: 'text', attr: { placeholder: '72' } });
@@ -93,6 +99,7 @@ class NoteDropModal extends ErtModal {
             return kind.getValue() === 'Scene' && this.app.vault.getMarkdownFiles().some(f => f !== this.file && getBookIdForPath(this.plugin.settings.books, f.path) === book.getValue() && sameSceneNumber(filenamePrefix(f.basename), prefix) && classifyForPromotion(this.app.metadataCache.getFileCache(f)?.frontmatter).kind === 'alreadyScene');
         };
         const update = () => {
+            propertiesRow.hidden = kind.getValue() !== 'Scene';
             numberRow.hidden = kind.getValue() !== 'Scene';
             anchorRow.hidden = kind.getValue() !== 'Sketch';
             if (conflict()) { explanation.setText(t('ui.timetable.noteDropNumberExists')); explanation.show(); } else explanation.hide();
@@ -132,9 +139,13 @@ class NoteDropModal extends ErtModal {
                 const prefix = input;
                 if (type === 'Scene' && this.app.vault.getMarkdownFiles().some(f => f !== this.file && getBookIdForPath(this.plugin.settings.books, f.path) === chosen.id && sameSceneNumber(filenamePrefix(f.basename), prefix) && classifyForPromotion(this.app.metadataCache.getFileCache(f)?.frontmatter).kind === 'alreadyScene')) throw new Error(t('ui.timetable.noteDropNumberExists'));
                 // Validate before a move and again inside vault.process for concurrent edits.
-                addNoteClass(await this.app.vault.read(this.file), type, after, act);
+                const prepare = (content: string) => {
+                    const classified = addNoteClass(content, type, after, act);
+                    return type === 'Scene' ? addSceneIntakeTemplate(classified, this.plugin.settings) : classified;
+                };
+                prepare(await this.app.vault.read(this.file));
                 if (destination !== oldPath) await this.app.fileManager.renameFile(this.file, destination);
-                try { await this.app.vault.process(this.file, content => addNoteClass(content, type, after, act)); }
+                try { await this.app.vault.process(this.file, prepare); }
                 catch (error) { if (destination !== oldPath) await this.app.fileManager.renameFile(this.file, oldPath); throw error; }
                 this.close(); this.plugin.refreshTimelineIfNeeded(null); new Notice(t('ui.timetable.noteDropDone'));
             })().catch((error: unknown) => { submit.disabled = false; explanation.setText(error instanceof Error ? error.message : String(error)); explanation.show(); });

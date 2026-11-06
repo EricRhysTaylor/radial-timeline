@@ -5778,7 +5778,7 @@ export const en = {
             noteDropScene: 'Scene',
             noteDropSketch: 'Sketch',
             noteDropNumber: 'Scene number',
-            noteDropExplanation: 'The original note will move into the selected book if needed. Its existing text and properties stay intact; Class and any chosen sketch placement are added. A scene uses its filename number and existing Act and When. An unplaced sketch appears at the end of its act; drag it into position afterwards.',
+            noteDropExplanation: 'The original note moves into the selected book if needed. Its existing text and properties stay intact. A scene receives missing properties from the configured Scene template; a sketch receives its chosen placement. An unplaced sketch appears at the end of its act.',
             noteDropConfirm: 'Add note',
             noteDropHint: 'Drop a note to add it to the book',
             noteDropChronologueUnavailable: 'Dropping a note onto a Chronologue ring is not available. Drop in empty space to add it to the book.',

@@ -68,6 +68,16 @@ function mount() {
 }
 
 describe('settings-owned beat render lifetime', () => {
+    it('preserves authored core and advanced Scene templates when opening settings', () => {
+        const settings = { sceneYamlTemplates: { base: 'Class: Scene\nAuthor Core: custom', advanced: 'Act: 4\nCustom Mood: hopeful\nTotal Time: 2.5' } };
+        const plugin = { settings, saveSettings: vi.fn() };
+        const tab = new RadialTimelineSettingsTab({} as never, plugin as never);
+        tabs.push(tab);
+        (tab as unknown as { autoMigrateAdvancedTemplate(): void }).autoMigrateAdvancedTemplate();
+        expect(settings.sceneYamlTemplates.base).toContain('Author Core: custom');
+        expect(settings.sceneYamlTemplates.base).toContain('Total Time: 2.5');
+        expect(settings.sceneYamlTemplates.advanced).toBe('Act: 4\nCustom Mood: hopeful\nTotal Time: 2.5');
+    });
     it('unsubscribes the old render before mounting a replacement', () => {
         const { tab, listeners, cleanups } = mount();
         tab.refreshActiveBookSections();

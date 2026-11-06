@@ -8,6 +8,7 @@ import { canonicalizeFrontmatterKey, frontmatterValueToText, getActiveFrontmatte
 import { buildDecimalSceneInsertionPrefix, isSafeSceneInsertionPrefix } from '../services/SceneInsertService';
 import { splitNumberPrefix } from '../utils/noteTitle';
 import { timelineItemAct } from '../utils/acts';
+import { addSceneIntakeTemplate } from './sceneIntakeTemplate';
 
 export type TimelineNoteTarget = { anchorPath: string; subplot: string };
 
@@ -122,6 +123,9 @@ export class TimelineNoteDropModal extends ErtModal {
             const actValue = card(t('ui.timetable.timelineDropActLabel'), String(act), 'book-open-text');
             const subplotValue = card(t('ui.addSceneConfirmModal.subplotLabel'), this.target.subplot, 'orbit');
             card(t('ui.timetable.timelineDropFilenameLabel'), name, 'file-text');
+            card(t('ui.scenePropertiesSection.heading'), (this.plugin.settings.sceneAdvancedPropertiesEnabled ?? true)
+                ? `${t('ui.scenePropertiesSection.coreName')} + ${t('ui.scenePropertiesSection.advancedName')}`
+                : t('ui.scenePropertiesSection.coreName'), 'list');
             const choice = (label: string, oldValue: unknown, desired: string): HTMLInputElement | null => {
                 if (oldValue === undefined || frontmatterValueToText(oldValue) === desired || (Array.isArray(oldValue) && oldValue.includes(desired))) return null;
                 if (!conflicts.hasChildNodes()) { conflicts.createDiv({ cls: 'ert-drag-confirm-section-title', text: t('ui.timetable.timelineDropExistingProperties') }); conflicts.show(); }
@@ -144,7 +148,8 @@ export class TimelineNoteDropModal extends ErtModal {
                 const oldPath = this.file.path;
                 const current = await this.app.vault.read(this.file);
                 if (current !== initialContent) throw new Error(t('ui.timetable.timelineDropChanged'));
-                const next = applyTimelineNoteFields(current, act, this.target.subplot, !!replaceAct?.checked, !!replaceSubplot?.checked, mappings);
+                const classified = applyTimelineNoteFields(current, act, this.target.subplot, !!replaceAct?.checked, !!replaceSubplot?.checked, mappings);
+                const next = addSceneIntakeTemplate(classified, this.plugin.settings);
                 const latest = await this.plugin.getSceneData({ sourcePath: book.sourceFolder });
                 const latestTarget = latest.find(item => item.path === this.target.anchorPath && item.itemType === 'Scene');
                 if (!latestTarget || timelineItemAct(latestTarget) !== act) throw new Error(t('ui.timetable.timelineDropChanged'));

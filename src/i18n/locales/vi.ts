@@ -6104,7 +6104,7 @@ export const vi: TranslationKeys = {
             noteDropScene: 'Cảnh',
             noteDropSketch: 'Phác thảo',
             noteDropNumber: 'Số cảnh',
-            noteDropExplanation: 'Ghi chú gốc sẽ được chuyển vào thư mục sách nếu cần. Văn bản và thuộc tính hiện có được giữ nguyên; chỉ thêm Class và vị trí phác thảo đã chọn. Cảnh dùng số trong tên tệp, hồi và When hiện có. Phác thảo chưa đặt vị trí xuất hiện ở cuối hồi và có thể kéo sau.',
+            noteDropExplanation: 'Ghi chú gốc sẽ được chuyển vào thư mục sách nếu cần. Văn bản và thuộc tính hiện có được giữ nguyên. Cảnh nhận các thuộc tính còn thiếu từ mẫu đã cấu hình; phác thảo nhận vị trí đã chọn. Phác thảo chưa đặt xuất hiện ở cuối hồi.',
             noteDropConfirm: 'Thêm ghi chú',
             noteDropHint: 'Thả ghi chú để thêm vào sách',
             noteDropChronologueUnavailable: 'Chưa thể thả ghi chú lên vòng Chronologue. Hãy thả vào vùng trống để thêm vào sách.',

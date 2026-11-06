@@ -6103,7 +6103,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             noteDropScene: '场景',
             noteDropSketch: '草稿',
             noteDropNumber: '场景编号',
-            noteDropExplanation: '如有需要，原笔记将移入所选书籍文件夹。现有正文和属性保持不变，只添加 Class 和所选草稿位置。场景使用文件名编号及现有幕和 When。未定位的草稿显示在对应幕末尾，之后可拖动调整。',
+            noteDropExplanation: '如有需要，原笔记会移入所选书籍文件夹。现有正文和属性保持不变。场景会补充所配置模板中缺少的属性；草稿会使用所选位置。 未定位的草稿显示在对应幕末尾。',
             noteDropConfirm: '添加笔记',
             noteDropHint: '拖放笔记以添加到书中',
             noteDropChronologueUnavailable: '无法将笔记拖放到 Chronologue 圆环上。请拖放到空白区域以添加到书中。',

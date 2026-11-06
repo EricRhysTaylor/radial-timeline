@@ -1,4 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { parse, stringify } from 'yaml';
 import { TFile, type App } from 'obsidian';
 import type { RadialTimelineSettings, TimelineItem } from '../types';
 import {
@@ -12,13 +13,6 @@ import {
     templateKeysOf,
 } from './PromoteToSceneService';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
-
-vi.mock('../sceneProperties/sceneNormalizer', () => ({
-    ensureSceneIds: vi.fn(async () => ({ updated: 0, skipped: 0, failed: 0, errors: [] })),
-    reorderSceneFields: vi.fn(async () => ({ reordered: 0, skipped: 0, failed: 0, errors: [] })),
-}));
-
-import { ensureSceneIds, reorderSceneFields } from '../sceneProperties/sceneNormalizer';
 
 const BASE_TEMPLATE = DEFAULT_SETTINGS.sceneYamlTemplates!.base;
 
@@ -45,6 +39,15 @@ function fakeApp(frontmatter: Record<string, Record<string, unknown> | undefined
         },
         vault: {
             getAbstractFileByPath: (path: string) => files.get(path) ?? null,
+            read: async (file: TFile) => `---\n${stringify(frontmatter[file.path] ?? {})}---\n\nBody`,
+            process: async (file: TFile, fn: (content: string) => string) => {
+                if (options.failOn === file.path) throw new Error('Malformed YAML');
+                const current = frontmatter[file.path] ?? {};
+                const content = `---\n${Object.keys(current).length ? stringify(current) : ''}---\n\nBody`;
+                const updated = fn(content);
+                frontmatter[file.path] = parse(updated.split('---')[1]) as Record<string, unknown>;
+                return updated;
+            },
         },
         fileManager: {
             processFrontMatter: async (file: TFile, fn: (fm: Record<string, unknown>) => void) => {
@@ -155,9 +158,14 @@ describe('planPromotion', () => {
 });
 
 describe('applyPromotion', () => {
-    beforeEach(() => {
-        vi.mocked(ensureSceneIds).mockClear();
-        vi.mocked(reorderSceneFields).mockClear();
+
+    it('uses the author-mapped property name when adding a missing core field', async () => {
+        const { app, file, frontmatter } = fakeApp({ 'Book 2/68 Test.md': { Synopsis: 'Keep' } });
+        const note = file('Book 2/68 Test.md');
+        const settings = settingsWithBook({ enableCustomMetadataMapping: true, frontmatterMappings: { 'Story Act': 'Act' } });
+        await applyPromotion(app, settings, planPromotion(app, settings, [note]), { advanced: false });
+        expect(frontmatter[note.path]).toHaveProperty('Story Act');
+        expect(frontmatter[note.path]).not.toHaveProperty('Act');
     });
 
     it('adds missing properties without overwriting the author\'s values', async () => {
@@ -178,8 +186,7 @@ describe('applyPromotion', () => {
         expect(fm['Publish Stage']).toBe('Zero');
         expect(fm.Chapter).toBeNull();
         expect(fm).not.toHaveProperty('Place');
-        expect(ensureSceneIds).toHaveBeenCalledWith(expect.objectContaining({ files: [note] }));
-        expect(reorderSceneFields).toHaveBeenCalledWith(expect.objectContaining({ files: [note] }));
+        expect(fm.ID).toMatch(/^scn_/);
     });
 
     it('turns a sketch into a scene, keeping the author\'s Class key casing', async () => {

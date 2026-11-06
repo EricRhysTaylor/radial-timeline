@@ -6104,7 +6104,7 @@ export const fr: TranslationKeys = {
             noteDropScene: 'Scène',
             noteDropSketch: 'Esquisse',
             noteDropNumber: 'Numéro de scène',
-            noteDropExplanation: 'La note originale sera déplacée dans le dossier du livre si nécessaire. Le texte et les propriétés existantes sont conservés ; Class et le placement choisi sont ajoutés. Une scène utilise son numéro de fichier, son acte et When. Une esquisse apparaît à la fin de son acte et peut ensuite être déplacée.',
+            noteDropExplanation: 'La note originale est déplacée dans le dossier du livre si nécessaire. Son texte et ses propriétés existantes sont conservés. Les propriétés manquantes de la scène proviennent du modèle configuré ; une esquisse reçoit le placement choisi. Une esquisse non placée apparaît à la fin de son acte.',
             noteDropConfirm: 'Ajouter la note',
             noteDropHint: 'Déposez une note pour l’ajouter au livre',
             noteDropChronologueUnavailable: 'Le dépôt sur un anneau Chronologue est indisponible. Déposez la note dans un espace vide pour l’ajouter au livre.',

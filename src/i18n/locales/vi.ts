@@ -2886,7 +2886,7 @@ export const vi: TranslationKeys = {
                 "example": "Ví dụ",
                 "quote": "Trích dẫn",
             },
-            "exportNote": "Theo mặc định, bình luận và khối chú thích không có trong bản xuất PDF và Word. Phần tô sáng vẫn giữ dấu ==.",
+            "exportNote": "Theo mặc định, bình luận và khối chú thích không có trong bản xuất PDF và Word. Từ được tô sáng sẽ hiện như văn bản thường.",
         },
         "addSceneConfirmModal": {
             "badge": "Thêm cảnh",

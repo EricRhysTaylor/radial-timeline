@@ -2885,7 +2885,7 @@ export const zh: DeepPartial<TranslationKeys> = {
                 example: '示例',
                 quote: '引用',
             },
-            exportNote: '默认情况下，注释和标注块不会出现在 PDF 和 Word 导出中。高亮会保留 == 标记。',
+            exportNote: '默认情况下，注释和标注块不会出现在 PDF 和 Word 导出中。高亮的文字会以普通文本输出。',
         },
         addSceneConfirmModal: {
             badge: '添加场景',

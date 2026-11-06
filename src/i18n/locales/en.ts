@@ -2564,7 +2564,7 @@ export const en = {
                 example: 'Example',
                 quote: 'Quote',
             },
-            exportNote: 'Comments and callouts are left out of PDF and Word exports by default. Highlights keep their == marks.',
+            exportNote: 'Comments and callouts are left out of PDF and Word exports by default. Highlighted words print as plain text.',
         },
         addSceneConfirmModal: {
             badge: 'Add Scene',

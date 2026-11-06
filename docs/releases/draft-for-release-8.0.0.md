@@ -58,6 +58,7 @@ See [Character lanes](https://github.com/EricRhysTaylor/radial-timeline/wiki/Nar
 
 ### Manuscript export
 
+- **Highlights print as plain text.** PDF and Word exports keep your highlighted words and leave out the `==` marks and any color. Markdown exports keep them as you wrote them.
 - **A saved range keeps up with the book.** A scene range that runs to the last scene now stays open-ended, so scenes you add later are included in the next export. A range that stops earlier is kept as you set it.
 
 ### Writing Session

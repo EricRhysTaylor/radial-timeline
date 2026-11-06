@@ -2883,7 +2883,7 @@ export const ko: DeepPartial<TranslationKeys> = {
                 example: '예시',
                 quote: '인용',
             },
-            exportNote: '주석과 콜아웃은 기본적으로 PDF 및 Word 내보내기에서 제외됩니다. 강조 표시는 == 기호가 그대로 남습니다.',
+            exportNote: '주석과 콜아웃은 기본적으로 PDF 및 Word 내보내기에서 제외됩니다. 강조 표시한 단어는 일반 텍스트로 출력됩니다.',
         },
         addSceneConfirmModal: {
             badge: '장면 추가',

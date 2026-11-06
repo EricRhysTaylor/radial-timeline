@@ -2886,7 +2886,7 @@ export const es: TranslationKeys = {
                 "example": "Ejemplo",
                 "quote": "Cita",
             },
-            "exportNote": "Los comentarios y las llamadas quedan fuera de las exportaciones a PDF y Word de forma predeterminada. Los resaltados conservan sus marcas ==.",
+            "exportNote": "Los comentarios y las llamadas quedan fuera de las exportaciones a PDF y Word de forma predeterminada. Las palabras resaltadas se imprimen como texto normal.",
         },
         "addSceneConfirmModal": {
             "badge": "Añadir escena",

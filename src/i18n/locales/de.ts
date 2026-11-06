@@ -2883,7 +2883,7 @@ export const de: DeepPartial<TranslationKeys> = {
                 example: 'Beispiel',
                 quote: 'Zitat',
             },
-            exportNote: 'Kommentare und Callouts werden standardmäßig nicht in PDF- und Word-Exporte übernommen. Hervorhebungen behalten ihre ==-Zeichen.',
+            exportNote: 'Kommentare und Callouts werden standardmäßig nicht in PDF- und Word-Exporte übernommen. Hervorgehobene Wörter erscheinen als normaler Text.',
         },
         addSceneConfirmModal: {
             badge: 'Szene hinzufügen',

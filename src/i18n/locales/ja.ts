@@ -2884,7 +2884,7 @@ export const ja: DeepPartial<TranslationKeys> = {
                 example: '例',
                 quote: '引用',
             },
-            exportNote: 'コメントとコールアウトは、既定では PDF と Word の書き出しに含まれません。ハイライトは == 記号のまま残ります。',
+            exportNote: 'コメントとコールアウトは、既定では PDF と Word の書き出しに含まれません。ハイライトした語句は通常のテキストとして出力されます。',
         },
         addSceneConfirmModal: {
             badge: 'シーンを追加',

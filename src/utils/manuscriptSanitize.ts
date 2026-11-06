@@ -214,6 +214,17 @@ function stripTaskListMarkers(content: string): string {
     return content.replace(/^(\s{0,3}(?:[-+*]|\d+[.)])\s+)\[[ xX]\]\s+/gm, '$1');
 }
 
+// Obsidian highlights: `==words==`, with a colored circle after the opening mark
+// for a color highlight. Marks touch the words they wrap, so `x == y` is left
+// alone, and inline code matches first so it stays as written.
+const INLINE_CODE_OR_HIGHLIGHT = /(`+)[^\n]*?\1|(^|[^=])==(?![\s=])([^\n]*?[^\s=])==(?!=)/gm;
+const HIGHLIGHT_COLOR = /^[\u{1F534}\u{1F535}\u{1F7E0}-\u{1F7E3}]/u;
+
+function stripHighlightMarks(content: string): string {
+    return content.replace(INLINE_CODE_OR_HIGHLIGHT, (match: string, code: string | undefined, before: string, words: string) =>
+        code ? match : before + words.replace(HIGHLIGHT_COLOR, ''));
+}
+
 // ── Protected-segment masking ────────────────────────────────────────────────
 // The opt-in strippers are plain regexes with no syntax awareness. Raw LaTeX
 // environments, fenced code blocks, and display math legitimately contain
@@ -390,9 +401,10 @@ export function sanitizeCompiledManuscriptForPdf(
     text: string,
     opts: Partial<ManuscriptExportCleanupOptions> = {}
 ): string {
-    // Task-marker strip is masked too: a `- [ ]` inside a code block or raw
-    // LaTeX example must survive verbatim.
+    // Task-marker and highlight strips are masked too: a `- [ ]` or `==mark==`
+    // inside a code block or raw LaTeX example must survive verbatim. Pandoc
+    // would print highlight marks as text; the highlighted words are the book's.
     const cleaned = sanitizeCompiledManuscript(text, opts);
     const { masked, segments } = maskProtectedSegments(cleaned);
-    return restoreProtectedSegments(stripTaskListMarkers(masked), segments).trim();
+    return restoreProtectedSegments(stripHighlightMarks(stripTaskListMarkers(masked)), segments).trim();
 }

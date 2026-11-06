@@ -2886,7 +2886,7 @@ export const fr: TranslationKeys = {
                 "example": "Exemple",
                 "quote": "Citation",
             },
-            "exportNote": "Par défaut, les commentaires et les encadrés sont exclus des exports PDF et Word. Le surlignage garde ses marques ==.",
+            "exportNote": "Par défaut, les commentaires et les encadrés sont exclus des exports PDF et Word. Les mots surlignés sortent en texte normal.",
         },
         "addSceneConfirmModal": {
             "badge": "Ajouter une scène",

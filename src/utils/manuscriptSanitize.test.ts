@@ -184,6 +184,31 @@ Ends here ^scene-end`;
         expect(sanitized).not.toContain('[x]');
     });
 
+    it('keeps highlighted words and drops the marks for PDF and Word', () => {
+        expect(sanitizeCompiledManuscriptForPdf('She ==walked home== and ==never== came back.')).toBe('She walked home and never came back.');
+        expect(sanitizeCompiledManuscriptForPdf('==Opening words== of a line.')).toBe('Opening words of a line.');
+        expect(sanitizeCompiledManuscriptForPdf('Keep ==**bold** inside== it.')).toBe('Keep **bold** inside it.');
+    });
+
+    it.each(['🔴', '🟠', '🟡', '🟢', '🔵', '🟣'])('drops the %s color mark with the highlight', color => {
+        expect(sanitizeCompiledManuscriptForPdf(`A ==${color}colored== word.`)).toBe('A colored word.');
+    });
+
+    it('leaves text that only looks like a highlight', () => {
+        for (const text of ['If x == y == z then stop.', 'Type `==text==` to highlight.', 'A title\n=====\n\nThe body.', 'One ==unfinished mark.']) {
+            expect(sanitizeCompiledManuscriptForPdf(text)).toBe(text);
+        }
+    });
+
+    it('leaves highlight marks inside code blocks', () => {
+        const code = '```text\n==keep==\n```';
+        expect(sanitizeCompiledManuscriptForPdf(code)).toBe(code);
+    });
+
+    it('keeps highlight marks for Markdown output', () => {
+        expect(sanitizeCompiledManuscript('A ==word== here.')).toBe('A ==word== here.');
+    });
+
     it('preserves markdown task-list boxes for regular manuscript cleanup', () => {
         const input = `- [ ] recently read`;
         const sanitized = sanitizeCompiledManuscript(input, {

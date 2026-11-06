@@ -113,7 +113,7 @@ You can also select words and type the mark. `==`, `**`, `*`, `~~` and `[[` wrap
 
 The key shows your own hotkey if you've set one. In Reading view it's a sheet to read; switch to editing to apply formatting.
 
-Comments and callouts are left out of PDF and Word exports by default, so they suit notes to yourself. Highlights keep their `==` marks in those exports.
+Comments and callouts are left out of PDF and Word exports by default, so they suit notes to yourself. Highlighted words print as plain text in those exports.
 
 ## Search
 

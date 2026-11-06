@@ -1,4 +1,5 @@
 import { setAccessibleLabel } from '../utils/domTooltip';
+import { allocationMinutes } from '../services/WritingSessionTimeAllocation';
 import { ButtonComponent, Modal, Notice, Setting, TextAreaComponent, TextComponent } from 'obsidian';
 import type { App } from 'obsidian';
 import type { ActiveWritingSession } from '../types/settings';
@@ -211,7 +212,7 @@ export class WritingSessionCompletionModal extends Modal {
 
         let allocateScenes = this.pendingTime;
         let updateSceneTotals = this.pendingTime;
-        const allocations = this.sceneActivity.map(entry => ({ ...entry, minutes: Math.round(entry.activeMs / 60000), words: entry.typedWords }));
+        const allocations = this.sceneActivity.map(entry => ({ ...entry, minutes: allocationMinutes(entry.activeMs, this.pendingTime), words: entry.typedWords }));
         if (allocations.length > 0) {
             const activitySection = form.createDiv({ cls: 'ert-writing-session-scenes ert-writing-session-activity' });
             const list = activitySection.createDiv({ cls: 'ert-writing-session-activity__list' });

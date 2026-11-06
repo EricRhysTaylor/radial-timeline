@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TFile } from 'obsidian';
-import { applySessionTimeAllocations, parseRecordedHours, readSessionTimeJournal } from './WritingSessionTimeAllocation';
+import { allocationMinutes, applySessionTimeAllocations, parseRecordedHours, readSessionTimeJournal } from './WritingSessionTimeAllocation';
 
 function fixture() {
     const files = new Map([['Book/A.md', new TFile('Book/A.md')], ['Book/B.md', new TFile('Book/B.md')]]);
@@ -59,6 +59,28 @@ describe('scene time allocation ledger', () => {
         const f = fixture(); f.metadata.get('Book/A.md')!['Total Time'] = 8;
         await expect(applySessionTimeAllocations(f.plugin, 'session-3', allocations)).rejects.toThrow('changed');
         expect(f.metadata.get('Book/A.md')?.['Total Time']).toBe(8);
+    });
+    it('lets a retry of fractional minutes match its ledger', async () => {
+        const f = fixture(); f.fail('Book/B.md');
+        const fractional = [{ ...allocations[0], minutes: 90000 / 60000 }, allocations[1]];
+        await expect(applySessionTimeAllocations(f.plugin, 'session-fraction', fractional)).rejects.toThrow('write failed');
+        f.fail('');
+        const journal = await readSessionTimeJournal(f.plugin, 'session-fraction');
+        // The save dialog reopens from the ledger and submits what it shows.
+        const retried = journal!.entries.map(entry => {
+            const activeMs = Math.round(allocationMinutes(entry.minutes * 60000, true) * 60000);
+            return { path: entry.path, minutes: activeMs / 60000, words: entry.words, beforeHours: entry.beforeHours };
+        });
+        await applySessionTimeAllocations(f.plugin, 'session-fraction', retried);
+        expect(f.metadata.get('Book/A.md')?.['Total Time']).toBe(5.425);
+        expect(f.metadata.get('Book/B.md')?.['Total Time']).toBe(1.25);
+        expect(allocationMinutes(90000, false)).toBe(2);
+    });
+    it('saves words for a scene whose Total Time cannot be read', async () => {
+        const f = fixture(); f.metadata.get('Book/B.md')!['Total Time'] = 'three hours';
+        await applySessionTimeAllocations(f.plugin, 'session-words', [allocations[0], { path: 'Book/B.md', minutes: 0, words: 50, beforeHours: NaN }]);
+        expect(f.metadata.get('Book/A.md')?.['Total Time']).toBe(5.9);
+        expect(f.metadata.get('Book/B.md')?.['Total Time']).toBe('three hours');
     });
     it('rejects an existing nonnumeric value instead of replacing it', () => {
         expect(() => parseRecordedHours('three hours')).toThrow();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isStoryActHeading, linkedSceneViewport, selectedCanvasBounds, storyAxis, storyKeyStep, storyPosition, storyProgress } from './canvasNavigation';
+import { actCardNumber, isStoryActHeading, linkedSceneViewport, selectedCanvasBounds, storyAxis, storyKeyStep, storyPosition, storyProgress } from './canvasNavigation';
 
 describe('story map navigation', () => {
     it('moves one whole scene per arrow key, from any point along the slider', () => {
@@ -18,6 +18,12 @@ describe('story map navigation', () => {
         expect(isStoryActHeading('**Act 2**')).toBe(true);
         expect(isStoryActHeading('# No act')).toBe(true);
         expect(isStoryActHeading('Act 2 arrives at the station')).toBe(false);
+    });
+    it('reads an act title after a colon or em dash', () => {
+        expect(actCardNumber('Act 2: The Fall')).toBe(2);
+        expect(actCardNumber('# Act 3 — The Return')).toBe(3);
+        expect(actCardNumber('Act 2: arrives')).toBe(2);
+        expect(isStoryActHeading('Act 2 arrives: at the station')).toBe(false);
     });
     const cards = [{ x: 0, y: 0, width: 200, height: 100 }, { x: 1000, y: 400, width: 400, height: 200 }];
     it('bounds selected cards and ignores invalid selection geometry', () => {

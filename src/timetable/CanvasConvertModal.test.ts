@@ -19,7 +19,7 @@ function setup(changeDuringCreate = false, selectedIds: string[] = ['1']) {
     });
     const app = { workspace: { getLeavesOfType: () => [] }, metadataCache: { getFileCache: () => ({}) }, vault: { getMarkdownFiles: () => [], getFiles: () => [], getFolderByPath: () => ({}), getAbstractFileByPath: (path: string) => path === 'Book/A scene.md' ? {} : null, create } } as unknown as App;
     const activateView = vi.fn(async () => {});
-    const plugin = { settings: {}, refreshTimelineIfNeeded: vi.fn(), getSceneData: vi.fn(async () => []), getTimelineService: () => ({ activateView }) } as unknown as RadialTimelinePlugin;
+    const plugin = { settings: {}, refreshTimelineIfNeeded: vi.fn(), getSceneData: vi.fn(async () => []), getTimelineService: () => ({ activateView }), setActiveBookId: vi.fn(async () => {}) } as unknown as RadialTimelinePlugin;
     const setData = vi.fn((next: StoryCanvasData) => { data = next; });
     const requestSave = vi.fn();
     const canvas: OpenCanvas = { getData: () => data, setData, requestSave, selection: new Set(selectedIds.map(id => ({ getData: () => ({ id, type: 'text' }) }))) };
@@ -52,6 +52,8 @@ describe('Canvas scene conversion', () => {
         expect(test.saved.get('Book/2 Other idea.md')).toContain('Act: 2');
         expect(test.getData().nodes?.map(node => node.file)).toEqual(['Book/1 A scene.md', 'Book/2 Other idea.md']);
         expect(test.activateView).toHaveBeenCalledOnce();
+        expect(test.plugin.setActiveBookId).toHaveBeenCalledWith('book');
+        expect(vi.mocked(test.plugin.setActiveBookId).mock.invocationCallOrder[0]).toBeLessThan(test.activateView.mock.invocationCallOrder[0]);
     });
 
     it('puts a colored card on the subplot named for its color, in the spelling the book uses', async () => {

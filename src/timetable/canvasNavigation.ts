@@ -1,7 +1,7 @@
 /** Extract the act heading created by both generations of story maps. */
 export function storyActHeadingLabel(text: string): string | null {
     const first = text.split('\n')[0].trim().replace(/^#{1,6}\s+/, '').replace(/^\*\*|\*\*$/g, '').trim();
-    return /^(?:act\s+\d+|no act)(?:\s*[·–-]\s*[^\n]+)?$/i.test(first) ? first : null;
+    return /^(?:act\s+\d+|no act)(?:\s*[·–—:-]\s*[^\n]+)?$/i.test(first) ? first : null;
 }
 
 export function isStoryActHeading(text: string): boolean { return storyActHeadingLabel(text) !== null; }

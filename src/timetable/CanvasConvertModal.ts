@@ -461,7 +461,10 @@ export class CanvasConvertModal extends ErtModal {
             }
             new Notice(this.mode === 'scenes' ? t('ui.canvasSketch.doneScenes', { scenes: tCount('scene', paths.size) }) : t('ui.canvasSketch.done', { count: paths.size }), 6000);
             this.plugin.refreshTimelineIfNeeded(null);
-            if (this.mode === 'scenes') await this.plugin.getTimelineService().activateView();
+            if (this.mode === 'scenes') {
+                await this.plugin.setActiveBookId(this.book.id);
+                await this.plugin.getTimelineService().activateView();
+            }
         } catch (error) {
             console.error('[Canvas sketches]', error);
             let retainedRanks = paths.size > 0 && ranked.length > 0;

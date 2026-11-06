@@ -34,6 +34,8 @@ export interface WritingSessionSceneActivityEntry {
     path: string;
     beforeHours: number;
     alreadyApplied: boolean;
+    /** A pending ledger entry this scene can no longer take; Save skips it. */
+    blocked: boolean;
     currentHours: number;
     title: string;
     activeMs: number;
@@ -235,7 +237,8 @@ export class WritingSessionCompletionModal extends Modal {
                 const summary = row.descEl.createSpan();
                 const refresh = () => {
                     const after = Math.round((entry.beforeHours + entry.minutes / 60) * 1_000_000) / 1_000_000;
-                    summary.setText(Number.isFinite(after) && (!entry.alreadyApplied || Number.isFinite(entry.currentHours)) ? (entry.alreadyApplied ? t('ui.writingSessionCompletionModal.sceneTimeApplied', { after: entry.currentHours }) : t('ui.writingSessionCompletionModal.sceneTimePreview', { before: entry.beforeHours, after })) : t('ui.writingSessionCompletionModal.invalidSceneTime'));
+                    if (entry.blocked) { summary.setText(t('ui.writingSessionCompletionModal.sceneTimeSkipped')); return; }
+                    summary.setText(Number.isFinite(after) &&(!entry.alreadyApplied || Number.isFinite(entry.currentHours)) ? (entry.alreadyApplied ? t('ui.writingSessionCompletionModal.sceneTimeApplied', { after: entry.currentHours }) : t('ui.writingSessionCompletionModal.sceneTimePreview', { before: entry.beforeHours, after })) : t('ui.writingSessionCompletionModal.invalidSceneTime'));
                 };
                 row.controlEl.createSpan({ text: t('ui.writingSessionCompletionModal.sceneMinutes') });
                 row.addText(input => {

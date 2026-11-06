@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TFile } from 'obsidian';
-import { allocationMinutes, applySessionTimeAllocations, parseRecordedHours, readSessionTimeJournal } from './WritingSessionTimeAllocation';
+import { allocationMinutes, applySessionTimeAllocations, parseRecordedHours, readSessionTimeJournal, rebaseSessionPath, rebaseSessionTimeJournal } from './WritingSessionTimeAllocation';
 
 function fixture() {
     const files = new Map([['Book/A.md', new TFile('Book/A.md')], ['Book/B.md', new TFile('Book/B.md')]]);
@@ -10,9 +10,10 @@ function fixture() {
     const plugin = {
         manifest: { dir: '.obsidian/plugins/radial-timeline' }, settings: {}, isSceneFile: (path: string) => files.has(path),
         app: { vault: { adapter: { exists: async (p: string) => store.has(p), read: async (p: string) => store.get(p)!, write: async (p: string, v: string) => { store.set(p, v); } }, getAbstractFileByPath: (p: string) => files.get(p) },
+            metadataCache: { getFileCache: (f: TFile) => ({ frontmatter: metadata.get(f.path) }) },
             fileManager: { processFrontMatter: async (f: TFile, cb: (fm: Record<string, unknown>) => void) => { if (f.path === failPath) throw new Error('write failed'); cb(metadata.get(f.path)!); } } },
     };
-    return { plugin: plugin as never, metadata, store, fail: (p: string) => { failPath = p; } };
+    return { plugin: plugin as never, files, metadata, store, fail: (p: string) => { failPath = p; } };
 }
 const allocations = [{ path: 'Book/A.md', minutes: 30, words: 200, beforeHours: 5.4 }, { path: 'Book/B.md', minutes: 15, words: 50, beforeHours: 1 }];
 
@@ -81,6 +82,37 @@ describe('scene time allocation ledger', () => {
         await applySessionTimeAllocations(f.plugin, 'session-words', [allocations[0], { path: 'Book/B.md', minutes: 0, words: 50, beforeHours: NaN }]);
         expect(f.metadata.get('Book/A.md')?.['Total Time']).toBe(5.9);
         expect(f.metadata.get('Book/B.md')?.['Total Time']).toBe('three hours');
+    });
+    it('checks every scene before starting, so a refused first save leaves no ledger', async () => {
+        const f = fixture(); f.files.delete('Book/B.md');
+        await expect(applySessionTimeAllocations(f.plugin, 'session-first', allocations)).rejects.toThrow('unavailable');
+        expect(await readSessionTimeJournal(f.plugin, 'session-first')).toBeNull();
+        expect(f.metadata.get('Book/A.md')?.['Total Time']).toBe(5.4);
+    });
+    it('finishes a pending ledger by skipping a scene that can no longer take its time', async () => {
+        const f = fixture(); f.fail('Book/B.md');
+        await expect(applySessionTimeAllocations(f.plugin, 'session-skip', allocations)).rejects.toThrow('write failed');
+        f.fail(''); f.files.delete('Book/B.md');
+        await expect(applySessionTimeAllocations(f.plugin, 'session-skip', allocations)).resolves.toEqual(['Book/B.md']);
+        expect(f.metadata.get('Book/A.md')?.['Total Time']).toBe(5.9);
+        expect((await readSessionTimeJournal(f.plugin, 'session-skip'))?.entries[1].skipped).toBe(true);
+        await expect(applySessionTimeAllocations(f.plugin, 'session-skip', allocations)).resolves.toEqual(['Book/B.md']);
+    });
+    it('keeps a pending ledger on a renamed scene, so the retry applies its time', async () => {
+        const f = fixture(); f.fail('Book/B.md');
+        await expect(applySessionTimeAllocations(f.plugin, 'session-move', allocations)).rejects.toThrow('write failed');
+        f.fail('');
+        const file = f.files.get('Book/B.md')!; file.path = 'Book/C.md'; f.files.delete('Book/B.md'); f.files.set('Book/C.md', file);
+        f.metadata.set('Book/C.md', f.metadata.get('Book/B.md')!);
+        await rebaseSessionTimeJournal(f.plugin, 'session-move', 'Book/B.md', 'Book/C.md');
+        const moved = allocations.map(a => a.path === 'Book/B.md' ? { ...a, path: 'Book/C.md' } : a);
+        await expect(applySessionTimeAllocations(f.plugin, 'session-move', moved)).resolves.toEqual([]);
+        expect(f.metadata.get('Book/C.md')?.['Total Time']).toBe(1.25);
+    });
+    it('rebases a path through a file or folder rename and leaves others alone', () => {
+        expect(rebaseSessionPath('Book/A.md', 'Book/A.md', 'Book/B.md')).toBe('Book/B.md');
+        expect(rebaseSessionPath('Book/A.md', 'Book', 'Novel')).toBe('Novel/A.md');
+        expect(rebaseSessionPath('Bookend/A.md', 'Book', 'Novel')).toBe('Bookend/A.md');
     });
     it('rejects an existing nonnumeric value instead of replacing it', () => {
         expect(() => parseRecordedHours('three hours')).toThrow();

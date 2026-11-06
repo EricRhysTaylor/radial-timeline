@@ -17,6 +17,7 @@ import { isCompleteStatus, normalizePublishStage } from '../progress/progressSna
 import { getRuntimeSettings } from '../utils/runtimeEstimator';
 import { normalizeStatus, countWords } from '../utils/text';
 import { buildPrivateSessionLog, type PrivateSessionLogRow } from './WritingSessionLog';
+import { rebaseSessionPath, rebaseSessionTimeJournal } from './WritingSessionTimeAllocation';
 import { extractBodyText } from '../utils/manuscript';
 import { RT_SYSTEM_FOLDER } from '../utils/systemFolder';
 import { formatLocalDateKey, parseLocalDateKey } from '../utils/date';
@@ -332,6 +333,29 @@ function addSceneActivity(
     const entry = map[trimmed] ?? (map[trimmed] = { activeMs: 0, typedWords: 0 });
     entry.activeMs += Math.max(0, Math.round(delta.activeMs ?? 0)); // SAFE: omitted delta = no time to add
     entry.typedWords += Math.max(0, Math.round(delta.typedWords ?? 0)); // SAFE: omitted delta = no words to add
+}
+
+/** Move a running session's per-scene record to a scene's new path. True when anything moved. */
+export function followSessionPathRename(active: ActiveWritingSession, oldPath: string, newPath: string): boolean {
+    let moved = false;
+    for (const [path, totals] of Object.entries(active.sceneActivity ?? {})) {
+        const next = rebaseSessionPath(path, oldPath, newPath);
+        if (next === path) continue;
+        delete active.sceneActivity![path]; // SAFE: entries came from this map
+        addSceneActivity(active, next, totals);
+        moved = true;
+    }
+    if (active.currentScenePath) {
+        const next = rebaseSessionPath(active.currentScenePath, oldPath, newPath);
+        moved = moved || next !== active.currentScenePath;
+        active.currentScenePath = next;
+    }
+    if (active.wordSnapshot) {
+        const paths = active.wordSnapshot.paths.map(path => rebaseSessionPath(path, oldPath, newPath));
+        moved = moved || paths.some((path, i) => path !== active.wordSnapshot!.paths[i]); // SAFE: checked just above
+        active.wordSnapshot.paths = paths;
+    }
+    return moved;
 }
 
 /** Serialize a running session's per-scene map into a record array (drops empties). */
@@ -681,6 +705,7 @@ export class WritingSessionService {
     private hydrated = false;
     private lastHeartbeatPersistMs = 0;
     private lastActivityPersistMs = 0;
+    private sceneRenameWork: Promise<unknown> = Promise.resolve();
 
     constructor(private plugin: RadialTimelinePlugin) {}
 
@@ -743,6 +768,22 @@ export class WritingSessionService {
         if (now - this.lastHeartbeatPersistMs < HEARTBEAT_PERSIST_MS) return;
         this.lastHeartbeatPersistMs = now;
         await this.plugin.saveSettings();
+    }
+
+    /**
+     * Keep the session on a scene whose file was renamed or renumbered. A timeline
+     * drag renames many files at once, so ledger updates run one at a time.
+     */
+    followSceneRename(oldPath: string, newPath: string): Promise<void> {
+        const active = this.getActiveSession();
+        if (!active) return Promise.resolve();
+        const moved = followSessionPathRename(active, oldPath, newPath);
+        const work = this.sceneRenameWork.then(async () => {
+            await rebaseSessionTimeJournal(this.plugin, active.id, oldPath, newPath);
+            if (moved) await this.plugin.saveSettings();
+        });
+        this.sceneRenameWork = work.catch(() => undefined); // SAFE: the caller reports `work`; this only keeps the queue moving
+        return work;
     }
 
     registerTypedWords(count: number, scenePath?: string): void {

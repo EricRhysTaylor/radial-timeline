@@ -7636,6 +7636,8 @@ export const ja: DeepPartial<TranslationKeys> = {
             sceneTimeApplied: "適用済み：{{after}} 時間",
             sceneTimePreview: "合計時間：{{before}} → {{after}} 時間",
             invalidSceneTime: "既存の合計時間を確認してください。",
+            sceneTimeSkipped: "保存時にこのシーンはスキップされ、合計時間はそのまま保たれます。",
+            sceneTimeSkippedNotice: "合計時間をそのまま保ったシーン：{{scenes}}",
             sceneMinutes: "分",
             sceneWords: "語",
             invalidAllocation: "各シーンの分数と語数がセッション合計を超えていないか確認してください。",

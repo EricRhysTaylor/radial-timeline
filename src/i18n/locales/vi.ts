@@ -7638,6 +7638,8 @@ export const vi: TranslationKeys = {
             sceneTimeApplied: "Đã áp dụng: {{after}} giờ",
             sceneTimePreview: "Tổng thời gian: {{before}} → {{after}} giờ",
             invalidSceneTime: "Cần kiểm tra tổng thời gian hiện có.",
+            sceneTimeSkipped: "Lưu sẽ bỏ qua cảnh này; tổng thời gian của cảnh được giữ nguyên.",
+            sceneTimeSkippedNotice: "Tổng thời gian được giữ nguyên cho: {{scenes}}",
             sceneMinutes: "Phút",
             sceneWords: "Từ",
             invalidAllocation: "Kiểm tra số phút và từ phân bổ không vượt tổng của phiên.",

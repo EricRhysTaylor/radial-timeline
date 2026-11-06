@@ -7638,6 +7638,8 @@ export const es: TranslationKeys = {
             sceneTimeApplied: "Ya aplicado: {{after}} horas",
             sceneTimePreview: "Tiempo total: {{before}} → {{after}} horas",
             invalidSceneTime: "Revisa el tiempo total existente.",
+            sceneTimeSkipped: "Guardar omite esta escena; su tiempo total queda como está.",
+            sceneTimeSkippedNotice: "El tiempo total quedó igual en: {{scenes}}",
             sceneMinutes: "Minutos",
             sceneWords: "Palabras",
             invalidAllocation: "Revisa los valores; los minutos y palabras asignados no pueden superar los totales de la sesión.",

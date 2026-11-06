@@ -7635,6 +7635,8 @@ export const ko: DeepPartial<TranslationKeys> = {
             sceneTimeApplied: "이미 적용됨: {{after}}시간",
             sceneTimePreview: "총 시간: {{before}} → {{after}}시간",
             invalidSceneTime: "기존 총 시간을 확인하세요.",
+            sceneTimeSkipped: "저장 시 이 장면을 건너뛰며 총 시간은 그대로 유지됩니다.",
+            sceneTimeSkippedNotice: "총 시간이 그대로 유지된 장면: {{scenes}}",
             sceneMinutes: "분",
             sceneWords: "단어",
             invalidAllocation: "장면별 분과 단어 수가 세션 합계를 넘지 않는지 확인하세요.",

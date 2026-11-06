@@ -161,6 +161,7 @@ export class FileTrackingService {
                 void this.plugin.saveSettings().catch(error => console.error('Could not update card image paths:', error));
             }
         }
+        void this.plugin.getWritingSessionService().followSceneRename(oldPath, file.path).catch(error => console.error('Could not update writing session paths:', error));
         if (this.plugin.openScenePaths.has(oldPath)) {
             this.plugin.openScenePaths.delete(oldPath);
             if (file instanceof TFile && this.plugin.isSceneFile(file.path)) {

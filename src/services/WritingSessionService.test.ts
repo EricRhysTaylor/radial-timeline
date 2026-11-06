@@ -8,6 +8,7 @@ import {
     buildCorruptSessionLogPath,
     buildWritingRangeStats,
     collectSceneCompletionEvents,
+    followSessionPathRename,
     parsePortableSessionLog,
     normalizeWritingSessionsSettings,
     WritingSessionService
@@ -1137,5 +1138,28 @@ describe('today’s first session start', () => {
             record('yesterday', new Date(2026, 4, 11, 7, 0).toISOString(), new Date(2026, 4, 11, 8, 0).toISOString()),
         ]);
         expect(service.getTodayFirstSessionStart(noon)).toBeUndefined();
+    });
+});
+
+describe('followSessionPathRename', () => {
+    const session = () => ({
+        sceneActivity: { 'Book/1 A.md': { activeMs: 6000, typedWords: 10 }, 'Book/2 B.md': { activeMs: 1000, typedWords: 1 } },
+        currentScenePath: 'Book/1 A.md',
+        wordSnapshot: { startedWords: 100, paths: ['Book/1 A.md'] },
+    }) as unknown as Parameters<typeof followSessionPathRename>[0];
+
+    it('moves the time, focus and word snapshot to the renamed scene', () => {
+        const active = session();
+        expect(followSessionPathRename(active, 'Book/1 A.md', 'Book/3 A.md')).toBe(true);
+        expect(active.sceneActivity).toEqual({ 'Book/2 B.md': { activeMs: 1000, typedWords: 1 }, 'Book/3 A.md': { activeMs: 6000, typedWords: 10 } });
+        expect(active.currentScenePath).toBe('Book/3 A.md');
+        expect(active.wordSnapshot?.paths).toEqual(['Book/3 A.md']);
+    });
+
+    it('adds to a record already at the new path, and ignores unrelated renames', () => {
+        const active = session();
+        followSessionPathRename(active, 'Book/1 A.md', 'Book/2 B.md');
+        expect(active.sceneActivity).toEqual({ 'Book/2 B.md': { activeMs: 7000, typedWords: 11 } });
+        expect(followSessionPathRename(active, 'Notes/x.md', 'Notes/y.md')).toBe(false);
     });
 });

@@ -7635,6 +7635,8 @@ export const de: DeepPartial<TranslationKeys> = {
             sceneTimeApplied: "Bereits angewendet: {{after}} Stunden",
             sceneTimePreview: "Gesamtzeit: {{before}} → {{after}} Stunden",
             invalidSceneTime: "Vorhandene Gesamtzeit prüfen.",
+            sceneTimeSkipped: "Beim Speichern wird diese Szene übersprungen; ihre Gesamtzeit bleibt unverändert.",
+            sceneTimeSkippedNotice: "Gesamtzeit unverändert für: {{scenes}}",
             sceneMinutes: "Minuten",
             sceneWords: "Wörter",
             invalidAllocation: "Prüfe die Szenenwerte; Minuten und Wörter dürfen die Sitzungssummen nicht überschreiten.",

@@ -7638,6 +7638,8 @@ export const th: TranslationKeys = {
             sceneTimeApplied: "เพิ่มแล้ว: {{after}} ชั่วโมง",
             sceneTimePreview: "เวลารวม: {{before}} → {{after}} ชั่วโมง",
             invalidSceneTime: "โปรดตรวจสอบเวลารวมเดิม",
+            sceneTimeSkipped: "การบันทึกจะข้ามฉากนี้ เวลารวมของฉากยังคงเดิม",
+            sceneTimeSkippedNotice: "เวลารวมยังคงเดิมสำหรับ: {{scenes}}",
             sceneMinutes: "นาที",
             sceneWords: "คำ",
             invalidAllocation: "ตรวจสอบนาทีและคำที่จัดสรรไม่ให้เกินยอดรวมของเซสชัน",

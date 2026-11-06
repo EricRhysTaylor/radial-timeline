@@ -1,4 +1,4 @@
-import { applySessionTimeAllocations, parseRecordedHours, readSessionTimeJournal } from '../services/WritingSessionTimeAllocation';
+import { applySessionTimeAllocations, parseRecordedHours, readSessionTimeJournal, sceneTimeBlocker } from '../services/WritingSessionTimeAllocation';
 import { authorKeyFor } from '../timetable/timetableFiles';
 import { registerTextSketchCapture } from '../timetable/TextSketchCapture';
 import { registerNoteDropCapture } from '../timetable/NoteDropCapture';
@@ -2145,6 +2145,7 @@ export class RadialTimelineView extends ItemView {
                 return {
                     path, title: titleByPath.get(path) ?? path.split('/').pop()?.replace(/\.md$/i, '') ?? path,
                     alreadyApplied: !!pending && (pending.applied || beforeHours === pending.afterHours),
+                    blocked: !!pending && !pending.applied && pending.minutes > 0 && (!!pending.skipped || sceneTimeBlocker(this.plugin, pending) !== null),
                     currentHours: beforeHours,
                     beforeHours: pending?.beforeHours ?? beforeHours, activeMs: pending ? pending.minutes * 60000 : entry?.activeMs ?? 0, typedWords: pending?.words ?? entry?.typedWords ?? 0,
                 };
@@ -2161,7 +2162,8 @@ export class RadialTimelineView extends ItemView {
                     if (service.getActiveSession()?.id !== active.id) throw new Error('The writing session has changed. Reopen the save dialog.');
                     if (completion.updateSceneTotals && completion.sceneAllocations) {
                         const before = new Map(sceneActivity.map(entry => [entry.path, entry.beforeHours]));
-                        await applySessionTimeAllocations(this.plugin, active.id, completion.sceneAllocations.map(entry => ({ path: entry.path, minutes: entry.activeMs / 60000, words: entry.typedWords, beforeHours: before.get(entry.path) ?? 0 })), completion);
+                        const skipped = await applySessionTimeAllocations(this.plugin, active.id, completion.sceneAllocations.map(entry => ({ path: entry.path, minutes: entry.activeMs / 60000, words: entry.typedWords, beforeHours: before.get(entry.path) ?? 0 })), completion);
+                        if (skipped.length) new Notice(t('ui.writingSessionCompletionModal.sceneTimeSkippedNotice', { scenes: skipped.map(path => path.split('/').pop()?.replace(/\.md$/i, '') ?? path).join(', ') }));
                     }
                     if (service.getActiveSession()?.id !== active.id) throw new Error('The writing session changed during the update. Reopen the save dialog.');
                     const record = await service.stop(completion);

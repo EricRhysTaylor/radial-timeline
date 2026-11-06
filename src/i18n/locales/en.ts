@@ -7294,6 +7294,8 @@ export const en = {
             sceneTimeApplied: "Already applied: {{after}} hours",
             sceneTimePreview: "Total Time: {{before}} → {{after}} hours",
             invalidSceneTime: "Existing Total Time needs review.",
+            sceneTimeSkipped: "Save skips this scene; its Total Time stays as it is.",
+            sceneTimeSkippedNotice: "Total Time stayed as it was for: {{scenes}}",
             sceneMinutes: "Minutes",
             sceneWords: "Words",
             invalidAllocation: "Check scene values; allocated minutes and words cannot exceed session totals.",

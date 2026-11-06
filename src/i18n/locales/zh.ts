@@ -7637,6 +7637,8 @@ export const zh: DeepPartial<TranslationKeys> = {
             sceneTimeApplied: "已应用：{{after}} 小时",
             sceneTimePreview: "总时间：{{before}} → {{after}} 小时",
             invalidSceneTime: "请检查现有总时间。",
+            sceneTimeSkipped: "保存时将跳过此场景，其总时间保持不变。",
+            sceneTimeSkippedNotice: "以下场景的总时间保持不变：{{scenes}}",
             sceneMinutes: "分钟",
             sceneWords: "字数",
             invalidAllocation: "检查场景数据；分配的分钟和字数不能超过本次总数。",

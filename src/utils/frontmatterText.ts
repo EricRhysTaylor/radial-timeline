@@ -202,7 +202,10 @@ export function replaceValueEdit(text: FrontmatterText, field: FrontmatterField,
     if (field.anchored) throw new Error(t('ui.timetable.timelineDropComplexProperty'));
     if (field.valueEnd > field.valueStart) {
         const trailing = /\s*$/.exec(text.raw.slice(field.valueStart, field.valueEnd))?.[0] ?? '';
-        return { start: field.valueStart, end: field.valueEnd, text: value + trailing };
+        // A block list may sit at column 0 under its key; a scalar there would
+        // read as a new top-level line, so it takes the usual indent.
+        const indent = text.raw[field.valueStart - 1] === '\n' ? '  ' : '';
+        return { start: field.valueStart, end: field.valueEnd, text: indent + value + trailing };
     }
     const rest = text.raw.slice(field.colonEnd, field.lineEnd);
     const gap = /^[ \t]*/.exec(rest)?.[0].length ?? 0;

@@ -67,6 +67,8 @@ describe('edits', () => {
         expect(applyFrontmatterEdits(blank.text, [replaceValueEdit(blank.text, blank.field, '2')])).toBe('---\nA: 2 # note\nB: 1\n---\n');
         const list = field('---\nA:\n  - x\n  - y\nB: 1\n---\n', 'A');
         expect(parse(applyFrontmatterEdits(list.text, [replaceValueEdit(list.text, list.field, 'z')]).split('---')[1])).toEqual({ A: 'z', B: 1 });
+        const flush = field('---\nA:\n- x\n- y\nB: 1\n---\n', 'A');
+        expect(applyFrontmatterEdits(flush.text, [replaceValueEdit(flush.text, flush.field, 'z')])).toBe('---\nA:\n  z\nB: 1\n---\n');
     });
     it('removes a field and its list, and keeps the comment above it', () => {
         const target = field('---\n# about A\nA:\n  - x\nB: 1\n---\n', 'A');

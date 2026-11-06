@@ -21,6 +21,7 @@ Subplot: Main Plot        # Single subplot (or use array format below for multip
 Character:                # Characters in the scene (use array format below for multiple)
 POV:                      # blank, first, you, third, omni, narrator, two, all, count
 Words:                    # Optional word count/statistics
+Total Time:               # Hours on this scene, added from writing sessions you approve
 Runtime:                  # Optional runtime estimate or override
 Publish Stage: Zero       # Progress stage (Zero/Author/House/Press)
 Status: Todo              # Scene status (Todo/Working/Complete)

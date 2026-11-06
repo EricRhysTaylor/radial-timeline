@@ -65,7 +65,7 @@ Sessions is a Core workflow for writing accountability and basic planning.
 *   **Writing stats**: A collapsible local stats panel summarizes today, the last 7 days, and the last 30 days from timer records and scene completion dates.
 *   **Timeline count/session button**: The compact title-bar button opens the writing-session popover. Start an open-ended session or a countdown sprint, then pause, resume, stop, or discard it there.
 *   **Session ring**: While a session is active, a thin timer ring appears just outside the rainbow progress ring. It fills toward the active time or word target.
-*   **Save session details**: Saving a timer session opens a confirmation panel for minutes, words added, scenes completed, pages edited, and an optional note.
+*   **Save session details**: Saving a timer session opens a confirmation panel for minutes, words added, scenes completed, pages edited, and an optional note. Tick **Allocate this session to scenes** to give each scene its minutes and words, and **Update scene Total Time with this session** to add those minutes to each scene's hours.
 
 Runtime and export tools may read these values, but Sessions owns the writing/session estimate settings.
 

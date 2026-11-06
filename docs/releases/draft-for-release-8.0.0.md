@@ -12,7 +12,7 @@ Your book on a Canvas, and a Timetable you can plan in: subplot maps that follow
 
 - **From a mind map to a timeline in one step.** **Turn Canvas cards into scenes or sketches** makes numbered scenes straight from a Canvas: each card joins its act and its subplot, and the timeline opens. The cards you leave out stay on the map.
 - **Color cards by subplot.** Select idea cards and click a swatch on the Canvas bar: your ring colors from Settings, named as they are there. In the dialog, each color gets a row to name a new subplot or pick one of the book's, and a dot shows the color its ring will have. Cards you add to the Canvas later start on the same subplot.
-- **Act cards set the acts.** A card named *Act 2* starts that act, and the cards after it join. With no Act cards, scenes spread evenly across the acts, and the dialog shows where each act starts.
+- **Act cards set the acts.** A card named *Act 2* or *Act 2: The Fall* starts that act, and the cards after it join. With no Act cards, scenes spread evenly across the acts, and the dialog shows where each act starts.
 - **A key for the map.** The **✱** on the Canvas bar sums up the workflow and the map's marks.
 - **Turn Canvas ideas into placed sketches.** Choose **Sketches** for loose ideas: **Place after scene**, or **End of act or unassigned**, with **Move up** and **Move down** to set their order.
 - **Sketches promoted together keep their order.** Each takes a scene number at the end of its act.
@@ -46,6 +46,8 @@ See [Timetable](https://github.com/EricRhysTaylor/radial-timeline/wiki/Timetable
 
 - **Scene titles read right side up all the way round.** Titles across the bottom half of the wheel now run left to right instead of upside down, in every ring and while you hover a scene to show its full title. Chronologue's dates around the edge of the wheel read the same way, each beside its tick.
 - **The rotate toggle is gone.** The arrow beside the outer ring turned the wheel so the lower titles could be read. With every title upright, its job is done, so the wheel always opens with Act 1 at 12 o'clock.
+- **Help in the title bar.** **Help** sits with the title-bar actions, and **Settings** opens from the gear.
+- **Stage milestones live in Settings.** **Settings → Core → Progress and status** marks each stage you finish, and the wheel stays clear for your book.
 
 See [Character lanes](https://github.com/EricRhysTaylor/radial-timeline/wiki/Narrative-Mode#character-lanes).
 
@@ -60,6 +62,7 @@ See [Character lanes](https://github.com/EricRhysTaylor/radial-timeline/wiki/Nar
 ### Writing Session
 
 - **Desk Lamps help.** A **?** beside Desk Lamps in the session panel explains that lamps share live sessions with the friends you choose, at any sharing level, Private included. The line under the checkboxes says what ticked friends see.
+- **Give each scene its share of a session.** Saving a session can split its minutes and words across the scenes you worked on, and add that time to each scene's **Total Time**. **Total Time** is now a core scene property, so the audit lists it on your existing scenes and **Insert missing fields** adds it.
 
 ### Story Vaults
 

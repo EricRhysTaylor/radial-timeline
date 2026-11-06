@@ -49,7 +49,7 @@ Radial Timeline® captures and visualizes four core timelines, letting you see m
 
 The mode buttons run in this order: Progress, Narrative, Chronologue, and Gossamer. Narrative and Chronologue keep subplot colors front-and-center so you can compare structure without workflow noise. When you need to see Todo/Working/Overdue status or progress stage colors, switch to Progress Mode, where the combined outer ring is replaced by a single-subplot view and scenes inherit the author-status and progress-stage palette.
 
-Beside the wheel, the **[Timetable](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Timetable)** lays the same book out in an Obsidian Bases view: as rows, as Panels with character portraits, or as an Outline next to your planning documents, where you place scenes and sketches by dragging them. **Canvas story maps** give each subplot its own lane on an Obsidian Canvas, and the map lights up the scene you Shift-hover on the timeline.
+Beside the wheel, the **[Timetable](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Timetable)** lays the same book out in an Obsidian Bases view: as rows, as Panels with character portraits, or as an Outline next to your planning documents, where you place scenes and sketches by dragging them. **Canvas story maps** give each subplot its own lane on an Obsidian Canvas, and the map lights up the scene you Shift-hover on the timeline. Turn a mind map on a Canvas into numbered scenes in one step.
 
 ## Docs (How-to & Setup)
 
@@ -174,7 +174,7 @@ All bundled fonts ship with their original license files in `assets/fonts/`.
 
 ## Feedback and Support
 
-Every way to get help is on one page: **[Getting help](https://community.radialtimeline.com/help)**, also one click away from **GET HELP** in the corner of the Radial Timeline View.
+Every way to get help is on one page: **[Getting help](https://community.radialtimeline.com/help)**, also one click away from **Help** in the Radial Timeline View title bar.
 
 - **Quick answers and writers helping writers:** the [Radial Timeline Community](https://community.radialtimeline.com), where writers share setups and answer each other's questions.
 - **Private bug reports and help requests:** [Community Requests](https://community.radialtimeline.com/requests) (sign in with your Community account). A person reads every request on weekdays; expect a reply within three working days.

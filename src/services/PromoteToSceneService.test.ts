@@ -239,6 +239,35 @@ describe('applyPromotion', () => {
         expect(renames).toEqual([]);
     });
 
+    it('numbers sketches promoted together, and leaves other notes with their names', async () => {
+        const { app, file, renames } = fakeApp({ 'Book 2/Second.md': { Class: 'Sketch' }, 'Book 2/First.md': { Class: 'Sketch' }, 'Book 2/Loose note.md': undefined });
+        const notes = [file('Book 2/Second.md'), file('Book 2/First.md'), file('Book 2/Loose note.md')];
+        const settings = settingsWithBook();
+        const result = await applyPromotion(app, settings, planPromotion(app, settings, notes), {
+            advanced: false,
+            sketchNumbers: new Map([['Book 2/First.md', '1'], ['Book 2/Second.md', '2']]),
+        });
+
+        expect(renames).toEqual([
+            { from: 'Book 2/Second.md', to: 'Book 2/2 Second.md' },
+            { from: 'Book 2/First.md', to: 'Book 2/1 First.md' },
+        ]);
+        expect(result.promoted).toHaveLength(3);
+        expect(result.failed).toEqual([]);
+    });
+
+    it('numbers only the sketches that were promoted', async () => {
+        const { app, file, renames } = fakeApp({ 'Book 2/A.md': { Class: 'Sketch' }, 'Book 2/B.md': { Class: 'Sketch' } }, { failOn: 'Book 2/A.md' });
+        const notes = [file('Book 2/A.md'), file('Book 2/B.md')];
+        const settings = settingsWithBook();
+        await applyPromotion(app, settings, planPromotion(app, settings, notes), {
+            advanced: false,
+            sketchNumbers: new Map([['Book 2/A.md', '1'], ['Book 2/B.md', '2']]),
+        });
+
+        expect(renames).toEqual([{ from: 'Book 2/B.md', to: 'Book 2/2 B.md' }]);
+    });
+
     it('reports a failing note and still promotes the rest', async () => {
         const { app, file } = fakeApp({ 'Book 2/A.md': undefined, 'Book 2/B.md': undefined }, { failOn: 'Book 2/A.md' });
         const a = file('Book 2/A.md');

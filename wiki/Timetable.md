@@ -193,6 +193,8 @@ A sketch placed after a scene is promoted into that spot, with a scene number th
 
 You can also run **Radial timeline: Scene promote note** or use the file-explorer context menu, including a folder’s direct children or a multi-selection. Notes must be inside a registered book’s manuscript folder; notes outside every book are explained and skipped. The scene then appears on the wheel and in the Timetable.
 
+Sketches promoted together keep the order they have in the Timetable: each takes a scene number at the end of its act, and a sketch with no act joins Act 1. Whole numbers are used where they fit, and decimals in a narrower gap, so the scenes around them keep their numbers. A sketch that already has a number keeps it, and a note with no Class keeps its name.
+
 To go the other way, right-click a scene and choose **Remove from timeline**. Only its `Class` is removed: the note stays where it is, keeps its ID, act, subplots and text, and stays in its row here as a note with no Class, wherever it sits in the book folder. Promote it to bring the same scene back.
 
 ## Other views in the same file

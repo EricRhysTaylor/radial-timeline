@@ -6049,6 +6049,8 @@ export const ja: DeepPartial<TranslationKeys> = {
             afterScene: '{{scene}} の後',
             keepsNumber: '番号 {{prefix}} はそのままです。',
             unnumberedMany: '名前に番号がないノート: {{notes}}。名前はそのままです。1つずつ昇格するか、タイムライン上でドラッグして番号を付けてください。',
+            sketchesInOrder: 'スケッチの順序は保たれます: {{notes}}に幕の末尾の番号が付きます。',
+            noRoomMany: 'この幕の末尾に使えるシーン番号がありません。スケッチを1つずつ昇格するか、タイムライン上でシーンをドラッグして空きを作ってください。',
             keepsValues: '既存のプロパティとノートの本文はそのまま残ります。',
             titleLabel: 'シーンのタイトル',
             titlePlaceholder: 'このシーンに名前を付ける',

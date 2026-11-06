@@ -1,9 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { anchorsInSketchAct, promotionAnchors } from './PromoteToSceneEntry';
+import { anchorsInSketchAct, promotionAnchors, sketchesByAct } from './PromoteToSceneEntry';
 import type { TimelineItem } from '../types';
+import { SKETCH_ORDER, type PlacementItem } from '../timetable/sketchPlacement';
+
+const sketch = (name: string, act: number | null, order: number): PlacementItem => ({
+    row: { path: `${name}.md`, basename: name, kind: 'sketch', act, prefix: null, className: 'Sketch', subplots: [], removedScene: false },
+    frontmatter: { [SKETCH_ORDER]: order },
+} as unknown as PlacementItem); // SAFE: test fixture with only the fields orderSketches reads
 
 const scene = (title: string, subplot: string): TimelineItem =>
     ({ itemType: 'Scene', title, path: `Book/${title}.md`, subplot } as unknown as TimelineItem); // SAFE: test fixture with only the fields promotionAnchors reads
+
+describe('sketchesByAct', () => {
+    it('keeps the order the author set, not the alphabetical order of the names', () => {
+        const items = [sketch('Vale names the killer', null, 30), sketch('Lord Ashby dies', null, 10), sketch('The butler swears', null, 20)];
+        const paths = new Set(items.map(item => item.row.path));
+        expect([...sketchesByAct(items, paths)]).toEqual([[1, ['Lord Ashby dies.md', 'The butler swears.md', 'Vale names the killer.md']]]);
+    });
+    it('groups by act, leaves out sketches that were not chosen, and puts no act in Act 1', () => {
+        const items = [sketch('Later', 2, 10), sketch('Skipped', 1, 10), sketch('First', 1, 20), sketch('Floating', null, 10)];
+        const paths = new Set(['Later.md', 'First.md', 'Floating.md']);
+        expect(Object.fromEntries(sketchesByAct(items, paths))).toEqual({ 1: ['First.md', 'Floating.md'], 2: ['Later.md'] });
+    });
+});
 
 describe('promotionAnchors', () => {
     it('only offers scene anchors in the sketch act, excluding missing or unassigned scenes', () => {

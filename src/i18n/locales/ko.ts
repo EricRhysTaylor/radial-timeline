@@ -6048,6 +6048,8 @@ export const ko: DeepPartial<TranslationKeys> = {
             afterScene: '{{scene}} 뒤',
             keepsNumber: '번호 {{prefix}}은(는) 그대로 유지됩니다.',
             unnumberedMany: '이름에 번호가 없는 노트: {{notes}}. 이름은 그대로 유지됩니다. 하나씩 승격하거나 타임라인에서 끌어서 번호를 매기세요.',
+            sketchesInOrder: '스케치의 순서가 유지됩니다: {{notes}}에 막의 끝 번호가 매겨집니다.',
+            noRoomMany: '이 막의 끝에 쓸 수 있는 장면 번호가 없습니다. 스케치를 하나씩 승격하거나 타임라인에서 장면을 끌어 자리를 만드세요.',
             keepsValues: '기존 속성과 노트 본문은 그대로 유지됩니다.',
             titleLabel: '장면 제목',
             titlePlaceholder: '이 장면의 이름 입력',

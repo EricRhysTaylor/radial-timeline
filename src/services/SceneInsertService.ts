@@ -185,6 +185,50 @@ export function isSafeSceneInsertionPrefix(items: TimelineItem[], anchorPath: st
     return nextPrefix !== null && comparePrefixTokens(prefix, nextPrefix) < 0;
 }
 
+/**
+ * Scene numbers for notes joining the end of their acts, keyed by note and in
+ * the order given. Whole numbers where they fit; in a narrower gap, decimals
+ * that count upward (20.9, then 20.10), because prefixes compare naturally.
+ * Returns null when an act has no room, before anything has changed.
+ */
+export function planActEndScenePrefixes(
+    items: TimelineItem[],
+    pathsByAct: ReadonlyMap<number, string[]>,
+    beatModel?: string
+): Map<string, string> | null {
+    const numbered = sortCandidatesByManuscriptOrder(collectCandidates(items, beatModel))
+        .flatMap(entry => {
+            const prefix = extractPrefixToken(entry.basename);
+            return prefix ? [{ act: entry.actNumber, prefix }] : [];
+        });
+    const used = new Set(numbered.map(entry => entry.prefix));
+    const result = new Map<string, string>();
+
+    for (const [act, paths] of [...pathsByAct].sort(([a], [b]) => a - b)) {
+        const inserted = numbered.filter(entry => entry.act <= act).length;
+        const previous = inserted > 0 ? numbered[inserted - 1].prefix : '0';
+        const next = numbered[inserted]?.prefix;
+        // A later act that restarts its numbering puts no ceiling on this one.
+        const ceiling = next && comparePrefixTokens(previous, next) < 0 ? next : null;
+        const [major, minor] = previous.split('.');
+        const count = (first: number, format: (value: number) => string) => paths.map((_, index) => format(first + index));
+        const fits = (prefixes: string[]) => prefixes.every(prefix => !used.has(prefix))
+            && (ceiling === null || comparePrefixTokens(prefixes[prefixes.length - 1], ceiling) < 0);
+        const prefixes = [
+            count(Number(major) + 1, String),
+            count(Number(minor ?? 0) + 1, value => `${major}.${value}`), // SAFE: a whole-number prefix has no minor part, so its decimals start at .1
+        ].find(fits);
+        if (!prefixes) return null;
+
+        prefixes.forEach((prefix, index) => {
+            result.set(paths[index], prefix);
+            used.add(prefix);
+        });
+        numbered.splice(inserted, 0, ...prefixes.map(prefix => ({ act, prefix })));
+    }
+    return result;
+}
+
 function extractRawFrontmatterScalar(frontmatter: string, keys: string[]): string {
     const lines = frontmatter.split(/\r?\n/);
     for (const key of keys) {

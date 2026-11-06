@@ -6051,6 +6051,8 @@ export const vi: TranslationKeys = {
             "afterScene": "sau {{scene}}",
             "keepsNumber": "giữ số của nó, {{prefix}}.",
             "unnumberedMany": "Không có số trong tên: {{notes}}. Họ giữ tên của họ; Đánh số chúng bằng cách quảng cáo từng cái một hoặc bằng cách kéo trên dòng thời gian.",
+            "sketchesInOrder": "Các bản phác thảo giữ nguyên thứ tự: {{notes}} nhận số ở cuối hồi của chúng.",
+            "noRoomMany": "Không còn số cảnh trống ở cuối hồi này. Hãy nâng từng bản phác thảo một, hoặc tạo chỗ bằng cách kéo một cảnh trên dòng thời gian.",
             "keepsValues": "các thuộc tính hiện có và văn bản ghi chú vẫn giữ nguyên.",
             "titleLabel": "Tiêu đề cảnh",
             "titlePlaceholder": "Đặt tên cho cảnh này",

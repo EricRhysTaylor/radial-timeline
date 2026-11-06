@@ -6051,6 +6051,8 @@ export const es: TranslationKeys = {
             "afterScene": "Después de {{scene}}",
             "keepsNumber": "mantiene su número, {{prefix}}.",
             "unnumberedMany": "sin un número en el nombre: {{notes}}. guardan sus nombres; Numérelos promoviendo uno a la vez o arrastrando en la línea de tiempo.",
+            "sketchesInOrder": "Los bocetos conservan su orden: {{notes}} reciben números al final de su acto.",
+            "noRoomMany": "No quedan números de escena libres al final de este acto. Promueva estos bocetos uno a uno o haga sitio arrastrando una escena en la línea de tiempo.",
             "keepsValues": "Las propiedades existentes y el texto de la nota permanecen como están.",
             "titleLabel": "Título de la escena",
             "titlePlaceholder": "Pon nombre a esta escena",

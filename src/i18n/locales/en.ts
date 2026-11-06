@@ -5729,6 +5729,8 @@ export const en = {
             afterScene: 'After {{scene}}',
             keepsNumber: 'Keeps its number, {{prefix}}.',
             unnumberedMany: 'Without a number in the name: {{notes}}. They keep their names; number them by promoting one at a time or by dragging on the timeline.',
+            sketchesInOrder: 'Sketches keep their order: {{notes}} take numbers at the end of their act.',
+            noRoomMany: 'No scene numbers are free at the end of this act. Promote these sketches one at a time, or make room by dragging a scene on the timeline.',
             keepsValues: 'Existing properties and the note text stay as they are.',
             titleLabel: 'Scene title',
             titlePlaceholder: 'Name this scene',

@@ -70,6 +70,8 @@ export interface PromotionOptions {
     /** Single-note promotion only: the scene's title, replacing a placeholder name. Any number prefix stays. */
     title?: string | null;
     sketchPlacement?: { anchorId: string; followingSketches: string[] };
+    /** Several notes promoted together: the number each sketch takes, by path, so the book keeps their order. */
+    sketchNumbers?: ReadonlyMap<string, string>;
     onProgress?: (current: number, total: number, name: string) => void;
 }
 
@@ -272,6 +274,19 @@ export async function applyPromotion(
 
     if (result.promoted.length > 0) {
         await waitForSceneClass(app, result.promoted);
+    }
+
+    for (const file of result.promoted) {
+        const prefix = options.sketchNumbers?.get(file.path);
+        if (!prefix) continue;
+        const from = file.path;
+        try {
+            const to = uniqueSiblingPath(app, file, promotedBasename(file.basename, prefix, null));
+            await app.fileManager.renameFile(file, to);
+            result.renamed.push({ from, to });
+        } catch (error) {
+            result.failed.push({ file, message: error instanceof Error ? error.message : String(error) });
+        }
     }
 
     // A single note may be renamed: numbered after an anchor (when it has no

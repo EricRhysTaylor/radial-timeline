@@ -6048,6 +6048,8 @@ export const de: DeepPartial<TranslationKeys> = {
             afterScene: 'Nach {{scene}}',
             keepsNumber: 'Behält ihre Nummer, {{prefix}}.',
             unnumberedMany: 'Ohne Nummer im Namen: {{notes}}. Sie behalten ihre Namen; nummerieren Sie sie, indem Sie sie einzeln zur Szene machen oder auf der Timeline ziehen.',
+            sketchesInOrder: 'Skizzen behalten ihre Reihenfolge: {{notes}} erhalten Nummern am Ende ihres Akts.',
+            noRoomMany: 'Am Ende dieses Akts sind keine Szenennummern frei. Machen Sie diese Skizzen einzeln zur Szene oder schaffen Sie Platz, indem Sie eine Szene auf der Timeline ziehen.',
             keepsValues: 'Vorhandene Eigenschaften und der Notiztext bleiben unverändert.',
             titleLabel: 'Szenentitel',
             titlePlaceholder: 'Szene benennen',

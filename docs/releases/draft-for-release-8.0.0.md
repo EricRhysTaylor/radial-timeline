@@ -11,6 +11,7 @@ Your book on a Canvas, and a Timetable you can plan in: subplot maps that follow
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/a70baad8ebb2b13cf8c28878d8d57e8494fc97ab/wiki/images/canvas-subplot-map.webp" alt="Wickham's Story hovered on the wheel, and its four cards lit across the subplot lanes of the Canvas map beside it, with the story navigation bar reading Scene 16 of 61" width="800">
 
 - **Turn Canvas ideas into placed sketches.** **Canvas convert cards to sketches** now asks where they go: **Place after scene**, or **End of act or unassigned**, with **Move up** and **Move down** to set their order.
+- **From a Canvas to the timeline in order.** Sketches promoted together keep the order you gave them: each takes a scene number at the end of its act, so a whole mind map can become a timeline in two steps.
 
 See [Canvas story maps](https://github.com/EricRhysTaylor/radial-timeline/wiki/Timetable#canvas-story-maps).
 

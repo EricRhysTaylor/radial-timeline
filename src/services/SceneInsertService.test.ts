@@ -6,7 +6,8 @@ import type { RadialTimelineSettings, TimelineItem } from '../types';
 import {
     buildDecimalSceneInsertionPrefix,
     isSafeSceneInsertionPrefix,
-    insertSceneAfterAnchor
+    insertSceneAfterAnchor,
+    planActEndScenePrefixes
 } from './SceneInsertService';
 
 function settings(overrides: Partial<RadialTimelineSettings> = {}): RadialTimelineSettings {
@@ -39,6 +40,57 @@ function beat(path: string, actNumber = 1): TimelineItem {
         actNumber
     };
 }
+
+describe('planActEndScenePrefixes', () => {
+    const numbers = (planned: Map<string, string> | null) => planned ? [...planned.values()] : null;
+
+    it('numbers a new book from 1, in the order given', () => {
+        const planned = planActEndScenePrefixes([], new Map([[1, ['Lord Ashby.md', 'The butler.md', 'Inspector Vale.md']]]));
+        expect([...planned!]).toEqual([['Lord Ashby.md', '1'], ['The butler.md', '2'], ['Inspector Vale.md', '3']]);
+    });
+
+    it('continues with whole numbers after the last scene of the book', () => {
+        expect(numbers(planActEndScenePrefixes([scene('Book/40 End.md', 3)], new Map([[3, ['A.md', 'B.md']]])))).toEqual(['41', '42']);
+    });
+
+    it('uses whole numbers in a gap wide enough for them', () => {
+        const items = [scene('Book/20 Last.md', 1), scene('Book/30 Next.md', 2)];
+        expect(numbers(planActEndScenePrefixes(items, new Map([[1, ['A.md', 'B.md']]])))).toEqual(['21', '22']);
+    });
+
+    it('counts up in decimals between two acts, leaving the neighbouring scenes alone', () => {
+        const items = [scene('Book/20 Last.md', 1), scene('Book/21 Next.md', 2)];
+        expect(numbers(planActEndScenePrefixes(items, new Map([[1, ['A.md', 'B.md', 'C.md']]])))).toEqual(['20.1', '20.2', '20.3']);
+    });
+
+    it('stays in natural order past nine decimals', () => {
+        const items = [scene('Book/20 Last.md', 1), scene('Book/21 Next.md', 2)];
+        const paths = Array.from({ length: 11 }, (_, index) => `${index}.md`);
+        const prefixes = numbers(planActEndScenePrefixes(items, new Map([[1, paths]])))!;
+        expect(prefixes.slice(-3)).toEqual(['20.9', '20.10', '20.11']);
+        expect([...prefixes].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))).toEqual(prefixes);
+    });
+
+    it('follows the beats that close an act', () => {
+        const items = [scene('Book/20 Last.md', 1), beat('Book/20.02 Break into Two.md', 1), scene('Book/21 Next.md', 2)];
+        expect(numbers(planActEndScenePrefixes(items, new Map([[1, ['A.md']]])))).toEqual(['20.3']);
+    });
+
+    it('carries the count from one act into the next when both are new', () => {
+        const planned = planActEndScenePrefixes([], new Map([[2, ['C.md']], [1, ['A.md', 'B.md']]]));
+        expect(Object.fromEntries(planned!)).toEqual({ 'A.md': '1', 'B.md': '2', 'C.md': '3' });
+    });
+
+    it('is not held back by a later act that restarts its numbering', () => {
+        const items = [scene('Book/20 Last.md', 1), scene('Book/1 Part Two.md', 2)];
+        expect(numbers(planActEndScenePrefixes(items, new Map([[1, ['A.md']]])))).toEqual(['21']);
+    });
+
+    it('reports no room rather than sorting a scene into the wrong act', () => {
+        const items = [scene('Book/20.5 Last.md', 1), scene('Book/20.6 Next.md', 2)];
+        expect(planActEndScenePrefixes(items, new Map([[1, ['A.md']]]))).toBeNull();
+    });
+});
 
 describe('SceneInsertService', () => {
     const today = new Date();

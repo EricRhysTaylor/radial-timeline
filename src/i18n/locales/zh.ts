@@ -6050,6 +6050,8 @@ export const zh: DeepPartial<TranslationKeys> = {
             afterScene: '在 {{scene}} 之后',
             keepsNumber: '保留其编号 {{prefix}}。',
             unnumberedMany: '名称中没有编号：{{notes}}。它们保留原名称；可逐个提升或在时间轴上拖动来编号。',
+            sketchesInOrder: '草稿保持原有顺序：{{notes}}将获得所在幕末尾的编号。',
+            noRoomMany: '此幕末尾没有可用的场景编号。请逐个提升这些草稿，或在时间轴上拖动场景以腾出位置。',
             keepsValues: '现有属性和笔记正文保持不变。',
             titleLabel: '场景标题',
             titlePlaceholder: '为此场景命名',

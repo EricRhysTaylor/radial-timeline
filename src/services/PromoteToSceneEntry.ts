@@ -9,6 +9,7 @@
 import { ItemView, Notice, TFile, TFolder, type Menu, type TAbstractFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { applyPromotion, isPromotable, planPromotion, type PromotionPlan } from './PromoteToSceneService';
+import { planActEndScenePrefixes } from './SceneInsertService';
 import { PromoteToSceneModal, type PromotionAnchorOption } from '../modals/PromoteToSceneModal';
 import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
 import { basename } from '../utils/paths';
@@ -17,7 +18,7 @@ import { t, tCount } from '../i18n';
 import type { TimelineItem } from '../types';
 import { sortByManuscriptOrder } from '../utils/sceneHelpers';
 import { buildTableRow } from '../timetable/timetableModel';
-import { orderSketches, sketchAnchor } from '../timetable/sketchPlacement';
+import { orderSketches, sketchAnchor, type PlacementItem } from '../timetable/sketchPlacement';
 import { readSceneId } from '../utils/sceneIds';
 import { getBookIdForPath } from '../utils/books';
 
@@ -82,6 +83,46 @@ function explainNothingToPromote(plan: PromotionPlan, files: TFile[]): string {
 }
 
 /** Plan, confirm and apply a promotion for the given notes. */
+function bookItems(plugin: RadialTimelinePlugin, bookId: string): PlacementItem[] {
+    const { app, settings } = plugin;
+    return app.vault.getMarkdownFiles().filter(file => getBookIdForPath(settings.books, file.path) === bookId)
+        .map(file => {
+            const frontmatter = app.metadataCache.getFileCache(file)?.frontmatter;
+            return { row: buildTableRow(file.path, file.basename, frontmatter, settings), frontmatter };
+        });
+}
+
+/** The chosen sketches by the act they will join, each act in the order the book shows them. */
+export function sketchesByAct(items: PlacementItem[], paths: ReadonlySet<string>): Map<number, string[]> {
+    const byAct = new Map<number, string[]>();
+    for (const { row } of orderSketches(items).items) {
+        if (!paths.has(row.path)) continue;
+        const act = row.act ?? 1; // SAFE: promotion puts a sketch with no act in Act 1
+        byAct.set(act, [...(byAct.get(act) ?? []), row.path]); // SAFE: the first sketch in this act starts its list
+    }
+    return byAct;
+}
+
+/**
+ * Sketches promoted together keep the order the author gave them: each takes a
+ * number at the end of its act. Returns null when an act has no room for them.
+ */
+async function planSketchNumbers(plugin: RadialTimelinePlugin, plan: PromotionPlan): Promise<Map<string, string> | null> {
+    const numbers = new Map<string, string>();
+    const sketches = plan.entries.filter(entry => entry.fromSketch && !entry.prefix);
+    for (const book of new Map(sketches.map(entry => [entry.book.id, entry.book])).values()) {
+        const paths = new Set(sketches.filter(entry => entry.book.id === book.id).map(entry => entry.file.path));
+        const planned = planActEndScenePrefixes(
+            await plugin.getSceneData({ sourcePath: book.sourceFolder }),
+            sketchesByAct(bookItems(plugin, book.id), paths),
+            resolveSelectedBeatModelFromSettings(plugin.settings),
+        );
+        if (!planned) return null;
+        planned.forEach((prefix, path) => numbers.set(path, prefix));
+    }
+    return numbers;
+}
+
 export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[], openPromoted?: (file: TFile) => Promise<void>): Promise<void> {
     const { app, settings } = plugin;
     const plan = planPromotion(app, settings, files);
@@ -111,11 +152,7 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[],
         }
         const anchorId = only.fromSketch ? sketchAnchor(fm) : null;
         if (anchorId) {
-            const items = app.vault.getMarkdownFiles().filter(file => getBookIdForPath(settings.books, file.path) === only.book.id)
-                .map(file => {
-                    const frontmatter = app.metadataCache.getFileCache(file)?.frontmatter;
-                    return { row: buildTableRow(file.path, file.basename, frontmatter, settings), frontmatter };
-                });
+            const items = bookItems(plugin, only.book.id);
             const matching = items.filter(item => item.row.kind === 'scene' && readSceneId(item.frontmatter) === anchorId);
             const ordered = orderSketches(items);
             if (matching.length !== 1 || ordered.problems.has(only.file.path)) {
@@ -137,12 +174,18 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[],
         new Notice(t('ui.timetable.sketchPromotionSingle'), 8000);
         return;
     }
+    const sketchNumbers = only ? new Map<string, string>() : await planSketchNumbers(plugin, plan);
+    if (!sketchNumbers) {
+        new Notice(t('ui.promoteToScene.noRoomMany'), 8000);
+        return;
+    }
 
     const modal = new PromoteToSceneModal(app, plan, {
         advancedDefault: settings.sceneAdvancedPropertiesEnabled ?? true,
         bookLabel,
         anchors,
         defaultAnchorPath,
+        numberedSketches: sketchNumbers.size,
         // "Untitled sketch" never becomes "12.5 Untitled sketch": the scene gets a title first.
         askTitle: only !== undefined && isUntitledName(only.file.basename, t('ui.timetable.newSketchName')),
     });
@@ -155,6 +198,7 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[],
         sceneData,
         beatModel: resolveSelectedBeatModelFromSettings(settings),
         title: choice.title,
+        sketchNumbers,
         sketchPlacement: defaultAnchorPath && choice.anchorPath === defaultAnchorPath
             ? { anchorId: sketchAnchor(app.metadataCache.getFileCache(only!.file)?.frontmatter)!, followingSketches } : undefined,
         onProgress: (current, total, name) => modal.updateProgress(t('ui.promoteToScene.progress', { name, current, total })),

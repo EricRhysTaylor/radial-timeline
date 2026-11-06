@@ -25,6 +25,8 @@ export interface PromoteToSceneModalOptions {
     /** Single unnumbered note only: scenes in manuscript order. */
     anchors: PromotionAnchorOption[] | null;
     defaultAnchorPath?: string | null;
+    /** Several notes: how many are sketches that take numbers to keep their order. */
+    numberedSketches: number;
     /** Single note with a placeholder name ("Untitled sketch"): ask for its title, and promote only once it has one. */
     askTitle: boolean;
 }
@@ -160,7 +162,11 @@ export class PromoteToSceneModal extends ErtModal {
         } else if (only?.prefix) {
             this.addRow(section, 'list-ordered', t('ui.promoteToScene.keepsNumber', { prefix: only.prefix }));
         } else if (!single) {
-            const unnumbered = this.plan.entries.filter(entry => !entry.prefix).length;
+            const { numberedSketches } = this.options;
+            if (numberedSketches > 0) {
+                this.addRow(section, 'list-ordered', t('ui.promoteToScene.sketchesInOrder', { notes: tCount('note', numberedSketches) }));
+            }
+            const unnumbered = this.plan.entries.filter(entry => !entry.prefix).length - numberedSketches;
             if (unnumbered > 0) {
                 this.addRow(section, 'list-ordered', t('ui.promoteToScene.unnumberedMany', { notes: tCount('note', unnumbered) }));
             }

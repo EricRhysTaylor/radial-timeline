@@ -6,7 +6,7 @@
 
 import { escapeXml, formatNumber } from '../../utils/svg';
 import { CHARACTER_LANE_HEIGHT } from '../layout/LayoutConstants';
-import { characterLaneRadii, type CharacterLaneEntry } from '../utils/CharacterLanes';
+import { characterLaneBandWidth, characterLaneRadii, type CharacterLaneEntry } from '../utils/CharacterLanes';
 import { arcPath } from '../layout/Paths';
 import { sceneArcPath } from './SceneArcs';
 
@@ -92,5 +92,7 @@ export function renderCharacterLanes(params: CharacterLanesParams): string {
     const beside = `<g class="ert-character-lane-beside" display="none"><path id="ert-character-lane-beside-path" fill="none" />`
         + `<text class="ert-character-lane-name"><textPath href="#ert-character-lane-beside-path"></textPath></text></g>`;
 
-    return `<g class="ert-character-lanes" data-ring="${outerRing}">${lanes.join('')}<g class="ert-character-lane-names">${names}</g>${beside}</g>`;
+    const bandWidth = characterLaneBandWidth(characters.length);
+    const backdrop = `<circle class="ert-character-lane-hover-backdrop" r="${formatNumber(ringInnerRadius - bandWidth / 2)}" stroke-width="${bandWidth}" />`;
+    return `<g class="ert-character-lanes" data-ring="${outerRing}">${backdrop}${lanes.join('')}<g class="ert-character-lane-names">${names}</g>${beside}</g>`;
 }

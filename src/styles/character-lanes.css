@@ -26,6 +26,16 @@
 }
 
 /* Match the muted scene slices while a scene is in focus. */
+.ert-character-lane-hover-backdrop {
+  fill: none;
+  stroke: transparent;
+  pointer-events: none;
+}
+
+.radial-timeline-svg.scene-hover .ert-character-lane-hover-backdrop {
+  stroke: white;
+}
+
 .radial-timeline-svg.scene-hover .ert-character-lane-track {
   stroke: var(--rt-color-empty-selected);
   stroke-opacity: 1;

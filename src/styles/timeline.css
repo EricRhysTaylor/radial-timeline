@@ -2773,15 +2773,6 @@
 .ert-mailbox-badge--menu {
   margin-inline-start: var(--size-4-2);
 }
-
-/* The Community sync row's "Sync now", after its status. The row itself
-   turns red through Obsidian's warning menu item when the sync needs
-   attention; the action keeps the accent so it still reads as the action. */
-.ert-mailbox-sync-action {
-  margin-inline-start: var(--size-4-2);
-  color: var(--text-accent);
-}
-
 /* Desk Lamps: an icon button right of the Mailbox, with the gold count of
    friends at their desks on its corner (.ert-mailbox-badge.is-new). Static
    like the Mailbox: no transitions or animation near the scene-hover path. */

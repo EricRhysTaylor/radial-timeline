@@ -139,6 +139,53 @@ export function communitySyncRow(state: CommunitySyncState, now: number): Commun
     }
 }
 
+/**
+ * The automatic book-list sync cadence. main.ts registers the community sync
+ * interval at layout-ready with this period and records when it did
+ * (plugin.communitySyncIntervalStartedAt).
+ */
+export const COMMUNITY_AUTO_SYNC_INTERVAL_MS = 6 * 60 * 60e3;
+
+/**
+ * The interval's next tick after `now`: start + n × interval, with n the
+ * smallest whole number of periods that lands strictly after `now`. A tick
+ * exactly at `now` is firing, so the next one is a full period on.
+ */
+export function nextAutoSyncAt(startedAt: number, now: number, interval: number = COMMUNITY_AUTO_SYNC_INTERVAL_MS): number {
+    const elapsedTicks = Math.max(0, Math.floor((now - startedAt) / interval));
+    return startedAt + (elapsedTicks + 1) * interval;
+}
+
+/** A local time in the interface language ("3:45 PM"), with the date when it is not on `now`'s day ("Nov 8, 1:45 AM"). */
+export function formatAutoSyncTime(at: number, now: number): string {
+    const when = new Date(at);
+    const today = new Date(now);
+    const sameDay = when.getFullYear() === today.getFullYear()
+        && when.getMonth() === today.getMonth()
+        && when.getDate() === today.getDate();
+    const options: Intl.DateTimeFormatOptions = sameDay
+        ? { hour: 'numeric', minute: '2-digit' }
+        : { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+    return new Intl.DateTimeFormat(getFormattingLocale(), options).format(when);
+}
+
+/**
+ * The row's tooltip: clicking syncs now, and when the next automatic sync is
+ * due (left out before the interval starts at layout-ready). A failed row
+ * puts its reason first. None while a Sync now is on its way.
+ */
+export function communitySyncTooltip(state: CommunitySyncState, nextAt: number | null, now: number): string | null {
+    if (state.status === 'syncing') return null;
+    const hint = nextAt === null
+        ? t('ui.communityMailbox.syncTooltipNoSchedule')
+        : t('ui.communityMailbox.syncTooltip', { time: formatAutoSyncTime(nextAt, now) });
+    if (state.status !== 'failed') return hint;
+    return t('ui.communityMailbox.syncTooltipWithReason', {
+        reason: t('ui.communityMailbox.syncFailed', { error: state.error }),
+        hint
+    });
+}
+
 export interface MailboxView {
     /** Connected to the Community and the toggle is on. */
     visible: boolean;
@@ -148,6 +195,8 @@ export interface MailboxView {
     error: string | null;
     /** The Community sync row; null when the vault does not sync its book list. */
     sync: CommunitySyncState | null;
+    /** When the next automatic book-list sync is due, for the row's tooltip; null with no row or before the interval starts. */
+    nextAutoSyncAt: number | null;
 }
 
 /**
@@ -287,20 +336,24 @@ export function openMailboxMenu(anchor: HTMLElement, view: MailboxView, onSyncNo
         });
     }
     if (view.sync) {
-        const row = communitySyncRow(view.sync, Date.now());
+        const now = Date.now();
+        const row = communitySyncRow(view.sync, now);
+        const hint = communitySyncTooltip(view.sync, view.nextAutoSyncAt, now);
         menu.addSeparator();
         menu.addItem(item => {
+            // The whole row is the Sync now control; its icon says so.
             const title = doc.win.createFragment();
-            title.appendText(row.text);
-            if (row.canSync) {
-                const action = title.createSpan({ cls: 'ert-mailbox-sync-action' });
-                action.setText(t('ui.communityMailbox.syncNow'));
-            }
+            const label = title.createSpan();
+            label.setText(row.text);
             item.setTitle(title)
                 .setIcon(row.warning ? 'alert-triangle' : 'refresh-cw')
                 .setWarning(row.warning)
                 .setDisabled(!row.canSync)
                 .onClick(() => { if (row.canSync) onSyncNow(); });
+            // MenuItem exposes no element, so reach the row through its title
+            // label. A native (OS) menu has no DOM row and shows no tooltip.
+            const rowEl = label.closest('.menu-item');
+            if (hint && rowEl?.instanceOf(HTMLElement)) applyTooltip(rowEl, hint, 'bottom');
         });
     }
     const rect = anchor.getBoundingClientRect();
@@ -335,12 +388,15 @@ export class CommunityMailbox {
 
     view(): MailboxView {
         const visible = this.connectionKey !== null;
+        const now = Date.now();
         let sync: CommunitySyncState | null = null;
         if (visible) {
-            sync = communitySyncState(normalizeCommunityShareSettings(this.plugin.settings.communityShare), Date.now());
+            sync = communitySyncState(normalizeCommunityShareSettings(this.plugin.settings.communityShare), now);
             if (sync && this.syncing) sync = { status: 'syncing' };
         }
-        return { visible, answer: this.answer, error: this.error, sync };
+        const startedAt = this.plugin.communitySyncIntervalStartedAt;
+        const nextAutoSync = sync && typeof startedAt === 'number' ? nextAutoSyncAt(startedAt, now) : null;
+        return { visible, answer: this.answer, error: this.error, sync, nextAutoSyncAt: nextAutoSync };
     }
 
     /**

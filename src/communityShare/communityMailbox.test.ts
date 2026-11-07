@@ -13,7 +13,11 @@ import {
     COMMUNITY_SITE_URL,
     COMMUNITY_SYNC_OVERDUE_MS,
     CommunityMailbox,
+    COMMUNITY_AUTO_SYNC_INTERVAL_MS,
     communitySyncRow,
+    communitySyncTooltip,
+    formatAutoSyncTime,
+    nextAutoSyncAt,
     communitySyncState,
     mailboxBadge,
     mailboxMenuEntries,
@@ -91,7 +95,7 @@ describe('mailboxMenuEntries mirrors the website account menu', () => {
             { label: 'Desk Lamp invites', icon: 'lamp-ceiling', url: COMMUNITY_DESK_LAMPS_URL, badge: { tone: 'new', count: 2 } }
         ]);
         expect(COMMUNITY_DESK_LAMPS_URL).toBe(`${COMMUNITY_SITE_URL}/me#desk-lamps`);
-        expect(mailboxTooltip({ visible: true, answer: answer({ desk_lamp_invites: 1 }), error: null, sync: null })).toBe('Mailbox: a Desk Lamp invite waiting');
+        expect(mailboxTooltip({ visible: true, answer: answer({ desk_lamp_invites: 1 }), error: null, sync: null, nextAutoSyncAt: null })).toBe('Mailbox: a Desk Lamp invite waiting');
     });
 
     it('keeps Requests reachable with nothing new, before the first check, and for a member', () => {
@@ -104,12 +108,12 @@ describe('mailboxMenuEntries mirrors the website account menu', () => {
 
 describe('mailboxTooltip', () => {
     it('names what is new, says nothing new, or says why a check failed', () => {
-        expect(mailboxTooltip({ visible: true, answer: answer({ admin: { unread: 2, awaiting: 3 }, support_unread: 1 }), error: null, sync: null }))
+        expect(mailboxTooltip({ visible: true, answer: answer({ admin: { unread: 2, awaiting: 3 }, support_unread: 1 }), error: null, sync: null, nextAutoSyncAt: null }))
             .toBe('Mailbox: 2 unread in the support inbox · a new reply in Requests');
-        expect(mailboxTooltip({ visible: true, answer: answer({ support_unread: 2, replies: { count: 3, latest_post_id: QUESTION } }), error: null, sync: null }))
+        expect(mailboxTooltip({ visible: true, answer: answer({ support_unread: 2, replies: { count: 3, latest_post_id: QUESTION } }), error: null, sync: null, nextAutoSyncAt: null }))
             .toBe('Mailbox: new replies on 2 requests · new replies to 3 of your questions');
-        expect(mailboxTooltip({ visible: true, answer: EMPTY, error: null, sync: null })).toBe('Mailbox: nothing new');
-        expect(mailboxTooltip({ visible: true, answer: null, error: 'This connection has been disconnected.', sync: null }))
+        expect(mailboxTooltip({ visible: true, answer: EMPTY, error: null, sync: null, nextAutoSyncAt: null })).toBe('Mailbox: nothing new');
+        expect(mailboxTooltip({ visible: true, answer: null, error: 'This connection has been disconnected.', sync: null, nextAutoSyncAt: null }))
             .toBe("Mailbox: couldn't check for new replies (This connection has been disconnected.).");
     });
 });
@@ -149,7 +153,7 @@ describe('CommunityMailbox', () => {
         const painted = vi.fn();
         const unsubscribe = mailbox.subscribe(painted);
         await vi.waitFor(() => expect(painted).toHaveBeenCalled());
-        expect(mailbox.view()).toEqual({ visible: true, answer: answer({ support_unread: 1 }), error: null, sync: { status: 'pending' } });
+        expect(mailbox.view()).toEqual({ visible: true, answer: answer({ support_unread: 1 }), error: null, sync: { status: 'pending' }, nextAutoSyncAt: null });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         mailbox.subscribe(() => {}); // a second view does not check again
@@ -211,7 +215,7 @@ describe('CommunityMailbox', () => {
 
         pending.resolve(answer({ support_unread: 1 }));
         await vi.runOnlyPendingTimersAsync();
-        expect(mailbox.view()).toEqual({ visible: false, answer: null, error: null, sync: null });
+        expect(mailbox.view()).toEqual({ visible: false, answer: null, error: null, sync: null, nextAutoSyncAt: null });
 
         plugin.settings.showCommunityMailbox = false;
         mailbox.settingsChanged(); // nothing changed for the mailbox: still hidden, no repaint
@@ -230,7 +234,7 @@ describe('CommunityMailbox', () => {
             secretId: 'rt.community-share.connection-secret'
         };
         mailbox.settingsChanged();
-        await vi.waitFor(() => expect(mailbox.view()).toEqual({ visible: true, answer: EMPTY, error: null, sync: { status: 'pending' } }));
+        await vi.waitFor(() => expect(mailbox.view()).toEqual({ visible: true, answer: EMPTY, error: null, sync: { status: 'pending' }, nextAutoSyncAt: null }));
         expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 });
@@ -329,11 +333,61 @@ describe('Community sync row', () => {
 
     it('names a sync that needs attention in the tooltip', () => {
         const sync = { status: 'failed', error: 'x' } as const;
-        expect(mailboxTooltip({ visible: true, answer: EMPTY, error: null, sync })).toBe('Mailbox: Community sync needs attention');
-        expect(mailboxTooltip({ visible: true, answer: answer({ desk_lamp_invites: 1 }), error: null, sync }))
+        expect(mailboxTooltip({ visible: true, answer: EMPTY, error: null, sync, nextAutoSyncAt: null })).toBe('Mailbox: Community sync needs attention');
+        expect(mailboxTooltip({ visible: true, answer: answer({ desk_lamp_invites: 1 }), error: null, sync, nextAutoSyncAt: null }))
             .toBe('Mailbox: a Desk Lamp invite waiting · Community sync needs attention');
-        expect(mailboxTooltip({ visible: true, answer: null, error: null, sync })).toBe('Mailbox: Community sync needs attention');
-        expect(mailboxTooltip({ visible: true, answer: EMPTY, error: null, sync: { status: 'healthy', syncedAt: NOW } })).toBe('Mailbox: nothing new');
+        expect(mailboxTooltip({ visible: true, answer: null, error: null, sync, nextAutoSyncAt: null })).toBe('Mailbox: Community sync needs attention');
+        expect(mailboxTooltip({ visible: true, answer: EMPTY, error: null, sync: { status: 'healthy', syncedAt: NOW }, nextAutoSyncAt: null })).toBe('Mailbox: nothing new');
+    });
+
+    describe('next automatic sync', () => {
+        const HOUR = 60 * MIN;
+        // Local times: the tooltip shows the author's clock.
+        const start = new Date(2026, 10, 7, 9, 45).getTime(); // interval registered 9:45 AM
+        const at = (hours: number, minutes = 0) => new Date(2026, 10, 7, hours, minutes).getTime();
+
+        it('runs every 6 hours from when the interval was registered', () => {
+            expect(COMMUNITY_AUTO_SYNC_INTERVAL_MS).toBe(6 * HOUR);
+        });
+
+        it('lands on the coming tick just before one, and on the following tick at or just after one', () => {
+            expect(nextAutoSyncAt(start, start + 6 * HOUR - 1)).toBe(start + 6 * HOUR);
+            expect(nextAutoSyncAt(start, start + 6 * HOUR)).toBe(start + 12 * HOUR);
+            expect(nextAutoSyncAt(start, start + 6 * HOUR + 1)).toBe(start + 12 * HOUR);
+            expect(nextAutoSyncAt(start, start)).toBe(start + 6 * HOUR);
+            expect(nextAutoSyncAt(start, start - HOUR)).toBe(start + 6 * HOUR);
+        });
+
+        it('carries across midnight and then shows the date', () => {
+            const lateEvening = at(21, 46); // just after the 9:45 PM tick
+            const next = nextAutoSyncAt(start, lateEvening);
+            expect(next).toBe(new Date(2026, 10, 8, 3, 45).getTime());
+            expect(formatAutoSyncTime(next, lateEvening)).toMatch(/^Nov 8, 3:45\sAM$/);
+            expect(formatAutoSyncTime(at(15, 45), at(13, 0))).toMatch(/^3:45\sPM$/);
+        });
+
+        it('says clicking syncs now and when the next automatic sync is due, reason first when it failed', () => {
+            const now = at(13, 0);
+            const next = at(15, 45);
+            expect(communitySyncTooltip({ status: 'healthy', syncedAt: now - 5 * MIN }, next, now))
+                .toMatch(/^Click to sync now\. Next automatic sync about 3:45\sPM\.$/);
+            expect(communitySyncTooltip({ status: 'overdue', syncedAt: null }, next, now))
+                .toMatch(/^Click to sync now\. Next automatic sync about 3:45\sPM\.$/);
+            expect(communitySyncTooltip({ status: 'failed', error: 'Could not reach the Community website.' }, next, now))
+                .toMatch(/^Couldn't sync with Community \(Could not reach the Community website\.\)\. Click to sync now\. Next automatic sync about 3:45\sPM\.$/);
+            expect(communitySyncTooltip({ status: 'pending' }, null, now)).toBe('Click to sync now.');
+            expect(communitySyncTooltip({ status: 'syncing' }, next, now)).toBeNull();
+        });
+
+        it('reads the interval start from the plugin, and gives no time before layout-ready', () => {
+            const plugin = connectedPlugin() as ReturnType<typeof connectedPlugin> & { communitySyncIntervalStartedAt?: number | null };
+            const mailbox = new CommunityMailbox(plugin as never);
+            expect(mailbox.view().nextAutoSyncAt).toBeNull();
+            const startedAt = Date.now() - 1000;
+            plugin.communitySyncIntervalStartedAt = startedAt;
+            expect(mailbox.view().nextAutoSyncAt).toBe(startedAt + COMMUNITY_AUTO_SYNC_INTERVAL_MS);
+            mailbox.destroy();
+        });
     });
 
     describe('Sync now', () => {

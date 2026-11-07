@@ -3908,7 +3908,9 @@ export const vi: TranslationKeys = {
             "syncFailed": "Không thể đồng bộ với Cộng đồng ({{error}})",
             "syncing": "Đang đồng bộ với Cộng đồng…",
             "syncNeedsAttention": "việc đồng bộ với Cộng đồng cần được xem lại",
-            "syncNow": "Đồng bộ ngay",
+            "syncTooltip": "Nhấp để đồng bộ ngay. Lần đồng bộ tự động tiếp theo vào khoảng {{time}}.",
+            "syncTooltipNoSchedule": "Nhấp để đồng bộ ngay.",
+            "syncTooltipWithReason": "{{reason}}. {{hint}}",
             "tooltip": "Hộp thư: {{notes}}",
             "tooltipError": "Hộp thư: Không thể kiểm tra các câu trả lời mới ({{error}}).",
             "tooltipTitle": "hộp thư"

@@ -3908,7 +3908,9 @@ export const th: TranslationKeys = {
             "syncFailed": "ไม่สามารถซิงค์กับ Community ได้ ({{error}})",
             "syncing": "กำลังซิงค์กับ Community…",
             "syncNeedsAttention": "การซิงค์กับ Community ต้องได้รับการตรวจสอบ",
-            "syncNow": "ซิงค์ตอนนี้",
+            "syncTooltip": "คลิกเพื่อซิงค์ตอนนี้ การซิงค์อัตโนมัติครั้งถัดไปประมาณ {{time}}",
+            "syncTooltipNoSchedule": "คลิกเพื่อซิงค์ตอนนี้",
+            "syncTooltipWithReason": "{{reason}} {{hint}}",
             "tooltip": "กล่องจดหมาย: {{notes}}",
             "tooltipError": "กล่องจดหมาย: ไม่สามารถตรวจสอบการตอบกลับใหม่ ({{error}})",
             "tooltipTitle": "หีบทิ้งไปรษณีย์"

@@ -65,7 +65,7 @@ import { hasSecret } from './ai/credentials/secretStorage';
 import type { AIProviderId } from './ai/types';
 import { migrateAuthorProgressSettings } from './authorProgress/authorProgressConfig';
 import { scheduleCommunityProjectSync, cancelPendingCommunityProjectSync } from './communityShare/communityShareClient';
-import { CommunityMailbox } from './communityShare/communityMailbox';
+import { COMMUNITY_AUTO_SYNC_INTERVAL_MS, CommunityMailbox } from './communityShare/communityMailbox';
 import { DeskLamps } from './communityShare/deskLamps';
 import { TimetableService } from './timetable/TimetableService';
 import { refreshTimetableViews } from './timetable/timetableRegistry';
@@ -264,6 +264,12 @@ export default class RadialTimelinePlugin extends Plugin {
     private writingSessionService!: WritingSessionService;
     /** Title-bar Community mailbox; timeline views subscribe to paint their button. */
     public communityMailbox!: CommunityMailbox;
+    /**
+     * When the 6-hour community sync interval was registered (layout-ready),
+     * so the Mailbox's Community sync row can say when the next automatic
+     * book-list sync is due. Null until then. Runtime only, never saved.
+     */
+    public communitySyncIntervalStartedAt: number | null = null;
     /** Desk Lamps: the title-bar lamp, the session's lamp, and friends' lamps (communityShare/deskLamps.ts). */
     public deskLamps!: DeskLamps;
     private lastWritingActivitySignalMs = 0;
@@ -687,7 +693,8 @@ export default class RadialTimelinePlugin extends Plugin {
             // queue a trailing re-send.
             this.registerInterval(window.setInterval(() => {
                 void scheduleCommunityProjectSync(this).finally(runCommunitySync);
-            }, 6 * 60 * 60 * 1000));
+            }, COMMUNITY_AUTO_SYNC_INTERVAL_MS));
+            this.communitySyncIntervalStartedAt = Date.now();
         });
 
         // Load embedded fonts (no external requests per Obsidian guidelines)

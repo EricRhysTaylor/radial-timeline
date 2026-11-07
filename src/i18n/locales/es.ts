@@ -3908,7 +3908,9 @@ export const es: TranslationKeys = {
             "syncFailed": "No se pudo sincronizar con la Comunidad ({{error}})",
             "syncing": "Sincronizando con la Comunidad…",
             "syncNeedsAttention": "la sincronización con la Comunidad necesita atención",
-            "syncNow": "Sincronizar ahora",
+            "syncTooltip": "Haz clic para sincronizar ahora. Próxima sincronización automática: {{time}} aprox.",
+            "syncTooltipNoSchedule": "Haz clic para sincronizar ahora.",
+            "syncTooltipWithReason": "{{reason}}. {{hint}}",
             "tooltip": "Buzón: {{notes}}",
             "tooltipError": "Buzón: No se pudo comprobar si hay nuevas respuestas ({{error}}).",
             "tooltipTitle": "Buzón"

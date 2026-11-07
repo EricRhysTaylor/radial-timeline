@@ -8,7 +8,7 @@ describe('generateSceneContent', () => {
     it('writes valid YAML for names with colons, hashes and quotes', () => {
         const input = { ...data, subplots: ['Arc: One'], character: 'Ann # lead', when: 'Spring: Year 3' };
         expect(parse(generateSceneContent('Subplot: {{Subplot}}\nCharacter: {{Character}}\nWhen: {{When}}', input)))
-            .toEqual({ Subplot: 'Arc: One', Character: 'Ann # lead', When: 'Spring: Year 3' });
+            .toEqual({ Subplot: 'Arc: One', Character: ['Ann # lead'], When: 'Spring: Year 3' });
         expect(parse(generateSceneContent('Subplot:\n{{SubplotList}}', { ...data, subplots: ['The "Big" Arc'] })))
             .toEqual({ Subplot: ['The "Big" Arc'] });
     });
@@ -23,8 +23,14 @@ describe('generateSceneContent', () => {
     it('never copies When into Due', () => {
         expect(generateSceneContent('Due: {{Due}}', { ...data, when: '2024-01-01' })).toBe('Due:');
     });
-    it('leaves no blank line for an empty list and no raw placeholder', () => {
-        expect(generateSceneContent('Act: {{Act}}\nCharacter:\n{{CharacterList}}\nMood: {{Mood}}', data)).toBe('Act: 2\nCharacter:\nMood:');
+    it('keeps empty and single character values as lists in Core and Advanced templates', () => {
+        for (const template of ['Character: {{Character}}', 'Character:\n{{CharacterList}}']) {
+            expect(parse(generateSceneContent(template, data))).toEqual({ Character: [] });
+            expect(parse(generateSceneContent(template, { ...data, character: '[[Trisan Fairchild]]' })))
+                .toEqual({ Character: ['[[Trisan Fairchild]]'] });
+        }
+        expect(generateSceneContent('Act: {{Act}}\nCharacter:\n{{CharacterList}}\nMood: {{Mood}}', data)).toBe('Act: 2\nCharacter: []\nMood:');
+        expect(parse(generateSceneContent('Custom: {{Character}}', { ...data, character: 'Ann' }))).toEqual({ Custom: 'Ann' });
     });
     it('inserts values literally', () => {
         expect(generateSceneContent('Place: {{Place}}', { ...data, place: 'Cost $& more' })).toBe('Place: Cost $& more');

@@ -68,7 +68,7 @@ describe('scene intake template', () => {
     it('writes the same empty fields a new scene has', () => {
         const settings = { ...DEFAULT_SETTINGS, sceneYamlTemplates: { base: 'Class: Scene\nWhen: {{When}}\nDuration: 1 hour\nCharacter: {{Character}}', advanced: 'Place:\n{{PlaceList}}\nMood: {{Mood}}' } };
         const result = addSceneIntakeTemplate('---\nClass: Scene\n---\n\nBody', settings, { when: 'Spring: Year 3' });
-        expect(result).toContain('When: "Spring: Year 3"\nDuration: 1 hour\nCharacter:\n');
+        expect(result).toContain('When: "Spring: Year 3"\nDuration: 1 hour\nCharacter: []\n');
         expect(result).toContain('Place:\nMood:\n');
         expect(result).not.toContain('{{');
     });

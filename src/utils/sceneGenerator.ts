@@ -90,8 +90,16 @@ export function generateSceneContent(template: string, data: SceneCreationData):
         PlaceList: listLines(places),
     };
     return template
+        // Keep an empty canonical character list a list, including in the
+        // merged Advanced template. Do not alter author-written values.
+        .replace(/^(Character\s*:)\s*\n[ \t]*{{CharacterList}}[ \t]*$/gm,
+            characters.length ? '$1\n{{CharacterList}}' : '$1 []')
         .split('\n')
         .flatMap(line => {
+            // A bare Character field is always a list; keep other uses of the
+            // same placeholder (such as a custom text field) unchanged.
+            const characterField = /^(\s*Character\s*:\s*){{Character}}(\s*(?:#.*)?)$/.exec(line);
+            if (characterField) return [`${characterField[1]}[${characters.map(value => JSON.stringify(value)).join(', ')}]${characterField[2]}`];
             const alone = /^\s*{{([^{}\n]+)}}\s*$/.exec(line)?.[1];
             if (alone !== undefined) {
                 const filled = lists[alone] ?? values.text[alone];

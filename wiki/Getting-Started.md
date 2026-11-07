@@ -12,6 +12,8 @@ The Welcome screen offers these starting points:
 3.  **Import a manuscript** — bring an existing draft in from a [Scrivener export, a Word document, or one big file](Onboard-Existing-Manuscript), with **Structure only — no AI** as the default.
 4.  **Visit the website** — [radialtimeline.com](https://radialtimeline.com) for support docs and the [Community](Settings-Community), where you can share your writing journey at your own comfort level.
 
+A new book opens on an empty timeline that says **Your timeline is ready**. **Open Timetable** leads to Outline, where you add an outline document to begin.
+
 > [!TIP]
 > **Coming from Scrivener, Word, or another tool?** [Import a manuscript](Onboard-Existing-Manuscript) lets you select an export directly and review scene notes before writing them. A supplied Scrivener outline CSV determines import order; without one, numbered filenames determine it. You map exported metadata once during import. See [Scene Properties (Core + Advanced)](YAML-Frontmatter) for the full schema.
 

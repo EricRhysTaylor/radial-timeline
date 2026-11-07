@@ -678,7 +678,16 @@ export default class RadialTimelinePlugin extends Plugin {
             };
             const communitySyncKickoff = window.setTimeout(runCommunitySync, 20_000);
             this.register(() => window.clearTimeout(communitySyncKickoff));
-            this.registerInterval(window.setInterval(runCommunitySync, 6 * 60 * 60 * 1000));
+            // Every 6 hours the book list goes too (throttled, a no-op when not
+            // syncing), so a vault left open keeps its Community last-synced
+            // time fresh: the website and the Mailbox's Community sync row flag
+            // a vault with no book-list sync for more than 7 days. The 20 s
+            // kickoff leaves it out: the load-time sync in onload already sent
+            // it, and a second call inside the 5-minute throttle window would
+            // queue a trailing re-send.
+            this.registerInterval(window.setInterval(() => {
+                void scheduleCommunityProjectSync(this).finally(runCommunitySync);
+            }, 6 * 60 * 60 * 1000));
         });
 
         // Load embedded fonts (no external requests per Obsidian guidelines)

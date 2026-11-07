@@ -11,6 +11,7 @@ Sharing tools:
 *   Public author profile and project shell.
 *   Optional Author Progress Report (APR) graphics.
 *   Optional writing-activity summaries at the highest sharing level.
+*   A book's timeline, shared from the **Timeline** section. Scene text never leaves your vault.
 *   A live preview of exactly what will be shared.
 *   Pause, take offline, delete shared data, and disconnect controls.
 
@@ -86,3 +87,13 @@ Rotating the connection secret from My Share does not repair this case. Rotation
 ## Sharing An APR
 
 From Level 2 upward, an [Author Progress Report](Author-Progress-Report) campaign can send its graphic to Community, where it arrives privately on My Share. See [Send a campaign to Community](Author-Progress-Report#send-a-campaign-to-community).
+
+## Share Your Timeline
+
+Turn on **Share timeline** to send a book's timeline to your Community account. It arrives private: nobody can see it until you review it and go live. **Open preview** opens the Complete Preview on the website, where you reveal scenes. Going live is always your click.
+
+Radial Timeline sends scene order, acts, subplots, status and publish stage. Titles, synopses, cast, POV and story dates are stored privately until you reveal a scene. Under **Details readers can see on a revealed scene**, choose which of those a reader sees. **Generic ring names** shows Subplot 1, Subplot 2 instead of your subplot names.
+
+A live timeline updates with your book sync. Pausing Community sharing stops every update. Sharing a timeline needs a sharing level above Private, and the book needs a source folder in Book Manager.
+
+To share from a file instead, run the [Community timeline share export](Commands#community-timeline-share-export) command and upload the file on My Share.

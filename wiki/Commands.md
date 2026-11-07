@@ -264,7 +264,7 @@ Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Summary scene refresh]
 <a name="timeline-share-export"></a>
 ## Community timeline share export
 
-Writes the file you upload on your Community **My Share** page to build your Interactive Timeline. Exporting shares nothing: the file is written to `Radial Timeline/Community/` in your vault and stays there until you upload it and activate the share.
+Writes a timeline file you can upload on your Community **My Share** page. To share without a file and keep the timeline updated automatically, turn on **Share timeline** in [Settings → Community](Settings-Community#share-your-timeline). Exporting shares nothing: the file is written to `Radial Timeline/Community/` in your vault and stays there until you upload it and activate the share.
 
 Before anything is written, a dialog lists what the file contains:
 

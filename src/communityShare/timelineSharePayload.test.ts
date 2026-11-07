@@ -68,6 +68,18 @@ describe('buildTimelineSharePayload', () => {
         expect(json).not.toContain('rawFrontmatter');
     });
 
+    it('sends linked cast and subplots by name, never by link target', () => {
+        const { items } = build([scene({
+            rawFrontmatter: {
+                Character: ['[[Private Folder/People/Mira|Mira]]', '[[Private Folder/People/Tomas]]', '[[Ana.md#Bio]]', '[[ ]]'],
+                Subplot: ['[[Private Folder/Arcs/Romance]]'],
+            },
+        })]);
+        expect(items[0].Character).toEqual(['Mira', 'Tomas', 'Ana']);
+        expect(items[0].subplot).toEqual(['Romance']);
+        expect(JSON.stringify(items)).not.toContain('Private Folder');
+    });
+
     it('sends no vault settings', () => {
         const payload = build([scene()]);
         expect(Object.keys(payload.renderConfig)).toEqual(['actCount']);

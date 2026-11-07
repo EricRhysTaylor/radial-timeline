@@ -669,15 +669,16 @@ export default class RadialTimelinePlugin extends Plugin {
             // Standing community share: while sharing is on, keep the live
             // report current. Delayed so startup stays snappy; the sync is a
             // no-op when sharing is off or nothing changed.
-            const communitySyncKickoff = window.setTimeout(() => {
+            const runCommunitySync = (): void => {
                 void import('./communityShare/communityShareClient')
-                    .then(({ syncCommunityShareIfDue }) => syncCommunityShareIfDue(this));
-            }, 20_000);
+                    .then(async ({ syncCommunityShareIfDue, syncCommunityTimelinesIfDue }) => {
+                        await syncCommunityShareIfDue(this);
+                        await syncCommunityTimelinesIfDue(this);
+                    });
+            };
+            const communitySyncKickoff = window.setTimeout(runCommunitySync, 20_000);
             this.register(() => window.clearTimeout(communitySyncKickoff));
-            this.registerInterval(window.setInterval(() => {
-                void import('./communityShare/communityShareClient')
-                    .then(({ syncCommunityShareIfDue }) => syncCommunityShareIfDue(this));
-            }, 6 * 60 * 60 * 1000));
+            this.registerInterval(window.setInterval(runCommunitySync, 6 * 60 * 60 * 1000));
         });
 
         // Load embedded fonts (no external requests per Obsidian guidelines)

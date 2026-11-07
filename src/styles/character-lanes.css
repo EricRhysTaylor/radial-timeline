@@ -25,6 +25,20 @@
   stroke-width: 1.5px;
 }
 
+/* Match the muted scene slices while a scene is in focus. */
+.radial-timeline-svg.scene-hover .ert-character-lane-track {
+  stroke: var(--rt-color-empty-selected);
+  stroke-opacity: 1;
+}
+
+.radial-timeline-svg.scene-hover .ert-character-lane-mark {
+  fill: var(--rt-color-empty-selected);
+}
+
+.radial-timeline-svg.scene-hover .ert-character-lane-mark:hover {
+  stroke: var(--rt-color-empty-selected);
+}
+
 /* The ring key's character spotlight dims the other lanes and their names. */
 .ert-character-lane.rt-non-selected .ert-character-lane-mark {
   fill-opacity: 0.15;

@@ -3902,6 +3902,13 @@ export const es: TranslationKeys = {
             "newRepliesToQuestions": "Nuevas respuestas a {{count}} de tus preguntas",
             "newReplyInRequests": "Una nueva respuesta en las solicitudes",
             "nothingNew": "Buzón: nada nuevo",
+            "notSyncedYet": "Aún no se ha sincronizado con la Comunidad",
+            "syncedAgo": "Última sincronización con la Comunidad: {{time}}",
+            "syncedJustNow": "Sincronizado con la Comunidad hace un momento",
+            "syncFailed": "No se pudo sincronizar con la Comunidad ({{error}})",
+            "syncing": "Sincronizando con la Comunidad…",
+            "syncNeedsAttention": "la sincronización con la Comunidad necesita atención",
+            "syncNow": "Sincronizar ahora",
             "tooltip": "Buzón: {{notes}}",
             "tooltipError": "Buzón: No se pudo comprobar si hay nuevas respuestas ({{error}}).",
             "tooltipTitle": "Buzón"

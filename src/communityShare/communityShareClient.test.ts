@@ -1526,9 +1526,11 @@ describe('Community Share activation without a book', () => {
         expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
     });
 
-    it('writes nothing when the server reports the binding the plugin already holds', async () => {
+    it('keeps the binding the plugin already holds, and a ready preview, when the server reports the same one', async () => {
         const harness = createPluginHarness();
-        connectUnbound(harness).connection.projectId = 'p-1';
+        const settings = connectUnbound(harness);
+        settings.connection.projectId = 'p-1';
+        settings.preview = { ...settings.preview, status: 'ready', previewHash: 'preview-hash', payloadHash: 'payload-hash' };
         const { plugin } = harness;
         vi.clearAllMocks();
         vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce(syncBody('p-1') as never);
@@ -1536,7 +1538,9 @@ describe('Community Share activation without a book', () => {
         await syncCommunityProjects(plugin as never);
 
         expect(plugin.settings.communityShare.connection.projectId).toBe('p-1');
-        expect(plugin.saveSettings).not.toHaveBeenCalled();
+        expect(plugin.settings.communityShare.preview.status).toBe('ready');
+        // The one write is the sync's own record (bookListSyncedAt).
+        expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
     });
 
     it('follows a book changed on the website: the next sync stores the new binding and stales a ready preview', async () => {
@@ -1557,7 +1561,7 @@ describe('Community Share activation without a book', () => {
         expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
     });
 
-    it('keeps an unbound connection unbound when the server reports null, without a settings write', async () => {
+    it('keeps an unbound connection unbound when the server reports null', async () => {
         const harness = createPluginHarness();
         connectUnbound(harness);
         const { plugin } = harness;
@@ -1567,7 +1571,6 @@ describe('Community Share activation without a book', () => {
         await syncCommunityProjects(plugin as never);
 
         expect(plugin.settings.communityShare.connection.projectId).toBeNull();
-        expect(plugin.saveSettings).not.toHaveBeenCalled();
     });
 
     it('rejects a sync response whose connection_project_id is neither a string nor null', async () => {
@@ -1582,7 +1585,7 @@ describe('Community Share activation without a book', () => {
 
         await expect(syncCommunityProjects(plugin as never)).rejects.toMatchObject({ code: 'invalid_response' });
         expect(plugin.settings.communityShare.connection.projectId).toBe('p-1');
-        expect(plugin.saveSettings).not.toHaveBeenCalled();
+        expect(plugin.settings.communityShare.connection.bookListSyncError).toBe('The project sync returned an unexpected response.');
     });
 
     it('leaves the connection unbound when an older server omits connection_project_id', async () => {
@@ -1603,7 +1606,111 @@ describe('Community Share activation without a book', () => {
         await syncCommunityProjects(plugin as never);
 
         expect(plugin.settings.communityShare.connection.projectId).toBeNull();
-        expect(plugin.saveSettings).not.toHaveBeenCalled();
+    });
+
+    describe('book-list sync record (the Mailbox Community sync row)', () => {
+        it('stamps the time of a successful sync and clears an earlier failure', async () => {
+            const harness = createPluginHarness();
+            const settings = connectUnbound(harness);
+            settings.connection.bookListSyncedAt = '2026-10-01T00:00:00.000Z';
+            settings.connection.bookListSyncError = 'Could not reach the Community website.';
+            settings.connection.bookListSyncFailedAt = '2026-10-02T00:00:00.000Z';
+            const { plugin } = harness;
+            vi.clearAllMocks();
+            vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce(syncBody(null) as never);
+            const before = Date.now();
+
+            await syncCommunityProjects(plugin as never);
+
+            const connection = plugin.settings.communityShare.connection;
+            expect(Date.parse(connection.bookListSyncedAt ?? '')).toBeGreaterThanOrEqual(before);
+            expect(connection.bookListSyncError).toBeUndefined();
+            expect(connection.bookListSyncFailedAt).toBeUndefined();
+            expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+        });
+
+        it('records why a sync failed and when, keeping the last success', async () => {
+            const harness = createPluginHarness();
+            const settings = connectUnbound(harness);
+            settings.connection.bookListSyncedAt = '2026-10-01T00:00:00.000Z';
+            const { plugin } = harness;
+            vi.clearAllMocks();
+            vi.spyOn(obsidian, 'requestUrl').mockResolvedValueOnce({
+                status: 503,
+                text: JSON.stringify({ error: { code: 'unavailable', message: 'The Community website is resting.' } })
+            } as never);
+            const before = Date.now();
+
+            await expect(syncCommunityProjects(plugin as never)).rejects.toMatchObject({ code: 'unavailable' });
+
+            const connection = plugin.settings.communityShare.connection;
+            expect(connection.bookListSyncError).toBe('The Community website is resting.');
+            expect(Date.parse(connection.bookListSyncFailedAt ?? '')).toBeGreaterThanOrEqual(before);
+            expect(connection.bookListSyncedAt).toBe('2026-10-01T00:00:00.000Z');
+            expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+        });
+
+        it('records a missing connection secret, but not a sync refused because the author chose Private', async () => {
+            const missing = createPluginHarness();
+            connectUnbound(missing);
+            missing.secrets.clear();
+            vi.clearAllMocks();
+            await expect(syncCommunityProjects(missing.plugin as never)).rejects.toMatchObject({ code: 'connection_secret_missing' });
+            expect(missing.plugin.settings.communityShare.connection.bookListSyncError).toBeTruthy();
+
+            const privateLevel = createPluginHarness();
+            connectUnbound(privateLevel).enabled = false;
+            vi.clearAllMocks();
+            await expect(syncCommunityProjects(privateLevel.plugin as never)).rejects.toMatchObject({ code: 'connection_required' });
+            expect(privateLevel.plugin.settings.communityShare.connection.bookListSyncError).toBeUndefined();
+            expect(privateLevel.plugin.saveSettings).not.toHaveBeenCalled();
+        });
+
+        it('drops an outcome for a connection that changed while the sync was out', async () => {
+            const harness = createPluginHarness();
+            connectUnbound(harness);
+            const { plugin } = harness;
+            vi.clearAllMocks();
+            vi.spyOn(obsidian, 'requestUrl').mockImplementationOnce(async () => {
+                plugin.settings.communityShare.connection = { status: 'disconnected' };
+                return syncBody(null) as never;
+            });
+
+            await syncCommunityProjects(plugin as never);
+
+            expect(plugin.settings.communityShare.connection.bookListSyncedAt).toBeUndefined();
+            expect(plugin.saveSettings).not.toHaveBeenCalled();
+        });
+
+        it('starts a new connection without the old connection\'s record', async () => {
+            const harness = createPluginHarness();
+            const settings = connectUnbound(harness);
+            settings.connection.bookListSyncedAt = '2026-10-01T00:00:00.000Z';
+            settings.connection.bookListSyncError = 'Could not reach the Community website.';
+            settings.connection.bookListSyncFailedAt = '2026-10-02T00:00:00.000Z';
+            const { plugin } = harness;
+            vi.clearAllMocks();
+            vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+                status: 201,
+                text: JSON.stringify({
+                    connection_id: 'conn-2',
+                    connection_secret: 'rtcs_returned-secret',
+                    secret_expires_at: null,
+                    profile_id: 'profile-1',
+                    project_id: null,
+                    profile_display: 'Eric',
+                    project_title: null
+                })
+            } as never);
+
+            await confirmCommunityShareActivation(plugin as never, 'activation-token-from-website');
+
+            const connection = plugin.settings.communityShare.connection;
+            expect(connection.connectionId).toBe('conn-2');
+            expect(connection.bookListSyncedAt).toBeUndefined();
+            expect(connection.bookListSyncError).toBeUndefined();
+            expect(connection.bookListSyncFailedAt).toBeUndefined();
+        });
     });
 
     it('refuses an APR upload before a book is synced and bound, without calling the server', async () => {

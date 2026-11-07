@@ -1,18 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./communityShareClient', () => ({
-    fetchCommunityMailbox: vi.fn()
+    fetchCommunityMailbox: vi.fn(),
+    syncCommunityProjects: vi.fn()
 }));
 
-import { fetchCommunityMailbox, type CommunityMailboxAnswer } from './communityShareClient';
+import { fetchCommunityMailbox, syncCommunityProjects, type CommunityMailboxAnswer } from './communityShareClient';
 import { buildDefaultCommunityShareSettings } from './communityShareSettings';
+import type { CommunityShareSettings } from '../types/settings';
 import {
     COMMUNITY_DESK_LAMPS_URL,
     COMMUNITY_SITE_URL,
+    COMMUNITY_SYNC_OVERDUE_MS,
     CommunityMailbox,
+    communitySyncRow,
+    communitySyncState,
     mailboxBadge,
     mailboxMenuEntries,
-    mailboxTooltip
+    mailboxTooltip,
+    syncNeedsAttention
 } from './communityMailbox';
 
 const QUESTION = '55555555-5555-4555-8555-555555555555';
@@ -85,7 +91,7 @@ describe('mailboxMenuEntries mirrors the website account menu', () => {
             { label: 'Desk Lamp invites', icon: 'lamp-ceiling', url: COMMUNITY_DESK_LAMPS_URL, badge: { tone: 'new', count: 2 } }
         ]);
         expect(COMMUNITY_DESK_LAMPS_URL).toBe(`${COMMUNITY_SITE_URL}/me#desk-lamps`);
-        expect(mailboxTooltip({ visible: true, answer: answer({ desk_lamp_invites: 1 }), error: null })).toBe('Mailbox: a Desk Lamp invite waiting');
+        expect(mailboxTooltip({ visible: true, answer: answer({ desk_lamp_invites: 1 }), error: null, sync: null })).toBe('Mailbox: a Desk Lamp invite waiting');
     });
 
     it('keeps Requests reachable with nothing new, before the first check, and for a member', () => {
@@ -98,12 +104,12 @@ describe('mailboxMenuEntries mirrors the website account menu', () => {
 
 describe('mailboxTooltip', () => {
     it('names what is new, says nothing new, or says why a check failed', () => {
-        expect(mailboxTooltip({ visible: true, answer: answer({ admin: { unread: 2, awaiting: 3 }, support_unread: 1 }), error: null }))
+        expect(mailboxTooltip({ visible: true, answer: answer({ admin: { unread: 2, awaiting: 3 }, support_unread: 1 }), error: null, sync: null }))
             .toBe('Mailbox: 2 unread in the support inbox · a new reply in Requests');
-        expect(mailboxTooltip({ visible: true, answer: answer({ support_unread: 2, replies: { count: 3, latest_post_id: QUESTION } }), error: null }))
+        expect(mailboxTooltip({ visible: true, answer: answer({ support_unread: 2, replies: { count: 3, latest_post_id: QUESTION } }), error: null, sync: null }))
             .toBe('Mailbox: new replies on 2 requests · new replies to 3 of your questions');
-        expect(mailboxTooltip({ visible: true, answer: EMPTY, error: null })).toBe('Mailbox: nothing new');
-        expect(mailboxTooltip({ visible: true, answer: null, error: 'This connection has been disconnected.' }))
+        expect(mailboxTooltip({ visible: true, answer: EMPTY, error: null, sync: null })).toBe('Mailbox: nothing new');
+        expect(mailboxTooltip({ visible: true, answer: null, error: 'This connection has been disconnected.', sync: null }))
             .toBe("Mailbox: couldn't check for new replies (This connection has been disconnected.).");
     });
 });
@@ -143,7 +149,7 @@ describe('CommunityMailbox', () => {
         const painted = vi.fn();
         const unsubscribe = mailbox.subscribe(painted);
         await vi.waitFor(() => expect(painted).toHaveBeenCalled());
-        expect(mailbox.view()).toEqual({ visible: true, answer: answer({ support_unread: 1 }), error: null });
+        expect(mailbox.view()).toEqual({ visible: true, answer: answer({ support_unread: 1 }), error: null, sync: { status: 'pending' } });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         mailbox.subscribe(() => {}); // a second view does not check again
@@ -205,7 +211,7 @@ describe('CommunityMailbox', () => {
 
         pending.resolve(answer({ support_unread: 1 }));
         await vi.runOnlyPendingTimersAsync();
-        expect(mailbox.view()).toEqual({ visible: false, answer: null, error: null });
+        expect(mailbox.view()).toEqual({ visible: false, answer: null, error: null, sync: null });
 
         plugin.settings.showCommunityMailbox = false;
         mailbox.settingsChanged(); // nothing changed for the mailbox: still hidden, no repaint
@@ -224,7 +230,162 @@ describe('CommunityMailbox', () => {
             secretId: 'rt.community-share.connection-secret'
         };
         mailbox.settingsChanged();
-        await vi.waitFor(() => expect(mailbox.view()).toEqual({ visible: true, answer: EMPTY, error: null }));
+        await vi.waitFor(() => expect(mailbox.view()).toEqual({ visible: true, answer: EMPTY, error: null, sync: { status: 'pending' } }));
         expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('Community sync row', () => {
+    const NOW = Date.parse('2026-11-07T12:00:00.000Z');
+    const MIN = 60e3;
+    const DAY = 24 * 60 * MIN;
+    const iso = (ms: number) => new Date(ms).toISOString();
+
+    function share(connection: Partial<CommunityShareSettings['connection']> = {}, patch: Partial<CommunityShareSettings> = {}): CommunityShareSettings {
+        const settings = buildDefaultCommunityShareSettings();
+        return {
+            ...settings,
+            enabled: true,
+            connection: {
+                status: 'connected',
+                connectionId: 'conn-1',
+                profileId: 'profile-1',
+                projectId: null,
+                secretId: 'rt.community-share.connection-secret',
+                ...connection
+            },
+            ...patch
+        };
+    }
+    const rowFor = (settings: CommunityShareSettings) => {
+        const state = communitySyncState(settings, NOW);
+        return state && communitySyncRow(state, NOW);
+    };
+
+    it('keeps the 7-day threshold the website uses', () => {
+        expect(COMMUNITY_SYNC_OVERDUE_MS).toBe(7 * DAY);
+    });
+
+    it('says when the book list last reached the website while it is healthy', () => {
+        expect(rowFor(share({ bookListSyncedAt: iso(NOW - 5 * MIN) })))
+            .toEqual({ text: 'Last synced with Community 5 minutes ago', warning: false, canSync: true });
+        expect(rowFor(share({ bookListSyncedAt: iso(NOW - 10e3) }))?.text).toBe('Last synced with Community just now');
+        expect(rowFor(share({ bookListSyncedAt: iso(NOW - 3 * 60 * MIN) }))?.text).toBe('Last synced with Community 3 hours ago');
+        expect(rowFor(share({ bookListSyncedAt: iso(NOW - 30 * 60 * MIN) }))?.text).toBe('Last synced with Community yesterday');
+    });
+
+    it('turns red with the reason when the latest attempt failed, even after a recent success', () => {
+        const failed = share({
+            bookListSyncedAt: iso(NOW - 5 * MIN),
+            bookListSyncError: 'Could not reach the Community website.',
+            bookListSyncFailedAt: iso(NOW - MIN)
+        });
+        expect(communitySyncState(failed, NOW)).toEqual({ status: 'failed', error: 'Could not reach the Community website.' });
+        expect(rowFor(failed)).toEqual({
+            text: "Couldn't sync with Community (Could not reach the Community website.)",
+            warning: true,
+            canSync: true
+        });
+    });
+
+    it('stays healthy at exactly 7 days and turns red once a sync is more than 7 days old', () => {
+        const atBoundary = share({ bookListSyncedAt: iso(NOW - 7 * DAY) });
+        expect(communitySyncState(atBoundary, NOW)?.status).toBe('healthy');
+        expect(rowFor(atBoundary)).toEqual({ text: 'Last synced with Community 7 days ago', warning: false, canSync: true });
+
+        const pastBoundary = share({ bookListSyncedAt: iso(NOW - 7 * DAY - 1) });
+        expect(communitySyncState(pastBoundary, NOW)?.status).toBe('overdue');
+        expect(rowFor(pastBoundary)).toEqual({ text: 'Last synced with Community 7 days ago', warning: true, canSync: true });
+    });
+
+    it('waits calmly for a first sync, and turns red if a connection older than 7 days never synced', () => {
+        expect(rowFor(share({ connectedAt: iso(NOW - DAY) })))
+            .toEqual({ text: 'Not synced with Community yet', warning: false, canSync: true });
+        expect(communitySyncState(share({ connectedAt: iso(NOW - 7 * DAY - 1) }), NOW)).toEqual({ status: 'overdue', syncedAt: null });
+        expect(rowFor(share({ connectedAt: iso(NOW - 8 * DAY) })))
+            .toEqual({ text: 'Not synced with Community yet', warning: true, canSync: true });
+    });
+
+    it('shows no row unless the vault syncs its book list: Private, paused, or disconnected', () => {
+        expect(communitySyncState(share({}, { enabled: false }), NOW)).toBeNull();
+        expect(communitySyncState(share({}, { sharingPaused: true }), NOW)).toBeNull();
+        expect(communitySyncState(share({ status: 'disconnected' }), NOW)).toBeNull();
+        expect(communitySyncState(buildDefaultCommunityShareSettings(), NOW)).toBeNull();
+    });
+
+    it('counts a failed or overdue sync once toward the gold count, like other things that wait on you', () => {
+        expect(syncNeedsAttention({ status: 'failed', error: 'x' })).toBe(true);
+        expect(syncNeedsAttention({ status: 'overdue', syncedAt: null })).toBe(true);
+        expect(syncNeedsAttention({ status: 'healthy', syncedAt: NOW })).toBe(false);
+        expect(syncNeedsAttention({ status: 'pending' })).toBe(false);
+        expect(syncNeedsAttention(null)).toBe(false);
+
+        expect(mailboxBadge(EMPTY, true)).toEqual({ tone: 'new', count: 1 });
+        expect(mailboxBadge(answer({ support_unread: 2 }), true)).toEqual({ tone: 'new', count: 3 });
+        expect(mailboxBadge(null, true)).toEqual({ tone: 'new', count: 1 });
+        expect(mailboxBadge(answer({ admin: { unread: 1, awaiting: 0 } }), true)).toEqual({ tone: 'unread', count: 1 });
+        expect(mailboxBadge(EMPTY, false)).toBeNull();
+    });
+
+    it('names a sync that needs attention in the tooltip', () => {
+        const sync = { status: 'failed', error: 'x' } as const;
+        expect(mailboxTooltip({ visible: true, answer: EMPTY, error: null, sync })).toBe('Mailbox: Community sync needs attention');
+        expect(mailboxTooltip({ visible: true, answer: answer({ desk_lamp_invites: 1 }), error: null, sync }))
+            .toBe('Mailbox: a Desk Lamp invite waiting · Community sync needs attention');
+        expect(mailboxTooltip({ visible: true, answer: null, error: null, sync })).toBe('Mailbox: Community sync needs attention');
+        expect(mailboxTooltip({ visible: true, answer: EMPTY, error: null, sync: { status: 'healthy', syncedAt: NOW } })).toBe('Mailbox: nothing new');
+    });
+
+    describe('Sync now', () => {
+        const syncMock = vi.mocked(syncCommunityProjects);
+        beforeEach(() => {
+            fetchMock.mockReset();
+            syncMock.mockReset();
+            fetchMock.mockResolvedValue(EMPTY);
+        });
+
+        it('shows syncing while the sync is out, then repaints from the record it leaves', async () => {
+            let finish!: () => void;
+            const plugin = connectedPlugin();
+            syncMock.mockImplementation(() => new Promise(resolve => {
+                finish = () => {
+                    plugin.settings.communityShare.connection.bookListSyncedAt = new Date().toISOString();
+                    resolve({ ok: true, created: 0, updated: 1, projects: [] });
+                };
+            }));
+            const mailbox = new CommunityMailbox(plugin as never);
+            const painted = vi.fn();
+            mailbox.subscribe(painted);
+
+            const done = mailbox.syncNow();
+            expect(mailbox.view().sync).toEqual({ status: 'syncing' });
+            expect(communitySyncRow({ status: 'syncing' }, NOW)).toEqual({ text: 'Syncing with Community…', warning: false, canSync: false });
+            void mailbox.syncNow(); // a second click while one is out does nothing
+            expect(syncMock).toHaveBeenCalledTimes(1);
+
+            finish();
+            await done;
+            expect(mailbox.view().sync?.status).toBe('healthy');
+            expect(painted.mock.calls.length).toBeGreaterThanOrEqual(2);
+            mailbox.destroy();
+        });
+
+        it('repaints when a settings save changes the sync record on the same connection', () => {
+            const plugin = connectedPlugin();
+            const mailbox = new CommunityMailbox(plugin as never);
+            const painted = vi.fn();
+            mailbox.subscribe(painted);
+            painted.mockClear();
+
+            mailbox.settingsChanged(); // nothing changed
+            expect(painted).not.toHaveBeenCalled();
+
+            plugin.settings.communityShare.connection.bookListSyncError = 'Could not reach the Community website.';
+            plugin.settings.communityShare.connection.bookListSyncFailedAt = new Date().toISOString();
+            mailbox.settingsChanged();
+            expect(painted).toHaveBeenCalledTimes(1);
+            expect(mailbox.view().sync?.status).toBe('failed');
+            mailbox.destroy();
+        });
     });
 });

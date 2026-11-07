@@ -1009,6 +1009,16 @@ export interface CommunityShareConnectionSettings {
     lastSyncedPayloadHash?: string;
     disconnectedAt?: string;
     secretId?: string;
+    /**
+     * Book-list sync health for this connection (community-project-sync),
+     * shown in the Mailbox's Community sync row. ISO time of the last
+     * successful sync; a new connection starts without one.
+     */
+    bookListSyncedAt?: string;
+    /** Why the latest book-list sync failed. Cleared by the next success. */
+    bookListSyncError?: string;
+    /** ISO time of that failed attempt. Cleared with the error. */
+    bookListSyncFailedAt?: string;
 }
 
 export interface CommunitySharePreviewState {

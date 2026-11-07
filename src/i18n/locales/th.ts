@@ -3902,6 +3902,13 @@ export const th: TranslationKeys = {
             "newRepliesToQuestions": "คำตอบใหม่สำหรับคำถามของคุณ {{count}}",
             "newReplyInRequests": "ตอบกลับใหม่ในคำขอ",
             "nothingNew": "กล่องจดหมาย: ไม่มีอะไรใหม่",
+            "notSyncedYet": "ยังไม่ได้ซิงค์กับ Community",
+            "syncedAgo": "ซิงค์กับ Community ล่าสุด: {{time}}",
+            "syncedJustNow": "ซิงค์กับ Community เมื่อสักครู่",
+            "syncFailed": "ไม่สามารถซิงค์กับ Community ได้ ({{error}})",
+            "syncing": "กำลังซิงค์กับ Community…",
+            "syncNeedsAttention": "การซิงค์กับ Community ต้องได้รับการตรวจสอบ",
+            "syncNow": "ซิงค์ตอนนี้",
             "tooltip": "กล่องจดหมาย: {{notes}}",
             "tooltipError": "กล่องจดหมาย: ไม่สามารถตรวจสอบการตอบกลับใหม่ ({{error}})",
             "tooltipTitle": "หีบทิ้งไปรษณีย์"

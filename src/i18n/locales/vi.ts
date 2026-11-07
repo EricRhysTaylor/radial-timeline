@@ -3902,6 +3902,13 @@ export const vi: TranslationKeys = {
             "newRepliesToQuestions": "Câu trả lời mới cho {{count}} về câu hỏi của bạn",
             "newReplyInRequests": "Một câu trả lời mới trong các yêu cầu",
             "nothingNew": "Hộp thư: Không có gì mới",
+            "notSyncedYet": "Chưa đồng bộ với Cộng đồng",
+            "syncedAgo": "Đồng bộ với Cộng đồng lần cuối: {{time}}",
+            "syncedJustNow": "Vừa đồng bộ với Cộng đồng",
+            "syncFailed": "Không thể đồng bộ với Cộng đồng ({{error}})",
+            "syncing": "Đang đồng bộ với Cộng đồng…",
+            "syncNeedsAttention": "việc đồng bộ với Cộng đồng cần được xem lại",
+            "syncNow": "Đồng bộ ngay",
             "tooltip": "Hộp thư: {{notes}}",
             "tooltipError": "Hộp thư: Không thể kiểm tra các câu trả lời mới ({{error}}).",
             "tooltipTitle": "hộp thư"

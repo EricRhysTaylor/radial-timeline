@@ -2,7 +2,7 @@ import { apiVersion, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
-import { canShareAprToCommunity, canShareTimelineToCommunity, deriveCommunityShareMode, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, timelineShareFor } from './communityShareSettings';
+import { canShareAprToCommunity, canShareTimelineToCommunity, deriveCommunityShareMode, expectsBookListSync, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, timelineShareFor } from './communityShareSettings';
 import { buildTimelineSharePayload, timelinePayloadFingerprint } from './timelineSharePayload';
 import {
     COMMUNITY_DAILY_BACKFILL_DAYS,
@@ -337,7 +337,11 @@ export async function confirmCommunityShareActivation(
             projectId: parsed.project_id,
             connectedAt: new Date().toISOString(),
             lastSyncedAt: new Date().toISOString(),
-            secretId
+            secretId,
+            // A new connection starts its own book-list sync record.
+            bookListSyncedAt: undefined,
+            bookListSyncError: undefined,
+            bookListSyncFailedAt: undefined
         },
         preview: {
             ...current.preview,
@@ -829,17 +833,93 @@ export async function syncDeskLamps(plugin: RadialTimelinePlugin, light?: DeskLa
 }
 
 /**
+ * Refusals raised because the vault stopped sharing, or changed connection,
+ * before the send. The sync was no longer due, so they are not a failed sync
+ * and are not recorded on the connection.
+ */
+const BOOK_LIST_SYNC_NOT_DUE = new Set(['connection_required', 'sharing_paused', 'connection_changed']);
+
+/**
  * Sync every Book Manager book to the community website as a project shell.
  * New shells arrive PRIVATE; the author chooses what to share on the website.
  * Sync never changes visibility and never deletes shells.
+ *
+ * Every attempt that reaches the website, or fails on the way, is recorded on
+ * the connection (bookListSyncedAt, or bookListSyncError + bookListSyncFailedAt)
+ * for the Mailbox's Community sync row. With no books nothing is sent and
+ * nothing is recorded.
  */
 export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promise<ProjectSyncSuccess> {
+    const attemptConnectionId = normalizeCommunityShareSettings(plugin.settings.communityShare).connection.connectionId;
+    let parsed: ProjectSyncSuccess | null;
+    try {
+        parsed = await postCommunityProjects(plugin);
+    } catch (error) {
+        if (!(error instanceof CommunityShareError && BOOK_LIST_SYNC_NOT_DUE.has(error.code))) {
+            await recordBookListSync(plugin, attemptConnectionId, { failed: error instanceof Error ? error.message : String(error) });
+        }
+        throw error;
+    }
+    if (!parsed) return { ok: true, created: 0, updated: 0, projects: [] };
+    await recordBookListSync(plugin, attemptConnectionId, { synced: parsed });
+    return parsed;
+}
+
+/**
+ * Store one book-list sync outcome on the live connection and save. An
+ * outcome for a connection that changed while the sync was out is dropped:
+ * it belongs to the old connection.
+ *
+ * A success also stores the server's binding. The binding is authoritative
+ * on every sync: a connection activated without a book is bound to the first
+ * synced shell, and the website's "Change book" control
+ * (community-connection-rebind) re-points a bound connection at another book;
+ * either way the response carries the binding after this call as
+ * connection_project_id. Servers that predate the field omit it. A changed
+ * binding changes the report's project, so a ready preview goes stale and is
+ * reviewed again before the next manual publish.
+ */
+async function recordBookListSync(
+    plugin: RadialTimelinePlugin,
+    attemptConnectionId: string | undefined,
+    outcome: { synced: ProjectSyncSuccess } | { failed: string }
+): Promise<void> {
+    const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (!attemptConnectionId || live.connection.connectionId !== attemptConnectionId) return;
+    const at = new Date().toISOString();
+    if ('failed' in outcome) {
+        commitCommunityShare(plugin, current => ({
+            ...current,
+            connection: { ...current.connection, bookListSyncError: outcome.failed, bookListSyncFailedAt: at }
+        }));
+    } else {
+        const bound = outcome.synced.connection_project_id;
+        const cached = live.connection.projectId ?? null; // SAFE: an absent cached id and null both mean unbound
+        const projectId = bound === undefined ? live.connection.projectId : bound;
+        const rebound = bound !== undefined && cached !== bound;
+        commitCommunityShare(plugin, current => ({
+            ...current,
+            connection: {
+                ...current.connection,
+                projectId,
+                bookListSyncedAt: at,
+                bookListSyncError: undefined,
+                bookListSyncFailedAt: undefined
+            },
+            preview: rebound && current.preview.status === 'ready'
+                ? { ...current.preview, status: 'stale' }
+                : current.preview
+        }));
+    }
+    await plugin.saveSettings();
+}
+
+/** Send the Book Manager list; null when there are no books, so nothing was sent. */
+async function postCommunityProjects(plugin: RadialTimelinePlugin): Promise<ProjectSyncSuccess | null> {
     const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
 
     const books = (plugin.settings.books ?? []).slice(0, 50); // SAFE: no books configured means nothing to sync; the empty-list branch below returns early
-    if (!books.length) {
-        return { ok: true, created: 0, updated: 0, projects: [] };
-    }
+    if (!books.length) return null;
 
     // Publishing targets are per book (BookProfile.stageTargetDates): every
     // book sends its own four dates — value or null, so a cleared date clears
@@ -851,7 +931,7 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
     const activeBookId = plugin.settings.activeBookId;
     assertStillSendable(plugin, connection);
 
-    const parsed = await postCommunityFunction(
+    return postCommunityFunction(
         plugin,
         'community-project-sync',
         {
@@ -876,43 +956,16 @@ export async function syncCommunityProjects(plugin: RadialTimelinePlugin): Promi
         { code: 'project_sync_failed', message: t('ui.communityShareClient.projectSyncFailed') },
         t('ui.communityShareClient.projectSyncUnexpected')
     );
-
-    // The server's binding is authoritative on every sync. A connection
-    // activated without a book is bound to the first synced shell, and the
-    // website's "Change book" control (community-connection-rebind) re-points
-    // a bound connection at another book; either way the response carries the
-    // binding after this call as connection_project_id. Store it whenever it
-    // differs from the cached id. Servers that predate the field omit it.
-    // A changed binding changes the report's project, so a ready preview goes
-    // stale and is reviewed again before the next manual publish.
-    if (parsed.connection_project_id !== undefined) {
-        const boundProjectId = parsed.connection_project_id;
-        const live = normalizeCommunityShareSettings(plugin.settings.communityShare);
-        if (live.connection.connectionId === connection.connectionId
-            && (live.connection.projectId ?? null) !== boundProjectId) { // SAFE: an absent cached id and null both mean unbound
-            commitCommunityShare(plugin, current => ({
-                ...current,
-                connection: {
-                    ...current.connection,
-                    projectId: boundProjectId
-                },
-                preview: current.preview.status === 'ready'
-                    ? { ...current.preview, status: 'stale' }
-                    : current.preview
-            }));
-            await plugin.saveSettings();
-        }
-    }
-    return parsed;
 }
 
 /**
  * Fire-and-forget project sync for plugin load: silently no-ops when
- * Community Share is not connected, and never throws into the caller.
+ * Community Share is not connected, and never throws into the caller. A
+ * failure is recorded on the connection by syncCommunityProjects, so the
+ * Mailbox's Community sync row shows it.
  */
 export async function syncCommunityProjectsIfConnected(plugin: RadialTimelinePlugin): Promise<void> {
-    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    if (!current.enabled || current.sharingPaused || current.connection.status !== 'connected' || !current.connection.connectionId) return; // SAFE: load-time sync precondition — disabled, paused, or disconnected is the documented no-op for this fire-and-forget path
+    if (!expectsBookListSync(normalizeCommunityShareSettings(plugin.settings.communityShare))) return; // SAFE: load-time sync precondition — disabled, paused, or disconnected is the documented no-op for this fire-and-forget path
     try {
         await syncCommunityProjects(plugin);
     } catch (error) {
@@ -1589,7 +1642,10 @@ export async function disconnectCommunityShare(plugin: RadialTimelinePlugin): Pr
             status: 'disconnected',
             disconnectedAt: at,
             lastSyncedPayloadHash: undefined,
-            secretId: undefined
+            secretId: undefined,
+            bookListSyncedAt: undefined,
+            bookListSyncError: undefined,
+            bookListSyncFailedAt: undefined
         },
         publishHistory: appendHistory(live, {
             id: `disconnect-${at}`,

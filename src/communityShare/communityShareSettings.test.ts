@@ -6,6 +6,7 @@ import {
     canShareAprToCommunity,
     deriveCommunityShareMode,
     deskLampChoices,
+    expectsBookListSync,
     hasActiveCommunityConnection,
     hasCommunityConnection,
     normalizeCommunityShareSettings
@@ -166,6 +167,34 @@ describe('hasActiveCommunityConnection', () => {
 
     it('ignores a paused share: pausing stops sharing, not the connection', () => {
         expect(hasActiveCommunityConnection({ ...connected(), sharingPaused: true })).toBe(true);
+    });
+
+    it('expects a book-list sync only while sharing runs: not paused, not Private', () => {
+        expect(expectsBookListSync(connected())).toBe(true);
+        expect(expectsBookListSync({ ...connected(), sharingPaused: true })).toBe(false);
+        expect(expectsBookListSync({ ...connected(), enabled: false })).toBe(false);
+    });
+
+    it('loads settings saved before the book-list sync record, and keeps a failure only as error plus time', () => {
+        expect(connected().connection).not.toHaveProperty('bookListSyncedAt');
+        const kept = normalizeCommunityShareSettings({
+            connection: {
+                status: 'connected', connectionId: 'conn-1',
+                bookListSyncedAt: '2026-11-01T00:00:00.000Z',
+                bookListSyncError: 'Could not reach the Community website.',
+                bookListSyncFailedAt: '2026-11-02T00:00:00.000Z'
+            }
+        }).connection;
+        expect(kept).toMatchObject({
+            bookListSyncedAt: '2026-11-01T00:00:00.000Z',
+            bookListSyncError: 'Could not reach the Community website.',
+            bookListSyncFailedAt: '2026-11-02T00:00:00.000Z'
+        });
+        const half = normalizeCommunityShareSettings({
+            connection: { status: 'connected', bookListSyncedAt: 42 as never, bookListSyncError: 'No time' }
+        }).connection;
+        expect(half).not.toHaveProperty('bookListSyncedAt');
+        expect(half).not.toHaveProperty('bookListSyncError');
     });
 });
 

@@ -715,7 +715,7 @@ export class RadialTimelineView extends ItemView {
             this.registerDomEvent(mailboxBtn, 'click', (evt: MouseEvent) => {
                 evt.preventDefault();
                 evt.stopPropagation();
-                openMailboxMenu(mailboxBtn, mailbox.view().answer);
+                openMailboxMenu(mailboxBtn, mailbox.view(), () => { void mailbox.syncNow(); });
             });
             // Desk Lamps — right of the mailbox: a lamp and the count of
             // friends at their desks. Shown once connected with a Desk Lamp or

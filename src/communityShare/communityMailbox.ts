@@ -28,14 +28,22 @@ import { setAccessibleLabel } from '../utils/domTooltip';
  * focus (the "I just read it on the website" return). A failed check keeps
  * the pill, drops the badge and says why in the tooltip; it never raises a
  * Notice.
+ *
+ * While the vault keeps its book list synced (expectsBookListSync), the menu
+ * also carries one Community sync row read from the connection's book-list
+ * sync record: when the list last reached the website, in red when the
+ * latest attempt failed or no sync has succeeded for COMMUNITY_SYNC_OVERDUE_MS.
+ * Choosing it syncs now. A row needing attention counts one toward the
+ * pill's gold count, like the other things that wait on you.
  */
 
-import { Menu } from 'obsidian';
+import { Menu, Notice } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import { t } from '../i18n';
+import { getFormattingLocale, t } from '../i18n';
 import { tooltip as applyTooltip } from '../utils/tooltip';
-import { fetchCommunityMailbox, type CommunityMailboxAnswer } from './communityShareClient';
-import { hasCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
+import type { CommunityShareSettings } from '../types/settings';
+import { fetchCommunityMailbox, syncCommunityProjects, type CommunityMailboxAnswer } from './communityShareClient';
+import { expectsBookListSync, hasCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
 
 export const COMMUNITY_SITE_URL = 'https://community.radialtimeline.com';
 /** My Share: where a member manages what they share, blocks, and Desk Lamps. */
@@ -47,6 +55,90 @@ const POLL_MS = 60 * 60e3;
 const JITTER_MS = 5 * 60e3; // 0–5 min added to every hourly check
 const WAKE_REFETCH_GAP_MS = 60e3; // debounce focus/visibility checks
 
+/**
+ * No successful book-list sync for longer than this turns the Community sync
+ * row red. Matches the Community website, which flags a vault whose book list
+ * has not synced for the same 7 days.
+ */
+export const COMMUNITY_SYNC_OVERDUE_MS = 7 * 24 * 60 * 60e3;
+
+/**
+ * The Community sync row's state. `healthy`: the latest sync succeeded within
+ * the overdue window. `failed`: the latest attempt failed (the reason is the
+ * stored error). `overdue`: no success for longer than the window. `pending`:
+ * no sync has succeeded yet on a connection younger than the window.
+ * `syncing`: a Sync now is on its way.
+ */
+export type CommunitySyncState =
+    | { status: 'healthy'; syncedAt: number }
+    | { status: 'failed'; error: string }
+    | { status: 'overdue'; syncedAt: number | null }
+    | { status: 'pending' }
+    | { status: 'syncing' };
+
+function parseTime(value: string | undefined): number | null {
+    if (!value) return null;
+    const ms = Date.parse(value);
+    return Number.isFinite(ms) ? ms : null;
+}
+
+/** The row for these settings at `now`; null when the vault is not expected to sync its book list (no row). */
+export function communitySyncState(share: CommunityShareSettings, now: number): CommunitySyncState | null {
+    if (!expectsBookListSync(share)) return null;
+    const { bookListSyncError, bookListSyncedAt, connectedAt } = share.connection;
+    if (bookListSyncError) return { status: 'failed', error: bookListSyncError };
+    const syncedAt = parseTime(bookListSyncedAt);
+    if (syncedAt !== null) {
+        return now - syncedAt > COMMUNITY_SYNC_OVERDUE_MS ? { status: 'overdue', syncedAt } : { status: 'healthy', syncedAt };
+    }
+    // Never synced: overdue once the connection itself is older than the window.
+    const since = parseTime(connectedAt);
+    return since !== null && now - since > COMMUNITY_SYNC_OVERDUE_MS ? { status: 'overdue', syncedAt: null } : { status: 'pending' };
+}
+
+/** Failed and overdue rows wait on the author, like an unread reply. */
+export function syncNeedsAttention(state: CommunitySyncState | null): boolean {
+    return state?.status === 'failed' || state?.status === 'overdue';
+}
+
+/** "5 minutes ago", "yesterday", "9 days ago" in the interface language. */
+function relativeTime(then: number, now: number): string {
+    const elapsed = Math.max(0, now - then);
+    const format = new Intl.RelativeTimeFormat(getFormattingLocale(), { numeric: 'auto' });
+    if (elapsed < 3_600_000) return format.format(-Math.floor(elapsed / 60_000), 'minute');
+    if (elapsed < 86_400_000) return format.format(-Math.floor(elapsed / 3_600_000), 'hour');
+    return format.format(-Math.floor(elapsed / 86_400_000), 'day');
+}
+
+export interface CommunitySyncRow {
+    /** What the row says. */
+    text: string;
+    /** Red (Obsidian's warning menu item): failed or overdue. */
+    warning: boolean;
+    /** False while a Sync now is on its way. */
+    canSync: boolean;
+}
+
+export function communitySyncRow(state: CommunitySyncState, now: number): CommunitySyncRow {
+    switch (state.status) {
+        case 'syncing':
+            return { text: t('ui.communityMailbox.syncing'), warning: false, canSync: false };
+        case 'failed':
+            return { text: t('ui.communityMailbox.syncFailed', { error: state.error }), warning: true, canSync: true };
+        case 'pending':
+            return { text: t('ui.communityMailbox.notSyncedYet'), warning: false, canSync: true };
+        case 'healthy':
+        case 'overdue': {
+            const warning = state.status === 'overdue';
+            if (state.syncedAt === null) return { text: t('ui.communityMailbox.notSyncedYet'), warning, canSync: true };
+            const text = now - state.syncedAt < 60_000
+                ? t('ui.communityMailbox.syncedJustNow')
+                : t('ui.communityMailbox.syncedAgo', { time: relativeTime(state.syncedAt, now) });
+            return { text, warning, canSync: true };
+        }
+    }
+}
+
 export interface MailboxView {
     /** Connected to the Community and the toggle is on. */
     visible: boolean;
@@ -54,6 +146,8 @@ export interface MailboxView {
     answer: CommunityMailboxAnswer | null;
     /** Why the last check failed, when it did. */
     error: string | null;
+    /** The Community sync row; null when the vault does not sync its book list. */
+    sync: CommunitySyncState | null;
 }
 
 /**
@@ -75,12 +169,16 @@ function inboxBadge(answer: CommunityMailboxAnswer | null): MailboxBadge | null 
     return null;
 }
 
-/** The pill's badge: the inbox count when there is one, else the gold count of new replies and Desk Lamp invites. */
-export function mailboxBadge(answer: CommunityMailboxAnswer | null): MailboxBadge | null {
-    if (!answer) return null;
+/**
+ * The pill's badge: the inbox count when there is one, else the gold count of
+ * new replies, Desk Lamp invites, and a Community sync row that needs
+ * attention (one). The sync row is local, so it counts before the first check
+ * and after a failed one too.
+ */
+export function mailboxBadge(answer: CommunityMailboxAnswer | null, syncAttention = false): MailboxBadge | null {
     const inbox = inboxBadge(answer);
     if (inbox) return inbox;
-    const fresh = answer.support_unread + answer.replies.count + answer.desk_lamp_invites;
+    const fresh = (answer ? answer.support_unread + answer.replies.count + answer.desk_lamp_invites : 0) + (syncAttention ? 1 : 0);
     return fresh > 0 ? { tone: 'new', count: fresh } : null;
 }
 
@@ -129,7 +227,8 @@ export function mailboxMenuEntries(answer: CommunityMailboxAnswer | null): Mailb
 export function mailboxTooltip(view: MailboxView): string {
     if (view.error) return t('ui.communityMailbox.tooltipError', { error: view.error });
     const answer = view.answer;
-    if (!answer) return t('ui.communityMailbox.tooltipTitle');
+    const syncNote = syncNeedsAttention(view.sync) ? t('ui.communityMailbox.syncNeedsAttention') : null;
+    if (!answer) return syncNote ? t('ui.communityMailbox.tooltip', { notes: syncNote }) : t('ui.communityMailbox.tooltipTitle');
     const notes: string[] = [];
     const inbox = inboxBadge(answer);
     if (inbox?.tone === 'unread') notes.push(t('ui.communityMailbox.inboxUnread', { count: inbox.count }));
@@ -140,6 +239,7 @@ export function mailboxTooltip(view: MailboxView): string {
     else if (answer.replies.count > 1) notes.push(t('ui.communityMailbox.newRepliesToQuestions', { count: answer.replies.count }));
     if (answer.desk_lamp_invites === 1) notes.push(t('ui.communityMailbox.deskLampInviteWaiting'));
     else if (answer.desk_lamp_invites > 1) notes.push(t('ui.communityMailbox.deskLampInvitesWaiting', { count: answer.desk_lamp_invites }));
+    if (syncNote) notes.push(syncNote);
     return notes.length ? t('ui.communityMailbox.tooltip', { notes: notes.join(' · ') }) : t('ui.communityMailbox.nothingNew');
 }
 
@@ -157,18 +257,22 @@ function paintBadge(el: HTMLElement, badge: MailboxBadge | null): void {
 export function paintMailboxButton(button: HTMLElement, badgeEl: HTMLElement, view: MailboxView): void {
     button.hidden = !view.visible;
     if (!view.visible) return;
-    paintBadge(badgeEl, mailboxBadge(view.answer));
+    paintBadge(badgeEl, mailboxBadge(view.answer, syncNeedsAttention(view.sync)));
     button.classList.toggle('is-stale', view.error !== null);
     const label = mailboxTooltip(view);
     setAccessibleLabel(button, label);
     applyTooltip(button, label, 'bottom');
 }
 
-/** Open the pill's menu just below it; each item opens its Community page. */
-export function openMailboxMenu(anchor: HTMLElement, answer: CommunityMailboxAnswer | null): void {
+/**
+ * Open the pill's menu just below it; each item opens its Community page.
+ * Below them, while the vault syncs its book list, the Community sync row:
+ * choosing it runs `onSyncNow`.
+ */
+export function openMailboxMenu(anchor: HTMLElement, view: MailboxView, onSyncNow: () => void): void {
     const doc = anchor.ownerDocument;
     const menu = new Menu();
-    for (const entry of mailboxMenuEntries(answer)) {
+    for (const entry of mailboxMenuEntries(view.answer)) {
         menu.addItem(item => {
             const title = doc.win.createFragment();
             title.appendText(entry.label);
@@ -180,6 +284,23 @@ export function openMailboxMenu(anchor: HTMLElement, answer: CommunityMailboxAns
             item.setTitle(title)
                 .setIcon(entry.icon)
                 .onClick(() => { window.open(entry.url, '_blank'); });
+        });
+    }
+    if (view.sync) {
+        const row = communitySyncRow(view.sync, Date.now());
+        menu.addSeparator();
+        menu.addItem(item => {
+            const title = doc.win.createFragment();
+            title.appendText(row.text);
+            if (row.canSync) {
+                const action = title.createSpan({ cls: 'ert-mailbox-sync-action' });
+                action.setText(t('ui.communityMailbox.syncNow'));
+            }
+            item.setTitle(title)
+                .setIcon(row.warning ? 'alert-triangle' : 'refresh-cw')
+                .setWarning(row.warning)
+                .setDisabled(!row.canSync)
+                .onClick(() => { if (row.canSync) onSyncNow(); });
         });
     }
     const rect = anchor.getBoundingClientRect();
@@ -201,14 +322,50 @@ export class CommunityMailbox {
     private lastAttemptAt = 0;
     private timer: number | null = null;
     private destroyed = false;
+    /** A Sync now is on its way. */
+    private syncing = false;
+    /** The book-list sync record last painted, so a settings save that changes it repaints. */
+    private syncKey: string;
     private readonly listeners = new Set<() => void>();
 
     constructor(private readonly plugin: RadialTimelinePlugin) {
         this.connectionKey = this.currentKey();
+        this.syncKey = this.currentSyncKey();
     }
 
     view(): MailboxView {
-        return { visible: this.connectionKey !== null, answer: this.answer, error: this.error };
+        const visible = this.connectionKey !== null;
+        let sync: CommunitySyncState | null = null;
+        if (visible) {
+            sync = communitySyncState(normalizeCommunityShareSettings(this.plugin.settings.communityShare), Date.now());
+            if (sync && this.syncing) sync = { status: 'syncing' };
+        }
+        return { visible, answer: this.answer, error: this.error, sync };
+    }
+
+    /**
+     * The Community sync row's Sync now: send the book list at once (the
+     * existing project sync, not the throttled one) and repaint. The outcome
+     * is recorded on the connection by syncCommunityProjects; the menu has
+     * closed by now, so a Notice says how it went.
+     */
+    async syncNow(): Promise<void> {
+        if (this.destroyed || this.syncing) return;
+        this.syncing = true;
+        this.emit();
+        let failure: string | null = null;
+        try {
+            await syncCommunityProjects(this.plugin);
+        } catch (e) {
+            failure = e instanceof Error ? e.message : String(e);
+        }
+        this.syncing = false;
+        if (this.destroyed) return;
+        this.syncKey = this.currentSyncKey();
+        this.emit();
+        new Notice(failure === null
+            ? t('ui.communityMailbox.syncedJustNow')
+            : t('ui.communityMailbox.syncFailed', { error: failure }));
     }
 
     subscribe(listener: () => void): () => void {
@@ -227,8 +384,17 @@ export class CommunityMailbox {
     settingsChanged(): void {
         if (this.destroyed) return;
         const key = this.currentKey();
-        if (key === this.connectionKey) return;
+        const syncKey = this.currentSyncKey();
+        if (key === this.connectionKey) {
+            // Same connection: repaint only when its book-list sync record changed.
+            if (syncKey !== this.syncKey) {
+                this.syncKey = syncKey;
+                this.emit();
+            }
+            return;
+        }
         this.connectionKey = key;
+        this.syncKey = syncKey;
         this.generation++;
         this.answer = null;
         this.error = null;
@@ -255,6 +421,13 @@ export class CommunityMailbox {
         const share = normalizeCommunityShareSettings(this.plugin.settings.communityShare);
         if (!hasCommunityConnection(share)) return null;
         return `${share.connection.connectionId}|${share.connection.secretId}`;
+    }
+
+    /** Everything the Community sync row reads from settings, as one comparable string. */
+    private currentSyncKey(): string {
+        const share = normalizeCommunityShareSettings(this.plugin.settings.communityShare);
+        const { bookListSyncedAt, bookListSyncError, bookListSyncFailedAt, connectedAt } = share.connection;
+        return JSON.stringify([expectsBookListSync(share), bookListSyncedAt, bookListSyncError, bookListSyncFailedAt, connectedAt]);
     }
 
     private async refresh(): Promise<void> {

@@ -134,6 +134,31 @@ export function hasActiveCommunityConnection(settings: CommunityShareSettings): 
     return settings.enabled && hasCommunityConnection(settings);
 }
 
+/**
+ * The vault is expected to keep its Book Manager list synced to the Community
+ * website (community-project-sync): Community on, sharing not paused, and a
+ * live connection with a stored secret. The load and settings-edit syncs run
+ * only in this state, and the Mailbox shows its Community sync row only in it.
+ */
+export function expectsBookListSync(settings: CommunityShareSettings): settings is ActiveCommunityShareSettings {
+    return hasActiveCommunityConnection(settings) && !settings.sharingPaused;
+}
+
+type BookListSyncFields = Pick<CommunityShareConnectionSettings, 'bookListSyncedAt' | 'bookListSyncError' | 'bookListSyncFailedAt'>;
+
+/** The book-list sync record: ISO times and a message, each kept only when it is a non-empty string. */
+function normalizeBookListSync(connection: Partial<CommunityShareConnectionSettings>): BookListSyncFields {
+    const text = (value: unknown): string | undefined => (typeof value === 'string' && value ? value : undefined);
+    const syncedAt = text(connection.bookListSyncedAt);
+    const error = text(connection.bookListSyncError);
+    const failedAt = text(connection.bookListSyncFailedAt);
+    return {
+        ...(syncedAt ? { bookListSyncedAt: syncedAt } : {}),
+        // A failure is the error and its time together; half of one is dropped.
+        ...(error && failedAt ? { bookListSyncError: error, bookListSyncFailedAt: failedAt } : {})
+    };
+}
+
 /** APR is a curated project artifact available from Level 2 upward. */
 export function canShareAprToCommunity(settings: CommunityShareSettings): boolean {
     return settings.enabled
@@ -333,7 +358,8 @@ export function normalizeCommunityShareSettings(raw?: Partial<CommunityShareSett
             lastSyncedAt: connection.lastSyncedAt,
             lastSyncedPayloadHash: connection.lastSyncedPayloadHash,
             disconnectedAt: connection.disconnectedAt,
-            secretId: connection.secretId
+            secretId: connection.secretId,
+            ...normalizeBookListSync(connection)
         },
         preview: {
             status: preview.status ?? 'not_generated',

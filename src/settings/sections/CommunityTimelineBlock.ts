@@ -220,10 +220,11 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
                 .setValue(!hidden.has(field))
                 .setDisabled(paused)
                 .onChange(async shown => {
-                    const next = new Set(hidden);
-                    if (shown) next.delete(field);
-                    else next.add(field);
-                    await saveDetails({ hiddenSceneFields: [...next] });
+                    // Kept current here, so a second toggle before the rerender
+                    // does not send the first one back.
+                    if (shown) hidden.delete(field);
+                    else hidden.add(field);
+                    await saveDetails({ hiddenSceneFields: [...hidden] });
                 }));
     }
 

@@ -3636,7 +3636,7 @@ export const en = {
         },
         communityShareSection: {
             timelineHeading: 'Timeline',
-            timelineDesc: 'Share a book\'s timeline on the Community website. Scene text never leaves your vault.',
+            timelineDesc: 'Share a book\'s timeline on the Community website. You choose which scenes to reveal.',
             timelineLevelNote: 'Choose a sharing level above Private to share a timeline.',
             timelineNoBook: 'Set a source folder for this book in Book Manager first.',
             timelineShareName: 'Share timeline',
@@ -3647,7 +3647,7 @@ export const en = {
             timelineStopNote: 'Turning this off stops updates. Your timeline stays as it is on the website, where you can take it offline or delete it.',
             timelineLastSent: 'Last sent {{date}}.',
             timelineConfirmTitle: 'Share this timeline?',
-            timelineConfirmMessage: 'Radial Timeline sends scene order, acts, subplots, status and publish stage. It also sends titles, synopses, cast, POV and story dates, stored privately until you reveal a scene. A new timeline arrives private, and one already live stays live. Scene text and file paths are never sent.',
+            timelineConfirmMessage: 'Radial Timeline sends scene order, acts, subplots, status and publish stage. It also sends titles, synopses, cast, POV and story dates, stored privately until you reveal a scene. A new timeline arrives private, and one already live stays live. Scene text and file paths stay in your vault.',
             timelineConfirmButton: 'Send timeline',
             timelineSentNotice: 'Timeline sent, private. Review it on the website to go live.',
             timelineUpdatedNotice: 'Timeline updated. It stays live.',

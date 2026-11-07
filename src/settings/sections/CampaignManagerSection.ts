@@ -29,7 +29,8 @@ import { mountSvgMarkup } from '../../utils/svgDom';
 import { getActiveBook } from '../../utils/books';
 import { AuthorProgressService } from '../../services/AuthorProgressService';
 import { canShareAprToCommunity, normalizeCommunityShareSettings } from '../../communityShare/communityShareSettings';
-import { findCommunityBookConflict, resolveCampaignBookId } from '../../authorProgress/campaignCommunityBinding';
+import { findCommunityBookConflict, moveCommunitySending, resolveCampaignBookId } from '../../authorProgress/campaignCommunityBinding';
+import { confirmWithErtModal } from '../../modals/ErtConfirmModal';
 import { t } from '../../i18n';
 
 export interface CampaignManagerProps {
@@ -941,11 +942,19 @@ function renderCampaignDetails(
                 ? t('ui.campaignManagerSection.publicAprRefreshed', { date: new Date(campaign.lastCommunityUploadedAt).toLocaleString() })
                 : t('ui.campaignManagerSection.privateAprSent', { date: new Date(campaign.lastCommunityUploadedAt).toLocaleString() }))
             : t('ui.campaignManagerSection.noAprSent');
+    // Another campaign sending this book now: named up front, so the toggle's
+    // offer to move sending here is no surprise.
+    const holder = !campaign.sendToCommunity && canSendToCommunity
+        ? findCommunityBookConflict(plugin.settings, campaign)
+        : undefined;
+    const sendDesc = canSendToCommunity
+        ? t('ui.campaignManagerSection.sendToCommunityDesc', { status: communityStatus })
+        : t('ui.campaignManagerSection.sendToCommunityLocked');
     new Setting(details)
         .setName(t('ui.campaignManagerSection.sendToCommunityName'))
-        .setDesc(canSendToCommunity
-            ? t('ui.campaignManagerSection.sendToCommunityDesc', { status: communityStatus })
-            : t('ui.campaignManagerSection.sendToCommunityLocked'))
+        .setDesc(holder
+            ? `${sendDesc} ${t('ui.campaignManagerSection.sendToCommunityHeldBy', { name: holder.name })}`
+            : sendDesc)
         .addToggle((toggle) => toggle
             .setValue(campaign.sendToCommunity ?? false) // SAFE: fail-closed privacy default — the toggle renders off until the author opts in
             // A lower sharing level blocks enabling this destination, but an
@@ -964,8 +973,20 @@ function renderCampaignDetails(
                     }
                     const conflict = findCommunityBookConflict(plugin.settings, target);
                     if (conflict) {
-                        new Notice(t('ui.campaignManagerSection.toggleConflictNotice', { name: conflict.name }));
-                        toggle.setValue(false);
+                        // My Share keeps one APR per book: offer to move sending
+                        // here rather than refuse. Both flags flip in one save.
+                        // Cancelling leaves both campaigns as they were.
+                        const confirmed = await confirmWithErtModal(plugin.app, {
+                            title: t('ui.campaignManagerSection.moveSendingTitle'),
+                            message: t('ui.campaignManagerSection.moveSendingMessage', { to: target.name, from: conflict.name }),
+                            confirmText: t('ui.campaignManagerSection.moveSendingConfirm'),
+                        });
+                        if (!confirmed || !moveCommunitySending(plugin.settings, target.id, conflict.id)) {
+                            toggle.setValue(false);
+                            return;
+                        }
+                        await plugin.saveSettings();
+                        onUpdate();
                         return;
                     }
                     // Pin the resolved book. A campaign that publishes publicly

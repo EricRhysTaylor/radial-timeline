@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AuthorProgressCampaign, RadialTimelineSettings } from '../types/settings';
-import { findCommunityBookConflict, resolveCampaignBookId } from './campaignCommunityBinding';
+import { findCommunityBookConflict, moveCommunitySending, resolveCampaignBookId } from './campaignCommunityBinding';
 
 function campaign(overrides: Partial<AuthorProgressCampaign> & { id: string }): AuthorProgressCampaign {
     return {
@@ -85,5 +85,48 @@ describe('findCommunityBookConflict', () => {
         const bsky = campaign({ id: 'bsky', name: 'bSKY', sendToCommunity: true });
         const community = campaign({ id: 'rt', name: 'RT Community', sendToCommunity: true, targetBookId: 'deleted-book' });
         expect(findCommunityBookConflict(settings([bsky, community]), community)).toBeUndefined();
+    });
+});
+
+describe('moveCommunitySending', () => {
+    // The Author vault on 2026-11-07: two distinct campaigns, neither pinned,
+    // both following the active book; RT Community sends, bSKY does not.
+    function authorVault() {
+        const bsky = campaign({ id: 'bsky', name: 'bSKY', sendToCommunity: false, updateFrequency: 'weekly' });
+        const community = campaign({ id: 'rt', name: 'RT Community', sendToCommunity: true, updateFrequency: 'daily' });
+        return { bsky, community, all: settings([bsky, community]) };
+    }
+
+    it('names the campaign holding the book, so the toggle can offer the move', () => {
+        const { bsky, all } = authorVault();
+        expect(findCommunityBookConflict(all, bsky)?.id).toBe('rt');
+    });
+
+    it('flips both flags together and pins the moved book', () => {
+        const { bsky, community, all } = authorVault();
+        expect(moveCommunitySending(all, 'bsky', 'rt')).toBe(true);
+        expect(community.sendToCommunity).toBe(false);
+        expect(bsky.sendToCommunity).toBe(true);
+        expect(bsky.targetBookId).toBe('book-1');
+        expect(findCommunityBookConflict(all, bsky)).toBeUndefined();
+        expect(findCommunityBookConflict(all, community)?.id).toBe('bsky');
+    });
+
+    it('changes nothing when the named campaign does not hold the book', () => {
+        const { bsky, community, all } = authorVault();
+        community.targetBookId = 'book-2';
+        expect(moveCommunitySending(all, 'bsky', 'rt')).toBe(false);
+        expect(community.sendToCommunity).toBe(true);
+        expect(bsky.sendToCommunity).toBe(false);
+        expect(bsky.targetBookId).toBeUndefined();
+    });
+
+    it('changes nothing when the book does not resolve, or for an unknown campaign', () => {
+        const { bsky, community, all } = authorVault();
+        bsky.targetBookId = 'deleted-book';
+        expect(moveCommunitySending(all, 'bsky', 'rt')).toBe(false);
+        expect(moveCommunitySending(all, 'missing', 'rt')).toBe(false);
+        expect(community.sendToCommunity).toBe(true);
+        expect(bsky.sendToCommunity).toBe(false);
     });
 });

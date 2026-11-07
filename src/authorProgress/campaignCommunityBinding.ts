@@ -48,3 +48,24 @@ export function findCommunityBookConflict(
         && resolveCampaignBookId(settings, other) === bookId
     );
 }
+
+/**
+ * Move Community sending for a book from `fromId` to `toId` in one change:
+ * the campaign that held the book stops sending and the chosen one starts,
+ * with its resolved book pinned (a publicly sharing campaign must not
+ * retarget when the active book changes). Keeps the one-APR-per-book rule:
+ * nothing changes, and false comes back, unless `fromId` is the campaign that
+ * holds `toId`'s book right now. The caller saves the settings once.
+ */
+export function moveCommunitySending(settings: RadialTimelineSettings, toId: string, fromId: string): boolean {
+    const campaigns = settings.authorProgress?.campaigns;
+    const to = campaigns?.find(c => c.id === toId);
+    if (!to) return false;
+    const bookId = resolveCampaignBookId(settings, to);
+    const from = findCommunityBookConflict(settings, to);
+    if (!bookId || !from || from.id !== fromId) return false;
+    from.sendToCommunity = false;
+    to.targetBookId = bookId;
+    to.sendToCommunity = true;
+    return true;
+}

@@ -37,7 +37,7 @@ import { setAccessibleLabel } from '../utils/domTooltip';
  * pill's gold count, like the other things that wait on you.
  */
 
-import { Menu, Notice } from 'obsidian';
+import { Menu, Notice, Platform, type App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { getFormattingLocale, t } from '../i18n';
 import { tooltip as applyTooltip } from '../utils/tooltip';
@@ -186,6 +186,31 @@ export function communitySyncTooltip(state: CommunitySyncState, nextAt: number |
     });
 }
 
+/**
+ * The row's text in a native (OS) menu, which shows no icon and no tooltip:
+ * the status, then that clicking syncs and when the next automatic sync is
+ * due. The status leads, so a failure keeps its reason first. While syncing
+ * the status says it all.
+ */
+export function communitySyncNativeText(state: CommunitySyncState, nextAt: number | null, now: number): string {
+    const status = communitySyncRow(state, now).text;
+    if (state.status === 'syncing') return status;
+    return nextAt === null
+        ? t('ui.communityMailbox.syncRowNativeNoSchedule', { status })
+        : t('ui.communityMailbox.syncRowNative', { status, time: formatAutoSyncTime(nextAt, now) });
+}
+
+/**
+ * Obsidian's Appearance → Native menus (desktop only). Menus then render
+ * through the OS: titles as plain text, no icons, no DOM to hang a tooltip on.
+ */
+export function usesNativeMenus(app: App): boolean {
+    if (!Platform.isDesktopApp) return false;
+    // SAFE: Vault.getConfig is not in Obsidian's public typings; 'nativeMenus' is the Appearance setting's config key. Absent getConfig reads as off (Obsidian's own menus).
+    const vault = app.vault as unknown as { getConfig?: (key: string) => unknown };
+    return vault.getConfig?.('nativeMenus') === true;
+}
+
 export interface MailboxView {
     /** Connected to the Community and the toggle is on. */
     visible: boolean;
@@ -292,6 +317,10 @@ export function mailboxTooltip(view: MailboxView): string {
     return notes.length ? t('ui.communityMailbox.tooltip', { notes: notes.join(' · ') }) : t('ui.communityMailbox.nothingNew');
 }
 
+function badgeText(badge: MailboxBadge): string {
+    return badge.count > 99 ? '99+' : String(badge.count);
+}
+
 /** Paint a badge element (the pill's corner, or a menu item). */
 function paintBadge(el: HTMLElement, badge: MailboxBadge | null): void {
     el.hidden = badge === null;
@@ -299,7 +328,12 @@ function paintBadge(el: HTMLElement, badge: MailboxBadge | null): void {
     el.setText('');
     if (!badge) return;
     el.classList.add(`is-${badge.tone}`);
-    el.setText(badge.count > 99 ? '99+' : String(badge.count));
+    el.setText(badgeText(badge));
+}
+
+/** A menu entry's title in a native menu, which drops the styled badge: "Requests (2)". */
+export function nativeMenuEntryTitle(entry: MailboxMenuEntry): string {
+    return entry.badge ? `${entry.label} (${badgeText(entry.badge)})` : entry.label;
 }
 
 /** Paint one title-bar Mailbox pill from the shared state. */
@@ -316,35 +350,44 @@ export function paintMailboxButton(button: HTMLElement, badgeEl: HTMLElement, vi
 /**
  * Open the pill's menu just below it; each item opens its Community page.
  * Below them, while the vault syncs its book list, the Community sync row:
- * choosing it runs `onSyncNow`.
+ * choosing it runs `onSyncNow`. `nativeMenus` (usesNativeMenus) moves the
+ * row's action and timing from its icon and tooltip into its text.
  */
-export function openMailboxMenu(anchor: HTMLElement, view: MailboxView, onSyncNow: () => void): void {
+export function openMailboxMenu(anchor: HTMLElement, view: MailboxView, onSyncNow: () => void, nativeMenus: boolean): void {
     const doc = anchor.ownerDocument;
     const menu = new Menu();
     for (const entry of mailboxMenuEntries(view.answer)) {
         menu.addItem(item => {
-            const title = doc.win.createFragment();
-            title.appendText(entry.label);
-            if (entry.badge) {
-                const badgeEl = title.createSpan();
-                paintBadge(badgeEl, entry.badge);
-                badgeEl.classList.add('ert-mailbox-badge--menu');
+            if (nativeMenus) {
+                // The badge span would run into the label as plain text.
+                item.setTitle(nativeMenuEntryTitle(entry));
+            } else {
+                const title = doc.win.createFragment();
+                title.appendText(entry.label);
+                if (entry.badge) {
+                    const badgeEl = title.createSpan();
+                    paintBadge(badgeEl, entry.badge);
+                    badgeEl.classList.add('ert-mailbox-badge--menu');
+                }
+                item.setTitle(title);
             }
-            item.setTitle(title)
-                .setIcon(entry.icon)
+            item.setIcon(entry.icon)
                 .onClick(() => { window.open(entry.url, '_blank'); });
         });
     }
     if (view.sync) {
         const now = Date.now();
         const row = communitySyncRow(view.sync, now);
-        const hint = communitySyncTooltip(view.sync, view.nextAutoSyncAt, now);
+        // A native menu shows neither the icon nor the tooltip, so the row's
+        // own text carries the action and the next sync time there.
+        const hint = nativeMenus ? null : communitySyncTooltip(view.sync, view.nextAutoSyncAt, now);
+        const text = nativeMenus ? communitySyncNativeText(view.sync, view.nextAutoSyncAt, now) : row.text;
         menu.addSeparator();
         menu.addItem(item => {
             // The whole row is the Sync now control; its icon says so.
             const title = doc.win.createFragment();
             const label = title.createSpan();
-            label.setText(row.text);
+            label.setText(text);
             item.setTitle(title)
                 .setIcon(row.warning ? 'alert-triangle' : 'refresh-cw')
                 .setWarning(row.warning)

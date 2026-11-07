@@ -8,14 +8,18 @@ vi.mock('./communityShareClient', () => ({
 import { fetchCommunityMailbox, syncCommunityProjects, type CommunityMailboxAnswer } from './communityShareClient';
 import { buildDefaultCommunityShareSettings } from './communityShareSettings';
 import type { CommunityShareSettings } from '../types/settings';
+import { Platform } from 'obsidian';
 import {
     COMMUNITY_DESK_LAMPS_URL,
     COMMUNITY_SITE_URL,
     COMMUNITY_SYNC_OVERDUE_MS,
     CommunityMailbox,
     COMMUNITY_AUTO_SYNC_INTERVAL_MS,
+    communitySyncNativeText,
     communitySyncRow,
     communitySyncTooltip,
+    nativeMenuEntryTitle,
+    usesNativeMenus,
     formatAutoSyncTime,
     nextAutoSyncAt,
     communitySyncState,
@@ -387,6 +391,47 @@ describe('Community sync row', () => {
             plugin.communitySyncIntervalStartedAt = startedAt;
             expect(mailbox.view().nextAutoSyncAt).toBe(startedAt + COMMUNITY_AUTO_SYNC_INTERVAL_MS);
             mailbox.destroy();
+        });
+
+        describe('with native menus (no icon, no tooltip)', () => {
+            const now = at(13, 0);
+            const next = at(15, 45);
+
+            it('puts the action and the next sync time in the row text', () => {
+                expect(communitySyncNativeText({ status: 'healthy', syncedAt: now - 10e3 }, next, now))
+                    .toMatch(/^Last synced with Community just now · click to sync · next about 3:45\sPM$/);
+                expect(communitySyncNativeText({ status: 'overdue', syncedAt: now - 8 * 24 * HOUR }, next, now))
+                    .toMatch(/^Last synced with Community 8 days ago · click to sync · next about 3:45\sPM$/);
+                expect(communitySyncNativeText({ status: 'pending' }, null, now)).toBe('Not synced with Community yet · click to sync');
+                expect(communitySyncNativeText({ status: 'syncing' }, next, now)).toBe('Syncing with Community…');
+            });
+
+            it('keeps a failure\'s reason first', () => {
+                expect(communitySyncNativeText({ status: 'failed', error: 'Could not reach the Community website.' }, next, now))
+                    .toMatch(/^Couldn't sync with Community \(Could not reach the Community website\.\) · click to sync · next about 3:45\sPM$/);
+            });
+
+            it('shows counts as text, since the styled badge does not render', () => {
+                expect(nativeMenuEntryTitle({ label: 'Requests', icon: 'mail', url: 'u', badge: { tone: 'new', count: 2 } })).toBe('Requests (2)');
+                expect(nativeMenuEntryTitle({ label: 'Support inbox', icon: 'inbox', url: 'u', badge: { tone: 'unread', count: 140 } })).toBe('Support inbox (99+)');
+                expect(nativeMenuEntryTitle({ label: 'Requests', icon: 'mail', url: 'u', badge: null })).toBe('Requests');
+            });
+
+            it('reads Obsidian\'s Native menus setting on desktop only', () => {
+                const app = (value: unknown) => ({ vault: { getConfig: (key: string) => (key === 'nativeMenus' ? value : undefined) } }) as never;
+                const platform = Platform as unknown as { isDesktopApp?: boolean };
+                const was = platform.isDesktopApp;
+                try {
+                    platform.isDesktopApp = true;
+                    expect(usesNativeMenus(app(true))).toBe(true);
+                    expect(usesNativeMenus(app(false))).toBe(false);
+                    expect(usesNativeMenus({ vault: {} } as never)).toBe(false);
+                    platform.isDesktopApp = false;
+                    expect(usesNativeMenus(app(true))).toBe(false);
+                } finally {
+                    platform.isDesktopApp = was;
+                }
+            });
         });
     });
 

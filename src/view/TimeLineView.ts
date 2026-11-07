@@ -48,7 +48,7 @@ import {
 } from '../renderer/ChangeDetection';
 import { WritingSessionCompletionModal } from '../modals/WritingSessionCompletionModal';
 import { canPostSessionsToFeed, postSessionToCommunityFeed } from '../communityShare/communityShareClient';
-import { openMailboxMenu, paintMailboxButton } from '../communityShare/communityMailbox';
+import { openMailboxMenu, paintMailboxButton, usesNativeMenus } from '../communityShare/communityMailbox';
 import { DESK_LAMP_PANEL_HELP, DESK_LAMP_PANEL_NOTE, openDeskLampsMenu, openSessionDeskLampMenu, paintDeskLampButton } from '../communityShare/deskLamps';
 import { projectSessionFeedPost } from '../services/WritingSessionLog';
 import { isRenderedOnTimeline } from '../utils/sceneHelpers';
@@ -715,7 +715,7 @@ export class RadialTimelineView extends ItemView {
             this.registerDomEvent(mailboxBtn, 'click', (evt: MouseEvent) => {
                 evt.preventDefault();
                 evt.stopPropagation();
-                openMailboxMenu(mailboxBtn, mailbox.view(), () => { void mailbox.syncNow(); });
+                openMailboxMenu(mailboxBtn, mailbox.view(), () => { void mailbox.syncNow(); }, usesNativeMenus(this.app));
             });
             // Desk Lamps — right of the mailbox: a lamp and the count of
             // friends at their desks. Shown once connected with a Desk Lamp or

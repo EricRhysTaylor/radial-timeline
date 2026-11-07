@@ -1070,6 +1070,30 @@ export interface CommunityShareSettings {
      * a record made for another profile is ignored. See deskLampChoices.
      */
     deskLamps?: CommunityDeskLampsRecord;
+    /**
+     * Timeline sharing per Book Manager book, keyed by book id. Scoped like
+     * deskLamps: a record made for another profile is ignored, so connecting a
+     * different account never starts sending to it. Which details show and
+     * whether the timeline is live belong to the website, not to this record.
+     */
+    timelineShares?: Record<string, CommunityTimelineShareRecord>;
+}
+
+/** One book's timeline sharing state (plugin data, never frontmatter). */
+export interface CommunityTimelineShareRecord {
+    /** Website profile the author turned this on for. */
+    profileId: string;
+    /** Share timeline: updates go out with the book sync. */
+    enabled: boolean;
+    /** Fingerprint hash of the last timeline the website accepted. */
+    lastSentHash?: string;
+    lastSentAt?: string;
+    /** Why the last send failed. Cleared by the next success. */
+    lastError?: string;
+    /** Old scene numbers whose reveal could not follow its scene in the last send. */
+    droppedReveals?: number[];
+    /** Scenes in the last send with no scene id, whose reveals cannot follow them. */
+    scenesWithoutStableId?: number;
 }
 
 /** Desk Lamps choices for one Community profile (plugin data, never frontmatter). */

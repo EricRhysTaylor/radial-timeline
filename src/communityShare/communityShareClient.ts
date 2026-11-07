@@ -2,7 +2,8 @@ import { apiVersion, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
-import { canShareAprToCommunity, deriveCommunityShareMode, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings } from './communityShareSettings';
+import { canShareAprToCommunity, canShareTimelineToCommunity, deriveCommunityShareMode, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, timelineShareFor } from './communityShareSettings';
+import { buildTimelineSharePayload, timelinePayloadFingerprint } from './timelineSharePayload';
 import {
     COMMUNITY_DAILY_BACKFILL_DAYS,
     COMMUNITY_DAILY_BACKFILL_VERSION,
@@ -13,7 +14,7 @@ import {
     buildCommunitySharePreview,
     communityDailyIncludesWords
 } from './communitySharePreview';
-import type { CommunityShareConnectionSettings, CommunityShareFieldKey, CommunitySharePublishHistoryEntry, CommunityShareSettings, WritingSessionMode } from '../types/settings';
+import type { BookProfile, CommunityShareConnectionSettings, CommunityShareFieldKey, CommunitySharePublishHistoryEntry, CommunityShareSettings, CommunityTimelineShareRecord, WritingSessionMode } from '../types/settings';
 import type { SessionFeedPost } from '../services/WritingSessionLog';
 
 const FUNCTIONS_BASE_URL = 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/functions/v1';
@@ -916,7 +917,12 @@ export async function syncCommunityProjectsIfConnected(plugin: RadialTimelinePlu
         await syncCommunityProjects(plugin);
     } catch (error) {
         console.warn('Community project sync skipped:', error instanceof Error ? error.message : error);
+        return;
     }
+    // The load-time sync runs before the vault is indexed, and a partial read
+    // would drop the reveals of every scene it missed. The 20 s kickoff in
+    // main.ts covers that first send.
+    if (plugin.app.workspace?.layoutReady) await syncCommunityTimelinesIfDue(plugin);
 }
 
 // ── Throttled project sync ──────────────────────────────────────────────────
@@ -974,7 +980,8 @@ export async function pauseCommunitySharing(plugin: RadialTimelinePlugin): Promi
         ...current,
         scheduledPublishEnabled: false,
         // Hard freeze: block report sync, daily aggregates, project shell sync,
-        // APR uploads, and session feed posts until the author resumes.
+        // APR uploads, session feed posts and timeline updates until the author
+        // resumes.
         sharingPaused: true,
         publishHistory: appendHistory(current, {
             id: `pause-${at}`,
@@ -1007,6 +1014,7 @@ export async function resumeCommunitySharing(plugin: RadialTimelinePlugin): Prom
     // refresh the daily aggregate companion. Both handle their own failures.
     await syncCommunityShareIfDue(plugin);
     await syncCommunityDailyIfEligible(plugin);
+    await syncCommunityTimelinesIfDue(plugin);
 }
 
 // Error codes that mean the standing authorization itself is broken; continuing
@@ -1250,6 +1258,240 @@ async function runShareSync(plugin: RadialTimelinePlugin): Promise<'synced' | 's
         }));
         await plugin.saveSettings();
         return 'failed';
+    }
+}
+
+// -- Timeline sharing (Settings → Community) ----------------------------------
+
+/** A share as the website summarizes it. Never carries the document. */
+export interface TimelineShareSummary {
+    status: 'private' | 'active';
+    scene_count: number;
+    revealed_count: number;
+    hidden_scene_fields: TimelineSceneDetail[];
+    generic_subplot_names: boolean;
+}
+
+export type TimelineSceneDetail = 'title' | 'synopsis' | 'characters' | 'povMode' | 'when';
+
+export interface TimelineShareAnswer {
+    ok: true;
+    shared: boolean;
+    project_id: string;
+    share?: TimelineShareSummary;
+    summary?: { scenes_without_stable_id: number; reveals_dropped: number[] };
+}
+
+export function isTimelineShareAnswer(value: unknown): value is TimelineShareAnswer {
+    if (!value || typeof value !== 'object') return false;
+    const answer = value as Partial<TimelineShareAnswer>;
+    const share = answer.share;
+    return answer.ok === true
+        && typeof answer.shared === 'boolean'
+        && typeof answer.project_id === 'string' && COMMUNITY_UUID_RE.test(answer.project_id)
+        && (answer.shared === false || (!!share
+            && (share.status === 'private' || share.status === 'active')
+            && Array.isArray(share.hidden_scene_fields)
+            && typeof share.generic_subplot_names === 'boolean'));
+}
+
+async function postTimelineShare(plugin: RadialTimelinePlugin, body: Record<string, unknown>): Promise<TimelineShareAnswer> {
+    return postCommunityFunction(
+        plugin,
+        'timeline-share-sync',
+        body,
+        isTimelineShareAnswer,
+        { code: 'timeline_share_failed', message: t('ui.communityShareClient.timelineShareFailed') },
+        t('ui.communityShareClient.timelineShareUnexpected')
+    );
+}
+
+async function saveTimelineRecord(
+    plugin: RadialTimelinePlugin,
+    bookId: string,
+    profileId: string,
+    update: (record: CommunityTimelineShareRecord) => CommunityTimelineShareRecord
+): Promise<void> {
+    commitCommunityShare(plugin, live => {
+        // The author may have reconnected as someone else while this was out.
+        if (live.connection.profileId !== profileId) return live;
+        const base = timelineShareFor(live, bookId) ?? { profileId, enabled: false };
+        return { ...live, timelineShares: { ...live.timelineShares, [bookId]: update(base) } };
+    });
+    await plugin.saveSettings();
+}
+
+/**
+ * Send one book's timeline. Returns null when nothing changed since the last
+ * send. `create` is the author turning Share timeline on; a background update
+ * cannot create, so a timeline deleted on the website stays deleted.
+ *
+ * Checked again immediately before the request leaves: reading the book awaits,
+ * and Pause or Disconnect can land in that window.
+ */
+async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, create: boolean): Promise<TimelineShareAnswer | null> {
+    const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
+    const profileId = connection.profileId;
+    if (!profileId) throw new CommunityShareError('connection_required', t('ui.communityShareClient.connectBeforeSync'));
+
+    const items = await plugin.getSceneData({ sourcePath: book.sourceFolder });
+    const payload = buildTimelineSharePayload({
+        items,
+        bookMeta: plugin.getBookMeta(),
+        book,
+        actCount: plugin.settings.actCount,
+        pluginVersion: plugin.manifest.version,
+        exportId: crypto.randomUUID(),
+        now: new Date(),
+    });
+    if (payload.items.length === 0) {
+        throw new CommunityShareError('empty_timeline', t('ui.communityShareClient.timelineNoScenes'));
+    }
+
+    const hash = await sha256Hex(timelinePayloadFingerprint(payload));
+    const before = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (!create && timelineShareFor(before, book.id)?.lastSentHash === hash) return null;
+
+    const live = assertStillSendable(plugin, connection);
+    if (!canShareTimelineToCommunity(live)) {
+        throw new CommunityShareError('sharing_level_required', t('ui.communityShareClient.timelineLevelRequired'));
+    }
+    const answer = await postTimelineShare(plugin, {
+        connection_id: connectionId,
+        current_secret: currentSecret,
+        action: 'push',
+        plugin_book_key: book.id,
+        export: payload,
+        ...(create ? { create: true } : {}),
+    });
+
+    await saveTimelineRecord(plugin, book.id, profileId, record => ({
+        profileId,
+        enabled: create || record.enabled,
+        lastSentHash: hash,
+        lastSentAt: new Date().toISOString(),
+        droppedReveals: answer.summary?.reveals_dropped ?? [],
+        scenesWithoutStableId: answer.summary?.scenes_without_stable_id ?? 0,
+    }));
+    return answer;
+}
+
+/**
+ * Share timeline, turned on. Sends the book, private: the website holds it until
+ * the author reviews it and goes live there. Syncs the book list first, because
+ * a timeline attaches to the book's project shell.
+ */
+export async function startTimelineSharing(plugin: RadialTimelinePlugin, book: BookProfile): Promise<TimelineShareAnswer> {
+    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (!canShareTimelineToCommunity(current)) {
+        throw new CommunityShareError('sharing_level_required', t('ui.communityShareClient.timelineLevelRequired'));
+    }
+    await syncCommunityProjects(plugin);
+    const answer = await pushTimeline(plugin, book, true);
+    if (!answer) throw new CommunityShareError('invalid_response', t('ui.communityShareClient.timelineShareUnexpected'));
+    return answer;
+}
+
+/**
+ * Share timeline, turned off. Stops updates and sends nothing: taking the
+ * timeline offline or deleting it stays on the website.
+ */
+export async function stopTimelineSharing(plugin: RadialTimelinePlugin, bookId: string): Promise<void> {
+    const profileId = normalizeCommunityShareSettings(plugin.settings.communityShare).connection.profileId;
+    if (!profileId) return;
+    await saveTimelineRecord(plugin, bookId, profileId, () => ({ profileId, enabled: false }));
+}
+
+/**
+ * Read one book's share for the Timeline block. READ-only, so it works while
+ * sharing is paused, like the website context. A timeline deleted on the website
+ * turns Share timeline off here, so the block never claims a share that is gone.
+ */
+export async function fetchTimelineShareStatus(plugin: RadialTimelinePlugin, bookId: string): Promise<TimelineShareAnswer> {
+    const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
+    assertStillSendable(plugin, connection, true);
+    const answer = await postTimelineShare(plugin, {
+        connection_id: connectionId,
+        current_secret: currentSecret,
+        action: 'status',
+        plugin_book_key: bookId,
+    });
+    const profileId = connection.profileId;
+    const record = timelineShareFor(normalizeCommunityShareSettings(plugin.settings.communityShare), bookId);
+    if (!answer.shared && record?.enabled && profileId) {
+        await saveTimelineRecord(plugin, bookId, profileId, () => ({
+            profileId,
+            enabled: false,
+            lastError: t('ui.communityShareClient.timelineRemovedOnWebsite'),
+        }));
+    }
+    return answer;
+}
+
+/**
+ * The author's detail and ring-name choices. The website holds them and applies
+ * them where it serves the timeline, so this is a write, never a local setting,
+ * and it stops at Pause with everything else outbound.
+ */
+export async function setTimelineShareDetails(
+    plugin: RadialTimelinePlugin,
+    bookId: string,
+    details: { hiddenSceneFields?: TimelineSceneDetail[]; genericSubplotNames?: boolean }
+): Promise<TimelineShareAnswer> {
+    const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
+    const live = assertStillSendable(plugin, connection);
+    if (!canShareTimelineToCommunity(live)) {
+        throw new CommunityShareError('sharing_level_required', t('ui.communityShareClient.timelineLevelRequired'));
+    }
+    return postTimelineShare(plugin, {
+        connection_id: connectionId,
+        current_secret: currentSecret,
+        action: 'set_details',
+        plugin_book_key: bookId,
+        ...(details.hiddenSceneFields ? { hidden_scene_fields: details.hiddenSceneFields } : {}),
+        ...(details.genericSubplotNames !== undefined ? { generic_subplot_names: details.genericSubplotNames } : {}),
+    });
+}
+
+let timelineSyncInflight: Promise<void> | null = null;
+
+/**
+ * Standing timeline sync: every book with Share timeline on, when its timeline
+ * changed. Silent by design, like the report sync: outcomes land on the book's
+ * record for the Timeline block. Never throws, and overlapping callers share one
+ * run.
+ */
+export function syncCommunityTimelinesIfDue(plugin: RadialTimelinePlugin): Promise<void> {
+    if (timelineSyncInflight) return timelineSyncInflight;
+    timelineSyncInflight = runTimelineSync(plugin).finally(() => {
+        timelineSyncInflight = null;
+    });
+    return timelineSyncInflight;
+}
+
+async function runTimelineSync(plugin: RadialTimelinePlugin): Promise<void> {
+    const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    if (!canShareTimelineToCommunity(current) || !hasCommunityConnection(current)) return;
+    const profileId = current.connection.profileId;
+    if (!profileId) return;
+
+    for (const book of plugin.settings.books ?? []) { // SAFE: no books configured means nothing to send
+        if (!timelineShareFor(current, book.id)?.enabled || !book.sourceFolder?.trim()) continue;
+        try {
+            await pushTimeline(plugin, book, false);
+        } catch (error) {
+            const code = error instanceof CommunityShareError ? error.code : 'timeline_share_failed';
+            // Pause or Disconnect landing mid-run is a clean stop, not a failure.
+            if (code === 'sharing_paused' || code === 'connection_changed') return;
+            const message = error instanceof Error ? error.message : t('ui.communityShareClient.timelineShareFailed');
+            const removed = code === 'timeline_not_shared';
+            await saveTimelineRecord(plugin, book.id, profileId, record => ({
+                ...record,
+                enabled: removed ? false : record.enabled,
+                lastError: removed ? t('ui.communityShareClient.timelineRemovedOnWebsite') : message,
+            }));
+            if (SYNC_STOP_CODES.has(code)) return;
+        }
     }
 }
 

@@ -29,6 +29,7 @@ import type { CommunityShareFieldKey, CommunityShareSettings } from '../../types
 import { ERT_CLASSES } from '../../ui/classes';
 import { confirmWithErtModal } from '../../modals/ErtConfirmModal';
 import { addHeadingIcon, applyErtHeaderLayout } from '../wikiLink';
+import { renderCommunityTimelineBlock } from './CommunityTimelineBlock';
 import { fitSelectToSelectedLabel } from '../selectSizing';
 import { t } from '../../i18n';
 
@@ -701,6 +702,8 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             rerender();
         }
     })();
+
+    renderCommunityTimelineBlock({ plugin, containerEl: section, book: activeBook, rerender });
 
     const actionCard = section.createDiv({ cls: ERT_CLASSES.STACK });
     const actionHeading = new Setting(actionCard)

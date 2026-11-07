@@ -6,7 +6,8 @@ import type {
     CommunityShareFieldKey,
     CommunityShareFieldPolicy,
     CommunityShareSettings,
-    CommunityShareTier
+    CommunityShareTier,
+    CommunityTimelineShareRecord
 } from '../types/settings';
 
 export const COMMUNITY_SHARE_SCHEMA_VERSION = 1;
@@ -143,6 +144,11 @@ export function canShareAprToCommunity(settings: CommunityShareSettings): boolea
         && settings.tier <= 4;
 }
 
+/** A timeline is a curated project artifact too, so it follows the APR's level. */
+export function canShareTimelineToCommunity(settings: CommunityShareSettings): boolean {
+    return canShareAprToCommunity(settings);
+}
+
 export function buildCommunityShareModeUpdate(mode: CommunityShareMode): Partial<CommunityShareSettings> {
     return {
         enabled: mode !== 'private',
@@ -227,6 +233,38 @@ function normalizeDeskLamps(value: unknown): CommunityDeskLampsRecord | undefine
     };
 }
 
+function normalizeTimelineShares(value: unknown): Record<string, CommunityTimelineShareRecord> | undefined {
+    if (!value || typeof value !== 'object') return undefined;
+    const records: Record<string, CommunityTimelineShareRecord> = {};
+    for (const [bookId, raw] of Object.entries(value as Record<string, unknown>)) {
+        const record = raw as Partial<CommunityTimelineShareRecord> | null;
+        if (!bookId || !record || typeof record.profileId !== 'string' || !record.profileId) continue;
+        records[bookId] = {
+            profileId: record.profileId,
+            enabled: record.enabled === true,
+            ...(typeof record.lastSentHash === 'string' ? { lastSentHash: record.lastSentHash } : {}),
+            ...(typeof record.lastSentAt === 'string' ? { lastSentAt: record.lastSentAt } : {}),
+            ...(typeof record.lastError === 'string' ? { lastError: record.lastError } : {}),
+            ...(Array.isArray(record.droppedReveals)
+                ? { droppedReveals: record.droppedReveals.filter((n): n is number => Number.isInteger(n)) }
+                : {}),
+            ...(Number.isInteger(record.scenesWithoutStableId) ? { scenesWithoutStableId: record.scenesWithoutStableId } : {}),
+        };
+    }
+    return Object.keys(records).length > 0 ? records : undefined;
+}
+
+/**
+ * This book's timeline record for the connected profile. A record made for
+ * another account is ignored, the way deskLampChoices ignores one: consent was
+ * given to send to that account, not this one.
+ */
+export function timelineShareFor(settings: CommunityShareSettings, bookId: string): CommunityTimelineShareRecord | undefined {
+    const record = settings.timelineShares?.[bookId];
+    if (!record || !settings.connection.profileId || record.profileId !== settings.connection.profileId) return undefined;
+    return record;
+}
+
 /**
  * The Desk Lamps choices for the connected profile. A record made for another
  * profile (a different account connected since) is ignored, so its friends are
@@ -308,6 +346,7 @@ export function normalizeCommunityShareSettings(raw?: Partial<CommunityShareSett
         publishHistory,
         lastError: input?.lastError,
         dailyBackfill: normalizeDailyBackfill(input?.dailyBackfill),
-        deskLamps: normalizeDeskLamps(input?.deskLamps)
+        deskLamps: normalizeDeskLamps(input?.deskLamps),
+        timelineShares: normalizeTimelineShares(input?.timelineShares)
     };
 }

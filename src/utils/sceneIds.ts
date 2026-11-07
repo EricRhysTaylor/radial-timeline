@@ -8,6 +8,17 @@ const SCENE_CLASS_KEY = 'class';
 const SCENE_ID_KEY = 'id';
 const CANONICAL_REFERENCE_ID_KEY = 'ID';
 
+const OPAQUE_SCENE_ID = new RegExp(`^${SCENE_ID_PREFIX}[0-9a-f]{${MIN_HEX_LENGTH},${MAX_HEX_LENGTH}}$`);
+
+/**
+ * Whether an id is one this plugin generated. `readSceneId` returns whatever an
+ * author typed into the field, which can carry a title, so anything leaving the
+ * vault checks this first. The website applies the same rule.
+ */
+export function isOpaqueSceneId(id: string): boolean {
+    return OPAQUE_SCENE_ID.test(id);
+}
+
 export function generateSceneId(hexLength: number = DEFAULT_HEX_LENGTH): string {
     const length = clampHexLength(hexLength);
     const byteLength = Math.ceil(length / 2);

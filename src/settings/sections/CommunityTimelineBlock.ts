@@ -144,8 +144,12 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
             toggle.setValue(record?.enabled === true).setDisabled(paused);
             toggle.onChange(async next => {
                 if (!next) {
-                    await stopTimelineSharing(plugin, bookId);
-                    new Notice(t('ui.communityShareSection.timelineStoppedNotice'));
+                    try {
+                        await stopTimelineSharing(plugin, bookId);
+                        new Notice(t('ui.communityShareSection.timelineStoppedNotice'));
+                    } catch (error) {
+                        console.error('Could not stop timeline sharing:', error);
+                    }
                     rerender();
                     return;
                 }

@@ -3958,7 +3958,7 @@ export const fr: TranslationKeys = {
         },
         "communityShareSection": {
             "timelineHeading": "Chronologie",
-            "timelineDesc": "Partagez la chronologie d'un livre sur le site de la Communauté. Le texte des scènes ne quitte jamais votre coffre.",
+            "timelineDesc": "Partagez la chronologie d'un livre sur le site de la Communauté. Vous choisissez les scènes à révéler.",
             "timelineLevelNote": "Choisissez un niveau de partage supérieur à Privé pour partager une chronologie.",
             "timelineNoBook": "Définissez d'abord un dossier source pour ce livre dans le gestionnaire de livres.",
             "timelineShareName": "Partager la chronologie",
@@ -3969,7 +3969,7 @@ export const fr: TranslationKeys = {
             "timelineStopNote": "La désactivation arrête les mises à jour. Votre chronologie reste telle quelle sur le site, où vous pouvez la retirer ou la supprimer.",
             "timelineLastSent": "Dernier envoi : {{date}}.",
             "timelineConfirmTitle": "Partager cette chronologie ?",
-            "timelineConfirmMessage": "Radial Timeline envoie l'ordre des scènes, les actes, les intrigues secondaires, le statut et l'étape de publication. Il envoie aussi les titres, synopsis, personnages, point de vue et dates de l'histoire, conservés en privé jusqu'à ce que vous révéliez une scène. Une nouvelle chronologie arrive en privé, et une chronologie déjà en ligne le reste. Le texte des scènes et les chemins de fichiers ne sont jamais envoyés.",
+            "timelineConfirmMessage": "Radial Timeline envoie l'ordre des scènes, les actes, les intrigues secondaires, le statut et l'étape de publication. Il envoie aussi les titres, synopsis, personnages, point de vue et dates de l'histoire, conservés en privé jusqu'à ce que vous révéliez une scène. Une nouvelle chronologie arrive en privé, et une chronologie déjà en ligne le reste. Le texte des scènes et les chemins de fichiers restent dans votre coffre.",
             "timelineConfirmButton": "Envoyer la chronologie",
             "timelineSentNotice": "Chronologie envoyée, en privé. Vérifiez-la sur le site pour la mettre en ligne.",
             "timelineUpdatedNotice": "Chronologie mise à jour. Elle reste en ligne.",

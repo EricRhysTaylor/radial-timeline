@@ -3958,7 +3958,7 @@ export const vi: TranslationKeys = {
         },
         "communityShareSection": {
             "timelineHeading": "Dòng thời gian",
-            "timelineDesc": "Chia sẻ dòng thời gian của một cuốn sách trên trang Cộng đồng. Văn bản cảnh không bao giờ rời khỏi kho của bạn.",
+            "timelineDesc": "Chia sẻ dòng thời gian của một cuốn sách trên trang Cộng đồng. Bạn chọn những cảnh sẽ tiết lộ.",
             "timelineLevelNote": "Chọn mức chia sẻ cao hơn Riêng tư để chia sẻ dòng thời gian.",
             "timelineNoBook": "Trước tiên, hãy đặt thư mục nguồn cho cuốn sách này trong Trình quản lý sách.",
             "timelineShareName": "Chia sẻ dòng thời gian",
@@ -3969,7 +3969,7 @@ export const vi: TranslationKeys = {
             "timelineStopNote": "Tắt mục này sẽ dừng cập nhật. Dòng thời gian vẫn giữ nguyên trên trang web, nơi bạn có thể gỡ xuống hoặc xóa.",
             "timelineLastSent": "Lần gửi gần nhất: {{date}}.",
             "timelineConfirmTitle": "Chia sẻ dòng thời gian này?",
-            "timelineConfirmMessage": "Radial Timeline gửi thứ tự cảnh, hồi, cốt truyện phụ, trạng thái và giai đoạn xuất bản. Tiêu đề, tóm tắt, nhân vật, góc nhìn và ngày trong truyện cũng được gửi, lưu riêng tư cho đến khi bạn tiết lộ một cảnh. Dòng thời gian mới đến ở chế độ riêng tư, còn dòng thời gian đã công khai vẫn công khai. Văn bản cảnh và đường dẫn tệp không bao giờ được gửi.",
+            "timelineConfirmMessage": "Radial Timeline gửi thứ tự cảnh, hồi, cốt truyện phụ, trạng thái và giai đoạn xuất bản. Tiêu đề, tóm tắt, nhân vật, góc nhìn và ngày trong truyện cũng được gửi, lưu riêng tư cho đến khi bạn tiết lộ một cảnh. Dòng thời gian mới đến ở chế độ riêng tư, còn dòng thời gian đã công khai vẫn công khai. Văn bản cảnh và đường dẫn tệp vẫn ở trong kho của bạn.",
             "timelineConfirmButton": "Gửi dòng thời gian",
             "timelineSentNotice": "Đã gửi dòng thời gian ở chế độ riêng tư. Hãy xem lại trên trang web để đăng công khai.",
             "timelineUpdatedNotice": "Đã cập nhật dòng thời gian. Dòng thời gian vẫn công khai.",

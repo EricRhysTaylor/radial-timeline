@@ -3956,7 +3956,7 @@ export const ja: DeepPartial<TranslationKeys> = {
         },
         communityShareSection: {
             timelineHeading: 'タイムライン',
-            timelineDesc: '本のタイムラインをコミュニティサイトで共有します。シーン本文が保管庫の外に出ることはありません。',
+            timelineDesc: '本のタイムラインをコミュニティサイトで共有します。公開するシーンはあなたが選びます。',
             timelineLevelNote: 'タイムラインを共有するには、非公開より上の共有レベルを選んでください。',
             timelineNoBook: '先にブックマネージャーでこの本のソースフォルダを設定してください。',
             timelineShareName: 'タイムラインを共有',
@@ -3967,7 +3967,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             timelineStopNote: 'オフにすると更新が止まります。タイムラインはサイト上にそのまま残り、そこで非公開にしたり削除したりできます。',
             timelineLastSent: '最終送信: {{date}}。',
             timelineConfirmTitle: 'このタイムラインを共有しますか？',
-            timelineConfirmMessage: 'Radial Timeline は、シーンの順序、幕、サブプロット、ステータス、公開ステージを送信します。タイトル、シノプシス、登場人物、視点、物語内の日付も送信され、シーンを公開するまで非公開で保管されます。新しいタイムラインは非公開で届き、すでに公開中のものは公開されたままです。シーン本文とファイルパスが送信されることはありません。',
+            timelineConfirmMessage: 'Radial Timeline は、シーンの順序、幕、サブプロット、ステータス、公開ステージを送信します。タイトル、シノプシス、登場人物、視点、物語内の日付も送信され、シーンを公開するまで非公開で保管されます。新しいタイムラインは非公開で届き、すでに公開中のものは公開されたままです。シーン本文とファイルパスは保管庫に残ります。',
             timelineConfirmButton: 'タイムラインを送信',
             timelineSentNotice: 'タイムラインを非公開で送信しました。サイトで確認して公開してください。',
             timelineUpdatedNotice: 'タイムラインを更新しました。公開されたままです。',

@@ -3955,7 +3955,7 @@ export const de: DeepPartial<TranslationKeys> = {
         },
         communityShareSection: {
             timelineHeading: 'Timeline',
-            timelineDesc: 'Teile die Timeline eines Buches auf der Community-Website. Der Szenentext verlässt deinen Vault nie.',
+            timelineDesc: 'Teile die Timeline eines Buches auf der Community-Website. Du entscheidest, welche Szenen du freigibst.',
             timelineLevelNote: 'Wähle eine Freigabestufe über Privat, um eine Timeline zu teilen.',
             timelineNoBook: 'Lege zuerst im Buchmanager einen Quellordner für dieses Buch fest.',
             timelineShareName: 'Timeline teilen',
@@ -3966,7 +3966,7 @@ export const de: DeepPartial<TranslationKeys> = {
             timelineStopNote: 'Das Ausschalten stoppt die Updates. Deine Timeline bleibt auf der Website, wie sie ist. Dort kannst du sie offline nehmen oder löschen.',
             timelineLastSent: 'Zuletzt gesendet: {{date}}.',
             timelineConfirmTitle: 'Diese Timeline teilen?',
-            timelineConfirmMessage: 'Radial Timeline sendet Szenenreihenfolge, Akte, Nebenhandlungen, Status und Veröffentlichungsphase. Außerdem Titel, Synopsen, Besetzung, Erzählperspektive und Story-Daten, die privat gespeichert bleiben, bis du eine Szene freigibst. Eine neue Timeline kommt privat an, eine bereits live geschaltete bleibt live. Szenentext und Dateipfade werden nie gesendet.',
+            timelineConfirmMessage: 'Radial Timeline sendet Szenenreihenfolge, Akte, Nebenhandlungen, Status und Veröffentlichungsphase. Außerdem Titel, Synopsen, Besetzung, Erzählperspektive und Story-Daten, die privat gespeichert bleiben, bis du eine Szene freigibst. Eine neue Timeline kommt privat an, eine bereits live geschaltete bleibt live. Szenentext und Dateipfade bleiben in deinem Vault.',
             timelineConfirmButton: 'Timeline senden',
             timelineSentNotice: 'Timeline privat gesendet. Prüfe sie auf der Website, um sie live zu schalten.',
             timelineUpdatedNotice: 'Timeline aktualisiert. Sie bleibt live.',

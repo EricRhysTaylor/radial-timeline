@@ -3955,7 +3955,7 @@ export const ko: DeepPartial<TranslationKeys> = {
         },
         communityShareSection: {
             timelineHeading: '타임라인',
-            timelineDesc: '책의 타임라인을 커뮤니티 웹사이트에 공유합니다. 장면 본문은 보관함 밖으로 나가지 않습니다.',
+            timelineDesc: '책의 타임라인을 커뮤니티 웹사이트에 공유합니다. 공개할 장면은 직접 선택합니다.',
             timelineLevelNote: '타임라인을 공유하려면 비공개보다 높은 공유 수준을 선택하세요.',
             timelineNoBook: '먼저 책 관리자에서 이 책의 소스 폴더를 설정하세요.',
             timelineShareName: '타임라인 공유',
@@ -3966,7 +3966,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             timelineStopNote: '끄면 업데이트가 중지됩니다. 타임라인은 웹사이트에 그대로 남으며, 그곳에서 내리거나 삭제할 수 있습니다.',
             timelineLastSent: '마지막 전송: {{date}}.',
             timelineConfirmTitle: '이 타임라인을 공유할까요?',
-            timelineConfirmMessage: 'Radial Timeline은 장면 순서, 막, 서브플롯, 상태, 출판 단계를 전송합니다. 제목, 시놉시스, 등장인물, 시점, 이야기 날짜도 전송되며, 장면을 공개할 때까지 비공개로 저장됩니다. 새 타임라인은 비공개로 도착하며, 이미 공개된 타임라인은 계속 공개됩니다. 장면 본문과 파일 경로는 전송되지 않습니다.',
+            timelineConfirmMessage: 'Radial Timeline은 장면 순서, 막, 서브플롯, 상태, 출판 단계를 전송합니다. 제목, 시놉시스, 등장인물, 시점, 이야기 날짜도 전송되며, 장면을 공개할 때까지 비공개로 저장됩니다. 새 타임라인은 비공개로 도착하며, 이미 공개된 타임라인은 계속 공개됩니다. 장면 본문과 파일 경로는 보관함에 남아 있습니다.',
             timelineConfirmButton: '타임라인 전송',
             timelineSentNotice: '타임라인을 비공개로 전송했습니다. 웹사이트에서 검토한 뒤 공개하세요.',
             timelineUpdatedNotice: '타임라인을 업데이트했습니다. 계속 공개됩니다.',

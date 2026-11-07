@@ -3957,7 +3957,7 @@ export const zh: DeepPartial<TranslationKeys> = {
         },
         communityShareSection: {
             timelineHeading: '时间线',
-            timelineDesc: '在社区网站上分享一本书的时间线。场景正文绝不会离开你的仓库。',
+            timelineDesc: '在社区网站上分享一本书的时间线。由你决定揭示哪些场景。',
             timelineLevelNote: '请选择高于“私密”的分享级别以分享时间线。',
             timelineNoBook: '请先在书籍管理器中为这本书设置源文件夹。',
             timelineShareName: '分享时间线',
@@ -3968,7 +3968,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             timelineStopNote: '关闭后将停止更新。你的时间线会原样保留在网站上，你可以在那里将其下线或删除。',
             timelineLastSent: '上次发送：{{date}}。',
             timelineConfirmTitle: '要分享此时间线吗？',
-            timelineConfirmMessage: 'Radial Timeline 会发送场景顺序、幕、支线情节、状态和出版阶段，也会发送标题、梗概、角色、视角和故事日期，这些内容在你揭示场景之前都私密保存。新的时间线到达时处于私密状态，已上线的时间线保持上线。场景正文和文件路径绝不会被发送。',
+            timelineConfirmMessage: 'Radial Timeline 会发送场景顺序、幕、支线情节、状态和出版阶段，也会发送标题、梗概、角色、视角和故事日期，这些内容在你揭示场景之前都私密保存。新的时间线到达时处于私密状态，已上线的时间线保持上线。场景正文和文件路径保留在你的仓库中。',
             timelineConfirmButton: '发送时间线',
             timelineSentNotice: '时间线已以私密方式发送。请在网站上审阅后上线。',
             timelineUpdatedNotice: '时间线已更新，并保持上线。',

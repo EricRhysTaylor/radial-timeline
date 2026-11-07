@@ -3958,7 +3958,7 @@ export const es: TranslationKeys = {
         },
         "communityShareSection": {
             "timelineHeading": "Línea de tiempo",
-            "timelineDesc": "Comparte la línea de tiempo de un libro en el sitio de la Comunidad. El texto de las escenas nunca sale de tu bóveda.",
+            "timelineDesc": "Comparte la línea de tiempo de un libro en el sitio de la Comunidad. Tú eliges qué escenas revelar.",
             "timelineLevelNote": "Elige un nivel de uso compartido superior a Privado para compartir una línea de tiempo.",
             "timelineNoBook": "Primero define una carpeta de origen para este libro en el Gestor de libros.",
             "timelineShareName": "Compartir línea de tiempo",
@@ -3969,7 +3969,7 @@ export const es: TranslationKeys = {
             "timelineStopNote": "Al desactivarlo se detienen las actualizaciones. Tu línea de tiempo queda como está en el sitio, donde puedes retirarla o eliminarla.",
             "timelineLastSent": "Último envío: {{date}}.",
             "timelineConfirmTitle": "¿Compartir esta línea de tiempo?",
-            "timelineConfirmMessage": "Radial Timeline envía el orden de las escenas, los actos, las subtramas, el estado y la etapa de publicación. También envía títulos, sinopsis, reparto, punto de vista y fechas de la historia, guardados en privado hasta que reveles una escena. Una línea de tiempo nueva llega como privada, y una ya publicada sigue publicada. El texto de las escenas y las rutas de archivo nunca se envían.",
+            "timelineConfirmMessage": "Radial Timeline envía el orden de las escenas, los actos, las subtramas, el estado y la etapa de publicación. También envía títulos, sinopsis, reparto, punto de vista y fechas de la historia, guardados en privado hasta que reveles una escena. Una línea de tiempo nueva llega como privada, y una ya publicada sigue publicada. El texto de las escenas y las rutas de archivo se quedan en tu bóveda.",
             "timelineConfirmButton": "Enviar línea de tiempo",
             "timelineSentNotice": "Línea de tiempo enviada, privada. Revísala en el sitio para publicarla.",
             "timelineUpdatedNotice": "Línea de tiempo actualizada. Sigue publicada.",

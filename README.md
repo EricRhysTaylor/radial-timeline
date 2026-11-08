@@ -51,6 +51,8 @@ The mode buttons run in this order: Progress, Narrative, Chronologue, and Gossam
 
 Beside the wheel, the **[Timetable](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Timetable)** lays the same book out in an Obsidian Bases view: as rows, as Panels with character portraits, or as an Outline next to your planning documents, where you place scenes and sketches by dragging them. **Canvas story maps** give each subplot its own lane on an Obsidian Canvas, and the map lights up the scene you Shift-hover on the timeline. Turn a mind map on a Canvas into numbered scenes in one step.
 
+Share a book's timeline with the **[Radial Timeline Community](https://community.radialtimeline.com/go/readme-community)** from **[Settings → Community](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Settings-Community#share-your-timeline)**. It arrives private, you reveal scenes one by one, and a live timeline stays up to date as you write.
+
 ## Docs (How-to & Setup)
 
 If you want the "how-to" details (setup, sets, properties, reordering, advanced options), they live in the wiki:

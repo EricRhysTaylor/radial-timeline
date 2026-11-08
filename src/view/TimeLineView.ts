@@ -2151,7 +2151,7 @@ export class RadialTimelineView extends ItemView {
             const pendingTime = await readSessionTimeJournal(this.plugin, active.id).catch(error => { new Notice(String(error)); return undefined; });
             if (pendingTime === undefined) return;
             const paths = new Set(pendingTime ? pendingTime.entries.map(entry => entry.path) : [...Object.keys(active.sceneActivity ?? {}), ...sceneSuggestions.map(scene => scene.path)]);
-            const sceneActivity = [...paths].map(path => {
+            const sceneActivity = await Promise.all([...paths].map(async path => {
                 const pending = pendingTime?.entries.find(item => item.path === path);
                 const entry = active.sceneActivity?.[path];
                 const file = this.app.vault.getFileByPath(path);
@@ -2163,11 +2163,11 @@ export class RadialTimelineView extends ItemView {
                 return {
                     path, title: titleByPath.get(path) ?? path.split('/').pop()?.replace(/\.md$/i, '') ?? path,
                     alreadyApplied: !!pending && (pending.applied || beforeHours === pending.afterHours),
-                    blocked: !!pending && !pending.applied && pending.minutes > 0 && (!!pending.skipped || sceneTimeBlocker(this.plugin, pending) !== null),
+                    blocked: !!pending && !pending.applied && pending.minutes > 0 && (!!pending.skipped || await sceneTimeBlocker(this.plugin, pending) !== null),
                     currentHours: beforeHours,
                     beforeHours: pending?.beforeHours ?? beforeHours, activeMs: pending ? pending.minutes * 60000 : entry?.activeMs ?? 0, typedWords: pending?.words ?? entry?.typedWords ?? 0,
                 };
-            });
+            }));
             const feedShare = {
                 eligible: canPostSessionsToFeed(this.plugin),
                 defaultOn: service.isPostSessionsToFeedEnabled(),

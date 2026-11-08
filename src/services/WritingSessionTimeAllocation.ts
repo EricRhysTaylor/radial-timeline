@@ -1,4 +1,4 @@
-import { TFile } from 'obsidian';
+import { getFrontMatterInfo, parseYaml, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { WritingSessionCompletionResult } from '../modals/WritingSessionCompletionModal';
 import { authorKeyFor } from '../timetable/timetableFiles';
@@ -40,12 +40,23 @@ function readEntryTotal(fm: Record<string, unknown>, property: string, entry: Ti
     return { key, current };
 }
 
-/** Why a scene cannot take this entry's time, or null when it can. */
-export function sceneTimeBlocker(plugin: RadialTimelinePlugin, entry: TimeJournalEntry): string | null {
+/**
+ * Why a scene cannot take this entry's time, or null when it can. Reads the
+ * note itself rather than the metadata cache: a scene whose properties do not
+ * parse has no cached frontmatter, yet its write would fail.
+ */
+export async function sceneTimeBlocker(plugin: RadialTimelinePlugin, entry: TimeJournalEntry): Promise<string | null> {
     const file = plugin.app.vault.getAbstractFileByPath(entry.path);
     if (!(file instanceof TFile) || !plugin.isSceneFile(file.path)) return `Scene is unavailable: ${entry.path}`;
+    const info = getFrontMatterInfo(await plugin.app.vault.read(file));
+    let fm: unknown = {};
+    if (info.exists) {
+        try { fm = parseYaml(info.frontmatter); } catch { return `Scene properties cannot be read; fix them before saving: ${entry.path}`; }
+    }
+    if (fm === null || fm === undefined) fm = {}; // An empty properties block has blank Total Time.
+    if (typeof fm !== 'object' || Array.isArray(fm)) return `Scene properties cannot be read; fix them before saving: ${entry.path}`;
     try {
-        readEntryTotal(plugin.app.metadataCache.getFileCache(file)?.frontmatter ?? {}, authorKeyFor('Total Time', plugin.settings), entry); // SAFE: a scene with no properties has blank Total Time
+        readEntryTotal(fm as Record<string, unknown>, authorKeyFor('Total Time', plugin.settings), entry);
         return null;
     } catch (error) {
         return error instanceof Error ? error.message : String(error);
@@ -101,7 +112,7 @@ export async function applySessionTimeAllocations(plugin: RadialTimelinePlugin, 
     } else {
         journal = { version: 1, sessionId, completion, entries: entries.map(entry => ({ ...entry, afterHours: updatedHours(entry.beforeHours, entry.minutes), applied: false })) };
         for (const entry of journal.entries) {
-            const blocker = entry.minutes > 0 ? sceneTimeBlocker(plugin, entry) : null;
+            const blocker = entry.minutes > 0 ? await sceneTimeBlocker(plugin, entry) : null;
             if (blocker) throw new Error(blocker);
         }
         await adapter.write(path, JSON.stringify(journal));
@@ -111,7 +122,7 @@ export async function applySessionTimeAllocations(plugin: RadialTimelinePlugin, 
     for (const entry of journal.entries) {
         if (entry.applied) continue;
         if (entry.minutes === 0) { entry.applied = true; await adapter.write(path, JSON.stringify(journal)); continue; }
-        if (entry.skipped || (retrying && sceneTimeBlocker(plugin, entry))) {
+        if (entry.skipped || (retrying && await sceneTimeBlocker(plugin, entry))) {
             skipped.push(entry.path);
             if (!entry.skipped) { entry.skipped = true; await adapter.write(path, JSON.stringify(journal)); }
             continue;

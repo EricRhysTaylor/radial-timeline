@@ -1,19 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { TFile } from 'obsidian';
-import { allocationMinutes, applySessionTimeAllocations, parseRecordedHours, readSessionTimeJournal, rebaseSessionPath, rebaseSessionTimeJournal } from './WritingSessionTimeAllocation';
+import { stringify } from 'yaml';
+import { allocationMinutes,applySessionTimeAllocations, parseRecordedHours, readSessionTimeJournal, rebaseSessionPath, rebaseSessionTimeJournal } from './WritingSessionTimeAllocation';
 
 function fixture() {
     const files = new Map([['Book/A.md', new TFile('Book/A.md')], ['Book/B.md', new TFile('Book/B.md')]]);
     const metadata = new Map<string, Record<string, unknown>>([['Book/A.md', { 'Total Time': 5.4, Synopsis: 'Keep' }], ['Book/B.md', { 'Total Time': 1 }]]);
     const store = new Map<string, string>();
+    const broken = new Set<string>();
     let failPath = '';
     const plugin = {
         manifest: { dir: '.obsidian/plugins/radial-timeline' }, settings: {}, isSceneFile: (path: string) => files.has(path),
-        app: { vault: { adapter: { exists: async (p: string) => store.has(p), read: async (p: string) => store.get(p)!, write: async (p: string, v: string) => { store.set(p, v); } }, getAbstractFileByPath: (p: string) => files.get(p) },
-            metadataCache: { getFileCache: (f: TFile) => ({ frontmatter: metadata.get(f.path) }) },
-            fileManager: { processFrontMatter: async (f: TFile, cb: (fm: Record<string, unknown>) => void) => { if (f.path === failPath) throw new Error('write failed'); cb(metadata.get(f.path)!); } } },
+        app: { vault: { adapter: { exists: async (p: string) => store.has(p), read: async (p: string) => store.get(p)!, write: async (p: string, v: string) => { store.set(p, v); } }, getAbstractFileByPath: (p: string) => files.get(p),
+                // An unclosed quote: the note's properties do not parse.
+                read: async (f: TFile) => broken.has(f.path) ? '---\nSynopsis: "unclosed\nTotal Time: 1\n---\nText' : `---\n${stringify(metadata.get(f.path))}---\nText` },
+            // Obsidian caches no frontmatter for properties that do not parse.
+            metadataCache: { getFileCache: (f: TFile) => ({ frontmatter: broken.has(f.path) ? undefined : metadata.get(f.path) }) },
+            fileManager: { processFrontMatter: async (f: TFile, cb: (fm: Record<string, unknown>) => void) => { if (f.path === failPath || broken.has(f.path)) throw new Error('write failed'); cb(metadata.get(f.path)!); } } },
     };
-    return { plugin: plugin as never, files, metadata, store, fail: (p: string) => { failPath = p; } };
+    return { plugin: plugin as never, files, metadata, store, fail: (p: string) => { failPath = p; }, breakProperties: (p: string) => { broken.add(p); } };
 }
 const allocations = [{ path: 'Book/A.md', minutes: 30, words: 200, beforeHours: 5.4 }, { path: 'Book/B.md', minutes: 15, words: 50, beforeHours: 1 }];
 
@@ -97,6 +102,20 @@ describe('scene time allocation ledger', () => {
         expect(f.metadata.get('Book/A.md')?.['Total Time']).toBe(5.9);
         expect((await readSessionTimeJournal(f.plugin, 'session-skip'))?.entries[1].skipped).toBe(true);
         await expect(applySessionTimeAllocations(f.plugin, 'session-skip', allocations)).resolves.toEqual(['Book/B.md']);
+    });
+    it('refuses a first save for a scene whose properties do not parse, leaving no ledger', async () => {
+        const f = fixture(); f.breakProperties('Book/B.md');
+        await expect(applySessionTimeAllocations(f.plugin, 'session-broken', allocations)).rejects.toThrow('cannot be read');
+        expect(await readSessionTimeJournal(f.plugin, 'session-broken')).toBeNull();
+        expect(f.metadata.get('Book/A.md')?.['Total Time']).toBe(5.4);
+    });
+    it('finishes a pending ledger by skipping a scene whose properties stopped parsing', async () => {
+        const f = fixture(); f.fail('Book/B.md');
+        await expect(applySessionTimeAllocations(f.plugin, 'session-broken-retry', allocations)).rejects.toThrow('write failed');
+        f.fail(''); f.breakProperties('Book/B.md');
+        await expect(applySessionTimeAllocations(f.plugin, 'session-broken-retry', allocations)).resolves.toEqual(['Book/B.md']);
+        expect(f.metadata.get('Book/A.md')?.['Total Time']).toBe(5.9);
+        expect((await readSessionTimeJournal(f.plugin, 'session-broken-retry'))?.entries[1].skipped).toBe(true);
     });
     it('keeps a pending ledger on a renamed scene, so the retry applies its time', async () => {
         const f = fixture(); f.fail('Book/B.md');

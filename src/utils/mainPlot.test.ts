@@ -113,7 +113,7 @@ describe('a renamed main plot', () => {
             scene(5, 'Main Plot'), scene(6, 'Main Plot'),
         ];
 
-        const { masterSubplotOrder } = computeCacheableValues(rendererPlugin('narrative') as never, scenes);
+        const { masterSubplotOrder } = computeCacheableValues(rendererPlugin('narrative') as never, scenes, { ownSubplotColors: new Map() });
 
         expect(masterSubplotOrder).toEqual(['The Heist', 'Romance', 'Main Plot']);
     });

@@ -5,7 +5,7 @@ import { buildTableRow, compareManuscriptRows } from './timetableModel';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { isStoryActHeading, selectedCanvasBounds, storyActHeadingLabel, storyAxis, storyKeyStep, storyPosition, storyProgress } from './canvasNavigation';
 import { placeKeyPanel, renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
-import { readSubplotColor, SUBPLOT_COLOR_SLOTS } from '../renderer/utils/subplotColors';
+import { readSubplotColorValue, subplotColorCss, SUBPLOT_COLOR_SLOTS, type SubplotColor } from '../renderer/utils/subplotColors';
 import { getActiveBook } from '../utils/books';
 import { getMainPlotName } from '../utils/mainPlot';
 import { cardColor } from './canvasCardSubplots';
@@ -22,13 +22,14 @@ type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => Node
 export class CanvasStoryNavigator {
     private root: HTMLElement | null = null;
     private colors: HTMLElement | null = null;
-    private swatches: HTMLButtonElement[] = [];
+    /** The palette slots, then a swatch for each of the active book's subplots that wears its own color. */
+    private swatches: Array<{ el: HTMLButtonElement; color: SubplotColor }> = [];
     private path = '';
     private storyMap = false;
     private hasBookCards = false;
     private events = new Component();
     private readonly actLabels = new Map<HTMLElement, HTMLElement>();
-    constructor(private readonly plugin: RadialTimelinePlugin, private readonly view: ItemView, private readonly ringSlots: (bookId: string) => Promise<Map<string, number>>) {}
+    constructor(private readonly plugin: RadialTimelinePlugin, private readonly view: ItemView, private readonly ringColors: (bookId: string) => Promise<Map<string, SubplotColor>>) {}
 
     private canvas(): Canvas | undefined { return (this.view as unknown as { canvas?: Canvas }).canvas; }
 
@@ -41,23 +42,48 @@ export class CanvasStoryNavigator {
         }) : [];
     }
 
-    private paint(slot: number): void {
-        const color = readSubplotColor(this.view.containerEl.doc, slot);
-        for (const node of this.selectedIdeas()) node.setColor?.(color);
+    private paint(color: SubplotColor): void {
+        const value = readSubplotColorValue(this.view.containerEl.doc, color);
+        for (const node of this.selectedIdeas()) node.setColor?.(value);
         this.canvas()?.requestSave?.();
         this.updateBar();
     }
 
-    /** Swatches read as Settings does: Main Plot, then the book's rings, then the free ring numbers. */
+    private addSwatch(strip: HTMLElement, color: SubplotColor): HTMLButtonElement {
+        const el = strip.createEl('button', { cls: 'ert-story-navigator__swatch', attr: { type: 'button' } });
+        el.setCssProps({ '--ert-story-swatch': subplotColorCss(color) });
+        el.addEventListener('click', () => this.paint(color)); // SAFE: the listener lives and goes with its swatch
+        this.swatches.push({ el, color });
+        return el;
+    }
+
+    /**
+     * Swatches read as Settings does: Main Plot, then the book's rings that
+     * wear palette colors, then the free ring numbers. A subplot with its own
+     * color follows with a swatch of that color, so cards painted with it
+     * join that subplot.
+     */
     private async labelSwatches(): Promise<void> {
         const book = getActiveBook(this.plugin.settings);
-        const slots = book ? await this.ringSlots(book.id) : new Map<string, number>();
-        const names = new Map([...slots].map(([name, slot]) => [slot, name]));
-        this.swatches.forEach((swatch, slot) => {
-            const label = names.get(slot) ?? (slot === 0 ? getMainPlotName() : t('ui.colorsSection.ringLabel', { number: slot + 1 }));
-            setAccessibleLabel(swatch, label);
-            setTooltip(swatch, label);
+        const rings = book ? await this.ringColors(book.id) : new Map<string, SubplotColor>();
+        if (!this.colors) return;
+        const names = new Map<number, string>();
+        for (const [name, color] of rings) if (color.kind === 'slot') names.set(color.slot, name);
+        this.swatches = this.swatches.filter(swatch => {
+            if (swatch.color.kind === 'slot') return true;
+            swatch.el.remove();
+            return false;
         });
+        for (const [name, color] of rings) {
+            if (color.kind === 'own') this.addSwatch(this.colors, color).dataset.subplot = name;
+        }
+        for (const { el, color } of this.swatches) {
+            const label = color.kind === 'own'
+                ? el.dataset.subplot ?? '' // SAFE: every own-color swatch is stamped with its subplot just above
+                : names.get(color.slot) ?? (color.slot === 0 ? getMainPlotName() : t('ui.colorsSection.ringLabel', { number: color.slot + 1 }));
+            setAccessibleLabel(el, label);
+            setTooltip(el, label);
+        }
     }
 
     private updateBar(): void {
@@ -69,19 +95,15 @@ export class CanvasStoryNavigator {
         this.root.toggle(this.plugin.settings.books.some(book => book.sourceFolder.trim()) && (this.storyMap || this.hasBookCards || coloring));
         const colors = new Set(ideas.map(node => cardColor(node.getData?.() ?? {}) ?? undefined)); // SAFE: no data or no color = uncolored
         const shared = colors.size === 1 ? [...colors][0] : undefined;
-        this.swatches.forEach((swatch, slot) => swatch.toggleClass('is-active', !!shared && shared === readSubplotColor(this.view.containerEl.doc, slot).toLowerCase()));
+        this.swatches.forEach(({ el, color }) => el.toggleClass('is-active', !!shared && shared === readSubplotColorValue(this.view.containerEl.doc, color).toLowerCase()));
     }
 
     private mountColors(root: HTMLElement): void {
         const strip = root.createDiv({ cls: 'ert-story-navigator__colors' });
         this.colors = strip;
         strip.hide();
-        this.swatches = Array.from({ length: SUBPLOT_COLOR_SLOTS }, (_, slot) => {
-            const swatch = strip.createEl('button', { cls: 'ert-story-navigator__swatch', attr: { type: 'button' } });
-            swatch.setCssProps({ '--ert-story-swatch': `var(--rt-subplot-colors-${slot})` });
-            this.events.registerDomEvent(swatch, 'click', () => this.paint(slot));
-            return swatch;
-        });
+        this.swatches = [];
+        for (let slot = 0; slot < SUBPLOT_COLOR_SLOTS; slot++) this.addSwatch(strip, { kind: 'slot', slot });
     }
 
     private keySections(): LegendSection[] {

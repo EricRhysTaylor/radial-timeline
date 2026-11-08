@@ -11,7 +11,6 @@
  * controllers cannot drift apart visually.
  */
 
-import { readSubplotColor } from '../../renderer/utils/subplotColors';
 import { TFile, type App } from 'obsidian';
 import { arcPath } from '../../renderer/layout/Paths';
 import { DRAG_DROP_TICK_INSET, DRAG_DROP_TICK_LENGTH } from '../../renderer/layout/LayoutConstants';
@@ -76,14 +75,10 @@ export function resolvePublishStageColorFromGroup(app: App, group: SVGGElement):
         || '#9370DB'; // SAFE: brand Zero-draft violet, used only if the theme defines no stage variables at all
 }
 
-/** The subplot colour a scene group is painted with, or its literal fill when the group carries no slot. */
+/** The subplot colour a scene group is painted with (stamped by the render), or its literal fill when the group carries none. */
 export function resolveSubplotColorFromGroup(group: Element): string | undefined {
-    const subplotIdxAttr = group.getAttribute('data-subplot-color-index')
-        || group.getAttribute('data-subplot-index');
-    if (subplotIdxAttr) {
-        const idx = Number(subplotIdxAttr);
-        if (Number.isFinite(idx)) return readSubplotColor(group.ownerDocument, idx);
-    }
+    const subplotColor = group.getAttribute('data-subplot-color');
+    if (subplotColor) return subplotColor;
 
     const scenePath = group.querySelector<SVGPathElement>('.rt-scene-path');
     const fillAttr = scenePath?.getAttribute('fill')?.trim();

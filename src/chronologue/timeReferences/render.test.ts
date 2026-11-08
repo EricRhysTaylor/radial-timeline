@@ -24,7 +24,7 @@ describe('reference occurrences across actual ring layouts', () => {
         const foregroundElements: string[] = [];
         const scenesMarkup = renderRings({ plugin: plugin as never, scenes, actsToRender: 1, sortByWhen: true,
             isChronologueMode: true, forceChronological: true, masterSubplotOrder: ['Main Plot', 'Family', 'History'],
-            colorIndexBySubplot: new Map([['Main Plot', 0], ['Family', 1], ['History', 2]]),
+            subplotColorFor: () => '#996699',
             ringStartRadii: [200, 400, 600], ringWidths: [200, 200, 200],
             scenesByActAndSubplot: { 0: { Family: [scenes[0]], History: [scenes[1]] } },
             PUBLISH_STAGE_COLORS: { Zero: '#996699' }, maxTextWidth: 120, synopsesElements: [], foregroundElements });
@@ -46,6 +46,8 @@ describe('reference occurrences across actual ring layouts', () => {
         expect(markup.match(/class="ert-time-reference"/g)).toHaveLength(2);
         expect(markup.match(/class="ert-time-reference-origin"/g)).toHaveLength(1);
         expect(markup.match(/class="rt-scene-group/g)).toHaveLength(3);
+        // Every scene group carries the color its subplot paints with, for hover, drag and synopsis readers.
+        expect(scenesMarkup.match(/data-subplot-color="#996699"/g)).toHaveLength(3);
         const occurrences = [...markup.matchAll(/<g class="ert-time-reference"[^>]*data-ring="(\d+)"/g)];
         expect(occurrences.map(match => match[1])).toEqual(['2', '2']);
         expect(markup).toContain('12 · Source');

@@ -12,7 +12,6 @@ import {
 import { getActiveFrontmatterMappings } from '../../utils/frontmatter';
 import { sleep } from '../../utils/sleep';
 import { formatNumber } from '../../utils/svg';
-import { readSubplotColor } from '../../renderer/utils/subplotColors';
 import { membershipOfRing } from './subplotRings';
 import { t } from '../../i18n';
 
@@ -252,11 +251,11 @@ export class SubplotRingDragController {
         this.updatePreview(current ? change : null, after);
     }
 
-    /** The colour a subplot ring is painted in, from its label's colour slot. */
+    /** The colour a subplot ring is painted in, as its label carries it. */
     private ringColor(ring: number): string | undefined {
         if (!this.ringColors.has(ring)) {
-            const slot = this.svg.querySelector(`.rt-subplot-ring-label-text[data-ring="${ring}"]`)?.getAttribute('data-color-index');
-            this.ringColors.set(ring, slot == null ? undefined : readSubplotColor(this.svg.ownerDocument, Number(slot)));
+            const color = this.svg.querySelector(`.rt-subplot-ring-label-text[data-ring="${ring}"]`)?.getAttribute('data-subplot-color');
+            this.ringColors.set(ring, color ?? undefined);
         }
         return this.ringColors.get(ring);
     }

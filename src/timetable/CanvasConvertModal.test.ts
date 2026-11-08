@@ -19,7 +19,7 @@ function setup(changeDuringCreate = false, selectedIds: string[] = ['1']) {
     });
     const app = { workspace: { getLeavesOfType: () => [] }, metadataCache: { getFileCache: () => ({}) }, vault: { getMarkdownFiles: () => [], getFiles: () => [], getFolderByPath: () => ({}), getAbstractFileByPath: (path: string) => path === 'Book/A scene.md' ? {} : null, create } } as unknown as App;
     const activateView = vi.fn(async () => {});
-    const plugin = { settings: {}, refreshTimelineIfNeeded: vi.fn(), getSceneData: vi.fn(async () => []), getTimelineService: () => ({ activateView }), setActiveBookId: vi.fn(async () => {}) } as unknown as RadialTimelinePlugin;
+    const plugin = { settings: {}, refreshTimelineIfNeeded: vi.fn(), getSceneData: vi.fn(async () => []), getTimelineService: () => ({ activateView }), setActiveBookId: vi.fn(async () => {}), saveSettings: vi.fn(async () => {}), setCSSColorVariables: vi.fn() } as unknown as RadialTimelinePlugin;
     const setData = vi.fn((next: StoryCanvasData) => { data = next; });
     const requestSave = vi.fn();
     const canvas: OpenCanvas = { getData: () => data, setData, requestSave, selection: new Set(selectedIds.map(id => ({ getData: () => ({ id, type: 'text' }) }))) };
@@ -27,7 +27,7 @@ function setup(changeDuringCreate = false, selectedIds: string[] = ['1']) {
     const modal = new CanvasConvertModal(app, plugin, canvas, [book], book, () => true);
     (Reflect.get(modal, 'selected') as Set<string>).add('1');
     Reflect.set(modal, 'mode', 'sketches');
-    return { modal, saved, setData, requestSave, app, plugin, activateView, getData: () => data };
+    return { modal, saved, setData, requestSave, app, plugin, activateView, book, getData: () => data };
 }
 
 function scenes(selected: string[] = ['1', '2']) {
@@ -60,10 +60,55 @@ describe('Canvas scene conversion', () => {
         const test = scenes();
         (Reflect.get(test.modal, 'cards') as Array<{ id: string; color?: string }>)[0].color = '#AA00FF';
         test.getData().nodes![0].color = '#AA00FF';
-        Reflect.set(test.modal, 'rings', [{ name: 'The Servant', slot: 2 }]);
+        Reflect.set(test.modal, 'rings', [{ name: 'The Servant', color: { kind: 'slot', slot: 2 } }]);
         (Reflect.get(test.modal, 'subplotByColor') as Map<string, string>).set('#aa00ff', ' the servant ');
         await Reflect.get(test.modal, 'convert').call(test.modal);
         expect(test.saved.get('Book/1 A scene.md')).toContain('Subplot: The Servant');
+        // An existing subplot keeps the color it wears; the card color is not stored for it.
+        expect(test.book.ownSubplotColors).toBeUndefined();
+        expect(test.plugin.saveSettings).not.toHaveBeenCalled();
+    });
+
+    it('gives a new subplot its card color, chosen once, so its ring wears it after Create', async () => {
+        const test = scenes();
+        const cards = Reflect.get(test.modal, 'cards') as Array<{ id: string; color?: string }>;
+        cards[0].color = '#AA00FF';
+        cards[1].color = '#aa00ff';
+        test.getData().nodes![0].color = '#AA00FF';
+        test.getData().nodes![1].color = '#aa00ff';
+        (Reflect.get(test.modal, 'subplotByColor') as Map<string, string>).set('#aa00ff', 'Romance');
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(test.saved.get('Book/1 A scene.md')).toContain('Subplot: Romance');
+        expect(test.book.ownSubplotColors).toEqual({ schemaVersion: 1, colors: { Romance: '#aa00ff' } });
+        expect(test.plugin.saveSettings).toHaveBeenCalledOnce();
+        expect(test.plugin.setCSSColorVariables).toHaveBeenCalledOnce();
+    });
+
+    it('lets a second card color join a new subplot an earlier color named, wearing the earlier color', async () => {
+        const test = scenes();
+        const cards = Reflect.get(test.modal, 'cards') as Array<{ id: string; color?: string }>;
+        cards[0].color = '#aa00ff';
+        cards[1].color = '#00ff00';
+        test.getData().nodes![0].color = '#aa00ff';
+        test.getData().nodes![1].color = '#00ff00';
+        const named = Reflect.get(test.modal, 'subplotByColor') as Map<string, string>;
+        named.set('#aa00ff', 'Romance').set('#00ff00', 'romance');
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(test.saved.get('Book/2 Other idea.md')).toContain('Subplot: Romance');
+        expect(test.book.ownSubplotColors).toEqual({ schemaVersion: 1, colors: { Romance: '#aa00ff' } });
+    });
+
+    it('stores no color for a new subplot whose scenes were never written', async () => {
+        const test = scenes(['1']);
+        (Reflect.get(test.modal, 'cards') as Array<{ id: string; color?: string }>)[0].color = '#aa00ff';
+        test.getData().nodes![0].color = '#aa00ff';
+        (Reflect.get(test.modal, 'subplotByColor') as Map<string, string>).set('#aa00ff', 'Romance');
+        test.app.vault.create = vi.fn(async () => { throw new Error('Disk full'); });
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        await Reflect.get(test.modal, 'convert').call(test.modal);
+        expect(test.book.ownSubplotColors).toBeUndefined();
+        expect(test.plugin.saveSettings).not.toHaveBeenCalled();
+        error.mockRestore();
     });
 
     it('leaves a card the author did not select on the Canvas as it was', async () => {

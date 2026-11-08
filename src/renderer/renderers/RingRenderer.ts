@@ -1,5 +1,4 @@
 import { renderTimeReferenceMarkers } from '../../chronologue/timeReferences/render';
-import { readSubplotColor } from '../utils/subplotColors';
 import type { TimelineItem } from '../../types';
 import { formatNumber, escapeXml } from '../../utils/svg';
 import { parseSceneTitle } from '../../utils/text';
@@ -40,7 +39,8 @@ export interface RingRenderContext {
     isChronologueMode: boolean;
     forceChronological: boolean;
     masterSubplotOrder: string[];
-    colorIndexBySubplot: Map<string, number>;
+    /** The render's one subplot color lookup (TimelineRenderer); a scene with no subplot paints as the main plot. */
+    subplotColorFor: (subplot: string | undefined) => string;
     ringStartRadii: number[];
     ringWidths: number[];
     scenesByActAndSubplot: Record<number, Record<string, TimelineItem[]>>;
@@ -67,7 +67,7 @@ export function renderRings(ctx: RingRenderContext): string {
         isChronologueMode,
         forceChronological,
         masterSubplotOrder,
-        colorIndexBySubplot,
+        subplotColorFor,
         ringStartRadii,
         ringWidths,
         scenesByActAndSubplot,
@@ -95,16 +95,6 @@ export function renderRings(ctx: RingRenderContext): string {
     const readabilityScale = plugin.settings.readabilityScale || 'normal';
     // Use the value from constant, handling the structure
     const beatTextRadius = BEAT_TEXT_RADIUS[readabilityScale] || BEAT_TEXT_RADIUS.normal;
-
-    const resolveSubplotColorIndex = (subplotName: string): number => {
-        const key = subplotName && subplotName.trim().length > 0 ? subplotName : getMainPlotName();
-        if (colorIndexBySubplot.has(key)) return colorIndexBySubplot.get(key)!;
-        const fallback = colorIndexBySubplot.get(getMainPlotName());
-        return fallback !== undefined ? fallback : 0;
-    };
-
-    // Helper for subplot color check
-    const subplotColorFor = (subplotName: string) => readSubplotColor(activeDocument, resolveSubplotColorIndex(subplotName));
 
     // Check if we need to force subplot fill colors
     const currentMode = plugin.settings.currentMode || 'narrative';
@@ -223,7 +213,7 @@ export function renderRings(ctx: RingRenderContext): string {
                         scene,
                         sceneId,
                         maxTextWidth,
-                        masterSubplotOrder,
+                        subplotColorFor,
                         scenes,
                         targets: synopsesElements
                     });
@@ -259,7 +249,7 @@ export function renderRings(ctx: RingRenderContext): string {
                         const name = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : getMainPlotName();
                         return Math.max(0, masterSubplotOrder.indexOf(name));
                     })();
-                    const subplotColorIdxAttr = resolveSubplotColorIndex(scene.subplot || getMainPlotName());
+                    const subplotColor = subplotColorFor(scene.subplot);
 
                     const plotStrokeAttr = (() => {
                         if (isBeatNote(scene)) {
@@ -287,7 +277,7 @@ export function renderRings(ctx: RingRenderContext): string {
                             startAngle: sceneStartAngle,
                             endAngle: sceneEndAngle,
                             subplotIdxAttr,
-                            subplotColorIdxAttr,
+                            subplotColor,
                             titleInset: sceneTitleInset
                         })}
                             <path id="${sceneId}"
@@ -375,7 +365,7 @@ export function renderRings(ctx: RingRenderContext): string {
                         const name = scene.subplot && scene.subplot.trim().length > 0 ? scene.subplot : getMainPlotName();
                         return Math.max(0, masterSubplotOrder.indexOf(name));
                     })();
-                    const subplotColorIdxAttr = resolveSubplotColorIndex(scene.subplot || getMainPlotName());
+                    const subplotColor = subplotColorFor(scene.subplot);
 
                     let sceneClasses = "rt-scene-path rt-scene-arc";
                     if (scene.path && plugin.openScenePaths.has(scene.path)) sceneClasses += " rt-scene-is-open";
@@ -392,7 +382,7 @@ export function renderRings(ctx: RingRenderContext): string {
                             startAngle: sceneStartAngle,
                             endAngle: sceneEndAngle,
                             subplotIdxAttr,
-                            subplotColorIdxAttr,
+                            subplotColor,
                             titleInset: sceneTitleInset,
                             aligned: isAlignedRing
                         })}

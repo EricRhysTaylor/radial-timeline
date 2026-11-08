@@ -75,6 +75,7 @@ import { classifyForPromotion } from '../services/PromoteToSceneService';
 import {
     belongsInTimetable,
     buildRingLayout,
+    ringColorCss,
     buildTableRow,
     compareChronologicalRows,
     compareManuscriptRows,
@@ -163,7 +164,7 @@ import {
     STATUS_OPTIONS,
 } from '../view/interactions/SceneContextMenu';
 import { applySubplotMembershipChangeToMany } from '../services/SubplotMembership';
-import { readSubplotColor, SUBPLOT_COLOR_SLOTS } from '../renderer/utils/subplotColors';
+import { readSubplotColor, readSubplotColorValue, sharedOwnSubplotColors, subplotColorCss, SUBPLOT_COLOR_SLOTS } from '../renderer/utils/subplotColors';
 import type { BookProfile, PlanetaryProfile } from '../types/settings';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -319,7 +320,8 @@ interface CellContext {
 interface WheelRings {
     key: string;
     order: string[];
-    colorIndex: Map<string, number>;
+    /** The own colors of the books in this table, agreed across them (renderer/utils/subplotColors). */
+    own: Map<string, string>;
 }
 
 /** View options shown in the Bases toolbar's view menu. */
@@ -1092,14 +1094,14 @@ export class TimetableView extends BasesView {
         const frontmatter: Record<string, unknown> | undefined = this.plugin.app.metadataCache.getFileCache(file)?.frontmatter;
         const subplots = buildTableRow(file.path, file.basename, frontmatter, this.plugin.settings).subplots;
         const primary = subplots[0];
-        const colorIndex = primary !== undefined ? this.rings?.colorIndex.get(primary) : undefined;
+        const color = primary !== undefined && this.rings ? buildRingLayout(this.rings.order, this.rings.own, []).colors.get(primary) : undefined;
         showSceneContextMenu({ plugin: this.plugin, openNote: created => openFromTimetable(this.plugin.app, created, undefined, this.rootEl) }, {
             file,
             itemType: 'Scene',
             ringSubplot: null,
             knownSubplots: rings,
             primarySubplot: primary,
-            subplotColor: colorIndex !== undefined ? readSubplotColor(this.rootEl.ownerDocument, colorIndex) : undefined,
+            subplotColor: color ? readSubplotColorValue(this.rootEl.ownerDocument, color) : undefined,
         }, evt);
     }
 
@@ -1886,12 +1888,13 @@ export class TimetableView extends BasesView {
             scenes.push(...bookScenes.map(scene => ({ ...scene, bookId: book.id, bookIndex })));
         }
         if (generation !== this.ringsGeneration) return;
-        const { masterSubplotOrder, colorIndexBySubplot } = computeCacheableValues(this.plugin as unknown as PluginRendererFacade, scenes); // SAFE: the plugin satisfies the renderer facade at runtime; the structural type is narrower than the class
-        const next: WheelRings = { key: ids.join('|'), order: masterSubplotOrder, colorIndex: colorIndexBySubplot };
+        const own = sharedOwnSubplotColors(books);
+        const { masterSubplotOrder } = computeCacheableValues(this.plugin as unknown as PluginRendererFacade, scenes, { ownSubplotColors: own }); // SAFE: the plugin satisfies the renderer facade at runtime; the structural type is narrower than the class
+        const next: WheelRings = { key: ids.join('|'), order: masterSubplotOrder, own };
         const changed = !this.rings
             || this.rings.key !== next.key
             || this.rings.order.join('\n') !== next.order.join('\n')
-            || [...next.colorIndex].some(([name, index]) => this.rings?.colorIndex.get(name) !== index);
+            || JSON.stringify([...this.rings.own]) !== JSON.stringify([...next.own]);
         this.rings = next;
         if (changed) this.render();
     }
@@ -1957,7 +1960,7 @@ export class TimetableView extends BasesView {
 
         const showRings = this.config.get('ringsColumn') !== false && this.rings !== null;
         const perLine = Math.min(8, Math.max(3, Math.round(Number(this.config.get('ringsPerLine') ?? RINGS_PER_LINE_DEFAULT)) || RINGS_PER_LINE_DEFAULT));
-        const layout = this.rings ? buildRingLayout(this.rings.order, this.rings.colorIndex, allItems.map(item => item.row)) : null;
+        const layout = this.rings ? buildRingLayout(this.rings.order, this.rings.own, allItems.map(item => item.row)) : null;
         const columns = this.columnsFor(mode);
         const columnCount = 1 + (showRings ? 1 : 0) + columns.length;
         const cells = this.cellContext(mode, allItems, columns);
@@ -2902,7 +2905,7 @@ export class TimetableView extends BasesView {
     private renderPanels(groups: TableGroup[], mode: ModeContext, allItems: TableItem[]): void {
         const imageFiles = this.plugin.app.vault.getFiles();
         const imageSelections = storyCharacterSelections(this.plugin, imageFiles, this.plugin.settings.storyImageStrategy ?? 'distinctive');
-        const layout = this.rings ? buildRingLayout(this.rings.order, this.rings.colorIndex, allItems.map(item => item.row)) : null;
+        const layout = this.rings ? buildRingLayout(this.rings.order, this.rings.own, allItems.map(item => item.row)) : null;
         const keep = new Set<string>();
         const list = this.rootEl.createDiv({ cls: 'ert-timetable-panels' });
         const outline = this.config.get('outline') === true;
@@ -3146,8 +3149,8 @@ export class TimetableView extends BasesView {
                 const extraSubplots: HTMLElement[] = [];
                 for (const [index, name] of row.subplots.entries()) {
                     const chip = meta.createSpan({ cls: 'ert-timetable-panels__subplot', text: name });
-                    const color = layout?.colorIndex.get(name);
-                    if (color !== undefined) chip.setCssProps({ '--ert-timetable-panel-color': `var(--rt-subplot-colors-${color})` });
+                    const color = layout?.colors.get(name);
+                    if (color) chip.setCssProps({ '--ert-timetable-panel-color': subplotColorCss(color) });
                     if (!outline && index >= 2) { chip.hidden = true; extraSubplots.push(chip); }
                 }
                 if (extraSubplots.length) {
@@ -3904,7 +3907,7 @@ export class TimetableView extends BasesView {
         const grid = cell.createDiv({ cls: 'ert-timetable__ring-grid' });
         layout.order.forEach(name => {
             const square = grid.createSpan({ cls: 'ert-timetable__ring is-member' });
-            square.setCssProps({ '--ert-timetable-ring': `var(--rt-subplot-colors-${layout.colorIndex.get(name) ?? 0})` });
+            square.setCssProps({ '--ert-timetable-ring': ringColorCss(layout, name) });
         });
         const names = layout.order.map((name, index) => layout.offWheel.has(name)
             ? t('ui.timetable.ringOffWheel', { number: index + 1, name })
@@ -3921,7 +3924,7 @@ export class TimetableView extends BasesView {
             const square = grid.createSpan({ cls: 'ert-timetable__ring' });
             if (!members.has(name)) continue;
             square.addClass(memberClass);
-            square.setCssProps({ '--ert-timetable-ring': `var(--rt-subplot-colors-${layout.colorIndex.get(name) ?? 0})` });
+            square.setCssProps({ '--ert-timetable-ring': ringColorCss(layout, name) });
         }
         const list = layout.order.filter(name => members.has(name)).join(', ');
         const text = list.length === 0

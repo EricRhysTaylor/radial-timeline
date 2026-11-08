@@ -70,7 +70,7 @@ describe('renderNumberSquares — All Scenes outer ring', () => {
             scene(6, outerSubplot),
         ];
 
-        const values = computeCacheableValues(plugin as never, scenes);
+        const values = computeCacheableValues(plugin as never, scenes, { ownSubplotColors: new Map() });
         expect(values.masterSubplotOrder).toEqual([outerSubplot, 'Voyage']);
 
         const svg = renderNumberSquares({
@@ -98,5 +98,26 @@ describe('renderNumberSquares — All Scenes outer ring', () => {
         // Outer-subplot scenes live only on the outer ring; the other
         // subplot's scenes are squared there and again on their own ring.
         expect(squares).toHaveLength(scenes.length + 2);
+    });
+
+    it('carries each scene’s subplot color on its square, so drag outlines and lit squares wear it', () => {
+        const plugin = makePlugin({ subplotAlignment: 'fill' });
+        const scenes = [scene(1, 'Main Plot'), scene(2, 'Voyage')];
+        const values = computeCacheableValues(plugin as never, scenes, { ownSubplotColors: new Map([['Voyage', '#e93147']]) });
+        expect(values.subplotColors.get('Voyage')).toEqual({ kind: 'own', color: '#e93147' });
+        const svg = renderNumberSquares({
+            plugin: plugin as never,
+            scenes,
+            scenesByActAndSubplot: values.scenesByActAndSubplot,
+            masterSubplotOrder: values.masterSubplotOrder,
+            ringStartRadii: values.ringStartRadii,
+            ringWidths: values.ringWidths,
+            sceneGrades: new Map<string, string>(),
+            sceneNumbersMap: new Map<string, SceneNumberInfo>(),
+            numberSquareVisualResolver: item => ({ subplotColor: item.subplot === 'Voyage' ? '#e93147' : 'var(--rt-subplot-colors-0)' }),
+            shouldApplyNumberSquareColors: true,
+        });
+        expect(svg).toContain('style="--rt-number-stroke-color: #e93147"'); // SAFE: inline style used for the square's subplot color variable the render emits
+        expect(svg).not.toContain('data-subplot-idx');
     });
 });

@@ -11,6 +11,7 @@ import { isPathInFolderScope } from '../utils/pathScope';
 import { t, tCount } from '../i18n';
 import { getBookMainPlotName } from '../utils/mainPlot';
 import { getActiveBook } from '../utils/books';
+import { clearOwnSubplotColor, renameOwnSubplotColor } from '../utils/ownSubplotColors';
 
 export interface SubplotStats {
     name: string;
@@ -78,7 +79,8 @@ export class SubplotManagementService {
 
     /**
      * Delete a subplot from all scenes.
-     * If a scene has only this subplot, it moves to the main plot.
+     * If a scene has only this subplot, it moves to the main plot, and the
+     * subplot's own color, if it had one, goes with it. The caller saves settings.
      */
     async deleteSubplot(subplotToDelete: string): Promise<void> {
         const mainPlot = this.getMainPlotName();
@@ -145,6 +147,8 @@ export class SubplotManagementService {
             if (processed) modifiedCount++;
         }
 
+        const book = getActiveBook(this.sceneDataService.getSettings());
+        if (book) clearOwnSubplotColor(book, subplotToDelete);
         new Notice(t('ui.subplotManagementService.removedFromScenes', { name: subplotToDelete, scenes: tCount('scene', modifiedCount) }));
     }
 
@@ -236,15 +240,16 @@ export class SubplotManagementService {
     }
 
     /**
-     * Rename subplot in settings: the active book's main plot name, and
-     * Dominant Subplots preferences. Updates the live settings object; the
-     * caller saves it.
+     * Rename subplot in settings: the active book's main plot name, the
+     * subplot's own color, and Dominant Subplots preferences. Updates the live
+     * settings object; the caller saves it.
      */
     private renameSubplotInSettings(oldName: string, newName: string, renamingMainPlot: boolean): void {
         // SceneDataService shares the live settings reference with the plugin.
         const settings = this.sceneDataService.getSettings();
         const book = getActiveBook(settings);
         if (renamingMainPlot && book) book.mainPlotName = newName;
+        if (book) renameOwnSubplotColor(book, oldName, newName);
         const dominantSubplots = settings.dominantSubplots;
         if (!dominantSubplots) return;
         for (const [path, subplot] of Object.entries(dominantSubplots)) {

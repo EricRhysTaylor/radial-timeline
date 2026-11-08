@@ -91,10 +91,10 @@ export class RendererService {
     /**
      * Update scene colors for dominant subplot changes (DOM update)
      */
-    updateSceneColorsDOM(container: HTMLElement, plugin: RadialTimelinePlugin, changedScenes: TimelineItem[]): boolean {
+    updateSceneColorsDOM(container: HTMLElement, changedScenes: TimelineItem[]): boolean {
         const svg = container.querySelector<SVGSVGElement>('.radial-timeline-svg');
         if (!svg) return false;
-        return updateSceneColors(svg, RendererService.asFacade(plugin), changedScenes);
+        return updateSceneColors(svg, changedScenes);
     }
 
     /**

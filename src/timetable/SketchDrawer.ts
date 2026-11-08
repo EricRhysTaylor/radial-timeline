@@ -21,7 +21,7 @@ import { getConfiguredActCount, parseActLabels, resolveActLabel } from '../utils
 import { canonicalizeFrontmatterKey, getActiveFrontmatterMappings } from '../utils/frontmatter';
 import { isUntitledName, splitNumberPrefix } from '../utils/noteTitle';
 import { authorKeyFor } from './timetableFiles';
-import type { RingLayout, TimetableRow } from './timetableModel';
+import { ringColorCss, type RingLayout, type TimetableRow } from './timetableModel';
 
 const SAVE_DELAY_MS = 700;
 
@@ -227,7 +227,7 @@ export class SketchDrawer extends Component {
                 toggle.dataset.ring = name;
                 toggle.setAttr('aria-pressed', String(members.has(name)));
                 toggle.toggleClass('is-on', members.has(name));
-                toggle.setCssProps({ '--ert-timetable-ring': `var(--rt-subplot-colors-${layout.colorIndex.get(name) ?? 0})` });
+                toggle.setCssProps({ '--ert-timetable-ring': ringColorCss(layout, name) });
                 toggle.createSpan({ cls: 'ert-timetable__drawer-ring-swatch' });
                 toggle.createSpan({ text: name });
             }

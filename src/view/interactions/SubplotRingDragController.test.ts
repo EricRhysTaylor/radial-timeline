@@ -53,12 +53,6 @@ vi.mock('../../services/SubplotMembership', async (importOriginal) => ({
 
 vi.mock('../../utils/sleep', () => ({ sleep: () => Promise.resolve() }));
 
-// Each colour slot reads back as its name, so a test can tell whose colour is on show.
-vi.mock('../../renderer/utils/subplotColors', async (importOriginal) => ({
-    ...(await importOriginal<typeof import('../../renderer/utils/subplotColors')>()),
-    readSubplotColor: (_doc: unknown, index: number) => `slot-${index}`,
-}));
-
 // Just enough SVG: class and [attr="value"] selectors, #id, closest, and
 // creating, inserting and removing the drag outline.
 const fakeDocument = { createElementNS: (_ns: string, _tag: string): FakeEl => new FakeEl([]) };
@@ -173,7 +167,7 @@ function buildTimeline(): { svg: FakeEl; groups: Map<string, FakeEl> } {
     // The outer ring's label names Main Plot (masterSubplotOrder[0]) in every
     // mode; only Progress mode shows Main Plot there.
     const label = (ring: number, name: string): FakeEl =>
-        new FakeEl(['rt-subplot-ring-label-text'], { 'data-ring': String(ring), 'data-subplot-name': name, 'data-color-index': String(ring + 4) });
+        new FakeEl(['rt-subplot-ring-label-text'], { 'data-ring': String(ring), 'data-subplot-name': name, 'data-subplot-color': slotOf(ring) });
     svg.append(
         new FakeEl(['rt-void-cell'], { 'data-ring': String(KEEPERS_RING), ...radii(KEEPERS_RING) }),
         label(OUTER, 'Main Plot'),

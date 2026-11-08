@@ -236,4 +236,5 @@ Configure the Chronologue backdrop ring and micro-backdrop rings.
 
 ## Subplot Ring Colors
 
-*   **Subplot ring colors**: Customize the 16-color palette used for subplot rings.
+*   **Subplot ring colors**: Customize the 16-color palette used for subplot rings. Each swatch is named for the subplot that wears it now. Rings take palette colors in ring order, outermost first, and Main Plot always wears the first.
+*   **Subplots with their own color**: A subplot created from a Canvas card color keeps that color wherever Radial Timeline shows it: the timeline rings, the subplot key, the Timetable, Panels, Outline and Canvas cards. It takes no palette color, so the next ring takes the one it would have worn. These subplots are listed under the palette for the active book. Change a color there, or reset it to return that subplot to its ring’s palette color. Renaming a subplot in the Subplot Manager keeps its color. The color is saved with the book in Radial Timeline’s settings, never in your scenes’ properties. See [Bring ideas from Canvas](Timetable#bring-ideas-from-canvas).

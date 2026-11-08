@@ -15,12 +15,11 @@ import type { TimelineItem } from '../../types';
 import { normalizeAngleSigned, normalizeAngleUnsigned } from '../../renderer/utils/angles';
 import { ELAPSED_ARC_RADIUS, ELAPSED_TICK_LENGTH } from '../../renderer/layout/LayoutConstants';
 
-/** Number squares, their text, Chronologue's foreground title and subplot color slot, by scene id. */
+/** Number squares, their text and Chronologue's foreground title, by scene id. */
 export interface SceneNumberLookup {
     squares: Map<string, SVGElement>;
     texts: Map<string, SVGElement>;
     titles: Map<string, SVGElement>;
-    subplotIndex: Map<string, number>;
 }
 
 /** The id of a scene group's path, which is also its scene id. */
@@ -28,17 +27,12 @@ export function sceneIdOfGroup(group: Element): string | null {
     return group.querySelector<SVGPathElement>('.rt-scene-path')?.id ?? null;
 }
 
-/** Index every scene's number square, text and subplot slot once per render. */
+/** Index every scene's number square and text once per render. */
 export function buildSceneNumberLookup(svg: SVGSVGElement): SceneNumberLookup {
-    const lookup: SceneNumberLookup = { squares: new Map(), texts: new Map(), titles: new Map(), subplotIndex: new Map() };
+    const lookup: SceneNumberLookup = { squares: new Map(), texts: new Map(), titles: new Map() };
     svg.querySelectorAll('.rt-scene-group[data-item-type="Scene"]').forEach(group => {
         const sceneId = sceneIdOfGroup(group);
         if (!sceneId) return;
-        const subplotIndexAttr = group.getAttribute('data-subplot-color-index') || group.getAttribute('data-subplot-index');
-        if (subplotIndexAttr) {
-            const subplotIndex = parseInt(subplotIndexAttr, 10);
-            if (!isNaN(subplotIndex)) lookup.subplotIndex.set(sceneId, subplotIndex);
-        }
         const square = svg.querySelector<SVGElement>(`.rt-number-square[data-scene-id="${sceneId}"]`);
         const text = svg.querySelector<SVGElement>(`.rt-number-text[data-scene-id="${sceneId}"]`);
         // Chronologue paints each title above the rings through a <use>, outside
@@ -51,25 +45,17 @@ export function buildSceneNumberLookup(svg: SVGSVGElement): SceneNumberLookup {
     return lookup;
 }
 
-/** Light (or clear) a scene's number square and text in its subplot color. */
+/**
+ * Light (or clear) a scene's number square and text in its subplot color.
+ * Each square carries that color from the render (--rt-number-stroke-color),
+ * so the class alone lights it.
+ */
 export function setNumberSquareActive(sceneId: string | null | undefined, active: boolean, lookup: SceneNumberLookup): void {
     if (!sceneId) return;
     const square = lookup.squares.get(sceneId);
     const text = lookup.texts.get(sceneId);
 
-    if (square) {
-        square.classList.toggle('rt-shift-active', active);
-        // Subplot slot as a data attribute for CSS to color from
-        if (active) {
-            const subplotIndex = lookup.subplotIndex.get(sceneId);
-            if (subplotIndex !== undefined) {
-                square.setAttribute('data-subplot-idx', (subplotIndex % 16).toString());
-            }
-        } else {
-            square.removeAttribute('data-subplot-idx');
-        }
-    }
-
+    square?.classList.toggle('rt-shift-active', active);
     if (text) text.classList.toggle('rt-shift-active', active);
     lookup.titles.get(sceneId)?.classList.toggle('rt-shift-active', active);
 }

@@ -145,7 +145,7 @@ export class ManageSubplotsModal extends Modal {
         }, async (newName) => {
             await this.service.renameSubplot(oldName, newName);
             // The rename may have changed settings (the book's main plot name,
-            // Dominant Subplots); persist them.
+            // the subplot's own color, Dominant Subplots); persist them.
             await this.plugin.saveSettings();
             // Scenes with no Subplot change rings without any file edit.
             if (renamingMainPlot) this.plugin.onSettingChanged(IMPACT_FULL);
@@ -156,6 +156,8 @@ export class ManageSubplotsModal extends Modal {
     async handleDelete(subplotName: string) {
         new SubplotDeletionConfirmModal(this.app, subplotName, async () => {
             await this.service.deleteSubplot(subplotName);
+            // The subplot's own color, if it had one, left with it; persist that.
+            await this.plugin.saveSettings();
             await this.loadSubplots();
         }).open();
     }

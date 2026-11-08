@@ -69,6 +69,8 @@ import { COMMUNITY_AUTO_SYNC_INTERVAL_MS, CommunityMailbox } from './communitySh
 import { DeskLamps } from './communityShare/deskLamps';
 import { TimetableService } from './timetable/TimetableService';
 import { refreshTimetableViews } from './timetable/timetableRegistry';
+import { getOpenDocuments } from './utils/documents';
+import { SUBPLOT_COLORS_CHANGED_EVENT } from './renderer/utils/subplotColors';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
 import { migratePublishingModelState, RENAMED_PANDOC_LAYOUT_IDS } from './utils/publishingMigration';
@@ -1548,6 +1550,8 @@ export default class RadialTimelinePlugin extends Plugin {
         this.themeService.applyCssVariables();
         // Status patterns in Timetable number cells are drawn from these colors.
         refreshTimetableViews();
+        // Canvas cards repaint subplots that wear their own color.
+        getOpenDocuments(this.app.workspace).forEach(doc => doc.defaultView?.dispatchEvent(new Event(SUBPLOT_COLORS_CHANGED_EVENT)));
     }
 
     // Add helper method to highlight search terms

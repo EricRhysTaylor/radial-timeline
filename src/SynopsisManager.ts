@@ -4,7 +4,6 @@ import { appendSynopsisInline } from './utils/synopsisInline';
  * Copyright (c) 2025 Eric Rhys Taylor
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
-import { readSubplotColor } from './renderer/utils/subplotColors';
 import type RadialTimelinePlugin from './main';
 import type { TimelineItem } from './types';
 import type { HoverMetadataField } from './types/settings';
@@ -833,7 +832,7 @@ export default class SynopsisManager {
    * Create a DOM element for a scene synopsis with consistent formatting
    * @returns An SVG group element containing the formatted synopsis
    */
-  generateElement(scene: TimelineItem, contentLines: string[], sceneId: string, subplotIndexResolver?: (name: string) => number, alienModeActive = false): SVGGElement {
+  generateElement(scene: TimelineItem, contentLines: string[], sceneId: string, subplotColorResolver?: (name: string) => string, alienModeActive = false): SVGGElement {
     const { titleColor: defaultTitleColor } = getPublishStageStyle(scene["Publish Stage"], this.plugin.settings.publishStageColors);
     const fontScale = this.getReadabilityScale();
 
@@ -867,36 +866,10 @@ export default class SynopsisManager {
     // Process all content lines to decode any HTML entities
     const decodedContentLines = decodeContentLines(contentLines);
 
-    // Deterministic subplot color from stylesheet variables
-    const getSubplotColor = (subplot: string, sceneIdentifier: string): string => {
-      const resolveCssVariable = (index: number): string => readSubplotColor(activeDocument, index);
-
-      const resolveIndex = (): number => {
-        if (subplotIndexResolver) {
-          const resolved = subplotIndexResolver(subplot);
-          if (!Number.isFinite(resolved)) {
-            throw new Error(`Subplot index resolver returned an invalid value for "${subplot}".`);
-          }
-          return resolved;
-        }
-
-        const sceneGroup = activeDocument.getElementById(sceneIdentifier)?.closest('.scene-group') as HTMLElement | null;
-        if (!sceneGroup) {
-          throw new Error(`Scene group not found for synopsis ${sceneIdentifier}.`);
-        }
-        const idxAttr = sceneGroup.getAttribute('data-subplot-color-index') || sceneGroup.getAttribute('data-subplot-index');
-        if (!idxAttr) {
-          throw new Error(`Scene group for ${sceneIdentifier} is missing data-subplot-index.`);
-        }
-        const parsed = parseInt(idxAttr, 10);
-        if (Number.isNaN(parsed)) {
-          throw new Error(`Invalid subplot index "${idxAttr}" for scene ${sceneIdentifier}.`);
-        }
-        return parsed;
-      };
-
-      const index = resolveIndex();
-      return resolveCssVariable(index);
+    // Each subplot name in the synopsis wears its ring's color, from the render's one subplot color lookup.
+    const getSubplotColor = (subplot: string): string => {
+      if (!subplotColorResolver) throw new Error(`Synopsis ${sceneId} lists subplots but was built without the render's subplot colors.`);
+      return subplotColorResolver(subplot);
     };
 
     const styleSource = getComputedStyle(activeDocument.documentElement);
@@ -1393,13 +1366,13 @@ export default class SynopsisManager {
           subplotTextElement.setAttribute('data-list-wrap-items', JSON.stringify(
             subplots.map((subplot: string) => ({
               text: subplot.trim(),
-              color: getSubplotColor(subplot.trim(), sceneId)
+              color: getSubplotColor(subplot.trim())
             }))
           ));
 
           // Format each subplot with its own color
           subplots.forEach((subplot: string, j: number) => {
-            const color = getSubplotColor(subplot.trim(), sceneId);
+            const color = getSubplotColor(subplot.trim());
             const subplotText = subplot.trim();
             const tspan = doc.win.createSvg("tspan");
             tspan.setAttribute("data-item-type", "subplot");
@@ -1505,15 +1478,6 @@ export default class SynopsisManager {
     }
 
     return containerGroup;
-  }
-
-  /**
-   * Generate SVG string from DOM element (temporary compatibility method)
-   */
-  generateHTML(scene: TimelineItem, contentLines: string[], sceneId: string): string {
-    const element = this.generateElement(scene, contentLines, sceneId);
-    const serializer = new XMLSerializer();
-    return serializer.serializeToString(element);
   }
 
   /**

@@ -5,6 +5,7 @@ import { slugifyToFileStem } from './slug';
 import type { BeatDefinition, BeatSystemConfig, BeatWorkspaceState, BookProfile, LoadedBeatTab, ManuscriptSceneHeadingMode, RadialTimelineSettings } from '../types/settings';
 import type { TimelineItem } from '../types/timeline';
 import { normalizeRecentStructuralMoves } from './recentStructuralMoves';
+import { normalizeOwnSubplotColorsRecord } from './ownSubplotColors';
 import { isPathInFolderScope } from './pathScope';
 
 export const DEFAULT_BOOK_TITLE = 'Untitled Manuscript';
@@ -43,6 +44,7 @@ export function normalizeBookProfile(profile: BookProfile): BookProfile {
   const publicLabel = profile.publicLabel?.trim();
   const publicDescription = profile.publicDescription?.trim();
   const mainPlotName = profile.mainPlotName?.trim();
+  const ownSubplotColors = normalizeOwnSubplotColorsRecord(profile.ownSubplotColors);
   const normalizedLayoutOptions: BookProfile['layoutOptions'] = {};
   const normalizeSceneHeadingMode = (value: unknown): ManuscriptSceneHeadingMode | undefined => {
     if (value === 'scene-number' || value === 'scene-number-title' || value === 'title-only') return value;
@@ -110,6 +112,7 @@ export function normalizeBookProfile(profile: BookProfile): BookProfile {
     ...(publicDescription && publicDescription.length > 0 ? { publicDescription } : {}),
     ...(Object.keys(normalizedStageTargetDates).length > 0 ? { stageTargetDates: normalizedStageTargetDates } : {}),
     ...(mainPlotName && mainPlotName.length > 0 ? { mainPlotName } : {}),
+    ...(ownSubplotColors ? { ownSubplotColors } : {}),
     ...(profile.lastUsedPandocLayoutByPreset ? { lastUsedPandocLayoutByPreset: { ...profile.lastUsedPandocLayoutByPreset } } : {}),
     ...(Object.keys(normalizedLayoutOptions).length > 0 ? { layoutOptions: normalizedLayoutOptions } : {}),
     ...(normalizeBeatWorkspace(profile.beatWorkspace) ? { beatWorkspace: normalizeBeatWorkspace(profile.beatWorkspace) } : {}),
@@ -142,7 +145,7 @@ export function getOverlappingBook(books: BookProfile[] | undefined, folder: str
         && (isPathInFolderScope(book.sourceFolder, folder) || isPathInFolderScope(folder, book.sourceFolder))) ?? null; // SAFE: null means no overlap
 }
 
-export function getActiveBook(settings: RadialTimelineSettings): BookProfile | null {
+export function getActiveBook(settings: Pick<RadialTimelineSettings, 'books' | 'activeBookId'>): BookProfile | null {
   const books = settings.books || []; // SAFE: pre-Book-Manager vaults have no books array; callers read empty as "no books yet"
   if (!books.length) return null;
   const active = settings.activeBookId

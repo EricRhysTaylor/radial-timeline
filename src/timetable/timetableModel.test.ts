@@ -5,6 +5,7 @@ import {
     appliedPalette,
     belongsInTimetable,
     buildRingLayout,
+    ringColorCss,
     buildTableRow,
     compareChronologicalRows,
     compareManuscriptRows,
@@ -100,13 +101,21 @@ describe('buildRingLayout', () => {
     it('keeps the wheel’s ring order and colors, then adds sketch-only rings', () => {
         const layout = buildRingLayout(
             ['Main Plot', 'Backdrop', 'Entiat Chelan Arc'],
-            new Map([['Main Plot', 0], ['Entiat Chelan Arc', 1]]),
+            new Map(),
             [row('Idea', { Class: 'Sketch', Subplot: ['Zed Arc', 'Main Plot'] })]
         );
         expect(layout.order).toEqual(['Main Plot', 'Entiat Chelan Arc', 'Zed Arc']);
-        expect(layout.colorIndex.get('Entiat Chelan Arc')).toBe(1);
+        expect(layout.colors.get('Entiat Chelan Arc')).toEqual({ kind: 'slot', slot: 1 });
+        expect(layout.colors.get('Zed Arc')).toEqual({ kind: 'slot', slot: 2 });
         expect(layout.offWheel.has('Zed Arc')).toBe(true);
         expect(layout.offWheel.has('Main Plot')).toBe(false);
+    });
+    it('paints a ring with its own color, and the next rings take the palette slots in order', () => {
+        const layout = buildRingLayout(['Main Plot', 'Romance', 'Family'], new Map([['Romance', '#e93147']]), []);
+        expect(layout.colors.get('Romance')).toEqual({ kind: 'own', color: '#e93147' });
+        expect(layout.colors.get('Family')).toEqual({ kind: 'slot', slot: 1 });
+        expect(ringColorCss(layout, 'Romance')).toBe('#e93147');
+        expect(ringColorCss(layout, 'Family')).toBe('var(--rt-subplot-colors-1)');
     });
 });
 

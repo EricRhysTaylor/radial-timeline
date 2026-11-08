@@ -20,7 +20,7 @@ import { getTimelineScope } from '../../utils/books';
 import { getTimelineSegmentCount } from '../utils/TimelineSegments';
 
 // Define the interface for the number square visual resolver logic
-export type NumberSquareVisualResolver = (scene: TimelineItem) => { subplotIndex: number };
+export type NumberSquareVisualResolver = (scene: TimelineItem) => { subplotColor: string };
 
 export interface NumberSquareRenderContext {
     plugin: PluginRendererFacade;

@@ -25,6 +25,7 @@ import { formatHoverMetadataValue } from '../utils/hoverMetadata';
 import { hexToRgb } from '../utils/colour';
 import { compareDateCategories, dateColoringRows, fixedColoringGroups, readDateGrouping, type DateGrouping } from './coloringDates';
 import { getMainPlotName } from '../utils/mainPlot';
+import { assignSubplotColors, subplotColorCss, type OwnSubplotColors, type SubplotColor } from '../renderer/utils/subplotColors';
 import { readSceneId } from '../utils/sceneIds';
 
 /**
@@ -165,8 +166,8 @@ export function withActDividers(rows: TimetableRow[]): TimetableLine[] {
 export interface RingLayout {
     /** Ring names in slot order: the wheel's ring order, then rings only sketches use. */
     order: string[];
-    /** Color index (0–15) per ring, as the wheel assigns it. */
-    colorIndex: Map<string, number>;
+    /** Each ring's color, as the wheel assigns it (renderer/utils/subplotColors). */
+    colors: Map<string, SubplotColor>;
     /** Rings the wheel doesn't draw yet (only planned on sketches or unclassed notes). */
     offWheel: Set<string>;
 }
@@ -174,22 +175,29 @@ export interface RingLayout {
 /**
  * Lay out the Rings column. Slots follow the wheel's ring order
  * (`masterSubplotOrder`) so a plotline reads straight down the table. Rings
- * that only sketches or unclassed notes use go last, alphabetically.
+ * that only sketches or unclassed notes use go last, alphabetically. Colors
+ * follow the same order through the one subplot color rule, so the wheel's
+ * rings keep the wheel's colors and planned rings take the next ones.
  */
 export function buildRingLayout(
     wheelOrder: string[],
-    wheelColorIndex: Map<string, number>,
+    own: OwnSubplotColors,
     rows: TimetableRow[]
 ): RingLayout {
-    const order = wheelOrder.filter(name => name !== 'Backdrop' && name !== 'MicroBackdrop');
-    const colorIndex = new Map<string, number>();
-    order.forEach((name, index) => colorIndex.set(name, wheelColorIndex.get(name) ?? index % 16));
-    const known = new Set(order);
+    const wheel = wheelOrder.filter(name => name !== 'Backdrop' && name !== 'MicroBackdrop');
+    const known = new Set(wheel);
     const extra = [...new Set(rows.flatMap(row => row.subplots))]
         .filter(name => !known.has(name))
         .sort((a, b) => a.localeCompare(b));
-    extra.forEach((name, index) => colorIndex.set(name, (order.length + index) % 16));
-    return { order: [...order, ...extra], colorIndex, offWheel: new Set(extra) };
+    const order = [...wheel, ...extra];
+    return { order, colors: assignSubplotColors(order, own), offWheel: new Set(extra) };
+}
+
+/** The CSS color a ring in the layout paints with. */
+export function ringColorCss(layout: RingLayout, name: string): string {
+    const color = layout.colors.get(name);
+    if (!color) throw new Error(`Ring "${name}" is not in this ring layout.`);
+    return subplotColorCss(color);
 }
 
 /**

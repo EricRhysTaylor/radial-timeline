@@ -79,7 +79,6 @@ export const CHRONOLOGUE_MODE: ModeDefinition = {
                 // Clean up number square shift classes
                 svg.querySelectorAll('.rt-shift-active').forEach(el => {
                     el.classList.remove('rt-shift-active');
-                    el.removeAttribute('data-subplot-idx');
                 });
                 
                 // Remove elapsed time elements

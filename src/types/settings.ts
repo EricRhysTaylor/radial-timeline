@@ -549,6 +549,12 @@ export interface StructuralMoveHistoryEntry {
     rippleRename?: boolean;
 }
 
+/** A book's subplots that wear their own ring color: subplot name → lower-case `#rrggbb`. */
+export interface OwnSubplotColorsRecord {
+    schemaVersion: 1;
+    colors: Record<string, string>;
+}
+
 /** Per-stage publishing target dates (YYYY-MM-DD strings). Scoped per book. */
 export interface StageTargetDates {
     Zero?: string;
@@ -579,6 +585,12 @@ export interface BookProfile {
     stageTargetDates?: StageTargetDates;
     /** Name of THIS book's main plot, the subplot that owns ring 1 (see utils/mainPlot). Absent means "Main Plot". Renamed in the Subplot Manager. */
     mainPlotName?: string;
+    /**
+     * Subplots in THIS book that wear their own ring color instead of a palette
+     * slot, such as a subplot created from a Canvas card color (see
+     * utils/ownSubplotColors). Plugin data, never scene YAML.
+     */
+    ownSubplotColors?: OwnSubplotColorsRecord;
     lastUsedPandocLayoutByPreset?: Partial<Record<'novel' | 'screenplay' | 'podcast', string>>;
     layoutOptions?: Record<string, BookLayoutOptions>;
     beatWorkspace?: BeatWorkspaceState;

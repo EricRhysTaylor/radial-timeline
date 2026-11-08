@@ -1,15 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import type { BookProfile } from '../types/settings';
-import { bookCardFor, ringSlotsWith } from './canvasBookCards';
+import { bookCardFor, ringColorsWith } from './canvasBookCards';
 
 describe('Ring colors after new scenes join', () => {
     const scene = (...subplots: string[]) => ({ kind: 'scene', subplots });
     it('keeps Main Plot first, then orders rings by scene count', () => {
-        const slots = ringSlotsWith([scene('Main Plot'), scene('Mara'), scene('Mara')], ['Tom', 'Tom', 'Tom']);
-        expect([...slots]).toEqual([['Main Plot', 0], ['Tom', 1], ['Mara', 2]]);
+        const colors = ringColorsWith([scene('Main Plot'), scene('Mara'), scene('Mara')], ['Tom', 'Tom', 'Tom'], new Map());
+        expect([...colors]).toEqual([
+            ['Main Plot', { kind: 'slot', slot: 0 }],
+            ['Tom', { kind: 'slot', slot: 1 }],
+            ['Mara', { kind: 'slot', slot: 2 }],
+        ]);
     });
     it('leaves sketches out of the count', () => {
-        expect(ringSlotsWith([{ kind: 'sketch', subplots: ['Mara'] }], ['Tom']).has('Mara')).toBe(false);
+        expect(ringColorsWith([{ kind: 'sketch', subplots: ['Mara'] }], ['Tom'], new Map()).has('Mara')).toBe(false);
+    });
+    it('gives a new subplot with its own color no palette slot, so existing rings keep theirs', () => {
+        const colors = ringColorsWith([scene('Main Plot'), scene('Mara')], ['Tom', 'Tom', 'Tom'], new Map([['Tom', '#e93147']]));
+        expect(colors.get('Tom')).toEqual({ kind: 'own', color: '#e93147' });
+        expect(colors.get('Mara')).toEqual({ kind: 'slot', slot: 1 });
     });
 });
 

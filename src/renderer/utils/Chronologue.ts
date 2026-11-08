@@ -179,8 +179,7 @@ export function renderChronologueOverlays({
                     layout: backdropLayout,
                     availableRadius: backdropRadius,
                     synopsesElements,
-                    maxTextWidth,
-                    masterSubplotOrder
+                    maxTextWidth
                 });
             } catch (err) {
                  

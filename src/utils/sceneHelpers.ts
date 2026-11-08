@@ -234,7 +234,7 @@ export interface PluginRendererFacade {
         labelText?: string;
         isFrozen?: boolean;
     } | null;
-    synopsisManager: { generateElement: (scene: TimelineItem, contentLines: string[], sceneId: string, subplotIndexResolver?: (name: string) => number, alienModeActive?: boolean) => SVGGElement };
+    synopsisManager: { generateElement: (scene: TimelineItem, contentLines: string[], sceneId: string, subplotColorResolver?: (name: string) => string, alienModeActive?: boolean) => SVGGElement };
     latestStatusCounts?: Record<string, number>;
     /** Beat label angles captured during ring rendering; consumed by the Gossamer overlay. */
     _beatAngles?: Map<string, number>;

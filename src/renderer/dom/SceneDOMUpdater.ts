@@ -4,7 +4,6 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
-import { readSubplotColor } from '../utils/subplotColors';
 import type { TimelineItem } from '../../types';
 import type { PluginRendererFacade } from '../../utils/sceneHelpers';
 import { getMostAdvancedStageColor } from '../../utils/colour';
@@ -13,16 +12,15 @@ import { getMainPlotName } from '../../utils/mainPlot';
 
 /**
  * Updates scene colors in the DOM without regenerating SVG
- * Used for dominant subplot changes
+ * Used for dominant subplot changes. Each ring's color is read back from its
+ * label, which the render stamped from the one subplot color lookup.
  */
 export function updateSceneColors(
     svg: SVGSVGElement,
-    plugin: PluginRendererFacade,
     changedScenes: TimelineItem[]
 ): boolean {
     try {
-        const subplotColors = plugin.settings.subplotColors || [];
-        const masterSubplotOrder = getMasterSubplotOrder(svg);
+        const ringColors = getRingColors(svg);
         
         let updated = false;
         
@@ -34,17 +32,14 @@ export function updateSceneColors(
             const sceneGroups = svg.querySelectorAll(`[data-path="${encodedPath}"]`);
             
             sceneGroups.forEach(group => {
-                // Get the subplot index
-                const subplot = scene.subplot || getMainPlotName();
-                const subplotIndex = masterSubplotOrder.indexOf(subplot);
-                
-                if (subplotIndex === -1) return;
+                const color = ringColors.get(scene.subplot || getMainPlotName());
+                if (color === undefined) return;
                 
                 // Update the scene arc fill color
                 const arc = group.querySelector('.rt-scene-arc');
                 if (arc) {
-                    const color = subplotColors[subplotIndex % subplotColors.length] || '#cccccc';
                     arc.setAttribute('fill', color);
+                    group.setAttribute('data-subplot-color', color);
                     updated = true;
                 }
             });
@@ -82,8 +77,10 @@ export function updateSceneFills(
             sceneGroups.forEach(group => {
                 const arc = group.querySelector('.rt-scene-arc');
                 if (!arc) return;
-                const subplotColorIndex = Number(group.getAttribute('data-subplot-color-index') ?? 0);
-                const subplotColorResolver = () => readSubplotColor(svg.ownerDocument, subplotColorIndex);
+                // The render stamps every scene group with its subplot color.
+                const subplotColor = group.getAttribute('data-subplot-color');
+                if (subplotColor === null) return;
+                const subplotColorResolver = () => subplotColor;
                 
                 const fill = getFillForScene(
                     scene,
@@ -121,13 +118,13 @@ export function updateSceneFills(
     }
 }
 
-/**
- * Helper: Extract master subplot order from SVG
- */
-function getMasterSubplotOrder(svg: SVGSVGElement): string[] {
-    const labels = svg.querySelectorAll('.rt-subplot-ring-label-text');
-    return Array.from(labels)
-        .map(label => label.getAttribute('data-subplot-name'))
-        .filter((name): name is string => name !== null);
+/** Each ring's color by subplot name, as the render stamped it on the ring labels. */
+function getRingColors(svg: SVGSVGElement): Map<string, string> {
+    const colors = new Map<string, string>();
+    svg.querySelectorAll('.rt-subplot-ring-label-text[data-subplot-name][data-subplot-color]').forEach(label => {
+        // SAFE: the selector above guarantees both attributes
+        colors.set(label.getAttribute('data-subplot-name')!, label.getAttribute('data-subplot-color')!);
+    });
+    return colors;
 }
 

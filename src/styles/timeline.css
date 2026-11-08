@@ -473,76 +473,10 @@
   stroke-width: 2px;
 }
 
-/* Shift mode: A new class, managed by JS, to restore number squares on hover/select */
+/* Shift mode: A new class, managed by JS, to restore number squares on hover/select.
+   Each square carries its subplot's color in --rt-number-stroke-color (renderer/utils/subplotColors). */
 .radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active {
-  /* Apply subplot color based on data attribute - avoid inline styles */
-  fill: var(--rt-subplot-colors-0);
-  /* Default fallback */
-}
-
-/* Apply subplot colors via data attributes - avoids inline style recalc */
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="0"] {
-  fill: var(--rt-subplot-colors-0);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="1"] {
-  fill: var(--rt-subplot-colors-1);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="2"] {
-  fill: var(--rt-subplot-colors-2);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="3"] {
-  fill: var(--rt-subplot-colors-3);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="4"] {
-  fill: var(--rt-subplot-colors-4);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="5"] {
-  fill: var(--rt-subplot-colors-5);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="6"] {
-  fill: var(--rt-subplot-colors-6);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="7"] {
-  fill: var(--rt-subplot-colors-7);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="8"] {
-  fill: var(--rt-subplot-colors-8);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="9"] {
-  fill: var(--rt-subplot-colors-9);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="10"] {
-  fill: var(--rt-subplot-colors-10);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="11"] {
-  fill: var(--rt-subplot-colors-11);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="12"] {
-  fill: var(--rt-subplot-colors-12);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="13"] {
-  fill: var(--rt-subplot-colors-13);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="14"] {
-  fill: var(--rt-subplot-colors-14);
-}
-
-.radial-timeline-svg[data-shift-mode="active"] .rt-number-square.rt-shift-active[data-subplot-idx="15"] {
-  fill: var(--rt-subplot-colors-15);
+  fill: var(--rt-number-stroke-color, var(--rt-subplot-colors-0));
 }
 
 .radial-timeline-svg[data-shift-mode="active"] .rt-number-text.rt-shift-active {
@@ -759,79 +693,14 @@
 
 /* 7. Active Number Square in Alien Mode */
 .radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active {
-  fill: var(--interactive-accent);
+  /* The square's subplot color (set on each square at render), or the accent without one */
+  fill: var(--rt-number-stroke-color, var(--interactive-accent));
   opacity: 1;
-  /* Default if no subplot */
 }
 
 .radial-timeline-svg[data-shift-mode="alien"] .rt-number-text.rt-shift-active {
   fill: var(--background-primary);
   opacity: 1;
-}
-
-/* Re-apply per-subplot colors for active squares in Alien Mode */
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="0"] {
-  fill: var(--rt-subplot-colors-0);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="1"] {
-  fill: var(--rt-subplot-colors-1);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="2"] {
-  fill: var(--rt-subplot-colors-2);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="3"] {
-  fill: var(--rt-subplot-colors-3);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="4"] {
-  fill: var(--rt-subplot-colors-4);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="5"] {
-  fill: var(--rt-subplot-colors-5);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="6"] {
-  fill: var(--rt-subplot-colors-6);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="7"] {
-  fill: var(--rt-subplot-colors-7);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="8"] {
-  fill: var(--rt-subplot-colors-8);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="9"] {
-  fill: var(--rt-subplot-colors-9);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="10"] {
-  fill: var(--rt-subplot-colors-10);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="11"] {
-  fill: var(--rt-subplot-colors-11);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="12"] {
-  fill: var(--rt-subplot-colors-12);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="13"] {
-  fill: var(--rt-subplot-colors-13);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="14"] {
-  fill: var(--rt-subplot-colors-14);
-}
-
-.radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active[data-subplot-idx="15"] {
-  fill: var(--rt-subplot-colors-15);
 }
 
 /* 8. ALT Button Active State - only fill is red, stroke/text stay normal */

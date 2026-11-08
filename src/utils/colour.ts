@@ -101,6 +101,25 @@ export function rgbToHex(r: number, g: number, b: number): string {
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
+/**
+ * Any opaque CSS color as lower-case `#rrggbb`, parsed by the window's own
+ * canvas so theme colors written as rgb(), hsl() or names all read. Null for
+ * text that is not a color, or a translucent one.
+ */
+export function cssColorToHex(doc: Document, css: string): string | null {
+  const context = doc.win.createEl('canvas').getContext('2d');
+  if (!context) throw new Error('This window cannot draw on a canvas, so it cannot read colors.');
+  // Text that is not a color leaves fillStyle alone, so it reads back as two different starting colors.
+  context.fillStyle = '#000000';
+  context.fillStyle = css;
+  const first = context.fillStyle;
+  context.fillStyle = '#ffffff';
+  context.fillStyle = css;
+  const second = context.fillStyle;
+  if (typeof first !== 'string' || first !== second) return null;
+  return /^#[0-9a-f]{6}$/i.test(first) ? first.toLowerCase() : null;
+}
+
 export function desaturateColor(hexColor: string, amount: number): string {
   const rgb = hexToRgb(hexColor);
   if (!rgb) return hexColor;

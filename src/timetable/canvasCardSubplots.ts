@@ -1,3 +1,6 @@
+import { cssColorToHex } from '../utils/colour';
+import { normalizeOwnSubplotColor } from '../utils/ownSubplotColors';
+
 type Box = { x?: number; y?: number; width?: number; height?: number };
 type Group = Box & { label?: string };
 
@@ -22,19 +25,71 @@ export function cardColorCss(color: string): string {
 }
 
 /**
+ * The `#rrggbb` a card color paints now: a custom color as it stands, a
+ * preset as the theme draws it at this moment. A subplot created from the
+ * card keeps this value, so its ring does not change with the theme. Null
+ * when the theme's preset cannot be read as an opaque color.
+ */
+export function cardColorHex(doc: Document, color: string): string | null {
+    if (!/^[1-6]$/.test(color)) return normalizeOwnSubplotColor(color);
+    const css = getComputedStyle(doc.body).getPropertyValue(`--canvas-color-${color}`).trim();
+    return css ? cssColorToHex(doc, css) : null;
+}
+
+/**
  * The subplot a color already stands for. Linked cards of that color on this
  * Canvas decide first, when they share exactly one subplot; after that, a ring
- * painted in exactly that color. Anything less certain stays unassigned.
+ * painted in exactly the color the cards paint (`paints`, lower-case hex).
+ * Anything less certain stays unassigned.
  */
 export function subplotForColor(
     color: string,
+    paints: string | null,
     linked: Array<{ color: string; subplots: string[] }>,
     rings: Array<{ name: string; color: string }>,
 ): string | null {
     const memberships = linked.filter(card => card.color === color).map(card => card.subplots);
     const shared = memberships[0]?.filter(name => memberships.every(subplots => subplots.includes(name))) ?? []; // SAFE: no linked card of this color means nothing shared
     if (shared.length === 1) return shared[0];
-    return rings.find(ring => ring.color === color)?.name ?? null;
+    if (paints === null) return null;
+    return rings.find(ring => ring.color === paints)?.name ?? null;
+}
+
+/** What one card color does to the book's subplots when its cards become scenes. */
+export type CardColorSubplot =
+    /** No name: the cards join the main plot, which keeps its color. */
+    | { kind: 'mainPlot' }
+    /** A subplot the book already has: it keeps the color it wears. */
+    | { kind: 'existing'; subplot: string }
+    /** A new subplot: its ring wears this card color. */
+    | { kind: 'new'; subplot: string }
+    /** A new subplot an earlier card color already names: its ring wears that earlier color. */
+    | { kind: 'sharesNew'; subplot: string; color: string };
+
+/**
+ * Which subplot each card color's cards join, and whose color that subplot
+ * wears, so a color is chosen once. Rows come in the dialog's order. A name
+ * the book already has (`existing` returns the book's spelling) keeps that
+ * subplot's color; a new name takes the first card color that names it, in
+ * the spelling that color gave it.
+ */
+export function planCardColorSubplots(
+    rows: ReadonlyArray<{ color: string; name: string }>,
+    existing: (name: string) => string | null,
+): Map<string, CardColorSubplot> {
+    const plans = new Map<string, CardColorSubplot>();
+    const created = new Map<string, { subplot: string; color: string }>();
+    for (const { color, name } of rows) {
+        const typed = name.trim();
+        if (!typed) { plans.set(color, { kind: 'mainPlot' }); continue; }
+        const known = existing(typed);
+        if (known !== null) { plans.set(color, { kind: 'existing', subplot: known }); continue; }
+        const first = created.get(typed.toLowerCase());
+        if (first) { plans.set(color, { kind: 'sharesNew', subplot: first.subplot, color: first.color }); continue; }
+        created.set(typed.toLowerCase(), { subplot: typed, color });
+        plans.set(color, { kind: 'new', subplot: typed });
+    }
+    return plans;
 }
 
 /** A subplot lane identifies a particular appearance of a scene without changing its note. */

@@ -44,7 +44,7 @@ export function buildSynopsisElement(
     sceneId: string,
     maxTextWidth: number,
     orderedSubplots: string[],
-    subplotIndexResolver?: (name: string) => number,
+    subplotColorResolver?: (name: string) => string,
     alienModeActive = false
 ): SVGGElement {
     const fontScale = getReadabilityMultiplier(plugin.settings);
@@ -59,7 +59,7 @@ export function buildSynopsisElement(
             lines.push(backdropContext);
         }
         lines.push('\u00A0');
-        return plugin.synopsisManager.generateElement(scene, lines, sceneId, subplotIndexResolver, alienModeActive);
+        return plugin.synopsisManager.generateElement(scene, lines, sceneId, subplotColorResolver, alienModeActive);
     }
 
     const beatLines = isBeatNote(scene) ? buildBeatHoverLines(scene) : [];
@@ -159,7 +159,7 @@ export function buildSynopsisElement(
     }
 
     const filtered = contentLines.filter(line => line && line.trim() !== '\u00A0');
-    return plugin.synopsisManager.generateElement(scene, filtered, sceneId, subplotIndexResolver, alienModeActive);
+    return plugin.synopsisManager.generateElement(scene, filtered, sceneId, subplotColorResolver, alienModeActive);
 }
 
 type SynopsisAppendOptions = {
@@ -167,7 +167,8 @@ type SynopsisAppendOptions = {
     scene: TimelineItem;
     sceneId: string;
     maxTextWidth: number;
-    masterSubplotOrder: string[];
+    /** The render's subplot colors, for the synopsis's subplot line. A backdrop's synopsis has no subplot line. */
+    subplotColorFor?: (name: string) => string;
     scenes: TimelineItem[];
     targets: SVGGElement[];
     alienModeActive?: boolean;
@@ -178,7 +179,7 @@ export function appendSynopsisElementForScene({
     scene,
     sceneId,
     maxTextWidth,
-    masterSubplotOrder,
+    subplotColorFor,
     scenes,
     targets,
     alienModeActive = false
@@ -201,11 +202,7 @@ export function appendSynopsisElementForScene({
             sceneId,
             maxTextWidth,
             orderedSubplots,
-            name => {
-                const idx = masterSubplotOrder.indexOf(name);
-                if (idx < 0) return 0;
-                return idx % 16;
-            },
+            subplotColorFor,
             alienModeActive
         );
         targets.push(synopsisElement);

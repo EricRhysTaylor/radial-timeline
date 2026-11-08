@@ -25,6 +25,7 @@ import { getTimelineScope } from '../../utils/books';
 import { getTimelineSegmentCount } from './TimelineSegments';
 import { getMainPlotName } from '../../utils/mainPlot';
 import { characterLaneBandWidth, characterLanesActive, chooseLaneCharacters, laneScenes, readSceneCharacters } from './CharacterLanes';
+import { assignSubplotColors, type OwnSubplotColors, type SubplotColor } from './subplotColors';
 
 /** One subplot's aggregated scene count, the unit {@link compareSubplotOrder} orders. */
 export interface SubplotCountEntry {
@@ -96,7 +97,8 @@ export function compareSubplotOrder(a: SubplotCountEntry, b: SubplotCountEntry):
 export interface PrecomputedRenderValues {
     scenesByActAndSubplot: { [act: number]: { [subplot: string]: TimelineItem[] } };
     masterSubplotOrder: string[];
-    colorIndexBySubplot: Map<string, number>;
+    /** Each subplot's color, from {@link assignSubplotColors}. Backdrop lanes are not subplots and have none. */
+    subplotColors: Map<string, SubplotColor>;
     totalPlotNotes: number;
     plotIndexByKey: Map<string, number>;
     plotsBySubplot: Map<string, TimelineItem[]>;
@@ -114,7 +116,11 @@ export interface PrecomputedRenderValues {
 export function computeCacheableValues(
     plugin: PluginRendererFacade,
     scenes: TimelineItem[],
-    options: { runtimeView?: boolean } = {}
+    options: {
+        runtimeView?: boolean;
+        /** The own colors of the books these scenes come from (see renderer/utils/subplotColors). */
+        ownSubplotColors: OwnSubplotColors;
+    }
 ): PrecomputedRenderValues {
     const stopPrecompute = startPerfSegment(plugin, 'timeline.precompute');
 
@@ -233,11 +239,8 @@ export function computeCacheableValues(
 
     const baseSubplotOrder = subplotCounts.map(item => item.subplot);
 
-    // Stable color index map (pre-reorder) so colors remain consistent across modes
-    const colorIndexBySubplot = new Map<string, number>();
-    baseSubplotOrder.forEach((subplot, idx) => {
-        colorIndexBySubplot.set(subplot, idx % 16);
-    });
+    // Colors follow the ring order before the backdrop lanes are inserted, so they stay the same across modes.
+    const subplotColors = assignSubplotColors(baseSubplotOrder, options.ownSubplotColors);
 
     let masterSubplotOrder = [...baseSubplotOrder];
 
@@ -328,7 +331,7 @@ export function computeCacheableValues(
     return {
         scenesByActAndSubplot,
         masterSubplotOrder,
-        colorIndexBySubplot,
+        subplotColors,
         totalPlotNotes,
         plotIndexByKey,
         plotsBySubplot,

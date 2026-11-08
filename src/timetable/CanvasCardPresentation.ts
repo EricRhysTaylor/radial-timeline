@@ -3,12 +3,12 @@ import type RadialTimelinePlugin from '../main';
 import { authorKeyFor } from './timetableFiles';
 import { synopsisKey } from './panelSynopsis';
 import { t } from '../i18n';
-import { bookCardFor, bookRingSlots } from './canvasBookCards';
+import { bookCardFor, bookRingColors } from './canvasBookCards';
 import { markTimetableRows, onLinkedScene } from './timetableRegistry';
 import { CanvasStoryNavigator } from './CanvasStoryNavigator';
 import { linkedSceneViewport } from './canvasNavigation';
 import { buildTableRow, sceneVitals } from './timetableModel';
-import { normalizeSubplotColorIndex } from '../renderer/utils/subplotColors';
+import { SUBPLOT_COLORS_CHANGED_EVENT, subplotColorCss, type SubplotColor } from '../renderer/utils/subplotColors';
 import { cardSubplots } from './canvasCardSubplots';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { readFrontmatterProperty } from '../utils/frontmatterKeys';
@@ -56,7 +56,7 @@ class CanvasCards {
     private followTimeline = true;
     private followTimer: number | undefined;
     private timelinePinned = false;
-    private readonly ringColors = new Map<string, Promise<Map<string, number>>>();
+    private readonly ringColors = new Map<string, Promise<Map<string, SubplotColor>>>();
     readonly action: HTMLElement;
     private readonly unlink: () => void;
     private readonly events = new Component();
@@ -129,6 +129,7 @@ class CanvasCards {
         });
         this.events.load();
         this.events.registerDomEvent(view.containerEl.win, 'rt-story-image-strategy-changed', () => this.schedule());
+        this.events.registerDomEvent(view.containerEl.win, SUBPLOT_COLORS_CHANGED_EVENT, () => this.invalidateColors());
         this.events.registerDomEvent(view.containerEl, 'click', event => {
             if (!this.hasBookCards || !(event.target instanceof Element)) return;
             const nodes = (this.view as CanvasView).canvas?.nodes;
@@ -157,11 +158,11 @@ class CanvasCards {
 
     invalidateColors(): void { this.ringColors.clear(); this.schedule(); }
 
-    private colorsForBook(bookId: string): Promise<Map<string, number>> {
+    private colorsForBook(bookId: string): Promise<Map<string, SubplotColor>> {
         const existing = this.ringColors.get(bookId);
         if (existing) return existing;
         const book = this.plugin.settings.books.find(item => item.id === bookId);
-        const pending = book ? bookRingSlots(this.plugin, book) : Promise.resolve(new Map<string, number>());
+        const pending = book ? bookRingColors(this.plugin, book) : Promise.resolve(new Map<string, SubplotColor>());
         this.ringColors.set(bookId, pending);
         return pending;
     }
@@ -206,8 +207,9 @@ class CanvasCards {
                 const selected = storyImageChoice(this.plugin, file.path).character ?? imageSelections.get(file.path);
                 const image = overrideImage ? this.plugin.app.vault.getResourcePath(overrideImage) : row.kind === 'scene' ? portrait(this.plugin, file, fm, imageFiles, selected) : null;
                 const place = this.showPlaceBackground && (row.kind === 'scene' || (row.kind === 'sketch' && (!!storyImageChoice(this.plugin, file.path).placeImage || !!readFrontmatterProperty(fm, 'Place image')))) ? panelPlaceImage(this.plugin.app, file, fm, authorKeyFor('Place', this.plugin.settings), imageFiles, storyImageChoice(this.plugin, file.path).placeImage) : null;
-                const slots = row.kind === 'scene' || row.kind === 'sketch' ? await this.colorsForBook(bookId) : new Map<string, number>();
-                const subplotNames = row.subplots.filter(name => slots.has(name));
+                const ringColors = row.kind === 'scene' || row.kind === 'sketch' ? await this.colorsForBook(bookId) : new Map<string, SubplotColor>();
+                const subplotNames = row.subplots.filter(name => ringColors.has(name));
+                const colorOf = (name: string): string => subplotColorCss(ringColors.get(name)!); // SAFE: subplotNames keeps only names the book's rings hold
                 const shownSubplots = cardSubplots(data, groups, subplotNames);
                 const overdue = this.showOverdue && row.kind === 'scene' && sceneVitals(fm, this.plugin.settings, new Date()).due.kind === 'late';
                 let preview = '';
@@ -227,7 +229,7 @@ class CanvasCards {
                 const title = file.basename.replace(/^\d+(?:\.\d+)?\s+/, '');
                 const description = plainText(preview);
                 const number = row.kind === 'scene' ? row.prefix : null;
-                const signature = JSON.stringify([this.mode, title, kind, number, image, place?.url, selected, storyImageChoice(this.plugin, file.path), readFrontmatterProperty(fm, 'Place image'), this.landscapePortrait, description, file.path, shownSubplots.map(name => [name, slots.get(name)]), overdue]);
+                const signature = JSON.stringify([this.mode, title, kind, number, image, place?.url, selected, storyImageChoice(this.plugin, file.path), readFrontmatterProperty(fm, 'Place image'), this.landscapePortrait, description, file.path, shownSubplots.map(name => [name, colorOf(name)]), overdue]);
                 const existing = this.cards.get(el);
                 if (existing?.signature === signature && el.contains(existing.overlay)) continue;
                 this.remove(el);
@@ -255,13 +257,13 @@ class CanvasCards {
                 const heading = header.createDiv({ cls: 'ert-canvas-story-card__heading' });
                 const meta = heading.createDiv({ cls: 'ert-canvas-story-card__meta' });
                 if (shownSubplots.length) {
-                    overlay.setCssProps({ '--ert-canvas-subplot': `var(--rt-subplot-colors-${normalizeSubplotColorIndex(slots.get(shownSubplots[0])!)})` });
+                    overlay.setCssProps({ '--ert-canvas-subplot': colorOf(shownSubplots[0]) });
                     overlay.addClass('has-subplot');
                     const markers = meta.createDiv({ cls: 'ert-canvas-story-card__subplots' });
                     for (const name of shownSubplots.slice(0, 3)) {
                         const marker = markers.createSpan({ cls: 'ert-canvas-story-card__subplot' });
                         setTooltip(marker, name);
-                        marker.setCssProps({ '--ert-canvas-subplot': `var(--rt-subplot-colors-${normalizeSubplotColorIndex(slots.get(name)!)})` });
+                        marker.setCssProps({ '--ert-canvas-subplot': colorOf(name) });
                     }
                     if (shownSubplots.length > 3) {
                         const more = markers.createSpan({ cls: 'ert-canvas-story-card__subplot-more', text: `+${shownSubplots.length - 3}` });

@@ -5,7 +5,7 @@ import { isCompleteStatus } from '../progress/progressSnapshot';
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
-import { readSubplotColor } from './utils/subplotColors';
+import { readSubplotColorValue, subplotColorOn, timelineOwnSubplotColors } from './utils/subplotColors';
 import { STAGE_ORDER, STAGES_FOR_GRID, STATUSES_FOR_GRID, SceneNumberInfo } from '../utils/constants';
 import {
     GRID_CELL_BASE,
@@ -266,14 +266,14 @@ export function createTimelineSVG(
     const isNarrativeRuntime = (settings.currentMode || 'narrative') === 'narrative' && options?.runtimeModeActive === true;
 
     const stopPrepPerf = startPerfSegment(plugin, 'timeline.scene-prep');
-    const precomputed = computeCacheableValues(plugin, scenes, { runtimeView: isNarrativeRuntime });
+    const precomputed = computeCacheableValues(plugin, scenes, { runtimeView: isNarrativeRuntime, ownSubplotColors: timelineOwnSubplotColors(settings) });
     stopPrepPerf();
 
     // Extract precomputed values
     const {
         scenesByActAndSubplot,
         masterSubplotOrder,
-        colorIndexBySubplot,
+        subplotColors,
         ringWidths,
         ringStartRadii,
         lineInnerRadius,
@@ -289,20 +289,12 @@ export function createTimelineSVG(
     const shouldApplyNumberSquareColors = currentMode !== 'gossamer';
     const isNarrativeMode = currentMode === 'narrative';
 
-    const resolveSubplotColorIndex = (subplotName: string): number => {
-        const key = subplotName && subplotName.trim().length > 0 ? subplotName : getMainPlotName();
-        if (colorIndexBySubplot.has(key)) return colorIndexBySubplot.get(key)!;
-        const fallback = colorIndexBySubplot.get(getMainPlotName());
-        return fallback !== undefined ? fallback : 0;
-    };
+    // The one subplot color lookup for this render: rings, labels, number squares, synopses and flags all paint from it.
+    const subplotColorFor = (subplotName: string | undefined): string => readSubplotColorValue(activeDocument, subplotColorOn(subplotColors, subplotName));
 
     const numberSquareVisualResolver = shouldApplyNumberSquareColors
-        ? (scene: TimelineItem) => ({
-            subplotIndex: resolveSubplotColorIndex(scene.subplot || getMainPlotName())
-        })
+        ? (scene: TimelineItem) => ({ subplotColor: subplotColorFor(scene.subplot) })
         : null;
-
-    const subplotColorFor = (subplotName: string) => readSubplotColor(activeDocument, resolveSubplotColorIndex(subplotName));
 
     // Determine sorting method (needed for later logic; pulled out for readability)
     const timelineSegments = buildTimelineSegments(settings);
@@ -537,7 +529,7 @@ export function createTimelineSVG(
             scene,
             sceneId,
             maxTextWidth,
-            masterSubplotOrder,
+            subplotColorFor,
             scenes,
             targets: synopsesElements
         });
@@ -582,7 +574,7 @@ export function createTimelineSVG(
         isChronologueMode,
         forceChronological,
         masterSubplotOrder,
-        colorIndexBySubplot,
+        subplotColorFor,
         ringStartRadii,
         ringWidths,
         scenesByActAndSubplot,
@@ -749,7 +741,7 @@ export function createTimelineSVG(
 
     // Subplot labels - rendered outside the scene layer, above it
     svg += `<g class="background-layer subplot-labels-fixed">`;
-    svg += renderSubplotLabels({ NUM_RINGS, ringStartRadii, ringWidths, masterSubplotOrder, colorIndexBySubplot, plugin });
+    svg += renderSubplotLabels({ NUM_RINGS, ringStartRadii, ringWidths, masterSubplotOrder, subplotColorFor, plugin });
     svg += `</g>`;
 
     // Scene-title sources stay with their scenes; paint them and the reference

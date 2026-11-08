@@ -246,7 +246,6 @@ export type BackdropRingOptions = {
     availableRadius: number; // center radius of the outermost lane (lane 0)
     synopsesElements: SVGGElement[];
     maxTextWidth: number;
-    masterSubplotOrder: string[];
 };
 
 export function renderBackdropRing({
@@ -256,7 +255,6 @@ export function renderBackdropRing({
     availableRadius,
     synopsesElements,
     maxTextWidth,
-    masterSubplotOrder,
 }: BackdropRingOptions): string {
     if (!layout.segments.length) return '';
 
@@ -304,7 +302,6 @@ export function renderBackdropRing({
             scene: seg.scene,
             sceneId,
             maxTextWidth,
-            masterSubplotOrder,
             scenes,
             targets: synopsesElements,
         });

@@ -12,6 +12,7 @@ import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
 import { readSharedChapterTitle } from '../utils/timelineChapters';
 import { readPartMarker } from '../utils/timelineParts';
 import { searchHitPaths, searchOptionsSignature, type TimelineSearchState } from '../services/searchState';
+import { timelineOwnSubplotColors } from './utils/subplotColors';
 
 /**
  * Types of changes that can trigger renders
@@ -188,9 +189,8 @@ export function createSnapshot(
     const publishStageColorsHash = settings.publishStageColors 
         ? JSON.stringify(settings.publishStageColors)
         : '';
-    const subplotColorsHash = settings.subplotColors
-        ? JSON.stringify(settings.subplotColors)
-        : '';
+    // The palette and the subplots on this timeline that wear their own color.
+    const subplotColorsHash = JSON.stringify([settings.subplotColors, [...timelineOwnSubplotColors(settings)]]);
     const customWorkingPatternsHash = settings.customWorkingPatterns
         ? JSON.stringify(settings.customWorkingPatterns)
         : '';

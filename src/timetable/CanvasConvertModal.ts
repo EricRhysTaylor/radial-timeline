@@ -15,9 +15,10 @@ import { buildRingLayout, buildTableRow, type TimetableRow } from './timetableMo
 import { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor, type PlacementItem } from './sketchPlacement';
 import { actsFromActCards, canvasReadingOrder, planCanvasSketchAppend, spreadAcrossActs } from './canvasSketchOrdering';
 import { actCardNumber } from './canvasNavigation';
-import { bookRingSlots, ringSlotsWith } from './canvasBookCards';
-import { cardColor, cardColorCounts, cardColorCss, subplotForColor } from './canvasCardSubplots';
-import { normalizeSubplotColorIndex, readSubplotColor } from '../renderer/utils/subplotColors';
+import { bookRingColors, ringColorsWith } from './canvasBookCards';
+import { cardColor, cardColorCounts, cardColorCss, cardColorHex, planCardColorSubplots, subplotForColor, type CardColorSubplot } from './canvasCardSubplots';
+import { bookOwnSubplotColors, readSubplotColorValue, subplotColorCss, type SubplotColor } from '../renderer/utils/subplotColors';
+import { setOwnSubplotColor } from '../utils/ownSubplotColors';
 import { getMainPlotName } from '../utils/mainPlot';
 import { planActEndScenePrefixes } from '../services/SceneInsertService';
 import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
@@ -32,14 +33,14 @@ export interface OpenCanvas {
 }
 
 /** One of the book's rings, as a card color can be assigned to it. */
-interface RingChoice { name: string; slot: number }
+interface RingChoice { name: string; color: SubplotColor }
 
 /** An existing sketch given a position during conversion, kept so a failure can restore it. */
 interface RankedSketch { file: TFile; key: string; rank: number; existed: boolean; value: unknown; act: number | null; anchor: string | null }
 
-function ringDot(parent: HTMLElement, slot: number): HTMLElement {
+function colorDot(parent: HTMLElement, css: string): HTMLElement {
     const dot = parent.createSpan({ cls: 'ert-canvas-sketch-swatch' });
-    dot.setCssProps({ '--ert-canvas-sketch-swatch': `var(--rt-subplot-colors-${normalizeSubplotColorIndex(slot)})` });
+    dot.setCssProps({ '--ert-canvas-sketch-swatch': css });
     return dot;
 }
 
@@ -56,7 +57,7 @@ class RingSuggest extends AbstractInputSuggest<RingChoice> {
 
     renderSuggestion(ring: RingChoice, el: HTMLElement): void {
         el.addClass('ert-canvas-sketch-ring-option');
-        ringDot(el, ring.slot);
+        colorDot(el, subplotColorCss(ring.color));
         el.createSpan({ text: ring.name });
     }
 
@@ -79,9 +80,13 @@ export class CanvasConvertModal extends ErtModal {
     private anchorPath: string | null = null;
     private rings: RingChoice[] = [];
     private rows: TimetableRow[] = [];
+    /** The book's subplots that already wear their own color. */
+    private own = new Map<string, string>();
+    /** What the author typed for each card color. */
     private readonly subplotByColor = new Map<string, string>();
     private sceneActs = new Map<string, number>();
-    private readonly ringDots = new Map<string, HTMLElement>();
+    /** Per card color, where its row says which color the subplot will wear. */
+    private readonly colorStates = new Map<string, HTMLElement>();
 
     constructor(app: App, private readonly plugin: RadialTimelinePlugin, private readonly canvas: OpenCanvas, private readonly books: BookProfile[], activeBook: BookProfile, private readonly canvasIsOpen: () => boolean) {
         super(app);
@@ -136,53 +141,83 @@ export class CanvasConvertModal extends ErtModal {
     /** Read the book's rings, then start each card color on the subplot it already stands for. */
     private async loadRings(): Promise<void> {
         const book = this.book;
-        const slots = await bookRingSlots(this.plugin, book);
+        const wheel = await bookRingColors(this.plugin, book);
         if (book !== this.book) return;
         const items = this.bookItems();
         this.rows = items.map(item => item.row);
-        const layout = buildRingLayout([...slots.keys()], slots, this.rows);
-        this.rings = [...new Set([getMainPlotName(), ...layout.order])].map(name => ({ name, slot: layout.colorIndex.get(name) ?? 0 })); // SAFE: a book with no scenes has no layout yet, and Main Plot always takes the first slot
+        this.own = bookOwnSubplotColors(book);
+        const layout = buildRingLayout([...wheel.keys()], this.own, this.rows);
+        this.rings = [...new Set([getMainPlotName(), ...layout.order])].map(name => ({ name, color: layout.colors.get(name) ?? { kind: 'slot', slot: 0 } })); // SAFE: a book with no scenes has no layout yet, and Main Plot always takes the first slot
         const subplotsByPath = new Map(items.map(item => [item.row.path, item.row.subplots]));
         const linked = (this.canvas.getData().nodes ?? []).flatMap(node => { // SAFE: canvas JSON may omit nodes; none = no linked cards
             const color = cardColor(node);
             const subplots = node.type === 'file' && typeof node.file === 'string' ? subplotsByPath.get(node.file) : undefined;
             return color && subplots?.length ? [{ color, subplots }] : [];
         });
-        const ringColors = this.rings.map(ring => ({ name: ring.name, color: readSubplotColor(this.containerEl.doc, ring.slot).toLowerCase() }));
+        const doc = this.containerEl.doc;
+        const ringColors = this.rings.map(ring => ({ name: ring.name, color: readSubplotColorValue(doc, ring.color).toLowerCase() }));
         this.subplotByColor.clear();
         for (const color of cardColorCounts(this.cards).keys()) {
-            const subplot = subplotForColor(color, linked, ringColors);
+            const subplot = subplotForColor(color, cardColorHex(doc, color), linked, ringColors);
             if (subplot) this.subplotByColor.set(color, subplot);
         }
     }
 
-    /** A subplot name in the book's own spelling when that ring already exists. */
-    private ringName(typed: string): string {
-        return this.rings.find(ring => ring.name.toLowerCase() === typed.toLowerCase())?.name ?? typed;
+    /** A subplot the book already has, in the book's own spelling. */
+    private existingRing(typed: string): string | null {
+        return this.rings.find(ring => ring.name.toLowerCase() === typed.toLowerCase())?.name ?? null;
+    }
+
+    /** For each card color on the selected cards: the subplot its cards join, and whose color that subplot wears. */
+    private colorPlans(): Map<string, CardColorSubplot> {
+        const colors = [...cardColorCounts(this.cards.filter(card => this.selected.has(card.id))).keys()];
+        return planCardColorSubplots(colors.map(color => ({ color, name: this.subplotByColor.get(color) ?? '' })), typed => this.existingRing(typed)); // SAFE: a color with no name typed yet joins the main plot
     }
 
     /** The subplot a card joins through its color. */
-    private subplotFor(card: CanvasTextCard): string | null {
+    private subplotFor(card: CanvasTextCard, plans: Map<string, CardColorSubplot>): string | null {
         const color = cardColor(card);
-        const typed = color ? this.subplotByColor.get(color)?.trim() : undefined;
-        return typed ? this.ringName(typed) : null;
+        const plan = color ? plans.get(color) : undefined;
+        return plan && plan.kind !== 'mainPlot' ? plan.subplot : null;
     }
 
-    /** Beside each name, the color its ring will have: ring order follows scene counts, so a new subplot's isn't known until it is named. */
-    private showRingColors(): void {
-        const additions = this.cards.filter(card => this.selected.has(card.id)).map(card => this.subplotFor(card) ?? getMainPlotName());
-        const slots = ringSlotsWith(this.rows, additions);
-        for (const [color, dot] of this.ringDots) {
-            dot.empty();
-            const typed = this.subplotByColor.get(color)?.trim();
-            const slot = typed ? slots.get(this.ringName(typed)) : undefined;
-            if (slot !== undefined) ringDot(dot, slot);
+    /**
+     * Each row says honestly which color its subplot will wear. A new subplot
+     * wears the row's own card color, so the row shows that color alone. A
+     * subplot the book has keeps its color: the dot shows it as the ring will
+     * look, since ring order follows scene counts. A new name an earlier
+     * color already gave shows that earlier color.
+     */
+    private showColorStates(): void {
+        const doc = this.containerEl.doc;
+        const plans = this.colorPlans();
+        const newColors = [...plans].flatMap(([color, plan]) => plan.kind === 'new' ? [[plan.subplot, cardColorCss(color)] as const] : []);
+        const additions = this.cards.filter(card => this.selected.has(card.id)).map(card => this.subplotFor(card, plans) ?? getMainPlotName());
+        // New subplots will wear their card colors, so they take no palette slot from the rings shown here.
+        const after = ringColorsWith(this.rows, additions, new Map([...this.own, ...newColors]));
+        const show = (state: HTMLElement, css: string, note: string): void => {
+            const dot = colorDot(state, css);
+            setAccessibleLabel(dot, note);
+            setTooltip(dot, note);
+        };
+        for (const [color, state] of this.colorStates) {
+            state.empty();
+            const plan = plans.get(color);
+            if (!plan || plan.kind === 'mainPlot' || plan.kind === 'new') continue;
+            if (plan.kind === 'sharesNew') {
+                show(state, cardColorCss(plan.color), t('ui.canvasSketch.sharesColor', { subplot: plan.subplot }));
+                continue;
+            }
+            const ring = after.get(plan.subplot)!; // SAFE: this color's selected cards join the subplot, so the rings after them hold it
+            // A subplot already wearing this card color leaves one color in play.
+            if (readSubplotColorValue(doc, ring).toLowerCase() === cardColorHex(doc, color)) continue;
+            show(state, subplotColorCss(ring), t('ui.canvasSketch.keepsColor', { subplot: plan.subplot }));
         }
     }
 
     private renderColors(container: HTMLElement): void {
         container.empty();
-        this.ringDots.clear();
+        this.colorStates.clear();
         const counts = cardColorCounts(this.cards.filter(card => this.selected.has(card.id)));
         if (!counts.size) return;
         container.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.canvasSketch.colorsHint', { mainPlot: getMainPlotName() }) });
@@ -193,12 +228,12 @@ export class CanvasConvertModal extends ErtModal {
             const input = row.createEl('input', { type: 'text', attr: { placeholder: t('ui.canvasSketch.subplotName') } });
             setAccessibleLabel(input, t('ui.canvasSketch.subplotName'));
             input.value = this.subplotByColor.get(color) ?? ''; // SAFE: a color with no subplot yet starts blank, ready to name
-            this.ringDots.set(color, row.createDiv({ cls: 'ert-canvas-sketch-ring' }));
-            const remember = (name: string) => { this.subplotByColor.set(color, name); this.showRingColors(); };
+            this.colorStates.set(color, row.createDiv({ cls: 'ert-canvas-sketch-ring' }));
+            const remember = (name: string) => { this.subplotByColor.set(color, name); this.showColorStates(); };
             input.addEventListener('input', () => remember(input.value));
             new RingSuggest(this.app, input, () => this.rings, remember);
         }
-        this.showRingColors();
+        this.showColorStates();
     }
 
     /** Moving past an act break changes the act first; the next move changes the order. */
@@ -356,8 +391,34 @@ export class CanvasConvertModal extends ErtModal {
         return path;
     }
 
+    /**
+     * The color each new subplot's ring will wear: its card color, read now,
+     * so a theme preset becomes a fixed color. Read before any note is
+     * written, so a color that cannot be read stops the conversion cleanly.
+     */
+    private newSubplotColors(plans: Map<string, CardColorSubplot>): Map<string, string> {
+        const colors = new Map<string, string>();
+        for (const [color, plan] of plans) {
+            if (plan.kind !== 'new') continue;
+            const hex = cardColorHex(this.containerEl.doc, color);
+            if (!hex) throw new Error(t('ui.canvasSketch.colorUnreadable'));
+            colors.set(plan.subplot, hex);
+        }
+        return colors;
+    }
+
+    /** New subplots that now have scenes keep their card color, on the book's profile. */
+    private async keepNewSubplotColors(colors: Map<string, string>, cards: CanvasTextCard[], plans: Map<string, CardColorSubplot>, paths: Map<string, string>): Promise<void> {
+        const created = new Set(cards.filter(card => paths.has(card.id)).map(card => this.subplotFor(card, plans)));
+        const kept = [...colors].filter(([subplot]) => created.has(subplot));
+        if (!kept.length) return;
+        for (const [subplot, hex] of kept) setOwnSubplotColor(this.book, subplot, hex);
+        await this.plugin.saveSettings();
+        this.plugin.setCSSColorVariables();
+    }
+
     /** Each card becomes a finished, numbered scene at the end of its act, in one write. */
-    private async writeScenes(cards: CanvasTextCard[], folder: string, paths: Map<string, string>): Promise<void> {
+    private async writeScenes(cards: CanvasTextCard[], folder: string, paths: Map<string, string>, plans: Map<string, CardColorSubplot>): Promise<void> {
         const { settings } = this.plugin;
         const actCount = getConfiguredActCount(settings);
         const byAct = new Map<number, string[]>();
@@ -374,7 +435,7 @@ export class CanvasConvertModal extends ErtModal {
                 [authorKeyFor('Class', settings)]: 'Scene',
                 [authorKeyFor('Act', settings)]: this.sceneAct(card),
             };
-            const subplot = this.subplotFor(card);
+            const subplot = this.subplotFor(card, plans);
             if (subplot) frontmatter[authorKeyFor('Subplot', settings)] = subplot;
             await this.app.vault.create(path, addSceneIntakeTemplate(this.noteBody(frontmatter, card), settings));
             paths.set(card.id, path);
@@ -440,8 +501,16 @@ export class CanvasConvertModal extends ErtModal {
                 return;
             }
             if (!this.canvasIsOpen() || JSON.stringify(initial) !== JSON.stringify(this.canvas.getData())) throw new Error(t('ui.canvasSketch.changed'));
-            if (this.mode === 'scenes') await this.writeScenes(cards, folder, paths);
-            else await this.writeSketches(cards, folder, paths, ranked);
+            if (this.mode === 'scenes') {
+                const plans = this.colorPlans();
+                const colors = this.newSubplotColors(plans);
+                try {
+                    await this.writeScenes(cards, folder, paths, plans);
+                } finally {
+                    // Subplots whose scenes were written keep their color even if a later scene failed.
+                    await this.keepNewSubplotColors(colors, cards, plans, paths);
+                }
+            } else await this.writeSketches(cards, folder, paths, ranked);
             // Never replace cards if the author (or another plugin) changed the map while files were being created.
             if (!this.canvasIsOpen() || JSON.stringify(initial) !== JSON.stringify(this.canvas.getData())) throw new Error(t('ui.canvasSketch.changed'));
             // Canvas retains the node class for an existing ID. New IDs let

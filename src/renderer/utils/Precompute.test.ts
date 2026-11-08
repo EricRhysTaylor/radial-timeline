@@ -36,7 +36,7 @@ describe('computeCacheableValues', () => {
             { title: '2 Undated', date: '', path: 'Book/2.md', subplot: 'Thread' },
             { title: '3 Earlier', date: '', path: 'Book/3.md', when: new Date(2026, 0, 10), subplot: 'Thread' }
         ];
-        const values = computeCacheableValues(plugin as never, scenes);
+        const values = computeCacheableValues(plugin as never, scenes, { ownSubplotColors: new Map() });
         expect(values.scenesByActAndSubplot[0].Thread.map(s => s.path)).toEqual(['Book/3.md', 'Book/2.md']);
         expect(scenes[1].when).toBeUndefined();
     });
@@ -62,7 +62,7 @@ describe('computeCacheableValues', () => {
             },
         ];
 
-        const values = computeCacheableValues(plugin as never, scenes);
+        const values = computeCacheableValues(plugin as never, scenes, { ownSubplotColors: new Map() });
 
         expect(values.maxStageColor).toBe('#3366ff');
     });
@@ -83,7 +83,7 @@ describe('computeCacheableValues', () => {
             },
         ];
 
-        const values = computeCacheableValues(plugin as never, scenes);
+        const values = computeCacheableValues(plugin as never, scenes, { ownSubplotColors: new Map() });
 
         expect(values.scenesByActAndSubplot[2]['Main Plot']).toHaveLength(1);
         expect(values.scenesByActAndSubplot[0]['Main Plot'] ?? []).toHaveLength(0);
@@ -132,7 +132,7 @@ describe('computeCacheableValues', () => {
                 },
             ];
 
-            const values = computeCacheableValues(plugin as never, scenes);
+            const values = computeCacheableValues(plugin as never, scenes, { ownSubplotColors: new Map() });
 
             expect(values.masterSubplotOrder).not.toContain('Main Plot');
             expect(values.masterSubplotOrder).toHaveLength(2);
@@ -165,7 +165,7 @@ describe('computeCacheableValues', () => {
                 },
             ];
 
-            const values = computeCacheableValues(plugin as never, scenes);
+            const values = computeCacheableValues(plugin as never, scenes, { ownSubplotColors: new Map() });
 
             expect(values.masterSubplotOrder).toHaveLength(2);
             expect(values.ringStartRadii).toHaveLength(values.masterSubplotOrder.length);
@@ -191,7 +191,7 @@ describe('computeCacheableValues', () => {
             { title: '8 H', path: 'Book/8 H.md', date: '', subplot: 'Lonely Thread', actNumber: 1 },
         ];
 
-        const values = computeCacheableValues(plugin as never, scenes);
+        const values = computeCacheableValues(plugin as never, scenes, { ownSubplotColors: new Map() });
 
         // Main Plot pinned first; Apple/Zebra tie on count(2) and break by
         // name ascending ('Apple' < 'Zebra'); Lonely Thread (count 1) last.

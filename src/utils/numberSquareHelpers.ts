@@ -45,13 +45,14 @@ export function generateNumberSquareGroup(
     grade?: string,
     options?: {
         cornerRadius?: number;
-        subplotIndex?: number;
+        /** The scene's subplot color (renderer/utils/subplotColors): drag outlines and lit squares paint with it. */
+        subplotColor?: string;
         dataAttrs?: Record<string, string | number | boolean | null | undefined>;
     }
 ): string {
     const cornerRadius = options?.cornerRadius ?? 0;
     const radiusAttr = cornerRadius > 0 ? ` rx="${cornerRadius}" ry="${cornerRadius}"` : '';
-    const subplotAttr = options?.subplotIndex !== undefined ? ` data-subplot-idx="${options.subplotIndex}"` : '';
+    const subplotAttr = options?.subplotColor !== undefined ? ` style="--rt-number-stroke-color: ${escapeXml(options.subplotColor)}"` : ''; // SAFE: inline style used for the dynamic subplot color variable
     const dataAttrString = options?.dataAttrs
         ? Object.entries(options.dataAttrs)
             .filter(([, v]) => v !== undefined && v !== null)

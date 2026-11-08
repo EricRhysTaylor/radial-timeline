@@ -14,6 +14,9 @@ import { hasProFeatureAccess } from '../featureGate';
 import { IMPACT_FULL } from '../SettingImpact';
 import { DEFAULT_MAIN_PLOT_NAME } from '../../utils/mainPlot';
 import { t } from '../../i18n';
+import { bookOwnSubplotColors, timelineOwnSubplotColors, type SubplotColor } from '../../renderer/utils/subplotColors';
+import { getActiveBook } from '../../utils/books';
+import { clearOwnSubplotColor, setOwnSubplotColor } from '../../utils/ownSubplotColors';
 
 /**
  * Return the subplot name trimmed of surrounding whitespace.
@@ -23,35 +26,83 @@ function normalizeSubplotLabel(value: string): string {
     return value.trim();
 }
 
-async function getTimelineSubplotOrder(plugin: RadialTimelinePlugin): Promise<string[]> {
+/** Each subplot's color on the timeline as it is scoped now, in ring order (backdrop lanes are not subplots). */
+async function getTimelineSubplotColors(plugin: RadialTimelinePlugin): Promise<Map<string, SubplotColor>> {
+    const ownSubplotColors = timelineOwnSubplotColors(plugin.settings);
     const scenes = Array.isArray(plugin.lastSceneData) ? plugin.lastSceneData : null;
     if (scenes && scenes.length > 0) {
-        const { masterSubplotOrder } = computeCacheableValues(plugin as unknown as PluginRendererFacade, scenes); // SAFE: the plugin satisfies the renderer facade at runtime; the structural type is narrower than the class
-        return masterSubplotOrder.filter(subplot =>
-            subplot &&
-            subplot.trim().length > 0 &&
-            subplot !== 'Backdrop' &&
-            subplot !== 'MicroBackdrop'
-        );
+        return computeCacheableValues(plugin as unknown as PluginRendererFacade, scenes, { ownSubplotColors }).subplotColors; // SAFE: the plugin satisfies the renderer facade at runtime; the structural type is narrower than the class
     }
 
     await sleep(150);
     let fetched: Awaited<ReturnType<RadialTimelinePlugin['getSceneData']>>;
     try {
         fetched = await plugin.getSceneData();
-    } catch {
-        return [];
+    } catch { // SAFE: the labels are a convenience; the palette stays editable under its ring numbers
+        return new Map();
     }
     const hydrated = Array.isArray(fetched) ? fetched : null;
-    if (!hydrated || hydrated.length === 0) return [];
+    if (!hydrated || hydrated.length === 0) return new Map();
 
-    const { masterSubplotOrder } = computeCacheableValues(plugin as unknown as PluginRendererFacade, hydrated); // SAFE: the plugin satisfies the renderer facade at runtime; the structural type is narrower than the class
-    return masterSubplotOrder.filter(subplot =>
-        subplot &&
-        subplot.trim().length > 0 &&
-        subplot !== 'Backdrop' &&
-        subplot !== 'MicroBackdrop'
-    );
+    return computeCacheableValues(plugin as unknown as PluginRendererFacade, hydrated, { ownSubplotColors }).subplotColors; // SAFE: the plugin satisfies the renderer facade at runtime; the structural type is narrower than the class
+}
+
+/** Save a subplot color change and repaint every surface that shows subplot colors. */
+async function applySubplotColorChange(plugin: RadialTimelinePlugin): Promise<void> {
+    await plugin.saveSettings();
+    plugin.setCSSColorVariables();
+    plugin.onSettingChanged(IMPACT_FULL);
+}
+
+/**
+ * The active book's subplots that wear their own color (from a Canvas card
+ * color), each editable, and each clearable back to its ring's palette color.
+ * Shows nothing while no subplot has a color of its own.
+ */
+function renderOwnSubplotColors(container: HTMLElement, plugin: RadialTimelinePlugin, onCleared: () => void): void {
+    container.empty();
+    const book = getActiveBook(plugin.settings);
+    const own = bookOwnSubplotColors(book);
+    if (!book || own.size === 0) return;
+    container.createDiv({ cls: 'ert-section-title', text: t('ui.colorsSection.ownColorsHeading', { book: book.title }) });
+    container.createDiv({ cls: 'ert-section-desc', text: t('ui.colorsSection.ownColorsDesc') });
+    const grid = container.createDiv({ cls: 'ert-color-grid' });
+    for (const [subplot, color] of own) {
+        const cell = grid.createDiv({ cls: 'ert-color-grid-item' });
+        cell.createDiv({ cls: 'ert-color-grid-label', text: subplot });
+        const control = cell.createDiv({ cls: 'ert-color-grid-controls' });
+        let inputRef: TextComponent | undefined;
+        const save = async (value: string): Promise<boolean> => {
+            if (!/^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(value)) return false;
+            setOwnSubplotColor(book, subplot, value.startsWith('#') ? value : `#${value}`);
+            await applySubplotColorChange(plugin);
+            return true;
+        };
+        const swatchHandle: ColorSwatchHandle = colorSwatch(control, {
+            value: color,
+            ariaLabel: t('ui.colorsSection.ownColorAriaLabel', { subplot }),
+            plugin,
+            onChange: (value) => { void (async () => {
+                if (await save(value)) inputRef?.setValue(value);
+            })(); }
+        });
+        new Settings(control)
+            .addText(text => {
+                inputRef = text;
+                text.inputEl.classList.add('ert-hex-input');
+                text.setValue(color).onChange(async (value) => {
+                    if (await save(value)) swatchHandle.setValue(value);
+                });
+            })
+            .addExtraButton(button => {
+                withTooltip(button.setIcon('reset'), t('ui.colorsSection.ownColorClear'))
+                    .onClick(async () => {
+                        clearOwnSubplotColor(book, subplot);
+                        await applySubplotColorChange(plugin);
+                        onCleared();
+                    });
+            });
+    }
 }
 
 function renderWorkingPatternPreview(
@@ -504,15 +555,27 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
             });
     }
 
-    void (async () => {
-        const subplotOrder = await getTimelineSubplotOrder(plugin);
-        if (subplotOrder.length === 0) return;
-        // Swatch 1 is the main plot's ring: it keeps the translated MAIN PLOT
-        // label until the author renames the main plot.
-        for (let i = 0; i < subplotLabels.length; i++) {
-            const subplotName = subplotOrder[i];
-            if (!subplotName || subplotName === DEFAULT_MAIN_PLOT_NAME) continue;
-            subplotLabels[i].setText(normalizeSubplotLabel(subplotName));
+    // Each palette slot is named for the subplot that wears it. A subplot with
+    // its own color wears no slot, so it is listed below instead.
+    const labelSlots = async (): Promise<void> => {
+        const colors = await getTimelineSubplotColors(plugin);
+        const wearers = new Map<number, string>();
+        for (const [name, color] of colors) {
+            if (color.kind === 'slot' && !wearers.has(color.slot)) wearers.set(color.slot, name);
         }
-    })();
+        for (let i = 0; i < subplotLabels.length; i++) {
+            const subplotName = wearers.get(i);
+            // Swatch 1 is the main plot's ring: it keeps the translated MAIN PLOT
+            // label until the author renames the main plot.
+            const fallback = i === 0 ? t('ui.colorsSection.mainPlotLabel') : t('ui.colorsSection.ringLabel', { number: i + 1 });
+            subplotLabels[i].setText(subplotName && subplotName !== DEFAULT_MAIN_PLOT_NAME ? normalizeSubplotLabel(subplotName) : fallback);
+        }
+    };
+    const ownColors = subplotSection.createDiv({ cls: 'ert-stack' });
+    const showOwnColors = (): void => renderOwnSubplotColors(ownColors, plugin, () => {
+        showOwnColors();
+        void labelSlots();
+    });
+    showOwnColors();
+    void labelSlots();
 }

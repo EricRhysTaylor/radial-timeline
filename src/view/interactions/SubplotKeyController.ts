@@ -29,7 +29,7 @@
  * Point of view → Character lanes).
  *
  * Ring data is read from the rendered SVG's subplot ring labels (stamped by
- * SubplotLabels.ts from Precompute's masterSubplotOrder/colorIndexBySubplot),
+ * SubplotLabels.ts from Precompute's masterSubplotOrder/subplotColors),
  * and lane data from the lane groups (stamped by CharacterLanes.ts), so the
  * key can never drift from what the wheel actually shows.
  */
@@ -45,7 +45,8 @@ import { membershipOfRing } from './subplotRings';
 
 interface SubplotKeyEntry {
     ring: number;
-    colorIndex: number;
+    /** The ring's color as its label carries it (renderer/utils/subplotColors). */
+    color: string;
     /** Text exactly as shown on the ring (outer ring says e.g. "ALL SCENES"). */
     ringLabel: string;
     /** Underlying subplot name (original casing). */
@@ -79,14 +80,13 @@ function collectEntries(svg: SVGSVGElement): SubplotKeyEntry[] {
         // Stamped by SubplotLabels.ts in the same render; a label missing them
         // is stale markup and gets no key row rather than an invented color.
         const ringAttr = label.getAttribute('data-ring');
-        const colorAttr = label.getAttribute('data-color-index');
+        const color = label.getAttribute('data-subplot-color');
         const subplotName = label.getAttribute('data-subplot-name');
-        if (!ringAttr || !colorAttr || !subplotName) return;
+        if (!ringAttr || !color || !subplotName) return;
         const ring = parseInt(ringAttr, 10);
-        const colorIndex = parseInt(colorAttr, 10);
-        if (isNaN(ring) || isNaN(colorIndex)) return;
+        if (isNaN(ring)) return;
         const text = label.textContent?.trim();
-        entries.push({ ring, colorIndex, ringLabel: text ? text : subplotName, subplotName });
+        entries.push({ ring, color, ringLabel: text ? text : subplotName, subplotName });
     });
     // Outer ring first (largest ring index renders outermost).
     entries.sort((a, b) => b.ring - a.ring);
@@ -257,7 +257,7 @@ export function setupSubplotKeyController(
 
         const swatch = doc.win.createSpan();
         swatch.className = 'ert-timeline-subplot-key__swatch';
-        swatch.style.setProperty('--ert-subplot-key-swatch', `var(--rt-subplot-colors-${entry.colorIndex})`);
+        swatch.style.setProperty('--ert-subplot-key-swatch', entry.color);
         row.appendChild(swatch);
 
         const name = doc.win.createSpan();

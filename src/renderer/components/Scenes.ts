@@ -1,5 +1,5 @@
 import type { TimelineItem } from '../../types';
-import { formatNumber } from '../../utils/svg';
+import { escapeXml, formatNumber } from '../../utils/svg';
 import { isBeatNote } from '../../utils/sceneHelpers';
 
 export function renderSceneGroup(params: {
@@ -12,7 +12,8 @@ export function renderSceneGroup(params: {
   startAngle: number;
   endAngle: number;
   subplotIdxAttr: string | number;
-  subplotColorIdxAttr?: string | number;
+  /** The color the scene's subplot paints with (renderer/utils/subplotColors); interaction code reads it back. */
+  subplotColor?: string;
   titleInset: number;
   /**
    * This scene's angle is pinned to its outer-ring counterpart (Sequence
@@ -21,9 +22,9 @@ export function renderSceneGroup(params: {
    */
   aligned?: boolean;
 }): string {
-  const { scene, act, ring, idx, innerR, outerR, startAngle, endAngle, subplotIdxAttr, subplotColorIdxAttr, titleInset, aligned } = params;
+  const { scene, act, ring, idx, innerR, outerR, startAngle, endAngle, subplotIdxAttr, subplotColor, titleInset, aligned } = params;
   const groupId = `scene-group-${act}-${ring}-${idx}`;
-  const colorAttr = subplotColorIdxAttr !== undefined ? ` data-subplot-color-index="${String(subplotColorIdxAttr)}"` : '';
+  const colorAttr = subplotColor !== undefined ? ` data-subplot-color="${escapeXml(subplotColor)}"` : '';
   const alignedAttr = aligned ? ' data-aligned="true"' : '';
   // Preserve high-precision angles for interaction/hover math; keep formatted angles for render attrs
   const rawStart = startAngle.toString();

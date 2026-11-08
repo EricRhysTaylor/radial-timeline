@@ -2998,7 +2998,7 @@ export class RadialTimelineView extends ItemView {
                     // Handle dominant subplot changes (scene colors only)
                     if (changeResult.changeTypes.has(ChangeType.DOMINANT_SUBPLOT)) {
                         const scenes = this.sceneData || [];
-                        updated = this.rendererService.updateSceneColorsDOM(container, this.plugin, scenes) || updated;
+                        updated = this.rendererService.updateSceneColorsDOM(container, scenes) || updated;
                     }
 
                     // Handle visual-only scene YAML changes (status, due, publish stage)

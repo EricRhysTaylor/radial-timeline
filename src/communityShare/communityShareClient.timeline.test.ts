@@ -38,6 +38,7 @@ function harness() {
         title: '1 Scene', date: '', path: 'Books/Private Path/1 Scene.md', sceneId: 'scn_a1b2c3d4',
         subplot: 'Main Plot', synopsis: 'A synopsis.', itemType: 'Scene', Character: ['Mira'],
     }];
+    const sceneData = vi.fn(async (_options?: unknown) => ({ items: scenes as unknown[], bookMeta: null as unknown }));
     const settings = buildDefaultCommunityShareSettings();
     settings.enabled = true;
     settings.tier = 2;
@@ -60,12 +61,13 @@ function harness() {
             }
         },
         settings: { activeBookId: 'book-1', books: [book], actCount: 3, communityShare: settings },
-        getSceneData: vi.fn(async () => scenes),
-        getBookMeta: () => null,
+        getSceneDataService: () => ({ getSceneDataWithBookMeta: sceneData }),
+        // The plugin-wide BookMeta: whichever book was read last.
+        getBookMeta: vi.fn((): unknown => null),
         getWritingSessionService: () => ({ getRangeStats: async () => ({}) }),
         saveSettings: vi.fn(async () => undefined)
     };
-    return { plugin, book, scenes };
+    return { plugin, book, scenes, sceneData };
 }
 
 function respondWith(...bodies: Array<{ status?: number; body: unknown }>) {
@@ -91,6 +93,31 @@ function respondToProjectSyncAndTimeline(timeline: unknown) {
             : timeline)
     })) as never);
     return request;
+}
+
+/**
+ * Hold one timeline request until `release()`: `sent` resolves once it is out.
+ * Every other call answers at once, as a project sync or a private share.
+ */
+function heldTimelineRequest(matches: (body: Record<string, unknown>) => boolean, heldBody: unknown, heldStatus = 200) {
+    let markSent: () => void = () => undefined;
+    let release: () => void = () => undefined;
+    const sent = new Promise<void>(resolve => { markSent = resolve; });
+    const held = new Promise<void>(resolve => { release = resolve; });
+    const request = vi.spyOn(obsidian, 'requestUrl');
+    request.mockReset();
+    request.mockImplementation((async (options: { url: string; body: string }) => {
+        if (options.url.endsWith('community-project-sync')) {
+            return { status: 200, text: JSON.stringify({ ok: true, created: 0, updated: 1, projects: [] }) };
+        }
+        if (matches(JSON.parse(options.body) as Record<string, unknown>)) {
+            markSent();
+            await held;
+            return { status: heldStatus, text: JSON.stringify(heldBody) };
+        }
+        return { status: 200, text: JSON.stringify(answer()) };
+    }) as never);
+    return { sent, release: () => release() };
 }
 
 const timelineCalls = (request: ReturnType<typeof vi.spyOn>) =>
@@ -149,12 +176,25 @@ describe('Share timeline', () => {
     it('reads the book it was asked for', async () => {
         const h = harness();
         await started(h);
-        expect(h.plugin.getSceneData).toHaveBeenCalledWith({ sourcePath: 'Books/Private Path' });
+        expect(h.sceneData).toHaveBeenCalledWith({ sourcePath: 'Books/Private Path' });
+    });
+
+    it('sends the metadata read with this book, not whichever book was read last', async () => {
+        const h = harness();
+        h.sceneData.mockResolvedValue({ items: h.scenes, bookMeta: { title: 'Book One', subtitle: 'First Subtitle', author: 'A. One' } });
+        h.plugin.getBookMeta.mockReturnValue({ title: 'Other Book', subtitle: 'Other Subtitle', author: 'B. Other' });
+        const request = respondToProjectSyncAndTimeline(answer());
+        await startTimelineSharing(h.plugin as never, h.book as never);
+        const sent = JSON.stringify(timelineCalls(request)[0]);
+        expect(sent).toContain('First Subtitle');
+        expect(sent).toContain('A. One');
+        expect(sent).not.toContain('Other Subtitle');
+        expect(sent).not.toContain('B. Other');
     });
 
     it('refuses to send a book that reads as empty', async () => {
         const h = harness();
-        h.plugin.getSceneData.mockResolvedValue([]);
+        h.sceneData.mockResolvedValue({ items: [], bookMeta: null });
         const request = respondToProjectSyncAndTimeline(answer());
         await expect(startTimelineSharing(h.plugin as never, h.book as never))
             .rejects.toMatchObject({ code: 'empty_timeline' });
@@ -287,9 +327,9 @@ describe('Pause is a full outbound freeze', () => {
         await started(h);
         h.scenes[0].synopsis = 'Changed.';
         const request = respondWith({ body: answer() });
-        h.plugin.getSceneData.mockImplementationOnce(async () => {
+        h.sceneData.mockImplementationOnce(async () => {
             await pauseCommunitySharing(h.plugin as never);
-            return h.scenes;
+            return { items: h.scenes, bookMeta: null };
         });
         await syncCommunityTimelinesIfDue(h.plugin as never);
         expect(request).not.toHaveBeenCalled();
@@ -376,6 +416,49 @@ describe('fetchTimelineShareStatus', () => {
         respondWith({ body: { ok: true, shared: false, project_id: PROJECT_ID } });
         await fetchTimelineShareStatus(h.plugin as never, 'book-1');
         expect(timelineShareFor(h.plugin.settings.communityShare, 'book-1')?.enabled).toBe(false);
+    });
+
+    it('ignores a "not shared" answer to a request sent before Share timeline was turned on', async () => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        try {
+            vi.setSystemTime(new Date('2026-11-08T10:00:00Z'));
+            const h = harness();
+            const status = heldTimelineRequest(body => body.action === 'status', { ok: true, shared: false, project_id: PROJECT_ID });
+            const pending = fetchTimelineShareStatus(h.plugin as never, 'book-1');
+            await status.sent;
+            vi.setSystemTime(new Date('2026-11-08T10:00:05Z'));
+            await startTimelineSharing(h.plugin as never, h.book as never);
+            status.release();
+            await pending;
+            const record = timelineShareFor(h.plugin.settings.communityShare, 'book-1');
+            expect(record?.enabled).toBe(true);
+            expect(record?.lastError).toBeUndefined();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('a background update refused before Share timeline was turned on again leaves sharing on', async () => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        try {
+            vi.setSystemTime(new Date('2026-11-08T10:00:00Z'));
+            const h = harness();
+            await started(h);
+            h.scenes[0].synopsis = 'Changed.';
+            const update = heldTimelineRequest(body => body.action === 'push' && !body.create, { error: { code: 'timeline_not_shared', message: 'Gone.' } }, 404);
+            const pending = syncCommunityTimelinesIfDue(h.plugin as never);
+            await update.sent;
+            vi.setSystemTime(new Date('2026-11-08T10:00:05Z'));
+            await stopTimelineSharing(h.plugin as never, 'book-1');
+            await startTimelineSharing(h.plugin as never, h.book as never);
+            update.release();
+            await pending;
+            const record = timelineShareFor(h.plugin.settings.communityShare, 'book-1');
+            expect(record?.enabled).toBe(true);
+            expect(record?.lastError).toBeUndefined();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('refuses a malformed answer', async () => {

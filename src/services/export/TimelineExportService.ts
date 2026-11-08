@@ -831,7 +831,8 @@ export class TimelineExportService {
     /** Export the render input pipeline as a schema-stamped JSON document. */
     public async exportDataJson(options?: { genericSubplotNames?: boolean }): Promise<void> {
         try {
-            const items = await this.plugin.getSceneData();
+            // The book's metadata from the same read as its scenes (see getSceneDataWithBookMeta).
+            const { items, bookMeta } = await this.plugin.getSceneDataService().getSceneDataWithBookMeta();
             if (!items || items.length === 0) {
                 new Notice(t('ui.timelineExportService.noDataToExport'));
                 return;
@@ -840,7 +841,7 @@ export class TimelineExportService {
             const active = this.getActiveTimelineSvg();
             const doc = buildTimelineDataExport({
                 items,
-                bookMeta: this.plugin.getBookMeta(),
+                bookMeta,
                 settings: this.plugin.settings,
                 pluginVersion: this.plugin.manifest.version,
                 mode: active?.mode ?? this.plugin.settings.currentMode,

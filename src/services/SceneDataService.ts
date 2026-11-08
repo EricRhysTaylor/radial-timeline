@@ -77,6 +77,16 @@ export class SceneDataService {
      * Get all scene data from the vault
      */
     async getSceneData(options?: GetSceneDataOptions): Promise<TimelineItem[]> {
+        return (await this.getSceneDataWithBookMeta(options)).items;
+    }
+
+    /**
+     * Scene data together with the BookMeta read in the same pass. A caller that
+     * reads a book other than the active one needs this: `getBookMeta()` holds
+     * whichever book was read last, and any other read can replace it while the
+     * caller awaits.
+     */
+    async getSceneDataWithBookMeta(options?: GetSceneDataOptions): Promise<{ items: TimelineItem[]; bookMeta: BookMeta | null }> {
         const filterBeats = options?.filterBeatsBySystem ?? true;
         // Use override sourcePath if provided (for Social APR project targeting), otherwise use settings
         const sourcePath = options?.sourcePath ?? this.settings.sourcePath;
@@ -89,8 +99,8 @@ export class SceneDataService {
 
         const scenes: TimelineItem[] = [];
         const plotsToProcess: Array<{ file: TFile, metadata: Record<string, unknown>, beatMetadata: Record<string, unknown>, validActNumber: number }> = [];
-        // Reset BookMeta — will be populated if a BookMeta note is found
-        this._bookMeta = null;
+        // Populated if a BookMeta note is found
+        let bookMeta: BookMeta | null = null;
         // Reset metrics for this run
         this.migrationCounters.clear();
 
@@ -300,7 +310,7 @@ export class SceneDataService {
                     const frontmatterBlocks = metadata.Frontmatter as Record<string, unknown> | undefined;
                     const backmatterBlocks = metadata.Backmatter as Record<string, unknown> | undefined;
 
-                    this._bookMeta = {
+                    bookMeta = {
                         title: (book?.title as string) || undefined,
                         subtitle: (book?.subtitle as string) || undefined,
                         author: (book?.author as string) || undefined,
@@ -452,7 +462,8 @@ export class SceneDataService {
             });
         }
 
-        return filteredScenes;
+        this._bookMeta = bookMeta;
+        return { items: filteredScenes, bookMeta };
     }
 
     /**

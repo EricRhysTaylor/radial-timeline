@@ -120,11 +120,15 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
     const stale = !cached || Date.now() - cached.fetchedAt >= STATUS_TTL_MS;
     if (stale && !statusInflight) {
         statusInflight = true;
+        const requestedAt = Date.now();
+        // Share timeline turned on while this was out caches its own, newer answer.
+        const newerCached = () => statusCache?.key === key && statusCache.fetchedAt >= requestedAt;
         void fetchTimelineShareStatus(plugin, bookId)
             .then(next => {
-                statusCache = { key, fetchedAt: Date.now(), answer: next };
+                if (!newerCached()) statusCache = { key, fetchedAt: Date.now(), answer: next };
             })
             .catch((error: unknown) => {
+                if (newerCached()) return;
                 statusCache = {
                     key,
                     fetchedAt: Date.now(),

@@ -1387,10 +1387,12 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
     const profileId = connection.profileId;
     if (!profileId) throw new CommunityShareError('connection_required', t('ui.communityShareClient.connectBeforeSync'));
 
-    const items = await plugin.getSceneData({ sourcePath: book.sourceFolder });
+    // This book's metadata comes from the same read as its scenes: the plugin-wide
+    // BookMeta follows whichever book was read last.
+    const { items, bookMeta } = await plugin.getSceneDataService().getSceneDataWithBookMeta({ sourcePath: book.sourceFolder });
     const payload = buildTimelineSharePayload({
         items,
-        bookMeta: plugin.getBookMeta(),
+        bookMeta,
         book,
         actCount: plugin.settings.actCount,
         pluginVersion: plugin.manifest.version,
@@ -1456,6 +1458,16 @@ export async function stopTimelineSharing(plugin: RadialTimelinePlugin, bookId: 
 }
 
 /**
+ * True when the book's timeline was sent after `requestedAt`. A "not shared"
+ * answer to a request older than that send predates the share (Share timeline
+ * turned on while the request was out), so it must not turn sharing off.
+ * Turning sharing on always stamps `lastSentAt`.
+ */
+function sentSince(record: CommunityTimelineShareRecord, requestedAt: number): boolean {
+    return !!record.lastSentAt && Date.parse(record.lastSentAt) > requestedAt;
+}
+
+/**
  * Read one book's share for the Timeline block. READ-only, so it works while
  * sharing is paused, like the website context. A timeline deleted on the website
  * turns Share timeline off here, so the block never claims a share that is gone.
@@ -1463,6 +1475,7 @@ export async function stopTimelineSharing(plugin: RadialTimelinePlugin, bookId: 
 export async function fetchTimelineShareStatus(plugin: RadialTimelinePlugin, bookId: string): Promise<TimelineShareAnswer> {
     const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
     assertStillSendable(plugin, connection, true);
+    const requestedAt = Date.now();
     const answer = await postTimelineShare(plugin, {
         connection_id: connectionId,
         current_secret: currentSecret,
@@ -1471,7 +1484,7 @@ export async function fetchTimelineShareStatus(plugin: RadialTimelinePlugin, boo
     });
     const profileId = connection.profileId;
     const record = timelineShareFor(normalizeCommunityShareSettings(plugin.settings.communityShare), bookId);
-    if (!answer.shared && record?.enabled && profileId) {
+    if (!answer.shared && record?.enabled && profileId && !sentSince(record, requestedAt)) {
         await saveTimelineRecord(plugin, bookId, profileId, () => ({
             profileId,
             enabled: false,
@@ -1530,6 +1543,7 @@ async function runTimelineSync(plugin: RadialTimelinePlugin): Promise<void> {
 
     for (const book of plugin.settings.books ?? []) { // SAFE: no books configured means nothing to send
         if (!timelineShareFor(current, book.id)?.enabled || !book.sourceFolder?.trim()) continue;
+        const requestedAt = Date.now();
         try {
             await pushTimeline(plugin, book, false);
         } catch (error) {
@@ -1539,11 +1553,15 @@ async function runTimelineSync(plugin: RadialTimelinePlugin): Promise<void> {
             const message = error instanceof Error ? error.message : t('ui.communityShareClient.timelineShareFailed');
             const removed = code === 'timeline_not_shared';
             try {
-                await saveTimelineRecord(plugin, book.id, profileId, record => ({
-                    ...record,
-                    enabled: removed ? false : record.enabled,
-                    lastError: removed ? t('ui.communityShareClient.timelineRemovedOnWebsite') : message,
-                }));
+                await saveTimelineRecord(plugin, book.id, profileId, record => {
+                    // Share timeline was turned on again while this update was out.
+                    if (removed && sentSince(record, requestedAt)) return record;
+                    return {
+                        ...record,
+                        enabled: removed ? false : record.enabled,
+                        lastError: removed ? t('ui.communityShareClient.timelineRemovedOnWebsite') : message,
+                    };
+                });
             } catch (saveError) {
                 console.warn('Community timeline sync could not record its outcome:', saveError instanceof Error ? saveError.message : saveError);
             }

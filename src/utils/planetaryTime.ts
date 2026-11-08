@@ -173,16 +173,24 @@ export function formatPlanetaryDateTime(opts: {
     const epochLabel = profile.epochLabel ? `${profile.epochLabel.toUpperCase()} ` : '';
     const timeStr = `${pad(localHours)}:${pad(localMinutes)}`;
     const weekday = planetaryWeekdayToken(profile, localWeekdayIndex);
-    // The month and day read exactly as on the Alt rim: "JAN 29", or "6 29"
-    // when the calendar leaves its months unnamed.
-    const date = `${planetaryMonthToken(profile, localMonthIndex)} ${localDayOfMonth}`;
+    // The full date names its month in full ("Junebug 34"), as the Alt start and
+    // end labels do; only the crowded Alt rim shortens it (planetaryMonthToken).
+    const date = `${planetaryMonthName(profile, localMonthIndex)} ${localDayOfMonth}`;
     // Format: Year ☉ Weekday Month Day @ Time
     return `${epochLabel}Year ${localYear} ☉ ${weekday ? `${weekday} ` : ''}${date} @ ${timeStr}`;
 }
 
 /**
- * The month as the rim and the hover both print it: its name's abbreviation,
- * or its number when the calendar leaves months unnamed.
+ * The month's full name as the author wrote it, or its number when the
+ * calendar leaves months unnamed.
+ */
+export function planetaryMonthName(profile: PlanetaryProfile, monthIndex: number): string {
+    return profile.monthNames?.[monthIndex]?.trim() || String(monthIndex + 1);
+}
+
+/**
+ * The month as the Alt rim prints it, where labels sit close together: its
+ * name's abbreviation, or its number when the calendar leaves months unnamed.
  */
 function planetaryMonthToken(profile: PlanetaryProfile, monthIndex: number): string {
     const name = profile.monthNames?.[monthIndex]?.trim();

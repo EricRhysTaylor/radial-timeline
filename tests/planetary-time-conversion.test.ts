@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { PlanetaryProfile } from '../src/types/settings';
 import { createMarsPlanetaryProfile, DARIAN_MARS_MONTH_NAMES, matchesLegacyMarsMonthNames } from '../src/utils/planetaryMars';
-import { convertFromEarth, convertToEarth, formatPlanetaryDateAdaptive, formatPlanetaryDateTime, parseCommaNames } from '../src/utils/planetaryTime';
+import { convertFromEarth, convertToEarth, formatPlanetaryDateAdaptive, formatPlanetaryDateTime, parseCommaNames, planetaryMonthName } from '../src/utils/planetaryTime';
 
 const TEST_PROFILE: PlanetaryProfile = {
     id: 'test',
@@ -28,25 +28,47 @@ describe('planetary date in the hover', () => {
         expect(at(ARCHEBALD)).not.toMatch(/DAY|MON/);
     });
 
-    it('abbreviates named months and keeps the day number', () => {
+    it('names the month in full and keeps the day number', () => {
         const monthNames = ['Frost', 'Thaw', 'Seed', 'Bloom', 'Sun', 'Harvest', 'Ember', 'Gale', 'Mist', 'Rime', 'Dark', 'Turn'];
-        expect(at({ ...ARCHEBALD, monthNames })).toBe('AE Year -108 ☉ HAR 29 @ 03:52');
+        expect(at({ ...ARCHEBALD, monthNames })).toBe('AE Year -108 ☉ Harvest 29 @ 03:52');
+    });
+
+    it('prints a long month name whole, as the author wrote it', () => {
+        const monthNames = Array.from({ length: 12 }, (_, i) => (i === 5 ? '  Month of the Long Rains ' : `M${i + 1}`));
+        expect(at({ ...ARCHEBALD, monthNames })).toBe('AE Year -108 ☉ Month of the Long Rains 29 @ 03:52');
     });
 
     it('leads with the weekday when the week is named too', () => {
         const monthNames = ['Frost', 'Thaw', 'Seed', 'Bloom', 'Sun', 'Harvest', 'Ember', 'Gale', 'Mist', 'Rime', 'Dark', 'Turn'];
         const weekdayNames = ['Ash', 'Brine', 'Cog', 'Dune', 'Eddy', 'Fen', 'Gust', 'Hail', 'Isle'];
-        expect(at({ ...ARCHEBALD, monthNames, weekdayNames })).toBe('AE Year -108 ☉ COG HAR 29 @ 03:52');
+        expect(at({ ...ARCHEBALD, monthNames, weekdayNames })).toBe('AE Year -108 ☉ COG Harvest 29 @ 03:52');
         expect(at({ ...ARCHEBALD, weekdayNames })).toBe('AE Year -108 ☉ COG 6 29 @ 03:52');
     });
 
-    it('prints the same month and day as the rim label', () => {
+    it('prints the same numbers as the rim label when the months are unnamed', () => {
         const conversion = convertFromEarth(new Date(Date.UTC(1811, 10, 26, 21, 0)), ARCHEBALD);
         expect(conversion).not.toBeNull();
         if (!conversion) return;
         const rim = formatPlanetaryDateAdaptive(conversion, 'Nov 26');
         expect(rim).toBe(`${conversion.localMonthIndex + 1} ${conversion.localDayOfMonth}`);
         expect(conversion.formatted).toContain(` ☉ ${rim} @ `);
+    });
+
+    it('names the month in full in the hover while the crowded rim keeps it short', () => {
+        // Archebald's months as filmed for Vol 14.
+        const monthNames = ['Gloopuary', 'Fibruary', 'Marshmallow', 'Aprickle', 'Mayhap', 'Junebug', 'Julyp', 'Awkgust', 'Snoozember', 'Octoplum', 'Noodlember', 'Dozember'];
+        const named = { ...ARCHEBALD, monthNames };
+        expect(formatPlanetaryDateTime({
+            profile: named, localYear: -108, localMonthIndex: 5, localDayOfMonth: 34, localWeekdayIndex: 0, localHours: 3, localMinutes: 52
+        })).toBe('AE Year -108 ☉ Junebug 34 @ 03:52');
+        const conversion = convertFromEarth(new Date(Date.UTC(1811, 10, 26, 21, 0)), named);
+        expect(conversion).not.toBeNull();
+        if (!conversion) return;
+        const month = monthNames[conversion.localMonthIndex];
+        expect(conversion.formatted).toContain(` ☉ ${month} ${conversion.localDayOfMonth} @ `);
+        expect(formatPlanetaryDateAdaptive(conversion, 'Nov 26')).toBe(`${month.slice(0, 3).toUpperCase()} ${conversion.localDayOfMonth}`);
+        expect(planetaryMonthName(named, conversion.localMonthIndex)).toBe(month);
+        expect(planetaryMonthName(ARCHEBALD, conversion.localMonthIndex)).toBe(String(conversion.localMonthIndex + 1));
     });
 });
 

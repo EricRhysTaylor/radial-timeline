@@ -9,7 +9,7 @@ import type { RadialTimelineSettings } from '../../types/settings';
 // Value import used only inside event handlers (call-time), so the
 // TimeLineView <-> controller cycle stays inert at module init.
 import { RadialTimelineView } from '../TimeLineView';
-import { getActivePlanetaryProfile, validatePlanetaryProfile, convertFromEarth, formatElapsedTimePlanetary, formatPlanetaryDateAdaptive } from '../../utils/planetaryTime';
+import { getActivePlanetaryProfile, validatePlanetaryProfile, convertFromEarth, formatElapsedTimePlanetary, formatPlanetaryDateAdaptive, planetaryMonthName } from '../../utils/planetaryTime';
 import { parseWhenField, formatElapsedTime } from '../../utils/date';
 import { t } from '../../i18n';
 import {
@@ -303,7 +303,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                 const earthDate = new Date(earthDateStr);
                 const conversion = convertFromEarth(earthDate, profile);
                 if (conversion) {
-                    const monthName = profile.monthNames?.[conversion.localMonthIndex] || String(conversion.localMonthIndex + 1);
+                    const monthName = planetaryMonthName(profile, conversion.localMonthIndex);
                     const isBoundary = label.classList.contains('rt-date-boundary');
 
                     if (isBoundary) {

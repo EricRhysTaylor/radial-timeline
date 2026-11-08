@@ -6,14 +6,15 @@ import {
 } from './optionalManagedKeys';
 
 const PART_KEYS = ['Part'];
+const SCENE_KEYS = [...PART_KEYS, 'Narration'];
 
 /** The Scene base template's key order, trimmed to the region that matters here. */
 const SCENE_ORDER = ['ID', 'Class', 'Act', 'When', 'Duration', 'Chapter', 'Synopsis'];
 
 describe('optionalManagedKeys', () => {
     describe('registry', () => {
-        it('declares the Part fields for scenes only', () => {
-            expect(getOptionalManagedKeys('Scene')).toEqual(PART_KEYS);
+        it('declares the Part fields and Narration for scenes only', () => {
+            expect(getOptionalManagedKeys('Scene')).toEqual(SCENE_KEYS);
             expect(getOptionalManagedKeys('Beat')).toEqual([]);
             expect(getOptionalManagedKeys('Backdrop')).toEqual([]);
         });
@@ -44,6 +45,13 @@ describe('optionalManagedKeys', () => {
                 'Part',
                 'Chapter',
                 'Synopsis',
+                'Narration',
+            ]);
+        });
+
+        it('places Narration right after Character, whose first name it marks', () => {
+            expect(withOptionalManagedKeys('Scene', ['ID', 'Class', 'Subplot', 'Character', 'Words'])).toEqual([
+                'ID', 'Class', 'Part', 'Subplot', 'Character', 'Narration', 'Words',
             ]);
         });
 
@@ -59,14 +67,15 @@ describe('optionalManagedKeys', () => {
                 'Duration',
                 'Part',
                 'Synopsis',
+                'Narration',
             ]);
         });
 
         it('appends when no anchor is present at all', () => {
-            expect(withOptionalManagedKeys('Scene', ['ID', 'Synopsis'])).toEqual([
+            expect(withOptionalManagedKeys('Scene', ['ID'])).toEqual([
                 'ID',
-                'Synopsis',
                 'Part',
+                'Narration',
             ]);
         });
 
@@ -80,6 +89,7 @@ describe('optionalManagedKeys', () => {
                 'Class',
                 'Part',
                 'Chapter',
+                'Narration',
             ]);
         });
 

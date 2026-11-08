@@ -32,6 +32,8 @@ import {
     TEMPLATE_HOTFIX_ALERT_ID,
     type RefactorAlert
 } from './refactorAlerts';
+import { applyPovToNarration, renderPovReviewList } from './povToNarrationAlert';
+import { POV_TO_NARRATION_ALERT_ID } from '../utils/narrationMigration';
 import { acknowledgeHotfixHistory } from '../utils/pandocBundledLayouts';
 import { getTemplateParts } from '../utils/yamlTemplateNormalize';
 import { getCredential } from '../ai/credentials/credentials';
@@ -99,6 +101,8 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
     private _progressStatusStack?: HTMLElement;
     private _beatsWrapper?: HTMLElement;
     private _backdropYamlTarget?: HTMLElement;
+    /** Narration names the active book's narration, so it redraws with the active book. */
+    private _narrationSection?: HTMLElement;
 
     /** Public method to set active tab before/after opening settings */
     public setActiveTab(tab: RadialTimelineSettingsTabId): void {
@@ -117,6 +121,11 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
      * another. No-op when the Core panels aren't displayed.
      */
     public refreshActiveBookSections(): void {
+        const narrationSection = this._narrationSection;
+        if (narrationSection?.isConnected) {
+            narrationSection.empty();
+            this.renderNarration(narrationSection);
+        }
         const progressStack = this._progressStatusStack;
         const beatsWrapper = this._beatsWrapper;
         if (!progressStack?.isConnected || !beatsWrapper?.isConnected) return;
@@ -127,6 +136,12 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         // The beats panel also renders the Backdrop properties editor here.
         this._backdropYamlTarget?.empty();
         this.renderBeatProperties(beatsWrapper, scope);
+    }
+
+    private renderNarration(containerEl: HTMLElement): void {
+        this.renderGuarded(t('ui.settingsTab.guardPov'), containerEl, () => {
+            renderPovSection({ plugin: this.plugin, containerEl });
+        });
     }
 
     private renderProgressStatus(containerEl: HTMLElement, scope: Component): void {
@@ -396,6 +411,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
         const description = contentSide.createDiv({ cls: 'ert-refactor-alert__description' });
         description.setText(alert.description);
+        if (alert.id === POV_TO_NARRATION_ALERT_ID) renderPovReviewList(this.app, this.plugin, contentSide);
 
         // Reassurance text inside alert - for migration and cleanup alerts
         if (alert.migrations?.length || alert.id === 'advanced-template-cleanup-v7') {
@@ -441,6 +457,16 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             }), t('ui.settingsTab.applyUpdate'));
             setIcon(autoUpdateBtn, 'check');
             this.plugin.registerDomEvent(autoUpdateBtn, 'click', async () => {
+                if (alert.migratesNotes) {
+                    // Rewrites scene notes: applied only after the writer confirms the plan.
+                    if (!await applyPovToNarration(this.app, this.plugin)) return;
+                    const panelParent = alertEl.closest('.ert-notification-panel')?.parentElement;
+                    if (panelParent) {
+                        panelParent.empty();
+                        this.renderRefactorAlerts(panelParent);
+                    }
+                    return;
+                }
                 const template = this.plugin.settings.sceneYamlTemplates?.advanced ?? '';
                 const updated = applyAlertMigrations(alert, template);
                 const migrationMap = new Map((alert.migrations ?? []).map(migration => [migration.oldKey, migration.newKey]));
@@ -470,8 +496,8 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
                 new Notice(t('ui.settingsTab.templateUpdatedNotice'));
             });
 
-            // View YAML button (↓)
-            {
+            // View YAML button (↓): the template row to migrate. A note migration has none.
+            if (!alert.migratesNotes) {
                 const viewBtn = withAccessibleLabel(actionSide.createEl('button', {
                     cls: 'ert-iconBtn ert-refactor-alert__btn--view',
                 }), t('ui.settingsTab.viewInYamlEditor'));
@@ -556,6 +582,8 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const infoEl = itemEl.createDiv({ cls: 'ert-notification-history__info' });
         infoEl.createSpan({ text: alert.title, cls: 'ert-notification-history__title' });
         infoEl.createSpan({ text: alert.description, cls: 'ert-notification-history__description' });
+        // Scenes whose POV stayed for review remain listed after the alert is applied.
+        if (alert.id === POV_TO_NARRATION_ALERT_ID) renderPovReviewList(this.app, this.plugin, infoEl);
     }
 
     private applyElementBlockLayout(containerEl: HTMLElement): void {
@@ -996,9 +1024,8 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         });
 
         const povSection = searchableContent.createDiv({ attr: { [ERT_DATA.SECTION]: 'pov' } });
-        this.renderGuarded(t('ui.settingsTab.guardPov'), povSection, () => {
-            renderPovSection({ plugin: this.plugin, containerEl: povSection });
-        });
+        this._narrationSection = povSection;
+        this.renderNarration(povSection);
 
         const planetarySection = searchableContent.createDiv({ attr: { [ERT_DATA.SECTION]: 'planetary' } });
         this.renderGuarded(t('ui.settingsTab.guardPlanetary'), planetarySection, () => {

@@ -194,7 +194,7 @@ const COLUMN_ICONS: Record<string, string> = {
     Duration: 'hourglass',
     Character: 'users',
     Place: 'map-pin',
-    POV: 'eye',
+    Narration: 'eye',
     Due: 'calendar-check',
     Words: 'pilcrow',
     Runtime: 'timer',

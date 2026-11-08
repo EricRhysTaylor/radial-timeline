@@ -2,11 +2,12 @@
  * Book profile helpers
  */
 import { slugifyToFileStem } from './slug';
-import type { BeatDefinition, BeatSystemConfig, BeatWorkspaceState, BookProfile, LoadedBeatTab, ManuscriptSceneHeadingMode, RadialTimelineSettings } from '../types/settings';
+import type { BeatDefinition, BeatSystemConfig, BeatWorkspaceState, BookProfile, LegacyPersistedSettings, LoadedBeatTab, ManuscriptSceneHeadingMode, NarrationMode, RadialTimelineSettings } from '../types/settings';
 import type { TimelineItem } from '../types/timeline';
 import { normalizeRecentStructuralMoves } from './recentStructuralMoves';
 import { normalizeOwnSubplotColorsRecord } from './ownSubplotColors';
 import { isPathInFolderScope } from './pathScope';
+import { isNarrationMode } from './pov';
 
 export const DEFAULT_BOOK_TITLE = 'Untitled Manuscript';
 
@@ -44,6 +45,9 @@ export function normalizeBookProfile(profile: BookProfile): BookProfile {
   const publicLabel = profile.publicLabel?.trim();
   const publicDescription = profile.publicDescription?.trim();
   const mainPlotName = profile.mainPlotName?.trim();
+  // Persisted data may hold any string; "not set" is stored as no field at all.
+  const storedNarration: unknown = profile.narrationMode;
+  const narrationMode = isNarrationMode(storedNarration) && storedNarration !== 'off' ? storedNarration : undefined;
   const ownSubplotColors = normalizeOwnSubplotColorsRecord(profile.ownSubplotColors);
   const normalizedLayoutOptions: BookProfile['layoutOptions'] = {};
   const normalizeSceneHeadingMode = (value: unknown): ManuscriptSceneHeadingMode | undefined => {
@@ -112,6 +116,7 @@ export function normalizeBookProfile(profile: BookProfile): BookProfile {
     ...(publicDescription && publicDescription.length > 0 ? { publicDescription } : {}),
     ...(Object.keys(normalizedStageTargetDates).length > 0 ? { stageTargetDates: normalizedStageTargetDates } : {}),
     ...(mainPlotName && mainPlotName.length > 0 ? { mainPlotName } : {}),
+    ...(narrationMode ? { narrationMode } : {}),
     ...(ownSubplotColors ? { ownSubplotColors } : {}),
     ...(profile.lastUsedPandocLayoutByPreset ? { lastUsedPandocLayoutByPreset: { ...profile.lastUsedPandocLayoutByPreset } } : {}),
     ...(Object.keys(normalizedLayoutOptions).length > 0 ? { layoutOptions: normalizedLayoutOptions } : {}),
@@ -180,6 +185,46 @@ export function getActiveStageTargetDates(
   const books = settings.books || []; // SAFE: pre-Book-Manager vaults have no books array; callers read empty as "no books yet"
   const active = (settings.activeBookId ? books.find(b => b.id === settings.activeBookId) : undefined) || books[0];
   return active?.stageTargetDates ?? {}; // SAFE: a book with no target dates set yet has none to report
+}
+
+/**
+ * The narration default of the book a scene belongs to: the scene's own book
+ * in a saga, the active book otherwise (a book timeline holds only that book's
+ * scenes). Undefined when the book sets none. Canonical reader for every
+ * timeline surface that marks POV characters.
+ */
+export function bookNarrationMode(
+  scene: Pick<TimelineItem, 'bookId'>,
+  settings: Pick<RadialTimelineSettings, 'books' | 'activeBookId'>
+): NarrationMode | undefined {
+  const book = scene.bookId
+    ? (settings.books || []).find(candidate => candidate.id === scene.bookId) // SAFE: pre-Book-Manager vaults have no books array; a saga always has its books
+    : getActiveBook(settings);
+  return book?.narrationMode;
+}
+
+/** Every book's narration default, for render fingerprints: a change to any book redraws. */
+export function narrationModesSignature(settings: Pick<RadialTimelineSettings, 'books'>): string {
+  const books = settings.books || []; // SAFE: pre-Book-Manager vaults have no books array; callers read empty as "no books yet"
+  return books.map(book => `${book.id}:${book.narrationMode ?? ''}`).join('|'); // SAFE: a book without a narration default contributes an empty slot that changes once it is set
+}
+
+/**
+ * Settings migration: the vault-wide narration default becomes each book's
+ * own. Every book without a default of its own takes the vault value, so no
+ * timeline changes; then the vault field leaves the settings for good. True
+ * when the settings changed.
+ */
+export function migrateVaultNarrationDefault(settings: Pick<RadialTimelineSettings, 'books'> & Pick<LegacyPersistedSettings, 'globalPovMode'>): boolean {
+  if (!Object.prototype.hasOwnProperty.call(settings, 'globalPovMode')) return false;
+  const vaultMode = settings.globalPovMode;
+  if (isNarrationMode(vaultMode) && vaultMode !== 'off') {
+    for (const book of settings.books) {
+      if (!book.narrationMode) book.narrationMode = vaultMode;
+    }
+  }
+  delete settings.globalPovMode;
+  return true;
 }
 
 export function getActiveBookTitle(settings: RadialTimelineSettings, fallback = DEFAULT_BOOK_TITLE): string {

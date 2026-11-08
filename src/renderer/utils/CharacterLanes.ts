@@ -9,12 +9,14 @@
  * few characters through the book in the order a reader meets the scenes.
  *
  * A scene's Character list says who is in it, and its POV comes from the same
- * rule the synopsis uses (resolveScenePov). Which characters get a lane is
- * decided here, from the scenes alone, so the choice needs no stored setting.
+ * rule the synopsis uses (resolveScenePov, with the scene's own book
+ * narration). Which characters get a lane is decided here, from the scenes
+ * alone, so the choice needs no stored setting.
  */
 
 import type { TimelineItem } from '../../types';
-import type { GlobalPovMode } from '../../types/settings';
+import type { RadialTimelineSettings } from '../../types/settings';
+import { bookNarrationMode } from '../../utils/books';
 import { resolveScenePov } from '../../utils/pov';
 import { isSceneItem, sceneKey } from '../../utils/sceneHelpers';
 import { CHARACTER_LANE_GAP, CHARACTER_LANE_HEIGHT, CHARACTER_LANE_PADDING } from '../layout/LayoutConstants';
@@ -30,7 +32,7 @@ export interface SceneCharacters {
     pov: Set<string>;
 }
 
-/** Character lanes are a Narrative feature, turned on in the POV settings. */
+/** Character lanes are a Narrative feature, turned on in the Narration settings. */
 export function characterLanesActive(settings: { currentMode?: string; showCharacterLanes?: boolean }): boolean {
     return settings.showCharacterLanes === true && (settings.currentMode || 'narrative') === 'narrative';
 }
@@ -59,7 +61,7 @@ export function laneScenes(scenes: TimelineItem[]): TimelineItem[] {
 export function collectCharacterLaneEntries(
     scenes: TimelineItem[],
     positions: Map<string, { startAngle: number; endAngle: number }>,
-    globalPovMode: GlobalPovMode | undefined
+    settings: Pick<RadialTimelineSettings, 'books' | 'activeBookId'>
 ): CharacterLaneEntry[] {
     const entries: CharacterLaneEntry[] = [];
     laneScenes(scenes).forEach(scene => {
@@ -69,20 +71,20 @@ export function collectCharacterLaneEntries(
             scene,
             startAngle: position.startAngle,
             endAngle: position.endAngle,
-            characters: readSceneCharacters(scene, globalPovMode)
+            characters: readSceneCharacters(scene, settings)
         });
     });
     return entries.sort((a, b) => a.startAngle - b.startAngle);
 }
 
 export function readSceneCharacters(
-    scene: Pick<TimelineItem, 'Character' | 'pov'>,
-    globalPovMode: GlobalPovMode | undefined
+    scene: Pick<TimelineItem, 'Character' | 'pov' | 'bookId'>,
+    settings: Pick<RadialTimelineSettings, 'books' | 'activeBookId'>
 ): SceneCharacters {
     const names = (scene.Character ?? []).map(name => name.trim()); // SAFE: a scene with no Character list puts no one on the lanes
     const present = [...new Set(names.filter(name => name.length > 0))];
     const pov = new Set<string>();
-    resolveScenePov(scene, { globalMode: globalPovMode }).characterMarkers.forEach(marker => {
+    resolveScenePov(scene, { narrationMode: bookNarrationMode(scene, settings) }).characterMarkers.forEach(marker => {
         const name = names[marker.index];
         if (name) pov.add(name);
     });

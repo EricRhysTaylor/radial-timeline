@@ -17,42 +17,10 @@ export const th: DeepPartial<TranslationKeys> = {
             }
         },
         "pov": {
-            "heading": "มุมมองของตัวละคร",
-            "vaultDefault": {
-                "name": "มุมมองทั่วไป",
-                "desc": "เลือกโหมดเริ่มต้นเพื่อใช้งาน มุมมองระดับฉากจะแทนที่การตั้งค่าทั่วไปนี้"
-            },
             "characterLanes": {
                 "name": "เลนตัวละคร",
                 "desc": "ในโหมด Narrative แสดงเลนใต้วงแหวนด้านนอกสำหรับตัวละครสี่ตัวที่เป็นมุมมองในฉากมากที่สุด โดยอ่านจากรายการ `Character:` ของแต่ละฉาก เครื่องหมายสูงคือฉากจากมุมมองของตัวละคร เครื่องหมายต่ำคือฉากที่ตัวละครปรากฏ"
             },
-            "yamlOverrides": {
-                "name": "ตัวอย่างการแทนที่ YAML",
-                "desc": "ใน Scene FrontMatter คุณสามารถใช้ `POV:` ที่หนึ่ง สอง สาม omni วัตถุประสงค์ หรือตัวเลข เช่น สอง สี่ นับ หรือทั้งหมดเพื่อกำหนดอักขระมากกว่าหนึ่งตัวกำลังถือ ฉาก POV. ค่านับ ทำเครื่องหมาย n ชื่อแรกใน `Character:` และใช้โหมด POV ส่วนกลางเพื่อเลือกเครื่องหมาย"
-            },
-            "modes": {
-                "off": "รุ่นเก่า (ตัวละครที่ระบุไว้ก่อนหน้า, มุมมอง)",
-                "first": "เสียงบุคคลที่หนึ่ง (¹)",
-                "second": "เสียงบุคคลที่สอง (คุณ²)",
-                "third": "บุคคลที่สามแบบจำกัด (³)",
-                "omni": "ผู้เล่าแบบองค์รวม (Omni³)",
-                "objective": "เชิงวัตถุ — ผู้เล่าแบบตากล้อง (Narrator°)"
-            },
-            "preview": {
-                "heading": "ตัวอย่างมุมมอง",
-                "examples": {
-                    "sceneFirst": "ฉาก YAML: POV: first | Character: [Alice]",
-                    "sceneThird": "ฉาก YAML: POV: third | Character: [Bob]",
-                    "sceneSecond": "ฉาก YAML: POV: second | Character: [Alice, Bob]",
-                    "sceneOmni": "ฉาก YAML: POV: omni | Character: [Alice, Bob]",
-                    "sceneObjective": "ฉาก YAML: POV: objective | Character: [Alice, Bob]",
-                    "countTwoThird": "การตั้งค่าทั่วไป: POV = third | ฉาก YAML: POV: two | Character: [Alice, Bob]",
-                    "countThreeThird": "การตั้งค่าทั่วไป: POV = third | ฉาก YAML: POV: three | Character: [Alice, Bob, Charlie]",
-                    "countFourThird": "การตั้งค่าทั่วไป: POV = third | ฉาก YAML: POV: four | Character: [Alice, Bob, Charlie, Diana]",
-                    "countTwoFirstNumeric": "การตั้งค่าทั่วไป: POV = first | ฉาก YAML: POV: 2 | Character: [Alice, Bob]",
-                    "countAllFirst": "การตั้งค่าทั่วไป: POV = first | ฉาก YAML: POV: all | Character: [Alice, Bob, Charlie]"
-                }
-            }
         },
         "configuration": {
             "heading": "การตั้งค่า",
@@ -1230,7 +1198,6 @@ export const th: DeepPartial<TranslationKeys> = {
         "structuralHeading": "แชร์เมื่อคุณเปิดใช้งาน",
         "structuralBody": "หมายเลขฉาก องก์ ชื่อพล็อตย่อย สถานะ เวทีเผยแพร่ ชื่อหนังสือ และผู้แต่ง",
         "revealingHeading": "จัดขึ้นเพื่อเปิดเผยต่อฉาก",
-        "revealingBody": "ชื่อฉาก เรื่องย่อ ตัวละคร POV และวันที่ของเรื่องราว — ซ่อนไว้จนกว่าคุณจะเปิดเผยแต่ละฉาก",
         "genericNamesToggleLabel": "ชื่อวงแหวนทั่วไป (พล็อตย่อย 1, พล็อตย่อย 2…)",
         "genericNamesToggleDescription": "ใช้หากชื่อพล็อตย่อยของคุณสามารถเปิดเผยโครงเรื่องได้",
         "destinationBody": "บันทึกไปยัง {{path}} ในห้องนิรภัยของคุณ",
@@ -4001,7 +3968,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "timelineStopNote": "การปิดจะหยุดการอัปเดต ไทม์ไลน์ของคุณยังคงอยู่บนเว็บไซต์ตามเดิม คุณสามารถนำออกหรือลบได้ที่นั่น",
             "timelineLastSent": "ส่งล่าสุด {{date}}",
             "timelineConfirmTitle": "แชร์ไทม์ไลน์นี้หรือไม่",
-            "timelineConfirmMessage": "Radial Timeline จะส่งลำดับฉาก องก์ พล็อตย่อย สถานะ และขั้นตอนการเผยแพร่ รวมทั้งชื่อเรื่อง เรื่องย่อ ตัวละคร มุมมอง และวันที่ในเรื่อง ซึ่งเก็บเป็นส่วนตัวจนกว่าคุณจะเปิดเผยฉาก ไทม์ไลน์ใหม่จะมาถึงแบบส่วนตัว และไทม์ไลน์ที่เผยแพร่อยู่แล้วจะยังคงเผยแพร่ต่อไป ข้อความในฉากและเส้นทางไฟล์จะยังอยู่ในห้องนิรภัยของคุณ",
             "timelineConfirmButton": "ส่งไทม์ไลน์",
             "timelineSentNotice": "ส่งไทม์ไลน์แบบส่วนตัวแล้ว ตรวจสอบบนเว็บไซต์เพื่อเผยแพร่",
             "timelineUpdatedNotice": "อัปเดตไทม์ไลน์แล้ว ยังคงเผยแพร่อยู่",
@@ -4016,7 +3982,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "timelineDetailTitle": "ชื่อเรื่อง",
             "timelineDetailSynopsis": "เรื่องย่อ",
             "timelineDetailCast": "ตัวละคร",
-            "timelineDetailPov": "POV",
             "timelineDetailWhen": "วันที่ในเรื่อง",
             "timelineGenericName": "ชื่อวงแหวนทั่วไป",
             "timelineGenericDesc": "ผู้อ่านจะเห็นพล็อตย่อย 1, พล็อตย่อย 2 แทนชื่อของคุณ",
@@ -4742,8 +4707,6 @@ export const th: DeepPartial<TranslationKeys> = {
         },
         "generalSection": {
             "metadataBadge": "หนังสือ",
-            "metadataTitle": "ข้อมูลเมตาของโครงการ",
-            "metadataSubtitle": "ข้อมูลเมตาโลคัลเสริมสำหรับสถิติในอนาคต กลุ่มประชากรตามรุ่น และการแชร์สาธารณะ",
             "genreName": "ประเภท",
             "genreDesc": "การจัดกลุ่มทางเลือก เช่น ไซไฟ โรแมนติก ลึกลับ หรือไดอารี่",
             "projectStageName": "เวทีโครงการ",
@@ -4780,7 +4743,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "createCopyTooltip": "สร้างสแน็ปช็อตการส่งหรือร่างการทำงานในโฟลเดอร์พี่น้อง",
             "copyNeedsFolderNotice": "การคัดลอกหนังสือต้องใช้โฟลเดอร์หนังสือ (ไม่รองรับรูทของห้องนิรภัย)",
             "sourceChangedError": "หนังสือต้นทางเปลี่ยนไป เปิดใหม่ สร้างสำเนาหนังสือ แล้วลองอีกครั้ง",
-            "metadataTooltip": "แก้ไขประเภททางเลือก เวทีโครงการ ป้ายชื่อสาธารณะ และคำอธิบาย",
             "sourceFolderPlaceholder": "โฟลเดอร์ต้นทาง",
             "removeProfileTooltip": "ลบโปรไฟล์ (ไฟล์จะไม่ถูกลบ)",
             "folderNotFound": "ไม่พบโฟลเดอร์: {{folder}}",
@@ -7401,7 +7363,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "guardRuntime": "โปรไฟล์รันไทม์",
             "guardStoryProperties": "คุณสมบัติของเรื่องราวและฉาก",
             "guardChronologue": "Chronologue การตั้งค่า",
-            "guardPov": "การตั้งค่า POV",
             "guardPlanetary": "การตั้งค่าปฏิทินดาวเคราะห์",
             "guardBackdrop": "การตั้งค่าฉากหลัง",
             "guardColors": "การตั้งค่าสี",
@@ -7411,7 +7372,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "quickLinkBeats": "บีทเรื่อง",
             "quickLinkProperties": "สรรพคุณ",
             "quickLinkChronology": "ลำดับเหตุการณ์",
-            "quickLinkPov": "เปิดโปง",
             "quickLinkPlanetary": "ปฏิทินดาวเคราะห์",
             "quickLinkBackdrop": "ฉากหลัง",
             "quickLinkColors": "สี",

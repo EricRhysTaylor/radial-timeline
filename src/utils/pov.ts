@@ -1,10 +1,13 @@
 import type { TimelineItem } from '../types';
-import type { GlobalPovMode, PovMarkerLabel } from '../types/settings';
+import type { NarrationMode, PovMarkerLabel } from '../types/settings';
 
 export interface ResolvedPov {
     syntheticEntries: Array<{ text: string; label: PovMarkerLabel }>;
     characterMarkers: Array<{ index: number; label: PovMarkerLabel }>;
 }
+
+/** Every narration mode, in the order the book details list them. 'off' is "not set". */
+export const NARRATION_MODES: readonly NarrationMode[] = ['off', 'first', 'second', 'third', 'omni', 'objective'];
 
 type EffectiveMode = 'first' | 'second' | 'third' | 'omni' | 'objective' | 'legacy';
 
@@ -81,12 +84,23 @@ function interpretKeyword(raw: unknown): PovInterpretation {
     return {};
 }
 
-function normalizeGlobalMode(mode: GlobalPovMode | undefined): EffectiveMode {
+/**
+ * Whether a scene's narration value names a mode (first, third, omni…) or a
+ * count (two, all, 3). Anything else, such as a character's name, is not a
+ * narration value and is ignored when the timeline resolves narration.
+ */
+export function isNarrationValue(raw: string): boolean {
+    const { modeOverride, countOverride } = interpretKeyword(raw);
+    return modeOverride !== undefined || countOverride !== undefined;
+}
+
+export function isNarrationMode(value: unknown): value is NarrationMode {
+    return typeof value === 'string' && (NARRATION_MODES as readonly string[]).includes(value);
+}
+
+function normalizeBookMode(mode: NarrationMode | undefined): EffectiveMode {
     if (!mode || mode === 'off') return 'legacy';
-    if (mode === 'first' || mode === 'second' || mode === 'third' || mode === 'omni' || mode === 'objective') {
-        return mode;
-    }
-    return 'legacy';
+    return mode;
 }
 
 function determineHighlightCount(countOverride: number | undefined, characterCount: number): number {
@@ -100,13 +114,18 @@ function determineHighlightCount(countOverride: number | undefined, characterCou
     return Math.max(1, Math.min(characterCount, Math.floor(countOverride)));
 }
 
+/**
+ * How a scene's characters are marked. The scene's `Narration:` override wins
+ * when it names a mode; otherwise the scene's book narration applies. A count
+ * override marks that many listed characters with the book's marker.
+ */
 export function resolveScenePov(
     scene: Pick<TimelineItem, 'Character' | 'pov'>,
-    options: { globalMode?: GlobalPovMode }
+    options: { narrationMode?: NarrationMode }
 ): ResolvedPov {
     const characters = scene.Character || [];
     const { modeOverride, countOverride } = interpretKeyword(scene.pov);
-    const effectiveMode = modeOverride ?? normalizeGlobalMode(options.globalMode);
+    const effectiveMode = modeOverride ?? normalizeBookMode(options.narrationMode);
     const config = MODE_CONFIG[effectiveMode];
 
     const syntheticEntries: Array<{ text: string; label: PovMarkerLabel }> = [];

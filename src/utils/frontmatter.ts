@@ -12,16 +12,39 @@ export interface CanonicalAliasConflict {
   keys: string[];
 }
 
+/**
+ * A scene's narration override. `Narration` is canonical; `POV` is the field's
+ * old name, read until the author accepts the POV → Narration refactor alert
+ * (src/utils/narrationMigration.ts). Narration wins when a scene has both.
+ * The POV *character* is never either field: it is the first name in Character.
+ */
+export const SCENE_NARRATION_KEY = 'Narration';
+export const LEGACY_SCENE_POV_KEY = 'POV';
+export const SCENE_NARRATION_KEYS = [SCENE_NARRATION_KEY, LEGACY_SCENE_POV_KEY] as const;
+
 let supportedFrontmatterRemapTargetsCache: Set<string> | null = null;
 
+/**
+ * Scene fields an author may map a property name onto: the Scene base
+ * template's keys, plus `Narration`, which ships in no template because only
+ * a scene narrated differently from its book carries it.
+ */
 function getSupportedFrontmatterRemapTargetSet(): Set<string> {
   if (!supportedFrontmatterRemapTargetsCache) {
-    supportedFrontmatterRemapTargetsCache = new Set(
-      getBaseKeys('Scene', DEFAULT_SETTINGS)
-    );
+    supportedFrontmatterRemapTargetsCache = new Set([
+      ...getBaseKeys('Scene', DEFAULT_SETTINGS),
+      SCENE_NARRATION_KEY,
+    ]);
   }
   return supportedFrontmatterRemapTargetsCache;
 }
+
+/**
+ * Retired scene fields an existing mapping may still name. They stay valid so
+ * the author's mapped property keeps being read until it is migrated, but they
+ * are not offered for new mappings.
+ */
+const LEGACY_REMAP_TARGETS = new Set<string>([LEGACY_SCENE_POV_KEY]);
 
 export function getSupportedFrontmatterRemapTargets(): string[] {
   return [...getSupportedFrontmatterRemapTargetSet()].sort();
@@ -35,7 +58,7 @@ export function sanitizeFrontmatterMappings(customMappings?: Record<string, stri
     const userKey = rawUserKey.trim();
     const canonicalKey = rawCanonicalKey.trim();
     if (!userKey || !canonicalKey) continue;
-    if (!getSupportedFrontmatterRemapTargetSet().has(canonicalKey)) continue;
+    if (!getSupportedFrontmatterRemapTargetSet().has(canonicalKey) && !LEGACY_REMAP_TARGETS.has(canonicalKey)) continue;
     sanitized[userKey] = canonicalKey;
   }
 
@@ -86,6 +109,7 @@ function buildFrontmatterKeyMappings(
     'iteration': 'Iteration',
     'iterations': 'Iteration',
     'revision': 'Iteration',
+    'narration': 'Narration',
     'pov': 'POV',
     'duration': 'Duration',
     'type': 'Type',
@@ -320,6 +344,7 @@ export function extractSummary(frontmatter: Record<string, unknown>): string {
 
 export const BEAT_PURPOSE_KEYS = ['Purpose', 'Description', 'description'] as const;
 export const BACKDROP_CONTEXT_KEYS = ['Context', 'Synopsis'] as const;
+// SCENE_NARRATION_KEYS (Narration, then the legacy POV) is defined at the top of this file.
 
 /**
  * The author's own line for what a canonical beat is in *this* book
@@ -396,6 +421,25 @@ export function readBeatInThisBook(fm: BeatFrontmatter | null | undefined): stri
 /** Canonical extraction of the Backdrop context text. Same semantics as readBeatPurpose. */
 export function readBackdropContext(fm: BackdropFrontmatter | null | undefined): string | undefined {
   return readFirstNonEmptyString(fm as Record<string, unknown> | null | undefined, BACKDROP_CONTEXT_KEYS);
+}
+
+/**
+ * A scene's narration override as written, from normalized scene frontmatter:
+ * `Narration`, else the legacy `POV`. A YAML list gives its first non-empty
+ * entry. Undefined when neither field holds text. The value is not judged here;
+ * resolveScenePov ignores anything that names no mode or count.
+ */
+export function readSceneNarration(fm: Record<string, unknown> | null | undefined): string | undefined {
+  if (!fm) return undefined;
+  for (const key of SCENE_NARRATION_KEYS) {
+    const raw = fm[key];
+    const entries = Array.isArray(raw) ? raw : [raw];
+    for (const entry of entries) {
+      const text = frontmatterValueToText(entry).trim();
+      if (text.length > 0) return text;
+    }
+  }
+  return undefined;
 }
 
 function readFirstNonEmptyString(

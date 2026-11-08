@@ -21,6 +21,7 @@
 import type { BookMeta, BookProfile, TimelineItem } from '../types';
 import { TIMELINE_DATA_EXPORT_SCHEMA_VERSION, wallClockWhen } from '../services/export/timelineExportFormat';
 import { isOpaqueSceneId } from '../utils/sceneIds';
+import { isNarrationValue } from '../utils/pov';
 
 export interface TimelineShareItem {
     itemType: 'Scene';
@@ -33,6 +34,11 @@ export interface TimelineShareItem {
     act?: string;
     actNumber?: number;
     number?: number;
+    /**
+     * The scene's narration override (`Narration:`, or a legacy `POV:` not yet
+     * migrated), sent only when it names a mode or count, never a character.
+     * The wire name stays `pov`: the server reads it as the scene's povMode.
+     */
     pov?: string;
     Character?: string[];
     synopsis?: string;
@@ -103,7 +109,7 @@ function shareItem(rows: TimelineItem[]): TimelineShareItem {
         ...(item.act ? { act: item.act } : {}),
         ...(item.actNumber !== undefined ? { actNumber: item.actNumber } : {}),
         ...(item.number !== undefined ? { number: item.number } : {}),
-        ...(item.pov ? { pov: item.pov } : {}),
+        ...(item.pov && isNarrationValue(item.pov) ? { pov: item.pov } : {}),
         ...(cast.length > 0 ? { Character: cast } : {}),
         ...(synopsis ? { synopsis } : {}),
         ...(item.status ? { status: item.status } : {}),

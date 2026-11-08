@@ -33,7 +33,6 @@ import type {
     BookMeta,
     BookProfile,
     ChronologueBackdropMicroRing,
-    GlobalPovMode,
     MatterMeta,
     RadialTimelineSettings,
     ReadabilityScale,
@@ -108,7 +107,6 @@ export interface TimelineExportRenderConfig {
     chronologueBackdropMicroRings?: ChronologueBackdropMicroRing[];
     dominantSubplots?: Record<string, string>;
     discontinuityThreshold?: string;
-    globalPovMode?: GlobalPovMode;
     showCharacterLanes?: boolean;
     runtimeContentType?: RuntimeContentType;
     currentMode?: string;
@@ -116,6 +114,7 @@ export interface TimelineExportRenderConfig {
     subplotAlignment?: SubplotAlignment;
     showChapterMarkers?: boolean;
     timelineScope?: 'book' | 'saga';
+    /** Each book carries its own narration default (`narrationMode`); a scene's `pov` overrides it. */
     books: BookProfile[];
     activeBookId?: string;
     readabilityScale?: ReadabilityScale;
@@ -223,7 +222,6 @@ export function snapshotRenderConfig(settings: RadialTimelineSettings): Timeline
         chronologueBackdropMicroRings: settings.chronologueBackdropMicroRings,
         dominantSubplots: settings.dominantSubplots,
         discontinuityThreshold: settings.discontinuityThreshold,
-        globalPovMode: settings.globalPovMode,
         showCharacterLanes: settings.showCharacterLanes,
         runtimeContentType: settings.runtimeContentType,
         currentMode: settings.currentMode,

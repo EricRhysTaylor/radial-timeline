@@ -18,8 +18,7 @@ Synopsis:                 # Concise present-tense snapshot for hovers/outlines (
 Summary:                  # Extended scene expansion (events, emotional turns, subtext, outcome)
 Pending Edits:            # Notes for next revision (especially for zero draft mode)
 Subplot: Main Plot        # Single subplot (or use array format below for multiple)
-Character:                # Characters in the scene (use array format below for multiple)
-POV:                      # blank, first, you, third, omni, narrator, two, all, count
+Character:                # Characters in the scene; the first name is the POV character
 Words:                    # Optional word count/statistics
 Total Time:               # Hours on this scene, added from writing sessions you approve
 Runtime:                  # Optional runtime estimate or override
@@ -52,15 +51,26 @@ Place:
 
 Obsidian links are supported in properties. Use the double-bracket wikilink format inside quotes if you want a field to link to a note.
 
-## POV Keywords
+<a name="narration-keywords"></a>
+## Narration Keywords
 
-*   `pov: first` — first listed character gets a `¹` marker.
-*   `pov: second` / `pov: you` — inserts `You²` ahead of the cast.
-*   `pov: omni` — shows `Omni³` to signal an omniscient narrator.
-*   `pov: objective` — shows `Narrator°` for camera-eye scenes.
-*   `pov: two`, `pov: 4`, `pov: count`, `pov: all` — highlight multiple carriers.
+Each book sets how it is narrated in its book details (**Settings → Core → Books**, the tag button on the book's card). The POV character is always the first name in `Character`. A scene narrated differently from its book adds a `Narration` property:
 
-You can control how POV is displayed in **Settings → Core → Point of view**.
+```yaml
+Character:
+  - "Watson"
+  - "Holmes"
+Narration: omni           # This scene only: an omniscient narrator
+```
+
+*   `Narration: first` — the first listed character gets a `¹` marker.
+*   `Narration: second` / `Narration: you` — inserts `You²` ahead of the cast.
+*   `Narration: third` — the first listed character gets a `³` marker.
+*   `Narration: omni` — shows `Omni³` to signal an omniscient narrator.
+*   `Narration: objective` — shows `Narrator°` for camera-eye scenes.
+*   `Narration: two`, `Narration: 4`, `Narration: count`, `Narration: all` — marks that many names at the start of `Character`, for a scene several characters carry, with the book's narration marker.
+
+Scenes that follow their book need no `Narration` property. Scenes written before Radial Timeline 8 may carry the field under its earlier name, `POV`. Radial Timeline reads it the same way until you apply **Scene field POV is now Narration** at the top of **Settings → Core**. See [Narration](Settings-Core#narration).
 
 <a name="advanced-scene-template"></a>
 ## Advanced Scene Properties

@@ -42,7 +42,8 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         get thumb() { return getEmbeddedAssetDataUri('demo-vaults/pride-and-prejudice.jpg'); },
         pageUrl: 'https://community.radialtimeline.com/go/rt-settings-classic-pride',
         get description() { return t('ui.bonusVaults.prideDescription'); },
-        books: [{ title: 'Pride & Prejudice', sourceFolder: 'Pride & Prejudice' }],
+        // Austen's narrator stays close to Elizabeth: third person.
+        books: [{ title: 'Pride & Prejudice', sourceFolder: 'Pride & Prejudice', narrationMode: 'third' }],
         archive: {
             url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/pride-and-prejudice/2026-10-30.3/pride-and-prejudice-demo-vault.zip',
             downloadUrl: 'https://community.radialtimeline.com/go/rt-welcome-demo-download',
@@ -61,7 +62,8 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         get thumb() { return getEmbeddedAssetDataUri('demo-vaults/odyssey.jpg'); },
         pageUrl: 'https://community.radialtimeline.com/go/rt-settings-classic-odyssey',
         get description() { return t('ui.bonusVaults.odysseyDescription'); },
-        books: [{ title: 'The Odyssey', sourceFolder: 'The Odyssey' }],
+        // Homer's narrator sees everything; the scenes Odysseus tells himself (Books 9 to 12) say first.
+        books: [{ title: 'The Odyssey', sourceFolder: 'The Odyssey', narrationMode: 'omni' }],
         archive: {
             url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/odyssey/2026-10-30/odyssey-demo-vault.zip',
             downloadUrl: 'https://community.radialtimeline.com/go/rt-welcome-odyssey-download',
@@ -80,11 +82,12 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         get thumb() { return getEmbeddedAssetDataUri('demo-vaults/sherlock-holmes.jpg'); },
         pageUrl: 'https://community.radialtimeline.com/go/rt-settings-classic-sherlock',
         get description() { return t('ui.bonusVaults.sherlockDescription'); },
+        // Watson narrates in the first person; the scenes of the American flashbacks say omniscient.
         books: [
-            { title: 'A Study in Scarlet', sourceFolder: '01 A Study in Scarlet' },
-            { title: 'The Sign of the Four', sourceFolder: '02 The Sign of the Four' },
-            { title: 'The Hound of the Baskervilles', sourceFolder: '03 The Hound of the Baskervilles' },
-            { title: 'The Valley of Fear', sourceFolder: '04 The Valley of Fear' }
+            { title: 'A Study in Scarlet', sourceFolder: '01 A Study in Scarlet', narrationMode: 'first' },
+            { title: 'The Sign of the Four', sourceFolder: '02 The Sign of the Four', narrationMode: 'first' },
+            { title: 'The Hound of the Baskervilles', sourceFolder: '03 The Hound of the Baskervilles', narrationMode: 'first' },
+            { title: 'The Valley of Fear', sourceFolder: '04 The Valley of Fear', narrationMode: 'first' }
         ],
         archive: {
             url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/sherlock-holmes/2026-10-30/sherlock-holmes-demo-vault.zip',

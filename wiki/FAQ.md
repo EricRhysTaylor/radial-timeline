@@ -16,7 +16,7 @@ Radial Timeline visualizes the scene list and draft you develop with the Snowfla
 | Scene narratives | Keep prose and properties together in each note |
 | First draft | Track revision progress, subplots, and chronology |
 
-Track character arcs as colored subplots and use POV indicators in scene hovers. Add a custom beat system when you want structural milestones, then use Gossamer to compare beat scores. Pulse evaluates scene flow in manuscript or subplot order.
+Track character arcs as colored subplots and use the POV markers on the cast in scene hovers, set by each book's narration. Add a custom beat system when you want structural milestones, then use Gossamer to compare beat scores. Pulse evaluates scene flow in manuscript or subplot order.
 
 ## I Use Dramatica
 

@@ -121,7 +121,6 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     shouldRestoreTimelineOnLoad: false,
     beatSelectionMigrationComplete: false,
     dominantSubplots: {}, // Default: empty map, will use outermost subplot for scenes in multiple subplots
-    globalPovMode: 'off',
     showCharacterLanes: false,
     lastSeenReleaseNotesVersion: '',
     cachedReleaseNotes: null,
@@ -151,7 +150,6 @@ Summary:
 Pending Edits:
 Subplot: {{Subplot}}
 Character: {{Character}}
-POV:
 Words:
 Total Time:
 Runtime:

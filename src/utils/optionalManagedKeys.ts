@@ -63,6 +63,16 @@ const SCENE_OPTIONAL_MANAGED_KEYS: readonly OptionalManagedKeyDefinition[] = [
         anchorBefore: 'Chapter',
         anchorAfter: ['Duration', 'When', 'Act', 'Class'],
     },
+    /**
+     * A scene narrated differently from its book says so here (first, third,
+     * omni, two…). Most scenes follow the book's narration, so the field ships
+     * in no template; it sits after Character, whose first name is the POV
+     * character the narration marks.
+     */
+    {
+        key: 'Narration',
+        anchorAfter: ['Character', 'Subplot', 'Pending Edits', 'Summary', 'Synopsis', 'Chapter', 'Duration', 'When', 'Act', 'Class'],
+    },
 ];
 
 const OPTIONAL_MANAGED_KEYS: Record<NoteType, readonly OptionalManagedKeyDefinition[]> = {

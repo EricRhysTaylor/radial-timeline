@@ -13,7 +13,7 @@
 
 import { App, TFile } from 'obsidian';
 import type { TimelineItem, RadialTimelineSettings, BookMeta, MatterMeta } from '../types';
-import { frontmatterValueToText, getActiveFrontmatterMappings, normalizeBeatFrontmatterKeys, normalizeFrontmatterKeys, readBeatInThisBook } from '../utils/frontmatter';
+import { frontmatterValueToText, getActiveFrontmatterMappings, normalizeBeatFrontmatterKeys, normalizeFrontmatterKeys, readBeatInThisBook, readSceneNarration } from '../utils/frontmatter';
 import { parseWhenField } from '../utils/date';
 import { whenTextHasClock } from '../utils/whenFormat';
 import { normalizeBooleanValue, isStoryBeat } from '../utils/sceneHelpers';
@@ -180,28 +180,8 @@ export class SceneDataService {
                             ? (rawCharacter as string[]).map(c => stripWikiLinks(c))
                             : (rawCharacter ? [stripWikiLinks(rawCharacter as string)] : undefined);
 
-                        const rawPov = metadata.POV;
-                        let povField: string | undefined;
-                        if (Array.isArray(rawPov)) {
-                            for (const entry of rawPov) {
-                                const candidate = typeof entry === 'string' ? entry : frontmatterValueToText(entry);
-                                const trimmed = candidate.trim();
-                                if (trimmed.length > 0) {
-                                    povField = trimmed;
-                                    break;
-                                }
-                            }
-                        } else if (typeof rawPov === 'string') {
-                            const trimmed = rawPov.trim();
-                            if (trimmed.length > 0) {
-                                povField = trimmed;
-                            }
-                        } else if (rawPov !== undefined && rawPov !== null) {
-                            const converted = frontmatterValueToText(rawPov).trim();
-                            if (converted.length > 0) {
-                                povField = converted;
-                            }
-                        }
+                        // Narration override; a legacy POV field is read until migrated.
+                        const povField = readSceneNarration(metadata);
 
                         const runtimeProfileRaw = metadata["Runtime Profile"] ?? metadata["RuntimeProfile"];
                         const runtimeProfile = runtimeProfileRaw !== undefined && runtimeProfileRaw !== null

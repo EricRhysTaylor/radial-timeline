@@ -30,7 +30,7 @@ function makeSnapshot(overrides: Partial<TimelineSnapshot> = {}): TimelineSnapsh
     publishStageColorsHash: '',
     subplotColorsHash: '',
     dominantSubplotsHash: '',
-    povMode: 'off',
+    narrationModesHash: '',
     gossamerRunExists: false,
     gossamerRunHash: '',
     updateAvailable: false,
@@ -227,6 +227,35 @@ describe('detectChanges', () => {
 
     expect(result.changeTypes.has(ChangeType.GOSSAMER)).toBe(true);
     expect(result.canUseSelectiveUpdate).toBe(false);
+    expect(result.updateStrategy).toBe('full');
+  });
+
+  it('forces a full render when any book changes its narration default', () => {
+    // POV superscripts are baked into the synopsis SVG, and a saga marks each
+    // book's scenes by that book's own narration, so every book counts.
+    const settings = (narration?: 'first' | 'third') => ({
+      books: [
+        { id: 'one', title: 'One', sourceFolder: 'One', narrationMode: 'first' },
+        { id: 'two', title: 'Two', sourceFolder: 'Two', ...(narration ? { narrationMode: narration } : {}) },
+      ],
+      activeBookId: 'one',
+    }) as never;
+    const snapshot = (narration?: 'first' | 'third') => createSnapshot(
+      [{ path: 'scene.md', title: 'Scene', rawFrontmatter: {} } as never],
+      new Set(),
+      createSearchState(),
+      'narrative',
+      settings(narration),
+      null
+    );
+
+    const unset = snapshot();
+    const third = snapshot('third');
+    expect(unset.narrationModesHash).not.toBe(third.narrationModesHash);
+    expect(snapshot('first').narrationModesHash).not.toBe(third.narrationModesHash);
+
+    const result = detectChanges(unset, { ...third, timestamp: unset.timestamp + 1 });
+    expect(result.changeTypes.has(ChangeType.SETTINGS)).toBe(true);
     expect(result.updateStrategy).toBe('full');
   });
 

@@ -73,12 +73,12 @@ describe('tableColumns', () => {
     it('leaves out columns fewer than half of the book’s scenes fill, but never When or Synopsis', () => {
         const scene = (extra: Record<string, unknown>) => ({ Class: 'Scene', When: '', Synopsis: '', Character: 'Mara', ...extra });
         const fill = countColumnFill([
-            scene({ POV: 'Mara' }), scene({}), scene({}), scene({}), scene({}),
-            { Class: 'Sketch', POV: 'Ilse' },
+            scene({ Place: 'North Light' }), scene({}), scene({}), scene({}), scene({}),
+            { Class: 'Sketch', Place: 'Lantern Row' },
         ], settings);
         const { timetable } = tableColumns(settings, fill);
         expect(timetable).toContain('Character');
-        expect(timetable).not.toContain('POV');
+        expect(timetable).not.toContain('Place');
         expect(timetable).toContain('When');
         expect(timetable).toContain('Synopsis');
     });

@@ -26,7 +26,7 @@
  * subplot ring, so the key lists them there, each beside its lane color.
  * Hovering a character spotlights the scenes that character is in. The
  * group's eye button shows or hides the lanes (the same setting as Core →
- * Point of view → Character lanes).
+ * Narration → Character lanes).
  *
  * Ring data is read from the rendered SVG's subplot ring labels (stamped by
  * SubplotLabels.ts from Precompute's masterSubplotOrder/subplotColors),

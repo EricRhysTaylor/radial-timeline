@@ -73,7 +73,7 @@ import { refreshTimetableViews } from './timetable/timetableRegistry';
 import { getOpenDocuments } from './utils/documents';
 import { SUBPLOT_COLORS_CHANGED_EVENT, syncSubplotPalette } from './renderer/utils/subplotColors';
 import { normalizeCanvasSubplotMemory } from './timetable/canvasSubplotMemory';
-import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
+import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, migrateVaultNarrationDefault, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
 import { migratePublishingModelState, RENAMED_PANDOC_LAYOUT_IDS } from './utils/publishingMigration';
 import { initVersionCheckService } from './services/VersionCheckService';
@@ -1402,6 +1402,11 @@ export default class RadialTimelinePlugin extends Plugin {
             stageTargetsMigrated = true;
         }
 
+        // ─── Migrate the vault-wide narration default → per-book ───
+        // Every book without its own narration takes the vault value, so no
+        // timeline changes; the vault field is then removed for good.
+        const narrationDefaultsMigrated = migrateVaultNarrationDefault(this.settings);
+
         // Fields whose deprecation is finished: no reader remains, so the key
         // leaves the settings file rather than riding along forever.
         let legacyKeysStripped = false;
@@ -1412,7 +1417,7 @@ export default class RadialTimelinePlugin extends Plugin {
             }
         }
 
-        if (sceneTemplatesMigrated || freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || booksMigrated || canvasSubplotMemoryMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated) {
+        if (sceneTemplatesMigrated || freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || booksMigrated || canvasSubplotMemoryMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated || narrationDefaultsMigrated) {
             await this.saveSettings();
         }
     }

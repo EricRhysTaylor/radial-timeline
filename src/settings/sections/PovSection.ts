@@ -1,13 +1,14 @@
 import { setAccessibleLabel, setTooltip, withAccessibleLabel } from '../../utils/domTooltip';
 import { Setting as ObsidianSetting, setIcon} from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
-import type { GlobalPovMode } from '../../types/settings';
+import type { NarrationMode } from '../../types/settings';
 import { resolveScenePov } from '../../utils/pov';
+import { getActiveBook } from '../../utils/books';
 import { t } from '../../i18n';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { ERT_CLASSES } from '../../ui/classes';
 import { IMPACT_FULL } from '../SettingImpact';
-import { fitSelectToSelectedLabel } from '../selectSizing';
+import { narrationModeLabel, openBookDetails } from './BookDetailsModal';
 
 const POV_LABELS: Record<string, string> = {
     '0': '°',
@@ -16,15 +17,15 @@ const POV_LABELS: Record<string, string> = {
     '3': '³'
 };
 
-const POV_VALUE_KEYWORDS = [
+const NARRATION_VALUE_KEYWORDS = [
     'first', 'second', 'third', 'omni', 'objective',
     'two', 'three', 'four', 'five', 'count', 'all', 'N'
 ];
 
-/** Backticked YAML keys become key chips; POV keywords are bolded only when asked. */
-function renderPovDesc(descEl: HTMLElement, raw: string, boldKeywords = true): void {
+/** Backticked YAML keys become key chips; narration keywords are bolded only when asked. */
+function renderNarrationDesc(descEl: HTMLElement, raw: string, boldKeywords = true): void {
     descEl.empty();
-    const keywordRe = new RegExp(`\\b(${POV_VALUE_KEYWORDS.join('|')})\\b`, 'g');
+    const keywordRe = new RegExp(`\\b(${NARRATION_VALUE_KEYWORDS.join('|')})\\b`, 'g');
     // Split on backtick-wrapped tokens; odd indices are inside backticks.
     raw.split(/`([^`]+)`/g).forEach((part, idx) => {
         if (idx % 2 === 1) {
@@ -47,6 +48,12 @@ function renderPovDesc(descEl: HTMLElement, raw: string, boldKeywords = true): v
     });
 }
 
+/**
+ * Settings → Core → Narration. Each book's narration default is set in its
+ * book details; this section points there, holds the character lanes toggle,
+ * and shows how a scene's `Narration:` override marks the POV character (the
+ * first name in `Character:`).
+ */
 export function renderPovSection(params: {
     plugin: RadialTimelinePlugin;
     containerEl: HTMLElement;
@@ -54,47 +61,32 @@ export function renderPovSection(params: {
     const { plugin, containerEl } = params;
     containerEl.classList.add(ERT_CLASSES.STACK);
 
-    const povHeading = new ObsidianSetting(containerEl)
+    const narrationHeading = new ObsidianSetting(containerEl)
         .setName(t('settings.pov.heading'))
         .setHeading();
-    addHeadingIcon(povHeading, 'eye');
-    addWikiLink(povHeading, 'Settings-Core#point-of-view');
-    applyErtHeaderLayout(povHeading);
+    addHeadingIcon(narrationHeading, 'eye');
+    addWikiLink(narrationHeading, 'Settings-Core#narration');
+    applyErtHeaderLayout(narrationHeading);
 
-    const povModeOptions: Record<GlobalPovMode, string> = {
-        off: t('settings.pov.modes.off'),
-        first: t('settings.pov.modes.first'),
-        second: t('settings.pov.modes.second'),
-        third: t('settings.pov.modes.third'),
-        omni: t('settings.pov.modes.omni'),
-        objective: t('settings.pov.modes.objective')
+    const bookNarrationSetting = new ObsidianSetting(containerEl)
+        .setName(t('settings.pov.bookDefault.name'));
+    bookNarrationSetting.settingEl.addClass('ert-settingRow');
+    const renderBookNarration = () => {
+        const activeBook = getActiveBook(plugin.settings);
+        bookNarrationSetting.controlEl.empty();
+        if (!activeBook) {
+            bookNarrationSetting.setDesc(t('settings.pov.bookDefault.descNoBook'));
+            return;
+        }
+        bookNarrationSetting.setDesc(t('settings.pov.bookDefault.desc', {
+            book: activeBook.title,
+            mode: narrationModeLabel(activeBook.narrationMode ?? 'off')
+        }));
+        bookNarrationSetting.addButton(button => button
+            .setButtonText(t('settings.pov.bookDefault.button'))
+            .onClick(() => openBookDetails(plugin, activeBook, renderBookNarration)));
     };
-
-    const storedMode = plugin.settings.globalPovMode;
-    const currentMode: GlobalPovMode = storedMode && storedMode in povModeOptions ? storedMode : 'off';
-    if (storedMode !== currentMode) {
-        plugin.settings.globalPovMode = currentMode;
-        void plugin.saveSettings();
-    }
-    const globalPovSetting = new ObsidianSetting(containerEl)
-        .setName(t('settings.pov.vaultDefault.name'))
-        .setDesc(t('settings.pov.vaultDefault.desc'))
-        .addDropdown(dropdown => {
-            (Object.keys(povModeOptions) as GlobalPovMode[]).forEach((key) => {
-                dropdown.addOption(key, povModeOptions[key]);
-            });
-            dropdown.selectEl.addClass('ert-input', 'ert-input--fit-selected');
-            dropdown.setValue(currentMode);
-            fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 104, maxPx: 220, extraPx: 18 });
-            dropdown.onChange(async (value) => {
-                const next = (value as GlobalPovMode) || 'off';
-                fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 104, maxPx: 220, extraPx: 18 });
-                plugin.settings.globalPovMode = next;
-                await plugin.saveSettings();
-                plugin.onSettingChanged(IMPACT_FULL); // Tier 3: POV superscripts baked into SVG synopsis
-            });
-        });
-    globalPovSetting.settingEl.addClass('ert-settingRow');
+    renderBookNarration();
 
     const characterLanesSetting = new ObsidianSetting(containerEl)
         .setName(t('settings.pov.characterLanes.name'))
@@ -105,12 +97,12 @@ export function renderPovSection(params: {
                 await plugin.saveSettings();
                 plugin.onSettingChanged(IMPACT_FULL); // Tier 3: the lanes take ring space
             }));
-    renderPovDesc(characterLanesSetting.descEl, t('settings.pov.characterLanes.desc'), false);
+    renderNarrationDesc(characterLanesSetting.descEl, t('settings.pov.characterLanes.desc'), false);
     characterLanesSetting.settingEl.addClass('ert-settingRow');
 
     const yamlOverridesSetting = new ObsidianSetting(containerEl)
         .setName(t('settings.pov.yamlOverrides.name'));
-    renderPovDesc(yamlOverridesSetting.descEl, t('settings.pov.yamlOverrides.desc'));
+    renderNarrationDesc(yamlOverridesSetting.descEl, t('settings.pov.yamlOverrides.desc'));
     yamlOverridesSetting.settingEl.addClass(ERT_CLASSES.ELEMENT_BLOCK_SKIP, 'ert-settingRow');
 
     // Preview section
@@ -132,11 +124,12 @@ export function renderPovSection(params: {
     const previewToggle = withAccessibleLabel(yamlOverridesSetting.controlEl.createEl('button', {
         cls: ERT_CLASSES.ICON_BTN,
         attr: { type: 'button' }
-    }), 'Hide POV preview');
+    }), t('settings.pov.preview.hide'));
     const refreshPreviewButton = () => {
+        const label = previewExpanded ? t('settings.pov.preview.hide') : t('settings.pov.preview.show');
         setIcon(previewToggle, previewExpanded ? 'chevron-down' : 'chevron-right');
-        setTooltip(previewToggle, previewExpanded ? 'Hide POV preview' : 'Show POV preview');
-        setAccessibleLabel(previewToggle, previewExpanded ? 'Hide POV preview' : 'Show POV preview');
+        setTooltip(previewToggle, label);
+        setAccessibleLabel(previewToggle, label);
         previewToggle.setAttribute('aria-expanded', previewExpanded ? 'true' : 'false');
     };
     refreshPreviewToggle();
@@ -152,15 +145,15 @@ export function renderPovSection(params: {
 
     const buildPreviewEntries = (
         characters: string[],
-        povValue: string,
-        globalMode?: GlobalPovMode
+        narrationValue: string,
+        narrationMode?: NarrationMode
     ) => {
         const povInfo = resolveScenePov(
             {
                 Character: characters,
-                pov: povValue
+                pov: narrationValue
             },
-            { globalMode }
+            { narrationMode }
         );
 
         const entries: Array<{ name: string; sup: string }> = [];
@@ -198,69 +191,26 @@ export function renderPovSection(params: {
         const renderExample = (
             label: string,
             characters: string[],
-            povValue: string,
-            globalMode?: GlobalPovMode
+            narrationValue: string,
+            narrationMode?: NarrationMode
         ) => {
             const example = previewBody.createDiv({ cls: 'ert-pov-example' });
             example.createDiv({ cls: 'ert-pov-example-label', text: label });
             const content = example.createDiv({ cls: 'ert-pov-example-content' });
-            renderNamesWithSup(content, buildPreviewEntries(characters, povValue, globalMode));
+            renderNamesWithSup(content, buildPreviewEntries(characters, narrationValue, narrationMode));
         };
 
-        // Example 1: Single character with first-person
         renderExample(t('settings.pov.preview.examples.sceneFirst'), ['Alice'], 'first');
-
-        // Example 2: Single character with third-person
         renderExample(t('settings.pov.preview.examples.sceneThird'), ['Bob'], 'third');
-
-        // Example 3: Second-person
         renderExample(t('settings.pov.preview.examples.sceneSecond'), ['Alice', 'Bob'], 'second');
-
-        // Example 4: Omni narrator
         renderExample(t('settings.pov.preview.examples.sceneOmni'), ['Alice', 'Bob'], 'omni');
-
-        // Example 5: Objective narrator
         renderExample(t('settings.pov.preview.examples.sceneObjective'), ['Alice', 'Bob'], 'objective');
-
-        // Example 6: Two characters with third-person
-        renderExample(
-            t('settings.pov.preview.examples.countTwoThird'),
-            ['Alice', 'Bob'],
-            'two',
-            'third'
-        );
-
-        // Example 7: Three characters with third-person
-        renderExample(
-            t('settings.pov.preview.examples.countThreeThird'),
-            ['Alice', 'Bob', 'Charlie'],
-            'three',
-            'third'
-        );
-
-        // Example 8: Four characters with third-person
-        renderExample(
-            t('settings.pov.preview.examples.countFourThird'),
-            ['Alice', 'Bob', 'Charlie', 'Diana'],
-            'four',
-            'third'
-        );
-
-        // Example 9: Numeric count override with first-person
-        renderExample(
-            t('settings.pov.preview.examples.countTwoFirstNumeric'),
-            ['Alice', 'Bob'],
-            '2',
-            'first'
-        );
-
-        // Example 10: All characters with first-person
-        renderExample(
-            t('settings.pov.preview.examples.countAllFirst'),
-            ['Alice', 'Bob', 'Charlie'],
-            'all',
-            'first'
-        );
+        // Count overrides take the book's narration marker.
+        renderExample(t('settings.pov.preview.examples.countTwoThird'), ['Alice', 'Bob'], 'two', 'third');
+        renderExample(t('settings.pov.preview.examples.countThreeThird'), ['Alice', 'Bob', 'Charlie'], 'three', 'third');
+        renderExample(t('settings.pov.preview.examples.countFourThird'), ['Alice', 'Bob', 'Charlie', 'Diana'], 'four', 'third');
+        renderExample(t('settings.pov.preview.examples.countTwoFirstNumeric'), ['Alice', 'Bob'], '2', 'first');
+        renderExample(t('settings.pov.preview.examples.countAllFirst'), ['Alice', 'Bob', 'Charlie'], 'all', 'first');
     };
 
     renderPreview();

@@ -92,7 +92,7 @@ From Level 2 upward, an [Author Progress Report](Author-Progress-Report) campaig
 
 Turn on **Share timeline** to send a book's timeline to your Community account. It arrives private: nobody can see it until you review it and go live. **Open preview** opens the Complete Preview on the website, where you reveal scenes. Going live is always your click.
 
-Radial Timeline sends scene order, acts, subplots, status and publish stage. Titles, synopses, cast, POV and story dates are stored privately until you reveal a scene. Under **Details readers can see on a revealed scene**, choose which of those a reader sees. **Generic ring names** shows Subplot 1, Subplot 2 instead of your subplot names.
+Radial Timeline sends scene order, acts, subplots, status and publish stage. Titles, synopses, cast, narration and story dates are stored privately until you reveal a scene. Under **Details readers can see on a revealed scene**, choose which of those a reader sees. **Generic ring names** shows Subplot 1, Subplot 2 instead of your subplot names.
 
 A live timeline updates with your book sync. Pausing Community sharing stops every update. Sharing a timeline needs a sharing level above Private, and the book needs a source folder in Book Manager.
 

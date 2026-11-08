@@ -553,12 +553,12 @@ Example custom fields:
 - `Total Time`: Writing/production time in hours
 - `Words`: Scene word count
 - `Support Files`: Attachments, references, research notes
-- `POV`: Optional point-of-view keyword. Provide a single word:
-  - `first`, `second`, `third`, `omni`, or `objective` — override the global narration mode.
+- `Narration`: Optional, for a scene narrated differently from its book. Each book sets its narration in its book details; the POV character is the first name under `Character:`. Provide a single word:
+  - `first`, `second`, `third`, `omni`, or `objective` — this scene's narration instead of the book's.
   - `second` / `you` inserts `You²`; `omni` inserts `Omni³`; `objective` inserts `Narrator°`; first/third attach `¹`/`³` to the first listed character.
-  - Counts (`two`, `4`, `count`, `all`, etc.) highlight that many leading characters using the current mode (global default if no mode keyword appears). Counts are clamped to the number of names under `Character:`.
-  - Any positive integer works (`pov: 5`). Use `pov: count`/`pov: all` to highlight everyone.
-  If the field is omitted entirely, the global setting applies (default: first listed character, `¹`).
+  - Counts (`two`, `4`, `count`, `all`, etc.) mark that many leading characters with the book's narration marker. Counts are clamped to the number of names under `Character:`.
+  - Any positive integer works (`Narration: 5`). Use `Narration: count`/`Narration: all` to mark everyone.
+  Without the field, the scene follows its book (a book with no narration set marks the first listed character, `¹`). Older scenes may carry the field as `POV`; it is read the same way until the **Scene field POV is now Narration** update renames it.
 - `Tone`: Scene mood or atmosphere
 
 ---

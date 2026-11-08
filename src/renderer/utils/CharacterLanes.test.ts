@@ -13,25 +13,42 @@ import { computeRingGeometry } from '../layout/Rings';
 import { CHARACTER_LANE_HEIGHT, CHARACTER_LANE_PADDING } from '../layout/LayoutConstants';
 
 const scene = (present: string[], pov: string[] = present.slice(0, 1)): SceneCharacters => ({ present, pov: new Set(pov) });
+/** One active book narrated in `mode`; omitted means the book sets none. */
+const narratedBy = (mode?: 'first' | 'third' | 'omni') => ({
+    books: [{ id: 'book', title: 'Book', sourceFolder: 'Book', ...(mode ? { narrationMode: mode } : {}) }],
+    activeBookId: 'book',
+});
 
 describe('readSceneCharacters', () => {
     it('makes the first character POV by default and keeps the list order', () => {
-        const read = readSceneCharacters({ Character: ['Elizabeth', 'Darcy'] }, 'off');
+        const read = readSceneCharacters({ Character: ['Elizabeth', 'Darcy'] }, narratedBy());
         expect(read.present).toEqual(['Elizabeth', 'Darcy']);
         expect([...read.pov]).toEqual(['Elizabeth']);
     });
 
     it('follows a scene count override', () => {
-        const read = readSceneCharacters({ Character: ['Elizabeth', 'Darcy', 'Jane'], pov: 'two' }, 'third');
+        const read = readSceneCharacters({ Character: ['Elizabeth', 'Darcy', 'Jane'], pov: 'two' }, narratedBy('third'));
         expect([...read.pov]).toEqual(['Elizabeth', 'Darcy']);
     });
 
     it('marks no POV character in omniscient mode', () => {
-        expect(readSceneCharacters({ Character: ['Elizabeth'] }, 'omni').pov.size).toBe(0);
+        expect(readSceneCharacters({ Character: ['Elizabeth'] }, narratedBy('omni')).pov.size).toBe(0);
+    });
+
+    it('reads each saga scene by its own book narration', () => {
+        const saga = {
+            books: [
+                { id: 'one', title: 'One', sourceFolder: 'One', narrationMode: 'omni' as const },
+                { id: 'two', title: 'Two', sourceFolder: 'Two', narrationMode: 'third' as const },
+            ],
+            activeBookId: 'one',
+        };
+        expect(readSceneCharacters({ Character: ['Ana'], bookId: 'one' }, saga).pov.size).toBe(0);
+        expect([...readSceneCharacters({ Character: ['Ben'], bookId: 'two' }, saga).pov]).toEqual(['Ben']);
     });
 
     it('trims names and drops blanks and repeats', () => {
-        expect(readSceneCharacters({ Character: [' Jane ', '', 'Jane'] }, 'off').present).toEqual(['Jane']);
+        expect(readSceneCharacters({ Character: [' Jane ', '', 'Jane'] }, narratedBy()).present).toEqual(['Jane']);
     });
 });
 
@@ -73,7 +90,7 @@ describe('collectCharacterLaneEntries', () => {
             ['b.md', { startAngle: 0, endAngle: 1 }],
             ['beat.md', { startAngle: 2, endAngle: 3 }],
         ]);
-        const entries = collectCharacterLaneEntries([a, b, a, beat], positions, 'off');
+        const entries = collectCharacterLaneEntries([a, b, a, beat], positions, narratedBy());
         expect(entries.map(entry => entry.scene.path)).toEqual(['b.md', 'a.md']);
     });
 });

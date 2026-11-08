@@ -12,6 +12,7 @@
 
 import type { HotfixHistoryEntry, RadialTimelineSettings } from '../types';
 import { getActiveFrontmatterMappings } from '../utils/frontmatter';
+import { POV_TO_NARRATION_ALERT_ID } from '../utils/narrationMigration';
 import { t } from '../i18n';
 
 // ============================================================================
@@ -34,6 +35,12 @@ export interface RefactorAlert {
     title: string;
     description: string;
     migrations?: FieldMigration[];  // Field migrations associated with this alert
+    /**
+     * Applying the alert also rewrites values in scene notes, so it is applied
+     * only from the alert itself, after the writer confirms what will change;
+     * the Advanced YAML editor offers no one-click rename for it.
+     */
+    migratesNotes?: boolean;
 }
 
 // ============================================================================
@@ -44,7 +51,7 @@ export interface RefactorAlert {
 // Used to detect and clean up legacy "complete" advanced templates
 export const BASE_BEAT_FIELDS = [
     'Class', 'Act', 'When', 'Duration', 'Synopsis', 'Summary', 'Pending Edits',
-    'Subplot', 'Character', 'POV', 'Words', 'Runtime', 'Publish Stage',
+    'Subplot', 'Character', 'Words', 'Runtime', 'Publish Stage',
     'Status', 'Due', 'Summary Update', 'Pulse Update'
 ];
 
@@ -114,6 +121,24 @@ export const REFACTOR_ALERTS: RefactorAlert[] = [
         icon: 'sparkles',
         get title() { return t('ui.refactorAlerts.inquiryProButtonsTitle'); },
         get description() { return t('ui.refactorAlerts.inquiryProButtonsDescription'); },
+    },
+    {
+        // Applying it migrates scene notes too (src/utils/narrationMigration.ts);
+        // see SettingsTab.applyPovToNarration.
+        id: POV_TO_NARRATION_ALERT_ID,
+        severity: 'warning',
+        icon: 'alert-triangle',
+        get title() { return t('ui.refactorAlerts.povToNarrationTitle'); },
+        get description() { return t('ui.refactorAlerts.povToNarrationDescription'); },
+        migratesNotes: true,
+        migrations: [
+            {
+                alertId: POV_TO_NARRATION_ALERT_ID,
+                oldKey: 'POV',
+                newKey: 'Narration',
+                get tooltip() { return t('ui.refactorAlerts.povToNarrationTooltip'); },
+            }
+        ]
     }
 ];
 
@@ -187,11 +212,20 @@ export function getTemplateHotfixAlert(settings: RadialTimelineSettings): Refact
  * Appends a synthetic template and matter update alert when bundled-template
  * hotfixes have run and the user hasn't yet acknowledged them.
  */
+/**
+ * The scene template text a field migration looks for its old key in: the
+ * Core (base) template and the advanced one. A renamed Core field such as POV
+ * lives in the base template.
+ */
+function sceneTemplateText(settings: RadialTimelineSettings): string {
+    return `${settings.sceneYamlTemplates?.base ?? ''}\n${settings.sceneYamlTemplates?.advanced ?? ''}`;
+}
+
 export function getActiveRefactorAlerts(settings: RadialTimelineSettings): RefactorAlert[] {
     const dismissed = settings.dismissedAlerts ?? [];
     const installBaseline = settings.installAlertBaseline ?? [];
     const remappings = getActiveFrontmatterMappings(settings) ?? {};
-    const template = settings.sceneYamlTemplates?.advanced ?? '';
+    const template = sceneTemplateText(settings);
 
     const staticActive = REFACTOR_ALERTS.filter(alert => {
         // Skip alerts that predate this vault's fresh install (nothing to migrate)
@@ -229,8 +263,9 @@ export function getActiveRefactorAlerts(settings: RadialTimelineSettings): Refac
 export function getActiveMigrations(settings: RadialTimelineSettings): FieldMigration[] {
     const dismissed = settings.dismissedAlerts ?? [];
     const installBaseline = settings.installAlertBaseline ?? [];
+    const noteMigrations = new Set(REFACTOR_ALERTS.filter(alert => alert.migratesNotes).map(alert => alert.id));
     return getAllFieldMigrations().filter(
-        m => !dismissed.includes(m.alertId) && !installBaseline.includes(m.alertId)
+        m => !dismissed.includes(m.alertId) && !installBaseline.includes(m.alertId) && !noteMigrations.has(m.alertId)
     );
 }
 
@@ -248,7 +283,7 @@ export function hasActiveAlerts(settings: RadialTimelineSettings): boolean {
 export function getAllNotificationsForHistory(settings: RadialTimelineSettings): RefactorAlert[] {
     const dismissed = settings.dismissedAlerts ?? [];
     const installBaseline = settings.installAlertBaseline ?? [];
-    const template = settings.sceneYamlTemplates?.advanced ?? '';
+    const template = sceneTemplateText(settings);
 
     // Filter alerts that have been dismissed OR have no pending migrations
     // (i.e., they've been processed or were non-migration notices)

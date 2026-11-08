@@ -4,7 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 import type { TimelineItem } from '../types';
-import type { BookProfile, ChronologueBackdropMicroRing, GlobalPovMode, ReadabilityScale } from '../types/settings';
+import type { BookProfile, ChronologueBackdropMicroRing, ReadabilityScale } from '../types/settings';
 import type { GossamerHistoricalRunOverlay, GossamerMinMaxBand, GossamerRun } from './gossamer';
 import { parseWhenField } from './date';
 import { comparePrefixTokens, extractPrefixToken } from './prefixOrder';
@@ -197,7 +197,6 @@ export interface PluginRendererFacade {
         chronologueBackdropMicroRings?: ChronologueBackdropMicroRing[];
         dominantSubplots?: Record<string, string>;
         discontinuityThreshold?: string;
-        globalPovMode?: GlobalPovMode;
         showCharacterLanes?: boolean;
         runtimeContentType?: 'novel' | 'screenplay';
         currentMode?: string;
@@ -205,6 +204,7 @@ export interface PluginRendererFacade {
         subplotAlignment?: 'fill' | 'sequence';
         showChapterMarkers?: boolean;
         timelineScope?: 'book' | 'saga';
+        /** Book profiles: each book's stage targets and narration default (BookProfile.narrationMode). */
         books: BookProfile[];
         /** Active book id — target ticks read per-book stageTargetDates. */
         activeBookId?: string;

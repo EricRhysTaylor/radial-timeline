@@ -309,7 +309,7 @@ export function computeCacheableValues(
     // Chosen in the order the wheel presents the book, which breaks ties.
     const characterLanes = characterLanesActive(plugin.settings)
         ? chooseLaneCharacters(sortScenes(laneScenes(scenes), sortByWhen, forceChronological, scenes)
-            .map(scene => readSceneCharacters(scene, plugin.settings.globalPovMode)))
+            .map(scene => readSceneCharacters(scene, plugin.settings)))
         : [];
 
     const ringGeo = computeRingGeometry({

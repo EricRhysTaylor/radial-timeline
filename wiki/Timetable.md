@@ -88,7 +88,7 @@ A view with a filter of its own (**This view** in the Filter menu) turns the len
 
 ### Color the timeline by a column
 
-Right-click a stored scene-property column header to color the timeline’s scenes by values such as Character, Place, POV, Type, or your own categories. Every list member is available, including a character never listed first. Unfilled template fields such as `{{Character}}` count as no value.
+Right-click a stored scene-property column header to color the timeline’s scenes by values such as Character, Place, Narration, Type, or your own categories. Every list member is available, including a character never listed first. Unfilled template fields such as `{{Character}}` count as no value.
 
 The timeline takes its colors at once: up to eight categories, starting with the eight that have the most scenes. **Edit key**, in the key above the timeline, chooses others, with a search for a long list. Other scenes stay muted. The key shows each category’s scene count and states when only part of the column is colored. A scene takes the color of its rarest colored category, so a character in nearly every scene leaves room for the others.
 

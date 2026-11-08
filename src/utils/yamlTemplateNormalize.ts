@@ -361,6 +361,9 @@ export function getExcludeKeyPredicate(
                 if (key === legacyNarrativeKey) return true;
                 // Repair metadata
                 if (['WhenSource', 'WhenConfidence', 'DurationSource', 'NeedsReview'].includes(key)) return true;
+                // Legacy narration field (renamed Narration): still read as the
+                // scene's narration override, migrated by the POV → Narration alert.
+                if (key === 'POV') return true;
                 // Obsidian-internal keys
                 if (RESERVED_OBSIDIAN_KEYS.has(key)) return true;
                 return false;

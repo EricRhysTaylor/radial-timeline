@@ -4,6 +4,8 @@ import { createBookId, normalizeBookProfile } from './books';
 export interface SampleBookDefinition {
     title: string;
     sourceFolder: string;
+    /** How the sample book is narrated; its profile starts with this default. */
+    narrationMode?: BookProfile['narrationMode'];
 }
 
 export interface SampleVaultConfig {

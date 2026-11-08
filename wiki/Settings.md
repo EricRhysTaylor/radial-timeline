@@ -4,7 +4,7 @@ The tab strip uses short labels: **Cor**, **Soc**, **Com**, **Inq**, **Pub**, **
 
 ## Settings Tabs
 
-*   [Core](Settings-Core) — Books, progress and status, runtime estimation, story beats, scene properties, chronology, POV, planetary time, and ring colors.
+*   [Core](Settings-Core) — Books, progress and status, runtime estimation, story beats, scene properties, chronology, narration, planetary time, and ring colors.
 *   [Social](Author-Progress-Report) — Author Progress Report (APR), progress tracking, styling, publishing automation, teaser reveal, and campaigns.
 *   [Community](Settings-Community) — Website connection, a single three-level "What you share" selector, a live preview, and pause/take-offline/delete/disconnect controls.
 *   [Inquiry](Settings-Inquiry) — Briefings, action notes, session history, sources, prompts, and corpus thresholds.

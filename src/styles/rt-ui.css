@@ -3911,6 +3911,18 @@
   margin-top: var(--ert-gap-xs);
 }
 
+/* Notes an alert leaves for the writer to review, each a link to the note */
+.ert-ui.ert-scope--settings .ert-refactor-alert__review,
+.ert-ui.ert-scope--modal .ert-refactor-alert__review {
+  margin: 0;
+  padding-left: 1.2em;
+  max-height: 12em;
+  overflow-y: auto;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .ert-ui.ert-scope--settings .ert-refactor-alert {
   display: flex;
   gap: var(--ert-gap-md);

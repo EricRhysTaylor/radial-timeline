@@ -1,7 +1,7 @@
 <p align="center"><img src="images/settings-core.png" alt="Settings → Core tab" width="600"></p>
 <p align="center"><sub>Settings → Core</sub></p>
 
-Configure book profiles, progress tracking, runtime estimation, story beats, scene properties, chronology, POV, planetary time, and ring colors.
+Configure book profiles, progress tracking, runtime estimation, story beats, scene properties, chronology, narration, planetary time, and ring colors.
 
 ## Books
 
@@ -11,14 +11,14 @@ To import an existing draft, use **Choose manuscript**. **Scan for exports** sug
 *   **Book profile manager**: Create one profile per book, set the title, and link each profile to its manuscript folder.
 *   **Active book**: The active book drives the timeline view, central title, and exports.
 *   **Linked folder**: Each book profile stores its own folder path. That is where Radial Timeline looks for that book's notes.
-*   **Project metadata**: Add optional genre, project stage, public label, and description.
+*   **Book details**: Set how the book is narrated (see [Narration](#narration)), and add optional genre, project stage, public label, and description.
 *   **Scene count**: Each book card shows how many `Class: Scene` notes are currently found in that folder.
 *   **Reorder books**: Drag books to control saga order.
 *   **Create draft**: Make a sibling draft copy of a book folder and add it as a new book profile.
 *   **Remove profile**: Removes the book profile and preserves its files.
 
 <p align="center"><img src="images/panel-project-metadata.png" alt="Project metadata dialog: genre, project stage, public label and description" width="380"></p>
-<p align="center"><sub>Project metadata — the description adds optional details on the Community website</sub></p>
+<p align="center"><sub>Book details — the description adds optional details on the Community website</sub></p>
 
 ## Progress And Status
 
@@ -190,17 +190,20 @@ Configure the time-based visualization of your story.
 > [!NOTE]
 > Read more in [Chronologue Mode](Chronologue-Mode).
 
-<a name="point-of-view"></a>
-## Point Of View
+<a name="narration"></a>
+## Narration
 
-Control how narrative perspective is visualized.
+Show how each book is narrated, and mark each scene's POV character in the synopsis and the character lanes. The POV character is always the first name in a scene's `Character` list.
 
-*   **Global POV**: Sets a default POV mode for the entire project.
-*   **Scene level YAML overrides**: Override the global default on a per-scene basis using the `POV` YAML key.
+*   **Book narration**: Each book sets its own narration in its book details, the tag button on its card under **Books**: first person, second person, third person, omniscient, or objective. **Open book details** opens the active book's. A saga marks every scene by its own book's narration. A book with no narration set marks its first listed character with `¹`.
+*   **Scene overrides**: A scene narrated differently from its book carries a `Narration` property, such as `Narration: first` for a letter inside a third-person novel, or `Narration: two` for a scene two characters carry. Scenes that follow their book need no property.
 *   **Character lanes**: In Narrative mode, shows a lane under the outer ring for each of the four characters who are POV in the most scenes. See [Character Lanes](Narrative-Mode#character-lanes).
+*   **Narration examples**: A preview of how each override marks the cast.
+
+Scenes from before Radial Timeline 8 may carry this property under its earlier name, `POV`. Radial Timeline reads it the same way until you apply **Scene field POV is now Narration** at the top of Core settings. The update renames `POV` to `Narration` wherever it holds a narration, removes it where it is empty or repeats the scene's first character, and lists every other `POV` for you to review, so a character's name never becomes a narration.
 
 > [!NOTE]
-> See [POV Keywords](YAML-Frontmatter#pov-keywords).
+> See [Narration Keywords](YAML-Frontmatter#narration-keywords).
 
 ## Planetary Time
 

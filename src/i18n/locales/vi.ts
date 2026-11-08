@@ -17,42 +17,10 @@ export const vi: DeepPartial<TranslationKeys> = {
             }
         },
         "pov": {
-            "heading": "Góc nhìn nhân vật",
-            "vaultDefault": {
-                "name": "Góc nhìn toàn cầu",
-                "desc": "Chọn chế độ mặc định để áp dụng. Góc nhìn ở cấp độ cảnh sẽ ghi đè cài đặt toàn cầu này."
-            },
             "characterLanes": {
                 "name": "Làn nhân vật",
                 "desc": "Trong chế độ Kịch bản, hiển thị một làn dưới vòng ngoài cho mỗi nhân vật trong bốn nhân vật giữ góc nhìn ở nhiều cảnh nhất, đọc từ danh sách `Character:` của từng cảnh. Dấu cao là cảnh theo góc nhìn của nhân vật; dấu thấp là cảnh có nhân vật xuất hiện."
             },
-            "yamlOverrides": {
-                "name": "Ví dụ ghi đè cảnh",
-                "desc": "Trong cảnh trước, bạn có thể sử dụng `POV:` thứ nhất, thứ hai, thứ ba, omni, khách quan, hoặc một số như hai, bốn, đếm, hoặc tất cả để chỉ định nhiều hơn một ký tự đang mang cảnh pov. đếm giá trị đánh dấu n tên đầu tiên trong `Character:` và sử dụng chế độ POV toàn cầu để chọn điểm đánh dấu."
-            },
-            "modes": {
-                "off": "Tính năng cũ (nhân vật đầu tiên liệt kê, góc nhìn)",
-                "first": "Giọng ngôi thứ nhất (¹)",
-                "second": "Giọng ngôi thứ hai (Bạn²)",
-                "third": "Giọng ngôi thứ ba giới hạn (³)",
-                "omni": "Người kể toàn tri (Omni³)",
-                "objective": "Khách quan — người kể góc nhìn máy ảnh (Narrator°)"
-            },
-            "preview": {
-                "heading": "VÍ DỤ GÓC NHÌN",
-                "examples": {
-                    "sceneFirst": "Cảnh YAML: POV: first | Character: [Alice]",
-                    "sceneThird": "Cảnh YAML: POV: third | Character: [Bob]",
-                    "sceneSecond": "Cảnh YAML: POV: second | Character: [Alice, Bob]",
-                    "sceneOmni": "Cảnh YAML: POV: omni | Character: [Alice, Bob]",
-                    "sceneObjective": "Cảnh YAML: POV: objective | Character: [Alice, Bob]",
-                    "countTwoThird": "Cài đặt toàn cầu: POV = third | Cảnh YAML: POV: two | Character: [Alice, Bob]",
-                    "countThreeThird": "Cài đặt toàn cầu: POV = third | Cảnh YAML: POV: three | Character: [Alice, Bob, Charlie]",
-                    "countFourThird": "Cài đặt toàn cầu: POV = third | Cảnh YAML: POV: four | Character: [Alice, Bob, Charlie, Diana]",
-                    "countTwoFirstNumeric": "Cài đặt toàn cầu: POV = first | Cảnh YAML: POV: 2 | Character: [Alice, Bob]",
-                    "countAllFirst": "Cài đặt toàn cầu: POV = first | Cảnh YAML: POV: all | Character: [Alice, Bob, Charlie]"
-                }
-            }
         },
         "configuration": {
             "heading": "Cấu hình",
@@ -1230,7 +1198,6 @@ export const vi: DeepPartial<TranslationKeys> = {
         "structuralHeading": "được chia sẻ khi bạn kích hoạt",
         "structuralBody": "Số cảnh, hồi, tên cốt truyện phụ, trạng thái, giai đoạn xuất bản, tên sách và tác giả.",
         "revealingHeading": "được tổ chức cho tiết lộ theo từng cảnh",
-        "revealingBody": "Tiêu đề cảnh, tóm tắt, nhân vật, POV và ngày câu chuyện - bị ẩn cho đến khi bạn tiết lộ từng cảnh.",
         "genericNamesToggleLabel": "Tên vòng chung (Cốt truyện phụ 1, Cốt truyện phụ 2…)",
         "genericNamesToggleDescription": "Dùng khi tên các cốt truyện phụ có thể tiết lộ cốt truyện.",
         "destinationBody": "Đã lưu vào {{path}} trong kho của bạn.",
@@ -4001,7 +3968,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "timelineStopNote": "Tắt mục này sẽ dừng cập nhật. Dòng thời gian vẫn giữ nguyên trên trang web, nơi bạn có thể gỡ xuống hoặc xóa.",
             "timelineLastSent": "Lần gửi gần nhất: {{date}}.",
             "timelineConfirmTitle": "Chia sẻ dòng thời gian này?",
-            "timelineConfirmMessage": "Radial Timeline gửi thứ tự cảnh, hồi, cốt truyện phụ, trạng thái và giai đoạn xuất bản. Tiêu đề, tóm tắt, nhân vật, góc nhìn và ngày trong truyện cũng được gửi, lưu riêng tư cho đến khi bạn tiết lộ một cảnh. Dòng thời gian mới đến ở chế độ riêng tư, còn dòng thời gian đã công khai vẫn công khai. Văn bản cảnh và đường dẫn tệp vẫn ở trong kho của bạn.",
             "timelineConfirmButton": "Gửi dòng thời gian",
             "timelineSentNotice": "Đã gửi dòng thời gian ở chế độ riêng tư. Hãy xem lại trên trang web để đăng công khai.",
             "timelineUpdatedNotice": "Đã cập nhật dòng thời gian. Dòng thời gian vẫn công khai.",
@@ -4016,7 +3982,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "timelineDetailTitle": "Tiêu đề",
             "timelineDetailSynopsis": "Tóm tắt",
             "timelineDetailCast": "Nhân vật",
-            "timelineDetailPov": "POV",
             "timelineDetailWhen": "Ngày trong truyện",
             "timelineGenericName": "Tên vòng chung",
             "timelineGenericDesc": "Độc giả thấy Cốt truyện phụ 1, Cốt truyện phụ 2 thay vì tên của bạn.",
@@ -4742,8 +4707,6 @@ export const vi: DeepPartial<TranslationKeys> = {
         },
         "generalSection": {
             "metadataBadge": "Sách",
-            "metadataTitle": "Siêu dữ liệu dự án",
-            "metadataSubtitle": "Siêu dữ liệu cục bộ tùy chọn cho số liệu thống kê trong tương lai, nhóm thuần tập và chia sẻ công khai.",
             "genreName": "Thể loại",
             "genreDesc": "Nhóm tùy chọn như khoa học viễn tưởng, lãng mạn, bí ẩn hoặc hồi ký.",
             "projectStageName": "giai đoạn dự án",
@@ -4780,7 +4743,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "createCopyTooltip": "Tạo ảnh chụp nhanh hoặc bản nháp làm việc trong thư mục anh chị em.",
             "copyNeedsFolderNotice": "Sao chép sách cần một thư mục sách (không hỗ trợ thư mục gốc của kho).",
             "sourceChangedError": "Sách nguồn đã thay đổi. Mở lại Tạo bản sao sách và thử lại.",
-            "metadataTooltip": "Chỉnh sửa thể loại tùy chọn, giai đoạn dự án, nhãn công khai và mô tả.",
             "sourceFolderPlaceholder": "thư mục nguồn",
             "removeProfileTooltip": "Xóa cấu hình (Tệp không bị xóa)",
             "folderNotFound": "Không tìm thấy thư mục: {{folder}}",
@@ -7401,7 +7363,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "guardRuntime": "Cấu hình thời gian chạy",
             "guardStoryProperties": "Thuộc tính câu chuyện và cảnh",
             "guardChronologue": "Cài đặt Chronologue",
-            "guardPov": "Cài đặt POV",
             "guardPlanetary": "Cài đặt lịch hành tinh",
             "guardBackdrop": "Cài đặt Backdrop",
             "guardColors": "Cài đặt màu",
@@ -7411,7 +7372,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "quickLinkBeats": "Nhịp truyện",
             "quickLinkProperties": "Đặc tính",
             "quickLinkChronology": "niên đại",
-            "quickLinkPov": "pov",
             "quickLinkPlanetary": "Lịch hành tinh",
             "quickLinkBackdrop": "Bối cảnh",
             "quickLinkColors": "Màu sắc",

@@ -269,7 +269,7 @@ Writes a timeline file you can upload on your Community **My Share** page. To sh
 Before anything is written, a dialog lists what the file contains:
 
 *   **Shared when you activate:** scene numbers, acts, subplot names, status, publish stage, book title, and author.
-*   **Held for per-scene reveal:** scene titles, synopses, characters, POV, and story dates. They stay hidden on your public timeline until you reveal each scene from My Share.
+*   **Held for per-scene reveal:** scene titles, synopses, characters, narration, and story dates. They stay hidden on your public timeline until you reveal each scene from My Share.
 
 If your subplot names could themselves reveal plot, turn on **Generic ring names** in the dialog to export them as "Subplot 1, Subplot 2…".
 

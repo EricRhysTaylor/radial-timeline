@@ -2,6 +2,7 @@ import type { TimelineItem } from '../../types';
 import { isBeatNote, type PluginRendererFacade } from '../../utils/sceneHelpers';
 import { splitIntoBalancedLinesOptimal, countWords } from '../../utils/text';
 import { resolveScenePov } from '../../utils/pov';
+import { bookNarrationMode } from '../../utils/books';
 import { getReadabilityMultiplier } from '../../utils/readability';
 import { getSynopsisGenerationWordLimit, getSynopsisHoverWordLimit, truncateToWordLimit } from '../../utils/synopsisLimits';
 import { markBeatPurposeSecondary } from '../../synopsis/SynopsisData';
@@ -130,7 +131,7 @@ export function buildSynopsisElement(
         contentLines.push(orderedSubplots.join(', '));
         const characters = scene.Character || [];
         const povInfo = resolveScenePov(scene, {
-            globalMode: plugin.settings.globalPovMode
+            narrationMode: bookNarrationMode(scene, plugin.settings)
         });
 
         const formattedEntries: string[] = [];

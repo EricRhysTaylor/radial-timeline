@@ -22,7 +22,7 @@ attribution.
 
 ## Held for later reveal (revealing fields)
 
-Scene titles, synopses, character names, POV, and story dates are included
+Scene titles, synopses, character names, narration, and story dates are included
 in the file but treated as revealing: they stay hidden on your public
 timeline until you reveal each scene individually from your My Share page.
 Uploading the file does not reveal anything by itself.

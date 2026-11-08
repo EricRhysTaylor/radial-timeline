@@ -734,7 +734,7 @@ export function createTimelineSVG(
 
     if (characterLanes.length > 0 && outerRingPositionByKey) {
         svg += renderCharacterLanes({
-            entries: collectCharacterLaneEntries(scenes, outerRingPositionByKey, settings.globalPovMode),
+            entries: collectCharacterLaneEntries(scenes, outerRingPositionByKey, settings),
             characters: characterLanes,
             ringInnerRadius: ringStartRadii[NUM_RINGS - 1],
             outerRing: NUM_RINGS - 1

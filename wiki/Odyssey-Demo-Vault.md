@@ -16,7 +16,7 @@ The poem doesn't run in a straight line, which makes it a good test of a circula
 
 ## What's inside
 
-*   **89 scenes and 12 beats.** The complete narrative, divided into scenes across all 24 books, plus 12 Hero's Journey beat notes. Every scene has a synopsis, act, story-time date and duration, subplot, point of view, character and place links, and a citation back to the source.
+*   **89 scenes and 12 beats.** The complete narrative, divided into scenes across all 24 books, plus 12 Hero's Journey beat notes. Every scene has a synopsis, act, story-time date and duration, subplot, narration, character and place links, and a citation back to the source.
 *   **Three acts.** *Search and exile* (Books 1–9), *Wanderings and return in disguise* (Books 10–16), and *Reckoning and restoration* (Books 17–24).
 *   **Five rings in Narrative mode.** The Main Plot follows Ulysses's homecoming. Four motif rings offer other reading paths: *Telemachus Comes of Age*, *Hospitality and Loyalty*, *Penelope and the Suitors*, and *Recognition and Restoration*.
 *   **51 characters and 27 places.** Selected for the scenes that need them, with Butler's names first and familiar Greek names as aliases (Ulysses is also Odysseus).
@@ -41,7 +41,7 @@ Hover any scene to read its synopsis and Pulse analysis. The AI readings are cur
 
 ## Editorial choices
 
-*   **Point of view is set per scene.** Homer's narrator is omniscient (`omni`). Scenes told in the first person, such as Ulysses's wanderings, Menelaus's story of Proteus, and the invented Cretan tales, are `first`, with the storyteller listed first under `Character`.
+*   **Narration follows the teller.** The book is narrated by Homer's omniscient narrator (`omni`). Scenes told in the first person, such as Ulysses's wanderings, Menelaus's story of Proteus, and the invented Cretan tales, are `first`, with the storyteller listed first under `Character`.
 *   **The Hero's Journey is an interpretation.** The beats follow manuscript order. They are a reading of the poem, not a claim that it fits a modern template.
 *   **Selective notes.** Character and place notes cover the figures that matter to the story, not every name that appears once.
 

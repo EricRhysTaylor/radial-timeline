@@ -28,6 +28,7 @@
 import { normalizePath, TFile, TFolder } from 'obsidian';
 import type { App } from 'obsidian';
 import type { ManuscriptModel, ManuscriptScene } from './manuscriptModel';
+import { isNarrationValue } from '../../utils/pov';
 
 // --- Source surface ---------------------------------------------------------
 
@@ -225,7 +226,7 @@ function readColumn(row: Record<string, string>, name: string): string | null {
  */
 const CANONICAL_KEY_NAMES = [
   'Class', 'Act', 'When', 'Duration', 'Chapter', 'Synopsis', 'Summary',
-  'Pending Edits', 'Subplot', 'Character', 'POV', 'Words', 'Runtime',
+  'Pending Edits', 'Subplot', 'Character', 'Narration', 'POV', 'Words', 'Runtime',
   'Publish Stage', 'Status', 'Due', 'Pulse Update', 'Summary Update',
   'Place', 'Questions', 'Reader Emotion', 'Internal', 'Type', 'Shift', 'Iteration',
 ] as const;
@@ -252,8 +253,8 @@ export type ScrivenerFieldTarget =
   | { target: 'subplot-flag' }
   /**
    * The scene's viewpoint character. Radial Timeline marks the FIRST name in
-   * Character as the POV character (its POV field holds a mode such as
-   * "third", not a name), so the name is placed first in Character.
+   * Character as the POV character (its Narration field holds a mode such as
+   * "third", never a name), so the name is placed first in Character.
    */
   | { target: 'pov-character' };
 
@@ -266,7 +267,7 @@ export type ScrivenerFieldTarget =
  */
 export const SCRIVENER_FIELD_TARGETS = {
   timeline: ['Subplot', 'Character', 'Place', 'When', 'Duration', 'Act', 'Chapter'],
-  other: ['Synopsis', 'Summary', 'POV', 'Pending Edits', 'Due', 'Questions', 'Reader Emotion', 'Internal', 'Type', 'Shift', 'Iteration'],
+  other: ['Synopsis', 'Summary', 'Narration', 'Pending Edits', 'Due', 'Questions', 'Reader Emotion', 'Internal', 'Type', 'Shift', 'Iteration'],
 } as const;
 
 const TARGET_KEYS = new Set<string>([...SCRIVENER_FIELD_TARGETS.timeline, ...SCRIVENER_FIELD_TARGETS.other]);
@@ -299,7 +300,7 @@ const FIELD_ALIASES: Record<string, string> = {
   'value shift': 'Shift', 'scene type': 'Type',
 };
 
-/** Scrivener columns naming the viewpoint character (a name, not RT's POV mode). */
+/** Scrivener columns naming the viewpoint character (a name, not Radial Timeline's Narration mode). */
 const POV_CHARACTER_FIELDS = new Set(['pov', 'pov character', 'point of view', 'viewpoint', 'viewpoint character']);
 
 /** The column name as the author wrote it (the adapter prefixes canonical-key collisions). */
@@ -411,7 +412,13 @@ export function applyMetadataMapping(
       put('Subplot', bareFieldName(key));
       if (!(key in out)) out[key] = value;
     } else if (decision.target === 'rt-key') {
-      put(decision.key, value);
+      // Narration holds only a mode or a count. A column mapped there that
+      // holds a name stays a custom field under its own name instead.
+      if (decision.key === 'Narration' && !isNarrationValue(value)) {
+        if (!(key in out)) out[key] = value;
+      } else {
+        put(decision.key, value);
+      }
     } else if (decision.target === 'pov-character') {
       out['Character'] = 'Character' in out ? `${value}; ${out['Character']}` : value;
     }

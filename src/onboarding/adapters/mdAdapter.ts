@@ -19,6 +19,7 @@ import {
   resolveReadingOrder,
   type ReadingOrderResult,
 } from './manuscriptModel';
+import { isNarrationValue } from '../../utils/pov';
 
 /** A markdown note as seen by the adapter (Obsidian-free for testing). */
 export interface MarkdownNote {
@@ -113,11 +114,14 @@ export function stripFrontmatter(content: string): string {
 const CANONICAL_KEYS = new Set(
   [
     'Class', 'Act', 'When', 'Duration', 'Chapter', 'Synopsis', 'Summary',
-    'Pending Edits', 'Subplot', 'Character', 'POV', 'Words', 'Runtime',
+    'Pending Edits', 'Subplot', 'Character', 'Narration', 'POV', 'Words', 'Runtime',
     'Publish Stage', 'Status', 'Due', 'Pulse Update', 'Summary Update',
     'Place', 'Questions', 'Reader Emotion', 'Internal', 'Type', 'Shift', 'Iteration',
   ].map((key) => key.toLowerCase())
 );
+
+/** A source note's narration override (Narration, or its old name POV), kept only when it names a mode or count. */
+const NARRATION_SOURCE_KEYS = ['narration', 'pov'];
 
 function nonCanonicalStrings(frontmatter: Record<string, unknown> | null): Record<string, string> {
   const out: Record<string, string> = {};
@@ -126,6 +130,16 @@ function nonCanonicalStrings(frontmatter: Record<string, unknown> | null): Recor
     if (CANONICAL_KEYS.has(key.toLowerCase())) continue;
     const str = readString(value);
     if (str !== null) out[key] = str;
+  }
+  // Narration carries over; a character's name in POV never becomes Narration
+  // (the POV character is the first name in Character).
+  for (const sourceKey of NARRATION_SOURCE_KEYS) {
+    const entry = Object.entries(frontmatter).find(([key]) => key.toLowerCase() === sourceKey);
+    const narration = entry ? readString(entry[1]) : null;
+    if (narration !== null && isNarrationValue(narration)) {
+      out['Narration'] = narration;
+      break;
+    }
   }
   return out;
 }

@@ -67,14 +67,29 @@ describe('ingestMarkdownFolder', () => {
     expect(result.kind).toBe('needs-order');
   });
 
-  it('excludes canonical Scene keys from carried metadata', async () => {
+  it('excludes canonical Scene keys from carried metadata and carries a narration mode as Narration', async () => {
     const notes = [
       note('01 A.md', { frontmatter: { Act: 2, Synopsis: 'x', POV: 'first', Mood: 'tense' } }),
     ];
     const result = await ingestMarkdownFolder(sourceOf(notes), 'Book');
+    expect(result.kind).toBe('ok');
     if (result.kind === 'ok') {
       const meta = result.model.chapters[0].scenes[0].knownMetadata;
-      expect(meta).toEqual({ Mood: 'tense' });
+      expect(meta).toEqual({ Mood: 'tense', Narration: 'first' });
+    }
+  });
+
+  it('never writes a character name into Narration', async () => {
+    const notes = [
+      note('01 A.md', { frontmatter: { POV: '[[Elizabeth Bennet]]', Mood: 'tense' } }),
+      note('02 B.md', { frontmatter: { Narration: 'Darcy' } }),
+    ];
+    const result = await ingestMarkdownFolder(sourceOf(notes), 'Book');
+    expect(result.kind).toBe('ok');
+    if (result.kind === 'ok') {
+      const [first, second] = result.model.chapters.flatMap(chapter => chapter.scenes);
+      expect(first.knownMetadata).toEqual({ Mood: 'tense' });
+      expect(second.knownMetadata).toEqual({});
     }
   });
 });

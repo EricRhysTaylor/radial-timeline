@@ -17,42 +17,10 @@ export const fr: DeepPartial<TranslationKeys> = {
             }
         },
         "pov": {
-            "heading": "Point de vue",
-            "vaultDefault": {
-                "name": "Point de vue global",
-                "desc": "Choisissez un mode par défaut à appliquer. Le point de vue au niveau de la scène remplace ce paramètre global."
-            },
             "characterLanes": {
                 "name": "Couloirs des personnages",
                 "desc": "En mode Narratif, affiche un couloir sous l'anneau extérieur pour chacun des quatre personnages qui portent le point de vue dans le plus de scènes, d'après la liste `Character:` de chaque scène. Une marque haute est une scène de son point de vue ; une marque basse, une scène où le personnage apparaît."
             },
-            "yamlOverrides": {
-                "name": "Exemples de surcharge YAML",
-                "desc": "Dans Scene Frontmatter, vous pouvez utiliser `POV:` premier, deuxième, troisième, omni, objectif ou un nombre tel que deux, quatre, comptent ou tous pour désigner plus d'un personnage porte le Scène POV. Compter les valeurs Marquez les noms premiers dans `Character:` Et utilisez le mode POV global pour choisir le marqueur."
-            },
-            "modes": {
-                "off": "Ancien (premier personnage listé, POV)",
-                "first": "Voix à la première personne (¹)",
-                "second": "Voix à la deuxième personne (Vous²)",
-                "third": "Troisième personne limitée (³)",
-                "omni": "Narrateur omniscient (Omni³)",
-                "objective": "Objectif — narrateur œil-de-camera (Narrateur°)"
-            },
-            "preview": {
-                "heading": "EXEMPLES DE POV",
-                "examples": {
-                    "sceneFirst": "Scène YAML : POV: first | Character: [Alice]",
-                    "sceneThird": "Scène YAML : POV: third | Character: [Bob]",
-                    "sceneSecond": "Scène YAML : POV: second | Character: [Alice, Bob]",
-                    "sceneOmni": "Scène YAML : POV: omni | Character: [Alice, Bob]",
-                    "sceneObjective": "Scène YAML : POV: objective | Character: [Alice, Bob]",
-                    "countTwoThird": "Paramètre global : POV = third | Scène YAML : POV: two | Character: [Alice, Bob]",
-                    "countThreeThird": "Paramètre global : POV = third | Scène YAML : POV: three | Character: [Alice, Bob, Charlie]",
-                    "countFourThird": "Paramètre global : POV = third | Scène YAML : POV: four | Character: [Alice, Bob, Charlie, Diana]",
-                    "countTwoFirstNumeric": "Paramètre global : POV = first | Scène YAML : POV: 2 | Character: [Alice, Bob]",
-                    "countAllFirst": "Paramètre global : POV = first | Scène YAML : POV: all | Character: [Alice, Bob, Charlie]"
-                }
-            }
         },
         "configuration": {
             "heading": "Configuration",
@@ -1230,7 +1198,6 @@ export const fr: DeepPartial<TranslationKeys> = {
         "structuralHeading": "Partagé lors de l'activation",
         "structuralBody": "Numéros de scène, actes, noms de sous-intrigues, statut, étape de publication, titre de livre et auteur.",
         "revealingHeading": "Tenue pour la révélation par scène",
-        "revealingBody": "Les titres de scène, les synopsis, les personnages, les points de vue et les dates des histoires – cachés jusqu'à ce que vous dévoiliez chaque scène.",
         "genericNamesToggleLabel": "Noms d'anneaux génériques (Sous-intrigue 1, Sous-intrigue 2…)",
         "genericNamesToggleDescription": "Utilisez si vos noms de sous-intrigues pourraient révéler l'intrigue.",
         "destinationBody": "Enregistré à {{path}} dans votre coffre.",
@@ -4001,7 +3968,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "timelineStopNote": "La désactivation arrête les mises à jour. Votre chronologie reste telle quelle sur le site, où vous pouvez la retirer ou la supprimer.",
             "timelineLastSent": "Dernier envoi : {{date}}.",
             "timelineConfirmTitle": "Partager cette chronologie ?",
-            "timelineConfirmMessage": "Radial Timeline envoie l'ordre des scènes, les actes, les intrigues secondaires, le statut et l'étape de publication. Il envoie aussi les titres, synopsis, personnages, point de vue et dates de l'histoire, conservés en privé jusqu'à ce que vous révéliez une scène. Une nouvelle chronologie arrive en privé, et une chronologie déjà en ligne le reste. Le texte des scènes et les chemins de fichiers restent dans votre coffre.",
             "timelineConfirmButton": "Envoyer la chronologie",
             "timelineSentNotice": "Chronologie envoyée, en privé. Vérifiez-la sur le site pour la mettre en ligne.",
             "timelineUpdatedNotice": "Chronologie mise à jour. Elle reste en ligne.",
@@ -4016,7 +3982,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "timelineDetailTitle": "Titre",
             "timelineDetailSynopsis": "Synopsis",
             "timelineDetailCast": "Personnages",
-            "timelineDetailPov": "POV",
             "timelineDetailWhen": "Date de l'histoire",
             "timelineGenericName": "Noms d'anneaux génériques",
             "timelineGenericDesc": "Les lecteurs voient Intrigue secondaire 1, Intrigue secondaire 2 au lieu de vos noms.",
@@ -4742,8 +4707,6 @@ export const fr: DeepPartial<TranslationKeys> = {
         },
         "generalSection": {
             "metadataBadge": "Livre",
-            "metadataTitle": "Métadonnées du projet",
-            "metadataSubtitle": "Métadonnées locales facultatives pour les statistiques futures, les cohortes et le partage public.",
             "genreName": "Le genre",
             "genreDesc": "Groupement optionnel tel que science-fiction, romance, mystère ou mémoire.",
             "projectStageName": "Étape du projet",
@@ -4780,7 +4743,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "createCopyTooltip": "Créez un instantané de soumission ou un brouillon de travail dans un dossier frère.",
             "copyNeedsFolderNotice": "La copie du livre nécessite un dossier de livre (la racine du coffre n'est pas prise en charge).",
             "sourceChangedError": "Le livre source a changé. Réouvrez Créez une copie du livre et réessayez.",
-            "metadataTooltip": "Modifiez le genre facultatif, l'étape du projet, l'étiquette publique et la description.",
             "sourceFolderPlaceholder": "Dossier source",
             "removeProfileTooltip": "Supprimer le profil (les fichiers ne sont pas supprimés)",
             "folderNotFound": "Dossier introuvable : {{folder}}",
@@ -7401,7 +7363,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "guardRuntime": "Profils d'exécution",
             "guardStoryProperties": "Propriétés des histoires et des scènes",
             "guardChronologue": "Chronologue Paramètres",
-            "guardPov": "Paramètres de point de vue",
             "guardPlanetary": "Paramètres du calendrier de la planète",
             "guardBackdrop": "Paramètres de la toile de fond",
             "guardColors": "Paramètres de couleur",
@@ -7411,7 +7372,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "quickLinkBeats": "Beats",
             "quickLinkProperties": "Propriétés",
             "quickLinkChronology": "Chronologie",
-            "quickLinkPov": "point de vue",
             "quickLinkPlanetary": "calendrier planétaire",
             "quickLinkBackdrop": "Contexte",
             "quickLinkColors": "Les couleurs",

@@ -86,7 +86,7 @@
 }
 
 /* YAML key pill — used inline in setting descriptions to flag frontmatter keys
-   like `POV:` or `Character:` so they read as YAML tokens rather than prose. */
+   like `Narration:` or `Character:` so they read as YAML tokens rather than prose. */
 .ert-yaml-key {
   display: inline-block;
   font-family: var(--font-monospace, monospace);

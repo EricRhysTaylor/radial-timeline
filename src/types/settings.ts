@@ -310,7 +310,12 @@ export interface BeatWorkspaceState {
     activeTabId?: string;
 }
 
-export type GlobalPovMode = 'off' | 'first' | 'second' | 'third' | 'omni' | 'objective';
+/**
+ * How a book is narrated. A book's default lives on its BookProfile; a scene
+ * narrated differently says so in its `Narration:` field. 'off' means not set:
+ * the first listed character is marked ¹.
+ */
+export type NarrationMode = 'off' | 'first' | 'second' | 'third' | 'omni' | 'objective';
 export type ReadabilityScale = 'normal' | 'large';
 export type RuntimeContentType = 'novel' | 'screenplay' | 'audiobook';
 /**
@@ -629,6 +634,11 @@ export interface BookProfile {
     stageTargetDates?: StageTargetDates;
     /** Name of THIS book's main plot, the subplot that owns ring 1 (see utils/mainPlot). Absent means "Main Plot". Renamed in the Subplot Manager. */
     mainPlotName?: string;
+    /**
+     * How THIS book is narrated, set in its book details. A scene's own
+     * `Narration:` overrides it. Absent means not set ('off' is never stored).
+     */
+    narrationMode?: Exclude<NarrationMode, 'off'>;
     /**
      * Subplots in THIS book that wear their own ring color instead of a palette
      * slot, such as a subplot created from a Canvas card color (see
@@ -1322,7 +1332,6 @@ export interface RadialTimelineSettings {
     dominantSubplots?: Record<string, string>;
     /** Timetable `.base` files RT wrote, by book ID (or 'saga'), with the folders their filter names. Plugin data, not a setting. */
     timetableFiles?: Record<string, { path: string; folders: string[] }>;
-    globalPovMode?: GlobalPovMode;
     /** Narrative mode: draw lanes for the four characters who hold POV most often. */
     showCharacterLanes?: boolean;
     readabilityScale?: ReadabilityScale;
@@ -1504,6 +1513,8 @@ export interface LegacyPersistedSettings {
     manuscriptExportTemplates?: ManuscriptExportTemplate[];
     /** Legacy last-used preset id, folded into lastUsedExportProfileId and then removed. */
     lastUsedManuscriptExportTemplateId?: string;
+    /** The vault-wide narration default, copied onto every book without its own on load and then removed. */
+    globalPovMode?: unknown;
 }
 
 export interface HotfixHistoryEntry {

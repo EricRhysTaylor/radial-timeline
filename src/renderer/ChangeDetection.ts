@@ -7,7 +7,7 @@
 import type { TimelineItem, RadialTimelineSettings, LegacyPersistedSettings, LegacyBeatDescription } from '../types';
 import type { GossamerRun } from '../utils/gossamer';
 import { getVersionCheckService } from '../services/VersionCheckService';
-import { DEFAULT_BOOK_TITLE, getActiveBook, getActiveBookTitle } from '../utils/books';
+import { DEFAULT_BOOK_TITLE, getActiveBook, getActiveBookTitle, narrationModesSignature } from '../utils/books';
 import { getActiveRecentStructuralMoves } from '../utils/recentStructuralMoves';
 import { readSharedChapterTitle } from '../utils/timelineChapters';
 import { readPartMarker } from '../utils/timelineParts';
@@ -77,7 +77,7 @@ export interface TimelineSnapshot {
     workingPatternId: string;
     customWorkingPatternsHash: string;
     dominantSubplotsHash: string;
-    povMode: string;
+    narrationModesHash: string;
     activeBookId: string;
     activeBookTitle: string;
     timelineScope: string;
@@ -271,7 +271,8 @@ export function createSnapshot(
         workingPatternId: settings.workingPatternId ?? '',
         customWorkingPatternsHash,
         dominantSubplotsHash,
-        povMode: settings.globalPovMode ?? 'off',
+        // Each book's narration default: a saga marks every book's scenes by its own.
+        narrationModesHash: narrationModesSignature(settings),
         activeBookId: settings.activeBookId ?? '',
         activeBookTitle: getActiveBookTitle(settings, DEFAULT_BOOK_TITLE),
         timelineScope: settings.timelineScope ?? 'book',
@@ -356,7 +357,7 @@ export function detectChanges(
         prev.subplotColorsHash !== current.subplotColorsHash ||
         prev.workingPatternId !== current.workingPatternId ||
         prev.customWorkingPatternsHash !== current.customWorkingPatternsHash ||
-        prev.povMode !== current.povMode ||
+        prev.narrationModesHash !== current.narrationModesHash ||
         prev.activeBookId !== current.activeBookId ||
         prev.activeBookTitle !== current.activeBookTitle ||
         prev.timelineScope !== current.timelineScope ||

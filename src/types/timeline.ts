@@ -96,6 +96,12 @@ export interface TimelineItem {
     bookSourceFolder?: string;
     subplot?: string;
     act?: string;
+    /**
+     * The scene's narration override as the author wrote it: its `Narration:`
+     * field, or a legacy `POV:` field not yet migrated (see readSceneNarration).
+     * Interpreted by resolveScenePov; a value that names no mode or count is
+     * ignored. Kept as `pov` because exports and the share payload carry it.
+     */
     pov?: string;
     place?: string;
     number?: number;

@@ -343,6 +343,15 @@ describe('applyMetadataMapping', () => {
     expect(mappingConflicts(mapping)).toEqual(['When']);
   });
 
+  it('maps a narration column to Narration only for modes and counts, never a name', () => {
+    const mapping: Record<string, ScrivenerFieldTarget> = { Voice: { target: 'rt-key', key: 'Narration' } };
+    expect(applyMetadataMapping({ Voice: 'third limited' }, mapping)).toEqual({ Narration: 'third limited' });
+    expect(applyMetadataMapping({ Voice: 'two' }, mapping)).toEqual({ Narration: 'two' });
+    // A name stays the author's own field rather than becoming Narration.
+    expect(applyMetadataMapping({ Voice: 'Ines Vell' }, mapping)).toEqual({ Voice: 'Ines Vell' });
+    expect(proposeScrivenerAutomap(['Scrivener Narration'])['Scrivener Narration']).toEqual({ target: 'rt-key', key: 'Narration' });
+  });
+
   it('puts the POV character first in Character, whichever column comes first', () => {
     const mapping: Record<string, ScrivenerFieldTarget> = {
       People: { target: 'rt-key', key: 'Character' },

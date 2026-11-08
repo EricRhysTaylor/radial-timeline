@@ -1,6 +1,6 @@
 import { setAccessibleLabel, setTooltip, withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 import type { App } from 'obsidian';
-import { Setting as ObsidianSetting, normalizePath, Notice, Modal, ButtonComponent, ExtraButtonComponent, TextComponent, setIcon, TFile, TFolder } from 'obsidian';
+import { Setting as ObsidianSetting, normalizePath, Notice, ButtonComponent, ExtraButtonComponent, TextComponent, setIcon, TFile, TFolder } from 'obsidian';
 import { OnboardingModal, candidateParts } from '../../modals/OnboardingModal';
 import { OnboardingService } from '../../onboarding/OnboardingService';
 import { basename } from '../../onboarding/paths';
@@ -8,7 +8,6 @@ import { countSceneNotes, discoverOnboardingCandidates, holdsManuscriptExport } 
 import { NamePromptModal } from '../../ui/NamePromptModal';
 import type RadialTimelinePlugin from '../../main';
 import { CreateBookCopyModal } from '../../modals/CreateBookCopyModal';
-import type { BookProfile } from '../../types/settings';
 import { ModalFolderSuggest } from '../FolderSuggest';
 import { DEFAULT_BOOK_TITLE, createBookId, getBookSequenceNumber, normalizeBookProfile, isBookIncludedInSaga, getOverlappingBook } from '../../utils/books';
 import {
@@ -26,78 +25,7 @@ import { extractCountableBodyText } from '../../utils/manuscript';
 import { countWords } from '../../utils/text';
 import { t, tCount } from '../../i18n';
 import { forgetBookSubplotMemory } from '../../timetable/canvasSubplotMemory';
-
-class BookMetadataModal extends Modal {
-    constructor(
-        app: App,
-        private book: BookProfile,
-        private onSubmit: (metadata: Pick<BookProfile, 'genre' | 'projectStage' | 'publicLabel' | 'publicDescription'>) => Promise<void>
-    ) {
-        super(app);
-    }
-
-    onOpen() {
-        const { contentEl, modalEl } = this;
-        contentEl.empty();
-
-        if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '520px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-        }
-        contentEl.addClass('ert-modal-container', 'ert-stack');
-
-        const header = contentEl.createDiv({ cls: 'ert-modal-header' });
-        header.createSpan({ cls: 'ert-modal-badge', text: t('ui.generalSection.metadataBadge') });
-        header.createDiv({ cls: 'ert-modal-title', text: t('ui.generalSection.metadataTitle') });
-        header.createDiv({
-            cls: 'ert-modal-subtitle',
-            text: t('ui.generalSection.metadataSubtitle')
-        });
-
-        const form = contentEl.createDiv({ cls: 'ert-stack' });
-        let genre = this.book.genre ?? '';
-        let projectStage = this.book.projectStage ?? '';
-        let publicLabel = this.book.publicLabel ?? '';
-        let publicDescription = this.book.publicDescription ?? '';
-
-        const addText = (name: string, desc: string, value: string, onChange: (value: string) => void) => {
-            new ObsidianSetting(form)
-                .setName(name)
-                .setDesc(desc)
-                .addText(text => {
-                    text.setValue(value);
-                    text.inputEl.addClass('ert-input--full');
-                    text.onChange(onChange);
-                });
-        };
-
-        addText(t('ui.generalSection.genreName'), t('ui.generalSection.genreDesc'), genre, value => { genre = value; });
-        addText(t('ui.generalSection.projectStageName'), t('ui.generalSection.projectStageDesc'), projectStage, value => { projectStage = value; });
-        addText(t('ui.generalSection.publicLabelName'), t('ui.generalSection.publicLabelDesc'), publicLabel, value => { publicLabel = value; });
-
-        new ObsidianSetting(form)
-            .setName(t('ui.generalSection.descriptionName'))
-            .setDesc(t('ui.generalSection.descriptionDesc'))
-            .addTextArea(text => {
-                text.setValue(publicDescription);
-                text.inputEl.addClass('ert-input--full');
-                text.inputEl.rows = 4;
-                text.onChange(value => { publicDescription = value; });
-            });
-
-        const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
-        const save = async () => {
-            await this.onSubmit({ genre, projectStage, publicLabel, publicDescription });
-            this.close();
-        };
-        new ButtonComponent(actions).setButtonText(t('common.save')).setCta().onClick(() => { void save(); });
-        new ButtonComponent(actions).setButtonText(t('common.cancel')).onClick(() => this.close());
-    }
-
-    onClose() {
-        this.contentEl.empty();
-    }
-}
+import { openBookDetails } from './BookDetailsModal';
 
 export function renderGeneralSection(params: {
     app: App;
@@ -590,16 +518,7 @@ export function renderGeneralSection(params: {
                 setAccessibleLabel(button.buttonEl, t('ui.generalSection.metadataTitle'));
                 setIcon(button.buttonEl, 'tags');
                 withTooltip(button, t('ui.generalSection.metadataTooltip'));
-                button.onClick(() => {
-                    new BookMetadataModal(app, book, async metadata => {
-                        book.genre = metadata.genre?.trim() || undefined;
-                        book.projectStage = metadata.projectStage?.trim() || undefined;
-                        book.publicLabel = metadata.publicLabel?.trim() || undefined;
-                        book.publicDescription = metadata.publicDescription?.trim() || undefined;
-                        await plugin.persistBookSettings();
-                        renderBooksManager();
-                    }).open();
-                });
+                button.onClick(() => openBookDetails(plugin, book, renderBooksManager));
             });
 
             const text = new TextComponent(folderRow);

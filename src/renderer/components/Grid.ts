@@ -1,5 +1,6 @@
 import { formatRuntimeValue } from '../../utils/runtimeEstimator';
 import { t } from '../../i18n';
+import { escapeXml } from '../../utils/svg';
 import type { ProgressStageState } from '../../progress/progressSnapshot';
 
 export function renderCenterGrid(params: {
@@ -74,8 +75,7 @@ export function renderCenterGrid(params: {
         const sceneList = sceneNames.join(', ');
         tooltipText = `${stage} • ${status}: ${sceneList}`;
       }
-      // Escape special characters for HTML attribute
-      tooltipText = tooltipText.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      tooltipText = escapeXml(tooltipText);
     }
     
     return `
@@ -89,13 +89,14 @@ export function renderCenterGrid(params: {
   const header = `
     <g class="color-key-center rt-center-stage-grid">
       ${statusesForGrid.map((status, c) => {
-        const label = status === 'Todo' ? t('timeline.grid.statusHeader.todo')
+        // Translations are text too: escaped like everything written into the SVG.
+        const label = escapeXml(status === 'Todo' ? t('timeline.grid.statusHeader.todo')
           : status === 'Working' ? t('timeline.grid.statusHeader.working')
           : status === 'Completed' ? t('timeline.grid.statusHeader.completed')
-          : t('timeline.grid.statusHeader.due');
+          : t('timeline.grid.statusHeader.due'));
         const x = startXGrid + c * (cellWidth + cellGapX) + (cellWidth / 2);
         const y = headerY;
-        const tip = params.statusTooltips[status] || status;
+        const tip = escapeXml(params.statusTooltips[status] || status);
         return `
           <g class="status-header rt-tooltip-target" data-tooltip="${tip}" data-tooltip-placement="bottom">
             <text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="alphabetic" class="center-key-text status-header-letter">${label}</text>
@@ -105,7 +106,7 @@ export function renderCenterGrid(params: {
       }).join('')}
       ${(() => {
         const runtimeY = startYGrid + gridHeight + (cellGapY + 16);
-        const runtimeText = totalRuntimeSeconds > 0 ? formatRuntimeValue(totalRuntimeSeconds) : 'No Data';
+        const runtimeText = escapeXml(totalRuntimeSeconds > 0 ? formatRuntimeValue(totalRuntimeSeconds) : 'No Data');
         return `<g class="rt-runtime-display">
           <text x="${startXGrid}" y="${runtimeY}" text-anchor="start" dominant-baseline="alphabetic" class="center-key-text rt-runtime-total">${runtimeText}</text>
         </g>`;
@@ -116,11 +117,11 @@ export function renderCenterGrid(params: {
   const rows = stagesForGrid.map((stage, r) => {
     const xh = startXGrid - 12;
     const yh = startYGrid + r * (cellHeight + cellGapY) + (cellHeight / 2 + 1);
-    const stageTip = params.stageTooltips[stage] || stage;
+    const stageTip = escapeXml(params.stageTooltips[stage] || stage);
     const stageKey = stage.toLowerCase();
     const stageHeader = `
       <g class="stage-header rt-tooltip-target" data-tooltip="${stageTip}" data-tooltip-placement="right">
-        <text x="${xh}" y="${yh}" text-anchor="end" dominant-baseline="middle" class="center-key-text stage-header-letter" data-stage="${stageKey}">${stage === 'Zero' ? t('timeline.grid.stageHeader.zero') : stage === 'Author' ? t('timeline.grid.stageHeader.author') : stage === 'House' ? t('timeline.grid.stageHeader.house') : t('timeline.grid.stageHeader.press')}</text>
+        <text x="${xh}" y="${yh}" text-anchor="end" dominant-baseline="middle" class="center-key-text stage-header-letter" data-stage="${stageKey}">${escapeXml(stage === 'Zero' ? t('timeline.grid.stageHeader.zero') : stage === 'Author' ? t('timeline.grid.stageHeader.author') : stage === 'House' ? t('timeline.grid.stageHeader.house') : t('timeline.grid.stageHeader.press'))}</text>
         <rect x="${xh - 14}" y="${yh - 14}" width="28" height="28" fill="transparent" pointer-events="all" />
       </g>
     `;

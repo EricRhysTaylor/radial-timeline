@@ -1,4 +1,4 @@
-import { formatNumber } from '../../utils/svg';
+import { escapeXml, formatNumber } from '../../utils/svg';
 import { normalizeAngleSigned } from '../utils/angles';
 
 export function renderMonthSpokesAndInnerLabels(params: {
@@ -27,7 +27,7 @@ export function renderMonthSpokesAndInnerLabels(params: {
   let svg = '<g class="month-spokes">';
   
   // Render main month spokes and labels
-  months.forEach(({ name, angle }, monthIndex) => {
+  months.forEach(({ angle }, monthIndex) => {
     const isActBoundary = isActBoundaryAngle(angle);
     const isPastMonth = monthIndex < currentMonthIndex;
     
@@ -71,19 +71,19 @@ export function renderMonthSpokesAndInnerLabels(params: {
     const pixelToRadian = (5 * 2 * Math.PI) / (2 * Math.PI * innerLabelRadius);
     const startAngle = angle + pixelToRadian;
     const endAngle = angle + (Math.PI / 6);
-    const innerPathId = `innerMonthPath-${name}`;
+    const innerPathId = `innerMonthPath-${monthIndex}`; // An index: a month name (a planet calendar's own) is no id
 
     // Build the month label text - add completed count for any month with completions
     const completedCount = monthlyCompletedCounts?.[monthIndex] ?? 0;
     const sceneNames = monthlyCompletedSceneNames?.[monthIndex] ?? [];
-    const labelText = completedCount > 0
+    const labelText = escapeXml(completedCount > 0
       ? `${months[monthIndex].shortName} • ${completedCount}`
-      : months[monthIndex].shortName;
+      : months[monthIndex].shortName);
 
     // Build tooltip showing scene names if there are completions
     let tooltipAttrs = '';
     if (completedCount > 0 && sceneNames.length > 0) {
-      const tooltipText = `Completed in ${months[monthIndex].name}: ${sceneNames.join(', ')}`.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      const tooltipText = escapeXml(`Completed in ${months[monthIndex].name}: ${sceneNames.join(', ')}`);
       tooltipAttrs = ` class="rt-tooltip-target" data-tooltip="${tooltipText}" data-tooltip-placement="bottom"`;
     }
 

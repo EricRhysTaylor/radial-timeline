@@ -34,6 +34,18 @@ describe('POV → Narration alert', () => {
         expect(getAllNotificationsForHistory(dismissed).map(a => a.id)).toContain(POV_TO_NARRATION_ALERT_ID);
     });
 
+    it('is offered in a fresh vault whose scenes still say POV, and stays quiet otherwise', () => {
+        const fresh = { ...DEFAULT_SETTINGS, dismissedAlerts: [], installAlertBaseline: getAllRefactorAlertIds() };
+        const pending = new Set([POV_TO_NARRATION_ALERT_ID]);
+        expect(getActiveRefactorAlerts(fresh).map(a => a.id)).toEqual([]);
+        expect(getActiveRefactorAlerts(fresh, pending).map(a => a.id)).toEqual([POV_TO_NARRATION_ALERT_ID]);
+        expect(getAllNotificationsForHistory(fresh, pending)).toEqual([]);
+        // Once applied (dismissed) it is history, with its review list, and stays quiet.
+        const applied = { ...fresh, dismissedAlerts: [POV_TO_NARRATION_ALERT_ID] };
+        expect(getActiveRefactorAlerts(applied, pending)).toEqual([]);
+        expect(getAllNotificationsForHistory(applied).map(a => a.id)).toEqual([POV_TO_NARRATION_ALERT_ID]);
+    });
+
     it('offers no one-click rename in the Advanced YAML editor, because it rewrites scene notes', () => {
         expect(getActiveMigrations(upgraderSettings()).map(m => m.alertId)).not.toContain(POV_TO_NARRATION_ALERT_ID);
         expect(getActiveMigrations(upgraderSettings()).map(m => m.alertId)).toContain('yaml-revision-to-iteration-v6');

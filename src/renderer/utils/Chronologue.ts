@@ -222,16 +222,17 @@ export function renderOuterLabelTexts({
             labelClass = 'rt-month-label-outer rt-date-boundary rt-date-last';
         }
 
-        let labelContent = shortName;
+        // Planet calendars carry the author's own month names.
+        let labelContent = escapeXml(shortName);
         if ((isFirst || isLast) && shortName.includes('\n')) {
             const lines = shortName.split('\n');
             labelContent = lines
-                .map((line, i) => `<tspan x="0" dy="${i === 0 ? 0 : CHRONOLOGUE_BOUNDARY_LINE_SPACING}">${line}</tspan>`)
+                .map((line, i) => `<tspan x="0" dy="${i === 0 ? 0 : CHRONOLOGUE_BOUNDARY_LINE_SPACING}">${escapeXml(line)}</tspan>`)
                 .join('');
         }
 
         // Add data-earth-date so alien (planetary) mode can swap labels
-        const earthDateAttr = earthDate ? ` data-earth-date="${earthDate}"` : '';
+        const earthDateAttr = earthDate ? ` data-earth-date="${escapeXml(earthDate)}"` : '';
 
         const labelHtml = `
             <text class="${labelClass}"${earthDateAttr} ${isPastMonth ? 'opacity="0.5"' : ''}>

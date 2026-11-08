@@ -100,6 +100,12 @@ External requests occur in these areas:
 - A version check against the GitHub Releases API, once at plugin load and
   at most once a day. It carries no vault data or identity; it compares
   version numbers so the timeline can show an update indicator.
+- **Release-note images.** The release notes ship inside the plugin, but
+  their screenshots and animations load from GitHub
+  (`raw.githubusercontent.com`) whenever the notes are on screen: in Settings,
+  where the release notes appear, and in the release notes window after an
+  update. Each is a plain image request that carries no vault data; GitHub
+  sees what any image request shows, such as the IP address.
 - **Story Vault download** — only when the author chooses **Add story to
   this vault**: one GET of that story's ZIP from the public `demo-vault`
   bucket in Radial Timeline's Supabase storage. It carries no vault data or
@@ -118,9 +124,10 @@ External requests occur in these areas:
   sharing anything, and stops when **Show Community mailbox** (Settings →
   Advanced) is off or the vault is disconnected.
 
-One path above runs by default without an account or any author action: the
-version check, which carries no author data. Every other path is optional and
-author-triggered.
+Two paths above run without an account or any author choice: the version
+check, and the release-note images whenever the notes are shown. Neither
+carries author data, and neither is an AI request. Every other path is
+optional and author-triggered.
 
 ## Community Share
 

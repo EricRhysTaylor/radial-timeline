@@ -78,6 +78,8 @@ export interface TimelineSnapshot {
     customWorkingPatternsHash: string;
     dominantSubplotsHash: string;
     narrationModesHash: string;
+    /** Dismissed alerts: the settings-alert badge on the timeline follows them. */
+    dismissedAlertsHash: string;
     activeBookId: string;
     activeBookTitle: string;
     timelineScope: string;
@@ -273,6 +275,7 @@ export function createSnapshot(
         dominantSubplotsHash,
         // Each book's narration default: a saga marks every book's scenes by its own.
         narrationModesHash: narrationModesSignature(settings),
+        dismissedAlertsHash: (settings.dismissedAlerts ?? []).join('|'), // SAFE: a vault that never dismissed an alert has an empty list
         activeBookId: settings.activeBookId ?? '',
         activeBookTitle: getActiveBookTitle(settings, DEFAULT_BOOK_TITLE),
         timelineScope: settings.timelineScope ?? 'book',
@@ -358,6 +361,7 @@ export function detectChanges(
         prev.workingPatternId !== current.workingPatternId ||
         prev.customWorkingPatternsHash !== current.customWorkingPatternsHash ||
         prev.narrationModesHash !== current.narrationModesHash ||
+        prev.dismissedAlertsHash !== current.dismissedAlertsHash ||
         prev.activeBookId !== current.activeBookId ||
         prev.activeBookTitle !== current.activeBookTitle ||
         prev.timelineScope !== current.timelineScope ||

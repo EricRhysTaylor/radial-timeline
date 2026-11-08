@@ -41,6 +41,7 @@ import { isNarrationValue } from './pov';
 import { isSceneClassFrontmatter } from './sceneIds';
 import { removeTemplateFields } from './templateMerge';
 import { isPathInFolderScope } from './pathScope';
+import { getActiveBook } from './books';
 
 export const POV_TO_NARRATION_ALERT_ID = 'yaml-pov-to-narration-v8';
 
@@ -164,9 +165,35 @@ export interface PovMigrationPlan {
     kept: Array<{ file: TFile; value: string; reason: PovKeepReason }>;
 }
 
-/** Scene notes in any book folder, read from the metadata cache. */
-function bookSceneNotes(app: App, settings: RadialTimelineSettings, mappings: Mappings): Array<{ file: TFile; frontmatter: Record<string, unknown> }> {
-    const folders = settings.books.map(book => book.sourceFolder.trim()).filter(folder => folder.length > 0);
+/**
+ * Whether these scenes still have a POV the migration would rename or remove.
+ * A POV it would only list for review is no reason to offer the update.
+ * Frontmatter may be keyed as the note spells it or canonically.
+ */
+export function scenesNeedPovMigration(frontmatters: Iterable<Record<string, unknown> | undefined>, mappings?: Mappings): boolean {
+    for (const frontmatter of frontmatters) {
+        if (!frontmatter) continue;
+        const outcome = classifyPovField(frontmatter, mappings);
+        if (outcome && outcome.action !== 'keep') return true;
+    }
+    return false;
+}
+
+/**
+ * Whether the active book's scenes still carry a POV the update would change.
+ * This offers the alert in a vault whose templates never had POV, such as a
+ * fresh vault with a Story Vault edition whose scenes still use it.
+ */
+export function activeBookNeedsPovMigration(app: App, settings: RadialTimelineSettings): boolean {
+    const active = getActiveBook(settings);
+    if (!active) return false;
+    const mappings = getActiveFrontmatterMappings(settings);
+    return scenesNeedPovMigration(bookSceneNotes(app, [active.sourceFolder], mappings).map(note => note.frontmatter), mappings);
+}
+
+/** Scene notes in the given book folders, read from the metadata cache. */
+function bookSceneNotes(app: App, sourceFolders: string[], mappings: Mappings): Array<{ file: TFile; frontmatter: Record<string, unknown> }> {
+    const folders = sourceFolders.map(folder => folder.trim()).filter(folder => folder.length > 0);
     return app.vault.getMarkdownFiles().flatMap(file => {
         if (!folders.some(folder => isPathInFolderScope(file.path, folder))) return [];
         const frontmatter: Record<string, unknown> | undefined = app.metadataCache.getFileCache(file)?.frontmatter;
@@ -179,7 +206,7 @@ function bookSceneNotes(app: App, settings: RadialTimelineSettings, mappings: Ma
 export function planPovToNarration(app: App, settings: RadialTimelineSettings): PovMigrationPlan {
     const mappings = getActiveFrontmatterMappings(settings);
     const plan: PovMigrationPlan = { files: [], moves: 0, removals: 0, kept: [] };
-    for (const { file, frontmatter } of bookSceneNotes(app, settings, mappings)) {
+    for (const { file, frontmatter } of bookSceneNotes(app, settings.books.map(book => book.sourceFolder), mappings)) {
         const outcome = classifyPovField(frontmatter, mappings);
         if (!outcome) continue;
         if (outcome.action === 'keep') {

@@ -4416,7 +4416,7 @@ export const en = {
             metadataTitle: 'Book details',
             metadataSubtitle: 'How this book is narrated, plus optional metadata for stats, cohorts, and public sharing.',
             narrationName: 'Narration',
-            narrationDesc: 'How this book is narrated. Each scene\'s first listed character is its POV character; a scene narrated differently says so in its own Narration field.',
+            narrationDesc: 'How this book is narrated. A scene told differently says so in its Narration field.',
             genreName: 'Genre',
             genreDesc: 'Optional grouping such as sci-fi, romance, mystery, or memoir.',
             projectStageName: 'Project stage',

@@ -3049,13 +3049,13 @@ export class RadialTimelineView extends ItemView {
                 container.appendChild(loadingEl);
                 
                 // Render the timeline with the scene data
-                this.renderTimeline(container, this.sceneData);
+                const drawn = this.renderTimeline(container, this.sceneData);
 
                 // Remove loading message
                 loadingEl.remove();
-                
-                // Update snapshot after successful render
-                this.lastSnapshot = currentSnapshot;
+
+                // Update snapshot after a successful render only; a failed one is retried next refresh
+                this.lastSnapshot = drawn ? currentSnapshot : null;
 
                 // Re-wire search controls and highlights now that DOM is current
                 this.setupSearchControls();
@@ -3257,7 +3257,8 @@ export class RadialTimelineView extends ItemView {
         // Note: ModeToggleController keyboard listeners are cleaned up automatically via view.register()
     }
     
-    renderTimeline(container: HTMLElement, scenes: TimelineItem[]): void {
+    /** Draw the timeline. False when it failed, so the caller keeps no snapshot of it and the next refresh tries again. */
+    renderTimeline(container: HTMLElement, scenes: TimelineItem[]): boolean {
         // Clear existing content (including the subplot key's document listeners;
         // its DOM lives in the container being emptied)
         if (this._subplotKeyCleanup) {
@@ -3295,7 +3296,7 @@ export class RadialTimelineView extends ItemView {
                 const open = center.createEl('button', { text: t('ui.welcomeScreen.openTimetable'), cls: 'ert-timeline-empty__action' });
                 this.renderScope.registerDomEvent(open, 'click', () => { void this.plugin.openTimetable(); });
             }
-            return;
+            return true;
         }
         
         this.sceneData = scenes;
@@ -3319,6 +3320,8 @@ export class RadialTimelineView extends ItemView {
             
             // Render directly into the container
             const svgElement = renderSvgFromString(svgString, timelineContainer);
+            // Markup that does not parse draws nothing: say so instead of a blank view.
+            if (!svgElement) throw new Error('The timeline SVG is not well-formed, so nothing could be drawn.');
 
                 if (svgElement) {
                     // Set data-mode attribute for CSS targeting
@@ -3567,7 +3570,9 @@ export class RadialTimelineView extends ItemView {
             container.createDiv({
                 text: t('timeline.renderError')
             });
+            return false;
         }
+        return true;
     }
 
     private renderRecentMovesPanel(svg: SVGSVGElement): void {

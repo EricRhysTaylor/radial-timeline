@@ -206,13 +206,6 @@ export function getTemplateHotfixAlert(settings: RadialTimelineSettings): Refact
 }
 
 /**
- * Get active refactor alerts that need user attention
- * Filters out dismissed alerts and alerts with no pending migrations (for migration alerts).
- * Info alerts without migrations are shown until dismissed.
- * Appends a synthetic template and matter update alert when bundled-template
- * hotfixes have run and the user hasn't yet acknowledged them.
- */
-/**
  * The scene template text a field migration looks for its old key in: the
  * Core (base) template and the advanced one. A renamed Core field such as POV
  * lives in the base template.
@@ -221,18 +214,39 @@ function sceneTemplateText(settings: RadialTimelineSettings): string {
     return `${settings.sceneYamlTemplates?.base ?? ''}\n${settings.sceneYamlTemplates?.advanced ?? ''}`;
 }
 
-export function getActiveRefactorAlerts(settings: RadialTimelineSettings): RefactorAlert[] {
+/**
+ * Ids of note-migrating alerts (`migratesNotes`) whose scenes still need them,
+ * found by the caller, which can read the vault (see activeBookNeedsPovMigration).
+ * Such an alert shows even in a fresh vault, whose templates never had the old
+ * key, and even when it predates the install: a Story Vault edition can bring
+ * scenes that still use it.
+ */
+export type PendingNoteMigrations = ReadonlySet<string>;
+
+const NO_PENDING_NOTE_MIGRATIONS: PendingNoteMigrations = new Set();
+
+/**
+ * Get active refactor alerts that need user attention
+ * Filters out dismissed alerts and alerts with no pending migrations (for migration alerts).
+ * Info alerts without migrations are shown until dismissed.
+ * Appends a synthetic template and matter update alert when bundled-template
+ * hotfixes have run and the user hasn't yet acknowledged them.
+ */
+export function getActiveRefactorAlerts(settings: RadialTimelineSettings, pendingNotes: PendingNoteMigrations = NO_PENDING_NOTE_MIGRATIONS): RefactorAlert[] {
     const dismissed = settings.dismissedAlerts ?? [];
     const installBaseline = settings.installAlertBaseline ?? [];
     const remappings = getActiveFrontmatterMappings(settings) ?? {};
     const template = sceneTemplateText(settings);
 
     const staticActive = REFACTOR_ALERTS.filter(alert => {
-        // Skip alerts that predate this vault's fresh install (nothing to migrate)
-        if (installBaseline.includes(alert.id)) return false;
-
         // Skip if already dismissed
         if (dismissed.includes(alert.id)) return false;
+
+        // Scenes that still need a note migration bring its alert back, install baseline or not.
+        if (alert.migratesNotes && pendingNotes.has(alert.id)) return true;
+
+        // Skip alerts that predate this vault's fresh install (nothing to migrate)
+        if (installBaseline.includes(alert.id)) return false;
 
         // For alerts with migrations, skip if no pending migrations in template
         if (alert.migrations?.length) {
@@ -272,15 +286,15 @@ export function getActiveMigrations(settings: RadialTimelineSettings): FieldMigr
 /**
  * Check if any active alerts exist (for Version Indicator)
  */
-export function hasActiveAlerts(settings: RadialTimelineSettings): boolean {
-    return getActiveRefactorAlerts(settings).length > 0;
+export function hasActiveAlerts(settings: RadialTimelineSettings, pendingNotes: PendingNoteMigrations = NO_PENDING_NOTE_MIGRATIONS): boolean {
+    return getActiveRefactorAlerts(settings, pendingNotes).length > 0;
 }
 
 /**
  * Get all notifications for history view (including dismissed ones)
  * Returns alerts sorted by severity (critical first, then warning, then info)
  */
-export function getAllNotificationsForHistory(settings: RadialTimelineSettings): RefactorAlert[] {
+export function getAllNotificationsForHistory(settings: RadialTimelineSettings, pendingNotes: PendingNoteMigrations = NO_PENDING_NOTE_MIGRATIONS): RefactorAlert[] {
     const dismissed = settings.dismissedAlerts ?? [];
     const installBaseline = settings.installAlertBaseline ?? [];
     const template = sceneTemplateText(settings);
@@ -288,9 +302,13 @@ export function getAllNotificationsForHistory(settings: RadialTimelineSettings):
     // Filter alerts that have been dismissed OR have no pending migrations
     // (i.e., they've been processed or were non-migration notices)
     return REFACTOR_ALERTS.filter(alert => {
-        // Alerts that predate this vault's fresh install never appear anywhere,
-        // including the "notifications processed" history.
-        if (installBaseline.includes(alert.id)) return false;
+        // Alerts that predate this vault's fresh install appear nowhere, history
+        // included, unless the writer has dealt with one (a note migration its
+        // scenes brought back).
+        if (installBaseline.includes(alert.id) && !dismissed.includes(alert.id)) return false;
+
+        // A note migration its scenes still need is active, not history.
+        if (alert.migratesNotes && pendingNotes.has(alert.id) && !dismissed.includes(alert.id)) return false;
 
         // For alerts with migrations, only show in history if dismissed or migrations complete
         if (alert.migrations?.length) {

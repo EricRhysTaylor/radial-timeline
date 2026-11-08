@@ -91,9 +91,7 @@
   --rt-font-scale: 1;
   --rt-synopsis-font-scale: var(--rt-font-scale);
   --rt-number-font-scale: 1;
-  --rt-synopsis-line-height: 24px;
-  --rt-pulse-line-height: 18px;
-  --rt-synopsis-metadata-line-height: 24px;
+  /* Synopsis line heights live in LayoutConstants.ts (SYNOPSIS_LINE_HEIGHT_PX…). */
 
   /* Settings UI sizing (character-based for consistency) */
   --rt-input-width-xs: 6ch;

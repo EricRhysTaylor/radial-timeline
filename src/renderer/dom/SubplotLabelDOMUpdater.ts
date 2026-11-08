@@ -17,7 +17,7 @@ export function updateSubplotLabels(
         
         newLabels.forEach((newText, subplotName) => {
             // Find label elements for this subplot
-            const labelElements = svg.querySelectorAll(`[data-subplot-name="${subplotName}"] textPath`);
+            const labelElements = svg.querySelectorAll(`[data-subplot-name="${CSS.escape(subplotName)}"] textPath`);
             
             labelElements.forEach(element => {
                 const currentText = element.textContent || '';

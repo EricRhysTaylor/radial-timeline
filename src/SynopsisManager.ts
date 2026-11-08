@@ -22,7 +22,10 @@ import { resolveSubplotOuterRadius } from './renderer/modules/ModeRenderingHelpe
 import {
   SYNOPSIS_INSET,
   MAX_TEXT_WIDTH,
-  INNER_RADIUS
+  INNER_RADIUS,
+  SYNOPSIS_LINE_HEIGHT_PX,
+  PULSE_LINE_HEIGHT_PX,
+  SYNOPSIS_METADATA_LINE_HEIGHT_PX
 } from './renderer/layout/LayoutConstants';
 import { isBeatNote, shouldDisplayMissingWhenWarning, buildChronologicalPlacements, sceneKey } from './utils/sceneHelpers';
 import { parseWhenField } from './utils/date';
@@ -872,12 +875,11 @@ export default class SynopsisManager {
       return subplotColorResolver(subplot);
     };
 
-    const styleSource = getComputedStyle(activeDocument.documentElement);
-    const synopsisLineHeight = parseFloat(styleSource.getPropertyValue('--rt-synopsis-line-height'));
-    const pulseLineHeightRaw = parseFloat(styleSource.getPropertyValue('--rt-pulse-line-height'));
-    const metadataLineHeight = parseFloat(styleSource.getPropertyValue('--rt-synopsis-metadata-line-height'));
-    const lineHeight = synopsisLineHeight * fontScale;
-    const pulseLineHeight = pulseLineHeightRaw * fontScale;
+    // Layout constants, not stylesheet values: the first render after enabling
+    // the plugin can run before Obsidian applies styles.css.
+    const metadataLineHeight = SYNOPSIS_METADATA_LINE_HEIGHT_PX;
+    const lineHeight = SYNOPSIS_LINE_HEIGHT_PX * fontScale;
+    const pulseLineHeight = PULSE_LINE_HEIGHT_PX * fontScale;
 
     // Create the main container group
     const containerGroup = createSynopsisContainer(sceneId, scene.path);
@@ -1672,10 +1674,8 @@ export default class SynopsisManager {
     // Circle parameters scale with readability to avoid overlaps
     const metadataSpacing = 14 * fontScale; // Default horizontal gap between title and metadata block
 
-    // Get pulse line height from CSS for beats text
-    const styleSource = getComputedStyle(synopsis.ownerDocument.documentElement);
-    const pulseLineHeightRaw = parseFloat(styleSource.getPropertyValue('--rt-pulse-line-height'));
-    const pulseLineHeight = pulseLineHeightRaw * fontScale;
+    // Pulse line height for beats text, scaled for readability
+    const pulseLineHeight = PULSE_LINE_HEIGHT_PX * fontScale;
 
     // Calculate starting y-position from synopsis position
     const synopsisTransform = (synopsis as SVGElement).getAttribute('transform') || '';

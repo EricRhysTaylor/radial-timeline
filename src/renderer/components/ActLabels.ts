@@ -1,5 +1,5 @@
 import { resolveActLabel } from '../../utils/acts';
-import { formatNumber } from '../../utils/svg';
+import { escapeXml, formatNumber } from '../../utils/svg';
 
 export function renderActLabels(params: {
   numActs: number;
@@ -22,7 +22,8 @@ export function renderActLabels(params: {
     const endAngleAct = startAngleAct + arcLength;
 
     const actPathId = `actPath-${act}`;
-    const labelText = resolveActLabel(act, actLabels);
+    // An act label is the author's text, and in a saga a book title ("Pride & Prejudice").
+    const labelText = escapeXml(resolveActLabel(act, actLabels));
     svg += `
       <path id="${actPathId}" d="
         M ${formatNumber(actLabelRadius * Math.cos(startAngleAct))} ${formatNumber(actLabelRadius * Math.sin(startAngleAct))}

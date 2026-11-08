@@ -4,7 +4,7 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
-import { formatNumber } from '../../utils/svg';
+import { escapeXml, formatNumber } from '../../utils/svg';
 import { formatRuntimeValue } from '../../utils/runtimeEstimator';
 import { arcPath } from '../layout/Paths';
 import { buildNarrativeRuntimeTicks, type NarrativeRuntimeEntry } from '../utils/NarrativeRuntime';
@@ -109,7 +109,7 @@ export function renderNarrativeRuntimeOverlay(params: NarrativeRuntimeOverlayPar
         if (tick.isFirst) labelClass += ' rt-runtime-outer-label-first';
         if (tick.isLast) labelClass += ' rt-runtime-outer-label-last';
         const offset = tick.isLast ? 'startOffset="100%" text-anchor="end"' : 'startOffset="0" text-anchor="start"';
-        labelTexts += `<text class="${labelClass}"><textPath href="#${pathId}" ${offset}>${tick.label}</textPath></text>`;
+        labelTexts += `<text class="${labelClass}"><textPath href="#${pathId}" ${offset}>${escapeXml(tick.label)}</textPath></text>`;
     });
 
     return `<g class="rt-runtime-overlay">`
@@ -137,7 +137,7 @@ function renderRuntimeHead(arcRadius: number, arcEnd: number, label: string): st
     const isLeftSide = normalizedAngle > Math.PI * 0.5 && normalizedAngle < Math.PI * 1.5;
     const rotationDeg = labelAngle * 180 / Math.PI + (isLeftSide ? 180 : 0);
     const textAnchor = isLeftSide ? 'end' : 'start';
-    const text = `<text x="${labelX}" y="${labelY}" text-anchor="${textAnchor}" dominant-baseline="middle" transform="rotate(${formatNumber(rotationDeg)}, ${labelX}, ${labelY})" class="rt-runtime-tick-label">${label}</text>`;
+    const text = `<text x="${labelX}" y="${labelY}" text-anchor="${textAnchor}" dominant-baseline="middle" transform="rotate(${formatNumber(rotationDeg)}, ${labelX}, ${labelY})" class="rt-runtime-tick-label">${escapeXml(label)}</text>`;
 
     return tick + text;
 }

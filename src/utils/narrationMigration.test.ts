@@ -5,7 +5,9 @@ import type { RadialTimelineSettings } from '../types/settings';
 import { readSceneNarration } from './frontmatter';
 import { readFrontmatterText, frontmatterValues } from './frontmatterText';
 import {
+    activeBookNeedsPovMigration,
     classifyPovField,
+    scenesNeedPovMigration,
     migratePovInContent,
     planPovToNarration,
     runPovToNarration,
@@ -154,6 +156,21 @@ describe('planning and applying the migration', () => {
         expect(files[1].content).toBe(note('Class: Scene\nCharacter: [Holmes]'));
         expect(files[2].content).toBe(note('Class: Scene\nCharacter: [Holmes]\nPOV: Dr. Watson'));
         expect(files[3].content).toBe(note('Class: Beat\nPOV: first'));
+    });
+
+    it('finds scenes in the active book that still need the update, and none for a kept name', () => {
+        const books = [{ id: 'a', title: 'A', sourceFolder: 'A' }, { id: 'b', title: 'B', sourceFolder: 'B' }];
+        const app = fakeApp([
+            file('A/1.md', note('Class: Scene\nCharacter: ["[[Elizabeth Bennet]]"]\nPOV: "[[Elizabeth Bennet]]"')),
+            file('B/1.md', note('Class: Scene\nCharacter: [Ames]\nPOV: Third Officer Benwick')),
+        ]);
+        const inBook = (activeBookId: string) => activeBookNeedsPovMigration(app, { ...settings, books, activeBookId } as RadialTimelineSettings);
+        // The Story Vault case: POV repeats the first character, so the update removes it.
+        expect(inBook('a')).toBe(true);
+        // Only a name to review: nothing for the update to do, so no alert.
+        expect(inBook('b')).toBe(false);
+        expect(scenesNeedPovMigration([{ POV: 'first' }, undefined])).toBe(true);
+        expect(scenesNeedPovMigration([{ Narration: 'third' }, {}])).toBe(false);
     });
 
     it('counts a planned scene that changed before the write as failed, not done', async () => {

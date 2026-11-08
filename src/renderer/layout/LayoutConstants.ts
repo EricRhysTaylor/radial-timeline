@@ -227,6 +227,17 @@ export const SCENE_TITLE_INSET = 22;
 /** Pixels inward from subplot outer radius for synopsis text positioning */
 export const SYNOPSIS_INSET = 0;
 
+/*
+ * Synopsis line heights, before the readability scale. These lived in
+ * styles.css as custom properties and were read back with getComputedStyle,
+ * but a plugin enabled while Obsidian runs draws its first timeline before
+ * Obsidian has applied its stylesheet: every line came out at y="NaN" (about
+ * 8,800 console errors per enable). The layout owns them here instead.
+ */
+export const SYNOPSIS_LINE_HEIGHT_PX = 24;
+export const PULSE_LINE_HEIGHT_PX = 18;
+export const SYNOPSIS_METADATA_LINE_HEIGHT_PX = 24;
+
 /** Fixed radius for story beat label text path (independent of subplot outer radius) */
 export const BEAT_TEXT_RADIUS = {
   normal: 769,

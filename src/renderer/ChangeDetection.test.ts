@@ -31,6 +31,7 @@ function makeSnapshot(overrides: Partial<TimelineSnapshot> = {}): TimelineSnapsh
     subplotColorsHash: '',
     dominantSubplotsHash: '',
     narrationModesHash: '',
+    dismissedAlertsHash: '',
     gossamerRunExists: false,
     gossamerRunHash: '',
     updateAvailable: false,

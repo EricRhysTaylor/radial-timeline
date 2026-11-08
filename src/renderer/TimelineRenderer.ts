@@ -75,6 +75,7 @@ import { renderProgressRingBaseLayer } from './utils/ProgressRing';
 import { getReadabilityMultiplier, getReadabilityScale } from '../utils/readability';
 import { getVersionCheckService } from '../services/VersionCheckService';
 import { hasActiveAlerts } from '../settings/refactorAlerts';
+import { POV_TO_NARRATION_ALERT_ID, scenesNeedPovMigration } from '../utils/narrationMigration';
 import { buildTimelineSegments } from './utils/TimelineSegments';
 import { getActiveBook, getTimelineScope } from '../utils/books';
 import {
@@ -812,7 +813,9 @@ export function createTimelineSVG(
     let versionIndicatorX: number | undefined;
     try {
         const versionService = getVersionCheckService();
-        const hasSettingsAlert = hasActiveAlerts(settings);
+        // Scenes on this timeline that still say POV bring the Narration update's alert.
+        const povPending = scenesNeedPovMigration(scenes.filter(isSceneItem).map(scene => scene.rawFrontmatter));
+        const hasSettingsAlert = hasActiveAlerts(settings, new Set(povPending ? [POV_TO_NARRATION_ALERT_ID] : []));
         const versionResult = renderVersionIndicator({
             version: versionService.getCurrentVersion(),
             hasUpdate: versionService.isUpdateAvailable(),

@@ -14,6 +14,7 @@ import type RadialTimelinePlugin from '../../main';
 import type { BookProfile, NarrationMode } from '../../types/settings';
 import { isNarrationMode, NARRATION_MODES } from '../../utils/pov';
 import { markNarrationChosen } from '../../utils/books';
+import { fitSelectToSelectedLabel } from '../selectSizing';
 import { t } from '../../i18n';
 
 /** The label each narration mode wears in a dropdown. */
@@ -44,7 +45,8 @@ class BookDetailsModal extends Modal {
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
         header.createSpan({ cls: 'ert-modal-badge', text: t('ui.generalSection.metadataBadge') });
-        header.createDiv({ cls: 'ert-modal-title', text: t('ui.generalSection.metadataTitle') });
+        // The book this edits, by name: opened from the Narration section it is the active book.
+        header.createDiv({ cls: 'ert-modal-title', text: this.book.title });
         header.createDiv({
             cls: 'ert-modal-subtitle',
             text: t('ui.generalSection.metadataSubtitle')
@@ -62,10 +64,15 @@ class BookDetailsModal extends Modal {
             .setDesc(t('ui.generalSection.narrationDesc'))
             .addDropdown(dropdown => {
                 for (const mode of NARRATION_MODES) dropdown.addOption(mode, narrationModeLabel(mode));
-                dropdown.selectEl.addClass('ert-input');
+                // Sized to the chosen label, capped, so the long option labels
+                // never squeeze the description into a sliver beside them.
+                dropdown.selectEl.addClass('ert-input', 'ert-input--fit-selected');
                 dropdown.setValue(narrationMode);
+                const fit = () => fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 140, maxPx: 220, extraPx: 18 });
+                fit();
                 dropdown.onChange(value => {
                     if (isNarrationMode(value)) narrationMode = value;
+                    fit();
                 });
             });
 

@@ -7,6 +7,7 @@ import { isNarrationValue, resolveScenePov } from './pov';
 import { registerSampleBookProfiles } from './sampleVault';
 import { buildTimelineSharePayload } from '../communityShare/timelineSharePayload';
 import { buildTimelineDataExport } from '../services/export/TimelineExportService';
+import { readSceneNarration } from './frontmatter';
 
 const book = (id: string, extra: Partial<BookProfile> = {}): BookProfile => ({ id, title: id, sourceFolder: id, ...extra });
 
@@ -116,6 +117,22 @@ describe('per-book resolution', () => {
         }
         for (const value of ['Dr. Watson', '[[Elizabeth Bennet]]', '', 'zero', 'Third Officer Ames', 'first (Watson)', 'present tense', 'constructor', '李']) {
             expect(isNarrationValue(value)).toBe(false);
+        }
+    });
+
+    it('leaves the book narration in charge of POV: Third Officer Benwick (live test case)', () => {
+        const frontmatter = { Character: ['[[Anne Elliot]]', '[[Third Officer Benwick]]'], POV: 'Third Officer Benwick' };
+        const pov = readSceneNarration(frontmatter);
+        expect(pov).toBeUndefined();
+        const scene = { Character: ['Anne Elliot', 'Third Officer Benwick'], pov };
+        // Book narrated in the first person: "Anne Elliot¹", never "Anne Elliot³".
+        expect(resolveScenePov(scene, { narrationMode: 'first' })).toEqual({ syntheticEntries: [], characterMarkers: [{ index: 0, label: '1' }] });
+        // In the second person: "You², Anne Elliot".
+        expect(resolveScenePov(scene, { narrationMode: 'second' })).toEqual({ syntheticEntries: [{ text: 'You', label: '2' }], characterMarkers: [] });
+        // Handed the raw name, resolution still ignores it.
+        expect(resolveScenePov({ ...scene, pov: 'Third Officer Benwick' }, { narrationMode: 'first' }).characterMarkers).toEqual([{ index: 0, label: '1' }]);
+        for (const name of ['First Mate Lyle', 'Second Sight', 'You Know Who', 'Narrator Jones', 'One-Eyed Jack']) {
+            expect(resolveScenePov({ Character: ['Ana'], pov: name }, { narrationMode: 'first' }).characterMarkers).toEqual([{ index: 0, label: '1' }]);
         }
     });
 

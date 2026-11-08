@@ -5,8 +5,10 @@ import type { RadialTimelineSettings } from '../types/settings';
 import { readSceneNarration } from './frontmatter';
 import { readFrontmatterText, frontmatterValues } from './frontmatterText';
 import {
-    activeBookNeedsPovMigration,
+    booksNeedPovMigration,
     classifyPovField,
+    pendingNoteMigrations,
+    POV_TO_NARRATION_ALERT_ID,
     scenesNeedPovMigration,
     migratePovInContent,
     planPovToNarration,
@@ -158,19 +160,31 @@ describe('planning and applying the migration', () => {
         expect(files[3].content).toBe(note('Class: Beat\nPOV: first'));
     });
 
-    it('finds scenes in the active book that still need the update, and none for a kept name', () => {
+    it('finds scenes in any book that still need the update, and none for a kept name', () => {
+        const storyVault = file('A/1.md', note('Class: Scene\nCharacter: ["[[Elizabeth Bennet]]"]\nPOV: "[[Elizabeth Bennet]]"'));
+        const keptName = file('B/1.md', note('Class: Scene\nCharacter: [Ames]\nPOV: Third Officer Benwick'));
         const books = [{ id: 'a', title: 'A', sourceFolder: 'A' }, { id: 'b', title: 'B', sourceFolder: 'B' }];
-        const app = fakeApp([
-            file('A/1.md', note('Class: Scene\nCharacter: ["[[Elizabeth Bennet]]"]\nPOV: "[[Elizabeth Bennet]]"')),
-            file('B/1.md', note('Class: Scene\nCharacter: [Ames]\nPOV: Third Officer Benwick')),
-        ]);
-        const inBook = (activeBookId: string) => activeBookNeedsPovMigration(app, { ...settings, books, activeBookId } as RadialTimelineSettings);
-        // The Story Vault case: POV repeats the first character, so the update removes it.
-        expect(inBook('a')).toBe(true);
+        const withActive = (activeBookId: string) => ({ ...settings, books, activeBookId } as RadialTimelineSettings);
+        // The Story Vault case: POV repeats the first character, so the update
+        // removes it. The alert is offered whichever book is active, as the
+        // update covers every book (the saga timeline shows them all).
+        const app = fakeApp([storyVault, keptName]);
+        expect(booksNeedPovMigration(app, withActive('a'))).toBe(true);
+        expect(booksNeedPovMigration(app, withActive('b'))).toBe(true);
+        expect([...pendingNoteMigrations(app, withActive('b'))]).toEqual([POV_TO_NARRATION_ALERT_ID]);
         // Only a name to review: nothing for the update to do, so no alert.
-        expect(inBook('b')).toBe(false);
+        const namesOnly = fakeApp([keptName]);
+        expect(booksNeedPovMigration(namesOnly, withActive('a'))).toBe(false);
+        expect(pendingNoteMigrations(namesOnly, withActive('a')).size).toBe(0);
         expect(scenesNeedPovMigration([{ POV: 'first' }, undefined])).toBe(true);
         expect(scenesNeedPovMigration([{ Narration: 'third' }, {}])).toBe(false);
+    });
+
+    it('offers the alert exactly when applying it has something to do', () => {
+        const books = [{ id: 'a', title: 'A', sourceFolder: 'A' }, { id: 'b', title: 'B', sourceFolder: 'B' }];
+        const saga = { ...settings, books, activeBookId: 'a' } as RadialTimelineSettings;
+        const app = fakeApp([file('B/1.md', note('Class: Scene\nPOV: first'))]);
+        expect(planPovToNarration(app, saga).files.length > 0).toBe(booksNeedPovMigration(app, saga));
     });
 
     it('counts a planned scene that changed before the write as failed, not done', async () => {

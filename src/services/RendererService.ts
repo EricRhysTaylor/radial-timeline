@@ -33,6 +33,7 @@ import { PluginRendererFacade, isBeatNote, isSceneItem } from '../utils/sceneHel
 import type { CompletionEstimate } from './TimelineMetricsService';
 import { STAGE_ORDER, STAGES_FOR_GRID, STATUSES_FOR_GRID } from '../utils/constants';
 import { AuthorProgressService } from './AuthorProgressService';
+import { pendingNoteMigrations } from '../utils/narrationMigration';
 
 const STAGE_HEADER_TOOLTIPS: Record<string, string> = {
     Zero: 'Zero stage — The raw first draft. Unpolished ideas on the page, no revisions yet.',
@@ -77,7 +78,12 @@ export class RendererService {
             // AuthorProgressService not available - skip indicator
         }
         
-        return buildTimelineSVG(pluginFacade, scenes, { aprNeedsRefresh, runtimeModeActive: mode.runtime, alienModeActive: mode.alien });
+        return buildTimelineSVG(pluginFacade, scenes, {
+            aprNeedsRefresh,
+            runtimeModeActive: mode.runtime,
+            alienModeActive: mode.alien,
+            pendingNoteMigrations: pendingNoteMigrations(this.plugin.app, this.plugin.settings),
+        });
     }
 
     public generateTimeline(scenes: TimelineItem[]): RenderResult {

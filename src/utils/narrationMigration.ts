@@ -41,7 +41,6 @@ import { isNarrationValue } from './pov';
 import { isSceneClassFrontmatter } from './sceneIds';
 import { removeTemplateFields } from './templateMerge';
 import { isPathInFolderScope } from './pathScope';
-import { getActiveBook } from './books';
 
 export const POV_TO_NARRATION_ALERT_ID = 'yaml-pov-to-narration-v8';
 
@@ -180,15 +179,24 @@ export function scenesNeedPovMigration(frontmatters: Iterable<Record<string, unk
 }
 
 /**
- * Whether the active book's scenes still carry a POV the update would change.
- * This offers the alert in a vault whose templates never had POV, such as a
- * fresh vault with a Story Vault edition whose scenes still use it.
+ * Whether any book's scenes still carry a POV the update would change: the same
+ * scope as planPovToNarration, so the alert is offered exactly when applying it
+ * has something to do. This offers the alert in a vault whose templates never
+ * had POV, such as a fresh vault with a Story Vault edition whose scenes still
+ * use it, whichever book is active.
  */
-export function activeBookNeedsPovMigration(app: App, settings: RadialTimelineSettings): boolean {
-    const active = getActiveBook(settings);
-    if (!active) return false;
+export function booksNeedPovMigration(app: App, settings: RadialTimelineSettings): boolean {
     const mappings = getActiveFrontmatterMappings(settings);
-    return scenesNeedPovMigration(bookSceneNotes(app, [active.sourceFolder], mappings).map(note => note.frontmatter), mappings);
+    return scenesNeedPovMigration(bookSceneNotes(app, settings.books.map(book => book.sourceFolder), mappings).map(note => note.frontmatter), mappings);
+}
+
+/**
+ * The note migrations still pending in this vault, for refactor alerts. The
+ * timeline's SETTINGS ALERT badge and the alert list in Settings both read
+ * this, so the badge never points at a Settings page with nothing on it.
+ */
+export function pendingNoteMigrations(app: App, settings: RadialTimelineSettings): Set<string> {
+    return new Set(booksNeedPovMigration(app, settings) ? [POV_TO_NARRATION_ALERT_ID] : []);
 }
 
 /** Scene notes in the given book folders, read from the metadata cache. */

@@ -33,7 +33,7 @@ import {
     type RefactorAlert
 } from './refactorAlerts';
 import { applyPovToNarration, renderPovReviewList } from './povToNarrationAlert';
-import { activeBookNeedsPovMigration, POV_TO_NARRATION_ALERT_ID } from '../utils/narrationMigration';
+import { pendingNoteMigrations, POV_TO_NARRATION_ALERT_ID } from '../utils/narrationMigration';
 import { acknowledgeHotfixHistory } from '../utils/pandocBundledLayouts';
 import { getTemplateParts } from '../utils/yamlTemplateNormalize';
 import { getCredential } from '../ai/credentials/credentials';
@@ -357,8 +357,8 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
      * Active alerts are shown with full interaction; dismissed alerts shown in history.
      */
     private renderRefactorAlerts(containerEl: HTMLElement): void {
-        // Scenes in the active book that still say POV offer the Narration update, templates or not.
-        const pendingNotes = new Set(activeBookNeedsPovMigration(this.app, this.plugin.settings) ? [POV_TO_NARRATION_ALERT_ID] : []);
+        // Scenes in any book that still say POV offer the Narration update, templates or not.
+        const pendingNotes = pendingNoteMigrations(this.app, this.plugin.settings);
         const activeAlerts = getActiveRefactorAlerts(this.plugin.settings, pendingNotes);
         const historyAlerts = getAllNotificationsForHistory(this.plugin.settings, pendingNotes);
         const hasActive = activeAlerts.length > 0;

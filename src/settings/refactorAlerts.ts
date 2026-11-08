@@ -208,7 +208,7 @@ function sceneTemplateText(settings: RadialTimelineSettings): string {
 
 /**
  * Ids of note-migrating alerts (`migratesNotes`) whose scenes still need them,
- * found by the caller, which can read the vault (see activeBookNeedsPovMigration).
+ * found by the caller, which can read the vault (see pendingNoteMigrations).
  * Such an alert shows even in a fresh vault, whose templates never had the old
  * key, and even when it predates the install: a Story Vault edition can bring
  * scenes that still use it.

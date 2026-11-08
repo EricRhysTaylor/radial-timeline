@@ -25,7 +25,7 @@ import { addSceneIntakeTemplate } from './sceneIntakeTemplate';
 import { cardColorStanding, directoryEntryNamed, paletteChoices, type CardColorStanding, type DirectoryEntry } from './canvasSubplotDirectory';
 import { cardHexReader, paletteHexes, readCanvasSubplots } from './CanvasSubplotMenu';
 import { CanvasNewSubplotModal } from './CanvasNewSubplotModal';
-import { canvasChoicesNow, forgetCards, subplotOfCard } from './canvasSubplotMemory';
+import { canvasChoicesNow, forgetCards, markSubplotsMade, saveCanvasSubplotMemory, subplotOfCard } from './canvasSubplotMemory';
 import { filesIndexed } from '../utils/metadataCacheWait';
 
 /** Minimal, runtime-checked surface of Obsidian's Canvas view. */
@@ -584,7 +584,8 @@ export class CanvasConvertModal extends ErtModal {
             this.busy = true;
             // Nothing in the dialog changes while the cards become notes.
             for (const control of this.contentEl.findAll('button, input, select')) (control as HTMLButtonElement | HTMLInputElement | HTMLSelectElement).disabled = true;
-            void this.convert().finally(() => { this.busy = false; this.close(); });
+            // The timeline waits for the whole batch, then draws once.
+            void this.plugin.getTimelineService().holdRefreshes(() => this.convert()).finally(() => { this.busy = false; this.close(); });
         });
     }
 
@@ -615,31 +616,37 @@ export class CanvasConvertModal extends ErtModal {
         return repaints;
     }
 
-    /**
-     * The cards whose scenes were written: new subplots among them keep their
-     * chosen color as their own when they need one (on the book's profile),
-     * and the card menu forgets the cards, which are cards no longer.
-     */
-    private async settleNewSubplots(book: BookProfile, initial: StoryCanvasData, ownNew: Map<string, string>, cards: CanvasTextCard[], plans: Map<string, CardColorSubplot>, paths: Map<string, string>): Promise<void> {
-        const written = cards.filter(card => paths.has(card.id));
-        const created = new Set(written.flatMap(card => {
+    /** The new subplots whose scenes were written. */
+    private createdSubplots(cards: CanvasTextCard[], plans: Map<string, CardColorSubplot>, paths: Map<string, string>): Set<string> {
+        return new Set(cards.filter(card => paths.has(card.id)).flatMap(card => {
             const row = this.rowOf(card);
             const plan = row ? plans.get(row.key) : undefined;
             return plan && (plan.kind === 'new' || plan.kind === 'sharesNew') ? [plan.subplot] : [];
         }));
+    }
+
+    /** New subplots whose scenes were written keep their chosen color as their own when they need one, on the book's profile. */
+    private async keepNewSubplotColors(book: BookProfile, ownNew: Map<string, string>, created: Set<string>): Promise<void> {
         const kept = [...ownNew].filter(([subplot]) => created.has(subplot));
+        if (!kept.length) return;
+        for (const [subplot, hex] of kept) setOwnSubplotColor(book, subplot, hex);
+        await this.plugin.saveSettings();
+        this.plugin.setCSSColorVariables();
+    }
+
+    /**
+     * Once the Canvas links the new notes: the card menu forgets the cards,
+     * which are cards no longer, and the subplots that now have scenes stop
+     * counting as new wherever a choice names them.
+     */
+    private async forgetConvertedCards(book: BookProfile, initial: StoryCanvasData, converted: string[], made: Set<string>): Promise<void> {
         const record = this.plugin.settings.canvasSubplotMemory;
         const open = canvasChoicesNow(record, this.canvasPath, canvasTextCards(initial).map(card => ({ id: card.id, hex: this.cardHexOf(cardColor(card)) })));
-        const remembered = written.filter(card => open.some(choice => choice.cards?.includes(card.id)));
-        if (!kept.length && !remembered.length) return;
-        for (const [subplot, hex] of kept) setOwnSubplotColor(book, subplot, hex);
-        if (remembered.length) {
-            const next = forgetCards(record, this.canvasPath, open, remembered.map(card => card.id));
-            if (next) this.plugin.settings.canvasSubplotMemory = next;
-            else delete this.plugin.settings.canvasSubplotMemory;
-        }
-        await this.plugin.saveSettings();
-        if (kept.length) this.plugin.setCSSColorVariables();
+        const remembered = converted.filter(id => open.some(choice => choice.cards?.includes(id)));
+        const forgotten = remembered.length ? forgetCards(record, this.canvasPath, open, remembered) : record;
+        const next = markSubplotsMade(forgotten, book.id, [...made]);
+        if (JSON.stringify(next) === JSON.stringify(record)) return;
+        await saveCanvasSubplotMemory(this.plugin, next);
     }
 
     /** Each card becomes a finished, numbered scene at the end of its act, in one write. */
@@ -735,6 +742,7 @@ export class CanvasConvertModal extends ErtModal {
             }
             if (!this.canvasIsOpen() || JSON.stringify(initial) !== JSON.stringify(this.canvas.getData())) throw new Error(t('ui.canvasSketch.changed'));
             let repaints = new Map<string, string>();
+            let created = new Set<string>();
             if (mode === 'scenes') {
                 if (this.ringsBook !== book.id) throw new Error(t('ui.canvasSketch.readingSubplots'));
                 const outcome = this.outcome();
@@ -745,7 +753,8 @@ export class CanvasConvertModal extends ErtModal {
                     await this.writeScenes(book, cards, folder, paths, outcome.plans);
                 } finally {
                     // Subplots whose scenes were written keep their color even if a later scene failed.
-                    await this.settleNewSubplots(book, initial, outcome.ownNew, cards, outcome.plans, paths);
+                    created = this.createdSubplots(cards, outcome.plans, paths);
+                    await this.keepNewSubplotColors(book, outcome.ownNew, created);
                 }
             } else await this.writeSketches(book, cards, folder, paths, ranked);
             // Never replace cards if the author (or another plugin) changed the map while files were being created.
@@ -768,16 +777,18 @@ export class CanvasConvertModal extends ErtModal {
                 throw error;
             }
             new Notice(mode === 'scenes' ? t('ui.canvasSketch.doneScenes', { scenes: tCount('scene', paths.size) }) : t('ui.canvasSketch.done', { count: paths.size }), 6000);
+            // Only now that the Canvas links the new notes does the card menu forget their cards.
+            const existing = this.ringsBook === book.id ? this.directory.filter(entry => !entry.pending).map(entry => entry.name) : [];
+            await this.forgetConvertedCards(book, initial, [...paths.keys()], new Set([...created, ...existing]));
             // Draw the timeline once, complete: only after Obsidian has read every new note's properties.
-            if (!await this.indexed([...paths.values()])) {
+            const indexed = await this.indexed([...paths.values()]);
+            if (mode === 'scenes') await this.plugin.setActiveBookId(book.id);
+            if (!indexed) {
                 new Notice(t('ui.canvasSketch.stillIndexing'), 10000);
                 return;
             }
             this.plugin.refreshTimelineIfNeeded(null);
-            if (mode === 'scenes') {
-                await this.plugin.setActiveBookId(book.id);
-                await this.plugin.getTimelineService().activateView();
-            }
+            if (mode === 'scenes') await this.plugin.getTimelineService().activateView();
         } catch (error) {
             console.error('[Canvas sketches]', error);
             let retainedRanks = paths.size > 0 && ranked.length > 0;

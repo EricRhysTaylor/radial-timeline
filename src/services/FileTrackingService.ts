@@ -2,8 +2,6 @@ import type RadialTimelinePlugin from '../main';
 import { TFile, TAbstractFile, MarkdownView } from 'obsidian';
 import { bindToAllDocuments, getOpenDocuments } from '../utils/documents';
 import { rebaseStoryImageChoices } from '../timetable/storyImageStore';
-import { dropCanvasSubplotMemory, rebaseCanvasSubplotMemory } from '../timetable/canvasSubplotMemory';
-import type { RadialTimelineSettings } from '../types/settings';
 
 export class FileTrackingService {
     private modalStateObservers = new Map<Document, MutationObserver>();
@@ -81,10 +79,7 @@ export class FileTrackingService {
             }
         }));
 
-        this.plugin.registerEvent(this.plugin.app.vault.on('delete', (file) => {
-            this.updateCanvasSubplotMemory(memory => dropCanvasSubplotMemory(memory, file.path));
-            this.plugin.refreshTimelineIfNeeded(file);
-        }));
+        this.plugin.registerEvent(this.plugin.app.vault.on('delete', (file) => this.plugin.refreshTimelineIfNeeded(file)));
         this.plugin.registerEvent(this.plugin.app.vault.on('rename', (file, oldPath) => this.handleFileRename(file, oldPath)));
 
         this.plugin.registerEvent(this.plugin.app.workspace.on('css-change', () => {
@@ -157,17 +152,6 @@ export class FileTrackingService {
             .some((doc) => this.isModalOpen(doc) || this.isSettingsTabOpen(doc));
     }
 
-    /** Keep the Canvas card menu's choices with their Canvases as files move or go. */
-    private updateCanvasSubplotMemory(change: (memory: RadialTimelineSettings['canvasSubplotMemory']) => RadialTimelineSettings['canvasSubplotMemory']): void {
-        const memory = this.plugin.settings.canvasSubplotMemory;
-        if (!memory) return;
-        const next = change(memory);
-        if (JSON.stringify(next) === JSON.stringify(memory)) return;
-        if (next) this.plugin.settings.canvasSubplotMemory = next;
-        else delete this.plugin.settings.canvasSubplotMemory;
-        void this.plugin.saveSettings().catch(error => console.error('Could not update the subplots given to Canvas cards:', error));
-    }
-
     private handleFileRename(file: TAbstractFile, oldPath: string): void {
         const choices = this.plugin.settings.storyImageChoices;
         if (choices) {
@@ -177,7 +161,6 @@ export class FileTrackingService {
                 void this.plugin.saveSettings().catch(error => console.error('Could not update card image paths:', error));
             }
         }
-        this.updateCanvasSubplotMemory(memory => rebaseCanvasSubplotMemory(memory, oldPath, file.path));
         void this.plugin.getWritingSessionService().followSceneRename(oldPath, file.path).catch(error => console.error('Could not update writing session paths:', error));
         if (this.plugin.openScenePaths.has(oldPath)) {
             this.plugin.openScenePaths.delete(oldPath);

@@ -2937,6 +2937,8 @@ export class RadialTimelineView extends ItemView {
 
     refreshTimeline() {
         if (!this.plugin) return;
+        // A batch of new notes is being written: draw once it is complete.
+        if (this.plugin.getTimelineService().deferRefresh()) return;
 
         if (getTimelineScope(this.plugin.settings) === 'saga' && this.currentMode !== 'narrative') {
             this.currentMode = 'narrative';

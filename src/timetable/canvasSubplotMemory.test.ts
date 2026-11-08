@@ -6,9 +6,13 @@ import {
     dropCanvasSubplotMemory,
     forgetBookSubplotMemory,
     forgetCards,
+    keepCanvases,
+    markSubplotsMade,
     normalizeCanvasSubplotMemory,
     rebaseCanvasSubplotMemory,
     rememberCardSubplot,
+    rememberedCanvases,
+    reviseCanvasChoices,
     saveCanvasSubplotMemory,
     subplotOfCard,
     waitingSubplots,
@@ -16,49 +20,54 @@ import {
 
 const record = (canvases: Record<string, CanvasSubplotChoice[]>) => ({ schemaVersion: 1 as const, canvases });
 const books = new Set(['book', 'other']);
-const letters = (cards: string[], color = '#abcdef'): CanvasSubplotChoice => ({ bookId: 'book', subplot: 'Letters', color, cards });
+/** Letters was named with New subplot…; Romance is a subplot the book has. */
+const letters = (cards: string[], color = '#abcdef'): CanvasSubplotChoice => ({ bookId: 'book', subplot: 'Letters', color, cards, created: true });
 const romance = (cards: string[], color = '#000003'): CanvasSubplotChoice => ({ bookId: 'book', subplot: 'Romance', color, cards });
 
 describe('The subplots the card menu gave Canvas cards, as stored', () => {
     it('keeps valid choices, gives a card claimed twice to the later choice, and drops choices of removed books', () => {
         expect(normalizeCanvasSubplotMemory({ schemaVersion: 1, canvases: {
             'Ideas.canvas': [
-                { bookId: 'book', subplot: ' Romance ', color: '#000003', cards: ['a', 'b', 'a', '', 7] },
-                { bookId: 'book', subplot: 'Letters', color: '#ABCDEF', cards: ['b'] },
+                { bookId: 'book', subplot: ' Romance ', color: '#000003', cards: ['a', 'b', 'a', '', 7], created: 'yes' },
+                { bookId: 'book', subplot: 'Letters', color: '#ABCDEF', cards: ['b'], created: true },
                 { bookId: 'gone', subplot: 'Storm', color: '#123456', cards: ['c'] },
                 { bookId: 'book', subplot: 'Empty', color: '#123456', cards: [] },
                 { bookId: 'book', subplot: 'Red', color: 'red', cards: ['d'] },
                 'junk',
             ],
             'Removed book.canvas': [{ bookId: 'gone', subplot: 'Storm', color: '#123456', cards: ['c'] }],
-        } }, undefined, books)).toEqual(record({ 'Ideas.canvas': [romance(['a']), letters(['b'])] }));
-        expect(normalizeCanvasSubplotMemory({ schemaVersion: 1, canvases: {} }, undefined, books)).toBeUndefined();
-        expect(normalizeCanvasSubplotMemory(undefined, undefined, books)).toBeUndefined();
+        } }, undefined, books)).toEqual({ record: record({ 'Ideas.canvas': [romance(['a']), letters(['b'])] }), legacyMerged: true });
+        expect(normalizeCanvasSubplotMemory({ schemaVersion: 1, canvases: {} }, undefined, books).record).toBeUndefined();
+        expect(normalizeCanvasSubplotMemory(undefined, undefined, books).record).toBeUndefined();
     });
 
-    it('carries the first record’s new subplots in, standing for the cards on their Canvas that wear their color', () => {
+    it('carries the first record’s new subplots in as New subplot… choices, standing for the cards on their Canvas that wear their color', () => {
         const first = { schemaVersion: 1, canvases: { 'Ideas.canvas': [{ bookId: 'book', name: 'Letters', color: '#ABCDEF' }, { bookId: 'gone', name: 'Storm', color: '#123456' }] } };
-        const memory = normalizeCanvasSubplotMemory(undefined, first, books);
-        expect(memory).toEqual(record({ 'Ideas.canvas': [{ bookId: 'book', subplot: 'Letters', color: '#abcdef' }] }));
-        // Read against the Canvas, it holds the cards wearing its color that no other choice holds.
+        const { record: memory, legacyMerged } = normalizeCanvasSubplotMemory(undefined, first, books);
+        expect(legacyMerged).toBe(true);
+        expect(memory).toEqual(record({ 'Ideas.canvas': [{ bookId: 'book', subplot: 'Letters', color: '#abcdef', created: true }] }));
+        // Read against the Canvas, it holds the cards wearing its color.
         expect(canvasChoicesNow(memory, 'Ideas.canvas', [{ id: 'a', hex: '#abcdef' }, { id: 'b', hex: '#000001' }, { id: 'c', hex: '#abcdef' }]))
             .toEqual([letters(['a', 'c'])]);
         // A name the current record already gives a card on that Canvas is not carried twice.
-        expect(normalizeCanvasSubplotMemory(record({ 'Ideas.canvas': [letters(['a'], '#000009')] }), first, books)).toEqual(record({ 'Ideas.canvas': [letters(['a'], '#000009')] }));
+        expect(normalizeCanvasSubplotMemory(record({ 'Ideas.canvas': [letters(['a'], '#000009')] }), first, books).record).toEqual(record({ 'Ideas.canvas': [letters(['a'], '#000009')] }));
     });
 
-    it('keeps a record from a newer Radial Timeline exactly as found, reads it as empty, and refuses to write it', () => {
+    it('keeps a record from a newer Radial Timeline exactly as found, leaves the first record for it, reads it as empty, and refuses to write it', () => {
         const newer = { schemaVersion: 2, cards: { 'Ideas.canvas#a': { subplot: 'Letters' } } };
-        expect(normalizeCanvasSubplotMemory(newer, undefined, books)).toBe(newer);
+        const first = { schemaVersion: 1, canvases: { 'Ideas.canvas': [{ bookId: 'book', name: 'Letters', color: '#abcdef' }] } };
+        expect(normalizeCanvasSubplotMemory(newer, first, books)).toEqual({ record: newer, legacyMerged: false });
         expect(canvasChoicesNow(newer, 'Ideas.canvas', [{ id: 'a', hex: '#abcdef' }])).toEqual([]);
+        expect(rememberedCanvases(newer)).toEqual([]);
         expect(rebaseCanvasSubplotMemory(newer, 'Ideas.canvas', 'Moved.canvas')).toBe(newer);
         expect(dropCanvasSubplotMemory(newer, 'Ideas.canvas')).toBe(newer);
         expect(forgetBookSubplotMemory(newer, 'book')).toBe(newer);
-        expect(() => rememberCardSubplot(newer, 'Ideas.canvas', [], { bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['a'] })).toThrow(/newer version/);
+        expect(reviseCanvasChoices(newer, 'Ideas.canvas', [])).toBe(newer);
+        expect(() => rememberCardSubplot(newer, 'Ideas.canvas', [], { bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['a'], created: true })).toThrow(/newer version/);
     });
 });
 
-describe('Reading the choices on the open Canvas', () => {
+describe('Reading the choices on a Canvas', () => {
     it('keeps the cards still there that still wear the color the menu gave them', () => {
         const memory = record({ 'Ideas.canvas': [romance(['a', 'b', 'c']), letters(['d'])] });
         // b was recolored by hand; c was deleted.
@@ -69,36 +78,71 @@ describe('Reading the choices on the open Canvas', () => {
         expect(subplotOfCard(now, 'a', 'other')).toBeNull();
         expect(canvasChoicesNow(memory, 'Other.canvas', [{ id: 'a', hex: '#000003' }])).toEqual([]);
     });
+
+    it('gives a copied card, new id and same color, the one choice of that color on the Canvas', () => {
+        const memory = record({ 'Ideas.canvas': [romance(['a']), letters(['d'])] });
+        expect(canvasChoicesNow(memory, 'Ideas.canvas', [{ id: 'a', hex: '#000003' }, { id: 'a copy', hex: '#000003' }, { id: 'd', hex: '#abcdef' }]))
+            .toEqual([romance(['a', 'a copy']), letters(['d'])]);
+        // Two choices share the color (ring order moved it): a copy matches neither.
+        const shared = record({ 'Ideas.canvas': [romance(['a']), { bookId: 'book', subplot: 'Family', color: '#000003', cards: ['f'] }] });
+        expect(canvasChoicesNow(shared, 'Ideas.canvas', [{ id: 'a', hex: '#000003' }, { id: 'f', hex: '#000003' }, { id: 'copy', hex: '#000003' }]))
+            .toEqual([romance(['a']), { bookId: 'book', subplot: 'Family', color: '#000003', cards: ['f'] }]);
+    });
+
+    it('stores a Canvas’s choices as its cards stand, and leaves the record alone when nothing changed', () => {
+        const memory = record({ 'Ideas.canvas': [letters(['a'])], 'Other.canvas': [romance(['b'])] });
+        expect(reviseCanvasChoices(memory, 'Ideas.canvas', [{ id: 'a', hex: '#abcdef' }])).toBe(memory);
+        // Its cards were recolored or deleted, or became sketches: Letters waits no longer.
+        expect(reviseCanvasChoices(memory, 'Ideas.canvas', [{ id: 'a', hex: '#000009' }])).toEqual(record({ 'Other.canvas': [romance(['b'])] }));
+        expect(reviseCanvasChoices(memory, 'Unknown.canvas', [])).toBe(memory);
+    });
 });
 
 describe('A book’s new subplots across its Canvases', () => {
-    const exists = (name: string) => ['main plot', 'mara'].includes(name.toLowerCase());
-    it('offers a new subplot named on one Canvas on every Canvas of the book, so no other Canvas can take its name or color', () => {
+    const exists = (name: string) => ['main plot', 'mara', 'love'].includes(name.toLowerCase());
+    it('offers a subplot named with New subplot… on one Canvas on every Canvas of the book', () => {
         const memory = record({
             'X.canvas': [letters(['x1'], '#000005')],
             'Y.canvas': [{ bookId: 'book', subplot: 'Mara', color: '#000002', cards: ['y1'] }],
-            'Z.canvas': [{ bookId: 'other', subplot: 'Dreams', color: '#000006', cards: ['z1'] }],
+            'Z.canvas': [{ bookId: 'other', subplot: 'Dreams', color: '#000006', cards: ['z1'], created: true }],
         });
         expect(waitingSubplots(memory, 'book', exists, { canvasPath: 'Y.canvas', choices: [] })).toEqual([{ name: 'Letters', color: '#000005' }]);
     });
+    it('never offers a renamed or removed subplot as new: only New subplot… choices name new subplots', () => {
+        // Romance was renamed Love in the scenes; the cards given Romance name no new subplot.
+        const memory = record({ 'X.canvas': [romance(['x1'])], 'Y.canvas': [{ bookId: 'book', subplot: 'Main Plot', color: '#000001', cards: ['y1'] }] });
+        expect(waitingSubplots(memory, 'book', name => name === 'Love', { canvasPath: 'Y.canvas', choices: [] })).toEqual([]);
+    });
     it('reads the open Canvas as it stands now, and names each new subplot once', () => {
-        const memory = record({ 'X.canvas': [letters(['x1'])], 'Y.canvas': [letters(['y1']), romance(['y2'], '#000009')] });
-        // On Y, the Romance card was recolored by hand, so Y offers only what its cards still say.
+        const memory = record({ 'X.canvas': [letters(['x1'])], 'Y.canvas': [letters(['y1']), { ...romance(['y2'], '#000009'), created: true, subplot: 'Storm' }] });
+        // On Y, the Storm card was recolored by hand, so Y offers only what its cards still say.
         expect(waitingSubplots(memory, 'book', exists, { canvasPath: 'Y.canvas', choices: [letters(['y1'])] })).toEqual([{ name: 'Letters', color: '#abcdef' }]);
         expect(waitingSubplots(memory, 'book', name => name === 'Letters' || exists(name), { canvasPath: 'Y.canvas', choices: [letters(['y1'])] })).toEqual([]);
+    });
+    it('stops counting a new subplot as new on every Canvas once it has scenes, so a later rename never brings it back', () => {
+        const memory = record({ 'X.canvas': [letters(['x1'])], 'Y.canvas': [letters(['y1']), romance(['y2'])] });
+        const made = markSubplotsMade(memory, 'book', ['letters']);
+        expect(made).toEqual(record({
+            'X.canvas': [{ bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['x1'] }],
+            'Y.canvas': [{ bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['y1'] }, romance(['y2'])],
+        }));
+        expect(waitingSubplots(made, 'book', () => false, { canvasPath: 'X.canvas', choices: [] })).toEqual([]);
+        expect(markSubplotsMade(memory, 'book', ['Romance'])).toBe(memory);
     });
 });
 
 describe('Remembering and forgetting cards', () => {
     it('gives cards a subplot, taking them from any other choice, and joins a choice of the same subplot and color', () => {
         const open = [romance(['a', 'b']), letters(['c'])];
-        expect(rememberCardSubplot(record({ 'Ideas.canvas': open }), 'Ideas.canvas', open, { bookId: 'book', subplot: 'letters', color: '#ABCDEF', cards: ['a'] }))
+        expect(rememberCardSubplot(record({ 'Ideas.canvas': open }), 'Ideas.canvas', open, { bookId: 'book', subplot: 'letters', color: '#ABCDEF', cards: ['a'], created: false }))
             .toEqual(record({ 'Ideas.canvas': [romance(['b']), letters(['c', 'a'])] }));
-        expect(rememberCardSubplot(undefined, 'New.canvas', [], { bookId: 'book', subplot: 'Storm', color: '#123456', cards: ['z'] }))
-            .toEqual(record({ 'New.canvas': [{ bookId: 'book', subplot: 'Storm', color: '#123456', cards: ['z'] }] }));
-        expect(() => rememberCardSubplot(undefined, 'New.canvas', [], { bookId: 'book', subplot: 'Storm', color: 'red', cards: ['z'] })).toThrow();
+        expect(rememberCardSubplot(undefined, 'New.canvas', [], { bookId: 'book', subplot: 'Storm', color: '#123456', cards: ['z'], created: true }))
+            .toEqual(record({ 'New.canvas': [{ bookId: 'book', subplot: 'Storm', color: '#123456', cards: ['z'], created: true }] }));
+        expect(rememberCardSubplot(undefined, 'New.canvas', [], { bookId: 'book', subplot: 'Mara', color: '#000002', cards: ['z'], created: false }))
+            .toEqual(record({ 'New.canvas': [{ bookId: 'book', subplot: 'Mara', color: '#000002', cards: ['z'] }] }));
+        expect(() => rememberCardSubplot(undefined, 'New.canvas', [], { bookId: 'book', subplot: 'Storm', color: 'red', cards: ['z'], created: true })).toThrow();
     });
-    it('forgets cards that became scenes, and drops an empty Canvas and record', () => {
+    it('forgets cards that became notes, and drops an empty Canvas and record', () => {
         const open = [romance(['a', 'b']), letters(['c'])];
         expect(forgetCards(record({ 'Ideas.canvas': open }), 'Ideas.canvas', open, ['a', 'c'])).toEqual(record({ 'Ideas.canvas': [romance(['b'])] }));
         expect(forgetCards(record({ 'Ideas.canvas': [letters(['c'])] }), 'Ideas.canvas', [letters(['c'])], ['c'])).toBeUndefined();
@@ -111,12 +155,16 @@ describe('Choices follow their Canvases and books', () => {
         expect(rebaseCanvasSubplotMemory(memory, 'Maps/Ideas.canvas', 'Old.canvas')).toEqual(record({ 'Old.canvas': [letters(['a'])], 'Maps/Plot.canvas': [romance(['b'])] }));
         expect(rebaseCanvasSubplotMemory(memory, 'Maps', 'Canvases')).toEqual(record({ 'Canvases/Ideas.canvas': [letters(['a'])], 'Canvases/Plot.canvas': [romance(['b'])], 'Old.canvas': [romance(['stale'])] }));
     });
-    it('drops a deleted Canvas, or every Canvas under a deleted folder', () => {
+    it('drops a deleted Canvas, every Canvas under a deleted folder, and Canvases no longer in the vault', () => {
         expect(dropCanvasSubplotMemory(memory, 'Old.canvas')).toEqual(record({ 'Maps/Ideas.canvas': [letters(['a'])], 'Maps/Plot.canvas': [romance(['b'])] }));
         expect(dropCanvasSubplotMemory(memory, 'Maps')).toEqual(record({ 'Old.canvas': [romance(['stale'])] }));
         expect(dropCanvasSubplotMemory(record({ 'Old.canvas': [romance(['stale'])] }), 'Old.canvas')).toBeUndefined();
         // A file whose name starts like a folder is not inside it.
-        expect(dropCanvasSubplotMemory(memory, 'Map')).toEqual(memory);
+        expect(dropCanvasSubplotMemory(memory, 'Map')).toBe(memory);
+        // Deleted outside Obsidian: found missing when Obsidian starts.
+        expect(keepCanvases(memory, path => path !== 'Maps/Plot.canvas')).toEqual(record({ 'Maps/Ideas.canvas': [letters(['a'])], 'Old.canvas': [romance(['stale'])] }));
+        expect(keepCanvases(memory, () => true)).toBe(memory);
+        expect(rememberedCanvases(memory)).toEqual(['Maps/Ideas.canvas', 'Maps/Plot.canvas', 'Old.canvas']);
     });
     it('drops a removed book’s choices', () => {
         const mixed = record({ 'Ideas.canvas': [letters(['a']), { bookId: 'other', subplot: 'Dreams', color: '#000006', cards: ['b'] }] });

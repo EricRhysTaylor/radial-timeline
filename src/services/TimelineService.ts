@@ -21,10 +21,38 @@ export class TimelineService implements Disposable {
     private plugin: RadialTimelinePlugin;
     private refreshTimeout: number | null = null;
     private pendingRequest: RenderRequest | null = null;
+    /** Batches of notes being written; while any is, timeline refreshes wait. */
+    private holds = 0;
+    private refreshWaiting = false;
 
     constructor(app: App, plugin: RadialTimelinePlugin) {
         this.app = app;
         this.plugin = plugin;
+    }
+
+    /**
+     * Hold every timeline refresh while `work` writes a batch of notes, then
+     * refresh once, so an open timeline draws the batch once, complete,
+     * rather than once per note as Obsidian reads each.
+     */
+    async holdRefreshes<T>(work: () => Promise<T>): Promise<T> {
+        this.holds++;
+        try {
+            return await work();
+        } finally {
+            this.holds--;
+            if (this.holds === 0 && this.refreshWaiting) {
+                this.refreshWaiting = false;
+                this.scheduleRender([ChangeType.SCENE_DATA], 0);
+            }
+        }
+    }
+
+    /** True while a batch is held: the refresh asked for now runs once the batch is done. */
+    deferRefresh(): boolean {
+        if (this.holds === 0) return false;
+        this.refreshWaiting = true;
+        return true;
     }
 
     getTimelineViews(): RadialTimelineView[] {

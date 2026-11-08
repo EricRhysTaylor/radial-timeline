@@ -7,6 +7,7 @@ import type { StoryCanvasData } from './canvasSketches';
 import type { TimetableRow } from './timetableModel';
 import type { SubplotColor } from '../renderer/utils/subplotColors';
 import type { CardColorStanding, DirectoryEntry } from './canvasSubplotDirectory';
+import type { CanvasSubplotMemoryRecord } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 
 /** Palette slot N paints `#0000NN` (1-based), so test colors read at a glance. */
@@ -169,26 +170,58 @@ describe('Canvas scene conversion', () => {
         expect(created.getData().nodes?.[0].color).toBe(slotHex(7));
     });
 
-    it('creates a new subplot named from the card menu, then forgets the cards that became its scenes', async () => {
-        const test = scenes(['1']);
+    /** Card 1 was given the new subplot Letters on this Canvas; another Canvas gave Letters a card too, and another book has a Letters of its own. */
+    function rememberLetters(test: ReturnType<typeof scenes>) {
         test.plugin.settings.canvasSubplotMemory = { schemaVersion: 1, canvases: {
             'Ideas.canvas': [
-                { bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['1'] },
-                { bookId: 'other', subplot: 'Letters', color: '#abcdef', cards: ['2'] },
+                { bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['1'], created: true },
+                { bookId: 'other', subplot: 'Letters', color: '#abcdef', cards: ['2'], created: true },
             ],
+            'Other.canvas': [{ bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['o1'], created: true }],
         } };
         colorCards(test, [{ color: '#abcdef', standing: { kind: 'pending', subplot: 'Letters' } }]);
         test.getData().nodes![1].color = '#abcdef';
         (Reflect.get(test.modal, 'given') as Map<string, string>).set('1', 'Letters');
         Reflect.set(test.modal, 'directory', [{ name: 'Main Plot', hex: slotHex(0), pending: false }, { name: 'Letters', hex: '#abcdef', pending: true }] satisfies DirectoryEntry[]);
         named(test).set('#abcdef\u0000letters', 'Letters');
+    }
+
+    it('creates a new subplot named from the card menu, forgets the cards that became its scenes, and counts it new nowhere', async () => {
+        const test = scenes(['1']);
+        rememberLetters(test);
         await convert(test);
         expect(test.saved.get('Book/1 A scene.md')).toContain('Subplot: Letters');
         expect(test.book.ownSubplotColors).toEqual({ schemaVersion: 1, colors: { Letters: '#abcdef' } });
         expect(test.plugin.settings.canvasSubplotMemory).toEqual({ schemaVersion: 1, canvases: {
-            'Ideas.canvas': [{ bookId: 'other', subplot: 'Letters', color: '#abcdef', cards: ['2'] }],
+            'Ideas.canvas': [{ bookId: 'other', subplot: 'Letters', color: '#abcdef', cards: ['2'], created: true }],
+            // Letters has scenes now: renamed later, it never comes back as new.
+            'Other.canvas': [{ bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['o1'] }],
         } });
-        expect(test.plugin.saveSettings).toHaveBeenCalledOnce();
+    });
+
+    it('forgets the cards it turned into sketches too', async () => {
+        const test = scenes(['1']);
+        rememberLetters(test);
+        Reflect.set(test.modal, 'mode', 'sketches');
+        await convert(test);
+        expect(test.saved.size).toBe(1);
+        expect((test.plugin.settings.canvasSubplotMemory as CanvasSubplotMemoryRecord).canvases['Ideas.canvas']).toEqual([
+            { bookId: 'other', subplot: 'Letters', color: '#abcdef', cards: ['2'], created: true },
+        ]);
+    });
+
+    it('keeps the cards’ memory when the Canvas cannot take the links, so nothing is forgotten for cards still there', async () => {
+        const test = scenes(['1']);
+        rememberLetters(test);
+        const before = structuredClone(test.plugin.settings.canvasSubplotMemory);
+        test.app.vault.create = vi.fn(async (path: string, text: string) => { test.saved.set(path, text); test.getData().extra = 'edited by author'; }) as typeof test.app.vault.create;
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        await convert(test);
+        expect(test.setData).not.toHaveBeenCalled();
+        expect(test.plugin.settings.canvasSubplotMemory).toEqual(before);
+        // The scene was written, so its new subplot keeps its color.
+        expect(test.book.ownSubplotColors).toEqual({ schemaVersion: 1, colors: { Letters: '#abcdef' } });
+        error.mockRestore();
     });
 
     it('puts cards on the subplot the card menu gave them, even when another subplot wears their color now', async () => {
@@ -246,10 +279,12 @@ describe('Canvas scene conversion', () => {
         expect(read.indexed.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(read.plugin.refreshTimelineIfNeeded).mock.invocationCallOrder[0]);
         expect(read.activateView).toHaveBeenCalledOnce();
 
+        // Obsidian is slow to read them: the book still becomes the active one, so opening the timeline later shows it.
         const unread = scenes();
         unread.indexed.mockResolvedValue(false);
         await convert(unread);
         expect(unread.saved.size).toBe(2);
+        expect(unread.plugin.setActiveBookId).toHaveBeenCalledWith('book');
         expect(unread.plugin.refreshTimelineIfNeeded).not.toHaveBeenCalled();
         expect(unread.activateView).not.toHaveBeenCalled();
     });
@@ -490,17 +525,22 @@ describe('Bring ideas into your book starts each card color on its subplot', () 
             { id: 'mara', type: 'text', text: 'Mara leaves', color: slotHex(1) },
             { id: 'romance', type: 'text', text: 'A first dance', color: slotHex(1) },
             { id: 'letters', type: 'text', text: 'A letter', color: '#ABCDEF' },
+            { id: 'letters copy', type: 'text', text: 'A second letter', color: '#abcdef' },
+            { id: 'courtship', type: 'text', text: 'A walk', color: slotHex(4) },
             { id: 'yellow', type: 'text', text: 'Storm', color: '6' },
             { id: 'free', type: 'text', text: 'Market day', color: slotHex(5) },
         ] };
         const app = { workspace: { getLeavesOfType: () => [] }, metadataCache: { getFileCache: () => ({}) }, vault: { getMarkdownFiles: () => [], getFiles: () => [] } } as unknown as App;
         const book = { id: 'book', title: 'Book', sourceFolder: 'Book' } as BookProfile;
-        // The card menu gave "romance" Romance while Romance wore the second palette color, which Mara wears now,
-        // and named the new subplot Letters for "letters".
+        // The card menu gave "romance" Romance while Romance wore the second palette color, then gave "mara"
+        // Mara, which wears it now; it named the new subplot Letters for "letters" ("letters copy" is a copy);
+        // and it gave "courtship" Courtship, a subplot since renamed.
         const plugin = { settings: { ...DEFAULT_SETTINGS, books: [book], canvasSubplotMemory: { schemaVersion: 1, canvases: {
             'Ideas.canvas': [
                 { bookId: 'book', subplot: 'Romance', color: slotHex(1), cards: ['romance'] },
-                { bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['letters'] },
+                { bookId: 'book', subplot: 'Mara', color: slotHex(1), cards: ['mara'] },
+                { bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['letters'], created: true },
+                { bookId: 'book', subplot: 'Courtship', color: slotHex(4), cards: ['courtship'] },
             ],
         } } } } as unknown as RadialTimelinePlugin;
         const canvas: OpenCanvas = { getData: () => data, setData: vi.fn(), requestSave: vi.fn(), selection: new Set(data.nodes!.map(node => ({ getData: () => ({ id: node.id, type: 'text' }) }))) };
@@ -520,17 +560,24 @@ describe('Bring ideas into your book starts each card color on its subplot', () 
             { name: 'Romance', hex: slotHex(2), pending: false },
             { name: 'Letters', hex: '#abcdef', pending: true },
         ]);
+        const maraRow = `${slotHex(1)}\u0000mara`;
         const romanceRow = `${slotHex(1)}\u0000romance`;
-        expect([...(Reflect.get(modal, 'subplotByRow') as Map<string, string>)]).toEqual([[slotHex(1), 'Mara'], [romanceRow, 'Romance'], ['#abcdef\u0000letters', 'Letters']]);
+        const lettersRow = '#abcdef\u0000letters';
+        expect([...(Reflect.get(modal, 'subplotByRow') as Map<string, string>)]).toEqual([[maraRow, 'Mara'], [romanceRow, 'Romance'], [lettersRow, 'Letters']]);
         const plans = Reflect.get(modal, 'colorPlans').call(modal) as Map<string, unknown>;
         expect([...plans]).toEqual([
-            [slotHex(1), { kind: 'existing', subplot: 'Mara' }],
+            [maraRow, { kind: 'existing', subplot: 'Mara' }],
             [romanceRow, { kind: 'existing', subplot: 'Romance' }],
-            ['#abcdef\u0000letters', { kind: 'new', subplot: 'Letters', color: '#abcdef' }],
+            // The copy joins the card it was copied from.
+            [lettersRow, { kind: 'new', subplot: 'Letters', color: '#abcdef' }],
+            // Courtship was renamed: its card is matched by color, which names no subplot, so it waits.
+            [slotHex(4), { kind: 'unassigned' }],
             // Preset 6 is no timeline color; the sixth palette color is free, but names no subplot either.
             ['6', { kind: 'unassigned' }],
             [slotHex(5), { kind: 'unassigned' }],
         ]);
+        const rows = Reflect.get(modal, 'colorRows').call(modal, Reflect.get(modal, 'cards')) as Map<string, { count: number }>;
+        expect(rows.get(lettersRow)?.count).toBe(2);
         expect(Reflect.get(modal, 'ringsBook')).toBe('book');
     });
 

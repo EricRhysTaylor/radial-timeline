@@ -578,6 +578,13 @@ export interface CanvasSubplotChoice {
      * stands for the idea cards on that Canvas wearing `color`.
      */
     cards?: string[];
+    /**
+     * Named with New subplot… (or given a subplot named that way) before the
+     * subplot had scenes. Only such a choice makes a subplot the book lacks
+     * a new one; any other choice whose subplot is gone (renamed, removed)
+     * no longer counts, and its cards are matched by color.
+     */
+    created?: true;
 }
 
 /** What the Canvas card menu gave each card, by Canvas file path. */

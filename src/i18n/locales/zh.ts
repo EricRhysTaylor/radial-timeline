@@ -6126,6 +6126,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             colorMoved: "环颜色已改变",
             colorMovedDetail: "这些卡片上色后，{{subplot}} 换了颜色。创建场景时，卡片会换成它的颜色。",
             stillIndexing: "Obsidian 仍在读取新场景。读取完成后再打开时间线。",
+            canvasUnreadable: "Radial Timeline 无法读取此 Canvas 的卡片，因此保持原样。",
             subplotName: '支线名称',
             takesColor: "这些卡片将换成 {{subplot}} 的颜色",
             outsideColor: "不是时间线颜色",

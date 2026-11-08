@@ -24,14 +24,17 @@ export function waitForMetadataResolved(app: App, timeoutMs: number): Promise<vo
 /**
  * True once every path has its frontmatter in the cache, as the cache
  * reports each file it reads; false when `timeoutMs` passes first, so the
- * caller can say so rather than draw from half-read notes.
+ * caller can say so rather than draw from half-read notes. A path no longer
+ * in the vault (renamed or deleted meanwhile) has nothing left to read, and
+ * the cache's `resolved` event, sent once it has read everything, checks
+ * the paths again.
  */
 export function filesIndexed(app: App, paths: readonly string[], timeoutMs: number): Promise<boolean> {
     const pending = new Set(paths);
     const settle = (): boolean => {
         for (const path of [...pending]) {
             const file = app.vault.getAbstractFileByPath(path);
-            if (file instanceof TFile && app.metadataCache.getFileCache(file)?.frontmatter) pending.delete(path);
+            if (!(file instanceof TFile) || app.metadataCache.getFileCache(file)?.frontmatter) pending.delete(path);
         }
         return pending.size === 0;
     };
@@ -39,12 +42,14 @@ export function filesIndexed(app: App, paths: readonly string[], timeoutMs: numb
     return new Promise<boolean>(resolve => {
         const finish = (indexed: boolean): void => {
             window.clearTimeout(timeout);
-            app.metadataCache.offref(ref);
+            app.metadataCache.offref(changed);
+            app.metadataCache.offref(resolved);
             resolve(indexed);
         };
         const timeout = window.setTimeout(() => finish(false), timeoutMs);
-        const ref = app.metadataCache.on('changed', file => { if (pending.has(file.path) && settle()) finish(true); });
-        // A file read between the first check and the subscription sends no further event.
+        const changed = app.metadataCache.on('changed', file => { if (pending.has(file.path) && settle()) finish(true); });
+        const resolved = app.metadataCache.on('resolved', () => { if (settle()) finish(true); });
+        // A file read between the first check and the subscriptions sends no further event.
         if (settle()) finish(true);
     });
 }

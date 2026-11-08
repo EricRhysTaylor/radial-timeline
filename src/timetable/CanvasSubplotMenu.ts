@@ -9,8 +9,8 @@ import { bookPlacementItems, bookSubplotChoices } from './canvasBookCards';
 import { cardColor, cardColorHex } from './canvasCardSubplots';
 import { canvasTextCards, type StoryCanvasData } from './canvasSketches';
 import { isStoryActHeading } from './canvasNavigation';
-import { cardMeaning, paletteChoices, subplotDirectory, subplotMenuModel, type DirectoryEntry } from './canvasSubplotDirectory';
-import { canvasChoicesNow, rememberCardSubplot, saveCanvasSubplotMemory, subplotOfCard, waitingSubplots } from './canvasSubplotMemory';
+import { cardMeaning, directoryEntryNamed, paletteChoices, subplotDirectory, subplotMenuModel, type DirectoryEntry } from './canvasSubplotDirectory';
+import { canvasChoicesNow, markSubplotsMade, rememberCardSubplot, saveCanvasSubplotMemory, subplotOfCard, waitingSubplots } from './canvasSubplotMemory';
 import { CanvasNewSubplotModal } from './CanvasNewSubplotModal';
 
 /*
@@ -75,7 +75,11 @@ export function cardHexReader(doc: Document): (color: string | null) => string |
 export interface CanvasSubplots {
     /** The book's subplots in ring order with their colors now, then its new subplots. */
     directory: DirectoryEntry[];
-    /** The open Canvas's card choices as they stand on its cards now. */
+    /**
+     * The open Canvas's card choices as they stand on its cards now, for
+     * subplots in the directory. A choice of a subplot since renamed or
+     * removed gives its cards no subplot: they are matched by color.
+     */
     choices: CanvasSubplotChoice[];
 }
 
@@ -93,28 +97,42 @@ export function readCanvasSubplots(
     const choices = canvasChoicesNow(settings.canvasSubplotMemory, canvasPath, canvasTextCards(canvasData).map(card => ({ id: card.id, hex: hexOf(cardColor(card)) })));
     const exists = (name: string): boolean => rings.some(ring => ring.name.trim().toLowerCase() === name.trim().toLowerCase());
     const waiting = waitingSubplots(settings.canvasSubplotMemory, book.id, exists, { canvasPath, choices });
-    return { directory: subplotDirectory(rings, waiting), choices };
+    const directory = subplotDirectory(rings, waiting);
+    return { directory, choices: choices.filter(entry => directoryEntryNamed(directory, entry.subplot) !== null) };
+}
+
+/** The Canvas's cards, or null when the Canvas cannot report them (undocumented Obsidian internals). */
+function canvasData(host: SubplotMenuHost): StoryCanvasData | null {
+    return typeof host.canvas.getData === 'function' ? host.canvas.getData() : null;
 }
 
 function cardId(node: CanvasCardNode): string {
     return node.getData!().id!; // SAFE: ideaCards keeps only cards with data and an id
 }
 
-/** The open Canvas's card choices as they stand on its cards at this moment. */
-function choicesNow(host: SubplotMenuHost, canvasPath: string): CanvasSubplotChoice[] {
-    const hexOf = cardHexReader(host.view.containerEl.doc);
-    const cards = canvasTextCards(host.canvas.getData?.() ?? {}).map(card => ({ id: card.id, hex: hexOf(cardColor(card)) })); // SAFE: a Canvas that cannot report its cards keeps no choices
-    return canvasChoicesNow(host.plugin.settings.canvasSubplotMemory, canvasPath, cards);
-}
-
-/** Give the cards a subplot: its exact color on every card, and the choice remembered card by card. */
-function choose(host: SubplotMenuHost, book: BookProfile, canvasPath: string, cards: CanvasCardNode[], subplot: string, hex: string): void {
+/**
+ * Give the cards a subplot: its exact color on every card, and the choice
+ * remembered card by card. `created` when the subplot has no scenes yet
+ * (New subplot…, or one of the book's new subplots); the book's subplots
+ * with scenes (`made`) stop counting as new wherever a choice names them.
+ */
+function choose(host: SubplotMenuHost, book: BookProfile, canvasPath: string, cards: CanvasCardNode[], given: { subplot: string; hex: string; created: boolean }, made: readonly string[]): void {
+    const { plugin } = host;
+    const { subplot, hex, created } = given;
+    if (!canvasData(host)) {
+        new Notice(t('ui.canvasSketch.canvasUnreadable'), 8000);
+        return;
+    }
     for (const card of cards) card.setColor!(hex); // SAFE: ideaCards keeps only cards that can take a color
     host.canvas.requestSave?.();
-    const { plugin } = host;
     void (async () => {
-        const next = rememberCardSubplot(plugin.settings.canvasSubplotMemory, canvasPath, choicesNow(host, canvasPath), { bookId: book.id, subplot, color: hex, cards: cards.map(cardId) });
-        await saveCanvasSubplotMemory(plugin, next);
+        const data = canvasData(host);
+        if (!data) throw new Error('The Canvas stopped reporting its cards.');
+        const hexOf = cardHexReader(host.view.containerEl.doc);
+        const record = plugin.settings.canvasSubplotMemory;
+        const open = canvasChoicesNow(record, canvasPath, canvasTextCards(data).map(card => ({ id: card.id, hex: hexOf(cardColor(card)) })));
+        const next = rememberCardSubplot(record, canvasPath, open, { bookId: book.id, subplot, color: hex, cards: cards.map(cardId), created });
+        await saveCanvasSubplotMemory(plugin, markSubplotsMade(next, book.id, made));
     })().catch((error: unknown) => {
         console.error('[Canvas subplots] Could not remember the subplot given to these cards', error);
         new Notice(t('ui.canvasSketch.pendingNotSaved', { subplot }), 10000);
@@ -146,10 +164,10 @@ export function addSubplotColorMenu(menu: Menu, host: SubplotMenuHost, nodes: It
     const hexOf = cardHexReader(doc);
     const wheel = host.ringsNow(book.id);
     const { app, settings } = host.plugin;
-    const data = host.canvas.getData?.() ?? {}; // SAFE: a Canvas that cannot report its cards (getData) has no card choices
-    const read = wheel ? readCanvasSubplots(settings, book, bookPlacementItems(app, settings, book).map(item => item.row), canvasPath, data, doc, hexOf, wheel) : null;
-    const meanings = read ? cards.map(card => cardMeaning(subplotOfCard(read.choices, cardId(card), book.id), hexOf(cardColor(card.getData?.() ?? {})), read.directory)) : []; // SAFE: an idea card always has data
-    const model = subplotMenuModel(read?.directory ?? null, meanings); // SAFE: no directory yet reads as still reading
+    const data = canvasData(host);
+    const read = wheel && data ? readCanvasSubplots(settings, book, bookPlacementItems(app, settings, book).map(item => item.row), canvasPath, data, doc, hexOf, wheel) : null;
+    const meanings = read ? cards.map(card => cardMeaning(subplotOfCard(read.choices, cardId(card), book.id), hexOf(cardColor(card.getData!())), read.directory)) : []; // SAFE: ideaCards keeps only cards with data
+    const model = subplotMenuModel(read ? read.directory : null, meanings);
     menu.addItem(item => {
         item.setTitle(t('ui.canvasSketch.menuSubplot')).setIcon('palette').setSection('radial-timeline');
         const submenu = submenuOf(item);
@@ -158,13 +176,19 @@ export function addSubplotColorMenu(menu: Menu, host: SubplotMenuHost, nodes: It
             item.setDisabled(true);
             return;
         }
+        if (!data) {
+            console.error('[Canvas subplots] This Canvas does not report its cards, so the card menu leaves it as it is.');
+            submenu.addItem(entry => entry.setTitle(t('ui.canvasSketch.canvasUnreadable')).setDisabled(true));
+            return;
+        }
         if (model.kind === 'reading' || !read) {
             submenu.addItem(entry => entry.setTitle(t('ui.canvasSketch.readingSubplots')).setDisabled(true));
             return;
         }
+        const made = read.directory.filter(entry => !entry.pending).map(entry => entry.name);
         for (const entry of model.entries) {
             submenu.addItem(option => option.setTitle(swatchTitle(doc, entry)).setChecked(entry.checked)
-                .onClick(() => choose(host, book, canvasPath, cards, entry.name, entry.hex)));
+                .onClick(() => choose(host, book, canvasPath, cards, { subplot: entry.name, hex: entry.hex, created: entry.pending }, made)));
         }
         submenu.addSeparator();
         submenu.addItem(option => option.setTitle(t('ui.canvasSketch.newSubplot')).setIcon('plus').onClick(() => {
@@ -173,7 +197,7 @@ export function addSubplotColorMenu(menu: Menu, host: SubplotMenuHost, nodes: It
                 directory: read.directory,
                 palette: paletteChoices(paletteHexes(doc), read.directory),
                 confirm: t('ui.canvasSketch.colorCards', { cards: tCount('card', cards.length) }),
-                onChoose: choice => choose(host, book, canvasPath, cards, choice.name, choice.color),
+                onChoose: choice => choose(host, book, canvasPath, cards, { subplot: choice.name, hex: choice.color, created: true }, made),
             }).open();
         }));
     });

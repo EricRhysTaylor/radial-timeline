@@ -6125,6 +6125,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             colorMoved: "リングの色が変わりました",
             colorMovedDetail: "これらのカードに色を付けた後、{{subplot}} の色が変わりました。シーンを作成すると、カードはその色になります。",
             stillIndexing: "Obsidian はまだ新しいシーンを読み込んでいます。完了したらタイムラインを開いてください。",
+            canvasUnreadable: "Radial Timeline はこの Canvas のカードを読み取れないため、そのままにしました。",
             subplotName: 'サブプロット名',
             takesColor: "カードは {{subplot}} の色になります",
             outsideColor: "タイムラインの色ではありません",

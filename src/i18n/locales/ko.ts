@@ -6124,6 +6124,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             colorMoved: "링 색이 바뀌었습니다",
             colorMovedDetail: "이 카드들을 색칠한 뒤 {{subplot}}의 색이 바뀌었습니다. 장면을 만들면 카드가 그 색을 사용합니다.",
             stillIndexing: "Obsidian이 아직 새 장면을 읽고 있습니다. 끝나면 타임라인을 여세요.",
+            canvasUnreadable: "Radial Timeline이 이 Canvas의 카드를 읽을 수 없어 그대로 두었습니다.",
             subplotName: '서브플롯 이름',
             takesColor: "카드가 {{subplot}}의 색을 사용합니다",
             outsideColor: "타임라인 색이 아닙니다",

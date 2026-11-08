@@ -71,12 +71,12 @@ describe('Radial Timeline: Color by subplot, in a Canvas card menu', () => {
 
     /** The card menu's memory: card c was given the new subplot Letters on this Canvas; another Canvas named Dreams. */
     const memory = (): CanvasSubplotMemoryRecord => ({ schemaVersion: 1, canvases: {
-        'Ideas.canvas': [{ bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['c'] }],
-        'Other.canvas': [{ bookId: 'book', subplot: 'Dreams', color: slotHex(6), cards: ['o1'] }],
+        'Ideas.canvas': [{ bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['c'], created: true }],
+        'Other.canvas': [{ bookId: 'book', subplot: 'Dreams', color: slotHex(6), cards: ['o1'], created: true }],
     } });
     let plugin: RadialTimelinePlugin;
 
-    function open(nodes: CanvasCardNode[], read = true, remembered = memory()): FakeMenu {
+    function open(nodes: CanvasCardNode[], read = true, remembered = memory(), reports = true): FakeMenu {
         const rings = read ? wheel : undefined;
         plugin = {
             app: { vault: { getMarkdownFiles: () => [] }, metadataCache: { getFileCache: () => ({}) } },
@@ -85,7 +85,7 @@ describe('Radial Timeline: Color by subplot, in a Canvas card menu', () => {
         } as unknown as RadialTimelinePlugin;
         const view = { containerEl: { doc: fakeDoc() }, file: { path: 'Ideas.canvas' } } as unknown as ItemView;
         const menu = new FakeMenu();
-        addSubplotColorMenu(menu as unknown as Menu, { plugin, view, canvas: { getData: () => data, requestSave }, ringsNow: () => rings }, nodes);
+        addSubplotColorMenu(menu as unknown as Menu, { plugin, view, canvas: reports ? { getData: () => data, requestSave } : { requestSave }, ringsNow: () => rings }, nodes);
         return menu;
     }
 
@@ -110,11 +110,35 @@ describe('Radial Timeline: Color by subplot, in a Canvas card menu', () => {
         await vi.waitFor(() => expect(plugin.saveSettings).toHaveBeenCalledOnce());
         expect(plugin.settings.canvasSubplotMemory).toEqual({ schemaVersion: 1, canvases: {
             'Ideas.canvas': [
-                { bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['c'] },
+                { bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['c'], created: true },
                 { bookId: 'book', subplot: 'Romance', color: '#e93147', cards: ['a', 'b'] },
             ],
-            'Other.canvas': [{ bookId: 'book', subplot: 'Dreams', color: slotHex(6), cards: ['o1'] }],
+            'Other.canvas': [{ bookId: 'book', subplot: 'Dreams', color: slotHex(6), cards: ['o1'], created: true }],
         } });
+    });
+
+    it('remembers a new subplot chosen from the list as new, so it stays offered while its cards wear it', async () => {
+        const dreams = open(cards).items[0] as FakeItem;
+        (dreams.submenu!.items[4] as FakeItem).click!();
+        await vi.waitFor(() => expect(plugin.saveSettings).toHaveBeenCalledOnce());
+        const memory = plugin.settings.canvasSubplotMemory as CanvasSubplotMemoryRecord;
+        expect(memory.canvases['Ideas.canvas']).toContainEqual({ bookId: 'book', subplot: 'Dreams', color: slotHex(6), cards: ['a', 'b'], created: true });
+    });
+
+    it('matches cards by color once the subplot the menu gave them is renamed or removed, never offering it as new', () => {
+        // a and b were given "Courtship", since renamed; they wear Mara's color.
+        const remembered = memory();
+        remembered.canvases['Ideas.canvas'].push({ bookId: 'book', subplot: 'Courtship', color: slotHex(1), cards: ['a', 'b'] });
+        const entries = (open(cards, true, remembered).items[0] as FakeItem).submenu!.items;
+        expect(entries.map(label)).not.toContain('Courtship new');
+        expect(entries.slice(0, 2).map(entry => [label(entry), (entry as FakeItem).checked])).toEqual([['Main Plot', false], ['Mara', true]]);
+    });
+
+    it('changes nothing on a Canvas that cannot report its cards, and says so', () => {
+        const item = open(cards, true, memory(), false).items[0] as FakeItem;
+        expect(item.submenu!.items.map(label)).toEqual(['Radial Timeline can’t read this Canvas’s cards, so it left them as they are.']);
+        expect((item.submenu!.items[0] as FakeItem).disabled).toBe(true);
+        expect(cards.map(card => vi.mocked(card.setColor!).mock.calls.length)).toEqual([0, 0]);
     });
 
     it('checks the subplot the menu gave the cards, even after ring order hands their color to another subplot', () => {

@@ -6127,6 +6127,7 @@ export const vi: TranslationKeys = {
             colorMoved: "Màu vòng đã đổi",
             colorMovedDetail: "{{subplot}} đã đổi sang màu khác từ khi các thẻ này được tô màu. Chúng sẽ lấy màu của nó khi bạn tạo các cảnh.",
             stillIndexing: "Obsidian vẫn đang đọc các cảnh mới. Hãy mở dòng thời gian khi đọc xong.",
+            canvasUnreadable: "Radial Timeline không đọc được các thẻ của Canvas này nên giữ nguyên chúng.",
             subplotName: 'Tên cốt truyện phụ',
             takesColor: "Các thẻ sẽ lấy màu của {{subplot}}",
             outsideColor: "Không phải màu của dòng thời gian",

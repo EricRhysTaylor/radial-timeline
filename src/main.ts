@@ -1161,9 +1161,13 @@ export default class RadialTimelinePlugin extends Plugin {
         let canvasSubplotMemoryMigrated = false;
         const legacyCanvasPending = (this.settings as LegacyPersistedSettings).canvasPendingSubplots;
         const canvasSubplotMemory = normalizeCanvasSubplotMemory(this.settings.canvasSubplotMemory, legacyCanvasPending, new Set(this.settings.books.map(book => book.id)));
-        if (legacyCanvasPending !== undefined || JSON.stringify(canvasSubplotMemory) !== JSON.stringify(this.settings.canvasSubplotMemory)) {
-            if (canvasSubplotMemory) this.settings.canvasSubplotMemory = canvasSubplotMemory;
+        if (JSON.stringify(canvasSubplotMemory.record) !== JSON.stringify(this.settings.canvasSubplotMemory)) {
+            if (canvasSubplotMemory.record) this.settings.canvasSubplotMemory = canvasSubplotMemory.record;
             else delete this.settings.canvasSubplotMemory;
+            canvasSubplotMemoryMigrated = true;
+        }
+        // The first record goes only once it is carried in; a newer record leaves it for the newer build.
+        if (legacyCanvasPending !== undefined && canvasSubplotMemory.legacyMerged) {
             delete (this.settings as LegacyPersistedSettings).canvasPendingSubplots;
             canvasSubplotMemoryMigrated = true;
         }

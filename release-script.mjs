@@ -517,6 +517,17 @@ async function main() {
         return;
     }
 
+    // Translation gate, before anything is committed, tagged or pushed. The
+    // tag goes public in Step 1, so a failure here must stop the release
+    // first; release-preflight repeats the same check when the draft is
+    // finished. A major release (x.0.0) ships only after the translation pass
+    // (docs/engineering/standards/i18n.md).
+    if (/^\d+\.0\.0$/.test(newVersion)) {
+        runCommand("npm run release:i18n -- --full-coverage", `Checking full translation coverage for major release ${newVersion}`);
+    } else {
+        runCommand("npm run release:i18n", "Checking i18n release alignment");
+    }
+
     // Generate changelog
     console.log(`\n📝 Generating changelog...`);
     const autoChangelog = generateChangelog(lastTag);

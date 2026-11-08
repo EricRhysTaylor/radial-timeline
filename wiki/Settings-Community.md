@@ -11,7 +11,7 @@ Sharing tools:
 *   Public author profile and project shell.
 *   Optional Author Progress Report (APR) graphics.
 *   Optional writing-activity summaries at the highest sharing level.
-*   A book's timeline, shared from the **Timeline** section. Scene text never leaves your vault.
+*   A book's timeline, shared from the **Timeline** section. You choose which scenes to reveal.
 *   A live preview of exactly what will be shared.
 *   Pause, take offline, delete shared data, and disconnect controls.
 

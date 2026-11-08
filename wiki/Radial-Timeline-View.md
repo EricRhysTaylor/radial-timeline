@@ -67,10 +67,11 @@ The title bar also includes the compact count/session button used for Sessions.
 
 ## Community Mailbox
 
-On a vault connected to the Community, at any sharing level (Private included), a **Mailbox** button (a mail icon and the word Mailbox) sits just right of the writing-session control. It works like your account menu on the Community website, in the same colours:
+On a vault connected to the Community, at any sharing level (Private included), a **Mailbox** button (a mail icon and the word Mailbox) sits just right of the writing-session control. It works like your account menu on the Community website, in the same colors:
 
 *   **A gold number** counts conversations with new replies (your requests the team has answered, plus your questions someone has replied to) and [Desk Lamp](Desk-Lamps) invites waiting for you.
 *   **Click it** to open a menu like the website's: **Requests**, **New replies** (while there are some; it opens your newest question with a reply), and **Desk Lamp invites** (while some wait; it opens My Share's Desk Lamps section), each with its own count. Pick one to read or answer it on the Community; that clears its number the next time the plugin checks.
+*   **Community sync** shows when your book list last reached My Share and when the next sync runs. Click it to sync now. Your book list syncs each time Obsidian opens and every six hours while your vault stays open.
 *   The plugin checks about once an hour while a timeline is open, and again when you come back to Obsidian. It never marks anything as read.
 *   If a check fails, its icon dims and its tooltip says why.
 

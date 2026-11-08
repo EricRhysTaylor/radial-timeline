@@ -3673,7 +3673,7 @@ export const en = {
             timelineStopNote: 'Turning this off stops updates. Your timeline stays as it is on the website, where you can take it offline or delete it.',
             timelineLastSent: 'Last sent {{date}}.',
             timelineConfirmTitle: 'Share this timeline?',
-            timelineConfirmMessage: 'Radial Timeline sends scene order, acts, subplots, status and publish stage. It also sends titles, synopses, cast, narration and story dates, stored privately until you reveal a scene. A new timeline arrives private, and one already live stays live. Scene text and file paths stay in your vault.',
+            timelineConfirmMessage: 'Radial Timeline sends scene order, acts, subplots, status and publish stage. It also sends titles, synopses, cast, narration and story dates, stored privately until you reveal a scene. A new timeline arrives private, and one already live stays live. You choose which scenes readers see.',
             timelineConfirmButton: 'Send timeline',
             timelineSentNotice: 'Timeline sent, private. Review it on the website to go live.',
             timelineUpdatedNotice: 'Timeline updated. It stays live.',

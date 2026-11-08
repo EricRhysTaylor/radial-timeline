@@ -139,7 +139,8 @@ book syncs to the website as a **private project shell** (its public label,
 or its working title when no label is set, plus logline, stage target dates,
 and order). Shells are visible only to the author on My Share and become
 public only by an explicit switch on the website; the plugin never changes
-that. Full behavior and the per-level field breakdown live in the
+that. The list syncs when Obsidian opens, after you change a book's settings,
+and every six hours while the vault stays open. Full behavior and the per-level field breakdown live in the
 [Settings → Community](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Settings-Community)
 wiki page.
 

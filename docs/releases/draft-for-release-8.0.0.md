@@ -27,7 +27,7 @@ See [Canvas story maps](https://github.com/EricRhysTaylor/radial-timeline/wiki/T
 
 - **Outline.** The book act by act in reading order, with **Outline documents** on top: notes with `Class: Outline` appear there by themselves, and you can attach any other note. Select text in a document and **Add selection as sketch** puts it where you clicked in the outline. **Create sketches from this document** turns a document's headings into sketches you review first; each links back to its source, and the document stays as it is.
 - **Quick Workspace** opens a reference document next to the table: side by side, below, or with the timeline as well, with your pinned tabs kept open. **Timetable above Canvas** puts your book's subplot map under the table.
-- **Add any note to the book by dragging it in.** Drag a note from the file explorer onto the Timetable or the timeline, choose **Scene** or **Sketch**, and it joins the book with its text and properties intact. In Narrative or Progress, drop it on a scene on the timeline and it becomes the next scene, in that scene's act and the subplot you dropped it on.
+- **Add any note to the book by dragging it in.** Drag a note from the file explorer onto the Timetable or the timeline, choose **Scene** or **Sketch**, and it joins the book with its text and properties intact. In Narrative or Progress, drop it on a scene on the timeline and it becomes the next scene, in that scene's act and the subplot you dropped it on. With no book set up yet, **Create book** in the dialog makes your first one and carries on with the note.
 - **Drop text to make a sketch.** Drag a selection from any note onto the timeline or Timetable, and **Create sketch** keeps a link back to its source. In Outline, drop it on a row and the sketch lands right there.
 - **Place scenes and sketches from the table.** Drag a scene's grip onto another scene to place it just before it, with no timeline open. In Narrative this reorders the manuscript; in Chronologue it places the scene in time. Sketches drag to sit after a scene, beside another sketch, or at the end of an act, and empty acts accept drops. When a scene with sketches after it moves to another act, **Move attached sketches?** asks whether they follow it.
 - **A toolbar of its own.** Switch the layout between **Table**, **Panels** and **Outline**, switch books, and pin a mode from the **Mode** menu; a lock marks a pinned mode. **Restore Radial Timetable view**, beside **Saved views**, adds a fresh view if yours was deleted. New Timetables name their views **Radial Timetable** and **Spreadsheet**.
@@ -50,6 +50,7 @@ See [Timetable](https://github.com/EricRhysTaylor/radial-timeline/wiki/Timetable
 
 - **Scene titles read right side up all the way round.** Titles across the bottom half of the wheel now run left to right instead of upside down, in every ring and while you hover a scene to show its full title. Chronologue's dates around the edge of the wheel read the same way, each beside its tick.
 - **The rotate toggle is gone.** The arrow beside the outer ring turned the wheel so the lower titles could be read. With every title upright, its job is done, so the wheel always opens with Act 1 at 12 o'clock.
+- **A new book opens on an empty timeline.** **Open Timetable** leads to the Outline, where an outline document starts the book. The Welcome screen closes from its corner.
 - **Help in the title bar.** **Help** sits with the title-bar actions, and **Settings** opens from the gear.
 - **Stage milestones live in Settings.** **Settings → Core → Progress and status** marks each stage you finish, and the wheel stays clear for your book.
 
@@ -77,8 +78,14 @@ See [Character lanes](https://github.com/EricRhysTaylor/radial-timeline/wiki/Nar
 - **Story Vaults open with their narration set.** Pride & Prejudice is narrated in the third person, the Sherlock Holmes novels in the first person, and The Odyssey by an omniscient narrator, each set in its book details.
 - **Portraits and places in Pride & Prejudice.** The Pride & Prejudice Story Vault has a portrait for each of its 29 characters, from Hugh Thomson's and C. E. Brock's illustrations of the 1890s, and notes for its nine places. Open its Timetable in **Panels** to see them beside every scene.
 
+### Community
+
+- **Share your timeline from Settings.** Turn on **Share timeline** in **Settings → Community** and the book's timeline arrives on your Community account, private until you review it. **Open preview** opens the Complete Preview, where you reveal scenes, and a live timeline keeps up with your book sync.
+- **See your Community sync in the Mailbox.** A row in the Mailbox shows when your book list last reached My Share and when the next sync runs; click it to sync now. An open vault refreshes the list every six hours.
+
 ### AI
 
+- **AI off keeps your work in your vault.** Turning AI off closes every connection to AI providers and local servers, and saved Pulse grades still color the scene numbers.
 - **Gemini requests opt out of Google's request storage.** Radial Timeline sends every Gemini request with `store: false`. Google turned request storage on by default for new paid projects on October 26; your manuscript text stays out of it.
 
 ### Fixes

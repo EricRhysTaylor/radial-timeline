@@ -35,7 +35,7 @@ export function parsePlacementFile(raw: string): PlacementFile {
     const sketches: Record<string, SketchPlacement> = {};
     for (const [path, entry] of Object.entries(value.sketches as Record<string, unknown>)) { // SAFE: non-array object validated above
         if (!entry || typeof entry !== 'object' || Array.isArray(entry)) throw new Error(t('sketchPlacement.unsupportedFile'));
-        const placement = cleanPlacement(entry as SketchPlacement); // SAFE: each field is type-checked by cleanPlacement
+        const placement = cleanPlacement(entry);
         if (placement) sketches[path] = placement;
     }
     return { schemaVersion: 1, sketches };

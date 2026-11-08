@@ -4831,9 +4831,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "momentumTooltip": "โมเมนตัม\n\nวัดว่าเรื่องราวก้าวไปข้างหน้าอย่างแข็งแกร่งเพียงใด—แต่ละบีทจะดึงผู้อ่านไปสู่สิ่งที่เกิดขึ้นต่อไป เน้นการเว้นจังหวะและ ผลที่ตามมา ไม่ใช่แค่การนับเหตุการณ์",
             "tensionTooltip": "ความตึงเครียด\n\nวัดความกดดันที่ผู้อ่านรู้สึก—จำนวนความเครียด ความไม่แน่นอน หรือความขัดแย้งที่ยังไม่ได้รับการแก้ไข ฉากที่เงียบสงบสามารถสูงได้ ตึงเครียดหากเดิมพันชัดเจน"
         },
-        "helpIcon": {
-            "getHelp": "ขอความช่วยเหลือ"
-        },
         "importDemoVault": {
             "anotherImport": "กำลังเพิ่มการสาธิตอื่น กรุณารอให้มันเสร็จสิ้น",
             "briefingsMissing": "การสาธิตนี้ไม่มี Inquiry บันทึกการบรรยายสรุปที่บันทึกไว้ ไฟล์ที่มีอยู่ถูกเก็บรักษาไว้",
@@ -5755,15 +5752,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "discardDraftTooltip": "ทิ้งร่าง",
             "addMappingButton": "เพิ่มการแมปใหม่",
             "allKeysMappedNotice": "คีย์ระบบที่รองรับทั้งหมดได้รับการแมปไว้แล้ว"
-        },
-        "milestoneIndicator": {
-            "zeroComplete": "ศูนย์สมบูรณ์",
-            "authorComplete": "ผู้เขียนสมบูรณ์",
-            "houseComplete": "บ้านสมบูรณ์",
-            "bookComplete": "เล่มจบ!",
-            "keepGoing": "ทำต่อไป",
-            "youGotThis": "คุณได้สิ่งนี้",
-            "weBelieveInYou": "เราเชื่อในตัวคุณ"
         },
         "modeManager": {
             "couldNotEnterMode": "ไม่สามารถเข้าสู่โหมด {{mode}} ตรวจสอบ Developer Console สำหรับรายละเอียด",

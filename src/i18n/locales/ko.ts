@@ -4823,9 +4823,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             momentumTooltip: '모멘텀\n\n이야기가 얼마나 힘차게 앞으로 나아가는지, 즉 각 비트가 독자를 다음 전개로 얼마나 끌어당기는지 측정합니다. 단순한 사건 수가 아니라 페이싱과 결과에 초점을 둡니다.',
             tensionTooltip: '긴장감\n\n독자가 느끼는 압박감, 즉 부담, 불확실성, 해결되지 않은 갈등이 얼마나 이어지는지 측정합니다. 위험 요소가 분명하다면 조용한 장면도 매우 긴장감 있을 수 있습니다.',
         },
-        helpIcon: {
-            getHelp: '도움 받기',
-        },
         importDemoVault: {
             anotherImport: '다른 데모를 추가하는 중입니다. 완료될 때까지 기다려 주세요.',
             briefingsMissing: '이 데모에 저장된 Inquiry Briefing이 없습니다. 기존 파일은 보존되었습니다.',
@@ -5747,15 +5744,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             discardDraftTooltip: '초안 버리기',
             addMappingButton: '새 매핑 추가',
             allKeysMappedNotice: '지원되는 모든 시스템 키가 이미 매핑되어 있습니다.',
-        },
-        milestoneIndicator: {
-            zeroComplete: 'ZERO 완료',
-            authorComplete: 'AUTHOR 완료',
-            houseComplete: 'HOUSE 완료',
-            bookComplete: '책 완성!',
-            keepGoing: '계속 나아가세요',
-            youGotThis: '할 수 있어요',
-            weBelieveInYou: '우리는 당신을 믿어요',
         },
         modeManager: {
             couldNotEnterMode: '{{mode}} 모드로 진입할 수 없습니다. 자세한 내용은 개발자 콘솔을 확인하세요.',

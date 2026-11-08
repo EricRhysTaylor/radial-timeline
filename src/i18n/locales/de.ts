@@ -4823,9 +4823,6 @@ export const de: DeepPartial<TranslationKeys> = {
             momentumTooltip: 'Dynamik\n\nMisst, wie stark die Geschichte vorankommt – wie sehr jeder Beat den Leser zum Nächsten zieht. Konzentriert sich auf Tempo und Konsequenzen, nicht nur auf die Zahl der Ereignisse.',
             tensionTooltip: 'Spannung\n\nMisst den Druck, den der Leser spürt – wie viel Anspannung, Ungewissheit oder ungelöster Konflikt weitergetragen wird. Eine ruhige Szene kann sehr spannungsgeladen sein, wenn klar ist, was auf dem Spiel steht.',
         },
-        helpIcon: {
-            getHelp: 'HILFE',
-        },
         importDemoVault: {
             anotherImport: 'Eine andere Demo wird gerade hinzugefügt. Bitte warten Sie, bis der Vorgang abgeschlossen ist.',
             briefingsMissing: 'Dieser Demo fehlen die gespeicherten Inquiry-Briefings. Vorhandene Dateien wurden beibehalten.',
@@ -5747,15 +5744,6 @@ export const de: DeepPartial<TranslationKeys> = {
             discardDraftTooltip: 'Entwurf verwerfen',
             addMappingButton: 'Neue Zuordnung hinzufügen',
             allKeysMappedNotice: 'Alle unterstützten Systemschlüssel sind bereits zugeordnet.',
-        },
-        milestoneIndicator: {
-            zeroComplete: 'ZERO ABGESCHLOSSEN',
-            authorComplete: 'AUTHOR ABGESCHLOSSEN',
-            houseComplete: 'HOUSE ABGESCHLOSSEN',
-            bookComplete: 'BUCH ABGESCHLOSSEN!',
-            keepGoing: 'WEITER SO',
-            youGotThis: 'SIE SCHAFFEN DAS',
-            weBelieveInYou: 'WIR GLAUBEN AN SIE',
         },
         modeManager: {
             couldNotEnterMode: 'Modus {{mode}} konnte nicht aktiviert werden. Details finden Sie in der Entwicklerkonsole.',

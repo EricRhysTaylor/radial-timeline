@@ -4825,9 +4825,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             momentumTooltip: 'Momentum（推进力）\n\n衡量故事向前推进的力度 — 每个节拍在多大程度上牵引读者去关注接下来会发生什么。侧重节奏与后果，而不仅仅是事件数量。',
             tensionTooltip: 'Tension（张力）\n\n衡量读者感受到的压力 — 有多少紧张、不确定或悬而未决的冲突被延续下去。如果利害关系明确，一个安静的场景也可能充满张力。',
         },
-        helpIcon: {
-            getHelp: '获取帮助',
-        },
         importDemoVault: {
             anotherImport: '正在添加另一个演示。请等待其完成。',
             briefingsMissing: '此演示缺少已保存的 Inquiry 简报。现有文件已保留。',
@@ -5749,15 +5746,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             discardDraftTooltip: '放弃草稿',
             addMappingButton: '添加新映射',
             allKeysMappedNotice: '所有支持的系统键均已映射。',
-        },
-        milestoneIndicator: {
-            zeroComplete: 'ZERO 阶段完成',
-            authorComplete: 'AUTHOR 阶段完成',
-            houseComplete: 'HOUSE 阶段完成',
-            bookComplete: '全书完成！',
-            keepGoing: '继续加油',
-            youGotThis: '您一定可以',
-            weBelieveInYou: '我们相信您',
         },
         modeManager: {
             couldNotEnterMode: '无法进入 {{mode}} 模式。请查看开发者控制台了解详情。',

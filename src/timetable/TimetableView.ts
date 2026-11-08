@@ -120,7 +120,7 @@ import { storyImageChoice } from './storyImageStore';
 import { resolveStoryPortrait } from './storyPortrait';
 import { coverPosition, validPanelFocus } from './panelFocus';
 import { PanelFocusModal } from './PanelFocusModal';
-import { timetableNarrativeOrder } from './timetablePlacement';
+import { modeAllowsSceneDrag, timetableModeColumns, timetableModeState, timetableNarrativeOrder } from './timetablePlacement';
 import { orderSketches, planSketchActDrop, planSketchDrop, sketchAnchor, type PlacementItem, type PlacementProblem, type SketchDropPlan, type SketchPlacement } from './sketchPlacement';
 import { bookPlacementItems } from './canvasBookCards';
 import { readSceneId } from '../utils/sceneIds';
@@ -915,9 +915,7 @@ export class TimetableView extends BasesView {
 
     /** The mode the table is drawn in: the timeline's, unless the author pinned another. */
     private modeState(): TimelineModeState {
-        const timeline = currentTimelineMode() ?? { mode: this.plugin.settings.currentMode || 'narrative', shift: false, alt: false, runtime: false };
-        if (this.modePin === null) return timeline;
-        return { mode: this.modePin, shift: false, alt: false, runtime: false };
+        return timetableModeState(this.modePin, currentTimelineMode(), this.plugin.settings.currentMode);
     }
 
     private modeTooltip(state: TimelineModeState): string {
@@ -2137,9 +2135,7 @@ export class TimetableView extends BasesView {
             const title = columns.findIndex(column => column.kind === 'property' && column.property === 'file.name');
             columns.splice(title + 1, 0, words);
         }
-        const added: Column[] = [];
-        if (mode.chronologue && mode.state.shift) added.push({ kind: 'gap' });
-        if (mode.running) added.push({ kind: 'running' });
+        const added: Column[] = timetableModeColumns(mode.state).map(kind => ({ kind }));
         if (added.length === 0) return columns;
         const whenIndex = columns.findIndex(column => column.kind === 'property' && this.isWhenColumn(column.property));
         columns.splice(whenIndex + 1, 0, ...added);
@@ -3310,7 +3306,7 @@ export class TimetableView extends BasesView {
     /** Drop immediately before a scene using the selected mode's placement operation. */
     private attachSceneDrag(row: HTMLElement, host: HTMLElement, path: string, state: TimelineModeState): HTMLButtonElement | null {
         const activeBook = getActiveBook(this.plugin.settings);
-        const unavailable = (state.mode !== 'narrative' && state.mode !== 'chronologue') || state.runtime || state.shift || state.alt
+        const unavailable = !modeAllowsSceneDrag(state)
             || this.config.getSort().length > 0 || getTimelineScope(this.plugin.settings) !== 'book'
             || !activeBook || getBookIdForPath(this.plugin.settings.books, path) !== activeBook.id;
         const handle = host.createEl('button', { cls: 'ert-timetable__drag clickable-icon', attr: { draggable: String(!unavailable), type: 'button' } });

@@ -71,7 +71,7 @@ Expand the reference control beside a scene number to see its dated passages, th
 
 ### Follow the timeline’s mode
 
-The Timetable draws itself in the timeline’s mode, and **Mode** in its toolbar shows which. Choose a mode from its menu to pin the table to it; a lock marks a pinned mode, and **Follow the timeline** releases it. A sort set in the Bases toolbar still wins over the mode’s order. The Outline layout always follows narrative order.
+The Timetable draws itself in the timeline’s mode, and **Mode** in its toolbar shows which. Choose a mode from its menu to pin the table to it; a lock marks a pinned mode, and **Follow the timeline** releases it. While the timeline is in the pinned mode, the table shows what the timeline shows, such as Chronologue's Shift gaps or Narrative's running times; pinned to any other mode, it shows that mode's plain order. A sort set in the Bases toolbar still wins over the mode’s order. The Outline layout always follows narrative order.
 
 | Timeline mode | What the table shows |
 |---|---|

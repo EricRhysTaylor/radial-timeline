@@ -2620,6 +2620,10 @@
 .ert-ui.ert-scope--modal .ert-canvas-subplot-palette button.ert-canvas-subplot-palette__swatch.is-active { box-shadow: 0 0 0 2px var(--ert-canvas-sketch-swatch); }
 .ert-canvas-subplot-used { display: flex; flex-direction: column; gap: var(--size-4-1); }
 .ert-canvas-subplot-used__item { color: var(--text-muted); font-size: var(--font-ui-small); }
+/* While Create runs: the dialog dims, its close button goes, and Create says it is at work. */
+.ert-ui.ert-scope--modal.ert-canvas-convert.is-busy { cursor: progress; }
+.ert-ui.ert-scope--modal.ert-canvas-convert.is-busy .modal-close-button { visibility: hidden; }
+.ert-ui.ert-scope--modal.ert-canvas-convert.is-busy .ert-modal-container > :not(.ert-modal-actions) { opacity: 0.5; }
 /* A long map makes a long dialog: its buttons stay in reach. */
 .ert-ui.ert-scope--modal.ert-canvas-convert .ert-modal-actions { position: sticky; bottom: 0; z-index: 1; padding-block: var(--size-4-3); background: var(--background-primary); }
 .ert-canvas-sketch-act { color: var(--text-muted); font-size: var(--font-ui-small); font-weight: var(--font-medium); }

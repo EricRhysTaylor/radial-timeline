@@ -16,8 +16,9 @@ import { dropCanvasSubplotMemory, keepCanvases, rebaseCanvasSubplotMemory, remem
  * Keeps the Canvas card menu's memory (timetable/canvasSubplotMemory) true
  * to the Canvases themselves. A Canvas's choices are checked against its
  * cards whenever its file changes or opens, and every remembered Canvas when
- * Obsidian starts, so a choice lapses as soon as no card wears it, even on a
- * Canvas changed outside Obsidian. Moving a Canvas moves its choices;
+ * Obsidian starts, even a Canvas changed outside Obsidian. A new subplot is
+ * offered only while a card wears it; a recolored card's choice rests
+ * dormant until the Canvas next opens. Moving a Canvas moves its choices;
  * deleting it, or finding it gone, drops them.
  */
 
@@ -48,17 +49,22 @@ export function registerCanvasSubplotMemoryUpkeep(plugin: RadialTimelinePlugin):
         return text.trim() ? JSON.parse(text) as StoryCanvasData : {}; // SAFE: an empty Canvas file is an empty Canvas
     };
 
-    const revise = async (path: string, fromFile: boolean): Promise<void> => {
+    /**
+     * Check a Canvas's choices against its cards. A change to the Canvas
+     * keeps the choices of recolored cards dormant, so an undo and redo keep
+     * the subplot; opening it, or starting Obsidian, sweeps them.
+     */
+    const revise = async (path: string, opening: boolean): Promise<void> => {
         if (!remembers(path)) return;
         const file = app.vault.getAbstractFileByPath(path);
         if (!(file instanceof TFile)) { update(memory => dropCanvasSubplotMemory(memory, path)); return; }
-        const data = await readCards(file, fromFile);
+        const data = await readCards(file, opening);
         const hexOf = cardHexReader(activeDocument);
         const cards = canvasTextCards(data).map(card => ({ id: card.id, hex: hexOf(cardColor(card)) }));
-        update(memory => reviseCanvasChoices(memory, path, cards));
+        update(memory => reviseCanvasChoices(memory, path, cards, opening));
     };
-    const reviseLogged = (path: string, fromFile: boolean): void => {
-        void revise(path, fromFile).catch((error: unknown) => console.error(`[Canvas subplots] Could not check the cards of ${path}`, error));
+    const reviseLogged = (path: string, opening: boolean): void => {
+        void revise(path, opening).catch((error: unknown) => console.error(`[Canvas subplots] Could not check the cards of ${path}`, error));
     };
 
     plugin.registerEvent(app.vault.on('modify', file => { if (file.path.endsWith('.canvas')) reviseLogged(file.path, false); }));

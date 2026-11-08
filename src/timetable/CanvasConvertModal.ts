@@ -368,10 +368,10 @@ export class CanvasConvertModal extends ErtModal {
             const row = rows.get(key);
             if (!plan || !row) continue;
             rowEl.toggleClass('is-blocked', plan.kind === 'unassigned' || plan.kind === 'needsColor');
-            const outside = this.standings.get(row.color)?.kind === 'outside';
-            if (outside) mark(state, t('ui.canvasSketch.outsideColor'), t('ui.canvasSketch.outsideColorDetail'));
             if (plan.kind === 'unassigned') {
-                if (!outside) mark(state, t('ui.canvasSketch.needsName'), t('ui.canvasSketch.outsideColorDetail'));
+                // Once the row has a subplot, its cards take that subplot's color and the mark goes.
+                const outside = this.standings.get(row.color)?.kind === 'outside';
+                mark(state, t(outside ? 'ui.canvasSketch.outsideColor' : 'ui.canvasSketch.needsName'), t('ui.canvasSketch.outsideColorDetail'));
                 continue;
             }
             if (plan.kind === 'needsColor') {
@@ -582,11 +582,19 @@ export class CanvasConvertModal extends ErtModal {
         submit.addEventListener('click', () => {
             if (this.busy || !this.selected.size) return;
             this.busy = true;
-            // Nothing in the dialog changes while the cards become notes.
+            // Nothing in the dialog changes while the cards become notes, and it shows it is at work.
             for (const control of this.contentEl.findAll('button, input, select')) (control as HTMLButtonElement | HTMLInputElement | HTMLSelectElement).disabled = true;
+            this.modalEl.addClass('is-busy');
+            submit.setText(t('ui.canvasSketch.creating'));
             // The timeline waits for the whole batch, then draws once.
             void this.plugin.getTimelineService().holdRefreshes(() => this.convert()).finally(() => { this.busy = false; this.close(); });
         });
+    }
+
+    /** Escape and the close button wait while Create runs; the dialog closes itself when it is done. */
+    close(): void {
+        if (this.busy) return;
+        super.close();
     }
 
     private noteBody(frontmatter: Record<string, unknown>, card: CanvasTextCard): string {

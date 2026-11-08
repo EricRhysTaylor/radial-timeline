@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TFile, type App } from 'obsidian';
+import { Modal, TFile, type App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { BookProfile } from '../types';
 import { CanvasConvertModal, type OpenCanvas } from './CanvasConvertModal';
@@ -241,6 +241,18 @@ describe('Canvas scene conversion', () => {
         expect(test.saved.get('Book/2 Other idea.md')).toContain('Subplot: Mara');
         // Card 1 takes Romance's ring color; card 2 already wears Mara's.
         expect(test.getData().nodes?.map(node => node.color)).toEqual([slotHex(2), slotHex(1)]);
+    });
+
+    it('stays open while Create runs, whether Escape or the close button asks, then closes when done', () => {
+        const test = scenes(['1']);
+        const close = vi.spyOn(Modal.prototype, 'close');
+        Reflect.set(test.modal, 'busy', true);
+        test.modal.close();
+        expect(close).not.toHaveBeenCalled();
+        Reflect.set(test.modal, 'busy', false);
+        test.modal.close();
+        expect(close).toHaveBeenCalledOnce();
+        close.mockRestore();
     });
 
     it('keeps the book chosen when Create was clicked, whatever the dialog shows after', async () => {

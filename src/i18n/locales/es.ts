@@ -6129,6 +6129,7 @@ export const es: TranslationKeys = {
             colorMovedDetail: "{{subplot}} cambió de color desde que se colorearon estas tarjetas. Tomarán su color al crear las escenas.",
             stillIndexing: "Obsidian todavía está leyendo las escenas nuevas. Abre la línea temporal cuando termine.",
             canvasUnreadable: "Radial Timeline no puede leer las tarjetas de este Canvas, así que las deja como están.",
+            creating: "Creando…",
             subplotName: 'Nombre de la subtrama',
             takesColor: "Las tarjetas toman el color de {{subplot}}",
             outsideColor: "No es un color de la línea temporal",

@@ -46,7 +46,7 @@ import { GossamerScoreService } from './services/GossamerScoreService';
 import { SceneAnalysisService } from './services/SceneAnalysisService';
 import { StatusBarService } from './services/StatusBarService';
 import { BeatsProcessingService } from './services/BeatsProcessingService';
-import { ThemeService } from './services/ThemeService';
+import { subplotPaletteColors, ThemeService } from './services/ThemeService';
 import type { SceneAnalysisProcessingModal } from './modals/SceneAnalysisProcessingModal';
 import { TimelineMetricsService } from './services/TimelineMetricsService';
 import { migrateSceneFrontmatterIds } from './migrations/sceneIds';
@@ -71,7 +71,7 @@ import { DeskLamps } from './communityShare/deskLamps';
 import { TimetableService } from './timetable/TimetableService';
 import { refreshTimetableViews } from './timetable/timetableRegistry';
 import { getOpenDocuments } from './utils/documents';
-import { SUBPLOT_COLORS_CHANGED_EVENT } from './renderer/utils/subplotColors';
+import { SUBPLOT_COLORS_CHANGED_EVENT, syncSubplotPalette } from './renderer/utils/subplotColors';
 import { normalizeCanvasSubplotMemory } from './timetable/canvasSubplotMemory';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
@@ -1030,6 +1030,7 @@ export default class RadialTimelinePlugin extends Plugin {
         const sceneTemplatesMigrated = sceneTemplates.base !== storedSceneTemplates.base || sceneTemplates.advanced !== storedSceneTemplates.advanced;
         this.settings.sceneYamlTemplates = sceneTemplates;
         syncMainPlotName(this.settings);
+        syncSubplotPalette(subplotPaletteColors(this.settings.subplotColors));
         await this.hydrateInquirySessionsFromVault();
         if (this.settings.publishStageColors?.House === '#DA7847') {
             this.settings.publishStageColors.House = '#F2863C';
@@ -1423,6 +1424,7 @@ export default class RadialTimelinePlugin extends Plugin {
 
     async saveSettings(): Promise<void> {
         syncMainPlotName(this.settings);
+        syncSubplotPalette(subplotPaletteColors(this.settings.subplotColors));
         this.sceneTimeHeader?.settingsChanged();
         this.communityMailbox?.settingsChanged();
         this.deskLamps?.settingsChanged();

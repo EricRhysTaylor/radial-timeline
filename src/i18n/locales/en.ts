@@ -5801,6 +5801,7 @@ export const en = {
             colorMovedDetail: "{{subplot}} has changed color since these cards were colored. They take its color when you create the scenes.",
             stillIndexing: "Obsidian is still reading the new scenes. Open the timeline once it has finished.",
             canvasUnreadable: "Radial Timeline can’t read this Canvas’s cards, so it left them as they are.",
+            creating: "Creating…",
             subplotName: 'Subplot name',
             takesColor: "The cards take the color of {{subplot}}",
             outsideColor: "Not a timeline color",

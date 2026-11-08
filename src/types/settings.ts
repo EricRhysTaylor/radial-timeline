@@ -579,6 +579,12 @@ export interface CanvasSubplotChoice {
      */
     cards?: string[];
     /**
+     * Cards given this subplot that are still on the Canvas but wear another
+     * color for now, say after an undo. Coloring one back (a redo) gives it
+     * this subplot again; the next time the Canvas opens, they are dropped.
+     */
+    dormant?: string[];
+    /**
      * Named with New subplot… (or given a subplot named that way) before the
      * subplot had scenes. Only such a choice makes a subplot the book lacks
      * a new one; any other choice whose subplot is gone (renamed, removed)

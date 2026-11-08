@@ -12,6 +12,7 @@ import {
     rebaseCanvasSubplotMemory,
     rememberCardSubplot,
     rememberedCanvases,
+    renameCanvasSubplotChoices,
     reviseCanvasChoices,
     saveCanvasSubplotMemory,
     subplotOfCard,
@@ -62,21 +63,35 @@ describe('The subplots the card menu gave Canvas cards, as stored', () => {
         expect(rebaseCanvasSubplotMemory(newer, 'Ideas.canvas', 'Moved.canvas')).toBe(newer);
         expect(dropCanvasSubplotMemory(newer, 'Ideas.canvas')).toBe(newer);
         expect(forgetBookSubplotMemory(newer, 'book')).toBe(newer);
-        expect(reviseCanvasChoices(newer, 'Ideas.canvas', [])).toBe(newer);
+        expect(reviseCanvasChoices(newer, 'Ideas.canvas', [], true)).toBe(newer);
         expect(() => rememberCardSubplot(newer, 'Ideas.canvas', [], { bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['a'], created: true })).toThrow(/newer version/);
     });
 });
 
 describe('Reading the choices on a Canvas', () => {
-    it('keeps the cards still there that still wear the color the menu gave them', () => {
+    it('gives the subplot to the cards still there that wear its color, rests the recolored ones, and drops the deleted', () => {
         const memory = record({ 'Ideas.canvas': [romance(['a', 'b', 'c']), letters(['d'])] });
-        // b was recolored by hand; c was deleted.
+        // b was recolored (an undo, or by hand); c was deleted.
         const now = canvasChoicesNow(memory, 'Ideas.canvas', [{ id: 'a', hex: '#000003' }, { id: 'b', hex: '#ff0000' }, { id: 'd', hex: '#abcdef' }]);
-        expect(now).toEqual([romance(['a']), letters(['d'])]);
+        expect(now).toEqual([{ ...romance(['a']), dormant: ['b'] }, letters(['d'])]);
         expect(subplotOfCard(now, 'a', 'book')).toBe('Romance');
         expect(subplotOfCard(now, 'b', 'book')).toBeNull();
         expect(subplotOfCard(now, 'a', 'other')).toBeNull();
         expect(canvasChoicesNow(memory, 'Other.canvas', [{ id: 'a', hex: '#000003' }])).toEqual([]);
+    });
+
+    it('brings a subplot back when an undone color is redone', () => {
+        const memory = record({ 'Ideas.canvas': [letters(['a', 'b'])] });
+        // Undo: both cards go back to no color. The choice rests; nothing wears Letters.
+        const undone = reviseCanvasChoices(memory, 'Ideas.canvas', [{ id: 'a', hex: null }, { id: 'b', hex: null }], false);
+        expect(undone).toEqual(record({ 'Ideas.canvas': [{ ...letters([]), dormant: ['a', 'b'] }] }));
+        expect(waitingSubplots(undone, 'book', () => false, { canvasPath: 'Other.canvas', choices: [] })).toEqual([]);
+        // Redo: the color is back, and so is the subplot.
+        const redone = canvasChoicesNow(undone, 'Ideas.canvas', [{ id: 'a', hex: '#abcdef' }, { id: 'b', hex: '#abcdef' }]);
+        expect(redone).toEqual([letters(['a', 'b'])]);
+        expect(subplotOfCard(redone, 'b', 'book')).toBe('Letters');
+        // Opening the Canvas later, with the cards still uncolored, lets the choice go.
+        expect(reviseCanvasChoices(undone, 'Ideas.canvas', [{ id: 'a', hex: null }, { id: 'b', hex: null }], true)).toBeUndefined();
     });
 
     it('gives a copied card, new id and same color, the one choice of that color on the Canvas', () => {
@@ -91,10 +106,12 @@ describe('Reading the choices on a Canvas', () => {
 
     it('stores a Canvas’s choices as its cards stand, and leaves the record alone when nothing changed', () => {
         const memory = record({ 'Ideas.canvas': [letters(['a'])], 'Other.canvas': [romance(['b'])] });
-        expect(reviseCanvasChoices(memory, 'Ideas.canvas', [{ id: 'a', hex: '#abcdef' }])).toBe(memory);
-        // Its cards were recolored or deleted, or became sketches: Letters waits no longer.
-        expect(reviseCanvasChoices(memory, 'Ideas.canvas', [{ id: 'a', hex: '#000009' }])).toEqual(record({ 'Other.canvas': [romance(['b'])] }));
-        expect(reviseCanvasChoices(memory, 'Unknown.canvas', [])).toBe(memory);
+        expect(reviseCanvasChoices(memory, 'Ideas.canvas', [{ id: 'a', hex: '#abcdef' }], false)).toBe(memory);
+        // Its card was deleted, or became a sketch: Letters waits no longer.
+        expect(reviseCanvasChoices(memory, 'Ideas.canvas', [], false)).toEqual(record({ 'Other.canvas': [romance(['b'])] }));
+        // Recolored, it rests until the Canvas opens again.
+        expect(reviseCanvasChoices(memory, 'Ideas.canvas', [{ id: 'a', hex: '#000009' }], true)).toEqual(record({ 'Other.canvas': [romance(['b'])] }));
+        expect(reviseCanvasChoices(memory, 'Unknown.canvas', [], true)).toBe(memory);
     });
 });
 
@@ -141,6 +158,20 @@ describe('Remembering and forgetting cards', () => {
         expect(rememberCardSubplot(undefined, 'New.canvas', [], { bookId: 'book', subplot: 'Mara', color: '#000002', cards: ['z'], created: false }))
             .toEqual(record({ 'New.canvas': [{ bookId: 'book', subplot: 'Mara', color: '#000002', cards: ['z'] }] }));
         expect(() => rememberCardSubplot(undefined, 'New.canvas', [], { bookId: 'book', subplot: 'Storm', color: 'red', cards: ['z'], created: true })).toThrow();
+    });
+    it('gives a resting card a new subplot, taking it from the choice it rested in', () => {
+        const open = [{ ...letters(['a']), dormant: ['b'] }];
+        expect(rememberCardSubplot(record({ 'Ideas.canvas': open }), 'Ideas.canvas', open, { bookId: 'book', subplot: 'Romance', color: '#000003', cards: ['b'], created: false }))
+            .toEqual(record({ 'Ideas.canvas': [letters(['a']), romance(['b'])] }));
+    });
+    it('renames the cards’ subplot on every Canvas when the Subplot manager renames it', () => {
+        const memory = record({ 'X.canvas': [romance(['x1'])], 'Y.canvas': [romance(['y1']), letters(['y2'])], 'Z.canvas': [{ ...romance(['z1']), bookId: 'other' }] });
+        expect(renameCanvasSubplotChoices(memory, 'book', 'Romance', 'Love')).toEqual(record({
+            'X.canvas': [{ ...romance(['x1']), subplot: 'Love' }],
+            'Y.canvas': [{ ...romance(['y1']), subplot: 'Love' }, letters(['y2'])],
+            'Z.canvas': [{ ...romance(['z1']), bookId: 'other' }],
+        }));
+        expect(renameCanvasSubplotChoices(memory, 'book', 'Storm', 'Rain')).toBe(memory);
     });
     it('forgets cards that became notes, and drops an empty Canvas and record', () => {
         const open = [romance(['a', 'b']), letters(['c'])];

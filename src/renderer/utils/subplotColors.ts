@@ -17,7 +17,7 @@
 import type { BookProfile, RadialTimelineSettings } from '../../types/settings';
 import { getActiveBook, getSagaBooks, getTimelineScope } from '../../utils/books';
 import { getBookMainPlotName, getMainPlotName } from '../../utils/mainPlot';
-import { ownSubplotColorEntries } from '../../utils/ownSubplotColors';
+import { normalizeOwnSubplotColor, ownSubplotColorEntries } from '../../utils/ownSubplotColors';
 import { cssColorToHex } from '../../utils/colour';
 
 export const SUBPLOT_COLOR_SLOTS = 16;
@@ -53,22 +53,50 @@ export type SubplotColor =
     | { kind: 'own'; color: string }
     | { kind: 'slot'; slot: number };
 
+/*
+ * The palette as lower-case `#rrggbb`, slot by slot, so slot colors can be
+ * compared with own colors without a document. The plugin syncs it from
+ * settings on load and on every save, as it does the main plot's name;
+ * ThemeService paints the same colors (subplotPaletteColors).
+ */
+let paletteHexes: ReadonlyArray<string | null> = [];
+
+export function syncSubplotPalette(colors: readonly string[]): void {
+    paletteHexes = colors.map(color => normalizeOwnSubplotColor(color));
+}
+
 /**
  * Every subplot's color, for subplots in ring order (outermost first). A
  * subplot with its own color wears it; the palette slots go, in ring order,
  * to the subplots without one. Giving a subplot its own color therefore never
- * repaints another subplot. The main plot of the rings drawn now (a book's,
- * or the saga's) always wears a palette slot, whatever color a book gives a
- * subplot of that name.
+ * repaints another subplot, and a slot whose color a subplot on these rings
+ * wears as its own goes to no other subplot, so no two subplots share a
+ * color while the palette has colors left. An own color kept for a subplot
+ * with no scenes here holds nothing. The main plot of the rings drawn now (a
+ * book's, or the saga's) always wears a palette slot, whatever color a book
+ * gives a subplot of that name, and the first slot when it leads the rings.
  */
 export function assignSubplotColors(order: readonly string[], own: OwnSubplotColors): Map<string, SubplotColor> {
     const colors = new Map<string, SubplotColor>();
     const mainPlot = getMainPlotName();
-    let slot = 0;
+    const worn = new Set(order.filter(subplot => subplot !== mainPlot && own.has(subplot)).map(subplot => own.get(subplot)!)); // SAFE: has() checked just before
+    const wornSlot = (slot: number): boolean => { const hex = paletteHexes[slot]; return !!hex && worn.has(hex); };
+    let next = 0;
+    const takeSlot = (): number => {
+        for (let tried = 0; tried < SUBPLOT_COLOR_SLOTS; tried++) {
+            const slot = normalizeSubplotColorIndex(next++);
+            if (!wornSlot(slot)) return slot;
+        }
+        // Every palette color is worn as an own color: rings repeat colors, as they do past sixteen.
+        return normalizeSubplotColorIndex(next++);
+    };
     for (const subplot of order) {
         if (colors.has(subplot)) continue;
         const color = subplot === mainPlot ? undefined : own.get(subplot);
-        colors.set(subplot, color !== undefined ? { kind: 'own', color } : { kind: 'slot', slot: normalizeSubplotColorIndex(slot++) });
+        if (color !== undefined) { colors.set(subplot, { kind: 'own', color }); continue; }
+        // Ring 1's main plot keeps the first slot.
+        const slot = subplot === mainPlot && next === 0 ? normalizeSubplotColorIndex(next++) : takeSlot();
+        colors.set(subplot, { kind: 'slot', slot });
     }
     return colors;
 }

@@ -12,6 +12,7 @@ import { t, tCount } from '../i18n';
 import { getBookMainPlotName } from '../utils/mainPlot';
 import { getActiveBook } from '../utils/books';
 import { clearOwnSubplotColor, renameOwnSubplotColor, type SubplotRenameOutcome } from '../utils/ownSubplotColors';
+import { renameCanvasSubplotChoices } from '../timetable/canvasSubplotMemory';
 
 export interface SubplotStats {
     name: string;
@@ -252,6 +253,12 @@ export class SubplotManagementService {
         const book = getActiveBook(settings);
         if (renamingMainPlot && book) book.mainPlotName = newName;
         if (book) renameOwnSubplotColor(book, oldName, newName, outcome);
+        // Canvas cards the card menu gave the subplot follow it, unless some scenes keep the old name.
+        if (book && !outcome.oldNameRemains) {
+            const memory = renameCanvasSubplotChoices(settings.canvasSubplotMemory, book.id, oldName, newName);
+            if (memory) settings.canvasSubplotMemory = memory;
+            else delete settings.canvasSubplotMemory;
+        }
         const dominantSubplots = settings.dominantSubplots;
         if (!dominantSubplots) return;
         for (const [path, subplot] of Object.entries(dominantSubplots)) {

@@ -12,6 +12,7 @@ import {
     SUBPLOT_COLOR_SLOTS,
     subplotColorCss,
     subplotColorOn,
+    syncSubplotPalette,
     timelineOwnSubplotColors,
 } from './subplotColors';
 import { syncMainPlotName } from '../../utils/mainPlot';
@@ -88,6 +89,50 @@ describe('the one subplot color rule', () => {
         } finally {
             syncMainPlotName({ books: [], activeBookId: undefined, timelineScope: 'book' });
         }
+    });
+
+    describe('with the palette in view', () => {
+        // Palette slot N paints #0000NN (1-based).
+        const palette = Array.from({ length: SUBPLOT_COLOR_SLOTS }, (_, slot) => `#${String(slot + 1).padStart(6, '0')}`);
+        afterEach(() => syncSubplotPalette([]));
+
+        it('never gives a ring a palette color another subplot wears as its own (the live test’s rename)', () => {
+            syncSubplotPalette(palette);
+            // The Captain wears the fifth palette color as its own. After "The Assassin" became "The Killer"
+            // in the scenes, The Killer and The Monk wear slots; The Monk would have landed on the fifth.
+            const own = new Map([['The Assassin', '#ff8600'], ['The Captain', '#000005'], ['The Handmaid', '#f9e784'], ['The Prince', '#2ec4b6']]);
+            const colors = assignSubplotColors(['Main Plot', 'The Captain', 'The Handmaid', 'The Prince', 'The Queen', 'The Jester', 'The Killer', 'The Monk'], own);
+            expect([...colors].filter(([, color]) => color.kind === 'slot')).toEqual([
+                ['Main Plot', { kind: 'slot', slot: 0 }],
+                ['The Queen', { kind: 'slot', slot: 1 }],
+                ['The Jester', { kind: 'slot', slot: 2 }],
+                ['The Killer', { kind: 'slot', slot: 3 }],
+                // Not slot 4, The Captain's color.
+                ['The Monk', { kind: 'slot', slot: 5 }],
+            ]);
+            const worn = [...colors.values()].map(color => color.kind === 'own' ? color.color : palette[color.slot]);
+            expect(new Set(worn).size).toBe(worn.length);
+        });
+
+        it('lets an own color kept for a subplot with no scenes hold nothing', () => {
+            syncSubplotPalette(palette);
+            // "The Assassin" was renamed in its scenes' properties; its color is still stored under the old name.
+            const colors = assignSubplotColors(['Main Plot', 'The Killer', 'The Monk'], new Map([['The Assassin', '#000002']]));
+            expect(colors.get('The Killer')).toEqual({ kind: 'slot', slot: 1 });
+            expect(colors.get('The Monk')).toEqual({ kind: 'slot', slot: 2 });
+        });
+
+        it('keeps the first slot for the main plot, and wraps over the free colors past them', () => {
+            syncSubplotPalette(palette);
+            const own = new Map([['Romance', '#000001'], ['Letters', '#000003']]);
+            const order = ['Main Plot', 'Romance', 'Letters', ...Array.from({ length: 15 }, (_, index) => `Ring ${index}`)];
+            const colors = assignSubplotColors(order, own);
+            expect(colors.get('Main Plot')).toEqual({ kind: 'slot', slot: 0 });
+            expect(colors.get('Ring 0')).toEqual({ kind: 'slot', slot: 1 });
+            expect(colors.get('Ring 1')).toEqual({ kind: 'slot', slot: 3 });
+            // Fourteen free slots (1, 3 to 15): the fifteenth ring wraps, still skipping the worn color.
+            expect(colors.get('Ring 14')).toEqual({ kind: 'slot', slot: 1 });
+        });
     });
 
     it('wraps the palette after sixteen slot-colored rings', () => {

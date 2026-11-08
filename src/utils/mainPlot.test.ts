@@ -275,6 +275,19 @@ describe('SubplotManagementService.renameSubplot', () => {
         expect(frontmatter['Book A/1 Opening.md'].Subplot).toBe('Courtship');
     });
 
+    it('moves a subplot’s own color, and the Canvas cards given it, to the new name', async () => {
+        const frontmatter = {
+            'Book A/1.md': { Class: 'Scene', Subplot: 'The Assassin' },
+            'Book A/2.md': { Class: 'Scene', Subplot: 'The Assassin' },
+        };
+        const { service, settings } = vaultWith(frontmatter);
+        settings.books[0].ownSubplotColors = { schemaVersion: 1, colors: { 'The Assassin': '#ff8600' } };
+        settings.canvasSubplotMemory = { schemaVersion: 1, canvases: { 'Ideas.canvas': [{ bookId: 'a', subplot: 'The Assassin', color: '#ff8600', cards: ['c1'] }] } };
+        await service.renameSubplot('The Assassin', 'The Killer');
+        expect(settings.books[0].ownSubplotColors).toEqual({ schemaVersion: 1, colors: { 'The Killer': '#ff8600' } });
+        expect(settings.canvasSubplotMemory).toEqual({ schemaVersion: 1, canvases: { 'Ideas.canvas': [{ bookId: 'a', subplot: 'The Killer', color: '#ff8600', cards: ['c1'] }] } });
+    });
+
     it('copies a subplot’s own color when some scenes keep the old name, so neither subplot changes color', async () => {
         const frontmatter = {
             'Book A/1 Opening.md': { Class: 'Scene', Subplot: 'Romance' },

@@ -6129,6 +6129,7 @@ export const th: TranslationKeys = {
             colorMovedDetail: "{{subplot}} เปลี่ยนสีแล้วตั้งแต่ลงสีการ์ดเหล่านี้ การ์ดจะเปลี่ยนเป็นสีนั้นเมื่อคุณสร้างฉาก",
             stillIndexing: "Obsidian ยังอ่านฉากใหม่อยู่ โปรดเปิดไทม์ไลน์เมื่ออ่านเสร็จแล้ว",
             canvasUnreadable: "Radial Timeline อ่านการ์ดของ Canvas นี้ไม่ได้ จึงปล่อยไว้ตามเดิม",
+            creating: "กำลังสร้าง…",
             subplotName: 'ชื่อพล็อตย่อย',
             takesColor: "การ์ดจะเปลี่ยนเป็นสีของ {{subplot}}",
             outsideColor: "ไม่ใช่สีของไทม์ไลน์",

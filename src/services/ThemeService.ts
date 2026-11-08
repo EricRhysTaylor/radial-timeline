@@ -1,6 +1,12 @@
 import type RadialTimelinePlugin from '../main';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import { getOpenDocuments } from '../utils/documents';
+import { SUBPLOT_COLOR_SLOTS } from '../renderer/utils/subplotColors';
+
+/** The 16 palette colors the rings paint with: each slot from settings, or its default when unset. */
+export function subplotPaletteColors(subplotColors: readonly string[]): string[] {
+    return Array.from({ length: SUBPLOT_COLOR_SLOTS }, (_, i) => subplotColors[i] || DEFAULT_SETTINGS.subplotColors[i]); // SAFE: an unset slot paints its default color, as Settings shows it
+}
 
 export class ThemeService {
     constructor(private plugin: RadialTimelinePlugin) { }
@@ -24,12 +30,9 @@ export class ThemeService {
         });
 
         if (Array.isArray(subplotColors)) {
-            for (let i = 0; i < 16; i++) {
-                const color = subplotColors[i] || DEFAULT_SETTINGS.subplotColors[i];
-                if (color) {
-                    root.style.setProperty(`--rt-subplot-colors-${i}`, color);
-                }
-            }
+            subplotPaletteColors(subplotColors).forEach((color, i) => {
+                if (color) root.style.setProperty(`--rt-subplot-colors-${i}`, color);
+            });
         }
     }
 

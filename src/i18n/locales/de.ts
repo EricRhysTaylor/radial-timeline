@@ -6126,6 +6126,7 @@ export const de: DeepPartial<TranslationKeys> = {
             colorMovedDetail: "{{subplot}} hat die Farbe gewechselt, seit diese Karten gefärbt wurden. Sie übernehmen ihre Farbe, wenn du die Szenen erstellst.",
             stillIndexing: "Obsidian liest die neuen Szenen noch. Öffne die Zeitleiste, sobald es fertig ist.",
             canvasUnreadable: "Radial Timeline kann die Karten dieses Canvas nicht lesen und lässt sie, wie sie sind.",
+            creating: "Wird erstellt…",
             subplotName: 'Name der Nebenhandlung',
             takesColor: "Die Karten übernehmen die Farbe von {{subplot}}",
             outsideColor: "Keine Farbe der Zeitleiste",

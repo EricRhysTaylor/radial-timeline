@@ -122,7 +122,7 @@ Opens the subplot manager for bulk cleanup. Use it when subplot names have drift
 
 Lists active subplots with scene counts and gives you bulk actions:
 
-*   **Rename** a subplot in the active book's scene files.
+*   **Rename** a subplot in the active book's scene files. Its own color, if it has one, and the Canvas cards given it go with the new name; renaming here rather than in each scene's properties is what keeps them.
 *   **Remove** a subplot from the timeline.
 
 <p align="center"><img src="images/panel-manage-subplots-rename.png" alt="Subplot manager — rename detail" width="450"></p>

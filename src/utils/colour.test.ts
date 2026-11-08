@@ -198,7 +198,7 @@ describe('lightenColor', () => {
 
 describe('completeHexColor', () => {
   it('stays quiet while a typed hex color is partial', () => {
-    for (const partial of ['', '#', '#F', '#F9E', 'F9E7', '#F9E78', '#F9E784A', '#GGGGGG']) {
+    for (const partial of ['', '#', '#F', '#F9', 'F9E7', '#F9E78', '#F9E784A', '#GGGGGG', '#GGG', '##fff']) {
       expect(completeHexColor(partial), partial).toBeNull();
     }
   });
@@ -207,5 +207,11 @@ describe('completeHexColor', () => {
     expect(completeHexColor('#F9E784')).toBe('#F9E784');
     expect(completeHexColor('f9e784')).toBe('#f9e784');
     expect(completeHexColor(' #a35ca7 ')).toBe('#a35ca7');
+  });
+
+  it('expands a shorthand #rgb to #rrggbb, so "#fff" still saves', () => {
+    expect(completeHexColor('#fff')).toBe('#ffffff');
+    expect(completeHexColor('abc')).toBe('#aabbcc');
+    expect(completeHexColor(' #F9E ')).toBe('#FF99EE');
   });
 });

@@ -121,15 +121,17 @@ export function cssColorToHex(doc: Document, css: string): string | null {
 }
 
 /**
- * A hex color typed into a field, once it is complete: `#rrggbb`, with the
- * `#` added if it was left off. Null while it is partial ("#F9E" on the way
- * to "#F9E784"), so a field saves nothing and feeds its color picker nothing
- * until then; a color input takes only #rrggbb and warns on anything else.
+ * A hex color typed into a field, once it is complete, as `#rrggbb`: the `#`
+ * is added if it was left off, and shorthand `#rgb` is expanded ("#fff" saves
+ * as "#ffffff"). Null while it is partial ("#F9E7" on the way to "#F9E784"),
+ * so a field saves nothing and feeds its color picker nothing until then; a
+ * color input takes only #rrggbb and warns on anything else.
  */
 export function completeHexColor(value: string): string | null {
-  const trimmed = value.trim();
-  if (!/^#?[0-9a-f]{6}$/i.test(trimmed)) return null;
-  return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+  const digits = value.trim().replace(/^#/, '');
+  if (/^[0-9a-f]{6}$/i.test(digits)) return `#${digits}`;
+  if (/^[0-9a-f]{3}$/i.test(digits)) return `#${[...digits].map(digit => digit + digit).join('')}`;
+  return null;
 }
 
 export function desaturateColor(hexColor: string, amount: number): string {

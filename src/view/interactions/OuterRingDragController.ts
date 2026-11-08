@@ -860,7 +860,7 @@ export class OuterRingDragController {
                     onWarning: () => {
                         new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
                     },
-                }), () => applyAttachedSketchMove(this.view.plugin.app, sketchMove), () => { reorderApplied = true; });
+                }), () => applyAttachedSketchMove(this.view.plugin.app, this.view.plugin.sketchPlacements, sketchMove), () => { reorderApplied = true; });
             const historySummary = `${sourceDescriptor} | ${targetDescriptor}`;
             const noticeText = t('ui.outerRingDragController.movedBefore', { source: sourceDescriptor, target: targetDescriptor });
             await this.recordRecentMove({
@@ -1005,7 +1005,7 @@ export class OuterRingDragController {
                     onWarning: () => {
                         new Notice(t('ui.outerRingDragController.potentialIssueNotice'), 8000);
                     },
-                }), () => applyAttachedSketchMove(this.view.plugin.app, sketchMove), () => { reorderApplied = true; });
+                }), () => applyAttachedSketchMove(this.view.plugin.app, this.view.plugin.sketchPlacements, sketchMove), () => { reorderApplied = true; });
             await this.recordRecentMove({
                 itemType: sourceType,
                 filePath: sourcePath,

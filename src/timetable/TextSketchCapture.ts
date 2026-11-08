@@ -2,13 +2,12 @@ import { Component, DropdownComponent, MarkdownView, Notice, TFile, normalizePat
 import type RadialTimelinePlugin from '../main';
 import { ErtModal } from '../ui/ErtModal';
 import { t } from '../i18n';
-import { getActiveBook, getBookIdForPath } from '../utils/books';
+import { getActiveBook } from '../utils/books';
 import { getConfiguredActCount } from '../utils/acts';
 import { safeTitle } from '../utils/noteTitle';
 import { authorKeyFor } from './timetableFiles';
-import { buildTableRow } from './timetableModel';
 import { planCanvasSketchAppend } from './canvasSketchOrdering';
-import { SKETCH_ORDER } from './sketchPlacement';
+import { bookPlacementItems } from './canvasBookCards';
 import { setAccessibleLabel } from '../utils/domTooltip';
 
 class TextSketchCaptureModal extends ErtModal {
@@ -46,18 +45,15 @@ class TextSketchCaptureModal extends ErtModal {
                 const folder = normalizePath(book?.sourceFolder ?? '');
                 if (!book || !folder || !this.app.vault.getFolderByPath(folder) || !body.value.trim()) throw new Error(t('ui.canvasSketch.missingFolder'));
                 const act = actSelect.getValue() ? Number(actSelect.getValue()) : null;
-                const items = this.app.vault.getMarkdownFiles().filter(file => getBookIdForPath(books, file.path) === book.id).map(file => {
-                    const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
-                    return { row: buildTableRow(file.path, file.basename, frontmatter, this.plugin.settings), frontmatter };
-                });
-                const placement = planCanvasSketchAppend(items, act, null, 1);
+                const placement = planCanvasSketchAppend(bookPlacementItems(this.plugin, book.id), act, null, 1);
                 if (placement.missing.length) throw new Error(t('ui.timetable.outlineImportMissingOrder'));
                 const name = safeTitle(title.value).slice(0, 100) || t('ui.timetable.newSketchName');
                 let path = `${folder}/${name}.md`;
                 for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${folder}/${name} ${n}.md`;
-                const fm: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch', [SKETCH_ORDER]: placement.ranks[0], Source: `[[${this.source.path.replace(/\.md$/i, '')}]]` };
+                const fm: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch', Source: `[[${this.source.path.replace(/\.md$/i, '')}]]` };
                 if (act !== null) fm[authorKeyFor('Act', this.plugin.settings)] = act;
                 await this.app.vault.create(path, `---\n${stringifyYaml(fm)}---\n\n${body.value}\n`);
+                await this.plugin.sketchPlacements.set([[path, { order: placement.ranks[0] }]]);
                 this.close();
                 // This dialog opens from the timeline and the Timetable's other
                 // layouts too, so the notice names the book, not the outline.

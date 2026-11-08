@@ -6227,7 +6227,6 @@ export const th: DeepPartial<TranslationKeys> = {
             noteDropAfter: 'วางร่างหลัง',
             noteDropEndAct: 'ท้ายองก์',
             noteDropExistingPlacement: 'โน้ตมีคุณสมบัติตำแหน่งอยู่แล้ว จึงไม่มีการเปลี่ยนแปลง',
-            noteDropAnchorHint: 'การเลือกฉากจะเพิ่ม Place after scene ด้วย',
             noteDropTitle: 'เพิ่มโน้ตลงในหนังสือ',
             noteDropType: 'ใช้โน้ตนี้เป็น',
             noteDropScene: 'ฉาก',

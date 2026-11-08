@@ -6219,7 +6219,6 @@ export const de: DeepPartial<TranslationKeys> = {
             noteDropAfter: 'Skizze platzieren nach',
             noteDropEndAct: 'Ende des Akts',
             noteDropExistingPlacement: 'Die Notiz hat bereits eine Positionseigenschaft; es wurde nichts geändert.',
-            noteDropAnchorHint: 'Bei Auswahl einer Szene wird Place after scene ergänzt.',
             noteDropTitle: 'Notiz zum Buch hinzufügen',
             noteDropType: 'Notiz verwenden als',
             noteDropScene: 'Szene',

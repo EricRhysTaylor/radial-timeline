@@ -1,13 +1,13 @@
 import { compareManuscriptRows, type TimetableRow } from './timetableModel';
 import { readSceneId } from '../utils/sceneIds';
-import { readFrontmatterProperty } from '../utils/frontmatterKeys';
-
-import { SKETCH_ORDER, sketchAnchor } from './sketchPlacementFields';
-export { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor } from './sketchPlacementFields';
+import { sketchAnchor, sketchOrder, type SketchPlacement } from './sketchPlacementFields';
+export { sketchAnchor, sketchOrder, type SketchPlacement } from './sketchPlacementFields';
 
 export interface PlacementItem {
     row: TimetableRow;
     frontmatter?: Record<string, unknown>;
+    /** The sketch's placement, from the placement sidecar. */
+    placement?: SketchPlacement;
 }
 export type PlacementProblem = 'missing' | 'duplicate' | 'different-act';
 export interface OrderedSketches<T> {
@@ -15,9 +15,8 @@ export interface OrderedSketches<T> {
     problems: Map<string, PlacementProblem>;
 }
 
-function sketchRank(frontmatter?: Record<string, unknown>): number {
-    const value = readFrontmatterProperty(frontmatter, SKETCH_ORDER);
-    return typeof value === 'number' && Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
+function sketchRank(placement?: SketchPlacement): number {
+    return sketchOrder(placement) ?? Number.POSITIVE_INFINITY;
 }
 
 /** Merge sketches into the existing scene order; never change scene positions. */
@@ -34,7 +33,7 @@ export function orderSketches<T extends PlacementItem>(items: T[]): OrderedSketc
     const unplaced = new Set<T>();
     for (const item of base) {
         if (item.row.kind !== 'sketch') continue;
-        const id = sketchAnchor(item.frontmatter);
+        const id = sketchAnchor(item.placement);
         if (!id) { unplaced.add(item); continue; }
         const matches = scenes.get(id) ?? []; // SAFE: an anchor no scene carries matches none and is reported as missing
         const problem = matches.length === 0 ? 'missing' : matches.length > 1 ? 'duplicate'
@@ -43,14 +42,14 @@ export function orderSketches<T extends PlacementItem>(items: T[]): OrderedSketc
         const key = matches[0].row.path;
         byAnchor.set(key, [...(byAnchor.get(key) ?? []), item]); // SAFE: the first sketch after this scene starts its group
     }
-    for (const group of byAnchor.values()) group.sort((a, b) => sketchRank(a.frontmatter) - sketchRank(b.frontmatter)
+    for (const group of byAnchor.values()) group.sort((a, b) => sketchRank(a.placement) - sketchRank(b.placement)
         || a.row.path.localeCompare(b.row.path, undefined, { numeric: true, sensitivity: 'base' }));
     const result: T[] = [];
     // Emit unplaced sketches at the end of their act, even if they had an old prefix.
     let act: number | null | undefined;
     let trailing: T[] = [];
     const flush = (): void => {
-        trailing.sort((a, b) => sketchRank(a.frontmatter) - sketchRank(b.frontmatter)
+        trailing.sort((a, b) => sketchRank(a.placement) - sketchRank(b.placement)
             || a.row.path.localeCompare(b.row.path, undefined, { numeric: true, sensitivity: 'base' }));
         result.push(...trailing);
         trailing = [];
@@ -75,7 +74,7 @@ export interface SketchDropPlan {
 export function planSketchActDrop(items: PlacementItem[], sourcePath: string, act: number | null): SketchDropPlan | null {
     if (!items.some(item => item.row.path === sourcePath && item.row.kind === 'sketch')) return null;
     const orderedPaths = orderSketches(items).items.filter(item => item.row.kind === 'sketch'
-        && item.row.path !== sourcePath && item.row.act === act && !sketchAnchor(item.frontmatter)).map(item => item.row.path);
+        && item.row.path !== sourcePath && item.row.act === act && !sketchAnchor(item.placement)).map(item => item.row.path);
     orderedPaths.push(sourcePath);
     return { anchorId: null, act, orderedPaths };
 }
@@ -85,11 +84,11 @@ export function planSketchDrop(items: PlacementItem[], sourcePath: string, targe
     const source = items.find(item => item.row.path === sourcePath && item.row.kind === 'sketch');
     const target = items.find(item => item.row.path === targetPath);
     if (!source || !target || source === target || (target.row.kind !== 'scene' && target.row.kind !== 'sketch')) return null;
-    const anchorId = target.row.kind === 'scene' ? readSceneId(target.frontmatter) ?? null : sketchAnchor(target.frontmatter);
+    const anchorId = target.row.kind === 'scene' ? readSceneId(target.frontmatter) ?? null : sketchAnchor(target.placement);
     if (!anchorId && target.row.kind === 'scene') return null;
     if (!anchorId) {
         const gap = orderSketches(items).items.filter(item => item.row.kind === 'sketch' && item.row.path !== sourcePath
-            && item.row.act === target.row.act && !sketchAnchor(item.frontmatter));
+            && item.row.act === target.row.act && !sketchAnchor(item.placement));
         const index = gap.findIndex(item => item.row.path === targetPath);
         if (index < 0) return null;
         const orderedPaths = gap.map(item => item.row.path);
@@ -100,7 +99,7 @@ export function planSketchDrop(items: PlacementItem[], sourcePath: string, targe
     if (anchors.length !== 1 || anchors[0].row.act === null || target.row.act !== anchors[0].row.act) return null;
     const act = anchors[0].row.act;
     const gap = orderSketches(items).items.filter(item => item.row.kind === 'sketch' && item.row.path !== sourcePath
-        && item.row.act === act && sketchAnchor(item.frontmatter) === anchorId);
+        && item.row.act === act && sketchAnchor(item.placement) === anchorId);
     const targetIndex = target.row.kind === 'scene' ? 0 : gap.findIndex(item => item.row.path === targetPath);
     if (targetIndex < 0) return null;
     const orderedPaths = gap.map(item => item.row.path);

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { anchorsInSketchAct, promotionAnchors, sketchesByAct } from './PromoteToSceneEntry';
 import type { TimelineItem } from '../types';
-import { SKETCH_ORDER, type PlacementItem } from '../timetable/sketchPlacement';
+import type { PlacementItem } from '../timetable/sketchPlacement';
 
 const sketch = (name: string, act: number | null, order: number): PlacementItem => ({
     row: { path: `${name}.md`, basename: name, kind: 'sketch', act, prefix: null, className: 'Sketch', subplots: [], removedScene: false },
-    frontmatter: { [SKETCH_ORDER]: order },
+    placement: { order },
 } as unknown as PlacementItem); // SAFE: test fixture with only the fields orderSketches reads
 
 const scene = (title: string, subplot: string): TimelineItem =>

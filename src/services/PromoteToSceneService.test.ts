@@ -1,6 +1,6 @@
 import { extractKeysInOrder } from '../utils/yamlTemplateNormalize';
 import { findMissingTemplateKeys } from '../utils/frontmatter';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { parse, stringify } from 'yaml';
 import { TFile, type App } from 'obsidian';
 import type { RadialTimelineSettings, TimelineItem } from '../types';
@@ -12,6 +12,8 @@ import {
     promotedBasename,
 } from './PromoteToSceneService';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
+import { memoryPlacements } from '../../tests/helpers/sketchPlacements';
+import type { SketchPlacementStore } from '../timetable/SketchPlacementStore';
 
 const BASE_TEMPLATE = DEFAULT_SETTINGS.sceneYamlTemplates!.base;
 
@@ -149,12 +151,14 @@ describe('planPromotion', () => {
 });
 
 describe('applyPromotion', () => {
+    let placements: SketchPlacementStore;
+    beforeEach(() => { placements = memoryPlacements().store; });
 
     it('uses the author-mapped property name when adding a missing core field', async () => {
         const { app, file, frontmatter } = fakeApp({ 'Book 2/68 Test.md': { Synopsis: 'Keep' } });
         const note = file('Book 2/68 Test.md');
         const settings = settingsWithBook({ enableCustomMetadataMapping: true, frontmatterMappings: { 'Story Act': 'Act' } });
-        await applyPromotion(app, settings, planPromotion(app, settings, [note]), { advanced: false });
+        await applyPromotion(app, settings, planPromotion(app, settings, [note]), { placements, advanced: false });
         expect(frontmatter[note.path]).toHaveProperty('Story Act');
         expect(frontmatter[note.path]).not.toHaveProperty('Act');
     });
@@ -166,7 +170,7 @@ describe('applyPromotion', () => {
         const note = file('Book 2/68 Consortia Attack.md');
         const settings = settingsWithBook();
         const plan = planPromotion(app, settings, [note]);
-        const result = await applyPromotion(app, settings, plan, { advanced: false });
+        const result = await applyPromotion(app, settings, plan, { placements, advanced: false });
 
         const fm = frontmatter['Book 2/68 Consortia Attack.md']!;
         expect(result.promoted).toEqual([note]);
@@ -184,7 +188,7 @@ describe('applyPromotion', () => {
         const { app, file, frontmatter } = fakeApp({ 'Book 2/School by Cascade.md': { class: 'Sketch', Act: 1 } });
         const note = file('Book 2/School by Cascade.md');
         const settings = settingsWithBook();
-        await applyPromotion(app, settings, planPromotion(app, settings, [note]), { advanced: true });
+        await applyPromotion(app, settings, planPromotion(app, settings, [note]), { placements, advanced: true });
 
         const fm = frontmatter['Book 2/School by Cascade.md']!;
         expect(fm.class).toBe('Scene');
@@ -202,6 +206,7 @@ describe('applyPromotion', () => {
         ] as TimelineItem[];
         const settings = settingsWithBook();
         const result = await applyPromotion(app, settings, planPromotion(app, settings, [note]), {
+            placements,
             advanced: false,
             anchorPath: 'Book 2/68 Consortia Attack.md',
             sceneData,
@@ -221,6 +226,7 @@ describe('applyPromotion', () => {
         ] as TimelineItem[];
         const settings = settingsWithBook();
         await applyPromotion(app, settings, planPromotion(app, settings, [note]), {
+            placements,
             advanced: false,
             anchorPath: 'Book 2/68 Consortia Attack.md',
             sceneData,
@@ -234,7 +240,7 @@ describe('applyPromotion', () => {
         const { app, file, renames } = fakeApp({ 'Book 2/School by Cascade.md': { Class: 'Sketch' } });
         const note = file('Book 2/School by Cascade.md');
         const settings = settingsWithBook();
-        await applyPromotion(app, settings, planPromotion(app, settings, [note]), { advanced: false, title: null });
+        await applyPromotion(app, settings, planPromotion(app, settings, [note]), { placements, advanced: false, title: null });
 
         expect(renames).toEqual([]);
     });
@@ -244,6 +250,7 @@ describe('applyPromotion', () => {
         const notes = [file('Book 2/Second.md'), file('Book 2/First.md'), file('Book 2/Loose note.md')];
         const settings = settingsWithBook();
         const result = await applyPromotion(app, settings, planPromotion(app, settings, notes), {
+            placements,
             advanced: false,
             sketchNumbers: new Map([['Book 2/First.md', '1'], ['Book 2/Second.md', '2']]),
         });
@@ -261,6 +268,7 @@ describe('applyPromotion', () => {
         const notes = [file('Book 2/A.md'), file('Book 2/B.md')];
         const settings = settingsWithBook();
         await applyPromotion(app, settings, planPromotion(app, settings, notes), {
+            placements,
             advanced: false,
             sketchNumbers: new Map([['Book 2/A.md', '1'], ['Book 2/B.md', '2']]),
         });
@@ -273,38 +281,55 @@ describe('applyPromotion', () => {
         const a = file('Book 2/A.md');
         const b = file('Book 2/B.md');
         const settings = settingsWithBook();
-        const result = await applyPromotion(app, settings, planPromotion(app, settings, [a, b]), { advanced: false });
+        const result = await applyPromotion(app, settings, planPromotion(app, settings, [a, b]), { placements, advanced: false });
 
         expect(result.promoted).toEqual([b]);
         expect(result.failed).toEqual([{ file: a, message: 'Malformed YAML' }]);
     });
 
-    it('keeps later sketches after the promoted scene', async () => {
+    it('keeps later sketches after the promoted scene, in the sidecar, writing no placement into notes', async () => {
         const { app, file, frontmatter } = fakeApp({
             'Book 2/1 First.md': { Class: 'Scene', ID: 'scn_first', Act: 1 },
-            'Book 2/Draft.md': { Class: 'Sketch', ID: 'scn_draft', Act: 1, 'Place after scene': 'scn_first', 'Sketch order': 10 },
-            'Book 2/Later.md': { Class: 'Sketch', Act: 1, 'Place after scene': 'scn_first', 'Sketch order': 20 },
+            'Book 2/Draft.md': { Class: 'Sketch', ID: 'scn_draft', Act: 1 },
+            'Book 2/Later.md': { Class: 'Sketch', Act: 1 },
         });
+        await placements.set([['Book 2/Draft.md', { after: 'scn_first', order: 10 }], ['Book 2/Later.md', { after: 'scn_first', order: 20 }]]);
         const note = file('Book 2/Draft.md'); file('Book 2/1 First.md'); file('Book 2/Later.md');
         const settings = settingsWithBook();
         const result = await applyPromotion(app, settings, planPromotion(app, settings, [note]), {
-            advanced: false, anchorPath: 'Book 2/1 First.md',
+            placements, advanced: false, anchorPath: 'Book 2/1 First.md',
             sceneData: [{ path: 'Book 2/1 First.md', itemType: 'Scene', actNumber: 1 }] as TimelineItem[],
             sketchPlacement: { anchorId: 'scn_first', followingSketches: ['Book 2/Later.md'] },
         });
         expect(result.failed).toEqual([]);
-        expect(frontmatter['Book 2/Draft.md']).not.toHaveProperty('Place after scene');
-        expect(frontmatter['Book 2/Later.md']?.['Place after scene']).toBe('scn_draft');
+        // The promoted scene leaves the sidecar; the sketch after it now follows it.
+        expect(placements.get('Book 2/Draft.md')).toBeUndefined();
+        expect(placements.get('Book 2/Later.md')).toEqual({ after: 'scn_draft', order: 20 });
+        expect(frontmatter['Book 2/Later.md']).toEqual({ Class: 'Sketch', Act: 1 });
+        expect(Object.keys(frontmatter['Book 2/Draft.md'] ?? {})).not.toContain('Place after scene');
+    });
+
+    it('refuses to promote a sketch whose placement changed since it was planned', async () => {
+        const { app, file, frontmatter } = fakeApp({ 'Book 2/1 First.md': { Class: 'Scene', ID: 'scn_first', Act: 1 }, 'Book 2/Draft.md': { Class: 'Sketch', Act: 1 } });
+        await placements.set([['Book 2/Draft.md', { after: 'scn_other' }]]);
+        const note = file('Book 2/Draft.md'); file('Book 2/1 First.md');
+        const settings = settingsWithBook();
+        const result = await applyPromotion(app, settings, planPromotion(app, settings, [note]), {
+            placements, advanced: false, sketchPlacement: { anchorId: 'scn_first', followingSketches: [] },
+        });
+        expect(result.promoted).toEqual([]);
+        expect(frontmatter['Book 2/Draft.md']?.Class).toBe('Sketch');
     });
 
     it('finds a safe natural-sort position when the numeric midpoint sorts into the wrong gap', async () => {
         const { app, file, renames } = fakeApp({
             'Book 2/1 First.md': { Class: 'Scene', ID: 'scn_first', Act: 1 },
-            'Book 2/Draft.md': { Class: 'Sketch', Act: 1, 'Place after scene': 'scn_first' },
+            'Book 2/Draft.md': { Class: 'Sketch', Act: 1 },
         });
         const note = file('Book 2/Draft.md'); file('Book 2/1 First.md');
         const settings = settingsWithBook();
         const result = await applyPromotion(app, settings, planPromotion(app, settings, [note]), {
+            placements,
             advanced: false, anchorPath: 'Book 2/1 First.md', sceneData: [
                 { path: 'Book 2/1 First.md', itemType: 'Scene', actNumber: 1 },
                 { path: 'Book 2/1.5 Next.md', itemType: 'Scene', actNumber: 1 },
@@ -317,11 +342,12 @@ describe('applyPromotion', () => {
     it('does not modify the sketch when no safe position exists in the gap', async () => {
         const { app, file, frontmatter } = fakeApp({
             'Book 2/12.1 First.md': { Class: 'Scene', ID: 'scn_first', Act: 1 },
-            'Book 2/Draft.md': { Class: 'Sketch', Act: 1, 'Place after scene': 'scn_first' },
+            'Book 2/Draft.md': { Class: 'Sketch', Act: 1 },
         });
         const note = file('Book 2/Draft.md'); file('Book 2/12.1 First.md');
         const settings = settingsWithBook();
         const result = await applyPromotion(app, settings, planPromotion(app, settings, [note]), {
+            placements,
             advanced: false, anchorPath: 'Book 2/12.1 First.md', sceneData: [
                 { path: 'Book 2/12.1 First.md', itemType: 'Scene', actNumber: 1 },
                 { path: 'Book 2/12.2 Next.md', itemType: 'Scene', actNumber: 1 },

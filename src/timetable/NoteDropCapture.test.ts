@@ -64,17 +64,17 @@ describe('a note dragged over a target of its own', () => {
 describe('adding a note to the book', () => {
     it('gives a placed sketch the act of its scene, leaving the rest of the note as it was', () => {
         const source = '---\nSynopsis: Keep # this\n---\n\nBody\n';
-        expect(addNoteClass(source, 'Sketch', 'scn_1', { key: 'Act', value: 2 })).toBe('---\nClass: Sketch\nPlace after scene: "scn_1"\nAct: 2\nSynopsis: Keep # this\n---\n\nBody\n');
-        expect(addNoteClass('Body\n', 'Sketch', 'scn_1', { key: 'Act', value: 2 })).toBe('---\nClass: Sketch\nPlace after scene: "scn_1"\nAct: 2\n---\n\nBody\n');
+        expect(addNoteClass(source, 'Sketch', { key: 'Act', value: 2 })).toBe('---\nClass: Sketch\nAct: 2\nSynopsis: Keep # this\n---\n\nBody\n');
+        expect(addNoteClass('Body\n', 'Sketch', { key: 'Act', value: 2 })).toBe('---\nClass: Sketch\nAct: 2\n---\n\nBody\n');
     });
     it('fills an empty Act in place instead of writing a second one', () => {
-        expect(addNoteClass('---\nact:\nWhen: 2085\n---\n', 'Sketch', 'scn_1', { key: 'Act', value: 3 })).toBe('---\nClass: Sketch\nPlace after scene: "scn_1"\nact: 3\nWhen: 2085\n---\n');
+        expect(addNoteClass('---\nact:\nWhen: 2085\n---\n', 'Sketch', { key: 'Act', value: 3 })).toBe('---\nClass: Sketch\nact: 3\nWhen: 2085\n---\n');
     });
     it('keeps Windows line endings when it fills an empty Act', () => {
-        expect(addNoteClass('---\r\nAct:\r\n---\r\n', 'Sketch', 'scn_1', { key: 'Act', value: 3 })).toBe('---\r\nClass: Sketch\r\nPlace after scene: "scn_1"\r\nAct: 3\r\n---\r\n');
+        expect(addNoteClass('---\r\nAct:\r\n---\r\n', 'Sketch', { key: 'Act', value: 3 })).toBe('---\r\nClass: Sketch\r\nAct: 3\r\n---\r\n');
     });
     it('leaves an Act it cannot read for the author to fix', () => {
-        expect(() => addNoteClass('---\nAct: two\n---\n', 'Sketch', 'scn_1', { key: 'Act', value: 3 })).toThrow();
+        expect(() => addNoteClass('---\nAct: two\n---\n', 'Sketch', { key: 'Act', value: 3 })).toThrow();
     });
     it('inserts only the Class line and preserves existing YAML, comments, and prose byte for byte', () => {
         const source = '---\r\nSynopsis: A scene # keep this\r\nAct: 3\r\nWhen: 2085-05-11\r\nCharacter:\r\n  - "[[Entiat Chelan]]"\r\n---\r\n\r\nUnchanged prose.\r\n';
@@ -83,10 +83,11 @@ describe('adding a note to the book', () => {
     it('wraps a note without frontmatter without changing its text', () => {
         expect(addNoteClass('A sketch.\n', 'Sketch')).toBe('---\nClass: Sketch\n---\n\nA sketch.\n');
     });
-    it('adds a chosen sketch anchor without changing the existing properties', () => {
+    it('never writes a sketch placement into the note: the scene it follows goes to the sidecar', () => {
         const source = '---\nAct: 3\nSynopsis: Leave this alone\n---\n\nBody\n';
-        expect(addNoteClass(source, 'Sketch', 'scn_12345678')).toBe(source.replace('---\n', '---\nClass: Sketch\nPlace after scene: "scn_12345678"\n'));
-        expect(() => addNoteClass('---\nPlace after scene: scn_existing\n---\n', 'Sketch', 'scn_other')).toThrow();
+        const classified = addNoteClass(source, 'Sketch');
+        expect(classified).toBe(source.replace('---\n', '---\nClass: Sketch\n'));
+        expect(classified).not.toMatch(/Place after scene|Sketch order/i);
     });
     it('does not replace an existing class under any letter case', () => {
         expect(() => addNoteClass('---\nclass: Character\n---\n', 'Scene')).toThrow();

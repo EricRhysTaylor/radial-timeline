@@ -10,6 +10,7 @@ import type { CardColorStanding, DirectoryEntry } from './canvasSubplotDirectory
 import type { CanvasSubplotMemoryRecord } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import { syncMainPlotName } from '../utils/mainPlot';
+import { memoryPlacements } from '../../tests/helpers/sketchPlacements';
 
 /** Palette slot N paints `#0000NN` (1-based), so test colors read at a glance. */
 const slotHex = (slot: number): string => `#${String(slot + 1).padStart(6, '0')}`;
@@ -27,7 +28,8 @@ function setup(changeDuringCreate = false, selectedIds: string[] = ['1']) {
     });
     const app = { workspace: { getLeavesOfType: () => [] }, metadataCache: { getFileCache: () => ({}) }, vault: { getMarkdownFiles: () => [], getFiles: () => [], getFolderByPath: () => ({}), getAbstractFileByPath: (path: string) => path === 'Book/A scene.md' ? {} : null, create } } as unknown as App;
     const activateView = vi.fn(async () => {});
-    const plugin = { settings: {}, refreshTimelineIfNeeded: vi.fn(), getSceneData: vi.fn(async () => []), getTimelineService: () => ({ activateView }), setActiveBookId: vi.fn(async () => {}), saveSettings: vi.fn(async () => {}), setCSSColorVariables: vi.fn() } as unknown as RadialTimelinePlugin;
+    const placements = memoryPlacements().store;
+    const plugin = { app, settings: {}, sketchPlacements: placements, refreshTimelineIfNeeded: vi.fn(), getSceneData: vi.fn(async () => []), getTimelineService: () => ({ activateView }), setActiveBookId: vi.fn(async () => {}), saveSettings: vi.fn(async () => {}), setCSSColorVariables: vi.fn() } as unknown as RadialTimelinePlugin;
     const setData = vi.fn((next: StoryCanvasData) => { data = next; });
     const requestSave = vi.fn();
     const canvas: OpenCanvas = { getData: () => data, setData, requestSave, selection: new Set(selectedIds.map(id => ({ getData: () => ({ id, type: 'text' }) }))) };
@@ -38,7 +40,7 @@ function setup(changeDuringCreate = false, selectedIds: string[] = ['1']) {
     // Obsidian has read every new note's properties (see the indexing test below).
     const indexed = vi.fn(async () => true);
     Reflect.set(modal, 'indexed', indexed);
-    return { modal, saved, setData, requestSave, app, plugin, activateView, book, indexed, getData: () => data };
+    return { modal, saved, setData, requestSave, app, plugin, activateView, book, indexed, placements, getData: () => data };
 }
 
 function scenes(selected: string[] = ['1', '2']) {
@@ -421,16 +423,17 @@ describe('Canvas sketch conversion', () => {
         error.mockRestore();
     });
 
-    it('writes selected sketches in the reviewed order at the end of the chosen act', async () => {
+    it('writes selected sketches in the reviewed order at the end of the chosen act, placement in the sidecar only', async () => {
         const test = setup(false, ['1', '2']);
         (Reflect.get(test.modal, 'selected') as Set<string>).add('2');
         const cards = Reflect.get(test.modal, 'cards') as Array<{ id: string }>;
         cards.reverse();
         Reflect.set(test.modal, 'act', 2);
         await Reflect.get(test.modal, 'convert').call(test.modal);
-        expect(test.saved.get('Book/Other idea.md')).toContain('Sketch order: 10');
-        expect(test.saved.get('Book/A scene 2.md')).toContain('Sketch order: 20');
+        expect(test.placements.get('Book/Other idea.md')).toEqual({ order: 10 });
+        expect(test.placements.get('Book/A scene 2.md')).toEqual({ order: 20 });
         expect(test.saved.get('Book/Other idea.md')).toContain('Act: 2');
+        for (const content of test.saved.values()) expect(content).not.toMatch(/Place after scene|Sketch order/i);
     });
 
     it('keeps sketches off subplots whatever color their card has', async () => {
@@ -451,9 +454,9 @@ describe('Canvas sketch conversion', () => {
         }]);
         await Reflect.get(test.modal, 'convert').call(test.modal);
         const content = test.saved.get('Book/A scene 2.md');
-        expect(content).toContain('Place after scene: scene_letter');
         expect(content).toContain('Act: 2');
-        expect(content).toContain('Sketch order: 10');
+        expect(content).not.toContain('Place after scene');
+        expect(test.placements.get('Book/A scene 2.md')).toEqual({ after: 'scene_letter', order: 10 });
     });
 
     it('does not create sketches if the chosen scene has a duplicate ID', async () => {
@@ -468,71 +471,65 @@ describe('Canvas sketch conversion', () => {
         error.mockRestore();
     });
 
-    it('gives an existing unranked sketch a position before the new cards', async () => {
-        const test = setup();
+    function withUnrankedSketch(test: ReturnType<typeof setup>) {
         const file = new TFile('Book/Existing.md');
         const frontmatter: Record<string, unknown> = { Class: 'Sketch', Act: 1 };
         test.plugin.settings = { ...DEFAULT_SETTINGS, books: [{ id: 'book', title: 'Book', sourceFolder: 'Book' }] };
         test.app.vault.getAbstractFileByPath = path => path === file.path ? file : null;
-        test.app.fileManager = { processFrontMatter: async (_file: TFile, cb: (fm: Record<string, unknown>) => void) => cb(frontmatter) } as App['fileManager'];
+        const processFrontMatter = vi.fn();
+        test.app.fileManager = { processFrontMatter } as unknown as App['fileManager'];
         Reflect.set(test.modal, 'act', 1);
-        Reflect.set(test.modal, 'bookItems', () => [{ row: { path: file.path, basename: file.basename, kind: 'sketch', act: 1 } as TimetableRow, frontmatter }]);
+        Reflect.set(test.modal, 'bookItems', () => [{ row: { path: file.path, basename: file.basename, kind: 'sketch', act: 1 } as TimetableRow, frontmatter, placement: test.placements.get(file.path) }]);
+        return { file, frontmatter, processFrontMatter };
+    }
+
+    it('gives an existing unranked sketch a position before the new cards, without touching its note', async () => {
+        const test = setup();
+        const { file, frontmatter, processFrontMatter } = withUnrankedSketch(test);
         await Reflect.get(test.modal, 'convert').call(test.modal);
-        expect(frontmatter['Sketch order']).toBe(10);
-        expect(test.saved.get('Book/A scene.md')).toContain('Sketch order: 20');
+        expect(test.placements.get(file.path)).toEqual({ order: 10 });
+        expect(test.placements.get('Book/A scene.md')).toEqual({ order: 20 });
+        expect(frontmatter).toEqual({ Class: 'Sketch', Act: 1 });
+        expect(processFrontMatter).not.toHaveBeenCalled();
     });
 
-    it('restores an existing sketch order when creating the first note fails', async () => {
+    it('leaves every position as it was when creating the first note fails', async () => {
         const test = setup();
-        const file = new TFile('Book/Existing.md');
-        const frontmatter: Record<string, unknown> = { Class: 'Sketch', Act: 1, 'Sketch order': 'unset' };
-        test.plugin.settings = { ...DEFAULT_SETTINGS, books: [{ id: 'book', title: 'Book', sourceFolder: 'Book' }] };
-        test.app.vault.getAbstractFileByPath = path => path === file.path ? file : null;
+        const { file } = withUnrankedSketch(test);
         test.app.vault.create = vi.fn(async () => { throw new Error('Disk full'); });
-        test.app.fileManager = { processFrontMatter: async (_file: TFile, cb: (fm: Record<string, unknown>) => void) => cb(frontmatter) } as App['fileManager'];
-        Reflect.set(test.modal, 'act', 1);
-        Reflect.set(test.modal, 'bookItems', () => [{ row: { path: file.path, basename: file.basename, kind: 'sketch', act: 1 } as TimetableRow, frontmatter: { ...frontmatter } }]);
         const error = vi.spyOn(console, 'error').mockImplementation(() => {});
         await Reflect.get(test.modal, 'convert').call(test.modal);
-        expect(frontmatter['Sketch order']).toBe('unset');
+        expect(test.placements.get(file.path)).toBeUndefined();
         expect(test.setData).not.toHaveBeenCalled();
         error.mockRestore();
     });
 
-    it('does not overwrite another edit when restoring an order after failure', async () => {
+    it('refuses to rank an older sketch that was placed meanwhile', async () => {
         const test = setup();
-        const file = new TFile('Book/Existing.md');
-        const frontmatter: Record<string, unknown> = { Class: 'Sketch', Act: 1 };
-        test.plugin.settings = { ...DEFAULT_SETTINGS, books: [{ id: 'book', title: 'Book', sourceFolder: 'Book' }] };
-        test.app.vault.getAbstractFileByPath = path => path === file.path ? file : null;
-        test.app.vault.create = vi.fn(async () => { frontmatter['Sketch order'] = 99; throw new Error('Disk full'); });
-        test.app.fileManager = { processFrontMatter: async (_file: TFile, cb: (fm: Record<string, unknown>) => void) => cb(frontmatter) } as App['fileManager'];
-        Reflect.set(test.modal, 'act', 1);
-        Reflect.set(test.modal, 'bookItems', () => [{ row: { path: file.path, basename: file.basename, kind: 'sketch', act: 1 } as TimetableRow, frontmatter: { ...frontmatter } }]);
+        const { file, frontmatter } = withUnrankedSketch(test);
+        // The dialog read the book before another write placed the sketch.
+        Reflect.set(test.modal, 'bookItems', () => [{ row: { path: file.path, basename: file.basename, kind: 'sketch', act: 1 } as TimetableRow, frontmatter }]);
+        await test.placements.set([[file.path, { order: 99 }]]);
         const error = vi.spyOn(console, 'error').mockImplementation(() => {});
         await Reflect.get(test.modal, 'convert').call(test.modal);
-        expect(frontmatter['Sketch order']).toBe(99);
+        expect(test.placements.get(file.path)).toEqual({ order: 99 });
+        expect(test.saved.size).toBe(0);
         error.mockRestore();
     });
 
     it('keeps existing ranks when some new sketches were created before a failure', async () => {
         const test = setup(false, ['1', '2']);
-        const file = new TFile('Book/Existing.md');
-        const frontmatter: Record<string, unknown> = { Class: 'Sketch', Act: 1 };
-        test.plugin.settings = { ...DEFAULT_SETTINGS, books: [{ id: 'book', title: 'Book', sourceFolder: 'Book' }] };
-        test.app.vault.getAbstractFileByPath = path => path === file.path ? file : null;
+        const { file } = withUnrankedSketch(test);
         let created = 0;
         test.app.vault.create = vi.fn(async () => {
             if (++created === 2) throw new Error('Disk full');
             return new TFile('Book/A scene.md');
         });
-        test.app.fileManager = { processFrontMatter: async (_file: TFile, cb: (fm: Record<string, unknown>) => void) => cb(frontmatter) } as App['fileManager'];
-        Reflect.set(test.modal, 'act', 1);
         (Reflect.get(test.modal, 'selected') as Set<string>).add('2');
-        Reflect.set(test.modal, 'bookItems', () => [{ row: { path: file.path, basename: file.basename, kind: 'sketch', act: 1 } as TimetableRow, frontmatter: { ...frontmatter } }]);
         const error = vi.spyOn(console, 'error').mockImplementation(() => {});
         await Reflect.get(test.modal, 'convert').call(test.modal);
-        expect(frontmatter['Sketch order']).toBe(10);
+        expect(test.placements.get(file.path)).toEqual({ order: 10 });
+        expect(test.placements.get('Book/A scene.md')).toEqual({ order: 20 });
         expect(test.setData).not.toHaveBeenCalled();
         error.mockRestore();
     });

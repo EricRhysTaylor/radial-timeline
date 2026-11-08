@@ -136,15 +136,15 @@ When:
 
 Use **Promote to scene** when it is ready; existing values and prose are preserved. See [Promoting notes](Timetable#promote-a-note-to-a-scene).
 
-When you place a sketch in the Timetable, Canvas or Outline, Radial Timeline records where it sits:
+A sketch created from an outline document records where it came from, a link you see in Properties and Backlinks:
 
 ```yaml
-Place after scene: scn_8f3a2c1e   # the ID of the scene it follows
-Sketch order: 20                  # its order among sketches at that spot
 Source: "[[Story Outline]]"       # only for sketches created from an outline document
 ```
 
-Leave these to the Timetable: dragging a sketch, or **Move up** and **Move down** when converting Canvas cards, rewrites them. A sketch without **Place after scene** sits at the end of its act. See [Place scenes and sketches from the table](Timetable#place-scenes-and-sketches-from-the-table).
+Where a sketch sits among the scenes, the scene it follows and its order there, is not a property. Radial Timeline keeps it in `Radial Timeline/Sketch Placement/placements.json`, which syncs with your vault, and follows the sketch when you rename or move it. Dragging a sketch in the Timetable, **Move up** and **Move down** when converting Canvas cards, and placing ideas from an outline all set it there. A sketch with no place after a scene sits at the end of its act. See [Place scenes and sketches from the table](Timetable#place-scenes-and-sketches-from-the-table).
+
+Earlier versions wrote this as `Place after scene` and `Sketch order` in the sketch note. The first time Radial Timeline 8 opens your vault, it copies those values into the placement file, so every sketch keeps its place. The lines stay in your notes as you have them, and Radial Timeline no longer reads them after that copy; you can delete them whenever you like.
 
 ## Outline Notes (YAML)
 

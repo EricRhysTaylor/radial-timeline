@@ -1,6 +1,5 @@
-import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import type { BookProfile, RadialTimelineSettings } from '../types/settings';
+import type { BookProfile } from '../types/settings';
 import { compareSubplotOrder, computeCacheableValues } from '../renderer/utils/Precompute';
 import { assignSubplotColors, bookOwnSubplotColors, type OwnSubplotColors, type SubplotColor } from '../renderer/utils/subplotColors';
 import { getBookIdForPath } from '../utils/books';
@@ -31,12 +30,17 @@ export async function bookRingColors(plugin: RadialTimelinePlugin, book: BookPro
     ).subplotColors;
 }
 
-/** Every note in a book folder, as the Timetable reads it. */
-export function bookPlacementItems(app: App, settings: RadialTimelineSettings, book: BookProfile): PlacementItem[] {
-    return app.vault.getMarkdownFiles().filter(file => getBookIdForPath(settings.books, file.path) === book.id)
+/**
+ * Every note in a book folder, as the Timetable reads it, each with its sketch
+ * placement from the placement sidecar. Every sketch-ordering path reads the
+ * book through this.
+ */
+export function bookPlacementItems(plugin: RadialTimelinePlugin, bookId: string): PlacementItem[] {
+    const { app, settings } = plugin;
+    return app.vault.getMarkdownFiles().filter(file => getBookIdForPath(settings.books, file.path) === bookId)
         .map(file => {
             const frontmatter = app.metadataCache.getFileCache(file)?.frontmatter;
-            return { row: buildTableRow(file.path, file.basename, frontmatter, settings), frontmatter };
+            return { row: buildTableRow(file.path, file.basename, frontmatter, settings), frontmatter, placement: plugin.sketchPlacements.get(file.path) };
         });
 }
 

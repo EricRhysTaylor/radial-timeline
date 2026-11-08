@@ -6227,7 +6227,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             noteDropAfter: 'Placer l’esquisse après',
             noteDropEndAct: 'Fin de l’acte',
             noteDropExistingPlacement: 'La note possède déjà une propriété de placement ; aucune modification effectuée.',
-            noteDropAnchorHint: 'Choisir une scène ajoute également Place after scene.',
             noteDropTitle: 'Ajouter la note au livre',
             noteDropType: 'Utiliser cette note comme',
             noteDropScene: 'Scène',

@@ -8,9 +8,9 @@ import { getBookIdForPath } from '../utils/books';
 import { safeTitle } from '../utils/noteTitle';
 import { setAccessibleLabel } from '../utils/domTooltip';
 import { authorKeyFor } from './timetableFiles';
-import { buildTableRow } from './timetableModel';
-import { SKETCH_ORDER } from './sketchPlacement';
 import { planCanvasSketchAppend } from './canvasSketchOrdering';
+import { bookPlacementItems } from './canvasBookCards';
+import type { SketchPlacement } from './sketchPlacementFields';
 import { parseOutlineHeadings, preserveOutlineEdits, type OutlineImportEntry } from './outlineImport';
 
 /** Preview a Markdown outline and create independent, source-linked sketches. */
@@ -128,10 +128,7 @@ export class OutlineImportModal extends ErtModal {
         } catch (error) {
             new Notice(t('ui.timetable.outlineSourceReadFailed', { message: error instanceof Error ? error.message : String(error) }), 8000); return false;
         }
-        const items = this.app.vault.getMarkdownFiles().filter(file => getBookIdForPath(this.plugin.settings.books, file.path) === this.book.id).map(file => {
-            const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
-            return { row: buildTableRow(file.path, file.basename, frontmatter, this.plugin.settings), frontmatter };
-        });
+        const items = bookPlacementItems(this.plugin, this.book.id);
         const ranks = new Map<number | null, number[]>();
         try {
             for (const act of new Set(chosen.map(entry => entry.act))) {
@@ -141,15 +138,23 @@ export class OutlineImportModal extends ErtModal {
             }
         } catch (error) { new Notice(error instanceof Error ? error.message : String(error), 10000); return false; }
         let created = 0;
+        const placements: Array<[string, SketchPlacement]> = [];
         try {
-            for (const entry of chosen) {
-                const title = safeTitle(entry.title).slice(0, 100) || t('ui.timetable.newSketchName');
-                let path = `${folder}/${title}.md`;
-                for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${folder}/${title} ${n}.md`;
-                const fm: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch', [SKETCH_ORDER]: ranks.get(entry.act)?.shift(), Source: `[[${this.source.path.replace(/\.md$/i, '')}]]` };
-                if (entry.act !== null) fm[authorKeyFor('Act', this.plugin.settings)] = entry.act;
-                await this.app.vault.create(path, `---\n${stringifyYaml(fm)}---\n\n${entry.body}${entry.body ? '\n' : ''}`);
-                created++;
+            try {
+                for (const entry of chosen) {
+                    const title = safeTitle(entry.title).slice(0, 100) || t('ui.timetable.newSketchName');
+                    let path = `${folder}/${title}.md`;
+                    for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${folder}/${title} ${n}.md`;
+                    const fm: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch', Source: `[[${this.source.path.replace(/\.md$/i, '')}]]` };
+                    if (entry.act !== null) fm[authorKeyFor('Act', this.plugin.settings)] = entry.act;
+                    const order = ranks.get(entry.act)?.shift();
+                    await this.app.vault.create(path, `---\n${stringifyYaml(fm)}---\n\n${entry.body}${entry.body ? '\n' : ''}`);
+                    created++;
+                    if (order !== undefined) placements.push([path, { order }]);
+                }
+            } finally {
+                // Every sketch that was made keeps its place, even when a later one failed.
+                if (placements.length) await this.plugin.sketchPlacements.set(placements);
             }
             new Notice(t('ui.timetable.outlineImportDone', { sketches: tCount('sketch', created), source: this.source.basename }), 6000);
             return true;

@@ -121,7 +121,8 @@ import { resolveStoryPortrait } from './storyPortrait';
 import { coverPosition, validPanelFocus } from './panelFocus';
 import { PanelFocusModal } from './PanelFocusModal';
 import { timetableNarrativeOrder } from './timetablePlacement';
-import { orderSketches, planSketchActDrop, planSketchDrop, sketchAnchor, SKETCH_AFTER_SCENE, SKETCH_ORDER, type PlacementItem, type PlacementProblem, type SketchDropPlan } from './sketchPlacement';
+import { orderSketches, planSketchActDrop, planSketchDrop, sketchAnchor, type PlacementItem, type PlacementProblem, type SketchDropPlan, type SketchPlacement } from './sketchPlacement';
+import { bookPlacementItems } from './canvasBookCards';
 import { readSceneId } from '../utils/sceneIds';
 import { findFrontmatterKey, readFrontmatterProperty } from '../utils/frontmatterKeys';
 import { OuterRingDragController } from '../view/interactions/OuterRingDragController';
@@ -508,6 +509,8 @@ export class TimetableView extends BasesView {
         });
         // A renamed note keeps its open drawer, its pick and its expanded references.
         this.registerEvent(this.plugin.app.vault.on('rename', (file, oldPath) => this.followRename(file.path, oldPath)));
+        // Sketch positions live in the placement sidecar, not in the notes Bases watches.
+        this.register(this.plugin.sketchPlacements.subscribe(() => this.refresh()));
         // Shift-hover: read a cut-off cell in full.
         this.peek = new CellPeek(this.rootEl.doc);
         this.register(() => this.peek?.destroy());
@@ -1602,17 +1605,19 @@ export class TimetableView extends BasesView {
         let path = `${folder}/${name}.md`;
         for (let counter = 2; app.vault.getAbstractFileByPath(path); counter++) path = `${folder}/${name} ${counter}.md`;
         const frontmatter: Record<string, unknown> = { [authorKeyFor('Class', settings)]: 'Sketch' };
+        let placement: SketchPlacement | null = null;
         if (act !== null) {
             frontmatter[authorKeyFor('Act', settings)] = act;
             // A new blank sketch can itself be an insertion point for later ideas.
-            const placement = planOutlineActInsertion(this.sketchPlacementItems(book.id), act);
-            if (placement) frontmatter[SKETCH_ORDER] = placement.rank;
+            const planned = planOutlineActInsertion(this.sketchPlacementItems(book.id), act);
+            if (planned) placement = { order: planned.rank };
         }
         this.openDrawers.add(path);
         this.focusPath = path;
         this.focusField = 'title';
         try {
             await app.vault.create(path, `---\n${stringifyYaml(frontmatter)}---\n\n`);
+            if (placement) await this.plugin.sketchPlacements.set([[path, placement]]);
         } catch (error) {
             this.openDrawers.delete(path);
             this.focusPath = null;
@@ -1811,14 +1816,8 @@ export class TimetableView extends BasesView {
     }
 
     private sketchPlacementItems(bookId: string): PlacementItem[] {
-        const { app, settings } = this.plugin;
-        return app.vault.getMarkdownFiles()
-            .filter(file => getBookIdForPath(settings.books, file.path) === bookId)
-            .map(file => {
-                const frontmatter = app.metadataCache.getFileCache(file)?.frontmatter;
-                return { row: buildTableRow(file.path, file.basename, frontmatter, settings), frontmatter };
-            })
-            .filter(item => belongsInTimetable(item.row, settings.books.map(book => book.sourceFolder)));
+        const folders = this.plugin.settings.books.map(book => book.sourceFolder);
+        return bookPlacementItems(this.plugin, bookId).filter(item => belongsInTimetable(item.row, folders));
     }
 
     /** An ungrouped table that spans books (the saga table) groups by book, in saga order. */
@@ -2855,12 +2854,7 @@ export class TimetableView extends BasesView {
         const bookId = typeof destination === 'string' ? getBookIdForPath(this.plugin.settings.books, destination) : destination.bookId;
         const book = this.sketchBook(bookId);
         // Placement must account for notes hidden by Bases filters, too.
-        const allBookItems = this.plugin.app.vault.getMarkdownFiles()
-            .filter(file => getBookIdForPath(this.plugin.settings.books, file.path) === bookId)
-            .map(file => {
-                const frontmatter = this.plugin.app.metadataCache.getFileCache(file)?.frontmatter;
-                return { row: buildTableRow(file.path, file.basename, frontmatter, this.plugin.settings), frontmatter };
-            });
+        const allBookItems = bookId ? bookPlacementItems(this.plugin, bookId) : [];
         const plan = typeof destination === 'string' ? planOutlineInsertion(allBookItems, destination) : planOutlineActInsertion(allBookItems, destination.act);
         if (!book?.sourceFolder || !plan) {
             new Notice(typeof destination === 'string'
@@ -2872,10 +2866,10 @@ export class TimetableView extends BasesView {
         const name = t('ui.timetable.newSketchName');
         let path = `${folder}/${name}.md`;
         for (let counter = 2; this.plugin.app.vault.getAbstractFileByPath(path); counter++) path = `${folder}/${name} ${counter}.md`;
-        const fm: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch', [authorKeyFor('Act', this.plugin.settings)]: plan.act, [SKETCH_ORDER]: plan.rank, Source: `[[${sourcePath.replace(/\.md$/i, '')}]]` };
-        if (plan.anchorId) fm[SKETCH_AFTER_SCENE] = plan.anchorId;
+        const fm: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch', [authorKeyFor('Act', this.plugin.settings)]: plan.act, Source: `[[${sourcePath.replace(/\.md$/i, '')}]]` };
         try {
             await this.plugin.app.vault.create(path, `---\n${stringifyYaml(fm)}---\n\n${text}\n`);
+            await this.plugin.sketchPlacements.set([[path, { after: plan.anchorId ?? undefined, order: plan.rank }]]);
             new Notice(t('ui.timetable.outlineSketchAdded'));
         } catch (error) {
             new Notice(t('ui.timetable.writeFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
@@ -3480,22 +3474,20 @@ export class TimetableView extends BasesView {
 
     private async applySketchPlan(plan: SketchDropPlan): Promise<void> {
         try {
-            for (const [index, path] of plan.orderedPaths.entries()) {
+            // Act is the author's property, written in the note; where the
+            // sketch sits after scenes goes to the placement sidecar.
+            for (const path of plan.orderedPaths) {
                 const file = this.plugin.app.vault.getAbstractFileByPath(path);
                 if (!(file instanceof TFile)) throw new Error(`Sketch no longer exists: ${path}`);
                 await this.plugin.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
                     const classification = classifyForPromotion(fm);
                     if (classification.kind !== 'eligible' || !classification.fromSketch) throw new Error(`Not a sketch: ${path}`);
-                    const set = (key: string, value: unknown) => {
-                        const existing = findFrontmatterKey(fm, key) ?? key;
-                        if (value === null) delete fm[existing];
-                        else fm[existing] = value;
-                    };
-                    set(authorKeyFor('Act', this.plugin.settings), plan.act);
-                    set(SKETCH_AFTER_SCENE, plan.anchorId);
-                    set(SKETCH_ORDER, (index + 1) * 10);
+                    const actKey = findFrontmatterKey(fm, authorKeyFor('Act', this.plugin.settings)) ?? authorKeyFor('Act', this.plugin.settings);
+                    if (plan.act === null) delete fm[actKey];
+                    else if (fm[actKey] !== plan.act) fm[actKey] = plan.act;
                 });
             }
+            await this.plugin.sketchPlacements.set(plan.orderedPaths.map((path, index) => [path, { after: plan.anchorId ?? undefined, order: (index + 1) * 10 }] as const));
             this.refresh();
         } catch (error) {
             console.error('Sketch placement failed', error);
@@ -3517,7 +3509,7 @@ export class TimetableView extends BasesView {
             const menu = new Menu();
             if (problem === 'different-act') {
                 const book = getBookIdForPath(this.plugin.settings.books, item.row.path);
-                const anchor = sketchAnchor(item.frontmatter);
+                const anchor = sketchAnchor(this.plugin.sketchPlacements.get(item.row.path));
                 const scene = book ? this.sketchPlacementItems(book).find(candidate => candidate.row.kind === 'scene' && readSceneId(candidate.frontmatter) === anchor) : undefined;
                 if (scene?.row.act != null) menu.addItem(option => option.setTitle(t('ui.timetable.sketchMoveFollow')).onClick(() => {
                     void this.plugin.app.fileManager.processFrontMatter(item.entry.file, (fm: Record<string, unknown>) => {
@@ -3528,9 +3520,10 @@ export class TimetableView extends BasesView {
                 }));
             }
             menu.addItem(option => option.setTitle(t('ui.timetable.sketchMoveStay')).onClick(() => {
-                void this.plugin.app.fileManager.processFrontMatter(item.entry.file, (fm: Record<string, unknown>) => {
-                    for (const key of Object.keys(fm)) if ([SKETCH_AFTER_SCENE.toLowerCase(), SKETCH_ORDER.toLowerCase()].includes(key.toLowerCase())) delete fm[key];
-                }).then(() => this.refresh());
+                void this.plugin.sketchPlacements.set([[item.row.path, null]]).then(() => this.refresh(), error => {
+                    console.error('Sketch placement failed', error);
+                    new Notice(t('ui.timetable.sketchPlacementFailed'), 8000);
+                });
             }));
             menu.showAtMouseEvent(event);
         });

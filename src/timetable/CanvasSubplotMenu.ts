@@ -165,7 +165,7 @@ export function addSubplotColorMenu(menu: Menu, host: SubplotMenuHost, nodes: It
     const wheel = host.ringsNow(book.id);
     const { app, settings } = host.plugin;
     const data = canvasData(host);
-    const read = wheel && data ? readCanvasSubplots(settings, book, bookPlacementItems(app, settings, book).map(item => item.row), canvasPath, data, doc, hexOf, wheel) : null;
+    const read = wheel && data ? readCanvasSubplots(settings, book, bookPlacementItems(host.plugin, book.id).map(item => item.row), canvasPath, data, doc, hexOf, wheel) : null;
     const meanings = read ? cards.map(card => cardMeaning(subplotOfCard(read.choices, cardId(card), book.id), hexOf(cardColor(card.getData!())), read.directory)) : []; // SAFE: ideaCards keeps only cards with data
     const model = subplotMenuModel(read ? read.directory : null, meanings);
     menu.addItem(item => {

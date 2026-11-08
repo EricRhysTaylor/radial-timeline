@@ -6220,7 +6220,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             noteDropAfter: 'スケッチの配置先',
             noteDropEndAct: '幕の末尾',
             noteDropExistingPlacement: '配置プロパティが既にあるため変更しませんでした。',
-            noteDropAnchorHint: 'シーンを選ぶと Place after scene も追加します。',
             noteDropTitle: 'ノートを本に追加',
             noteDropType: 'ノートの種類',
             noteDropScene: 'シーン',

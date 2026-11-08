@@ -2521,6 +2521,10 @@ export const en = {
             alreadyConfirmed: 'A cue was already confirmed. Reopen scene time before confirming all.',
         },
     },
+    sketchPlacement: {
+        loadFailed: 'Sketch positions could not be read from Radial Timeline/Sketch Placement/placements.json: {{detail}}. Sketches show at the end of their act, and placing them is paused until the file reads again.',
+        unsupportedFile: 'Unsupported sketch placement file',
+    },
     ui: {
         formatKey: {
             title: 'Formatting',
@@ -5936,7 +5940,7 @@ export const en = {
             noteDropAfter: 'Place sketch after',
             noteDropEndAct: 'End of act',
             noteDropExistingPlacement: 'The note already has a placement property; no changes were made.',
-            noteDropAnchorHint: 'Choosing a scene also adds Place after scene.',
+            noteDropAnchorHint: 'The sketch sits right after the scene you choose.',
             noteDropTitle: 'Add note to the book',
             noteDropType: 'Use this note as',
             noteDropScene: 'Scene',

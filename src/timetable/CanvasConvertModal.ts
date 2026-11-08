@@ -8,10 +8,9 @@ import { canvasTextCards, linkSketches, repaintCards, sketchTitle, type StoryCan
 import { hasPortalReferences } from './canvasPortals';
 import { t, tCount } from '../i18n';
 import { readSceneId } from '../utils/sceneIds';
-import { findFrontmatterKey } from '../utils/frontmatterKeys';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
-import { buildTableRow, type TimetableRow } from './timetableModel';
-import { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor, type PlacementItem } from './sketchPlacement';
+import type { TimetableRow } from './timetableModel';
+import { sketchAnchor, sketchOrder, type PlacementItem, type SketchPlacement } from './sketchPlacement';
 import { actsFromActCards, canvasReadingOrder, planCanvasSketchAppend, spreadAcrossActs } from './canvasSketchOrdering';
 import { actCardNumber } from './canvasNavigation';
 import { bookPlacementItems, bookRingColors, bookSubplotName, ownColorsForNewSubplots, ringColorsWith } from './canvasBookCards';
@@ -35,9 +34,6 @@ export interface OpenCanvas {
     requestSave(pushHistory?: boolean): void;
     selection?: Set<{ getData?: () => { id?: string; type?: string } }>;
 }
-
-/** An existing sketch given a position during conversion, kept so a failure can restore it. */
-interface RankedSketch { file: TFile; key: string; rank: number; existed: boolean; value: unknown; act: number | null; anchor: string | null }
 
 /** One row of card colors: the selected cards of one color, or of one color the card menu gave one subplot. */
 interface ColorRow {
@@ -166,7 +162,7 @@ export class CanvasConvertModal extends ErtModal {
     }
 
     private bookItems(book: BookProfile): PlacementItem[] {
-        return bookPlacementItems(this.app, this.plugin.settings, book);
+        return bookPlacementItems(this.plugin, book.id);
     }
 
     private scenes(items: PlacementItem[]): PlacementItem[] {
@@ -682,38 +678,42 @@ export class CanvasConvertModal extends ErtModal {
         }
     }
 
-    /** Each card becomes a sketch at the chosen place, after ranking any older sketches that lack a position. */
-    private async writeSketches(book: BookProfile, cards: CanvasTextCard[], folder: string, paths: Map<string, string>, ranked: RankedSketch[]): Promise<void> {
+    /**
+     * Each card becomes a sketch at the chosen place, after ranking any older
+     * sketches that lack a position. Positions go to the placement sidecar in
+     * one write once the notes exist, so a failure before the first note leaves
+     * every position as it was. `ranked` receives the older sketches ranked.
+     */
+    private async writeSketches(book: BookProfile, cards: CanvasTextCard[], folder: string, paths: Map<string, string>, ranked: string[]): Promise<void> {
         const items = this.bookItems(book);
         const anchor = this.anchorPath ? this.scenes(items).find(item => item.row.path === this.anchorPath) : undefined;
         if (this.anchorPath && !anchor) throw new Error(t('ui.canvasSketch.anchorChanged'));
         const anchorId = anchor ? readSceneId(anchor.frontmatter) ?? null : null;
         const act = anchor?.row.act ?? this.act;
         const placement = planCanvasSketchAppend(items, act, anchorId, cards.length);
+        const store = this.plugin.sketchPlacements;
         for (const item of placement.missing) {
-            const file = this.app.vault.getAbstractFileByPath(item.path);
-            if (!(file instanceof TFile)) throw new Error(t('ui.canvasSketch.placementChanged'));
             const original = items.find(candidate => candidate.row.path === item.path);
-            if (!original) throw new Error(t('ui.canvasSketch.placementChanged'));
-            let previous: { key: string; existed: boolean; value: unknown } | undefined;
-            await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
-                const key = findFrontmatterKey(fm, SKETCH_ORDER) ?? SKETCH_ORDER;
-                const row = buildTableRow(file.path, file.basename, fm, this.plugin.settings);
-                if (row.kind !== 'sketch' || row.act !== original.row.act || sketchAnchor(fm) !== sketchAnchor(original.frontmatter)
-                    || (typeof fm[key] === 'number' && Number.isFinite(fm[key]))) throw new Error(t('ui.canvasSketch.placementChanged'));
-                previous = { key, existed: Object.prototype.hasOwnProperty.call(fm, key), value: fm[key] };
-                fm[key] = item.rank;
-            });
-            if (previous) ranked.push({ file, ...previous, rank: item.rank, act: original.row.act, anchor: sketchAnchor(original.frontmatter) });
+            const now = store.get(item.path);
+            if (!original || !(this.app.vault.getAbstractFileByPath(item.path) instanceof TFile)
+                || sketchOrder(now) !== null || sketchAnchor(now) !== sketchAnchor(original.placement)) throw new Error(t('ui.canvasSketch.placementChanged'));
         }
-        for (const [index, card] of cards.entries()) {
-            const path = this.freePath(folder, sketchTitle(card.text));
-            const frontmatter: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch' };
-            if (act !== null) frontmatter[authorKeyFor('Act', this.plugin.settings)] = act;
-            if (anchorId) frontmatter[SKETCH_AFTER_SCENE] = anchorId;
-            frontmatter[SKETCH_ORDER] = placement.ranks[index];
-            await this.app.vault.create(path, this.noteBody(frontmatter, card));
-            paths.set(card.id, path);
+        const created: Array<[string, SketchPlacement]> = [];
+        try {
+            for (const [index, card] of cards.entries()) {
+                const path = this.freePath(folder, sketchTitle(card.text));
+                const frontmatter: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch' };
+                if (act !== null) frontmatter[authorKeyFor('Act', this.plugin.settings)] = act;
+                await this.app.vault.create(path, this.noteBody(frontmatter, card));
+                paths.set(card.id, path);
+                created.push([path, { after: anchorId ?? undefined, order: placement.ranks[index] }]);
+            }
+        } finally {
+            if (created.length) {
+                const older = placement.missing.map(item => [item.path, { ...store.get(item.path), order: item.rank }] as [string, SketchPlacement]);
+                await store.set([...older, ...created]);
+                ranked.push(...older.map(([path]) => path));
+            }
         }
     }
 
@@ -740,7 +740,7 @@ export class CanvasConvertModal extends ErtModal {
             return;
         }
         const paths = new Map<string, string>();
-        const ranked: RankedSketch[] = [];
+        const ranked: string[] = [];
         try {
             // Replacing a card changes its ID. Cross-canvas portal edges can
             // refer to that ID in another file, so refuse rather than break them.
@@ -805,25 +805,8 @@ export class CanvasConvertModal extends ErtModal {
             if (mode === 'scenes') await this.plugin.getTimelineService().activateView();
         } catch (error) {
             console.error('[Canvas sketches]', error);
-            let retainedRanks = paths.size > 0 && ranked.length > 0;
-            if (paths.size === 0) {
-                for (const item of ranked.reverse()) {
-                    try {
-                        await this.app.fileManager.processFrontMatter(item.file, (fm: Record<string, unknown>) => {
-                            const row = buildTableRow(item.file.path, item.file.basename, fm, this.plugin.settings);
-                            if (fm[item.key] !== item.rank || row.kind !== 'sketch' || row.act !== item.act || sketchAnchor(fm) !== item.anchor) {
-                                retainedRanks = true;
-                                return;
-                            }
-                            if (item.existed) fm[item.key] = item.value;
-                            else delete fm[item.key];
-                        });
-                    } catch (rollbackError) {
-                        retainedRanks = true;
-                        console.error('[Canvas sketches] Could not restore sketch ordering', rollbackError);
-                    }
-                }
-            }
+            // Older sketches are ranked only together with a new sketch, so there is nothing to undo.
+            const retainedRanks = ranked.length > 0;
             const message = (error instanceof Error ? error.message : String(error)) + (retainedRanks ? ` ${t('ui.canvasSketch.orderRetained')}` : '');
             if (paths.size === 0) new Notice(message, 12000);
             else if (mode === 'scenes') new Notice(t('ui.canvasSketch.failedScenes', { scenes: tCount('scene', paths.size), message }), 12000);

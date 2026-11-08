@@ -5,7 +5,8 @@ import type RadialTimelinePlugin from '../main';
 import { getBookIdForPath } from '../utils/books';
 import { isSceneClassFrontmatter, readSceneId } from '../utils/sceneIds';
 import { findFrontmatterKey } from '../utils/frontmatterKeys';
-import { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor } from './sketchPlacement';
+import { sketchAnchor } from './sketchPlacement';
+import type { SketchPlacementStore } from './SketchPlacementStore';
 import { classifyForPromotion } from '../services/PromoteToSceneService';
 import { authorKeyFor } from './timetableFiles';
 import { SceneReorderVerificationError } from '../services/SceneReorderService';
@@ -35,7 +36,7 @@ export async function askAboutAttachedSketches(plugin: RadialTimelinePlugin, pat
     const files = notes.filter(file => {
         const fm = app.metadataCache.getFileCache(file)?.frontmatter;
         const classification = classifyForPromotion(fm);
-        return classification.kind === 'eligible' && classification.fromSketch && sketchAnchor(fm) === id;
+        return classification.kind === 'eligible' && classification.fromSketch && sketchAnchor(plugin.sketchPlacements.get(file.path)) === id;
     });
     if (files.length === 0) return undefined;
     // An ambiguous ID must never cause sketches to be moved with the wrong scene.
@@ -79,14 +80,23 @@ export async function runSceneMoveWithSketches(applyMove: () => Promise<void>, m
     if (warning) throw warning;
 }
 
-export async function applyAttachedSketchMove(app: App, move: AttachedSketchMove | undefined): Promise<void> {
+/**
+ * Sketches that follow their scene take its new act, in the note; their place
+ * after it stays. Sketches that stay lose their place after it, in the
+ * placement sidecar, and sit at the end of their act.
+ */
+export async function applyAttachedSketchMove(app: App, placements: SketchPlacementStore, move: AttachedSketchMove | undefined): Promise<void> {
     if (!move) return;
     for (const file of move.files) {
+        if (sketchAnchor(placements.get(file.path)) !== move.anchorId) throw new Error(`Sketch anchor changed: ${file.path}`);
+    }
+    if (!move.follow) {
+        await placements.set(move.files.map(file => [file.path, null] as const));
+        return;
+    }
+    for (const file of move.files) {
         await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
-            if (sketchAnchor(fm) !== move.anchorId) throw new Error(`Sketch anchor changed: ${file.path}`);
-            const key = (name: string) => findFrontmatterKey(fm, name) ?? name;
-            if (move.follow) fm[key(move.actKey)] = move.destinationAct;
-            else { delete fm[key(SKETCH_AFTER_SCENE)]; delete fm[key(SKETCH_ORDER)]; }
+            fm[findFrontmatterKey(fm, move.actKey) ?? move.actKey] = move.destinationAct;
         });
     }
 }

@@ -6227,7 +6227,6 @@ export const es: DeepPartial<TranslationKeys> = {
             noteDropAfter: 'Colocar boceto después de',
             noteDropEndAct: 'Fin del acto',
             noteDropExistingPlacement: 'La nota ya tiene una propiedad de posición; no se ha cambiado nada.',
-            noteDropAnchorHint: 'Al elegir una escena también se añade Place after scene.',
             noteDropTitle: 'Añadir nota al libro',
             noteDropType: 'Usar nota como',
             noteDropScene: 'Escena',

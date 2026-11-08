@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
-import { addSceneIntakeTemplate, completeImportedScene, promoteSceneContent, replaceSketchAnchor } from './sceneIntakeTemplate';
+import { addSceneIntakeTemplate, completeImportedScene, promoteSceneContent } from './sceneIntakeTemplate';
 
 function frontmatter(content: string): Record<string, unknown> {
     return parse(content.split('---')[1]) as Record<string, unknown>;
@@ -52,8 +52,8 @@ describe('scene intake template', () => {
         const result = promoteSceneContent(sketch, { ...DEFAULT_SETTINGS, sceneYamlTemplates: templates }, { advanced: true, act: 1, when: '' });
         for (const line of ['Class: Scene # class comment', 'Act: 2 # keep act', 'Synopsis: Original # keep synopsis', 'Custom Field: Keep']) expect(result).toContain(line);
         expect(result).toContain('\n\nOriginal prose.\n');
-        expect(result).not.toContain('Place after scene:');
-        expect(result).not.toContain('Sketch Order:');
+        // Placement lines an earlier version wrote stay as the author has them; the sidecar holds placement now.
+        expect(result).toContain('Place after scene: scn_1\nSketch Order: 4\n');
     });
     it('keeps the generated ID when a template lists ID', () => {
         const settings = { ...DEFAULT_SETTINGS, sceneYamlTemplates: { base: 'ID:\nClass: Scene\nAct: {{Act}}', advanced: '' } };
@@ -87,10 +87,6 @@ describe('scene intake template', () => {
     });
     it('refuses a note with the same property under two spellings', () => {
         expect(() => addSceneIntakeTemplate('---\nClass: Scene\nSynopsis: A\nsynopsis: B\n---\n', DEFAULT_SETTINGS)).toThrow();
-    });
-    it('reanchors a following sketch without changing its other properties', () => {
-        const source = '---\nPlace after scene: scn_old # keep\nSynopsis: A # original\n---\n\nBody';
-        expect(replaceSketchAnchor(source, 'scn_old', 'scn_new')).toBe('---\nPlace after scene: "scn_new" # keep\nSynopsis: A # original\n---\n\nBody');
     });
 });
 

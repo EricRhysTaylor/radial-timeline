@@ -6219,7 +6219,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             noteDropAfter: '스케치 위치',
             noteDropEndAct: '막 끝',
             noteDropExistingPlacement: '이미 위치 속성이 있어 변경하지 않았습니다.',
-            noteDropAnchorHint: '장면을 선택하면 Place after scene도 추가합니다.',
             noteDropTitle: '책에 노트 추가',
             noteDropType: '노트의 종류',
             noteDropScene: '장면',

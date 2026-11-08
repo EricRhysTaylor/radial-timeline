@@ -6227,7 +6227,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             noteDropAfter: 'Đặt phác thảo sau',
             noteDropEndAct: 'Cuối hồi',
             noteDropExistingPlacement: 'Ghi chú đã có thuộc tính vị trí; không có thay đổi.',
-            noteDropAnchorHint: 'Chọn cảnh cũng sẽ thêm Place after scene.',
             noteDropTitle: 'Thêm ghi chú vào sách',
             noteDropType: 'Dùng ghi chú làm',
             noteDropScene: 'Cảnh',

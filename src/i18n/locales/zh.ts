@@ -6221,7 +6221,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             noteDropAfter: '将草稿放在',
             noteDropEndAct: '幕末尾',
             noteDropExistingPlacement: '笔记已有位置属性；未作任何更改。',
-            noteDropAnchorHint: '选择场景时还会添加 Place after scene。',
             noteDropTitle: '将笔记添加到书中',
             noteDropType: '将此笔记用作',
             noteDropScene: '场景',

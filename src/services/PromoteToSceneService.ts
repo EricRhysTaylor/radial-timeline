@@ -24,8 +24,10 @@ import { safeTitle, splitNumberPrefix } from '../utils/noteTitle';
 import { buildDecimalSceneInsertionPrefix, isSafeSceneInsertionPrefix } from './SceneInsertService';
 import { readSceneId } from '../utils/sceneIds';
 import { sketchAnchor } from '../timetable/sketchPlacementFields';
-import { promoteSceneContent, replaceSketchAnchor } from '../timetable/sceneIntakeTemplate';
+import type { SketchPlacementStore } from '../timetable/SketchPlacementStore';
+import { promoteSceneContent } from '../timetable/sceneIntakeTemplate';
 import { sleep } from '../utils/sleep';
+import { t } from '../i18n';
 
 const CLASS_KEY = 'Class';
 
@@ -69,7 +71,10 @@ export interface PromotionOptions {
     beatModel?: string;
     /** Single-note promotion only: the scene's title, replacing a placeholder name. Any number prefix stays. */
     title?: string | null;
+    /** Single-sketch promotion only: the scene the sketch follows, and the sketches after it there, which now follow the new scene. */
     sketchPlacement?: { anchorId: string; followingSketches: string[] };
+    /** The placement sidecar: a promoted sketch leaves it, and the sketches after it are re-anchored there. */
+    placements: SketchPlacementStore;
     /** Several notes promoted together: the number each sketch takes, by path, so the book keeps their order. */
     sketchNumbers?: ReadonlyMap<string, string>;
     onProgress?: (current: number, total: number, name: string) => void;
@@ -255,14 +260,8 @@ export async function applyPromotion(
         try {
             const frontmatter = frontmatterOf(app, entry.file);
             const act = readNumber(readField(frontmatter, 'Act')) ?? anchorAct ?? 1;
-            await app.vault.process(entry.file, content => {
-                if (options.sketchPlacement) {
-                    const raw = content.match(/^---\s*\r?\n([\s\S]*?)^---\s*$/m)?.[1];
-                    const fm = raw ? parseYaml(raw) as Record<string, unknown> : undefined;
-                    if (sketchAnchor(fm) !== options.sketchPlacement.anchorId) throw new Error('Sketch placement changed.');
-                }
-                return promoteSceneContent(content, settings, { advanced: options.advanced, act, when: anchorWhen, expectedSketch: entry.fromSketch });
-            });
+            if (options.sketchPlacement && sketchAnchor(options.placements.get(entry.file.path)) !== options.sketchPlacement.anchorId) throw new Error('Sketch placement changed.');
+            await app.vault.process(entry.file, content => promoteSceneContent(content, settings, { advanced: options.advanced, act, when: anchorWhen, expectedSketch: entry.fromSketch }));
             result.promoted.push(entry.file);
         } catch (error) {
             result.failed.push({
@@ -274,6 +273,12 @@ export async function applyPromotion(
 
     if (result.promoted.length > 0) {
         await waitForSceneClass(app, result.promoted);
+        // A scene has no place among the sketches: its sidecar entry goes.
+        const placed = result.promoted.filter(file => options.placements.get(file.path));
+        if (placed.length) {
+            try { await options.placements.set(placed.map(file => [file.path, null] as const)); }
+            catch (error) { result.failed.push({ file: placed[0], message: error instanceof Error ? error.message : String(error) }); }
+        }
     }
 
     for (const file of result.promoted) {
@@ -305,11 +310,12 @@ export async function applyPromotion(
                 const raw = (await app.vault.read(only.file)).match(/^---\s*\r?\n([\s\S]*?)^---\s*$/m)?.[1];
                 const sceneId = raw ? readSceneId(parseYaml(raw) as Record<string, unknown>) : undefined;
                 if (!sceneId) throw new Error('Promoted scene has no ID.');
-                for (const path of options.sketchPlacement.followingSketches) {
-                    const sketch = app.vault.getAbstractFileByPath(path);
-                    if (!(sketch instanceof TFile)) throw new Error(`Sketch no longer exists: ${path}`);
-                    await app.vault.process(sketch, content => replaceSketchAnchor(content, options.sketchPlacement!.anchorId, sceneId));
+                const { anchorId, followingSketches } = options.sketchPlacement;
+                for (const path of followingSketches) {
+                    if (!(app.vault.getAbstractFileByPath(path) instanceof TFile)) throw new Error(`Sketch no longer exists: ${path}`);
+                    if (sketchAnchor(options.placements.get(path)) !== anchorId) throw new Error(t('ui.timetable.sketchPromotionAnchorProblem'));
                 }
+                await options.placements.set(followingSketches.map(path => [path, { ...options.placements.get(path), after: sceneId }] as const));
             } catch (error) {
                 result.failed.push({ file: only.file, message: error instanceof Error ? error.message : String(error) });
             }

@@ -15,6 +15,7 @@ import { TimelineService } from './services/TimelineService';
 import { SceneDataService } from './services/SceneDataService';
 import { SceneTimeHeader } from './services/SceneTimeHeader';
 import { SceneTimeService } from './sceneTime/SceneTimeService';
+import { SketchPlacementStore } from './timetable/SketchPlacementStore';
 import { sceneTimeEditorExtension } from './sceneTime/editorRuler';
 import { renderReadingTime } from './sceneTime/readingRuler';
 import { createSearchState, readTimelineSearchSettings, type TimelineSearchState } from './services/searchState';
@@ -252,6 +253,8 @@ export default class RadialTimelinePlugin extends Plugin {
     private outputProfileStore!: OutputProfileStore;
     private sceneDataService!: SceneDataService;
     private sceneTimeHeader!: SceneTimeHeader;
+    /** Where each sketch sits among the scenes (the placement sidecar). */
+    sketchPlacements!: SketchPlacementStore;
     private searchService!: import('./services/SearchService').SearchService;
     private fileTrackingService!: import('./services/FileTrackingService').FileTrackingService;
     private rendererService!: RendererService;
@@ -726,6 +729,9 @@ export default class RadialTimelinePlugin extends Plugin {
         this.sceneTimeHeader = this.addChild(new SceneTimeHeader(this, sceneTimeService));
         this.registerEditorExtension(sceneTimeEditorExtension(sceneTimeService));
         this.registerMarkdownPostProcessor((el, ctx) => renderReadingTime(sceneTimeService, el, ctx));
+        this.sketchPlacements = new SketchPlacementStore(this);
+        await this.sketchPlacements.initialize();
+        this.addChild(this.sketchPlacements);
         const { SearchService } = await import('./services/SearchService');
         const { FileTrackingService } = await import('./services/FileTrackingService');
         this.searchService = new SearchService(this.app, this);

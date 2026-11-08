@@ -14,11 +14,10 @@ import { authorKeyFromMappings, canonicalizeFrontmatterKey, findMissingTemplateK
 import { formatLocalDateKey } from '../utils/date';
 import { generateSceneContent } from '../utils/sceneGenerator';
 import { generateSceneId } from '../utils/sceneIds';
-import { applyFrontmatterEdits, frontmatterValues, insertFieldEdits, isBlankFrontmatterValue, readFrontmatterText, removeFieldEdit, replaceValueEdit, yamlKey, type FrontmatterField, type FrontmatterText, type TextEdit } from '../utils/frontmatterText';
+import { applyFrontmatterEdits, frontmatterValues, insertFieldEdits, isBlankFrontmatterValue, readFrontmatterText, replaceValueEdit, yamlKey, type FrontmatterField, type FrontmatterText, type TextEdit } from '../utils/frontmatterText';
 import { reorderFrontmatterContent } from '../utils/yamlManager';
 import { buildScenePropertyDefinitions } from '../sceneProperties/scenePropertyAdapter';
 import { resolveSceneExpectedKeys, resolveScenePropertyPolicy, sceneDynamicKeys } from '../sceneProperties/scenePropertyPolicy';
-import { SKETCH_AFTER_SCENE, SKETCH_ORDER } from './sketchPlacementFields';
 import { t } from '../i18n';
 
 export interface SceneIntakeContext {
@@ -117,23 +116,8 @@ export function promoteSceneContent(content: string, settings: RadialTimelineSet
         if (!blankClass) {
             const value = Array.isArray(classField.value) && classField.value.length === 1 ? classField.value[0] as unknown : classField.value;
             if (typeof value !== 'string' || value.trim().toLowerCase() !== 'sketch') throw new Error(t('ui.timetable.timelineDropChanged'));
-            for (const field of text.fields) {
-                const key = field.key.toLowerCase();
-                if (key === SKETCH_AFTER_SCENE.toLowerCase() || key === SKETCH_ORDER.toLowerCase()) edits.push(removeFieldEdit(field, text.raw));
-            }
         }
         edits.push(replaceValueEdit(text, classField, 'Scene'));
     }
     return addSceneIntakeTemplate(applyFrontmatterEdits(text, edits), settings, context);
-}
-
-/** Reanchor a following sketch without reformatting its other YAML. */
-export function replaceSketchAnchor(content: string, expected: string, next: string): string {
-    const problem = () => new Error(t('ui.timetable.sketchPromotionAnchorProblem'));
-    let text: FrontmatterText | null;
-    try { text = readFrontmatterText(content); } catch { throw problem(); }
-    if (!text) throw problem();
-    const matches = text.fields.filter(field => field.key.toLowerCase() === SKETCH_AFTER_SCENE.toLowerCase());
-    if (matches.length !== 1 || matches[0].value !== expected) throw problem();
-    return applyFrontmatterEdits(text, [replaceValueEdit(text, matches[0], JSON.stringify(next))]);
 }

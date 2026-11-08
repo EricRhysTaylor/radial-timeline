@@ -19,8 +19,8 @@ import type { TimelineItem } from '../types';
 import { sortByManuscriptOrder } from '../utils/sceneHelpers';
 import { buildTableRow } from '../timetable/timetableModel';
 import { orderSketches, sketchAnchor, type PlacementItem } from '../timetable/sketchPlacement';
+import { bookPlacementItems } from '../timetable/canvasBookCards';
 import { readSceneId } from '../utils/sceneIds';
-import { getBookIdForPath } from '../utils/books';
 
 const PROMOTE_ICON = 'rt-logo';
 
@@ -82,16 +82,6 @@ function explainNothingToPromote(plan: PromotionPlan, files: TFile[]): string {
     }
 }
 
-/** Plan, confirm and apply a promotion for the given notes. */
-function bookItems(plugin: RadialTimelinePlugin, bookId: string): PlacementItem[] {
-    const { app, settings } = plugin;
-    return app.vault.getMarkdownFiles().filter(file => getBookIdForPath(settings.books, file.path) === bookId)
-        .map(file => {
-            const frontmatter = app.metadataCache.getFileCache(file)?.frontmatter;
-            return { row: buildTableRow(file.path, file.basename, frontmatter, settings), frontmatter };
-        });
-}
-
 /** The chosen sketches by the act they will join, each act in the order the book shows them. */
 export function sketchesByAct(items: PlacementItem[], paths: ReadonlySet<string>): Map<number, string[]> {
     const byAct = new Map<number, string[]>();
@@ -114,7 +104,7 @@ async function planSketchNumbers(plugin: RadialTimelinePlugin, plan: PromotionPl
         const paths = new Set(sketches.filter(entry => entry.book.id === book.id).map(entry => entry.file.path));
         const planned = planActEndScenePrefixes(
             await plugin.getSceneData({ sourcePath: book.sourceFolder }),
-            sketchesByAct(bookItems(plugin, book.id), paths),
+            sketchesByAct(bookPlacementItems(plugin, book.id), paths),
             resolveSelectedBeatModelFromSettings(plugin.settings),
         );
         if (!planned) return null;
@@ -150,9 +140,9 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[],
                 return file ? buildTableRow(file.path, file.basename, app.metadataCache.getFileCache(file)?.frontmatter, settings).act : null;
             });
         }
-        const anchorId = only.fromSketch ? sketchAnchor(fm) : null;
+        const anchorId = only.fromSketch ? sketchAnchor(plugin.sketchPlacements.get(only.file.path)) : null;
         if (anchorId) {
-            const items = bookItems(plugin, only.book.id);
+            const items = bookPlacementItems(plugin, only.book.id);
             const matching = items.filter(item => item.row.kind === 'scene' && readSceneId(item.frontmatter) === anchorId);
             const ordered = orderSketches(items);
             if (matching.length !== 1 || ordered.problems.has(only.file.path)) {
@@ -164,13 +154,13 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[],
                 new Notice(t('ui.timetable.sketchPromotionAnchorProblem'), 8000);
                 return;
             }
-            const gap = ordered.items.filter(item => item.row.kind === 'sketch' && sketchAnchor(item.frontmatter) === anchorId
+            const gap = ordered.items.filter(item => item.row.kind === 'sketch' && sketchAnchor(item.placement) === anchorId
                 && item.row.act === matching[0].row.act);
             const position = gap.findIndex(item => item.row.path === only.file.path);
             followingSketches = gap.slice(position + 1).map(item => item.row.path);
         }
     }
-    if ((!only || only.prefix) && plan.entries.some(entry => entry.fromSketch && sketchAnchor(app.metadataCache.getFileCache(entry.file)?.frontmatter))) {
+    if ((!only || only.prefix) && plan.entries.some(entry => entry.fromSketch && sketchAnchor(plugin.sketchPlacements.get(entry.file.path)))) {
         new Notice(t('ui.timetable.sketchPromotionSingle'), 8000);
         return;
     }
@@ -200,7 +190,8 @@ export async function runPromotion(plugin: RadialTimelinePlugin, files: TFile[],
         title: choice.title,
         sketchNumbers,
         sketchPlacement: defaultAnchorPath && choice.anchorPath === defaultAnchorPath
-            ? { anchorId: sketchAnchor(app.metadataCache.getFileCache(only!.file)?.frontmatter)!, followingSketches } : undefined,
+            ? { anchorId: sketchAnchor(plugin.sketchPlacements.get(only!.file.path))!, followingSketches } : undefined,
+        placements: plugin.sketchPlacements,
         onProgress: (current, total, name) => modal.updateProgress(t('ui.promoteToScene.progress', { name, current, total })),
     });
     plugin.refreshTimelineIfNeeded(null);

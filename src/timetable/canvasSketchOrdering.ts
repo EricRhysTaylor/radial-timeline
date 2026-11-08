@@ -1,6 +1,5 @@
 import { t } from '../i18n';
-import { readFrontmatterProperty } from '../utils/frontmatterKeys';
-import { orderSketches, sketchAnchor, SKETCH_ORDER, type PlacementItem } from './sketchPlacement';
+import { orderSketches, sketchAnchor, sketchOrder, type PlacementItem } from './sketchPlacement';
 import { actCardNumber, storyAxis } from './canvasNavigation';
 import type { CanvasCard } from './canvasSketches';
 
@@ -52,16 +51,12 @@ export function planCanvasSketchAppend(items: PlacementItem[], act: number | nul
 } {
     const ordered = orderSketches(items);
     const existing = ordered.items.filter(item => item.row.kind === 'sketch' && item.row.act === act
-        && (anchor ? sketchAnchor(item.frontmatter) === anchor && !ordered.problems.has(item.row.path)
-            : !sketchAnchor(item.frontmatter) || ordered.problems.has(item.row.path)));
-    const rank = (fm?: Record<string, unknown>) => {
-        const value = readFrontmatterProperty(fm, SKETCH_ORDER);
-        return typeof value === 'number' && Number.isFinite(value) ? value : null;
-    };
-    let next = Math.max(0, ...existing.map(item => rank(item.frontmatter) ?? 0)); // SAFE: unranked sketches don't raise the max; the loop below ranks them after it
+        && (anchor ? sketchAnchor(item.placement) === anchor && !ordered.problems.has(item.row.path)
+            : !sketchAnchor(item.placement) || ordered.problems.has(item.row.path)));
+    let next = Math.max(0, ...existing.map(item => sketchOrder(item.placement) ?? 0)); // SAFE: unranked sketches don't raise the max; the loop below ranks them after it
     const missing: Array<{ path: string; rank: number }> = [];
     for (const item of existing) {
-        if (rank(item.frontmatter) !== null) continue;
+        if (sketchOrder(item.placement) !== null) continue;
         next += 10;
         if (!Number.isFinite(next) || next > Number.MAX_SAFE_INTEGER) throw new Error(t('ui.timetable.sketchOrderTooLarge'));
         missing.push({ path: item.row.path, rank: next });

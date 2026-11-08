@@ -43,17 +43,15 @@ export function sceneBeforeNumber<T extends { prefix: string | null }>(scenes: r
 }
 
 /** Insert only the missing lines, preserving all existing bytes; an empty Class or Act is filled in place. */
-export function addNoteClass(content: string, kind: 'Scene' | 'Sketch', anchor?: string, act?: { key: string; value: number }): string {
-    const placementLines = (anchor ? [`Place after scene: ${JSON.stringify(anchor)}`] : []);
+export function addNoteClass(content: string, kind: 'Scene' | 'Sketch', act?: { key: string; value: number }): string {
     const text = readFrontmatterText(content);
-    if (!text) return `---\nClass: ${kind}\n${[...placementLines, ...(act ? [`${yamlKey(act.key)}: ${act.value}`] : [])].map(line => `${line}\n`).join('')}---\n\n${content}`;
+    if (!text) return `---\nClass: ${kind}\n${act ? `${yamlKey(act.key)}: ${act.value}\n` : ''}---\n\n${content}`;
     const find = (name: string) => text.fields.find(field => field.key.toLowerCase() === name.toLowerCase());
     const classField = find('class');
     if (classField && !isBlankFrontmatterValue(classField.value)) throw new Error(t('ui.timetable.noteDropHasClass'));
-    if (anchor && find('place after scene')) throw new Error(t('ui.timetable.noteDropExistingPlacement'));
     const edits: TextEdit[] = [];
     if (classField) edits.push(replaceValueEdit(text, classField, kind));
-    const lines = classField ? [...placementLines] : [`Class: ${kind}`, ...placementLines];
+    const lines = classField ? [] : [`Class: ${kind}`];
     if (act) {
         const actField = find(act.key);
         if (actField && !isBlankFrontmatterValue(actField.value)) throw new Error(t('ui.timetable.noteDropExistingPlacement'));
@@ -180,13 +178,15 @@ class NoteDropModal extends ErtModal {
                 }
                 // Validate before a move and again inside vault.process for concurrent edits.
                 const prepare = (content: string) => {
-                    const classified = addNoteClass(content, type, after, act);
+                    const classified = addNoteClass(content, type, act);
                     return type === 'Scene' ? addSceneIntakeTemplate(classified, this.plugin.settings, intake) : classified;
                 };
                 prepare(await this.app.vault.read(this.file));
                 if (destination !== oldPath) await this.app.fileManager.renameFile(this.file, destination);
                 try { await this.app.vault.process(this.file, prepare); }
                 catch (error) { if (destination !== oldPath) await this.app.fileManager.renameFile(this.file, oldPath); throw error; }
+                // The scene it follows goes to the placement sidecar; an end-of-act sketch has no entry.
+                if (type === 'Sketch' && (after || this.plugin.sketchPlacements.get(this.file.path))) await this.plugin.sketchPlacements.set([[this.file.path, after ? { after } : null]]);
                 this.close(); this.plugin.refreshTimelineIfNeeded(null); new Notice(t('ui.timetable.noteDropDone'));
             })().catch((error: unknown) => { submit.disabled = false; explanation.setText(error instanceof Error ? error.message : String(error)); explanation.show(); });
         };

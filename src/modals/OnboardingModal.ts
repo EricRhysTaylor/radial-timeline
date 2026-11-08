@@ -323,8 +323,10 @@ export class OnboardingModal extends Modal {
     const { modalEl, contentEl } = this;
     modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--onboarding');
     // Never taller than the window: the scene list scrolls inside instead, so
-    // each step's actions (Continue on Confirm scenes) stay in view.
-    modalEl.setCssStyles({ width: '832px', maxWidth: '94vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+    // each step's actions (Continue on Confirm scenes) stay in view. Each step
+    // is a different height, so the dialog holds its top edge instead of
+    // re-centering: the step header stays put and only the bottom edge moves.
+    modalEl.setCssStyles({ width: '832px', maxWidth: '94vw', maxHeight: '92vh', alignSelf: 'flex-start', marginTop: '4vh' }); // SAFE: Modal sizing and placement via inline styles (Obsidian pattern)
     contentEl.addClass('ert-modal-container', 'ert-stack');
 
     // Resume: a dismissed modal (stray outside click, Escape) loses nothing —
@@ -1629,9 +1631,12 @@ export class OnboardingModal extends Modal {
     if (subtitle) titles.createDiv({ cls: 'ert-modal-subtitle ert-onb-stage__subtitle', text: subtitle });
   }
 
+  /** A working message under the current step's header, which stays, so the dialog doesn't drop to one line between steps. */
   private renderBusy(message: string): void {
     const { contentEl } = this;
-    contentEl.empty();
+    Array.from(contentEl.children)
+      .filter(child => !child.matches('.ert-onb-topbar, .ert-onb-stage, .ert-modal-header'))
+      .forEach(child => child.remove());
     contentEl.createDiv({ cls: 'ert-section-desc', text: message });
   }
 

@@ -19,8 +19,21 @@ describe('import dialog layout', () => {
 
     it('stops the dialog at the window height', () => {
         expect(source).toContain("modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--onboarding');");
-        expect(source).toContain("modalEl.setCssStyles({ width: '832px', maxWidth: '94vw', maxHeight: '92vh' });");
+        expect(source).toContain("maxHeight: '92vh'");
         expect(block('.ert-ui.ert-modal--onboarding.modal')).toContain('overflow: hidden');
+    });
+
+    /*
+     * Each step is a different height. Centered, the dialog re-centered at
+     * every step, so its header jumped up and down the window (Vol 14 capture,
+     * November 7): it now holds its top edge, and a working message keeps the
+     * step's header instead of dropping the dialog to one line.
+     */
+    it('holds its top edge between steps', () => {
+        expect(source).toContain("modalEl.setCssStyles({ width: '832px', maxWidth: '94vw', maxHeight: '92vh', alignSelf: 'flex-start', marginTop: '4vh' });");
+        const busy = source.slice(source.indexOf('private renderBusy('), source.indexOf('private renderMessage('));
+        expect(busy).toContain(".ert-onb-topbar, .ert-onb-stage, .ert-modal-header");
+        expect(busy).not.toContain('contentEl.empty()');
     });
 
     it('lets only the scene list give up height, so the actions stay in view', () => {

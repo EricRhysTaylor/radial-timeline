@@ -62,6 +62,9 @@ Location: `docs/engineering/standards/`
 - **[code-standards.md](standards/code-standards.md)**
   Supporting coding standards. Use after `ui-architecture.md` for UI/settings/modal work.
 
+- **[i18n.md](standards/i18n.md)**
+  Strings and translations: new strings in English only until features settle, changed meanings remove the translation, one translation pass before a major release.
+
 - **[css-guidelines.md](standards/css-guidelines.md)**
   Supporting CSS guidance and enforcement notes. Use after `ui-architecture.md`.
 

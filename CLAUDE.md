@@ -121,6 +121,21 @@ were filed on the public Editorialist repo and had to be closed.
   `docs/engineering/standards/code-doctrine.md` → "Scene YAML Belongs to the
   Author"
 
+## Strings and translations (English first until features settle)
+
+Owner's decision, 2026-11-07. Full rule: `docs/engineering/standards/i18n.md`.
+
+- Add new strings to `src/i18n/locales/en.ts` only. The other languages show
+  the English string until they are translated; `t()` falls back to English.
+- When an English string's meaning changes, delete that key from every other
+  locale, so the language shows the new English text instead of an outdated
+  translation. Delete a removed key from every locale too.
+- One translation pass brings the languages back to full coverage before a
+  major release (8.0).
+- Keep every existing language. Do not remove a locale.
+- `npm run release:i18n` reports each language's coverage and fails only on a
+  key English no longer has.
+
 ## Refactor Guard
 
 Before performing any architectural refactor the agent must read:

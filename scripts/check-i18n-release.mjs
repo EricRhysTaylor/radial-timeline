@@ -118,16 +118,19 @@ const english = parseLocaleFile(path.join(localesDir, 'en.ts'));
 const englishKeys = extractKeys(english);
 console.log(`[i18n-release] English source keys: ${englishKeys.length}`);
 
+// New strings ship in English first; the other languages fall back to English
+// until the translation pass before a major release. Coverage is reported, not
+// enforced. A key English no longer has is a stale translation: it fails.
 for (const locale of supportedLocales.filter(locale => locale !== 'en')) {
   const localeObj = parseLocaleFile(path.join(localesDir, `${locale}.ts`));
-  // Every English key must be translated before a release, so the gap
-  // between English and the other languages can't reopen.
   const missingKeys = englishKeys.filter(key => !hasKey(localeObj, key));
   const translatedCount = englishKeys.length - missingKeys.length;
   const percentage = ((translatedCount / englishKeys.length) * 100).toFixed(1);
-  console.log(`[i18n-release] ${locale}: ${translatedCount}/${englishKeys.length} (${percentage}%)`);
-  if (missingKeys.length > 0) {
-    fail(`${locale} is missing ${missingKeys.length} translation(s), e.g. ${missingKeys.slice(0, 5).join(', ')}.`);
+  const fallback = missingKeys.length > 0 ? `, ${missingKeys.length} in English` : '';
+  console.log(`[i18n-release] ${locale}: ${translatedCount}/${englishKeys.length} (${percentage}%)${fallback}`);
+  const staleKeys = extractKeys(localeObj).filter(key => !hasKey(english, key));
+  if (staleKeys.length > 0) {
+    fail(`${locale} has ${staleKeys.length} key(s) English no longer has; delete them: ${staleKeys.slice(0, 5).join(', ')}.`);
   }
 }
 
@@ -151,4 +154,4 @@ if (process.exitCode) {
   process.exit(process.exitCode);
 }
 
-console.log('[i18n-release] Locale source, full coverage, and release bundle checks passed.');
+console.log('[i18n-release] Locale source, stale-key, and release bundle checks passed.');

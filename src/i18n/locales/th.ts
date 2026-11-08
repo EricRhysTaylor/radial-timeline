@@ -4,7 +4,12 @@
  */
 import type { TranslationKeys } from './en';
 
-export const th: TranslationKeys = {
+// Missing keys fall back to English (src/i18n/index.ts).
+type DeepPartial<T> = {
+    [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+
+export const th: DeepPartial<TranslationKeys> = {
     "settings": {
         "general": {
             "sourcePath": {

@@ -91,9 +91,9 @@ For sci-fi and fantasy authors, Chronologue mode includes a **Planetary Time** s
     *   **Days per year** (e.g., 400 days)
     *   **Epoch Offset**: Shift the start date of your calendar relative to Earth's Unix Epoch (1970-01-01).
     *   **Custom Labels**: Define custom names for months and days of the week.
-*   **Synopsis Hover**: In Chronologue mode, hover over a scene to see its date converted to your active planetary profile.
+*   **Synopsis Hover**: With the Alt overlay off, hover over a scene: its synopsis shows the date converted to your active planetary profile, with the month named in full.
 *   **Calculator**: Use the command palette (`Cmd + P` on Mac, `Ctrl + P` on Windows/Linux) and search for **"Radial timeline: Planetary time calculator"** to open a calculator. Enter any Earth date/time to see the corresponding planetary date/time.
-*   **Alt overlay**: Press `Alt` to enter the planetary wireframe for your active local time profile.
+*   **Alt overlay**: Press `Alt` to enter the planetary wireframe for your active local time profile. The rim reads in planetary dates; hovering a scene lights it without a synopsis, and clicking two scenes measures the time between them in local units.
 *   **Alt + Shift**: This mirrors the standard Shift sub-mode in red, so you can compare elapsed time and discontinuities in local planetary time.
 *   **Active profile**: The selected profile in Settings controls which calendar is used for hover and conversion outputs.
 *   **Sticky Planet Calendar**: Settings -> Core -> Chronologue can make Planet Calendar the default Chronologue display when planetary time is enabled and a valid profile is active.

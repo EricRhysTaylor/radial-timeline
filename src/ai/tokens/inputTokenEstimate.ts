@@ -42,10 +42,6 @@ export function describeTokenEstimateMethod(method: TokenEstimateMethod): string
 // dragging this file's provider clients along. Re-exported, never re-written.
 export { estimateTokensFromChars };
 
-export function estimateTokensFromText(text: string, charsPerToken = DEFAULT_CHARS_PER_TOKEN): number {
-    return estimateTokensFromChars(text.length, charsPerToken);
-}
-
 /**
  * Local execution estimate, separate from the UI corpus chars/4 metric.
  * Non-ASCII text reserves its UTF-8 byte count: chars/4 badly undercounts

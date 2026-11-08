@@ -46,17 +46,6 @@ export function safeParseYaml(template: string): Record<string, FieldEntryValue>
     }
 }
 
-export function mergeOrders(primary: string[], secondary: string[]): string[] {
-    const seen = new Set<string>();
-    const result: string[] = [];
-    [...primary, ...secondary].forEach(key => {
-        if (!key || seen.has(key)) return;
-        seen.add(key);
-        result.push(key);
-    });
-    return result;
-}
-
 export function buildYamlFromEntries(entries: FieldEntry[], commentMap?: Record<string, string>): string {
     const lines: string[] = [];
     entries.forEach(entry => {
@@ -72,14 +61,4 @@ export function buildYamlFromEntries(entries: FieldEntry[], commentMap?: Record<
         }
     });
     return lines.join('\n');
-}
-
-export function entriesFromTemplate(template: string, requiredOrder: string[]): FieldEntry[] {
-    const order = mergeOrders(extractKeysInOrder(template), requiredOrder);
-    const obj = safeParseYaml(template);
-    return order.map(key => ({
-        key,
-        value: obj[key] ?? '',
-        required: requiredOrder.includes(key)
-    }));
 }

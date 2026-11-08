@@ -4,6 +4,7 @@ import type { TimelineItem } from '../types';
 import { buildTimelineChapterResolverItems } from '../utils/timelineChapters';
 import { readPartMarker } from '../utils/timelineParts';
 import { t, tCount } from '../i18n';
+import { toRomanNumeral } from '../utils/romanNumerals';
 
 /**
  * Set part… — the Part twin of Set chapter….
@@ -38,23 +39,6 @@ function sceneLabel(start: number, end: number): string {
         : t('ui.setPartModal.sceneRange', { start, end });
 }
 
-function toRomanNumeral(value: number): string {
-    const numerals: Array<[number, string]> = [
-        [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'],
-        [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I'],
-    ];
-    let remaining = Math.floor(value);
-    if (!Number.isFinite(remaining) || remaining <= 0) return String(value);
-    let output = '';
-    for (const [amount, glyph] of numerals) {
-        while (remaining >= amount) {
-            output += glyph;
-            remaining -= amount;
-        }
-    }
-    return output;
-}
-
 /**
  * Summarize the book's parts as the author would see them printed.
  *
@@ -74,7 +58,7 @@ export function buildPartContainerSummaries(scenes: TimelineItem[]): PartContain
         if (marker) {
             partIndex += 1;
             current = {
-                numeral: toRomanNumeral(partIndex),
+                numeral: toRomanNumeral(partIndex) ?? String(partIndex),
                 ...(marker.titled && marker.title ? { title: marker.title } : {}),
                 start: position,
                 end: position,

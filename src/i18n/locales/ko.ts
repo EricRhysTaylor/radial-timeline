@@ -2027,6 +2027,7 @@ export const ko: DeepPartial<TranslationKeys> = {
         },
         notices: {
             layoutReset: '레이아웃이 자동 분배 기본값으로 재설정되었습니다.',
+            openFailed: '북 디자이너를 열 수 없습니다: {{error}}',
             templateDeleted: '템플릿이 삭제되었습니다.',
             templateNotFound: '템플릿을 찾을 수 없습니다.',
             templateSaved: '템플릿 "{{name}}"이(가) 저장되었습니다.',

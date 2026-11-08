@@ -2196,7 +2196,7 @@ export class TimetableView extends BasesView {
         setIcon(button, 'asterisk');
         const panel = this.rootEl.doc.body.createDiv({ cls: 'ert-timeline-legend ert-timeline-legend--compact ert-timetable-key', attr: { role: 'tooltip' } });
         this.register(() => panel.remove());
-        wireLegendTrigger(this, button, panel, () => this.fillKey(button, panel));
+        wireLegendTrigger(this, button, panel, () => this.fillKey(button, panel), this.app.workspace);
         this.keyButton = button;
     }
 

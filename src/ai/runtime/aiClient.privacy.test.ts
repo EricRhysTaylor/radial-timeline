@@ -67,6 +67,40 @@ describe('model data follows the master switch', () => {
             unbind();
         }
     });
+
+    it('refreshes model data when AI turns on after a load with AI off', async () => {
+        const { plugin } = makePlugin('openai', false);
+        const unbind = bindAiNetworkGate(() => plugin.settings.enableAiSceneAnalysis === true);
+        try {
+            const client = new AIClient(plugin);
+            await client.refreshModelDataIfStale();
+            expect((await client.getProviderSnapshot(false)).source).toBe('none');
+            expect(requestJson).not.toHaveBeenCalled();
+            plugin.settings.enableAiSceneAnalysis = true;
+            expect(await client.refreshModelDataForAiOn()).toBe(true);
+            expect(requestJson).toHaveBeenCalledTimes(2);
+        } finally {
+            unbind();
+        }
+    });
+
+    it('reloads the snapshot loaded while AI was off, even when other model data is fresh', async () => {
+        const { plugin } = makePlugin('openai', false);
+        // Fresh pricing makes the stale check pass, so only the reset can bring the snapshot back.
+        plugin.settings.aiPricingCacheJson = JSON.stringify({ fetchedAt: new Date().toISOString(), table: {} });
+        const unbind = bindAiNetworkGate(() => plugin.settings.enableAiSceneAnalysis === true);
+        try {
+            const client = new AIClient(plugin);
+            expect((await client.getProviderSnapshot(false)).source).toBe('none');
+            plugin.settings.enableAiSceneAnalysis = true;
+            expect(await client.refreshModelDataForAiOn()).toBe(false);
+            expect(requestJson).not.toHaveBeenCalled();
+            await client.getProviderSnapshot(false);
+            expect(requestJson).toHaveBeenCalledOnce();
+        } finally {
+            unbind();
+        }
+    });
 });
 
 describe('estimates send nothing', () => {

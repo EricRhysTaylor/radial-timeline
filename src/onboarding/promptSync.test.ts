@@ -3,6 +3,7 @@ import { requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { parseRemotePrompt, refreshOnboardingPrompt, shouldAdoptRemotePrompt } from './promptSync';
 import { ONBOARDING_SCHEMA_VERSION } from '../ai/prompts/onboarding';
+import { bindAiNetworkGate } from '../ai/runtime/aiNetworkGate';
 
 vi.mock('../../tests/mocks/obsidian.ts', async importOriginal => ({
   ...await importOriginal<typeof import('obsidian')>(),
@@ -15,8 +16,16 @@ describe('refreshOnboardingPrompt', () => {
     await refreshOnboardingPrompt(plugin);
     expect(requestUrl).not.toHaveBeenCalled();
     plugin.settings.enableAiSceneAnalysis = true;
+    // The request itself passes the AI network gate, like every other AI request.
     await refreshOnboardingPrompt(plugin);
-    expect(requestUrl).toHaveBeenCalledOnce();
+    expect(requestUrl).not.toHaveBeenCalled();
+    const unbind = bindAiNetworkGate(() => plugin.settings.enableAiSceneAnalysis === true);
+    try {
+      await refreshOnboardingPrompt(plugin);
+      expect(requestUrl).toHaveBeenCalledOnce();
+    } finally {
+      unbind();
+    }
   });
 });
 

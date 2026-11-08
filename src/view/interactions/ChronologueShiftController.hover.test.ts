@@ -3,10 +3,10 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * With the planet calendar (Alt) on, hovering a scene shows its normal
- * synopsis, which carries the planetary date and time. Shift mode keeps the
- * hover to itself so scenes light for measuring; clicking two scenes measures
- * in both modes.
+ * With the planet calendar (Alt) on, hovering a scene lights its number
+ * square and shows its normal synopsis, which carries the planetary date and
+ * time. Shift mode keeps the hover to itself so scenes light for measuring;
+ * clicking two scenes measures in both modes.
  */
 describe('Chronologue hover with the planet calendar on', () => {
     const controller = readFileSync(resolve(process.cwd(), 'src/view/interactions/ChronologueShiftController.ts'), 'utf8');
@@ -16,13 +16,24 @@ describe('Chronologue hover with the planet calendar on', () => {
         // The handler's opening lines, through its first early return.
         return source.slice(start, source.indexOf('return', start) + 'return'.length + 2);
     };
+    /** A capture handler's body, up to the next registered handler. */
+    const body = (event: string) => {
+        const start = controller.indexOf(`registerDomEvent(svg as unknown as HTMLElement, '${event}'`);
+        return controller.slice(start, controller.indexOf('}, { capture: true });', start));
+    };
 
-    it('lets the hover through to the synopsis in Alt, and only Shift stops it', () => {
-        for (const event of ['pointerover', 'pointerout']) {
-            const block = handler(controller, event);
-            expect(block).toContain('if (!mode.shift) return;');
-            expect(block).not.toContain('mode.alien');
+    it('lights the number square in Alt and lets the hover through; only Shift stops it', () => {
+        for (const [event, active] of [['pointerover', 'true'], ['pointerout', 'false']] as const) {
+            const block = body(event);
+            expect(block).toContain('if (!mode.shift && !mode.alien) return;');
+            const alt = block.indexOf('if (!mode.shift) {');
+            const stop = block.indexOf('e.stopImmediatePropagation();');
+            expect(alt).toBeGreaterThan(-1);
+            // Alt returns before the propagation stop, which only Shift reaches.
+            expect(block.slice(alt, stop)).toContain(`lightAltNumberSquare(g, ${active});\n                return;`);
+            expect(stop).toBeGreaterThan(alt);
         }
+        expect(controller).toMatch(/const lightAltNumberSquare = \(g: Element, active: boolean\) => \{[\s\S]*?selectedPathsSet\.has\(scenePathEncoded\)\) return;\s*setNumberSquareActive\(getSceneIdFromGroup\(g\), active, numberLookup\);/);
         const synopsisHover = handler(mode, 'pointerover');
         expect(synopsisHover).toContain('if (view.chronologueState.shift || isSubplotDragActive()) {');
     });

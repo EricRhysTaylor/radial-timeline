@@ -2028,6 +2028,7 @@ export const ja: DeepPartial<TranslationKeys> = {
         },
         notices: {
             layoutReset: 'レイアウトを自動分配のデフォルトにリセットしました。',
+            openFailed: 'ブックデザイナーを開けませんでした：{{error}}',
             templateDeleted: 'テンプレートを削除しました。',
             templateNotFound: 'テンプレートが見つかりません。',
             templateSaved: 'テンプレート "{{name}}" を保存しました。',

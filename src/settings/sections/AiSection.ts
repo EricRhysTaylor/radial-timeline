@@ -253,12 +253,17 @@ export function renderAiSection(params: {
         await plugin.saveSettings();
         params.toggleAiSettingsVisibility(value);
         plugin.getInquiryService().notifyAiSettingsChanged();
-        plugin.onSettingChanged(IMPACT_FULL); // Tier 3: number square colors + AI pulse elements
+        plugin.onSettingChanged(IMPACT_FULL); // Tier 3: redraw the timeline for the new AI state (saved pulse and grades show either way)
         updateAiHeroState(value);
-        // Nothing was checked while AI was off, so the panel checks now.
-        // Turning it off drops any check still in flight.
-        if (value) onAiTabActivated();
-        else localValidation.invalidate();
+        // Nothing was checked or fetched while AI was off, so the panel checks
+        // now and model data refreshes as it would have on load. Turning AI
+        // off drops any check still in flight.
+        if (value) {
+            onAiTabActivated();
+            void getAIClient(plugin).refreshModelDataForAiOn();
+        } else {
+            localValidation.invalidate();
+        }
     };
 
     heroToggleInput.checked = plugin.settings.enableAiSceneAnalysis;

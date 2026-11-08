@@ -658,7 +658,7 @@ export class RadialTimelineView extends ItemView {
             doc.body.appendChild(sessionPanel);
             this.register(() => sessionPanel.remove());
 
-            wireLegendTrigger(this, legendBtn, legendPanel, () => this.updateTimelineLegend());
+            wireLegendTrigger(this, legendBtn, legendPanel, () => this.updateTimelineLegend(), this.app.workspace);
 
             searchShell.appendChild(searchBtn);
             searchShell.appendChild(searchInput);

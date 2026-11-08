@@ -144,7 +144,7 @@ export class CanvasStoryNavigator {
         wireLegendTrigger(this.events, button, panel, () => {
             renderLegendSurface(panel, { title: t('ui.canvasSketch.keyTitle'), badge: t('ui.canvasSketch.badge'), sections: this.keySections() });
             placeKeyPanel(button, panel);
-        });
+        }, this.plugin.app.workspace);
     }
 
     refresh(hasBookCards: boolean): void {

@@ -10,11 +10,13 @@ import { withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
  * sections of rows, each an icon or a swatch with a label and a detail.
  * Hover or focus opens the panel for a look; it closes when the pointer
  * leaves both the button and the panel. A click on the button opens and
- * pins it: a pinned panel stays until Esc, a click elsewhere, or a second
- * click on the button.
+ * pins it: a pinned panel stays until Esc, a press anywhere else (another
+ * key's button included), a second click on the button, or its pane losing
+ * the focus. A layout change refills an open key, so it follows its view
+ * (Reading and Editing) and its button's place.
  */
 
-import { setIcon, type Component } from 'obsidian';
+import { setIcon, type Component, type Workspace } from 'obsidian';
 
 export interface LegendDetailSegment {
     text: string;
@@ -140,8 +142,12 @@ function renderRow(sectionEl: HTMLElement, row: LegendRow): void {
  *
  * A click always opens and pins. It never closes a panel the same pointer
  * just opened by hovering: only a click on an already pinned panel does.
+ *
+ * Panels hang from the window, outside their pane, so the workspace closes
+ * them: another pane taking the focus hides a key, and a layout change
+ * hides one whose button is gone or hidden and refills one still showing.
  */
-export function wireLegendTrigger(component: Component, trigger: HTMLElement, panel: HTMLElement, beforeShow: () => void): void {
+export function wireLegendTrigger(component: Component, trigger: HTMLElement, panel: HTMLElement, beforeShow: () => void, workspace: Workspace): void {
     const doc = trigger.ownerDocument;
     let hideTimer: number | null = null;
     // Meaningful only while the panel is open: the view may close it itself
@@ -168,6 +174,15 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
         pinned = false;
         panel.removeClass('is-visible');
         trigger.setAttribute('aria-expanded', 'false');
+    };
+    /** Fill an open panel again, keeping it open (and pinned) unless its button went away. */
+    const refill = () => {
+        beforeShow();
+        if (trigger.hidden) {
+            hide();
+            return;
+        }
+        panel.addClass('is-visible');
     };
     const scheduleHide = () => {
         if (isPinned()) return;
@@ -197,12 +212,29 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
     });
     component.registerDomEvent(panel, 'mouseenter', show);
     component.registerDomEvent(panel, 'mouseleave', scheduleHide);
-    component.registerDomEvent(doc.body, 'click', (evt: MouseEvent) => {
+    // Capture phase on the document: it runs before any button stops its
+    // own click, so pressing another key's button closes this one.
+    component.registerDomEvent(doc, 'pointerdown', (evt: PointerEvent) => {
+        if (!isOpen()) return;
         const target = evt.target instanceof Node ? evt.target : null;
         if (target && (panel.contains(target) || trigger.contains(target))) return;
         hide();
-    });
+    }, { capture: true });
     component.registerDomEvent(doc, 'keydown', (evt: KeyboardEvent) => {
         if (evt.key === 'Escape') hide();
     });
+    component.registerEvent(workspace.on('active-leaf-change', leaf => {
+        if (!isOpen()) return;
+        // The key's own pane taking the focus (a formatting row does) keeps it.
+        if (leaf?.view.containerEl.contains(trigger)) return;
+        hide();
+    }));
+    component.registerEvent(workspace.on('layout-change', () => {
+        if (!isOpen()) return;
+        if (!trigger.isConnected || !trigger.isShown()) {
+            hide();
+            return;
+        }
+        refill();
+    }));
 }

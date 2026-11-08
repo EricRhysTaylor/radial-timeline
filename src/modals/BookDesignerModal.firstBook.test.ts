@@ -4,8 +4,12 @@ import type { App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { BookProfile } from '../types/settings';
 
-const firstBook = vi.hoisted(() => ({ ensure: vi.fn() }));
+const firstBook = vi.hoisted(() => ({ ensure: vi.fn(), notices: [] as string[] }));
 vi.mock('./EnsureFirstBookModal', () => ({ ensureActiveBookFolder: firstBook.ensure }));
+vi.mock('../../tests/mocks/obsidian.ts', async importOriginal => ({
+    ...await importOriginal<typeof import('obsidian')>(),
+    Notice: class { constructor(message: string) { firstBook.notices.push(message); } },
+}));
 
 import { BookDesignerModal } from './BookDesignerModal';
 
@@ -30,6 +34,14 @@ describe('Book Designer with no book yet', () => {
         expect(shellOpens).not.toHaveBeenCalled();
         resolve({ id: 'b1', title: 'The Keeper’s Log', sourceFolder: 'The Keeper’s Log' } as BookProfile);
         await vi.waitFor(() => expect(shellOpens).toHaveBeenCalledOnce());
+    });
+
+    it('says so when the first-book prompt fails, instead of swallowing it', async () => {
+        firstBook.notices.length = 0;
+        firstBook.ensure.mockRejectedValue(new Error('Folder could not be created'));
+        designer([]).open();
+        await vi.waitFor(() => expect(firstBook.notices).toEqual(['Book designer could not open: Folder could not be created']));
+        expect(shellOpens).not.toHaveBeenCalled();
     });
 
     it('opens nothing when the prompt is cancelled', async () => {

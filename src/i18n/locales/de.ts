@@ -2027,6 +2027,7 @@ export const de: DeepPartial<TranslationKeys> = {
         },
         notices: {
             layoutReset: 'Layout auf Standardwerte mit automatischer Verteilung zurückgesetzt.',
+            openFailed: 'Buch-Designer konnte nicht geöffnet werden: {{error}}',
             templateDeleted: 'Vorlage gelöscht.',
             templateNotFound: 'Vorlage nicht gefunden.',
             templateSaved: 'Vorlage "{{name}}" gespeichert.',

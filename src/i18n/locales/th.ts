@@ -2007,6 +2007,7 @@ export const th: TranslationKeys = {
         },
         "notices": {
             "layoutReset": "เค้าโครงรีเซ็ตเป็นค่าเริ่มต้นด้วยการกระจายอัตโนมัติ",
+            "openFailed": "เปิดนักออกแบบหนังสือไม่ได้: {{error}}",
             "templateDeleted": "ลบเทมเพลตแล้ว",
             "templateNotFound": "ไม่พบเทมเพลต",
             "templateSaved": "เทมเพลต \"{{name}}\" ที่บันทึกไว้",

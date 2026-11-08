@@ -190,7 +190,7 @@ export function renderNumberSquaresUnified(params: {
     let textClasses = buildTextClasses(isSceneOpen, isSearchMatch, hasEdits);
 
     const grade = sceneGrades.get(sceneId);
-    if (plugin.settings.enableAiSceneAnalysis && grade) {
+    if (grade) {
       textClasses += ` rt-grade-${grade}`;
     }
 
@@ -322,7 +322,7 @@ export function renderInnerRingsNumberSquaresAllScenes(params: {
     const sceneId = makeSceneId(actIndex, ring, sceneIndex, false, false, sceneKey(scene));
     extractGradeFromScene(scene, sceneId, sceneGrades, plugin);
     const grade = sceneGrades.get(sceneId);
-    if (plugin.settings.enableAiSceneAnalysis && grade) textClasses += ` rt-grade-${grade}`;
+    if (grade) textClasses += ` rt-grade-${grade}`;
     const subplotVisual = enableSubplotColors && resolveSubplotVisual ? resolveSubplotVisual(scene) : null;
     svg += generateNumberSquareGroup(
       squareX,

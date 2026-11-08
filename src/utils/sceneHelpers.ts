@@ -263,9 +263,9 @@ export interface SceneState {
 }
 
 /**
- * Helper function to extract AI scene analysis grades from scenes
- * Only processes if AI features are enabled to avoid performance overhead
- * Optimized with caching to avoid repeated string operations
+ * Read a scene's saved pulse grade (A, B or C) from its current analysis.
+ * Saved results are the writer's data, so grades show whether or not AI is
+ * on; only running a new analysis needs AI.
  */
 export function extractGradeFromScene(
     scene: TimelineItem, 
@@ -273,8 +273,6 @@ export function extractGradeFromScene(
     sceneGrades: Map<string, string>, 
     plugin: PluginRendererFacade
 ): void {
-    // Early return if AI features disabled - avoid all string processing
-    if (!plugin.settings.enableAiSceneAnalysis) return;
     if (!gradeKey) return;
     
     const analysisText = scene["currentSceneAnalysis"];

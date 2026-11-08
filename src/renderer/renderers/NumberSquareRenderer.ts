@@ -109,13 +109,12 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
                 positionByKey.forEach((position, key) => outerPositionByKey.set(key, position));
             }
 
-            if (plugin.settings.enableAiSceneAnalysis) {
-                sortedCombined.forEach((sceneItem, combinedIdx) => {
-                    if (isBeatNote(sceneItem)) return;
-                    const combinedSceneId = makeSceneId(act, ringOuter, combinedIdx, true, true, sceneKey(sceneItem));
-                    extractGradeFromScene(sceneItem, combinedSceneId, sceneGrades, plugin);
-                });
-            }
+            // Saved grades show whether or not AI is on.
+            sortedCombined.forEach((sceneItem, combinedIdx) => {
+                if (isBeatNote(sceneItem)) return;
+                const combinedSceneId = makeSceneId(act, ringOuter, combinedIdx, true, true, sceneKey(sceneItem));
+                extractGradeFromScene(sceneItem, combinedSceneId, sceneGrades, plugin);
+            });
 
             // Draw squares for non-Plot scenes that have a number
             svg += renderOuterRingNumberSquares({

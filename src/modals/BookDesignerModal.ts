@@ -746,6 +746,8 @@ export class BookDesignerModal extends Modal {
         }
         void ensureActiveBookFolder(this.plugin).then(book => {
             if (book) super.open();
+        }).catch((error: unknown) => {
+            new Notice(t('bookDesigner.notices.openFailed', { error: error instanceof Error ? error.message : String(error) }));
         });
     }
 

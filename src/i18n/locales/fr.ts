@@ -2007,6 +2007,7 @@ export const fr: TranslationKeys = {
         },
         "notices": {
             "layoutReset": "Mise en page Réinitialiser les valeurs par défaut avec la distribution automatique.",
+            "openFailed": "Impossible d'ouvrir le concepteur de livres : {{error}}",
             "templateDeleted": "Modèle supprimé.",
             "templateNotFound": "Modèle introuvable.",
             "templateSaved": "Modèle \"{{name}}\" enregistré.",

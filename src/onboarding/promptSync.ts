@@ -11,6 +11,7 @@
 import { requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { ONBOARDING_SCHEMA_VERSION } from '../ai/prompts/onboarding';
+import { assertAiNetworkAllowed } from '../ai/runtime/aiNetworkGate';
 
 const PROMPT_ENDPOINT = 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/functions/v1/onboarding-prompt';
 
@@ -55,6 +56,8 @@ export async function refreshOnboardingPrompt(plugin: RadialTimelinePlugin): Pro
       const age = Date.now() - new Date(cache.fetchedAt).getTime();
       if (Number.isFinite(age) && age >= 0 && age < REFRESH_INTERVAL_MS) return;
     }
+    // The same gate as every other AI request, at the request itself.
+    assertAiNetworkAllowed();
     const response = await requestUrl({ url: PROMPT_ENDPOINT, method: 'GET', throw: false });
     if (response.status !== 200) return;
     const payload = parseRemotePrompt(response.json);

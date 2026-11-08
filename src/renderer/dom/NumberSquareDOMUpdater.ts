@@ -48,14 +48,11 @@ export function updateNumberSquareStates(
                     newTextClasses += ' rt-missing-when';
                 }
                 
-                // Add AI grade if enabled
-                if (plugin.settings.enableAiSceneAnalysis) {
-                    // Try to extract grade from existing class
-                    const existingClasses = numberText.getAttribute('class') || '';
-                    const gradeMatch = existingClasses.match(/rt-grade-([A-F])/);
-                    if (gradeMatch) {
-                        newTextClasses += ` rt-grade-${gradeMatch[1]}`;
-                    }
+                // Keep the saved pulse grade, which shows whether or not AI is on
+                const existingClasses = numberText.getAttribute('class') || '';
+                const gradeMatch = existingClasses.match(/rt-grade-([A-F])/);
+                if (gradeMatch) {
+                    newTextClasses += ` rt-grade-${gradeMatch[1]}`;
                 }
                 
                 // Update square classes

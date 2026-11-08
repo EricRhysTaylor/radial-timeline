@@ -1700,6 +1700,7 @@ export const en = {
         },
         notices: {
             layoutReset: 'Layout reset to defaults with auto distribution.',
+            openFailed: 'Book designer could not open: {{error}}',
             templateDeleted: 'Template deleted.',
             templateNotFound: 'Template not found.',
             templateSaved: 'Template "{{name}}" saved.',

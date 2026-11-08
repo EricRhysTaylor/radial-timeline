@@ -2029,6 +2029,7 @@ export const zh: DeepPartial<TranslationKeys> = {
         },
         notices: {
             layoutReset: '布局已重置为带自动分配的默认值。',
+            openFailed: '无法打开书籍设计器：{{error}}',
             templateDeleted: '模板已删除。',
             templateNotFound: '未找到模板。',
             templateSaved: '模板 "{{name}}" 已保存。',

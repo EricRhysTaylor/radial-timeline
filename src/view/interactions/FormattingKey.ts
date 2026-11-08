@@ -9,9 +9,11 @@
  * panel listing Obsidian's formatting with each one's hotkey and what to type.
  * Clicking a row runs Obsidian's own command on the note, around the selected
  * text. Nothing stays on the page unasked: hovering opens it for a look and
- * it leaves with the pointer; a click pins it until Esc, a click elsewhere or
- * a second click on the icon. So it never competes with Editorialist's review
- * toolbar. The panel hangs in the right gutter, past the end of the writing.
+ * it leaves with the pointer; a click pins it until Esc, a click elsewhere, a
+ * second click on the icon or another pane taking the focus. Switching
+ * between Reading and Editing refills a pinned key. So it never competes with
+ * Editorialist's review toolbar. The panel hangs in the right gutter, past the
+ * end of the writing.
  */
 
 import { Component, MarkdownView, Platform, setIcon, type Editor } from 'obsidian';
@@ -54,7 +56,7 @@ class FormattingKey extends Component {
         const panel = button.doc.body.createDiv({ cls: 'ert-timeline-legend ert-timeline-legend--compact ert-timetable-key ert-format-key' });
         this.button = button;
         this.panel = panel;
-        wireLegendTrigger(this, button, panel, () => this.fill());
+        wireLegendTrigger(this, button, panel, () => this.fill(), this.plugin.app.workspace);
         // Pressing a button would take the focus, and with it the selection, from the note.
         this.registerDomEvent(button, 'mousedown', event => event.preventDefault());
         this.registerDomEvent(panel, 'mousedown', event => event.preventDefault());

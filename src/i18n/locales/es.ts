@@ -2007,6 +2007,7 @@ export const es: TranslationKeys = {
         },
         "notices": {
             "layoutReset": "Layout Reset a valores predeterminados con distribución automática.",
+            "openFailed": "No se pudo abrir el diseñador de libros: {{error}}",
             "templateDeleted": "plantilla eliminada.",
             "templateNotFound": "No se encuentra la plantilla.",
             "templateSaved": "Plantilla \"{{name}}\" guardada.",

@@ -91,8 +91,8 @@ describe('settings section navigation anchors', () => {
         expect(firstStatement).toBe('if (plugin.settings.enableAiSceneAnalysis !== true) return;');
         // Local validation never queues while AI is off.
         expect(aiSource).toMatch(/isLocalActive: \(\) => plugin\.settings\.enableAiSceneAnalysis === true\s*&& ensureCanonicalAiSettings\(\)\.provider === 'ollama'/);
-        // Turning AI on runs the checks that were skipped.
-        expect(aiSource.includes('if (value) onAiTabActivated();')).toBe(true);
+        // Turning AI on runs the checks that were skipped and refreshes model data.
+        expect(aiSource).toMatch(/if \(value\) \{\s*onAiTabActivated\(\);\s*void getAIClient\(plugin\)\.refreshModelDataForAiOn\(\);/);
         // The render-time key check and the debounced key/server check are gated too.
         expect(panelSource.includes('if (plugin.settings.enableAiSceneAnalysis !== true) return;')).toBe(true);
         expect(settingsSource.includes('if (this.plugin.settings.enableAiSceneAnalysis !== true) return;')).toBe(true);

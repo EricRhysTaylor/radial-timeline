@@ -559,6 +559,16 @@ export class AIClient {
         return true;
     }
 
+    /**
+     * The master switch just turned on. Model data loaded while AI was off
+     * came from the cache at best (often nothing), so the snapshot reloads
+     * on next use and stale data refreshes now, as it would have on load.
+     */
+    async refreshModelDataForAiOn(): Promise<boolean> {
+        this.providerSnapshotReady = false;
+        return this.refreshModelDataIfStale();
+    }
+
     async getRegistryModels(): Promise<ModelInfo[]> {
         if (!this.registryReady) {
             await this.refreshRegistry();

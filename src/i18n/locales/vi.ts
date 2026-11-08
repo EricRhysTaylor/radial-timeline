@@ -2007,6 +2007,7 @@ export const vi: TranslationKeys = {
         },
         "notices": {
             "layoutReset": "Đặt lại bố cục về mặc định với phân phối tự động.",
+            "openFailed": "Không thể mở Nhà thiết kế sách: {{error}}",
             "templateDeleted": "Đã xóa mẫu.",
             "templateNotFound": "Không tìm thấy mẫu.",
             "templateSaved": "Đã lưu mẫu \"{{name}}\"",

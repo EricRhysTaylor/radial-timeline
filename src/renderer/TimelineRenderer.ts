@@ -69,7 +69,6 @@ import { appendSynopsisElementForScene } from './utils/SynopsisBuilder';
 import { renderGossamerOverlay, type StageColorMap } from './utils/Gossamer';
 import { renderVersionIndicator } from './components/VersionIndicator';
 import { renderAuthorProgressIndicator } from './components/AuthorProgressIndicator';
-import type { MilestoneInfo } from './components/MilestoneIndicator';
 import type { CompletionEstimate } from './utils/Estimation';
 import { renderProgressRingBaseLayer } from './utils/ProgressRing';
 import { getReadabilityMultiplier, getReadabilityScale } from '../utils/readability';
@@ -245,7 +244,7 @@ function calculateTargetTickEnhancedData(
 export function createTimelineSVG(
     plugin: PluginRendererFacade,
     scenes: TimelineItem[],
-    options?: { aprNeedsRefresh?: boolean; milestone?: MilestoneInfo | null; runtimeModeActive?: boolean; alienModeActive?: boolean }
+    options?: { aprNeedsRefresh?: boolean; runtimeModeActive?: boolean; alienModeActive?: boolean }
 ): { svgString: string; maxStageColor: string } {
     const stopTotalPerf = startPerfSegment(plugin, 'timeline.total');
     const size = SVG_SIZE;

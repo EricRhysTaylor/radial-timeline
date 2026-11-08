@@ -29,7 +29,7 @@ import { setAccessibleLabel } from '../utils/domTooltip';
  * the pill, drops the badge and says why in the tooltip; it never raises a
  * Notice.
  *
- * While the vault keeps its book list synced (expectsBookListSync), the menu
+ * While the vault keeps a non-empty book list synced (expectsBookListSync), the menu
  * also carries one Community sync row read from the connection's book-list
  * sync record: when the list last reached the website, in red when the
  * latest attempt failed or no sync has succeeded for COMMUNITY_SYNC_OVERDUE_MS.
@@ -82,9 +82,14 @@ function parseTime(value: string | undefined): number | null {
     return Number.isFinite(ms) ? ms : null;
 }
 
-/** The row for these settings at `now`; null when the vault is not expected to sync its book list (no row). */
-export function communitySyncState(share: CommunityShareSettings, now: number): CommunitySyncState | null {
-    if (!expectsBookListSync(share)) return null;
+/**
+ * The row for these settings at `now`; null when the vault is not expected to
+ * sync its book list (no row). With no books in the Book Manager there is no
+ * list to send (syncCommunityProjects sends nothing and records nothing), so
+ * there is no row either, rather than one that turns red after 7 days.
+ */
+export function communitySyncState(share: CommunityShareSettings, now: number, hasBooks: boolean): CommunitySyncState | null {
+    if (!expectsBookListSync(share) || !hasBooks) return null;
     const { bookListSyncError, bookListSyncedAt, connectedAt } = share.connection;
     if (bookListSyncError) return { status: 'failed', error: bookListSyncError };
     const syncedAt = parseTime(bookListSyncedAt);
@@ -434,7 +439,7 @@ export class CommunityMailbox {
         const now = Date.now();
         let sync: CommunitySyncState | null = null;
         if (visible) {
-            sync = communitySyncState(normalizeCommunityShareSettings(this.plugin.settings.communityShare), now);
+            sync = communitySyncState(normalizeCommunityShareSettings(this.plugin.settings.communityShare), now, this.hasBooks());
             if (sync && this.syncing) sync = { status: 'syncing' };
         }
         const startedAt = this.plugin.communitySyncIntervalStartedAt;
@@ -526,7 +531,12 @@ export class CommunityMailbox {
     private currentSyncKey(): string {
         const share = normalizeCommunityShareSettings(this.plugin.settings.communityShare);
         const { bookListSyncedAt, bookListSyncError, bookListSyncFailedAt, connectedAt } = share.connection;
-        return JSON.stringify([expectsBookListSync(share), bookListSyncedAt, bookListSyncError, bookListSyncFailedAt, connectedAt]);
+        return JSON.stringify([expectsBookListSync(share), this.hasBooks(), bookListSyncedAt, bookListSyncError, bookListSyncFailedAt, connectedAt]);
+    }
+
+    /** Whether the Book Manager has a book list to sync. */
+    private hasBooks(): boolean {
+        return (this.plugin.settings.books ?? []).length > 0; // SAFE: settings saved before the Book Manager have no books array, which is no books
     }
 
     private async refresh(): Promise<void> {

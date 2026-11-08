@@ -35,7 +35,7 @@ const answer = (patch: Partial<CommunityMailboxAnswer>): CommunityMailboxAnswer 
 
 const fetchMock = vi.mocked(fetchCommunityMailbox);
 
-function connectedPlugin(options: { toggle?: boolean; connected?: boolean } = {}) {
+function connectedPlugin(options: { toggle?: boolean; connected?: boolean; books?: Array<{ id: string }> } = {}) {
     const communityShare = buildDefaultCommunityShareSettings();
     if (options.connected !== false) {
         communityShare.enabled = true;
@@ -47,7 +47,7 @@ function connectedPlugin(options: { toggle?: boolean; connected?: boolean } = {}
             secretId: 'rt.community-share.connection-secret'
         };
     }
-    return { settings: { showCommunityMailbox: options.toggle, communityShare } };
+    return { settings: { showCommunityMailbox: options.toggle, communityShare, books: options.books ?? [{ id: 'book-1' }] } };
 }
 
 function deferred<T>() {
@@ -266,7 +266,7 @@ describe('Community sync row', () => {
         };
     }
     const rowFor = (settings: CommunityShareSettings) => {
-        const state = communitySyncState(settings, NOW);
+        const state = communitySyncState(settings, NOW, true);
         return state && communitySyncRow(state, NOW);
     };
 
@@ -288,7 +288,7 @@ describe('Community sync row', () => {
             bookListSyncError: 'Could not reach the Community website.',
             bookListSyncFailedAt: iso(NOW - MIN)
         });
-        expect(communitySyncState(failed, NOW)).toEqual({ status: 'failed', error: 'Could not reach the Community website.' });
+        expect(communitySyncState(failed, NOW, true)).toEqual({ status: 'failed', error: 'Could not reach the Community website.' });
         expect(rowFor(failed)).toEqual({
             text: "Couldn't sync with Community (Could not reach the Community website.)",
             warning: true,
@@ -298,27 +298,36 @@ describe('Community sync row', () => {
 
     it('stays healthy at exactly 7 days and turns red once a sync is more than 7 days old', () => {
         const atBoundary = share({ bookListSyncedAt: iso(NOW - 7 * DAY) });
-        expect(communitySyncState(atBoundary, NOW)?.status).toBe('healthy');
+        expect(communitySyncState(atBoundary, NOW, true)?.status).toBe('healthy');
         expect(rowFor(atBoundary)).toEqual({ text: 'Last synced with Community 7 days ago', warning: false, canSync: true });
 
         const pastBoundary = share({ bookListSyncedAt: iso(NOW - 7 * DAY - 1) });
-        expect(communitySyncState(pastBoundary, NOW)?.status).toBe('overdue');
+        expect(communitySyncState(pastBoundary, NOW, true)?.status).toBe('overdue');
         expect(rowFor(pastBoundary)).toEqual({ text: 'Last synced with Community 7 days ago', warning: true, canSync: true });
     });
 
     it('waits calmly for a first sync, and turns red if a connection older than 7 days never synced', () => {
         expect(rowFor(share({ connectedAt: iso(NOW - DAY) })))
             .toEqual({ text: 'Not synced with Community yet', warning: false, canSync: true });
-        expect(communitySyncState(share({ connectedAt: iso(NOW - 7 * DAY - 1) }), NOW)).toEqual({ status: 'overdue', syncedAt: null });
+        expect(communitySyncState(share({ connectedAt: iso(NOW - 7 * DAY - 1) }), NOW, true)).toEqual({ status: 'overdue', syncedAt: null });
         expect(rowFor(share({ connectedAt: iso(NOW - 8 * DAY) })))
             .toEqual({ text: 'Not synced with Community yet', warning: true, canSync: true });
     });
 
     it('shows no row unless the vault syncs its book list: Private, paused, or disconnected', () => {
-        expect(communitySyncState(share({}, { enabled: false }), NOW)).toBeNull();
-        expect(communitySyncState(share({}, { sharingPaused: true }), NOW)).toBeNull();
-        expect(communitySyncState(share({ status: 'disconnected' }), NOW)).toBeNull();
-        expect(communitySyncState(buildDefaultCommunityShareSettings(), NOW)).toBeNull();
+        expect(communitySyncState(share({}, { enabled: false }), NOW, true)).toBeNull();
+        expect(communitySyncState(share({}, { sharingPaused: true }), NOW, true)).toBeNull();
+        expect(communitySyncState(share({ status: 'disconnected' }), NOW, true)).toBeNull();
+        expect(communitySyncState(buildDefaultCommunityShareSettings(), NOW, true)).toBeNull();
+    });
+
+    it('shows no row with an empty Book Manager, so a vault with no books never turns red', () => {
+        // Nothing is sent with no books, so bookListSyncedAt is never stamped.
+        const neverSynced = share({ connectedAt: iso(NOW - 30 * DAY) });
+        expect(communitySyncState(neverSynced, NOW, false)).toBeNull();
+        expect(syncNeedsAttention(communitySyncState(neverSynced, NOW, false))).toBe(false);
+        // The first book brings the row back.
+        expect(communitySyncState(neverSynced, NOW, true)).toEqual({ status: 'overdue', syncedAt: null });
     });
 
     it('counts a failed or overdue sync once toward the gold count, like other things that wait on you', () => {
@@ -484,6 +493,22 @@ describe('Community sync row', () => {
             mailbox.settingsChanged();
             expect(painted).toHaveBeenCalledTimes(1);
             expect(mailbox.view().sync?.status).toBe('failed');
+            mailbox.destroy();
+        });
+
+        it('leaves the row out with no books, and repaints with it when the first book arrives', () => {
+            const plugin = connectedPlugin({ books: [] });
+            plugin.settings.communityShare.connection.connectedAt = new Date(Date.now() - 30 * DAY).toISOString();
+            const mailbox = new CommunityMailbox(plugin as never);
+            const painted = vi.fn();
+            mailbox.subscribe(painted);
+            painted.mockClear();
+            expect(mailbox.view().sync).toBeNull();
+
+            plugin.settings.books = [{ id: 'book-1' }];
+            mailbox.settingsChanged();
+            expect(painted).toHaveBeenCalledTimes(1);
+            expect(mailbox.view().sync?.status).toBe('overdue');
             mailbox.destroy();
         });
     });

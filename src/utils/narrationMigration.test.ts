@@ -49,9 +49,30 @@ describe('POV → Narration value rules', () => {
         expect(classifyPovField({ POV: ['first', 'Elizabeth'] })).toEqual({ action: 'keep', value: 'first, Elizabeth', reason: 'name' });
     });
 
+    it('keeps a name that starts with a mode word even when nobody lists it', () => {
+        const unlisted = note('Character: [Holmes]\nPOV: Third Officer Ames');
+        expect(migratePovInContent(unlisted)).toEqual({ content: unlisted, outcome: { action: 'keep', value: 'Third Officer Ames', reason: 'name' } });
+        expect(classifyPovField({ POV: 'first (Watson)' })).toEqual({ action: 'keep', value: 'first (Watson)', reason: 'name' });
+        expect(classifyPovField({ POV: 'third person limited' })).toEqual({ action: 'move', value: 'third person limited' });
+    });
+
+    it('removes the first character by link target, alias or text, ignoring case', () => {
+        expect(classifyPovField({ Character: ['[[Mr. Bennet]]', 'Jane'], POV: '[[Mr. Bennet|Papa]]' })).toEqual({ action: 'remove', reason: 'firstCharacter' });
+        expect(classifyPovField({ Character: ['[[Elizabeth Bennet]]'], POV: 'elizabeth bennet' })).toEqual({ action: 'remove', reason: 'firstCharacter' });
+        expect(classifyPovField({ Character: ['[[People/Mr. Darcy|Darcy]]'], POV: 'darcy' })).toEqual({ action: 'remove', reason: 'firstCharacter' });
+        expect(classifyPovField({ Character: ['Jane', '[[Mr. Bennet]]'], POV: 'mr. bennet' })).toEqual({ action: 'keep', value: 'mr. bennet', reason: 'name' });
+    });
+
     it('leaves POV when Narration already says something, and replaces a blank Narration', () => {
         expect(classifyPovField({ POV: 'first', Narration: 'third' })).toEqual({ action: 'keep', value: 'first', reason: 'narrationSet' });
         expect(migratePovInContent(note('Narration:\nPOV: first')).content).toBe(note('Narration: first'));
+    });
+
+    it('keeps the writer’s own Narration text untouched, and the POV beside it', () => {
+        const own = note('Narration: Read by Jim Dale\nPOV: first');
+        expect(migratePovInContent(own)).toEqual({ content: own, outcome: { action: 'keep', value: 'first', reason: 'narrationTaken' } });
+        // The timeline still reads the valid POV, not the writer's text.
+        expect(readSceneNarration({ Narration: 'Read by Jim Dale', POV: 'first' })).toBe('first');
     });
 
     it('follows the author’s mapped names for POV and Narration', () => {
@@ -75,8 +96,11 @@ describe('legacy POV reading until the migration', () => {
         expect(readSceneNarration({})).toBeUndefined();
     });
 
-    it('still reads a name, which resolution then ignores', () => {
-        expect(readSceneNarration({ POV: 'Dr. Watson' })).toBe('Dr. Watson');
+    it('reads only a mode or count, skipping a name or the writer’s own text', () => {
+        expect(readSceneNarration({ POV: 'Dr. Watson' })).toBeUndefined();
+        expect(readSceneNarration({ Narration: 'Read by Jim Dale' })).toBeUndefined();
+        expect(readSceneNarration({ Narration: ['Read by Jim Dale', 'omni'] })).toBe('omni');
+        expect(readSceneNarration({ POV: 'Third Officer Ames' })).toBeUndefined();
     });
 });
 
@@ -122,7 +146,7 @@ describe('planning and applying the migration', () => {
         const plan = planPovToNarration(app, settings);
         expect(plan.files.map(f => f.path)).toEqual(['Book/1.md', 'Book/2.md']);
         expect(plan).toMatchObject({ moves: 1, removals: 1 });
-        expect(plan.kept.map(entry => [entry.file.path, entry.value])).toEqual([['Book/3.md', 'Dr. Watson']]);
+        expect(plan.kept.map(entry => [entry.file.path, entry.value, entry.reason])).toEqual([['Book/3.md', 'Dr. Watson', 'name']]);
 
         const result = await runPovToNarration(app, plan.files, settings);
         expect(result).toMatchObject({ moved: 1, removed: 1, failed: 0 });
@@ -130,6 +154,22 @@ describe('planning and applying the migration', () => {
         expect(files[1].content).toBe(note('Class: Scene\nCharacter: [Holmes]'));
         expect(files[2].content).toBe(note('Class: Scene\nCharacter: [Holmes]\nPOV: Dr. Watson'));
         expect(files[3].content).toBe(note('Class: Beat\nPOV: first'));
+    });
+
+    it('counts a planned scene that changed before the write as failed, not done', async () => {
+        const scene = file('Book/1.md', note('Class: Scene\nPOV: first'));
+        const app = fakeApp([scene]);
+        const plan = planPovToNarration(app, settings);
+        expect(plan.files).toHaveLength(1);
+        // The writer edits the scene after the plan: POV now names someone.
+        scene.content = note('Class: Scene\nPOV: Dr. Watson');
+        const result = await runPovToNarration(app, plan.files, settings);
+        expect(result).toMatchObject({ moved: 0, removed: 0, failed: 1 });
+        expect(scene.content).toBe(note('Class: Scene\nPOV: Dr. Watson'));
+
+        // A planned note whose text no longer has frontmatter is not done either.
+        const bare = file('Book/2.md', 'No properties any more.\n');
+        expect((await runPovToNarration(fakeApp([bare]), [bare], settings)).failed).toBe(1);
     });
 
     it('reports a scene it could not change instead of skipping it quietly', async () => {

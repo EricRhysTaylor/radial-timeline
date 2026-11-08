@@ -18,7 +18,7 @@ import { confirmAudit } from './sections/beats/confirmAudit';
 import { dismissAlert } from './refactorAlerts';
 import { getTemplateParts } from '../utils/yamlTemplateNormalize';
 import { openOrRevealFile } from '../utils/fileUtils';
-import { planPovToNarration, POV_TO_NARRATION_ALERT_ID, runPovToNarration, withoutPovTemplateField, type PovMigrationPlan } from '../utils/narrationMigration';
+import { planPovToNarration, POV_TO_NARRATION_ALERT_ID, runPovToNarration, withoutPovTemplateField, type PovKeepReason, type PovMigrationPlan } from '../utils/narrationMigration';
 
 /** Scenes that keep a POV the migration does not move, each a link to the note. Nothing when there are none. */
 export function renderPovReviewList(app: App, plugin: RadialTimelinePlugin, containerEl: HTMLElement, plan: PovMigrationPlan = planPovToNarration(app, plugin.settings)): void {
@@ -28,7 +28,7 @@ export function renderPovReviewList(app: App, plugin: RadialTimelinePlugin, cont
         text: t('ui.refactorAlerts.povToNarrationReview', { scenes: tCount('scene', plan.kept.length) })
     });
     const list = containerEl.createEl('ul', { cls: 'ert-refactor-alert__review' });
-    for (const { file, value } of plan.kept) {
+    for (const { file, value, reason } of plan.kept) {
         const item = list.createEl('li');
         const link = item.createEl('a', { text: file.basename, href: '#' });
         // SAFE: Settings alerts are re-rendered as a whole; the list is dropped with them
@@ -36,7 +36,15 @@ export function renderPovReviewList(app: App, plugin: RadialTimelinePlugin, cont
             event.preventDefault();
             void openOrRevealFile(app, file);
         });
-        item.appendText(` · POV: ${value}`);
+        item.appendText(` · POV: ${value} · ${keptReasonText(reason)}`);
+    }
+}
+
+function keptReasonText(reason: PovKeepReason): string {
+    switch (reason) {
+        case 'name': return t('ui.refactorAlerts.povToNarrationKeptName');
+        case 'narrationSet': return t('ui.refactorAlerts.povToNarrationKeptNarrationSet');
+        case 'narrationTaken': return t('ui.refactorAlerts.povToNarrationKeptNarrationTaken');
     }
 }
 

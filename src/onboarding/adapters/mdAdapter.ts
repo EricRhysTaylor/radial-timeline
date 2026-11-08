@@ -131,16 +131,18 @@ function nonCanonicalStrings(frontmatter: Record<string, unknown> | null): Recor
     const str = readString(value);
     if (str !== null) out[key] = str;
   }
-  // Narration carries over; a character's name in POV never becomes Narration
-  // (the POV character is the first name in Character).
-  for (const sourceKey of NARRATION_SOURCE_KEYS) {
-    const entry = Object.entries(frontmatter).find(([key]) => key.toLowerCase() === sourceKey);
-    const narration = entry ? readString(entry[1]) : null;
-    if (narration !== null && isNarrationValue(narration)) {
-      out['Narration'] = narration;
-      break;
-    }
-  }
+  // A narration value (mode or count) carries over as Narration; a character's
+  // name in POV never becomes Narration (the POV character is the first name in
+  // Character). A source Narration holding other text is the writer's own field
+  // and is carried untouched; a narration value then keeps its POV name.
+  const [narrationEntry, povEntry] = NARRATION_SOURCE_KEYS.map(sourceKey =>
+    Object.entries(frontmatter).find(([key]) => key.toLowerCase() === sourceKey));
+  const ownNarration = narrationEntry ? readString(narrationEntry[1]) : null;
+  const ownNarrationKept = ownNarration !== null && !isNarrationValue(ownNarration);
+  if (narrationEntry && ownNarrationKept) out[narrationEntry[0]] = ownNarration;
+  const mode = [ownNarration, povEntry ? readString(povEntry[1]) : null]
+    .find((value): value is string => value !== null && isNarrationValue(value));
+  if (mode !== undefined) out[ownNarrationKept ? 'POV' : 'Narration'] = mode;
   return out;
 }
 

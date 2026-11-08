@@ -136,7 +136,7 @@ describe('detectChanges', () => {
       new Set(),
       createSearchState(),
       'narrative',
-      {} as never,
+      { books: [] } as never,
       null
     );
     const withChapter = createSnapshot(
@@ -144,7 +144,7 @@ describe('detectChanges', () => {
       new Set(),
       createSearchState(),
       'narrative',
-      {} as never,
+      { books: [] } as never,
       null
     );
 
@@ -165,7 +165,7 @@ describe('detectChanges', () => {
       new Set(),
       createSearchState(),
       'narrative',
-      {} as never,
+      { books: [] } as never,
       null
     );
 
@@ -185,7 +185,7 @@ describe('detectChanges', () => {
       new Set(),
       createSearchState(),
       'narrative',
-      {} as never,
+      { books: [] } as never,
       null
     );
 
@@ -203,7 +203,7 @@ describe('detectChanges', () => {
       new Set(),
       createSearchState(),
       'narrative',
-      {} as never,
+      { books: [] } as never,
       null
     );
 

@@ -133,8 +133,9 @@ Owner's decision, 2026-11-07. Full rule: `docs/engineering/standards/i18n.md`.
 - One translation pass brings the languages back to full coverage before a
   major release (8.0).
 - Keep every existing language. Do not remove a locale.
-- `npm run release:i18n` reports each language's coverage and fails only on a
-  key English no longer has.
+- `npm run release:i18n` reports each language's coverage and fails on a key
+  English no longer has. For an `x.0.0` release the preflight adds
+  `--full-coverage`, which also fails on any string still shown in English.
 
 ## Refactor Guard
 

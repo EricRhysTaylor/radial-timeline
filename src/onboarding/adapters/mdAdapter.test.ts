@@ -79,17 +79,32 @@ describe('ingestMarkdownFolder', () => {
     }
   });
 
-  it('never writes a character name into Narration', async () => {
+  it('keeps a writer’s own Narration text untouched, with a narration value under POV beside it', async () => {
+    const notes = [
+      note('01 A.md', { frontmatter: { Narration: 'Read by Jim Dale', POV: 'first' } }),
+      note('02 B.md', { frontmatter: { Narration: 'Read by Jim Dale', POV: 'Watson' } }),
+    ];
+    const result = await ingestMarkdownFolder(sourceOf(notes), 'Book');
+    expect(result.kind).toBe('ok');
+    if (result.kind === 'ok') {
+      const [first, second] = result.model.chapters.flatMap(chapter => chapter.scenes);
+      expect(first.knownMetadata).toEqual({ Narration: 'Read by Jim Dale', POV: 'first' });
+      expect(second.knownMetadata).toEqual({ Narration: 'Read by Jim Dale' });
+    }
+  });
+
+  it('never moves a character name into Narration', async () => {
     const notes = [
       note('01 A.md', { frontmatter: { POV: '[[Elizabeth Bennet]]', Mood: 'tense' } }),
-      note('02 B.md', { frontmatter: { Narration: 'Darcy' } }),
+      // A Narration the source already had is the writer's own and stays as written.
+      note('02 B.md', { frontmatter: { Narration: 'Darcy', POV: 'Darcy' } }),
     ];
     const result = await ingestMarkdownFolder(sourceOf(notes), 'Book');
     expect(result.kind).toBe('ok');
     if (result.kind === 'ok') {
       const [first, second] = result.model.chapters.flatMap(chapter => chapter.scenes);
       expect(first.knownMetadata).toEqual({ Mood: 'tense' });
-      expect(second.knownMetadata).toEqual({});
+      expect(second.knownMetadata).toEqual({ Narration: 'Darcy' });
     }
   });
 });

@@ -22,7 +22,7 @@ The download holds the book and its notes only, with no Obsidian settings or plu
 
 ## What's inside
 
-*   **`Pride & Prejudice/`** — the novel as 61 chapter notes plus 15 Save the Cat beat notes. Every chapter carries full properties (`Act`, `When`, `Duration`, `Synopsis`, `Subplot`, `Character`, `Status`, `Publish Stage`, and more) and a saved **Pulse** analysis. The beat notes hold four Gossamer signals: momentum, tension, activity, and interiority.
+*   **`Pride & Prejudice/`** — the novel as 61 chapter notes plus 15 Save the Cat beat notes. Every chapter carries full properties (`Act`, `When`, `Duration`, `Synopsis`, `Subplot`, `Character`, `Status`, `Publish Stage`, and more) and a saved **Pulse** analysis. Its narration, third person, is set in its book details. Downloaded Story Vaults carry the scene narration field under its earlier name, `POV`, until their next edition, and Radial Timeline reads it the same way. The beat notes hold four Gossamer signals: momentum, tension, activity, and interiority.
 *   **`Characters/`** — notes for 29 characters, linked from every chapter they appear in, each with a portrait from Hugh Thomson’s and C. E. Brock’s illustrations of the 1890s in `Characters/Portraits/`. The Timetable’s [Panels](Timetable#panels) show them beside each scene.
 *   **`Places/`** — notes for the nine places the story moves between, from Longbourn and Netherfield to Pemberley and Rosings.
 *   **`Radial Timeline/Inquiry/`** — three saved Inquiry sessions, ready to read in the [Inquiry view](Inquiry).

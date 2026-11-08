@@ -119,8 +119,11 @@ const englishKeys = extractKeys(english);
 console.log(`[i18n-release] English source keys: ${englishKeys.length}`);
 
 // New strings ship in English first; the other languages fall back to English
-// until the translation pass before a major release. Coverage is reported, not
-// enforced. A key English no longer has is a stale translation: it fails.
+// until the translation pass before a major release. Coverage is reported, and
+// enforced only with --full-coverage, which release-preflight turns on for an
+// x.0.0 release. A key English no longer has is a stale translation: it fails.
+const fullCoverage = process.argv.includes('--full-coverage');
+if (fullCoverage) console.log('[i18n-release] Full coverage required (major release).');
 for (const locale of supportedLocales.filter(locale => locale !== 'en')) {
   const localeObj = parseLocaleFile(path.join(localesDir, `${locale}.ts`));
   const missingKeys = englishKeys.filter(key => !hasKey(localeObj, key));
@@ -128,6 +131,9 @@ for (const locale of supportedLocales.filter(locale => locale !== 'en')) {
   const percentage = ((translatedCount / englishKeys.length) * 100).toFixed(1);
   const fallback = missingKeys.length > 0 ? `, ${missingKeys.length} in English` : '';
   console.log(`[i18n-release] ${locale}: ${translatedCount}/${englishKeys.length} (${percentage}%)${fallback}`);
+  if (fullCoverage && missingKeys.length > 0) {
+    fail(`${locale} shows ${missingKeys.length} string(s) in English; a major release needs the translation pass first, e.g. ${missingKeys.slice(0, 5).join(', ')}.`);
+  }
   const staleKeys = extractKeys(localeObj).filter(key => !hasKey(english, key));
   if (staleKeys.length > 0) {
     fail(`${locale} has ${staleKeys.length} key(s) English no longer has; delete them: ${staleKeys.slice(0, 5).join(', ')}.`);
@@ -154,4 +160,4 @@ if (process.exitCode) {
   process.exit(process.exitCode);
 }
 
-console.log('[i18n-release] Locale source, stale-key, and release bundle checks passed.');
+console.log(`[i18n-release] Locale source, stale-key, ${fullCoverage ? 'full coverage, ' : ''}and release bundle checks passed.`);

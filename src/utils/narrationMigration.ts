@@ -12,11 +12,14 @@
  * put names there anyway, so the migration moves only what is a narration
  * value and never carries a name into Narration:
  *
- *   - a mode or count (first, third limited, omni, two, all, 3) → the field is
- *     renamed Narration in place, value, comment and position kept;
- *   - an empty POV, or one naming exactly the scene's first Character → removed;
- *   - anything else (another name, a list, a value beside an existing
- *     Narration) → left untouched under POV and listed for the writer.
+ *   - a mode or count, every word a narration word (first, third person
+ *     limited, omni, two, all, 3) → the field is renamed Narration in place,
+ *     value, comment and position kept;
+ *   - an empty POV, or one naming the scene's first Character (by link target,
+ *     note name or alias, ignoring case) → removed;
+ *   - anything else (another name, a list, a value beside a Narration field,
+ *     whose text stays the writer's own) → left untouched under POV and listed
+ *     for the writer.
  *
  * Nothing runs until the writer applies the alert. Until then, and for any
  * POV left in place, the timeline keeps reading POV (readSceneNarration).
@@ -35,17 +38,26 @@ import {
 } from './frontmatter';
 import { applyFrontmatterEdits, frontmatterValues, readFrontmatterText, removeFieldEdit, yamlKey, type FrontmatterText, type TextEdit } from './frontmatterText';
 import { isNarrationValue } from './pov';
-import { stripWikiLinks } from './text';
 import { isSceneClassFrontmatter } from './sceneIds';
 import { removeTemplateFields } from './templateMerge';
 import { isPathInFolderScope } from './pathScope';
 
 export const POV_TO_NARRATION_ALERT_ID = 'yaml-pov-to-narration-v8';
 
+/**
+ * Why a POV stays where it is:
+ * - `name`: it names a character, or holds anything that is not one narration
+ *   value (several entries, extra words);
+ * - `narrationSet`: the scene already has a narration in Narration;
+ * - `narrationTaken`: the scene's Narration holds the writer's own text, which
+ *   stays untouched, so POV cannot take that name.
+ */
+export type PovKeepReason = 'name' | 'narrationSet' | 'narrationTaken';
+
 export type PovFieldOutcome =
     | { action: 'move'; value: string }
     | { action: 'remove'; reason: 'empty' | 'firstCharacter' }
-    | { action: 'keep'; value: string; reason: 'name' | 'narrationSet' };
+    | { action: 'keep'; value: string; reason: PovKeepReason };
 
 type Mappings = Record<string, string> | undefined;
 
@@ -58,6 +70,34 @@ function textEntries(raw: unknown): string[] {
 /** The note's own spelling of a canonical key, under the author's mappings. */
 function noteKeyFor(frontmatter: Record<string, unknown>, canonical: string, mappings: Mappings): string | undefined {
     return Object.keys(frontmatter).find(key => canonicalizeFrontmatterKey(key, mappings) === canonical);
+}
+
+/**
+ * The spellings a name can match by, lowercased: a link's target, the target's
+ * note name and its alias (`[[People/Mr. Bennet|Papa]]`), or the plain text.
+ */
+function nameForms(value: string): Set<string> {
+    const forms = new Set<string>();
+    const add = (form: string | undefined) => {
+        const normalized = form?.trim().toLowerCase();
+        if (normalized) forms.add(normalized);
+    };
+    const link = /^\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]+))?\]\]$/.exec(value.trim());
+    if (!link) {
+        add(value);
+        return forms;
+    }
+    const target = link[1].trim().replace(/\.md$/i, '');
+    add(target);
+    add(target.split('/').pop());
+    add(link[2]);
+    return forms;
+}
+
+/** Whether two values name the same character, by link target or text, ignoring case. */
+function sameName(a: string, b: string): boolean {
+    const forms = nameForms(b);
+    return [...nameForms(a)].some(form => forms.has(form));
 }
 
 /**
@@ -74,15 +114,16 @@ export function classifyPovField(frontmatter: Record<string, unknown>, mappings?
 
     const value = values[0];
     const characterKey = noteKeyFor(frontmatter, 'Character', mappings);
-    const characters = characterKey === undefined ? [] : textEntries(frontmatter[characterKey]).map(stripWikiLinks);
-    const named = stripWikiLinks(value);
-    // A listed character is a name even when it starts like a mode ("Third Officer Ames").
-    if (characters.length > 0 && named === characters[0]) return { action: 'remove', reason: 'firstCharacter' };
-    if (characters.includes(named) || !isNarrationValue(value)) return { action: 'keep', value, reason: 'name' };
+    const cast = characterKey === undefined ? [] : textEntries(frontmatter[characterKey]);
+    if (cast.length > 0 && sameName(value, cast[0])) return { action: 'remove', reason: 'firstCharacter' };
+    // A listed character is a name even when it reads like a mode; anything with
+    // a word that is not a narration word ("Third Officer Ames") is a name too.
+    if (cast.some(name => sameName(value, name)) || !isNarrationValue(value)) return { action: 'keep', value, reason: 'name' };
 
     const narrationKey = noteKeyFor(frontmatter, SCENE_NARRATION_KEY, mappings);
-    if (narrationKey !== undefined && textEntries(frontmatter[narrationKey]).length > 0) {
-        return { action: 'keep', value, reason: 'narrationSet' };
+    const narration = narrationKey === undefined ? [] : textEntries(frontmatter[narrationKey]);
+    if (narration.length > 0) {
+        return { action: 'keep', value, reason: narration.some(isNarrationValue) ? 'narrationSet' : 'narrationTaken' };
     }
     return { action: 'move', value };
 }
@@ -119,8 +160,8 @@ export interface PovMigrationPlan {
     files: TFile[];
     moves: number;
     removals: number;
-    /** Scenes whose POV stays for the writer to review, with what it says. */
-    kept: Array<{ file: TFile; value: string }>;
+    /** Scenes whose POV stays for the writer to review, with what it says and why it stays. */
+    kept: Array<{ file: TFile; value: string; reason: PovKeepReason }>;
 }
 
 /** Scene notes in any book folder, read from the metadata cache. */
@@ -142,7 +183,7 @@ export function planPovToNarration(app: App, settings: RadialTimelineSettings): 
         const outcome = classifyPovField(frontmatter, mappings);
         if (!outcome) continue;
         if (outcome.action === 'keep') {
-            plan.kept.push({ file, value: outcome.value });
+            plan.kept.push({ file, value: outcome.value, reason: outcome.reason });
             continue;
         }
         plan.files.push(file);
@@ -173,6 +214,13 @@ export async function runPovToNarration(app: App, files: TFile[], settings: Radi
             });
             if (applied.outcome?.action === 'move') result.moved += 1;
             else if (applied.outcome?.action === 'remove') result.removed += 1;
+            else {
+                // Planned, but the note no longer reads as the plan saw it (edited
+                // since, or its frontmatter does not parse as text): nothing was
+                // written, and the migration is not done.
+                result.failed += 1;
+                result.errors.push({ file, error: 'The scene changed after the update was planned; nothing was written.' });
+            }
         } catch (error) {
             result.failed += 1;
             result.errors.push({ file, error: error instanceof Error ? error.message : String(error) });

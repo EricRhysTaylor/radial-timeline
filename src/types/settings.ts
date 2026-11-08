@@ -570,6 +570,13 @@ export interface NewerSchemaRecord {
     [field: string]: unknown;
 }
 
+/** The narration defaults migration, done (see migrateVaultNarrationDefault). */
+export interface NarrationDefaultsMigration {
+    schemaVersion: 1;
+    /** Books whose narration came from the vault value and that the writer has not set since. */
+    inheritedBookIds: string[];
+}
+
 /** Cards on one Canvas that the Canvas card menu gave a subplot. */
 export interface CanvasSubplotChoice {
     bookId: string;
@@ -1332,6 +1339,13 @@ export interface RadialTimelineSettings {
     dominantSubplots?: Record<string, string>;
     /** Timetable `.base` files RT wrote, by book ID (or 'saga'), with the folders their filter names. Plugin data, not a setting. */
     timetableFiles?: Record<string, { path: string; folders: string[] }>;
+    /**
+     * Schema-stamped record of the move from the vault-wide narration default
+     * (legacy `globalPovMode`) to each book's own (see migrateVaultNarrationDefault).
+     * `inheritedBookIds` are the books whose narration came from the vault
+     * value and that the writer has not set since. Plugin data, not a setting.
+     */
+    narrationDefaultsMigration?: NarrationDefaultsMigration | NewerSchemaRecord;
     /** Narrative mode: draw lanes for the four characters who hold POV most often. */
     showCharacterLanes?: boolean;
     readabilityScale?: ReadabilityScale;
@@ -1513,7 +1527,13 @@ export interface LegacyPersistedSettings {
     manuscriptExportTemplates?: ManuscriptExportTemplate[];
     /** Legacy last-used preset id, folded into lastUsedExportProfileId and then removed. */
     lastUsedManuscriptExportTemplateId?: string;
-    /** The vault-wide narration default, copied onto every book without its own on load and then removed. */
+    /**
+     * The vault-wide narration default from 7.x, copied onto every book
+     * without its own by the narration defaults migration. It stays on disk
+     * through 8.0 so a device still on 7.x keeps reading it, and so a book an
+     * older device stripped can be given it again. TODO(8.1): delete it with
+     * the repair branch of migrateVaultNarrationDefault.
+     */
     globalPovMode?: unknown;
 }
 

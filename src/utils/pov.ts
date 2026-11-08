@@ -11,36 +11,39 @@ export const NARRATION_MODES: readonly NarrationMode[] = ['off', 'first', 'secon
 
 type EffectiveMode = 'first' | 'second' | 'third' | 'omni' | 'objective' | 'legacy';
 
-const MODE_KEYWORDS: Record<string, EffectiveMode> = {
-    first: 'first',
-    '1st': 'first',
-    second: 'second',
-    '2nd': 'second',
-    you: 'second',
-    third: 'third',
-    '3rd': 'third',
-    limited: 'third',
-    omni: 'omni',
-    omniscient: 'omni',
-    objective: 'objective',
-    narrator: 'objective',
-    legacy: 'legacy',
-    pov: 'legacy'
-};
+const MODE_KEYWORDS = new Map<string, EffectiveMode>([
+    ['first', 'first'],
+    ['1st', 'first'],
+    ['second', 'second'],
+    ['2nd', 'second'],
+    ['you', 'second'],
+    ['third', 'third'],
+    ['3rd', 'third'],
+    ['limited', 'third'],
+    ['omni', 'omni'],
+    ['omniscient', 'omni'],
+    ['objective', 'objective'],
+    ['narrator', 'objective'],
+    ['legacy', 'legacy'],
+    ['pov', 'legacy'],
+]);
 
-const COUNT_WORDS: Record<string, number> = {
-    one: 1,
-    two: 2,
-    three: 3,
-    four: 4,
-    five: 5,
-    six: 6,
-    seven: 7,
-    eight: 8,
-    nine: 9,
-    ten: 10,
-    dozen: 12
-};
+/** Words that describe a narration without naming the mode ("third person limited", "close third"). */
+const NARRATION_QUALIFIERS = new Set(['person', 'close', 'deep', 'distant', 'past', 'present', 'tense', 'multiple', 'single']);
+
+const COUNT_WORDS = new Map<string, number>([
+    ['one', 1],
+    ['two', 2],
+    ['three', 3],
+    ['four', 4],
+    ['five', 5],
+    ['six', 6],
+    ['seven', 7],
+    ['eight', 8],
+    ['nine', 9],
+    ['ten', 10],
+    ['dozen', 12],
+]);
 
 const MODE_CONFIG: Record<EffectiveMode, { label: PovMarkerLabel; usesCharacters: boolean; syntheticText?: string }> = {
     first: { label: '1', usesCharacters: true },
@@ -56,23 +59,22 @@ interface PovInterpretation {
     countOverride?: number;
 }
 
+/**
+ * A narration value is a mode, described by mode words and qualifiers only
+ * ("first", "third person limited", "close third"), or a count ("two", "all",
+ * "3"). Every word must belong: "Third Officer Ames" is a name, not a mode.
+ */
 function interpretKeyword(raw: unknown): PovInterpretation {
     if (typeof raw !== 'string') return {};
     const trimmed = raw.trim().toLowerCase();
     if (!trimmed) return {};
 
-    const firstToken = trimmed.split(/\s+/)[0];
-    const mappedMode = MODE_KEYWORDS[firstToken];
-    if (mappedMode) {
-        return { modeOverride: mappedMode };
-    }
-
     if (trimmed === 'count' || trimmed === 'all') {
         return { countOverride: Number.POSITIVE_INFINITY };
     }
 
-    const wordCount = COUNT_WORDS[trimmed];
-    if (wordCount) {
+    const wordCount = COUNT_WORDS.get(trimmed);
+    if (wordCount !== undefined) {
         return { countOverride: wordCount };
     }
 
@@ -81,7 +83,12 @@ function interpretKeyword(raw: unknown): PovInterpretation {
         return { countOverride: numeric };
     }
 
-    return {};
+    const words = trimmed.split(/[^a-z0-9]+/).filter(word => word.length > 0);
+    if (words.length === 0 || !words.every(word => MODE_KEYWORDS.has(word) || NARRATION_QUALIFIERS.has(word))) {
+        return {};
+    }
+    const mode = words.map(word => MODE_KEYWORDS.get(word)).find(found => found !== undefined);
+    return mode ? { modeOverride: mode } : {};
 }
 
 /**

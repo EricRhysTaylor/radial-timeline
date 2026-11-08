@@ -13,6 +13,7 @@ import { ButtonComponent, Modal, Setting as ObsidianSetting } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { BookProfile, NarrationMode } from '../../types/settings';
 import { isNarrationMode, NARRATION_MODES } from '../../utils/pov';
+import { markNarrationChosen } from '../../utils/books';
 import { t } from '../../i18n';
 
 /** The label each narration mode wears in a dropdown. */
@@ -113,6 +114,8 @@ class BookDetailsModal extends Modal {
  */
 export function openBookDetails(plugin: RadialTimelinePlugin, book: BookProfile, onSaved?: () => void): void {
     new BookDetailsModal(plugin, book, async details => {
+        // A narration the writer picks is theirs: it no longer follows the old vault value.
+        if (details.narrationMode !== (book.narrationMode ?? 'off')) markNarrationChosen(plugin.settings, book.id);
         if (details.narrationMode === 'off') delete book.narrationMode;
         else book.narrationMode = details.narrationMode;
         book.genre = details.genre?.trim() || undefined;

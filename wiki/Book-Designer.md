@@ -51,7 +51,7 @@ Book Designer supports two built-in scene property profiles:
 
 ### Adding Custom Properties
 
-To track fields beyond the built-in keys, such as Dramatica signposts or your own labels, add them as advanced properties with **Show advanced properties editor** under **Settings → Core → Scene properties**, then choose **Advanced properties** in Book Designer. Check the built-in fields first: `Status`, `Publish Stage`, `POV` and many others are already tracked. See [Advanced properties editor](YAML-Frontmatter#advanced-yaml-editor).
+To track fields beyond the built-in keys, such as Dramatica signposts or your own labels, add them as advanced properties with **Show advanced properties editor** under **Settings → Core → Scene properties**, then choose **Advanced properties** in Book Designer. Check the built-in fields first: `Status`, `Publish Stage`, `Character` and many others are already tracked, and each book's narration is set in its book details. See [Advanced properties editor](YAML-Frontmatter#advanced-yaml-editor).
 
 ## Custom Beat Systems
 

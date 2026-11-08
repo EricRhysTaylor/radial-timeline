@@ -6,6 +6,7 @@ import { getFrontMatterInfo, parseYaml } from 'obsidian';
 import type { RadialTimelineSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import { getBaseKeys } from './yamlTemplateNormalize';
+import { isNarrationValue } from './pov';
 
 export interface CanonicalAliasConflict {
   canonicalKey: string;
@@ -424,10 +425,11 @@ export function readBackdropContext(fm: BackdropFrontmatter | null | undefined):
 }
 
 /**
- * A scene's narration override as written, from normalized scene frontmatter:
- * `Narration`, else the legacy `POV`. A YAML list gives its first non-empty
- * entry. Undefined when neither field holds text. The value is not judged here;
- * resolveScenePov ignores anything that names no mode or count.
+ * A scene's narration override, from normalized scene frontmatter: the first
+ * entry of `Narration`, then of the legacy `POV`, that names a mode or count
+ * (isNarrationValue). Anything else in those fields, such as the writer's own
+ * `Narration: Read by Jim Dale` or a character's name in `POV`, is not an
+ * override and is skipped. Undefined when no entry is one.
  */
 export function readSceneNarration(fm: Record<string, unknown> | null | undefined): string | undefined {
   if (!fm) return undefined;
@@ -436,7 +438,7 @@ export function readSceneNarration(fm: Record<string, unknown> | null | undefine
     const entries = Array.isArray(raw) ? raw : [raw];
     for (const entry of entries) {
       const text = frontmatterValueToText(entry).trim();
-      if (text.length > 0) return text;
+      if (isNarrationValue(text)) return text;
     }
   }
   return undefined;

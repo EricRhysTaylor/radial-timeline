@@ -191,6 +191,7 @@ Configure the time-based visualization of your story.
 > Read more in [Chronologue Mode](Chronologue-Mode).
 
 <a name="narration"></a>
+<a name="point-of-view"></a>
 ## Narration
 
 Show how each book is narrated, and mark each scene's POV character in the synopsis and the character lanes. The POV character is always the first name in a scene's `Character` list.

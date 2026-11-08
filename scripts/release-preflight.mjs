@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 
 function run(command, description) {
   console.log(`\n[release-preflight] ${description}...`);
@@ -36,7 +37,15 @@ run('node scripts/check-unpublished-releases.mjs', 'Checking for stranded draft 
 run('npm run publish:pdf-smoke', 'Compiling bundled PDF layouts against packaged fonts');
 
 run(`npm run ${primaryAudit}`, `Running ${primaryAudit}`);
-run('npm run release:i18n', 'Checking i18n release alignment');
+// The release script bumps package.json before this runs, so its version is the
+// one being released. Point releases may show new strings in English; a major
+// release (x.0.0) ships only after the translation pass (docs/engineering/standards/i18n.md).
+const releaseVersion = JSON.parse(readFileSync('package.json', 'utf8')).version;
+if (/^\d+\.0\.0$/.test(releaseVersion)) {
+  run('npm run release:i18n -- --full-coverage', `Checking i18n release alignment, full coverage for major release ${releaseVersion}`);
+} else {
+  run('npm run release:i18n', 'Checking i18n release alignment');
+}
 run('npm run review:obsidian', 'Running Obsidian review readiness');
 run('npm run release:eyeball', 'Printing eyeball checklist');
 

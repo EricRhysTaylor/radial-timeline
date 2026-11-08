@@ -2,7 +2,7 @@
  * Book profile helpers
  */
 import { slugifyToFileStem } from './slug';
-import type { BeatDefinition, BeatSystemConfig, BeatWorkspaceState, BookProfile, LegacyPersistedSettings, LoadedBeatTab, ManuscriptSceneHeadingMode, NarrationMode, RadialTimelineSettings } from '../types/settings';
+import type { BeatDefinition, BeatSystemConfig, BeatWorkspaceState, BookProfile, LegacyPersistedSettings, LoadedBeatTab, ManuscriptSceneHeadingMode, NarrationDefaultsMigration, NarrationMode, RadialTimelineSettings } from '../types/settings';
 import type { TimelineItem } from '../types/timeline';
 import { normalizeRecentStructuralMoves } from './recentStructuralMoves';
 import { normalizeOwnSubplotColorsRecord } from './ownSubplotColors';
@@ -198,33 +198,86 @@ export function bookNarrationMode(
   settings: Pick<RadialTimelineSettings, 'books' | 'activeBookId'>
 ): NarrationMode | undefined {
   const book = scene.bookId
-    ? (settings.books || []).find(candidate => candidate.id === scene.bookId) // SAFE: pre-Book-Manager vaults have no books array; a saga always has its books
+    ? settings.books.find(candidate => candidate.id === scene.bookId)
     : getActiveBook(settings);
   return book?.narrationMode;
 }
 
 /** Every book's narration default, for render fingerprints: a change to any book redraws. */
 export function narrationModesSignature(settings: Pick<RadialTimelineSettings, 'books'>): string {
-  const books = settings.books || []; // SAFE: pre-Book-Manager vaults have no books array; callers read empty as "no books yet"
-  return books.map(book => `${book.id}:${book.narrationMode ?? ''}`).join('|'); // SAFE: a book without a narration default contributes an empty slot that changes once it is set
+  return settings.books.map(book => `${book.id}:${book.narrationMode ?? ''}`).join('|'); // SAFE: a book without a narration default contributes an empty slot that changes once it is set
+}
+
+export const NARRATION_DEFAULTS_MIGRATION_SCHEMA_VERSION = 1;
+
+type NarrationMigrationSettings = Pick<RadialTimelineSettings, 'books' | 'narrationDefaultsMigration'> & Pick<LegacyPersistedSettings, 'globalPovMode'>;
+
+/**
+ * Settings migration, run on every load: the 7.x vault-wide narration default
+ * (`globalPovMode`) becomes each book's own, so no timeline changes.
+ *
+ * - Runs once, stamped by `narrationDefaultsMigration`. Every book without a
+ *   narration of its own takes the vault value and is recorded as inheriting it.
+ * - Waits, unstamped, while there are no books (a book created later inherits
+ *   the value) or while the vault value is one this build does not know.
+ * - Afterwards, repairs: a device still on 7.x drops `narrationMode` from the
+ *   books when it saves, so a recorded book that lost its narration takes the
+ *   vault value again. A book the writer has set since is no longer recorded
+ *   (markNarrationChosen), so "not set" stays not set.
+ *
+ * `globalPovMode` stays on disk through 8.0 for those 7.x devices.
+ * TODO(8.1): delete `globalPovMode` and the repair branch; keep the stamp.
+ * True when the settings changed.
+ */
+export function migrateVaultNarrationDefault(settings: NarrationMigrationSettings): boolean {
+  const vaultMode = settings.globalPovMode;
+  const inheritedMode = isNarrationMode(vaultMode) && vaultMode !== 'off' ? vaultMode : undefined;
+  const record = settings.narrationDefaultsMigration;
+
+  if (record === undefined) {
+    if (settings.books.length === 0) return false;
+    if (vaultMode !== undefined && !isNarrationMode(vaultMode)) return false;
+    const inheritedBookIds: string[] = [];
+    if (inheritedMode) {
+      for (const book of settings.books) {
+        if (book.narrationMode) continue;
+        book.narrationMode = inheritedMode;
+        inheritedBookIds.push(book.id);
+      }
+    }
+    settings.narrationDefaultsMigration = { schemaVersion: NARRATION_DEFAULTS_MIGRATION_SCHEMA_VERSION, inheritedBookIds };
+    return true;
+  }
+
+  // A record from a newer Radial Timeline is kept as found and never read.
+  if (record.schemaVersion !== NARRATION_DEFAULTS_MIGRATION_SCHEMA_VERSION || !inheritedMode) return false;
+  const inherited = new Set(inheritedBookIdsOf(record as NarrationDefaultsMigration));
+  let repaired = false;
+  for (const book of settings.books) {
+    if (!inherited.has(book.id) || book.narrationMode) continue;
+    book.narrationMode = inheritedMode;
+    repaired = true;
+  }
+  return repaired;
 }
 
 /**
- * Settings migration: the vault-wide narration default becomes each book's
- * own. Every book without a default of its own takes the vault value, so no
- * timeline changes; then the vault field leaves the settings for good. True
- * when the settings changed.
+ * The writer set this book's narration themselves (including "not set"), so it
+ * no longer inherits the vault value and the repair above leaves it alone.
  */
-export function migrateVaultNarrationDefault(settings: Pick<RadialTimelineSettings, 'books'> & Pick<LegacyPersistedSettings, 'globalPovMode'>): boolean {
-  if (!Object.prototype.hasOwnProperty.call(settings, 'globalPovMode')) return false;
-  const vaultMode = settings.globalPovMode;
-  if (isNarrationMode(vaultMode) && vaultMode !== 'off') {
-    for (const book of settings.books) {
-      if (!book.narrationMode) book.narrationMode = vaultMode;
-    }
-  }
-  delete settings.globalPovMode;
-  return true;
+export function markNarrationChosen(settings: Pick<RadialTimelineSettings, 'narrationDefaultsMigration'>, bookId: string): void {
+  const record = settings.narrationDefaultsMigration;
+  if (record?.schemaVersion !== NARRATION_DEFAULTS_MIGRATION_SCHEMA_VERSION) return;
+  settings.narrationDefaultsMigration = {
+    schemaVersion: NARRATION_DEFAULTS_MIGRATION_SCHEMA_VERSION,
+    inheritedBookIds: inheritedBookIdsOf(record as NarrationDefaultsMigration).filter(id => id !== bookId),
+  };
+}
+
+/** The recorded ids, as stored: a hand-edited list keeps only its string entries. */
+function inheritedBookIdsOf(record: NarrationDefaultsMigration): string[] {
+  const ids: unknown = record.inheritedBookIds;
+  return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : [];
 }
 
 export function getActiveBookTitle(settings: RadialTimelineSettings, fallback = DEFAULT_BOOK_TITLE): string {

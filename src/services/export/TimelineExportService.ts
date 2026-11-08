@@ -41,6 +41,7 @@ import type {
     TimelineItem,
 } from '../../types';
 import { isMatterNote } from '../../utils/sceneHelpers';
+import { isNarrationValue } from '../../utils/pov';
 import { OWN_SUBPLOT_COLORS_SCHEMA_VERSION, ownSubplotColorEntries } from '../../utils/ownSubplotColors';
 import { getBookMainPlotName } from '../../utils/mainPlot';
 import { TIMELINE_DATA_EXPORT_SCHEMA_VERSION, wallClockWhen } from './timelineExportFormat';
@@ -252,6 +253,9 @@ export function buildTimelineDataExport(params: BuildTimelineDataExportParams): 
         const when = wallClockWhen(item);
         const next: TimelineExportItem = { ...item, when };
         if (when === undefined) delete next.when;
+        // `pov` is the scene's narration override, which the website reads as
+        // its narration mode: never a character's name (as in the Community share).
+        if (next.pov !== undefined && !isNarrationValue(next.pov)) delete next.pov;
         return next;
     });
     const matter: TimelineMatterEntry[] = items

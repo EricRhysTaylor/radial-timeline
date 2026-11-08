@@ -2,6 +2,7 @@
  * Manuscript Assembly Utilities
  */
 import { stripFrontmatter } from './frontmatterDocument';
+import { toRomanNumeral } from './romanNumerals';
 import { TFile, Vault, App, getFrontMatterInfo, parseYaml } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { TimelineItem, BookMeta, MatterMeta, LegacyMatterOrder } from '../types';
@@ -833,24 +834,6 @@ interface ModernClassicState {
   partEpigraphAttributions: string[];
 }
 
-function toRomanNumeral(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return '';
-  const table: Array<[number, string]> = [
-    [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],
-    [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'],
-    [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']
-  ];
-  let remaining = Math.floor(value);
-  let output = '';
-  for (const [numeric, roman] of table) {
-    while (remaining >= numeric) {
-      output += roman;
-      remaining -= numeric;
-    }
-  }
-  return output;
-}
-
 /** Macro arguments drop author braces before escaping, so inserted ones survive. */
 function escapeModernClassicMacroText(value: string): string {
   return escapeLatex(value.replace(/[{}]/g, ''));
@@ -1231,7 +1214,7 @@ export async function assembleManuscript(
   const chapterLevel = hasNavigationParts ? 2 : 1;
   const sceneLevel = hasNavigationParts ? (hasNavigationChapters ? 3 : 2) : (hasNavigationChapters ? 2 : 1);
   const partLabel = (title: string | undefined, n: number) => title && /^act\b/i.test(title)
-    ? title : `Part ${toRomanNumeral(n)}${title ? `: ${title}` : ''}`;
+    ? title : `Part ${toRomanNumeral(n) ?? ''}${title ? `: ${title}` : ''}`;
 
   // Frontmatter pages first (resolver order, with bookPageOrder applied).
   for (const page of frontPages) emitMatterPage(page);
@@ -1299,7 +1282,7 @@ export async function assembleManuscript(
         modernClassicState.partIndex += 1;
         const style = options?.modernClassicStructure?.partNumberStyle;
         const partRoman = style === 'word' ? partNumberInWords(modernClassicState.partIndex)
-          : style === 'arabic' ? String(modernClassicState.partIndex) : toRomanNumeral(modernClassicState.partIndex);
+          : style === 'arabic' ? String(modernClassicState.partIndex) : (toRomanNumeral(modernClassicState.partIndex) ?? '');
         if (partRoman) {
           const slot = modernClassicState.partIndex - 1;
           const partTitle = partMarker.titled
@@ -1332,7 +1315,7 @@ export async function assembleManuscript(
 
       if (documentContents?.format === 'pdf') textParts.push(queueNavigation(sceneLevel, resolveSceneTitleForPublishing(title, sceneFrontmatter)));
       modernClassicState.sceneIndexInPart += 1;
-      const sceneRoman = toRomanNumeral(modernClassicState.sceneIndexInPart).toLowerCase();
+      const sceneRoman = (toRomanNumeral(modernClassicState.sceneIndexInPart) ?? '').toLowerCase();
       const opener = options?.modernClassicStructure?.sceneOpener ?? 'roman-with-rule';
       if (opener === 'dedicated-page') {
         const publishTitle = resolveSceneTitleForPublishing(title, sceneFrontmatter);

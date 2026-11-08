@@ -4824,9 +4824,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             momentumTooltip: 'Momentum\n\n物語がどれだけ力強く前進しているか — 各ビートが読者を次の展開へどれだけ引き込むか — を測定します。出来事の数だけでなく、ペースと結果に注目します。',
             tensionTooltip: 'Tension\n\n読者が感じる圧力 — どれだけの緊張、不確かさ、未解決の葛藤が持ち越されているか — を測定します。何が懸かっているかが明確であれば、静かなシーンでも高い緊張感を持ちえます。',
         },
-        helpIcon: {
-            getHelp: 'ヘルプ',
-        },
         importDemoVault: {
             anotherImport: '別のデモを追加中です。完了するまでお待ちください。',
             briefingsMissing: 'このデモには保存済みの Inquiry Briefing がありません。既存のファイルは保持されました。',
@@ -5748,15 +5745,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             discardDraftTooltip: '下書きを破棄',
             addMappingButton: '新しいマッピングを追加',
             allKeysMappedNotice: 'サポートされているシステムキーはすべてマッピング済みです。',
-        },
-        milestoneIndicator: {
-            zeroComplete: 'ZERO 完了',
-            authorComplete: 'AUTHOR 完了',
-            houseComplete: 'HOUSE 完了',
-            bookComplete: '書籍完成！',
-            keepGoing: 'その調子',
-            youGotThis: 'あなたならできる',
-            weBelieveInYou: '応援しています',
         },
         modeManager: {
             couldNotEnterMode: '{{mode}} モードに入れませんでした。詳細は開発者コンソールを確認してください。',

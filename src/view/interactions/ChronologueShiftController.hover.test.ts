@@ -3,10 +3,11 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * With the planet calendar (Alt) on, hovering a scene lights its number
- * square and shows its normal synopsis, which carries the planetary date and
- * time. Shift mode keeps the hover to itself so scenes light for measuring;
- * clicking two scenes measures in both modes.
+ * With the planet calendar (Alt) on, the rim carries the planet's dates and a
+ * hover only lights the scene, as a measurable one: no synopsis shows. Shift
+ * does the same. Turning Alt or Shift off brings back the normal hover, whose
+ * synopsis always carries the planet date. Clicking two scenes measures in
+ * both modes, in the planet's time when Alt is on.
  */
 describe('Chronologue hover with the planet calendar on', () => {
     const controller = readFileSync(resolve(process.cwd(), 'src/view/interactions/ChronologueShiftController.ts'), 'utf8');
@@ -22,20 +23,17 @@ describe('Chronologue hover with the planet calendar on', () => {
         return controller.slice(start, controller.indexOf('}, { capture: true });', start));
     };
 
-    it('lights the number square in Alt and lets the hover through; only Shift stops it', () => {
-        for (const [event, active] of [['pointerover', 'true'], ['pointerout', 'false']] as const) {
+    it('keeps the hover in Alt as in Shift: the scene lights and the hover stops there', () => {
+        for (const event of ['pointerover', 'pointerout']) {
             const block = body(event);
             expect(block).toContain('if (!mode.shift && !mode.alien) return;');
-            const alt = block.indexOf('if (!mode.shift) {');
-            const stop = block.indexOf('e.stopImmediatePropagation();');
-            expect(alt).toBeGreaterThan(-1);
-            // Alt returns before the propagation stop, which only Shift reaches.
-            expect(block.slice(alt, stop)).toContain(`lightAltNumberSquare(g, ${active});\n                return;`);
-            expect(stop).toBeGreaterThan(alt);
+            expect(block).toContain('e.stopImmediatePropagation();');
+            // No Alt-only branch that lets the hover through to the synopsis.
+            expect(block).not.toContain('if (!mode.shift) {');
         }
-        expect(controller).toMatch(/const lightAltNumberSquare = \(g: Element, active: boolean\) => \{[\s\S]*?selectedPathsSet\.has\(scenePathEncoded\)\) return;\s*setNumberSquareActive\(getSceneIdFromGroup\(g\), active, numberLookup\);/);
+        expect(controller).not.toContain('lightAltNumberSquare');
         const synopsisHover = handler(mode, 'pointerover');
-        expect(synopsisHover).toContain('if (view.chronologueState.shift || isSubplotDragActive()) {');
+        expect(synopsisHover).toContain('if (view.chronologueState.shift || view.chronologueState.alien || isSubplotDragActive()) {');
     });
 
     it('still measures between two clicked scenes in Alt', () => {
@@ -45,7 +43,7 @@ describe('Chronologue hover with the planet calendar on', () => {
 });
 
 describe('Alt hover styles', () => {
-    it('leaves the synopsis to its normal rules, so a hover shows one synopsis, not all of them', () => {
+    it('leaves the synopsis to its normal rules, so a hover never shows them all', () => {
         const styles = ['timeline.css', 'scenes.css', 'base.css', 'chronologue-alt.css', 'chronologue-base.css', 'chronologue-shift.css']
             .map(file => readFileSync(resolve(process.cwd(), 'src/styles', file), 'utf8'))
             .join('\n')

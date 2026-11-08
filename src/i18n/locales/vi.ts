@@ -4831,9 +4831,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "momentumTooltip": "Đà\n\nĐo mức độ câu chuyện tiến về phía trước — mỗi nhịp kéo người đọc về điều xảy ra tiếp theo mạnh đến đâu. Tập trung vào nhịp độ và hệ quả, không chỉ số lượng sự kiện.",
             "tensionTooltip": "Căng thẳng\n\nđo lường áp lực mà người đọc cảm thấy — mức độ căng thẳng, không chắc chắn hoặc xung đột chưa được giải quyết được chuyển tiếp. Một cảnh yên tĩnh có thể rất cao căng thẳng nếu tiền cược rõ ràng."
         },
-        "helpIcon": {
-            "getHelp": "Được trợ giúp"
-        },
         "importDemoVault": {
             "anotherImport": "Một bản demo khác đang được thêm vào. Vui lòng đợi nó kết thúc.",
             "briefingsMissing": "Bản demo này thiếu các bản tóm tắt Inquiry đã lưu của nó. các tệp hiện có đã được bảo tồn.",
@@ -5755,15 +5752,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "discardDraftTooltip": "loại bỏ bản nháp",
             "addMappingButton": "Thêm bản đồ mới",
             "allKeysMappedNotice": "Tất cả các khóa hệ thống được hỗ trợ đã được ánh xạ."
-        },
-        "milestoneIndicator": {
-            "zeroComplete": "Không hoàn thành",
-            "authorComplete": "Tác giả hoàn thành",
-            "houseComplete": "Nhà hoàn thiện",
-            "bookComplete": "Sách hoàn thành!",
-            "keepGoing": "Tiếp tục đi",
-            "youGotThis": "bạn có cái này",
-            "weBelieveInYou": "Chúng tôi tin tưởng vào bạn"
         },
         "modeManager": {
             "couldNotEnterMode": "Không thể vào chế độ {{mode}}. Kiểm tra bảng điều khiển dành cho nhà phát triển để biết chi tiết.",

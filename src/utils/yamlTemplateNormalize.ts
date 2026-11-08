@@ -69,22 +69,6 @@ export function safeParseYaml(template: string): Record<string, FieldEntryValue>
     return entries;
 }
 
-/**
- * Merge two ordered key lists, preserving the relative order of each.
- * Primary keys appear first; secondary keys that aren't already present
- * are appended in their original order.
- */
-export function mergeOrders(primary: string[], secondary: string[]): string[] {
-    const seen = new Set<string>();
-    const result: string[] = [];
-    [...primary, ...secondary].forEach(key => {
-        if (!key || seen.has(key)) return;
-        seen.add(key);
-        result.push(key);
-    });
-    return result;
-}
-
 // ─── Reserved keys ──────────────────────────────────────────────────────
 
 /** Obsidian-internal keys injected into the metadata cache — never user-editable. */

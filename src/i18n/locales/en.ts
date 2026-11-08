@@ -4542,9 +4542,6 @@ export const en = {
             momentumTooltip: 'Momentum\n\nMeasures how strongly the story moves forward—how much each beat pulls the reader toward what happens next. Focuses on pacing and consequence, not just event count.',
             tensionTooltip: 'Tension\n\nMeasures the pressure the reader feels—how much strain, uncertainty, or unresolved conflict is carried forward. A quiet scene can be highly tense if the stakes are clear.',
         },
-        helpIcon: {
-            getHelp: 'GET HELP',
-        },
         importDemoVault: {
             anotherImport: 'Another story is being added. Please wait for it to finish.',
             briefingsMissing: 'This story is missing its saved Inquiry briefings. Existing files were preserved.',
@@ -5466,15 +5463,6 @@ export const en = {
             discardDraftTooltip: 'Discard draft',
             addMappingButton: 'Add new mapping',
             allKeysMappedNotice: 'All supported system keys are already mapped.',
-        },
-        milestoneIndicator: {
-            zeroComplete: 'ZERO COMPLETE',
-            authorComplete: 'AUTHOR COMPLETE',
-            houseComplete: 'HOUSE COMPLETE',
-            bookComplete: 'BOOK COMPLETE!',
-            keepGoing: 'KEEP GOING',
-            youGotThis: 'YOU GOT THIS',
-            weBelieveInYou: 'WE BELIEVE IN YOU',
         },
         modeManager: {
             couldNotEnterMode: 'Could not enter {{mode}} mode. Check the developer console for details.',

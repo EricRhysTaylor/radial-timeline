@@ -1538,11 +1538,15 @@ async function runTimelineSync(plugin: RadialTimelinePlugin): Promise<void> {
             if (code === 'sharing_paused' || code === 'connection_changed') return;
             const message = error instanceof Error ? error.message : t('ui.communityShareClient.timelineShareFailed');
             const removed = code === 'timeline_not_shared';
-            await saveTimelineRecord(plugin, book.id, profileId, record => ({
-                ...record,
-                enabled: removed ? false : record.enabled,
-                lastError: removed ? t('ui.communityShareClient.timelineRemovedOnWebsite') : message,
-            }));
+            try {
+                await saveTimelineRecord(plugin, book.id, profileId, record => ({
+                    ...record,
+                    enabled: removed ? false : record.enabled,
+                    lastError: removed ? t('ui.communityShareClient.timelineRemovedOnWebsite') : message,
+                }));
+            } catch (saveError) {
+                console.warn('Community timeline sync could not record its outcome:', saveError instanceof Error ? saveError.message : saveError);
+            }
             if (SYNC_STOP_CODES.has(code)) return;
         }
     }

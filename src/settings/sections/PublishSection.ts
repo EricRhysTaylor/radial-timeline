@@ -71,6 +71,7 @@ import { getMatterPreviewSummary, getPublishingProgressContext, getPublishingVal
 import { createBookMetaOnly, ensurePublishingEnvironment, generateSampleTemplates, maybeRenameTemplateFileForPathChange } from '../../publishing/starterSetup';
 import { compactTemplatePathForStorage, persistImportedTemplate } from '../../utils/templateImport';
 import { t, tCount } from '../../i18n';
+import { toRomanNumeral } from '../../utils/romanNumerals';
 
 // Example shown in the Custom Pandoc metadata field. This is literal Pandoc
 // metadata syntax (case-sensitive keys), not sentence-case UI copy, so it must
@@ -783,23 +784,6 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         const caps = getLayoutSpecialCapabilities(layout);
         return caps.usesModernClassicStructure || caps.hasEpigraphs;
     };
-    const toRomanNumeral = (value: number): string => {
-        if (!Number.isFinite(value) || value <= 0) return '';
-        const table: Array<[number, string]> = [
-            [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],
-            [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'],
-            [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']
-        ];
-        let remainder = Math.floor(value);
-        let output = '';
-        for (const [numeric, roman] of table) {
-            while (remainder >= numeric) {
-                output += roman;
-                remainder -= numeric;
-            }
-        }
-        return output;
-    };
     const getActiveBookReference = (): BookProfile | null => {
         const active = getActiveBook(plugin.settings);
         if (!active) return null;
@@ -846,7 +830,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
         for (let partIndex = 0; partIndex < rowCount; partIndex++) {
             const marker = markers[partIndex];
-            const numeral = toRomanNumeral(partIndex + 1) || String(partIndex + 1);
+            const numeral = toRomanNumeral(partIndex + 1) ?? String(partIndex + 1);
             const partLabel = !marker
                 ? t('ui.publishSection.partLabelNoMarker', { numeral })
                 : marker.titled && marker.title ? t('ui.publishSection.partLabelTitled', { numeral, title: marker.title }) : t('ui.publishSection.partLabel', { numeral });

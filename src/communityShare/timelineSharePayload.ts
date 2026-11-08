@@ -68,9 +68,28 @@ export interface BuildTimelineSharePayloadParams {
     now: Date;
 }
 
+const WIKILINK = /\[\[([^\][|]*)(?:\|([^\][]*))?\]\]/g;
+
+/**
+ * A name as the reader sees it in Obsidian. The authored form of a link carries
+ * its target, which can be a folder path in the vault (`[[People/Mira]]`), so it
+ * leaves as its alias or the note's name and never as the link itself.
+ */
+function linkText(text: string): string {
+    return text.replace(WIKILINK, (_match: string, target: string, alias?: string) => {
+        const shown = alias?.trim();
+        if (shown) return shown;
+        const note = target.split('#')[0].split('/').pop() ?? ''; // SAFE: split always yields at least one segment
+        return note.replace(/\.md$/i, '').trim();
+    }).trim();
+}
+
 function textList(value: unknown): string[] {
     const values = Array.isArray(value) ? value : [value];
-    return values.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0);
+    return values
+        .filter((entry): entry is string => typeof entry === 'string')
+        .map(linkText)
+        .filter(entry => entry.length > 0);
 }
 
 /** One row per scene: the renderer's input repeats a scene for each of its subplots. */

@@ -31,14 +31,14 @@ import { comparePrefixTokens, extractPrefixToken } from '../../utils/prefixOrder
 import { getScenePrefixNumber } from '../../utils/text';
 import { SHARED_CHAPTER_FIELD_KEY } from '../../utils/timelineChapters';
 import { tooltipForComponent } from '../../utils/tooltip';
-import { computeCanonicalOrder, getBaseKeys, getCustomKeys, getTemplateParts, RESERVED_OBSIDIAN_KEYS } from '../../utils/yamlTemplateNormalize';
+import { computeCanonicalOrder, extractKeysInOrder, getBaseKeys, getCustomKeys, getTemplateParts, RESERVED_OBSIDIAN_KEYS, safeParseYaml } from '../../utils/yamlTemplateNormalize';
 import { IconSuggest } from '../IconSuggest';
 import { IMPACT_FULL } from '../SettingImpact';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { getBeatSystemCopy as getBuiltInBeatSystemCopy } from './beats/beatSystemCopy';
 import { dirtyState, type InnerStage } from './beats/dirtyState';
 import type { BeatNoteCustomContentSummary, BeatRow, FieldEntry } from './beats/types';
-import { buildYamlFromEntries, extractKeysInOrder, safeParseYaml, } from './beats/yamlHelpers';
+import { buildYamlFromEntries } from './beats/yamlHelpers';
 import { renderSceneNormalizerSection } from './scene/SceneNormalizerSection';
 import { renderScenePropertiesSection } from './scene/ScenePropertiesSection';
 

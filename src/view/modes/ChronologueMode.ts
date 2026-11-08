@@ -280,11 +280,11 @@ function setupSceneHoverInteractions(view: RadialTimelineView, svg: SVGSVGElemen
 
     // Register hover handlers for Scene elements
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
-        // Suspend hover synopsis reveal while Shift mode owns the hover.
-        // The planet calendar (Alt) keeps the synopsis: it carries the
-        // planetary date and time.
+        // Suspend hover synopsis reveal while Shift or the planet calendar
+        // (Alt) owns the hover: Alt shows the planet's dates on the rim, and
+        // the normal hover (Alt off) carries the planet date in its synopsis.
         // CHECK THIS FIRST before any other work!
-        if (view.chronologueState.shift || isSubplotDragActive()) {
+        if (view.chronologueState.shift || view.chronologueState.alien || isSubplotDragActive()) {
             return;
         }
 

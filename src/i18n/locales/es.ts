@@ -4831,9 +4831,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "momentumTooltip": "Impulso\n\nMide la fuerza con la que avanza la historia: cuánto empuja cada beat al lector hacia lo que sucede a continuación. Se centra en el ritmo y Consecuencia, no solo el recuento de eventos.",
             "tensionTooltip": "Tensión\n\nMide la presión que siente el lector: cuánta tensión, incertidumbre o conflicto no resuelto se lleva adelante. Una escena tranquila puede ser muy tenso si hay apuestas claras."
         },
-        "helpIcon": {
-            "getHelp": "Consigue ayuda"
-        },
         "importDemoVault": {
             "anotherImport": "Se está agregando otra demostración. Por favor, espere a que termine.",
             "briefingsMissing": "A esta demo le faltan sus sesiones informativas Inquiry guardadas. Se conservaron los archivos existentes.",
@@ -5755,15 +5752,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "discardDraftTooltip": "descartar borrador",
             "addMappingButton": "Agregar nuevo mapeo",
             "allKeysMappedNotice": "Todas las claves del sistema admitidas ya están asignadas."
-        },
-        "milestoneIndicator": {
-            "zeroComplete": "cero completo",
-            "authorComplete": "Autor completo",
-            "houseComplete": "casa completa",
-            "bookComplete": "¡Reserva completa!",
-            "keepGoing": "seguir haciendo",
-            "youGotThis": "Lo tienes",
-            "weBelieveInYou": "Creemos en ti"
         },
         "modeManager": {
             "couldNotEnterMode": "No se pudo ingresar al modo {{mode}}. Consulte la consola de desarrolladores para obtener más detalles.",

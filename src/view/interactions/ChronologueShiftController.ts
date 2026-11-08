@@ -552,29 +552,17 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
             selectedPathsSet = new Set(selectedScenes.map(s => s.path ? encodeURIComponent(s.path) : '').filter(p => p));
         };
 
-        /** Alt's hover cue: the number square lights in its subplot color; a locked scene stays lit. */
-        const lightAltNumberSquare = (g: Element, active: boolean) => {
-            const scenePathEncoded = g.getAttribute('data-path');
-            if (!scenePathEncoded || selectedPathsSet.has(scenePathEncoded)) return;
-            setNumberSquareActive(getSceneIdFromGroup(g), active, numberLookup);
-        };
-
         // Use capture phase to run before other handlers.
-        // Shift mode owns the hover so scenes light for measuring. With the
-        // planet calendar (Alt) on, the hover only lights the scene's number
-        // square, as a measurable scene, and passes through to the normal
-        // synopsis, which shows the planetary date and time. Clicking two
-        // scenes measures in both (handleShiftModeClick).
+        // Shift and the planet calendar (Alt) own the hover: the scene lights
+        // as a measurable scene and no synopsis shows. In Alt the rim already
+        // carries the planet's dates; turning Alt (or Shift) off brings back
+        // the normal hover, whose synopsis always shows the planet date.
+        // Clicking two scenes measures in both (handleShiftModeClick).
         view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
             if (!mode.shift && !mode.alien) return;
 
             const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"]');
             if (!g) return;
-
-            if (!mode.shift) {
-                lightAltNumberSquare(g, true);
-                return;
-            }
 
             // Stop ALL event handlers (including other listeners on same element)
             e.stopImmediatePropagation();
@@ -598,17 +586,12 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
             }
         }, { capture: true }); // Use capture phase
 
-        // Use capture phase for pointerout too (as above: Alt passes it through)
+        // Use capture phase for pointerout too (Shift and Alt, as above)
         view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
             if (!mode.shift && !mode.alien) return;
 
             const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"]');
             if (!g) return;
-
-            if (!mode.shift) {
-                lightAltNumberSquare(g, false);
-                return;
-            }
 
             // Stop ALL event handlers
             e.stopImmediatePropagation();

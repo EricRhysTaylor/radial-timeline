@@ -47,14 +47,6 @@ export interface RefactorAlert {
 // Alert Definitions
 // ============================================================================
 
-// Base template fields - these should NOT appear in the advanced template
-// Used to detect and clean up legacy "complete" advanced templates
-export const BASE_BEAT_FIELDS = [
-    'Class', 'Act', 'When', 'Duration', 'Synopsis', 'Summary', 'Pending Edits',
-    'Subplot', 'Character', 'Words', 'Runtime', 'Publish Stage',
-    'Status', 'Due', 'Summary Update', 'Pulse Update'
-];
-
 // Alert wording (title/description) lives in the ui.refactorAlerts.* i18n keys. Settings notifications read from this list.
 // Severity: info (blue), warning (orange), critical (red).
 export const REFACTOR_ALERTS: RefactorAlert[] = [

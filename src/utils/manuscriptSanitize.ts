@@ -216,13 +216,16 @@ function stripTaskListMarkers(content: string): string {
 
 // Obsidian highlights: `==words==`, with a colored circle after the opening mark
 // for a color highlight. Marks touch the words they wrap, so `x == y` is left
-// alone, and inline code matches first so it stays as written.
-const INLINE_CODE_OR_HIGHLIGHT = /(`+)[^\n]*?\1|(^|[^=])==(?![\s=])([^\n]*?[^\s=])==(?!=)/gm;
+// alone. Inline code and math match first so they stay as written: `$$…$$`
+// within a line (display math opening a line is already masked), then inline
+// `$…$` by Pandoc's rule (no space inside either `$`, an unescaped opener, no
+// digit after the closer), so a price such as `$5` is not read as math.
+const INLINE_CODE_MATH_OR_HIGHLIGHT = /(`+)[^\n]*?\1|(\$\$[^\n]*?\$\$|(?<!\\)\$[^\s$](?:[^\n$]*?[^\s$\\])?\$(?!\d))|(^|[^=])==(?![\s=])([^\n]*?[^\s=])==(?!=)/gm;
 const HIGHLIGHT_COLOR = /^[\u{1F534}\u{1F535}\u{1F7E0}-\u{1F7E3}]/u;
 
 function stripHighlightMarks(content: string): string {
-    return content.replace(INLINE_CODE_OR_HIGHLIGHT, (match: string, code: string | undefined, before: string, words: string) =>
-        code ? match : before + words.replace(HIGHLIGHT_COLOR, ''));
+    return content.replace(INLINE_CODE_MATH_OR_HIGHLIGHT, (match: string, code: string | undefined, math: string | undefined, before: string, words: string) =>
+        code || math ? match : before + words.replace(HIGHLIGHT_COLOR, ''));
 }
 
 // ── Protected-segment masking ────────────────────────────────────────────────

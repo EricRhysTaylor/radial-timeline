@@ -200,6 +200,14 @@ Ends here ^scene-end`;
         }
     });
 
+    it('leaves highlight-like marks inside inline and display math', () => {
+        for (const text of ['$a==b$ and $c==d$', 'Inline $$a==b$$ and $$c==d$$ here.', '$$\na==b\nc==d\n$$', 'Set $x==y$ here.']) {
+            expect(sanitizeCompiledManuscriptForPdf(text)).toBe(text);
+        }
+        expect(sanitizeCompiledManuscriptForPdf('Paid $5 for ==this== and $6 for that.')).toBe('Paid $5 for this and $6 for that.');
+        expect(sanitizeCompiledManuscriptForPdf('Where $x$ is ==the key== here.')).toBe('Where $x$ is the key here.');
+    });
+
     it('leaves highlight marks inside code blocks', () => {
         const code = '```text\n==keep==\n```';
         expect(sanitizeCompiledManuscriptForPdf(code)).toBe(code);

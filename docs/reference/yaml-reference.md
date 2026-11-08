@@ -558,7 +558,7 @@ Example custom fields:
   - `second` / `you` inserts `You²`; `omni` inserts `Omni³`; `objective` inserts `Narrator°`; first/third attach `¹`/`³` to the first listed character.
   - Counts (`two`, `4`, `count`, `all`, etc.) mark that many leading characters with the book's narration marker. Counts are clamped to the number of names under `Character:`.
   - Any positive integer works (`Narration: 5`). Use `Narration: count`/`Narration: all` to mark everyone.
-  Without the field, the scene follows its book (a book with no narration set marks the first listed character, `¹`). Older scenes may carry the field as `POV`; it is read the same way until the **Scene field POV is now Narration** update renames it.
+  New scenes carry the field empty. Empty or absent, the scene follows its book (a book with no narration set marks the first listed character, `¹`); a value that is not a mode or count, such as a name, is ignored the same way. Older scenes may carry the field as `POV`; it is read the same way until the **Scene field POV is now Narration** update renames it, keeping its value.
 - `Tone`: Scene mood or atmosphere
 
 ---

@@ -65,9 +65,9 @@ const SCENE_OPTIONAL_MANAGED_KEYS: readonly OptionalManagedKeyDefinition[] = [
     },
     /**
      * A scene narrated differently from its book says so here (first, third,
-     * omni, two…). Most scenes follow the book's narration, so the field ships
-     * in no template; it sits after Character, whose first name is the POV
-     * character the narration marks.
+     * omni, two…). The default scene template writes it empty after Character,
+     * whose first name is the POV character the narration marks; a template
+     * the writer trimmed may leave it out, so it stays optional-managed.
      */
     {
         key: 'Narration',

@@ -18,9 +18,9 @@ import { confirmAudit } from './sections/beats/confirmAudit';
 import { dismissAlert } from './refactorAlerts';
 import { getTemplateParts } from '../utils/yamlTemplateNormalize';
 import { openOrRevealFile } from '../utils/fileUtils';
-import { planPovToNarration, POV_TO_NARRATION_ALERT_ID, runPovToNarration, withoutPovTemplateField, type PovKeepReason, type PovMigrationPlan } from '../utils/narrationMigration';
+import { planPovToNarration, POV_TO_NARRATION_ALERT_ID, runPovToNarration, withNarrationTemplateField, type PovMigrationPlan } from '../utils/narrationMigration';
 
-/** Scenes that keep a POV the migration does not move, each a link to the note. Nothing when there are none. */
+/** Scenes that keep a POV beside a Narration that says something else, each a link to the note. Nothing when there are none. */
 export function renderPovReviewList(app: App, plugin: RadialTimelinePlugin, containerEl: HTMLElement, plan: PovMigrationPlan = planPovToNarration(app, plugin.settings)): void {
     if (plan.kept.length === 0) return;
     containerEl.createDiv({
@@ -28,7 +28,7 @@ export function renderPovReviewList(app: App, plugin: RadialTimelinePlugin, cont
         text: t('ui.refactorAlerts.povToNarrationReview', { scenes: tCount('scene', plan.kept.length) })
     });
     const list = containerEl.createEl('ul', { cls: 'ert-refactor-alert__review' });
-    for (const { file, value, reason } of plan.kept) {
+    for (const { file, value, narration } of plan.kept) {
         const item = list.createEl('li');
         const link = item.createEl('a', { text: file.basename, href: '#' });
         // SAFE: Settings alerts are re-rendered as a whole; the list is dropped with them
@@ -36,20 +36,12 @@ export function renderPovReviewList(app: App, plugin: RadialTimelinePlugin, cont
             event.preventDefault();
             void openOrRevealFile(app, file);
         });
-        item.appendText(` · POV: ${value} · ${keptReasonText(reason)}`);
-    }
-}
-
-function keptReasonText(reason: PovKeepReason): string {
-    switch (reason) {
-        case 'name': return t('ui.refactorAlerts.povToNarrationKeptName');
-        case 'narrationSet': return t('ui.refactorAlerts.povToNarrationKeptNarrationSet');
-        case 'narrationTaken': return t('ui.refactorAlerts.povToNarrationKeptNarrationTaken');
+        item.appendText(` · POV: ${value} · Narration: ${narration}`);
     }
 }
 
 /**
- * Confirm, then migrate. The scene templates lose POV and the alert closes
+ * Confirm, then migrate. The scene templates rename POV and the alert closes
  * only when every planned scene was written; after a failure the alert stays,
  * and applying it again finishes the rest. True when the alert is complete.
  */
@@ -62,9 +54,9 @@ export async function applyPovToNarration(app: App, plugin: RadialTimelinePlugin
         scope: t('ui.refactorAlerts.povToNarrationScope'),
         action: t('ui.refactorAlerts.povToNarrationAction'),
         renderBody: body => {
-            if (plan.moves > 0) body.createDiv({ text: t('ui.refactorAlerts.povToNarrationMoveLine', { scenes: tCount('scene', plan.moves) }) });
-            if (plan.removals > 0) body.createDiv({ text: t('ui.refactorAlerts.povToNarrationRemoveLine', { scenes: tCount('scene', plan.removals) }) });
-            if (plan.moves === 0 && plan.removals === 0) body.createDiv({ text: t('ui.refactorAlerts.povToNarrationNothingLine') });
+            if (plan.renames > 0) body.createDiv({ text: t('ui.refactorAlerts.povToNarrationRenameLine', { scenes: tCount('scene', plan.renames) }) });
+            if (plan.removals > 0) body.createDiv({ text: t('ui.refactorAlerts.povToNarrationDropLine', { scenes: tCount('scene', plan.removals) }) });
+            if (plan.renames === 0 && plan.removals === 0) body.createDiv({ text: t('ui.refactorAlerts.povToNarrationNothingLine') });
             body.createDiv({ text: t('ui.refactorAlerts.povToNarrationTemplateLine') });
             renderPovReviewList(app, plugin, body, plan);
         }
@@ -78,7 +70,7 @@ export async function applyPovToNarration(app: App, plugin: RadialTimelinePlugin
         return false;
     }
 
-    plugin.settings.sceneYamlTemplates = withoutPovTemplateField({
+    plugin.settings.sceneYamlTemplates = withNarrationTemplateField({
         base: getTemplateParts('Scene', plugin.settings).base,
         advanced: plugin.settings.sceneYamlTemplates?.advanced ?? '',
     });
@@ -92,7 +84,7 @@ export async function applyPovToNarration(app: App, plugin: RadialTimelinePlugin
     dismissAlert(POV_TO_NARRATION_ALERT_ID, plugin.settings);
     await plugin.saveSettings();
     new Notice(t('ui.refactorAlerts.povToNarrationDoneNotice', {
-        moved: tCount('scene', result.moved),
+        renamed: tCount('scene', result.renamed),
         removed: tCount('scene', result.removed),
         kept: tCount('scene', plan.kept.length),
     }), 12000);

@@ -150,6 +150,7 @@ Summary:
 Pending Edits:
 Subplot: {{Subplot}}
 Character: {{Character}}
+Narration:
 Words:
 Total Time:
 Runtime:

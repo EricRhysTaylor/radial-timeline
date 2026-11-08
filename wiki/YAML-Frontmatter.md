@@ -19,6 +19,7 @@ Summary:                  # Extended scene expansion (events, emotional turns, s
 Pending Edits:            # Notes for next revision (especially for zero draft mode)
 Subplot: Main Plot        # Single subplot (or use array format below for multiple)
 Character:                # Characters in the scene; the first name is the POV character
+Narration:                # Leave empty to follow the book's narration; see Narration Keywords
 Words:                    # Optional word count/statistics
 Total Time:               # Hours on this scene, added from writing sessions you approve
 Runtime:                  # Optional runtime estimate or override
@@ -54,7 +55,7 @@ Obsidian links are supported in properties. Use the double-bracket wikilink form
 <a name="narration-keywords"></a>
 ## Narration Keywords
 
-Each book sets how it is narrated in its book details (**Settings → Core → Books**, the tag button on the book's card). The POV character is always the first name in `Character`. A scene narrated differently from its book adds a `Narration` property:
+Each book sets how it is narrated in its book details (**Settings → Core → Books**, the tag button on the book's card). The POV character is always the first name in `Character`. A scene narrated differently from its book says so in its `Narration` property:
 
 ```yaml
 Character:
@@ -70,7 +71,7 @@ Narration: omni           # This scene only: an omniscient narrator
 *   `Narration: objective` — shows `Narrator°` for camera-eye scenes.
 *   `Narration: two`, `Narration: 4`, `Narration: count`, `Narration: all` — marks that many names at the start of `Character`, for a scene several characters carry, with the book's narration marker.
 
-Scenes that follow their book need no `Narration` property. Scenes written before Radial Timeline 8 may carry the field under its earlier name, `POV`. Radial Timeline reads it the same way until you apply **Scene field POV is now Narration** at the top of **Settings → Core**. See [Narration](Settings-Core#narration).
+New scenes get an empty `Narration` property; a scene that follows its book leaves it empty, or without the property at all. Scenes written before Radial Timeline 8 may carry the field under its earlier name, `POV`. Radial Timeline reads it the same way until you apply **Scene field POV is now Narration** at the top of **Settings → Core**, which renames `POV` to `Narration` and keeps its value. See [Narration](Settings-Core#narration).
 
 <a name="advanced-scene-template"></a>
 ## Advanced Scene Properties

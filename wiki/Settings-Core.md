@@ -197,11 +197,11 @@ Configure the time-based visualization of your story.
 Show how each book is narrated, and mark each scene's POV character in the synopsis and the character lanes. The POV character is always the first name in a scene's `Character` list.
 
 *   **Book narration**: Each book sets its own narration in its book details, the tag button on its card under **Books**: first person, second person, third person, omniscient, or objective. **Open book details** opens the active book's. A saga marks every scene by its own book's narration. A book with no narration set marks its first listed character with `¹`.
-*   **Scene overrides**: A scene narrated differently from its book carries a `Narration` property, such as `Narration: first` for a letter inside a third-person novel, or `Narration: two` for a scene two characters carry. Scenes that follow their book need no property.
+*   **Scene overrides**: A scene narrated differently from its book carries a `Narration` property, such as `Narration: first` for a letter inside a third-person novel, or `Narration: two` for a scene two characters carry. New scenes get an empty `Narration` property; leave it empty and the scene follows its book.
 *   **Character lanes**: In Narrative mode, shows a lane under the outer ring for each of the four characters who are POV in the most scenes. See [Character Lanes](Narrative-Mode#character-lanes).
 *   **Narration examples**: A preview of how each override marks the cast.
 
-Scenes from before Radial Timeline 8 may carry this property under its earlier name, `POV`. Radial Timeline reads it the same way until you apply **Scene field POV is now Narration** at the top of Core settings. The update renames `POV` to `Narration` wherever it holds a narration, removes it where it is empty or repeats the scene's first character, and lists every other `POV` for you to review, so a character's name never becomes a narration.
+Scenes from before Radial Timeline 8 may carry this property under its earlier name, `POV`. Radial Timeline reads it the same way until you apply **Scene field POV is now Narration** at the top of Core settings. The update renames `POV` to `Narration` in every scene and keeps its value exactly as you wrote it. A value that is not a narration, such as a character's name, stays too, and the scene then follows its book's narration. Where a scene already has a `Narration` value, an empty `POV`, or one that says the same thing, is dropped, and a `POV` that says something else stays beside it, listed for you to review. New scenes get an empty `Narration` property where they had `POV`.
 
 > [!NOTE]
 > See [Narration Keywords](YAML-Frontmatter#narration-keywords).

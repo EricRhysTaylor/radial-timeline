@@ -2685,6 +2685,21 @@
   color: var(--text-faint);
 }
 
+/* A lamp that is on reads lit in the badge's gold: a friend at their desk,
+   and your own lamp while you share a session (that row is a disabled menu
+   item, so its muted color and opacity are lifted here). */
+.ert-desk-lamps-row.is-lit {
+  color: var(--ert-community-gold);
+}
+
+.menu-item:has(.ert-desk-lamps-row.is-lit) .menu-item-icon {
+  color: var(--ert-community-gold);
+}
+
+.menu-item.is-disabled:has(.ert-desk-lamps-row.is-lit) {
+  opacity: 1;
+}
+
 .ert-timeline-subplot-key {
   position: absolute;
   top: var(--size-4-3);

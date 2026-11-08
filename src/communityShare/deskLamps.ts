@@ -338,6 +338,8 @@ export function openDeskLampsMenu(anchor: HTMLElement, deskLamps: DeskLamps, sho
                 const text = title.createSpan({ cls: 'ert-desk-lamps-row', text: deskLampRowLabel(row, now) });
                 text.classList.toggle('is-break', onBreak);
                 text.classList.toggle('is-off', off);
+                // A friend at their desk reads lit, in the lamp's gold.
+                text.classList.toggle('is-lit', !off && !onBreak);
                 item.setTitle(title)
                     .setIcon(off ? 'lamp' : onBreak ? 'pause' : 'lamp-ceiling')
                     .onClick(() => openUrl(profileUrl(handle)));
@@ -352,7 +354,13 @@ export function openDeskLampsMenu(anchor: HTMLElement, deskLamps: DeskLamps, sho
         }
     }
     menu.addSeparator();
-    menu.addItem(item => item.setTitle(ownDeskLampLine(view.own)).setIcon('lamp-ceiling').setDisabled(true));
+    menu.addItem(item => {
+        // Your own lamp reads lit too while friends can see it.
+        const title = doc.win.createFragment();
+        const text = title.createSpan({ cls: 'ert-desk-lamps-row', text: ownDeskLampLine(view.own) });
+        text.classList.toggle('is-lit', view.own.kind === 'on' && view.own.state === 'lit');
+        item.setTitle(title).setIcon('lamp-ceiling').setDisabled(true);
+    });
     const invites = view.answer?.invites_received ?? 0; // SAFE: before the first answer no invite is known
     if (invites > 0) {
         menu.addItem(item => item.setTitle(invitesWaitingLine(invites)).setIcon('mail-plus').onClick(() => openUrl(COMMUNITY_DESK_LAMPS_URL)));

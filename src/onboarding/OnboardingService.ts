@@ -267,6 +267,9 @@ export class OnboardingService {
     const aiSettings = validateAiSettings(this.plugin.settings.aiSettings ?? null).value;
     const provider = aiSettings.provider;
     const label = CLOUD_PROVIDER_LABELS[provider] ?? '';
+    if (this.plugin.settings.enableAiSceneAnalysis !== true) {
+      return { ok: false, provider, label, reason: t('notices.aiTurnedOff') };
+    }
     if (!label) {
       return { ok: false, provider, label, reason: 'No cloud provider selected in Settings → AI.' };
     }
@@ -310,6 +313,10 @@ export class OnboardingService {
 
   /** Gate: the local model must produce strict JSON and reach capability tier >= 2. */
   async preflight(): Promise<PreflightResult> {
+    // The preflight runs a real completion on the local server; AI off contacts nothing.
+    if (this.plugin.settings.enableAiSceneAnalysis !== true) {
+      return { ok: false, tier: 0, reason: t('notices.aiTurnedOff') };
+    }
     const client = getLocalLlmClient(this.plugin);
     const diagnostics = await client.runDiagnostics();
     if (!diagnostics.structuredJson.ok) {

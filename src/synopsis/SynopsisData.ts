@@ -82,3 +82,26 @@ export function isOverdueAndIncomplete(scene: SynopsisScene, today: Date = new D
   const isComplete = normalizedStatus === 'complete' || normalizedStatus === 'done';
   return isOverdue && !isComplete;
 }
+
+export type SavedPulseKey = 'previousSceneAnalysis' | 'currentSceneAnalysis' | 'nextSceneAnalysis';
+export type SavedPulseScene = Partial<Record<SavedPulseKey, string>>;
+
+/**
+ * The saved pulse blocks a scene's hover shows, in reading order.
+ *
+ * Saved pulse is the writer's data, so it shows whether or not AI is on;
+ * only running a new analysis needs AI. The neighbor blocks follow the
+ * "full triplet" setting.
+ */
+export function selectSavedPulseBlocks(
+  scene: SavedPulseScene,
+  showTripletNeighbors: boolean
+): Array<{ key: SavedPulseKey; text: string }> {
+  const keys: SavedPulseKey[] = showTripletNeighbors
+    ? ['previousSceneAnalysis', 'currentSceneAnalysis', 'nextSceneAnalysis']
+    : ['currentSceneAnalysis'];
+  return keys.flatMap(key => {
+    const text = scene[key];
+    return text ? [{ key, text }] : [];
+  });
+}

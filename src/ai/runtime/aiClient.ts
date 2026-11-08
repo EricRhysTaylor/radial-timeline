@@ -446,12 +446,15 @@ export class AIClient {
 
     /**
      * The privacy block in aiSettings is the user's authoritative consent for
-     * outbound model-data calls. Reading it on every loader construction —
-     * rather than caching at constructor time — means a settings toggle takes
-     * effect on the next operation without requiring a plugin reload.
+     * outbound model-data calls, and the master switch sits above it: while
+     * AI is off, no model data is fetched. Reading both on every loader
+     * construction — rather than caching at constructor time — means a
+     * settings toggle takes effect on the next operation without requiring a
+     * plugin reload.
      */
     private isProviderSnapshotAllowed(): boolean {
-        return !!getAiSettings(this.plugin.settings).privacy.allowProviderSnapshot;
+        return this.plugin.settings.enableAiSceneAnalysis === true
+            && !!getAiSettings(this.plugin.settings).privacy.allowProviderSnapshot;
     }
 
     private buildRegistry(): ModelRegistry {

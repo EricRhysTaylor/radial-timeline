@@ -6,6 +6,7 @@ const { requestMock } = vi.hoisted(() => ({ requestMock: vi.fn() }));
 vi.mock('https', () => ({ request: requestMock }));
 vi.mock('http', () => ({ request: requestMock }));
 import { requestProvider, decodeAnthropicStream } from './providerTransport';
+import { AiNetworkBlockedError, bindAiNetworkGate } from '../ai/runtime/aiNetworkGate';
 
 const options = { url: 'https://api.anthropic.com/v1/messages', method: 'POST', body: 'synthetic fixture' };
 const control = (patch: Partial<AIRequestControl> = {}): AIRequestControl => ({
@@ -31,8 +32,38 @@ function mockRequest(status?: number, body: unknown = {}, headers: Record<string
     return req;
 }
 
-beforeEach(() => { requestMock.mockReset(); });
-afterEach(() => vi.useRealTimers());
+let unbindGate: () => void = () => undefined;
+beforeEach(() => { requestMock.mockReset(); unbindGate = bindAiNetworkGate(() => true); });
+afterEach(() => { vi.useRealTimers(); unbindGate(); });
+
+describe('AI master switch at the transport', () => {
+    it.each([
+        ['cloud', options, {}],
+        ['local', { ...options, url: 'http://127.0.0.1:1234/v1/models', method: 'GET' }, { allowHttp: true }]
+    ] as const)('opens no %s socket while AI is off', async (_kind, requestOptions, transport) => {
+        unbindGate();
+        unbindGate = bindAiNetworkGate(() => false);
+        await expect(requestProvider(requestOptions, control(), transport)).rejects.toBeInstanceOf(AiNetworkBlockedError);
+        expect(requestMock).not.toHaveBeenCalled();
+    });
+
+    it('opens no socket before the plugin binds the gate', async () => {
+        unbindGate();
+        await expect(requestProvider(options)).rejects.toBeInstanceOf(AiNetworkBlockedError);
+        expect(requestMock).not.toHaveBeenCalled();
+    });
+
+    it('reads the switch on every request, so turning AI off takes effect at once', async () => {
+        let enabled = true;
+        unbindGate();
+        unbindGate = bindAiNetworkGate(() => enabled);
+        mockRequest(200, { answer: 'fixture' });
+        expect(await requestProvider(options, control())).toMatchObject({ status: 200 });
+        enabled = false;
+        await expect(requestProvider(options, control())).rejects.toBeInstanceOf(AiNetworkBlockedError);
+        expect(requestMock).toHaveBeenCalledOnce();
+    });
+});
 
 describe('cloud transport lifecycle', () => {
     it('allows HTTP only for an explicitly configured Local LLM transport', async () => {

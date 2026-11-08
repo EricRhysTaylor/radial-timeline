@@ -261,6 +261,8 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
     private async scheduleKeyValidation(provider: 'anthropic' | 'google' | 'openai' | 'ollama') {
         const prior = this._keyValidateTimers[provider];
         if (prior) window.clearTimeout(prior);
+        // A key or server check is a network call; AI off contacts nothing.
+        if (this.plugin.settings.enableAiSceneAnalysis !== true) return;
 
         if (provider === 'ollama') {
             const selectedProvider = this.getSelectedAiProvider();

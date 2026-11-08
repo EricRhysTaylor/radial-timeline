@@ -14,7 +14,7 @@ import {
   formatDateForDisplay
 } from './utils/hoverMetadata';
 import { decodeHtmlEntities, parseSceneTitleComponents } from './utils/text';
-import { getPublishStageStyle, splitSynopsisLines, decodeContentLines, isOverdueAndIncomplete, readBeatPurposeSecondary } from './synopsis/SynopsisData';
+import { getPublishStageStyle, splitSynopsisLines, decodeContentLines, isOverdueAndIncomplete, readBeatPurposeSecondary, selectSavedPulseBlocks } from './synopsis/SynopsisData';
 import { createSynopsisContainer, createTextGroup, createText, renderSynopsisStrips } from './synopsis/SynopsisView';
 import { convertFromEarth, getActivePlanetaryProfile } from './utils/planetaryTime';
 import { t } from './i18n';
@@ -1175,35 +1175,11 @@ export default class SynopsisManager {
       let currentMetadataY = addSpacer(synopsisBottomY, 0);
       const showTripletNeighbors = this.plugin.settings.showFullTripletAnalysis ?? true;
 
-      // Process previousSceneAnalysis metadata if it exists and AI scene analysis is enabled
-      if (this.plugin.settings.enableAiSceneAnalysis && showTripletNeighbors && scene["previousSceneAnalysis"]) {
+      // Saved pulse is the writer's data: it shows whether or not AI is on.
+      // Only running a new analysis needs AI.
+      for (const block of selectSavedPulseBlocks(scene, showTripletNeighbors)) {
         const beatsY = currentMetadataY;
-        const beatsText = scene["previousSceneAnalysis"] || '';
-        const linesAdded = this.formatBeatsText(beatsText, 'previousSceneAnalysis', synopsisTextGroup, beatsY, pulseLineHeight, 0); // Pass 'previousSceneAnalysis'
-        currentMetadataY = beatsY + (linesAdded * pulseLineHeight);
-        if (linesAdded > 0) {
-          // Call addSpacer with height 0, update starting point for next block
-          currentMetadataY = addSpacer(currentMetadataY, 0);
-        }
-      }
-
-      // Process currentSceneAnalysis metadata if it exists and AI scene analysis is enabled
-      if (this.plugin.settings.enableAiSceneAnalysis && scene["currentSceneAnalysis"]) {
-        const beatsY = currentMetadataY;
-        const beatsText = scene["currentSceneAnalysis"] || '';
-        const linesAdded = this.formatBeatsText(beatsText, 'currentSceneAnalysis', synopsisTextGroup, beatsY, pulseLineHeight, 0); // Pass 'currentSceneAnalysis'
-        currentMetadataY = beatsY + (linesAdded * pulseLineHeight);
-        if (linesAdded > 0) {
-          // Call addSpacer with height 0, update starting point for next block
-          currentMetadataY = addSpacer(currentMetadataY, 0);
-        }
-      }
-
-      // Process nextSceneAnalysis metadata if it exists and AI scene analysis is enabled
-      if (this.plugin.settings.enableAiSceneAnalysis && showTripletNeighbors && scene["nextSceneAnalysis"]) {
-        const beatsY = currentMetadataY;
-        const beatsText = scene["nextSceneAnalysis"] || '';
-        const linesAdded = this.formatBeatsText(beatsText, 'nextSceneAnalysis', synopsisTextGroup, beatsY, pulseLineHeight, 0); // Pass 'nextSceneAnalysis'
+        const linesAdded = this.formatBeatsText(block.text, block.key, synopsisTextGroup, beatsY, pulseLineHeight, 0);
         currentMetadataY = beatsY + (linesAdded * pulseLineHeight);
         if (linesAdded > 0) {
           // Call addSpacer with height 0, update starting point for next block
@@ -1218,7 +1194,7 @@ export default class SynopsisManager {
       const pulseReviewWarning = typeof pulseReviewWarningRaw === 'string'
         ? pulseReviewWarningRaw.trim()
         : '';
-      if (this.plugin.settings.enableAiSceneAnalysis && pulseReviewWarning) {
+      if (pulseReviewWarning) {
         const y = currentMetadataY;
         const lineGroup = doc.win.createSvg("g");
         lineGroup.setAttribute("class", "rt-hover-metadata-line is-pulse-review-warning");

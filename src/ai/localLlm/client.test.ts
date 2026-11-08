@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const listModels = vi.fn();
 const getCredential = vi.fn();
-const fetchOllamaModelDetails = vi.fn();
 const resolveLocalLlmSelection = vi.fn();
 const getCanonicalLocalLlmSettings = vi.fn();
 const runLocalLlmDiagnostics = vi.fn();
@@ -21,7 +20,6 @@ vi.mock('../credentials/credentials', () => ({
 }));
 
 vi.mock('./transport', () => ({
-    fetchOllamaModelDetails,
     type: undefined
 }));
 
@@ -44,7 +42,6 @@ describe('LocalLlmClient diagnostic ownership', () => {
     beforeEach(() => {
         listModels.mockReset();
         getCredential.mockReset();
-        fetchOllamaModelDetails.mockReset();
         resolveLocalLlmSelection.mockReset();
         getCanonicalLocalLlmSettings.mockReset();
         runLocalLlmDiagnostics.mockReset();

@@ -1,13 +1,16 @@
 import { createServer, type ServerResponse } from 'node:http';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type RadialTimelinePlugin from '../../main';
 import { AIClient } from '../runtime/aiClient';
 import { buildDefaultAiSettings } from '../settings/aiSettings';
 import { DEFAULT_SETTINGS } from '../../settings/defaults';
 import { callOpenAiCompatibleLocalCompletion, LOCAL_LLM_CANCELLED } from './transport';
+import { bindAiNetworkGate } from '../runtime/aiNetworkGate';
 
 const originalFetch = globalThis.fetch;
-afterEach(() => { globalThis.fetch = originalFetch; vi.unstubAllEnvs(); });
+let unbindGate: () => void = () => undefined;
+beforeEach(() => { unbindGate = bindAiNetworkGate(() => true); });
+afterEach(() => { globalThis.fetch = originalFetch; vi.unstubAllEnvs(); unbindGate(); });
 
 describe('Local LLM cancellation over a real loopback connection', () => {
     it.each(['abort', 'timeout'] as const)('closes a standalone local connection on %s without retrying', async trigger => {
@@ -79,6 +82,8 @@ describe('Local LLM cancellation over a real loopback connection', () => {
             app: { vault: { adapter: { exists: async () => false } }, secretStorage: { getSecret: async () => '' } },
             saveSettings: async () => undefined
         } as unknown as RadialTimelinePlugin; // SAFE: the real AI path needs settings and offline registry/credential IO only
+        unbindGate();
+        unbindGate = bindAiNetworkGate(() => plugin.settings.enableAiSceneAnalysis === true);
         const client = new AIClient(plugin);
         vi.spyOn(client, 'getProviderSnapshot').mockResolvedValue({ source: 'none', snapshot: null });
         const run = client.run({

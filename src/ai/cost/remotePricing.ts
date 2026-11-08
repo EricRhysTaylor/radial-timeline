@@ -1,5 +1,6 @@
 import { parsePricingFile, type ProviderPricingTable } from './providerPricing';
 import { requestJson } from '../../utils/requestUrlJson';
+import { assertAiNetworkAllowed } from '../runtime/aiNetworkGate';
 
 export interface RemotePricingCache {
     fetchedAt: string;
@@ -49,6 +50,7 @@ function isCacheFresh(cache: RemotePricingCache, ttlMs: number): boolean {
 }
 
 async function defaultFetch(url: string): Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }> {
+    assertAiNetworkAllowed();
     return requestJson(url);
 }
 

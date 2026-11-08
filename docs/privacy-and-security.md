@@ -24,10 +24,17 @@ Features may also use selected story fields such as Summary or beat Purpose.
 Selected material must be readable in its chosen mode before a run can proceed.
 
 Turning AI off stops queued requests and closes active connections. Saved
-Inquiry results remain available to read. Providers handle material already
-received under their own processing and retention terms.
+Inquiry and scene pulse results remain available to read. Providers handle
+material already received under their own processing and retention terms.
 
-Model metadata and pricing refreshes follow the network settings in the AI panel.
+While AI is off, the plugin contacts no AI provider and no local AI server.
+Settings → AI checks no key, detects no server, lists no models and runs no
+diagnostics, and model metadata and pricing are not refreshed. Every AI
+request passes one gate (`src/ai/runtime/aiNetworkGate.ts`) that refuses it
+while the switch is off.
+
+Model metadata and pricing refreshes follow the network settings in the AI
+panel, and run only while AI is on.
 **Local LLM** sends analysis requests to the server the author configures.
 
 ### Caching and provider policies

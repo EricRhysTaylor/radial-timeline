@@ -1,6 +1,11 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchOpenAiCompatibleLocalModels, LOCAL_LLM_CANCELLED } from './transport';
+import { AiNetworkBlockedError, bindAiNetworkGate } from '../runtime/aiNetworkGate';
+
+let unbindGate: () => void = () => undefined;
+beforeEach(() => { unbindGate = bindAiNetworkGate(() => true); });
+afterEach(() => unbindGate());
 
 async function withServer(
     respond: (req: IncomingMessage, res: ServerResponse) => void,
@@ -19,6 +24,20 @@ async function withServer(
 }
 
 describe('local model discovery over a real bounded socket', () => {
+    it('sends the local server nothing while AI is off', async () => {
+        let requests = 0;
+        await withServer((_req, res) => {
+            requests++;
+            res.end(JSON.stringify({ data: [{ id: 'fixture-model' }] }));
+        }, async baseUrl => {
+            unbindGate();
+            unbindGate = bindAiNetworkGate(() => false);
+            await expect(fetchOpenAiCompatibleLocalModels({ baseUrl, timeoutMs: 1000 }))
+                .rejects.toBeInstanceOf(AiNetworkBlockedError);
+            expect(requests).toBe(0);
+        });
+    });
+
     it('loads Unicode model metadata without requiring server CORS headers', async () => {
         await withServer((req, res) => {
             expect(req.url).toBe('/v1/models');

@@ -60,6 +60,7 @@ import { migrateAiSettings, stripLegacyAiSettings } from './ai/settings/migrateA
 import { validateAiSettings } from './ai/settings/validateAiSettings';
 import { buildDefaultAiSettings } from './ai/settings/aiSettings';
 import { getAIClient, disposeAIClient } from './ai/runtime/aiClient';
+import { bindAiNetworkGate } from './ai/runtime/aiNetworkGate';
 import { migrateLegacyKeysToSecretStorage, needsLegacyKeyMigration } from './ai/credentials/credentials';
 import { hasSecret } from './ai/credentials/secretStorage';
 import type { AIProviderId } from './ai/types';
@@ -608,6 +609,9 @@ export default class RadialTimelinePlugin extends Plugin {
         ensureButtonComponentCompatibility();
         this.settingsService = new SettingsService(this);
         await this.loadSettings();
+        // Every AI request (cloud, key check, local server, model data)
+        // asserts this gate first: while AI is off, nothing leaves.
+        this.register(bindAiNetworkGate(() => this.settings.enableAiSceneAnalysis === true));
         this.betaFeatures = await detectBetaFeatures(this);
 
         // Restore the author's search scope. Validated on read, so a malformed

@@ -1,6 +1,24 @@
-import { describe, it, expect } from 'vitest';
-import { parseRemotePrompt, shouldAdoptRemotePrompt } from './promptSync';
+import { describe, it, expect, vi } from 'vitest';
+import { requestUrl } from 'obsidian';
+import type RadialTimelinePlugin from '../main';
+import { parseRemotePrompt, refreshOnboardingPrompt, shouldAdoptRemotePrompt } from './promptSync';
 import { ONBOARDING_SCHEMA_VERSION } from '../ai/prompts/onboarding';
+
+vi.mock('../../tests/mocks/obsidian.ts', async importOriginal => ({
+  ...await importOriginal<typeof import('obsidian')>(),
+  requestUrl: vi.fn(async () => ({ status: 503, json: null, text: '' })),
+}));
+
+describe('refreshOnboardingPrompt', () => {
+  it('fetches the AI prompt only while AI is on', async () => {
+    const plugin = { settings: { enableAiSceneAnalysis: false }, saveSettings: vi.fn() } as unknown as RadialTimelinePlugin; // SAFE: the refresh reads only the master switch and the prompt cache
+    await refreshOnboardingPrompt(plugin);
+    expect(requestUrl).not.toHaveBeenCalled();
+    plugin.settings.enableAiSceneAnalysis = true;
+    await refreshOnboardingPrompt(plugin);
+    expect(requestUrl).toHaveBeenCalledOnce();
+  });
+});
 
 describe('parseRemotePrompt', () => {
   it('parses the endpoint payload shape', () => {

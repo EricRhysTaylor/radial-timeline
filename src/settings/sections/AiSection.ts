@@ -255,6 +255,10 @@ export function renderAiSection(params: {
         plugin.getInquiryService().notifyAiSettingsChanged();
         plugin.onSettingChanged(IMPACT_FULL); // Tier 3: number square colors + AI pulse elements
         updateAiHeroState(value);
+        // Nothing was checked while AI was off, so the panel checks now.
+        // Turning it off drops any check still in flight.
+        if (value) onAiTabActivated();
+        else localValidation.invalidate();
     };
 
     heroToggleInput.checked = plugin.settings.enableAiSceneAnalysis;
@@ -3077,7 +3081,8 @@ export function renderAiSection(params: {
     const localValidation = renderAiLocalLlmValidation({
         container: localLlmActionsRow,
         scope: localLlmScope,
-        isLocalActive: () => ensureCanonicalAiSettings().provider === 'ollama'
+        isLocalActive: () => plugin.settings.enableAiSceneAnalysis === true
+            && ensureCanonicalAiSettings().provider === 'ollama'
             && getLocalLlmSettings(ensureCanonicalAiSettings()).enabled,
         getDeadlineMs: getLocalLlmValidationDeadlineMs,
         detect: () => detectLocalLlmServers({ quiet: true }),
@@ -3133,6 +3138,9 @@ export function renderAiSection(params: {
     // Apply provider dimming on first render
     params.refreshProviderDimming();
     const onAiTabActivated = (): void => {
+        // While AI is off the panel contacts nothing: no server detection,
+        // model list, diagnostics or key check. Turning AI on runs this.
+        if (plugin.settings.enableAiSceneAnalysis !== true) return;
         // Both halves of the panel re-check on arrival: the local server (when
         // it is the active provider) and every cloud key. Whichever the author
         // is about to switch to, the dropdown they read is current.

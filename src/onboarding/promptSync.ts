@@ -47,6 +47,8 @@ export function shouldAdoptRemotePrompt(
  * Call fire-and-forget when the onboarding modal opens.
  */
 export async function refreshOnboardingPrompt(plugin: RadialTimelinePlugin): Promise<void> {
+  // The prompt serves AI-assisted import only; AI off fetches nothing.
+  if (plugin.settings.enableAiSceneAnalysis !== true) return;
   try {
     const cache = plugin.settings.onboardingPromptCache;
     if (cache?.fetchedAt) {

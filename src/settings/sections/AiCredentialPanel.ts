@@ -175,6 +175,10 @@ export function renderAiCredentialPanel(options: CredentialPanelOptions): { refr
     const invalidate = (): void => { revision++; checkedAt = 0; inFlight = null; };
     const refresh = async (): Promise<void> => {
         if (disposed) return;
+        // The key check lists the provider's models: a network call. While
+        // AI is off the panel is hidden and asks nothing; turning AI on
+        // refreshes every panel.
+        if (plugin.settings.enableAiSceneAnalysis !== true) return;
         if (inFlight) return inFlight;
         if (checkedAt && Date.now() - checkedAt < 10_000) return;
         const currentRevision = revision;

@@ -6,12 +6,17 @@ import { AIClient } from './aiClient';
 import { buildDefaultAiSettings } from '../settings/aiSettings';
 import { DEFAULT_SETTINGS } from '../../settings/defaults';
 import { requestProvider } from '../../api/providerTransport';
+import { requestJson } from '../../utils/requestUrlJson';
+import { bindAiNetworkGate } from './aiNetworkGate';
 import { buildCostComparisonRows } from '../cost/costComparison';
 import { buildCanonicalExecutionEstimate } from '../forecast/estimateTokensFromVault';
 import { BUILTIN_MODELS } from '../registry/builtinModels';
 
 vi.mock('../../api/providerTransport', () => ({
     requestProvider: vi.fn(() => { throw new Error('Unexpected provider connection during local estimation'); })
+}));
+vi.mock('../../utils/requestUrlJson', () => ({
+    requestJson: vi.fn(async () => ({ ok: false, status: 503, json: async () => null }))
 }));
 
 function makePlugin(provider: Exclude<AIProviderId, 'none'>, enabled = true) {
@@ -37,7 +42,32 @@ const request: AIRunRequest = {
     feature: 'AuditFixture', task: 'EstimateOnly', requiredCapabilities: [], returnType: 'text',
     userInput: 'Public prose. <!-- PRIVATE_HTML_SENTINEL --> %% PRIVATE_OBSIDIAN_SENTINEL %%'
 };
-beforeEach(() => { vi.mocked(requestProvider).mockClear(); });
+beforeEach(() => { vi.mocked(requestProvider).mockClear(); vi.mocked(requestJson).mockClear(); });
+
+describe('model data follows the master switch', () => {
+    it.each([false, true])('fetches pricing and the provider snapshot only while AI is on (AI on: %s)', async enabled => {
+        const { plugin } = makePlugin('openai', enabled);
+        const unbind = bindAiNetworkGate(() => plugin.settings.enableAiSceneAnalysis === true);
+        try {
+            await new AIClient(plugin).updateModelData(true);
+            expect(requestJson).toHaveBeenCalledTimes(enabled ? 2 : 0);
+        } finally {
+            unbind();
+        }
+    });
+
+    it('fetches nothing on the load-time stale check while AI is off', async () => {
+        const { plugin } = makePlugin('anthropic', false);
+        const unbind = bindAiNetworkGate(() => plugin.settings.enableAiSceneAnalysis === true);
+        try {
+            await new AIClient(plugin).refreshModelDataIfStale();
+            expect(requestJson).not.toHaveBeenCalled();
+            expect(requestProvider).not.toHaveBeenCalled();
+        } finally {
+            unbind();
+        }
+    });
+});
 
 describe('estimates send nothing', () => {
     it.each(['openai', 'anthropic', 'google', 'ollama'] as const)('prepares %s estimates offline with no credentials or metadata fetch', async provider => {

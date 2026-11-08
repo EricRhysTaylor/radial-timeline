@@ -80,5 +80,23 @@ describe('settings section navigation anchors', () => {
         expect(aiSource.includes('Object.values(providerKeyRefreshers).forEach(refresh => { void refresh(); });')).toBe(true);
     });
 
+    it('contacts no provider or local server from Settings while AI is off', () => {
+        const settingsSource = readFileSync(resolve(process.cwd(), 'src/settings/SettingsTab.ts'), 'utf8');
+        const aiSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiSection.ts'), 'utf8');
+        const panelSource = readFileSync(resolve(process.cwd(), 'src/settings/sections/AiCredentialPanel.ts'), 'utf8');
+        const activation = aiSource.slice(aiSource.indexOf('const onAiTabActivated = (): void => {'));
+        const firstStatement = activation.split('\n').map(line => line.trim()).find(line => line && !line.startsWith('//') && !line.startsWith('const onAiTabActivated'));
+
+        // Opening the AI tab: no detection, model list, diagnostics or key check.
+        expect(firstStatement).toBe('if (plugin.settings.enableAiSceneAnalysis !== true) return;');
+        // Local validation never queues while AI is off.
+        expect(aiSource).toMatch(/isLocalActive: \(\) => plugin\.settings\.enableAiSceneAnalysis === true\s*&& ensureCanonicalAiSettings\(\)\.provider === 'ollama'/);
+        // Turning AI on runs the checks that were skipped.
+        expect(aiSource.includes('if (value) onAiTabActivated();')).toBe(true);
+        // The render-time key check and the debounced key/server check are gated too.
+        expect(panelSource.includes('if (plugin.settings.enableAiSceneAnalysis !== true) return;')).toBe(true);
+        expect(settingsSource.includes('if (this.plugin.settings.enableAiSceneAnalysis !== true) return;')).toBe(true);
+    });
+
 
 });

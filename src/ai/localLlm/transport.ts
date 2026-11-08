@@ -1,4 +1,3 @@
-import { requestUrl } from 'obsidian';
 import type { AIRequestControl } from '../types';
 import { requestProvider } from '../../api/providerTransport';
 
@@ -87,12 +86,6 @@ function normalizeBaseUrl(baseUrl: string, path: string): string {
     const trimmed = baseUrl.trim().replace(/\/+$/, '');
     if (trimmed.endsWith(path)) return trimmed;
     return `${trimmed}${path}`;
-}
-
-function normalizeOllamaApiUrl(baseUrl: string, path: string): string {
-    const trimmed = baseUrl.trim().replace(/\/+$/, '');
-    const withoutV1 = trimmed.endsWith('/v1') ? trimmed.slice(0, -3) : trimmed;
-    return `${withoutV1}${path}`;
 }
 
 function asRecord(value: unknown): JsonRecord | null {
@@ -298,28 +291,6 @@ export async function fetchOpenAiCompatibleLocalModels(
         throw new Error(responseData?.error?.message || `HTTP ${response.status}`); // SAFE: the throw is the failure signal; the bare status line stands in only when the local server sends no message
     }
     return normalizeModelList(responseData);
-}
-
-export async function fetchOllamaModelDetails(
-    request: LocalLlmTransportRequest,
-    modelId: string
-): Promise<Partial<LocalLlmModelEntry>> {
-    const response = await withTimeout(requestUrl({
-        url: normalizeOllamaApiUrl(request.baseUrl, '/api/show'),
-        method: 'POST',
-        headers: buildHeaders(request.apiKey),
-        body: JSON.stringify({ name: modelId }),
-        throw: false
-    }), request.timeoutMs, 'Ollama model details request timed out.');
-    const responseData = response.json as JsonRecord & { error?: { message?: string } };
-    if (response.status >= 400) {
-        throw new Error(asRecord(responseData?.error)?.message as string || `HTTP ${response.status}`);
-    }
-    const modelInfo = asRecord(responseData.model_info) ?? responseData;
-    return {
-        contextWindow: extractContextWindow(modelInfo) ?? undefined,
-        maxOutput: extractMaxOutput(modelInfo) ?? undefined
-    };
 }
 
 export async function callOpenAiCompatibleLocalCompletion(input: {

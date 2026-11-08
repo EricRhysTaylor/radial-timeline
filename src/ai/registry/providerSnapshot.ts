@@ -1,6 +1,7 @@
 import type { CanonicalModelRecord, ProviderSnapshotPayload } from '../types';
 import { redactSensitiveValue } from '../credentials/redactSensitive';
 import { requestJson } from '../../utils/requestUrlJson';
+import { assertAiNetworkAllowed } from '../runtime/aiNetworkGate';
 
 export interface ProviderSnapshotCache {
     fetchedAt: string;
@@ -88,6 +89,7 @@ function isCacheFresh(cache: ProviderSnapshotCache, ttlMs: number): boolean {
 }
 
 async function defaultFetch(url: string): Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }> {
+    assertAiNetworkAllowed();
     return requestJson(url);
 }
 

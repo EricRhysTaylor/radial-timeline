@@ -7,6 +7,7 @@ import { redactSensitiveValue } from '../ai/credentials/redactSensitive';
 import { classifyProviderError } from './providerErrors';
 import { extractBalancedObject } from '../ai/localLlm/structuredJson';
 import { validateJsonResponse } from '../ai/runtime/jsonValidator';
+import { assertAiNetworkAllowed } from '../ai/runtime/aiNetworkGate';
 
 export interface ProviderHttpResponse {
     status: number;
@@ -236,6 +237,9 @@ function statusIsSuccess(status: number | undefined): boolean {
 
 /** Retry only explicit transient HTTP rejections, never ambiguous network/timeout failures. */
 export async function requestProvider(options: RequestUrlParam, control?: AIRequestControl, transport: ProviderTransportOptions = {}): Promise<ProviderHttpResponse> {
+    // Cloud calls, key checks and every local server request come through
+    // here: nothing leaves while AI is off.
+    assertAiNetworkAllowed();
     const maxAttempts = control?.retryPolicy.maxAttempts ?? 1; // SAFE: metadata/key-validation requests make one attempt
     const started = Date.now();
     const deadlineMs = requestTimeout(options, control);

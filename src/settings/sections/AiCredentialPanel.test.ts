@@ -55,13 +55,13 @@ vi.mock('../../../tests/mocks/obsidian.ts', async importOriginal => ({
     }
 }));
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>(done => { resolve = done; }); return { promise, resolve }; }
-function render(available = true, secretName = 'openai-main') {
+function render(available = true, secretName = 'openai-main', aiEnabled = true) {
     const ai = buildDefaultAiSettings(); setCredentialSecretId(ai, 'openai', secretName);
     const secrets = new Map<string, string>([['openai-main', 'test-old-key'], ['other-key', 'test-other-key']]);
     const storage = { getSecret: vi.fn(async (id: string) => secrets.get(id)),
         setSecret: vi.fn(async (id: string, value: string) => { secrets.set(id, value); }) };
     const app = { secretStorage: storage } as unknown as App;
-    const plugin = { refreshCredentialPresence: vi.fn(async () => {}) };
+    const plugin = { settings: { enableAiSceneAnalysis: aiEnabled }, refreshCredentialPresence: vi.fn(async () => {}) };
     const scope = new Component(); scope.load();
     const changed = vi.fn(); const persist = vi.fn(async () => {});
     const panel = renderAiCredentialPanel({ section: new ElementStub() as unknown as HTMLElement,
@@ -73,6 +73,14 @@ function render(available = true, secretName = 'openai-main') {
 }
 beforeEach(() => { ui.rows = []; ui.notices = []; vi.mocked(validateProviderKeyQuick).mockReset().mockResolvedValue({ state: 'ready', detail: '' }); });
 describe('AI credential panel', () => {
+    it('checks no key while AI is off, then checks once AI is on', async () => {
+        const p = render(true, 'openai-main', false); await p.panel.refresh();
+        expect(validateProviderKeyQuick).not.toHaveBeenCalled();
+        expect(p.storage.getSecret).not.toHaveBeenCalled();
+        p.plugin.settings.enableAiSceneAnalysis = true; await p.panel.refresh();
+        expect(validateProviderKeyQuick).toHaveBeenCalledOnce();
+        expect(p.changed).toHaveBeenLastCalledWith('ready'); p.scope.unload();
+    });
     it.each(['ready', 'rejected', 'network_blocked'] as const)('renders %s with storage wording and resolved placeholders', async state => {
         vi.mocked(validateProviderKeyQuick).mockResolvedValue({ state, detail: '' });
         const p = render(); await p.panel.refresh();

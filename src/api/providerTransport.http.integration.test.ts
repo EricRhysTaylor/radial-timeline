@@ -1,11 +1,15 @@
 import { createServer, type Server } from 'node:http';
 import { once } from 'node:events';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { requestProvider } from './providerTransport';
+import { bindAiNetworkGate } from '../ai/runtime/aiNetworkGate';
 
 let server: Server | undefined;
+let unbindGate: () => void = () => undefined;
+beforeEach(() => { unbindGate = bindAiNetworkGate(() => true); });
 
 afterEach(async () => {
+    unbindGate();
     if (!server) return;
     server.closeAllConnections();
     await new Promise<void>((resolve, reject) => server!.close(error => error ? reject(error) : resolve()));

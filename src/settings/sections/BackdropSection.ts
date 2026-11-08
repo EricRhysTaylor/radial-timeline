@@ -5,6 +5,7 @@ import { parseDateRangeInput } from '../../utils/date';
 import { DEFAULT_SETTINGS } from '../defaults';
 import { ERT_CLASSES } from '../../ui/classes';
 import { colorSwatch, type ColorSwatchHandle } from '../../ui/ui';
+import { completeHexColor } from '../../utils/colour';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { IMPACT_FULL } from '../SettingImpact';
 import { t } from '../../i18n';
@@ -15,7 +16,6 @@ type MicroBackdropConfig = {
     color: string;
 };
 
-const isValidHexColor = (value: string) => /^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(value);
 
 export function renderBackdropSection(params: { app: App; plugin: RadialTimelinePlugin; containerEl: HTMLElement; }): void {
     const { plugin, containerEl } = params;
@@ -153,8 +153,8 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
             ariaLabel: t('ui.backdropSection.colorAriaLabel', { title: config.title || t('ui.backdropSection.microBackdropFallback') }),
             plugin,
             onChange: (value) => { void (async () => {
-                if (!isValidHexColor(value)) return;
-                const normalized = value.startsWith('#') ? value : `#${value}`;
+                const normalized = completeHexColor(value);
+                if (!normalized) return;
                 await updateMicroBackdrop(index, { color: normalized });
                 colorTextInput?.setValue(normalized);
             })(); }
@@ -165,8 +165,8 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
         hexInput.inputEl.classList.add('ert-hex-input');
         hexInput.setValue(colorValue)
             .onChange(async (value) => {
-                if (!isValidHexColor(value)) return;
-                const normalized = value.startsWith('#') ? value : `#${value}`;
+                const normalized = completeHexColor(value);
+                if (!normalized) return;
                 await updateMicroBackdrop(index, { color: normalized });
                 swatchHandle.setValue(normalized);
             });

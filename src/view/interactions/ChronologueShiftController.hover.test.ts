@@ -43,3 +43,15 @@ describe('Chronologue hover with the planet calendar on', () => {
         expect(mode).toContain('if (view.chronologueState.shift || view.chronologueState.alien) {\n            const handled = view.handleShiftModeClick?.(e, g);');
     });
 });
+
+describe('Alt hover styles', () => {
+    it('leaves the synopsis to its normal rules, so a hover shows one synopsis, not all of them', () => {
+        const styles = ['timeline.css', 'scenes.css', 'base.css', 'chronologue-alt.css', 'chronologue-base.css', 'chronologue-shift.css']
+            .map(file => readFileSync(resolve(process.cwd(), 'src/styles', file), 'utf8'))
+            .join('\n')
+            .replace(/\/\*[\s\S]*?\*\//g, '');
+        // Any selector that styles the synopsis by shift or Alt mode.
+        const selectors = styles.split('{').map(chunk => chunk.slice(chunk.lastIndexOf('}') + 1).trim());
+        expect(selectors.filter(selector => selector.includes('data-shift-mode') && selector.includes('rt-scene-info'))).toEqual([]);
+    });
+});

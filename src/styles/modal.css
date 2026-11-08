@@ -590,7 +590,7 @@
   align-items: center;
   justify-content: center;
   opacity: 0.9;
-  color: var(--ert-confirm-accent, var(--text-normal));
+  color: var(--ert-confirm-edge, var(--text-normal));
 }
 
 .ert-drag-confirm-row-icon svg {
@@ -635,7 +635,7 @@
   height: 20px;
   margin: 0 var(--ert-gap-sm);
   vertical-align: -0.28em;
-  color: var(--ert-confirm-accent, var(--text-muted));
+  color: var(--ert-confirm-edge, var(--text-muted));
   opacity: 1;
 }
 
@@ -778,38 +778,45 @@
   pointer-events: none;
 }
 
+/* The subplot color can be pale (yellow) or dark (navy), and neither reads on
+   every theme background. So the dialog's text and marks mix it toward the
+   theme's own text: headings (--ert-confirm-ink, 35%) clear 4.5:1 and icons
+   and edges (--ert-confirm-edge, 55%) clear 3:1 on every default subplot
+   color in light and dark themes (tests/drag-confirm-cta-contrast.test.ts).
+   With no subplot color, headings are the theme's text and edges lean on
+   the theme accent, as the button's tint does. */
+.ert-ui.ert-scope--modal .ert-drag-confirm-modal {
+  --ert-confirm-ink: color-mix(in srgb, var(--ert-confirm-accent, var(--text-normal)) 35%, var(--text-normal));
+  --ert-confirm-edge: color-mix(in srgb, var(--ert-confirm-accent, var(--interactive-accent)) 55%, var(--text-normal));
+}
+
 .ert-ui.ert-scope--modal .ert-drag-confirm-modal .ert-modal-badge {
-  color: var(--ert-confirm-accent, var(--text-muted));
+  color: var(--ert-confirm-ink);
   border-color: color-mix(in srgb, var(--ert-confirm-accent, var(--interactive-accent)) 45%, var(--background-modifier-border));
   background: color-mix(in srgb, var(--ert-confirm-accent, var(--interactive-accent)) 12%, var(--background-secondary));
 }
 
 .ert-ui.ert-scope--modal .ert-drag-confirm-modal .ert-modal-title {
   background: linear-gradient(90deg,
-      var(--ert-confirm-accent, var(--text-normal)),
-      color-mix(in srgb, var(--ert-confirm-accent, var(--text-normal)) 66%, var(--text-faint) 34%));
+      var(--ert-confirm-ink),
+      color-mix(in srgb, var(--ert-confirm-ink) 66%, var(--text-normal)));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* Begin / Dismiss wear the subplot's color, which may be pale (yellow) or
-   dark (navy). No one label color reads on every solid fill, so the color
-   tints the theme's background (28%) and the label is the theme's own text.
-   The outline mixes the color toward that text, so a pale color still
-   outlines a button on white and a dark one on black. Hover adds an inset
-   ring rather than a stronger tint, which would cost the label contrast.
-   tests/drag-confirm-cta-contrast.test.ts checks every default subplot
-   color in both themes. */
+/* Begin / Dismiss wear the subplot's color: it tints the theme's background
+   (28%) under the theme's own text, and the shared edge outlines the button.
+   Hover adds an inset ring rather than a stronger tint, which would cost the
+   label contrast. */
 .ert-ui.ert-scope--modal .ert-drag-confirm-modal .ert-mod-cta {
-  --ert-confirm-cta-edge: color-mix(in srgb, var(--ert-confirm-accent, var(--interactive-accent)) 55%, var(--text-normal));
   color: var(--text-normal);
   background-color: color-mix(in srgb, var(--ert-confirm-accent, var(--interactive-accent)) 28%, var(--background-primary));
-  border: 1px solid var(--ert-confirm-cta-edge);
+  border: 1px solid var(--ert-confirm-edge);
 }
 
 .ert-ui.ert-scope--modal .ert-drag-confirm-modal .ert-mod-cta:hover:not(:disabled) {
-  box-shadow: inset 0 0 0 1px var(--ert-confirm-cta-edge);
+  box-shadow: inset 0 0 0 1px var(--ert-confirm-edge);
 }
 
 .ert-subplot-picker-modal {

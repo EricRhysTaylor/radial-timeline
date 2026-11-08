@@ -13,6 +13,19 @@ export function mountSvgMarkup(container: HTMLElement, svgMarkup: string): SVGSV
     return imported as unknown as SVGSVGElement;
 }
 
+/**
+ * Mount an SVG shown as a preview inside Settings (the Author Progress
+ * Report). Its links, such as the Radial Timeline attribution, keep their
+ * click but leave the keyboard sequence: Obsidian's settings Tab handling
+ * calls isShown(), an HTMLElement method, on every focusable element, and an
+ * SVG link has none, so Tab threw. Exported SVGs keep their links focusable.
+ */
+export function mountSvgPreview(container: HTMLElement, svgMarkup: string): SVGSVGElement | null {
+    const svg = mountSvgMarkup(container, svgMarkup);
+    svg?.querySelectorAll('a[href]').forEach(link => link.setAttribute('tabindex', '-1'));
+    return svg;
+}
+
 /** Mount a timeline SVG with its fixed viewport contract. */
 export function renderSvgFromString(svgContent: string, container: HTMLElement): SVGSVGElement | null {
     const svg = mountSvgMarkup(container, svgContent);

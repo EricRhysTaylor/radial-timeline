@@ -431,6 +431,31 @@
   padding-right: var(--ert-pad-xs);
 }
 
+/* The import dialog stops at the window's height (92vh, set on the modal).
+   The scene list, the one long part, gives up height first and scrolls, so
+   each step's actions stay in view; the dialog itself scrolls only if the
+   rest alone outgrows the window. */
+.ert-ui.ert-modal--onboarding.modal {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ert-ui.ert-modal--onboarding .ert-modal-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ert-ui.ert-modal--onboarding .ert-onb-list {
+  flex: 1 1 auto;
+  min-height: 7.5rem;
+}
+
+.ert-ui.ert-modal--onboarding .ert-modal-container > :not(.ert-onb-list) {
+  flex-shrink: 0;
+}
+
 .ert-ui .ert-onb-scene {
   /* Never let flex shrink collapsed rows to make an open card fit — rows keep
      their natural height and the list scrolls instead. */

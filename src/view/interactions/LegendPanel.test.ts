@@ -150,6 +150,34 @@ describe('key panel trigger', () => {
         expect(second.open()).toBe(true);
     });
 
+    it('opens no second key on hover or focus while one is pinned', () => {
+        const p = page();
+        const first = p.key();
+        const second = p.key();
+        first.click();
+        second.trigger.dispatchEvent(new Event('mouseenter'));
+        second.trigger.dispatchEvent(new Event('focus'));
+        expect(second.open()).toBe(false);
+        expect(first.open()).toBe(true);
+        // A pinned key closed, hover works on the other again.
+        first.click();
+        second.trigger.dispatchEvent(new Event('mouseenter'));
+        expect(second.open()).toBe(true);
+    });
+
+    it('moves the pin on a keyboard click, which sends no press', () => {
+        const p = page();
+        const first = p.key();
+        const second = p.key();
+        first.click();
+        second.trigger.dispatchEvent(new Event('click'));
+        expect(first.open()).toBe(false);
+        expect(second.open()).toBe(true);
+        // The second is now the pinned one: a press on its own row keeps it.
+        p.pressOn(second.row);
+        expect(second.open()).toBe(true);
+    });
+
     it('starts unpinned after the view closes the panel itself', () => {
         const k = setup();
         k.click();

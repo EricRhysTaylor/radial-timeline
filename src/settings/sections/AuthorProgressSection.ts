@@ -16,13 +16,14 @@ import { AuthorProgressModal } from '../../modals/AuthorProgressModal';
 import { renderCampaignManagerSection } from './CampaignManagerSection';
 import { hasProFeatureAccess } from '../featureGate';
 import { colorSwatch, type ColorSwatchHandle } from '../../ui/ui';
+import { completeHexColor } from '../../utils/colour';
 import { ERT_CLASSES } from '../../ui/classes';
 import { STAGE_ORDER } from '../../utils/constants';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { t } from '../../i18n';
 import { buildDefaultEmbedPath, normalizeAprExportFormat, type AprExportFormat } from '../../utils/aprPaths';
 import { fitSelectToSelectedLabel } from '../selectSizing';
-import { mountSvgMarkup } from '../../utils/svgDom';
+import { mountSvgPreview } from '../../utils/svgDom';
 export interface AuthorProgressSectionProps {
     app: App;
     plugin: RadialTimelinePlugin;
@@ -1178,10 +1179,11 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             colorText.setPlaceholder(colorConfig.fallback).setValue(colorConfig.value);
             colorText.onChange(async (val) => {
                 if (isSyncing) return;
-                if (!val || !/^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(val)) return;
-                await setAprSetting(colorConfig.key, val as AuthorProgressDefaults[typeof colorConfig.key]);
-                colorPicker?.setValue(val);
-                colorConfig.onAfterChange?.(val);
+                const hex = completeHexColor(val);
+                if (!hex) return;
+                await setAprSetting(colorConfig.key, hex as AuthorProgressDefaults[typeof colorConfig.key]);
+                colorPicker?.setValue(hex);
+                colorConfig.onAfterChange?.(hex);
                 updateAutoState();
             });
         }
@@ -1597,9 +1599,10 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
         ariaLabel: t('ui.authorProgressSection.spokeColorAriaLabel'),
         plugin,
         onChange: (val) => { void (async () => {
-            if (/^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(val)) {
-                await setAprSetting('aprSpokeColor', (val || fallbackColor) as AuthorProgressDefaults['aprSpokeColor']);
-                spokeColorInputRef?.setValue(val);
+            const hex = completeHexColor(val);
+            if (hex) {
+                await setAprSetting('aprSpokeColor', hex as AuthorProgressDefaults['aprSpokeColor']);
+                spokeColorInputRef?.setValue(hex);
             }
         })(); }
     });
@@ -1612,10 +1615,10 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     spokeColorInput.setPlaceholder(fallbackColor).setValue(initialEffective);
     spokeColorInput.setDisabled(!isCustomMode);
     spokeColorInput.onChange(async (val) => {
-        if (!val) return;
-        if (/^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(val)) {
-            await setAprSetting('aprSpokeColor', val as AuthorProgressDefaults['aprSpokeColor']);
-            spokeColorPickerRef?.setValue(val);
+        const hex = completeHexColor(val);
+        if (hex) {
+            await setAprSetting('aprSpokeColor', hex as AuthorProgressDefaults['aprSpokeColor']);
+            spokeColorPickerRef?.setValue(hex);
         }
     });
 
@@ -2031,7 +2034,7 @@ async function renderHeroPreview(
 
         // Create a wrapper to ensure SVG displays at natural size
         const svgWrapper = container.createDiv({ cls: 'ert-apr-svg-wrapper' });
-        const svgEl = mountSvgMarkup(svgWrapper, svgString);
+        const svgEl = mountSvgPreview(svgWrapper, svgString);
 
         // Ensure the SVG has explicit dimensions for 1:1 display
         if (svgEl) {

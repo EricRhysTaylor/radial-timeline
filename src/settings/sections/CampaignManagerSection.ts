@@ -25,7 +25,7 @@ import { resolveBookTitle } from '../../renderer/apr/aprHelpers';
 
 import { ERT_CLASSES } from '../../ui/classes';
 import { fitSelectToSelectedLabel } from '../selectSizing';
-import { mountSvgMarkup } from '../../utils/svgDom';
+import { mountSvgPreview } from '../../utils/svgDom';
 import { getActiveBook } from '../../utils/books';
 import { AuthorProgressService } from '../../services/AuthorProgressService';
 import { canShareAprToCommunity, normalizeCommunityShareSettings } from '../../communityShare/communityShareSettings';
@@ -1409,7 +1409,7 @@ async function renderTeaserStagesPreviews(
                 portableSvg: true
             });
 
-            if (!mountSvgMarkup(svgContainer, svgString)) {
+            if (!mountSvgPreview(svgContainer, svgString)) {
                 svgContainer.createSpan({ text: '⚠', cls: 'ert-stageCard__error' });
             }
         } catch {

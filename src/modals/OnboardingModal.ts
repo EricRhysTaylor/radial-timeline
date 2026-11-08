@@ -321,8 +321,10 @@ export class OnboardingModal extends Modal {
 
   onOpen(): void {
     const { modalEl, contentEl } = this;
-    modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-    modalEl.setCssStyles({ width: '832px', maxWidth: '94vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+    modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--onboarding');
+    // Never taller than the window: the scene list scrolls inside instead, so
+    // each step's actions (Continue on Confirm scenes) stay in view.
+    modalEl.setCssStyles({ width: '832px', maxWidth: '94vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
     contentEl.addClass('ert-modal-container', 'ert-stack');
 
     // Resume: a dismissed modal (stray outside click, Escape) loses nothing —

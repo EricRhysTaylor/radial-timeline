@@ -1,12 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { mountSvgMarkup, renderSvgFromString } from './svgDom';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { mountSvgMarkup, mountSvgPreview, renderSvgFromString } from './svgDom';
 
 // The browser supplies parsing and importNode. These tests exercise our acceptance
 // and viewport contract against their returned nodes, without emulating XML parsing.
 function fixture(viewBox: string | null = '0 0 100 200', invalid = false) {
     const svg = {
         localName: 'svg', namespaceURI: 'http://www.w3.org/2000/svg',
-        getAttribute: vi.fn(() => viewBox), setAttribute: vi.fn(), remove: vi.fn()
+        getAttribute: vi.fn(() => viewBox), setAttribute: vi.fn(), remove: vi.fn(),
+        links: [{ setAttribute: vi.fn() }],
+        querySelectorAll(selector: string) { return selector === 'a[href]' ? this.links : []; }
     };
     const parse = vi.fn(() => ({ documentElement: svg, querySelector: () => invalid ? {} : null }));
     vi.stubGlobal('DOMParser', class { parseFromString = parse; });
@@ -48,5 +52,15 @@ describe('SVG mounting contract', () => {
         expect(svg.setAttribute).toHaveBeenCalledWith('preserveAspectRatio', 'xMidYMid meet');
         expect(svg.setAttribute).toHaveBeenCalledWith('width', '100%');
         expect(svg.remove).not.toHaveBeenCalled();
+    });
+    it('takes a Settings preview\'s links out of the keyboard sequence, which calls isShown() on each', () => {
+        const { svg, target } = fixture();
+        expect(mountSvgPreview(target, '<svg/>')).toBe(svg);
+        expect(svg.links[0].setAttribute).toHaveBeenCalledExactlyOnceWith('tabindex', '-1');
+        for (const file of ['src/settings/sections/AuthorProgressSection.ts', 'src/settings/sections/CampaignManagerSection.ts']) {
+            const source = readFileSync(resolve(process.cwd(), file), 'utf8');
+            expect(source, file).toContain('mountSvgPreview(');
+            expect(source, file).not.toContain('mountSvgMarkup(');
+        }
     });
 });

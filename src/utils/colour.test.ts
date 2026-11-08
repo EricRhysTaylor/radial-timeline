@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
+  completeHexColor,
   hexToRgb,
   rgbToHex,
   rgbToHsl,
@@ -195,3 +196,16 @@ describe('lightenColor', () => {
   });
 });
 
+describe('completeHexColor', () => {
+  it('stays quiet while a typed hex color is partial', () => {
+    for (const partial of ['', '#', '#F', '#F9E', 'F9E7', '#F9E78', '#F9E784A', '#GGGGGG']) {
+      expect(completeHexColor(partial), partial).toBeNull();
+    }
+  });
+
+  it('returns a complete color as #rrggbb, adding a missing #', () => {
+    expect(completeHexColor('#F9E784')).toBe('#F9E784');
+    expect(completeHexColor('f9e784')).toBe('#f9e784');
+    expect(completeHexColor(' #a35ca7 ')).toBe('#a35ca7');
+  });
+});

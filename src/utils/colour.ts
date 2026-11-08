@@ -120,6 +120,18 @@ export function cssColorToHex(doc: Document, css: string): string | null {
   return /^#[0-9a-f]{6}$/i.test(first) ? first.toLowerCase() : null;
 }
 
+/**
+ * A hex color typed into a field, once it is complete: `#rrggbb`, with the
+ * `#` added if it was left off. Null while it is partial ("#F9E" on the way
+ * to "#F9E784"), so a field saves nothing and feeds its color picker nothing
+ * until then; a color input takes only #rrggbb and warns on anything else.
+ */
+export function completeHexColor(value: string): string | null {
+  const trimmed = value.trim();
+  if (!/^#?[0-9a-f]{6}$/i.test(trimmed)) return null;
+  return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+}
+
 export function desaturateColor(hexColor: string, amount: number): string {
   const rgb = hexToRgb(hexColor);
   if (!rgb) return hexColor;

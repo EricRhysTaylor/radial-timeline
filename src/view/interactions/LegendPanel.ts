@@ -136,6 +136,9 @@ function renderRow(sectionEl: HTMLElement, row: LegendRow): void {
     }
 }
 
+/** The pinned key in each window, so a second key never stacks on it. */
+const pinnedKeys = new WeakMap<Document, { panel: HTMLElement; hide: () => void }>();
+
 /**
  * Open and close a key panel from its button. `beforeShow` fills (and may
  * place) the panel each time it opens; a hidden button never opens it.
@@ -146,6 +149,9 @@ function renderRow(sectionEl: HTMLElement, row: LegendRow): void {
  * Panels hang from the window, outside their pane, so the workspace closes
  * them: another pane taking the focus hides a key, and a layout change
  * hides one whose button is gone or hidden and refills one still showing.
+ *
+ * One key is pinned per window at a time. While one is pinned, hovering or
+ * focusing another key's button opens nothing; clicking it moves the pin.
  */
 export function wireLegendTrigger(component: Component, trigger: HTMLElement, panel: HTMLElement, beforeShow: () => void, workspace: Workspace): void {
     const doc = trigger.ownerDocument;
@@ -155,6 +161,10 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
     let pinned = false;
     const isOpen = () => panel.hasClass('is-visible');
     const isPinned = () => pinned && isOpen();
+    const pinnedElsewhere = (): boolean => {
+        const other = pinnedKeys.get(doc);
+        return !!other && other.panel !== panel && other.panel.hasClass('is-visible');
+    };
     const cancelHide = () => {
         if (hideTimer === null) return;
         window.clearTimeout(hideTimer);
@@ -172,8 +182,21 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
     const hide = () => {
         cancelHide();
         pinned = false;
+        if (pinnedKeys.get(doc)?.panel === panel) pinnedKeys.delete(doc);
         panel.removeClass('is-visible');
         trigger.setAttribute('aria-expanded', 'false');
+    };
+    const pin = () => {
+        // A keyboard click reaches no pointerdown, so the old pin goes here.
+        const other = pinnedKeys.get(doc);
+        if (other && other.panel !== panel) other.hide();
+        pinned = true;
+        pinnedKeys.set(doc, { panel, hide });
+    };
+    /** Hover and focus open a key for a look, unless another key is pinned. */
+    const look = () => {
+        if (pinnedElsewhere()) return;
+        show();
     };
     /** Fill an open panel again, keeping it open (and pinned) unless its button went away. */
     const refill = () => {
@@ -196,8 +219,8 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
     };
 
     component.register(cancelHide);
-    component.registerDomEvent(trigger, 'mouseenter', show);
-    component.registerDomEvent(trigger, 'focus', show);
+    component.registerDomEvent(trigger, 'mouseenter', look);
+    component.registerDomEvent(trigger, 'focus', look);
     component.registerDomEvent(trigger, 'mouseleave', scheduleHide);
     component.registerDomEvent(trigger, 'blur', scheduleHide);
     component.registerDomEvent(trigger, 'click', (evt: MouseEvent) => {
@@ -208,7 +231,7 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
             return;
         }
         show();
-        if (isOpen()) pinned = true;
+        if (isOpen()) pin();
     });
     component.registerDomEvent(panel, 'mouseenter', show);
     component.registerDomEvent(panel, 'mouseleave', scheduleHide);

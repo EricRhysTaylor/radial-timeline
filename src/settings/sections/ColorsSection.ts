@@ -6,6 +6,7 @@ import type { PluginRendererFacade } from '../../utils/sceneHelpers';
 import { computeCacheableValues } from '../../renderer/utils/Precompute';
 import { DEFAULT_SETTINGS } from '../defaults';
 import { colorSwatch, type ColorSwatchHandle } from '../../ui/ui';
+import { completeHexColor } from '../../utils/colour';
 import { ERT_DATA, ERT_CLASSES } from '../../ui/classes';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { HERO_PATTERNS, DEFAULT_WORKING_PATTERN_ID, CUSTOM_PATTERN_ID_PREFIX, getHeroPattern, type HeroPattern } from '../../renderer/components/HeroPatterns';
@@ -72,18 +73,20 @@ function renderOwnSubplotColors(container: HTMLElement, plugin: RadialTimelinePl
         cell.createDiv({ cls: 'ert-color-grid-label', text: subplot });
         const control = cell.createDiv({ cls: 'ert-color-grid-controls' });
         let inputRef: TextComponent | undefined;
-        const save = async (value: string): Promise<boolean> => {
-            if (!/^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(value)) return false;
-            setOwnSubplotColor(book, subplot, value.startsWith('#') ? value : `#${value}`);
+        const save = async (value: string): Promise<string | null> => {
+            const hex = completeHexColor(value);
+            if (!hex) return null;
+            setOwnSubplotColor(book, subplot, hex);
             await applySubplotColorChange(plugin);
-            return true;
+            return hex;
         };
         const swatchHandle: ColorSwatchHandle = colorSwatch(control, {
             value: color,
             ariaLabel: t('ui.colorsSection.ownColorAriaLabel', { subplot }),
             plugin,
             onChange: (value) => { void (async () => {
-                if (await save(value)) inputRef?.setValue(value);
+                const hex = await save(value);
+                if (hex) inputRef?.setValue(hex);
             })(); }
         });
         new Settings(control)
@@ -91,7 +94,8 @@ function renderOwnSubplotColors(container: HTMLElement, plugin: RadialTimelinePl
                 inputRef = text;
                 text.inputEl.classList.add('ert-hex-input');
                 text.setValue(color).onChange(async (value) => {
-                    if (await save(value)) swatchHandle.setValue(value);
+                    const hex = await save(value);
+                    if (hex) swatchHandle.setValue(hex);
                 });
             })
             .addExtraButton(button => {
@@ -436,12 +440,13 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
             swatchClass: `ert-stage-${stage}`,
             plugin,
             onChange: (value) => { void (async () => {
-                if (/^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(value)) {
-                    (plugin.settings.publishStageColors as Record<string, string>)[stage] = value;
+                const hex = completeHexColor(value);
+                if (hex) {
+                    (plugin.settings.publishStageColors as Record<string, string>)[stage] = hex;
                     await plugin.saveSettings();
                     plugin.setCSSColorVariables();
                     plugin.onSettingChanged(IMPACT_FULL);
-                    textInputRef?.setValue(value);
+                    textInputRef?.setValue(hex);
                 }
             })(); }
         });
@@ -452,12 +457,13 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
                 textInput.inputEl.classList.add('ert-hex-input');
                 textInput.setValue(color)
                     .onChange(async (value) => {
-                        if (/^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(value)) {
-                            (plugin.settings.publishStageColors as Record<string, string>)[stage] = value;
+                        const hex = completeHexColor(value);
+                        if (hex) {
+                            (plugin.settings.publishStageColors as Record<string, string>)[stage] = hex;
                             await plugin.saveSettings();
                             plugin.setCSSColorVariables();
                             plugin.onSettingChanged(IMPACT_FULL);
-                            swatchHandle.setValue(value);
+                            swatchHandle.setValue(hex);
                         }
                     });
             })
@@ -510,14 +516,15 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
             swatchClass: `ert-subplot-${i}`,
             plugin,
             onChange: (value) => { void (async () => {
-                if (/^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(value)) {
+                const hex = completeHexColor(value);
+                if (hex) {
                     const next = [...(plugin.settings.subplotColors || DEFAULT_SETTINGS.subplotColors)];
-                    next[i] = value;
+                    next[i] = hex;
                     plugin.settings.subplotColors = next;
                     await plugin.saveSettings();
                     plugin.setCSSColorVariables();
                     plugin.onSettingChanged(IMPACT_FULL);
-                    inputRef?.setValue(value);
+                    inputRef?.setValue(hex);
                 }
             })(); }
         });
@@ -528,14 +535,15 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
                 text.inputEl.classList.add('ert-hex-input');
                 text.setValue(current)
                     .onChange(async (value) => {
-                        if (/^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(value)) {
+                        const hex = completeHexColor(value);
+                        if (hex) {
                             const next = [...(plugin.settings.subplotColors || DEFAULT_SETTINGS.subplotColors)];
-                            next[i] = value;
+                            next[i] = hex;
                             plugin.settings.subplotColors = next;
                             await plugin.saveSettings();
                             plugin.setCSSColorVariables();
                             plugin.onSettingChanged(IMPACT_FULL);
-                            swatchHandle.setValue(value);
+                            swatchHandle.setValue(hex);
                         }
                     });
             })

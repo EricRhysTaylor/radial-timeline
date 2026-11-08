@@ -675,21 +675,10 @@
   opacity: 0.7;
 }
 
-/* Alien hover: synopsis/info text stays tinted */
-.radial-timeline-svg[data-shift-mode="alien"].scene-hover .rt-scene-info {
-  opacity: 1;
-  color: rgba(200, 50, 50, 0.9);
-  fill: rgba(200, 50, 50, 0.9);
-  stroke: rgba(200, 50, 50, 0.6);
-}
-
-/* Alien hover: synopsis/info text stays tinted */
-.radial-timeline-svg[data-shift-mode="alien"] .rt-scene-info.rt-visible {
-  opacity: 1;
-  color: rgba(200, 50, 50, 0.9);
-  fill: rgba(200, 50, 50, 0.9);
-  stroke: rgba(200, 50, 50, 0.6);
-}
+/* No Alien rule touches the synopsis (.rt-scene-info): with the planet
+   calendar on, a hover shows the hovered scene's synopsis exactly as it does
+   without it, planetary line included. Two rules written when Alt blocked
+   the hover once showed every synopsis and tinted the text red. */
 
 /* 7. Active Number Square in Alien Mode */
 .radial-timeline-svg[data-shift-mode="alien"] .rt-number-square.rt-shift-active {

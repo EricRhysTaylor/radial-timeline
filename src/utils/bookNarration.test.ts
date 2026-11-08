@@ -3,7 +3,9 @@ import { DEFAULT_SETTINGS } from '../settings/defaults';
 import { BONUS_VAULTS } from '../settings/bonusVaults';
 import type { BookProfile } from '../types/settings';
 import { bookNarrationMode, markNarrationChosen, migrateVaultNarrationDefault, normalizeBookProfile } from './books';
-import { isNarrationValue, resolveScenePov } from './pov';
+import { isNarrationValue, NARRATION_MODES, resolveScenePov } from './pov';
+import { narrationModeLabel } from '../settings/sections/BookDetailsModal';
+import { t } from '../i18n';
 import { registerSampleBookProfiles } from './sampleVault';
 import { buildTimelineSharePayload } from '../communityShare/timelineSharePayload';
 import { buildTimelineDataExport } from '../services/export/TimelineExportService';
@@ -73,6 +75,14 @@ describe('vault narration default → each book', () => {
 
     it('no longer ships a vault default', () => {
         expect('globalPovMode' in DEFAULT_SETTINGS).toBe(false);
+    });
+});
+
+describe('narration labels', () => {
+    it('stay short enough for the Book details dropdown, with the markers explained in its description', () => {
+        const labels = NARRATION_MODES.map(mode => narrationModeLabel(mode));
+        expect(labels).toEqual(['Not set', 'First person', 'Second person', 'Third person', 'Omniscient', 'Objective']);
+        expect(t('ui.generalSection.narrationDesc')).toMatch(/¹.*³.*You².*Omni³.*Narrator°/);
     });
 });
 

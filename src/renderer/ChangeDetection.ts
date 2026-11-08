@@ -13,6 +13,7 @@ import { readSharedChapterTitle } from '../utils/timelineChapters';
 import { readPartMarker } from '../utils/timelineParts';
 import { searchHitPaths, searchOptionsSignature, type TimelineSearchState } from '../services/searchState';
 import { timelineOwnSubplotColors } from './utils/subplotColors';
+import { buildTimelineSegments } from './utils/TimelineSegments';
 
 /**
  * Types of changes that can trigger renders
@@ -80,6 +81,8 @@ export interface TimelineSnapshot {
     narrationModesHash: string;
     /** Dismissed alerts: the settings-alert badge on the timeline follows them. */
     dismissedAlertsHash: string;
+    /** The wheel's segment labels: act labels, or in a saga every book's title, active or not. */
+    segmentLabelsHash: string;
     activeBookId: string;
     activeBookTitle: string;
     timelineScope: string;
@@ -275,6 +278,7 @@ export function createSnapshot(
         dominantSubplotsHash,
         // Each book's narration default: a saga marks every book's scenes by its own.
         narrationModesHash: narrationModesSignature(settings),
+        segmentLabelsHash: buildTimelineSegments(settings).map(segment => `${segment.id}:${segment.label}`).join('|'),
         dismissedAlertsHash: (settings.dismissedAlerts ?? []).join('|'), // SAFE: a vault that never dismissed an alert has an empty list
         activeBookId: settings.activeBookId ?? '',
         activeBookTitle: getActiveBookTitle(settings, DEFAULT_BOOK_TITLE),
@@ -362,6 +366,7 @@ export function detectChanges(
         prev.customWorkingPatternsHash !== current.customWorkingPatternsHash ||
         prev.narrationModesHash !== current.narrationModesHash ||
         prev.dismissedAlertsHash !== current.dismissedAlertsHash ||
+        prev.segmentLabelsHash !== current.segmentLabelsHash ||
         prev.activeBookId !== current.activeBookId ||
         prev.activeBookTitle !== current.activeBookTitle ||
         prev.timelineScope !== current.timelineScope ||

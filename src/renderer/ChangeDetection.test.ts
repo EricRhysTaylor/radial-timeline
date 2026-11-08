@@ -32,6 +32,7 @@ function makeSnapshot(overrides: Partial<TimelineSnapshot> = {}): TimelineSnapsh
     dominantSubplotsHash: '',
     narrationModesHash: '',
     dismissedAlertsHash: '',
+    segmentLabelsHash: '',
     gossamerRunExists: false,
     gossamerRunHash: '',
     updateAvailable: false,
@@ -256,6 +257,33 @@ describe('detectChanges', () => {
     expect(snapshot('first').narrationModesHash).not.toBe(third.narrationModesHash);
 
     const result = detectChanges(unset, { ...third, timestamp: unset.timestamp + 1 });
+    expect(result.changeTypes.has(ChangeType.SETTINGS)).toBe(true);
+    expect(result.updateStrategy).toBe('full');
+  });
+
+  it('forces a full render when a saga book that is not active is renamed', () => {
+    const saga = (secondTitle: string) => ({
+      books: [
+        { id: 'one', title: 'Persuasion', sourceFolder: 'One' },
+        { id: 'two', title: secondTitle, sourceFolder: 'Two' },
+      ],
+      activeBookId: 'one',
+      timelineScope: 'saga',
+    }) as never;
+    const snapshot = (secondTitle: string) => createSnapshot(
+      [{ path: 'scene.md', title: 'Scene', rawFrontmatter: {} } as never],
+      new Set(),
+      createSearchState(),
+      'narrative',
+      saga(secondTitle),
+      null
+    );
+    const before = snapshot('Pride and Prejudice');
+    const after = snapshot('Pride & Prejudice');
+    // The active book's title is unchanged; only the saga's label for book two is.
+    expect(after.activeBookTitle).toBe(before.activeBookTitle);
+    expect(after.segmentLabelsHash).not.toBe(before.segmentLabelsHash);
+    const result = detectChanges(before, { ...after, timestamp: before.timestamp + 1 });
     expect(result.changeTypes.has(ChangeType.SETTINGS)).toBe(true);
     expect(result.updateStrategy).toBe('full');
   });

@@ -2591,9 +2591,20 @@
 .ert-canvas-sketch-color { display: flex; align-items: center; gap: var(--size-4-3); }
 .ert-canvas-sketch-color-count { flex: none; min-width: 7ch; color: var(--text-muted); font-size: var(--font-ui-small); font-variant-numeric: tabular-nums; }
 .ert-canvas-sketch-color input { flex: 1; min-width: 0; }
-.ert-canvas-sketch-ring { display: flex; align-items: center; justify-content: center; flex: none; width: 14px; }
+.ert-canvas-sketch-ring { display: flex; align-items: center; justify-content: flex-end; gap: var(--size-4-2); flex: none; min-width: 14px; }
 .ert-canvas-sketch-swatch { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--ert-canvas-sketch-swatch); }
 .ert-canvas-sketch-ring-option { display: flex; align-items: center; gap: var(--size-4-2); }
+/* A card color outside the timeline's colors, and a row that waits for the author before Create. */
+.ert-canvas-sketch-outside { color: var(--text-warning); font-size: var(--font-ui-small); white-space: nowrap; }
+.ert-canvas-sketch-color.is-blocked .ert-canvas-sketch-color-count { color: var(--text-warning); }
+.ert-canvas-subplot-menu__note { color: var(--text-muted); font-size: var(--font-ui-smaller); }
+/* New subplot: the free palette colors, then the ones in use with their subplots. */
+.ert-canvas-subplot-palette { display: flex; flex-wrap: wrap; gap: var(--size-4-2); }
+.ert-ui.ert-scope--modal .ert-canvas-subplot-palette button.ert-canvas-subplot-palette__swatch { flex: none; width: 28px; height: 28px; padding: 0; border: 2px solid var(--background-primary); border-radius: 50%; background: var(--ert-canvas-sketch-swatch); box-shadow: none; cursor: var(--cursor); }
+.ert-ui.ert-scope--modal .ert-canvas-subplot-palette button.ert-canvas-subplot-palette__swatch:hover,
+.ert-ui.ert-scope--modal .ert-canvas-subplot-palette button.ert-canvas-subplot-palette__swatch.is-active { box-shadow: 0 0 0 2px var(--ert-canvas-sketch-swatch); }
+.ert-canvas-subplot-used { display: flex; flex-direction: column; gap: var(--size-4-1); }
+.ert-canvas-subplot-used__item { color: var(--text-muted); font-size: var(--font-ui-small); }
 /* A long map makes a long dialog: its buttons stay in reach. */
 .ert-ui.ert-scope--modal.ert-canvas-convert .ert-modal-actions { position: sticky; bottom: 0; z-index: 1; padding-block: var(--size-4-3); background: var(--background-primary); }
 .ert-canvas-sketch-act { color: var(--text-muted); font-size: var(--font-ui-small); font-weight: var(--font-medium); }

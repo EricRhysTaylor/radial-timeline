@@ -28,6 +28,12 @@ export function sketchTitle(text: string): string {
     return safeTitle(line.replace(/^\s*#{1,6}\s+/, '').slice(0, 100)) || t('ui.timetable.newSketchName');
 }
 
+/** Give these cards (by id) a new Canvas color, `#rrggbb`; every other card keeps its own. */
+export function repaintCards(data: StoryCanvasData, colors: ReadonlyMap<string, string>): StoryCanvasData {
+    if (!colors.size) return data;
+    return { ...data, nodes: data.nodes?.map(node => colors.has(node.id) ? { ...node, color: colors.get(node.id) } : node) };
+}
+
 /** Give file cards new IDs, as Canvas requires when changing a node's type.
  * Repoint edges so the visual connections and edge metadata are preserved. */
 export function linkSketches(data: StoryCanvasData, replacements: Map<string, { id: string; path: string }>): StoryCanvasData {

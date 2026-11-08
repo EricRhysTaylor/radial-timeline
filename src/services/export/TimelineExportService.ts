@@ -42,6 +42,7 @@ import type {
     TimelineItem,
 } from '../../types';
 import { isMatterNote } from '../../utils/sceneHelpers';
+import { OWN_SUBPLOT_COLORS_SCHEMA_VERSION, ownSubplotColorEntries } from '../../utils/ownSubplotColors';
 import { TIMELINE_DATA_EXPORT_SCHEMA_VERSION, wallClockWhen } from './timelineExportFormat';
 import { rasterizeSvgToPng } from './svgToPng';
 import {
@@ -301,7 +302,8 @@ export function buildTimelineDataExport(params: BuildTimelineDataExportParams): 
  *    exploded into one TimelineItem per subplot (SceneDataService), and all
  *    of those sibling items share one `rawFrontmatter` object by reference,
  *    so it is remapped once per unique object;
- *  - `renderConfig.dominantSubplots`, a path -> preferred-subplot-name map.
+ *  - `renderConfig.dominantSubplots`, a path -> preferred-subplot-name map;
+ *  - each book profile's `mainPlotName` and `ownSubplotColors` keys.
  *
  * Scene TITLES are never touched here — titles are a revealing field (reveal
  * model, server-side), not structural, and are untouched by this toggle.
@@ -348,6 +350,20 @@ export function applyGenericSubplotNames(doc: TimelineDataExportDocument): void 
         }
         doc.renderConfig.dominantSubplots = remapped;
     }
+
+    // Book profiles name subplots too: a renamed main plot, and the subplots
+    // that wear their own color. The snapshot shares the live settings'
+    // profiles, so each is copied, never changed in place. A color record
+    // from a newer Radial Timeline cannot be read here, so it is left out.
+    doc.renderConfig.books = doc.renderConfig.books.map((book) => {
+        const { mainPlotName, ownSubplotColors, ...rest } = book;
+        const own = ownSubplotColorEntries(book);
+        return {
+            ...rest,
+            ...(mainPlotName ? { mainPlotName: genericNameFor(mainPlotName) } : {}),
+            ...(own.length ? { ownSubplotColors: { schemaVersion: OWN_SUBPLOT_COLORS_SCHEMA_VERSION, colors: Object.fromEntries(own.map(([name, color]) => [genericNameFor(name), color])) } } : {}),
+        };
+    });
 }
 
 function deepClone<T>(value: T): T {

@@ -1,4 +1,4 @@
-import { Component, getFrontMatterInfo, ItemView, Menu, setIcon, TFile, type View } from 'obsidian';
+import { Component, getFrontMatterInfo, ItemView, Menu, setIcon, TFile, type Events, type View } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { authorKeyFor } from './timetableFiles';
 import { synopsisKey } from './panelSynopsis';
@@ -19,6 +19,8 @@ import { explicitCardImage, showStoryImageMenu } from './storyImageMenu';
 import { storyImageChoice } from './storyImageStore';
 import { resolveStoryPortrait } from './storyPortrait';
 import { outlineReferenceType, type OutlineReferenceType } from './outlineDocuments';
+import { getActiveBook } from '../utils/books';
+import { addSubplotColorMenu, type CanvasCardNode } from './CanvasSubplotMenu';
 
 type Mode = 'full' | 'preview' | 'title';
 const CARD_ICONS: Record<OutlineReferenceType, string> = {
@@ -57,6 +59,8 @@ class CanvasCards {
     private followTimer: number | undefined;
     private timelinePinned = false;
     private readonly ringColors = new Map<string, Promise<Map<string, SubplotColor>>>();
+    /** The same ring colors once read, for the card menu, which cannot wait. */
+    private readonly settledRingColors = new Map<string, Map<string, SubplotColor>>();
     readonly action: HTMLElement;
     private readonly unlink: () => void;
     private readonly events = new Component();
@@ -156,7 +160,7 @@ class CanvasCards {
         this.timer = window.setTimeout(() => { this.timer = undefined; void this.refresh(); }, 80);
     }
 
-    invalidateColors(): void { this.ringColors.clear(); this.schedule(); }
+    invalidateColors(): void { this.ringColors.clear(); this.settledRingColors.clear(); this.schedule(); }
 
     private colorsForBook(bookId: string): Promise<Map<string, SubplotColor>> {
         const existing = this.ringColors.get(bookId);
@@ -164,7 +168,24 @@ class CanvasCards {
         const book = this.plugin.settings.books.find(item => item.id === bookId);
         const pending = book ? bookRingColors(this.plugin, book) : Promise.resolve(new Map<string, SubplotColor>());
         this.ringColors.set(bookId, pending);
+        pending.then(colors => {
+            if (this.ringColors.get(bookId) === pending) this.settledRingColors.set(bookId, colors);
+        }).catch((error: unknown) => console.error('[Canvas] Could not read the book’s ring colors', error));
         return pending;
+    }
+
+    /** The view this controller presents. */
+    get canvasView(): ItemView { return this.view; }
+
+    /**
+     * A book's ring colors when they are already read, for menus that must be
+     * built at once. Undefined while they are still being read; the read is
+     * started so the next menu has them.
+     */
+    ringColorsNow(bookId: string): Map<string, SubplotColor> | undefined {
+        const settled = this.settledRingColors.get(bookId);
+        if (!settled) void this.colorsForBook(bookId);
+        return settled;
     }
 
     private remove(node: HTMLElement): void {
@@ -190,6 +211,9 @@ class CanvasCards {
         const nodes = (this.view as CanvasView).canvas?.nodes;
         const bookCards = this.bookCards();
         this.navigator.refresh(bookCards.length > 0);
+        // The card menu lists the active book's subplots the moment it opens.
+        const activeBook = getActiveBook(this.plugin.settings);
+        if (activeBook?.sourceFolder.trim()) this.ringColorsNow(activeBook.id);
         const imageSelections = bookCards.length ? storyCharacterSelections(this.plugin, imageFiles, this.plugin.settings.storyImageStrategy ?? 'distinctive', new Set(bookCards.map(card => card.bookId))) : new Map<string, string>();
         this.hasBookCards = bookCards.length > 0;
         this.action.toggle(this.hasBookCards);
@@ -324,6 +348,29 @@ export function registerCanvasCardPresentation(plugin: RadialTimelinePlugin): vo
     plugin.registerEvent(workspace.on('active-leaf-change', refresh));
     plugin.registerEvent(workspace.on('file-open', refresh));
     plugin.registerEvent(plugin.app.metadataCache.on('changed', () => { for (const controller of controllers.values()) controller.invalidateColors(); refresh(); }));
+    // Radial Timeline: Color by subplot, on one card or a selection. Canvas
+    // passes its own (undocumented) node and canvas objects.
+    const menuFor = (menu: unknown, canvas: unknown, nodes: () => Iterable<CanvasCardNode>): void => {
+        if (!(menu instanceof Menu) || !canvas) return;
+        const controller = [...controllers.values()].find(candidate => (candidate.canvasView as CanvasView).canvas === canvas);
+        if (!controller) return;
+        addSubplotColorMenu(menu, {
+            plugin,
+            view: controller.canvasView,
+            // Its methods are optional in CanvasForMenu, and each use checks for them.
+            canvas,
+            ringsNow: bookId => controller.ringColorsNow(bookId),
+        }, nodes());
+    };
+    const canvasEvents: Events = workspace; // Canvas menu events are not in Workspace's typed event list.
+    plugin.registerEvent(canvasEvents.on('canvas:node-menu', (menu: unknown, node: unknown) => {
+        const card = node as (CanvasCardNode & { canvas?: unknown }) | null;
+        menuFor(menu, card?.canvas, () => card ? [card] : []);
+    }));
+    plugin.registerEvent(canvasEvents.on('canvas:selection-menu', (menu: unknown, canvas: unknown) => {
+        const selection = (canvas as { selection?: unknown } | null)?.selection;
+        menuFor(menu, canvas, () => selection instanceof Set ? selection as Set<CanvasCardNode> : []);
+    }));
     workspace.onLayoutReady(refresh);
     plugin.register(() => { running = false; for (const controller of controllers.values()) controller.destroy(); controllers.clear(); });
 }

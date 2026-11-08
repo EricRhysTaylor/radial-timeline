@@ -555,6 +555,30 @@ export interface OwnSubplotColorsRecord {
     colors: Record<string, string>;
 }
 
+/**
+ * A persisted record stamped with a schema version newer than this build
+ * reads. It is kept exactly as found, so a newer Radial Timeline still has it
+ * after this one saves settings, and it is never read or rewritten here.
+ */
+export interface NewerSchemaRecord {
+    schemaVersion: number;
+    [field: string]: unknown;
+}
+
+/** A subplot an author named from a Canvas card menu before any of its scenes exist. */
+export interface CanvasPendingSubplot {
+    bookId: string;
+    name: string;
+    /** The palette color its cards wear, lower-case `#rrggbb`. */
+    color: string;
+}
+
+/** New subplots waiting on their Canvas cards to become scenes, by Canvas file path. */
+export interface CanvasPendingSubplotsRecord {
+    schemaVersion: 1;
+    canvases: Record<string, CanvasPendingSubplot[]>;
+}
+
 /** Per-stage publishing target dates (YYYY-MM-DD strings). Scoped per book. */
 export interface StageTargetDates {
     Zero?: string;
@@ -590,7 +614,7 @@ export interface BookProfile {
      * slot, such as a subplot created from a Canvas card color (see
      * utils/ownSubplotColors). Plugin data, never scene YAML.
      */
-    ownSubplotColors?: OwnSubplotColorsRecord;
+    ownSubplotColors?: OwnSubplotColorsRecord | NewerSchemaRecord;
     lastUsedPandocLayoutByPreset?: Partial<Record<'novel' | 'screenplay' | 'podcast', string>>;
     layoutOptions?: Record<string, BookLayoutOptions>;
     beatWorkspace?: BeatWorkspaceState;
@@ -1144,6 +1168,12 @@ export interface RadialTimelineSettings {
     /** How scene cards choose a character portrait across the manuscript. */
     storyImageStrategy?: 'first' | 'second' | 'distinctive' | 'pov' | 'balanced';
     storyImageChoices?: Record<string, { character?: string; image?: string; placeImage?: string }>;
+    /**
+     * New subplots chosen from the Canvas card menu, remembered until their
+     * cards become scenes (see timetable/canvasPendingSubplots). Plugin data,
+     * never scene YAML.
+     */
+    canvasPendingSubplots?: CanvasPendingSubplotsRecord | NewerSchemaRecord;
     books: BookProfile[];
     activeBookId?: string;
     timelineScope?: 'book' | 'saga';

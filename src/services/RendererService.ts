@@ -23,7 +23,7 @@ import {
 } from '../renderer/layout/LayoutConstants';
 import { dateToAngle } from '../utils/date';
 // Import new DOM updaters
-import { updateSceneColors, updateSceneFills } from '../renderer/dom/SceneDOMUpdater';
+import { updateSceneFills } from '../renderer/dom/SceneDOMUpdater';
 import { updateNumberSquareStates } from '../renderer/dom/NumberSquareDOMUpdater';
 import { updateSynopsisText, updateSynopsisVisibility } from '../renderer/dom/SynopsisDOMUpdater';
 import { updateSubplotLabels } from '../renderer/dom/SubplotLabelDOMUpdater';
@@ -86,15 +86,6 @@ export class RendererService {
 
     adjustBeatLabelsAfterRender(container: HTMLElement): void {
         adjustBeatLabelsAfterRender(container);
-    }
-
-    /**
-     * Update scene colors for dominant subplot changes (DOM update)
-     */
-    updateSceneColorsDOM(container: HTMLElement, changedScenes: TimelineItem[]): boolean {
-        const svg = container.querySelector<SVGSVGElement>('.radial-timeline-svg');
-        if (!svg) return false;
-        return updateSceneColors(svg, changedScenes);
     }
 
     /**

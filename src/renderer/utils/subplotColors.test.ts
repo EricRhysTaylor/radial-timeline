@@ -14,6 +14,7 @@ import {
     subplotColorOn,
     timelineOwnSubplotColors,
 } from './subplotColors';
+import { syncMainPlotName } from '../../utils/mainPlot';
 
 function stubComputedStyle(vars: Record<string, string>): void {
     vi.stubGlobal('getComputedStyle', () => ({
@@ -70,6 +71,23 @@ describe('the one subplot color rule', () => {
         const before = assignSubplotColors(['Main Plot', 'Family'], new Map());
         const after = assignSubplotColors(['Main Plot', 'Romance', 'Family'], own);
         expect(after.get('Family')).toEqual(before.get('Family'));
+    });
+
+    it('never gives the main plot of the rings drawn now an own color, whatever a book calls its subplots', () => {
+        // A saga whose books name their main plots differently draws ring 1 as "Main Plot"; a book's own subplot of that name keeps no color there.
+        const sagaBooks = [
+            { id: 'a', title: 'A', sourceFolder: 'A', mainPlotName: 'Shail', ownSubplotColors: { schemaVersion: 1 as const, colors: { 'Main Plot': '#123456', Romance: '#e93147' } } },
+            { id: 'b', title: 'B', sourceFolder: 'B' },
+        ];
+        const settings = { books: sagaBooks, activeBookId: 'a', timelineScope: 'saga' as const };
+        syncMainPlotName(settings);
+        try {
+            const colors = assignSubplotColors(['Main Plot', 'Romance', 'Shail'], timelineOwnSubplotColors(settings));
+            expect(colors.get('Main Plot')).toEqual({ kind: 'slot', slot: 0 });
+            expect(colors.get('Romance')).toEqual({ kind: 'own', color: '#e93147' });
+        } finally {
+            syncMainPlotName({ books: [], activeBookId: undefined, timelineScope: 'book' });
+        }
     });
 
     it('wraps the palette after sixteen slot-colored rings', () => {

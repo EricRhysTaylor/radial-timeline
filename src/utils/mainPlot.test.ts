@@ -275,6 +275,30 @@ describe('SubplotManagementService.renameSubplot', () => {
         expect(frontmatter['Book A/1 Opening.md'].Subplot).toBe('Courtship');
     });
 
+    it('copies a subplot’s own color when some scenes keep the old name, so neither subplot changes color', async () => {
+        const frontmatter = {
+            'Book A/1 Opening.md': { Class: 'Scene', Subplot: 'Romance' },
+            'Book A/2 Broken.md': { Class: 'Scene', Subplot: 'Romance' },
+        };
+        const { service, settings } = vaultWith(frontmatter, ['Book A/2 Broken.md']);
+        settings.books[0].ownSubplotColors = { schemaVersion: 1, colors: { Romance: '#e93147' } };
+        await service.renameSubplot('Romance', 'Courtship');
+        expect(settings.books[0].ownSubplotColors).toEqual({ schemaVersion: 1, colors: { Romance: '#e93147', Courtship: '#e93147' } });
+    });
+
+    it('keeps the color of the subplot a rename merges into, never the renamed one’s', async () => {
+        const frontmatter = {
+            'Book A/1.md': { Class: 'Scene', Subplot: 'Romance' },
+            'Book A/2.md': { Class: 'Scene', Subplot: 'Courtship' },
+        };
+        const { service, settings } = vaultWith(frontmatter);
+        settings.books[0].ownSubplotColors = { schemaVersion: 1, colors: { Romance: '#e93147' } };
+        await service.renameSubplot('Romance', 'Courtship');
+        expect(frontmatter['Book A/1.md'].Subplot).toBe('Courtship');
+        // Courtship wore a palette slot and keeps it; Romance's color goes with Romance.
+        expect(settings.books[0].ownSubplotColors).toBeUndefined();
+    });
+
     it("never lets the main plot take another subplot's name", () => {
         const stats = [{ name: 'Main Plot', count: 3 }, { name: 'Romance', count: 2 }];
         expect(isSubplotNameTaken(stats, 'Main Plot', 'romance ')).toBe(true);

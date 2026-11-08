@@ -290,7 +290,17 @@ export function createTimelineSVG(
     const isNarrativeMode = currentMode === 'narrative';
 
     // The one subplot color lookup for this render: rings, labels, number squares, synopses and flags all paint from it.
-    const subplotColorFor = (subplotName: string | undefined): string => readSubplotColorValue(activeDocument, subplotColorOn(subplotColors, subplotName));
+    // Read once per subplot name: a palette slot is a computed-style read, and every scene asks.
+    const subplotColorCache = new Map<string, string>();
+    const subplotColorFor = (subplotName: string | undefined): string => {
+        const key = subplotName ?? ''; // SAFE: no subplot keys the main plot's color, as subplotColorOn paints it
+        let color = subplotColorCache.get(key);
+        if (color === undefined) {
+            color = readSubplotColorValue(activeDocument, subplotColorOn(subplotColors, subplotName));
+            subplotColorCache.set(key, color);
+        }
+        return color;
+    };
 
     const numberSquareVisualResolver = shouldApplyNumberSquareColors
         ? (scene: TimelineItem) => ({ subplotColor: subplotColorFor(scene.subplot) })

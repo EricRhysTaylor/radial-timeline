@@ -71,6 +71,7 @@ import { TimetableService } from './timetable/TimetableService';
 import { refreshTimetableViews } from './timetable/timetableRegistry';
 import { getOpenDocuments } from './utils/documents';
 import { SUBPLOT_COLORS_CHANGED_EVENT } from './renderer/utils/subplotColors';
+import { normalizeCanvasPendingSubplots } from './timetable/canvasPendingSubplots';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
 import { migratePublishingModelState, RENAMED_PANDOC_LAYOUT_IDS } from './utils/publishingMigration';
@@ -1151,6 +1152,15 @@ export default class RadialTimelinePlugin extends Plugin {
             }
         }
 
+        // New subplots waiting on Canvas cards: checked like every schema-stamped record.
+        let canvasPendingSubplotsMigrated = false;
+        const canvasPendingSubplots = normalizeCanvasPendingSubplots(this.settings.canvasPendingSubplots);
+        if (JSON.stringify(canvasPendingSubplots) !== JSON.stringify(this.settings.canvasPendingSubplots)) {
+            if (canvasPendingSubplots) this.settings.canvasPendingSubplots = canvasPendingSubplots;
+            else delete this.settings.canvasPendingSubplots;
+            canvasPendingSubplotsMigrated = true;
+        }
+
         let timelineScopeMigrated = false;
         if (this.settings.timelineScope !== 'book' && this.settings.timelineScope !== 'saga') {
             this.settings.timelineScope = 'book';
@@ -1390,7 +1400,7 @@ export default class RadialTimelinePlugin extends Plugin {
             }
         }
 
-        if (sceneTemplatesMigrated || freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || booksMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated) {
+        if (sceneTemplatesMigrated || freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || booksMigrated || canvasPendingSubplotsMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated) {
             await this.saveSettings();
         }
     }

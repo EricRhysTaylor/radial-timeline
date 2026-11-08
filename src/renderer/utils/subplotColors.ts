@@ -18,6 +18,7 @@ import type { BookProfile, RadialTimelineSettings } from '../../types/settings';
 import { getActiveBook, getSagaBooks, getTimelineScope } from '../../utils/books';
 import { getBookMainPlotName, getMainPlotName } from '../../utils/mainPlot';
 import { ownSubplotColorEntries } from '../../utils/ownSubplotColors';
+import { cssColorToHex } from '../../utils/colour';
 
 export const SUBPLOT_COLOR_SLOTS = 16;
 
@@ -56,14 +57,17 @@ export type SubplotColor =
  * Every subplot's color, for subplots in ring order (outermost first). A
  * subplot with its own color wears it; the palette slots go, in ring order,
  * to the subplots without one. Giving a subplot its own color therefore never
- * repaints another subplot.
+ * repaints another subplot. The main plot of the rings drawn now (a book's,
+ * or the saga's) always wears a palette slot, whatever color a book gives a
+ * subplot of that name.
  */
 export function assignSubplotColors(order: readonly string[], own: OwnSubplotColors): Map<string, SubplotColor> {
     const colors = new Map<string, SubplotColor>();
+    const mainPlot = getMainPlotName();
     let slot = 0;
     for (const subplot of order) {
         if (colors.has(subplot)) continue;
-        const color = own.get(subplot);
+        const color = subplot === mainPlot ? undefined : own.get(subplot);
         colors.set(subplot, color !== undefined ? { kind: 'own', color } : { kind: 'slot', slot: normalizeSubplotColorIndex(slot++) });
     }
     return colors;
@@ -77,6 +81,19 @@ export function subplotColorCss(color: SubplotColor): string {
 /** The concrete color, for SVG attributes, exports and color comparisons. */
 export function readSubplotColorValue(doc: Document, color: SubplotColor): string {
     return color.kind === 'own' ? color.color : readSubplotColor(doc, color.slot);
+}
+
+/**
+ * The color as lower-case `#rrggbb`, the form Canvas cards store and colors
+ * are compared in. A palette color that is not an opaque color is a setup
+ * fault and throws.
+ */
+export function readSubplotColorHex(doc: Document, color: SubplotColor): string {
+    if (color.kind === 'own') return color.color;
+    const value = readSubplotColor(doc, color.slot);
+    const hex = cssColorToHex(doc, value);
+    if (!hex) throw new Error(`Palette color ${color.slot + 1} ("${value}") is not an opaque color.`);
+    return hex;
 }
 
 /**

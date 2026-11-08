@@ -10,20 +10,25 @@ import { registerCanvasCardPresentation } from './CanvasCardPresentation';
 import { SubplotCanvasModal } from './SubplotCanvasModal';
 import { canvasTextCards } from './canvasSketches';
 
-function canvasForView(source: View | null | undefined): OpenCanvas | null {
+/** An open Canvas and the file it shows. */
+interface CanvasInView { canvas: OpenCanvas; path: string }
+
+function canvasForView(source: View | null | undefined): CanvasInView | null {
     if (!source || source.getViewType() !== 'canvas') return null;
-    const view = source as unknown as { canvas?: Partial<OpenCanvas> };
+    const view = source as unknown as { canvas?: Partial<OpenCanvas>; file?: TFile | null };
     const canvas = view.canvas;
-    if (!canvas || typeof canvas.getData !== 'function' || typeof canvas.setData !== 'function' || typeof canvas.requestSave !== 'function') return null;
-    return canvas as OpenCanvas;
+    const path = view.file?.path;
+    if (!path || !canvas || typeof canvas.getData !== 'function' || typeof canvas.setData !== 'function' || typeof canvas.requestSave !== 'function') return null;
+    return { canvas: canvas as OpenCanvas, path };
 }
 
-function activeCanvas(plugin: RadialTimelinePlugin): OpenCanvas | null {
+function activeCanvas(plugin: RadialTimelinePlugin): CanvasInView | null {
     return canvasForView(plugin.app.workspace.getActiveViewOfType(ItemView));
 }
 
-function openCanvasSketches(plugin: RadialTimelinePlugin, canvas = activeCanvas(plugin)): void {
-    if (!canvas) { new Notice(t('ui.canvasSketch.openCanvas')); return; }
+function openCanvasSketches(plugin: RadialTimelinePlugin, open = activeCanvas(plugin)): void {
+    if (!open) { new Notice(t('ui.canvasSketch.openCanvas')); return; }
+    const { canvas, path } = open;
     const eligible = new Set(canvasTextCards(canvas.getData()).map(card => card.id));
     const selectedCards = canvas.selection instanceof Set ? [...canvas.selection] : [];
     if (!selectedCards.some(node => { const data = node.getData?.(); return data?.id && eligible.has(data.id); })) {
@@ -34,7 +39,7 @@ function openCanvasSketches(plugin: RadialTimelinePlugin, canvas = activeCanvas(
     const active = getActiveBook(plugin.settings);
     const selected = books.find(book => book.id === active?.id) ?? books[0];
     if (!selected) { new Notice(t('ui.canvasSketch.noBook')); return; }
-    new CanvasConvertModal(plugin.app, plugin, canvas, books, selected, () =>
+    new CanvasConvertModal(plugin.app, plugin, canvas, path, books, selected, () =>
         plugin.app.workspace.getLeavesOfType('canvas').some(leaf => (leaf.view as unknown as { canvas?: OpenCanvas }).canvas === canvas),
     ).open();
 }

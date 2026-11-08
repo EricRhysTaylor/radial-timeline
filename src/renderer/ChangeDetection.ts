@@ -27,7 +27,7 @@ export enum ChangeType {
     TARGET_DATES = 'target_dates',    // Progress target ticks changed
     TIME = 'time',                    // Time-based (year progress, month)
     GOSSAMER = 'gossamer',            // Gossamer data updated
-    DOMINANT_SUBPLOT = 'dominant_subplot',  // Dominant subplot changed (scene colors only)
+    DOMINANT_SUBPLOT = 'dominant_subplot',  // Dominant subplot changed (full render)
     SCENE_VISUAL = 'scene_visual',    // Scene fill/status/due/stage changed without layout changes
     SYNOPSIS = 'synopsis',            // Synopsis text changed
     UPDATE_STATUS = 'update_status',  // Plugin update available
@@ -366,7 +366,7 @@ export function detectChanges(
         changeTypes.add(ChangeType.SETTINGS);
     }
     
-    // Detect dominant subplot changes separately (for selective update)
+    // A dominant subplot change moves scenes between rings, so it always takes a full render.
     if (prev.dominantSubplotsHash !== current.dominantSubplotsHash) {
         changeTypes.add(ChangeType.DOMINANT_SUBPLOT);
     }

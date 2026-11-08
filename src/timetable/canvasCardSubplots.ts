@@ -1,5 +1,6 @@
 import { cssColorToHex } from '../utils/colour';
 import { normalizeOwnSubplotColor } from '../utils/ownSubplotColors';
+import type { CardColorStanding } from './canvasSubplotDirectory';
 
 type Box = { x?: number; y?: number; width?: number; height?: number };
 type Group = Box & { label?: string };
@@ -57,37 +58,77 @@ export function subplotForColor(
 
 /** What one card color does to the book's subplots when its cards become scenes. */
 export type CardColorSubplot =
-    /** No name: the cards join the main plot, which keeps its color. */
+    /** No name, on a timeline color: the cards join the main plot. */
     | { kind: 'mainPlot' }
     /** A subplot the book already has: it keeps the color it wears. */
     | { kind: 'existing'; subplot: string }
-    /** A new subplot: its ring wears this card color. */
-    | { kind: 'new'; subplot: string }
-    /** A new subplot an earlier card color already names: its ring wears that earlier color. */
-    | { kind: 'sharesNew'; subplot: string; color: string };
+    /** A new subplot, wearing `color` (lower-case hex): this row's cards are the first to name it with a color. */
+    | { kind: 'new'; subplot: string; color: string }
+    /** A new subplot another row gives its color. */
+    | { kind: 'sharesNew'; subplot: string; color: string }
+    /** Not a timeline color, and no subplot chosen yet: Create waits for one. */
+    | { kind: 'unassigned' }
+    /** A new name with no palette color yet: Create waits for one. */
+    | { kind: 'needsColor'; subplot: string };
+
+/** One card color's row in Bring ideas into your book. */
+export interface CardColorRow {
+    /** The card color as Canvas stores it. */
+    color: string;
+    /** The subplot typed or chosen for it; blank for none. */
+    name: string;
+    /** The card color as `#rrggbb`, null when it cannot be read. */
+    hex: string | null;
+    standing: CardColorStanding;
+    /** A palette color picked on this row for a new subplot. */
+    palette?: string;
+}
+
+/** True while some row stops Create until the author chooses for it. */
+export function plansWaitOnAuthor(plans: ReadonlyMap<string, CardColorSubplot>): boolean {
+    return [...plans.values()].some(plan => plan.kind === 'unassigned' || plan.kind === 'needsColor');
+}
 
 /**
- * Which subplot each card color's cards join, and whose color that subplot
- * wears, so a color is chosen once. Rows come in the dialog's order. A name
- * the book already has (`existing` returns the book's spelling) keeps that
- * subplot's color; a new name takes the first card color that names it, in
- * the spelling that color gave it.
+ * Which subplot each card color's cards join, and the color a new subplot
+ * wears, so each color is chosen once and always from the timeline's colors.
+ * Rows come in the dialog's order. A name the book already has (`existing`
+ * returns the book's spelling) keeps that subplot's color. A new name takes,
+ * from the first row naming it that can give one: the color of the new
+ * subplot remembered under that name (`pending`), the palette color picked
+ * on the row, or the row's card color when that is a free palette color.
+ * Otherwise the name waits for a palette color. A row with no name joins the
+ * main plot, except a card color outside the timeline's colors, which waits
+ * for a subplot.
  */
 export function planCardColorSubplots(
-    rows: ReadonlyArray<{ color: string; name: string }>,
+    rows: readonly CardColorRow[],
     existing: (name: string) => string | null,
+    pending: (name: string) => { name: string; hex: string } | null,
 ): Map<string, CardColorSubplot> {
+    const supplied = new Map<string, { subplot: string; color: string; row: string }>();
+    const spelling = new Map<string, string>();
+    for (const row of rows) {
+        const typed = row.name.trim();
+        if (!typed || existing(typed) !== null) continue;
+        const waiting = pending(typed);
+        const key = typed.toLowerCase();
+        if (!spelling.has(key)) spelling.set(key, waiting?.name ?? typed); // SAFE: a name no new subplot holds keeps the spelling typed
+        const color = waiting?.hex ?? row.palette ?? (row.standing.kind === 'palette' ? row.hex : null); // SAFE: no remembered, picked or free palette color leaves the name waiting for one
+        if (color && !supplied.has(key)) supplied.set(key, { subplot: spelling.get(key)!, color, row: row.color }); // SAFE: the spelling is set just above
+    }
     const plans = new Map<string, CardColorSubplot>();
-    const created = new Map<string, { subplot: string; color: string }>();
-    for (const { color, name } of rows) {
-        const typed = name.trim();
-        if (!typed) { plans.set(color, { kind: 'mainPlot' }); continue; }
+    for (const row of rows) {
+        const typed = row.name.trim();
+        if (!typed) { plans.set(row.color, row.standing.kind === 'outside' ? { kind: 'unassigned' } : { kind: 'mainPlot' }); continue; }
         const known = existing(typed);
-        if (known !== null) { plans.set(color, { kind: 'existing', subplot: known }); continue; }
-        const first = created.get(typed.toLowerCase());
-        if (first) { plans.set(color, { kind: 'sharesNew', subplot: first.subplot, color: first.color }); continue; }
-        created.set(typed.toLowerCase(), { subplot: typed, color });
-        plans.set(color, { kind: 'new', subplot: typed });
+        if (known !== null) { plans.set(row.color, { kind: 'existing', subplot: known }); continue; }
+        const key = typed.toLowerCase();
+        const supply = supplied.get(key);
+        if (!supply) { plans.set(row.color, { kind: 'needsColor', subplot: spelling.get(key)! }); continue; } // SAFE: every new name was spelled in the first pass
+        plans.set(row.color, supply.row === row.color
+            ? { kind: 'new', subplot: supply.subplot, color: supply.color }
+            : { kind: 'sharesNew', subplot: supply.subplot, color: supply.color });
     }
     return plans;
 }

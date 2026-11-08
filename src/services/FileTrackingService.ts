@@ -2,6 +2,7 @@ import type RadialTimelinePlugin from '../main';
 import { TFile, TAbstractFile, MarkdownView } from 'obsidian';
 import { bindToAllDocuments, getOpenDocuments } from '../utils/documents';
 import { rebaseStoryImageChoices } from '../timetable/storyImageStore';
+import { rebasePendingSubplotCanvases } from '../timetable/canvasPendingSubplots';
 
 export class FileTrackingService {
     private modalStateObservers = new Map<Document, MutationObserver>();
@@ -159,6 +160,14 @@ export class FileTrackingService {
             if (JSON.stringify(choices) !== JSON.stringify(rebased)) {
                 this.plugin.settings.storyImageChoices = rebased;
                 void this.plugin.saveSettings().catch(error => console.error('Could not update card image paths:', error));
+            }
+        }
+        const pending = this.plugin.settings.canvasPendingSubplots;
+        if (pending) {
+            const rebased = rebasePendingSubplotCanvases(pending, oldPath, file.path);
+            if (JSON.stringify(pending) !== JSON.stringify(rebased)) {
+                this.plugin.settings.canvasPendingSubplots = rebased;
+                void this.plugin.saveSettings().catch(error => console.error('Could not follow a renamed Canvas’s new subplots:', error));
             }
         }
         void this.plugin.getWritingSessionService().followSceneRename(oldPath, file.path).catch(error => console.error('Could not update writing session paths:', error));

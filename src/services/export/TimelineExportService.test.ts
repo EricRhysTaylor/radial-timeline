@@ -293,6 +293,26 @@ describe('applyGenericSubplotNames (via buildTimelineDataExport genericSubplotNa
         expect(doc.items[1].rawFrontmatter?.Subplot).toEqual(['Heist', 'Redemption Arc']);
     });
 
+    it('leaves no real subplot name anywhere in the export, book profiles included, and leaves the live settings as they were', () => {
+        const books = [
+            { id: 'book-1', title: 'Test Book', sourceFolder: 'Book', mainPlotName: 'Redemption Arc', ownSubplotColors: { schemaVersion: 1 as const, colors: { Heist: '#e93147', 'Secret Twin': '#00ff00' } } },
+            { id: 'book-2', title: 'Sequel', sourceFolder: 'Sequel', ownSubplotColors: { schemaVersion: 9, layers: { 'Hidden Heir': '#123456' } } },
+        ];
+        const settings = makeSettings({ books, dominantSubplots: { 'Book/2 Heist Setup.md': 'Heist' } });
+        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true, settings }));
+        const serialized = JSON.stringify(doc);
+        for (const name of ['Redemption Arc', 'Secret Twin', 'Hidden Heir']) expect(serialized).not.toContain(name);
+        // "Heist" stays only in a scene title and its path, which this option leaves alone.
+        expect(JSON.stringify({ ...doc.renderConfig, dominantSubplots: undefined })).not.toContain('Heist');
+        expect(JSON.stringify(doc.items.map(item => ({ ...item, title: undefined, path: undefined })))).not.toContain('Heist');
+        // The same subplot gets the same generic name everywhere it appears.
+        expect(doc.renderConfig.books[0].mainPlotName).toBe(doc.items[0].subplot);
+        expect(doc.renderConfig.books[0].ownSubplotColors).toEqual({ schemaVersion: 1, colors: { [doc.items[1].subplot!]: '#e93147', 'Subplot 4': '#00ff00' } });
+        expect(doc.renderConfig.books[1]).not.toHaveProperty('ownSubplotColors');
+        expect(settings.books[0].mainPlotName).toBe('Redemption Arc');
+        expect(settings.books[0].ownSubplotColors).toEqual({ schemaVersion: 1, colors: { Heist: '#e93147', 'Secret Twin': '#00ff00' } });
+    });
+
     it('applyGenericSubplotNames tolerates a non-string entry inside a Subplot array', () => {
         const doc: TimelineDataExportDocument = buildTimelineDataExport(makeParams({
             items: [

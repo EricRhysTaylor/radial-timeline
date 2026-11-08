@@ -5,7 +5,7 @@ import { buildTableRow, compareManuscriptRows } from './timetableModel';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { isStoryActHeading, selectedCanvasBounds, storyActHeadingLabel, storyAxis, storyKeyStep, storyPosition, storyProgress } from './canvasNavigation';
 import { placeKeyPanel, renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
-import { readSubplotColorValue, subplotColorCss, SUBPLOT_COLOR_SLOTS, type SubplotColor } from '../renderer/utils/subplotColors';
+import { readSubplotColorHex, readSubplotColorValue, subplotColorCss, SUBPLOT_COLOR_SLOTS, type SubplotColor } from '../renderer/utils/subplotColors';
 import { getActiveBook } from '../utils/books';
 import { getMainPlotName } from '../utils/mainPlot';
 import { cardColor } from './canvasCardSubplots';
@@ -43,7 +43,7 @@ export class CanvasStoryNavigator {
     }
 
     private paint(color: SubplotColor): void {
-        const value = readSubplotColorValue(this.view.containerEl.doc, color);
+        const value = readSubplotColorHex(this.view.containerEl.doc, color);
         for (const node of this.selectedIdeas()) node.setColor?.(value);
         this.canvas()?.requestSave?.();
         this.updateBar();

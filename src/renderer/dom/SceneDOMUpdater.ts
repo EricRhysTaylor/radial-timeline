@@ -8,49 +8,6 @@ import type { TimelineItem } from '../../types';
 import type { PluginRendererFacade } from '../../utils/sceneHelpers';
 import { getMostAdvancedStageColor } from '../../utils/colour';
 import { getFillForScene } from '../utils/SceneFill';
-import { getMainPlotName } from '../../utils/mainPlot';
-
-/**
- * Updates scene colors in the DOM without regenerating SVG
- * Used for dominant subplot changes. Each ring's color is read back from its
- * label, which the render stamped from the one subplot color lookup.
- */
-export function updateSceneColors(
-    svg: SVGSVGElement,
-    changedScenes: TimelineItem[]
-): boolean {
-    try {
-        const ringColors = getRingColors(svg);
-        
-        let updated = false;
-        
-        changedScenes.forEach(scene => {
-            if (!scene.path) return;
-            
-            // Find all scene groups for this path
-            const encodedPath = encodeURIComponent(scene.path);
-            const sceneGroups = svg.querySelectorAll(`[data-path="${encodedPath}"]`);
-            
-            sceneGroups.forEach(group => {
-                const color = ringColors.get(scene.subplot || getMainPlotName());
-                if (color === undefined) return;
-                
-                // Update the scene arc fill color
-                const arc = group.querySelector('.rt-scene-arc');
-                if (arc) {
-                    arc.setAttribute('fill', color);
-                    group.setAttribute('data-subplot-color', color);
-                    updated = true;
-                }
-            });
-        });
-
-        return updated;
-    } catch (error) {
-        console.error('[SceneDOMUpdater] Failed to update scene colors:', error);
-        return false;
-    }
-}
 
 /**
  * Updates scene fills in the DOM without regenerating SVG.
@@ -116,15 +73,5 @@ export function updateSceneFills(
         console.error('[SceneDOMUpdater] Failed to update scene fills:', error);
         return false;
     }
-}
-
-/** Each ring's color by subplot name, as the render stamped it on the ring labels. */
-function getRingColors(svg: SVGSVGElement): Map<string, string> {
-    const colors = new Map<string, string>();
-    svg.querySelectorAll('.rt-subplot-ring-label-text[data-subplot-name][data-subplot-color]').forEach(label => {
-        // SAFE: the selector above guarantees both attributes
-        colors.set(label.getAttribute('data-subplot-name')!, label.getAttribute('data-subplot-color')!);
-    });
-    return colors;
 }
 

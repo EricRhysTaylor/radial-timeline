@@ -37,38 +37,6 @@
   pointer-events: all;
 }
 
-/* =============================================================================
-   HELP ICON
-   Bottom-right corner help/wiki link
-   ============================================================================= */
-.rt-help-icon {
-  cursor: pointer;
-  stroke: var(--text-muted);
-  opacity: 0.6;
-  transition: opacity 0.2s ease, stroke 0.2s ease;
-}
-
-.rt-help-icon:hover {
-  opacity: 1;
-  stroke: var(--text-normal);
-}
-
-.rt-help-text {
-  font-family: '04b03b', 'Monaco', 'Courier New', monospace;
-  font-size: 20px;
-  text-anchor: middle;
-  dominant-baseline: baseline;
-  fill: var(--text-muted);
-  opacity: 0;
-  pointer-events: none;
-  transition: fill 0.2s ease, opacity 0.2s ease;
-}
-
-.rt-help-icon:hover .rt-help-text {
-  opacity: 1;
-  fill: var(--text-normal);
-}
-
 .rt-version-text {
   font-family: '04b03b', 'Monaco', 'Courier New', monospace;
   font-size: 20px;

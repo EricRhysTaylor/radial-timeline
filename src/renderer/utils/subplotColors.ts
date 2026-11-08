@@ -101,6 +101,19 @@ export function assignSubplotColors(order: readonly string[], own: OwnSubplotCol
     return colors;
 }
 
+/**
+ * The other subplots on these rings that wear this color (`#rrggbb`), in ring
+ * order. Two own colors can match, and so can an own color and the first
+ * palette color, which the main plot keeps whatever own colors match it. Both
+ * are the author's choices, so they stand; Settings names the match beside
+ * the own color instead.
+ */
+export function subplotsWearingColor(colors: ReadonlyMap<string, SubplotColor>, hex: string, except: string): string[] {
+    const target = normalizeOwnSubplotColor(hex);
+    if (!target) return [];
+    return [...colors].filter(([name, color]) => name !== except && (color.kind === 'own' ? color.color : paletteHexes[color.slot]) === target).map(([name]) => name);
+}
+
 /** CSS to paint with. A slot reads the palette variable, so it follows palette edits live. */
 export function subplotColorCss(color: SubplotColor): string {
     return color.kind === 'own' ? color.color : `var(--rt-subplot-colors-${color.slot})`;

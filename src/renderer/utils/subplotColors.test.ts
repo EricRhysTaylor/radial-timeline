@@ -12,6 +12,7 @@ import {
     SUBPLOT_COLOR_SLOTS,
     subplotColorCss,
     subplotColorOn,
+    subplotsWearingColor,
     syncSubplotPalette,
     timelineOwnSubplotColors,
 } from './subplotColors';
@@ -132,6 +133,19 @@ describe('the one subplot color rule', () => {
             expect(colors.get('Ring 1')).toEqual({ kind: 'slot', slot: 3 });
             // Fourteen free slots (1, 3 to 15): the fifteenth ring wraps, still skipping the worn color.
             expect(colors.get('Ring 14')).toEqual({ kind: 'slot', slot: 1 });
+        });
+
+        it('names the subplots an own color matches: another own color, or the main plot’s first palette color', () => {
+            syncSubplotPalette(palette);
+            // Romance was given the first palette color, and Letters and Storm the same color, in Settings.
+            const own = new Map([['Romance', '#000001'], ['Letters', '#abcdef'], ['Storm', '#abcdef']]);
+            const colors = assignSubplotColors(['Main Plot', 'Romance', 'Letters', 'Storm', 'Mara'], own);
+            expect(subplotsWearingColor(colors, '#000001', 'Romance')).toEqual(['Main Plot']);
+            expect(subplotsWearingColor(colors, '#ABCDEF', 'Letters')).toEqual(['Storm']);
+            // A ring on a palette slot is matched by its slot's color.
+            expect(subplotsWearingColor(colors, '#000002', 'Romance')).toEqual(['Mara']);
+            expect(subplotsWearingColor(colors, '#123456', 'Romance')).toEqual([]);
+            expect(subplotsWearingColor(colors, 'red', 'Romance')).toEqual([]);
         });
     });
 

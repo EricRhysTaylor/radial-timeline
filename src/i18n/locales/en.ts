@@ -3527,6 +3527,7 @@ export const en = {
             ownColorsDesc: "Each subplot here took its color from its Canvas cards and keeps it wherever Radial Timeline shows it. Change a color here, or reset one to give that subplot its ring color from the palette above.",
             ownColorAriaLabel: "{{subplot}} color",
             ownColorClear: "Use the ring color from the palette",
+            ownColorShared: "Same color as {{subplots}} on the timeline",
         },
         commandRegistrar: {
             archivedBeforeOverwrite: 'Archived existing output before overwrite: {{path}}',

@@ -15,7 +15,7 @@ import { hasProFeatureAccess } from '../featureGate';
 import { IMPACT_FULL } from '../SettingImpact';
 import { DEFAULT_MAIN_PLOT_NAME } from '../../utils/mainPlot';
 import { t } from '../../i18n';
-import { bookOwnSubplotColors, timelineOwnSubplotColors, type SubplotColor } from '../../renderer/utils/subplotColors';
+import { bookOwnSubplotColors, subplotsWearingColor, timelineOwnSubplotColors, type SubplotColor } from '../../renderer/utils/subplotColors';
 import { getActiveBook } from '../../utils/books';
 import { clearOwnSubplotColor, setOwnSubplotColor } from '../../utils/ownSubplotColors';
 
@@ -58,26 +58,44 @@ async function applySubplotColorChange(plugin: RadialTimelinePlugin): Promise<vo
 /**
  * The active book's subplots that wear their own color (from a Canvas card
  * color), each editable, and each clearable back to its ring's palette color.
- * Shows nothing while no subplot has a color of its own.
+ * Shows nothing while no subplot has a color of its own. A color another ring
+ * on the timeline also wears (another own color, or the main plot's first
+ * palette color) stays as the author chose it, with that ring named beneath.
+ * Returns the step that names those matches, for palette edits to rerun.
  */
-function renderOwnSubplotColors(container: HTMLElement, plugin: RadialTimelinePlugin, onCleared: () => void): void {
+function renderOwnSubplotColors(container: HTMLElement, plugin: RadialTimelinePlugin, onCleared: () => void): () => Promise<void> {
     container.empty();
     const book = getActiveBook(plugin.settings);
     const own = bookOwnSubplotColors(book);
-    if (!book || own.size === 0) return;
+    if (!book || own.size === 0) return async () => {};
     container.createDiv({ cls: 'ert-section-title', text: t('ui.colorsSection.ownColorsHeading', { book: book.title }) });
     container.createDiv({ cls: 'ert-section-desc', text: t('ui.colorsSection.ownColorsDesc') });
     const grid = container.createDiv({ cls: 'ert-color-grid' });
+    const notes = new Map<string, HTMLElement>();
+    const markShared = async (): Promise<void> => {
+        const rings = await getTimelineSubplotColors(plugin);
+        const colors = bookOwnSubplotColors(book);
+        for (const [subplot, note] of notes) {
+            const hex = colors.get(subplot);
+            const sharing = hex && rings.has(subplot) ? subplotsWearingColor(rings, hex, subplot).map(normalizeSubplotLabel) : [];
+            note.setText(sharing.length ? t('ui.colorsSection.ownColorShared', { subplots: sharing.join(', ') }) : '');
+            note.hidden = sharing.length === 0;
+        }
+    };
     for (const [subplot, color] of own) {
         const cell = grid.createDiv({ cls: 'ert-color-grid-item' });
         cell.createDiv({ cls: 'ert-color-grid-label', text: subplot });
         const control = cell.createDiv({ cls: 'ert-color-grid-controls' });
+        const note = cell.createDiv({ cls: 'setting-item-description' });
+        note.hidden = true;
+        notes.set(subplot, note);
         let inputRef: TextComponent | undefined;
         const save = async (value: string): Promise<string | null> => {
             const hex = completeHexColor(value);
             if (!hex) return null;
             setOwnSubplotColor(book, subplot, hex);
             await applySubplotColorChange(plugin);
+            void markShared();
             return hex;
         };
         const swatchHandle: ColorSwatchHandle = colorSwatch(control, {
@@ -107,6 +125,8 @@ function renderOwnSubplotColors(container: HTMLElement, plugin: RadialTimelinePl
                     });
             });
     }
+    void markShared();
+    return markShared;
 }
 
 function renderWorkingPatternPreview(
@@ -495,6 +515,8 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
     const ensureArray = (arr: unknown): string[] => Array.isArray(arr) ? arr as string[] : [];
     const subplotColors = ensureArray(plugin.settings.subplotColors);
     const subplotLabels: HTMLElement[] = [];
+    // A palette edit can make the main plot's color match an own color below.
+    let markOwnShared: () => Promise<void> = async () => {};
     for (let i = 0; i < 16; i++) {
         const labelText = i === 0 ? t('ui.colorsSection.mainPlotLabel') : t('ui.colorsSection.ringLabel', { number: i + 1 });
         const current = subplotColors[i] || DEFAULT_SETTINGS.subplotColors[i];
@@ -524,6 +546,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
                     await plugin.saveSettings();
                     plugin.setCSSColorVariables();
                     plugin.onSettingChanged(IMPACT_FULL);
+                    void markOwnShared();
                     inputRef?.setValue(hex);
                 }
             })(); }
@@ -543,6 +566,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
                             await plugin.saveSettings();
                             plugin.setCSSColorVariables();
                             plugin.onSettingChanged(IMPACT_FULL);
+                            void markOwnShared();
                             swatchHandle.setValue(hex);
                         }
                     });
@@ -557,6 +581,7 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
                         await plugin.saveSettings();
                         plugin.setCSSColorVariables();
                         plugin.onSettingChanged(IMPACT_FULL);
+                        void markOwnShared();
                         inputRef?.setValue(value);
                         swatchHandle.setValue(value);
                     });
@@ -580,10 +605,12 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
         }
     };
     const ownColors = subplotSection.createDiv({ cls: 'ert-stack' });
-    const showOwnColors = (): void => renderOwnSubplotColors(ownColors, plugin, () => {
-        showOwnColors();
-        void labelSlots();
-    });
+    const showOwnColors = (): void => {
+        markOwnShared = renderOwnSubplotColors(ownColors, plugin, () => {
+            showOwnColors();
+            void labelSlots();
+        });
+    };
     showOwnColors();
     void labelSlots();
 }

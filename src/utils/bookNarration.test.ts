@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import { BONUS_VAULTS } from '../settings/bonusVaults';
 import type { BookProfile } from '../types/settings';
-import { bookNarrationMode, markNarrationChosen, migrateVaultNarrationDefault, normalizeBookProfile } from './books';
+import { bookNarrationMode, markNarrationChosen, migrateVaultNarrationDefault, normalizeBookProfile, recordBookNarrations } from './books';
 import { isNarrationValue, NARRATION_MODES, resolveScenePov } from './pov';
 import { narrationModeLabel } from '../settings/sections/BookDetailsModal';
 import { t } from '../i18n';
@@ -46,6 +46,37 @@ describe('vault narration default → each book', () => {
         expect(migrateVaultNarrationDefault(settings)).toBe(false);
         expect(settings.books[1].narrationMode).toBeUndefined();
         expect(settings.narrationDefaultsMigration).toEqual({ schemaVersion: 1, inheritedBookIds: ['one'] });
+    });
+
+    it('gives back a narration set in 8.0 after a 7.x device dropped it, and keeps "not set" not set', () => {
+        for (const vaultValue of ['third', 'off', undefined]) {
+            const settings = vault([book('one'), book('two'), book('three')], vaultValue);
+            migrateVaultNarrationDefault(settings);
+            // In 8.0 the writer picks First person for one book and "not set" for another.
+            markNarrationChosen(settings, 'one');
+            settings.books[0].narrationMode = 'first';
+            markNarrationChosen(settings, 'two');
+            delete settings.books[1].narrationMode;
+            recordBookNarrations(settings);
+            // 7.7 keeps the record (an unknown top-level key) and drops narrationMode from the books.
+            const synced = JSON.parse(JSON.stringify(settings)) as MigrationSettings;
+            synced.books = synced.books.map(({ narrationMode: _dropped, ...rest }) => rest);
+            migrateVaultNarrationDefault(synced);
+            const inherited = vaultValue === 'third' ? 'third' : undefined;
+            expect(synced.books.map(entry => entry.narrationMode)).toEqual(['first', undefined, inherited]);
+        }
+    });
+
+    it('records each book narration only once migrated, and ignores a hand-edited entry', () => {
+        const waiting = vault([book('one', { narrationMode: 'first' })], 'sideways');
+        recordBookNarrations(waiting);
+        expect(waiting.narrationDefaultsMigration).toBeUndefined();
+
+        const settings = vault([book('one')], 'off');
+        migrateVaultNarrationDefault(settings);
+        settings.narrationDefaultsMigration = { schemaVersion: 1, inheritedBookIds: [], bookNarrations: { one: 'sideways' } } as unknown as MigrationSettings['narrationDefaultsMigration'];
+        expect(migrateVaultNarrationDefault(settings)).toBe(false);
+        expect(settings.books[0].narrationMode).toBeUndefined();
     });
 
     it('waits, unstamped, with no books or an unknown vault value, so a later book inherits', () => {

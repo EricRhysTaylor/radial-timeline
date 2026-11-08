@@ -575,6 +575,13 @@ export interface NarrationDefaultsMigration {
     schemaVersion: 1;
     /** Books whose narration came from the vault value and that the writer has not set since. */
     inheritedBookIds: string[];
+    /**
+     * Each book's narration as of the last save, by book id. A device still on
+     * 7.x drops `narrationMode` from the books when it saves but keeps this
+     * record, so the repair gives a narration set in 8.0 back to its book.
+     * Absent on a record saved before it existed.
+     */
+    bookNarrations?: Record<string, Exclude<NarrationMode, 'off'>>;
 }
 
 /** Cards on one Canvas that the Canvas card menu gave a subplot. */

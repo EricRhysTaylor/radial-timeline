@@ -73,7 +73,7 @@ import { refreshTimetableViews } from './timetable/timetableRegistry';
 import { getOpenDocuments } from './utils/documents';
 import { SUBPLOT_COLORS_CHANGED_EVENT, syncSubplotPalette } from './renderer/utils/subplotColors';
 import { normalizeCanvasSubplotMemory } from './timetable/canvasSubplotMemory';
-import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, migrateVaultNarrationDefault, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
+import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, migrateVaultNarrationDefault, normalizeBookProfile, recordBookNarrations, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
 import { migratePublishingModelState, RENAMED_PANDOC_LAYOUT_IDS } from './utils/publishingMigration';
 import { initVersionCheckService } from './services/VersionCheckService';
@@ -1503,6 +1503,7 @@ export default class RadialTimelinePlugin extends Plugin {
         this.syncGossamerRunFilterSettings();
         this.syncLegacySourcePathFromActiveBook();
         this.syncPublishingModelState();
+        recordBookNarrations(this.settings);
         stripLegacyAiSettings(this.settings);
         if (__RT_DEV__) {
             try {

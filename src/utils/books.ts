@@ -221,12 +221,13 @@ type NarrationMigrationSettings = Pick<RadialTimelineSettings, 'books' | 'narrat
  * - Waits, unstamped, while there are no books (a book created later inherits
  *   the value) or while the vault value is one this build does not know.
  * - Afterwards, repairs: a device still on 7.x drops `narrationMode` from the
- *   books when it saves, so a recorded book that lost its narration takes the
- *   vault value again. A book the writer has set since is no longer recorded
- *   (markNarrationChosen), so "not set" stays not set.
+ *   books when it saves, but keeps this record. A book that lost its narration
+ *   takes the vault value again while it still inherits it; a book the writer
+ *   has set since (markNarrationChosen) takes back the narration recorded at the
+ *   last save (recordBookNarrations), and "not set" stays not set.
  *
  * `globalPovMode` stays on disk through 8.0 for those 7.x devices.
- * TODO(8.1): delete `globalPovMode` and the repair branch; keep the stamp.
+ * TODO(8.1): delete `globalPovMode`, the repair branch and recordBookNarrations; keep the stamp.
  * True when the settings changed.
  */
 export function migrateVaultNarrationDefault(settings: NarrationMigrationSettings): boolean {
@@ -250,12 +251,16 @@ export function migrateVaultNarrationDefault(settings: NarrationMigrationSetting
   }
 
   // A record from a newer Radial Timeline is kept as found and never read.
-  if (record.schemaVersion !== NARRATION_DEFAULTS_MIGRATION_SCHEMA_VERSION || !inheritedMode) return false;
-  const inherited = new Set(inheritedBookIdsOf(record as NarrationDefaultsMigration));
+  if (record.schemaVersion !== NARRATION_DEFAULTS_MIGRATION_SCHEMA_VERSION) return false;
+  const migration = record as NarrationDefaultsMigration;
+  const inherited = new Set(inheritedBookIdsOf(migration));
+  const recorded = bookNarrationsOf(migration);
   let repaired = false;
   for (const book of settings.books) {
-    if (!inherited.has(book.id) || book.narrationMode) continue;
-    book.narrationMode = inheritedMode;
+    if (book.narrationMode) continue;
+    const restored = inherited.has(book.id) ? inheritedMode : recorded[book.id];
+    if (!restored) continue;
+    book.narrationMode = restored;
     repaired = true;
   }
   return repaired;
@@ -263,21 +268,49 @@ export function migrateVaultNarrationDefault(settings: NarrationMigrationSetting
 
 /**
  * The writer set this book's narration themselves (including "not set"), so it
- * no longer inherits the vault value and the repair above leaves it alone.
+ * no longer inherits the vault value; the repair above restores it from the
+ * copy recordBookNarrations keeps instead.
  */
 export function markNarrationChosen(settings: Pick<RadialTimelineSettings, 'narrationDefaultsMigration'>, bookId: string): void {
   const record = settings.narrationDefaultsMigration;
   if (record?.schemaVersion !== NARRATION_DEFAULTS_MIGRATION_SCHEMA_VERSION) return;
+  const migration = record as NarrationDefaultsMigration;
   settings.narrationDefaultsMigration = {
-    schemaVersion: NARRATION_DEFAULTS_MIGRATION_SCHEMA_VERSION,
-    inheritedBookIds: inheritedBookIdsOf(record as NarrationDefaultsMigration).filter(id => id !== bookId),
+    ...migration,
+    inheritedBookIds: inheritedBookIdsOf(migration).filter(id => id !== bookId),
   };
+}
+
+/**
+ * Run before every settings save: copies each book's narration into the
+ * migration record, which a 7.x device keeps when it drops `narrationMode`
+ * from the books. Nothing to record until the migration has run.
+ */
+export function recordBookNarrations(settings: Pick<RadialTimelineSettings, 'books' | 'narrationDefaultsMigration'>): void {
+  const record = settings.narrationDefaultsMigration;
+  if (record?.schemaVersion !== NARRATION_DEFAULTS_MIGRATION_SCHEMA_VERSION) return;
+  const bookNarrations: NonNullable<NarrationDefaultsMigration['bookNarrations']> = {};
+  for (const book of settings.books) {
+    if (book.narrationMode) bookNarrations[book.id] = book.narrationMode;
+  }
+  settings.narrationDefaultsMigration = { ...(record as NarrationDefaultsMigration), bookNarrations };
 }
 
 /** The recorded ids, as stored: a hand-edited list keeps only its string entries. */
 function inheritedBookIdsOf(record: NarrationDefaultsMigration): string[] {
   const ids: unknown = record.inheritedBookIds;
   return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : [];
+}
+
+/** The recorded narrations, as stored: a hand-edited map keeps only its known, set modes. */
+function bookNarrationsOf(record: NarrationDefaultsMigration): NonNullable<NarrationDefaultsMigration['bookNarrations']> {
+  const stored: unknown = record.bookNarrations;
+  const narrations: NonNullable<NarrationDefaultsMigration['bookNarrations']> = {};
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return narrations;
+  for (const [bookId, mode] of Object.entries(stored)) {
+    if (isNarrationMode(mode) && mode !== 'off') narrations[bookId] = mode;
+  }
+  return narrations;
 }
 
 export function getActiveBookTitle(settings: RadialTimelineSettings, fallback = DEFAULT_BOOK_TITLE): string {

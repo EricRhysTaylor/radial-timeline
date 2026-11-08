@@ -111,4 +111,23 @@ describe('yamlTemplateNormalize', () => {
         expect(parsed.When).toBe('{{When}}');
         expect(parsed.Subplot).toBe('');
     });
+
+    // Settings > Beat Properties reads beat and backdrop advanced templates
+    // through these two helpers (it used to carry older copies of its own).
+    it('keeps the other fields of an advanced template when one value is malformed', () => {
+        const template = 'Purpose: Set the hook\nTension: [unclosed\nBeat Note: {{note}}';
+        expect(extractKeysInOrder(template)).toEqual(['Purpose', 'Tension', 'Beat Note']);
+        const parsed = safeParseYaml(template);
+        expect(parsed['Purpose']).toBe('Set the hook');
+        expect(parsed['Tension']).toBe('');
+        expect(parsed['Beat Note']).toBe('{{note}}');
+    });
+
+    it('reads a placeholder that is already quoted as the placeholder', () => {
+        expect(safeParseYaml('Beat Note: "{{note}}"')['Beat Note']).toBe('{{note}}');
+    });
+
+    it('lists custom keys with letters outside plain ASCII', () => {
+        expect(extractKeysInOrder('Café Scene: \nÉtape:\n')).toEqual(['Café Scene', 'Étape']);
+    });
 });

@@ -1404,7 +1404,8 @@ export default class RadialTimelinePlugin extends Plugin {
 
         // ─── Migrate the vault-wide narration default → per-book ───
         // Every book without its own narration takes the vault value, so no
-        // timeline changes; the vault field is then removed for good.
+        // timeline changes. globalPovMode itself stays on disk through 8.0 so
+        // books a 7.x device saved can be repaired (migrateVaultNarrationDefault, TODO(8.1)).
         const narrationDefaultsMigrated = migrateVaultNarrationDefault(this.settings);
 
         // Fields whose deprecation is finished: no reader remains, so the key

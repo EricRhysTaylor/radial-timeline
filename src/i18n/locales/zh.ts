@@ -6185,7 +6185,7 @@ export const zh: DeepPartial<TranslationKeys> = {
             keySelect: "选择卡片",
             keySelectDetail: "在 Canvas 空白处拖出选框。Shift 点击可添加或移除卡片。",
             keyColor: "按支线上色",
-            keyColorDetail: "右键点击想法卡片并选择“Radial Timeline：按支线上色”，或点击此栏中的颜色：主情节、你的某个环，或给新支线的空闲颜色。",
+            keyColorDetail: "右键点击想法卡片并选择“Radial Timeline：按支线上色”，然后选择本书的一条支线，或用“新支线…”以调色板中的空闲颜色新建一条。",
             keyActs: "标记幕",
             keyActsDetail: "名为 Act 2 的卡片开始该幕，其后的卡片归入该幕。没有幕卡片时，场景平均分配。",
             keyConvert: "把卡片转为场景",

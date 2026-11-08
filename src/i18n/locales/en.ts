@@ -5858,7 +5858,7 @@ export const en = {
             keySelect: "Select cards",
             keySelectDetail: "Drag a box on empty Canvas. Shift-click adds or removes a card.",
             keyColor: "Color by subplot",
-            keyColorDetail: "Right-click idea cards and choose Radial Timeline: Color by subplot, or click a swatch on this bar: Main Plot, one of your rings, or a free color for a new subplot.",
+            keyColorDetail: "Right-click idea cards and choose Radial Timeline: Color by subplot, then one of the book’s subplots, or New subplot… to give a new one a free palette color.",
             keyActs: "Mark the acts",
             keyActsDetail: "A card named Act 2 starts that act, and the cards after it join. With no Act cards, scenes spread evenly.",
             keyConvert: "Turn cards into scenes",

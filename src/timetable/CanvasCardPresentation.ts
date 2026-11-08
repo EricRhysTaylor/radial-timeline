@@ -67,7 +67,7 @@ class CanvasCards {
     private readonly navigator: CanvasStoryNavigator;
 
     constructor(private plugin: RadialTimelinePlugin, private view: ItemView) {
-        this.navigator = new CanvasStoryNavigator(plugin, view, bookId => this.colorsForBook(bookId));
+        this.navigator = new CanvasStoryNavigator(plugin, view);
         this.action = view.addAction('layout-template', t('ui.canvasSketch.cardViews'), event => {
             const menu = new Menu();
             const choices: Array<[Mode, string]> = [

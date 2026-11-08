@@ -6183,7 +6183,7 @@ export const ko: DeepPartial<TranslationKeys> = {
             keySelect: "카드 선택",
             keySelectDetail: "빈 Canvas에서 드래그해 상자를 그립니다. Shift 클릭으로 카드를 추가하거나 뺍니다.",
             keyColor: "서브플롯별 색칠",
-            keyColorDetail: "아이디어 카드를 오른쪽 클릭하고 ‘Radial Timeline: 서브플롯별 색칠’을 고르거나, 이 막대의 색을 클릭하세요. 메인 플롯, 기존 링, 또는 새 서브플롯용 빈 색을 고를 수 있습니다.",
+            keyColorDetail: "아이디어 카드를 오른쪽 클릭하고 ‘Radial Timeline: 서브플롯별 색칠’을 고른 다음, 책의 서브플롯을 고르거나 ‘새 서브플롯…’으로 팔레트의 빈 색을 가진 새 서브플롯을 만드세요.",
             keyActs: "막 표시",
             keyActsDetail: "Act 2라는 이름의 카드가 그 막을 시작하고 뒤따르는 카드가 합류합니다. 막 카드가 없으면 장면이 고르게 나뉩니다.",
             keyConvert: "카드를 장면으로 변환",

@@ -6186,7 +6186,7 @@ export const es: TranslationKeys = {
             keySelect: "Seleccionar tarjetas",
             keySelectDetail: "Arrastra un recuadro sobre el Canvas vacío. Mayús-clic añade o quita una tarjeta.",
             keyColor: "Colorear por subtrama",
-            keyColorDetail: "Haz clic derecho en tarjetas de ideas y elige Radial Timeline: Colorear por subtrama, o haz clic en una muestra de esta barra: la trama principal, uno de tus anillos o un color libre para una subtrama nueva.",
+            keyColorDetail: "Haz clic derecho en tarjetas de ideas, elige Radial Timeline: Colorear por subtrama y luego una de las subtramas del libro, o Nueva subtrama… para dar a una nueva un color libre de la paleta.",
             keyActs: "Marcar los actos",
             keyActsDetail: "Una tarjeta llamada Acto 2 inicia ese acto y las tarjetas siguientes se unen a él. Sin tarjetas de acto, las escenas se reparten por igual.",
             keyConvert: "Convertir tarjetas en escenas",

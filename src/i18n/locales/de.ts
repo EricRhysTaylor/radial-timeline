@@ -6183,7 +6183,7 @@ export const de: DeepPartial<TranslationKeys> = {
             keySelect: "Karten auswählen",
             keySelectDetail: "Ziehe auf leerem Canvas einen Rahmen. Umschalt-Klick fügt eine Karte hinzu oder entfernt sie.",
             keyColor: "Nach Nebenhandlung färben",
-            keyColorDetail: "Klicke Ideenkarten mit der rechten Maustaste an und wähle „Radial Timeline: Nach Nebenhandlung färben“, oder klicke auf dieser Leiste eine Farbe an: Haupthandlung, einen deiner Ringe oder eine freie Farbe für eine neue Nebenhandlung.",
+            keyColorDetail: "Klicke Ideenkarten mit der rechten Maustaste an, wähle „Radial Timeline: Nach Nebenhandlung färben“ und dann eine Nebenhandlung des Buchs oder „Neue Nebenhandlung…“, um einer neuen eine freie Palettenfarbe zu geben.",
             keyActs: "Akte markieren",
             keyActsDetail: "Eine Karte namens Akt 2 beginnt diesen Akt, die folgenden Karten gehören dazu. Ohne Akt-Karten verteilen sich die Szenen gleichmäßig.",
             keyConvert: "Karten in Szenen umwandeln",

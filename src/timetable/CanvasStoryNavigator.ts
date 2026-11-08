@@ -5,105 +5,40 @@ import { buildTableRow, compareManuscriptRows } from './timetableModel';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { isStoryActHeading, selectedCanvasBounds, storyActHeadingLabel, storyAxis, storyKeyStep, storyPosition, storyProgress } from './canvasNavigation';
 import { placeKeyPanel, renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
-import { readSubplotColorHex, readSubplotColorValue, subplotColorCss, SUBPLOT_COLOR_SLOTS, type SubplotColor } from '../renderer/utils/subplotColors';
-import { getActiveBook } from '../utils/books';
-import { getMainPlotName } from '../utils/mainPlot';
-import { cardColor } from './canvasCardSubplots';
 
 type NodeData = { type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
-type CanvasColor = string | undefined;
-type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; selection?: Set<{ getData?: () => NodeData & { color?: CanvasColor }; setColor?: (color: string) => void }>; requestSave?: () => void; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void; zoomToBbox?: (bounds: { minX: number; minY: number; maxX: number; maxY: number }) => void };
+type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; selection?: Set<{ getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void; zoomToBbox?: (bounds: { minX: number; minY: number; maxX: number; maxY: number }) => void };
 
 /**
  * The Radial Timeline bar on a Canvas. Generated story maps get the scene
- * slider; any map gets the Settings swatches while text cards are selected,
- * and the key to how a map becomes a timeline.
+ * slider; the bar shows the key to how a map becomes a timeline on a story
+ * map, on a Canvas with book notes, and while idea cards are selected.
+ * Cards are given subplots from their right-click menu
+ * (timetable/CanvasSubplotMenu).
  */
 export class CanvasStoryNavigator {
     private root: HTMLElement | null = null;
-    private colors: HTMLElement | null = null;
-    /** The palette slots, then a swatch for each of the active book's subplots that wears its own color. */
-    private swatches: Array<{ el: HTMLButtonElement; color: SubplotColor }> = [];
     private path = '';
     private storyMap = false;
     private hasBookCards = false;
     private events = new Component();
     private readonly actLabels = new Map<HTMLElement, HTMLElement>();
-    constructor(private readonly plugin: RadialTimelinePlugin, private readonly view: ItemView, private readonly ringColors: (bookId: string) => Promise<Map<string, SubplotColor>>) {}
+    constructor(private readonly plugin: RadialTimelinePlugin, private readonly view: ItemView) {}
 
     private canvas(): Canvas | undefined { return (this.view as unknown as { canvas?: Canvas }).canvas; }
 
-    /** The selected cards a color can mean something on: ideas, never Act cards or linked notes. */
-    private selectedIdeas() {
+    /** Whether idea cards are selected: text cards, never Act cards or linked notes. */
+    private ideasSelected(): boolean {
         const selected = this.canvas()?.selection;
-        return selected instanceof Set ? [...selected].filter(node => {
+        return selected instanceof Set && [...selected].some(node => {
             const data = node.getData?.();
             return data?.type === 'text' && !(typeof data.text === 'string' && isStoryActHeading(data.text)); // SAFE: a card with no text is no heading
-        }) : [];
-    }
-
-    private paint(color: SubplotColor): void {
-        const value = readSubplotColorHex(this.view.containerEl.doc, color);
-        for (const node of this.selectedIdeas()) node.setColor?.(value);
-        this.canvas()?.requestSave?.();
-        this.updateBar();
-    }
-
-    private addSwatch(strip: HTMLElement, color: SubplotColor): HTMLButtonElement {
-        const el = strip.createEl('button', { cls: 'ert-story-navigator__swatch', attr: { type: 'button' } });
-        el.setCssProps({ '--ert-story-swatch': subplotColorCss(color) });
-        el.addEventListener('click', () => this.paint(color)); // SAFE: the listener lives and goes with its swatch
-        this.swatches.push({ el, color });
-        return el;
-    }
-
-    /**
-     * Swatches read as Settings does: Main Plot, then the book's rings that
-     * wear palette colors, then the free ring numbers. A subplot with its own
-     * color follows with a swatch of that color, so cards painted with it
-     * join that subplot.
-     */
-    private async labelSwatches(): Promise<void> {
-        const book = getActiveBook(this.plugin.settings);
-        const rings = book ? await this.ringColors(book.id) : new Map<string, SubplotColor>();
-        if (!this.colors) return;
-        const names = new Map<number, string>();
-        for (const [name, color] of rings) if (color.kind === 'slot') names.set(color.slot, name);
-        this.swatches = this.swatches.filter(swatch => {
-            if (swatch.color.kind === 'slot') return true;
-            swatch.el.remove();
-            return false;
         });
-        for (const [name, color] of rings) {
-            if (color.kind === 'own') this.addSwatch(this.colors, color).dataset.subplot = name;
-        }
-        for (const { el, color } of this.swatches) {
-            const label = color.kind === 'own'
-                ? el.dataset.subplot ?? '' // SAFE: every own-color swatch is stamped with its subplot just above
-                : names.get(color.slot) ?? (color.slot === 0 ? getMainPlotName() : t('ui.colorsSection.ringLabel', { number: color.slot + 1 }));
-            setAccessibleLabel(el, label);
-            setTooltip(el, label);
-        }
     }
 
     private updateBar(): void {
-        if (!this.root || !this.colors) return;
-        const ideas = this.selectedIdeas();
-        const coloring = ideas.length > 0;
-        if (coloring && this.colors.isShown() === false) this.labelSwatches().catch((error: unknown) => console.error('[Canvas] Could not label ring swatches', error));
-        this.colors.toggle(coloring);
-        this.root.toggle(this.plugin.settings.books.some(book => book.sourceFolder.trim()) && (this.storyMap || this.hasBookCards || coloring));
-        const colors = new Set(ideas.map(node => cardColor(node.getData?.() ?? {}) ?? undefined)); // SAFE: no data or no color = uncolored
-        const shared = colors.size === 1 ? [...colors][0] : undefined;
-        this.swatches.forEach(({ el, color }) => el.toggleClass('is-active', !!shared && shared === readSubplotColorValue(this.view.containerEl.doc, color).toLowerCase()));
-    }
-
-    private mountColors(root: HTMLElement): void {
-        const strip = root.createDiv({ cls: 'ert-story-navigator__colors' });
-        this.colors = strip;
-        strip.hide();
-        this.swatches = [];
-        for (let slot = 0; slot < SUBPLOT_COLOR_SLOTS; slot++) this.addSwatch(strip, { kind: 'slot', slot });
+        if (!this.root) return;
+        this.root.toggle(this.plugin.settings.books.some(book => book.sourceFolder.trim()) && (this.storyMap || this.hasBookCards || this.ideasSelected()));
     }
 
     private keySections(): LegendSection[] {
@@ -189,7 +124,6 @@ export class CanvasStoryNavigator {
             root.toggleClass('is-story-map', isStoryMap);
             this.root = root;
             if (isStoryMap) this.mountNavigation(root);
-            this.mountColors(root);
             this.mountKey(root);
             this.events.registerInterval(window.setInterval(() => this.updateBar(), 250));
         }
@@ -294,7 +228,7 @@ export class CanvasStoryNavigator {
         window.setTimeout(() => { if (this.root === root) { update(false); followViewport(); } }, 500);
     }
     destroy(): void {
-        this.events.unload(); this.root?.remove(); this.root = null; this.colors = null;
+        this.events.unload(); this.root?.remove(); this.root = null;
         for (const [el, overlay] of this.actLabels) {
             overlay.remove(); el.removeClass('ert-story-act-heading', 'ert-story-act-heading--bold');
         }

@@ -6186,7 +6186,7 @@ export const vi: TranslationKeys = {
             keySelect: "Chọn thẻ",
             keySelectDetail: "Kéo một khung trên vùng Canvas trống. Shift-nhấp để thêm hoặc bỏ một thẻ.",
             keyColor: "Tô màu theo cốt truyện phụ",
-            keyColorDetail: "Nhấp chuột phải vào thẻ ý tưởng rồi chọn Radial Timeline: Tô màu theo cốt truyện phụ, hoặc nhấp một màu trên thanh này: cốt truyện chính, một vòng của bạn, hoặc màu trống cho cốt truyện phụ mới.",
+            keyColorDetail: "Nhấp chuột phải vào thẻ ý tưởng, chọn Radial Timeline: Tô màu theo cốt truyện phụ, rồi chọn một cốt truyện phụ của sách, hoặc “Cốt truyện phụ mới…” để tạo một cốt truyện phụ mới bằng một màu còn trống trong bảng màu.",
             keyActs: "Đánh dấu các hồi",
             keyActsDetail: "Thẻ tên Act 2 bắt đầu hồi đó, và các thẻ tiếp theo sẽ vào hồi. Không có thẻ hồi, các cảnh được chia đều.",
             keyConvert: "Biến thẻ thành cảnh",

@@ -6186,7 +6186,7 @@ export const fr: TranslationKeys = {
             keySelect: "Sélectionner des cartes",
             keySelectDetail: "Tracez un cadre sur le Canvas vide. Maj-clic ajoute ou retire une carte.",
             keyColor: "Colorer par sous-intrigue",
-            keyColorDetail: "Faites un clic droit sur des cartes d’idées et choisissez Radial Timeline : Colorer par sous-intrigue, ou cliquez sur une couleur de cette barre : l’intrigue principale, l’un de vos anneaux ou une couleur libre pour une nouvelle sous-intrigue.",
+            keyColorDetail: "Faites un clic droit sur des cartes d’idées, choisissez Radial Timeline : Colorer par sous-intrigue, puis l’une des sous-intrigues du livre, ou Nouvelle sous-intrigue… pour en créer une dans une couleur libre de la palette.",
             keyActs: "Marquer les actes",
             keyActsDetail: "Une carte nommée Acte 2 ouvre cet acte, et les cartes suivantes le rejoignent. Sans carte d’acte, les scènes se répartissent également.",
             keyConvert: "Transformer les cartes en scènes",

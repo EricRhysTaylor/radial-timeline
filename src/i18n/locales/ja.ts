@@ -6184,7 +6184,7 @@ export const ja: DeepPartial<TranslationKeys> = {
             keySelect: "カードを選択",
             keySelectDetail: "Canvas の空き部分でドラッグして囲みます。Shift クリックでカードを追加・解除します。",
             keyColor: "サブプロットで色分け",
-            keyColorDetail: "アイデアカードを右クリックして「Radial Timeline: サブプロットで色分け」を選ぶか、このバーの色をクリックします。メインプロット、既存のリング、または新しいサブプロット用の空き色を選べます。",
+            keyColorDetail: "アイデアカードを右クリックして「Radial Timeline: サブプロットで色分け」を選び、本のサブプロットを選ぶか、「新しいサブプロット…」でパレットの空き色を持つ新しいサブプロットを作ります。",
             keyActs: "幕を示す",
             keyActsDetail: "「Act 2」という名前のカードがその幕を始め、続くカードがその幕に入ります。幕カードがなければ、シーンは均等に分かれます。",
             keyConvert: "カードをシーンに変換",

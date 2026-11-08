@@ -4,16 +4,17 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  */
 
-import type { CanvasPendingSubplot } from '../types/settings';
+import type { WaitingSubplot } from './canvasSubplotMemory';
 
 /*
  * The subplot directory a Canvas card color is chosen from.
  *
  * The book's subplots come first, in ring order, each in the color it wears
- * on the timeline (read through renderer/utils/subplotColors); then the new
- * subplots named on this Canvas that are still waiting for their scenes
- * (timetable/canvasPendingSubplots). A new subplot takes a palette color no
- * subplot uses yet. Colors compare as lower-case `#rrggbb`.
+ * on the timeline (read through renderer/utils/subplotColors); then the
+ * book's new subplots, named from the card menu on any of its Canvases and
+ * waiting for their scenes (timetable/canvasSubplotMemory). A new subplot
+ * takes a name and a palette color no subplot of the book has. Colors
+ * compare as lower-case `#rrggbb`.
  */
 
 /** One subplot a card color can stand for. */
@@ -29,24 +30,11 @@ function sameName(a: string, b: string): boolean {
     return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
-/**
- * Whether a remembered new subplot is still waiting: no subplot of the book
- * has its name or its color, and an idea card on its Canvas wears its color
- * (`worn`, lower-case hex).
- */
-export function isStillWaiting(entry: CanvasPendingSubplot, rings: ReadonlyArray<{ name: string; hex: string }>, worn: ReadonlySet<string>): boolean {
-    return worn.has(entry.color) && !rings.some(ring => sameName(ring.name, entry.name) || ring.hex === entry.color);
-}
-
-/** The book's subplots (`rings`, ring order with their colors now), then the new subplots still waiting. */
-export function subplotDirectory(
-    rings: ReadonlyArray<{ name: string; hex: string }>,
-    pending: readonly CanvasPendingSubplot[],
-    worn: ReadonlySet<string>,
-): DirectoryEntry[] {
+/** The book's subplots (`rings`, ring order with their colors now), then its new subplots (`waiting`) under names it does not have. */
+export function subplotDirectory(rings: ReadonlyArray<{ name: string; hex: string }>, waiting: readonly WaitingSubplot[]): DirectoryEntry[] {
     return [
         ...rings.map(ring => ({ name: ring.name, hex: ring.hex, pending: false })),
-        ...pending.filter(entry => isStillWaiting(entry, rings, worn)).map(entry => ({ name: entry.name, hex: entry.color, pending: true })),
+        ...waiting.filter(entry => !rings.some(ring => sameName(ring.name, entry.name))).map(entry => ({ name: entry.name, hex: entry.color, pending: true })),
     ];
 }
 
@@ -88,16 +76,26 @@ export function directoryEntryNamed(directory: readonly DirectoryEntry[], name: 
     return directory.find(entry => sameName(entry.name, name)) ?? null; // SAFE: null means a name the directory lacks, a new subplot
 }
 
-/** What the card menu offers: each subplot, checked when every card it acts on already wears its color. */
+/**
+ * The subplot a card stands for: the one the card menu gave it (`given`),
+ * else the subplot, or the new subplot, that wears exactly its color.
+ */
+export function cardMeaning(given: string | null, hex: string | null, directory: readonly DirectoryEntry[]): string | null {
+    if (given !== null) return given;
+    return hex === null ? null : directory.find(entry => entry.hex === hex)?.name ?? null; // SAFE: a color no subplot wears stands for none
+}
+
+/** What the card menu offers: each subplot, checked when every card it acts on already stands for it. */
 export type SubplotMenuModel =
     /** The book's rings are still being read; the menu says so rather than guess. */
     | { kind: 'reading' }
     | { kind: 'ready'; entries: Array<DirectoryEntry & { checked: boolean }> };
 
-export function subplotMenuModel(directory: readonly DirectoryEntry[] | null, cardHexes: ReadonlyArray<string | null>): SubplotMenuModel {
+/** `meanings`: what each card the menu acts on stands for now (cardMeaning). */
+export function subplotMenuModel(directory: readonly DirectoryEntry[] | null, meanings: ReadonlyArray<string | null>): SubplotMenuModel {
     if (!directory) return { kind: 'reading' };
     return {
         kind: 'ready',
-        entries: directory.map(entry => ({ ...entry, checked: cardHexes.length > 0 && cardHexes.every(hex => hex === entry.hex) })),
+        entries: directory.map(entry => ({ ...entry, checked: meanings.length > 0 && meanings.every(meaning => meaning !== null && sameName(meaning, entry.name)) })),
     };
 }

@@ -15,7 +15,7 @@ import { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor, type PlacementItem } fr
 import { actsFromActCards, canvasReadingOrder, planCanvasSketchAppend, spreadAcrossActs } from './canvasSketchOrdering';
 import { actCardNumber } from './canvasNavigation';
 import { bookPlacementItems, bookRingColors, ownColorsForNewSubplots, ringColorsWith } from './canvasBookCards';
-import { cardColor, cardColorCounts, cardColorCss, cardColorHex, planCardColorSubplots, plansWaitOnAuthor, subplotForColor, type CardColorSubplot } from './canvasCardSubplots';
+import { cardColor, cardColorCss, planCardColorSubplots, plansWaitOnAuthor, subplotForColor, type CardColorSubplot } from './canvasCardSubplots';
 import { bookOwnSubplotColors, readSubplotColorHex, subplotColorOn, type SubplotColor } from '../renderer/utils/subplotColors';
 import { ownSubplotColorsWritable, setOwnSubplotColor } from '../utils/ownSubplotColors';
 import { getMainPlotName } from '../utils/mainPlot';
@@ -23,9 +23,10 @@ import { planActEndScenePrefixes } from '../services/SceneInsertService';
 import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
 import { addSceneIntakeTemplate } from './sceneIntakeTemplate';
 import { cardColorStanding, directoryEntryNamed, paletteChoices, type CardColorStanding, type DirectoryEntry } from './canvasSubplotDirectory';
-import { paletteHexes, readCanvasSubplotDirectory } from './CanvasSubplotMenu';
+import { cardHexReader, paletteHexes, readCanvasSubplots } from './CanvasSubplotMenu';
 import { CanvasNewSubplotModal } from './CanvasNewSubplotModal';
-import { forgetPendingSubplots, pendingSubplotsOn } from './canvasPendingSubplots';
+import { canvasChoicesNow, forgetCards, subplotOfCard } from './canvasSubplotMemory';
+import { filesIndexed } from '../utils/metadataCacheWait';
 
 /** Minimal, runtime-checked surface of Obsidian's Canvas view. */
 export interface OpenCanvas {
@@ -37,6 +38,19 @@ export interface OpenCanvas {
 
 /** An existing sketch given a position during conversion, kept so a failure can restore it. */
 interface RankedSketch { file: TFile; key: string; rank: number; existed: boolean; value: unknown; act: number | null; anchor: string | null }
+
+/** One row of card colors: the selected cards of one color, or of one color the card menu gave one subplot. */
+interface ColorRow {
+    key: string;
+    /** The card color as Canvas stores it. */
+    color: string;
+    /** The subplot the card menu gave these cards; null when it gave none. */
+    given: string | null;
+    count: number;
+}
+
+/** How long Create waits for Obsidian to index the new scenes before it opens the timeline. */
+const INDEX_WAIT_MS = 10000;
 
 /** What the scenes will do to the book's subplots, as the dialog shows it and Create carries it out. */
 interface SubplotOutcome {
@@ -98,22 +112,26 @@ export class CanvasConvertModal extends ErtModal {
     private anchorPath: string | null = null;
     /** The book whose subplots below are read; Create waits until it is the chosen book. */
     private ringsBook: string | null = null;
-    /** The book's subplots in ring order, then new subplots waiting on this Canvas. */
+    /** Counts book reads, so only the latest one is applied. */
+    private ringsGeneration = 0;
+    /** The book's subplots in ring order, then its new subplots. */
     private directory: DirectoryEntry[] = [];
     /** The palette, slot by slot, lower-case hex. */
     private palette: string[] = [];
     private rows: TimetableRow[] = [];
     /** The book's subplots that already wear their own color. */
     private own = new Map<string, string>();
-    /** What the author typed or chose for each card color. */
-    private readonly subplotByColor = new Map<string, string>();
-    /** A palette color picked for a card color's new subplot. */
-    private readonly paletteByColor = new Map<string, string>();
+    /** The subplot the card menu gave each card, for this book, by card id. */
+    private readonly given = new Map<string, string>();
+    /** What the author typed or chose for each row, by row key. */
+    private readonly subplotByRow = new Map<string, string>();
+    /** A palette color picked for a row's new subplot, by row key. */
+    private readonly paletteByRow = new Map<string, string>();
     /** Each card color as `#rrggbb` (null when the theme cannot show it as one), and what it means on the timeline. */
     private readonly cardHexes = new Map<string, string | null>();
     private readonly standings = new Map<string, CardColorStanding>();
     private sceneActs = new Map<string, number>();
-    /** Per card color, its row and where the row says what happens to the cards' color. */
+    /** Per row key, its row and where the row says what happens to the cards' color. */
     private readonly colorStates = new Map<string, { row: HTMLElement; state: HTMLElement }>();
     private updateSubmit = (): void => {};
 
@@ -147,8 +165,8 @@ export class CanvasConvertModal extends ErtModal {
         return this.act ?? this.sceneActs.get(card.id) ?? 1; // SAFE: every listed card is placed above; a card that joined the Canvas later starts the book
     }
 
-    private bookItems(): PlacementItem[] {
-        return bookPlacementItems(this.app, this.plugin.settings, this.book);
+    private bookItems(book: BookProfile): PlacementItem[] {
+        return bookPlacementItems(this.app, this.plugin.settings, book);
     }
 
     private scenes(items: PlacementItem[]): PlacementItem[] {
@@ -168,29 +186,52 @@ export class CanvasConvertModal extends ErtModal {
         return bookRingColors(this.plugin, book);
     }
 
+    private cardHexMemo: ((color: string | null) => string | null) | null = null;
+
+    /** A card color as lower-case `#rrggbb`, each distinct color read once from this window's theme. */
+    private cardHexOf(color: string | null): string | null {
+        this.cardHexMemo ??= cardHexReader(this.containerEl.doc);
+        return this.cardHexMemo(color);
+    }
+
+    /** True once Obsidian has read the properties of every note at these paths. */
+    private indexed(paths: string[]): Promise<boolean> {
+        return filesIndexed(this.app, paths, INDEX_WAIT_MS);
+    }
+
     /** A subplot color as lower-case `#rrggbb`, read from this window's palette. */
     private hexOf(color: SubplotColor): string {
         return readSubplotColorHex(this.containerEl.doc, color);
     }
 
     /**
-     * Read the book's subplot directory, then start each card color on the
-     * subplot it already stands for: the one its linked cards on this Canvas
-     * share, else the subplot, or the new subplot waiting here, that wears
-     * exactly that color.
+     * Read the book's subplot directory, then start each row on the subplot
+     * its cards already stand for: the one the card menu gave them, else the
+     * one their linked cards on this Canvas share, else the subplot, or the
+     * book's new subplot, that wears exactly their color. Only the latest
+     * read is applied, so switching books and back never loses a name typed
+     * since.
      */
     private async loadRings(): Promise<void> {
+        const generation = ++this.ringsGeneration;
         const book = this.book;
         this.ringsBook = null;
         const wheel = await this.readWheel(book);
-        if (book !== this.book) return;
-        const items = this.bookItems();
+        if (generation !== this.ringsGeneration) return;
+        const items = this.bookItems(book);
         const doc = this.containerEl.doc;
         const data = this.canvas.getData();
+        const hexOf = (color: string | null): string | null => this.cardHexOf(color);
         this.rows = items.map(item => item.row);
         this.own = bookOwnSubplotColors(book);
         this.palette = paletteHexes(doc);
-        this.directory = readCanvasSubplotDirectory(this.plugin.settings, book, this.rows, this.canvasPath, data, doc, wheel);
+        const read = readCanvasSubplots(this.plugin.settings, book, this.rows, this.canvasPath, data, doc, hexOf, wheel);
+        this.directory = read.directory;
+        this.given.clear();
+        for (const card of this.cards) {
+            const subplot = subplotOfCard(read.choices, card.id, book.id);
+            if (subplot !== null) this.given.set(card.id, subplot);
+        }
         const subplotsByPath = new Map(items.map(item => [item.row.path, item.row.subplots]));
         const linked = (data.nodes ?? []).flatMap(node => { // SAFE: canvas JSON may omit nodes; none = no linked cards
             const color = cardColor(node);
@@ -198,18 +239,45 @@ export class CanvasConvertModal extends ErtModal {
             return color && subplots?.length ? [{ color, subplots }] : [];
         });
         const colorsNow = this.directory.map(entry => ({ name: entry.name, color: entry.hex }));
-        this.subplotByColor.clear();
-        this.paletteByColor.clear();
+        this.subplotByRow.clear();
+        this.paletteByRow.clear();
         this.cardHexes.clear();
         this.standings.clear();
-        for (const color of cardColorCounts(this.cards).keys()) {
-            const hex = cardColorHex(doc, color);
-            this.cardHexes.set(color, hex);
-            this.standings.set(color, cardColorStanding(hex, this.directory, this.palette));
-            const subplot = subplotForColor(color, hex, linked, colorsNow);
-            if (subplot) this.subplotByColor.set(color, subplot);
+        for (const row of this.colorRows(this.cards).values()) {
+            if (!this.cardHexes.has(row.color)) {
+                const hex = hexOf(row.color);
+                this.cardHexes.set(row.color, hex);
+                this.standings.set(row.color, cardColorStanding(hex, this.directory, this.palette));
+            }
+            const subplot = row.given ?? subplotForColor(row.color, this.cardHexes.get(row.color) ?? null, linked, colorsNow); // SAFE: a card the menu gave no subplot is matched by its color
+            if (subplot) this.subplotByRow.set(row.key, subplot);
         }
         this.ringsBook = book.id;
+    }
+
+    /** A card's row: its color, with the subplot the card menu gave it when it gave one. Null for an uncolored card. */
+    private rowOf(card: CanvasCard): { key: string; color: string; given: string | null } | null {
+        const color = cardColor(card);
+        if (!color) return null;
+        const given = this.given.get(card.id) ?? null; // SAFE: null means the menu gave this card no subplot
+        return { key: given === null ? color : `${color}\u0000${given.toLowerCase()}`, color, given };
+    }
+
+    /** These cards' rows, in the order the cards come, with how many cards each holds. */
+    private colorRows(cards: readonly CanvasCard[]): Map<string, ColorRow> {
+        const rows = new Map<string, ColorRow>();
+        for (const card of cards) {
+            const row = this.rowOf(card);
+            if (!row) continue;
+            const known = rows.get(row.key);
+            if (known) known.count++;
+            else rows.set(row.key, { ...row, count: 1 });
+        }
+        return rows;
+    }
+
+    private selectedCards(): CanvasTextCard[] {
+        return this.cards.filter(card => this.selected.has(card.id));
     }
 
     /** A subplot the book already has, in the book's own spelling. */
@@ -218,35 +286,36 @@ export class CanvasConvertModal extends ErtModal {
         return entry && !entry.pending ? entry.name : null;
     }
 
-    /** A new subplot waiting on this Canvas under this name. */
+    /** A new subplot of the book under this name. */
     private pendingNamed(typed: string): { name: string; hex: string } | null {
         const entry = directoryEntryNamed(this.directory, typed);
         return entry?.pending ? { name: entry.name, hex: entry.hex } : null;
     }
 
-    /** For each card color on the selected cards: the subplot its cards join, and the color a new one wears. */
+    /** For each row of the selected cards: the subplot its cards join, and the color a new one wears. */
     private colorPlans(): Map<string, CardColorSubplot> {
-        const colors = [...cardColorCounts(this.cards.filter(card => this.selected.has(card.id))).keys()];
-        return planCardColorSubplots(colors.map(color => ({
-            color,
-            name: this.subplotByColor.get(color) ?? '', // SAFE: a color with no name yet is blank: the main plot, or waiting when it is no timeline color
-            hex: this.cardHexes.get(color) ?? null, // SAFE: a color the dialog never read is no timeline color
-            standing: this.standings.get(color) ?? { kind: 'outside' }, // SAFE: a color the dialog never read is no timeline color, so it waits for a subplot
-            palette: this.paletteByColor.get(color),
-        })), typed => this.existingRing(typed), typed => this.pendingNamed(typed));
+        const rows = [...this.colorRows(this.selectedCards()).values()];
+        return planCardColorSubplots(rows.map(row => ({
+            key: row.key,
+            name: this.subplotByRow.get(row.key) ?? '', // SAFE: a row with no name yet is blank, which waits for a subplot
+            hex: this.cardHexes.get(row.color) ?? null, // SAFE: a color the dialog never read is no timeline color
+            standing: this.standings.get(row.color) ?? { kind: 'outside' }, // SAFE: a color the dialog never read is no timeline color
+            palette: this.paletteByRow.get(row.key),
+        })), typed => this.existingRing(typed), typed => this.pendingNamed(typed),
+        hex => this.directory.find(entry => entry.hex === hex)?.name ?? null); // SAFE: null means no subplot wears that color
     }
 
-    /** The subplot a card joins through its color; null for the main plot. */
+    /** The subplot a card joins; null for an uncolored card, which joins the main plot. */
     private subplotFor(card: CanvasTextCard, plans: Map<string, CardColorSubplot>): string | null {
-        const color = cardColor(card);
-        const plan = color ? plans.get(color) : undefined;
+        const row = this.rowOf(card);
+        const plan = row ? plans.get(row.key) : undefined;
         return plan && (plan.kind === 'existing' || plan.kind === 'new' || plan.kind === 'sharesNew') ? plan.subplot : null;
     }
 
     /** What the selected cards do to the book's subplots, and every ring's color after: one reading for the dialog and Create. */
     private outcome(): SubplotOutcome {
         const plans = this.colorPlans();
-        const additions = this.cards.filter(card => this.selected.has(card.id)).map(card => this.subplotFor(card, plans) ?? getMainPlotName());
+        const additions = this.selectedCards().map(card => this.subplotFor(card, plans) ?? getMainPlotName());
         const chosen = new Map([...plans.values()].flatMap(plan => plan.kind === 'new' ? [[plan.subplot, plan.color] as const] : []));
         const ownNew = ownColorsForNewSubplots(this.rows, additions, this.own, chosen, color => this.hexOf(color));
         return { plans, ownNew, after: ringColorsWith(this.rows, additions, new Map([...this.own, ...ownNew])) };
@@ -257,9 +326,9 @@ export class CanvasConvertModal extends ErtModal {
         return this.hexOf(subplotColorOn(outcome.after, this.subplotFor(card, outcome.plans) ?? undefined));
     }
 
-    /** Name a new subplot for a card color and pick its palette color. */
-    private chooseNewSubplot(color: string, typed: string, container: HTMLElement): void {
-        const others = [...this.colorPlans()].flatMap(([other, plan]) => other !== color && plan.kind === 'new' ? [{ name: plan.subplot, hex: plan.color }] : []);
+    /** Name a new subplot for a row and pick its palette color. */
+    private chooseNewSubplot(key: string, typed: string, container: HTMLElement): void {
+        const others = [...this.colorPlans()].flatMap(([other, plan]) => other !== key && plan.kind === 'new' ? [{ name: plan.subplot, hex: plan.color }] : []);
         new CanvasNewSubplotModal(this.app, {
             bookTitle: this.book.title,
             directory: this.directory,
@@ -267,48 +336,60 @@ export class CanvasConvertModal extends ErtModal {
             name: typed,
             confirm: t('ui.canvasSketch.useColor'),
             onChoose: choice => {
-                this.subplotByColor.set(color, choice.name);
-                this.paletteByColor.set(color, choice.color);
+                this.subplotByRow.set(key, choice.name);
+                this.paletteByRow.set(key, choice.color);
                 this.renderColors(container);
             },
         }).open();
     }
 
     /**
-     * Each row says what happens to its cards' color. A color outside the
-     * timeline's colors is marked, and waits for a subplot. A new name with no
-     * palette color yet waits for one. When the cards' subplot wears another
-     * color than the cards (the ring order can move a palette color), the dot
-     * shows that color: the cards take it when the scenes are created.
+     * Each row says what happens to its cards' color. A row with no subplot
+     * waits for one, marked as outside the timeline's colors when it is. A new
+     * name with no palette color yet waits for one. A row the card menu gave a
+     * subplot whose color has moved since is marked. When the cards' subplot
+     * wears another color than the cards, the dot shows that color: the cards
+     * take it when the scenes are created.
      */
     private showColorStates(container: HTMLElement): void {
         const outcome = this.outcome();
+        const rows = this.colorRows(this.selectedCards());
         const show = (state: HTMLElement, css: string, note: string): void => {
             const dot = colorDot(state, css);
             setAccessibleLabel(dot, note);
             setTooltip(dot, note);
         };
-        for (const [color, { row, state }] of this.colorStates) {
+        const mark = (state: HTMLElement, text: string, detail: string): void => {
+            setTooltip(state.createSpan({ cls: 'ert-canvas-sketch-outside', text }), detail);
+        };
+        for (const [key, { row: rowEl, state }] of this.colorStates) {
             state.empty();
-            const plan = outcome.plans.get(color);
-            row.toggleClass('is-blocked', plan?.kind === 'unassigned' || plan?.kind === 'needsColor');
-            if (this.standings.get(color)?.kind === 'outside') {
-                const mark = state.createSpan({ cls: 'ert-canvas-sketch-outside', text: t('ui.canvasSketch.outsideColor') });
-                setTooltip(mark, t('ui.canvasSketch.outsideColorDetail'));
+            const plan = outcome.plans.get(key);
+            const row = rows.get(key);
+            if (!plan || !row) continue;
+            rowEl.toggleClass('is-blocked', plan.kind === 'unassigned' || plan.kind === 'needsColor');
+            const outside = this.standings.get(row.color)?.kind === 'outside';
+            if (outside) mark(state, t('ui.canvasSketch.outsideColor'), t('ui.canvasSketch.outsideColorDetail'));
+            if (plan.kind === 'unassigned') {
+                if (!outside) mark(state, t('ui.canvasSketch.needsName'), t('ui.canvasSketch.outsideColorDetail'));
+                continue;
             }
-            if (!plan || plan.kind === 'unassigned') continue;
             if (plan.kind === 'needsColor') {
                 const button = state.createEl('button', { text: t('ui.canvasSketch.chooseColor'), attr: { type: 'button' } });
                 setTooltip(button, t('ui.canvasSketch.needsColor', { subplot: plan.subplot }));
-                button.addEventListener('click', () => this.chooseNewSubplot(color, plan.subplot, container));
+                button.addEventListener('click', () => this.chooseNewSubplot(key, plan.subplot, container));
                 continue;
             }
-            const card = this.cards.find(candidate => this.selected.has(candidate.id) && cardColor(candidate) === color);
+            const cardHex = this.cardHexes.get(row.color);
+            const wears = directoryEntryNamed(this.directory, plan.subplot)?.hex;
+            if (row.given !== null && row.given.toLowerCase() === plan.subplot.toLowerCase() && wears !== undefined && wears !== cardHex) {
+                mark(state, t('ui.canvasSketch.colorMoved'), t('ui.canvasSketch.colorMovedDetail', { subplot: plan.subplot }));
+            }
+            const card = this.selectedCards().find(candidate => this.rowOf(candidate)?.key === key);
             if (!card) continue;
             const target = this.colorAfter(card, outcome);
-            if (target === this.cardHexes.get(color)) continue;
-            const subplot = plan.kind === 'mainPlot' ? getMainPlotName() : plan.subplot;
-            show(state, target, t('ui.canvasSketch.takesColor', { subplot }));
+            if (target === cardHex) continue;
+            show(state, target, t('ui.canvasSketch.takesColor', { subplot: plan.subplot }));
         }
         this.updateSubmit();
     }
@@ -321,21 +402,28 @@ export class CanvasConvertModal extends ErtModal {
             this.updateSubmit();
             return;
         }
-        const counts = cardColorCounts(this.cards.filter(card => this.selected.has(card.id)));
-        if (!counts.size) { this.updateSubmit(); return; }
+        const rows = this.colorRows(this.selectedCards());
+        if (!rows.size) { this.updateSubmit(); return; }
         container.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.canvasSketch.colorsHint', { mainPlot: getMainPlotName() }) });
-        for (const [color, count] of counts) {
+        for (const { key, color, count } of rows.values()) {
             const row = container.createDiv({ cls: 'ert-canvas-sketch-color' });
             row.createSpan({ cls: 'ert-canvas-sketch-swatch' }).setCssProps({ '--ert-canvas-sketch-swatch': cardColorCss(color) });
             row.createSpan({ cls: 'ert-canvas-sketch-color-count', text: tCount('card', count) });
             const input = row.createEl('input', { type: 'text', attr: { placeholder: t('ui.canvasSketch.subplotName') } });
             setAccessibleLabel(input, t('ui.canvasSketch.subplotName'));
-            input.value = this.subplotByColor.get(color) ?? ''; // SAFE: a color with no subplot yet starts blank, ready to name
-            this.colorStates.set(color, { row, state: row.createDiv({ cls: 'ert-canvas-sketch-ring' }) });
-            const remember = (name: string) => { this.subplotByColor.set(color, name); this.showColorStates(container); };
-            input.addEventListener('input', () => remember(input.value));
-            new SubplotSuggest(this.app, input, () => this.directory, remember, typed => this.chooseNewSubplot(color, typed, container));
+            input.value = this.subplotByRow.get(key) ?? ''; // SAFE: a row with no subplot yet starts blank, ready to name
+            this.colorStates.set(key, { row, state: row.createDiv({ cls: 'ert-canvas-sketch-ring' }) });
+            input.addEventListener('input', () => this.nameRow(key, input.value, container));
+            new SubplotSuggest(this.app, input, () => this.directory, name => this.nameRow(key, name, container), typed => this.chooseNewSubplot(key, typed, container));
         }
+        this.showColorStates(container);
+    }
+
+    /** A row's name changed: a palette color picked for the old name no longer applies. */
+    private nameRow(key: string, name: string, container: HTMLElement): void {
+        const before = this.subplotByRow.get(key) ?? ''; // SAFE: a row never named starts blank
+        if (before.trim().toLowerCase() !== name.trim().toLowerCase()) this.paletteByRow.delete(key);
+        this.subplotByRow.set(key, name);
         this.showColorStates(container);
     }
 
@@ -360,13 +448,14 @@ export class CanvasConvertModal extends ErtModal {
         const dropdown = new DropdownComponent(destination.createDiv({ cls: 'setting-item-control' }));
         for (const book of this.books) dropdown.addOption(book.id, book.title);
         dropdown.setValue(this.book.id).onChange(id => {
+            if (this.busy) return;
             this.book = this.books.find(book => book.id === id) ?? this.book;
             this.anchorPath = null;
             // Create waits for the new book's subplots, so no card joins the previous book's.
             this.ringsBook = null;
             this.directory = [];
-            this.subplotByColor.clear();
-            this.paletteByColor.clear();
+            this.subplotByRow.clear();
+            this.paletteByRow.clear();
             updateScenes();
             this.renderColors(colors);
             updateRings();
@@ -398,13 +487,13 @@ export class CanvasConvertModal extends ErtModal {
         const updateScenes = () => {
             anchorSelect.selectEl.empty();
             anchorSelect.addOption('', t('ui.canvasSketch.endOfAct'));
-            for (const item of this.scenes(this.bookItems())) anchorSelect.addOption(item.row.path, item.row.basename);
+            for (const item of this.scenes(this.bookItems(this.book))) anchorSelect.addOption(item.row.path, item.row.basename);
             anchorSelect.setValue(this.anchorPath ?? ''); // SAFE: no anchor selects the '' End of act option added above
         };
         updateScenes();
         anchorSelect.onChange(value => {
             this.anchorPath = value || null;
-            const scene = value ? this.scenes(this.bookItems()).find(item => item.row.path === value) : undefined;
+            const scene = value ? this.scenes(this.bookItems(this.book)).find(item => item.row.path === value) : undefined;
             if (scene?.row.act !== null && scene?.row.act !== undefined) {
                 this.act = scene.row.act;
                 actSelect.setValue(String(this.act));
@@ -425,10 +514,10 @@ export class CanvasConvertModal extends ErtModal {
         };
         this.updateSubmit = updateSubmit;
         const updateRings = () => {
-            const book = this.book;
-            this.loadRings().then(() => this.renderColors(colors)).catch((error: unknown) => {
+            const generation = this.ringsGeneration + 1;
+            this.loadRings().then(() => { if (generation === this.ringsGeneration) this.renderColors(colors); }).catch((error: unknown) => {
                 console.error('[Canvas sketches]', error);
-                if (book !== this.book) return;
+                if (generation !== this.ringsGeneration) return;
                 colors.empty();
                 colors.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.canvasSketch.subplotsUnreadable', { message: error instanceof Error ? error.message : String(error) }) });
             });
@@ -493,8 +582,8 @@ export class CanvasConvertModal extends ErtModal {
         submit.addEventListener('click', () => {
             if (this.busy || !this.selected.size) return;
             this.busy = true;
-            submit.disabled = true;
-            cancel.disabled = true;
+            // Nothing in the dialog changes while the cards become notes.
+            for (const control of this.contentEl.findAll('button, input, select')) (control as HTMLButtonElement | HTMLInputElement | HTMLSelectElement).disabled = true;
             void this.convert().finally(() => { this.busy = false; this.close(); });
         });
     }
@@ -519,39 +608,42 @@ export class CanvasConvertModal extends ErtModal {
         for (const card of cards) {
             const color = cardColor(card);
             if (!color) continue;
+            // A preset follows the theme, so even one that looks right now is set to the fixed color.
             const target = this.colorAfter(card, outcome);
-            if (target !== this.cardHexes.get(color)) repaints.set(card.id, target);
+            if (color !== target) repaints.set(card.id, target);
         }
         return repaints;
     }
 
     /**
-     * New subplots that now have scenes: each keeps its chosen color as its
-     * own when it needs one (on the book's profile), and stops waiting on
-     * this Canvas.
+     * The cards whose scenes were written: new subplots among them keep their
+     * chosen color as their own when they need one (on the book's profile),
+     * and the card menu forgets the cards, which are cards no longer.
      */
-    private async settleNewSubplots(ownNew: Map<string, string>, cards: CanvasTextCard[], plans: Map<string, CardColorSubplot>, paths: Map<string, string>): Promise<void> {
-        const created = [...new Set(cards.filter(card => paths.has(card.id)).flatMap(card => {
-            const color = cardColor(card);
-            const plan = color ? plans.get(color) : undefined;
+    private async settleNewSubplots(book: BookProfile, initial: StoryCanvasData, ownNew: Map<string, string>, cards: CanvasTextCard[], plans: Map<string, CardColorSubplot>, paths: Map<string, string>): Promise<void> {
+        const written = cards.filter(card => paths.has(card.id));
+        const created = new Set(written.flatMap(card => {
+            const row = this.rowOf(card);
+            const plan = row ? plans.get(row.key) : undefined;
             return plan && (plan.kind === 'new' || plan.kind === 'sharesNew') ? [plan.subplot] : [];
-        }))];
-        const kept = [...ownNew].filter(([subplot]) => created.includes(subplot));
-        const record = this.plugin.settings.canvasPendingSubplots;
-        const waiting = pendingSubplotsOn(record, this.canvasPath, this.book.id).some(entry => created.some(name => name.toLowerCase() === entry.name.toLowerCase()));
-        if (!kept.length && !waiting) return;
-        for (const [subplot, hex] of kept) setOwnSubplotColor(this.book, subplot, hex);
-        if (waiting) {
-            const next = forgetPendingSubplots(record, this.canvasPath, this.book.id, created, () => true);
-            if (next) this.plugin.settings.canvasPendingSubplots = next;
-            else delete this.plugin.settings.canvasPendingSubplots;
+        }));
+        const kept = [...ownNew].filter(([subplot]) => created.has(subplot));
+        const record = this.plugin.settings.canvasSubplotMemory;
+        const open = canvasChoicesNow(record, this.canvasPath, canvasTextCards(initial).map(card => ({ id: card.id, hex: this.cardHexOf(cardColor(card)) })));
+        const remembered = written.filter(card => open.some(choice => choice.cards?.includes(card.id)));
+        if (!kept.length && !remembered.length) return;
+        for (const [subplot, hex] of kept) setOwnSubplotColor(book, subplot, hex);
+        if (remembered.length) {
+            const next = forgetCards(record, this.canvasPath, open, remembered.map(card => card.id));
+            if (next) this.plugin.settings.canvasSubplotMemory = next;
+            else delete this.plugin.settings.canvasSubplotMemory;
         }
         await this.plugin.saveSettings();
         if (kept.length) this.plugin.setCSSColorVariables();
     }
 
     /** Each card becomes a finished, numbered scene at the end of its act, in one write. */
-    private async writeScenes(cards: CanvasTextCard[], folder: string, paths: Map<string, string>, plans: Map<string, CardColorSubplot>): Promise<void> {
+    private async writeScenes(book: BookProfile, cards: CanvasTextCard[], folder: string, paths: Map<string, string>, plans: Map<string, CardColorSubplot>): Promise<void> {
         const { settings } = this.plugin;
         const actCount = getConfiguredActCount(settings);
         const byAct = new Map<number, string[]>();
@@ -560,7 +652,7 @@ export class CanvasConvertModal extends ErtModal {
             if (act > actCount) throw new Error(t('ui.canvasSketch.actTooHigh', { act, acts: actCount }));
             byAct.set(act, [...(byAct.get(act) ?? []), card.id]); // SAFE: the first scene in an act starts its list
         }
-        const numbers = planActEndScenePrefixes(await this.plugin.getSceneData({ sourcePath: this.book.sourceFolder }), byAct, resolveSelectedBeatModelFromSettings(settings));
+        const numbers = planActEndScenePrefixes(await this.plugin.getSceneData({ sourcePath: book.sourceFolder }), byAct, resolveSelectedBeatModelFromSettings(settings));
         if (!numbers) throw new Error(t('ui.promoteToScene.noRoomMany'));
         for (const card of cards) {
             const path = this.freePath(folder, `${numbers.get(card.id)} ${sketchTitle(card.text)}`);
@@ -576,8 +668,8 @@ export class CanvasConvertModal extends ErtModal {
     }
 
     /** Each card becomes a sketch at the chosen place, after ranking any older sketches that lack a position. */
-    private async writeSketches(cards: CanvasTextCard[], folder: string, paths: Map<string, string>, ranked: RankedSketch[]): Promise<void> {
-        const items = this.bookItems();
+    private async writeSketches(book: BookProfile, cards: CanvasTextCard[], folder: string, paths: Map<string, string>, ranked: RankedSketch[]): Promise<void> {
+        const items = this.bookItems(book);
         const anchor = this.anchorPath ? this.scenes(items).find(item => item.row.path === this.anchorPath) : undefined;
         if (this.anchorPath && !anchor) throw new Error(t('ui.canvasSketch.anchorChanged'));
         const anchorId = anchor ? readSceneId(anchor.frontmatter) ?? null : null;
@@ -611,15 +703,23 @@ export class CanvasConvertModal extends ErtModal {
     }
 
     private async convert(): Promise<void> {
+        // The book and mode as Create was clicked, whatever the dialog shows later.
+        const book = this.book;
+        const mode = this.mode;
         if (!this.canvasIsOpen()) { new Notice(t('ui.canvasSketch.changed'), 8000); return; }
         const initial = JSON.parse(JSON.stringify(this.canvas.getData())) as StoryCanvasData;
         const live = new Map(canvasTextCards(initial).map(card => [card.id, card]));
         const cards = this.cards.filter(card => this.selected.has(card.id)).flatMap(card => live.get(card.id) ? [live.get(card.id)!] : []);
-        if (cards.length !== this.selected.size || cards.some(card => this.cards.find(original => original.id === card.id)?.text !== card.text)) {
+        // The rows were read from these cards' text and colors.
+        const unchanged = (card: CanvasTextCard): boolean => {
+            const original = this.cards.find(candidate => candidate.id === card.id);
+            return !!original && original.text === card.text && cardColor(original) === cardColor(card);
+        };
+        if (cards.length !== this.selected.size || !cards.every(unchanged)) {
             new Notice(t('ui.canvasSketch.changed'), 8000);
             return;
         }
-        const folder = this.book.sourceFolder.trim().replace(/\/$/, '');
+        const folder = book.sourceFolder.trim().replace(/\/$/, '');
         if (!folder || !this.app.vault.getFolderByPath(folder)) {
             new Notice(t('ui.canvasSketch.missingFolder'), 8000);
             return;
@@ -635,19 +735,19 @@ export class CanvasConvertModal extends ErtModal {
             }
             if (!this.canvasIsOpen() || JSON.stringify(initial) !== JSON.stringify(this.canvas.getData())) throw new Error(t('ui.canvasSketch.changed'));
             let repaints = new Map<string, string>();
-            if (this.mode === 'scenes') {
-                if (this.ringsBook !== this.book.id) throw new Error(t('ui.canvasSketch.readingSubplots'));
+            if (mode === 'scenes') {
+                if (this.ringsBook !== book.id) throw new Error(t('ui.canvasSketch.readingSubplots'));
                 const outcome = this.outcome();
                 if (plansWaitOnAuthor(outcome.plans)) throw new Error(t('ui.canvasSketch.outsideColorDetail'));
-                if (outcome.ownNew.size && !ownSubplotColorsWritable(this.book)) throw new Error(t('ui.canvasSketch.newerColors'));
+                if (outcome.ownNew.size && !ownSubplotColorsWritable(book)) throw new Error(t('ui.canvasSketch.newerColors'));
                 repaints = this.cardRepaints(cards, outcome);
                 try {
-                    await this.writeScenes(cards, folder, paths, outcome.plans);
+                    await this.writeScenes(book, cards, folder, paths, outcome.plans);
                 } finally {
                     // Subplots whose scenes were written keep their color even if a later scene failed.
-                    await this.settleNewSubplots(outcome.ownNew, cards, outcome.plans, paths);
+                    await this.settleNewSubplots(book, initial, outcome.ownNew, cards, outcome.plans, paths);
                 }
-            } else await this.writeSketches(cards, folder, paths, ranked);
+            } else await this.writeSketches(book, cards, folder, paths, ranked);
             // Never replace cards if the author (or another plugin) changed the map while files were being created.
             if (!this.canvasIsOpen() || JSON.stringify(initial) !== JSON.stringify(this.canvas.getData())) throw new Error(t('ui.canvasSketch.changed'));
             // Canvas retains the node class for an existing ID. New IDs let
@@ -667,10 +767,15 @@ export class CanvasConvertModal extends ErtModal {
                 this.canvas.requestSave(false);
                 throw error;
             }
-            new Notice(this.mode === 'scenes' ? t('ui.canvasSketch.doneScenes', { scenes: tCount('scene', paths.size) }) : t('ui.canvasSketch.done', { count: paths.size }), 6000);
+            new Notice(mode === 'scenes' ? t('ui.canvasSketch.doneScenes', { scenes: tCount('scene', paths.size) }) : t('ui.canvasSketch.done', { count: paths.size }), 6000);
+            // Draw the timeline once, complete: only after Obsidian has read every new note's properties.
+            if (!await this.indexed([...paths.values()])) {
+                new Notice(t('ui.canvasSketch.stillIndexing'), 10000);
+                return;
+            }
             this.plugin.refreshTimelineIfNeeded(null);
-            if (this.mode === 'scenes') {
-                await this.plugin.setActiveBookId(this.book.id);
+            if (mode === 'scenes') {
+                await this.plugin.setActiveBookId(book.id);
                 await this.plugin.getTimelineService().activateView();
             }
         } catch (error) {
@@ -696,7 +801,7 @@ export class CanvasConvertModal extends ErtModal {
             }
             const message = (error instanceof Error ? error.message : String(error)) + (retainedRanks ? ` ${t('ui.canvasSketch.orderRetained')}` : '');
             if (paths.size === 0) new Notice(message, 12000);
-            else if (this.mode === 'scenes') new Notice(t('ui.canvasSketch.failedScenes', { scenes: tCount('scene', paths.size), message }), 12000);
+            else if (mode === 'scenes') new Notice(t('ui.canvasSketch.failedScenes', { scenes: tCount('scene', paths.size), message }), 12000);
             else new Notice(t('ui.canvasSketch.failed', { count: paths.size, message }), 12000);
         }
     }

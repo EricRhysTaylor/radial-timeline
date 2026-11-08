@@ -78,50 +78,72 @@ describe('Choosing a color once: which subplot each card color makes', () => {
     const existing = (name: string) => book.get(name.toLowerCase()) ?? null;
     const waiting = new Map([['letters', { name: 'Letters', hex: '#123456' }]]);
     const pending = (name: string) => waiting.get(name.toLowerCase()) ?? null;
+    // The colors the book's subplots and new subplots wear now.
+    const worn = new Map([['#a35ca7', 'Mara'], ['#123456', 'Letters'], ['#e93147', 'The Servant']]);
+    const colorOwner = (hex: string) => worn.get(hex) ?? null;
     const palette: CardColorStanding = { kind: 'palette' };
     const outside: CardColorStanding = { kind: 'outside' };
-    type Row = { color: string; name: string; hex?: string | null; standing?: CardColorStanding; palette?: string };
-    const plan = (...rows: Row[]) => [...planCardColorSubplots(rows.map(row => ({ hex: row.color, standing: palette, ...row })), existing, pending)];
+    type Row = { key: string; name: string; hex?: string | null; standing?: CardColorStanding; palette?: string };
+    const plan = (...rows: Row[]) => [...planCardColorSubplots(rows.map(row => ({ hex: row.key, standing: palette, ...row })), existing, pending, colorOwner)];
 
     it('makes a new subplot from a new name on a free palette color, which it wears', () => {
-        expect(plan({ color: '#aa00ff', name: ' Romance ' })).toEqual([['#aa00ff', { kind: 'new', subplot: 'Romance', color: '#aa00ff' }]]);
+        expect(plan({ key: '#aa00ff', name: ' Romance ' })).toEqual([['#aa00ff', { kind: 'new', subplot: 'Romance', color: '#aa00ff' }]]);
     });
     it('keeps an existing subplot, in the book’s spelling, on the color it already wears', () => {
-        expect(plan({ color: '1', name: 'the SERVANT', hex: '#e93147', standing: outside })).toEqual([['1', { kind: 'existing', subplot: 'The Servant' }]]);
-        expect(plan({ color: '2', name: 'Main Plot', hex: '#00ff00' })).toEqual([['2', { kind: 'existing', subplot: 'Main Plot' }]]);
+        expect(plan({ key: '1', name: 'the SERVANT', hex: '#e93147', standing: outside })).toEqual([['1', { kind: 'existing', subplot: 'The Servant' }]]);
+        expect(plan({ key: '2', name: 'Main Plot', hex: '#00ff00' })).toEqual([['2', { kind: 'existing', subplot: 'Main Plot' }]]);
     });
-    it('sends a timeline color with no name to the main plot', () => {
-        expect(plan({ color: '#bbbbbb', name: '  ' })).toEqual([['#bbbbbb', { kind: 'mainPlot' }]]);
-        expect(plan({ color: '#a35ca7', name: '', standing: { kind: 'subplot', subplot: 'Mara' } })).toEqual([['#a35ca7', { kind: 'mainPlot' }]]);
+    it('holds every card color with no subplot, a free palette color included, until it has one', () => {
+        expect(plan({ key: '#bbbbbb', name: '  ' })).toEqual([['#bbbbbb', { kind: 'unassigned' }]]);
+        expect(plan({ key: '#a35ca7', name: '', standing: { kind: 'subplot', subplot: 'Mara' } })).toEqual([['#a35ca7', { kind: 'unassigned' }]]);
+        expect(plan({ key: '3', name: '', hex: '#ffff00', standing: outside })).toEqual([['3', { kind: 'unassigned' }]]);
+        expect(plansWaitOnAuthor(new Map(plan({ key: '#bbbbbb', name: '' })))).toBe(true);
     });
-    it('holds a color outside the timeline’s colors until it has a subplot', () => {
-        expect(plan({ color: '3', name: '', hex: '#ffff00', standing: outside })).toEqual([['3', { kind: 'unassigned' }]]);
-        expect(plan({ color: '3', name: 'Romance', hex: '#ffff00', standing: outside })).toEqual([['3', { kind: 'needsColor', subplot: 'Romance' }]]);
-        expect(plan({ color: '3', name: 'Romance', hex: null, standing: outside })).toEqual([['3', { kind: 'needsColor', subplot: 'Romance' }]]);
-        expect(plan({ color: '3', name: 'Romance', hex: '#ffff00', standing: outside, palette: '#314cb6' }))
+    it('gives a color outside the timeline’s colors a subplot only with a palette color for a new name', () => {
+        expect(plan({ key: '3', name: 'Romance', hex: '#ffff00', standing: outside })).toEqual([['3', { kind: 'needsColor', subplot: 'Romance' }]]);
+        expect(plan({ key: '3', name: 'Romance', hex: null, standing: outside })).toEqual([['3', { kind: 'needsColor', subplot: 'Romance' }]]);
+        expect(plan({ key: '3', name: 'Romance', hex: '#ffff00', standing: outside, palette: '#314cb6' }))
             .toEqual([['3', { kind: 'new', subplot: 'Romance', color: '#314cb6' }]]);
-        expect(plansWaitOnAuthor(new Map(plan({ color: '3', name: '', hex: '#ffff00', standing: outside })))).toBe(true);
-        expect(plansWaitOnAuthor(new Map(plan({ color: '3', name: 'The Servant', hex: '#ffff00', standing: outside })))).toBe(false);
+        expect(plansWaitOnAuthor(new Map(plan({ key: '3', name: 'The Servant', hex: '#ffff00', standing: outside })))).toBe(false);
     });
     it('never lets a new name take a color another subplot wears', () => {
-        expect(plan({ color: '#a35ca7', name: 'Romance', standing: { kind: 'subplot', subplot: 'Mara' } }))
+        expect(plan({ key: '#a35ca7', name: 'Romance', standing: { kind: 'subplot', subplot: 'Mara' } }))
             .toEqual([['#a35ca7', { kind: 'needsColor', subplot: 'Romance' }]]);
-        expect(plan({ color: '#123456', name: 'Romance', standing: { kind: 'pending', subplot: 'Letters' } }))
+        expect(plan({ key: '#123456', name: 'Romance', standing: { kind: 'pending', subplot: 'Letters' } }))
             .toEqual([['#123456', { kind: 'needsColor', subplot: 'Romance' }]]);
+        // Even a palette color picked on the row, when another subplot wears it by now.
+        expect(plan({ key: '3', name: 'Romance', hex: '#ffff00', standing: outside, palette: '#a35ca7' }))
+            .toEqual([['3', { kind: 'needsColor', subplot: 'Romance' }]]);
     });
-    it('gives a new subplot remembered on the Canvas its own name and color', () => {
-        expect(plan({ color: '#123456', name: 'Letters', standing: { kind: 'pending', subplot: 'Letters' } }))
+    it('never gives two new names in one dialog the same color: the later row needs a color', () => {
+        expect(plan(
+            { key: '#aa00ff', name: 'Romance' },
+            { key: '3', name: 'Storm', hex: '#ffff00', standing: outside, palette: '#aa00ff' },
+        )).toEqual([
+            ['#aa00ff', { kind: 'new', subplot: 'Romance', color: '#aa00ff' }],
+            ['3', { kind: 'needsColor', subplot: 'Storm' }],
+        ]);
+        expect(plan(
+            { key: '3', name: 'Storm', hex: '#ffff00', standing: outside, palette: '#314cb6' },
+            { key: '4', name: 'Romance', hex: '#bbbbbb', standing: outside, palette: '#314cb6' },
+        )).toEqual([
+            ['3', { kind: 'new', subplot: 'Storm', color: '#314cb6' }],
+            ['4', { kind: 'needsColor', subplot: 'Romance' }],
+        ]);
+    });
+    it('gives a new subplot named from the card menu its own name and color', () => {
+        expect(plan({ key: '#123456', name: 'Letters', standing: { kind: 'pending', subplot: 'Letters' } }))
             .toEqual([['#123456', { kind: 'new', subplot: 'Letters', color: '#123456' }]]);
         // Another color named for it joins it, and its cards take its color.
-        expect(plan({ color: '7', name: 'LETTERS', hex: '#ffff00', standing: outside }))
+        expect(plan({ key: '7', name: 'LETTERS', hex: '#ffff00', standing: outside }))
             .toEqual([['7', { kind: 'new', subplot: 'Letters', color: '#123456' }]]);
     });
-    it('gives a new name two colors share the first color that can give it one, in the first spelling', () => {
-        expect(plan({ color: '#aa00ff', name: 'Romance' }, { color: '4', name: 'romance', hex: '#bbbbbb' })).toEqual([
+    it('gives a new name two rows share the first color that can give it one, in the first spelling', () => {
+        expect(plan({ key: '#aa00ff', name: 'Romance' }, { key: '4', name: 'romance', hex: '#bbbbbb' })).toEqual([
             ['#aa00ff', { kind: 'new', subplot: 'Romance', color: '#aa00ff' }],
             ['4', { kind: 'sharesNew', subplot: 'Romance', color: '#aa00ff' }],
         ]);
-        expect(plan({ color: '3', name: 'Romance', hex: '#ffff00', standing: outside }, { color: '#aa00ff', name: 'romance' })).toEqual([
+        expect(plan({ key: '3', name: 'Romance', hex: '#ffff00', standing: outside }, { key: '#aa00ff', name: 'romance' })).toEqual([
             ['3', { kind: 'sharesNew', subplot: 'Romance', color: '#aa00ff' }],
             ['#aa00ff', { kind: 'new', subplot: 'Romance', color: '#aa00ff' }],
         ]);

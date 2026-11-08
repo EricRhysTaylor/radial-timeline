@@ -25,6 +25,7 @@ import { consumeBookManagerAutoloadHighlight } from '../bookManagerAutoloadHighl
 import { extractCountableBodyText } from '../../utils/manuscript';
 import { countWords } from '../../utils/text';
 import { t, tCount } from '../../i18n';
+import { forgetBookSubplotMemory } from '../../timetable/canvasSubplotMemory';
 
 class BookMetadataModal extends Modal {
     constructor(
@@ -708,6 +709,10 @@ export function renderGeneralSection(params: {
             trashButton.extraSettingsEl.addClass('ert-book-card__trash');
             trashButton.onClick(async () => {
                 plugin.settings.books = books.filter(b => b.id !== book.id);
+                // The subplots its Canvas cards were given go with the book.
+                const memory = forgetBookSubplotMemory(plugin.settings.canvasSubplotMemory, book.id);
+                if (memory) plugin.settings.canvasSubplotMemory = memory;
+                else delete plugin.settings.canvasSubplotMemory;
                 if (book.id === plugin.settings.activeBookId) {
                     plugin.settings.activeBookId = plugin.settings.books[0]?.id;
                 }

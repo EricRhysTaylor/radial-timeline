@@ -309,6 +309,8 @@ describe('applyGenericSubplotNames (via buildTimelineDataExport genericSubplotNa
         expect(doc.renderConfig.books[0].mainPlotName).toBe(doc.items[0].subplot);
         expect(doc.renderConfig.books[0].ownSubplotColors).toEqual({ schemaVersion: 1, colors: { [doc.items[1].subplot!]: '#e93147', 'Subplot 4': '#00ff00' } });
         expect(doc.renderConfig.books[1]).not.toHaveProperty('ownSubplotColors');
+        // A book that never renamed its main plot still names it, so ring 1 matches its "Main Plot" scenes.
+        expect(doc.renderConfig.books[1].mainPlotName).toBe(doc.items[3].subplot);
         expect(settings.books[0].mainPlotName).toBe('Redemption Arc');
         expect(settings.books[0].ownSubplotColors).toEqual({ schemaVersion: 1, colors: { Heist: '#e93147', 'Secret Twin': '#00ff00' } });
     });

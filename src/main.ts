@@ -71,7 +71,7 @@ import { TimetableService } from './timetable/TimetableService';
 import { refreshTimetableViews } from './timetable/timetableRegistry';
 import { getOpenDocuments } from './utils/documents';
 import { SUBPLOT_COLORS_CHANGED_EVENT } from './renderer/utils/subplotColors';
-import { normalizeCanvasPendingSubplots } from './timetable/canvasPendingSubplots';
+import { normalizeCanvasSubplotMemory } from './timetable/canvasSubplotMemory';
 import { DEFAULT_BOOK_TITLE, createBookId, deriveBookTitleFromSourcePath, getActiveBook, getSagaBooks, getTimelineScope, isSagaScopeAvailable, normalizeBookProfile, shouldSeedBookProfileFromLegacySettings } from './utils/books';
 import { adaptPandocLayoutsToPublishingModel } from './utils/publishingModel';
 import { migratePublishingModelState, RENAMED_PANDOC_LAYOUT_IDS } from './utils/publishingMigration';
@@ -1152,13 +1152,16 @@ export default class RadialTimelinePlugin extends Plugin {
             }
         }
 
-        // New subplots waiting on Canvas cards: checked like every schema-stamped record.
-        let canvasPendingSubplotsMigrated = false;
-        const canvasPendingSubplots = normalizeCanvasPendingSubplots(this.settings.canvasPendingSubplots);
-        if (JSON.stringify(canvasPendingSubplots) !== JSON.stringify(this.settings.canvasPendingSubplots)) {
-            if (canvasPendingSubplots) this.settings.canvasPendingSubplots = canvasPendingSubplots;
-            else delete this.settings.canvasPendingSubplots;
-            canvasPendingSubplotsMigrated = true;
+        // The subplots the Canvas card menu gave cards: checked like every
+        // schema-stamped record, with the first record carried in and removed.
+        let canvasSubplotMemoryMigrated = false;
+        const legacyCanvasPending = (this.settings as LegacyPersistedSettings).canvasPendingSubplots;
+        const canvasSubplotMemory = normalizeCanvasSubplotMemory(this.settings.canvasSubplotMemory, legacyCanvasPending, new Set(this.settings.books.map(book => book.id)));
+        if (legacyCanvasPending !== undefined || JSON.stringify(canvasSubplotMemory) !== JSON.stringify(this.settings.canvasSubplotMemory)) {
+            if (canvasSubplotMemory) this.settings.canvasSubplotMemory = canvasSubplotMemory;
+            else delete this.settings.canvasSubplotMemory;
+            delete (this.settings as LegacyPersistedSettings).canvasPendingSubplots;
+            canvasSubplotMemoryMigrated = true;
         }
 
         let timelineScopeMigrated = false;
@@ -1400,7 +1403,7 @@ export default class RadialTimelinePlugin extends Plugin {
             }
         }
 
-        if (sceneTemplatesMigrated || freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || booksMigrated || canvasPendingSubplotsMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated) {
+        if (sceneTemplatesMigrated || freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || booksMigrated || canvasSubplotMemoryMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated) {
             await this.saveSettings();
         }
     }

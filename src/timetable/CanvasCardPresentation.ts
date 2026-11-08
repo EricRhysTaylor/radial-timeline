@@ -20,7 +20,7 @@ import { storyImageChoice } from './storyImageStore';
 import { resolveStoryPortrait } from './storyPortrait';
 import { outlineReferenceType, type OutlineReferenceType } from './outlineDocuments';
 import { getActiveBook } from '../utils/books';
-import { addSubplotColorMenu, type CanvasCardNode } from './CanvasSubplotMenu';
+import { addSubplotColorMenu, ideaCards, type CanvasCardNode } from './CanvasSubplotMenu';
 
 type Mode = 'full' | 'preview' | 'title';
 const CARD_ICONS: Record<OutlineReferenceType, string> = {
@@ -211,9 +211,10 @@ class CanvasCards {
         const nodes = (this.view as CanvasView).canvas?.nodes;
         const bookCards = this.bookCards();
         this.navigator.refresh(bookCards.length > 0);
-        // The card menu lists the active book's subplots the moment it opens.
+        // The card menu lists the active book's subplots the moment it opens,
+        // so they are read ahead on a Canvas with idea cards to color.
         const activeBook = getActiveBook(this.plugin.settings);
-        if (activeBook?.sourceFolder.trim()) this.ringColorsNow(activeBook.id);
+        if (activeBook?.sourceFolder.trim() && nodes instanceof Map && ideaCards(nodes.values()).length > 0) this.ringColorsNow(activeBook.id);
         const imageSelections = bookCards.length ? storyCharacterSelections(this.plugin, imageFiles, this.plugin.settings.storyImageStrategy ?? 'distinctive', new Set(bookCards.map(card => card.bookId))) : new Map<string, string>();
         this.hasBookCards = bookCards.length > 0;
         this.action.toggle(this.hasBookCards);

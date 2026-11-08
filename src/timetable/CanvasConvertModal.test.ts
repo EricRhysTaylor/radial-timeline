@@ -33,7 +33,10 @@ function setup(changeDuringCreate = false, selectedIds: string[] = ['1']) {
     const modal = new CanvasConvertModal(app, plugin, canvas, 'Ideas.canvas', [book], book, () => true);
     (Reflect.get(modal, 'selected') as Set<string>).add('1');
     Reflect.set(modal, 'mode', 'sketches');
-    return { modal, saved, setData, requestSave, app, plugin, activateView, book, getData: () => data };
+    // Obsidian has read every new note's properties (see the indexing test below).
+    const indexed = vi.fn(async () => true);
+    Reflect.set(modal, 'indexed', indexed);
+    return { modal, saved, setData, requestSave, app, plugin, activateView, book, indexed, getData: () => data };
 }
 
 function scenes(selected: string[] = ['1', '2']) {
@@ -44,6 +47,9 @@ function scenes(selected: string[] = ['1', '2']) {
     // The book's subplots are read, in a palette where slot N paints #0000NN.
     Reflect.set(test.modal, 'ringsBook', 'book');
     Reflect.set(test.modal, 'hexOf', hexOf);
+    // Card colors read as loadRings read them (colorCards below); a hex color reads as itself.
+    const cardHexes = Reflect.get(test.modal, 'cardHexes') as Map<string, string | null>;
+    Reflect.set(test.modal, 'cardHexOf', (color: string | null) => color === null ? null : cardHexes.has(color) ? cardHexes.get(color) : /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : null);
     return test;
 }
 
@@ -59,7 +65,7 @@ function colorCards(test: ReturnType<typeof scenes>, colors: Array<{ color: stri
     });
 }
 
-const named = (test: ReturnType<typeof scenes>) => Reflect.get(test.modal, 'subplotByColor') as Map<string, string>;
+const named = (test: ReturnType<typeof scenes>) => Reflect.get(test.modal, 'subplotByRow') as Map<string, string>;
 const convert = (test: ReturnType<typeof scenes>) => Reflect.get(test.modal, 'convert').call(test.modal) as Promise<void>;
 
 describe('Canvas scene conversion', () => {
@@ -156,28 +162,96 @@ describe('Canvas scene conversion', () => {
         const created = scenes();
         colorCards(created, [{ color: '6', hex: '#ffff00', standing: { kind: 'outside' } }]);
         named(created).set('6', 'Romance');
-        (Reflect.get(created.modal, 'paletteByColor') as Map<string, string>).set('6', slotHex(7));
+        (Reflect.get(created.modal, 'paletteByRow') as Map<string, string>).set('6', slotHex(7));
         await convert(created);
         expect(created.saved.get('Book/1 A scene.md')).toContain('Subplot: Romance');
         expect(created.book.ownSubplotColors).toEqual({ schemaVersion: 1, colors: { Romance: slotHex(7) } });
         expect(created.getData().nodes?.[0].color).toBe(slotHex(7));
     });
 
-    it('creates a new subplot remembered on the Canvas, then stops remembering it', async () => {
-        const test = scenes();
-        test.plugin.settings.canvasPendingSubplots = { schemaVersion: 1, canvases: {
-            'Ideas.canvas': [{ bookId: 'book', name: 'Letters', color: '#abcdef' }, { bookId: 'other', name: 'Letters', color: '#abcdef' }],
+    it('creates a new subplot named from the card menu, then forgets the cards that became its scenes', async () => {
+        const test = scenes(['1']);
+        test.plugin.settings.canvasSubplotMemory = { schemaVersion: 1, canvases: {
+            'Ideas.canvas': [
+                { bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['1'] },
+                { bookId: 'other', subplot: 'Letters', color: '#abcdef', cards: ['2'] },
+            ],
         } };
         colorCards(test, [{ color: '#abcdef', standing: { kind: 'pending', subplot: 'Letters' } }]);
+        test.getData().nodes![1].color = '#abcdef';
+        (Reflect.get(test.modal, 'given') as Map<string, string>).set('1', 'Letters');
         Reflect.set(test.modal, 'directory', [{ name: 'Main Plot', hex: slotHex(0), pending: false }, { name: 'Letters', hex: '#abcdef', pending: true }] satisfies DirectoryEntry[]);
-        named(test).set('#abcdef', 'Letters');
+        named(test).set('#abcdef\u0000letters', 'Letters');
         await convert(test);
         expect(test.saved.get('Book/1 A scene.md')).toContain('Subplot: Letters');
         expect(test.book.ownSubplotColors).toEqual({ schemaVersion: 1, colors: { Letters: '#abcdef' } });
-        expect(test.plugin.settings.canvasPendingSubplots).toEqual({ schemaVersion: 1, canvases: {
-            'Ideas.canvas': [{ bookId: 'other', name: 'Letters', color: '#abcdef' }],
+        expect(test.plugin.settings.canvasSubplotMemory).toEqual({ schemaVersion: 1, canvases: {
+            'Ideas.canvas': [{ bookId: 'other', subplot: 'Letters', color: '#abcdef', cards: ['2'] }],
         } });
         expect(test.plugin.saveSettings).toHaveBeenCalledOnce();
+    });
+
+    it('puts cards on the subplot the card menu gave them, even when another subplot wears their color now', async () => {
+        const test = scenes();
+        // Both cards wear the second palette color. The menu gave card 1 Romance; Mara has since taken that color.
+        colorCards(test, [{ color: slotHex(1), standing: { kind: 'subplot', subplot: 'Mara' } }, { color: slotHex(1), standing: { kind: 'subplot', subplot: 'Mara' } }]);
+        (Reflect.get(test.modal, 'given') as Map<string, string>).set('1', 'Romance');
+        Reflect.set(test.modal, 'directory', [
+            { name: 'Main Plot', hex: slotHex(0), pending: false }, { name: 'Mara', hex: slotHex(1), pending: false }, { name: 'Romance', hex: slotHex(2), pending: false },
+        ] satisfies DirectoryEntry[]);
+        named(test).set(`${slotHex(1)}\u0000romance`, 'Romance').set(slotHex(1), 'Mara');
+        // The book already has three Main Plot scenes, two of Mara and one of Romance.
+        const scene = (subplot: string) => ({ kind: 'scene', subplots: [subplot] }) as unknown as TimetableRow;
+        Reflect.set(test.modal, 'rows', [scene('Main Plot'), scene('Main Plot'), scene('Main Plot'), scene('Mara'), scene('Mara'), scene('Romance')]);
+        await convert(test);
+        expect(test.saved.get('Book/1 A scene.md')).toContain('Subplot: Romance');
+        expect(test.saved.get('Book/2 Other idea.md')).toContain('Subplot: Mara');
+        // Card 1 takes Romance's ring color; card 2 already wears Mara's.
+        expect(test.getData().nodes?.map(node => node.color)).toEqual([slotHex(2), slotHex(1)]);
+    });
+
+    it('keeps the book chosen when Create was clicked, whatever the dialog shows after', async () => {
+        const test = scenes(['1']);
+        const other = { id: 'other', title: 'Other', sourceFolder: 'Other' } as BookProfile;
+        const running = convert(test);
+        Reflect.set(test.modal, 'book', other);
+        await running;
+        expect([...test.saved.keys()]).toEqual(['Book/1 A scene.md']);
+        expect(test.plugin.setActiveBookId).toHaveBeenCalledWith('book');
+    });
+
+    it('stops when a selected card changed color after the dialog opened', async () => {
+        const test = scenes(['1']);
+        test.getData().nodes![0].color = '4';
+        await convert(test);
+        expect(test.saved.size).toBe(0);
+        expect(test.setData).not.toHaveBeenCalled();
+    });
+
+    it('sets a preset card to the fixed color of its subplot even when the theme shows that color now', async () => {
+        const test = scenes(['1']);
+        // Preset 2 happens to show the main plot's color in this theme.
+        colorCards(test, [{ color: '2', hex: slotHex(0), standing: { kind: 'subplot', subplot: 'Main Plot' } }]);
+        Reflect.set(test.modal, 'directory', [{ name: 'Main Plot', hex: slotHex(0), pending: false }] satisfies DirectoryEntry[]);
+        named(test).set('2', 'Main Plot');
+        await convert(test);
+        expect(test.getData().nodes?.[0].color).toBe(slotHex(0));
+    });
+
+    it('opens the timeline only once Obsidian has read every new scene, so it draws once, complete', async () => {
+        const read = scenes();
+        await convert(read);
+        expect(read.indexed).toHaveBeenCalledWith([...read.saved.keys()]);
+        expect(read.saved.size).toBe(2);
+        expect(read.indexed.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(read.plugin.refreshTimelineIfNeeded).mock.invocationCallOrder[0]);
+        expect(read.activateView).toHaveBeenCalledOnce();
+
+        const unread = scenes();
+        unread.indexed.mockResolvedValue(false);
+        await convert(unread);
+        expect(unread.saved.size).toBe(2);
+        expect(unread.plugin.refreshTimelineIfNeeded).not.toHaveBeenCalled();
+        expect(unread.activateView).not.toHaveBeenCalled();
     });
 
     it('waits for the chosen book’s subplots before Create', async () => {
@@ -283,7 +357,7 @@ describe('Canvas sketch conversion', () => {
         const test = setup();
         (Reflect.get(test.modal, 'cards') as Array<{ id: string; color?: string }>)[0].color = '1';
         test.getData().nodes![0].color = '1';
-        (Reflect.get(test.modal, 'subplotByColor') as Map<string, string>).set('1', 'The Servant');
+        (Reflect.get(test.modal, 'subplotByRow') as Map<string, string>).set('1', 'The Servant');
         await Reflect.get(test.modal, 'convert').call(test.modal);
         expect(test.saved.get('Book/A scene 2.md')).not.toContain('Subplot');
     });
@@ -402,47 +476,82 @@ describe('Canvas conversion on a damaged map', () => {
 describe('Bring ideas into your book starts each card color on its subplot', () => {
     afterEach(() => vi.unstubAllGlobals());
 
-    it('reads the book’s subplots, then a new subplot waiting on the Canvas, and marks a color outside the timeline’s', async () => {
-        // The palette paints slot N as #0000NN; Canvas preset 6 paints a yellow no ring wears.
+    const wheel = new Map<string, SubplotColor>([['Main Plot', { kind: 'slot', slot: 0 }], ['Mara', { kind: 'slot', slot: 1 }], ['Romance', { kind: 'slot', slot: 2 }]]);
+
+    /** The dialog over a Canvas, in a window whose palette paints slot N as #0000NN and preset 6 as a yellow no ring wears. */
+    function dialog() {
         const vars: Record<string, string> = { '--canvas-color-6': '#ffff00' };
         for (let slot = 0; slot < 16; slot++) vars[`--rt-subplot-colors-${slot}`] = slotHex(slot);
         vi.stubGlobal('getComputedStyle', () => ({ getPropertyValue: (name: string) => vars[name] ?? '' }));
         let fill = '#000000';
         const context = { get fillStyle() { return fill; }, set fillStyle(value: string) { if (/^#[0-9a-f]{6}$/i.test(value)) fill = value.toLowerCase(); } };
         const doc = { win: { createEl: () => ({ getContext: () => context }) }, documentElement: {}, body: {} } as unknown as Document; // SAFE: the color readers touch only these members
-
         const data: StoryCanvasData = { nodes: [
             { id: 'mara', type: 'text', text: 'Mara leaves', color: slotHex(1) },
+            { id: 'romance', type: 'text', text: 'A first dance', color: slotHex(1) },
             { id: 'letters', type: 'text', text: 'A letter', color: '#ABCDEF' },
             { id: 'yellow', type: 'text', text: 'Storm', color: '6' },
             { id: 'free', type: 'text', text: 'Market day', color: slotHex(5) },
         ] };
         const app = { workspace: { getLeavesOfType: () => [] }, metadataCache: { getFileCache: () => ({}) }, vault: { getMarkdownFiles: () => [], getFiles: () => [] } } as unknown as App;
         const book = { id: 'book', title: 'Book', sourceFolder: 'Book' } as BookProfile;
-        const plugin = { settings: { ...DEFAULT_SETTINGS, books: [book], canvasPendingSubplots: { schemaVersion: 1, canvases: {
-            'Ideas.canvas': [{ bookId: 'book', name: 'Letters', color: '#abcdef' }],
+        // The card menu gave "romance" Romance while Romance wore the second palette color, which Mara wears now,
+        // and named the new subplot Letters for "letters".
+        const plugin = { settings: { ...DEFAULT_SETTINGS, books: [book], canvasSubplotMemory: { schemaVersion: 1, canvases: {
+            'Ideas.canvas': [
+                { bookId: 'book', subplot: 'Romance', color: slotHex(1), cards: ['romance'] },
+                { bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['letters'] },
+            ],
         } } } } as unknown as RadialTimelinePlugin;
         const canvas: OpenCanvas = { getData: () => data, setData: vi.fn(), requestSave: vi.fn(), selection: new Set(data.nodes!.map(node => ({ getData: () => ({ id: node.id, type: 'text' }) }))) };
         const modal = new CanvasConvertModal(app, plugin, canvas, 'Ideas.canvas', [book], book, () => true);
         Reflect.set(modal, 'containerEl', { doc });
         Reflect.set(modal, 'bookItems', () => []);
-        Reflect.set(modal, 'readWheel', async () => new Map<string, SubplotColor>([['Main Plot', { kind: 'slot', slot: 0 }], ['Mara', { kind: 'slot', slot: 1 }]]));
+        Reflect.set(modal, 'readWheel', async () => wheel);
+        return { modal, book };
+    }
 
+    it('starts each row on the subplot the card menu gave its cards, then on the subplot wearing its color; a color with no subplot waits', async () => {
+        const { modal } = dialog();
         await Reflect.get(modal, 'loadRings').call(modal);
-
         expect(Reflect.get(modal, 'directory')).toEqual([
             { name: 'Main Plot', hex: slotHex(0), pending: false },
             { name: 'Mara', hex: slotHex(1), pending: false },
+            { name: 'Romance', hex: slotHex(2), pending: false },
             { name: 'Letters', hex: '#abcdef', pending: true },
         ]);
-        expect([...(Reflect.get(modal, 'subplotByColor') as Map<string, string>)]).toEqual([[slotHex(1), 'Mara'], ['#abcdef', 'Letters']]);
+        const romanceRow = `${slotHex(1)}\u0000romance`;
+        expect([...(Reflect.get(modal, 'subplotByRow') as Map<string, string>)]).toEqual([[slotHex(1), 'Mara'], [romanceRow, 'Romance'], ['#abcdef\u0000letters', 'Letters']]);
         const plans = Reflect.get(modal, 'colorPlans').call(modal) as Map<string, unknown>;
         expect([...plans]).toEqual([
             [slotHex(1), { kind: 'existing', subplot: 'Mara' }],
-            ['#abcdef', { kind: 'new', subplot: 'Letters', color: '#abcdef' }],
+            [romanceRow, { kind: 'existing', subplot: 'Romance' }],
+            ['#abcdef\u0000letters', { kind: 'new', subplot: 'Letters', color: '#abcdef' }],
+            // Preset 6 is no timeline color; the sixth palette color is free, but names no subplot either.
             ['6', { kind: 'unassigned' }],
-            [slotHex(5), { kind: 'mainPlot' }],
+            [slotHex(5), { kind: 'unassigned' }],
         ]);
+        expect(Reflect.get(modal, 'ringsBook')).toBe('book');
+    });
+
+    it('applies only the latest read when the book changes and changes back, keeping names typed since', async () => {
+        const { modal, book } = dialog();
+        const other = { id: 'other', title: 'Other', sourceFolder: 'Other' } as BookProfile;
+        const reads: Array<() => void> = [];
+        Reflect.set(modal, 'readWheel', () => new Promise<Map<string, SubplotColor>>(resolve => reads.push(() => resolve(wheel))));
+        const load = Reflect.get(modal, 'loadRings') as () => Promise<void>;
+        const first = load.call(modal);
+        Reflect.set(modal, 'book', other);
+        const second = load.call(modal);
+        Reflect.set(modal, 'book', book);
+        const third = load.call(modal);
+        reads[2]();
+        await third;
+        (Reflect.get(modal, 'subplotByRow') as Map<string, string>).set(slotHex(5), 'Market');
+        reads[0]();
+        reads[1]();
+        await Promise.all([first, second]);
+        expect((Reflect.get(modal, 'subplotByRow') as Map<string, string>).get(slotHex(5))).toBe('Market');
         expect(Reflect.get(modal, 'ringsBook')).toBe('book');
     });
 });

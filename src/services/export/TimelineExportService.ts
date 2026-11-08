@@ -43,6 +43,7 @@ import type {
 } from '../../types';
 import { isMatterNote } from '../../utils/sceneHelpers';
 import { OWN_SUBPLOT_COLORS_SCHEMA_VERSION, ownSubplotColorEntries } from '../../utils/ownSubplotColors';
+import { getBookMainPlotName } from '../../utils/mainPlot';
 import { TIMELINE_DATA_EXPORT_SCHEMA_VERSION, wallClockWhen } from './timelineExportFormat';
 import { rasterizeSvgToPng } from './svgToPng';
 import {
@@ -355,12 +356,14 @@ export function applyGenericSubplotNames(doc: TimelineDataExportDocument): void 
     // that wear their own color. The snapshot shares the live settings'
     // profiles, so each is copied, never changed in place. A color record
     // from a newer Radial Timeline cannot be read here, so it is left out.
+    // Every book names its main plot, so ring 1 keeps matching its scenes
+    // even when the book never renamed it from "Main Plot".
     doc.renderConfig.books = doc.renderConfig.books.map((book) => {
-        const { mainPlotName, ownSubplotColors, ...rest } = book;
+        const { mainPlotName: _mainPlotName, ownSubplotColors: _ownSubplotColors, ...rest } = book;
         const own = ownSubplotColorEntries(book);
         return {
             ...rest,
-            ...(mainPlotName ? { mainPlotName: genericNameFor(mainPlotName) } : {}),
+            mainPlotName: genericNameFor(getBookMainPlotName(book)),
             ...(own.length ? { ownSubplotColors: { schemaVersion: OWN_SUBPLOT_COLORS_SCHEMA_VERSION, colors: Object.fromEntries(own.map(([name, color]) => [genericNameFor(name), color])) } } : {}),
         };
     });

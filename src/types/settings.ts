@@ -565,18 +565,25 @@ export interface NewerSchemaRecord {
     [field: string]: unknown;
 }
 
-/** A subplot an author named from a Canvas card menu before any of its scenes exist. */
-export interface CanvasPendingSubplot {
+/** Cards on one Canvas that the Canvas card menu gave a subplot. */
+export interface CanvasSubplotChoice {
     bookId: string;
-    name: string;
-    /** The palette color its cards wear, lower-case `#rrggbb`. */
+    /** The subplot, which may not have scenes yet (a new subplot named from the menu). */
+    subplot: string;
+    /** The color the cards were given, lower-case `#rrggbb`. */
     color: string;
+    /**
+     * The cards, by Canvas node id. Absent only on a choice carried over from
+     * the first record (canvasPendingSubplots), which named no cards: it
+     * stands for the idea cards on that Canvas wearing `color`.
+     */
+    cards?: string[];
 }
 
-/** New subplots waiting on their Canvas cards to become scenes, by Canvas file path. */
-export interface CanvasPendingSubplotsRecord {
+/** What the Canvas card menu gave each card, by Canvas file path. */
+export interface CanvasSubplotMemoryRecord {
     schemaVersion: 1;
-    canvases: Record<string, CanvasPendingSubplot[]>;
+    canvases: Record<string, CanvasSubplotChoice[]>;
 }
 
 /** Per-stage publishing target dates (YYYY-MM-DD strings). Scoped per book. */
@@ -1169,11 +1176,11 @@ export interface RadialTimelineSettings {
     storyImageStrategy?: 'first' | 'second' | 'distinctive' | 'pov' | 'balanced';
     storyImageChoices?: Record<string, { character?: string; image?: string; placeImage?: string }>;
     /**
-     * New subplots chosen from the Canvas card menu, remembered until their
-     * cards become scenes (see timetable/canvasPendingSubplots). Plugin data,
-     * never scene YAML.
+     * The subplot the Canvas card menu gave each idea card, including new
+     * subplots that have no scenes yet (see timetable/canvasSubplotMemory).
+     * Plugin data, never scene YAML or the Canvas file.
      */
-    canvasPendingSubplots?: CanvasPendingSubplotsRecord | NewerSchemaRecord;
+    canvasSubplotMemory?: CanvasSubplotMemoryRecord | NewerSchemaRecord;
     books: BookProfile[];
     activeBookId?: string;
     timelineScope?: 'book' | 'saga';
@@ -1470,6 +1477,8 @@ export interface RadialTimelineSettings {
  * the deprecation tags stay on RadialTimelineSettings for everyone else.
  */
 export interface LegacyPersistedSettings {
+    /** The first Canvas card menu record (new subplots by Canvas, no cards), carried into canvasSubplotMemory and then removed. */
+    canvasPendingSubplots?: unknown;
     showSourcePathAsTitle?: boolean;
     backdropYamlTemplate?: string;
     pandocTemplates?: {

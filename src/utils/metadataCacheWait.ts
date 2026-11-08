@@ -8,7 +8,6 @@
  */
 
 import { TFile, type App } from 'obsidian';
-import { sleep } from './sleep';
 
 /** Resolve on the cache's next `resolved` event, or after `timeoutMs` if it never comes. */
 export function waitForMetadataResolved(app: App, timeoutMs: number): Promise<void> {
@@ -22,20 +21,35 @@ export function waitForMetadataResolved(app: App, timeoutMs: number): Promise<vo
     });
 }
 
-/** Poll until every path has frontmatter in the cache, or `timeoutMs` passes. */
-export async function waitForFileCaches(app: App, paths: string[], timeoutMs = 5000, pollMs = 120): Promise<void> {
-    if (paths.length === 0) return;
-    const start = Date.now();
+/**
+ * True once every path has its frontmatter in the cache, as the cache
+ * reports each file it reads; false when `timeoutMs` passes first, so the
+ * caller can say so rather than draw from half-read notes.
+ */
+export function filesIndexed(app: App, paths: readonly string[], timeoutMs: number): Promise<boolean> {
     const pending = new Set(paths);
-    while (pending.size > 0 && (Date.now() - start) < timeoutMs) {
+    const settle = (): boolean => {
         for (const path of [...pending]) {
             const file = app.vault.getAbstractFileByPath(path);
-            if (!(file instanceof TFile)) continue;
-            if (app.metadataCache.getFileCache(file)?.frontmatter) {
-                pending.delete(path);
-            }
+            if (file instanceof TFile && app.metadataCache.getFileCache(file)?.frontmatter) pending.delete(path);
         }
-        if (pending.size === 0) break;
-        await sleep(pollMs);
-    }
+        return pending.size === 0;
+    };
+    if (settle()) return Promise.resolve(true);
+    return new Promise<boolean>(resolve => {
+        const finish = (indexed: boolean): void => {
+            window.clearTimeout(timeout);
+            app.metadataCache.offref(ref);
+            resolve(indexed);
+        };
+        const timeout = window.setTimeout(() => finish(false), timeoutMs);
+        const ref = app.metadataCache.on('changed', file => { if (pending.has(file.path) && settle()) finish(true); });
+        // A file read between the first check and the subscription sends no further event.
+        if (settle()) finish(true);
+    });
+}
+
+/** Wait until every path has frontmatter in the cache, or `timeoutMs` passes. */
+export async function waitForFileCaches(app: App, paths: string[], timeoutMs = 5000): Promise<void> {
+    await filesIndexed(app, paths, timeoutMs);
 }

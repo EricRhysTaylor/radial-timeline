@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cardColorStanding, directoryEntryNamed, isStillWaiting, paletteChoices, subplotDirectory, subplotMenuModel } from './canvasSubplotDirectory';
+import { cardColorStanding, cardMeaning, directoryEntryNamed, paletteChoices, subplotDirectory, subplotMenuModel } from './canvasSubplotDirectory';
 
 const rings = [
     { name: 'Main Plot', hex: '#000001' },
@@ -8,12 +8,9 @@ const rings = [
 ];
 
 describe('The subplot directory for Canvas card colors', () => {
-    it('lists the book’s subplots in ring order, then the new subplots still waiting on this Canvas', () => {
-        const pending = [
-            { bookId: 'book', name: 'Letters', color: '#abcdef' },
-            { bookId: 'book', name: 'Storm', color: '#123456' },
-        ];
-        expect(subplotDirectory(rings, pending, new Set(['#abcdef', '#123456']))).toEqual([
+    it('lists the book’s subplots in ring order, then its new subplots', () => {
+        const waiting = [{ name: 'Letters', color: '#abcdef' }, { name: 'Storm', color: '#123456' }];
+        expect(subplotDirectory(rings, waiting)).toEqual([
             { name: 'Main Plot', hex: '#000001', pending: false },
             { name: 'Mara', hex: '#000002', pending: false },
             { name: 'Romance', hex: '#e93147', pending: false },
@@ -22,17 +19,12 @@ describe('The subplot directory for Canvas card colors', () => {
         ]);
     });
 
-    it('stops offering a new subplot once the book has it, another subplot wears its color, or no card wears it', () => {
-        const worn = new Set(['#abcdef', '#000002']);
-        expect(isStillWaiting({ bookId: 'book', name: 'Letters', color: '#abcdef' }, rings, worn)).toBe(true);
-        expect(isStillWaiting({ bookId: 'book', name: 'mara', color: '#abcdef' }, rings, worn)).toBe(false);
-        expect(isStillWaiting({ bookId: 'book', name: 'Letters', color: '#000002' }, rings, worn)).toBe(false);
-        expect(isStillWaiting({ bookId: 'book', name: 'Letters', color: '#fedcba' }, rings, worn)).toBe(false);
-        expect(subplotDirectory(rings, [{ bookId: 'book', name: 'Letters', color: '#fedcba' }], worn).map(entry => entry.name)).toEqual(['Main Plot', 'Mara', 'Romance']);
+    it('lists a new subplot no longer once the book has a subplot of that name', () => {
+        expect(subplotDirectory(rings, [{ name: 'mara', color: '#abcdef' }]).map(entry => entry.name)).toEqual(['Main Plot', 'Mara', 'Romance']);
     });
 
     it('finds a subplot by name in any case, in its own spelling', () => {
-        const directory = subplotDirectory(rings, [], new Set());
+        const directory = subplotDirectory(rings, []);
         expect(directoryEntryNamed(directory, ' romance ')?.name).toBe('Romance');
         expect(directoryEntryNamed(directory, 'Letters')).toBeNull();
     });
@@ -41,7 +33,7 @@ describe('The subplot directory for Canvas card colors', () => {
 describe('The palette a new subplot chooses from', () => {
     const palette = ['#000001', '#000002', '#000003', '#e93147', '#000005'];
     it('offers the colors no subplot wears first, then the ones in use with the subplots wearing them', () => {
-        const directory = [...subplotDirectory(rings, [], new Set()), { name: 'Letters', hex: '#000005', pending: true }];
+        const directory = [...subplotDirectory(rings, []), { name: 'Letters', hex: '#000005', pending: true }];
         expect(paletteChoices(palette, directory)).toEqual([
             { slot: 2, hex: '#000003', usedBy: [] },
             { slot: 0, hex: '#000001', usedBy: ['Main Plot'] },
@@ -57,9 +49,9 @@ describe('The palette a new subplot chooses from', () => {
 });
 
 describe('What a card color means on the timeline', () => {
-    const directory = [...subplotDirectory(rings, [], new Set()), { name: 'Letters', hex: '#abcdef', pending: true }];
+    const directory = [...subplotDirectory(rings, []), { name: 'Letters', hex: '#abcdef', pending: true }];
     const palette = ['#000001', '#000002', '#000003'];
-    it('names the subplot, or the new subplot waiting here, that wears exactly that color', () => {
+    it('names the subplot, or the new subplot, that wears exactly that color', () => {
         expect(cardColorStanding('#000002', directory, palette)).toEqual({ kind: 'subplot', subplot: 'Mara' });
         expect(cardColorStanding('#e93147', directory, palette)).toEqual({ kind: 'subplot', subplot: 'Romance' });
         expect(cardColorStanding('#abcdef', directory, palette)).toEqual({ kind: 'pending', subplot: 'Letters' });
@@ -69,17 +61,23 @@ describe('What a card color means on the timeline', () => {
         expect(cardColorStanding('#ffff00', directory, palette)).toEqual({ kind: 'outside' });
         expect(cardColorStanding(null, directory, palette)).toEqual({ kind: 'outside' });
     });
+    it('takes the subplot the card menu gave a card over whichever subplot wears its color now', () => {
+        expect(cardMeaning('Romance', '#000002', directory)).toBe('Romance');
+        expect(cardMeaning(null, '#000002', directory)).toBe('Mara');
+        expect(cardMeaning(null, '#000003', directory)).toBeNull();
+        expect(cardMeaning(null, null, directory)).toBeNull();
+    });
 });
 
 describe('The Canvas card menu', () => {
-    const directory = subplotDirectory(rings, [{ bookId: 'book', name: 'Letters', color: '#abcdef' }], new Set(['#abcdef']));
+    const directory = subplotDirectory(rings, [{ name: 'Letters', color: '#abcdef' }]);
     it('says it is still reading the book’s subplots rather than guess', () => {
-        expect(subplotMenuModel(null, ['#000002'])).toEqual({ kind: 'reading' });
+        expect(subplotMenuModel(null, ['Mara'])).toEqual({ kind: 'reading' });
     });
-    it('checks the subplot every card already wears, and none when the cards differ', () => {
-        const same = subplotMenuModel(directory, ['#000002', '#000002']);
+    it('checks the subplot every card stands for, and none when the cards differ', () => {
+        const same = subplotMenuModel(directory, ['Mara', 'mara']);
         expect(same.kind === 'ready' && same.entries.filter(entry => entry.checked).map(entry => entry.name)).toEqual(['Mara']);
-        const mixed = subplotMenuModel(directory, ['#000002', null]);
+        const mixed = subplotMenuModel(directory, ['Mara', null]);
         expect(mixed.kind === 'ready' && mixed.entries.some(entry => entry.checked)).toBe(false);
         const ready = subplotMenuModel(directory, []);
         expect(ready.kind === 'ready' && ready.entries.map(entry => [entry.name, entry.pending])).toEqual([

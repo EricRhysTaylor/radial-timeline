@@ -92,6 +92,32 @@ describe('buildTimelineSharePayload', () => {
         }
     });
 
+    it('leaves out an id two scenes share, so neither merges into the other', () => {
+        const { items } = build([
+            scene({ path: 'Book/1 The Ball.md', title: '1 The Ball' }),
+            scene({ path: 'Book/1 The Ball 1.md', title: '1 The Ball' }),
+            scene({ path: 'Book/2 The Letter.md', title: '2 The Letter', sceneId: 'scn_e5f6a7b8' }),
+        ]);
+        expect(items).toHaveLength(3);
+        expect(items[0]).not.toHaveProperty('sceneId');
+        expect(items[1]).not.toHaveProperty('sceneId');
+        expect(items[2].sceneId).toBe('scn_e5f6a7b8');
+    });
+
+    it('leaves out a shared id when the two scenes have different titles', () => {
+        const { items } = build([
+            scene({ path: 'Book/1 The Ball.md', title: '1 The Ball' }),
+            scene({ path: 'Book/3 The Duel.md', title: '3 The Duel' }),
+        ]);
+        expect(items.map(item => item.title)).toEqual(['1 The Ball', '3 The Duel']);
+        expect(items.some(item => 'sceneId' in item)).toBe(false);
+    });
+
+    it('keeps the id of a scene repeated once per subplot', () => {
+        const { items } = build([scene({ subplot: 'Main Plot' }), scene({ subplot: 'Romance' })]);
+        expect(items[0].sceneId).toBe('scn_a1b2c3d4');
+    });
+
     it('sends one row per scene, with every subplot', () => {
         const { items } = build([scene({ subplot: 'Main Plot' }), scene({ subplot: 'Romance' })]);
         expect(items).toHaveLength(1);

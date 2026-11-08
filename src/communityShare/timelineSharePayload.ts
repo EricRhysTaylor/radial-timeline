@@ -110,7 +110,25 @@ function scenesOf(items: TimelineItem[]): TimelineItem[][] {
     return scenes;
 }
 
-function shareItem(rows: TimelineItem[]): TimelineShareItem {
+/**
+ * Scene ids that more than one scene carries. A duplicated note keeps its
+ * `scn_` id, and the website groups scenes by id: two scenes on one id either
+ * merge into one or make every sync fail. Those scenes go without an id and
+ * are placed by position instead.
+ */
+function repeatedSceneIds(scenes: TimelineItem[][]): Set<string> {
+    const seen = new Set<string>();
+    const repeated = new Set<string>();
+    for (const [item] of scenes) {
+        const id = item.sceneId;
+        if (!id) continue;
+        if (seen.has(id)) repeated.add(id);
+        else seen.add(id);
+    }
+    return repeated;
+}
+
+function shareItem(rows: TimelineItem[], repeatedIds: ReadonlySet<string>): TimelineShareItem {
     const item = rows[0];
     const frontmatter = item.rawFrontmatter;
     const authoredSubplots = textList(frontmatter?.Subplot);
@@ -123,7 +141,7 @@ function shareItem(rows: TimelineItem[]): TimelineShareItem {
         itemType: 'Scene',
         subplot: [...new Set(subplots)],
         ...(item.title ? { title: item.title } : {}),
-        ...(item.sceneId && isOpaqueSceneId(item.sceneId) ? { sceneId: item.sceneId } : {}),
+        ...(item.sceneId && isOpaqueSceneId(item.sceneId) && !repeatedIds.has(item.sceneId) ? { sceneId: item.sceneId } : {}),
         ...(when ? { when } : item.date ? { date: item.date } : {}),
         ...(item.act ? { act: item.act } : {}),
         ...(item.actNumber !== undefined ? { actNumber: item.actNumber } : {}),
@@ -141,7 +159,9 @@ function shareItem(rows: TimelineItem[]): TimelineShareItem {
  * private title, as it does for the book's project card.
  */
 export function buildTimelineSharePayload(params: BuildTimelineSharePayloadParams): TimelineSharePayload {
-    const items = scenesOf(params.items).map(shareItem);
+    const scenes = scenesOf(params.items);
+    const repeatedIds = repeatedSceneIds(scenes);
+    const items = scenes.map(rows => shareItem(rows, repeatedIds));
     const title = params.book.publicLabel?.trim() || params.bookMeta?.title?.trim() || params.book.title; // SAFE: the public label is optional; the book's own title is always set
     return {
         schemaVersion: TIMELINE_DATA_EXPORT_SCHEMA_VERSION,

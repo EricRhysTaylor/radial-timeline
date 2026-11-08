@@ -111,7 +111,7 @@ describe('Radial Timeline: Color by subplot, in a Canvas card menu', () => {
         expect(plugin.settings.canvasSubplotMemory).toEqual({ schemaVersion: 1, canvases: {
             'Ideas.canvas': [
                 { bookId: 'book', subplot: 'Letters', color: '#abcdef', cards: ['c'], created: true },
-                { bookId: 'book', subplot: 'Romance', color: '#e93147', cards: ['a', 'b'] },
+                { bookId: 'book', subplot: 'Romance', color: '#e93147', cards: ['a', 'b'], at: expect.any(Number) },
             ],
             'Other.canvas': [{ bookId: 'book', subplot: 'Dreams', color: slotHex(6), cards: ['o1'], created: true }],
         } });
@@ -122,7 +122,7 @@ describe('Radial Timeline: Color by subplot, in a Canvas card menu', () => {
         (dreams.submenu!.items[4] as FakeItem).click!();
         await vi.waitFor(() => expect(plugin.saveSettings).toHaveBeenCalledOnce());
         const memory = plugin.settings.canvasSubplotMemory as CanvasSubplotMemoryRecord;
-        expect(memory.canvases['Ideas.canvas']).toContainEqual({ bookId: 'book', subplot: 'Dreams', color: slotHex(6), cards: ['a', 'b'], created: true });
+        expect(memory.canvases['Ideas.canvas']).toContainEqual({ bookId: 'book', subplot: 'Dreams', color: slotHex(6), cards: ['a', 'b'], created: true, at: expect.any(Number) });
     });
 
     it('matches cards by color once the subplot the menu gave them is renamed or removed, never offering it as new', () => {

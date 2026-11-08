@@ -39,29 +39,35 @@ export function registerCanvasSubplotMemoryUpkeep(plugin: RadialTimelinePlugin):
 
     const remembers = (path: string): boolean => rememberedCanvases(plugin.settings.canvasSubplotMemory).includes(path);
 
-    /** The cards of a Canvas: from its open view when it has one (current to the last edit), else from its file. */
-    const readCards = async (file: TFile, fromFile: boolean): Promise<StoryCanvasData> => {
+    /**
+     * The cards of a Canvas: from its open view when it has one (current to
+     * the last edit), else from its file, with the time that file was saved.
+     */
+    const readCards = async (file: TFile, fromFile: boolean): Promise<{ data: StoryCanvasData; savedAt?: number }> => {
         const open = fromFile ? undefined : app.workspace.getLeavesOfType('canvas').map(leaf => leaf.view)
             .find(view => view instanceof ItemView && (view as unknown as { file?: TFile | null }).file?.path === file.path);
         const live = (open as unknown as { canvas?: { getData?: () => StoryCanvasData } } | undefined)?.canvas;
-        if (live && typeof live.getData === 'function') return live.getData();
+        if (live && typeof live.getData === 'function') return { data: live.getData() };
+        const savedAt = file.stat.mtime;
         const text = await app.vault.cachedRead(file);
-        return text.trim() ? JSON.parse(text) as StoryCanvasData : {}; // SAFE: an empty Canvas file is an empty Canvas
+        return { data: text.trim() ? JSON.parse(text) as StoryCanvasData : {}, savedAt }; // SAFE: an empty Canvas file is an empty Canvas
     };
 
     /**
      * Check a Canvas's choices against its cards. A change to the Canvas
      * keeps the choices of recolored cards dormant, so an undo and redo keep
-     * the subplot; opening it, or starting Obsidian, sweeps them.
+     * the subplot; opening it, or starting Obsidian, sweeps them. A file
+     * saved before the latest choice on it (returning to a Canvas tab within
+     * seconds of a recolor) is too old to check that Canvas against.
      */
     const revise = async (path: string, opening: boolean): Promise<void> => {
         if (!remembers(path)) return;
         const file = app.vault.getAbstractFileByPath(path);
         if (!(file instanceof TFile)) { update(memory => dropCanvasSubplotMemory(memory, path)); return; }
-        const data = await readCards(file, opening);
+        const { data, savedAt } = await readCards(file, opening);
         const hexOf = cardHexReader(activeDocument);
         const cards = canvasTextCards(data).map(card => ({ id: card.id, hex: hexOf(cardColor(card)) }));
-        update(memory => reviseCanvasChoices(memory, path, cards, opening));
+        update(memory => reviseCanvasChoices(memory, path, cards, opening, savedAt));
     };
     const reviseLogged = (path: string, opening: boolean): void => {
         void revise(path, opening).catch((error: unknown) => console.error(`[Canvas subplots] Could not check the cards of ${path}`, error));

@@ -66,13 +66,19 @@ function withCanvas(record: CanvasSubplotMemoryRecord | undefined, canvasPath: s
     return withCanvases({ ...record?.canvases, [canvasPath]: choices });
 }
 
-function choice(fields: { bookId: string; subplot: string; color: string; cards?: string[]; dormant?: string[]; created?: boolean }): CanvasSubplotChoice {
+function choice(fields: { bookId: string; subplot: string; color: string; cards?: string[]; dormant?: string[]; created?: boolean; at?: number }): CanvasSubplotChoice {
     return {
         bookId: fields.bookId, subplot: fields.subplot, color: fields.color,
         ...(fields.cards ? { cards: fields.cards } : {}),
         ...(fields.dormant?.length ? { dormant: fields.dormant } : {}),
         ...(fields.created ? { created: true as const } : {}),
+        ...(fields.at !== undefined ? { at: fields.at } : {}),
     };
+}
+
+/** A stored choice time: a positive finite number of ms, else none (a choice from before times were kept). */
+function choiceTime(raw: unknown): number | undefined {
+    return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : undefined;
 }
 
 /** Whether a choice still names a card, wearing its color or not; a carried-over choice names none and stands for its color. */
@@ -86,14 +92,14 @@ function cardIds(raw: unknown): string[] | null {
 }
 
 function checkedChoice(raw: unknown, bookIds: ReadonlySet<string>): CanvasSubplotChoice | null {
-    const { bookId, subplot, color, cards, dormant, created } = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    const { bookId, subplot, color, cards, dormant, created, at } = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
     const hex = normalizeOwnSubplotColor(color);
     if (typeof bookId !== 'string' || !bookIds.has(bookId) || typeof subplot !== 'string' || !subplot.trim() || !hex) return null;
     if (cards === undefined) return choice({ bookId, subplot: subplot.trim(), color: hex, created: created === true });
     const ids = cardIds(cards);
     if (!ids) return null;
     const resting = cardIds(dormant) ?? []; // SAFE: a choice with no dormant list has no dormant cards
-    const entry = choice({ bookId, subplot: subplot.trim(), color: hex, cards: ids, dormant: resting.filter(id => !ids.includes(id)), created: created === true });
+    const entry = choice({ bookId, subplot: subplot.trim(), color: hex, cards: ids, dormant: resting.filter(id => !ids.includes(id)), created: created === true, at: choiceTime(at) });
     return namesCards(entry) ? entry : null;
 }
 
@@ -171,10 +177,16 @@ export function canvasChoicesNow(record: Stored, canvasPath: string, cards: read
  * A Canvas's stored choices brought in line with its cards now; the same
  * record when nothing changed. `sweep` (the Canvas opening, Obsidian
  * starting) also drops dormant cards, so a choice no card wears lapses.
+ * `savedAt`, for cards read from the Canvas file, is when that file was
+ * saved: a file saved before the latest choice on the Canvas predates the
+ * colors the menu just gave (the Canvas saves seconds later), so the Canvas
+ * is left as stored until a newer read.
  */
-export function reviseCanvasChoices(record: Stored, canvasPath: string, cards: readonly CardNow[], sweep: boolean): Stored {
+export function reviseCanvasChoices(record: Stored, canvasPath: string, cards: readonly CardNow[], sweep: boolean, savedAt?: number): Stored {
     const current = readable(record);
-    if (!current?.canvases[canvasPath]) return record;
+    const stored = current?.canvases[canvasPath];
+    if (!current || !stored) return record;
+    if (savedAt !== undefined && stored.some(entry => entry.at !== undefined && entry.at > savedAt)) return record;
     const now = canvasChoicesNow(current, canvasPath, cards);
     const kept = sweep ? now.filter(entry => entry.cards!.length > 0).map(entry => choice({ ...entry, dormant: [] })) : now; // SAFE: choices as they stand now always name their cards
     if (JSON.stringify(kept) === JSON.stringify(current.canvases[canvasPath])) return record;
@@ -219,15 +231,15 @@ export function waitingSubplots(
 
 /**
  * Remember that the menu gave these cards a subplot in a color; `created`
- * when the subplot has no scenes yet. The open Canvas's other choices are
- * kept as they stand now (`open`), less these cards; a choice of the same
- * book, subplot and color takes them in.
+ * when the subplot has no scenes yet; `at` when (ms since the epoch). The
+ * open Canvas's other choices are kept as they stand now (`open`), less
+ * these cards; a choice of the same book, subplot and color takes them in.
  */
 export function rememberCardSubplot(
     record: Stored,
     canvasPath: string,
     open: readonly CanvasSubplotChoice[],
-    given: { bookId: string; subplot: string; color: string; cards: readonly string[]; created: boolean },
+    given: { bookId: string; subplot: string; color: string; cards: readonly string[]; created: boolean; at: number },
 ): CanvasSubplotMemoryRecord {
     const current = writable(record);
     const color = normalizeOwnSubplotColor(given.color);
@@ -236,8 +248,8 @@ export function rememberCardSubplot(
     const others = without(open, ids);
     const same = others.find(other => other.bookId === given.bookId && sameName(other.subplot, given.subplot) && other.color === color);
     const next = same
-        ? others.map(other => other === same ? choice({ ...other, cards: [...other.cards!, ...ids], created: !!other.created || given.created }) : other) // SAFE: every choice above names its cards
-        : [...others, choice({ bookId: given.bookId, subplot: given.subplot.trim(), color, cards: [...ids], created: given.created })];
+        ? others.map(other => other === same ? choice({ ...other, cards: [...other.cards!, ...ids], created: !!other.created || given.created, at: given.at }) : other) // SAFE: every choice above names its cards
+        : [...others, choice({ bookId: given.bookId, subplot: given.subplot.trim(), color, cards: [...ids], created: given.created, at: given.at })];
     return withCanvas(current, canvasPath, next)!; // SAFE: the list holds the cards just given
 }
 

@@ -603,6 +603,12 @@ export interface CanvasSubplotChoice {
      * no longer counts, and its cards are matched by color.
      */
     created?: true;
+    /**
+     * When the menu last gave cards this choice (ms since the epoch). The
+     * Canvas saves its file seconds after a recolor, so a file saved before
+     * this time cannot yet show the color, and is not read against the choice.
+     */
+    at?: number;
 }
 
 /** What the Canvas card menu gave each card, by Canvas file path. */

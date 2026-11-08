@@ -131,7 +131,7 @@ function choose(host: SubplotMenuHost, book: BookProfile, canvasPath: string, ca
         const hexOf = cardHexReader(host.view.containerEl.doc);
         const record = plugin.settings.canvasSubplotMemory;
         const open = canvasChoicesNow(record, canvasPath, canvasTextCards(data).map(card => ({ id: card.id, hex: hexOf(cardColor(card)) })));
-        const next = rememberCardSubplot(record, canvasPath, open, { bookId: book.id, subplot, color: hex, cards: cards.map(cardId), created });
+        const next = rememberCardSubplot(record, canvasPath, open, { bookId: book.id, subplot, color: hex, cards: cards.map(cardId), created, at: Date.now() });
         await saveCanvasSubplotMemory(plugin, markSubplotsMade(next, book.id, made));
     })().catch((error: unknown) => {
         console.error('[Canvas subplots] Could not remember the subplot given to these cards', error);

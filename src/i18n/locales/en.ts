@@ -5849,6 +5849,7 @@ export const en = {
             actTooHigh: "An Act card says Act {{act}}, and this book has {{acts}} acts.",
             doneScenes: "Created {{scenes}} and linked them to the Canvas.",
             failedScenes: "Could not finish linking the Canvas. {{scenes}} were created in the book folder and have been kept. {{message}}",
+            cardMemoryNotSaved: "The scenes were created and linked, but Radial Timeline could not save which Canvas cards became scenes. {{message}}",
             keyTitle: "From map to timeline",
             keyWorkflow: "The workflow",
             keySelect: "Select cards",

@@ -14,7 +14,7 @@ import { buildTableRow, type TimetableRow } from './timetableModel';
 import { SKETCH_AFTER_SCENE, SKETCH_ORDER, sketchAnchor, type PlacementItem } from './sketchPlacement';
 import { actsFromActCards, canvasReadingOrder, planCanvasSketchAppend, spreadAcrossActs } from './canvasSketchOrdering';
 import { actCardNumber } from './canvasNavigation';
-import { bookPlacementItems, bookRingColors, ownColorsForNewSubplots, ringColorsWith } from './canvasBookCards';
+import { bookPlacementItems, bookRingColors, bookSubplotName, ownColorsForNewSubplots, ringColorsWith } from './canvasBookCards';
 import { cardColor, cardColorCss, planCardColorSubplots, plansWaitOnAuthor, subplotForColor, type CardColorSubplot } from './canvasCardSubplots';
 import { bookOwnSubplotColors, readSubplotColorHex, subplotColorOn, type SubplotColor } from '../renderer/utils/subplotColors';
 import { ownSubplotColorsWritable, setOwnSubplotColor } from '../utils/ownSubplotColors';
@@ -676,7 +676,7 @@ export class CanvasConvertModal extends ErtModal {
                 [authorKeyFor('Act', settings)]: this.sceneAct(card),
             };
             const subplot = this.subplotFor(card, plans);
-            if (subplot) frontmatter[authorKeyFor('Subplot', settings)] = subplot;
+            if (subplot) frontmatter[authorKeyFor('Subplot', settings)] = bookSubplotName(subplot, book);
             await this.app.vault.create(path, addSceneIntakeTemplate(this.noteBody(frontmatter, card), settings));
             paths.set(card.id, path);
         }
@@ -787,7 +787,13 @@ export class CanvasConvertModal extends ErtModal {
             new Notice(mode === 'scenes' ? t('ui.canvasSketch.doneScenes', { scenes: tCount('scene', paths.size) }) : t('ui.canvasSketch.done', { count: paths.size }), 6000);
             // Only now that the Canvas links the new notes does the card menu forget their cards.
             const existing = this.ringsBook === book.id ? this.directory.filter(entry => !entry.pending).map(entry => entry.name) : [];
-            await this.forgetConvertedCards(book, initial, [...paths.keys()], new Set([...created, ...existing]));
+            try {
+                await this.forgetConvertedCards(book, initial, [...paths.keys()], new Set([...created, ...existing]));
+            } catch (error) {
+                // The scenes exist and the Canvas links them; only the card menu's memory could not be saved.
+                console.error('[Canvas subplots] Could not save the Canvas card choices after Create', error);
+                new Notice(t('ui.canvasSketch.cardMemoryNotSaved', { message: error instanceof Error ? error.message : String(error) }), 10000);
+            }
             // Draw the timeline once, complete: only after Obsidian has read every new note's properties.
             const indexed = await this.indexed([...paths.values()]);
             if (mode === 'scenes') await this.plugin.setActiveBookId(book.id);

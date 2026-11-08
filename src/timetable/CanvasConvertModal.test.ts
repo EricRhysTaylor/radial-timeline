@@ -9,6 +9,7 @@ import type { SubplotColor } from '../renderer/utils/subplotColors';
 import type { CardColorStanding, DirectoryEntry } from './canvasSubplotDirectory';
 import type { CanvasSubplotMemoryRecord } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
+import { syncMainPlotName } from '../utils/mainPlot';
 
 /** Palette slot N paints `#0000NN` (1-based), so test colors read at a glance. */
 const slotHex = (slot: number): string => `#${String(slot + 1).padStart(6, '0')}`;
@@ -222,6 +223,38 @@ describe('Canvas scene conversion', () => {
         // The scene was written, so its new subplot keeps its color.
         expect(test.book.ownSubplotColors).toEqual({ schemaVersion: 1, colors: { Letters: '#abcdef' } });
         error.mockRestore();
+    });
+
+    it('counts the scenes created and opens the timeline when only the card memory cannot be saved', async () => {
+        const test = scenes(['1']);
+        rememberLetters(test);
+        // The new subplot's color saves; the card memory after the links does not.
+        vi.mocked(test.plugin.saveSettings).mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('Disk full'));
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        await convert(test);
+        expect(test.saved.get('Book/1 A scene.md')).toContain('Subplot: Letters');
+        expect(test.getData().nodes?.[0]).toMatchObject({ type: 'file', file: 'Book/1 A scene.md' });
+        expect(test.plugin.setActiveBookId).toHaveBeenCalledWith('book');
+        expect(test.activateView).toHaveBeenCalledOnce();
+        expect(error).toHaveBeenCalledWith(expect.stringContaining('[Canvas subplots]'), expect.objectContaining({ message: 'Disk full' }));
+        expect(error).not.toHaveBeenCalledWith('[Canvas sketches]', expect.anything());
+        error.mockRestore();
+    });
+
+    it('writes the chosen book’s own main plot name, not the active book’s, into a scene of another book', async () => {
+        // The active book calls its main plot Shail; the chosen book never renamed its own.
+        syncMainPlotName({ books: [{ id: 'active', title: 'Active', sourceFolder: 'Active', mainPlotName: 'Shail' }], activeBookId: 'active', timelineScope: 'book' });
+        try {
+            const test = scenes(['1']);
+            colorCards(test, [{ color: slotHex(0), standing: { kind: 'subplot', subplot: 'Shail' } }]);
+            Reflect.set(test.modal, 'directory', [{ name: 'Shail', hex: slotHex(0), pending: false }] satisfies DirectoryEntry[]);
+            named(test).set(slotHex(0), 'Shail');
+            await convert(test);
+            expect(test.saved.get('Book/1 A scene.md')).toContain('Subplot: Main Plot');
+            expect(test.saved.get('Book/1 A scene.md')).not.toContain('Shail');
+        } finally {
+            syncMainPlotName({ books: [], activeBookId: undefined, timelineScope: 'book' });
+        }
     });
 
     it('puts cards on the subplot the card menu gave them, even when another subplot wears their color now', async () => {

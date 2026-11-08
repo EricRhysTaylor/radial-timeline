@@ -4,7 +4,7 @@ import type { BookProfile, RadialTimelineSettings } from '../types/settings';
 import { compareSubplotOrder, computeCacheableValues } from '../renderer/utils/Precompute';
 import { assignSubplotColors, bookOwnSubplotColors, type OwnSubplotColors, type SubplotColor } from '../renderer/utils/subplotColors';
 import { getBookIdForPath } from '../utils/books';
-import { getMainPlotName } from '../utils/mainPlot';
+import { getBookMainPlotName, getMainPlotName } from '../utils/mainPlot';
 import type { PluginRendererFacade } from '../utils/sceneHelpers';
 import { buildRingLayout, buildTableRow, type TimetableRow } from './timetableModel';
 import type { PlacementItem } from './sketchPlacement';
@@ -48,6 +48,15 @@ export function bookPlacementItems(app: App, settings: RadialTimelineSettings, b
 export function bookSubplotChoices(wheel: ReadonlyMap<string, SubplotColor>, own: OwnSubplotColors, rows: TimetableRow[]): RingChoice[] {
     const layout = buildRingLayout([...wheel.keys()], own, rows);
     return [...new Set([getMainPlotName(), ...layout.order])].map(name => ({ name, color: layout.colors.get(name) ?? { kind: 'slot', slot: 0 } })); // SAFE: a book with no scenes has no layout yet, and Main Plot always takes the first slot
+}
+
+/**
+ * The Subplot a new scene of `book` lists. Every book's main plot is read,
+ * as the timeline reads it, under the timeline's main plot name (the active
+ * book's, or the saga's); a scene written into a book lists that book's own.
+ */
+export function bookSubplotName(subplot: string, book: Pick<BookProfile, 'mainPlotName'>): string {
+    return subplot === getMainPlotName() ? getBookMainPlotName(book) : subplot;
 }
 
 /**

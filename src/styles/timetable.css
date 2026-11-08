@@ -1736,7 +1736,8 @@
 }
 
 .ert-text-sketch-drop { display: none; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--size-4-4); min-height: 128px; margin: var(--size-4-2); padding: var(--size-4-4); border: 2px dashed var(--interactive-accent); border-radius: var(--radius-m); background: var(--background-secondary); color: var(--text-normal); box-shadow: var(--shadow-s); pointer-events: none; text-align: center; }
-.ert-note-drop-number[hidden], .ert-note-drop-anchor[hidden] { display: none; }
+/* Note drop rows hidden by kind: [hidden] alone loses to .setting-item's display. */
+.ert-note-drop-row[hidden] { display: none; }
 .ert-timeline-note-drop { --ert-confirm-accent: var(--interactive-accent); }
 .ert-timeline-note-drop .ert-drag-confirm-impact-text { min-width: 0; }
 .ert-timeline-note-drop .ert-drag-confirm-impact-value { overflow-wrap: anywhere; }

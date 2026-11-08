@@ -2102,14 +2102,12 @@ export class RadialTimelineView extends ItemView {
         const elapsedMs = service.getActiveElapsedMs();
         const statusDisplay = this.getSessionStatusDisplay(active, elapsedMs);
         const clockProgressStep = this.getActiveSessionProgressStep(active, elapsedMs);
-        const clockText = statusDisplay.tone === 'complete'
-            ? this.formatCompletedSessionSummary(active, elapsedMs)
-            : this.getActiveWritingSessionPanelClockText(active, elapsedMs);
         panel.dataset.sessionRenderKey = this.getActiveWritingSessionPanelRenderKey(active, elapsedMs);
 
         const clock = panel.createDiv({ cls: `ert-timeline-session-panel__clock is-${statusDisplay.tone}` });
         this.applySessionProgressClass(clock, clockProgressStep);
-        clock.createDiv({ cls: 'ert-timeline-session-panel__clock-value', text: clockText });
+        const clockValue = clock.createDiv({ cls: 'ert-timeline-session-panel__clock-value' });
+        this.setSessionClockParts(clockValue, this.getActiveWritingSessionPanelClockParts(active, elapsedMs));
         // Live tracking stays one line: the clock is the whole story. Session
         // shape (mode/stage/book/targets) lives in the aria detail and the
         // start form, not repeated here.
@@ -2250,25 +2248,46 @@ export class RadialTimelineView extends ItemView {
         ].join('|');
     }
 
-    private getActiveWritingSessionPanelClockText(active: ActiveWritingSession, elapsedMs: number): string {
+    /**
+     * The live clock, as the parts it may wrap between. A word-goal session
+     * reads "0/400w 31m": word progress, then minutes remaining on a countdown
+     * or elapsed without one. Those are two parts, so a long count puts its
+     * minutes on a second line instead of running past the panel's edge;
+     * nothing ever breaks inside a part.
+     */
+    private getActiveWritingSessionPanelClockParts(active: ActiveWritingSession, elapsedMs: number): string[] {
         const goalMs = active.goalMinutes ? active.goalMinutes * 60000 : undefined;
         const countdownElapsedMs = this.getCountdownSegmentElapsedMs(active, elapsedMs);
         const remainingMs = goalMs ? Math.max(0, goalMs - countdownElapsedMs) : undefined;
         const statusDisplay = this.getSessionStatusDisplay(active, elapsedMs);
         if (statusDisplay.tone === 'complete') {
-            return this.formatCompletedSessionSummary(active, elapsedMs);
+            return [this.formatCompletedSessionSummary(active, elapsedMs)];
         }
-        // Word-goal sessions get one compact line ("0/400w 31m"): word progress
-        // plus minutes remaining on a countdown, or minutes elapsed without one.
         if (this.sessionHasWordGoal(active)) {
             const typedWords = Math.max(0, Math.round(active.typedWords || 0));
             const goalWords = Math.max(1, Math.round(active.goalWords || 1));
             const minutes = remainingMs !== undefined
                 ? Math.ceil(remainingMs / 60000)
                 : Math.floor(elapsedMs / 60000);
-            return t('ui.timeLineView.compactWordClock', { typed: typedWords, goal: goalWords, minutes });
+            return [
+                t('ui.timeLineView.compactWordClockWords', { typed: typedWords, goal: goalWords }),
+                t('ui.timeLineView.compactWordClockMinutes', { minutes }),
+            ];
         }
-        return this.formatSessionClockHms(remainingMs ?? elapsedMs);
+        return [this.formatSessionClockHms(remainingMs ?? elapsedMs)];
+    }
+
+    /** Write the clock's parts, updating the spans in place while their number holds. */
+    private setSessionClockParts(clockValue: HTMLElement, parts: string[]): void {
+        const spans = Array.from(clockValue.children);
+        if (spans.length !== parts.length) {
+            clockValue.empty();
+            for (const part of parts) clockValue.createSpan({ cls: 'ert-timeline-session-panel__clock-part', text: part });
+            return;
+        }
+        spans.forEach((span, index) => {
+            if (span.textContent !== parts[index]) span.setText(parts[index]);
+        });
     }
 
     private syncActiveWritingSessionPanelClock(panel: HTMLElement, active: ActiveWritingSession): boolean {
@@ -2287,7 +2306,7 @@ export class RadialTimelineView extends ItemView {
         clock.classList.toggle('is-paused', statusDisplay.tone === 'paused');
         clock.classList.toggle('is-complete', statusDisplay.tone === 'complete');
         this.applySessionProgressClass(clock, clockProgressStep);
-        clockValue.setText(this.getActiveWritingSessionPanelClockText(active, elapsedMs));
+        this.setSessionClockParts(clockValue, this.getActiveWritingSessionPanelClockParts(active, elapsedMs));
         return true;
     }
 

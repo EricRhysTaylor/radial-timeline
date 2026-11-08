@@ -1409,6 +1409,14 @@ export const es: TranslationKeys = {
                 "one": "{{count}} palabra",
                 "other": "{{count}} palabras"
             },
+            "character": {
+                "one": "{{count}} personaje",
+                "other": "{{count}} personajes"
+            },
+            "place": {
+                "one": "{{count}} lugar",
+                "other": "{{count}} lugares"
+            },
             "notification": {
                 "one": "{{count}} notificación",
                 "other": "{{count}} notificaciones"
@@ -5907,8 +5915,6 @@ export const es: TranslationKeys = {
             "generateSummaries": "Generar resúmenes de IA para perfiles (lento: una llamada por personaje/lugar)",
             "applyWriteScenes": "Aplicar — Escribir {{count}} Escenas",
             "actPill": "Acto {{act}}",
-            "charsPill": "{{count}} Chars",
-            "placesPill": "{{count}} Lugares",
             "failedPill": "fracasado",
             "extractionFailedReason": "La extracción falló: {{error}}",
             "extractionFailedSkipped": "Error de extracción: esta escena se omitirá.",
@@ -6294,6 +6300,7 @@ export const es: TranslationKeys = {
             noteDropExists: 'Ya existe una nota con ese nombre en la carpeta de destino.',
             noteDropDone: 'Nota añadida al libro.',
             captureSketchTitle: 'Crear boceto',
+            captureSketchAdded: 'Boceto añadido a {{book}}.',
             captureSketchName: 'Título del boceto',
             captureSketchText: 'Texto del boceto',
             captureSketchDrop: 'Suelta el texto para crear un boceto',
@@ -7578,7 +7585,8 @@ export const es: TranslationKeys = {
             "cancelledSession": "Sesión de escritura cancelada.",
             "cancelFailed": "No se pudo cancelar la sesión de escritura.",
             "changeLampAudience": "Cambia quién ve tu lámpara",
-            "compactWordClock": "{{typed}}/{{goal}}w {{minutes}}m",
+            "compactWordClockWords": "{{typed}}/{{goal}}w",
+            "compactWordClockMinutes": "{{minutes}}m",
             "commandPaletteUnavailable": "La paleta de comandos no está disponible.",
             "commandPaletteSearchMissing": "Se abrió la paleta de comandos, pero no se encontró el cuadro de búsqueda.",
             "legendTitle": "Claves de línea de tiempo",
@@ -7769,7 +7777,7 @@ export const es: TranslationKeys = {
             "linkWiki": "Wiki — Documentación completa",
             "linkCommunity": "Comunidad",
             "linkIssues": "Informes de errores / solicitudes de funciones",
-            "backupNotice": "Haga una copia de seguridad de su bóveda de Obsidian con regularidad para protegerse contra la pérdida de datos. Más información en [Guía de copias de seguridad de Obsidian]. La sincronización no protege contra todas las formas de pérdida de datos. Las opciones de sincronización incluyen [Obsidian Sync] o [Obsidian Git]"
+            "backupNotice": "Haga una copia de seguridad de su bóveda de Obsidian con regularidad para protegerse contra la pérdida de datos. Más información en [Guía de copias de seguridad de Obsidian]. La sincronización no protege contra todas las formas de pérdida de datos. La recuperación de archivos de Obsidian guarda instantáneas de sus notas, y [Obsidian Sync] o iCloud mantienen una copia en sus otros dispositivos."
         },
         "writingSessionCompletionModal": {
             allocateScenes: "Asignar esta sesión a escenas",
@@ -7949,14 +7957,14 @@ export const es: TranslationKeys = {
             "reorderedNotes": "Reordenado {{notes}}"
         },
         "yamlSafety": {
-            "dataviewInlineQuery": "Consulta en línea de DataView",
-            "dataviewJsApiCall": "DataView JS API Llamada",
+            "dataviewInlineQuery": "Sintaxis de consulta en línea (`= …`)",
+            "dataviewJsApiCall": "Llamada a API de script (dv.…)",
             "dynamicEval": "Invocación de evaluación dinámica",
             "dynamicFunctionConstructor": "Constructor de funciones dinámicas",
             "dynamicFunctionConstructorNew": "Constructor de funciones dinámicas (nuevo formulario)",
             "embedTag": "<embed> Etiqueta",
             "fileUnreadable": "No se pudo leer el archivo: posible problema de codificación o permiso.",
-            "foreignPluginKey": "La tecla \"{{key}}\" parece ser inyectada por el complemento \"{{plugin}}\".",
+            "foreignPluginKey": "La clave \"{{key}}\" parece haber sido añadida por otro complemento.",
             "htmlEventHandler": "Atributo del controlador de eventos HTML",
             "iframeTag": "<iframe> Etiqueta",
             "javascriptUri": "JavaScript: URI",
@@ -7968,7 +7976,7 @@ export const es: TranslationKeys = {
             "scriptTag": "<script> Etiqueta",
             "severityDanger": "Peligro",
             "severityWarning": "Advertencia",
-            "templaterSyntax": "Sintaxis de plantilla",
+            "templaterSyntax": "Sintaxis de etiqueta de plantilla (<% %>)",
             "unparseableYaml": "YAML El bloque de la materia principal existe, pero Obsidian no pudo analizarlo, probablemente sintaxis malformada.",
             "unterminatedFence": "Apertura `---` Encontrado cerca pero no hay valla de cierre — YAML El bloque no está terminado.",
             "valueExceedsLimit": "El valor de \"{{key}}\" es {{length}} CHARS — excede el límite seguro ({{limit}}).",

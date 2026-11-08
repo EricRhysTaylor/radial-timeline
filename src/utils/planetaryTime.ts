@@ -170,14 +170,32 @@ export function formatPlanetaryDateTime(opts: {
     localMinutes: number;
 }): string {
     const { profile, localYear, localMonthIndex, localDayOfMonth, localWeekdayIndex, localHours, localMinutes } = opts;
-    const monthLabel = profile.monthNames?.[localMonthIndex] ?? `Month ${localMonthIndex + 1}`;
-    const weekdayLabel = profile.weekdayNames?.[localWeekdayIndex] ?? `Day ${localWeekdayIndex + 1}`;
     const epochLabel = profile.epochLabel ? `${profile.epochLabel.toUpperCase()} ` : '';
     const timeStr = `${pad(localHours)}:${pad(localMinutes)}`;
-    const weekdayAbbrev = abbreviate(weekdayLabel);
-    const monthAbbrev = abbreviate(monthLabel);
-    // Format: Year ☉ Weekday Month · Day @ Time
-    return `${epochLabel}Year ${localYear} ☉ ${weekdayAbbrev} ${monthAbbrev} · ${localDayOfMonth} @ ${timeStr}`;
+    const weekday = planetaryWeekdayToken(profile, localWeekdayIndex);
+    // The month and day read exactly as on the Alt rim: "JAN 29", or "6 29"
+    // when the calendar leaves its months unnamed.
+    const date = `${planetaryMonthToken(profile, localMonthIndex)} ${localDayOfMonth}`;
+    // Format: Year ☉ Weekday Month Day @ Time
+    return `${epochLabel}Year ${localYear} ☉ ${weekday ? `${weekday} ` : ''}${date} @ ${timeStr}`;
+}
+
+/**
+ * The month as the rim and the hover both print it: its name's abbreviation,
+ * or its number when the calendar leaves months unnamed.
+ */
+function planetaryMonthToken(profile: PlanetaryProfile, monthIndex: number): string {
+    const name = profile.monthNames?.[monthIndex]?.trim();
+    return name ? abbreviate(name) : String(monthIndex + 1);
+}
+
+/**
+ * The weekday's abbreviation. An unnamed week prints no weekday: a bare
+ * number beside the month and day would read as part of the date.
+ */
+function planetaryWeekdayToken(profile: PlanetaryProfile, weekdayIndex: number): string | null {
+    const name = profile.weekdayNames?.[weekdayIndex]?.trim();
+    return name ? abbreviate(name) : null;
 }
 
 /**
@@ -199,9 +217,8 @@ export function formatPlanetaryDateAdaptive(
     const isTimeOnly = hasTime && !hasYear && !/[A-Za-z]{3,}/.test(earthLabel.replace(/am|pm|noon|midnight/i, ''));
 
     const { profile, localYear, localMonthIndex, localDayOfMonth, localHours, localMinutes } = conversion;
-    const monthLabel = profile.monthNames?.[localMonthIndex] ?? `${localMonthIndex + 1}`;
     // Use short abbreviation for perimeter labels
-    const monthAbbrev = abbreviate(monthLabel); 
+    const monthAbbrev = planetaryMonthToken(profile, localMonthIndex);
     const timeStr = `${pad(localHours)}:${pad(localMinutes)}`;
 
     const parts: string[] = [];

@@ -793,8 +793,18 @@
   -webkit-text-fill-color: transparent;
 }
 
+/* Begin / Dismiss wear the subplot's color, which may be pale (yellow) or
+   dark (purple). No one label color reads on every solid fill, so the color
+   tints the theme's background and outlines the button, and the label is the
+   theme's own text: readable in light and dark themes alike. */
 .ert-ui.ert-scope--modal .ert-drag-confirm-modal .ert-mod-cta {
-  background-color: var(--ert-confirm-accent, var(--interactive-accent));
+  color: var(--text-normal);
+  background-color: color-mix(in srgb, var(--ert-confirm-accent, var(--interactive-accent)) 28%, var(--background-primary));
+  border: 1px solid var(--ert-confirm-accent, var(--interactive-accent));
+}
+
+.ert-ui.ert-scope--modal .ert-drag-confirm-modal .ert-mod-cta:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--ert-confirm-accent, var(--interactive-accent)) 40%, var(--background-primary));
 }
 
 .ert-subplot-picker-modal {

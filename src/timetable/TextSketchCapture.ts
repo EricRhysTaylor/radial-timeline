@@ -59,7 +59,9 @@ class TextSketchCaptureModal extends ErtModal {
                 if (act !== null) fm[authorKeyFor('Act', this.plugin.settings)] = act;
                 await this.app.vault.create(path, `---\n${stringifyYaml(fm)}---\n\n${body.value}\n`);
                 this.close();
-                new Notice(t('ui.timetable.outlineSketchAdded'));
+                // This dialog opens from the timeline and the Timetable's other
+                // layouts too, so the notice names the book, not the outline.
+                new Notice(t('ui.timetable.captureSketchAdded', { book: book.title || book.sourceFolder }));
                 this.plugin.refreshTimelineIfNeeded(null);
             })().catch((error: unknown) => { submit.disabled = false; new Notice(t('ui.timetable.writeFailed', { message: error instanceof Error ? error.message : String(error) }), 8000); });
         };

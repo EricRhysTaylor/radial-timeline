@@ -1859,10 +1859,19 @@
   overflow-wrap: anywhere;
 }
 
-/* Live tracking is one line, never wrapped; only the "Save …?" complete
-   summary is allowed to wrap (overflow-wrap above). */
+/* Live tracking never breaks inside a part. A word-goal clock has two parts,
+   words and minutes ("107/1000w 119m"); when they don't fit the panel on one
+   line, the minutes go below at full size. Only the "Save …?" complete
+   summary wraps freely (overflow-wrap above). */
 .ert-timeline-session-panel__clock:not(.is-complete) .ert-timeline-session-panel__clock-value {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 1ch;
   min-width: 10.5ch;
+}
+
+.ert-timeline-session-panel__clock:not(.is-complete) .ert-timeline-session-panel__clock-part {
   white-space: nowrap;
 }
 

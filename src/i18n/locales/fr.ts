@@ -1406,8 +1406,16 @@ export const fr: TranslationKeys = {
                 "other": "{{count}} fichiers"
             },
             "word": {
-                "one": "{{count}} mot (Word)",
-                "other": "{{count}} mots (Word)"
+                "one": "{{count}} mot",
+                "other": "{{count}} mots"
+            },
+            "character": {
+                "one": "{{count}} personnage",
+                "other": "{{count}} personnages"
+            },
+            "place": {
+                "one": "{{count}} lieu",
+                "other": "{{count}} lieux"
             },
             "notification": {
                 "one": "{{count}} notification",
@@ -5907,8 +5915,6 @@ export const fr: TranslationKeys = {
             "generateSummaries": "Générer des résumés d'IA pour les profils (lent - un appel par caractère/lieu)",
             "applyWriteScenes": "Appliquer — Écrire {{count}} scènes",
             "actPill": "Acte {{act}}",
-            "charsPill": "{{count}} Chars",
-            "placesPill": "{{count}} Lieux",
             "failedPill": "manqué",
             "extractionFailedReason": "Échec de l'extraction : {{error}}",
             "extractionFailedSkipped": "Échec de l'extraction : cette scène sera ignorée.",
@@ -6294,6 +6300,7 @@ export const fr: TranslationKeys = {
             noteDropExists: 'Une note de ce nom existe déjà dans le dossier de destination.',
             noteDropDone: 'Note ajoutée au livre.',
             captureSketchTitle: 'Créer une esquisse',
+            captureSketchAdded: 'Esquisse ajoutée à {{book}}.',
             captureSketchName: 'Titre de l’esquisse',
             captureSketchText: 'Texte de l’esquisse',
             captureSketchDrop: 'Déposer le texte pour créer une esquisse',
@@ -7578,7 +7585,8 @@ export const fr: TranslationKeys = {
             "cancelledSession": "Séance d'écriture annulée.",
             "cancelFailed": "Impossible d'annuler la session d'écriture.",
             "changeLampAudience": "Changez qui voit votre lampe",
-            "compactWordClock": "{{typed}}/{{goal}}w {{minutes}}m",
+            "compactWordClockWords": "{{typed}}/{{goal}}w",
+            "compactWordClockMinutes": "{{minutes}}m",
             "commandPaletteUnavailable": "La palette de commandes n'est pas disponible.",
             "commandPaletteSearchMissing": "La palette de commandes s'est ouverte, mais la zone de recherche n'a pas été trouvée.",
             "legendTitle": "Clés de chronologie",
@@ -7769,7 +7777,7 @@ export const fr: TranslationKeys = {
             "linkWiki": "Wiki — Documentation complète",
             "linkCommunity": "Communauté",
             "linkIssues": "Rapports de bogues / requêtes de fonctionnalités",
-            "backupNotice": "Sauvegardez régulièrement votre coffre Obsidian pour vous protéger contre la perte de données. En savoir plus dans [le guide de sauvegarde Obsidian]. La synchronisation ne protège pas contre toutes les formes de perte de données. Les options de synchronisation incluent [Obsidian Sync] ou [Obsidian Git]"
+            "backupNotice": "Sauvegardez régulièrement votre coffre Obsidian pour vous protéger contre la perte de données. En savoir plus dans [le guide de sauvegarde Obsidian]. La synchronisation ne protège pas contre toutes les formes de perte de données. La récupération de fichiers d'Obsidian conserve des instantanés de vos notes, et [Obsidian Sync] ou iCloud gardent une copie sur vos autres appareils."
         },
         "writingSessionCompletionModal": {
             allocateScenes: "Attribuer cette session aux scènes",
@@ -7949,14 +7957,14 @@ export const fr: TranslationKeys = {
             "reorderedNotes": "Réorganisé {{notes}}"
         },
         "yamlSafety": {
-            "dataviewInlineQuery": "Requête en ligne DataView",
-            "dataviewJsApiCall": "Appel DataView JS API",
+            "dataviewInlineQuery": "Syntaxe de requête en ligne (`= …`)",
+            "dataviewJsApiCall": "Appel d'API de script (dv.…)",
             "dynamicEval": "Invocation d'évaluation dynamique",
             "dynamicFunctionConstructor": "Constructeur de fonctions dynamiques",
             "dynamicFunctionConstructorNew": "Constructeur de fonctions dynamiques (nouveau formulaire)",
             "embedTag": "<embed> Balise",
             "fileUnreadable": "Le fichier n'a pas pu être lu — Encodage ou autorisation possible.",
-            "foreignPluginKey": "La clé \"{{key}}\" semble être injectée par le plugin \"{{plugin}}\".",
+            "foreignPluginKey": "La clé \"{{key}}\" semble avoir été ajoutée par un autre plugin.",
             "htmlEventHandler": "Attribut du gestionnaire d'événements HTML",
             "iframeTag": "<iframe> Balise",
             "javascriptUri": "Javascript : URI",
@@ -7968,7 +7976,7 @@ export const fr: TranslationKeys = {
             "scriptTag": "<script> Balise",
             "severityDanger": "Danger",
             "severityWarning": "Avertissement",
-            "templaterSyntax": "Syntaxe du modèle",
+            "templaterSyntax": "Syntaxe de balise de modèle (<% %>)",
             "unparseableYaml": "YAML Le bloc Frontmatter existe mais Obsidian n'a pas pu l'analyser, probablement une syntaxe malformée.",
             "unterminatedFence": "Ouverture `---` Clôture trouvée mais aucune clôture de fermeture — YAML Le bloc n'est pas terminé.",
             "valueExceedsLimit": "La valeur pour \"{{key}}\" est {{length}} caractères — dépasse la limite de sécurité ({{limit}}).",

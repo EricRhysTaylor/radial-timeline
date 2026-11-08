@@ -95,15 +95,17 @@ class NoteDropModal extends ErtModal {
         const kind = new DropdownComponent(kindRow.createDiv({ cls: 'setting-item-control' }));
         kind.addOption('Scene', t('ui.timetable.noteDropScene')); kind.addOption('Sketch', t('ui.timetable.noteDropSketch'));
         kind.setValue(this.defaultKind);
-        const propertiesRow = this.contentEl.createDiv({ cls: 'setting-item' });
+        // Rows that come and go with the note's kind carry ert-note-drop-row: its
+        // [hidden] rule beats .setting-item's display, which the attribute alone does not.
+        const propertiesRow = this.contentEl.createDiv({ cls: 'setting-item ert-note-drop-row' });
         propertiesRow.createDiv({ cls: 'setting-item-name', text: t('ui.scenePropertiesSection.heading') });
         propertiesRow.createDiv({ cls: 'setting-item-control', text: scenePropertySetLabel(this.plugin.settings) });
-        const numberRow = this.contentEl.createDiv({ cls: 'setting-item ert-note-drop-number' });
+        const numberRow = this.contentEl.createDiv({ cls: 'setting-item ert-note-drop-row ert-note-drop-number' });
         numberRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropNumber') });
         const number = numberRow.createDiv({ cls: 'setting-item-control' }).createEl('input', { type: 'text', attr: { placeholder: '72' } });
         setAccessibleLabel(number, t('ui.timetable.noteDropNumber'));
         number.value = filenamePrefix(this.file.basename) ?? '';
-        const anchorRow = this.contentEl.createDiv({ cls: 'setting-item ert-note-drop-anchor' });
+        const anchorRow = this.contentEl.createDiv({ cls: 'setting-item ert-note-drop-row ert-note-drop-anchor' });
         anchorRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropAfter') });
         anchorRow.createDiv({ cls: 'setting-item-description', text: t('ui.timetable.noteDropAnchorHint') });
         const anchor = new DropdownComponent(anchorRow.createDiv({ cls: 'setting-item-control' }));

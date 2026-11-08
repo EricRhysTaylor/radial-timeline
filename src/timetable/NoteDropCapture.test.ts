@@ -113,3 +113,18 @@ describe('scene number collisions', () => {
         expect(sameSceneNumber(null, '5')).toBe(false);
     });
 });
+
+describe('Add note to the book: rows that follow the kind', () => {
+    it('hides every kind-dependent row with a rule that beats .setting-item', async () => {
+        const { readFileSync } = await import('node:fs');
+        const { resolve } = await import('node:path');
+        const source = readFileSync(resolve(process.cwd(), 'src/timetable/NoteDropCapture.ts'), 'utf8');
+        const css = readFileSync(resolve(process.cwd(), 'src/styles/timetable.css'), 'utf8');
+        const toggled = [...source.matchAll(/(\w+)\.hidden = kind\.getValue\(\)/g)].map(match => match[1]);
+        expect(toggled).toEqual(['propertiesRow', 'numberRow', 'anchorRow']);
+        for (const row of toggled) {
+            expect(source).toMatch(new RegExp(`const ${row} = this\\.contentEl\\.createDiv\\(\\{ cls: 'setting-item ert-note-drop-row[ '"]`));
+        }
+        expect(css).toContain('.ert-note-drop-row[hidden] { display: none; }');
+    });
+});

@@ -1409,6 +1409,14 @@ export const vi: TranslationKeys = {
                 "one": "{{count}} từ",
                 "other": "{{count}} từ"
             },
+            "character": {
+                "one": "{{count}} nhân vật",
+                "other": "{{count}} nhân vật"
+            },
+            "place": {
+                "one": "{{count}} địa điểm",
+                "other": "{{count}} địa điểm"
+            },
             "notification": {
                 "one": "{{count}} thông báo",
                 "other": "{{count}} thông báo"
@@ -5907,8 +5915,6 @@ export const vi: TranslationKeys = {
             "generateSummaries": "Tạo bản tóm tắt AI cho các cấu hình (chậm - một cuộc gọi cho mỗi ký tự / địa điểm)",
             "applyWriteScenes": "Áp dụng — Viết cảnh {{count}}",
             "actPill": "Hồi {{act}}",
-            "charsPill": "ký tự {{count}}",
-            "placesPill": "địa điểm {{count}}",
             "failedPill": "thất bại",
             "extractionFailedReason": "Trích xuất không thành công: {{error}}",
             "extractionFailedSkipped": "Trích xuất không thành công - cảnh này sẽ bị bỏ qua.",
@@ -6294,6 +6300,7 @@ export const vi: TranslationKeys = {
             noteDropExists: 'Thư mục đích đã có ghi chú cùng tên.',
             noteDropDone: 'Đã thêm ghi chú vào sách.',
             captureSketchTitle: 'Tạo bản phác thảo',
+            captureSketchAdded: 'Đã thêm bản phác thảo vào {{book}}.',
             captureSketchName: 'Tiêu đề bản phác thảo',
             captureSketchText: 'Nội dung bản phác thảo',
             captureSketchDrop: 'Thả văn bản để tạo bản phác thảo',
@@ -7578,7 +7585,8 @@ export const vi: TranslationKeys = {
             "cancelledSession": "phiên viết bị hủy.",
             "cancelFailed": "Không thể hủy bỏ phiên viết.",
             "changeLampAudience": "Thay đổi người nhìn thấy đèn của bạn",
-            "compactWordClock": "{{typed}} / {{goal}}w {{minutes}}m",
+            "compactWordClockWords": "{{typed}} / {{goal}}w",
+            "compactWordClockMinutes": "{{minutes}}m",
             "commandPaletteUnavailable": "Bảng lệnh không khả dụng.",
             "commandPaletteSearchMissing": "Bảng lệnh đã mở, nhưng không tìm thấy hộp tìm kiếm.",
             "legendTitle": "Các phím thời gian",
@@ -7769,7 +7777,7 @@ export const vi: TranslationKeys = {
             "linkWiki": "Wiki - Tài liệu đầy đủ",
             "linkCommunity": "cộng đồng",
             "linkIssues": "Báo cáo lỗi / Yêu cầu tính năng",
-            "backupNotice": "Hãy sao lưu kho Obsidian của bạn thường xuyên để tránh mất dữ liệu. Tìm hiểu thêm tại [Hướng dẫn sao lưu Obsidian]. Đồng bộ không bảo vệ khỏi mọi hình thức mất dữ liệu. Các tùy chọn đồng bộ gồm [Obsidian Sync] hoặc [Obsidian Git]"
+            "backupNotice": "Hãy sao lưu kho Obsidian của bạn thường xuyên để tránh mất dữ liệu. Tìm hiểu thêm tại [Hướng dẫn sao lưu Obsidian]. Đồng bộ không bảo vệ khỏi mọi hình thức mất dữ liệu. Khôi phục tệp của Obsidian lưu các bản chụp ghi chú của bạn, và [Obsidian Sync] hoặc iCloud giữ một bản sao trên các thiết bị khác của bạn."
         },
         "writingSessionCompletionModal": {
             allocateScenes: "Phân bổ phiên này cho các cảnh",
@@ -7949,14 +7957,14 @@ export const vi: TranslationKeys = {
             "reorderedNotes": "{{notes}} được sắp xếp lại"
         },
         "yamlSafety": {
-            "dataviewInlineQuery": "Truy vấn nội tuyến DataView",
-            "dataviewJsApiCall": "cuộc gọi dataview js API",
+            "dataviewInlineQuery": "Cú pháp truy vấn nội tuyến (`= …`)",
+            "dataviewJsApiCall": "Lệnh gọi API tập lệnh (dv.…)",
             "dynamicEval": "Lời kêu gọi đánh giá động",
             "dynamicFunctionConstructor": "Hàm tạo hàm động",
             "dynamicFunctionConstructorNew": "Hàm tạo hàm động (dạng mới)",
             "embedTag": "Thẻ <embed>",
             "fileUnreadable": "Không thể đọc tệp - có thể mã hóa hoặc sự cố quyền.",
-            "foreignPluginKey": "Phím \"{{key}}\" dường như được tiêm vào plugin \"{{plugin}}\".",
+            "foreignPluginKey": "Khóa \"{{key}}\" dường như được một plugin khác thêm vào.",
             "htmlEventHandler": "thuộc tính trình xử lý sự kiện html",
             "iframeTag": "Thẻ <iframe>",
             "javascriptUri": "JavaScript: URI",
@@ -7968,7 +7976,7 @@ export const vi: TranslationKeys = {
             "scriptTag": "Thẻ <script>",
             "severityDanger": "Nguy hiểm",
             "severityWarning": "Cảnh báo",
-            "templaterSyntax": "Cú pháp template",
+            "templaterSyntax": "Cú pháp thẻ mẫu (<% %>)",
             "unparseableYaml": "YAML frontmatter tồn tại nhưng Obsidian không thể phân tích cú pháp nó - có thể là cú pháp không đúng định dạng.",
             "unterminatedFence": "Mở hàng rào `---` nhưng không có hàng rào đóng cửa - khối YAML không bị hạn chế.",
             "valueExceedsLimit": "Giá trị cho \"{{key}}\" là ký tự {{length}} - vượt quá giới hạn an toàn ({{limit}}).",

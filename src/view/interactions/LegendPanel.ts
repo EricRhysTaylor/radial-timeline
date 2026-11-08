@@ -8,8 +8,10 @@ import { withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
  * ----------
  * The keys behind the timeline's and the Timetable's ✱ button: titled
  * sections of rows, each an icon or a swatch with a label and a detail.
- * The panel opens on hover, focus or click and closes on Esc, a click
- * elsewhere, or when the pointer leaves both the button and the panel.
+ * Hover or focus opens the panel for a look; it closes when the pointer
+ * leaves both the button and the panel. A click on the button opens and
+ * pins it: a pinned panel stays until Esc, a click elsewhere, or a second
+ * click on the button.
  */
 
 import { setIcon, type Component } from 'obsidian';
@@ -135,36 +137,50 @@ function renderRow(sectionEl: HTMLElement, row: LegendRow): void {
 /**
  * Open and close a key panel from its button. `beforeShow` fills (and may
  * place) the panel each time it opens; a hidden button never opens it.
+ *
+ * A click always opens and pins. It never closes a panel the same pointer
+ * just opened by hovering: only a click on an already pinned panel does.
  */
 export function wireLegendTrigger(component: Component, trigger: HTMLElement, panel: HTMLElement, beforeShow: () => void): void {
     const doc = trigger.ownerDocument;
     let hideTimer: number | null = null;
+    // Meaningful only while the panel is open: the view may close it itself
+    // (a mode change does), and a panel that opens again starts unpinned.
+    let pinned = false;
+    const isOpen = () => panel.hasClass('is-visible');
+    const isPinned = () => pinned && isOpen();
+    const cancelHide = () => {
+        if (hideTimer === null) return;
+        window.clearTimeout(hideTimer);
+        hideTimer = null;
+    };
     const show = () => {
-        if (hideTimer !== null) {
-            window.clearTimeout(hideTimer);
-            hideTimer = null;
-        }
+        cancelHide();
         if (trigger.hidden) return;
+        if (isOpen()) return;
+        pinned = false;
         beforeShow();
         panel.addClass('is-visible');
         trigger.setAttribute('aria-expanded', 'true');
     };
     const hide = () => {
+        cancelHide();
+        pinned = false;
         panel.removeClass('is-visible');
         trigger.setAttribute('aria-expanded', 'false');
     };
     const scheduleHide = () => {
-        if (hideTimer !== null) window.clearTimeout(hideTimer);
+        if (isPinned()) return;
+        cancelHide();
         hideTimer = window.setTimeout(() => {
             hideTimer = null;
+            if (isPinned()) return;
             if (panel.matches(':hover') || trigger.matches(':hover') || panel.contains(doc.activeElement)) return;
             hide();
         }, 120);
     };
 
-    component.register(() => {
-        if (hideTimer !== null) window.clearTimeout(hideTimer);
-    });
+    component.register(cancelHide);
     component.registerDomEvent(trigger, 'mouseenter', show);
     component.registerDomEvent(trigger, 'focus', show);
     component.registerDomEvent(trigger, 'mouseleave', scheduleHide);
@@ -172,8 +188,12 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
     component.registerDomEvent(trigger, 'click', (evt: MouseEvent) => {
         evt.preventDefault();
         evt.stopPropagation();
-        if (panel.hasClass('is-visible')) hide();
-        else show();
+        if (isPinned()) {
+            hide();
+            return;
+        }
+        show();
+        if (isOpen()) pinned = true;
     });
     component.registerDomEvent(panel, 'mouseenter', show);
     component.registerDomEvent(panel, 'mouseleave', scheduleHide);

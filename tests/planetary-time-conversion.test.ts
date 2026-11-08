@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { PlanetaryProfile } from '../src/types/settings';
 import { createMarsPlanetaryProfile, DARIAN_MARS_MONTH_NAMES, matchesLegacyMarsMonthNames } from '../src/utils/planetaryMars';
-import { convertFromEarth, convertToEarth, parseCommaNames } from '../src/utils/planetaryTime';
+import { convertFromEarth, convertToEarth, formatPlanetaryDateAdaptive, formatPlanetaryDateTime, parseCommaNames } from '../src/utils/planetaryTime';
 
 const TEST_PROFILE: PlanetaryProfile = {
     id: 'test',
@@ -15,6 +15,40 @@ const TEST_PROFILE: PlanetaryProfile = {
     monthNames: ['Aster', 'Beryl', 'Cinder'],
     weekdayNames: ['One', 'Two', 'Three', 'Four', 'Five'],
 };
+
+describe('planetary date in the hover', () => {
+    // Archebald, as filmed: a 31-hour day, a 9-day week, 412 days a year.
+    const ARCHEBALD: PlanetaryProfile = { id: 'archebald', label: 'Archebald', hoursPerDay: 31, daysPerWeek: 9, daysPerYear: 412, epochLabel: 'AE' };
+    const at = (profile: PlanetaryProfile) => formatPlanetaryDateTime({
+        profile, localYear: -108, localMonthIndex: 5, localDayOfMonth: 29, localWeekdayIndex: 2, localHours: 3, localMinutes: 52
+    });
+
+    it('keeps the month and day numbers when nothing is named, as the Alt rim does', () => {
+        expect(at(ARCHEBALD)).toBe('AE Year -108 ☉ 6 29 @ 03:52');
+        expect(at(ARCHEBALD)).not.toMatch(/DAY|MON/);
+    });
+
+    it('abbreviates named months and keeps the day number', () => {
+        const monthNames = ['Frost', 'Thaw', 'Seed', 'Bloom', 'Sun', 'Harvest', 'Ember', 'Gale', 'Mist', 'Rime', 'Dark', 'Turn'];
+        expect(at({ ...ARCHEBALD, monthNames })).toBe('AE Year -108 ☉ HAR 29 @ 03:52');
+    });
+
+    it('leads with the weekday when the week is named too', () => {
+        const monthNames = ['Frost', 'Thaw', 'Seed', 'Bloom', 'Sun', 'Harvest', 'Ember', 'Gale', 'Mist', 'Rime', 'Dark', 'Turn'];
+        const weekdayNames = ['Ash', 'Brine', 'Cog', 'Dune', 'Eddy', 'Fen', 'Gust', 'Hail', 'Isle'];
+        expect(at({ ...ARCHEBALD, monthNames, weekdayNames })).toBe('AE Year -108 ☉ COG HAR 29 @ 03:52');
+        expect(at({ ...ARCHEBALD, weekdayNames })).toBe('AE Year -108 ☉ COG 6 29 @ 03:52');
+    });
+
+    it('prints the same month and day as the rim label', () => {
+        const conversion = convertFromEarth(new Date(Date.UTC(1811, 10, 26, 21, 0)), ARCHEBALD);
+        expect(conversion).not.toBeNull();
+        if (!conversion) return;
+        const rim = formatPlanetaryDateAdaptive(conversion, 'Nov 26');
+        expect(rim).toBe(`${conversion.localMonthIndex + 1} ${conversion.localDayOfMonth}`);
+        expect(conversion.formatted).toContain(` ☉ ${rim} @ `);
+    });
+});
 
 describe('planetary time conversion', () => {
     it('converts Earth time to planetary time and back using the same profile', () => {

@@ -1406,8 +1406,16 @@ export const th: TranslationKeys = {
                 "other": "{{count}} ไฟล์"
             },
             "word": {
-                "one": "{{count}} คำ (Word)",
-                "other": "{{count}} คำ (Word)"
+                "one": "{{count}} คำ",
+                "other": "{{count}} คำ"
+            },
+            "character": {
+                "one": "{{count}} ตัวละคร",
+                "other": "{{count}} ตัวละคร"
+            },
+            "place": {
+                "one": "{{count}} สถานที่",
+                "other": "{{count}} สถานที่"
             },
             "notification": {
                 "one": "{{count}} การแจ้งเตือน",
@@ -5907,8 +5915,6 @@ export const th: TranslationKeys = {
             "generateSummaries": "สร้างบทสรุป AI สำหรับโปรไฟล์ (ช้า — หนึ่งการโทรต่ออักขระ/สถานที่)",
             "applyWriteScenes": "สมัคร — เขียน {{count}} ฉาก",
             "actPill": "องก์ที่ {{act}}",
-            "charsPill": "{{count}}ตัวอักษร",
-            "placesPill": "{{count}}สถานที่",
             "failedPill": "ล้มเหลว",
             "extractionFailedReason": "การสกัดล้มเหลว: {{error}}",
             "extractionFailedSkipped": "การแยกล้มเหลว — ฉากนี้จะถูกข้าม",
@@ -6294,6 +6300,7 @@ export const th: TranslationKeys = {
             noteDropExists: 'โฟลเดอร์ปลายทางมีโน้ตชื่อนี้อยู่แล้ว',
             noteDropDone: 'เพิ่มโน้ตลงในหนังสือแล้ว',
             captureSketchTitle: 'สร้างเค้าโครง',
+            captureSketchAdded: 'เพิ่มแบบร่างใน {{book}} แล้ว',
             captureSketchName: 'ชื่อเค้าโครง',
             captureSketchText: 'ข้อความเค้าโครง',
             captureSketchDrop: 'วางข้อความเพื่อสร้างเค้าโครง',
@@ -7578,7 +7585,8 @@ export const th: TranslationKeys = {
             "cancelledSession": "ยกเลิกการเขียนเซสชั่น",
             "cancelFailed": "ไม่สามารถยกเลิกการเขียนเซสชั่นได้",
             "changeLampAudience": "เปลี่ยนใครเห็นตะเกียงของคุณ",
-            "compactWordClock": "{{typed}}/{{goal}}W {{minutes}}m",
+            "compactWordClockWords": "{{typed}}/{{goal}}W",
+            "compactWordClockMinutes": "{{minutes}}m",
             "commandPaletteUnavailable": "จานคำสั่งไม่พร้อมใช้งาน",
             "commandPaletteSearchMissing": "เปิด Palette คำสั่ง แต่ไม่พบช่องค้นหา",
             "legendTitle": "คีย์ไทม์ไลน์",
@@ -7769,7 +7777,7 @@ export const th: TranslationKeys = {
             "linkWiki": "วิกิ - เอกสารฉบับเต็ม",
             "linkCommunity": "ชุมชน",
             "linkIssues": "รายงานข้อบกพร่อง / คำขอคุณสมบัติ",
-            "backupNotice": "สำรองข้อมูลของคุณ Obsidian ห้องนิรภัยเป็นประจำเพื่อป้องกันการสูญหายของข้อมูล เรียนรู้เพิ่มเติมได้ที่ [Obsidian คู่มือการสำรองข้อมูล]. Sync ไม่ได้ป้องกันการสูญหายของข้อมูลทุกรูปแบบ ตัวเลือกการซิงค์รวมถึง [Obsidian ซิงค์] หรือ [Obsidian Git]"
+            "backupNotice": "สำรองข้อมูลของคุณ Obsidian ห้องนิรภัยเป็นประจำเพื่อป้องกันการสูญหายของข้อมูล เรียนรู้เพิ่มเติมได้ที่ [Obsidian คู่มือการสำรองข้อมูล]. Sync ไม่ได้ป้องกันการสูญหายของข้อมูลทุกรูปแบบ การกู้คืนไฟล์ของ Obsidian จะเก็บสแนปช็อตของโน้ตของคุณ และ [Obsidian ซิงค์] หรือ iCloud จะเก็บสำเนาไว้ในอุปกรณ์อื่นของคุณ"
         },
         "writingSessionCompletionModal": {
             allocateScenes: "จัดสรรเซสชันนี้ให้แต่ละฉาก",
@@ -7949,14 +7957,14 @@ export const th: TranslationKeys = {
             "reorderedNotes": "จัดลำดับใหม่ {{notes}}"
         },
         "yamlSafety": {
-            "dataviewInlineQuery": "DataView แบบสอบถามแบบอินไลน์",
-            "dataviewJsApiCall": "DataView JS API โทร",
+            "dataviewInlineQuery": "ไวยากรณ์คิวรีแบบอินไลน์ (`= …`)",
+            "dataviewJsApiCall": "การเรียก API ของสคริปต์ (dv.…)",
             "dynamicEval": "การเรียกใช้การประเมินแบบไดนามิก",
             "dynamicFunctionConstructor": "ตัวสร้างฟังก์ชันแบบไดนามิก",
             "dynamicFunctionConstructorNew": "ตัวสร้างฟังก์ชันแบบไดนามิก (รูปแบบใหม่)",
             "embedTag": "<embed> แท็ก",
             "fileUnreadable": "ไม่สามารถอ่านไฟล์ได้ — ปัญหาการเข้ารหัสหรือการอนุญาตที่เป็นไปได้",
-            "foreignPluginKey": "คีย์ \"{{key}}\" ดูเหมือนจะถูกฉีดโดยปลั๊กอิน \"{{plugin}}\"",
+            "foreignPluginKey": "คีย์ \"{{key}}\" ดูเหมือนจะถูกเพิ่มโดยปลั๊กอินอื่น",
             "htmlEventHandler": "คุณลักษณะตัวจัดการเหตุการณ์ HTML",
             "iframeTag": "<iframe> แท็ก",
             "javascriptUri": "Javascript: URI",
@@ -7968,7 +7976,7 @@ export const th: TranslationKeys = {
             "scriptTag": "<script> แท็ก",
             "severityDanger": "อันตราย",
             "severityWarning": "การเตือน",
-            "templaterSyntax": "ไวยากรณ์ templater",
+            "templaterSyntax": "ไวยากรณ์แท็กเทมเพลต (<% %>)",
             "unparseableYaml": "YAML frontmatter block มีอยู่ แต่ Obsidian ไม่สามารถแยกวิเคราะห์ได้ — ไวยากรณ์ที่มีรูปแบบไม่ถูกต้อง",
             "unterminatedFence": "พบรั้ว `---` แต่ไม่มีรั้วปิด — บล็อก YAML ไม่สิ้นสุด",
             "valueExceedsLimit": "ค่าสำหรับ \"{{key}}\" คือ {{length}} chars — เกินขีดจำกัดที่ปลอดภัย ({{limit}})",

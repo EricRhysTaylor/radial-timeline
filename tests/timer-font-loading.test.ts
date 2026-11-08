@@ -168,11 +168,18 @@ describe('writing session timer font loading', () => {
         expect(timelineViewSource).not.toContain("button.setAttribute('title', label)");
         expect(timelineViewSource).not.toContain("settingsBtn.setAttribute('title'");
         expect(timelineViewSource).toContain('formatCompletedSessionSummary');
-        // Live tracking is a single compact clock line ("0/400w 31m") with no
-        // meta paragraph under it; only the complete summary may wrap.
-        expect(timelineViewSource).toContain("t('ui.timeLineView.compactWordClock', { typed: typedWords, goal: goalWords, minutes })");
+        // Live tracking is one compact clock ("0/400w 31m") with no meta
+        // paragraph under it. Its words and minutes are separate parts that
+        // never break inside: a long count puts the minutes on a second line
+        // at full size instead of running past the panel. Only the complete
+        // summary wraps freely.
+        expect(timelineViewSource).toContain("t('ui.timeLineView.compactWordClockWords', { typed: typedWords, goal: goalWords })");
+        expect(timelineViewSource).toContain("t('ui.timeLineView.compactWordClockMinutes', { minutes })");
         expect(timelineViewSource).not.toContain("cls: 'ert-timeline-session-panel__meta'");
-        expect(readRuleBlock(timelineCss, '.ert-timeline-session-panel__clock:not(.is-complete) .ert-timeline-session-panel__clock-value')).toContain('white-space: nowrap');
+        const liveClockBlock = readRuleBlock(timelineCss, '.ert-timeline-session-panel__clock:not(.is-complete) .ert-timeline-session-panel__clock-value');
+        expect(liveClockBlock).toContain('flex-wrap: wrap');
+        expect(liveClockBlock).not.toContain('font-size');
+        expect(readRuleBlock(timelineCss, '.ert-timeline-session-panel__clock:not(.is-complete) .ert-timeline-session-panel__clock-part')).toContain('white-space: nowrap');
         expect(timelineViewSource).not.toContain("? 'Session Complete'");
         expect(timelineViewSource).not.toContain("active.pausedAt ? 'Paused' : 'Running'");
     });

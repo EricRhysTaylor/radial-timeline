@@ -619,9 +619,10 @@ export function renderWelcomeScreen({ container, plugin, refreshTimeline, dismis
 
     const backupText = backupNotice.createDiv({ cls: 'rt-welcome-backup-text' });
     const backupPara = backupText.createDiv();
+    // Public copy names only Obsidian's own features, iCloud, Radial Timeline
+    // and Editorialist: never a third-party plugin.
     appendTextWithLinks(backupPara, WELCOME_COPY.backupNotice, [
         'https://help.obsidian.md/backup',
-        'https://obsidian.md/sync',
-        'https://obsidian.md/plugins?id=obsidian-git'
+        'https://obsidian.md/sync'
     ]);
 }

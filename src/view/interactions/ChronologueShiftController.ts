@@ -552,10 +552,13 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
             selectedPathsSet = new Set(selectedScenes.map(s => s.path ? encodeURIComponent(s.path) : '').filter(p => p));
         };
 
-        // Use capture phase to run before other handlers
-        // Works for Shift mode and ALT (Alien) mode
+        // Use capture phase to run before other handlers.
+        // Shift mode only: it owns the hover so scenes light for measuring.
+        // With the planet calendar (Alt) on, the hover passes through to the
+        // normal synopsis, which shows the planetary date and time; clicking
+        // two scenes still measures (handleShiftModeClick).
         view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (e: PointerEvent) => {
-            if (!mode.shift && !mode.alien) return;
+            if (!mode.shift) return;
 
             const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"]');
             if (!g) return;
@@ -582,10 +585,9 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
             }
         }, { capture: true }); // Use capture phase
 
-        // Use capture phase for pointerout too
-        // Works for Shift mode and ALT (Alien) mode
+        // Use capture phase for pointerout too (Shift mode only, as above)
         view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (e: PointerEvent) => {
-            if (!mode.shift && !mode.alien) return;
+            if (!mode.shift) return;
 
             const g = (e.target as Element).closest('.rt-scene-group[data-item-type="Scene"]');
             if (!g) return;

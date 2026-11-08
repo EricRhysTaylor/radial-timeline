@@ -54,4 +54,4 @@ The four modes in the Radial Timeline View — switch with `1`/`2`/`3`/`4` or th
 ---
 
 > [!IMPORTANT]
-> **Protect your work.** Keep regular vault backups alongside sync. See Obsidian's [backup guide](https://help.obsidian.md/backup), [Obsidian Sync](https://obsidian.md/sync), or the [Obsidian Git plugin](https://obsidian.md/plugins?id=obsidian-git).
+> **Protect your work.** Keep regular vault backups alongside sync. See Obsidian's [backup guide](https://help.obsidian.md/backup). Obsidian's File recovery keeps snapshots of your notes, and [Obsidian Sync](https://obsidian.md/sync) or iCloud keeps a copy on your other devices.

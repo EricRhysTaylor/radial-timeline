@@ -13,7 +13,7 @@ import { ensureSceneTemplateFrontmatter } from '../utils/sceneIds';
 import { getActiveLoadedBeatTab } from '../storyBeats/workspaceState';
 import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
 import { replayTransientClass } from '../utils/domClassEffects';
-import { getActiveBook } from '../utils/books';
+import { getActiveBook, getActiveBookSourceFolder } from '../utils/books';
 import { ensureActiveBookFolder } from './EnsureFirstBookModal';
 import {
     NONLINEAR_DEMO_ACT_COUNT,
@@ -734,20 +734,22 @@ export class BookDesignerModal extends Modal {
         this.refreshTemplateDropdown();
     }
 
-    onOpen(): void {
-        if (this.getBookProfiles().length === 0 || !(getActiveBook(this.plugin.settings)?.sourceFolder || '').trim()) {
-            void this.bootstrapFirstBookAndOpen();
+    /**
+     * With no book yet, the "Create your first book" prompt comes first and
+     * alone; Book Designer opens only once the book exists. Opening the shell
+     * first would leave an empty Book Designer behind the prompt.
+     */
+    open(): void {
+        if (this.getBookProfiles().length > 0 && getActiveBookSourceFolder(this.plugin.settings)) {
+            super.open();
             return;
         }
-        this.renderModal();
+        void ensureActiveBookFolder(this.plugin).then(book => {
+            if (book) super.open();
+        });
     }
 
-    private async bootstrapFirstBookAndOpen(): Promise<void> {
-        const book = await ensureActiveBookFolder(this.plugin);
-        if (!book) {
-            this.close();
-            return;
-        }
+    onOpen(): void {
         this.renderModal();
     }
 

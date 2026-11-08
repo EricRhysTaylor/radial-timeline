@@ -243,7 +243,8 @@ export async function scanFrontmatterSafety(
                     severity: 'warning',
                     category: 'foreign_plugin',
                     field: key,
-                    message: t('ui.yamlSafety.foreignPluginKey', { key, plugin }),
+                    // The message quotes the key; it names no other plugin.
+                    message: t('ui.yamlSafety.foreignPluginKey', { key }),
                     pattern: plugin,
                 });
             }

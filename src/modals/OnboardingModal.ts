@@ -20,6 +20,7 @@ import { setTooltip, setAccessibleLabel, withAccessibleLabel } from '../utils/do
  */
 
 import { frontmatterValueToText } from '../utils/frontmatter';
+import { countWords } from '../utils/text';
 import { openSettingsTab } from '../utils/obsidianInternals';
 import { App, ButtonComponent, DropdownComponent, Modal, Notice, TFolder, normalizePath, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
@@ -116,6 +117,22 @@ function openAiSettings(plugin: RadialTimelinePlugin): void {
 function abbreviateModelId(id: string): string {
   const leaf = (id || '').trim().split(/[\\/]/).pop() ?? ''; // SAFE: display-only leaf of a model id; an empty id renders as an empty label
   return leaf.replace(/\.(gguf|safetensors|bin)$/i, '');
+}
+
+/**
+ * The count pills on a Review row. The word count shows the scene's text
+ * arrived in full. Character and place pills name the people and places the
+ * import found, so they appear only when it found some: a structure-only
+ * import names none, and "0" beside every scene read as an empty note.
+ */
+export function reviewSceneCountLabels(proposal: Pick<SceneProposal, 'body' | 'frontmatter'>): string[] {
+  const fm = proposal.frontmatter;
+  const characters = Array.isArray(fm?.Character) ? fm.Character.length : 0;
+  const places = Array.isArray(fm?.Place) ? fm.Place.length : 0;
+  const labels = [tCount('word', countWords(proposal.body))];
+  if (characters > 0) labels.push(tCount('character', characters));
+  if (places > 0) labels.push(tCount('place', places));
+  return labels;
 }
 
 /** First `max` chars of a paragraph for the split-editor preview, with an ellipsis. */
@@ -1253,10 +1270,7 @@ export class OnboardingModal extends Modal {
     const meta = head.createDiv({ cls: 'ert-onb-scene__meta' });
     if (fm) {
       this.pill(meta, t('ui.onboardingModal.actPill', { act: frontmatterValueToText(fm.Act) || '?' }), 'ert-onb-pill--act'); // SAFE: pill label — the question mark marks an unknown Act instead of asserting one
-      const chars = Array.isArray(fm.Character) ? fm.Character.length : 0;
-      const places = Array.isArray(fm.Place) ? fm.Place.length : 0;
-      this.pill(meta, t('ui.onboardingModal.charsPill', { count: chars }), 'ert-onb-pill--count', true);
-      this.pill(meta, t('ui.onboardingModal.placesPill', { count: places }), 'ert-onb-pill--count', true);
+      for (const label of reviewSceneCountLabels(proposal)) this.pill(meta, label, 'ert-onb-pill--count', true);
       if (proposal.flags.length > 0) meta.createSpan({ cls: 'ert-onb-flag', text: '⚑' });
     } else {
       this.pill(meta, t('ui.onboardingModal.failedPill'), 'ert-onb-pill--warn', true);

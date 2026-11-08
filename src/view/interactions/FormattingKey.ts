@@ -8,9 +8,10 @@
  * A signature icon at the far right of each note's title bar. It opens a key
  * panel listing Obsidian's formatting with each one's hotkey and what to type.
  * Clicking a row runs Obsidian's own command on the note, around the selected
- * text. Nothing stays on the page: it opens when asked and leaves with the
- * pointer, so it never competes with Editorialist's review toolbar. The panel
- * hangs in the right gutter, past the end of the writing.
+ * text. Nothing stays on the page unasked: hovering opens it for a look and
+ * it leaves with the pointer; a click pins it until Esc, a click elsewhere or
+ * a second click on the icon. So it never competes with Editorialist's review
+ * toolbar. The panel hangs in the right gutter, past the end of the writing.
  */
 
 import { Component, MarkdownView, Platform, setIcon, type Editor } from 'obsidian';

@@ -19,12 +19,6 @@
   fill: var(--ert-character-lane-color);
 }
 
-/* The mark under the pointer gets an outline, so it is clear which slice the hover found. */
-.ert-character-lane-mark:hover {
-  stroke: var(--text-normal);
-  stroke-width: 1.5px;
-}
-
 /* Match the muted scene slices while a scene is in focus. */
 .ert-character-lane-hover-backdrop {
   fill: none;
@@ -41,12 +35,11 @@
   stroke-opacity: 1;
 }
 
-.radial-timeline-svg.scene-hover .ert-character-lane-mark {
+/* The mark under the pointer is the active one: it keeps its color while every
+   other mark steps back with the muted slices, and its character's name shows
+   beside it (.ert-character-lane-beside, AllScenesMode). */
+.radial-timeline-svg.scene-hover .ert-character-lane-mark:not(:hover) {
   fill: var(--rt-color-empty-selected);
-}
-
-.radial-timeline-svg.scene-hover .ert-character-lane-mark:hover {
-  stroke: var(--rt-color-empty-selected);
 }
 
 /* The ring key's character spotlight dims the other lanes and their names. */

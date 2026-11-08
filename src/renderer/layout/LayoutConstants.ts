@@ -64,31 +64,6 @@ export const APR_ICON_X = VERSION_ICON_X;
 /** Y position for APR icon CENTER */
 export const APR_ICON_Y = VERSION_ICON_Y - APR_ABOVE_VERSION_GAP;
 
-// -----------------------------------------------------------------------------
-// BOTTOM-RIGHT: Help Icon
-// -----------------------------------------------------------------------------
-
-/** X position for Help icon CENTER */
-export const HELP_ICON_X = 700;
-
-/** Y position for Help icon CENTER */
-export const HELP_ICON_Y = 756;
-
- // text baseline for backwards compat
-
-// -----------------------------------------------------------------------------
-// BOTTOM-RIGHT: Milestone Indicator (above Help)
-// -----------------------------------------------------------------------------
-
-/** Vertical gap between Milestone and Help icon centers */
-export const MILESTONE_ABOVE_HELP_GAP = 70;
-
-/** X position for Milestone icon CENTER (same as Help for alignment) */
-export const MILESTONE_ICON_X = HELP_ICON_X;
-
-/** Y position for Milestone icon CENTER */
-export const MILESTONE_ICON_Y = HELP_ICON_Y - MILESTONE_ABOVE_HELP_GAP;
-
 // =============================================================================
 // RADII - CORE STRUCTURE
 // =============================================================================

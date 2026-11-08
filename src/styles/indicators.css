@@ -555,33 +555,3 @@
 .rt-apr-indicator:hover .rt-apr-alert-icon {
   stroke-width: 1.5px;
 }
-
-/* =============================================================================
-   PROGRESS MILESTONE INDICATOR
-   Right-side indicator for stage completions and encouragement
-   ============================================================================= */
-.rt-milestone-indicator {
-  cursor: pointer;
-  opacity: 0.85;
-}
-
-.rt-milestone-indicator:hover {
-  opacity: 1;
-}
-
-/* Text styles - visible by default, pulses like APR */
-.rt-milestone-indicator-text {
-  font-family: '04b03b', 'Monaco', 'Courier New', monospace;
-  font-size: 20px;
-  text-anchor: middle;
-  dominant-baseline: baseline;
-  letter-spacing: 0;
-  pointer-events: none;
-  /* Fill color is set inline from the milestone type */
-  opacity: 1;
-  transition: opacity 0.2s ease, fill 0.2s ease;
-}
-
-.rt-milestone-indicator:hover .rt-milestone-icon {
-  stroke-width: 2px;
-}

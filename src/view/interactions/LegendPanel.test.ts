@@ -60,7 +60,7 @@ function page() {
         const open = () => panel.hasClass('is-visible');
         /** A full click on the button: the press, then the click the button stops. */
         const click = () => { pressOn(trigger); trigger.dispatchEvent(new Event('click')); };
-        return { pane, trigger, panel, row, beforeShow, open, click, leaf: { view: { containerEl: pane } } };
+        return { pane, trigger, panel, row, component, beforeShow, open, click, leaf: { view: { containerEl: pane } } };
     };
     return { doc, workspace, element, pressOn, key };
 }
@@ -161,6 +161,18 @@ describe('key panel trigger', () => {
         expect(first.open()).toBe(true);
         // A pinned key closed, hover works on the other again.
         first.click();
+        second.trigger.dispatchEvent(new Event('mouseenter'));
+        expect(second.open()).toBe(true);
+    });
+
+    it('lets other keys open on hover after a pinned key\'s pane closes (Cmd+W)', () => {
+        const p = page();
+        const first = p.key();
+        const second = p.key();
+        first.click();
+        // The pane closes with its key pinned: no press, no workspace event, just unload.
+        first.component.unload();
+        expect(first.open()).toBe(false);
         second.trigger.dispatchEvent(new Event('mouseenter'));
         expect(second.open()).toBe(true);
     });

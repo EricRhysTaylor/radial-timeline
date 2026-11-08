@@ -218,7 +218,10 @@ export function wireLegendTrigger(component: Component, trigger: HTMLElement, pa
         }, 120);
     };
 
-    component.register(cancelHide);
+    // Unload closes the key and clears its pin: a pane closed with its key
+    // pinned (Cmd+W) fires no event here, and a pin left behind would stop
+    // every other key in the window from opening on hover.
+    component.register(hide);
     component.registerDomEvent(trigger, 'mouseenter', look);
     component.registerDomEvent(trigger, 'focus', look);
     component.registerDomEvent(trigger, 'mouseleave', scheduleHide);

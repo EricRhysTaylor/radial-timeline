@@ -2,7 +2,7 @@
 
 This is the maintained content-only packager. It replaces the legacy helper under the Sherlock Holmes ingestion folder. Canonical book preparation, user-operated AI runs, and literary review happen before packaging.
 
-`pride-and-prejudice-next.json` is a **pending candidate**, separate from the contract for the published edition. It includes the canonical timetable, subplot Canvas, storybook portraits and place images. Its date is provisional: set it to the actual release date before building a release, then perform fresh-vault native acceptance and update the catalog only after publication. The November 9 trial passed automated packaging; it has not been accepted or published.
+`pride-and-prejudice-next.json` is a **pending candidate**, separate from the contract for the published edition. It includes the canonical timetable, subplot Canvas, 29 WebP storybook portraits and nine WebP place images. Its date is provisional: set it to the actual release date before building a release, then perform fresh-vault native acceptance and update the catalog only after publication. The November 9 WebP trial passed automated packaging and extracted-inventory checks; it has not been accepted or published. The prior PNG trial is superseded.
 
 ```sh
 uv run scripts/demo-vaults/package_sample_vault.py \

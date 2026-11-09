@@ -107,7 +107,7 @@ export async function importDemoVault(
             }
             report(t('ui.importDemoVault.statusOpening'));
             const manuscript = plugin.app.vault.getMarkdownFiles().filter(file => definitions.some(book => file.path.startsWith(`${book.sourceFolder}/`)));
-            await awaitDemoIndex(plugin, manuscript.map(file => file.path));
+            await awaitDemoIndex(plugin, [manifest.path, ...manuscript.map(file => file.path)]);
             if (!manuscript.length) throw new Error(t('ui.importDemoVault.manuscriptMissing'));
             await openDemo(plugin, demo);
             return;
@@ -157,7 +157,7 @@ export async function importDemoVault(
         installed = true;
         staging = null;
         report(t('ui.importDemoVault.statusPreparing'));
-        await awaitDemoIndex(plugin, plan.indexedPaths);
+        await awaitDemoIndex(plugin, [...plan.indexedPaths, `${destination}/Sample Vault Config.md`]);
         await openDemo(plugin, demo);
         new Notice(t('ui.importDemoVault.readyNotice', { title: demo.title }));
     } catch (error) {

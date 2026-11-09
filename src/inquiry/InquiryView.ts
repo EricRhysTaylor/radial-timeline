@@ -1,6 +1,7 @@
 import { setAccessibleLabel } from '../utils/domTooltip';
 import { openSettingsTab } from '../utils/obsidianInternals';
 import { sleep } from '../utils/sleep';
+import { isImportedStoryBook, storyBookInquirySources } from './storyVaultSources';
 import {
     ItemView,
     Menu,
@@ -4223,6 +4224,9 @@ export class InquiryView extends ItemView {
         count: number,
         overrideLabel?: string
     ): string {
+        if (className === 'scene' && isImportedStoryBook(this.app.vault, this.app.metadataCache, this.state.scope, this.state.activeBookId)) {
+            return `${getCorpusCcHeaderTooltipPure(className, mode, count, overrideLabel)} · ${t('ui.inquiryCorpusStripMinimap.storyVaultScenes')}`;
+        }
         return getCorpusCcHeaderTooltipPure(className, mode, count, overrideLabel);
     }
 
@@ -6672,7 +6676,7 @@ export class InquiryView extends ItemView {
     }
 
     private buildCorpusSettingsFingerprint(): string {
-        const sources = this.settingsAccessor.getSources();
+        const sources = this.normalizeInquirySources(this.settingsAccessor.getSources());
         const classes = sources?.classes ?? []; // SAFE: settings may omit class configs — fingerprint has no parts
         const parts = classes
             .filter(c => c.enabled)
@@ -7945,7 +7949,10 @@ export class InquiryView extends ItemView {
     }
 
     private normalizeInquirySources(raw?: InquirySourcesSettings): InquirySourcesSettings {
-        return normalizeInquirySourcesPure(raw);
+        const sources = normalizeInquirySourcesPure(raw);
+        return isImportedStoryBook(this.app.vault, this.app.metadataCache, this.state.scope, this.state.activeBookId)
+            ? storyBookInquirySources(sources)
+            : sources;
     }
 
     private extractClassValues(frontmatter: Record<string, unknown>): string[] {

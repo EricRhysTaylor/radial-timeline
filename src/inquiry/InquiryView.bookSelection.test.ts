@@ -24,6 +24,7 @@ function makeView(activeIndex = 0) {
     } as unknown as MetadataCache; // SAFE: resolver only reads these frontmatter records.
     const view = Object.assign(Object.create(InquiryView.prototype), {
         state,
+        app: { vault, metadataCache },
         plugin: { settings },
         perfCounters: { refreshUICalls: 0, refreshCorpusCalls: 0, corpusRefreshMs: 0 },
         startupFreshMode: false,

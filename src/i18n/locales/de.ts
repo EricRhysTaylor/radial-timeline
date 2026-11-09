@@ -2788,7 +2788,6 @@ export const de: DeepPartial<TranslationKeys> = {
             undatedBefore: 'Undatiert · steht in Erzählreihenfolge vor {{scene}}.',
             undatedNarrative: 'Undatiert · in Erzählreihenfolge angezeigt.',
             invalidWhen: 'Ungültiges When · in Erzählreihenfolge angezeigt; prüfen Sie das Datumsformat.',
-            durationNotSet: 'Duration nicht gesetzt',
         },
         errors: {
             loadFailed: 'Szenenzeit-Entscheidungen konnten nicht geladen werden: {{detail}}',

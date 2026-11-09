@@ -2789,7 +2789,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             undatedBefore: '日付未設定 · 物語順で {{scene}} の前にあります。',
             undatedNarrative: '日付未設定 · 物語順で表示しています。',
             invalidWhen: 'When が無効 · 物語順で表示しています。日付の形式を確認してください。',
-            durationNotSet: 'Duration 未設定',
         },
         errors: {
             loadFailed: 'シーン時間の判断を読み込めませんでした: {{detail}}',

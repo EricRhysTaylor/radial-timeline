@@ -9,8 +9,9 @@
  * `Wed Jan 3, 2085 @ 2:20PM`. A date-only When shows no time, because
  * `parseWhenField` reads it as local noon and printing "@ Noon" would invent a
  * clock time the author never wrote. The title bar's scene-time badge keeps its
- * own compact clock format (`sceneTimeLabel`). The Timetable's cells use the
- * short forms at the end of this file: When, Duration and Due.
+ * own compact clock format (`sceneTimeLabel`) for a When with a time, and uses
+ * this formatter for a date-only When. The Timetable's cells use the short
+ * forms at the end of this file: When, Duration and Due.
  */
 
 import { getFormattingLocale } from '../i18n';
@@ -23,6 +24,17 @@ const ENGLISH_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 
 /** True when the author's When text names a clock time. A date-only When never does. */
 export function whenTextHasClock(raw: string): boolean {
     return /\d{1,2}:\d{2}|\d\s*(?:am|pm)\b/i.test(raw);
+}
+
+/**
+ * True unless the author's When names only a year (`2085`), a year and month
+ * (`2085-04`) or a month and year (`April 2085`). `parseWhenField` reads those
+ * as the 1st of the period, so printing that day would invent a date the
+ * author never wrote. Meaningful only for a When that `parseWhenField` reads.
+ */
+export function whenTextNamesDay(raw: string): boolean {
+    const text = raw.trim();
+    return !/^\d{4}(?:[-/]\d{1,2})?$/.test(text) && !/^[A-Za-z]+\s*,?\s*\d{4}$/.test(text);
 }
 
 function englishClock(when: Date): string {

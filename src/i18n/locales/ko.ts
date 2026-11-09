@@ -2788,7 +2788,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             undatedBefore: '날짜 없음 · 서사 순서에서 {{scene}} 앞에 옵니다.',
             undatedNarrative: '날짜 없음 · 서사 순서로 표시됩니다.',
             invalidWhen: '잘못된 When · 서사 순서로 표시됩니다. 날짜 형식을 확인하세요.',
-            durationNotSet: 'Duration 미설정',
         },
         errors: {
             loadFailed: '장면 시간 결정을 불러오지 못했습니다: {{detail}}',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCompactDuration, formatDueLabel, formatLongDate, formatSceneWhen, formatTableWhen, whenTextHasClock } from './whenFormat';
+import { formatCompactDuration, formatDueLabel, formatLongDate, formatSceneWhen, formatTableWhen, whenTextHasClock, whenTextNamesDay } from './whenFormat';
 
 describe('whenTextHasClock', () => {
     it('reads a clock time only when the author wrote one', () => {
@@ -7,6 +7,15 @@ describe('whenTextHasClock', () => {
         expect(whenTextHasClock('2085-01-03 14:20')).toBe(true);
         expect(whenTextHasClock('2085-01-03T14:20')).toBe(true);
         expect(whenTextHasClock('2085-01-03 2pm')).toBe(true);
+    });
+});
+
+describe('whenTextNamesDay', () => {
+    it.each(['1811-10-09', '1811/10/9', '10/9/1811', 'October 9, 1811', '9 October 1811', '1811-10-09 20:00'])('reads a day in %s', when => {
+        expect(whenTextNamesDay(when)).toBe(true);
+    });
+    it.each(['1811', '1811-10', '1811/10', 'October 1811', 'Oct, 1811'])('reads no day in %s', when => {
+        expect(whenTextNamesDay(when)).toBe(false);
     });
 });
 

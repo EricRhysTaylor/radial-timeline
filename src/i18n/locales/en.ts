@@ -2500,7 +2500,6 @@ export const en = {
             undatedBefore: 'Undated · precedes {{scene}} in narrative order.',
             undatedNarrative: 'Undated · shown in narrative order.',
             invalidWhen: 'Invalid When · shown in narrative order; check the date format.',
-            durationNotSet: 'Duration not set',
         },
         errors: {
             loadFailed: 'Scene time decisions could not be loaded: {{detail}}',

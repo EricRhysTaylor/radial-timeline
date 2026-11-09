@@ -18,15 +18,28 @@ describe('scene time header label', () => {
         const weekday = new Date(2085, 3, 21).toLocaleDateString([], { weekday: 'short' });
         expect(sceneTimeLabel(when, '31 hours').text).toContain(`${weekday} · 31 hours`);
     });
-    it.each(['2085', 'April 2085', '2085-04-13'])('preserves date precision for %s', when => {
+    it.each(['2085', '2085-04', 'April 2085'])('preserves date precision for %s', when => {
         expect(sceneTimeLabel(when, '25 min').text).toBe(`${when} · 25 min`);
+    });
+    it('reads a date-only When as the scene date, with no clock or end time', () => {
+        expect(sceneTimeLabel('1811-10-09', '3 hours').text).toBe('Wed Oct 9, 1811 · 3 hours');
+    });
+    it.each(['1811-10-09', '1811/10/09', '10/9/1811', 'October 9, 1811', '9 October 1811'])('reads %s as the same day', when => {
+        expect(sceneTimeLabel(when, undefined).text).toBe('Wed Oct 9, 1811');
+    });
+    it('leaves an empty Duration out of the bar and names it in the description', () => {
+        const label = sceneTimeLabel('1811-10-09', undefined);
+        expect(label.text).toBe('Wed Oct 9, 1811');
+        expect(label.description).toBe('When: 1811-10-09 · Duration: Not set');
+        expect(sceneTimeLabel('2085-04-13T20:00:00', '').text).not.toContain('·');
     });
     it('preserves ongoing or unrecognized durations without calculating an end', () => {
         expect(sceneTimeLabel('2085-04-13T12:00:00', 'ongoing').text).not.toContain('→');
         expect(sceneTimeLabel('2085-04-13T12:00:00', 'a while').text).toContain('a while');
     });
     it('shows missing timing explicitly and preserves unparsed dates', () => {
-        expect(sceneTimeLabel(undefined, undefined).text).toBe('When not set · Duration not set');
+        expect(sceneTimeLabel(undefined, undefined).text).toBe('When not set');
+        expect(sceneTimeLabel(undefined, '2 hours').text).toBe('When not set · 2 hours');
         expect(sceneTimeLabel('tomorrow', '2 hours').text).toBe('tomorrow · 2 hours');
     });
     it('handles zero duration and retains seconds', () => {

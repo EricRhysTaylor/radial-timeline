@@ -2795,8 +2795,7 @@ export const vi: DeepPartial<TranslationKeys> = {
             "undatedAfter": "undated · Theo {{scene}} theo thứ tự tường thuật.",
             "undatedBefore": "không ghi ngày · Trước {{scene}} theo thứ tự tường thuật.",
             "undatedNarrative": "không ghi ngày · được hiển thị theo thứ tự tường thuật.",
-            "invalidWhen": "không hợp lệ khi · được hiển thị theo thứ tự tường thuật; Kiểm tra định dạng ngày.",
-            "durationNotSet": "Thời lượng không được đặt"
+            "invalidWhen": "không hợp lệ khi · được hiển thị theo thứ tự tường thuật; Kiểm tra định dạng ngày."
         },
         "errors": {
             "loadFailed": "Không thể tải các quyết định về thời gian cảnh: {{detail}}",

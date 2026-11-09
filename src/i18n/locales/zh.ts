@@ -2790,7 +2790,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             undatedBefore: '未设日期 · 按叙事顺序位于 {{scene}} 之前。',
             undatedNarrative: '未设日期 · 按叙事顺序显示。',
             invalidWhen: 'When 无效 · 按叙事顺序显示；请检查日期格式。',
-            durationNotSet: 'Duration 未设置',
         },
         errors: {
             loadFailed: '无法加载场景时间决定：{{detail}}',

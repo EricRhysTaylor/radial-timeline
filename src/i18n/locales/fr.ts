@@ -2795,8 +2795,7 @@ export const fr: DeepPartial<TranslationKeys> = {
             "undatedAfter": "Non daté · suit {{scene}} dans l'ordre narratif.",
             "undatedBefore": "Non daté · précède {{scene}} dans l'ordre narratif.",
             "undatedNarrative": "Non daté · Montré dans l'ordre narratif.",
-            "invalidWhen": "Invalide lorsque · indiqué dans l'ordre narratif ; Vérifiez le format de date.",
-            "durationNotSet": "Durée non définie"
+            "invalidWhen": "Invalide lorsque · indiqué dans l'ordre narratif ; Vérifiez le format de date."
         },
         "errors": {
             "loadFailed": "Les décisions de temps de scène n'ont pas pu être chargées : {{detail}}",

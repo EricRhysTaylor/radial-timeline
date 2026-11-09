@@ -1,8 +1,13 @@
 import { formatLocalDateKey, parseDuration, parseWhenField } from './date';
 import { t } from '../i18n';
-import { whenTextHasClock } from './whenFormat';
+import { formatSceneWhen, whenTextHasClock, whenTextNamesDay } from './whenFormat';
 
-/** Display author timing without inventing a clock time for partial dates. */
+/**
+ * Display author timing without inventing a clock time for partial dates.
+ * A When with a time reads as a clock (`☾ 8:00 PM Wed`); a date-only When reads
+ * as the shared scene date (`Wed Oct 9, 1811`); a year or month stays as written.
+ * An empty Duration is left out of the bar; the hover description still names it.
+ */
 export function sceneTimeLabel(when: unknown, duration: unknown): { text: string; description: string } {
     const rawWhen = typeof when === 'string' ? when.trim() : '';
     const rawDuration = typeof duration === 'string' || typeof duration === 'number'
@@ -19,10 +24,12 @@ export function sceneTimeLabel(when: unknown, duration: unknown): { text: string
         const isDay = start.getHours() >= 6 && start.getHours() < 18;
         parts.push(`${isDay ? '☀' : '☾'} ${clock(start)} ${start.toLocaleDateString([], { weekday: 'short' })}`);
         description += ` · ${t('sceneTime.label.sunMoon')}`;
+    } else if (start && whenTextNamesDay(rawWhen)) {
+        parts.push(formatSceneWhen(start, false));
     } else {
         parts.push(rawWhen || t('sceneTime.label.whenNotSet'));
     }
-    parts.push(rawDuration || t('sceneTime.label.durationNotSet'));
+    if (rawDuration) parts.push(rawDuration);
     const durationMs = parseDuration(rawDuration);
     if (start && hasClock && durationMs !== null && Number.isFinite(durationMs)) {
         const end = new Date(start.getTime() + durationMs);

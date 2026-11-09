@@ -4,6 +4,7 @@ import type { BonusVaultDef } from '../settings/bonusVaults';
 import { parseSessionArtifact, serializeSessionsToArtifact } from '../inquiry/sessionArtifact';
 import { INQUIRY_SIDECAR_PATH } from '../inquiry/InquiryArtifactStore';
 import type { SampleBookDefinition } from '../utils/sampleVault';
+import { retargetFolderFilter } from '../timetable/timetableFiles';
 
 export const DEMO_PROJECTS_FOLDER = 'Demo Projects';
 export const demoProjectFolder = (demo: Pick<BonusVaultDef, 'title'>): string => `${DEMO_PROJECTS_FOLDER}/${demo.title}`;
@@ -36,7 +37,7 @@ export async function prepareDemoImport(
             throw new Error('The demo archive contains an unsafe path.');
         }
         if (entry.name.endsWith('/')) return false;
-        if (!/\.(md|json|html|jpg|webp|png)$/i.test(entry.name)) throw new Error('The demo archive contains an unsupported file.');
+        if (!/\.(md|json|html|jpg|webp|png|base|canvas)$/i.test(entry.name)) throw new Error('The demo archive contains an unsupported file.');
         total += entry.originalSize;
         if (++count > 600 || total > 40 * 1024 * 1024) throw new Error('The demo archive exceeds the import limit.');
         return true;
@@ -86,6 +87,21 @@ export async function prepareDemoImport(
                 indexedPaths.push(`${destination}/${path}`);
             }
             files.set(path, strToU8(rebaseWiki(text)));
+        } else if (path.endsWith('.canvas')) {
+            const canvas: unknown = JSON.parse(strFromU8(data));
+            if (!canvas || typeof canvas !== 'object' || !Array.isArray((canvas as { nodes?: unknown }).nodes)) throw new Error('Invalid demo Canvas.');
+            for (const node of (canvas as { nodes: Array<{ type?: string; file?: unknown }> }).nodes) {
+                if (node.type !== 'file') continue;
+                if (typeof node.file !== 'string') throw new Error('Invalid demo Canvas file card.');
+                node.file = resolvePath(node.file, true);
+            }
+            files.set(path, strToU8(JSON.stringify(canvas, null, 2)));
+        } else if (path.endsWith('.base')) {
+            let content = strFromU8(data);
+            for (const book of demo.books) {
+                content = retargetFolderFilter(content, book.sourceFolder, `${destination}/${book.sourceFolder}`) ?? content;
+            }
+            files.set(path, strToU8(content));
         } else files.set(path, data);
     }
     for (const book of demo.books) {

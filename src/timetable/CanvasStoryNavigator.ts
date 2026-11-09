@@ -5,6 +5,7 @@ import { buildTableRow, compareManuscriptRows } from './timetableModel';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { isStoryActHeading, selectedCanvasBounds, storyActHeadingLabel, storyAxis, storyKeyStep, storyPosition, storyProgress } from './canvasNavigation';
 import { placeKeyPanel, renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
+import { isStoryMapPath } from './storyMapPaths';
 
 type NodeData = { type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
 type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; selection?: Set<{ getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void; zoomToBbox?: (bounds: { minX: number; minY: number; maxX: number; maxY: number }) => void };
@@ -86,7 +87,7 @@ export class CanvasStoryNavigator {
         this.hasBookCards = hasBookCards;
         const file = (this.view as unknown as { file?: TFile | null }).file;
         const path = file?.path ?? ''; // SAFE: a canvas view without a file is never a Story Map
-        const isStoryMap = path.startsWith('Radial Timeline/Story Maps/') && path.endsWith('.canvas');
+        const isStoryMap = isStoryMapPath(path);
         const canvasView = (this.view as unknown as { canvas?: Canvas }).canvas;
         const visibleActNodes = new Set<HTMLElement>();
         for (const node of canvasView?.nodes?.values() ?? []) { // SAFE: Canvas internals are undocumented; no canvas or node map = nothing to mark

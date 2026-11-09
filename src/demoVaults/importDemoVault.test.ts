@@ -26,6 +26,7 @@ function fixture(options?: { writeFailure?: boolean; idCollision?: boolean; rena
         getAbstractFileByPath: (path: string) => entries.get(path) ?? null,
         getMarkdownFiles: () => Array.from(entries.values()).filter((entry): entry is TFile => entry instanceof TFile && entry.path.endsWith('.md')),
         read: async (file: TFile) => texts.get(file.path)!,
+        cachedRead: async (file: TFile) => texts.get(file.path)!,
         createFolder: async (path: string) => { if (entries.has(path)) throw new Error('exists'); const folder = new TFolder(path); entries.set(path, folder); return folder; },
         create: async (path: string, text: string) => { if (options?.writeFailure && path.endsWith('/1 Scene.md')) throw new Error('disk full'); const file = new TFile(path); entries.set(path, file); texts.set(path, text); return file; },
         createBinary: vi.fn(),
@@ -77,6 +78,16 @@ beforeEach(() => {
 });
 
 describe('demo import orchestration', () => {
+    it('associates a packaged timetable with the imported book without touching author settings', async () => {
+        const { plugin, texts } = fixture();
+        const existing = await mocks.prepare();
+        existing.files.set('Radial Timeline/Timetables/Book.base', strToU8('filters:\n  and:\n    - file.inFolder("Demo Projects/Test/Book")\nviews:\n  - type: radial-timeline-timetable\n    name: Timetable\n'));
+        await importDemoVault(plugin as never, demo);
+        const imported = plugin.settings.books[1];
+        const records = (plugin.settings as unknown as { timetableFiles: Record<string, { path: string; folders: string[] }> }).timetableFiles;
+        expect(records[imported.id]).toEqual({ path: `${destination}/Radial Timeline/Timetables/Book.base`, folders: [`${destination}/Book`] });
+        expect(texts.get('Author/Chapter.md')).toContain('Author scene');
+    });
     it('waits for staged metadata before moving files Obsidian is still reading', async () => {
         vi.useFakeTimers();
         try {

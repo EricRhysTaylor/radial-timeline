@@ -2,10 +2,10 @@ import { App, DropdownComponent, Notice, type TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { ErtModal } from '../ui/ErtModal';
 import { getActiveBook, getBookIdForPath } from '../utils/books';
-import { safeTitle } from '../utils/noteTitle';
 import { t } from '../i18n';
 import { buildTableRow, type TimetableRow } from './timetableModel';
 import { planSubplotCanvas, storyRangeBounds, storyRangeRows, type StoryRange } from './subplotCanvas';
+import { storyMapFolder, storyMapPrefix } from './storyMapPaths';
 
 export class SubplotCanvasModal extends ErtModal {
     private bookId: string;
@@ -103,12 +103,15 @@ export class SubplotCanvasModal extends ErtModal {
         const bounds = storyRangeBounds(plan.nodes, rows, this.act, this.subplot, this.range);
         if (!plan.sceneCount) { new Notice(t('ui.subplotCanvas.empty')); return; }
         try {
-            const folder = 'Radial Timeline/Story Maps';
-            if (!this.app.vault.getFolderByPath('Radial Timeline')) await this.app.vault.createFolder('Radial Timeline');
-            if (!this.app.vault.getFolderByPath(folder)) await this.app.vault.createFolder(folder);
-            const stem = safeTitle(book.title) || 'Book';
-            let path = `${folder}/${stem} - Subplot Map.canvas`;
-            for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${folder}/${stem} - Subplot Map ${n}.canvas`;
+            const folder = storyMapFolder(book.sourceFolder);
+            let current = '';
+            for (const part of folder.split('/')) {
+                current = current ? `${current}/${part}` : part;
+                if (!this.app.vault.getFolderByPath(current)) await this.app.vault.createFolder(current);
+            }
+            const prefix = storyMapPrefix(book);
+            let path = `${prefix}.canvas`;
+            for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${prefix} ${n}.canvas`;
             const file = await this.app.vault.create(path, JSON.stringify({ nodes: plan.nodes, edges: plan.edges }, null, 2));
             if (this.onCreated) await this.onCreated(file);
             else await this.app.workspace.openLinkText(file.path, '', true);

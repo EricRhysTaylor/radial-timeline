@@ -9,6 +9,7 @@ import { systemFolderPath } from '../utils/systemFolder';
 import { INQUIRY_SIDECAR_PATH } from '../inquiry/InquiryArtifactStore';
 import { parseSessionArtifact } from '../inquiry/sessionArtifact';
 import { initializeSampleInquirySources } from '../inquiry/sampleInquirySources';
+import { matchesBookTimetable, tableFileStem } from '../timetable/timetableFiles';
 
 const importing = new WeakSet<RadialTimelinePlugin>();
 
@@ -57,6 +58,16 @@ async function openDemo(plugin: RadialTimelinePlugin, demo: BonusVaultDef): Prom
         for (const book of registration.books) if (!currentIds.has(book.id)) book.includeInSaga = false;
     }
     plugin.settings.books = registration.books;
+    for (const definition of definitions) {
+        const book = registration.books.find(entry => entry.sourceFolder === definition.sourceFolder);
+        if (!book || plugin.settings.timetableFiles?.[book.id]) continue;
+        const path = `${demoProjectFolder(demo)}/Radial Timeline/Timetables/${tableFileStem(definition.title)}.base`;
+        const file = plugin.app.vault.getAbstractFileByPath(path);
+        if (!(file instanceof TFile)) continue;
+        const parsed: unknown = parseYaml(await plugin.app.vault.cachedRead(file));
+        if (!matchesBookTimetable(parsed, definition.sourceFolder)) continue;
+        plugin.settings.timetableFiles = { ...plugin.settings.timetableFiles, [book.id]: { path, folders: [definition.sourceFolder] } };
+    }
     initializeSampleInquirySources(plugin.settings);
     await plugin.saveSettings();
     await plugin.setActiveBookId(registration.targetId);
@@ -131,7 +142,7 @@ export async function importDemoVault(
         for (const [path, bytes] of plan.files) {
             const target = `${stagingPath}/${path}`;
             await ensureFolder(plugin, target.slice(0, target.lastIndexOf('/')));
-            if (/\.(md|json|html)$/.test(path)) await plugin.app.vault.create(target, strFromU8(bytes));
+            if (/\.(md|json|html|base|canvas)$/.test(path)) await plugin.app.vault.create(target, strFromU8(bytes));
             else await plugin.app.vault.createBinary(target, new Uint8Array(bytes).buffer);
         }
         // Let Obsidian finish reading all staged Markdown before its paths

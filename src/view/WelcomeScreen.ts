@@ -22,7 +22,7 @@ import {
     deriveBookTitleFromSourcePath,
     getActiveBook
 } from '../utils/books';
-import { readSampleVaultManifest, registerSampleBookProfiles, type SampleVaultConfig } from '../utils/sampleVault';
+import { readSampleVaultManifest, registerSampleBookProfiles, withSampleNarrationDefaults, type SampleVaultConfig } from '../utils/sampleVault';
 import { t } from '../i18n';
 
 interface WelcomeScreenParams {
@@ -311,10 +311,14 @@ const ensureSampleBookProject = async (
     if (!bookFolder) return (getActiveBook(plugin.settings) ?? books[0])?.id ?? null;
 
     const normalizedBookFolder = normalizePath(bookFolder);
-    const definitions = config?.books ?? [{
+    let definitions = config?.books ?? [{
         title: displayNameToBookTitle(config?.displayName, normalizedBookFolder),
         sourceFolder: normalizedBookFolder
     }];
+    // Only a recognized packaged sample receives catalog defaults. Existing
+    // book profiles remain author-owned in registerSampleBookProfiles.
+    const edition = await getDemoEditionStatus(plugin.app, BONUS_VAULTS, normalizedBookFolder);
+    if (edition?.demo.books) definitions = withSampleNarrationDefaults(definitions, edition.demo.books);
     for (const book of definitions) {
         if (!(plugin.app.vault.getAbstractFileByPath(book.sourceFolder) instanceof TFolder)) {
             throw new Error(t('ui.welcomeScreen.sampleFolderMissing', { folder: book.sourceFolder }));

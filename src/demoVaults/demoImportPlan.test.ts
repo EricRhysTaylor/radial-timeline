@@ -25,6 +25,20 @@ async function fixture(extra: Record<string, string> = {}) {
 }
 
 describe('reviewed demo import plan', () => {
+    it('imports a timetable and map with paths rebased to the demo project', async () => {
+        const { bytes, demo, numbers } = await fixture({
+            'Demo/Radial Timeline/Timetables/Book.base': 'filters:\n  and:\n    - file.inFolder("Book")\nviews:\n  - type: radial-timeline-timetable\n    name: Radial Timetable\n',
+            'Demo/Radial Timeline/Story Maps/Book - Subplot Map.canvas': JSON.stringify({ nodes: [{ id: 'a', type: 'file', file: 'Book/1 Start.md' }], edges: [] }),
+        });
+        const plan = await prepareDemoImport(bytes, demo, numbers);
+        expect(strFromU8(plan.files.get('Radial Timeline/Timetables/Book.base')!)).toContain('file.inFolder("Demo Projects/Test/Book")');
+        const canvas = JSON.parse(strFromU8(plan.files.get('Radial Timeline/Story Maps/Book - Subplot Map.canvas')!));
+        expect(canvas.nodes[0].file).toBe('Demo Projects/Test/Book/1 Start.md');
+    });
+    it('rejects a Canvas card targeting a file outside the package', async () => {
+        const { bytes, demo, numbers } = await fixture({ 'Demo/Bad.canvas': JSON.stringify({ nodes: [{ type: 'file', file: 'Private.md' }], edges: [] }) });
+        await expect(prepareDemoImport(bytes, demo, numbers)).rejects.toThrow('Missing or ambiguous');
+    });
     it('rebases links, bracketed filenames, brief references and book scope without changing quotations', async () => {
         const { bytes, demo, numbers } = await fixture();
         const plan = await prepareDemoImport(bytes, demo, numbers);

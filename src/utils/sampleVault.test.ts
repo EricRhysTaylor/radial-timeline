@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readSampleVaultManifest, registerSampleBookProfiles } from './sampleVault';
+import { readSampleVaultManifest, registerSampleBookProfiles, withSampleNarrationDefaults } from './sampleVault';
 
 const novels = [
     ['A Study in Scarlet', '01 A Study in Scarlet'],
@@ -11,6 +11,13 @@ const novels = [
 const manifest = { rt_sample_vault: true, schema_version: 1, display_name: 'Sherlock Holmes', books: novels };
 
 describe('portable sample collections', () => {
+    it('assigns catalog narration only to matching new book definitions', () => {
+        const definitions = [{ title: 'My title', sourceFolder: 'Book' }, { title: 'Other', sourceFolder: 'Other', narrationMode: 'third' as const }];
+        expect(withSampleNarrationDefaults(definitions, [{ title: 'Book', sourceFolder: 'Book', narrationMode: 'first' }, { title: 'Other', sourceFolder: 'Other', narrationMode: 'omni' }])).toEqual([
+            { title: 'My title', sourceFolder: 'Book', narrationMode: 'first' }, { title: 'Other', sourceFolder: 'Other', narrationMode: 'third' }
+        ]);
+        expect(definitions[0]).not.toHaveProperty('narrationMode');
+    });
     it('registers all four novels in order and opens Scarlet on a fresh install', () => {
         const config = readSampleVaultManifest(manifest)!;
         let id = 0;

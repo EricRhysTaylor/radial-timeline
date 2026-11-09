@@ -14,6 +14,14 @@ export interface SampleVaultConfig {
     books?: SampleBookDefinition[];
 }
 
+/** Fill defaults for a recognized sample without replacing its titles or order. */
+export function withSampleNarrationDefaults(definitions: SampleBookDefinition[], catalog: readonly SampleBookDefinition[]): SampleBookDefinition[] {
+    return definitions.map(book => {
+        const match = catalog.find(entry => entry.sourceFolder === book.sourceFolder);
+        return book.narrationMode || !match?.narrationMode ? book : { ...book, narrationMode: match.narrationMode };
+    });
+}
+
 /** Explicit collection manifests use version 1; older single-book notes stay readable. */
 export function readSampleVaultManifest(fm: Record<string, unknown>): SampleVaultConfig | null {
     if (fm.rt_sample_vault !== true) return null;

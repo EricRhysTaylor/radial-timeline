@@ -92,4 +92,5 @@ See [Character lanes](https://github.com/EricRhysTaylor/radial-timeline/wiki/Nar
 ### Fixes
 
 - **A portable Timetable opens again.** When a book already has a matching Radial Timetable in `Radial Timeline/Timetables`, a fresh installation opens it instead of offering to create a duplicate.
+- **Story Vaults keep their narration and maps.** Opening a recognized Story Vault sets the narration defaults for its new book profiles. Adding a story to an existing vault keeps its packaged Timetables and Canvas maps connected to the imported books.
 - **No more `{{Character}}` in your scenes.** **Insert missing fields** and **Fill empty values** add empty fields instead of copying the template's placeholders, such as `{{Character}}` or `{{When}}`, into a scene.

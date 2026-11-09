@@ -49,6 +49,7 @@ See [Timetable](https://github.com/EricRhysTaylor/radial-timeline/wiki/Timetable
 
 <img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/75bcccbe6931bc0d3c67e6ad22f61f9d6b25aa53/wiki/images/character-lanes.webp" alt="Pride and Prejudice in Narrative mode with four character lanes inside the outer ring, and the ring key open listing the six rings and the lanes for Elizabeth Bennet, Mr. Bennet, Jane Bennet and Mrs. Bennet" width="600">
 
+- **Dates before the common era.** Write `BCE` after a scene's `When`, as in `When: 1184-06-14 BCE` or `When: 44 BCE`. Chronologue, the hover, the scene time bar and the Timetable count the years down to 1 BCE and name the era: *1184 BCE*. A book that runs on into the common era names *CE* on its later years.
 - **Scene titles read right side up all the way round.** Titles across the bottom half of the wheel now run left to right instead of upside down, in every ring and while you hover a scene to show its full title. Chronologue's dates around the edge of the wheel read the same way, each beside its tick.
 - **The rotate toggle is gone.** The arrow beside the outer ring turned the wheel so the lower titles could be read. With every title upright, its job is done, so the wheel always opens with Act 1 at 12 o'clock.
 - **A new book opens on an empty timeline.** **Open Timetable** leads to the Outline, where an outline document starts the book. The Welcome screen closes from its corner.

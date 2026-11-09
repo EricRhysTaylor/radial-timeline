@@ -6,6 +6,7 @@ import {
     buildSagaTimetableContent,
     countColumnFill,
     findTimetableViewName,
+    matchesBookTimetable,
     retargetFolderFilter,
     retargetSagaFolderFilter,
     tableColumns,
@@ -17,6 +18,16 @@ import {
 
 const settings = { ...DEFAULT_SETTINGS, enableCustomMetadataMapping: false, actCount: 3 } as RadialTimelineSettings;
 const names = { timetable: 'Timetable', table: 'Table', notOnTimeline: 'Not on the timeline', actBoard: 'Act board', statusBoard: 'Status board' };
+
+describe('matching a portable book timetable', () => {
+    it('accepts only a timetable view with the expected single book folder', () => {
+        const content = buildBookTimetableContent({ sourceFolder: 'Pride & Prejudice' }, settings, names, true);
+        expect(matchesBookTimetable(content, 'Pride & Prejudice')).toBe(true);
+        expect(matchesBookTimetable(content, 'Another Book')).toBe(false);
+        expect(matchesBookTimetable({ ...content, views: [{ type: 'table', name: 'Table' }] }, 'Pride & Prejudice')).toBe(false);
+        expect(matchesBookTimetable({ ...content, filters: { and: ['file.inFolder("Pride & Prejudice")', 'file.inFolder("Other")'] } }, 'Pride & Prejudice')).toBe(false);
+    });
+});
 
 describe('restoring a Timetable view', () => {
     it('adds a uniquely named view while retaining filters, custom views and their settings', () => {

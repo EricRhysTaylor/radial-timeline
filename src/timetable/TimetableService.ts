@@ -27,6 +27,7 @@ import {
     buildSagaTimetableContent,
     countColumnFill,
     findTimetableViewName,
+    matchesBookTimetable,
     retargetFolderFilter,
     retargetSagaFolderFilter,
     SAGA_TIMETABLE_KEY,
@@ -256,6 +257,28 @@ export class TimetableService {
         if (record && existing) {
             await this.followFolders(existing, record, target);
             return existing;
+        }
+
+        // A portable vault can contain its table without this installation's
+        // private association. Adopt only the expected file for this book,
+        // with its own Timetable view and matching folder filter.
+        if (!record && target.folders.length === 1 && target.key !== SAGA_TIMETABLE_KEY) {
+            const candidate = app.vault.getFileByPath(tableFilePath(tableFileStem(target.title)));
+            if (candidate) {
+                let matches = false;
+                try {
+                    const parsed: unknown = parseYaml(await app.vault.cachedRead(candidate));
+                    matches = matchesBookTimetable(parsed, target.folders[0]);
+                } catch (error) {
+                    console.error('[Timetable] Could not inspect existing table:', error);
+                    new Notice(t('ui.timetable.existingReadFailed', { path: candidate.path }), 8000);
+                    return null;
+                }
+                if (matches) {
+                    await this.remember(target.key, { path: candidate.path, folders: target.folders });
+                    return candidate;
+                }
+            }
         }
 
         const path = this.availablePath(tableFilePath(tableFileStem(target.title)));

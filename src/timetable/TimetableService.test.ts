@@ -2,15 +2,42 @@ import { describe, expect, it, vi } from 'vitest';
 import { TimetableService } from './TimetableService';
 import { timetableInElement } from './timetableRegistry';
 import { ensureActiveBookFolder } from '../modals/EnsureFirstBookModal';
+import { confirmWithErtModal } from '../modals/ErtConfirmModal';
 
 vi.mock('./TimetableView', () => ({ TimetableView: class {}, timetableViewOptions: [] }));
 vi.mock('../view/TimeLineView', () => ({ TIMELINE_VIEW_TYPE: 'radial-timeline' }));
 vi.mock('../modals/EnsureFirstBookModal', () => ({ ensureActiveBookFolder: vi.fn() }));
+vi.mock('../modals/ErtConfirmModal', () => ({ confirmWithErtModal: vi.fn() }));
 vi.mock('./timetableRegistry', () => ({
     activeTimetable: vi.fn(), refreshTimetableViews: vi.fn(), timetableInElement: vi.fn(),
 }));
 
 describe('opening the first Timetable', () => {
+    it('adopts a portable matching timetable without creating or rewriting it', async () => {
+        const file = { path: 'Radial Timeline/Timetables/Book.base' };
+        const plugin = {
+            settings: { timetableFiles: {} },
+            app: { vault: { getFileByPath: vi.fn(() => file), cachedRead: vi.fn().mockResolvedValue('filters:\n  and:\n    - file.inFolder("Story")\nviews:\n  - type: radial-timeline-timetable\n    name: Timetable\n') } },
+            saveSettings: vi.fn().mockResolvedValue(undefined),
+        };
+        const service = new TimetableService(plugin as never);
+        const ensureFile = (service as unknown as { ensureFile: (target: unknown) => Promise<unknown> }).ensureFile.bind(service);
+        expect(await ensureFile({ key: 'book-id', title: 'Book', folders: ['Story'] })).toBe(file);
+        expect(plugin.settings.timetableFiles).toEqual({ 'book-id': { path: file.path, folders: ['Story'] } });
+        expect(confirmWithErtModal).not.toHaveBeenCalled();
+    });
+
+    it('does not offer a duplicate when an existing timetable cannot be read', async () => {
+        const file = { path: 'Radial Timeline/Timetables/Book.base' };
+        const plugin = { settings: { timetableFiles: {} }, app: { vault: { getFileByPath: () => file, cachedRead: vi.fn().mockRejectedValue(new Error('read failed')) } } };
+        const service = new TimetableService(plugin as never);
+        const ensureFile = (service as unknown as { ensureFile: (target: unknown) => Promise<unknown> }).ensureFile.bind(service);
+        const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        expect(await ensureFile({ key: 'book-id', title: 'Book', folders: ['Story'] })).toBeNull();
+        expect(confirmWithErtModal).not.toHaveBeenCalled();
+        log.mockRestore();
+    });
+
     it('asks for a book before opening and stops if setup is cancelled', async () => {
         const plugin = { settings: { books: [], timelineScope: 'book' }, registerBasesView: vi.fn(() => true) };
         const service = new TimetableService(plugin as never);

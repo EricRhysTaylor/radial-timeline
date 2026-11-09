@@ -357,3 +357,12 @@ export function findTimetableViewName(parsed: unknown): string | null {
     }
     return null;
 }
+
+/** Identify an unregistered, book-specific timetable without changing its contents. */
+export function matchesBookTimetable(parsed: unknown, folder: string): boolean {
+    if (!findTimetableViewName(parsed) || !parsed || typeof parsed !== 'object') return false;
+    const filters = (parsed as { filters?: { and?: unknown } }).filters?.and;
+    if (!Array.isArray(filters)) return false;
+    const folderTerms = filters.filter((term): term is string => typeof term === 'string' && /^\s*file\.inFolder\s*\(/.test(term));
+    return folderTerms.length === 1 && folderFilterTerms(folder).includes(folderTerms[0].trim());
+}

@@ -6318,6 +6318,7 @@ export const en = {
             drawerKeepMine: 'Keep the drawer text',
             drawerUseNote: 'Use the note’s text',
             writeFailed: 'Couldn’t write the Timetable file: {{message}}',
+            existingReadFailed: 'Couldn’t read the existing Timetable at {{path}}.',
         },
         progressSection: {
             pressCelebration1Title: 'You wrote a book.',

@@ -70,15 +70,10 @@ function keepTimeAdvanceDay(interval: PlacementInterval, currentWhen: Date | nul
 
     // At most two tries: that time on the lower bound's day, else the next day.
     for (let dayOffset = 0; dayOffset <= 1; dayOffset += 1) {
-        const attempt = new Date(
-            lower.getFullYear(),
-            lower.getMonth(),
-            lower.getDate() + dayOffset,
-            hours,
-            minutes,
-            0,
-            0
-        );
+        // Copy the date, then set day and clock: `new Date(year, …)` reads years 0–99 as 19xx.
+        const attempt = new Date(lower.getTime());
+        attempt.setDate(lower.getDate() + dayOffset);
+        attempt.setHours(hours, minutes, 0, 0);
         const attemptMs = attempt.getTime();
         if (attemptMs > interval.lowerMs && attemptMs < interval.upperMs) {
             return [{

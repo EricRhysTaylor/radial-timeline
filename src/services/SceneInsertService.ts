@@ -6,7 +6,7 @@ import { ensureSceneTemplateFrontmatter } from '../utils/sceneIds';
 import { comparePrefixTokens, extractPrefixToken } from '../utils/prefixOrder';
 import { filterBeatsBySystem } from '../utils/gossamer';
 import { getActiveFrontmatterMappings } from '../utils/frontmatter';
-import { formatLocalDateKey } from '../utils/date';
+import { formatLocalDateKey, formatWhenDate, formatWhenForYaml } from '../utils/date';
 import { escapeRegExp } from '../utils/regex';
 import { fileStem } from '../utils/paths';
 import { getMainPlotName } from '../utils/mainPlot';
@@ -241,15 +241,10 @@ function extractRawFrontmatterScalar(frontmatter: string, keys: string[]): strin
     return '';
 }
 
+/** A noon Date is how a date-only When parses, so it goes back date-only. */
 function formatDateForYaml(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = date.getHours();
-    const minute = date.getMinutes();
-    const second = date.getSeconds();
-    if (hour === 12 && minute === 0 && second === 0) return `${year}-${month}-${day}`;
-    return `${year}-${month}-${day} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    const dateOnly = date.getHours() === 12 && date.getMinutes() === 0 && date.getSeconds() === 0;
+    return dateOnly ? formatWhenDate(date) : formatWhenForYaml(date);
 }
 
 function normalizeWhenFallback(value: unknown): string {

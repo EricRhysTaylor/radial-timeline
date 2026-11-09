@@ -5,6 +5,7 @@
  */
 
 import type { TimelineItem } from '../../types';
+import { splitWhenEra } from '../../utils/date';
 
 /**
  * Schema version for the JSON data export document. Bump on breaking changes.
@@ -17,6 +18,15 @@ export const TIMELINE_DATA_EXPORT_SCHEMA_VERSION = '1.1.0';
 const FRONTMATTER_DATE_ONLY = /^\s*\d{4}-\d{1,2}-\d{1,2}\s*$/;
 
 const pad = (value: number, width = 2): string => String(value).padStart(width, '0');
+
+/**
+ * An astronomical year as ISO 8601 and JavaScript read it: `2085`, `0000`
+ * (1 BCE), and the signed six-digit form outside 0–9999 (`-001183` for
+ * 1184 BCE), which `new Date()` parses.
+ */
+const isoYear = (year: number): string => year >= 0 && year <= 9999
+    ? pad(year, 4)
+    : `${year < 0 ? '-' : '+'}${pad(Math.abs(year), 6)}`;
 
 /**
  * A scene's `when` as the string the export carries.
@@ -38,15 +48,18 @@ const pad = (value: number, width = 2): string => String(value).padStart(width, 
  * parsed to local noon, and noon-in-UTC is a precise-looking hour the author
  * never wrote. A date-only source therefore stays date-only here, and the
  * reader is shown a day rather than an invented clock time.
+ *
+ * A BCE year is written as its signed astronomical year (1184 BCE is
+ * `-001183`), the form ISO 8601 and `new Date()` read.
  */
 export function wallClockWhen(item: Pick<TimelineItem, 'when' | 'rawFrontmatter'>): string | undefined {
     const when = item.when;
     if (!(when instanceof Date) || Number.isNaN(when.getTime())) return undefined;
 
-    const date = `${pad(when.getFullYear(), 4)}-${pad(when.getMonth() + 1)}-${pad(when.getDate())}`;
+    const date = `${isoYear(when.getFullYear())}-${pad(when.getMonth() + 1)}-${pad(when.getDate())}`;
 
     const raw = item.rawFrontmatter?.['When'];
-    if (typeof raw === 'string' && FRONTMATTER_DATE_ONLY.test(raw)) return date;
+    if (typeof raw === 'string' && FRONTMATTER_DATE_ONLY.test(splitWhenEra(raw).body)) return date;
 
     return `${date}T${pad(when.getHours())}:${pad(when.getMinutes())}:${pad(when.getSeconds())}`;
 }

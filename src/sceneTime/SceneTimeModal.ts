@@ -1,6 +1,7 @@
 import { Notice, Setting, TFile, setIcon } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import { parseDuration, parseWhenField } from '../utils/date';
+import { formatSceneWhen } from '../utils/whenFormat';
 import { cueDescription, cueState, elapsedLabel, type TimeDecision } from './model';
 import type { SceneTimeService } from './SceneTimeService';
 import { t } from '../i18n';
@@ -149,7 +150,9 @@ export class SceneTimeModal extends ErtModal {
             if (cue.decision && typeof metadata.When === 'string') {
                 const start = parseWhenField(metadata.When);
                 if (start && /\d:\d|\d\s*[ap]m\b/i.test(metadata.When)) {
-                    card.createDiv({ text: t('sceneTime.modal.clockAfter', { clock: new Date(start.getTime() + cue.elapsed * 60000).toLocaleString() }) });
+                    const after = new Date(start.getTime() + cue.elapsed * 60000);
+                    // A BCE clock names its era; a CE one reads as it always has.
+                    card.createDiv({ text: t('sceneTime.modal.clockAfter', { clock: after.getFullYear() > 0 ? after.toLocaleString() : formatSceneWhen(after, true) }) });
                 }
             }
 

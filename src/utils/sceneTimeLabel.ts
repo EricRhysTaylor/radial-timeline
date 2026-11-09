@@ -1,4 +1,4 @@
-import { formatLocalDateKey, parseDuration, parseWhenField } from './date';
+import { formatLocalDateKey, formatWhenDate, parseDuration, parseWhenField } from './date';
 import { t } from '../i18n';
 import { formatSceneWhen, whenTextHasClock, whenTextNamesDay } from './whenFormat';
 
@@ -35,7 +35,7 @@ export function sceneTimeLabel(when: unknown, duration: unknown): { text: string
         const end = new Date(start.getTime() + durationMs);
         if (Number.isFinite(end.getTime())) {
             const endDate = formatLocalDateKey(end) !== formatLocalDateKey(start)
-                ? ` (${formatLocalDateKey(end)})` : '';
+                ? ` (${formatWhenDate(end)})` : '';
             parts[parts.length - 1] += ` → ${clock(end)}${endDate}`;
         }
     }

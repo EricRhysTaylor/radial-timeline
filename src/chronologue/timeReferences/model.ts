@@ -1,3 +1,5 @@
+import { splitWhenEra } from '../../utils/date';
+
 /** Author-owned time references; operational identity is derived, never written to YAML. */
 export const TIME_REFERENCES_KEY = 'Time References';
 export const REFERENCE_KINDS = ['enacted', 'recollection', 'mention', 'possibility'] as const;
@@ -21,13 +23,17 @@ export interface TimeReference {
 export interface ReferenceProblem { index: number; reason: 'array' | 'entry' | 'label' | 'kind' | 'date' | 'range' | 'passage' }
 export interface ReferenceSnapshot { references: TimeReference[]; problems: ReferenceProblem[] }
 
-/** Strict local calendar parsing; bounds express precision rather than invented clock times. */
+/**
+ * Strict local calendar parsing; bounds express precision rather than invented clock times.
+ * A trailing era reads as the When does (`1184-06-14 BCE`); there is no year 0.
+ */
 export function parseReferenceDate(value: unknown): ReferenceDate | null {
     if (typeof value !== 'string') return null;
     const text = value.trim();
-    const match = /^(\d{4})(?:-(\d{1,2})(?:-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2}))?)?)?)?$/.exec(text);
-    if (!match) return null;
-    const year = Number(match[1]), month = Number(match[2] ?? 1), day = Number(match[3] ?? 1);
+    const { body, era } = splitWhenEra(text);
+    const match = /^(\d{4})(?:-(\d{1,2})(?:-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2}))?)?)?)?$/.exec(body);
+    if (!match || Number(match[1]) === 0) return null;
+    const year = era === 'BCE' ? 1 - Number(match[1]) : Number(match[1]), month = Number(match[2] ?? 1), day = Number(match[3] ?? 1);
     const hour = Number(match[4] ?? 0), minute = Number(match[5] ?? 0), second = Number(match[6] ?? 0);
     const date = new Date(0);
     date.setFullYear(year, month - 1, day);

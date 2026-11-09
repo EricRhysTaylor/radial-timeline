@@ -22,6 +22,7 @@ import {
   type ResolvedPage
 } from './bookPagesResolver';
 import { getMainPlotName } from './mainPlot';
+import { formatStoryDate } from './date';
 
 export interface SceneContent {
   title: string;
@@ -724,7 +725,7 @@ export async function getSceneFilesByOrder(
     if (!(file instanceof TFile)) continue;
     files.push(file);
     titles.push(file.basename);
-    whenDates.push(scene.when ? formatWhenDate(scene.when) : null);
+    whenDates.push(scene.when ? formatExportWhen(scene.when) : null);
     acts.push(parseActNumber(scene.actNumber ?? scene.act));
     const numStr = getScenePrefixNumber(scene.title, scene.number);
     sceneNumbers.push(numStr ? parseInt(numStr, 10) || 0 : 0);
@@ -788,8 +789,10 @@ export async function getSceneFilesByOrder(
   };
 }
 
-function formatWhenDate(date: Date): string {
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+/** A scene's When for the outline and data exports; a BCE date names its era (`Jun 14, 1184 BCE`). */
+function formatExportWhen(date: Date): string {
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+  return date.getFullYear() > 0 ? date.toLocaleDateString(undefined, options) : formatStoryDate(date, options);
 }
 
 function parseActNumber(value: unknown): number | null {

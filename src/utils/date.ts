@@ -45,7 +45,10 @@ export interface TimeSpanInfo {
  * - YYYY-MM-DDTHH:MM:SS or YYYY-M-DTHH:MM:SS (ISO 8601 format with T separator)
  * - YYYY-MM-DDTHH:MM or YYYY-M-DTHH:MM (ISO 8601 format with T separator, no seconds)
  * - YYYY-MM-DD h:mm am/pm or YYYY-M-D h:mm am/pm (12-hour clock with AM/PM)
- * 
+ * - Any form followed by an era: `1184-06-14 BCE`, `June 14, 1184 BC`, `44 BCE`,
+ *   `33 AD`. BCE years become astronomical years (1 BCE = 0); there is no year 0.
+ *   Design: docs/engineering/plans/bce-scene-dates-plan.md
+ *
  * Examples:
  * - 1812-9-17 → September 17, 1812 at noon
  * - 1812-09-17 → September 17, 1812 at noon
@@ -76,157 +79,129 @@ function parseMonthName(value: string): number | null {
     return key in MONTH_NAME_MAP ? MONTH_NAME_MAP[key] : null;
 }
 
-function createLocalDate(year: number, monthIndex: number, day: number, hour = 12, minute = 0, second = 0): Date | null {
-    const date = new Date(year, monthIndex, day, hour, minute, second, 0);
+/**
+ * A local date from a calendar year that counts astronomically: 1 CE is 1,
+ * 1 BCE is 0, 1184 BCE is -1183. `new Date(year, …)` reads years 0–99 as
+ * 1900–1999, so those years and every BCE year go through `setFullYear`.
+ * Years from 100 on take the same `new Date(year, …)` path as always.
+ */
+export function createLocalDate(year: number, monthIndex: number, day: number, hour = 12, minute = 0, second = 0): Date | null {
+    const date = new Date(year >= 100 ? year : 2000, monthIndex, day, hour, minute, second, 0);
+    if (year < 100) date.setFullYear(year, monthIndex, day);
     return isNaN(date.getTime()) ? null : date;
+}
+
+/** True when a day exists in the calendar (no Feb 30): `year` counts astronomically, `month` from 1. */
+export function isCalendarDay(year: number, month: number, day: number): boolean {
+    const date = createLocalDate(year, month - 1, day);
+    return date !== null && date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+/** An era as an author writes one: `BCE`, `BC`, `B.C.E.`, `B.C.`, `CE`, `C.E.`, `AD`, `A.D.` (match it case-insensitively). */
+const ERA_TOKEN = String.raw`B\.?C\.?(?:E\.?)?|C\.?E\.?|A\.?D\.?`;
+
+/** The era after a When. */
+const WHEN_ERA_SUFFIX = new RegExp(String.raw`\s+(${ERA_TOKEN})$`, 'i');
+
+/**
+ * For date cues found in scene text: a year (four digits, or fewer when an era
+ * follows), then the era if one is written, which the pattern captures. Without
+ * an era this matches exactly the four-digit years the cues always read.
+ */
+export const PROSE_YEAR_SOURCE = String.raw`(\d{4}|\d{1,3}(?=\s+(?:${ERA_TOKEN})(?![A-Za-z])))\b`;
+export const PROSE_ERA_SOURCE = String.raw`(?:\s+(${ERA_TOKEN})(?![A-Za-z]))?`;
+
+/** A When for a date found in scene text: `2085-04-01`, `1184-06-14 BCE`. */
+export function proseDateWhen(year: string, month: string, day: string, era: string | undefined): string {
+    const text = `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    return era && /^B/i.test(era) ? `${text} BCE` : text;
+}
+
+export type WhenEra = 'BCE' | 'CE';
+
+/** Split a trailing era from a When: `1184-06-14 BCE` → `1184-06-14` and `BCE`. A When without one has no era. */
+export function splitWhenEra(raw: string): { body: string; era: WhenEra | null } {
+    const text = raw.trim();
+    const match = WHEN_ERA_SUFFIX.exec(text);
+    if (!match) return { body: text, era: null };
+    return { body: text.slice(0, match.index).trim(), era: /^B/i.test(match[1]) ? 'BCE' : 'CE' };
+}
+
+interface WhenParts {
+    /** The year as written, counted within its era (never 0). */
+    year: number;
+    /** How many digits the author wrote for the year. */
+    yearDigits: number;
+    monthIndex: number;
+    day: number;
+    hour: number;
+    minute: number;
+    second: number;
+}
+
+function to24Hour(hour: number, ampm: string | undefined): number {
+    const period = ampm?.toLowerCase();
+    if (period === 'pm' && hour < 12) return hour + 12;
+    if (period === 'am' && hour === 12) return 0;
+    return hour;
+}
+
+function whenParts(yearText: string, monthIndex: number, day: number, hour = 12, minute = 0, second = 0): WhenParts {
+    return { year: parseInt(yearText, 10), yearDigits: yearText.length, monthIndex, day, hour, minute, second };
+}
+
+const int = (text: string | undefined, fallback = 0): number => text === undefined ? fallback : parseInt(text, 10);
+
+/**
+ * Each When form the parser reads, in the order it tries them. A form whose
+ * month name is unknown reads nothing and the next form is tried.
+ *
+ * Year-first numeric forms (`1184-06-14`, `1184-06`) always take a four-digit
+ * year, as ISO does: `0044-03-15 BCE`. A year that stands alone or comes last
+ * (`44 BCE`, `March 15, 44 BCE`, `3/15/44 BC`) may be shorter, but only when an
+ * era is written; without one it takes four digits, exactly as before.
+ */
+const WHEN_FORMS: Array<{ regex: RegExp; read: (m: RegExpExecArray) => WhenParts | null }> = [
+    { regex: /^(\d{4})-(\d{1,2})-(\d{1,2})$/, read: m => whenParts(m[1], int(m[2]) - 1, int(m[3])) },
+    { regex: /^(\d{4})-(\d{1,2})-(\d{1,2})T(\d{1,2}):(\d{1,2}):(\d{1,2})$/, read: m => whenParts(m[1], int(m[2]) - 1, int(m[3]), int(m[4]), int(m[5]), int(m[6])) },
+    { regex: /^(\d{4})-(\d{1,2})-(\d{1,2})T(\d{1,2}):(\d{1,2})$/, read: m => whenParts(m[1], int(m[2]) - 1, int(m[3]), int(m[4]), int(m[5])) },
+    { regex: /^(\d{4})-(\d{1,2})-(\d{1,2}) (\d{1,2}):(\d{1,2}):(\d{1,2})$/, read: m => whenParts(m[1], int(m[2]) - 1, int(m[3]), int(m[4]), int(m[5]), int(m[6])) },
+    { regex: /^(\d{4})-(\d{1,2})-(\d{1,2}) (\d{1,2}):(\d{1,2})$/, read: m => whenParts(m[1], int(m[2]) - 1, int(m[3]), int(m[4]), int(m[5])) },
+    { regex: /^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i, read: m => whenParts(m[1], int(m[2]) - 1, int(m[3]), to24Hour(int(m[4]), m[6]), int(m[5])) },
+    { regex: /^(\d{1,2})-(\d{1,2})-(\d{1,4})(?:\s+(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?)?\s*(am|pm)?$/i, read: m => whenParts(m[3], int(m[1]) - 1, int(m[2]), to24Hour(int(m[4], 12), m[7]), int(m[5]), int(m[6])) },
+    { regex: /^(\d{4})-(\d{1,2})$/, read: m => whenParts(m[1], int(m[2]) - 1, 1) },
+    { regex: /^(\d{1,4})$/, read: m => whenParts(m[1], 0, 1) },
+    { regex: /^([A-Za-z]+)\s*,?\s*(\d{1,4})$/, read: m => { const month = parseMonthName(m[1]); return month === null ? null : whenParts(m[2], month, 1); } },
+    { regex: /^([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,)?\s+(\d{1,4})$/, read: m => { const month = parseMonthName(m[1]); return month === null ? null : whenParts(m[3], month, int(m[2])); } },
+    { regex: /^(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)(?:,)?\s+(\d{1,4})$/, read: m => { const month = parseMonthName(m[2]); return month === null ? null : whenParts(m[3], month, int(m[1])); } },
+];
+
+/**
+ * A When's year as an astronomical year: `1184 BCE` → -1183, `1 BCE` → 0,
+ * `33 CE` and `33` → 33. Null for year 0, which neither era has.
+ */
+function astronomicalYear(year: number, era: WhenEra | null): number | null {
+    if (year < 1) return null;
+    return era === 'BCE' ? 1 - year : year;
 }
 
 export function parseWhenField(when: string): Date | null {
     if (!when || typeof when !== 'string') return null;
 
-    // Standardize separators (support both dashes and slashes)
-    const standardized = when.trim().replace(/\//g, '-');
-    const trimmed = standardized;
+    // Support both dashes and slashes as date separators.
+    const { body, era } = splitWhenEra(when);
+    const text = body.replace(/\//g, '-');
 
-    // Try ISO date format: YYYY-MM-DD or YYYY-M-D (flexible month/day digits)
-    // Parse as local time by extracting components
-    const dateOnlyMatch = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(trimmed);
-    if (dateOnlyMatch) {
-        const year = parseInt(dateOnlyMatch[1], 10);
-        const month = parseInt(dateOnlyMatch[2], 10) - 1; // JS months are 0-indexed
-        const day = parseInt(dateOnlyMatch[3], 10);
-        const date = new Date(year, month, day, 12, 0, 0, 0); // Local time at noon (12:00 PM)
-        return isNaN(date.getTime()) ? null : date;
-    }
-
-    // Try ISO 8601 format with T separator and seconds: YYYY-MM-DDTHH:MM:SS (flexible month/day digits)
-    const iso8601SecondsMatch = /^(\d{4})-(\d{1,2})-(\d{1,2})T(\d{1,2}):(\d{1,2}):(\d{1,2})$/.exec(trimmed);
-    if (iso8601SecondsMatch) {
-        const year = parseInt(iso8601SecondsMatch[1], 10);
-        const month = parseInt(iso8601SecondsMatch[2], 10) - 1;
-        const day = parseInt(iso8601SecondsMatch[3], 10);
-        const hour = parseInt(iso8601SecondsMatch[4], 10);
-        const minute = parseInt(iso8601SecondsMatch[5], 10);
-        const second = parseInt(iso8601SecondsMatch[6], 10);
-        const date = new Date(year, month, day, hour, minute, second, 0); // Local time
-        return isNaN(date.getTime()) ? null : date;
-    }
-
-    // Try ISO 8601 format with T separator, no seconds: YYYY-MM-DDTHH:MM (flexible month/day digits)
-    const iso8601Match = /^(\d{4})-(\d{1,2})-(\d{1,2})T(\d{1,2}):(\d{1,2})$/.exec(trimmed);
-    if (iso8601Match) {
-        const year = parseInt(iso8601Match[1], 10);
-        const month = parseInt(iso8601Match[2], 10) - 1;
-        const day = parseInt(iso8601Match[3], 10);
-        const hour = parseInt(iso8601Match[4], 10);
-        const minute = parseInt(iso8601Match[5], 10);
-        const date = new Date(year, month, day, hour, minute, 0, 0); // Local time
-        return isNaN(date.getTime()) ? null : date;
-    }
-
-    // Try date + time with seconds and space separator: YYYY-MM-DD HH:MM:SS (flexible month/day digits)
-    const dateTimeSecondsMatch = /^(\d{4})-(\d{1,2})-(\d{1,2}) (\d{1,2}):(\d{1,2}):(\d{1,2})$/.exec(trimmed);
-    if (dateTimeSecondsMatch) {
-        const year = parseInt(dateTimeSecondsMatch[1], 10);
-        const month = parseInt(dateTimeSecondsMatch[2], 10) - 1;
-        const day = parseInt(dateTimeSecondsMatch[3], 10);
-        const hour = parseInt(dateTimeSecondsMatch[4], 10);
-        const minute = parseInt(dateTimeSecondsMatch[5], 10);
-        const second = parseInt(dateTimeSecondsMatch[6], 10);
-        const date = new Date(year, month, day, hour, minute, second, 0); // Local time
-        return isNaN(date.getTime()) ? null : date;
-    }
-
-    // Try date + time with space separator: YYYY-MM-DD HH:MM (flexible month/day digits)
-    const dateTimeMatch = /^(\d{4})-(\d{1,2})-(\d{1,2}) (\d{1,2}):(\d{1,2})$/.exec(trimmed);
-    if (dateTimeMatch) {
-        const year = parseInt(dateTimeMatch[1], 10);
-        const month = parseInt(dateTimeMatch[2], 10) - 1;
-        const day = parseInt(dateTimeMatch[3], 10);
-        const hour = parseInt(dateTimeMatch[4], 10);
-        const minute = parseInt(dateTimeMatch[5], 10);
-        const date = new Date(year, month, day, hour, minute, 0, 0); // Local time
-        return isNaN(date.getTime()) ? null : date;
-    }
-
-    // Try date + 12-hour time with am/pm: YYYY-MM-DD h:mm am/pm (flexible month/day digits)
-    const ampmMatch = /^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i.exec(trimmed);
-    if (ampmMatch) {
-        const year = parseInt(ampmMatch[1], 10);
-        const month = parseInt(ampmMatch[2], 10) - 1;
-        const day = parseInt(ampmMatch[3], 10);
-        let hour = parseInt(ampmMatch[4], 10);
-        const minute = ampmMatch[5] ? parseInt(ampmMatch[5], 10) : 0;
-        const ampm = ampmMatch[6].toLowerCase();
-
-        if (ampm === 'pm' && hour < 12) {
-            hour += 12;
-        } else if (ampm === 'am' && hour === 12) { // Midnight case
-            hour = 0;
-        }
-
-        const date = new Date(year, month, day, hour, minute, 0, 0); // Local time
-        return isNaN(date.getTime()) ? null : date;
-    }
-
-    // Try month/day/year with optional time (supports M/D/YYYY and MM/DD/YYYY)
-    const monthDayYearTimeMatch = /^(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?)?\s*(am|pm)?$/i.exec(trimmed);
-    if (monthDayYearTimeMatch) {
-        const month = parseInt(monthDayYearTimeMatch[1], 10) - 1;
-        const day = parseInt(monthDayYearTimeMatch[2], 10);
-        const year = parseInt(monthDayYearTimeMatch[3], 10);
-        let hour = monthDayYearTimeMatch[4] ? parseInt(monthDayYearTimeMatch[4], 10) : 12;
-        const minute = monthDayYearTimeMatch[5] ? parseInt(monthDayYearTimeMatch[5], 10) : 0;
-        const second = monthDayYearTimeMatch[6] ? parseInt(monthDayYearTimeMatch[6], 10) : 0;
-        const ampm = monthDayYearTimeMatch[7]?.toLowerCase();
-
-        if (ampm) {
-            if (ampm === 'pm' && hour < 12) hour += 12;
-            if (ampm === 'am' && hour === 12) hour = 0;
-        }
-
-        return createLocalDate(year, month, day, hour, minute, second);
-    }
-    const yearMonthMatch = /^(\d{4})-(\d{1,2})$/.exec(trimmed);
-    if (yearMonthMatch) {
-        const year = parseInt(yearMonthMatch[1], 10);
-        const month = parseInt(yearMonthMatch[2], 10) - 1;
-        return createLocalDate(year, month, 1);
-    }
-
-    const yearOnlyMatch = /^(\d{4})$/.exec(trimmed);
-    if (yearOnlyMatch) {
-        const year = parseInt(yearOnlyMatch[1], 10);
-        return createLocalDate(year, 0, 1);
-    }
-
-    const monthYearMatch = /^([A-Za-z]+)\s*,?\s*(\d{4})$/.exec(trimmed);
-    if (monthYearMatch) {
-        const month = parseMonthName(monthYearMatch[1]);
-        const year = parseInt(monthYearMatch[2], 10);
-        if (month !== null) {
-            return createLocalDate(year, month, 1);
-        }
-    }
-
-    const monthDayYearMatch = /^([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,)?\s+(\d{4})$/.exec(trimmed);
-    if (monthDayYearMatch) {
-        const month = parseMonthName(monthDayYearMatch[1]);
-        const day = parseInt(monthDayYearMatch[2], 10);
-        const year = parseInt(monthDayYearMatch[3], 10);
-        if (month !== null) {
-            return createLocalDate(year, month, day);
-        }
-    }
-
-    const dayMonthYearMatch = /^(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)(?:,)?\s+(\d{4})$/.exec(trimmed);
-    if (dayMonthYearMatch) {
-        const day = parseInt(dayMonthYearMatch[1], 10);
-        const month = parseMonthName(dayMonthYearMatch[2]);
-        const year = parseInt(dayMonthYearMatch[3], 10);
-        if (month !== null) {
-            return createLocalDate(year, month, day);
-        }
+    for (const form of WHEN_FORMS) {
+        const match = form.regex.exec(text);
+        if (!match) continue;
+        const parts = form.read(match);
+        if (!parts) continue;
+        // Without an era, a year takes four digits, as it always has.
+        if (era === null && parts.yearDigits !== 4) continue;
+        const year = astronomicalYear(parts.year, era);
+        if (year === null) return null;
+        return createLocalDate(year, parts.monthIndex, parts.day, parts.hour, parts.minute, parts.second);
     }
 
     return null;
@@ -261,14 +236,85 @@ export function parseLocalDateKey(value: string | undefined): Date | null {
     return Number.isFinite(date.getTime()) ? date : null;
 }
 
-export function formatWhenForYaml(date: Date): string {
+/**
+ * A date's year within its era: 1184 BCE → `{ year: 1184, era: 'BCE' }`,
+ * 2024 → `{ year: 2024, era: 'CE' }`. `getFullYear()` counts astronomically,
+ * so 0 is 1 BCE.
+ */
+export function eraYearOf(date: Date): { year: number; era: WhenEra } {
     const year = date.getFullYear();
+    return year <= 0 ? { year: 1 - year, era: 'BCE' } : { year, era: 'CE' };
+}
+
+/** A When's date in the author's form, without a clock: `2024-03-05`, `1184-06-14 BCE`. */
+export function formatWhenDate(date: Date): string {
+    const { year, era } = eraYearOf(date);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const text = `${String(year).padStart(4, '0')}-${month}-${day}`;
+    return era === 'BCE' ? `${text} BCE` : text;
+}
+
+/**
+ * The canonical `When` for frontmatter: `2024-03-05 14:30`, `1184-06-14 20:00 BCE`.
+ * The year always takes four digits (`0800-01-01 12:00`), which is what the
+ * parser's year-first form reads. A CE year never gets an era.
+ */
+export function formatWhenForYaml(date: Date): string {
+    const { year, era } = eraYearOf(date);
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const hour = String(date.getHours()).padStart(2, '0');
     const minute = String(date.getMinutes()).padStart(2, '0');
 
-    return `${year}-${month}-${day} ${hour}:${minute}`;
+    const text = `${String(year).padStart(4, '0')}-${month}-${day} ${hour}:${minute}`;
+    return era === 'BCE' ? `${text} BCE` : text;
+}
+
+const ENGLISH_LOCALE = /^en(?:-|$)/i;
+
+/** True for English and its regional forms (`en`, `en-GB`). */
+export function isEnglishLocale(locale: string): boolean {
+    return ENGLISH_LOCALE.test(locale);
+}
+
+/** True when a set of story dates runs from BCE into CE. Only then does a CE year name its era. */
+export function datesSpanEras(dates: readonly Date[]): boolean {
+    let bce = false;
+    let ce = false;
+    for (const date of dates) {
+        if (date.getFullYear() <= 0) bce = true;
+        else ce = true;
+        if (bce && ce) return true;
+    }
+    return false;
+}
+
+/**
+ * Format a story date with Intl. A BCE date names its era (`Jun 14, 1184 BCE`),
+ * and so does a CE date when `markCe` says the dates around it cross eras
+ * (`Apr 3, 33 CE`). English reads BCE and CE; other languages use their own
+ * era names from Intl (`v. Chr.`, `av. J.-C.`, `紀元前`). Any other date, and
+ * any format without a year, comes out exactly as Intl has always made it.
+ */
+export function formatStoryDate(
+    date: Date,
+    options: Intl.DateTimeFormatOptions,
+    locale: string = getFormattingLocale(),
+    markCe = false
+): string {
+    const base: Intl.DateTimeFormatOptions = { ...options, calendar: 'gregory' };
+    const bce = date.getFullYear() <= 0;
+    if (!options.year || (!bce && !markCe)) return new Intl.DateTimeFormat(locale, base).format(date);
+    const parts = new Intl.DateTimeFormat(locale, { ...base, era: 'short' }).formatToParts(date);
+    if (!isEnglishLocale(locale)) return parts.map(part => part.value).join('');
+    const era = bce ? t('ui.date.eraBce') : t('ui.date.eraCe');
+    return parts.map(part => part.type === 'era' ? era : part.value).join('');
+}
+
+/** A story year on its own: `1811`, `1184 BCE`; `33 CE` when `markCe` (a span that crosses eras). */
+export function formatStoryYear(date: Date, locale: string = getFormattingLocale(), markCe = false): string {
+    return formatStoryDate(date, { year: 'numeric' }, locale, markCe);
 }
 
 export function parseDateRangeInput(value: string): { start: Date | null; end: Date | null } | null {
@@ -885,14 +931,14 @@ export function generateChronologicalTicks(
     // Calculate time span if not provided (for intelligent labeling)
     const validDates = validScenes.map(s => s.date);
     const span = timeSpan || calculateTimeSpan(validDates);
+    // A book that runs from BCE into CE names the era on its CE years too.
+    const markCe = datesSpanEras(validDates);
 
     // Special case: Only one scene - just show that date at the top
     if (validScenes.length === 1) {
         const singleDate = validScenes[0].date;
         // Use local time methods to ensure consistency with parsing
-        const dateLabel = singleDate.toLocaleDateString(getFormattingLocale(), {
-            month: 'short', day: 'numeric', year: 'numeric', calendar: 'gregory',
-        });
+        const dateLabel = formatStoryDate(singleDate, { month: 'short', day: 'numeric', year: 'numeric' });
 
         return [{
             angle: -Math.PI / 2, // Top of circle
@@ -995,7 +1041,7 @@ export function generateChronologicalTicks(
         const dateStr = sceneDate.toLocaleDateString(getFormattingLocale(), {
             month: 'short', day: 'numeric', calendar: 'gregory',
         });
-        const year = sceneDate.toLocaleDateString(getFormattingLocale(), { year: 'numeric', calendar: 'gregory' });
+        const year = formatStoryYear(sceneDate, getFormattingLocale(), markCe);
         const timeStr = formatTime(sceneDate);
 
         // Analyze gap before this scene to determine label type

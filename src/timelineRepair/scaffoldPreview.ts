@@ -11,6 +11,7 @@ import type { PatternPresetId, TimeBucket } from './types';
 import { TIME_BUCKET_LABELS, SCAFFOLD_PATTERNS } from './types';
 import { getInitialBeatIndex } from './patternSync';
 import { getFormattingLocale } from '../i18n';
+import { formatStoryDate } from '../utils/date';
 
 export interface ScaffoldPreviewStep {
     sceneLabel: string;
@@ -75,11 +76,11 @@ function buildBeatLabels(cycle: TimeBucket[], startIndex: number, count: number)
 }
 
 function formatAnchorLabel(anchorWhen: Date): string {
-    const dateLabel = new Intl.DateTimeFormat(getFormattingLocale(), {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    }).format(anchorWhen);
+    // A BCE anchor names its era; a CE one reads as it always has.
+    const dateOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+    const dateLabel = anchorWhen.getFullYear() > 0
+        ? new Intl.DateTimeFormat(getFormattingLocale(), dateOptions).format(anchorWhen)
+        : formatStoryDate(anchorWhen, dateOptions);
 
     const timeLabel = new Intl.DateTimeFormat(getFormattingLocale(), {
         hour: 'numeric',

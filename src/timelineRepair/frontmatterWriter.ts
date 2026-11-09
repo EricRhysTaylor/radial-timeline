@@ -15,7 +15,7 @@ import type {
 } from './types';
 import { getEffectiveWhen } from './types';
 import { appendWhenChanges, type WhenChangeRecord } from './whenChangeLog';
-import { formatWhenForYaml, formatLocalDateKey } from '../utils/date';
+import { formatWhenForYaml, formatWhenDate } from '../utils/date';
 
 // ============================================================================
 // Date Formatting
@@ -123,7 +123,7 @@ export async function writeFrontmatterUpdates(
         
         try {
             let previousWhen: string | null = null;
-            const nextWhen = update.dateOnly ? formatLocalDateKey(update.when) : formatWhenForYaml(update.when);
+            const nextWhen = update.dateOnly ? formatWhenDate(update.when) : formatWhenForYaml(update.when);
             await app.fileManager.processFrontMatter(update.file, (fm) => {
                 const fmObj = fm as Record<string, unknown>;
 

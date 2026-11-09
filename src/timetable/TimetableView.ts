@@ -55,7 +55,7 @@ import { getActiveBook, getBookIdForPath, getSagaBooks, getTimelineScope } from 
 import { getConfiguredActCount, parseActLabels, resolveActLabel } from '../utils/acts';
 import { canonicalizeFrontmatterKey, getActiveFrontmatterMappings, readBeatPurpose } from '../utils/frontmatter';
 import { listAuthorQueries } from '../utils/authorQueryComments';
-import { formatElapsedTime, parseLocalDateKey, parseWhenField } from '../utils/date';
+import { datesSpanEras, formatElapsedTime, formatStoryYear, parseLocalDateKey, parseWhenField } from '../utils/date';
 import { formatCompactDuration, formatDueLabel, formatLongDate, formatSceneWhen, formatTableWhen, whenTextHasClock } from '../utils/whenFormat';
 import { normalizeStatus } from '../utils/text';
 import { isOverdueDateString } from '../utils/date';
@@ -305,8 +305,10 @@ interface ModeContext {
 /** What the cells of one draw share. */
 interface CellContext {
     mode: ModeContext;
-    /** The year every When shares, shown once in the header; null when they span years, so each cell shows its own. */
-    whenYear: number | null;
+    /** The year every When shares (`1811`, `1184 BCE`), shown once in the header; null when they span years, so each cell shows its own. */
+    whenYear: string | null;
+    /** The Whens run from BCE into CE, so CE years name their era too. */
+    whenSpansEras: boolean;
     /** The When cell shows the Duration while the Duration column is hidden. */
     durationInWhen: boolean;
     /** The median Words of each book's scenes, by book id ('' outside every book). */
@@ -358,6 +360,11 @@ function modeName(mode: string): string {
 function modeIcon(mode: string): string {
     const icon = MODE_ICONS[mode];
     return typeof icon === 'string' ? icon : 'list-ordered';
+}
+
+/** The When header's shared year: the bare number for a CE year, as always; `1184 BCE` for a BCE one. */
+function headerYear(when: Date): string {
+    return when.getFullYear() > 0 ? String(when.getFullYear()) : formatStoryYear(when);
 }
 
 function firstText(value: unknown): string {
@@ -2072,12 +2079,12 @@ export class TimetableView extends BasesView {
             const { type, name } = parsePropertyId(column.property);
             return type === 'note' && canonicalizeFrontmatterKey(name, mappings) === canonical;
         });
-        const years = new Set<number>();
+        const years = new Map<number, Date>();
         const words = new Map<string, number[]>();
         const books = settings.books;
         for (const item of items) {
             const { when } = readWhen(item.frontmatter, settings);
-            if (when) years.add(when.getFullYear());
+            if (when && !years.has(when.getFullYear())) years.set(when.getFullYear(), when);
             if (item.row.kind !== 'scene') continue;
             const count = Number(readFrontmatterProperty(item.frontmatter, authorKeyFor('Words', settings)));
             if (!Number.isFinite(count) || count <= 0) continue;
@@ -2092,7 +2099,8 @@ export class TimetableView extends BasesView {
         return {
             mode,
             // Alt's planetary calendar has years of its own; each cell keeps them.
-            whenYear: years.size === 1 && !mode.chronologue?.profile ? [...years][0] : null,
+            whenYear: years.size === 1 && !mode.chronologue?.profile ? headerYear([...years.values()][0]) : null,
+            whenSpansEras: datesSpanEras([...years.values()]),
             durationInWhen: !shows('Duration'),
             wordMedians,
             today: new Date(),
@@ -4031,7 +4039,7 @@ export class TimetableView extends BasesView {
         const hasClock = whenTextHasClock(text);
         const profile = cells.mode.chronologue?.profile ?? null;
         const full = this.formatWhen(when, hasClock, profile);
-        cell.createSpan({ text: profile ? full : formatTableWhen(when, hasClock, cells.whenYear === null) });
+        cell.createSpan({ text: profile ? full : formatTableWhen(when, hasClock, cells.whenYear === null, undefined, cells.whenSpansEras) });
         const durationRaw = cells.durationInWhen ? readFrontmatterProperty(item.frontmatter, authorKeyFor('Duration', this.plugin.settings)) : undefined;
         const duration = typeof durationRaw === 'string' ? durationRaw.trim() : '';
         const compact = duration ? formatCompactDuration(duration) : null;

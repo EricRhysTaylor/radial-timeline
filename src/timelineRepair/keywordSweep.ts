@@ -9,11 +9,17 @@
 
 import type { RepairSceneEntry, TemporalCue, WhenConfidence, TimeBucket } from './types';
 import { TIME_BUCKET_HOURS } from './types';
-import { parseWhenField } from '../utils/date';
+import { parseWhenField, PROSE_ERA_SOURCE, PROSE_YEAR_SOURCE, proseDateWhen } from '../utils/date';
 
 // ============================================================================
 // Temporal Cue Patterns
 // ============================================================================
+
+const MONTH_NUMBERS: Record<string, string> = {
+    january: '01', february: '02', march: '03', april: '04',
+    may: '05', june: '06', july: '07', august: '08',
+    september: '09', october: '10', november: '11', december: '12'
+};
 
 /**
  * Patterns for absolute date/time mentions.
@@ -23,38 +29,20 @@ const ABSOLUTE_DATE_PATTERNS: Array<{
     pattern: RegExp;
     extract: (match: RegExpMatchArray) => string | null;
 }> = [
-    // ISO format: 2085-04-01, 2085-4-1
+    // ISO format: 2085-04-01, 2085-4-1, 1184-06-14 BCE
     {
-        pattern: /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/,
-        extract: (m) => `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`
+        pattern: new RegExp(String.raw`\b(\d{4})-(\d{1,2})-(\d{1,2})\b` + PROSE_ERA_SOURCE, 'i'),
+        extract: (m) => proseDateWhen(m[1], m[2], m[3], m[4])
     },
-    // Month Day, Year: "March 15, 2085", "March 15th, 2085"
+    // Month Day, Year: "March 15, 2085", "March 15th, 2085", "March 15, 44 BC"
     {
-        pattern: /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b/i,
-        extract: (m) => {
-            const monthMap: Record<string, string> = {
-                january: '01', february: '02', march: '03', april: '04',
-                may: '05', june: '06', july: '07', august: '08',
-                september: '09', october: '10', november: '11', december: '12'
-            };
-            const month = monthMap[m[1].toLowerCase()];
-            const day = m[2].padStart(2, '0');
-            return `${m[3]}-${month}-${day}`;
-        }
+        pattern: new RegExp(String.raw`\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+` + PROSE_YEAR_SOURCE + PROSE_ERA_SOURCE, 'i'),
+        extract: (m) => proseDateWhen(m[3], MONTH_NUMBERS[m[1].toLowerCase()], m[2], m[4])
     },
-    // Day Month Year: "15 March 2085", "15th March 2085"
+    // Day Month Year: "15 March 2085", "15th March 2085", "15 March 44 BC"
     {
-        pattern: /\b(\d{1,2})(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December),?\s+(\d{4})\b/i,
-        extract: (m) => {
-            const monthMap: Record<string, string> = {
-                january: '01', february: '02', march: '03', april: '04',
-                may: '05', june: '06', july: '07', august: '08',
-                september: '09', october: '10', november: '11', december: '12'
-            };
-            const month = monthMap[m[2].toLowerCase()];
-            const day = m[1].padStart(2, '0');
-            return `${m[3]}-${month}-${day}`;
-        }
+        pattern: new RegExp(String.raw`\b(\d{1,2})(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December),?\s+` + PROSE_YEAR_SOURCE + PROSE_ERA_SOURCE, 'i'),
+        extract: (m) => proseDateWhen(m[3], MONTH_NUMBERS[m[2].toLowerCase()], m[1], m[4])
     }
 ];
 

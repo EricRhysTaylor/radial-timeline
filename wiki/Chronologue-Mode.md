@@ -13,6 +13,8 @@ Chronologue arranges your scenes by story-world time, so you can build and check
 
 > [!NOTE]
 > **Date formats**: A calendar anchor needs at least a year. Year-only (`When: 2045`), year+month (`When: 2045-07`), and textual month+year (`When: July 2045`) work — omitted pieces default internally to the first day at noon. Month-only, day-only, and time-only values cannot establish a calendar anchor. A scene can still appear in Chronologue with `When` blank.
+>
+> **Dates before the common era**: Write `BCE` (or `BC`) after the date: `When: 1184-06-14 BCE`, `When: 1184-06-14 20:00 BCE`, `When: June 1184 BCE`, `When: 44 BCE`. Years count down toward 1 BCE, which is followed by 1 CE; there is no year 0. Labels name the era (`1184 BCE`), and a book that runs into the common era names `CE` on its later years too.
 
 ## Other periods inside a scene
 

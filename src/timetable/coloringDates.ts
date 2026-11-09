@@ -1,5 +1,5 @@
 import { getFormattingLocale, t } from '../i18n';
-import { formatLocalDateKey, parseLocalDateKey, parseWhenField } from '../utils/date';
+import { createLocalDate, formatLocalDateKey, formatStoryDate, formatStoryYear, isCalendarDay, parseLocalDateKey, parseWhenField, splitWhenEra } from '../utils/date';
 
 export type DateGrouping = { kind: 'day' | 'month' | 'year' | 'due' } | { kind: 'range'; start: string; end: string };
 
@@ -21,13 +21,41 @@ export function readDateGrouping(raw: unknown): DateGrouping | null {
 function dateValue(value: unknown): Date | null {
     if (value instanceof Date) return Number.isFinite(value.getTime()) ? value : null;
     if (typeof value !== 'string') return null;
-    const day = value.trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:$|[ T])/);
-    if (day && !validColoringDateKey(`${day[1]}-${day[2].padStart(2, '0')}-${day[3].padStart(2, '0')}`)) return null;
+    const { body, era } = splitWhenEra(value);
+    const day = body.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:$|[ T])/);
+    // The day must exist in its own year: 1 BCE (astronomical 0) has a Feb 29.
+    if (day && !isCalendarDay(era === 'BCE' ? 1 - Number(day[1]) : Number(day[1]), Number(day[2]), Number(day[3]))) return null;
     return parseWhenField(value);
 }
 
 export function hasColoringDates(rows: Array<{ value: unknown }>): boolean {
     return rows.some(row => dateValue(row.value) !== null);
+}
+
+/**
+ * A date key's numbers: `2024-03-05`, `-1183-06-14` (1184 BCE), `-1183-06`, `-1183`.
+ * Day, month and year category IDs carry the astronomical year, so 1184 BCE is
+ * `-1183`; a CE key is the same `formatLocalDateKey` text it has always been.
+ */
+function dateKeyParts(key: string): [number, number, number] | null {
+    const match = /^(-?\d+)(?:-(\d{1,2}))?(?:-(\d{1,2}))?$/.exec(key);
+    if (!match) return null;
+    // A month key has no day, a year key no month: each starts on the 1st.
+    const [, year, month = '1', day = '1'] = match;
+    return [Number(year), Number(month), Number(day)];
+}
+
+/** Order two date keys in time; BCE years count down, so a string comparison cannot. */
+function compareDateKeys(a: string, b: string): number | null {
+    const left = dateKeyParts(a);
+    const right = dateKeyParts(b);
+    if (!left || !right) return null;
+    return left[0] - right[0] || left[1] - right[1] || left[2] - right[2];
+}
+
+function dateKeyLocalDate(key: string): Date | null {
+    const parts = dateKeyParts(key);
+    return parts ? createLocalDate(parts[0], parts[1] - 1, parts[2]) : null;
 }
 
 /** Stable, locale-independent category IDs; boundaries are calendar days, never milliseconds across DST. */
@@ -43,9 +71,14 @@ export function dateColoringRows(rows: Array<{ path: string; value: unknown; com
         const key = formatLocalDateKey(date);
         switch (grouping.kind) {
             case 'day': return { path, value: `day:${key}` };
-            case 'month': return { path, value: `month:${key.slice(0, 7)}` };
+            case 'month': return { path, value: `month:${key.slice(0, key.lastIndexOf('-'))}` };
             case 'year': return { path, value: `year:${date.getFullYear()}` };
-            case 'range': return { path, value: key < grouping.start ? 'range:before' : key > grouping.end ? 'range:after' : 'range:inside' };
+            case 'range': {
+                const before = compareDateKeys(key, grouping.start);
+                const after = compareDateKeys(key, grouping.end);
+                if (before === null || after === null) return { path, value: 'date:invalid' };
+                return { path, value: before < 0 ? 'range:before' : after > 0 ? 'range:after' : 'range:inside' };
+            }
             case 'due': return { path, value: complete ? 'due:completed' : key < todayKey ? 'due:overdue' : key === todayKey ? 'due:today' : key <= weekKey ? 'due:week' : 'due:later' };
         }
     });
@@ -61,10 +94,20 @@ export function coloringDateLabel(value: string, grouping?: DateGrouping): strin
         'range:inside': grouping?.kind === 'range' ? `${grouping.start} – ${grouping.end}` : '',
     };
     if (value in labels) return labels[value];
-    if (value.startsWith('year:')) return value.slice(5);
-    const day = value.startsWith('month:') ? `${value.slice(6)}-01` : value.startsWith('day:') ? value.slice(4) : '';
+    const isMonth = value.startsWith('month:');
+    const key = value.startsWith('year:') ? value.slice(5) : isMonth ? value.slice(6) : value.startsWith('day:') ? value.slice(4) : '';
+    // A BCE group names its era (`1184 BCE`, `Jun 1184 BCE`); CE groups read as they always have.
+    const parts = dateKeyParts(key);
+    if (parts && parts[0] <= 0) {
+        const date = dateKeyLocalDate(key);
+        if (!date) return value;
+        if (value.startsWith('year:')) return formatStoryYear(date);
+        return formatStoryDate(date, isMonth ? { month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    if (value.startsWith('year:')) return key;
+    const day = isMonth ? `${key}-01` : key;
     const date = parseLocalDateKey(day);
-    return date ? new Intl.DateTimeFormat(getFormattingLocale(), value.startsWith('month:')
+    return date ? new Intl.DateTimeFormat(getFormattingLocale(), isMonth
         ? { month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short', year: 'numeric' }).format(date) : value;
 }
 
@@ -79,10 +122,15 @@ export function fixedColoringGroups(grouping?: DateGrouping): string[] | undefin
     return undefined;
 }
 
+const DATE_CATEGORY = /^(day|month|year):(.+)$/;
+
 /** Calendar categories stay in time order, with missing/invalid dates last. */
 export function compareDateCategories(a: string, b: string): number {
     const fixed = [...RANGE_GROUPS, ...DUE_GROUPS, ...DATE_GAPS];
     if (a.startsWith('date:') !== b.startsWith('date:')) return a.startsWith('date:') ? 1 : -1;
     if (fixed.includes(a) && fixed.includes(b)) return fixed.indexOf(a) - fixed.indexOf(b);
-    return a.localeCompare(b, undefined, { numeric: true });
+    const left = DATE_CATEGORY.exec(a);
+    const right = DATE_CATEGORY.exec(b);
+    const inTime = left && right && left[1] === right[1] ? compareDateKeys(left[2], right[2]) : null;
+    return inTime ?? a.localeCompare(b, undefined, { numeric: true });
 }

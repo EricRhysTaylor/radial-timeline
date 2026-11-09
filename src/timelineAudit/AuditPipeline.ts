@@ -10,7 +10,7 @@ import type { Vault } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { getAIClient } from '../ai/runtime/aiClient';
 import type { AIProviderId, Capability } from '../ai/types';
-import { parseWhenField, formatLocalDateKey } from '../utils/date';
+import { parseWhenField, formatWhenDate, PROSE_ERA_SOURCE, PROSE_YEAR_SOURCE, proseDateWhen, splitWhenEra } from '../utils/date';
 import { t, tCount } from '../i18n';
 import { buildChronologyEntries, buildChronologyPositionMap } from './chronology';
 import { loadScopedSceneNotes } from '../timeline/sharedSceneNotes';
@@ -99,15 +99,16 @@ const RELATIVE_PATTERNS: PatternDef[] = [
     { pattern: /\ban?\s+hour\s+later\b/i, cue: { kind: 'continuity', label: 'an hour later', minuteOffset: 60, tier: 'direct' } }
 ];
 
+// A written era (`1184-06-14 BCE`, `June 14, 44 BC`) stays on the cue, so a BCE scene is never read as CE.
 const ABSOLUTE_DATE_PATTERNS: Array<{ pattern: RegExp; extract: (match: RegExpMatchArray) => string | null; label: string }> = [
     {
-        pattern: /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/,
-        extract: (m) => `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`,
+        pattern: new RegExp(String.raw`\b(\d{4})-(\d{1,2})-(\d{1,2})\b` + PROSE_ERA_SOURCE, 'i'),
+        extract: (m) => proseDateWhen(m[1], m[2], m[3], m[4]),
         label: 'explicit date'
     },
     {
-        pattern: /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b/i,
-        extract: (m) => `${m[3]}-${monthNameToIndex(m[1])}-${m[2].padStart(2, '0')}`,
+        pattern: new RegExp(String.raw`\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+` + PROSE_YEAR_SOURCE + PROSE_ERA_SOURCE, 'i'),
+        extract: (m) => proseDateWhen(m[3], monthNameToIndex(m[1]), m[2], m[4]),
         label: 'explicit date'
     }
 ];
@@ -403,7 +404,7 @@ function compareWhenAgainstCue(
                 'relative_order_conflict',
                 'deterministic',
                 cue.tier,
-                t('ui.auditPipeline.bodyDateDiffers', { date: formatLocalDateKey(cue.absoluteWhen), yaml: String(finding.currentWhenRaw) })
+                t('ui.auditPipeline.bodyDateDiffers', { date: formatWhenDate(cue.absoluteWhen), yaml: String(finding.currentWhenRaw) })
             );
             addEvidence(finding, cueToEvidence(cue, 'deterministic'));
             setSuggestion(finding, {
@@ -776,6 +777,9 @@ export function buildTimelineAuditAiPrompt(
     const summary = input.summary || 'N/A'; // SAFE: prompt must label an absent optional scene summary
     const synopsis = input.synopsis || 'N/A'; // SAFE: prompt must label an absent optional scene synopsis
     const body = input.bodyExcerpt || 'N/A'; // SAFE: prompt must label an empty scene body
+    // Only a book with BCE dates hears about eras, so every other book's prompt is unchanged.
+    const bceBook = [input, ...manuscriptInputs].some(entry => typeof entry.rawWhen === 'string' && splitWhenEra(entry.rawWhen).era === 'BCE');
+    const eraRule = bceBook ? ' This book has years before the common era: write BCE after any such date (1184-06-14 BCE, 1184-06-14 20:00 BCE).' : '';
     return `You are reconstructing a fiction manuscript chronology scene by scene.
 
 The current YAML When may be a rough scaffold. Treat it as provisional evidence, not truth. Read the manuscript evidence and decide whether this scene is mainline action, a flashback, a flash-forward, parallel action, or unclear. Infer an updated timestamp only when the text and neighboring narrative scenes support one. Preserve uncertainty instead of inventing precision.
@@ -810,7 +814,7 @@ Check all of the following:
 - memories, dreams, backstory, flashbacks, flash-forwards, and parallel action;
 - whether the provisional When puts the scene in the wrong era, day, order, or time bucket.
 
-Return JSON only. Use an empty string when no issue, position, or timestamp can be supported. suggestedWhen must be YYYY-MM-DD, or YYYY-MM-DD HH:mm when the text also supports a clock time.
+Return JSON only. Use an empty string when no issue, position, or timestamp can be supported. suggestedWhen must be YYYY-MM-DD, or YYYY-MM-DD HH:mm when the text also supports a clock time.${eraRule}
 {
   "rationale": string,
   "evidenceQuotes": string[],
@@ -1049,7 +1053,7 @@ async function runAiInference(
                     if (suggestionDiffers) {
                         setSuggestion(finding, {
                             when: suggestedWhen,
-                            dateOnly: /^\d{4}-\d{2}-\d{2}$/.test(parsed.suggestedWhen),
+                            dateOnly: /^\d{4}-\d{2}-\d{2}$/.test(splitWhenEra(parsed.suggestedWhen).body),
                             confidence: parsed.confidence,
                             provenance: 'ai',
                             reason: parsed.rationale,

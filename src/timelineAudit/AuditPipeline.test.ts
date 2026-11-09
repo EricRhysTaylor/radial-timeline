@@ -10,8 +10,35 @@ import {
     selectTimelineAuditAiInputs
 } from './AuditPipeline';
 import type { TimelineAuditSceneInput } from './types';
+import { parseWhenField } from '../utils/date';
 
 vi.mock('../ai/runtime/aiClient', () => ({ getAIClient: vi.fn() }));
+
+describe('timeline audit with BCE dates', () => {
+    const bceInput = (path: string, index: number, rawWhen: string, bodyExcerpt: string): TimelineAuditSceneInput =>
+        makeInput({ path, manuscriptOrderIndex: index, rawWhen, parsedWhen: parseWhenField(rawWhen), bodyExcerpt });
+
+    it('reads a BCE date in the text as BCE, so it matches its own When', async () => {
+        const input = bceInput('Odyssey/1 Troy.md', 0, '1184-06-14 BCE', 'On June 14, 1184 BCE the city fell.');
+        const result = await runTimelineAuditFromInputs([input], { runDeterministicPass: true, runContinuityPass: false, runAiInference: false });
+        expect(result.findings[0].suggestedWhen).toBeNull();
+    });
+
+    it('suggests a BCE correction in BCE', async () => {
+        const input = bceInput('Odyssey/1 Troy.md', 0, '1184-06-14 BCE', 'On June 15, 1184 BCE the city fell.');
+        const result = await runTimelineAuditFromInputs([input], { runDeterministicPass: true, runContinuityPass: false, runAiInference: false });
+        expect(result.findings[0].suggestedWhen?.getFullYear()).toBe(-1183);
+        expect(result.findings[0].suggestedWhen?.getDate()).toBe(15);
+        expect(result.findings[0].suggestedDateOnly).toBe(true);
+    });
+
+    it('asks the AI to keep BCE only in a book that has BCE dates', () => {
+        const bce = bceInput('Odyssey/1 Troy.md', 0, '1184-06-14 BCE', '');
+        expect(buildTimelineAuditAiPrompt(bce, null, null, [bce])).toContain('write BCE after any such date');
+        const ce = makeInput({ path: 'Story/1 Day.md', manuscriptOrderIndex: 0, rawWhen: '2026-01-01' });
+        expect(buildTimelineAuditAiPrompt(ce, null, null, [ce])).not.toContain('BCE');
+    });
+});
 
 function makeInput(params: Partial<TimelineAuditSceneInput> & { path: string; manuscriptOrderIndex: number }): TimelineAuditSceneInput {
     const rawWhen = params.rawWhen ?? null;

@@ -190,9 +190,14 @@ export function toggleRippleIncludeAnchored(session: SessionDiffModel): SessionD
  * one day instead of smearing every scene's clock time by -16 hours.
  */
 function calendarDayDelta(from: Date, to: Date): number {
-    const a = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
-    const b = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
-    return Math.round((b - a) / 86400000);
+    return Math.round((utcCalendarDay(to) - utcCalendarDay(from)) / 86400000);
+}
+
+/** A date's local calendar day as UTC midnight. `setUTCFullYear` keeps years 0–99 and BCE years; `Date.UTC` reads 0–99 as 19xx. */
+function utcCalendarDay(date: Date): number {
+    const day = new Date(0);
+    day.setUTCFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+    return day.getTime();
 }
 
 /**

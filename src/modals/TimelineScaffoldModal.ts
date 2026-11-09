@@ -45,7 +45,7 @@ import {
     getNeedsReviewCount
 } from '../timelineRepair/sessionDiff';
 import { readWhenHistory, clearWhenChangeLog } from '../timelineRepair/whenChangeLog';
-import { formatWhenForDisplay, detectTimeBucket } from '../timelineRepair/patternSync';
+import { detectTimeBucket } from '../timelineRepair/patternSync';
 import { writeSessionChanges, getChangeSummary } from '../timelineRepair/frontmatterWriter';
 import {
     buildTimelineSnapshot,
@@ -56,7 +56,7 @@ import {
     type SnapshotMeta
 } from '../timelineRepair/timelineSnapshot';
 import { buildScaffoldPreview } from '../timelineRepair/scaffoldPreview';
-import { parseWhenField } from '../utils/date';
+import { formatWhenForYaml, parseWhenField } from '../utils/date';
 import { renderWithYamlTokens } from '../utils/yamlTokenRender';
 import { TimelineAuditModal } from './TimelineAuditModal';
 
@@ -1216,7 +1216,7 @@ export class TimelineScaffoldModal extends Modal {
         // Proposed When (primary, prominent)
         const proposedLine = whenArea.createDiv({ cls: 'ert-timeline-repair-proposed-when' });
         proposedLine.createSpan({
-            text: formatWhenForDisplay(effectiveWhen),
+            text: formatWhenForYaml(effectiveWhen),
             cls: 'ert-timeline-repair-proposed-date'
         });
         proposedLine.createSpan({
@@ -1226,8 +1226,8 @@ export class TimelineScaffoldModal extends Modal {
 
         // Current When comparison (secondary, smaller) — only if different
         if (entry.originalWhen && entry.source !== 'authored') {
-            const originalDisplay = formatWhenForDisplay(entry.originalWhen);
-            const proposedDisplay = formatWhenForDisplay(effectiveWhen);
+            const originalDisplay = formatWhenForYaml(entry.originalWhen);
+            const proposedDisplay = formatWhenForYaml(effectiveWhen);
             const originalBucket = detectTimeBucket(entry.originalWhen);
 
             if (originalDisplay !== proposedDisplay || originalBucket !== currentBucket) {

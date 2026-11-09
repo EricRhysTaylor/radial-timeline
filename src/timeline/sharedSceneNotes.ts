@@ -12,7 +12,7 @@ import type RadialTimelinePlugin from '../main';
 import type { SceneData } from '../sceneAnalysis/types';
 import { compareScenesByOrder, getAllSceneData } from '../sceneAnalysis/data';
 import type { TimelineItem } from '../types';
-import { parseWhenField } from '../utils/date';
+import { formatWhenForYaml, parseWhenField } from '../utils/date';
 import { readSceneId } from '../utils/sceneIds';
 
 export interface SharedSceneNote {
@@ -38,14 +38,7 @@ function normalizeText(value: unknown): string {
 
 export function toRawWhenValue(value: unknown): string | null {
     if (typeof value === 'string' && value.trim().length > 0) return value.trim();
-    if (value instanceof Date && !Number.isNaN(value.getTime())) {
-        const year = value.getFullYear();
-        const month = String(value.getMonth() + 1).padStart(2, '0');
-        const day = String(value.getDate()).padStart(2, '0');
-        const hour = String(value.getHours()).padStart(2, '0');
-        const minute = String(value.getMinutes()).padStart(2, '0');
-        return `${year}-${month}-${day} ${hour}:${minute}`;
-    }
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return formatWhenForYaml(value);
     return null;
 }
 

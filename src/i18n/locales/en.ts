@@ -3946,6 +3946,9 @@ export const en = {
         date: {
             midnight: 'midnight',
             noon: 'noon',
+            // English era names for story dates. Other languages take theirs from Intl (v. Chr., av. J.-C.).
+            eraBce: 'BCE',
+            eraCe: 'CE',
         },
         demoLibraryModal: {
             title: 'Explore a finished book',

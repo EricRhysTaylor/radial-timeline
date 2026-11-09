@@ -86,6 +86,8 @@ Location: `docs/engineering/plans/`
 Contains architecture proposals and historical planning documents.
 These describe design direction but are not always authoritative rules.
 
+- **[bce-scene-dates-plan.md](plans/bce-scene-dates-plan.md)** — BCE scene dates: `When: 1184-06-14 BCE`, astronomical years inside one parser, era labels ("1184 BCE"; CE only when a book crosses eras), every caller that reads, writes or shows a When, and a suggested re-dating of the Odyssey. Built 2026-11-09.
+
 - **[chronologue-time-references-plan.md](plans/chronologue-time-references-plan.md)** — Manual Chronologue time references: author controls, square markers, interior concentric connectors and off-range seam terminals, inherited subplot occurrences, nested Timetable rows, and isolated native acceptance.
 
 - **[character-lanes-and-chronology-findings-plan.md](plans/character-lanes-and-chronology-findings-plan.md)** — Settled design: four character lanes in Narrative, chosen automatically by POV count, under the All Scenes ring, read from Character with POV from `resolveScenePov` and optional Place colors from the Timetable. In Chronologue, chronology findings (saved Date Audit results, a character in two places at once) ride the existing duration arcs, with one all-pairs overlap calculation owned by the Date Audit. Not built.

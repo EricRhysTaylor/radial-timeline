@@ -15,9 +15,8 @@
  */
 
 import { getFormattingLocale } from '../i18n';
-import { parseDurationDetail, type DurationUnitKey } from './date';
+import { formatStoryDate, formatStoryYear, isEnglishLocale, parseDurationDetail, splitWhenEra, type DurationUnitKey } from './date';
 
-const ENGLISH_LOCALE = /^en(?:-|$)/i;
 const ENGLISH_WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const ENGLISH_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -27,14 +26,14 @@ export function whenTextHasClock(raw: string): boolean {
 }
 
 /**
- * True unless the author's When names only a year (`2085`), a year and month
- * (`2085-04`) or a month and year (`April 2085`). `parseWhenField` reads those
- * as the 1st of the period, so printing that day would invent a date the
- * author never wrote. Meaningful only for a When that `parseWhenField` reads.
+ * True unless the author's When names only a year (`2085`, `1184 BCE`), a year
+ * and month (`2085-04`) or a month and year (`April 2085`). `parseWhenField`
+ * reads those as the 1st of the period, so printing that day would invent a
+ * date the author never wrote. Meaningful only for a When that `parseWhenField` reads.
  */
 export function whenTextNamesDay(raw: string): boolean {
-    const text = raw.trim();
-    return !/^\d{4}(?:[-/]\d{1,2})?$/.test(text) && !/^[A-Za-z]+\s*,?\s*\d{4}$/.test(text);
+    const text = splitWhenEra(raw).body;
+    return !/^\d{1,4}(?:[-/]\d{1,2})?$/.test(text) && !/^[A-Za-z]+\s*,?\s*\d{1,4}$/.test(text);
 }
 
 function englishClock(when: Date): string {
@@ -51,16 +50,17 @@ function englishClock(when: Date): string {
  * Format a scene's When for display. `hasClock` says whether the author's YAML
  * names a time; without one, only the date shows. Month and weekday names
  * follow Obsidian's language; English keeps RT's long-standing hover format.
+ * A BCE year names its era: `Wed Jun 14, 1184 BCE`.
  */
 export function formatSceneWhen(when: Date, hasClock: boolean, locale: string = getFormattingLocale()): string {
     if (!(when instanceof Date) || Number.isNaN(when.getTime())) {
         throw new Error('formatSceneWhen requires a valid Date object');
     }
-    if (ENGLISH_LOCALE.test(locale)) {
-        const date = `${ENGLISH_WEEKDAYS[when.getDay()]} ${ENGLISH_MONTHS[when.getMonth()]} ${when.getDate()}, ${when.getFullYear()}`;
+    if (isEnglishLocale(locale)) {
+        const date = `${ENGLISH_WEEKDAYS[when.getDay()]} ${ENGLISH_MONTHS[when.getMonth()]} ${when.getDate()}, ${formatStoryYear(when, locale)}`;
         return hasClock ? `${date} @ ${englishClock(when)}` : date;
     }
-    const date = new Intl.DateTimeFormat(locale, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', calendar: 'gregory' }).format(when);
+    const date = formatStoryDate(when, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }, locale);
     if (!hasClock) return date;
     const clock = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }).format(when);
     return `${date} @ ${clock}`;
@@ -68,14 +68,15 @@ export function formatSceneWhen(when: Date, hasClock: boolean, locale: string = 
 
 /**
  * The Timetable's short When: `Fri Apr 6 · 7PM`, with the year only when the
- * table's rows span more than one (otherwise its header shows it once).
+ * table's rows span more than one (otherwise its header shows it once). A BCE
+ * year names its era; `markCe` names it on CE years too, for rows that cross eras.
  */
-export function formatTableWhen(when: Date, hasClock: boolean, withYear: boolean, locale: string = getFormattingLocale()): string {
-    if (ENGLISH_LOCALE.test(locale)) {
-        const date = `${ENGLISH_WEEKDAYS[when.getDay()]} ${ENGLISH_MONTHS[when.getMonth()]} ${when.getDate()}${withYear ? `, ${when.getFullYear()}` : ''}`;
+export function formatTableWhen(when: Date, hasClock: boolean, withYear: boolean, locale: string = getFormattingLocale(), markCe = false): string {
+    if (isEnglishLocale(locale)) {
+        const date = `${ENGLISH_WEEKDAYS[when.getDay()]} ${ENGLISH_MONTHS[when.getMonth()]} ${when.getDate()}${withYear ? `, ${formatStoryYear(when, locale, markCe)}` : ''}`;
         return hasClock ? `${date} · ${englishClock(when)}` : date;
     }
-    const date = new Intl.DateTimeFormat(locale, { weekday: 'short', month: 'short', day: 'numeric', year: withYear ? 'numeric' : undefined, calendar: 'gregory' }).format(when);
+    const date = formatStoryDate(when, { weekday: 'short', month: 'short', day: 'numeric', year: withYear ? 'numeric' : undefined }, locale, markCe);
     if (!hasClock) return date;
     return `${date} · ${new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }).format(when)}`;
 }

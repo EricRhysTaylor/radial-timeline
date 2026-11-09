@@ -9,7 +9,7 @@ import { setTooltip } from '../utils/domTooltip';
 
 import { App, ButtonComponent, Modal, Notice, setIcon} from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import { formatLocalDateKey, formatWhenForYaml } from '../utils/date';
+import { formatWhenDate, formatWhenForYaml } from '../utils/date';
 import { t } from '../i18n';
 import { renderWithYamlTokens } from '../utils/yamlTokenRender';
 import { applyAuditFindings, buildAuditApplyPlan } from '../timelineAudit/apply';
@@ -1122,7 +1122,7 @@ export class TimelineAuditModal extends Modal {
 
     private formatWhen(value: Date | null, dateOnly = false): string {
         if (!(value instanceof Date) || Number.isNaN(value.getTime())) return t('timelineAuditModal.detail.formatWhenMissing');
-        return dateOnly ? formatLocalDateKey(value) : formatWhenForYaml(value);
+        return dateOnly ? formatWhenDate(value) : formatWhenForYaml(value);
     }
 
     private formatEvidenceSource(source: TimelineAuditEvidenceSource): string {

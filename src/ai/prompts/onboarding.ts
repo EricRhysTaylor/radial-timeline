@@ -63,7 +63,7 @@ Subplot:
 Set Act by structural read; if the book runs past 3 acts, raise the act count in Settings to match. Flag uncertain calls.
 
 STAGE 3 — CORE METADATA
-- When: the in-world date, YYYY-MM-DD (a bare year is enough)
+- When: the in-world date, YYYY-MM-DD (a bare year is enough); for a year before the common era, add BCE after it (1184-06-14 BCE)
 - Synopsis: 1-2 sentences of what happens in the scene. ${SYNOPSIS_CONTENT_RULE}
 - Character: wiki links — e.g. "[[Odysseus]]"
 - Place: wiki links — e.g. "[[Ithaca]]"
@@ -186,7 +186,7 @@ const ONBOARDING_SCENE_SCHEMA = {
     },
     when: {
       type: ['string', 'null'],
-      description: 'In-world date YYYY-MM-DD (a bare year is enough), or null if it cannot be grounded.',
+      description: 'In-world date YYYY-MM-DD (a bare year is enough), with BCE after it for a year before the common era (1184-06-14 BCE), or null if it cannot be grounded.',
     },
     duration: {
       type: ['string', 'null'],

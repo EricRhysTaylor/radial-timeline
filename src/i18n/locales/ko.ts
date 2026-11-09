@@ -6050,7 +6050,6 @@ export const ko: DeepPartial<TranslationKeys> = {
         },
         canvasSketch: {
             selectIdea: '먼저 캔버스에서 아이디어 카드를 선택하세요. 막 제목과 기존 노트를 여는 카드는 변환할 수 없습니다.',
-            placeBackground: '장소 배경 표시',
             showOverdue: '기한이 지난 장면 표시',
             followTimeline: 'Shift를 누르고 가리킨 장면을 캔버스에서 따라가기',
             fileCardsExplanation: '여기서는 텍스트 카드만 변환할 수 있습니다. 파일 카드는 기존 노트에 연결되어 있으며 변경되지 않습니다.',
@@ -6137,7 +6136,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             keyActs: "막 표시",
             keyActsDetail: "Act 2라는 이름의 카드가 그 막을 시작하고 뒤따르는 카드가 합류합니다. 막 카드가 없으면 장면이 고르게 나뉩니다.",
             keyConvert: "카드를 장면으로 변환",
-            keyConvertDetail: "원하는 카드를 선택한 다음 제목 표시줄의 연필을 클릭하세요. 선택하지 않은 카드는 Canvas에 남습니다.",
             keyMap: "맵에서",
             keyEdge: "링 색",
             keyEdgeDetail: "카드 테두리가 링 색을 보여 줍니다. 점선 테두리는 스케치입니다.",

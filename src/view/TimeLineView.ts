@@ -588,7 +588,7 @@ export class RadialTimelineView extends ItemView {
             // folds them into one menu built from this same list.
             const titleActions: Array<{ label: string; icon: string; run: (anchor: HTMLElement) => void }> = [
                 { label: t('ui.timetable.viewName'), icon: 'table-2', run: () => { void this.plugin.openTimetable(); } },
-                { label: t('ui.timetable.canvasMapMenuHelp'), icon: 'layout-dashboard', run: (anchor) => {
+                { label: t('ui.timeLineView.canvasAction'), icon: 'layout-dashboard', run: (anchor) => {
                     const book = getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings) : undefined;
                     const prefix = book ? storyMapPrefix(book) : undefined;
                     const candidates = prefix ? this.app.vault.getFiles().filter(file => file.extension === 'canvas' && (file.path === `${prefix}.canvas` || (file.path.startsWith(`${prefix} `) && /^\d+\.canvas$/.test(file.path.slice(prefix.length + 1))))) : [];

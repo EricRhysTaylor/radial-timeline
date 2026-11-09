@@ -6052,7 +6052,6 @@ export const zh: DeepPartial<TranslationKeys> = {
         },
         canvasSketch: {
             selectIdea: '请先在画布上选择一张想法卡片。幕标题和已关联笔记的卡片无法转换。',
-            placeBackground: '显示地点背景',
             showOverdue: '显示逾期场景',
             followTimeline: '在画布中跟随按住 Shift 悬停的场景',
             fileCardsExplanation: '此处只能转换文本卡片。文件卡片已链接到笔记，不会被更改。',
@@ -6139,7 +6138,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             keyActs: "标记幕",
             keyActsDetail: "名为 Act 2 的卡片开始该幕，其后的卡片归入该幕。没有幕卡片时，场景平均分配。",
             keyConvert: "把卡片转为场景",
-            keyConvertDetail: "选择需要的卡片，再点击标题栏中的铅笔。未选的卡片留在 Canvas 上。",
             keyMap: "在地图上",
             keyEdge: "环的颜色",
             keyEdgeDetail: "卡片边缘显示其环的颜色。虚线边缘表示草稿。",

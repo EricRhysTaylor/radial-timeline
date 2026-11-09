@@ -117,6 +117,7 @@ import { leadPortrait } from './panelPortrait';
 import { combinedPanelImage, panelPlaceImage, panelSceneImage } from './panelPlaceImage';
 import { imageSubjectName } from './storyImageMatching';
 import { storyCharacterSelections } from './storyImageSelection';
+import { addMenuChoices } from './menuChoices';
 import { explicitCardImage, showStoryImageMenu } from './storyImageMenu';
 import { storyImageChoice } from './storyImageStore';
 import { resolveStoryPortrait } from './storyPortrait';
@@ -2537,15 +2538,16 @@ export class TimetableView extends BasesView {
                 let previousSection: string | undefined;
                 for (const select of Array.from(options.querySelectorAll<HTMLSelectElement>('select'))) {
                     const section = select.dataset.imageSection;
-                    if (section && section !== previousSection) {
-                        menu.addItem(item => item.setTitle(section).setIsLabel(true));
-                        previousSection = section;
-                    }
-                    for (const option of Array.from(select.options)) menu.addItem(item => item.setTitle(option.text).setChecked(option.value === select.value).onClick(() => {
-                        select.value = option.value;
-                        select.dispatchEvent(new Event('change', { bubbles: true }));
-                    }));
-                    menu.addSeparator();
+                    const heading = section && section !== previousSection ? section : undefined;
+                    if (heading) previousSection = heading;
+                    addMenuChoices(menu, heading, Array.from(select.options).map(option => ({
+                        label: option.text,
+                        checked: option.value === select.value,
+                        run: () => {
+                            select.value = option.value;
+                            select.dispatchEvent(new Event('change', { bubbles: true }));
+                        },
+                    })));
                 }
                 const rect = button.getBoundingClientRect();
                 menu.showAtPosition({ x: rect.left, y: rect.bottom }, button.ownerDocument);

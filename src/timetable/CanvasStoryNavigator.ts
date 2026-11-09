@@ -50,14 +50,14 @@ export class CanvasStoryNavigator {
                     { icon: 'square-dashed', label: t('ui.canvasSketch.keySelect'), detail: t('ui.canvasSketch.keySelectDetail') },
                     { icon: 'palette', label: t('ui.canvasSketch.keyColor'), detail: t('ui.canvasSketch.keyColorDetail') },
                     { icon: 'book-open', label: t('ui.canvasSketch.keyActs'), detail: t('ui.canvasSketch.keyActsDetail') },
-                    { icon: 'pencil-line', label: t('ui.canvasSketch.keyConvert'), detail: t('ui.canvasSketch.keyConvertDetail') },
+                    { icon: 'replace', label: t('ui.canvasSketch.keyConvert'), detail: t('ui.canvasSketch.keyConvertDetail') },
                 ],
             },
             {
                 title: t('ui.canvasSketch.keyMap'),
                 rows: [
                     { dot: 'var(--rt-subplot-colors-1)', label: t('ui.canvasSketch.keyEdge'), detail: t('ui.canvasSketch.keyEdgeDetail') },
-                    { icon: 'layout-template', label: t('ui.canvasSketch.cardViews'), detail: t('ui.canvasSketch.keyCardViewDetail') },
+                    { icon: 'image', label: t('ui.canvasSketch.cardViews'), detail: t('ui.canvasSketch.keyCardViewDetail') },
                     { icon: 'arrow-big-up', label: t('ui.canvasSketch.keyHover'), detail: t('ui.canvasSketch.keyHoverDetail') },
                     ...(this.storyMap ? [
                         { icon: 'zoom-to-selection', label: t('ui.subplotCanvas.navigatorSelection') },

@@ -6058,7 +6058,6 @@ export const th: DeepPartial<TranslationKeys> = {
         },
         canvasSketch: {
             selectIdea: 'เลือกการ์ดไอเดียบน Canvas ก่อน หัวข้อองก์และการ์ดที่เปิดโน้ตอยู่แล้วไม่สามารถแปลงได้',
-            placeBackground: 'แสดงภาพสถานที่เป็นพื้นหลัง',
             showOverdue: 'แสดงฉากที่เกินกำหนด',
             followTimeline: 'ติดตามฉากที่ชี้พร้อมกด Shift บน Canvas',
             fileCardsExplanation: 'ที่นี่แปลงได้เฉพาะการ์ดข้อความ การ์ดไฟล์เชื่อมกับโน้ตอยู่แล้วและจะไม่ถูกเปลี่ยน',
@@ -6145,7 +6144,6 @@ export const th: DeepPartial<TranslationKeys> = {
             keyActs: "กำหนดองก์",
             keyActsDetail: "การ์ดชื่อ Act 2 จะเริ่มองก์นั้น และการ์ดที่ตามมาจะเข้าร่วม หากไม่มีการ์ดองก์ ฉากจะกระจายเท่า ๆ กัน",
             keyConvert: "เปลี่ยนการ์ดเป็นฉาก",
-            keyConvertDetail: "เลือกการ์ดที่ต้องการ แล้วคลิกดินสอที่แถบชื่อเรื่อง การ์ดที่ไม่ได้เลือกจะอยู่บน Canvas",
             keyMap: "บนแผนที่",
             keyEdge: "สีวงแหวน",
             keyEdgeDetail: "ขอบการ์ดแสดงสีวงแหวน ขอบเส้นประหมายถึงสเก็ตช์",

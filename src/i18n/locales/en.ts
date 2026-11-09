@@ -4714,6 +4714,7 @@ export const en = {
             jumpToAria: 'Jump to {{label}}',
         },
         inquiryCorpusStripMinimap: {
+            storyVaultScenes: 'Story Vault scenes use book-specific defaults; your Inquiry settings are unchanged',
             classSagaOutline: 'Saga Outline',
             classCharacter: 'Character',
             classScene: 'Scene',
@@ -5774,7 +5775,8 @@ export const en = {
         },
         canvasSketch: {
             selectIdea: 'Select an idea card on the Canvas first. Act headings and cards that already open notes cannot be converted.',
-            placeBackground: 'Show place background',
+            menuCardContent: 'Card content',
+            menuTimeline: 'Timeline',
             showOverdue: 'Show overdue scenes',
             followTimeline: 'Follow Shift-hover from timeline in Canvas',
             fileCardsExplanation: 'Only text cards can be converted here. File cards already link to notes; they are not copied or changed.',
@@ -5862,7 +5864,7 @@ export const en = {
             keyActs: "Mark the acts",
             keyActsDetail: "A card named Act 2 starts that act, and the cards after it join. With no Act cards, scenes spread evenly.",
             keyConvert: "Turn cards into scenes",
-            keyConvertDetail: "Select the cards you want, then the pencil in the title bar. Cards you leave out stay on the Canvas.",
+            keyConvertDetail: "Select the cards you want, then click the convert button in the title bar. Cards you leave out stay on the Canvas.",
             keyMap: "On the map",
             keyEdge: "Ring color",
             keyEdgeDetail: "A card’s edge shows its ring color. A dashed edge marks a sketch.",
@@ -7163,6 +7165,7 @@ export const en = {
             unicodeEngineMissing: 'This template uses fontspec, but no XeLaTeX or LuaLaTeX engine was detected.',
         },
         timeLineView: {
+            canvasAction: 'Canvas',
             radialTimelineCommands: 'Radial Timeline commands',
             reportBug: 'Report a bug',
             settingsAction: 'Settings',

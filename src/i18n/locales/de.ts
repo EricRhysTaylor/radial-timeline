@@ -6050,7 +6050,6 @@ export const de: DeepPartial<TranslationKeys> = {
         },
         canvasSketch: {
             selectIdea: 'Wähle zuerst eine Ideenkarte auf dem Canvas. Aktüberschriften und Karten mit bestehenden Notizen können nicht umgewandelt werden.',
-            placeBackground: 'Ortsbild als Hintergrund',
             showOverdue: 'Überfällige Szenen anzeigen',
             followTimeline: 'Umschalt-Zeigen auf der Zeitleiste im Canvas folgen',
             fileCardsExplanation: 'Hier können nur Textkarten umgewandelt werden. Dateikarten verweisen bereits auf Notizen und bleiben unverändert.',
@@ -6137,7 +6136,6 @@ export const de: DeepPartial<TranslationKeys> = {
             keyActs: "Akte markieren",
             keyActsDetail: "Eine Karte namens Akt 2 beginnt diesen Akt, die folgenden Karten gehören dazu. Ohne Akt-Karten verteilen sich die Szenen gleichmäßig.",
             keyConvert: "Karten in Szenen umwandeln",
-            keyConvertDetail: "Wähle die gewünschten Karten aus, dann den Stift in der Titelleiste. Nicht gewählte Karten bleiben auf dem Canvas.",
             keyMap: "Auf der Karte",
             keyEdge: "Ringfarbe",
             keyEdgeDetail: "Der Kartenrand zeigt die Ringfarbe. Ein gestrichelter Rand steht für eine Skizze.",

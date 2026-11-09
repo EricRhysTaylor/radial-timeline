@@ -21,6 +21,7 @@ import { resolveStoryPortrait } from './storyPortrait';
 import { outlineReferenceType, type OutlineReferenceType } from './outlineDocuments';
 import { getActiveBook } from '../utils/books';
 import { addSubplotColorMenu, ideaCards, type CanvasCardNode } from './CanvasSubplotMenu';
+import { addMenuChoices } from './menuChoices';
 
 type Mode = 'full' | 'preview' | 'title';
 const CARD_ICONS: Record<OutlineReferenceType, string> = {
@@ -68,40 +69,38 @@ class CanvasCards {
 
     constructor(private plugin: RadialTimelinePlugin, private view: ItemView) {
         this.navigator = new CanvasStoryNavigator(plugin, view);
-        this.action = view.addAction('layout-template', t('ui.canvasSketch.cardViews'), event => {
-            const menu = new Menu();
-            const choices: Array<[Mode, string]> = [
+        // Grouped like the Timetable Panels image menu, with the same headings
+        // and choice names wherever the two views offer the same setting.
+        this.action = view.addAction('image', t('ui.canvasSketch.cardViews'), () => {
+            const menu = new Menu().setUseNativeMenu(false);
+            const modes: Array<[Mode, string]> = [
                 ['preview', t('ui.canvasSketch.cardPreview')], ['title', t('ui.canvasSketch.cardTitle')], ['full', t('ui.canvasSketch.cardFull')],
             ];
-            for (const [mode, label] of choices) menu.addItem(item => item.setTitle(label).setChecked(this.mode === mode).onClick(() => {
-                this.mode = mode;
-                this.schedule();
-            }));
-            menu.addSeparator();
-            for (const [strategy, label] of [['distinctive', t('ui.timetable.storyImageDistinctive')], ['first', t('ui.timetable.storyImageFirst')], ['second', t('ui.timetable.storyImageSecond')], ['pov', t('ui.timetable.storyImagePov')], ['balanced', t('ui.timetable.storyImageBalanced')]] as const) {
-                menu.addItem(item => item.setTitle(`${t('ui.timetable.storyImageStrategy')}: ${label}`).setChecked((this.plugin.settings.storyImageStrategy ?? 'distinctive') === strategy).onClick(() => {
-                    this.plugin.settings.storyImageStrategy = strategy;
+            addMenuChoices(menu, t('ui.canvasSketch.menuCardContent'), modes.map(([mode, label]) => ({
+                label, checked: this.mode === mode, run: () => { this.mode = mode; this.schedule(); },
+            })));
+            addMenuChoices(menu, t('ui.timetable.imageCombinations'), ([[false, t('ui.timetable.panelImageCharacter')], [true, t('ui.timetable.panelImageLayered')]] as const).map(([layered, label]) => ({
+                label, checked: this.showPlaceBackground === layered, run: () => { this.showPlaceBackground = layered; this.schedule(); },
+            })));
+            const strategy = this.plugin.settings.storyImageStrategy ?? 'distinctive';
+            addMenuChoices(menu, t('ui.timetable.storyImageStrategy'), ([['distinctive', t('ui.timetable.storyImageDistinctive')], ['first', t('ui.timetable.storyImageFirst')], ['second', t('ui.timetable.storyImageSecond')], ['pov', t('ui.timetable.storyImagePov')], ['balanced', t('ui.timetable.storyImageBalanced')]] as const).map(([value, label]) => ({
+                label, checked: strategy === value, run: () => {
+                    this.plugin.settings.storyImageStrategy = value;
                     void this.plugin.saveSettings(); this.view.containerEl.win.dispatchEvent(new Event('rt-story-image-strategy-changed'));
-                }));
-            }
-            menu.addSeparator();
-            menu.addItem(item => item.setTitle(t('ui.canvasSketch.placeBackground')).setChecked(this.showPlaceBackground).onClick(() => {
-                this.showPlaceBackground = !this.showPlaceBackground;
-                this.schedule();
-            }));
-            menu.addItem(item => item.setTitle(t('ui.timetable.portraitLandscape')).setChecked(this.landscapePortrait).onClick(() => {
-                this.landscapePortrait = !this.landscapePortrait;
-                this.schedule();
-            }));
-            menu.addItem(item => item.setTitle(t('ui.canvasSketch.showOverdue')).setIcon('calendar-clock').setChecked(this.showOverdue).onClick(() => {
-                this.showOverdue = !this.showOverdue;
-                this.schedule();
-            }));
-            menu.addItem(item => item.setTitle(t('ui.canvasSketch.followTimeline')).setIcon('locate-fixed').setChecked(this.followTimeline).onClick(() => {
-                this.followTimeline = !this.followTimeline;
-                if (this.followTimer) window.clearTimeout(this.followTimer);
-            }));
-            menu.showAtMouseEvent(event);
+                },
+            })));
+            addMenuChoices(menu, t('ui.timetable.imageFormatting'), ([[false, t('ui.timetable.portraitSquare')], [true, t('ui.timetable.portraitLandscape')]] as const).map(([landscape, label]) => ({
+                label, checked: this.landscapePortrait === landscape, run: () => { this.landscapePortrait = landscape; this.schedule(); },
+            })));
+            addMenuChoices(menu, t('ui.canvasSketch.menuTimeline'), [
+                { label: t('ui.canvasSketch.showOverdue'), checked: this.showOverdue, run: () => { this.showOverdue = !this.showOverdue; this.schedule(); } },
+                { label: t('ui.canvasSketch.followTimeline'), checked: this.followTimeline, run: () => {
+                    this.followTimeline = !this.followTimeline;
+                    if (this.followTimer) window.clearTimeout(this.followTimer);
+                } },
+            ]);
+            const rect = this.action.getBoundingClientRect();
+            menu.showAtPosition({ x: rect.right, y: rect.bottom, width: rect.width, left: true }, this.action.ownerDocument);
         });
         this.action.hide();
         this.unlink = onLinkedScene((path, color, source) => {

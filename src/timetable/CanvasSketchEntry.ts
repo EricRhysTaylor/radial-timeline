@@ -63,7 +63,7 @@ export function registerCanvasSketches(plugin: RadialTimelinePlugin): void {
             const existing = actions.get(view);
             if (existing && view.containerEl.contains(existing)) return;
             existing?.remove();
-            const action = view.addAction('pencil-line', t('ui.canvasSketch.command'), () => {
+            const action = view.addAction('replace', t('ui.canvasSketch.command'), () => {
                 openCanvasSketches(plugin, canvasForView(view));
             });
             action.addClass('ert-canvas-sketch-action');

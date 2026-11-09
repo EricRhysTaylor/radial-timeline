@@ -6058,7 +6058,6 @@ export const fr: DeepPartial<TranslationKeys> = {
         },
         canvasSketch: {
             selectIdea: 'Sélectionnez d’abord une carte d’idée sur le Canvas. Les titres d’acte et les cartes ouvrant déjà des notes ne peuvent pas être convertis.',
-            placeBackground: 'Afficher le lieu en arrière-plan',
             showOverdue: 'Afficher les scènes en retard',
             followTimeline: 'Suivre Maj-survol de la chronologie dans le Canvas',
             fileCardsExplanation: 'Seules les cartes texte peuvent être converties. Les cartes de fichier renvoient déjà à des notes et ne sont pas modifiées.',
@@ -6145,7 +6144,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             keyActs: "Marquer les actes",
             keyActsDetail: "Une carte nommée Acte 2 ouvre cet acte, et les cartes suivantes le rejoignent. Sans carte d’acte, les scènes se répartissent également.",
             keyConvert: "Transformer les cartes en scènes",
-            keyConvertDetail: "Sélectionnez les cartes voulues, puis le crayon de la barre de titre. Les autres restent sur le Canvas.",
             keyMap: "Sur la carte",
             keyEdge: "Couleur de l’anneau",
             keyEdgeDetail: "Le bord d’une carte montre la couleur de son anneau. Un bord en pointillé signale une esquisse.",

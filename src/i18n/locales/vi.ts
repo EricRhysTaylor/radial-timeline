@@ -6058,7 +6058,6 @@ export const vi: DeepPartial<TranslationKeys> = {
         },
         canvasSketch: {
             selectIdea: 'Trước tiên hãy chọn thẻ ý tưởng trên Canvas. Không thể chuyển tiêu đề hồi hoặc thẻ đã mở ghi chú.',
-            placeBackground: 'Hiện ảnh địa điểm làm nền',
             showOverdue: 'Hiện các cảnh quá hạn',
             followTimeline: 'Theo cảnh trỏ cùng phím Shift trên Canvas',
             fileCardsExplanation: 'Chỉ có thể chuyển thẻ văn bản tại đây. Thẻ tệp đã liên kết với ghi chú và không bị thay đổi.',
@@ -6145,7 +6144,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             keyActs: "Đánh dấu các hồi",
             keyActsDetail: "Thẻ tên Act 2 bắt đầu hồi đó, và các thẻ tiếp theo sẽ vào hồi. Không có thẻ hồi, các cảnh được chia đều.",
             keyConvert: "Biến thẻ thành cảnh",
-            keyConvertDetail: "Chọn các thẻ bạn muốn, rồi nhấp bút chì trên thanh tiêu đề. Thẻ không chọn sẽ ở lại Canvas.",
             keyMap: "Trên bản đồ",
             keyEdge: "Màu vòng",
             keyEdgeDetail: "Viền thẻ cho biết màu vòng. Viền nét đứt là phác thảo.",

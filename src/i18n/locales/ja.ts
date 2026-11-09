@@ -6051,7 +6051,6 @@ export const ja: DeepPartial<TranslationKeys> = {
         },
         canvasSketch: {
             selectIdea: 'まずキャンバスでアイデアカードを選択してください。幕の見出しや既存のノートを開くカードは変換できません。',
-            placeBackground: '場所の背景を表示',
             showOverdue: '期限超過のシーンを表示',
             followTimeline: 'Shiftキーを押して指したシーンをキャンバスで追跡',
             fileCardsExplanation: 'ここではテキストカードのみ変換できます。ファイルカードは既存のノートにリンクしており、変更されません。',
@@ -6138,7 +6137,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             keyActs: "幕を示す",
             keyActsDetail: "「Act 2」という名前のカードがその幕を始め、続くカードがその幕に入ります。幕カードがなければ、シーンは均等に分かれます。",
             keyConvert: "カードをシーンに変換",
-            keyConvertDetail: "必要なカードを選択し、タイトルバーの鉛筆をクリックします。選ばなかったカードは Canvas に残ります。",
             keyMap: "マップ上で",
             keyEdge: "リングの色",
             keyEdgeDetail: "カードの縁がリングの色を示します。破線の縁はスケッチです。",

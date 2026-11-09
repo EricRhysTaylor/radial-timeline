@@ -6058,7 +6058,6 @@ export const es: DeepPartial<TranslationKeys> = {
         },
         canvasSketch: {
             selectIdea: 'Selecciona primero una tarjeta de idea en el Canvas. Los encabezados de acto y las tarjetas que ya abren notas no se pueden convertir.',
-            placeBackground: 'Mostrar fondo del lugar',
             showOverdue: 'Mostrar escenas atrasadas',
             followTimeline: 'Seguir en Canvas la escena señalada con Mayús',
             fileCardsExplanation: 'Solo se convierten tarjetas de texto. Las tarjetas de archivo ya enlazan a notas y no se modifican.',
@@ -6145,7 +6144,6 @@ export const es: DeepPartial<TranslationKeys> = {
             keyActs: "Marcar los actos",
             keyActsDetail: "Una tarjeta llamada Acto 2 inicia ese acto y las tarjetas siguientes se unen a él. Sin tarjetas de acto, las escenas se reparten por igual.",
             keyConvert: "Convertir tarjetas en escenas",
-            keyConvertDetail: "Selecciona las tarjetas que quieras y luego el lápiz de la barra de título. Las demás se quedan en el Canvas.",
             keyMap: "En el mapa",
             keyEdge: "Color del anillo",
             keyEdgeDetail: "El borde de una tarjeta muestra el color de su anillo. Un borde discontinuo indica un boceto.",

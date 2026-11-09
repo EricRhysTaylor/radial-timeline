@@ -1,0 +1,37 @@
+name: Publish wiki
+
+# Copies wiki/ to the public wiki, the same way npm run publish-wiki does on
+# the Mac. Run it by hand from the Actions tab, or have an agent run it
+# through the GitHub API: cloud sessions cannot push to the .wiki repository.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-wiki
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy wiki/ to the wiki repository and push
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git clone "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" wiki_publish
+          rsync -a --delete --exclude='.git' --exclude='.DS_Store' wiki/ wiki_publish/
+          cd wiki_publish
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No changes to publish."
+            exit 0
+          fi
+          count=$(git status --porcelain | wc -l | tr -d ' ')
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "[wiki] $(date -u '+%Y-%m-%d %H:%M') — ${count} files — from ${GITHUB_SHA::7}"
+          git push

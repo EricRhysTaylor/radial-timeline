@@ -11,7 +11,7 @@ function indexImages(files: readonly TFile[]): Map<string, TFile[]> {
     for (const file of files) {
         if (!IMAGE_EXTENSION.test(file.extension)) continue;
         const name = normalized(file.basename);
-        const variant = /^(.*) \d+$/.exec(name)?.[1];
+        const variant = /^(.*?)(?:\s*)\d+$/.exec(name)?.[1]?.trimEnd();
         for (const key of new Set([name, ...(variant ? [variant] : [])])) {
             const entries = index.get(key) ?? [];
             entries.push(file);
@@ -30,7 +30,7 @@ export function imageSubjectName(value: unknown): string | null {
     return name || null;
 }
 
-/** Match an exact subject name or a numbered variant. Ambiguous same-name files are excluded. */
+/** Match an exact subject name or a numbered variant, with or without a space. Ambiguous same-name files are excluded. */
 export function matchingStoryImages(files: readonly TFile[], subject: string): TFile[] {
     const key = normalized(subject);
     if (!key) return [];

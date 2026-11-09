@@ -13,8 +13,8 @@ describe('story image filename matching', () => {
         expect(imageSubjectName('[[Places/Diego|the port]]')).toBe('Diego');
     });
     it('matches exact names and numbered variants without prefix collisions', () => {
-        const images = ['Art/Diego.webp', 'Art/Diego 2.jpg', 'Art/Diego 10.png', 'Art/Diego West.jpg', 'Art/Diego2.jpg'].map(image);
-        expect(matchingStoryImages(images, 'Diego').map(file => file.name)).toEqual(['Diego.webp', 'Diego 2.jpg', 'Diego 10.png']);
+        const images = ['Art/Diego.webp', 'Art/Diego 2.jpg', 'Art/Diego 10.png', 'Art/Diego West.jpg', 'Art/Diego2.webp', 'Art/Diego3.webp'].map(image);
+        expect(matchingStoryImages(images, 'Diego').map(file => file.name)).toEqual(['Diego.webp', 'Diego 2.jpg', 'Diego 10.png', 'Diego2.webp', 'Diego3.webp']);
     });
     it('does not silently pick between duplicate matching names', () => {
         const images = ['A/Diego.jpg', 'B/Diego.png', 'A/Diego 2.jpg'].map(image);

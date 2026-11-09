@@ -167,7 +167,7 @@ Manage the scene note properties that Radial Timeline maintains and shows in hov
 *   **Core properties**: Always included in scene notes and maintained automatically.
 *   **Advanced properties**: Optional scene note properties you can enable, edit, and reveal in hover.
 *   **Scene hover preview**: Preview how enabled scene note properties appear in hover metadata.
-*   **Scene note maintenance**: Check notes, add missing properties, add missing IDs, reorder maintained properties, and clean up duplicate IDs.
+*   **Scene note maintenance**: Check notes, add missing properties, add missing IDs, reorder maintained properties, and clean up duplicate IDs. The check also lists each scene whose `Narration` holds something other than a narration, such as a character's name, with its value, for you to review.
 
 Important behavior:
 

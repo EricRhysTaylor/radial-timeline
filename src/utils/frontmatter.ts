@@ -444,6 +444,21 @@ export function readSceneNarration(fm: Record<string, unknown> | null | undefine
   return undefined;
 }
 
+/**
+ * The writer's text in a scene's `Narration` field when the timeline reads no
+ * narration override from the scene (readSceneNarration), so the scene follows
+ * its book: a character's name carried over from `POV`, say. Empty when the
+ * field is absent or empty, or when the scene has a narration value.
+ */
+export function readUnrecognizedNarration(fm: Record<string, unknown> | null | undefined): string[] {
+  if (!fm || readSceneNarration(fm) !== undefined) return [];
+  const raw = fm[SCENE_NARRATION_KEY];
+  const entries = Array.isArray(raw) ? raw : [raw];
+  return entries
+    .map(entry => frontmatterValueToText(entry).trim())
+    .filter(text => text.length > 0);
+}
+
 function readFirstNonEmptyString(
   fm: Record<string, unknown> | null | undefined,
   keys: readonly string[]

@@ -397,6 +397,9 @@ export function renderSceneNormalizerSection(params: {
 
             for (const entry of pageEntries) {
                 let reason = entry.reason;
+                // A warning pill names its value in short; the tooltip and the
+                // notice give the whole warning, which says what to do.
+                let detail: string | undefined;
                 if (activeChip.kind === 'extra') {
                     reason = t('ui.sceneNormalizerSection.notManagedReason', { keys: entry.extraKeys.join(', ') });
                 } else if (activeChip.kind === 'drift') {
@@ -412,6 +415,7 @@ export function renderSceneNormalizerSection(params: {
                         ? entry.semanticWarnings.filter((warning) => getSemanticWarningType(warning) === activeChip.warningType)
                         : entry.semanticWarnings;
                     reason = formatSemanticWarningReason(warnings);
+                    detail = warnings.join(' | ');
                 }
 
                 const pillStyleKind = activeChip.kind === 'duplicate' ? 'critical' : activeChip.kind;
@@ -430,10 +434,10 @@ export function renderSceneNormalizerSection(params: {
                 }
                 pillEl.createSpan({ text: entry.file.basename, cls: 'ert-audit-note-pill-name' });
                 pillEl.createSpan({ text: ` — ${reason}`, cls: 'ert-audit-note-pill-reason' });
-                setTooltip(pillEl, `${entry.file.basename}: ${reason}`);
+                setTooltip(pillEl, `${entry.file.basename}: ${detail ?? reason}`);
                 pillEl.addEventListener('click', () => { void (async () => {
                     await openOrRevealFile(app, entry.file, false);
-                    new Notice(reason);
+                    new Notice(detail ?? reason);
                 })(); });
             }
 

@@ -16,7 +16,8 @@ import {
     getExcludeKeyPredicate,
 } from './yamlTemplateNormalize';
 import type { RadialTimelineSettings } from '../types/settings';
-import { canonicalizeFrontmatterKey, findMissingTemplateKeys, getActiveFrontmatterMappings, normalizeFrontmatterKeys } from './frontmatter';
+import { canonicalizeFrontmatterKey, findMissingTemplateKeys, getActiveFrontmatterMappings, normalizeFrontmatterKeys, readUnrecognizedNarration } from './frontmatter';
+import { t } from '../i18n';
 import { getOptionalManagedKeys, isOptionalManagedKey } from './optionalManagedKeys';
 import { normalizeBeatSetNameInput, toBeatModelMatchKey } from './beatsInputNormalize';
 import { STARTER_BEAT_SETS } from './beatsSystems';
@@ -98,6 +99,29 @@ const BEAT_PURPOSE_SOFT_MAX_WORDS = 75;
 const BACKDROP_SCENE_TITLE_MAX_MATCHES = 3;
 const SYNOPSIS_LENGTH_WARNING = 'Synopsis length above target';
 const PURPOSE_LENGTH_WARNING = 'Purpose length above target';
+
+/** The warning type for a scene Narration value the timeline does not read. */
+function narrationWarningLabel(): string {
+    return t('ui.yamlAuditPanel.narrationWarningLabel');
+}
+
+/**
+ * `Narration not recognized: "Dr. Watson". …` — the value sits between the
+ * first and last double quote; the label and the explanation have none.
+ */
+function formatNarrationWarning(values: string[]): string {
+    return t('ui.yamlAuditPanel.narrationWarning', {
+        label: narrationWarningLabel(),
+        value: values.join(', '),
+    });
+}
+
+/** The scene's Narration value, read back from its warning for the short pill text. */
+function readNarrationWarningValue(warning: string): string | undefined {
+    const open = warning.indexOf('"');
+    const close = warning.lastIndexOf('"');
+    return open >= 0 && close > open ? warning.slice(open + 1, close) : undefined;
+}
 
 function getStringField(fm: Record<string, unknown>, key: string): string | undefined {
     const value = fm[key];
@@ -187,6 +211,10 @@ export function formatSemanticWarningReason(warnings: string[]): string {
         if (type === PURPOSE_LENGTH_WARNING && wordMatch) {
             return `Purpose Warnings: ${wordMatch[1]} words`;
         }
+        const narrationValue = type === narrationWarningLabel() ? readNarrationWarningValue(warning) : undefined;
+        if (narrationValue !== undefined) {
+            return t('ui.yamlAuditPanel.narrationWarningReason', { value: narrationValue });
+        }
         return type;
     });
     return [...new Set(parts)].join('; ');
@@ -208,6 +236,12 @@ function buildSemanticWarnings(
             if (wordCount > targetWords) {
                 warnings.push(`${SYNOPSIS_LENGTH_WARNING}: ${wordCount} words (target ${targetWords} words).`);
             }
+        }
+        // fm is normalized through the author's key mappings, so a renamed
+        // Narration property is read here under its canonical name.
+        const unrecognizedNarration = readUnrecognizedNarration(fm);
+        if (unrecognizedNarration.length > 0) {
+            warnings.push(formatNarrationWarning(unrecognizedNarration));
         }
         return warnings;
     }

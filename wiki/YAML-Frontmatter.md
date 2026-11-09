@@ -71,6 +71,8 @@ Narration: omni           # This scene only: an omniscient narrator
 *   `Narration: objective` — shows `Narrator°` for camera-eye scenes.
 *   `Narration: two`, `Narration: 4`, `Narration: count`, `Narration: all` — marks that many names at the start of `Character`, for a scene several characters carry, with the book's narration marker.
 
+Descriptions built from these words, such as `third person limited` or `close third`, work too. The scene properties check in **Settings → Core** lists any scene whose `Narration` holds something else, such as a character's name, with its value, so you can open the scene and choose a narration or clear the field; until then the scene follows its book.
+
 New scenes get an empty `Narration` property; a scene that follows its book leaves it empty, or without the property at all. Scenes written before Radial Timeline 8 may carry the field under its earlier name, `POV`. Radial Timeline reads it the same way until you apply **Scene field POV is now Narration** at the top of **Settings → Core**, which renames `POV` to `Narration` and keeps its value. See [Narration](Settings-Core#narration).
 
 <a name="advanced-scene-template"></a>

@@ -9,6 +9,24 @@ from vault_qa import validate_inquiry, validate_source, validate_wiki_links
 
 
 class PackagingBoundaries(unittest.TestCase):
+    def test_story_map_references_must_be_included_and_base_is_parsed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            map_path = 'Radial Timeline/Story Maps/Book - Subplot Map.canvas'
+            base_path = 'Radial Timeline/Timetables/Book.base'
+            scene_path = 'Book/1.md'
+            for path in (map_path, base_path, scene_path):
+                (root / path).parent.mkdir(parents=True, exist_ok=True)
+            (root / map_path).write_text(json.dumps({'nodes': [{'type': 'file', 'file': scene_path}], 'edges': []}))
+            (root / base_path).write_text('views:\n  - type: table\n')
+            (root / scene_path).write_text('Scene')
+            self.assertEqual(len(select_files(root, {'include_files': [map_path, base_path, scene_path]})), 3)
+            with self.assertRaisesRegex(ValueError, 'reference is not packaged'):
+                select_files(root, {'include_files': [map_path, base_path]})
+            (root / base_path).write_text('- not a Base mapping')
+            with self.assertRaisesRegex(ValueError, 'Invalid Base'):
+                select_files(root, {'include_files': [map_path, base_path, scene_path]})
+
     def test_public_inquiry_removes_only_excluded_log_links(self):
         path = 'Radial Timeline/Inquiry/Briefing/IB-260101-1000.md'
         result = {'summary': 'Original model words', 'findings': [{'evidenceQuote': 'Exact source words'}]}

@@ -16,6 +16,8 @@ import { ItemView, WorkspaceLeaf, MarkdownView, TFile, Notice, setIcon, Menu, Co
 import { TimelineScaffoldModal } from '../modals/TimelineScaffoldModal';
 import { TimelineAuditModal } from '../modals/TimelineAuditModal';
 import { SubplotCanvasModal } from '../timetable/SubplotCanvasModal';
+import { CanvasWorkspacePicker } from '../timetable/CanvasWorkspacePicker';
+import { safeTitle } from '../utils/noteTitle';
 import RadialTimelinePlugin from '../main';
 import { t, tCount } from '../i18n';
 import type { SubplotAlignment, TimelineItem } from '../types';
@@ -584,9 +586,31 @@ export class RadialTimelineView extends ItemView {
             // Title actions, in cluster order after the book selector. Each is
             // an icon button; on a bar too narrow for the full row, TitleBarFit
             // folds them into one menu built from this same list.
-            const titleActions: Array<{ label: string; icon: string; run: () => void }> = [
+            const titleActions: Array<{ label: string; icon: string; run: (anchor: HTMLElement) => void }> = [
                 { label: t('ui.timetable.viewName'), icon: 'table-2', run: () => { void this.plugin.openTimetable(); } },
-                { label: t('ui.subplotCanvas.command'), icon: 'layout-dashboard', run: () => new SubplotCanvasModal(this.app, this.plugin).open() },
+                { label: t('ui.timetable.canvasMapMenuHelp'), icon: 'layout-dashboard', run: (anchor) => {
+                    const book = getTimelineScope(this.plugin.settings) === 'book' ? getActiveBook(this.plugin.settings) : undefined;
+                    const prefix = book ? `Radial Timeline/Story Maps/${safeTitle(book.title) || 'Book'} - Subplot Map` : undefined;
+                    const candidates = prefix ? this.app.vault.getFiles().filter(file => file.extension === 'canvas' && (file.path === `${prefix}.canvas` || (file.path.startsWith(`${prefix} `) && /^\d+\.canvas$/.test(file.path.slice(prefix.length + 1))))) : [];
+                    const openPaths = new Set(this.app.workspace.getLeavesOfType('canvas').map(leaf => (leaf.view as { file?: TFile }).file?.path));
+                    const openMatches = candidates.filter(file => openPaths.has(file.path));
+                    const match = openMatches.length === 1 ? openMatches[0] : candidates.find(file => file.path === `${prefix}.canvas`) ?? (candidates.length === 1 ? candidates[0] : undefined);
+                    const choose = (file: TFile | null): void => {
+                        if (file) void this.app.workspace.openLinkText(file.path, '', true);
+                        else new SubplotCanvasModal(this.app, this.plugin, book?.id).open();
+                    };
+                    const menu = new Menu().setUseNativeMenu(false);
+                    menu.addItem(item => item.setTitle(t('ui.timetable.canvasMapOpen')).setIcon('folder-open').onClick(() => {
+                        if (match) choose(match);
+                        else if (book && !candidates.length) choose(null);
+                        else new CanvasWorkspacePicker(this.app, choose, candidates.length ? candidates : undefined).open();
+                    }));
+                    menu.addItem(item => item.setTitle(t('ui.timetable.canvasMapChoose')).setIcon('files').onClick(() => new CanvasWorkspacePicker(this.app, choose).open()));
+                    menu.addSeparator();
+                    menu.addItem(item => item.setTitle(t('ui.timetable.canvasMapCreateAnother')).setIcon('plus').onClick(() => choose(null)));
+                    const rect = anchor.getBoundingClientRect();
+                    menu.showAtPosition({ x: rect.left, y: rect.bottom }, anchor.ownerDocument);
+                } },
                 { label: t('ui.timeLineView.radialTimelineCommands'), icon: 'command', run: () => this.openRadialTimelineCommands() },
                 { label: t('commands.manuscriptExport'), icon: 'printer', run: () => this.plugin.openManuscriptExportModal() },
                 // Same action as the version-indicator fallback; only the
@@ -614,7 +638,7 @@ export class RadialTimelineView extends ItemView {
                 this.registerDomEvent(btn, 'click', (evt: MouseEvent) => {
                     evt.preventDefault();
                     evt.stopPropagation();
-                    action.run();
+                    action.run(btn);
                 });
                 return btn;
             });
@@ -633,7 +657,7 @@ export class RadialTimelineView extends ItemView {
                 titleActions.forEach(action => menu.addItem(item => item
                     .setTitle(action.label)
                     .setIcon(action.icon)
-                    .onClick(() => action.run())));
+                    .onClick(() => action.run(actionsMenuBtn))));
                 const rect = actionsMenuBtn.getBoundingClientRect();
                 menu.showAtPosition({ x: rect.right, y: rect.bottom, width: rect.width, left: true }, doc);
             });

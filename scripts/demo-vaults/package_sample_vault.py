@@ -21,6 +21,7 @@ from pathlib import Path, PurePosixPath
 import re
 import tempfile
 import zipfile
+import yaml
 from vault_qa import require, validate
 
 
@@ -42,6 +43,12 @@ def select_files(source, config):
         require(not any(source.joinpath(*relative.parts[:i]).is_symlink() for i in range(1, len(relative.parts) + 1)), f'Symlink inclusion refused: {rel}')
         require(path.is_file() and path.resolve().is_relative_to(source.resolve()), f'Missing/outside source file: {rel}')
         allowed = {'.md', '.json', '.webp'}  # WebP: character portraits, listed one by one like every other file
+        if rel.startswith('Radial Timeline/Story Maps/') and path.suffix == '.canvas':
+            allowed.add('.canvas')
+        if rel.startswith('Radial Timeline/Timetables/') and path.suffix == '.base':
+            allowed.add('.base')
+        if (rel.startswith('Characters/Portraits/Storybook/') or rel.startswith('Places/Images/')) and path.suffix == '.png':
+            allowed.add('.png')
         if config.get('source_layout') == 'gutenberg-odyssey-html':
             allowed.update(('.html', '.jpg'))
         elif config.get('source_layout') == 'gutenberg-holmes-html':
@@ -50,6 +57,16 @@ def select_files(source, config):
         data = path.read_bytes()
         if path.suffix == '.webp':
             require(data[:4] == b'RIFF' and data[8:12] == b'WEBP', f'Not a WebP image: {rel}')
+        if path.suffix == '.png':
+            require(data.startswith(b'\x89PNG\r\n\x1a\n'), f'Not a PNG image: {rel}')
+        if path.suffix == '.canvas':
+            canvas = json.loads(data)
+            require(isinstance(canvas, dict) and isinstance(canvas.get('nodes'), list) and isinstance(canvas.get('edges'), list), f'Invalid Canvas: {rel}')
+            for node in canvas['nodes']:
+                if node.get('type') == 'file':
+                    require(node.get('file') in included, f'Canvas file reference is not packaged: {node.get("file")}')
+        if path.suffix == '.base':
+            require(isinstance(yaml.safe_load(data), dict), f'Invalid Base: {rel}')
         require(not re.search(rb'(?:sk-ant-api\w*-|sk-proj-|sb_secret_)[A-Za-z0-9_-]{16,}', data), f'Credential-shaped content: {rel}')
         result[rel] = data
     return result

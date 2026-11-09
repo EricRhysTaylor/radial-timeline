@@ -1,6 +1,7 @@
 import { getInquiryCorpusTier } from '../inquiry/corpus/inquiryCorpusStripSlotRenderer';
 import { registerTextSketchCapture, type DraggedSelection } from './TextSketchCapture';
 import { registerNoteDropCapture } from './NoteDropCapture';
+import { CanvasWorkspacePicker } from './CanvasWorkspacePicker';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { readTimeReferences, referenceDateLabel, TIME_REFERENCES_KEY, type TimeReference } from '../chronologue/timeReferences/model';
 import { manageTimeReferences, openTimeReference } from '../chronologue/timeReferences/editor';
@@ -274,13 +275,6 @@ class OutlineDocumentPicker extends FuzzySuggestModal<TFile> {
     getItems(): TFile[] { return this.app.vault.getMarkdownFiles(); }
     getItemText(file: TFile): string { return file.path; }
     onChooseItem(file: TFile): void { this.chosen(file); }
-}
-
-class CanvasWorkspacePicker extends FuzzySuggestModal<TFile | null> {
-    constructor(app: App, private readonly chosen: (file: TFile | null) => void, private readonly candidates?: TFile[]) { super(app); this.setPlaceholder(t('ui.timetable.canvasWorkspaceChoose')); }
-    getItems(): Array<TFile | null> { return [...(this.candidates ?? this.app.vault.getFiles().filter(file => file.extension === 'canvas')), null]; }
-    getItemText(file: TFile | null): string { return file?.path ?? t('ui.timetable.canvasWorkspaceCreate'); }
-    onChooseItem(file: TFile | null): void { this.chosen(file); }
 }
 
 /** A table column: one of the Base's properties, or a column a micro-mode adds. */

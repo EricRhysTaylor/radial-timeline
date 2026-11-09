@@ -4,7 +4,7 @@ Your book on a Canvas, and a Timetable you can plan in: subplot maps that follow
 
 ### Canvas story maps
 
-- **Map your subplots on a Canvas.** **Canvas map** in the Timetable, the Canvas icon in the timeline title bar, or **Canvas create subplot map** lays the book out on a new Canvas: one lane per subplot in **Horizontal lanes** or **Vertical lanes**, or a **Single story line**. Each card links to its scene note, and lines follow each subplot in reading order. Choose an act or subplot, and the third of the book to open on. Moving cards does not reorder your manuscript.
+- **Map your subplots on a Canvas.** **Canvas map** in the Timetable or the Canvas icon in the timeline title bar opens an existing map, lets you choose another Canvas, or creates a new subplot map. **Canvas create subplot map** also creates one: choose **Horizontal lanes**, **Vertical lanes**, or a **Single story line**, an act or subplot, and the third of the book to open on. Each card links to its scene note, and lines follow each subplot in reading order. Moving cards does not reorder your manuscript.
 - **The map and the wheel point at each other.** Hold Shift as you hover a scene on the timeline and its cards light up on the map; with **Follow Shift-hover from timeline in Canvas** on, the map travels to it. Click a card to light its scene on the timeline and in the Timetable. A card's menu adds **Radial Timeline: Show in Timetable**, **Radial Timeline: Show on timeline** and **Radial Timeline: Promote to scene**.
 - **Find your way around.** The story navigation bar steps scene by scene with a slider (*Scene 16 of 61 · Wickham's Story*), with **Zoom to selection** and **Fit all**. **Canvas card view** shows notes from your books as a **Preview** of the synopsis, the **Title**, or the **Full note**, and can mark overdue scenes. Other notes keep Obsidian's usual look. Double-click a card to edit its note.
 
@@ -77,7 +77,7 @@ See [Character lanes](https://github.com/EricRhysTaylor/radial-timeline/wiki/Nar
 - **Story Vaults live under Settings → Resources.** The **Res** tab replaces the Pro tab: the Story Vaults, then **Learn more** links to Getting started, the wiki and the video tutorials.
 - **Story Vaults know their edition.** When a newer edition of a story is ready, the Welcome screen and **Settings → Resources** offer it as a separate download, and your current vault stays as it is.
 - **Story Vaults open with their narration set.** Pride & Prejudice is narrated in the third person, the Sherlock Holmes novels in the first person, and The Odyssey by an omniscient narrator, each set in its book details.
-- **Portraits and places in Pride & Prejudice.** The Pride & Prejudice Story Vault has a portrait for each of its 29 characters, from Hugh Thomson's and C. E. Brock's illustrations of the 1890s, and notes for its nine places. Open its Timetable in **Panels** to see them beside every scene.
+- **Portraits and places in Pride & Prejudice.** The next Pride & Prejudice Story Vault edition includes 29 storybook character portraits, nine place images, a Timetable and a subplot map. Open the Timetable in **Panels** to see the images alongside the scenes.
 
 ### Community
 
@@ -91,4 +91,5 @@ See [Character lanes](https://github.com/EricRhysTaylor/radial-timeline/wiki/Nar
 
 ### Fixes
 
+- **A portable Timetable opens again.** When a book already has a matching Radial Timetable in `Radial Timeline/Timetables`, a fresh installation opens it instead of offering to create a duplicate.
 - **No more `{{Character}}` in your scenes.** **Insert missing fields** and **Fill empty values** add empty fields instead of copying the template's placeholders, such as `{{Character}}` or `{{When}}`, into a scene.

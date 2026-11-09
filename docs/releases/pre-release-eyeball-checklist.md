@@ -40,3 +40,9 @@ Use this after the code/tests/gates are green and before shipping the next relea
 - Community-plugin-facing metadata is still correct.
 - Release notes match what actually changed.
 - Privacy/security wording is still accurate.
+
+## Pride & Prejudice Story Vault coordination
+
+- Confirm the plugin release tag contains commit `b8cc1b9f` (portable Timetable adoption). In a fresh profile, opening the candidate's Timetable must open the packaged Base without creating a second file.
+- Build the next Pride & Prejudice edition from its canonical vault using `scripts/demo-vaults/pride-and-prejudice-next.json`; set the contract's edition to the actual release date. Test the exact dated archive with the plugin release, including its Canvas, images and saved Inquiry.
+- Publish the accepted vault edition with the plugin release, verify the public download, then update the catalog URL, hash, size and edition. Until then, the existing catalog remains the published edition and the new vault is a candidate.

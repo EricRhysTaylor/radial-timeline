@@ -86,7 +86,7 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     workingPatternId: 'wiggle',
     customWorkingPatterns: [],
     currentMode: 'narrative', // Default to Narrative mode
-    logApiInteractions: true, // Default for new setting
+    logApiInteractions: false,
     // stageTargetDates intentionally absent: target dates are per-book
     // (BookProfile.stageTargetDates); the legacy vault-global field is migrated
     // on load and must not be re-seeded by defaults.
@@ -110,7 +110,7 @@ export const DEFAULT_SETTINGS: RadialTimelineSettings = {
     enableSceneTitleAutoExpand: true, // Default: enabled to maintain current behavior
     showChapterMarkers: false,
     showRecentMovesOverlay: true,
-    enableManuscriptRippleRename: false,
+    enableManuscriptRippleRename: true,
     enableHoverDebugLogging: false,
     sortByWhenDate: false, // Default: manuscript order (backward compatible)
     subplotAlignment: 'fill', // Default: subplot rings spread to fill their segment

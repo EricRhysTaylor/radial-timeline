@@ -5879,7 +5879,7 @@ export class InquiryView extends ItemView {
             questions,
             providerSummary: providerPlan.summary,
             providerLabel: providerPlan.label,
-            logsEnabled: this.plugin.settings.logApiInteractions ?? true, // SAFE: unset logging setting defaults to logging on
+            logsEnabled: this.plugin.settings.logApiInteractions ?? false,
             runDisabledReason,
             priorProgress: priorProgress ?? undefined,
             resumeAvailable: resumeCheck.available,

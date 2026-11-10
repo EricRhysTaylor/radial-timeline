@@ -1224,6 +1224,14 @@ export interface RadialTimelineSettings {
     storyImageStrategy?: 'first' | 'second' | 'distinctive' | 'pov' | 'balanced';
     storyImageChoices?: Record<string, { character?: string; image?: string; placeImage?: string }>;
     /**
+     * How story cards show images, in Timetable Panels and on a Canvas alike: the image combination, the text backing
+     * over a place background, Fill or Fit, and the portrait shape. Read through timetable/storyCardImages, which
+     * supplies the defaults and checks each value.
+     */
+    storyCardImages?: { combination?: string; backing?: string; fit?: string; portraitShape?: string };
+    /** Where each image's crop centers, by image path, in every card view (0–1 across and down). */
+    storyImageFocus?: Record<string, { x: number; y: number }>;
+    /**
      * The subplot the Canvas card menu gave each idea card, including new
      * subplots that have no scenes yet (see timetable/canvasSubplotMemory).
      * Plugin data, never scene YAML or the Canvas file.

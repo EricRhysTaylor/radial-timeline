@@ -6195,7 +6195,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             imageSettings: '图像设置',
             imageCombinations: '图像组合',
             backgroundTreatment: '背景处理',
-            imageFormatting: '格式',
             storyImageChoose: 'Choose card image…',
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',

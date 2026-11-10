@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { App, TFile } from 'obsidian';
-import { combinedPanelImage, panelPlaceImage, panelSceneImage } from './panelPlaceImage';
+import { panelPlaceImage, panelSceneImage } from './panelPlaceImage';
 
 const scene = { path: 'Story/Scene.md' } as TFile;
 const place = { path: 'Places/Tourney.md', basename: 'Tourney' } as TFile;
@@ -15,13 +15,6 @@ const app = {
 } as unknown as App;
 
 describe('panel place image', () => {
-    it('uses the available combined image in place, character, artwork order', () => {
-        const location = { url: 'place-url', path: 'place' }, character = { url: 'character-url', path: 'character' }, art = { url: 'art-url', path: 'art' };
-        expect(combinedPanelImage(location, character, art)).toEqual({ kind: 'place', image: location });
-        expect(combinedPanelImage(null, character, art)).toEqual({ kind: 'character', image: character });
-        expect(combinedPanelImage(null, null, art)).toEqual({ kind: 'artwork', image: art });
-        expect(combinedPanelImage(null, null, null)).toBeNull();
-    });
     it('resolves optional scene artwork independently of the place image', () => {
         expect(panelSceneImage(app, scene, { 'Scene image': '[[Final.webp]]', 'Place image': '[[Tourney.jpg]]' })).toEqual({ url: override.path, path: override.path, name: override.name });
         expect(panelSceneImage(app, scene, { 'Scene image': '[[Missing.png]]' })).toBeNull();

@@ -6201,7 +6201,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             imageSettings: 'Cài đặt hình ảnh',
             imageCombinations: 'Kết hợp hình ảnh',
             backgroundTreatment: 'Xử lý nền',
-            imageFormatting: 'Định dạng',
             "storyImageChoose": "Choose card image…",
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",

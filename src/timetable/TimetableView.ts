@@ -114,14 +114,19 @@ import { authorKeyFor, countColumnFill, tableColumns, TIMETABLE_VIEW_TYPE, withR
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { synopsisKey, updateSynopsis } from './panelSynopsis';
 import { leadPortrait } from './panelPortrait';
-import { combinedPanelImage, panelPlaceImage, panelSceneImage } from './panelPlaceImage';
+import { panelPlaceImage, panelSceneImage } from './panelPlaceImage';
 import { imageSubjectName } from './storyImageMatching';
 import { storyCharacterSelections } from './storyImageSelection';
 import { addMenuChoices } from './menuChoices';
 import { explicitCardImage, showStoryImageMenu } from './storyImageMenu';
 import { storyImageChoice } from './storyImageStore';
 import { resolveStoryPortrait } from './storyPortrait';
-import { coverPosition, validPanelFocus } from './panelFocus';
+import { coverPosition, type PanelFocus } from './panelFocus';
+import {
+    addStoryCardImageMenu, adoptViewImageSettings, backingChoices, cardImages, combinationChoices, fitChoices, notifyStoryImagesChanged,
+    saveStoryCardImages, saveStoryImageFocus, saveStoryImageStrategy, shapeChoices, STORY_IMAGES_CHANGED_EVENT, storyCardImages,
+    storyImageFocus, storyImageStrategy, strategyChoices,
+} from './storyCardImages';
 import { PanelFocusModal } from './PanelFocusModal';
 import { modeAllowsSceneDrag, timetableModeColumns, timetableModeState, timetableNarrativeOrder } from './timetablePlacement';
 import { orderSketches, planSketchActDrop, planSketchDrop, sketchAnchor, type PlacementItem, type PlacementProblem, type SketchDropPlan, type SketchPlacement } from './sketchPlacement';
@@ -484,7 +489,7 @@ export class TimetableView extends BasesView {
         this.setUpKey();
         // One set of delegated handlers: rows are redrawn on every data update.
         this.registerDomEvent(this.rootEl, 'click', (evt: MouseEvent) => this.handleClick(evt));
-        this.registerDomEvent(this.rootEl.win, 'rt-story-image-strategy-changed', () => this.render());
+        this.registerDomEvent(this.rootEl.win, STORY_IMAGES_CHANGED_EVENT, () => this.render());
         this.registerDomEvent(this.rootEl, 'keydown', (evt: KeyboardEvent) => {
             if (evt.key !== 'Enter' && evt.key !== ' ') return;
             const toggle = evt.target instanceof Element ? evt.target.closest<HTMLElement>('.ert-timetable__group-toggle') : null;
@@ -1737,6 +1742,9 @@ export class TimetableView extends BasesView {
     }
 
     onDataUpdated(): void {
+        // A Timetable that still carries its own image settings hands them to the shared card settings once.
+        void adoptViewImageSettings(this.plugin, this.config).then(adopted => { if (adopted) notifyStoryImagesChanged(this.plugin); })
+            .catch((error: unknown) => console.error('[Timetable] Could not adopt this view’s image settings', error));
         this.render();
         this.scheduleRingsRefresh();
     }
@@ -2160,6 +2168,16 @@ export class TimetableView extends BasesView {
         return id;
     }
 
+    /** This Timetable view's panel size: layout, so it stays with the view, unlike the shared card image settings. */
+    private panelSize(): 'small' | 'medium' | 'large' {
+        const saved = this.config.get('panelSize');
+        return saved === 'small' || saved === 'large' ? saved : 'medium';
+    }
+
+    private panelSizeChoices(): Array<['small' | 'medium' | 'large', string]> {
+        return [['small', t('ui.timetable.panelSizeSmall')], ['medium', t('ui.timetable.panelSizeMedium')], ['large', t('ui.timetable.panelSizeLarge')]];
+    }
+
     /** The table's control corner: + New sketch, the lens, and the mode the table follows. */
     private renderCorner(cell: HTMLElement): void {
         const corner = cell.createDiv({ cls: 'ert-timetable__corner' });
@@ -2456,65 +2474,26 @@ export class TimetableView extends BasesView {
             this.renderCorner(toolbar);
         }
         if (this.config.get('panels') === true) {
+            // The card image settings are shared with Canvas (storyCardImages); only the panel size is this view's own.
             const panelOptions = toolbar.createDiv({ cls: 'ert-timetable-panels__options' });
-            const imageLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelImage') });
-            const imageChoice = imageLabel.createEl('select');
-            imageChoice.dataset.imageSection = t('ui.timetable.imageCombinations');
-            setAccessibleLabel(imageChoice, t('ui.timetable.panelImageLabel'));
-            for (const [value, label] of [['character', t('ui.timetable.panelImageCharacter')], ['place', t('ui.timetable.panelImagePlace')], ['combined', t('ui.timetable.panelImageCombined')], ['layered', t('ui.timetable.panelImageLayered')], ['artwork', t('ui.timetable.panelImageArtwork')], ['none', t('ui.timetable.panelImageNone')]] as const) imageChoice.createEl('option', { value, text: label });
-            const imageSetting = this.config.get('panelImage');
-            imageChoice.value = ['place', 'combined', 'layered', 'artwork', 'none'].includes(String(imageSetting)) ? String(imageSetting) : 'character';
-            this.panelEvents?.registerDomEvent(imageChoice, 'change', () => { this.config.set('panelImage', imageChoice.value); this.render(); });
-            if (imageChoice.value === 'layered') {
-                const backingLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.placeTextBacking') });
-                const backing = backingLabel.createEl('select');
-                backing.dataset.imageSection = t('ui.timetable.backgroundTreatment');
-                setAccessibleLabel(backing, t('ui.timetable.placeTextBacking'));
-                for (const [value, label] of [['subtle', t('ui.timetable.placeTextSubtle')], ['balanced', t('ui.timetable.placeTextBalanced')], ['strong', t('ui.timetable.placeTextStrong')]] as const) backing.createEl('option', { value, text: label });
-                const saved = this.config.get('placeTextBacking');
-                backing.value = saved === 'subtle' || saved === 'strong' ? saved : 'balanced';
-                this.panelEvents?.registerDomEvent(backing, 'change', () => { this.config.set('placeTextBacking', backing.value); this.render(); });
-            }
-            const strategyLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.storyImageStrategy') });
-            const strategyChoice = strategyLabel.createEl('select');
-            strategyChoice.dataset.imageSection = t('ui.timetable.storyImageStrategy');
-            setAccessibleLabel(strategyChoice, t('ui.timetable.storyImageStrategy'));
-            for (const [value, label] of [['distinctive', t('ui.timetable.storyImageDistinctive')], ['first', t('ui.timetable.storyImageFirst')], ['second', t('ui.timetable.storyImageSecond')], ['pov', t('ui.timetable.storyImagePov')], ['balanced', t('ui.timetable.storyImageBalanced')]] as const) strategyChoice.createEl('option', { value, text: label });
-            strategyChoice.value = this.plugin.settings.storyImageStrategy ?? 'distinctive';
-            this.panelEvents?.registerDomEvent(strategyChoice, 'change', () => {
-                const value = strategyChoice.value;
-                if (value === 'distinctive' || value === 'first' || value === 'second' || value === 'pov' || value === 'balanced') this.plugin.settings.storyImageStrategy = value;
-                void this.plugin.saveSettings(); this.rootEl.win.dispatchEvent(new Event('rt-story-image-strategy-changed'));
-            });
-            const fitLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.panelFit') });
-            const fitChoice = fitLabel.createEl('select');
-            fitChoice.dataset.imageSection = t('ui.timetable.imageFormatting');
-            setAccessibleLabel(fitChoice, t('ui.timetable.panelFit'));
-            fitChoice.createEl('option', { value: 'fill', text: t('ui.timetable.panelFitFill') });
-            fitChoice.createEl('option', { value: 'fit', text: t('ui.timetable.panelFitFit') });
-            fitChoice.value = this.config.get('panelFit') === 'fit' ? 'fit' : 'fill';
-            this.panelEvents?.registerDomEvent(fitChoice, 'change', () => { this.config.set('panelFit', fitChoice.value); this.render(); });
-            const shapeLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__image-choice', text: t('ui.timetable.portraitShape') });
-            const shape = shapeLabel.createEl('select');
-            shape.dataset.imageSection = t('ui.timetable.imageFormatting');
-            setAccessibleLabel(shape, t('ui.timetable.portraitShape'));
-            shape.createEl('option', { value: 'square', text: t('ui.timetable.portraitSquare') });
-            shape.createEl('option', { value: 'landscape', text: t('ui.timetable.portraitLandscape') });
-            shape.value = this.config.get('portraitShape') === 'landscape' ? 'landscape' : 'square';
-            this.panelEvents?.registerDomEvent(shape, 'change', () => { this.config.set('portraitShape', shape.value); this.render(); });
-            const sizeLabel = panelOptions.createEl('label', { cls: 'ert-timetable-panels__size', text: t('ui.timetable.panelSize') });
-            const size = sizeLabel.createEl('select');
-            size.dataset.imageSection = t('ui.timetable.imageFormatting');
-            setAccessibleLabel(size, t('ui.timetable.panelSize'));
-            for (const [value, label] of [['small', t('ui.timetable.panelSizeSmall')], ['medium', t('ui.timetable.panelSizeMedium')], ['large', t('ui.timetable.panelSizeLarge')]] as const) {
-                size.createEl('option', { value, text: label });
-            }
-            const saved = this.config.get('panelSize');
-            size.value = saved === 'small' || saved === 'large' ? saved : 'medium';
-            this.panelEvents?.registerDomEvent(size, 'change', () => {
-                this.config.set('panelSize', size.value);
-                this.render();
-            });
+            const images = storyCardImages(this.plugin.settings);
+            const choice = <T extends string>(cls: string, text: string, label: string, choices: Array<[T, string]>, value: T, change: (value: T) => void) => {
+                const select = panelOptions.createEl('label', { cls, text }).createEl('select');
+                setAccessibleLabel(select, label);
+                for (const [option, optionLabel] of choices) select.createEl('option', { value: option, text: optionLabel });
+                select.value = value;
+                this.panelEvents?.registerDomEvent(select, 'change', () => {
+                    const picked = choices.find(([option]) => option === select.value);
+                    if (picked) change(picked[0]);
+                });
+            };
+            const save = (change: Parameters<typeof saveStoryCardImages>[1]) => { void saveStoryCardImages(this.plugin, change); };
+            choice('ert-timetable-panels__image-choice', t('ui.timetable.panelImage'), t('ui.timetable.panelImageLabel'), combinationChoices(), images.combination, combination => save({ combination }));
+            if (images.combination === 'layered') choice('ert-timetable-panels__image-choice', t('ui.timetable.placeTextBacking'), t('ui.timetable.placeTextBacking'), backingChoices(), images.backing, backing => save({ backing }));
+            choice('ert-timetable-panels__image-choice', t('ui.timetable.storyImageStrategy'), t('ui.timetable.storyImageStrategy'), strategyChoices(), storyImageStrategy(this.plugin.settings), strategy => { void saveStoryImageStrategy(this.plugin, strategy); });
+            choice('ert-timetable-panels__image-choice', t('ui.timetable.panelFit'), t('ui.timetable.panelFit'), fitChoices(), images.fit, fit => save({ fit }));
+            choice('ert-timetable-panels__image-choice', t('ui.timetable.portraitShape'), t('ui.timetable.portraitShape'), shapeChoices(), images.portraitShape, portraitShape => save({ portraitShape }));
+            choice('ert-timetable-panels__size', t('ui.timetable.panelSize'), t('ui.timetable.panelSize'), this.panelSizeChoices(), this.panelSize(), size => { this.config.set('panelSize', size); this.render(); });
         }
         // Preserve the existing controls as the single source of behavior. At narrow
         // widths the menu invokes those same buttons rather than duplicating actions.
@@ -2542,21 +2521,13 @@ export class TimetableView extends BasesView {
             setAccessibleLabel(button, t('ui.timetable.imageSettings'));
             setTooltip(button, t('ui.timetable.imageSettings'));
             this.panelEvents?.registerDomEvent(button, 'click', () => {
+                // The same groups as the Canvas card menu, then this view's panel size.
                 const menu = new Menu().setUseNativeMenu(false);
-                let previousSection: string | undefined;
-                for (const select of Array.from(options.querySelectorAll<HTMLSelectElement>('select'))) {
-                    const section = select.dataset.imageSection;
-                    const heading = section && section !== previousSection ? section : undefined;
-                    if (heading) previousSection = heading;
-                    addMenuChoices(menu, heading, Array.from(select.options).map(option => ({
-                        label: option.text,
-                        checked: option.value === select.value,
-                        run: () => {
-                            select.value = option.value;
-                            select.dispatchEvent(new Event('change', { bubbles: true }));
-                        },
-                    })));
-                }
+                addStoryCardImageMenu(menu, this.plugin);
+                const size = this.panelSize();
+                addMenuChoices(menu, t('ui.timetable.panelSize'), this.panelSizeChoices().map(([value, label]) => ({
+                    label, checked: size === value, run: () => { this.config.set('panelSize', value); this.render(); },
+                })));
                 const rect = button.getBoundingClientRect();
                 menu.showAtPosition({ x: rect.left, y: rect.bottom }, button.ownerDocument);
             });
@@ -2973,18 +2944,35 @@ export class TimetableView extends BasesView {
                 const selectedPerson = people[selectedIndex < 0 ? 0 : selectedIndex];
                 const overrideImage = explicitCardImage(this.plugin, entry.file);
                 const portrait = overrideImage ? this.plugin.app.vault.getResourcePath(overrideImage) : selectedPerson?.image ?? leadPortrait(people);
-                const imageMode = outline ? 'character' : this.config.get('panelImage');
+                const cardSettings = storyCardImages(this.plugin.settings);
+                const imageMode = outline ? 'character' : cardSettings.combination;
                 const location = (imageMode === 'place' || imageMode === 'combined' || imageMode === 'layered') && (row.kind === 'scene' || (row.kind === 'sketch' && (!!storyImageChoice(this.plugin, row.path).placeImage || !!readFrontmatterProperty(frontmatter, 'Place image')))) ? panelPlaceImage(this.plugin.app, entry.file, frontmatter, authorKeyFor('Place', this.plugin.settings), imageFiles, storyImageChoice(this.plugin, row.path).placeImage) : null;
                 const artwork = (imageMode === 'artwork' || imageMode === 'combined') && row.kind === 'scene' ? panelSceneImage(this.plugin.app, entry.file, frontmatter) : null;
                 const portraitPath = overrideImage?.path ?? selectedPerson?.imagePath;
-                const characterImage = portrait && portraitPath ? { url: portrait, path: portraitPath } : null;
-                const combined = imageMode === 'combined' ? combinedPanelImage(location, characterImage, artwork) : null;
-                const panelImage = row.kind === 'sketch' ? (imageMode === 'place' ? location?.url ?? null : imageMode === 'combined' ? combined?.image.url ?? null : imageMode !== 'none' && overrideImage ? portrait : null) : imageMode === 'combined' ? combined?.image.url ?? null : imageMode === 'place' ? location?.url ?? null : imageMode === 'artwork' ? artwork?.url ?? null : imageMode === 'none' ? null : portrait;
-                const imagePath = row.kind === 'sketch' ? (imageMode === 'place' ? location?.path : imageMode === 'combined' ? combined?.image.path : overrideImage?.path) : imageMode === 'combined' ? combined?.image.path : imageMode === 'place' ? location?.path : imageMode === 'artwork' ? artwork?.path : imageMode === 'none' ? undefined : portraitPath;
-                const imageFit = !outline && this.config.get('panelFit') === 'fit' ? 'fit' : 'fill';
-                const storedFocus = this.config.get('panelFocus');
-                const focusMap = storedFocus && typeof storedFocus === 'object' && !Array.isArray(storedFocus) ? storedFocus as Record<string, unknown> : {};
-                const focus = validPanelFocus(imagePath ? focusMap[imagePath] : null);
+                const shown = cardImages(imageMode, row.kind === 'sketch' ? 'sketch' : 'scene', {
+                    character: portrait ? { url: portrait, path: portraitPath ?? undefined } : null,
+                    place: location, artwork, hasCharacters: people.length > 0, chosen: !!overrideImage,
+                });
+                const panelImage = shown.cover?.url ?? null;
+                const imagePath = shown.cover?.path;
+                const imageFit = !outline && cardSettings.fit === 'fit' ? 'fit' : 'fill';
+                const focus = storyImageFocus(this.plugin.settings, imagePath);
+                // Center an image's focus point in its tile (a Fill crop); Fit shows the whole image.
+                const frameImage = (image: HTMLImageElement, point: PanelFocus) => {
+                    image.toggleClass('is-fit', imageFit === 'fit');
+                    if (imageFit !== 'fill') return;
+                    const position = () => {
+                        const bounds = image.getBoundingClientRect();
+                        const at = coverPosition(bounds.width, bounds.height, image.naturalWidth, image.naturalHeight, point);
+                        image.setCssProps({ '--ert-image-x': `${at.x}px`, '--ert-image-y': `${at.y}px` });
+                    };
+                    this.panelEvents?.registerDomEvent(image, 'load', position);
+                    const resize = new ResizeObserver(position);
+                    resize.observe(image);
+                    this.panelEvents?.register(() => resize.disconnect());
+                    if (image.complete) position();
+                };
+                const editFocus = (url: string, path: string, point: PanelFocus) => new PanelFocusModal(this.plugin.app, url, point, value => { void saveStoryImageFocus(this.plugin, path, value); }).open();
                 if (row.kind === 'scene') {
                     const fill = sceneNumberFill(frontmatter, this.plugin.settings, this.patternPrefix);
                     const stage = sceneVitals(frontmatter, this.plugin.settings, new Date()).stage;
@@ -2993,60 +2981,62 @@ export class TimetableView extends BasesView {
                     if (color) panel.setCssProps({ '--ert-timetable-portrait-color': color });
                 }
                 const sceneActions = !outline && row.kind === 'scene' ? panel.createDiv({ cls: 'ert-timetable-panels__scene-actions' }) : null;
-                if (!outline && imageMode === 'layered' && location) {
+                const backdropImage = !outline ? shown.backdrop : null;
+                if (backdropImage) {
                     panel.addClass('has-place-background');
-                    const backing = this.config.get('placeTextBacking');
+                    const backing = cardSettings.backing;
                     panel.setCssProps({ '--ert-place-text-opacity': backing === 'subtle' ? '68%' : backing === 'strong' ? '90%' : '78%' });
                     const backdrop = panel.createDiv({ cls: 'ert-timetable-panels__backdrop', attr: { 'aria-hidden': 'true' } });
-                    const backdropImage = backdrop.createEl('img', { attr: { src: location.url, alt: '', draggable: 'false' } });
-                    const placeFocus = validPanelFocus(focusMap[location.path]);
-                    backdropImage.setCssProps({ '--ert-place-focus-x': `${placeFocus.x * 100}%`, '--ert-place-focus-y': `${placeFocus.y * 100}%` });
-                    this.panelEvents?.registerDomEvent(backdropImage, 'error', () => { backdrop.remove(); panel.removeClass('has-place-background'); });
-                    const adjust = (sceneActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__place-focus', attr: { type: 'button' } });
-                    setIcon(adjust, 'focus');
-                    setAccessibleLabel(adjust, t('ui.timetable.placeFocus'));
-                    setTooltip(adjust, t('ui.timetable.placeFocus'));
-                    this.panelEvents?.registerDomEvent(adjust, 'click', event => {
-                        event.stopPropagation();
-                        new PanelFocusModal(this.plugin.app, location.url, placeFocus, point => {
-                            this.config.set('panelFocus', { ...focusMap, [location.path]: point });
-                            this.render();
-                        }).open();
-                    });
+                    const backdropEl = backdrop.createEl('img', { attr: { src: backdropImage.url, alt: '', draggable: 'false' } });
+                    const placeFocus = storyImageFocus(this.plugin.settings, backdropImage.path);
+                    backdropEl.setCssProps({ '--ert-place-focus-x': `${placeFocus.x * 100}%`, '--ert-place-focus-y': `${placeFocus.y * 100}%` });
+                    this.panelEvents?.registerDomEvent(backdropEl, 'error', () => { backdrop.remove(); panel.removeClass('has-place-background'); });
+                    const placePath = backdropImage.path;
+                    if (placePath) {
+                        const adjust = (sceneActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__place-focus', attr: { type: 'button' } });
+                        setIcon(adjust, 'focus');
+                        setAccessibleLabel(adjust, t('ui.timetable.placeFocus'));
+                        setTooltip(adjust, t('ui.timetable.placeFocus'));
+                        this.panelEvents?.registerDomEvent(adjust, 'click', event => { event.stopPropagation(); editFocus(backdropImage.url, placePath, placeFocus); });
+                    }
                 }
-                if (!outline && this.config.get('portraitShape') === 'landscape') panel.addClass('has-landscape-portrait');
+                if (!outline && cardSettings.portraitShape === 'landscape') panel.addClass('has-landscape-portrait');
                 const header = panel.createDiv({ cls: 'ert-timetable-panels__header' });
                 let sceneNumberOnCover = false;
-                if ((row.kind === 'scene' || (row.kind === 'sketch' && !!panelImage)) && (panelImage || (!outline && size === 'small') || imageMode === 'place' || imageMode === 'combined' || imageMode === 'artwork' || (imageMode !== 'none' && people.length > 0))) {
+                if ((row.kind === 'scene' || row.kind === 'sketch') && (shown.showCover || (row.kind === 'scene' && !outline && size === 'small'))) {
                     const handle = row.kind === 'scene' ? this.attachSceneDrag(panel, header, row.path, mode.state) : null;
                     const cover = handle ?? header.createDiv();
                     cover.addClass('ert-timetable-panels__cover');
                     cover.toggleClass('is-missing', !panelImage);
                     const placeholder = cover.createSpan({ cls: 'ert-timetable-panels__cover-placeholder', attr: { 'aria-hidden': 'true' } });
-                    setIcon(placeholder, imageMode === 'place' || imageMode === 'combined' ? 'map-pin' : imageMode === 'artwork' ? 'image' : imageMode === 'none' ? 'file-text' : 'user-round');
+                    setIcon(placeholder, shown.placeholderIcon);
                     if (panelImage) {
                         const image = cover.createEl('img', { cls: 'ert-timetable-panels__cover-image', attr: { alt: '', src: panelImage, draggable: 'false' } });
-                        image.toggleClass('is-fit', imageFit === 'fit');
-                        if (imageFit === 'fill') {
-                            const position = () => {
-                                const bounds = image.getBoundingClientRect();
-                                const point = coverPosition(bounds.width, bounds.height, image.naturalWidth, image.naturalHeight, focus);
-                                image.setCssProps({ '--ert-image-x': `${point.x}px`, '--ert-image-y': `${point.y}px` });
-                            };
-                            this.panelEvents?.registerDomEvent(image, 'load', position);
-                            const resize = new ResizeObserver(position);
-                            resize.observe(image);
-                            this.panelEvents?.register(() => resize.disconnect());
-                            if (image.complete) position();
-                        }
-                        if (location && (imageMode === 'place' || combined?.kind === 'place')) setTooltip(image, location.source === 'scene' ? t('ui.timetable.panelImageSceneSource', { name: location.name }) : t('ui.timetable.panelImagePlaceSource', { name: location.name }));
+                        frameImage(image, focus);
+                        if (location && shown.cover === location) setTooltip(image, location.source === 'scene' ? t('ui.timetable.panelImageSceneSource', { name: location.name }) : t('ui.timetable.panelImagePlaceSource', { name: location.name }));
                         this.panelEvents?.registerDomEvent(image, 'error', () => cover.addClass('is-missing'));
                     }
                     if (!outline && size !== 'small' && row.kind === 'scene' && row.prefix) {
                         cover.createSpan({ cls: 'ert-timetable-panels__cover-number', text: row.prefix });
                         sceneNumberOnCover = true;
                     }
-                } else if (row.kind === 'scene') this.attachSceneDrag(panel, header, row.path, mode.state);
+                    // Place + character: the character stands beside its place, a tile the same size as the cover.
+                    const companion = !outline && size !== 'small' ? shown.companion : null;
+                    if (companion) {
+                        panel.addClass('has-companion');
+                        const tile = header.createEl('button', { cls: 'ert-timetable-panels__cover is-companion', attr: { type: 'button' } });
+                        const caption = companion.path && imageFit === 'fill' ? `${t('ui.timetable.panelImageCharacter')}: ${t('ui.timetable.panelFocusTitle')}` : t('ui.timetable.panelImageCharacter');
+                        setAccessibleLabel(tile, caption);
+                        setTooltip(tile, caption);
+                        const companionImage = tile.createEl('img', { cls: 'ert-timetable-panels__cover-image', attr: { alt: '', src: companion.url, draggable: 'false' } });
+                        const companionFocus = storyImageFocus(this.plugin.settings, companion.path);
+                        frameImage(companionImage, companionFocus);
+                        this.panelEvents?.registerDomEvent(companionImage, 'error', () => tile.remove());
+                        const companionPath = companion.path;
+                        if (companionPath && imageFit === 'fill') this.panelEvents?.registerDomEvent(tile, 'click', evt => { evt.stopPropagation(); editFocus(companion.url, companionPath, companionFocus); });
+                    }
+                    // With no cover (None), the drag grip joins the scene's buttons, so the title starts at the edge.
+                } else if (row.kind === 'scene') this.attachSceneDrag(panel, sceneActions ?? header, row.path, mode.state);
                 if (row.kind === 'sketch') this.attachSketchDrag(panel, header, row.path, mode.state);
                 if (row.kind === 'sketch') this.attachSceneActDrop(panel, row.act, getBookIdForPath(this.plugin.settings.books, row.path), mode.state);
                 if (row.kind === 'sketch') this.renderSketchProblem(header, item);
@@ -3099,39 +3089,22 @@ export class TimetableView extends BasesView {
                     setIcon(focusButton, 'focus');
                     setAccessibleLabel(focusButton, t('ui.timetable.panelFocusTitle'));
                     setTooltip(focusButton, t('ui.timetable.panelFocusTitle'));
-                    this.panelEvents?.registerDomEvent(focusButton, 'click', evt => {
-                        evt.stopPropagation();
-                        new PanelFocusModal(this.plugin.app, panelImage, focus, point => {
-                            this.config.set('panelFocus', { ...focusMap, [imagePath]: point });
-                            this.render();
-                        }).open();
-                    });
+                    this.panelEvents?.registerDomEvent(focusButton, 'click', evt => { evt.stopPropagation(); editFocus(panelImage, imagePath, focus); });
                 }
-                const characterInset = people.length > 0 && combined?.kind !== 'character';
-                const artworkInset = !!artwork && combined?.kind !== 'artwork';
-                if (!outline && row.kind === 'scene' && imageMode === 'combined' && (characterInset || artworkInset)) {
+                // A small panel's cover fills it, so there the Place + character portrait rides as an inset instead.
+                const insetImage = !outline && size === 'small' ? shown.companion : null;
+                if (insetImage) {
                     panel.addClass('has-image-insets');
-                    const images = panel.createDiv({ cls: 'ert-timetable-panels__image-insets' });
-                    const addInset = (url: string | null, path: string | null | undefined, label: string, icon: string) => {
-                        const inset = images.createEl('button', { cls: 'ert-timetable-panels__inset', attr: { type: 'button' } });
-                        const caption = url && imageFit === 'fill' ? `${label}: ${t('ui.timetable.panelFocusTitle')}` : label;
-                        setAccessibleLabel(inset, caption);
-                        setTooltip(inset, caption);
-                        if (!url || !path) { inset.addClass('is-missing'); setIcon(inset, icon); return; }
-                        const img = inset.createEl('img', { attr: { alt: '', src: url, draggable: 'false' } });
-                        img.toggleClass('is-fit', imageFit === 'fit');
-                        const point = validPanelFocus(focusMap[path]);
-                        if (imageFit === 'fill') {
-                            const position = () => { const rect = img.getBoundingClientRect(); const pos = coverPosition(rect.width, rect.height, img.naturalWidth, img.naturalHeight, point); img.setCssProps({ '--ert-image-x': `${pos.x}px`, '--ert-image-y': `${pos.y}px` }); };
-                            this.panelEvents?.registerDomEvent(img, 'load', position);
-                            const resize = new ResizeObserver(position); resize.observe(img); this.panelEvents?.register(() => resize.disconnect());
-                            if (img.complete) position();
-                            this.panelEvents?.registerDomEvent(inset, 'click', evt => { evt.stopPropagation(); new PanelFocusModal(this.plugin.app, url, point, value => { this.config.set('panelFocus', { ...focusMap, [path]: value }); this.render(); }).open(); });
-                        }
-                        this.panelEvents?.registerDomEvent(img, 'error', () => { img.remove(); inset.addClass('is-missing'); setIcon(inset, icon); });
-                    };
-                    if (characterInset) addInset(portrait, selectedPerson?.imagePath, t('ui.timetable.panelImageCharacter'), 'user-round');
-                    if (artworkInset && artwork) addInset(artwork.url, artwork.path, t('ui.timetable.panelImageArtwork'), 'image');
+                    const inset = panel.createDiv({ cls: 'ert-timetable-panels__image-insets' }).createEl('button', { cls: 'ert-timetable-panels__inset', attr: { type: 'button' } });
+                    const caption = insetImage.path && imageFit === 'fill' ? `${t('ui.timetable.panelImageCharacter')}: ${t('ui.timetable.panelFocusTitle')}` : t('ui.timetable.panelImageCharacter');
+                    setAccessibleLabel(inset, caption);
+                    setTooltip(inset, caption);
+                    const img = inset.createEl('img', { attr: { alt: '', src: insetImage.url, draggable: 'false' } });
+                    const insetFocus = storyImageFocus(this.plugin.settings, insetImage.path);
+                    frameImage(img, insetFocus);
+                    this.panelEvents?.registerDomEvent(img, 'error', () => { img.remove(); inset.addClass('is-missing'); setIcon(inset, 'user-round'); });
+                    const insetPath = insetImage.path;
+                    if (insetPath && imageFit === 'fill') this.panelEvents?.registerDomEvent(inset, 'click', evt => { evt.stopPropagation(); editFocus(insetImage.url, insetPath, insetFocus); });
                 }
                 const open = (sketchActions ?? sceneActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__open clickable-icon', attr: { type: 'button' } });
                 setIcon(open, !outline && row.kind !== 'scene' ? 'arrow-up-right' : 'file-text');

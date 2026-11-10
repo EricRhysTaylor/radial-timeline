@@ -2,7 +2,7 @@ import { FuzzySuggestModal, Menu, Notice, TFile } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { readFrontmatterProperty } from '../utils/frontmatterKeys';
-import { getOpenDocuments } from '../utils/documents';
+import { notifyStoryImagesChanged } from './storyCardImages';
 import { authorKeyFor } from './timetableFiles';
 import { imageSubjectName, matchingStoryImages, stableStoryImage } from './storyImageMatching';
 import { saveStoryImageChoice, storyImageChoice, type StoryImageChoice } from './storyImageStore';
@@ -29,7 +29,7 @@ export function showStoryImageMenu(plugin: RadialTimelinePlugin, file: TFile, fm
         const next = change ? { ...storyImageChoice(plugin, file.path), ...change } : null;
         void saveStoryImageChoice(plugin, file.path, next).then(() => {
             refresh();
-            for (const doc of getOpenDocuments(plugin.app.workspace)) doc.defaultView?.dispatchEvent(new Event('rt-story-image-strategy-changed'));
+            notifyStoryImagesChanged(plugin);
         }).catch(() => new Notice(t('ui.timetable.storyImageSaveFailed')));
     };
     const raw = readFrontmatterProperty(fm, authorKeyFor('Character', plugin.settings));

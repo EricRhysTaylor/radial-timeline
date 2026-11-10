@@ -6062,7 +6062,6 @@ export const en = {
             imageSettings: 'Image settings',
             imageCombinations: 'Image combinations',
             backgroundTreatment: 'Background treatment',
-            imageFormatting: 'Formatting',
             panelImage: 'Image',
             panelImageLabel: 'Panel image',
             "panelFit": "Image sizing",

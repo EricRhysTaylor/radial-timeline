@@ -2,6 +2,7 @@ import type RadialTimelinePlugin from '../main';
 import { TFile, TAbstractFile, MarkdownView } from 'obsidian';
 import { bindToAllDocuments, getOpenDocuments } from '../utils/documents';
 import { rebaseStoryImageChoices } from '../timetable/storyImageStore';
+import { rebaseStoryImageFocus } from '../timetable/storyCardImages';
 
 export class FileTrackingService {
     private modalStateObservers = new Map<Document, MutationObserver>();
@@ -154,12 +155,15 @@ export class FileTrackingService {
 
     private handleFileRename(file: TAbstractFile, oldPath: string): void {
         const choices = this.plugin.settings.storyImageChoices;
-        if (choices) {
-            const rebased = rebaseStoryImageChoices(choices, oldPath, file.path);
-            if (JSON.stringify(choices) !== JSON.stringify(rebased)) {
-                this.plugin.settings.storyImageChoices = rebased;
-                void this.plugin.saveSettings().catch(error => console.error('Could not update card image paths:', error));
-            }
+        const focus = this.plugin.settings.storyImageFocus;
+        const rebasedChoices = choices ? rebaseStoryImageChoices(choices, oldPath, file.path) : undefined;
+        const rebasedFocus = focus ? rebaseStoryImageFocus(focus, oldPath, file.path) : undefined;
+        const choicesMoved = JSON.stringify(choices) !== JSON.stringify(rebasedChoices);
+        const focusMoved = JSON.stringify(focus) !== JSON.stringify(rebasedFocus);
+        if (choicesMoved || focusMoved) {
+            if (choicesMoved) this.plugin.settings.storyImageChoices = rebasedChoices;
+            if (focusMoved) this.plugin.settings.storyImageFocus = rebasedFocus;
+            void this.plugin.saveSettings().catch(error => console.error('Could not update card image paths:', error));
         }
         void this.plugin.getWritingSessionService().followSceneRename(oldPath, file.path).catch(error => console.error('Could not update writing session paths:', error));
         if (this.plugin.openScenePaths.has(oldPath)) {

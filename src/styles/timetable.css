@@ -1457,6 +1457,9 @@
 .ert-timetable .ert-timetable-panels:not(.is-outline) .ert-timetable-panels__panel > :not(.ert-timetable-panels__backdrop) { flex-shrink: 0; }
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .ert-timetable-panels__panel.is-scene:not(.is-editing-synopsis) { overflow: hidden; }
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__header { max-height: 40%; overflow-y: auto; padding-right: 72px; }
+/* Place + character: two tiles; a title that would get under 180px starts its own line beneath them. */
+.ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene.has-companion .ert-timetable-panels__header { max-height: 60%; }
+.ert-timetable .ert-timetable-panels__panel.has-companion .ert-timetable-panels__heading { flex-basis: 180px; }
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__meta { max-height: 3em; overflow-y: auto; }
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene .ert-timetable-panels__characters { max-height: 3.5em; overflow-y: auto; scrollbar-width: thin; }
 .ert-timetable .ert-timetable-panels:not(.is-outline):not(.is-small) .is-scene button.ert-timetable-panels__synopsis:not(.is-empty) { display: block; flex: 0 1 auto; min-height: 2.5em; overflow-y: auto; scrollbar-width: thin; }
@@ -1469,7 +1472,6 @@
 .ert-timetable-panels__watermark { position: absolute; right: var(--size-4-4); bottom: var(--size-4-4); color: var(--text-muted); opacity: 0.09; pointer-events: none; }
 .ert-timetable-panels__watermark .svg-icon { width: 64px; height: 64px; }
 .ert-timetable .ert-timetable-panels__image-insets { position: absolute; z-index: 2; top: 42px; right: 8px; display: flex; flex-direction: column; gap: 6px; }
-.ert-timetable .ert-timetable-panels:not(.is-small):not(.is-outline) .ert-timetable-panels__panel.has-image-insets { padding-right: 72px; }
 .ert-timetable .ert-timetable-panels:not(.is-small):not(.is-outline) .is-scene .ert-timetable-panels__header { align-items: flex-start; }
 .ert-timetable .ert-timetable-panels.is-small .ert-timetable-panels__panel.has-image-insets .ert-timetable-panels__heading { right: 72px; }
 .ert-timetable button.ert-timetable-panels__inset { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; padding: 0; overflow: hidden; border: 2px solid var(--background-primary); border-radius: var(--radius-s); background: var(--background-secondary); color: var(--text-muted); box-shadow: var(--shadow-s); }
@@ -1548,7 +1550,10 @@
     border: 1px solid var(--background-modifier-border); border-radius: 8px;
 }
 .ert-canvas-story-card__art svg { width: 27px; height: 27px; }
-.ert-canvas-story-card__art img { width: 100%; height: 100%; object-fit: cover; }
+.ert-canvas-story-card__art img { width: 100%; height: 100%; object-fit: cover; object-position: var(--ert-image-x, 50%) var(--ert-image-y, 50%); }
+.ert-canvas-story-card__art img.is-fit { object-fit: contain; object-position: center; }
+/* Place + character: the character tile sits close beside its place. */
+.ert-canvas-story-card__art + .ert-canvas-story-card__art { margin-inline-start: -8px; }
 .ert-canvas-story-card__heading { min-width: 0; }
 .ert-canvas-story-card__kind { color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .ert-canvas-story-card__title { font-size: 23px; line-height: 1.12; font-weight: 800; letter-spacing: -.035em; overflow-wrap: anywhere; }
@@ -1718,7 +1723,8 @@
 }
 .ert-canvas-story-card__backdrop::after {
     content: ''; position: absolute; inset: 0;
-    background: linear-gradient(90deg, color-mix(in srgb, var(--background-primary) 92%, transparent), color-mix(in srgb, var(--background-primary) 72%, transparent));
+    /* The Background treatment sets both stops (Subtle 84/58, Balanced 92/72, Strong 96/86). */
+    background: linear-gradient(90deg, color-mix(in srgb, var(--background-primary) var(--ert-canvas-veil-near, 92%), transparent), color-mix(in srgb, var(--background-primary) var(--ert-canvas-veil-far, 72%), transparent));
 }
 
 /* Local backings protect the writing while leaving the landscape vivid. */

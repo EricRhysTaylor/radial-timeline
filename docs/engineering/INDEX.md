@@ -106,6 +106,7 @@ Location: `docs/engineering/audits/`
 
 Historical audits and investigations.
 
+- **[Story card image settings](audits/2026-11-10-story-card-image-settings.md)** — One setting for Panels and Canvas card images (combination, backing, Fill or Fit, portrait shape) and shared focus points, adopted once from each Timetable view; Place + character as two equal tiles; None without an indent.
 - **[Chronologue reference callout line](audits/2026-11-09-chronologue-reference-callout-line.md)** — Reference line in the text color on a background casing (3:1 over every subplot fill), scrolling the opened passage into view past long Properties, and (2026-11-10) directional arrowhead marks painted above the backdrops.
 - **[Chronologue annotation readability](audits/2026-10-17-chronologue-annotation-readability.md)** — Inner-band reference labels and overflow counts, full-opacity date squares, and native overflow-menu selection checks.
 - **[Chronologue query foreground and source clearance](audits/2026-10-17-chronologue-query-foreground.md)** — Question icons above subplot headlines and separated source/date squares at the seam, checked in Fill and Sequence.

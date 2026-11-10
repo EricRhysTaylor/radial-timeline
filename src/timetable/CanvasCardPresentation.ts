@@ -12,7 +12,12 @@ import { SUBPLOT_COLORS_CHANGED_EVENT, subplotColorCss, type SubplotColor } from
 import { cardSubplots } from './canvasCardSubplots';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { readFrontmatterProperty } from '../utils/frontmatterKeys';
-import { panelPlaceImage } from './panelPlaceImage';
+import { panelPlaceImage, panelSceneImage } from './panelPlaceImage';
+import { coverPosition } from './panelFocus';
+import {
+    addStoryCardImageMenu, cardImages, STORY_IMAGES_CHANGED_EVENT, storyCardImages, storyImageFocus, storyImageStrategy,
+    type CardImage, type PlaceTextBacking,
+} from './storyCardImages';
 import { imageSubjectName } from './storyImageMatching';
 import { storyCharacterSelections } from './storyImageSelection';
 import { explicitCardImage, showStoryImageMenu } from './storyImageMenu';
@@ -37,20 +42,21 @@ function plainText(text: string): string {
         .replace(/^\s*#{1,6}\s+/gm, '').replace(/[*_`~]/g, '').replace(/\s+/g, ' ').trim();
 }
 
-function portrait(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, unknown>, imageFiles: readonly TFile[], selected: string | undefined): string | null {
+function portrait(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, unknown>, imageFiles: readonly TFile[], selected: string | undefined): CardImage | null {
     const characters = readFrontmatterProperty(fm, authorKeyFor('Character', plugin.settings));
     const first: unknown = Array.isArray(characters) ? (characters.find(value => imageSubjectName(value) === selected) ?? characters[0]) : characters;
     if (typeof first !== 'string' || !first.trim()) return null;
     const image = resolveStoryPortrait(plugin.app, file.path, first, imageFiles);
-    return image ? plugin.app.vault.getResourcePath(image) : null;
+    return image ? { url: plugin.app.vault.getResourcePath(image), path: image.path } : null;
 }
 
+/** The veil over a place background, near and far edges, for each Background treatment (Panels' text backing). */
+const VEILS: Record<PlaceTextBacking, [string, string]> = { subtle: ['84%', '58%'], balanced: ['92%', '72%'], strong: ['96%', '86%'] };
+
 class CanvasCards {
-    private showPlaceBackground = false;
-    private landscapePortrait = false;
     private mode: Mode = 'preview';
     private hasBookCards = false;
-    private readonly cards = new Map<HTMLElement, { overlay: HTMLElement; signature: string }>();
+    private readonly cards = new Map<HTMLElement, { overlay: HTMLElement; signature: string; cleanup: Array<() => void> }>();
     private observer: MutationObserver;
     private timer: number | undefined;
     private revision = 0;
@@ -69,8 +75,7 @@ class CanvasCards {
 
     constructor(private plugin: RadialTimelinePlugin, private view: ItemView) {
         this.navigator = new CanvasStoryNavigator(plugin, view);
-        // Grouped like the Timetable Panels image menu, with the same headings
-        // and choice names wherever the two views offer the same setting.
+        // The card image groups are the Timetable Panels menu's own (storyCardImages), and so are their settings.
         this.action = view.addAction('image', t('ui.canvasSketch.cardViews'), () => {
             const menu = new Menu().setUseNativeMenu(false);
             const modes: Array<[Mode, string]> = [
@@ -79,19 +84,7 @@ class CanvasCards {
             addMenuChoices(menu, t('ui.canvasSketch.menuCardContent'), modes.map(([mode, label]) => ({
                 label, checked: this.mode === mode, run: () => { this.mode = mode; this.schedule(); },
             })));
-            addMenuChoices(menu, t('ui.timetable.imageCombinations'), ([[false, t('ui.timetable.panelImageCharacter')], [true, t('ui.timetable.panelImageLayered')]] as const).map(([layered, label]) => ({
-                label, checked: this.showPlaceBackground === layered, run: () => { this.showPlaceBackground = layered; this.schedule(); },
-            })));
-            const strategy = this.plugin.settings.storyImageStrategy ?? 'distinctive';
-            addMenuChoices(menu, t('ui.timetable.storyImageStrategy'), ([['distinctive', t('ui.timetable.storyImageDistinctive')], ['first', t('ui.timetable.storyImageFirst')], ['second', t('ui.timetable.storyImageSecond')], ['pov', t('ui.timetable.storyImagePov')], ['balanced', t('ui.timetable.storyImageBalanced')]] as const).map(([value, label]) => ({
-                label, checked: strategy === value, run: () => {
-                    this.plugin.settings.storyImageStrategy = value;
-                    void this.plugin.saveSettings(); this.view.containerEl.win.dispatchEvent(new Event('rt-story-image-strategy-changed'));
-                },
-            })));
-            addMenuChoices(menu, t('ui.timetable.imageFormatting'), ([[false, t('ui.timetable.portraitSquare')], [true, t('ui.timetable.portraitLandscape')]] as const).map(([landscape, label]) => ({
-                label, checked: this.landscapePortrait === landscape, run: () => { this.landscapePortrait = landscape; this.schedule(); },
-            })));
+            addStoryCardImageMenu(menu, this.plugin);
             addMenuChoices(menu, t('ui.canvasSketch.menuTimeline'), [
                 { label: t('ui.canvasSketch.showOverdue'), checked: this.showOverdue, run: () => { this.showOverdue = !this.showOverdue; this.schedule(); } },
                 { label: t('ui.canvasSketch.followTimeline'), checked: this.followTimeline, run: () => {
@@ -131,7 +124,7 @@ class CanvasCards {
             }, 350);
         });
         this.events.load();
-        this.events.registerDomEvent(view.containerEl.win, 'rt-story-image-strategy-changed', () => this.schedule());
+        this.events.registerDomEvent(view.containerEl.win, STORY_IMAGES_CHANGED_EVENT, () => this.schedule());
         this.events.registerDomEvent(view.containerEl.win, SUBPLOT_COLORS_CHANGED_EVENT, () => this.invalidateColors());
         this.events.registerDomEvent(view.containerEl, 'click', event => {
             if (!this.hasBookCards || !(event.target instanceof Element)) return;
@@ -188,7 +181,9 @@ class CanvasCards {
     }
 
     private remove(node: HTMLElement): void {
-        this.cards.get(node)?.overlay.remove();
+        const card = this.cards.get(node);
+        card?.cleanup.forEach(stop => stop());
+        card?.overlay.remove();
         this.cards.delete(node);
         node.removeClass('ert-canvas-story-node');
     }
@@ -214,7 +209,8 @@ class CanvasCards {
         // so they are read ahead on a Canvas with idea cards to color.
         const activeBook = getActiveBook(this.plugin.settings);
         if (activeBook?.sourceFolder.trim() && nodes instanceof Map && ideaCards(nodes.values()).length > 0) this.ringColorsNow(activeBook.id);
-        const imageSelections = bookCards.length ? storyCharacterSelections(this.plugin, imageFiles, this.plugin.settings.storyImageStrategy ?? 'distinctive', new Set(bookCards.map(card => card.bookId))) : new Map<string, string>();
+        const imageSelections = bookCards.length ? storyCharacterSelections(this.plugin, imageFiles, storyImageStrategy(this.plugin.settings), new Set(bookCards.map(card => card.bookId))) : new Map<string, string>();
+        const cardSettings = storyCardImages(this.plugin.settings);
         this.hasBookCards = bookCards.length > 0;
         this.action.toggle(this.hasBookCards);
         this.view.containerEl.toggleClass('ert-canvas-card-view', this.hasBookCards && this.mode !== 'full');
@@ -228,9 +224,21 @@ class CanvasCards {
                 const kind = typeof kindValue === 'string' ? kindValue.trim() : t('ui.canvasSketch.cardLabel');
                 const row = buildTableRow(file.path, file.basename, fm, this.plugin.settings);
                 const overrideImage = explicitCardImage(this.plugin, file);
-                const selected = storyImageChoice(this.plugin, file.path).character ?? imageSelections.get(file.path);
-                const image = overrideImage ? this.plugin.app.vault.getResourcePath(overrideImage) : row.kind === 'scene' ? portrait(this.plugin, file, fm, imageFiles, selected) : null;
-                const place = this.showPlaceBackground && (row.kind === 'scene' || (row.kind === 'sketch' && (!!storyImageChoice(this.plugin, file.path).placeImage || !!readFrontmatterProperty(fm, 'Place image')))) ? panelPlaceImage(this.plugin.app, file, fm, authorKeyFor('Place', this.plugin.settings), imageFiles, storyImageChoice(this.plugin, file.path).placeImage) : null;
+                const choice = storyImageChoice(this.plugin, file.path);
+                const selected = choice.character ?? imageSelections.get(file.path);
+                const chosenImage: CardImage | null = overrideImage ? { url: this.plugin.app.vault.getResourcePath(overrideImage), path: overrideImage.path } : null;
+                const story = row.kind === 'scene' || row.kind === 'sketch';
+                const combination = cardSettings.combination;
+                const place = story && (combination === 'place' || combination === 'combined' || combination === 'layered') && (row.kind === 'scene' || !!choice.placeImage || !!readFrontmatterProperty(fm, 'Place image'))
+                    ? panelPlaceImage(this.plugin.app, file, fm, authorKeyFor('Place', this.plugin.settings), imageFiles, choice.placeImage) : null;
+                const artwork = (combination === 'artwork' || combination === 'combined') && row.kind === 'scene' ? panelSceneImage(this.plugin.app, file, fm) : null;
+                const castValue = readFrontmatterProperty(fm, authorKeyFor('Character', this.plugin.settings));
+                const hasCharacters = (Array.isArray(castValue) ? castValue : [castValue]).some(name => typeof name === 'string' && name.trim().length > 0);
+                const shown = story ? cardImages(combination, row.kind === 'sketch' ? 'sketch' : 'scene', {
+                    character: chosenImage ?? (row.kind === 'scene' ? portrait(this.plugin, file, fm, imageFiles, selected) : null),
+                    place, artwork, hasCharacters, chosen: !!overrideImage,
+                }) : null;
+                const focusOf = (image: CardImage | null | undefined) => image ? storyImageFocus(this.plugin.settings, image.path) : null;
                 const ringColors = row.kind === 'scene' || row.kind === 'sketch' ? await this.colorsForBook(bookId) : new Map<string, SubplotColor>();
                 const subplotNames = row.subplots.filter(name => ringColors.has(name));
                 const colorOf = (name: string): string => subplotColorCss(ringColors.get(name)!); // SAFE: subplotNames keeps only names the book's rings hold
@@ -253,12 +261,13 @@ class CanvasCards {
                 const title = file.basename.replace(/^\d+(?:\.\d+)?\s+/, '');
                 const description = plainText(preview);
                 const number = row.kind === 'scene' ? row.prefix : null;
-                const signature = JSON.stringify([this.mode, title, kind, number, image, place?.url, selected, storyImageChoice(this.plugin, file.path), readFrontmatterProperty(fm, 'Place image'), this.landscapePortrait, description, file.path, shownSubplots.map(name => [name, colorOf(name)]), overdue]);
+                const signature = JSON.stringify([this.mode, title, kind, number, cardSettings, shown, chosenImage?.url, [shown?.cover, shown?.companion, shown?.backdrop].map(focusOf), selected, choice, description, file.path, shownSubplots.map(name => [name, colorOf(name)]), overdue]);
                 const existing = this.cards.get(el);
                 if (existing?.signature === signature && el.contains(existing.overlay)) continue;
                 this.remove(el);
                 const cardType = outlineReferenceType(kind);
                 const overlay = el.createDiv({ cls: `ert-canvas-story-card${cardType === 'sketch' ? ' is-sketch' : ''}` });
+                const cleanup: Array<() => void> = [];
                 if (row.kind === 'scene' || row.kind === 'sketch') {
                     const imageOptions = overlay.createEl('button', { cls: 'ert-canvas-story-card__image-menu', attr: { type: 'button' } });
                     setAccessibleLabel(imageOptions, t('ui.timetable.storyImageChoose'));
@@ -267,17 +276,44 @@ class CanvasCards {
                     imageOptions.onclick = event => { event.stopPropagation(); showStoryImageMenu(this.plugin, file, fm, imageFiles, event, () => this.schedule(), selected ?? undefined); };
                     imageOptions.onpointerdown = event => event.stopPropagation();
                 }
-                if (place) {
+                const backdropImage = shown?.backdrop;
+                if (backdropImage) {
                     overlay.addClass('has-place-background');
+                    const [near, far] = VEILS[cardSettings.backing];
+                    overlay.setCssProps({ '--ert-canvas-veil-near': near, '--ert-canvas-veil-far': far });
                     const backdrop = overlay.createDiv({ cls: 'ert-canvas-story-card__backdrop', attr: { 'aria-hidden': 'true' } });
-                    const backdropImage = backdrop.createEl('img', { attr: { src: place.url, alt: '', draggable: 'false' } });
-                    this.events.registerDomEvent(backdropImage, 'error', () => { backdrop.remove(); overlay.removeClass('has-place-background'); });
+                    const backdropEl = backdrop.createEl('img', { attr: { src: backdropImage.url, alt: '', draggable: 'false' } });
+                    const placeFocus = storyImageFocus(this.plugin.settings, backdropImage.path);
+                    backdropEl.setCssProps({ '--ert-place-focus-x': `${placeFocus.x * 100}%`, '--ert-place-focus-y': `${placeFocus.y * 100}%` });
+                    this.events.registerDomEvent(backdropEl, 'error', () => { backdrop.remove(); overlay.removeClass('has-place-background'); });
                 }
-                if (this.landscapePortrait) overlay.addClass('has-landscape-portrait');
+                if (cardSettings.portraitShape === 'landscape') overlay.addClass('has-landscape-portrait');
                 const header = overlay.createDiv({ cls: 'ert-canvas-story-card__header' });
-                const artwork = header.createDiv({ cls: 'ert-canvas-story-card__art' });
-                if (image) artwork.createEl('img', { attr: { src: image, alt: '' } });
-                else setIcon(artwork, CARD_ICONS[cardType]);
+                // One tile per image, cropped at its shared focus point (a Fill crop) or shown whole (Fit).
+                const tile = (image: CardImage | null | undefined, icon: string) => {
+                    const art = header.createDiv({ cls: 'ert-canvas-story-card__art' });
+                    if (!image) { setIcon(art, icon); return; }
+                    const img = art.createEl('img', { attr: { src: image.url, alt: '' } });
+                    img.toggleClass('is-fit', cardSettings.fit === 'fit');
+                    this.events.registerDomEvent(img, 'error', () => { img.remove(); setIcon(art, icon); });
+                    if (cardSettings.fit !== 'fill') return;
+                    const point = storyImageFocus(this.plugin.settings, image.path);
+                    // Layout sizes, not screen sizes: the Canvas zoom scales the card without changing them.
+                    const position = () => {
+                        const at = coverPosition(img.clientWidth, img.clientHeight, img.naturalWidth, img.naturalHeight, point);
+                        img.setCssProps({ '--ert-image-x': `${at.x}px`, '--ert-image-y': `${at.y}px` });
+                    };
+                    this.events.registerDomEvent(img, 'load', position);
+                    const resize = new ResizeObserver(position);
+                    resize.observe(img);
+                    cleanup.push(() => resize.disconnect());
+                    if (img.complete) position();
+                };
+                if (!shown) tile(chosenImage, CARD_ICONS[cardType]);
+                else if (shown.showCover) {
+                    tile(shown.cover, shown.placeholderIcon);
+                    if (shown.companion) tile(shown.companion, 'user-round');
+                }
                 const heading = header.createDiv({ cls: 'ert-canvas-story-card__heading' });
                 const meta = heading.createDiv({ cls: 'ert-canvas-story-card__meta' });
                 if (shownSubplots.length) {
@@ -304,7 +340,7 @@ class CanvasCards {
                 }
                 if (this.mode === 'preview' && description) overlay.createDiv({ cls: 'ert-canvas-story-card__preview', text: description });
                 el.addClass('ert-canvas-story-node');
-                this.cards.set(el, { overlay, signature });
+                this.cards.set(el, { overlay, signature, cleanup });
             }
         }
         if (revision !== this.revision) return;

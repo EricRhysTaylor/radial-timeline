@@ -6201,7 +6201,6 @@ export const es: DeepPartial<TranslationKeys> = {
             imageSettings: 'Ajustes de imagen',
             imageCombinations: 'Combinaciones de imágenes',
             backgroundTreatment: 'Tratamiento del fondo',
-            imageFormatting: 'Formato',
             "storyImageChoose": "Choose card image…",
             "storyImageChoosePlace": "Choose place background…",
             "storyImageChooseCharacter": "Choose character",

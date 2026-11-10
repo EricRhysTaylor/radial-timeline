@@ -2,14 +2,6 @@ import { readFrontmatterProperty } from '../utils/frontmatterKeys';
 import { TFile, type App } from 'obsidian';
 import { imageSubjectName, stableStoryImage } from './storyImageMatching';
 
-export type PanelImage = { url: string; path: string };
-
-/** Prefer a place for the background, while still showing available art when it is missing. */
-export function combinedPanelImage(place: PanelImage | null, character: PanelImage | null, artwork: PanelImage | null): { kind: 'place' | 'character' | 'artwork'; image: PanelImage } | null {
-    if (place) return { kind: 'place', image: place };
-    if (character) return { kind: 'character', image: character };
-    return artwork ? { kind: 'artwork', image: artwork } : null;
-}
 
 function linkPath(value: unknown): string | null {
     if (typeof value !== 'string' || !value.trim()) return null;

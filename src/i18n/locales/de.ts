@@ -6193,7 +6193,6 @@ export const de: DeepPartial<TranslationKeys> = {
             imageSettings: 'Bildeinstellungen',
             imageCombinations: 'Bildkombinationen',
             backgroundTreatment: 'Hintergrundgestaltung',
-            imageFormatting: 'Formatierung',
             storyImageChoose: 'Choose card image…',
             storyImageChoosePlace: 'Choose place background…',
             storyImageChooseCharacter: 'Choose character',

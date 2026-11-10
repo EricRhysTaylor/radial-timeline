@@ -18,10 +18,10 @@ Timeline display options, frontmatter key remapping, ripple rename, and log loca
 ### Schema & Manuscript
 
 *   **Remap frontmatter field keys**: Map custom frontmatter keys to Radial Timeline scene core fields.
-*   **Manuscript ripple rename**: Normalizes scene and active-beat filename prefixes after drag reorder. Scenes stay integer-numbered; beats use decimal minors.
+*   **Manuscript ripple rename**: Normalizes scene and active-beat filename prefixes after drag reorder. Scenes stay integer-numbered; beats use decimal minors. On in new vaults.
 
 ### Logs
 
 *   **Logs**: Readout of the main Radial Timeline logs location.
 *   **Export folder**: Destination for manuscript, outline, and cue-card exports. Editable — type or pick any folder inside your vault; the chip beside the field reveals it in the file explorer.
-*   **Enable AI content logs**: Saves full prompts, submitted material, and API responses in your vault for reviewing AI runs, including failed runs. Credentials are redacted. Your vault's sync and backup settings apply to these files.
+*   **Enable AI content logs**: Saves full prompts, submitted material, and API responses in your vault for reviewing AI runs, including failed runs. Credentials are redacted. Your vault's sync and backup settings apply to these files. Off in new vaults.

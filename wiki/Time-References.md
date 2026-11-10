@@ -40,13 +40,14 @@ References describe passages within their source scene. They do not create new s
 
 Time-reference marks appear **only in normal Chronologue**, on the outer **All Scenes** ring. They disappear in the Shift and Alt (planet calendar) sub-modes, and in other timeline modes. Question icons also hide in these Chronologue sub-modes. A source that belongs to several subplots still has only one set of reference marks.
 
-![A selected time reference connects its larger source square to a smaller date square on the outer ring](images/time-references-timeline.png)
+<p align="center"><img src="images/time-references-timeline.webp" alt="Pride and Prejudice in Chronologue: the source circle on Darcy's Letter, its lines to two November dates and to Earlier · 2 dates at the seam, and a list of the scene's four references beside the timeline" width="800"></p>
 
-- **Larger square:** the source scene containing the passage. Its caption identifies the scene when a reference is active.
-- **Smaller square:** a referenced date. Squares follow the angle of the ring. Hover or focus one to preview its source; click to pin the relationship and open the passage. The selected square grows, and other reference labels recede. Date squares remain fully opaque.
-- **Connector:** the active relationship follows an arc inside the ring. It does not mean that intervening scenes mention that date. Clicking empty timeline space clears the pinned relationship.
-- **Earlier / Later:** references outside the manuscript’s date range gather on either side of the 12 o’clock seam. The small activity-shaped break marks the discontinuity. Their distance from the seam does not measure elapsed years.
-- **Stack and +N:** up to three squares appear at a shared date. `+6` means six additional reference entries beyond the three shown; `+2` means two additional entries. Click the count to choose one of those passages. The count concerns references, not years or scenes.
+- **Source circle:** the scene that holds the references. Hover or focus it to see them all at once: every line from the scene draws, its date marks grow, other marks and source circles dim, its rows light in the Timetable, and a list beside the timeline names each reference in the order you wrote them. Click it to choose one from the same list.
+- **Date mark:** a hollow arrowhead on the referenced date, pointing along the ring the way the date lies from its scene: counter-clockwise for an earlier date, clockwise for a later one. A diamond marks references that point both ways, or a span around the scene’s own time. Hover or focus a mark to read its references beside the timeline: the label, kind and date, the source scene and the passage. Click it to open the passage; Radial Timeline scrolls the note to it and highlights it. Where several references share a mark, clicking it lists them to choose from.
+- **Line:** the route from the source circle to the date, drawn in the theme’s text color so it reads over every subplot color. It does not mean that intervening scenes mention that date.
+- **Earlier / Later:** references outside the manuscript’s date range gather on either side of the 12 o’clock seam under a double arrowhead, labeled with how many dates they hold (*Earlier · 2 dates*). The small activity-shaped break marks the discontinuity. Their distance from the seam does not measure elapsed years.
+- **Stack and +N:** up to three marks appear at a shared date. `+6` means six additional reference entries beyond the three shown. Click the count to choose one of those passages. The count concerns references, not years or scenes.
+- In Chronologue, the [timeline legend](Radial-Timeline-View#timeline-legend) shows the line and each kind of mark.
 
 Several scenes can refer to the same date. Each reference retains its own source: selecting the June 4 passage in **The photograph**, for example, connects that scene to June 4; selecting the corresponding passage in **The council vote** connects that source instead.
 

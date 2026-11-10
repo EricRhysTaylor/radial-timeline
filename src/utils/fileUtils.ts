@@ -39,7 +39,8 @@ export async function revealHighlight(app: App, file: TFile, highlight: OpenMatc
   const win = cm.dom.ownerDocument.defaultView;
   if (!win) return;
   const settle = () => new Promise<void>(resolve => win.requestAnimationFrame(() => win.requestAnimationFrame(() => resolve())));
-  const at = highlight.matches[0][0];
+  // The match was found in the file as read; a buffer that changed since can be shorter, and CodeMirror throws past its end.
+  const at = Math.min(Math.max(0, highlight.matches[0][0]), cm.state.doc.length);
   for (let pass = 0; pass < 3; pass++) {
     await settle();
     const box = cm.scrollDOM.getBoundingClientRect();

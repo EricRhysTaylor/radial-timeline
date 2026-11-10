@@ -186,7 +186,9 @@ class NoteDropModal extends ErtModal {
                 try { await this.app.vault.process(this.file, prepare); }
                 catch (error) { if (destination !== oldPath) await this.app.fileManager.renameFile(this.file, oldPath); throw error; }
                 // The scene it follows goes to the placement sidecar; an end-of-act sketch has no entry.
-                if (type === 'Sketch' && (after || this.plugin.sketchPlacements.get(this.file.path))) await this.plugin.sketchPlacements.set([[this.file.path, after ? { after } : null]]);
+                // An old entry may still sit under the old path: the rename's move in the sidecar is queued, not yet written.
+                const stale = this.plugin.sketchPlacements.get(oldPath) ?? this.plugin.sketchPlacements.get(this.file.path);
+                if (type === 'Sketch' && (after || stale)) await this.plugin.sketchPlacements.set([[this.file.path, after ? { after } : null]]);
                 this.close(); this.plugin.refreshTimelineIfNeeded(null); new Notice(t('ui.timetable.noteDropDone'));
             })().catch((error: unknown) => { submit.disabled = false; explanation.setText(error instanceof Error ? error.message : String(error)); explanation.show(); });
         };

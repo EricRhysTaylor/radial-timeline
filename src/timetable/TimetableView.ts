@@ -3023,7 +3023,6 @@ export class TimetableView extends BasesView {
                     // Place + character: the character stands beside its place, a tile the same size as the cover.
                     const companion = !outline && size !== 'small' ? shown.companion : null;
                     if (companion) {
-                        panel.addClass('has-companion');
                         const tile = header.createEl('button', { cls: 'ert-timetable-panels__cover is-companion', attr: { type: 'button' } });
                         const caption = companion.path && imageFit === 'fill' ? `${t('ui.timetable.panelImageCharacter')}: ${t('ui.timetable.panelFocusTitle')}` : t('ui.timetable.panelImageCharacter');
                         setAccessibleLabel(tile, caption);

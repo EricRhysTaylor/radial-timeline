@@ -86,7 +86,7 @@ class NoteDropModal extends ErtModal {
         const bookRow = this.contentEl.createDiv({ cls: 'setting-item' });
         bookRow.createDiv({ cls: 'setting-item-name', text: t('ui.canvasSketch.book') });
         const book = new DropdownComponent(bookRow.createDiv({ cls: 'setting-item-control' }));
-        books.forEach(item => book.addOption(item.id, item.title || item.sourceFolder));
+        books.forEach(item => { book.addOption(item.id, item.title || item.sourceFolder); });
         book.setValue(books.find(item => item.id === this.initialBook)?.id ?? getBookIdForPath(books, this.file.path) ?? getActiveBook(this.plugin.settings)?.id ?? books[0].id);
         const kindRow = this.contentEl.createDiv({ cls: 'setting-item' });
         kindRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropType') });
@@ -115,7 +115,7 @@ class NoteDropModal extends ErtModal {
         const updateAnchors = () => {
             anchor.selectEl.empty(); anchor.addOption('', t('ui.timetable.noteDropEndAct'));
             anchors().sort((a, b) => a.file.basename.localeCompare(b.file.basename, undefined, { numeric: true }))
-                .forEach(item => anchor.addOption(item.id!, item.file.basename));
+                .forEach(item => { anchor.addOption(item.id!, item.file.basename); });
         };
         const explanation = this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint' });
         explanation.hide();

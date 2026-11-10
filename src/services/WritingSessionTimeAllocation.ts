@@ -129,7 +129,7 @@ export async function applySessionTimeAllocations(plugin: RadialTimelinePlugin, 
         }
         const file = plugin.app.vault.getAbstractFileByPath(entry.path);
         if (!(file instanceof TFile)) throw new Error(`Scene is unavailable: ${entry.path}`);
-        await plugin.app.fileManager.processFrontMatter(file, fm => {
+        await plugin.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
             const { key, current } = readEntryTotal(fm, property, entry);
             if (current !== entry.afterHours) fm[key] = entry.afterHours; // Otherwise the write completed before its ledger checkpoint.
         });

@@ -21,6 +21,42 @@ export const th: DeepPartial<TranslationKeys> = {
                 "name": "เลนตัวละคร",
                 "desc": "ในโหมด Narrative แสดงเลนใต้วงแหวนด้านนอกสำหรับตัวละครสี่ตัวที่เป็นมุมมองในฉากมากที่สุด โดยอ่านจากรายการ `Character:` ของแต่ละฉาก เครื่องหมายสูงคือฉากจากมุมมองของตัวละคร เครื่องหมายต่ำคือฉากที่ตัวละครปรากฏ"
             },
+            "heading": "มุมมองการเล่า",
+            "bookDefault": {
+                "name": "มุมมองการเล่าของหนังสือ",
+                "desc": "หนังสือแต่ละเล่มกำหนดมุมมองการเล่าของตัวเองในรายละเอียดหนังสือ {{book}}: {{mode}}",
+                "descNoBook": "หนังสือแต่ละเล่มกำหนดมุมมองการเล่าของตัวเองในรายละเอียดหนังสือ ในส่วนหนังสือ",
+                "button": "เปิดรายละเอียดหนังสือ",
+            },
+            "yamlOverrides": {
+                "name": "การแทนที่ระดับฉาก",
+                "desc": "เพิ่ม `Narration:` เฉพาะในฉากที่เล่าต่างจากหนังสือของฉากนั้น: first, second, third, omni หรือ objective เมื่อฉากหนึ่งมีตัวละครนำมากกว่าหนึ่งตัว คำบอกจำนวน (two, four, count หรือ all) จะทำเครื่องหมายชื่อตามจำนวนนั้นที่ต้น `Character:` ด้วยเครื่องหมายมุมมองการเล่าของหนังสือ ตัวละครมุมมอง (POV) คือชื่อที่อยู่ต้น `Character:`",
+            },
+            "modes": {
+                "off": "ยังไม่ตั้งค่า",
+                "first": "บุคคลที่หนึ่ง",
+                "second": "บุคคลที่สอง",
+                "third": "บุคคลที่สาม",
+                "omni": "ผู้เล่าแบบรู้แจ้ง",
+                "objective": "ผู้เล่าแบบตากล้อง",
+            },
+            "preview": {
+                "heading": "ตัวอย่างมุมมองการเล่า",
+                "hide": "ซ่อนตัวอย่างมุมมองการเล่า",
+                "show": "แสดงตัวอย่างมุมมองการเล่า",
+                "examples": {
+                    "sceneFirst": "YAML ของฉาก: Narration: first | Character: [Alice]",
+                    "sceneThird": "YAML ของฉาก: Narration: third | Character: [Bob]",
+                    "sceneSecond": "YAML ของฉาก: Narration: second | Character: [Alice, Bob]",
+                    "sceneOmni": "YAML ของฉาก: Narration: omni | Character: [Alice, Bob]",
+                    "sceneObjective": "YAML ของฉาก: Narration: objective | Character: [Alice, Bob]",
+                    "countTwoThird": "มุมมองการเล่าของหนังสือ: third | YAML ของฉาก: Narration: two | Character: [Alice, Bob]",
+                    "countThreeThird": "มุมมองการเล่าของหนังสือ: third | YAML ของฉาก: Narration: three | Character: [Alice, Bob, Charlie]",
+                    "countFourThird": "มุมมองการเล่าของหนังสือ: third | YAML ของฉาก: Narration: four | Character: [Alice, Bob, Charlie, Diana]",
+                    "countTwoFirstNumeric": "มุมมองการเล่าของหนังสือ: first | YAML ของฉาก: Narration: 2 | Character: [Alice, Bob]",
+                    "countAllFirst": "มุมมองการเล่าของหนังสือ: first | YAML ของฉาก: Narration: all | Character: [Alice, Bob, Charlie]",
+                },
+            },
         },
         "configuration": {
             "heading": "การตั้งค่า",
@@ -1202,7 +1238,8 @@ export const th: DeepPartial<TranslationKeys> = {
         "genericNamesToggleDescription": "ใช้หากชื่อพล็อตย่อยของคุณสามารถเปิดเผยโครงเรื่องได้",
         "destinationBody": "บันทึกไปยัง {{path}} ในห้องนิรภัยของคุณ",
         "cancelButton": "ยกเลิก",
-        "exportButton": "ส่งออก JSON"
+        "exportButton": "ส่งออก JSON",
+        "revealingBody": "ชื่อฉาก เรื่องย่อ ตัวละคร มุมมองการเล่า และวันที่ในเรื่อง — ซ่อนไว้จนกว่าคุณจะเปิดเผยแต่ละฉาก",
     },
     "common": {
         "cancel": "ยกเลิก",
@@ -2692,7 +2729,9 @@ export const th: DeepPartial<TranslationKeys> = {
             "date": "ป้อนวันที่ในปฏิทินที่ถูกต้องเป็นข้อความ",
             "range": "ระยะเวลาต้องสิ้นสุดในหรือหลังการเริ่มต้น",
             "passage": "ข้อความต้องเป็นข้อความ"
-        }
+        },
+        "dateCount": "วันที่ {{count}} รายการ",
+        "referenceCount": "การอ้างอิง {{count}} รายการ",
     },
     "sceneTime": {
         "manual": {
@@ -3819,7 +3858,8 @@ export const th: DeepPartial<TranslationKeys> = {
             "ownColorsHeading": "พล็อตย่อยที่มีสีของตัวเองใน {{book}}",
             "ownColorsDesc": "พล็อตย่อยแต่ละรายการที่นี่ได้สีมาจากการ์ด Canvas ของตัวเอง และคงสีนั้นไว้ทุกที่ที่ Radial Timeline แสดง เปลี่ยนสีได้ที่นี่ หรือรีเซ็ตเพื่อให้พล็อตย่อยใช้สีวงแหวนจากชุดสีด้านบน",
             "ownColorAriaLabel": "สีของ {{subplot}}",
-            "ownColorClear": "ใช้สีวงแหวนจากชุดสี"
+            "ownColorClear": "ใช้สีวงแหวนจากชุดสี",
+            "ownColorShared": "สีเดียวกับ {{subplots}} บนไทม์ไลน์",
         },
         "commandRegistrar": {
             "archivedBeforeOverwrite": "เก็บถาวรที่มีอยู่ออกก่อนเขียนทับ: {{path}}",
@@ -4125,7 +4165,9 @@ export const th: DeepPartial<TranslationKeys> = {
             "disconnectMessage": "การอัปเดตจะหยุดลงและคีย์การเชื่อมต่อที่บันทึกไว้จะถูกลบออก ทุกอย่างในบัญชีชุมชนของคุณยังคงอยู่เหมือนเดิม การเชื่อมต่อใหม่ต้องใช้ a คีย์การเชื่อมโยงแบบครั้งเดียวใหม่",
             "disconnectingButton": "ตัดการเชื่อมต่อ...",
             "disconnectedNotice": "ห้องนิรภัยถูกตัดการเชื่อมต่อ บัญชีชุมชนของคุณไม่เปลี่ยนแปลง ใช้คีย์การเชื่อมโยงแบบครั้งเดียวใหม่เพื่อแชร์อีกครั้ง",
-            "disconnectFailed": "ไม่สามารถยกเลิกการแชร์ชุมชนได้"
+            "disconnectFailed": "ไม่สามารถยกเลิกการแชร์ชุมชนได้",
+            "timelineConfirmMessage": "Radial Timeline จะส่งลำดับฉาก องก์ พล็อตย่อย สถานะ และขั้นการเผยแพร่ รวมถึงชื่อเรื่อง เรื่องย่อ ตัวละคร มุมมองการเล่า และวันที่ในเรื่อง ซึ่งจะเก็บไว้เป็นส่วนตัวจนกว่าคุณจะเปิดเผยฉาก ไทม์ไลน์ใหม่จะมาถึงแบบส่วนตัว ส่วนไทม์ไลน์ที่เผยแพร่อยู่แล้วจะยังคงเผยแพร่ต่อไป คุณเลือกได้ว่าผู้อ่านจะเห็นฉากใด",
+            "timelineDetailPov": "มุมมองการเล่า",
         },
         "conceptSearchService": {
             "consecutiveFailures": "โมเดลโลคัลส่งคืน {{attempts}} ไม่สามารถใช้การตอบกลับในแถว: {{error}}",
@@ -4148,7 +4190,9 @@ export const th: DeepPartial<TranslationKeys> = {
             "recentMovesName": "การซ้อนทับการลากล่าสุดในโหมดการเล่าเรื่อง",
             "recentMovesDesc": "แสดงฉากสุดท้ายที่มุ่งมั่นและบีทการลากบีทในไทม์ไลน์การเล่าเรื่อง",
             "chapterMarkersActive": "{{markers}} ในหนังสือที่ใช้งานอยู่ปัจจุบัน",
-            "chapterMarkersNone": "ไม่มีเครื่องหมายบทที่ใช้งานอยู่"
+            "chapterMarkersNone": "ไม่มีเครื่องหมายบทที่ใช้งานอยู่",
+            "sceneTimeCueBarName": "แสดงแถบกำกับเวลาในโน้ตฉาก",
+            "sceneTimeCueBarDesc": "ในโน้ตฉาก แถบแนวตั้งข้างข้อความจะทำเครื่องหมายวลีเวลาแต่ละวลี เช่น \"an hour later\" ทั้งในมุมมองแก้ไขและมุมมองอ่าน โน้ตอื่นจะไม่แสดงแถบนี้ ปิดเพื่อซ่อนแถบ ส่วนเวลาของฉากในแถบชื่อเรื่องของโน้ตจะยังคงแสดงอยู่",
         },
         "confirmAudit": {
             "scopeLine": "ขอบเขต: {{scope}}"
@@ -4230,7 +4274,9 @@ export const th: DeepPartial<TranslationKeys> = {
         },
         "date": {
             "midnight": "มิดไนท์",
-            "noon": "เที่ยง"
+            "noon": "เที่ยง",
+            "eraBce": "ก่อน ค.ศ.",
+            "eraCe": "ค.ศ.",
         },
         "demoLibraryModal": {
             "title": "สำรวจหนังสือที่เสร็จแล้ว",
@@ -4754,7 +4800,12 @@ export const th: DeepPartial<TranslationKeys> = {
             "sourceFolderNotFoundNotice": "ไม่พบโฟลเดอร์ต้นทาง: {{folder}}",
             "copyCreatedNotice": "สร้างสำเนาหนังสือ: {{path}}",
             "copyFailedNotice": "สำเนาหนังสือล้มเหลว: {{error}}",
-            "copyFailedRetainedNotice": "การคัดลอกหนังสือล้มเหลว: {{error}} ตรวจสอบ {{path}} ก่อนลองใหม่ ไฟล์ที่คัดลอกจะถูกเก็บไว้"
+            "copyFailedRetainedNotice": "การคัดลอกหนังสือล้มเหลว: {{error}} ตรวจสอบ {{path}} ก่อนลองใหม่ ไฟล์ที่คัดลอกจะถูกเก็บไว้",
+            "metadataTitle": "รายละเอียดหนังสือ",
+            "metadataSubtitle": "มุมมองการเล่าของหนังสือเล่มนี้ พร้อมข้อมูลเมตาที่ไม่บังคับสำหรับสถิติ กลุ่ม และการแชร์สาธารณะ",
+            "narrationName": "มุมมองการเล่า",
+            "narrationDesc": "มุมมองการเล่าของหนังสือเล่มนี้ และวิธีที่เรื่องย่อทำเครื่องหมายตัวละคร: บุคคลที่หนึ่งและบุคคลที่สามทำเครื่องหมายตัวละครตัวแรกในรายการด้วย ¹ หรือ ³ บุคคลที่สองเพิ่ม You² ผู้เล่าแบบรู้แจ้งเพิ่ม Omni³ และผู้เล่าแบบตากล้องเพิ่ม Narrator° ส่วน “ยังไม่ตั้งค่า” จะทำเครื่องหมายตัวละครตัวแรกในรายการด้วย ¹ ฉากที่เล่าต่างออกไปจะระบุไว้ในฟิลด์ Narration ของฉากนั้น",
+            "metadataTooltip": "แก้ไขมุมมองการเล่า ประเภท ขั้นโครงการ ป้ายสาธารณะ และคำอธิบาย",
         },
         "generateCandidates": {
             "midway": "กลางระหว่างสองฉาก",
@@ -4998,7 +5049,8 @@ export const th: DeepPartial<TranslationKeys> = {
             "classCharacter": "อักขระ",
             "classScene": "ฉาก",
             "classOutline": "เค้าโครง",
-            "classFallback": "ชั้น"
+            "classFallback": "ชั้น",
+            "storyVaultScenes": "ฉากในสาธิตห้องนิรภัยใช้ค่าเริ่มต้นเฉพาะของหนังสือ ส่วนการตั้งค่า Inquiry ของคุณไม่เปลี่ยนแปลง",
         },
         "inquiryCorpusStripRenderer": {
             "corpusTitle": "คลังสมอง",
@@ -6146,6 +6198,10 @@ export const th: DeepPartial<TranslationKeys> = {
             keyCardViewDetail: "ที่แถบชื่อเรื่อง: ตัวอย่าง ชื่อเรื่อง หรือโน้ตเต็ม",
             keyHover: "Shift-โฮเวอร์",
             keyHoverDetail: "กด Shift ค้างบนฉากในไทม์ไลน์เพื่อให้การ์ดของฉากนั้นสว่างที่นี่",
+            "menuCardContent": "เนื้อหาการ์ด",
+            "menuTimeline": "ไทม์ไลน์",
+            "cardMemoryNotSaved": "สร้างและเชื่อมฉากแล้ว แต่ Radial Timeline บันทึกไม่ได้ว่าการ์ด Canvas ใบใดกลายเป็นฉาก {{message}}",
+            "keyConvertDetail": "เลือกการ์ดที่ต้องการ แล้วคลิกปุ่มแปลงในแถบชื่อเรื่อง การ์ดที่ไม่ได้เลือกจะยังอยู่บน Canvas",
         },
         "promoteToScene": {
             "menuItem": "โปรโมทไปฉาก",
@@ -6608,7 +6664,18 @@ export const th: DeepPartial<TranslationKeys> = {
             "drawerConflict": "โน้ตนี้เปลี่ยนที่อื่นในขณะที่คุณพิมพ์ที่นี่ ไม่มีอะไรถูกเขียนทับ",
             "drawerKeepMine": "เก็บข้อความลิ้นชัก",
             "drawerUseNote": "ใช้ข้อความของโน้ต",
-            "writeFailed": "ไม่สามารถเขียนไฟล์ตารางเวลา: {{message}}"
+            "writeFailed": "ไม่สามารถเขียนไฟล์ตารางเวลา: {{message}}",
+            "storyImageMenu": "รูปภาพการ์ด",
+            "storyImageSourcePortraitCard": "ภาพบุคคล: เลือกไว้สำหรับการ์ดนี้",
+            "storyImageSourcePortraitNote": "ภาพบุคคล: จากโน้ตของ {{name}}",
+            "storyImageSourcePortraitNamed": "ภาพบุคคล: รูปภาพชื่อ {{file}}",
+            "storyImageSourcePortraitNone": "ภาพบุคคล: ไม่พบสำหรับ {{name}}",
+            "storyImageSourcePlaceCard": "ภาพสถานที่: เลือกไว้สำหรับการ์ดนี้",
+            "storyImageSourcePlaceNote": "ภาพสถานที่: จากโน้ตของ {{name}}",
+            "storyImageSourcePlaceNamed": "ภาพสถานที่: รูปภาพชื่อ {{file}}",
+            "storyImageSourcePlaceNone": "ภาพสถานที่: ไม่พบสำหรับ {{name}}",
+            "noteDropAnchorHint": "สเก็ตช์จะอยู่ถัดจากฉากที่คุณเลือกทันที",
+            "existingReadFailed": "อ่านตารางเวลาที่มีอยู่ที่ {{path}} ไม่ได้",
         },
         "progressSection": {
             "pressCelebration1Title": "คุณเขียนหนังสือ",
@@ -7037,7 +7104,20 @@ export const th: DeepPartial<TranslationKeys> = {
             "inquiryProButtonsTitle": "Inquiry ปุ่ม Pro ปรับสไตล์ใหม่",
             "inquiryProButtonsDescription": "ใน Inquiry ดู คำถามที่สร้างโดยโปรถูกทำเครื่องหมายด้วยตัวเลขสีม่วงแดงแทนที่จะเป็นวงแหวนด้านใน วงกลมจุดเพียงอย่างเดียวมีสถานะการทำงาน (พร้อม เรียกใช้ ค้าง) ดังนั้นแต่ละปุ่มจึงอ่านได้ง่ายขึ้นในพริบตา เครื่องสำอางล้วนๆ — ไม่ต้องดำเนินการใดๆ",
             "templateHotfixTitle": "อัปเดตเทมเพลตและหน้าหนังสือ PDF",
-            "templateHotfixDescription": "เทมเพลตสไตล์ PDF แบบรวมและหน้าหนังสือ LaTeX แบบอินไลน์ได้รับการอัปเกรดเป็นรูปแบบล่าสุด ส่งออกอีกครั้งเพื่อใช้การจัดรูปแบบใหม่"
+            "templateHotfixDescription": "เทมเพลตสไตล์ PDF แบบรวมและหน้าหนังสือ LaTeX แบบอินไลน์ได้รับการอัปเกรดเป็นรูปแบบล่าสุด ส่งออกอีกครั้งเพื่อใช้การจัดรูปแบบใหม่",
+            "povToNarrationTitle": "ฟิลด์ฉาก POV เปลี่ยนเป็น Narration แล้ว",
+            "povToNarrationDescription": "ตอนนี้หนังสือแต่ละเล่มกำหนดมุมมองการเล่าของตัวเองในรายละเอียดหนังสือ และฉากที่เล่าต่างออกไปจะระบุไว้ในฟิลด์ Narration เมื่อใช้การอัปเดตนี้ POV จะถูกเปลี่ยนชื่อเป็น Narration ในทุกฉาก โดยคงค่าไว้ตรงตามที่คุณเขียน ค่าที่ไม่ใช่มุมมองการเล่า เช่น ชื่อตัวละคร ก็จะคงอยู่เช่นกัน และไทม์ไลน์จะใช้มุมมองการเล่าของหนังสือแทน ในฉากที่มีค่า Narration อยู่แล้ว บรรทัด POV ที่ว่างหรือระบุสิ่งเดียวกันจะถูกนำออก ส่วน POV ที่ระบุต่างออกไปจะคงอยู่ข้างกันเพื่อให้คุณตรวจสอบ ฉากใหม่จะได้ฟิลด์ Narration ว่างแทนตำแหน่งที่เคยมี POV จนกว่าคุณจะใช้การอัปเดต Radial Timeline จะยังคงอ่าน POV ต่อไป",
+            "povToNarrationTooltip": "เปลี่ยนชื่อฟิลด์ฉาก \"POV\" เป็น \"Narration\" โดยคงค่าไว้",
+            "povToNarrationReview": "POV คงอยู่ข้าง Narration ที่ต่างกันใน {{scenes}} เพื่อให้คุณตรวจสอบ:",
+            "povToNarrationConfirmSubtitle": "Radial Timeline เปลี่ยนชื่อเฉพาะบรรทัด POV ในฉากเหล่านี้และคงค่าไว้ คุณสมบัติ ความคิดเห็น และบรรทัดอื่นทั้งหมดจะคงอยู่ตามที่คุณเขียน",
+            "povToNarrationScope": "โน้ตฉากในทุกโฟลเดอร์หนังสือ",
+            "povToNarrationAction": "ใช้การอัปเดต",
+            "povToNarrationRenameLine": "{{scenes}}: เปลี่ยนชื่อ POV เป็น Narration โดยคงค่าไว้",
+            "povToNarrationDropLine": "{{scenes}}: ฉากมี Narration อยู่แล้ว จึงนำบรรทัด POV ที่ว่างหรือตรงกันออก ไม่มีข้อมูลสูญหาย",
+            "povToNarrationNothingLine": "ไม่มีฉากใดต้องเปลี่ยนแปลง",
+            "povToNarrationTemplateLine": "ฉากใหม่จะได้ฟิลด์ Narration ว่างแทนตำแหน่งที่เคยมี POV",
+            "povToNarrationFailedNotice": "POV → Narration หยุดแล้ว: เปลี่ยน {{scenes}} ไม่ได้ การอัปเดตจึงยังเปิดค้างอยู่ คอนโซลนักพัฒนาซอฟต์แวร์แสดงรายการไว้ ใช้การอัปเดตอีกครั้งเมื่อฉากเหล่านั้นเปิดได้ตามปกติ",
+            "povToNarrationDoneNotice": "POV เปลี่ยนเป็น Narration แล้ว: เปลี่ยนชื่อใน {{renamed}} และนำออกจาก {{removed}} ที่มี Narration อยู่แล้ว POV ยังคงอยู่ใน {{kept}} เพื่อให้คุณตรวจสอบใน การตั้งค่า → หลัก",
         },
         "releaseNotesModal": {
             "badge": "บันทึกประจำรุ่น",
@@ -7363,7 +7443,9 @@ export const th: DeepPartial<TranslationKeys> = {
             "guardBonusVaults": "ห้องนิรภัยโบนัส",
             "notificationsProcessed": "{{notifications}} ประมวลผลแล้ว",
             "jumpToAria": "ข้ามไปที่ {{section}}",
-            "sectionUnavailable": "{{label}}ไม่พร้อมใช้งาน"
+            "sectionUnavailable": "{{label}}ไม่พร้อมใช้งาน",
+            "guardPov": "การตั้งค่ามุมมองการเล่า",
+            "quickLinkPov": "มุมมองการเล่า",
         },
         "spendLabel": {
             "estimate": "โดยประมาณ {{cost}}",
@@ -7597,7 +7679,14 @@ export const th: DeepPartial<TranslationKeys> = {
             "recently": "เมื่อไม่นานนี้",
             "justNow": "เมื่อกี้",
             "minutesAgo": "{{minutes}} นาทีที่แล้ว",
-            "hoursAgo": "{{hours}} ชั่วโมงที่แล้ว"
+            "hoursAgo": "{{hours}} ชั่วโมงที่แล้ว",
+            "canvasAction": "Canvas",
+            "legendTimeReferenceDirection": "ย้อนหลังหรือล่วงหน้าในเวลา",
+            "legendTimeReferenceDirectionDetail": "หัวลูกศรชี้ไปตามไทม์ไลน์จากฉากไปยังวันที่",
+            "legendTimeReferenceBeyond": "ก่อนหรือหลังไทม์ไลน์",
+            "legendTimeReferenceBeyondDetail": "วันที่ที่อยู่นอกหนังสือ รวมไว้ที่จุดเริ่มต้น",
+            "legendTimeReferenceBoth": "ทั้งสองทาง",
+            "legendTimeReferenceBothDetail": "ช่วงเวลารอบเวลาของฉากเอง หรือวันที่ทั้งสองฝั่ง",
         },
         "timelineAuditAiService": {
             "noRunSummary": "การตรวจสอบไทม์ไลน์ AI เสร็จสิ้นโดยไม่มีการสรุปการทำงาน",
@@ -7898,7 +7987,10 @@ export const th: DeepPartial<TranslationKeys> = {
             "beforeLabel": "ก่อน:",
             "afterLabel": "หลัง:",
             "reorderButton": "สั่งใหม่",
-            "reorderedNotes": "จัดลำดับใหม่ {{notes}}"
+            "reorderedNotes": "จัดลำดับใหม่ {{notes}}",
+            "narrationWarningLabel": "ไม่รู้จักค่า Narration",
+            "narrationWarning": "{{label}}: \"{{value}}\" ไทม์ไลน์จะไม่ใช้ค่านี้และใช้มุมมองการเล่าของหนังสือสำหรับฉากนี้แทน Narration รับค่าโหมด เช่น first, third หรือ omni หรือจำนวน เช่น two เว้นว่างไว้เพื่อใช้ตามหนังสือ",
+            "narrationWarningReason": "Narration: {{value}}",
         },
         "yamlSafety": {
             "dataviewInlineQuery": "ไวยากรณ์คิวรีแบบอินไลน์ (`= …`)",
@@ -7944,5 +8036,9 @@ export const th: DeepPartial<TranslationKeys> = {
             "discardSubtitle": "การแก้ไขที่ยังไม่ได้บันทึกจะหายไป",
             "discardButton": "ทิ้ง"
         }
-    }
+    },
+    "sketchPlacement": {
+        "loadFailed": "อ่านตำแหน่งสเก็ตช์จาก Radial Timeline/Sketch Placement/placements.json ไม่ได้: {{detail}} สเก็ตช์จะแสดงที่ท้ายองก์ของตัวเอง และการจัดวางสเก็ตช์จะหยุดไว้ชั่วคราวจนกว่าจะอ่านไฟล์ได้อีกครั้ง",
+        "unsupportedFile": "ไฟล์ตำแหน่งสเก็ตช์ที่ไม่รองรับ",
+    },
 };

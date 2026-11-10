@@ -21,6 +21,42 @@ export const es: DeepPartial<TranslationKeys> = {
                 "name": "Carriles de personajes",
                 "desc": "En el modo Narrativa, muestra un carril bajo el anillo exterior para cada uno de los cuatro personajes que llevan el punto de vista en más escenas, según la lista `Character:` de cada escena. Una marca alta es una escena desde su punto de vista; una marca baja, una escena en la que aparece el personaje."
             },
+            "heading": "Narración",
+            "bookDefault": {
+                "name": "Narración del libro",
+                "desc": "Cada libro indica cómo se narra en sus detalles del libro. {{book}}: {{mode}}.",
+                "descNoBook": "Cada libro indica cómo se narra en sus detalles del libro, dentro de Libros.",
+                "button": "Abrir detalles del libro",
+            },
+            "yamlOverrides": {
+                "name": "Anulaciones por escena",
+                "desc": "Añada `Narration:` solo a una escena narrada de forma distinta a su libro: first, second, third, omni u objective. Cuando más de un personaje lleva una escena, una palabra numérica (two, four, count o all) marca esa cantidad de nombres al inicio de `Character:` con el marcador de narración del libro. El personaje de punto de vista (POV) es el nombre al inicio de `Character:`.",
+            },
+            "modes": {
+                "off": "Sin definir",
+                "first": "Primera persona",
+                "second": "Segunda persona",
+                "third": "Tercera persona",
+                "omni": "Omnisciente",
+                "objective": "Objetiva",
+            },
+            "preview": {
+                "heading": "EJEMPLOS DE NARRACIÓN",
+                "hide": "Ocultar ejemplos de narración",
+                "show": "Mostrar ejemplos de narración",
+                "examples": {
+                    "sceneFirst": "YAML de escena: Narration: first | Character: [Alice]",
+                    "sceneThird": "YAML de escena: Narration: third | Character: [Bob]",
+                    "sceneSecond": "YAML de escena: Narration: second | Character: [Alice, Bob]",
+                    "sceneOmni": "YAML de escena: Narration: omni | Character: [Alice, Bob]",
+                    "sceneObjective": "YAML de escena: Narration: objective | Character: [Alice, Bob]",
+                    "countTwoThird": "Narración del libro: third | YAML de escena: Narration: two | Character: [Alice, Bob]",
+                    "countThreeThird": "Narración del libro: third | YAML de escena: Narration: three | Character: [Alice, Bob, Charlie]",
+                    "countFourThird": "Narración del libro: third | YAML de escena: Narration: four | Character: [Alice, Bob, Charlie, Diana]",
+                    "countTwoFirstNumeric": "Narración del libro: first | YAML de escena: Narration: 2 | Character: [Alice, Bob]",
+                    "countAllFirst": "Narración del libro: first | YAML de escena: Narration: all | Character: [Alice, Bob, Charlie]",
+                },
+            },
         },
         "configuration": {
             "heading": "Configuración",
@@ -1202,7 +1238,8 @@ export const es: DeepPartial<TranslationKeys> = {
         "genericNamesToggleDescription": "Use si los nombres de sus subtramas podrían revelar la trama.",
         "destinationBody": "Guardado en {{path}} en su bóveda.",
         "cancelButton": "Cancelar",
-        "exportButton": "Exportar JSON"
+        "exportButton": "Exportar JSON",
+        "revealingBody": "Títulos de escena, sinopsis, personajes, narración y fechas de la historia — ocultos hasta que reveles cada escena.",
     },
     "common": {
         "cancel": "Cancelar",
@@ -2692,7 +2729,9 @@ export const es: DeepPartial<TranslationKeys> = {
             "date": "Ingrese las fechas de calendario válidas como texto.",
             "range": "El período debe terminar en o después de su inicio.",
             "passage": "El pasaje debe ser texto."
-        }
+        },
+        "dateCount": "{{count}} fechas",
+        "referenceCount": "{{count}} referencias",
     },
     "sceneTime": {
         "manual": {
@@ -3819,7 +3858,8 @@ export const es: DeepPartial<TranslationKeys> = {
             "ownColorsHeading": "Subtramas con color propio en {{book}}",
             "ownColorsDesc": "Cada subtrama de esta lista tomó su color de sus tarjetas del Canvas y lo conserva en todo Radial Timeline. Cambia un color aquí o restablécelo para que la subtrama use el color de su anillo en la paleta de arriba.",
             "ownColorAriaLabel": "Color de {{subplot}}",
-            "ownColorClear": "Usar el color del anillo de la paleta"
+            "ownColorClear": "Usar el color del anillo de la paleta",
+            "ownColorShared": "Mismo color que {{subplots}} en la línea de tiempo",
         },
         "commandRegistrar": {
             "archivedBeforeOverwrite": "Salida existente archivada antes de sobrescribir: {{path}}",
@@ -4125,7 +4165,9 @@ export const es: DeepPartial<TranslationKeys> = {
             "disconnectMessage": "Las actualizaciones se detendrán y se eliminará la clave de conexión guardada. Todo en su cuenta de la comunidad permanece como está. Reconectar requiere una Nueva clave de enlace de una sola vez.",
             "disconnectingButton": "Desconectando...",
             "disconnectedNotice": "Bóveda desconectada. Su cuenta de la comunidad no ha cambiado. Utilice una nueva clave de enlace de una sola vez para compartir nuevamente.",
-            "disconnectFailed": "No se pudo desconectar la parte comunitaria."
+            "disconnectFailed": "No se pudo desconectar la parte comunitaria.",
+            "timelineConfirmMessage": "Radial Timeline envía el orden de las escenas, los actos, las subtramas, el estado y la etapa de publicación. También envía títulos, sinopsis, reparto, narración y fechas de la historia, guardados de forma privada hasta que reveles una escena. Una línea de tiempo nueva llega privada, y una ya publicada sigue publicada. Tú eliges qué escenas ven los lectores.",
+            "timelineDetailPov": "Narración",
         },
         "conceptSearchService": {
             "consecutiveFailures": "Modelo local devuelto {{attempts}} Respuestas inutilizables en una fila: {{error}}",
@@ -4148,7 +4190,9 @@ export const es: DeepPartial<TranslationKeys> = {
             "recentMovesName": "Superposición de movimiento de arrastre reciente en modo narrativo",
             "recentMovesDesc": "Muestra los últimos movimientos de arrastre de escenas y beats confirmados en la línea de tiempo narrativa.",
             "chapterMarkersActive": "{{markers}} en el libro activo actual.",
-            "chapterMarkersNone": "Sin marcadores de capítulo activos."
+            "chapterMarkersNone": "Sin marcadores de capítulo activos.",
+            "sceneTimeCueBarName": "Mostrar la barra de notación de tiempo en las notas de escena",
+            "sceneTimeCueBarDesc": "En las notas de escena, una barra vertical junto al texto marca cada frase de tiempo, como \"una hora después\", en las vistas de edición y de lectura. Las demás notas nunca la muestran. Desactívela para ocultar la barra; el tiempo de la escena en la barra de título de la nota sigue visible.",
         },
         "confirmAudit": {
             "scopeLine": "Alcance: {{scope}}"
@@ -4230,7 +4274,9 @@ export const es: DeepPartial<TranslationKeys> = {
         },
         "date": {
             "midnight": "medianoche",
-            "noon": "mediodía"
+            "noon": "mediodía",
+            "eraBce": "a. e. c.",
+            "eraCe": "e. c.",
         },
         "demoLibraryModal": {
             "title": "explorar un libro terminado",
@@ -4754,7 +4800,12 @@ export const es: DeepPartial<TranslationKeys> = {
             "sourceFolderNotFoundNotice": "Carpeta de origen no encontrada: {{folder}}",
             "copyCreatedNotice": "Copia de libro creado: {{path}}",
             "copyFailedNotice": "Error de copia del libro: {{error}}",
-            "copyFailedRetainedNotice": "Error de copia del libro: {{error}} Inspeccionar {{path}} antes de volver a intentarlo; Los archivos copiados se conservan."
+            "copyFailedRetainedNotice": "Error de copia del libro: {{error}} Inspeccionar {{path}} antes de volver a intentarlo; Los archivos copiados se conservan.",
+            "metadataTitle": "Detalles del libro",
+            "metadataSubtitle": "Cómo se narra este libro, además de metadatos opcionales para estadísticas, cohortes y uso compartido público.",
+            "narrationName": "Narración",
+            "narrationDesc": "Cómo se narra este libro y cómo sus sinopsis marcan el reparto: la primera y la tercera persona marcan al primer personaje listado con ¹ o ³, la segunda persona añade You², la omnisciente añade Omni³ y la objetiva añade Narrator°. Sin definir marca al primer personaje listado con ¹. Una escena narrada de otra forma lo indica en su campo Narration.",
+            "metadataTooltip": "Editar narración, género, etapa del proyecto, etiqueta pública y descripción.",
         },
         "generateCandidates": {
             "midway": "A mitad de camino entre las dos escenas",
@@ -4998,7 +5049,8 @@ export const es: DeepPartial<TranslationKeys> = {
             "classCharacter": "Carácter",
             "classScene": "Escena",
             "classOutline": "Esquema",
-            "classFallback": "Clase"
+            "classFallback": "Clase",
+            "storyVaultScenes": "Las escenas de la bóveda de demostración usan valores predeterminados propios del libro; su configuración de Inquiry no cambia",
         },
         "inquiryCorpusStripRenderer": {
             "corpusTitle": "Cuerpo",
@@ -6146,6 +6198,10 @@ export const es: DeepPartial<TranslationKeys> = {
             keyCardViewDetail: "En la barra de título: vista previa, título o nota completa.",
             keyHover: "Mayús y pasar el cursor",
             keyHoverDetail: "Mantén Mayús sobre una escena de la línea de tiempo para iluminar aquí sus tarjetas.",
+            "menuCardContent": "Contenido de la tarjeta",
+            "menuTimeline": "Línea de tiempo",
+            "cardMemoryNotSaved": "Las escenas se crearon y vincularon, pero Radial Timeline no pudo guardar qué tarjetas del Canvas se convirtieron en escenas. {{message}}",
+            "keyConvertDetail": "Selecciona las tarjetas que quieras y luego haz clic en el botón de convertir de la barra de título. Las tarjetas que dejes fuera se quedan en el Canvas.",
         },
         "promoteToScene": {
             "menuItem": "Promover a la escena",
@@ -6608,7 +6664,18 @@ export const es: DeepPartial<TranslationKeys> = {
             "drawerConflict": "Esta nota cambió en otro lugar mientras estabas escribiendo aquí. No se ha sobrescrito nada.",
             "drawerKeepMine": "Mantenga el texto del cajón",
             "drawerUseNote": "Usa el texto de la nota",
-            "writeFailed": "No se pudo escribir el archivo de horario: {{message}}"
+            "writeFailed": "No se pudo escribir el archivo de horario: {{message}}",
+            "storyImageMenu": "Imágenes de tarjeta",
+            "storyImageSourcePortraitCard": "Retrato: elegido para esta tarjeta",
+            "storyImageSourcePortraitNote": "Retrato: de la nota de {{name}}",
+            "storyImageSourcePortraitNamed": "Retrato: imagen llamada {{file}}",
+            "storyImageSourcePortraitNone": "Retrato: no se encontró ninguno para {{name}}",
+            "storyImageSourcePlaceCard": "Lugar: elegido para esta tarjeta",
+            "storyImageSourcePlaceNote": "Lugar: de la nota de {{name}}",
+            "storyImageSourcePlaceNamed": "Lugar: imagen llamada {{file}}",
+            "storyImageSourcePlaceNone": "Lugar: no se encontró ninguno para {{name}}",
+            "noteDropAnchorHint": "El boceto se coloca justo después de la escena que elijas.",
+            "existingReadFailed": "No se pudo leer el horario existente en {{path}}.",
         },
         "progressSection": {
             "pressCelebration1Title": "Escribiste un libro.",
@@ -7037,7 +7104,20 @@ export const es: DeepPartial<TranslationKeys> = {
             "inquiryProButtonsTitle": "Inquiry Botones Pro rediseñados",
             "inquiryProButtonsDescription": "EN EL Inquiry Ver, las preguntas progeneradas ahora están marcadas por un número magenta en lugar de un anillo interior. El círculo de puntos solo lleva el estado de ejecución (Listo, Ejecutar, rancio), por lo que cada botón es más fácil de leer de un vistazo. Puramente cosmético: no requiere acción.",
             "templateHotfixTitle": "PDF Plantillas y ejemplos de páginas de libros actualizados",
-            "templateHotfixDescription": "Las plantillas de estilo PDF y las plantillas de estilo en línea LaTeX se actualizaron al último formato. Vuelva a exportar para aplicar el nuevo formato."
+            "templateHotfixDescription": "Las plantillas de estilo PDF y las plantillas de estilo en línea LaTeX se actualizaron al último formato. Vuelva a exportar para aplicar el nuevo formato.",
+            "povToNarrationTitle": "El campo de escena POV ahora es Narration",
+            "povToNarrationDescription": "Ahora cada libro define su propia narración en sus detalles del libro, y una escena narrada de otra forma lo indica en un campo Narration. Al aplicar esta actualización, POV pasa a llamarse Narration en todas las escenas y su valor se conserva exactamente como lo escribió. Un valor que no es una narración, como el nombre de un personaje, también se conserva, y la línea de tiempo sigue entonces la narración del libro. Si una escena ya tiene un valor de Narration, se elimina la línea POV que está vacía o dice lo mismo, y un POV que dice otra cosa se mantiene junto a Narration para que lo revise. Las escenas nuevas reciben un campo Narration vacío donde tenían POV. Hasta que la aplique, Radial Timeline sigue leyendo POV.",
+            "povToNarrationTooltip": "Renombra el campo de escena \"POV\" a \"Narration\" y conserva su valor.",
+            "povToNarrationReview": "En {{scenes}}, POV se mantiene junto a un valor distinto de Narration para que lo revise:",
+            "povToNarrationConfirmSubtitle": "Radial Timeline solo renombra la línea POV en estas escenas y conserva su valor. Todas las demás propiedades, comentarios y líneas quedan como las escribió.",
+            "povToNarrationScope": "Notas de escena en todas las carpetas de libros",
+            "povToNarrationAction": "Aplicar actualización",
+            "povToNarrationRenameLine": "{{scenes}}: POV pasa a llamarse Narration y se conserva su valor.",
+            "povToNarrationDropLine": "{{scenes}}: la escena ya tiene Narration, así que se elimina su línea POV vacía o coincidente. No se pierde nada.",
+            "povToNarrationNothingLine": "Ninguna escena necesita cambios.",
+            "povToNarrationTemplateLine": "Las escenas nuevas reciben un campo Narration vacío donde tenían POV.",
+            "povToNarrationFailedNotice": "POV → Narration se detuvo: no se pudieron cambiar {{scenes}}, así que la actualización sigue pendiente. La consola de desarrollador las enumera. Vuelva a aplicarla cuando se abran con normalidad.",
+            "povToNarrationDoneNotice": "POV ahora es Narration: renombrado en {{renamed}} y eliminado de {{removed}} donde ya existía Narration. POV se mantiene en {{kept}} para que lo revise en Configuración → Núcleo.",
         },
         "releaseNotesModal": {
             "badge": "Notas de la versión",
@@ -7363,7 +7443,9 @@ export const es: DeepPartial<TranslationKeys> = {
             "guardBonusVaults": "Bóvedas de bonificación",
             "notificationsProcessed": "{{notifications}} procesado",
             "jumpToAria": "Saltar a {{section}}",
-            "sectionUnavailable": "{{label}} No disponible"
+            "sectionUnavailable": "{{label}} No disponible",
+            "guardPov": "Configuración de narración",
+            "quickLinkPov": "Narración",
         },
         "spendLabel": {
             "estimate": "est. {{cost}}",
@@ -7597,7 +7679,14 @@ export const es: DeepPartial<TranslationKeys> = {
             "recently": "Recientemente",
             "justNow": "Justo ahora",
             "minutesAgo": "hace {{minutes}} min",
-            "hoursAgo": "hace {{hours}} h"
+            "hoursAgo": "hace {{hours}} h",
+            "canvasAction": "Canvas",
+            "legendTimeReferenceDirection": "Hacia atrás o adelante en el tiempo",
+            "legendTimeReferenceDirectionDetail": "la punta de flecha señala a lo largo de la línea de tiempo desde la escena hasta la fecha",
+            "legendTimeReferenceBeyond": "Antes o después de la línea de tiempo",
+            "legendTimeReferenceBeyondDetail": "fechas fuera del libro, agrupadas al principio",
+            "legendTimeReferenceBoth": "En ambos sentidos",
+            "legendTimeReferenceBothDetail": "un intervalo alrededor del tiempo propio de la escena, o fechas a ambos lados",
         },
         "timelineAuditAiService": {
             "noRunSummary": "La IA de auditoría de la línea de tiempo completada sin un resumen de ejecución.",
@@ -7898,7 +7987,10 @@ export const es: DeepPartial<TranslationKeys> = {
             "beforeLabel": "Antes:",
             "afterLabel": "después:",
             "reorderButton": "reordenar",
-            "reorderedNotes": "Reordenado {{notes}}"
+            "reorderedNotes": "Reordenado {{notes}}",
+            "narrationWarningLabel": "Narración no reconocida",
+            "narrationWarning": "{{label}}: \"{{value}}\". La línea de tiempo ignora este valor y usa la narración del libro para esta escena. Narration admite un modo como first, third u omni, o un recuento como two; déjelo vacío para seguir el libro.",
+            "narrationWarningReason": "Narration: {{value}}",
         },
         "yamlSafety": {
             "dataviewInlineQuery": "Sintaxis de consulta en línea (`= …`)",
@@ -7944,5 +8036,9 @@ export const es: DeepPartial<TranslationKeys> = {
             "discardSubtitle": "Se perderán ediciones no guardadas.",
             "discardButton": "Descarte"
         }
-    }
+    },
+    "sketchPlacement": {
+        "loadFailed": "No se pudieron leer las posiciones de los bocetos de Radial Timeline/Sketch Placement/placements.json: {{detail}}. Los bocetos se muestran al final de su acto y su colocación queda en pausa hasta que el archivo se pueda leer de nuevo.",
+        "unsupportedFile": "Archivo de colocación de bocetos no compatible",
+    },
 };

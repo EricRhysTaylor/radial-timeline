@@ -21,6 +21,42 @@ export const vi: DeepPartial<TranslationKeys> = {
                 "name": "Làn nhân vật",
                 "desc": "Trong chế độ Kịch bản, hiển thị một làn dưới vòng ngoài cho mỗi nhân vật trong bốn nhân vật giữ góc nhìn ở nhiều cảnh nhất, đọc từ danh sách `Character:` của từng cảnh. Dấu cao là cảnh theo góc nhìn của nhân vật; dấu thấp là cảnh có nhân vật xuất hiện."
             },
+            "heading": "Ngôi kể",
+            "bookDefault": {
+                "name": "Ngôi kể của sách",
+                "desc": "Mỗi cuốn sách đặt ngôi kể của mình trong chi tiết sách. {{book}}: {{mode}}.",
+                "descNoBook": "Mỗi cuốn sách đặt ngôi kể của mình trong chi tiết sách, tại mục Sách.",
+                "button": "Mở chi tiết sách",
+            },
+            "yamlOverrides": {
+                "name": "Ghi đè theo cảnh",
+                "desc": "Chỉ thêm `Narration:` vào cảnh được kể khác với cuốn sách của nó: first, second, third, omni hoặc objective. Khi một cảnh do nhiều nhân vật cùng dẫn dắt, một từ chỉ số lượng (two, four, count hoặc all) đánh dấu chừng ấy tên ở đầu `Character:` bằng dấu ngôi kể của sách. Nhân vật POV là tên đứng đầu `Character:`.",
+            },
+            "modes": {
+                "off": "Chưa đặt",
+                "first": "Ngôi thứ nhất",
+                "second": "Ngôi thứ hai",
+                "third": "Ngôi thứ ba",
+                "omni": "Toàn tri",
+                "objective": "Khách quan",
+            },
+            "preview": {
+                "heading": "VÍ DỤ NGÔI KỂ",
+                "hide": "Ẩn ví dụ ngôi kể",
+                "show": "Hiện ví dụ ngôi kể",
+                "examples": {
+                    "sceneFirst": "YAML cảnh: Narration: first | Character: [Alice]",
+                    "sceneThird": "YAML cảnh: Narration: third | Character: [Bob]",
+                    "sceneSecond": "YAML cảnh: Narration: second | Character: [Alice, Bob]",
+                    "sceneOmni": "YAML cảnh: Narration: omni | Character: [Alice, Bob]",
+                    "sceneObjective": "YAML cảnh: Narration: objective | Character: [Alice, Bob]",
+                    "countTwoThird": "Ngôi kể của sách: third | YAML cảnh: Narration: two | Character: [Alice, Bob]",
+                    "countThreeThird": "Ngôi kể của sách: third | YAML cảnh: Narration: three | Character: [Alice, Bob, Charlie]",
+                    "countFourThird": "Ngôi kể của sách: third | YAML cảnh: Narration: four | Character: [Alice, Bob, Charlie, Diana]",
+                    "countTwoFirstNumeric": "Ngôi kể của sách: first | YAML cảnh: Narration: 2 | Character: [Alice, Bob]",
+                    "countAllFirst": "Ngôi kể của sách: first | YAML cảnh: Narration: all | Character: [Alice, Bob, Charlie]",
+                },
+            },
         },
         "configuration": {
             "heading": "Cấu hình",
@@ -1202,7 +1238,8 @@ export const vi: DeepPartial<TranslationKeys> = {
         "genericNamesToggleDescription": "Dùng khi tên các cốt truyện phụ có thể tiết lộ cốt truyện.",
         "destinationBody": "Đã lưu vào {{path}} trong kho của bạn.",
         "cancelButton": "Hủy",
-        "exportButton": "Xuất JSON"
+        "exportButton": "Xuất JSON",
+        "revealingBody": "Tiêu đề cảnh, tóm tắt, nhân vật, ngôi kể và ngày trong truyện — được ẩn cho đến khi bạn tiết lộ từng cảnh.",
     },
     "common": {
         "cancel": "Hủy",
@@ -2692,7 +2729,9 @@ export const vi: DeepPartial<TranslationKeys> = {
             "date": "Nhập ngày lịch hợp lệ dưới dạng văn bản.",
             "range": "Khoảng thời gian phải kết thúc vào hoặc sau khi bắt đầu.",
             "passage": "Đoạn văn phải là văn bản."
-        }
+        },
+        "dateCount": "{{count}} mốc thời gian",
+        "referenceCount": "{{count}} tham chiếu",
     },
     "sceneTime": {
         "manual": {
@@ -3819,7 +3858,8 @@ export const vi: DeepPartial<TranslationKeys> = {
             "ownColorsHeading": "Cốt truyện phụ có màu riêng trong {{book}}",
             "ownColorsDesc": "Mỗi cốt truyện phụ ở đây lấy màu từ các thẻ Canvas của nó và giữ màu đó ở mọi nơi Radial Timeline hiển thị. Đổi màu tại đây, hoặc đặt lại để cốt truyện phụ dùng màu vòng trong bảng màu bên trên.",
             "ownColorAriaLabel": "Màu của {{subplot}}",
-            "ownColorClear": "Dùng màu vòng trong bảng màu"
+            "ownColorClear": "Dùng màu vòng trong bảng màu",
+            "ownColorShared": "Cùng màu với {{subplots}} trên dòng thời gian",
         },
         "commandRegistrar": {
             "archivedBeforeOverwrite": "Đã lưu trữ đầu ra hiện có trước khi ghi đè: {{path}}",
@@ -4125,7 +4165,9 @@ export const vi: DeepPartial<TranslationKeys> = {
             "disconnectMessage": "Các bản cập nhật sẽ dừng và khóa kết nối đã lưu sẽ bị xóa. Mọi thứ trên tài khoản cộng đồng của bạn vẫn như hiện tại. kết nối lại yêu cầu a Khóa liên kết một lần mới.",
             "disconnectingButton": "Ngắt kết nối ...",
             "disconnectedNotice": "Kho bị ngắt kết nối. Tài khoản cộng đồng của bạn không thay đổi. Sử dụng khóa liên kết một lần mới để chia sẻ lại.",
-            "disconnectFailed": "Không thể ngắt kết nối chia sẻ cộng đồng."
+            "disconnectFailed": "Không thể ngắt kết nối chia sẻ cộng đồng.",
+            "timelineConfirmMessage": "Radial Timeline gửi thứ tự cảnh, hồi, cốt truyện phụ, trạng thái và giai đoạn xuất bản. Radial Timeline cũng gửi tiêu đề, tóm tắt, nhân vật, ngôi kể và ngày trong truyện, được lưu riêng tư cho đến khi bạn tiết lộ một cảnh. Dòng thời gian mới được gửi ở chế độ riêng tư, còn dòng thời gian đã công khai vẫn công khai. Bạn chọn những cảnh độc giả được xem.",
+            "timelineDetailPov": "Ngôi kể",
         },
         "conceptSearchService": {
             "consecutiveFailures": "Mô hình cục bộ trả về {{attempts}} trả lời không sử dụng được liên tiếp: {{error}}",
@@ -4148,7 +4190,9 @@ export const vi: DeepPartial<TranslationKeys> = {
             "recentMovesName": "Lớp phủ di chuyển kéo gần đây ở chế độ tường thuật",
             "recentMovesDesc": "Hiển thị các thao tác kéo cảnh và nhịp đã xác nhận gần nhất trên dòng thời gian tường thuật.",
             "chapterMarkersActive": "{{markers}} Trong cuốn sách đang hoạt động hiện tại.",
-            "chapterMarkersNone": "Không có điểm đánh dấu chương hoạt động."
+            "chapterMarkersNone": "Không có điểm đánh dấu chương hoạt động.",
+            "sceneTimeCueBarName": "Hiện thanh đánh dấu thời gian trong ghi chú cảnh",
+            "sceneTimeCueBarDesc": "Trong ghi chú cảnh, một thanh dọc bên cạnh văn bản đánh dấu từng cụm từ chỉ thời gian, chẳng hạn \"an hour later\", ở chế độ chỉnh sửa và chế độ Đọc. Các ghi chú khác không bao giờ hiển thị thanh này. Tắt để ẩn thanh; thời gian của cảnh trên thanh tiêu đề ghi chú vẫn hiển thị.",
         },
         "confirmAudit": {
             "scopeLine": "Phạm vi: {{scope}}"
@@ -4230,7 +4274,9 @@ export const vi: DeepPartial<TranslationKeys> = {
         },
         "date": {
             "midnight": "nữa đêm",
-            "noon": "buổi trưa"
+            "noon": "buổi trưa",
+            "eraBce": "TCN",
+            "eraCe": "CN",
         },
         "demoLibraryModal": {
             "title": "Khám phá một cuốn sách đã hoàn thành",
@@ -4754,7 +4800,12 @@ export const vi: DeepPartial<TranslationKeys> = {
             "sourceFolderNotFoundNotice": "Không tìm thấy thư mục nguồn: {{folder}}",
             "copyCreatedNotice": "Bản sao sách được tạo: {{path}}",
             "copyFailedNotice": "Sao chép sách không thành công: {{error}}",
-            "copyFailedRetainedNotice": "Sao chép sách không thành công: {{error}} kiểm tra {{path}} trước khi thử lại; các tệp đã sao chép được giữ lại."
+            "copyFailedRetainedNotice": "Sao chép sách không thành công: {{error}} kiểm tra {{path}} trước khi thử lại; các tệp đã sao chép được giữ lại.",
+            "metadataTitle": "Chi tiết sách",
+            "metadataSubtitle": "Cách cuốn sách này được kể, cùng siêu dữ liệu tùy chọn cho thống kê, nhóm tác giả và chia sẻ công khai.",
+            "narrationName": "Ngôi kể",
+            "narrationDesc": "Cách cuốn sách này được kể, và cách phần tóm tắt đánh dấu nhân vật: ngôi thứ nhất và ngôi thứ ba đánh dấu nhân vật được liệt kê đầu tiên bằng ¹ hoặc ³, ngôi thứ hai thêm You², toàn tri thêm Omni³, và khách quan thêm Narrator°. Chưa đặt sẽ đánh dấu nhân vật được liệt kê đầu tiên bằng ¹. Cảnh nào được kể khác sẽ ghi rõ trong trường Narration của cảnh đó.",
+            "metadataTooltip": "Sửa ngôi kể, thể loại, giai đoạn dự án, nhãn công khai và mô tả.",
         },
         "generateCandidates": {
             "midway": "Giữa hai cảnh",
@@ -4998,7 +5049,8 @@ export const vi: DeepPartial<TranslationKeys> = {
             "classCharacter": "Tính cách",
             "classScene": "Cảnh",
             "classOutline": "Dàn ý",
-            "classFallback": "Lớp"
+            "classFallback": "Lớp",
+            "storyVaultScenes": "Cảnh trong Kho demo dùng mặc định riêng của từng sách; cài đặt Inquiry của bạn không thay đổi",
         },
         "inquiryCorpusStripRenderer": {
             "corpusTitle": "Corpus",
@@ -6146,6 +6198,10 @@ export const vi: DeepPartial<TranslationKeys> = {
             keyCardViewDetail: "Trên thanh tiêu đề: xem trước, tiêu đề hoặc toàn bộ ghi chú.",
             keyHover: "Shift-di chuột",
             keyHoverDetail: "Giữ Shift trên một cảnh ở dòng thời gian để làm sáng các thẻ của cảnh đó tại đây.",
+            "menuCardContent": "Nội dung thẻ",
+            "menuTimeline": "Dòng thời gian",
+            "cardMemoryNotSaved": "Các cảnh đã được tạo và liên kết, nhưng Radial Timeline không lưu được những thẻ Canvas nào đã trở thành cảnh. {{message}}",
+            "keyConvertDetail": "Chọn các thẻ bạn muốn, rồi nhấp nút chuyển đổi trên thanh tiêu đề. Các thẻ bạn không chọn vẫn ở trên Canvas.",
         },
         "promoteToScene": {
             "menuItem": "Quảng cáo cho cảnh",
@@ -6608,7 +6664,18 @@ export const vi: DeepPartial<TranslationKeys> = {
             "drawerConflict": "Ghi chú này đã thay đổi ở một nơi khác khi bạn đang gõ ở đây. Không có gì đã được ghi đè.",
             "drawerKeepMine": "Giữ văn bản ngăn kéo",
             "drawerUseNote": "Sử dụng văn bản của ghi chú",
-            "writeFailed": "Không thể viết tệp thời gian biểu: {{message}}"
+            "writeFailed": "Không thể viết tệp thời gian biểu: {{message}}",
+            "storyImageMenu": "Hình ảnh thẻ",
+            "storyImageSourcePortraitCard": "Ảnh nhân vật: đã chọn cho thẻ này",
+            "storyImageSourcePortraitNote": "Ảnh nhân vật: từ ghi chú của {{name}}",
+            "storyImageSourcePortraitNamed": "Ảnh nhân vật: ảnh có tên {{file}}",
+            "storyImageSourcePortraitNone": "Ảnh nhân vật: không tìm thấy ảnh nào cho {{name}}",
+            "storyImageSourcePlaceCard": "Địa điểm: đã chọn cho thẻ này",
+            "storyImageSourcePlaceNote": "Địa điểm: từ ghi chú của {{name}}",
+            "storyImageSourcePlaceNamed": "Địa điểm: ảnh có tên {{file}}",
+            "storyImageSourcePlaceNone": "Địa điểm: không tìm thấy ảnh nào cho {{name}}",
+            "noteDropAnchorHint": "Bản phác thảo sẽ nằm ngay sau cảnh bạn chọn.",
+            "existingReadFailed": "Không thể đọc tệp thời gian biểu hiện có tại {{path}}.",
         },
         "progressSection": {
             "pressCelebration1Title": "Bạn đã viết một cuốn sách.",
@@ -7037,7 +7104,20 @@ export const vi: DeepPartial<TranslationKeys> = {
             "inquiryProButtonsTitle": "Inquiry Các nút Pro được thay đổi",
             "inquiryProButtonsDescription": "trong Inquiry Xem, các câu hỏi được tạo ra bây giờ được đánh dấu bằng một số màu đỏ tươi thay vì một vòng bên trong. Vòng tròn chấm chỉ mang trạng thái chạy (sẵn sàng, Chạy, cũ), vì vậy mỗi nút dễ đọc hơn trong nháy mắt. Hoàn toàn là mỹ phẩm - không cần hành động.",
             "templateHotfixTitle": "PDF Các mẫu và trang sách được cập nhật",
-            "templateHotfixDescription": "Các mẫu kiểu PDF đi kèm và các trang sách LaTeX nội tuyến đã được nâng cấp lên định dạng mới nhất. Tái xuất để áp dụng định dạng mới."
+            "templateHotfixDescription": "Các mẫu kiểu PDF đi kèm và các trang sách LaTeX nội tuyến đã được nâng cấp lên định dạng mới nhất. Tái xuất để áp dụng định dạng mới.",
+            "povToNarrationTitle": "Trường cảnh POV nay là Narration",
+            "povToNarrationDescription": "Giờ đây mỗi cuốn sách tự đặt ngôi kể trong chi tiết sách, còn cảnh nào được kể khác thì ghi rõ trong trường Narration. Áp dụng bản cập nhật này sẽ đổi tên POV thành Narration trong mọi cảnh và giữ nguyên giá trị đúng như bạn đã viết. Giá trị không phải là ngôi kể, chẳng hạn tên một nhân vật, cũng được giữ lại, và khi đó dòng thời gian theo ngôi kể của sách. Ở cảnh đã có giá trị Narration, dòng POV trống hoặc ghi cùng nội dung sẽ bị bỏ, còn POV ghi nội dung khác được giữ bên cạnh để bạn xem lại. Cảnh mới sẽ có trường Narration trống thay cho POV. Cho đến khi bạn áp dụng, Radial Timeline vẫn tiếp tục đọc POV.",
+            "povToNarrationTooltip": "Đổi tên trường cảnh \"POV\" thành \"Narration\", giữ nguyên giá trị.",
+            "povToNarrationReview": "POV được giữ bên cạnh một Narration khác trong {{scenes}} để bạn xem lại:",
+            "povToNarrationConfirmSubtitle": "Radial Timeline chỉ đổi tên dòng POV trong các cảnh này và giữ nguyên giá trị của nó. Mọi thuộc tính, chú thích và dòng khác vẫn giữ như bạn đã viết.",
+            "povToNarrationScope": "Ghi chú cảnh trong mọi thư mục sách",
+            "povToNarrationAction": "Áp dụng cập nhật",
+            "povToNarrationRenameLine": "{{scenes}}: POV được đổi tên thành Narration, giữ nguyên giá trị.",
+            "povToNarrationDropLine": "{{scenes}}: cảnh đã có Narration, nên dòng POV trống hoặc trùng khớp bị bỏ. Không mất gì cả.",
+            "povToNarrationNothingLine": "Không có cảnh nào cần thay đổi.",
+            "povToNarrationTemplateLine": "Cảnh mới sẽ có trường Narration trống thay cho POV.",
+            "povToNarrationFailedNotice": "POV → Narration đã dừng: không thể thay đổi {{scenes}}, nên bản cập nhật vẫn còn mở. Bảng điều khiển dành cho nhà phát triển liệt kê các cảnh đó. Hãy áp dụng lại khi chúng mở được bình thường.",
+            "povToNarrationDoneNotice": "POV nay là Narration: đã đổi tên trong {{renamed}}, và đã bỏ khỏi {{removed}} vốn đã có Narration. POV vẫn còn trong {{kept}} để bạn xem lại trong Cài đặt → Core.",
         },
         "releaseNotesModal": {
             "badge": "Ghi chú phát hành",
@@ -7363,7 +7443,9 @@ export const vi: DeepPartial<TranslationKeys> = {
             "guardBonusVaults": "Kho thưởng",
             "notificationsProcessed": "{{notifications}} đã xử lý",
             "jumpToAria": "Chuyển đến {{section}}",
-            "sectionUnavailable": "{{label}} không khả dụng"
+            "sectionUnavailable": "{{label}} không khả dụng",
+            "guardPov": "Cài đặt ngôi kể",
+            "quickLinkPov": "Ngôi kể",
         },
         "spendLabel": {
             "estimate": "EST. {{cost}}",
@@ -7597,7 +7679,14 @@ export const vi: DeepPartial<TranslationKeys> = {
             "recently": "Mới đây",
             "justNow": "Vừa mới đây",
             "minutesAgo": "{{minutes}} phút trước",
-            "hoursAgo": "{{hours}} giờ trước"
+            "hoursAgo": "{{hours}} giờ trước",
+            "canvasAction": "Canvas",
+            "legendTimeReferenceDirection": "Lùi hoặc tiến trong thời gian",
+            "legendTimeReferenceDirectionDetail": "đầu mũi tên chỉ dọc theo dòng thời gian, từ cảnh đến ngày đó",
+            "legendTimeReferenceBeyond": "Trước hoặc sau dòng thời gian",
+            "legendTimeReferenceBeyondDetail": "các ngày nằm ngoài cuốn sách, gom lại ở điểm bắt đầu",
+            "legendTimeReferenceBoth": "Cả hai chiều",
+            "legendTimeReferenceBothDetail": "một khoảng bao quanh thời điểm của chính cảnh, hoặc các ngày ở cả hai phía",
         },
         "timelineAuditAiService": {
             "noRunSummary": "AI Kiểm tra Dòng thời gian đã hoàn thành mà không có bản tóm tắt chạy.",
@@ -7898,7 +7987,10 @@ export const vi: DeepPartial<TranslationKeys> = {
             "beforeLabel": "trước:",
             "afterLabel": "sau:",
             "reorderButton": "Sắp xếp lại",
-            "reorderedNotes": "{{notes}} được sắp xếp lại"
+            "reorderedNotes": "{{notes}} được sắp xếp lại",
+            "narrationWarningLabel": "Không nhận ra ngôi kể",
+            "narrationWarning": "{{label}}: \"{{value}}\". Dòng thời gian bỏ qua giá trị này và dùng ngôi kể của sách cho cảnh này. Narration nhận một chế độ như first, third hoặc omni, hoặc một số lượng như two; để trống để theo cuốn sách.",
+            "narrationWarningReason": "Narration: {{value}}",
         },
         "yamlSafety": {
             "dataviewInlineQuery": "Cú pháp truy vấn nội tuyến (`= …`)",
@@ -7944,5 +8036,9 @@ export const vi: DeepPartial<TranslationKeys> = {
             "discardSubtitle": "Các chỉnh sửa chưa được lưu sẽ bị mất.",
             "discardButton": "loại bỏ"
         }
-    }
+    },
+    "sketchPlacement": {
+        "loadFailed": "Không thể đọc vị trí bản phác thảo từ Radial Timeline/Sketch Placement/placements.json: {{detail}}. Các bản phác thảo hiển thị ở cuối hồi của chúng, và việc sắp đặt bản phác thảo tạm dừng cho đến khi đọc lại được tệp.",
+        "unsupportedFile": "Tệp vị trí bản phác thảo không được hỗ trợ",
+    },
 };

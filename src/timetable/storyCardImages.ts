@@ -11,14 +11,14 @@ import { validPanelFocus, type PanelFocus } from './panelFocus';
  * both views). Kept once in plugin settings; each image's crop focus is kept once too, by image path, so both views
  * crop an image alike. A Timetable view's older copies of these settings are adopted once (adoptViewImageSettings).
  */
-export type StoryImageCombination = 'character' | 'place' | 'combined' | 'layered' | 'artwork' | 'none';
+export type StoryImageCombination = 'character' | 'place' | 'combined' | 'layered' | 'none';
 export type PlaceTextBacking = 'subtle' | 'balanced' | 'strong';
 export type StoryImageFit = 'fill' | 'fit';
 export type PortraitShape = 'square' | 'landscape';
 export type StoryImageStrategy = NonNullable<RadialTimelineSettings['storyImageStrategy']>;
 export interface StoryCardImages { combination: StoryImageCombination; backing: PlaceTextBacking; fit: StoryImageFit; portraitShape: PortraitShape }
 
-const COMBINATIONS: readonly StoryImageCombination[] = ['character', 'place', 'combined', 'layered', 'artwork', 'none'];
+const COMBINATIONS: readonly StoryImageCombination[] = ['character', 'place', 'combined', 'layered', 'none'];
 const BACKINGS: readonly PlaceTextBacking[] = ['subtle', 'balanced', 'strong'];
 const FITS: readonly StoryImageFit[] = ['fill', 'fit'];
 const SHAPES: readonly PortraitShape[] = ['square', 'landscape'];
@@ -143,7 +143,7 @@ export function addStoryCardImageMenu(menu: Menu, plugin: RadialTimelinePlugin):
 
 export const combinationChoices = (): Array<[StoryImageCombination, string]> => [
     ['character', t('ui.timetable.panelImageCharacter')], ['place', t('ui.timetable.panelImagePlace')], ['combined', t('ui.timetable.panelImageCombined')],
-    ['layered', t('ui.timetable.panelImageLayered')], ['artwork', t('ui.timetable.panelImageArtwork')], ['none', t('ui.timetable.panelImageNone')],
+    ['layered', t('ui.timetable.panelImageLayered')], ['none', t('ui.timetable.panelImageNone')],
 ];
 export const backingChoices = (): Array<[PlaceTextBacking, string]> => [
     ['subtle', t('ui.timetable.placeTextSubtle')], ['balanced', t('ui.timetable.placeTextBalanced')], ['strong', t('ui.timetable.placeTextStrong')],
@@ -160,7 +160,6 @@ export interface CardImage { url: string; path?: string }
 export interface CardImageSources {
     character: CardImage | null;
     place: CardImage | null;
-    artwork: CardImage | null;
     /** The scene names characters, so a missing portrait still gets its placeholder. */
     hasCharacters: boolean;
     /** The card image was chosen on the card ("Choose card image…"). */
@@ -180,15 +179,14 @@ export interface CardImages {
 
 /**
  * Which images a card shows, one rule for Panels and Canvas. A scene shows its combination; a sketch shows an image
- * only when one is given for it: a place chosen for it (the caller passes no place otherwise) or a card image chosen
- * on it. Place + character shows the place and the character side by side; with only one of them, that one, and with
- * neither, the scene artwork.
+ * only when one is given for it: a place chosen for it (the caller passes no place otherwise) or a portrait chosen on
+ * it. Place + character shows the place and the character side by side, and with only one of them, that one.
  */
 export function cardImages(combination: StoryImageCombination, kind: 'scene' | 'sketch', sources: CardImageSources): CardImages {
-    const { character, place, artwork, hasCharacters, chosen } = sources;
+    const { character, place, hasCharacters, chosen } = sources;
     const none: CardImages = { cover: null, companion: null, backdrop: null, showCover: false, placeholderIcon: 'file-text' };
     if (combination === 'none') return none;
-    const placeholderIcon = combination === 'place' || combination === 'combined' ? 'map-pin' : combination === 'artwork' ? 'image' : 'user-round';
+    const placeholderIcon = combination === 'place' || combination === 'combined' ? 'map-pin' : 'user-round';
     if (kind === 'sketch') {
         const cover = combination === 'place' ? place
             : combination === 'combined' ? place ?? character ?? null
@@ -198,11 +196,7 @@ export function cardImages(combination: StoryImageCombination, kind: 'scene' | '
     }
     switch (combination) {
         case 'place': return { cover: place, companion: null, backdrop: null, showCover: true, placeholderIcon };
-        case 'artwork': return { cover: artwork, companion: null, backdrop: null, showCover: true, placeholderIcon };
-        case 'combined': {
-            const cover = place ?? character ?? artwork;
-            return { cover, companion: place && character ? character : null, backdrop: null, showCover: true, placeholderIcon };
-        }
+        case 'combined': return { cover: place ?? character, companion: place && character ? character : null, backdrop: null, showCover: true, placeholderIcon };
         case 'layered': return { cover: character, companion: null, backdrop: place, showCover: !!character || hasCharacters, placeholderIcon };
         default: return { cover: character, companion: null, backdrop: null, showCover: !!character || hasCharacters, placeholderIcon };
     }

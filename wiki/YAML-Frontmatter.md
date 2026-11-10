@@ -158,16 +158,19 @@ Class: Outline
 
 ## Images for Timetable Panels
 
-**Panels** and Canvas cards show an image on each card. An image file named after a character or place, such as `Elizabeth Bennet.webp`, is found anywhere in the vault; numbered copies such as `Elizabeth Bennet 2.webp` are further portraits of the same character, and each scene keeps the one it was given. To choose the image yourself, name it in an `Image` property, such as `Image: Elizabeth Bennet.png`; it takes the place of the match by name. The cards read these properties:
+**Panels** and Canvas cards show the pictures of a scene’s people and places. A picture belongs to the person or place, never to the scene, and a card finds it this way:
+
+1. **The note’s own `Image` property**, on a character note or a Place note, such as `Image: Elizabeth Bennet.png`.
+2. **Otherwise, a picture named after the character or place**, such as `Elizabeth Bennet.webp`, found anywhere in the vault. Numbered copies such as `Elizabeth Bennet 2.webp` are further portraits; each scene keeps the one it was given.
 
 | Property | On | Shows |
 |---|---|---|
-| `Image` | a character note | the portrait to use for that character, instead of the image found by name |
-| `Image` | a Place note | the place, for the first place in a scene’s **Place** list, instead of the image found by name |
-| `Place image` | a scene or sketch | the place art for that note only, instead of the Place note’s image |
-| `Scene image` | a scene | artwork for the scene itself |
+| `Image` | a character note | that character’s portrait, instead of the picture found by name |
+| `Image` | a Place note | that place, for the first place in a scene’s **Place** list, instead of the picture found by name |
 
-Each value names an image in the vault, such as `Elizabeth Bennet.png` or `"[[Longbourn.webp]]"`. PNG, JPEG, GIF, WebP and AVIF work. See [Panels](Timetable#panels).
+Each value names an image in the vault, such as `Elizabeth Bennet.png` or `"[[Longbourn.webp]]"`. PNG, JPEG, GIF, WebP and AVIF work.
+
+Scenes have no picture properties. To change what one card shows, use the card’s own picture menu (**Card images**): choose a character, step to the **Next portrait**, **Choose portrait…**, **Choose place image…**, or **Return to automatic images**. The top of that menu says where each picture comes from. See [Panels](Timetable#panels).
 
 ## Beat Notes (YAML)
 

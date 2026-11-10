@@ -114,11 +114,11 @@ import { authorKeyFor, countColumnFill, tableColumns, TIMETABLE_VIEW_TYPE, withR
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { synopsisKey, updateSynopsis } from './panelSynopsis';
 import { leadPortrait } from './panelPortrait';
-import { panelPlaceImage, panelSceneImage } from './panelPlaceImage';
+import { panelPlaceImage } from './panelPlaceImage';
 import { imageSubjectName } from './storyImageMatching';
 import { storyCharacterSelections } from './storyImageSelection';
 import { addMenuChoices } from './menuChoices';
-import { explicitCardImage, showStoryImageMenu } from './storyImageMenu';
+import { describePlaceImage, explicitCardImage, showStoryImageMenu } from './storyImageMenu';
 import { storyImageChoice } from './storyImageStore';
 import { resolveStoryPortrait } from './storyPortrait';
 import { coverPosition, type PanelFocus } from './panelFocus';
@@ -2946,12 +2946,11 @@ export class TimetableView extends BasesView {
                 const portrait = overrideImage ? this.plugin.app.vault.getResourcePath(overrideImage) : selectedPerson?.image ?? leadPortrait(people);
                 const cardSettings = storyCardImages(this.plugin.settings);
                 const imageMode = outline ? 'character' : cardSettings.combination;
-                const location = (imageMode === 'place' || imageMode === 'combined' || imageMode === 'layered') && (row.kind === 'scene' || (row.kind === 'sketch' && (!!storyImageChoice(this.plugin, row.path).placeImage || !!readFrontmatterProperty(frontmatter, 'Place image')))) ? panelPlaceImage(this.plugin.app, entry.file, frontmatter, authorKeyFor('Place', this.plugin.settings), imageFiles, storyImageChoice(this.plugin, row.path).placeImage) : null;
-                const artwork = (imageMode === 'artwork' || imageMode === 'combined') && row.kind === 'scene' ? panelSceneImage(this.plugin.app, entry.file, frontmatter) : null;
+                const location = (imageMode === 'place' || imageMode === 'combined' || imageMode === 'layered') && (row.kind === 'scene' || (row.kind === 'sketch' && !!storyImageChoice(this.plugin, row.path).placeImage)) ? panelPlaceImage(this.plugin.app, entry.file, frontmatter, authorKeyFor('Place', this.plugin.settings), imageFiles, storyImageChoice(this.plugin, row.path).placeImage) : null;
                 const portraitPath = overrideImage?.path ?? selectedPerson?.imagePath;
                 const shown = cardImages(imageMode, row.kind === 'sketch' ? 'sketch' : 'scene', {
                     character: portrait ? { url: portrait, path: portraitPath ?? undefined } : null,
-                    place: location, artwork, hasCharacters: people.length > 0, chosen: !!overrideImage,
+                    place: location, hasCharacters: people.length > 0, chosen: !!overrideImage,
                 });
                 const panelImage = shown.cover?.url ?? null;
                 const imagePath = shown.cover?.path;
@@ -3013,7 +3012,7 @@ export class TimetableView extends BasesView {
                     if (panelImage) {
                         const image = cover.createEl('img', { cls: 'ert-timetable-panels__cover-image', attr: { alt: '', src: panelImage, draggable: 'false' } });
                         frameImage(image, focus);
-                        if (location && shown.cover === location) setTooltip(image, location.source === 'scene' ? t('ui.timetable.panelImageSceneSource', { name: location.name }) : t('ui.timetable.panelImagePlaceSource', { name: location.name }));
+                        if (location && shown.cover === location) setTooltip(image, describePlaceImage(location));
                         this.panelEvents?.registerDomEvent(image, 'error', () => cover.addClass('is-missing'));
                     }
                     if (!outline && size !== 'small' && row.kind === 'scene' && row.prefix) {
@@ -3053,8 +3052,8 @@ export class TimetableView extends BasesView {
                 if (!outline && (row.kind === 'scene' || row.kind === 'sketch')) {
                     const imageOptions = (sceneActions ?? panel).createEl('button', { cls: 'ert-timetable-panels__image-menu clickable-icon', attr: { type: 'button' } });
                     setIcon(imageOptions, 'image-plus');
-                    setAccessibleLabel(imageOptions, t('ui.timetable.storyImageChoose'));
-                    setTooltip(imageOptions, t('ui.timetable.storyImageChoose'));
+                    setAccessibleLabel(imageOptions, t('ui.timetable.storyImageMenu'));
+                    setTooltip(imageOptions, t('ui.timetable.storyImageMenu'));
                     this.panelEvents?.registerDomEvent(imageOptions, 'click', (event: MouseEvent) => { event.stopPropagation(); showStoryImageMenu(this.plugin, entry.file, frontmatter, imageFiles, event, () => this.render(), selectedSubject ?? undefined); });
                 }
                 const title = heading.createDiv({ cls: 'ert-timetable-panels__title-line' });

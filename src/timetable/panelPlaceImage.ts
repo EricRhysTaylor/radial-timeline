@@ -2,37 +2,32 @@ import { readFrontmatterProperty } from '../utils/frontmatterKeys';
 import { TFile, type App } from 'obsidian';
 import { imageSubjectName, stableStoryImage } from './storyImageMatching';
 
+/** Where a card's place image came from: chosen on the card, the Place note's Image, or a picture named after the place. */
+export type PlaceImageSource = 'card' | 'note' | 'named';
+export type PanelPlaceImage = { url: string; path: string; source: PlaceImageSource; name: string };
 
 function linkPath(value: unknown): string | null {
     if (typeof value !== 'string' || !value.trim()) return null;
     return value.trim().replace(/^!?\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim() || null;
 }
 
-/** Resolve optional scene artwork independently of the scene's place image. */
-export function panelSceneImage(app: App, scene: TFile, fm: Record<string, unknown> | undefined): { url: string; path: string; name: string } | null {
-    const path = linkPath(readFrontmatterProperty(fm, 'Scene image'));
-    const file = path ? app.metadataCache.getFirstLinkpathDest(path, scene.path) : null;
-    if (!file || !/^(png|jpe?g|gif|webp|avif)$/i.test(file.extension)) return null;
-    return { url: app.vault.getResourcePath(file), path: file.path, name: file.name };
-}
+const isImage = (file: TFile) => /^(png|jpe?g|gif|webp|avif)$/i.test(file.extension);
 
-/** Resolve a scene-specific image first, then the first Place note's Image, then a file named after the place. */
-export function panelPlaceImage(app: App, scene: TFile, fm: Record<string, unknown> | undefined, placeKey: string, imageFiles?: readonly TFile[], chosenPath?: string): { url: string; path: string; source: 'scene' | 'place'; name: string } | null {
-    const image = (value: unknown, sourcePath: string): TFile | null => {
-        const path = linkPath(value);
-        const file = path ? app.metadataCache.getFirstLinkpathDest(path, sourcePath) : null;
-        return file && /^(png|jpe?g|gif|webp|avif)$/i.test(file.extension) ? file : null;
-    };
+/**
+ * A scene's place image: the one chosen on its card, else its first Place note's Image, else a picture named after
+ * that place (numbered copies spread across scenes). A scene's own properties never set it (2026-11-10: pictures belong
+ * to people and places, and a card's own choice to the card). `name` is the place, or the chosen file.
+ */
+export function panelPlaceImage(app: App, scene: TFile, fm: Record<string, unknown> | undefined, placeKey: string, imageFiles?: readonly TFile[], chosenPath?: string): PanelPlaceImage | null {
     const selected = chosenPath ? app.vault.getAbstractFileByPath(chosenPath) : null;
-    if (selected instanceof TFile && /^(png|jpe?g|gif|webp|avif)$/i.test(selected.extension)) return { url: app.vault.getResourcePath(selected), path: selected.path, source: 'scene', name: selected.name };
-    const override = image(readFrontmatterProperty(fm, 'Place image'), scene.path);
-    if (override) return { url: app.vault.getResourcePath(override), path: override.path, source: 'scene', name: override.name };
+    if (selected instanceof TFile && isImage(selected)) return { url: app.vault.getResourcePath(selected), path: selected.path, source: 'card', name: selected.name };
     const places = readFrontmatterProperty(fm, placeKey);
     const placePath = linkPath(Array.isArray(places) ? places[0] : places);
     const place = placePath ? app.metadataCache.getFirstLinkpathDest(placePath, scene.path) : null;
-    const own = place ? image(readFrontmatterProperty(app.metadataCache.getFileCache(place)?.frontmatter, 'Image'), place.path) : null;
-    if (place && own) return { url: app.vault.getResourcePath(own), path: own.path, source: 'place', name: place.basename };
+    const ownPath = place ? linkPath(readFrontmatterProperty(app.metadataCache.getFileCache(place)?.frontmatter, 'Image')) : null;
+    const own = place && ownPath ? app.metadataCache.getFirstLinkpathDest(ownPath, place.path) : null;
+    if (place && own && isImage(own)) return { url: app.vault.getResourcePath(own), path: own.path, source: 'note', name: place.basename };
     const subject = imageSubjectName(placePath);
     const named = subject && imageFiles ? stableStoryImage(imageFiles, scene.path, subject) : null;
-    return named ? { url: app.vault.getResourcePath(named), path: named.path, source: 'place', name: subject! } : null;
+    return named ? { url: app.vault.getResourcePath(named), path: named.path, source: 'named', name: subject! } : null;
 }

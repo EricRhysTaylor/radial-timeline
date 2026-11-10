@@ -6,21 +6,22 @@ import { addStoryCardImageMenu, adoptViewImageSettings, cardImages, rebaseStoryI
 
 const place = { url: 'place-url', path: 'Images/Longbourn.webp' };
 const character = { url: 'character-url', path: 'Images/Elizabeth.webp' };
-const artwork = { url: 'art-url', path: 'Images/Ball.webp' };
-const sources = (over: Partial<CardImageSources> = {}): CardImageSources => ({ character, place, artwork, hasCharacters: true, chosen: false, ...over });
+const sources = (over: Partial<CardImageSources> = {}): CardImageSources => ({ character, place, hasCharacters: true, chosen: false, ...over });
 
 describe('the images a card shows, one rule for Panels and Canvas', () => {
     it('shows each combination for a scene', () => {
         expect(cardImages('character', 'scene', sources())).toMatchObject({ cover: character, companion: null, backdrop: null, showCover: true });
         expect(cardImages('place', 'scene', sources())).toMatchObject({ cover: place, companion: null, showCover: true, placeholderIcon: 'map-pin' });
         expect(cardImages('layered', 'scene', sources())).toMatchObject({ cover: character, backdrop: place });
-        expect(cardImages('artwork', 'scene', sources())).toMatchObject({ cover: artwork, placeholderIcon: 'image' });
     });
     it('puts the character beside its place in Place + character, the same size, and falls back when one is missing', () => {
         expect(cardImages('combined', 'scene', sources())).toMatchObject({ cover: place, companion: character });
         expect(cardImages('combined', 'scene', sources({ place: null }))).toMatchObject({ cover: character, companion: null });
-        expect(cardImages('combined', 'scene', sources({ place: null, character: null }))).toMatchObject({ cover: artwork, companion: null });
-        expect(cardImages('combined', 'scene', sources({ place: null, character: null, artwork: null }))).toMatchObject({ cover: null, showCover: true, placeholderIcon: 'map-pin' });
+        expect(cardImages('combined', 'scene', sources({ character: null }))).toMatchObject({ cover: place, companion: null });
+        expect(cardImages('combined', 'scene', sources({ place: null, character: null }))).toMatchObject({ cover: null, showCover: true, placeholderIcon: 'map-pin' });
+    });
+    it('no longer knows Scene artwork: a saved choice of it reads as Character', () => {
+        expect(storyCardImages({ storyCardImages: { combination: 'artwork' } } as RadialTimelineSettings).combination).toBe('character');
     });
     it('shows no tile at all with None, so the title starts at the edge', () => {
         expect(cardImages('none', 'scene', sources())).toEqual({ cover: null, companion: null, backdrop: null, showCover: false, placeholderIcon: 'file-text' });
@@ -92,10 +93,10 @@ describe('the shared image menu', () => {
         addStoryCardImageMenu(menu as unknown as Menu, pluginWith(settings));
         return items;
     };
-    it('labels every group, with all six combinations and Background treatment only with a place background', () => {
+    it('labels every group, with the five combinations and Background treatment only with a place background', () => {
         const items = groups({ storyCardImages: { combination: 'combined' } });
         expect(items.filter(item => item.label).map(item => item.title)).toEqual(['Image combinations', 'Character selection', 'Image sizing', 'Portrait shape']);
-        expect(items.slice(1, 7).map(item => item.title)).toEqual(['Character', 'Place', 'Place + character', 'Place background + character', 'Scene artwork', 'None']);
+        expect(items.slice(1, 6).map(item => item.title)).toEqual(['Character', 'Place', 'Place + character', 'Place background + character', 'None']);
         expect(items.find(item => item.checked && item.title === 'Place + character')).toBeDefined();
         expect(groups({ storyCardImages: { combination: 'layered' } }).filter(item => item.label).map(item => item.title)).toContain('Background treatment');
     });

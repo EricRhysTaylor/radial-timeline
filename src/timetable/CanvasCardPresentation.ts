@@ -12,7 +12,7 @@ import { SUBPLOT_COLORS_CHANGED_EVENT, subplotColorCss, type SubplotColor } from
 import { cardSubplots } from './canvasCardSubplots';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { readFrontmatterProperty } from '../utils/frontmatterKeys';
-import { panelPlaceImage, panelSceneImage } from './panelPlaceImage';
+import { panelPlaceImage } from './panelPlaceImage';
 import { coverPosition } from './panelFocus';
 import {
     addStoryCardImageMenu, cardImages, STORY_IMAGES_CHANGED_EVENT, storyCardImages, storyImageFocus, storyImageStrategy,
@@ -229,14 +229,13 @@ class CanvasCards {
                 const chosenImage: CardImage | null = overrideImage ? { url: this.plugin.app.vault.getResourcePath(overrideImage), path: overrideImage.path } : null;
                 const story = row.kind === 'scene' || row.kind === 'sketch';
                 const combination = cardSettings.combination;
-                const place = story && (combination === 'place' || combination === 'combined' || combination === 'layered') && (row.kind === 'scene' || !!choice.placeImage || !!readFrontmatterProperty(fm, 'Place image'))
+                const place = story && (combination === 'place' || combination === 'combined' || combination === 'layered') && (row.kind === 'scene' || !!choice.placeImage)
                     ? panelPlaceImage(this.plugin.app, file, fm, authorKeyFor('Place', this.plugin.settings), imageFiles, choice.placeImage) : null;
-                const artwork = (combination === 'artwork' || combination === 'combined') && row.kind === 'scene' ? panelSceneImage(this.plugin.app, file, fm) : null;
                 const castValue = readFrontmatterProperty(fm, authorKeyFor('Character', this.plugin.settings));
                 const hasCharacters = (Array.isArray(castValue) ? castValue : [castValue]).some(name => typeof name === 'string' && name.trim().length > 0);
                 const shown = story ? cardImages(combination, row.kind === 'sketch' ? 'sketch' : 'scene', {
                     character: chosenImage ?? (row.kind === 'scene' ? portrait(this.plugin, file, fm, imageFiles, selected) : null),
-                    place, artwork, hasCharacters, chosen: !!overrideImage,
+                    place, hasCharacters, chosen: !!overrideImage,
                 }) : null;
                 const focusOf = (image: CardImage | null | undefined) => image ? storyImageFocus(this.plugin.settings, image.path) : null;
                 const ringColors = row.kind === 'scene' || row.kind === 'sketch' ? await this.colorsForBook(bookId) : new Map<string, SubplotColor>();
@@ -270,9 +269,9 @@ class CanvasCards {
                 const cleanup: Array<() => void> = [];
                 if (row.kind === 'scene' || row.kind === 'sketch') {
                     const imageOptions = overlay.createEl('button', { cls: 'ert-canvas-story-card__image-menu', attr: { type: 'button' } });
-                    setAccessibleLabel(imageOptions, t('ui.timetable.storyImageChoose'));
+                    setAccessibleLabel(imageOptions, t('ui.timetable.storyImageMenu'));
                     setIcon(imageOptions, 'image-plus');
-                    setTooltip(imageOptions, t('ui.timetable.storyImageChoose'));
+                    setTooltip(imageOptions, t('ui.timetable.storyImageMenu'));
                     imageOptions.onclick = event => { event.stopPropagation(); showStoryImageMenu(this.plugin, file, fm, imageFiles, event, () => this.schedule(), selected ?? undefined); };
                     imageOptions.onpointerdown = event => event.stopPropagation();
                 }

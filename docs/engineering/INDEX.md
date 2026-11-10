@@ -106,6 +106,7 @@ Location: `docs/engineering/audits/`
 
 Historical audits and investigations.
 
+- **[Chronologue reference callout line](audits/2026-11-09-chronologue-reference-callout-line.md)** — Reference line and hollow circle ends in the text color on a background casing (3:1 over every subplot fill), and scrolling the opened passage into view past long Properties.
 - **[Chronologue annotation readability](audits/2026-10-17-chronologue-annotation-readability.md)** — Inner-band reference labels and overflow counts, full-opacity date squares, and native overflow-menu selection checks.
 - **[Chronologue query foreground and source clearance](audits/2026-10-17-chronologue-query-foreground.md)** — Question icons above subplot headlines and separated source/date squares at the seam, checked in Fill and Sequence.
 - **[Chronologue foreground layering](audits/2026-10-17-chronologue-foreground-layering.md)** — Date references and scene titles above fixed subplot headlines, with native shared-date owner switching and SVG-instance clipping checks.

@@ -17,7 +17,7 @@
  */
 
 import { Keymap, MarkdownView, type App, type OpenViewState, type TFile, type WorkspaceLeaf } from 'obsidian';
-import { openOrRevealFile, type OpenMatchHighlight } from '../utils/fileUtils';
+import { openOrRevealFile, revealHighlight, type OpenMatchHighlight } from '../utils/fileUtils';
 import { openTimetableElements } from './timetableRegistry';
 
 export interface PaneBox {
@@ -115,4 +115,5 @@ export async function openFromWheel(
         return;
     }
     await openInReadingPane(app, file, tableLeaf, { evt, highlight });
+    if (highlight) await revealHighlight(app, file, highlight);
 }

@@ -206,7 +206,8 @@ describe('subplot color source guard', () => {
     const files = sources('src');
 
     it('reads palette slots only through the resolver; the rest of the slot users color the category lens, not subplots', () => {
-        const lens = ['src/view/TimeLineView.ts', 'src/view/interactions/TimetableLink.ts', 'src/chronologue/timeReferences/interactions.ts', 'src/services/ThemeService.ts'];
+        // Time references draw in theme colors (2026-11-09), so the category lens no longer recolors them.
+        const lens = ['src/view/TimeLineView.ts', 'src/view/interactions/TimetableLink.ts', 'src/services/ThemeService.ts'];
         const slotUsers = files.filter(file => strip(file).includes('rt-subplot-colors-${'));
         expect(slotUsers.sort()).toEqual(['src/renderer/utils/subplotColors.ts', ...lens].sort());
         const directReads = files.filter(file => file !== 'src/renderer/utils/subplotColors.ts' && /\breadSubplotColor\(/.test(strip(file)));

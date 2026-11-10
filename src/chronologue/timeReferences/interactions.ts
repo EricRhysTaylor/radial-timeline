@@ -1,5 +1,4 @@
 import { Menu } from 'obsidian';
-import { referenceMarkColor } from './render';
 import type { RadialTimelineView } from '../../view/TimeLineView';
 import { currentTimelineColoring, currentTimelineLens, onTimelineOverlayChange } from '../../timetable/timetableRegistry';
 import { openTimeReference } from './editor';
@@ -33,22 +32,14 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
         // Outside the lens, or (while names are picked in the color key) a scene that doesn't list them all.
         const picking = !!coloring && coloring.picks.length > 0;
         const outside = (path: string): boolean => (!!lens && !lens.paths.has(path)) || (picking && !coloring.values.has(path));
+        // References draw in the theme's text color in every coloring, so a lens or a pick only filters them.
         svg.querySelectorAll<SVGElement>('.ert-time-reference-connector').forEach(connector => {
             const reference = references.get(keysOf(connector)[0]);
-            const value = reference ? coloring?.values.get(reference.path) : undefined;
-            const slot = value === undefined ? undefined : coloring?.legend.find(entry => entry.value === value)?.colorIndex;
-            connector.setCssProps({ stroke: coloring ? referenceMarkColor(slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`) : '' });
             connector.classList.toggle('ert-time-reference-filtered', !!reference && outside(reference.path));
         });
         svg.querySelectorAll<SVGElement>('.ert-time-reference, .ert-time-reference-origin').forEach(group => {
             const candidates = keysOf(group).map(key => references.get(key)).filter((ref): ref is TimeReference => !!ref);
-            const ref = candidates.find(candidate => !outside(candidate.path)) ?? candidates[0];
             group.classList.toggle('ert-time-reference-filtered', (!!lens || picking) && candidates.every(candidate => outside(candidate.path)));
-            if (!ref) return;
-            const value = coloring?.values.get(ref.path);
-            const slot = value === undefined ? undefined : coloring?.legend.find(entry => entry.value === value)?.colorIndex;
-            const fill = coloring ? referenceMarkColor(slot === undefined ? 'var(--background-modifier-border-hover)' : `var(--rt-subplot-colors-${slot})`) : '';
-            group.querySelector<SVGElement>('.ert-time-reference-slice, .ert-time-reference-source-mark')?.setCssProps({ fill });
         });
     };
     // Keep overflow beside its date label in the inner text lane. Measure the

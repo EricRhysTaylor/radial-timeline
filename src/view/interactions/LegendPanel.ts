@@ -37,8 +37,8 @@ export interface LegendRow {
     swatch?: LegendSwatch;
     /** Ring squares in these colors; a null entry is an outlined (planned) square. */
     rings?: Array<string | null>;
-    /** A time reference as drawn on the wheel, in this color: source square, connector, date square. */
-    timeReference?: string;
+    /** A time reference as drawn on the timeline: hollow source circle, the callout line, hollow date circle. */
+    timeReference?: boolean;
     /** A filled dot in this color, like the Timetable's Due dot. */
     dot?: string;
     label: string;
@@ -104,7 +104,6 @@ function renderRow(sectionEl: HTMLElement, row: LegendRow): void {
         }
     } else if (row.timeReference) {
         iconEl.addClass('ert-timeline-legend__icon--reference');
-        iconEl.setCssProps({ '--ert-legend-reference': row.timeReference });
         iconEl.createSpan({ cls: 'ert-timeline-legend__reference-source' });
         iconEl.createSpan({ cls: 'ert-timeline-legend__reference-line' });
         iconEl.createSpan({ cls: 'ert-timeline-legend__reference-date' });

@@ -317,8 +317,7 @@ export function renderRings(ctx: RingRenderContext): string {
                     });
                 });
                 svg += ringScenesSvg;
-                ctx.foregroundElements.push(renderTimeReferenceMarkers(sortedCombined, positions, sequence.referenceSlots, innerR, outerR, ring,
-                    scene => getFillForScene(scene, PUBLISH_STAGE_COLORS, subplotColorFor, true, forceSubplotFillColors)));
+                ctx.foregroundElements.push(renderTimeReferenceMarkers(sortedCombined, positions, sequence.referenceSlots, innerR, outerR, ring));
 
                 continue; // Continue to next ring loop (which iterates rings for this act)
             }

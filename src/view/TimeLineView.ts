@@ -76,7 +76,6 @@ import { isColoringMatch, matchLabelKey } from '../timetable/timetableModel';
 import { applyQueryMarks, applyTimetableOverlayToSvg, linkActLabelsToTimetable } from './interactions/TimetableLink';
 import { renderLegendSurface, wireLegendTrigger, type LegendDetailSegment, type LegendSection } from './interactions/LegendPanel';
 import { listAuthorQueries } from '../utils/authorQueryComments';
-import { referenceMarkColor } from '../chronologue/timeReferences/render';
 
 // Duplicate of constants defined in main for now. We can consolidate later.
 export const TIMELINE_VIEW_TYPE = "radial-timeline";
@@ -2686,8 +2685,7 @@ export class RadialTimelineView extends ItemView {
                 rows: [
                     { icon: 'arrow-left-right', label: t('ui.timeLineView.legendShiftCapsLock'), detail: t('ui.timeLineView.legendShiftCapsLockDetail') },
                     { icon: 'crosshair', label: t('ui.timeLineView.legendClickWhileComparing'), detail: t('ui.timeLineView.legendClickWhileComparingDetail') },
-                    // Drawn in ring 1's color, the way the wheel draws a reference from a main-plot scene.
-                    { timeReference: referenceMarkColor('var(--rt-subplot-colors-0)'), label: t('ui.timeLineView.legendTimeReference'), detail: t('ui.timeLineView.legendTimeReferenceDetail') },
+                    { timeReference: true, label: t('ui.timeLineView.legendTimeReference'), detail: t('ui.timeLineView.legendTimeReferenceDetail') },
                 ],
             });
         }

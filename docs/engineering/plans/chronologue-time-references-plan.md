@@ -16,17 +16,20 @@ attached to that scene, with one or more rendered occurrences.
 
 ## Agreed interaction and geometry
 
-- A reference is a solid square, up to 10 SVG units, at the clockwise interior
-  corner of its date position. It overlays scene geometry and never receives a
-  scene slot. Marker bases sit four SVG units above the inner edge, allowing
-  for half the square height. Only Later markers lift another six units to
+- A reference ends in a hollow circle, 0.65 of the marker size in radius (up to
+  6.5 SVG units), at the clockwise interior corner of its date position. It
+  overlays scene geometry and never receives a scene slot. Marker bases sit four
+  SVG units above the inner edge. Only Later markers lift another six units to
   clear the subplot dominance triangle.
 - From the middle of the master scene's inner edge, a short radial feed reaches
   a concentric track 32% inside the outer ring border. The arc follows that track
-  and ends radially at the reference square. Lines and solid squares have no
-  backing outline; source hues blend with the theme text color for visibility
-  over matching scene fills. Text retains its readability outline. The arc clears the
-  scene center's question icon.
+  and ends radially at the reference circle. It reads as a callout (2026-11-09):
+  a 3.5 px line and 3 px circle strokes in the theme text color, each on a
+  casing in the background color 1 px wider on each side. The casing keeps 3:1
+  contrast (WCAG 1.4.11) over every subplot fill in both themes; the earlier
+  source hue blended with the text color fell to about 1:1 over pale fills.
+  Text retains its readability outline. The arc clears the scene center's
+  question icon.
 - Connectors never cross the central status grid or travel through another ring.
   A coincident date produces a radial connection rather than an artificial arc.
 - Same-date references stack radially at the same angle, with at most three
@@ -35,13 +38,14 @@ attached to that scene, with one or more rendered occurrences.
 - Reference relationships appear once on All Scenes. Subplot memberships still
   belong to the source scene; references do not create subplot copies or imply
   that another scene at the referenced date participates in the relationship.
-- A larger solid square (up to 16 SVG units) marks the source near the middle
-  of its inner edge, offset beside the Question icon. Its selected scene caption
-  follows the ring on a text path. The selected date square grows to 135% of its
-  normal size; other reference squares and unrelated date labels dim to 25%.
-- Source and date squares rotate tangentially with the ring. Source, Earlier and
-  Later labels follow circular text paths; lower-half paths reverse to stay
-  upright. Guide paths live in SVG definitions and do not enlarge hit bounds.
+- The same hollow circle marks the source near the middle of its inner edge,
+  offset beside the Question icon (the clearance still reserves the old
+  16-unit source mark). Its selected scene caption follows the ring on a text
+  path. The selected date circle grows to 135% of its normal size; other
+  reference marks and unrelated date labels dim to 25%.
+- Source, Earlier and Later labels follow circular text paths; lower-half paths
+  reverse to stay upright. Guide paths live in SVG definitions and do not
+  enlarge hit bounds.
 - Selecting a same-date stack entry moves the shared route's final leg to that
   entry's marker. Its date label stays readable; the sibling squares dim.
   Referenced-date details name the owning scene.
@@ -53,7 +57,11 @@ attached to that scene, with one or more rendered occurrences.
   set of nested reference rows. Hover does not force expansion or scroll jumps.
   Activation holds selection, expands references and opens an exact passage.
 - Kind and date precision remain explicit in reference details and nested rows.
-  Square color follows the existing ring/column-coloring semantics.
+  Reference marks keep the theme colors in every ring and column coloring; a
+  lens or color-key pick filters them, it does not recolor them.
+- Opening a reference scrolls its passage to the middle of the editor after the
+  note shows (`revealHighlight`). Obsidian's own jump to a match does nothing
+  when the note shows a long Properties block.
 
 The local interactive concept is under `build/concept-previews/` and is ignored
 by Git. It demonstrates behavior; its schematic angles and illustrative prose

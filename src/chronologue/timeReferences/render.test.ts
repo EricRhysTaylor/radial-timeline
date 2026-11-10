@@ -14,7 +14,7 @@ const source = (subplot: string, dates = ['1952']): TimelineItem => ({ path: '12
     rawFrontmatter: { When: '2026-10-14', 'Time References': dates.map((When, i) => ({ Label: `A <memory> ${i}`, When, Kind: 'recollection' })) } });
 const render = (dates: string[], inner = 400, outer = 460) => {
     const items = [source('History', dates)], layout = computeChronologueLayout(inner, outer, start, end, items);
-    return renderTimeReferenceMarkers(items, layout.positions, layout.slots, inner, outer, 0, () => 'var(--rt-subplot-colors-1)');
+    return renderTimeReferenceMarkers(items, layout.positions, layout.slots, inner, outer, 0);
 };
 describe('reference occurrences across actual ring layouts', () => {
     it.each(['fill', 'sequence'])('renders references once on All Scenes while preserving subplot scenes: %s', subplotAlignment => {
@@ -57,7 +57,8 @@ describe('reference occurrences across actual ring layouts', () => {
     it('uses interior concentric tracks and separate explicit seam terminals', () => {
         const markup = render(['1952', '2040']);
         expect(markup).toContain(' A 440.8 440.8 ');
-        expect(markup.match(/ert-time-reference-break/g)).toHaveLength(2);
+        expect(markup.match(/class="ert-time-reference-connector ert-time-reference-break"/g)).toHaveLength(2);
+        expect(markup.match(/class="ert-time-reference-connector ert-time-reference-break ert-time-reference-casing"/g)).toHaveLength(2);
         expect(markup).toContain('Earlier · 1952');
         expect(markup).toContain('Later · 2040');
         expect(markup).not.toMatch(/NaN|Infinity/);
@@ -73,23 +74,24 @@ describe('reference occurrences across actual ring layouts', () => {
     });
     it('returns labels to scene bottoms and lifts only Later slightly above the dominance corner', () => {
         const markup = render(['1952', '2040']);
-        const squares = Array.from(markup.matchAll(/<g transform="translate\(([^ ]+) ([^)]+)\) rotate\(([^)]+)\)"><rect class="ert-time-reference-slice" x="[^"]+" y="[^"]+" width="([^"]+)"/g), m => m.slice(1).map(Number));
-        expect(squares).toHaveLength(2);
-        const radii = squares.map(([x, y, rotation]) => {
-            expect(Math.cos(rotation * Math.PI / 180)).toBeCloseTo(Math.cos(Math.atan2(y, x) + Math.PI / 2));
-            return Math.hypot(x, y);
-        });
+        const ends = Array.from(markup.matchAll(/<circle class="ert-time-reference-slice" cx="([^"]+)" cy="([^"]+)" r="([^"]+)"/g), m => m.slice(1).map(Number));
+        expect(ends).toHaveLength(2);
+        const radii = ends.map(([x, y]) => Math.hypot(x, y));
         expect(radii[0]).toBeCloseTo(408.8);
         expect(radii[1] - radii[0]).toBeCloseTo(6);
         expect(markup).not.toContain('ert-time-reference-halo');
         expect(markup).toContain('d="M22 12h-2.48');
     });
-    it('uses circular label paths and a larger source square, with upright lower-half source text', () => {
+    it('ends in hollow circles over casings, with upright lower-half source text', () => {
         const markup = render(['1952', '2040']);
         expect(markup.match(/<textPath /g)).toHaveLength(3);
-        const sourceMark = markup.match(/class="ert-time-reference-source-mark"[^>]*width="([^"]+)"/);
-        expect(Number(sourceMark![1])).toBeGreaterThan(9.6 * 1.35);
-        expect(markup).not.toContain('<circle');
+        // The source and each date end in a circle wider than half the old square, so the core shows the scene.
+        const sourceMark = markup.match(/<circle class="ert-time-reference-source-mark" cx="([^"]+)" cy="([^"]+)" r="([^"]+)"/);
+        expect(Number(sourceMark![3])).toBeCloseTo(9.6 * 0.65);
+        for (const end of markup.matchAll(/<circle class="(?:ert-time-reference-slice|ert-time-reference-source-mark)" (cx="[^"]+" cy="[^"]+" r="[^"]+")/g)) {
+            expect(markup).toContain(`<circle class="ert-time-reference-casing" ${end[1]}/><circle class=`);
+        }
+        expect(markup).not.toContain('<rect class="ert-time-reference-slice"');
         const label = markup.match(/class="ert-time-reference-origin-label"[^>]*><textPath href="#([^"]+)"/);
         const sourcePath = markup.match(new RegExp(`<path id="${label![1]}" d="([^"]+)"`));
         expect(sourcePath![1]).toContain(' A 422.8 422.8 0 0 0 ');
@@ -98,7 +100,7 @@ describe('reference occurrences across actual ring layouts', () => {
         const items = [source('History', Array(5).fill('1952'))];
         for (const [inner, outside] of [[200, 320], [400, 520], [700, 900]]) {
             const local = computeChronologueLayout(inner, outside, start, end, items);
-            const markup = renderTimeReferenceMarkers(items, local.positions, local.slots, inner, outside, 0, () => 'purple');
+            const markup = renderTimeReferenceMarkers(items, local.positions, local.slots, inner, outside, 0);
             const overflow = markup.match(/<g class="ert-time-reference"[^>]*data-reference-x="([^"]+)" data-reference-y="([^"]+)" data-reference-overflow="true"/);
             expect(overflow).not.toBeNull();
             // The count follows the first date's inner baseline, not a fourth row.
@@ -107,6 +109,17 @@ describe('reference occurrences across actual ring layouts', () => {
             expect(Number(countPath![1])).toBeLessThanOrEqual(inner + (outside - inner) * .4);
             expect(markup).toContain('>+2</textPath></text>');
         }
+    });
+    it('draws every route in theme colors on a matching casing, never in the subplot color', () => {
+        const markup = render(['1952', '1990-06-01', '2040'], 400, 520);
+        // The stylesheet colors the line and its casing; nothing inline can bring back a fill-matched hue.
+        expect(markup).not.toMatch(/stroke="|color-mix|rt-subplot-colors/);
+        const lines = Array.from(markup.matchAll(/<path class="ert-time-reference-connector" ([^>]*)\/>/g), m => m[1]);
+        const casings = Array.from(markup.matchAll(/<path class="ert-time-reference-connector ert-time-reference-casing" ([^>]*)\/>/g), m => m[1]);
+        expect(lines.length).toBeGreaterThan(0);
+        // Each casing shares its line's keys and route, and is painted first.
+        expect(casings).toEqual(lines);
+        expect(markup.indexOf('ert-time-reference-casing')).toBeLessThan(markup.indexOf('class="ert-time-reference-connector"'));
     });
     it('distinguishes multiple off-range dates from a same-date stack', () => {
         const markup = render(['1952', '1986', '1990']);

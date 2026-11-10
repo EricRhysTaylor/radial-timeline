@@ -4,19 +4,42 @@
     display: none;
 }
 
+/* A callout: a line in the text color, hollow circles at both ends, and a casing in the background color
+   beneath every stroke, so the reference holds contrast over any subplot fill in either theme. */
 .ert-time-reference-connector {
     pointer-events: none;
     opacity: 0;
-    stroke-width: 2px;
+    stroke: var(--text-normal);
+    stroke-width: 3.5px;
     stroke-linecap: round;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
 }
-.ert-time-reference-connector.is-active { opacity: 1; stroke-width: 3px; }
+.ert-time-reference-connector.ert-time-reference-casing { stroke: var(--background-primary); stroke-width: 5.5px; }
+.ert-time-reference-connector.is-active { opacity: 1; }
 .ert-time-reference-connector.ert-time-reference-break { stroke-width: 1.5px; }
+.ert-time-reference-connector.ert-time-reference-break.ert-time-reference-casing { stroke-width: 3.5px; }
 .ert-time-reference-hit { pointer-events: all; cursor: pointer; }
-.ert-time-reference-slice { opacity: 1; pointer-events: none; transform-box: fill-box; transform-origin: center; }
-.ert-time-reference.is-active .ert-time-reference-slice { transform: scale(1.35); }
+.ert-time-reference-slice,
+.ert-time-reference-source-mark {
+    fill: none;
+    stroke: var(--text-normal);
+    stroke-width: 3px;
+    pointer-events: none;
+    vector-effect: non-scaling-stroke;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+circle.ert-time-reference-casing {
+    fill: none;
+    stroke: var(--background-primary);
+    stroke-width: 5px;
+    pointer-events: none;
+    vector-effect: non-scaling-stroke;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+.ert-time-reference.is-active :is(.ert-time-reference-slice, .ert-time-reference-casing) { transform: scale(1.35); }
 .ert-has-reference-selection .ert-time-reference:not(.is-date-active) .ert-time-reference-range,
 .ert-has-reference-selection .ert-time-reference-origin:not(.is-active):not(.ert-time-reference-filtered) { opacity: 0.25; }
 .ert-time-reference-origin { pointer-events: none; }

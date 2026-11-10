@@ -31,6 +31,8 @@ If you delete the Radial Timetable view or change it beyond repair, choose **Res
 
 ## Read the rows
 
+![The timeline beside the TimeTable table, showing scene rows, dates, characters, places, and synopses](images/homepage-timetable-full.webp)
+
 - **Scene number:** the number cell carries writing status and Publish Stage colors. Story beats have their own number treatment; sketches remain distinct from scenes. Click a scene's number cell to set its Status or Publish Stage, or click a Status, Publish Stage, or Act cell for that property's values. Marking a scene Complete sets Due to today, as it does from the wheel.
 - **Row controls:** beside each number, each control in its own place so they line up down the table:
   - the stage letter (**Z** Zero, **A** Author, **H** House, **P** Press) in its stage color, or a sketch’s chevron;
@@ -123,6 +125,8 @@ Notes you open from the Timetable appear in a pane below the table, so the wheel
 
 ## Panels
 
+![The timeline beside TimeTable Panels, with scene cards and character portraits](images/homepage-timeline-panels.webp)
+
 **Panels** shows each scene, beat and sketch as a card, act by act: number, title, date, rings, characters and the synopsis, with an image beside them. Beats show their purpose; sketches show their text, and **Expand sketch** opens the rest.
 
 <p align="center"><img src="images/timetable-panels.webp" alt="Timetable Panels beside the wheel: Pride and Prejudice scene cards, each with a character portrait over a picture of the place, the date, rings, characters and synopsis" width="800"></p>
@@ -139,6 +143,8 @@ Notes you open from the Timetable appear in a pane below the table, so the wheel
 The layout and panel size are saved with the view. The image choices (**Image**, **Text backing**, **Image sizing**, **Portrait shape** and **Character selection**) are shared with Canvas cards and apply across your books, and a card’s own picture choices stay with that note.
 
 ## Outline
+
+![The TimeTable outline beside an open scene note](images/homepage-outline-note.webp)
 
 **Outline** lists the book act by act in narrative order, whatever mode the timeline is in, with each scene’s synopsis. **Show beats** adds the story beats between them.
 
@@ -167,6 +173,8 @@ Sketches have a grip too, in Narrative. Drop a sketch on a scene to place it aft
 Each scene appears in every subplot lane it belongs to, as a card linked to its note, and lines connect the scenes of a lane in narrative order. Moving cards does not reorder your manuscript.
 
 <p align="center"><img src="images/canvas-subplot-map.webp" alt="Wickham's Story hovered on the wheel, and its four cards lit across the subplot lanes of the Canvas map beside it, with the story navigation bar reading Scene 16 of 61" width="800"></p>
+
+<p align="center"><img src="images/homepage-timeline-canvas.webp" alt="The timeline beside a Canvas subplot map of Pride and Prejudice" width="800"></p>
 
 - **Story navigation**, the bar along the top of the map: drag the slider to travel scene by scene (*Scene 16 of 61 · Wickham’s Story*), **Zoom to selection** to frame the selected cards, or **Fit all**. Act labels stay readable when you zoom out.
 - **Canvas card view**, in the Canvas title bar: **Preview** (synopsis or opening text), **Title**, or **Full note**. Notes in your books open in **Preview** on any Canvas, and a choice here lasts until you close that Canvas. Other notes keep Obsidian's usual look, and a Canvas with no book notes has no **Canvas card view** button. Double-click a card to edit its note. The same menu has the Panels image choices (**Image combinations**, **Background treatment**, **Character selection**, **Image sizing** and **Portrait shape**, shared with Panels), **Show overdue scenes**, which marks late scenes, and **Follow Shift-hover from timeline in Canvas**: hold Shift while you hover a scene on the wheel, and the map travels to it and holds it in view. Cards carry their subplot colors.

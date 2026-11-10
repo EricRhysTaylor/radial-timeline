@@ -71,6 +71,17 @@ describe('reference occurrences across actual ring layouts', () => {
         expect(markup).toContain('Later · 2040');
         expect(markup).not.toMatch(/NaN|Infinity/);
     });
+    it('makes one source circle per scene a button holding every reference it declares, in declared order', () => {
+        const markup = render(['2040', '1952', '1952']);
+        const origins = [...markup.matchAll(/<g class="ert-time-reference-origin" data-reference-keys="([^"]+)"[^>]*>/g)];
+        expect(origins).toHaveLength(1);
+        expect(origins[0][0]).toContain('role="button" tabindex="0"');
+        const unescape = (text: string) => text.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;|&apos;/g, "'").replace(/&amp;/g, '&');
+        const keys = JSON.parse(unescape(origins[0][1])) as string[];
+        // Its dates span two slots (Later, then Earlier); the circle still lists all three, as declared.
+        expect(keys.map(key => (JSON.parse(key) as unknown[])[1])).toEqual([0, 1, 2]);
+        expect(markup).toMatch(/<g class="ert-time-reference-origin"[^>]*>[^]*?<circle class="ert-time-reference-hit"/);
+    });
     it('shows three same-date marks and an actionable overflow containing every remaining reference', () => {
         const markup = render(Array(5).fill('1952'), 400, 520);
         expect(markup.match(/class="ert-time-reference-mark"/g)).toHaveLength(3);

@@ -48,6 +48,19 @@ export function referencePopoverContent(extent: string | undefined, rows: Refere
 }
 
 /**
+ * A source circle's popover: the scene as its heading, with how many references it has when there are several, then
+ * each reference in the order the author declared them. The rows leave out the source, which the heading names.
+ */
+export function sourcePopoverContent(source: string, references: TimeReference[], options: { planetCalendar: boolean }): ReferencePopoverContent {
+    const count = references.length > 1 ? t('timeReferences.referenceCount', { count: references.length }) : '';
+    return {
+        heading: [source, count].filter(Boolean).join(' · '),
+        rows: references.map(reference => ({ reference, source: '' })),
+        notes: options.planetCalendar ? [t('timeReferences.earthCalendar')] : [],
+    };
+}
+
+/**
  * Level with its marker, just outside the timeline on the marker's side (the timeline's `radius` from its center), so
  * it covers no scenes and leaves the route in view; kept inside the window.
  */

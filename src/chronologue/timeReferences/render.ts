@@ -83,8 +83,9 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
     const thickness = outerR - innerR;
     const textRadiusLimit = innerR + thickness * .4;
     const { size, sourceSize, pitch, base, capacity } = referenceRingGeometry(innerR, outerR);
-    let connectors = '', markers = '', origins = '';
-    const sourcePaths = new Set<string>();
+    let connectors = '', markers = '';
+    // One source circle per scene, carrying every reference the scene declares across all its dates.
+    const sources = new Map<string, { origin: { x: number; y: number }; radius: number; references: TimeReference[] }>();
     for (const [slotIndex, slot] of slots.entries()) {
         const refs = slot.references.filter(ref => byPath.get(ref.path)?.position);
         if (!refs.length) continue;
@@ -99,16 +100,9 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
             const index = mixed ? 0 : Math.min(refs.findIndex(ref => ref.path === path), shown.length - 1);
             const sourceAnchor = referenceSourceAnchor(innerR, outerR, parent.position!, slots);
             const route = referenceConnector(slot, terminalRadius(index), sourceAnchor);
-            if (!sourcePaths.has(path)) {
-                sourcePaths.add(path);
-                const { text, number } = parseSceneTitle(parent.item.title || '', parent.item.number);
-                const sourceLabel = [escapeXml(number), text].filter(Boolean).join(' · ');
-                const angle = Math.atan2(route.origin.y, route.origin.x);
-                const labelId = `ert-reference-source-${makeSceneId(parent.item.bookIndex ?? 0, ring, parent.index, true, true, path)}`;
-                origins += `<g class="ert-time-reference-origin" ${attrs(owned)} data-source-path="${escapeXml(encodeURIComponent(path))}"><desc>${sourceLabel}</desc>
-                    ${sourceCircle(route.origin.x, route.origin.y, size)}
-                    ${curvedReferenceLabel(labelId, sourceAnchor.radius + size, angle, sourceSize / 2 + 12, true, sourceLabel, 'ert-time-reference-origin-label', textRadiusLimit)}</g>`;
-            }
+            const source = sources.get(path);
+            if (source) source.references.push(...owned);
+            else sources.set(path, { origin: route.origin, radius: sourceAnchor.radius, references: [...owned] });
             const routeAttrs = `${attrs(owned)} data-source-path="${escapeXml(encodeURIComponent(path))}" fill="none"`;
             // Each casing is painted first and carries the connector class, so selection and filtering treat it
             // exactly like the line on top of it.
@@ -146,6 +140,22 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
         };
         shown.forEach((choices, index) => { markers += button(choices, terminalRadius(index), false, offRange && index === 0); });
         if (!mixed && refs.length > shown.length) markers += button(refs.slice(shown.length), terminalRadius(0), true);
+    }
+    // A source circle is a button too: hovering it shows all of its scene's routes at once (interactions.ts).
+    let origins = '';
+    for (const [path, { origin, radius, references }] of sources) {
+        const parent = byPath.get(path)!;
+        const { text, number } = parseSceneTitle(parent.item.title || '', parent.item.number);
+        const sourceLabel = [escapeXml(number), text].filter(Boolean).join(' · ');
+        const angle = Math.atan2(origin.y, origin.x);
+        const labelId = `ert-reference-source-${makeSceneId(parent.item.bookIndex ?? 0, ring, parent.index, true, true, path)}`;
+        const hit = Math.max(10, size + 4);
+        // In the order the author declared them, as the Timetable lists them.
+        const keys = [...references].sort((a, b) => a.index - b.index).map(ref => ref.key);
+        origins += `<g class="ert-time-reference-origin" data-reference-keys="${escapeXml(JSON.stringify(keys))}" data-ring="${ring}" data-source-path="${escapeXml(encodeURIComponent(path))}" role="button" tabindex="0"><desc>${sourceLabel}</desc>
+            <circle class="ert-time-reference-hit" cx="${num(origin.x)}" cy="${num(origin.y)}" r="${num(hit)}" fill="transparent"/>
+            ${sourceCircle(origin.x, origin.y, size)}
+            ${curvedReferenceLabel(labelId, radius + size, angle, sourceSize / 2 + 12, true, sourceLabel, 'ert-time-reference-origin-label', textRadiusLimit)}</g>`;
     }
     return connectors + markers + origins;
 }

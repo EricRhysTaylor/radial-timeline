@@ -104,6 +104,27 @@ choose a reference? The tooltip is not readable … Possibly we change it to a n
     on a choice, Escape, a click outside, a scroll or a redraw. A single reference still opens directly.
   - Styled with Obsidian's popover tokens (`--layer-popover`, `--shadow-l`, theme background and border).
 
+## 5. Many scenes with references: a scene-wide hover instead of colors (2026-11-10)
+
+Eric asked what happens with seven or eight scenes carrying references, and whether they'd be color coded. They
+aren't: section 1 showed subplot-tinted lines fall to about 1:1 contrast over pale fills, and eight more hues would
+compete with the subplot palette the scenes already wear. At rest, nothing tied a date mark to its scene. Only the
+hovered mark's line said where it came from.
+
+**Change:** the source circle is a button.
+- **Selection:** `ReferenceSelection.key` may be `null`, meaning every reference the scene declares.
+  `selectsReference` is the single rule the timeline and the Timetable use to decide what a selection covers.
+  `reconcileReferenceSelection` drops a whole-scene selection only when the scene has no references left.
+- **Markup:** `render.ts` draws one circle per scene after all the slots, carrying every reference key the scene
+  declares in declared order. Before, it carried only the first slot's keys. The circle has a hit circle, `role="button"` and
+  `tabindex="0"`.
+- **Hover or focus on the circle:** all of the scene's routes draw, each of its marks grows, and the source label
+  shows. Other marks, their counts and other source circles dim to 25%. The scene's Timetable reference rows
+  highlight. `sourcePopoverContent` heads the popover with the scene and lists its references without repeating it.
+- **Dimming:** a single-reference hover now also dims the other date marks to 25%, as this plan already described.
+  Before, only their labels dimmed.
+- **Click:** the same choosing popover as a group. A scene with one reference opens it directly.
+
 ## Verification
 
 - `vitest` on `src/chronologue/timeReferences`. The render tests now cover:
@@ -139,3 +160,17 @@ choose a reference? The tooltip is not readable … Possibly we change it to a n
     - The popover sits right of the timeline: "Nov 27, 1811", then the label, "Recollection · Nov 27, 1811",
       "35 · Darcy's Letter" and the passage.
     - Clicking Earlier opens "Earlier · 3 dates" left of the timeline with four reference buttons; Escape closes it.
+- **2026-11-10, scene-wide hover:**
+  - New tests cover `selectsReference`, keeping and dropping a whole-scene selection, the source popover's heading
+    and rows, and one source circle per scene holding all three keys of references split across two slots, in
+    declared order.
+  - The full `vitest` run: 6,025 passed, 40 skipped. `npm run build-only`, `npm run lint` and `lint:obsidian`
+    passed.
+  - Natively in the same copy:
+    - Hovering Darcy's Letter's circle draws both of its routes (across the seam to Earlier, and on to Jane's and
+      Bingley's dates). The popover reads "35 · Darcy's Letter · 5 references" with all five, and Last Days at
+      Hunsford's circle dims to 25%.
+    - Hovering Bingley's mark lights one line; the Earlier and Jane marks and the Hunsford circle sit at 25%.
+    - Clicking the circle opens the five references as buttons, with focus on the first; Escape closes it.
+    - Focusing Hunsford's circle from the keyboard shows its one route and popover; blur hides both.
+  - **Not checked natively:** the Timetable rows lighting on a scene-wide hover (the shared rule is unit-tested).

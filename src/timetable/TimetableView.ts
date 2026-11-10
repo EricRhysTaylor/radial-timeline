@@ -6,7 +6,7 @@ import { storyMapPrefix } from './storyMapPaths';
 import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { readTimeReferences, referenceDateLabel, TIME_REFERENCES_KEY, type TimeReference } from '../chronologue/timeReferences/model';
 import { manageTimeReferences, openTimeReference } from '../chronologue/timeReferences/editor';
-import { currentReferenceSelection, hoverTimeReference, onReferenceSelection, pinTimeReference } from '../chronologue/timeReferences/selection';
+import { currentReferenceSelection, hoverTimeReference, onReferenceSelection, pinTimeReference, selectsReference } from '../chronologue/timeReferences/selection';
 /*
  * Radial Timeline (tm) Plugin for Obsidian
  * Copyright (c) 2025 Eric Rhys Taylor
@@ -484,7 +484,7 @@ export class TimetableView extends BasesView {
             }
             this.markLinkedRow(selection?.path ?? null, null, false);
             this.rootEl.querySelectorAll<HTMLElement>('.ert-time-reference-row').forEach(row =>
-                row.toggleClass('is-reference-selected', row.dataset.referenceKey === selection?.key));
+                row.toggleClass('is-reference-selected', selectsReference(selection, row.dataset.sourcePath, row.dataset.referenceKey)));
         }));
         this.setUpKey();
         // One set of delegated handlers: rows are redrawn on every data update.
@@ -3729,7 +3729,7 @@ export class TimetableView extends BasesView {
             const row = body.createEl('tr', { cls: 'ert-time-reference-row' });
             row.dataset.referenceKey = reference.key;
             row.dataset.sourcePath = reference.path;
-            row.toggleClass('is-reference-selected', currentReferenceSelection()?.key === reference.key);
+            row.toggleClass('is-reference-selected', selectsReference(currentReferenceSelection(), reference.path, reference.key));
             const cell = row.createEl('td'); cell.colSpan = columnCount;
             const button = cell.createEl('button', { cls: 'ert-time-reference-open' });
             setIcon(button.createSpan(), icons[reference.kind]);

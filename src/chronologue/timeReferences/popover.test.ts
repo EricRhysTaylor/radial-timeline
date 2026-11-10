@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readTimeReferences } from './model';
-import { popoverPosition, readableReferenceSpan, referencePopoverContent } from './popover';
+import { popoverPosition, readableReferenceSpan, referencePopoverContent, sourcePopoverContent } from './popover';
 
 const refs = readTimeReferences([
     { Label: 'Old Mr. Darcy dies', When: '1807', Kind: 'recollection', Passage: 'My excellent father died about five years ago' },
@@ -29,6 +29,14 @@ describe('time reference popover', () => {
     it('heads one reference with its date, and two on one date with how many there are', () => {
         expect(referencePopoverContent('within', [row(bingley)], { clipped: false, planetCalendar: false }).heading).toBe('Nov 27, 1811');
         expect(referencePopoverContent('earlier', [row(ramsgate), row(ramsgateMention)], { clipped: false, planetCalendar: false }).heading).toBe('Earlier · Jul – Aug 1811 · 2 references');
+    });
+    it('heads a source circle\'s popover with its scene, and leaves the scene out of each row', () => {
+        const content = sourcePopoverContent('35 · Darcy’s Letter', [father, ramsgate, bingley], { planetCalendar: false });
+        expect(content.heading).toBe('35 · Darcy’s Letter · 3 references');
+        expect(content.rows.map(item => item.reference.label)).toEqual(['Old Mr. Darcy dies', 'Ramsgate', 'Bingley leaves for London']);
+        expect(content.rows.every(item => item.source === '')).toBe(true);
+        expect(sourcePopoverContent('35 · Darcy’s Letter', [bingley], { planetCalendar: true })).toEqual({
+            heading: '35 · Darcy’s Letter', rows: [{ reference: bingley, source: '' }], notes: ['Earth calendar'] });
     });
     it('notes an overlap with the displayed period, and the Earth calendar only while a planet calendar is on', () => {
         expect(referencePopoverContent('within', [row(jane)], { clipped: true, planetCalendar: true }).notes).toEqual(['Overlaps the displayed period', 'Earth calendar']);

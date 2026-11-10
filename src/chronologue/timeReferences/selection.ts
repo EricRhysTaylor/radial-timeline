@@ -1,5 +1,13 @@
-/** Ephemeral shared selection; no plugin state is written into author notes. */
-export interface ReferenceSelection { path: string; key: string; reveal?: boolean }
+/**
+ * Ephemeral shared selection; no plugin state is written into author notes. A null key selects every reference the
+ * scene declares (hovering its source circle on the timeline).
+ */
+export interface ReferenceSelection { path: string; key: string | null; reveal?: boolean }
+
+/** Whether a selection covers one reference: that reference, or its whole scene. */
+export function selectsReference(selection: ReferenceSelection | null, path: string | undefined, key: string | undefined): boolean {
+    return !!selection && selection.path === path && (selection.key === null || selection.key === key);
+}
 let hovered: ReferenceSelection | null = null;
 let pinned: ReferenceSelection | null = null;
 const listeners = new Set<(selection: ReferenceSelection | null) => void>();
@@ -23,7 +31,9 @@ export function onReferenceSelection(listener: (selection: ReferenceSelection | 
 /** Array locators are valid only while their captured declarations still exist. */
 export function reconcileReferenceSelection(path: string, validKeys: ReadonlySet<string>): void {
     let changed = false;
-    if (hovered?.path === path && !validKeys.has(hovered.key)) { hovered = null; changed = true; }
-    if (pinned?.path === path && !validKeys.has(pinned.key)) { pinned = null; changed = true; }
+    const stale = (selection: ReferenceSelection | null): boolean =>
+        selection?.path === path && (selection.key === null ? validKeys.size === 0 : !validKeys.has(selection.key));
+    if (stale(hovered)) { hovered = null; changed = true; }
+    if (stale(pinned)) { pinned = null; changed = true; }
     if (changed) publish();
 }

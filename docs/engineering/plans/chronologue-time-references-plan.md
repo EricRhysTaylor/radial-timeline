@@ -68,6 +68,15 @@ attached to that scene, with one or more rendered occurrences.
   Direct reference hover/focus previews one connection. Clicking pins that
   connection until another reference or the timeline background is clicked;
   subsequent hovering cannot displace it. Sibling routes remain hidden.
+- The source circle is a button too (2026-11-10, for books where many scenes
+  carry references; no color coding, which fails contrast over subplot fills and
+  competes with the subplot palette). Hovering or focusing it selects the whole
+  scene (`key: null` in the shared selection): every route from that scene draws
+  at once, each of its date marks grows, other marks and source circles dim to
+  25%, its Timetable reference rows highlight, and a popover headed with the
+  scene ("35 · Darcy's Letter · 5 references") lists its references in declared
+  order. Clicking it opens the same popover with each reference as a button; a
+  scene with a single reference opens that reference directly.
 - The Timetable has one parent scene row, a reference count/disclosure, and one
   set of nested reference rows. Hover does not force expansion or scroll jumps.
   Activation holds selection, expands references and opens an exact passage.

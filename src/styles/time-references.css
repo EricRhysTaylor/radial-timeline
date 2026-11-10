@@ -40,8 +40,12 @@
 }
 .ert-time-reference-mark { transform-box: fill-box; transform-origin: center; }
 .ert-time-reference.is-active .ert-time-reference-mark { transform: scale(1.35); }
+/* While a reference or a whole scene is shown, everything else steps back: other marks, their labels and counts, and
+   other source circles. */
 .ert-has-reference-selection .ert-time-reference:not(.is-date-active) .ert-time-reference-range,
+.ert-has-reference-selection .ert-time-reference:not(.is-active) :is(.ert-time-reference-mark, .ert-time-reference-count),
 .ert-has-reference-selection .ert-time-reference-origin:not(.is-active):not(.ert-time-reference-filtered) { opacity: 0.25; }
+/* A source circle answers only through its hit target, so its caption never catches the pointer. */
 .ert-time-reference-origin { pointer-events: none; }
 .ert-time-reference-origin-label { opacity: 0; fill: var(--text-normal); font-size: 13px; font-weight: 600; paint-order: stroke; stroke: var(--background-primary); stroke-width: 3px; }
 .ert-time-reference-origin.is-active .ert-time-reference-origin-label { opacity: 1; }

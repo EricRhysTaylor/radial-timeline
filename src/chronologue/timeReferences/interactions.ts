@@ -2,9 +2,9 @@ import type { RadialTimelineView } from '../../view/TimeLineView';
 import { currentTimelineColoring, currentTimelineLens, onTimelineOverlayChange } from '../../timetable/timetableRegistry';
 import { getActivePlanetaryProfile } from '../../utils/planetaryTime';
 import { openTimeReference } from './editor';
-import { onReferenceSelection, hoverTimeReference, pinTimeReference, currentReferenceSelection, type ReferenceSelection } from './selection';
+import { onReferenceSelection, hoverTimeReference, pinTimeReference, currentReferenceSelection, selectsReference, type ReferenceSelection } from './selection';
 import { readTimeReferences, type TimeReference } from './model';
-import { ReferencePopover, referencePopoverContent } from './popover';
+import { ReferencePopover, referencePopoverContent, sourcePopoverContent } from './popover';
 
 export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SVGSVGElement): void {
     const references = new Map<string, TimeReference>();
@@ -23,10 +23,18 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
             if (reference) references.set(key, { ...reference, index, key });
         });
     });
-    const groupOf = (target: EventTarget | null): Element | null => target instanceof Element ? target.closest('.ert-time-reference') : null;
+    // A date marker, or a source circle (the scene end of every route from that scene).
+    const groupOf = (target: EventTarget | null): Element | null => target instanceof Element ? target.closest('.ert-time-reference, .ert-time-reference-origin') : null;
+    const isSource = (group: Element): boolean => group.classList.contains('ert-time-reference-origin');
     const keysOf = (group: Element): string[] => {
         const parsed: unknown = JSON.parse(group.getAttribute('data-reference-keys') ?? '[]');
         return Array.isArray(parsed) ? parsed.filter((key): key is string => typeof key === 'string') : [];
+    };
+    // A marker selects its first reference; a source circle selects its whole scene.
+    const selectionFor = (group: Element): ReferenceSelection | null => {
+        const reference = references.get(keysOf(group)[0]);
+        if (!reference) return null;
+        return isSource(group) ? { path: reference.path, key: null } : { path: reference.path, key: reference.key };
     };
     const update = (): void => {
         const lens = currentTimelineLens(), coloring = currentTimelineColoring();
@@ -71,14 +79,17 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
     update();
     view.renderScope.register(onTimelineOverlayChange(update));
     const applySelection = (selection: ReferenceSelection | null): void => {
-        svg.classList.toggle('ert-has-reference-selection', !!selection && references.has(selection.key));
+        const holds = (group: Element): boolean => keysOf(group).some(key => selectsReference(selection, references.get(key)?.path, key));
+        svg.classList.toggle('ert-has-reference-selection', Array.from(references.values()).some(ref => selectsReference(selection, ref.path, ref.key)));
         svg.querySelectorAll('.ert-time-reference-origin[data-source-path]').forEach(group => {
             group.classList.toggle('is-active', !!selection && group.getAttribute('data-source-path') === encodeURIComponent(selection.path));
         });
         const markers = Array.from(svg.querySelectorAll<SVGElement>('.ert-time-reference'));
-        const selected = markers.find(group => !!selection && keysOf(group).includes(selection.key));
+        // One reference lights its own marker. A whole scene (its source circle) lights every route and marker it owns.
+        const key = selection?.key;
+        const selected = key ? markers.find(group => keysOf(group).includes(key)) : undefined;
         svg.querySelectorAll<SVGElement>('.ert-time-reference-connector').forEach(connector => {
-            const active = !!selection && keysOf(connector).includes(selection.key);
+            const active = holds(connector);
             connector.classList.toggle('is-active', active);
             if (active && selected && !connector.classList.contains('ert-time-reference-break')) {
                 // Same-date stacks share a route; its last leg follows the selected passage marker.
@@ -86,8 +97,8 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
             }
         });
         markers.forEach(group => {
-            group.classList.toggle('is-active', group === selected);
-            group.classList.toggle('is-date-active', !!selected && group.dataset.referenceSlot === selected.dataset.referenceSlot);
+            group.classList.toggle('is-active', selected ? group === selected : holds(group));
+            group.classList.toggle('is-date-active', selected ? group.dataset.referenceSlot === selected.dataset.referenceSlot : holds(group));
         });
     };
     view.renderScope.register(onReferenceSelection(applySelection));
@@ -99,7 +110,7 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
         applySelection(currentReferenceSelection());
     });
     view.renderScope.register(() => win.cancelAnimationFrame(countFrame));
-    // The marker's popover: the references it holds, readable, beside the marker on the side away from the center.
+    // The popover: the references a marker or a source circle holds, readable, just outside the timeline.
     const doc = svg.ownerDocument;
     const popover = new ReferencePopover(doc);
     view.renderScope.register(() => popover.hide());
@@ -109,9 +120,12 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
     const showPopover = (group: Element, choose?: (reference: TimeReference) => void): void => {
         const choices = choicesOf(group);
         if (!choices.length) return;
-        const content = referencePopoverContent(group.getAttribute('data-extent') ?? undefined,
-            choices.map(reference => ({ reference, source: sourceTitle(reference.path) })),
-            { clipped: group.hasAttribute('data-clipped'), planetCalendar: !!getActivePlanetaryProfile(view.plugin.settings) });
+        const planetCalendar = !!getActivePlanetaryProfile(view.plugin.settings);
+        const content = isSource(group)
+            ? sourcePopoverContent(sourceTitle(choices[0].path), choices, { planetCalendar })
+            : referencePopoverContent(group.getAttribute('data-extent') ?? undefined,
+                choices.map(reference => ({ reference, source: sourceTitle(reference.path) })),
+                { clipped: group.hasAttribute('data-clipped'), planetCalendar });
         // The timeline's center on screen, and its reach: the drawing fills the shorter side of the SVG.
         const box = svg.getBoundingClientRect();
         popover.show(content, group, { x: box.left + box.width / 2, y: box.top + box.height / 2 }, Math.min(box.width, box.height) / 2, choose);
@@ -119,8 +133,8 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (event: Event) => {
         const group = groupOf(event.target);
         if (!group) return;
-        const reference = references.get(keysOf(group)[0]);
-        if (reference) hoverTimeReference({ path: reference.path, key: reference.key });
+        const selection = selectionFor(group);
+        if (selection) hoverTimeReference(selection);
         if (!popover.pinned) showPopover(group);
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (event: Event) => {
@@ -150,8 +164,8 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'wheel', () => popover.hide());
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'focusin', (event: Event) => {
         const group = groupOf(event.target);
-        const reference = group ? references.get(keysOf(group)[0]) : undefined;
-        if (reference) hoverTimeReference({ path: reference.path, key: reference.key });
+        const selection = group ? selectionFor(group) : null;
+        if (selection) hoverTimeReference(selection);
         if (group && !popover.pinned) showPopover(group);
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'focusout', (event: Event) => {

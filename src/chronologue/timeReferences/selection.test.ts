@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { currentReferenceSelection, hoverTimeReference, onReferenceSelection, pinTimeReference, reconcileReferenceSelection } from './selection';
+import { currentReferenceSelection, hoverTimeReference, onReferenceSelection, pinTimeReference, reconcileReferenceSelection, selectsReference } from './selection';
 
 afterEach(() => { hoverTimeReference(null); pinTimeReference(null); });
 
@@ -42,6 +42,23 @@ describe('reference selection lifetime', () => {
         pinTimeReference({ path: 'other.md', key: 'retained' });
         reconcileReferenceSelection('scene.md', new Set());
         expect(currentReferenceSelection()?.key).toBe('retained');
+    });
+
+    it('a whole-scene selection covers every reference that scene declares, and only those', () => {
+        const scene = { path: 'scene.md', key: null };
+        expect(selectsReference(scene, 'scene.md', 'first')).toBe(true);
+        expect(selectsReference(scene, 'scene.md', 'second')).toBe(true);
+        expect(selectsReference(scene, 'other.md', 'first')).toBe(false);
+        expect(selectsReference({ path: 'scene.md', key: 'first' }, 'scene.md', 'second')).toBe(false);
+        expect(selectsReference(null, 'scene.md', 'first')).toBe(false);
+    });
+
+    it('keeps a whole-scene hover while the scene has references, and drops it when none remain', () => {
+        hoverTimeReference({ path: 'scene.md', key: null });
+        reconcileReferenceSelection('scene.md', new Set(['new']));
+        expect(currentReferenceSelection()).toEqual({ path: 'scene.md', key: null });
+        reconcileReferenceSelection('scene.md', new Set());
+        expect(currentReferenceSelection()).toBeNull();
     });
 
     it('retains unchanged keys and removes disposed listeners', () => {

@@ -2426,23 +2426,16 @@
   background: var(--ert-legend-dot);
 }
 
-/* A time reference as the timeline draws it: hollow circles at the source and the date, joined by the line. */
-.ert-timeline-legend__icon--reference {
-  gap: 0;
-}
-
-.ert-timeline-legend__reference-source,
-.ert-timeline-legend__reference-date {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1.5px var(--text-normal);
-}
-
-.ert-timeline-legend__reference-line {
-  width: 7px;
-  height: 2px;
-  background: var(--text-normal);
+/* Time reference marks as the timeline draws them: a hollow source circle, the line, hollow arrowheads. Wider than
+   an icon, and drawn at their own size in the full and compact keys alike. */
+.ert-timeline-legend__row .ert-timeline-legend__icon svg.ert-timeline-legend__reference {
+  width: 28px;
+  height: 12px;
+  fill: none;
+  stroke: var(--text-normal);
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 /* Compact key (the Timetable's): one line per row, label then detail. */

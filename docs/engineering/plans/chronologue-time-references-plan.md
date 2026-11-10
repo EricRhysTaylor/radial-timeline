@@ -16,15 +16,25 @@ attached to that scene, with one or more rendered occurrences.
 
 ## Agreed interaction and geometry
 
-- A reference ends in a hollow circle, 0.65 of the marker size in radius (up to
-  6.5 SVG units), at the clockwise interior corner of its date position. It
-  overlays scene geometry and never receives a scene slot. Marker bases sit four
-  SVG units above the inner edge. Only Later markers lift another six units to
-  clear the subplot dominance triangle.
+- A reference ends in a hollow arrowhead at the clockwise interior corner of its
+  date position (2026-11-10, chosen by Eric over chevrons). The arrowhead points
+  along the ring the way the date lies from its scene: counter-clockwise for a
+  date before the scene, clockwise for one after it. Dates before the timeline's
+  start or after its end (the Earlier and Later groups at the seam) take a double
+  arrowhead. A marker whose references point both ways, or a span around the
+  scene's own time, takes a diamond, the two arrowheads joined. Marks are sized
+  from the ring's reference size (up to 10 SVG units): two sizes across the ring,
+  one and a half along it. They overlay scene geometry and never receive a scene
+  slot. Marker centers sit a size and a half above the inner edge, so a mark and
+  its casing sit wholly on the scene, clear of the backdrop ring. Only Later
+  markers lift another six units to clear the subplot dominance triangle.
+- References paint in their own layer after the Chronologue overlays (backdrops,
+  micro-backdrops, seam dates) and before the synopses, so nothing but a hover
+  synopsis covers a mark or its line.
 - From the middle of the master scene's inner edge, a short radial feed reaches
   a concentric track 32% inside the outer ring border. The arc follows that track
-  and ends radially at the reference circle. It reads as a callout (2026-11-09):
-  a 3.5 px line and 3 px circle strokes in the theme text color, each on a
+  and ends radially at the reference mark. It reads as a callout (2026-11-09):
+  a 3.5 px line and 2.5 px mark strokes in the theme text color, each on a
   casing in the background color 1 px wider on each side. The casing keeps 3:1
   contrast (WCAG 1.4.11) over every subplot fill in both themes; the earlier
   source hue blended with the text color fell to about 1:1 over pale fills.
@@ -33,21 +43,23 @@ attached to that scene, with one or more rendered occurrences.
 - Connectors never cross the central status grid or travel through another ring.
   A coincident date produces a radial connection rather than an artificial arc.
 - Same-date references stack radially at the same angle, with at most three
-  visible squares. A selectable `+N` retains overflow. Narrow rings and different
+  visible marks. A selectable `+N` retains overflow. Narrow rings and different
   dates too close together use an explicit selectable count cluster.
 - Reference relationships appear once on All Scenes. Subplot memberships still
   belong to the source scene; references do not create subplot copies or imply
   that another scene at the referenced date participates in the relationship.
-- The same hollow circle marks the source near the middle of its inner edge,
-  offset beside the Question icon (the clearance still reserves the old
-  16-unit source mark). Its selected scene caption follows the ring on a text
-  path. The selected date circle grows to 135% of its normal size; other
-  reference marks and unrelated date labels dim to 25%.
+- A hollow circle, one size in radius so its core stays open, marks the source
+  near the middle of its inner edge, offset beside the Question icon. When a date
+  mark is too close, it steps out past the marks' span (at most 60% of the ring
+  thickness). Its selected scene caption follows the ring on a text path. The
+  selected date mark grows to 135% of its normal size; other reference marks and
+  unrelated date labels dim to 25%. The Timeline key shows the route and the
+  four kinds of mark.
 - Source, Earlier and Later labels follow circular text paths; lower-half paths
   reverse to stay upright. Guide paths live in SVG definitions and do not
   enlarge hit bounds.
 - Selecting a same-date stack entry moves the shared route's final leg to that
-  entry's marker. Its date label stays readable; the sibling squares dim.
+  entry's marker. Its date label stays readable; the sibling marks dim.
   Referenced-date details name the owning scene.
 - Ordinary scene/ring and parent Timetable-row hovers do not reveal routes.
   Direct reference hover/focus previews one connection. Clicking pins that
@@ -193,7 +205,7 @@ reference its parent's reading time.
 | Managed field boundary | `src/sceneProperties/scenePropertyAdapter.ts`, `src/sceneProperties/scenePropertyPolicy.ts`, `src/utils/frontmatter.ts` | Explicit optional field enrollment, safe targeted writes |
 | Scene chronological order | `src/utils/sceneHelpers.ts` (`buildChronologueSceneSequence`) | Preserve primary order; overlay references without changing scene/label positions |
 | Angular slots | `src/renderer/utils/SceneLayout.ts` | Reference overlays on unchanged primary positions; existing modes keep their contract |
-| Ring rendering and metadata | `src/renderer/renderers/RingRenderer.ts`, `src/renderer/components/Scenes.ts`, `src/renderer/components/SceneArcs.ts` | Small square terminals and concentric interior tracks with seam discontinuities |
+| Ring rendering and metadata | `src/renderer/renderers/RingRenderer.ts`, `src/renderer/components/Scenes.ts`, `src/renderer/components/SceneArcs.ts` | Directional arrowhead terminals and concentric interior tracks with seam discontinuities |
 | Chronologue orchestration and labels | `src/renderer/TimelineRenderer.ts`, `src/renderer/utils/Chronologue.ts` | Consume shared positions; preserve primary-only duration/overlap overlays |
 | Wheel/table hover | `src/view/interactions/TimetableLink.ts`, `src/timetable/timetableRegistry.ts` | Select one reference on All Scenes, retaining scene-path API behavior |
 | Parent and child rows | `src/timetable/TimetableView.ts`, `src/timetable/timetableModel.ts` | Dedicated reference subrows outside file-row/bulk-selection maps |

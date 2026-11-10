@@ -548,6 +548,7 @@ export function createTimelineSVG(
     const stopRingRender = startPerfSegment(plugin, 'timeline.render-rings');
 
     const foregroundElements: string[] = [];
+    const referenceElements: string[] = [];
     const ringRenderContext: RingRenderContext = {
         plugin,
         scenes,
@@ -564,6 +565,7 @@ export function createTimelineSVG(
         maxTextWidth,
         synopsesElements,
         foregroundElements,
+        referenceElements,
         outerRingPositionByKey,
         outerRingChapterBoundaryGeometry: showChapterMarkers ? new Map<string, OuterRingChapterBoundaryGeometry>() : undefined,
         maxStageColor // Pass for Gossamer mode beat strokes
@@ -726,8 +728,7 @@ export function createTimelineSVG(
     svg += renderSubplotLabels({ NUM_RINGS, ringStartRadii, ringWidths, masterSubplotOrder, subplotColorFor, plugin });
     svg += `</g>`;
 
-    // Scene-title sources stay with their scenes; paint them and the reference
-    // controls after the headlines.
+    // Scene-title sources stay with their scenes; paint them after the headlines.
     svg += `<g class="ert-scene-foreground">${foregroundElements.join('')}</g>`;
 
     let chronologueOverlaysHtml = '';
@@ -772,6 +773,10 @@ export function createTimelineSVG(
     if (isChronologueMode && boundaryLabelsHtml) {
         svg += boundaryLabelsHtml;
     }
+
+    // Time references after the Chronologue overlays, so no backdrop, micro-backdrop or seam date covers a mark
+    // or its line; synopses still paint over them.
+    if (referenceElements.length) svg += `<g class="ert-time-reference-layer">${referenceElements.join('')}</g>`;
 
     svg += synopsisHTML;
 

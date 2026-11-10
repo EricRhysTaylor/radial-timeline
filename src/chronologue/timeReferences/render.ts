@@ -4,21 +4,63 @@ import { escapeXml } from '../../utils/svg';
 import { parseSceneTitle } from '../../utils/text';
 import { makeSceneId } from '../../utils/numberSquareHelpers';
 import type { PositionInfo } from '../../renderer/utils/SceneLayout';
-import { referenceConnector, referenceDateIdentity, referenceRingGeometry, referenceSourceAnchor, type ReferenceSlot } from './layout';
-import { referenceDateLabel, type TimeReference } from './model';
+import { REFERENCE_MARK, referenceConnector, referenceDateIdentity, referenceMarkReach, referenceRingGeometry, referenceSourceAnchor, type ReferenceSlot } from './layout';
+import { parseReferenceDate, referenceDateLabel, type TimeReference } from './model';
 
 // Lucide Activity, matching the single-line icon convention used by the timeline indicators.
 const ACTIVITY_PATH = 'M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2';
 
 /**
- * A reference reads as a callout: a line in the theme's text color, with hollow circles at the source and the
- * date. Every stroke rides on a casing in the background color, so it holds contrast over any subplot fill
- * (the source hue mixed with the text color fell to about 1:1 over pale fills). Colors live in time-references.css.
+ * A reference reads as a callout: a line in the theme's text color from a hollow circle at the source scene to a
+ * hollow arrowhead at the date. Every stroke rides on a casing in the background color, so it holds contrast over
+ * any subplot fill (the source hue mixed with the text color fell to about 1:1 over pale fills). Colors live in
+ * time-references.css.
+ *
+ * The arrowhead points along the timeline the way the date lies from its scene: counter-clockwise back in time,
+ * clockwise forward. A date before the timeline's start or after its end (the Earlier and Later groups at the seam)
+ * takes a double arrowhead. A mark whose references point both ways, or a date around the scene's own time, takes a
+ * diamond: the two arrowheads joined.
  */
-const endCircle = (x: number, y: number, r: number, cls: string): string =>
-    `<circle class="ert-time-reference-casing" cx="${x}" cy="${y}" r="${r}"/><circle class="${cls}" cx="${x}" cy="${y}" r="${r}"/>`;
-/** The ends are a little wider than the old squares so the hollow core still shows the scene beneath. */
-const endRadius = (size: number): number => size * 0.65;
+export type ReferenceDirection = 'back' | 'forward' | 'both';
+
+const num = (value: number): number => Number(value.toFixed(2));
+const cased = (tag: 'circle' | 'polygon', shapes: string[], cls: string): string =>
+    shapes.map(shape => `<${tag} class="ert-time-reference-casing" ${shape}/>`).join('') + shapes.map(shape => `<${tag} class="${cls}" ${shape}/>`).join('');
+
+/** The source scene's end of a callout: a hollow circle one size in radius, its core open on the scene. */
+const sourceCircle = (x: number, y: number, size: number): string =>
+    cased('circle', [`cx="${num(x)}" cy="${num(y)}" r="${num(size)}"`], 'ert-time-reference-source-mark');
+
+/** The date's end of a callout, centered on (x, y) and oriented along the ring through it. */
+function dateMark(x: number, y: number, size: number, direction: ReferenceDirection, double: boolean): string {
+    const angle = Math.atan2(y, x);
+    // Along the ring clockwise on screen (forward in time), and across it, outward.
+    const along = [-Math.sin(angle), Math.cos(angle)], across = [Math.cos(angle), Math.sin(angle)];
+    const at = (t: number, r: number) => `${num(x + along[0] * t + across[0] * r)},${num(y + along[1] * t + across[1] * r)}`;
+    const half = size * REFERENCE_MARK.span / 2, length = size * REFERENCE_MARK.length, gap = size * REFERENCE_MARK.gap;
+    let shapes: string[];
+    if (direction === 'both') {
+        shapes = [[at(length / 2, 0), at(0, half), at(-length / 2, 0), at(0, -half)].join(' ')];
+    } else {
+        const sign = direction === 'forward' ? 1 : -1;
+        shapes = (double ? [-gap / 2, gap / 2] : [0]).map(shift => {
+            const center = shift * sign;
+            return [at(center - sign * length / 2, half), at(center + sign * length / 2, 0), at(center - sign * length / 2, -half)].join(' ');
+        });
+    }
+    return `<g class="ert-time-reference-mark" data-direction="${direction}"${double ? ' data-beyond="true"' : ''}>${cased('polygon', shapes.map(points => `points="${points}"`), 'ert-time-reference-slice')}</g>`;
+}
+
+/** Where a reference's date lies from its own scene's time: wholly before it, wholly after it, or around it. */
+export function referenceDirection(ref: TimeReference, scene: TimelineItem): ReferenceDirection {
+    const own = parseReferenceDate(scene.rawFrontmatter?.When);
+    const start = own?.start ?? (scene.when instanceof Date ? scene.when.getTime() : NaN);
+    if (!Number.isFinite(start)) return 'both';
+    const end = own?.end ?? start + 1;
+    if ((ref.end?.end ?? ref.when.end) <= start) return 'back';
+    if (ref.when.start >= end) return 'forward';
+    return 'both';
+}
 
 /** Text follows the ring baseline; reverse lower-half paths to keep labels upright. */
 function curvedReferenceLabel(id: string, radius: number, angle: number, gap: number, before: boolean, text: string, className: string, maxRadius: number): string {
@@ -64,7 +106,7 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
                 const angle = Math.atan2(route.origin.y, route.origin.x);
                 const labelId = `ert-reference-source-${makeSceneId(parent.item.bookIndex ?? 0, ring, parent.index, true, true, path)}`;
                 origins += `<g class="ert-time-reference-origin" ${attrs(owned)} data-source-path="${escapeXml(encodeURIComponent(path))}"><desc>${sourceLabel}</desc>
-                    ${endCircle(route.origin.x, route.origin.y, endRadius(size), 'ert-time-reference-source-mark')}
+                    ${sourceCircle(route.origin.x, route.origin.y, size)}
                     ${curvedReferenceLabel(labelId, sourceAnchor.radius, angle, sourceSize / 2 + 12, true, sourceLabel, 'ert-time-reference-origin-label', textRadiusLimit)}</g>`;
             }
             const routeAttrs = `${attrs(owned)} data-source-path="${escapeXml(encodeURIComponent(path))}" fill="none"`;
@@ -81,17 +123,22 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
         const offRange = slot.extent === 'earlier' || slot.extent === 'later';
         const extentLabel = slot.extent === 'within' ? '' : t(`timeReferences.${slot.extent}`);
         const dateLabel = dateCount > 1 ? t('timeReferences.dateGroups', { count: dateCount }) : referenceDateLabel(refs[0]);
+        const reach = referenceMarkReach(size);
         const button = (choices: TimeReference[], radius: number, overflow: boolean, showRange = false): string => {
             const x = radius * Math.cos(slot.angle), y = radius * Math.sin(slot.angle);
+            const directions = new Set(choices.map(ref => referenceDirection(ref, byPath.get(ref.path)!.item)));
+            const direction: ReferenceDirection = slot.extent === 'earlier' ? 'back' : slot.extent === 'later' ? 'forward'
+                : directions.size === 1 ? [...directions][0] : 'both';
             const detail = choices.map(ref => `${byPath.get(ref.path)!.item.title} · ${ref.label} · ${referenceDateLabel(ref)} · ${t(`timeReferences.kinds.${ref.kind}`)}`).join('\n');
             const title = escapeXml([overflow ? t('timeReferences.cluster', { count: choices.length }) : '', extentLabel, dateCount > 1 ? dateLabel : '', slot.clipped ? t('timeReferences.overlapsRange') : '', detail, t('timeReferences.earthCalendar')].filter(Boolean).join('\n'));
             const parent = byPath.get(choices[0].path)!;
             const labelId = `ert-reference-date-${slotIndex}-${makeSceneId(parent.item.bookIndex ?? 0, ring, parent.index, true, true, choices[0].path)}`;
-            const rangeLabel = showRange ? `<g class="ert-time-reference-label">${curvedReferenceLabel(labelId, radius, slot.angle, size / 2 + 12, slot.extent === 'earlier', escapeXml(`${extentLabel} · ${dateLabel}`), 'ert-time-reference-range', textRadiusLimit)}</g>` : '';
-            const mixedX = x + (slot.extent === 'earlier' ? -(endRadius(size) + 6) : endRadius(size) + 6);
+            const rangeLabel = showRange ? `<g class="ert-time-reference-label">${curvedReferenceLabel(labelId, radius, slot.angle, reach + 8, slot.extent === 'earlier', escapeXml(`${extentLabel} · ${dateLabel}`), 'ert-time-reference-range', textRadiusLimit)}</g>` : '';
+            const mixedX = x + (slot.extent === 'earlier' ? -(reach + 6) : reach + 6);
+            const hit = Math.max(10, reach);
             return `<g class="ert-time-reference" ${attrs(choices)} data-extent="${slot.extent}" data-reference-slot="${ring}-${items[0]?.bookIndex ?? 0}-${slotIndex}" data-reference-x="${x}" data-reference-y="${y}"${overflow ? ' data-reference-overflow="true"' : ''} role="button" tabindex="0" data-rt-tip="${title}"><desc>${title}</desc>
-                <rect class="ert-time-reference-hit" x="${x - 10}" y="${y - 10}" width="20" height="20" fill="transparent"/>
-                ${overflow ? curvedReferenceLabel(`${labelId}-overflow`, radius, slot.angle, size / 2 + 12, slot.extent === 'earlier', `+${choices.length}`, 'ert-time-reference-count', textRadiusLimit) : endCircle(x, y, endRadius(size), 'ert-time-reference-slice')}
+                <rect class="ert-time-reference-hit" x="${num(x - hit)}" y="${num(y - hit)}" width="${num(2 * hit)}" height="${num(2 * hit)}" fill="transparent"/>
+                ${overflow ? curvedReferenceLabel(`${labelId}-overflow`, radius, slot.angle, size / 2 + 12, slot.extent === 'earlier', `+${choices.length}`, 'ert-time-reference-count', textRadiusLimit) : dateMark(x, y, size, direction, slot.extent === 'earlier' || slot.extent === 'later')}
                 ${rangeLabel}
                 ${mixed && !overflow ? `<text class="ert-time-reference-count" x="${mixedX}" y="${y + 4}" text-anchor="${slot.extent === 'earlier' ? 'end' : 'start'}">${refs.length}</text>` : ''}</g>`;
         };

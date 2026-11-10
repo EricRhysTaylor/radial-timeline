@@ -14,17 +14,28 @@ export interface ReferenceSlot {
 }
 export interface ReferenceLayout { positions: Map<number, PositionInfo>; slots: ReferenceSlot[] }
 
+/**
+ * A date mark's proportions, in multiples of the ring's reference size: an arrowhead spans two sizes across the ring
+ * and one and a half along it; a double arrowhead adds a second one a little more than a size further on.
+ */
+export const REFERENCE_MARK = { span: 2, length: 1.5, gap: 1.2 } as const;
+/** How far a date mark reaches along the ring from its center: half a double arrowhead. */
+export const referenceMarkReach = (size: number): number => size * (REFERENCE_MARK.length + REFERENCE_MARK.gap) / 2;
+
 /** Shared ring geometry keeps routes, stacked markers and seam labels in the scene interior. */
 export function referenceRingGeometry(innerR: number, outerR: number) {
     const thickness = outerR - innerR;
     const size = Math.min(10, thickness * .16);
-    const pitch = size + 6;
-    const base = innerR + size / 2 + 4;
+    // A mark reaches one size to either side of its center across the ring; stacked marks keep a small gap.
+    const pitch = size * REFERENCE_MARK.span + 4;
+    // Half a size clear of the ring's inner edge, where the backdrop ring meets it, so the mark and its casing sit
+    // wholly on the scene.
+    const base = innerR + size * 1.5;
     return {
         track: innerR + thickness * .68,
         base, size, pitch,
         sourceSize: Math.min(16, thickness * .26),
-        capacity: Math.max(1, Math.min(3, Math.floor((outerR - base - size / 2) / pitch))),
+        capacity: Math.max(1, Math.min(3, Math.floor((outerR - base - size) / pitch) + 1)),
         seamOffset: Math.PI / 45,
     };
 }
@@ -104,7 +115,7 @@ function arc(radius: number, from: number, to: number): string {
 
 /** Keep the master marker clear of date stacks without moving the dates or the scene. */
 export function referenceSourceAnchor(innerR: number, outerR: number, source: PositionInfo, slots: ReferenceSlot[]): { angle: number; radius: number } {
-    const { track, base, size, sourceSize } = referenceRingGeometry(innerR, outerR);
+    const { track, base, size } = referenceRingGeometry(innerR, outerR);
     const center = source.startAngle + source.angularSize / 2;
     // Both choices sit beside the center Question icon and inside this scene.
     const offset = Math.min(32 / track, source.angularSize / 4);
@@ -112,15 +123,15 @@ export function referenceSourceAnchor(innerR: number, outerR: number, source: Po
     const alternate = center - offset;
     const clearance = (angle: number) => slots.reduce((closest, slot) =>
         Math.min(closest, Math.abs(2 * base * Math.sin((angle - slot.angle) / 2))), Infinity);
-    // Include the selected date's enlargement and the rotated square corners.
-    const required = (sourceSize + size * 1.35) / Math.sqrt(2) + 4;
+    // The source circle (one size in radius) beside a selected date mark, which grows to 1.35 times its reach.
+    const required = size + referenceMarkReach(size) * 1.35 + 4;
     const preferredClearance = clearance(preferred);
     if (preferredClearance >= required) return { angle: preferred, radius: base };
-    // Clear the date-label baseline as well as the square stack. Stay in the
-    // inner half of the source scene, below its title and beside its Question.
+    // Step out past the date marks' span, so the circle clears them radially, staying in the inner part of the
+    // source scene, below its title and beside its Question.
     return {
         angle: clearance(alternate) > preferredClearance ? alternate : preferred,
-        radius: Math.min(base + sourceSize / 2 + 20, (innerR + outerR) / 2)
+        radius: Math.min(base + size * 2 + 2, innerR + (outerR - innerR) * .6)
     };
 }
 

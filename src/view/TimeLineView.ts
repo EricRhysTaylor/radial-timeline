@@ -2685,7 +2685,10 @@ export class RadialTimelineView extends ItemView {
                 rows: [
                     { icon: 'arrow-left-right', label: t('ui.timeLineView.legendShiftCapsLock'), detail: t('ui.timeLineView.legendShiftCapsLockDetail') },
                     { icon: 'crosshair', label: t('ui.timeLineView.legendClickWhileComparing'), detail: t('ui.timeLineView.legendClickWhileComparingDetail') },
-                    { timeReference: true, label: t('ui.timeLineView.legendTimeReference'), detail: t('ui.timeLineView.legendTimeReferenceDetail') },
+                    { timeReference: 'route', label: t('ui.timeLineView.legendTimeReference'), detail: t('ui.timeLineView.legendTimeReferenceDetail') },
+                    { timeReference: 'direction', label: t('ui.timeLineView.legendTimeReferenceDirection'), detail: t('ui.timeLineView.legendTimeReferenceDirectionDetail') },
+                    { timeReference: 'beyond', label: t('ui.timeLineView.legendTimeReferenceBeyond'), detail: t('ui.timeLineView.legendTimeReferenceBeyondDetail') },
+                    { timeReference: 'both', label: t('ui.timeLineView.legendTimeReferenceBoth'), detail: t('ui.timeLineView.legendTimeReferenceBothDetail') },
                 ],
             });
         }

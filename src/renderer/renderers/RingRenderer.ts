@@ -47,8 +47,10 @@ export interface RingRenderContext {
     PUBLISH_STAGE_COLORS: StageColorMap;
     maxTextWidth: number;
     synopsesElements: SVGGElement[];
-    /** Chronologue titles and references, painted above the fixed subplot headlines. */
+    /** Chronologue titles, painted above the fixed subplot headlines. */
     foregroundElements: string[];
+    /** Time references, painted above the Chronologue overlays (backdrops, micro-backdrops, seam dates). */
+    referenceElements: string[];
     /**
      * Filled by this renderer: where each scene sits on the all-scenes outer
      * ring. Chronologue's duration and backbone arcs read it afterwards.
@@ -317,7 +319,7 @@ export function renderRings(ctx: RingRenderContext): string {
                     });
                 });
                 svg += ringScenesSvg;
-                ctx.foregroundElements.push(renderTimeReferenceMarkers(sortedCombined, positions, sequence.referenceSlots, innerR, outerR, ring));
+                ctx.referenceElements.push(renderTimeReferenceMarkers(sortedCombined, positions, sequence.referenceSlots, innerR, outerR, ring));
 
                 continue; // Continue to next ring loop (which iterates rings for this act)
             }

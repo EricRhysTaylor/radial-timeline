@@ -4,8 +4,9 @@
     display: none;
 }
 
-/* A callout: a line in the text color, hollow circles at both ends, and a casing in the background color
-   beneath every stroke, so the reference holds contrast over any subplot fill in either theme. */
+/* A callout: a line in the text color from a hollow circle at the source to a hollow arrowhead at the date, and a
+   casing in the background color beneath every stroke, so the reference holds contrast over any subplot fill in
+   either theme. The marks are a little lighter than the line, so their cores stay open. */
 .ert-time-reference-connector {
     pointer-events: none;
     opacity: 0;
@@ -24,22 +25,21 @@
 .ert-time-reference-source-mark {
     fill: none;
     stroke: var(--text-normal);
-    stroke-width: 3px;
+    stroke-width: 2.5px;
+    stroke-linejoin: round;
     pointer-events: none;
     vector-effect: non-scaling-stroke;
-    transform-box: fill-box;
-    transform-origin: center;
 }
-circle.ert-time-reference-casing {
+:is(circle, polygon).ert-time-reference-casing {
     fill: none;
     stroke: var(--background-primary);
-    stroke-width: 5px;
+    stroke-width: 4.5px;
+    stroke-linejoin: round;
     pointer-events: none;
     vector-effect: non-scaling-stroke;
-    transform-box: fill-box;
-    transform-origin: center;
 }
-.ert-time-reference.is-active :is(.ert-time-reference-slice, .ert-time-reference-casing) { transform: scale(1.35); }
+.ert-time-reference-mark { transform-box: fill-box; transform-origin: center; }
+.ert-time-reference.is-active .ert-time-reference-mark { transform: scale(1.35); }
 .ert-has-reference-selection .ert-time-reference:not(.is-date-active) .ert-time-reference-range,
 .ert-has-reference-selection .ert-time-reference-origin:not(.is-active):not(.ert-time-reference-filtered) { opacity: 0.25; }
 .ert-time-reference-origin { pointer-events: none; }

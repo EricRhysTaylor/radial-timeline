@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../../types';
 import { computeChronologueLayout, computePositions } from '../../renderer/utils/SceneLayout';
-import { primaryReferenceDomain, referenceConnector, referenceRingGeometry, referenceSourceAnchor } from './layout';
+import { primaryReferenceDomain, referenceConnector, referenceMarkReach, referenceRingGeometry, referenceSourceAnchor } from './layout';
 
 const start = -Math.PI / 2, end = 3 * Math.PI / 2;
 function scene(path: string, when: string, dates: string[] = []): TimelineItem {
@@ -25,8 +25,10 @@ describe('Chronologue reference overlays', () => {
             const route = referenceConnector(700, 760, slot, 709, referenceSourceAnchor(700, 760, result.positions.get(1)!, result.slots));
             const source = result.positions.get(1)!;
             const originAngle = source.startAngle + source.angularSize / 2 + Math.min(32 / 740.8, source.angularSize / 4);
-            expect(route.origin.x).toBeCloseTo(708.8 * Math.cos(originAngle));
-            expect(route.origin.y).toBeCloseTo(708.8 * Math.sin(originAngle));
+            const { base } = referenceRingGeometry(700, 760);
+            expect(base).toBeCloseTo(714.4);
+            expect(route.origin.x).toBeCloseTo(base * Math.cos(originAngle));
+            expect(route.origin.y).toBeCloseTo(base * Math.sin(originAngle));
             expect(route.path.match(/M /g)).toHaveLength(2);
             expect(route.discontinuity).toMatchObject({ x: expect.closeTo(0), y: expect.closeTo(-740.8) });
             expect(route.path).toContain('A 740.8 740.8');
@@ -43,11 +45,12 @@ describe('Chronologue reference overlays', () => {
         const chosen = referenceSourceAnchor(700, 760, source, result.slots);
         const distance = (angle: number) => Math.abs(2 * base * Math.sin((angle - earlier.angle) / 2));
         expect(distance(defaultAngle)).toBeLessThan((sourceSize + size) / 2);
-        expect(distance(chosen.angle)).toBeGreaterThan((sourceSize + size * 1.35) / Math.sqrt(2) + 4);
+        expect(distance(chosen.angle)).toBeGreaterThan(size + referenceMarkReach(size) * 1.35 + 4);
         expect(chosen.angle).toBeGreaterThan(source.startAngle);
         expect(chosen.angle).toBeLessThan(source.endAngle);
-        expect(chosen.radius - base - sourceSize / 2).toBeGreaterThan(8);
-        expect(chosen.radius).toBeLessThanOrEqual(730);
+        // Stepped out, the source circle (one size in radius) clears the date marks, which reach a size outward.
+        expect(chosen.radius - size).toBeGreaterThanOrEqual(base + size);
+        expect(chosen.radius).toBeLessThanOrEqual(700 + 60 * .6);
         // Every date from this master must leave the same visible source square.
         const origins = result.slots.map(slot => referenceConnector(700, 760, slot, base, chosen).origin);
         expect(origins[0]).toEqual(origins[1]);
@@ -89,7 +92,8 @@ describe('Chronologue reference overlays', () => {
         for (const [inner, outer] of [[400, 460], [500, 650], [700, 900]]) {
             const geometry = referenceRingGeometry(inner, outer);
             expect(outer - geometry.track).toBeGreaterThanOrEqual((outer - inner) * .30);
-            expect(geometry.base - geometry.size / 2).toBe(inner + 4);
+            // A mark reaches a size inward from its center: its inner tip sits half a size off the ring's edge.
+            expect(geometry.base - geometry.size).toBeCloseTo(inner + geometry.size / 2);
             const result = computeChronologueLayout(inner, outer, start, end, week(['1952', '2040']));
             offsets.push(start - result.slots[0].angle, result.slots[1].angle - end);
             horizontalOffsets.push(Math.abs(geometry.base * Math.cos(result.slots[0].angle)));

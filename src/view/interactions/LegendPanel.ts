@@ -37,8 +37,11 @@ export interface LegendRow {
     swatch?: LegendSwatch;
     /** Ring squares in these colors; a null entry is an outlined (planned) square. */
     rings?: Array<string | null>;
-    /** A time reference as drawn on the timeline: hollow source circle, the callout line, hollow date circle. */
-    timeReference?: boolean;
+    /**
+     * Time reference marks as the timeline draws them: 'route' is the source circle, the line and an arrowhead;
+     * 'direction' the back and forward arrowheads; 'beyond' the doubled ones; 'both' the diamond.
+     */
+    timeReference?: 'route' | 'direction' | 'beyond' | 'both';
     /** A filled dot in this color, like the Timetable's Due dot. */
     dot?: string;
     label: string;
@@ -83,6 +86,41 @@ export function renderLegendSurface(panel: HTMLElement, content: { title: string
     return surface;
 }
 
+/**
+ * A time reference's marks in the key, in the proportions the timeline uses (chronologue/timeReferences/render.ts):
+ * hollow arrowheads one and a half times as long as they are half wide, doubled past the timeline's ends.
+ */
+function renderReferenceGlyph(iconEl: HTMLElement, kind: NonNullable<LegendRow['timeReference']>): void {
+    const win = iconEl.win;
+    const svg = win.createSvg('svg');
+    svg.setAttribute('class', 'ert-timeline-legend__reference');
+    svg.setAttribute('viewBox', '0 0 28 12');
+    svg.setAttribute('aria-hidden', 'true');
+    const add = (tag: 'circle' | 'line' | 'polygon', attrs: Record<string, number | string>) => {
+        const el = win.createSvg(tag);
+        for (const [name, value] of Object.entries(attrs)) el.setAttribute(name, String(value));
+        svg.appendChild(el);
+    };
+    // An arrowhead centered at cx, pointing right (1) or left (-1).
+    const arrow = (cx: number, dir: number) => add('polygon', { points: `${cx - dir * 2.25},2 ${cx + dir * 2.25},6 ${cx - dir * 2.25},10` });
+    if (kind === 'route') {
+        add('circle', { cx: 4, cy: 6, r: 3 });
+        add('line', { x1: 7, y1: 6, x2: 20, y2: 6 });
+        arrow(22.75, 1);
+    } else if (kind === 'direction') {
+        arrow(5, -1);
+        arrow(23, 1);
+    } else if (kind === 'beyond') {
+        arrow(3.5, -1);
+        arrow(7.1, -1);
+        arrow(20.9, 1);
+        arrow(24.5, 1);
+    } else {
+        add('polygon', { points: '16.25,6 14,2 11.75,6 14,10' });
+    }
+    iconEl.appendChild(svg);
+}
+
 function renderRow(sectionEl: HTMLElement, row: LegendRow): void {
     const rowEl = sectionEl.createDiv({ cls: 'ert-timeline-legend__row' });
     const iconEl = rowEl.createSpan({ cls: 'ert-timeline-legend__icon' });
@@ -103,10 +141,7 @@ function renderRow(sectionEl: HTMLElement, row: LegendRow): void {
             else square.addClass('is-planned');
         }
     } else if (row.timeReference) {
-        iconEl.addClass('ert-timeline-legend__icon--reference');
-        iconEl.createSpan({ cls: 'ert-timeline-legend__reference-source' });
-        iconEl.createSpan({ cls: 'ert-timeline-legend__reference-line' });
-        iconEl.createSpan({ cls: 'ert-timeline-legend__reference-date' });
+        renderReferenceGlyph(iconEl, row.timeReference);
     } else if (row.dot) {
         iconEl.createSpan({ cls: 'ert-timeline-legend__dot' }).setCssProps({ '--ert-legend-dot': row.dot });
     } else if (row.icon) {

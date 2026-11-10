@@ -11,6 +11,7 @@ import { getSceneFilesByOrder, extractCountableBodyText, ManuscriptOrder, TocMod
 import { t, tCount } from '../i18n';
 import { getManuscriptSourceFiles, getReviewedManuscriptSelection, type ManuscriptSource } from '../utils/exportContext';
 import { countWords } from '../utils/text';
+import { extractPrefixToken } from '../utils/prefixOrder';
 import { getManuscriptProofConfigurationKey, getManuscriptProofStaleReason, type ManuscriptProofReceipt } from '../publishing/manuscriptProof';
 import { ManuscriptProofPreview } from '../publishing/ManuscriptProofPreview';
 import { readSavedManuscripts, restoreSavedManuscript, saveManuscriptRecord } from '../publishing/savedManuscripts';
@@ -3953,9 +3954,13 @@ export class ManuscriptOptionsModal extends Modal {
         return this.order === 'chronological' || this.order === 'reverse-chronological';
     }
 
-    private getSceneNumberAt(position: number): number {
+    private getSceneNumberAt(position: number): string | number {
         // Convert 1-based position to 0-based index and get scene number
         const index = Math.max(0, Math.min(position - 1, this.sceneNumbers.length - 1));
+        if (!this.source || this.source.kind === 'book') {
+            const prefix = extractPrefixToken(this.sceneTitles[index]);
+            if (prefix?.includes('.')) return prefix;
+        }
         return this.sceneNumbers[index] ?? position;
     }
 
@@ -4016,7 +4021,7 @@ export class ManuscriptOptionsModal extends Modal {
                 const inRange = (i + 1) >= this.rangeStart && (i + 1) <= this.rangeEnd;
                 const chip = this.rangeCardContainer.createDiv({ cls: 'ert-manuscript-scene-chip' });
                 chip.toggleClass('is-muted', !inRange);
-                const num = this.sceneNumbers[i] || (i + 1);
+                const num = this.getSceneNumberAt(i + 1) || (i + 1);
                 chip.createDiv({ cls: 'ert-manuscript-scene-chip-num', text: t('ui.manuscriptOptionsModal.sceneNumber', { number: num }) });
                 chip.createDiv({ cls: 'ert-manuscript-scene-chip-title', text: this.sceneTitles[i] || '—' });
             }

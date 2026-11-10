@@ -22,7 +22,7 @@ describe('Chronologue reference overlays', () => {
         expect(result.slots[1].angle).toBeGreaterThan(end);
         expect(primaryReferenceDomain(items)).toEqual(primaryReferenceDomain(week([])));
         for (const slot of result.slots) {
-            const route = referenceConnector(700, 760, slot, 709, referenceSourceAnchor(700, 760, result.positions.get(1)!, result.slots));
+            const route = referenceConnector(slot, 709, referenceSourceAnchor(700, 760, result.positions.get(1)!, result.slots));
             const source = result.positions.get(1)!;
             const originAngle = source.startAngle + source.angularSize / 2 + Math.min(32 / 740.8, source.angularSize / 4);
             const { base } = referenceRingGeometry(700, 760);
@@ -30,8 +30,9 @@ describe('Chronologue reference overlays', () => {
             expect(route.origin.x).toBeCloseTo(base * Math.cos(originAngle));
             expect(route.origin.y).toBeCloseTo(base * Math.sin(originAngle));
             expect(route.path.match(/M /g)).toHaveLength(2);
-            expect(route.discontinuity).toMatchObject({ x: expect.closeTo(0), y: expect.closeTo(-740.8) });
-            expect(route.path).toContain('A 740.8 740.8');
+            // The route runs at the date mark's radius (709 here), with no climb to a separate track and back.
+            expect(route.discontinuity).toMatchObject({ x: expect.closeTo(0), y: expect.closeTo(-709) });
+            expect(route.path).toContain('A 709 709');
             expect(route.path).not.toMatch(/NaN|Infinity/);
         }
     });
@@ -52,7 +53,7 @@ describe('Chronologue reference overlays', () => {
         expect(chosen.radius - size).toBeGreaterThanOrEqual(base + size);
         expect(chosen.radius).toBeLessThanOrEqual(700 + 60 * .6);
         // Every date from this master must leave the same visible source square.
-        const origins = result.slots.map(slot => referenceConnector(700, 760, slot, base, chosen).origin);
+        const origins = result.slots.map(slot => referenceConnector(slot, base, chosen).origin);
         expect(origins[0]).toEqual(origins[1]);
         expect(result.positions).toEqual(computePositions(700, 760, start, end, items));
     });
@@ -60,7 +61,7 @@ describe('Chronologue reference overlays', () => {
         const result = layout(week(['2026-06-04'])), slot = result.slots[0];
         expect(slot.extent).toBe('within');
         expect(slot.angle).toBeCloseTo(result.positions.get(1)!.endAngle - 18 / 740.8);
-        expect(referenceConnector(700, 760, slot, 709, referenceSourceAnchor(700, 760, result.positions.get(1)!, result.slots)).discontinuity).toBeUndefined();
+        expect(referenceConnector(slot, 709, referenceSourceAnchor(700, 760, result.positions.get(1)!, result.slots)).discontinuity).toBeUndefined();
     });
     it('does not invent January 1 precision for a year overlapping the manuscript week', () => {
         const result = layout(week(['2026']));

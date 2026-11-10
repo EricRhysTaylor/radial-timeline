@@ -135,9 +135,12 @@ export function referenceSourceAnchor(innerR: number, outerR: number, source: Po
     };
 }
 
-/** Concentric interior track, with a real gap for the Lucide Activity seam mark. */
-export function referenceConnector(innerR: number, outerR: number, slot: ReferenceSlot, terminalRadius: number, source: { angle: number; radius: number }): { path: string; origin: { x: number; y: number }; discontinuity?: { x: number; y: number; rotation: number } } {
-    const { track } = referenceRingGeometry(innerR, outerR);
+/**
+ * The route runs along the ring at its date mark's own radius, the lane the marks sit in, so it never climbs away from
+ * the marks and drops back (Eric, 2026-11-10). A real gap holds the Lucide Activity seam mark.
+ */
+export function referenceConnector(slot: ReferenceSlot, terminalRadius: number, source: { angle: number; radius: number }): { path: string; origin: { x: number; y: number }; discontinuity?: { x: number; y: number; rotation: number } } {
+    const track = terminalRadius;
     const { angle: from, radius: sourceRadius } = source;
     let path = `M ${point(sourceRadius, from)} L ${point(track, from)} `;
     const offRange = slot.extent === 'earlier' || slot.extent === 'later';

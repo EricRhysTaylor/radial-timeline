@@ -59,9 +59,12 @@ describe('reference occurrences across actual ring layouts', () => {
         expect(markup).toContain('A &lt;memory&gt;');
         expect(markup).not.toContain('aria-label=');
     });
-    it('uses interior concentric tracks and separate explicit seam terminals', () => {
+    it('runs each route along its date mark\'s own radius, with separate explicit seam terminals', () => {
         const markup = render(['1952', '2040']);
-        expect(markup).toContain(' A 440.8 440.8 ');
+        // Earlier at the marks' base radius, Later at its small lift; neither climbs to another track and back.
+        expect(markup).toContain(' A 414.4 414.4 ');
+        expect(markup).toContain(' A 420.4 420.4 ');
+        expect(markup).not.toContain(' A 440.8 440.8 ');
         expect(markup.match(/class="ert-time-reference-connector ert-time-reference-break"/g)).toHaveLength(2);
         expect(markup.match(/class="ert-time-reference-connector ert-time-reference-break ert-time-reference-casing"/g)).toHaveLength(2);
         expect(markup).toContain('Earlier · 1952');

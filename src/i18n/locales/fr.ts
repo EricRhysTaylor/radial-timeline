@@ -2651,7 +2651,6 @@ export const fr: DeepPartial<TranslationKeys> = {
         earlier: "Antérieur",
         later: "Ultérieur",
         unanchored: "Aucune scène datée dans cet anneau",
-        dateGroups: "{{count}} dates — choisir une référence",
         overlapsRange: "Chevauche la période affichée",
 
         "earthCalendar": "calendrier de la Terre",
@@ -2679,7 +2678,6 @@ export const fr: DeepPartial<TranslationKeys> = {
         "detached": "Le passage est manquant ou apparaît plus d'une fois. Modifiez la référence pour la rattacher.",
         "references": "{{count}} Références temporelles",
         "manage": "Gérer les références temporelles",
-        "cluster": "{{count}} Références — Choisissez un passage",
         "kinds": {
             "enacted": "promulgué",
             "recollection": "Souvenir",

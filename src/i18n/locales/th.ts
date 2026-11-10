@@ -2651,7 +2651,6 @@ export const th: DeepPartial<TranslationKeys> = {
         earlier: "ก่อนหน้า",
         later: "ภายหลัง",
         unanchored: "ไม่มีฉากที่ระบุวันที่ในวงแหวนนี้",
-        dateGroups: "{{count}} วันที่ — เลือกการอ้างอิง",
         overlapsRange: "ทับซ้อนกับช่วงเวลาที่แสดง",
 
         "earthCalendar": "ปฏิทินโลก",
@@ -2679,7 +2678,6 @@ export const th: DeepPartial<TranslationKeys> = {
         "detached": "ข้อความหายไปหรือปรากฏขึ้นมากกว่าหนึ่งครั้ง แก้ไขการอ้างอิงเพื่อใส่กลับเข้าไปใหม่",
         "references": "{{count}} อ้างอิงเวลา",
         "manage": "จัดการการอ้างอิงเวลา",
-        "cluster": "{{count}} อ้างอิง — เลือกข้อความ",
         "kinds": {
             "enacted": "ที่ได้แสดงไว้",
             "recollection": "การจำ",

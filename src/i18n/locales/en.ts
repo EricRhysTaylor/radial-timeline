@@ -2376,7 +2376,8 @@ export const en = {
         earlier: "Earlier",
         later: "Later",
         unanchored: "No dated scenes in this ring",
-        dateGroups: "{{count}} dates — choose a reference",
+        dateCount: "{{count}} dates",
+        referenceCount: "{{count}} references",
         overlapsRange: "Overlaps the displayed period",
 
         earthCalendar: 'Earth calendar',
@@ -2393,7 +2394,6 @@ export const en = {
         notScene: 'Time references require a scene note with valid frontmatter.',
         detached: 'The passage is missing or appears more than once. Edit the reference to reattach it.',
         references: '{{count}} time references', manage: 'Manage time references',
-        cluster: '{{count}} references — choose a passage',
         kinds: { enacted: 'Enacted', recollection: 'Recollection', mention: 'Mention', possibility: 'Possible future' },
         problems: { array: 'Use a list of references.', entry: 'Use a reference with Label, When and Kind.',
             label: 'Enter a label.', kind: 'Choose a reference kind.', date: 'Enter valid calendar dates as text.',

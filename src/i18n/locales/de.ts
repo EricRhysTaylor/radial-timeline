@@ -2666,7 +2666,6 @@ export const de: DeepPartial<TranslationKeys> = {
         earlier: "Früher",
         later: "Später",
         unanchored: "Keine datierten Szenen in diesem Ring",
-        dateGroups: "{{count}} Daten — Referenz wählen",
         overlapsRange: "Überschneidet den angezeigten Zeitraum",
 
         earthCalendar: 'Erdkalender',
@@ -2682,7 +2681,7 @@ export const de: DeepPartial<TranslationKeys> = {
         stale: 'Die Szene oder der Zeitbezug wurde geändert. Öffne die Zeitbezüge erneut.',
         notScene: 'Zeitbezüge benötigen eine Szenennotiz mit gültigem Frontmatter.',
         detached: 'Die Textstelle fehlt oder kommt mehrfach vor. Bearbeite den Zeitbezug, um sie neu zuzuordnen.',
-        references: '{{count}} Zeitbezüge', manage: 'Zeitbezüge verwalten', cluster: '{{count}} Zeitbezüge — Textstelle auswählen',
+        references: '{{count}} Zeitbezüge', manage: 'Zeitbezüge verwalten',
         kinds: { enacted: 'Dargestelltes Ereignis', recollection: 'Erinnerung', mention: 'Erwähnung', possibility: 'Mögliche Zukunft' },
         problems: { array: 'Verwende eine Liste von Zeitbezügen.', entry: 'Verwende Label, When und Kind.', label: 'Gib eine Bezeichnung ein.',
             kind: 'Wähle die Art des Zeitbezugs.', date: 'Gib gültige Kalenderdaten als Text ein.', range: 'Das Ende darf nicht vor dem Beginn liegen.', passage: 'Die Textstelle muss Text sein.' },

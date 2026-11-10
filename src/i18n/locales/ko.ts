@@ -2666,7 +2666,6 @@ export const ko: DeepPartial<TranslationKeys> = {
         earlier: "이전",
         later: "이후",
         unanchored: "이 링에 날짜가 있는 장면 없음",
-        dateGroups: "날짜 {{count}}개 — 참조 선택",
         overlapsRange: "표시된 기간과 겹침",
 
         earthCalendar: '지구력',
@@ -2682,7 +2681,7 @@ export const ko: DeepPartial<TranslationKeys> = {
         stale: '장면 또는 참조가 변경되었습니다. 시간 참조를 다시 여세요.',
         notScene: '유효한 프런트매터가 있는 장면 노트가 필요합니다.',
         detached: '구절이 없거나 여러 번 나타납니다. 참조를 편집하여 다시 연결하세요.',
-        references: '시간 참조 {{count}}개', manage: '시간 참조 관리', cluster: '참조 {{count}}개 — 구절 선택',
+        references: '시간 참조 {{count}}개', manage: '시간 참조 관리',
         kinds: { enacted: '묘사된 사건', recollection: '회상', mention: '언급', possibility: '가능한 미래' },
         problems: { array: '참조 목록을 사용하세요.', entry: 'Label, When, Kind를 지정하세요.', label: '이름을 입력하세요.',
             kind: '참조 유형을 선택하세요.', date: '유효한 날짜를 문자열로 입력하세요.', range: '종료는 시작보다 빠를 수 없습니다.', passage: '구절은 텍스트여야 합니다.' },

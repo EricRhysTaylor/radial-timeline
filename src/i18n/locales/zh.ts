@@ -2668,7 +2668,6 @@ export const zh: DeepPartial<TranslationKeys> = {
         earlier: "更早",
         later: "更晚",
         unanchored: "此环中没有带日期的场景",
-        dateGroups: "{{count}} 个日期 — 选择引用",
         overlapsRange: "与显示时段重叠",
 
         earthCalendar: '地球历',
@@ -2684,7 +2683,7 @@ export const zh: DeepPartial<TranslationKeys> = {
         stale: '场景或引用已更改。请重新打开时间引用。',
         notScene: '时间引用需要具有有效前置元数据的场景笔记。',
         detached: '片段不存在或出现多次。请编辑引用以重新关联。',
-        references: '{{count}}个时间引用', manage: '管理时间引用', cluster: '{{count}}个引用 — 选择片段',
+        references: '{{count}}个时间引用', manage: '管理时间引用',
         kinds: { enacted: '直接描写', recollection: '回忆', mention: '提及', possibility: '可能的未来' },
         problems: { array: '请使用引用列表。', entry: '请指定Label、When和Kind。', label: '请输入标签。',
             kind: '请选择引用类型。', date: '请以文本输入有效日期。', range: '结束时间不得早于开始时间。', passage: '片段必须为文本。' },

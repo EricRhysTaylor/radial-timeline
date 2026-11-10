@@ -31,9 +31,12 @@ attached to that scene, with one or more rendered occurrences.
 - References paint in their own layer after the Chronologue overlays (backdrops,
   micro-backdrops, seam dates) and before the synopses, so nothing but a hover
   synopsis covers a mark or its line.
-- From the middle of the master scene's inner edge, a short radial feed reaches
-  a concentric track 32% inside the outer ring border. The arc follows that track
-  and ends radially at the reference mark. It reads as a callout (2026-11-09):
+- The route runs along the marks' own radius (2026-11-10, Eric: the line "should
+  not move up then down but align with the icon radius"). The arc runs at the
+  date mark's radius from the source to the mark. A radial step appears only
+  where the source circle had to step out past a nearby mark, and where a
+  selected stack entry sits above the first. Text labels sit one mark size
+  outside that lane. It reads as a callout (2026-11-09):
   a 3.5 px line and 2.5 px mark strokes in the theme text color, each on a
   casing in the background color 1 px wider on each side. The casing keeps 3:1
   contrast (WCAG 1.4.11) over every subplot fill in both themes; the earlier
@@ -177,8 +180,18 @@ The existing primary positions are returned unchanged even for dense references.
   the Later side receives a small radial lift. Labels use 13-unit text, active
   connectors use one 3 px line, and the 18-unit Activity icon uses a 1.5 px line.
 - Several off-range dates share an explicit date-count cluster at that terminal,
-  with all declarations available in its menu and Timetable. They are never
+  with all declarations available in its popover and Timetable. They are never
   misrepresented as multiple references at one date.
+- A date mark's details are a popover, not a one-line tooltip (2026-11-10, Eric:
+  "The tooltip is not readable"). It opens on hover or focus, level with the
+  mark and just outside the timeline on the mark's side, so it covers no scenes
+  and leaves the route in view. A heading names the side and the date or date
+  count (Earlier · 3 dates; Nov 27, 1811); then one block per reference: its
+  label, kind and readable date (Jul – Aug 1811), source scene, and passage
+  (two lines at most). Notes for an overlap with the displayed period or the
+  Earth calendar close it. Clicking a group opens the same popover with each
+  reference as a button; it stays open until a choice, Escape, a click outside,
+  or a scroll. No "choose a reference" prompt.
 - Precision bounds classify wholly off-range dates. A year-only reference that
   overlaps a one-week manuscript remains in range with an overlap explanation;
   its year is never presented as a known January 1 date. Periods keep their full

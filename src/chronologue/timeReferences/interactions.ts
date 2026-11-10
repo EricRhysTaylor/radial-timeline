@@ -1,9 +1,10 @@
-import { Menu } from 'obsidian';
 import type { RadialTimelineView } from '../../view/TimeLineView';
 import { currentTimelineColoring, currentTimelineLens, onTimelineOverlayChange } from '../../timetable/timetableRegistry';
+import { getActivePlanetaryProfile } from '../../utils/planetaryTime';
 import { openTimeReference } from './editor';
 import { onReferenceSelection, hoverTimeReference, pinTimeReference, currentReferenceSelection, type ReferenceSelection } from './selection';
 import { readTimeReferences, type TimeReference } from './model';
+import { ReferencePopover, referencePopoverContent } from './popover';
 
 export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SVGSVGElement): void {
     const references = new Map<string, TimeReference>();
@@ -98,39 +99,65 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
         applySelection(currentReferenceSelection());
     });
     view.renderScope.register(() => win.cancelAnimationFrame(countFrame));
+    // The marker's popover: the references it holds, readable, beside the marker on the side away from the center.
+    const doc = svg.ownerDocument;
+    const popover = new ReferencePopover(doc);
+    view.renderScope.register(() => popover.hide());
+    const choicesOf = (group: Element): TimeReference[] => keysOf(group).map(key => references.get(key)).filter((ref): ref is TimeReference => !!ref);
+    const sourceTitle = (path: string): string => Array.from(svg.querySelectorAll('.ert-time-reference-origin'))
+        .find(origin => origin.getAttribute('data-source-path') === encodeURIComponent(path))?.querySelector('desc')?.textContent ?? '';
+    const showPopover = (group: Element, choose?: (reference: TimeReference) => void): void => {
+        const choices = choicesOf(group);
+        if (!choices.length) return;
+        const content = referencePopoverContent(group.getAttribute('data-extent') ?? undefined,
+            choices.map(reference => ({ reference, source: sourceTitle(reference.path) })),
+            { clipped: group.hasAttribute('data-clipped'), planetCalendar: !!getActivePlanetaryProfile(view.plugin.settings) });
+        // The timeline's center on screen, and its reach: the drawing fills the shorter side of the SVG.
+        const box = svg.getBoundingClientRect();
+        popover.show(content, group, { x: box.left + box.width / 2, y: box.top + box.height / 2 }, Math.min(box.width, box.height) / 2, choose);
+    };
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (event: Event) => {
         const group = groupOf(event.target);
         if (!group) return;
         const reference = references.get(keysOf(group)[0]);
         if (reference) hoverTimeReference({ path: reference.path, key: reference.key });
+        if (!popover.pinned) showPopover(group);
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (event: Event) => {
         const group = groupOf(event.target);
-        if (group && !group.contains((event as PointerEvent).relatedTarget as Node | null)) hoverTimeReference(null);
+        if (!group || group.contains((event as PointerEvent).relatedTarget as Node | null)) return;
+        hoverTimeReference(null);
+        if (!popover.pinned) popover.hide();
     });
-    const activate = (group: Element, event?: MouseEvent): void => {
-        const choices = keysOf(group).map(key => references.get(key)).filter((ref): ref is TimeReference => !!ref);
+    const activate = (group: Element): void => {
+        const choices = choicesOf(group);
         const open = (reference: TimeReference): void => { pinTimeReference({ path: reference.path, key: reference.key }); void openTimeReference(view.plugin, reference, group); };
-        if (choices.length === 1) open(choices[0]);
-        else {
-            const menu = new Menu();
-            choices.forEach(reference => menu.addItem(item => item.setTitle(`${reference.label} · ${reference.when.text}`).onClick(() => open(reference))));
-            if (event) menu.showAtMouseEvent(event);
-            else { const rect = group.getBoundingClientRect(); menu.showAtPosition({ x: rect.left, y: rect.bottom }); }
-        }
+        if (choices.length === 1) { popover.hide(); open(choices[0]); }
+        // A group's references, to choose one: the same popover, with each reference a button.
+        else showPopover(group, open);
     };
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'click', (event: Event) => {
         const group = groupOf(event.target);
-        if (!group) { hoverTimeReference(null); pinTimeReference(null); return; }
-        event.stopPropagation(); activate(group, event as MouseEvent);
+        if (!group) { hoverTimeReference(null); pinTimeReference(null); popover.hide(); return; }
+        event.stopPropagation(); activate(group);
     });
+    view.renderScope.registerDomEvent(doc as unknown as HTMLElement, 'pointerdown', (event: Event) => {
+        if (popover.pinned && !popover.contains(event.target) && !groupOf(event.target)) popover.hide();
+    });
+    view.renderScope.registerDomEvent(doc as unknown as HTMLElement, 'keydown', (event: Event) => {
+        if ((event as KeyboardEvent).key === 'Escape' && popover.pinned) popover.hide();
+    });
+    view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'wheel', () => popover.hide());
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'focusin', (event: Event) => {
         const group = groupOf(event.target);
         const reference = group ? references.get(keysOf(group)[0]) : undefined;
         if (reference) hoverTimeReference({ path: reference.path, key: reference.key });
+        if (group && !popover.pinned) showPopover(group);
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'focusout', (event: Event) => {
-        if (groupOf(event.target)) hoverTimeReference(null);
+        if (!groupOf(event.target)) return;
+        hoverTimeReference(null);
+        if (!popover.pinned) popover.hide();
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'keydown', (event: Event) => {
         const key = (event as KeyboardEvent).key;

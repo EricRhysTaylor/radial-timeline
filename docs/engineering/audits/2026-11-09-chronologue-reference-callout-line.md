@@ -81,6 +81,29 @@ and "make the donut hole a little bigger".
 - **The Timeline key** shows the route and the four kinds of mark (back or forward, before or after the timeline,
   both ways), drawn in the same proportions.
 
+## 4. The line jogged, and the tooltip was unreadable (2026-11-10)
+
+Eric: "the connecting ring line should not move up then down but align with the icon radius. Why does it say
+choose a reference? The tooltip is not readable … Possibly we change it to a nicely formatted popover."
+
+- **The line.** `referenceConnector` ran its arc on a track 68% of the way out the ring, with radial legs down
+  to the source circle and the date mark, so every route climbed, crossed, and came back down. The arc now runs at
+  the date mark's own radius (`terminalRadius`), so the line passes through the marks. The source and range labels
+  moved to one mark size outside the lane, so the line no longer runs through them.
+- **"Choose a reference."** A group's mark carried an SVG `data-rt-tip` reading "3 dates — choose a reference",
+  and a click opened an Obsidian `Menu` of one-line items. Both are gone, along with the `dateGroups` and
+  `cluster` strings in every locale.
+- **The popover** (`src/chronologue/timeReferences/popover.ts`, `ReferencePopover`):
+  - **Where it opens:** on hover or focus, level with the mark and just outside the timeline on the mark's side,
+    kept inside the window.
+  - **Heading:** the side and the date or the number of dates, such as "Earlier · 3 dates" or "Nov 27, 1811".
+  - **Each reference:** its label, its kind and readable date (Recollection · Jul – Aug 1811), its source scene,
+    and its passage in italics, two lines at most.
+  - **Notes** for an overlap with the displayed period, or for the Earth calendar while a planet calendar is on.
+  - **Click on a group:** opens the same popover with each reference as a button, focused on the first. It closes
+    on a choice, Escape, a click outside, a scroll or a redraw. A single reference still opens directly.
+  - Styled with Obsidian's popover tokens (`--layer-popover`, `--shadow-l`, theme background and border).
+
 ## Verification
 
 - `vitest` on `src/chronologue/timeReferences`. The render tests now cover:
@@ -105,3 +128,14 @@ and "make the donut hole a little bigger".
   - Natively in the same copy: the Earlier group reads ◁◁ at the seam, Bingley's and Jane's dates read ◁, and every
     mark sits clear of the backdrop band. The hovered line and its enlarged mark paint over the backdrops. The
     Timeline key shows the four rows.
+- **2026-11-10, line radius and popover:**
+  - Layout and render tests now expect the arc at the mark radius (`A 709 709`, `A 414.4 414.4`, `A 420.4 420.4`).
+    New `popover.test.ts` covers readable dates and spans, headings without "choose", the notes, and placement
+    outside the timeline with window clamping.
+  - The full `vitest` run: 6,021 passed, 40 skipped. `npm run build-only`, `npm run lint` and `lint:obsidian`
+    passed.
+  - Natively in the same copy:
+    - Hovering Bingley draws one arc from the letter through Jane's mark to Bingley's, with no climb.
+    - The popover sits right of the timeline: "Nov 27, 1811", then the label, "Recollection · Nov 27, 1811",
+      "35 · Darcy's Letter" and the passage.
+    - Clicking Earlier opens "Earlier · 3 dates" left of the timeline with four reference buttons; Escape closes it.

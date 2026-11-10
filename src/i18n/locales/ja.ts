@@ -2667,7 +2667,6 @@ export const ja: DeepPartial<TranslationKeys> = {
         earlier: "表示期間より前",
         later: "表示期間より後",
         unanchored: "このリングに日付付きシーンはありません",
-        dateGroups: "{{count}} 個の日付 — 参照を選択",
         overlapsRange: "表示期間と重なります",
 
         earthCalendar: '地球暦',
@@ -2683,7 +2682,7 @@ export const ja: DeepPartial<TranslationKeys> = {
         stale: 'シーンまたは参照が変更されました。時間参照を開き直してください。',
         notScene: '有効なフロントマターを持つシーンノートが必要です。',
         detached: '該当箇所が見つからないか複数あります。参照を編集して再指定してください。',
-        references: '時間参照 {{count}}件', manage: '時間参照を管理', cluster: '{{count}}件の参照 — 本文箇所を選択',
+        references: '時間参照 {{count}}件', manage: '時間参照を管理',
         kinds: { enacted: '描写された出来事', recollection: '回想', mention: '言及', possibility: '未来の可能性' },
         problems: { array: '参照をリスト形式にしてください。', entry: 'Label、When、Kindを指定してください。', label: 'ラベルを入力してください。',
             kind: '参照の種類を選んでください。', date: '有効な日付を文字列で入力してください。', range: '終了は開始以降にしてください。', passage: '本文の一節は文字列で指定してください。' },

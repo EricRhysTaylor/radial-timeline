@@ -2651,7 +2651,6 @@ export const vi: DeepPartial<TranslationKeys> = {
         earlier: "Trước đó",
         later: "Sau đó",
         unanchored: "Không có cảnh có ngày trong vòng này",
-        dateGroups: "{{count}} ngày — chọn tham chiếu",
         overlapsRange: "Trùng với khoảng thời gian hiển thị",
 
         "earthCalendar": "Lịch trái đất",
@@ -2679,7 +2678,6 @@ export const vi: DeepPartial<TranslationKeys> = {
         "detached": "đoạn văn bị thiếu hoặc xuất hiện nhiều lần. Chỉnh sửa tham chiếu để gắn lại nó.",
         "references": "Tham chiếu thời gian {{count}}",
         "manage": "Quản lý thời gian tham khảo",
-        "cluster": "Tài liệu tham khảo {{count}} - Chọn một đoạn văn",
         "kinds": {
             "enacted": "ban hành",
             "recollection": "hồi ức",

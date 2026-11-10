@@ -143,6 +143,34 @@
   display: none;
 }
 
+/* Character lanes freeze while the runtime view is on, as the backdrop rings
+   do: no hover (so no synopsis or name beside a mark), a faint runtime tint,
+   and the ring key's names stay off the wheel. Scene hover leaves them as
+   they are. */
+.radial-timeline-svg[data-runtime-view="true"] .ert-character-lanes {
+  pointer-events: none;
+}
+
+.radial-timeline-svg[data-runtime-view="true"] .ert-character-lane-mark,
+.radial-timeline-svg[data-runtime-view="true"].scene-hover .ert-character-lane-mark:not(:hover) {
+  fill: var(--rt-color-runtime);
+  fill-opacity: 0.15;
+}
+
+.radial-timeline-svg[data-runtime-view="true"].scene-hover .ert-character-lane-track {
+  stroke: var(--background-modifier-border);
+  stroke-opacity: 0.5;
+}
+
+.radial-timeline-svg[data-runtime-view="true"].scene-hover .ert-character-lane-hover-backdrop {
+  stroke: transparent;
+}
+
+.radial-timeline-svg[data-runtime-view="true"] .ert-character-lane-names,
+.radial-timeline-svg[data-runtime-view="true"] .ert-character-lane-beside {
+  display: none;
+}
+
 /* RT keycap icon: centred in its rounded square; the keycap group takes the
    pointer so its tooltip never sticks. */
 .rt-runtime-icon-wrapper {

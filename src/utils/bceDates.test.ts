@@ -302,6 +302,17 @@ describe('Timetable coloring by date', () => {
         expect(coloringDateLabel('year:2024', { kind: 'year' })).toBe('2024');
         expect(coloringDateLabel('month:2085-04', { kind: 'month' })).toBe('Apr 2085');
     });
+
+    it('labels a CE year under 1000 written with an era as a date, keeping its key', () => {
+        vi.spyOn(obsidian, 'getLanguage').mockReturnValue('en');
+        const [day] = dateColoringRows(rows(['0033-04-03 AD']), { kind: 'day' }, today).map(row => row.value);
+        const [month] = dateColoringRows(rows(['0033-04-03 AD']), { kind: 'month' }, today).map(row => row.value);
+        expect(day).toBe('day:33-04-03');
+        expect(month).toBe('month:33-04');
+        expect(coloringDateLabel(day, { kind: 'day' })).toBe('Apr 3, 33');
+        expect(coloringDateLabel(month, { kind: 'month' })).toBe('Apr 33');
+        expect(coloringDateLabel('day:850-12-25', { kind: 'day' })).toBe('Dec 25, 850');
+    });
 });
 
 describe('Chronologue time references', () => {

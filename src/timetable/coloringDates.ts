@@ -105,8 +105,9 @@ export function coloringDateLabel(value: string, grouping?: DateGrouping): strin
         return formatStoryDate(date, isMonth ? { month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short', year: 'numeric' });
     }
     if (value.startsWith('year:')) return key;
-    const day = isMonth ? `${key}-01` : key;
-    const date = parseLocalDateKey(day);
+    // A CE year under 1000 has a short key (`33-04-03` for 33 AD); read it by its
+    // numbers, as `parseLocalDateKey` takes four-digit years only. The key is unchanged.
+    const date = parts ? dateKeyLocalDate(key) : null;
     return date ? new Intl.DateTimeFormat(getFormattingLocale(), isMonth
         ? { month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short', year: 'numeric' }).format(date) : value;
 }

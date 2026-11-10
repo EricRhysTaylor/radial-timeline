@@ -10,7 +10,7 @@ The optional **Time References** list records other dates or periods mentioned w
 ID: scn_00000000          # Auto-generated stable scene reference
 Class: Scene              # Type: Scene
 Act: 1                    # Act number within your configured act count
-When:                     # Optional story chronology date (YYYY-MM-DD, optionally 12:34pm)
+When:                     # Optional story chronology date (YYYY-MM-DD, optionally 12:34pm; add BCE for dates before the common era)
 Duration:                 # How long the scene lasts (e.g., "45 seconds", "45s", "45sec", "2 hours", "3days")
 Part:                     # Optional part marker — `true` for numeral only, or a title
 Chapter:                  # Optional chapter marker for publishing and perimeter placards

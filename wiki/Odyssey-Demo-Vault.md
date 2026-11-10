@@ -30,7 +30,7 @@ The poem doesn't run in a straight line, which makes it a good test of a circula
 
 Books 9–12 are Ulysses's own account of his wanderings, told at the Phaeacian court years after the events. The vault dates those scenes to when their events happened, so **Chronologue** moves them to the start of the timeline, ahead of scene 1. Shorter stories told inside a scene, such as Nestor's and Menelaus's, keep the date of the telling.
 
-**About the dates:** Radial Timeline counts years forward and has no BCE, so the vault uses a notional calendar. It anchors the fall of Troy at the year 1184 and counts forward from there, keeping the poem's intervals, including a year with Circe and seven years with Calypso. The years shown are illustrative coordinates, not historical dates.
+**About the dates:** Radial Timeline reads dates before the common era, such as `When: 1184 BCE`. This edition of the vault still uses a notional calendar: it anchors the fall of Troy at the year 1184 and counts forward from there, keeping the poem's intervals, including a year with Circe and seven years with Calypso. The years shown are illustrative coordinates, not historical dates.
 
 ## Every scene annotated
 

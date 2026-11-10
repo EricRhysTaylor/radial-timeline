@@ -63,7 +63,7 @@ A blue bracketed marker appears beside the paragraph, and the time counts toward
 
 ## Turning the time notation bar off
 
-Go to **Settings → Advanced → Timeline Display** and turn off **Show time notation bar in Scene notes**. The title-bar summary stays visible. See [Advanced settings](Settings-Advanced).
+Go to **Settings → Advanced → Timeline display** and turn off **Show time notation bar in scene notes**. The title-bar summary stays visible. See [Advanced settings](Settings-Advanced).
 
 ## What Scene Time changes
 

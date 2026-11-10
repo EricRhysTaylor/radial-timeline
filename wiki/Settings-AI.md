@@ -53,7 +53,7 @@ Set defaults for analysis and scene hover display.
 *   **Enable citations (temporarily unavailable)**: Strict provider-level inline citations are still paused.
 *   Findings include evidence quotes and scene references in the result’s **Sources** block.
 
-### Timeline Display
+### Timeline display
 
 *   **Pulse context**: Include previous and next scene analysis in the scene hover reveal.
 *   **Synopsis max words**: Base target for stored Synopsis generation.

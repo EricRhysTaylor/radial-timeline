@@ -152,7 +152,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     createDenseRow(displayContainer, {
         title: t('ui.configurationSection.sceneTimeCueBarName'),
         description: t('ui.configurationSection.sceneTimeCueBarDesc'),
-        icon: 'ruler',
+        icon: 'git-commit-vertical',
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.showSceneTimeCueBar !== false)

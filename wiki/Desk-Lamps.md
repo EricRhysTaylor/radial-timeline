@@ -40,4 +40,4 @@ They never see your book, scene names, words, goals, notes, or exact times. Only
 
 Desk Lamps is separate from your [sharing level](Settings-Community#what-you-share). It works at every level, **Private** included, as long as the vault is connected. Pausing Community sharing turns your lamp off; you still see your friends' lamps. Disconnecting the vault turns your lamp off. Blocking someone removes them from your Desk Lamps, and deleting your account removes all of them.
 
-To hide the lamp and keep yours off, turn off **Show Desk Lamps** in [Settings → Advanced](Settings-Advanced).
+To hide the lamp and keep yours off, turn off **Show desk lamps** in [Settings → Advanced](Settings-Advanced).

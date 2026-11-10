@@ -75,7 +75,7 @@ On a vault connected to the Community, at any sharing level (Private included), 
 *   The plugin checks about once an hour while a timeline is open, and again when you come back to Obsidian. It never marks anything as read.
 *   If a check fails, its icon dims and its tooltip says why.
 
-The Mailbox does not appear on a vault that is not connected. To hide it on a connected vault, turn off **Show Community mailbox** in **Settings → Advanced**.
+The Mailbox does not appear on a vault that is not connected. To hide it on a connected vault, turn off **Show community mailbox** in **Settings → Advanced**.
 
 <a name="desk-lamps"></a>
 ## Desk Lamps

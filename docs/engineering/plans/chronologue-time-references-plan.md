@@ -35,8 +35,10 @@ attached to that scene, with one or more rendered occurrences.
   not move up then down but align with the icon radius"). The arc runs at the
   date mark's radius from the source to the mark. A radial step appears only
   where the source circle had to step out past a nearby mark, and where a
-  selected stack entry sits above the first. Text labels sit one mark size
-  outside that lane. It reads as a callout (2026-11-09):
+  selected stack entry sits above the first. The source caption sits one mark
+  size outside that lane; the Earlier and Later labels sit level with their
+  marks, centered on the mark radius on the side away from the seam, where the
+  route never runs. It reads as a callout (2026-11-09):
   a 3.5 px line and 2.5 px mark strokes in the theme text color, each on a
   casing in the background color 1 px wider on each side. The casing keeps 3:1
   contrast (WCAG 1.4.11) over every subplot fill in both themes; the earlier

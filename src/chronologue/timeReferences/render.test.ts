@@ -101,6 +101,12 @@ describe('reference occurrences across actual ring layouts', () => {
         expect(radii[1] - radii[0]).toBeCloseTo(6);
         expect(markup).not.toContain('ert-time-reference-halo');
         expect(markup).toContain('d="M22 12h-2.48');
+        // Each Earlier and Later label runs through its mark's radius, its letters centered on it.
+        const labels = Array.from(markup.matchAll(/<text class="ert-time-reference-range"[^>]*dominant-baseline="central"[^>]*><textPath href="#([^"]+)"/g), m => m[1]);
+        expect(labels).toHaveLength(2);
+        const labelRadii = labels.map(id => Number(markup.match(new RegExp(`<path id="${id}" d="M [^A]+ A ([0-9.]+) `))![1]));
+        expect(labelRadii[0]).toBeCloseTo(radii[0]);
+        expect(labelRadii[1]).toBeCloseTo(radii[1]);
     });
     it('ends in a hollow source circle and hollow arrowheads over casings, with upright lower-half source text', () => {
         const markup = render(['1952', '2040']);

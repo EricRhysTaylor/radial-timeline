@@ -62,18 +62,21 @@ export function referenceDirection(ref: TimeReference, scene: TimelineItem): Ref
     return 'both';
 }
 
-/** Text follows the ring baseline; reverse lower-half paths to keep labels upright. */
-function curvedReferenceLabel(id: string, radius: number, angle: number, gap: number, before: boolean, text: string, className: string, maxRadius: number): string {
+/**
+ * Text follows the ring baseline; reverse lower-half paths to keep labels upright. A centered label runs through
+ * `radius` itself, its letters straddling it, so it lines up with a mark at that radius.
+ */
+function curvedReferenceLabel(id: string, radius: number, angle: number, gap: number, before: boolean, text: string, className: string, maxRadius: number, centered = false): string {
     const rotation = (angle * 180 / Math.PI + 450) % 360;
     const reversed = rotation > 90 && rotation < 270;
-    const labelRadius = Math.min(radius + (reversed ? 14 : 0), maxRadius);
+    const labelRadius = Math.min(radius + (reversed && !centered ? 14 : 0), maxRadius);
     const near = angle + (before ? -gap : gap) / labelRadius;
     const far = near + (before ? -1 : 1) * Math.PI / 2;
     const from = before !== reversed ? far : near;
     const to = before !== reversed ? near : far;
     const point = (a: number) => `${labelRadius * Math.cos(a)} ${labelRadius * Math.sin(a)}`;
     return `<defs><path id="${id}" d="M ${point(from)} A ${labelRadius} ${labelRadius} 0 0 ${reversed ? 0 : 1} ${point(to)}" fill="none"/></defs>
-        <text class="${className}" text-anchor="${before !== reversed ? 'end' : 'start'}"><textPath href="#${id}" startOffset="${before !== reversed ? '100%' : '0%'}">${text}</textPath></text>`;
+        <text class="${className}" text-anchor="${before !== reversed ? 'end' : 'start'}"${centered ? ' dominant-baseline="central"' : ''}><textPath href="#${id}" startOffset="${before !== reversed ? '100%' : '0%'}">${text}</textPath></text>`;
 }
 
 /** Reference buttons are overlays, deliberately outside scene IDs, counts and drag targets. */
@@ -128,8 +131,9 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
             const title = escapeXml([heading, ...choices.map(ref => `${ref.label}, ${referenceDateLabel(ref)}, ${t(`timeReferences.kinds.${ref.kind}`)}`)].join('. '));
             const parent = byPath.get(choices[0].path)!;
             const labelId = `ert-reference-date-${slotIndex}-${makeSceneId(parent.item.bookIndex ?? 0, ring, parent.index, true, true, choices[0].path)}`;
-            // Labels ride just outside the route's lane, so a line along the marks never runs through them.
-            const rangeLabel = showRange ? `<g class="ert-time-reference-label">${curvedReferenceLabel(labelId, radius + size, slot.angle, reach + 8, slot.extent === 'earlier', escapeXml(heading), 'ert-time-reference-range', textRadiusLimit)}</g>` : '';
+            // The Earlier and Later label sits level with its mark, on the side away from the seam, where the route
+            // (which arrives across the seam) never runs (Eric, 2026-11-10: line it up with the line and arrows).
+            const rangeLabel = showRange ? `<g class="ert-time-reference-label">${curvedReferenceLabel(labelId, radius, slot.angle, reach + 8, slot.extent === 'earlier', escapeXml(heading), 'ert-time-reference-range', textRadiusLimit, true)}</g>` : '';
             const mixedX = x + (slot.extent === 'earlier' ? -(reach + 6) : reach + 6);
             const hit = Math.max(10, reach);
             return `<g class="ert-time-reference" ${attrs(choices)} data-extent="${slot.extent}" data-reference-slot="${ring}-${items[0]?.bookIndex ?? 0}-${slotIndex}" data-reference-x="${x}" data-reference-y="${y}"${overflow ? ' data-reference-overflow="true"' : ''}${slot.clipped ? ' data-clipped="true"' : ''} role="button" tabindex="0"><desc>${title}</desc>

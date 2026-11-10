@@ -132,7 +132,7 @@ One row per scene, a page you scroll down, and columns you can rearrange. That's
 - **Right-click a row** to get the same menu as right-clicking the scene on the wheel: Add scene, Set chapter, Set part, Status, Publish Stage, and subplot move, add or remove. There's no new editing UI to build or keep in step.
 - **Inline cell edits** are optional and later. Authors who want spreadsheet editing can switch the same `.base` file to Obsidian's built-in Table view, which already writes frontmatter. Both views read the same notes.
 
-**Cross-highlighting** keeps the table and wheel feeling like one instrument. Hovering a row highlights the scene on an open timeline, and hovering a scene scrolls to and highlights its row. Clicking a row opens the note; Shift-clicking reveals the scene on the timeline. Selections are shared, so "Promote selected" works from either side.
+**Cross-highlighting** keeps the table and wheel feeling like one instrument. Hovering a row highlights the scene on an open timeline, and hovering a scene highlights its row. Only Shift on that hover scrolls the row into view, centered when it is out of sight, the same rule Canvas uses for its cards (2026-11-10, Eric: a file dragged across the timeline made Outline jump and hid its documents tray). Clicking a row opens the note; Shift-clicking reveals the scene on the timeline. Selections are shared, so "Promote selected" works from either side.
 
 **Create book base** (command, and a button in Book Manager). This writes a `.base` file for a book, on request only. It holds:
 - a filter on the book's `sourceFolder`;

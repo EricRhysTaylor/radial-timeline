@@ -4,8 +4,9 @@
  * Licensed under a Source-Available, Non-Commercial License. See LICENSE file for details.
  *
  * Hovering a scene on the wheel lights up its row in any open Timetable, so
- * the two views read as one instrument. The Timetable does the reverse
- * through the plugin's scene highlighter.
+ * the two views read as one instrument; holding Shift also brings that row
+ * (and its Canvas card) into view. The Timetable does the reverse through the
+ * plugin's scene highlighter.
  */
 
 import { getIcon } from 'obsidian';
@@ -42,7 +43,9 @@ export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGEl
         if (path === current && color === currentColor) return;
         current = path;
         currentColor = color;
-        markTimetableRows(path, color, true, 'timeline');
+        // Hovering only lights the scene's row and cards. Shift brings them into view (Table, Panels, Outline, Canvas),
+        // so a pointer crossing the timeline, or a file dragged over it, never moves a view the author is working in.
+        markTimetableRows(path, color, false, 'timeline');
         if ((event as PointerEvent).shiftKey) markTimetableRows(path, color, true, 'timeline-pin');
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (event: Event) => {
@@ -50,7 +53,7 @@ export function linkSceneHoverToTimetable(view: TimetableLinkView, svg: SVGSVGEl
         if (scenePathOf((event as PointerEvent).relatedTarget) === current) return;
         current = null;
         currentColor = null;
-        markTimetableRows(null, null, true, 'timeline');
+        markTimetableRows(null, null, false, 'timeline');
     });
     view.renderScope.registerDomEvent(svg.ownerDocument.defaultView as unknown as HTMLElement, 'keydown', (event: Event) => {
         const key = event as KeyboardEvent;

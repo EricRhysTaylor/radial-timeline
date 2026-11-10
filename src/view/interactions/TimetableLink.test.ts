@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { linkSceneHoverToTimetable, litScenes, queryMarkFor } from './TimetableLink';
-import { onLinkedScene } from '../../timetable/timetableRegistry';
+import { onLinkedScene, trackTimetable } from '../../timetable/timetableRegistry';
 
 describe('timeline to Canvas', () => {
     it('pins the hovered scene on Shift and keeps normal hover events distinct', () => {
@@ -24,6 +24,32 @@ describe('timeline to Canvas', () => {
             expect(listener.mock.calls.map(call => call[2])).toEqual(['timeline', 'timeline-pin', 'timeline']);
             expect(listener.mock.calls[1][0]).toBe('Story/Scene.md');
         } finally { dispose(); vi.unstubAllGlobals(); }
+    });
+
+    it('lights a Timetable row on hover but scrolls to it only with Shift', () => {
+        class SceneElement {
+            ownerDocument = { defaultView: {} };
+            closest() { return this; }
+            getAttribute() { return 'Story%2FScene.md'; }
+            querySelector() { return null; }
+        }
+        vi.stubGlobal('Element', SceneElement);
+        const handlers = new Map<string, (event: Event) => void>();
+        const svg = { ownerDocument: { defaultView: {} } } as unknown as SVGSVGElement;
+        const view = { renderScope: { registerDomEvent: (_el: HTMLElement, name: string, handler: (event: Event) => void) => { handlers.set(name, handler); } } };
+        const markLinkedRow = vi.fn();
+        const untrack = trackTimetable({ markLinkedRow } as never);
+        try {
+            linkSceneHoverToTimetable(view, svg);
+            // A pointer crossing the timeline, or a file dragged over it, only lights the row.
+            handlers.get('pointerover')!({ target: new SceneElement(), shiftKey: false } as unknown as Event);
+            handlers.get('pointerout')!({ relatedTarget: null } as unknown as Event);
+            handlers.get('pointerover')!({ target: new SceneElement(), shiftKey: true } as unknown as Event);
+            expect(markLinkedRow.mock.calls).toEqual([
+                ['Story/Scene.md', null, false], [null, null, false],
+                ['Story/Scene.md', null, false], ['Story/Scene.md', null, true],
+            ]);
+        } finally { untrack(); vi.unstubAllGlobals(); }
     });
 });
 

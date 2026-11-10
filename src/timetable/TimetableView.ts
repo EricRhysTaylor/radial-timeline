@@ -850,7 +850,10 @@ export class TimetableView extends BasesView {
         this.autoWidths.clear();
     }
 
-    /** The wheel is hovering this scene: light up its row and bring it into view. */
+    /**
+     * Another view points at this scene: light up its row. With `reveal` (Shift on the timeline, a click on a Canvas
+     * card) bring it into view too; a plain hover never scrolls.
+     */
     markLinkedRow(path: string | null, color: string | null, reveal = true): void {
         if (this.linkedRow) {
             this.linkedRow.removeClass('is-linked');
@@ -860,18 +863,17 @@ export class TimetableView extends BasesView {
         if (!this.linkedRow) return;
         this.linkedRow.addClass('is-linked');
         if (color) this.linkedRow.setCssProps({ '--ert-timetable-link-color': color });
-        if (reveal) this.linkedRow.scrollIntoView({ block: 'nearest' });
+        if (reveal) this.revealRow(this.linkedRow);
     }
 
     /** A note was opened in an editor: mark its row (and bring it into view). */
     markCurrentNote(path: string | null): void {
         this.setCurrentRow(path);
-        this.revealCurrentRow();
+        this.revealRow(this.currentRow);
     }
 
-    /** Bring the open note's row into view, centred when it was out of sight (as after a wheel click); a visible row stays put. */
-    private revealCurrentRow(): void {
-        const row = this.currentRow;
+    /** Bring a row (or panel) into view, centred when it was out of sight (as after a wheel click); a visible row stays put. */
+    private revealRow(row: HTMLElement | null): void {
         const scroller = row?.closest<HTMLElement>('.bases-view');
         if (!row || !scroller) {
             row?.scrollIntoView({ block: 'nearest' });

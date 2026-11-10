@@ -173,4 +173,5 @@ hovered mark's line said where it came from.
     - Hovering Bingley's mark lights one line; the Earlier and Jane marks and the Hunsford circle sit at 25%.
     - Clicking the circle opens the five references as buttons, with focus on the first; Escape closes it.
     - Focusing Hunsford's circle from the keyboard shows its one route and popover; blur hides both.
-  - **Not checked natively:** the Timetable rows lighting on a scene-wide hover (the shared rule is unit-tested).
+  - Later the same day, with the Timetable open beside the timeline in Table layout: hovering Darcy's Letter's circle
+    lights its scene row and all five expanded reference rows.

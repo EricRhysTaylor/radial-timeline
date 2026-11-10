@@ -3,7 +3,7 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
 import { canShareAprToCommunity, canShareTimelineToCommunity, deriveCommunityShareMode, expectsBookListSync, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, timelineShareFor } from './communityShareSettings';
-import { buildTimelineSharePayload, timelinePayloadFingerprint } from './timelineSharePayload';
+import { buildTimelineSharePayload, sceneIdHolders, timelinePayloadFingerprint } from './timelineSharePayload';
 import {
     COMMUNITY_DAILY_BACKFILL_DAYS,
     COMMUNITY_DAILY_BACKFILL_VERSION,
@@ -1390,6 +1390,9 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
     // This book's metadata comes from the same read as its scenes: the plugin-wide
     // BookMeta follows whichever book was read last.
     const { items, bookMeta } = await plugin.getSceneDataService().getSceneDataWithBookMeta({ sourcePath: book.sourceFolder });
+    const before = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    const previous = timelineShareFor(before, book.id);
+    const holders = sceneIdHolders(items, previous?.sceneIdPaths);
     const payload = buildTimelineSharePayload({
         items,
         bookMeta,
@@ -1398,14 +1401,22 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
         pluginVersion: plugin.manifest.version,
         exportId: crypto.randomUUID(),
         now: new Date(),
+        sceneIdHolders: holders,
     });
     if (payload.items.length === 0) {
         throw new CommunityShareError('empty_timeline', t('ui.communityShareClient.timelineNoScenes'));
     }
 
     const hash = await sha256Hex(timelinePayloadFingerprint(payload));
-    const before = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    if (!create && timelineShareFor(before, book.id)?.lastSentHash === hash) return null;
+    if (!create && previous?.lastSentHash === hash) {
+        // Nothing the website reads changed, but a note that holds an id may have
+        // been renamed: remember it under its new path, or a later duplicate could
+        // take the id from it.
+        if (JSON.stringify(previous.sceneIdPaths ?? {}) !== JSON.stringify(holders)) {
+            await saveTimelineRecord(plugin, book.id, profileId, record => ({ ...record, sceneIdPaths: holders }));
+        }
+        return null;
+    }
 
     const live = assertStillSendable(plugin, connection);
     if (!canShareTimelineToCommunity(live)) {
@@ -1427,6 +1438,7 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
         lastSentAt: new Date().toISOString(),
         droppedReveals: answer.summary?.reveals_dropped ?? [],
         scenesWithoutStableId: answer.summary?.scenes_without_stable_id ?? 0,
+        sceneIdPaths: holders,
     }));
     return answer;
 }

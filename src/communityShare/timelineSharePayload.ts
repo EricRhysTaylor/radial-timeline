@@ -66,22 +66,36 @@ export interface BuildTimelineSharePayloadParams {
     pluginVersion: string;
     exportId: string;
     now: Date;
+    /** From `sceneIdHolders`. Without it, nothing is known of earlier sends. */
+    sceneIdHolders?: Readonly<Record<string, string>>;
 }
 
-const WIKILINK = /\[\[([^\][|]*)(?:\|([^\][]*))?\]\]/g;
+const WIKILINK = /!?\[\[([^\][|]*)(?:\|([^\][]*))?\]\]/g;
+/** A markdown link to a note in the vault: no URL scheme, so its target is a vault path. */
+const VAULT_MARKDOWN_LINK = /!?\[([^\]]*)\]\((?![a-z][a-z0-9+.-]*:)(?:<[^>]*>|[^)]*)\)/gi;
 
 /**
- * A name as the reader sees it in Obsidian. The authored form of a link carries
- * its target, which can be a folder path in the vault (`[[People/Mira]]`), so it
- * leaves as its alias or the note's name and never as the link itself.
+ * Text as the reader sees it in Obsidian. The authored form of a link carries
+ * its target, which can be a folder path in the vault (`[[People/Mira]]`,
+ * `[Mira](People/Mira.md)`), so a link leaves as its shown text, alias or the
+ * note's name, and never as the link itself. Web links are left as written.
  */
 function linkText(text: string): string {
-    return text.replace(WIKILINK, (_match: string, target: string, alias?: string) => {
-        const shown = alias?.trim();
-        if (shown) return shown;
-        const note = target.split('#')[0].split('/').pop() ?? ''; // SAFE: split always yields at least one segment
-        return note.replace(/\.md$/i, '').trim();
-    }).trim();
+    return text
+        .replace(WIKILINK, (_match: string, target: string, alias?: string) => {
+            const shown = alias?.trim();
+            if (shown) return shown;
+            const note = target.split('#')[0].split('/').pop() ?? ''; // SAFE: split always yields at least one segment
+            return note.replace(/\.md$/i, '').trim();
+        })
+        .replace(VAULT_MARKDOWN_LINK, (_match: string, shown: string) => shown.trim())
+        .trim();
+}
+
+function sharedText(value: string | undefined): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    const text = linkText(value);
+    return text.length > 0 ? text : undefined;
 }
 
 function textList(value: unknown): string[] {
@@ -111,39 +125,58 @@ function scenesOf(items: TimelineItem[]): TimelineItem[][] {
 }
 
 /**
- * Scene ids that more than one scene carries. A duplicated note keeps its
- * `scn_` id, and the website groups scenes by id: two scenes on one id either
- * merge into one or make every sync fail. Those scenes go without an id and
- * are placed by position instead.
+ * Which note sends each scene id, as id → note path.
+ *
+ * A duplicated note keeps its `scn_` id, and the website groups scenes by id:
+ * two scenes on one id either merge into one or make every sync fail. So each
+ * id goes out on one scene only. The note that carried it in the last send
+ * keeps it, so the website still matches the original and its reveal; the
+ * copy goes without an id, placed by position, until the YAML audit's Fix
+ * duplicate IDs gives it its own. With no earlier send (or that note renamed
+ * or gone), the first scene in timeline order keeps it.
+ *
+ * `previous` is this result from the last send. The paths stay in plugin data
+ * and never leave the vault: the payload carries only the ids.
  */
-function repeatedSceneIds(scenes: TimelineItem[][]): Set<string> {
-    const seen = new Set<string>();
-    const repeated = new Set<string>();
-    for (const [item] of scenes) {
+export function sceneIdHolders(
+    items: TimelineItem[],
+    previous: Readonly<Record<string, string>> = {}
+): Record<string, string> {
+    const carriers = new Map<string, string[]>();
+    for (const [item] of scenesOf(items)) {
         const id = item.sceneId;
-        if (!id) continue;
-        if (seen.has(id)) repeated.add(id);
-        else seen.add(id);
+        if (!id || !item.path || !isOpaqueSceneId(id)) continue;
+        const paths = carriers.get(id);
+        if (paths) paths.push(item.path);
+        else carriers.set(id, [item.path]);
     }
-    return repeated;
+    const holders: Record<string, string> = {};
+    for (const [id, paths] of carriers) {
+        const kept = previous[id];
+        holders[id] = kept && paths.includes(kept) ? kept : paths[0];
+    }
+    return holders;
 }
 
-function shareItem(rows: TimelineItem[], repeatedIds: ReadonlySet<string>): TimelineShareItem {
+function shareItem(rows: TimelineItem[], holders: Readonly<Record<string, string>>): TimelineShareItem {
     const item = rows[0];
     const frontmatter = item.rawFrontmatter;
     const authoredSubplots = textList(frontmatter?.Subplot);
     const subplots = authoredSubplots.length > 0 ? authoredSubplots : rows.flatMap(row => textList(row.subplot));
     const cast = textList(frontmatter?.Character ?? item.Character);
     const when = wallClockWhen(item);
-    const synopsis = item.synopsis ?? item.Summary;
+    // Every free-text field goes through the same link reduction as the names.
+    const synopsis = sharedText(item.synopsis ?? item.Summary);
+    const title = sharedText(item.title);
+    const act = sharedText(item.act);
 
     return {
         itemType: 'Scene',
         subplot: [...new Set(subplots)],
-        ...(item.title ? { title: item.title } : {}),
-        ...(item.sceneId && isOpaqueSceneId(item.sceneId) && !repeatedIds.has(item.sceneId) ? { sceneId: item.sceneId } : {}),
+        ...(title ? { title } : {}),
+        ...(item.sceneId && item.path && holders[item.sceneId] === item.path ? { sceneId: item.sceneId } : {}),
         ...(when ? { when } : item.date ? { date: item.date } : {}),
-        ...(item.act ? { act: item.act } : {}),
+        ...(act ? { act } : {}),
         ...(item.actNumber !== undefined ? { actNumber: item.actNumber } : {}),
         ...(item.number !== undefined ? { number: item.number } : {}),
         ...(item.pov && isNarrationValue(item.pov) ? { pov: item.pov } : {}),
@@ -159,9 +192,8 @@ function shareItem(rows: TimelineItem[], repeatedIds: ReadonlySet<string>): Time
  * private title, as it does for the book's project card.
  */
 export function buildTimelineSharePayload(params: BuildTimelineSharePayloadParams): TimelineSharePayload {
-    const scenes = scenesOf(params.items);
-    const repeatedIds = repeatedSceneIds(scenes);
-    const items = scenes.map(rows => shareItem(rows, repeatedIds));
+    const holders = params.sceneIdHolders ?? sceneIdHolders(params.items);
+    const items = scenesOf(params.items).map(rows => shareItem(rows, holders));
     const title = params.book.publicLabel?.trim() || params.bookMeta?.title?.trim() || params.book.title; // SAFE: the public label is optional; the book's own title is always set
     return {
         schemaVersion: TIMELINE_DATA_EXPORT_SCHEMA_VERSION,

@@ -258,6 +258,15 @@ function normalizeDeskLamps(value: unknown): CommunityDeskLampsRecord | undefine
     };
 }
 
+function normalizeSceneIdPaths(value: unknown): { sceneIdPaths: Record<string, string> } | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    const paths: Record<string, string> = {};
+    for (const [id, path] of Object.entries(value as Record<string, unknown>)) {
+        if (id && typeof path === 'string' && path) paths[id] = path;
+    }
+    return Object.keys(paths).length > 0 ? { sceneIdPaths: paths } : undefined;
+}
+
 function normalizeTimelineShares(value: unknown): Record<string, CommunityTimelineShareRecord> | undefined {
     if (!value || typeof value !== 'object') return undefined;
     const records: Record<string, CommunityTimelineShareRecord> = {};
@@ -274,6 +283,7 @@ function normalizeTimelineShares(value: unknown): Record<string, CommunityTimeli
                 ? { droppedReveals: record.droppedReveals.filter((n): n is number => Number.isInteger(n)) }
                 : {}),
             ...(Number.isInteger(record.scenesWithoutStableId) ? { scenesWithoutStableId: record.scenesWithoutStableId } : {}),
+            ...(normalizeSceneIdPaths(record.sceneIdPaths) ?? {}),
         };
     }
     return Object.keys(records).length > 0 ? records : undefined;

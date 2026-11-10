@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../types';
-import { buildTimelineSharePayload, timelinePayloadFingerprint } from './timelineSharePayload';
+import { buildTimelineSharePayload, sceneIdHolders, timelinePayloadFingerprint } from './timelineSharePayload';
 
 const SCENE_TEXT = 'The rain came in under the door and she did not look up.';
 
@@ -92,25 +92,62 @@ describe('buildTimelineSharePayload', () => {
         }
     });
 
-    it('leaves out an id two scenes share, so neither merges into the other', () => {
+    it('sends an id two scenes share on one scene only, so neither merges into the other', () => {
         const { items } = build([
             scene({ path: 'Book/1 The Ball.md', title: '1 The Ball' }),
             scene({ path: 'Book/1 The Ball 1.md', title: '1 The Ball' }),
             scene({ path: 'Book/2 The Letter.md', title: '2 The Letter', sceneId: 'scn_e5f6a7b8' }),
         ]);
         expect(items).toHaveLength(3);
-        expect(items[0]).not.toHaveProperty('sceneId');
+        expect(items[0].sceneId).toBe('scn_a1b2c3d4');
         expect(items[1]).not.toHaveProperty('sceneId');
         expect(items[2].sceneId).toBe('scn_e5f6a7b8');
     });
 
-    it('leaves out a shared id when the two scenes have different titles', () => {
-        const { items } = build([
-            scene({ path: 'Book/1 The Ball.md', title: '1 The Ball' }),
-            scene({ path: 'Book/3 The Duel.md', title: '3 The Duel' }),
-        ]);
-        expect(items.map(item => item.title)).toEqual(['1 The Ball', '3 The Duel']);
-        expect(items.some(item => 'sceneId' in item)).toBe(false);
+    it('keeps the id on the scene that sent it last when a note is duplicated', () => {
+        const original = scene({ path: 'Book/3 The Duel.md', title: '3 The Duel' });
+        const firstSend = sceneIdHolders([original]);
+        expect(firstSend).toEqual({ scn_a1b2c3d4: 'Book/3 The Duel.md' });
+
+        // The copy sorts ahead of the original, and has a different title.
+        const items = [scene({ path: 'Book/1 The Ball.md', title: '1 The Ball' }), original];
+        const holders = sceneIdHolders(items, firstSend);
+        const sent = build(items, { sceneIdHolders: holders }).items;
+        expect(sent.map(item => item.title)).toEqual(['1 The Ball', '3 The Duel']);
+        expect(sent[0]).not.toHaveProperty('sceneId');
+        expect(sent[1].sceneId).toBe('scn_a1b2c3d4');
+        expect(holders).toEqual(firstSend);
+    });
+
+    it('gives the id to the first scene in order when the note that sent it is gone', () => {
+        const items = [scene({ path: 'Book/1 The Ball.md' }), scene({ path: 'Book/1 The Ball 1.md' })];
+        expect(sceneIdHolders(items, { scn_a1b2c3d4: 'Book/Renamed.md' })).toEqual({ scn_a1b2c3d4: 'Book/1 The Ball.md' });
+    });
+
+    it('sends each scene its own id once the copy has a new one', () => {
+        const items = [scene({ path: 'Book/1 The Ball.md' }), scene({ path: 'Book/1 The Ball 1.md', sceneId: 'scn_0f0f0f0f' })];
+        const sent = build(items, { sceneIdHolders: sceneIdHolders(items, { scn_a1b2c3d4: 'Book/1 The Ball.md' }) }).items;
+        expect(sent.map(item => item.sceneId)).toEqual(['scn_a1b2c3d4', 'scn_0f0f0f0f']);
+    });
+
+    it('sends the synopsis, title and act with links reduced to their shown text', () => {
+        const [item] = build([scene({
+            title: '[[Private Folder/Book/1 The Ball|1 The Ball]]',
+            act: '[[Private Folder/Acts/Act One]]',
+            synopsis: 'She meets [[Private Folder/People/Mira|Mira]] and [[Private Folder/People/Tomas]], reads ![[Private Folder/Letters/Note.md]], sees [the map](Private%20Folder/Places/Map.md) and [the archive](https://example.org/archive).',
+        })]).items;
+        expect(item.title).toBe('1 The Ball');
+        expect(item.act).toBe('Act One');
+        expect(item.synopsis).toBe('She meets Mira and Tomas, reads Note, sees the map and [the archive](https://example.org/archive).');
+        expect(JSON.stringify(item)).not.toContain('Private');
+    });
+
+    it('sends markdown links in cast and subplots by their shown text', () => {
+        const { items } = build([scene({
+            rawFrontmatter: { Character: ['[Mira](Private Folder/People/Mira.md)'], Subplot: ['[Romance](<Private Folder/Arcs/Romance.md>)'] },
+        })]);
+        expect(items[0].Character).toEqual(['Mira']);
+        expect(items[0].subplot).toEqual(['Romance']);
     });
 
     it('keeps the id of a scene repeated once per subplot', () => {

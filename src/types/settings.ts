@@ -1190,6 +1190,11 @@ export interface CommunityTimelineShareRecord {
     droppedReveals?: number[];
     /** Scenes in the last send with no scene id, whose reveals cannot follow them. */
     scenesWithoutStableId?: number;
+    /**
+     * Which note sent each scene id last, id → note path, so a duplicated note
+     * cannot take the id from the scene the website knows. Stays in plugin data.
+     */
+    sceneIdPaths?: Record<string, string>;
 }
 
 /** Desk Lamps choices for one Community profile (plugin data, never frontmatter). */

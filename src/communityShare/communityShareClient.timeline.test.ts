@@ -276,6 +276,33 @@ describe('Timeline updates with the book sync', () => {
         expect(record?.scenesWithoutStableId).toBe(2);
     });
 
+    it('keeps the scene id on the original when the author duplicates its note', async () => {
+        const h = harness();
+        await started(h);
+        expect(timelineShareFor(h.plugin.settings.communityShare, 'book-1')?.sceneIdPaths)
+            .toEqual({ scn_a1b2c3d4: 'Books/Private Path/1 Scene.md' });
+
+        // The copy keeps the scn_ id and is read first.
+        h.scenes.unshift({ ...h.scenes[0], title: '0 Copy', path: 'Books/Private Path/0 Copy.md' });
+        const request = respondWith({ body: answer('active') });
+        await syncCommunityTimelinesIfDue(h.plugin as never);
+        const [body] = timelineCalls(request);
+        const items = (body.export as { items: Array<{ title?: string; sceneId?: string }> }).items;
+        expect(items.map(item => [item.title, item.sceneId])).toEqual([['0 Copy', undefined], ['1 Scene', 'scn_a1b2c3d4']]);
+        expect(JSON.stringify(body)).not.toContain('Private Path');
+    });
+
+    it('follows a renamed note that holds an id, with nothing sent', async () => {
+        const h = harness();
+        await started(h);
+        h.scenes[0].path = 'Books/Private Path/1 Scene Renamed.md';
+        const request = respondWith({ body: answer() });
+        await syncCommunityTimelinesIfDue(h.plugin as never);
+        expect(request).not.toHaveBeenCalled();
+        expect(timelineShareFor(h.plugin.settings.communityShare, 'book-1')?.sceneIdPaths)
+            .toEqual({ scn_a1b2c3d4: 'Books/Private Path/1 Scene Renamed.md' });
+    });
+
     it('turns itself off when the timeline was deleted on the website', async () => {
         const h = harness();
         await started(h);

@@ -2,7 +2,7 @@ Scene Time helps you check how much story time passes inside a scene. It reads t
 
 Scene Time is optional. It never changes your prose or your scene properties.
 
-<p align="center"><img src="images/scene-time-cue-bar.png" alt="A scene with the time cue bar beside the prose and the scene time summary in the title bar" width="720"></p>
+<p align="center"><img src="images/scene-time-cue-bar.png" alt="A scene with the time notation bar beside the prose and the scene time summary in the title bar" width="720"></p>
 <p align="center"><sub>The title bar shows when the scene starts and how much time is accounted for. The bar beside the prose marks each time phrase.</sub></p>
 
 ## The title bar
@@ -20,7 +20,7 @@ If the confirmed time runs longer than the scene's `Duration`, or an **Elapsed s
 
 Click the summary to open the Scene Time panel.
 
-## The cue bar
+## The time notation bar
 
 A thin bar runs beside your prose, in both editing and Reading view. Each time phrase gets a colored strip beside its paragraph:
 
@@ -61,13 +61,13 @@ Some action takes time even when the prose never says so, like a long climb or a
 
 A blue bracketed marker appears beside the paragraph, and the time counts toward the title-bar total. You can also select a line of prose and run the command **Scene time assignment**.
 
-## Turning the cue bar off
+## Turning the time notation bar off
 
-Go to **Settings → Advanced → Timeline Display** and turn off **Show scene time cue bar**. The title-bar summary stays visible. See [Advanced settings](Settings-Advanced).
+Go to **Settings → Advanced → Timeline Display** and turn off **Show time notation bar in Scene notes**. The title-bar summary stays visible. See [Advanced settings](Settings-Advanced).
 
 ## What Scene Time changes
 
-Scene Time only affects the cue bar and the elapsed total in the title bar. It does not change Timeline Date Audit, Timeline Date Scaffold, or your writing-session timer.
+Scene Time only affects the time notation bar and the elapsed total in the title bar. It does not change Timeline Date Audit, Timeline Date Scaffold, or your writing-session timer.
 
 Your decisions are saved per scene in the `Radial Timeline/Scene Time` folder of your vault. Your notes and their properties are never edited. If you rewrite a paragraph, review its time phrase again.
 

@@ -968,6 +968,19 @@
   margin-bottom: 0;
 }
 
+/* Lucide icon before a Configuration row's title */
+.ert-ui.ert-scope--settings .ert-config-row-icon {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-inline-end: var(--ert-gap-xs);
+  color: var(--text-muted);
+}
+
+.ert-ui.ert-scope--settings .ert-config-row-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
 .ert-ui.ert-scope--settings .ert-config-group-modal-link {
   display: inline-flex;
   align-items: center;

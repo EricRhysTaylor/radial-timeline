@@ -4142,8 +4142,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "contentLogsName": "Activer les journaux de contenu de l'IA",
             "contentLogsDesc": "Lorsqu'il est activé, des invites complètes, des documents et API Les réponses sont écrites dans les dossiers de contenu de fonctionnalités sous Journaux. Les journaux concis, les archives, les instantanés et l'historique des déplacements sont toujours écrits Indépendamment de cette bascule.",
             "contentLogsChip": "Journaux de contenu",
-            "sceneTimeCueBarName": "Afficher la barre de repère de temps de scène",
-            "sceneTimeCueBarDesc": "Afficher les marqueurs de l'expression temporelle à côté des notes de scène dans les vues d'édition et de lecture. Désactivez pour masquer la barre verticale ; Le timing de la scène dans la barre de titre de la note reste visible.",
             "communityMailboxName": "Afficher la boîte aux lettres communautaire",
             "communityMailboxDesc": "Lorsque ce coffre est connecté à la communauté, un bouton de boîte aux lettres à côté du contrôle de session d'écriture marque de nouvelles réponses à vos demandes et questions. Il vérifie le site Web environ une fois par heure et quand Obsidian retrouve la concentration.",
             "deskLampsName": "Afficher Desk Lamps",

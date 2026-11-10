@@ -4135,8 +4135,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             contentLogsName: 'AI コンテンツログを有効にする',
             contentLogsDesc: '有効にすると、完全なプロンプト、資料、API レスポンスが Logs 配下の各機能のコンテンツフォルダに書き込まれます。簡潔なログ、アーカイブ、スナップショット、移動履歴は、この設定に関係なく常に書き込まれます。',
             contentLogsChip: 'コンテンツログ',
-            sceneTimeCueBarName: 'シーン時間のキューバーを表示',
-            sceneTimeCueBarDesc: '編集ビューと閲覧ビューで、シーンノートの横に時間表現のマーカーを表示します。オフにすると縦のバーが非表示になります。ノートのタイトルバーのシーン時間は表示されたままです。',
             communityMailboxName: 'コミュニティのメールボックスを表示',
             communityMailboxDesc: 'この保管庫がコミュニティに接続されている場合、執筆セッションのコントロールの横にあるメールボックスボタンで、あなたのリクエストや質問への新しい返信をお知らせします。ウェブサイトの確認は約 1 時間ごとと、Obsidian にフォーカスが戻ったときに行われます。',
             deskLampsName: 'デスクランプを表示',

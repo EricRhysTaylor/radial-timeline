@@ -4134,8 +4134,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             contentLogsName: 'AI 콘텐츠 로그 활성화',
             contentLogsDesc: '활성화하면 전체 프롬프트, 자료, API 응답이 로그 아래의 기능별 콘텐츠 폴더에 기록됩니다. 간결한 로그, 아카이브, 스냅샷, 이동 기록은 이 설정과 관계없이 항상 기록됩니다.',
             contentLogsChip: '콘텐츠 로그',
-            sceneTimeCueBarName: '장면 시간 단서 막대 표시',
-            sceneTimeCueBarDesc: '편집 보기와 읽기 보기에서 장면 노트 옆에 시간 표현 마커를 표시합니다. 끄면 세로 막대가 숨겨지며, 노트 제목 표시줄의 장면 시간은 계속 표시됩니다.',
             communityMailboxName: '커뮤니티 메일함 표시',
             communityMailboxDesc: '이 보관함이 커뮤니티에 연결되어 있으면 집필 세션 컨트롤 옆의 메일함 버튼이 요청과 질문에 달린 새 답글을 알려 줍니다. 약 1시간마다, 그리고 Obsidian으로 다시 돌아올 때 웹사이트를 확인합니다.',
             deskLampsName: 'Desk Lamps 표시',

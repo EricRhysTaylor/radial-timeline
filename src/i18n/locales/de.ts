@@ -4134,8 +4134,6 @@ export const de: DeepPartial<TranslationKeys> = {
             contentLogsName: 'KI-Inhaltsprotokolle aktivieren',
             contentLogsDesc: 'Wenn aktiviert, werden vollständige Prompts, Materialien und API-Antworten in die Inhaltsordner der jeweiligen Funktion unter Logs geschrieben. Kurzprotokolle, Archive, Snapshots und der Verschiebungsverlauf werden unabhängig von diesem Schalter immer geschrieben.',
             contentLogsChip: 'Inhaltsprotokolle',
-            sceneTimeCueBarName: 'Zeithinweisleiste für Szenen anzeigen',
-            sceneTimeCueBarDesc: 'Zeigt Markierungen für Zeitangaben neben Szenennotizen in der Bearbeitungs- und Leseansicht. Ausschalten, um die senkrechte Leiste auszublenden; das Szenen-Timing in der Titelleiste der Notiz bleibt sichtbar.',
             communityMailboxName: 'Community-Postfach anzeigen',
             communityMailboxDesc: 'Wenn dieser Vault mit der Community verbunden ist, markiert eine Postfach-Schaltfläche neben der Schreibsitzungs-Steuerung neue Antworten auf Ihre Anfragen und Fragen. Sie prüft die Website etwa einmal pro Stunde und wenn Obsidian wieder den Fokus erhält.',
             deskLampsName: 'Desk Lamps anzeigen',

@@ -4136,8 +4136,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             contentLogsName: '启用 AI 内容日志',
             contentLogsDesc: '启用后，完整的提示、材料和 API 响应会写入“日志”下各功能的内容文件夹。无论此开关如何，简明日志、归档、快照和移动历史始终会被写入。',
             contentLogsChip: '内容日志',
-            sceneTimeCueBarName: '显示场景时间线索栏',
-            sceneTimeCueBarDesc: '在编辑视图和阅读视图中，于场景笔记旁显示时间短语标记。关闭后将隐藏竖条；笔记标题栏中的场景时间仍然可见。',
             communityMailboxName: '显示社区信箱',
             communityMailboxDesc: '当此仓库已连接到社区时，写作会话控件旁的“信箱”按钮会标示对您的请求和问题的新回复。它大约每小时检查一次网站，并在 Obsidian 重新获得焦点时检查。',
             deskLampsName: '显示台灯',

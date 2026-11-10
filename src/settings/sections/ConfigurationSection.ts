@@ -1,4 +1,4 @@
-import { App, Setting as Settings } from 'obsidian';
+import { App, Setting as Settings, setIcon } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { ReadabilityScale } from '../../types/settings';
 import { clearFontMetricsCaches } from '../../renderer/utils/FontMetricsCache';
@@ -37,6 +37,8 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
         options: {
             title: string;
             description: string;
+            /** Lucide icon shown before the title. */
+            icon?: string;
             control: (setting: Settings) => void;
         }
     ): Settings => {
@@ -44,6 +46,11 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
             .setName(options.title)
             .setDesc(options.description);
         row.settingEl.addClass('ert-settingRow');
+        if (options.icon) {
+            const iconEl = createSpan({ cls: 'ert-config-row-icon' });
+            setIcon(iconEl, options.icon);
+            row.nameEl.prepend(iconEl);
+        }
         options.control(row);
         return row;
     };
@@ -145,6 +152,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     createDenseRow(displayContainer, {
         title: t('ui.configurationSection.sceneTimeCueBarName'),
         description: t('ui.configurationSection.sceneTimeCueBarDesc'),
+        icon: 'ruler',
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.showSceneTimeCueBar !== false)
@@ -157,6 +165,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     createDenseRow(displayContainer, {
         title: t('ui.configurationSection.communityMailboxName'),
         description: t('ui.configurationSection.communityMailboxDesc'),
+        icon: 'mail',
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.showCommunityMailbox !== false)
@@ -169,6 +178,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     createDenseRow(displayContainer, {
         title: t('ui.configurationSection.deskLampsName'),
         description: t('ui.configurationSection.deskLampsDesc'),
+        icon: 'lamp-ceiling',
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.showDeskLamps !== false)
@@ -186,6 +196,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     createDenseRow(displayContainer, {
         title: t('settings.configuration.autoExpand.name'),
         description: t('settings.configuration.autoExpand.desc'),
+        icon: 'unfold-horizontal',
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.enableSceneTitleAutoExpand ?? true)
@@ -199,6 +210,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     const chapterMarkerSetting = createDenseRow(displayContainer, {
         title: t('settings.configuration.chapterMarkers.name'),
         description: buildChapterMarkerDescription(),
+        icon: 'bookmark',
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.showChapterMarkers ?? false)
@@ -213,6 +225,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     createDenseRow(displayContainer, {
         title: t('ui.configurationSection.recentMovesName'),
         description: t('ui.configurationSection.recentMovesDesc'),
+        icon: 'history',
         control: (setting) => {
             setting.addToggle(toggle => toggle
                 .setValue(plugin.settings.showRecentMovesOverlay ?? true)
@@ -227,6 +240,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
     createDenseRow(displayContainer, {
         title: t('settings.configuration.readability.name'),
         description: t('settings.configuration.readability.desc'),
+        icon: 'a-large-small',
         control: (setting) => {
             setting.addDropdown(drop => {
                 drop.addOption('normal', t('settings.configuration.readability.normal'));

@@ -4142,8 +4142,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "contentLogsName": "Habilitar registros de contenido de IA",
             "contentLogsDesc": "Cuando está habilitado, indicaciones completas, materiales y API Las respuestas se escriben en las carpetas de contenido de características en Registros. Los registros concisos, los archivos, las instantáneas y el historial de movimientos siempre se escriben Independientemente de esta palanca.",
             "contentLogsChip": "Registros de contenido",
-            "sceneTimeCueBarName": "Mostrar barra de señal de tiempo de escena",
-            "sceneTimeCueBarDesc": "Mostrar marcadores de frase de tiempo junto a las notas de la escena en las vistas de edición y lectura. Apague para ocultar la barra vertical; La sincronización de la escena en la barra de título de la nota permanece visible.",
             "communityMailboxName": "Mostrar buzón de la comunidad",
             "communityMailboxDesc": "Cuando esta bóveda está conectada a la comunidad, un botón de buzón junto al control de sesión de escritura marca nuevas respuestas a sus solicitudes y Preguntas. Revisa el sitio web aproximadamente una vez por hora y cuando Obsidian Recupera el enfoque.",
             "deskLampsName": "Mostrar Desk Lamps",

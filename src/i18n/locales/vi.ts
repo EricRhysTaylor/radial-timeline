@@ -4142,8 +4142,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "contentLogsName": "Bật nhật ký nội dung AI",
             "contentLogsDesc": "Khi được bật, lời nhắc đầy đủ, tài liệu và API Phản hồi được ghi vào các thư mục nội dung nổi bật trong nhật ký. Nhật ký ngắn gọn, lưu trữ, ảnh chụp nhanh và lịch sử di chuyển luôn được viết Bất kể chuyển đổi này.",
             "contentLogsChip": "Nhật ký nội dung",
-            "sceneTimeCueBarName": "Hiển thị thời gian cảnh quay thanh",
-            "sceneTimeCueBarDesc": "Hiển thị các điểm đánh dấu cụm từ thời gian bên cạnh ghi chú cảnh trong chế độ chỉnh sửa và đọc. Tắt để ẩn thanh dọc; Thời gian cảnh trong thanh ghi chú vẫn hiển thị.",
             "communityMailboxName": "Hiển thị hộp thư cộng đồng",
             "communityMailboxDesc": "Khi kho này được kết nối với cộng đồng, một nút hộp thư bên cạnh điều khiển phiên viết sẽ đánh dấu các câu trả lời mới cho các yêu cầu của bạn và câu hỏi. nó kiểm tra trang web khoảng một lần một giờ và khi nào Obsidian lấy lại sự tập trung.",
             "deskLampsName": "Hiển thị Desk Lamps",

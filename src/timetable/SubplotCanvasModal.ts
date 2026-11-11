@@ -6,6 +6,7 @@ import { t } from '../i18n';
 import { buildTableRow, type TimetableRow } from './timetableModel';
 import { planSubplotCanvas, storyRangeBounds, storyRangeRows, type StoryRange } from './subplotCanvas';
 import { storyMapFolder, storyMapPrefix } from './storyMapPaths';
+import type { StoryCanvasData } from './canvasSketches';
 
 export class SubplotCanvasModal extends ErtModal {
     private bookId: string;
@@ -113,6 +114,17 @@ export class SubplotCanvasModal extends ErtModal {
             let path = `${prefix}.canvas`;
             for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${prefix} ${n}.canvas`;
             const file = await this.app.vault.create(path, JSON.stringify({ nodes: plan.nodes, edges: plan.edges }, null, 2));
+            const scoped = storyRangeRows(rows, this.act, 'all').filter(row => this.subplot === null || row.subplots.includes(this.subplot));
+            this.plugin.settings.storyMapProvenance = {
+                ...this.plugin.settings.storyMapProvenance,
+                [file.path]: {
+                    version: 1, bookId: book.id, generatedAt: new Date().toISOString(),
+                    act: this.act, subplot: this.subplot, layout: this.layout, initialFocus: this.range,
+                    scenes: scoped.map(row => ({ path: row.path, act: row.act, subplots: [...row.subplots] })),
+                    generated: JSON.parse(JSON.stringify({ nodes: plan.nodes, edges: plan.edges })) as StoryCanvasData,
+                },
+            };
+            await this.plugin.saveSettings();
             if (this.onCreated) await this.onCreated(file);
             else await this.app.workspace.openLinkText(file.path, '', true);
             this.close();

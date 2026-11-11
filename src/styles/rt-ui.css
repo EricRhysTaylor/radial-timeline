@@ -10574,6 +10574,8 @@
 .ert-story-navigator input.ert-story-navigator__slider:hover::-webkit-slider-thumb,
 .ert-story-navigator input.ert-story-navigator__slider:active::-webkit-slider-thumb { width: 30px; height: 18px; border-radius: 999px; }
 .ert-story-navigator__fit { flex: none; }
+.ert-story-navigator__review.is-out-of-date { color: var(--text-accent); background: var(--background-modifier-hover); }
+.ert-story-navigator__review-text { margin-inline-start: 4px; font-size: var(--font-ui-smaller); }
 [class~="canvas-node"].ert-story-act-heading:not([class~="is-selected"]):not(:hover):not(:focus-within) > [class~="canvas-node-container"] { background: transparent; border-color: transparent; box-shadow: none; }
 .ert-story-act-heading:not(:focus-within) > [class~="canvas-node-container"] > [class~="canvas-node-content"] { opacity: 0; }
 .ert-story-act-label { position: absolute; inset: 0; z-index: 2; padding: 16px; overflow: hidden; pointer-events: none; color: var(--text-normal); }

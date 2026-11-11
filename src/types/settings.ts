@@ -2,6 +2,7 @@ import type { InquiryScope, InquiryZone } from '../inquiry/state';
 import type { AiSettingsV1, AIRoleTemplate } from '../ai/types';
 import type { DesignedStyleSpec } from '../publishing/designedStyle';
 import type { GossamerRunTiming } from '../gossamer/runTiming';
+import type { StoryMapProvenance } from '../timetable/storyMapProvenance';
 
 export type AiContextTemplate = AIRoleTemplate;
 
@@ -1220,6 +1221,8 @@ export interface CommunityDailyBackfillRecord {
 }
 
 export interface RadialTimelineSettings {
+    /** Generation baselines for story maps, keyed by Canvas path. */
+    storyMapProvenance?: Record<string, StoryMapProvenance>;
     /** How scene cards choose a character portrait across the manuscript. */
     storyImageStrategy?: 'first' | 'second' | 'distinctive' | 'pov' | 'balanced';
     storyImageChoices?: Record<string, { character?: string; image?: string; placeImage?: string }>;

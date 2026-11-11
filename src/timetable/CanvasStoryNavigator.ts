@@ -8,6 +8,9 @@ import { placeKeyPanel, renderLegendSurface, wireLegendTrigger, type LegendSecti
 import { isStoryMapPath } from './storyMapPaths';
 import { transposeStoryCanvas } from './canvasOrientation';
 import type { StoryCanvasData } from './canvasSketches';
+import { StoryMapReviewModal, mapScenes } from './StoryMapReviewModal';
+import { diffStoryMap } from './storyMapDiff';
+import { isStoryMapProvenance } from './storyMapProvenance';
 
 type NodeData = { type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
 type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; selection?: Set<{ getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; getData?: () => StoryCanvasData; setData?: (data: StoryCanvasData) => void; requestSave?: (pushHistory?: boolean) => void; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void; zoomToBbox?: (bounds: { minX: number; minY: number; maxX: number; maxY: number }) => void };
@@ -141,6 +144,38 @@ export class CanvasStoryNavigator {
         selection.disabled = true;
         const fit = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit' });
         const orientation = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit', attr: { type: 'button' } });
+        const review = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit ert-story-navigator__review', attr: { type: 'button' } });
+        setIcon(review, 'clipboard-list');
+        const reviewText = review.createSpan({ cls: 'ert-story-navigator__review-text', text: t('ui.storyMapReview.outOfDate') });
+        reviewText.hide();
+        const reviewStatus = (): void => {
+            const record = this.plugin.settings.storyMapProvenance?.[this.path];
+            let stale = false;
+            if (isStoryMapProvenance(record) && this.plugin.settings.books.some(book => book.id === record.bookId)) {
+                const changes = diffStoryMap(record.scenes, mapScenes(this.plugin, record));
+                stale = !!(changes.added.length || changes.removed.length || changes.actChanged.length || changes.subplotsChanged.length || changes.orderChanged);
+            }
+            const label = t(stale ? 'ui.storyMapReview.outOfDate' : 'ui.storyMapReview.details');
+            review.toggleClass('is-out-of-date', stale);
+            reviewText.toggle(stale);
+            setTooltip(review, label); setAccessibleLabel(review, label);
+        };
+        this.events.registerDomEvent(review, 'click', () => {
+            const file = (this.view as unknown as { file?: TFile | null }).file;
+            const view = this.canvas();
+            if (file && view) new StoryMapReviewModal(this.plugin.app, this.plugin, file, view).open();
+        });
+        let statusTimer = 0;
+        const scheduleStatus = (): void => {
+            window.clearTimeout(statusTimer);
+            statusTimer = window.setTimeout(reviewStatus, 500);
+        };
+        this.events.register(() => window.clearTimeout(statusTimer));
+        this.events.registerEvent(this.plugin.app.metadataCache.on('changed', scheduleStatus));
+        this.events.registerEvent(this.plugin.app.vault.on('create', scheduleStatus));
+        this.events.registerEvent(this.plugin.app.vault.on('delete', scheduleStatus));
+        this.events.registerEvent(this.plugin.app.vault.on('rename', scheduleStatus));
+        scheduleStatus();
         setAccessibleLabel(slider, t('ui.subplotCanvas.navigator'));
         setTooltip(selection, t('ui.subplotCanvas.navigatorSelection'));
         setIcon(selection, 'zoom-to-selection');

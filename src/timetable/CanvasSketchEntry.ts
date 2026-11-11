@@ -8,6 +8,7 @@ import { runPromotion } from '../services/PromoteToSceneEntry';
 import { CanvasConvertModal, type OpenCanvas } from './CanvasConvertModal';
 import { registerCanvasCardPresentation } from './CanvasCardPresentation';
 import { registerCanvasSubplotMemoryUpkeep } from './CanvasSubplotMemoryUpkeep';
+import { rebaseStoryMapProvenance } from './storyMapProvenance';
 import { SubplotCanvasModal } from './SubplotCanvasModal';
 import { canvasTextCards } from './canvasSketches';
 
@@ -48,6 +49,14 @@ function openCanvasSketches(plugin: RadialTimelinePlugin, open = activeCanvas(pl
 export function registerCanvasSketches(plugin: RadialTimelinePlugin): void {
     registerCanvasCardPresentation(plugin);
     registerCanvasSubplotMemoryUpkeep(plugin);
+    plugin.registerEvent(plugin.app.vault.on('rename', (file, oldPath) => {
+        const records = plugin.settings.storyMapProvenance;
+        if (!records) return;
+        const next = rebaseStoryMapProvenance(records, oldPath, file.path);
+        if (JSON.stringify(records) === JSON.stringify(next)) return;
+        plugin.settings.storyMapProvenance = next;
+        void plugin.saveSettings().catch((error: unknown) => console.error('[Story map] Could not save renamed map details', error));
+    }));
     plugin.addCommand({ id: 'create-subplot-canvas', name: t('ui.subplotCanvas.paletteCommand'), callback: () => new SubplotCanvasModal(plugin.app, plugin).open() });
     // Track each open Canvas, including inactive and split leaves. Bind the
     // action to its own view rather than whichever leaf happens to have focus.

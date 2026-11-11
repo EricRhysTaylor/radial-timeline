@@ -1,5 +1,9 @@
 /* Source path autocomplete suggestions */
 
+.ert-settings-search-index {
+  display: none;
+}
+
 .source-path-suggestions.hidden {
   display: none;
 }

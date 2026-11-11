@@ -80,7 +80,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
                 this.dashboardEl = setting.settingEl.createDiv();
                 this.renderDashboard();
             } },
-            { type: 'group', cls: 'is-hidden', items: destinations.map(({ name, tab, section }) => ({
+            { type: 'group', cls: 'ert-settings-search-index', items: destinations.map(({ name, tab, section }) => ({
                 type: 'page' as const, name, page: () => this.searchPage(tab, section),
             })) },
         ];

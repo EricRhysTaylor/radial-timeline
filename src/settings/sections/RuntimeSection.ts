@@ -7,7 +7,7 @@ import { withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
  * Runtime Estimation Settings Section
  */
 
-import { App, Setting, TextComponent, DropdownComponent, setIcon, Modal, ButtonComponent } from 'obsidian';
+import { App, Setting, TextComponent, DropdownComponent, Modal, ButtonComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { RuntimeContentType, RuntimeRateProfile } from '../../types';
 import { addWikiLink, applyErtHeaderLayout } from '../wikiLink';

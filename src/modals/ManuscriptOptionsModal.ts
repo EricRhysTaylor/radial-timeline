@@ -57,7 +57,6 @@ import {
     type SpreadValidationContext,
 } from '../publishing/layoutVisuals';
 import { buildSpreadValidationContext, collectSpreadWarningTooltips } from '../publishing/spreadValidationContext';
-import { ERT_CLASSES } from '../ui/classes';
 import { getExportValidationIssues } from '../services/PublishingValidationService';
 import type {
     BookProfile,

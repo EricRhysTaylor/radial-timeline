@@ -1,3 +1,4 @@
+import { applySketchPlacement } from './applySketchPlacement';
 import { getInquiryCorpusTier } from '../inquiry/corpus/inquiryCorpusStripSlotRenderer';
 import { registerTextSketchCapture, type DraggedSelection } from './TextSketchCapture';
 import { registerNoteDropCapture } from './NoteDropCapture';
@@ -73,7 +74,6 @@ import { renderDefs } from '../renderer/components/Defs';
 import { computeCacheableValues } from '../renderer/utils/Precompute';
 import type { PluginRendererFacade } from '../utils/sceneHelpers';
 import { runPromotion } from '../services/PromoteToSceneEntry';
-import { classifyForPromotion } from '../services/PromoteToSceneService';
 import {
     belongsInTimetable,
     buildRingLayout,
@@ -3451,20 +3451,7 @@ export class TimetableView extends BasesView {
 
     private async applySketchPlan(plan: SketchDropPlan): Promise<void> {
         try {
-            // Act is the author's property, written in the note; where the
-            // sketch sits after scenes goes to the placement sidecar.
-            for (const path of plan.orderedPaths) {
-                const file = this.plugin.app.vault.getAbstractFileByPath(path);
-                if (!(file instanceof TFile)) throw new Error(`Sketch no longer exists: ${path}`);
-                await this.plugin.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
-                    const classification = classifyForPromotion(fm);
-                    if (classification.kind !== 'eligible' || !classification.fromSketch) throw new Error(`Not a sketch: ${path}`);
-                    const actKey = findFrontmatterKey(fm, authorKeyFor('Act', this.plugin.settings)) ?? authorKeyFor('Act', this.plugin.settings);
-                    if (plan.act === null) delete fm[actKey];
-                    else if (fm[actKey] !== plan.act) fm[actKey] = plan.act;
-                });
-            }
-            await this.plugin.sketchPlacements.set(plan.orderedPaths.map((path, index) => [path, { after: plan.anchorId ?? undefined, order: (index + 1) * 10 }] as const));
+            await applySketchPlacement(this.plugin, plan);
             this.refresh();
         } catch (error) {
             console.error('Sketch placement failed', error);

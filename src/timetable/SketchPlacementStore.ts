@@ -114,6 +114,13 @@ export class SketchPlacementStore extends Component {
         });
     }
 
+    /** Wait for the initial import and refuse a move before it changes notes. */
+    async assertWritable(): Promise<void> {
+        await this.importReady;
+        await this.pendingWrite;
+        if (this.error) throw new Error(this.error);
+    }
+
     /**
      * The one-time import: while the vault has no sidecar, copy every sketch
      * note's old placement lines into one. The notes are not edited. With

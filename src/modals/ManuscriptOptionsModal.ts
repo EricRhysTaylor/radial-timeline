@@ -2005,7 +2005,7 @@ export class ManuscriptOptionsModal extends Modal {
     }
 
     private hasSelectedTemplateChanges(template: ModalExportProfile): boolean {
-        return !exportProfilesMatch(this.createTemplateSnapshot(template.name, template.id), template);
+        return !exportProfilesMatch(this.createTemplateSnapshot(template.name, template.id), template, this.source?.kind === 'book');
     }
 
     private updateTemplateActionButtonState(): void {

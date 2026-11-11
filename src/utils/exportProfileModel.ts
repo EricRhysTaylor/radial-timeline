@@ -169,15 +169,15 @@ export function resolveIncludeSceneId(profile: Pick<ExportProfile, 'includeScene
  * Project a profile onto the fields its export mode actually uses. The
  * export modal decides "matches preset" by running both the saved preset and
  * its own live state through this one projection, so a field the mode hides
- * (legacy scene indexes on Word, matter on Markdown) can never read as a change.
+ * (scene IDs for direct sources, matter on Markdown) cannot read as a change.
  */
-export function buildComparableExportProfile(profile: ModalExportProfile) {
+export function buildComparableExportProfile(profile: ModalExportProfile, supportsSceneIds = true) {
     const isOutline = profile.exportType === 'outline';
     const outputFormat: ExportProfile['outputFormat'] = isOutline ? 'markdown' : profile.outputFormat;
     const isPdfManuscript = !isOutline && outputFormat === 'pdf';
     const isMarkdownManuscript = !isOutline && outputFormat === 'markdown';
     const isPandocManuscript = isPdfManuscript || (!isOutline && outputFormat === 'docx');
-    const includeSceneId = resolveIncludeSceneId(profile);
+    const includeSceneId = supportsSceneIds && resolveIncludeSceneId(profile);
     const isSplit = !isOutline && profile.splitMode === 'parts';
     return {
         templateProfileId: profile.templateProfileId || profile.selectedLayoutId || '',
@@ -205,8 +205,8 @@ export function buildComparableExportProfile(profile: ModalExportProfile) {
     };
 }
 
-export function exportProfilesMatch(a: ModalExportProfile, b: ModalExportProfile): boolean {
-    return JSON.stringify(buildComparableExportProfile(a)) === JSON.stringify(buildComparableExportProfile(b));
+export function exportProfilesMatch(a: ModalExportProfile, b: ModalExportProfile, supportsSceneIds = true): boolean {
+    return JSON.stringify(buildComparableExportProfile(a, supportsSceneIds)) === JSON.stringify(buildComparableExportProfile(b, supportsSceneIds));
 }
 
 export function getModalExportProfileSummary(

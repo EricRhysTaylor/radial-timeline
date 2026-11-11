@@ -80,6 +80,21 @@ function formattedFixture() {
 }
 
 describe('manuscript export UI-to-runner contract', () => {
+    it.each(['file', 'folder'] as const)('keeps Editor round matched when a %s export suppresses scene IDs', async kind => {
+        const { plugin, files } = fixture();
+        const modal = new ManuscriptOptionsModal(plugin.app, plugin, async () => ({}));
+        modal['source'] = { kind, path: kind === 'file' ? files[0].path : 'Book', paths: [files[0].path], title: 'Query letter', author: 'Writer' };
+
+        await modal['applyTemplateById']('builtin:editor-round');
+
+        expect(modal['outputFormat']).toBe('docx');
+        expect(modal['includeSceneId']).toBe(false);
+        expect(modal['getSelectedTemplateState']().hasChanges).toBe(false);
+
+        modal['setActiveCleanupOption']('stripComments', false);
+        expect(modal['getSelectedTemplateState']().hasChanges).toBe(true);
+    });
+
     it.each(['pdf', 'docx'] as const)('passes document contents and depth to %s rendering', async outputFormat => {
         const { registrar, options } = formattedFixture();
         vi.spyOn(registrar as unknown as { ensureVaultFolderPath(path: string): Promise<void> }, 'ensureVaultFolderPath').mockResolvedValue(undefined);

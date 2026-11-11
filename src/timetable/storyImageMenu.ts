@@ -47,7 +47,10 @@ export function storyImageSources(plugin: RadialTimelinePlugin, file: TFile, fm:
     const chosenPlace = storyImageChoice(plugin, file.path).placeImage;
     if (firstPlace || chosenPlace) {
         const place = panelPlaceImage(plugin.app, file, fm, placeKey, images, chosenPlace);
-        lines.push(place ? describePlaceImage(place) : t('ui.timetable.storyImageSourcePlaceNone', { name: firstPlace ?? '' })); // SAFE: only a chosen place image reaches here without a named place
+        // A chosen place picture that was deleted or renamed, on a scene with no Place, has no name to report.
+        lines.push(place ? describePlaceImage(place)
+            : firstPlace ? t('ui.timetable.storyImageSourcePlaceNone', { name: firstPlace })
+                : t('ui.timetable.storyImageSourcePlaceMissing'));
     }
     return lines;
 }

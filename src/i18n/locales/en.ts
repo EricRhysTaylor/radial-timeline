@@ -5925,6 +5925,7 @@ export const en = {
             storyImageSourcePlaceNote: 'Place: from {{name}}’s note',
             storyImageSourcePlaceNamed: 'Place: picture named {{file}}',
             storyImageSourcePlaceNone: 'Place: none found for {{name}}',
+            storyImageSourcePlaceMissing: 'Place: the chosen picture is missing',
             storyImageChooseCharacter: 'Choose character',
             panelHideCharacters: "Show fewer",
             panelShowSubplots: "Show all {{count}} subplots",

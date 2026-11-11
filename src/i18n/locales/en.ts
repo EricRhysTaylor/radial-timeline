@@ -6127,6 +6127,7 @@ export const en = {
             sketchDragHint: "To move sketches, choose Narrative and the active book, and turn off sorting and alternate overlays.",
             sketchPlacementUnavailable: "Choose a scene with a unique ID or a sketch already placed after one.",
             sketchPlacementFailed: "Could not finish placing the sketch. Some sketches may have been updated; check their positions.",
+            sketchCreatedWithoutPlacement: 'The sketch was saved at {{path}}, but its position could not be saved. Open it before trying again.',
             'emptyActDrop': 'Drop a scene or sketch here',
             sketchMoveTitle: "Move attached sketches?",
             sketchMoveMessage: "Sketches attached to {{scene}}: {{count}}. Move them to Act {{act}} with the scene, or leave them at the end of their current act?",

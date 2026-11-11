@@ -1,3 +1,4 @@
+import { createSketchNote } from './createSketchNote';
 import { applySketchPlacement } from './applySketchPlacement';
 import { getInquiryCorpusTier } from '../inquiry/corpus/inquiryCorpusStripSlotRenderer';
 import { registerTextSketchCapture, type DraggedSelection } from './TextSketchCapture';
@@ -1624,8 +1625,8 @@ export class TimetableView extends BasesView {
         this.focusPath = path;
         this.focusField = 'title';
         try {
-            await app.vault.create(path, `---\n${stringifyYaml(frontmatter)}---\n\n`);
-            if (placement) await this.plugin.sketchPlacements.set([[path, placement]]);
+            const placed = await createSketchNote(this.plugin, path, `---\n${stringifyYaml(frontmatter)}---\n\n`, placement);
+            if (!placed) new Notice(t('ui.timetable.sketchCreatedWithoutPlacement', { path }), 0);
         } catch (error) {
             this.openDrawers.delete(path);
             this.focusPath = null;
@@ -2844,9 +2845,8 @@ export class TimetableView extends BasesView {
         for (let counter = 2; this.plugin.app.vault.getAbstractFileByPath(path); counter++) path = `${folder}/${name} ${counter}.md`;
         const fm: Record<string, unknown> = { [authorKeyFor('Class', this.plugin.settings)]: 'Sketch', [authorKeyFor('Act', this.plugin.settings)]: plan.act, Source: `[[${sourcePath.replace(/\.md$/i, '')}]]` };
         try {
-            await this.plugin.app.vault.create(path, `---\n${stringifyYaml(fm)}---\n\n${text}\n`);
-            await this.plugin.sketchPlacements.set([[path, { after: plan.anchorId ?? undefined, order: plan.rank }]]);
-            new Notice(t('ui.timetable.outlineSketchAdded'));
+            const placed = await createSketchNote(this.plugin, path, `---\n${stringifyYaml(fm)}---\n\n${text}\n`, { after: plan.anchorId ?? undefined, order: plan.rank });
+            new Notice(placed ? t('ui.timetable.outlineSketchAdded') : t('ui.timetable.sketchCreatedWithoutPlacement', { path }), placed ? 4000 : 0);
         } catch (error) {
             new Notice(t('ui.timetable.writeFailed', { message: error instanceof Error ? error.message : String(error) }), 8000);
         }

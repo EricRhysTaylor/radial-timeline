@@ -72,6 +72,19 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             { name: 'Author progress and social sharing', tab: 'social', section: 'social' },
             { name: 'Community sharing', tab: 'community', section: 'community' },
             { name: 'Resources and bonus vaults', tab: 'pro', section: 'resources' },
+            ...[
+                'OpenAI API key', 'Anthropic API key', 'Google Gemini API key', 'Ollama local model',
+            ].map(name => ({ name, tab: 'ai' as const, section: 'ai' })),
+            ...[
+                'PDF fonts and typography', 'PDF manuscript layout', 'PDF export design wizard',
+            ].map(name => ({ name, tab: 'publishing' as const, section: 'pdf-style' })),
+            { name: 'Scene colors and subplot colors', tab: 'core', section: 'colors-subplot' },
+            { name: 'Working status color and pattern', tab: 'core', section: 'colors-working-pattern' },
+            { name: 'Publishing stage colors', tab: 'core', section: 'colors-publish' },
+            { name: 'Scene time and duration', tab: 'core', section: 'chronologue' },
+            { name: 'Point of view and narration', tab: 'core', section: 'pov' },
+            { name: 'Book selection and manuscript folder', tab: 'core', section: 'general' },
+            { name: 'AI logging and output folder', tab: 'advanced', section: 'configuration' },
         ];
         return [
             { name: 'Dashboard', searchable: false, render: (setting) => {

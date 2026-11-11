@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readTimeReferences } from './model';
-import { popoverPosition, readableReferenceSpan, referencePopoverContent, sourcePopoverContent } from './popover';
+import { ReferencePopover, popoverPosition, readableReferenceSpan, referencePopoverContent, sourcePopoverContent } from './popover';
 
 const refs = readTimeReferences([
     { Label: 'Old Mr. Darcy dies', When: '1807', Kind: 'recollection', Passage: 'My excellent father died about five years ago' },
@@ -13,6 +13,37 @@ const [father, ramsgate, bingley, jane, ramsgateMention] = refs;
 const row = (reference: typeof refs[number], source = '35 · Darcy’s Letter') => ({ reference, source });
 
 describe('time reference popover', () => {
+    it('recognizes popout-window elements and restores focus to their marker', () => {
+        class PopoutNode {}
+        class PopoutElement extends PopoutNode {
+            isConnected = true;
+            focus() { activeElement = this; }
+            getBoundingClientRect() { return { left: 100, right: 110, top: 100, bottom: 110 }; }
+        }
+        class PopoutSvgElement extends PopoutElement {}
+        let activeElement: PopoutElement | null = null;
+        const button = new PopoutElement();
+        const popoverElement = {
+            offsetWidth: 100, offsetHeight: 100,
+            toggleClass() {}, createDiv() {}, setCssProps() {}, remove() {},
+            createEl() { return { createDiv() {} }; },
+            querySelector() { return button; },
+            contains(element: unknown) { return element === button; },
+        };
+        const doc = {
+            body: { createDiv: () => popoverElement },
+            defaultView: { Node: PopoutNode, HTMLElement: PopoutElement, SVGElement: PopoutSvgElement, innerWidth: 1000, innerHeight: 800 },
+            get activeElement() { return activeElement; },
+        } as unknown as Document;
+        const marker = new PopoutSvgElement();
+        const popover = new ReferencePopover(doc);
+        popover.show({ heading: 'References', rows: [row(father)], notes: [] }, marker as unknown as Element, { x: 500, y: 400 }, 200, () => {});
+        expect(popover.contains(button as unknown as EventTarget)).toBe(true);
+        expect(activeElement).toBe(button);
+        popover.dismiss();
+        expect(activeElement).toBe(marker);
+        expect(popover.contains(button as unknown as EventTarget)).toBe(false);
+    });
     it('writes dates as a reader would', () => {
         expect(readableReferenceSpan(father)).toBe('1807');
         expect(readableReferenceSpan(bingley)).toBe('Nov 27, 1811');

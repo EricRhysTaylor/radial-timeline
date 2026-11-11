@@ -84,7 +84,8 @@ export class ReferencePopover {
     constructor(private readonly doc: Document) {}
 
     contains(target: EventTarget | null): boolean {
-        return !!this.el && target instanceof Node && this.el.contains(target);
+        const view = this.doc.defaultView;
+        return !!this.el && !!view && target instanceof view.Node && this.el.contains(target);
     }
 
     show(content: ReferencePopoverContent, anchor: Element, center: { x: number; y: number }, radius: number, choose?: (reference: TimeReference) => void): void {
@@ -109,7 +110,7 @@ export class ReferencePopover {
         el.setCssProps({ '--ert-popover-left': `${at.left}px`, '--ert-popover-top': `${at.top}px` });
         this.el = el;
         this.pinned = !!choose;
-        this.anchor = choose && (anchor instanceof SVGElement || anchor instanceof HTMLElement) ? anchor : null;
+        this.anchor = choose && win && (anchor instanceof win.SVGElement || anchor instanceof win.HTMLElement) ? anchor : null;
         if (choose) el.querySelector<HTMLButtonElement>('button')?.focus();
     }
 

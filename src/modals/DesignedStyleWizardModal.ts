@@ -51,6 +51,7 @@ import { assertNever } from '../utils/assertNever';
 import { LatexPreviewModal } from './LatexPreviewModal';
 import { slugifyToFileStem } from '../utils/slug';
 import { t } from '../i18n';
+import { addVideoLinkToElement } from '../settings/wikiLink';
 
 type WizardCategory =
     | 'page'
@@ -525,6 +526,7 @@ export class DesignedStyleWizardModal extends Modal {
         // (isEditMode && layoutId) check below; the UI strings just need to
         // mirror that distinction.
         this.wizardModeBadgeLabelEl = modeBadge.createSpan({ cls: 'ert-modal-badge__label' });
+        addVideoLinkToElement(modeBadge, 'pdf-export', ERT_CLASSES.MODAL_BADGE_WIKI);
         this.wizardTitleEl = header.createDiv({ cls: 'ert-modal-title' });
         this.wizardSubtitleEl = header.createDiv({ cls: 'ert-modal-subtitle' });
         this.refreshHeaderCopy();

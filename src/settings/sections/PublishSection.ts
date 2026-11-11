@@ -13,7 +13,7 @@ import { App, Setting, setIcon, normalizePath, Notice, TFile, TFolder, Modal, Bu
 import { existsSync } from 'fs';
 import type RadialTimelinePlugin from '../../main';
 import { ERT_CLASSES, ERT_DATA } from '../../ui/classes';
-import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
+import { addHeadingIcon, addVideoLink, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { DEFAULT_SETTINGS } from '../defaults';
 import { isPandocAvailable, getStructuredFontDiagnostic, parseCustomPandocMetadata, validatePandocLayout, getPandocFolder } from '../../utils/exportFormats';
 import type { BookLayoutOptions, BookMeta, BookProfile, ManuscriptSceneHeadingMode, PandocLayoutTemplate, TemplateProfile } from '../../types';
@@ -255,6 +255,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         .setHeading();
     addHeadingIcon(pandocHeading, 'book-open-text');
     addWikiLink(pandocHeading, 'Publishing');
+    addVideoLink(pandocHeading, 'pdf-export');
     applyErtHeaderLayout(pandocHeading);
 
     const systemConfigPanel = section.createDiv({

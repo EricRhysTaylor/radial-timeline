@@ -7453,6 +7453,11 @@ export const en = {
             linkIssues: 'Bug reports / feature requests',
             backupNotice: 'Back up your Obsidian vault regularly to protect against data loss. Learn more at [Obsidian backup guide]. Sync does not protect against all forms of data loss. Obsidian\'s File recovery keeps snapshots of your notes, and [Obsidian Sync] or iCloud keeps a copy on your other devices.',
         },
+        workflowVideos: {
+            watch: 'Watch the video: {{title}}',
+            pdfExport: 'Design a PDF style and export your manuscript',
+            communityShare: 'Share your progress on the Community',
+        },
         writingSessionCompletionModal: {
             allocateScenes: "Allocate this session to scenes",
             updateSceneTotals: "Update scene Total Time with this session",

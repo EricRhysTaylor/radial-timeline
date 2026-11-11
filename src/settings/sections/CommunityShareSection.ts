@@ -28,7 +28,7 @@ import { COMMUNITY_MY_SHARE_URL } from '../../communityShare/communityMailbox';
 import type { CommunityShareFieldKey, CommunityShareSettings } from '../../types/settings';
 import { ERT_CLASSES } from '../../ui/classes';
 import { confirmWithErtModal } from '../../modals/ErtConfirmModal';
-import { addHeadingIcon, applyErtHeaderLayout } from '../wikiLink';
+import { addHeadingIcon, addVideoLinkToElement, applyErtHeaderLayout } from '../wikiLink';
 import { renderCommunityTimelineBlock } from './CommunityTimelineBlock';
 import { fitSelectToSelectedLabel } from '../selectSizing';
 import { t } from '../../i18n';
@@ -235,6 +235,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         attr: { 'target': '_blank', 'rel': 'noopener' }
     }), t('ui.communityShareSection.wikiAriaLabel'));
     setIcon(wikiLink, 'external-link');
+    addVideoLinkToElement(badge, 'community-share', ERT_CLASSES.BADGE_PILL_WIKI);
 
     const titleRow = hero.createDiv({ cls: 'ert-hero-titleRow' });
     titleRow.createDiv({

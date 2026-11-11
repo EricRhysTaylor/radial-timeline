@@ -10,6 +10,7 @@ Use this after the code/tests/gates are green and before shipping the next relea
 - Every touched modal opens, closes, and confirms/cancels cleanly.
 - Release version is consistent across `package.json`, `src/manifest.json`, `manifest.json`, and `versions.json`.
 - `README.md` disclosures still match actual behavior.
+- If the release changes a screen a published workflow video shows (`src/settings/workflowVideos.ts`), re-record the video or point its /go/ link at a newer one.
 
 ## If timeline or interaction surfaces changed
 

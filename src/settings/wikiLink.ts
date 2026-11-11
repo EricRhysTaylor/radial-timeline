@@ -1,6 +1,8 @@
 import { withAccessibleLabel } from '../utils/domTooltip';
 import { Setting, setIcon } from 'obsidian';
 import { ERT_CLASSES } from '../ui/classes';
+import { t } from '../i18n';
+import { WORKFLOW_VIDEOS, workflowVideoUrl, type WorkflowVideoKey } from './workflowVideos';
 
 /**
  * Adds a wiki link icon to a setting's name element.
@@ -58,11 +60,11 @@ export function applyErtHeaderLayout(
         header.addClass(ERT_CLASSES.HEADER_NO_LEFT);
     }
 
-    const wikiLink = nameEl.querySelector('.ert-wiki-link, .ert-setting-heading-wikilink');
-    if (wikiLink) {
-        wikiLink.classList.add('ert-wiki-link');
-        right.appendChild(wikiLink);
-    }
+    // The wiki link, and a workflow video's play icon beside it when there is one.
+    nameEl.querySelectorAll('.ert-wiki-link, .ert-setting-heading-wikilink').forEach(link => {
+        link.classList.add('ert-wiki-link');
+        right.appendChild(link);
+    });
 
     nameEl.classList.add(ERT_CLASSES.SECTION_TITLE);
     main.appendChild(nameEl);
@@ -99,6 +101,30 @@ export function addWikiLinkToElement(el: HTMLElement, wikiPage: string): void {
     setIcon(link, 'external-link');
     
     // Styling handled by .ert-wiki-link in src/styles/settings.css
+}
+
+/**
+ * Adds a workflow video's play icon to a setting's name element, beside its
+ * wiki link. Nothing is added while the video isn't published.
+ */
+export function addVideoLink(setting: Setting, video: WorkflowVideoKey): void {
+    addVideoLinkToElement(setting.nameEl, video, 'ert-wiki-link');
+}
+
+/**
+ * Adds a workflow video's play icon to any element. `linkClass` is the class
+ * of the wiki link beside it (a heading's, a modal badge's or a badge pill's),
+ * so the two icons match. Nothing is added while the video isn't published.
+ */
+export function addVideoLinkToElement(el: HTMLElement, video: WorkflowVideoKey, linkClass: string): void {
+    const href = workflowVideoUrl(video);
+    if (!el || !href) return;
+    const link = withAccessibleLabel(el.createEl('a', {
+        href,
+        cls: linkClass,
+        attr: { 'target': '_blank', 'rel': 'noopener' }
+    }), t('ui.workflowVideos.watch', { title: t(WORKFLOW_VIDEOS[video].titleKey) }));
+    setIcon(link, 'circle-play');
 }
 
 function addHeadingIconToElement(el: HTMLElement, icon: string): void {

@@ -21,6 +21,7 @@ import { ExportDeliveryReviewModal } from './ExportDeliveryReviewModal';
 import { RecentExportsModal } from './RecentExportsModal';
 import { openExportedFile } from '../publishing/openExportedFile';
 import { ModalFolderSuggest } from '../settings/FolderSuggest';
+import { addVideoLinkToElement } from '../settings/wikiLink';
 import { resolveExportOutputFolder } from '../utils/aiOutput';
 import { clearFontAvailabilityCache, ExportFormat, ExportType, ManuscriptPreset, OutlinePreset, getAutoPdfEngineSelection, resolveTemplatePath, validatePandocLayout, getTemplateFontDiagnostics, getStructuredFontDiagnostic } from '../utils/exportFormats';
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
@@ -1115,7 +1116,10 @@ export class ManuscriptOptionsModal extends Modal {
     private renderSkeleton(container: HTMLElement): void {
         const hero = container.createDiv({ cls: 'ert-modal-header' });
         const bookTitle = this.getSourceTitle();
-        this.badgeEl = hero.createSpan({ cls: 'ert-modal-badge', text: t('ui.manuscriptOptionsModal.badge', { title: bookTitle }) });
+        // The badge's text lives in its own span: the summary rewrites it, and the video icon beside it stays.
+        const badge = hero.createSpan({ cls: 'ert-modal-badge' });
+        this.badgeEl = badge.createSpan({ text: t('ui.manuscriptOptionsModal.badge', { title: bookTitle }) });
+        addVideoLinkToElement(badge, 'pdf-export', ERT_CLASSES.MODAL_BADGE_WIKI);
 
         hero.createDiv({
             cls: 'ert-modal-title',

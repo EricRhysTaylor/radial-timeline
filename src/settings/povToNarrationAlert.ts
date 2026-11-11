@@ -72,7 +72,7 @@ export async function applyPovToNarration(app: App, plugin: RadialTimelinePlugin
 
     plugin.settings.sceneYamlTemplates = withNarrationTemplateField({
         base: getTemplateParts('Scene', plugin.settings).base,
-        advanced: plugin.settings.sceneYamlTemplates?.advanced ?? '',
+        advanced: plugin.settings.sceneYamlTemplates?.advanced ?? '', // SAFE: no advanced template means nothing there to rename
     });
     if (Array.isArray(plugin.settings.hoverMetadataFields)) {
         plugin.settings.hoverMetadataFields = plugin.settings.hoverMetadataFields.map(field => field.key !== 'POV' ? field : {

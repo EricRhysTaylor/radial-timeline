@@ -1412,7 +1412,7 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
         // Nothing the website reads changed, but a note that holds an id may have
         // been renamed: remember it under its new path, or a later duplicate could
         // take the id from it.
-        if (JSON.stringify(previous.sceneIdPaths ?? {}) !== JSON.stringify(holders)) {
+        if (JSON.stringify(previous.sceneIdPaths ?? {}) !== JSON.stringify(holders)) { // SAFE: a share record saved before sceneIdPaths existed holds none
             await saveTimelineRecord(plugin, book.id, profileId, record => ({ ...record, sceneIdPaths: holders }));
         }
         return null;
@@ -1436,8 +1436,8 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
         enabled: create || record.enabled,
         lastSentHash: hash,
         lastSentAt: new Date().toISOString(),
-        droppedReveals: answer.summary?.reveals_dropped ?? [],
-        scenesWithoutStableId: answer.summary?.scenes_without_stable_id ?? 0,
+        droppedReveals: answer.summary?.reveals_dropped ?? [], // SAFE: the share summary is optional in the response; absent = nothing dropped
+        scenesWithoutStableId: answer.summary?.scenes_without_stable_id ?? 0, // SAFE: the share summary is optional in the response; absent = none
         sceneIdPaths: holders,
     }));
     return answer;

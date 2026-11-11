@@ -455,7 +455,7 @@ export type ColoringPlan =
 function rarestValue(items: readonly string[], from: readonly string[], counts: ReadonlyMap<string, number>): string | undefined {
     let lead: string | undefined;
     for (const item of items) {
-        if (from.includes(item) && (lead === undefined || (counts.get(item) ?? 0) < (counts.get(lead) ?? 0))) lead = item;
+        if (from.includes(item) && (lead === undefined || (counts.get(item) ?? 0) < (counts.get(lead) ?? 0))) lead = item; // SAFE: a name not counted yet counts zero
     }
     return lead;
 }

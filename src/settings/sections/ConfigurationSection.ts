@@ -140,7 +140,7 @@ export function renderConfigurationSection(params: { app: App; plugin: RadialTim
         description: t('settings.configuration.rippleRename.desc'),
         control: (setting) => {
             setting.addToggle(toggle => toggle
-                .setValue(plugin.settings.enableManuscriptRippleRename ?? DEFAULT_SETTINGS.enableManuscriptRippleRename ?? true)
+                .setValue(plugin.settings.enableManuscriptRippleRename ?? DEFAULT_SETTINGS.enableManuscriptRippleRename ?? true) // SAFE: an unset setting shows its default
                 .onChange(async (value) => {
                     plugin.settings.enableManuscriptRippleRename = value;
                     await plugin.saveSettings();

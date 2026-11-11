@@ -20,7 +20,7 @@ export interface SceneCreationData {
 const PLACEHOLDER = /{{([^{}\n]+)}}/g;
 
 const inlineValues = (values: string[]): string => values.length <= 1
-    ? yamlScalar(values[0] ?? '')
+    ? yamlScalar(values[0] ?? '') // SAFE: an empty list writes an empty value
     : `[${values.map(value => JSON.stringify(value)).join(', ')}]`;
 
 const listLines = (values: string[]): string => values.map(value => `  - ${JSON.stringify(value)}`).join('\n');
@@ -39,7 +39,7 @@ interface PlaceholderValues {
  */
 function fillValue(value: string, { text, whole }: PlaceholderValues): string {
     if (!value.includes('{{')) return value;
-    const textOf = (_match: string, name: string): string => text[name] ?? '';
+    const textOf = (_match: string, name: string): string => text[name] ?? ''; // SAFE: a placeholder with no value writes an empty field, never the placeholder
     const quoted = /^(["'])(.*?)\1(\s+#.*)?$/.exec(value);
     if (quoted) {
         const [, quote, body, comment = ''] = quoted;
@@ -48,12 +48,12 @@ function fillValue(value: string, { text, whole }: PlaceholderValues): string {
             : (item: string) => item.replace(/'/g, "''");
         return quote + body.replace(PLACEHOLDER, (match, name: string) => escape(textOf(match, name))) + quote + comment.replace(PLACEHOLDER, '');
     }
-    const [, body, comment = ''] = /^(.*?)(\s+#.*)?$/.exec(value) ?? [];
+    const [, body, comment = ''] = /^(.*?)(\s+#.*)?$/.exec(value) ?? []; // SAFE: the pattern matches any line; the types say exec can return null
     const tail = comment.replace(PLACEHOLDER, '');
     const only = /^{{([^{}\n]+)}}$/.exec(body)?.[1];
-    if (only !== undefined) return (whole[only] ?? yamlScalar(text[only] ?? '')) + tail;
+    if (only !== undefined) return (whole[only] ?? yamlScalar(text[only] ?? '')) + tail; // SAFE: a placeholder with no value writes an empty field, never the placeholder
     if (body.startsWith('[')) {
-        return body.replace(/(["']?){{([^{}\n]+)}}\1/g, (_match, _quote, name: string) => JSON.stringify(text[name] ?? '')) + tail;
+        return body.replace(/(["']?){{([^{}\n]+)}}\1/g, (_match, _quote, name: string) => JSON.stringify(text[name] ?? '')) + tail; // SAFE: a placeholder with no value writes an empty field, never the placeholder
     }
     return yamlScalar(body.replace(PLACEHOLDER, textOf)) + tail;
 }
@@ -71,7 +71,7 @@ export function generateSceneContent(template: string, data: SceneCreationData):
         text: {
             Act: data.act.toString(),
             When: data.when,
-            Due: data.due ?? '',
+            Due: data.due ?? '', // SAFE: a scene created without a due date leaves Due empty
             SceneNumber: data.sceneNumber.toString(),
             Subplot: data.subplots.join(', '),
             Character: characters.join(', '),
@@ -106,7 +106,7 @@ export function generateSceneContent(template: string, data: SceneCreationData):
                 return filled ? [filled] : [];
             }
             const valueStart = /^\s*-\s+/.exec(line)?.[0].length ?? templateValueStart(line);
-            if (valueStart === null) return [line.replace(PLACEHOLDER, (_match, name: string) => values.text[name] ?? '')];
+            if (valueStart === null) return [line.replace(PLACEHOLDER, (_match, name: string) => values.text[name] ?? '')]; // SAFE: a placeholder with no value writes an empty field, never the placeholder
             return [line.slice(0, valueStart) + fillValue(line.slice(valueStart), values)];
         })
         .join('\n')

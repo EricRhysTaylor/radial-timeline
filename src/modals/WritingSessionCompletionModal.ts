@@ -135,13 +135,13 @@ export class WritingSessionCompletionModal extends Modal {
             : undefined;
         let wordsAdded: number | undefined = this.recoveredCompletion ? this.recoveredCompletion.wordsAdded : hasTypedWords ? typedWords : undefined;
         let scenesCompleted: number | undefined = this.recoveredCompletion?.scenesCompleted;
-        let note = this.recoveredCompletion?.note ?? '';
+        let note = this.recoveredCompletion?.note ?? ''; // SAFE: a fresh completion has no recovered note
         // Default-OFF: user opts in to scenes they actually worked on. The
         // suggestion list (currently-active file, open files, working scenes,
         // recently-modified files) is informational — pre-selecting all of
         // them is a trap because the active file is often unrelated to the
         // session work, and "selecting" implies opt-in, not opt-out.
-        const selectedScenePaths = new Set<string>(this.recoveredCompletion?.scenePaths ?? []);
+        const selectedScenePaths = new Set<string>(this.recoveredCompletion?.scenePaths ?? []); // SAFE: a fresh completion has no recovered scenes
 
         const wireNumber = (
             setting: Setting,
@@ -348,7 +348,7 @@ export class WritingSessionCompletionModal extends Modal {
         let saving = false;
         const save = async () => {
             if (saving) return;
-            if (allocateScenes && (allocations.some(entry => !Number.isFinite(entry.minutes) || entry.minutes < 0 || !Number.isFinite(entry.words) || entry.words < 0 || (updateSceneTotals && entry.minutes > 0 && !Number.isFinite(entry.beforeHours))) || allocations.reduce((total, entry) => total + entry.minutes, 0) > minutes || allocations.reduce((total, entry) => total + entry.words, 0) > (wordsAdded ?? 0))) {
+            if (allocateScenes && (allocations.some(entry => !Number.isFinite(entry.minutes) || entry.minutes < 0 || !Number.isFinite(entry.words) || entry.words < 0 || (updateSceneTotals && entry.minutes > 0 && !Number.isFinite(entry.beforeHours))) || allocations.reduce((total, entry) => total + entry.minutes, 0) > minutes || allocations.reduce((total, entry) => total + entry.words, 0) > (wordsAdded ?? 0))) { // SAFE: a session without a word count adds no words to allocate
                 new Notice(t('ui.writingSessionCompletionModal.invalidAllocation')); return;
             }
             saving = true;

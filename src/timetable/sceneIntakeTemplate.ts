@@ -67,8 +67,8 @@ export function addSceneIntakeTemplate(content: string, settings: RadialTimeline
     const normalized = normalizeFrontmatterKeys(frontmatter, mappings);
     const noteAct = Number(normalized.Act);
     const rendered = generateSceneContent(getSceneTemplate(settings, context.advanced), {
-        act: Number.isFinite(noteAct) && noteAct > 0 ? noteAct : context.act ?? 1,
-        when: typeof normalized.When === 'string' ? normalized.When : context.when ?? '',
+        act: Number.isFinite(noteAct) && noteAct > 0 ? noteAct : context.act ?? 1, // SAFE: a note with no act and no drop target joins Act 1
+        when: typeof normalized.When === 'string' ? normalized.When : context.when ?? '', // SAFE: a note with no When and no drop date leaves When empty
         due: formatLocalDateKey(),
         sceneNumber: '',
         subplots: [],

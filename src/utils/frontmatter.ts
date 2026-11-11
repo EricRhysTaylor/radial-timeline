@@ -186,7 +186,7 @@ export function canonicalizeFrontmatterKey(key: string, customMappings?: Record<
 
 /** The name the author's notes use for a canonical key, under their custom mappings. */
 export function authorKeyFromMappings(canonical: string, mappings: Record<string, string> | undefined): string {
-  return Object.entries(mappings ?? {}).find(([, target]) => target === canonical)?.[0] ?? canonical;
+  return Object.entries(mappings ?? {}).find(([, target]) => target === canonical)?.[0] ?? canonical; // SAFE: no field mappings means the canonical name is used
 }
 
 /**

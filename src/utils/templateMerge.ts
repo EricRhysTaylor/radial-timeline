@@ -28,7 +28,7 @@ export function templateValueStart(line: string): number | null {
     const start = readFieldStart(line);
     if (!start) return null;
     const afterColon = start.matched.trimEnd().length;
-    return afterColon + (/^[ \t]*/.exec(line.slice(afterColon))?.[0].length ?? 0);
+    return afterColon + (/^[ \t]*/.exec(line.slice(afterColon))?.[0].length ?? 0); // SAFE: /^[ \t]*/ always matches; the types say exec can return null
 }
 
 export interface TemplateField {

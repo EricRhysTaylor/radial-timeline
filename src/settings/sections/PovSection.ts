@@ -80,7 +80,7 @@ export function renderPovSection(params: {
         }
         bookNarrationSetting.setDesc(t('settings.pov.bookDefault.desc', {
             book: activeBook.title,
-            mode: narrationModeLabel(activeBook.narrationMode ?? 'off')
+            mode: narrationModeLabel(activeBook.narrationMode ?? 'off') // SAFE: a book without a narration choice is Not set
         }));
         bookNarrationSetting.addButton(button => button
             .setButtonText(t('settings.pov.bookDefault.button'))

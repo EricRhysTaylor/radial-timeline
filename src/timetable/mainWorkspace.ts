@@ -5,7 +5,7 @@ type WorkspaceLayout = { main: LayoutNode; active?: string; [key: string]: unkno
 type LayoutKind = 'beside' | 'below' | 'timeline' | 'canvas';
 
 function leaves(node: LayoutNode): LayoutNode[] {
-    return node.type === 'leaf' ? [node] : (node.children ?? []).flatMap(leaves);
+    return node.type === 'leaf' ? [node] : (node.children ?? []).flatMap(leaves); // SAFE: a split without children has no leaves
 }
 
 /** Rebuild the main area, reusing views needed by the chosen layout. Pinned tabs stay, behind the Timetable. */

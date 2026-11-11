@@ -286,7 +286,7 @@ export function renderScenePropertiesSection(params: {
                     type: 'checkbox',
                     cls: 'ert-hover-checkbox'
                 });
-                checkbox.checked = hoverMeta?.enabled ?? false;
+                checkbox.checked = hoverMeta?.enabled ?? false; // SAFE: a field without hover settings is not shown on hover
                 setTooltip(checkbox, t('ui.scenePropertiesSection.revealTooltip'));
                 const applyIcon = (iconName: string) => {
                     iconPreview.empty();

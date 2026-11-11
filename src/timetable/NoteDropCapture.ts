@@ -23,7 +23,7 @@ export function sameSceneNumber(a: string | null, b: string | null): boolean {
 /** Scenes a dropped note can follow: its own act's, or the whole book's when the note has no Act. */
 export function noteDropAnchors<T extends { row: { kind: string; act: number | null }; id?: string | null }>(items: readonly T[], act: number | null): T[] {
     const counts = new Map<string, number>();
-    for (const item of items) if (item.row.kind === 'scene' && item.id) counts.set(item.id, (counts.get(item.id) ?? 0) + 1);
+    for (const item of items) if (item.row.kind === 'scene' && item.id) counts.set(item.id, (counts.get(item.id) ?? 0) + 1); // SAFE: an ID not counted yet counts from zero
     return items.filter(item => item.row.kind === 'scene' && (act === null || item.row.act === act) && !!item.id && counts.get(item.id) === 1);
 }
 
@@ -102,7 +102,7 @@ class NoteDropModal extends ErtModal {
         numberRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropNumber') });
         const number = numberRow.createDiv({ cls: 'setting-item-control' }).createEl('input', { type: 'text', attr: { placeholder: '72' } });
         setAccessibleLabel(number, t('ui.timetable.noteDropNumber'));
-        number.value = filenamePrefix(this.file.basename) ?? '';
+        number.value = filenamePrefix(this.file.basename) ?? ''; // SAFE: a file name without a number leaves the field for the author
         const anchorRow = this.contentEl.createDiv({ cls: 'setting-item ert-note-drop-row ert-note-drop-anchor' });
         anchorRow.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.noteDropAfter') });
         anchorRow.createDiv({ cls: 'setting-item-description', text: t('ui.timetable.noteDropAnchorHint') });
@@ -231,7 +231,7 @@ export function registerNoteDropCapture(owner: Component, host: HTMLElement, plu
         if (!host.isConnected) return false;
         const area = host.closest<HTMLElement>('.bases-view') ?? host;
         const rect = area.getBoundingClientRect();
-        return event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom && (options?.acceptPoint?.(event) ?? true);
+        return event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom && (options?.acceptPoint?.(event) ?? true); // SAFE: a view without its own drop rule accepts any point over it
     };
     owner.registerDomEvent(host.ownerDocument, 'dragstart', (event: DragEvent) => {
         explorerFile = null;

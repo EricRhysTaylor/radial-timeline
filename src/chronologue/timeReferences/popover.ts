@@ -103,7 +103,7 @@ export class ReferencePopover {
         for (const note of content.notes) el.createDiv({ cls: 'ert-time-reference-popover__note', text: note });
         const win = this.doc.defaultView;
         const box = anchor.getBoundingClientRect();
-        const at = popoverPosition(box, center, radius, { width: el.offsetWidth, height: el.offsetHeight }, { width: win?.innerWidth ?? 0, height: win?.innerHeight ?? 0 });
+        const at = popoverPosition(box, center, radius, { width: el.offsetWidth, height: el.offsetHeight }, { width: win?.innerWidth ?? 0, height: win?.innerHeight ?? 0 }); // SAFE: a document without a window has no viewport to fit; the popover stays at its anchor
         el.setCssProps({ '--ert-popover-left': `${at.left}px`, '--ert-popover-top': `${at.top}px` });
         this.el = el;
         this.pinned = !!choose;

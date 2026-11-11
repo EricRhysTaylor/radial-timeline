@@ -33,7 +33,7 @@ export function storyBookInquirySources(sources: InquirySourcesSettings): Inquir
                 className: 'scene',
                 enabled: true,
                 bookScope: scene?.enabled && scene.bookScope !== 'excluded' ? scene.bookScope : 'full',
-                sagaScope: scene?.sagaScope ?? 'excluded',
+                sagaScope: scene?.sagaScope ?? 'excluded', // SAFE: a Story Vault scene source without a saga scope stays out of saga runs
                 referenceScope: 'excluded'
             }
         ]

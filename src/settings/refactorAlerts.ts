@@ -203,7 +203,7 @@ export function getTemplateHotfixAlert(settings: RadialTimelineSettings): Refact
  * lives in the base template.
  */
 function sceneTemplateText(settings: RadialTimelineSettings): string {
-    return `${settings.sceneYamlTemplates?.base ?? ''}\n${settings.sceneYamlTemplates?.advanced ?? ''}`;
+    return `${settings.sceneYamlTemplates?.base ?? ''}\n${settings.sceneYamlTemplates?.advanced ?? ''}`; // SAFE: a missing template contributes no text to search
 }
 
 /**

@@ -53,11 +53,11 @@ class BookDetailsModal extends Modal {
         });
 
         const form = contentEl.createDiv({ cls: 'ert-stack' });
-        let narrationMode: NarrationMode = this.book.narrationMode ?? 'off';
-        let genre = this.book.genre ?? '';
-        let projectStage = this.book.projectStage ?? '';
-        let publicLabel = this.book.publicLabel ?? '';
-        let publicDescription = this.book.publicDescription ?? '';
+        let narrationMode: NarrationMode = this.book.narrationMode ?? 'off'; // SAFE: a book without a narration choice is Not set
+        let genre = this.book.genre ?? ''; // SAFE: an unset book detail opens empty
+        let projectStage = this.book.projectStage ?? ''; // SAFE: an unset book detail opens empty
+        let publicLabel = this.book.publicLabel ?? ''; // SAFE: an unset book detail opens empty
+        let publicDescription = this.book.publicDescription ?? ''; // SAFE: an unset book detail opens empty
 
         new ObsidianSetting(form)
             .setName(t('ui.generalSection.narrationName'))
@@ -122,7 +122,7 @@ class BookDetailsModal extends Modal {
 export function openBookDetails(plugin: RadialTimelinePlugin, book: BookProfile, onSaved?: () => void): void {
     new BookDetailsModal(plugin, book, async details => {
         // A narration the writer picks is theirs: it no longer follows the old vault value.
-        if (details.narrationMode !== (book.narrationMode ?? 'off')) markNarrationChosen(plugin.settings, book.id);
+        if (details.narrationMode !== (book.narrationMode ?? 'off')) markNarrationChosen(plugin.settings, book.id); // SAFE: a book without a narration choice is Not set
         if (details.narrationMode === 'off') delete book.narrationMode;
         else book.narrationMode = details.narrationMode;
         book.genre = details.genre?.trim() || undefined;

@@ -33,7 +33,7 @@ export function parseReferenceDate(value: unknown): ReferenceDate | null {
     const { body, era } = splitWhenEra(text);
     const match = /^(\d{4})(?:-(\d{1,2})(?:-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2}))?)?)?)?$/.exec(body);
     if (!match || Number(match[1]) === 0) return null;
-    const year = era === 'BCE' ? 1 - Number(match[1]) : Number(match[1]), month = Number(match[2] ?? 1), day = Number(match[3] ?? 1);
+    const year = era === 'BCE' ? 1 - Number(match[1]) : Number(match[1]), month = Number(match[2] ?? 1), day = Number(match[3] ?? 1); // SAFE: a year-only or year-month date means its first month and day
     const hour = Number(match[4] ?? 0), minute = Number(match[5] ?? 0), second = Number(match[6] ?? 0);
     const date = new Date(0);
     date.setFullYear(year, month - 1, day);

@@ -20,14 +20,14 @@ export function storyCharacterSelections(plugin: RadialTimelinePlugin, images: r
         const raw = readFrontmatterProperty(fm, authorKeyFor('Character', settings));
         const links = (Array.isArray(raw) ? raw : [raw]).filter((value): value is string => typeof value === 'string' && !!imageSubjectName(value));
         const names = links.map(imageSubjectName).filter((name): name is string => !!name);
-        const group = books.get(book) ?? [];
-        group.push({ path: file.path, act: row.act ?? 0, prefix: row.prefix ?? '', names, links });
+        const group = books.get(book) ?? []; // SAFE: a book's first scene starts its list
+        group.push({ path: file.path, act: row.act ?? 0, prefix: row.prefix ?? '', names, links }); // SAFE: a row without an act or number sorts before the numbered ones
         books.set(book, group);
     }
     const result = new Map<string, string>();
     for (const scenes of books.values()) {
         const counts = new Map<string, number>();
-        for (const scene of scenes) for (const key of new Set(scene.names.map(name => name.normalize('NFC').toLocaleLowerCase()))) counts.set(key, (counts.get(key) ?? 0) + 1);
+        for (const scene of scenes) for (const key of new Set(scene.names.map(name => name.normalize('NFC').toLocaleLowerCase()))) counts.set(key, (counts.get(key) ?? 0) + 1); // SAFE: a name not counted yet counts from zero
         scenes.sort((a, b) => a.act - b.act || a.prefix.localeCompare(b.prefix, undefined, { numeric: true }) || a.path.localeCompare(b.path));
         let previous: string | null = null;
         for (const scene of scenes) {

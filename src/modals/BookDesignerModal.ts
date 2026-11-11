@@ -1607,7 +1607,7 @@ export class BookDesignerModal extends Modal {
             when: scene.when,
             sceneNumber: scene.sceneNumber,
             subplots: scene.subplots,
-            character: scene.characters[0] ?? '',
+            character: scene.characters[0] ?? '', // SAFE: a designed scene without characters writes an empty Character
             place: scene.place,
             characterList: scene.characters,
             placeList: [scene.place],

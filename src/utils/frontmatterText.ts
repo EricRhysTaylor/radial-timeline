@@ -201,14 +201,14 @@ export function isBlankFrontmatterValue(value: unknown): boolean {
 export function replaceValueEdit(text: FrontmatterText, field: FrontmatterField, value: string): TextEdit {
     if (field.anchored) throw new Error(t('ui.timetable.timelineDropComplexProperty'));
     if (field.valueEnd > field.valueStart) {
-        const trailing = /\s*$/.exec(text.raw.slice(field.valueStart, field.valueEnd))?.[0] ?? '';
+        const trailing = /\s*$/.exec(text.raw.slice(field.valueStart, field.valueEnd))?.[0] ?? ''; // SAFE: /\s*$/ always matches; the types say exec can return null
         // A block list may sit at column 0 under its key; a scalar there would
         // read as a new top-level line, so it takes the usual indent.
         const indent = text.raw[field.valueStart - 1] === '\n' ? '  ' : '';
         return { start: field.valueStart, end: field.valueEnd, text: indent + value + trailing };
     }
     const rest = text.raw.slice(field.colonEnd, field.lineEnd);
-    const gap = /^[ \t]*/.exec(rest)?.[0].length ?? 0;
+    const gap = /^[ \t]*/.exec(rest)?.[0].length ?? 0; // SAFE: /^[ \t]*/ always matches; the types say exec can return null
     const comment = rest[gap] === '#' ? ' ' : '';
     return { start: field.colonEnd, end: field.colonEnd + gap, text: ` ${value}${comment}` };
 }

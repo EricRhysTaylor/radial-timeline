@@ -13,7 +13,7 @@ function indexImages(files: readonly TFile[]): Map<string, TFile[]> {
         const name = normalized(file.basename);
         const variant = /^(.*?)(?:\s*)\d+$/.exec(name)?.[1]?.trimEnd();
         for (const key of new Set([name, ...(variant ? [variant] : [])])) {
-            const entries = index.get(key) ?? [];
+            const entries = index.get(key) ?? []; // SAFE: a name with no pictures yet starts an empty list
             entries.push(file);
             index.set(key, entries);
         }
@@ -34,11 +34,11 @@ export function imageSubjectName(value: unknown): string | null {
 export function matchingStoryImages(files: readonly TFile[], subject: string): TFile[] {
     const key = normalized(subject);
     if (!key) return [];
-    const matches = indexImages(files).get(key) ?? [];
+    const matches = indexImages(files).get(key) ?? []; // SAFE: a name with no pictures matches none
     const counts = new Map<string, number>();
     for (const file of matches) {
         const name = file.basename.normalize('NFC').toLocaleLowerCase();
-        counts.set(name, (counts.get(name) ?? 0) + 1);
+        counts.set(name, (counts.get(name) ?? 0) + 1); // SAFE: a name not counted yet counts from zero
     }
     return matches.filter(file => counts.get(file.basename.normalize('NFC').toLocaleLowerCase()) === 1)
         .sort((a, b) => a.basename.localeCompare(b.basename, undefined, { numeric: true, sensitivity: 'base' }) || a.path.localeCompare(b.path));
@@ -71,6 +71,6 @@ export function chooseImageSubject(candidates: readonly string[], strategy: Stor
             const bRepeat = normalize(b) === normalize(previous) ? 1 : 0;
             if (aRepeat !== bRepeat) return aRepeat - bRepeat;
         }
-        return (frequencies.get(normalize(a)) ?? 0) - (frequencies.get(normalize(b)) ?? 0) || candidates.indexOf(a) - candidates.indexOf(b);
+        return (frequencies.get(normalize(a)) ?? 0) - (frequencies.get(normalize(b)) ?? 0) || candidates.indexOf(a) - candidates.indexOf(b); // SAFE: a name the book never mentions counts zero
     })[0];
 }

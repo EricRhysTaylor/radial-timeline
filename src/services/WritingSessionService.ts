@@ -338,7 +338,7 @@ function addSceneActivity(
 /** Move a running session's per-scene record to a scene's new path. True when anything moved. */
 export function followSessionPathRename(active: ActiveWritingSession, oldPath: string, newPath: string): boolean {
     let moved = false;
-    for (const [path, totals] of Object.entries(active.sceneActivity ?? {})) {
+    for (const [path, totals] of Object.entries(active.sceneActivity ?? {})) { // SAFE: a session started before scene activity tracking has none
         const next = rebaseSessionPath(path, oldPath, newPath);
         if (next === path) continue;
         delete active.sceneActivity![path]; // SAFE: entries came from this map

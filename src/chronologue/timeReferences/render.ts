@@ -136,7 +136,8 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
             const rangeLabel = showRange ? `<g class="ert-time-reference-label">${curvedReferenceLabel(labelId, radius, slot.angle, reach + 8, slot.extent === 'earlier', escapeXml(heading), 'ert-time-reference-range', textRadiusLimit, true)}</g>` : '';
             const mixedX = x + (slot.extent === 'earlier' ? -(reach + 6) : reach + 6);
             const hit = Math.max(10, reach);
-            return `<g class="ert-time-reference" ${attrs(choices)} data-extent="${slot.extent}" data-reference-slot="${ring}-${items[0]?.bookIndex ?? 0}-${slotIndex}" data-reference-x="${x}" data-reference-y="${y}"${overflow ? ' data-reference-overflow="true"' : ''}${slot.clipped ? ' data-clipped="true"' : ''} role="button" tabindex="0"><desc>${title}</desc>
+            const bookIndex = items[0]?.bookIndex ?? 0; // SAFE: a single-book timeline leaves bookIndex unset; it is book 0
+            return `<g class="ert-time-reference" ${attrs(choices)} data-extent="${slot.extent}" data-reference-slot="${ring}-${bookIndex}-${slotIndex}" data-reference-x="${x}" data-reference-y="${y}"${overflow ? ' data-reference-overflow="true"' : ''}${slot.clipped ? ' data-clipped="true"' : ''} role="button" tabindex="0"><desc>${title}</desc>
                 <rect class="ert-time-reference-hit" x="${num(x - hit)}" y="${num(y - hit)}" width="${num(2 * hit)}" height="${num(2 * hit)}" fill="transparent"/>
                 ${overflow ? curvedReferenceLabel(`${labelId}-overflow`, radius, slot.angle, size / 2 + 12, slot.extent === 'earlier', `+${choices.length}`, 'ert-time-reference-count', textRadiusLimit) : dateMark(x, y, size, direction, slot.extent === 'earlier' || slot.extent === 'later')}
                 ${rangeLabel}
@@ -152,7 +153,7 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
         const { text, number } = parseSceneTitle(parent.item.title || '', parent.item.number);
         const sourceLabel = [escapeXml(number), text].filter(Boolean).join(' · ');
         const angle = Math.atan2(origin.y, origin.x);
-        const labelId = `ert-reference-source-${makeSceneId(parent.item.bookIndex ?? 0, ring, parent.index, true, true, path)}`;
+        const labelId = `ert-reference-source-${makeSceneId(parent.item.bookIndex ?? 0, ring, parent.index, true, true, path)}`; // SAFE: a single-book timeline leaves bookIndex unset; it is book 0
         const hit = Math.max(10, size + 4);
         // In the order the author declared them, as the Timetable lists them.
         const keys = [...references].sort((a, b) => a.index - b.index).map(ref => ref.key);

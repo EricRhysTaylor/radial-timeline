@@ -32,7 +32,7 @@ const oneOf = <T extends string>(value: unknown, allowed: readonly T[]): T | und
     typeof value === 'string' && (allowed as readonly string[]).includes(value) ? value as T : undefined;
 
 export function storyCardImages(settings: RadialTimelineSettings): StoryCardImages {
-    const saved = settings.storyCardImages ?? {};
+    const saved = settings.storyCardImages ?? {}; // SAFE: settings saved before card image choices hold none
     return {
         combination: oneOf(saved.combination, COMBINATIONS) ?? DEFAULTS.combination,
         backing: oneOf(saved.backing, BACKINGS) ?? DEFAULTS.backing,
@@ -42,7 +42,7 @@ export function storyCardImages(settings: RadialTimelineSettings): StoryCardImag
 }
 
 export function storyImageStrategy(settings: RadialTimelineSettings): StoryImageStrategy {
-    return oneOf(settings.storyImageStrategy, STRATEGIES) ?? 'distinctive';
+    return oneOf(settings.storyImageStrategy, STRATEGIES) ?? 'distinctive'; // SAFE: an unset or unknown strategy is Most distinctive, the default
 }
 
 /** Tell every open card view to redraw. */
@@ -198,6 +198,6 @@ export function cardImages(combination: StoryImageCombination, kind: 'scene' | '
         case 'place': return { cover: place, companion: null, backdrop: null, showCover: true, placeholderIcon };
         case 'combined': return { cover: place ?? character, companion: place && character ? character : null, backdrop: null, showCover: true, placeholderIcon };
         case 'layered': return { cover: character, companion: null, backdrop: place, showCover: !!character || hasCharacters, placeholderIcon };
-        default: return { cover: character, companion: null, backdrop: null, showCover: !!character || hasCharacters, placeholderIcon };
+        case 'character': return { cover: character, companion: null, backdrop: null, showCover: !!character || hasCharacters, placeholderIcon };
     }
 }

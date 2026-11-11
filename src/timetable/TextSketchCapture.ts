@@ -20,7 +20,7 @@ class TextSketchCaptureModal extends ErtModal {
         row.createDiv({ cls: 'setting-item-name', text: t('ui.canvasSketch.book') });
         const bookSelect = new DropdownComponent(row.createDiv({ cls: 'setting-item-control' }));
         for (const book of books) bookSelect.addOption(book.id, book.title || book.sourceFolder);
-        bookSelect.setValue(getActiveBook(this.plugin.settings)?.id ?? books[0]?.id ?? '');
+        bookSelect.setValue(getActiveBook(this.plugin.settings)?.id ?? books[0]?.id ?? ''); // SAFE: no active book selects the first; no books leaves the menu empty
         const actRow = this.contentEl.createDiv({ cls: 'setting-item' });
         actRow.createDiv({ cls: 'setting-item-name', text: t('ui.canvasSketch.act') });
         const actSelect = new DropdownComponent(actRow.createDiv({ cls: 'setting-item-control' }));
@@ -42,7 +42,7 @@ class TextSketchCaptureModal extends ErtModal {
             submit.disabled = true;
             void (async () => {
                 const book = books.find(item => item.id === bookSelect.getValue());
-                const folder = normalizePath(book?.sourceFolder ?? '');
+                const folder = normalizePath(book?.sourceFolder ?? ''); // SAFE: no book or folder fails the check on the next line
                 if (!book || !folder || !this.app.vault.getFolderByPath(folder) || !body.value.trim()) throw new Error(t('ui.canvasSketch.missingFolder'));
                 const act = actSelect.getValue() ? Number(actSelect.getValue()) : null;
                 const placement = planCanvasSketchAppend(bookPlacementItems(this.plugin, book.id), act, null, 1);

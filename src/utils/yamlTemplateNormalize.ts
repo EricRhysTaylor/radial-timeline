@@ -159,7 +159,7 @@ export function getMergedTemplate(
 /** The scene template the current settings apply: Core, plus Advanced when enabled. */
 export function getSceneTemplate(
     settings: RadialTimelineSettings,
-    advanced: boolean = settings.sceneAdvancedPropertiesEnabled ?? true
+    advanced: boolean = settings.sceneAdvancedPropertiesEnabled ?? true // SAFE: unset advanced properties are on, the default
 ): string {
     const parts = getTemplateParts('Scene', settings);
     return advanced ? parts.merged : parts.base;
@@ -168,7 +168,7 @@ export function getSceneTemplate(
 /** Which scene property sets a note receives, for the drop and promotion dialogs. */
 export function scenePropertySetLabel(settings: RadialTimelineSettings): string {
     const core = t('ui.scenePropertiesSection.coreName');
-    return (settings.sceneAdvancedPropertiesEnabled ?? true)
+    return (settings.sceneAdvancedPropertiesEnabled ?? true) // SAFE: unset advanced properties are on, the default
         ? `${core} + ${t('ui.scenePropertiesSection.advancedName')}`
         : core;
 }
@@ -181,7 +181,7 @@ export function scenePropertySetLabel(settings: RadialTimelineSettings): string 
  */
 export function migrateSceneTemplates(stored: { base?: string; advanced?: string }): { base: string; advanced: string } {
     const base = stored.base?.trim() ? stored.base : DEFAULT_SETTINGS.sceneYamlTemplates!.base;
-    const storedAdvanced = stored.advanced ?? '';
+    const storedAdvanced = stored.advanced ?? ''; // SAFE: settings without an advanced template hold none
     const movedTime = splitTemplateFields(storedAdvanced).find(field => field.key.toLowerCase() === TOTAL_TIME_KEY.toLowerCase());
     const advanced = movedTime ? removeTemplateFields(storedAdvanced, [movedTime.key]) : storedAdvanced;
     const movedLines = movedTime?.lines.replace(/^[^:]*:/, `${TOTAL_TIME_KEY}:`);
@@ -195,7 +195,7 @@ export function migrateSceneTemplates(stored: { base?: string; advanced?: string
         const wordsIndex = fields.findIndex(field => field.key === 'Words');
         const pulseIndex = fields.findIndex(field => field.key === 'Pulse Update');
         const position = wordsIndex >= 0 ? wordsIndex + 1 : pulseIndex >= 0 ? pulseIndex : fields.length;
-        const lines = movedLines ?? `${TOTAL_TIME_KEY}:`;
+        const lines = movedLines ?? `${TOTAL_TIME_KEY}:`; // SAFE: with no Total Time line to move, the base template gets an empty one
         fields.splice(position, 0, { key: TOTAL_TIME_KEY, lines, rest: lines.slice(TOTAL_TIME_KEY.length) });
     }
     return { base: fields.map(field => field.lines).join('\n'), advanced };

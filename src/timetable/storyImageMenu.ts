@@ -47,7 +47,7 @@ export function storyImageSources(plugin: RadialTimelinePlugin, file: TFile, fm:
     const chosenPlace = storyImageChoice(plugin, file.path).placeImage;
     if (firstPlace || chosenPlace) {
         const place = panelPlaceImage(plugin.app, file, fm, placeKey, images, chosenPlace);
-        lines.push(place ? describePlaceImage(place) : t('ui.timetable.storyImageSourcePlaceNone', { name: firstPlace ?? '' }));
+        lines.push(place ? describePlaceImage(place) : t('ui.timetable.storyImageSourcePlaceNone', { name: firstPlace ?? '' })); // SAFE: only a chosen place image reaches here without a named place
     }
     return lines;
 }

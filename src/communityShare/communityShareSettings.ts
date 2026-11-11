@@ -283,7 +283,7 @@ function normalizeTimelineShares(value: unknown): Record<string, CommunityTimeli
                 ? { droppedReveals: record.droppedReveals.filter((n): n is number => Number.isInteger(n)) }
                 : {}),
             ...(Number.isInteger(record.scenesWithoutStableId) ? { scenesWithoutStableId: record.scenesWithoutStableId } : {}),
-            ...(normalizeSceneIdPaths(record.sceneIdPaths) ?? {}),
+            ...(normalizeSceneIdPaths(record.sceneIdPaths) ?? {}), // SAFE: a share record saved before sceneIdPaths existed holds none
         };
     }
     return Object.keys(records).length > 0 ? records : undefined;

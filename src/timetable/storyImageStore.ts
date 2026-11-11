@@ -16,7 +16,7 @@ export function rebaseStoryImageChoices(choices: Record<string, StoryImageChoice
 }
 
 export function storyImageChoice(plugin: RadialTimelinePlugin, path: string): StoryImageChoice {
-    return plugin.settings.storyImageChoices?.[path] ?? {};
+    return plugin.settings.storyImageChoices?.[path] ?? {}; // SAFE: a note with no card choices of its own
 }
 
 export async function saveStoryImageChoice(plugin: RadialTimelinePlugin, path: string, choice: StoryImageChoice | null): Promise<void> {

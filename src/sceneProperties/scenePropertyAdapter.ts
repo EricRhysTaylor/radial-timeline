@@ -102,7 +102,7 @@ export interface AdvancedTemplateEntry {
 export function parseAdvancedEntries(template: string): AdvancedTemplateEntry[] {
     return splitTemplateFields(template).map(({ key, lines }) => ({
         key,
-        value: safeParseYaml(lines)[key] ?? '',
+        value: safeParseYaml(lines)[key] ?? '', // SAFE: a property with no value parses to undefined; it reads as empty
         lines,
     }));
 }

@@ -112,7 +112,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
     const bookId = book.id;
     const record = timelineShareFor(settings, bookId);
     const paused = settings.sharingPaused;
-    const key = `${settings.connection.connectionId ?? ''}:${bookId}`;
+    const key = `${settings.connection.connectionId ?? ''}:${bookId}`; // SAFE: before Community connects there is no connection id to key on
     const cached = statusCache?.key === key ? statusCache : null;
     const answer = cached?.answer;
     const share = answer?.share;

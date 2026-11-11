@@ -116,7 +116,7 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
     view.renderScope.register(() => popover.hide());
     const choicesOf = (group: Element): TimeReference[] => keysOf(group).map(key => references.get(key)).filter((ref): ref is TimeReference => !!ref);
     const sourceTitle = (path: string): string => Array.from(svg.querySelectorAll('.ert-time-reference-origin'))
-        .find(origin => origin.getAttribute('data-source-path') === encodeURIComponent(path))?.querySelector('desc')?.textContent ?? '';
+        .find(origin => origin.getAttribute('data-source-path') === encodeURIComponent(path))?.querySelector('desc')?.textContent ?? ''; // SAFE: DOM types textContent as nullable; every source circle renders its desc
     const showPopover = (group: Element, choose?: (reference: TimeReference) => void): void => {
         const choices = choicesOf(group);
         if (!choices.length) return;

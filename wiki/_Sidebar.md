@@ -14,7 +14,7 @@
     *   [Publish](Publishing)
     *   [AI](Settings-AI)
     *   [Advanced](Settings-Advanced)
-    *   [Resources & Pro](Pro)
+    *   [Resources](Resources)
 *   [Radial Timeline View](Radial-Timeline-View)
     *   [Progress Mode](Progress-Mode)
         *   [Status & Progress Stage](Progress-Mode#status-and-progress-stage)

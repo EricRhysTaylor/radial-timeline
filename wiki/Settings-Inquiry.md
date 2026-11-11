@@ -8,8 +8,8 @@ For the operating guide to the Inquiry View itself, see [Inquiry](Inquiry).
 <a name="prompts"></a>
 ## Inquiry Prompts
 
-*   **Built-in questions**: Each zone (Setup, Pressure, Payoff) ships with 4 core questions; Pro adds 5 more per zone, for 9 built-in questions per zone.
-*   **Custom questions**: Add your own prompts per zone on top of the built-ins. The Core surface allows 3 custom questions per zone; Pro raises the limit to 8.
+*   **Built-in questions**: Each zone (Setup, Pressure, Payoff) ships with 9 built-in questions: 4 core questions and 5 signature questions.
+*   **Custom questions**: Add your own prompts per zone on top of the built-ins, up to 8 per zone.
 *   **Order and defaults**: Drag to reorder questions within a zone, toggle individual questions on or off, and use the restore button to return to the built-in defaults.
 
 > [!NOTE]

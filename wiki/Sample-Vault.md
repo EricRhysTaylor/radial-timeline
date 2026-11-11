@@ -39,6 +39,6 @@ The download holds the book and its notes only, with no Obsidian settings or plu
 
 [The Odyssey](Odyssey-Demo-Vault) and *Sherlock Holmes* are free Story Vaults too, added the same way from the Story Vault chooser or downloaded from their pages on radialtimeline.com. *Sherlock Holmes* collects four novels, *A Study in Scarlet*, *The Sign of the Four*, *The Hound of the Baskervilles*, and *The Valley of Fear*: 56 chapters, each novel in its own manuscript folder with three acts and its own **Mystery and Revelation** beats. A fourth card, the **Secret vault**, is in preparation.
 
-Each story has an edition. When a newer one is ready, the Welcome screen and **Settings → Resources** offer it as a separate download, and the copy you have stays as it is. See [Story Vaults](Pro#story-vaults).
+Each story has an edition. When a newer one is ready, the Welcome screen and **Settings → Resources** offer it as a separate download, and the copy you have stays as it is. See [Story Vaults](Resources#story-vaults).
 
 You're welcome to fork it, edit it, write in it, or strip it for parts. The source text and all included analysis are free to read, copy, and reuse.

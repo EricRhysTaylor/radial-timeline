@@ -44,7 +44,7 @@ Control how much of your story structure is visible:
 
 **Tip**: Uncheck all options for a simple progress ring—perfect for early teasers or minimal updates. Manual reveal options are disabled when Teaser Reveal is enabled.
 
-## Teaser Reveal (Pro)
+## Teaser Reveal
 
 For campaigns, enable **Teaser Reveal** to automatically show more detail as your book progresses.
 
@@ -104,7 +104,7 @@ APR exports a static **PNG or SVG** file. The **Output file** row in the panel i
 *   **Output file**: Shows the current export file path for the default report or the selected campaign. Click it to reveal the file.
 *   **Auto-update export paths**: When size or schedule changes, updates the default export path if it still matches the default pattern.
 
-## Campaigns (Pro)
+## Campaigns
 
 Create multiple APR configurations for different platforms:
 

@@ -74,7 +74,7 @@ Scene completion stats use scenes with `Status = Complete` and a `Due` date. `Pu
 <a name="runtime-estimation"></a>
 ## Runtime Estimation
 
-Runtime estimation is a Pro workflow configured from the Core tab.
+Runtime estimation is configured from the Core tab.
 
 *   **Enable runtime estimation**: Activates runtime calculations for scenes and the Narrative Runtime view.
 *   **Default runtime profile**: The profile used when no per-scene override is set.
@@ -93,7 +93,7 @@ Runtime estimation is a Pro workflow configured from the Core tab.
 *   **Narration words per minute**: Reading pace for all content (default 150).
 
 > [!NOTE]
-> Runtime estimation is a [Pro](Pro) feature. See [Runtime estimator](Commands#runtime-estimator) for the estimate and [Runtime view](Narrative-Mode#runtime-view) for the visualization.
+> See [Runtime estimator](Commands#runtime-estimator) for the estimate and [Runtime view](Narrative-Mode#runtime-view) for the visualization.
 
 <a name="story-beats-system"></a>
 ## Story Beats System
@@ -231,7 +231,7 @@ Configure the Chronologue backdrop ring and micro-backdrop rings.
 
 *   **Working patterns**: The pattern library used for scenes whose `Status` is `Working`.
 *   **Working pattern**: Choose the live motif used on the timeline for `Working` scenes.
-*   **Custom patterns**: A custom-pattern editor for author-defined motifs — a Pro workflow.
+*   **Custom patterns**: A custom-pattern editor for author-defined motifs.
 
 <a name="progress-stage-colors"></a>
 ## Progress Stage Colors

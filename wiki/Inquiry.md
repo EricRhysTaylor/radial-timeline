@@ -105,7 +105,7 @@ The corpus strip at the right of the view draws every note in the corpus as a pa
 *   **Shift + Click** toggles targeting.
 *   **Right-click** opens the page's menu.
 
-The legend also explains the question states on the glyph: ready to run, a saved result, stale (the corpus changed since that run), Pro questions, and a failed run.
+The legend also explains the question states on the glyph: ready to run, a saved result, stale (the corpus changed since that run), signature questions, and a failed run.
 
 ---
 
@@ -236,7 +236,7 @@ Inquiry can write findings directly into your scene frontmatter:
 <a name="prompts"></a>
 ## Prompts
 
-Each zone ships with built-in questions, with more under Pro, and you can add your own. Choose **Standard** or **Focused** in a question’s menu to select its prompt form. Question counts, custom questions, and ordering are set in [Inquiry prompts](Settings-Inquiry#prompts).
+Each zone ships with built-in questions, core and signature, and you can add your own. Choose **Standard** or **Focused** in a question’s menu to select its prompt form. Question counts, custom questions, and ordering are set in [Inquiry prompts](Settings-Inquiry#prompts).
 
 ---
 

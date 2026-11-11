@@ -20,7 +20,7 @@ These are the main command-palette entries.
 9. **[Summary scene refresh](#summary-refresh)**
 10. **[Timeline search](#search-timeline)**
 11. **[Gossamer analysis](#gossamer-analysis)**
-12. **[Runtime estimator](#runtime-estimator)** *(Pro)*
+12. **[Runtime estimator](#runtime-estimator)**
 13. **[Manuscript export](Manuscript-Export)** ← standalone guide
 14. **[Inquiry omnibus](#inquiry-omnibus-pass)** *(in testing — not yet released)*
 15. **[Gossamer score manager](#gossamer-score-manager)**
@@ -44,7 +44,7 @@ Some commands are hidden until their required feature is enabled. Others remain 
 *   **Scene pulse analysis**, **Summary scene refresh**, and **Gossamer analysis** appear only when **AI LLM features** are enabled in [Settings → AI](Settings-AI).
 *   **Inquiry open** stays listed and opens with AI off, so you can read saved sessions, including the Story Vaults', without an API key. Running a new question needs AI turned on and a provider. See [Inquiry](Inquiry).
 *   **Gossamer analysis** also needs an active beat system, story beats, and scene content. To score by hand without AI, use **[Gossamer score manager](#gossamer-score-manager)**.
-*   **Runtime estimator** is a **Pro** workflow. Runtime configuration lives in [Settings → Core](Settings-Core#runtime-estimation).
+*   **Runtime estimator** configuration lives in [Settings → Core](Settings-Core#runtime-estimation).
 *   With AI off, the **Timeline date audit** AI scan and the runtime estimator's AI mode tell you AI is off instead of running.
 *   **Planetary time calculator** is visible, but it needs at least one configured planetary profile before it can produce a conversion.
 *   **Inquiry omnibus** is undergoing testing and is not released yet. It does not appear in release builds.
@@ -181,13 +181,13 @@ Related: [Gossamer Mode → AI Analysis](Gossamer-Mode#ai-analysis).
 ---
 
 <a name="runtime-estimator"></a>
-## Runtime estimator *(Pro)*
+## Runtime estimator
 
 Opens the runtime estimation panel.
 
 <p align="center"><img src="images/panel-runtime-estimator.png" alt="Runtime estimator panel" width="520"></p>
 
-Used for novels, audiobooks, and screenplays. The panel works with runtime profiles and can estimate duration across different scopes and filters. Available only when **Pro** is active.
+Used for novels, audiobooks, and screenplays. The panel works with runtime profiles and can estimate duration across different scopes and filters.
 
 Related: [Settings → Core → Runtime estimation](Settings-Core#runtime-estimation), [Narrative Runtime view](Narrative-Mode#runtime-view).
 

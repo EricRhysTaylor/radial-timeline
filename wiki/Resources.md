@@ -1,19 +1,4 @@
-Everything the plugin does is free to use right now — Pro included.
-
-Pro labels advanced workflows for Inquiry questions, runtime estimates, publishing layouts, multi-book timelines, and APR campaigns.
-
-Pro workflows appear throughout Radial Timeline in magenta.
-
----
-
-## Pro workflows
-
-*   **Inquiry+** — the extended question set and a higher custom-question ceiling per zone. See [Settings → Inquiry](Settings-Inquiry) and [Inquiry](Inquiry).
-*   **Runtime estimation** — screen time, audiobook duration, and manuscript-length analysis. See [Runtime estimator](Commands#runtime-estimator), [Runtime view](Narrative-Mode#runtime-view), and [Settings → Core](Settings-Core#runtime-estimation).
-*   **Advanced publishing layouts** — the Professional, Signature, Screenplay, and Podcast Script templates, plus custom Pandoc/LaTeX metadata. Designed-style editing and template import are in beta and not yet in release builds. See [Publishing](Publishing) and [Manuscript Export](Manuscript-Export).
-*   **Campaign Manager / Teaser Reveal** — multiple APR campaigns and staged public reveals. See [Author Progress Report](Author-Progress-Report).
-*   **Saga timeline scope** — view an entire multi-book saga on one timeline.
-*   **Custom scene colors and patterns** — author-defined palettes and working-pattern motifs. See [Settings → Core](Settings-Core).
+**Settings → Resources** (the **Res** tab) holds the Story Vaults and links to learn the plugin. Everything the plugin does is free to use right now.
 
 ---
 

@@ -11,7 +11,7 @@ The tab strip uses short labels: **Cor**, **Soc**, **Com**, **Inq**, **Pub**, **
 *   [Publish](Publishing) — Pandoc, PDF styles, bundled layouts, chapter markers, Parts, and manuscript export workflow.
 *   [AI](Settings-AI) — Provider setup, model selection, local/OpenAI-compatible settings, and analysis behavior.
 *   [Advanced](Settings-Advanced) — Timeline display options, remap frontmatter field keys, ripple rename, logs, and export-path readouts.
-*   [Resources](Pro#story-vaults) — Story Vaults with their editions, then **Learn more**: Getting started, the Radial Timeline Wiki, and YouTube videos.
+*   [Resources](Resources) — Story Vaults with their editions, then **Learn more**: Getting started, the Radial Timeline Wiki, and YouTube videos.
 
 ## Reference Pages
 

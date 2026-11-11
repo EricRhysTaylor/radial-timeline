@@ -15,7 +15,7 @@ Narrative Mode is your primary manuscript-order workspace. It displays all scene
 *   **Interactive Reordering**: You can drag scenes on the outer ring to reorder them. See [Reorder Scenes](How-to#reorder-scenes) for details.
 *   **Scene right-click menu**: Add a scene after the current one, set a chapter marker, change Status, change Publish Stage, or flag it for Pulse — see below.
 *   **Recent moves overlay**: Narrative Mode can show a top-left list of recent committed scene and beat moves. Toggle it in [Settings → Advanced → Configuration](Settings-Advanced#configuration).
-*   **Runtime view** ✦ Pro: Click **RT** to see how long each scene runs and the running time of the book in reading order. See [Runtime view](#runtime-view).
+*   **Runtime view**: Click **RT** to see how long each scene runs and the running time of the book in reading order. See [Runtime view](#runtime-view).
 
 <p align="center"><img src="images/mode-narrative-beats.png" alt="Narrative Mode with Save the Cat beats around the outer ring and the recent moves overlay at top left" width="480"></p>
 <p align="center"><sub>Save the Cat beats around the outer ring, with the recent moves overlay at top left</sub></p>
@@ -32,7 +32,7 @@ The **alignment chip** at the left of the mode row switches how subplot rings la
 
 <a name="runtime-view"></a>
 <a name="runtime-mode-pro"></a>
-## Runtime View ✦ Pro
+## Runtime View
 
 Runtime follows **narrative order** — the order a reader, listener, or audience meets your scenes. The Runtime view shows how long each scene runs and how the minutes add up across the book.
 
@@ -60,7 +60,7 @@ While the Runtime view is on, clicks select scenes for comparison; turn it off t
 4. Switch to Narrative mode (`2`) and click `RT`
 
 > [!NOTE]
-> Runtime estimates appear in scene hover tooltips when Runtime Estimation is enabled. See [Settings → Runtime estimation](Settings-Core#runtime-estimation) for configuration and [Pro](Pro) for full Pro documentation. With a [Timetable](Timetable) open, the Runtime view adds a **Running time** column.
+> Runtime estimates appear in scene hover tooltips when Runtime Estimation is enabled. See [Settings → Runtime estimation](Settings-Core#runtime-estimation) for configuration and [Runtime estimator](Commands#runtime-estimator) for the estimate. With a [Timetable](Timetable) open, the Runtime view adds a **Running time** column.
 
 ## Scene Right-Click Menu
 

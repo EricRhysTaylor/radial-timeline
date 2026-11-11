@@ -68,6 +68,24 @@ function mount() {
 }
 
 describe('settings-owned beat render lifetime', () => {
+    it('opens a searchable destination in the existing dashboard and disposes it on close', () => {
+        const { tab } = mountPanels();
+        const internal = tab as unknown as { renderDashboard(): void; dashboardEl: HTMLElement | null };
+        const render = vi.spyOn(internal, 'renderDashboard').mockImplementation(() => {});
+        const reveal = vi.spyOn(tab, 'revealSettingsSection').mockImplementation(() => {});
+        const groups = tab.getSettingDefinitions();
+        const group = groups.find(item => 'type' in item && item.type === 'group');
+        if (!group || !('items' in group)) throw new Error('Search destinations missing');
+        const ai = group.items?.find(item => item.name === 'AI provider and API keys');
+        if (!ai || !('page' in ai) || !ai.page) throw new Error('AI search page missing');
+        const page = ai.page();
+        page.display();
+        expect(render).toHaveBeenCalledOnce();
+        expect(reveal).toHaveBeenCalledWith('ai', 'ai', { force: true });
+        expect(internal.dashboardEl).toBe(page.containerEl);
+        page.hide();
+        expect(internal.dashboardEl).toBeNull();
+    });
     it('unsubscribes the old render before mounting a replacement', () => {
         const { tab, listeners, cleanups } = mount();
         tab.refreshActiveBookSections();
@@ -102,7 +120,8 @@ describe('settings-owned beat render lifetime', () => {
             expect(disposeAi).toHaveBeenCalledTimes(1);
             throw stop;
         } } as unknown as HTMLElement;
-        expect(() => tab.display()).toThrow(stop);
+        // SAFE: exercise the same dashboard renderer used by both settings and search pages.
+        expect(() => (tab as unknown as { renderDashboard(): void }).renderDashboard()).toThrow(stop);
     });
 });
 

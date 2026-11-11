@@ -239,6 +239,12 @@ export class PluginSettingTab {
   hide(): void {}
 }
 
+export class SettingPage {
+  containerEl = {} as HTMLElement;
+  display(): void {}
+  hide(): void {}
+}
+
 // Component base — a working model of Obsidian's lifecycle: registrations
 // accumulate until unload(), children load/unload with their parent, and
 // removeChild() unloads the child immediately.

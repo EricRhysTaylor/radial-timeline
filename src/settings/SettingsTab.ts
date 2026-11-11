@@ -1,5 +1,5 @@
 import { setAccessibleLabel, withAccessibleLabel } from '../utils/domTooltip';
-import { App, Component, Notice, PluginSettingTab, setIcon, TextComponent } from 'obsidian';
+import { App, Component, Notice, PluginSettingTab, SettingPage, setIcon, TextComponent, type SettingDefinitionItem } from 'obsidian';
 import { renderGeneralSection } from './sections/GeneralSection';
 import { renderCompletionEstimatePreview, renderProgressSection } from './sections/ProgressSection';
 import { renderChronologueSection } from './sections/ChronologueSection';
@@ -44,6 +44,61 @@ import { getLocalLlmSettings } from '../ai/localLlm/settings';
 import { CORE_ALERTS_SECTION_KEY, type RadialTimelineSettingsTabId } from './settingsAnchors';
 
 export class RadialTimelineSettingsTab extends PluginSettingTab {
+    private dashboardEl: HTMLElement | null = null;
+
+    /** Search destinations open the original settings dashboard at its relevant section. */
+    getSettingDefinitions(): SettingDefinitionItem[] {
+        const destinations: Array<{ name: string; tab: RadialTimelineSettingsTabId; section: string }> = [
+            { name: t('ui.settingsTab.guardGeneral'), tab: 'core', section: 'general' },
+            { name: t('ui.settingsTab.guardProgress'), tab: 'core', section: 'progress-status' },
+            { name: t('ui.settingsTab.guardRuntime'), tab: 'core', section: 'runtime' },
+            { name: t('ui.settingsTab.guardChronologue'), tab: 'core', section: 'chronologue' },
+            { name: t('ui.settingsTab.guardPov'), tab: 'core', section: 'pov' },
+            { name: t('ui.settingsTab.guardBackdrop'), tab: 'core', section: 'backdrop' },
+            { name: t('ui.settingsTab.guardInquiry'), tab: 'inquiry', section: 'inquiry' },
+            { name: t('ui.settingsTab.guardPublish'), tab: 'publishing', section: 'export-check' },
+            { name: 'Scene properties', tab: 'core', section: 'scene-properties' },
+            { name: 'Story beats', tab: 'core', section: 'beats-story' },
+            { name: 'Acts and structure', tab: 'core', section: 'beats-acts' },
+            { name: t('ui.settingsTab.guardColors'), tab: 'core', section: 'colors-subplot' },
+            { name: 'Planetary time', tab: 'core', section: 'planetary' },
+            { name: 'Goals and writing sessions', tab: 'core', section: 'goals-sessions' },
+            { name: 'PDF styles and publishing', tab: 'publishing', section: 'pdf-style' },
+            { name: 'Pandoc manuscript export', tab: 'publishing', section: 'pandoc-advanced' },
+            { name: 'Book details', tab: 'publishing', section: 'book-details' },
+            { name: 'Book pages', tab: 'publishing', section: 'book-pages' },
+            { name: 'AI provider and API keys', tab: 'ai', section: 'ai' },
+            { name: 'Advanced configuration', tab: 'advanced', section: 'configuration' },
+            { name: 'Author progress and social sharing', tab: 'social', section: 'social' },
+            { name: 'Community sharing', tab: 'community', section: 'community' },
+            { name: 'Resources and bonus vaults', tab: 'pro', section: 'resources' },
+        ];
+        return [
+            { name: 'Dashboard', searchable: false, render: (setting) => {
+                setting.settingEl.empty();
+                setting.settingEl.removeClass('setting-item');
+                this.dashboardEl = setting.settingEl.createDiv();
+                this.renderDashboard();
+            } },
+            { type: 'group', cls: 'is-hidden', items: destinations.map(({ name, tab, section }) => ({
+                type: 'page' as const, name, page: () => this.searchPage(tab, section),
+            })) },
+        ];
+    }
+
+    private searchPage(tab: RadialTimelineSettingsTabId, section: string): SettingPage {
+        const render = (container: HTMLElement): void => {
+            this.dashboardEl = container;
+            this.setActiveTab(tab);
+            this.renderDashboard();
+            this.revealSettingsSection(tab, section, { force: true });
+        };
+        const dispose = (): void => { this.disposeAsyncWork(); this.dashboardEl = null; };
+        return new class extends SettingPage {
+            display(): void { render(this.containerEl); }
+            hide(): void { dispose(); }
+        }();
+    }
     /** Owns the listeners of the panels that read the active book (Progress and status, Story beats system). */
     private _activeBookScope: Component | null = null;
 
@@ -710,7 +765,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
     }
 
     private scrollToSettingsSection(sectionKey: string, options: { force?: boolean } = {}): boolean {
-        const target = this.containerEl.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="${sectionKey}"]`);
+        const target = (this.dashboardEl ?? this.containerEl).querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="${sectionKey}"]`);
         if (!target) return false;
         const host = this.findSettingsScrollHost(target);
         if (!options.force && host && this.isSectionVisibleWithinHost(target, host)) {
@@ -795,7 +850,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
     private renderCoreQuickLinks(containerEl: HTMLElement, links: Array<{ label: string; section: string }>): void {
         // Links name sections by key, not element: the active-book panels re-render in place.
-        const findSection = (key: string) => this.containerEl.querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="${key}"]`);
+        const findSection = (key: string) => (this.dashboardEl ?? this.containerEl).querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="${key}"]`);
         const valid = links.filter(link => findSection(link.section) !== null);
         if (!valid.length) return;
 
@@ -832,8 +887,8 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         }
     }
 
-    display(): void {
-        const { containerEl } = this;
+    private renderDashboard(): void {
+        const containerEl = this.dashboardEl ?? this.containerEl;
         this.disposeAsyncWork();
         containerEl.empty();
         containerEl.addClass('ert-ui', 'ert-settings-root', 'ert-scope--settings');
@@ -888,10 +943,12 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
 
         const coreContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-settings-core-content ert-scope--settings' });
         const socialContent = containerEl.createDiv({
-            cls: 'ert-settings-tab-content ert-settings-social-content ert-ui ert-scope--settings ert-skin--social ert-density--compact'
+            cls: 'ert-settings-tab-content ert-settings-social-content ert-ui ert-scope--settings ert-skin--social ert-density--compact',
+            attr: { [ERT_DATA.SECTION]: 'social' }
         });
         const communityContent = containerEl.createDiv({
-            cls: 'ert-settings-tab-content ert-settings-community-content ert-ui ert-scope--settings'
+            cls: 'ert-settings-tab-content ert-settings-community-content ert-ui ert-scope--settings',
+            attr: { [ERT_DATA.SECTION]: 'community' }
         });
         const inquiryContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-settings-inquiry-content ert-scope--settings' });
         const publishingContent = containerEl.createDiv({
@@ -899,7 +956,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         });
         const aiContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-settings-ai-content ert-scope--settings' });
         const advancedContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-settings-advanced-content ert-scope--settings' });
-        const proContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-scope--settings' });
+        const proContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-scope--settings', attr: { [ERT_DATA.SECTION]: 'resources' } });
 
         this._tabEls = {
             core: coreTab,

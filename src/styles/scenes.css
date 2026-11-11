@@ -9,6 +9,12 @@
   text-shadow: none;
 }
 
+/* While the timeline is hovered, the other beat titles recede to a darker
+   gray so the hovered beat's white title stands out. */
+.radial-timeline-svg.scene-hover .rt-storybeat-title {
+  fill: var(--text-faint);
+}
+
 /* Hover: emphasize story beat titles with a solid black background using stroke */
 .radial-timeline-container .rt-storybeat-title:hover,
 .radial-timeline-container .rt-scene-group.beats:hover .rt-storybeat-title,

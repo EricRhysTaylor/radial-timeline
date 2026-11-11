@@ -25,12 +25,7 @@
 - **Footage:** record in the Story Vaults (Pride & Prejudice, The Odyssey, Sherlock), so no private manuscript appears on screen.
 - **Captions:** always on; most viewers watch muted. Voice-over is optional.
 - **Shape:** open on the result, show three to five steps, end on a card naming the wiki page.
-- **Example, `pdf-export`:**
-  - 0–5 s: the finished PDF spread.
-  - 5–20 s: Settings → Publish, choose a layout.
-  - 20–45 s: the design wizard: trim size, fonts, chapter headings, with the live preview.
-  - 45–70 s: the Manuscript export dialog, choose PDF, press Export.
-  - 70–90 s: open the PDF; end card "Full guide: Publishing in the wiki".
+- **Scripts:** one per video in `docs/product/videos/<key>.md`, with exact interface labels, so a script can be checked against the app before recording. First: [`pdf-export.md`](../../product/videos/pdf-export.md).
 
 ## Publishing a video
 

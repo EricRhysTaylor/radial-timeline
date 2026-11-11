@@ -82,9 +82,9 @@ When **Strip author queries** is off, each Editorialist author query (`%%query: 
 
 Bring the returned file to Editorialist the same way as the editor's first round: copy the formatting instructions from the review launcher and give them, with the file, to the AI of your choice. Each answer comes back on its question.
 
-## Print Binding Gutter (PDF)
+## Paperback Binding Margin (PDF)
 
-PDF options include a **Print binding gutter** toggle. When on, exports add 0.25" to the inner margin so text clears the spine of a printed, bound paperback (KDP/IngramSpark). Leave it off for PDFs meant to be read on screen — it changes the page geometry. The setting persists across exports.
+PDF options include a **Paperback binding margin** toggle. When on, exports add 0.25" to the inner margin so text clears the spine of a printed, bound paperback (KDP/IngramSpark). Leave it off for PDFs meant to be read on screen — it changes the page geometry. The setting persists across exports.
 
 ## PDF Layouts
 

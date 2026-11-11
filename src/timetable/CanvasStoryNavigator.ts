@@ -1,4 +1,4 @@
-import { Component, setIcon, TFile, type ItemView } from 'obsidian';
+import { Component, Notice, setIcon, TFile, type ItemView } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { buildTableRow, compareManuscriptRows } from './timetableModel';
@@ -6,9 +6,11 @@ import { setAccessibleLabel, setTooltip } from '../utils/domTooltip';
 import { isStoryActHeading, selectedCanvasBounds, storyActHeadingLabel, storyAxis, storyKeyStep, storyPosition, storyProgress } from './canvasNavigation';
 import { placeKeyPanel, renderLegendSurface, wireLegendTrigger, type LegendSection } from '../view/interactions/LegendPanel';
 import { isStoryMapPath } from './storyMapPaths';
+import { transposeStoryCanvas } from './canvasOrientation';
+import type { StoryCanvasData } from './canvasSketches';
 
 type NodeData = { type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
-type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; selection?: Set<{ getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void; zoomToBbox?: (bounds: { minX: number; minY: number; maxX: number; maxY: number }) => void };
+type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; selection?: Set<{ getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; getData?: () => StoryCanvasData; setData?: (data: StoryCanvasData) => void; requestSave?: (pushHistory?: boolean) => void; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void; zoomToBbox?: (bounds: { minX: number; minY: number; maxX: number; maxY: number }) => void };
 
 /**
  * The Radial Timeline bar on a Canvas. Generated story maps get the scene
@@ -137,6 +139,10 @@ export class CanvasStoryNavigator {
         const slider = root.createEl('input', { cls: 'ert-story-navigator__slider', attr: { type: 'range', min: '0', max: '0', value: '0' } });
         const selection = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit' });
         selection.disabled = true;
+        const orientation = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit', attr: { type: 'button' } });
+        setIcon(orientation, 'repeat-2');
+        setAccessibleLabel(orientation, t('ui.subplotCanvas.flipOrientation'));
+        setTooltip(orientation, t('ui.subplotCanvas.flipOrientation'));
         const fit = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit' });
         setAccessibleLabel(slider, t('ui.subplotCanvas.navigator'));
         setTooltip(selection, t('ui.subplotCanvas.navigatorSelection'));
@@ -224,6 +230,17 @@ export class CanvasStoryNavigator {
             if (bounds) view?.zoomToBbox?.(bounds);
         });
         this.events.registerDomEvent(fit, 'click', () => canvas()?.zoomToFit?.());
+        this.events.registerDomEvent(orientation, 'click', () => {
+            const view = canvas();
+            if (!view?.getData || !view.setData || !view.requestSave) { new Notice(t('ui.subplotCanvas.flipUnavailable')); return; }
+            const flipped = transposeStoryCanvas(view.getData());
+            if (!flipped) { new Notice(t('ui.subplotCanvas.flipUnavailable')); return; }
+            const viewport = { x: view.x, y: view.y, zoom: view.zoom };
+            view.setData(flipped);
+            view.requestSave();
+            if (typeof viewport.x === 'number' && typeof viewport.y === 'number' && typeof viewport.zoom === 'number') view.setViewport?.(viewport.y, viewport.x, viewport.zoom);
+            window.setTimeout(() => { if (this.root === root) { dragViewport = null; update(false, true); followViewport(); } }, 250);
+        });
         this.events.registerInterval(window.setInterval(followViewport, 250));
         // The Canvas can still be loading when its view is first attached.
         window.setTimeout(() => { if (this.root === root) { update(false); followViewport(); } }, 500);

@@ -5751,6 +5751,8 @@ export const en = {
             navigator: 'Story navigation',
             navigatorPosition: 'Scene {{current}} of {{total}}',
             navigatorFit: 'Fit all',
+            flipOrientation: 'Switch horizontal / vertical',
+            flipUnavailable: 'This Canvas cannot be rearranged right now.',
             navigatorSelection: 'Zoom to selection',
             range: 'Start focused on',
             rangeAll: "Entire selection",

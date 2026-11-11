@@ -37,6 +37,13 @@ describe('generated Canvas baseline comparison', () => {
         expect(copy.data.nodes?.find(node => node.id === 'idea')?.text).toBe('Idea');
         expect(JSON.stringify(original)).toBe(before);
     });
+    it('preserves an edge with a changed custom type value', () => {
+        const nodes = [{ id: 'a', type: 'file', x: 0, y: 0 }];
+        const old: StoryCanvasData = { nodes, edges: [{ id: 'e', fromNode: 'a', toNode: 'a', type: { label: 'old' } }] };
+        const current: StoryCanvasData = { nodes, edges: [{ id: 'e', fromNode: 'a', toNode: 'a', type: { label: 'new' } }] };
+        const copy = carryCanvasEdits(old, current, { nodes: [], edges: [] });
+        expect(copy.data.edges?.[0].type).toEqual({ label: 'new' });
+    });
     it('rebases a renamed note and a renamed map while keeping other metadata', () => {
         const record: StoryMapProvenance = { version: 1, bookId: 'b', generatedAt: '2026-01-01', act: null, subplot: null, layout: 'horizontal', initialFocus: 'beginning', scenes: [{ path: 'Book/old.md', act: 1, subplots: ['Main'] }], generated: { nodes: [{ id: 'a', type: 'file', file: 'Book/old.md' }] } };
         const moved = rebaseStoryMapProvenance({ 'Maps/old.canvas': record }, 'Book/old.md', 'Book/new.md');

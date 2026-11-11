@@ -17,6 +17,7 @@ describe('time reference popover', () => {
         class PopoutNode {}
         class PopoutElement extends PopoutNode {
             isConnected = true;
+            instanceOf(type: typeof PopoutNode) { return this instanceof type; }
             focus() { activeElement = this; }
             getBoundingClientRect() { return { left: 100, right: 110, top: 100, bottom: 110 }; }
         }

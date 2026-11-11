@@ -27,6 +27,13 @@ export interface CanvasChangeSummary {
     removedEdges: number;
 }
 
+function canonical(value: unknown): string {
+    return JSON.stringify(value, (_key, item: unknown) => {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) return item;
+        return Object.fromEntries(Object.entries(item as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)));
+    });
+}
+
 /** Unknown or incomplete records are never treated as reliable provenance. */
 export function isStoryMapProvenance(value: unknown): value is StoryMapProvenance {
     if (!value || typeof value !== 'object') return false;
@@ -45,10 +52,6 @@ export function canvasChanges(baseline: StoryCanvasData, current: StoryCanvasDat
     const compare = (oldItems: readonly Record<string, unknown>[], newItems: readonly Record<string, unknown>[]) => {
         const oldById = new Map(oldItems.filter(item => typeof item.id === 'string').map(item => [item.id as string, item]));
         const newById = new Map(newItems.filter(item => typeof item.id === 'string').map(item => [item.id as string, item]));
-        const canonical = (value: unknown): string => JSON.stringify(value, (_key, item: unknown) => {
-            if (!item || typeof item !== 'object' || Array.isArray(item)) return item;
-            return Object.fromEntries(Object.entries(item as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)));
-        });
         return {
             added: [...newById.keys()].filter(id => !oldById.has(id)).length,
             removed: [...oldById.keys()].filter(id => !newById.has(id)).length,
@@ -77,7 +80,7 @@ export function carryCanvasEdits(baseline: StoryCanvasData, current: StoryCanvas
     const oldNodes = new Map((baseline.nodes ?? []).map(node => [node.id, node]));
     const oldEdges = new Map((baseline.edges ?? []).filter(edge => typeof edge.id === 'string').map(edge => [edge.id as string, edge]));
     const allNodes = new Map((current.nodes ?? []).map(node => [node.id, node]));
-    const changed = (a: Record<string, unknown> | undefined, b: Record<string, unknown>): boolean => !a || canvasChanges({ nodes: [{ ...a, id: 'x', type: String(a.type ?? 'edge') }] }, { nodes: [{ ...b, id: 'x', type: String(b.type ?? 'edge') }] }).changedNodes > 0;
+    const changed = (a: Record<string, unknown> | undefined, b: Record<string, unknown>): boolean => !a || canonical({ ...a, id: 'x' }) !== canonical({ ...b, id: 'x' });
     const chosen = new Set((current.nodes ?? []).filter(node => changed(oldNodes.get(node.id), node)).map(node => node.id));
     const carriedEdges = (current.edges ?? []).filter(edge => {
         const id = typeof edge.id === 'string' ? edge.id : '';

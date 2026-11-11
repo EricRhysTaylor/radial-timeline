@@ -24,7 +24,8 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
         });
     });
     // A date marker, or a source circle (the scene end of every route from that scene).
-    const groupOf = (target: EventTarget | null): Element | null => target instanceof Element ? target.closest('.ert-time-reference, .ert-time-reference-origin') : null;
+    const targetWindow = svg.ownerDocument.defaultView;
+    const groupOf = (target: EventTarget | null): Element | null => targetWindow && target instanceof targetWindow.Node && target.instanceOf(targetWindow.Element) ? target.closest('.ert-time-reference, .ert-time-reference-origin') : null;
     const isSource = (group: Element): boolean => group.classList.contains('ert-time-reference-origin');
     const keysOf = (group: Element): string[] => {
         const parsed: unknown = JSON.parse(group.getAttribute('data-reference-keys') ?? '[]');

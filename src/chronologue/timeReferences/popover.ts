@@ -110,7 +110,7 @@ export class ReferencePopover {
         el.setCssProps({ '--ert-popover-left': `${at.left}px`, '--ert-popover-top': `${at.top}px` });
         this.el = el;
         this.pinned = !!choose;
-        this.anchor = choose && win && (anchor instanceof win.SVGElement || anchor instanceof win.HTMLElement) ? anchor : null;
+        this.anchor = choose && win && (anchor.instanceOf(win.SVGElement) || anchor.instanceOf(win.HTMLElement)) ? anchor : null;
         if (choose) el.querySelector<HTMLButtonElement>('button')?.focus();
     }
 

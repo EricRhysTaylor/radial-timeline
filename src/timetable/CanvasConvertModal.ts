@@ -692,6 +692,7 @@ export class CanvasConvertModal extends ErtModal {
         const act = anchor?.row.act ?? this.act;
         const placement = planCanvasSketchAppend(items, act, anchorId, cards.length);
         const store = this.plugin.sketchPlacements;
+        await store.assertWritable();
         for (const item of placement.missing) {
             const original = items.find(candidate => candidate.row.path === item.path);
             const now = store.get(item.path);
@@ -741,6 +742,9 @@ export class CanvasConvertModal extends ErtModal {
         }
         const paths = new Map<string, string>();
         const ranked: string[] = [];
+        let repaints = new Map<string, string>();
+        let created = new Set<string>();
+        let linked = false;
         try {
             // Replacing a card changes its ID. Cross-canvas portal edges can
             // refer to that ID in another file, so refuse rather than break them.
@@ -749,8 +753,6 @@ export class CanvasConvertModal extends ErtModal {
                 return;
             }
             if (!this.canvasIsOpen() || JSON.stringify(initial) !== JSON.stringify(this.canvas.getData())) throw new Error(t('ui.canvasSketch.changed'));
-            let repaints = new Map<string, string>();
-            let created = new Set<string>();
             if (mode === 'scenes') {
                 if (this.ringsBook !== book.id) throw new Error(t('ui.canvasSketch.readingSubplots'));
                 const outcome = this.outcome();
@@ -772,16 +774,20 @@ export class CanvasConvertModal extends ErtModal {
             const replacements = new Map([...paths].map(([id, path]) => [id, { id: crypto.randomUUID().replace(/-/g, ''), path }]));
             // Each new scene's card wears its subplot's timeline color.
             const colors = new Map([...repaints].flatMap(([id, hex]) => replacements.has(id) ? [[replacements.get(id)!.id, hex] as const] : [])); // SAFE: has() checked the replacement just before
+            const converted = repaintCards(linkSketches(initial, replacements), colors);
             try {
-                this.canvas.setData(repaintCards(linkSketches(initial, replacements), colors));
+                this.canvas.setData(converted);
                 const actual = this.canvas.getData();
                 if ([...replacements.values()].some(({ id, path }) => !actual.nodes?.some(node => node.id === id && node.type === 'file' && node.file === path))) {
                     throw new Error(t('ui.canvasSketch.changed'));
                 }
                 this.canvas.requestSave(false);
+                linked = true;
             } catch (error) {
-                this.canvas.setData(initial);
-                this.canvas.requestSave(false);
+                if (JSON.stringify(this.canvas.getData()) === JSON.stringify(converted)) {
+                    this.canvas.setData(initial);
+                    this.canvas.requestSave(false);
+                }
                 throw error;
             }
             new Notice(mode === 'scenes' ? t('ui.canvasSketch.doneScenes', { scenes: tCount('scene', paths.size) }) : t('ui.canvasSketch.done', { count: paths.size }), 6000);
@@ -807,10 +813,43 @@ export class CanvasConvertModal extends ErtModal {
             console.error('[Canvas sketches]', error);
             // Older sketches are ranked only together with a new sketch, so there is nothing to undo.
             const retainedRanks = ranked.length > 0;
-            const message = (error instanceof Error ? error.message : String(error)) + (retainedRanks ? ` ${t('ui.canvasSketch.orderRetained')}` : '');
+            let message = (error instanceof Error ? error.message : String(error)) + (retainedRanks ? ` ${t('ui.canvasSketch.orderRetained')}` : '');
+            if (paths.size && !linked && this.canvasIsOpen() && JSON.stringify(initial) === JSON.stringify(this.canvas.getData())) {
+                // Preserve completed work on the map. A later conversion then sees only
+                // the remaining text cards, rather than creating these notes twice.
+                const replacements = new Map([...paths].map(([id, path]) => [id, { id: crypto.randomUUID().replace(/-/g, ''), path }]));
+                const colors = new Map([...repaints].flatMap(([id, hex]) => replacements.has(id) ? [[replacements.get(id)!.id, hex] as const] : [])); // SAFE: checked above
+                const partial = repaintCards(linkSketches(initial, replacements), colors);
+                try {
+                    this.canvas.setData(partial);
+                    const actual = this.canvas.getData();
+                    if ([...replacements.values()].some(({ id, path }) => !actual.nodes?.some(node => node.id === id && node.type === 'file' && node.file === path))) throw new Error(t('ui.canvasSketch.changed'));
+                    this.canvas.requestSave(false);
+                    linked = true;
+                } catch (recoveryError) {
+                    console.error('[Canvas sketches] Could not link the notes already created', recoveryError);
+                    // Only restore our replacement while the Canvas still matches it;
+                    // never discard an intervening change made by the author.
+                    const current = this.canvas.getData();
+                    if (JSON.stringify(current) === JSON.stringify(partial)) {
+                        try { this.canvas.setData(initial); this.canvas.requestSave(false); }
+                        catch (restoreError) { console.error('[Canvas sketches] Could not restore the Canvas', restoreError); }
+                    }
+                }
+                if (linked) {
+                    const existing = this.ringsBook === book.id ? this.directory.filter(entry => !entry.pending).map(entry => entry.name) : [];
+                    try { await this.forgetConvertedCards(book, initial, [...paths.keys()], new Set([...created, ...existing])); }
+                    catch (memoryError) {
+                        console.error('[Canvas subplots] Could not save partially converted card choices', memoryError);
+                        message += ` ${t('ui.canvasSketch.cardMemoryNotSaved', { message: memoryError instanceof Error ? memoryError.message : String(memoryError) })}`;
+                    }
+                }
+            }
             if (paths.size === 0) new Notice(message, 12000);
-            else if (mode === 'scenes') new Notice(t('ui.canvasSketch.failedScenes', { scenes: tCount('scene', paths.size), message }), 12000);
-            else new Notice(t('ui.canvasSketch.failed', { count: paths.size, message }), 12000);
+            else {
+                const names = [...paths.values()].join('\n');
+                new Notice(t(linked ? 'ui.canvasSketch.partialLinked' : 'ui.canvasSketch.partialUnlinked', { paths: names, message }), 0);
+            }
         }
     }
 }

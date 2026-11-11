@@ -105,6 +105,24 @@ describe('Canvas scene conversion', () => {
         expect(test.getData().nodes?.[1].color).toBeUndefined();
     });
 
+    it('links scenes already created if a later scene cannot be written', async () => {
+        const test = scenes();
+        let count = 0;
+        test.app.vault.create = vi.fn(async (path, text) => {
+            if (++count === 2) throw new Error('Disk full');
+            test.saved.set(path, text);
+            return new TFile(path);
+        });
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            await convert(test);
+            expect([...test.saved.keys()]).toEqual(['Book/1 A scene.md']);
+            expect(test.getData().nodes?.[0]).toMatchObject({ type: 'file', file: 'Book/1 A scene.md' });
+            expect(test.getData().nodes?.[1]).toMatchObject({ type: 'text', id: '2' });
+            expect(test.activateView).not.toHaveBeenCalled();
+        } finally { error.mockRestore(); }
+    });
+
     it('gives a new subplot a free palette color its cards wear, as its own when ring order would give it another slot', async () => {
         const test = scenes();
         colorCards(test, [{ color: '#AA00FF', standing: { kind: 'palette' } }, { color: '#aa00ff', standing: { kind: 'palette' } }]);
@@ -530,8 +548,33 @@ describe('Canvas sketch conversion', () => {
         await Reflect.get(test.modal, 'convert').call(test.modal);
         expect(test.placements.get(file.path)).toEqual({ order: 10 });
         expect(test.placements.get('Book/A scene.md')).toEqual({ order: 20 });
-        expect(test.setData).not.toHaveBeenCalled();
+        expect(test.getData().nodes?.[0]).toMatchObject({ type: 'file', file: 'Book/A scene.md' });
+        expect(test.getData().nodes?.[1]).toMatchObject({ type: 'text', id: '2' });
+        expect(test.requestSave).toHaveBeenCalled();
         error.mockRestore();
+    });
+
+    it('keeps and links a created sketch if the later placement write fails', async () => {
+        const test = setup();
+        vi.spyOn(test.placements, 'set').mockRejectedValueOnce(new Error('disk full'));
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            await Reflect.get(test.modal, 'convert').call(test.modal);
+            expect(test.saved.get('Book/A scene 2.md')).toContain('Some ideas');
+            expect(test.getData().nodes?.[0]).toMatchObject({ type: 'file', file: 'Book/A scene 2.md' });
+            expect(test.placements.get('Book/A scene 2.md')).toBeUndefined();
+        } finally { error.mockRestore(); }
+    });
+
+    it('does not create notes when the placement store is unreadable', async () => {
+        const test = setup();
+        vi.spyOn(test.placements, 'assertWritable').mockRejectedValueOnce(new Error('unreadable'));
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            await Reflect.get(test.modal, 'convert').call(test.modal);
+            expect(test.saved.size).toBe(0);
+            expect(test.setData).not.toHaveBeenCalled();
+        } finally { error.mockRestore(); }
     });
 });
 

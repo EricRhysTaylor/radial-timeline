@@ -5855,6 +5855,8 @@ export const en = {
             command: "Turn Canvas cards into scenes or sketches",
             paletteCommand: "Canvas convert cards to scenes or sketches",
             orderRetained: 'Some existing sketch order values were retained; review their placement.',
+            partialLinked: 'The conversion stopped. These notes were created and linked to the Canvas:\n{{paths}}\nReview them before converting the remaining cards. {{message}}',
+            partialUnlinked: 'The conversion stopped. These notes were created but could not be linked to the Canvas:\n{{paths}}\nFind them in your book before trying again to avoid duplicates. {{message}}',
             openCanvas: 'Open a Canvas first.',
             noBook: 'Set up a book folder before creating sketches.',
             missingFolder: 'The selected book folder no longer exists.',

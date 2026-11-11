@@ -2364,8 +2364,11 @@ export class TimetableView extends BasesView {
             menu.addItem(item => item.setTitle(t('ui.timetable.canvasMapChoose')).setIcon('files').onClick(() => new CanvasWorkspacePicker(this.plugin.app, open).open()));
             menu.addSeparator();
             menu.addItem(item => item.setTitle(t('ui.timetable.canvasMapCreateAnother')).setIcon('plus').onClick(() => open(null)));
-            const rect = canvasButton.getBoundingClientRect();
-            menu.showAtPosition({ x: rect.left, y: rect.bottom }, canvasButton.ownerDocument);
+            // At narrow widths this button is hidden and the compact menu clicks
+            // it; a hidden button has no position, so open under the compact menu.
+            const anchor = canvasButton.isShown() ? canvasButton : toolbar.querySelector<HTMLElement>('.ert-timetable__compact-menu') ?? canvasButton;
+            const rect = anchor.getBoundingClientRect();
+            menu.showAtPosition({ x: rect.left, y: rect.bottom }, anchor.ownerDocument);
         });
         this.clearBasesHeaderControls();
         const baseContainer = this.rootEl.closest('.bases-view')?.parentElement;

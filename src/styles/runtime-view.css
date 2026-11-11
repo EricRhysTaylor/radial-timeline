@@ -152,17 +152,20 @@
 }
 
 .radial-timeline-svg[data-runtime-view="true"] .ert-character-lane-mark,
-.radial-timeline-svg[data-runtime-view="true"].scene-hover .ert-character-lane-mark:not(:hover) {
+.radial-timeline-svg[data-runtime-view="true"].scene-hover .ert-character-lane-mark:not(:hover),
+.radial-timeline-svg[data-runtime-view="true"].ert-scene-spotlight .ert-character-lane-mark {
   fill: var(--rt-color-runtime);
   fill-opacity: 0.15;
 }
 
-.radial-timeline-svg[data-runtime-view="true"].scene-hover .ert-character-lane-track {
+.radial-timeline-svg[data-runtime-view="true"].scene-hover .ert-character-lane-track,
+.radial-timeline-svg[data-runtime-view="true"].ert-scene-spotlight .ert-character-lane-track {
   stroke: var(--background-modifier-border);
   stroke-opacity: 0.5;
 }
 
-.radial-timeline-svg[data-runtime-view="true"].scene-hover .ert-character-lane-hover-backdrop {
+.radial-timeline-svg[data-runtime-view="true"].scene-hover .ert-character-lane-hover-backdrop,
+.radial-timeline-svg[data-runtime-view="true"].ert-scene-spotlight .ert-character-lane-hover-backdrop {
   stroke: transparent;
 }
 

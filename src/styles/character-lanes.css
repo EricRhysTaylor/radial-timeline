@@ -19,26 +19,32 @@
   fill: var(--ert-character-lane-color);
 }
 
-/* Match the muted scene slices while a scene is in focus. */
+/* Match the muted scene slices while a scene is in focus: hovered on the
+   timeline (.scene-hover) or from a Timetable row or canvas card
+   (.ert-scene-spotlight, SceneHighlighter). */
 .ert-character-lane-hover-backdrop {
   fill: none;
   stroke: transparent;
   pointer-events: none;
 }
 
-.radial-timeline-svg.scene-hover .ert-character-lane-hover-backdrop {
+.radial-timeline-svg.scene-hover .ert-character-lane-hover-backdrop,
+.radial-timeline-svg.ert-scene-spotlight .ert-character-lane-hover-backdrop {
   stroke: white;
 }
 
-.radial-timeline-svg.scene-hover .ert-character-lane-track {
+.radial-timeline-svg.scene-hover .ert-character-lane-track,
+.radial-timeline-svg.ert-scene-spotlight .ert-character-lane-track {
   stroke: var(--rt-color-empty-selected);
   stroke-opacity: 1;
 }
 
 /* The mark under the pointer is the active one: it keeps its color while every
    other mark steps back with the muted slices, and its character's name shows
-   beside it (.ert-character-lane-beside, AllScenesMode). */
-.radial-timeline-svg.scene-hover .ert-character-lane-mark:not(:hover) {
+   beside it (.ert-character-lane-beside, AllScenesMode). A spotlight from
+   another view has no pointer on the timeline, so every mark steps back. */
+.radial-timeline-svg.scene-hover .ert-character-lane-mark:not(:hover),
+.radial-timeline-svg.ert-scene-spotlight .ert-character-lane-mark {
   fill: var(--rt-color-empty-selected);
 }
 
@@ -62,7 +68,8 @@
   display: inline;
 }
 
-.radial-timeline-svg.ert-show-lane-names.scene-hover .ert-character-lane-names {
+.radial-timeline-svg.ert-show-lane-names.scene-hover .ert-character-lane-names,
+.radial-timeline-svg.ert-show-lane-names.ert-scene-spotlight .ert-character-lane-names {
   display: none;
 }
 

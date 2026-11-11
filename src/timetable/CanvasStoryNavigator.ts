@@ -12,7 +12,7 @@ import { StoryMapReviewModal, mapScenes } from './StoryMapReviewModal';
 import { diffStoryMap } from './storyMapDiff';
 import { isStoryMapProvenance } from './storyMapProvenance';
 
-type NodeData = { type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
+type NodeData = { id?: string; type?: string; file?: string; text?: string; x?: number; y?: number; width?: number; height?: number };
 type Canvas = { nodes?: Map<string, { nodeEl?: HTMLElement; getData?: () => NodeData }>; selection?: Set<{ getData?: () => NodeData }>; x?: number; y?: number; zoom?: number; getData?: () => StoryCanvasData; setData?: (data: StoryCanvasData) => void; requestSave?: (pushHistory?: boolean) => void; setViewport?: (x: number, y: number, zoom: number) => void; zoomToFit?: () => void; zoomToBbox?: (bounds: { minX: number; minY: number; maxX: number; maxY: number }) => void };
 
 /**

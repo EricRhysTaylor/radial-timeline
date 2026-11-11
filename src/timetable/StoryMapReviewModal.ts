@@ -10,8 +10,9 @@ import { diffStoryMap, type StoryMapScene } from './storyMapDiff';
 import { transposeStoryCanvas } from './canvasOrientation';
 import type { StoryCanvasData } from './canvasSketches';
 import { t } from '../i18n';
+import { selectedCanvasContents } from './storyMapLegacyCarry';
 
-type LiveCanvas = { getData?: () => StoryCanvasData };
+type LiveCanvas = { getData?: () => StoryCanvasData; selection?: Set<{ getData?: () => { id?: string } }> };
 
 export function mapScenes(plugin: RadialTimelinePlugin, provenance: StoryMapProvenance): StoryMapScene[] {
     const rows = plugin.app.vault.getMarkdownFiles()
@@ -30,10 +31,29 @@ export class StoryMapReviewModal extends ErtModal {
         this.mountHeader({ badge: { text: t('ui.storyMapReview.badge') }, title: t('ui.storyMapReview.title'), subtitle: this.file.basename });
         if (!isStoryMapProvenance(record) || !this.canvas.getData) {
             this.contentEl.createEl('p', { text: t('ui.storyMapReview.legacy') });
+            const source = this.canvas.getData?.();
+            const ids = [...(this.canvas.selection ?? [])].flatMap(item => {
+                const id = item.getData?.()?.id;
+                return typeof id === 'string' ? [id] : [];
+            });
+            let carryCount = 0;
+            let invalidSelection = false;
+            try { if (source && ids.length) carryCount = selectedCanvasContents(source, ids).nodes.length; } catch { invalidSelection = true; }
+            this.contentEl.createEl('p', { text: invalidSelection ? t('ui.storyMapReview.legacyInvalid') : carryCount ? t('ui.storyMapReview.legacySelected', { count: carryCount }) : t('ui.storyMapReview.legacySelect') });
             const actions = this.mountActions();
             actions.createEl('button', { text: t('ui.storyMapReview.close') }).addEventListener('click', () => this.close());
-            actions.createEl('button', { text: t('ui.storyMapReview.cleanCopy'), cls: 'ert-story-map-review__create mod-cta' }).addEventListener('click', () => {
+            actions.createEl('button', { text: t('ui.storyMapReview.cleanCopy'), cls: 'ert-story-map-review__create' }).addEventListener('click', () => {
                 this.close(); new SubplotCanvasModal(this.app, this.plugin).open();
+            });
+            const carry = actions.createEl('button', { text: t('ui.storyMapReview.carrySelection'), cls: 'ert-story-map-review__create mod-cta' });
+            carry.disabled = !source || !ids.length || !carryCount;
+            carry.addEventListener('click', () => {
+                if (!source) return;
+                const books = new Set((source.nodes ?? []).flatMap(node => typeof node.file === 'string' ? [getBookIdForPath(this.plugin.settings.books, node.file)] : []).filter((id): id is string => !!id));
+                const book = books.size === 1 ? [...books][0] : undefined;
+                const snapshot = JSON.parse(JSON.stringify(source)) as StoryCanvasData;
+                this.close();
+                new SubplotCanvasModal(this.app, this.plugin, book, undefined, { source: snapshot, selectedIds: ids, readCurrent: () => this.canvas.getData?.() }).open();
             });
             return;
         }

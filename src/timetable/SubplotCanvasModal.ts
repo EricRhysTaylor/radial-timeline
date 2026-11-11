@@ -7,6 +7,7 @@ import { buildTableRow, type TimetableRow } from './timetableModel';
 import { planSubplotCanvas, storyRangeBounds, storyRangeRows, type StoryRange } from './subplotCanvas';
 import { storyMapFolder, storyMapPrefix } from './storyMapPaths';
 import type { StoryCanvasData } from './canvasSketches';
+import { carryLegacySelection, selectedCanvasContents, type LegacyCanvasSelection } from './storyMapLegacyCarry';
 
 export class SubplotCanvasModal extends ErtModal {
     private bookId: string;
@@ -16,7 +17,7 @@ export class SubplotCanvasModal extends ErtModal {
     private layout: 'horizontal' | 'vertical' | 'story' = 'horizontal';
     private busy = false;
 
-    constructor(app: App, private readonly plugin: RadialTimelinePlugin, initialBookId?: string, private readonly onCreated?: (file: TFile) => Promise<void>) {
+    constructor(app: App, private readonly plugin: RadialTimelinePlugin, initialBookId?: string, private readonly onCreated?: (file: TFile) => Promise<void>, private readonly carry?: LegacyCanvasSelection) {
         super(app);
         this.bookId = initialBookId ?? getActiveBook(plugin.settings)?.id ?? ''; // SAFE: '' = no book yet; onOpen settles on the first book with a source folder
     }
@@ -60,6 +61,10 @@ export class SubplotCanvasModal extends ErtModal {
         laneRow.createDiv({ cls: 'setting-item-name', text: t('ui.subplotCanvas.subplot') });
         const laneSelect = new DropdownComponent(laneRow.createDiv({ cls: 'setting-item-control' }));
         const count = this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint' });
+        if (this.carry) {
+            const selected = selectedCanvasContents(this.carry.source, this.carry.selectedIds);
+            this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint', text: t('ui.storyMapReview.carryPreview', { cards: selected.nodes.length, edges: selected.edges.length }) });
+        }
         const actions = this.mountActions();
         const cancel = actions.createEl('button', { text: t('ui.subplotCanvas.cancel') });
         cancel.addEventListener('click', () => this.close());
@@ -103,7 +108,12 @@ export class SubplotCanvasModal extends ErtModal {
         const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot, layout: this.layout }, () => crypto.randomUUID().replace(/-/g, ''));
         const bounds = storyRangeBounds(plan.nodes, rows, this.act, this.subplot, this.range);
         if (!plan.sceneCount) { new Notice(t('ui.subplotCanvas.empty')); return; }
+        if (this.carry && JSON.stringify(this.carry.readCurrent()) !== JSON.stringify(this.carry.source)) {
+            new Notice(t('ui.storyMapReview.carryChanged'), 8000); this.close(); return;
+        }
         try {
+            const generated = JSON.parse(JSON.stringify({ nodes: plan.nodes, edges: plan.edges })) as StoryCanvasData;
+            const data = this.carry ? carryLegacySelection(this.carry.source, this.carry.selectedIds, generated).data : generated;
             const folder = storyMapFolder(book.sourceFolder);
             let current = '';
             for (const part of folder.split('/')) {
@@ -113,7 +123,7 @@ export class SubplotCanvasModal extends ErtModal {
             const prefix = storyMapPrefix(book);
             let path = `${prefix}.canvas`;
             for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${prefix} ${n}.canvas`;
-            const file = await this.app.vault.create(path, JSON.stringify({ nodes: plan.nodes, edges: plan.edges }, null, 2));
+            const file = await this.app.vault.create(path, JSON.stringify(data, null, 2));
             const scoped = storyRangeRows(rows, this.act, 'all').filter(row => this.subplot === null || row.subplots.includes(this.subplot));
             this.plugin.settings.storyMapProvenance = {
                 ...this.plugin.settings.storyMapProvenance,
@@ -121,7 +131,7 @@ export class SubplotCanvasModal extends ErtModal {
                     version: 1, bookId: book.id, generatedAt: new Date().toISOString(),
                     act: this.act, subplot: this.subplot, layout: this.layout, initialFocus: this.range,
                     scenes: scoped.map(row => ({ path: row.path, act: row.act, subplots: [...row.subplots] })),
-                    generated: JSON.parse(JSON.stringify({ nodes: plan.nodes, edges: plan.edges })) as StoryCanvasData,
+                    generated,
                 },
             };
             await this.plugin.saveSettings();

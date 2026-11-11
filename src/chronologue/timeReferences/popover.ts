@@ -78,6 +78,8 @@ export class ReferencePopover {
     private el: HTMLElement | null = null;
     /** Opened by a click to choose among references; hover leaves it alone until it closes. */
     pinned = false;
+    /** The marker a pinned popover was opened from, so Escape can hand keyboard focus back to it. */
+    private anchor: SVGElement | HTMLElement | null = null;
 
     constructor(private readonly doc: Document) {}
 
@@ -107,6 +109,7 @@ export class ReferencePopover {
         el.setCssProps({ '--ert-popover-left': `${at.left}px`, '--ert-popover-top': `${at.top}px` });
         this.el = el;
         this.pinned = !!choose;
+        this.anchor = choose && (anchor instanceof SVGElement || anchor instanceof HTMLElement) ? anchor : null;
         if (choose) el.querySelector<HTMLButtonElement>('button')?.focus();
     }
 
@@ -114,5 +117,13 @@ export class ReferencePopover {
         this.el?.remove();
         this.el = null;
         this.pinned = false;
+        this.anchor = null;
+    }
+
+    /** Close on Escape: when focus was in the popover, return it to the marker instead of dropping it on the page. */
+    dismiss(): void {
+        const anchor = this.el?.contains(this.doc.activeElement) ? this.anchor : null;
+        this.hide();
+        if (anchor?.isConnected) anchor.focus();
     }
 }

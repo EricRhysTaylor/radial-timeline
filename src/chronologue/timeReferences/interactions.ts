@@ -159,7 +159,7 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
         if (popover.pinned && !popover.contains(event.target) && !groupOf(event.target)) popover.hide();
     });
     view.renderScope.registerDomEvent(doc as unknown as HTMLElement, 'keydown', (event: Event) => {
-        if ((event as KeyboardEvent).key === 'Escape' && popover.pinned) popover.hide();
+        if ((event as KeyboardEvent).key === 'Escape' && popover.pinned) popover.dismiss();
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'wheel', () => popover.hide());
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'focusin', (event: Event) => {

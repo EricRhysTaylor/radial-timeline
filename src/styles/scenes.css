@@ -9,10 +9,16 @@
   text-shadow: none;
 }
 
-/* While the timeline is hovered, the other beat titles recede to a darker
-   gray so the hovered beat's white title stands out. */
-.radial-timeline-svg.scene-hover .rt-storybeat-title {
+/* While the timeline is hovered, or a Timetable or Canvas hover spotlights a
+   scene on it, the other beat titles recede to a darker gray so the active
+   beat's white title stands out. */
+.radial-timeline-svg.scene-hover .rt-storybeat-title,
+.radial-timeline-svg.ert-scene-spotlight .rt-storybeat-title {
   fill: var(--text-faint);
+}
+
+.radial-timeline-svg.ert-scene-spotlight .rt-storybeat-title.rt-selected {
+  fill: var(--rt-color-empty);
 }
 
 /* Hover: emphasize story beat titles with a solid black background using stroke */

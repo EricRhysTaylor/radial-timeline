@@ -1,7 +1,7 @@
 import type RadialTimelinePlugin from '../main';
 import { sceneCellColor } from '../utils/sceneCellColor';
 
-const SPOTLIGHT_SELECTOR = '.rt-scene-path, .rt-number-square, .rt-number-text, .rt-scene-title, .rt-discontinuity-marker';
+const SPOTLIGHT_SELECTOR = '.rt-scene-path, .rt-number-square, .rt-number-text, .rt-scene-title, .rt-storybeat-title, .rt-discontinuity-marker';
 
 export class SceneHighlighter {
     constructor(private plugin: RadialTimelinePlugin) {}
@@ -32,7 +32,7 @@ export class SceneHighlighter {
             groups.forEach(group => {
                 const scenePath = group.querySelector('.rt-scene-path');
                 scenePath?.classList.add('rt-selected');
-                group.querySelector('.rt-scene-title')?.classList.add('rt-selected');
+                group.querySelector('.rt-scene-title, .rt-storybeat-title')?.classList.add('rt-selected');
                 const sceneId = scenePath?.id;
                 if (!sceneId) return;
                 svg.querySelector(`.rt-number-square[data-scene-id="${sceneId}"]`)?.classList.add('rt-selected');

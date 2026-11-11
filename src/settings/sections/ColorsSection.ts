@@ -7,7 +7,7 @@ import { computeCacheableValues } from '../../renderer/utils/Precompute';
 import { DEFAULT_SETTINGS } from '../defaults';
 import { colorSwatch, type ColorSwatchHandle } from '../../ui/ui';
 import { completeHexColor } from '../../utils/colour';
-import { ERT_DATA, ERT_CLASSES } from '../../ui/classes';
+import { ERT_DATA } from '../../ui/classes';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { HERO_PATTERNS, DEFAULT_WORKING_PATTERN_ID, CUSTOM_PATTERN_ID_PREFIX, getHeroPattern, type HeroPattern } from '../../renderer/components/HeroPatterns';
 import { validateSvgPattern } from '../../renderer/components/heroPatternValidator';

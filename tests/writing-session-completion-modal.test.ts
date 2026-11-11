@@ -33,7 +33,7 @@ describe('writing session completion modal', () => {
         expect(scenesListBlock).toContain('overflow-y: auto');
         expect(scenesListBlock).toContain('max-height: min(28vh, 220px)');
         expect(compactSettingBlock).toContain('border-top: none');
-        expect(compactSettingBlock).toContain('display: contents');
+        expect(compactSettingBlock).toContain('grid-template-columns: subgrid');
         expect(compactInfoBlock).toContain('align-self: start');
         expect(compactControlBlock).toContain('align-self: start');
         expect(compactControlBlock).toContain('justify-self: end');

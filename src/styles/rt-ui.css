@@ -4386,15 +4386,22 @@
   padding-top: var(--ert-gap-md);
 }
 
+/* Each setting takes two of the grid's columns, its name and its control. */
 .ert-ui .ert-writing-session-compact-setting.setting-item {
   border-top: none;
-  padding-top: 0;
-  display: contents;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-column: span 2;
+  grid-template-columns: subgrid;
+  align-items: start;
 }
 
+/* Obsidian pads every modal setting after the first; these sit level in their row. */
 .ert-ui.ert-modal--writing-session .ert-writing-session-compact-setting.setting-item,
 .ert-ui .ert-modal--writing-session .ert-writing-session-compact-setting.setting-item {
   border-top: none;
+  padding: 0;
 }
 
 /* Share group: the note and the community-feed toggle read as one unit, so it

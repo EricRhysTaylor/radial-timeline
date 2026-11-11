@@ -1856,7 +1856,7 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  column-gap: 1ch;
+  gap: 0 1ch;
   min-width: 10.5ch;
 }
 

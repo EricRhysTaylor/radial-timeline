@@ -1516,8 +1516,11 @@
   grid-template-columns: fit-content(32ch) fit-content(20ch) max-content max-content max-content max-content;
 }
 
+/* Each row spans the grid and shares its columns, so the cells line up. */
 .ert-ui.ert-scope--modal .ert-apr-status-row {
-  display: contents;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
 }
 
 .ert-ui.ert-scope--modal .ert-apr-status-cell {

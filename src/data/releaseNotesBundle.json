@@ -5,7 +5,8 @@
       "title": "8.0.1",
       "body": "## Radial Timeline 8.0.1\n\nNew Story Vault editions for Radial Timeline 8.0.\n\n### Story Vaults\n\n- **The Story Vaults use Narration.** Pride & Prejudice, The Odyssey and Sherlock Holmes are repackaged with the 8.0 scene field, so a newly added Story Vault opens without the field-rename alert in Settings.\n- **Every book has a Timetable and a subplot map.** Each Story Vault includes a Timetable for each of its books and a Canvas map of its subplots with scene cards.\n- **Pride & Prejudice adds pictures of its nine places**, shown with the 29 character portraits in Timetable Panels. Its download is now 20 MB.\n- **An earlier Story Vault is offered the new edition.** When you open a vault from an earlier download, the Welcome screen offers the 2026-11-10 edition as a separate download.\n\n### Changes\n\n- **No Pro labels.** Settings, Inquiry, manuscript options and the runtime dialogs no longer mark features as Pro.",
       "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/8.0.1",
-      "publishedAt": "2026-11-11T03:19:50.877Z"
+      "publishedAt": "2026-11-11T03:22:27.840Z",
+      "isDraft": true
     },
     {
       "version": "8.0.0",
@@ -30,15 +31,7 @@
     "title": "8.0.1",
     "body": "## Radial Timeline 8.0.1\n\nNew Story Vault editions for Radial Timeline 8.0.\n\n### Story Vaults\n\n- **The Story Vaults use Narration.** Pride & Prejudice, The Odyssey and Sherlock Holmes are repackaged with the 8.0 scene field, so a newly added Story Vault opens without the field-rename alert in Settings.\n- **Every book has a Timetable and a subplot map.** Each Story Vault includes a Timetable for each of its books and a Canvas map of its subplots with scene cards.\n- **Pride & Prejudice adds pictures of its nine places**, shown with the 29 character portraits in Timetable Panels. Its download is now 20 MB.\n- **An earlier Story Vault is offered the new edition.** When you open a vault from an earlier download, the Welcome screen offers the 2026-11-10 edition as a separate download.\n\n### Changes\n\n- **No Pro labels.** Settings, Inquiry, manuscript options and the runtime dialogs no longer mark features as Pro.",
     "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/8.0.1",
-    "publishedAt": "2026-11-11T03:19:50.877Z"
-  },
-  "patches": [
-    {
-      "version": "8.0.1",
-      "title": "8.0.1",
-      "body": "## Radial Timeline 8.0.1\n\nNew Story Vault editions for Radial Timeline 8.0.\n\n### Story Vaults\n\n- **The Story Vaults use Narration.** Pride & Prejudice, The Odyssey and Sherlock Holmes are repackaged with the 8.0 scene field, so a newly added Story Vault opens without the field-rename alert in Settings.\n- **Every book has a Timetable and a subplot map.** Each Story Vault includes a Timetable for each of its books and a Canvas map of its subplots with scene cards.\n- **Pride & Prejudice adds pictures of its nine places**, shown with the 29 character portraits in Timetable Panels. Its download is now 20 MB.\n- **An earlier Story Vault is offered the new edition.** When you open a vault from an earlier download, the Welcome screen offers the 2026-11-10 edition as a separate download.\n\n### Changes\n\n- **No Pro labels.** Settings, Inquiry, manuscript options and the runtime dialogs no longer mark features as Pro.",
-      "url": "https://github.com/EricRhysTaylor/Radial-Timeline/releases/tag/8.0.1",
-      "publishedAt": "2026-11-11T03:19:50.877Z"
-    }
-  ]
+    "publishedAt": "2026-11-11T03:22:27.840Z",
+    "isDraft": true
+  }
 }

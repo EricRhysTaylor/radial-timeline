@@ -72,6 +72,4 @@ console.log('- If styles changed, verify no clipped text, overlap, or broken spa
 console.log('- If publishing/export changed, manually open one generated artifact and test file/folder reveal.');
 console.log('- If AI surfaces changed, turn AI Off and confirm the UI behaves like AI is actually unavailable.');
 console.log('- Re-read README disclosures and confirm they still match the shipped behavior.');
-console.log('- Pride & Prejudice: verify the release tag contains b8cc1b9f and its packaged Timetable opens without a duplicate in a fresh profile.');
-console.log('- Coordinate the dated Pride & Prejudice candidate with this plugin release; verify the exact archive and released plugin together before updating its catalog. See docs/releases/pre-release-eyeball-checklist.md.');
-console.log('- Odyssey and Sherlock next editions: verify both separate-vault opening and Add story to this vault, including narration, Timetables and Canvas references, before updating their catalogs.');
+console.log('- If this release carries a new Story Vault edition, test the exact archive as a separate vault and through Add story to this vault before updating its catalog. See docs/releases/pre-release-eyeball-checklist.md.');

@@ -195,7 +195,7 @@ export class SketchDrawer extends Component {
         this.barEl.empty();
 
         // The title is the file name without its number; a placeholder name shows as an empty field.
-        const titleField = this.barEl.createEl('label', { cls: 'ert-timetable__drawer-field' });
+        const titleField = this.barEl.createEl('label', { cls: 'ert-timetable__drawer-field is-title' });
         titleField.createSpan({ text: t('ui.timetable.drawerTitle') });
         const titleInput = titleField.createEl('input', { type: 'text', cls: 'ert-timetable__drawer-title' });
         const sketchName = t('ui.timetable.newSketchName');

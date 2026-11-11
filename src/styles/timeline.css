@@ -2678,11 +2678,11 @@
   color: var(--ert-community-gold);
 }
 
-.menu-item:has(.ert-desk-lamps-row.is-lit) .menu-item-icon {
+.menu-item.ert-desk-lamps-item-lit .menu-item-icon {
   color: var(--ert-community-gold);
 }
 
-.menu-item.is-disabled:has(.ert-desk-lamps-row.is-lit) {
+.menu-item.is-disabled.ert-desk-lamps-item-lit {
   opacity: 1;
 }
 

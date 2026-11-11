@@ -311,6 +311,11 @@ function openUrl(url: string): void {
     window.open(url, '_blank');
 }
 
+/** A lit row's menu item carries a class, so its icon can wear the lamp's gold without :has(). */
+function markLitMenuItem(row: HTMLElement): void {
+    row.closest('.menu-item')?.toggleClass('ert-desk-lamps-item-lit', row.hasClass('is-lit'));
+}
+
 /**
  * The living list, just below the lamp: up to 12 rows (all of them after
  * "N more at their desks"), then your own lamp, invites waiting, and
@@ -343,6 +348,7 @@ export function openDeskLampsMenu(anchor: HTMLElement, deskLamps: DeskLamps, sho
                 item.setTitle(title)
                     .setIcon(off ? 'lamp' : onBreak ? 'pause' : 'lamp-ceiling')
                     .onClick(() => openUrl(profileUrl(handle)));
+                markLitMenuItem(text);
             });
         }
         if (list.hiddenLamps > 0) {
@@ -360,6 +366,7 @@ export function openDeskLampsMenu(anchor: HTMLElement, deskLamps: DeskLamps, sho
         const text = title.createSpan({ cls: 'ert-desk-lamps-row', text: ownDeskLampLine(view.own) });
         text.classList.toggle('is-lit', view.own.kind === 'on' && view.own.state === 'lit');
         item.setTitle(title).setIcon('lamp-ceiling').setDisabled(true);
+        markLitMenuItem(text);
     });
     const invites = view.answer?.invites_received ?? 0; // SAFE: before the first answer no invite is known
     if (invites > 0) {

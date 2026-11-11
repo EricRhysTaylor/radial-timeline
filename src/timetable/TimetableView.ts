@@ -1946,6 +1946,7 @@ export class TimetableView extends BasesView {
         const scrollParent = this.rootEl.parentElement;
         const scrollTop = scrollParent?.scrollTop ?? 0;
         this.rootEl.empty();
+        this.rootEl.toggleClass('is-outline-layout', outline);
         // The peek's cell is gone; refindPeekCell brings it back once the rows are drawn.
         this.peek?.hide();
         this.mountPatternDefs();
@@ -3181,6 +3182,7 @@ export class TimetableView extends BasesView {
                     const toggle = panel.createEl('button', { cls: 'ert-timetable__drawer-toggle', text: this.drawerIsOpen(row.path) ? t('ui.timetable.panelCloseSketch') : t('ui.timetable.panelExpandSketch') });
                     toggle.setAttr('aria-expanded', String(this.drawerIsOpen(row.path)));
                     if (this.drawerIsOpen(row.path)) {
+                        panel.addClass('has-drawer');
                         const holder = panel.createDiv({ cls: 'ert-timetable__drawer-row' });
                         const drawer = this.drawerFor(entry.file);
                         holder.appendChild(drawer.el);

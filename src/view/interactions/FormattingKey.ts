@@ -101,6 +101,7 @@ class FormattingKey extends Component {
         surface.createDiv({ cls: 'ert-format-key__note', text: t('ui.formatKey.exportNote') });
 
         for (const control of Array.from(this.panel.querySelectorAll<HTMLButtonElement>('button'))) control.disabled = reading;
+        this.panel.toggleClass('is-reading', reading);
         this.place();
     }
 

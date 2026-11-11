@@ -1,6 +1,6 @@
 {
   "sample_id": "sherlock-holmes",
-  "edition": "2026-10-30",
+  "edition": "2026-11-10",
   "display_name": "Obsidian Vault Sherlock Holmes Demo",
   "book_folder": "01 A Study in Scarlet",
   "source_layout": "gutenberg-holmes-html",
@@ -481,6 +481,14 @@
     "Radial Timeline/Inquiry/Sessions/sessions.json",
     "Sample Vault Config.md",
     "Source Record.md",
-    "Story Structure.md"
+    "Story Structure.md",
+    "Radial Timeline/Story Maps/A Study in Scarlet - Subplot Map.canvas",
+    "Radial Timeline/Story Maps/The Hound of the Baskervilles - Subplot Map.canvas",
+    "Radial Timeline/Story Maps/The Sign of the Four - Subplot Map.canvas",
+    "Radial Timeline/Story Maps/The Valley of Fear - Subplot Map.canvas",
+    "Radial Timeline/Timetables/A Study in Scarlet.base",
+    "Radial Timeline/Timetables/The Hound of the Baskervilles.base",
+    "Radial Timeline/Timetables/The Sign of the Four.base",
+    "Radial Timeline/Timetables/The Valley of Fear.base"
   ]
 }

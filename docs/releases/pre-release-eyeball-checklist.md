@@ -41,9 +41,10 @@ Use this after the code/tests/gates are green and before shipping the next relea
 - Release notes match what actually changed.
 - Privacy/security wording is still accurate.
 
-## Pride & Prejudice Story Vault coordination
+## Story Vault editions
 
-- Confirm the plugin release tag contains commit `b8cc1b9f` (portable Timetable adoption). In a fresh profile, opening the candidate's Timetable must open the packaged Base without creating a second file.
-- Build the next Pride & Prejudice edition from its canonical vault using `scripts/demo-vaults/pride-and-prejudice-next.json`; set the contract's edition to the actual release date. Test the exact dated archive with the plugin release, including its Canvas, images and saved Inquiry.
-- Publish the accepted vault edition with the plugin release, verify the public download, then update the catalog URL, hash, size and edition. Until then, the existing catalog remains the published edition and the new vault is a candidate.
-- Odyssey and Sherlock also have pending `*-next.json` contracts with narration overrides, book Timetables and maps. At their respective releases, assign actual edition dates, rebuild and check the exact ZIPs both as separate vaults and through **Add story to this vault** using the released plugin. Confirm all imported map cards and Base filters point inside their demo projects. Update their catalog entries only after the accepted archives are publicly available and verified.
+Only when a release carries a new Story Vault edition:
+
+- Set the contract's `edition` (`scripts/demo-vaults/<sample-id>.json`) to the release date and rebuild from the canonical vault.
+- Test the exact archive both as a separate vault and through **Add story to this vault** with the plugin being released: its Timetable opens the packaged Base without a second file, its Canvas cards and Base filters point inside the demo project, its pictures load and its saved Inquiry opens.
+- Upload it to its new dated object path, leaving earlier editions in place because released plugins pin their hashes, and verify the public download. Then update the catalog URL, hash, size and edition in `src/settings/bonusVaults.ts` and the Story Vault go-links.

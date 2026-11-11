@@ -89,9 +89,9 @@ Test the exact extracted ZIP in a fresh profile: sample detection, book initiali
 
 | Sample | Included analysis | Release |
 |---|---|---|
-| Pride & Prejudice | 61 chapters with Pulse and Places, 15 beats with four reviewed October Gossamer signals, 3 saved Inquiry sessions, 29 character portraits | Edition `2026-10-30.3` (stamped); published direct download; catalog pins the live ZIP |
-| The Odyssey | 89 scenes with Pulse, 12 beats with four Gossamer signals, 3 saved Inquiry sessions | Edition `2026-10-30` (stamped, unwrapped paragraphs); published direct download |
-| Sherlock Holmes | Four novels / 56 chapters with Pulse, 41 beats with four Gossamer signals, 12 saved Inquiry sessions | Edition `2026-10-30` (stamped); published direct download; catalog pins the live ZIP |
+| Pride & Prejudice | 61 chapters with Pulse and Places, 15 beats with four reviewed October Gossamer signals, 3 saved Inquiry sessions, 29 character portraits, nine place pictures, Timetable and subplot Canvas | Edition `2026-11-10` (stamped); published direct download; catalog pins the live ZIP |
+| The Odyssey | 89 scenes with Pulse, 12 beats with four Gossamer signals, 3 saved Inquiry sessions, Timetable and subplot Canvas | Edition `2026-11-10` (stamped, unwrapped paragraphs); published direct download; catalog pins the live ZIP |
+| Sherlock Holmes | Four novels / 56 chapters with Pulse, 41 beats with four Gossamer signals, 12 saved Inquiry sessions, a Timetable and subplot Canvas per novel | Edition `2026-11-10` (stamped); published direct download; catalog pins the live ZIP |
 
 Older Gossamer runs remain explicitly identified as history in the guide. The updated readings are the October 2 Claude Opus 5.5 runs. No blanket claim is made that every historical analysis used that model.
 

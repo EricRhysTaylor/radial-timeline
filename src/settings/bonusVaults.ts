@@ -45,12 +45,12 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         // Austen's narrator stays close to Elizabeth: third person.
         books: [{ title: 'Pride & Prejudice', sourceFolder: 'Pride & Prejudice', narrationMode: 'third' }],
         archive: {
-            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/pride-and-prejudice/2026-10-30.3/pride-and-prejudice-demo-vault.zip',
+            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/pride-and-prejudice/2026-11-10/pride-and-prejudice-demo-vault.zip',
             downloadUrl: 'https://community.radialtimeline.com/go/rt-welcome-demo-download',
-            sha256: '245fd9d86856da7b7e7b749d4e86d2ba19e6d5927efa069047073b32fdab25c6',
-            bytes: 1505588,
+            sha256: '6545a6bb03684d41aabdbc36960cbd12e5089966a6f811180ec66dfbefab5455',
+            bytes: 21007200,
             root: 'Pride & Prejudice Demo Vault',
-            edition: '2026-10-30.3'
+            edition: '2026-11-10'
         }
     },
     {
@@ -65,12 +65,12 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
         // Homer's narrator sees everything; the scenes Odysseus tells himself (Books 9 to 12) say first.
         books: [{ title: 'The Odyssey', sourceFolder: 'The Odyssey', narrationMode: 'omni' }],
         archive: {
-            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/odyssey/2026-10-30/odyssey-demo-vault.zip',
+            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/odyssey/2026-11-10/odyssey-demo-vault.zip',
             downloadUrl: 'https://community.radialtimeline.com/go/rt-welcome-odyssey-download',
-            sha256: 'bbce39e69ed818c5ff3cfe101126e3d5b6893961d762654e9311d6d52c61c430',
-            bytes: 1091408,
+            sha256: 'd5bd5ed370e94cabaf62db5c106f986513530c57273d5a58e3e3d86575c85b3a',
+            bytes: 1105676,
             root: 'Obsidian Vault Odyssey Demo',
-            edition: '2026-10-30'
+            edition: '2026-11-10'
         }
     },
     {
@@ -90,12 +90,12 @@ export const BONUS_VAULTS: readonly BonusVaultDef[] = [
             { title: 'The Valley of Fear', sourceFolder: '04 The Valley of Fear', narrationMode: 'first' }
         ],
         archive: {
-            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/sherlock-holmes/2026-10-30/sherlock-holmes-demo-vault.zip',
+            url: 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/storage/v1/object/public/demo-vault/sherlock-holmes/2026-11-10/sherlock-holmes-demo-vault.zip',
             downloadUrl: 'https://community.radialtimeline.com/go/rt-welcome-sherlock-download',
-            sha256: '81095e9e911c74e117f1c73fa176b766be964b62d41b43998039249c75d7978a',
-            bytes: 5483224,
+            sha256: 'b5e938c51dbd19fa44ca53cf176a184a4786a94604bebec17c4589091f209293',
+            bytes: 5492385,
             root: 'Obsidian Vault Sherlock Holmes Demo',
-            edition: '2026-10-30'
+            edition: '2026-11-10'
         }
     },
     {

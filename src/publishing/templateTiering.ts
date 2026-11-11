@@ -3,8 +3,8 @@ import type { PandocLayoutTemplate, TemplateKind, TemplateTier, ValidationIssue 
 export const BASIC_MANUSCRIPT_LAYOUT_ID = 'bundled-fiction-classic-manuscript';
 export const CONTEMPORARY_LITERARY_LAYOUT_ID = 'bundled-fiction-contemporary-literary';
 
-export const TEMPLATE_ACCESS_FALLBACK_MESSAGE = 'The saved PDF style is a Pro style. This export will use Basic instead.';
-export const TEMPLATE_ACCESS_LOCKED_MESSAGE = 'The selected PDF style is a Pro style, and no Core fallback is available.';
+export const TEMPLATE_ACCESS_FALLBACK_MESSAGE = "The saved PDF style isn't available in this vault. This export will use Basic instead.";
+export const TEMPLATE_ACCESS_LOCKED_MESSAGE = "The selected PDF style isn't available in this vault, and no fallback style is available.";
 
 export interface TemplateAccessResolution {
     requestedLayout?: PandocLayoutTemplate;
@@ -127,7 +127,7 @@ export function resolveTemplateAccess(params: {
                 buildIssue(
                     'info',
                     tier === 'free' ? 'template_access_core_included' : 'template_access_requires_pro',
-                    tier === 'free' ? 'Included with Core.' : 'Pro workflow.',
+                    tier === 'free' ? 'Available in every vault.' : 'Available in this vault.',
                     requestedLayout.id
                 ),
             ],
@@ -144,7 +144,7 @@ export function resolveTemplateAccess(params: {
             usedFallback: true,
             issues: [
                 buildIssue('warning', 'template_access_fallback_to_basic', TEMPLATE_ACCESS_FALLBACK_MESSAGE, requestedLayout.id),
-                buildIssue('info', 'template_access_core_included', 'Included with Core.', fallbackLayout.id),
+                buildIssue('info', 'template_access_core_included', 'Available in every vault.', fallbackLayout.id),
             ],
         };
     }
@@ -155,7 +155,7 @@ export function resolveTemplateAccess(params: {
         usedFallback: false,
         issues: [
             buildIssue('error', 'template_access_locked_no_fallback', TEMPLATE_ACCESS_LOCKED_MESSAGE, requestedLayout.id),
-            buildIssue('info', 'template_access_requires_pro', 'Pro workflow.', requestedLayout.id),
+            buildIssue('info', 'template_access_requires_pro', 'Not available in this vault.', requestedLayout.id),
         ],
     };
 }

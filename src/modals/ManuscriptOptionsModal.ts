@@ -56,6 +56,7 @@ import {
     type SpreadStatus,
     type SpreadValidationContext,
 } from '../publishing/layoutVisuals';
+import { ERT_CLASSES } from '../ui/classes';
 import { buildSpreadValidationContext, collectSpreadWarningTooltips } from '../publishing/spreadValidationContext';
 import { getExportValidationIssues } from '../services/PublishingValidationService';
 import type {

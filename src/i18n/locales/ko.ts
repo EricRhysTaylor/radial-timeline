@@ -486,7 +486,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             header: {
                 name: '런타임 추정',
                 desc: '서사 모드, 타임라인 호버, 런타임 도구 전반에서 읽기, 나레이션, 시나리오 런타임을 추정합니다.',
-                badgeText: 'Pro',
             },
             contentType: {
                 name: '콘텐츠 유형',
@@ -596,7 +595,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             },
             prompts: {
                 name: 'Inquiry 프롬프트',
-                proTag: 'Pro',
                 alreadyAddedTag: '이미 추가됨',
                 alreadyAdded: '이미 추가됨 — 기존 질문으로 이동했습니다',
                 dragToReorder: '드래그하여 순서 변경',
@@ -2408,7 +2406,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             errorPrefix: '오류: {{error}}',
         },
         runtimeModal: {
-            badgePro: 'PRO',
             badgeAudiobook: '오디오북',
             badgeScreenplay: '시나리오',
             badgeRuntime: '런타임 · {{mode}}',
@@ -3261,7 +3258,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             statusHeading: '상태',
             sharingOutputPill: '공유 출력',
             campaignStatusHeading: '캠페인 상태',
-            proPill: 'Pro',
             noCampaigns: '아직 캠페인이 없습니다.',
             columnApr: 'APR',
             columnBookTitle: '책 제목',
@@ -3618,7 +3614,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             reminderIn: '{{days}}일 후 알림',
             autoUpdateDue: '자동 업데이트 예정',
             autoUpdateIn: '{{days}}일 후 자동 업데이트',
-            proBadge: 'PRO',
             title: '캠페인 관리자',
             desc: '새로 고침 일정이 각각 다른 여러 내보내기 대상을 만드세요. Kickstarter, Patreon, 뉴스레터, 웹사이트 내보내기를 따로 관리하기에 적합합니다.',
             emptyState: '아직 캠페인이 없습니다. 여러 내보내기 대상을 추적하려면 첫 캠페인을 만드세요.',
@@ -3816,7 +3811,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             runtimeNovel: '런타임 모드 전환 (오디오북/소설)',
         },
         colorsSection: {
-            proBadge: 'PRO',
             customPatternsTitle: '사용자 지정 패턴',
             customPatternsDescLead: '다음 사이트에서 원하는 패턴을 붙여 넣어 Working 장면 채우기로 사용하세요: ',
             customPatternsDescTail: ' (Hero Patterns의 패턴은 Creative Commons 4.0 라이선스에 따라 무료입니다.)',
@@ -4332,7 +4326,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             warnPageTwiceFolio: '머리글 모서리 {{corner}}에서 "페이지 #"를 사용하지만 폴리오가 페이지 하단에 표시됩니다 — 쪽 번호가 두 번 표시됩니다. 해당 모서리에 쪽 번호가 아닌 필드를 선택하거나 충돌하는 설정을 변경하세요.',
             warnNameExists: '같은 이름의 스타일이 이미 있습니다. 저장할 때 이름 뒤에 접미사가 붙습니다(예: "-2").',
             warnFontNotInstalled: '{{font}}이(가) 설치되어 있지 않습니다. 글꼴 행 옆의 설치를 클릭하거나 다른 글꼴을 선택하세요 — 해결될 때까지 내보내기가 실패합니다.',
-            proBadge: 'PRO',
             viewLatex: 'LaTeX 보기',
             updateStyle: '스타일 업데이트',
             saveStyle: '스타일 저장',
@@ -5700,7 +5693,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             noLayoutsFor: '{{preset}}용 레이아웃이 없습니다.',
             manageLayouts: '레이아웃 관리…',
             choosePdfLayout: '계속하려면 PDF 레이아웃을 선택하세요.',
-            proPill: 'Pro',
             layoutSummaryBook: '부 페이지, 에피그래프 지원, 장 처리를 갖춘 단행본 스타일.',
             layoutSummaryLiterary: '장면 시작 제어와 세련된 머리글을 갖춘 문학 스타일.',
             layoutSummaryReadingDraft: '깔끔한 머리글과 편안한 책 페이지 간격을 갖춘 세련된 읽기용 초고 스타일.',
@@ -6846,8 +6838,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             layoutNameRequired: '레이아웃 이름은 필수입니다.',
             installed: '설치됨',
             notInstalled: '설치되지 않음',
-            tierPro: 'Pro',
-            tierCore: 'Core',
             fontsInstallWithSetup: '글꼴은 설정과 함께 설치됩니다',
             needsFont: '필요한 글꼴: {{font}}',
             howToInstall: '설치 방법',

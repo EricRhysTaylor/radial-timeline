@@ -107,16 +107,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
         .setHeading()
         .setDesc(t('settings.runtime.header.desc'));
     addWikiLink(runtimeHeader, 'Settings-Core#runtime-estimation');
-    const runtimeHeaderLayout = applyErtHeaderLayout(runtimeHeader);
-    if (runtimeHeaderLayout) {
-        runtimeHeaderLayout.header.removeClass(ERT_CLASSES.HEADER_NO_LEFT);
-        const badgeEl = runtimeHeaderLayout.left.createSpan({
-            cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_PRO} ${ERT_CLASSES.BADGE_PILL_SM}`
-        });
-        const badgeIcon = badgeEl.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
-        setIcon(badgeIcon, 'signature');
-        badgeEl.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('settings.runtime.header.badgeText') });
-    }
+    applyErtHeaderLayout(runtimeHeader);
 
     // Content host within runtime card — all runtime rows re-render inside this element
     const runtimeBody = proContainer.createDiv({ cls: ERT_CLASSES.STACK });

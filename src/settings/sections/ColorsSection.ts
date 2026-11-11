@@ -196,9 +196,6 @@ function renderCustomPatternsCard(
 
     const headerRow = card.createDiv({ cls: 'ert-custom-patterns-header' });
     const titleWrap = headerRow.createDiv({ cls: 'ert-custom-patterns-title' });
-    const proPill = titleWrap.createSpan({ cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_PRO}` });
-    setIcon(proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON }), 'signature');
-    proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.colorsSection.proBadge') });
     titleWrap.createSpan({ text: t('ui.colorsSection.customPatternsTitle'), cls: 'ert-custom-patterns-title-text' });
 
     const desc = card.createEl('p', { cls: 'ert-color-section-desc' });

@@ -2701,26 +2701,12 @@
   justify-content: flex-start;
 }
 
-/* Combined mode badge — nested PRO chip + DESIGN/EDIT label in one pill.
-   PRO is downsized so it reads as a "stamp" on the larger badge. The
-   left padding is gap-tight (6px) so the inset PRO pill has breathing
-   room from the outer badge's left border — earlier 1px felt cramped. */
-.ert-ui .ert-modal-badge--with-pro {
-  padding-left: var(--ert-gap-tight);
-}
-.ert-ui .ert-modal-badge--with-pro .ert-modal-badge__label {
+/* Mode badge label (DESIGN / EDIT) */
+.ert-ui .ert-modal-badge__label {
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-/* Uniformly scale down the canonical PRO pill so interior proportions
-   (icon size, padding, border-radius, font weight, kerning) all scale
-   together. `zoom` also shrinks the layout box, so we don't reserve
-   full-size space. No manual font/padding overrides — the canonical
-   .ert-badgePill rules do the work. */
-.ert-ui .ert-modal-badge__pro-inline {
-  zoom: 0.7;
 }
 
 .ert-style-wizard__meta {

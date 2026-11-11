@@ -472,7 +472,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "header": {
                 "name": "การประมาณค่ารันไทม์",
                 "desc": "ประมาณการการอ่าน การบรรยาย และรันไทม์ของบทภาพยนตร์ในโหมดการเล่าเรื่อง, ไทม์ไลน์โฮเวอร์ และเครื่องมือรันไทม์",
-                "badgeText": "ซึ่งสนับสนุน"
             },
             "contentType": {
                 "name": "ชนิดของเนื้อหา",
@@ -582,7 +581,6 @@ export const th: DeepPartial<TranslationKeys> = {
             },
             "prompts": {
                 "name": "Inquiry แจ้งเตือน",
-                "proTag": "ซึ่งสนับสนุน",
                 "alreadyAddedTag": "เพิ่มแล้ว",
                 "alreadyAdded": "เพิ่มแล้ว — ย้ายไปยังคำถามที่มีอยู่",
                 "dragToReorder": "ลากเพื่อจัดเรียงใหม่",
@@ -2393,7 +2391,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "errorPrefix": "ข้อผิดพลาด: {{error}}"
         },
         "runtimeModal": {
-            "badgePro": "PRO",
             "badgeAudiobook": "หนังสือเสียง",
             "badgeScreenplay": "บทหนัง",
             "badgeRuntime": "รันไทม์ · {{mode}}",
@@ -3268,7 +3265,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "statusHeading": "สถานะ",
             "sharingOutputPill": "การแบ่งปันผลลัพธ์",
             "campaignStatusHeading": "สถานะแคมเปญ",
-            "proPill": "ซึ่งสนับสนุน",
             "noCampaigns": "ยังไม่มีแคมเปญ",
             "columnApr": "เห.",
             "columnBookTitle": "ชื่อหนังสือ",
@@ -3625,7 +3621,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "reminderIn": "เตือนความจำใน {{days}}D",
             "autoUpdateDue": "อัปเดตอัตโนมัติเนื่องจาก",
             "autoUpdateIn": "อัปเดตอัตโนมัติใน {{days}}D",
-            "proBadge": "PRO",
             "title": "ตัวจัดการแคมเปญ",
             "desc": "สร้างปลายทางการส่งออกหลายแห่งด้วยกำหนดการรีเฟรชอิสระ เหมาะสำหรับการจัดการการส่งออก Kickstarter, Patreon, จดหมายข่าวและเว็บไซต์แยกต่างหาก",
             "emptyState": "ยังไม่มีแคมเปญ สร้างแคมเปญแรกของคุณเพื่อติดตามปลายทางการส่งออกหลายแห่ง",
@@ -3823,7 +3818,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "runtimeNovel": "สลับโหมดรันไทม์ (หนังสือเสียง/นวนิยาย)"
         },
         "colorsSection": {
-            "proBadge": "PRO",
             "customPatternsTitle": "รูปแบบที่กำหนดเอง",
             "customPatternsDescLead": "วางลวดลายใด ๆ จาก ",
             "customPatternsDescTail": " และใช้เป็นฉากการทำงานของคุณ รูปแบบจากรูปแบบฮีโร่นั้นฟรีภายใต้ใบอนุญาต Creative Commons 4.0",
@@ -4339,7 +4333,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "warnPageTwiceFolio": "หัวมุม {{corner}} ใช้ \"หน้า #\" แต่โฟลิโอจะแสดงที่ด้านล่างของหน้า - หมายเลขหน้าจะปรากฏขึ้นสองครั้ง เลือกฟิลด์ที่ไม่ใช่หน้าสำหรับสิ่งนั้น มุมหรือเปลี่ยนการตั้งค่าที่ขัดแย้งกัน",
             "warnNameExists": "มีสไตล์ที่มีชื่อนี้อยู่แล้ว ชื่อที่บันทึกไว้จะถูกต่อท้าย (เช่น \"-2\")",
             "warnFontNotInstalled": "ไม่ได้ติดตั้ง {{font}} คลิก ติดตั้ง ถัดจากแถวแบบอักษร หรือเลือกแบบอักษรอื่น — การส่งออกจะล้มเหลวจนกว่าจะได้รับการแก้ไข",
-            "proBadge": "PRO",
             "viewLatex": "ดู LaTeX",
             "updateStyle": "สไตล์การอัพเดท",
             "saveStyle": "บันทึกสไตล์",
@@ -5707,7 +5700,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "noLayoutsFor": "ไม่มีเลย์เอาต์สำหรับ {{preset}}",
             "manageLayouts": "จัดการเค้าโครง…",
             "choosePdfLayout": "เลือกเลย์เอาต์ PDF เพื่อดำเนินการต่อ",
-            "proPill": "ซึ่งสนับสนุน",
             "layoutSummaryBook": "การจัดรูปแบบหนังสือด้วยหน้าส่วน การสนับสนุน epigraph และการรักษาบท",
             "layoutSummaryLiterary": "สไตล์วรรณกรรมพร้อมตัวควบคุมที่เปิดฉากและหัววิ่งขัดมัน",
             "layoutSummaryReadingDraft": "รูปแบบการอ่านที่ขัดเกลาพร้อมส่วนหัวที่สะอาดและระยะห่างหน้าหนังสือที่สะดวกสบาย",
@@ -6853,8 +6845,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "layoutNameRequired": "ต้องระบุชื่อเค้าโครง",
             "installed": "ที่ติดตั้ง",
             "notInstalled": "ไม่ได้ติดตั้ง",
-            "tierPro": "ซึ่งสนับสนุน",
-            "tierCore": "แกน",
             "fontsInstallWithSetup": "แบบอักษรติดตั้งด้วยการตั้งค่า",
             "needsFont": "ต้องการแบบอักษร: {{font}}",
             "howToInstall": "ติดตั้งอย่างไร",

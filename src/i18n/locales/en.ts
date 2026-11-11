@@ -482,7 +482,6 @@ export const en = {
             header: {
                 name: 'Runtime estimation',
                 desc: 'Estimate reading, narration, and screenplay runtime across Narrative mode, timeline hover, and runtime tools.',
-                badgeText: 'Pro',
             },
             contentType: {
                 name: 'Content type',
@@ -564,7 +563,6 @@ export const en = {
             },
             prompts: {
                 name: 'Inquiry prompts',
-                proTag: 'Pro',
                 alreadyAddedTag: 'Already added',
                 alreadyAdded: 'Already added \u2014 moved to existing question',
                 dragToReorder: 'Drag to reorder',
@@ -2081,7 +2079,6 @@ export const en = {
             errorPrefix: 'Error: {{error}}',
         },
         runtimeModal: {
-            badgePro: 'PRO',
             badgeAudiobook: 'Audiobook',
             badgeScreenplay: 'Screenplay',
             badgeRuntime: 'Runtime · {{mode}}',
@@ -2939,7 +2936,6 @@ export const en = {
             statusHeading: 'Status',
             sharingOutputPill: 'Sharing output',
             campaignStatusHeading: 'Campaign status',
-            proPill: 'Pro',
             noCampaigns: 'No campaigns yet.',
             columnApr: 'APR',
             columnBookTitle: 'Book Title',
@@ -3296,7 +3292,6 @@ export const en = {
             reminderIn: 'Reminder in {{days}}d',
             autoUpdateDue: 'Auto update due',
             autoUpdateIn: 'Auto update in {{days}}d',
-            proBadge: 'PRO',
             title: 'Campaign Manager',
             desc: 'Create multiple export destinations with independent refresh schedules. Perfect for managing Kickstarter, Patreon, newsletter, and website exports separately.',
             emptyState: 'No campaigns yet. Create your first campaign to track multiple export destinations.',
@@ -3494,7 +3489,6 @@ export const en = {
             runtimeNovel: 'Toggle Runtime Mode (Audiobook/Novel)',
         },
         colorsSection: {
-            proBadge: 'PRO',
             customPatternsTitle: 'Custom patterns',
             customPatternsDescLead: 'Paste any pattern from ',
             customPatternsDescTail: ' and use it as your Working scene fill. Patterns from Hero Patterns are free under the Creative Commons 4.0 license.',
@@ -4011,7 +4005,6 @@ export const en = {
             warnPageTwiceFolio: 'Header corner {{corner}} uses "Page #" but the folio is shown at the bottom of the page — the page number will appear twice. Select a non-page field for that corner, or change the conflicting setting.',
             warnNameExists: 'A style with this name already exists; the saved name will be suffixed (e.g. "-2").',
             warnFontNotInstalled: '{{font}} is not installed. Click Install next to the Font row, or select a different font — the export will fail until this is resolved.',
-            proBadge: 'PRO',
             viewLatex: 'View LaTeX',
             updateStyle: 'Update style',
             saveStyle: 'Save style',
@@ -5379,7 +5372,6 @@ export const en = {
             noLayoutsFor: 'No layouts for {{preset}}.',
             manageLayouts: 'Manage layouts…',
             choosePdfLayout: 'Choose a PDF layout to continue.',
-            proPill: 'Pro',
             layoutSummaryBook: 'Book styling with part pages, epigraph support, and chapter treatments.',
             layoutSummaryLiterary: 'Literary styling with scene opener controls and polished running heads.',
             layoutSummaryReadingDraft: 'A polished reading draft style with clean headers and comfortable book-page spacing.',
@@ -6505,8 +6497,6 @@ export const en = {
             layoutNameRequired: 'Layout name is required.',
             installed: 'Installed',
             notInstalled: 'Not installed',
-            tierPro: 'Pro',
-            tierCore: 'Core',
             fontsInstallWithSetup: 'Fonts install with setup',
             needsFont: 'Needs font: {{font}}',
             howToInstall: 'How to install',

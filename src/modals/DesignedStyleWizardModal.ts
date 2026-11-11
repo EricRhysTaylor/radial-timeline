@@ -516,16 +516,8 @@ export class DesignedStyleWizardModal extends Modal {
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header ert-style-wizard__header' });
         const badgeRow = header.createDiv({ cls: 'ert-modal-badge-row' });
-        // Single combined pill: PRO chip nested inside the modal-mode badge
-        // (DESIGN / EDIT). PRO downsized via the --inline modifier so it fits
-        // visually as a "stamp" on the larger badge.
-        const modeBadge = badgeRow.createSpan({ cls: 'ert-modal-badge ert-modal-badge--with-pro' });
-        const proPill = modeBadge.createSpan({
-            cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_PRO} ert-modal-badge__pro-inline`,
-        });
-        const proPillIcon = proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
-        setIcon(proPillIcon, 'signature');
-        proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.designedStyleWizardModal.proBadge') });
+        // Modal-mode badge (DESIGN / EDIT).
+        const modeBadge = badgeRow.createSpan({ cls: 'ert-modal-badge' });
         // Two modes:
         //   • Updating an existing designed-origin layout (layoutId set) → EDIT
         //   • Forking from a bundled spec OR designing from an archetype → DESIGN

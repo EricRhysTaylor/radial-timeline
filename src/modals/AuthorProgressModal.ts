@@ -275,14 +275,6 @@ export class AuthorProgressModal extends Modal {
         setIcon(headerIcon, 'layers');
         headerRow.createEl('h4', { text: t('ui.authorProgressModal.campaignStatusHeading'), cls: ERT_CLASSES.SECTION_TITLE });
 
-        const headerActions = header.createDiv({ cls: ERT_CLASSES.SECTION_ACTIONS });
-        const proPill = headerActions.createSpan({
-            cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM} ${ERT_CLASSES.BADGE_PILL_PRO}`
-        });
-        const proIcon = proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
-        setIcon(proIcon, 'signature');
-        proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.authorProgressModal.proPill') });
-
         const campaignTargets = this.getAprStatusTargets().filter(target => target.campaign);
         if (campaignTargets.length === 0) {
             this.campaignsSectionEl.createDiv({ text: t('ui.authorProgressModal.noCampaigns'), cls: ERT_CLASSES.FIELD_NOTE });

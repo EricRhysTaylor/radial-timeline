@@ -1036,13 +1036,6 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     text: installed ? t('ui.publishSection.installed') : t('ui.publishSection.notInstalled')
                 });
                 setAccessibleLabel(pill, installed ? t('ui.publishSection.installed') : t('ui.publishSection.notInstalled'));
-                const tierPill = s.nameEl.createSpan({
-                    cls: `ert-badgePill ert-badgePill--sm ${isProLayout ? ERT_CLASSES.BADGE_PILL_PRO : ERT_CLASSES.BADGE_PILL_NEUTRAL}`,
-                });
-                tierPill.createSpan({
-                    cls: 'ert-badgePill__text',
-                    text: isProLayout ? t('ui.publishSection.tierPro') : t('ui.publishSection.tierCore'),
-                });
             }
 
             if (useVisual && s.descEl) {

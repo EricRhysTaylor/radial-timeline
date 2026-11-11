@@ -187,15 +187,10 @@ export function renderCampaignManagerSection({ app, plugin, containerEl, onCampa
         card.addClass('ert-pro-locked');
     }
 
-    // Header with Pro badge
     const headerRow = card.createDiv({ cls: ERT_CLASSES.PANEL_HEADER });
     const titleArea = headerRow.createDiv({ cls: ERT_CLASSES.CONTROL });
 
-    // Pro Pill (ERT Style)
     const titleRow = titleArea.createEl('h4', { cls: `${ERT_CLASSES.SECTION_TITLE} ${ERT_CLASSES.INLINE} ert-campaign-title` });
-    const proPill = titleRow.createSpan({ cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_PRO}` });
-    setIcon(proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON }), 'signature');
-    proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.campaignManagerSection.proBadge') });
     titleRow.createSpan({ text: t('ui.campaignManagerSection.title') });
 
     // Description

@@ -16,7 +16,6 @@ import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../../ut
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { t } from '../../i18n';
 import { ERT_CLASSES } from '../../ui/classes';
-import { badgePill } from '../../ui/ui';
 import { hasProFeatureAccess } from '../featureGate';
 import {
     buildDefaultInquiryPromptConfig,
@@ -977,9 +976,6 @@ export function renderInquirySection(params: SectionParams): void {
         ): string => {
             const parts = [question.label];
             const existingIndex = findCanonicalSlotIndex(zone, question.id, excludeIndex);
-            if (question.tier === 'signature') {
-                parts.push(t('settings.inquiry.prompts.proTag'));
-            }
             if (existingIndex !== -1) {
                 parts.push(`#${existingIndex + 1}`);
                 parts.push(t('settings.inquiry.prompts.alreadyAddedTag'));
@@ -990,13 +986,7 @@ export function renderInquirySection(params: SectionParams): void {
         const getCanonicalInsertOptionLabel = (
             question: InquiryCanonicalQuestionDefinition,
             zone: InquiryZone
-        ): string => {
-            const parts = [`${getCanonicalTemplateOrder(question, zone)}. ${question.label}`];
-            if (question.tier === 'signature') {
-                parts.push(t('settings.inquiry.prompts.proTag'));
-            }
-            return parts.join(' · ');
-        };
+        ): string => `${getCanonicalTemplateOrder(question, zone)}. ${question.label}`;
 
         const focusCanonicalQuestionRow = (
             zone: InquiryZone,
@@ -1494,13 +1484,6 @@ export function renderInquirySection(params: SectionParams): void {
                     cls: 'ert-reorder-placeholder ert-reorder-placeholder--pro'
                 });
                 ghostText.createSpan({ text: t('settings.inquiry.prompts.unlockProGhost') });
-                const ghostBadge = ghostText.createDiv({ cls: ERT_CLASSES.ICON_BTN_GROUP });
-                badgePill(ghostBadge, {
-                    icon: 'sparkles',
-                    label: t('settings.inquiry.prompts.proTag'),
-                    variant: ERT_CLASSES.BADGE_PILL_PRO,
-                    size: ERT_CLASSES.BADGE_PILL_SM
-                });
             }
 
             const addLimit = isPro ? proCustomLimit : freeCustomLimit;

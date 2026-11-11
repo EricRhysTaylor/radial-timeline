@@ -43,7 +43,7 @@ import {
     removeExportPreset,
     type ModalExportProfile,
 } from '../utils/exportProfileModel';
-import { getPandocLayoutSortRank, getPandocLayoutTier } from '../publishing/templateTiering';
+import { getPandocLayoutSortRank } from '../publishing/templateTiering';
 import { EDITORIALIST_LOGO_PATHS, EDITORIALIST_LOGO_VIEWBOX } from '../branding/editorialistLogo';
 import {
     applySpreadValidation,
@@ -2740,12 +2740,6 @@ export class ManuscriptOptionsModal extends Modal {
         const variant = getFictionVariantForLayout(sourceLayout);
         const summary = desc.createDiv({ cls: 'ert-manuscript-layout-summary' });
         const titleRow = summary.createDiv({ cls: 'ert-manuscript-layout-summary-titleRow' });
-        if (sourceLayout && getPandocLayoutTier(sourceLayout) === 'pro') {
-            const proPill = titleRow.createSpan({
-                cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM} ${ERT_CLASSES.BADGE_PILL_PRO} ert-pro-pill`,
-            });
-            proPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.manuscriptOptionsModal.proPill') });
-        }
         titleRow.createDiv({
             cls: 'ert-manuscript-layout-summary-title',
             text: profile.name,

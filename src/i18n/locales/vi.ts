@@ -472,7 +472,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "header": {
                 "name": "Ước lượng thời gian chạy",
                 "desc": "Ước lượng thời gian đọc, kể chuyện và kịch bản trên chế độ Tự sự, khi di chuột qua đường thời gian và các công cụ thời gian chạy.",
-                "badgeText": "Pro"
             },
             "contentType": {
                 "name": "Loại nội dung",
@@ -582,7 +581,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             },
             "prompts": {
                 "name": "Câu hỏi Inquiry",
-                "proTag": "Pro",
                 "alreadyAddedTag": "Đã thêm",
                 "alreadyAdded": "Đã thêm — di chuyển sang câu hỏi hiện có",
                 "dragToReorder": "Kéo để sắp xếp lại",
@@ -2393,7 +2391,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "errorPrefix": "Lỗi: {{error}}"
         },
         "runtimeModal": {
-            "badgePro": "PRO",
             "badgeAudiobook": "Sách nói",
             "badgeScreenplay": "Kịch bản",
             "badgeRuntime": "thời gian chạy · {{mode}}",
@@ -3268,7 +3265,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "statusHeading": "Trạng thái",
             "sharingOutputPill": "Đầu ra chia sẻ",
             "campaignStatusHeading": "Trạng thái chiến dịch",
-            "proPill": "Pro",
             "noCampaigns": "Chưa có chiến dịch nào.",
             "columnApr": "Tháng 4",
             "columnBookTitle": "Tên sách",
@@ -3625,7 +3621,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "reminderIn": "Nhắc nhở trong {{days}}d",
             "autoUpdateDue": "Tự động cập nhật đến hạn",
             "autoUpdateIn": "Tự động cập nhật trong {{days}}d",
-            "proBadge": "PRO",
             "title": "Người quản lý chiến dịch",
             "desc": "Tạo nhiều điểm đến xuất với lịch làm mới độc lập. Hoàn hảo để quản lý Kickstarter, Patreon, bản tin và xuất trang web riêng biệt.",
             "emptyState": "Chưa có chiến dịch nào. Tạo chiến dịch đầu tiên của bạn để theo dõi nhiều điểm đến xuất.",
@@ -3823,7 +3818,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "runtimeNovel": "Chuyển đổi chế độ thời gian chạy (AudioBook / Novel)"
         },
         "colorsSection": {
-            "proBadge": "PRO",
             "customPatternsTitle": "Các mẫu tùy chỉnh",
             "customPatternsDescLead": "Dán bất kỳ mẫu nào từ ",
             "customPatternsDescTail": " Và sử dụng nó khi làm việc của bạn lấp đầy cảnh làm việc. Các mẫu từ các mẫu anh hùng được miễn phí theo giấy phép Creative Commons 4.0.",
@@ -4339,7 +4333,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "warnPageTwiceFolio": "Góc tiêu đề {{corner}} Sử dụng \"trang #\" nhưng folio được hiển thị ở cuối trang - số trang sẽ xuất hiện hai lần. Chọn một trường không phải trang cho điều đó góc hoặc thay đổi cài đặt xung đột.",
             "warnNameExists": "Một phong cách với tên này đã tồn tại; Tên đã lưu sẽ được hậu tố (ví dụ: \"-2\").",
             "warnFontNotInstalled": "{{font}} không được cài đặt. Nhấp vào Cài đặt bên cạnh hàng phông chữ hoặc chọn một phông chữ khác - quá trình xuất sẽ không thành công cho đến khi điều này được giải quyết.",
-            "proBadge": "PRO",
             "viewLatex": "Xem LaTeX",
             "updateStyle": "Cập nhật kiểu",
             "saveStyle": "Lưu phong cách",
@@ -5707,7 +5700,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "noLayoutsFor": "Không có bố cục cho {{preset}}.",
             "manageLayouts": "Quản lý bố cục…",
             "choosePdfLayout": "Chọn bố cục PDF để tiếp tục.",
-            "proPill": "Pro",
             "layoutSummaryBook": "Tạo kiểu sách với các trang một phần, hỗ trợ epigraph và các phương pháp điều trị theo chương.",
             "layoutSummaryLiterary": "Phong cách văn học với các điều khiển cảnh mở và đầu chạy được đánh bóng.",
             "layoutSummaryReadingDraft": "Một phong cách dự thảo đọc được đánh bóng với tiêu đề sạch sẽ và khoảng cách trang sách thoải mái.",
@@ -6853,8 +6845,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "layoutNameRequired": "Tên bố cục là bắt buộc.",
             "installed": "Được cài đặt",
             "notInstalled": "không được cài đặt",
-            "tierPro": "Pro",
-            "tierCore": "Phần nồng cốt",
             "fontsInstallWithSetup": "Cài đặt phông chữ với thiết lập",
             "needsFont": "Cần phông chữ: {{font}}",
             "howToInstall": "Cách cài đặt",

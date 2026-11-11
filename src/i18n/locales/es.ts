@@ -472,7 +472,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "header": {
                 "name": "Estimación de duración",
                 "desc": "Estimar duración de lectura, narración y guion en Modo Narrativa, al pasar el ratón por la línea de tiempo y en herramientas de duración.",
-                "badgeText": "Pro"
             },
             "contentType": {
                 "name": "Tipo de contenido",
@@ -582,7 +581,6 @@ export const es: DeepPartial<TranslationKeys> = {
             },
             "prompts": {
                 "name": "Preguntas de Inquiry",
-                "proTag": "Pro",
                 "alreadyAddedTag": "Ya agregado",
                 "alreadyAdded": "Ya agregado — movido a la pregunta existente",
                 "dragToReorder": "Arrastra para reordenar",
@@ -2393,7 +2391,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "errorPrefix": "Error: {{error}}"
         },
         "runtimeModal": {
-            "badgePro": "PRO",
             "badgeAudiobook": "audiolibro",
             "badgeScreenplay": "Guion",
             "badgeRuntime": "Tiempo de ejecución · {{mode}}",
@@ -3268,7 +3265,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "statusHeading": "Estado",
             "sharingOutputPill": "Compartir salida",
             "campaignStatusHeading": "Estado de la campaña",
-            "proPill": "Pro",
             "noCampaigns": "No hay campañas todavía.",
             "columnApr": "abril",
             "columnBookTitle": "Titulo del libro",
@@ -3625,7 +3621,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "reminderIn": "Recordatorio en {{days}}d",
             "autoUpdateDue": "Actualización automática",
             "autoUpdateIn": "Actualización automática en {{days}}d",
-            "proBadge": "PRO",
             "title": "director de campaña",
             "desc": "Cree múltiples destinos de exportación con programas de actualización independientes. Perfecto para administrar las exportaciones de Kickstarter, Patreon, boletín y sitios web por separado.",
             "emptyState": "No hay campañas todavía. Crea tu primera campaña para rastrear múltiples destinos de exportación.",
@@ -3823,7 +3818,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "runtimeNovel": "Modo de tiempo de ejecución de alternancia (audiolibro/novela)"
         },
         "colorsSection": {
-            "proBadge": "PRO",
             "customPatternsTitle": "Patrones personalizados",
             "customPatternsDescLead": "Pega cualquier patrón de ",
             "customPatternsDescTail": " Y úsalo como relleno de escena de trabajo. Los patrones de Hero Patterns son gratuitos bajo la licencia Creative Commons 4.0.",
@@ -4339,7 +4333,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "warnPageTwiceFolio": "Esquina de cabecera {{corner}} Usa \"número de página\", pero el folio se muestra en la parte inferior de la página; el número de página aparecerá dos veces. Seleccione un campo que no sea de página para eso esquina o cambiar la configuración conflictiva.",
             "warnNameExists": "Ya existe un estilo con este nombre; El nombre guardado será sufijo (por ejemplo, \"-2\").",
             "warnFontNotInstalled": "{{font}} no está instalado. Haga clic en Instalar junto a la fila de fuentes o seleccione una fuente diferente: la exportación fallará hasta que se resuelva.",
-            "proBadge": "PRO",
             "viewLatex": "Ver LaTeX",
             "updateStyle": "Estilo de actualización",
             "saveStyle": "Guardar estilo",
@@ -5707,7 +5700,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "noLayoutsFor": "Sin diseños para {{preset}}.",
             "manageLayouts": "Gestionar diseños…",
             "choosePdfLayout": "Elija un diseño PDF para continuar.",
-            "proPill": "Pro",
             "layoutSummaryBook": "Estilo de libros con páginas de piezas, soporte de epígrafe y tratamientos de capítulos.",
             "layoutSummaryLiterary": "Estilo literario con controles de apertura de escena y cabezas de carrera pulidas.",
             "layoutSummaryReadingDraft": "Un estilo de borrador de lectura pulido con encabezados limpios y cómodo espacio entre libros.",
@@ -6853,8 +6845,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "layoutNameRequired": "Se requiere el nombre del diseño.",
             "installed": "instalado",
             "notInstalled": "no instalado",
-            "tierPro": "Pro",
-            "tierCore": "Núcleo",
             "fontsInstallWithSetup": "Instalación de fuentes con configuración",
             "needsFont": "Necesita fuente: {{font}}",
             "howToInstall": "como instalar",

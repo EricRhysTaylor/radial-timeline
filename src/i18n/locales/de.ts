@@ -486,7 +486,6 @@ export const de: DeepPartial<TranslationKeys> = {
             header: {
                 name: 'Laufzeitschätzung',
                 desc: 'Schätzt Lese-, Hörbuch- und Drehbuchlaufzeit für den Erzählung-Modus, den Timeline-Hover und die Laufzeit-Werkzeuge.',
-                badgeText: 'Pro',
             },
             contentType: {
                 name: 'Inhaltstyp',
@@ -596,7 +595,6 @@ export const de: DeepPartial<TranslationKeys> = {
             },
             prompts: {
                 name: 'Inquiry-Prompts',
-                proTag: 'Pro',
                 alreadyAddedTag: 'Bereits hinzugefügt',
                 alreadyAdded: 'Bereits hinzugefügt — zur vorhandenen Frage verschoben',
                 dragToReorder: 'Ziehen zum Neuanordnen',
@@ -2408,7 +2406,6 @@ export const de: DeepPartial<TranslationKeys> = {
             errorPrefix: 'Fehler: {{error}}',
         },
         runtimeModal: {
-            badgePro: 'PRO',
             badgeAudiobook: 'Hörbuch',
             badgeScreenplay: 'Drehbuch',
             badgeRuntime: 'Laufzeit · {{mode}}',
@@ -3261,7 +3258,6 @@ export const de: DeepPartial<TranslationKeys> = {
             statusHeading: 'Status',
             sharingOutputPill: 'Ausgabe zum Teilen',
             campaignStatusHeading: 'Kampagnenstatus',
-            proPill: 'Pro',
             noCampaigns: 'Noch keine Kampagnen.',
             columnApr: 'APR',
             columnBookTitle: 'Buchtitel',
@@ -3618,7 +3614,6 @@ export const de: DeepPartial<TranslationKeys> = {
             reminderIn: 'Erinnerung in {{days}} T.',
             autoUpdateDue: 'Automatische Aktualisierung fällig',
             autoUpdateIn: 'Automatische Aktualisierung in {{days}} T.',
-            proBadge: 'PRO',
             title: 'Kampagnen-Manager',
             desc: 'Erstellen Sie mehrere Exportziele mit unabhängigen Aktualisierungsplänen. Ideal, um Exporte für Kickstarter, Patreon, Newsletter und Website getrennt zu verwalten.',
             emptyState: 'Noch keine Kampagnen. Erstellen Sie Ihre erste Kampagne, um mehrere Exportziele zu verfolgen.',
@@ -3816,7 +3811,6 @@ export const de: DeepPartial<TranslationKeys> = {
             runtimeNovel: 'Laufzeitmodus umschalten (Hörbuch/Roman)',
         },
         colorsSection: {
-            proBadge: 'PRO',
             customPatternsTitle: 'Eigene Muster',
             customPatternsDescLead: 'Fügen Sie ein beliebiges Muster von ',
             customPatternsDescTail: ' ein und verwenden Sie es als Füllung für Working-Szenen. Muster von Hero Patterns sind unter der Lizenz Creative Commons 4.0 kostenlos.',
@@ -4332,7 +4326,6 @@ export const de: DeepPartial<TranslationKeys> = {
             warnPageTwiceFolio: 'Kopfzeilenecke {{corner}} verwendet „Seite #“, aber die Seitenzahl wird unten auf der Seite angezeigt — die Seitenzahl erscheint doppelt. Wählen Sie für diese Ecke ein Feld ohne Seitenzahl oder ändern Sie die widersprüchliche Einstellung.',
             warnNameExists: 'Ein Stil mit diesem Namen existiert bereits; der gespeicherte Name erhält ein Suffix (z. B. „-2“).',
             warnFontNotInstalled: '{{font}} ist nicht installiert. Klicken Sie neben der Zeile „Schrift“ auf „Installieren“ oder wählen Sie eine andere Schrift — der Export schlägt fehl, bis dies behoben ist.',
-            proBadge: 'PRO',
             viewLatex: 'LaTeX anzeigen',
             updateStyle: 'Stil aktualisieren',
             saveStyle: 'Stil speichern',
@@ -5700,7 +5693,6 @@ export const de: DeepPartial<TranslationKeys> = {
             noLayoutsFor: 'Keine Layouts für {{preset}}.',
             manageLayouts: 'Layouts verwalten…',
             choosePdfLayout: 'Wählen Sie ein PDF-Layout, um fortzufahren.',
-            proPill: 'Pro',
             layoutSummaryBook: 'Buchgestaltung mit Teilseiten, Epigraph-Unterstützung und Kapitelgestaltung.',
             layoutSummaryLiterary: 'Literarische Gestaltung mit Steuerung der Szenen-Eröffnung und sorgfältigen Kolumnentiteln.',
             layoutSummaryReadingDraft: 'Ein ansprechender Leseentwurf mit klaren Kolumnentiteln und angenehmem Buchseiten-Abstand.',
@@ -6846,8 +6838,6 @@ export const de: DeepPartial<TranslationKeys> = {
             layoutNameRequired: 'Layout-Name ist erforderlich.',
             installed: 'Installiert',
             notInstalled: 'Nicht installiert',
-            tierPro: 'Pro',
-            tierCore: 'Core',
             fontsInstallWithSetup: 'Schriften werden bei der Einrichtung installiert',
             needsFont: 'Benötigt Schrift: {{font}}',
             howToInstall: 'Installationsanleitung',

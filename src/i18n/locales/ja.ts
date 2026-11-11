@@ -487,7 +487,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             header: {
                 name: 'ランタイム推定',
                 desc: '叙事モード、タイムラインのホバー、ランタイムツール全体で、読書・ナレーション・脚本のランタイムを推定します。',
-                badgeText: 'Pro',
             },
             contentType: {
                 name: 'コンテンツタイプ',
@@ -597,7 +596,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             },
             prompts: {
                 name: 'Inquiry のプロンプト',
-                proTag: 'Pro',
                 alreadyAddedTag: '追加済み',
                 alreadyAdded: '追加済み — 既存の質問に移動しました',
                 dragToReorder: 'ドラッグして並べ替え',
@@ -2409,7 +2407,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             errorPrefix: 'エラー：{{error}}',
         },
         runtimeModal: {
-            badgePro: 'PRO',
             badgeAudiobook: 'オーディオブック',
             badgeScreenplay: '脚本',
             badgeRuntime: 'ランタイム · {{mode}}',
@@ -3262,7 +3259,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             statusHeading: 'ステータス',
             sharingOutputPill: '共有用の出力',
             campaignStatusHeading: 'キャンペーンのステータス',
-            proPill: 'Pro',
             noCampaigns: 'キャンペーンはまだありません。',
             columnApr: 'APR',
             columnBookTitle: '本のタイトル',
@@ -3619,7 +3615,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             reminderIn: '{{days}} 日後にリマインダー',
             autoUpdateDue: '自動更新の時期',
             autoUpdateIn: '{{days}} 日後に自動更新',
-            proBadge: 'PRO',
             title: 'キャンペーンマネージャー',
             desc: '更新スケジュールが独立した複数のエクスポート先を作成します。Kickstarter、Patreon、ニュースレター、Web サイト向けのエクスポートを個別に管理するのに最適です。',
             emptyState: 'キャンペーンはまだありません。最初のキャンペーンを作成して、複数のエクスポート先を追跡しましょう。',
@@ -3817,7 +3812,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             runtimeNovel: 'ランタイムモードを切り替え（オーディオブック/小説）',
         },
         colorsSection: {
-            proBadge: 'PRO',
             customPatternsTitle: 'カスタムパターン',
             customPatternsDescLead: '好きなパターンを ',
             customPatternsDescTail: ' から貼り付けて、Working シーンの塗りつぶしとして使用できます。Hero Patterns のパターンは Creative Commons 4.0 ライセンスのもとで無料で利用できます。',
@@ -4333,7 +4327,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             warnPageTwiceFolio: 'ヘッダーの {{corner}} に「ページ番号」が使われていますが、ノンブルがページ下部に表示されています — ページ番号が 2 回表示されます。その位置にはページ番号以外のフィールドを選ぶか、競合する設定を変更してください。',
             warnNameExists: 'この名前のスタイルはすでに存在します。保存名にはサフィックスが付きます（例：「-2」）。',
             warnFontNotInstalled: '{{font}} がインストールされていません。フォントの行の横にある「インストール」をクリックするか、別のフォントを選択してください — 解決するまでエクスポートは失敗します。',
-            proBadge: 'PRO',
             viewLatex: 'LaTeX を表示',
             updateStyle: 'スタイルを更新',
             saveStyle: 'スタイルを保存',
@@ -5701,7 +5694,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             noLayoutsFor: '{{preset}} 用のレイアウトはありません。',
             manageLayouts: 'レイアウトを管理…',
             choosePdfLayout: '続行するには PDF レイアウトを選択してください。',
-            proPill: 'Pro',
             layoutSummaryBook: '部のページ、エピグラフ、章のデザインに対応した書籍向けスタイル。',
             layoutSummaryLiterary: 'シーン冒頭の設定と洗練された柱を備えた文芸向けスタイル。',
             layoutSummaryReadingDraft: 'すっきりした柱と読みやすい書籍ページの間隔を備えた、洗練された閲読用下書きスタイル。',
@@ -6847,8 +6839,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             layoutNameRequired: 'レイアウト名は必須です。',
             installed: 'インストール済み',
             notInstalled: '未インストール',
-            tierPro: 'Pro',
-            tierCore: 'Core',
             fontsInstallWithSetup: 'フォントはセットアップ時にインストールされます',
             needsFont: '必要なフォント：{{font}}',
             howToInstall: 'インストール方法',

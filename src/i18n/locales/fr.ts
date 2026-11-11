@@ -472,7 +472,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "header": {
                 "name": "Estimation du temps d'exécution",
                 "desc": "Estimer le temps de lecture, de narration et de scénario à travers le mode Narration, le survol de la chronologie et les outils de durée.",
-                "badgeText": "Pro"
             },
             "contentType": {
                 "name": "Type de contenu",
@@ -582,7 +581,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             },
             "prompts": {
                 "name": "Prompts Inquiry",
-                "proTag": "Pro",
                 "alreadyAddedTag": "Déjà ajouté",
                 "alreadyAdded": "Déjà ajouté — déplacé vers la question existante",
                 "dragToReorder": "Glisser pour réorganiser",
@@ -2393,7 +2391,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "errorPrefix": "Erreur : {{error}}"
         },
         "runtimeModal": {
-            "badgePro": "PRO",
             "badgeAudiobook": "livre audio",
             "badgeScreenplay": "Scénario",
             "badgeRuntime": "Durée d'exécution · {{mode}}",
@@ -3268,7 +3265,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "statusHeading": "Statut",
             "sharingOutputPill": "Partager la sortie",
             "campaignStatusHeading": "État de la campagne",
-            "proPill": "Pro",
             "noCampaigns": "Pas encore de campagnes.",
             "columnApr": "avr",
             "columnBookTitle": "titre du livre",
@@ -3625,7 +3621,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "reminderIn": "Rappel en {{days}}d",
             "autoUpdateDue": "Mise à jour automatique due",
             "autoUpdateIn": "Mise à jour automatique en {{days}}D",
-            "proBadge": "PRO",
             "title": "directeur de campagne",
             "desc": "Créez plusieurs destinations d'exportation avec des horaires de rafraîchissement indépendants Parfait pour gérer séparément les exportations de Kickstarter, Patreon, de la newsletter et du site Web.",
             "emptyState": "Pas encore de campagnes. Créez votre première campagne pour suivre plusieurs destinations d'exportation.",
@@ -3823,7 +3818,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "runtimeNovel": "Basculer le mode d'exécution (livre audio/roman)"
         },
         "colorsSection": {
-            "proBadge": "PRO",
             "customPatternsTitle": "Modèles personnalisés",
             "customPatternsDescLead": "Collez n'importe quel motif de ",
             "customPatternsDescTail": " Et utilisez-le comme remplissage de votre scène de travail. Les modèles de modèles de héros sont gratuits sous la licence Creative Commons 4.0.",
@@ -4339,7 +4333,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "warnPageTwiceFolio": "Coin d'en-tête {{corner}} Utilise \"Page #\" mais le folio est affiché en bas de la page - le numéro de page apparaîtra deux fois. Sélectionnez un champ hors page pour cela coin, ou modifiez le paramètre en conflit.",
             "warnNameExists": "Un style avec ce nom existe déjà ; Le nom enregistré sera suffixé (par exemple, \"-2\").",
             "warnFontNotInstalled": "{{font}} n'est pas installé. Cliquez sur Installer à côté de la ligne de police ou sélectionnez une police différente. L'exportation échouera jusqu'à ce que cela soit résolu.",
-            "proBadge": "PRO",
             "viewLatex": "Voir LaTeX",
             "updateStyle": "Mise à jour du style",
             "saveStyle": "Enregistrer le style",
@@ -5707,7 +5700,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "noLayoutsFor": "Aucune mise en page pour {{preset}}.",
             "manageLayouts": "Gérer les mises en page…",
             "choosePdfLayout": "Choisissez une mise en page PDF pour continuer.",
-            "proPill": "Pro",
             "layoutSummaryBook": "Style de livre avec des pages de pièces, un support d'épigraphe et des traitements de chapitre.",
             "layoutSummaryLiterary": "Style littéraire avec commandes d'ouverture de scène et têtes de course polies.",
             "layoutSummaryReadingDraft": "Un style de brouillon de lecture raffiné avec des en-têtes propres et un espacement confortable de la page du livre.",
@@ -6853,8 +6845,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "layoutNameRequired": "Le nom de la mise en page est requis.",
             "installed": "Installé",
             "notInstalled": "Non installé",
-            "tierPro": "Pro",
-            "tierCore": "Coeur",
             "fontsInstallWithSetup": "Installer les polices avec configuration",
             "needsFont": "Nécessite une police : {{font}}",
             "howToInstall": "Comment installer",

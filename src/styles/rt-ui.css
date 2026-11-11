@@ -720,11 +720,6 @@
   height: 14px;
 }
 
-.ert-ui.ert-scope--settings .ert-pro-pill,
-.ert-ui.ert-scope--modal .ert-pro-pill {
-  letter-spacing: 0.4px;
-}
-
 .ert-ui.ert-scope--settings .ert-mono-inline {
   font-family: var(--font-monospace);
   font-size: 0.95em;
@@ -4709,27 +4704,6 @@
 .ert-ui .ert-modal-badge__wikiLink svg {
   width: 14px;
   height: 14px;
-}
-
-.ert-ui .ert-modal-badge.ert-modal-badge-pro {
-  align-items: center;
-  background: rgba(var(--rt-pro-color-rgb, 217, 70, 239), 0.15);
-  border-color: rgba(var(--rt-pro-color-rgb, 217, 70, 239), 0.3);
-  color: var(--rt-pro-color);
-}
-
-.ert-ui .ert-modal-badge-pro .ert-modal-badge-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ert-ui .ert-modal-badge-pro .ert-modal-badge-icon svg {
-  width: 14px;
-  height: 14px;
-  stroke: var(--rt-pro-color);
-  stroke-width: 2;
-  fill: none;
 }
 
 .ert-ui .ert-modal-title {

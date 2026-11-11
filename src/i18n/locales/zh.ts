@@ -488,7 +488,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             header: {
                 name: '时长估算',
                 desc: '在叙事模式、时间轴悬停和时长工具中估算阅读、朗读和剧本时长。',
-                badgeText: 'Pro',
             },
             contentType: {
                 name: '内容类型',
@@ -598,7 +597,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             },
             prompts: {
                 name: 'Inquiry 提示',
-                proTag: 'Pro',
                 alreadyAddedTag: '已添加',
                 alreadyAdded: '已添加 — 已移至现有问题',
                 dragToReorder: '拖动以重新排序',
@@ -2410,7 +2408,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             errorPrefix: '错误：{{error}}',
         },
         runtimeModal: {
-            badgePro: 'PRO',
             badgeAudiobook: '有声书',
             badgeScreenplay: '剧本',
             badgeRuntime: '时长 · {{mode}}',
@@ -3263,7 +3260,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             statusHeading: '状态',
             sharingOutputPill: '分享输出',
             campaignStatusHeading: '活动状态',
-            proPill: 'Pro',
             noCampaigns: '还没有活动。',
             columnApr: 'APR',
             columnBookTitle: '书名',
@@ -3620,7 +3616,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             reminderIn: '{{days}} 天后提醒',
             autoUpdateDue: '待自动更新',
             autoUpdateIn: '{{days}} 天后自动更新',
-            proBadge: 'PRO',
             title: '活动管理器',
             desc: '创建多个导出目标，各自设定独立的刷新计划。非常适合分别管理 Kickstarter、Patreon、新闻通讯和网站的导出。',
             emptyState: '还没有活动。创建您的第一个活动来追踪多个导出目标。',
@@ -3818,7 +3813,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             runtimeNovel: '切换时长模式（有声书/小说）',
         },
         colorsSection: {
-            proBadge: 'PRO',
             customPatternsTitle: '自定义图案',
             customPatternsDescLead: '粘贴来自 ',
             customPatternsDescTail: ' 的任意图案，并将其用作 Working 场景的填充。Hero Patterns 中的图案依据 Creative Commons 4.0 许可免费使用。',
@@ -4334,7 +4328,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             warnPageTwiceFolio: '页眉角 {{corner}} 使用了“Page #”，但页码已显示在页面底部 — 页码将出现两次。请为该角选择一个非页码字段，或更改冲突的设置。',
             warnNameExists: '已存在同名样式；保存的名称将添加后缀（例如“-2”）。',
             warnFontNotInstalled: '{{font}} 未安装。请点击“字体”行旁的“安装”，或选择其他字体 — 在解决此问题之前，导出将会失败。',
-            proBadge: 'PRO',
             viewLatex: '查看 LaTeX',
             updateStyle: '更新样式',
             saveStyle: '保存样式',
@@ -5702,7 +5695,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             noLayoutsFor: '没有适用于 {{preset}} 的版式。',
             manageLayouts: '管理版式…',
             choosePdfLayout: '选择一个 PDF 版式以继续。',
-            proPill: 'Pro',
             layoutSummaryBook: '书籍样式，含部页、题词支持和章节处理。',
             layoutSummaryLiterary: '文学样式，含场景开篇控制和精致的页眉。',
             layoutSummaryReadingDraft: '精致的阅读稿样式，页眉简洁，书页间距舒适。',
@@ -6848,8 +6840,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             layoutNameRequired: '版式名称为必填项。',
             installed: '已安装',
             notInstalled: '未安装',
-            tierPro: 'Pro',
-            tierCore: 'Core',
             fontsInstallWithSetup: '字体随设置一并安装',
             needsFont: '需要字体：{{font}}',
             howToInstall: '如何安装',

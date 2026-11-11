@@ -149,16 +149,6 @@ export class RuntimeProcessingModal extends ErtModal {
         const modeIconName = contentType === 'screenplay' ? 'projector' : 'mic-vocal';
         const badgeRow = header.createDiv({ cls: 'ert-modal-badge-row' });
 
-        const pill = badgeRow.createSpan({
-            cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_PRO}`,
-        });
-        const pillIcon = pill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
-        setIcon(pillIcon, 'signature');
-        pill.createSpan({
-            cls: ERT_CLASSES.BADGE_PILL_TEXT,
-            text: t('sceneAnalysis.runtimeModal.badgePro'),
-        });
-
         const badge = badgeRow.createSpan({ cls: 'ert-modal-badge' });
         const modeIcon = badge.createSpan({ cls: 'ert-modal-badge-icon' });
         setIcon(modeIcon, modeIconName);

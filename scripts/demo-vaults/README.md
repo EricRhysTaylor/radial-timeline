@@ -2,7 +2,7 @@
 
 This is the maintained content-only packager. It replaces the legacy helper under the Sherlock Holmes ingestion folder. Canonical book preparation, user-operated AI runs, and literary review happen before packaging.
 
-Each `<sample-id>.json` is the contract for that book's published edition. The current editions are `2026-11-10` for all three books, published with Radial Timeline 8.0.1: every packaged scene uses `Narration`, and each book carries its Timetable and subplot Canvas. Evidence: `Demo Vaults/Testing Vaults/2026-11-10 Story Vault editions/README.md`. For the next edition, change the contract's `edition` to its release date and keep the earlier edition in git history and `Demo Vaults/Releases/`.
+Each `<sample-id>.json` is the contract for that book's published edition. The current editions are `2026-11-10` for all three books, and the plugin catalog points at them from Radial Timeline 8.0.1: every packaged scene uses `Narration`, and each book carries its Timetable and subplot Canvas. Evidence: `Demo Vaults/Testing Vaults/2026-11-10 Story Vault editions/README.md`. For the next edition, change the contract's `edition` to its release date and keep the earlier edition in git history and `Demo Vaults/Releases/`.
 
 ```sh
 uv run scripts/demo-vaults/package_sample_vault.py \

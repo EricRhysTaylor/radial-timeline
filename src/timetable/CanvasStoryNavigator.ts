@@ -139,11 +139,8 @@ export class CanvasStoryNavigator {
         const slider = root.createEl('input', { cls: 'ert-story-navigator__slider', attr: { type: 'range', min: '0', max: '0', value: '0' } });
         const selection = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit' });
         selection.disabled = true;
-        const orientation = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit', attr: { type: 'button' } });
-        setIcon(orientation, 'repeat-2');
-        setAccessibleLabel(orientation, t('ui.subplotCanvas.flipOrientation'));
-        setTooltip(orientation, t('ui.subplotCanvas.flipOrientation'));
         const fit = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit' });
+        const orientation = root.createEl('button', { cls: 'clickable-icon ert-story-navigator__fit', attr: { type: 'button' } });
         setAccessibleLabel(slider, t('ui.subplotCanvas.navigator'));
         setTooltip(selection, t('ui.subplotCanvas.navigatorSelection'));
         setIcon(selection, 'zoom-to-selection');
@@ -172,6 +169,11 @@ export class CanvasStoryNavigator {
         const update = (navigate: boolean, rescan = false): void => {
             if (rescan || !scenes.length) {
                 scenes = items(); cards = scenes.map(scene => scene.data); axis = storyAxis(cards);
+                const vertical = axis?.axis === 'y';
+                const orientationLabel = t(vertical ? 'ui.subplotCanvas.flipToHorizontal' : 'ui.subplotCanvas.flipToVertical');
+                setIcon(orientation, vertical ? 'rotate-ccw-square' : 'rotate-cw-square');
+                setAccessibleLabel(orientation, orientationLabel);
+                setTooltip(orientation, orientationLabel);
                 lastViewportCoordinate = null;
                 slider.max = String(Math.max(0, (scenes.length - 1) * 100));
                 slider.disabled = scenes.length === 0;

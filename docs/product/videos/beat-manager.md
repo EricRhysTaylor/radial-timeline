@@ -156,6 +156,26 @@ The shot times in the shot list are the plan. Set the YouTube chapters below fro
 
 **How-to, the workflow video:** `Radial Timeline LLC/Video/Plugin tutorials/beat manager/Exports/Beat Manager how-to.mp4`, 1:06, UHD; subtitles `Publish/beat-manager-howto.en.srt`. Eric's note on cut 2: a how-to, not an overview, about half as long. It keeps only the step lines of the same voice take: "Start from the library: classics like Save the Cat and the Hero's Journey" (over Settings → Core → Beats → Add system), "One click makes a note for every beat…", the drift and repair lines, "Or build your own…", the fields line, "All three live in the same book. Switch tabs…", and "Finished with one? Remove it…". Dropped: the opening on why beats matter, shots 4, 6, 7 and 10, the three proposals line, Gossamer following, adding a system back, and the closing line. Captions number the steps; the end card points to the wiki.
 
+**How-to dialog (recut 2026-11-12).** Eric's note: say how to get there, including the settings search (searching "beats" in Obsidian's settings finds "Story beats" under Radial Timeline). Only the first paragraph is new: record it as a pickup, `audio/beat-manager-howto-pickup.aifc`, with the same microphone setup. The rest is the take as already cut. On screen during the new line: Core's quick links, the click on Beats, the scroll down to "Story beats system", and the settings search field.
+
+> To open the Beat Manager, go to Settings, choose Radial Timeline's Core tab, and click Beats in the quick links. Or search for beats in the settings search.
+>
+> Start from the library: classics like Save the Cat and the Hero's Journey.
+>
+> One click makes a note for every beat, and each one takes its place on the timeline.
+>
+> As the book changes, beats drift. The Beat Manager checks every beat note against the system and shows you what's out of place.
+>
+> Repair beat notes puts them back. It fixes the act and the system name, and never renames your files.
+>
+> Or build your own. Name a system, add beats with plus, and put each one in its act.
+>
+> Give your beats the fields you care about, like what's at stake. Save the set and create its notes.
+>
+> All three live in the same book. Switch tabs, and the timeline switches structure.
+>
+> Finished with one? Remove it, and its notes go to the trash.
+
 **Beats Update Short:** the full overview reframed to 9:16, `Radial Timeline LLC/Video/Shorts/Beats Update/Exports/Beats Update.mp4`, 2:28; subtitles in its `Publish/`.
 
 **Full overview, 16:9:** `Radial Timeline LLC/Video/Plugin tutorials/beat manager/Exports/Beat Manager cut 2.mp4`, 2:28, UHD, made in HyperFrames (`HyperFrames/`). In that folder, `planning/build-voice.py` cuts the voice (pauses between chapters at 1.2 s), `planning/record.mjs` records the screen takes in a copy of the Pride & Prejudice vault, and `planning/build.py` lays out the scenes, captions and subtitles (`Publish/beat-manager.en.srt`). Music: "Observations" (From Now On), low under the voice.

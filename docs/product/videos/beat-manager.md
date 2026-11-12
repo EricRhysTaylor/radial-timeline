@@ -23,7 +23,7 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 - **Vault:** a throwaway copy of the Pride & Prejudice Story Vault, because the video creates, repairs and deletes beat notes. The Story Vault ships 15 Save the Cat beats with reviewed Gossamer scores.
 - **Starting state:** Save the Cat is the tab marked "Active in timeline". No Hero's Journey tab and no "Austen's Three Proposals" set yet.
 - **Check first:**
-  - Record on a build with commit 341f917a or later, and publish after the release that carries it. Before it, Repair never shows for a library system such as Hero's Journey (chapter 3), and a new blank system can't be named (chapter 5).
+  - Needs Radial Timeline 8.0.2 or later (commit 341f917a, released 2026-11-12). Before it, Repair never shows for a library system such as Hero's Journey (chapter 3), and a new blank system can't be named (chapter 5).
   - Clicking a system's tab swaps the beats on the wheel.
 - **Window and recorder:** as for `pdf-export`: 1920×1080, the shared theme, click highlights and auto-zoom, nothing private on screen.
 

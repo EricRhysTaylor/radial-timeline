@@ -23,7 +23,7 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 - **Vault:** a throwaway copy of the Pride & Prejudice Story Vault, because the video creates, repairs and deletes beat notes. The Story Vault ships 15 Save the Cat beats with reviewed Gossamer scores.
 - **Starting state:** Save the Cat is the tab marked "Active in timeline". No Hero's Journey tab and no "Austen's Three Proposals" set yet.
 - **Check first:**
-  - "Create 12 beat notes for Hero's Journey" works on the unchanged library set. If it asks you to save the set first, use "Save as copy" before chapter 1's last shot.
+  - Record on a build with commit 341f917a or later, and publish after the release that carries it. Before it, Repair never shows for a library system such as Hero's Journey (chapter 3), and a new blank system can't be named (chapter 5).
   - Clicking a system's tab swaps the beats on the wheel.
 - **Window and recorder:** as for `pdf-export`: 1920×1080, the shared theme, click highlights and auto-zoom, nothing private on screen.
 
@@ -44,7 +44,7 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 ### Chapter 1: Put a structure on your timeline (0:15–0:40)
 
 **3. The library (0:15–0:27)**
-- Screen: Settings → Radial Timeline → Core → "Story beats system". Open "Add system" and show its groups: "Narrative Frameworks", "Story Engines", "Format Structures". Choose "Hero's Journey", then "Open tab".
+- Screen: Settings → Radial Timeline → Core → "Story beats system". Open "Add system". Its "Select a set" list is a dropdown a screen recording can't show open, so choose each system the voice names in turn: its card appears, and the edit names its group ("Narrative Frameworks", "Story Engines", "Format Structures"). End on "Hero's Journey", then "Open tab".
 - Caption: ① Generate beats · Settings → Core → Story beats system
 - Voice: "Start from the library: classics like Save the Cat and the Hero's Journey, story engines like the Thriller Escalation Ladder, or formats like the Podcast Narrative Arc."
 
@@ -54,7 +54,7 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 - Voice: "Each system lists its beats by act, and what each one is for."
 
 **5. Onto the timeline (0:33–0:40)**
-- Screen: under "Beat notes", "Create 12 beat notes for Hero's Journey". Cut to the wheel: the twelve beats now sit among the chapters.
+- Screen: "Design", then under "Beat notes in your vault for Hero's Journey", "Create beat notes" and, in its dialog, "Create 12 notes". Cut to the wheel: the twelve beats now sit among the chapters.
 - Caption: One note per beat, placed on the timeline
 - Voice: "One click makes a note for every beat, and each one takes its place on the timeline."
 
@@ -78,27 +78,27 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 - Voice: "As the book changes, beats drift. The Beat Manager checks every beat note against the system and shows you what's out of place."
 
 **9. Repair (1:08–1:18)**
-- Screen: "Repair beat notes". The row turns green: "All 12 beat notes are synced."
+- Screen: "Repair 1 beat note". The row turns green and moves back to Act 2: "All 12 beat notes are synced."
 - Caption: Repair beat notes
 - Voice: "Repair beat notes puts them back. It fixes the act and the system name, and never renames your files."
 
 ### Chapter 4: Duplicates (1:18–1:28)
 
 **10. Find and remove a duplicate (1:18–1:28)**
-- Screen: in the file explorer, duplicate the Ordeal note and give the copy a different number prefix. Its row turns red: "Duplicate beat title. Manually delete duplicate beat notes (or rename one title) to resolve." Delete the copy; the row turns green.
+- Screen: in the file explorer, duplicate the Ordeal note and give the copy a different number prefix. When Settings opens, its row is red, and its icon's tooltip reads "Multiple beat notes match this title. Manually delete duplicate beat notes to resolve." Delete the copy (right-click, "Delete"); reopened, the row is green. The rows redraw when Settings opens, not while it stays open.
 - Caption: ④ Duplicates show in red
 - Voice: "A duplicate beat would throw off the scoring, so it's flagged in red. Delete the extra note, and the beat is clean again."
 
 ### Chapter 5: Build your own (1:28–1:50)
 
 **11. A blank system (1:28–1:40)**
-- Screen: "Add system" → "Blank / Custom" → "Create blank system". In "Edit custom system details", set "System name" to "Austen's Three Proposals". In Design's bottom row, add beats with "+": "Collins Proposes" in Act 1, "Darcy Proposes" in Act 2, "Darcy Proposes Again" in Act 3.
+- Screen: "Add system" → "Blank / Custom" → "Create blank system", then "Design". Click the system's name above its rows to open "Edit custom system details" and set "System name" to "Austen's Three Proposals". In Design's bottom row, add beats with "+": "Collins Proposes" in Act 1, "Darcy Proposes" in Act 2, "Darcy Proposes Again" in Act 3.
 - Caption: ⑤ Build your own system
 - Voice: "Or build your own. Name a system, add beats with plus, and put each one in its act. Here are the three proposals in Pride and Prejudice."
 
 **12. Your own fields (1:40–1:50)**
-- Screen: the "Fields" tab: add a field "Stakes" and tick "Show in beat hover synopsis"; the "Beat Hover Metadata Preview" shows it. "Save set", then "Create 3 beat notes for Austen's Three Proposals".
-- Caption: Your fields · Save set · Create beat notes
+- Screen: the "Fields" tab: add a field "Stakes" and tick "Show in beat hover synopsis"; the "Beat Hover Metadata Preview" shows it. "Save changes", then in "Design", "Create beat notes" and "Create 3 notes".
+- Caption: Your fields · Save changes · Create beat notes
 - Voice: "Give your beats the fields you care about, like what's at stake, save the set, and create its notes."
 
 ### Chapter 6: Switch systems in the same book (1:50–2:08)
@@ -151,6 +151,12 @@ Positions are in the take file as recorded, before the edit:
 | 15 | 2:38.3–2:43.2 | 4.9 s | 7 s |
 
 The shot times in the shot list are the plan. Set the YouTube chapters below from the blue markers in the final cut.
+
+## First cut (2026-11-12)
+
+`Radial Timeline LLC/Video/Plugin tutorials/beat manager/Exports/Beat Manager first cut.mp4`, 2:28, UHD, made in HyperFrames (`HyperFrames/`). In that folder, `planning/build-voice.py` cuts the voice (pauses between chapters at 1.2 s), `planning/record.mjs` records the screen takes in a copy of the Pride & Prejudice vault, and `planning/build.py` lays out the scenes, captions and subtitles (`Publish/beat-manager.en.srt`). Music: "Observations" (From Now On), low under the voice.
+
+Chapters in this cut: 0:00 What beats are for · 0:24 Put a structure on your timeline · 0:52 Each beat's place and characteristics · 1:10 Audit and repair · 1:29 Duplicates · 1:38 Build your own · 1:59 Switch systems
 
 ## YouTube chapters
 

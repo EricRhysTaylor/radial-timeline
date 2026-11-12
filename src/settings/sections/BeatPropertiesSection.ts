@@ -34,7 +34,7 @@ import { tooltipForComponent } from '../../utils/tooltip';
 import { computeCanonicalOrder, extractKeysInOrder, getBaseKeys, getCustomKeys, getTemplateParts, RESERVED_OBSIDIAN_KEYS, safeParseYaml } from '../../utils/yamlTemplateNormalize';
 import { IconSuggest } from '../IconSuggest';
 import { IMPACT_FULL } from '../SettingImpact';
-import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
+import { addHeadingIcon, addVideoLink, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { getBeatSystemCopy as getBuiltInBeatSystemCopy } from './beats/beatSystemCopy';
 import { dirtyState, type InnerStage } from './beats/dirtyState';
 import type { BeatNoteCustomContentSummary, BeatRow, FieldEntry } from './beats/types';
@@ -675,6 +675,7 @@ export function renderBeatPropertiesSection(params: {
         .setHeading();
     addHeadingIcon(beatsHeading, 'activity');
     addWikiLink(beatsHeading, 'Settings-Core#story-beats-system');
+    addVideoLink(beatsHeading, 'beat-manager');
     applyErtHeaderLayout(beatsHeading);
 
     // Wrapper keeps tabs + panel as a single stack item (no stack gap between them)

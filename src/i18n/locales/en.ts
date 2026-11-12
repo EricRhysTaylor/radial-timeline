@@ -7483,6 +7483,7 @@ export const en = {
             watch: 'Watch the video: {{title}}',
             pdfExport: 'Design a PDF style and export your manuscript',
             communityShare: 'Share your progress on the Community',
+            beatManager: 'Shape your story with the Beat Manager',
         },
         writingSessionCompletionModal: {
             allocateScenes: "Allocate this session to scenes",

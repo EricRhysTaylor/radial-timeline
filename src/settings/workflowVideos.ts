@@ -12,7 +12,7 @@
  * Plan and publishing steps: docs/engineering/plans/workflow-videos-plan.md
  */
 
-export type WorkflowVideoKey = 'pdf-export' | 'community-share';
+export type WorkflowVideoKey = 'pdf-export' | 'community-share' | 'beat-manager';
 
 interface WorkflowVideo {
     /** The registered /go/ slug (`rt-video-…`) once the video is live; null until then. */
@@ -24,6 +24,7 @@ interface WorkflowVideo {
 export const WORKFLOW_VIDEOS: Record<WorkflowVideoKey, WorkflowVideo> = {
     'pdf-export': { goSlug: null, titleKey: 'ui.workflowVideos.pdfExport' },
     'community-share': { goSlug: null, titleKey: 'ui.workflowVideos.communityShare' },
+    'beat-manager': { goSlug: null, titleKey: 'ui.workflowVideos.beatManager' },
 };
 
 export const WORKFLOW_VIDEO_GO_BASE = 'https://community.radialtimeline.com/go/';

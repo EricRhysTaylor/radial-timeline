@@ -16,6 +16,7 @@
 - **Wired now:**
   - `pdf-export`: the Export & publishing heading in Settings → Publish (`PublishSection.ts`), the design wizard's header badge (`DesignedStyleWizardModal.ts`), and the Manuscript export badge (`ManuscriptOptionsModal.ts`).
   - `community-share`: the status pill at the top of Settings → Community (`CommunityShareSection.ts`).
+  - `beat-manager`: the Story beats system heading in Settings → Core (`BeatPropertiesSection.ts`).
 - **Wiki:** GitHub wikis can't play video. Put a thumbnail at the top of the section the video explains, linking to its /go/ link. For example, at the top of Publishing: `wiki/images/video-pdf-export.webp` with the alt text "Watch: Design a PDF style and export your manuscript".
 - **Release notes:** link a video when the feature it shows ships or changes.
 
@@ -25,7 +26,7 @@
 - **Footage:** record in the Story Vaults (Pride & Prejudice, The Odyssey, Sherlock), so no private manuscript appears on screen.
 - **Captions:** always on; most viewers watch muted. Voice-over is optional.
 - **Shape:** open on the result, show three to five steps, end on a card naming the wiki page.
-- **Scripts:** one per video in `docs/product/videos/<key>.md`, with exact interface labels, so a script can be checked against the app before recording. First: [`pdf-export.md`](../../product/videos/pdf-export.md).
+- **Scripts:** one per video in `docs/product/videos/<key>.md`, with exact interface labels, so a script can be checked against the app before recording. Written so far: [`pdf-export.md`](../../product/videos/pdf-export.md) and [`beat-manager.md`](../../product/videos/beat-manager.md).
 
 ## Publishing a video
 
@@ -47,6 +48,7 @@ The pre-release eyeball checklist asks: if a release changes a screen a publishe
 |---|---|---|---|
 | `pdf-export` (wired) | Design a PDF style and export the manuscript | Pro workflow with the most steps | Settings → Publish, design wizard, Manuscript export, wiki Publishing |
 | `community-share` (wired) | Share your progress on the Community | Shows exactly what is and isn't shared | Settings → Community, wiki Settings-Community |
+| `beat-manager` (wired, scripted) | Shape your story with the Beat Manager | Gossamer scores against these beats; no video covers the Beat Manager yet | Settings → Core → Story beats system, wiki Settings-Core |
 | `pandoc-setup` | Install Pandoc and fonts for export | Issues #29 and #34 were authors stuck here | Settings → Publish, wiki Publishing |
 | `story-vault` | Add a Story Vault and look around | The first thing a new author sees | Welcome screen, Story Vault dialog, wiki Sample-Vault |
 | `import-manuscript` | Bring in an existing manuscript, including from Scrivener | The biggest hurdle for new authors | Onboarding dialog, wiki Onboard-Existing-Manuscript |

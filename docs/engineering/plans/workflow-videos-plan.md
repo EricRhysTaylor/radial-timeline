@@ -27,6 +27,7 @@
 - **Captions:** always on; most viewers watch muted. Voice-over is optional.
 - **Shape:** open on the result, show three to five steps, end on a card naming the wiki page.
 - **A how-to, not an overview** (Eric, 2026-11-12): show how to get there, starting from the screen an author opens (for example Settings → Core → a quick link; Obsidian's settings search doesn't find plugin sections), then how to use the tool, in about a minute. No labels over the interface. Everything a feature can do belongs in a Short or a numbered video instead; the Beat Manager's full 2:28 cut became the Beats Update Short.
+- **The end card stays up** (Eric, 2026-11-12): no fade to black. The closing card (logo, what to look up, radialtimeline.com) holds to the last frame, with the address on screen for at least three seconds.
 - **Production files** (voice takes, screen recordings, the edit) stay out of this public repository: on the Mac, in `Radial Timeline LLC/Video/Plugin tutorials/<video>/`, for example `…/beat manager/audio/beat-manager.aifc`. The auto-backup runs `git add -A` and pushes, so `.gitignore` ignores `video/` and raw recording formats in case a take lands in the repository folder by mistake.
 - **Scripts:** one per video in `docs/product/videos/<key>.md`, with exact interface labels, so a script can be checked against the app before recording. Written so far: [`pdf-export.md`](../../product/videos/pdf-export.md) and [`beat-manager.md`](../../product/videos/beat-manager.md).
 

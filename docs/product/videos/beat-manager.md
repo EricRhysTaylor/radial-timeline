@@ -44,8 +44,8 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 ### Chapter 1: Put a structure on your timeline (0:15–0:40)
 
 **3. The library (0:15–0:27)**
-- Screen: Settings → Radial Timeline → Core → "Story beats system". Open "Add system". Its "Select a set" list is a dropdown a screen recording can't show open, so choose each system the voice names in turn: its card appears, and the edit names its group ("Narrative Frameworks", "Story Engines", "Format Structures"). End on "Hero's Journey", then "Open tab".
-- Caption: ① Generate beats · Settings → Core → Story beats system
+- Screen: Settings → Radial Timeline → Core, at the top: click "Beats" under "Quick links", which jumps to "Story beats system" (Obsidian's settings search doesn't find it). Open "Add system". Its "Select a set" list is a dropdown a screen recording can't show open, so choose each system the voice names in turn and let its card show; no labels over the interface. End on "Hero's Journey", then "Open tab".
+- Caption: ① Generate beats · Settings → Core → Beats
 - Voice: "Start from the library: classics like Save the Cat and the Hero's Journey, story engines like the Thriller Escalation Ladder, or formats like the Podcast Narrative Arc."
 
 **4. The beats (0:27–0:33)**
@@ -152,11 +152,13 @@ Positions are in the take file as recorded, before the edit:
 
 The shot times in the shot list are the plan. Set the YouTube chapters below from the blue markers in the final cut.
 
-## First cut (2026-11-12)
+## Current cut (cut 2, 2026-11-12)
 
-`Radial Timeline LLC/Video/Plugin tutorials/beat manager/Exports/Beat Manager first cut.mp4`, 2:28, UHD, made in HyperFrames (`HyperFrames/`). In that folder, `planning/build-voice.py` cuts the voice (pauses between chapters at 1.2 s), `planning/record.mjs` records the screen takes in a copy of the Pride & Prejudice vault, and `planning/build.py` lays out the scenes, captions and subtitles (`Publish/beat-manager.en.srt`). Music: "Observations" (From Now On), low under the voice.
+`Radial Timeline LLC/Video/Plugin tutorials/beat manager/Exports/Beat Manager cut 2.mp4`, 2:28, UHD, made in HyperFrames (`HyperFrames/`). In that folder, `planning/build-voice.py` cuts the voice (pauses between chapters at 1.2 s), `planning/record.mjs` records the screen takes in a copy of the Pride & Prejudice vault, and `planning/build.py` lays out the scenes, captions and subtitles (`Publish/beat-manager.en.srt`). Music: "Observations" (From Now On), low under the voice.
 
-Chapters in this cut: 0:00 What beats are for · 0:24 Put a structure on your timeline · 0:52 Each beat's place and characteristics · 1:10 Audit and repair · 1:29 Duplicates · 1:38 Build your own · 1:59 Switch systems
+Cut 2 opens shot 3 on Core's quick links and drops the group labels over the set cards (Eric's notes on the first cut).
+
+Chapters in this cut: 0:00 What beats are for · 0:23 Put a structure on your timeline · 0:52 Each beat's place and characteristics · 1:10 Audit and repair · 1:29 Duplicates · 1:38 Build your own · 1:59 Switch systems
 
 ## YouTube chapters
 

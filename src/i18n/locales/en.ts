@@ -242,6 +242,7 @@ export const en = {
                 optionOpenaiCompat: 'OpenAI-Compatible',
                 baseUrlName: 'Base URL',
                 baseUrlDesc: 'The API endpoint for the selected Local server. For example: Ollama "http://localhost:11434/v1" or LM Studio "http://localhost:1234/v1".',
+                baseUrlPlainTextWarning: 'This address isn\'t on your computer or local network, and the connection isn\'t encrypted. Your manuscript text will travel in plain text.',
                 manualModelName: 'Manual model ID (fallback)',
                 manualModelDesc: 'Only use this if automatic model discovery cannot find the model you want. The AI Strategy model dropdown above is now the primary local model selector.',
                 jsonModeName: 'Structured JSON mode',

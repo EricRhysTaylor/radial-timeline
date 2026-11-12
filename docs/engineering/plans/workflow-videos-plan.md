@@ -63,6 +63,28 @@ The pre-release eyeball checklist asks: if a release changes a screen a publishe
 
 Later: Gossamer beat scoring, running an Inquiry, writing goals and sessions, exporting the wheel as an image.
 
+## Existing videos to reuse
+
+The channel already has a numbered series (listed in the README and on the wiki Home page) that the plugin never links to. A long video can serve a key now through a /go/ link with a start time (the YouTube link ending in `?t=` and the seconds), or a Short can be cut from it in YouTube Studio. Check each against today's interface before linking it from the plugin.
+
+| Existing video | Could serve | Link it from | Check first |
+|---|---|---|---|
+| Vol 11, Turn Your Notes into a Finished Manuscript | `pdf-export`, at its PDF part | Already wired | Probably predates the design wizard |
+| Vol 8, Radial Timeline Community | `community-share` | Already wired | Shows today's sharing levels and preview? |
+| Short, Build Your Novel Structure Instantly (`0vkLaI_LewM`) | `book-designer` | Book Designer's header badge | Ready to link |
+| Vol 10, Quick Start (`n53fYUejH44`) | `story-vault`, maybe `import-manuscript` | Welcome screen, Settings → Resources | |
+| Vol 14, A Tour of Radial Timeline (2026-11-10) | Getting started; its sections may cover Timetable and reordering | Welcome screen, wiki Getting-Started | Newest, most likely current |
+| Vol 2, Chronologue Mode (`5DsKdFLLeOU`) | `scene-time` | Settings → Core → Chronologue heading | Predates Release 6; Chronologue has changed a lot |
+| Vol 4, Inquiry View (`xfX0rP4-Hv4`) | Inquiry | Settings → Inquiry headings | |
+| Vol 5, Author Progress Report (`euJ2qOUZgco`) | `progress-and-lamps` | Settings → Social status pill | |
+| Vol 6, Gossamer Mode (`DOUVYXFwigM`) | Gossamer scoring; the `beat-manager` end card points here | Gossamer score dialog | |
+| Vol 9, Editorialist (`uoGUkF6RQ2E`) | The export-to-Editorialist handoff | The Editorialist line in the Manuscript export dialog | |
+| Short, Watch a Novel Progress Across Scenes & Subplots (`tBErpewO1wQ`) | Timelapse | Wiki Progress-Mode | |
+| Vol 13, November writing | Desk Lamps, if it shows them | Wiki Desk-Lamps | |
+| Vol 1 (`7noTSFaj8Eo`), Vol 3 Release 6 overview | — | Not from the plugin | Replaced by the tour |
+
+Volumes 7 and 12 appear nowhere in the README, the wiki or the Obsidian plugin page.
+
 ## Open questions
 
 - **"Design your own…" is still beta-only in 8.0.1** (the `plugin.betaFeatures` check in `PublishSection.ts`). Either record `pdf-export` after it ships, or record editing a bundled layout with the pencil button, which already ships.

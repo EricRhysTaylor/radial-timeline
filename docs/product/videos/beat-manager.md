@@ -25,7 +25,6 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 - **Check first:**
   - "Create 12 beat notes for Hero's Journey" works on the unchanged library set. If it asks you to save the set first, use "Save as copy" before chapter 1's last shot.
   - Clicking a system's tab swaps the beats on the wheel.
-  - Which act the Hero's Journey puts the Ordeal in, for chapter 3.
 - **Window and recorder:** as for `pdf-export`: 1920×1080, the shared theme, click highlights and auto-zoom, nothing private on screen.
 
 ## Shot list
@@ -74,7 +73,7 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 ### Chapter 3: Audit and repair as the book changes (0:58–1:18)
 
 **8. A beat drifts (0:58–1:08)**
-- Screen: in the Ordeal note's properties, change `Act` to a different act, as a revision might. Back in the Beat Manager, the Ordeal's row turns orange with "Placed in Act 3 in the manuscript. Template suggests Act 2." (the acts you used), and the status reads 11 synced, 1 misaligned.
+- Screen: in the Ordeal note's properties, change `Act` from 2 to 3, as a revision might. (The Hero's Journey puts the Ordeal in Act 2.) Back in the Beat Manager, the Ordeal's row turns orange with "Placed in Act 3 in the manuscript. Template suggests Act 2.", and the status reads 11 synced, 1 misaligned.
 - Caption: ③ Audit as the book changes
 - Voice: "As the book changes, beats drift. The Beat Manager checks every beat note against the system and shows you what's out of place."
 

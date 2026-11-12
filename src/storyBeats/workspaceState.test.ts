@@ -3,8 +3,8 @@ import { TFolder } from 'obsidian';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
 import type { RadialTimelineSettings, SavedBeatSystem } from '../types/settings';
 import { getBeatLibraryItems } from './libraryState';
-import { activateLoadedBeatTab, autoAdoptDetectedBeatsIfEmpty, ensureBeatWorkspaceState, ensureMaterializedBeatWorkspaceState, getActiveLoadedBeatTab, getLoadedBeatTabs, getMaterializedBeatTabs, loadBeatTabFromLibraryItem, unloadBeatTab } from './workspaceState';
-import { resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
+import { activateLoadedBeatTab, autoAdoptDetectedBeatsIfEmpty, ensureBeatWorkspaceState, ensureMaterializedBeatWorkspaceState, getActiveLoadedBeatTab, getLoadedBeatTabs, getMaterializedBeatTabs, linkBeatTabToSavedSystem, loadBeatTabFromLibraryItem, unloadBeatTab, updateLoadedBeatTab } from './workspaceState';
+import { getCustomBeatConfigKey, resolveSelectedBeatModelFromSettings } from '../utils/beatSystemState';
 
 function buildSettings(): RadialTimelineSettings {
     return {
@@ -282,6 +282,76 @@ describe('manuscript-detected beat tabs', () => {
         expect(getActiveLoadedBeatTab(settings)).toBeUndefined();
         expect(resolveSelectedBeatModelFromSettings(settings)).toBeUndefined();
         expect(getLoadedBeatTabs(settings).map((tab) => tab.name)).toContain('Historical Spiral');
+    });
+});
+
+describe('saving a blank system to the library', () => {
+    const config = { beatYamlAdvanced: 'Stakes:', beatHoverMetadataFields: [{ key: 'Stakes', label: 'Stakes', icon: 'flame', enabled: true }] };
+
+    function buildBlankWithBeats(settings: RadialTimelineSettings) {
+        const blank = getBeatLibraryItems(settings).find((item) => item.kind === 'blank')!;
+        const tab = loadBeatTabFromLibraryItem(settings, blank);
+        return updateLoadedBeatTab(settings, tab.tabId, (current) => ({
+            ...current,
+            name: "Austen's Three Proposals",
+            beats: [
+                { name: 'Collins Proposes', act: 1 },
+                { name: 'Darcy Proposes', act: 2 },
+                { name: 'Darcy Proposes Again', act: 3 },
+            ],
+            config,
+        }))!;
+    }
+
+    function storeSystem(settings: RadialTimelineSettings, system: SavedBeatSystem) {
+        settings.savedBeatSystems = [system, ...(settings.savedBeatSystems ?? [])];
+        settings.beatSystemConfigs = { ...(settings.beatSystemConfigs ?? {}), [getCustomBeatConfigKey(system.id)]: config };
+    }
+
+    it('a blank tab with beats reads unsaved, and reads clean once linked to its saved system', () => {
+        const settings = buildSettings();
+        const blankTab = buildBlankWithBeats(settings);
+        expect(blankTab.dirty).toBe(true);
+
+        const system: SavedBeatSystem = { id: '1700000000000', name: blankTab.name, beats: blankTab.beats, createdAt: '2026-11-12T00:00:00.000Z' };
+        storeSystem(settings, system);
+        const linked = linkBeatTabToSavedSystem(settings, blankTab.tabId, system, config)!;
+
+        expect(linked.tabId).toBe('beat-tab:saved:1700000000000');
+        expect(linked.sourceKind).toBe('saved');
+        expect(linked.dirty).toBe(false);
+        expect(getActiveLoadedBeatTab(settings)?.tabId).toBe(linked.tabId);
+        expect(getLoadedBeatTabs(settings).map((tab) => tab.tabId)).toEqual([linked.tabId]);
+    });
+
+    it('creating another blank system afterwards opens a new tab instead of replacing the saved one', () => {
+        const settings = buildSettings();
+        const blankTab = buildBlankWithBeats(settings);
+        const system: SavedBeatSystem = { id: '1700000000000', name: blankTab.name, beats: blankTab.beats, createdAt: '2026-11-12T00:00:00.000Z' };
+        storeSystem(settings, system);
+        linkBeatTabToSavedSystem(settings, blankTab.tabId, system, config);
+
+        const blank = getBeatLibraryItems(settings).find((item) => item.kind === 'blank')!;
+        loadBeatTabFromLibraryItem(settings, blank);
+
+        const tabs = getLoadedBeatTabs(settings);
+        expect(tabs).toHaveLength(2);
+        expect(tabs.find((tab) => tab.sourceKind === 'saved')?.name).toBe("Austen's Three Proposals");
+        expect(tabs.find((tab) => tab.sourceKind === 'blank')?.beats).toHaveLength(0);
+    });
+
+    it('an edited saved tab reads unsaved until the library copy matches it again', () => {
+        const settings = buildSettings();
+        const blankTab = buildBlankWithBeats(settings);
+        const system: SavedBeatSystem = { id: '1700000000000', name: blankTab.name, beats: blankTab.beats, createdAt: '2026-11-12T00:00:00.000Z' };
+        storeSystem(settings, system);
+        const linked = linkBeatTabToSavedSystem(settings, blankTab.tabId, system, config)!;
+
+        const edited = updateLoadedBeatTab(settings, linked.tabId, (tab) => ({ ...tab, beats: [...tab.beats, { name: 'Wickham Elopes', act: 3 }] }))!;
+        expect(edited.dirty).toBe(true);
+
+        settings.savedBeatSystems = [{ ...system, beats: edited.beats }];
+        expect(updateLoadedBeatTab(settings, linked.tabId, (tab) => tab)?.dirty).toBe(false);
     });
 });
 

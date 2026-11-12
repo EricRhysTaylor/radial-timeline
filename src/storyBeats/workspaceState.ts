@@ -8,6 +8,7 @@ import type {
     BookProfile,
     LoadedBeatTab,
     RadialTimelineSettings,
+    SavedBeatSystem,
 } from '../types/settings';
 import { getActiveBook } from '../utils/books';
 import {
@@ -75,7 +76,7 @@ export function getLoadedBeatTabConfigKey(tab: LoadedBeatTab): string {
     return getCustomBeatConfigKey(getWorkspaceCustomSystemId(tab));
 }
 
-function buildWorkspaceTabId(item: BeatLibraryItem): string {
+function buildWorkspaceTabId(item: Pick<BeatLibraryItem, 'kind' | 'id'>): string {
     if (item.kind === 'blank') return `${WORKSPACE_TAB_ID_PREFIX}blank`;
     return `${WORKSPACE_TAB_ID_PREFIX}${item.kind}:${item.id}`;
 }
@@ -499,6 +500,47 @@ export function updateLoadedBeatTab(
         },
     });
     return cloneLoadedTab(updated);
+}
+
+/**
+ * Make a loaded tab the working copy of a library system the caller has just stored in
+ * `settings.savedBeatSystems` (with its config under its custom config key). The tab is
+ * re-keyed to that system's tab id, so a later "Create blank system" (or reloading the
+ * built-in it was copied from) gets a tab of its own instead of overwriting this one.
+ * Its dirty flag is recomputed against the stored system, so a saved tab reads clean.
+ */
+export function linkBeatTabToSavedSystem(
+    settings: RadialTimelineSettings,
+    tabId: string,
+    system: SavedBeatSystem,
+    config: BeatSystemConfig
+): LoadedBeatTab | undefined {
+    const workspace = getWorkspace(settings);
+    if (!workspace.tabsById[tabId]) return undefined;
+    const nextTabId = buildWorkspaceTabId({ kind: 'saved', id: system.id });
+    const linked: LoadedBeatTab = {
+        tabId: nextTabId,
+        sourceKind: 'saved',
+        sourceId: system.id,
+        linkedSavedSystemId: system.id,
+        name: normalizeBeatSetNameInput(system.name, 'Custom'),
+        description: system.description ?? '',
+        beats: system.beats.map(cloneBeatDefinition),
+        config: cloneBeatConfig(config),
+        dirty: false,
+    };
+    linked.dirty = computeTabDirty(settings, linked);
+    const tabsById = { ...workspace.tabsById };
+    delete tabsById[tabId];
+    tabsById[nextTabId] = linked;
+    setWorkspace(settings, {
+        loadedTabIds: workspace.loadedTabIds
+            .filter((id) => id !== nextTabId || id === tabId)
+            .map((id) => (id === tabId ? nextTabId : id)),
+        tabsById,
+        activeTabId: workspace.activeTabId === tabId ? nextTabId : workspace.activeTabId,
+    });
+    return cloneLoadedTab(linked);
 }
 
 export function unloadBeatTab(settings: RadialTimelineSettings, tabId: string): string | undefined {

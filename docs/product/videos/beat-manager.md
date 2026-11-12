@@ -24,6 +24,7 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 - **Starting state:** Save the Cat is the tab marked "Active in timeline". No Hero's Journey tab and no "Austen's Three Proposals" set yet.
 - **Check first:**
   - Needs Radial Timeline 8.0.2 or later (commit 341f917a, released 2026-11-12). Before it, Repair never shows for a library system such as Hero's Journey (chapter 3), and a new blank system can't be named (chapter 5).
+  - Also needs the release after 8.0.2 (the "Save changes saves a blank system" fix, 2026-11-12). Before it, "Austen's Three Proposals" never reaches the library: its tab shows the yellow "unsaved changes" icon whenever another tab is active (chapter 6), and its Stakes field drops out of the hover until its tab is selected again. Don't publish before that release.
   - Clicking a system's tab swaps the beats on the wheel.
 - **Window and recorder:** as for `pdf-export`: 1920×1080, the shared theme, click highlights and auto-zoom, nothing private on screen.
 

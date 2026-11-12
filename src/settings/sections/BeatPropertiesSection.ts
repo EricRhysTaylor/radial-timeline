@@ -17,13 +17,13 @@ import { DEFAULT_SETTINGS } from '../defaults';
 import { renderYamlAuditPanel } from './beats/YamlAuditPanel';
 
 import { SystemEditModal } from '../../modals/SystemEditModal';
-import { BLANK_LIBRARY_ITEM_ID, getBeatLibraryItems } from '../../storyBeats/libraryState';
-import { activateLoadedBeatTab, ensureBeatWorkspaceState, ensureMaterializedBeatWorkspaceState, getActiveLoadedBeatTab, getActiveLoadedBeatTabId, getLoadedBeatTabs, getMaterializedBeatTabs, isBeatLibraryItemLoaded, loadBeatTabFromLibraryItem, materializeBeatTab, unloadBeatTab, updateLoadedBeatTab } from '../../storyBeats/workspaceState';
+import { BLANK_LIBRARY_ITEM_ID, getBeatLibraryItems, getSavedBeatLibraryItems } from '../../storyBeats/libraryState';
+import { activateLoadedBeatTab, ensureBeatWorkspaceState, ensureMaterializedBeatWorkspaceState, getActiveLoadedBeatTab, getActiveLoadedBeatTabId, getLoadedBeatTabs, getMaterializedBeatTabs, isBeatLibraryItemLoaded, linkBeatTabToSavedSystem, loadBeatTabFromLibraryItem, materializeBeatTab, unloadBeatTab, updateLoadedBeatTab } from '../../storyBeats/workspaceState';
 import type { HoverMetadataField, SavedBeatSystem } from '../../types/settings';
 import { ERT_CLASSES, ERT_DATA } from '../../ui/classes';
 import { clampActNumber, parseActLabels, resolveActLabel } from '../../utils/acts';
 import { DEFAULT_CUSTOM_BEAT_SYSTEM_ID, getCustomBeatConfigKey, replaceSavedBeatSystem, resolveSelectedBeatModelFromSettings, } from '../../utils/beatSystemState';
-import { generateBeatGuid, hasBeatReadableText, normalizeBeatFieldKeyInput, normalizeBeatFieldListValueInput, normalizeBeatFieldValueInput, normalizeBeatNameInput, normalizeBeatSetNameInput, } from '../../utils/beatsInputNormalize';
+import { generateBeatGuid, hasBeatReadableText, normalizeBeatFieldKeyInput, normalizeBeatFieldListValueInput, normalizeBeatFieldValueInput, normalizeBeatNameInput, normalizeBeatSetNameInput, toBeatModelMatchKey, } from '../../utils/beatsInputNormalize';
 import { parseDescriptionParts } from '../../utils/descriptionParser';
 import { scheduleFocusAfterPaint } from '../../utils/domFocus';
 import { getActiveFrontmatterMappings, normalizeFrontmatterKeys } from '../../utils/frontmatter';
@@ -1601,13 +1601,32 @@ export function renderBeatPropertiesSection(params: {
     let refreshBeatAuditPrimaryAction: (() => void) | null = null;
     let resetBeatAuditPanel: (() => void) | null = null;
     let primaryDesignAction: (() => Promise<void>) = async () => { await createBeatTemplates(); };
+    /**
+     * Store a system in the library (with its fields config) and make the active tab its
+     * working copy. The one path by which a tab becomes a saved system: Save changes on a
+     * new blank system, and Save as copy.
+     */
+    const saveActiveTabAsLibrarySystem = (system: SavedBeatSystem, config: BeatSystemConfig): void => {
+        if (!plugin.settings.beatSystemConfigs) plugin.settings.beatSystemConfigs = {};
+        plugin.settings.beatSystemConfigs[getCustomBeatConfigKey(system.id)] = {
+            beatYamlAdvanced: config.beatYamlAdvanced,
+            beatHoverMetadataFields: config.beatHoverMetadataFields.map(f => ({ ...f })),
+        };
+        replaceSavedBeatSystem(plugin.settings, system);
+        const stored = (plugin.settings.savedBeatSystems ?? []).find(s => s.id === system.id) ?? system;
+        const activeTabId = getActiveBeatWorkspaceTabId();
+        if (activeTabId) {
+            linkBeatTabToSavedSystem(plugin.settings, activeTabId, stored, config);
+        }
+    };
+
     const saveCurrentCustomSet = async (context: 'design' | 'fields' | 'generic' = 'generic'): Promise<void> => {
         const activeWorkspaceTab = getActiveBeatWorkspaceTab();
         if (!activeWorkspaceTab || activeWorkspaceTab.sourceKind === 'builtin') return;
         const activeId = getActiveCustomId();
 
         // Regular Save never prompts rename/save-as.
-        // If active set is a saved set, update that set in place.
+        // A new blank system is added to the library under its own name; a saved set is updated in place.
         const activeConfig = getBeatConfigForSystem(plugin.settings);
         const currentName = getActiveCustomName('Custom');
         const currentDescription = getActiveCustomDescription();
@@ -1623,7 +1642,21 @@ export function renderBeatPropertiesSection(params: {
 
         const savedSystems = plugin.settings.savedBeatSystems ?? [];
         const existingIdx = activeId ? savedSystems.findIndex(s => s.id === activeId) : -1;
-        if (existingIdx >= 0 && activeId) {
+        const isFirstSaveOfBlank = activeWorkspaceTab.sourceKind === 'blank';
+        if (isFirstSaveOfBlank) {
+            const nameKey = toBeatModelMatchKey(currentName);
+            if (getSavedBeatLibraryItems(plugin.settings).some(item => toBeatModelMatchKey(item.name) === nameKey)) {
+                new Notice(t('ui.beatPropertiesSection.saveNameTakenNotice', { name: currentName }));
+                return;
+            }
+            saveActiveTabAsLibrarySystem({
+                id: `${Date.now()}`,
+                name: currentName,
+                description: currentDescription,
+                beats: currentBeats,
+                createdAt: new Date().toISOString(),
+            }, activeConfig);
+        } else if (existingIdx >= 0 && activeId) {
             savedSystems[existingIdx] = {
                 ...savedSystems[existingIdx],
                 name: currentName,
@@ -1637,15 +1670,24 @@ export function renderBeatPropertiesSection(params: {
                 beatHoverMetadataFields: activeConfig.beatHoverMetadataFields.map(f => ({ ...f })),
             };
         }
+        // Re-read the tab's dirty flag against what was just stored; tabs that aren't active show this flag.
+        const savedTabId = getActiveBeatWorkspaceTabId();
+        if (savedTabId) updateLoadedBeatTab(plugin.settings, savedTabId, (tab) => tab);
 
         await plugin.saveSettings();
         captureSetBaseline(getActiveDirtyKey());
         dirtyState.notify();
+        if (isFirstSaveOfBlank) {
+            renderCustomConfig();       // Design header shows the saved system
+            renderSavedBeatSystems();   // Library lists it
+        }
         renderBeatSystemTabs();
         renderPreviewContent(getActiveBeatWorkspaceName('Custom'));
         updateTemplateButton(templateSetting, getActiveBeatWorkspaceName('Custom'));
         refreshBeatAuditPrimaryAction?.();
-        if (context === 'fields') {
+        if (isFirstSaveOfBlank) {
+            new Notice(t('ui.beatPropertiesSection.setSavedNotice', { name: currentName }));
+        } else if (context === 'fields') {
             new Notice(t('settings.beats.design.setSavedNotice'));
         }
     };
@@ -2986,35 +3028,7 @@ export function renderBeatPropertiesSection(params: {
                 createdAt: new Date().toISOString()
             };
 
-            if (!plugin.settings.beatSystemConfigs) plugin.settings.beatSystemConfigs = {};
-            plugin.settings.beatSystemConfigs[getCustomBeatConfigKey(newSystem.id)] = {
-                beatYamlAdvanced: activeConfig.beatYamlAdvanced,
-                beatHoverMetadataFields: activeConfig.beatHoverMetadataFields.map(f => ({ ...f })),
-            };
-
-            if (existingIdx >= 0) {
-                existingSystems[existingIdx] = newSystem;
-            } else {
-                existingSystems.unshift(newSystem);
-            }
-            plugin.settings.savedBeatSystems = existingSystems;
-            const activeTabId = getActiveBeatWorkspaceTabId();
-            if (activeTabId) {
-                updateLoadedBeatTab(plugin.settings, activeTabId, (tab) => ({
-                    ...tab,
-                    sourceKind: 'saved',
-                    sourceId: newSystem.id,
-                    linkedSavedSystemId: newSystem.id,
-                    name: newSystem.name,
-                    description: newSystem.description ?? '',
-                    beats: newSystem.beats.map((beat) => ({ ...beat })),
-                    config: {
-                        beatYamlAdvanced: activeConfig.beatYamlAdvanced,
-                        beatHoverMetadataFields: activeConfig.beatHoverMetadataFields.map(f => ({ ...f })),
-                    },
-                    dirty: false,
-                }));
-            }
+            saveActiveTabAsLibrarySystem(newSystem, activeConfig);
             await plugin.saveSettings();
             // Re-capture baseline so the saved state becomes the new "clean" reference
             captureSetBaseline(getActiveDirtyKey());

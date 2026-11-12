@@ -3101,6 +3101,7 @@ export const en = {
             setCopiedNotice: 'Set "{{name}}" copied.',
             setUpdatedNotice: 'Set "{{name}}" updated.',
             setSavedNotice: 'Set "{{name}}" saved.',
+            saveNameTakenNotice: 'Your library already has a system named "{{name}}". Rename this one to save it.',
             backdropHoverPreviewHeadingCount: 'Backdrop Hover Metadata Preview ({{fields}})',
             missingDetails: 'Missing details: {{detail}}',
             missingTooltipHeader: 'Why these beats are marked missing:\n{{lines}}',

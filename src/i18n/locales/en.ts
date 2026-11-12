@@ -5817,6 +5817,7 @@ export const en = {
             colorMoved: "Ring color changed",
             colorMovedDetail: "{{subplot}} has changed color since these cards were colored. They take its color when you create the scenes.",
             stillIndexing: "Obsidian is still reading the new scenes. Open the timeline once it has finished.",
+            doneNotShown: "The conversion finished, but the timeline could not be opened. Open it from the ribbon.",
             canvasUnreadable: "Radial Timeline can’t read this Canvas’s cards, so it left them as they are.",
             creating: "Creating…",
             subplotName: 'Subplot name',

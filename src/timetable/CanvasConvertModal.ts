@@ -800,15 +800,22 @@ export class CanvasConvertModal extends ErtModal {
                 console.error('[Canvas subplots] Could not save the Canvas card choices after Create', error);
                 new Notice(t('ui.canvasSketch.cardMemoryNotSaved', { message: error instanceof Error ? error.message : String(error) }), 10000);
             }
-            // Draw the timeline once, complete: only after Obsidian has read every new note's properties.
-            const indexed = await this.indexed([...paths.values()]);
-            if (mode === 'scenes') await this.plugin.setActiveBookId(book.id);
-            if (!indexed) {
-                new Notice(t('ui.canvasSketch.stillIndexing'), 10000);
-                return;
+            // The conversion is complete. A failure from here on only affects
+            // showing the result, so it must not be reported as a partial conversion.
+            try {
+                // Draw the timeline once, complete: only after Obsidian has read every new note's properties.
+                const indexed = await this.indexed([...paths.values()]);
+                if (mode === 'scenes') await this.plugin.setActiveBookId(book.id);
+                if (!indexed) {
+                    new Notice(t('ui.canvasSketch.stillIndexing'), 10000);
+                    return;
+                }
+                this.plugin.refreshTimelineIfNeeded(null);
+                if (mode === 'scenes') await this.plugin.getTimelineService().activateView();
+            } catch (error) {
+                console.error('[Canvas sketches] Converted, but could not show the timeline', error);
+                new Notice(t('ui.canvasSketch.doneNotShown'), 8000);
             }
-            this.plugin.refreshTimelineIfNeeded(null);
-            if (mode === 'scenes') await this.plugin.getTimelineService().activateView();
         } catch (error) {
             console.error('[Canvas sketches]', error);
             // Older sketches are ranked only together with a new sketch, so there is nothing to undo.

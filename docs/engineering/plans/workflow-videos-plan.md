@@ -26,6 +26,7 @@
 - **Footage:** record in the Story Vaults (Pride & Prejudice, The Odyssey, Sherlock), so no private manuscript appears on screen.
 - **Captions:** always on; most viewers watch muted. Voice-over is optional.
 - **Shape:** open on the result, show three to five steps, end on a card naming the wiki page.
+- **A how-to, not an overview** (Eric, 2026-11-12): show how to get there, starting from the screen an author opens (for example Settings → Core → a quick link; Obsidian's settings search doesn't find plugin sections), then how to use the tool, in about a minute. No labels over the interface. Everything a feature can do belongs in a Short or a numbered video instead; the Beat Manager's full 2:28 cut became the Beats Update Short.
 - **Production files** (voice takes, screen recordings, the edit) stay out of this public repository: on the Mac, in `Radial Timeline LLC/Video/Plugin tutorials/<video>/`, for example `…/beat manager/audio/beat-manager.aifc`. The auto-backup runs `git add -A` and pushes, so `.gitignore` ignores `video/` and raw recording formats in case a take lands in the repository folder by mistake.
 - **Scripts:** one per video in `docs/product/videos/<key>.md`, with exact interface labels, so a script can be checked against the app before recording. Written so far: [`pdf-export.md`](../../product/videos/pdf-export.md) and [`beat-manager.md`](../../product/videos/beat-manager.md).
 
@@ -49,7 +50,7 @@ The pre-release eyeball checklist asks: if a release changes a screen a publishe
 |---|---|---|---|
 | `pdf-export` (wired) | Design a PDF style and export the manuscript | Pro workflow with the most steps | Settings → Publish, design wizard, Manuscript export, wiki Publishing |
 | `community-share` (wired) | Share your progress on the Community | Shows exactly what is and isn't shared | Settings → Community, wiki Settings-Community |
-| `beat-manager` (wired, scripted) | Shape your story with the Beat Manager | Gossamer scores against these beats; no video covers the Beat Manager yet | Settings → Core → Story beats system, wiki Settings-Core |
+| `beat-manager` (wired; how-to cut, 1:06, ready; publish after the release that carries 341f917a) | Shape your story with the Beat Manager | Gossamer scores against these beats; no video covers the Beat Manager yet | Settings → Core → Story beats system, wiki Settings-Core |
 | `pandoc-setup` | Install Pandoc and fonts for export | Issues #29 and #34 were authors stuck here | Settings → Publish, wiki Publishing |
 | `story-vault` | Add a Story Vault and look around | The first thing a new author sees | Welcome screen, Story Vault dialog, wiki Sample-Vault |
 | `import-manuscript` | Bring in an existing manuscript, including from Scrivener | The biggest hurdle for new authors | Onboarding dialog, wiki Onboard-Existing-Manuscript |

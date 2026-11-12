@@ -1,7 +1,7 @@
 # Video script: The Beat Manager
 
 **Key:** `beat-manager` (see `docs/engineering/plans/workflow-videos-plan.md`)
-**Length:** about 2 minutes 15 seconds, in six chapters. Longer than the other workflow videos because it introduces the whole tool. Add the chapters as YouTube chapters; a 60-second Short can be cut from chapters 1 and 6.
+**Length:** two cuts from one recording. The **how-to** (1:06) is the workflow video the plugin links to: how to get there and how to use the tool, nothing else. The full overview (2:28, six chapters, everything below) becomes the vertical **Beats Update** Short. See "Cuts" below.
 **Frame:** 16:9.
 **Written against:** 8.0.1. Labels in quotes are exact; check the order of clicks in the app before recording.
 
@@ -152,9 +152,13 @@ Positions are in the take file as recorded, before the edit:
 
 The shot times in the shot list are the plan. Set the YouTube chapters below from the blue markers in the final cut.
 
-## Current cut (cut 2, 2026-11-12)
+## Cuts (2026-11-12)
 
-`Radial Timeline LLC/Video/Plugin tutorials/beat manager/Exports/Beat Manager cut 2.mp4`, 2:28, UHD, made in HyperFrames (`HyperFrames/`). In that folder, `planning/build-voice.py` cuts the voice (pauses between chapters at 1.2 s), `planning/record.mjs` records the screen takes in a copy of the Pride & Prejudice vault, and `planning/build.py` lays out the scenes, captions and subtitles (`Publish/beat-manager.en.srt`). Music: "Observations" (From Now On), low under the voice.
+**How-to, the workflow video:** `Radial Timeline LLC/Video/Plugin tutorials/beat manager/Exports/Beat Manager how-to.mp4`, 1:06, UHD; subtitles `Publish/beat-manager-howto.en.srt`. Eric's note on cut 2: a how-to, not an overview, about half as long. It keeps only the step lines of the same voice take: "Start from the library: classics like Save the Cat and the Hero's Journey" (over Settings → Core → Beats → Add system), "One click makes a note for every beat…", the drift and repair lines, "Or build your own…", the fields line, "All three live in the same book. Switch tabs…", and "Finished with one? Remove it…". Dropped: the opening on why beats matter, shots 4, 6, 7 and 10, the three proposals line, Gossamer following, adding a system back, and the closing line. Captions number the steps; the end card points to the wiki.
+
+**Beats Update Short:** the full overview reframed to 9:16, `Radial Timeline LLC/Video/Shorts/Beats Update/Exports/Beats Update.mp4`, 2:28; subtitles in its `Publish/`.
+
+**Full overview, 16:9:** `Radial Timeline LLC/Video/Plugin tutorials/beat manager/Exports/Beat Manager cut 2.mp4`, 2:28, UHD, made in HyperFrames (`HyperFrames/`). In that folder, `planning/build-voice.py` cuts the voice (pauses between chapters at 1.2 s), `planning/record.mjs` records the screen takes in a copy of the Pride & Prejudice vault, and `planning/build.py` lays out the scenes, captions and subtitles (`Publish/beat-manager.en.srt`). Music: "Observations" (From Now On), low under the voice.
 
 Cut 2 opens shot 3 on Core's quick links and drops the group labels over the set cards (Eric's notes on the first cut).
 

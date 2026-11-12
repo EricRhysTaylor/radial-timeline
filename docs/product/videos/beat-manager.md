@@ -124,9 +124,9 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 
 `Radial Timeline LLC/Video/Plugin tutorials/beat manager/audio/beat-manager.aifc`: 2:47.4, 48 kHz, 24-bit. Measured with ffmpeg's silence detection and a whisper transcript of each line. Shot 7's and shot 11's voice lines above now match what was said.
 
-- **Edit:** trim the 3.0 s before the first word, and cut 0:28.1–0:35.9 (a false start of shot 3 and the spoken "retake"). The voice then runs 2:32.4, against 2:15 planned.
-- **Missing:** shot 4 ("Each system lists its beats by act…") is not in the take. It is being recorded as a pickup, `beat-manager-pickup.aifc` beside the take, with the same microphone setup. Read shot 3's last sentence, shot 4 and shot 5's first sentence together so the line flows, and keep only shot 4. At the take's pace it runs about 5 s.
-- **Pauses:** the breaks between chapters hold 1.9–4.9 s, 22.5 s in all. At 1 s each, the voice runs about 2:17.
+- **Edit:** trim the 3.0 s before the first word, and cut 0:28.1–0:35.9 (a false start of shot 3 and the spoken "retake"). The voice then runs 2:32.4, or 2:38.2 with the shot 4 pickup, against 2:15 planned.
+- **Shot 4 pickup:** the take has no shot 4. `beat-manager-pickup.aifc` beside the take (17.8 s, same format) reads shot 3's last sentence, shot 4 and shot 5's first sentence once; shot 4 is at 0:06.3–0:11.4 in it, and its words match the script. Split the take at 0:50.75, in the room tone after "Podcast Narrative Arc.", and put the pickup's 0:05.80–0:11.65 there. The take's breath before "One click" stays. Raise the pickup clip 1 dB: the two lines it repeats from the take measure 0.9–2.4 LU quieter, while its tone and room tone match.
+- **Pauses:** the breaks between chapters hold 1.9–4.9 s, 22.5 s in all. At 1 s each, the voice runs about 2:23 with the pickup.
 - **Pace:** 2.7 words a second. Shot 1's 32 words need about 12 s, not the planned 7.
 - **Listen for:** "Finished with one?" (2:25.5), which every transcript hears as "Finish with one". The B in "Beats" (0:03.0) and "beats drift" (1:19.6), heard as an M when those lines are transcribed alone.
 
@@ -137,7 +137,7 @@ Positions are in the take file as recorded, before the edit:
 | 1 | 0:03.0–0:16.9 | 13.8 s | 7 s |
 | 2 | 0:17.5–0:24.6 | 7.1 s | 8 s |
 | 3 | 0:35.9–0:50.7 | 14.7 s | 12 s |
-| 4 | not recorded | — | 6 s |
+| 4 | pickup file, 0:06.3–0:11.4 | 5.1 s | 6 s |
 | 5 | 0:51.6–0:57.6 | 6.0 s | 7 s |
 | 6 | 1:01.2–1:08.0 | 6.8 s | 8 s |
 | 7 | 1:08.9–1:17.5 | 8.6 s | 10 s |

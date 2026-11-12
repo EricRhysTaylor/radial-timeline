@@ -26,6 +26,7 @@
 - **Footage:** record in the Story Vaults (Pride & Prejudice, The Odyssey, Sherlock), so no private manuscript appears on screen.
 - **Captions:** always on; most viewers watch muted. Voice-over is optional.
 - **Shape:** open on the result, show three to five steps, end on a card naming the wiki page.
+- **Production files** (voice takes, screen recordings, the edit) stay out of this public repository: on the Mac, in `Radial Timeline LLC/Video/Plugin tutorials/<video>/`, for example `…/beat manager/audio/beat-manager.aifc`. The auto-backup runs `git add -A` and pushes, so `.gitignore` ignores `video/` and raw recording formats in case a take lands in the repository folder by mistake.
 - **Scripts:** one per video in `docs/product/videos/<key>.md`, with exact interface labels, so a script can be checked against the app before recording. Written so far: [`pdf-export.md`](../../product/videos/pdf-export.md) and [`beat-manager.md`](../../product/videos/beat-manager.md).
 
 ## Publishing a video

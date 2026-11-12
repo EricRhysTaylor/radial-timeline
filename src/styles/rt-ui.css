@@ -10565,17 +10565,18 @@
 
 /* Story position on generated Canvas maps. */
 .ert-story-navigator { position: absolute; z-index: 10; left: 12px; top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: auto; max-width: 236px; padding: 8px 10px; border: 1px solid var(--background-modifier-border); border-radius: 10px; background: var(--background-secondary); box-shadow: var(--shadow-s); }
-.ert-story-navigator.is-story-map { left: 50%; transform: translateX(-50%); width: min(680px, calc(100% - 24px)); max-width: none; }
-/* The story map's buttons take a fixed share; the scene label gives way before the drag bar does. */
-.ert-story-navigator.is-story-map .ert-story-navigator__label { flex: 0 1 auto; max-width: 220px; }
-.ert-story-navigator.is-story-map .ert-story-navigator__slider { flex: 1 1 200px; min-width: 160px; }
+.ert-story-navigator.is-story-map { left: 50%; transform: translateX(-50%); width: min(600px, calc(100% - 24px)); max-width: none; }
+/* The drag bar keeps one width while the scene label changes under a drag;
+   the label takes whatever room is left and truncates. */
+.ert-story-navigator.is-story-map .ert-story-navigator__label { flex: 1 1 0; }
+.ert-story-navigator.is-story-map .ert-story-navigator__slider { flex: 0 0 160px; }
 .ert-story-navigator:not(.is-story-map) { flex-wrap: nowrap; }
 .ert-story-navigator .ert-story-navigator__key { position: static; flex: none; }
 .ert-story-navigator__label { font-size: var(--font-ui-smaller); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 0 45%; min-width: 0; }
 .ert-story-navigator__slider { flex: 1; min-width: 50px; }
 .ert-story-navigator input.ert-story-navigator__slider::-webkit-slider-thumb,
 .ert-story-navigator input.ert-story-navigator__slider:hover::-webkit-slider-thumb,
-.ert-story-navigator input.ert-story-navigator__slider:active::-webkit-slider-thumb { width: 30px; height: 18px; border-radius: 999px; }
+.ert-story-navigator input.ert-story-navigator__slider:active::-webkit-slider-thumb { width: 30px; height: 18px; border-radius: 999px; top: var(--slider-thumb-y); }
 .ert-story-navigator__fit { flex: none; }
 .ert-story-navigator__review.is-out-of-date { color: var(--text-accent); background: var(--background-modifier-hover); }
 .ert-story-navigator__review-text { margin-inline-start: 4px; font-size: var(--font-ui-smaller); }

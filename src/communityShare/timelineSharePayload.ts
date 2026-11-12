@@ -16,6 +16,12 @@
  *
  * Scene text is not on a TimelineItem, and this builder could not send it if it
  * were: the rule is enforced by what is listed here, not by what is left out.
+ *
+ * Every text field that is sent (title, synopsis, act, subplots, cast, status,
+ * publish stage and the book's title, subtitle and author) goes through
+ * `linkText` first, so no link target leaves: a vault link leaves as the name
+ * the reader sees, a web link as its shown text, and an attachment embed not
+ * at all. See `linkText` for each form.
  */
 
 import type { BookMeta, BookProfile, TimelineItem } from '../types';
@@ -70,29 +76,54 @@ export interface BuildTimelineSharePayloadParams {
     sceneIdHolders?: Readonly<Record<string, string>>;
 }
 
-const WIKILINK = /!?\[\[([^\][|]*)(?:\|([^\][]*))?\]\]/g;
-/** A markdown link to a note in the vault: no URL scheme, so its target is a vault path. */
-const VAULT_MARKDOWN_LINK = /!?\[([^\]]*)\]\((?![a-z][a-z0-9+.-]*:)(?:<[^>]*>|[^)]*)\)/gi;
+const WIKILINK = /(!?)\[\[([^\][|]*)(?:\|([^\][]*))?\]\]/g;
+/** Any markdown link or image: `[shown](target)`, `[shown](<target with spaces>)`, `![alt](target)`. */
+const MARKDOWN_LINK = /(!?)\[([^\]]*)\]\((?:<[^>]*>|[^)]*)\)/g;
+/** File types Obsidian embeds as media rather than as a note. Their embeds carry nothing a reader reads. */
+const ATTACHMENT = /\.(?:png|jpe?g|gif|bmp|svg|webp|avif|heic|tiff?|mp3|wav|m4a|ogg|3gp|flac|webm|mp4|ogv|mov|mkv|pdf)$/i;
+
+/** Stands in for a removed embed until the spaces around it close up. */
+const REMOVED = '\u0000';
+
+function markdownTarget(link: string): string {
+    const open = link.lastIndexOf('](');
+    const target = link.slice(open + 2, -1).trim();
+    const bare = target.startsWith('<') ? target.slice(1, target.indexOf('>')) : target.split(/\s+/)[0];
+    return bare.split(/[?#]/)[0];
+}
 
 /**
- * Text as the reader sees it in Obsidian. The authored form of a link carries
- * its target, which can be a folder path in the vault (`[[People/Mira]]`,
- * `[Mira](People/Mira.md)`), so a link leaves as its shown text, alias or the
- * note's name, and never as the link itself. Web links are left as written.
+ * Text as the reader sees it in Obsidian, with no link target left in it. The
+ * authored form of a link carries its target, which can be a folder path in
+ * the vault (`[[People/Mira]]`, `[Mira](People/Mira.md)`) or a web address,
+ * so every link leaves as its shown text and never as the link itself:
+ *
+ * - `[[People/Mira]]` and `[[Mira#Bio]]` leave as `Mira`; `[[People/Mira|M.]]` as `M.`.
+ * - A note embed `![[Letters/Note]]` leaves as its alias or the note's name.
+ * - An attachment embed (`![[map.png]]`, `![alt](scan.pdf)`) is removed: it
+ *   shows a picture or a file, not words, and its name is often a path or a
+ *   camera file name.
+ * - A markdown link, to a note or to the web, leaves as its shown text. No URL
+ *   in link form leaves the vault.
  */
-function linkText(text: string): string {
+export function linkText(text: string): string {
     return text
-        .replace(WIKILINK, (_match: string, target: string, alias?: string) => {
+        .replace(WIKILINK, (_match: string, embed: string, target: string, alias?: string) => {
+            const [path, heading = ''] = target.split('#');
+            if (embed && ATTACHMENT.test(path.trim())) return REMOVED;
             const shown = alias?.trim();
             if (shown) return shown;
-            const note = target.split('#')[0].split('/').pop() ?? ''; // SAFE: split always yields at least one segment
-            return note.replace(/\.md$/i, '').trim();
+            const note = path.split('/').pop() ?? ''; // SAFE: split always yields at least one segment
+            return (note.replace(/\.md$/i, '').trim() || heading.trim());
         })
-        .replace(VAULT_MARKDOWN_LINK, (_match: string, shown: string) => shown.trim())
+        .replace(MARKDOWN_LINK, (match: string, embed: string, shown: string) => (
+            embed && ATTACHMENT.test(markdownTarget(match)) ? REMOVED : shown.trim()
+        ))
+        .replace(/[ \t]*\u0000[ \t]*/g, ' ')
         .trim();
 }
 
-function sharedText(value: string | undefined): string | undefined {
+function sharedText(value: unknown): string | undefined {
     if (typeof value !== 'string') return undefined;
     const text = linkText(value);
     return text.length > 0 ? text : undefined;
@@ -165,10 +196,11 @@ function shareItem(rows: TimelineItem[], holders: Readonly<Record<string, string
     const subplots = authoredSubplots.length > 0 ? authoredSubplots : rows.flatMap(row => textList(row.subplot));
     const cast = textList(frontmatter?.Character ?? item.Character);
     const when = wallClockWhen(item);
-    // Every free-text field goes through the same link reduction as the names.
     const synopsis = sharedText(item.synopsis ?? item.Summary);
     const title = sharedText(item.title);
     const act = sharedText(item.act);
+    const status = Array.isArray(item.status) ? textList(item.status) : sharedText(item.status);
+    const stage = sharedText(item['Publish Stage']);
 
     return {
         itemType: 'Scene',
@@ -182,8 +214,8 @@ function shareItem(rows: TimelineItem[], holders: Readonly<Record<string, string
         ...(item.pov && isNarrationValue(item.pov) ? { pov: item.pov } : {}),
         ...(cast.length > 0 ? { Character: cast } : {}),
         ...(synopsis ? { synopsis } : {}),
-        ...(item.status ? { status: item.status } : {}),
-        ...(item['Publish Stage'] ? { 'Publish Stage': item['Publish Stage'] } : {}),
+        ...(status && status.length > 0 ? { status } : {}),
+        ...(stage ? { 'Publish Stage': stage } : {}),
     };
 }
 
@@ -194,7 +226,9 @@ function shareItem(rows: TimelineItem[], holders: Readonly<Record<string, string
 export function buildTimelineSharePayload(params: BuildTimelineSharePayloadParams): TimelineSharePayload {
     const holders = params.sceneIdHolders ?? sceneIdHolders(params.items);
     const items = scenesOf(params.items).map(rows => shareItem(rows, holders));
-    const title = params.book.publicLabel?.trim() || params.bookMeta?.title?.trim() || params.book.title; // SAFE: the public label is optional; the book's own title is always set
+    const title = sharedText(params.book.publicLabel) || sharedText(params.bookMeta?.title) || linkText(params.book.title); // SAFE: the public label is optional; the book's own title is always set
+    const subtitle = sharedText(params.bookMeta?.subtitle);
+    const author = sharedText(params.bookMeta?.author);
     return {
         schemaVersion: TIMELINE_DATA_EXPORT_SCHEMA_VERSION,
         exportedAt: params.now.toISOString(),
@@ -204,8 +238,8 @@ export function buildTimelineSharePayload(params: BuildTimelineSharePayloadParam
         context: { bookTitle: title, itemCount: items.length },
         bookMeta: {
             title,
-            ...(params.bookMeta?.subtitle ? { subtitle: params.bookMeta.subtitle } : {}),
-            ...(params.bookMeta?.author ? { author: params.bookMeta.author } : {}),
+            ...(subtitle ? { subtitle } : {}),
+            ...(author ? { author } : {}),
         },
         renderConfig: params.actCount === undefined ? {} : { actCount: params.actCount },
         items,

@@ -78,6 +78,8 @@ export class ReferencePopover {
     private el: HTMLElement | null = null;
     /** Opened by a click to choose among references; hover leaves it alone until it closes. */
     pinned = false;
+    /** True only while Escape hands focus back to the marker. */
+    returningFocus = false;
     /** The marker a pinned popover was opened from, so Escape can hand keyboard focus back to it. */
     private anchor: SVGElement | HTMLElement | null = null;
 
@@ -125,6 +127,10 @@ export class ReferencePopover {
     dismiss(): void {
         const anchor = this.el?.contains(this.doc.activeElement) ? this.anchor : null;
         this.hide();
-        if (anchor?.isConnected) anchor.focus();
+        if (!anchor?.isConnected) return;
+        // Focus events fire during focus(); the flag tells the marker's focus
+        // handler not to reopen the popover Escape just closed.
+        this.returningFocus = true;
+        try { anchor.focus(); } finally { this.returningFocus = false; }
     }
 }

@@ -167,7 +167,7 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
         const group = groupOf(event.target);
         const selection = group ? selectionFor(group) : null;
         if (selection) hoverTimeReference(selection);
-        if (group && !popover.pinned) showPopover(group);
+        if (group && !popover.pinned && !popover.returningFocus) showPopover(group);
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'focusout', (event: Event) => {
         if (!groupOf(event.target)) return;

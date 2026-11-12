@@ -68,7 +68,7 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 **7. Act, order and range (0:48–0:58)**
 - Screen: the "Design" tab. Run the pointer down the rows: each beat's act, its order, and its range ("Gossamer momentum range (e.g. 10-20)").
 - Caption: Act · order · Gossamer range
-- Voice: "In Design, each beat carries its act, its place in the order, and the momentum range Gossamer measures it against."
+- Voice: "In Design, each beat carries its act, its place in the order, and the momentum range Gossamer measures against."
 
 ### Chapter 3: Audit and repair as the book changes (0:58–1:18)
 
@@ -94,7 +94,7 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 **11. A blank system (1:28–1:40)**
 - Screen: "Add system" → "Blank / Custom" → "Create blank system". In "Edit custom system details", set "System name" to "Austen's Three Proposals". In Design's bottom row, add beats with "+": "Collins Proposes" in Act 1, "Darcy Proposes" in Act 2, "Darcy Proposes Again" in Act 3.
 - Caption: ⑤ Build your own system
-- Voice: "Or build your own. Name a system, add beats with plus, and put each one in its act. Here: the three proposals in Pride and Prejudice."
+- Voice: "Or build your own. Name a system, add beats with plus, and put each one in its act. Here are the three proposals in Pride and Prejudice."
 
 **12. Your own fields (1:40–1:50)**
 - Screen: the "Fields" tab: add a field "Stakes" and tick "Show in beat hover synopsis"; the "Beat Hover Metadata Preview" shows it. "Save set", then "Create 3 beat notes for Austen's Three Proposals".
@@ -119,6 +119,38 @@ All of this keeps the beats clean, and Gossamer scores the draft against them: c
 - Screen: the Radial Timeline mark over the wheel.
 - Caption: Full guide: Story Beats System in the Radial Timeline wiki · Next: Gossamer Mode
 - Voice: "Clean beats, honest scores. Next, see how Gossamer scores them."
+
+## Voice take (2026-11-12)
+
+`Radial Timeline LLC/Video/Plugin tutorials/beat manager/audio/beat-manager.aifc`: 2:47.4, 48 kHz, 24-bit. Measured with ffmpeg's silence detection and a whisper transcript of each line. Shot 7's and shot 11's voice lines above now match what was said.
+
+- **Edit:** trim the 3.0 s before the first word, and cut 0:28.1–0:35.9 (a false start of shot 3 and the spoken "retake"). The voice then runs 2:32.4, against 2:15 planned.
+- **Missing:** shot 4 ("Each system lists its beats by act…") is not in the take. Record it as a pickup or drop the shot.
+- **Pauses:** the breaks between chapters hold 1.9–4.9 s, 22.5 s in all. At 1 s each, the voice runs about 2:17.
+- **Pace:** 2.7 words a second. Shot 1's 32 words need about 12 s, not the planned 7.
+- **Listen for:** "Finished with one?" (2:25.5), which every transcript hears as "Finish with one". The B in "Beats" (0:03.0) and "beats drift" (1:19.6), heard as an M when those lines are transcribed alone.
+
+Positions are in the take file as recorded, before the edit:
+
+| Shot | In the take | Spoken | Planned |
+|---|---|---|---|
+| 1 | 0:03.0–0:16.9 | 13.8 s | 7 s |
+| 2 | 0:17.5–0:24.6 | 7.1 s | 8 s |
+| 3 | 0:35.9–0:50.7 | 14.7 s | 12 s |
+| 4 | not recorded | — | 6 s |
+| 5 | 0:51.6–0:57.6 | 6.0 s | 7 s |
+| 6 | 1:01.2–1:08.0 | 6.8 s | 8 s |
+| 7 | 1:08.9–1:17.5 | 8.6 s | 10 s |
+| 8 | 1:19.6–1:28.8 | 9.2 s | 10 s |
+| 9 | 1:29.6–1:37.5 | 7.8 s | 10 s |
+| 10 | 1:41.2–1:49.4 | 8.3 s | 10 s |
+| 11 | 1:51.3–2:03.2 | 11.8 s | 12 s |
+| 12 | 2:03.5–2:10.7 | 7.1 s | 10 s |
+| 13 | 2:13.3–2:24.7 | 11.4 s | 10 s |
+| 14 | 2:25.5–2:33.4 | 7.9 s | 8 s |
+| 15 | 2:38.3–2:43.2 | 4.9 s | 7 s |
+
+The shot times in the shot list are the plan. Set the YouTube chapters below from the blue markers in the final cut.
 
 ## YouTube chapters
 

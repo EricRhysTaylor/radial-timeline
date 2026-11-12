@@ -10565,7 +10565,10 @@
 
 /* Story position on generated Canvas maps. */
 .ert-story-navigator { position: absolute; z-index: 10; left: 12px; top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: auto; max-width: 236px; padding: 8px 10px; border: 1px solid var(--background-modifier-border); border-radius: 10px; background: var(--background-secondary); box-shadow: var(--shadow-s); }
-.ert-story-navigator.is-story-map { left: 50%; transform: translateX(-50%); width: min(480px, 70%); max-width: none; }
+.ert-story-navigator.is-story-map { left: 50%; transform: translateX(-50%); width: min(680px, calc(100% - 24px)); max-width: none; }
+/* The story map's buttons take a fixed share; the scene label gives way before the drag bar does. */
+.ert-story-navigator.is-story-map .ert-story-navigator__label { flex: 0 1 auto; max-width: 220px; }
+.ert-story-navigator.is-story-map .ert-story-navigator__slider { flex: 1 1 200px; min-width: 160px; }
 .ert-story-navigator:not(.is-story-map) { flex-wrap: nowrap; }
 .ert-story-navigator .ert-story-navigator__key { position: static; flex: none; }
 .ert-story-navigator__label { font-size: var(--font-ui-smaller); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 0 45%; min-width: 0; }

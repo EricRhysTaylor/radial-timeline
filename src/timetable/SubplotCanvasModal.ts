@@ -134,7 +134,9 @@ export class SubplotCanvasModal extends ErtModal {
                     generated,
                 },
             };
-            await this.plugin.saveSettings();
+            // The Canvas already exists; a failed details save (already reported by
+            // saveSettings) must not mark the create as failed and invite a duplicate.
+            try { await this.plugin.saveSettings(); } catch (error) { console.error('[Story map] Could not save map details', error); }
             if (this.onCreated) await this.onCreated(file);
             else await this.app.workspace.openLinkText(file.path, '', true);
             this.close();

@@ -117,7 +117,9 @@ export class StoryMapReviewModal extends ErtModal {
         for (let n = 2; this.app.vault.getAbstractFileByPath(path); n++) path = `${base} - Updated ${n}.canvas`;
         const file = await this.app.vault.create(path, JSON.stringify(copy.data, null, 2));
         this.plugin.settings.storyMapProvenance = { ...this.plugin.settings.storyMapProvenance, [path]: { ...record, orientationFlipped, generatedAt: new Date().toISOString(), scenes: mapScenes(this.plugin, record), generated } };
-        await this.plugin.saveSettings();
+        // The copy already exists; a failed details save (already reported by
+        // saveSettings) must not re-enable Create and invite a duplicate copy.
+        try { await this.plugin.saveSettings(); } catch (error) { console.error('[Story map] Could not save map details', error); }
         this.close();
         await this.app.workspace.openLinkText(file.path, '', true);
     }

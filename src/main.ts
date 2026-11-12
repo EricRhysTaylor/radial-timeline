@@ -70,7 +70,7 @@ import { scheduleCommunityProjectSync, cancelPendingCommunityProjectSync } from 
 import { COMMUNITY_AUTO_SYNC_INTERVAL_MS, CommunityMailbox } from './communityShare/communityMailbox';
 import { DeskLamps } from './communityShare/deskLamps';
 import { TimetableService } from './timetable/TimetableService';
-import { refreshTimetableViews } from './timetable/timetableRegistry';
+import { markTimetableRows, refreshTimetableViews } from './timetable/timetableRegistry';
 import { getOpenDocuments } from './utils/documents';
 import { SUBPLOT_COLORS_CHANGED_EVENT, syncSubplotPalette } from './renderer/utils/subplotColors';
 import { normalizeCanvasSubplotMemory } from './timetable/canvasSubplotMemory';
@@ -500,6 +500,18 @@ export default class RadialTimelinePlugin extends Plugin {
     /** Light up a scene on every open timeline (a Timetable row is hovered); null clears it. */
     public highlightSceneOnTimeline(path: string | null): string | null {
         return this.sceneHighlighter.spotlight(path);
+    }
+
+    /**
+     * Light a scene up everywhere Radial Timeline shows it, as hovering it on
+     * the wheel does: the wheel, its row in every open Timetable and its card
+     * on every open canvas. Nothing scrolls. Another plugin points at a scene
+     * this way (Editorialist's edit grid, with Shift held over a dot); null
+     * clears it.
+     */
+    public spotlightScene(path: string | null): void {
+        const color = this.sceneHighlighter.spotlight(path);
+        markTimetableRows(path, color, false);
     }
 
     /**

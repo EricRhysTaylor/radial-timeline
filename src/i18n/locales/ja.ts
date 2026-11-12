@@ -3461,7 +3461,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             repairTooltipMissingModelOther: 'Beat Model のない {{count}} 件のビートノートについて、Act と Beat Model を更新します。接頭辞の番号は変更されません。',
             resolveDuplicatesOne: '統合する前に重複を解決してください。重複したビートノートを手動で削除してください。',
             resolveDuplicatesOther: '統合する前に重複を解決してください。重複したビートノートを手動で削除してください。',
-            mergeCustomOnlyNotice: '統合はカスタムビートシステムでのみ利用できます。',
             noCustomBeatsNotice: 'カスタムビートが定義されていません。上のリストでビートを追加してください。',
             noNotesToMergeNotice: '統合できる既存のビートノートが見つかりません。',
             noMergeNotice: '統合できたビートノートはありません。',

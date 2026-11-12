@@ -3462,7 +3462,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             repairTooltipMissingModelOther: '为 {{count}} 个缺少 Beat Model 的节拍笔记更新 Act 和 Beat Model。前缀编号不会更改。',
             resolveDuplicatesOne: '合并前请先解决重复问题。请手动删除重复的节拍笔记。',
             resolveDuplicatesOther: '合并前请先解决重复问题。请手动删除重复的节拍笔记。',
-            mergeCustomOnlyNotice: '合并仅适用于自定义节拍系统。',
             noCustomBeatsNotice: '未定义自定义节拍。请在上方列表中添加节拍。',
             noNotesToMergeNotice: '未找到可合并的现有节拍笔记。',
             noMergeNotice: '没有可合并的节拍笔记。',

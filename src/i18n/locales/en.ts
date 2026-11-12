@@ -3138,7 +3138,6 @@ export const en = {
             repairTooltipMissingModelOther: 'Update Act and Beat Model for {{count}} missing Beat Model beat notes. Prefix numbers are not changed.',
             resolveDuplicatesOne: 'Resolve duplicate before merging. Manually delete duplicate beat notes.',
             resolveDuplicatesOther: 'Resolve duplicates before merging. Manually delete duplicate beat notes.',
-            mergeCustomOnlyNotice: 'Merge is available for custom beat systems only.',
             noCustomBeatsNotice: 'No custom beats defined. Add beats in the list above.',
             noNotesToMergeNotice: 'No existing beat notes found to merge.',
             noMergeNotice: 'No beat notes could be merged.',

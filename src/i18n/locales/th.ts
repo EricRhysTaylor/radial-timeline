@@ -3467,7 +3467,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "repairTooltipMissingModelOther": "อัปเดต Act และ Beat Model สำหรับบีทโน้ตที่ไม่มี Beat Model {{count}} รายการ ตัวเลขคำนำหน้าจะไม่เปลี่ยนแปลง",
             "resolveDuplicatesOne": "แก้ไขซ้ำก่อนที่จะรวม ลบโน้ตบีทที่ซ้ำกันด้วยตนเอง",
             "resolveDuplicatesOther": "แก้ไขรายการที่ซ้ำกันก่อนที่จะรวม ลบโน้ตบีทที่ซ้ำกันด้วยตนเอง",
-            "mergeCustomOnlyNotice": "ผสานใช้ได้กับระบบบีทแบบกำหนดเองเท่านั้น",
             "noCustomBeatsNotice": "ไม่มีการกำหนดบีทที่กำหนดเอง เพิ่มบีทในรายการด้านบน",
             "noNotesToMergeNotice": "ไม่พบบีทโน้ตที่มีอยู่ในการผสาน",
             "noMergeNotice": "ไม่สามารถรวมบีทโน้ตได้",

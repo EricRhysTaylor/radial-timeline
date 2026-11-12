@@ -150,22 +150,31 @@ export function renderBeatPropertiesSection(params: {
         options?: { refreshSets?: boolean }
     ) => {
         const targetSystem = (plugin.settings.savedBeatSystems ?? []).find((system) => system.id === systemId);
-        if (!targetSystem) return;
         const activeTabId = getActiveBeatWorkspaceTabId();
-        const isActiveSystem = getActiveSavedSystemId() === systemId && !!activeTabId;
-        new SystemEditModal(app, targetSystem.name, targetSystem.description ?? '', async (newName, newDesc) => {
+        const activeTab = getActiveBeatWorkspaceTab();
+        // A new blank system lives only in its workspace tab until it is saved as a set,
+        // so its name and description are the tab's own.
+        const unsavedActiveTab = !targetSystem && !!activeTab && activeTabId === systemId && isEditableActiveBeatWorkspace()
+            ? activeTab
+            : undefined;
+        if (!targetSystem && !unsavedActiveTab) return;
+        const isActiveSystem = !!unsavedActiveTab || (getActiveSavedSystemId() === systemId && !!activeTabId);
+        const currentName = targetSystem?.name ?? unsavedActiveTab?.name ?? '';
+        const currentDescription = targetSystem?.description ?? unsavedActiveTab?.description ?? '';
+        new SystemEditModal(app, currentName, currentDescription, async (newName, newDesc) => {
             const normalizedName = normalizeBeatSetNameInput(newName, '');
             if (!normalizedName || !hasBeatReadableText(normalizedName)) {
                 new Notice(t('settings.beats.systemEditModal.nameLettersNotice'));
                 return false;
             }
 
-            replaceSavedBeatSystem(plugin.settings, {
-                ...targetSystem,
-                name: normalizedName,
-                description: newDesc,
-            });
-            await plugin.saveSettings();
+            if (targetSystem) {
+                replaceSavedBeatSystem(plugin.settings, {
+                    ...targetSystem,
+                    name: normalizedName,
+                    description: newDesc,
+                });
+            }
 
             if (isActiveSystem && activeTabId) {
                 updateLoadedBeatTab(plugin.settings, activeTabId, (tab) => ({
@@ -173,6 +182,10 @@ export function renderBeatPropertiesSection(params: {
                     name: normalizedName,
                     description: newDesc,
                 }));
+            }
+            await plugin.saveSettings();
+
+            if (isActiveSystem && activeTabId) {
                 invalidateBeatStructuralStatus();
                 updateTemplateButton(templateSetting, getActiveBeatWorkspaceName('Custom'));
                 renderCustomConfig();
@@ -3791,7 +3804,8 @@ export function renderBeatPropertiesSection(params: {
             }
 
             // Show Repair only when the beat-note audit reports canonical mismatches.
-            if (repairBeatNotesButton && isCustom && (hasMisaligned || hasMissingModel)) {
+            // Library systems load as editable tabs too, so they repair the same way.
+            if (repairBeatNotesButton && (hasMisaligned || hasMissingModel)) {
                 repairBeatNotesButton.buttonEl.removeClass('ert-hidden');
                 repairBeatNotesButton.setDisabled(false);
                 const repairCount = misaligned + missingModel;
@@ -3825,10 +3839,7 @@ export function renderBeatPropertiesSection(params: {
 
     async function mergeExistingBeatNotes(): Promise<void> {
         const activeTab = getActiveBeatWorkspaceTab();
-        if (!activeTab || activeTab.sourceKind === 'builtin') {
-            new Notice(t('ui.beatPropertiesSection.mergeCustomOnlyNotice'));
-            return;
-        }
+        if (!activeTab) return;
         const storyStructureName = activeTab.name;
 
         const maxActs = getActCount();

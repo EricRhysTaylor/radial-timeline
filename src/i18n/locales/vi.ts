@@ -3467,7 +3467,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "repairTooltipMissingModelOther": "Cập nhật Act và Beat Model cho {{count}} ghi chú nhịp thiếu Beat Model. Số tiền tố không được thay đổi.",
             "resolveDuplicatesOne": "Hãy giải quyết bản trùng trước khi hợp nhất. Xóa thủ công các ghi chú nhịp trùng lặp.",
             "resolveDuplicatesOther": "Hãy giải quyết các bản trùng trước khi hợp nhất. Xóa thủ công các ghi chú nhịp trùng lặp.",
-            "mergeCustomOnlyNotice": "Merge chỉ có sẵn cho các hệ thống beat tùy chỉnh.",
             "noCustomBeatsNotice": "Không có nhịp tùy chỉnh được xác định. Thêm nhịp trong danh sách trên.",
             "noNotesToMergeNotice": "Không có ghi chú nhịp hiện có nào được tìm thấy để hợp nhất.",
             "noMergeNotice": "Không thể hợp nhất ghi chú nhịp nào.",

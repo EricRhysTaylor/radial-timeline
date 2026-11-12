@@ -3460,7 +3460,6 @@ export const de: DeepPartial<TranslationKeys> = {
             repairTooltipMissingModelOther: 'Act und Beat Model für {{count}} Beat-Notizen ohne Beat Model aktualisieren. Präfixnummern werden nicht geändert.',
             resolveDuplicatesOne: 'Beheben Sie das Duplikat vor dem Zusammenführen. Löschen Sie doppelte Beat-Notizen manuell.',
             resolveDuplicatesOther: 'Beheben Sie die Duplikate vor dem Zusammenführen. Löschen Sie doppelte Beat-Notizen manuell.',
-            mergeCustomOnlyNotice: 'Zusammenführen ist nur für eigene Beat-Systeme verfügbar.',
             noCustomBeatsNotice: 'Keine eigenen Beats definiert. Fügen Sie Beats in der Liste oben hinzu.',
             noNotesToMergeNotice: 'Keine vorhandenen Beat-Notizen zum Zusammenführen gefunden.',
             noMergeNotice: 'Es konnten keine Beat-Notizen zusammengeführt werden.',

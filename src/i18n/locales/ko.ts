@@ -3460,7 +3460,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             repairTooltipMissingModelOther: 'Beat Model이 누락된 비트 노트 {{count}}개의 Act와 Beat Model을 업데이트합니다. 접두사 번호는 변경되지 않습니다.',
             resolveDuplicatesOne: '병합하기 전에 중복을 해결하세요. 중복된 비트 노트를 직접 삭제하세요.',
             resolveDuplicatesOther: '병합하기 전에 중복을 해결하세요. 중복된 비트 노트를 직접 삭제하세요.',
-            mergeCustomOnlyNotice: '병합은 사용자 지정 비트 시스템에서만 사용할 수 있습니다.',
             noCustomBeatsNotice: '정의된 사용자 지정 비트가 없습니다. 위 목록에 비트를 추가하세요.',
             noNotesToMergeNotice: '병합할 기존 비트 노트를 찾을 수 없습니다.',
             noMergeNotice: '병합할 수 있는 비트 노트가 없습니다.',

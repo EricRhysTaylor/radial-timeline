@@ -3467,7 +3467,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "repairTooltipMissingModelOther": "Actualiza Act y Beat Model en {{count}} notas de beat sin Beat Model. Los números de prefijo no se cambian.",
             "resolveDuplicatesOne": "Resolver duplicado antes de fusionar. Eliminar manualmente notas de beat duplicadas.",
             "resolveDuplicatesOther": "Resolver duplicados antes de fusionar. Eliminar manualmente notas de beat duplicadas.",
-            "mergeCustomOnlyNotice": "Merge está disponible solo para sistemas Beat personalizados.",
             "noCustomBeatsNotice": "No se definen beats personalizados. Agregue beats en la lista anterior.",
             "noNotesToMergeNotice": "No se encontraron notas de beat existentes para fusionarse.",
             "noMergeNotice": "No se pudieron fusionar notas de beat.",

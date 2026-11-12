@@ -1,80 +1,129 @@
-# Video script: Shape your story with the Beat Manager
+# Video script: The Beat Manager
 
 **Key:** `beat-manager` (see `docs/engineering/plans/workflow-videos-plan.md`)
-**Length:** about 95 seconds
+**Length:** about 2 minutes 15 seconds, in six chapters. Longer than the other workflow videos because it introduces the whole tool. Add the chapters as YouTube chapters; a 60-second Short can be cut from chapters 1 and 6.
 **Frame:** 16:9.
 **Written against:** 8.0.1. Labels in quotes are exact; check the order of clicks in the app before recording.
-**Structure:** the script follows the **YouTube Explainer Arc**, one of the beat systems in the Beat Manager's library. Each shot is one of its twelve beats, so the video demonstrates the tool by using it.
+
+## What the video says the Beat Manager is for
+
+Beats are a story's anchor points. The Beat Manager:
+
+1. puts a beat system on the timeline, from Save the Cat and the Hero's Journey to more technical structures, as one note per beat;
+2. keeps each beat's place (act and order) and its characteristics (purpose, Gossamer range, your own fields);
+3. audits the beat notes as the book changes, and repairs what has drifted;
+4. finds duplicates and clears out beats you no longer use;
+5. lets you build your own system;
+6. switches between systems in the same book, without losing any.
+
+All of this keeps the beats clean, and Gossamer scores the draft against them: clean beats, honest scores.
 
 ## Before recording
 
-- **Vault:** a throwaway copy of the Pride & Prejudice Story Vault, because the video creates beat notes. The Story Vault ships 15 Save the Cat beats with reviewed Gossamer scores.
-- **Starting state:** Save the Cat is the tab marked "Active in timeline".
-- **Fresh name:** remove any earlier "Austen Romance Ladder" set.
-- **Check first:** switching beat system tabs swaps the beats on the wheel. The wheel shows only the active system's beats.
+- **Vault:** a throwaway copy of the Pride & Prejudice Story Vault, because the video creates, repairs and deletes beat notes. The Story Vault ships 15 Save the Cat beats with reviewed Gossamer scores.
+- **Starting state:** Save the Cat is the tab marked "Active in timeline". No Hero's Journey tab and no "Austen's Three Proposals" set yet.
+- **Check first:**
+  - "Create 12 beat notes for Hero's Journey" works on the unchanged library set. If it asks you to save the set first, use "Save as copy" before chapter 1's last shot.
+  - Clicking a system's tab swaps the beats on the wheel.
+  - Which act the Hero's Journey puts the Ordeal in, for chapter 3.
 - **Window and recorder:** as for `pdf-export`: 1920×1080, the shared theme, click highlights and auto-zoom, nothing private on screen.
 
 ## Shot list
 
-**1. Cold Hook (0:00–0:06)**
-- Screen: the Pride & Prejudice wheel in Gossamer mode, the 15 Save the Cat beats around it with the momentum line.
-- Caption: Your story's structure, on the wheel
-- Voice: "Here's Pride and Prejudice, measured against Save the Cat, beat by beat."
+### Opening (0:00–0:15)
 
-**2. Promise of Value (0:06–0:11)**
-- Screen: hover a beat so its hover card shows its Purpose.
-- Caption: Pick a structure · make it yours · put it in your book
-- Voice: "In ninety seconds: pick a beat system, make it yours, and put its beats in your book."
+**1. Anchor points (0:00–0:07)**
+- Screen: the Pride & Prejudice wheel with the Save the Cat beats among the chapters. Hover "Midpoint".
+- Caption: Beats: your story's anchor points
+- Voice: "Beats are your story's anchor points: the Catalyst, the Midpoint, the Dark Night of the Soul. The Beat Manager puts them on your timeline and keeps them in order as the book changes."
 
-**3. Stakes (0:11–0:16)**
-- Screen: hover a Gossamer score on the momentum line.
-- Caption: Gossamer scores your draft against these beats
-- Voice: "Gossamer scores your draft against these beats, so the structure you choose matters."
+**2. Why it matters (0:07–0:15)**
+- Screen: switch to Gossamer mode and hover a score on the momentum line.
+- Caption: Gossamer scores your draft against your beats
+- Voice: "And they matter. Gossamer scores your draft against these beats, so clean beats mean honest scores."
 
-**4. Core Concept (0:16–0:26)**
-- Screen: Settings → Radial Timeline → Core → "Story beats system". The tab row shows Save the Cat as "Active in timeline". Under "Beat system sets", use "Add system" and "Select a set" to choose "Romance Tropes Ladder" from "Story Engines", then "Open tab".
-- Caption: Settings → Core → Story beats system → Add system
-- Voice: "The Beat Manager lives in Settings. Add a system from the library — here, the Romance Tropes Ladder."
+### Chapter 1: Put a structure on your timeline (0:15–0:40)
 
-**5. Example (0:26–0:34)**
-- Screen: the "Preview" tab: twelve beats across three acts, from "Meet Cute" to "Commitment".
+**3. The library (0:15–0:27)**
+- Screen: Settings → Radial Timeline → Core → "Story beats system". Open "Add system" and show its groups: "Narrative Frameworks", "Story Engines", "Format Structures". Choose "Hero's Journey", then "Open tab".
+- Caption: ① Generate beats · Settings → Core → Story beats system
+- Voice: "Start from the library: classics like Save the Cat and the Hero's Journey, story engines like the Thriller Escalation Ladder, or formats like the Podcast Narrative Arc."
+
+**4. The beats (0:27–0:33)**
+- Screen: the "Preview" tab: twelve beats across three acts, from "Ordinary World" to "Return with the Elixir".
 - Caption: Every beat, by act, with its purpose
 - Voice: "Each system lists its beats by act, and what each one is for."
 
-**6. Counterexample (0:34–0:42)**
-- Screen: hover the "Starter set" tag ("Save a copy to edit."). Click "Save as copy"; in "Save a copy", enter "Austen Romance Ladder" as the "Set name", then "Save".
-- Caption: Library sets stay as they are · Save as copy
-- Voice: "Library sets stay untouched. Save a copy, and the copy is yours to change."
+**5. Onto the timeline (0:33–0:40)**
+- Screen: under "Beat notes", "Create 12 beat notes for Hero's Journey". Cut to the wheel: the twelve beats now sit among the chapters.
+- Caption: One note per beat, placed on the timeline
+- Voice: "One click makes a note for every beat, and each one takes its place on the timeline."
 
-**7. Deep Insight (0:42–0:56)**
-- Screen: the "Design" tab. Drag "Self-Realization" from Act 3 into Act 2. Then, in the row at the bottom, type "Pemberley Visit" in "New beat", choose Act 3, and click "+".
-- Caption: Drag beats between acts · add your own
-- Voice: "Fit it to your book. Elizabeth sees herself clearly when she reads Darcy's letter, mid-novel, so that beat moves to Act 2. And her visit to Pemberley gets a beat of its own."
+### Chapter 2: Each beat's place and characteristics (0:40–0:58)
 
-**8. Escalation Example (0:56–1:05)**
-- Screen: under "Beat notes", "Create beat notes"; the button shows how many notes it will create. Open one new note to show `Class: Beat` and `Beat Model: Austen Romance Ladder`.
-- Caption: Create beat notes
-- Voice: "Create beat notes, and every beat becomes a note in your book, ready for Gossamer."
+**6. A beat is a note (0:40–0:48)**
+- Screen: hover "Ordeal" on the wheel; its hover card shows its Purpose. Open the note: `Class: Beat`, `Act`, `Purpose`, `Beat Model: Hero's Journey`.
+- Caption: ② Place and describe each beat
+- Voice: "Every beat is an ordinary note: its act, its purpose, and the system it belongs to."
 
-**9. Unexpected Twist (1:05–1:14)**
-- Screen: the wheel now shows the Austen Romance Ladder beats. Back in Settings, click the Save the Cat tab; on the wheel, its 15 beats return.
-- Caption: Switch tabs, switch structure
-- Voice: "Here's the twist: switch tabs and the wheel switches structure. Your Save the Cat beats are still there."
+**7. Act, order and range (0:48–0:58)**
+- Screen: the "Design" tab. Run the pointer down the rows: each beat's act, its order, and its range ("Gossamer momentum range (e.g. 10-20)").
+- Caption: Act · order · Gossamer range
+- Voice: "In Design, each beat carries its act, its place in the order, and the momentum range Gossamer measures it against."
 
-**10. Synthesis (1:14–1:22)**
-- Screen: in the Austen Romance Ladder tab, drag a beat that now has a note into another act; its row turns orange. Click "Repair beat notes"; the row turns green.
-- Caption: Orange = wrong act → Repair beat notes
-- Voice: "The Beat Manager keeps your list and your notes in step. Move a beat, and Repair beat notes moves its note to match."
+### Chapter 3: Audit and repair as the book changes (0:58–1:18)
 
-**11. Practical Takeaway (1:22–1:28)**
-- Screen: hold on the editor with a legend card over it.
-- Caption: Green: in step · Orange: Repair beat notes · Red: a duplicate to fix by hand
-- Voice: "Green means in step. Orange, press Repair. Red means a duplicate to fix by hand."
+**8. A beat drifts (0:58–1:08)**
+- Screen: in the Ordeal note's properties, change `Act` to a different act, as a revision might. Back in the Beat Manager, the Ordeal's row turns orange with "Placed in Act 3 in the manuscript. Template suggests Act 2." (the acts you used), and the status reads 11 synced, 1 misaligned.
+- Caption: ③ Audit as the book changes
+- Voice: "As the book changes, beats drift. The Beat Manager checks every beat note against the system and shows you what's out of place."
 
-**12. Call to Action (1:28–1:34)**
+**9. Repair (1:08–1:18)**
+- Screen: "Repair beat notes". The row turns green: "All 12 beat notes are synced."
+- Caption: Repair beat notes
+- Voice: "Repair beat notes puts them back. It fixes the act and the system name, and never renames your files."
+
+### Chapter 4: Duplicates (1:18–1:28)
+
+**10. Find and remove a duplicate (1:18–1:28)**
+- Screen: in the file explorer, duplicate the Ordeal note and give the copy a different number prefix. Its row turns red: "Duplicate beat title. Manually delete duplicate beat notes (or rename one title) to resolve." Delete the copy; the row turns green.
+- Caption: ④ Duplicates show in red
+- Voice: "A duplicate beat would throw off the scoring, so it's flagged in red. Delete the extra note, and the beat is clean again."
+
+### Chapter 5: Build your own (1:28–1:50)
+
+**11. A blank system (1:28–1:40)**
+- Screen: "Add system" → "Blank / Custom" → "Create blank system". In "Edit custom system details", set "System name" to "Austen's Three Proposals". In Design's bottom row, add beats with "+": "Collins Proposes" in Act 1, "Darcy Proposes" in Act 2, "Darcy Proposes Again" in Act 3.
+- Caption: ⑤ Build your own system
+- Voice: "Or build your own. Name a system, add beats with plus, and put each one in its act. Here: the three proposals in Pride and Prejudice."
+
+**12. Your own fields (1:40–1:50)**
+- Screen: the "Fields" tab: add a field "Stakes" and tick "Show in beat hover synopsis"; the "Beat Hover Metadata Preview" shows it. "Save set", then "Create 3 beat notes for Austen's Three Proposals".
+- Caption: Your fields · Save set · Create beat notes
+- Voice: "Give your beats the fields you care about, like what's at stake, save the set, and create its notes."
+
+### Chapter 6: Switch systems in the same book (1:50–2:08)
+
+**13. One book, three structures (1:50–2:00)**
+- Screen: click the tabs in turn: Save the Cat, Hero's Journey, Austen's Three Proposals. The wheel's beats change each time.
+- Caption: ⑥ Switch systems, same book
+- Voice: "All three live in the same book. Switch tabs, and the timeline switches structure. Gossamer follows whichever one is active, and nothing is lost."
+
+**14. Clear out a system you're done with (2:00–2:08)**
+- Screen: the × on the Hero's Journey tab. The dialog says "This moves beat notes to trash. The set definition remains available in Add system." Type DELETE, choose "Delete beat notes". The notice reads that 12 beat notes moved to the trash and Hero's Journey was removed.
+- Caption: Remove a system · its notes go to the trash
+- Voice: "Finished with one? Remove it, and its notes go to the trash. You can always add it back from the library."
+
+### End card (2:08–2:15)
+
+**15. Next**
 - Screen: the Radial Timeline mark over the wheel.
 - Caption: Full guide: Story Beats System in the Radial Timeline wiki · Next: Gossamer Mode
-- Voice: "The full guide is in the Radial Timeline wiki. Next, see how Gossamer scores your beats."
+- Voice: "Clean beats, honest scores. Next, see how Gossamer scores them."
+
+## YouTube chapters
+
+0:00 What beats are for · 0:15 Put a structure on your timeline · 0:40 Each beat's place and characteristics · 0:58 Audit and repair · 1:18 Duplicates · 1:28 Build your own · 1:50 Switch systems
 
 ## Captions
 

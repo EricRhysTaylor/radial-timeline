@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canvasChanges, carryCanvasEdits, matchingBaseline, rebaseStoryMapProvenance, type StoryMapProvenance } from '../src/timetable/storyMapProvenance';
+import { canvasChanges, carryCanvasEdits, matchingBaseline, pruneStoryMapProvenance, rebaseStoryMapProvenance, type StoryMapProvenance } from '../src/timetable/storyMapProvenance';
 import { transposeStoryCanvas } from '../src/timetable/canvasOrientation';
 import type { StoryCanvasData } from '../src/timetable/canvasSketches';
 
@@ -50,5 +50,17 @@ describe('generated Canvas baseline comparison', () => {
         expect(moved['Maps/old.canvas'].scenes[0].path).toBe('Book/new.md');
         expect(moved['Maps/old.canvas'].generated.nodes?.[0].file).toBe('Book/new.md');
         expect(rebaseStoryMapProvenance(moved, 'Maps/old.canvas', 'Maps/new.canvas')['Maps/new.canvas'].initialFocus).toBe('beginning');
+    });
+});
+
+describe('pruning story map records', () => {
+    const record = {} as StoryMapProvenance;
+    it('drops records whose Canvas is gone and keeps the rest', () => {
+        const records = { 'Maps/A.canvas': record, 'Maps/B.canvas': record };
+        expect(Object.keys(pruneStoryMapProvenance(records, path => path === 'Maps/A.canvas'))).toEqual(['Maps/A.canvas']);
+    });
+    it('returns the same records when every Canvas exists', () => {
+        const records = { 'Maps/A.canvas': record };
+        expect(pruneStoryMapProvenance(records, () => true)).toBe(records);
     });
 });

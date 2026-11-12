@@ -112,3 +112,9 @@ export function rebaseStoryMapProvenance(records: Record<string, StoryMapProvena
     }
     return result;
 }
+
+/** The records whose Canvas still exists; the same object when none are gone. */
+export function pruneStoryMapProvenance(records: Record<string, StoryMapProvenance>, exists: (path: string) => boolean): Record<string, StoryMapProvenance> {
+    const kept = Object.entries(records).filter(([path]) => exists(path));
+    return kept.length === Object.keys(records).length ? records : Object.fromEntries(kept);
+}

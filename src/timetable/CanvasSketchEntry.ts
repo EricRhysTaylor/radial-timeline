@@ -8,7 +8,7 @@ import { runPromotion } from '../services/PromoteToSceneEntry';
 import { CanvasConvertModal, type OpenCanvas } from './CanvasConvertModal';
 import { registerCanvasCardPresentation } from './CanvasCardPresentation';
 import { registerCanvasSubplotMemoryUpkeep } from './CanvasSubplotMemoryUpkeep';
-import { rebaseStoryMapProvenance } from './storyMapProvenance';
+import { pruneStoryMapProvenance, rebaseStoryMapProvenance } from './storyMapProvenance';
 import { SubplotCanvasModal } from './SubplotCanvasModal';
 import { canvasTextCards } from './canvasSketches';
 
@@ -57,6 +57,20 @@ export function registerCanvasSketches(plugin: RadialTimelinePlugin): void {
         plugin.settings.storyMapProvenance = next;
         void plugin.saveSettings().catch((error: unknown) => console.error('[Story map] Could not save renamed map details', error));
     }));
+    // A map's record holds a full copy of the generated Canvas, so drop it once
+    // the Canvas is gone: on delete, and at startup for maps deleted while the
+    // plugin was off. Startup waits for the layout, when the vault is indexed.
+    const pruneStoryMaps = (gone?: string): void => {
+        const records = plugin.settings.storyMapProvenance;
+        if (!records) return;
+        const vault = plugin.app.vault;
+        const next = pruneStoryMapProvenance(records, path => !(gone !== undefined && (path === gone || path.startsWith(`${gone}/`))) && vault.getAbstractFileByPath(path) instanceof TFile);
+        if (next === records) return;
+        plugin.settings.storyMapProvenance = next;
+        void plugin.saveSettings().catch((error: unknown) => console.error('[Story map] Could not save removed map details', error));
+    };
+    plugin.registerEvent(plugin.app.vault.on('delete', file => pruneStoryMaps(file.path)));
+    plugin.app.workspace.onLayoutReady(() => pruneStoryMaps());
     plugin.addCommand({ id: 'create-subplot-canvas', name: t('ui.subplotCanvas.paletteCommand'), callback: () => new SubplotCanvasModal(plugin.app, plugin).open() });
     // Track each open Canvas, including inactive and split leaves. Bind the
     // action to its own view rather than whichever leaf happens to have focus.

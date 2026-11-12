@@ -2800,6 +2800,12 @@
   scrollbar-gutter: stable;
 }
 
+/* A settings search result opens as a page under Obsidian's sticky title bar;
+   keep the revealed section's heading below it. */
+.setting-page.ert-settings-scroll-host {
+  scroll-padding-top: var(--size-4-12);
+}
+
 .ert-ui.ert-scope--settings .setting-item.is-attention-pulse {
   border: 1px solid color-mix(in srgb, var(--text-warning) 40%, transparent);
   border-radius: 10px;
@@ -8341,7 +8347,9 @@
   text-decoration: underline;
 }
 
-.ert-ui.ert-scope--settings .ert-advanced-config-toggle.is-hidden {
+/* The Advanced configuration link is only needed while its panel is closed,
+   however the panel was opened (the link, a failed Pandoc check, or a settings search). */
+.ert-ui.ert-scope--settings [data-ert-section="export-check"]:not(.is-hidden) ~ .ert-advanced-config-toggle {
   display: none;
 }
 

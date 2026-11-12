@@ -780,6 +780,8 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
     private scrollToSettingsSection(sectionKey: string, options: { force?: boolean } = {}): boolean {
         const target = (this.dashboardEl ?? this.containerEl).querySelector<HTMLElement>(`[${ERT_DATA.SECTION}="${sectionKey}"]`);
         if (!target) return false;
+        // A section kept closed until asked for (Publishing's Advanced configuration) opens when revealed.
+        target.closest<HTMLElement>(`[${ERT_DATA.SECTION}].is-hidden`)?.removeClass('is-hidden');
         const host = this.findSettingsScrollHost(target);
         if (!options.force && host && this.isSectionVisibleWithinHost(target, host)) {
             this.markSettingsSectionRevealed(target);

@@ -2845,13 +2845,9 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     const advancedIcon = advancedToggle.createSpan({ cls: 'ert-advanced-config-icon' });
     setIcon(advancedIcon, 'chevron-right');
     advancedToggle.prepend(advancedIcon);
-    // Hide toggle if system config is already visible
-    if (!systemConfigPanel.hasClass('is-hidden')) {
-        advancedToggle.addClass('is-hidden');
-    }
+    // CSS hides this link while the panel is open (rt-ui.css, export-check sibling rule).
     advancedLink.addEventListener('click', (evt: MouseEvent) => {
         evt.preventDefault();
-        advancedToggle.addClass('is-hidden');
         revealSystemConfig();
     });
 

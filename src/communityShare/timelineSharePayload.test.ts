@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../types';
-import { buildTimelineSharePayload, sceneIdHolders, timelinePayloadFingerprint } from './timelineSharePayload';
+import { buildTimelineSharePayload, linkText, sceneIdHolders, timelinePayloadFingerprint } from './timelineSharePayload';
 
 const SCENE_TEXT = 'The rain came in under the door and she did not look up.';
 
@@ -138,8 +138,26 @@ describe('buildTimelineSharePayload', () => {
         })]).items;
         expect(item.title).toBe('1 The Ball');
         expect(item.act).toBe('Act One');
-        expect(item.synopsis).toBe('She meets Mira and Tomas, reads Note, sees the map and [the archive](https://example.org/archive).');
+        expect(item.synopsis).toBe('She meets Mira and Tomas, reads Note, sees the map and the archive.');
         expect(JSON.stringify(item)).not.toContain('Private');
+    });
+
+    it('sends no folder path written into a synopsis as a link', () => {
+        const [item] = build([scene({
+            synopsis: 'At [[Private Folder/Places/The Mill#Upstairs|the mill]], ![[Private Folder/Scans/IMG_2041.jpg|300]] [[Private Folder/People/Mira]] finds [the will](<Private Folder/Docs/The Will.md>).',
+        })]).items;
+        expect(item.synopsis).toBe('At the mill, Mira finds the will.');
+        expect(JSON.stringify(item)).not.toMatch(/Private|IMG_|\.md|\.jpg/);
+    });
+
+    it('sends status, publish stage and the book metadata with links reduced', () => {
+        const payload = build([scene({ status: ['[[Status/Complete|Complete]]'], 'Publish Stage': '[[Stages/Press]]' })], {
+            bookMeta: { title: '[[Private Folder/Book|The Book]]', subtitle: '[A Tale](https://example.org)', author: '[[People/A. Writer]]' } as never,
+        });
+        expect(payload.items[0].status).toEqual(['Complete']);
+        expect(payload.items[0]['Publish Stage']).toBe('Press');
+        expect(payload.bookMeta).toEqual({ title: 'The Book', subtitle: 'A Tale', author: 'A. Writer' });
+        expect(payload.context.bookTitle).toBe('The Book');
     });
 
     it('sends markdown links in cast and subplots by their shown text', () => {
@@ -188,6 +206,31 @@ describe('buildTimelineSharePayload', () => {
             bookMeta: { title: 'Book', author: 'A. Writer', rights: { copyright_holder: 'Holder' } } as never,
         });
         expect(payload.bookMeta).toEqual({ title: 'Book', author: 'A. Writer' });
+    });
+});
+
+describe('linkText', () => {
+    it.each([
+        ['a wikilink by its note name', 'See [[People/Mira]].', 'See Mira.'],
+        ['a wikilink by its alias', 'See [[People/Mira|her]].', 'See her.'],
+        ['a heading link by its note name', '[[People/Mira#Early life]]', 'Mira'],
+        ['a heading link by its alias', '[[People/Mira#Early life|Mira, young]]', 'Mira, young'],
+        ['a link to a heading in the same note by the heading', '[[#The Fire]]', 'The Fire'],
+        ['a .md wikilink without the extension', '[[People/Mira.md]]', 'Mira'],
+        ['a note embed by its name', 'Read ![[Letters/The Letter]] now', 'Read The Letter now'],
+        ['a note embed by its alias', '![[Letters/The Letter|her letter]]', 'her letter'],
+        ['an image embed removed', 'The map ![[Attachments/Maps/valley.png]] shows it', 'The map shows it'],
+        ['a sized image embed removed', '![[Attachments/photo.JPG|300]] Opening', 'Opening'],
+        ['a PDF embed removed', 'Notes ![[Research/Deeds/deed.pdf#page=2]]', 'Notes'],
+        ['a markdown note link by its text', '[Mira](People/Mira.md)', 'Mira'],
+        ['an encoded markdown note link by its text', '[Mira](People%20Folder/Mira.md)', 'Mira'],
+        ['an angle-bracket markdown link by its text', '[the mill](<Places/The Old Mill.md>)', 'the mill'],
+        ['a web link by its text', 'See [the archive](https://example.org/archive?id=1 "Archive").', 'See the archive.'],
+        ['an obsidian URI by its text', '[open](obsidian://open?vault=Private&file=Book%2FScene)', 'open'],
+        ['a markdown image of an attachment removed', 'Here ![a scan](Attachments/scan.jpeg) ends', 'Here ends'],
+        ['plain text unchanged', 'They dance.', 'They dance.'],
+    ])('reduces %s', (_name, input, expected) => {
+        expect(linkText(input)).toBe(expected);
     });
 });
 

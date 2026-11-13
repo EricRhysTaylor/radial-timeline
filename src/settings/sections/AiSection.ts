@@ -25,6 +25,7 @@ import { resolveCitationsEnabled } from '../../ai/caps/computeCaps';
 import { getModelUiSignals } from '../../ai/caps/engineCapabilities';
 import { getAIClient } from '../../ai/runtime/aiClient';
 import { getLocalLlmClient } from '../../ai/localLlm/client';
+import { isUnencryptedOffNetworkUrl } from '../../ai/localLlm/networkLocality';
 import {
     migrateLegacyKeysToSecretStorage,
     needsLegacyKeyMigration
@@ -2651,9 +2652,10 @@ export function renderAiSection(params: {
             text
                 .setPlaceholder('http://localhost:11434/v1')
                 .setValue(getOllamaBaseUrl());
-            text.onChange(() => {
+            text.onChange((value) => {
                 text.inputEl.removeClass('ert-setting-input-success');
                 text.inputEl.removeClass('ert-setting-input-error');
+                updateBaseUrlPlainTextWarning(value);
             });
             localLlmScope.registerDomEvent(text.inputEl, 'keydown', (evt: KeyboardEvent) => {
                 if (evt.key === 'Enter') {
@@ -2668,6 +2670,7 @@ export function renderAiSection(params: {
                         ...getLocalLlmSettings(aiSettings),
                         baseUrl: text.getValue().trim() || 'http://localhost:11434/v1'
                     };
+                    updateBaseUrlPlainTextWarning(getLocalLlmSettings(aiSettings).baseUrl);
                     markLocalLlmConfigurationDirty();
                     await persistCanonical();
                     params.scheduleKeyValidation('ollama');
@@ -2677,6 +2680,15 @@ export function renderAiSection(params: {
             params.setOllamaConnectionInputs({ baseInput: text.inputEl });
         });
     localLlmBaseUrlSetting.settingEl.addClass('ert-setting-full-width-input');
+    // Plain http is allowed (local servers serve nothing else); warn, never block, when it leaves the network.
+    const baseUrlPlainTextWarning = localLlmBaseUrlSetting.descEl.createDiv({
+        cls: 'ert-section-desc ert-section-desc--alert',
+        text: t('settings.ai.localLlmConfig.baseUrlPlainTextWarning')
+    });
+    function updateBaseUrlPlainTextWarning(url: string): void {
+        baseUrlPlainTextWarning.toggleClass('ert-settings-hidden', !isUnencryptedOffNetworkUrl(url));
+    }
+    updateBaseUrlPlainTextWarning(getOllamaBaseUrl());
 
     const localLlmModelSetting = new Settings(localLlmConfigSection)
         .setName(t('settings.ai.localLlmConfig.manualModelName'))

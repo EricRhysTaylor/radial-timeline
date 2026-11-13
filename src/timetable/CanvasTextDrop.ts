@@ -10,7 +10,7 @@ import { findSafeSceneInsertionPrefix, scenePrefixBefore } from '../services/Sce
 import { mapScenes } from './StoryMapReviewModal';
 import { diffStoryMap } from './storyMapDiff';
 import { isStoryMapProvenance, matchingBaseline } from './storyMapProvenance';
-import { planCanvasTextDrop } from './canvasTextDropPlan';
+import { planCanvasTextDrop, type CanvasDropProblem } from './canvasTextDropPlan';
 import { insertCanvasSceneCard } from './canvasTextDropLayout';
 import { registerTextSketchCapture, type DraggedSelection } from './TextSketchCapture';
 import type { StoryCanvasData } from './canvasSketches';
@@ -21,6 +21,16 @@ type Canvas = { nodes?: Map<string, CanvasNode>; getData?: () => StoryCanvasData
 type CanvasView = ItemView & { file?: TFile | null; canvas?: Canvas };
 type Point = { x: number; y: number };
 const uid = () => crypto.randomUUID().replace(/-/g, '');
+const dropProblemKeys: Record<CanvasDropProblem, string> = {
+    invalidPosition: 'ui.timetable.canvasDropInvalidPosition',
+    overlappingLanes: 'ui.timetable.canvasDropOverlappingLanes',
+    unassignedLane: 'ui.timetable.canvasDropUnassignedLane',
+    splitScene: 'ui.timetable.canvasDropSplitScene',
+    noScenes: 'ui.timetable.canvasDropNoScenes',
+    outOfOrder: 'ui.timetable.canvasDropOutOfOrder',
+    hiddenScenes: 'ui.timetable.canvasDropHiddenScenes',
+    missingAct: 'ui.timetable.canvasDropMissingAct',
+};
 
 /** Use a rendered node as a ruler; Canvas' viewport transform is not public API. */
 export function canvasPoint(canvas: Canvas, event: Pick<DragEvent, 'clientX' | 'clientY'>): Point | null {
@@ -61,7 +71,7 @@ class CanvasTextDropModal extends ErtModal {
         const target = planCanvasTextDrop(original, baseline.data, scenes, this.point, vertical);
         if (target.kind === 'ambiguous') {
             this.mountHeader({ title: t('ui.timetable.canvasDropUnavailable') });
-            this.contentEl.createEl('p', { text: target.reason }); return;
+            this.contentEl.createEl('p', { text: t(dropProblemKeys[target.reason]) }); return;
         }
         this.mountHeader({ title: target.kind === 'scene' ? t('ui.timetable.canvasDropScene') : t('ui.timetable.captureSketchTitle'), subtitle: book.title || book.sourceFolder });
         if (target.kind === 'scene') {
@@ -77,7 +87,7 @@ class CanvasTextDropModal extends ErtModal {
         let actSelect: DropdownComponent | null = null;
         if (target.kind === 'scene') {
             const allowedActs = record.act === null ? target.actChoices : target.actChoices.filter(act => act === record.act);
-            if (!allowedActs.length) { this.contentEl.createEl('p', { text: t('ui.timetable.canvasDropStale') }); return; }
+            if (!allowedActs.length) { this.contentEl.createEl('p', { text: t('ui.timetable.canvasDropScopedAct') }); return; }
             chosenAct = allowedActs[0];
             const actRow = this.contentEl.createDiv({ cls: 'setting-item' });
             actRow.createDiv({ cls: 'setting-item-name', text: t('ui.canvasSketch.act') });
@@ -182,7 +192,7 @@ export function registerCanvasTextDrop(owner: Component, view: ItemView, plugin:
             const canvas = canvasView.canvas;
             if (!isStoryMapProvenance(record) || !canvas?.getData) return;
             const point = canvasPoint(canvas, event);
-            if (!point) { if (label) label.textContent = t('ui.timetable.canvasDropUnavailable'); marker.hide(); return; }
+            if (!point) { if (label) label.textContent = t('ui.timetable.canvasDropViewPosition'); marker.hide(); return; }
             const current = canvas.getData();
             const baseline = matchingBaseline(record.generated, current);
             const flipped = !!record.orientationFlipped !== baseline.transposed;
@@ -190,7 +200,7 @@ export function registerCanvasTextDrop(owner: Component, view: ItemView, plugin:
             hoverScenes ??= mapScenes(plugin, { ...record, act: null, subplot: null });
             const target = planCanvasTextDrop(current, baseline.data, hoverScenes, point, vertical);
             if (target.kind !== 'scene') {
-                if (label) label.textContent = t(target.kind === 'sketch' ? 'ui.timetable.captureSketchDrop' : 'ui.timetable.canvasDropUnavailable');
+                if (label) label.textContent = t(target.kind === 'sketch' ? 'ui.timetable.captureSketchDrop' : dropProblemKeys[target.reason]);
                 marker.hide(); return;
             }
             if (label) label.textContent = target.after ? t('ui.timetable.canvasDropOverScene', { subplot: target.subplot, scene: target.after.split('/').pop()?.replace(/\.md$/i, '') ?? '' }) : t('ui.timetable.canvasDropBeginning');
@@ -208,7 +218,7 @@ export function registerCanvasTextDrop(owner: Component, view: ItemView, plugin:
         },
         onDrop: (selection, event) => {
             const point = canvasView.canvas && canvasPoint(canvasView.canvas, event);
-            if (!point) { new Notice(t('ui.timetable.canvasDropUnavailable')); return; }
+            if (!point) { new Notice(t('ui.timetable.canvasDropViewPosition'), 10000); return; }
             new CanvasTextDropModal(plugin, canvasView, selection, point).open();
         },
     });

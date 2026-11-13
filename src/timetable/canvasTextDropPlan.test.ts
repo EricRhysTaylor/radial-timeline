@@ -25,7 +25,7 @@ describe('Canvas text drop placement', () => {
         let id = 0;
         const data = planSubplotCanvas(rows.slice(0, 2), { act: null, subplot: null }, () => String(++id));
         expect(planCanvasTextDrop(data, data, scenes, { x: 400, y: 180 }, false)).toMatchObject({ kind: 'scene', after: 'Book/1.md', before: 'Book/2.md' });
-        expect(planCanvasTextDrop(data, data, scenes, { x: 700, y: 180 }, false).kind).toBe('ambiguous');
+        expect(planCanvasTextDrop(data, data, scenes, { x: 700, y: 180 }, false)).toEqual({ kind: 'ambiguous', reason: 'hiddenScenes' });
     });
     it('does not use overlapping manual groups as generated lanes', () => {
         let id = 0;
@@ -49,6 +49,6 @@ describe('Canvas text drop placement', () => {
         let id = 0;
         const data = planSubplotCanvas(rows, { act: null, subplot: null }, () => String(++id));
         const modified = { ...data, nodes: data.nodes.map(node => node.file === 'Book/2.md' ? { ...node, x: 1500 } : node) };
-        expect(planCanvasTextDrop(modified, data, scenes, { x: 800, y: 180 }, false).kind).toBe('ambiguous');
+        expect(planCanvasTextDrop(modified, data, scenes, { x: 800, y: 180 }, false)).toEqual({ kind: 'ambiguous', reason: 'outOfOrder' });
     });
 });

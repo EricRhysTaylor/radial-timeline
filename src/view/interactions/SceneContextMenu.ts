@@ -472,13 +472,14 @@ function addSubplotMenuItems(menu: Menu, view: SceneMenuHost, target: SceneMenuT
  * note with no Class, where Promote to scene puts it back. The scene ID stays,
  * so a promoted scene keeps the identity its history is filed under.
  */
-async function removeSceneFromTimeline(view: SceneMenuHost, file: TFile): Promise<void> {
+export async function removeSceneFromTimeline(view: SceneMenuHost, file: TFile): Promise<void> {
+    const mappings = getActiveFrontmatterMappings(view.plugin.settings);
     await updateSceneFrontmatter(
         view,
         file,
         (fm) => {
             for (const key of Object.keys(fm)) {
-                if (key.toLowerCase() === 'class') delete fm[key];
+                if (canonicalizeFrontmatterKey(key, mappings) === 'Class') delete fm[key];
             }
         },
         t('ui.sceneContextMenu.removedFromTimeline', { name: file.basename })

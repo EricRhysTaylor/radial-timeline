@@ -134,6 +134,14 @@ async function started(h: ReturnType<typeof harness>) {
 describe('Share timeline', () => {
     beforeEach(() => vi.clearAllMocks());
 
+    it('refuses to start when duplicate IDs have no known owner', async () => {
+        const h = harness();
+        h.scenes.unshift({ ...h.scenes[0], title: '0 Copy', path: 'Books/Private Path/0 Copy.md' });
+        const request = respondToProjectSyncAndTimeline(answer());
+        await expect(startTimelineSharing(h.plugin as never, h.book as never)).rejects.toThrow(/same scene ID/i);
+        expect(timelineCalls(request)).toHaveLength(0);
+    });
+
     it('is off by default and sends nothing', async () => {
         const h = harness();
         const request = respondWith({ body: answer() });
@@ -290,6 +298,29 @@ describe('Timeline updates with the book sync', () => {
         const items = (body.export as { items: Array<{ title?: string; sceneId?: string }> }).items;
         expect(items.map(item => [item.title, item.sceneId])).toEqual([['0 Copy', undefined], ['1 Scene', 'scn_a1b2c3d4']]);
         expect(JSON.stringify(body)).not.toContain('Private Path');
+    });
+
+    it('does not send an ambiguous duplicate when an older share has no recorded owner', async () => {
+        const h = harness();
+        await started(h);
+        const record = timelineShareFor(h.plugin.settings.communityShare, 'book-1');
+        if (!record) throw new Error('expected shared timeline');
+        delete record.sceneIdPaths;
+        h.scenes.unshift({ ...h.scenes[0], title: '0 Copy', path: 'Books/Private Path/0 Copy.md' });
+        const request = respondWith({ body: answer('active') });
+        await syncCommunityTimelinesIfDue(h.plugin as never);
+        expect(timelineCalls(request)).toHaveLength(0);
+        const after = timelineShareFor(h.plugin.settings.communityShare, 'book-1');
+        expect(after?.enabled).toBe(true);
+        expect(after?.lastError).toMatch(/same scene ID/i);
+
+        // The author keeps the old ID on the original and gives the copy its own.
+        h.scenes[0].sceneId = 'scn_0f0f0f0f';
+        await syncCommunityTimelinesIfDue(h.plugin as never);
+        const [sent] = timelineCalls(request);
+        expect((sent.export as { items: Array<{ title?: string; sceneId?: string }> }).items.map(item => [item.title, item.sceneId]))
+            .toEqual([['0 Copy', 'scn_0f0f0f0f'], ['1 Scene', 'scn_a1b2c3d4']]);
+        expect(timelineShareFor(h.plugin.settings.communityShare, 'book-1')?.lastError).toBeUndefined();
     });
 
     it('follows a renamed note that holds an id, with nothing sent', async () => {

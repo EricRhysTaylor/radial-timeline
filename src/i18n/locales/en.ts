@@ -3611,6 +3611,7 @@ export const en = {
             timelineShareFailed: 'Could not reach the Community timeline service.',
             timelineShareUnexpected: 'The Community website sent an unexpected timeline response.',
             timelineNoScenes: 'This book has no scenes to share.',
+            timelineDuplicateSceneIds: 'Timeline sync is waiting because two or more scenes have the same scene ID. Keep the ID on the original scene, give each copy a new ID, then sync again.',
             timelineLevelRequired: 'Choose a sharing level above Private to share a timeline.',
             timelineRemovedOnWebsite: 'This timeline was deleted on the website, so sharing is off for this book.',
             actionFailed: 'Community Share action failed. Try again.',

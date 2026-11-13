@@ -3,7 +3,7 @@ import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
 import { canShareAprToCommunity, canShareTimelineToCommunity, deriveCommunityShareMode, expectsBookListSync, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, timelineShareFor } from './communityShareSettings';
-import { buildTimelineSharePayload, sceneIdHolders, timelinePayloadFingerprint } from './timelineSharePayload';
+import { buildTimelineSharePayload, hasAmbiguousSceneIdHolders, sceneIdHolders, timelinePayloadFingerprint } from './timelineSharePayload';
 import {
     COMMUNITY_DAILY_BACKFILL_DAYS,
     COMMUNITY_DAILY_BACKFILL_VERSION,
@@ -1392,6 +1392,9 @@ async function pushTimeline(plugin: RadialTimelinePlugin, book: BookProfile, cre
     const { items, bookMeta } = await plugin.getSceneDataService().getSceneDataWithBookMeta({ sourcePath: book.sourceFolder });
     const before = normalizeCommunityShareSettings(plugin.settings.communityShare);
     const previous = timelineShareFor(before, book.id);
+    if (hasAmbiguousSceneIdHolders(items, previous?.sceneIdPaths)) {
+        throw new CommunityShareError('ambiguous_scene_ids', t('ui.communityShareClient.timelineDuplicateSceneIds'));
+    }
     const holders = sceneIdHolders(items, previous?.sceneIdPaths);
     const payload = buildTimelineSharePayload({
         items,

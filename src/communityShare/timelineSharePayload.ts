@@ -132,16 +132,13 @@ function scenesOf(items: TimelineItem[]): TimelineItem[][] {
  * id goes out on one scene only. The note that carried it in the last send
  * keeps it, so the website still matches the original and its reveal; the
  * copy goes without an id, placed by position, until the YAML audit's Fix
- * duplicate IDs gives it its own. With no earlier send (or that note renamed
- * or gone), the first scene in timeline order keeps it.
+ * duplicate IDs gives it its own. If the owner is unknown and duplicates
+ * exist, the caller must stop the share rather than guess.
  *
  * `previous` is this result from the last send. The paths stay in plugin data
  * and never leave the vault: the payload carries only the ids.
  */
-export function sceneIdHolders(
-    items: TimelineItem[],
-    previous: Readonly<Record<string, string>> = {}
-): Record<string, string> {
+function sceneIdCarriers(items: TimelineItem[]): Map<string, string[]> {
     const carriers = new Map<string, string[]>();
     for (const [item] of scenesOf(items)) {
         const id = item.sceneId;
@@ -150,8 +147,23 @@ export function sceneIdHolders(
         if (paths) paths.push(item.path);
         else carriers.set(id, [item.path]);
     }
+    return carriers;
+}
+
+/** Do not guess which duplicate owns an ID when its last carrier is unknown. */
+export function hasAmbiguousSceneIdHolders(items: TimelineItem[], previous: Readonly<Record<string, string>> = {}): boolean {
+    for (const [id, paths] of sceneIdCarriers(items)) {
+        if (paths.length > 1 && !paths.includes(previous[id])) return true;
+    }
+    return false;
+}
+
+export function sceneIdHolders(
+    items: TimelineItem[],
+    previous: Readonly<Record<string, string>> = {}
+): Record<string, string> {
     const holders: Record<string, string> = {};
-    for (const [id, paths] of carriers) {
+    for (const [id, paths] of sceneIdCarriers(items)) {
         const kept = previous[id];
         holders[id] = kept && paths.includes(kept) ? kept : paths[0];
     }

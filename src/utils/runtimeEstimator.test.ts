@@ -71,6 +71,23 @@ describe('estimateRuntime', () => {
 });
 
 describe('extractRuntimeBody', () => {
+    it('keeps dialogue between scene breaks and excludes fenced code and display math', () => {
+        const note = '---\nClass: Scene\n---\nBefore.\n\n---\nKade: Get down!\n---\n\nAfter.\n\n```js\nconst hidden = 123;\n```\n\n$$\nx = 42\n$$';
+        const body = extractRuntimeBody(note);
+        expect(body).toContain('Kade: Get down!');
+        expect(body).toContain('After.');
+        expect(body).not.toContain('const hidden');
+        expect(body).not.toContain('x = 42');
+    });
+
+    it('keeps text following code and math blocks and counts only the narration', () => {
+        const note = '---\nClass: Scene\n---\nOne two.\n\n~~~text\nsecret code\n~~~\n\n$$x + y$$\n\nThree four.';
+        const body = extractRuntimeBody(note);
+        expect(body).toContain('One two.');
+        expect(body).toContain('Three four.');
+        expect(body).not.toContain('secret code');
+        expect(body).not.toContain('x + y');
+    });
     it('keeps only the manuscript text a narrator would read', () => {
         const note = [
             '---',

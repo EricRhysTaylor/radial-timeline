@@ -376,13 +376,14 @@ export function normalizeManuscriptCleanupOptions(
 
 export function sanitizeCompiledManuscript(
     text: string,
-    opts: Partial<ManuscriptExportCleanupOptions> = {}
+    opts: Partial<ManuscriptExportCleanupOptions> = {},
+    { stripEmbeddedFrontmatter = true }: { stripEmbeddedFrontmatter?: boolean } = {}
 ): string {
     let cleaned = normalizeLineEndings(text);
     // Structural strippers run unmasked on purpose: the editorialist stripper
     // must still find its own fenced blocks, and the YAML stripper is already
     // fence-aware.
-    cleaned = stripYamlFrontmatterBlocks(cleaned);
+    if (stripEmbeddedFrontmatter) cleaned = stripYamlFrontmatterBlocks(cleaned);
     cleaned = stripEditorialistReviewBlocks(cleaned);
 
     const anyOptIn = opts.stripComments || opts.stripAiComments

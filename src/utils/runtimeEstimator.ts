@@ -11,6 +11,7 @@ import type { ManuscriptExportCleanupOptions, RadialTimelineSettings, RuntimeCon
 import { stripFrontmatter } from './frontmatterDocument';
 import { sanitizeCompiledManuscript } from './manuscriptSanitize';
 import { countWords } from './text';
+import { MARKDOWN_FENCE_OPEN_PATTERN, isClosingMarkdownFence } from './markdownFence';
 
 // Nothing outside the manuscript is read aloud, so the estimator applies the
 // strictest export cleanup: author queries go along with the private notes.
@@ -28,7 +29,26 @@ const RUNTIME_CLEANUP: ManuscriptExportCleanupOptions = {
  * the manuscript export's own sanitizer.
  */
 export function extractRuntimeBody(noteContent: string): string {
-    return sanitizeCompiledManuscript(stripFrontmatter(noteContent), RUNTIME_CLEANUP);
+    const body = sanitizeCompiledManuscript(stripFrontmatter(noteContent), RUNTIME_CLEANUP, { stripEmbeddedFrontmatter: false });
+    const lines: string[] = [];
+    let fence: string | null = null;
+    let displayMath = false;
+    for (const line of body.split('\n')) {
+        if (fence !== null) {
+            if (isClosingMarkdownFence(line, fence)) fence = null;
+            continue;
+        }
+        if (displayMath) {
+            if (/^\s*\$\$\s*$/.test(line)) displayMath = false;
+            continue;
+        }
+        const opener = line.match(MARKDOWN_FENCE_OPEN_PATTERN);
+        if (opener) { fence = opener[1]; continue; }
+        if (/^\s*\$\$\s*$/.test(line)) { displayMath = true; continue; }
+        if (/^\s*\$\$.*\$\$\s*$/.test(line)) continue;
+        lines.push(line);
+    }
+    return lines.join('\n').trim();
 }
 
 /** True when the text has a letter or digit to perform; empty placeholder scenes get no estimate. */

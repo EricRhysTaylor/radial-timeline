@@ -114,7 +114,7 @@ import {
 import { authorKeyFor, countColumnFill, tableColumns, TIMETABLE_VIEW_TYPE, withRecommendedColumns } from './timetableFiles';
 import { SketchDrawer, type SketchDrawerHost } from './SketchDrawer';
 import { synopsisKey, updateSynopsis } from './panelSynopsis';
-import { leadPortrait } from './panelPortrait';
+import { selectedPortrait } from './panelPortrait';
 import { panelPlaceImage } from './panelPlaceImage';
 import { imageSubjectName } from './storyImageMatching';
 import { storyCharacterSelections } from './storyImageSelection';
@@ -2949,7 +2949,7 @@ export class TimetableView extends BasesView {
                 const selectedIndex = selectedSubject ? names.findIndex(name => imageSubjectName(name) === selectedSubject) : -1;
                 const selectedPerson = people[selectedIndex < 0 ? 0 : selectedIndex];
                 const overrideImage = explicitCardImage(this.plugin, entry.file);
-                const portrait = overrideImage ? this.plugin.app.vault.getResourcePath(overrideImage) : selectedPerson?.image ?? leadPortrait(people);
+                const portrait = overrideImage ? this.plugin.app.vault.getResourcePath(overrideImage) : selectedPortrait(people, selectedIndex);
                 const cardSettings = storyCardImages(this.plugin.settings);
                 const imageMode = outline ? 'character' : cardSettings.combination;
                 const location = (imageMode === 'place' || imageMode === 'combined' || imageMode === 'layered') && (row.kind === 'scene' || (row.kind === 'sketch' && !!storyImageChoice(this.plugin, row.path).placeImage)) ? panelPlaceImage(this.plugin.app, entry.file, frontmatter, authorKeyFor('Place', this.plugin.settings), imageFiles, storyImageChoice(this.plugin, row.path).placeImage) : null;

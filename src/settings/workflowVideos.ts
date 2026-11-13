@@ -24,7 +24,7 @@ interface WorkflowVideo {
 export const WORKFLOW_VIDEOS: Record<WorkflowVideoKey, WorkflowVideo> = {
     'pdf-export': { goSlug: null, titleKey: 'ui.workflowVideos.pdfExport' },
     'community-share': { goSlug: null, titleKey: 'ui.workflowVideos.communityShare' },
-    'beat-manager': { goSlug: null, titleKey: 'ui.workflowVideos.beatManager' },
+    'beat-manager': { goSlug: 'rt-video-beat-manager', titleKey: 'ui.workflowVideos.beatManager' },
 };
 
 export const WORKFLOW_VIDEO_GO_BASE = 'https://community.radialtimeline.com/go/';

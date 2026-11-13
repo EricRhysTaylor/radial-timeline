@@ -52,7 +52,7 @@ The pre-release eyeball checklist asks: if a release changes a screen a publishe
 |---|---|---|---|
 | `pdf-export` (wired) | Design a PDF style and export the manuscript | Pro workflow with the most steps | Settings → Publish, design wizard, Manuscript export, wiki Publishing |
 | `community-share` (wired) | Share your progress on the Community | Shows exactly what is and isn't shared | Settings → Community, wiki Settings-Community |
-| `beat-manager` (wired; how-to cut 1:06, opening being re-voiced; needs 8.0.2 or later, released 2026-11-12) | Shape your story with the Beat Manager | Gossamer scores against these beats; no video covers the Beat Manager yet | Settings → Core → Story beats system, wiki Settings-Core |
+| `beat-manager` (wired and linked: how-to 1:42 uploaded private as `h9rJSU7p6aA`, `rt-video-beat-manager` registered and set, 2026-11-12. Make the video public with the release that carries the Save changes fix `da7ac30c`; until then the icon opens a private video) | Shape your story with the Beat Manager | Gossamer scores against these beats; no video covers the Beat Manager yet | Settings → Core → Story beats system, wiki Settings-Core |
 | `pandoc-setup` | Install Pandoc and fonts for export | Issues #29 and #34 were authors stuck here | Settings → Publish, wiki Publishing |
 | `story-vault` | Add a Story Vault and look around | The first thing a new author sees | Welcome screen, Story Vault dialog, wiki Sample-Vault |
 | `import-manuscript` | Bring in an existing manuscript, including from Scrivener | The biggest hurdle for new authors | Onboarding dialog, wiki Onboard-Existing-Manuscript |

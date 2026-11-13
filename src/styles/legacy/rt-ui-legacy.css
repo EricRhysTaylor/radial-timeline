@@ -418,6 +418,12 @@
     opacity 0.15s ease;
 }
 
+/* Obsidian's setting groups draw a divider along each row's top edge; on a
+   bordered book card it covers the top border, including the active card's green. */
+:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-book-card.setting-item::before {
+  content: none;
+}
+
 /* Override generic .is-inactive muting — book cards must stay interactive */
 :is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-book-card.setting-item.is-inactive {
   opacity: 1;

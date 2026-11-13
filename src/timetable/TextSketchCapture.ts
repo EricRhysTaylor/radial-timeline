@@ -71,14 +71,19 @@ export type DraggedSelection = { text: string; source: TFile };
  * Elements matching rowSelector place the text themselves: capture stands aside
  * over them, and the returned getter gives them the selection being dragged.
  */
-export function registerTextSketchCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, rowSelector?: string): () => DraggedSelection | null {
+export function registerTextSketchCapture(owner: Component, host: HTMLElement, plugin: RadialTimelinePlugin, rowSelector?: string, options?: {
+    onDrop?: (selection: DraggedSelection, event: DragEvent) => void;
+    onOver?: (event: DragEvent, target: HTMLElement) => void;
+    onClear?: () => void;
+    accept?: () => boolean;
+}): () => DraggedSelection | null {
     let capture: DraggedSelection | null = null;
     let pressedSelection: { text: string; source: TFile; container: HTMLElement } | null = null;
     const doc = host.ownerDocument;
     const target = host.createDiv({ cls: 'ert-text-sketch-drop', attr: { role: 'status' } });
     setIcon(target.createSpan(), 'file-plus-2');
     target.createSpan({ text: t('ui.timetable.captureSketchDrop') });
-    const clear = () => { capture = null; target.removeClass('is-visible'); };
+    const clear = () => { capture = null; target.removeClass('is-visible'); options?.onClear?.(); };
     const overRow = (event: DragEvent): boolean => !!rowSelector && event.target instanceof Element && !!event.target.closest(rowSelector);
     owner.registerDomEvent(doc, 'pointerdown', (event: PointerEvent) => {
         pressedSelection = null;
@@ -103,13 +108,14 @@ export function registerTextSketchCapture(owner: Component, host: HTMLElement, p
         pressedSelection = null;
     }, true);
     owner.registerDomEvent(host, 'dragover', (event: DragEvent) => {
-        if (!capture) return;
+        if (!capture || options?.accept?.() === false) return;
         if (overRow(event)) { target.removeClass('is-visible'); return; }
         if (!target.isConnected) {
             const toolbar = host.querySelector<HTMLElement>('.ert-timetable-panels__toolbar');
             if (toolbar) toolbar.after(target); else host.appendChild(target);
         }
         target.addClass('is-visible');
+        options?.onOver?.(event, target);
         // The entire pane accepts note text; this also prevents the editor's
         // default move operation and keeps file/scene drags on their own paths.
         event.preventDefault();
@@ -117,11 +123,12 @@ export function registerTextSketchCapture(owner: Component, host: HTMLElement, p
         if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
     }, true);
     owner.registerDomEvent(host, 'drop', (event: DragEvent) => {
-        if (!capture || overRow(event)) return;
+        if (!capture || options?.accept?.() === false || overRow(event)) return;
         event.preventDefault(); event.stopPropagation();
         const { text, source } = capture;
         clear();
-        new TextSketchCaptureModal(plugin, text, source).open();
+        if (options?.onDrop) options.onDrop({ text, source }, event);
+        else new TextSketchCaptureModal(plugin, text, source).open();
     }, true);
     owner.registerDomEvent(doc, 'dragend', clear, true);
     owner.register(() => target.remove());

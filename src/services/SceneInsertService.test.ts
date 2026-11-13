@@ -6,6 +6,8 @@ import type { RadialTimelineSettings, TimelineItem } from '../types';
 import {
     buildDecimalSceneInsertionPrefix,
     isSafeSceneInsertionPrefix,
+    findSafeSceneInsertionPrefix,
+    scenePrefixBefore,
     insertSceneAfterAnchor,
     planActEndScenePrefixes
 } from './SceneInsertService';
@@ -18,6 +20,27 @@ function settings(overrides: Partial<RadialTimelineSettings> = {}): RadialTimeli
         ...overrides
     };
 }
+
+describe('scenePrefixBefore', () => {
+    it('places a scene before the first scene without renumbering', () => {
+        expect(scenePrefixBefore([scene('Book/1 First.md'), scene('Book/2 Second.md')], 'Book/1 First.md')).toBe('0');
+    });
+    it('places the scene after an earlier beat and before its scene', () => {
+        expect(scenePrefixBefore([beat('Book/0.1 Opening.md'), scene('Book/1 First.md')], 'Book/1 First.md')).toBe('0.2');
+    });
+    it('does not invent a number when no safe gap exists', () => {
+        expect(scenePrefixBefore([scene('Book/0 First.md')], 'Book/0 First.md')).toBeNull();
+    });
+});
+
+describe('findSafeSceneInsertionPrefix', () => {
+    it('finds a natural-sort gap when decimal midpoint sorts after the next scene', () => {
+        const items = [scene('Book/4 First.md'), scene('Book/4.5 Next.md')];
+        const prefix = findSafeSceneInsertionPrefix(items, 'Book/4 First.md');
+        expect(prefix).toBe('4.1');
+        expect(isSafeSceneInsertionPrefix(items, 'Book/4 First.md', prefix!)).toBe(true);
+    });
+});
 
 function scene(path: string, actNumber = 1): TimelineItem {
     return {

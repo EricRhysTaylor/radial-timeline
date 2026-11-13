@@ -27,6 +27,7 @@ import { outlineReferenceType, type OutlineReferenceType } from './outlineDocume
 import { getActiveBook } from '../utils/books';
 import { addSubplotColorMenu, ideaCards, type CanvasCardNode } from './CanvasSubplotMenu';
 import { addMenuChoices } from './menuChoices';
+import { registerCanvasTextDrop } from './CanvasTextDrop';
 
 type Mode = 'full' | 'preview' | 'title';
 const CARD_ICONS: Record<OutlineReferenceType, string> = {
@@ -124,6 +125,7 @@ class CanvasCards {
             }, 350);
         });
         this.events.load();
+        registerCanvasTextDrop(this.events, view, plugin);
         this.events.registerDomEvent(view.containerEl.win, STORY_IMAGES_CHANGED_EVENT, () => this.schedule());
         this.events.registerDomEvent(view.containerEl.win, SUBPLOT_COLORS_CHANGED_EVENT, () => this.invalidateColors());
         this.events.registerDomEvent(view.containerEl, 'click', event => {

@@ -14,7 +14,7 @@ function dragEvent(target: unknown) {
     return { target, preventDefault: vi.fn(), stopPropagation: vi.fn(), dataTransfer: { dropEffect: 'none' } };
 }
 
-function setup() {
+function setup(options?: Parameters<typeof registerTextSketchCapture>[4]) {
     const handlers = new Map<string, (event: unknown) => void>();
     const banner = { isConnected: true, createSpan: () => ({}), addClass: vi.fn(), removeClass: vi.fn(), remove: vi.fn() };
     const doc = { getSelection: () => null };
@@ -29,7 +29,7 @@ function setup() {
         file: source, containerEl: pane, getMode: () => 'source', editor: { getSelection: () => 'A dropped line' },
     });
     const plugin = { app: { workspace: { getLeavesOfType: () => [{ view }] } } } as unknown as RadialTimelinePlugin;
-    const dragged = registerTextSketchCapture(owner as unknown as Component, host as unknown as HTMLElement, plugin, ROW);
+    const dragged = registerTextSketchCapture(owner as unknown as Component, host as unknown as HTMLElement, plugin, ROW, options);
     const fire = (key: string, event: unknown) => handlers.get(key)!(event);
     // CodeMirror may clear its selection before dragstart, so the press is what counts.
     const startDrag = () => { fire('doc:pointerdown', { target: {} }); view.editor.getSelection = () => ''; fire('doc:dragstart', { target: {} }); };
@@ -82,5 +82,15 @@ describe('dropping selected text', () => {
         startDrag();
         fire('doc:dragend', {});
         expect(dragged()).toBeNull();
+    });
+    it('passes a copied note selection to a custom Canvas handler', () => {
+        const onDrop = vi.fn();
+        const { source, fire, startDrag } = setup({ onDrop });
+        startDrag();
+        const drop = dragEvent(new FakeElement(false));
+        fire('host:drop', drop);
+        expect(drop.preventDefault).toHaveBeenCalled();
+        expect(onDrop).toHaveBeenCalledWith({ text: 'A dropped line', source }, drop);
+        expect(open).not.toHaveBeenCalled();
     });
 });

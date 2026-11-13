@@ -185,6 +185,44 @@ export function isSafeSceneInsertionPrefix(items: TimelineItem[], anchorPath: st
     return nextPrefix !== null && comparePrefixTokens(prefix, nextPrefix) < 0;
 }
 
+/** Find a prefix using the same natural ordering as the manuscript. Decimal
+ * arithmetic alone is insufficient: natural sorting places 4.25 after 4.5. */
+export function findSafeSceneInsertionPrefix(items: TimelineItem[], anchorPath: string, beatModel?: string): string | null {
+    const initial = buildDecimalSceneInsertionPrefix(items, anchorPath, beatModel);
+    if (isSafeSceneInsertionPrefix(items, anchorPath, initial, beatModel)) return initial;
+    const token = extractPrefixToken(fileStem(anchorPath));
+    const major = token?.split('.')[0];
+    if (!major) return null;
+    for (const minor of [...Array.from({ length: 999 }, (_, index) => index + 1), 0]) {
+        for (let width = 1; width <= 6; width++) {
+            const candidate = `${major}.${String(minor).padStart(width, '0')}`;
+            if (isSafeSceneInsertionPrefix(items, anchorPath, candidate, beatModel)) return candidate;
+        }
+    }
+    return null;
+}
+
+/** A safe unused number immediately before a scene, respecting beats in the
+ * same act. Returns null when the existing numbering leaves no representable gap. */
+export function scenePrefixBefore(items: TimelineItem[], beforePath: string, beatModel?: string): string | null {
+    const ordered = sortCandidatesByManuscriptOrder(collectCandidates(items, beatModel));
+    const index = ordered.findIndex(entry => entry.path === beforePath && entry.itemType === 'Scene');
+    if (index < 0) return null;
+    const before = ordered[index];
+    const upper = extractPrefixToken(before.basename);
+    if (!upper) return null;
+    const previous = ordered[index - 1];
+    const lower = previous?.actNumber === before.actNumber ? extractPrefixToken(previous.basename) : null;
+    if (previous?.actNumber === before.actNumber && !lower) return null;
+    const used = new Set(ordered.map(entry => extractPrefixToken(entry.basename)).filter((value): value is string => value !== null));
+    const upperMajor = Number(upper.split('.')[0]);
+    const candidates: string[] = [];
+    if (!lower && upperMajor > 0) candidates.push(String(upperMajor - 1));
+    const major = lower?.split('.')[0] ?? (upperMajor > 0 ? String(upperMajor - 1) : '0');
+    for (let suffix = 1; suffix <= 999; suffix++) candidates.push(`${major}.${suffix}`);
+    return candidates.find(candidate => !used.has(candidate) && (!lower || comparePrefixTokens(lower, candidate) < 0) && comparePrefixTokens(candidate, upper) < 0) ?? null;
+}
+
 /**
  * Scene numbers for notes joining the end of their acts, keyed by note and in
  * the order given. Whole numbers where they fit; in a narrower gap, decimals

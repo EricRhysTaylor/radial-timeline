@@ -54,7 +54,7 @@ function portrait(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, 
 /** The veil over a place background, near and far edges, for each Background treatment (Panels' text backing). */
 const VEILS: Record<PlaceTextBacking, [string, string]> = { subtle: ['84%', '58%'], balanced: ['92%', '72%'], strong: ['96%', '86%'] };
 
-class CanvasCards {
+export class CanvasCards {
     private mode: Mode = 'preview';
     private hasBookCards = false;
     private readonly cards = new Map<HTMLElement, { overlay: HTMLElement; signature: string; cleanup: Array<() => void> }>();
@@ -160,11 +160,15 @@ class CanvasCards {
         const existing = this.ringColors.get(bookId);
         if (existing) return existing;
         const book = this.plugin.settings.books.find(item => item.id === bookId);
-        const pending = book ? bookRingColors(this.plugin, book) : Promise.resolve(new Map<string, SubplotColor>());
-        this.ringColors.set(bookId, pending);
-        pending.then(colors => {
+        const pending = (book ? bookRingColors(this.plugin, book) : Promise.resolve(new Map<string, SubplotColor>())).then(colors => {
             if (this.ringColors.get(bookId) === pending) this.settledRingColors.set(bookId, colors);
-        }).catch((error: unknown) => console.error('[Canvas] Could not read the book’s ring colors', error));
+            return colors;
+        }).catch((error: unknown) => {
+            if (this.ringColors.get(bookId) === pending) this.ringColors.delete(bookId);
+            console.error('[Canvas] Could not read the book’s ring colors', error);
+            return new Map<string, SubplotColor>();
+        });
+        this.ringColors.set(bookId, pending);
         return pending;
     }
 
@@ -188,6 +192,19 @@ class CanvasCards {
         card?.overlay.remove();
         this.cards.delete(node);
         node.removeClass('ert-canvas-story-node');
+    }
+
+    private async cardPreview(file: TFile): Promise<string> {
+        try {
+            const content = await this.plugin.app.vault.cachedRead(file);
+            const info = getFrontMatterInfo(content);
+            const preview = content.slice(info.exists ? info.contentStart : 0).trim();
+            const firstLine = preview.split('\n')[0]?.replace(/^\s*#+\s*/, '').trim();
+            return firstLine === file.basename ? (preview.includes('\n') ? preview.slice(preview.indexOf('\n') + 1) : '') : preview;
+        } catch (error) {
+            console.error('[Canvas] Could not read the card preview', error);
+            return '';
+        }
     }
 
     private bookCards(): Array<{ data: NodeData; el: HTMLElement; file: TFile; bookId: string }> {
@@ -217,6 +234,8 @@ class CanvasCards {
         this.action.toggle(this.hasBookCards);
         this.view.containerEl.toggleClass('ert-canvas-card-view', this.hasBookCards && this.mode !== 'full');
         const keep = new Set<HTMLElement>();
+        // A failed read is retried on a later refresh, once per book per pass.
+        const refreshColors = new Map<string, Promise<Map<string, SubplotColor>>>();
         if (this.mode !== 'full' && nodes instanceof Map) {
             const groups = [...nodes.values()].map(node => node.getData?.()).filter((data): data is NodeData => data?.type === 'group');
             for (const { data, el, file, bookId } of bookCards) {
@@ -240,7 +259,12 @@ class CanvasCards {
                     place, hasCharacters, chosen: !!overrideImage,
                 }) : null;
                 const focusOf = (image: CardImage | null | undefined) => image ? storyImageFocus(this.plugin.settings, image.path) : null;
-                const ringColors = row.kind === 'scene' || row.kind === 'sketch' ? await this.colorsForBook(bookId) : new Map<string, SubplotColor>();
+                let ringColors = new Map<string, SubplotColor>();
+                if (row.kind === 'scene' || row.kind === 'sketch') {
+                    let read = refreshColors.get(bookId);
+                    if (!read) { read = this.colorsForBook(bookId); refreshColors.set(bookId, read); }
+                    ringColors = await read;
+                }
                 const subplotNames = row.subplots.filter(name => ringColors.has(name));
                 const colorOf = (name: string): string => subplotColorCss(ringColors.get(name)!); // SAFE: subplotNames keeps only names the book's rings hold
                 const shownSubplots = cardSubplots(data, groups, subplotNames);
@@ -251,11 +275,7 @@ class CanvasCards {
                         const synopsis: unknown = fm[synopsisKey(fm, this.plugin.settings)];
                         preview = typeof synopsis === 'string' ? synopsis : '';
                     } else {
-                        const content = await this.plugin.app.vault.cachedRead(file);
-                        const info = getFrontMatterInfo(content);
-                        preview = content.slice(info.exists ? info.contentStart : 0).trim();
-                        const firstLine = preview.split('\n')[0]?.replace(/^\s*#+\s*/, '').trim();
-                        if (firstLine === file.basename) preview = preview.includes('\n') ? preview.slice(preview.indexOf('\n') + 1) : '';
+                        preview = await this.cardPreview(file);
                     }
                 }
                 if (this.stopped || revision !== this.revision) return;

@@ -97,7 +97,7 @@ class CanvasTextDropModal extends ErtModal {
         }
         this.contentEl.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.canvasDropName') });
         const title = this.contentEl.createEl('input', { type: 'text', value: safeTitle(this.droppedText.text.split(/\r?\n/)[0]).slice(0, 100) });
-        this.contentEl.createDiv({ cls: 'setting-item-name', text: t('ui.timetable.captureSketchText') });
+        this.contentEl.createDiv({ cls: 'setting-item-name', text: t(target.kind === 'scene' ? 'ui.timetable.canvasDropText' : 'ui.timetable.captureSketchText') });
         const body = this.contentEl.createEl('textarea', { attr: { rows: '8' } }); body.value = this.droppedText.text;
         const status = this.contentEl.createDiv({ cls: 'ert-canvas-sketch-order-hint' });
         const actions = this.mountActions();

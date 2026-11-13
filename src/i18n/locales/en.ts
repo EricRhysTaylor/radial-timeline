@@ -6012,6 +6012,7 @@ export const en = {
             canvasDropOverScene: 'Add to {{subplot}} after {{scene}}',
             canvasDropScene: 'Create scene',
             canvasDropName: 'Title',
+            canvasDropText: 'Scene text',
             canvasDropEmpty: 'Enter text for the new note.',
             canvasDropUnavailable: 'Unable to determine where to place this on the map.',
             canvasDropViewPosition: 'The Canvas position could not be read. Bring a scene card into view, zoom in, and try dropping again.',

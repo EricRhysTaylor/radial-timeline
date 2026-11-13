@@ -11,7 +11,7 @@
  * back. Going live stays a click on the website.
  */
 
-import { Notice, Setting } from 'obsidian';
+import { Notice, Setting, type ToggleComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import {
     CommunityShareError,
@@ -51,6 +51,7 @@ interface TimelineStatusCache {
 }
 let statusCache: TimelineStatusCache | null = null;
 let statusInflight = false;
+const detailSaves = new Set<string>();
 const STATUS_TTL_MS = 60 * 1000;
 
 const getDetailLabels = (): Array<{ field: TimelineSceneDetail; label: string }> => [
@@ -206,14 +207,23 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
         attr: { target: '_blank', rel: 'noopener' },
     });
 
+    const detailToggles: ToggleComponent[] = [];
     const saveDetails = async (details: Parameters<typeof setTimelineShareDetails>[2]): Promise<void> => {
+        if (detailSaves.has(key)) return;
+        detailSaves.add(key);
+        detailToggles.forEach(toggle => { toggle.setDisabled(true); });
         try {
             const saved = await setTimelineShareDetails(plugin, bookId, details);
             statusCache = { key, fetchedAt: Date.now(), answer: saved };
         } catch (error) {
+            // A lost response does not prove the website rejected the change.
+            // Re-read its state before another privacy choice can be made.
+            if (statusCache?.key === key) statusCache = null;
             new Notice(errorText(error, t('ui.communityShareSection.timelineDetailsFailed')));
+        } finally {
+            detailSaves.delete(key);
+            rerender();
         }
-        rerender();
     };
 
     const detailsHeading = new Setting(block)
@@ -224,25 +234,26 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
     for (const { field, label } of getDetailLabels()) {
         new Setting(block)
             .setName(label)
-            .addToggle(toggle => toggle
-                .setValue(!hidden.has(field))
-                .setDisabled(paused)
-                .onChange(async shown => {
-                    // Kept current here, so a second toggle before the rerender
-                    // does not send the first one back.
-                    if (shown) hidden.delete(field);
-                    else hidden.add(field);
-                    await saveDetails({ hiddenSceneFields: [...hidden] });
-                }));
+            .addToggle(toggle => {
+                detailToggles.push(toggle);
+                toggle.setValue(!hidden.has(field)).setDisabled(paused || detailSaves.has(key)).onChange(async shown => {
+                    const next = new Set(hidden);
+                    if (shown) next.delete(field);
+                    else next.add(field);
+                    await saveDetails({ hiddenSceneFields: [...next] });
+                });
+            });
     }
 
     new Setting(block)
         .setName(t('ui.communityShareSection.timelineGenericName'))
         .setDesc(t('ui.communityShareSection.timelineGenericDesc'))
-        .addToggle(toggle => toggle
-            .setValue(share.generic_subplot_names)
-            .setDisabled(paused)
+        .addToggle(toggle => {
+            detailToggles.push(toggle);
+            toggle.setValue(share.generic_subplot_names)
+            .setDisabled(paused || detailSaves.has(key))
             .onChange(async generic => {
                 await saveDetails({ genericSubplotNames: generic });
-            }));
+            });
+        });
 }

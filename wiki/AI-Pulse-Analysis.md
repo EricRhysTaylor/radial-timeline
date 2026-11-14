@@ -8,9 +8,6 @@ Pulse analyzes each scene with its previous and next scenes, then saves grades a
 **Command**: `Scene pulse analysis (manuscript order)`, `Scene pulse analysis (subplot order)`
 **Settings**: [Settings → AI](Settings-AI) — enable **Enable AI LLM features** and choose a provider
 
-<p align="center"><img src="images/panel-scene-pulse.png" alt="AI Pulse Triplet Analysis" width="600"></p>
-<p align="center"><sub>AI Pulse Triplet Analysis</sub></p>
-
 <p align="center"><img src="images/feature-pulse.png" alt="Pulse triplet output in scene hover metadata" width="720"></p>
 <p align="center"><sub>Pulse triplet output — previous, current, and next scene grades surfaced in hover</sub></p>
 

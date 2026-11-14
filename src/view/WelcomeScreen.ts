@@ -24,6 +24,7 @@ import {
 } from '../utils/books';
 import { readSampleVaultManifest, registerSampleBookProfiles, withSampleNarrationDefaults, type SampleVaultConfig } from '../utils/sampleVault';
 import { t } from '../i18n';
+import { docsUrl } from '../utils/docsUrl';
 
 interface WelcomeScreenParams {
     container: HTMLElement;
@@ -93,7 +94,7 @@ const getWelcomeCopy = () => ({
 // Functional links (wiki, issues, help, contact) stay direct.
 const WELCOME_URLS = {
     website: 'https://community.radialtimeline.com/go/rt-welcome-site',
-    wiki: 'https://github.com/EricRhysTaylor/radial-timeline/wiki',
+    wiki: docsUrl(),
     community: 'https://community.radialtimeline.com/go/rt-welcome-community',
     issues: 'https://github.com/EricRhysTaylor/radial-timeline/issues',
     youtube: 'https://community.radialtimeline.com/go/rt-welcome-youtube',

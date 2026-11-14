@@ -32,6 +32,7 @@ import { addHeadingIcon, addVideoLinkToElement, applyErtHeaderLayout } from '../
 import { renderCommunityTimelineBlock } from './CommunityTimelineBlock';
 import { fitSelectToSelectedLabel } from '../selectSizing';
 import { t } from '../../i18n';
+import { docsUrl } from '../../utils/docsUrl';
 
 export interface CommunityShareSectionProps {
     app: App;
@@ -230,7 +231,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     setIcon(badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON }), isConnected ? 'satellite-dish' : settings.enabled ? 'shield-check' : 'shield');
     badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.communityShareSection.badgeText', { status: formatStatus(settings) }) });
     const wikiLink = withAccessibleLabel(badge.createEl('a', {
-        href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Community',
+        href: docsUrl('Settings-Community'),
         cls: ERT_CLASSES.BADGE_PILL_WIKI,
         attr: { 'target': '_blank', 'rel': 'noopener' }
     }), t('ui.communityShareSection.wikiAriaLabel'));

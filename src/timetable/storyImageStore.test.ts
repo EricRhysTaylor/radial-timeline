@@ -18,6 +18,12 @@ describe('card image settings', () => {
         expect(rebaseStoryImageChoices(choices, 'Art', 'Images')['Book/1.md'].image).toBe('Images/Portrait.png');
         expect(rebaseStoryImageChoices(choices, 'Art/Place.png', 'Art/Harbor.png')['Book/1.md'].placeImage).toBe('Art/Harbor.png');
     });
+    it('keeps a Canvas shade with its scene when the scene is renamed', async () => {
+        const save = vi.fn().mockResolvedValue(undefined);
+        const plugin = { settings: {}, saveSettings: save } as unknown as RadialTimelinePlugin;
+        await saveStoryImageChoice(plugin, 'Book/1.md', { canvasBackgroundShade: 'original' });
+        expect(rebaseStoryImageChoices(plugin.settings.storyImageChoices!, 'Book/1.md', 'Book/2.md')['Book/2.md']).toEqual({ canvasBackgroundShade: 'original' });
+    });
     it('restores settings when saving fails', async () => {
         const original = { 'Book/1.md': { character: 'Old' } };
         const plugin = { settings: { storyImageChoices: original }, saveSettings: vi.fn().mockRejectedValue(new Error('disk')) } as unknown as RadialTimelinePlugin;

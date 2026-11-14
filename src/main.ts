@@ -652,6 +652,9 @@ export default class RadialTimelinePlugin extends Plugin {
          * ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
         addIcon('rt-circle-letter-o', '<g fill="none" stroke="currentColor" stroke-width="8.333"><circle cx="50" cy="50" r="16.667"/><circle cx="50" cy="50" r="41.667"/></g>');
         addIcon('rt-workspace-timeline', '<g fill="none" stroke="currentColor" stroke-width="8.333" stroke-linecap="round" stroke-linejoin="round"><rect x="8.333" y="12.5" width="83.334" height="75" rx="8.333"/><path d="M50 12.5v75M50 50h41.667"/></g>');
+        // Workflow video links: YouTube's play button (Obsidian's icon set has no YouTube logo). The rounded rectangle
+        // takes currentColor (YouTube red, .ert-video-link); the triangle is white through its class.
+        addIcon('rt-video-play', '<path fill="currentColor" stroke="none" d="M22 18H78A18 18 0 0 1 96 36V64A18 18 0 0 1 78 82H22A18 18 0 0 1 4 64V36A18 18 0 0 1 22 18Z"/><path class="ert-video-play__triangle" stroke="none" d="M41 35L68 50L41 65Z"/>');
 
         // Resolve the vault-local Pandoc font destination. Bundled templates
         // point at Radial Timeline/Pandoc/fonts, not MacTeX, Font Book, or

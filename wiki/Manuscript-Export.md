@@ -38,8 +38,6 @@ For a folder or file, enter **Title** and **Author** in the panel. Save a named 
 
 Your source files stay unchanged. Recheck the included notes when returning to a saved selection, especially after moving or deleting files.
 
-![Saved manuscript source showing Radial Timeline book, Folder, and Single file choices, and reusable title, author, selection and order](images/release-7-5-general-export-source.png)
-
 ## Who Is It For?
 
 The panel opens by asking who the export is for. Each choice is a built-in preset that sets the format, scene IDs, and cleanup for that reader, and keeps your order, range, and layout:

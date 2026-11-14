@@ -4,8 +4,9 @@ import { t } from '../i18n';
 import { readFrontmatterProperty } from '../utils/frontmatterKeys';
 import { authorKeyFor } from './timetableFiles';
 import { imageSubjectName, matchingStoryImages, stableStoryImage } from './storyImageMatching';
-import { saveStoryImageChoice, storyImageChoice, type StoryImageChoice } from './storyImageStore';
+import { saveStoryImageChoice, storyImageChoice, type CanvasBackgroundShade, type StoryImageChoice } from './storyImageStore';
 import { notifyStoryImagesChanged } from './storyCardImages';
+import { addMenuChoices } from './menuChoices';
 import { panelPlaceImage, type PanelPlaceImage } from './panelPlaceImage';
 import { storyPortraitSource } from './storyPortrait';
 
@@ -63,10 +64,11 @@ class StoryImagePicker extends FuzzySuggestModal<TFile> {
 }
 
 /** A card's own picture choices, kept in plugin data, never in author notes. */
-export function showStoryImageMenu(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, unknown> | undefined, images: TFile[], event: MouseEvent, refresh: () => void, automaticSubject?: string): void {
+export function showStoryImageMenu(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, unknown> | undefined, images: TFile[], event: MouseEvent, refresh: () => void, automaticSubject?: string, canvasBackdrop = false): void {
     const menu = new Menu().setUseNativeMenu(false);
     const write = (change: Partial<StoryImageChoice> | null) => {
-        const next = change ? { ...storyImageChoice(plugin, file.path), ...change } : null;
+        const previous = storyImageChoice(plugin, file.path);
+        const next = change ? { ...previous, ...change } : { canvasBackgroundShade: previous.canvasBackgroundShade };
         void saveStoryImageChoice(plugin, file.path, next).then(() => {
             refresh();
             notifyStoryImagesChanged(plugin);
@@ -91,5 +93,16 @@ export function showStoryImageMenu(plugin: RadialTimelinePlugin, file: TFile, fm
     menu.addItem(item => item.setTitle(t('ui.timetable.storyImageChoosePlace')).onClick(() => new StoryImagePicker(plugin.app, images, chosen => write({ placeImage: chosen.path })).open()));
     menu.addSeparator();
     menu.addItem(item => item.setTitle(t('ui.timetable.storyImageAutomatic')).onClick(() => write(null)));
+    if (canvasBackdrop) {
+        menu.addSeparator();
+        const selected = storyImageChoice(plugin, file.path).canvasBackgroundShade;
+        const choices: Array<[CanvasBackgroundShade | undefined, string]> = [
+            [undefined, t('ui.timetable.canvasShadeShared')], ['original', t('ui.timetable.canvasShadeOriginal')],
+            ['light', t('ui.timetable.canvasShadeLight')], ['medium', t('ui.timetable.canvasShadeMedium')], ['strong', t('ui.timetable.canvasShadeStrong')],
+        ];
+        addMenuChoices(menu, t('ui.timetable.canvasShadeScene'), choices.map(([shade, label]) => ({
+            label, checked: selected === shade, run: () => write({ canvasBackgroundShade: shade }),
+        })));
+    }
     menu.showAtMouseEvent(event);
 }

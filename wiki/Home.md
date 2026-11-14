@@ -20,6 +20,8 @@ Radial Timeline maps your manuscript in Obsidian. Explore scenes, subplots, stor
 | 14 | [A Tour of Radial Timeline](https://radialtimeline.com/go/wiki-tour-video) | [Getting Started](Getting-Started) |
 | Short | [Build Your Novel Structure Instantly](https://youtu.be/0vkLaI_LewM) | [Book Designer](Book-Designer) |
 | Short | [Watch a Novel Progress Across Scenes & Subplots](https://youtu.be/tBErpewO1wQ) | |
+| How-to | [Put Your Story's Beats on Your Timeline](https://radialtimeline.com/go/wiki-beat-manager-video) | [Story Beats System](Settings-Core#story-beats-system) |
+| Short | [Keep Your Story Beats in Order as Your Book Changes](https://radialtimeline.com/go/wiki-beats-update-short) | [Story Beats System](Settings-Core#story-beats-system) |
 
 ## What It Does
 Arrange scenes by act, subplot, and manuscript or chronological order. Hover for a synopsis and saved Pulse feedback; highlight a scene across its subplots to follow connected story threads.

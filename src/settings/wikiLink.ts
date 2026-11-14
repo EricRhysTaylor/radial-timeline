@@ -3,11 +3,13 @@ import { Setting, setIcon } from 'obsidian';
 import { ERT_CLASSES } from '../ui/classes';
 import { t } from '../i18n';
 import { WORKFLOW_VIDEOS, workflowVideoUrl, type WorkflowVideoKey } from './workflowVideos';
+import { docsUrl } from '../utils/docsUrl';
 
 /**
- * Adds a wiki link icon to a setting's name element.
+ * Adds a docs link icon to a setting's name element.
  * @param setting The Obsidian Setting object
- * @param wikiPage The name of the wiki page (e.g., "AI-Analysis.md" or "Advanced-YAML.md")
+ * @param wikiPage The wiki page name, with an optional anchor (e.g. "Settings-Core#acts");
+ *   it opens on docs.radialtimeline.com, which keeps the wiki's page names
  */
 export function addWikiLink(setting: Setting, wikiPage: string): void {
     addWikiLinkToElement(setting.nameEl, wikiPage);
@@ -79,23 +81,20 @@ export function applyErtHeaderLayout(
 }
 
 /**
- * Adds a wiki link icon to any HTMLElement.
+ * Adds a docs link icon to any HTMLElement.
  * @param el The target HTMLElement (usually a header or label)
- * @param wikiPage The name of the wiki page
+ * @param wikiPage The wiki page name, with an optional anchor
  */
 export function addWikiLinkToElement(el: HTMLElement, wikiPage: string): void {
     if (!el) return;
 
-    // Remove extension if present to make the URL cleaner, though GitHub handles .md
-    // GitHub Wiki URLs usually don't have .md for the page view, just the name without extension.
-    // e.g. https://github.com/user/repo/wiki/Page-Name
-    const pageName = wikiPage.replace(/\.md$/, '');
-    
+    // Links open the page on docs.radialtimeline.com, which is built from the
+    // published wiki and keeps its page names and section anchors.
     const link = withAccessibleLabel(el.createEl('a', {
-        href: `https://github.com/EricRhysTaylor/radial-timeline/wiki/${pageName}`,
+        href: docsUrl(wikiPage),
         cls: 'ert-wiki-link',
         attr: { 'target': '_blank', 'rel': 'noopener' }
-    }), 'Read more in the wiki');
+    }), 'Read more in the docs');
 
     // Add the diagonal arrow icon
     setIcon(link, 'external-link');
@@ -104,27 +103,30 @@ export function addWikiLinkToElement(el: HTMLElement, wikiPage: string): void {
 }
 
 /**
- * Adds a workflow video's play icon to a setting's name element, beside its
- * wiki link. Nothing is added while the video isn't published.
+ * Adds a workflow video's play button to a setting's name element, ahead of
+ * its wiki link. Nothing is added while the video isn't published.
  */
 export function addVideoLink(setting: Setting, video: WorkflowVideoKey): void {
     addVideoLinkToElement(setting.nameEl, video, 'ert-wiki-link');
 }
 
 /**
- * Adds a workflow video's play icon to any element. `linkClass` is the class
+ * Adds a workflow video's play button to any element. `linkClass` is the class
  * of the wiki link beside it (a heading's, a modal badge's or a badge pill's),
- * so the two icons match. Nothing is added while the video isn't published.
+ * so the two sit together; the video comes first and stands out in gold
+ * (`.ert-video-link`). Nothing is added while the video isn't published.
  */
 export function addVideoLinkToElement(el: HTMLElement, video: WorkflowVideoKey, linkClass: string): void {
     const href = workflowVideoUrl(video);
     if (!el || !href) return;
+    const wiki = el.querySelector(`:scope > .${linkClass}`);
     const link = withAccessibleLabel(el.createEl('a', {
         href,
-        cls: linkClass,
+        cls: [linkClass, 'ert-video-link'],
         attr: { 'target': '_blank', 'rel': 'noopener' }
     }), t('ui.workflowVideos.watch', { title: t(WORKFLOW_VIDEOS[video].titleKey) }));
-    setIcon(link, 'circle-play');
+    setIcon(link, 'rt-video-play');
+    if (wiki) el.insertBefore(link, wiki);
 }
 
 function addHeadingIconToElement(el: HTMLElement, icon: string): void {

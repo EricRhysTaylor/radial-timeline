@@ -31,65 +31,11 @@ const PDF_CLEANUP_DEFAULTS: ManuscriptExportCleanupOptions = {
     stripBlockIds: false
 };
 
-const YAML_KEY_PATTERN = /^\s*[A-Za-z0-9_"'.-]+\s*:/;
 const EDITORIALIST_REVIEW_FENCE_PATTERN = /^\s*(`{3,}|~{3,})\s*editorialist-review\b.*$/i;
 const EDITORIALIST_REVIEW_WRAPPER_LINE = /^Return only this fenced block\. No extra text\.\s*$/i;
 
 function normalizeLineEndings(text: string): string {
     return text.replace(/\r\n?/g, '\n');
-}
-
-function stripYamlFrontmatterBlocks(content: string): string {
-    const lines = content.split('\n');
-    const output: string[] = [];
-    let codeFence: string | null = null;
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-
-        if (codeFence !== null) {
-            if (isClosingFence(line, codeFence)) codeFence = null;
-            output.push(line);
-            continue;
-        }
-
-        const fenceMatch = line.match(CODE_FENCE_PATTERN);
-        if (fenceMatch) {
-            codeFence = fenceMatch[1];
-            output.push(line);
-            continue;
-        }
-
-        if (line.trim() !== '---') {
-            output.push(line);
-            continue;
-        }
-
-        let end = i + 1;
-        while (end < lines.length && lines[end].trim() !== '---') {
-            end += 1;
-        }
-
-        if (end >= lines.length) {
-            output.push(line);
-            continue;
-        }
-
-        const candidate = lines.slice(i + 1, end);
-        const hasYamlKeys = candidate.some(candidateLine => YAML_KEY_PATTERN.test(candidateLine));
-        const hasCodeFence = candidate.some(candidateLine => CODE_FENCE_PATTERN.test(candidateLine));
-        if (!hasYamlKeys || hasCodeFence) {
-            output.push(line);
-            continue;
-        }
-
-        i = end;
-        if (i + 1 < lines.length && lines[i + 1].trim() === '') {
-            i += 1;
-        }
-    }
-
-    return output.join('\n');
 }
 
 // Obsidian comments pair `%%` delimiters left to right. Both comment strippers
@@ -374,17 +320,20 @@ export function normalizeManuscriptCleanupOptions(
     };
 }
 
+/**
+ * Cleans compiled manuscript text. Each note's YAML frontmatter is removed
+ * where the note is read (`assembleManuscript` strips the block at the top of
+ * every scene and matter note), so a `---` … `---` block inside the text is
+ * the author's scene break and always stays, even when it holds dialogue
+ * such as `Kade: Get down!`.
+ */
 export function sanitizeCompiledManuscript(
     text: string,
-    opts: Partial<ManuscriptExportCleanupOptions> = {},
-    { stripEmbeddedFrontmatter = true }: { stripEmbeddedFrontmatter?: boolean } = {}
+    opts: Partial<ManuscriptExportCleanupOptions> = {}
 ): string {
-    let cleaned = normalizeLineEndings(text);
-    // Structural strippers run unmasked on purpose: the editorialist stripper
-    // must still find its own fenced blocks, and the YAML stripper is already
-    // fence-aware.
-    if (stripEmbeddedFrontmatter) cleaned = stripYamlFrontmatterBlocks(cleaned);
-    cleaned = stripEditorialistReviewBlocks(cleaned);
+    // The review stripper runs unmasked on purpose: it must still find its
+    // own fenced blocks.
+    const cleaned = stripEditorialistReviewBlocks(normalizeLineEndings(text));
 
     const anyOptIn = opts.stripComments || opts.stripAiComments
         || opts.stripLinks || opts.stripCallouts || opts.stripBlockIds; // SAFE: "is any cleanup enabled" disjunction over the cleanup flags, not a value fallback

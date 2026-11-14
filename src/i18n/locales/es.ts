@@ -94,7 +94,7 @@ export const es: DeepPartial<TranslationKeys> = {
         "ai": {
             "hero": {
                 "badgeText": "IA",
-                "wikiAriaLabel": "Leer más en la Wiki",
+                "wikiAriaLabel": "Leer más en la documentación",
                 "toggleInactive": "Inactivo",
                 "toggleActive": "Activo",
                 "toggleAriaLabel": "Activar funciones de IA",
@@ -686,7 +686,7 @@ export const es: DeepPartial<TranslationKeys> = {
             "hero": {
                 "badgeRefresh": "Recordatorio para actualizar",
                 "badgeDefault": "Compartir · Redes sociales",
-                "wikiAriaLabel": "Leer más en la Wiki",
+                "wikiAriaLabel": "Leer más en la documentación",
                 "title": "Promociona tu último trabajo en redes sociales.",
                 "desc": "Genere gráficos de progreso vibrantes y seguros para los spoilers para las redes sociales y el crowdfunding. Perfecto para actualizaciones de Kickstarter, publicaciones de Patreon o Compartiendo tu viaje de escritura con los fans.",
                 "keyBenefitsHeading": "Beneficios clave:",
@@ -1923,7 +1923,7 @@ export const es: DeepPartial<TranslationKeys> = {
             "badge": "Disposición",
             "title": "diseñador de libros",
             "subtitle": "Configure y genere el andamio para su nueva novela. Arrastre escenas en vista previa a diferentes actos y subtramas para activar el modo manual. Salvar la plantilla para reutilizarla más tarde.",
-            "wikiAriaLabel": "Leer más en la Wiki",
+            "wikiAriaLabel": "Leer más en la documentación",
             "noBookSelected": "Ningún libro seleccionado",
             "untitled": "Intitulado"
         },
@@ -4058,7 +4058,7 @@ export const es: DeepPartial<TranslationKeys> = {
             "statusNotConnected": "no conectado",
             "timeNotRecorded": "Hora no grabada",
             "badgeText": "Compartir en la comunidad - {{status}}",
-            "wikiAriaLabel": "Leer más en el Wiki",
+            "wikiAriaLabel": "Leer más en la documentación",
             "heroTitle": "Comparte tu viaje",
             "heroSubtitle": "Muestre su perfil y libros, agregue un gráfico de progreso de APR controlado o comparta actividad de escritura redondeada. Revise la vista previa completa, luego comience a compartir.",
             "highlightsKicker": "Aspectos destacados de la comunidad:",
@@ -7355,7 +7355,7 @@ export const es: DeepPartial<TranslationKeys> = {
             "templateUpdatedNotice": "Plantilla actualizada con éxito",
             "viewInYamlEditor": "Ver en YAML Editor",
             "toggleHistory": "Toggle Historial de notificaciones",
-            "wikiAria": "Leer más en el Wiki",
+            "wikiAria": "Leer más en la documentación",
             "publishBadge": "Publicar",
             "publishTitle": "Prepare su manuscrito para la exportación y publicación.",
             "publishSubtitle": "La exportación en Markdown siempre está disponible sin configuración: exporte su manuscrito en cualquier momento. Prepare exportaciones en PDF y Word con detalles del libro, páginas opcionales y la configuración a continuación.",
@@ -7399,7 +7399,7 @@ export const es: DeepPartial<TranslationKeys> = {
             "tabPro": "Rec",
             "resourcesHelp": "Más información",
             "resourcesGettingStarted": "Primeros pasos",
-            "resourcesWiki": "RT Wiki",
+            "resourcesWiki": "Documentación de Radial Timeline",
             "resourcesVideos": "YouTube Vídeos",
             "guardCompletionEstimate": "estimación de finalización",
             "guardGeneral": "Configuración general",
@@ -7795,7 +7795,7 @@ export const es: DeepPartial<TranslationKeys> = {
             "welcomeTitle": "Bienvenida",
             "browseDemoProjects": "Explorar proyectos de demostración",
             "linkYoutube": "Videos de YouTube",
-            "linkWiki": "Wiki — Documentación completa",
+            "linkWiki": "Documentación completa",
             "linkCommunity": "Comunidad",
             "linkIssues": "Informes de errores / solicitudes de funciones",
             "backupNotice": "Haga una copia de seguridad de su bóveda de Obsidian con regularidad para protegerse contra la pérdida de datos. Más información en [Guía de copias de seguridad de Obsidian]. La sincronización no protege contra todas las formas de pérdida de datos. La recuperación de archivos de Obsidian guarda instantáneas de sus notas, y [Obsidian Sync] o iCloud mantienen una copia en sus otros dispositivos."

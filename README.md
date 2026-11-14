@@ -49,19 +49,19 @@ Radial Timeline® captures and visualizes four core timelines, letting you see m
 
 The mode buttons run in this order: Progress, Narrative, Chronologue, and Gossamer. Narrative and Chronologue keep subplot colors front-and-center so you can compare structure without workflow noise. When you need to see Todo/Working/Overdue status or progress stage colors, switch to Progress Mode, where the combined outer ring is replaced by a single-subplot view and scenes inherit the author-status and progress-stage palette.
 
-Beside the timeline, the **[Timetable](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Timetable)** lays the same book out in an Obsidian Bases view: as rows, as Panels with character portraits, or as an Outline next to your planning documents, where you place scenes and sketches by dragging them. Right-click a column and the timeline takes its colors at once, with a key you can search. **Canvas story maps** give each subplot its own lane on an Obsidian Canvas, and the map lights up the scene you Shift-hover on the timeline. Turn a mind map on a Canvas into numbered scenes in one step.
+Beside the timeline, the **[Timetable](https://docs.radialtimeline.com/Timetable/)** lays the same book out in an Obsidian Bases view: as rows, as Panels with character portraits, or as an Outline next to your planning documents, where you place scenes and sketches by dragging them. Right-click a column and the timeline takes its colors at once, with a key you can search. **Canvas story maps** give each subplot its own lane on an Obsidian Canvas, running across or down the page, and the map lights up the scene you Shift-hover on the timeline. Drop text from any note onto a lane and it becomes a scene in that spot. When the manuscript moves on, the map says so and builds an updated copy that carries your own cards along. Turn a mind map on a Canvas into numbered scenes in one step.
 
-Share a book's timeline with the **[Radial Timeline Community](https://community.radialtimeline.com/go/readme-community)** from **[Settings → Community](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Settings-Community#share-your-timeline)**. It arrives private, you reveal scenes one by one, and a live timeline stays up to date as you write.
+Share a book's timeline with the **[Radial Timeline Community](https://community.radialtimeline.com/go/readme-community)** from **[Settings → Community](https://docs.radialtimeline.com/Settings-Community/#share-your-timeline)**. It arrives private, you reveal scenes one by one, and a live timeline stays up to date as you write.
 
 ## Docs (How-to & Setup)
 
-If you want the "how-to" details (setup, sets, properties, reordering, advanced options), they live in the wiki:
+If you want the "how-to" details (setup, sets, properties, reordering, advanced options), they live in the docs:
 
-- [Wiki Home](https://github.com/EricRhysTaylor/Radial-Timeline/wiki)
-- [How-to](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/How-to)
-- [Settings](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Settings)
-- [Commands](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Commands)
-- [YAML Frontmatter](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/YAML-Frontmatter)
+- [Docs home](https://docs.radialtimeline.com/)
+- [How-to](https://docs.radialtimeline.com/How-to/)
+- [Settings](https://docs.radialtimeline.com/Settings/)
+- [Commands](https://docs.radialtimeline.com/Commands/)
+- [YAML Frontmatter](https://docs.radialtimeline.com/YAML-Frontmatter/)
 
 ## Sets, Properties, and Templates
 
@@ -88,10 +88,15 @@ Ongoing series on the [Radial Timeline YouTube channel](https://www.youtube.com/
 - **Volume 13 — November Writers' Month**: [Writing a Novel This November? Come Write With Me](https://radialtimeline.com/go/readme-november-video)
 - **Volume 14 — The full tour**: [A Tour of Radial Timeline](https://radialtimeline.com/go/readme-tour-video)
 
+How-tos:
+
+- **Beat Manager**: [Put Your Story's Beats on Your Timeline](https://radialtimeline.com/go/readme-beat-manager-video)
+
 Shorts:
 
 - **Book Designer**: [Build Your Novel Structure Instantly](https://youtu.be/0vkLaI_LewM)
 - **Timelapse**: [Watch a Novel Progress Across Scenes & Subplots](https://youtu.be/tBErpewO1wQ)
+- **Beats Update**: [Keep Your Story Beats in Order as Your Book Changes](https://radialtimeline.com/go/readme-beats-update-short)
 
 ## Installation
 
@@ -139,7 +144,7 @@ Radial Timeline may contact external services in these workflows:
 - A version check against the GitHub Releases API runs once at plugin load (throttled to once a day). It carries no vault data or identity; it only compares version numbers so the timeline can show an update indicator.
 - Story Vault downloads: **Add story to this vault** downloads that story's ZIP from Radial Timeline's public storage. The request carries no vault data or identity, and the file must match a SHA-256 fingerprint shipped in the plugin before anything is added to your vault.
 - Community mailbox: on a vault connected to the Community, while a timeline is open, the plugin asks the Community about once an hour (and when Obsidian regains focus) whether you have unread replies. It sends the connection's id and secret and gets back counts. Turn it off with **Show Community mailbox** in Settings → Advanced
-- Community Share calls: once you connect, your Book Manager book titles (or public labels), loglines, and target dates sync to your private My Share list as project shells at every level; report publishing and daily-activity sync are sent only at a sharing level above Private; and, for a book where you turn on **Share timeline**, its scene order, acts, subplots, status and stage, plus titles, synopses, cast, narration and story dates, held privately until you reveal each scene, and you choose which scenes to reveal — see [Settings → Community](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Settings-Community)
+- Community Share calls: once you connect, your Book Manager book titles (or public labels), loglines, and target dates sync to your private My Share list as project shells at every level; report publishing and daily-activity sync are sent only at a sharing level above Private; and, for a book where you turn on **Share timeline**, its scene order, acts, subplots, status and stage, plus titles, synopses, cast, narration and story dates, held privately until you reveal each scene, and you choose which scenes to reveal — see [Settings → Community](https://docs.radialtimeline.com/Settings-Community/)
 
 ## Known Conflicts
 
@@ -182,7 +187,7 @@ Every way to get help is on one page: **[Getting help](https://community.radialt
 - **Quick answers and writers helping writers:** the [Radial Timeline Community](https://community.radialtimeline.com), where writers share setups and answer each other's questions.
 - **Private bug reports and help requests:** [Community Requests](https://community.radialtimeline.com/requests) (sign in with your Community account). A person reads every request on weekdays; expect a reply within three working days.
 - **Plugin bugs on GitHub:** the bug icon (**Report a bug**) in the Radial Timeline and Inquiry views opens the [bug report form](https://github.com/EricRhysTaylor/Radial-Timeline/issues/new/choose) with your versions filled in.
-- **Step-by-step answers:** the [Guide](https://github.com/EricRhysTaylor/Radial-Timeline/wiki).
+- **Step-by-step answers:** the [Guide](https://docs.radialtimeline.com/).
 - **Feature ideas:** the [feature idea form](https://github.com/EricRhysTaylor/Radial-Timeline/issues/new?template=feature_request.yml), or share it with other writers on the [Community](https://community.radialtimeline.com).
 
 ## Author
@@ -202,7 +207,7 @@ Released under the **Radial Timeline Source-Available Non-Commercial License**.
 - Radial Timeline is protected by U.S. Copyright Registration TX0009593938 and U.S. Trademark Registration No. 8,251,843.
 - The Radial Timeline visualization system is the subject of a pending U.S. patent application and is marked Patent Pending.
 
-See the [Legal page](https://github.com/EricRhysTaylor/Radial-Timeline/wiki/Legal) on the wiki for a plain-English permission table, the [License](https://github.com/EricRhysTaylor/radial-timeline/blob/main/LICENSE) text, and the [Notice](https://github.com/EricRhysTaylor/radial-timeline/blob/main/NOTICE) file.
+See the [Legal page](https://docs.radialtimeline.com/Legal/) in the docs for a plain-English permission table, the [License](https://github.com/EricRhysTaylor/radial-timeline/blob/main/LICENSE) text, and the [Notice](https://github.com/EricRhysTaylor/radial-timeline/blob/main/NOTICE) file.
 
 ## Disclaimer & Limitation of Liability
 

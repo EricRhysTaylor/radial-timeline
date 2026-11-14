@@ -94,7 +94,7 @@ export const vi: DeepPartial<TranslationKeys> = {
         "ai": {
             "hero": {
                 "badgeText": "AI",
-                "wikiAriaLabel": "Đọc thêm trong Wiki",
+                "wikiAriaLabel": "Đọc thêm trong tài liệu",
                 "toggleInactive": "Tắt",
                 "toggleActive": "Đang hoạt động",
                 "toggleAriaLabel": "Bật tính năng AI",
@@ -686,7 +686,7 @@ export const vi: DeepPartial<TranslationKeys> = {
             "hero": {
                 "badgeRefresh": "Nhắc nhở làm mới",
                 "badgeDefault": "Chia sẻ · Mạng xã hội",
-                "wikiAriaLabel": "Đọc thêm trong Wiki",
+                "wikiAriaLabel": "Đọc thêm trong tài liệu",
                 "title": "Quảng bá tác phẩm mới nhất của bạn trên mạng xã hội.",
                 "desc": "Tạo đồ họa tiến độ sống động, an toàn cho phương tiện truyền thông xã hội và huy động vốn từ cộng đồng. Hoàn hảo để cập nhật Kickstarter, bài đăng Patreon, hoặc Chia sẻ hành trình viết của bạn với người hâm mộ.",
                 "keyBenefitsHeading": "Lợi ích chính:",
@@ -1923,7 +1923,7 @@ export const vi: DeepPartial<TranslationKeys> = {
             "badge": "thiết lập",
             "title": "Nhà thiết kế sách",
             "subtitle": "Định cấu hình và tạo khung cho cuốn tiểu thuyết mới của bạn. Kéo các cảnh trong bản xem trước sang các hồi và cốt truyện phụ khác để bật chế độ thủ công. Lưu mẫu để dùng lại sau này.",
-            "wikiAriaLabel": "Đọc thêm trong Wiki",
+            "wikiAriaLabel": "Đọc thêm trong tài liệu",
             "noBookSelected": "Không có cuốn sách nào được chọn",
             "untitled": "không có tiêu đề"
         },
@@ -4058,7 +4058,7 @@ export const vi: DeepPartial<TranslationKeys> = {
             "statusNotConnected": "Không kết nối",
             "timeNotRecorded": "thời gian không được ghi lại",
             "badgeText": "Cộng đồng Chia sẻ - {{status}}",
-            "wikiAriaLabel": "Đọc thêm trong wiki",
+            "wikiAriaLabel": "Đọc thêm trong tài liệu",
             "heroTitle": "Chia sẻ hành trình của bạn",
             "heroSubtitle": "Hiển thị hồ sơ và sách của bạn, thêm đồ họa tiến độ APR có kiểm soát hoặc chia sẻ hoạt động viết tròn. Xem lại bản xem trước hoàn chỉnh, sau đó bắt đầu chia sẻ.",
             "highlightsKicker": "Điểm nổi bật của cộng đồng:",
@@ -7355,7 +7355,7 @@ export const vi: DeepPartial<TranslationKeys> = {
             "templateUpdatedNotice": "Đã cập nhật mẫu thành công",
             "viewInYamlEditor": "Xem trong YAML Editor",
             "toggleHistory": "Chuyển đổi lịch sử thông báo",
-            "wikiAria": "Đọc thêm trong wiki",
+            "wikiAria": "Đọc thêm trong tài liệu",
             "publishBadge": "Công bố",
             "publishTitle": "Chuẩn bị bản thảo của bạn để xuất khẩu và xuất bản.",
             "publishSubtitle": "Xuất Markdown luôn sẵn sàng mà không cần thiết lập — hãy xuất bản thảo của bạn bất kỳ lúc nào. Chuẩn bị xuất PDF và Word với chi tiết sách, các trang tùy chọn và các cài đặt bên dưới.",
@@ -7399,7 +7399,7 @@ export const vi: DeepPartial<TranslationKeys> = {
             "tabPro": "Tài liệu",
             "resourcesHelp": "Tìm hiểu thêm",
             "resourcesGettingStarted": "Bắt đầu",
-            "resourcesWiki": "RT Wiki",
+            "resourcesWiki": "Tài liệu Radial Timeline",
             "resourcesVideos": "YouTube Video",
             "guardCompletionEstimate": "Ước tính hoàn thành",
             "guardGeneral": "Cài đặt chung",
@@ -7795,7 +7795,7 @@ export const vi: DeepPartial<TranslationKeys> = {
             "welcomeTitle": "CHÀO MỪNG",
             "browseDemoProjects": "Duyệt các dự án demo",
             "linkYoutube": "Video Youtube",
-            "linkWiki": "Wiki - Tài liệu đầy đủ",
+            "linkWiki": "Tài liệu đầy đủ",
             "linkCommunity": "cộng đồng",
             "linkIssues": "Báo cáo lỗi / Yêu cầu tính năng",
             "backupNotice": "Hãy sao lưu kho Obsidian của bạn thường xuyên để tránh mất dữ liệu. Tìm hiểu thêm tại [Hướng dẫn sao lưu Obsidian]. Đồng bộ không bảo vệ khỏi mọi hình thức mất dữ liệu. Khôi phục tệp của Obsidian lưu các bản chụp ghi chú của bạn, và [Obsidian Sync] hoặc iCloud giữ một bản sao trên các thiết bị khác của bạn."

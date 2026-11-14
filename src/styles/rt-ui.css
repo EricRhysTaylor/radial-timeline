@@ -2151,8 +2151,8 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 316px;
-  height: 316px;
+  width: 240px;
+  height: 240px;
   box-sizing: border-box;
 }
 
@@ -2165,6 +2165,9 @@
 
 .ert-ui.ert-scope--settings .ert-apr-preview-frame.ert-apr-preview--actual svg {
   display: block;
+  /* The SVG is drawn at its 300px design size; show it a little smaller. */
+  width: 224px;
+  height: 224px;
   border-radius: var(--ert-gap-xs);
   flex-shrink: 0;
 }

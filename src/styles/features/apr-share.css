@@ -8,11 +8,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--ert-gap-lg);
+  gap: var(--ert-gap-md);
 }
 
 .ert-ui.ert-scope--settings .ert-apr-previewSide {
-  flex: 1 1 240px;
+  flex: 1 1 200px;
   min-width: 0;
   gap: var(--ert-gap-md);
 }
@@ -59,8 +59,8 @@
 
 .ert-ui .ert-apr-share__thumb {
   flex: 0 0 auto;
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: 6px;
   object-fit: contain;
   background: var(--background-primary);
@@ -104,6 +104,9 @@
 
 /* Style context — shown on the Styling panel while a campaign's style is open. */
 .ert-ui.ert-scope--settings .ert-apr-styleContext {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: var(--ert-gap-sm);
   padding: var(--ert-pad-sm) var(--ert-pad-md);
   border: 1px solid color-mix(in srgb, var(--ert-accent) 35%, transparent);
@@ -123,5 +126,6 @@
 
 .ert-ui.ert-scope--settings .ert-apr-styleContext__text {
   flex: 1 1 auto;
+  min-width: 0;
   font-size: var(--font-ui-small);
 }

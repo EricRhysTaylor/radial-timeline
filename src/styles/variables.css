@@ -27,6 +27,9 @@
   --ert-community-account-blue: #58B9FF;
   --ert-community-alert-red: #FF6B6B;
   --ert-community-badge-ink: #050505;
+  /* YouTube's brand red, for the play button on workflow video links (YouTube allows its play button only in red,
+     black or white). */
+  --ert-youtube-red: #FF0000;
   --rt-legacy-black: #000000;
   --rt-legacy-gray: #666666;
   --rt-legacy-gray-light: #888888;

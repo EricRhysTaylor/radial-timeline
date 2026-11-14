@@ -6,6 +6,9 @@ import path from 'path';
 const WIKI_REPO = 'git@github.com:EricRhysTaylor/radial-timeline.wiki.git';
 const TEMP_DIR = '.wiki_temp_publish';
 const SOURCE_DIR = 'wiki';
+// docs.radialtimeline.com is built from the published wiki by this repo's workflow.
+const DOCS_REPO = 'EricRhysTaylor/radial-timeline-docs';
+const DOCS_WORKFLOW = 'deploy.yml';
 
 function run(command, cwd) {
     console.log(`> ${command}`);
@@ -14,6 +17,19 @@ function run(command, cwd) {
     } catch (e) {
         console.error(`Command failed: ${command}`);
         process.exit(1);
+    }
+}
+
+// Start a redeploy of the docs site so it picks up the pages just pushed. Best effort: a
+// missing or logged-out gh, or a refused dispatch, only prints the command to run by hand;
+// the wiki itself is already published.
+function redeployDocs() {
+    const command = `gh workflow run ${DOCS_WORKFLOW} -R ${DOCS_REPO}`;
+    try {
+        execSync(command, { stdio: 'pipe' });
+        console.log(`📚 Docs site redeploy started: https://github.com/${DOCS_REPO}/actions`);
+    } catch {
+        console.warn(`⚠️  Could not start the docs site redeploy. Run it by hand: ${command}`);
     }
 }
 
@@ -95,6 +111,7 @@ function publish() {
             run(`git commit -m ${JSON.stringify(commitMsg)}`, cwd);
             run('git push', cwd);
             console.log('✅ Wiki published successfully!');
+            redeployDocs();
         }
     } catch (e) {
         console.error('Error checking git status or pushing');

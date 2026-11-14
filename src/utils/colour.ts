@@ -126,11 +126,14 @@ export function cssColorToHex(doc: Document, css: string): string | null {
  * as "#ffffff"). Null while it is partial ("#F9E7" on the way to "#F9E784"),
  * so a field saves nothing and feeds its color picker nothing until then; a
  * color input takes only #rrggbb and warns on anything else.
+ *
+ * `shorthand: false` reads "#F9E" as partial too: while a field is being
+ * typed in, three digits are usually the start of six (see bindHexTextInput).
  */
-export function completeHexColor(value: string): string | null {
+export function completeHexColor(value: string, options: { shorthand?: boolean } = {}): string | null {
   const digits = value.trim().replace(/^#/, '');
   if (/^[0-9a-f]{6}$/i.test(digits)) return `#${digits}`;
-  if (/^[0-9a-f]{3}$/i.test(digits)) return `#${[...digits].map(digit => digit + digit).join('')}`;
+  if (options.shorthand !== false && /^[0-9a-f]{3}$/i.test(digits)) return `#${[...digits].map(digit => digit + digit).join('')}`;
   return null;
 }
 

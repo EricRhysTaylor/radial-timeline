@@ -214,4 +214,9 @@ describe('completeHexColor', () => {
     expect(completeHexColor('abc')).toBe('#aabbcc');
     expect(completeHexColor(' #F9E ')).toBe('#FF99EE');
   });
+
+  it('reads a shorthand as partial while it may still be the start of six digits', () => {
+    expect(completeHexColor('#F9E', { shorthand: false })).toBeNull();
+    expect(completeHexColor('#F9E784', { shorthand: false })).toBe('#F9E784');
+  });
 });

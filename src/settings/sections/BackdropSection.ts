@@ -6,6 +6,7 @@ import { DEFAULT_SETTINGS } from '../defaults';
 import { ERT_CLASSES } from '../../ui/classes';
 import { colorSwatch, type ColorSwatchHandle } from '../../ui/ui';
 import { completeHexColor } from '../../utils/colour';
+import { bindHexTextInput } from '../../ui/hexTextInput';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { IMPACT_FULL } from '../SettingImpact';
 import { t } from '../../i18n';
@@ -163,13 +164,11 @@ export function renderBackdropSection(params: { app: App; plugin: RadialTimeline
         const hexInput = new TextComponent(colorControls);
         colorTextInput = hexInput;
         hexInput.inputEl.classList.add('ert-hex-input');
-        hexInput.setValue(colorValue)
-            .onChange(async (value) => {
-                const normalized = completeHexColor(value);
-                if (!normalized) return;
-                await updateMicroBackdrop(index, { color: normalized });
-                swatchHandle.setValue(normalized);
-            });
+        hexInput.setValue(colorValue);
+        bindHexTextInput(hexInput, async (normalized) => {
+            await updateMicroBackdrop(index, { color: normalized });
+            swatchHandle.setValue(normalized);
+        });
 
         const rangeSetting = new Settings(details)
             .setName(t('ui.backdropSection.dateRangeName'))

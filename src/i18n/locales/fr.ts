@@ -4599,7 +4599,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "renameImpactLabel": "Renommer l'impact",
             "contextChangeLabel": "Changement de contexte",
             "extraEffectLabel": "Effet supplémentaire",
-            "rippleRenameEnabled": "Ripple Renomme activé",
             "recentMovesTitle": "Déplacements récents",
             "crossedActs": "Actes croisés",
             "rippleRename": "Renommer Ripple",

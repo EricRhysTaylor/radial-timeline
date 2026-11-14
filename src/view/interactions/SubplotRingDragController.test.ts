@@ -401,9 +401,9 @@ type OuterInternals = {
 };
 
 describe('the All Scenes ring reorders and never edits subplots', () => {
-    function outer() {
+    function outer(plugin = makePlugin(lighthouseSubplots)) {
         const { svg, groups } = buildTimeline();
-        const controller = new OuterRingDragController({ plugin: makePlugin(lighthouseSubplots), renderScope } as never, svg as never, { onRefresh: () => {}, mode: 'narrative' });
+        const controller = new OuterRingDragController({ plugin, renderScope } as never, svg as never, { onRefresh: () => {}, mode: 'narrative' });
         const internals = controller as unknown as OuterInternals;
         const grab = (basename: string): void => {
             const group = groups.get(`${OUTER}:${basename}`)!;
@@ -435,6 +435,35 @@ describe('the All Scenes ring reorders and never edits subplots', () => {
         expect(renumbered[0].length).toBeGreaterThan(0);
         expect(renumbered[0].every((update) => update.subplots === undefined)).toBe(true);
         expect(memberships).toHaveLength(0);
+    });
+
+    it('with ripple rename on, the confirmation counts the other scene files it renames', async () => {
+        const plugin = makePlugin(lighthouseSubplots);
+        plugin.settings.enableManuscriptRippleRename = true;
+        // The book holds one more scene than the ring shows; the move renumbers
+        // the ring 1..n and the ripple then renames that scene to follow.
+        const sceneData = [
+            ...SCENES.map(([basename, act, itemType]) => ({ path: path(basename), itemType, actNumber: act + 1 })),
+            { path: 'Book/30 Coda.md', itemType: 'Scene', actNumber: 3 },
+        ];
+        plugin.getSceneData = () => Promise.resolve(sceneData as never);
+        const { internals, groups, grab } = outer(plugin);
+        grab('14 Scene');
+        const target = groups.get(`${OUTER}:12 Scene`)!;
+        internals.currentTarget = { type: 'scene', group: target, sceneId: target.querySelector('.rt-scene-path')!.id, act: 1, ring: OUTER };
+        await internals.finishDrag();
+
+        expect(shown[0]).toMatchObject({ rippleRename: true, rippleRenameOtherCount: 1 });
+    });
+
+    it('with ripple rename off, the confirmation carries no ripple count', async () => {
+        const { internals, groups, grab } = outer();
+        grab('14 Scene');
+        const target = groups.get(`${OUTER}:12 Scene`)!;
+        internals.currentTarget = { type: 'scene', group: target, sceneId: target.querySelector('.rt-scene-path')!.id, act: 1, ring: OUTER };
+        await internals.finishDrag();
+        expect(shown[0].rippleRename).toBe(false);
+        expect(shown[0].rippleRenameOtherCount).toBeUndefined();
     });
 });
 

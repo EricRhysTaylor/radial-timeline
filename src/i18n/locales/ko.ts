@@ -4592,7 +4592,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             renameImpactLabel: '이름 변경 영향',
             contextChangeLabel: '맥락 변경',
             extraEffectLabel: '추가 효과',
-            rippleRenameEnabled: '리플 이름 변경 활성화됨',
             recentMovesTitle: '최근 이동',
             crossedActs: '막 경계를 넘음',
             rippleRename: '리플 이름 변경',

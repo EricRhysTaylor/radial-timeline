@@ -4592,7 +4592,6 @@ export const de: DeepPartial<TranslationKeys> = {
             renameImpactLabel: 'Auswirkung auf Umbenennungen',
             contextChangeLabel: 'Kontextänderung',
             extraEffectLabel: 'Zusätzliche Auswirkung',
-            rippleRenameEnabled: 'Ripple-Umbenennung aktiviert',
             recentMovesTitle: 'Letzte Verschiebungen',
             crossedActs: 'Aktübergreifend',
             rippleRename: 'Ripple-Umbenennung',

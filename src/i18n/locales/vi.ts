@@ -4599,7 +4599,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "renameImpactLabel": "Đổi tên tác động",
             "contextChangeLabel": "Thay đổi ngữ cảnh",
             "extraEffectLabel": "Hiệu ứng phụ",
-            "rippleRenameEnabled": "Đã bật tên của Ripple",
             "recentMovesTitle": "những động thái gần đây",
             "crossedActs": "Chuyển qua hồi khác",
             "rippleRename": "đổi tên gợn sóng",

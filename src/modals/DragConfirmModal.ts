@@ -15,6 +15,8 @@ export interface DragConfirmCurrentMoveSummary {
     renameCount: number;
     contextChange?: string;
     rippleRename?: boolean;
+    /** Files the ripple rename will rename beyond the move's own renames. */
+    rippleRenameOtherCount?: number;
     /** Header override for a move that is not a reorder (a subplot change). */
     badge?: string;
     title?: string;
@@ -22,6 +24,12 @@ export interface DragConfirmCurrentMoveSummary {
     showRenameImpact?: boolean;
     /** Label for the contextChange card (default "Context change"). */
     contextLabel?: string;
+}
+
+/** The ripple rename card: how many other scene files the move renames. */
+export function formatRippleRenameImpact(otherCount: number): string {
+    if (otherCount <= 0) return t('ui.dragConfirmModal.rippleRenameNoOtherFiles');
+    return t('ui.dragConfirmModal.rippleRenameOtherFiles', { files: tCount('otherSceneFile', otherCount) });
 }
 
 export class DragConfirmModal extends ErtModal {
@@ -119,7 +127,7 @@ export class DragConfirmModal extends ErtModal {
             this.createImpactCard(impactGrid, this.currentMove.contextLabel ?? t('ui.dragConfirmModal.contextChangeLabel'), this.currentMove.contextChange, ICON_BLOCKS);
         }
         if (this.currentMove.rippleRename) {
-            this.createImpactCard(impactGrid, t('ui.dragConfirmModal.extraEffectLabel'), t('ui.dragConfirmModal.rippleRenameEnabled'), ICON_WAVES);
+            this.createImpactCard(impactGrid, t('ui.dragConfirmModal.extraEffectLabel'), formatRippleRenameImpact(this.currentMove.rippleRenameOtherCount ?? 0), ICON_WAVES);
         }
 
         if (this.recentMoves.length > 0) {

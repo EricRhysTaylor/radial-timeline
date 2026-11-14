@@ -4594,7 +4594,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             renameImpactLabel: '重命名影响',
             contextChangeLabel: '上下文变化',
             extraEffectLabel: '附加效果',
-            rippleRenameEnabled: '已启用波纹重命名',
             recentMovesTitle: '最近的移动',
             crossedActs: '跨越幕',
             rippleRename: '波纹重命名',

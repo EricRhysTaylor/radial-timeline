@@ -4593,7 +4593,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             renameImpactLabel: '名前変更の影響',
             contextChangeLabel: '文脈の変更',
             extraEffectLabel: '追加の効果',
-            rippleRenameEnabled: 'Ripple Rename が有効',
             recentMovesTitle: '最近の移動',
             crossedActs: '幕をまたぐ移動',
             rippleRename: 'Ripple Rename',

@@ -312,6 +312,38 @@ export function buildRippleRenamePlan(items: TimelineItem[], options?: RippleRen
     };
 }
 
+/**
+ * How many files a ripple rename would rename once these updates have landed,
+ * leaving out the files the updates themselves touch. The drag confirm dialog
+ * shows this so the author knows how many other scene files a move renames.
+ */
+export function countRippleRenamesAfterUpdates(
+    items: TimelineItem[],
+    updates: SceneUpdate[],
+    options?: RippleRenamePlanOptions
+): number {
+    const updateByPath = new Map(updates.map(update => [update.path, update]));
+    const touchedPaths = new Set<string>();
+    const projected = items.map((item) => {
+        const update = item.path ? updateByPath.get(item.path) : undefined;
+        if (!update || !item.path) return item;
+        const slash = item.path.lastIndexOf('/');
+        const folder = slash >= 0 ? item.path.slice(0, slash + 1) : '';
+        const fileName = item.path.slice(slash + 1);
+        const extension = fileName.match(/\.[^.]+$/)?.[0] ?? '';
+        const nextPath = `${folder}${buildRenamedBasename(extractBasename(item.path), update.newNumber)}${extension}`;
+        touchedPaths.add(nextPath);
+        return {
+            ...item,
+            path: nextPath,
+            ...(update.actNumber !== undefined ? { actNumber: update.actNumber } : {}),
+        };
+    });
+    return buildRippleRenamePlan(projected, options).updates
+        .filter(update => !touchedPaths.has(update.path))
+        .length;
+}
+
 async function readReferenceIdFromFile(app: App, file: TFile): Promise<string | undefined> {
     try {
         const content = await app.vault.read(file);

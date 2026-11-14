@@ -4,6 +4,7 @@ import type RadialTimelinePlugin from '../../main';
 import {
     applySceneNumberUpdates,
     buildRippleRenamePlan,
+    countRippleRenamesAfterUpdates,
     SceneReorderVerificationError,
     type SceneUpdate,
     type SceneReorderProgress
@@ -801,28 +802,6 @@ export class OuterRingDragController {
             ? await askAboutAttachedSketches(this.view.plugin, sourcePath, targetActNumber) : undefined;
         if (sketchMove === null) { this.resetState(); return; }
 
-        this.confirming = true;
-        const modal = new DragConfirmModal(
-            this.view.plugin.app,
-            {
-                // "source | target": DragConfirmModal draws the arrow between the two parts in any language.
-                actionSummary: `${sourceDescriptor} | ${targetDescriptor}`,
-                renameCount: renumberUpdates.length,
-                ...(contextChange ? { contextChange } : {}),
-                rippleRename,
-            },
-            recentMoves,
-            (entry) => openStructuralMoveHistoryLog(this.view.plugin, entry),
-            this.originModalColor ?? this.originColor,
-            sourceLabel
-        );
-        const started = await modal.waitForBegin();
-        if (!started) {
-            this.confirming = false;
-            this.resetState();
-            return;
-        }
-
         // Apply the act update to the moved item (only if it changed)
         updates.forEach(u => {
             if (u.path === sourcePath && actChanged) {
@@ -837,6 +816,31 @@ export class OuterRingDragController {
                 newNumber: sourceOriginalNumber,
                 actNumber: targetActNumber,
             });
+        }
+
+        const rippleRenameOtherCount = rippleRename ? await this.countRippleRenamesAfter(updates) : undefined;
+
+        this.confirming = true;
+        const modal = new DragConfirmModal(
+            this.view.plugin.app,
+            {
+                // "source | target": DragConfirmModal draws the arrow between the two parts in any language.
+                actionSummary: `${sourceDescriptor} | ${targetDescriptor}`,
+                renameCount: renumberUpdates.length,
+                ...(contextChange ? { contextChange } : {}),
+                rippleRename,
+                ...(rippleRenameOtherCount !== undefined ? { rippleRenameOtherCount } : {}),
+            },
+            recentMoves,
+            (entry) => openStructuralMoveHistoryLog(this.view.plugin, entry),
+            this.originModalColor ?? this.originColor,
+            sourceLabel
+        );
+        const started = await modal.waitForBegin();
+        if (!started) {
+            this.confirming = false;
+            this.resetState();
+            return;
         }
 
         if (updates.length === 0) {
@@ -969,6 +973,9 @@ export class OuterRingDragController {
             ? await askAboutAttachedSketches(this.view.plugin, sourcePath, targetActNumber) : undefined;
         if (sketchMove === null) { this.resetState(); return; }
 
+        // The act is already merged into updates here.
+        const rippleRenameOtherCount = rippleRename ? await this.countRippleRenamesAfter(updates) : undefined;
+
         this.confirming = true;
         const modal = new DragConfirmModal(
             this.view.plugin.app,
@@ -977,6 +984,7 @@ export class OuterRingDragController {
                 renameCount: renumberUpdates.length,
                 ...(contextChange ? { contextChange } : {}),
                 rippleRename,
+                ...(rippleRenameOtherCount !== undefined ? { rippleRenameOtherCount } : {}),
             },
             recentMoves,
             (entry) => openStructuralMoveHistoryLog(this.view.plugin, entry),
@@ -1067,6 +1075,14 @@ export class OuterRingDragController {
             return t('ui.outerRingDragController.progressNoRenames', { prefix });
         }
         return t('ui.outerRingDragController.progressRenamed', { prefix, renamed: progress.totalFiles, total: progress.totalFiles });
+    }
+
+    /** Files the ripple rename will rename once these updates have landed, beyond the updates' own files. */
+    private async countRippleRenamesAfter(updates: SceneUpdate[]): Promise<number> {
+        const sceneData = await this.view.plugin.getSceneData();
+        return countRippleRenamesAfterUpdates(sceneData, updates, {
+            beatModel: resolveSelectedBeatModelFromSettings(this.view.plugin.settings)
+        });
     }
 
     private async runRippleRenameIfEnabled(onStatus?: (message: string) => void): Promise<void> {

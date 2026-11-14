@@ -4599,7 +4599,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "renameImpactLabel": "เปลี่ยนชื่อผลกระทบ",
             "contextChangeLabel": "การเปลี่ยนแปลงบริบท",
             "extraEffectLabel": "ผลพิเศษ",
-            "rippleRenameEnabled": "เปิดใช้งานการเปลี่ยนชื่อระลอกคลื่น",
             "recentMovesTitle": "การเคลื่อนไหวล่าสุด",
             "crossedActs": "ข้ามองก์",
             "rippleRename": "ระลอกคลื่นเปลี่ยนชื่อ",

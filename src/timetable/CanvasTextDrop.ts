@@ -11,7 +11,7 @@ import { mapScenes } from './StoryMapReviewModal';
 import { diffStoryMap } from './storyMapDiff';
 import { isStoryMapProvenance, matchingBaseline } from './storyMapProvenance';
 import { planCanvasTextDrop, type CanvasDropProblem } from './canvasTextDropPlan';
-import { insertCanvasSceneCard } from './canvasTextDropLayout';
+import { CanvasLayoutError, insertCanvasSceneCard, type CanvasLayoutProblem } from './canvasTextDropLayout';
 import { registerTextSketchCapture, type DraggedSelection } from './TextSketchCapture';
 import type { StoryCanvasData } from './canvasSketches';
 import { isStoryMapPath } from './storyMapPaths';
@@ -31,6 +31,20 @@ const dropProblemKeys: Record<CanvasDropProblem, string> = {
     hiddenScenes: 'ui.timetable.canvasDropHiddenScenes',
     missingAct: 'ui.timetable.canvasDropMissingAct',
 };
+
+const layoutProblemKeys: Record<CanvasLayoutProblem, string> = {
+    laneChanged: 'ui.timetable.canvasLayoutLaneChanged',
+    nextSceneMissing: 'ui.timetable.canvasLayoutNextSceneMissing',
+    invalidCoordinates: 'ui.timetable.canvasLayoutInvalidCoordinates',
+    noScenePosition: 'ui.timetable.canvasLayoutNoScenePosition',
+    laneEdited: 'ui.timetable.canvasLayoutLaneEdited',
+    cardEdited: 'ui.timetable.canvasLayoutCardEdited',
+    manualCardsInWay: 'ui.timetable.canvasLayoutManualCardsInWay',
+    manualCardInLane: 'ui.timetable.canvasLayoutManualCardInLane',
+    connectionChanged: 'ui.timetable.canvasLayoutConnectionChanged',
+};
+const errorText = (error: unknown): string => error instanceof CanvasLayoutError ? t(layoutProblemKeys[error.problem])
+    : error instanceof Error ? error.message : String(error);
 
 /** Use a rendered node as a ruler; Canvas' viewport transform is not public API. */
 export function canvasPoint(canvas: Canvas, event: Pick<DragEvent, 'clientX' | 'clientY'>): Point | null {
@@ -119,7 +133,7 @@ class CanvasTextDropModal extends ErtModal {
                 proposedPrefix = prefix;
                 status.setText(t('ui.timetable.canvasDropPosition', { number: prefix, before: target.before?.split('/').pop()?.replace(/\.md$/i, '') ?? t('ui.timetable.canvasDropEnd') }));
                 submit.disabled = false;
-                }).catch((error: unknown) => { if (currentRevision === revision) status.setText(error instanceof Error ? error.message : String(error)); });
+                }).catch((error: unknown) => { if (currentRevision === revision) status.setText(errorText(error)); });
             };
             actSelect?.onChange(value => { chosenAct = Number(value); refresh(); });
             refresh();
@@ -170,7 +184,7 @@ class CanvasTextDropModal extends ErtModal {
             }
             this.plugin.refreshTimelineIfNeeded(null);
             this.close(); new Notice(t('ui.timetable.noteDropDone'));
-        })().catch((error: unknown) => { submit.disabled = noteCreated; status.setText(error instanceof Error ? error.message : String(error)); }); };
+        })().catch((error: unknown) => { submit.disabled = noteCreated; status.setText(errorText(error)); }); };
     }
 }
 

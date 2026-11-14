@@ -709,8 +709,6 @@ export const ko: DeepPartial<TranslationKeys> = {
                 featureStageWeighted: '단계별 진행 — 세 가지 방식으로 진행 상황을 추적합니다',
             },
             preview: {
-                sizeLabel: 'APR 미리보기',
-                actualSizePreview: '실제 크기 미리보기',
                 teaserAuto: '자동 (현재 단계)',
                 teaserRing: '링',
                 teaserScenes: '장면',
@@ -720,8 +718,6 @@ export const ko: DeepPartial<TranslationKeys> = {
                 publishTooltip: '게시 도구를 열어 라이브 파일을 업데이트하거나, 스냅샷을 저장하거나, 캠페인을 대상으로 지정합니다.',
                 loading: '미리보기 로딩 중...',
                 lastUpdateNever: '없음',
-                kickstarterReady: 'Kickstarter 대응',
-                patreonFriendly: 'Patreon 친화적',
                 emptyState: '소셜 보고서 미리보기를 보려면 장면을 만드세요.',
                 renderError: '미리보기를 렌더링하지 못했습니다.',
                 lastUpdate: '마지막 업데이트: {{date}}',
@@ -807,10 +803,6 @@ export const ko: DeepPartial<TranslationKeys> = {
                 refreshAlertThreshold: {
                     name: '새로 고침 알림 임계값',
                     desc: '타임라인 보기에 새로 고침 알림을 표시하기까지의 일수입니다. 현재: {{days}}일.',
-                },
-                exportPath: {
-                    name: '내보내기 경로',
-                    desc: '라이브 내보내기 파일의 위치입니다. 형식은 소셜 모달 설정을 따릅니다.',
                 },
             },
             progressMode: {
@@ -3277,8 +3269,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             qualityStandard: '표준',
             qualityUltra: '울트라',
             qualityPrint: '인쇄',
-            outputFileLabel: '출력 파일',
-            revealTooltip: '{{path}} — 클릭하면 시스템 파일 관리자에서 표시',
             selectCampaign: '게시할 캠페인을 선택하세요.',
             campaignStaleAlert: '캠페인 "{{name}}"이(가) {{days}}일 지났습니다. 새로 고칠 때입니다!',
             campaignStaleAlertUnknown: '캠페인 "{{name}}"이(가) 오래되었습니다. 새로 고칠 때입니다!',
@@ -3289,11 +3279,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             qualityPrintShort: '4800px 인쇄',
             qualityUltraShort: '2400px 울트라',
             qualityStandardShort: '1200px 표준',
-            noOutputFileNotice: '아직 표시할 출력 파일이 없습니다.',
-            revealUnsupportedNotice: '이 플랫폼에서는 파일 표시를 지원하지 않습니다.',
-            outputNotGeneratedNotice: '출력 파일이 아직 생성되지 않았습니다. 게시를 클릭하여 만드세요.',
-            shellUnavailableNotice: '파일을 표시할 수 없습니다: 시스템 셸을 사용할 수 없습니다.',
-            revealFailedNotice: '시스템 파일 관리자에서 파일을 표시할 수 없습니다.',
             manualLabel: '수동',
             stageDefaultInherited: '기본 · {{stage}}',
             teaserOffTooltip: '티저 끔 — 이 캠페인은 현재 기본 보고서 보기(소셜 설정 미리보기에서 설정)를 게시합니다.',
@@ -3336,7 +3321,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             customSlotEmptyAriaLabel: '사용자 지정 {{number}} — 클릭하여 설정',
             customSlotName: '사용자 지정 {{number}}',
             spokeColorAriaLabel: '스포크 색상',
-            resetToPath: '{{path}}(으)로 초기화',
         },
         backdropSection: {
             heading: '백드롭 및 마이크로 컨텍스트 링',

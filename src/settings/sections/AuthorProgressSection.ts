@@ -1,7 +1,7 @@
 import { setAccessibleLabel, setTooltip, withAccessibleLabel, withTooltip } from '../../utils/domTooltip';
 import { formatDateRange, parseDateRange } from './authorProgress/dateRange';
 import { CustomBgPresetModal } from '../../modals/CustomBgPresetModal';
-import { App, Setting, setIcon, normalizePath, DropdownComponent, TextComponent, Modal, ButtonComponent } from 'obsidian';
+import { App, Setting, setIcon, DropdownComponent, TextComponent, Modal, ButtonComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { buildDefaultAuthorProgressDefaults } from '../../authorProgress/authorProgressConfig';
 import { AuthorProgressService } from '../../services/AuthorProgressService';
@@ -14,6 +14,7 @@ import { getTeaserRevealLevel, getTeaserThresholds, teaserLevelToRevealOptions }
 import { AprPaletteModal } from '../../modals/AprPaletteModal';
 import { AuthorProgressModal } from '../../modals/AuthorProgressModal';
 import { renderCampaignManagerSection } from './CampaignManagerSection';
+import { renderAprShareFile } from '../../ui/aprShareFile';
 import { hasProFeatureAccess } from '../featureGate';
 import { colorSwatch, type ColorSwatchHandle } from '../../ui/ui';
 import { completeHexColor } from '../../utils/colour';
@@ -145,89 +146,41 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     });
 
     // ─────────────────────────────────────────────────────────────────────────
-    // APR PREVIEW MODULE
+    // PREVIEW + SHARE
+    // One preview at a fixed size (exports render at the chosen quality, not
+    // at the preview size), with publishing and the share file beside it.
     // ─────────────────────────────────────────────────────────────────────────
-    const previewCard = section.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.STACK}` });
-
-    // Size selector row
-    const sizeSelectorRow = previewCard.createDiv({ cls: `${ERT_CLASSES.ROW} ${ERT_CLASSES.ROW_COMPACT}` });
-    sizeSelectorRow.createSpan({ text: t('settings.authorProgress.preview.sizeLabel'), cls: ERT_CLASSES.LABEL });
-    const sizeSelectorControls = sizeSelectorRow.createDiv({ cls: ERT_CLASSES.INLINE });
+    const previewCard = section.createDiv({ cls: `${ERT_CLASSES.CARD} ert-apr-previewCard` });
     let teaserPreviewMode: TeaserPreviewMode = plugin.settings.authorProgress?.defaults.aprDefaultViewMode ?? 'auto';
     let refreshPreview = () => {};
     let refreshCampaignStyleState: (() => void) | null = null;
-    let teaserSelectWrap: HTMLDivElement | null = null;
-    const updateTeaserPreviewVisibility = (_size: 'small' | 'medium' | 'large') => {
-        // Dropdown always visible — Ring mode is valid at all sizes including thumb
+
+    const previewContainer = previewCard.createDiv({ cls: `ert-apr-preview-frame ert-apr-preview--actual ${ERT_CLASSES.PREVIEW_FRAME} ert-previewFrame--flush` });
+    previewContainer.createDiv({ cls: `ert-apr-preview-loading ${ERT_CLASSES.PREVIEW_INNER}`, text: t('settings.authorProgress.preview.loading') });
+    void renderHeroPreview(app, plugin, previewContainer, teaserPreviewMode);
+    refreshPreview = () => {
+        void renderHeroPreview(app, plugin, previewContainer, teaserPreviewMode);
     };
 
-    const sizeButtons = [
-        { size: 'small', dimension: '150' },
-        { size: 'medium', dimension: '300' },
-        { size: 'large', dimension: '450' },
-    ] as const;
-
-    const currentSize = plugin.settings.authorProgress?.defaults.aprSize || 'medium';
-    const setSizeLabel = (el: HTMLElement, dimension: string, suffix?: string) => {
-        const doc = el.ownerDocument;
-        el.textContent = '';
-        el.append(doc.createTextNode(dimension));
-        el.append(doc.createTextNode('²'));
-        if (suffix) {
-            el.append(doc.createTextNode(` — ${suffix}`));
-        }
+    const previewSide = previewCard.createDiv({ cls: `${ERT_CLASSES.STACK} ert-apr-previewSide` });
+    const statusLine = previewSide.createDiv({ cls: 'ert-apr-previewStatus' });
+    const shareSlot = previewSide.createDiv({ cls: 'ert-apr-shareSlot' });
+    const refreshShareState = () => {
+        const defaults = plugin.settings.authorProgress?.defaults;
+        const lastDate = defaults?.lastPublishedDate
+            ? new Date(defaults.lastPublishedDate).toLocaleDateString()
+            : t('settings.authorProgress.preview.lastUpdateNever');
+        statusLine.setText(t('settings.authorProgress.preview.lastUpdate', { date: lastDate }));
+        statusLine.toggleClass('is-alert', aprService.isStale());
+        renderAprShareFile(shareSlot, { app, vaultPath: aprService.getDefaultReportPath() });
     };
-    let dimLabel: HTMLElement | null = null;
+    refreshShareState();
 
-    sizeButtons.forEach(({ size, dimension }) => {
-        const btn = sizeSelectorControls.createEl('button', {
-            cls: `ert-apr-size-btn ${size === currentSize ? `ert-apr-size-btn--active ${ERT_CLASSES.IS_ACTIVE}` : ''} ${ERT_CLASSES.PILL_BTN} ${ERT_CLASSES.PILL_BTN_STANDARD}`
-        });
-        setSizeLabel(btn, dimension);
-
-        btn.onclick = async () => {
-            if (!plugin.settings.authorProgress) return;
-            const settings = plugin.settings.authorProgress.defaults;
-            const defaultFormat = resolveDefaultExportFormat(plugin.settings.authorProgress);
-            const oldDefaultPath = buildDefaultEmbedPath({
-                bookTitle: plugin.getActiveBookTitle(),
-                updateFrequency: settings.updateFrequency,
-                aprExportQuality: settings.aprExportQuality,
-                exportFormat: defaultFormat
-            });
-            settings.aprSize = size;
-            if (settings.exportPath === oldDefaultPath) {
-                settings.exportPath = buildDefaultEmbedPath({
-                    bookTitle: plugin.getActiveBookTitle(),
-                    updateFrequency: settings.updateFrequency,
-                    aprExportQuality: settings.aprExportQuality,
-                    exportFormat: defaultFormat
-                });
-            }
-            await plugin.saveSettings();
-
-            // Update button states
-            sizeSelectorRow.querySelectorAll('.ert-apr-size-btn').forEach(b => {
-                b.removeClass('ert-apr-size-btn--active');
-                b.removeClass(ERT_CLASSES.IS_ACTIVE);
-            });
-            btn.addClass('ert-apr-size-btn--active');
-            btn.addClass(ERT_CLASSES.IS_ACTIVE);
-
-            // Update dimension label
-            if (dimLabel) {
-                setSizeLabel(dimLabel, dimension, t('settings.authorProgress.preview.actualSizePreview'));
-            }
-
-            // Re-render preview at new size
-            updateTeaserPreviewVisibility(size);
-            refreshPreview?.();
-        };
-    });
-
+    const previewControls = previewSide.createDiv({ cls: `${ERT_CLASSES.INLINE} ert-apr-previewControls` });
     if (isProActive) {
-        teaserSelectWrap = sizeSelectorControls.createDiv({ cls: ERT_CLASSES.SKIN_PRO });
+        const teaserSelectWrap = previewControls.createDiv({ cls: ERT_CLASSES.SKIN_PRO });
         const teaserSelect = teaserSelectWrap.createEl('select', { cls: 'dropdown ert-input ert-input--fit-selected' });
+        setTooltip(teaserSelect, t('settings.authorProgress.preview.viewModeTooltip'));
         const teaserOptions: { value: TeaserPreviewMode; label: string }[] = [
             { value: 'auto', label: t('settings.authorProgress.preview.teaserAuto') },
             { value: 'ring', label: t('settings.authorProgress.preview.teaserRing') },
@@ -248,56 +201,23 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
                 defaults.aprDefaultViewMode = teaserPreviewMode;
                 void plugin.saveSettings();
             }
-            refreshPreview?.();
+            refreshPreview();
         };
         fitSelectToSelectedLabel(teaserSelect, { extraPx: 16, minPx: 72 });
-        updateTeaserPreviewVisibility(currentSize);
     }
 
-    // Publish — connect the setup above to the APR action workflow. Opens the
-    // Author Progress modal (the single publish surface) rather than writing
-    // a file in place, so static snapshots, campaign targeting, and reveal are
-    // all reachable from one hub.
-    const publishBtn = withTooltip(new ButtonComponent(sizeSelectorControls)
+    // Publish opens the Author Progress modal (the single publish surface), so
+    // the live file, snapshots and campaigns are all reachable from one place.
+    const publishBtn = withTooltip(new ButtonComponent(previewControls)
         .setButtonText(t('settings.authorProgress.preview.publish'))
         .setCta(), t('settings.authorProgress.preview.publishTooltip'))
         .onClick(() => {
-            new AuthorProgressModal(app, plugin).open();
+            new AuthorProgressModal(app, plugin, { onPublished: refreshShareState }).open();
         });
     publishBtn.buttonEl.addClass('ert-apr-publish-btn');
 
-    // Dimension info (second row, second column)
-    const sizeMetaRow = previewCard.createDiv({ cls: `${ERT_CLASSES.ROW} ${ERT_CLASSES.ROW_TIGHT} ert-row--stack ert-apr-size-meta` });
-    const currentDim = sizeButtons.find(s => s.size === currentSize)?.dimension || '300';
-    dimLabel = sizeMetaRow.createEl('em', { cls: ERT_CLASSES.ROW_DESC });
-    setSizeLabel(dimLabel, currentDim, t('settings.authorProgress.preview.actualSizePreview'));
-
-    // 1:1 preview
-    const previewSection = previewCard.createDiv({ cls: 'ert-apr-preview' });
-
-    // SVG Preview container - shows at 1:1 actual size
-    const previewContainer = previewSection.createDiv({ cls: `ert-apr-preview-frame ert-apr-preview--actual ${ERT_CLASSES.PREVIEW_FRAME} ert-previewFrame--flush` });
-    previewContainer.createDiv({ cls: `ert-apr-preview-loading ${ERT_CLASSES.PREVIEW_INNER}`, text: t('settings.authorProgress.preview.loading') });
-
-    // Load and render preview asynchronously at actual size
-    void renderHeroPreview(app, plugin, previewContainer, currentSize, teaserPreviewMode);
-    refreshPreview = () => {
-        const size = plugin.settings.authorProgress?.defaults.aprSize || 'medium';
-        updateTeaserPreviewVisibility(size);
-        void renderHeroPreview(app, plugin, previewContainer, size, teaserPreviewMode);
-    };
-
-    // Meta tags
     const authorProgress = plugin.settings.authorProgress;
     const settings = authorProgress?.defaults;
-    const lastDate = settings?.lastPublishedDate
-        ? new Date(settings.lastPublishedDate).toLocaleDateString()
-        : t('settings.authorProgress.preview.lastUpdateNever');
-
-    const meta = previewCard.createDiv({ cls: ERT_CLASSES.INLINE });
-    meta.createSpan({ text: t('settings.authorProgress.preview.lastUpdate', { date: lastDate }), cls: `${ERT_CLASSES.CHIP} ${ERT_CLASSES.FIELD_NOTE}` });
-    meta.createSpan({ text: t('settings.authorProgress.preview.kickstarterReady'), cls: ERT_CLASSES.CHIP });
-    meta.createSpan({ text: t('settings.authorProgress.preview.patreonFriendly'), cls: ERT_CLASSES.CHIP });
 
     // ─────────────────────────────────────────────────────────────────────────
     // CONFIGURATION SECTION
@@ -633,6 +553,26 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     addHeadingIcon(themeHeading, 'swatch-book');
     addWikiLink(themeHeading, 'Author-Progress-Report#styling-options');
     const themeControl = themeHeading.controlEl;
+
+    // Opening a campaign in the Campaign Manager points this panel (and the
+    // preview) at that campaign's style. Say so plainly, with a way back.
+    const designerCampaign = aprStyleService.getDesignerCampaign();
+    if (designerCampaign) {
+        const contextBar = themeBlock.createDiv({ cls: `${ERT_CLASSES.INLINE} ${ERT_CLASSES.SKIN_PRO} ert-apr-styleContext` });
+        setIcon(contextBar.createSpan({ cls: 'ert-apr-styleContext__icon' }), 'layers');
+        contextBar.createSpan({
+            cls: 'ert-apr-styleContext__text',
+            text: t('settings.authorProgress.styling.editingCampaign', { name: designerCampaign.name })
+        });
+        new ButtonComponent(contextBar)
+            .setButtonText(t('settings.authorProgress.styling.editingCampaignDone'))
+            .onClick(async () => {
+                aprStyleService.clearDesignerContext();
+                await plugin.saveSettings();
+                rerenderSection();
+            });
+    }
+
     const themeBody = themeBlock.createDiv({ cls: 'ert-typography-stack' });
 
     // Color picker refs
@@ -1766,91 +1706,6 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             }
         }
 
-        const exportPathSetting = new Setting(automationCard)
-            .setName(t('settings.authorProgress.publishing.exportPath.name'))
-            .setDesc(t('settings.authorProgress.publishing.exportPath.desc'));
-
-        exportPathSetting.settingEl.addClass('ert-setting-full-width-input');
-
-        exportPathSetting.addText(text => {
-            const defaultFormat = resolveDefaultExportFormat(plugin.settings.authorProgress);
-            const defaultPath = buildDefaultEmbedPath({
-                bookTitle: plugin.getActiveBookTitle(),
-                updateFrequency: settings?.updateFrequency,
-                aprExportQuality: settings?.aprExportQuality,
-                exportFormat: defaultFormat
-            });
-            const successClass = 'ert-input--success';
-            const errorClass = 'ert-input--error';
-            const clearInputState = () => {
-                text.inputEl.removeClass(successClass);
-                text.inputEl.removeClass(errorClass);
-            };
-            const flashError = (timeout = 2000) => {
-                text.inputEl.addClass(errorClass);
-                window.setTimeout(() => {
-                    text.inputEl.removeClass(errorClass);
-                }, timeout);
-            };
-            const flashSuccess = (timeout = 1000) => {
-                text.inputEl.addClass(successClass);
-                window.setTimeout(() => {
-                    text.inputEl.removeClass(successClass);
-                }, timeout);
-            };
-            text.setPlaceholder(defaultPath)
-                .setValue(settings?.exportPath || defaultPath);
-            text.inputEl.addClass('ert-input', 'ert-input--full');
-
-            // Validate on blur
-            const handleBlur = async () => {
-                const val = text.getValue().trim();
-                clearInputState();
-
-                if (!val) {
-                    // Empty is invalid - needs a path
-                    flashError();
-                    return;
-                }
-
-                if (!val.toLowerCase().endsWith(`.${defaultFormat}`)) {
-                    flashError();
-                    return;
-                }
-
-                // Valid - save
-                if (plugin.settings.authorProgress) {
-                    plugin.settings.authorProgress.defaults.exportPath = val;
-                    await plugin.saveSettings();
-                    flashSuccess();
-                }
-            };
-
-            plugin.registerDomEvent(text.inputEl, 'blur', () => { void handleBlur(); });
-
-            // Also handle Enter key
-            plugin.registerDomEvent(text.inputEl, 'keydown', (evt: KeyboardEvent) => {
-                if (evt.key === 'Enter') {
-                    evt.preventDefault();
-                    text.inputEl.blur();
-                }
-            });
-
-            exportPathSetting.addExtraButton(button => {
-                button.setIcon('rotate-ccw');
-                withTooltip(button, t('ui.authorProgressSection.resetToPath', { path: defaultPath }));
-                button.onClick(async () => {
-                    text.setValue(defaultPath);
-                    if (!plugin.settings.authorProgress) {
-                        plugin.settings.authorProgress = { ...DEFAULT_SETTINGS.authorProgress! };
-                    }
-                    plugin.settings.authorProgress.defaults.exportPath = normalizePath(defaultPath);
-                    await plugin.saveSettings();
-                    flashSuccess();
-                });
-            });
-        });
-
     } // End of non-Pro publishing section
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1893,14 +1748,13 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 }
 
 /**
- * Render the Social SVG preview in the hero section
- * Uses the dedicated Social renderer at 1:1 actual size
+ * Render the Social SVG preview at its fixed 300px design size. Exports render
+ * at the chosen export quality, so one preview size is all the settings need.
  */
 async function renderHeroPreview(
     app: App,
     plugin: RadialTimelinePlugin,
     container: HTMLElement,
-    size: 'small' | 'medium' | 'large' = 'medium',
     teaserPreviewMode: TeaserPreviewMode = 'auto'
 ): Promise<void> {
     try {
@@ -1981,7 +1835,7 @@ async function renderHeroPreview(
             ? plugin.settings.books?.find(book => book.id === activeDesignerCampaign.targetBookId)?.title?.trim() || plugin.getActiveBookTitle()
             : plugin.getActiveBookTitle();
         const { svgString, width, height } = createAprSVG(scenes, {
-            size: size,
+            size: 'medium',
             progressPercent: displayPercent,
             bookTitle: previewBookTitle,
             authorName: aprSettings?.authorName || '',

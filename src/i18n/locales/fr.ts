@@ -695,8 +695,6 @@ export const fr: DeepPartial<TranslationKeys> = {
                 "featureStageWeighted": "Progression par étape — Suivez l'avancement via trois modalités différentes"
             },
             "preview": {
-                "sizeLabel": "Aperçu APR",
-                "actualSizePreview": "Aperçu à taille réelle",
                 "teaserAuto": "Automatique (étape actuelle)",
                 "teaserRing": "Anneau",
                 "teaserScenes": "Scènes",
@@ -706,8 +704,6 @@ export const fr: DeepPartial<TranslationKeys> = {
                 "publishTooltip": "Ouvrir l'éditeur pour mettre à jour le fichier en direct, enregistrer une capture ou cibler une campagne.",
                 "loading": "Chargement de l'aperçu...",
                 "lastUpdateNever": "Jamais",
-                "kickstarterReady": "Prêt pour Kickstarter",
-                "patreonFriendly": "Compatible Patreon",
                 "emptyState": "Créez des scènes pour voir un aperçu de votre rapport social.",
                 "renderError": "Échec du rendu de l'aperçu.",
                 "lastUpdate": "Dernière mise à jour : {{date}}"
@@ -794,10 +790,6 @@ export const fr: DeepPartial<TranslationKeys> = {
                     "name": "Seuil d'alerte de rafraîchissement",
                     "desc": "jours avant d'afficher un rappel de rafraîchissement dans la vue Chronologie. Actuellement : jours {{days}}."
                 },
-                "exportPath": {
-                    "name": "Chemin d'exportation",
-                    "desc": "Emplacement du fichier d'exportation en direct. Le format suit le paramètre social modal."
-                }
             },
             "progressMode": {
                 "dateRangePlaceholder": "AAAA-MM-JJ à AAAA-MM-JJ"
@@ -3284,8 +3276,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "qualityStandard": "Standard",
             "qualityUltra": "Extrémiste",
             "qualityPrint": "Impression",
-            "outputFileLabel": "Fichier de sortie",
-            "revealTooltip": "{{path}} — Cliquez pour afficher dans le gestionnaire de fichiers système",
             "selectCampaign": "Sélectionnez une campagne à publier.",
             "campaignStaleAlert": "La campagne \"{{name}}\" date de {{days}}. Time to refresh!",
             "campaignStaleAlertUnknown": "La campagne \"{{name}}\" a plusieurs jours. Time to refresh!",
@@ -3296,11 +3286,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "qualityPrintShort": "4800px PRT",
             "qualityUltraShort": "2400px ultimate",
             "qualityStandardShort": "1200px std",
-            "noOutputFileNotice": "Pas encore de fichier de sortie à révéler.",
-            "revealUnsupportedNotice": "La révélation de fichiers n'est pas prise en charge sur cette plate-forme.",
-            "outputNotGeneratedNotice": "Fichier de sortie non encore généré. Cliquez sur Publier pour le créer.",
-            "shellUnavailableNotice": "Impossible de révéler le fichier : système Shell indisponible.",
-            "revealFailedNotice": "Impossible de révéler le fichier dans le gestionnaire de fichiers système.",
             "manualLabel": "Manuel",
             "stageDefaultInherited": "Par défaut · {{stage}}",
             "teaserOffTooltip": "Teaser Off : cette campagne publie la vue de rapport par défaut actuelle (définie dans l'aperçu des paramètres sociaux).",
@@ -3343,7 +3328,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "customSlotEmptyAriaLabel": "Personnalisé {{number}} — Cliquez pour définir",
             "customSlotName": "Personnalisé {{number}}",
             "spokeColorAriaLabel": "Couleur du rayon",
-            "resetToPath": "Réinitialiser à {{path}}"
         },
         "backdropSection": {
             "heading": "Anneaux de fond et de micro-contexte",

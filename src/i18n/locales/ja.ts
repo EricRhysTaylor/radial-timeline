@@ -710,8 +710,6 @@ export const ja: DeepPartial<TranslationKeys> = {
                 featureStageWeighted: 'ステージ進捗 — 3種類の方式で進み具合を追跡します',
             },
             preview: {
-                sizeLabel: 'APR プレビュー',
-                actualSizePreview: '実寸プレビュー',
                 teaserAuto: '自動（現在のステージ）',
                 teaserRing: 'リング',
                 teaserScenes: 'シーン',
@@ -721,8 +719,6 @@ export const ja: DeepPartial<TranslationKeys> = {
                 publishTooltip: 'パブリッシャーを開いて、ライブファイルの更新、スナップショットの保存、キャンペーンの指定を行います。',
                 loading: 'プレビューを読み込み中...',
                 lastUpdateNever: 'なし',
-                kickstarterReady: 'Kickstarter 対応',
-                patreonFriendly: 'Patreon 向け',
                 emptyState: 'シーンを作成すると、ソーシャルレポートのプレビューが表示されます。',
                 renderError: 'プレビューの描画に失敗しました。',
                 lastUpdate: '最終更新：{{date}}',
@@ -808,10 +804,6 @@ export const ja: DeepPartial<TranslationKeys> = {
                 refreshAlertThreshold: {
                     name: '更新アラートの閾値',
                     desc: 'タイムラインビューに更新リマインダーを表示するまでの日数。現在：{{days}} 日。',
-                },
-                exportPath: {
-                    name: 'エクスポートパス',
-                    desc: 'ライブエクスポートファイルの保存場所。形式はソーシャルモーダルの設定に従います。',
                 },
             },
             progressMode: {
@@ -3278,8 +3270,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             qualityStandard: '標準',
             qualityUltra: 'ウルトラ',
             qualityPrint: '印刷',
-            outputFileLabel: '出力ファイル',
-            revealTooltip: '{{path}} — クリックしてシステムのファイルマネージャーで表示',
             selectCampaign: '公開するキャンペーンを選択してください。',
             campaignStaleAlert: 'キャンペーン「{{name}}」は {{days}} 日前のものです。更新しましょう！',
             campaignStaleAlertUnknown: 'キャンペーン「{{name}}」は何日も更新されていません。更新しましょう！',
@@ -3290,11 +3280,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             qualityPrintShort: '4800px 印刷',
             qualityUltraShort: '2400px ウルトラ',
             qualityStandardShort: '1200px 標準',
-            noOutputFileNotice: '表示できる出力ファイルはまだありません。',
-            revealUnsupportedNotice: 'このプラットフォームではファイルの表示に対応していません。',
-            outputNotGeneratedNotice: '出力ファイルはまだ生成されていません。「公開」をクリックして作成してください。',
-            shellUnavailableNotice: 'ファイルを表示できません：システムシェルを利用できません。',
-            revealFailedNotice: 'システムのファイルマネージャーでファイルを表示できませんでした。',
             manualLabel: '手動',
             stageDefaultInherited: 'デフォルト · {{stage}}',
             teaserOffTooltip: 'ティーザーはオフです — このキャンペーンは現在のデフォルトレポートの表示（ソーシャル設定のプレビューで設定）を公開します。',
@@ -3337,7 +3322,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             customSlotEmptyAriaLabel: 'カスタム {{number}} — クリックして設定',
             customSlotName: 'カスタム {{number}}',
             spokeColorAriaLabel: 'スポークの色',
-            resetToPath: '{{path}} にリセット',
         },
         backdropSection: {
             heading: 'バックドロップとマイクロコンテキストリング',

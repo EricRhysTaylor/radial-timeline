@@ -709,8 +709,6 @@ export const de: DeepPartial<TranslationKeys> = {
                 featureStageWeighted: 'Phasenfortschritt — Verfolgen Sie den Fortschritt auf drei verschiedene Arten',
             },
             preview: {
-                sizeLabel: 'APR-Vorschau',
-                actualSizePreview: 'Vorschau in Originalgröße',
                 teaserAuto: 'Auto (aktuelle Phase)',
                 teaserRing: 'Ring',
                 teaserScenes: 'Szenen',
@@ -720,8 +718,6 @@ export const de: DeepPartial<TranslationKeys> = {
                 publishTooltip: 'Öffnet den Publisher, um die Live-Datei zu aktualisieren, einen Snapshot zu speichern oder eine Kampagne als Ziel zu wählen.',
                 loading: 'Vorschau wird geladen...',
                 lastUpdateNever: 'Nie',
-                kickstarterReady: 'Kickstarter-tauglich',
-                patreonFriendly: 'Patreon-freundlich',
                 emptyState: 'Erstellen Sie Szenen, um eine Vorschau Ihres Social-Berichts zu sehen.',
                 renderError: 'Vorschau konnte nicht gerendert werden.',
                 lastUpdate: 'Letzte Aktualisierung: {{date}}',
@@ -807,10 +803,6 @@ export const de: DeepPartial<TranslationKeys> = {
                 refreshAlertThreshold: {
                     name: 'Schwelle für Aktualisierungshinweis',
                     desc: 'Tage, bis in der Timeline-Ansicht eine Erinnerung zum Aktualisieren erscheint. Aktuell: {{days}} Tage.',
-                },
-                exportPath: {
-                    name: 'Exportpfad',
-                    desc: 'Speicherort der Live-Exportdatei. Das Format folgt der Einstellung im Social-Modal.',
                 },
             },
             progressMode: {
@@ -3277,8 +3269,6 @@ export const de: DeepPartial<TranslationKeys> = {
             qualityStandard: 'Standard',
             qualityUltra: 'Ultra',
             qualityPrint: 'Druck',
-            outputFileLabel: 'Ausgabedatei',
-            revealTooltip: '{{path}} — klicken, um im Dateimanager des Systems anzuzeigen',
             selectCampaign: 'Wählen Sie eine Kampagne zum Veröffentlichen.',
             campaignStaleAlert: 'Kampagne „{{name}}“ ist {{days}} Tage alt. Zeit zum Aktualisieren!',
             campaignStaleAlertUnknown: 'Kampagne „{{name}}“ ist viele Tage alt. Zeit zum Aktualisieren!',
@@ -3289,11 +3279,6 @@ export const de: DeepPartial<TranslationKeys> = {
             qualityPrintShort: '4800px Drk',
             qualityUltraShort: '2400px Ult',
             qualityStandardShort: '1200px Std',
-            noOutputFileNotice: 'Noch keine Ausgabedatei zum Anzeigen.',
-            revealUnsupportedNotice: 'Das Anzeigen von Dateien wird auf dieser Plattform nicht unterstützt.',
-            outputNotGeneratedNotice: 'Ausgabedatei noch nicht erzeugt. Klicken Sie auf Veröffentlichen, um sie zu erstellen.',
-            shellUnavailableNotice: 'Datei kann nicht angezeigt werden: System-Shell nicht verfügbar.',
-            revealFailedNotice: 'Datei konnte nicht im Dateimanager des Systems angezeigt werden.',
             manualLabel: 'Manuell',
             stageDefaultInherited: 'STANDARD · {{stage}}',
             teaserOffTooltip: 'Teaser aus — diese Kampagne veröffentlicht die aktuelle Ansicht des Standardberichts (festgelegt in der Vorschau der Social-Einstellungen).',
@@ -3336,7 +3321,6 @@ export const de: DeepPartial<TranslationKeys> = {
             customSlotEmptyAriaLabel: 'Benutzerdefiniert {{number}} — zum Festlegen klicken',
             customSlotName: 'Benutzerdefiniert {{number}}',
             spokeColorAriaLabel: 'Speichenfarbe',
-            resetToPath: 'Auf {{path}} zurücksetzen',
         },
         backdropSection: {
             heading: 'Backdrop- & Mikrokontext-Ringe',

@@ -1534,17 +1534,6 @@
   gap: var(--ert-gap-xs);
 }
 
-.ert-ui.ert-scope--modal .ert-apr-output-link {
-  cursor: pointer;
-  text-decoration: none;
-  border-bottom: 1px dashed var(--text-faint);
-}
-
-.ert-ui.ert-scope--modal .ert-apr-output-link:hover {
-  color: var(--text-accent);
-  border-bottom-color: var(--text-accent);
-}
-
 .ert-ui.ert-scope--modal .ert-apr-status-cell--header {
   font-size: 0.7rem;
   font-weight: 600;
@@ -2008,56 +1997,6 @@
   color: var(--text-warning);
   font-size: 0.9rem;
   margin-bottom: 16px;
-}
-
-/* Reveal Section - compact checkbox grid */
-
-/* Mode Section */
-
-.ert-apr-mode-btn,
-.ert-apr-size-btn {
-  padding: var(--ert-pad-xs) var(--ert-pad-md);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.ert-apr-mode-btn:hover,
-.ert-apr-size-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.ert-apr-mode-btn.is-active,
-.ert-apr-size-btn.is-active {
-  background: rgba(var(--ert-social-accent-rgb-base), 0.2);
-  border-color: var(--ert-social-accent-color-base);
-  color: var(--ert-social-accent-color-base);
-}
-
-/* Size Section */
-
-/* Side-by-side preview row */
-
-.ert-apr-preview-card.is-locked {
-  cursor: default;
-  opacity: 0.7;
-}
-
-.ert-apr-preview-card.is-locked:hover {
-  border-color: rgba(255, 255, 255, 0.1);
-  transform: none;
-  box-shadow: none;
-}
-
-.ert-apr-preview-card.is-active {
-  border-color: var(--ert-social-accent-color-base);
-  box-shadow: var(--ert-apr-preview-active-glow);
 }
 
 /* Density tip note */

@@ -164,9 +164,9 @@ export class AuthorProgressRenderService {
         const scenes = await this.plugin.getSceneData({ sourcePath: projectPath });
         const scenesFiltered = scenes.filter(isSceneItem);
         const progressState = this.aprProgressService.resolveProgress(scenesFiltered, settings);
-        // Use the designer style (same source the settings preview reads from) so the published
-        // Default Report visually matches what the user sees in the social settings preview.
-        const style = this.aprStyleService.resolveDesignerStyle();
+        // The Default Report always renders from the saved default style. The designer draft
+        // belongs to whichever campaign is open in settings, and must never leak into it.
+        const style = this.aprStyleService.resolveStyle();
         const renderStyle = this.aprStyleService.buildRenderStyle(style);
         const showRtAttribution = hasProFeatureAccess(this.plugin)
             ? renderStyle.showRtAttribution !== false

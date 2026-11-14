@@ -1,0 +1,127 @@
+/* -------------------------------------------------------------------------- */
+/* Author Progress Report: preview card, share file, style context            */
+/* -------------------------------------------------------------------------- */
+
+/* Preview card — fixed preview on the left; status, controls and the share
+   file on the right. Wraps to one column in a narrow settings pane. */
+.ert-ui.ert-scope--settings .ert-apr-previewCard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--ert-gap-lg);
+}
+
+.ert-ui.ert-scope--settings .ert-apr-previewSide {
+  flex: 1 1 240px;
+  min-width: 0;
+  gap: var(--ert-gap-md);
+}
+
+.ert-ui.ert-scope--settings .ert-apr-previewStatus {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.ert-ui.ert-scope--settings .ert-apr-previewStatus.is-alert {
+  color: var(--text-warning);
+}
+
+.ert-ui.ert-scope--settings .ert-apr-previewControls {
+  flex-wrap: wrap;
+  gap: var(--ert-gap-sm);
+}
+
+.ert-ui.ert-scope--settings .ert-apr-publish-btn {
+  min-height: 32px;
+  font-weight: 600;
+}
+
+/* Share file — the published image, draggable into a post composer. Shared by
+   the Social settings tab and the publish modal. */
+.ert-ui .ert-apr-share {
+  display: flex;
+  align-items: center;
+  gap: var(--ert-gap-md);
+  padding: var(--ert-pad-sm);
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: var(--ert-control-radius);
+  background: var(--background-secondary);
+}
+
+.ert-ui .ert-apr-share.is-ready {
+  border-style: solid;
+  cursor: grab;
+}
+
+.ert-ui .ert-apr-share.is-ready:active {
+  cursor: grabbing;
+}
+
+.ert-ui .ert-apr-share__thumb {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 6px;
+  object-fit: contain;
+  background: var(--background-primary);
+}
+
+.ert-ui .ert-apr-share__thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+}
+
+.ert-ui .ert-apr-share__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ert-ui .ert-apr-share__name {
+  overflow: hidden;
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ert-ui .ert-apr-share__hint {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+}
+
+.ert-ui .ert-apr-share__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--ert-gap-xs);
+}
+
+/* Style context — shown on the Styling panel while a campaign's style is open. */
+.ert-ui.ert-scope--settings .ert-apr-styleContext {
+  gap: var(--ert-gap-sm);
+  padding: var(--ert-pad-sm) var(--ert-pad-md);
+  border: 1px solid color-mix(in srgb, var(--ert-accent) 35%, transparent);
+  border-radius: var(--ert-control-radius);
+  background: color-mix(in srgb, var(--ert-accent) 10%, transparent);
+}
+
+.ert-ui.ert-scope--settings .ert-apr-styleContext__icon {
+  display: inline-flex;
+  color: var(--ert-accent);
+}
+
+.ert-ui.ert-scope--settings .ert-apr-styleContext__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ert-ui.ert-scope--settings .ert-apr-styleContext__text {
+  flex: 1 1 auto;
+  font-size: var(--font-ui-small);
+}

@@ -1021,12 +1021,6 @@
   line-height: 1.5;
 }
 
-.ert-ui.ert-scope--settings .ert-apr-size-meta .ert-row-desc {
-  grid-column: 1 / -1;
-  justify-self: center;
-  text-align: center;
-}
-
 .ert-ui .ert-prompt-question {
   font-size: 0.95em;
   font-style: italic;
@@ -2147,22 +2141,19 @@
   height: 16px;
 }
 
-.ert-ui.ert-scope--settings .ert-apr-preview {
-  margin: 0;
-  gap: var(--ert-gap-md);
-}
-
 .ert-ui.ert-scope--settings .ert-apr-preview-frame.ert-apr-preview--actual {
   margin: 0;
   padding: var(--ert-pad-sm);
   background: rgba(0, 0, 0, 0.3);
   border-radius: var(--ert-control-radius);
   border: none;
-  overflow: auto;
-  max-height: 520px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
+  width: 316px;
+  height: 316px;
+  box-sizing: border-box;
 }
 
 .ert-ui.ert-scope--settings .ert-apr-preview-frame.ert-apr-preview--actual .ert-apr-svg-wrapper {

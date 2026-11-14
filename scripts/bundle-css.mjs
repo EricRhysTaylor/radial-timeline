@@ -74,7 +74,7 @@ const files = [
     // Cycle A
     'features/icon-suggestions.css',
     'features/backdrop-presets.css',
-    'features/apr-size-buttons.css',
+    'features/apr-share.css',
     'features/onboarding.css',
     'inquiry.css',
     'legacy/apr-legacy.css',

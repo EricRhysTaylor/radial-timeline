@@ -695,8 +695,6 @@ export const vi: DeepPartial<TranslationKeys> = {
                 "featureStageWeighted": "Tiến độ giai đoạn — Theo dõi sự tiến bộ qua ba phương thức khác nhau"
             },
             "preview": {
-                "sizeLabel": "Xem trước APR",
-                "actualSizePreview": "Xem trước kích thước thực tế",
                 "teaserAuto": "Tự động (Giai đoạn hiện tại)",
                 "teaserRing": "Vòng tròn",
                 "teaserScenes": "Cảnh",
@@ -706,8 +704,6 @@ export const vi: DeepPartial<TranslationKeys> = {
                 "publishTooltip": "Mở công cụ xuất bản để cập nhật tệp trực tuyến, lưu bản sao hoặc nhắm mục tiêu chiến dịch.",
                 "loading": "Đang tải xem trước...",
                 "lastUpdateNever": "Chưa bao giờ",
-                "kickstarterReady": "Sẵn sàng cho Kickstarter",
-                "patreonFriendly": "Thân thiện với Patreon",
                 "emptyState": "Tạo các cảnh để xem trước báo cáo Mạng xã hội của bạn.",
                 "renderError": "Không thể hiển thị xem trước.",
                 "lastUpdate": "Cập nhật lần cuối: {{date}}"
@@ -794,10 +790,6 @@ export const vi: DeepPartial<TranslationKeys> = {
                     "name": "Ngưỡng cảnh báo làm mới",
                     "desc": "vài ngày trước khi hiển thị lời nhắc làm mới trong chế độ xem dòng thời gian. Hiện tại: {{days}} ngày."
                 },
-                "exportPath": {
-                    "name": "Đường dẫn xuất",
-                    "desc": "Vị trí cho tệp xuất trực tiếp. Định dạng tuân theo thiết lập phương thức xã hội."
-                }
             },
             "progressMode": {
                 "dateRangePlaceholder": "yyyy-mm-dd thành yyyy-mm-dd"
@@ -3284,8 +3276,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "qualityStandard": "Tiêu chuẩn",
             "qualityUltra": "Cực kỳ",
             "qualityPrint": "In",
-            "outputFileLabel": "Tệp đầu ra",
-            "revealTooltip": "{{path}} - Nhấp để tiết lộ trong Trình quản lý tệp hệ thống",
             "selectCampaign": "Chọn một chiến dịch để xuất bản.",
             "campaignStaleAlert": "Chiến dịch \"{{name}}\" là {{days}} ngày. Thời gian để làm mới!",
             "campaignStaleAlertUnknown": "Chiến dịch \"{{name}}\" đã nhiều ngày tuổi. Thời gian để làm mới!",
@@ -3296,11 +3286,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "qualityPrintShort": "4800px PRT",
             "qualityUltraShort": "2400px ult",
             "qualityStandardShort": "1200px std",
-            "noOutputFileNotice": "Không có tệp đầu ra để tiết lộ.",
-            "revealUnsupportedNotice": "Việc tiết lộ các tệp không được hỗ trợ trên nền tảng này.",
-            "outputNotGeneratedNotice": "tệp đầu ra chưa được tạo. Nhấp vào Xuất bản để tạo nó.",
-            "shellUnavailableNotice": "Không thể tiết lộ tệp: Shell hệ thống không khả dụng.",
-            "revealFailedNotice": "Không thể tiết lộ tệp trong Trình quản lý tệp hệ thống.",
             "manualLabel": "Hướng dẫn sử dụng",
             "stageDefaultInherited": "mặc định · {{stage}}",
             "teaserOffTooltip": "Teaser tắt - Chiến dịch này xuất bản chế độ xem báo cáo mặc định hiện tại (đặt trong Xem trước cài đặt xã hội).",
@@ -3343,7 +3328,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "customSlotEmptyAriaLabel": "tùy chỉnh {{number}} - Nhấp để đặt",
             "customSlotName": "{{number}} tùy chỉnh",
             "spokeColorAriaLabel": "nói màu",
-            "resetToPath": "Đặt lại về {{path}}"
         },
         "backdropSection": {
             "heading": "Vòng phông nền và ngữ cảnh vi mô",

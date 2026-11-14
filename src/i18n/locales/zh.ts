@@ -711,8 +711,6 @@ export const zh: DeepPartial<TranslationKeys> = {
                 featureStageWeighted: '阶段进度 — 通过三种不同方式追踪进展',
             },
             preview: {
-                sizeLabel: 'APR 预览',
-                actualSizePreview: '实际尺寸预览',
                 teaserAuto: '自动（当前阶段）',
                 teaserRing: '环',
                 teaserScenes: '场景',
@@ -722,8 +720,6 @@ export const zh: DeepPartial<TranslationKeys> = {
                 publishTooltip: '打开发布器，以更新实时文件、保存快照或指定推广活动。',
                 loading: '正在加载预览...',
                 lastUpdateNever: '从未',
-                kickstarterReady: '适用于 Kickstarter',
-                patreonFriendly: '适合 Patreon',
                 emptyState: '创建场景后即可预览您的社交报告。',
                 renderError: '渲染预览失败。',
                 lastUpdate: '上次更新：{{date}}',
@@ -809,10 +805,6 @@ export const zh: DeepPartial<TranslationKeys> = {
                 refreshAlertThreshold: {
                     name: '刷新提醒阈值',
                     desc: '经过多少天后在时间轴视图中显示刷新提醒。当前：{{days}} 天。',
-                },
-                exportPath: {
-                    name: '导出路径',
-                    desc: '实时导出文件的位置。格式遵循社交对话框中的设置。',
                 },
             },
             progressMode: {
@@ -3279,8 +3271,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             qualityStandard: '标准',
             qualityUltra: '超高',
             qualityPrint: '印刷',
-            outputFileLabel: '输出文件',
-            revealTooltip: '{{path}} — 点击在系统文件管理器中显示',
             selectCampaign: '选择要发布的活动。',
             campaignStaleAlert: '活动“{{name}}”已有 {{days}} 天未更新。该刷新了！',
             campaignStaleAlertUnknown: '活动“{{name}}”已有很多天未更新。该刷新了！',
@@ -3291,11 +3281,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             qualityPrintShort: '4800px 印刷',
             qualityUltraShort: '2400px 超高',
             qualityStandardShort: '1200px 标准',
-            noOutputFileNotice: '尚无可显示的输出文件。',
-            revealUnsupportedNotice: '此平台不支持显示文件。',
-            outputNotGeneratedNotice: '输出文件尚未生成。点击“发布”即可创建。',
-            shellUnavailableNotice: '无法显示文件：系统 shell 不可用。',
-            revealFailedNotice: '无法在系统文件管理器中显示文件。',
             manualLabel: '手动',
             stageDefaultInherited: '默认 · {{stage}}',
             teaserOffTooltip: '预告已关闭 — 此活动发布当前的默认报告视图（在社交设置预览中设置）。',
@@ -3338,7 +3323,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             customSlotEmptyAriaLabel: '自定义 {{number}} — 点击设置',
             customSlotName: '自定义 {{number}}',
             spokeColorAriaLabel: '辐条颜色',
-            resetToPath: '重置为 {{path}}',
         },
         backdropSection: {
             heading: '背景与微型上下文环',

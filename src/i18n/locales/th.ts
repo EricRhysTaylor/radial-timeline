@@ -695,8 +695,6 @@ export const th: DeepPartial<TranslationKeys> = {
                 "featureStageWeighted": "ความคืบหน้าของเวที — ติดตามความก้าวหน้าผ่านสามรูปแบบที่แตกต่างกัน"
             },
             "preview": {
-                "sizeLabel": "พรีวิว APR",
-                "actualSizePreview": "ตัวอย่างขนาดจริง",
                 "teaserAuto": "อัตโนมัติ (เวทีปัจจุบัน)",
                 "teaserRing": "วงแหวน",
                 "teaserScenes": "ฉาก",
@@ -706,8 +704,6 @@ export const th: DeepPartial<TranslationKeys> = {
                 "publishTooltip": "เปิดผู้เผยแพร่โฆษณาเพื่ออัปเดตไฟล์สด บันทึกสแนปชอต หรือกำหนดเป้าหมายแคมเปญ",
                 "loading": "กำลังโหลดตัวอย่าง...",
                 "lastUpdateNever": "อย่า",
-                "kickstarterReady": "Kickstarter พร้อม",
-                "patreonFriendly": "Patreon เป็นมิตร",
                 "emptyState": "สร้างฉากเพื่อดูตัวอย่างรายงานทางสังคมของคุณ",
                 "renderError": "แสดงตัวอย่างไม่สำเร็จ",
                 "lastUpdate": "อัปเดตล่าสุด: {{date}}"
@@ -794,10 +790,6 @@ export const th: DeepPartial<TranslationKeys> = {
                     "name": "รีเฟรชเกณฑ์การแจ้งเตือน",
                     "desc": "วันก่อนแสดงการเตือนการรีเฟรชในมุมมองไทม์ไลน์ ปัจจุบัน: {{days}}"
                 },
-                "exportPath": {
-                    "name": "เส้นทางการส่งออก",
-                    "desc": "ตำแหน่งสำหรับไฟล์ส่งออกสด รูปแบบเป็นไปตามการตั้งค่าโมดอลทางสังคม"
-                }
             },
             "progressMode": {
                 "dateRangePlaceholder": "ปปปปปปปปปปปปปปปปปปปปปปปปปปปปปปปปปปปปปป"
@@ -3284,8 +3276,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "qualityStandard": "มาตรฐาน",
             "qualityUltra": "รุนแรง",
             "qualityPrint": "พิมพ์",
-            "outputFileLabel": "ไฟล์เอาต์พุต",
-            "revealTooltip": "{{path}} — คลิกเพื่อเปิดเผยในตัวจัดการไฟล์ระบบ",
             "selectCampaign": "เลือกแคมเปญที่จะเผยแพร่",
             "campaignStaleAlert": "แคมเปญ \"{{name}}\" คือ {{days}} วัน ได้เวลารีเฟรช!",
             "campaignStaleAlertUnknown": "แคมเปญ \"{{name}}\" มีอายุหลายวัน ได้เวลารีเฟรช!",
@@ -3296,11 +3286,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "qualityPrintShort": "4800px PRT",
             "qualityUltraShort": "2400px ult",
             "qualityStandardShort": "1200px std",
-            "noOutputFileNotice": "ยังไม่มีไฟล์เอาต์พุตที่จะเปิดเผย",
-            "revealUnsupportedNotice": "ไม่รองรับการเปิดเผยไฟล์บนแพลตฟอร์มนี้",
-            "outputNotGeneratedNotice": "ไฟล์เอาต์พุตยังไม่ได้สร้าง คลิกเผยแพร่เพื่อสร้าง",
-            "shellUnavailableNotice": "ไม่สามารถเปิดเผยไฟล์: เชลล์ระบบไม่พร้อมใช้งาน",
-            "revealFailedNotice": "ไม่สามารถเปิดเผยไฟล์ในตัวจัดการไฟล์ระบบ",
             "manualLabel": "คู่มือ",
             "stageDefaultInherited": "ค่าเริ่มต้น · {{stage}}",
             "teaserOffTooltip": "Teaser Off — แคมเปญนี้เผยแพร่มุมมองรายงานเริ่มต้นปัจจุบัน (ตั้งค่าในการแสดงตัวอย่างการตั้งค่าทางสังคม)",
@@ -3343,7 +3328,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "customSlotEmptyAriaLabel": "กำหนดเอง {{number}} — คลิกเพื่อตั้งค่า",
             "customSlotName": "{{number}} ที่กำหนดเอง",
             "spokeColorAriaLabel": "พูดสี",
-            "resetToPath": "รีเซ็ตเป็น {{path}}"
         },
         "backdropSection": {
             "heading": "ฉากหลังและวงแหวนบริบทขนาดเล็ก",

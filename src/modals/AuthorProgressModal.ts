@@ -1,7 +1,7 @@
-import { setTooltip, withAccessibleLabel, withTooltip } from '../utils/domTooltip';
+import { setTooltip, withAccessibleLabel } from '../utils/domTooltip';
 import { openSettingsTab } from '../utils/obsidianInternals';
-import { App, Modal, ButtonComponent, FileSystemAdapter, Notice, setIcon, normalizePath } from 'obsidian';
-import * as path from 'path'; // SAFE: Node path needed to build absolute paths for native Finder reveal
+import { App, Modal, ButtonComponent, Notice, setIcon, normalizePath } from 'obsidian';
+import { renderAprShareFile } from '../ui/aprShareFile';
 import type RadialTimelinePlugin from '../main';
 import { TimelineItem } from '../types/timeline';
 import { AuthorProgressService } from '../services/AuthorProgressService';
@@ -41,9 +41,12 @@ export class AuthorProgressModal extends Modal {
     private progressPercent: number = 0;
     private cachedProjectPath: string = '';
 
-    constructor(app: App, plugin: RadialTimelinePlugin) {
+    private readonly onPublished?: () => void;
+
+    constructor(app: App, plugin: RadialTimelinePlugin, options?: { onPublished?: () => void }) {
         super(app);
         this.plugin = plugin;
+        this.onPublished = options?.onPublished;
         this.service = new AuthorProgressService(plugin, app);
 
         const settings = plugin.settings.authorProgress?.defaults ?? buildDefaultAuthorProgressSettings().defaults;
@@ -481,9 +484,7 @@ export class AuthorProgressModal extends Modal {
             };
         });
 
-        // === OUTPUT FILE ===
-        const pathRow = container.createDiv({ cls: 'ert-apr-target-row' });
-        pathRow.createSpan({ text: t('ui.authorProgressModal.outputFileLabel'), cls: ERT_CLASSES.LABEL });
+        // === SHARE FILE ===
         const defaultPath = buildDefaultEmbedPath({
             bookTitle: this.plugin.getActiveBookTitle(),
             updateFrequency: settings?.updateFrequency,
@@ -495,16 +496,7 @@ export class AuthorProgressModal extends Modal {
             settings.exportPath = defaultPath;
             void this.plugin.saveSettings();
         }
-        const pathDisplay = withTooltip(pathRow.createEl('a', {
-            cls: `${ERT_CLASSES.FIELD_NOTE} ert-apr-output-link`,
-            attr: { href: '#', role: 'button' }
-        }), t('ui.authorProgressModal.revealTooltip', { path: defaultPath }));
-        pathDisplay.setText(this.summarizePath(defaultPath));
-        pathDisplay.addEventListener('click', (evt) => {
-            evt.preventDefault();
-            void this.revealOutputFileInOS(defaultPath);
-        });
-
+        renderAprShareFile(container.createDiv({ cls: 'ert-apr-shareSlot' }), { app: this.app, vaultPath: defaultPath });
     }
 
     private renderProActions(container: HTMLElement, campaigns: AuthorProgressCampaign[]): void {
@@ -615,22 +607,8 @@ export class AuthorProgressModal extends Modal {
             setTooltip(stagePill, stageInfo.tooltip);
         }
 
-        // === OUTPUT FILE ===
-        const pathRow = container.createDiv({
-            cls: `${ERT_CLASSES.ROW} ${ERT_CLASSES.ROW_COMPACT} ${ERT_CLASSES.ROW_MIDDLE_ALIGN}`
-        });
-        pathRow.createSpan({ text: t('ui.authorProgressModal.outputFileLabel'), cls: ERT_CLASSES.LABEL });
-        const pathValue = pathRow.createDiv({ cls: ERT_CLASSES.INLINE });
-        const pathText = withTooltip(pathValue.createEl('a', {
-            cls: `${ERT_CLASSES.FIELD_NOTE} ert-mono ert-truncate ert-apr-output-link`,
-            text: this.summarizePath(campaign.exportPath),
-            attr: { href: '#', role: 'button' }
-        }), t('ui.authorProgressModal.revealTooltip', { path: campaign.exportPath }));
-        pathText.addEventListener('click', (evt) => {
-            evt.preventDefault();
-            void this.revealOutputFileInOS(campaign.exportPath);
-        });
-
+        // === SHARE FILE ===
+        renderAprShareFile(container.createDiv({ cls: 'ert-apr-shareSlot' }), { app: this.app, vaultPath: campaign.exportPath });
     }
 
     private renderRefreshAlert(container: HTMLElement): void {
@@ -741,59 +719,6 @@ export class AuthorProgressModal extends Modal {
     private getQualityLabel(quality: AprExportQuality): string {
         if (quality === 'print') return t('ui.authorProgressModal.qualityPrintShort');
         return quality === 'ultra' ? t('ui.authorProgressModal.qualityUltraShort') : t('ui.authorProgressModal.qualityStandardShort');
-    }
-
-    private summarizePath(filePath: string, maxLength = 42): string {
-        if (!filePath) return '—';
-        if (filePath.length <= maxLength) return filePath;
-        const parts = filePath.split('/');
-        if (parts.length <= 2) return `…${filePath.slice(-maxLength + 1)}`;
-        return `…/${parts.slice(-2).join('/')}`;
-    }
-
-    /**
-     * Resolve a vault-relative path to an absolute filesystem path. Returns null
-     * on platforms without filesystem access (mobile).
-     */
-    private resolveAbsolutePath(vaultPath: string): string | null {
-        const adapter = this.app.vault.adapter; // SAFE: adapter required to compute absolute path for native Finder reveal
-        if (adapter instanceof FileSystemAdapter) {
-            return path.join(adapter.getBasePath(), normalizePath(vaultPath));
-        }
-        return null;
-    }
-
-    /**
-     * Reveal the output file in the OS file manager (Finder on macOS, Explorer on Windows,
-     * default file manager on Linux). Shows a Notice if the file isn't generated yet or the
-     * platform doesn't support native reveal (mobile).
-     */
-    private revealOutputFileInOS(vaultPath: string): void {
-        if (!vaultPath) {
-            new Notice(t('ui.authorProgressModal.noOutputFileNotice'));
-            return;
-        }
-        const absolute = this.resolveAbsolutePath(vaultPath);
-        if (!absolute) {
-            new Notice(t('ui.authorProgressModal.revealUnsupportedNotice'));
-            return;
-        }
-        const existing = this.app.vault.getAbstractFileByPath(normalizePath(vaultPath));
-        if (!existing) {
-            new Notice(t('ui.authorProgressModal.outputNotGeneratedNotice'));
-            return;
-        }
-        try {
-            const electron = (window as unknown as { require?: (name: string) => { shell?: { showItemInFolder: (p: string) => void } } }).require?.('electron');
-            const shell = electron?.shell;
-            if (!shell) {
-                new Notice(t('ui.authorProgressModal.shellUnavailableNotice'));
-                return;
-            }
-            shell.showItemInFolder(absolute);
-        } catch {
-            new Notice(t('ui.authorProgressModal.revealFailedNotice'));
-        }
     }
 
     private getDaysSince(date?: string): number | null {
@@ -958,6 +883,15 @@ export class AuthorProgressModal extends Modal {
     }
 
     private async publish(mode: 'static' | 'dynamic') {
+        await this.runPublish(mode);
+        // Show the freshly written file in the share card, here and in settings.
+        this.renderStatusSection();
+        this.renderCampaignStatusSection();
+        this.renderActions();
+        this.onPublished?.();
+    }
+
+    private async runPublish(mode: 'static' | 'dynamic') {
         if (this.isCampaignTarget()) {
             const campaign = this.getSelectedCampaign();
             if (!campaign) {

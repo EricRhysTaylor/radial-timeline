@@ -15,7 +15,7 @@ export class AuthorProgressService {
     private readonly publishService: AuthorProgressPublishService;
     private readonly campaignService: AuthorProgressCampaignService;
 
-    constructor(plugin: RadialTimelinePlugin, app: App) {
+    constructor(private readonly plugin: RadialTimelinePlugin, app: App) {
         this.aprProgressService = new AprProgressService(plugin);
         this.aprStyleService = new AprStyleService(plugin);
         this.renderService = new AuthorProgressRenderService(plugin, app);
@@ -61,6 +61,12 @@ export class AuthorProgressService {
 
     public getDesignerCampaign() {
         return this.aprStyleService.getDesignerCampaign();
+    }
+
+    /** Vault path the Default Report publishes to. */
+    public getDefaultReportPath(): string | null {
+        const settings = this.plugin.settings.authorProgress?.defaults;
+        return settings ? this.renderService.getDefaultExportPath(settings) : null;
     }
 
     public generateReport(mode?: 'static' | 'dynamic'): Promise<string | null> {

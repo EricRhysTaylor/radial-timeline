@@ -104,27 +104,30 @@ export function addWikiLinkToElement(el: HTMLElement, wikiPage: string): void {
 }
 
 /**
- * Adds a workflow video's play icon to a setting's name element, beside its
- * wiki link. Nothing is added while the video isn't published.
+ * Adds a workflow video's play button to a setting's name element, ahead of
+ * its wiki link. Nothing is added while the video isn't published.
  */
 export function addVideoLink(setting: Setting, video: WorkflowVideoKey): void {
     addVideoLinkToElement(setting.nameEl, video, 'ert-wiki-link');
 }
 
 /**
- * Adds a workflow video's play icon to any element. `linkClass` is the class
+ * Adds a workflow video's play button to any element. `linkClass` is the class
  * of the wiki link beside it (a heading's, a modal badge's or a badge pill's),
- * so the two icons match. Nothing is added while the video isn't published.
+ * so the two sit together; the video comes first and stands out in gold
+ * (`.ert-video-link`). Nothing is added while the video isn't published.
  */
 export function addVideoLinkToElement(el: HTMLElement, video: WorkflowVideoKey, linkClass: string): void {
     const href = workflowVideoUrl(video);
     if (!el || !href) return;
+    const wiki = el.querySelector(`:scope > .${linkClass}`);
     const link = withAccessibleLabel(el.createEl('a', {
         href,
-        cls: linkClass,
+        cls: [linkClass, 'ert-video-link'],
         attr: { 'target': '_blank', 'rel': 'noopener' }
     }), t('ui.workflowVideos.watch', { title: t(WORKFLOW_VIDEOS[video].titleKey) }));
-    setIcon(link, 'circle-play');
+    setIcon(link, 'rt-video-play');
+    if (wiki) el.insertBefore(link, wiki);
 }
 
 function addHeadingIconToElement(el: HTMLElement, icon: string): void {

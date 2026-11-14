@@ -29,6 +29,36 @@
   opacity: 1;
 }
 
+/* Workflow video link: first after the title, gold and larger than the wiki link so it is noticed (Eric, 2026-11-13). */
+.ert-wiki-link.ert-video-link {
+  color: var(--ert-community-gold);
+  opacity: 1;
+  transform: none;
+  top: 0;
+}
+
+.ert-wiki-link.ert-video-link:hover {
+  opacity: 0.8;
+}
+
+.ert-wiki-link.ert-video-link .svg-icon {
+  width: 30px;
+  height: 30px;
+}
+
+/* The same play button in a modal badge (PDF export) and the Community badge pill: gold, a little larger than the
+   wiki icon, sized to the badge. */
+.ert-ui .ert-modal-badge__wikiLink.ert-video-link,
+.ert-ui.ert-scope--settings .ert-badgePill__wikiLink.ert-video-link {
+  color: var(--ert-community-gold);
+}
+
+.ert-ui .ert-modal-badge__wikiLink.ert-video-link svg,
+.ert-ui.ert-scope--settings .ert-badgePill__wikiLink.ert-video-link svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* Path chips — clickable folder shortcuts shown opposite a setting's title */
 .ert-path-chips {
   display: inline-flex;

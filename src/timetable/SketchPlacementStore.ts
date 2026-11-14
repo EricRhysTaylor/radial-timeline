@@ -83,8 +83,19 @@ export class SketchPlacementStore extends Component {
     }
 
     onload(): void {
-        const { vault, workspace } = this.plugin.app;
-        workspace.onLayoutReady(() => { void this.importFromNotes(); });
+        const { vault, workspace, metadataCache } = this.plugin.app;
+        workspace.onLayoutReady(() => {
+            // The import reads each note's properties, so it waits until Obsidian has
+            // read every note: a note it has not reached yet has no cache, and its
+            // placement would be missed for good. Nothing to import needs no wait.
+            const indexed = (): boolean => vault.getMarkdownFiles().every(file => metadataCache.getFileCache(file) !== null);
+            if (this.hasFile || this.error || indexed()) { void this.importFromNotes(); return; }
+            const ref = metadataCache.on('resolved', () => {
+                metadataCache.offref(ref);
+                void this.importFromNotes();
+            });
+            this.registerEvent(ref);
+        });
         this.registerEvent(vault.on('rename', (file, oldPath) => this.moved(file, oldPath)));
         this.registerEvent(vault.on('delete', file => this.deleted(file)));
         // The sidecar changed on disk (another device synced it): read it again.

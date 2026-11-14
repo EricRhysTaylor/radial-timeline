@@ -11,6 +11,9 @@ function fixture(notes: Record<string, Record<string, unknown>>, sidecar?: unkno
     const disk = new Map<string, string>();
     if (sidecar !== undefined) disk.set(SKETCH_PLACEMENT_PATH, JSON.stringify(sidecar));
     const handlers = new Map<string, Handler>();
+    const cacheHandlers = new Map<string, Handler>();
+    /** Notes Obsidian has not read yet: no cache at all. */
+    const unindexed = new Set<string>();
     let layoutReady: (() => void) | null = null;
     const adapter = {
         exists: vi.fn(async (path: string) => disk.has(path)),
@@ -28,7 +31,11 @@ function fixture(notes: Record<string, Record<string, unknown>>, sidecar?: unkno
                 getMarkdownFiles: () => Object.keys(notes).map(path => new TFile(path)),
                 on: (name: string, handler: Handler) => { handlers.set(name, handler); return {}; },
             },
-            metadataCache: { getFileCache: (file: TFile) => ({ frontmatter: notes[file.path] }) },
+            metadataCache: {
+                getFileCache: (file: TFile) => unindexed.has(file.path) ? null : { frontmatter: notes[file.path] },
+                on: (name: string, handler: Handler) => { cacheHandlers.set(name, handler); return { name }; },
+                offref: (ref: { name: string }) => { cacheHandlers.delete(ref.name); },
+            },
             workspace: { onLayoutReady: (callback: () => void) => { layoutReady = callback; } },
             fileManager: { processFrontMatter },
         },
@@ -44,7 +51,9 @@ function fixture(notes: Record<string, Record<string, unknown>>, sidecar?: unkno
     };
     const fire = (name: string, ...args: unknown[]) => handlers.get(name)?.(...args);
     const settle = () => new Promise(resolve => setTimeout(resolve, 0));
-    return { store, disk, saved, start, fire, settle, processFrontMatter, process, notes };
+    const fireCache = (name: string) => cacheHandlers.get(name)?.();
+    const layout = () => layoutReady?.();
+    return { store, disk, saved, start, fire, fireCache, layout, unindexed, settle, processFrontMatter, process, notes };
 }
 
 describe('sketch placement sidecar', () => {
@@ -77,6 +86,30 @@ describe('sketch placement sidecar', () => {
         expect(JSON.stringify(notes)).toBe(before);
         expect(f.processFrontMatter).not.toHaveBeenCalled();
         expect(f.process).not.toHaveBeenCalled();
+    });
+
+    it('waits for Obsidian to read every note before the one-time import, so no placement is missed', async () => {
+        const f = fixture({ 'Book/A.md': { Class: 'Sketch', 'Sketch order': 20 }, 'Book/B.md': { Class: 'Sketch', 'Sketch order': 10 } });
+        f.unindexed.add('Book/B.md');
+        await f.store.initialize();
+        f.store.load();
+        f.layout();
+        await f.settle();
+        // B is not read yet: importing now would leave it out for good.
+        expect(f.saved()).toBeNull();
+        f.unindexed.clear();
+        f.fireCache('resolved');
+        await f.store.assertWritable();
+        expect(f.saved()?.sketches).toEqual({ 'Book/A.md': { order: 20 }, 'Book/B.md': { order: 10 } });
+    });
+
+    it('imports at layout ready when every note is already read', async () => {
+        const f = fixture({ 'Book/A.md': { Class: 'Sketch', 'Sketch order': 20 } });
+        await f.store.initialize();
+        f.store.load();
+        f.layout();
+        await f.store.assertWritable();
+        expect(f.saved()?.sketches).toEqual({ 'Book/A.md': { order: 20 } });
     });
 
     it('never reads the old note lines again once a sidecar exists: the sidecar wins', async () => {

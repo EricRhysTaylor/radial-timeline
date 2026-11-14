@@ -18,11 +18,14 @@ describe('time reference popover', () => {
         class PopoutElement extends PopoutNode {
             isConnected = true;
             instanceOf(type: typeof PopoutNode) { return this instanceof type; }
-            focus() { activeElement = this; }
+            focus() { activeElement = this; focusedWhileReturning.push(popover?.returningFocus ?? false); }
             getBoundingClientRect() { return { left: 100, right: 110, top: 100, bottom: 110 }; }
         }
         class PopoutSvgElement extends PopoutElement {}
         let activeElement: PopoutElement | null = null;
+        // What the marker's focus handler sees: true means "don't reopen the popover".
+        const focusedWhileReturning: boolean[] = [];
+        let popover: ReferencePopover | null = null;
         const button = new PopoutElement();
         const popoverElement = {
             offsetWidth: 100, offsetHeight: 100,
@@ -37,13 +40,17 @@ describe('time reference popover', () => {
             get activeElement() { return activeElement; },
         } as unknown as Document;
         const marker = new PopoutSvgElement();
-        const popover = new ReferencePopover(doc);
+        popover = new ReferencePopover(doc);
         popover.show({ heading: 'References', rows: [row(father)], notes: [] }, marker as unknown as Element, { x: 500, y: 400 }, 200, () => {});
         expect(popover.contains(button as unknown as EventTarget)).toBe(true);
         expect(activeElement).toBe(button);
+        focusedWhileReturning.length = 0;
         popover.dismiss();
         expect(activeElement).toBe(marker);
         expect(popover.contains(button as unknown as EventTarget)).toBe(false);
+        // Escape hands focus back without reopening the popover it just closed (792e8617).
+        expect(focusedWhileReturning).toEqual([true]);
+        expect(popover.returningFocus).toBe(false);
     });
     it('writes dates as a reader would', () => {
         expect(readableReferenceSpan(father)).toBe('1807');

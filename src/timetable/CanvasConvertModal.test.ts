@@ -90,6 +90,19 @@ describe('Canvas scene conversion', () => {
         expect(vi.mocked(test.plugin.setActiveBookId).mock.invocationCallOrder[0]).toBeLessThan(test.activateView.mock.invocationCallOrder[0]);
     });
 
+    it('reports a finished conversion as finished when only opening the timeline fails, never as stopped partway', async () => {
+        const test = scenes();
+        test.activateView.mockRejectedValueOnce(new Error('No leaf'));
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            await convert(test);
+            // Every card is converted and linked.
+            expect(test.getData().nodes?.map(node => node.file)).toEqual(['Book/1 A scene.md', 'Book/2 Other idea.md']);
+            // Only the "converted, but not shown" path reports; the partial-conversion path never runs.
+            expect(error.mock.calls.map(call => call[0])).toEqual(['[Canvas sketches] Converted, but could not show the timeline']);
+        } finally { error.mockRestore(); }
+    });
+
     it('puts a colored card on the subplot named for its color, in the spelling the book uses, and gives the card that subplot’s color', async () => {
         const test = scenes();
         colorCards(test, [{ color: '#AA00FF' }]);

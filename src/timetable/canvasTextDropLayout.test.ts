@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { planSubplotCanvas } from './subplotCanvas';
-import { insertCanvasSceneCard } from './canvasTextDropLayout';
+import { CanvasLayoutError, insertCanvasSceneCard } from './canvasTextDropLayout';
+import { t } from '../i18n';
 import type { TimetableRow } from './timetableModel';
 
 const rows = [1, 2, 3].map(n => ({ path: `Book/${n}.md`, basename: `${n}`, kind: 'scene', className: null, prefix: String(n), act: 1, subplots: ['Main'], removedScene: false } as TimetableRow));
@@ -48,5 +49,16 @@ describe('Canvas insertion layout', () => {
         const manual = { id: 'manual', type: 'text', text: 'Author idea', x: 740, y: 205, width: 100, height: 100 };
         const current = { ...data, nodes: [...data.nodes, manual] };
         expect(() => insertCanvasSceneCard(current, data, { laneId: lane.id, nodeId: 'new', edgeId: () => 'new-edge', path: 'Book/1.5.md', beforePath: 'Book/2.md', vertical: false })).toThrow(/Manual cards/);
+    });
+    it('reports why a card cannot be placed as a translatable problem', () => {
+        let id = 0;
+        const data = planSubplotCanvas(rows, { act: null, subplot: null }, () => String(++id));
+        const lane = data.nodes.find(item => item.type === 'group')!;
+        const changed = { ...data, edges: data.edges.map((edge, i) => i ? edge : { ...edge, label: 'mine' }) };
+        let thrown: unknown;
+        try { insertCanvasSceneCard(changed, data, { laneId: lane.id, nodeId: 'new', edgeId: () => 'new-edge', path: 'Book/1.5.md', beforePath: 'Book/2.md', vertical: false }); } catch (error) { thrown = error; }
+        expect(thrown).toBeInstanceOf(CanvasLayoutError);
+        expect((thrown as CanvasLayoutError).problem).toBe('connectionChanged');
+        expect(t('ui.timetable.canvasLayoutConnectionChanged')).toBe((thrown as CanvasLayoutError).message);
     });
 });

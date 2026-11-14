@@ -94,7 +94,7 @@ export const th: DeepPartial<TranslationKeys> = {
         "ai": {
             "hero": {
                 "badgeText": "AI",
-                "wikiAriaLabel": "อ่านเพิ่มเติมในวิกิ",
+                "wikiAriaLabel": "อ่านเพิ่มเติมในเอกสาร",
                 "toggleInactive": "ไม่ใช้งาน",
                 "toggleActive": "ใช้งาน",
                 "toggleAriaLabel": "เปิดใช้งานคุณลักษณะ AI",
@@ -686,7 +686,7 @@ export const th: DeepPartial<TranslationKeys> = {
             "hero": {
                 "badgeRefresh": "เตือนความจำเพื่อรีเฟรช",
                 "badgeDefault": "แชร์ · โซเชียล",
-                "wikiAriaLabel": "อ่านเพิ่มเติมในวิกิ",
+                "wikiAriaLabel": "อ่านเพิ่มเติมในเอกสาร",
                 "title": "โปรโมตงานล่าสุดของคุณผ่านโซเชียลมีเดีย",
                 "desc": "สร้างกราฟิกความคืบหน้าที่มีชีวิตชีวาและปลอดภัยสำหรับโซเชียลมีเดียและคราวด์ฟันดิ้ง เหมาะสำหรับการอัปเดต Kickstarter โพสต์ Patreon หรือ แบ่งปันเส้นทางการเขียนของคุณกับแฟน ๆ",
                 "keyBenefitsHeading": "ประโยชน์ที่สำคัญ:",
@@ -1923,7 +1923,7 @@ export const th: DeepPartial<TranslationKeys> = {
             "badge": "พวก",
             "title": "นักออกแบบหนังสือ",
             "subtitle": "กำหนดค่าและสร้างโครงสำหรับนวนิยายใหม่ของคุณ ลากฉากในการแสดงตัวอย่างไปยังองก์และพล็อตย่อยต่างๆ เพื่อเปิดใช้งานโหมดแมนนวล ประหยัด เทมเพลตเพื่อใช้ซ้ำในภายหลัง",
-            "wikiAriaLabel": "อ่านเพิ่มเติมในวิกิ",
+            "wikiAriaLabel": "อ่านเพิ่มเติมในเอกสาร",
             "noBookSelected": "ไม่มีหนังสือที่เลือก",
             "untitled": "ไม่มีชื่อ"
         },
@@ -4058,7 +4058,7 @@ export const th: DeepPartial<TranslationKeys> = {
             "statusNotConnected": "ไม่เกี่ยว",
             "timeNotRecorded": "เวลาไม่ได้บันทึก",
             "badgeText": "แชร์ชุมชน - {{status}}",
-            "wikiAriaLabel": "อ่านเพิ่มเติมในวิกิ",
+            "wikiAriaLabel": "อ่านเพิ่มเติมในเอกสาร",
             "heroTitle": "แบ่งปันการเดินทางของคุณ",
             "heroSubtitle": "แสดงโปรไฟล์และหนังสือของคุณ เพิ่มกราฟิก APR Progress ที่มีการควบคุม หรือแชร์กิจกรรมการเขียนที่กลมกล่อม ตรวจสอบตัวอย่างทั้งหมด จากนั้นเริ่มแชร์",
             "highlightsKicker": "จุดเด่นของชุมชน:",
@@ -7355,7 +7355,7 @@ export const th: DeepPartial<TranslationKeys> = {
             "templateUpdatedNotice": "อัปเดตเทมเพลตเรียบร้อยแล้ว",
             "viewInYamlEditor": "ดูใน YAML Editor",
             "toggleHistory": "สลับประวัติการแจ้งเตือน",
-            "wikiAria": "อ่านเพิ่มเติมในวิกิ",
+            "wikiAria": "อ่านเพิ่มเติมในเอกสาร",
             "publishBadge": "ประกาศ",
             "publishTitle": "เตรียมต้นฉบับของคุณสำหรับการส่งออกและตีพิมพ์",
             "publishSubtitle": "การส่งออกแบบ Markdown ใช้งานได้ทันทีโดยไม่ต้องตั้งค่าใดๆ — คุณสามารถส่งออกต้นฉบับได้ทุกเมื่อ ตั้งค่าการส่งออก PDF และ Word ด้วยรายละเอียดหนังสือ หน้าเสริมที่เลือกได้ และการตั้งค่าด้านล่าง",
@@ -7399,7 +7399,7 @@ export const th: DeepPartial<TranslationKeys> = {
             "tabPro": "แหล่งข้อมูล",
             "resourcesHelp": "เรียนรู้เพิ่มเติม",
             "resourcesGettingStarted": "เริ่มต้นใช้งาน",
-            "resourcesWiki": "RT วิกิ",
+            "resourcesWiki": "เอกสาร Radial Timeline",
             "resourcesVideos": "YouTube วิดีโอ",
             "guardCompletionEstimate": "ประมาณการสำเร็จ",
             "guardGeneral": "การตั้งค่าทั่วไป",
@@ -7795,7 +7795,7 @@ export const th: DeepPartial<TranslationKeys> = {
             "welcomeTitle": "ต้อนรับ",
             "browseDemoProjects": "เรียกดูโครงการสาธิต",
             "linkYoutube": "วิดีโอ YouTube",
-            "linkWiki": "วิกิ - เอกสารฉบับเต็ม",
+            "linkWiki": "เอกสารฉบับเต็ม",
             "linkCommunity": "ชุมชน",
             "linkIssues": "รายงานข้อบกพร่อง / คำขอคุณสมบัติ",
             "backupNotice": "สำรองข้อมูลของคุณ Obsidian ห้องนิรภัยเป็นประจำเพื่อป้องกันการสูญหายของข้อมูล เรียนรู้เพิ่มเติมได้ที่ [Obsidian คู่มือการสำรองข้อมูล]. Sync ไม่ได้ป้องกันการสูญหายของข้อมูลทุกรูปแบบ การกู้คืนไฟล์ของ Obsidian จะเก็บสแนปช็อตของโน้ตของคุณ และ [Obsidian ซิงค์] หรือ iCloud จะเก็บสำเนาไว้ในอุปกรณ์อื่นของคุณ"

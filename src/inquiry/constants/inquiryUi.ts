@@ -1,4 +1,5 @@
 import type { Capability } from '../../ai/types';
+import { docsUrl } from '../../utils/docsUrl';
 
 export const INQUIRY_CONTEXT_CLASSES = new Set(['character', 'place', 'power']);
 
@@ -49,7 +50,7 @@ export const INQUIRY_VIEW_LIMITS = {
 } as const;
 
 export const INQUIRY_VIEW_LINKS = {
-    guidanceDocUrl: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Inquiry'
+    guidanceDocUrl: docsUrl('Inquiry')
 } as const;
 
 export const INQUIRY_REQUIRED_CAPABILITIES: Capability[] = ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap'];

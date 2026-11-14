@@ -22,6 +22,7 @@ import {
     isValidIsoDateOnly,
 } from '../utils/bookDesignerDemoProject';
 import { getBookMainPlotName } from '../utils/mainPlot';
+import { docsUrl } from '../utils/docsUrl';
 
 const defaultSubplots = (mainPlot: string): string => `${mainPlot}\nSubplot A\nSubplot B`;
 const DEFAULT_CHARACTERS = "Hero\nAntagonist";
@@ -790,7 +791,7 @@ export class BookDesignerModal extends Modal {
         heroBadge.createSpan({ cls: 'ert-book-designer-badge-sep', text: '•' });
         this.heroModeMeta = heroBadge.createSpan({ cls: 'ert-book-designer-badge-detail ert-book-designer-badge-mode ert-meta-auto', text: t('bookDesigner.meta.autoMode') });
         const wikiLink = withAccessibleLabel(heroBadge.createEl('a', {
-            href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Book-Designer',
+            href: docsUrl('Book-Designer'),
             cls: 'ert-modal-badge__wikiLink',
             attr: { 'target': '_blank', 'rel': 'noopener' }
         }), t('bookDesigner.modal.wikiAriaLabel'));

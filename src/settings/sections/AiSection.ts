@@ -88,6 +88,7 @@ import {
 } from './aiPanelEstimate';
 import {formatTokenHeadline } from '../../ai/estimates';
 import { resolveAccessTier } from '../../ai/runtime/runtimeSelection';
+import { docsUrl } from '../../utils/docsUrl';
 
 type Provider = 'anthropic' | 'google' | 'openai' | 'ollama';
 type CapacityItem = string | { text: string; dividerBefore?: boolean; extraCls?: string };
@@ -127,7 +128,7 @@ export function renderAiSection(params: {
     setIcon(badgeIcon, 'cpu');
     badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('settings.ai.hero.badgeText') });
     const badgeWikiLink = withAccessibleLabel(badge.createEl('a', {
-        href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-AI',
+        href: docsUrl('Settings-AI'),
         cls: ERT_CLASSES.BADGE_PILL_WIKI,
         attr: { 'target': '_blank', 'rel': 'noopener' }
     }), t('settings.ai.hero.wikiAriaLabel'));

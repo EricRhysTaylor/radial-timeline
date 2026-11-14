@@ -42,6 +42,7 @@ import { getCanonicalAiSettings } from '../ai/runtime/runtimeSelection';
 import { getLocalLlmBackend } from '../ai/localLlm/backends';
 import { getLocalLlmSettings } from '../ai/localLlm/settings';
 import { CORE_ALERTS_SECTION_KEY, type RadialTimelineSettingsTabId } from './settingsAnchors';
+import { docsUrl } from '../utils/docsUrl';
 
 export class RadialTimelineSettingsTab extends PluginSettingTab {
     private dashboardEl: HTMLElement | null = null;
@@ -800,7 +801,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             badgeLabel: t('ui.settingsTab.publishBadge'),
             badgeIcon: 'book-open-text',
             badgeVariant: ERT_CLASSES.BADGE_PILL_PRO,
-            wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Publishing',
+            wikiHref: docsUrl('Publishing'),
             title: t('ui.settingsTab.publishTitle'),
             subtitle: t('ui.settingsTab.publishSubtitle'),
             helperLine: t('ui.settingsTab.publishHelper'),
@@ -819,7 +820,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             badgeLabel: t('ui.settingsTab.advancedBadge'),
             badgeIcon: 'pyramid',
             badgeVariant: ERT_CLASSES.BADGE_PILL_NEUTRAL,
-            wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Advanced#configuration',
+            wikiHref: docsUrl('Settings-Advanced#configuration'),
             title: t('ui.settingsTab.advancedTitle'),
             subtitle: t('ui.settingsTab.advancedSubtitle'),
             kicker: t('ui.settingsTab.advancedKicker'),
@@ -836,7 +837,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             badgeLabel: t('ui.settingsTab.inquiryBadge'),
             badgeIcon: 'ri-logo',
             badgeVariant: ERT_CLASSES.BADGE_PILL_NEUTRAL,
-            wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Inquiry',
+            wikiHref: docsUrl('Settings-Inquiry'),
             title: t('ui.settingsTab.inquiryTitle'),
             subtitle: t('ui.settingsTab.inquirySubtitle'),
             helperLine: t('ui.settingsTab.inquiryHelper'),
@@ -854,7 +855,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             badgeLabel: t('ui.settingsTab.coreBadge'),
             badgeIcon: 'settings',
             badgeVariant: ERT_CLASSES.BADGE_PILL_NEUTRAL,
-            wikiHref: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Core',
+            wikiHref: docsUrl('Settings-Core'),
             title: t('ui.settingsTab.coreTitle'),
             subtitle: t('ui.settingsTab.coreSubtitle'),
             kicker: t('ui.settingsTab.coreKicker'),
@@ -1236,8 +1237,8 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         resources.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: t('ui.settingsTab.resourcesHelp') });
         const resourceLinks = resources.createDiv({ cls: 'ert-resource-links' });
         [
-            { label: t('ui.settingsTab.resourcesGettingStarted'), icon: 'compass', href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Getting-Started' },
-            { label: t('ui.settingsTab.resourcesWiki'), icon: 'book-open', href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki' },
+            { label: t('ui.settingsTab.resourcesGettingStarted'), icon: 'compass', href: docsUrl('Getting-Started') },
+            { label: t('ui.settingsTab.resourcesWiki'), icon: 'book-open', href: docsUrl() },
             { label: t('ui.settingsTab.resourcesVideos'), icon: 'circle-play', href: 'https://www.youtube.com/@RadialTimeline' }
         ].forEach(({ label, icon, href }) => {
             const link = resourceLinks.createEl('a', {

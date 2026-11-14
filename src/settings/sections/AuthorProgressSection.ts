@@ -24,6 +24,7 @@ import { t } from '../../i18n';
 import { buildDefaultEmbedPath, normalizeAprExportFormat, type AprExportFormat } from '../../utils/aprPaths';
 import { fitSelectToSelectedLabel } from '../selectSizing';
 import { mountSvgPreview } from '../../utils/svgDom';
+import { docsUrl } from '../../utils/docsUrl';
 export interface AuthorProgressSectionProps {
     app: App;
     plugin: RadialTimelinePlugin;
@@ -108,7 +109,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 
     // Right Icon (Wiki Link) - Manually constructed for ERT styling
     const wikiLink = withAccessibleLabel(badge.createEl('a', {
-        href: 'https://github.com/EricRhysTaylor/radial-timeline/wiki/Author-Progress-Report',
+        href: docsUrl('Author-Progress-Report'),
         cls: ERT_CLASSES.BADGE_PILL_WIKI,
         attr: { 'target': '_blank', 'rel': 'noopener' }
     }), t('settings.authorProgress.hero.wikiAriaLabel'));

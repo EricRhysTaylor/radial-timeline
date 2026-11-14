@@ -3,11 +3,13 @@ import { Setting, setIcon } from 'obsidian';
 import { ERT_CLASSES } from '../ui/classes';
 import { t } from '../i18n';
 import { WORKFLOW_VIDEOS, workflowVideoUrl, type WorkflowVideoKey } from './workflowVideos';
+import { docsUrl } from '../utils/docsUrl';
 
 /**
- * Adds a wiki link icon to a setting's name element.
+ * Adds a docs link icon to a setting's name element.
  * @param setting The Obsidian Setting object
- * @param wikiPage The name of the wiki page (e.g., "AI-Analysis.md" or "Advanced-YAML.md")
+ * @param wikiPage The wiki page name, with an optional anchor (e.g. "Settings-Core#acts");
+ *   it opens on docs.radialtimeline.com, which keeps the wiki's page names
  */
 export function addWikiLink(setting: Setting, wikiPage: string): void {
     addWikiLinkToElement(setting.nameEl, wikiPage);
@@ -79,23 +81,20 @@ export function applyErtHeaderLayout(
 }
 
 /**
- * Adds a wiki link icon to any HTMLElement.
+ * Adds a docs link icon to any HTMLElement.
  * @param el The target HTMLElement (usually a header or label)
- * @param wikiPage The name of the wiki page
+ * @param wikiPage The wiki page name, with an optional anchor
  */
 export function addWikiLinkToElement(el: HTMLElement, wikiPage: string): void {
     if (!el) return;
 
-    // Remove extension if present to make the URL cleaner, though GitHub handles .md
-    // GitHub Wiki URLs usually don't have .md for the page view, just the name without extension.
-    // e.g. https://github.com/user/repo/wiki/Page-Name
-    const pageName = wikiPage.replace(/\.md$/, '');
-    
+    // Links open the page on docs.radialtimeline.com, which is built from the
+    // published wiki and keeps its page names and section anchors.
     const link = withAccessibleLabel(el.createEl('a', {
-        href: `https://github.com/EricRhysTaylor/radial-timeline/wiki/${pageName}`,
+        href: docsUrl(wikiPage),
         cls: 'ert-wiki-link',
         attr: { 'target': '_blank', 'rel': 'noopener' }
-    }), 'Read more in the wiki');
+    }), 'Read more in the docs');
 
     // Add the diagonal arrow icon
     setIcon(link, 'external-link');

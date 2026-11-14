@@ -1724,6 +1724,11 @@
     /* The Background treatment sets both stops (Subtle 84/58, Balanced 92/72, Strong 96/86). */
     background: linear-gradient(90deg, color-mix(in srgb, var(--background-primary) var(--ert-canvas-veil-near, 92%), transparent), color-mix(in srgb, var(--background-primary) var(--ert-canvas-veil-far, 72%), transparent));
 }
+/* Keep text readable over unshaded art using local translucent strips. */
+.ert-canvas-story-card.has-place-background.has-light-background-shade :is(.ert-canvas-story-card__title, .ert-canvas-story-card__kind, .ert-canvas-story-card__preview) {
+    width: fit-content; max-width: 100%; padding: var(--size-2-1) var(--size-4-1); border-radius: var(--radius-s);
+    color: var(--text-normal); background: color-mix(in srgb, var(--background-primary) 78%, transparent);
+}
 
 /* Local backings protect the writing while leaving the landscape vivid. */
 .ert-timetable .has-place-background {

@@ -1225,7 +1225,7 @@ export interface RadialTimelineSettings {
     storyMapProvenance?: Record<string, StoryMapProvenance>;
     /** How scene cards choose a character portrait across the manuscript. */
     storyImageStrategy?: 'first' | 'second' | 'distinctive' | 'pov' | 'balanced';
-    storyImageChoices?: Record<string, { character?: string; image?: string; placeImage?: string }>;
+    storyImageChoices?: Record<string, { character?: string; image?: string; placeImage?: string; canvasBackgroundShade?: 'original' | 'light' | 'medium' | 'strong' }>;
     /**
      * How story cards show images, in Timetable Panels and on a Canvas alike: the image combination, the text backing
      * over a place background, Fill or Fit, and the portrait shape. Read through timetable/storyCardImages, which

@@ -15,8 +15,8 @@ import { readFrontmatterProperty } from '../utils/frontmatterKeys';
 import { panelPlaceImage } from './panelPlaceImage';
 import { coverPosition } from './panelFocus';
 import {
-    addStoryCardImageMenu, cardImages, STORY_IMAGES_CHANGED_EVENT, storyCardImages, storyImageFocus, storyImageStrategy,
-    type CardImage, type PlaceTextBacking,
+    addStoryCardImageMenu, canvasBackgroundVeil, cardImages, STORY_IMAGES_CHANGED_EVENT, storyCardImages, storyImageFocus, storyImageStrategy,
+    type CardImage,
 } from './storyCardImages';
 import { imageSubjectName } from './storyImageMatching';
 import { storyCharacterSelections } from './storyImageSelection';
@@ -50,9 +50,6 @@ function portrait(plugin: RadialTimelinePlugin, file: TFile, fm: Record<string, 
     const image = resolveStoryPortrait(plugin.app, file.path, first, imageFiles);
     return image ? { url: plugin.app.vault.getResourcePath(image), path: image.path } : null;
 }
-
-/** The veil over a place background, near and far edges, for each Background treatment (Panels' text backing). */
-const VEILS: Record<PlaceTextBacking, [string, string]> = { subtle: ['84%', '58%'], balanced: ['92%', '72%'], strong: ['96%', '86%'] };
 
 export class CanvasCards {
     private mode: Mode = 'preview';
@@ -294,13 +291,14 @@ export class CanvasCards {
                     setAccessibleLabel(imageOptions, t('ui.timetable.storyImageMenu'));
                     setIcon(imageOptions, 'image-plus');
                     setTooltip(imageOptions, t('ui.timetable.storyImageMenu'));
-                    imageOptions.onclick = event => { event.stopPropagation(); showStoryImageMenu(this.plugin, file, fm, imageFiles, event, () => this.schedule(), selected ?? undefined); };
+                    imageOptions.onclick = event => { event.stopPropagation(); showStoryImageMenu(this.plugin, file, fm, imageFiles, event, () => this.schedule(), selected ?? undefined, !!shown?.backdrop); };
                     imageOptions.onpointerdown = event => event.stopPropagation();
                 }
                 const backdropImage = shown?.backdrop;
                 if (backdropImage) {
                     overlay.addClass('has-place-background');
-                    const [near, far] = VEILS[cardSettings.backing];
+                    const [near, far] = canvasBackgroundVeil(cardSettings.backing, choice.canvasBackgroundShade);
+                    overlay.toggleClass('has-light-background-shade', choice.canvasBackgroundShade === 'original' || choice.canvasBackgroundShade === 'light');
                     overlay.setCssProps({ '--ert-canvas-veil-near': near, '--ert-canvas-veil-far': far });
                     const backdrop = overlay.createDiv({ cls: 'ert-canvas-story-card__backdrop', attr: { 'aria-hidden': 'true' } });
                     const backdropEl = backdrop.createEl('img', { attr: { src: backdropImage.url, alt: '', draggable: 'false' } });

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Menu } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { RadialTimelineSettings } from '../types/settings';
-import { addStoryCardImageMenu, adoptViewImageSettings, cardImages, rebaseStoryImageFocus, storyCardImages, storyImageFocus, type CardImageSources } from './storyCardImages';
+import { addStoryCardImageMenu, adoptViewImageSettings, canvasBackgroundVeil, cardImages, rebaseStoryImageFocus, storyCardImages, storyImageFocus, type CardImageSources } from './storyCardImages';
 
 const place = { url: 'place-url', path: 'Images/Longbourn.webp' };
 const character = { url: 'character-url', path: 'Images/Elizabeth.webp' };
@@ -99,5 +99,16 @@ describe('the shared image menu', () => {
         expect(items.slice(1, 6).map(item => item.title)).toEqual(['Character', 'Place', 'Place + character', 'Place background + character', 'None']);
         expect(items.find(item => item.checked && item.title === 'Place + character')).toBeDefined();
         expect(groups({ storyCardImages: { combination: 'layered' } }).filter(item => item.label).map(item => item.title)).toContain('Background treatment');
+    });
+});
+
+describe('Canvas background shade', () => {
+    it('inherits the shared setting until the scene has an override', () => {
+        expect(canvasBackgroundVeil('balanced', undefined)).toEqual(['92%', '72%']);
+        expect(canvasBackgroundVeil('subtle', undefined)).toEqual(['84%', '58%']);
+        expect(canvasBackgroundVeil('strong', 'original')).toEqual(['0%', '0%']);
+        expect(canvasBackgroundVeil('subtle', 'light')).toEqual(['45%', '25%']);
+        expect(canvasBackgroundVeil('balanced', 'medium')).toEqual(['70%', '45%']);
+        expect(canvasBackgroundVeil('balanced', 'strong')).toEqual(['90%', '70%']);
     });
 });

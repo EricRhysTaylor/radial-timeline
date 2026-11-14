@@ -1,6 +1,7 @@
 import type RadialTimelinePlugin from '../main';
 
-export interface StoryImageChoice { character?: string; image?: string; placeImage?: string }
+export type CanvasBackgroundShade = 'original' | 'light' | 'medium' | 'strong';
+export interface StoryImageChoice { character?: string; image?: string; placeImage?: string; canvasBackgroundShade?: CanvasBackgroundShade }
 
 /** Rebase choices when either a note, image, or containing folder is renamed. */
 export function rebaseStoryImageChoices(choices: Record<string, StoryImageChoice>, oldPath: string, newPath: string): Record<string, StoryImageChoice> {

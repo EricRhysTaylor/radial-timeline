@@ -5,6 +5,7 @@ import { t } from '../i18n';
 import { getOpenDocuments } from '../utils/documents';
 import { addMenuChoices } from './menuChoices';
 import { validPanelFocus, type PanelFocus } from './panelFocus';
+import type { CanvasBackgroundShade } from './storyImageStore';
 
 /**
  * How story cards show their images, the same in Timetable Panels and on a Canvas (Eric, 2026-11-10: one setting for
@@ -24,6 +25,13 @@ const FITS: readonly StoryImageFit[] = ['fill', 'fit'];
 const SHAPES: readonly PortraitShape[] = ['square', 'landscape'];
 const STRATEGIES: readonly StoryImageStrategy[] = ['distinctive', 'first', 'second', 'pov', 'balanced'];
 const DEFAULTS: StoryCardImages = { combination: 'character', backing: 'balanced', fit: 'fill', portraitShape: 'square' };
+const SHARED_CANVAS_VEILS: Record<PlaceTextBacking, readonly [string, string]> = { subtle: ['84%', '58%'], balanced: ['92%', '72%'], strong: ['96%', '86%'] };
+const CANVAS_SHADE_VEILS: Record<CanvasBackgroundShade, readonly [string, string]> = { original: ['0%', '0%'], light: ['45%', '25%'], medium: ['70%', '45%'], strong: ['90%', '70%'] };
+
+/** Canvas inherits the shared Background treatment until a scene overrides it. */
+export function canvasBackgroundVeil(backing: PlaceTextBacking, shade: CanvasBackgroundShade | undefined): readonly [string, string] {
+    return shade && Object.prototype.hasOwnProperty.call(CANVAS_SHADE_VEILS, shade) ? CANVAS_SHADE_VEILS[shade] : SHARED_CANVAS_VEILS[backing];
+}
 
 /** Card views redraw on this event: a card setting, the character strategy, a card's own choices or a focus point changed. */
 export const STORY_IMAGES_CHANGED_EVENT = 'rt-story-images-changed';

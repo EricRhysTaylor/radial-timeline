@@ -168,35 +168,53 @@ export function buildDecimalSceneInsertionPrefix(
     return formatPrefixNumber(fallback);
 }
 
-/** Only accept a generated prefix if the manuscript comparator puts it in the intended gap. */
-export function isSafeSceneInsertionPrefix(items: TimelineItem[], anchorPath: string, prefix: string, beatModel?: string): boolean {
+interface SceneInsertionGap {
+    anchor: InsertionCandidate;
+    previous: InsertionCandidate | undefined;
+    next: InsertionCandidate | undefined;
+    usedPrefixes: ReadonlySet<string>;
+}
+
+/** The ordered neighbours of the gap after an anchor scene, or null when the anchor is not a scene. */
+function resolveSceneInsertionGap(items: TimelineItem[], anchorPath: string, beatModel?: string): SceneInsertionGap | null {
     const ordered = sortCandidatesByManuscriptOrder(collectCandidates(items, beatModel));
     const anchorIndex = ordered.findIndex(entry => entry.path === anchorPath && entry.itemType === 'Scene');
-    if (anchorIndex < 0) return false;
+    if (anchorIndex < 0) return null;
     const insertIndex = findInsertionIndexAfterSceneBeatGap(ordered, anchorPath);
-    const previous = ordered[insertIndex - 1];
-    const next = ordered[insertIndex];
-    const anchor = ordered[anchorIndex];
+    const usedPrefixes = new Set(ordered.map(entry => extractPrefixToken(entry.basename)).filter((value): value is string => value !== null));
+    return { anchor: ordered[anchorIndex], previous: ordered[insertIndex - 1], next: ordered[insertIndex], usedPrefixes };
+}
+
+function prefixFitsSceneInsertionGap(gap: SceneInsertionGap, prefix: string): boolean {
+    const { anchor, previous, next } = gap;
     const previousPrefix = extractPrefixToken(previous?.basename);
-    if (!previousPrefix || previous.actNumber !== anchor.actNumber || comparePrefixTokens(previousPrefix, prefix) >= 0) return false;
-    if (ordered.some(entry => extractPrefixToken(entry.basename) === prefix)) return false;
+    if (!previousPrefix || previous?.actNumber !== anchor.actNumber || comparePrefixTokens(previousPrefix, prefix) >= 0) return false;
+    if (gap.usedPrefixes.has(prefix)) return false;
     if (!next || next.actNumber !== anchor.actNumber) return true;
     const nextPrefix = extractPrefixToken(next.basename);
     return nextPrefix !== null && comparePrefixTokens(prefix, nextPrefix) < 0;
 }
 
+/** Only accept a generated prefix if the manuscript comparator puts it in the intended gap. */
+export function isSafeSceneInsertionPrefix(items: TimelineItem[], anchorPath: string, prefix: string, beatModel?: string): boolean {
+    const gap = resolveSceneInsertionGap(items, anchorPath, beatModel);
+    return gap !== null && prefixFitsSceneInsertionGap(gap, prefix);
+}
+
 /** Find a prefix using the same natural ordering as the manuscript. Decimal
  * arithmetic alone is insufficient: natural sorting places 4.25 after 4.5. */
 export function findSafeSceneInsertionPrefix(items: TimelineItem[], anchorPath: string, beatModel?: string): string | null {
+    const gap = resolveSceneInsertionGap(items, anchorPath, beatModel);
+    if (!gap) return null;
     const initial = buildDecimalSceneInsertionPrefix(items, anchorPath, beatModel);
-    if (isSafeSceneInsertionPrefix(items, anchorPath, initial, beatModel)) return initial;
+    if (prefixFitsSceneInsertionGap(gap, initial)) return initial;
     const token = extractPrefixToken(fileStem(anchorPath));
     const major = token?.split('.')[0];
     if (!major) return null;
     for (const minor of [...Array.from({ length: 999 }, (_, index) => index + 1), 0]) {
         for (let width = 1; width <= 6; width++) {
             const candidate = `${major}.${String(minor).padStart(width, '0')}`;
-            if (isSafeSceneInsertionPrefix(items, anchorPath, candidate, beatModel)) return candidate;
+            if (prefixFitsSceneInsertionGap(gap, candidate)) return candidate;
         }
     }
     return null;

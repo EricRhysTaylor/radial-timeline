@@ -88,10 +88,15 @@ Ongoing series on the [Radial Timeline YouTube channel](https://www.youtube.com/
 - **Volume 13 — November Writers' Month**: [Writing a Novel This November? Come Write With Me](https://radialtimeline.com/go/readme-november-video)
 - **Volume 14 — The full tour**: [A Tour of Radial Timeline](https://radialtimeline.com/go/readme-tour-video)
 
+How-tos:
+
+- **Beat Manager**: [Put Your Story's Beats on Your Timeline](https://radialtimeline.com/go/readme-beat-manager-video)
+
 Shorts:
 
 - **Book Designer**: [Build Your Novel Structure Instantly](https://youtu.be/0vkLaI_LewM)
 - **Timelapse**: [Watch a Novel Progress Across Scenes & Subplots](https://youtu.be/tBErpewO1wQ)
+- **Beats Update**: [Keep Your Story Beats in Order as Your Book Changes](https://radialtimeline.com/go/readme-beats-update-short)
 
 ## Installation
 

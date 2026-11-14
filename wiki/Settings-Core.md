@@ -98,6 +98,8 @@ Runtime estimation is configured from the Core tab.
 <a name="story-beats-system"></a>
 ## Story Beats System
 
+[![Watch: Put your story's beats on your timeline (1:42)](https://i.ytimg.com/vi/h9rJSU7p6aA/maxresdefault.jpg)](https://radialtimeline.com/go/wiki-beat-manager-section)
+
 Configure the structural pacing guide for your story. [Gossamer Mode](Gossamer-Mode) scores the beats you set up here.
 
 *   **Story beats system**: Choose a built-in structure (**Save the Cat**, **Hero's Journey**, **Classic Dramatic Structure**, **Podcast Narrative Arc**, **YouTube Explainer Arc**, **Documentary Narrative Arc**, **Romance Tropes Ladder**, **Thriller Escalation Ladder**) or a custom system.

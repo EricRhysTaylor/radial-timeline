@@ -182,9 +182,14 @@ export function registerCanvasTextDrop(owner: Component, view: ItemView, plugin:
     marker.hide();
     owner.register(() => marker.remove());
     let hoverScenes: ReturnType<typeof mapScenes> | null = null;
+    // The canvas and its map record hold still during a drag, and every drag
+    // starts and ends with onClear, so the layout is read once per drag rather
+    // than on each dragover. Screen rects are still read per event below so
+    // the marker follows scrolling and zoom.
+    let hoverLayout: { canvas: Canvas; record: unknown; current: StoryCanvasData; baseline: ReturnType<typeof matchingBaseline> } | null = null;
     registerTextSketchCapture(owner, view.contentEl, plugin, undefined, {
         accept: () => !!canvasView.file?.path && isStoryMapPath(canvasView.file.path),
-        onClear: () => { marker.hide(); hoverScenes = null; },
+        onClear: () => { marker.hide(); hoverScenes = null; hoverLayout = null; },
         onOver: (event, banner) => {
             const label = banner.lastElementChild;
             const path = canvasView.file?.path;
@@ -193,8 +198,11 @@ export function registerCanvasTextDrop(owner: Component, view: ItemView, plugin:
             if (!isStoryMapProvenance(record) || !canvas?.getData) return;
             const point = canvasPoint(canvas, event);
             if (!point) { if (label) label.textContent = t('ui.timetable.canvasDropViewPosition'); marker.hide(); return; }
-            const current = canvas.getData();
-            const baseline = matchingBaseline(record.generated, current);
+            if (hoverLayout?.canvas !== canvas || hoverLayout.record !== record) {
+                const data = canvas.getData();
+                hoverLayout = { canvas, record, current: data, baseline: matchingBaseline(record.generated, data) };
+            }
+            const { current, baseline } = hoverLayout;
             const flipped = !!record.orientationFlipped !== baseline.transposed;
             const vertical = record.layout === 'vertical' ? !flipped : flipped;
             hoverScenes ??= mapScenes(plugin, { ...record, act: null, subplot: null });

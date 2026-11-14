@@ -2,6 +2,8 @@ Access Radial Timeline settings in Obsidian via **Settings → Community Plugins
 
 The tab strip uses short labels: **Cor**, **Soc**, **Com**, **Inq**, **Pub**, **AI**, **Adv**, and **Res**. This wiki uses the full names, so **Settings → Core** means the **Cor** tab.
 
+Obsidian's settings search finds Radial Timeline settings too. Search for a section such as Scene properties, Story beats, PDF fonts or an API key, and the result opens Radial Timeline's settings at that section, opening it if it was closed.
+
 ## Settings Tabs
 
 *   [Core](Settings-Core) — Books, progress and status, runtime estimation, story beats, scene properties, chronology, narration, planetary time, and ring colors.

@@ -101,10 +101,10 @@ Runtime estimation is configured from the Core tab.
 Configure the structural pacing guide for your story. [Gossamer Mode](Gossamer-Mode) scores the beats you set up here.
 
 *   **Story beats system**: Choose a built-in structure (**Save the Cat**, **Hero's Journey**, **Classic Dramatic Structure**, **Podcast Narrative Arc**, **YouTube Explainer Arc**, **Documentary Narrative Arc**, **Romance Tropes Ladder**, **Thriller Escalation Ladder**) or a custom system.
-*   **Custom story beat system editor**: Name your system (the name is written to each beat note's `Beat Model` field), add beats with **+**, assign each beat to an act, and drag to reorder within or across acts. Edit names inline; after renaming or reordering, use **Repair beat notes** to update existing files.
+*   **Custom story beat system editor**: Name your system (the name is written to each beat note's `Beat Model` field), add beats with **+**, assign each beat to an act, and drag to reorder within or across acts. Edit names inline; after renaming or reordering, use **Repair beat notes** to update existing files. **Create blank system** starts a new one: give it a **System name** before you save it, and **Save changes** adds it to your library under that name, so its beat notes carry it too.
 *   **Create beat notes**: Generates one beat note per beat in the active book folder, with `Class: Beat`, `Purpose`, `Beat Model`, `Range` and the other beat properties filled in, so Gossamer recognizes them at once. The button is disabled when every beat already has a note, and shows how many notes it will create.
 *   **Beat filename numbering**: Generated beat notes use decimal minor prefixes (for example, `7.01 Midpoint.md`) so scene integer slots remain canonical.
-*   **Repair beat notes**: Updates `Act`, `Beat Model`, and `Class` on existing beat notes, preserving filenames.
+*   **Repair beat notes**: Updates `Act`, `Beat Model`, and `Class` on existing beat notes, preserving filenames. It works for library systems such as Hero's Journey as well as your custom ones.
 *   **Beat properties editor**: Customize additional beat properties and choose which fields appear in beat hover metadata. Stored per beat system.
 *   **Saved sets**: Save and switch between multiple custom beat systems. Each set stores its beats, beat properties, and hover fields.
 

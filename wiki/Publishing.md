@@ -279,7 +279,7 @@ If you're migrating a manuscript that already carries Pandoc/LaTeX markup, this 
 - Raw LaTeX environments (`\begin{…}…\end{…}`), fenced code blocks, and display math (`$$…$$`) — preserved through export cleanup, including comment, link, and task-marker patterns inside them.
 
 **Always removed:**
-- YAML blocks (`---…---` with `key: value` lines) anywhere in the compiled text — including note frontmatter. Keep manuscript prose outside YAML fences.
+- Each note's frontmatter: the `---…---` block at the very top of a scene or matter note. A `---` block later in the scene is your text and goes into the manuscript as written, including scene breaks that hold dialogue such as `Kade: Get down!` (Radial Timeline 8.0.4 and later).
 - Editorialist review blocks.
 
 **Removed only when the matching cleanup toggle is on:** `%%comments%%`, `%%query: author queries%%` (and the older `%%ai:` spelling), HTML comments, links (label kept), callouts, block IDs, and (PDF/Word) task-list markers. In a Word export, author queries that are kept become margin comments (see [Manuscript Export](Manuscript-Export#author-queries-as-word-comments)).

@@ -169,7 +169,10 @@
   stroke: transparent;
 }
 
+/* The .ert-show-lane-names form outranks character-lanes.css, which is bundled
+   later and shows the names while the ring key is open. */
 .radial-timeline-svg[data-runtime-view="true"] .ert-character-lane-names,
+.radial-timeline-svg[data-runtime-view="true"].ert-show-lane-names .ert-character-lane-names,
 .radial-timeline-svg[data-runtime-view="true"] .ert-character-lane-beside {
   display: none;
 }

@@ -11,4 +11,4 @@ New Story Vault editions for Radial Timeline 8.0.
 
 ### Changes
 
-- **No Pro labels.** Settings, Inquiry, manuscript options and the runtime dialogs no longer mark features as Pro.
+- **Every feature by its own name.** Settings, Inquiry, manuscript options and the runtime dialogs name each feature plainly.

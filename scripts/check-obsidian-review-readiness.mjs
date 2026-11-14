@@ -5,7 +5,7 @@ import path from 'node:path';
 const ROOT = process.cwd();
 
 const ALLOWED_FILESYSTEM_ADAPTER_FILES = new Set([
-  'src/modals/AuthorProgressModal.ts',
+  'src/ui/aprShareFile.ts',
   'src/modals/ManuscriptOptionsModal.ts',
   'src/utils/exportFormats.ts'
 ]);

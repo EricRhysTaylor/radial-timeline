@@ -56,8 +56,6 @@ Some commands are hidden until their required feature is enabled. Others remain 
 
 Opens the guided Radial Timeline note selector.
 
-<p align="center"><img src="images/panel-create-note.png" alt="Create note command panel" width="560"></p>
-
 The selector is organized into three families:
 
 *   **Scene** — Core scene, scene with advanced properties, screenplay scene, podcast scene.
@@ -118,15 +116,10 @@ Related: [Timeline date scaffold](#timeline-order), [Chronologue Mode](Chronolog
 
 Opens the subplot manager for bulk cleanup. Use it when subplot names have drifted.
 
-<p align="center"><img src="images/panel-manage-subplots.png" alt="Subplot manager panel" width="500"></p>
-
 Lists active subplots with scene counts and gives you bulk actions:
 
 *   **Rename** a subplot in the active book's scene files. Its own color, if it has one, and the Canvas cards given it go with the new name; renaming here rather than in each scene's properties is what keeps them.
 *   **Remove** a subplot from the timeline.
-
-<p align="center"><img src="images/panel-manage-subplots-rename.png" alt="Subplot manager — rename detail" width="450"></p>
-<p align="center"><sub>Rename a subplot — updates the Subplot field of every scene in the active book that uses it</sub></p>
 
 The main plot is marked with a map pin. It stays in ring 1 whatever it is called and includes any scene without a Subplot. Each book names its own main plot (**Main Plot** until you rename it): renaming it updates only the active book's scenes, the dialog says how many before anything is written, and a name another subplot already uses is refused. The main plot can't be deleted. Removing a subplot moves any scenes that only belonged to it back to the main plot.
 
@@ -138,8 +131,6 @@ Related: [Narrative Mode](Narrative-Mode).
 ## Summary scene refresh
 
 Regenerates scene summaries with AI.
-
-<p align="center"><img src="images/panel-summary-refresh.png" alt="Summary scene refresh command panel" width="560"></p>
 
 Writes:
 
@@ -159,8 +150,6 @@ Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Inquiry View](Inquiry)
 
 Opens the timeline search bar.
 
-<p align="center"><img src="images/panel-search-timeline.png" alt="Timeline search panel" width="500"></p>
-
 Choose **Timeline fields**, **Scene body**, or both in **Search options**. Press **Enter** for text search, or enable **Local LLM assist** for concept matching with verified evidence quotes. See [Search](How-to#search) for scope, highlighting, and local AI setup.
 
 Related: [How to → Search](How-to#search).
@@ -171,8 +160,6 @@ Related: [How to → Search](How-to#search).
 ## Gossamer analysis
 
 Runs the built-in AI scoring workflow for the active Gossamer signal. Appears only when AI LLM features are on; to score by hand, use [Gossamer score manager](#gossamer-score-manager).
-
-<p align="center"><img src="images/panel-gossamer-analysis.png" alt="Gossamer analysis command panel" width="560"></p>
 
 Works against the active beat system and the active signal — Momentum, Tension, Activity, or Interiority. AI scores the supplied manuscript material independently of your visual Momentum ranges.
 
@@ -227,8 +214,6 @@ Related: [Gossamer Mode → Manual Entry](Gossamer-Mode#manual-entry).
 
 Opens the planetary conversion panel.
 
-<p align="center"><img src="images/panel-planet-calculator.png" alt="Planetary time calculator panel" width="440"></p>
-
 Uses the active planetary profile from [Settings → Core](Settings-Core) and lets you select a date and time, convert that Earth timestamp to local planetary time, and copy a YAML-friendly result block. The panel is designed for quick planet calendar checks while writing. Select an active planetary profile in Settings → Core before converting dates.
 
 Related: [Planetary Calendar](Chronologue-Mode#alt-sub-mode).
@@ -240,8 +225,6 @@ Related: [Planetary Calendar](Chronologue-Mode#alt-sub-mode).
 
 Opens the subplot pulse selector first, then runs pulse analysis for a selected subplot.
 
-<p align="center"><img src="images/panel-scene-pulse-subplot.png" alt="Scene pulse analysis subplot order command panel" width="560"></p>
-
 The subplot selector shows flagged scenes, processable scenes, and total scenes. From there you can choose **Process flagged scenes**, **Process entire subplot**, or **Purge all pulse** for that subplot.
 
 Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Subplot manager](#manage-subplots).
@@ -252,8 +235,6 @@ Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Subplot manager](#mana
 ## Scene pulse analysis (manuscript order)
 
 Opens the pulse command panel for manuscript-order analysis.
-
-<p align="center"><img src="images/panel-scene-pulse-manuscript.png" alt="Scene pulse analysis manuscript order command panel" width="560"></p>
 
 Run modes: process open scenes, process flagged scenes, process unprocessed scenes, or reprocess all scenes.
 

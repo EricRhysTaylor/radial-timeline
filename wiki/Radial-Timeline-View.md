@@ -62,9 +62,6 @@ The title bar also includes the compact count/session button used for Sessions.
 *   If you have [Desk Lamps](Desk-Lamps), tick the friends who should see this session under **Desk Lamps** before you press **Begin Session**. While you write, the panel shows who your lamp is lit for.
 *   Use the settings icon in that panel to jump straight to **Settings → Core → Sessions**.
 
-<p align="center"><img src="images/panel-session-start.png" alt="The Writing Session panel: Ready to write? with a countdown ring, the target time, and the session's mode and stage" width="312"></p>
-<p align="center"><sub>Writing Session panel — timer, daily goal context, and session controls</sub></p>
-
 ## Community Mailbox
 
 On a vault connected to the Community, at any sharing level (Private included), a **Mailbox** button (a mail icon and the word Mailbox) sits just right of the writing-session control. It works like your account menu on the Community website, in the same colors:
@@ -89,9 +86,6 @@ The legend is a quick visual guide for the current mode.
 *   It explains basic scene actions such as **Hover**, **Click**, and **Right click**.
 *   It includes mode-specific help for **Narrative**, **Progress**, and **Chronologue**.
 *   The right-click guidance includes **Add scene** alongside status, stage, and Pulse actions.
-
-<p align="center"><img src="images/ui-rt-legend.png" alt="Radial Timeline legend" width="600"></p>
-<p align="center"><sub>Timeline legend — scene actions and mode-specific controls</sub></p>
 
 ## Timetable
 

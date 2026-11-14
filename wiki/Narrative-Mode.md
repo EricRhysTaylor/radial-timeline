@@ -66,9 +66,6 @@ While the Runtime view is on, clicks select scenes for comparison; turn it off t
 
 Right-click any scene on the timeline to open a context menu that lets you add a scene or update scene frontmatter without opening the note. The current value in each group is marked with a checkmark.
 
-<p align="center"><img src="images/menu-rightclick-chapter.png" alt="Narrative scene right-click context menu" width="282"></p>
-<p align="center"><sub>Scene right-click menu — Add scene, chapter markers, Status, Publish Stage, and Pulse actions</sub></p>
-
 **Add scene** — inserts a new scene after the selected one, using that scene as the anchor for placement and context.
 
 **Set chapter** — adds, edits, or clears the `Chapter:` marker on the selected scene. The panel previews current chapter containers so you can see how the marker affects the manuscript structure.

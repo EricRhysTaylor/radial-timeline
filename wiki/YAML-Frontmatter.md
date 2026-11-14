@@ -32,9 +32,6 @@ Summary Update:           # Summary scene refresh flag
 
 Book Designer and Note create generate the core scaffold above. `ID` is inserted automatically for stable scene citations, and the advanced properties editor can maintain the current core and advanced field order.
 
-<p align="center"><img src="images/scene-properties.png" alt="A scene note's core properties in Obsidian's Properties view" width="420"></p>
-<p align="center"><sub>A scene’s core properties as Obsidian shows them at the top of the note</sub></p>
-
 **For multiple subplots or characters, use YAML list format:**
 ```yaml
 Subplot:

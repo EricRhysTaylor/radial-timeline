@@ -7,18 +7,14 @@ Configure book profiles, progress tracking, runtime estimation, story beats, sce
 
 To import an existing draft, use **Choose manuscript**. **Scan for exports** suggests potential local exports; scanning runs automatically when no configured book folder is usable. Review export completeness, narrative order, and metadata in [Import a manuscript](Onboard-Existing-Manuscript).
 
-
 *   **Book profile manager**: Create one profile per book, set the title, and link each profile to its manuscript folder.
 *   **Active book**: The active book drives the timeline view, central title, and exports.
 *   **Linked folder**: Each book profile stores its own folder path. That is where Radial Timeline looks for that book's notes.
-*   **Book details**: Set how the book is narrated (see [Narration](#narration)), and add optional genre, project stage, public label, and description.
+*   **Book details**: Set how the book is narrated (see [Narration](#narration)), and add optional genre, project stage, public label, and description. The description adds optional details on the Community website.
 *   **Scene count**: Each book card shows how many `Class: Scene` notes are currently found in that folder.
 *   **Reorder books**: Drag books to control saga order.
 *   **Create draft**: Make a sibling draft copy of a book folder and add it as a new book profile.
 *   **Remove profile**: Removes the book profile and preserves its files.
-
-<p align="center"><img src="images/panel-project-metadata.png" alt="Project metadata dialog: genre, project stage, public label and description" width="380"></p>
-<p align="center"><sub>Book details — the description adds optional details on the Community website</sub></p>
 
 ## Progress And Status
 

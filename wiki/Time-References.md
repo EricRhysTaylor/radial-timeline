@@ -24,8 +24,6 @@ Time References:
     Kind: possibility
 ```
 
-![Time References in the YAML of The photograph, with its primary When unchanged](images/time-references-yaml.png)
-
 | Field | What to enter |
 |---|---|
 | `Label` | A short name for the reference. Required. |

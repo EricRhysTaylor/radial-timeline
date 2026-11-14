@@ -15,12 +15,8 @@ Gossamer Mode visualizes beat-level scoring across your active story beat system
 <p align="center"><img src="images/mode-gossamer.jpeg" alt="Gossamer with saved traces and signal controls" width="400"></p>
 <p align="center"><sub>Gossamer — saved traces, signal switching, and beat-level scoring</sub></p>
 
-<table>
-<tr>
-<td width="50%"><img src="images/feature-gossamer-ranges.jpg" alt="Gossamer ideal ranges visualization"><br>Ideal ranges for story beats</td>
-<td width="50%"><img src="images/feature-gossamer-callouts.png" alt="Gossamer callouts with scoring details"><br>Callouts showing score details</td>
-</tr>
-</table>
+<p align="center"><img src="images/feature-gossamer-callouts.png" alt="Gossamer ideal ranges for story beats, with callouts showing score details" width="520"></p>
+<p align="center"><sub>Ideal ranges for story beats, with callouts showing score details</sub></p>
 
 <p align="center"><img src="images/panel-gossamer-score-manager.png" alt="Gossamer score entry panel for manual signal scoring" width="500"></p>
 <p align="center"><sub>Gossamer score manager — manual entry for the active signal</sub></p>

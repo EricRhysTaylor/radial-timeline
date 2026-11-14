@@ -168,8 +168,6 @@ Sketches have a grip too, in Narrative. Drop a sketch on a scene to place it aft
 
 **Canvas map** in the Timetable toolbar, the Canvas icon in the timeline title bar, or **Radial timeline: Canvas create subplot map** opens **Create a subplot map**. Choose the **Book**, an **Act** or **All acts**, a **Subplot** or **All subplots**, and a **Layout**: **Horizontal lanes**, **Vertical lanes**, or **Single story line**. **Start focused on** picks the part of the book the map opens on (**Entire selection**, or the beginning, middle or final third); every scene is on the map either way. **Create Canvas** saves it in `Radial Timeline/Story Maps/`.
 
-<p align="center"><img src="images/canvas-subplot-map-dialog.webp" alt="The Create a subplot map dialog for Pride and Prejudice: Book, Act, Layout set to Horizontal lanes, Start focused on Beginning third, Subplot, and a count of 61 scenes and 127 card appearances" width="500"></p>
-
 Each scene appears in every subplot lane it belongs to, as a card linked to its note, and lines connect the scenes of a lane in narrative order. Moving cards does not reorder your manuscript.
 
 <p align="center"><img src="images/canvas-subplot-map.webp" alt="Wickham's Story hovered on the wheel, and its four cards lit across the subplot lanes of the Canvas map beside it, with the story navigation bar reading Scene 16 of 61" width="800"></p>

@@ -228,6 +228,8 @@ describe('linkText', () => {
         ['a web link by its text', 'See [the archive](https://example.org/archive?id=1 "Archive").', 'See the archive.'],
         ['an obsidian URI by its text', '[open](obsidian://open?vault=Private&file=Book%2FScene)', 'open'],
         ['a markdown image of an attachment removed', 'Here ![a scan](Attachments/scan.jpeg) ends', 'Here ends'],
+        ['a web link with parentheses in its address by its text', 'See [Foo](https://en.wikipedia.org/wiki/Foo_(bar)) here.', 'See Foo here.'],
+        ['an image whose address has parentheses removed', 'Here ![scan](Attachments/scan_(1).png) ends', 'Here ends'],
         ['plain text unchanged', 'They dance.', 'They dance.'],
     ])('reduces %s', (_name, input, expected) => {
         expect(linkText(input)).toBe(expected);

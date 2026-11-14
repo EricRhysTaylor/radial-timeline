@@ -77,8 +77,10 @@ export interface BuildTimelineSharePayloadParams {
 }
 
 const WIKILINK = /(!?)\[\[([^\][|]*)(?:\|([^\][]*))?\]\]/g;
-/** Any markdown link or image: `[shown](target)`, `[shown](<target with spaces>)`, `![alt](target)`. */
-const MARKDOWN_LINK = /(!?)\[([^\]]*)\]\((?:<[^>]*>|[^)]*)\)/g;
+/** Any markdown link or image: `[shown](target)`, `[shown](<target with spaces>)`, `![alt](target)`.
+ * A bare target may hold balanced parentheses, as in `wiki/Foo_(bar)`, so the
+ * link ends at its own closing parenthesis rather than the first one. */
+const MARKDOWN_LINK = /(!?)\[([^\]]*)\]\((?:<[^>]*>|(?:[^()]|\([^()]*\))*)\)/g;
 /** File types Obsidian embeds as media rather than as a note. Their embeds carry nothing a reader reads. */
 const ATTACHMENT = /\.(?:png|jpe?g|gif|bmp|svg|webp|avif|heic|tiff?|mp3|wav|m4a|ogg|3gp|flac|webm|mp4|ogv|mov|mkv|pdf)$/i;
 

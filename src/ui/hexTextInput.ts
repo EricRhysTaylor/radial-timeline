@@ -12,7 +12,9 @@ export function bindHexTextInput(text: TextComponent, save: (hex: string) => voi
         const hex = completeHexColor(value, { shorthand: false });
         if (hex) await save(hex);
     });
-    text.inputEl.addEventListener('change', () => {
+    // The input's own change event: it fires once the field is committed. The
+    // handler lives and dies with the element, so no Component owns it.
+    text.inputEl.onchange = () => {
         const value = text.getValue();
         // A full color was already saved while it was typed.
         if (completeHexColor(value, { shorthand: false })) return;
@@ -20,5 +22,5 @@ export function bindHexTextInput(text: TextComponent, save: (hex: string) => voi
         if (!hex) return;
         text.setValue(hex);
         void save(hex);
-    });
+    };
 }

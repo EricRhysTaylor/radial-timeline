@@ -6,9 +6,9 @@ import { bindHexTextInput } from './hexTextInput';
 function fakeText() {
     let value = '';
     let onInput: ((value: string) => unknown) | null = null;
-    const listeners: Array<() => void> = [];
+    const inputEl: { onchange: (() => void) | null } = { onchange: null };
     const text = {
-        inputEl: { addEventListener: (type: string, listener: () => void) => { if (type === 'change') listeners.push(listener); } },
+        inputEl,
         getValue: () => value,
         setValue: (next: string) => { value = next; return text; },
         onChange: (callback: (value: string) => unknown) => { onInput = callback; return text; },
@@ -19,7 +19,7 @@ function fakeText() {
             await onInput?.(value);
         }
     };
-    const commit = (): void => listeners.forEach(listener => listener());
+    const commit = (): void => inputEl.onchange?.();
     return { text: text as unknown as TextComponent, type, commit, value: () => value };
 }
 

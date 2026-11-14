@@ -90,6 +90,9 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             { name: 'Dashboard', searchable: false, render: (setting) => {
                 setting.settingEl.empty();
                 setting.settingEl.removeClass('setting-item');
+                // Obsidian groups definition rows by default. This row hosts the
+                // whole dashboard, so group styles must not flatten its settings.
+                setting.settingEl.closest('.setting-group')?.classList.remove('setting-group');
                 this.dashboardEl = setting.settingEl.createDiv();
                 this.renderDashboard();
             } },

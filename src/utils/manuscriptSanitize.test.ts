@@ -2,44 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { countManuscriptComments, getDefaultManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from './manuscriptSanitize';
 
 describe('sanitizeCompiledManuscript', () => {
-    it('always removes YAML frontmatter blocks from compiled manuscript text', () => {
-        const input = `## 1 Opening
-
----
-Class: Scene
-Words: 1200
----
-Paragraph one.
-
-## 2 Arrival
-
----
-Class: Scene
-Role: other
----
-Paragraph two.`;
-
-        const sanitized = sanitizeCompiledManuscript(input, {
-            stripComments: false,
-            stripLinks: false,
-            stripCallouts: false,
-            stripBlockIds: false
-        });
-
-        expect(sanitized).toContain('## 1 Opening');
-        expect(sanitized).toContain('## 2 Arrival');
-        expect(sanitized).toContain('Paragraph one.');
-        expect(sanitized).toContain('Paragraph two.');
-        expect(sanitized).not.toContain('Class: Scene');
-        expect(sanitized).not.toContain('Words: 1200');
-        expect(sanitized).not.toContain('Role: other');
+    it('keeps a scene-break block that holds dialogue', () => {
+        const input = '## 1 Opening\n\nBefore.\n\n---\nKade: Get down!\nMira: Now!\n---\n\nAfter.';
+        expect(sanitizeCompiledManuscript(input)).toBe(input);
+        expect(sanitizeCompiledManuscriptForPdf(input, getDefaultManuscriptCleanupOptions('pdf'))).toBe(input);
     });
 
     it('preserves comments, links, and callouts when optional cleanup is disabled', () => {
-        const input = `---
-Class: Scene
----
-Visible %%editor note%% and <!-- html note -->.
+        const input = `Visible %%editor note%% and <!-- html note -->.
 [Doc link](https://example.com) with [[My Note|Alias]].
 > [!note] Tip
 > Keep this callout.`;
@@ -56,7 +26,6 @@ Visible %%editor note%% and <!-- html note -->.
         expect(sanitized).toContain('[Doc link](https://example.com)');
         expect(sanitized).toContain('[[My Note|Alias]]');
         expect(sanitized).toContain('> [!note] Tip');
-        expect(sanitized).not.toContain('Class: Scene');
     });
 
     it('always strips Editorialist revision batches from manuscript output', () => {
@@ -98,7 +67,7 @@ Scene text after.`;
     });
 
     it.each(['````', '~~~~'])('strips %s review fences without stopping at nested shorter fences', (fence) => {
-        const input = ['Before.', '', `${fence}editorialist-review`, '=== MEMO ===', 'Issues: Private review.', fence.slice(0, 3), 'Hidden payload.', fence + ' ignored trailing text', 'Still private.', fence + fence[0], '', '---', 'Class: Scene', '---', 'After.'].join('\n');
+        const input = ['Before.', '', `${fence}editorialist-review`, '=== MEMO ===', 'Issues: Private review.', fence.slice(0, 3), 'Hidden payload.', fence + ' ignored trailing text', 'Still private.', fence + fence[0], '', 'After.'].join('\n');
         expect(sanitizeCompiledManuscriptForPdf(input, { stripAiComments: false })).toBe('Before.\n\nAfter.');
     });
 

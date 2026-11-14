@@ -1245,7 +1245,9 @@ export async function assembleManuscript(
     }
 
     const content = c.content || '';
-    const bodyText = options?.sourceNotes ? extractBodyTextAfterFrontmatter(content) : extractBodyText(content);
+    // Only the block at the top of the note is frontmatter; a `---` block
+    // later in the scene is a scene break and reaches the manuscript.
+    const bodyText = extractBodyTextAfterFrontmatter(content);
     const countableBodyText = extractCountableBodyText(content);
     const sceneFrontmatter = extractFrontmatterObject(content);
     const sceneId = readSceneId(sceneFrontmatter);

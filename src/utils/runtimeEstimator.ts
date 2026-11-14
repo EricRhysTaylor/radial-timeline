@@ -29,7 +29,7 @@ const RUNTIME_CLEANUP: ManuscriptExportCleanupOptions = {
  * the manuscript export's own sanitizer.
  */
 export function extractRuntimeBody(noteContent: string): string {
-    const body = sanitizeCompiledManuscript(stripFrontmatter(noteContent), RUNTIME_CLEANUP, { stripEmbeddedFrontmatter: false });
+    const body = sanitizeCompiledManuscript(stripFrontmatter(noteContent), RUNTIME_CLEANUP);
     const lines: string[] = [];
     let fence: string | null = null;
     let displayMath = false;

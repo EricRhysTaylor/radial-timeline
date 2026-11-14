@@ -2634,7 +2634,11 @@
 .ert-ui.ert-scope--modal.ert-canvas-convert.is-busy { cursor: progress; }
 .ert-ui.ert-scope--modal.ert-canvas-convert.is-busy .modal-close-button { visibility: hidden; }
 .ert-ui.ert-scope--modal.ert-canvas-convert.is-busy .ert-modal-container > :not(.ert-modal-actions) { opacity: 0.5; }
-/* A long map makes a long dialog: its buttons stay in reach. */
+/* A long map makes a long dialog: its buttons stay in reach. The dialog itself scrolls, and a sticky
+   footer stops at the scroller's padding, so the frame's bottom gap is the panel's margin instead:
+   the footer meets the dialog's edge and no card scrolls past below it. */
+.ert-ui.ert-scope--modal.ert-canvas-convert.modal { padding-bottom: 0; }
+.ert-ui.ert-scope--modal.ert-canvas-convert .ert-modal-container { margin-bottom: var(--ert-gap-sm); }
 .ert-ui.ert-scope--modal.ert-canvas-convert .ert-modal-actions { position: sticky; bottom: 0; z-index: 1; padding-block: var(--size-4-3); background: var(--background-primary); }
 .ert-canvas-sketch-act { color: var(--text-muted); font-size: var(--font-ui-small); font-weight: var(--font-medium); }
 .ert-canvas-sketch-title {

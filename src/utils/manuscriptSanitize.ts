@@ -1,4 +1,3 @@
-import { parseYaml } from 'obsidian';
 import type { ManuscriptExportCleanupOptions } from '../types';
 import { MARKDOWN_FENCE_OPEN_PATTERN as CODE_FENCE_PATTERN, isClosingMarkdownFence as isClosingFence } from './markdownFence';
 
@@ -32,43 +31,12 @@ const PDF_CLEANUP_DEFAULTS: ManuscriptExportCleanupOptions = {
     stripBlockIds: false
 };
 
-// Embedded frontmatter shapes. A key line is `Key:` followed by a space or the
-// end of the line. Unquoted keys may be several words only when each later
-// word is capitalized, the way scene templates spell `Publish Stage` and
-// `Pending Edits`; quoted keys may hold anything.
-const YAML_KEY_LINE_PATTERN = /^(?:[A-Za-z0-9_.-]+(?: [A-Z0-9][A-Za-z0-9_.-]*)*|"[^"\n]+"|'[^'\n]+')\s*:(?:\s|$)/;
-const YAML_LIST_ITEM_PATTERN = /^\s*-(?:\s|$)/;
-const YAML_CONTINUATION_PATTERN = /^\s+\S/;
+const YAML_KEY_PATTERN = /^\s*[A-Za-z0-9_"'.-]+\s*:/;
 const EDITORIALIST_REVIEW_FENCE_PATTERN = /^\s*(`{3,}|~{3,})\s*editorialist-review\b.*$/i;
 const EDITORIALIST_REVIEW_WRAPPER_LINE = /^Return only this fenced block\. No extra text\.\s*$/i;
 
 function normalizeLineEndings(text: string): string {
     return text.replace(/\r\n?/g, '\n');
-}
-
-/**
- * True only for a `---` pair whose body is frontmatter and nothing else:
- * every non-blank line is a key, a list item or an indented continuation,
- * and the whole body parses as a YAML mapping. `---` is also the scene-break
- * mark, so a looser test deletes manuscript text that happens to look like a
- * key, such as the dialogue line `Kade: Get down!` between two breaks.
- */
-function isEmbeddedFrontmatter(candidate: string[]): boolean {
-    let hasKey = false;
-    for (const candidateLine of candidate) {
-        if (candidateLine.trim() === '') continue;
-        if (CODE_FENCE_PATTERN.test(candidateLine)) return false;
-        if (YAML_KEY_LINE_PATTERN.test(candidateLine)) { hasKey = true; continue; }
-        if (YAML_LIST_ITEM_PATTERN.test(candidateLine) || YAML_CONTINUATION_PATTERN.test(candidateLine)) continue;
-        return false;
-    }
-    if (!hasKey) return false;
-    try {
-        const parsed: unknown = parseYaml(candidate.join('\n'));
-        return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed);
-    } catch {
-        return false;
-    }
 }
 
 function stripYamlFrontmatterBlocks(content: string): string {
@@ -108,7 +76,9 @@ function stripYamlFrontmatterBlocks(content: string): string {
         }
 
         const candidate = lines.slice(i + 1, end);
-        if (!isEmbeddedFrontmatter(candidate)) {
+        const hasYamlKeys = candidate.some(candidateLine => YAML_KEY_PATTERN.test(candidateLine));
+        const hasCodeFence = candidate.some(candidateLine => CODE_FENCE_PATTERN.test(candidateLine));
+        if (!hasYamlKeys || hasCodeFence) {
             output.push(line);
             continue;
         }

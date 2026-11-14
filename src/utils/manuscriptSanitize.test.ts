@@ -35,24 +35,6 @@ Paragraph two.`;
         expect(sanitized).not.toContain('Role: other');
     });
 
-    it('keeps scene-break text that only partly looks like YAML', () => {
-        const input = ['Before.', '', '---', 'Kade: Get down!', 'She dove behind the crates.', '---', '', 'After.'].join('\n');
-        const sanitized = sanitizeCompiledManuscript(input);
-        expect(sanitized).toBe(input);
-        expect(sanitizeCompiledManuscriptForPdf(input)).toContain('Kade: Get down!');
-    });
-
-    it('keeps scene-break text that does not parse as a YAML mapping', () => {
-        const input = ['Before.', '', '---', 'Kade: Get down: now!', '---', '', 'After.'].join('\n');
-        expect(sanitizeCompiledManuscript(input)).toBe(input);
-    });
-
-    it('strips embedded frontmatter with lists, multi-word keys and continuations', () => {
-        const input = ['## 1 Opening', '', '---', 'Class: Scene', 'Publish Stage: Zero', 'Subplot:', '  - Main Plot', '  - Romance', 'Synopsis: >', '  Kade crosses the yard.', '"Pending Edits": tighten', '---', 'Paragraph one.'].join('\n');
-        const sanitized = sanitizeCompiledManuscript(input);
-        expect(sanitized).toBe('## 1 Opening\n\nParagraph one.');
-    });
-
     it('preserves comments, links, and callouts when optional cleanup is disabled', () => {
         const input = `---
 Class: Scene

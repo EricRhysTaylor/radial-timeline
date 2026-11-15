@@ -70,20 +70,19 @@ were filed on the public Editorialist repo and had to be closed.
   Studio's disk or the Obsidian vault plugin folders. A remote agent must
   never claim the local plugin is updated — its job ends at pushed/merged
   commits on origin/main.
-- The Mac Studio receives remote merges by itself. A launchd job
-  (`scripts/mac-sync/`, installed once with `install.sh`) runs every 15
-  minutes and at login: it fast-forwards each company repo's clean `main` to
-  `origin/main` and runs `npm run deploy` for the plugins, then exits.
-  `npm run deploy` fast-forwards `main` and rebuilds the plugin into all
-  vault folders. Builds write a `.hotreload` marker so the Hot Reload
-  community plugin reloads the plugin in an open vault. (Owner's decision,
-  2026-11-15, replacing the 2026-07-27 on-demand-only rule: scheduled work
-  must reach the vaults without Eric tracking deploy steps.)
+- The Mac Studio receives remote merges each morning: the Daily brief runs
+  `scripts/mac-sync/sync-repos.sh`, which fast-forwards each company repo's
+  clean `main` to `origin/main`, runs `npm run deploy` for the plugins, and
+  exits. Its report is the Clearing House "Deploys" card. Nothing runs in the
+  background on the Mac (owner's decision, 2026-07-27, reaffirmed 2026-11-15).
+  `npm run deploy` fast-forwards `main` and rebuilds the plugin into all vault
+  folders; it remains the way to get a change the same day. Builds write a
+  `.hotreload` marker so the Hot Reload community plugin reloads the plugin in
+  an open vault.
 - When a remote agent finishes a change that affects the plugin, its final
-  message must say it lands in the vaults within about 15 minutes of merging
-  to `main`, by the Mac sync job — never imply the local plugin already has
-  it. If the job reports a repo as not synced (uncommitted work, another
-  branch, unpushed commits), `npm run deploy` by hand still works.
+  message must say it reaches the vaults with the next morning's Daily brief
+  sync, or sooner with `npm run deploy` on the Mac — never imply the local
+  plugin already has it.
 - **Standing order: land finished cloud work on `origin/main` yourself.**
   When the change is verified and ready for Eric to test, merge it — if the
   session put it on a branch or draft PR, mark the PR ready and merge it

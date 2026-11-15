@@ -1,22 +1,23 @@
 # Mac repo sync
 
-Cloud sessions and scheduled routines land their work on GitHub. This job
-brings it to the Mac: every 15 minutes, and at login, it fast-forwards each
-Radial Timeline LLC repo to `origin/main` and, for the two plugins, runs
-`npm run deploy` so the new build is in every vault. A macOS notification says
-what arrived. Each run does its work and exits; nothing stays running.
+Cloud sessions and scheduled routines land their work on GitHub. This script
+brings it to the Mac: it fast-forwards each Radial Timeline LLC repo to
+`origin/main` and, for the two plugins, runs `npm run deploy` so the new build
+is in every vault. Then it exits.
 
-Install once, from this repo, in a terminal where `npm` works:
+It is one shot and never schedules itself. Nothing runs in the background on
+the Mac Studio (owner's rule, 2026-07-27). The Daily brief runs it each
+morning and puts the report in the Clearing House **Deploys** card (see
+`DAILY-BRIEF-STEP.md`). By hand:
 
-    bash scripts/mac-sync/install.sh
-
-It shows a dry run first, then installs the launchd job and runs the first
-sync. Re-running it is safe. Remove it with `bash scripts/mac-sync/uninstall.sh`.
+    bash scripts/mac-sync/sync-repos.sh                 # sync and print
+    bash scripts/mac-sync/sync-repos.sh --dry-run       # show what it would do
+    bash scripts/mac-sync/sync-repos.sh --report deploys.json   # also write the card's data
 
 What it will never do:
 
 - touch a repo that has uncommitted changes, is on a branch other than `main`,
-  or has local commits GitHub doesn't have (it notifies once instead);
+  or has local commits GitHub doesn't have (it reports **Not synced** and why);
 - merge, rebase, reset, commit or push;
 - build uncommitted work into the vaults.
 
@@ -24,9 +25,12 @@ Repos covered (found by their GitHub remote under
 `~/Documents/Radial Timeline LLC`, up to four folders deep): radial-timeline,
 editorialist, radial-timeline-community, -web, -platform, -email, -engine.
 Only repos with an `npm run deploy` script are built; the rest are just
-fast-forwarded.
+fast-forwarded. Build output goes to `~/Library/Logs/rt-repo-sync-npm.log`.
 
-Log: `~/Library/Logs/rt-repo-sync.log` (build output in `rt-repo-sync.log.npm`).
+The report (`--report`) is `{rows, meta}` JSON, one row per repo:
+`repo`, `state` (Up to date, Updated, Not synced, Failed), `github` (origin/main
+commit), `github_subject`, `vaults` (commit last built into the vaults, or
+"no build"), `note`.
 
 ## Reload without toggling
 

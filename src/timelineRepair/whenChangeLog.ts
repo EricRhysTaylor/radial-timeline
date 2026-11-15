@@ -14,7 +14,7 @@
  */
 
 import { TFile, type App } from 'obsidian';
-import { TIMELINE_SNAPSHOT_FOLDER } from './timelineSnapshot';
+import { TIMELINE_SNAPSHOT_FOLDER, ensureSnapshotFolder } from './timelineSnapshot';
 
 export const WHEN_CHANGE_LOG_PATH = `${TIMELINE_SNAPSHOT_FOLDER}/when-change-log.jsonl`;
 
@@ -35,25 +35,10 @@ export interface WhenChangeRecord {
     tool: 'scaffold' | 'audit' | 'chronologue';
 }
 
-async function ensureLogFolder(app: App): Promise<void> {
-    const parts = TIMELINE_SNAPSHOT_FOLDER.split('/');
-    let current = '';
-    for (const part of parts) {
-        current = current ? `${current}/${part}` : part;
-        if (!app.vault.getAbstractFileByPath(current)) {
-            try {
-                await app.vault.createFolder(current);
-            } catch {
-                // Race-tolerant.
-            }
-        }
-    }
-}
-
 /** Append change records to the JSONL log, creating it if needed. */
 export async function appendWhenChanges(app: App, records: WhenChangeRecord[]): Promise<void> {
     if (records.length === 0) return;
-    await ensureLogFolder(app);
+    await ensureSnapshotFolder(app);
     const lines = records.map(r => JSON.stringify(r)).join('\n') + '\n';
     const existing = app.vault.getAbstractFileByPath(WHEN_CHANGE_LOG_PATH);
     if (existing instanceof TFile) {

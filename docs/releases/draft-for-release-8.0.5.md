@@ -1,6 +1,10 @@
 ## Radial Timeline 8.0.5
 
-A scene drag tells you how many other files it renames, and color fields save the color you finish typing.
+A scene drag tells you how many other files it renames, color fields save the color you finish typing, and the Timetable says when a sort has replaced its mode's order.
+
+### Improvements
+
+- **Timetable sort notice:** a sort set in Bases replaces the order the Timetable's mode gives it, such as Chronologue's story order and day dividers. A line beside **Mode** now says so, for example "Sorted by Words · Chronologue order paused", and **Clear sort** puts the mode's order back.
 
 ### Fixes
 

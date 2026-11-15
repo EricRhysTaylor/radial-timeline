@@ -237,17 +237,17 @@ The wheel is for seeing (proportion, rhythm, gaps, where you are); the Timetable
 - **Bulk edits** (the table owns field edits). Checkboxes on scene, sketch and unpromoted rows; Shift picks a range; Esc clears (from the app's key scope, so it works wherever focus is while the Timetable pane is active, and an open menu takes Esc first). A bar sets Status, Publish Stage, Act or rings on every picked row, or promotes the non-scenes. Ring changes (scenes only) get one notice and one Undo for all of them.
 - **Open query dots on the wheel** (the wheel flags, the table works through them). A scene with `%%query: …%%` in its text gets the Timetable's question bubble (`message-circle-question`, white with a dark outline) at the center of each of its cells, sized to the cell; a cell too small for a legible icon (a compact All Scenes ring, a Sequence subring) gets a small dot, a sliver nothing (`queryMarkFor`). Eric 2026-10-13: the first version's corner dot floated in Gossamer, and a plain dot didn't say what it meant. The mark lives in the scene's group, so it recedes with the scene, and it is pointer-transparent like the number squares: Narrative opens and drags from the cell's path, so a mark that caught the pointer blocked both. So the wheel has no tooltip of its own for queries; the table's badge lists them, and hovering the scene lights its row.
 
-## 8. A visible sort (proposed 2026-11-15)
+## 8. A visible sort (proposed and built 2026-11-15)
 
 **The problem: a sort the author can't see.** A sort set in Bases outranks the mode's order (§7, `buildGroups` and `chronologueContext` in `TimetableView.ts`). Narrative stops reading in manuscript order, Chronologue drops its day dividers, and the drag grips stop until the sort is gone. Nothing in the Timetable says so: the grip explains itself only when an author tries it, and missing day dividers are the only visible sign. For example, an author sorts by Words to find the longest scenes, then switches to Chronologue a week later: story order is gone, and nothing says why. The Timetable's right-click column tools color the timeline; none of them touch sorting.
 
-- **When** `this.config.getSort().length > 0`, show one line in the Timetable's toolbar row, beside **Mode**, for example *Sorted by Words · Chronologue order paused*. Its tooltip says what the sort replaces in this mode: manuscript order in Narrative and Progress, story order and the day dividers in Chronologue, the beat order in Gossamer. In Narrative and Chronologue it adds that the drag grips wait for the sort to clear.
-- **Clear sort,** on the line, removes the sort from this view only, and the mode's order returns.
-  - **Spike first:** whether `config.set('sort', …)` clears a view's sort through Obsidian. The API documents `getSort()` as reading the sort the author set in the toolbar, and documents no setter.
-  - **Otherwise** edit the `.base` file the way **Restore Radial Timetable view** does (`TimetableService.restoreView`): parse, change only this view's `sort`, and write through `vault.process`, giving up if the file changed since it was read. The rewrite reformats the file and drops YAML comments, as Restore's confirmation already says, so Clear sort confirms the same way. Find the view by its name. If two views share it, explain and change nothing (no fallback).
-- **Outline** always reads in narrative order. Check whether it ignores the sort; if it does, the notice stays out of Outline.
-- **Copy:** new strings in `en.ts` only, per the i18n rule. Wiki: "Follow the timeline's mode" in `wiki/Timetable.md` gains a line on the notice.
-- **Short:** once this ships, the Timetable Modes Short's sort shot points at the notice instead of the missing dividers.
+**Built (Eric, 2026-11-15: "build the warning"):**
+
+- **The line.** While `config.getSort()` has entries, `renderSortNotice` (`TimetableView.ts`) adds one line beside **Mode** in every layout: *Sorted by Words · Chronologue order paused*, naming each sorted column by `config.getDisplayName`. Its tooltip says what the sort took over, from `sortNoticeHelpKeys` (`timetablePlacement.ts`, tested): story order and the day dividers in Chronologue, manuscript order in the other modes, and the scene drag wherever it would otherwise work (`modeAllowsSceneDrag` in Book scope, so not under Shift, Alt or Runtime, nor in Saga scope).
+- **Outline doesn't ignore the sort.** `buildGroups` keeps the Bases order in every layout, so the line shows in Outline and Panels too; in Outline it names narrative order, the order Outline reads in.
+- **Clear sort** calls `config.set('sort', null)`, the same way the view already removes its own `coloring` and writes Obsidian's `columnSize`, then redraws in the mode's order. If `getSort()` still returns the sort afterward, it says so and points to Bases' Sort menu instead of redrawing as if it had worked. So the `.base` rewrite planned as the alternative wasn't needed.
+- **Check in Obsidian** (not testable in Node): after **Clear sort**, Bases' Sort menu shows no sort, and the view's entry in the `.base` file has no `sort`.
+- **Copy** is in `en.ts` only. The wiki's "Follow the timeline's mode" describes the line, the 8.0.5 release draft lists it, and the Timetable Modes Short's sort shot now shows it.
 
 ### Set aside (Eric, 2026-11-15)
 
@@ -302,4 +302,4 @@ Decided 2026-10-12: each book's table file includes the built-in Act board and S
 
 The remaining unknowns are implementation spikes (phase 3).
 
-Open (§8, proposed 2026-11-15): build the sort notice and **Clear sort**? Mode-aware question shortcuts were set aside the same day.
+Decided 2026-11-15 (§8): the sort notice and **Clear sort** are built; mode-aware question shortcuts are set aside.

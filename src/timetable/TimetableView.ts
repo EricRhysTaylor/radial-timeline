@@ -45,6 +45,7 @@ import {
     type BasesEntry,
     type BasesEntryGroup,
     type BasesPropertyId,
+    type BasesSortConfig,
     type QueryController,
     type WorkspaceLeaf,
 } from 'obsidian';
@@ -129,7 +130,7 @@ import {
     storyImageFocus, storyImageStrategy, strategyChoices,
 } from './storyCardImages';
 import { PanelFocusModal } from './PanelFocusModal';
-import { modeAllowsSceneDrag, timetableModeColumns, timetableModeState, timetableNarrativeOrder } from './timetablePlacement';
+import { modeAllowsSceneDrag, sortNoticeHelpKeys, timetableModeColumns, timetableModeState, timetableNarrativeOrder } from './timetablePlacement';
 import { orderSketches, planSketchActDrop, planSketchDrop, sketchAnchor, type PlacementItem, type PlacementProblem, type SketchDropPlan, type SketchPlacement } from './sketchPlacement';
 import { bookPlacementItems } from './canvasBookCards';
 import { readSceneId } from '../utils/sceneIds';
@@ -2323,6 +2324,35 @@ export class TimetableView extends BasesView {
         this.render();
     }
 
+    /**
+     * A sort set in Bases takes over from the mode's order (buildGroups,
+     * chronologueContext) and pauses the scene drag. Nothing else on screen
+     * says so, so a line beside Mode names the sort and offers to clear it.
+     */
+    private renderSortNotice(parent: HTMLElement, sort: BasesSortConfig[], state: TimelineModeState): void {
+        const fields = sort.map(entry => this.config.getDisplayName(entry.property)).join(', ');
+        const notice = parent.createSpan({ cls: 'ert-timetable-panels__sort-notice' });
+        setIcon(notice.createSpan({ attr: { 'aria-hidden': 'true' } }), 'arrow-down-up');
+        const text = notice.createSpan({ text: t('ui.timetable.sortNotice', { fields, mode: modeName(state.mode) }) });
+        tooltip(text, sortNoticeHelpKeys(state, getTimelineScope(this.plugin.settings)).map(key => t(key)).join(' '), 'bottom');
+        const clear = notice.createEl('button', { cls: 'ert-timetable-panels__sort-clear', text: t('ui.timetable.clearSort'), attr: { type: 'button' } });
+        tooltip(clear, t('ui.timetable.clearSortHelp', { mode: modeName(state.mode) }), 'bottom');
+        this.panelEvents?.registerDomEvent(clear, 'click', () => this.clearSort(state));
+    }
+
+    /** Remove this view's sort, so its rows return to the mode's order. */
+    private clearSort(state: TimelineModeState): void {
+        if (this.panelEditing) return;
+        this.config.set('sort', null);
+        // Say so plainly if Obsidian kept the sort, rather than redraw as if it were gone.
+        if (this.config.getSort().length > 0) {
+            new Notice(t('ui.timetable.clearSortFailed'), 8000);
+            return;
+        }
+        new Notice(t('ui.timetable.sortCleared', { mode: modeName(state.mode) }));
+        this.render();
+    }
+
     private renderLayoutSwitch(state: TimelineModeState): void {
         const toolbar = this.rootEl.createDiv({ cls: 'ert-timetable-panels__toolbar' });
         toolbar.createSpan({ cls: 'ert-timetable__layout-caption', text: t('ui.timetable.radialViewName') });
@@ -2476,6 +2506,10 @@ export class TimetableView extends BasesView {
         if (outlineMode && state.mode !== 'narrative') {
             const order = modeGroup.createSpan({ cls: 'ert-timetable-panels__outline-order', text: `${t('ui.timetable.layoutOutline')}: ${modeName('narrative')}` });
             tooltip(order, t('ui.timetable.outlineNarrativeOrder'), 'bottom');
+        }
+        const sort = this.config.getSort();
+        if (sort.length > 0) {
+            this.renderSortNotice(modeGroup, sort, outlineMode ? { mode: 'narrative', shift: false, alt: false, runtime: false } : state);
         }
         if (this.config.get('panels') === true || this.config.get('outline') === true) {
             this.renderCorner(toolbar);

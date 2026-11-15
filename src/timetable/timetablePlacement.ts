@@ -34,6 +34,18 @@ export function modeAllowsSceneDrag(state: TimelineModeState): boolean {
     return (state.mode === 'narrative' || state.mode === 'chronologue') && !state.runtime && !state.shift && !state.alt;
 }
 
+/**
+ * What a sort set in Bases has taken over in this mode, as translation keys
+ * for the sort notice beside Mode: story order and the day dividers in
+ * Chronologue, manuscript order elsewhere, and the scene drag where it would
+ * otherwise work: the mode allows it and the timeline shows one book.
+ */
+export function sortNoticeHelpKeys(state: TimelineModeState, scope: 'book' | 'saga'): string[] {
+    const keys = [state.mode === 'chronologue' ? 'ui.timetable.sortReplacesStoryOrder' : 'ui.timetable.sortReplacesManuscriptOrder'];
+    if (modeAllowsSceneDrag(state) && scope === 'book') keys.push('ui.timetable.sortPausesDrag');
+    return keys;
+}
+
 /** Use the whole book and the same act, prefix, and active-beat ordering as manuscript renumbering. */
 export function timetableNarrativeOrder(items: TimelineItem[], beatModel?: string): OuterRingOrderEntry[] {
     const byPath = new Map<string, TimelineItem>();

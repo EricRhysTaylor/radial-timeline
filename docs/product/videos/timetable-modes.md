@@ -4,7 +4,7 @@
 **Length:** about 2:25.
 **Frame:** record 16:9 in UHD, then reframe to 9:16, as for the Beats Update Short. Each shot names where the vertical frame sits: the wheel, the table, or a split with the wheel above the table.
 **Production files:** `Radial Timeline LLC/Video/Shorts/Timetable Modes/`.
-**Written against:** main at 8.0.x (wiki Timetable, "Follow the timeline's mode"; `src/timetable/TimetableView.ts`). Labels in quotes are exact; Bases' own menus are Obsidian's and may read differently in your Obsidian version.
+**Written against:** main at 8.0.x (wiki Timetable, "Follow the timeline's mode"; `src/timetable/TimetableView.ts`). Shot 6 needs the release with the Timetable sort notice (drafted for 8.0.5). Labels in quotes are exact; Bases' own menus are Obsidian's and may read differently in your Obsidian version.
 
 ## What the Short says
 
@@ -12,7 +12,7 @@
 - **The Timetable follows the timeline's mode, or you pin it to another.** A mode changes what the table shows, not only its order: Chronologue's day dividers, Progress's totals on each heading and its overdue dates, Gossamer's beats with their scores.
 - **Filters, groups and sorts are questions you ask inside a mode,** not modes of their own.
 - **Three things to watch:**
-  - A sort set in Bases outranks the mode's order. In Chronologue the day dividers disappear, which is the visible sign, and the drag grips wait until the sort is gone.
+  - A sort set in Bases outranks the mode's order, and the drag grips wait until it's gone. A line beside **Mode** says so, and **Clear sort** puts the mode's order back. In Chronologue the day dividers disappear too.
   - In Chronologue, rows form one list in story time, so act headings and any other grouping step aside.
   - Outline always reads in narrative order, whatever the mode, because it's for working through the manuscript.
 
@@ -72,10 +72,10 @@
 ### Watch the sort (1:22–1:40)
 
 **6. A sort outranks the mode (1:22–1:40)**
-- Screen: still in Chronologue with the Ulysses filter. In the Bases sort menu, sort by Words. The order changes and the day dividers disappear. Try dragging a row by its grip: it explains what to change instead of moving. Remove the sort; story order and the dividers return.
-- 9:16: the table.
+- Screen: still in Chronologue with the Ulysses filter. In the Bases sort menu, sort by Words. The order changes, the day dividers disappear, and a line beside "Mode" reads "Sorted by Words · Chronologue order paused". Hover it for what the sort replaced. Click "Clear sort": story order and the dividers return.
+- 9:16: the table's toolbar, then its rows.
 - Caption: A Bases sort overrides the mode's order
-- Voice: "One thing to watch: a sort you set in Bases outranks the mode. The day dividers disappear — that's your sign — and the grips that move scenes wait. Remove the sort, and story time comes back."
+- Voice: "One thing to watch: a sort you set in Bases outranks the mode, and the Timetable tells you so. Clear sort, and story time comes back."
 
 ### Progress: what's left? (1:40–1:58)
 

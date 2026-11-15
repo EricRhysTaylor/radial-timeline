@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../types';
-import { modeAllowsSceneDrag, timetableModeColumns, timetableModeState, timetableNarrativeOrder } from './timetablePlacement';
+import { t } from '../i18n';
+import { modeAllowsSceneDrag, sortNoticeHelpKeys, timetableModeColumns, timetableModeState, timetableNarrativeOrder } from './timetablePlacement';
 
 describe('standalone timetable placement order', () => {
     it('uses the full book, deduplicates paths, and orders beats with scenes by act', () => {
@@ -51,5 +52,36 @@ describe('a Timetable pinned to a mode', () => {
     it('follows everything the timeline shows when unpinned', () => {
         expect(timetableModeState(null, timeline('chronologue', { alt: true }), 'narrative')).toEqual(timeline('chronologue', { alt: true }));
         expect(modeAllowsSceneDrag(timeline('progress'))).toBe(false);
+    });
+});
+
+describe('the sort notice beside Mode', () => {
+    const state = (mode: string, toggles: Partial<{ shift: boolean; alt: boolean; runtime: boolean }> = {}) =>
+        ({ mode, shift: false, alt: false, runtime: false, ...toggles });
+
+    it('says a sort has replaced story order and the day dividers in Chronologue, and that scenes wait to be dragged', () => {
+        expect(sortNoticeHelpKeys(state('chronologue'), 'book')).toEqual(['ui.timetable.sortReplacesStoryOrder', 'ui.timetable.sortPausesDrag']);
+    });
+
+    it('says a sort has replaced manuscript order in the other modes', () => {
+        expect(sortNoticeHelpKeys(state('narrative'), 'book')).toEqual(['ui.timetable.sortReplacesManuscriptOrder', 'ui.timetable.sortPausesDrag']);
+        expect(sortNoticeHelpKeys(state('progress'), 'book')).toEqual(['ui.timetable.sortReplacesManuscriptOrder']);
+        expect(sortNoticeHelpKeys(state('gossamer'), 'book')).toEqual(['ui.timetable.sortReplacesManuscriptOrder']);
+    });
+
+    it('leaves the drag out where an overlay already pauses it', () => {
+        expect(sortNoticeHelpKeys(state('chronologue', { shift: true }), 'book')).toEqual(['ui.timetable.sortReplacesStoryOrder']);
+        expect(sortNoticeHelpKeys(state('narrative', { runtime: true }), 'book')).toEqual(['ui.timetable.sortReplacesManuscriptOrder']);
+    });
+
+    it('leaves the drag out in Saga scope, where the Timetable never drags scenes', () => {
+        expect(sortNoticeHelpKeys(state('chronologue'), 'saga')).toEqual(['ui.timetable.sortReplacesStoryOrder']);
+        expect(sortNoticeHelpKeys(state('narrative'), 'saga')).toEqual(['ui.timetable.sortReplacesManuscriptOrder']);
+    });
+
+    it('has English text for every line', () => {
+        for (const mode of ['narrative', 'chronologue', 'progress', 'gossamer']) {
+            for (const key of sortNoticeHelpKeys(state(mode), 'book')) expect(t(key)).not.toMatch(/^\[missing:/);
+        }
     });
 });

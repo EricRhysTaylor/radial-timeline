@@ -20,6 +20,7 @@ export const RETIRED_MODEL_SUCCESSORS: Readonly<Record<string, { successor: stri
     'claude-haiku-4-5': { successor: 'claude-haiku-5-5', tier: 'FAST' },
     'claude-sonnet-5': { successor: 'claude-sonnet-5-5', tier: 'BALANCED' },
     'claude-fable-5': { successor: 'claude-fable-5-1', tier: 'DEEP' },
+    'claude-fable-5-1': { successor: 'claude-fable-5-2', tier: 'DEEP' },
     'gpt-5.6-luna': { successor: 'gpt-6-luna', tier: 'FAST' },
     'gemini-3.5-flash': { successor: 'gemini-3.8-flash', tier: 'FAST' },
     // Google's latest-stable default is Flash, so a retired Pro pin needs

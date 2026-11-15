@@ -96,10 +96,10 @@ describe('BUILTIN_MODELS — Anthropic Claude Opus 5 (continuity)', () => {
     });
 });
 
-describe('BUILTIN_MODELS — Anthropic Claude Fable 5.1', () => {
+describe('BUILTIN_MODELS — Anthropic Claude Fable 5.2', () => {
     it('exposes a 1M context / 128k output window on its own line', () => {
-        const model = byAlias('claude-fable-5-1');
-        expect(model.id).toBe('claude-fable-5-1');
+        const model = byAlias('claude-fable-5-2');
+        expect(model.id).toBe('claude-fable-5-2');
         expect(model.line).toBe('claude-fable');
         expect(model.contextWindow).toBe(1000000);
         expect(model.maxOutput).toBe(128000);
@@ -108,7 +108,7 @@ describe('BUILTIN_MODELS — Anthropic Claude Fable 5.1', () => {
     });
 
     it('declares always-on thinking and sits off the stable channel (explicit-choice only)', () => {
-        const model = byAlias('claude-fable-5-1');
+        const model = byAlias('claude-fable-5-2');
         expect(model.constraints).toMatchObject({
             supportsTemperature: false,
             supportsTopP: false,
@@ -153,7 +153,7 @@ describe('BUILTIN_MODELS — Google Gemini', () => {
 describe('BUILTIN_MODELS — catalog policy invariants', () => {
     it('keeps the catalog small enough to be deliberately curated (one top model per provider, plus deliberate splits)', () => {
         const cloud = BUILTIN_MODELS.filter(m => m.provider !== 'none' && m.provider !== 'ollama');
-        // Anthropic 5 (Opus 5.5 + Opus 5 continuity + Fable 5.1 premium pro
+        // Anthropic 5 (Opus 5.5 + Opus 5 continuity + Fable 5.2 premium pro
         // lane + Sonnet 5.5 BALANCED + Haiku 5.5 FAST) + OpenAI 3 (GPT-6.1 Sol
         // + GPT-6 Astra pro lane + GPT-6 Luna economy) + Google 2 (Gemini 4
         // Argon depth / Gemini 3.8 Flash speed) = 10 cloud models.
@@ -171,7 +171,7 @@ describe('BUILTIN_MODELS — catalog policy invariants', () => {
         // answers a task-fit question the catalog cannot already answer,
         // before updating this expectation.
         // 10 as of 2026-09-05: GPT-6 Astra joined as the OpenAI pro-channel
-        // premium entry, the OpenAI counterpart of Fable 5.1.
+        // premium entry, the OpenAI counterpart of Fable 5.2.
         expect(cloud.length).toBeLessThanOrEqual(10);
     });
 

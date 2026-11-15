@@ -108,7 +108,7 @@ describe('Claude Fable 5 always-on-thinking request shape', () => {
 
         await callAnthropicApi(
             'test-key',
-            'claude-fable-5-1',
+            'claude-fable-5-2',
             'System rules',
             'Return JSON per schema.',
             4000,
@@ -147,7 +147,7 @@ describe('Claude Fable 5 always-on-thinking request shape', () => {
 
         await callAnthropicApi(
             'test-key',
-            'claude-fable-5-1',
+            'claude-fable-5-2',
             'System rules',
             'Write a paragraph.',
             4000,
@@ -168,7 +168,7 @@ describe('Claude Fable 5 always-on-thinking request shape', () => {
     it('defaults effort to medium when no thinking budget is supplied', async () => {
         mockTextResponse('done', { stop_reason: 'end_turn' });
 
-        await callAnthropicApi('test-key', 'claude-fable-5-1', null, 'Hi', 4000, true);
+        await callAnthropicApi('test-key', 'claude-fable-5-2', null, 'Hi', 4000, true);
 
         expect(lastRequestBody().output_config?.effort).toBe('medium');
     });
@@ -180,7 +180,7 @@ describe('Claude Fable 5 always-on-thinking request shape', () => {
             json: { type: 'error', error: { type: 'invalid_request_error', message: 'Bad request.' } }
         } as never);
 
-        const result = await callAnthropicApi('test-key', 'claude-fable-5-1', null, 'Hi', 4000, true);
+        const result = await callAnthropicApi('test-key', 'claude-fable-5-2', null, 'Hi', 4000, true);
         expect(result.success).toBe(false);
         expect(result.error).toContain('zero data retention');
         expect(result.error).toContain('30-day data retention');
@@ -193,7 +193,7 @@ describe('Claude Fable 5 always-on-thinking request shape', () => {
             json: { type: 'error', error: { type: 'invalid_request_error', message: 'temperature is not supported for this model.' } }
         } as never);
 
-        const result = await callAnthropicApi('test-key', 'claude-fable-5-1', null, 'Hi', 4000, true);
+        const result = await callAnthropicApi('test-key', 'claude-fable-5-2', null, 'Hi', 4000, true);
         expect(result.error).not.toContain('zero data retention');
     });
 });

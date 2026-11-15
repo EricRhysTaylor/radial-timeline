@@ -183,7 +183,7 @@ export function modelThinkingDefaultsOn(
 
 /**
  * Whether the provider accepts an explicit cached-content resource for this
- * model. Gemini 4 Argon caches implicitly only, so RT must not create or
+ * model. Gemini 4 Carbon caches implicitly only, so RT must not create or
  * reference `cachedContents` for it. Declared per-model via
  * ModelInfo.constraints.supportsExplicitCache.
  */

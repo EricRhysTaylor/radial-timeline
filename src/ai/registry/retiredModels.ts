@@ -25,7 +25,8 @@ export const RETIRED_MODEL_SUCCESSORS: Readonly<Record<string, { successor: stri
     'gemini-3.5-flash': { successor: 'gemini-3.8-flash', tier: 'FAST' },
     // Google's latest-stable default is Flash, so a retired Pro pin needs
     // its own entry to stay on the depth lane.
-    'gemini-3.1-pro-preview': { successor: 'gemini-4-argon', tier: 'DEEP' }
+    'gemini-3.1-pro-preview': { successor: 'gemini-4-argon', tier: 'DEEP' },
+    'gemini-4-argon': { successor: 'gemini-4-carbon', tier: 'DEEP' }
 };
 
 /**

@@ -377,11 +377,19 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
-        // Gemini 4 Argon (GA 2026-10-13, promoted 2026-10-13, replacing
-        // Gemini 3.1 Pro Preview on the depth lane). ai.google.dev/gemini-api/
-        // docs/models/gemini-4-argon + /latest-model: 1,048,576 tokens shared
-        // by input, thinking and output; 65,536 output by default. Deltas that
-        // matter to RT:
+        // Gemini 4 Carbon (GA 2026-11-10, promoted 2026-11-15, replacing
+        // Gemini 4 Argon on the depth lane; Argon had replaced Gemini 3.1 Pro
+        // Preview on 2026-10-13). aistudio.google.com/docs/models/
+        // gemini-4-carbon + /whats-new-gemini-4-carbon: 1,048,576 tokens shared
+        // by input, thinking and output; 65,536 output per synchronous request.
+        // Google's migration note from Argon: no request schema changes, same
+        // per-token price. Carbon is Google's strongest reasoning model and
+        // Argon its efficient sibling: Carbon spends more thinking tokens per
+        // turn, so per-request cost and latency are higher, and Google
+        // recommends a maxOutputTokens of at least 32,768 because thinking
+        // shares that limit. Verified against Google's pages on 2026-11-15;
+        // NOT yet smoke-tested against the live API.
+        // Request-shape facts (unchanged from Argon):
         //   - Explicit caching (cachedContents) is NOT supported; implicit
         //     caching is on for prompts >= 4,096 tokens at 95% off. RT skips
         //     the cache manager and reads hits from cachedContentTokenCount.
@@ -392,9 +400,9 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // default (the depth lane is an explicit pick, as 3.1 Pro was).
         // Launch pricing through 2026-11-30; see pricing.json.
         provider: 'google',
-        id: 'gemini-4-argon',
-        alias: 'gemini-4-argon',
-        label: 'Gemini 4 Argon',
+        id: 'gemini-4-carbon',
+        alias: 'gemini-4-carbon',
+        label: 'Gemini 4 Carbon',
         line: 'gemini-pro',
         tier: 'DEEP',
         capabilities: ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap', 'streaming'],

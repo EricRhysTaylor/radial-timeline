@@ -22,11 +22,11 @@ describe('getModelDisplayName snapshot formatting', () => {
     });
 
     it('caches concrete resolutions for latest aliases and normalizes provider prefixes', () => {
-        cacheResolvedModel('gemini-pro-latest', 'models/gemini-4-argon');
+        cacheResolvedModel('gemini-pro-latest', 'models/gemini-4-carbon');
 
-        expect(getResolvedModelId('gemini-pro-latest')).toBe('gemini-4-argon');
-        expect(getResolvedModelId('models/gemini-pro-latest')).toBe('gemini-4-argon');
-        expect(getModelDisplayName('gemini-pro-latest')).toBe('Gemini 4 Argon (via latest)');
+        expect(getResolvedModelId('gemini-pro-latest')).toBe('gemini-4-carbon');
+        expect(getResolvedModelId('models/gemini-pro-latest')).toBe('gemini-4-carbon');
+        expect(getModelDisplayName('gemini-pro-latest')).toBe('Gemini 4 Carbon (via latest)');
     });
 });
 

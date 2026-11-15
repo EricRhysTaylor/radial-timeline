@@ -104,7 +104,7 @@ export interface ModelInfo {
         thinkingDefaultsOn?: boolean;
         /**
          * Whether the provider accepts explicit cached-content resources for
-         * this model (Gemini `cachedContents`). False on Gemini 4 Argon, which
+         * this model (Gemini `cachedContents`). False on Gemini 4 Carbon, which
          * caches implicitly only: RT sends the stable prefix first and reads
          * the hit from `cachedContentTokenCount`. Default (absent) is true.
          */

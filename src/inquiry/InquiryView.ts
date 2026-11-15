@@ -9053,7 +9053,7 @@ export class InquiryView extends ItemView {
         } else if (provider === 'google') {
             // The explicit-cache manager's create/hit verdict. Implicit-cache
             // reads carry no lifetime to count down — including every read on
-            // an implicit-only model (Gemini 4 Argon), which RT never creates.
+            // an implicit-only model (Gemini 4 Carbon), which RT never creates.
             if (!modelSupportsExplicitCache('google', result.aiModelResolved)) return null;
             if (!trace?.cacheStatus && !confirmedHit) return null;
             // Gemini cache TTL is fixed at creation and does NOT extend on hits.

@@ -59,7 +59,7 @@ describe('sanitizeDispatchParams', () => {
     });
 
     it('treats Gemini thinking models as managed-sampling models', () => {
-        const profile = getModelRequestProfile('google', 'gemini-4-argon');
+        const profile = getModelRequestProfile('google', 'gemini-4-carbon');
 
         expect(profile.supportsTemperature).toBe(false);
         expect(profile.supportsTopP).toBe(false);
@@ -67,7 +67,7 @@ describe('sanitizeDispatchParams', () => {
 
     it('strips Gemini managed-sampling controls using the shared request profile', () => {
         const result = sanitizeDispatchParams('google', {
-            modelId: 'gemini-4-argon',
+            modelId: 'gemini-4-carbon',
             userPrompt: 'Return JSON.',
             maxOutputTokens: 2048,
             temperature: 0.2,
@@ -76,7 +76,7 @@ describe('sanitizeDispatchParams', () => {
 
         expect(result.params.temperature).toBeUndefined();
         expect(result.params.topP).toBeUndefined();
-        expect(result.notes).toContain('Stripped temperature for google/gemini-4-argon: model does not support temperature');
-        expect(result.notes).toContain('Stripped topP for google/gemini-4-argon: model does not support topP');
+        expect(result.notes).toContain('Stripped temperature for google/gemini-4-carbon: model does not support temperature');
+        expect(result.notes).toContain('Stripped topP for google/gemini-4-carbon: model does not support topP');
     });
 });

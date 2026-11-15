@@ -121,8 +121,8 @@ describe('BUILTIN_MODELS — Anthropic Claude Fable 5.2', () => {
 });
 
 describe('BUILTIN_MODELS — Google Gemini', () => {
-    it('declares Gemini 4 Argon as the depth lane', () => {
-        const model = byAlias('gemini-4-argon');
+    it('declares Gemini 4 Carbon as the depth lane', () => {
+        const model = byAlias('gemini-4-carbon');
         expect(model.status).toBe('stable');
         expect(model.tier).toBe('DEEP');
         expect(model.line).toBe('gemini-pro');
@@ -156,7 +156,7 @@ describe('BUILTIN_MODELS — catalog policy invariants', () => {
         // Anthropic 5 (Opus 5.5 + Opus 5 continuity + Fable 5.2 premium pro
         // lane + Sonnet 5.5 BALANCED + Haiku 5.5 FAST) + OpenAI 3 (GPT-6.1 Sol
         // + GPT-6 Astra pro lane + GPT-6 Luna economy) + Google 2 (Gemini 4
-        // Argon depth / Gemini 3.8 Flash speed) = 10 cloud models.
+        // Carbon depth / Gemini 3.8 Flash speed) = 10 cloud models.
         //
         // Fable 5 was promoted as an explicit-choice premium model (2× Opus
         // cost), NOT an auto-default. Sonnet 5 and Haiku 4.5 were added

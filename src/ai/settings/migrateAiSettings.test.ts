@@ -16,12 +16,12 @@ describe('migrateAiSettings', () => {
         const result = migrateAiSettings({
             ...base,
             defaultAiProvider: 'gemini',
-            geminiModelId: 'gemini-4-argon'
+            geminiModelId: 'gemini-4-carbon'
         });
 
         expect(result.aiSettings.provider).toBe('google');
         expect(result.aiSettings.modelPolicy.type).toBe('pinned');
-        expect((result.aiSettings.modelPolicy as any).pinnedAlias).toBe('gemini-4-argon');
+        expect((result.aiSettings.modelPolicy as any).pinnedAlias).toBe('gemini-4-carbon');
         expect((result.aiSettings.credentials as any).googleApiKey).toBeUndefined();
         expect(result.aiSettings.credentials?.googleSecretId).toBeTruthy();
         expect(result.changed).toBe(true);
@@ -68,7 +68,7 @@ describe('migrateAiSettings', () => {
                 connections: {}
             },
             defaultAiProvider: 'gemini',
-            geminiModelId: 'gemini-4-argon'
+            geminiModelId: 'gemini-4-carbon'
         } as any);
 
         expect(result.aiSettings.provider).toBe('anthropic');

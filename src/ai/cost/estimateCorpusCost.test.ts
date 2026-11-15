@@ -201,7 +201,7 @@ describe('estimateCorpusCost', () => {
     });
 
     it('Gemini recovers thinking-token output from totalTokens for legacy sessions', () => {
-        const result = estimateUsageCost('google', 'gemini-4-argon', {
+        const result = estimateUsageCost('google', 'gemini-4-carbon', {
             inputTokens: 264_606,
             outputTokens: 531,
             totalTokens: 270_015,

@@ -178,6 +178,19 @@ const filesToCopy = [
 		}
 	}
 
+	// --- Hot Reload marker ---
+	// The Hot Reload community plugin reloads any plugin whose folder holds a
+	// `.hotreload` file when main.js or styles.css changes, so a deploy shows up
+	// in an open vault without toggling the plugin. Inert without Hot Reload.
+	// Vault plugin folders only: ./release and ./build ship exactly three files.
+	if (destDir.includes("/.obsidian/plugins/")) {
+		try {
+			fs.writeFileSync(path.join(destDir, ".hotreload"), "");
+		} catch (err) {
+			logErrorDetails(`Error writing .hotreload marker to ${dest.name}:`, err);
+		}
+	}
+
 	// --- Copy main.js ---
 	if (destDirs.length > 1) {
 		const mainJsPath = path.join(destDirs[0].path, "main.js");

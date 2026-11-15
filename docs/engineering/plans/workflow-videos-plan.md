@@ -30,7 +30,7 @@
 - **Show each step at a pace an author can follow** (Eric, 2026-11-12): 1.5 to 2 seconds per click or choice, typing at a readable speed, never sped up. Record a how-to's own takes for that pace rather than reusing a faster take timed to a longer script, and place each whole sentence of the voice at the step it starts on. Never cut a sentence short; loose sync with the screen is fine. "About a minute" gives way to this when a workflow has many steps.
 - **The end card stays up** (Eric, 2026-11-12): no fade to black. The closing card (logo, what to look up, radialtimeline.com) holds to the last frame, with the address on screen for at least three seconds.
 - **Production files** (voice takes, screen recordings, the edit) stay out of this public repository: on the Mac, in `Radial Timeline LLC/Video/Plugin tutorials/<video>/`, for example `…/beat manager/audio/beat-manager.aifc`. The auto-backup runs `git add -A` and pushes, so `.gitignore` ignores `video/` and raw recording formats in case a take lands in the repository folder by mistake.
-- **Scripts:** one per video in `docs/product/videos/<key>.md`, with exact interface labels, so a script can be checked against the app before recording. Written so far: [`pdf-export.md`](../../product/videos/pdf-export.md) and [`beat-manager.md`](../../product/videos/beat-manager.md).
+- **Scripts:** one per video in `docs/product/videos/<key>.md`, with exact interface labels, so a script can be checked against the app before recording. Written so far: [`pdf-export.md`](../../product/videos/pdf-export.md), [`beat-manager.md`](../../product/videos/beat-manager.md), and the Short [`timetable-modes.md`](../../product/videos/timetable-modes.md).
 
 ## Publishing a video
 
@@ -65,6 +65,11 @@ The pre-release eyeball checklist asks: if a release changes a screen a publishe
 | `progress-and-lamps` | Make a progress graphic and light a Desk Lamp | Pairs with `community-share` | Settings → Social, wiki Desk-Lamps |
 
 Later: Gossamer beat scoring, running an Inquiry, writing goals and sessions, exporting the wheel as an image.
+
+**Shorts** (vertical, in `Radial Timeline LLC/Video/Shorts/<name>/`; explorations rather than how-tos, so the plugin doesn't link them; the wiki can):
+
+- **Beats Update:** the Beat Manager's full overview, 2:28.
+- **Timetable Modes** (scripted 2026-11-15): filters, groups and sorts as questions inside each timeline mode, in the Odyssey Story Vault, about 2:25. Covers pinning a mode, a Bases sort outranking the mode's order, grouping stepping aside in Chronologue, and Outline's fixed reading order. Wiki thumbnail at Timetable → "Follow the timeline's mode".
 
 ## Existing videos to reuse
 

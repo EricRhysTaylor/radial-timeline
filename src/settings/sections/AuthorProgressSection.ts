@@ -18,6 +18,7 @@ import { renderAprShareFile } from '../../ui/aprShareFile';
 import { hasProFeatureAccess } from '../featureGate';
 import { colorSwatch, type ColorSwatchHandle } from '../../ui/ui';
 import { completeHexColor } from '../../utils/colour';
+import { bindHexTextInput } from '../../ui/hexTextInput';
 import { ERT_CLASSES } from '../../ui/classes';
 import { STAGE_ORDER } from '../../utils/constants';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
@@ -1118,10 +1119,8 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             colorConfig.setTextRef?.(colorText);
             colorText.inputEl.classList.add('ert-input', 'ert-input--hex');
             colorText.setPlaceholder(colorConfig.fallback).setValue(colorConfig.value);
-            colorText.onChange(async (val) => {
+            bindHexTextInput(colorText, async (hex) => {
                 if (isSyncing) return;
-                const hex = completeHexColor(val);
-                if (!hex) return;
                 await setAprSetting(colorConfig.key, hex as AuthorProgressDefaults[typeof colorConfig.key]);
                 colorPicker?.setValue(hex);
                 colorConfig.onAfterChange?.(hex);
@@ -1555,12 +1554,9 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     spokeColorInput.inputEl.classList.add('ert-input', 'ert-input--hex');
     spokeColorInput.setPlaceholder(fallbackColor).setValue(initialEffective);
     spokeColorInput.setDisabled(!isCustomMode);
-    spokeColorInput.onChange(async (val) => {
-        const hex = completeHexColor(val);
-        if (hex) {
-            await setAprSetting('aprSpokeColor', hex as AuthorProgressDefaults['aprSpokeColor']);
-            spokeColorPickerRef?.setValue(hex);
-        }
+    bindHexTextInput(spokeColorInput, async (hex) => {
+        await setAprSetting('aprSpokeColor', hex as AuthorProgressDefaults['aprSpokeColor']);
+        spokeColorPickerRef?.setValue(hex);
     });
 
     // Exposed so the background-color controls can keep the border swatch in sync when mode is 'sync'.

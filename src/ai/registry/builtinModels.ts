@@ -119,7 +119,7 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // auto-selection (Pulse/Gossamer/Inquiry) reads channel === 'stable'
         // only, so it continues to resolve to Opus 5.5. Fable is a 'pro'-channel
         // entry — visible and pinnable in the picker, but never the silent
-        // default. This matters because Fable costs 2.5× Opus ($10/$50 vs $4/$20
+        // default. This matters because Fable costs 2× Opus ($8/$40 vs $4/$20
         // per MTok); it must be an explicit author choice.
         //
         // Request-shape facts (verified against Anthropic docs, mid-2026):
@@ -130,8 +130,9 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         //     structured output uses output_config.format (json_schema), not
         //     the forced-tool path used by Opus.
         //   - temperature/top_p rejected (same as Opus 4.7+).
-        //   - Prompt-cache minimum prefix is 2048 tokens (Opus: 4096); cache
-        //     TTLs 5m/1h unchanged, so existing cache_control plumbing carries.
+        //   - Prompt-cache minimum prefix was 2048 tokens on Fable 5 (Anthropic
+        //     lists 512 for Fable 5.2 as of 2026-11-15); cache TTLs 5m/1h
+        //     unchanged, so existing cache_control plumbing carries.
         // All four facts verified via live smoke probe against claude-fable-5
         // on 2026-07-19 (basic effort request, output_config.format structured
         // output, 1h cache-prefix reuse, and the temperature/thinking.disabled
@@ -143,17 +144,31 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // routes structured output through output_config.format, so nothing
         // changes here); cache reads fall to $0.25/MTok; thinking blocks are
         // bound to the producing model and conversation (RT never replays them).
+        // Claude Fable 5.2 (2026-11-09) replaced Claude Fable 5.1 on this lane on
+        // 2026-11-15: same tier, context, output cap, always-on thinking,
+        // forced-tool_choice 400, sampling-parameter rule and 30-day retention
+        // requirement (Anthropic's migration guide calls it mostly drop-in).
+        // Deltas that matter to Radial Timeline: the price falls to $8/$40 per
+        // MTok (cache writes $10 5m / $16 1h, cache reads $0.20); a request that
+        // sends thinking blocks back after editing system, tools or earlier
+        // messages is now a 400 (Radial Timeline never replays thinking blocks);
+        // thinking tokens count toward max_tokens and a prompt line no longer
+        // suppresses thinking, so a small max_tokens can end before any text.
+        // Verified against Anthropic's Fable 5.2 overview, migration guide and
+        // pricing pages on 2026-11-15. NOT yet smoke-tested against the live
+        // API: run `npm run smoke-model -- --provider anthropic --model
+        // claude-fable-5-2` before a release.
         provider: 'anthropic',
-        id: 'claude-fable-5-1',
-        alias: 'claude-fable-5-1',
-        label: 'Claude Fable 5.1',
+        id: 'claude-fable-5-2',
+        alias: 'claude-fable-5-2',
+        label: 'Claude Fable 5.2',
         line: 'claude-fable',
         tier: 'DEEP',
         capabilities: [...DEEP_CAPS],
         personality: { reasoning: 10, writing: 10, determinism: 9 },
         contextWindow: 1_000_000,
         maxOutput: 128_000,
-        releasedAt: '2026-08-28',
+        releasedAt: '2026-11-09',
         status: 'stable',
         rollout: {
             channel: 'pro',

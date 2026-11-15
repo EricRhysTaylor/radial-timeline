@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T18:00:00.000Z",
+  "generatedAt": "2026-11-15T03:00:00.000Z",
   "models": [
     {
       "provider": "anthropic",
@@ -71,9 +71,9 @@
     },
     {
       "provider": "anthropic",
-      "id": "claude-fable-5-1",
-      "alias": "claude-fable-5-1",
-      "label": "Claude Fable 5.1",
+      "id": "claude-fable-5-2",
+      "alias": "claude-fable-5-2",
+      "label": "Claude Fable 5.2",
       "line": "claude-fable",
       "tier": "DEEP",
       "capabilities": [
@@ -89,7 +89,7 @@
       },
       "contextWindow": 1000000,
       "maxOutput": 128000,
-      "releasedAt": "2026-08-28",
+      "releasedAt": "2026-11-09",
       "status": "stable",
       "rollout": {
         "channel": "pro",

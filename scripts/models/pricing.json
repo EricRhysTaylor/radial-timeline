@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T18:00:00.000Z",
+  "generatedAt": "2026-11-15T03:00:00.000Z",
   "models": [
     {
       "provider": "anthropic",
@@ -51,13 +51,13 @@
     },
     {
       "provider": "anthropic",
-      "modelId": "claude-fable-5-1",
-      "inputPer1M": 10,
-      "outputPer1M": 50,
-      "cacheWrite5mPer1M": 12.5,
-      "cacheWrite1hPer1M": 20,
-      "cacheReadPer1M": 0.25,
-      "note": "Premium always-on-thinking model. 2x Opus on input/output; cache writes 5m $12.50, 1h $20.00; cache reads $0.25 (0.025x input)."
+      "modelId": "claude-fable-5-2",
+      "inputPer1M": 8,
+      "outputPer1M": 40,
+      "cacheWrite5mPer1M": 10,
+      "cacheWrite1hPer1M": 16,
+      "cacheReadPer1M": 0.2,
+      "note": "Premium always-on-thinking model. 2x Opus 5.5 on input/output; cache writes 5m $10.00, 1h $16.00; cache reads $0.20 (0.025x input). No long-context tier. Verified against platform.claude.com/docs/en/about-claude/pricing on 2026-11-15."
     },
     {
       "provider": "openai",

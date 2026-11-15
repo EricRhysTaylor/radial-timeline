@@ -183,20 +183,20 @@ describe('GoogleProvider', () => {
         expect(result.cacheUsed).toBe(false);
     });
 
-    // ── Implicit-only caching (Gemini 4 Argon) ──
+    // ── Implicit-only caching (Gemini 4 Carbon) ──
     //
-    // Argon does not accept cachedContents. RT must skip the cache manager,
+    // Carbon does not accept cachedContents. RT must skip the cache manager,
     // send the full prompt with the stable prefix first (so the provider's
     // implicit cache can match it), and treat cachedContentTokenCount > 0 as
     // provider proof of a reused prefix.
 
-    it('Gemini 4 Argon skips cachedContents, sends stable-first prompt, and reports an implicit hit', async () => {
+    it('Gemini 4 Carbon skips cachedContents, sends stable-first prompt, and reports an implicit hit', async () => {
         vi.mocked(callGeminiApi).mockResolvedValue(cachedResponse(135_825) as never);
 
         const stable = `Stable prefix ${'x'.repeat(140_000)}`;
         const provider = new GoogleProvider({ settings: {} } as never);
         const result = await provider.generateText({
-            modelId: 'gemini-4-argon',
+            modelId: 'gemini-4-carbon',
             systemPrompt: 'You are precise.',
             userPrompt: `${stable}${CACHE_BREAK_DELIMITER}Volatile question`,
             citationsEnabled: false
@@ -205,7 +205,7 @@ describe('GoogleProvider', () => {
         expect(getOrCreateGeminiCache).not.toHaveBeenCalled();
         expect(callGeminiApi).toHaveBeenCalledTimes(1);
         const args = vi.mocked(callGeminiApi).mock.calls[0];
-        expect(args[1]).toBe('gemini-4-argon');
+        expect(args[1]).toBe('gemini-4-carbon');
         expect(args[3]).toBe(`${stable}\n\nVolatile question`);
         expect(args[3].startsWith(stable)).toBe(true);
         // No cachedContent resource is referenced.
@@ -214,7 +214,7 @@ describe('GoogleProvider', () => {
         expect(result.cacheStatus).toBe('hit');
     });
 
-    it('Gemini 4 Argon reports no cache use when the response carries no cached tokens', async () => {
+    it('Gemini 4 Carbon reports no cache use when the response carries no cached tokens', async () => {
         const provider = new GoogleProvider({ settings: {} } as never);
         for (const usageMetadata of [
             { promptTokenCount: 140_000, cachedContentTokenCount: 0, candidatesTokenCount: 200, totalTokenCount: 140_200 },
@@ -228,7 +228,7 @@ describe('GoogleProvider', () => {
             } as never);
 
             const result = await provider.generateText({
-                modelId: 'gemini-4-argon',
+                modelId: 'gemini-4-carbon',
                 systemPrompt: 'You are precise.',
                 userPrompt: buildPrompt(),
                 citationsEnabled: false

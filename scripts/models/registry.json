@@ -278,9 +278,9 @@
     },
     {
       "provider": "google",
-      "id": "gemini-4-argon",
-      "alias": "gemini-4-argon",
-      "label": "Gemini 4 Argon",
+      "id": "gemini-4-carbon",
+      "alias": "gemini-4-carbon",
+      "label": "Gemini 4 Carbon",
       "line": "gemini-pro",
       "tier": "DEEP",
       "capabilities": [

@@ -1080,7 +1080,7 @@ export class AIClient {
             if (execution.cacheUsed) {
                 // Confirmed hit — safe to mark warm and surface cache coverage.
                 advancedContext.reuseState = 'warm';
-                // An implicit-cache hit (Gemini 4 Argon) can cover only part of
+                // An implicit-cache hit (Gemini 4 Carbon) can cover only part of
                 // the stable prefix: report the provider's cached count, not
                 // the estimate of the whole prefix.
                 const implicitReadTokens = provider === 'google' && !modelSupportsExplicitCache('google', modelSelection.model.id)

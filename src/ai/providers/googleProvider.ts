@@ -51,7 +51,7 @@ export class GoogleProvider implements AIProvider {
         implicitCache: boolean
     ): Pick<ProviderExecutionResult, 'cacheUsed' | 'cacheStatus'> {
         if (implicitCache) {
-            // Implicit-only models (Gemini 4 Argon): RT created nothing, so
+            // Implicit-only models (Gemini 4 Carbon): RT created nothing, so
             // a reported cachedContentTokenCount IS provider proof of reuse
             // of an earlier request's prefix.
             const read = extractTokenUsage('google', responseData)?.cacheReadInputTokens ?? 0; // SAFE: an absent counter means no cached read

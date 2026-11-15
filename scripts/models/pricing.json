@@ -109,7 +109,7 @@
     },
     {
       "provider": "google",
-      "modelId": "gemini-4-argon",
+      "modelId": "gemini-4-carbon",
       "inputPer1M": 2,
       "outputPer1M": 10,
       "cacheReadPer1M": 0.1,
@@ -120,7 +120,7 @@
         "standardOutputPer1M": 20,
         "standardCacheReadPer1M": 0.2
       },
-      "note": "Launch pricing through 2026-11-30; standard rates from 2026-12-01. Implicit caching only (no explicit cache, so no storage charge); cache read is the implicit-hit rate. No long-context tier. Verified against ai.google.dev/gemini-api/docs/pricing on 2026-10-13."
+      "note": "Launch pricing through 2026-11-30; standard rates from 2026-12-01. Implicit caching only (no explicit cache, so no storage charge); cache read is the implicit-hit rate. No long-context tier. Not on the free tier. Verified against aistudio.google.com/docs/pricing on 2026-11-15."
     },
     {
       "provider": "google",

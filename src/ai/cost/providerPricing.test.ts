@@ -66,14 +66,14 @@ describe('providerPricing', () => {
         expect(longContext.cacheReadPer1M).toBe(0.2);
     });
 
-    it('stores Gemini 4 Argon flat pricing (no long-context tier, no cache storage) with its launch promo', () => {
+    it('stores Gemini 4 Carbon flat pricing (no long-context tier, no cache storage) with its launch promo', () => {
         // Long-context tier coverage lives in the GPT-6.1 Sol tests above;
         // no Google model has a long-context price tier.
         vi.useFakeTimers({ toFake: ['Date'] });
         try {
             vi.setSystemTime(new Date('2026-11-15T00:00:00Z'));
-            const promoStandard = resolveProviderModelPricing('google', 'gemini-4-argon', 200_000);
-            const promoLarge = resolveProviderModelPricing('google', 'gemini-4-argon', 900_000);
+            const promoStandard = resolveProviderModelPricing('google', 'gemini-4-carbon', 200_000);
+            const promoLarge = resolveProviderModelPricing('google', 'gemini-4-carbon', 900_000);
             expect(promoStandard.promo?.expiresAt).toBe('2026-12-01T00:00:00Z');
             expect(promoStandard.inputPer1M).toBe(2);
             expect(promoStandard.outputPer1M).toBe(10);
@@ -85,7 +85,7 @@ describe('providerPricing', () => {
             expect(promoLarge.cacheReadPer1M).toBe(0.1);
 
             vi.setSystemTime(new Date('2026-12-01T00:00:00Z'));
-            const standard = resolveProviderModelPricing('google', 'gemini-4-argon', 900_000);
+            const standard = resolveProviderModelPricing('google', 'gemini-4-carbon', 900_000);
             expect(standard.promo).toBeUndefined();
             expect(standard.inputPer1M).toBe(4);
             expect(standard.outputPer1M).toBe(20);
@@ -94,7 +94,7 @@ describe('providerPricing', () => {
         } finally {
             vi.useRealTimers();
         }
-        expect(getProviderPricing('google', 'gemini-4-argon').longContext).toBeUndefined();
+        expect(getProviderPricing('google', 'gemini-4-carbon').longContext).toBeUndefined();
     });
 
     it('prices Gemini 3.8 Flash at launch rates, then every rate at standard after the promo ends', () => {
@@ -213,7 +213,7 @@ describe('providerPricing', () => {
     it('resolveProviderModelPricing surfaces active promo', () => {
         mergeRemotePricing({
             google: {
-                'gemini-4-argon': {
+                'gemini-4-carbon': {
                     inputPer1M: 0,
                     outputPer1M: 0,
                     promo: { label: 'Launch promo', expiresAt: new Date(Date.now() + 86400000).toISOString() }
@@ -221,7 +221,7 @@ describe('providerPricing', () => {
             }
         }, 'remote');
 
-        const resolved = resolveProviderModelPricing('google', 'gemini-4-argon', 50_000);
+        const resolved = resolveProviderModelPricing('google', 'gemini-4-carbon', 50_000);
         expect(resolved.inputPer1M).toBe(0);
         expect(resolved.promo?.label).toBe('Launch promo');
     });
@@ -229,7 +229,7 @@ describe('providerPricing', () => {
     it('resolveProviderModelPricing omits expired promo', () => {
         mergeRemotePricing({
             google: {
-                'gemini-4-argon': {
+                'gemini-4-carbon': {
                     inputPer1M: 0,
                     outputPer1M: 0,
                     promo: { label: 'Expired promo', expiresAt: '2020-01-01T00:00:00Z' }
@@ -237,14 +237,14 @@ describe('providerPricing', () => {
             }
         }, 'remote');
 
-        const resolved = resolveProviderModelPricing('google', 'gemini-4-argon', 50_000);
+        const resolved = resolveProviderModelPricing('google', 'gemini-4-carbon', 50_000);
         expect(resolved.promo).toBeUndefined();
     });
 
     it('expired promo falls back to standard prices', () => {
         mergeRemotePricing({
             google: {
-                'gemini-4-argon': {
+                'gemini-4-carbon': {
                     inputPer1M: 0,
                     outputPer1M: 0,
                     promo: {
@@ -257,7 +257,7 @@ describe('providerPricing', () => {
             }
         }, 'remote');
 
-        const resolved = resolveProviderModelPricing('google', 'gemini-4-argon', 50_000);
+        const resolved = resolveProviderModelPricing('google', 'gemini-4-carbon', 50_000);
         expect(resolved.promo).toBeUndefined();
         expect(resolved.inputPer1M).toBe(5.0);
         expect(resolved.outputPer1M).toBe(20.0);
@@ -266,7 +266,7 @@ describe('providerPricing', () => {
     it('expired promo without standard prices keeps base prices', () => {
         mergeRemotePricing({
             google: {
-                'gemini-4-argon': {
+                'gemini-4-carbon': {
                     inputPer1M: 2.5,
                     outputPer1M: 15.0,
                     promo: {
@@ -277,7 +277,7 @@ describe('providerPricing', () => {
             }
         }, 'remote');
 
-        const resolved = resolveProviderModelPricing('google', 'gemini-4-argon', 50_000);
+        const resolved = resolveProviderModelPricing('google', 'gemini-4-carbon', 50_000);
         expect(resolved.inputPer1M).toBe(2.5);
         expect(resolved.outputPer1M).toBe(15.0);
     });
@@ -286,7 +286,7 @@ describe('providerPricing', () => {
         const future = new Date(Date.now() + 86400000).toISOString();
         mergeRemotePricing({
             google: {
-                'gemini-4-argon': {
+                'gemini-4-carbon': {
                     inputPer1M: 0,
                     outputPer1M: 0,
                     promo: {
@@ -299,7 +299,7 @@ describe('providerPricing', () => {
             }
         }, 'remote');
 
-        const resolved = resolveProviderModelPricing('google', 'gemini-4-argon', 50_000);
+        const resolved = resolveProviderModelPricing('google', 'gemini-4-carbon', 50_000);
         expect(resolved.promo?.label).toBe('Free preview');
         expect(resolved.inputPer1M).toBe(0);
         expect(resolved.outputPer1M).toBe(0);

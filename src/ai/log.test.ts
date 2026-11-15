@@ -271,7 +271,7 @@ describe('buildUsageCostBreakdown', () => {
     });
 
     it('formats actual usage cost for run summaries without estimate data', () => {
-        const cost = formatActualUsageCost('google', 'gemini-4-argon', {
+        const cost = formatActualUsageCost('google', 'gemini-4-carbon', {
             inputTokens: 264_612,
             outputTokens: 3_402,
             totalTokens: 268_014,
@@ -288,8 +288,8 @@ describe('buildUsageCostBreakdown', () => {
             feature: 'Inquiry',
             scopeTarget: 'Saga · Σ',
             provider: 'Google',
-            modelRequested: 'gemini-4-argon',
-            modelResolved: 'gemini-4-argon',
+            modelRequested: 'gemini-4-carbon',
+            modelResolved: 'gemini-4-carbon',
             submittedAt: new Date('2026-05-05T15:00:00.000Z'),
             returnedAt: new Date('2026-05-05T15:00:38.000Z'),
             durationMs: 38_000,

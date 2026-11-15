@@ -68,7 +68,8 @@ function buildDisplayLabel(now: Date): string {
     });
 }
 
-async function ensureSnapshotFolder(app: App): Promise<void> {
+/** Create the snapshot folder (and parents) if missing. Shared with the When change log, which lives in it. */
+export async function ensureSnapshotFolder(app: App): Promise<void> {
     const folder = app.vault.getAbstractFileByPath(TIMELINE_SNAPSHOT_FOLDER);
     if (folder) return;
     const parts = TIMELINE_SNAPSHOT_FOLDER.split('/');

@@ -8,7 +8,7 @@ import { SubplotCanvasModal } from './SubplotCanvasModal';
 import { canvasChanges, carryCanvasEdits, isStoryMapProvenance, matchingBaseline, type StoryMapProvenance } from './storyMapProvenance';
 import { diffStoryMap, type StoryMapScene } from './storyMapDiff';
 import { transposeStoryCanvas } from './canvasOrientation';
-import type { StoryCanvasData } from './canvasSketches';
+import { canvasNodeId, type StoryCanvasData } from './canvasSketches';
 import { t } from '../i18n';
 import { selectedCanvasContents } from './storyMapLegacyCarry';
 
@@ -106,7 +106,7 @@ export class StoryMapReviewModal extends ErtModal {
         }
         const rows = this.app.vault.getMarkdownFiles().filter(file => getBookIdForPath(this.plugin.settings.books, file.path) === record.bookId)
             .map(file => buildTableRow(file.path, file.basename, this.app.metadataCache.getFileCache(file)?.frontmatter, this.plugin.settings));
-        const plan = planSubplotCanvas(rows, { act: record.act, subplot: record.subplot, layout: record.layout }, () => crypto.randomUUID().replace(/-/g, ''));
+        const plan = planSubplotCanvas(rows, { act: record.act, subplot: record.subplot, layout: record.layout }, canvasNodeId);
         const original = matchingBaseline(record.generated, live);
         let generated = JSON.parse(JSON.stringify({ nodes: plan.nodes, edges: plan.edges })) as StoryCanvasData;
         const orientationFlipped = !!record.orientationFlipped !== original.transposed;

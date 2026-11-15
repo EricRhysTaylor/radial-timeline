@@ -55,7 +55,6 @@ export class GossamerProcessingModal extends ErtModal {
 
     // UI elements
     private confirmationView?: HTMLElement;
-    private processingView?: HTMLElement;
     private subtitleEl?: HTMLElement;
     private manuscriptInfoEl?: HTMLElement;
     private priorReadingEl?: HTMLElement;

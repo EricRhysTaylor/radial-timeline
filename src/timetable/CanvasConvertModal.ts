@@ -4,7 +4,7 @@ import type { BookProfile } from '../types';
 import { ErtModal } from '../ui/ErtModal';
 import { authorKeyFor } from './timetableFiles';
 import { getConfiguredActCount } from '../utils/acts';
-import { canvasTextCards, linkSketches, repaintCards, sketchTitle, type StoryCanvasData, type CanvasCard, type CanvasTextCard } from './canvasSketches';
+import { canvasNodeId, canvasTextCards, linkSketches, repaintCards, sketchTitle, type StoryCanvasData, type CanvasCard, type CanvasTextCard } from './canvasSketches';
 import { hasPortalReferences } from './canvasPortals';
 import { t, tCount } from '../i18n';
 import { readSceneId } from '../utils/sceneIds';
@@ -771,7 +771,7 @@ export class CanvasConvertModal extends ErtModal {
             if (!this.canvasIsOpen() || JSON.stringify(initial) !== JSON.stringify(this.canvas.getData())) throw new Error(t('ui.canvasSketch.changed'));
             // Canvas retains the node class for an existing ID. New IDs let
             // the live view replace text cards, and make Canvas undo work.
-            const replacements = new Map([...paths].map(([id, path]) => [id, { id: crypto.randomUUID().replace(/-/g, ''), path }]));
+            const replacements = new Map([...paths].map(([id, path]) => [id, { id: canvasNodeId(), path }]));
             // Each new scene's card wears its subplot's timeline color.
             const colors = new Map([...repaints].flatMap(([id, hex]) => replacements.has(id) ? [[replacements.get(id)!.id, hex] as const] : [])); // SAFE: has() checked the replacement just before
             const converted = repaintCards(linkSketches(initial, replacements), colors);
@@ -824,7 +824,7 @@ export class CanvasConvertModal extends ErtModal {
             if (paths.size && !linked && this.canvasIsOpen() && JSON.stringify(initial) === JSON.stringify(this.canvas.getData())) {
                 // Preserve completed work on the map. A later conversion then sees only
                 // the remaining text cards, rather than creating these notes twice.
-                const replacements = new Map([...paths].map(([id, path]) => [id, { id: crypto.randomUUID().replace(/-/g, ''), path }]));
+                const replacements = new Map([...paths].map(([id, path]) => [id, { id: canvasNodeId(), path }]));
                 const colors = new Map([...repaints].flatMap(([id, hex]) => replacements.has(id) ? [[replacements.get(id)!.id, hex] as const] : [])); // SAFE: checked above
                 const partial = repaintCards(linkSketches(initial, replacements), colors);
                 try {

@@ -237,6 +237,54 @@ The wheel is for seeing (proportion, rhythm, gaps, where you are); the Timetable
 - **Bulk edits** (the table owns field edits). Checkboxes on scene, sketch and unpromoted rows; Shift picks a range; Esc clears (from the app's key scope, so it works wherever focus is while the Timetable pane is active, and an open menu takes Esc first). A bar sets Status, Publish Stage, Act or rings on every picked row, or promotes the non-scenes. Ring changes (scenes only) get one notice and one Undo for all of them.
 - **Open query dots on the wheel** (the wheel flags, the table works through them). A scene with `%%query: …%%` in its text gets the Timetable's question bubble (`message-circle-question`, white with a dark outline) at the center of each of its cells, sized to the cell; a cell too small for a legible icon (a compact All Scenes ring, a Sequence subring) gets a small dot, a sliver nothing (`queryMarkFor`). Eric 2026-10-13: the first version's corner dot floated in Gossamer, and a plain dot didn't say what it meant. The mark lives in the scene's group, so it recedes with the scene, and it is pointer-transparent like the number squares: Narrative opens and drags from the cell's path, so a mark that caught the pointer blocked both. So the wheel has no tooltip of its own for queries; the table's badge lists them, and hovering the scene lights its row.
 
+## 8. Questions inside a mode, and a visible sort (proposed 2026-11-15)
+
+**The idea (Eric, 2026-11-15).** The four modes are the Timetable's main ways to read a book: Narrative in manuscript order, Chronologue in story time, Progress by how far the work has come, Gossamer by its beats and their scores. Bases filters, groups and sorts are questions asked *inside* a mode, not modes of their own. So the four modes stay the primary navigation, and the Timetable could offer a few small, mode-aware shortcuts for common questions. The Timetable Modes Short (`docs/product/videos/timetable-modes.md`) teaches the same model. Examples:
+
+- **Narrative:** two characters, and where they appear together (color by Character, pick both, **Both present**).
+- **Chronologue:** one character's or place's path through story time (a filter on Character or Place).
+- **Progress:** what's left, by status (Status is not Complete, grouped by Status).
+- **Gossamer:** the beats that matter to one subplot, or the beats that miss their expected range.
+
+**The problem to solve first: a sort the author can't see.** A sort set in Bases outranks the mode's order (§7, `buildGroups` and `chronologueContext` in `TimetableView.ts`). Narrative stops reading in manuscript order, Chronologue drops its day dividers, and the drag grips stop until the sort is gone. Nothing in the Timetable says so: the grip explains itself only when an author tries it, and missing day dividers are the only visible sign. Any shortcut has to keep the mode's order, and the Timetable should say when a sort has replaced it.
+
+### 8a. The sort notice (small; build first)
+
+- **When** `this.config.getSort().length > 0`, show one line in the Timetable's toolbar row, beside **Mode**, for example *Sorted by Words · Chronologue order paused*. Its tooltip says what the sort replaces in this mode: manuscript order in Narrative and Progress, story order and the day dividers in Chronologue, the beat order in Gossamer. In Narrative and Chronologue it adds that the drag grips wait for the sort to clear.
+- **Clear sort,** on the line, removes the sort from this view only, and the mode's order returns.
+  - **Spike first:** whether `config.set('sort', …)` clears a view's sort through Obsidian. The API documents `getSort()` as reading the sort the author set in the toolbar, and documents no setter.
+  - **Otherwise** edit the `.base` file the way **Restore Radial Timetable view** does (`TimetableService.restoreView`): parse, change only this view's `sort`, and write through `vault.process`, giving up if the file changed since it was read. The rewrite reformats the file and drops YAML comments, as Restore's confirmation already says, so Clear sort confirms the same way. Find the view by its name. If two views share it, explain and change nothing (no fallback).
+- **Outline** always reads in narrative order. Check whether it ignores the sort; if it does, the notice stays out of Outline.
+- **Copy:** new strings in `en.ts` only, per the i18n rule. Wiki: "Follow the timeline's mode" in `wiki/Timetable.md` gains a line on the notice.
+- **Short:** once this ships, the Timetable Modes Short's sort shot points at the notice instead of the missing dividers.
+
+### 8b. Mode-aware shortcuts (proposed; pick which)
+
+- **Where:** a short section in the **Mode** menu, *Questions in Chronologue* and so on, listing only the current mode's shortcuts. The Mode menu is already where an author chooses how to read the table, so a question there reads as part of that mode rather than as a fifth mode.
+- **What a shortcut does:** it adds a **new saved view** to the book's `.base` file, a copy of the Radial Timetable view named after the question, for example *Ulysses in story time*, with a "This view" filter or grouping, and opens it. It never changes an existing view's filters. The file is the author's (§2), and a saved view is already a saved lens: a view with its own filter turns the lens on by itself. The new view is removed like any other, from Bases' view menu.
+- **Rules for every shortcut:**
+  - never add a sort, so the mode's order holds;
+  - name the question in the view's name, so it's clear what the view is;
+  - write the `.base` file through the same guarded `vault.process` path as 8a.
+- **Candidates:**
+
+| Mode | Shortcut | What it sets |
+|---|---|---|
+| Narrative | **Who's together?** | Not a filter: starts coloring by Character and opens **Edit key**, where two names default to **Both present**. No new view |
+| Chronologue | **Follow a character…** / **Follow a place…** | Asks for a name from the book's Character or Place values, then a new view filtered to it |
+| Progress | **What's left?** | A new view: Status is not Complete, grouped by Status |
+| Progress | **Overdue** | Coloring by Due, which already has an Overdue group. No new view |
+| Gossamer | **Beats only** | A new view filtered to `Class` is Beat |
+
+- **Not possible as a Bases filter:**
+  - **Gossamer's "outside the expected range."** The flag is worked out by Radial Timeline from the score and the range, not stored as a property. It would need a Timetable view option ("Only flagged beats") that `buildGroups` applies itself.
+  - **A subplot's beats.** Possible only if beat notes carry a Subplot. Check the Story Vaults' beats; if they don't, filtering by Subplot hides every beat.
+
+### Set aside
+
+- **A "Story chronology" preset.** It would duplicate Chronologue. A historical chronology is a variation within Chronologue (dates, the Alt calendar, BCE years), not a separate top-level view.
+- **Preset modes built from filters.** Filters stay questions inside a mode; the four modes stay the navigation.
+
 ## Considered and set aside: a lanes layout ("Unwrapped")
 
 We considered a linear layout of the timeline view itself, with each ring pulled into a horizontal lane and a sideways scroll in manuscript order. It answers the same requests and has two real benefits: every scene gets the same size, and gaps in a plotline stand out. It is also the familiar "plot grid" of other writing tools.
@@ -284,3 +332,8 @@ Also settled on 2026-10-12: the icons (`file-up` for Promote, `table-2` for the 
 Decided 2026-10-12: each book's table file includes the built-in Act board and Status board (§6). Native grouping with `groupOrder` and collapsible act groups remain the proposed approach, since the boards rely on the same grouping.
 
 The remaining unknowns are implementation spikes (phase 3).
+
+Open (§8, proposed 2026-11-15):
+1. Build the sort notice and **Clear sort** (8a) now?
+2. Which mode-aware shortcuts (8b), if any, and whether they live in the **Mode** menu.
+3. Whether a shortcut adds a new saved view (proposed) or changes the current view's filter.

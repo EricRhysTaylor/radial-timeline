@@ -1,4 +1,5 @@
 import type { TFile, Workspace, WorkspaceLeaf } from 'obsidian';
+import { canvasNodeId } from './canvasSketches';
 
 type LayoutNode = { id: string; type: string; children?: LayoutNode[]; direction?: string; state?: { type?: string; state?: { file?: string } }; [key: string]: unknown };
 type WorkspaceLayout = { main: LayoutNode; active?: string; [key: string]: unknown };
@@ -37,7 +38,7 @@ export async function applyMainWorkspace(workspace: Workspace, table: WorkspaceL
         const tableNode = leaves(original.main).find(node => workspace.getLeafById(node.id) === table);
         if (!tableNode) throw new Error('Timetable is no longer in the main workspace.');
         const pinned = new Set(leaves(original.main).filter(node => workspace.getLeafById(node.id)?.getViewState().pinned === true).map(node => node.id));
-        const plan = planMainWorkspace(original, tableNode.id, file, kind, () => crypto.randomUUID().replace(/-/g, ''), pinned);
+        const plan = planMainWorkspace(original, tableNode.id, file, kind, canvasNodeId, pinned);
         try {
             await workspace.changeLayout(plan.layout);
             const newTable = workspace.getLeafById(plan.tableId);

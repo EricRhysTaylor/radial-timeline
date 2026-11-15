@@ -6,7 +6,7 @@ import { t } from '../i18n';
 import { buildTableRow, type TimetableRow } from './timetableModel';
 import { planSubplotCanvas, storyRangeBounds, storyRangeRows, type StoryRange } from './subplotCanvas';
 import { storyMapFolder, storyMapPrefix } from './storyMapPaths';
-import type { StoryCanvasData } from './canvasSketches';
+import { canvasNodeId, type StoryCanvasData } from './canvasSketches';
 import { carryLegacySelection, selectedCanvasContents, type LegacyCanvasSelection } from './storyMapLegacyCarry';
 
 export class SubplotCanvasModal extends ErtModal {
@@ -105,7 +105,7 @@ export class SubplotCanvasModal extends ErtModal {
         const book = this.plugin.settings.books.find(item => item.id === this.bookId);
         if (!book) return;
         const rows = this.rows();
-        const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot, layout: this.layout }, () => crypto.randomUUID().replace(/-/g, ''));
+        const plan = planSubplotCanvas(rows, { act: this.act, subplot: this.subplot, layout: this.layout }, canvasNodeId);
         const bounds = storyRangeBounds(plan.nodes, rows, this.act, this.subplot, this.range);
         if (!plan.sceneCount) { new Notice(t('ui.subplotCanvas.empty')); return; }
         if (this.carry && JSON.stringify(this.carry.readCurrent()) !== JSON.stringify(this.carry.source)) {

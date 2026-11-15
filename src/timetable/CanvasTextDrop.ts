@@ -13,14 +13,13 @@ import { isStoryMapProvenance, matchingBaseline } from './storyMapProvenance';
 import { planCanvasTextDrop, type CanvasDropProblem } from './canvasTextDropPlan';
 import { CanvasLayoutError, insertCanvasSceneCard, type CanvasLayoutProblem } from './canvasTextDropLayout';
 import { registerTextSketchCapture, type DraggedSelection } from './TextSketchCapture';
-import type { StoryCanvasData } from './canvasSketches';
+import { canvasNodeId, type StoryCanvasData } from './canvasSketches';
 import { isStoryMapPath } from './storyMapPaths';
 
 type CanvasNode = { nodeEl?: HTMLElement; getData?: () => { file?: string; x?: number; y?: number; width?: number; height?: number } };
 type Canvas = { nodes?: Map<string, CanvasNode>; getData?: () => StoryCanvasData; setData?: (data: StoryCanvasData) => void; requestSave?: () => void };
 type CanvasView = ItemView & { file?: TFile | null; canvas?: Canvas };
 type Point = { x: number; y: number };
-const uid = () => crypto.randomUUID().replace(/-/g, '');
 const dropProblemKeys: Record<CanvasDropProblem, string> = {
     invalidPosition: 'ui.timetable.canvasDropInvalidPosition',
     overlappingLanes: 'ui.timetable.canvasDropOverlappingLanes',
@@ -158,12 +157,12 @@ class CanvasTextDropModal extends ErtModal {
                 if (this.app.vault.getAbstractFileByPath(destination)) throw new Error(t('ui.timetable.noteDropExists'));
                 fm[authorKeyFor('Act', this.plugin.settings)] = chosenAct;
                 fm[authorKeyFor('Subplot', this.plugin.settings)] = [bookSubplotName(target.subplot, book)];
-                const layout = insertCanvasSceneCard(original, baseline.data, { laneId: target.laneId, nodeId: uid(), edgeId: uid, path: destination, beforePath: target.before, vertical, keepHeading: !after });
+                const layout = insertCanvasSceneCard(original, baseline.data, { laneId: target.laneId, nodeId: canvasNodeId(), edgeId: canvasNodeId, path: destination, beforePath: target.before, vertical, keepHeading: !after });
                 nextCanvas = layout.data; nextBaseline = layout.baseline;
             } else {
                 destination = normalizePath(`${book.sourceFolder}/${name}.md`);
                 for (let n = 2; this.app.vault.getAbstractFileByPath(destination); n++) destination = normalizePath(`${book.sourceFolder}/${name} ${n}.md`);
-                nextCanvas = { ...original, nodes: [...(original.nodes ?? []), { id: uid(), type: 'file', file: destination, x: Math.round(this.point.x), y: Math.round(this.point.y), width: 300, height: 170 }] };
+                nextCanvas = { ...original, nodes: [...(original.nodes ?? []), { id: canvasNodeId(), type: 'file', file: destination, x: Math.round(this.point.x), y: Math.round(this.point.y), width: 300, height: 170 }] };
             }
             const raw = `---\n${stringifyYaml(fm)}---\n\n${body.value}\n`;
             const content = target.kind === 'scene' ? addSceneIntakeTemplate(raw, this.plugin.settings, { act: chosenAct }) : raw;

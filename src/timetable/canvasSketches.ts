@@ -2,6 +2,9 @@ import { t } from '../i18n';
 import { safeTitle } from '../utils/noteTitle';
 import { isStoryActHeading } from './canvasNavigation';
 
+/** A fresh Canvas node or edge id: a UUID without dashes, the shape Obsidian itself writes. */
+export const canvasNodeId = (): string => crypto.randomUUID().replace(/-/g, '');
+
 /** Canvas data is intentionally open: other plugins may add their own fields. */
 export interface CanvasCard {
     id: string;

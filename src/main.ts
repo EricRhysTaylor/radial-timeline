@@ -228,7 +228,6 @@ export default class RadialTimelinePlugin extends Plugin {
 
     private readonly eventBus = new EventTarget();
     private readonly disposables = new DisposableRegistry();
-    private metadataCacheListener: (() => void) | null = null;
     // Serialized settings persistence: a single in-flight save drain plus a
     // coalescing request flag. Concurrent saveSettings() callers never run
     // saveData() in parallel (no last-writer-wins clobbering); every caller's

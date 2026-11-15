@@ -230,7 +230,6 @@ export class RadialTimelineView extends ItemView {
     private readonly interactionController: ModeInteractionController; // Interaction handler management
     
     // Store event handler references for clean removal
-    private normalEventHandlers: Map<string, EventListener> = new Map();
     private gossamerEventHandlers: Map<string, EventListener> = new Map();
 
     // Expose a safe registrar for Gossamer handlers so external modules can record svg-level listeners

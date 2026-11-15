@@ -197,7 +197,6 @@ export class OuterRingDragController {
     private holdTimer: number | null = null;
     private startX = 0;
     private startY = 0;
-    private startTime = 0;
     private confirming = false;
     private originColor?: string;
     private originModalColor?: string;
@@ -1238,7 +1237,6 @@ export class OuterRingDragController {
         dragInteractionActive = true;
         this.startX = evt.clientX;
         this.startY = evt.clientY;
-        this.startTime = Date.now();
         
         // Drag accent follows publish-stage color (not subplot fill color)
         this.originColor = this.resolvePublishStageColorFromGroup(group);

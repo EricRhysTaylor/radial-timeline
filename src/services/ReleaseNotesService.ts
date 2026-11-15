@@ -13,7 +13,6 @@ import releaseNotesBundle from '../data/releaseNotesBundle.json';
 export class ReleaseNotesService {
     private releaseNotesBundle: EmbeddedReleaseNotesBundle | null = null;
     private releaseModalShownThisSession = false;
-    private releaseNotesFetchPromise: Promise<boolean> | null = null;
 
     constructor(
         private settings: RadialTimelineSettings,

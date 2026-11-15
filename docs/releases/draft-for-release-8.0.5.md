@@ -12,3 +12,4 @@ A scene drag tells you how many other files it renames, color fields save the co
 - **Color fields:** a hex color saves once you have typed all six digits. A three-digit shorthand such as `#fff` saves when you press Enter or leave the field, and the field shows it in full.
 - **Sketch positions from earlier versions:** the one-time copy of each sketch's place into the placement file waits until Obsidian has read every note, so every sketch keeps its place.
 - **Runtime view:** character lane names stay out of the way when the ring key is open.
+- **Time reference popovers:** a marker's popover opens once as the pointer arrives and stays steady while the pointer moves across the marker.

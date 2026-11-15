@@ -133,7 +133,8 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
     };
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (event: Event) => {
         const group = groupOf(event.target);
-        if (!group) return;
+        // pointerover fires again for each part of a marker the pointer crosses; only entering the marker counts.
+        if (!group || group.contains((event as PointerEvent).relatedTarget as Node | null)) return;
         const selection = selectionFor(group);
         if (selection) hoverTimeReference(selection);
         if (!popover.pinned) showPopover(group);

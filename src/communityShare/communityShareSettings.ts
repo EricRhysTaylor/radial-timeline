@@ -1,6 +1,7 @@
 import type {
     CommunityDailyBackfillRecord,
     CommunityDeskLampsRecord,
+    CommunitySceneBodyShareRecord,
     CommunityShareAudience,
     CommunityShareConnectionSettings,
     CommunityShareFieldKey,
@@ -239,7 +240,7 @@ function normalizeDailyBackfill(value: unknown): CommunityDailyBackfillRecord | 
     };
 }
 
-const DESK_LAMP_PROFILE_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const COMMUNITY_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function normalizeDeskLamps(value: unknown): CommunityDeskLampsRecord | undefined {
     if (!value || typeof value !== 'object') return undefined;
@@ -247,7 +248,7 @@ function normalizeDeskLamps(value: unknown): CommunityDeskLampsRecord | undefine
     if (typeof record.profileId !== 'string' || !record.profileId) return undefined;
     const audience: string[] = [];
     for (const id of Array.isArray(record.audience) ? record.audience : []) {
-        if (typeof id !== 'string' || !DESK_LAMP_PROFILE_RE.test(id)) continue;
+        if (typeof id !== 'string' || !COMMUNITY_UUID_RE.test(id)) continue;
         const lower = id.toLowerCase();
         if (!audience.includes(lower)) audience.push(lower);
     }
@@ -287,6 +288,37 @@ function normalizeTimelineShares(value: unknown): Record<string, CommunityTimeli
         };
     }
     return Object.keys(records).length > 0 ? records : undefined;
+}
+
+/**
+ * Share scene body records, field by field: the account, on or off, and the
+ * book's website project. Anything else on a stored record is dropped, so the
+ * record can never come to hold scene text.
+ */
+function normalizeSceneBodyShares(value: unknown): Record<string, CommunitySceneBodyShareRecord> | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    const records: Record<string, CommunitySceneBodyShareRecord> = {};
+    for (const [bookId, raw] of Object.entries(value as Record<string, unknown>)) {
+        const record = raw as Partial<CommunitySceneBodyShareRecord> | null;
+        if (!bookId || !record || typeof record.profileId !== 'string' || !record.profileId) continue;
+        records[bookId] = {
+            profileId: record.profileId,
+            enabled: record.enabled === true,
+            // The id becomes part of a link: only a UUID is kept.
+            ...(typeof record.projectId === 'string' && COMMUNITY_UUID_RE.test(record.projectId) ? { projectId: record.projectId } : {}),
+        };
+    }
+    return Object.keys(records).length > 0 ? records : undefined;
+}
+
+/**
+ * This book's Share scene body record for the connected profile. A record made
+ * for another account is ignored, as timelineShareFor ignores one.
+ */
+export function sceneBodyShareFor(settings: CommunityShareSettings, bookId: string): CommunitySceneBodyShareRecord | undefined {
+    const record = settings.sceneBodyShares?.[bookId];
+    if (!record || !settings.connection.profileId || record.profileId !== settings.connection.profileId) return undefined;
+    return record;
 }
 
 /**
@@ -383,6 +415,7 @@ export function normalizeCommunityShareSettings(raw?: Partial<CommunityShareSett
         lastError: input?.lastError,
         dailyBackfill: normalizeDailyBackfill(input?.dailyBackfill),
         deskLamps: normalizeDeskLamps(input?.deskLamps),
-        timelineShares: normalizeTimelineShares(input?.timelineShares)
+        timelineShares: normalizeTimelineShares(input?.timelineShares),
+        sceneBodyShares: normalizeSceneBodyShares(input?.sceneBodyShares)
     };
 }

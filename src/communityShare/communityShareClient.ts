@@ -2,8 +2,10 @@ import { apiVersion, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
-import { canShareAprToCommunity, canShareTimelineToCommunity, deriveCommunityShareMode, expectsBookListSync, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, timelineShareFor } from './communityShareSettings';
+import { canShareAprToCommunity, canShareTimelineToCommunity, deriveCommunityShareMode, expectsBookListSync, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, sceneBodyShareFor, timelineShareFor } from './communityShareSettings';
 import { buildTimelineSharePayload, hasAmbiguousSceneIdHolders, sceneIdHolders, timelinePayloadFingerprint } from './timelineSharePayload';
+import { sceneTextProblem, type SceneBlock, type SceneTextProblem } from './sceneReleaseText';
+import { isOpaqueSceneId } from '../utils/sceneIds';
 import {
     COMMUNITY_DAILY_BACKFILL_DAYS,
     COMMUNITY_DAILY_BACKFILL_VERSION,
@@ -14,7 +16,7 @@ import {
     buildCommunitySharePreview,
     communityDailyIncludesWords
 } from './communitySharePreview';
-import type { BookProfile, CommunityShareConnectionSettings, CommunityShareFieldKey, CommunitySharePublishHistoryEntry, CommunityShareSettings, CommunityTimelineShareRecord, WritingSessionMode } from '../types/settings';
+import type { BookProfile, CommunitySceneBodyShareRecord, CommunityShareConnectionSettings, CommunityShareFieldKey, CommunitySharePublishHistoryEntry, CommunityShareSettings, CommunityTimelineShareRecord, WritingSessionMode } from '../types/settings';
 import type { SessionFeedPost } from '../services/WritingSessionLog';
 
 const FUNCTIONS_BASE_URL = 'https://gjffqdfjcjdmqxuqlzsj.supabase.co/functions/v1';
@@ -1583,6 +1585,262 @@ async function runTimelineSync(plugin: RadialTimelinePlugin): Promise<void> {
             if (SYNC_STOP_CODES.has(code)) return;
         }
     }
+}
+
+// -- Private scenes (Settings → Community) ------------------------------------
+//
+// The only path by which scene text leaves the vault. Text is sent by
+// releaseSceneBody alone, and that is called only from the preview dialog's
+// Release / Update button (SceneReleasePreviewModal), after the author has
+// seen the very blocks that go. No sync, timer or startup hook calls it:
+// status, consent and take-down carry no text, and nothing here runs on its
+// own. Contract: Platform/COMMUNITY-SHARE-AMENDMENT-2-PRIVATE-SCENE-TEXT.md;
+// doctrine: docs/engineering/standards/writing-session-privacy.md.
+
+export type SceneReleaseRating = 'general' | 'mature';
+
+/** One released scene as the website reports it. Never carries the text. */
+export interface SceneReleaseSummary {
+    id: string;
+    /** The stable id of the timeline scene the release sits on now; null when it is detached. */
+    scene_id: string | null;
+    scene_title: string;
+    version: number;
+    rating: SceneReleaseRating;
+    words: number;
+    /** SHA-256 of the released text, as sceneReleaseText.sceneTextHash computes it. */
+    text_hash: string;
+    /** Hidden from readers while a report is reviewed. */
+    hidden: boolean;
+    released_at: string;
+    updated_at: string;
+    /** How many readers the author named for this scene. A count, never who. */
+    readers: number;
+}
+
+export interface SceneReleaseStatus {
+    project_id: string;
+    /** Whether the account has agreed to the release terms. */
+    consent: boolean;
+    standing: null | 'account_flagged' | 'account_deletion_pending';
+    has_timeline: boolean;
+    /** Released scenes allowed per book for this account. */
+    limit: number;
+    releases: SceneReleaseSummary[];
+}
+
+/** What the website answers to a release or an update: the fields the plugin reads. */
+export interface SceneReleaseResult {
+    release: {
+        id: string;
+        scene_title: string;
+        version: number;
+        rating: SceneReleaseRating;
+        words: number;
+        hidden: boolean;
+        released_at: string;
+        updated_at: string;
+    };
+}
+
+interface SceneReleaseConsentAnswer {
+    ok: true;
+    version: string;
+}
+
+const SCENE_TEXT_HASH_RE = /^[0-9a-f]{64}$/;
+const SCENE_RELEASE_RATINGS: ReadonlySet<unknown> = new Set(['general', 'mature']);
+const SCENE_RELEASE_STANDINGS: ReadonlySet<unknown> = new Set([null, 'account_flagged', 'account_deletion_pending']);
+
+function isVersion(value: unknown): value is number {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 1;
+}
+
+function isSceneReleaseSummary(value: unknown): value is SceneReleaseSummary {
+    if (!value || typeof value !== 'object') return false;
+    const release = value as Partial<SceneReleaseSummary>;
+    return typeof release.id === 'string' && release.id.length > 0
+        && (release.scene_id === null || typeof release.scene_id === 'string')
+        && typeof release.scene_title === 'string'
+        && isVersion(release.version)
+        && SCENE_RELEASE_RATINGS.has(release.rating)
+        && isCount(release.words)
+        && typeof release.text_hash === 'string' && SCENE_TEXT_HASH_RE.test(release.text_hash)
+        && typeof release.hidden === 'boolean'
+        && typeof release.released_at === 'string'
+        && typeof release.updated_at === 'string'
+        && isCount(release.readers);
+}
+
+export function isSceneReleaseStatus(value: unknown): value is SceneReleaseStatus {
+    if (!value || typeof value !== 'object') return false;
+    const status = value as Partial<SceneReleaseStatus>;
+    // The project id becomes part of a link: only a UUID is accepted.
+    return typeof status.project_id === 'string' && COMMUNITY_UUID_RE.test(status.project_id)
+        && typeof status.consent === 'boolean'
+        && SCENE_RELEASE_STANDINGS.has(status.standing)
+        && typeof status.has_timeline === 'boolean'
+        && isCount(status.limit)
+        && Array.isArray(status.releases) && status.releases.every(isSceneReleaseSummary);
+}
+
+export function isSceneReleaseResult(value: unknown): value is SceneReleaseResult {
+    if (!value || typeof value !== 'object') return false;
+    const release = (value as Partial<SceneReleaseResult>).release;
+    return !!release && typeof release === 'object'
+        && typeof release.id === 'string' && release.id.length > 0
+        && typeof release.scene_title === 'string'
+        && isVersion(release.version)
+        && SCENE_RELEASE_RATINGS.has(release.rating)
+        && isCount(release.words)
+        && typeof release.hidden === 'boolean'
+        && typeof release.released_at === 'string'
+        && typeof release.updated_at === 'string';
+}
+
+function isSceneReleaseConsentAnswer(value: unknown): value is SceneReleaseConsentAnswer {
+    const answer = value as Partial<SceneReleaseConsentAnswer>;
+    return answer?.ok === true && typeof answer.version === 'string';
+}
+
+/** Why a scene's cleaned text can't be released, in the author's words. */
+export function sceneTextProblemMessage(problem: SceneTextProblem): string {
+    if (problem === 'empty') return t('ui.communityShareClient.sceneReleaseEmpty');
+    if (problem === 'too_many_words') return t('ui.communityShareClient.sceneReleaseTooLong');
+    return t('ui.communityShareClient.sceneReleaseTooLarge');
+}
+
+/**
+ * Whether a scene-release call may leave: a connected vault, sharing not
+ * paused (Pause is a full outbound freeze, so even the status read stops), and
+ * the level a timeline needs, because a scene is released onto the shared
+ * timeline.
+ */
+function assertSceneReleaseAllowed(settings: CommunityShareSettings): void {
+    if (!hasCommunityConnection(settings)) {
+        throw new CommunityShareError('connection_required', t('ui.communityShareClient.connectBeforeSync'));
+    }
+    if (settings.sharingPaused) {
+        throw new CommunityShareError('sharing_paused', t('ui.communityShareClient.sceneReleasePaused'));
+    }
+    if (!canShareTimelineToCommunity(settings)) {
+        throw new CommunityShareError('sharing_level_required', t('ui.communityShareClient.sceneReleaseLevelRequired'));
+    }
+}
+
+/**
+ * One call to scene-release-sync for one book. `action` holds the action name
+ * and exactly that action's own keys: the website refuses any extra or missing
+ * key. Gated before the secret is read and again immediately before the
+ * request leaves, like every sender here.
+ */
+async function postSceneRelease<T>(
+    plugin: RadialTimelinePlugin,
+    book: Pick<BookProfile, 'id'>,
+    action: Record<string, unknown>,
+    isSuccess: (value: unknown) => value is T
+): Promise<T> {
+    assertSceneReleaseAllowed(normalizeCommunityShareSettings(plugin.settings.communityShare));
+    const { connectionId, currentSecret, connection } = await requireActiveConnection(plugin);
+    const body = {
+        connection_id: connectionId,
+        current_secret: currentSecret,
+        plugin_book_key: book.id,
+        ...action,
+    };
+    assertSceneReleaseAllowed(assertStillSendable(plugin, connection));
+    return postCommunityFunction(
+        plugin,
+        'scene-release-sync',
+        body,
+        isSuccess,
+        { code: 'scene_release_failed', message: t('ui.communityShareClient.sceneReleaseFailed') },
+        t('ui.communityShareClient.sceneReleaseUnexpected')
+    );
+}
+
+async function saveSceneBodyRecord(
+    plugin: RadialTimelinePlugin,
+    bookId: string,
+    profileId: string,
+    update: (record: CommunitySceneBodyShareRecord) => CommunitySceneBodyShareRecord
+): Promise<void> {
+    commitCommunityShare(plugin, live => {
+        // The author may have reconnected as someone else while this was out.
+        if (live.connection.profileId !== profileId) return live;
+        const base = sceneBodyShareFor(live, bookId) ?? { profileId, enabled: false };
+        return { ...live, sceneBodyShares: { ...live.sceneBodyShares, [bookId]: update(base) } };
+    });
+    await plugin.saveSettings();
+}
+
+/**
+ * Share scene body, turned on or off for one book. A local setting: nothing is
+ * sent, released or taken down. `projectId` is the book's website project from
+ * the status answer, kept for the "Choose readers" link.
+ */
+export async function setSceneBodySharing(
+    plugin: RadialTimelinePlugin,
+    bookId: string,
+    enabled: boolean,
+    projectId?: string
+): Promise<void> {
+    const profileId = normalizeCommunityShareSettings(plugin.settings.communityShare).connection.profileId;
+    if (!profileId) throw new CommunityShareError('connection_required', t('ui.communityShareClient.connectBeforeSync'));
+    await saveSceneBodyRecord(plugin, bookId, profileId, record => {
+        const project = projectId ?? record.projectId;
+        return { profileId, enabled, ...(project ? { projectId: project } : {}) };
+    });
+}
+
+/**
+ * What the website holds for this book: its releases with their hashes, the
+ * account's consent and standing, and the limit. The request names the book
+ * and carries no text; the answer never carries any.
+ */
+export async function fetchSceneReleaseStatus(plugin: RadialTimelinePlugin, book: Pick<BookProfile, 'id'>): Promise<SceneReleaseStatus> {
+    const profileId = normalizeCommunityShareSettings(plugin.settings.communityShare).connection.profileId;
+    const status = await postSceneRelease(plugin, book, { action: 'status' }, isSceneReleaseStatus);
+    const record = sceneBodyShareFor(normalizeCommunityShareSettings(plugin.settings.communityShare), book.id);
+    if (profileId && record?.enabled && record.projectId !== status.project_id) {
+        await saveSceneBodyRecord(plugin, book.id, profileId, live => ({ ...live, projectId: status.project_id }));
+    }
+    return status;
+}
+
+/** Record the author's agreement to the release terms, once per account. Carries no text. */
+export async function acceptSceneReleaseTerms(plugin: RadialTimelinePlugin, book: Pick<BookProfile, 'id'>): Promise<void> {
+    await postSceneRelease(plugin, book, { action: 'consent' }, isSceneReleaseConsentAnswer);
+}
+
+/**
+ * Release one scene's text, or replace a released scene's text when
+ * `expectedVersion` is given (the version the status answer reported).
+ *
+ * The one call that sends scene text. Call it only from the preview dialog's
+ * Release / Update button, with the blocks that dialog rendered.
+ */
+export async function releaseSceneBody(
+    plugin: RadialTimelinePlugin,
+    book: Pick<BookProfile, 'id'>,
+    release: { sceneId: string; rating: SceneReleaseRating; blocks: readonly SceneBlock[]; expectedVersion?: number }
+): Promise<SceneReleaseResult> {
+    if (!isOpaqueSceneId(release.sceneId)) {
+        throw new CommunityShareError('invalid_request', t('ui.communityShareClient.sceneReleaseNoSceneId'));
+    }
+    const problem = sceneTextProblem(release.blocks);
+    if (problem) {
+        throw new CommunityShareError(problem === 'empty' ? 'empty_text' : 'too_long', sceneTextProblemMessage(problem));
+    }
+    const action = release.expectedVersion === undefined
+        ? { action: 'release', scene_id: release.sceneId, rating: release.rating, blocks: release.blocks }
+        : { action: 'update', scene_id: release.sceneId, expected_version: release.expectedVersion, rating: release.rating, blocks: release.blocks };
+    return postSceneRelease(plugin, book, action, isSceneReleaseResult);
+}
+
+/** Take a released scene down: the website deletes its text and readers lose it at once. Carries no text. */
+export async function takeDownSceneRelease(plugin: RadialTimelinePlugin, book: Pick<BookProfile, 'id'>, releaseId: string): Promise<void> {
+    await postSceneRelease(plugin, book, { action: 'take_down', release_id: releaseId }, isOkResponse);
 }
 
 async function callReportAction(

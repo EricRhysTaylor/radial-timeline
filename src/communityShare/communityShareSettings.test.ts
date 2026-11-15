@@ -9,7 +9,8 @@ import {
     expectsBookListSync,
     hasActiveCommunityConnection,
     hasCommunityConnection,
-    normalizeCommunityShareSettings
+    normalizeCommunityShareSettings,
+    sceneBodyShareFor
 } from './communityShareSettings';
 
 describe('Community Share settings', () => {
@@ -195,6 +196,75 @@ describe('hasActiveCommunityConnection', () => {
         }).connection;
         expect(half).not.toHaveProperty('bookListSyncedAt');
         expect(half).not.toHaveProperty('bookListSyncError');
+    });
+});
+
+describe('Share scene body settings', () => {
+    const PROJECT = '33333333-3333-4333-8333-333333333333';
+    const connection = {
+        status: 'connected' as const,
+        connectionId: 'conn-1',
+        profileId: 'profile-1',
+        projectId: null,
+        secretId: 'rt.community-share.connection-secret'
+    };
+
+    it('is absent by default: off for every book', () => {
+        expect(buildDefaultCommunityShareSettings().sceneBodyShares).toBeUndefined();
+        expect(normalizeCommunityShareSettings({ connection }).sceneBodyShares).toBeUndefined();
+        expect(sceneBodyShareFor(normalizeCommunityShareSettings({ connection }), 'book-1')).toBeUndefined();
+    });
+
+    it('keeps the per-book record through a save and load', () => {
+        const settings = normalizeCommunityShareSettings({
+            connection,
+            sceneBodyShares: { 'book-1': { profileId: 'profile-1', enabled: true, projectId: PROJECT } }
+        });
+        expect(settings.sceneBodyShares).toEqual({ 'book-1': { profileId: 'profile-1', enabled: true, projectId: PROJECT } });
+        // What data.json holds is what loads back.
+        const reloaded = normalizeCommunityShareSettings(JSON.parse(JSON.stringify(settings)));
+        expect(reloaded.sceneBodyShares).toEqual(settings.sceneBodyShares);
+        expect(sceneBodyShareFor(reloaded, 'book-1')?.enabled).toBe(true);
+    });
+
+    it('drops every field it does not name, so the record can never hold scene text', () => {
+        const settings = normalizeCommunityShareSettings({
+            connection,
+            sceneBodyShares: {
+                'book-1': {
+                    profileId: 'profile-1',
+                    enabled: true,
+                    projectId: PROJECT,
+                    blocks: [{ kind: 'p', runs: ['SCENE_TEXT_TRACER'] }],
+                    text: 'SCENE_TEXT_TRACER',
+                    textHash: 'a'.repeat(64),
+                    releases: [{ scene_id: 'scn_a1b2c3d4' }]
+                } as never
+            }
+        });
+        expect(Object.keys(settings.sceneBodyShares?.['book-1'] ?? {}).sort()).toEqual(['enabled', 'profileId', 'projectId']);
+        expect(JSON.stringify(settings)).not.toContain('SCENE_TEXT_TRACER');
+        expect(JSON.stringify(settings)).not.toContain('a'.repeat(64));
+    });
+
+    it('reads anything but true as off, and keeps only a UUID as the project', () => {
+        const settings = normalizeCommunityShareSettings({
+            connection,
+            sceneBodyShares: {
+                'book-1': { profileId: 'profile-1', enabled: 'yes' as never, projectId: 'javascript:alert(1)' },
+                'book-2': { enabled: true } as never,
+                'book-3': null as never
+            }
+        });
+        expect(settings.sceneBodyShares).toEqual({ 'book-1': { profileId: 'profile-1', enabled: false } });
+    });
+
+    it('ignores a record made for another profile', () => {
+        const theirs = normalizeCommunityShareSettings({
+            connection,
+            sceneBodyShares: { 'book-1': { profileId: 'profile-2', enabled: true } }
+        });
+        expect(sceneBodyShareFor(theirs, 'book-1')).toBeUndefined();
     });
 });
 

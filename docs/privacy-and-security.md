@@ -115,6 +115,13 @@ External requests occur in these areas:
 - **Community Share** — report publishing and the `community-daily-sync`
   call, sent only after the author connects to Community and selects a
   sharing level above Private. See below.
+- **Private scenes** — on a connected vault, with **Share scene body** on
+  for a book (Settings → Community, off by default): the `scene-release-sync`
+  call. It sends the text of one scene only when the author presses
+  **Release** or **Update** in that scene's preview, which shows exactly what
+  is sent. Reading the book's released scenes, recording agreement to the
+  release terms and taking a scene down use the same call and carry no scene
+  text. See below.
 - **Community mailbox** — on a connected vault only, while a timeline view
   is open: a `community-mailbox` check about once an hour and when Obsidian
   regains focus. It sends the connection id and secret (plus the plugin,
@@ -152,6 +159,15 @@ Posture:
 - **Never published at any level:** manuscript text, scene/note/vault paths,
   file or folder names, raw writing-session rows, exact session timestamps,
   and API/license keys or plugin secrets.
+- **Scene text leaves only when you release a scene.** With **Share scene
+  body** on for a book, you can release the text of a chosen scene to readers
+  you name on the website; only they can read it, signed in, and it is never
+  public. The preview shows exactly what is sent: the scene's prose, with its
+  properties, comments, callouts, link syntax and block ids removed. Nothing is
+  sent in the background, and a released scene changes only when you press
+  **Update**. Whether a scene changed since its release is worked out in your
+  vault, with nothing sent. **Take down** deletes the text on the website.
+  No scene text is stored in plugin settings.
 - **Level 2** publishes the public profile and project shells, plus an
   optional Author Progress Report graphic. The APR route is separately
   opt-in per campaign and defaults off.

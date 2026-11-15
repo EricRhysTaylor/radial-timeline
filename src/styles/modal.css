@@ -2596,3 +2596,26 @@
 .ert-modal--writing-session .ert-writing-session-allocation-row .setting-item-info { flex: 1 1 50%; min-width: 0; }
 .ert-modal--writing-session .ert-writing-session-allocation-row .setting-item-control { flex: 0 1 auto; flex-wrap: wrap; gap: var(--size-4-2); }
 .ert-modal--writing-session .ert-writing-session-allocation-row input[type="number"] { width: 68px; min-width: 0; }
+
+/* Private scenes (Settings → Community): the scene list and the text preview scroll inside the dialog,
+   so its header and buttons stay in reach on a long book or a long scene. */
+.ert-scene-release-list {
+    max-height: 50vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.ert-scene-release-preview {
+    max-height: 42vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--ert-pad-md);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    line-height: var(--line-height-normal);
+    overflow-wrap: anywhere;
+}
+
+.ert-scene-release-preview p { margin-block: 0 var(--size-4-3); }
+.ert-scene-release-preview p:last-child { margin-block-end: 0; }
+.ert-scene-release-preview__break { text-align: center; }

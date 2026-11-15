@@ -30,6 +30,7 @@ import { ERT_CLASSES } from '../../ui/classes';
 import { confirmWithErtModal } from '../../modals/ErtConfirmModal';
 import { addHeadingIcon, addVideoLinkToElement, applyErtHeaderLayout } from '../wikiLink';
 import { renderCommunityTimelineBlock } from './CommunityTimelineBlock';
+import { renderCommunitySceneBodyBlock } from './CommunitySceneBodyBlock';
 import { fitSelectToSelectedLabel } from '../selectSizing';
 import { t } from '../../i18n';
 import { docsUrl } from '../../utils/docsUrl';
@@ -706,6 +707,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     })();
 
     renderCommunityTimelineBlock({ plugin, containerEl: section, book: activeBook, rerender });
+    renderCommunitySceneBodyBlock({ plugin, containerEl: section, book: activeBook, rerender });
 
     const actionCard = section.createDiv({ cls: ERT_CLASSES.STACK });
     const actionHeading = new Setting(actionCard)

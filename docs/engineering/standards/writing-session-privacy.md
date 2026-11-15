@@ -22,22 +22,31 @@ amendment "Desk Lamps", 2026-10). It is not the old `friends` audience: it
 carries no session rows and no aggregates, only a live state, and only while
 a session the author chose to share is open.
 
+Amended 2026-11-15: **private scene text** (contract Amendment 2,
+`Platform/COMMUNITY-SHARE-AMENDMENT-2-PRIVATE-SCENE-TEXT.md`, approved
+2026-11-14). Scene text is neither session data nor book identity, but it is
+the most sensitive thing that can leave the device, so its one exit is named
+here with the others: "Per scene, on Release or Update: scene text" below.
+
 ---
 
 ## Audiences
 
-There are three audiences. They take different shapes. Do not collapse them.
+There are four audiences. They take different shapes. Do not collapse them.
 
 | Audience | Who | Shape | When |
 |---|---|---|---|
 | `private` | The author, on their own device | Full session row | always |
 | `community` | The public website | Aggregates, an undated rollup, and author-composed posts | standing share at Level 3, or an explicit per-save post |
 | `desk lamps` | The accepted Desk Lamps the author ticked for this session | A live state: lit or on a break, mode, session start floored to 5 minutes | only while that session is open, at any sharing level |
+| `named readers` | The readers the author names on the website for a released scene, signed in | That scene's cleaned text: paragraphs, italics, scene breaks | only when the author presses Release or Update for that scene |
 
 Community **never** sees per-session rows. Forcing community to aggregates
 removes the spoiler surface entirely; it is the privacy lever, not a
 presentation choice. Desk Lamps never see a session row either: they see
 that a session is open right now, and nothing about it survives the session.
+Named readers see no session data at all: they read the text of the scenes
+released to them, and the public never sees that text.
 
 ---
 
@@ -186,6 +195,66 @@ Lamp off bulletins (a friend's lamp that went off since the last check) are
 made on the viewer's device from data it already received, held in memory
 only, and never stored or sent. They add no exit.
 
+### Per scene, on Release or Update: scene text
+
+The only path by which scene text leaves the vault. Contract: Amendment 2
+(`Platform/COMMUNITY-SHARE-AMENDMENT-2-PRIVATE-SCENE-TEXT.md`). The storage
+doctrine it implements: the server holds only text the author pushed for an
+audience, and the website never pulls from the vault.
+
+Exit point: `communityShareClient.releaseSceneBody`, to `scene-release-sync`
+with `action: "release"` or `"update"`. It has **one caller**: the primary
+button of the preview dialog (`src/modals/SceneReleasePreviewModal.ts`). No
+sync, timer, startup hook or status check calls it, and none may be added.
+
+What it sends, and nothing else:
+
+- `connection_id`, `current_secret`, `plugin_book_key` (the book's id);
+- `scene_id`: the scene's opaque generated id (`scn_…`), never an id the
+  author typed, a path or a title;
+- `rating`: the author's choice in the dialog, General or Mature;
+- `expected_version`, on an update: the version the website reported;
+- `blocks`: the scene's cleaned text, as paragraphs of plain and italic runs
+  and scene breaks. No other shape exists.
+
+How the text is made (`src/communityShare/sceneReleaseText.ts`, pure): the
+note is read, its YAML removed, and the manuscript sanitizer run with every
+cleanup on (comments, author queries, links, callouts, block ids), then the
+website's own paste parse turns it into blocks. Frontmatter, comments and
+working notes cannot follow: they are gone before the blocks exist.
+
+The rules the code keeps, each pinned by a test:
+
+1. **Only Release or Update sends text.** The function's other three actions
+   carry none: `status` (the book's releases with their hashes, consent,
+   standing and limit), `consent` (the author's agreement to the release
+   terms, once per account) and `take_down` (a release id).
+2. **The author sees exactly what is sent.** The dialog renders the blocks
+   and sends those same blocks. On the press the note is read again; if its
+   cleaned text is not the text on screen, nothing is sent and the new text
+   is shown.
+3. **"Changed since release" is worked out in the vault.** The website
+   reports each release's SHA-256; the plugin hashes its own cleaned text the
+   same way and compares. The list dialog reads only the notes of scenes
+   already released, and a preview reads the one scene it shows.
+4. **Nothing is kept.** No scene text and no hash of it is written to plugin
+   settings or anywhere on disk, and nothing is written to scene YAML. The
+   per-book record `communityShare.sceneBodyShares` holds `profileId`,
+   `enabled` and `projectId` only, and its normalizer drops every other
+   field.
+5. **Pause is a full freeze.** While sharing is paused none of the four
+   actions is sent, the status read included. They also need a connected
+   vault and the sharing level a timeline needs, checked before the secret is
+   read and again immediately before the request leaves.
+
+**Share scene body** (Settings → Community → Private scenes) is a per-book
+switch, off by default. Turning it on reads `status` and, the first time,
+shows the release terms and records the agreement; it sends no text. Turning
+it off sends nothing and takes nothing down. A scene can be released only
+once the book's timeline is shared, because a release sits on a scene of the
+shared timeline. Readers are chosen on the website: a release from the
+plugin shares the text with nobody until then.
+
 ---
 
 ## Field sensitivity
@@ -206,6 +275,12 @@ The Desk Lamp does not breach it (Eric, 2026-10-04): it is a live state, not
 a session row; its start time is floored to 5 minutes, not exact; it goes
 only to friends the author ticked; and it is deleted when the session ends.
 No end time is ever sent.
+
+### Leaves only by Release or Update, to named readers
+
+- the cleaned text of a scene the author released, as described under "Per
+  scene, on Release or Update: scene text". Its path, title, YAML, comments
+  and working notes never go with it.
 
 ### Crosses the wire only as a private shell
 
@@ -236,6 +311,8 @@ points are pure of identity concerns and one less thing can leak.
   per-save feed post.
 - No Desk Lamp is lit unless the author ticks at least one friend for that
   session.
+- Share scene body is off for every book. Turning it on sends no text; each
+  scene's text goes only when the author presses Release or Update for it.
 - Rounding and precision are not user-configurable; they are fixed by the
   contract per level.
 
@@ -275,6 +352,25 @@ stage, goals, word counts and a countdown must project to exactly `state`,
 `mode`, `lit_at` and `audience`, with no tracer, no exact start time, and an
 idle auto-pause reading as `lit`; and what `syncDeskLamps` posts must be
 that lamp plus `connection_id` and `current_secret`, nothing else.
+
+Scene text has its own tests, with the tracer
+`SCENE_TEXT_TRACER_DO_NOT_LEAK` in a scene note:
+
+- `src/communityShare/communityShareClient.sceneRelease.test.ts`: each
+  action sends exactly its documented keys; `status`, `consent` and
+  `take_down` carry no `blocks`; a paused share sends nothing; every sync
+  entry point `main.ts` schedules runs with Share scene body on and none
+  reaches `scene-release-sync` or reads a scene note; and a source check
+  that `releaseSceneBody` is called only from the preview dialog's button.
+- `src/modals/SceneReleasePreviewModal.test.ts`: the blocks sent are the
+  blocks on screen, and a note that changed between the preview and the
+  press sends nothing.
+- `src/communityShare/sceneReleaseVault.test.ts`: the list reads only the
+  notes of released scenes and sends no text to find what changed.
+- `src/communityShare/sceneReleaseText.test.ts`: the parse, the limits and
+  the website's known-answer hash.
+- `src/communityShare/communityShareSettings.test.ts`: the per-book record
+  keeps `profileId`, `enabled` and `projectId` and drops everything else.
 
 A future field on `WritingSessionRecord` that quietly passes through to a
 community exit fails these tests. **Adding the tracer for a new field is

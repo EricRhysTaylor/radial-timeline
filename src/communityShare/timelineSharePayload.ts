@@ -203,6 +203,41 @@ export function sceneIdHolders(
     return holders;
 }
 
+/** One scene note of a book, in the order the timeline sends its scenes. */
+export interface TimelineSceneNote {
+    path: string;
+    /** The note's name, as the timeline shows it. Stays in the vault. */
+    title: string;
+    /** The scene's id, only when this note is the one that sends it (see `sceneIdHolders`). */
+    sceneId?: string;
+    /** Why this note sends no id: it has no generated id, or another note carries the same one. */
+    idProblem?: 'missing' | 'duplicate';
+}
+
+/**
+ * The book's scene notes with the id each one sends, by the timeline's own
+ * rule: an id goes out on one note only, and never when its owner is a guess.
+ * A scene release names its scene by this id, so it reads the same list.
+ */
+export function timelineSceneNotes(items: TimelineItem[], previous: Readonly<Record<string, string>> = {}): TimelineSceneNote[] {
+    const carriers = sceneIdCarriers(items);
+    const holders = sceneIdHolders(items, previous);
+    const notes: TimelineSceneNote[] = [];
+    for (const [item] of scenesOf(items)) {
+        if (!item.path) continue;
+        const note = { path: item.path, title: item.title || item.path };
+        const id = item.sceneId;
+        if (!id || !isOpaqueSceneId(id)) {
+            notes.push({ ...note, idProblem: 'missing' });
+            continue;
+        }
+        const paths = carriers.get(id) ?? [item.path]; // SAFE: every opaque id read here was counted by sceneIdCarriers from the same items
+        const ownerKnown = paths.length === 1 || paths.includes(previous[id]);
+        notes.push(ownerKnown && holders[id] === item.path ? { ...note, sceneId: id } : { ...note, idProblem: 'duplicate' });
+    }
+    return notes;
+}
+
 function shareItem(rows: TimelineItem[], holders: Readonly<Record<string, string>>): TimelineShareItem {
     const item = rows[0];
     const frontmatter = item.rawFrontmatter;

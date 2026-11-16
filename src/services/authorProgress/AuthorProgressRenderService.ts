@@ -2,15 +2,14 @@ import { App } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import { createAprSVG } from '../../renderer/apr/AprRenderer';
 import { getExportPreset } from '../../renderer/apr/aprPresets';
-import type { AuthorProgressCampaign, AuthorProgressDefaults, AprExportQuality } from '../../types/settings';
+import type { AuthorProgressCampaign, TeaserRevealLevel } from '../../types/settings';
 import { AprProgressService } from '../apr/AprProgressService';
 import { AprStyleService } from '../apr/AprStyleService';
 import { getTeaserThresholds, getTeaserRevealLevel, teaserLevelToRevealOptions } from '../../renderer/apr/AprConstants';
 import { hasProFeatureAccess } from '../../settings/featureGate';
 import { isSceneItem } from '../../utils/sceneHelpers';
-import { buildDefaultEmbedPath, normalizeAprExportFormat, type AprExportFormat } from '../../utils/aprPaths';
+import { buildReportEmbedPath, type AprExportFormat } from '../../utils/aprPaths';
 import { resolveBookTitle, resolveProjectPath } from '../../renderer/apr/aprHelpers';
-import type { TimelineItem } from '../../types/timeline';
 import { writeManagedOutput } from '../../utils/logVaultOps';
 import { rasterizeSvgToPng } from '../export/svgToPng';
 import {
@@ -21,28 +20,21 @@ import {
 } from '../export/exportFonts';
 
 export interface AuthorProgressReportBuildResult {
-    settings: AuthorProgressDefaults;
+    report: AuthorProgressCampaign;
     svgString: string;
     width: number;
     height: number;
-    exportPath: string;
-    exportFormat: AprExportFormat;
+    /** How many scenes the report's book has; zero means there is nothing to draw yet. */
+    sceneCount: number;
+    /** How much of the timeline this render shows. */
+    revealLevel: TeaserRevealLevel;
+    percent: number;
 }
 
-export interface AuthorProgressCampaignBuildResult {
-    settings: AuthorProgressDefaults;
-    campaign: AuthorProgressCampaign;
-    svgString: string;
-    width: number;
-    height: number;
-    meta: {
-        format: AprExportFormat;
-        size: string;
-        stage: string;
-        percent: number;
-    };
-}
-
+/**
+ * Draws Author Progress reports. `buildReport` is the only path from a report's
+ * settings to an image, so the settings preview and the published file agree.
+ */
 export class AuthorProgressRenderService {
     private readonly aprProgressService: AprProgressService;
     private readonly aprStyleService: AprStyleService;
@@ -52,32 +44,25 @@ export class AuthorProgressRenderService {
         this.aprStyleService = new AprStyleService(plugin);
     }
 
-    public calculateProgress(scenes: TimelineItem[]): number {
-        return this.aprProgressService.getPercent(scenes);
+    public getReport(reportId: string): AuthorProgressCampaign | undefined {
+        return this.plugin.settings.authorProgress?.campaigns.find(report => report.id === reportId);
     }
 
-    public getDefaultExportFormat(settings: AuthorProgressDefaults): AprExportFormat {
-        if (typeof settings.exportFormat === 'string' && settings.exportFormat.trim()) {
-            return normalizeAprExportFormat(settings.exportFormat);
-        }
-        return this.pathFormat(settings.exportPath ?? '', 'png');
+    /** The vault path this report publishes to, following its settings and its book. */
+    public getReportPath(report: AuthorProgressCampaign): string {
+        const bookTitle = resolveBookTitle(report, this.plugin.settings.books, this.plugin.getActiveBookTitle());
+        return buildReportEmbedPath(report, bookTitle);
     }
 
-    public getDefaultExportPath(settings: AuthorProgressDefaults): string {
-        return settings.exportPath || buildDefaultEmbedPath({
-            bookTitle: this.plugin.getActiveBookTitle(),
-            updateFrequency: settings.updateFrequency,
-            aprExportQuality: settings.aprExportQuality,
-            exportFormat: this.getDefaultExportFormat(settings)
-        });
-    }
-
-    public getCampaignExportFormat(campaign?: AuthorProgressCampaign): AprExportFormat {
-        if (!campaign) return 'png';
-        if (typeof campaign.exportFormat === 'string' && campaign.exportFormat.trim()) {
-            return normalizeAprExportFormat(campaign.exportFormat);
-        }
-        return this.pathFormat(campaign.exportPath ?? '', 'png');
+    /** Teaser reveal follows progress; with it off the report always shows its chosen view. */
+    public resolveRevealLevel(report: AuthorProgressCampaign, percent: number): TeaserRevealLevel {
+        const teaser = report.teaserReveal;
+        if (!teaser.enabled) return report.viewMode;
+        return getTeaserRevealLevel(
+            percent,
+            getTeaserThresholds(teaser.preset, teaser.customThresholds),
+            teaser.disabledStages
+        );
     }
 
     public async saveAprOutput(path: string, format: AprExportFormat, svgString: string, width: number, height: number): Promise<void> {
@@ -142,167 +127,44 @@ export class AuthorProgressRenderService {
         return new XMLSerializer().serializeToString(root);
     }
 
-    public buildSnapshotPath(exportPath: string, fallbackBase = 'apr'): string {
-        const trimmed = exportPath.trim();
-        const lastSlash = trimmed.lastIndexOf('/');
-        const folder = lastSlash >= 0 ? trimmed.slice(0, lastSlash) : '';
-        const file = lastSlash >= 0 ? trimmed.slice(lastSlash + 1) : trimmed;
-        const extMatch = file.match(/\.([a-z0-9]+)$/i);
-        const ext = (extMatch?.[1] ?? 'png').toLowerCase();
-        const base = extMatch ? file.slice(0, -(ext.length + 1)) : file;
-        const safeBase = base.trim() || fallbackBase;
-        const fileName = `${safeBase}-snapshot-${Date.now()}.${ext}`;
-        return folder ? `${folder}/${fileName}` : fileName;
-    }
-
-    public async buildDefaultReport(): Promise<AuthorProgressReportBuildResult | null> {
+    /**
+     * Draw a report at its export quality. The settings preview shows this same
+     * drawing scaled down, so what is on screen is what gets published.
+     */
+    public async buildReport(reportId: string): Promise<AuthorProgressReportBuildResult | null> {
         const authorProgress = this.plugin.settings.authorProgress;
-        const settings = authorProgress?.defaults;
-        if (!authorProgress || !settings) return null;
-
-        const projectPath = resolveProjectPath(null, this.plugin.settings.books, this.plugin.settings.sourcePath);
-        const scenes = await this.plugin.getSceneData({ sourcePath: projectPath });
-        const scenesFiltered = scenes.filter(isSceneItem);
-        const progressState = this.aprProgressService.resolveProgress(scenesFiltered, settings);
-        // The Default Report always renders from the saved default style. The designer draft
-        // belongs to whichever campaign is open in settings, and must never leak into it.
-        const style = this.aprStyleService.resolveStyle();
-        const renderStyle = this.aprStyleService.buildRenderStyle(style);
-        const showRtAttribution = hasProFeatureAccess(this.plugin)
-            ? renderStyle.showRtAttribution !== false
-            : true;
-
-        const designSize = settings.aprSize || 'medium';
-        const exportQuality: AprExportQuality = settings.aprExportQuality || 'standard';
-        const bookTitle = resolveBookTitle(null, this.plugin.settings.books, this.plugin.getActiveBookTitle());
-
-        // Honor the persisted view mode from social settings (teaser preview dropdown).
-        // 'auto' / undefined → full reveal. 'ring'/'scenes'/'colors'/'full' → apply that level.
-        const baseReveal = this.resolveBaseRevealOptions(settings.aprDefaultViewMode, settings);
-        const ringOnly = settings.aprDefaultViewMode === 'ring';
-
-        const { svgString, width, height } = createAprSVG(scenesFiltered, {
-            size: designSize,
-            exportPreset: getExportPreset(designSize, exportQuality),
-            progressPercent: progressState.percent,
-            bookTitle,
-            authorName: settings.authorName || '',
-            showScenes: ringOnly ? false : baseReveal.showScenes,
-            showSubplots: baseReveal.showSubplots,
-            showActs: baseReveal.showActs,
-            showStatusColors: baseReveal.showStatusColors,
-            showStageColors: baseReveal.showStageColors,
-            grayCompletedScenes: baseReveal.grayCompletedScenes,
-            grayscaleScenes: baseReveal.grayscaleScenes,
-            showProgressPercent: ringOnly ? false : baseReveal.showProgressPercent,
-            showBranding: !ringOnly,
-            centerMark: 'none',
-            stageColors: this.plugin.settings.publishStageColors,
-            workingPatternId: this.plugin.settings.workingPatternId,
-            customWorkingPatterns: this.plugin.settings.customWorkingPatterns,
-            actCount: this.plugin.settings.actCount || undefined,
-            ...renderStyle,
-            publishStageLabel: progressState.displayStage,
-            showRtAttribution,
-            teaserRevealEnabled: false,
-            portableSvg: true
-        });
-
-        return {
-            settings,
-            svgString,
-            width,
-            height,
-            exportPath: this.getDefaultExportPath(settings),
-            exportFormat: this.pathFormat(this.getDefaultExportPath(settings), this.getDefaultExportFormat(settings))
-        };
-    }
-
-    public async buildCampaignReport(campaignId: string): Promise<AuthorProgressCampaignBuildResult | null> {
-        const authorProgress = this.plugin.settings.authorProgress;
-        const settings = authorProgress?.defaults;
-        if (!authorProgress || !settings) return null;
-
-        const campaign = authorProgress.campaigns?.find(c => c.id === campaignId);
-        if (!campaign) return null;
+        const report = this.getReport(reportId);
+        if (!authorProgress || !report) return null;
+        const settings = authorProgress.defaults;
 
         const books = this.plugin.settings.books;
-        const projectPath = resolveProjectPath(campaign, books, this.plugin.settings.sourcePath);
-        const scenes = await this.plugin.getSceneData({ sourcePath: projectPath });
-        const scenesFiltered = scenes.filter(isSceneItem);
-        const progressState = this.aprProgressService.resolveProgress(scenesFiltered, settings);
-        const style = this.aprStyleService.resolveStyle(campaign);
-        const renderStyle = this.aprStyleService.buildRenderStyle(style);
+        const projectPath = resolveProjectPath(report, books, this.plugin.settings.sourcePath);
+        const scenes = (await this.plugin.getSceneData({ sourcePath: projectPath })).filter(isSceneItem);
+        const progressState = this.aprProgressService.resolveProgress(scenes, settings);
+        const renderStyle = this.aprStyleService.buildRenderStyle(this.aprStyleService.resolveStyle(report));
+        // Hiding the Radial Timeline mark is the one Pro choice left in Social.
         const showRtAttribution = hasProFeatureAccess(this.plugin)
             ? renderStyle.showRtAttribution !== false
             : true;
 
-        let showScenes: boolean;
-        let showSubplots: boolean;
-        let showActs: boolean;
-        let showStatusColors: boolean;
-        let showStageColors: boolean;
-        let grayCompletedScenes: boolean;
-        let grayscaleScenes: boolean;
-        let showProgressPercent: boolean;
-        let isRingLevel = false;
-        let debugStage = 'Standard';
+        const revealLevel = this.resolveRevealLevel(report, progressState.percent);
+        const reveal = teaserLevelToRevealOptions(revealLevel);
+        const ringOnly = revealLevel === 'ring';
 
-        if (campaign.teaserReveal?.enabled) {
-            // Teaser ON → progressive reveal based on current progress percent.
-            const preset = campaign.teaserReveal.preset ?? 'standard';
-            const thresholds = getTeaserThresholds(preset, campaign.teaserReveal.customThresholds);
-            const revealLevel = getTeaserRevealLevel(
-                progressState.percent,
-                thresholds,
-                campaign.teaserReveal.disabledStages
-            );
-            debugStage = revealLevel;
-            const revealOptions = teaserLevelToRevealOptions(revealLevel);
-            isRingLevel = revealLevel === 'ring';
-
-            showScenes = revealOptions.showScenes;
-            showSubplots = revealOptions.showSubplots;
-            showActs = revealOptions.showActs;
-            showStatusColors = revealOptions.showStatusColors;
-            showStageColors = revealOptions.showStageColors;
-            grayCompletedScenes = revealOptions.grayCompletedScenes;
-            grayscaleScenes = revealOptions.grayscaleScenes;
-            showProgressPercent = settings.showProgressPercent ?? true;
-        } else {
-            // Teaser OFF → inherit Default Report's view mode (mirrors social preview).
-            const base = this.resolveBaseRevealOptions(settings.aprDefaultViewMode, settings);
-            isRingLevel = settings.aprDefaultViewMode === 'ring';
-            showScenes = base.showScenes;
-            showSubplots = base.showSubplots;
-            showActs = base.showActs;
-            showStatusColors = base.showStatusColors;
-            showStageColors = base.showStageColors;
-            grayCompletedScenes = base.grayCompletedScenes;
-            grayscaleScenes = base.grayscaleScenes;
-            showProgressPercent = base.showProgressPercent;
-            debugStage = settings.aprDefaultViewMode ?? 'default';
-        }
-
-        const designSize = campaign.aprSize || settings.aprSize || 'medium';
-        const exportQuality: AprExportQuality = campaign.aprExportQuality || settings.aprExportQuality || 'standard';
-        const ringOnly = isRingLevel;
-        const bookTitle = resolveBookTitle(campaign, books, this.plugin.getActiveBookTitle());
-
-        const { svgString, width, height } = createAprSVG(scenesFiltered, {
-            size: designSize,
-            exportPreset: getExportPreset(designSize, exportQuality),
+        const { svgString, width, height } = createAprSVG(scenes, {
+            size: 'medium',
+            exportPreset: getExportPreset('medium', report.aprExportQuality),
             progressPercent: progressState.percent,
-            bookTitle,
+            bookTitle: resolveBookTitle(report, books, this.plugin.getActiveBookTitle()),
             authorName: settings.authorName || '',
-            showScenes: ringOnly ? false : showScenes,
-            showSubplots,
-            showActs,
-            showStatusColors,
-            showStageColors,
-            grayCompletedScenes,
-            grayscaleScenes,
-            showProgressPercent: ringOnly ? false : showProgressPercent,
+            showScenes: ringOnly ? false : reveal.showScenes,
+            showSubplots: reveal.showSubplots,
+            showActs: reveal.showActs,
+            showStatusColors: reveal.showStatusColors,
+            showStageColors: reveal.showStageColors,
+            grayCompletedScenes: reveal.grayCompletedScenes,
+            grayscaleScenes: reveal.grayscaleScenes,
+            showProgressPercent: !ringOnly,
             showBranding: !ringOnly,
             centerMark: 'none',
             stageColors: this.plugin.settings.publishStageColors,
@@ -312,74 +174,18 @@ export class AuthorProgressRenderService {
             ...renderStyle,
             publishStageLabel: progressState.displayStage,
             showRtAttribution,
-            teaserRevealEnabled: campaign.teaserReveal?.enabled ?? false,
             portableSvg: true
         });
 
         return {
-            settings,
-            campaign,
+            report,
             svgString,
             width,
             height,
-            meta: {
-                format: this.getCampaignExportFormat(campaign),
-                size: designSize,
-                stage: debugStage,
-                percent: progressState.percent
-            }
+            sceneCount: scenes.length,
+            revealLevel,
+            percent: progressState.percent
         };
-    }
-
-    /**
-     * Resolve the visual flags for a non-teaser render (Default Report, or campaign with teaser OFF).
-     * Returns the reveal options for the explicit view mode, or 'full' equivalents when 'auto'/undefined.
-     */
-    private resolveBaseRevealOptions(
-        mode: AuthorProgressDefaults['aprDefaultViewMode'],
-        settings: AuthorProgressDefaults
-    ): {
-        showScenes: boolean;
-        showSubplots: boolean;
-        showActs: boolean;
-        showStatusColors: boolean;
-        showStageColors: boolean;
-        grayCompletedScenes: boolean;
-        grayscaleScenes: boolean;
-        showProgressPercent: boolean;
-    } {
-        const showProgressPercent = settings.showProgressPercent ?? true;
-        if (mode && mode !== 'auto') {
-            const opts = teaserLevelToRevealOptions(mode);
-            return {
-                showScenes: opts.showScenes,
-                showSubplots: opts.showSubplots && (settings.showSubplots ?? true),
-                showActs: opts.showActs && (settings.showActs ?? true),
-                showStatusColors: opts.showStatusColors && (settings.showStatus ?? true),
-                showStageColors: opts.showStageColors,
-                grayCompletedScenes: opts.grayCompletedScenes,
-                grayscaleScenes: opts.grayscaleScenes,
-                showProgressPercent
-            };
-        }
-        // 'auto' / undefined → full reveal, gated by user's show* toggles
-        return {
-            showScenes: true,
-            showSubplots: settings.showSubplots ?? true,
-            showActs: settings.showActs ?? true,
-            showStatusColors: settings.showStatus ?? true,
-            showStageColors: true,
-            grayCompletedScenes: false,
-            grayscaleScenes: false,
-            showProgressPercent
-        };
-    }
-
-    private pathFormat(path: string, fallback: AprExportFormat): AprExportFormat {
-        const normalized = path.trim().toLowerCase();
-        if (normalized.endsWith('.svg')) return 'svg';
-        if (normalized.endsWith('.png')) return 'png';
-        return fallback;
     }
 
     private writeUint32BE(target: Uint8Array, offset: number, value: number): void {

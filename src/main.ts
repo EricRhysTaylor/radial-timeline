@@ -1258,16 +1258,6 @@ export default class RadialTimelinePlugin extends Plugin {
             }
             freshInstallSeeded = true;
         }
-        if (this.settings.authorProgress) {
-            // Always auto-update export paths (no user toggle)
-            this.settings.authorProgress.defaults.autoUpdateExportPath = true;
-            // Clear stale legacy paths that use old size tokens (medium/small/large/thumb)
-            const defaults = this.settings.authorProgress.defaults;
-            const ep = defaults.exportPath ?? '';
-            if (ep && /-(thumb|small|medium|large)\.(png|svg)$/.test(ep)) {
-                defaults.exportPath = '';
-            }
-        }
         if (this.settings.releaseNotesLastFetched !== undefined) {
             const parsed = Date.parse(this.settings.releaseNotesLastFetched);
             if (Number.isNaN(parsed)) {

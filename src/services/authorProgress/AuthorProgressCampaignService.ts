@@ -1,93 +1,43 @@
-import { App, Notice } from 'obsidian';
+import { Notice } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
-import type { AuthorProgressCampaign, AuthorProgressSettings } from '../../types/settings';
-import { hasProFeatureAccess } from '../../settings/featureGate';
-import { getTeaserRevealLevel, getTeaserThresholds } from '../../renderer/apr/AprConstants';
+import type { AuthorProgressCampaign } from '../../types/settings';
 import { uploadAprToCommunity } from '../../communityShare/communityShareClient';
 import { findCommunityBookConflict, resolveCampaignBookId } from '../../authorProgress/campaignCommunityBinding';
-import { AuthorProgressRenderService, type AuthorProgressCampaignBuildResult } from './AuthorProgressRenderService';
-import { AuthorProgressPublishService } from './AuthorProgressPublishService';
+import { AuthorProgressRenderService, type AuthorProgressReportBuildResult } from './AuthorProgressRenderService';
 import { t, tCount } from '../../i18n';
 
+/**
+ * Publishes Author Progress reports: on request, on each report's schedule,
+ * and to Community for the reports that share there. The Default report and
+ * campaigns are the same kind of thing and take the same path.
+ */
 export class AuthorProgressCampaignService {
     constructor(
         private plugin: RadialTimelinePlugin,
-        private app: App,
-        private renderService: AuthorProgressRenderService,
-        private publishService: AuthorProgressPublishService
+        private renderService: AuthorProgressRenderService
     ) {}
 
-    public isStale(): boolean {
-        const authorProgress = this.plugin.settings.authorProgress;
-        const settings = authorProgress?.defaults;
-        if (!authorProgress || !settings || !authorProgress.enabled) return false;
-        if (settings.updateFrequency !== 'manual') return false;
-        if (!settings.lastPublishedDate) return false;
-
-        const last = new Date(settings.lastPublishedDate).getTime();
-        const now = Date.now();
-        const diffDays = (now - last) / (1000 * 60 * 60 * 24);
-        return diffDays > settings.stalenessThresholdDays;
+    private getReports(): AuthorProgressCampaign[] {
+        return this.plugin.settings.authorProgress?.campaigns ?? []; // SAFE: no Social settings yet means there is no report to publish
     }
 
-    public anyCampaignNeedsRefresh(): boolean {
-        const campaigns = this.plugin.settings.authorProgress?.campaigns ?? [];
-        return campaigns.some(c => this.campaignNeedsRefresh(c));
-    }
-
+    /** A manually published report is due a refresh once its reminder period has passed. */
     public campaignNeedsRefresh(campaign: AuthorProgressCampaign): boolean {
         if (!campaign.isActive) return false;
-        if (campaign.updateFrequency && campaign.updateFrequency !== 'manual') return false;
+        if (campaign.updateFrequency !== 'manual') return false;
         if (!campaign.lastPublishedDate) return false;
 
         const last = new Date(campaign.lastPublishedDate).getTime();
-        const now = Date.now();
-        const diffDays = (now - last) / (1000 * 60 * 60 * 24);
+        const diffDays = (Date.now() - last) / (1000 * 60 * 60 * 24);
         return diffDays > campaign.refreshThresholdDays;
     }
 
     public getCampaignsNeedingRefresh(): AuthorProgressCampaign[] {
-        const campaigns = this.plugin.settings.authorProgress?.campaigns ?? [];
-        return campaigns.filter(c => this.campaignNeedsRefresh(c));
+        return this.getReports().filter(c => this.campaignNeedsRefresh(c));
     }
 
     public needsAnyRefresh(): boolean {
-        return this.isStale() || this.anyCampaignNeedsRefresh();
-    }
-
-    public async checkAutoUpdate(): Promise<void> {
-        const authorProgress = this.plugin.settings.authorProgress;
-        if (!authorProgress) return;
-        const settings = authorProgress.defaults;
-
-        // Legacy default/hover APR auto-publish. This branch — and only this
-        // branch — is gated by the `enabled` flag and `defaults`. Campaigns are
-        // a separate feature and must not inherit this gate.
-        if (authorProgress.enabled && settings && settings.updateFrequency !== 'manual') {
-            const last = settings.lastPublishedDate ? new Date(settings.lastPublishedDate).getTime() : 0;
-            const now = Date.now();
-            const diffMs = now - last;
-
-            let thresholdMs = 0;
-            switch (settings.updateFrequency) {
-                case 'daily': thresholdMs = 24 * 60 * 60 * 1000; break;
-                case 'weekly': thresholdMs = 7 * 24 * 60 * 60 * 1000; break;
-                case 'monthly': thresholdMs = 30 * 24 * 60 * 60 * 1000; break;
-            }
-
-            const cooldown = 5 * 60 * 1000;
-            if (diffMs > thresholdMs && diffMs > cooldown) {
-                try {
-                    await this.publishService.generateReport('dynamic');
-                    new Notice(t('ui.authorProgressCampaignService.reportUpdatedAutomatically'));
-                } catch {
-                    // Silent failure; user can refresh manually.
-                }
-            }
-        }
-
-        // Campaigns schedule independently of the legacy default APR.
-        await this.checkCampaignAutoUpdates(authorProgress);
+        return this.getReports().some(c => this.campaignNeedsRefresh(c));
     }
 
     // A campaign's scheduled work is "regenerate, and upload when shared". Track
@@ -102,35 +52,34 @@ export class AuthorProgressCampaignService {
         return Math.max(published, uploaded);
     }
 
+    /** Publish a report: write its image and, when it shares to Community, send it there. */
     public async generateCampaignReport(campaignId: string, options?: { silent?: boolean }): Promise<string | null> {
-        const authorProgress = this.plugin.settings.authorProgress;
-        if (!authorProgress) return null;
-        const result = await this.renderService.buildCampaignReport(campaignId);
+        const result = await this.renderService.buildReport(campaignId);
         if (!result) return null;
 
-        const { svgString, campaign, width, height } = result;
-        const path = campaign.exportPath;
-        const format = result.meta.format;
-        await this.renderService.saveAprOutput(path, format, svgString, width, height);
-
-        const campaignIndex = authorProgress.campaigns?.findIndex(c => c.id === campaignId);
-        if (campaignIndex !== undefined && campaignIndex >= 0 && authorProgress.campaigns) {
-            authorProgress.campaigns[campaignIndex].lastPublishedDate = new Date().toISOString();
-            await this.plugin.saveSettings();
-        }
+        const { svgString, report, width, height } = result;
+        const path = this.renderService.getReportPath(report);
+        await this.renderService.saveAprOutput(path, report.exportFormat, svgString, width, height);
+        report.lastPublishedDate = new Date().toISOString();
+        await this.plugin.saveSettings();
 
         if (!options?.silent) {
-            new Notice(t('ui.authorProgressCampaignService.campaignPublished', { name: campaign.name, format: format.toUpperCase(), size: result.meta.size, stage: result.meta.stage, percent: result.meta.percent.toFixed(1) }));
+            new Notice(t('ui.authorProgressCampaignService.campaignPublished', {
+                name: report.name,
+                format: report.exportFormat.toUpperCase(),
+                stage: result.revealLevel,
+                percent: result.percent.toFixed(1)
+            }));
         }
 
         // Community share surface: send the portable APR to the website.
         // It arrives private on My Share; activation is website-only.
-        if (campaign.sendToCommunity && hasProFeatureAccess(this.plugin)) {
+        if (report.sendToCommunity) {
             try {
                 await this.uploadCampaignReport(result, options);
             } catch (error) {
                 const message = error instanceof Error ? error.message : t('ui.authorProgressCampaignService.unknownError');
-                console.error(`Community APR upload failed for campaign ${campaign.name}:`, message);
+                console.error(`Community APR upload failed for campaign ${report.name}:`, message);
                 if (!options?.silent) {
                     new Notice(t('ui.authorProgressCampaignService.communitySendFailed', { message }));
                 }
@@ -140,56 +89,21 @@ export class AuthorProgressCampaignService {
     }
 
     public async sendCampaignToCommunity(campaignId: string, options?: { silent?: boolean }): Promise<'private' | 'active' | null> {
-        if (!hasProFeatureAccess(this.plugin)) {
-            throw new Error(t('ui.authorProgressCampaignService.communityShareRequiresPro'));
-        }
-        const result = await this.renderService.buildCampaignReport(campaignId);
+        const result = await this.renderService.buildReport(campaignId);
         if (!result) return null;
         return this.uploadCampaignReport(result, options);
     }
 
-    public async generateCampaignSnapshot(campaignId: string): Promise<string | null> {
-        const result = await this.renderService.buildCampaignReport(campaignId);
-        if (!result) return null;
-        const { svgString, campaign, width, height } = result;
-        const path = this.renderService.buildSnapshotPath(campaign.exportPath, campaign.name);
-        await this.renderService.saveAprOutput(path, result.meta.format, svgString, width, height);
-        return path;
-    }
-
-    public async publishAllStale(): Promise<number> {
-        const needsRefresh = this.getCampaignsNeedingRefresh();
-        let count = 0;
-        for (const campaign of needsRefresh) {
-            try {
-                await this.generateCampaignReport(campaign.id);
-                count++;
-            } catch (error) {
-                console.error(`Failed to publish campaign ${campaign.name}:`, error);
-            }
-        }
-
-        if (count > 0) {
-            new Notice(t('ui.authorProgressCampaignService.publishedCampaigns', { campaigns: tCount('campaign', count) }));
-        }
-
-        return count;
-    }
-
-    private async checkCampaignAutoUpdates(authorProgress: AuthorProgressSettings): Promise<void> {
-        if (!hasProFeatureAccess(this.plugin)) return;
-        const campaigns = authorProgress.campaigns ?? [];
-        if (campaigns.length === 0) return;
-
+    /** Publish every report whose schedule is due, and retry Community sends that failed. */
+    public async checkAutoUpdate(): Promise<void> {
         const cooldown = 5 * 60 * 1000;
         const now = Date.now();
         let updatedCount = 0;
 
-        for (const campaign of campaigns) {
+        for (const campaign of this.getReports()) {
             if (!campaign.isActive) continue;
-            const frequency = campaign.updateFrequency ?? 'manual';
-            const last = this.campaignLastRunAt(campaign);
-            const diffMs = now - last;
+            const frequency = campaign.updateFrequency;
+            const diffMs = now - this.campaignLastRunAt(campaign);
 
             let thresholdMs = 0;
             switch (frequency) {
@@ -226,16 +140,13 @@ export class AuthorProgressCampaignService {
     }
 
     private async uploadCampaignReport(
-        result: AuthorProgressCampaignBuildResult,
+        result: AuthorProgressReportBuildResult,
         options?: { silent?: boolean }
     ): Promise<'private' | 'active'> {
-        const authorProgress = this.plugin.settings.authorProgress;
-        const campaignIndex = authorProgress?.campaigns?.findIndex(campaign => campaign.id === result.campaign.id) ?? -1; // SAFE: -1 is findIndex's own "not found" value, so an absent campaign list takes the same not-found branch
-        if (!authorProgress?.campaigns || campaignIndex < 0) {
+        const campaign = this.renderService.getReport(result.report.id);
+        if (!campaign) {
             throw new Error(t('ui.authorProgressCampaignService.campaignNotFound'));
         }
-
-        const campaign = authorProgress.campaigns[campaignIndex];
         const bookKey = resolveCampaignBookId(this.plugin.settings, campaign);
         if (!bookKey) {
             throw new Error(t('ui.authorProgressCampaignService.chooseCampaignBook'));
@@ -255,20 +166,13 @@ export class AuthorProgressCampaignService {
         await this.plugin.saveSettings();
 
         try {
-            const teaser = campaign.teaserReveal;
-            const revealLevel = teaser?.enabled
-                ? getTeaserRevealLevel(
-                    result.meta.percent,
-                    getTeaserThresholds(teaser.preset ?? 'standard', teaser.customThresholds), // SAFE: 'standard' is the shipped teaser preset for a campaign that never picked one
-                    teaser.disabledStages
-                )
-                : 'full';
             const uploaded = await uploadAprToCommunity(this.plugin, {
                 svg: result.svgString,
                 width: result.width,
                 height: result.height,
-                teaserLevel: revealLevel,
-                updateFrequency: campaign.updateFrequency ?? 'manual', // SAFE: fail-closed cadence — a campaign with no schedule never auto-posts; the author triggers it
+                // Community reads a level below full as a teaser in progress.
+                teaserLevel: campaign.teaserReveal.enabled ? result.revealLevel : 'full',
+                updateFrequency: campaign.updateFrequency,
                 bookKey,
                 campaignLabel: campaign.name
             });

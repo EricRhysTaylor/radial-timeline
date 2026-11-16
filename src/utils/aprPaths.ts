@@ -1,7 +1,6 @@
 import { kebabSlug } from './slug';
 import { systemFolderPath } from './systemFolder';
 
-export type AprSize = 'small' | 'medium' | 'large';
 export type AprFrequency = 'manual' | 'daily' | 'weekly' | 'monthly';
 export type AprExportFormat = 'png' | 'svg';
 export type AprExportQuality = 'standard' | 'ultra' | 'print';
@@ -21,25 +20,18 @@ export type AprExportQuality = 'standard' | 'ultra' | 'print';
  * Where:
  *   {campaignSlug} = slugified campaign name (use "default" for core report)
  *   {mode}         = manual | auto-daily | auto-weekly | auto-monthly
- *   {quality}      = standard | ultra
- *   {-teaser}      = suffix only if teaser enabled
+ *   {quality}      = standard | ultra | print
+ *   {-teaser}      = suffix only if teaser enabled (campaigns only)
  *   {format}       = png | svg
  *
  * Examples:
  *   Core:     Radial Timeline/Social/my-novel/apr-default-manual-standard.png
  *   Campaign: Radial Timeline/Social/my-novel/campaigns/apr-kickstarter-auto-weekly-ultra-teaser.png
- *
- * Legacy format (still matched for migration):
- *   apr-{campaignSlug}-{mode}-{size}.{format}  (size = thumb|small|medium|large)
  */
 
-function formatAprMode(updateFrequency?: AprFrequency): string {
-    if (!updateFrequency || updateFrequency === 'manual') return 'manual';
+function formatAprMode(updateFrequency: AprFrequency): string {
+    if (updateFrequency === 'manual') return 'manual';
     return `auto-${updateFrequency}`;
-}
-
-function resolveQuality(quality?: AprExportQuality): AprExportQuality {
-    return quality ?? 'standard';
 }
 
 const EXPORT_FORMATS: AprExportFormat[] = ['png', 'svg'];
@@ -53,43 +45,32 @@ export function normalizeAprExportFormat(value: unknown): AprExportFormat {
 /** APR artwork root — the Social subfolder of the canonical system folder. */
 const SOCIAL_ROOT = systemFolderPath('Social');
 
-/**
- * Builds the embed path for the default/core APR report.
- */
-export function buildDefaultEmbedPath(options: {
-    bookTitle?: string;
-    updateFrequency?: AprFrequency;
-    aprExportQuality?: AprExportQuality;
-    /** @deprecated Use aprExportQuality instead. Accepted for backwards compat. */
-    aprSize?: AprSize;
-    exportFormat?: AprExportFormat;
-}): string {
-    const bookSlug = kebabSlug(options.bookTitle ?? '', 'book');
-    const mode = formatAprMode(options.updateFrequency);
-    const quality = resolveQuality(options.aprExportQuality);
-    const format = normalizeAprExportFormat(options.exportFormat);
-    return `${SOCIAL_ROOT}/${bookSlug}/apr-default-${mode}-${quality}.${format}`;
+/** Id of the Default report, the one report every vault has. */
+export const DEFAULT_REPORT_ID = 'default';
+
+/** The fields of a report that decide its file name. */
+export interface AprReportPathFields {
+    id: string;
+    name: string;
+    updateFrequency: AprFrequency;
+    aprExportQuality: AprExportQuality;
+    exportFormat: AprExportFormat;
+    teaserReveal: { enabled: boolean };
 }
 
 /**
- * Builds the embed path for a campaign APR report.
+ * The vault path a report publishes to. This is the only place the path is
+ * decided: it follows the report's own settings and its book, so it is derived
+ * each time and never stored.
  */
-export function buildCampaignEmbedPath(options: {
-    bookTitle?: string;
-    campaignName: string;
-    updateFrequency?: AprFrequency;
-    aprExportQuality?: AprExportQuality;
-    /** @deprecated Use aprExportQuality instead. Accepted for backwards compat. */
-    aprSize?: AprSize;
-    fallbackSize?: AprSize;
-    teaserEnabled?: boolean;
-    exportFormat?: AprExportFormat;
-}): string {
-    const bookSlug = kebabSlug(options.bookTitle ?? '', 'book');
-    const campaignSlug = kebabSlug(options.campaignName ?? '', 'campaign');
-    const mode = formatAprMode(options.updateFrequency);
-    const quality = resolveQuality(options.aprExportQuality);
-    const teaserSuffix = options.teaserEnabled ? '-teaser' : '';
-    const format = normalizeAprExportFormat(options.exportFormat);
-    return `${SOCIAL_ROOT}/${bookSlug}/campaigns/apr-${campaignSlug}-${mode}-${quality}${teaserSuffix}.${format}`;
+export function buildReportEmbedPath(report: AprReportPathFields, bookTitle: string): string {
+    const bookSlug = kebabSlug(bookTitle, 'book');
+    const mode = formatAprMode(report.updateFrequency);
+    const format = normalizeAprExportFormat(report.exportFormat);
+    if (report.id === DEFAULT_REPORT_ID) {
+        return `${SOCIAL_ROOT}/${bookSlug}/apr-default-${mode}-${report.aprExportQuality}.${format}`;
+    }
+    const campaignSlug = kebabSlug(report.name, 'campaign');
+    const teaserSuffix = report.teaserReveal.enabled ? '-teaser' : '';
+    return `${SOCIAL_ROOT}/${bookSlug}/campaigns/apr-${campaignSlug}-${mode}-${report.aprExportQuality}${teaserSuffix}.${format}`;
 }

@@ -685,92 +685,43 @@ export interface BookLayoutOptions {
     sceneHeadingMode?: ManuscriptSceneHeadingMode;
 }
 
-export type AuthorProgressPublishTarget = 'folder' | 'github_pages' | 'note';
 export type AuthorProgressFrequency = 'manual' | 'daily' | 'weekly' | 'monthly';
 export type AprExportFormat = 'png' | 'svg';
 export type AprExportQuality = 'standard' | 'ultra' | 'print';
 
+/**
+ * What every Author Progress report shares: who wrote the book and how
+ * progress is measured. Per-report choices live on the report itself, and
+ * colors and fonts live in the style a report points to.
+ */
 export interface AuthorProgressDefaults {
-    noteBehavior: 'preset' | 'custom';
-    publishTarget: AuthorProgressPublishTarget;
-    customNoteTemplatePath?: string; // Path to custom note template (Pro feature)
-
-    // Display defaults
-    showSubplots: boolean;  // Show all rings vs single Main Plot ring
-    showActs: boolean;      // Show act divisions vs full circle
-    showStatus: boolean;    // Show real stage colors vs neutral gray
-    showProgressPercent?: boolean; // Show big center %
     aprProgressMode?: 'stage' | 'date' | 'full';
     aprTrackedStage?: AprTrackedStage;
     aprProgressDateStart?: string;
     aprProgressDateTarget?: string;
     aprTargetSceneCount?: number; // Author-estimated total scenes — APR denominator when current scene count is smaller
-    aprSize?: 'small' | 'medium' | 'large';
-    aprExportQuality?: AprExportQuality; // Standard (1200px) or Ultra (2400px)
-    // Persisted view mode for the Default Report and any campaign with teaser OFF.
-    // Mirrors the teaser preview dropdown in social settings. 'auto' = use progress %.
-    aprDefaultViewMode?: 'auto' | 'ring' | 'scenes' | 'colors' | 'full';
-    exportFormat?: AprExportFormat; // Core/default report export format
-    aprBackgroundColor?: string;
-    aprCenterTransparent?: boolean;
-    aprBookAuthorColor?: string;
-    aprAuthorColor?: string;
-    aprEngineColor?: string;
-    aprPercentNumberColor?: string; // Color for the center percent number
-    aprTheme?: 'dark' | 'light' | 'none'; // Controls stroke/border contrast
-    aprSpokeColorMode?: 'dark' | 'light' | 'none' | 'custom' | 'sync'; // Act spokes color mode
-    aprSpokeColor?: string; // Custom spokes color (used when mode is 'custom')
-
-    // Typography Settings (since SVG embeds fonts, these are user-configurable)
-    aprBookTitleFontFamily?: string;  // Font family for book title (default: 'Inter')
-    aprBookTitleFontWeight?: number;  // Font weight for book title (default: 400)
-    aprBookTitleFontItalic?: boolean; // Italic for book title (default: false)
-    aprBookTitleFontSize?: number;    // Font size for book title (default: from preset)
-
-    aprAuthorNameFontFamily?: string;  // Font family for author name (default: 'Inter' or script font)
-    aprAuthorNameFontWeight?: number;  // Font weight for author name (default: 400)
-    aprAuthorNameFontItalic?: boolean; // Italic for author name (default: false)
-    aprAuthorNameFontSize?: number;    // Font size for author name (default: from preset)
-
-    aprPercentNumberFontSize1Digit?: number;  // Font size for single-digit (default: from preset)
-    aprPercentNumberFontSize2Digit?: number;  // Font size for double-digit (default: from preset)
-    aprPercentNumberFontSize3Digit?: number;  // Font size for triple-digit (default: from preset)
-
-    aprRtBadgeFontFamily?: string;  // Font family for stage badge / RT mark (default: 'Inter')
-    aprRtBadgeFontWeight?: number;  // Font weight for stage badge / RT mark (default: 700)
-    aprRtBadgeFontItalic?: boolean; // Italic for stage badge / RT mark (default: false)
-    aprRtBadgeFontSize?: number;    // Font size for stage badge / RT mark (default: from preset)
-    aprShowRtAttribution?: boolean; // Show RT attribution mark (Pro can disable)
-    aprStylingExpanded?: boolean; // Collapse state for the styling panel body
+    aprStylingExpanded?: boolean; // Collapse state for the style designer
 
     // Custom background presets (user-saved colors with names)
     aprCustomBgPresets?: Array<{ label: string; color: string }>;
 
     // Identity
     authorName?: string;
-
-    // Publishing defaults
-    lastPublishedDate?: string; // ISO string
-    updateFrequency: AuthorProgressFrequency;
-    stalenessThresholdDays: number; // For Manual mode
-    enableReminders: boolean;
-    exportPath: string;
-    autoUpdateExportPath?: boolean;
 }
 
+/**
+ * Schema 2: the Default report is the first entry in `campaigns` (id
+ * `default`) and every report names a saved style. Schema 1 kept the Default
+ * report and its colors loose inside `defaults`.
+ */
 export interface AuthorProgressSettings {
-    enabled: boolean;
+    schemaVersion: 2;
     defaults: AuthorProgressDefaults;
-    styleProfiles?: AprStyleProfile[];
-    designerDraftStyle?: AprStyleSettings;
-    designerCampaignId?: string;
-
-    // Pro Feature: Campaign Manager
-    campaigns?: AuthorProgressCampaign[];
+    styleProfiles: AprStyleProfile[];
+    campaigns: AuthorProgressCampaign[];
 }
 
 export type AprTrackedStage = 'Zero' | 'Author' | 'House' | 'Press';
-export type AprStyleSource = 'global' | 'profile';
 
 export interface AprStyleSettings {
     aprBackgroundColor?: string;
@@ -800,12 +751,12 @@ export interface AprStyleSettings {
     aprShowRtAttribution?: boolean;
 }
 
+/** A named style. The one with id `default` always exists and cannot be deleted. */
 export interface AprStyleProfile {
     id: string;
     name: string;
     createdAt: string;
     style: AprStyleSettings;
-    aprExportQuality?: AprExportQuality;
 }
 
 /**
@@ -854,21 +805,21 @@ export interface TeaserRevealSettings {
 }
 
 /**
- * Author Progress campaign - Pro Feature
- * Allows multiple export destinations with independent refresh schedules
+ * One Author Progress report: the Default report (id `default`) or a campaign
+ * the author added. Each publishes its own image on its own schedule. The file
+ * path is derived from these fields (see `buildReportEmbedPath`), never stored.
  */
 export interface AuthorProgressCampaign {
     id: string;
     name: string;                    // "Kickstarter", "Newsletter", "Website", etc.
-    description?: string;            // Optional notes about this campaign
-    isActive: boolean;               // Whether this campaign is currently being used
+    isActive: boolean;               // Paused reports are skipped by the schedule
 
     // Update Schedule
-    updateFrequency?: 'manual' | 'daily' | 'weekly' | 'monthly';  // How often to auto-update
+    updateFrequency: AuthorProgressFrequency;
     refreshThresholdDays: number;    // Days before reminder appears (for manual mode)
     lastPublishedDate?: string;      // ISO string - when last updated
 
-    // Community share surface: also send this campaign's APR to the author's
+    // Community share surface: also send this report to the author's
     // My Share page on the community website. It arrives private there; the
     // author activates public display on the website (never from the plugin).
     sendToCommunity?: boolean;
@@ -878,26 +829,19 @@ export interface AuthorProgressCampaign {
     lastCommunityUploadError?: string;
 
     // Output
-    exportPath: string;              // Where to save the exported report for this campaign
-    exportFormat?: AprExportFormat;  // Campaign export format (PNG recommended, SVG optional for web embeds)
+    exportFormat: AprExportFormat;
+    aprExportQuality: AprExportQuality;
 
-    // Book targeting (Pro: select a specific book; default: follows active book)
-    targetBookId?: string;            // Book Manager book ID — undefined = current active book
+    // Book targeting: a chosen book, or undefined to follow the active book
+    targetBookId?: string;
 
-    aprSize?: 'small' | 'medium' | 'large';
-    aprExportQuality?: AprExportQuality;
+    // The saved style this report is drawn with
+    styleProfileId: string;
 
-    // Explicit style resolution
-    styleSource?: AprStyleSource;
-    styleProfileId?: string;
-
-    // Legacy per-campaign styling overrides retained for migration only
-    customBackgroundColor?: string;
-    customTransparent?: boolean;
-    customTheme?: 'dark' | 'light';
-
-    // Pro Feature: Teaser Reveal (Progressive Reveal)
-    teaserReveal?: TeaserRevealSettings;
+    // Teaser reveal shows more of the timeline as progress grows. When it is
+    // off the report always shows `viewMode`.
+    teaserReveal: TeaserRevealSettings;
+    viewMode: TeaserRevealLevel;
 }
 
 export type SceneInclusion = 'excluded' | 'summary' | 'full';

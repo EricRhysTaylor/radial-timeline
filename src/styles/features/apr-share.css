@@ -1,9 +1,10 @@
 /* -------------------------------------------------------------------------- */
-/* Author Progress Report: preview card, share file, style context            */
+/* Author Progress Report: the open report (preview, share file, style) and   */
+/* the publish dialog's report list                                           */
 /* -------------------------------------------------------------------------- */
 
-/* Preview card — fixed preview on the left; status, controls and the share
-   file on the right. Wraps to one column in a narrow settings pane. */
+/* Preview card — fixed preview on the left; status, the share file and
+   Publish on the right. Wraps to one column in a narrow settings pane. */
 .ert-ui.ert-scope--settings .ert-apr-previewCard {
   display: flex;
   flex-wrap: wrap;
@@ -108,30 +109,73 @@
   gap: var(--ert-gap-xs);
 }
 
-/* Style context — shown on the Styling panel while a campaign's style is open. */
-.ert-ui.ert-scope--settings .ert-apr-styleContext {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
+/* Style row — the saved style this report uses, with the designer under it. */
+.ert-ui.ert-scope--settings .ert-apr-styleRow .setting-item-control {
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--ert-gap-sm);
-  padding: var(--ert-pad-sm) var(--ert-pad-md);
-  border: 1px solid color-mix(in srgb, var(--ert-accent) 35%, transparent);
-  border-radius: var(--ert-control-radius);
-  background: color-mix(in srgb, var(--ert-accent) 10%, transparent);
 }
 
-.ert-ui.ert-scope--settings .ert-apr-styleContext__icon {
-  display: inline-flex;
-  color: var(--ert-accent);
+.ert-ui.ert-scope--settings .ert-apr-designer__palette {
+  justify-content: flex-end;
 }
 
-.ert-ui.ert-scope--settings .ert-apr-styleContext__icon svg {
-  width: 16px;
-  height: 16px;
+/* Designer rows sit inside the open report, which is narrower than a settings
+   panel: the label keeps a readable width and the controls take the rest,
+   wrapping under each other when they do not fit on one line. */
+.ert-ui.ert-scope--settings .ert-apr-designer .ert-elementBlock.ert-settingRow.setting-item[data-ert-typo] {
+  grid-template-columns: minmax(110px, 1fr) minmax(0, 2.6fr);
 }
 
-.ert-ui.ert-scope--settings .ert-apr-styleContext__text {
-  flex: 1 1 auto;
+/* Hold the controls to their column so the rows inside can wrap. */
+.ert-ui.ert-scope--settings .ert-apr-designer .ert-elementBlock.ert-settingRow.setting-item[data-ert-typo] > .setting-item-control {
+  width: 100%;
   min-width: 0;
-  font-size: var(--font-ui-small);
+}
+
+.ert-ui.ert-scope--settings .ert-apr-designer .ert-controlGroup {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.ert-ui.ert-scope--settings .ert-apr-designer .ert-typography-controls {
+  justify-content: flex-end;
+}
+
+.ert-ui.ert-scope--settings .ert-apr-designer .ert-typography-controls > .ert-typography-text-input {
+  flex: 1 1 120px;
+  width: auto;
+}
+
+/* The share file beside the preview has little room: the buttons drop under
+   the text instead of squeezing it. */
+.ert-ui.ert-scope--settings .ert-apr-share {
+  flex-wrap: wrap;
+}
+
+.ert-ui.ert-scope--settings .ert-apr-share__body {
+  flex: 1 1 140px;
+}
+
+.ert-ui.ert-scope--settings .ert-apr-share__actions {
+  margin-left: auto;
+}
+
+/* Publish dialog — the file leads; each report line below is a choice. */
+.ert-ui.ert-scope--modal .ert-apr-shareSlot--lead .ert-apr-share__thumb {
+  width: 96px;
+  height: 96px;
+}
+
+.ert-ui.ert-scope--modal .ert-apr-status-row--choice {
+  border-radius: var(--ert-control-radius);
+  cursor: pointer;
+}
+
+.ert-ui.ert-scope--modal .ert-apr-status-row--choice:hover {
+  background: var(--background-modifier-hover);
+}
+
+.ert-ui.ert-scope--modal .ert-apr-status-row--choice.is-selected {
+  background: color-mix(in srgb, var(--ert-accent) 14%, transparent);
 }

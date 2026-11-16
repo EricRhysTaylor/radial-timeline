@@ -1,34 +1,39 @@
-import {
-    buildCampaignEmbedPath,
-    buildDefaultEmbedPath,
-    normalizeAprExportFormat
-} from '../utils/aprPaths';
+/**
+ * Social / authorProgress settings: the shipped defaults and the one seam where
+ * saved data is read.
+ *
+ * Schema 2 has a single shape. The Default report is the first entry in
+ * `campaigns` (id `default`), every report names a saved style, and the style
+ * with id `default` always exists. Schema 1 kept the Default report, and the
+ * "manual" colors and fonts it was drawn with, loose inside `defaults`;
+ * `migrateAuthorProgressSettings` folds that into a report and a style.
+ */
+import { DEFAULT_REPORT_ID, normalizeAprExportFormat } from '../utils/aprPaths';
 import type {
+    AprExportFormat,
+    AprExportQuality,
     AuthorProgressCampaign,
     AuthorProgressDefaults,
     AuthorProgressFrequency,
-    AuthorProgressPublishTarget,
     AuthorProgressSettings,
     AprStyleProfile,
     AprStyleSettings,
     AprTrackedStage,
+    TeaserRevealLevel,
     TeaserRevealSettings
 } from '../types/settings';
 
+/** Id of the style every vault has. It cannot be deleted. */
+export const DEFAULT_STYLE_ID = 'default';
+
 const AUTHOR_PROGRESS_FREQUENCIES = new Set<AuthorProgressFrequency>(['manual', 'daily', 'weekly', 'monthly']);
-const AUTHOR_PROGRESS_PUBLISH_TARGETS = new Set<AuthorProgressPublishTarget>(['folder', 'github_pages', 'note']);
-
-type AprDefaultViewMode = NonNullable<AuthorProgressDefaults['aprDefaultViewMode']>;
-const APR_DEFAULT_VIEW_MODES = new Set<AprDefaultViewMode>(['auto', 'ring', 'scenes', 'colors', 'full']);
-
+const APR_VIEW_MODES = new Set<TeaserRevealLevel>(['ring', 'scenes', 'colors', 'full']);
 const APR_TRACKED_STAGES = new Set<AprTrackedStage>(['Zero', 'Author', 'House', 'Press']);
 
 type AprSpokeColorMode = NonNullable<AprStyleSettings['aprSpokeColorMode']>;
 // 'dark' is deliberately absent: the original migration checks never accepted it,
 // so a saved 'dark' falls through to the caller-provided fallback.
 const APR_SPOKE_COLOR_MODES = new Set<AprSpokeColorMode>(['light', 'none', 'custom', 'sync']);
-
-type LegacyAuthorProgressSettings = Record<string, unknown>;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -51,37 +56,26 @@ function asNumber(value: unknown, fallback: number): number {
     return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
-function normalizeFrequency(value: unknown, fallback: AuthorProgressFrequency): AuthorProgressFrequency {
+function asOptionalNumber(value: unknown, fallback: number | undefined): number | undefined {
+    return typeof value === 'number' ? value : fallback;
+}
+
+function normalizeFrequency(value: unknown): AuthorProgressFrequency {
     return typeof value === 'string' && AUTHOR_PROGRESS_FREQUENCIES.has(value as AuthorProgressFrequency)
         ? value as AuthorProgressFrequency
-        : fallback;
+        : 'manual';
 }
 
-function normalizePublishTarget(value: unknown, fallback: AuthorProgressPublishTarget): AuthorProgressPublishTarget {
-    return typeof value === 'string' && AUTHOR_PROGRESS_PUBLISH_TARGETS.has(value as AuthorProgressPublishTarget)
-        ? value as AuthorProgressPublishTarget
-        : fallback;
+function normalizeViewMode(value: unknown): TeaserRevealLevel {
+    return typeof value === 'string' && APR_VIEW_MODES.has(value as TeaserRevealLevel)
+        ? value as TeaserRevealLevel
+        : 'full';
 }
 
-function normalizeAprSize(value: unknown, fallback: AuthorProgressDefaults['aprSize']): AuthorProgressDefaults['aprSize'] {
-    if (value === 'small' || value === 'medium' || value === 'large') return value;
-    return fallback;
-}
-
-function normalizeAprDefaultViewMode(
-    value: unknown,
-    fallback: AuthorProgressDefaults['aprDefaultViewMode']
-): AuthorProgressDefaults['aprDefaultViewMode'] {
-    if (typeof value === 'string' && APR_DEFAULT_VIEW_MODES.has(value as AprDefaultViewMode)) {
-        return value as AprDefaultViewMode;
-    }
-    return fallback;
-}
-
-function normalizeTrackedStage(value: unknown, fallback: AprTrackedStage = 'Zero'): AprTrackedStage {
+function normalizeTrackedStage(value: unknown): AprTrackedStage {
     return typeof value === 'string' && APR_TRACKED_STAGES.has(value as AprTrackedStage)
         ? value as AprTrackedStage
-        : fallback;
+        : 'Zero';
 }
 
 function normalizeAprSpokeColorMode(
@@ -93,9 +87,20 @@ function normalizeAprSpokeColorMode(
         : fallback;
 }
 
-function normalizeTeaserReveal(value: unknown): TeaserRevealSettings | undefined {
+function normalizeAprExportQuality(value: unknown): AprExportQuality | undefined {
+    return value === 'standard' || value === 'ultra' || value === 'print' ? value : undefined;
+}
+
+/** A saved format, or the extension of a schema 1 export path. */
+function normalizeFormat(format: unknown, legacyPath: unknown): AprExportFormat {
+    if (asString(format)) return normalizeAprExportFormat(format);
+    return asString(legacyPath)?.toLowerCase().endsWith('.svg') ? 'svg' : 'png';
+}
+
+function normalizeTeaserReveal(value: unknown): TeaserRevealSettings {
     const record = asRecord(value);
-    if (!record) return undefined;
+    // A report that never chose a teaser draws the full view.
+    if (!record) return { enabled: false, preset: 'standard' };
     const customThresholds = asRecord(record.customThresholds);
     const disabledStages = asRecord(record.disabledStages);
     return {
@@ -115,20 +120,17 @@ function normalizeTeaserReveal(value: unknown): TeaserRevealSettings | undefined
 
 export function buildDefaultAuthorProgressDefaults(): AuthorProgressDefaults {
     return {
-        noteBehavior: 'preset',
-        publishTarget: 'folder',
-        showSubplots: true,
-        showActs: true,
-        showStatus: true,
-        showProgressPercent: true,
         aprProgressMode: 'stage',
         aprTrackedStage: 'Zero',
         aprProgressDateStart: undefined,
         aprProgressDateTarget: undefined,
-        aprTargetSceneCount: undefined,
-        aprSize: 'medium',
-        aprDefaultViewMode: 'auto',
-        exportFormat: 'png',
+        aprTargetSceneCount: undefined
+    };
+}
+
+/** The colors and fonts a new vault starts with. */
+export function buildDefaultAprStyle(): AprStyleSettings {
+    return {
         aprBackgroundColor: '#0d0d0f',
         aprCenterTransparent: true,
         aprBookAuthorColor: '#6FB971',
@@ -153,92 +155,82 @@ export function buildDefaultAuthorProgressDefaults(): AuthorProgressDefaults {
         aprRtBadgeFontWeight: 700,
         aprRtBadgeFontItalic: false,
         aprRtBadgeFontSize: undefined,
-        aprShowRtAttribution: true,
-        lastPublishedDate: undefined,
+        aprShowRtAttribution: true
+    };
+}
+
+function buildDefaultStyleProfile(style: AprStyleSettings): AprStyleProfile {
+    return { id: DEFAULT_STYLE_ID, name: 'Default', createdAt: new Date().toISOString(), style };
+}
+
+function buildDefaultReport(): AuthorProgressCampaign {
+    return {
+        id: DEFAULT_REPORT_ID,
+        name: 'Default',
+        isActive: true,
         updateFrequency: 'manual',
-        stalenessThresholdDays: 30,
-        enableReminders: true,
-        exportPath: '',
-        autoUpdateExportPath: true
+        refreshThresholdDays: 30,
+        exportFormat: 'png',
+        aprExportQuality: 'standard',
+        styleProfileId: DEFAULT_STYLE_ID,
+        teaserReveal: { enabled: false, preset: 'standard' },
+        viewMode: 'full'
+    };
+}
+
+/** A campaign the author adds: teaser reveal on, drawn with the Default style until they pick another. */
+export function buildNewCampaign(name: string, reminderDays: number): AuthorProgressCampaign {
+    return {
+        ...buildDefaultReport(),
+        id: `campaign-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        name,
+        refreshThresholdDays: reminderDays,
+        teaserReveal: { enabled: true, preset: 'standard' }
     };
 }
 
 export function buildDefaultAuthorProgressSettings(): AuthorProgressSettings {
     return {
-        enabled: false,
+        schemaVersion: 2,
         defaults: buildDefaultAuthorProgressDefaults(),
-        styleProfiles: [],
-        designerDraftStyle: undefined,
-        designerCampaignId: undefined,
-        campaigns: []
+        styleProfiles: [buildDefaultStyleProfile(buildDefaultAprStyle())],
+        campaigns: [buildDefaultReport()]
     };
 }
 
-function captureStyleSettings(defaults: AuthorProgressDefaults): AprStyleSettings {
-    return {
-        aprBackgroundColor: defaults.aprBackgroundColor,
-        aprCenterTransparent: defaults.aprCenterTransparent,
-        aprBookAuthorColor: defaults.aprBookAuthorColor,
-        aprAuthorColor: defaults.aprAuthorColor,
-        aprEngineColor: defaults.aprEngineColor,
-        aprPercentNumberColor: defaults.aprPercentNumberColor,
-        aprTheme: defaults.aprTheme,
-        aprSpokeColorMode: defaults.aprSpokeColorMode,
-        aprSpokeColor: defaults.aprSpokeColor,
-        aprBookTitleFontFamily: defaults.aprBookTitleFontFamily,
-        aprBookTitleFontWeight: defaults.aprBookTitleFontWeight,
-        aprBookTitleFontItalic: defaults.aprBookTitleFontItalic,
-        aprBookTitleFontSize: defaults.aprBookTitleFontSize,
-        aprAuthorNameFontFamily: defaults.aprAuthorNameFontFamily,
-        aprAuthorNameFontWeight: defaults.aprAuthorNameFontWeight,
-        aprAuthorNameFontItalic: defaults.aprAuthorNameFontItalic,
-        aprAuthorNameFontSize: defaults.aprAuthorNameFontSize,
-        aprPercentNumberFontSize1Digit: defaults.aprPercentNumberFontSize1Digit,
-        aprPercentNumberFontSize2Digit: defaults.aprPercentNumberFontSize2Digit,
-        aprPercentNumberFontSize3Digit: defaults.aprPercentNumberFontSize3Digit,
-        aprRtBadgeFontFamily: defaults.aprRtBadgeFontFamily,
-        aprRtBadgeFontWeight: defaults.aprRtBadgeFontWeight,
-        aprRtBadgeFontItalic: defaults.aprRtBadgeFontItalic,
-        aprRtBadgeFontSize: defaults.aprRtBadgeFontSize,
-        aprShowRtAttribution: defaults.aprShowRtAttribution,
-    };
-}
-
-function migrateStyleSettings(raw: unknown, defaults: AuthorProgressDefaults): AprStyleSettings {
+function migrateStyleSettings(raw: unknown, base: AprStyleSettings): AprStyleSettings {
     const record = asRecord(raw);
-    const base = captureStyleSettings(defaults);
-    if (!record) return base;
+    if (!record) return { ...base };
     return {
-        ...base,
         aprBackgroundColor: asString(record.aprBackgroundColor) ?? base.aprBackgroundColor,
         aprCenterTransparent: asBoolean(record.aprCenterTransparent, base.aprCenterTransparent ?? true),
         aprBookAuthorColor: asString(record.aprBookAuthorColor) ?? base.aprBookAuthorColor,
         aprAuthorColor: asString(record.aprAuthorColor) ?? base.aprAuthorColor,
         aprEngineColor: asString(record.aprEngineColor) ?? base.aprEngineColor,
         aprPercentNumberColor: asString(record.aprPercentNumberColor) ?? base.aprPercentNumberColor,
-        aprTheme: record.aprTheme === 'light' || record.aprTheme === 'none' ? record.aprTheme : base.aprTheme,
+        aprTheme: record.aprTheme === 'light' || record.aprTheme === 'none' || record.aprTheme === 'dark' ? record.aprTheme : base.aprTheme,
         aprSpokeColorMode: normalizeAprSpokeColorMode(record.aprSpokeColorMode, base.aprSpokeColorMode),
         aprSpokeColor: asString(record.aprSpokeColor) ?? base.aprSpokeColor,
         aprBookTitleFontFamily: asString(record.aprBookTitleFontFamily) ?? base.aprBookTitleFontFamily,
         aprBookTitleFontWeight: asNumber(record.aprBookTitleFontWeight, base.aprBookTitleFontWeight ?? 400),
         aprBookTitleFontItalic: asBoolean(record.aprBookTitleFontItalic, base.aprBookTitleFontItalic ?? false),
-        aprBookTitleFontSize: typeof record.aprBookTitleFontSize === 'number' ? record.aprBookTitleFontSize : base.aprBookTitleFontSize,
+        aprBookTitleFontSize: asOptionalNumber(record.aprBookTitleFontSize, base.aprBookTitleFontSize),
         aprAuthorNameFontFamily: asString(record.aprAuthorNameFontFamily) ?? base.aprAuthorNameFontFamily,
         aprAuthorNameFontWeight: asNumber(record.aprAuthorNameFontWeight, base.aprAuthorNameFontWeight ?? 400),
         aprAuthorNameFontItalic: asBoolean(record.aprAuthorNameFontItalic, base.aprAuthorNameFontItalic ?? false),
-        aprAuthorNameFontSize: typeof record.aprAuthorNameFontSize === 'number' ? record.aprAuthorNameFontSize : base.aprAuthorNameFontSize,
-        aprPercentNumberFontSize1Digit: typeof record.aprPercentNumberFontSize1Digit === 'number' ? record.aprPercentNumberFontSize1Digit : base.aprPercentNumberFontSize1Digit,
-        aprPercentNumberFontSize2Digit: typeof record.aprPercentNumberFontSize2Digit === 'number' ? record.aprPercentNumberFontSize2Digit : base.aprPercentNumberFontSize2Digit,
-        aprPercentNumberFontSize3Digit: typeof record.aprPercentNumberFontSize3Digit === 'number' ? record.aprPercentNumberFontSize3Digit : base.aprPercentNumberFontSize3Digit,
+        aprAuthorNameFontSize: asOptionalNumber(record.aprAuthorNameFontSize, base.aprAuthorNameFontSize),
+        aprPercentNumberFontSize1Digit: asOptionalNumber(record.aprPercentNumberFontSize1Digit, base.aprPercentNumberFontSize1Digit),
+        aprPercentNumberFontSize2Digit: asOptionalNumber(record.aprPercentNumberFontSize2Digit, base.aprPercentNumberFontSize2Digit),
+        aprPercentNumberFontSize3Digit: asOptionalNumber(record.aprPercentNumberFontSize3Digit, base.aprPercentNumberFontSize3Digit),
         aprRtBadgeFontFamily: asString(record.aprRtBadgeFontFamily) ?? base.aprRtBadgeFontFamily,
         aprRtBadgeFontWeight: asNumber(record.aprRtBadgeFontWeight, base.aprRtBadgeFontWeight ?? 700),
         aprRtBadgeFontItalic: asBoolean(record.aprRtBadgeFontItalic, base.aprRtBadgeFontItalic ?? false),
-        aprRtBadgeFontSize: typeof record.aprRtBadgeFontSize === 'number' ? record.aprRtBadgeFontSize : base.aprRtBadgeFontSize,
+        aprRtBadgeFontSize: asOptionalNumber(record.aprRtBadgeFontSize, base.aprRtBadgeFontSize),
         aprShowRtAttribution: asBoolean(record.aprShowRtAttribution, base.aprShowRtAttribution ?? true),
     };
 }
 
-function migrateStyleProfile(raw: unknown, defaults: AuthorProgressDefaults): AprStyleProfile | null {
+function migrateStyleProfile(raw: unknown, base: AprStyleSettings): AprStyleProfile | null {
     const record = asRecord(raw);
     if (!record) return null;
     const id = asString(record.id);
@@ -248,216 +240,166 @@ function migrateStyleProfile(raw: unknown, defaults: AuthorProgressDefaults): Ap
         id,
         name,
         createdAt: asString(record.createdAt) ?? new Date().toISOString(),
-        style: migrateStyleSettings(record.style ?? record, defaults),
-        aprExportQuality: normalizeAprExportQuality(record.aprExportQuality)
+        style: migrateStyleSettings(record.style ?? record, base)
     };
 }
 
-function hasLegacyCampaignStyleOverrides(record: Record<string, unknown>): boolean {
-    return asString(record.customBackgroundColor) !== undefined
-        || typeof record.customTransparent === 'boolean'
-        || record.customTheme === 'light'
-        || record.customTheme === 'dark';
-}
-
-function createLegacyCampaignStyleProfile(
+/**
+ * Schema 1 campaigns older than saved styles carried their own background,
+ * transparency and theme. Those become a style of their own.
+ */
+function buildLegacyCampaignStyle(
     campaignId: string,
     campaignName: string,
-    defaults: AuthorProgressDefaults,
+    base: AprStyleSettings,
     record: Record<string, unknown>
-): AprStyleProfile {
-    const style = captureStyleSettings(defaults);
-    style.aprBackgroundColor = asString(record.customBackgroundColor) ?? style.aprBackgroundColor;
-    style.aprCenterTransparent = typeof record.customTransparent === 'boolean'
-        ? record.customTransparent
-        : style.aprCenterTransparent;
-    style.aprTheme = record.customTheme === 'light' || record.customTheme === 'dark'
-        ? record.customTheme
-        : style.aprTheme;
+): AprStyleProfile | undefined {
+    const background = asString(record.customBackgroundColor);
+    const transparent = typeof record.customTransparent === 'boolean' ? record.customTransparent : undefined;
+    const theme = record.customTheme === 'light' || record.customTheme === 'dark' ? record.customTheme : undefined;
+    if (background === undefined && transparent === undefined && theme === undefined) return undefined;
     return {
         id: `legacy-style-${campaignId}`,
         name: `${campaignName} Style`,
         createdAt: asString(record.createdAt) ?? new Date().toISOString(),
-        style,
-        aprExportQuality: normalizeAprExportQuality(record.aprExportQuality)
+        style: {
+            ...base,
+            aprBackgroundColor: background ?? base.aprBackgroundColor,
+            aprCenterTransparent: transparent ?? base.aprCenterTransparent,
+            aprTheme: theme ?? base.aprTheme
+        }
     };
 }
 
-function migrateDefaults(raw: LegacyAuthorProgressSettings | null): AuthorProgressDefaults {
-    const defaults = buildDefaultAuthorProgressDefaults();
-    if (!raw) return defaults;
-
-    const noteBehavior = raw.noteBehavior === 'custom' || raw.defaultNoteBehavior === 'custom' ? 'custom' : 'preset';
-    const updateFrequency = normalizeFrequency(raw.updateFrequency, defaults.updateFrequency);
-    const aprSize = normalizeAprSize(raw.aprSize, defaults.aprSize);
-    const aprDefaultViewMode = normalizeAprDefaultViewMode(raw.aprDefaultViewMode, defaults.aprDefaultViewMode);
-    const exportFormat = normalizeAprExportFormat(raw.exportFormat);
-
+function migrateSharedDefaults(raw: Record<string, unknown>): AuthorProgressDefaults {
     const rawProgressMode = raw.aprProgressMode;
-    const migratedProgressMode = rawProgressMode === 'date'
-        ? 'date'
-        : rawProgressMode === 'full'
-            ? 'full'
-            : 'stage';
-    const migratedTrackedStage = rawProgressMode === 'zero'
-        ? 'Zero'
-        : normalizeTrackedStage(raw.aprTrackedStage, defaults.aprTrackedStage ?? 'Zero');
-
+    const customPresets = Array.isArray(raw.aprCustomBgPresets)
+        ? raw.aprCustomBgPresets
+            .map(asRecord)
+            .map(preset => ({ label: asString(preset?.label), color: asString(preset?.color) }))
+            .filter((preset): preset is { label: string; color: string } => !!preset.label && !!preset.color)
+        : undefined;
     return {
-        ...defaults,
-        noteBehavior,
-        publishTarget: normalizePublishTarget(raw.publishTarget ?? raw.defaultPublishTarget, defaults.publishTarget),
-        customNoteTemplatePath: asString(raw.customNoteTemplatePath),
-        showSubplots: asBoolean(raw.showSubplots, defaults.showSubplots),
-        showActs: asBoolean(raw.showActs, defaults.showActs),
-        showStatus: asBoolean(raw.showStatus, defaults.showStatus),
-        showProgressPercent: asBoolean(raw.showProgressPercent, defaults.showProgressPercent ?? true),
-        aprProgressMode: migratedProgressMode,
-        aprTrackedStage: migratedTrackedStage,
+        aprProgressMode: rawProgressMode === 'date' ? 'date' : rawProgressMode === 'full' ? 'full' : 'stage',
+        // Schema 0 named the Zero stage as a progress mode of its own.
+        aprTrackedStage: rawProgressMode === 'zero' ? 'Zero' : normalizeTrackedStage(raw.aprTrackedStage),
         aprProgressDateStart: asString(raw.aprProgressDateStart),
         aprProgressDateTarget: asString(raw.aprProgressDateTarget),
         aprTargetSceneCount: typeof raw.aprTargetSceneCount === 'number' && raw.aprTargetSceneCount > 0
             ? Math.floor(raw.aprTargetSceneCount)
             : undefined,
-        aprSize,
-        aprDefaultViewMode,
-        exportFormat,
-        aprBackgroundColor: asString(raw.aprBackgroundColor) ?? defaults.aprBackgroundColor,
-        aprCenterTransparent: asBoolean(raw.aprCenterTransparent, defaults.aprCenterTransparent ?? true),
-        aprBookAuthorColor: asString(raw.aprBookAuthorColor) ?? defaults.aprBookAuthorColor,
-        aprAuthorColor: asString(raw.aprAuthorColor) ?? defaults.aprAuthorColor,
-        aprEngineColor: asString(raw.aprEngineColor) ?? defaults.aprEngineColor,
-        aprPercentNumberColor: asString(raw.aprPercentNumberColor) ?? defaults.aprPercentNumberColor,
-        aprTheme: raw.aprTheme === 'light' || raw.aprTheme === 'none' ? raw.aprTheme : defaults.aprTheme,
-        aprSpokeColorMode: normalizeAprSpokeColorMode(raw.aprSpokeColorMode, defaults.aprSpokeColorMode),
-        aprSpokeColor: asString(raw.aprSpokeColor) ?? defaults.aprSpokeColor,
-        aprBookTitleFontFamily: asString(raw.aprBookTitleFontFamily) ?? defaults.aprBookTitleFontFamily,
-        aprBookTitleFontWeight: asNumber(raw.aprBookTitleFontWeight, defaults.aprBookTitleFontWeight ?? 400),
-        aprBookTitleFontItalic: asBoolean(raw.aprBookTitleFontItalic, defaults.aprBookTitleFontItalic ?? false),
-        aprBookTitleFontSize: typeof raw.aprBookTitleFontSize === 'number' ? raw.aprBookTitleFontSize : undefined,
-        aprAuthorNameFontFamily: asString(raw.aprAuthorNameFontFamily) ?? defaults.aprAuthorNameFontFamily,
-        aprAuthorNameFontWeight: asNumber(raw.aprAuthorNameFontWeight, defaults.aprAuthorNameFontWeight ?? 400),
-        aprAuthorNameFontItalic: asBoolean(raw.aprAuthorNameFontItalic, defaults.aprAuthorNameFontItalic ?? false),
-        aprAuthorNameFontSize: typeof raw.aprAuthorNameFontSize === 'number' ? raw.aprAuthorNameFontSize : undefined,
-        aprPercentNumberFontSize1Digit: typeof raw.aprPercentNumberFontSize1Digit === 'number' ? raw.aprPercentNumberFontSize1Digit : undefined,
-        aprPercentNumberFontSize2Digit: typeof raw.aprPercentNumberFontSize2Digit === 'number' ? raw.aprPercentNumberFontSize2Digit : undefined,
-        aprPercentNumberFontSize3Digit: typeof raw.aprPercentNumberFontSize3Digit === 'number' ? raw.aprPercentNumberFontSize3Digit : undefined,
-        aprRtBadgeFontFamily: asString(raw.aprRtBadgeFontFamily) ?? defaults.aprRtBadgeFontFamily,
-        aprRtBadgeFontWeight: asNumber(raw.aprRtBadgeFontWeight, defaults.aprRtBadgeFontWeight ?? 700),
-        aprRtBadgeFontItalic: asBoolean(raw.aprRtBadgeFontItalic, defaults.aprRtBadgeFontItalic ?? false),
-        aprRtBadgeFontSize: typeof raw.aprRtBadgeFontSize === 'number' ? raw.aprRtBadgeFontSize : undefined,
-        aprShowRtAttribution: asBoolean(raw.aprShowRtAttribution, defaults.aprShowRtAttribution ?? true),
-        authorName: asString(raw.authorName),
-        lastPublishedDate: asString(raw.lastPublishedDate),
-        updateFrequency,
-        stalenessThresholdDays: asNumber(raw.stalenessThresholdDays, defaults.stalenessThresholdDays),
-        enableReminders: asBoolean(raw.enableReminders, defaults.enableReminders),
-        exportPath: asString(raw.exportPath ?? raw.dynamicEmbedPath) ?? buildDefaultEmbedPath({
-            updateFrequency,
-            aprExportQuality: normalizeAprExportQuality(raw.aprExportQuality),
-            exportFormat
-        }),
-        autoUpdateExportPath: asBoolean(raw.autoUpdateExportPath ?? raw.autoUpdateEmbedPaths, defaults.autoUpdateExportPath ?? true)
+        aprStylingExpanded: typeof raw.aprStylingExpanded === 'boolean' ? raw.aprStylingExpanded : undefined,
+        aprCustomBgPresets: customPresets,
+        authorName: asString(raw.authorName)
     };
 }
 
-function normalizeAprExportQuality(value: unknown): AuthorProgressCampaign['aprExportQuality'] | undefined {
-    return value === 'standard' || value === 'ultra' || value === 'print' ? value : undefined;
+/** What a schema 1 report inherited from the loose Default settings. */
+interface LegacyInheritance {
+    quality: AprExportQuality;
+    viewMode: TeaserRevealLevel;
+    staleDays: number;
 }
 
-function migrateCampaign(
-    raw: unknown,
-    defaults: AuthorProgressDefaults
-): { campaign: AuthorProgressCampaign; generatedProfile?: AprStyleProfile } | null {
-    const record = asRecord(raw);
-    if (!record) return null;
-    const name = asString(record.name);
-    const id = asString(record.id);
-    if (!name || !id) return null;
-
-    const updateFrequency = normalizeFrequency(record.updateFrequency, defaults.updateFrequency);
-    const aprSize = normalizeAprSize(record.aprSize, defaults.aprSize);
-    const exportFormat = normalizeAprExportFormat(record.exportFormat);
-    const aprExportQuality = normalizeAprExportQuality(record.aprExportQuality);
-    const teaserReveal = normalizeTeaserReveal(record.teaserReveal);
-    const hasLegacyStyle = hasLegacyCampaignStyleOverrides(record);
-    const explicitStyleSource = record.styleSource === 'profile' || record.styleSource === 'global'
-        ? record.styleSource
-        : undefined;
-    const generatedProfile = hasLegacyStyle && explicitStyleSource !== 'profile'
-        ? createLegacyCampaignStyleProfile(id, name, defaults, record)
-        : undefined;
-    const styleSource = explicitStyleSource ?? (generatedProfile ? 'profile' : 'global');
-    const styleProfileId = asString(record.styleProfileId) ?? generatedProfile?.id;
-
+function migrateReport(
+    record: Record<string, unknown>,
+    id: string,
+    name: string,
+    styleProfileId: string,
+    inherited: LegacyInheritance
+): AuthorProgressCampaign {
     return {
-        campaign: {
-            id,
-            name,
-            description: asString(record.description),
-            isActive: asBoolean(record.isActive, true),
-            updateFrequency,
-            sendToCommunity: asBoolean(record.sendToCommunity, false),
-            lastCommunityUploadAttemptAt: asString(record.lastCommunityUploadAttemptAt),
-            lastCommunityUploadedAt: asString(record.lastCommunityUploadedAt),
-            lastCommunityUploadStatus: record.lastCommunityUploadStatus === 'private' || record.lastCommunityUploadStatus === 'active'
-                ? record.lastCommunityUploadStatus
-                : undefined,
-            lastCommunityUploadError: asString(record.lastCommunityUploadError),
-            refreshThresholdDays: asNumber(record.refreshThresholdDays, defaults.stalenessThresholdDays),
-            lastPublishedDate: asString(record.lastPublishedDate),
-            exportPath: asString(record.exportPath ?? record.embedPath) ?? buildCampaignEmbedPath({
-                campaignName: name,
-                updateFrequency,
-                aprExportQuality,
-                teaserEnabled: teaserReveal?.enabled,
-                exportFormat
-            }),
-            exportFormat,
-            aprExportQuality,
-            targetBookId: asString(record.targetBookId),
-            aprSize,
-            styleSource,
-            styleProfileId,
-            teaserReveal
-        },
-        generatedProfile
+        id,
+        name,
+        isActive: asBoolean(record.isActive, true),
+        updateFrequency: normalizeFrequency(record.updateFrequency),
+        refreshThresholdDays: asNumber(record.refreshThresholdDays, inherited.staleDays),
+        lastPublishedDate: asString(record.lastPublishedDate),
+        sendToCommunity: asBoolean(record.sendToCommunity, false),
+        lastCommunityUploadAttemptAt: asString(record.lastCommunityUploadAttemptAt),
+        lastCommunityUploadedAt: asString(record.lastCommunityUploadedAt),
+        lastCommunityUploadStatus: record.lastCommunityUploadStatus === 'private' || record.lastCommunityUploadStatus === 'active'
+            ? record.lastCommunityUploadStatus
+            : undefined,
+        lastCommunityUploadError: asString(record.lastCommunityUploadError),
+        exportFormat: normalizeFormat(record.exportFormat, record.exportPath ?? record.embedPath),
+        aprExportQuality: normalizeAprExportQuality(record.aprExportQuality) ?? inherited.quality,
+        targetBookId: asString(record.targetBookId),
+        styleProfileId,
+        teaserReveal: normalizeTeaserReveal(record.teaserReveal),
+        viewMode: record.viewMode === undefined ? inherited.viewMode : normalizeViewMode(record.viewMode)
     };
 }
 
+/**
+ * Read saved Social settings of any age into schema 2.
+ *
+ * For schema 1 this builds the Default report from the loose Default settings,
+ * saves the "manual" colors and fonts as the style named Default, and points
+ * every campaign that borrowed them at that style. A style left open and
+ * unsaved in the old designer is not carried over.
+ */
 export function migrateAuthorProgressSettings(raw: unknown): AuthorProgressSettings {
     const record = asRecord(raw);
     if (!record) {
         return buildDefaultAuthorProgressSettings();
     }
 
-    const defaults = migrateDefaults(asRecord(record.defaults) ?? record);
-    const migratedProfiles = Array.isArray(record.styleProfiles)
-        ? record.styleProfiles
-            .map((profile) => migrateStyleProfile(profile, defaults))
-            .filter((profile): profile is AprStyleProfile => profile !== null)
-        : [];
-    const migratedCampaigns = Array.isArray(record.campaigns)
-        ? record.campaigns
-            .map((campaign) => migrateCampaign(campaign, defaults))
-            .filter((campaign): campaign is { campaign: AuthorProgressCampaign; generatedProfile?: AprStyleProfile } => campaign !== null)
-        : [];
-    const styleProfiles = [...migratedProfiles];
-    const seenProfileIds = new Set(styleProfiles.map(profile => profile.id));
-    migratedCampaigns.forEach(({ generatedProfile }) => {
-        if (!generatedProfile || seenProfileIds.has(generatedProfile.id)) return;
-        seenProfileIds.add(generatedProfile.id);
-        styleProfiles.push(generatedProfile);
-    });
-    const campaigns = migratedCampaigns.map(({ campaign }) => campaign);
+    const isLegacy = record.schemaVersion !== 2;
+    // Schema 1 nests the shared settings under `defaults`; the first releases kept them flat.
+    const sharedRecord = asRecord(record.defaults) ?? record;
+    const defaults = migrateSharedDefaults(sharedRecord);
 
-    return {
-        enabled: asBoolean(record.enabled, false),
-        defaults,
-        styleProfiles,
-        designerDraftStyle: record.designerDraftStyle ? migrateStyleSettings(record.designerDraftStyle, defaults) : undefined,
-        designerCampaignId: asString(record.designerCampaignId),
-        campaigns
+    // The style that incomplete saved styles are filled from: the shipped one,
+    // or for schema 1 the colors and fonts the Default report was drawn with.
+    const baseStyle = isLegacy
+        ? migrateStyleSettings(sharedRecord, buildDefaultAprStyle())
+        : buildDefaultAprStyle();
+
+    const styleProfiles = (Array.isArray(record.styleProfiles) ? record.styleProfiles : [])
+        .map(profile => migrateStyleProfile(profile, baseStyle))
+        .filter((profile): profile is AprStyleProfile => profile !== null);
+    if (!styleProfiles.some(profile => profile.id === DEFAULT_STYLE_ID)) {
+        styleProfiles.unshift(buildDefaultStyleProfile(baseStyle));
+    }
+
+    const inherited: LegacyInheritance = {
+        quality: normalizeAprExportQuality(sharedRecord.aprExportQuality) ?? 'standard',
+        viewMode: normalizeViewMode(sharedRecord.aprDefaultViewMode),
+        staleDays: asNumber(sharedRecord.stalenessThresholdDays, 30)
     };
-}
 
+    const campaigns: AuthorProgressCampaign[] = [];
+    for (const rawCampaign of Array.isArray(record.campaigns) ? record.campaigns : []) {
+        const campaignRecord = asRecord(rawCampaign);
+        const id = asString(campaignRecord?.id);
+        const name = asString(campaignRecord?.name);
+        if (!campaignRecord || !id || !name) continue;
+
+        // A report keeps the saved style it names. One that names none borrowed
+        // the manual style (or, before saved styles, carried its own overrides).
+        let savedStyle = styleProfiles.find(profile => profile.id === asString(campaignRecord.styleProfileId));
+        if (isLegacy && !savedStyle) {
+            const legacyStyle = buildLegacyCampaignStyle(id, name, baseStyle, campaignRecord);
+            savedStyle = styleProfiles.find(profile => profile.id === legacyStyle?.id) ?? legacyStyle;
+            if (savedStyle && savedStyle === legacyStyle) styleProfiles.push(legacyStyle);
+        }
+        campaigns.push(migrateReport(campaignRecord, id, name, savedStyle ? savedStyle.id : DEFAULT_STYLE_ID, inherited));
+    }
+
+    if (!campaigns.some(campaign => campaign.id === DEFAULT_REPORT_ID)) {
+        // Schema 1: the Default report's own settings sat beside the shared ones.
+        const defaultReport = isLegacy
+            ? migrateReport(
+                { ...sharedRecord, refreshThresholdDays: sharedRecord.stalenessThresholdDays, isActive: true },
+                DEFAULT_REPORT_ID,
+                'Default',
+                DEFAULT_STYLE_ID,
+                inherited
+            )
+            : buildDefaultReport();
+        campaigns.unshift({ ...defaultReport, sendToCommunity: false, targetBookId: undefined });
+    }
+
+    return { schemaVersion: 2, defaults, styleProfiles, campaigns };
+}

@@ -1895,12 +1895,6 @@
   gap: var(--ert-gap-sm);
 }
 
-.ert-ui.ert-scope--modal .ert-apr-actions.ert-skin--pro.ert-panel--glass {
-  --ert-panel-bg: var(--ert-pro-surface-bg);
-  --ert-panel-border: var(--ert-pro-border);
-  --ert-panel-shadow: var(--ert-panel-shadow);
-}
-
 .ert-ui.ert-scope--modal .ert-apr-actions-row--split {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1942,61 +1936,11 @@
   box-shadow: none;
 }
 
-/* Target Row: two-column layout with dropdown right-aligned */
-.ert-ui.ert-scope--modal .ert-apr-target-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--ert-gap-md);
-  padding: var(--ert-gap-xs) 0;
-}
-
-.ert-ui.ert-scope--modal .ert-apr-target-row .ert-label {
-  flex-shrink: 0;
-}
-
-.ert-ui.ert-scope--modal .ert-apr-target-row select {
-  flex: 0 1 auto;
-  min-width: 180px;
-  max-width: 280px;
-}
-
-/* Actions Status Row (campaign mode): grid-style row matching Status section */
-.ert-ui.ert-scope--modal .ert-apr-actions-status {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content max-content max-content max-content;
-  align-items: center;
-  gap: var(--ert-gap-xs) var(--ert-gap-sm);
-  padding: var(--ert-gap-sm) 0;
-}
-
-.ert-ui.ert-scope--modal .ert-apr-actions-status .ert-apr-status-cell {
-  padding: 0;
-}
-
-.ert-ui.ert-scope--modal .ert-apr-actions-status .ert-apr-status-cell--book {
-  min-width: 0;
-}
-
 /* View/Stage indicator row */
 .ert-ui.ert-scope--modal .ert-apr-view-stage {
   display: flex;
   align-items: center;
   gap: var(--ert-gap-sm);
-}
-
-/* Refresh Alert */
-.ert-apr-refresh-alert {
-  display: flex;
-  align-items: center;
-  gap: var(--ert-gap-cozy);
-  padding: var(--ert-pad-sm) var(--ert-pad-md);
-  background: rgba(255, 140, 0, 0.12);
-  border: 1px solid rgba(255, 140, 0, 0.3);
-  border-radius: 12px;
-  color: var(--text-warning);
-  font-size: 0.9rem;
-  margin-bottom: 16px;
 }
 
 /* Density tip note */

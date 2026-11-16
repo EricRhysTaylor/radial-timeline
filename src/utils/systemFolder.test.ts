@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS } from '../settings/defaults';
 import { DEFAULT_INQUIRY_ARTIFACT_FOLDER } from '../inquiry/constants';
 import { INQUIRY_SIDECAR_DIR } from '../inquiry/InquiryArtifactStore';
 import { TIMELINE_SNAPSHOT_FOLDER } from '../timelineRepair/timelineSnapshot';
-import { buildDefaultEmbedPath } from './aprPaths';
+import { DEFAULT_REPORT_ID, buildReportEmbedPath } from './aprPaths';
 
 describe('systemFolderPath', () => {
     it('names the plugin\'s single top-level vault folder', () => {
@@ -26,7 +26,7 @@ describe('canonical folder callers', () => {
             DEFAULT_INQUIRY_ARTIFACT_FOLDER,
             INQUIRY_SIDECAR_DIR,
             TIMELINE_SNAPSHOT_FOLDER,
-            buildDefaultEmbedPath({ bookTitle: 'My Novel' }),
+            buildReportEmbedPath({ id: DEFAULT_REPORT_ID, name: 'Default', updateFrequency: 'manual', aprExportQuality: 'standard', exportFormat: 'png', teaserReveal: { enabled: false } }, 'My Novel'),
         ];
         for (const destination of destinations) {
             expect(destination).toBeTruthy();

@@ -1,13 +1,9 @@
 import { kebabSlug } from '../../utils/slug';
 import type RadialTimelinePlugin from '../../main';
-import {
-    buildDefaultAuthorProgressDefaults,
-    buildDefaultAuthorProgressSettings,
-} from '../../authorProgress/authorProgressConfig';
+import { DEFAULT_STYLE_ID, buildDefaultAuthorProgressSettings } from '../../authorProgress/authorProgressConfig';
 import type {
     AuthorProgressCampaign,
-    AuthorProgressDefaults,
-    AprExportQuality,
+    AuthorProgressSettings,
     AprStyleProfile,
     AprStyleSettings,
 } from '../../types/settings';
@@ -41,44 +37,22 @@ type AprRenderStyleOptions = Pick<
     | 'rtBadgeFontSize'
 >;
 
-
+/**
+ * Saved Author Progress styles. Every report names one, and edits go straight
+ * to the saved style: there is no draft and no style that belongs to nobody.
+ */
 export class AprStyleService {
     constructor(private plugin: RadialTimelinePlugin) {}
 
-    private readonly styleKeys: Array<keyof AprStyleSettings> = [
-        'aprBackgroundColor',
-        'aprCenterTransparent',
-        'aprBookAuthorColor',
-        'aprAuthorColor',
-        'aprEngineColor',
-        'aprPercentNumberColor',
-        'aprTheme',
-        'aprSpokeColorMode',
-        'aprSpokeColor',
-        'aprBookTitleFontFamily',
-        'aprBookTitleFontWeight',
-        'aprBookTitleFontItalic',
-        'aprBookTitleFontSize',
-        'aprAuthorNameFontFamily',
-        'aprAuthorNameFontWeight',
-        'aprAuthorNameFontItalic',
-        'aprAuthorNameFontSize',
-        'aprPercentNumberFontSize1Digit',
-        'aprPercentNumberFontSize2Digit',
-        'aprPercentNumberFontSize3Digit',
-        'aprRtBadgeFontFamily',
-        'aprRtBadgeFontWeight',
-        'aprRtBadgeFontItalic',
-        'aprRtBadgeFontSize',
-        'aprShowRtAttribution',
-    ];
-
-    public getDefaults(): AuthorProgressDefaults {
-        return this.plugin.settings.authorProgress?.defaults ?? buildDefaultAuthorProgressDefaults();
+    public ensureAuthorProgressSettings(): AuthorProgressSettings {
+        if (!this.plugin.settings.authorProgress) {
+            this.plugin.settings.authorProgress = buildDefaultAuthorProgressSettings();
+        }
+        return this.plugin.settings.authorProgress;
     }
 
     public getProfiles(): AprStyleProfile[] {
-        return this.plugin.settings.authorProgress?.styleProfiles ?? [];
+        return this.ensureAuthorProgressSettings().styleProfiles;
     }
 
     public findProfileByName(name: string): AprStyleProfile | undefined {
@@ -87,175 +61,56 @@ export class AprStyleService {
         return this.getProfiles().find(profile => profile.name.trim().toLowerCase() === normalized);
     }
 
-    public getDesignerCampaignId(): string | undefined {
-        return this.plugin.settings.authorProgress?.designerCampaignId;
-    }
-
-    public getDesignerCampaign(): AuthorProgressCampaign | undefined {
-        const campaignId = this.getDesignerCampaignId();
-        if (!campaignId) return undefined;
-        return this.plugin.settings.authorProgress?.campaigns?.find(campaign => campaign.id === campaignId);
-    }
-
-    public resolveDesignerStyle(): AprStyleSettings {
-        const draft = this.plugin.settings.authorProgress?.designerDraftStyle;
-        return draft ? { ...draft } : this.captureCurrentStyle(this.getDefaults());
-    }
-
-    public isDesignerCampaignActive(campaignId: string): boolean {
-        return this.getDesignerCampaignId() === campaignId;
-    }
-
-    public captureCurrentStyle(defaults: AuthorProgressDefaults = this.getDefaults()): AprStyleSettings {
-        return {
-            aprBackgroundColor: defaults.aprBackgroundColor,
-            aprCenterTransparent: defaults.aprCenterTransparent,
-            aprBookAuthorColor: defaults.aprBookAuthorColor,
-            aprAuthorColor: defaults.aprAuthorColor,
-            aprEngineColor: defaults.aprEngineColor,
-            aprPercentNumberColor: defaults.aprPercentNumberColor,
-            aprTheme: defaults.aprTheme,
-            aprSpokeColorMode: defaults.aprSpokeColorMode,
-            aprSpokeColor: defaults.aprSpokeColor,
-            aprBookTitleFontFamily: defaults.aprBookTitleFontFamily,
-            aprBookTitleFontWeight: defaults.aprBookTitleFontWeight,
-            aprBookTitleFontItalic: defaults.aprBookTitleFontItalic,
-            aprBookTitleFontSize: defaults.aprBookTitleFontSize,
-            aprAuthorNameFontFamily: defaults.aprAuthorNameFontFamily,
-            aprAuthorNameFontWeight: defaults.aprAuthorNameFontWeight,
-            aprAuthorNameFontItalic: defaults.aprAuthorNameFontItalic,
-            aprAuthorNameFontSize: defaults.aprAuthorNameFontSize,
-            aprPercentNumberFontSize1Digit: defaults.aprPercentNumberFontSize1Digit,
-            aprPercentNumberFontSize2Digit: defaults.aprPercentNumberFontSize2Digit,
-            aprPercentNumberFontSize3Digit: defaults.aprPercentNumberFontSize3Digit,
-            aprRtBadgeFontFamily: defaults.aprRtBadgeFontFamily,
-            aprRtBadgeFontWeight: defaults.aprRtBadgeFontWeight,
-            aprRtBadgeFontItalic: defaults.aprRtBadgeFontItalic,
-            aprRtBadgeFontSize: defaults.aprRtBadgeFontSize,
-            aprShowRtAttribution: defaults.aprShowRtAttribution,
-        };
-    }
-
-    public resolveStyle(campaign?: AuthorProgressCampaign): AprStyleSettings {
-        const defaults = this.getDefaults();
-        if (campaign?.styleSource === 'profile' && campaign.styleProfileId) {
-            const profile = this.getProfiles().find(entry => entry.id === campaign.styleProfileId);
-            if (profile) return { ...profile.style };
+    /** The saved style a report is drawn with. Loading settings guarantees it exists. */
+    public getReportStyle(report: Pick<AuthorProgressCampaign, 'name' | 'styleProfileId'>): AprStyleProfile {
+        const profile = this.getProfiles().find(entry => entry.id === report.styleProfileId);
+        if (!profile) {
+            throw new Error(`Author Progress report "${report.name}" names a style that no longer exists.`);
         }
-        return this.captureCurrentStyle(defaults);
+        return profile;
     }
 
-    public loadCampaignIntoDesigner(campaignId: string): boolean {
-        const authorProgress = this.ensureAuthorProgressSettings();
-        const campaign = authorProgress.campaigns?.find(entry => entry.id === campaignId);
-        if (!campaign) {
-            return this.clearDesignerContext();
-        }
-        authorProgress.designerCampaignId = campaignId;
-        authorProgress.designerDraftStyle = this.resolveStyle(campaign);
-        return true;
+    public resolveStyle(report: Pick<AuthorProgressCampaign, 'name' | 'styleProfileId'>): AprStyleSettings {
+        return { ...this.getReportStyle(report).style };
     }
 
-    public clearDesignerContext(): boolean {
-        const authorProgress = this.ensureAuthorProgressSettings();
-        const hadContext = !!authorProgress.designerCampaignId || !!authorProgress.designerDraftStyle;
-        authorProgress.designerCampaignId = undefined;
-        authorProgress.designerDraftStyle = undefined;
-        return hadContext;
+    /** Reports drawn with this style: an edit to the style changes all of them. */
+    public getStyleUsers(profileId: string): AuthorProgressCampaign[] {
+        return this.ensureAuthorProgressSettings().campaigns.filter(report => report.styleProfileId === profileId);
     }
 
-    public updateDesignerStyle(updates: Partial<AprStyleSettings>): void {
-        const authorProgress = this.ensureAuthorProgressSettings();
-        if (authorProgress.designerCampaignId) {
-            authorProgress.designerDraftStyle = {
-                ...(authorProgress.designerDraftStyle ?? this.resolveDesignerStyle()),
-                ...updates
-            };
-            return;
-        }
-        Object.entries(updates).forEach(([key, value]) => {
-            if (!this.styleKeys.includes(key as keyof AprStyleSettings)) return;
-            (authorProgress.defaults as unknown as Record<string, unknown>)[key] = value;
-        });
+    public updateStyle(profileId: string, updates: Partial<AprStyleSettings>): void {
+        const profile = this.getProfiles().find(entry => entry.id === profileId);
+        if (!profile) return;
+        profile.style = { ...profile.style, ...updates };
     }
 
-    public stylesMatch(a?: AprStyleSettings, b?: AprStyleSettings): boolean {
-        const left = a ?? {};
-        const right = b ?? {};
-        return this.styleKeys.every((key) => left[key] === right[key]);
-    }
-
-    public resolveStyleProfile(campaign?: AuthorProgressCampaign): AprStyleProfile | undefined {
-        if (campaign?.styleSource !== 'profile' || !campaign.styleProfileId) return undefined;
-        return this.getProfiles().find(entry => entry.id === campaign.styleProfileId);
-    }
-
-    public resolveCurrentExportQuality(): AprExportQuality {
-        const defaults = this.getDefaults();
-        const campaign = this.getDesignerCampaign();
-        return campaign?.aprExportQuality ?? defaults.aprExportQuality ?? 'standard';
-    }
-
-    public createStyleProfile(name: string, defaults: AuthorProgressDefaults = this.getDefaults()): AprStyleProfile {
+    /** Save a copy of a style under a new name. The caller checks the name is free. */
+    public duplicateStyle(sourceId: string, name: string): AprStyleProfile | undefined {
+        const source = this.getProfiles().find(entry => entry.id === sourceId);
+        if (!source) return undefined;
         const timestamp = Date.now();
-        return {
+        const copy: AprStyleProfile = {
             id: `apr-style-${kebabSlug(name, 'style')}-${timestamp}`,
             name: name.trim(),
             createdAt: new Date(timestamp).toISOString(),
-            style: this.captureCurrentStyle(defaults),
-            aprExportQuality: this.resolveCurrentExportQuality()
+            style: { ...source.style }
         };
+        this.getProfiles().push(copy);
+        return copy;
     }
 
-    public ensureAuthorProgressSettings(): NonNullable<RadialTimelinePlugin['settings']['authorProgress']> {
-        if (!this.plugin.settings.authorProgress) {
-            this.plugin.settings.authorProgress = buildDefaultAuthorProgressSettings();
-        }
-        if (!this.plugin.settings.authorProgress.styleProfiles) {
-            this.plugin.settings.authorProgress.styleProfiles = [];
-        }
-        return this.plugin.settings.authorProgress;
-    }
-
-    public saveCurrentStyleAsProfile(
-        name: string,
-        options?: { overwrite?: boolean }
-    ): { profile: AprStyleProfile; overwritten: boolean } {
+    /** Delete a style; reports that used it go back to Default. Default itself stays. */
+    public deleteStyle(profileId: string): AprStyleProfile | undefined {
+        if (profileId === DEFAULT_STYLE_ID) return undefined;
         const authorProgress = this.ensureAuthorProgressSettings();
-        const nextName = name.trim();
-        const existingProfile = this.findProfileByName(nextName);
-        const sourceStyle = this.resolveDesignerStyle();
-        if (existingProfile) {
-            if (!options?.overwrite) {
-                return { profile: existingProfile, overwritten: false };
-            }
-            existingProfile.name = nextName;
-            existingProfile.style = { ...sourceStyle };
-            existingProfile.aprExportQuality = this.resolveCurrentExportQuality();
-            return { profile: existingProfile, overwritten: true };
-        }
-
-        const profile = this.createStyleProfile(nextName, authorProgress.defaults);
-        profile.style = { ...sourceStyle };
-        profile.aprExportQuality = this.resolveCurrentExportQuality();
-        authorProgress.styleProfiles?.push(profile);
-        return { profile, overwritten: false };
-    }
-
-    public deleteProfile(profileId: string): AprStyleProfile | undefined {
-        const authorProgress = this.ensureAuthorProgressSettings();
-        const profiles = authorProgress.styleProfiles ?? [];
-        const index = profiles.findIndex(profile => profile.id === profileId);
+        const index = authorProgress.styleProfiles.findIndex(profile => profile.id === profileId);
         if (index === -1) return undefined;
-
-        const [deletedProfile] = profiles.splice(index, 1);
-        for (const campaign of authorProgress.campaigns ?? []) {
-            if (campaign.styleProfileId === profileId) {
-                campaign.styleSource = 'global';
-                campaign.styleProfileId = undefined;
-            }
+        const [deleted] = authorProgress.styleProfiles.splice(index, 1);
+        for (const report of authorProgress.campaigns) {
+            if (report.styleProfileId === profileId) report.styleProfileId = DEFAULT_STYLE_ID;
         }
-        return deletedProfile;
+        return deleted;
     }
 
     public buildRenderStyle(style: AprStyleSettings): AprRenderStyleOptions {

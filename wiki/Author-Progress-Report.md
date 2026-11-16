@@ -6,6 +6,18 @@ The Author Progress Report (APR) creates a spoiler-safe progress graphic for new
 <p align="center"><img src="images/panel-apr.png" alt="Author Progress Report panel with preview and export options" width="500"></p>
 <p align="center"><sub>Author Progress Report — configure, preview, and export your progress graphic</sub></p>
 
+## Reports
+
+Settings → Social lists your reports. Every vault has the **Default** report, and you can add a **campaign** for any audience that needs its own look, book or schedule. They work the same way and have the same settings.
+
+Open a report with the arrow at the right of its row. One report is open at a time, and it shows:
+
+- **Preview**: the report exactly as it will be published.
+- **Share file**: the image the report last published, ready to drag into a post.
+- **Publish**: writes the image file now.
+- **Style**: the saved style the report is drawn with, and the designer that edits it.
+- **Book**, **File format**, **Export quality**, **Posting mode**, **Send to Community** and **Teaser reveal**.
+
 ## Progress Tracking
 
 APR can measure progress in three ways:
@@ -31,22 +43,9 @@ Date Goal measures progress through a date range. Set a start date and target da
 > [!NOTE]
 > APR tracking is separate from the timeline's Estimated Completion feature, which projects pace inside the working manuscript view.
 
-## Reveal Options
-
-Control how much of your story structure is visible:
-
-| Option | What It Shows |
-|--------|---------------|
-| **Subplots** | Multiple concentric rings for each subplot |
-| **Acts** | Act boundary spokes dividing the timeline |
-| **Status Colors** | Scene stage/status colors (Todo, Working, Complete, etc.) |
-| **% Complete** | Large percentage number in the center |
-
-**Tip**: Uncheck all options for a simple progress ring—perfect for early teasers or minimal updates. Manual reveal options are disabled when Teaser Reveal is enabled.
-
 ## Teaser Reveal
 
-For campaigns, enable **Teaser Reveal** to automatically show more detail as your book progresses.
+Turn on **Teaser reveal** for a report to show more detail automatically as your book progresses. New campaigns start with it on; the Default report starts with it off.
 
 Reveal stages:
 
@@ -65,13 +64,11 @@ Preset schedules:
 
 You can click the middle stages in the preview (Scenes, Colors) to skip them and jump to the next stage.
 
-## Preview
-
-Settings → Social shows your report in one preview, with its status, **Publish** and the share file beside it. Every export renders at the pixel size you choose under **Export quality**.
+With Teaser reveal off, **View** sets how much the report always shows: Complete, Color, Scenes or Ring.
 
 ## Export Quality
 
-The exported file is always rendered at one of three pixel sizes, chosen via **Export quality**:
+Each report is published at one of three pixel sizes, chosen with its **Export quality** setting:
 
 | Quality | Output | File Size | Best For |
 |---------|--------|-----------|----------|
@@ -79,46 +76,55 @@ The exported file is always rendered at one of three pixel sizes, chosen via **E
 | Ultra | 2400 px | ~400 KB | Crisp embeds on high-DPI displays |
 | Print | 4800 px | ~1.2 MB | Print-quality graphics, large banners |
 
-## Styling Options
+## Styles
+
+Every report is drawn with a saved **style**: its colors, fonts, background and borders. A new vault has one style, **Default**. Choose a report's style from the **Style** list, and open the designer with the arrow beside it.
+
+- Changes in the designer are saved to the style as you make them, and show in every report that uses that style. The Style row names the other reports that share it.
+- **Save as new** copies the style under a new name and switches the open report to the copy. Use it to change one report without changing the others.
+- Deleting a style sends the reports that used it back to Default. The Default style cannot be deleted.
+
+The designer has these controls:
 
 - **Choose Palette**: Applies curated colors across the text elements, seeded from the Title color.
-- **Title**, **Author**, **% Number**, **Stage / RT**: Font, weight, and color for each text element. The Radial Timeline logo follows the Publish Stage color.
-- **Transparent mode**: No background fill, so the graphic adapts to any page. Works for PNG and SVG on platforms that keep transparency.
-- **Background color**: Bakes in a solid background for email newsletters, Kickstarter, PDF exports, or platforms that rasterize SVGs.
+- **Title**, **Author**, **% Number**, **Stage / RT**: Font, weight, and color for each text element. The Radial Timeline logo follows the Publish Stage color. The author name is shared by every report.
+- **Transparent mode**: No background fill, so the graphic adapts to any page. Bluesky and some other sites show a transparent background as black; the share file warns you when a published image is transparent.
+- **Background color**: Bakes in a solid background for social posts, email newsletters, Kickstarter, PDF exports, or platforms that rasterize SVGs.
 - **Borders**: Scene borders and act division lines in white, black, none, or a custom color.
 
-## Export And Refresh
+## Publish And Share
 
-APR exports a static **PNG or SVG** file. The **share file** card, in Settings → Social and in the publisher, shows the published image. Drag it into a post or onto your desktop, choose **Copy image** to paste a PNG, or choose **Show in file manager** to find the file.
+Each report publishes a **PNG or SVG** file, chosen with **File format**. The file's name and folder follow the report's settings and its book, under `Radial Timeline/Social/`.
 
-*   **Update frequency**: Manual Only, Daily, Weekly, or Monthly. Manual mode requires clicking the update button in the APR panel.
-*   **Refresh alert threshold**: Days before showing a refresh reminder in the Radial Timeline View.
-*   **Auto-update export paths**: When size or schedule changes, updates the default export path if it still matches the default pattern.
+- **Publish** in the open report writes the file. The **Author progress report** command opens a dialog that does the same for any report.
+- The **share file** card shows the published image. Drag it into a post or onto your desktop, choose **Copy image** to paste a PNG, or choose **Show in file manager** to find the file.
+- **Posting mode**: Manual, Daily, Weekly, or Monthly. A Daily, Weekly or Monthly report republishes itself when it is due.
+- **Reminder** (Manual only): days before the report shows a refresh reminder in the Radial Timeline View.
 
 ## Campaigns
 
-Create multiple APR configurations for different platforms:
+Add a campaign with **Add campaign**, or start from a preset:
 
 - **Kickstarter**: 7-day refresh reminders
 - **Patreon**: 14-day refresh reminders
 - **Newsletter**: 14-day refresh reminders
 - **Website**: 30-day refresh reminders
 
-Each campaign can have its own update frequency, refresh alert threshold, output file, export size, and reveal settings. Teaser Reveal can be enabled per campaign, and manual reveal options are available when Teaser Reveal is disabled.
+Each campaign has its own style, book, file format, export quality, posting mode and teaser reveal. Pause a campaign to skip its schedule, or delete it; the Default report can be neither paused nor deleted.
 
-### Send A Campaign To Community
+### Send A Report To Community
 
 Community sharing is available when this vault is connected and **Level 2 — Profile, books + APR** or **Level 3 — Profile, books + writing activity** is selected in Community settings.
 
-For each campaign:
+For each report:
 
-1. Choose the campaign's target book.
+1. Choose the report's book.
 2. Enable **Send to Community**.
-3. Click **Send now** to upload the current APR directly to your private My Share area, or use the campaign's Daily, Weekly, or Monthly update frequency.
+3. Click **Send now** to upload the current APR directly to your private My Share area, or use the report's Daily, Weekly, or Monthly posting mode.
 4. Review the exact image on **My Share**, then activate it when you are ready. Its book must be public first.
 
-The local **Update** action still creates the campaign's PNG or SVG export. **Send now** renders and uploads without requiring a separate local export. A scheduled campaign can do both when it becomes due.
+**Publish** writes the report's PNG or SVG file and, with Send to Community on, uploads it too. **Send now** renders and uploads without writing the local file. A scheduled report does both when it becomes due.
 
 Community uploads always land privately first. Level 2 permits the visual APR but does not share writing-day, streak, minutes, inactivity, or session statistics. Level 3 is the separate opt-in for broader writing activity.
 
-Campaign schedules run while the plugin is open. Due campaigns are checked on plugin startup and hourly while the vault is open. If an update is missed while Obsidian is closed, it runs on the next startup.
+Schedules run while the plugin is open. Due reports are checked on plugin startup and hourly while the vault is open. If an update is missed while Obsidian is closed, it runs on the next startup.

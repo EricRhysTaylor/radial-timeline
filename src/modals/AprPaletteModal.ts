@@ -5,27 +5,20 @@
  */
 
 import { App, Modal, Setting, ButtonComponent } from 'obsidian';
-import type RadialTimelinePlugin from '../main';
-import type { AuthorProgressDefaults } from '../types/settings';
 import { getPresetPalettes, generatePaletteFromColor, type AprPalette } from '../utils/aprPaletteGenerator';
 import { t } from '../i18n';
 
 export class AprPaletteModal extends Modal {
-    private plugin: RadialTimelinePlugin;
-    private defaults: AuthorProgressDefaults;
     private onApply: (palette: AprPalette) => void;
     private seedColor?: string;
 
+    /** `onApply` saves the chosen palette into the style being edited. */
     constructor(
         app: App,
-        plugin: RadialTimelinePlugin,
-        defaults: AuthorProgressDefaults,
         onApply: (palette: AprPalette) => void,
         seedColor?: string
     ) {
         super(app);
-        this.plugin = plugin;
-        this.defaults = defaults;
         this.onApply = onApply;
         this.seedColor = seedColor;
     }
@@ -45,13 +38,7 @@ export class AprPaletteModal extends Modal {
         header.createSpan({ cls: 'ert-modal-badge', text: t('ui.aprPaletteModal.badge') });
         header.createDiv({ cls: 'ert-modal-title', text: t('ui.aprPaletteModal.title') });
 
-        const applyPalette = async (palette: AprPalette) => {
-            if (!this.plugin.settings.authorProgress) return;
-            const defaults = this.plugin.settings.authorProgress.defaults;
-            defaults.aprBookAuthorColor = palette.bookTitle;
-            defaults.aprAuthorColor = palette.authorName;
-            defaults.aprPercentNumberColor = palette.percentNumber;
-            await this.plugin.saveSettings();
+        const applyPalette = (palette: AprPalette) => {
             this.onApply(palette);
             this.close();
         };
@@ -60,7 +47,7 @@ export class AprPaletteModal extends Modal {
         const generateCard = contentEl.createDiv({ cls: 'ert-panel ert-panel--glass ert-apr-palette-generate' });
         generateCard.createEl('h4', { text: t('ui.aprPaletteModal.generateHeading'), cls: 'ert-section-title' });
 
-        const currentBookColor = this.seedColor?.trim() || this.defaults?.aprBookAuthorColor || '#6FB971';
+        const currentBookColor = this.seedColor?.trim() || '#6FB971';
         const schemes: Array<{ value: 'analogous' | 'complementary' | 'triadic' | 'monochromatic'; label: string }> = [
             { value: 'analogous', label: t('ui.aprPaletteModal.schemeAnalogous') },
             { value: 'complementary', label: t('ui.aprPaletteModal.schemeComplementary') },

@@ -57,7 +57,7 @@ describe('SVG mounting contract', () => {
         const { svg, target } = fixture();
         expect(mountSvgPreview(target, '<svg/>')).toBe(svg);
         expect(svg.links[0].setAttribute).toHaveBeenCalledExactlyOnceWith('tabindex', '-1');
-        for (const file of ['src/settings/sections/AuthorProgressSection.ts', 'src/settings/sections/CampaignManagerSection.ts']) {
+        for (const file of ['src/settings/sections/CampaignManagerSection.ts']) {
             const source = readFileSync(resolve(process.cwd(), file), 'utf8');
             expect(source, file).toContain('mountSvgPreview(');
             expect(source, file).not.toContain('mountSvgMarkup(');

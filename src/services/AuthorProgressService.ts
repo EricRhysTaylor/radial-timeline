@@ -1,34 +1,20 @@
 import { App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
-import type { AuthorProgressCampaign } from '../types/settings';
+import type { AuthorProgressCampaign, TeaserRevealLevel } from '../types/settings';
 import type { TimelineItem } from '../types/timeline';
 import { AprProgressService, type AprResolvedProgressState } from './apr/AprProgressService';
-import { AprStyleService } from './apr/AprStyleService';
-import { AuthorProgressRenderService } from './authorProgress/AuthorProgressRenderService';
-import { AuthorProgressPublishService } from './authorProgress/AuthorProgressPublishService';
+import { AuthorProgressRenderService, type AuthorProgressReportBuildResult } from './authorProgress/AuthorProgressRenderService';
 import { AuthorProgressCampaignService } from './authorProgress/AuthorProgressCampaignService';
 
 export class AuthorProgressService {
     private readonly aprProgressService: AprProgressService;
-    private readonly aprStyleService: AprStyleService;
     private readonly renderService: AuthorProgressRenderService;
-    private readonly publishService: AuthorProgressPublishService;
     private readonly campaignService: AuthorProgressCampaignService;
 
-    constructor(private readonly plugin: RadialTimelinePlugin, app: App) {
+    constructor(plugin: RadialTimelinePlugin, app: App) {
         this.aprProgressService = new AprProgressService(plugin);
-        this.aprStyleService = new AprStyleService(plugin);
         this.renderService = new AuthorProgressRenderService(plugin, app);
-        this.publishService = new AuthorProgressPublishService(plugin, app, this.renderService);
-        this.campaignService = new AuthorProgressCampaignService(plugin, app, this.renderService, this.publishService);
-    }
-
-    public isStale(): boolean {
-        return this.campaignService.isStale();
-    }
-
-    public anyCampaignNeedsRefresh(): boolean {
-        return this.campaignService.anyCampaignNeedsRefresh();
+        this.campaignService = new AuthorProgressCampaignService(plugin, this.renderService);
     }
 
     public campaignNeedsRefresh(campaign: AuthorProgressCampaign): boolean {
@@ -43,34 +29,23 @@ export class AuthorProgressService {
         return this.campaignService.needsAnyRefresh();
     }
 
-    public calculateProgress(scenes: TimelineItem[]): number {
-        return this.aprProgressService.getPercent(scenes);
-    }
-
     public resolveProgressState(scenes: TimelineItem[]): AprResolvedProgressState {
         return this.aprProgressService.resolveProgress(scenes);
     }
 
-    public resolveStyle(campaign?: AuthorProgressCampaign) {
-        return this.aprStyleService.resolveStyle(campaign);
+    /** Vault path the report publishes to. */
+    public getReportPath(report: AuthorProgressCampaign): string {
+        return this.renderService.getReportPath(report);
     }
 
-    public resolveDesignerStyle() {
-        return this.aprStyleService.resolveDesignerStyle();
+    /** How much of the timeline the report shows at this progress. */
+    public resolveRevealLevel(report: AuthorProgressCampaign, percent: number): TeaserRevealLevel {
+        return this.renderService.resolveRevealLevel(report, percent);
     }
 
-    public getDesignerCampaign() {
-        return this.aprStyleService.getDesignerCampaign();
-    }
-
-    /** Vault path the Default Report publishes to. */
-    public getDefaultReportPath(): string | null {
-        const settings = this.plugin.settings.authorProgress?.defaults;
-        return settings ? this.renderService.getDefaultExportPath(settings) : null;
-    }
-
-    public generateReport(mode?: 'static' | 'dynamic'): Promise<string | null> {
-        return this.publishService.generateReport(mode);
+    /** Draw the report exactly as publishing would, for the settings preview. */
+    public buildReportPreview(reportId: string): Promise<AuthorProgressReportBuildResult | null> {
+        return this.renderService.buildReport(reportId);
     }
 
     public checkAutoUpdate(): Promise<void> {
@@ -83,13 +58,5 @@ export class AuthorProgressService {
 
     public sendCampaignToCommunity(campaignId: string, options?: { silent?: boolean }): Promise<'private' | 'active' | null> {
         return this.campaignService.sendCampaignToCommunity(campaignId, options);
-    }
-
-    public generateCampaignSnapshot(campaignId: string): Promise<string | null> {
-        return this.campaignService.generateCampaignSnapshot(campaignId);
-    }
-
-    public publishAllStale(): Promise<number> {
-        return this.campaignService.publishAllStale();
     }
 }

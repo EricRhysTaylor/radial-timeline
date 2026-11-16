@@ -73,7 +73,7 @@ export class RendererService {
         let aprNeedsRefresh = false;
         try {
             const aprService = new AuthorProgressService(this.plugin, this.plugin.app);
-            aprNeedsRefresh = aprService.isStale();
+            aprNeedsRefresh = aprService.needsAnyRefresh();
         } catch {
             // AuthorProgressService not available - skip indicator
         }

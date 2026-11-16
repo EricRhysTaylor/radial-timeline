@@ -1,113 +1,52 @@
-import { setTooltip, withAccessibleLabel } from '../utils/domTooltip';
+import { setAccessibleLabel, setTooltip, withAccessibleLabel } from '../utils/domTooltip';
 import { openSettingsTab } from '../utils/obsidianInternals';
-import { App, Modal, ButtonComponent, Notice, setIcon, normalizePath } from 'obsidian';
+import { App, Modal, ButtonComponent, Notice, setIcon } from 'obsidian';
 import { renderAprShareFile } from '../ui/aprShareFile';
 import type RadialTimelinePlugin from '../main';
-import { TimelineItem } from '../types/timeline';
 import { AuthorProgressService } from '../services/AuthorProgressService';
 import type { AuthorProgressCampaign } from '../types/settings';
-import { buildDefaultAuthorProgressSettings } from '../authorProgress/authorProgressConfig';
-import { getTeaserThresholds, getTeaserRevealLevel, TEASER_LEVEL_INFO } from '../renderer/apr/AprConstants';
-import { hasProFeatureAccess } from '../settings/featureGate';
+import { getTeaserThresholds, TEASER_LEVEL_INFO } from '../renderer/apr/AprConstants';
 import { ERT_CLASSES } from '../ui/classes';
-import {
-    buildCampaignEmbedPath,
-    buildDefaultEmbedPath,
-    normalizeAprExportFormat,
-    type AprExportFormat,
-    type AprExportQuality
-} from '../utils/aprPaths';
+import { DEFAULT_REPORT_ID, type AprExportQuality } from '../utils/aprPaths';
 import { resolveBookTitle, resolveProjectPath } from '../renderer/apr/aprHelpers';
+import { aprReportLabel } from '../authorProgress/aprLabels';
 import { isSceneItem } from '../utils/sceneHelpers';
-import { systemFolderPath } from '../utils/systemFolder';
 import { t, tCount } from '../i18n';
 
+/**
+ * Publish an Author Progress report from anywhere in the vault: pick a report,
+ * publish it, and drag its image into a post. Each report's settings live in
+ * the Social tab; this dialog only publishes and hands off the file.
+ */
 export class AuthorProgressModal extends Modal {
     private plugin: RadialTimelinePlugin;
     private service: AuthorProgressService;
+    private selectedReportId: string = DEFAULT_REPORT_ID;
 
-    // Reveal options (derived from settings)
-    private aprSize: 'small' | 'medium' | 'large';
-    private lastFullSize: 'small' | 'medium' | 'large' = 'medium';
-    private exportQuality: AprExportQuality = 'standard';
-    private selectedTargetId: string = 'default';
+    private shareSlotEl: HTMLElement | null = null;
+    private reportsSectionEl: HTMLElement | null = null;
+    private publishButton: ButtonComponent | null = null;
 
-    private statusSectionEl: HTMLElement | null = null;
-    private campaignsSectionEl: HTMLElement | null = null;
-    private actionsSectionEl: HTMLElement | null = null;
-    private actionsBodyEl: HTMLElement | null = null;
+    /** Progress percent of each book a report tracks, keyed by its source folder. */
+    private readonly percentByProject = new Map<string, number>();
 
-    private cachedScenes: TimelineItem[] = [];
-    private progressPercent: number = 0;
-    private cachedProjectPath: string = '';
-
-    private readonly onPublished?: () => void;
-
-    constructor(app: App, plugin: RadialTimelinePlugin, options?: { onPublished?: () => void }) {
+    constructor(app: App, plugin: RadialTimelinePlugin) {
         super(app);
         this.plugin = plugin;
-        this.onPublished = options?.onPublished;
         this.service = new AuthorProgressService(plugin, app);
-
-        const settings = plugin.settings.authorProgress?.defaults ?? buildDefaultAuthorProgressSettings().defaults;
-
-        // Initialize reveal options from settings
-        // Initialize size from settings
-        this.aprSize = settings.aprSize ?? 'medium';
-        this.lastFullSize = this.aprSize;
-        this.exportQuality = settings.aprExportQuality ?? 'standard';
     }
 
-    private getSelectedCampaign(): AuthorProgressCampaign | undefined {
-        if (this.selectedTargetId === 'default') return undefined;
-        return this.plugin.settings.authorProgress?.campaigns?.find(c => c.id === this.selectedTargetId);
+    private getReports(): AuthorProgressCampaign[] {
+        return this.plugin.settings.authorProgress?.campaigns ?? []; // SAFE: no Social settings yet means there is no report to list
     }
 
-    private isCampaignTarget(): boolean {
-        return this.selectedTargetId !== 'default';
+    private getSelectedReport(): AuthorProgressCampaign | undefined {
+        const reports = this.getReports();
+        return reports.find(report => report.id === this.selectedReportId) ?? reports[0];
     }
 
-    private getGlobalAprSize(): 'small' | 'medium' | 'large' {
-        return this.plugin.settings.authorProgress?.defaults.aprSize ?? this.aprSize ?? 'medium';
-    }
-
-    private getEffectiveAprSize(campaign?: AuthorProgressCampaign): 'small' | 'medium' | 'large' {
-        return campaign?.aprSize ?? this.getGlobalAprSize();
-    }
-
-    private getCampaignExportFormat(campaign?: AuthorProgressCampaign): AprExportFormat {
-        if (!campaign) return 'png';
-        if (typeof campaign.exportFormat === 'string' && campaign.exportFormat.trim()) {
-            return normalizeAprExportFormat(campaign.exportFormat);
-        }
-        const path = campaign.exportPath?.toLowerCase() ?? '';
-        return path.endsWith('.svg') ? 'svg' : 'png';
-    }
-
-    private getDefaultExportFormat(): AprExportFormat {
-        const settings = this.plugin.settings.authorProgress?.defaults;
-        if (typeof settings?.exportFormat === 'string' && settings.exportFormat.trim()) {
-            return normalizeAprExportFormat(settings.exportFormat);
-        }
-        const path = settings?.exportPath?.toLowerCase() ?? '';
-        return path.endsWith('.svg') ? 'svg' : 'png';
-    }
-
-    private getTargetExportFormat(campaign?: AuthorProgressCampaign): AprExportFormat {
-        return campaign ? this.getCampaignExportFormat(campaign) : this.getDefaultExportFormat();
-    }
-
-    private swapPathExtension(path: string, format: AprExportFormat): string {
-        const trimmed = path.trim();
-        if (!trimmed) return trimmed;
-        if (/\.[a-z0-9]+$/i.test(trimmed)) {
-            return trimmed.replace(/\.[a-z0-9]+$/i, `.${format}`);
-        }
-        return `${trimmed}.${format}`;
-    }
-
-    private getFormatLabel(format: AprExportFormat): string {
-        return format.toUpperCase();
+    private getProjectPath(report: AuthorProgressCampaign): string {
+        return resolveProjectPath(report, this.plugin.settings.books, this.plugin.settings.sourcePath);
     }
 
     async onOpen() {
@@ -135,49 +74,11 @@ export class AuthorProgressModal extends Modal {
         header.createDiv({ text: t('ui.authorProgressModal.title'), cls: 'ert-modal-title' });
         header.createDiv({ text: t('ui.authorProgressModal.subtitle'), cls: 'ert-modal-subtitle' });
 
-        // Target selection + dynamic sections
-        const campaigns = this.plugin.settings.authorProgress?.campaigns || [];
-        const isProActive = hasProFeatureAccess(this.plugin);
-
-        // Ensure valid target selection
-        if (isProActive && campaigns.length > 0) {
-            const campaignIds = new Set(campaigns.map(c => c.id));
-            if (this.selectedTargetId !== 'default' && !campaignIds.has(this.selectedTargetId)) {
-                this.selectedTargetId = 'default';
-            }
-        } else {
-            this.selectedTargetId = 'default';
-        }
-
-        // Status (always shown)
-        this.statusSectionEl = contentEl.createDiv({
+        // The file comes first: handing it off is what this dialog is for.
+        this.shareSlotEl = contentEl.createDiv({ cls: 'ert-apr-shareSlot ert-apr-shareSlot--lead' });
+        this.reportsSectionEl = contentEl.createDiv({
             cls: `${ERT_CLASSES.PANEL} ert-panel--glass ${ERT_CLASSES.STACK}`
         });
-
-        if (isProActive || campaigns.length > 0) {
-            const campaignsSkin = contentEl.createDiv({ cls: ERT_CLASSES.SKIN_PRO });
-            this.campaignsSectionEl = campaignsSkin.createDiv({
-                cls: `${ERT_CLASSES.PANEL} ert-panel--glass ${ERT_CLASSES.STACK}`
-            });
-            if (!isProActive) {
-                this.campaignsSectionEl.addClass('ert-pro-locked');
-            }
-        }
-
-        // Actions (context-sensitive)
-        const actionsSection = contentEl.createDiv({
-            cls: `${ERT_CLASSES.PANEL} ert-panel--glass ${ERT_CLASSES.STACK}`
-        });
-        actionsSection.addClass('ert-apr-actions');
-        const actionsHeader = actionsSection.createDiv({ cls: ERT_CLASSES.PANEL_HEADER });
-        const actionsHeaderMain = actionsHeader.createDiv({ cls: ERT_CLASSES.CONTROL });
-        const actionsTitleRow = actionsHeaderMain.createDiv({ cls: ERT_CLASSES.INLINE });
-        const actionsIcon = actionsTitleRow.createSpan({ cls: ERT_CLASSES.SECTION_ICON });
-        setIcon(actionsIcon, 'share-2');
-        actionsTitleRow.createEl('h4', { text: t('ui.authorProgressModal.actionsHeading'), cls: ERT_CLASSES.SECTION_TITLE });
-        this.actionsSectionEl = actionsSection;
-
-        this.actionsBodyEl = actionsSection.createDiv({ cls: `${ERT_CLASSES.STACK} ${ERT_CLASSES.STACK_TIGHT}` });
 
         // Footer actions
         const footer = contentEl.createDiv({ cls: 'ert-modal-actions' });
@@ -189,531 +90,123 @@ export class AuthorProgressModal extends Modal {
                 openSettingsTab(this.app);
             });
         settingsBtn.buttonEl.addClass('ert-modal-settings-btn');
-        new ButtonComponent(footer)
+        this.publishButton = new ButtonComponent(footer)
             .setButtonText(t('ui.authorProgressModal.publishButton'))
             .setCta()
-            .onClick(() => this.publish('dynamic'));
+            .onClick(() => this.publish());
         new ButtonComponent(footer)
             .setButtonText(t('ui.authorProgressModal.closeButton'))
             .onClick(() => this.close());
 
-        await this.loadData();
-        this.renderStatusSection();
-        this.renderCampaignStatusSection();
-        this.renderActions();
+        await this.loadProgress();
+        this.render();
     }
 
-    private async loadData() {
-        const authorProgress = this.plugin.settings.authorProgress;
-        const settings = authorProgress?.defaults;
-        if (!settings) {
-            this.cachedScenes = [];
-            this.progressPercent = 0;
-            this.cachedProjectPath = '';
-            return;
-        }
-
-        // Get resolved project path for the selected target
-        const campaign = this.getSelectedCampaign();
-        const projectPath = resolveProjectPath(campaign ?? null, this.plugin.settings.books, this.plugin.settings.sourcePath);
-
-        // Only reload if project path changed (cache invalidation on projectPath change)
-        if (this.cachedProjectPath === projectPath && this.cachedScenes.length > 0) {
-            return; // Cache hit - skip reload
-        }
-
-        // Load scenes from the resolved project path
-        const allScenes = await this.plugin.getSceneData({ sourcePath: projectPath });
-        this.cachedScenes = allScenes.filter(isSceneItem);
-        this.progressPercent = this.service.resolveProgressState(this.cachedScenes).percent;
-        this.cachedProjectPath = projectPath;
-
-        // Empty project feedback - show Notice when valid path has no scenes
-        if (this.cachedScenes.length === 0) {
-            new Notice(campaign
-                ? t('ui.authorProgressModal.campaignNoScenesNotice', { name: campaign.name, path: projectPath })
-                : t('ui.authorProgressModal.defaultNoScenesNotice', { path: projectPath }));
+    /** Work out each tracked book's progress once, so every row shows its own stage. */
+    private async loadProgress(): Promise<void> {
+        for (const report of this.getReports()) {
+            const projectPath = this.getProjectPath(report);
+            if (this.percentByProject.has(projectPath)) continue;
+            const scenes = (await this.plugin.getSceneData({ sourcePath: projectPath })).filter(isSceneItem);
+            this.percentByProject.set(projectPath, this.service.resolveProgressState(scenes).percent);
         }
     }
 
-    private renderStatusSection(): void {
-        if (!this.statusSectionEl) return;
-        this.statusSectionEl.empty();
-
-        const settings = this.plugin.settings.authorProgress?.defaults;
-        const isCampaign = this.isCampaignTarget();
-        if (!isCampaign && settings?.aprSize) {
-            this.aprSize = settings.aprSize;
+    private render(): void {
+        const selected = this.getSelectedReport();
+        if (this.shareSlotEl) {
+            renderAprShareFile(this.shareSlotEl, {
+                app: this.app,
+                vaultPath: selected ? this.service.getReportPath(selected) : null
+            });
         }
-
-        const header = this.statusSectionEl.createDiv({ cls: ERT_CLASSES.PANEL_HEADER });
-        const headerMain = header.createDiv({ cls: ERT_CLASSES.CONTROL });
-        const headerRow = headerMain.createDiv({ cls: ERT_CLASSES.INLINE });
-        const headerIcon = headerRow.createSpan({ cls: ERT_CLASSES.SECTION_ICON });
-        setIcon(headerIcon, 'radio');
-        headerRow.createEl('h4', { text: t('ui.authorProgressModal.statusHeading'), cls: ERT_CLASSES.SECTION_TITLE });
-
-        const headerActions = header.createDiv({ cls: ERT_CLASSES.SECTION_ACTIONS });
-        const statusPill = headerActions.createSpan({
-            cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM} ${ERT_CLASSES.BADGE_PILL_NEUTRAL}`
-        });
-        const statusIcon = statusPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
-        setIcon(statusIcon, 'share-2');
-        statusPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.authorProgressModal.sharingOutputPill') });
-
-        this.renderRefreshAlert(this.statusSectionEl);
-
-        const statusTargets = this.getAprStatusTargets().filter(target => !target.campaign);
-        this.renderStatusGrid(this.statusSectionEl, statusTargets, true);
+        this.renderReports(selected);
     }
 
-    private renderCampaignStatusSection(): void {
-        if (!this.campaignsSectionEl) return;
-        this.campaignsSectionEl.empty();
+    private renderReports(selected: AuthorProgressCampaign | undefined): void {
+        const container = this.reportsSectionEl;
+        if (!container) return;
+        container.empty();
 
-        const header = this.campaignsSectionEl.createDiv({ cls: ERT_CLASSES.PANEL_HEADER });
-        const headerMain = header.createDiv({ cls: ERT_CLASSES.CONTROL });
-        const headerRow = headerMain.createDiv({ cls: ERT_CLASSES.INLINE });
-        const headerIcon = headerRow.createSpan({ cls: ERT_CLASSES.SECTION_ICON });
-        setIcon(headerIcon, 'layers');
-        headerRow.createEl('h4', { text: t('ui.authorProgressModal.campaignStatusHeading'), cls: ERT_CLASSES.SECTION_TITLE });
+        const header = container.createDiv({ cls: ERT_CLASSES.PANEL_HEADER });
+        const headerRow = header.createDiv({ cls: ERT_CLASSES.CONTROL }).createDiv({ cls: ERT_CLASSES.INLINE });
+        setIcon(headerRow.createSpan({ cls: ERT_CLASSES.SECTION_ICON }), 'layers');
+        headerRow.createEl('h4', { text: t('ui.aprReports.title'), cls: ERT_CLASSES.SECTION_TITLE });
 
-        const campaignTargets = this.getAprStatusTargets().filter(target => target.campaign);
-        if (campaignTargets.length === 0) {
-            this.campaignsSectionEl.createDiv({ text: t('ui.authorProgressModal.noCampaigns'), cls: ERT_CLASSES.FIELD_NOTE });
-            return;
-        }
-
-        this.renderStatusGrid(this.campaignsSectionEl, campaignTargets, true);
-    }
-
-    private renderStatusGrid(container: HTMLElement, targets: Array<{
-        id: string;
-        label: string;
-        bookTitle: string;
-        projectPath: string;
-        path: string;
-        size: 'small' | 'medium' | 'large';
-        exportQuality: AprExportQuality;
-        campaign?: AuthorProgressCampaign;
-    }>, includeFormatColumn = false): void {
-        if (targets.length === 0) return;
-
-        const settings = this.plugin.settings.authorProgress?.defaults;
-        const statusGrid = container.createDiv({ cls: `ert-apr-status-grid${includeFormatColumn ? ' ert-apr-status-grid--with-format' : ''}` });
-        const statusHeaderRow = statusGrid.createDiv({ cls: 'ert-apr-status-row ert-apr-status-row--header' });
-        const aprHeaderLabel = t('ui.authorProgressModal.columnApr');
-        const bookTitleHeaderLabel = t('ui.authorProgressModal.columnBookTitle');
-        const exportHeaderLabel = t('ui.authorProgressModal.columnExport');
-        const stageHeaderLabel = t('ui.authorProgressModal.columnStage');
-        const updateInHeaderLabel = t('ui.authorProgressModal.columnUpdateIn');
-        const headerLabels = includeFormatColumn
-            ? [aprHeaderLabel, bookTitleHeaderLabel, t('ui.authorProgressModal.formatLabel'), exportHeaderLabel, stageHeaderLabel, updateInHeaderLabel]
-            : [aprHeaderLabel, bookTitleHeaderLabel, exportHeaderLabel, stageHeaderLabel, updateInHeaderLabel];
-        headerLabels.forEach((label, index) => {
-            const headerCell = statusHeaderRow.createDiv({
-                text: label,
-                cls: 'ert-apr-status-cell ert-apr-status-cell--header'
-            });
-            if (index === 0) {
-                setTooltip(headerCell, t('ui.authorProgressModal.aprColumnTooltip'));
-            }
-        });
-
-        targets.forEach((target) => {
-            const dataRow = statusGrid.createDiv({ cls: 'ert-apr-status-row ert-apr-status-row--data' });
-
-            const aprCell = dataRow.createDiv({ cls: 'ert-apr-status-cell ert-apr-status-cell--apr' });
-            const aprLabel = aprCell.createSpan({
-                text: target.label,
-                cls: 'ert-apr-status-title'
-            });
-            setTooltip(aprLabel, target.label);
-
-            const bookCell = dataRow.createDiv({ cls: 'ert-apr-status-cell ert-apr-status-cell--book' });
-            const bookLabel = bookCell.createSpan({
-                text: target.bookTitle,
-                cls: `${ERT_CLASSES.FIELD_NOTE} ert-apr-status-book`
-            });
-            if (target.projectPath) {
-                setTooltip(bookLabel, t('ui.authorProgressModal.projectTooltip', { path: target.projectPath }));
-            }
-
-            if (includeFormatColumn) {
-                const formatCell = dataRow.createDiv({ cls: 'ert-apr-status-cell' });
-                const formatPill = formatCell.createSpan({
-                    cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM} ert-apr-format-pill`
-                });
-                const format = this.getTargetExportFormat(target.campaign);
-                formatPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: this.getFormatLabel(format) });
-            }
-
-            const exportCell = dataRow.createDiv({ cls: 'ert-apr-status-cell ert-apr-status-cell--export' });
-            const exportPill = exportCell.createSpan({
-                cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM}`
-            });
-            exportPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: this.getQualityLabel(target.exportQuality) });
-
-            const stageCell = dataRow.createDiv({ cls: 'ert-apr-status-cell' });
-            const stagePill = stageCell.createSpan({
-                cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM}`
-            });
-            const stageIcon = stagePill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
-            const stageMeta = target.campaign
-                ? this.getCampaignStageDisplay(target.campaign)
-                : this.getDefaultReportStageDisplay(target.size);
-            setIcon(stageIcon, stageMeta.icon);
-            stagePill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: stageMeta.label });
-            if (stageMeta.tooltip) {
-                setTooltip(stagePill, stageMeta.tooltip);
-            }
-
-            const updateCell = dataRow.createDiv({ cls: 'ert-apr-status-cell' });
-            const updatePill = updateCell.createSpan({
-                cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM}`
-            });
-            const frequency = target.campaign ? target.campaign.updateFrequency : settings?.updateFrequency;
-            const lastPublishedDate = target.campaign ? target.campaign.lastPublishedDate : settings?.lastPublishedDate;
-            const isUnpublished = !lastPublishedDate?.trim();
-            const isAuto = !!frequency && frequency !== 'manual';
-            const updateInfo = isUnpublished
-                ? { label: t('ui.authorProgressModal.updateUnpublished'), reminder: undefined }
-                : target.campaign && !target.campaign.isActive
-                    ? { label: t('ui.authorProgressModal.updatePaused'), reminder: undefined }
-                    : (isAuto && !lastPublishedDate)
-                        ? { label: t('ui.authorProgressModal.updateAutoDue'), reminder: undefined }
-                        : this.getNextUpdateInfo({
-                            frequency,
-                            lastPublishedDate,
-                            reminderDays: target.campaign ? target.campaign.refreshThresholdDays : settings?.stalenessThresholdDays,
-                            remindersEnabled: target.campaign ? true : settings?.enableReminders
-                        });
-            const updateLabel = updateInfo.reminder
-                ? `${updateInfo.label} · ${updateInfo.reminder}`
-                : updateInfo.label;
-            updatePill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: updateLabel });
-        });
-    }
-
-    private renderActions(): void {
-        if (!this.actionsBodyEl) return;
-        this.actionsBodyEl.empty();
-
-        const campaigns = this.plugin.settings.authorProgress?.campaigns || [];
-        const isProActive = hasProFeatureAccess(this.plugin);
-        const showProActions = isProActive && this.selectedTargetId !== 'default';
-        if (this.actionsSectionEl) {
-            this.actionsSectionEl.classList.toggle(ERT_CLASSES.SKIN_PRO, showProActions);
-        }
-        if (showProActions) {
-            this.renderProActions(this.actionsBodyEl, campaigns);
-        } else {
-            this.renderCoreActions(this.actionsBodyEl);
-        }
-    }
-
-    private renderCoreActions(container: HTMLElement): void {
-        const authorProgress = this.plugin.settings.authorProgress;
-        const settings = authorProgress?.defaults;
-        if (!settings) return;
-
-        this.aprSize = settings.aprSize ?? this.aprSize ?? 'medium';
-
-        const campaigns = this.plugin.settings.authorProgress?.campaigns || [];
-        const isProActive = hasProFeatureAccess(this.plugin);
-
-        // === TARGET ROW (two-column: label left, dropdown right) ===
-        if (isProActive && campaigns.length > 0) {
-            const targetRow = container.createDiv({ cls: 'ert-apr-target-row' });
-            targetRow.createSpan({ text: t('ui.authorProgressModal.targetLabel'), cls: ERT_CLASSES.LABEL });
-            const targetSelect = targetRow.createEl('select', { cls: 'dropdown ert-input' });
-            targetSelect.createEl('option', { value: 'default', text: t('ui.authorProgressModal.defaultReportOption') });
-            campaigns.forEach(campaign => {
-                targetSelect.createEl('option', { value: campaign.id, text: t('ui.authorProgressModal.campaignOption', { name: campaign.name }) });
-            });
-            targetSelect.value = this.selectedTargetId;
-            targetSelect.onchange = async () => {
-                this.selectedTargetId = targetSelect.value === 'default' ? 'default' : targetSelect.value;
-                await this.loadData();
-                this.renderStatusSection();
-                this.renderCampaignStatusSection();
-                this.renderActions();
-            };
-        }
-
-        // === FORMAT ROW (two-column: label left, dropdown right) ===
-        const formatRow = container.createDiv({ cls: 'ert-apr-target-row' });
-        formatRow.createSpan({ text: t('ui.authorProgressModal.formatLabel'), cls: ERT_CLASSES.LABEL });
-        const formatSelect = formatRow.createEl('select', { cls: 'dropdown ert-input' });
-        formatSelect.createEl('option', { value: 'png', text: 'PNG' });
-        formatSelect.createEl('option', { value: 'svg', text: 'SVG' });
-        formatSelect.value = this.getDefaultExportFormat();
-        formatSelect.onchange = async () => {
-            await this.saveDefaultExportFormat(normalizeAprExportFormat(formatSelect.value));
-            this.renderStatusSection();
-            this.renderActions();
-        };
-
-        // === EXPORT QUALITY ROW (two-column: label left, buttons right) ===
-        const exportRow = container.createDiv({ cls: 'ert-apr-target-row' });
-        exportRow.createSpan({ text: t('ui.authorProgressModal.exportQualityLabel'), cls: ERT_CLASSES.LABEL });
-
-        const qualityOptions: Array<{ quality: AprExportQuality; label: string; detail: string }> = [
-            { quality: 'standard', label: t('ui.authorProgressModal.qualityStandard'), detail: '1200px · ~150 KB' },
-            { quality: 'ultra', label: t('ui.authorProgressModal.qualityUltra'), detail: '2400px · ~400 KB' },
-            { quality: 'print', label: t('ui.authorProgressModal.qualityPrint'), detail: '4800px · ~1.2 MB' }
-        ];
-
-        const qualityButtonRow = exportRow.createDiv({ cls: `ert-apr-size-buttons ${ERT_CLASSES.INLINE}` });
-        qualityOptions.forEach(option => {
-            const isActive = option.quality === this.exportQuality;
-            const btn = qualityButtonRow.createEl('button', {
-                cls: `${ERT_CLASSES.PILL_BTN} ${ERT_CLASSES.PILL_BTN_SOCIAL} ${isActive ? ERT_CLASSES.IS_ACTIVE : ''}`
-            });
-            const label = btn.createSpan({ cls: ERT_CLASSES.PILL_BTN_LABEL });
-            label.append(label.ownerDocument.createTextNode(option.label));
-            setTooltip(btn, option.detail);
-            if (isActive) {
-                btn.setAttr('aria-pressed', 'true');
-            }
-            btn.onclick = async () => {
-                this.exportQuality = option.quality;
-                await this.saveQuality();
-                this.renderStatusSection();
-                this.renderActions();
-            };
-        });
-
-        // === SHARE FILE ===
-        const defaultPath = buildDefaultEmbedPath({
-            bookTitle: this.plugin.getActiveBookTitle(),
-            updateFrequency: settings?.updateFrequency,
-            aprExportQuality: settings?.aprExportQuality,
-            exportFormat: this.getDefaultExportFormat()
-        });
-        // Auto-sync export path to canonical default
-        if (settings) {
-            settings.exportPath = defaultPath;
-            void this.plugin.saveSettings();
-        }
-        renderAprShareFile(container.createDiv({ cls: 'ert-apr-shareSlot' }), { app: this.app, vaultPath: defaultPath });
-    }
-
-    private renderProActions(container: HTMLElement, campaigns: AuthorProgressCampaign[]): void {
-        const settings = this.plugin.settings.authorProgress?.defaults;
-        if (!settings) return;
-
-        // === TARGET ROW (two-column: label left, dropdown right) ===
-        const targetRow = container.createDiv({ cls: 'ert-apr-target-row' });
-        targetRow.createSpan({ text: t('ui.authorProgressModal.targetLabel'), cls: ERT_CLASSES.LABEL });
-        const targetSelect = targetRow.createEl('select', { cls: 'dropdown ert-input' });
-        targetSelect.createEl('option', { value: 'default', text: t('ui.authorProgressModal.defaultReportOption') });
-        campaigns.forEach(campaign => {
-            targetSelect.createEl('option', { value: campaign.id, text: t('ui.authorProgressModal.campaignOption', { name: campaign.name }) });
-        });
-        targetSelect.value = this.selectedTargetId;
-        targetSelect.onchange = async () => {
-            this.selectedTargetId = targetSelect.value === 'default' ? 'default' : targetSelect.value;
-            await this.loadData();
-            this.renderStatusSection();
-            this.renderCampaignStatusSection();
-            this.renderActions();
-        };
-
-        const campaign = this.getSelectedCampaign() ?? campaigns.find(c => c.id === this.selectedTargetId);
-        if (!campaign) {
-            container.createDiv({ text: t('ui.authorProgressModal.selectCampaign'), cls: ERT_CLASSES.FIELD_NOTE });
-            return;
-        }
-
-        const campaignFormatRow = container.createDiv({ cls: 'ert-apr-target-row' });
-        campaignFormatRow.createSpan({ text: t('ui.authorProgressModal.formatLabel'), cls: ERT_CLASSES.LABEL });
-        const campaignFormatSelect = campaignFormatRow.createEl('select', { cls: 'dropdown ert-input' });
-        campaignFormatSelect.createEl('option', { value: 'png', text: 'PNG' });
-        campaignFormatSelect.createEl('option', { value: 'svg', text: 'SVG' });
-        campaignFormatSelect.value = this.getCampaignExportFormat(campaign);
-        campaignFormatSelect.onchange = async () => {
-            await this.saveCampaignExportFormat(campaign, normalizeAprExportFormat(campaignFormatSelect.value));
-            this.renderStatusSection();
-            this.renderCampaignStatusSection();
-            this.renderActions();
-        };
-
-        // Auto-update legacy export paths
-        if (settings) {
-            const legacySlug = campaign.name.toLowerCase().replace(/\s+/g, '-');
-            const legacyPath = `${systemFolderPath('Social')}/${legacySlug}-progress.svg`;
-            if (campaign.exportPath === legacyPath) {
-                const nextPath = buildCampaignEmbedPath({
-                    bookTitle: this.plugin.getActiveBookTitle(),
-                    campaignName: campaign.name,
-                    updateFrequency: campaign.updateFrequency,
-                    aprExportQuality: campaign.aprExportQuality ?? settings.aprExportQuality,
-                    teaserEnabled: campaign.teaserReveal?.enabled ?? true,
-                    exportFormat: this.getCampaignExportFormat(campaign)
-                });
-                campaign.exportPath = nextPath;
-                void this.plugin.saveSettings();
-            }
-        }
-
-        // === STATUS ROW (grid-style: Book, Format, Export, Schedule, Stage) ===
-        const projectPath = resolveProjectPath(campaign, this.plugin.settings.books, this.plugin.settings.sourcePath);
-        const bookTitle = resolveBookTitle(campaign, this.plugin.settings.books, this.plugin.getActiveBookTitle());
-        const format = this.getCampaignExportFormat(campaign);
-        const campaignQuality = campaign.aprExportQuality ?? this.plugin.settings.authorProgress?.defaults.aprExportQuality ?? 'standard';
-        const scheduleLabel = this.getTeaserScheduleLabel(campaign);
-        // Reuse the same logic as the upper Campaign Status row so the pill matches
-        // (shows DEFAULT · RING / DEFAULT · SCENES etc. when teaser is OFF, or the teaser stage when ON).
-        const stageInfo = this.getCampaignStageDisplay(campaign);
-
-        const statusRow = container.createDiv({ cls: 'ert-apr-status-row ert-apr-status-row--data ert-apr-actions-status' });
-
-        // Book cell
-        const bookCell = statusRow.createDiv({ cls: 'ert-apr-status-cell ert-apr-status-cell--book' });
-        const bookLabel = bookCell.createSpan({
-            text: bookTitle,
-            cls: `${ERT_CLASSES.FIELD_NOTE} ert-apr-status-book`
-        });
-        setTooltip(bookLabel, t('ui.authorProgressModal.projectTooltip', { path: projectPath }));
-
-        const formatCell = statusRow.createDiv({ cls: 'ert-apr-status-cell' });
-        const formatPill = formatCell.createSpan({
-            cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM} ert-apr-format-pill`
-        });
-        formatPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: this.getFormatLabel(format) });
-
-        const exportCell = statusRow.createDiv({ cls: 'ert-apr-status-cell' });
-        const exportPill = exportCell.createSpan({
-            cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM}`
-        });
-        exportPill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: this.getQualityLabel(campaignQuality) });
-
-        const scheduleCell = statusRow.createDiv({ cls: 'ert-apr-status-cell' });
-        const schedulePill = scheduleCell.createSpan({
-            cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM}`
-        });
-        schedulePill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: scheduleLabel });
-
-        // Stage cell
-        const stageCell = statusRow.createDiv({ cls: 'ert-apr-status-cell' });
-        const stagePill = stageCell.createSpan({
-            cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM}`
-        });
-        const stageIcon = stagePill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON });
-        setIcon(stageIcon, stageInfo.icon);
-        stagePill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: stageInfo.label });
-        if (stageInfo.tooltip) {
-            setTooltip(stagePill, stageInfo.tooltip);
-        }
-
-        // === SHARE FILE ===
-        renderAprShareFile(container.createDiv({ cls: 'ert-apr-shareSlot' }), { app: this.app, vaultPath: campaign.exportPath });
-    }
-
-    private renderRefreshAlert(container: HTMLElement): void {
-        if (this.isCampaignTarget()) {
-            const campaign = this.getSelectedCampaign();
-            if (!campaign) return;
-            if (!this.service.campaignNeedsRefresh(campaign)) return;
-            const daysSince = this.getDaysSince(campaign.lastPublishedDate);
+        if (selected && this.service.campaignNeedsRefresh(selected)) {
+            const daysSince = this.getDaysSince(selected.lastPublishedDate);
             const alert = container.createDiv({ cls: ERT_CLASSES.INLINE });
-            const alertIcon = alert.createSpan({ cls: ERT_CLASSES.ICON_BADGE });
-            setIcon(alertIcon, 'alert-triangle');
+            setIcon(alert.createSpan({ cls: ERT_CLASSES.ICON_BADGE }), 'alert-triangle');
             alert.createSpan({
                 text: daysSince === null
-                    ? t('ui.authorProgressModal.campaignStaleAlertUnknown', { name: campaign.name })
-                    : t('ui.authorProgressModal.campaignStaleAlert', { name: campaign.name, days: daysSince }),
+                    ? t('ui.authorProgressModal.campaignStaleAlertUnknown', { name: aprReportLabel(selected) })
+                    : t('ui.authorProgressModal.campaignStaleAlert', { name: aprReportLabel(selected), days: daysSince }),
                 cls: 'ert-section-desc ert-section-desc--alert'
             });
-            return;
         }
 
-        if (!this.service.isStale()) return;
-        const daysSince = this.getDaysSince(this.plugin.settings.authorProgress?.defaults.lastPublishedDate);
-        const alert = container.createDiv({ cls: ERT_CLASSES.INLINE });
-        const alertIcon = alert.createSpan({ cls: ERT_CLASSES.ICON_BADGE });
-        setIcon(alertIcon, 'alert-triangle');
-        alert.createSpan({
-            text: daysSince === null
-                ? t('ui.authorProgressModal.reportStaleAlertUnknown')
-                : t('ui.authorProgressModal.reportStaleAlert', { days: daysSince }),
-            cls: 'ert-section-desc ert-section-desc--alert'
+        const grid = container.createDiv({ cls: 'ert-apr-status-grid ert-apr-status-grid--with-format' });
+        const headerCells = grid.createDiv({ cls: 'ert-apr-status-row ert-apr-status-row--header' });
+        [
+            t('ui.authorProgressModal.columnApr'),
+            t('ui.authorProgressModal.columnBookTitle'),
+            t('ui.authorProgressModal.formatLabel'),
+            t('ui.authorProgressModal.columnExport'),
+            t('ui.authorProgressModal.columnStage'),
+            t('ui.authorProgressModal.columnUpdateIn')
+        ].forEach((label, index) => {
+            const headerCell = headerCells.createDiv({ text: label, cls: 'ert-apr-status-cell ert-apr-status-cell--header' });
+            if (index === 0) setTooltip(headerCell, t('ui.authorProgressModal.aprColumnTooltip'));
         });
+
+        this.getReports().forEach(report => this.renderReportRow(grid, report, report === selected));
     }
 
-    private getTeaserScheduleLabel(campaign?: AuthorProgressCampaign): string {
-        if (!campaign) return '—';
-        const teaserSettings = campaign.teaserReveal ?? { enabled: true, preset: 'standard' as const };
-        if (!teaserSettings.enabled) return t('ui.authorProgressModal.teaserOff');
-        const thresholds = getTeaserThresholds(teaserSettings.preset ?? 'standard', teaserSettings.customThresholds);
-        return `${Math.round(thresholds.scenes)}/${Math.round(thresholds.colors)}/${Math.round(thresholds.full)}%`;
-    }
+    /** One report line. Choosing it makes it the report that Publish writes and the file shown above. */
+    private renderReportRow(grid: HTMLElement, report: AuthorProgressCampaign, isSelected: boolean): void {
+        const label = aprReportLabel(report);
+        const row = grid.createDiv({ cls: 'ert-apr-status-row ert-apr-status-row--data ert-apr-status-row--choice' });
+        row.toggleClass('is-selected', isSelected);
+        row.setAttr('role', 'button');
+        row.setAttr('tabindex', '0');
+        row.setAttr('aria-pressed', String(isSelected));
+        setAccessibleLabel(row, t('ui.aprReports.chooseReportLabel', { name: label }));
+        const choose = () => {
+            this.selectedReportId = report.id;
+            this.render();
+        };
+        row.onclick = choose;
+        row.onkeydown = (evt: KeyboardEvent) => {
+            if (evt.key === 'Enter' || evt.key === ' ') {
+                evt.preventDefault();
+                choose();
+            }
+        };
 
-    private getAprStatusTargets(): Array<{
-        id: string;
-        label: string;
-        bookTitle: string;
-        projectPath: string;
-        path: string;
-        size: 'small' | 'medium' | 'large';
-        exportQuality: AprExportQuality;
-        campaign?: AuthorProgressCampaign;
-    }> {
-        const authorProgress = this.plugin.settings.authorProgress;
-        const settings = authorProgress?.defaults;
-        const targets: Array<{
-            id: string;
-            label: string;
-            bookTitle: string;
-            projectPath: string;
-            path: string;
-            size: 'small' | 'medium' | 'large';
-            exportQuality: AprExportQuality;
-            campaign?: AuthorProgressCampaign;
-        }> = [];
+        const pill = (cell: HTMLElement, text: string, extraCls = ''): HTMLElement => {
+            const el = cell.createSpan({ cls: `${ERT_CLASSES.BADGE_PILL} ${ERT_CLASSES.BADGE_PILL_SM} ${extraCls}`.trim() });
+            el.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text });
+            return el;
+        };
 
-        if (!authorProgress || !settings) return targets;
+        row.createDiv({ cls: 'ert-apr-status-cell ert-apr-status-cell--apr' })
+            .createSpan({ text: label, cls: 'ert-apr-status-title' });
 
-        // Default Report (Core Social)
-        const defaultProjectPath = resolveProjectPath(null, this.plugin.settings.books, this.plugin.settings.sourcePath);
-        const defaultBookTitle = resolveBookTitle(null, this.plugin.settings.books, this.plugin.getActiveBookTitle());
-        const defaultPath = buildDefaultEmbedPath({
-            bookTitle: this.plugin.getActiveBookTitle(),
-            updateFrequency: settings.updateFrequency,
-            aprExportQuality: settings.aprExportQuality,
-            exportFormat: this.getDefaultExportFormat()
+        const bookLabel = row.createDiv({ cls: 'ert-apr-status-cell ert-apr-status-cell--book' }).createSpan({
+            text: resolveBookTitle(report, this.plugin.settings.books, this.plugin.getActiveBookTitle()),
+            cls: `${ERT_CLASSES.FIELD_NOTE} ert-apr-status-book`
         });
-        const defaultSize = this.getGlobalAprSize();
-        const defaultQuality = settings.aprExportQuality ?? 'standard';
-        targets.push({
-            id: 'default',
-            label: t('ui.authorProgressModal.defaultReportLabel'),
-            bookTitle: defaultBookTitle,
-            projectPath: defaultProjectPath,
-            path: settings.exportPath || defaultPath,
-            size: defaultSize,
-            exportQuality: defaultQuality
-        });
+        setTooltip(bookLabel, t('ui.authorProgressModal.projectTooltip', { path: this.getProjectPath(report) }));
 
-        // Campaigns (Pro overrides)
-        const campaigns = authorProgress.campaigns || [];
-        campaigns.forEach(campaign => {
-            const campaignProjectPath = resolveProjectPath(campaign, this.plugin.settings.books, this.plugin.settings.sourcePath);
-            const campaignBookTitle = resolveBookTitle(campaign, this.plugin.settings.books, this.plugin.getActiveBookTitle());
-            targets.push({
-                id: campaign.id,
-                label: campaign.name,
-                bookTitle: campaignBookTitle,
-                projectPath: campaignProjectPath,
-                path: campaign.exportPath,
-                size: this.getEffectiveAprSize(campaign),
-                exportQuality: campaign.aprExportQuality ?? settings.aprExportQuality ?? 'standard',
-                campaign
-            });
-        });
+        pill(row.createDiv({ cls: 'ert-apr-status-cell' }), report.exportFormat.toUpperCase(), 'ert-apr-format-pill');
+        pill(row.createDiv({ cls: 'ert-apr-status-cell ert-apr-status-cell--export' }), this.getQualityLabel(report.aprExportQuality));
 
-        return targets;
+        const stage = this.getStageDisplay(report);
+        const stagePill = pill(row.createDiv({ cls: 'ert-apr-status-cell' }), stage.label);
+        setIcon(stagePill.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON, prepend: true }), stage.icon);
+        setTooltip(stagePill, stage.tooltip);
+
+        pill(row.createDiv({ cls: 'ert-apr-status-cell' }), this.getUpdateLabel(report));
     }
 
     private getQualityLabel(quality: AprExportQuality): string {
@@ -729,199 +222,66 @@ export class AuthorProgressModal extends Modal {
     }
 
     private formatDays(value: number): string {
-        const safe = Math.max(0, Math.round(value));
-        return tCount('day', safe);
+        return tCount('day', Math.max(0, Math.round(value)));
     }
 
-    private getNextUpdateInfo(opts: {
-        frequency?: 'manual' | 'daily' | 'weekly' | 'monthly';
-        lastPublishedDate?: string;
-        reminderDays?: number;
-        remindersEnabled?: boolean;
-    }): { label: string; reminder?: string } {
-        const frequency = opts.frequency ?? 'manual';
-        if (frequency === 'manual') {
-            const reminderDays = opts.reminderDays ?? 0;
-            const daysSince = this.getDaysSince(opts.lastPublishedDate) ?? 0;
-            const reminder = (opts.remindersEnabled && reminderDays > 0)
-                ? this.formatDays(Math.max(0, reminderDays - daysSince))
-                : undefined;
-            return { label: t('ui.authorProgressModal.manualLabel'), reminder };
+    /** When the report next updates on its own, or its reminder for manual posting. */
+    private getUpdateLabel(report: AuthorProgressCampaign): string {
+        const daysSince = this.getDaysSince(report.lastPublishedDate);
+        if (daysSince === null) return t('ui.authorProgressModal.updateUnpublished');
+        if (!report.isActive) return t('ui.authorProgressModal.updatePaused');
+        if (report.updateFrequency === 'manual') {
+            const manual = t('ui.authorProgressModal.manualLabel');
+            return report.refreshThresholdDays > 0
+                ? `${manual} · ${this.formatDays(report.refreshThresholdDays - daysSince)}`
+                : manual;
+        }
+        const intervalDays = report.updateFrequency === 'daily' ? 1 : report.updateFrequency === 'weekly' ? 7 : 30;
+        return this.formatDays(intervalDays - daysSince);
+    }
+
+    /** How much of the timeline the report shows now and, with teaser reveal on, when it next opens up. */
+    private getStageDisplay(report: AuthorProgressCampaign): { label: string; icon: string; tooltip: string } {
+        const percent = this.percentByProject.get(this.getProjectPath(report)) ?? 0; // SAFE: a book added after the dialog opened shows 0% until it is reopened
+        const progress = Math.max(0, Math.round(percent));
+        const level = this.service.resolveRevealLevel(report, percent);
+        const info = TEASER_LEVEL_INFO[level];
+        const teaser = report.teaserReveal;
+        if (!teaser.enabled) {
+            return { label: info.label.toUpperCase(), icon: info.icon, tooltip: t('ui.authorProgressModal.stageTooltipProgress', { progress }) };
         }
 
-        const intervalDays = frequency === 'daily' ? 1 : frequency === 'weekly' ? 7 : 30;
-        const daysSince = this.getDaysSince(opts.lastPublishedDate);
-        const remaining = daysSince === null ? 0 : Math.max(0, intervalDays - daysSince);
-        return { label: this.formatDays(remaining) };
-    }
-
-    private getDefaultReportStageDisplay(_size: 'small' | 'medium' | 'large'): { label: string; icon: string; tooltip?: string } {
-        // Honor the persisted view mode (set via the social settings teaser preview dropdown).
-        const defaultViewMode = this.plugin.settings.authorProgress?.defaults.aprDefaultViewMode;
-        const level = (defaultViewMode && defaultViewMode !== 'auto') ? defaultViewMode : 'full';
-        const info = TEASER_LEVEL_INFO[level];
-        return { label: info.label.toUpperCase(), icon: info.icon };
-    }
-
-    private getCampaignStageDisplay(campaign: AuthorProgressCampaign): { label: string; icon: string; tooltip?: string } {
-        const teaserSettings = campaign.teaserReveal ?? { enabled: true, preset: 'standard' as const };
-        if (!teaserSettings.enabled) {
-            // Mirror the Default Report's current view mode (set via social settings preview).
-            const defaultViewMode = this.plugin.settings.authorProgress?.defaults.aprDefaultViewMode;
-            const inheritedLevel = (defaultViewMode && defaultViewMode !== 'auto') ? defaultViewMode : 'full';
-            const info = TEASER_LEVEL_INFO[inheritedLevel];
-            return {
-                label: t('ui.authorProgressModal.stageDefaultInherited', { stage: info.label.toUpperCase() }),
+        const thresholds = getTeaserThresholds(teaser.preset, teaser.customThresholds);
+        const steps = [
+            { level: 'scenes', threshold: thresholds.scenes, skipped: !!teaser.disabledStages?.scenes },
+            { level: 'colors', threshold: thresholds.colors, skipped: !!teaser.disabledStages?.colors },
+            { level: 'full', threshold: thresholds.full, skipped: false },
+        ].filter(step => !step.skipped);
+        const next = steps[steps.findIndex(step => step.level === level) + 1];
+        return next
+            ? {
+                label: `${info.label.toUpperCase()} ${progress}/${Math.round(next.threshold)}`,
                 icon: info.icon,
-                tooltip: t('ui.authorProgressModal.teaserOffTooltip')
-            };
-        }
-
-        const thresholds = getTeaserThresholds(teaserSettings.preset ?? 'standard', teaserSettings.customThresholds);
-        const level = getTeaserRevealLevel(this.progressPercent, thresholds, teaserSettings.disabledStages);
-        const info = TEASER_LEVEL_INFO[level];
-        const progress = Math.max(0, Math.round(this.progressPercent));
-
-        const steps: Array<{ level: 'scenes' | 'colors' | 'full'; threshold: number }> = [
-            { level: 'scenes', threshold: thresholds.scenes },
-            { level: 'colors', threshold: thresholds.colors },
-            { level: 'full', threshold: thresholds.full },
-        ];
-        const disabled = teaserSettings.disabledStages ?? {};
-        const filtered = steps.filter(step => !(step.level === 'scenes' && disabled.scenes) && !(step.level === 'colors' && disabled.colors));
-        const currentIndex = filtered.findIndex(step => step.level === level);
-        const nextThreshold = level === 'ring'
-            ? filtered[0]?.threshold
-            : (currentIndex >= 0 && currentIndex < filtered.length - 1
-                ? filtered[currentIndex + 1].threshold
-                : undefined);
-
-        const label = nextThreshold
-            ? `${info.label.toUpperCase()} ${progress}/${Math.round(nextThreshold)}`
-            : info.label.toUpperCase();
-        const tooltip = nextThreshold
-            ? t('ui.authorProgressModal.stageTooltipNext', { progress, next: Math.round(nextThreshold) })
-            : t('ui.authorProgressModal.stageTooltipProgress', { progress });
-
-        return { label, icon: info.icon, tooltip };
-    }
-
-    private async saveDefaultExportFormat(format: AprExportFormat): Promise<void> {
-        const settings = this.plugin.settings.authorProgress?.defaults;
-        if (!settings) return;
-
-        const nextFormat = normalizeAprExportFormat(format);
-        settings.exportFormat = nextFormat;
-        // Always recompute canonical default path when format changes
-        settings.exportPath = buildDefaultEmbedPath({
-            bookTitle: this.plugin.getActiveBookTitle(),
-            updateFrequency: settings.updateFrequency,
-            aprExportQuality: settings.aprExportQuality,
-            exportFormat: nextFormat
-        });
-
-        await this.plugin.saveSettings();
-    }
-
-    private async saveCampaignExportFormat(campaign: AuthorProgressCampaign, format: AprExportFormat): Promise<void> {
-        const authorProgress = this.plugin.settings.authorProgress;
-        const settings = authorProgress?.defaults;
-        if (!authorProgress?.campaigns || !settings) return;
-
-        const index = authorProgress.campaigns.findIndex(c => c.id === campaign.id);
-        if (index < 0) return;
-        const target = authorProgress.campaigns[index];
-        const nextFormat = normalizeAprExportFormat(format);
-        const currentFormat = this.getCampaignExportFormat(target);
-        const resolvedBookTitle = resolveBookTitle(
-            target,
-            this.plugin.settings.books,
-            this.plugin.getActiveBookTitle()
-        );
-        const oldDefaultPath = buildCampaignEmbedPath({
-            bookTitle: resolvedBookTitle,
-            campaignName: target.name,
-            updateFrequency: target.updateFrequency,
-            aprExportQuality: target.aprExportQuality ?? settings.aprExportQuality,
-            teaserEnabled: target.teaserReveal?.enabled ?? true,
-            exportFormat: currentFormat
-        });
-        const newDefaultPath = buildCampaignEmbedPath({
-            bookTitle: resolvedBookTitle,
-            campaignName: target.name,
-            updateFrequency: target.updateFrequency,
-            aprExportQuality: target.aprExportQuality ?? settings.aprExportQuality,
-            teaserEnabled: target.teaserReveal?.enabled ?? true,
-            exportFormat: nextFormat
-        });
-        const currentPath = target.exportPath?.trim() ?? '';
-
-        target.exportFormat = nextFormat;
-        if (!currentPath || currentPath === oldDefaultPath) {
-            target.exportPath = newDefaultPath;
-        } else {
-            target.exportPath = normalizePath(this.swapPathExtension(currentPath, nextFormat));
-        }
-
-        await this.plugin.saveSettings();
-    }
-
-    private async saveQuality() {
-        if (!this.plugin.settings.authorProgress) {
-            this.plugin.settings.authorProgress = buildDefaultAuthorProgressSettings();
-        }
-        const settings = this.plugin.settings.authorProgress?.defaults;
-        settings.aprExportQuality = this.exportQuality;
-        // Always recompute canonical default path when quality changes
-        settings.exportPath = buildDefaultEmbedPath({
-            bookTitle: this.plugin.getActiveBookTitle(),
-            updateFrequency: settings.updateFrequency,
-            aprExportQuality: settings.aprExportQuality,
-            exportFormat: this.getDefaultExportFormat()
-        });
-        await this.plugin.saveSettings();
-    }
-
-    private async publish(mode: 'static' | 'dynamic') {
-        await this.runPublish(mode);
-        // Show the freshly written file in the share card, here and in settings.
-        this.renderStatusSection();
-        this.renderCampaignStatusSection();
-        this.renderActions();
-        this.onPublished?.();
-    }
-
-    private async runPublish(mode: 'static' | 'dynamic') {
-        if (this.isCampaignTarget()) {
-            const campaign = this.getSelectedCampaign();
-            if (!campaign) {
-                new Notice(t('ui.authorProgressModal.campaignNotFoundNotice'));
-                return;
+                tooltip: t('ui.authorProgressModal.stageTooltipNext', { progress, next: Math.round(next.threshold) })
             }
-            if (mode === 'dynamic') {
-                const result = await this.service.generateCampaignReport(campaign.id);
-                if (result) {
-                    new Notice(t('ui.authorProgressModal.campaignUpdatedNotice', { name: campaign.name }));
-                } else {
-                    new Notice(t('ui.authorProgressModal.campaignPublishFailedNotice'));
-                }
-                return;
-            }
-            const result = await this.service.generateCampaignSnapshot(campaign.id);
-            if (result) {
-                new Notice(t('ui.authorProgressModal.snapshotSavedNotice', { path: result }));
-            } else {
-                new Notice(t('ui.authorProgressModal.campaignSnapshotFailedNotice'));
-            }
-            return;
-        }
+            : { label: info.label.toUpperCase(), icon: info.icon, tooltip: t('ui.authorProgressModal.stageTooltipProgress', { progress }) };
+    }
 
-        const result = await this.service.generateReport(mode);
-        if (result) {
-            new Notice(mode === 'dynamic' ? t('ui.authorProgressModal.liveFileUpdatedNotice') : t('ui.authorProgressModal.snapshotSavedNotice', { path: result }));
-        } else {
-            new Notice(t('ui.authorProgressModal.reportFailedNotice'));
+    private async publish(): Promise<void> {
+        const report = this.getSelectedReport();
+        if (!report) return;
+        this.publishButton?.setDisabled(true);
+        try {
+            const path = await this.service.generateCampaignReport(report.id);
+            if (!path) throw new Error(t('ui.campaignManagerSection.renderFailed'));
+        } catch (error) {
+            new Notice(t('ui.aprReports.publishFailedNotice', {
+                message: error instanceof Error ? error.message : String(error)
+            }));
         }
+        this.publishButton?.setDisabled(false);
+        // Show the freshly written file in the share card.
+        this.render();
     }
 
     onClose() {

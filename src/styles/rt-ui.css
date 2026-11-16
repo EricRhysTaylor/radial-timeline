@@ -2041,26 +2041,6 @@
   gap: var(--ert-gap-xs);
 }
 
-.ert-ui .ert-apr-presetNote--alert {
-  color: var(--ert-alert-warning-color);
-  font-weight: 600;
-}
-
-.ert-ui button.ert-apr-presetBtn {
-  padding: var(--ert-gap-xs) var(--ert-pad-cozy);
-  height: auto;
-  min-height: 0;
-  line-height: 1.2;
-  font-size: var(--ert-control-font-size, 13px);
-  font-weight: 600;
-  border-radius: 5px;
-}
-
-.ert-ui button.ert-apr-presetBtn--alert {
-  border: 1px solid var(--ert-alert-warning-color);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ert-alert-warning-color) 35%, transparent);
-}
-
 .ert-ui .ert-apr-flow__segment {
   flex-basis: 0;
   min-width: 10px;
@@ -2114,17 +2094,6 @@
   color: var(--text-error);
 }
 
-.ert-ui.ert-scope--settings .ert-apr-refresh-alert {
-  border-left: calc(var(--ert-gap-xs) - var(--ert-gap-xs) / 4) solid var(--text-error);
-  padding-left: var(--ert-pad-sm);
-  background: color-mix(in srgb, var(--text-error) 6%, transparent);
-  border-radius: calc(var(--ert-control-radius) - var(--ert-gap-xs) / 2);
-}
-
-.ert-ui.ert-scope--settings .ert-apr-refresh-alert .setting-item-name {
-  color: var(--text-error);
-}
-
 .ert-ui.ert-scope--settings .ert-hero-features {
   margin: 0 0 0 0;
   padding: calc(var(--ert-gap-sm) + var(--ert-gap-xs) / 2) var(--ert-pad-sm);
@@ -2165,7 +2134,7 @@
 
 .ert-ui.ert-scope--settings .ert-apr-preview-frame.ert-apr-preview--actual svg {
   display: block;
-  /* The SVG is drawn at its 300px design size; show it a little smaller. */
+  /* The SVG is drawn at its export size; scale it to the preview. */
   width: 224px;
   height: 224px;
   border-radius: var(--ert-gap-xs);
@@ -2426,21 +2395,6 @@
   box-shadow: none;
 }
 
-.ert-ui.ert-scope--settings .ert-sliderValueLabel {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--ert-control-height);
-  height: calc(var(--ert-control-height) - var(--ert-gap-sm));
-  padding: 0 var(--ert-gap-sm);
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--ert-control-radius);
-  font-size: var(--ert-control-font-size);
-  font-weight: 600;
-  color: var(--text-normal);
-}
-
 .ert-ui .ert-row--recommended {
   --ert-row-pad: 12px 14px;
   border-radius: 8px;
@@ -2520,8 +2474,7 @@
   border-radius: 8px;
 }
 
-/* Scoped to typography-style rows (those tagged with ert-settingRow). Excludes containers
-   like .ert-campaign-frequency-setting which need their own grid layout. */
+/* Scoped to typography-style rows (those tagged with ert-settingRow). */
 .ert-ui.ert-scope--settings .ert-elementBlock.ert-settingRow.setting-item {
   display: flex;
   align-items: center; /* keep label/desc and controls vertically centered against each other */
@@ -6316,13 +6269,6 @@
   background: rgba(255, 0, 0, 0.08);
 }
 
-.ert-ui.ert-skin--pro .ert-panel--muted,
-.ert-ui .ert-skin--pro .ert-panel--muted {
-  background: var(--ert-pro-surface-2);
-  border: 1px solid var(--ert-pro-border);
-  box-shadow: none;
-}
-
 .ert-ui .ert-prompt-header {
   align-items: baseline;
   gap: var(--ert-gap-xs);
@@ -6542,15 +6488,6 @@
   letter-spacing: 1px;
 }
 
-.ert-ui.ert-scope--settings .ert-campaign-empty-state {
-  padding: var(--ert-pad-md);
-  text-align: center;
-  color: var(--text-muted);
-  background: var(--ert-pro-surface-2);
-  border-radius: var(--ert-control-radius);
-  border: 1px dashed var(--ert-pro-border);
-}
-
 /* Quick Start Template buttons: no dropshadow */
 .ert-ui.ert-scope--settings .ert-campaign-templates .ert-pillBtn,
 .ert-ui.ert-scope--settings .ert-campaign-templates .ert-pillBtn:hover:not(:disabled) {
@@ -6653,63 +6590,6 @@
   color: var(--text-muted);
 }
 
-.ert-ui.ert-scope--settings .ert-campaign-frequency-setting {
-  display: grid;
-  row-gap: var(--ert-gap-sm);
-}
-
-.ert-ui.ert-scope--settings.ert-skin--social .ert-skin--pro .ert-elementBlock.setting-item.ert-campaign-frequency-setting,
-.ert-ui.ert-scope--settings .ert-skin--social .ert-skin--pro .ert-elementBlock.setting-item.ert-campaign-frequency-setting {
-  background: color-mix(in srgb, var(--background-secondary) 80%, color-mix(in srgb, var(--ert-accent) 24%, transparent) 0%);
-  border: 1px solid var(--ert-pro-border);
-  box-shadow: none;
-}
-
-.ert-ui.ert-scope--settings .ert-campaign-frequency-setting__row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(200px, 220px);
-  align-items: center;
-  gap: 0 var(--ert-gap-md);
-  margin: 0; /* override inherited right margin from Obsidian setting-item children */
-}
-
-.ert-ui.ert-scope--settings .ert-campaign-frequency-setting__row--subordinate {
-  margin-top: 0;
-  padding-top: var(--ert-gap-sm);
-  border-top: 1px solid var(--ert-pro-border);
-}
-
-.ert-ui.ert-scope--settings .ert-settingComposite__info {
-  min-width: 0;
-}
-
-.ert-ui.ert-scope--settings .ert-settingComposite__info .setting-item-name {
-  margin: 0 0 var(--ert-gap-2xs) 0;
-}
-
-.ert-ui.ert-scope--settings .ert-settingComposite__info .setting-item-description {
-  margin: 0;
-}
-
-.ert-ui.ert-scope--settings .ert-settingComposite__control {
-  justify-self: end;
-  align-self: center;
-  min-width: 0;
-  margin: var(--ert-gap-xs) 0;
-}
-
-.ert-ui.ert-scope--settings .ert-campaign-refresh-controls {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--ert-gap-sm);
-  width: 220px;
-  max-width: 100%;
-}
-
-.ert-ui.ert-scope--settings .ert-campaign-refresh-controls input[type="range"] {
-  width: 100%;
-}
 
 .ert-ui.ert-scope--settings .ert-iconBtn--active {
   color: var(--text-success);
@@ -6745,46 +6625,8 @@
   margin: 0;
 }
 
-.ert-ui.ert-scope--settings .ert-campaign-style-grid {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: var(--ert-gap-md);
-}
-
-.ert-ui.ert-scope--settings .ert-campaign-style-card {
-  min-width: 0;
-  gap: var(--ert-gap-sm);
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.ert-ui.ert-scope--settings .ert-campaign-style-card.is-active {
-  border-color: color-mix(in srgb, var(--ert-accent) 38%, var(--ert-pro-border));
-  background: color-mix(in srgb, var(--ert-pro-surface-2) 84%, var(--ert-accent) 16%);
-}
-
-.ert-ui.ert-scope--settings .ert-campaign-style-card__header {
-  min-width: 0;
-}
-
-.ert-ui.ert-scope--settings .ert-campaign-style-card__header .setting-item-name,
-.ert-ui.ert-scope--settings .ert-campaign-style-card__header .setting-item-description {
-  margin: 0;
-}
-
-.ert-ui.ert-scope--settings .ert-campaign-style-card__control {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  margin: var(--ert-gap-xs) 0;
-}
-
-.ert-ui.ert-scope--settings .ert-campaign-style-card__control select {
-  max-width: 100%;
-}
-
 @container ert-settings (max-width: 680px) {
-  .ert-ui.ert-scope--settings .ert-apr-progressModeGrid,
-  .ert-ui.ert-scope--settings .ert-campaign-style-grid,
-  .ert-ui.ert-scope--settings .ert-campaign-frequency-setting__row {
+  .ert-ui.ert-scope--settings .ert-apr-progressModeGrid {
     grid-template-columns: minmax(0, 1fr);
     row-gap: var(--ert-gap-sm);
   }
@@ -6796,16 +6638,6 @@
   .ert-ui.ert-scope--settings .ert-apr-modeCell .ert-typography-controls {
     justify-content: flex-start;
   }
-
-  .ert-ui.ert-scope--settings .ert-settingComposite__control {
-    justify-self: start;
-    max-width: 100%;
-  }
-}
-
-.ert-ui.ert-scope--settings .ert-campaign-style-card__actions {
-  flex-wrap: wrap;
-  gap: var(--ert-gap-sm);
 }
 
 .ert-ui.ert-scope--settings .ert-campaign-details .setting-item-control input[type="range"]::-webkit-slider-runnable-track {
@@ -7069,10 +6901,6 @@
 .ert-ui .setting-item.is-inactive {
   opacity: 0.5;
   pointer-events: none;
-}
-
-.ert-ui.ert-scope--settings .setting-item.ert-setting--flush {
-  margin-bottom: 0;
 }
 
 /* Debug overlay (opt-in via .is-debug) */

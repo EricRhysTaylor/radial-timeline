@@ -2984,6 +2984,7 @@ export const en = {
             emptyHint: 'Publish to create the image you can drag into a post.',
             dragHint: 'Drag into a post on X, Bluesky, Patreon or Kickstarter, or copy and paste it.',
             svgHint: 'SVG file. Most social sites need PNG: switch the format to PNG in the publisher.',
+            transparentWarning: 'This image has a transparent background. Bluesky and some other sites show it as black. To bake in the background color, turn off Transparent mode in the style, then publish again.',
             copyLabel: 'Copy image',
             copyPngOnly: 'Copying works for PNG files only',
             revealLabel: 'Show in file manager',

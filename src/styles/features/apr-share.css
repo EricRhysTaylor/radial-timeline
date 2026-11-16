@@ -96,6 +96,12 @@
   line-height: 1.4;
 }
 
+.ert-ui .ert-apr-share__warning {
+  color: var(--text-warning);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+}
+
 .ert-ui .ert-apr-share__actions {
   display: flex;
   flex: 0 0 auto;

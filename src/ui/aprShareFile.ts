@@ -50,6 +50,22 @@ function revealInFileManager(app: App, vaultPath: string): void {
     }
 }
 
+/** True when the image's top-left pixel is not fully opaque (a transparent background). */
+async function hasTransparentCorner(img: HTMLImageElement): Promise<boolean> {
+    try {
+        await img.decode();
+        const canvas = img.ownerDocument.win.createEl('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return false;
+        ctx.drawImage(img, 0, 0, 1, 1, 0, 0, 1, 1);
+        return ctx.getImageData(0, 0, 1, 1).data[3] < 255;
+    } catch {
+        return false;
+    }
+}
+
 export interface AprShareFileOptions {
     app: App;
     /** Vault path the report publishes to; null when there is no report yet. */
@@ -86,6 +102,16 @@ function renderReady(card: HTMLElement, app: App, filePath: string, bytes: Array
         cls: 'ert-apr-share__hint',
         text: isPng ? t('ui.aprShareFile.dragHint') : t('ui.aprShareFile.svgHint'),
     });
+
+    // Social sites re-encode uploads without transparency and fill the empty
+    // background with black, so say so before the author posts it.
+    if (isPng) {
+        void hasTransparentCorner(thumb).then(transparent => {
+            if (transparent && card.isConnected) {
+                body.createDiv({ cls: 'ert-apr-share__warning', text: t('ui.aprShareFile.transparentWarning') });
+            }
+        });
+    }
 
     card.setAttr('draggable', 'true');
     // SAFE: the card is rebuilt whenever its container is emptied; the listener dies with it

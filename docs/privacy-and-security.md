@@ -167,7 +167,10 @@ Posture:
   sent in the background, and a released scene changes only when you press
   **Update**. Whether a scene changed since its release is worked out in your
   vault, with nothing sent. **Take down** deletes the text on the website.
-  No scene text is stored in plugin settings.
+  No scene text is stored in plugin settings. On the website, a released
+  scene that a reader reports is hidden and its text is sent to the
+  Community's AI provider to be checked against the content rules; the
+  release terms the plugin shows say so.
 - **Level 2** publishes the public profile and project shells, plus an
   optional Author Progress Report graphic. The APR route is separately
   opt-in per campaign and defaults off.

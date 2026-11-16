@@ -182,7 +182,8 @@ export class SceneReleaseListModal extends ErtModal {
     private async takeDown(title: string, release: SceneReleaseSummary): Promise<void> {
         const confirmed = await confirmWithErtModal(this.app, {
             title: t('ui.sceneReleaseModal.takeDownTitle', { title }),
-            message: t('ui.sceneReleaseModal.takeDownMessage'),
+            // Taking down a scene that is hidden after a report has a consequence on the website: say it first.
+            message: t(release.hidden ? 'ui.sceneReleaseModal.takeDownHiddenMessage' : 'ui.sceneReleaseModal.takeDownMessage'),
             confirmText: t('ui.sceneReleaseModal.takeDown'),
         });
         if (!confirmed || this.busy) return;

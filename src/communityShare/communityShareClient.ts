@@ -1610,7 +1610,7 @@ export interface SceneReleaseSummary {
     words: number;
     /** SHA-256 of the released text, as sceneReleaseText.sceneTextHash computes it. */
     text_hash: string;
-    /** Hidden from readers while a report is reviewed. */
+    /** Hidden from readers after a report: being checked, or held. The website says which. */
     hidden: boolean;
     released_at: string;
     updated_at: string;

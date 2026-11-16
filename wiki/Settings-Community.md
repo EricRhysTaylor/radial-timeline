@@ -104,10 +104,12 @@ To share from a file instead, run the [Community timeline share export](Commands
 
 Under **Private scenes**, turn on **Share scene body** to release the text of a scene from the active book to readers you name. It is off by default. Only those readers can read a released scene, signed in on the website. The first time you turn it on, Radial Timeline shows the release terms and asks you to agree.
 
-**Release scenes…** lists the book's scenes in manuscript order, each marked **Not released**, **Released**, **Changed since release**, or **Hidden while a report is reviewed**. Radial Timeline works out whether a scene changed since its release inside your vault.
+**Release scenes…** lists the book's scenes in manuscript order, each marked **Not released**, **Released**, **Changed since release**, or **Hidden after a reader's report**. Radial Timeline works out whether a scene changed since its release inside your vault.
 
 **Preview and release** shows exactly what readers will see: the scene's prose, with its properties, comments, callouts, link syntax and block IDs removed. Choose a rating, **General** or **Mature**, then press **Release**. Scenes with sex in them can't be shared yet. The text is sent on that press. For a released scene, **Preview and update** shows the current text, and **Update for every reader** replaces it; feedback on the earlier version is kept, marked with its version.
 
 A release shares the text with nobody until you choose its readers: **Choose readers on the website** opens that page. **Take down** deletes the text on the website and readers lose it at once. You keep the feedback you received.
+
+A reader can report a scene. That hides it from every reader and sends its text to the Community's AI provider to be checked against the content rules. It comes back if the check finds no breach. If it stays hidden, the website's Private scenes page says why, and updating the scene there sends it through the check again. If you take a scene down while it is hidden this way, the scenes you release or update afterwards are checked the same way before your readers see them.
 
 A scene can be released once the book's timeline is shared, and it needs a scene ID. A scene can be up to 10,000 words. The block shows how many scenes you have released and how many your account allows for the book. Pausing Community sharing stops releases, updates and take-downs. Turning **Share scene body** off leaves released scenes as they are.

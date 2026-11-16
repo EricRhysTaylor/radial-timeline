@@ -121,7 +121,7 @@ describe('Release scenes', () => {
             ['1 Opening', 'Not released', [PREVIEW_RELEASE]],
             ['2 Storm', 'Released · version 2 · 1 reader', [TAKE_DOWN]],
             ['3 Letter', 'Changed since release · version 2 · 2 readers', [PREVIEW_UPDATE, TAKE_DOWN]],
-            ['4 Trial', 'Hidden while a report is reviewed', [TAKE_DOWN]],
+            ['4 Trial', 'Hidden after a reader\'s report. The website shows why and how it comes back.', [TAKE_DOWN]],
             ['5 Typed id', t('ui.sceneReleaseModal.stateNoSceneId'), []],
             ['Released from the website: Website r9', 'Released · version 2 · 2 readers', [TAKE_DOWN]],
         ]);

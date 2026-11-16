@@ -127,7 +127,7 @@ describe('Share scene body', () => {
             'Each reader you name can read it. Anyone who can read it can copy it, so a release can\'t be fully recalled.',
             'You wrote it and have the right to share it.',
             'Sharing text, even privately, can matter to a publisher or a contest. Check your own agreements.',
-            'The same content rules apply as anywhere on the Community. A reader can report a scene, which hides it while it is reviewed.',
+            'The same content rules apply as anywhere on the Community. A reader can report a scene. That hides it and sends its text to our AI provider to be checked against the rules. It comes back if the check finds no breach. If you take a scene down while it is hidden this way, the scenes you release or update afterwards are checked the same way before your readers see them.',
         ]);
         expect(terms.buttons.map(button => button.text)).toEqual(['Cancel', 'I agree']);
 

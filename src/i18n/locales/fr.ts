@@ -7492,7 +7492,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "unicodeEngineMissing": "Ce modèle utilise FontSpec, mais aucun moteur XelaTeX ou Lualatex n'a été détecté."
         },
         "timeLineView": {
-            "radialTimelineCommands": "Radial Timeline Commandes",
             "reportBug": "Signaler un bogue",
             settingsAction: 'Paramètres',
             helpAction: 'Aide',

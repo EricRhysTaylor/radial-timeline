@@ -7486,7 +7486,6 @@ export const ja: DeepPartial<TranslationKeys> = {
             unicodeEngineMissing: 'このテンプレートは fontspec を使用していますが、XeLaTeX または LuaLaTeX エンジンが検出されませんでした。',
         },
         timeLineView: {
-            radialTimelineCommands: 'Radial Timeline のコマンド',
             reportBug: 'バグを報告',
             settingsAction: '設定',
             helpAction: 'ヘルプ',

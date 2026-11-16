@@ -7485,7 +7485,6 @@ export const de: DeepPartial<TranslationKeys> = {
             unicodeEngineMissing: 'Diese Vorlage verwendet fontspec, aber es wurde keine XeLaTeX- oder LuaLaTeX-Engine erkannt.',
         },
         timeLineView: {
-            radialTimelineCommands: 'Radial Timeline-Befehle',
             reportBug: 'Fehler melden',
             settingsAction: 'Einstellungen',
             helpAction: 'Hilfe',

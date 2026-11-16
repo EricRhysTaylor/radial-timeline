@@ -7485,7 +7485,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             unicodeEngineMissing: '이 템플릿은 fontspec을 사용하지만 XeLaTeX 또는 LuaLaTeX 엔진이 감지되지 않았습니다.',
         },
         timeLineView: {
-            radialTimelineCommands: 'Radial Timeline 명령',
             reportBug: '버그 신고',
             settingsAction: '설정',
             helpAction: '도움말',

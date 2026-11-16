@@ -7492,7 +7492,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "unicodeEngineMissing": "เทมเพลตนี้ใช้ FontSpec แต่ไม่พบเอ็นจิ้น Xelatex หรือ Lualatex"
         },
         "timeLineView": {
-            "radialTimelineCommands": "Radial Timelineคำสั่ง",
             "reportBug": "รายงานความผิดพลาด",
             settingsAction: 'การตั้งค่า',
             helpAction: 'ความช่วยเหลือ',

@@ -7492,7 +7492,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "unicodeEngineMissing": "Mẫu này sử dụng FontSpec, nhưng không phát hiện động cơ xelalatex hoặc lualatex."
         },
         "timeLineView": {
-            "radialTimelineCommands": "Các lệnh Radial Timeline",
             "reportBug": "Báo cáo lỗi",
             settingsAction: 'Cài đặt',
             helpAction: 'Trợ giúp',

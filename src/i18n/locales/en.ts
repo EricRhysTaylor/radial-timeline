@@ -7356,7 +7356,7 @@ export const en = {
         },
         timeLineView: {
             canvasAction: 'Canvas',
-            radialTimelineCommands: 'Radial Timeline commands',
+            radialTimelineCommands: 'Command palette',
             reportBug: 'Report a bug',
             settingsAction: 'Settings',
             helpAction: 'Help',

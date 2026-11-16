@@ -7487,7 +7487,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             unicodeEngineMissing: '此模板使用了 fontspec，但未检测到 XeLaTeX 或 LuaLaTeX 引擎。',
         },
         timeLineView: {
-            radialTimelineCommands: 'Radial Timeline 命令',
             reportBug: '报告错误',
             settingsAction: '设置',
             helpAction: '帮助',

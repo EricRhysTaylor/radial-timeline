@@ -7492,7 +7492,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "unicodeEngineMissing": "Esta plantilla utiliza FontSpec, pero no se detectó ningún motor Xelatex o Lualtex."
         },
         "timeLineView": {
-            "radialTimelineCommands": "Radial Timeline Comandos",
             "reportBug": "Reportar un error",
             settingsAction: 'Configuración',
             helpAction: 'Ayuda',

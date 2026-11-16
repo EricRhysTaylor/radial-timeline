@@ -72,7 +72,13 @@ function paragraphRuns(line: string): SceneRun[] {
 export function parsePastedScene(input: string): SceneBlock[] {
     let text = input.replace(BYTE_ORDER_MARK, '').replace(/\r\n?/g, '\n');
     text = text.replace(/^---\n[\s\S]*?\n---[ \t]*(?:\n|$)/, '');
-    text = text.replace(/%%[\s\S]*?%%/g, '').replace(/<!--[\s\S]*?-->/g, '');
+    // Repeat until nothing changes: removing one comment can join the pieces
+    // around it into a new one, such as `<!<!-- -->-- PRIVATE -->`.
+    let previous: string;
+    do {
+        previous = text;
+        text = text.replace(/%%[\s\S]*?%%/g, '').replace(/<!--[\s\S]*?-->/g, '');
+    } while (text !== previous);
     const blocks: SceneBlock[] = [];
     for (const raw of text.split('\n')) {
         const line = raw.replace(CONTROL, ' ').replace(NO_BREAK_SPACE, ' ').trim();

@@ -68,6 +68,17 @@ describe('parsePastedScene (mirrors the website paste parser)', () => {
         expect(JSON.stringify(blocks)).not.toMatch(/PRIVATE/);
     });
 
+    it('drops a comment that only forms once an inner comment is removed', () => {
+        const pasted = [
+            'Kept. <!<!-- -->-- PRIVATE_HTML --> Still kept.',
+            'Also %<!-- -->% PRIVATE_NOTE %<!-- -->% kept.',
+            '<<!-- x -->!--<!-- y -->-- PRIVATE_NESTED --<!-- z -->>',
+        ].join('\n');
+        const blocks = parsePastedScene(pasted);
+        expect(blocks).toEqual([p('Kept.  Still kept.'), p('Also  kept.')]);
+        expect(JSON.stringify(blocks)).not.toMatch(/PRIVATE|<!--|-->|%%/);
+    });
+
     it('takes the # off a heading', () => {
         expect(parsePastedScene('## The Storm\nIt rained.')).toEqual([p('The Storm'), p('It rained.')]);
     });

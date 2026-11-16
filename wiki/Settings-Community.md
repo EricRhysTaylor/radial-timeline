@@ -12,6 +12,7 @@ Sharing tools:
 *   Optional Author Progress Report (APR) graphics.
 *   Optional writing-activity summaries at the highest sharing level.
 *   A book's timeline, shared from the **Timeline** section. You choose which scenes to reveal.
+*   Private scenes: the text of a scene, released to readers you name.
 *   A live preview of exactly what will be shared.
 *   Pause, take offline, delete shared data, and disconnect controls.
 
@@ -19,7 +20,6 @@ Sharing tools:
 
 The plugin does **not** publish:
 
-*   Manuscript text.
 *   Scene paths.
 *   Note paths.
 *   File names or folder paths.
@@ -29,6 +29,8 @@ The plugin does **not** publish:
 *   API keys, license keys, or plugin secrets.
 
 Only the categories included in your selected sharing level are published.
+
+Manuscript text is never public and is never part of a sharing level. Community Share sends it in one case: a scene you release to readers you name, sent when you press **Release** or **Update for every reader** for that scene. See [Private Scenes](#private-scenes).
 
 **[Desk Lamps](Desk-Lamps)** is separate from the sharing level and works at every level, Private included. For a session you choose to share, it sends the friends you tick only that your lamp is on, the kind of writing, and how long, in five-minute steps. Nothing is kept after the session ends.
 
@@ -97,3 +99,15 @@ Radial Timeline sends scene order, acts, subplots, status and publish stage. Tit
 A live timeline updates with your book sync. Pausing Community sharing stops every update. Sharing a timeline needs a sharing level above Private, and the book needs a source folder in Book Manager.
 
 To share from a file instead, run the [Community timeline share export](Commands#community-timeline-share-export) command and upload the file on My Share.
+
+## Private Scenes
+
+Under **Private scenes**, turn on **Share scene body** to release the text of a scene from the active book to readers you name. It is off by default. Only those readers can read a released scene, signed in on the website. The first time you turn it on, Radial Timeline shows the release terms and asks you to agree.
+
+**Release scenes…** lists the book's scenes in manuscript order, each marked **Not released**, **Released**, **Changed since release**, or **Hidden while a report is reviewed**. Radial Timeline works out whether a scene changed since its release inside your vault.
+
+**Preview and release** shows exactly what readers will see: the scene's prose, with its properties, comments, callouts, link syntax and block IDs removed. Choose a rating, **General** or **Mature**, then press **Release**. Scenes with sex in them can't be shared yet. The text is sent on that press. For a released scene, **Preview and update** shows the current text, and **Update for every reader** replaces it; feedback on the earlier version is kept, marked with its version.
+
+A release shares the text with nobody until you choose its readers: **Choose readers on the website** opens that page. **Take down** deletes the text on the website and readers lose it at once. You keep the feedback you received.
+
+A scene can be released once the book's timeline is shared, and it needs a scene ID. A scene can be up to 10,000 words. The block shows how many scenes you have released and how many your account allows for the book. Pausing Community sharing stops releases, updates and take-downs. Turning **Share scene body** off leaves released scenes as they are.

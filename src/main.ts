@@ -52,6 +52,7 @@ import type { SceneAnalysisProcessingModal } from './modals/SceneAnalysisProcess
 import { TimelineMetricsService } from './services/TimelineMetricsService';
 import { migrateSceneFrontmatterIds } from './migrations/sceneIds';
 import { normalizeTimelineMode } from './migrations/timelineMode';
+import { resetContentLoggingOnce } from './migrations/contentLogging';
 import { ensureBeatInThisBookTemplateField } from './utils/beatsTemplates';
 import { SettingsService } from './services/SettingsService';
 import { saveSettingsVerified } from './settings/verifiedSave';
@@ -1428,6 +1429,9 @@ export default class RadialTimelinePlugin extends Plugin {
         // books a 7.x device saved can be repaired (migrateVaultNarrationDefault, TODO(8.1)).
         const narrationDefaultsMigrated = migrateVaultNarrationDefault(this.settings);
 
+        // ─── One-time reset: AI content logging off for existing installs ───
+        const contentLoggingReset = resetContentLoggingOnce(this.settings);
+
         // Fields whose deprecation is finished: no reader remains, so the key
         // leaves the settings file rather than riding along forever.
         let legacyKeysStripped = false;
@@ -1438,7 +1442,7 @@ export default class RadialTimelinePlugin extends Plugin {
             }
         }
 
-        if (sceneTemplatesMigrated || freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || booksMigrated || canvasSubplotMemoryMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated || narrationDefaultsMigrated) {
+        if (sceneTemplatesMigrated || freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || booksMigrated || canvasSubplotMemoryMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated || narrationDefaultsMigrated || contentLoggingReset) {
             await this.saveSettings();
         }
     }

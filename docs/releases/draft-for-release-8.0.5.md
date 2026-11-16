@@ -5,6 +5,7 @@ A scene drag tells you how many other files it renames, color fields save the co
 ### Improvements
 
 - **Timetable sort notice:** a sort set in Bases replaces the order the Timetable's mode gives it, such as Chronologue's story order and day dividers. A line beside **Mode** now says so, for example "Sorted by Words · Chronologue order paused", and **Clear sort** puts the mode's order back.
+- **AI content logs start off in every vault:** this update turns off **Enable AI content logs** once, so every vault now matches the new-vault default. To keep full prompts, submitted material and responses in your vault's log files, turn it back on in **Settings → Advanced**, and it stays on.
 
 ### Fixes
 

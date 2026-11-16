@@ -1322,6 +1322,12 @@ export interface RadialTimelineSettings {
     currentMode?: string;
     logApiInteractions: boolean;
     /**
+     * Schema stamp for the one-time AI content logging reset
+     * (see migrations/contentLogging.ts). Absent on installs that predate it;
+     * never seeded by DEFAULT_SETTINGS, so the reset runs exactly once.
+     */
+    contentLoggingResetVersion?: number;
+    /**
      * @deprecated Legacy vault-global target dates. Migrated into per-book
      * `BookProfile.stageTargetDates` on load (see loadSettings) and cleared;
      * never read at runtime.

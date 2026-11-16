@@ -65,15 +65,9 @@ Preset schedules:
 
 You can click the middle stages in the preview (Scenes, Colors) to skip them and jump to the next stage.
 
-## Preview Size
+## Preview
 
-The **Size** selector (Small, Medium, Large) controls the **design intent** of the graphic — which elements are shown and how dense the layout is — not the final export resolution. The dimensions below refer to the panel's preview only. For a bare progress ring with no text or labels, switch the view mode to **Ring**.
-
-| Size | Preview | Design Intent |
-|------|---------|---------------|
-| Small | 150×150 px | Compact graphic for inline embeds |
-| Medium | 300×300 px | Default — balanced density and labels |
-| Large | 450×450 px | Full layout with all reveal elements |
+Settings → Social shows your report in one preview, with its status, **Publish** and the share file beside it. Every export renders at the pixel size you choose under **Export quality**.
 
 ## Export Quality
 
@@ -85,8 +79,6 @@ The exported file is always rendered at one of three pixel sizes, chosen via **E
 | Ultra | 2400 px | ~400 KB | Crisp embeds on high-DPI displays |
 | Print | 4800 px | ~1.2 MB | Print-quality graphics, large banners |
 
-The combination of **Size** (design intent) and **Export quality** (resolution) determines the final PNG: e.g., Medium + Ultra produces the medium layout rendered at 2400 px.
-
 ## Styling Options
 
 - **Choose Palette**: Applies curated colors across the text elements, seeded from the Title color.
@@ -97,11 +89,10 @@ The combination of **Size** (design intent) and **Export quality** (resolution) 
 
 ## Export And Refresh
 
-APR exports a static **PNG or SVG** file. The **Output file** row in the panel is clickable and reveals the current export file in your system file manager.
+APR exports a static **PNG or SVG** file. The **share file** card, in Settings → Social and in the publisher, shows the published image. Drag it into a post or onto your desktop, choose **Copy image** to paste a PNG, or choose **Show in file manager** to find the file.
 
 *   **Update frequency**: Manual Only, Daily, Weekly, or Monthly. Manual mode requires clicking the update button in the APR panel.
 *   **Refresh alert threshold**: Days before showing a refresh reminder in the Radial Timeline View.
-*   **Output file**: Shows the current export file path for the default report or the selected campaign. Click it to reveal the file.
 *   **Auto-update export paths**: When size or schedule changes, updates the default export path if it still matches the default pattern.
 
 ## Campaigns

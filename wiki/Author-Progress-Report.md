@@ -1,10 +1,10 @@
-<p align="center"><img src="images/settings-social.jpg" alt="Settings → Social tab" width="600"></p>
+<p align="center"><img src="images/settings-social.png" alt="Settings → Social tab: the Reports list with the Default report and a Kickstarter campaign, and Progress tracking" width="600"></p>
 <p align="center"><sub>Settings → Social</sub></p>
 
 The Author Progress Report (APR) creates a spoiler-safe progress graphic for newsletters, social posts, Patreon, and Kickstarter updates.
 
-<p align="center"><img src="images/panel-apr.png" alt="Author Progress Report panel with preview and export options" width="500"></p>
-<p align="center"><sub>Author Progress Report — configure, preview, and export your progress graphic</sub></p>
+<p align="center"><img src="images/panel-apr.png" alt="The Default report open: preview, share file, Publish, Style and export settings" width="500"></p>
+<p align="center"><sub>An open report — preview, share file, Publish, style and settings</sub></p>
 
 ## Reports
 

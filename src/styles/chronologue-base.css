@@ -260,3 +260,60 @@
 }
 
 /* Shift/ALT/Runtime: keep backdrop ring background tint locked during scene hover */
+.ert-compressed-preview-modal {
+  width: min(95vw, 1500px);
+  max-width: 95vw;
+}
+
+.ert-compressed-preview-modal .modal-content {
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.ert-compressed-preview__layout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-4-4);
+}
+
+.ert-compressed-preview__wheel {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.ert-compressed-preview__wheel svg.radial-timeline-svg {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 50vh;
+  height: auto;
+  margin: auto;
+}
+
+.ert-compressed-preview__wheel svg.radial-timeline-svg > :not(.ert-compressed-preview__overlay) {
+  pointer-events: none;
+}
+
+.ert-compressed-preview__list {
+  flex: 0 1 280px;
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+.ert-compressed-preview__mask { fill: none; stroke: var(--background-primary); }
+.ert-compressed-preview__track { fill: none; stroke: var(--background-modifier-hover); }
+.ert-compressed-preview__gap { fill: none; stroke: var(--text-warning); stroke-width: 12; stroke-dasharray: 10 10; }
+.ert-compressed-preview__range { fill: none; stroke: var(--interactive-accent); stroke-width: 18; }
+.ert-compressed-preview__instant { stroke: var(--text-accent); stroke-width: 8; }
+.ert-compressed-preview__range.is-selected,
+.ert-compressed-preview__instant.is-selected { stroke: var(--text-normal); stroke-width: 24; }
+.ert-compressed-preview__match .rt-scene-path { stroke: var(--text-normal); stroke-width: 5; }
+.ert-compressed-preview__scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: var(--size-4-2);
+  padding: var(--size-4-2);
+  text-align: left;
+  white-space: normal;
+}

@@ -60,6 +60,7 @@ import { registerPromoteToScene } from './PromoteToSceneEntry';
 import { registerCanvasSketches } from '../timetable/CanvasSketchEntry';
 import { registerFormattingKey } from '../view/interactions/FormattingKey';
 import { getMainPlotName } from '../utils/mainPlot';
+import { CompressedPreviewModal } from '../chronologue/CompressedPreviewModal';
 
 export class CommandRegistrar {
     constructor(private plugin: RadialTimelinePlugin, private app: App) { }
@@ -107,6 +108,16 @@ export class CommandRegistrar {
             },
         });
         if (this.plugin.betaFeatures) {
+            this.plugin.addCommand({
+                id: 'preview-compressed-chronologue',
+                name: 'Dev — preview compressed Chronologue',
+                callback: () => {
+                    const view = this.plugin.getTimelineViews().find(item => item.currentMode === 'chronologue');
+                    const svg = view?.contentEl.querySelector<SVGSVGElement>('.radial-timeline-svg');
+                    if (!view || !svg) { new Notice('Open a timeline in Chronologue first.'); return; }
+                    new CompressedPreviewModal(this.app, svg, view.sceneData ?? []).open();
+                },
+            });
             this.plugin.addCommand({
                 id: 'inquiry-omnibus-pass',
                 name: `Dev — ${t('commands.inquiryOmnibusPass')}`,

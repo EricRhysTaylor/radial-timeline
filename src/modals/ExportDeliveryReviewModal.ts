@@ -12,8 +12,7 @@ export class ExportDeliveryReviewModal extends Modal {
     constructor(app: App, private receipt: ExportDeliveryReceipt, private onFileOpened?: () => void) { super(app); }
 
     async onOpen(): Promise<void> {
-        this.modalEl.addClass('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-        this.modalEl.setCssStyles({ width: '800px', maxWidth: '92vw', maxHeight: '92vh' }); // SAFE: Obsidian modal sizing.
+        this.modalEl.addClass('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--export-delivery-review');
         this.contentEl.addClass('ert-modal-container', 'ert-stack');
         this.contentEl.createDiv({ cls: 'ert-section-desc', text: t('ui.exportDeliveryReviewModal.checkingFiles'), attr: { role: 'status' } });
         await this.runCheck();

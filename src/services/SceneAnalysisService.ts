@@ -216,8 +216,7 @@ class SubplotPickerModal extends Modal {
         contentEl.empty();
         // Use generic modal base + subplot picker specific styling
         if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '720px', maxWidth: '92vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--subplot-picker');
         }
         contentEl.addClass('ert-modal-container', 'ert-stack');
         contentEl.addClass('ert-subplot-picker-modal');

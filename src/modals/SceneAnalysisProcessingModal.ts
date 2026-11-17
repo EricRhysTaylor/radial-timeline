@@ -48,8 +48,7 @@ class ConfirmationModal extends Modal {
         titleEl.setText('');
 
         if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '520px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--scene-analysis-confirm');
         }
         contentEl.addClass('ert-modal-container', 'ert-stack');
 
@@ -171,8 +170,7 @@ export class SceneAnalysisProcessingModal extends Modal {
         const { contentEl, titleEl, modalEl } = this;
         // Use generic modal base + scene analysis specific styling
         if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '720px', maxWidth: '92vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--scene-analysis-processing');
         }
         contentEl.addClass('ert-modal-container', 'ert-stack');
         contentEl.addClass('ert-scene-analysis-modal');
@@ -230,7 +228,7 @@ export class SceneAnalysisProcessingModal extends Modal {
 
     onClose(): void {
         if (this.pendingRafId !== null) {
-            cancelAnimationFrame(this.pendingRafId);
+            window.cancelAnimationFrame(this.pendingRafId);
             this.pendingRafId = null;
         }
         // Clean up animation interval
@@ -249,7 +247,7 @@ export class SceneAnalysisProcessingModal extends Modal {
 
     private ensureModalShell(): void {
         if (this.modalEl && !this.modalEl.classList.contains('ert-modal-shell')) {
-            this.modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
+            this.modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--scene-analysis-processing');
         }
         this.contentEl.classList.add('ert-modal-container', 'ert-stack');
         this.contentEl.classList.add('ert-scene-analysis-modal');
@@ -527,15 +525,10 @@ export class SceneAnalysisProcessingModal extends Modal {
     }
 
     private showConfirmationView(): void {
-        const { contentEl, modalEl, titleEl } = this;
+        const { contentEl, titleEl } = this;
         contentEl.empty();
         this.ensureModalShell();
         titleEl.setText('');
-
-        // Set modal width using Obsidian's approach
-        if (modalEl) {
-            modalEl.setCssStyles({ width: '720px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-        }
 
         this.renderProcessingHero(contentEl);
 

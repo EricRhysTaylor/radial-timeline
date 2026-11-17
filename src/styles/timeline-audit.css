@@ -3,8 +3,10 @@
  * Timeline Auditor Styles
  */
 
-.ert-timeline-audit-modal-shell {
-    /* Inherits from ert-modal-shell */
+.ert-ui.ert-timeline-audit-modal-shell.modal {
+    width: 960px;
+    max-width: 96vw;
+    max-height: 92vh;
 }
 
 .ert-timeline-audit-modal {

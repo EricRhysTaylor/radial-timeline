@@ -44,8 +44,7 @@ export class AiContextModal extends Modal {
         const { contentEl, titleEl, modalEl } = this;
         // Use generic modal base + AI Context specific styling
         if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '660px', maxWidth: '92vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--ai-context');
         }
         titleEl.setText('');
         contentEl.addClass('ert-modal-container', 'ert-modal--aiContext', 'ert-stack');

@@ -321,12 +321,8 @@ export class OnboardingModal extends Modal {
 
   onOpen(): void {
     const { modalEl, contentEl } = this;
+    // Sizing and top-edge placement live on .ert-modal--onboarding (onboarding.css).
     modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--onboarding');
-    // Never taller than the window: the scene list scrolls inside instead, so
-    // each step's actions (Continue on Confirm scenes) stay in view. Each step
-    // is a different height, so the dialog holds its top edge instead of
-    // re-centering: the step header stays put and only the bottom edge moves.
-    modalEl.setCssStyles({ width: '832px', maxWidth: '94vw', maxHeight: '92vh', alignSelf: 'flex-start', marginTop: '4vh' }); // SAFE: Modal sizing and placement via inline styles (Obsidian pattern)
     contentEl.addClass('ert-modal-container', 'ert-stack');
 
     // Resume: a dismissed modal (stray outside click, Escape) loses nothing —
@@ -1050,9 +1046,7 @@ export class OnboardingModal extends Modal {
     const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     const statusEl = progressWrap.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingModal.readingEachFile') });
     const barTrack = progressWrap.createDiv({ cls: 'ert-progress-track' });
-    barTrack.setCssStyles({ height: '6px', background: 'var(--background-modifier-border)', borderRadius: '3px' }); // SAFE: progress track
-    const barFill = barTrack.createDiv();
-    barFill.setCssStyles({ height: '100%', width: '0%', background: 'var(--interactive-accent)', borderRadius: '3px' }); // SAFE: progress fill
+    const barFill = barTrack.createDiv({ cls: 'ert-progress-track__fill' });
 
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.abort')).setDestructive().onClick(() => this.abortController?.abort());
@@ -1099,9 +1093,7 @@ export class OnboardingModal extends Modal {
     const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
     const statusEl = progressWrap.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingModal.surveyingBook') });
     const barTrack = progressWrap.createDiv({ cls: 'ert-progress-track' });
-    barTrack.setCssStyles({ height: '6px', background: 'var(--background-modifier-border)', borderRadius: '3px' }); // SAFE: progress track
-    const barFill = barTrack.createDiv();
-    barFill.setCssStyles({ height: '100%', width: '0%', background: 'var(--interactive-accent)', borderRadius: '3px' }); // SAFE: progress fill
+    const barFill = barTrack.createDiv({ cls: 'ert-progress-track__fill' });
 
     const actions = contentEl.createDiv({ cls: 'ert-modal-actions' });
     new ButtonComponent(actions).setButtonText(t('ui.onboardingModal.abort')).setDestructive().onClick(() => this.abortController?.abort());
@@ -1384,9 +1376,7 @@ export class OnboardingModal extends Modal {
       const progressWrap = contentEl.createDiv({ cls: 'ert-panel ert-stack' });
       const statusEl = progressWrap.createDiv({ cls: 'ert-section-desc', text: t('ui.onboardingModal.gatheringEntities') });
       const barTrack = progressWrap.createDiv({ cls: 'ert-progress-track' });
-      barTrack.setCssStyles({ height: '6px', background: 'var(--background-modifier-border)', borderRadius: '3px' }); // SAFE: progress track
-      const barFill = barTrack.createDiv();
-      barFill.setCssStyles({ height: '100%', width: '0%', background: 'var(--interactive-accent)', borderRadius: '3px' }); // SAFE: progress fill
+      const barFill = barTrack.createDiv({ cls: 'ert-progress-track__fill' });
       const abortRow = contentEl.createDiv({ cls: 'ert-modal-actions' });
       new ButtonComponent(abortRow).setButtonText(t('ui.onboardingModal.abort')).setDestructive().onClick(() => this.abortController?.abort());
 

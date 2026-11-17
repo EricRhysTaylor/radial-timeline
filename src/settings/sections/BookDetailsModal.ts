@@ -38,8 +38,7 @@ class BookDetailsModal extends Modal {
         contentEl.empty();
 
         if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '520px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--book-details');
         }
         contentEl.addClass('ert-modal-container', 'ert-stack');
 

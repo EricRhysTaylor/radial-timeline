@@ -90,7 +90,7 @@ export function setupMainPlotMode(view: RadialTimelineView, svg: SVGSVGElement):
     // Cleanup on pointerout
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', () => {
         if (rafId !== null) {
-            cancelAnimationFrame(rafId);
+            window.cancelAnimationFrame(rafId);
             rafId = null;
         }
     });

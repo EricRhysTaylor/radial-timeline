@@ -7,8 +7,10 @@
  * Modal Shell
  * ============================================================================ */
 
-.ert-timeline-repair-modal-shell {
-    /* Inherits from ert-modal-shell */
+.ert-ui.ert-timeline-repair-modal-shell.modal {
+    width: 900px;
+    max-width: 95vw;
+    max-height: 92vh;
 }
 
 .ert-timeline-repair-modal {

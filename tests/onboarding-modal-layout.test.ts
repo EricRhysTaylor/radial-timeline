@@ -19,8 +19,9 @@ describe('import dialog layout', () => {
 
     it('stops the dialog at the window height', () => {
         expect(source).toContain("modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--onboarding');");
-        expect(source).toContain("maxHeight: '92vh'");
-        expect(block('.ert-ui.ert-modal--onboarding.modal')).toContain('overflow: hidden');
+        const shell = block('.ert-ui.ert-modal--onboarding.modal');
+        expect(shell).toContain('max-height: 92vh');
+        expect(shell).toContain('overflow: hidden');
     });
 
     /*
@@ -30,7 +31,11 @@ describe('import dialog layout', () => {
      * step's header instead of dropping the dialog to one line.
      */
     it('holds its top edge between steps', () => {
-        expect(source).toContain("modalEl.setCssStyles({ width: '832px', maxWidth: '94vw', maxHeight: '92vh', alignSelf: 'flex-start', marginTop: '4vh' });");
+        const shell = block('.ert-ui.ert-modal--onboarding.modal');
+        expect(shell).toContain('width: 832px');
+        expect(shell).toContain('max-width: 94vw');
+        expect(shell).toContain('align-self: flex-start');
+        expect(shell).toContain('margin-top: 4vh');
         const busy = source.slice(source.indexOf('private renderBusy('), source.indexOf('private renderMessage('));
         expect(busy).toContain(".ert-onb-topbar, .ert-onb-stage, .ert-modal-header");
         expect(busy).not.toContain('contentEl.empty()');

@@ -646,3 +646,15 @@
   opacity: 0.85;
 }
 
+/* Zero draft mode row: dashed frame in the Zero stage color, tinted while on. */
+.ert-ui .setting-item.ert-zero-draft-setting {
+  border: 2px dashed var(--ert-zero-draft-color);
+  border-radius: 8px;
+  padding: var(--ert-pad-sm);
+  margin-top: var(--ert-pad-xs);
+  background-color: transparent;
+}
+
+.ert-ui .setting-item.ert-zero-draft-setting.is-enabled {
+  background-color: color-mix(in srgb, var(--ert-zero-draft-color) 12.5%, transparent);
+}

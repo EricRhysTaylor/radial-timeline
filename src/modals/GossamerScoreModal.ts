@@ -337,10 +337,8 @@ export class GossamerScoreModal extends Modal {
     const { contentEl, modalEl } = this;
     contentEl.empty();
 
-    // Set modal width using new generic system
     if (modalEl) {
-      modalEl.setCssStyles({ width: '980px', maxWidth: '98vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-      modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
+      modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--gossamer-score');
     }
 
     contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-gossamer-score-modal');
@@ -1083,8 +1081,7 @@ export class GossamerScoreModal extends Modal {
       modal.titleEl.setText('');
       contentEl.empty();
 
-      modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-      modalEl.setCssStyles({ width: '680px', maxWidth: '92vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+      modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--gossamer-purge-confirm');
       contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-gossamer-score-modal', 'ert-purge-confirm-modal');
 
       const hero = contentEl.createDiv({ cls: 'ert-modal-header' });
@@ -1313,11 +1310,8 @@ class NormalizeConfirmationModal extends Modal {
     contentEl.empty();
 
     if (modalEl) {
-      modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-      // SAFE: Modal sizing via inline styles (Obsidian pattern). Match the
-      // Gossamer score modal's constraints so this confirm dialog doesn't
-      // stretch edge-to-edge.
-      modalEl.setCssStyles({ width: '540px', maxWidth: '90vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+      // Sized in CSS so this confirm dialog doesn't stretch edge-to-edge.
+      modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--gossamer-normalize-confirm');
     }
       contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-gossamer-score-modal', 'ert-purge-confirm-modal');
 

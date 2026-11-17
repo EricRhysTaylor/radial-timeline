@@ -82,6 +82,8 @@ const RT_IGNORE_REGEX = [
   'StoryLine',
   // Scrivener's own menu path, quoted verbatim in the import help.
   'File → Export',
+  // Lowercase roman-numeral samples ("ii.") drawn in the scene-opener previews.
+  '^[ivxlcdm]+\\.$',
 ];
 
 export const RT_SENTENCE_CASE_OPTIONS = {

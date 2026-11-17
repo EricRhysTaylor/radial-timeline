@@ -4286,6 +4286,103 @@
   max-width: 92vw;
 }
 
+/* Per-modal sizes. Each modal adds its own class to modalEl; the size lives
+   here instead of in inline styles. */
+.ert-ui.ert-modal--ensure-first-book.modal {
+  width: 460px;
+  max-width: 92vw;
+}
+
+.ert-ui.ert-modal--system-edit.modal {
+  width: 480px;
+  max-width: 92vw;
+}
+
+.ert-ui.ert-modal--scene-analysis-confirm.modal,
+.ert-ui.ert-modal--book-details.modal {
+  width: 520px;
+  max-width: 92vw;
+}
+
+.ert-ui.ert-modal--gossamer-normalize-confirm.modal {
+  width: 540px;
+  max-width: 90vw;
+  max-height: 92vh;
+}
+
+.ert-ui.ert-modal--starter-publishing-setup.modal {
+  width: 560px;
+  max-width: 92vw;
+}
+
+.ert-ui.ert-modal--apr-palette.modal,
+.ert-ui.ert-modal--subplot-deletion-confirm.modal {
+  width: 600px;
+  max-width: 92vw;
+}
+
+.ert-ui.ert-modal--create-beats-templates.modal {
+  width: 620px;
+  max-width: 92vw;
+}
+
+.ert-ui.ert-modal--ai-context.modal {
+  width: 660px;
+  max-width: 92vw;
+  max-height: 92vh;
+}
+
+.ert-ui.ert-modal--gossamer-purge-confirm.modal {
+  width: 680px;
+  max-width: 92vw;
+  max-height: 92vh;
+}
+
+.ert-ui.ert-modal--social.modal,
+.ert-ui.ert-modal--planetary-time.modal {
+  width: 720px;
+  max-width: 92vw;
+}
+
+.ert-ui.ert-modal--scene-analysis-processing.modal,
+.ert-ui.ert-modal--subplot-picker.modal {
+  width: 720px;
+  max-width: 92vw;
+  max-height: 92vh;
+}
+
+.ert-ui.ert-modal--export-delivery-review.modal,
+.ert-ui.ert-modal--recent-exports.modal,
+.ert-ui.ert-modal--manuscript-options.modal {
+  width: 800px;
+  max-width: 92vw;
+  max-height: 92vh;
+}
+
+.ert-ui.ert-modal--gossamer-processing.modal {
+  width: 800px;
+  max-width: 90vw;
+  max-height: 92vh;
+}
+
+.ert-ui.ert-modal--scene-analysis-purge-confirm.modal {
+  width: 820px;
+  max-width: 92vw;
+  max-height: 92vh;
+}
+
+.ert-ui.ert-modal--book-designer.modal {
+  width: 860px;
+  max-width: 96vw;
+  max-height: 92vh;
+}
+
+.ert-ui.ert-modal--gossamer-score.modal {
+  width: 980px;
+  max-width: 98vw;
+  max-height: 92vh;
+}
+
 .ert-ui.ert-modal--import-template.modal,
 .ert-ui .ert-modal--import-template.modal {
   width: 640px;

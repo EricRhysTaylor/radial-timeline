@@ -65,7 +65,7 @@ export function setupNarrativeRuntimeController(view: RadialTimelineView, svg: S
         syncHeader();
         // Re-render on the next frame so the keycap responds at once.
         const rafId = window.requestAnimationFrame(() => view.refreshTimeline());
-        view.renderScope.register(() => cancelAnimationFrame(rafId));
+        view.renderScope.register(() => window.cancelAnimationFrame(rafId));
     };
 
     view.renderScope.registerDomEvent(rtButton as unknown as HTMLElement, 'click', (e: MouseEvent) => {

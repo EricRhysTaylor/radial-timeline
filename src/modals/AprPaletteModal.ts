@@ -29,8 +29,7 @@ export class AprPaletteModal extends Modal {
         titleEl.setText('');
         
         if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '600px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--apr-palette');
         }
         contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-apr-palette-modal');
 

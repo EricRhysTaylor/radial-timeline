@@ -159,7 +159,7 @@ export function adjustBeatLabelsAfterRender(container: HTMLElement, attempt: num
     if (state.signature !== signature) {
         state.signature = signature;
         state.success = false;
-        if (state.retryId) cancelAnimationFrame(state.retryId);
+        if (state.retryId) window.cancelAnimationFrame(state.retryId);
         beatLabelAdjustState.set(container, state);
     }
 

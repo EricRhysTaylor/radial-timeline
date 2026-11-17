@@ -68,7 +68,7 @@ export class SceneInteractionManager {
         // Register cleanup for animation frames
         this.register(() => {
             if (this.rafId !== null) {
-                cancelAnimationFrame(this.rafId);
+                window.cancelAnimationFrame(this.rafId);
                 this.rafId = null;
             }
         });
@@ -254,7 +254,7 @@ export class SceneInteractionManager {
                 this.currentSceneId
             );
         });
-        this.register(() => cancelAnimationFrame(rafId));
+        this.register(() => window.cancelAnimationFrame(rafId));
         this.rafId = rafId;
     }
     
@@ -263,7 +263,7 @@ export class SceneInteractionManager {
      */
     cleanup(): void {
         if (this.rafId !== null) {
-            cancelAnimationFrame(this.rafId);
+            window.cancelAnimationFrame(this.rafId);
             this.rafId = null;
         }
         

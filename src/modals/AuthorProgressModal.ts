@@ -56,7 +56,6 @@ export class AuthorProgressModal extends Modal {
         // Apply shell styling and sizing
         if (modalEl) {
             modalEl.classList.add('ert-modal-shell', 'ert-ui', 'ert-scope--modal', 'ert-modal--social');
-            modalEl.setCssStyles({ width: '720px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
         }
 
         // Standard modal container with glassy styling

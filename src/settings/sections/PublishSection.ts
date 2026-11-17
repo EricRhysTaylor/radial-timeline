@@ -140,8 +140,7 @@ class StarterPublishingSetupModal extends Modal {
         const { contentEl, modalEl } = this;
         contentEl.empty();
         if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--template-pack');
-            modalEl.setCssStyles({ width: '560px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--template-pack', 'ert-modal--starter-publishing-setup');
         }
         contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-template-pack-modal');
 

@@ -3489,7 +3489,7 @@ export class RadialTimelineView extends ItemView {
                 
                 // Register cleanup for RAF IDs
                 this.renderScope.register(() => {
-                    sceneGroupRafIds.forEach(id => cancelAnimationFrame(id));
+                    sceneGroupRafIds.forEach(id => window.cancelAnimationFrame(id));
                 });
                 
                 // Start processing scene groups in chunks
@@ -3583,8 +3583,8 @@ export class RadialTimelineView extends ItemView {
                     
                     // Register cleanup for gossamer RAF IDs
                     this.renderScope.register(() => {
-                        if (gossamerOuterRafId !== null) cancelAnimationFrame(gossamerOuterRafId);
-                        if (gossamerInnerRafId !== null) cancelAnimationFrame(gossamerInnerRafId);
+                        if (gossamerOuterRafId !== null) window.cancelAnimationFrame(gossamerOuterRafId);
+                        if (gossamerInnerRafId !== null) window.cancelAnimationFrame(gossamerInnerRafId);
                     });
                 }
             }

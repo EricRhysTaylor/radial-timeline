@@ -925,21 +925,14 @@ export function renderProgressSection(params: {
             .onChange(async (value) => {
                 plugin.settings.enableZeroDraftMode = value;
                 await plugin.saveSettings();
-                zeroDraftSetting.settingEl.setCssStyles({
-                    backgroundColor: value ? `${zeroStageColor}20` : 'transparent'
-                });
+                zeroDraftSetting.settingEl.toggleClass('is-enabled', value);
                 // Zero-draft mode syncs to the active book's website shell.
                 void scheduleCommunityProjectSync(plugin);
             }));
 
-    // Apply initial styles including background tint if enabled
-    const isEnabled = plugin.settings.enableZeroDraftMode ?? false;
-    zeroDraftSetting.settingEl.setCssStyles({
-        border: `2px dashed ${zeroStageColor}`,
-        borderRadius: '8px',
-        padding: '12px',
-        marginTop: '8px',
-        backgroundColor: isEnabled ? `${zeroStageColor}20` : 'transparent'
-    });
+    // Dashed frame in the Zero stage color; tinted while the mode is on.
+    zeroDraftSetting.settingEl.addClass('ert-zero-draft-setting');
+    zeroDraftSetting.settingEl.setCssProps({ '--ert-zero-draft-color': zeroStageColor });
+    zeroDraftSetting.settingEl.toggleClass('is-enabled', plugin.settings.enableZeroDraftMode ?? false);
 
 }

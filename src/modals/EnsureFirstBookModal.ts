@@ -29,10 +29,7 @@ class FirstBookSetupModal extends ErtModal {
     onOpen(): void {
         const { contentEl } = this;
         contentEl.empty();
-        this.applyShell({ width: '460px' });
-        if (this.modalEl) {
-            this.modalEl.setCssStyles({ maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-        }
+        this.applyShell({ shellClasses: ['ert-modal--ensure-first-book'] });
 
         const header = contentEl.createDiv({ cls: 'ert-modal-header' });
         header.createSpan({ cls: 'ert-modal-badge', text: t('ui.ensureFirstBookModal.badge') });

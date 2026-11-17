@@ -32,8 +32,7 @@ export class CreateBeatSetModal extends Modal {
     titleEl.setText('');
 
     if (modalEl) {
-      modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-      modalEl.setCssStyles({ width: '620px', maxWidth: '92vw' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+      modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--create-beats-templates');
     }
     contentEl.addClass('ert-modal-container', 'ert-stack');
     contentEl.addClass('ert-create-plot-templates-modal');

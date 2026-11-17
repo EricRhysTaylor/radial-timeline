@@ -94,10 +94,7 @@ export class GossamerProcessingModal extends ErtModal {
     onOpen(): void {
         const { titleEl } = this;
         titleEl.setText('');
-        this.applyShell({ width: '800px', containerClasses: ['ert-gossamer-processing-modal'] });
-        if (this.modalEl) {
-            this.modalEl.setCssStyles({ maxWidth: '90vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-        }
+        this.applyShell({ shellClasses: ['ert-modal--gossamer-processing'], containerClasses: ['ert-gossamer-processing-modal'] });
 
         // Show confirmation view first
         this.showConfirmationView();

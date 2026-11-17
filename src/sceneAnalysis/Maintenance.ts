@@ -215,8 +215,7 @@ class PurgeConfirmationModal extends Modal {
         contentEl.empty();
 
         if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '820px', maxWidth: '92vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--scene-analysis-purge-confirm');
         }
         contentEl.addClass('ert-modal-container', 'ert-stack');
         contentEl.addClass('ert-purge-confirm-modal');

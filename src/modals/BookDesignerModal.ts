@@ -775,8 +775,7 @@ export class BookDesignerModal extends Modal {
 
         // Use generic modal system + Book Designer specific class
         if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell');
-            modalEl.setCssStyles({ width: '860px', maxWidth: '96vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
+            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal--book-designer');
         }
         contentEl.addClass('ert-modal-container', 'ert-stack');
         contentEl.addClass('ert-book-designer-modal');

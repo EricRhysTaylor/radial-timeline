@@ -93,9 +93,7 @@ export class TimelineAuditModal extends Modal {
         titleEl.setText('');
 
         if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-timeline-audit-modal-shell');
-            modalEl.setCssStyles({ width: '960px', maxWidth: '96vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-        }
+            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-timeline-audit-modal-shell');        }
 
         contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-timeline-audit-modal');
         this.restoreLatestAiState();

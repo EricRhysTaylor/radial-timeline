@@ -186,9 +186,7 @@ export class TimelineScaffoldModal extends Modal {
         titleEl.setText('');
 
         if (modalEl) {
-            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-timeline-repair-modal-shell');
-            modalEl.setCssStyles({ width: '900px', maxWidth: '95vw', maxHeight: '92vh' }); // SAFE: Modal sizing via inline styles (Obsidian pattern)
-        }
+            modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-timeline-repair-modal-shell');        }
 
         contentEl.addClass('ert-modal-container', 'ert-stack', 'ert-timeline-repair-modal');
 

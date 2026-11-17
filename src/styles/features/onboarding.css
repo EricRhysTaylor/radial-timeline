@@ -431,14 +431,34 @@
   padding-right: var(--ert-pad-xs);
 }
 
-/* The import dialog stops at the window's height (92vh, set on the modal).
-   The scene list, the one long part, gives up height first and scrolls, so
-   each step's actions stay in view; the dialog itself scrolls only if the
-   rest alone outgrows the window. */
+/* The import dialog stops at the window's height (92vh). The scene list, the
+   one long part, gives up height first and scrolls, so each step's actions
+   stay in view; the dialog itself scrolls only if the rest alone outgrows the
+   window. Each step is a different height, so the dialog holds its top edge
+   instead of re-centering: the step header stays put and only the bottom
+   edge moves. */
 .ert-ui.ert-modal--onboarding.modal {
+  width: 832px;
+  max-width: 94vw;
+  max-height: 92vh;
+  align-self: flex-start;
+  margin-top: 4vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.ert-ui.ert-modal--onboarding .ert-progress-track {
+  height: 6px;
+  background: var(--background-modifier-border);
+  border-radius: 3px;
+}
+
+.ert-ui.ert-modal--onboarding .ert-progress-track__fill {
+  height: 100%;
+  width: 0%;
+  background: var(--interactive-accent);
+  border-radius: 3px;
 }
 
 .ert-ui.ert-modal--onboarding .ert-modal-container {

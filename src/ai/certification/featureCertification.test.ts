@@ -60,6 +60,7 @@ import { resetPricingToBuiltin } from '../cost/providerPricing';
 import { estimateUsageCost } from '../cost/estimateCorpusCost';
 import { extractTokenUsage, type TokenUsage } from '../usage/providerUsage';
 import { getAIClient } from '../runtime/aiClient';
+import { bindAiNetworkGate } from '../runtime/aiNetworkGate';
 import { BUILTIN_MODELS } from '../registry/builtinModels';
 import type { AIRunRequest, AIRunResult } from '../types';
 import { getAllSceneData } from '../../sceneAnalysis/data';
@@ -440,10 +441,17 @@ describe.skipIf(!LIVE_TRANSPORT || !PROVIDER || !MODEL_ID || !API_KEY)('Live fea
         resetPricingToBuiltin();
         const app = createInMemoryApp(loadBookFiles());
         const plugin = createPlugin(app);
+        // The plugin binds the AI network gate to its master switch on load
+        // (main.ts); unbound, every request is refused. Bind it the same way.
+        const unbindGate = bindAiNetworkGate(() => (plugin as { settings: { enableAiSceneAnalysis?: boolean } }).settings.enableAiSceneAnalysis === true);
         const cases: FeatureCase[] = [];
-        if (FEATURES.has('pulse')) cases.push(...await certifyPulse(plugin, app));
-        if (FEATURES.has('gossamer')) cases.push(await certifyGossamer(plugin, app));
-        if (FEATURES.has('inquiry')) cases.push(await certifyInquiry(plugin, app));
+        try {
+            if (FEATURES.has('pulse')) cases.push(...await certifyPulse(plugin, app));
+            if (FEATURES.has('gossamer')) cases.push(await certifyGossamer(plugin, app));
+            if (FEATURES.has('inquiry')) cases.push(await certifyInquiry(plugin, app));
+        } finally {
+            unbindGate();
+        }
         writeReport(cases);
         const failures = cases.filter(entry => !entry.passed);
         expect(failures, JSON.stringify(failures.map(({ id, summary, refusal, error }) => ({ id, summary, refusal, error })), null, 2)).toEqual([]);

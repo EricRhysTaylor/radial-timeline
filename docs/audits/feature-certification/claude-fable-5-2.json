@@ -1,0 +1,33 @@
+{
+  "provider": "anthropic",
+  "modelId": "claude-fable-5-2",
+  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault AI Certification",
+  "book": "Pride & Prejudice",
+  "generatedAt": "2026-11-17T01:01:07.676Z",
+  "cases": [
+    {
+      "id": "pulse:31 Easter at Rosings",
+      "feature": "pulse",
+      "durationMs": 13317,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 12180,
+        "outputTokens": 1314,
+        "totalTokens": 13494,
+        "rawInputTokens": 12180,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.15,
+      "sample": {
+        "previousSceneAnalysis": "- 30 Darcy's arrival primed + / His prompt Parsonage call plants interest that 31 pays off.\n- Fitzwilliam introduced + / Easy charm established; sets up foil role at the pianoforte.\n- Jane question dropped ? / Darcy's confusion hooks, but 31 leaves the thread untouched.\n- Lady Catherine's meddling + / Her officious habits prepare the music-lecture interruptions.\n- Slow routine summary - / Long domestic exposition delays tension before the gentlemen arrive.",
+        "currentSceneAnalysis": "- 31 A / Trim the opening summary; let Elizabeth register Darcy's attention to sharpen stakes.\n- Pianoforte sparring + / Witty banter carries attraction and conflict through pure subtext.\n- Practice metaphor + / Elizabeth's fingers analogy neatly rebukes Darcy's social excuse.\n- Darcy's vulnerability + / Admitting awkwardness with strangers deepens him beyond pride.\n- Lady Catherine interrupts + / Comic rudeness breaks intimacy and embarrasses Darcy usefully.\n- Slow opening - / Invitation logistics stall momentum before the drawing-room scene.\n- Flat ending ? / Closes on forbearance and a carriage; no forward hook.",
+        "nextSceneAnalysis": "- 32 Solo visit escalates + / Darcy alone with Elizabeth raises the intimacy from 31.\n- Awkwardness proven + / His stilted silences dramatize the confession made at the piano.\n- Netherfield probe returns + / Elizabeth presses Bingley's departure; Darcy's evasions sustain the mystery.\n- Chair drawn closer + / Advance and cold retreat externalize his inner conflict.\n- Charlotte's speculation ? / Names the romantic question, but through lengthy summary.\n- Summary tail - / Closing narration of repeated visits dissipates the tête-à-tête's tension.",
+        "sceneGrade": "A"
+      }
+    }
+  ]
+}

@@ -45,6 +45,7 @@ import {
 
 export interface ChronologueDragViewAdapter {
     chronologueState: { shift: boolean; alien: boolean };
+    isCompressedTimeActive?: () => boolean;
     plugin: RadialTimelinePlugin;
     sceneData: TimelineItem[];
     renderScope: {
@@ -166,7 +167,7 @@ export class ChronologueDragController {
         this.startX = evt.clientX;
         this.startY = evt.clientY;
 
-        const startAngle = Number(group.getAttribute('data-start-angle') ?? '');
+        const startAngle = Number(group.getAttribute('data-start-angle-raw') ?? group.getAttribute('data-start-angle') ?? '');
         this.sourceStartAngle = Number.isFinite(startAngle) ? startAngle : undefined;
         this.accentColor = resolvePublishStageColorFromGroup(this.view.plugin.app, group);
         this.modalAccent = resolveSubplotColorFromGroup(group);
@@ -256,7 +257,7 @@ export class ChronologueDragController {
         const path = encodedPath ? decodeURIComponent(encodedPath) : null;
         if (!path || path === this.sourcePath) return null;
 
-        const startAngle = Number(group.getAttribute('data-start-angle') ?? '');
+        const startAngle = Number(group.getAttribute('data-start-angle-raw') ?? group.getAttribute('data-start-angle') ?? '');
         if (!Number.isFinite(startAngle)) return null;
         return { group, path, startAngle };
     }
@@ -285,7 +286,16 @@ export class ChronologueDragController {
     // ── commit ─────────────────────────────────────────────────────────────
 
     private async commitDrop(sourcePath: string, targetPath: string): Promise<void> {
-        const sequence = buildChronologueSceneSequence(this.view.sceneData);
+        let sequence = buildChronologueSceneSequence(this.view.sceneData);
+        if (this.view.isCompressedTimeActive?.()) {
+            const byPath = new Map(sequence.map(scene => [scene.path, scene]));
+            const displayed = Array.from(this.svg.querySelectorAll<SVGGElement>('.rt-scene-group[data-item-type="Scene"]'))
+                .filter(group => this.isOnOuterRing(group))
+                .sort((a, b) => Number(a.getAttribute('data-start-angle-raw') ?? a.getAttribute('data-start-angle')) - Number(b.getAttribute('data-start-angle-raw') ?? b.getAttribute('data-start-angle')))
+                .map(group => byPath.get(decodeURIComponent(group.getAttribute('data-path') || '')))
+                .filter((scene): scene is typeof sequence[number] => !!scene);
+            if (displayed.length === sequence.length) sequence = displayed;
+        }
         const resolution = resolvePlacementNeighbors(sequence, sourcePath, targetPath);
 
         if (resolution.kind === 'noop' || resolution.kind === 'not_found') {

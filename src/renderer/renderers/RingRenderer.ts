@@ -33,6 +33,7 @@ import { getMainPlotName } from '../../utils/mainPlot';
 
 export interface RingRenderContext {
     plugin: PluginRendererFacade;
+    compressedTime?: boolean;
     scenes: TimelineItem[];
     actsToRender: number;
     sortByWhen: boolean;
@@ -147,6 +148,7 @@ export function renderRings(ctx: RingRenderContext): string {
                     isSagaScope,
                     sortByWhen,
                     forceChronological,
+                    compressedTime: ctx.compressedTime,
                     includeBeats: !isChronologueMode && shouldRenderStoryBeats(plugin),
                     masterSubplotOrder,
                     dominantSubplots: plugin.settings.dominantSubplots,

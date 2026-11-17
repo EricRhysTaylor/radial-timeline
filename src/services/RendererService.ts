@@ -66,7 +66,7 @@ export class RendererService {
         return plugin as unknown as PluginRendererFacade;
     }
 
-    public renderTimeline(scenes: TimelineItem[], mode: { runtime: boolean; alien: boolean } = { runtime: false, alien: false }): RenderResult {
+    public renderTimeline(scenes: TimelineItem[], mode: { runtime: boolean; alien: boolean; compressedTime?: boolean } = { runtime: false, alien: false }): RenderResult {
         const pluginFacade = RendererService.asFacade(this.plugin);
 
         // Check if APR needs refresh (stale check)
@@ -82,6 +82,7 @@ export class RendererService {
             aprNeedsRefresh,
             runtimeModeActive: mode.runtime,
             alienModeActive: mode.alien,
+            compressedTime: mode.compressedTime,
             pendingNoteMigrations: pendingNoteMigrations(this.plugin.app, this.plugin.settings),
         });
     }

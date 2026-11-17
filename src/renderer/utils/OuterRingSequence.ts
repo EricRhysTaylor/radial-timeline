@@ -16,6 +16,8 @@
  * different sort — silently detaches a square from its arc.
  */
 
+import { compressedRingLayout } from '../../chronologue/compressedRingLayout';
+import { placeTimeReferences } from '../../chronologue/timeReferences/layout';
 import type { TimelineItem } from '../../types';
 import { isBeatNote, sceneKey, sortScenes } from '../../utils/sceneHelpers';
 import { resolveDominantScene } from '../components/SubplotDominanceIndicators';
@@ -48,6 +50,7 @@ export function buildOuterRingSequence(params: {
     /** When true the ring spans the full circle and holds every segment's items. */
     sortByWhen: boolean;
     forceChronological: boolean;
+    compressedTime?: boolean;
     includeBeats: boolean;
     masterSubplotOrder: string[];
     dominantSubplots?: Record<string, string>;
@@ -62,6 +65,7 @@ export function buildOuterRingSequence(params: {
         isSagaScope,
         sortByWhen,
         forceChronological,
+        compressedTime,
         includeBeats,
         masterSubplotOrder,
         dominantSubplots,
@@ -118,7 +122,8 @@ export function buildOuterRingSequence(params: {
     });
 
     const items = sortScenes(combined, sortByWhen, forceChronological, scenes);
-    const layout = forceChronological
+    const compressed = forceChronological && compressedTime ? compressedRingLayout(items, startAngle, endAngle) : null;
+    const layout = compressed ? placeTimeReferences(items, compressed.positions, innerR, outerR, startAngle, endAngle, undefined, compressed.angleAt) : forceChronological
         ? computeChronologueLayout(innerR, outerR, startAngle, endAngle, items)
         : { positions: computePositions(innerR, outerR, startAngle, endAngle, items), slots: [] };
     const positions = layout.positions;

@@ -53,7 +53,7 @@ export type BackdropRingLayout = {
  * malformed backdrop from blanking the whole timeline via NaN-string
  * propagation into SVG path coordinates.
  */
-export function buildBackdropRingLayout(scenes: TimelineItem[]): BackdropRingLayout {
+export function buildBackdropRingLayout(scenes: TimelineItem[], compressedAngleAt?: (time: number) => number): BackdropRingLayout {
     // 1. Filter for valid Backdrop items.
     const backdropItems = scenes.filter(s => s.itemType === 'Backdrop' && s.when && (s.Duration || s.End));
     if (backdropItems.length === 0) {
@@ -85,6 +85,7 @@ export function buildBackdropRingLayout(scenes: TimelineItem[]): BackdropRingLay
     const angularSize = totalAngle / sortedScenes.length;
 
     function mapTimestampToSceneIndexAngle(timeMs: number, bias: 'start' | 'end' = 'end'): number {
+        if (compressedAngleAt) return compressedAngleAt(timeMs);
         let prevIndex = -1;
         for (let i = 0; i < sortedScenes.length; i++) {
             const sceneTime = sortedScenes[i].when!.getTime();

@@ -109,8 +109,9 @@ function rangesOverlap(a: MicroRingSegment, b: MicroRingSegment): boolean {
 export function buildBackdropMicroRingLayout(params: {
     scenes: TimelineItem[];
     configs: MicroRingConfig[];
+    compressedAngleAt?: (time: number) => number;
 }): BackdropMicroRingLayout {
-    const { scenes, configs } = params;
+    const { scenes, configs, compressedAngleAt } = params;
     const sortedScenes = collectChronologueScenes(scenes);
     if (sortedScenes.length === 0) {
         return { segments: [], ticks: [], laneCount: 0 };
@@ -144,8 +145,8 @@ export function buildBackdropMicroRingLayout(params: {
         if (clampedStartMs >= clampedEndMs && endMs < viewStartMs) return;
         if (clampedStartMs >= clampedEndMs && startMs > viewEndMs) return;
 
-        let startAngle = mapTimestampToSceneIndexAngle(clampedStartMs, sortedScenes, 'start');
-        let endAngle = mapTimestampToSceneIndexAngle(clampedEndMs, sortedScenes, 'end');
+        let startAngle = compressedAngleAt?.(clampedStartMs) ?? mapTimestampToSceneIndexAngle(clampedStartMs, sortedScenes, 'start');
+        let endAngle = compressedAngleAt?.(clampedEndMs) ?? mapTimestampToSceneIndexAngle(clampedEndMs, sortedScenes, 'end');
         const totalAngle = (3 * Math.PI) / 2 - (-Math.PI / 2);
         const epsilon = 0.002;
         const span = endAngle - startAngle;

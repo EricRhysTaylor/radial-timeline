@@ -24,6 +24,7 @@ export type NumberSquareVisualResolver = (scene: TimelineItem) => { subplotColor
 
 export interface NumberSquareRenderContext {
     plugin: PluginRendererFacade;
+    compressedTime?: boolean;
     scenes: TimelineItem[];
     scenesByActAndSubplot: Record<number, Record<string, TimelineItem[]>>;
     masterSubplotOrder: string[];
@@ -96,6 +97,7 @@ export function renderNumberSquares(ctx: NumberSquareRenderContext): string {
                 isSagaScope,
                 sortByWhen,
                 forceChronological: isChronologueMode,
+                compressedTime: ctx.compressedTime,
                 includeBeats: !isChronologueMode && shouldRenderStoryBeats(plugin),
                 masterSubplotOrder,
                 dominantSubplots: plugin.settings.dominantSubplots,

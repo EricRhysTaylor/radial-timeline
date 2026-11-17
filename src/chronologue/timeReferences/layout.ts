@@ -62,7 +62,7 @@ export function referenceDateIdentity(ref: TimeReference): string { return ref.e
 /** Overlay dates onto the existing scene geometry. Primary positions are never reallocated. */
 export function placeTimeReferences(items: TimelineItem[], primary: Map<number, PositionInfo>,
     innerR: number, outerR: number, startAngle: number, endAngle: number,
-    domain = primaryReferenceDomain(items)): ReferenceLayout {
+    domain = primaryReferenceDomain(items), compressedAngleAt?: (time: number) => number): ReferenceLayout {
     const seen = new Set<string>();
     const references = items.flatMap(item => {
         const key = sceneKey(item);
@@ -80,6 +80,7 @@ export function placeTimeReferences(items: TimelineItem[], primary: Map<number, 
     }).sort((a, b) => a.time - b.time || a.angle - b.angle)
         .filter((anchor, i, all) => i === 0 || anchor.time !== all[i - 1].time);
     const angleAt = (time: number): number => {
+        if (compressedAngleAt) return compressedAngleAt(time);
         const right = anchors.findIndex(a => a.time >= time);
         if (right === 0) return anchors[0].angle;
         if (right === -1) return anchors[anchors.length - 1].angle;

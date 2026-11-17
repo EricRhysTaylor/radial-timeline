@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../../types';
 import { computeChronologueLayout, computePositions } from '../../renderer/utils/SceneLayout';
-import { primaryReferenceDomain, referenceConnector, referenceMarkReach, referenceRingGeometry, referenceSourceAnchor } from './layout';
+import { placeTimeReferences, primaryReferenceDomain, referenceConnector, referenceMarkReach, referenceRingGeometry, referenceSourceAnchor } from './layout';
 
 const start = -Math.PI / 2, end = 3 * Math.PI / 2;
 function scene(path: string, when: string, dates: string[] = []): TimelineItem {
@@ -11,6 +11,13 @@ function scene(path: string, when: string, dates: string[] = []): TimelineItem {
 const week = (dates: string[]) => [scene('first.md', '2026-06-01'), scene('source.md', '2026-06-04', dates), scene('last.md', '2026-06-07')];
 const layout = (items: TimelineItem[]) => computeChronologueLayout(700, 760, start, end, items);
 describe('Chronologue reference overlays', () => {
+    it('uses the compressed time mapping for an in-range reference', () => {
+        const items = week(['2026-06-03']);
+        const positions = computePositions(700, 760, start, end, items);
+        const result = placeTimeReferences(items, positions, 700, 760, start, end, undefined, () => 0.25);
+        expect(result.positions).toEqual(positions);
+        expect(result.slots[0]).toMatchObject({ extent: 'within', angle: 0.25 });
+    });
     it.each([[], ['1952', '2040'], ['2026-06-03', '2026-06-04']].map(dates => [dates]))('preserves primary positions exactly for %j', dates => {
         const items = week(dates);
         expect(layout(items).positions).toEqual(computePositions(700, 760, start, end, items));

@@ -118,6 +118,7 @@ export function computeCacheableValues(
     scenes: TimelineItem[],
     options: {
         runtimeView?: boolean;
+        compressedAngleAt?: (time: number) => number;
         /** The own colors of the books these scenes come from (see renderer/utils/subplotColors). */
         ownSubplotColors: OwnSubplotColors;
     }
@@ -141,7 +142,7 @@ export function computeCacheableValues(
         ? plugin.settings.chronologueBackdropMicroRings
         : [];
     const microRingLayout = (shouldIncludeBackdrop && microRingConfigs.length > 0)
-        ? buildBackdropMicroRingLayout({ scenes, configs: microRingConfigs })
+        ? buildBackdropMicroRingLayout({ scenes, configs: microRingConfigs, compressedAngleAt: options.compressedAngleAt })
         : undefined;
     const microRingLaneCount = microRingLayout?.laneCount ?? 0;
     const shouldIncludeMicroBackdrop = shouldIncludeBackdrop && microRingLaneCount > 0;
@@ -153,7 +154,7 @@ export function computeCacheableValues(
     let backdropLayout: BackdropRingLayout | undefined;
     if (shouldIncludeBackdrop) {
         try {
-            backdropLayout = buildBackdropRingLayout(scenes);
+            backdropLayout = buildBackdropRingLayout(scenes, options.compressedAngleAt);
         } catch (err) {
              
             console.error(

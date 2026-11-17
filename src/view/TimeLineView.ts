@@ -1,3 +1,5 @@
+import { compressedRingLayout } from '../chronologue/compressedRingLayout';
+import { buildChronologueSceneSequence } from '../utils/sceneHelpers';
 import { applySessionTimeAllocations, parseRecordedHours, readSessionTimeJournal, sceneTimeBlocker } from '../services/WritingSessionTimeAllocation';
 import { authorKeyFor } from '../timetable/timetableFiles';
 import { registerTextSketchCapture } from '../timetable/TextSketchCapture';
@@ -438,6 +440,8 @@ export class RadialTimelineView extends ItemView {
 
 
     readonly chronologueState = { shift: false, alien: false };
+    private compressedTime = false;
+    public isCompressedTimeActive(): boolean { return this.currentMode === 'chronologue' && this.compressedTime; }
 
     /** Narrative's runtime view: runtime arcs and running totals in the order the book presents its scenes. */
     readonly narrativeState = { runtime: false };
@@ -1077,8 +1081,23 @@ export class RadialTimelineView extends ItemView {
             this.chronologueSubNav?.toggleAlt();
         });
 
+        const time = this.makeSubNavButton(doc, 'time', t('ui.timeLineView.subNavCompressed'), '◷', t('ui.timeLineView.subNavCompressedAria'));
+        this.registerDomEvent(time, 'click', (evt: MouseEvent) => {
+            evt.preventDefault(); evt.stopPropagation();
+            if (!this.compressedTime && !compressedRingLayout(buildChronologueSceneSequence(this.sceneData), -Math.PI / 2, 3 * Math.PI / 2)) {
+                new Notice(t('ui.timeLineView.compressedUnavailable'));
+                return;
+            }
+            this.compressedTime = !this.compressedTime;
+            time.classList.toggle('is-active', this.compressedTime);
+            time.setAttribute('aria-pressed', String(this.compressedTime));
+            this.lastSnapshot = null;
+            this.refreshTimeline();
+        });
+        time.setAttribute('aria-pressed', 'false');
         subNav.appendChild(shift);
         subNav.appendChild(alt);
+        subNav.appendChild(time);
         this.insertSubNav(modeNav, subNav, anchorBtn);
 
         this.chronologueSubNavEl = subNav;
@@ -3335,7 +3354,7 @@ export class RadialTimelineView extends ItemView {
         try {
             // Generate the SVG content and get the max stage color
             const renderer = this.rendererService ?? this.plugin.getRendererService();
-            const { svgString, maxStageColor: calculatedMaxStageColor } = renderer.renderTimeline(scenes, { runtime: this.narrativeState.runtime, alien: this.chronologueState.alien });
+            const { svgString, maxStageColor: calculatedMaxStageColor } = renderer.renderTimeline(scenes, { runtime: this.narrativeState.runtime, alien: this.chronologueState.alien, compressedTime: this.compressedTime && this.currentMode === 'chronologue' });
 
             // Expose the dominant publish-stage colour to CSS so rules can use var(--rt-max-publish-stage-color)
             if (calculatedMaxStageColor) {

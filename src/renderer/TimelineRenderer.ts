@@ -1,3 +1,7 @@
+import { t } from '../i18n';
+import { escapeXml, formatNumber } from '../utils/svg';
+import { compressedRingLayout } from '../chronologue/compressedRingLayout';
+import { buildChronologueSceneSequence } from '../utils/sceneHelpers';
 import { isCompleteStatus } from '../progress/progressSnapshot';
 /**
  * Radial Timeline Plugin for Obsidian — Renderer
@@ -216,7 +220,7 @@ function calculateTargetTickEnhancedData(
 export function createTimelineSVG(
     plugin: PluginRendererFacade,
     scenes: TimelineItem[],
-    options?: { aprNeedsRefresh?: boolean; runtimeModeActive?: boolean; alienModeActive?: boolean; pendingNoteMigrations?: PendingNoteMigrations }
+    options?: { aprNeedsRefresh?: boolean; runtimeModeActive?: boolean; alienModeActive?: boolean; compressedTime?: boolean; pendingNoteMigrations?: PendingNoteMigrations }
 ): { svgString: string; maxStageColor: string } {
     const stopTotalPerf = startPerfSegment(plugin, 'timeline.total');
     const size = SVG_SIZE;
@@ -237,8 +241,11 @@ export function createTimelineSVG(
     // book presents its scenes.
     const isNarrativeRuntime = (settings.currentMode || 'narrative') === 'narrative' && options?.runtimeModeActive === true;
 
+    const compressedLayout = settings.currentMode === 'chronologue' && options?.compressedTime
+        ? compressedRingLayout(buildChronologueSceneSequence(scenes), -Math.PI / 2, 3 * Math.PI / 2) : null;
+    const compressedAngleAt = compressedLayout?.angleAt;
     const stopPrepPerf = startPerfSegment(plugin, 'timeline.scene-prep');
-    const precomputed = computeCacheableValues(plugin, scenes, { runtimeView: isNarrativeRuntime, ownSubplotColors: timelineOwnSubplotColors(settings) });
+    const precomputed = computeCacheableValues(plugin, scenes, { runtimeView: isNarrativeRuntime, compressedAngleAt, ownSubplotColors: timelineOwnSubplotColors(settings) });
     stopPrepPerf();
 
     // Extract precomputed values
@@ -321,7 +328,7 @@ export function createTimelineSVG(
 
     let outerLabels: { name: string; shortName: string; angle: number; isMajor?: boolean; isFirst?: boolean; isLast?: boolean }[];
     if (isChronologueMode) {
-        outerLabels = buildChronologueOuterLabels(plugin, scenes, ringStartRadii[NUM_RINGS - 1], ringStartRadii[NUM_RINGS - 1] + ringWidths[NUM_RINGS - 1]);
+        outerLabels = buildChronologueOuterLabels(plugin, scenes, ringStartRadii[NUM_RINGS - 1], ringStartRadii[NUM_RINGS - 1] + ringWidths[NUM_RINGS - 1], options?.compressedTime);
     } else {
         outerLabels = standardMonths;
     }
@@ -556,6 +563,7 @@ export function createTimelineSVG(
         sortByWhen,
         isChronologueMode,
         forceChronological,
+        compressedTime: options?.compressedTime,
         masterSubplotOrder,
         subplotColorFor,
         ringStartRadii,
@@ -572,6 +580,21 @@ export function createTimelineSVG(
     };
 
     svg += renderRings(ringRenderContext);
+    if (compressedLayout) {
+        const radius = ringStartRadii[NUM_RINGS - 1] + ringWidths[NUM_RINGS - 1] + 3;
+        svg += '<g class="rt-compressed-time-gaps" pointer-events="none">';
+        for (const gap of compressedLayout.scale.segments.filter(segment => segment.compressed)) {
+            const a = compressedLayout.mapAngle(gap.startAngle), b = compressedLayout.mapAngle(gap.endAngle);
+            const point = (angle: number) => `${formatNumber(radius * Math.cos(angle))} ${formatNumber(radius * Math.sin(angle))}`;
+            svg += `<path d="M ${point(a)} A ${radius} ${radius} 0 ${b - a > Math.PI ? 1 : 0} 1 ${point(b)}" fill="none" stroke="var(--text-warning)" stroke-width="5" stroke-dasharray="7 5"></path>`;
+        }
+        svg += '</g>';
+        if (compressedLayout.undatedCount) {
+            const angle = (compressedLayout.datedEnd + 3 * Math.PI / 2) / 2;
+            const r = radius + 38;
+            svg += `<text class="rt-compressed-undated-label" x="${formatNumber(r * Math.cos(angle))}" y="${formatNumber(r * Math.sin(angle))}" text-anchor="middle" fill="var(--text-muted)">${escapeXml(t('ui.timeLineView.compressedUndated'))}</text>`;
+        }
+    }
 
     stopRingRender();
 
@@ -661,6 +684,7 @@ export function createTimelineSVG(
     // Add number squares after background layer but before synopses
     const numberSquareContext: NumberSquareRenderContext = {
         plugin,
+        compressedTime: options?.compressedTime,
         scenes,
         scenesByActAndSubplot,
         masterSubplotOrder,

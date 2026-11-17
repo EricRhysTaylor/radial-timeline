@@ -1,3 +1,4 @@
+import { compressedRingLayout } from '../../chronologue/compressedRingLayout';
 import { computePositions } from './SceneLayout';
 /*
  * Helper to generate outer label data for Chronologue mode.
@@ -75,7 +76,8 @@ export function buildChronologueOuterLabels(
     plugin: PluginRendererFacade,
     scenes: TimelineItem[],
     innerR: number,
-    outerR: number
+    outerR: number,
+    compressedTime = false
 ): ChronologueLabel[] {
     const stopChronoLabels = startPerfSegment(plugin, 'timeline.chronologue-labels');
     const startAngle = -Math.PI / 2;
@@ -88,9 +90,13 @@ export function buildChronologueOuterLabels(
         .filter((when): when is Date => when instanceof Date && !isNaN(when.getTime()));
     const timeSpan = validDates.length > 0 ? calculateTimeSpan(validDates) : undefined;
 
-    const positions = computePositions(innerR, outerR, startAngle, endAngle, sortedScenes);
-    const sceneStartAngles = sortedScenes.map((_, idx) => positions.get(idx)!.startAngle);
-    const sceneAngularSize = positions.get(0)?.angularSize ?? 0;
+    const compressed = compressedTime ? compressedRingLayout(sortedScenes, startAngle, endAngle) : null;
+    const positions = compressed?.positions ?? computePositions(innerR, outerR, startAngle, endAngle, sortedScenes);
+    const sceneStartAngles = sortedScenes.map((scene, idx) => {
+        const range = compressed?.scale.ranges.find(item => item.id === scene.path);
+        return range ? compressed!.mapAngle((range.startAngle + range.endAngle) / 2) : positions.get(idx)!.startAngle;
+    });
+    const sceneAngularSize = compressed ? undefined : positions.get(0)?.angularSize ?? 0;
 
     const datedScenes = sortedScenes.map(scene => {
         const raw = scene.rawFrontmatter?.When;
@@ -111,11 +117,22 @@ export function buildChronologueOuterLabels(
         earthDate: tick.earthDate,
         precision: tick.precision,
         labelKind: tick.labelKind,
-        boundaryAtSeam: !!(tick.isFirst || tick.isLast)
+        boundaryAtSeam: !compressed && !!(tick.isFirst || tick.isLast)
     }));
     // Reference dates live on their overlay tooltip and Timetable subrow.
     stopChronoLabels();
-    return fitChronologueLabels(outerLabels, outerR);
+    // In the compressed layout the last date is not necessarily at the seam.
+    // Reserve room around its actual position before fitting intermediate labels.
+    const boundaries = compressed ? outerLabels.filter(label => label.isFirst || label.isLast) : [];
+    const spacedLabels = compressed ? outerLabels.map(label => {
+        if (!label.isMajor || label.isFirst || label.isLast) return label;
+        const overlaps = boundaries.some(boundary => {
+            const distance = Math.abs(Math.atan2(Math.sin(label.angle - boundary.angle), Math.cos(label.angle - boundary.angle)));
+            return distance < (Math.max(label.shortName.length, boundary.shortName.length, 12) * 11 + 20) / outerR;
+        });
+        return overlaps ? { ...label, name: '', shortName: '', isMajor: false, earthDate: undefined } : label;
+    }) : outerLabels;
+    return fitChronologueLabels(spacedLabels, outerR);
 }
 
 export type ChronologueOverlayOptions = {

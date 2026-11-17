@@ -389,8 +389,12 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // Argon its efficient sibling: Carbon spends more thinking tokens per
         // turn, so per-request cost and latency are higher, and Google
         // recommends a maxOutputTokens of at least 32,768 because thinking
-        // shares that limit. Verified against Google's pages on 2026-11-15;
-        // NOT yet smoke-tested against the live API.
+        // shares that limit. Verified against Google's pages on 2026-11-15.
+        // Smoke-tested against the live API on 2026-11-17 (`npm run
+        // smoke-model`): PASS, HTTP 200, finishReason STOP, {"ok": true} via
+        // responseSchema; 206 prompt / 21 output tokens, no thinking tokens
+        // reported at maxOutputTokens 1024. Not yet certified on a real corpus
+        // (`npm run certify:features`).
         // Request-shape facts (unchanged from Argon):
         //   - Explicit caching (cachedContents) is NOT supported; implicit
         //     caching is on for prompts >= 4,096 tokens at 95% off. RT skips

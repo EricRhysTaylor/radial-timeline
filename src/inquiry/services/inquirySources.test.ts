@@ -103,6 +103,21 @@ describe('buildInquirySourcesViewModel', () => {
         });
     });
 
+    it('drops provider source URLs that are not http(s)', () => {
+        const citations: InquiryCitation[] = ['javascript:alert(1)', 'obsidian://open?vault=x', 'file:///etc/passwd', 'not a url']
+            .map((url, index) => ({
+                attributionType: 'tool_url' as const,
+                sourceLabel: `Source ${index}`,
+                sourceId: `source-${index}`,
+                url,
+                citedText: 'Quoted text.'
+            }));
+
+        const vm = buildInquirySourcesViewModel(citations, undefined);
+        expect(vm.items).toHaveLength(4);
+        for (const item of vm.items) expect(item.url).toBeUndefined();
+    });
+
     it('returns empty state when no citation data is provided', () => {
         const vm = buildInquirySourcesViewModel(undefined, undefined);
         expect(vm).toEqual({

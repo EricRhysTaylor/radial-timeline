@@ -132,7 +132,7 @@ export function buildInquirySourcesViewModel(
                 excerpt,
                 classLabel: formatAttributionClassLabel(first.attributionType),
                 citationCount: grouped.length,
-                url: first.url
+                url: webUrlOrUndefined(first.url)
             });
         }
     }
@@ -198,6 +198,22 @@ export function buildInquirySourcesViewModel(
 function isDirectManuscriptCitation(citation: InquiryCitation): citation is Extract<InquiryCitation, { documentIndex: number }> {
     return citation.attributionType === undefined
         || citation.attributionType === 'direct_manuscript';
+}
+
+/**
+ * Provider-returned source URLs are untrusted (web search results can carry
+ * prompt-injected content). Only http(s) links may become clickable in the
+ * briefing panel or the saved briefing note; anything else (javascript:,
+ * obsidian:, file:) is dropped and the source shows as plain text.
+ */
+function webUrlOrUndefined(url: string | undefined): string | undefined {
+    if (!url) return undefined;
+    try {
+        const protocol = new URL(url).protocol;
+        return protocol === 'https:' || protocol === 'http:' ? url : undefined;
+    } catch { // SAFE: an unparseable provider URL is dropped; the source renders as plain text
+        return undefined;
+    }
 }
 
 function isExternalAttributionCitation(citation: InquiryCitation): citation is Extract<InquiryCitation, { attributionType: 'tool_file' | 'tool_url' | 'grounded' }> {

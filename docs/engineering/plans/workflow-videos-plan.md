@@ -2,7 +2,7 @@
 
 **Goal:** short videos, 45–90 seconds each, that show one workflow from start to finish, opened from the setting, dialog or wiki section that explains it. Radial Timeline first; Editorialist can follow the same pattern.
 
-**Status (2026-11-11):** the video list and the play icon are built and wired for the first two videos. No video is published yet, so no icon shows. Eric records and decides the order.
+**Status (2026-11-17):** `beat-manager` is published (how-to `h9rJSU7p6aA`, public 2026-11-13) and its play button ships in 8.0.4. `pandoc-setup` is next: script in progress. Eric records and decides the order.
 
 ## How a video reaches authors
 
@@ -12,7 +12,7 @@
 
 ## Where the icon goes
 
-- **Code:** `src/settings/workflowVideos.ts` lists the videos. In `src/settings/wikiLink.ts`, `addVideoLink` puts a `circle-play` icon on a settings heading and `addVideoLinkToElement` puts one in a modal badge or badge pill. The icon takes the class of the wiki link beside it, so the two match and no new CSS is needed. A video without a slug adds nothing.
+- **Code:** `src/settings/workflowVideos.ts` lists the videos. In `src/settings/wikiLink.ts`, `addVideoLink` puts a play button on a settings heading and `addVideoLinkToElement` puts one in a modal badge or badge pill, ahead of the wiki link. The button is the custom `rt-video-play` icon (registered in `main.ts`): a YouTube-red rounded rectangle with a white triangle, larger than the wiki link (Eric, 2026-11-13: "make it first ... just use the youtube brand red color"). It takes the wiki link's class plus `ert-video-link`. A video without a slug adds nothing.
 - **Wired now:**
   - `pdf-export`: the Export & publishing heading in Settings → Publish (`PublishSection.ts`), the design wizard's header badge (`DesignedStyleWizardModal.ts`), and the Manuscript export badge (`ManuscriptOptionsModal.ts`).
   - `community-share`: the status pill at the top of Settings → Community (`CommunityShareSection.ts`).
@@ -28,9 +28,10 @@
 - **Shape:** open on the result, show three to five steps, end on a card naming the wiki page.
 - **A how-to, not an overview** (Eric, 2026-11-12): show how to get there, starting from the screen an author opens (for example Settings → Core → a quick link; Obsidian's settings search doesn't find plugin sections), then how to use the tool, in about a minute. No labels over the interface. Everything a feature can do belongs in a Short or a numbered video instead; the Beat Manager's full 2:28 cut became the Beats Update Short.
 - **Show each step at a pace an author can follow** (Eric, 2026-11-12): 1.5 to 2 seconds per click or choice, typing at a readable speed, never sped up. Record a how-to's own takes for that pace rather than reusing a faster take timed to a longer script, and place each whole sentence of the voice at the step it starts on. Never cut a sentence short; loose sync with the screen is fine. "About a minute" gives way to this when a workflow has many steps.
+- **Two seconds before the voice** (Eric, 2026-11-16): every video opens on at least 2 seconds of picture and music before the narration starts.
 - **The end card stays up** (Eric, 2026-11-12): no fade to black. The closing card (logo, what to look up, radialtimeline.com) holds to the last frame, with the address on screen for at least three seconds.
 - **Production files** (voice takes, screen recordings, the edit) stay out of this public repository: on the Mac, in `Radial Timeline LLC/Video/Plugin tutorials/<video>/`, for example `…/beat manager/audio/beat-manager.aifc`. The auto-backup runs `git add -A` and pushes, so `.gitignore` ignores `video/` and raw recording formats in case a take lands in the repository folder by mistake.
-- **Scripts:** one per video in `docs/product/videos/<key>.md`, with exact interface labels, so a script can be checked against the app before recording. Written so far: [`pdf-export.md`](../../product/videos/pdf-export.md), [`beat-manager.md`](../../product/videos/beat-manager.md), and the Short [`timetable-modes.md`](../../product/videos/timetable-modes.md).
+- **Scripts:** one per video in `docs/product/videos/<key>.md`, with exact interface labels, so a script can be checked against the app before recording. Written so far: [`pdf-export.md`](../../product/videos/pdf-export.md), [`beat-manager.md`](../../product/videos/beat-manager.md), [`pandoc-setup.md`](../../product/videos/pandoc-setup.md), and the Short [`timetable-modes.md`](../../product/videos/timetable-modes.md).
 
 ## Publishing a video
 
@@ -52,8 +53,8 @@ The pre-release eyeball checklist asks: if a release changes a screen a publishe
 |---|---|---|---|
 | `pdf-export` (wired) | Design a PDF style and export the manuscript | Pro workflow with the most steps | Settings → Publish, design wizard, Manuscript export, wiki Publishing |
 | `community-share` (wired) | Share your progress on the Community | Shows exactly what is and isn't shared | Settings → Community, wiki Settings-Community |
-| `beat-manager` (wired and linked: how-to 1:42 uploaded private as `h9rJSU7p6aA`, `rt-video-beat-manager` registered and set, 2026-11-12. Make the video public with the release that carries the Save changes fix `da7ac30c`; until then the icon opens a private video) | Shape your story with the Beat Manager | Gossamer scores against these beats; no video covers the Beat Manager yet | Settings → Core → Story beats system, wiki Settings-Core |
-| `pandoc-setup` | Install Pandoc and fonts for export | Issues #29 and #34 were authors stuck here | Settings → Publish, wiki Publishing |
+| `beat-manager` (published: how-to 1:42, `h9rJSU7p6aA`, public 2026-11-13 with the Beats Update Short `zzlBLvrHyIo`; `rt-video-beat-manager` set; README, wiki and the Settings-Core thumbnail link it) | Shape your story with the Beat Manager | Gossamer scores against these beats; no video covers the Beat Manager yet | Settings → Core → Story beats system, wiki Settings-Core |
+| `pandoc-setup` (next: script started 2026-11-17) | Install Pandoc and fonts for export | Issues #29 and #34 were authors stuck here | Settings → Publish, wiki Publishing |
 | `story-vault` | Add a Story Vault and look around | The first thing a new author sees | Welcome screen, Story Vault dialog, wiki Sample-Vault |
 | `import-manuscript` | Bring in an existing manuscript, including from Scrivener | The biggest hurdle for new authors | Onboarding dialog, wiki Onboard-Existing-Manuscript |
 | `ai-setup` | Connect AI, including a local model | Four outside contributors asked for local models in #14 | Settings → AI → API keys, wiki Settings-AI |

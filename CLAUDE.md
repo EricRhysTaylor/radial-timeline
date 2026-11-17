@@ -43,6 +43,29 @@ Responding to issues opened by other people is expected and welcome.
 Opening them is not. This rule was added after five agent-authored issues
 were filed on the public Editorialist repo and had to be closed.
 
+## Live tests that send email: one test address
+
+Owner's decision, 2026-11-17. Every live test that makes the real services
+send email (sign-up, sign-in, magic link, password or backup-code flows,
+invitations, newsletter sign-up, Resend or Supabase Auth test sends) uses one
+fixed address: `ericrhystaylor+rt-qa@gmail.com`.
+
+- Never make up a new plus-address (`+rt-signup-<date>qa`, `+nltest`,
+  `+rttest1`...) and never use Eric's plain address for a test. Each new
+  alias lands in his inbox as if a real person had signed up, and leaves
+  another test account behind.
+- Reuse the existing test account. If a test really needs a brand-new
+  account, ask Eric first rather than creating a second one.
+- Unit tests, fixtures and docs use `example.com` addresses, never a real
+  inbox.
+- In the final report, say which live emails the run caused: the flow, the
+  number of emails, and that they went to the test address. Note any email
+  sequence a test started that will keep sending (for example a newsletter
+  welcome series), and stop it when the test ends if you can.
+- Exception: a preview Eric asked to see (a newsletter draft, a new email
+  template) goes to his own address, as the email repo's docs describe. That
+  is a review copy, not a test.
+
 ## Git Workflow
 
 - Work directly on `main`. Do NOT create feature branches — committing

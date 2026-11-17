@@ -212,18 +212,9 @@ function planetaryWeekdayToken(profile: PlanetaryProfile, weekdayIndex: number):
  */
 export function formatPlanetaryDateAdaptive(
     conversion: PlanetaryConversionResult,
-    earthLabel: string
+    kind: 'year' | 'month' | 'day' | 'time' | 'datetime',
+    showYear = false
 ): string {
-    // Detect content of Earth label to match granularity
-    // Matches 10:30, 10:30am, noon, midnight
-    const hasTime = /(\d{1,2}:\d{2}|noon|midnight)/i.test(earthLabel);
-    // Matches 4-digit year (1000-2999)
-    const hasYear = /\b(1\d{3}|2\d{3})\b/.test(earthLabel);
-    
-    // Check if it's ONLY time (no letters except am/pm/noon/midnight, no year)
-    // Used to identify "Time-only" ticks
-    const isTimeOnly = hasTime && !hasYear && !/[A-Za-z]{3,}/.test(earthLabel.replace(/am|pm|noon|midnight/i, ''));
-
     const { profile, localYear, localMonthIndex, localDayOfMonth, localHours, localMinutes } = conversion;
     // Use short abbreviation for perimeter labels
     const monthAbbrev = planetaryMonthToken(profile, localMonthIndex);
@@ -231,23 +222,48 @@ export function formatPlanetaryDateAdaptive(
 
     const parts: string[] = [];
 
-    if (isTimeOnly) {
+    if (kind === 'time' && !showYear) {
         return timeStr;
     }
 
-    if (hasYear) {
+    if (showYear || kind === 'year') {
         // Compact year: "Yr 30"
         parts.push(`Yr ${localYear}`);
     }
 
     // Date part: Month Day
-    parts.push(`${monthAbbrev} ${localDayOfMonth}`);
+    if (kind !== 'year') parts.push(kind === 'month' ? monthAbbrev : `${monthAbbrev} ${localDayOfMonth}`);
 
-    if (hasTime) {
+    if (kind === 'time' || kind === 'datetime') {
         parts.push(timeStr);
     }
 
     return parts.join(' · ');
+}
+
+/** Convert the entire period an imprecise Earth date describes, not its noon placeholder. */
+export function formatPlanetaryPrecisionRange(date: Date, profile: PlanetaryProfile, precision: 'year' | 'month' | 'day'): string | null {
+    const start = new Date(date.getTime());
+    start.setHours(0, 0, 0, 0);
+    if (precision === 'year') start.setMonth(0, 1);
+    else if (precision === 'month') start.setDate(1);
+    const end = new Date(start.getTime());
+    if (precision === 'year') end.setFullYear(end.getFullYear() + 1);
+    else if (precision === 'month') end.setMonth(end.getMonth() + 1);
+    else end.setDate(end.getDate() + 1);
+    const first = convertFromEarth(start, profile);
+    const last = convertFromEarth(new Date(end.getTime() - 1), profile);
+    if (!first || !last) return null;
+    if (precision === 'year') return first.localYear === last.localYear ? `Yr ${first.localYear}` : `Yr ${first.localYear}–${last.localYear}`;
+    const yearChanged = first.localYear !== last.localYear;
+    const monthChanged = first.localMonthIndex !== last.localMonthIndex || yearChanged;
+    const startMonth = planetaryMonthToken(profile, first.localMonthIndex);
+    const endMonth = planetaryMonthToken(profile, last.localMonthIndex);
+    const startText = `${yearChanged ? `Yr ${first.localYear} ` : ''}${startMonth}${precision === 'day' ? ` ${first.localDayOfMonth}` : ''}`;
+    if (precision === 'month' && !monthChanged) return startText;
+    if (precision === 'day' && !monthChanged && first.localDayOfMonth === last.localDayOfMonth) return startText;
+    const endText = `${yearChanged ? `Yr ${last.localYear} ` : ''}${monthChanged ? endMonth : ''}${precision === 'day' ? `${monthChanged ? ' ' : ''}${last.localDayOfMonth}` : ''}`;
+    return `${startText}–${endText}`;
 }
 
 export function parseCommaNames(input: string | undefined): string[] | undefined {

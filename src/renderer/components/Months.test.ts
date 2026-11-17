@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { outerLabelArc, renderMonthLabelDefs } from './Months';
-import { renderOuterLabelTexts } from '../utils/Chronologue';
+import { fitChronologueLabels, renderOuterLabelTexts } from '../utils/Chronologue';
 
 const parse = (d: string) => {
     const n = d.replace(/[MA]/g, ' ').trim().split(/\s+/).map(Number);
@@ -54,5 +54,20 @@ describe('renderOuterLabelTexts', () => {
         const anchors = [...labelsSvg.matchAll(/<textPath href="#monthLabelPath-(\d)" ([^>]+)>/g)].map(m => m[2]);
         expect(anchors[0]).toBe('startOffset="100%" text-anchor="end"');
         expect(anchors[1]).toBe('startOffset="0" text-anchor="start"');
+    });
+});
+
+describe('perimeter label spacing', () => {
+    it('keeps boundary labels and suppresses overlapping dates', () => {
+        const labels = [
+            { name: 'Start', shortName: 'Start', angle: -Math.PI / 2, isMajor: true, isFirst: true },
+            { name: 'A long date', shortName: 'A long date', angle: -Math.PI / 2 + 0.3, isMajor: true },
+            { name: 'Another date', shortName: 'Another date', angle: -Math.PI / 2 + 0.31, isMajor: true },
+            { name: 'End', shortName: 'End', angle: 4, isMajor: true, isLast: true },
+        ];
+        const fitted = fitChronologueLabels(labels, 760);
+        expect(fitted[0].shortName).toBe('Start');
+        expect(fitted[3].shortName).toBe('End');
+        expect(fitted.slice(1, 3).filter(label => label.isMajor)).toHaveLength(1);
     });
 });

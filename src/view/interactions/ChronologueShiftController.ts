@@ -9,7 +9,7 @@ import type { RadialTimelineSettings } from '../../types/settings';
 // Value import used only inside event handlers (call-time), so the
 // TimeLineView <-> controller cycle stays inert at module init.
 import { RadialTimelineView } from '../TimeLineView';
-import { getActivePlanetaryProfile, validatePlanetaryProfile, convertFromEarth, formatElapsedTimePlanetary, formatPlanetaryDateAdaptive, planetaryMonthName } from '../../utils/planetaryTime';
+import { getActivePlanetaryProfile, validatePlanetaryProfile, convertFromEarth, formatElapsedTimePlanetary, formatPlanetaryDateAdaptive, formatPlanetaryPrecisionRange, planetaryMonthName } from '../../utils/planetaryTime';
 import { parseWhenField, formatElapsedTime } from '../../utils/date';
 import { t } from '../../i18n';
 import {
@@ -275,9 +275,17 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
         const dateLabels = svg.querySelectorAll('.rt-month-label-outer[data-earth-date]');
         const profile = getActivePlanetaryProfile(view.plugin.settings);
 
-        const includeTimeInLabel = (earthLabel: string): boolean =>
-            /(\d{1,2}:\d{2}\s*(am|pm)?|noon|midnight)/i.test(earthLabel);
         const padTime = (value: number): string => String(Math.max(0, value)).padStart(2, '0');
+        const ordered = Array.from(dateLabels).sort((a, b) => Date.parse(a.getAttribute('data-earth-date') ?? '') - Date.parse(b.getAttribute('data-earth-date') ?? ''));
+        const precedingYear = new Map<Element, number>();
+        let previousYear: number | undefined;
+        if (profile) ordered.forEach(label => {
+            const value = label.getAttribute('data-earth-date');
+            const converted = value ? convertFromEarth(new Date(value), profile) : null;
+            if (!converted) return;
+            if (previousYear !== undefined) precedingYear.set(label, previousYear);
+            previousYear = converted.localYear;
+        });
 
         dateLabels.forEach(label => {
             const textPath = label.querySelector('textPath');
@@ -299,10 +307,14 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                 }
                 saveEarthLabelNodes(textPath);
 
-                const earthLabel = label.getAttribute('data-earth-label') || '';
                 const earthDate = new Date(earthDateStr);
                 const conversion = convertFromEarth(earthDate, profile);
                 if (conversion) {
+                    const rawKind = label.getAttribute('data-label-kind');
+                    const kind = rawKind === 'year' || rawKind === 'month' || rawKind === 'time' || rawKind === 'datetime' ? rawKind : 'day';
+                    const precision = label.getAttribute('data-date-precision');
+                    const range = precision === 'year' || precision === 'month' || precision === 'day'
+                        ? formatPlanetaryPrecisionRange(earthDate, profile, precision) : null;
                     const monthName = planetaryMonthName(profile, conversion.localMonthIndex);
                     const isBoundary = label.classList.contains('rt-date-boundary');
 
@@ -315,11 +327,11 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                         const yearLabel = profile.epochLabel
                             ? t('ui.chronologueShiftController.epochYear', { epoch: profile.epochLabel, year: conversion.localYear })
                             : t('ui.chronologueShiftController.year', { year: conversion.localYear });
-                        let dateLabel = `${monthName} ${conversion.localDayOfMonth}`;
-                        if (includeTimeInLabel(earthLabel)) {
+                        let dateLabel = kind === 'year' ? '' : kind === 'month' ? monthName : `${monthName} ${conversion.localDayOfMonth}`;
+                        if (kind === 'time' || kind === 'datetime') {
                             dateLabel += ` ${padTime(conversion.localHours)}:${padTime(conversion.localMinutes)}`;
                         }
-                        const alienLines = [yearLabel, dateLabel];
+                        const alienLines = range ? (precision === 'year' || range.includes('Yr ') ? [range] : [yearLabel, range]) : [yearLabel, dateLabel].filter(Boolean);
 
                         while (textPath.firstChild) textPath.removeChild(textPath.firstChild);
                         alienLines.forEach((line, i) => {
@@ -331,7 +343,7 @@ export function setupChronologueShiftController(view: RadialTimelineView, svg: S
                         });
                     } else {
                         // Regular perimeter ticks use the new adaptive short format
-                        const alienText = formatPlanetaryDateAdaptive(conversion, earthLabel);
+                        const alienText = range ?? formatPlanetaryDateAdaptive(conversion, kind, precedingYear.has(label) && precedingYear.get(label) !== conversion.localYear);
                         
                         while (textPath.firstChild) textPath.removeChild(textPath.firstChild);
                         textPath.textContent = alienText;

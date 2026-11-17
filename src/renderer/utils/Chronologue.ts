@@ -16,6 +16,8 @@ import {
 import { renderBackdropRing, type BackdropRingLayout } from '../components/BackdropRing';
 import { outerLabelArc } from '../components/Months';
 import { BACKDROP_RING_HEIGHT, CHRONOLOGUE_BOUNDARY_LINE_SPACING } from '../layout/LayoutConstants';
+import { whenTextNamesDay } from '../../utils/whenFormat';
+import { splitWhenEra } from '../../utils/date';
 import {
     renderBackdropMicroRings,
     type BackdropMicroRingLayout,
@@ -32,8 +34,42 @@ export type ChronologueLabel = {
     isFirst?: boolean;
     isLast?: boolean;
     earthDate?: string;
+    precision?: 'year' | 'month' | 'day' | 'time';
+    labelKind?: 'year' | 'month' | 'day' | 'time' | 'datetime';
     boundaryAtSeam?: boolean;
 };
+
+/** Reserve room for the range at the seam and prefer changes of year/month. */
+export function fitChronologueLabels(labels: ChronologueLabel[], radius: number): ChronologueLabel[] {
+    const circle = 2 * Math.PI;
+    const angle = (value: number) => ((value + Math.PI / 2) % circle + circle) % circle;
+    const boundary = labels.filter(label => label.isFirst || label.isLast);
+    const reserved = boundary.map(label => {
+        const length = Math.min(Math.PI / 4, (Math.max(12, ...label.shortName.split('\n').map(line => [...line].length)) * 10 + 20) / radius);
+        return label.isFirst ? { start: 0, end: length } : { start: circle - length, end: circle };
+    });
+    const major = labels.filter(label => label.isMajor && !label.isFirst && !label.isLast);
+    const ranked = major.map((label, index) => {
+        const previous = index ? major[index - 1] : boundary.find(item => item.isFirst);
+        const date = label.earthDate ? new Date(label.earthDate) : null;
+        const before = previous?.earthDate ? new Date(previous.earthDate) : null;
+        const priority = date && before && date.getFullYear() !== before.getFullYear() ? 2 : date && before && date.getMonth() !== before.getMonth() ? 1 : 0;
+        return { label, index, priority };
+    }).sort((a, b) => b.priority - a.priority || a.index - b.index);
+    const selected = new Set<ChronologueLabel>(boundary);
+    for (const { label } of ranked) {
+        if (selected.size >= 20) break;
+        const start = angle(label.angle);
+        const length = Math.min(Math.PI / 6, (Math.max(12, ...label.shortName.split('\n').map(line => [...line].length)) * 11 + 16) / radius);
+        const end = start + length;
+        if (end > circle || reserved.some(item => start < item.end && end > item.start)) continue;
+        reserved.push({ start, end });
+        selected.add(label);
+    }
+    return labels.map(label => label.isMajor && !selected.has(label)
+        ? { ...label, name: '', shortName: '', isMajor: false, earthDate: undefined }
+        : label);
+}
 
 export function buildChronologueOuterLabels(
     plugin: PluginRendererFacade,
@@ -56,7 +92,15 @@ export function buildChronologueOuterLabels(
     const sceneStartAngles = sortedScenes.map((_, idx) => positions.get(idx)!.startAngle);
     const sceneAngularSize = positions.get(0)?.angularSize ?? 0;
 
-    const chronoTicks = generateChronologicalTicks(sortedScenes, sceneStartAngles, sceneAngularSize, timeSpan);
+    const datedScenes = sortedScenes.map(scene => {
+        const raw = scene.rawFrontmatter?.When;
+        if (typeof raw !== 'string' && typeof raw !== 'number') return scene;
+        const text = String(raw);
+        const body = splitWhenEra(text).body;
+        const whenPrecision = scene.whenHasClock ? 'time' : /^\d{1,4}$/.test(body) ? 'year' : whenTextNamesDay(text) ? 'day' : 'month';
+        return { ...scene, whenPrecision } as typeof scene & { whenPrecision: 'year' | 'month' | 'day' | 'time' };
+    });
+    const chronoTicks = generateChronologicalTicks(datedScenes, sceneStartAngles, sceneAngularSize, timeSpan);
     const outerLabels = chronoTicks.map(tick => ({
         name: tick.name,
         shortName: tick.shortName,
@@ -65,11 +109,13 @@ export function buildChronologueOuterLabels(
         isFirst: tick.isFirst,
         isLast: tick.isLast,
         earthDate: tick.earthDate,
+        precision: tick.precision,
+        labelKind: tick.labelKind,
         boundaryAtSeam: !!(tick.isFirst || tick.isLast)
     }));
     // Reference dates live on their overlay tooltip and Timetable subrow.
     stopChronoLabels();
-    return outerLabels;
+    return fitChronologueLabels(outerLabels, outerR);
 }
 
 export type ChronologueOverlayOptions = {
@@ -207,7 +253,7 @@ export function renderOuterLabelTexts({
     let boundaryLabelsHtml = '';
 
     outerLabels.forEach((label, index) => {
-        const { shortName, isFirst, isLast, earthDate } = label;
+        const { shortName, isFirst, isLast, earthDate, precision, labelKind } = label;
         const pathId = `monthLabelPath-${index}`;
         // A flipped label's path runs back toward its tick, so it ends there
         const anchor = outerLabelArc(label).flipped || (label.boundaryAtSeam && isLast) ? 'startOffset="100%" text-anchor="end"' : 'startOffset="0" text-anchor="start"';
@@ -233,9 +279,10 @@ export function renderOuterLabelTexts({
 
         // Add data-earth-date so alien (planetary) mode can swap labels
         const earthDateAttr = earthDate ? ` data-earth-date="${escapeXml(earthDate)}"` : '';
+        const precisionAttr = precision ? ` data-date-precision="${precision}" data-label-kind="${labelKind ?? precision}"` : '';
 
         const labelHtml = `
-            <text class="${labelClass}"${earthDateAttr} ${isPastMonth ? 'opacity="0.5"' : ''}>
+            <text class="${labelClass}"${earthDateAttr}${precisionAttr} ${isPastMonth ? 'opacity="0.5"' : ''}>
                 <textPath href="#${pathId}" ${anchor}>
                     ${labelContent}
                 </textPath>

@@ -891,6 +891,8 @@ export interface ChronologicalTickInfo {
     isLast?: boolean;   // Optional: true for last scene label (ending date)
     sceneIndex?: number; // Optional: sorted scene index for matching with elapsed markers
     earthDate?: string; // Optional: ISO date string for alien mode conversion
+    precision?: 'year' | 'month' | 'day' | 'time';
+    labelKind?: 'year' | 'month' | 'day' | 'time' | 'datetime';
 }
 
 /**
@@ -910,16 +912,16 @@ export interface ChronologicalTickInfo {
  * @returns Array of tick info matching month format { angle, name, shortName }
  */
 export function generateChronologicalTicks(
-    scenes: { when?: Date }[],
+    scenes: { when?: Date; whenPrecision?: 'year' | 'month' | 'day' | 'time' }[],
     sceneStartAngles?: number[],
     sceneAngularSize?: number,
     timeSpan?: TimeSpanInfo
 ): ChronologicalTickInfo[] {
     // Filter scenes with valid dates, preserving chronological order
-    const validScenes: Array<{ date: Date; sortedIndex: number }> = [];
+    const validScenes: Array<{ date: Date; sortedIndex: number; precision: 'year' | 'month' | 'day' | 'time' }> = [];
     scenes.forEach((s, idx) => {
         if (s.when && !isNaN(s.when.getTime())) {
-            validScenes.push({ date: s.when, sortedIndex: idx });
+            validScenes.push({ date: s.when, sortedIndex: idx, precision: s.whenPrecision ?? 'time' });
         }
     });
 
@@ -933,18 +935,23 @@ export function generateChronologicalTicks(
     const span = timeSpan || calculateTimeSpan(validDates);
     // A book that runs from BCE into CE names the era on its CE years too.
     const markCe = datesSpanEras(validDates);
+    const datesSpanYears = validDates.some(date => date.getFullYear() !== validDates[0].getFullYear());
 
     // Special case: Only one scene - just show that date at the top
     if (validScenes.length === 1) {
         const singleDate = validScenes[0].date;
         // Use local time methods to ensure consistency with parsing
-        const dateLabel = formatStoryDate(singleDate, { month: 'short', day: 'numeric', year: 'numeric' });
+        const precision = validScenes[0].precision;
+        let dateLabel = precision === 'year' ? formatStoryYear(singleDate) : formatStoryDate(singleDate, { month: 'short', ...(precision !== 'month' ? { day: 'numeric' as const } : {}), year: 'numeric' });
+        if (scenes[validScenes[0].sortedIndex].whenPrecision === 'time') dateLabel += ` ${singleDate.toLocaleTimeString(getFormattingLocale(), { hour: 'numeric', minute: '2-digit' })}`;
 
         return [{
             angle: -Math.PI / 2, // Top of circle
             name: dateLabel,
             shortName: dateLabel,
-            isMajor: true
+            isMajor: true,
+            earthDate: singleDate.toISOString(), precision,
+            labelKind: precision === 'time' ? 'datetime' : precision
         }];
     }
 
@@ -976,7 +983,7 @@ export function generateChronologicalTicks(
     if (numScenes > MAX_MAJOR_TICKS) {
         // Calculate step that gives us approximately MAX_MAJOR_TICKS major ticks
         // But ensure it divides evenly into numScenes for balanced distribution
-        step = Math.ceil(numScenes / MAX_MAJOR_TICKS);
+        step = Math.ceil((numScenes - 1) / (MAX_MAJOR_TICKS - 1));
 
         // Find a step that evenly divides numScenes (or gets close)
         // Try to find the largest divisor <= step that gives us <= MAX_MAJOR_TICKS
@@ -1003,6 +1010,23 @@ export function generateChronologicalTicks(
     // Promote every Nth scene (except first/last) for balanced distribution
     for (let i = step; i < numScenes - 1; i += step) {
         promoteSet.add(i);
+    }
+
+    // Do not miss a year or month change simply because it fell between the
+    // evenly sampled scenes. Keep important changes before ordinary samples.
+    const priority = new Map<number, number>();
+    for (let i = 1; i < numScenes - 1; i++) {
+        const date = validScenes[i].date;
+        const previous = validScenes[i - 1].date;
+        const rank = date.getFullYear() !== previous.getFullYear() ? 2 : date.getMonth() !== previous.getMonth() ? 1 : 0;
+        if (rank) { priority.set(i, rank); promoteSet.add(i); }
+    }
+    if (promoteSet.size > MAX_MAJOR_TICKS) {
+        const chosen = [...promoteSet].filter(i => i !== 0 && i !== numScenes - 1)
+            .sort((a, b) => (priority.get(b) ?? 0) - (priority.get(a) ?? 0) || a - b)
+            .slice(0, MAX_MAJOR_TICKS - 2);
+        promoteSet.clear();
+        [0, numScenes - 1, ...chosen].forEach(i => promoteSet.add(i));
     }
 
     // Check if first and last would overlap (they're at the same or very close angles)
@@ -1038,11 +1062,17 @@ export function generateChronologicalTicks(
             return date.toLocaleTimeString(getFormattingLocale(), { hour: 'numeric', minute: '2-digit' });
         };
 
+        const precision = validScenes[sceneIndex].precision;
         const dateStr = sceneDate.toLocaleDateString(getFormattingLocale(), {
             month: 'short', day: 'numeric', calendar: 'gregory',
         });
         const year = formatStoryYear(sceneDate, getFormattingLocale(), markCe);
         const timeStr = formatTime(sceneDate);
+        if (precision === 'year') return { name: year, shortName: year };
+        if (precision === 'month') {
+            const month = sceneDate.toLocaleDateString(getFormattingLocale(), { month: 'short', calendar: 'gregory' });
+            return { name: `${month} ${year}`, shortName: `${month} ${year}` };
+        }
 
         // Analyze gap before this scene to determine label type
         const gapMs = sceneGaps[sceneIndex];
@@ -1052,9 +1082,11 @@ export function generateChronologicalTicks(
         if (isFirst) {
             // Check if overall timeline is short (time-based) or long (date-based)
             const totalSpanHours = span.hours;
-            if (totalSpanHours < 48) {
+            if (totalSpanHours < 48 && precision === 'time' && !datesSpanYears) {
                 // Short timeline: show date + time
                 return { name: `${dateStr}\n${timeStr}`, shortName: `${dateStr}\n${timeStr}` };
+            } else if (totalSpanHours < 48 && precision === 'time') {
+                return { name: `${year}\n${dateStr} ${timeStr}`, shortName: `${year}\n${dateStr} ${timeStr}` };
             } else {
                 // Long timeline: show year + date
                 return { name: `${year}\n${dateStr}`, shortName: `${year}\n${dateStr}` };
@@ -1064,9 +1096,11 @@ export function generateChronologicalTicks(
         // Last scene: Match the format of the first scene for consistency
         if (isLast) {
             const totalSpanHours = span.hours;
-            if (totalSpanHours < 48) {
+            if (totalSpanHours < 48 && precision === 'time' && !datesSpanYears) {
                 // Short timeline: show date + time (matching first scene)
                 return { name: `${dateStr}\n${timeStr}`, shortName: `${dateStr}\n${timeStr}` };
+            } else if (totalSpanHours < 48 && precision === 'time') {
+                return { name: `${year}\n${dateStr} ${timeStr}`, shortName: `${year}\n${dateStr} ${timeStr}` };
             } else {
                 // Long timeline: show year + date (matching first scene)
                 return { name: `${year}\n${dateStr}`, shortName: `${year}\n${dateStr}` };
@@ -1074,6 +1108,11 @@ export function generateChronologicalTicks(
         }
 
         // Intermediate scenes: Adaptive labels based on gap before this scene
+        if (datesSpanYears) {
+            const text = `${dateStr} ${year}${precision === 'time' && gapHours < 48 ? ` ${timeStr}` : ''}`;
+            return { name: text, shortName: text };
+        }
+        if (precision !== 'time') return { name: dateStr, shortName: dateStr };
         if (gapHours < 6) {
             // Gap < 6 hours: Show TIME only
             return { name: timeStr, shortName: timeStr };
@@ -1118,7 +1157,8 @@ export function generateChronologicalTicks(
                 isMajor: true,
                 isFirst: true,
                 sceneIndex: scene.sortedIndex,
-                earthDate: scene.date.toISOString()
+                earthDate: scene.date.toISOString(), precision: scene.precision,
+                labelKind: scene.precision === 'time' && span.hours < 48 ? 'datetime' : scene.precision === 'time' ? 'day' : scene.precision
             });
             lastLabeledSceneDate = scene.date; // Update last labeled scene
         } else if (i === numScenes - 1) {
@@ -1139,7 +1179,8 @@ export function generateChronologicalTicks(
                 isMajor: true,
                 isLast: true,
                 sceneIndex: scene.sortedIndex,
-                earthDate: scene.date.toISOString()
+                earthDate: scene.date.toISOString(), precision: scene.precision,
+                labelKind: scene.precision === 'time' && span.hours < 48 ? 'datetime' : scene.precision === 'time' ? 'day' : scene.precision
             });
             lastLabeledSceneDate = scene.date; // Update last labeled scene
         } else if (promoteSet.has(i)) {
@@ -1151,7 +1192,8 @@ export function generateChronologicalTicks(
                 shortName: labels.shortName,
                 isMajor: true,
                 sceneIndex: scene.sortedIndex,
-                earthDate: scene.date.toISOString()
+                earthDate: scene.date.toISOString(), precision: scene.precision,
+                labelKind: scene.precision === 'time' ? (gapFromLastLabel < 6 * 3600000 && !datesSpanYears ? 'time' : gapFromLastLabel < 48 * 3600000 ? 'datetime' : 'day') : scene.precision
             });
             lastLabeledSceneDate = scene.date; // Update last labeled scene
         } else {

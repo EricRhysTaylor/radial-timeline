@@ -230,16 +230,16 @@ describe('omnibus cost accumulator', () => {
 });
 
 describe('omnibus cost accumulator — Gemini cache provenance', () => {
-    const rates = getActivePricingTable().google['gemini-3.8-flash'];
+    const rates = getActivePricingTable().google['gemini-4-hydrogen'];
     const outputUSD = (2_000 / 1e6) * rates.outputPer1M;
 
     it('prices the call that created the Gemini cache at the input rate, not the cache-read rate', () => {
-        const created = accumulateOmnibusPassCost(createOmnibusCostAccumulator(), 'google', 'gemini-3.8-flash', geminiUsage, 'created');
+        const created = accumulateOmnibusPassCost(createOmnibusCostAccumulator(), 'google', 'gemini-4-hydrogen', geminiUsage, 'created');
         expect(created.totalCostUSD).toBeCloseTo((100_000 / 1e6) * rates.inputPer1M + outputUSD, 10);
     });
 
     it('prices a real Gemini cache hit at the cache-read rate', () => {
-        const hit = accumulateOmnibusPassCost(createOmnibusCostAccumulator(), 'google', 'gemini-3.8-flash', geminiUsage, 'hit');
+        const hit = accumulateOmnibusPassCost(createOmnibusCostAccumulator(), 'google', 'gemini-4-hydrogen', geminiUsage, 'hit');
         expect(hit.totalCostUSD).toBeCloseTo(
             (10_000 / 1e6) * rates.inputPer1M + (90_000 / 1e6) * rates.cacheReadPer1M! + outputUSD,
             10
@@ -248,10 +248,10 @@ describe('omnibus cost accumulator — Gemini cache provenance', () => {
 });
 
 describe('estimateOmnibusRunCost', () => {
-    const rates = getActivePricingTable().google['gemini-3.8-flash'];
+    const rates = getActivePricingTable().google['gemini-4-hydrogen'];
     const base = {
         provider: 'google' as const,
-        modelId: 'gemini-3.8-flash',
+        modelId: 'gemini-4-hydrogen',
         corpusInputTokens: 100_000,
         expectedOutputTokensPerQuestion: 1_000,
         questionCount: 5,

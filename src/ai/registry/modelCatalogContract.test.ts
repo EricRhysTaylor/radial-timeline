@@ -177,12 +177,12 @@ describe('model catalog dispatch contract: invariants', () => {
         }
     });
 
-    it('Gemini 2.5+/3.x models strip temperature and topP regardless of caller', () => {
-        const geminiThinking = cloudModels.filter(m =>
-            m.provider === 'google' && isGeminiThinkingFamily(m.id)
-        );
-        expect(geminiThinking.length).toBeGreaterThan(0);
-        for (const model of geminiThinking) {
+    it('Gemini catalog models strip temperature and topP regardless of caller', () => {
+        // Every Gemini model in the catalog has provider-managed sampling
+        // (2.5 / 3.x by family rule, Gemini 4 by its own constraints).
+        const gemini = cloudModels.filter(m => m.provider === 'google');
+        expect(gemini.length).toBeGreaterThan(0);
+        for (const model of gemini) {
             const { params: sanitized } = sanitizeDispatchParams(
                 'google',
                 fullyEquippedDispatch(model.id),

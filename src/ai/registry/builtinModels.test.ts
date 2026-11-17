@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BUILTIN_MODELS } from './builtinModels';
+import { getPickerModelsForProvider } from './releaseChannels';
 
 function byAlias(alias: string) {
     const model = BUILTIN_MODELS.find(entry => entry.alias === alias);
@@ -133,20 +134,27 @@ describe('BUILTIN_MODELS — Google Gemini', () => {
         expect(model.constraints?.supportsTemperature).toBe(false);
         expect(model.constraints?.supportsTopP).toBe(false);
         expect(model.constraints?.supportsExplicitCache).toBe(false);
-        // No releasedAt, so Gemini 3.8 Flash stays the Google latest-stable default.
+        // No releasedAt, so Gemini 4 Hydrogen stays the Google latest-stable default.
         expect(model.releasedAt).toBeUndefined();
     });
 
-    it('declares Gemini 3.8 Flash as the stable/speed lane', () => {
-        const model = byAlias('gemini-3.8-flash');
+    it('declares Gemini 4 Hydrogen as the stable/speed lane and the Google default', () => {
+        const model = byAlias('gemini-4-hydrogen');
         expect(model.status).toBe('stable');
         expect(model.tier).toBe('FAST');
+        expect(model.line).toBe('gemini-flash');
         expect(model.contextWindow).toBe(1048576);
         expect(model.maxOutput).toBe(65536);
         expect(model.constraints?.cacheVsCitationsExclusive).toBe(true);
-        // Sampling parameters are deprecated on the latest Gemini models.
+        // Sampling is provider-managed, and the 2.5 / 3.x family rule in
+        // modelRequestProfiles.ts does not match gemini-4-*, so the entry
+        // must declare it. Caching is implicit only (no cachedContents).
         expect(model.constraints?.supportsTemperature).toBe(false);
         expect(model.constraints?.supportsTopP).toBe(false);
+        expect(model.constraints?.supportsExplicitCache).toBe(false);
+        expect(model.releasedAt).toBe('2026-11-12');
+        // Google sorts newest-first by releasedAt; Carbon is undated, so Hydrogen leads.
+        expect(getPickerModelsForProvider(BUILTIN_MODELS, 'google')[0]?.alias).toBe('gemini-4-hydrogen');
     });
 });
 
@@ -156,7 +164,7 @@ describe('BUILTIN_MODELS — catalog policy invariants', () => {
         // Anthropic 5 (Opus 5.5 + Opus 5 continuity + Fable 5.2 premium pro
         // lane + Sonnet 5.5 BALANCED + Haiku 5.5 FAST) + OpenAI 3 (GPT-6.1 Sol
         // + GPT-6 Astra pro lane + GPT-6 Luna economy) + Google 2 (Gemini 4
-        // Carbon depth / Gemini 3.8 Flash speed) = 10 cloud models.
+        // Carbon depth / Gemini 4 Hydrogen speed) = 10 cloud models.
         //
         // Fable 5 was promoted as an explicit-choice premium model (2× Opus
         // cost), NOT an auto-default. Sonnet 5 and Haiku 4.5 were added

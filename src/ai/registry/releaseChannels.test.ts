@@ -31,7 +31,7 @@ describe('release channel curation', () => {
         // Order is not pinned — only that both lanes appear.
         expect(picker).toHaveLength(2);
         expect(picker).toContain('gemini-4-carbon');
-        expect(picker).toContain('gemini-3.8-flash');
+        expect(picker).toContain('gemini-4-hydrogen');
     });
 
     it('returns the current Anthropic model, the premium pro entry, and the one-back continuity model', () => {

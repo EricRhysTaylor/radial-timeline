@@ -151,29 +151,20 @@ describe('estimateCorpusCost', () => {
         expect(result?.totalCostUSD).toBeGreaterThan(0);
     });
 
-    // Gemini 3.8 Flash is the remaining explicit-cache (cachedContents)
-    // Gemini model. Its launch promo makes rates date-dependent, so these
-    // tests pin the clock past the promo (standard $1.50 in / $7.50 out /
-    // $0.15 cache read per 1M).
-    describe('Gemini 3.8 Flash (clock pinned past the launch promo)', () => {
-        beforeEach(() => {
-            vi.useFakeTimers({ toFake: ['Date'] });
-            vi.setSystemTime(new Date('2027-02-01T00:00:00Z'));
-        });
-        afterEach(() => {
-            vi.useRealTimers();
-        });
+    // Gemini 4 Hydrogen: $1.50 in / $7.50 out / $0.075 cache read per 1M,
+    // no promo, so no clock pinning.
+    describe('Gemini 4 Hydrogen', () => {
 
         it('surfaces a separate cache-read line', () => {
-            const result = estimateUsageCost('google', 'gemini-3.8-flash', {
+            const result = estimateUsageCost('google', 'gemini-4-hydrogen', {
                 inputTokens: 264_606,
                 outputTokens: 5_409,
                 cacheReadInputTokens: 264_584
             });
             // Cache-read pricing must flow through as its own number.
             expect(typeof result?.cacheReadCostUSD).toBe('number');
-            // 264,584 × $0.15/1M ≈ $0.0397.
-            expect(result?.cacheReadCostUSD).toBeCloseTo(0.0397, 4);
+            // 264,584 × $0.075/1M ≈ $0.0198.
+            expect(result?.cacheReadCostUSD).toBeCloseTo(0.0198, 4);
             expect(result?.outputTokens).toBe(5_409);
             expect(result?.totalCostUSD).toBeGreaterThan(0);
         });
@@ -188,13 +179,13 @@ describe('estimateCorpusCost', () => {
                 totalTokens: 140_621,
                 cacheReadInputTokens: 135_700
             };
-            const created = estimateUsageCost('google', 'gemini-3.8-flash', usage, 'created');
-            const hit = estimateUsageCost('google', 'gemini-3.8-flash', usage, 'hit');
+            const created = estimateUsageCost('google', 'gemini-4-hydrogen', usage, 'created');
+            const hit = estimateUsageCost('google', 'gemini-4-hydrogen', usage, 'hit');
 
             // Created ≈ fresh: 135,723 @ $1.50/M + 4,898 @ $7.50/M ≈ $0.2403.
             expect(created?.totalCostUSD).toBeCloseTo(0.2403, 3);
-            // Hit: 23 @ $1.50/M + 135,700 @ $0.15/M + 4,898 @ $7.50/M ≈ $0.0571.
-            expect(hit?.totalCostUSD).toBeCloseTo(0.0571, 3);
+            // Hit: 23 @ $1.50/M + 135,700 @ $0.075/M + 4,898 @ $7.50/M ≈ $0.0469.
+            expect(hit?.totalCostUSD).toBeCloseTo(0.0469, 3);
             // The created run must be materially pricier than a genuine reuse hit.
             expect((created?.totalCostUSD ?? 0)).toBeGreaterThan((hit?.totalCostUSD ?? 0) * 3);
         });
@@ -370,8 +361,8 @@ describe('estimateOmnibusCostRange', () => {
     });
 
     it('prices the priming question at the input rate for providers without an explicit write rate', () => {
-        const pricing = getActivePricingTable().google['gemini-3.8-flash'];
-        const range = estimateOmnibusCostRange({ provider: 'google', modelId: 'gemini-3.8-flash', corpusInputTokens: 50_000, expectedOutputTokensPerQuestion: 1_000, questionCount: 4, cacheWriteTtl: '1h' });
+        const pricing = getActivePricingTable().google['gemini-4-hydrogen'];
+        const range = estimateOmnibusCostRange({ provider: 'google', modelId: 'gemini-4-hydrogen', corpusInputTokens: 50_000, expectedOutputTokensPerQuestion: 1_000, questionCount: 4, cacheWriteTtl: '1h' });
         const output = 4 * (1_000 / 1e6) * pricing.outputPer1M;
         expect(range.cachedUSD).toBeCloseTo(0.05 * pricing.inputPer1M + 3 * 0.05 * (pricing.cacheReadPer1M as number) + output, 10);
         expect(range.cachedUSD as number).toBeLessThan(range.uncachedUSD);

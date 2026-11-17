@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-15T03:00:00.000Z",
+  "generatedAt": "2026-11-17T03:00:00.000Z",
   "models": [
     {
       "provider": "anthropic",
@@ -307,9 +307,9 @@
     },
     {
       "provider": "google",
-      "id": "gemini-3.8-flash",
-      "alias": "gemini-3.8-flash",
-      "label": "Gemini 3.8 Flash",
+      "id": "gemini-4-hydrogen",
+      "alias": "gemini-4-hydrogen",
+      "label": "Gemini 4 Hydrogen",
       "line": "gemini-flash",
       "tier": "FAST",
       "capabilities": [
@@ -326,12 +326,13 @@
       },
       "contextWindow": 1048576,
       "maxOutput": 65536,
-      "releasedAt": "2026-09-02",
+      "releasedAt": "2026-11-12",
       "status": "stable",
       "constraints": {
         "cacheVsCitationsExclusive": true,
         "supportsTemperature": false,
-        "supportsTopP": false
+        "supportsTopP": false,
+        "supportsExplicitCache": false
       }
     },
     {

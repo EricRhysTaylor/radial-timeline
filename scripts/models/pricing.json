@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-15T03:00:00.000Z",
+  "generatedAt": "2026-11-17T03:00:00.000Z",
   "models": [
     {
       "provider": "anthropic",
@@ -124,20 +124,11 @@
     },
     {
       "provider": "google",
-      "modelId": "gemini-3.8-flash",
-      "inputPer1M": 0.75,
-      "outputPer1M": 3.75,
+      "modelId": "gemini-4-hydrogen",
+      "inputPer1M": 1.5,
+      "outputPer1M": 7.5,
       "cacheReadPer1M": 0.075,
-      "cacheStoragePer1MPerHour": 0.5,
-      "promo": {
-        "label": "Launch pricing through Dec 31, 2026",
-        "expiresAt": "2027-01-01T00:00:00Z",
-        "standardInputPer1M": 1.5,
-        "standardOutputPer1M": 7.5,
-        "standardCacheReadPer1M": 0.15,
-        "standardCacheStoragePer1MPerHour": 1
-      },
-      "note": "Launch pricing through 2026-12-31; the promo entry switches every rate to standard on 2027-01-01. No long-context tier. Verified against ai.google.dev/gemini-api/docs/pricing on 2026-09-25."
+      "note": "Speed lane. Output includes thinking tokens. Implicit caching only (no explicit cache, so no storage charge); cache read is the implicit-hit rate. No promo, no dated change, no long-context tier listed. Free tier available. Verified against aistudio.google.com/docs/pricing on 2026-11-17."
     }
   ]
 }

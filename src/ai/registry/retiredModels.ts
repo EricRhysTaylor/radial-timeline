@@ -23,6 +23,7 @@ export const RETIRED_MODEL_SUCCESSORS: Readonly<Record<string, { successor: stri
     'claude-fable-5-1': { successor: 'claude-fable-5-2', tier: 'DEEP' },
     'gpt-5.6-luna': { successor: 'gpt-6-luna', tier: 'FAST' },
     'gemini-3.5-flash': { successor: 'gemini-3.8-flash', tier: 'FAST' },
+    'gemini-3.8-flash': { successor: 'gemini-4-hydrogen', tier: 'FAST' },
     // Google's latest-stable default is Flash, so a retired Pro pin needs
     // its own entry to stay on the depth lane.
     'gemini-3.1-pro-preview': { successor: 'gemini-4-argon', tier: 'DEEP' },

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { mergeRemotePricing, resetPricingToBuiltin } from './cost/providerPricing';
 import { TFile, TFolder, normalizePath } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import {
@@ -202,21 +203,28 @@ describe('buildUsageCostBreakdown', () => {
     it('surfaces the separately-billed Gemini cache storage charge when a TTL is supplied', () => {
         const ttlSeconds = 900; // 15m window
         const storedTokens = 140_000;
-        // Pinned past the Gemini 3.8 Flash launch promo, so the standard
-        // $1.00/1M/hr storage rate applies.
-        vi.useFakeTimers({ toFake: ['Date'] });
-        vi.setSystemTime(new Date('2027-02-01T00:00:00Z'));
-        const lines = formatUsageCostBreakdownLines('google', 'gemini-3.8-flash', {
-            inputTokens: 140_000,
-            outputTokens: 7_000,
-            rawInputTokens: 0,
-            cacheReadInputTokens: storedTokens
-        }, {
-            executionInputTokens: 140_000,
-            expectedOutputTokens: 7_000,
-            expectedPasses: 1
-        }, 'created', ttlSeconds);
-        vi.useRealTimers();
+        // No catalog model uses explicit cachedContents since Gemini 3.8 Flash
+        // retired (Carbon and Hydrogen cache implicitly), but the storage line
+        // still serves any explicit-cache Gemini model, so a synthetic one
+        // with a $1.00/1M/hr storage rate keeps it covered.
+        mergeRemotePricing({ google: { 'gemini-explicit-cache-fixture': {
+            inputPer1M: 1.5, outputPer1M: 7.5, cacheReadPer1M: 0.15, cacheStoragePer1MPerHour: 1
+        } } }, 'remote');
+        let lines: string[];
+        try {
+            lines = formatUsageCostBreakdownLines('google', 'gemini-explicit-cache-fixture', {
+                inputTokens: 140_000,
+                outputTokens: 7_000,
+                rawInputTokens: 0,
+                cacheReadInputTokens: storedTokens
+            }, {
+                executionInputTokens: 140_000,
+                expectedOutputTokens: 7_000,
+                expectedPasses: 1
+            }, 'created', ttlSeconds);
+        } finally {
+            resetPricingToBuiltin();
+        }
 
         const storageLine = lines.find(line => line.startsWith('- Cache storage (billed separately): '));
         expect(storageLine).toBeTruthy();
@@ -228,7 +236,7 @@ describe('buildUsageCostBreakdown', () => {
     });
 
     it('omits the cache storage line when no TTL is supplied', () => {
-        const lines = formatUsageCostBreakdownLines('google', 'gemini-3.8-flash', {
+        const lines = formatUsageCostBreakdownLines('google', 'gemini-4-hydrogen', {
             inputTokens: 140_000,
             outputTokens: 7_000,
             cacheReadInputTokens: 140_000

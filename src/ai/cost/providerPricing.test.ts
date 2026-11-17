@@ -97,27 +97,17 @@ describe('providerPricing', () => {
         expect(getProviderPricing('google', 'gemini-4-carbon').longContext).toBeUndefined();
     });
 
-    it('prices Gemini 3.8 Flash at launch rates, then every rate at standard after the promo ends', () => {
-        vi.useFakeTimers();
-        try {
-            vi.setSystemTime(new Date('2026-10-01T00:00:00Z'));
-            const launch = resolveProviderModelPricing('google', 'gemini-3.8-flash', 500_000);
-            expect(launch.pricingPhase).toBe('standard');
-            expect(launch.inputPer1M).toBe(0.75);
-            expect(launch.outputPer1M).toBe(3.75);
-            expect(launch.cacheReadPer1M).toBe(0.075);
-            expect(launch.cacheStoragePer1MPerHour).toBe(0.5);
-            expect(launch.promo?.label).toMatch(/Launch pricing/);
-
-            vi.setSystemTime(new Date('2027-01-02T00:00:00Z'));
-            const standard = resolveProviderModelPricing('google', 'gemini-3.8-flash', 500_000);
-            expect(standard.inputPer1M).toBe(1.5);
-            expect(standard.outputPer1M).toBe(7.5);
-            expect(standard.cacheReadPer1M).toBe(0.15);
-            expect(standard.cacheStoragePer1MPerHour).toBe(1);
-            expect(standard.promo).toBeUndefined();
-        } finally {
-            vi.useRealTimers();
+    it('prices Gemini 4 Hydrogen at one flat rate with no promo, storage or long-context tier', () => {
+        const small = resolveProviderModelPricing('google', 'gemini-4-hydrogen', 10_000);
+        const large = resolveProviderModelPricing('google', 'gemini-4-hydrogen', 900_000);
+        for (const rates of [small, large]) {
+            expect(rates.pricingPhase).toBe('standard');
+            expect(rates.inputPer1M).toBe(1.5);
+            expect(rates.outputPer1M).toBe(7.5);
+            expect(rates.cacheReadPer1M).toBe(0.075);
+            // Implicit caching only: no cachedContents, so nothing is stored.
+            expect(rates.cacheStoragePer1MPerHour).toBeUndefined();
+            expect(rates.promo).toBeUndefined();
         }
     });
 

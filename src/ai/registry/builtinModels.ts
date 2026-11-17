@@ -396,7 +396,7 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         //   - temperature/top_p/top_k are ignored; sampling is provider-managed.
         //   - thinking_level low/medium/high, default medium; RT sends no
         //     thinkingConfig. maxOutputTokens caps thinking + answer together.
-        // No releasedAt: Gemini 3.8 Flash stays the Google latest-stable
+        // No releasedAt: Gemini 4 Hydrogen stays the Google latest-stable
         // default (the depth lane is an explicit pick, as 3.1 Pro was).
         // Launch pricing through 2026-11-30; see pricing.json.
         provider: 'google',
@@ -418,32 +418,55 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         }
     },
     {
-        // Gemini 3.8 Flash (GA 2026-09-02, promoted 2026-09-25, replacing
-        // Gemini 3.5 Flash on the speed lane). ai.google.dev/gemini-api/docs/
-        // models/gemini-3.8-flash: 1,048,576 input / 65,536 output tokens,
-        // structured outputs, caching. Deltas that matter to RT:
-        //   - temperature/top_p/top_k are deprecated on the latest Gemini
-        //     models (changelog 2026-07-21), so sampling is provider-managed.
-        //   - thinking level 'minimal' returns an error; RT sends no
-        //     thinkingConfig, so the model default applies.
-        // Launch pricing through 2026-12-31 is half the standard rate; see
-        // the promo entry in pricing.json.
+        // Gemini 4 Hydrogen (GA 2026-11-12, promoted 2026-11-17, replacing
+        // Gemini 3.8 Flash on the speed lane; Google lines have no continuity
+        // slot, so 3.8 Flash retired in the same change). Google's "What's new
+        // in Gemini 4 Hydrogen" page recommends it as the upgrade from 3.8
+        // Flash. aistudio.google.com/docs/models/gemini-4-hydrogen: 1,048,576
+        // tokens shared by input, thinking and output; 65,536 output per
+        // synchronous request. $1.50 / $7.50 per MTok, cached input $0.075 —
+        // the same as 3.8 Flash's standard rate, with no launch promo.
+        // Request-shape deltas from 3.8 Flash, each a place a past onboarding
+        // broke:
+        //   - Explicit caching (cachedContents) is NOT supported; implicit
+        //     caching is on for prompts >= 4,096 tokens at 95% off. 3.8 Flash
+        //     used explicit caches, so supportsExplicitCache: false moves this
+        //     lane off the cache manager, as for Carbon.
+        //   - temperature/top_p/top_k: in-range values are ignored, out-of-range
+        //     values 400. The Google family regex in modelRequestProfiles.ts
+        //     (2.5 / 3.x) does not match gemini-4-*, so the constraints below
+        //     carry the sampling facts.
+        //   - thinking_level low/medium/high/xhigh, default HIGH (3.8 Flash
+        //     defaulted to medium); 'minimal' returns an error. The plugin sends
+        //     no thinkingConfig, so every request thinks at high: more output
+        //     tokens and latency per call than 3.8 Flash. maxOutputTokens caps
+        //     thinking and answer together.
+        //   - Thought signatures in client-managed histories must be returned
+        //     unchanged (the plugin sends single-turn requests).
+        // releasedAt keeps Hydrogen the Google latest-stable default, as 3.8
+        // Flash was; Carbon stays undated. Verified against Google's model,
+        // what's-new, pricing, changelog and deprecations pages on 2026-11-17.
+        // NOT yet smoke-tested or certified against the live API: run
+        // `npm run smoke-model -- --provider google --model gemini-4-hydrogen`
+        // and `RT_CERT_PROVIDER=google RT_CERT_MODEL=gemini-4-hydrogen
+        // npm run certify:features` before a release.
         provider: 'google',
-        id: 'gemini-3.8-flash',
-        alias: 'gemini-3.8-flash',
-        label: 'Gemini 3.8 Flash',
+        id: 'gemini-4-hydrogen',
+        alias: 'gemini-4-hydrogen',
+        label: 'Gemini 4 Hydrogen',
         line: 'gemini-flash',
         tier: 'FAST',
         capabilities: ['longContext', 'jsonStrict', 'reasoningStrong', 'highOutputCap', 'streaming'],
         personality: { reasoning: 8, writing: 8, determinism: 8 },
         contextWindow: 1048576,
         maxOutput: 65536,
-        releasedAt: '2026-09-02',
+        releasedAt: '2026-11-12',
         status: 'stable',
         constraints: {
             cacheVsCitationsExclusive: true,
             supportsTemperature: false,
-            supportsTopP: false
+            supportsTopP: false,
+            supportsExplicitCache: false
         }
     },
     {

@@ -22,7 +22,8 @@ OpenAI:    GPT-6.1 Sol                   (depth — promoted 2026-10-01, replaci
            GPT-6 Luna                    (economy — FAST tier, promoted 2026-09-25, replacing GPT-5.6 Luna)
 Google:    Gemini 4 Carbon               (depth — promoted 2026-11-15, replacing Gemini 4 Argon;
                                           implicit caching only, no explicit cachedContents)
-           Gemini 3.8 Flash              (speed — promoted 2026-09-25, replacing Gemini 3.5 Flash)
+           Gemini 4 Hydrogen             (speed — promoted 2026-11-17, replacing Gemini 3.8 Flash;
+                                          implicit caching only, thinking defaults to high)
 Ollama:    llama3, local-model           (local)
 ```
 

@@ -768,14 +768,6 @@ export const ja: DeepPartial<TranslationKeys> = {
                     label: 'ステージ / RT',
                     desc: 'ステージバッジの文字スタイル。RT ロゴは出版ステージの色に従います。',
                 },
-                transparentMode: {
-                    name: '透過モード',
-                    desc: '背景の塗りつぶしなし — どんなページやアプリにもなじみます。透過を保持するプラットフォームでは、PNG と SVG のエクスポートで機能します。',
-                },
-                backgroundColor: {
-                    name: '背景色',
-                    desc: '単色の背景を焼き込みます。透過が確実でない場合に使用してください：メールニュースレター、Kickstarter、PDF エクスポート、SVG をラスタライズするプラットフォームなど。',
-                },
                 spokesAndBorders: {
                     name: '枠線',
                     desc: 'シーンの枠線と幕の区切り線を制御します。白、黒、なし、またはカスタムカラーを選択します。',

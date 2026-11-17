@@ -753,14 +753,6 @@ export const fr: DeepPartial<TranslationKeys> = {
                     "label": "Étape / Radial Timeline",
                     "desc": "Typographie du badge d'étape. Le logo Radial Timeline suit la couleur de l'étape Publier."
                 },
-                "transparentMode": {
-                    "name": "Mode transparent",
-                    "desc": "Aucun remplissage en arrière-plan — s'adapte à une page ou à une application. Fonctionne pour les exportations PNG et SVG sur des plates-formes qui préservent la transparence."
-                },
-                "backgroundColor": {
-                    "name": "couleur de fond",
-                    "desc": "Cuit dans un fond solide. Utiliser lorsque la transparence n'est pas fiable : newsletters par e-mail, Kickstarter, PDF, ou plates-formes qui rastérisent les SVG."
-                },
                 "spokesAndBorders": {
                     "name": "Limites",
                     "desc": "Contrôle les bordures des scènes et les lignes de séparation des actes. Choisissez blanc, noir, aucun ou une couleur personnalisée."

@@ -753,14 +753,6 @@ export const vi: DeepPartial<TranslationKeys> = {
                     "label": "Giai đoạn / Radial Timeline",
                     "desc": "Kiểu chữ cho huy hiệu giai đoạn. Biểu tượng Radial Timeline sẽ theo màu của giai đoạn Xuất bản."
                 },
-                "transparentMode": {
-                    "name": "Chế độ trong suốt",
-                    "desc": "Không điền nền - thích ứng với bất kỳ trang hoặc ứng dụng nào. Hoạt động cho xuất khẩu PNG và SVG trên các nền tảng bảo toàn tính minh bạch."
-                },
-                "backgroundColor": {
-                    "name": "Màu nền",
-                    "desc": "Nướng trong một nền vững chắc. Sử dụng khi tính minh bạch không đáng tin cậy: bản tin email, Kickstarter, xuất khẩu PDF hoặc các nền tảng rasterizing SVG."
-                },
                 "spokesAndBorders": {
                     "name": "biên giới",
                     "desc": "Điều khiển đường viền cảnh và đường phân chia các hồi. Chọn trắng, đen, không có hoặc màu tùy chỉnh."

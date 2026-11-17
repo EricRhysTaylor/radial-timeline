@@ -681,16 +681,12 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
     });
 
     // ─────────────────────────────────────────────────────────────────────────
-    // TRANSPARENT MODE, BACKGROUND COLOR, SPOKES AND BORDERS (styled like Theme rows)
+    // BACKGROUND: transparent, or one solid color. Choosing a color turns
+    // transparency off; choosing Transparent turns the color off.
     // ─────────────────────────────────────────────────────────────────────────
-    const transparencySetting = new Setting(themeBody)
-        .setName(t('settings.authorProgress.styling.transparentMode.name'))
-        .setDesc(t('settings.authorProgress.styling.transparentMode.desc'));
-    transparencySetting.settingEl.addClass('ert-elementBlock', 'ert-settingRow');
-
     const bgSetting = new Setting(themeBody)
-        .setName(t('settings.authorProgress.styling.backgroundColor.name'))
-        .setDesc(t('settings.authorProgress.styling.backgroundColor.desc'));
+        .setName(t('settings.authorProgress.styling.background.name'))
+        .setDesc(t('settings.authorProgress.styling.background.desc'));
     bgSetting.settingEl.addClass('ert-elementBlock', 'ert-settingRow');
 
     let bgColorPicker: ColorSwatchHandle | null = null;
@@ -699,25 +695,31 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
     // border mode is 'sync', the border swatch needs to follow.
     let refreshBorderSwatchFromBg: (() => void) | null = null;
 
-    const updateEmphasis = (isTransparent: boolean) => {
-        if (isTransparent) {
-            bgSetting.settingEl.classList.add('is-inactive');
-            if (bgColorPicker) bgColorPicker.setDisabled(true);
-            if (bgTextInput) bgTextInput.setDisabled(true);
-        } else {
-            bgSetting.settingEl.classList.remove('is-inactive');
-            if (bgColorPicker) bgColorPicker.setDisabled(false);
-            if (bgTextInput) bgTextInput.setDisabled(false);
-        }
-    };
-
-    transparencySetting.addToggle(toggle => {
-        toggle.setValue(currentTransparent);
-        toggle.onChange(async (val) => {
-            await setAprSetting('aprCenterTransparent', val as AprStyleSettings['aprCenterTransparent']);
-            updateEmphasis(val);
-        });
+    const transparentBtn = bgSetting.controlEl.createEl('button', {
+        cls: 'ert-chip ert-typography-auto',
+        text: t('settings.authorProgress.styling.background.transparent'),
+        attr: { type: 'button' }
     });
+    const showTransparent = (isTransparent: boolean): void => {
+        transparentBtn.toggleClass('is-active', isTransparent);
+        transparentBtn.setAttr('aria-pressed', String(isTransparent));
+        bgSetting.settingEl.toggleClass('is-transparent', isTransparent);
+    };
+    // SAFE: Settings sections are standalone functions without Component lifecycle; Obsidian manages settings tab cleanup
+    transparentBtn.addEventListener('click', () => { void (async () => {
+        await setAprSetting('aprCenterTransparent', true);
+        showTransparent(true);
+    })(); });
+
+    /** Use a solid background color. */
+    const setBackgroundColor = async (color: string): Promise<void> => {
+        await setAprSettings({ aprBackgroundColor: color, aprCenterTransparent: false });
+        showTransparent(false);
+        bgColorPicker?.setValue(color);
+        bgTextInput?.setValue(color);
+        updateSourceLabel(color);
+        refreshBorderSwatchFromBg?.();
+    };
 
     // ── Source label ─────────────────────────────────────────────────────
     // Shows which preset (if any) matches the current background color.
@@ -772,15 +774,9 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
 
     const bgSwatch = colorSwatch(bgSetting.controlEl, {
         value: currentBg,
-        ariaLabel: t('settings.authorProgress.styling.backgroundColor.name'),
+        ariaLabel: t('settings.authorProgress.styling.background.name'),
         plugin,
-        onChange: (val) => { void (async () => {
-            const next = val || '#0d0d0f'; // SAFE: clearing the swatch restores the shipped background color
-            await setAprSetting('aprBackgroundColor', next as AprStyleSettings['aprBackgroundColor']);
-            bgTextInput?.setValue(next);
-            updateSourceLabel(next);
-            refreshBorderSwatchFromBg?.();
-        })(); }
+        onChange: (val) => { void setBackgroundColor(val || '#0d0d0f'); } // SAFE: clearing the swatch restores the shipped background color
     });
     bgColorPicker = bgSwatch;
 
@@ -788,18 +784,10 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
         bgTextInput = text;
         text.setPlaceholder('#0d0d0f').setValue(currentBg);
         text.inputEl.classList.add('ert-input', 'ert-input--hex');
-        text.onChange(async (val) => {
-            if (!val) return;
-            await setAprSetting('aprBackgroundColor', val as AprStyleSettings['aprBackgroundColor']);
-            bgColorPicker?.setValue(val);
-            updateSourceLabel(val);
-            refreshBorderSwatchFromBg?.();
-        });
+        bindHexTextInput(text, setBackgroundColor);
     });
 
-    updateEmphasis(currentTransparent);
-
-    // Initialize source label with current color
+    showTransparent(currentTransparent);
     updateSourceLabel(currentBg);
 
     // ── Platform preset pills ────────────────────────────────────────────
@@ -807,13 +795,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
     platformRow.createSpan({ text: t('ui.authorProgressSection.platformBackgrounds'), cls: 'ert-platform-presets__label' });
     const platformSwatches = platformRow.createDiv({ cls: 'ert-platform-presets__swatches' });
 
-    const applyPreset = async (color: string) => {
-        await setAprSetting('aprBackgroundColor', color as AprStyleSettings['aprBackgroundColor']);
-        bgColorPicker?.setValue(color);
-        bgTextInput?.setValue(color);
-        updateSourceLabel(color);
-        refreshBorderSwatchFromBg?.();
-    };
+    const applyPreset = setBackgroundColor;
 
     for (const preset of platformPresets) {
         const btn = withAccessibleLabel(platformSwatches.createEl('button', {

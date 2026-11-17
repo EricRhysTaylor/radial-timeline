@@ -767,14 +767,6 @@ export const de: DeepPartial<TranslationKeys> = {
                     label: 'Phase / RT',
                     desc: 'Typografie des Phasen-Badges. Das RT-Logo folgt der Farbe der Veröffentlichungsphase.',
                 },
-                transparentMode: {
-                    name: 'Transparenter Modus',
-                    desc: 'Keine Hintergrundfüllung — passt sich jeder Seite oder App an. Funktioniert für PNG- und SVG-Exporte auf Plattformen, die Transparenz erhalten.',
-                },
-                backgroundColor: {
-                    name: 'Hintergrundfarbe',
-                    desc: 'Fügt einen festen Hintergrund ein. Verwenden Sie dies, wenn Transparenz nicht zuverlässig ist: E-Mail-Newsletter, Kickstarter, PDF-Exporte oder Plattformen, die SVGs rastern.',
-                },
                 spokesAndBorders: {
                     name: 'Rahmen',
                     desc: 'Steuert Szenenrahmen und Aktgrenzlinien. Wählen Sie Weiß, Schwarz, keine oder eine eigene Farbe.',

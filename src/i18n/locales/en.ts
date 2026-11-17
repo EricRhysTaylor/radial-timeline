@@ -699,13 +699,10 @@ export const en = {
                 },
                 percentNumber: { label: '% Number', desc: 'Center progress number.' },
                 stageBadge: { label: 'Stage / RT', desc: 'Stage badge typography. The RT logo follows the Publish stage color.' },
-                transparentMode: {
-                    name: 'Transparent mode',
-                    desc: 'No background fill \u2014 adapts to any page or app. Works for PNG and SVG exports on platforms that preserve transparency.',
-                },
-                backgroundColor: {
-                    name: 'Background color',
-                    desc: 'Bakes in a solid background. Use when transparency isn\'t reliable: email newsletters, Kickstarter, PDF exports, or platforms that rasterize SVGs.',
+                background: {
+                    name: 'Background',
+                    desc: 'Transparent, or a solid color.',
+                    transparent: 'Transparent',
                 },
                 spokesAndBorders: {
                     name: 'Borders',
@@ -2960,7 +2957,6 @@ export const en = {
             emptyHint: 'Publish to create the image you can drag into a post.',
             dragHint: 'Drag into a post on X, Bluesky, Patreon or Kickstarter, or copy and paste it.',
             svgHint: 'SVG file. Most social sites need PNG: switch the format to PNG in the publisher.',
-            transparentWarning: 'This image has a transparent background. Bluesky and some other sites show it as black. To bake in the background color, turn off Transparent mode in the style, then publish again.',
             copyLabel: 'Copy image',
             copyPngOnly: 'Copying works for PNG files only',
             revealLabel: 'Show in file manager',

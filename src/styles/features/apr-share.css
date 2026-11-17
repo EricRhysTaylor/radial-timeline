@@ -97,12 +97,6 @@
   line-height: 1.4;
 }
 
-.ert-ui .ert-apr-share__warning {
-  color: var(--text-warning);
-  font-size: var(--font-ui-smaller);
-  line-height: 1.4;
-}
-
 .ert-ui .ert-apr-share__actions {
   display: flex;
   flex: 0 0 auto;
@@ -145,6 +139,12 @@
 .ert-ui.ert-scope--settings .ert-apr-designer .ert-typography-controls > .ert-typography-text-input {
   flex: 1 1 120px;
   width: auto;
+}
+
+/* Background is transparent or a color: while Transparent is chosen, the
+   color reads as not in use but stays clickable, since picking it switches. */
+.ert-ui.ert-scope--settings .ert-apr-designer .ert-settingRow.is-transparent :is(.ert-swatch, .ert-input--hex, .ert-bg-source-label) {
+  opacity: 0.45;
 }
 
 /* The share file beside the preview has little room: the buttons drop under

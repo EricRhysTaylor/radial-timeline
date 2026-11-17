@@ -753,14 +753,6 @@ export const es: DeepPartial<TranslationKeys> = {
                     "label": "Etiqueta de etapa / Radial Timeline",
                     "desc": "Tipografía de la etiqueta de etapa. El logotipo de Radial Timeline sigue el color de la etapa Publicar."
                 },
-                "transparentMode": {
-                    "name": "Modo transparente",
-                    "desc": "Sin relleno de fondo: se adapta a ninguna página o aplicación. Trabaja para PNG y SVG exportaciones en plataformas que preservan la transparencia."
-                },
-                "backgroundColor": {
-                    "name": "color de fondo",
-                    "desc": "Hornea en un fondo sólido. Use cuando la transparencia no es confiable: boletines de correo electrónico, Kickstarter, PDF exportaciones o plataformas que rasterizan los SVG."
-                },
                 "spokesAndBorders": {
                     "name": "fronteras",
                     "desc": "Controla los bordes de la escena y las líneas de división de los actos. Elija blanco, negro, ninguno o un color personalizado."

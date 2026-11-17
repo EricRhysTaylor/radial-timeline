@@ -767,14 +767,6 @@ export const ko: DeepPartial<TranslationKeys> = {
                     label: '단계 / RT',
                     desc: '단계 배지 타이포그래피입니다. RT 로고는 출판 단계 색상을 따릅니다.',
                 },
-                transparentMode: {
-                    name: '투명 모드',
-                    desc: '배경 채우기가 없어 어떤 페이지나 앱에도 어울립니다. 투명도를 유지하는 플랫폼에서 PNG 및 SVG 내보내기에 사용할 수 있습니다.',
-                },
-                backgroundColor: {
-                    name: '배경색',
-                    desc: '단색 배경을 고정합니다. 투명도를 신뢰할 수 없는 경우에 사용하세요: 이메일 뉴스레터, Kickstarter, PDF 내보내기, SVG를 래스터화하는 플랫폼.',
-                },
                 spokesAndBorders: {
                     name: '테두리',
                     desc: '장면 테두리와 막 구분선을 제어합니다. 흰색, 검은색, 없음 또는 사용자 지정 색상을 선택하세요.',

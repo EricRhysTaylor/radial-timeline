@@ -769,14 +769,6 @@ export const zh: DeepPartial<TranslationKeys> = {
                     label: '阶段 / RT',
                     desc: '阶段徽章的字体样式。RT 标志跟随出版阶段的颜色。',
                 },
-                transparentMode: {
-                    name: '透明模式',
-                    desc: '无背景填充 — 适配任何页面或应用。适用于在保留透明度的平台上导出 PNG 和 SVG。',
-                },
-                backgroundColor: {
-                    name: '背景颜色',
-                    desc: '嵌入纯色背景。在透明效果不可靠时使用：电子邮件通讯、Kickstarter、PDF 导出，或会将 SVG 栅格化的平台。',
-                },
                 spokesAndBorders: {
                     name: '边框',
                     desc: '控制场景边框和幕分隔线。可选择白色、黑色、无，或自定义颜色。',

@@ -88,8 +88,7 @@ The designer has these controls:
 
 - **Choose Palette**: Applies curated colors across the text elements, seeded from the Title color.
 - **Title**, **Author**, **% Number**, **Stage / RT**: Font, weight, and color for each text element. The Radial Timeline logo follows the Publish Stage color. The author name is shared by every report.
-- **Transparent mode**: No background fill, so the graphic adapts to any page. Bluesky and some other sites show a transparent background as black; the share file warns you when a published image is transparent.
-- **Background color**: Bakes in a solid background for social posts, email newsletters, Kickstarter, PDF exports, or platforms that rasterize SVGs.
+- **Background**: **Transparent**, or a solid color. Picking a color, or a site under **Platform backgrounds**, turns transparency off. Use a color for sites such as Bluesky that show a transparent image on black.
 - **Borders**: Scene borders and act division lines in white, black, none, or a custom color.
 
 ## Publish And Share

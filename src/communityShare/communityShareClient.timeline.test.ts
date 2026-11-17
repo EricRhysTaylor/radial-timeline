@@ -422,6 +422,7 @@ describe('Pause is a full outbound freeze', () => {
             connection_id: 'conn-1',
             current_secret: 'rtcs_current-secret',
             action: 'status',
+            include_preview: true,
             plugin_book_key: 'book-1'
         });
     });

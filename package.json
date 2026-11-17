@@ -110,6 +110,8 @@
 		"vitest": "^4.1.12"
 	},
 	"dependencies": {
+		"@radial-timeline/timeline-layout": "file:vendor/radial-timeline/timeline-layout.tgz",
+		"@radial-timeline/timeline-tokens": "file:vendor/radial-timeline/timeline-tokens.tgz",
 		"ajv": "^8.20.0",
 		"fflate": "0.8.3",
 		"yaml": "^2.9.1"

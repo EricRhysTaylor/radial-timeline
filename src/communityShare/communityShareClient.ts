@@ -1,3 +1,4 @@
+import { isTimelinePreviewDocument, type TimelinePreviewDocument } from './timelinePreview';
 import { apiVersion, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
@@ -1335,6 +1336,8 @@ export interface TimelineShareAnswer {
     project_id: string;
     share?: TimelineShareSummary;
     summary?: { scenes_without_stable_id: number; reveals_dropped: number[] };
+    preview_document?: TimelinePreviewDocument;
+    reader_access?: "available" | "unavailable" | "unknown";
 }
 
 export function isTimelineShareAnswer(value: unknown): value is TimelineShareAnswer {
@@ -1344,6 +1347,8 @@ export function isTimelineShareAnswer(value: unknown): value is TimelineShareAns
     return answer.ok === true
         && typeof answer.shared === 'boolean'
         && typeof answer.project_id === 'string' && COMMUNITY_UUID_RE.test(answer.project_id)
+        && (answer.preview_document === undefined || isTimelinePreviewDocument(answer.preview_document))
+        && (answer.reader_access === undefined || ["available", "unavailable", "unknown"].includes(answer.reader_access))
         && (answer.shared === false || (!!share
             && (share.status === 'private' || share.status === 'active')
             && Array.isArray(share.hidden_scene_fields)
@@ -1497,6 +1502,7 @@ export async function fetchTimelineShareStatus(plugin: RadialTimelinePlugin, boo
         connection_id: connectionId,
         current_secret: currentSecret,
         action: 'status',
+        include_preview: true,
         plugin_book_key: bookId,
     });
     const profileId = connection.profileId;

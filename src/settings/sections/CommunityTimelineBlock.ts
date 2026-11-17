@@ -33,6 +33,7 @@ import { ERT_CLASSES } from '../../ui/classes';
 import type { BookProfile, CommunityTimelineShareRecord } from '../../types/settings';
 import { addHeadingIcon, applyErtHeaderLayout } from '../wikiLink';
 import { t } from '../../i18n';
+import { renderTimelinePreview } from '../../communityShare/timelinePreview';
 
 export interface CommunityTimelineBlockProps {
     plugin: RadialTimelinePlugin;
@@ -100,8 +101,9 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
         new Setting(block).setDesc(t('ui.communityShareSection.connectToLoadNote'));
         return;
     }
-    // Pause keeps the block readable. Only Private and a missing book end it here.
-    if (!settings.sharingPaused && !canShareTimelineToCommunity(settings)) {
+    // Private level does not send a book identifier to the website.
+    const canShare = canShareTimelineToCommunity(settings);
+    if (!settings.sharingPaused && !canShare) {
         new Setting(block).setDesc(t('ui.communityShareSection.timelineLevelNote'));
         return;
     }
@@ -115,10 +117,9 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
     const paused = settings.sharingPaused;
     const key = `${settings.connection.connectionId ?? ''}:${bookId}`; // SAFE: before Community connects there is no connection id to key on
     const cached = statusCache?.key === key ? statusCache : null;
-    const answer = cached?.answer;
-    const share = answer?.share;
-
     const stale = !cached || Date.now() - cached.fetchedAt >= STATUS_TTL_MS;
+    const answer = stale ? undefined : cached?.answer;
+    const share = answer?.share;
     if (stale && !statusInflight) {
         statusInflight = true;
         const requestedAt = Date.now();
@@ -148,7 +149,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
             ? t('ui.communityShareSection.timelineStatusUnknown')
             : shareDescription(book, record, answer))
         .addToggle(toggle => {
-            toggle.setValue(record?.enabled === true).setDisabled(paused);
+            toggle.setValue(record?.enabled === true).setDisabled(paused || (!canShare && !record?.enabled));
             toggle.onChange(async next => {
                 if (!next) {
                     try {
@@ -172,7 +173,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
                 toggle.setDisabled(true);
                 try {
                     const sent = await startTimelineSharing(plugin, book);
-                    statusCache = { key, fetchedAt: Date.now(), answer: sent };
+                    statusCache = null; // Re-read the website's filtered preview after the send.
                     new Notice(sent.share?.status === 'active'
                         ? t('ui.communityShareSection.timelineUpdatedNotice')
                         : t('ui.communityShareSection.timelineSentNotice'));
@@ -184,6 +185,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
         });
 
     if (paused) addNote(shareRow, t('ui.communityShareSection.timelinePausedNote'));
+    else if (!canShare) addNote(shareRow, t('ui.communityShareSection.timelineLevelNote'));
     if (record?.enabled) addNote(shareRow, t('ui.communityShareSection.timelineStopNote'));
     if (record?.lastSentAt) {
         const sentAt = new Date(record.lastSentAt).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
@@ -198,7 +200,28 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
         addNote(shareRow, t('ui.communityShareSection.timelineNoStableIds', { count: record.scenesWithoutStableId }), 'warning');
     }
 
-    if (!record?.enabled || !answer?.shared || !share) return;
+    if (!answer?.shared || !share) return;
+
+    // An open settings pane must not keep presenting an expired preview as current.
+    const checkedAt = cached!.fetchedAt;
+    window.setTimeout(() => {
+        if (block.isConnected && statusCache?.key === key && statusCache.fetchedAt === checkedAt) rerender();
+    }, Math.max(1, STATUS_TTL_MS - (Date.now() - checkedAt) + 10));
+    const summary = block.createDiv({ cls: 'ert-community-wheel-card' });
+    const visual = summary.createDiv({ cls: 'ert-community-wheel-card__image' });
+    const text = summary.createDiv({ cls: 'ert-community-wheel-card__text' });
+    text.createDiv({ cls: 'ert-community-wheel-card__title', text: book.publicLabel || book.title });
+    const access = answer.reader_access === 'available' ? t('ui.communityShareSection.timelineReaderAvailable')
+        : answer.reader_access === 'unavailable' ? t('ui.communityShareSection.timelineReaderUnavailable')
+        : t('ui.communityShareSection.timelineReaderUnknown');
+    text.createDiv({ text: access });
+    text.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.timelineThumbnailNote') });
+    text.createDiv({ text: t('ui.communityShareSection.timelineRevealCount', { revealed: share.revealed_count, total: share.scene_count }) });
+    if (cached) text.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.timelineCheckedAt', { date: new Date(cached.fetchedAt).toLocaleString() }) });
+    if (!answer.preview_document || !renderTimelinePreview(visual, answer.preview_document)) {
+        visual.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.timelinePreviewUnavailable') });
+    }
+
 
     const reviewRow = new Setting(block)
         .setName(t('ui.communityShareSection.timelineReviewName'))
@@ -218,8 +241,8 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
         detailSaves.add(key);
         detailToggles.forEach(toggle => { toggle.setDisabled(true); });
         try {
-            const saved = await setTimelineShareDetails(plugin, bookId, details);
-            statusCache = { key, fetchedAt: Date.now(), answer: saved };
+            await setTimelineShareDetails(plugin, bookId, details);
+            statusCache = null; // A detail change needs a new reader-facing preview.
         } catch (error) {
             // A lost response does not prove the website rejected the change.
             // Re-read its state before another privacy choice can be made.
@@ -241,7 +264,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
             .setName(label)
             .addToggle(toggle => {
                 detailToggles.push(toggle);
-                toggle.setValue(!hidden.has(field)).setDisabled(paused || detailSaves.has(key)).onChange(async shown => {
+                toggle.setValue(!hidden.has(field)).setDisabled(paused || !canShare || detailSaves.has(key)).onChange(async shown => {
                     const next = new Set(hidden);
                     if (shown) next.delete(field);
                     else next.add(field);
@@ -256,7 +279,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
         .addToggle(toggle => {
             detailToggles.push(toggle);
             toggle.setValue(share.generic_subplot_names)
-            .setDisabled(paused || detailSaves.has(key))
+            .setDisabled(paused || !canShare || detailSaves.has(key))
             .onChange(async generic => {
                 await saveDetails({ genericSubplotNames: generic });
             });

@@ -37,7 +37,9 @@ describe('timeline privacy details', () => {
         state.save.mockReset();
         let rejectFirst: (error: Error) => void = () => {};
         state.save.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectFirst = reject; })).mockResolvedValue(answer);
-        const container = { createDiv: () => ({}) } as unknown as HTMLElement;
+        vi.stubGlobal('window', { setTimeout: vi.fn() });
+        const node = { createDiv: () => node };
+        const container = node as unknown as HTMLElement;
         const plugin = { settings: { communityShare: { connection: { status: 'connected', connectionId: `privacy-test-${applied}` }, sharingPaused: false } } };
         const book = { id: `privacy-test-book-${applied}`, title: 'Book', sourceFolder: 'Book' };
         const render = () => { state.rows = []; renderCommunityTimelineBlock({ plugin: plugin as never, containerEl: container, book: book as never, rerender: render }); };

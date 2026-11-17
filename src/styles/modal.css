@@ -2563,3 +2563,44 @@
 .ert-scene-release-preview p { margin-block: 0 var(--size-4-3); }
 .ert-scene-release-preview p:last-child { margin-block-end: 0; }
 .ert-scene-release-preview__break { text-align: center; }
+
+/* The release terms (SceneReleaseConsentModal), set as an agreement: numbered clauses, a rule
+   between each, room above and below. The list scrolls inside the dialog on a short window,
+   so Cancel and I agree stay in reach. */
+.ert-release-terms {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: 60vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-block: 1px solid var(--background-modifier-border);
+}
+
+.ert-release-terms__clause {
+    display: grid;
+    grid-template-columns: 2em minmax(0, 1fr);
+    column-gap: var(--size-4-3);
+    align-items: baseline;
+    margin: 0;
+    padding-block: var(--size-4-5);
+    border-block-start: 1px solid var(--background-modifier-border);
+}
+
+.ert-release-terms__clause:first-child { border-block-start: 0; }
+
+.ert-release-terms__number {
+    color: var(--text-faint);
+    font-family: var(--font-monospace);
+    font-size: var(--font-ui-small);
+    font-variant-numeric: tabular-nums;
+}
+
+.ert-release-terms__number::after { content: '.'; }
+
+.ert-release-terms__text {
+    margin: 0;
+    color: var(--text-normal);
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}

@@ -13,6 +13,12 @@ import { t } from '../i18n';
  * 5). The five points match the website's wording: both record the same
  * consent, once per account. This dialog sends nothing; the caller records the
  * agreement only when it resolves true.
+ *
+ * Set as numbered clauses, each with room above and below, because this is an
+ * agreement and should read as one (Eric, 2026-11-16). The same day he cut the
+ * fifth clause back to what a report is and what it does: what follows a
+ * take-down of a hidden scene is said where it happens, in the take-down
+ * dialog, not here.
  */
 class SceneReleaseConsentModal extends ErtModal {
     private resolved = false;
@@ -23,22 +29,27 @@ class SceneReleaseConsentModal extends ErtModal {
 
     onOpen(): void {
         this.contentEl.empty();
-        this.applyShell({ size: 'md' });
+        this.applyShell({ shellClasses: ['ert-modal--scene-release-consent'] });
         this.mountHeader({
             badge: { text: t('ui.sceneReleaseModal.badge') },
             title: t('ui.sceneReleaseModal.consentTitle'),
         });
 
-        const card = this.contentEl.createDiv({ cls: 'ert-glass-card ert-sub-card' });
-        const points = card.createEl('ul');
-        const terms = [
+        const clauses = [
             t('ui.sceneReleaseModal.consentStored'),
             t('ui.sceneReleaseModal.consentReaders'),
             t('ui.sceneReleaseModal.consentRights'),
             t('ui.sceneReleaseModal.consentAgreements'),
             t('ui.sceneReleaseModal.consentRules'),
         ];
-        for (const term of terms) points.createEl('li', { text: term });
+        // An ordered list, so a screen reader announces each clause's place;
+        // the drawn numeral is decoration over the list's own numbering.
+        const terms = this.contentEl.createEl('ol', { cls: 'ert-release-terms' });
+        clauses.forEach((text, index) => {
+            const clause = terms.createEl('li', { cls: 'ert-release-terms__clause' });
+            clause.createSpan({ cls: 'ert-release-terms__number', text: String(index + 1), attr: { 'aria-hidden': 'true' } });
+            clause.createEl('p', { cls: 'ert-release-terms__text', text });
+        });
 
         const actions = this.mountActions();
         new ButtonComponent(actions)

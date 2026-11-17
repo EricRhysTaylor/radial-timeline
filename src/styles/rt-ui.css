@@ -4304,6 +4304,12 @@
   max-width: 92vw;
 }
 
+/* The release terms read as an agreement: a wider measure than a confirm. */
+.ert-ui.ert-modal--scene-release-consent.modal {
+  width: 680px;
+  max-width: 92vw;
+}
+
 .ert-ui.ert-modal--gossamer-normalize-confirm.modal {
   width: 540px;
   max-width: 90vw;

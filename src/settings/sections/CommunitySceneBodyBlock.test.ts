@@ -122,13 +122,16 @@ describe('Share scene body', () => {
 
         const terms = dialogScreen(consentDialog());
         expect(terms.content).toContain(t('ui.sceneReleaseModal.consentTitle'));
-        expect(terms.all().filter(el => el.tag === 'li').map(el => el.text)).toEqual([
+        // Five numbered clauses, in the website's wording.
+        const clauses = terms.all().filter(el => el.tag === 'li');
+        expect(clauses.map(clause => clause.find('ert-release-terms__text')[0].text)).toEqual([
             'The text is stored on Radial Timeline\'s servers until you take it down.',
             'Each reader you name can read it. Anyone who can read it can copy it, so a release can\'t be fully recalled.',
             'You wrote it and have the right to share it.',
             'Sharing text, even privately, can matter to a publisher or a contest. Check your own agreements.',
-            'The same content rules apply as anywhere on the Community. A reader can report a scene. That hides it and sends its text to our AI provider to be checked against the rules. It comes back if the check finds no breach. If you take a scene down while it is hidden this way, the scenes you release or update afterwards are checked the same way before your readers see them. If the check found that the scene you took down breaks a content rule, and it finds that of a scene you release afterwards, your account is flagged: your author page, timelines and scenes are hidden, and posting and sharing stop, until the flag is reviewed. A hold over a scene\'s rating doesn\'t count.',
+            'The Community\'s terms of use apply to private scenes too. A reader can report a scene that violates them. A reported scene is hidden and its text is sent to our AI provider to be checked. The scene is restored if the check finds no violation.',
         ]);
+        expect(clauses.map(clause => clause.find('ert-release-terms__number')[0].text)).toEqual(['1', '2', '3', '4', '5']);
         expect(terms.buttons.map(button => button.text)).toEqual(['Cancel', 'I agree']);
 
         await terms.buttonNamed('Cancel').click();

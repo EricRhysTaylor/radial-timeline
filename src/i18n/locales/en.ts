@@ -6889,7 +6889,7 @@ export const en = {
             consentReaders: 'Each reader you name can read it. Anyone who can read it can copy it, so a release can\'t be fully recalled.',
             consentRights: 'You wrote it and have the right to share it.',
             consentAgreements: 'Sharing text, even privately, can matter to a publisher or a contest. Check your own agreements.',
-            consentRules: 'The same content rules apply as anywhere on the Community. A reader can report a scene. That hides it and sends its text to our AI provider to be checked against the rules. It comes back if the check finds no breach. If you take a scene down while it is hidden this way, the scenes you release or update afterwards are checked the same way before your readers see them. If the check found that the scene you took down breaks a content rule, and it finds that of a scene you release afterwards, your account is flagged: your author page, timelines and scenes are hidden, and posting and sharing stop, until the flag is reviewed. A hold over a scene\'s rating doesn\'t count.',
+            consentRules: 'The Community\'s terms of use apply to private scenes too. A reader can report a scene that violates them. A reported scene is hidden and its text is sent to our AI provider to be checked. The scene is restored if the check finds no violation.',
             consentAgree: 'I agree',
             listTitle: 'Release scenes',
             listSubtitle: 'The scenes of {{book}}, in manuscript order. A released scene is read only by the readers you name on the website.',

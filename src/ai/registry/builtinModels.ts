@@ -155,9 +155,11 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // thinking tokens count toward max_tokens and a prompt line no longer
         // suppresses thinking, so a small max_tokens can end before any text.
         // Verified against Anthropic's Fable 5.2 overview, migration guide and
-        // pricing pages on 2026-11-15. NOT yet smoke-tested against the live
-        // API: run `npm run smoke-model -- --provider anthropic --model
-        // claude-fable-5-2` before a release.
+        // pricing pages on 2026-11-15. Smoke-tested against the live API on
+        // 2026-11-17 (`npm run smoke-model`): PASS first call, HTTP 200,
+        // stop_reason end_turn, {"ok": true} via output_config.format; 222
+        // input / 9 output tokens, 0 thinking tokens at effort medium. Not yet
+        // certified on a real corpus (`npm run certify:features`).
         provider: 'anthropic',
         id: 'claude-fable-5-2',
         alias: 'claude-fable-5-2',

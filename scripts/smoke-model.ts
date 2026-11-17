@@ -68,6 +68,8 @@ interface ProbeResult {
     body: string;
     sentParams: string[];
     omittedParams: string[];
+    /** Stop reason and token usage the provider reported, for the run record. */
+    usage?: string;
 }
 
 /**
@@ -147,6 +149,7 @@ async function smokeAnthropic(model: string, key: string): Promise<ProbeResult> 
         body: JSON.stringify(body),
     });
     const text = await res.text();
+    const usage = anthropicUsage(text);
 
     // Response-shape checks. Always-on-thinking path: the JSON must arrive in a
     // text block and parse to {ok: true}. Forced-tool path: the tool input must
@@ -163,9 +166,15 @@ async function smokeAnthropic(model: string, key: string): Promise<ProbeResult> 
                 body: JSON.stringify({ error: { message, ...detail } }),
                 sentParams,
                 omittedParams,
+                usage,
             });
             if (parsed.stop_reason === 'refusal') {
                 return softFail('The model refused the smoke request (stop_reason refusal). Read stop_details before changing the profile.', {});
+            }
+            // Thinking shares max_tokens on always-on-thinking models (Fable 5.2+),
+            // so a max_tokens stop can arrive with no answer text at all.
+            if (parsed.stop_reason === 'max_tokens') {
+                return softFail('Response stopped at max_tokens before the answer completed (thinking counts toward max_tokens).', {});
             }
             if (alwaysOnThinking) {
                 const textBlock = parsed.content?.find(b => b.type === 'text');
@@ -188,7 +197,17 @@ async function smokeAnthropic(model: string, key: string): Promise<ProbeResult> 
             // Response wasn't JSON we could parse — let the normal pass/fail flow handle it.
         }
     }
-    return { status: res.status, body: text, sentParams, omittedParams };
+    return { status: res.status, body: text, sentParams, omittedParams, usage };
+}
+
+function anthropicUsage(raw: string): string | undefined {
+    try {
+        const parsed = JSON.parse(raw) as { stop_reason?: string; usage?: Record<string, unknown> };
+        if (!parsed.usage) return undefined;
+        return `stop_reason=${parsed.stop_reason ?? 'none'} usage=${JSON.stringify(parsed.usage)}`;
+    } catch {
+        return undefined;
+    }
 }
 
 /**
@@ -302,7 +321,45 @@ async function smokeGoogle(model: string, key: string): Promise<ProbeResult> {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body),
     });
-    return { status: res.status, body: await res.text(), sentParams, omittedParams };
+    const text = await res.text();
+    let usage: string | undefined;
+
+    // Response-shape checks, matching geminiApi.ts: anything but finishReason
+    // STOP is a failure there (MAX_TOKENS included — thinking shares
+    // maxOutputTokens), and the JSON must arrive in the text parts.
+    if (res.status >= 200 && res.status < 300) {
+        try {
+            const parsed = JSON.parse(text) as {
+                candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>;
+                usageMetadata?: Record<string, unknown>;
+            };
+            const candidate = parsed.candidates?.[0];
+            usage = `finishReason=${candidate?.finishReason ?? 'none'} usage=${JSON.stringify(parsed.usageMetadata ?? {})}`;
+            const softFail = (message: string, detail: Record<string, unknown>): ProbeResult => ({
+                status: 422,
+                body: JSON.stringify({ error: { message, ...detail } }),
+                sentParams,
+                omittedParams,
+                usage,
+            });
+            if (candidate?.finishReason !== 'STOP') {
+                return softFail(`Response did not complete (finishReason ${candidate?.finishReason ?? 'missing'}).`, {});
+            }
+            const raw = (candidate.content?.parts ?? [])
+                .filter(p => p.thought !== true)
+                .map(p => p.text ?? '')
+                .join('')
+                .trim();
+            let ok: unknown = undefined;
+            try { ok = (JSON.parse(raw) as { ok?: unknown }).ok; } catch { /* handled below */ }
+            if (ok !== true) {
+                return softFail('Structured output did not arrive as {"ok": true} in the text parts.', { text: raw.slice(0, 200) });
+            }
+        } catch {
+            // Response wasn't JSON we could parse — let the normal pass/fail flow handle it.
+        }
+    }
+    return { status: res.status, body: text, sentParams, omittedParams, usage };
 }
 
 async function main(): Promise<void> {
@@ -336,6 +393,9 @@ async function main(): Promise<void> {
     console.log(`${COLOR.dim}Sent parameters:    ${result.sentParams.join(', ')}${COLOR.reset}`);
     if (result.omittedParams.length > 0) {
         console.log(`${COLOR.dim}Omitted (per profile): ${result.omittedParams.join(', ')}${COLOR.reset}`);
+    }
+    if (result.usage) {
+        console.log(`${COLOR.dim}Provider reported:  ${result.usage}${COLOR.reset}`);
     }
     console.log('');
 

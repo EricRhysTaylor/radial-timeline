@@ -78,6 +78,8 @@ if (isReleaseBuild) {
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault Fresh/.obsidian/plugins/radial-timeline", name: "Fresh", beta: true },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault Sherlock Holmes/.obsidian/plugins/radial-timeline", name: "Sherlock Holmes", beta: true },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault Pride & Prejudice Demo/.obsidian/plugins/radial-timeline", name: "P&P", beta: true },
+		// Model onboarding test vault: reset with `npm run model-vault:reset`.
+		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault Model Onboarding/.obsidian/plugins/radial-timeline", name: "Model Onboarding", beta: true },
 		{ path: "/Users/ericrhystaylor/Documents/Author Eric Rhys Taylor/Obsidian Vault Author timelapse/.obsidian/plugins/radial-timeline", name: "Timelapse", beta: true },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Pride & Prejudice Demo/.obsidian/plugins/radial-timeline", name: "P&P Demo", beta: true },
 		{ path: "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Demo Vaults/Obsidian Vault Sherlock Holmes Demo/.obsidian/plugins/radial-timeline", name: "Sherlock Demo", beta: true },

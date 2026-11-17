@@ -60,6 +60,7 @@
 		"certify:anthropic": "RT_USE_LIVE_OBSIDIAN_REQUEST=1 vitest run src/ai/certification/anthropicCertification.test.ts",
 		"certify:features": "RT_USE_LIVE_OBSIDIAN_REQUEST=1 vitest run src/ai/certification/featureCertification.test.ts",
 		"smoke-model": "tsx scripts/smoke-model.ts",
+		"model-vault:reset": "node scripts/model-onboarding-vault.mjs",
 		"css-drift": "node scripts/css-drift-check.mjs",
 		"fallback-gate": "node scripts/fallback-gate.mjs",
 		"scan-ert": "node scripts/scan-ert-classes.mjs",

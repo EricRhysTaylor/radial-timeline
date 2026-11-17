@@ -52,7 +52,15 @@ A 4xx response names the offending parameter. Update `modelRequestProfiles.ts` t
 
 Do not skip this step. Do not assume the older sibling model's profile is correct. Do not invent fallback paths in the sanitizer to paper over a wrong profile.
 
-### 5. Run `npm run gates` — all 11 must pass
+### 5. Certify the features on the model onboarding test vault
+
+```
+RT_CERT_PROVIDER=<provider> RT_CERT_MODEL=<model-id> npm run certify:features
+```
+
+Runs Pulse, Summary and Synopsis, Gossamer and Inquiry through the production builders and validators on *The Tidewater Ledger* (`tests/fixtures/model-onboarding`): a small, unpublished novella with planted faults, so a run costs cents and Inquiry cannot answer from memory. The report in `docs/audits/feature-certification/` records spend and which planted faults Inquiry found; compare it with the incumbent's report. Before a release, also run the full Pride & Prejudice book for the long-context paths. To click through the features in Obsidian, `npm run model-vault:reset` gives a fresh copy of the vault (see the fixture README).
+
+### 6. Run `npm run gates` — all 11 must pass
 
 The catalog dispatch contract test auto-iterates `BUILTIN_MODELS` so the new model is exercised through the sanitizer immediately. The model coverage gate enforces cross-file consistency.
 

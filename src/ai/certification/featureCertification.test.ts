@@ -1,12 +1,22 @@
 /**
- * Live feature certification — runs the three AI features (Pulse triplet
- * analysis, Gossamer, Inquiry) end-to-end against ONE real provider model,
- * on a real manuscript read from an Obsidian vault on disk.
+ * Live feature certification — runs the AI features (Pulse triplet analysis,
+ * Summary and Synopsis, Gossamer, Inquiry) end-to-end against ONE real
+ * provider model, on a manuscript read from an Obsidian vault on disk.
  *
  * The request builders, response parsers and validators are the production
  * ones; only the Obsidian app (vault / metadataCache / modals / Notices) is
- * replaced by the in-memory test app. A model is certified for RT when all
- * three features return output that passes the production validators.
+ * replaced by the in-memory test app. A model is certified for Radial Timeline
+ * when every feature returns output that passes the production validators.
+ *
+ * The default corpus is the model onboarding test vault checked into this
+ * repo (tests/fixtures/model-onboarding): a short original novella, about
+ * 8,300 words in 12 scenes, with 15 Save The Cat beat notes. It is small to
+ * keep a run cheap, and unpublished so a model cannot answer Inquiry from
+ * memory when the plugin sent it a broken corpus. Its answer key lists faults
+ * planted in the prose; the report says which ones the Inquiry run found.
+ * Detection is reported, never gated. The small corpus never reaches a
+ * long-context price tier, so before a release also run the full Pride &
+ * Prejudice book (RT_CERT_VAULT + RT_CERT_BOOK below).
  *
  * Run (skipped unless live transport and the provider's key are present):
  *   RT_CERT_PROVIDER=anthropic RT_CERT_MODEL=claude-opus-5-5 npm run certify:features
@@ -14,10 +24,16 @@
  * Env:
  *   RT_CERT_PROVIDER   anthropic | openai | google          (required)
  *   RT_CERT_MODEL      catalog model id, e.g. gpt-6.1-sol     (required)
- *   RT_CERT_VAULT      vault folder (default: ../Test Vaults/Obsidian Vault AI Certification)
- *   RT_CERT_BOOK       book folder inside the vault (default: Pride & Prejudice)
- *   RT_CERT_FEATURES   comma list of pulse,gossamer,inquiry (default: all three)
+ *   RT_CERT_VAULT      vault folder (default: tests/fixtures/model-onboarding/vault)
+ *   RT_CERT_BOOK       book folder inside the vault (default: The Tidewater Ledger)
+ *                      Long run: RT_CERT_VAULT='../Test Vaults/Obsidian Vault AI Certification'
+ *                      RT_CERT_BOOK='Pride & Prejudice'
+ *   RT_CERT_FEATURES   comma list of pulse,summary,gossamer,inquiry (default: all four)
  *   RT_CERT_PULSE_TRIPLETS  how many Pulse triplets to run (default: 3)
+ *   RT_CERT_SUMMARY_SCENES  how many scenes get a Summary + Synopsis (default: 2)
+ *   RT_CERT_INQUIRY_QUESTION  canonical question id (default: payoff-abandoned-threads)
+ *   RT_CERT_ANSWER_KEY planted-fault answer key (default: the fixture's, used
+ *                      only when its book matches RT_CERT_BOOK)
  *   Keys: RT_<PROVIDER>_API_KEY or ANTHROPIC_API_KEY / OPENAI_API_KEY /
  *         GEMINI_API_KEY (GOOGLE_API_KEY)
  *
@@ -31,12 +47,16 @@ type CertProvider = 'anthropic' | 'openai' | 'google';
 
 const PROVIDER = (process.env.RT_CERT_PROVIDER ?? '').trim() as CertProvider | '';
 const MODEL_ID = (process.env.RT_CERT_MODEL ?? '').trim();
-const VAULT_PATH = (process.env.RT_CERT_VAULT ?? '').trim()
-    || resolve(process.cwd(), '..', 'Test Vaults', 'Obsidian Vault AI Certification');
-const BOOK_FOLDER = (process.env.RT_CERT_BOOK ?? '').trim() || 'Pride & Prejudice';
-const FEATURES = new Set(((process.env.RT_CERT_FEATURES ?? '').trim() || 'pulse,gossamer,inquiry')
+const FIXTURE_DIR = resolve(process.cwd(), 'tests', 'fixtures', 'model-onboarding');
+const VAULT_PATH = (process.env.RT_CERT_VAULT ?? '').trim() || join(FIXTURE_DIR, 'vault');
+const BOOK_FOLDER = (process.env.RT_CERT_BOOK ?? '').trim() || 'The Tidewater Ledger';
+const FEATURE_ORDER = ['pulse', 'summary', 'gossamer', 'inquiry'] as const;
+const FEATURES = new Set(((process.env.RT_CERT_FEATURES ?? '').trim() || FEATURE_ORDER.join(','))
     .split(',').map(entry => entry.trim().toLowerCase()).filter(Boolean));
 const PULSE_TRIPLETS = Math.max(1, Number.parseInt(process.env.RT_CERT_PULSE_TRIPLETS ?? '3', 10) || 3);
+const SUMMARY_SCENES = Math.max(1, Number.parseInt(process.env.RT_CERT_SUMMARY_SCENES ?? '2', 10) || 2);
+const INQUIRY_QUESTION_ID = (process.env.RT_CERT_INQUIRY_QUESTION ?? '').trim() || 'payoff-abandoned-threads';
+const ANSWER_KEY_PATH = (process.env.RT_CERT_ANSWER_KEY ?? '').trim() || join(FIXTURE_DIR, 'answer-key.json');
 const LIVE_TRANSPORT = process.env.RT_USE_LIVE_OBSIDIAN_REQUEST === '1';
 
 function readKey(provider: CertProvider | ''): string {
@@ -73,6 +93,8 @@ import { asBeatFrontmatter, readBeatPurpose } from '../../utils/frontmatter';
 import { buildGossamerEvidenceDocument } from '../../gossamer/evidence/buildGossamerEvidence';
 import { buildUnifiedBeatAnalysisCacheParts, getUnifiedBeatAnalysisJsonSchema, type UnifiedBeatInfo } from '../prompts/unifiedBeatAnalysis';
 import { unwrapStructuredEnvelope } from '../structuredResponseUnwrap';
+import { extractJsonPayload } from '../runtime/jsonValidator';
+import { countWords } from '../../utils/text';
 import { validateGossamerResponse } from '../gossamer/responseValidation';
 import { InquiryRunnerService } from '../../inquiry/runner/InquiryRunnerService';
 import { ALL_CANONICAL_QUESTIONS } from '../../inquiry/questions/canonicalQuestions';
@@ -80,10 +102,19 @@ import type { CorpusManifestEntry, InquiryRunnerInput } from '../../inquiry/runn
 import { INQUIRY_SCHEMA_VERSION } from '../../inquiry/constants';
 import { hashString } from '../../inquiry/services/InquiryCorpusService';
 import { OutputProfileStore } from '../cost/outputProfile';
+import {
+    buildSummaryRunRequest,
+    buildSynopsisRunRequest,
+    parseSummaryReply,
+    parseSynopsisReply,
+    resolveSummaryTargetWords
+} from '../../sceneAnalysis/summaryRefresh';
+import { getSynopsisGenerationWordLimit } from '../../utils/synopsisLimits';
+import type { InquiryFinding } from '../../inquiry/state';
 
 type FeatureCase = {
     id: string;
-    feature: 'pulse' | 'gossamer' | 'inquiry';
+    feature: typeof FEATURE_ORDER[number];
     passed: boolean;
     durationMs: number;
     summary: string;
@@ -92,7 +123,33 @@ type FeatureCase = {
     usage?: TokenUsage | null;
     costUSD?: number;
     sample?: unknown;
+    /** Inquiry only: which answer-key faults its findings mention. */
+    plantedFaults?: { id: string; found: boolean }[];
 };
+
+type AnswerKey = {
+    book: string;
+    faults: { id: string; kind: string; description: string; keywords: string[] }[];
+};
+
+/** The answer key for the corpus under test, or null when the book has none. */
+function loadAnswerKey(): AnswerKey | null {
+    if (!existsSync(ANSWER_KEY_PATH)) return null;
+    const key = JSON.parse(readFileSync(ANSWER_KEY_PATH, 'utf8')) as AnswerKey;
+    return key.book === BOOK_FOLDER ? key : null;
+}
+
+/** A planted fault counts as found when one finding mentions any of its keywords. */
+function scorePlantedFaults(findings: InquiryFinding[]): FeatureCase['plantedFaults'] {
+    const key = loadAnswerKey();
+    if (!key) return undefined;
+    const texts = findings.map(finding => [finding.headline, ...(finding.bullets ?? []), finding.recommendedAction ?? '']
+        .join(' ').toLowerCase());
+    return key.faults.map(fault => ({
+        id: fault.id,
+        found: texts.some(text => fault.keywords.some(keyword => text.includes(keyword.toLowerCase())))
+    }));
+}
 
 const REPORT_DIR = resolve(process.cwd(), 'docs', 'audits', 'feature-certification');
 
@@ -271,6 +328,74 @@ async function certifyPulse(plugin: never, app: ReturnType<typeof createInMemory
     return cases;
 }
 
+/**
+ * Summary then Synopsis, the two passes of a Summary refresh, through the
+ * production request builders and reply parsers. The Synopsis is written
+ * from the new Summary, as in the plugin. Production truncates an over-long
+ * Synopsis, so the case checks the raw reply: a model that ignores the hard
+ * word cap fails here instead of having its last sentence cut off silently.
+ */
+async function certifySummary(plugin: never, app: ReturnType<typeof createInMemoryApp>): Promise<FeatureCase[]> {
+    const client = getAIClient(plugin);
+    primeClient(client);
+    const settings = (plugin as { settings: Parameters<typeof resolveSummaryTargetWords>[0] }).settings;
+    const targetWords = resolveSummaryTargetWords(settings);
+    const maxWords = getSynopsisGenerationWordLimit(settings);
+    const scenes = (await getAllSceneData(plugin, app.vault as never))
+        .sort((a, b) => placementOf(a.file.name) - placementOf(b.file.name));
+    const step = Math.max(1, Math.floor(scenes.length / (SUMMARY_SCENES + 1)));
+    const targets = Array.from({ length: Math.min(SUMMARY_SCENES, scenes.length) }, (_, index) => scenes[Math.min(scenes.length - 1, step * (index + 1))]);
+    const cases: FeatureCase[] = [];
+    for (const scene of targets) {
+        cases.push(await timed(`summary:${scene.file.basename}`, 'summary', async () => {
+            const summaryRun = await client.run({ ...buildSummaryRunRequest(scene, targetWords), ...pinned() });
+            const summaryUsage = extractTokenUsage(summaryRun.provider, summaryRun.responseData);
+            const summaryCost = costOf(summaryUsage, summaryRun.validation?.providerCacheStatus);
+            if (summaryRun.aiStatus !== 'success' || !summaryRun.content) {
+                return { passed: false, summary: `Summary run ${summaryRun.aiStatus}`, refusal: refusalOf(summaryRun), error: summaryRun.error, usage: summaryUsage, costUSD: summaryCost };
+            }
+            const summary = parseSummaryReply(summaryRun.content);
+            if (!summary.ok) {
+                return { passed: false, summary: `Summary parser rejected the reply: ${summary.problem}`, usage: summaryUsage, costUSD: summaryCost };
+            }
+            const synopsisRun = await client.run({ ...buildSynopsisRunRequest(scene, summary.text, maxWords), ...pinned() });
+            const synopsisUsage = extractTokenUsage(synopsisRun.provider, synopsisRun.responseData);
+            const usage = sumUsage(summaryUsage, synopsisUsage);
+            const costUSD = (summaryCost ?? 0) + (costOf(synopsisUsage, synopsisRun.validation?.providerCacheStatus) ?? 0);
+            if (synopsisRun.aiStatus !== 'success' || !synopsisRun.content) {
+                return { passed: false, summary: `Synopsis run ${synopsisRun.aiStatus}`, refusal: refusalOf(synopsisRun), error: synopsisRun.error, usage, costUSD };
+            }
+            const synopsis = parseSynopsisReply(synopsisRun.content, maxWords);
+            if (!synopsis.ok) {
+                return { passed: false, summary: `Synopsis parser rejected the reply: ${synopsis.problem}`, usage, costUSD };
+            }
+            const rawSynopsis = (JSON.parse(extractJsonPayload(synopsisRun.content)) as { synopsis: string }).synopsis.trim();
+            const rawWords = countWords(rawSynopsis);
+            const summaryWords = countWords(summary.text);
+            const overCap = rawWords > maxWords;
+            return {
+                passed: !overCap,
+                summary: overCap
+                    ? `Synopsis ran ${rawWords} words, over the ${maxWords}-word cap.`
+                    : `Summary ${summaryWords} words (target ${targetWords}); Synopsis ${rawWords} words (cap ${maxWords}); both passed the production parsers.`,
+                usage,
+                costUSD,
+                sample: { summary: summary.text, synopsis: rawSynopsis }
+            };
+        }));
+    }
+    return cases;
+}
+
+function sumUsage(a: TokenUsage | null | undefined, b: TokenUsage | null | undefined): TokenUsage | null {
+    if (!a || !b) return a ?? b ?? null;
+    const total = { ...a } as Record<string, unknown>;
+    for (const [field, value] of Object.entries(b)) {
+        if (typeof value === 'number') total[field] = (typeof total[field] === 'number' ? total[field] as number : 0) + value;
+    }
+    return total as TokenUsage;
+}
+
 async function certifyGossamer(plugin: never, app: ReturnType<typeof createInMemoryApp>): Promise<FeatureCase> {
     return timed('gossamer:momentum', 'gossamer', async () => {
         const client = getAIClient(plugin);
@@ -339,7 +464,7 @@ async function certifyGossamer(plugin: never, app: ReturnType<typeof createInMem
 }
 
 async function certifyInquiry(plugin: never, app: ReturnType<typeof createInMemoryApp>): Promise<FeatureCase> {
-    return timed('inquiry:setup-core', 'inquiry', async () => {
+    return timed(`inquiry:${INQUIRY_QUESTION_ID}`, 'inquiry', async () => {
         const client = getAIClient(plugin);
         primeClient(client);
         const scenes = (await getAllSceneData(plugin, app.vault as never))
@@ -352,8 +477,8 @@ async function certifyInquiry(plugin: never, app: ReturnType<typeof createInMemo
             mode: 'full',
             isTarget: false
         }));
-        const question = ALL_CANONICAL_QUESTIONS.find(entry => entry.id === 'setup-core');
-        if (!question) throw new Error('Canonical question setup-core is missing.');
+        const question = ALL_CANONICAL_QUESTIONS.find(entry => entry.id === INQUIRY_QUESTION_ID);
+        if (!question) throw new Error(`Canonical question ${INQUIRY_QUESTION_ID} is missing.`);
         const fingerprintSource = entries.map(entry => `${entry.path}:${entry.sceneId ?? ''}:${entry.mtime}:${entry.mode}`).sort().join('|');
         const input: InquiryRunnerInput = {
             scope: 'book',
@@ -386,11 +511,16 @@ async function certifyInquiry(plugin: never, app: ReturnType<typeof createInMemo
         const usage = (trace as { usage?: TokenUsage }).usage ?? null;
         const findings = result.findings ?? [];
         const passed = result.aiStatus === 'success' && findings.length > 0;
+        const plantedFaults = passed ? scorePlantedFaults(findings) : undefined;
+        const plantedNote = plantedFaults
+            ? ` Planted faults found: ${plantedFaults.filter(fault => fault.found).length}/${plantedFaults.length}.`
+            : '';
         return {
             passed,
             summary: passed
-                ? `Inquiry returned ${findings.length} finding(s) over ${entries.length} scenes; verdict and refs passed the production result builder.`
+                ? `Inquiry returned ${findings.length} finding(s) over ${entries.length} scenes; verdict and refs passed the production result builder.${plantedNote}`
                 : `Inquiry ${result.aiStatus ?? 'unknown'}: ${result.aiReason ?? ''}`,
+            plantedFaults,
             error: passed ? undefined : (result as { aiError?: string }).aiError ?? result.aiReason,
             usage,
             costUSD: costOf(usage, trace.cacheStatus),
@@ -401,7 +531,7 @@ async function certifyInquiry(plugin: never, app: ReturnType<typeof createInMemo
 
 /**
  * A run limited by RT_CERT_FEATURES keeps the model's recorded cases for the
- * features it did not run, so one report per model always shows all three.
+ * features it did not run, so one report per model always shows every feature.
  */
 function mergeWithPriorReport(cases: FeatureCase[]): FeatureCase[] {
     const priorPath = join(REPORT_DIR, `${MODEL_ID}.json`);
@@ -410,7 +540,19 @@ function mergeWithPriorReport(cases: FeatureCase[]): FeatureCase[] {
     if (prior.book !== BOOK_FOLDER || !Array.isArray(prior.cases)) return cases;
     const rerun = new Set(cases.map(entry => entry.feature));
     return [...prior.cases.filter(entry => !rerun.has(entry.feature)), ...cases]
-        .sort((a, b) => ['pulse', 'gossamer', 'inquiry'].indexOf(a.feature) - ['pulse', 'gossamer', 'inquiry'].indexOf(b.feature));
+        .sort((a, b) => FEATURE_ORDER.indexOf(a.feature) - FEATURE_ORDER.indexOf(b.feature));
+}
+
+function plantedFaultLines(cases: FeatureCase[]): string[] {
+    const scored = cases.find(entry => entry.plantedFaults);
+    const key = loadAnswerKey();
+    if (!scored?.plantedFaults || !key) return [];
+    return [
+        `Planted faults (${scored.id}; reported, not gated):`,
+        '',
+        ...scored.plantedFaults.map(fault => `- ${fault.found ? 'found' : 'missed'}: ${fault.id} — ${key.faults.find(entry => entry.id === fault.id)?.description ?? ''}`),
+        ''
+    ];
 }
 
 function writeReport(runCases: FeatureCase[]): void {
@@ -428,6 +570,7 @@ function writeReport(runCases: FeatureCase[]): void {
         `- Result: ${cases.every(entry => entry.passed) ? 'PASS' : 'FAIL'}`,
         `- Estimated spend: $${totalCost.toFixed(4)}`,
         '',
+        ...plantedFaultLines(cases),
         '| Case | Result | Seconds | Input tok | Output tok | Cost | Notes |',
         '| --- | --- | --- | --- | --- | --- | --- |',
         ...cases.map(entry => `| ${entry.id} | ${entry.passed ? 'PASS' : 'FAIL'} | ${(entry.durationMs / 1000).toFixed(1)} | ${entry.usage?.inputTokens ?? '—'} | ${entry.usage?.outputTokens ?? '—'} | ${entry.costUSD !== undefined ? `$${entry.costUSD.toFixed(4)}` : '—'} | ${(entry.refusal ? `refusal: ${entry.refusal}. ` : '') + (entry.passed ? entry.summary : (entry.error ?? entry.summary))}`.replace(/\n/g, ' ') + ' |'),
@@ -437,7 +580,7 @@ function writeReport(runCases: FeatureCase[]): void {
 }
 
 describe.skipIf(!LIVE_TRANSPORT || !PROVIDER || !MODEL_ID || !API_KEY)('Live feature certification', () => {
-    it(`certifies Pulse, Gossamer and Inquiry on ${PROVIDER}/${MODEL_ID}`, async () => {
+    it(`certifies Pulse, Summary, Gossamer and Inquiry on ${PROVIDER}/${MODEL_ID}`, async () => {
         resetPricingToBuiltin();
         const app = createInMemoryApp(loadBookFiles());
         const plugin = createPlugin(app);
@@ -447,6 +590,7 @@ describe.skipIf(!LIVE_TRANSPORT || !PROVIDER || !MODEL_ID || !API_KEY)('Live fea
         const cases: FeatureCase[] = [];
         try {
             if (FEATURES.has('pulse')) cases.push(...await certifyPulse(plugin, app));
+            if (FEATURES.has('summary')) cases.push(...await certifySummary(plugin, app));
             if (FEATURES.has('gossamer')) cases.push(await certifyGossamer(plugin, app));
             if (FEATURES.has('inquiry')) cases.push(await certifyInquiry(plugin, app));
         } finally {

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "book": "The Tidewater Ledger",
+  "note": "Faults planted on purpose in the model onboarding test vault. The story was written for this vault and is unpublished, so a model cannot answer from memory. A planted fault counts as found when one Inquiry finding mentions any of its keywords (case-insensitive). Detection is a quality signal reported beside the pass/fail result, never a gate: models phrase findings differently. tests/model-onboarding-fixture.test.ts checks that each plant is still in the prose (plantText in the first plantedIn scene) and that an abandoned thread stays abandoned (no absentAfter term in any later scene).",
+  "faults": [
+    {
+      "id": "box-14-key",
+      "kind": "abandoned-thread",
+      "description": "Wren finds a brass key tagged \"Box 14\" hidden in the ledger's back cover and vows to find what it opens. It is mentioned once more and never resolved.",
+      "plantedIn": [
+        "scn_tw020002",
+        "scn_tw050005"
+      ],
+      "plantText": "Box 14",
+      "keywords": [
+        "box 14",
+        "brass key"
+      ],
+      "absentAfter": {
+        "scene": "scn_tw050005",
+        "terms": [
+          "Box 14",
+          "brass key"
+        ]
+      }
+    },
+    {
+      "id": "jonah-vanishes",
+      "kind": "abandoned-thread",
+      "description": "Jonah Marsh, the deckhand, says Elias was not alone the night he died and promises to tell Wren everything on Friday at six. He never appears or is mentioned again, and the meeting never happens.",
+      "plantedIn": [
+        "scn_tw030003",
+        "scn_tw050005"
+      ],
+      "plantText": "Jonah",
+      "keywords": [
+        "jonah",
+        "deckhand",
+        "not alone"
+      ],
+      "absentAfter": {
+        "scene": "scn_tw050005",
+        "terms": [
+          "Jonah"
+        ]
+      }
+    },
+    {
+      "id": "death-month",
+      "kind": "continuity",
+      "description": "Elias drowned in March (scenes 1, 2, 9, 10), but scene 8 calls it \"the August night he drowned\".",
+      "plantedIn": [
+        "scn_tw080008"
+      ],
+      "plantText": "the August night he drowned",
+      "keywords": [
+        "august"
+      ]
+    }
+  ]
+}

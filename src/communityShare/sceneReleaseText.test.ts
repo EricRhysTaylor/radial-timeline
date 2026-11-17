@@ -76,7 +76,19 @@ describe('parsePastedScene (mirrors the website paste parser)', () => {
         ].join('\n');
         const blocks = parsePastedScene(pasted);
         expect(blocks).toEqual([p('Kept.  Still kept.'), p('Also  kept.')]);
-        expect(JSON.stringify(blocks)).not.toMatch(/PRIVATE|<!--|-->|%%/);
+        expect(JSON.stringify(blocks)).not.toMatch(/PRIVATE|<!--|--!?>|%%/);
+    });
+
+    it('drops a comment the author never closed, to the end of the text', () => {
+        expect(parsePastedScene('Kept.\n%% PRIVATE_NOTE\nstill the note.')).toEqual([p('Kept.')]);
+        expect(parsePastedScene('Kept. <!-- PRIVATE_HTML\nstill the comment.')).toEqual([p('Kept.')]);
+        expect(parsePastedScene('One. %% a %% Two. %% PRIVATE_NOTE')).toEqual([p('One.  Two.')]);
+    });
+
+    it('ends an HTML comment at --!>', () => {
+        const blocks = parsePastedScene('Kept. <!-- PRIVATE_HTML --!> Still kept.\nAlso <!<!-- -->-- PRIVATE_NESTED --!> kept.');
+        expect(blocks).toEqual([p('Kept.  Still kept.'), p('Also  kept.')]);
+        expect(JSON.stringify(blocks)).not.toMatch(/PRIVATE|<!--|--!?>|%%/);
     });
 
     it('takes the # off a heading', () => {
@@ -156,6 +168,13 @@ describe('sceneBlocksFromNote (a scene note, cleaned for release)', () => {
         // breaks, not a second YAML block to drop.
         const blocks = sceneBlocksFromNote('---\nClass: Scene\n---\n---\nKade: Get down!\n---\nThey ran.');
         expect(blocks).toEqual([p('Kade: Get down!'), BREAK, p('They ran.')]);
+    });
+
+    it('sends nothing after a comment the author never closed', () => {
+        const blocks = sceneBlocksFromNote('---\nClass: Scene\n---\nMira ran. %% done %%\n\n%% PRIVATE_NOTE\n\nPRIVATE_MORE\n\n<!-- also open');
+        expect(blocks).toEqual([p('Mira ran.')]);
+        expect(JSON.stringify(blocks)).not.toMatch(/PRIVATE|<!--|%%/);
+        expect(sceneBlocksFromNote('Prose. <!-- PRIVATE_HTML --!> More prose.')).toEqual([p('Prose.  More prose.')]);
     });
 
     it('is empty for a note with no prose', () => {

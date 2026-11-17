@@ -14,9 +14,10 @@
  * come out, so the preview dialog can show the very blocks that are sent.
  *
  * `parsePastedScene` and the helpers above it mirror the Community website's
- * `parsePastedScene` (`lib/scene-text.ts`) and the platform's
- * `_shared/scene-text.ts`, so a scene reads the same whether it was pasted on
- * the website or released from here. Change all three together.
+ * `parsePastedScene` (`lib/scene-text.ts`), so a scene reads the same whether
+ * it was pasted on the website or released from here. The platform's
+ * `_shared/scene-text.ts` holds the same block shapes and checks them; it has
+ * no parse. Change them together.
  */
 
 import type { ManuscriptExportCleanupOptions } from '../types';
@@ -72,12 +73,14 @@ function paragraphRuns(line: string): SceneRun[] {
 export function parsePastedScene(input: string): SceneBlock[] {
     let text = input.replace(BYTE_ORDER_MARK, '').replace(/\r\n?/g, '\n');
     text = text.replace(/^---\n[\s\S]*?\n---[ \t]*(?:\n|$)/, '');
-    // Repeat until nothing changes: removing one comment can join the pieces
-    // around it into a new one, such as `<!<!-- -->-- PRIVATE -->`.
+    // A comment the author never closed runs to the end of the text, as
+    // Obsidian shows it, and an HTML comment also ends at `--!>`. Repeat until
+    // nothing changes: removing one comment can join the pieces around it into
+    // a new one, such as `<!<!-- -->-- PRIVATE -->`.
     let previous: string;
     do {
         previous = text;
-        text = text.replace(/%%[\s\S]*?%%/g, '').replace(/<!--[\s\S]*?-->/g, '');
+        text = text.replace(/%%[\s\S]*?(?:%%|$)/g, '').replace(/<!--[\s\S]*?(?:--!?>|$)/g, '');
     } while (text !== previous);
     const blocks: SceneBlock[] = [];
     for (const raw of text.split('\n')) {

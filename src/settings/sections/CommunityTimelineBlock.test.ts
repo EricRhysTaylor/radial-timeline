@@ -4,10 +4,11 @@ const state = vi.hoisted(() => ({ rows: [] as Array<{ name: string; toggle?: { d
 vi.mock('../../../tests/mocks/obsidian', async (original) => ({
     ...await original<typeof import('../../../tests/mocks/obsidian')>(),
     Notice: class {},
+    setIcon: vi.fn(),
     Setting: class {
         name = '';
         descEl = { createDiv: () => ({}) };
-        controlEl = { createEl: () => ({}) };
+        controlEl = { createEl: () => ({ createSpan: () => ({}) }) };
         setName(name: string) { this.name = name; return this; }
         setDesc() { return this; }
         setHeading() { return this; }

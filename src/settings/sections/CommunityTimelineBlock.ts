@@ -11,7 +11,7 @@
  * back. Going live stays a click on the website.
  */
 
-import { Notice, Setting, type ToggleComponent } from 'obsidian';
+import { Notice, Setting, setIcon, type ToggleComponent } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import {
     CommunityShareError,
@@ -82,8 +82,8 @@ function shareDescription(
         : t('ui.communityShareSection.timelineSharePrivate');
 }
 
-function addNote(setting: Setting, text: string): void {
-    setting.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text });
+function addNote(setting: Setting, text: string, kind: 'note' | 'sent' | 'warning' = 'note'): void {
+    setting.descEl.createDiv({ cls: `${ERT_CLASSES.FIELD_NOTE} ert-community-timeline-${kind}`, text });
 }
 
 export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerender }: CommunityTimelineBlockProps): void {
@@ -185,15 +185,15 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
     if (record?.enabled) addNote(shareRow, t('ui.communityShareSection.timelineStopNote'));
     if (record?.lastSentAt) {
         const sentAt = new Date(record.lastSentAt).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
-        addNote(shareRow, t('ui.communityShareSection.timelineLastSent', { date: sentAt }));
+        addNote(shareRow, t('ui.communityShareSection.timelineLastSent', { date: sentAt }), 'sent');
     }
-    if (record?.lastError) addNote(shareRow, record.lastError);
-    if (record?.enabled && cached?.error) addNote(shareRow, cached.error);
+    if (record?.lastError) addNote(shareRow, record.lastError, 'warning');
+    if (record?.enabled && cached?.error) addNote(shareRow, cached.error, 'warning');
     if (record?.droppedReveals?.length) {
-        addNote(shareRow, t('ui.communityShareSection.timelineRevealsDropped', { scenes: record.droppedReveals.join(', ') }));
+        addNote(shareRow, t('ui.communityShareSection.timelineRevealsDropped', { scenes: record.droppedReveals.join(', ') }), 'warning');
     }
     if (record?.scenesWithoutStableId) {
-        addNote(shareRow, t('ui.communityShareSection.timelineNoStableIds', { count: record.scenesWithoutStableId }));
+        addNote(shareRow, t('ui.communityShareSection.timelineNoStableIds', { count: record.scenesWithoutStableId }), 'warning');
     }
 
     if (!record?.enabled || !answer?.shared || !share) return;
@@ -201,11 +201,14 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
     const reviewRow = new Setting(block)
         .setName(t('ui.communityShareSection.timelineReviewName'))
         .setDesc(t('ui.communityShareSection.timelineReviewDesc'));
-    reviewRow.controlEl.createEl('a', {
-        text: t('ui.communityShareSection.timelineReviewButton'),
+    const preview = reviewRow.controlEl.createEl('a', {
+        cls: 'ert-community-timeline-preview',
         href: `${COMMUNITY_SITE_URL}/me/timeline/${encodeURIComponent(answer.project_id)}`,
         attr: { target: '_blank', rel: 'noopener' },
     });
+    preview.createSpan({ text: t('ui.communityShareSection.timelineReviewButton') });
+    const previewIcon = preview.createSpan({ attr: { 'aria-hidden': 'true' } });
+    setIcon(previewIcon, 'external-link');
 
     const detailToggles: ToggleComponent[] = [];
     const saveDetails = async (details: Parameters<typeof setTimelineShareDetails>[2]): Promise<void> => {

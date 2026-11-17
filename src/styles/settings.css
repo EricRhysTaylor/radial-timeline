@@ -143,3 +143,48 @@
   font-weight: 600;
   color: var(--text-normal);
 }
+/* Community timeline: separate the sync timestamp and actionable warnings. */
+.ert-ui.ert-scope--settings .ert-community-timeline-note {
+  margin-top: var(--ert-gap-xs);
+}
+
+.ert-ui.ert-scope--settings .ert-community-timeline-sent {
+  display: inline-block;
+  margin-top: var(--ert-gap-sm);
+  padding: var(--ert-gap-xs) var(--ert-gap-sm);
+  border-radius: var(--radius-s);
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+  font-weight: var(--font-semibold);
+}
+
+.ert-ui.ert-scope--settings .ert-community-timeline-warning {
+  margin-top: var(--ert-gap-sm);
+  padding: var(--ert-gap-sm);
+  border-inline-start: 3px solid var(--text-warning);
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.ert-ui.ert-scope--settings a.ert-community-timeline-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ert-gap-xs);
+  padding: var(--size-4-2) var(--size-4-3);
+  border-radius: var(--button-radius);
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  box-shadow: var(--input-shadow);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ert-ui.ert-scope--settings a.ert-community-timeline-preview:hover {
+  background: var(--interactive-hover);
+  color: var(--text-normal);
+}
+
+.ert-ui.ert-scope--settings .ert-community-timeline-preview svg {
+  width: var(--icon-s);
+  height: var(--icon-s);
+}

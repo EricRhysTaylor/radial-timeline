@@ -892,7 +892,15 @@ async function renderTeaserStagesPreviews(
     const styleService = new AprStyleService(plugin);
 
     // The scenes of the book this report tracks
-    const scenes = await scenesReady;
+    let scenes: TimelineItem[];
+    try {
+        scenes = await scenesReady;
+    } catch (e) {
+        if (!isCurrent()) return;
+        container.empty();
+        console.error('Social settings teaser stage preview error:', e);
+        return;
+    }
     if (!isCurrent()) return;
     container.empty();
     if (scenes.length === 0) {

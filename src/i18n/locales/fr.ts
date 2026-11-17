@@ -7628,7 +7628,6 @@ export const fr: DeepPartial<TranslationKeys> = {
         "welcomeScreen": {
             close: "Fermer l’accueil",
             emptyTitle: "Votre chronologie est prête",
-            emptyHint: "Ouvrez le tableau, choisissez Plan et ajoutez un document de plan.",
             openTimetable: "Ouvrir le tableau",
             "intro": "Radial Timeline Transforme les récits de longue durée en une seule carte d'histoire navigable. Suivre des scènes, des sous-intrigues, des personnages, des beats et des chronologies des romans, Sagas, mémoires et autres projets de fiction ou de non-fiction soutenus. Choisissez un point de départ ci-dessous.",
             "websiteTitle": "Visitez le site Web",

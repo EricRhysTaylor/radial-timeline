@@ -7622,7 +7622,6 @@ export const ja: DeepPartial<TranslationKeys> = {
         welcomeScreen: {
             close: "ようこそ画面を閉じる",
             emptyTitle: "タイムラインの準備ができました",
-            emptyHint: "タイムテーブルを開き、アウトラインを選んで文書を追加します。",
             openTimetable: "タイムテーブルを開く",
             intro: 'Radial Timeline は、長編の物語をひとつのナビゲーション可能なストーリーマップにします。長編小説、サーガ、回想録など、長期にわたるフィクションやノンフィクションのプロジェクトで、シーン、サブプロット、キャラクター、ビート、タイムラインを追跡できます。以下から始め方を選んでください。',
             websiteTitle: 'ウェブサイトを見る',

@@ -7628,7 +7628,6 @@ export const vi: DeepPartial<TranslationKeys> = {
         "welcomeScreen": {
             close: "Đóng màn hình chào mừng",
             emptyTitle: "Dòng thời gian đã sẵn sàng",
-            emptyHint: "Mở bảng thời gian, chọn Dàn ý và thêm tài liệu dàn ý.",
             openTimetable: "Mở bảng thời gian",
             "intro": "Radial Timeline biến các câu chuyện dài thành một bản đồ câu chuyện duy nhất, có thể điều hướng được. Theo dõi các cảnh, cốt truyện phụ, nhân vật, nhịp và dòng thời gian trên tiểu thuyết, sagas, hồi ký và các dự án tiểu thuyết hoặc phi hư cấu bền vững khác. Chọn một điểm bắt đầu bên dưới.",
             "websiteTitle": "Truy cập trang web",

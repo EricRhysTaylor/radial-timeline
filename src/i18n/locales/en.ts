@@ -7562,7 +7562,7 @@ export const en = {
         welcomeScreen: {
             close: "Close welcome",
             emptyTitle: "Your timeline is ready",
-            emptyHint: "Open Timetable, choose Outline, and add an outline document to begin.",
+            emptyHint: "Drag a note or a block of text onto the timeline to add a sketch or scene, or start from an outline in Timetable.",
             openTimetable: "Open Timetable",
             intro: 'Radial Timeline turns long-form narratives into a single, navigable story map. Track scenes, subplots, characters, beats, and timelines across novels, sagas, memoirs, and other sustained fiction or nonfiction projects. Pick a starting point below.',
             websiteTitle: 'Visit the website',

@@ -7623,7 +7623,6 @@ export const zh: DeepPartial<TranslationKeys> = {
         welcomeScreen: {
             close: "关闭欢迎页",
             emptyTitle: "时间线已准备就绪",
-            emptyHint: "打开时间表，选择大纲，然后添加大纲文档。",
             openTimetable: "打开时间表",
             intro: 'Radial Timeline 将长篇叙事转化为一张可导航的故事地图。在长篇小说、系列作品、回忆录及其他长期虚构或非虚构写作项目中，追踪场景、副情节、人物、节拍和时间线。请从下方选择一个起点。',
             websiteTitle: '访问网站',

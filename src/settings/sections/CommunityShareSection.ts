@@ -34,6 +34,7 @@ import { renderCommunitySceneBodyBlock } from './CommunitySceneBodyBlock';
 import { fitSelectToSelectedLabel } from '../selectSizing';
 import { t } from '../../i18n';
 import { docsUrl } from '../../utils/docsUrl';
+import { getSecret } from '../../ai/credentials/secretStorage';
 
 export interface CommunityShareSectionProps {
     app: App;
@@ -230,7 +231,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const badgeRow = hero.createDiv({ cls: ERT_CLASSES.INLINE });
     const badge = badgeRow.createSpan({ cls: ERT_CLASSES.BADGE_PILL });
     setIcon(badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON }), isConnected ? 'satellite-dish' : settings.enabled ? 'shield-check' : 'shield');
-    badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.communityShareSection.badgeText', { status: formatStatus(settings) }) });
+    const badgeText = badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.communityShareSection.badgeText', { status: isConnected ? t('ui.communityShareSection.connectionChecking') : formatStatus(settings) }) });
     const wikiLink = withAccessibleLabel(badge.createEl('a', {
         href: docsUrl('Settings-Community'),
         cls: ERT_CLASSES.BADGE_PILL_WIKI,
@@ -336,15 +337,31 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 : t('ui.communityShareSection.linked'));
         const replacementContainer = activationSection.createDiv({ cls: 'ert-hidden' });
         statusRow.addButton(button => {
+            let connectionHealthy = false;
+            let checked = false;
             const renderState = (connected: boolean) => {
                 button.buttonEl.empty();
                 const iconEl = button.buttonEl.createSpan();
-                setIcon(iconEl, connected ? 'satellite-dish' : 'x');
-                button.buttonEl.createSpan({ text: connected ? t('ui.communityShareSection.activeConnection') : t('ui.communityShareSection.cancelReplace') });
-                button.buttonEl.toggleClass('ert-btn--connected', connected);
+                setIcon(iconEl, connected && connectionHealthy ? 'satellite-dish' : 'x');
+                button.buttonEl.createSpan({ text: !connected ? t('ui.communityShareSection.cancelReplace') : !checked ? t('ui.communityShareSection.connectionChecking') : connectionHealthy ? t('ui.communityShareSection.activeConnection') : t('ui.communityShareSection.reconnectButton') });
+                button.buttonEl.toggleClass('ert-btn--connected', connected && connectionHealthy);
+                button.setDisabled(!checked);
             };
             button.buttonEl.addClass('ert-btn--icon-left');
             renderState(true);
+            const secretId = settings.connection.secretId;
+            void (secretId && settings.connection.connectionId ? getSecret(plugin.app, secretId) : Promise.resolve(null)).then(secret => {
+                // This render may have been replaced while the keychain was being read.
+                if (!section.isConnected) return;
+                checked = true;
+                connectionHealthy = Boolean(secret);
+                badgeText.setText(t('ui.communityShareSection.badgeText', { status: t(connectionHealthy ? 'ui.communityShareSection.connectionKeyAvailable' : 'ui.communityShareSection.connectionNeedsRepair') }));
+                renderState(replacementContainer.classList.contains('ert-hidden'));
+                if (!connectionHealthy) {
+                    const help = statusRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.reconnectHelp') });
+                    help.createEl('a', { text: t('ui.communityShareSection.reconnectWebsite'), href: COMMUNITY_MY_SHARE_URL, attr: { target: '_blank', rel: 'noopener' } });
+                }
+            });
             button.onClick(() => {
                 const willShow = replacementContainer.classList.contains('ert-hidden');
                 replacementContainer.classList.toggle('ert-hidden', !willShow);
@@ -352,7 +369,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             });
         });
         renderConnectionCodeSetting(replacementContainer);
-        if (settings.lastError) {
+        if (settings.lastError && settings.lastError !== t('ui.communityShareClient.secretMissing')) {
             statusRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: settings.lastError });
         }
     } else {

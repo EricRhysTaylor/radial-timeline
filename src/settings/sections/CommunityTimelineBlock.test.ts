@@ -63,3 +63,13 @@ describe('timeline privacy details', () => {
         expect(state.save).toHaveBeenLastCalledWith(plugin, book.id, { hiddenSceneFields: applied ? ['synopsis', 'title', 'characters'] : ['synopsis', 'characters'] });
     });
 });
+
+describe('timeline status wording', () => {
+    it('does not assume a website timeline is private while its status is unknown', async () => {
+        const { shareDescription } = await import('./CommunityTimelineBlock');
+        const book = { id: 'book', title: 'Book' } as never;
+        expect(shareDescription(book, undefined, undefined)).toBe(t('ui.communityShareSection.timelineShareChecking'));
+        expect(shareDescription(book, { enabled: false } as never, { shared: true } as never)).toBe(t('ui.communityShareSection.timelineShareOffExisting'));
+        expect(shareDescription(book, { enabled: true } as never, { shared: true, share: { status: 'active' } } as never)).toBe(t('ui.communityShareSection.timelineShareLive'));
+    });
+});

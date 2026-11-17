@@ -66,17 +66,17 @@ function errorText(error: unknown, fallback: string): string {
     return error instanceof CommunityShareError ? error.message : fallback;
 }
 
-function shareDescription(
+export function shareDescription(
     book: BookProfile,
     record: CommunityTimelineShareRecord | undefined,
     answer: TimelineShareAnswer | undefined
 ): string {
+    if (!answer) return t('ui.communityShareSection.timelineShareChecking');
     if (!record?.enabled) {
-        return answer?.shared
+        return answer.shared
             ? t('ui.communityShareSection.timelineShareOffExisting')
             : t('ui.communityShareSection.timelineShareOff', { book: book.publicLabel || book.title }); // SAFE: the public label is optional; the book's own title is always set
     }
-    if (!answer) return t('ui.communityShareSection.timelineShareChecking');
     return answer.share?.status === 'active'
         ? t('ui.communityShareSection.timelineShareLive')
         : t('ui.communityShareSection.timelineSharePrivate');
@@ -144,7 +144,9 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
 
     const shareRow = new Setting(block)
         .setName(t('ui.communityShareSection.timelineShareName'))
-        .setDesc(shareDescription(book, record, answer))
+        .setDesc(cached?.error && !answer
+            ? t('ui.communityShareSection.timelineStatusUnknown')
+            : shareDescription(book, record, answer))
         .addToggle(toggle => {
             toggle.setValue(record?.enabled === true).setDisabled(paused);
             toggle.onChange(async next => {

@@ -21,10 +21,6 @@ export class AuthorProgressService {
         return this.campaignService.campaignNeedsRefresh(campaign);
     }
 
-    public getCampaignsNeedingRefresh(): AuthorProgressCampaign[] {
-        return this.campaignService.getCampaignsNeedingRefresh();
-    }
-
     public needsAnyRefresh(): boolean {
         return this.campaignService.needsAnyRefresh();
     }
@@ -43,9 +39,14 @@ export class AuthorProgressService {
         return this.renderService.resolveRevealLevel(report, percent);
     }
 
+    /** The scenes of the book a report tracks, loaded once for each open report in settings. */
+    public loadReportScenes(report: AuthorProgressCampaign): Promise<TimelineItem[]> {
+        return this.renderService.loadReportScenes(report);
+    }
+
     /** Draw the report exactly as publishing would, for the settings preview. */
-    public buildReportPreview(reportId: string): Promise<AuthorProgressReportBuildResult | null> {
-        return this.renderService.buildReport(reportId);
+    public drawReport(report: AuthorProgressCampaign, scenes: TimelineItem[]): AuthorProgressReportBuildResult {
+        return this.renderService.drawReport(report, scenes);
     }
 
     public checkAutoUpdate(): Promise<void> {

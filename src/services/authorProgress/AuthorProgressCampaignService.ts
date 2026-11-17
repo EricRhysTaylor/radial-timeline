@@ -4,6 +4,7 @@ import type { AuthorProgressCampaign } from '../../types/settings';
 import { uploadAprToCommunity } from '../../communityShare/communityShareClient';
 import { findCommunityBookConflict, resolveCampaignBookId } from '../../authorProgress/campaignCommunityBinding';
 import { AuthorProgressRenderService, type AuthorProgressReportBuildResult } from './AuthorProgressRenderService';
+import { TEASER_LEVEL_INFO } from '../../renderer/apr/AprConstants';
 import { t, tCount } from '../../i18n';
 
 /**
@@ -30,10 +31,6 @@ export class AuthorProgressCampaignService {
         const last = new Date(campaign.lastPublishedDate).getTime();
         const diffDays = (Date.now() - last) / (1000 * 60 * 60 * 24);
         return diffDays > campaign.refreshThresholdDays;
-    }
-
-    public getCampaignsNeedingRefresh(): AuthorProgressCampaign[] {
-        return this.getReports().filter(c => this.campaignNeedsRefresh(c));
     }
 
     public needsAnyRefresh(): boolean {
@@ -67,7 +64,7 @@ export class AuthorProgressCampaignService {
             new Notice(t('ui.authorProgressCampaignService.campaignPublished', {
                 name: report.name,
                 format: report.exportFormat.toUpperCase(),
-                stage: result.revealLevel,
+                stage: TEASER_LEVEL_INFO[result.revealLevel].label,
                 percent: result.percent.toFixed(1)
             }));
         }

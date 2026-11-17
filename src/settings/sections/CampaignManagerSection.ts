@@ -25,8 +25,8 @@ import { hasProFeatureAccess } from '../featureGate';
 import { getTeaserThresholds, getTeaserRevealLevel, teaserLevelToRevealOptions, TEASER_LEVEL_INFO } from '../../renderer/apr/AprConstants';
 import { createAprSVG } from '../../renderer/apr/AprRenderer';
 import { DEFAULT_REPORT_ID } from '../../utils/aprPaths';
-import { resolveBookTitle, resolveProjectPath } from '../../renderer/apr/aprHelpers';
-import { isSceneItem } from '../../utils/sceneHelpers';
+import { resolveBookTitle } from '../../renderer/apr/aprHelpers';
+import type { TimelineItem } from '../../types/timeline';
 import { DEFAULT_STYLE_ID, buildNewCampaign } from '../../authorProgress/authorProgressConfig';
 import { aprReportLabel, aprStyleLabel } from '../../authorProgress/aprLabels';
 
@@ -358,7 +358,14 @@ function renderReportDetails(
     statusLine.toggleClass('is-alert', service.campaignNeedsRefresh(campaign));
     renderAprShareFile(previewSide.createDiv({ cls: 'ert-apr-shareSlot' }), { app, vaultPath: service.getReportPath(campaign) });
 
-    const refreshPreview = (): void => { void renderReportPreview(previewContainer, service, campaign.id); };
+    // The book is read once while this report is open; each redraw reuses it.
+    const scenesReady = service.loadReportScenes(campaign);
+    // A redraw that finishes after a newer one has started is dropped.
+    let previewRun = 0;
+    const refreshPreview = (): void => {
+        const run = ++previewRun;
+        void renderReportPreview(previewContainer, service, campaign, scenesReady, () => run === previewRun);
+    };
     refreshPreview();
 
     const previewControls = previewSide.createDiv({ cls: `${ERT_CLASSES.INLINE} ert-apr-previewControls` });
@@ -493,7 +500,7 @@ function renderReportDetails(
         for (const book of books) {
             bookDropdown.addOption(book.id, book.title?.trim() || t('ui.campaignManagerSection.untitled'));
         }
-        bookDropdown.setValue(campaign.targetBookId ?? '');
+        bookDropdown.setValue(campaign.targetBookId ?? ''); // SAFE: the empty option is 'follow the active book'
         bookDropdown.onChange(async (val) => {
             if (campaign.sendToCommunity) {
                 // "Active book" would let a book switch silently change what
@@ -501,13 +508,13 @@ function renderReportDetails(
                 // campaign would overwrite its APR on My Share.
                 if (!val) {
                     new Notice(t('ui.campaignManagerSection.explicitBookNotice'));
-                    bookDropdown.setValue(campaign.targetBookId ?? '');
+                    bookDropdown.setValue(campaign.targetBookId ?? ''); // SAFE: the empty option is 'follow the active book'
                     return;
                 }
                 const conflict = findCommunityBookConflict(plugin.settings, { id: campaign.id, targetBookId: val });
                 if (conflict) {
                     new Notice(t('ui.campaignManagerSection.bookConflictNotice', { name: conflict.name }));
-                    bookDropdown.setValue(campaign.targetBookId ?? '');
+                    bookDropdown.setValue(campaign.targetBookId ?? ''); // SAFE: the empty option is 'follow the active book'
                     return;
                 }
             }
@@ -797,7 +804,7 @@ function renderReportDetails(
             });
             input.maxLength = 2;
             input.onblur = () => {
-                const val = parseInt(input.value) || 0;
+                const val = parseInt(input.value) || 0; // SAFE: a blank or non-numeric threshold reads as 0 and is clamped to 1
                 if (val < 1) input.value = '1';
                 else if (val > 99) input.value = '99';
             };
@@ -806,9 +813,9 @@ function renderReportDetails(
 
         saveBtn.onclick = async () => {
             const vals = {
-                scenes: parseInt(inputs.scenes.value) || 0,
-                colors: parseInt(inputs.colors.value) || 0,
-                full: parseInt(inputs.full.value) || 0,
+                scenes: parseInt(inputs.scenes.value) || 0, // SAFE: a blank threshold reads as 0, which the range check rejects
+                colors: parseInt(inputs.colors.value) || 0, // SAFE: a blank threshold reads as 0, which the range check rejects
+                full: parseInt(inputs.full.value) || 0, // SAFE: a blank threshold reads as 0, which the range check rejects
             };
             for (const [k, v] of Object.entries(vals)) {
                 if (v < 1 || v > 99) {
@@ -828,9 +835,10 @@ function renderReportDetails(
 
     // Show SVG previews of each reveal stage
     const svgPreviewRow = teaserContentContainer.createDiv({ cls: 'ert-teaser__previewRow' });
+    let stagesRun = 0;
     const refreshStages = (): void => {
-        svgPreviewRow.empty();
-        void renderTeaserStagesPreviews(svgPreviewRow, plugin, campaign, save);
+        const run = ++stagesRun;
+        void renderTeaserStagesPreviews(svgPreviewRow, plugin, campaign, scenesReady, save, () => run === stagesRun);
     };
     refreshStages();
     styleRefreshers.push(refreshStages);
@@ -839,14 +847,22 @@ function renderReportDetails(
 /**
  * Draw the open report at screen size, through the same path that publishes it.
  */
-async function renderReportPreview(container: HTMLElement, service: AuthorProgressService, reportId: string): Promise<void> {
+async function renderReportPreview(
+    container: HTMLElement,
+    service: AuthorProgressService,
+    report: AuthorProgressCampaign,
+    scenesReady: Promise<TimelineItem[]>,
+    isCurrent: () => boolean
+): Promise<void> {
     if (!container.hasChildNodes()) {
         container.createDiv({ cls: `ert-apr-preview-loading ${ERT_CLASSES.PREVIEW_INNER}`, text: t('settings.authorProgress.preview.loading') });
     }
     try {
-        const result = await service.buildReportPreview(reportId);
+        const scenes = await scenesReady;
+        if (!isCurrent()) return;
+        const result = service.drawReport(report, scenes);
         container.empty();
-        if (!result || result.sceneCount === 0) {
+        if (result.sceneCount === 0) {
             container.createDiv({ cls: 'ert-apr-preview-empty', text: t('settings.authorProgress.preview.emptyState') });
             return;
         }
@@ -866,7 +882,9 @@ async function renderTeaserStagesPreviews(
     container: HTMLElement,
     plugin: RadialTimelinePlugin,
     campaign: AuthorProgressCampaign,
-    save: () => Promise<void>
+    scenesReady: Promise<TimelineItem[]>,
+    save: () => Promise<void>,
+    isCurrent: () => boolean
 ): Promise<void> {
     const settings = plugin.settings.authorProgress?.defaults;
     if (!settings) return;
@@ -874,8 +892,9 @@ async function renderTeaserStagesPreviews(
     const styleService = new AprStyleService(plugin);
 
     // The scenes of the book this report tracks
-    const projectPath = resolveProjectPath(campaign, plugin.settings.books, plugin.settings.sourcePath);
-    const scenes = (await plugin.getSceneData({ sourcePath: projectPath })).filter(isSceneItem);
+    const scenes = await scenesReady;
+    if (!isCurrent()) return;
+    container.empty();
     if (scenes.length === 0) {
         container.createEl('p', {
             text: t('ui.campaignManagerSection.noScenesPreview'),
@@ -945,7 +964,7 @@ async function renderTeaserStagesPreviews(
                 size: 'small',
                 progressPercent: stage.progress,
                 bookTitle,
-                authorName: settings.authorName || '',
+                authorName: settings.authorName || '', // SAFE: no author name draws the ring without one
                 showScenes: isRingOnly ? false : revealOptions.showScenes,
                 showSubplots: revealOptions.showSubplots,
                 showActs: revealOptions.showActs,

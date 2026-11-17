@@ -198,7 +198,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 
     const updateModeUI = (modeOverride?: AprProgressMode) => {
         isUpdatingMode = true;
-        const nextMode = modeOverride ?? (plugin.settings.authorProgress?.defaults.aprProgressMode ?? 'stage');
+        const nextMode = modeOverride ?? (plugin.settings.authorProgress?.defaults.aprProgressMode ?? 'stage'); // SAFE: stage tracking is the shipped progress mode
         modeDropdown.setValue(nextMode);
         trackedStageDropdown.selectEl.toggleClass('ert-hidden', nextMode !== 'stage');
         dateRangeInput.inputEl.toggleClass('ert-hidden', nextMode !== 'date');
@@ -238,7 +238,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
 
     trackedStageDropdown.onChange(async (val) => {
         if (isUpdatingMode || !plugin.settings.authorProgress) return;
-        const nextStage = STAGE_ORDER.find(stage => stage === val) ?? 'Zero';
+        const nextStage = STAGE_ORDER.find(stage => stage === val) ?? 'Zero'; // SAFE: the dropdown offers only stages; Zero is the shipped tracked stage
         plugin.settings.authorProgress.defaults.aprTrackedStage = nextStage;
         await plugin.saveSettings();
         await refreshTrackingState();
@@ -352,7 +352,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
     ): void => {
         STAGE_ORDER.forEach(stage => {
             const seg = flowSegments[stage];
-            const count = breakdown[stage] ?? 0;
+            const count = breakdown[stage] ?? 0; // SAFE: a stage with no scenes has no count
             seg.style.setProperty('flex-grow', String(count)); // SAFE: segment width is the live scene count
             seg.toggleClass('is-empty', count === 0);
             setTooltip(seg, `${stage}: ${count}`);
@@ -367,7 +367,7 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             const color = plugin.settings.publishStageColors[stage];
             label.style.setProperty('--ert-flow-color', color);
             label.createSpan({ cls: 'ert-apr-flow__legend-dot' });
-            label.createSpan({ cls: 'ert-apr-flow__legend-text', text: `${stage} ${breakdown[stage] ?? 0}` });
+            label.createSpan({ cls: 'ert-apr-flow__legend-text', text: `${stage} ${breakdown[stage] ?? 0}` }); // SAFE: a stage with no scenes has no count
         });
     };
 
@@ -385,8 +385,8 @@ export function renderAuthorProgressSection({ app, plugin, containerEl }: Author
             renderFlowBar(progressState.stageBreakdown, progressState.percent);
             seedDateRange();
         } catch {
-            const trackedStage = plugin.settings.authorProgress?.defaults.aprTrackedStage ?? 'Zero';
-            const mode = (plugin.settings.authorProgress?.defaults.aprProgressMode ?? 'stage');
+            const trackedStage = plugin.settings.authorProgress?.defaults.aprTrackedStage ?? 'Zero'; // SAFE: Zero is the shipped tracked stage
+            const mode = (plugin.settings.authorProgress?.defaults.aprProgressMode ?? 'stage'); // SAFE: stage tracking is the shipped progress mode
             lastKnownSceneCount = 0;
             const storedTarget = plugin.settings.authorProgress?.defaults.aprTargetSceneCount;
             updateStageUI(mode, trackedStage, trackedStage, composeStageNote(mode));

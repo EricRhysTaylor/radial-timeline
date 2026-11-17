@@ -2255,7 +2255,7 @@
   border-radius: 2px;
 }
 
-/* Nested Pro skin inside Social (keep Pro identity) */
+/* The one Pro row inside Social (RT attribution) keeps the Pro accent. */
 .ert-ui.ert-scope--settings.ert-skin--social .ert-skin--pro,
 .ert-ui.ert-scope--settings .ert-skin--social .ert-skin--pro {
   --ert-accent: var(--ert-pro-accent-color);
@@ -2267,20 +2267,6 @@
     color-mix(in srgb, var(--background-primary) 94%, var(--ert-accent) 4%);
   --ert-pro-surface-2: color-mix(in srgb, var(--background-secondary) 88%, var(--ert-accent) 8%);
   --ert-pro-glow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-.ert-ui.ert-scope--settings.ert-skin--social .ert-skin--pro .ert-panel,
-.ert-ui.ert-scope--settings .ert-skin--social .ert-skin--pro .ert-panel,
-.ert-ui.ert-scope--settings.ert-skin--social .ert-skin--pro .ert-card:not(.ert-card--hero):not(.ert-card--apr),
-.ert-ui.ert-scope--settings .ert-skin--social .ert-skin--pro .ert-card:not(.ert-card--hero):not(.ert-card--apr) {
-  background: var(--ert-pro-surface-bg);
-  border: 1px solid var(--ert-pro-border);
-  box-shadow: var(--ert-pro-glow);
-}
-
-.ert-ui.ert-scope--settings.ert-skin--social .ert-skin--pro .ert-chip,
-.ert-ui.ert-scope--settings .ert-skin--social .ert-skin--pro .ert-chip {
-  background: color-mix(in srgb, var(--ert-accent) 12%, var(--background-secondary) 78%);
 }
 
 .ert-ui.ert-scope--settings.ert-skin--social .ert-iconBadge,
@@ -6401,19 +6387,6 @@
   border-color: var(--ert-previewFrame-border);
 }
 
-.ert-ui.ert-scope--settings .ert-skin--pro .ert-objectRow {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.ert-ui.ert-scope--settings .ert-skin--pro .ert-objectRow:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--text-accent);
-}
-
-.ert-ui.ert-scope--settings .ert-skin--pro .ert-objectRow.is-expanded {
-  border-bottom-color: transparent;
-}
-
 .ert-ui.ert-scope--settings.ert-skin--pro .ert-elementBlock,
 .ert-ui.ert-scope--settings .ert-skin--pro .ert-elementBlock,
 .ert-ui.ert-scope--settings .ert-elementBlock.ert-skin--pro {
@@ -6618,11 +6591,6 @@
   border: 1px solid var(--background-modifier-border);
   border-top: none;
   border-radius: 0 0 var(--ert-control-radius) var(--ert-control-radius);
-}
-
-.ert-ui.ert-scope--settings .ert-campaign-style-header .setting-item-name,
-.ert-ui.ert-scope--settings .ert-campaign-style-header .setting-item-description {
-  margin: 0;
 }
 
 @container ert-settings (max-width: 680px) {

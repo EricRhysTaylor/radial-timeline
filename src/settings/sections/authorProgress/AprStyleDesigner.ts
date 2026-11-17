@@ -36,11 +36,11 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
     const getActiveStyleSettings = (): AprStyleSettings =>
         aprStyleService.getProfiles().find(profile => profile.id === profileId)?.style ?? {}; // SAFE: a style deleted while its designer is still on screen reads as empty until the section redraws
     const styleSettings = getActiveStyleSettings();
-    const currentBg = styleSettings.aprBackgroundColor || '#0d0d0f';
-    const currentTransparent = styleSettings.aprCenterTransparent ?? true; // Default to true (recommended)
-    const currentTheme = styleSettings.aprTheme || 'dark';
-    const currentSpokeMode = styleSettings.aprSpokeColorMode || 'dark';
-    const currentSpokeColor = styleSettings.aprSpokeColor || '#ffffff';
+    const currentBg = styleSettings.aprBackgroundColor || '#0d0d0f'; // SAFE: the shipped background color, shown when a style has none
+    const currentTransparent = styleSettings.aprCenterTransparent ?? true; // SAFE: transparent is the shipped style's setting
+    const currentTheme = styleSettings.aprTheme || 'dark'; // SAFE: the dark theme is the shipped style's theme
+    const currentSpokeMode = styleSettings.aprSpokeColorMode || 'dark'; // SAFE: light borders ('dark' mode) are the shipped style's borders
+    const currentSpokeColor = styleSettings.aprSpokeColor || '#ffffff'; // SAFE: white is the shipped custom border color
 
     // Color picker refs
     let bookTitleColorPickerRef: ColorSwatchHandle | undefined;
@@ -192,7 +192,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
         onSave: (value: string) => Promise<void>
     ): { setValue: (value: string) => void } => {
         const customValue = '__custom__';
-        let currentFont = currentValue || 'Inter';
+        let currentFont = currentValue || 'Inter'; // SAFE: Inter is the shipped font and the dropdown's Default option
         let isUpdating = false;
         const isCustomFont = (value: string): boolean => {
             const normalized = value.trim();
@@ -311,7 +311,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
         });
 
         const setValue = (value: string): void => {
-            const next = value || 'Inter';
+            const next = value || 'Inter'; // SAFE: Inter is the shipped font and the dropdown's Default option
             currentFont = next;
             updateOptions(currentFont);
         };
@@ -366,7 +366,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
         const fontDrop = new DropdownComponent(rowEl);
         fontDrop.selectEl.addClass('ert-input', 'ert-typography-select');
         const currentStyle = getActiveStyleSettings() as Record<string, unknown>;
-        const currentFont = (currentStyle[opts.familyKey] as string | undefined) ?? opts.fontDefault ?? 'Inter';
+        const currentFont = (currentStyle[opts.familyKey] as string | undefined) ?? opts.fontDefault ?? 'Inter'; // SAFE: Inter is the shipped font and the dropdown's Default option
         const { setValue: setFontValue } = applyFontDropdown(fontDrop, currentFont, async (val) => {
             if (isSyncing()) return;
             await setAprSetting(opts.familyKey, val as AprStyleSettings[typeof opts.familyKey]);
@@ -377,7 +377,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
         styleDrop.selectEl.addClass('ert-input', 'ert-typography-select');
         WEIGHT_OPTIONS.forEach(opt => { styleDrop.addOption(opt.value, opt.label); });
         const currentWeight = (currentStyle[opts.weightKey] as number | undefined) ?? opts.weightDefault;
-        const currentItalic = (currentStyle[opts.italicKey] as boolean | undefined) ?? opts.italicDefault ?? false;
+        const currentItalic = (currentStyle[opts.italicKey] as boolean | undefined) ?? opts.italicDefault ?? false; // SAFE: upright is the shipped style for every text element
         let isStyleUpdating = false;
         styleDrop.setValue(formatWeightValue(currentWeight, currentItalic));
         styleDrop.onChange(async (val) => {
@@ -439,9 +439,9 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
         let autoButton: HTMLButtonElement | null = null;
 
         const normalizeHex = (val: string): string => val.trim().toLowerCase();
-        const defaultFont = opts.typography?.fontDefault ?? 'Inter';
-        const defaultWeight = opts.typography?.weightDefault ?? 400;
-        const defaultItalic = opts.typography?.italicDefault ?? false;
+        const defaultFont = opts.typography?.fontDefault ?? 'Inter'; // SAFE: Inter is the shipped font and the dropdown's Default option
+        const defaultWeight = opts.typography?.weightDefault ?? 400; // SAFE: 400 is the shipped weight for text elements without their own
+        const defaultItalic = opts.typography?.italicDefault ?? false; // SAFE: upright is the shipped style for every text element
 
         const updateAutoState = (): void => {
             const currentStyle = getActiveStyleSettings() as Record<string, unknown>;
@@ -608,7 +608,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
         text: {
             placeholder: t('settings.authorProgress.styling.author.placeholder'),
             // The author's name is shared by every report, not part of the style.
-            value: plugin.settings.authorProgress?.defaults.authorName || '',
+            value: plugin.settings.authorProgress?.defaults.authorName || '', // SAFE: an empty field shows the Author placeholder
             onChange: async (val) => {
                 if (!plugin.settings.authorProgress) return;
                 plugin.settings.authorProgress.defaults.authorName = val;
@@ -746,7 +746,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
     // Custom presets (user-saved colors with custom names)
     const MAX_CUSTOM_PRESETS = 2;
     const getCustomPresets = (): Array<{ label: string; color: string }> => {
-        return plugin.settings.authorProgress?.defaults.aprCustomBgPresets ?? [];
+        return plugin.settings.authorProgress?.defaults.aprCustomBgPresets ?? []; // SAFE: no saved custom backgrounds yet
     };
 
     // Resolve which preset name matches a color (check built-in, then custom)
@@ -775,7 +775,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
         ariaLabel: t('settings.authorProgress.styling.backgroundColor.name'),
         plugin,
         onChange: (val) => { void (async () => {
-            const next = val || '#0d0d0f';
+            const next = val || '#0d0d0f'; // SAFE: clearing the swatch restores the shipped background color
             await setAprSetting('aprBackgroundColor', next as AprStyleSettings['aprBackgroundColor']);
             bgTextInput?.setValue(next);
             updateSourceLabel(next);
@@ -872,7 +872,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
         const modal = new CustomBgPresetModal(app, {
             index,
             existing,
-            currentBg: getActiveStyleSettings().aprBackgroundColor ?? '#0d0d0f',
+            currentBg: getActiveStyleSettings().aprBackgroundColor ?? '#0d0d0f', // SAFE: the shipped background color, shown when a style has none
             onSave: async (preset) => {
                 if (!plugin.settings.authorProgress) return;
                 const presets = [...getCustomPresets()];
@@ -889,7 +889,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
                 plugin.settings.authorProgress.defaults.aprCustomBgPresets = presets;
                 await plugin.saveSettings();
                 renderCustomPills();
-                updateSourceLabel(getActiveStyleSettings().aprBackgroundColor ?? '#0d0d0f');
+                updateSourceLabel(getActiveStyleSettings().aprBackgroundColor ?? '#0d0d0f'); // SAFE: the shipped background color, shown when a style has none
             }
         });
         modal.open();
@@ -952,7 +952,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
     // Exposed so the background-color controls can keep the border swatch in sync when mode is 'sync'.
     refreshBorderSwatchFromBg = () => {
         const style = getActiveStyleSettings();
-        const mode = (style.aprSpokeColorMode ?? 'dark');
+        const mode = (style.aprSpokeColorMode ?? 'dark'); // SAFE: light borders ('dark' mode) are the shipped style's borders
         if (mode !== 'sync') return;
         const eff = effectiveBorderColor(mode, style.aprSpokeColor ?? fallbackColor, style.aprBackgroundColor ?? currentBg);
         spokeColorPickerRef?.setValue(eff);
@@ -970,7 +970,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
     spokeModeDropdown.setValue(currentValue);
     fitSelectToSelectedLabel(spokeModeDropdown.selectEl, { minPx: 132, maxPx: 260, extraPx: 16 });
     spokeModeDropdown.onChange(async (val) => {
-        const mode = (val as 'dark' | 'light' | 'none' | 'custom' | 'sync') || 'dark';
+        const mode = (val as 'dark' | 'light' | 'none' | 'custom' | 'sync') || 'dark'; // SAFE: the dropdown always has a value; 'dark' is the shipped border mode
         await setAprSettings({
             aprTheme: (mode === 'custom' || mode === 'sync') ? 'dark' : (mode),
             aprSpokeColorMode: mode

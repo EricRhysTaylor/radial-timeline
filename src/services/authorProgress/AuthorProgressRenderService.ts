@@ -3,6 +3,7 @@ import type RadialTimelinePlugin from '../../main';
 import { createAprSVG } from '../../renderer/apr/AprRenderer';
 import { getExportPreset } from '../../renderer/apr/aprPresets';
 import type { AuthorProgressCampaign, TeaserRevealLevel } from '../../types/settings';
+import type { TimelineItem } from '../../types/timeline';
 import { AprProgressService } from '../apr/AprProgressService';
 import { AprStyleService } from '../apr/AprStyleService';
 import { getTeaserThresholds, getTeaserRevealLevel, teaserLevelToRevealOptions } from '../../renderer/apr/AprConstants';
@@ -127,19 +128,28 @@ export class AuthorProgressRenderService {
         return new XMLSerializer().serializeToString(root);
     }
 
-    /**
-     * Draw a report at its export quality. The settings preview shows this same
-     * drawing scaled down, so what is on screen is what gets published.
-     */
-    public async buildReport(reportId: string): Promise<AuthorProgressReportBuildResult | null> {
-        const authorProgress = this.plugin.settings.authorProgress;
-        const report = this.getReport(reportId);
-        if (!authorProgress || !report) return null;
-        const settings = authorProgress.defaults;
+    /** The scenes of the book a report tracks. */
+    public async loadReportScenes(report: AuthorProgressCampaign): Promise<TimelineItem[]> {
+        const projectPath = resolveProjectPath(report, this.plugin.settings.books, this.plugin.settings.sourcePath);
+        return (await this.plugin.getSceneData({ sourcePath: projectPath })).filter(isSceneItem);
+    }
 
+    /** Load a report's book and draw it, as publishing does. */
+    public async buildReport(reportId: string): Promise<AuthorProgressReportBuildResult | null> {
+        const report = this.getReport(reportId);
+        if (!report) return null;
+        return this.drawReport(report, await this.loadReportScenes(report));
+    }
+
+    /**
+     * Draw a report at its export quality from its book's scenes. The settings
+     * preview shows this same drawing scaled down, so what is on screen is what
+     * gets published.
+     */
+    public drawReport(report: AuthorProgressCampaign, scenes: TimelineItem[]): AuthorProgressReportBuildResult {
+        const settings = this.plugin.settings.authorProgress?.defaults;
+        if (!settings) throw new Error('Author Progress settings are not loaded.');
         const books = this.plugin.settings.books;
-        const projectPath = resolveProjectPath(report, books, this.plugin.settings.sourcePath);
-        const scenes = (await this.plugin.getSceneData({ sourcePath: projectPath })).filter(isSceneItem);
         const progressState = this.aprProgressService.resolveProgress(scenes, settings);
         const renderStyle = this.aprStyleService.buildRenderStyle(this.aprStyleService.resolveStyle(report));
         // Hiding the Radial Timeline mark is the one Pro choice left in Social.
@@ -156,7 +166,7 @@ export class AuthorProgressRenderService {
             exportPreset: getExportPreset('medium', report.aprExportQuality),
             progressPercent: progressState.percent,
             bookTitle: resolveBookTitle(report, books, this.plugin.getActiveBookTitle()),
-            authorName: settings.authorName || '',
+            authorName: settings.authorName || '', // SAFE: no author name draws the ring without one
             showScenes: ringOnly ? false : reveal.showScenes,
             showSubplots: reveal.showSubplots,
             showActs: reveal.showActs,

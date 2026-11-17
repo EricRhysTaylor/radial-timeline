@@ -19,8 +19,8 @@ const MIME_BY_EXT: Record<string, string> = {
 };
 
 function mimeFor(fileName: string): string {
-    const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
-    return MIME_BY_EXT[ext] ?? 'application/octet-stream';
+    const ext = fileName.split('.').pop()?.toLowerCase() ?? ''; // SAFE: a name without an extension has no known type
+    return MIME_BY_EXT[ext] ?? 'application/octet-stream'; // SAFE: unknown extensions drag as generic binary data
 }
 
 function absolutePathFor(app: App, vaultPath: string): string | null {

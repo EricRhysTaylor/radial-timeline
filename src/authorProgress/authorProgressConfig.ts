@@ -203,7 +203,7 @@ function migrateStyleSettings(raw: unknown, base: AprStyleSettings): AprStyleSet
     if (!record) return { ...base };
     return {
         aprBackgroundColor: asString(record.aprBackgroundColor) ?? base.aprBackgroundColor,
-        aprCenterTransparent: asBoolean(record.aprCenterTransparent, base.aprCenterTransparent ?? true),
+        aprCenterTransparent: asBoolean(record.aprCenterTransparent, base.aprCenterTransparent ?? true), // SAFE: base style fields are optional; the shipped style's value fills a gap
         aprBookAuthorColor: asString(record.aprBookAuthorColor) ?? base.aprBookAuthorColor,
         aprAuthorColor: asString(record.aprAuthorColor) ?? base.aprAuthorColor,
         aprEngineColor: asString(record.aprEngineColor) ?? base.aprEngineColor,
@@ -212,21 +212,21 @@ function migrateStyleSettings(raw: unknown, base: AprStyleSettings): AprStyleSet
         aprSpokeColorMode: normalizeAprSpokeColorMode(record.aprSpokeColorMode, base.aprSpokeColorMode),
         aprSpokeColor: asString(record.aprSpokeColor) ?? base.aprSpokeColor,
         aprBookTitleFontFamily: asString(record.aprBookTitleFontFamily) ?? base.aprBookTitleFontFamily,
-        aprBookTitleFontWeight: asNumber(record.aprBookTitleFontWeight, base.aprBookTitleFontWeight ?? 400),
-        aprBookTitleFontItalic: asBoolean(record.aprBookTitleFontItalic, base.aprBookTitleFontItalic ?? false),
+        aprBookTitleFontWeight: asNumber(record.aprBookTitleFontWeight, base.aprBookTitleFontWeight ?? 400), // SAFE: base style fields are optional; the shipped style's value fills a gap
+        aprBookTitleFontItalic: asBoolean(record.aprBookTitleFontItalic, base.aprBookTitleFontItalic ?? false), // SAFE: base style fields are optional; the shipped style's value fills a gap
         aprBookTitleFontSize: asOptionalNumber(record.aprBookTitleFontSize, base.aprBookTitleFontSize),
         aprAuthorNameFontFamily: asString(record.aprAuthorNameFontFamily) ?? base.aprAuthorNameFontFamily,
-        aprAuthorNameFontWeight: asNumber(record.aprAuthorNameFontWeight, base.aprAuthorNameFontWeight ?? 400),
-        aprAuthorNameFontItalic: asBoolean(record.aprAuthorNameFontItalic, base.aprAuthorNameFontItalic ?? false),
+        aprAuthorNameFontWeight: asNumber(record.aprAuthorNameFontWeight, base.aprAuthorNameFontWeight ?? 400), // SAFE: base style fields are optional; the shipped style's value fills a gap
+        aprAuthorNameFontItalic: asBoolean(record.aprAuthorNameFontItalic, base.aprAuthorNameFontItalic ?? false), // SAFE: base style fields are optional; the shipped style's value fills a gap
         aprAuthorNameFontSize: asOptionalNumber(record.aprAuthorNameFontSize, base.aprAuthorNameFontSize),
         aprPercentNumberFontSize1Digit: asOptionalNumber(record.aprPercentNumberFontSize1Digit, base.aprPercentNumberFontSize1Digit),
         aprPercentNumberFontSize2Digit: asOptionalNumber(record.aprPercentNumberFontSize2Digit, base.aprPercentNumberFontSize2Digit),
         aprPercentNumberFontSize3Digit: asOptionalNumber(record.aprPercentNumberFontSize3Digit, base.aprPercentNumberFontSize3Digit),
         aprRtBadgeFontFamily: asString(record.aprRtBadgeFontFamily) ?? base.aprRtBadgeFontFamily,
-        aprRtBadgeFontWeight: asNumber(record.aprRtBadgeFontWeight, base.aprRtBadgeFontWeight ?? 700),
-        aprRtBadgeFontItalic: asBoolean(record.aprRtBadgeFontItalic, base.aprRtBadgeFontItalic ?? false),
+        aprRtBadgeFontWeight: asNumber(record.aprRtBadgeFontWeight, base.aprRtBadgeFontWeight ?? 700), // SAFE: base style fields are optional; the shipped style's value fills a gap
+        aprRtBadgeFontItalic: asBoolean(record.aprRtBadgeFontItalic, base.aprRtBadgeFontItalic ?? false), // SAFE: base style fields are optional; the shipped style's value fills a gap
         aprRtBadgeFontSize: asOptionalNumber(record.aprRtBadgeFontSize, base.aprRtBadgeFontSize),
-        aprShowRtAttribution: asBoolean(record.aprShowRtAttribution, base.aprShowRtAttribution ?? true),
+        aprShowRtAttribution: asBoolean(record.aprShowRtAttribution, base.aprShowRtAttribution ?? true), // SAFE: base style fields are optional; the shipped style's value fills a gap
     };
 }
 
@@ -364,7 +364,7 @@ export function migrateAuthorProgressSettings(raw: unknown): AuthorProgressSetti
     }
 
     const inherited: LegacyInheritance = {
-        quality: normalizeAprExportQuality(sharedRecord.aprExportQuality) ?? 'standard',
+        quality: normalizeAprExportQuality(sharedRecord.aprExportQuality) ?? 'standard', // SAFE: schema 1 Default reports with no saved quality published at Standard
         viewMode: normalizeViewMode(sharedRecord.aprDefaultViewMode),
         staleDays: asNumber(sharedRecord.stalenessThresholdDays, 30)
     };

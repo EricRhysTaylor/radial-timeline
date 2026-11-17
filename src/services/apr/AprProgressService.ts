@@ -63,11 +63,11 @@ export class AprProgressService {
         const trackedStage = normalizeTrackedStage(settings.aprTrackedStage, 'Zero');
         const uniqueScenes = this.getUniqueScenes(scenes);
         const targetSceneCount = normalizeTargetSceneCount(settings.aprTargetSceneCount);
-        const effectiveDenominator = Math.max(uniqueScenes.length, targetSceneCount ?? 0);
+        const effectiveDenominator = Math.max(uniqueScenes.length, targetSceneCount ?? 0); // SAFE: no scene goal means the scene count alone is the denominator
         const stageBreakdown = this.countStages(uniqueScenes);
 
         if (mode === 'date') {
-            const percent = this.calculateDateProgress(settings.aprProgressDateStart, settings.aprProgressDateTarget) ?? 0;
+            const percent = this.calculateDateProgress(settings.aprProgressDateStart, settings.aprProgressDateTarget) ?? 0; // SAFE: an unset or invalid date range reads as 0%; the settings panel flags the range
             const displayStage = this.stageFromPercent(percent);
             return {
                 mode,
@@ -117,13 +117,6 @@ export class AprProgressService {
         };
     }
 
-    public getPercent(
-        scenes: TimelineItem[],
-        settings: AuthorProgressDefaults = this.plugin.settings.authorProgress?.defaults ?? buildDefaultAuthorProgressDefaults()
-    ): number {
-        return this.resolveProgress(scenes, settings).percent;
-    }
-
     public getDisplayStageForPercent(percent: number): AprTrackedStage {
         return this.stageFromPercent(percent);
     }
@@ -142,7 +135,7 @@ export class AprProgressService {
         scenes.forEach((scene, index) => {
             if (isBeatNote(scene)) return;
             if (scene?.itemType && scene.itemType !== 'Scene') return;
-            const key = scene.path?.trim() || `${scene.title ?? 'scene'}::${scene.number ?? ''}::${index}`;
+            const key = scene.path?.trim() || `${scene.title ?? 'scene'}::${scene.number ?? ''}::${index}`; // SAFE: de-duplication key; scenes without a path fall back to title, number and position
             if (seen.has(key)) return;
             seen.add(key);
             unique.push(scene);

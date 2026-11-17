@@ -123,7 +123,7 @@ export class AprStyleService {
             authorColor: style.aprAuthorColor ?? style.aprBookAuthorColor ?? fallbackColor,
             engineColor: style.aprEngineColor,
             percentNumberColor: style.aprPercentNumberColor ?? style.aprBookAuthorColor ?? fallbackColor,
-            theme: style.aprTheme ?? 'dark',
+            theme: style.aprTheme ?? 'dark', // SAFE: the dark theme is the shipped style's theme
             spokeColor: style.aprSpokeColorMode === 'custom'
                 ? style.aprSpokeColor
                 : style.aprSpokeColorMode === 'sync'

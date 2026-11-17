@@ -55,10 +55,8 @@ Two authors got stuck here (GitHub issues #29 and #34, both fixed in 7.0.2 and 7
 - Caption: ④ Auto locate
 - Voice: "Back in Radial Timeline, click Auto locate. It finds both programs and saves the path."
 
-**6. Styles and fonts (0:49–0:58)**
-- Screen: the PDF styles list, every pill "Not installed". Click "Install all", on the row with "Design your own…" and "Import template…" (it reads "Install all" while nothing is installed, "Install fonts" when only fonts are missing). The notice reads "Installed 6 bundled layout template(s) and required fonts in Radial Timeline/Pandoc/." and the pills turn "Installed".
-- Caption: ⑤ Install all · PDF styles and fonts
-- Voice: "Then install the PDF styles and their fonts with Install all."
+**6. Styles and fonts: dropped (2026-11-17)**
+- In 8.0.4 the bundled PDF styles and their fonts install themselves when the plugin loads: every style already reads "Installed", and so does the button beside "Design your own…" and "Import template…". There is no Install all step to show, so the edit leaves the line "Then install the PDF styles and their fonts with Install all." out of the read. The button ("Install all", or "Install fonts" when only fonts are missing) is still there for a vault whose Pandoc folder lost its files.
 
 **7. Ready (0:58–1:10)**
 - Screen: the "Export Check" card now reads "Ready to export. Generate your PDF." Click "Export manuscript": the "Export manuscript" dialog shows "Export checks · Ready".
@@ -96,6 +94,14 @@ The whole read, as one take:
 > The full guide is in the wiki, under Publishing.
 
 About 110 words, roughly 45 seconds at the Beat Manager read's pace (2.7 words a second); the rest of the 1:18 is steps shown at a followable pace.
+
+## Voice take and first cut (2026-11-17)
+
+- **Take:** `Radial Timeline LLC/Video/Plugin tutorials/pandoc setup/audio/pandoc-setup.aifc` (Eric recorded it in the Vol 14 project's `Audio/`; the copy here is the working source), 1:19.5, 48 kHz 24-bit. Every line matches the script; pauses between lines run about a second, so it is longer than the 45 s estimate.
+- **Cut voice:** `audio/pandoc-setup-voice-cut.wav`, 1:12.7: 58.25–64.95 s taken out (the Install all sentence, shot 6). The first word is at 2.31 s, so the film opens on 2 s of picture and music.
+- **Edit:** HyperFrames, `planning/record.mjs` (the takes) and `planning/build.py` (scenes, captions, end card, mix, subtitles `Publish/pandoc-setup.en.srt`). Music: "Careful Consideration" (Jon Bjork, Epidemic Sound). 1:14.6 in all.
+- **Staging that differs from "Before recording":** the vault also needed Book Details (title, author, rights, publisher) before Export Check could read Ready: without them it reads "Blocked: Add title in Publish → Book details before exporting." The "Scene field POV is now Narration" alert and the APR refresh badge were cleared in the capture copy so they don't show in the wheel's corner.
+- **Labels as they are in 8.0.4:** the status cards are "Form 01 Book Details" to "Form 04 Export Check"; Export Check's footer reads "04 Press proof · Set up tools", and "Set up tools" scrolls to "Export tools". Auto locate reports "✓ Pandoc found at … · Replaced missing path … · ✓ LaTeX found (xelatex) · Available engines …" in the row and in a notice. The Export manuscript button is labelled "Export manuscript →".
 
 ## Captions
 

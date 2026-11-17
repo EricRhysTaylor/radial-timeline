@@ -353,6 +353,12 @@
   height: 12px;
 }
 
+.ert-ui.ert-scope--settings .ert-beat-template-source-note {
+  margin-top: var(--ert-gap-3xs);
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
 .ert-ui.ert-scope--settings .ert-beat-template-desc {
   color: var(--text-muted);
   font-size: 13px;

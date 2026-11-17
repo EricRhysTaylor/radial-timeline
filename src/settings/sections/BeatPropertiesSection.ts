@@ -561,7 +561,7 @@ export function renderBeatPropertiesSection(params: {
         totalBeats: number;
         totalActs: number;
         hasAuthorDesc: boolean;
-        sourceLink?: { label: string; href: string };
+        sourceLink?: { label: string; href: string; note?: string };
     } => {
         const activeTab = loadedTab ?? getActiveBeatWorkspaceTab();
         const isBuiltinSystem = !!getPlotSystem(system);
@@ -583,6 +583,25 @@ export function renderBeatPropertiesSection(params: {
             hasAuthorDesc,
             sourceLink: hasAuthorDesc ? undefined : copy.sourceLink,
         };
+    };
+
+    /** The credit line under a built-in system's title: outbound source link, then its note. */
+    const renderSourceCredit = (parent: HTMLElement, sourceLink: { label: string; href: string; note?: string }): void => {
+        const sourceRow = parent.createDiv({ cls: 'ert-beat-template-source' });
+        const link = sourceRow.createEl('a', {
+            cls: 'ert-beat-template-source-link',
+            href: sourceLink.href,
+            attr: {
+                target: '_blank',
+                rel: 'noopener'
+            }
+        });
+        link.createSpan({ text: sourceLink.label });
+        const sourceIcon = link.createSpan({ cls: 'ert-beat-template-source-link-icon' });
+        setIcon(sourceIcon, 'external-link');
+        if (sourceLink.note) {
+            sourceRow.createDiv({ cls: 'ert-beat-template-source-note', text: sourceLink.note });
+        }
     };
 
     /**
@@ -1796,20 +1815,7 @@ export function renderBeatPropertiesSection(params: {
         const activeTab = getActiveBeatWorkspaceTab();
         const overview = getSystemOverviewState(system, activeTab ?? null);
         tierBannerEl.createDiv({ cls: 'ert-beat-template-title', text: overview.title });
-        if (overview.sourceLink) {
-            const sourceRow = tierBannerEl.createDiv({ cls: 'ert-beat-template-source' });
-            const sourceLink = sourceRow.createEl('a', {
-                cls: 'ert-beat-template-source-link',
-                href: overview.sourceLink.href,
-                attr: {
-                    target: '_blank',
-                    rel: 'noopener'
-                }
-            });
-            sourceLink.createSpan({ text: overview.sourceLink.label });
-            const sourceIcon = sourceLink.createSpan({ cls: 'ert-beat-template-source-link-icon' });
-            setIcon(sourceIcon, 'external-link');
-        }
+        if (overview.sourceLink) renderSourceCredit(tierBannerEl, overview.sourceLink);
         renderSystemDescription(tierBannerEl, overview);
     }
 
@@ -2884,20 +2890,7 @@ export function renderBeatPropertiesSection(params: {
         }
 
         const overview = getSystemOverviewState(selectedEntry.name, buildPreviewLoadedTab(selectedEntry));
-        if (overview.sourceLink) {
-            const sourceRow = previewCard.createDiv({ cls: 'ert-beat-template-source' });
-            const sourceLink = sourceRow.createEl('a', {
-                cls: 'ert-beat-template-source-link',
-                href: overview.sourceLink.href,
-                attr: {
-                    target: '_blank',
-                    rel: 'noopener'
-                }
-            });
-            sourceLink.createSpan({ text: overview.sourceLink.label });
-            const sourceIcon = sourceLink.createSpan({ cls: 'ert-beat-template-source-link-icon' });
-            setIcon(sourceIcon, 'external-link');
-        }
+        if (overview.sourceLink) renderSourceCredit(previewCard, overview.sourceLink);
         renderSystemDescription(previewCard, overview);
 
         const selectedLoadedTab = isBeatLibraryItemLoaded(plugin.settings, selectedEntry);

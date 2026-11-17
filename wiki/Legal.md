@@ -49,7 +49,7 @@ This project stands on the shoulders of many generous teachers, tools, and story
 *   [d3.js](https://d3js.org) — data-driven SVG visualizations.
 *   [Hero Patterns](https://heropatterns.com) by Steve Schoger — SVG motifs used in the Working-status scene fill, under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
 *   [Obsidian](https://obsidian.md) — for a thriving plugin ecosystem and thoughtful feature development.
-*   [Save the Cat! Writes a Novel](https://www.jessicabrody.com/books/non-fiction/save-cat-writes-novel/about/) (2018), Jessica Brody — a practical articulation of the Save the Cat beats.
+*   [Save the Cat! Writes a Novel](https://www.jessicabrody.com/books/non-fiction/save-cat-writes-novel/about/) (2018), Jessica Brody — a practical articulation of the Save the Cat beats. Radial Timeline is not affiliated with or endorsed by Save the Cat!®.
 *   [The Story Grid](https://storygrid.com), Shawn Coyne — a rigorous methodology for analyzing scenes and beat flow.
 *   [W3C SVG specification](https://www.w3.org/Graphics/SVG/) — for making vector graphics on the web dependable.
 

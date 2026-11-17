@@ -3132,6 +3132,7 @@ export const en = {
             saveTheCatDesc: 'Emphasizes clear emotional beats and audience engagement.\n\nUse it when you want clean turning points, visible reversals, and a strong sense of audience-facing momentum from setup through finale.\n\nBest for: commercial fiction, screenplays, high-concept genre\nMomentum profile: setup -> midpoint turn -> closing payoff',
             saveTheCatExamples: 'Examples: The Hunger Games, The Martian, The Fault in Our Stars.',
             saveTheCatSourceLabel: 'Jessica Brody\'s Save the Cat books',
+            saveTheCatSourceNote: 'Radial Timeline is not affiliated with or endorsed by Save the Cat!®.',
             herosJourneyTitle: 'Hero\'s Journey',
             herosJourneyDesc: 'Tracks departure, transformation, ordeal, and return.\n\nUse it when you want a mythic or identity-driven arc with visible inner and outer transformation.\n\nBest for: quest stories, speculative fiction, coming-of-age, transformational journeys\nMomentum profile: departure -> trials -> ordeal -> return with change',
             herosJourneyExamples: 'Examples: Star Wars, The Hobbit, A Wizard of Earthsea.',

@@ -5,7 +5,7 @@ export const getBeatSystemCopy = (): Record<string, {
     title: string;
     description: string;
     examples?: string;
-    sourceLink?: { label: string; href: string };
+    sourceLink?: { label: string; href: string; note?: string };
 }> => ({
     'Save The Cat': {
         title: t('ui.beatSystemCopy.saveTheCatTitle'),
@@ -13,7 +13,8 @@ export const getBeatSystemCopy = (): Record<string, {
         examples: t('ui.beatSystemCopy.saveTheCatExamples'),
         sourceLink: {
             label: t('ui.beatSystemCopy.saveTheCatSourceLabel'),
-            href: 'https://www.jessicabrody.com/save-the-cat-for-novels/'
+            href: 'https://www.jessicabrody.com/save-the-cat-for-novels/',
+            note: t('ui.beatSystemCopy.saveTheCatSourceNote')
         }
     },
     'Hero\'s Journey': {

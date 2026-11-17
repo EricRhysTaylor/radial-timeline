@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelineItem } from '../types';
 import { parseWhenField } from '../utils/date';
-import { previewCompressedScale, previewSceneRanges } from './compressedPreviewModel';
+import { previewCompressedScale, previewSceneRanges, previewSceneSectors } from './compressedPreviewModel';
 
 const scene = (path: string, raw: string, whenHasClock = false): TimelineItem => ({
     date: '', path, title: path, itemType: 'Scene', when: parseWhenField(raw) ?? undefined, whenHasClock, rawFrontmatter: { When: raw },
@@ -32,4 +32,24 @@ describe('compressed time preview', () => {
         expect(ranges[0].endMs - ranges[0].startMs).toBeGreaterThan(364 * 86400000);
         expect(ranges[1].endMs - ranges[1].startMs).toBeGreaterThan(27 * 86400000);
     });
+    it('allocates contiguous scene wedges and groups simultaneous scenes', () => {
+        const scale = previewCompressedScale([
+            { id: 'first', startMs: 0, endMs: 0 },
+            { id: 'same', startMs: 0, endMs: 0 },
+            { id: 'middle', startMs: 1000, endMs: 1000 },
+            { id: 'last', startMs: 10000000000, endMs: 10000000000 },
+        ])!;
+        const sectors = previewSceneSectors(scale);
+        expect(sectors).toHaveLength(3);
+        expect(sectors[0].ranges.map(range => range.id)).toEqual(['first', 'same']);
+        expect(sectors[0].startAngle).toBe(scale.segments[0].startAngle);
+        expect(sectors[2].endAngle).toBe(scale.segments.at(-1)!.endAngle);
+        for (let i = 0; i < sectors.length; i++) {
+            expect(sectors[i].startAngle).toBeLessThan(sectors[i].endAngle);
+            expect(sectors[i].angle).toBeGreaterThanOrEqual(sectors[i].startAngle);
+            expect(sectors[i].angle).toBeLessThanOrEqual(sectors[i].endAngle + 1e-10);
+            if (i) expect(sectors[i - 1].endAngle).toBe(sectors[i].startAngle);
+        }
+    });
+
 });

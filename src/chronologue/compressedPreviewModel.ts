@@ -44,3 +44,20 @@ export function previewCompressedScale(ranges: TimeRange[]) {
         gapThresholdMs: PREVIEW_GAP_THRESHOLD_MS, compressedGapMs: PREVIEW_GAP_WEIGHT_MS,
     });
 }
+
+/** Allocate display space around dated positions without changing the time scale. */
+export function previewSceneSectors(scale: NonNullable<ReturnType<typeof previewCompressedScale>>) {
+    const positions = scale.ranges.map(range => ({ range, angle: (range.startAngle + range.endAngle) / 2 }))
+        .sort((a, b) => a.angle - b.angle);
+    const clusters: Array<{ angle: number; ranges: typeof scale.ranges }> = [];
+    for (const position of positions) {
+        const last = clusters[clusters.length - 1];
+        if (last && Math.abs(last.angle - position.angle) < 1e-10) last.ranges.push(position.range);
+        else clusters.push({ angle: position.angle, ranges: [position.range] });
+    }
+    return clusters.map((cluster, index) => ({
+        ...cluster,
+        startAngle: index ? (clusters[index - 1].angle + cluster.angle) / 2 : scale.segments[0].startAngle,
+        endAngle: index + 1 < clusters.length ? (cluster.angle + clusters[index + 1].angle) / 2 : scale.segments[scale.segments.length - 1].endAngle,
+    }));
+}

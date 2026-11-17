@@ -1,7 +1,7 @@
 import { App, Modal } from 'obsidian';
 import type { TimelineItem } from '../types';
 import { formatElapsedTime } from '../utils/date';
-import { previewCompressedScale, previewSceneRanges } from './compressedPreviewModel';
+import { previewCompressedScale, previewSceneRanges, previewSceneSectors } from './compressedPreviewModel';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 let previewId = 0;
@@ -15,6 +15,12 @@ function element(doc: Document, tag: string, attrs: Record<string, string>): SVG
 function arc(radius: number, start: number, end: number): string {
     const point = (angle: number) => `${radius * Math.cos(angle)} ${radius * Math.sin(angle)}`;
     return `M ${point(start)} A ${radius} ${radius} 0 ${end - start > Math.PI ? 1 : 0} 1 ${point(end)}`;
+}
+
+function sector(inner: number, outer: number, start: number, end: number): string {
+    const point = (radius: number, angle: number) => `${radius * Math.cos(angle)} ${radius * Math.sin(angle)}`;
+    const large = end - start > Math.PI ? 1 : 0;
+    return `M ${point(outer, start)} A ${outer} ${outer} 0 ${large} 1 ${point(outer, end)} L ${point(inner, end)} A ${inner} ${inner} 0 ${large} 0 ${point(inner, start)} Z`;
 }
 
 /** Prefix cloned SVG ids so the preview cannot alter the live wheel's references. */
@@ -51,7 +57,7 @@ export class CompressedPreviewModal extends Modal {
             content.createEl('p', { text: 'This preview needs at least two distinct dated positions or a date range.' });
             return;
         }
-        content.createEl('p', { text: `${ranges.length} dated scenes · ${excluded} undated or unsupported scenes omitted. Lines mark exact times; arcs show date uncertainty. Dashed arcs mark compressed gaps. Hover or focus a scene to highlight its matching subplot positions.` });
+        content.createEl('p', { text: `${ranges.length} dated scenes · ${excluded} undated or unsupported scenes omitted. Wedges allocate space around scene dates; they do not show scene duration. Orange dashes mark compressed gaps. Some labels may be too close together to display. Hover or focus a scene to highlight its matching subplot positions.` });
         const layout = content.createDiv({ cls: 'ert-compressed-preview__layout' });
         const host = layout.createDiv({ cls: 'radial-timeline-container ert-compressed-preview__wheel' });
         const svg = this.source.cloneNode(true) as SVGSVGElement; // SAFE: cloning a rendered SVG is confined to this read-only preview.
@@ -70,27 +76,38 @@ export class CompressedPreviewModal extends Modal {
         const mid = (inner + outer) / 2;
         const overlay = element(svg.ownerDocument, 'g', { class: 'ert-compressed-preview__overlay' });
         overlay.appendChild(element(svg.ownerDocument, 'circle', { cx: '0', cy: '0', r: String(mid), 'stroke-width': String(outer - inner + 3), class: 'ert-compressed-preview__mask' }));
-        overlay.appendChild(element(svg.ownerDocument, 'circle', { cx: '0', cy: '0', r: String(mid), 'stroke-width': String(outer - inner - 8), class: 'ert-compressed-preview__track' }));
-        for (const gap of scale.segments.filter(segment => segment.compressed)) {
-            const path = element(svg.ownerDocument, 'path', { d: arc(mid, gap.startAngle, gap.endAngle), class: 'ert-compressed-preview__gap' });
-            path.appendChild(element(svg.ownerDocument, 'title', {})).textContent = `Compressed gap: ${formatElapsedTime(gap.endMs - gap.startMs)}`;
-            overlay.appendChild(path);
-        }
         const sceneShapes = new Map<string, SVGElement>();
         const highlight = (path: string | null) => {
-            sceneShapes.forEach((shape, id) => shape.classList.toggle('is-selected', id === path));
+            sceneShapes.forEach(shape => shape.classList.toggle('is-selected', !!path && sceneShapes.get(path) === shape));
             groups.forEach(group => group.classList.toggle('ert-compressed-preview__match', !!path && group.getAttribute('data-path') === encodeURIComponent(path)));
         };
-        for (const range of scale.ranges) {
-            const title = titles.get(range.id) ?? range.id;
-            const shape = range.startMs === range.endMs
-                ? element(svg.ownerDocument, 'line', { x1: String((inner + 8) * Math.cos(range.startAngle)), y1: String((inner + 8) * Math.sin(range.startAngle)), x2: String((outer - 8) * Math.cos(range.startAngle)), y2: String((outer - 8) * Math.sin(range.startAngle)), class: 'ert-compressed-preview__instant' })
-                : element(svg.ownerDocument, 'path', { d: arc(mid, range.startAngle, range.endAngle), class: 'ert-compressed-preview__range' });
-            shape.appendChild(element(svg.ownerDocument, 'title', {})).textContent = title;
-            sceneShapes.set(range.id, shape);
-            shape.addEventListener('pointerenter', () => highlight(range.id));
-            shape.addEventListener('pointerleave', () => highlight(null));
-            overlay.appendChild(shape);
+        for (const wedge of previewSceneSectors(scale)) {
+            const first = wedge.ranges[0];
+            const matching = groups.find(group => Number(group.getAttribute('data-outer-r')) === outer && group.getAttribute('data-path') === encodeURIComponent(first.id));
+            const color = matching?.getAttribute('data-subplot-color') || 'var(--interactive-accent)';
+            const group = element(svg.ownerDocument, 'g', { class: 'ert-compressed-preview__wedge' });
+            const shape = element(svg.ownerDocument, 'path', { d: sector(inner, outer, wedge.startAngle, wedge.endAngle), fill: color, class: 'ert-compressed-preview__wedge-shape' });
+            group.appendChild(shape);
+            group.appendChild(element(svg.ownerDocument, 'title', {})).textContent = wedge.ranges.map(range => titles.get(range.id) ?? range.id).join('\n');
+            const width = wedge.endAngle - wedge.startAngle;
+            if (width * mid > 40) {
+                const angle = (wedge.startAngle + wedge.endAngle) / 2;
+                const label = element(svg.ownerDocument, 'text', { x: String(mid * Math.cos(angle)), y: String(mid * Math.sin(angle)), 'text-anchor': 'middle', 'dominant-baseline': 'middle', transform: `rotate(${angle * 180 / Math.PI + 90 + (Math.cos(angle) < 0 ? 180 : 0)} ${mid * Math.cos(angle)} ${mid * Math.sin(angle)})`, class: 'ert-compressed-preview__wedge-label' });
+                const scene = this.scenes.find(item => item.path === first.id);
+                const name = wedge.ranges.length > 1 ? `${wedge.ranges.length} scenes` : `${scene?.number != null ? `${scene.number} ` : ''}${scene?.title ?? first.id}`;
+                const max = Math.max(3, Math.floor(width * mid / 9));
+                label.textContent = name.length > max ? `${name.slice(0, max - 1)}…` : name;
+                group.appendChild(label);
+            }
+            wedge.ranges.forEach(range => sceneShapes.set(range.id, group));
+            group.addEventListener('pointerenter', () => highlight(first.id));
+            group.addEventListener('pointerleave', () => highlight(null));
+            overlay.appendChild(group);
+        }
+        for (const gap of scale.segments.filter(segment => segment.compressed)) {
+            const path = element(svg.ownerDocument, 'path', { d: arc(outer - 5, gap.startAngle, gap.endAngle), class: 'ert-compressed-preview__gap' });
+            path.appendChild(element(svg.ownerDocument, 'title', {})).textContent = `Compressed gap: ${formatElapsedTime(gap.endMs - gap.startMs)}`;
+            overlay.appendChild(path);
         }
         svg.appendChild(overlay);
         host.appendChild(svg);

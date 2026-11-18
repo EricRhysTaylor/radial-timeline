@@ -27,7 +27,8 @@ import { resolveBookScopedFiles } from '../services/NoteScopeResolver';
 import { describeAiRunModel } from '../utils/modelResolver';
 import { snapshotFrontmatterFields } from '../utils/logVaultOps';
 import { normalizeBooleanValue } from '../utils/sceneHelpers';
-import { truncateToWordLimit } from '../utils/synopsisLimits';
+import { getSynopsisKeepWordLimit } from '../utils/synopsisLimits';
+import { countWords } from '../utils/text';
 import { getSynopsisContentProblem } from '../utils/synopsisContent';
 import { getSummaryUpdateFlag } from './data';
 import type { SceneData } from './types';
@@ -67,14 +68,21 @@ export function buildSummaryRunRequest(scene: SceneData, targetWords: number): A
     };
 }
 
-/** The Synopsis pass: a word-capped hover blurb written from the new Summary. */
-export function buildSynopsisRunRequest(scene: SceneData, summaryText: string, maxWords: number): AIRunRequest {
+/**
+ * The Synopsis pass: a word-capped hover blurb written from the new Summary.
+ * `tooLongWords` is set on the one retry after a reply ran past what is kept,
+ * and tells the model how long its first answer was.
+ */
+export function buildSynopsisRunRequest(scene: SceneData, summaryText: string, maxWords: number, tooLongWords?: number): AIRunRequest {
+    const retryNote = tooLongWords === undefined
+        ? undefined
+        : `Your previous synopsis for this scene ran ${tooLongWords} words. Write a new one of at most ${maxWords} words.`;
     return {
         feature: 'SummaryRefresh',
         task: 'SceneSynopsis',
         requiredCapabilities: ['jsonStrict', 'reasoningStrong'],
         featureModeInstructions: getSummarySystemPrompt(),
-        userInput: buildSynopsisPrompt(summaryText, sceneNumberLabel(scene), maxWords),
+        userInput: buildSynopsisPrompt(summaryText, sceneNumberLabel(scene), maxWords, retryNote),
         returnType: 'json',
         responseSchema: getSynopsisJsonSchema(),
         // Regenerates the Synopsis; never the previous answer, and no author
@@ -87,7 +95,7 @@ export function buildSynopsisRunRequest(scene: SceneData, summaryText: string, m
 
 export type SummaryRefreshReply =
     | { ok: true; text: string }
-    | { ok: false; problem: string };
+    | { ok: false; problem: string; tooLongWords?: number };
 
 function readReplyField(reply: string, field: 'summary' | 'synopsis'): SummaryRefreshReply {
     // Replies can arrive wrapped (a code fence, a sentence before the JSON);
@@ -113,11 +121,46 @@ export function parseSummaryReply(reply: string): SummaryRefreshReply {
     return readReplyField(reply, 'summary');
 }
 
+/**
+ * Read a Synopsis reply. A reply a few words over the cap is kept as written
+ * (up to the hover's word room, getSynopsisKeepWordLimit); one past that is
+ * refused with `tooLongWords`, never cut, so the scene never gets a sentence
+ * that stops mid-way.
+ */
 export function parseSynopsisReply(reply: string, maxWords: number): SummaryRefreshReply {
     const result = readReplyField(reply, 'synopsis');
     if (!result.ok) return result;
     const problem = getSynopsisContentProblem(result.text);
-    return problem ? { ok: false, problem } : { ok: true, text: truncateToWordLimit(result.text, maxWords) };
+    if (problem) return { ok: false, problem };
+    const words = countWords(result.text);
+    const keepLimit = getSynopsisKeepWordLimit(maxWords);
+    if (words > keepLimit) {
+        return {
+            ok: false,
+            problem: `The synopsis ran ${words} words. The cap is ${maxWords}, and at most ${keepLimit} are kept.`,
+            tooLongWords: words
+        };
+    }
+    return { ok: true, text: result.text };
+}
+
+/**
+ * The Synopsis pass with its one retry: when the reply runs past what is
+ * kept, ask once more, telling the model how long the first answer was. A
+ * second reply that is still too long fails with its problem. The API run and
+ * feature certification both go through here; AI jobs get their retry from
+ * the job mailbox, which sends a refused answer back to the client.
+ */
+export async function requestSynopsis(
+    send: (request: AIRunRequest) => Promise<string>,
+    scene: SceneData,
+    summaryText: string,
+    maxWords: number
+): Promise<SummaryRefreshReply & { attempts: number }> {
+    const first = parseSynopsisReply(await send(buildSynopsisRunRequest(scene, summaryText, maxWords)), maxWords);
+    if (first.ok || first.tooLongWords === undefined) return { ...first, attempts: 1 };
+    const second = parseSynopsisReply(await send(buildSynopsisRunRequest(scene, summaryText, maxWords, first.tooLongWords)), maxWords);
+    return { ...second, attempts: 2 };
 }
 
 /**

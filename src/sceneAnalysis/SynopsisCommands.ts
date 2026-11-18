@@ -15,11 +15,10 @@ import { getAllSceneData, compareScenesByOrder, assertSceneSourcesUnchanged } fr
 import { classifySynopsis } from './synopsisQuality';
 import {
     buildSummaryRunRequest,
-    buildSynopsisRunRequest,
     isFlaggedForSummaryRefresh,
     parseSummaryReply,
-    parseSynopsisReply,
     persistSummaryForScene,
+    requestSynopsis,
     resolveSummaryRefreshScope,
     resolveSummaryTargetWords,
     sendSummaryRefreshRequest
@@ -300,12 +299,16 @@ export async function runSynopsisBatch(
             // Generate the hover blurb from the newly generated Summary, not the full scene text.
             if (alsoUpdateSynopsis) {
                 try {
-                    const sent = await sendSummaryRefreshRequest(plugin, { ...buildSynopsisRunRequest(scene, newSummary, synopsisMaxWords), shouldAbort: () => modal.isAborted() });
-                    modal.setAiAdvancedContext(sent.advancedContext ?? null);
-                    const parsed = parseSynopsisReply(sent.reply, synopsisMaxWords);
+                    let synopsisAttribution: string | null = null;
+                    const parsed = await requestSynopsis(async request => {
+                        const sent = await sendSummaryRefreshRequest(plugin, { ...request, shouldAbort: () => modal.isAborted() });
+                        modal.setAiAdvancedContext(sent.advancedContext ?? null);
+                        synopsisAttribution = sent.attribution;
+                        return sent.reply;
+                    }, scene, newSummary, synopsisMaxWords);
                     if (!parsed.ok) throw new Error(parsed.problem);
                     newSynopsis = parsed.text;
-                    attribution ??= sent.attribution;
+                    attribution ??= synopsisAttribution;
                 } catch (synErr) {
                     console.warn(`Synopsis generation failed for ${sceneName}:`, synErr);
                     const reason = explainSummaryRefreshFailure(synErr, {

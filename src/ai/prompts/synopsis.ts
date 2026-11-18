@@ -93,6 +93,9 @@ export function buildSynopsisPrompt(
   extraInstructions?: string
 ): string {
   let instructions = extraInstructions ? extraInstructions.trim() + '\n\n' : '';
+  // Models aiming at the cap land a word or two over it; aiming below it
+  // keeps them under.
+  const aimWords = Math.max(1, Math.round(maxWords * 5 / 6));
 
   return `${instructions}Read the scene below and write a concise synopsis (brief summary).
 Return ONLY valid JSON matching this structure:
@@ -103,7 +106,7 @@ Return ONLY valid JSON matching this structure:
 
 Rules:
 1. FOCUS: Purely factual summary of the main event(s) in the scene.
-2. LENGTH: Maximum ${maxWords} words. Hard cap; do not exceed it.
+2. LENGTH: Aim for about ${aimWords} words. Never more than ${maxWords}.
 3. TONE: Neutral, objective, concise. No flowery prose.
 4. CONTENT: Capture the key action or turning point. Prefer one compact paragraph. Do NOT include analysis or "The scene is about...".
 5. SCHEDULING: ${SYNOPSIS_CONTENT_RULE}

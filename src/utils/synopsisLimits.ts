@@ -15,8 +15,16 @@ export function getSynopsisGenerationWordLimit(settings: SynopsisLimitSettings):
 }
 
 export function getSynopsisHoverWordLimit(settings: SynopsisLimitSettings): number {
-    const words = getSynopsisGenerationWordLimit(settings);
-    return Math.min(300, words + SYNOPSIS_HOVER_EXTRA_WORDS);
+    return getSynopsisKeepWordLimit(getSynopsisGenerationWordLimit(settings));
+}
+
+/**
+ * The longest AI Synopsis Radial Timeline keeps as written: the hover's word
+ * room, so anything kept still shows in full. The prompt asks for the cap; a
+ * reply a few words over it is kept, never cut mid-sentence.
+ */
+export function getSynopsisKeepWordLimit(maxWords: number): number {
+    return Math.min(300, maxWords + SYNOPSIS_HOVER_EXTRA_WORDS);
 }
 
 export function getSynopsisHoverLineLimit(settings: SynopsisLimitSettings): number {

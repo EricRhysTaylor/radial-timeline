@@ -6,9 +6,11 @@ import {
     buildSummaryRunRequest,
     buildSynopsisRunRequest,
     parseSummaryReply,
-    parseSynopsisReply
+    parseSynopsisReply,
+    requestSynopsis
 } from './summaryRefresh';
 import { getSummaryJsonSchema, getSynopsisJsonSchema } from '../ai/prompts/synopsis';
+import type { AIRunRequest } from '../ai/types';
 import type { SceneData } from './types';
 
 const scene: SceneData = {
@@ -38,8 +40,58 @@ describe('Summary refresh replies', () => {
         if (!prose.ok) expect(prose.problem).toContain('not valid JSON');
     });
 
-    it('caps the synopsis at the word limit', () => {
-        expect(parseSynopsisReply('{ "synopsis": "one two three four five" }', 3)).toEqual({ ok: true, text: 'one two three...' });
+    it('keeps a synopsis a few words over the cap as written, never cut', () => {
+        // Cap 30 keeps up to 50 (the hover's word room).
+        const synopsis = words(31);
+        expect(parseSynopsisReply(JSON.stringify({ synopsis }), 30)).toEqual({ ok: true, text: synopsis });
+        expect(parseSynopsisReply(JSON.stringify({ synopsis: words(50) }), 30).ok).toBe(true);
+    });
+
+    it('refuses a synopsis past what is kept, naming its length', () => {
+        const parsed = parseSynopsisReply(JSON.stringify({ synopsis: words(51) }), 30);
+        expect(parsed.ok).toBe(false);
+        if (!parsed.ok) {
+            expect(parsed.tooLongWords).toBe(51);
+            expect(parsed.problem).toContain('51 words');
+        }
+    });
+});
+
+function words(count: number): string {
+    return Array.from({ length: count }, (_, index) => `word${index + 1}`).join(' ');
+}
+
+describe('Synopsis pass retry', () => {
+    const reply = (count: number) => JSON.stringify({ synopsis: words(count) });
+
+    it('sends one request when the first reply is kept', async () => {
+        const sent: AIRunRequest[] = [];
+        const result = await requestSynopsis(async request => { sent.push(request); return reply(28); }, scene, 'A factual summary.', 30);
+        expect(result).toMatchObject({ ok: true, attempts: 1 });
+        expect(sent).toHaveLength(1);
+    });
+
+    it('retries once when the reply runs past what is kept, telling the model its length', async () => {
+        const sent: AIRunRequest[] = [];
+        const answers = [reply(60), reply(27)];
+        const result = await requestSynopsis(async request => { sent.push(request); return answers.shift() ?? ''; }, scene, 'A factual summary.', 30);
+        expect(result).toMatchObject({ ok: true, text: words(27), attempts: 2 });
+        expect(sent).toHaveLength(2);
+        expect(sent[1].userInput).toContain('ran 60 words');
+        expect(sent[0].userInput).not.toContain('ran 60 words');
+    });
+
+    it('fails with the problem when the retry is still too long', async () => {
+        const result = await requestSynopsis(async () => reply(70), scene, 'A factual summary.', 30);
+        expect(result.ok).toBe(false);
+        expect(result.attempts).toBe(2);
+    });
+
+    it('does not retry a reply refused for another reason', async () => {
+        const sent: AIRunRequest[] = [];
+        const result = await requestSynopsis(async request => { sent.push(request); return 'not json'; }, scene, 'A factual summary.', 30);
+        expect(result).toMatchObject({ ok: false, attempts: 1 });
+        expect(sent).toHaveLength(1);
     });
 });
 
@@ -84,7 +136,7 @@ describe('Summary refresh has one request, reply and write path', () => {
 
     it('the API run uses the shared builders, parsers and writer', () => {
         const source = read('src/sceneAnalysis/SynopsisCommands.ts');
-        for (const name of ['buildSummaryRunRequest(', 'buildSynopsisRunRequest(', 'parseSummaryReply(', 'parseSynopsisReply(', 'persistSummaryForScene(']) {
+        for (const name of ['buildSummaryRunRequest(', 'requestSynopsis(', 'parseSummaryReply(', 'persistSummaryForScene(']) {
             expect(source).toContain(name);
         }
         expect(source).not.toContain('buildSummaryPrompt(');

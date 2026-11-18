@@ -93,7 +93,6 @@ import { asBeatFrontmatter, readBeatPurpose } from '../../utils/frontmatter';
 import { buildGossamerEvidenceDocument } from '../../gossamer/evidence/buildGossamerEvidence';
 import { buildUnifiedBeatAnalysisCacheParts, getUnifiedBeatAnalysisJsonSchema, type UnifiedBeatInfo } from '../prompts/unifiedBeatAnalysis';
 import { unwrapStructuredEnvelope } from '../structuredResponseUnwrap';
-import { extractJsonPayload } from '../runtime/jsonValidator';
 import { countWords } from '../../utils/text';
 import { validateGossamerResponse } from '../gossamer/responseValidation';
 import { InquiryRunnerService } from '../../inquiry/runner/InquiryRunnerService';
@@ -104,9 +103,8 @@ import { hashString } from '../../inquiry/services/InquiryCorpusService';
 import { OutputProfileStore } from '../cost/outputProfile';
 import {
     buildSummaryRunRequest,
-    buildSynopsisRunRequest,
     parseSummaryReply,
-    parseSynopsisReply,
+    requestSynopsis,
     resolveSummaryTargetWords
 } from '../../sceneAnalysis/summaryRefresh';
 import { getSynopsisGenerationWordLimit } from '../../utils/synopsisLimits';
@@ -331,9 +329,10 @@ async function certifyPulse(plugin: never, app: ReturnType<typeof createInMemory
 /**
  * Summary then Synopsis, the two passes of a Summary refresh, through the
  * production request builders and reply parsers. The Synopsis is written
- * from the new Summary, as in the plugin. Production truncates an over-long
- * Synopsis, so the case checks the raw reply: a model that ignores the hard
- * word cap fails here instead of having its last sentence cut off silently.
+ * from the new Summary, as in the plugin, through the same one-retry pass
+ * (requestSynopsis): a reply a few words over the cap is kept as written, and
+ * the case fails only when the retry is still longer than what is kept. The
+ * report says when a retry was needed.
  */
 async function certifySummary(plugin: never, app: ReturnType<typeof createInMemoryApp>): Promise<FeatureCase[]> {
     const client = getAIClient(plugin);
@@ -358,29 +357,42 @@ async function certifySummary(plugin: never, app: ReturnType<typeof createInMemo
             if (!summary.ok) {
                 return { passed: false, summary: `Summary parser rejected the reply: ${summary.problem}`, usage: summaryUsage, costUSD: summaryCost };
             }
-            const synopsisRun = await client.run({ ...buildSynopsisRunRequest(scene, summary.text, maxWords), ...pinned() });
-            const synopsisUsage = extractTokenUsage(synopsisRun.provider, synopsisRun.responseData);
-            const usage = sumUsage(summaryUsage, synopsisUsage);
-            const costUSD = (summaryCost ?? 0) + (costOf(synopsisUsage, synopsisRun.validation?.providerCacheStatus) ?? 0);
-            if (synopsisRun.aiStatus !== 'success' || !synopsisRun.content) {
-                return { passed: false, summary: `Synopsis run ${synopsisRun.aiStatus}`, refusal: refusalOf(synopsisRun), error: synopsisRun.error, usage, costUSD };
+            // The production Synopsis pass, with its one retry when a reply runs
+            // past what is kept. Every call it makes is billed into this case.
+            const synopsisRuns: Awaited<ReturnType<typeof client.run>>[] = [];
+            let failedRun: Awaited<ReturnType<typeof client.run>> | null = null;
+            let synopsis: Awaited<ReturnType<typeof requestSynopsis>> | null = null;
+            try {
+                synopsis = await requestSynopsis(async request => {
+                    const run = await client.run({ ...request, ...pinned() });
+                    synopsisRuns.push(run);
+                    if (run.aiStatus !== 'success' || !run.content) {
+                        failedRun = run;
+                        throw new Error(`Synopsis run ${run.aiStatus}`);
+                    }
+                    return run.content;
+                }, scene, summary.text, maxWords);
+            } catch {
+                // failedRun carries the reason; reported below.
             }
-            const synopsis = parseSynopsisReply(synopsisRun.content, maxWords);
+            const usage = synopsisRuns.reduce((total, run) => sumUsage(total, extractTokenUsage(run.provider, run.responseData)), summaryUsage);
+            const costUSD = synopsisRuns.reduce((total, run) => total + (costOf(extractTokenUsage(run.provider, run.responseData), run.validation?.providerCacheStatus) ?? 0), summaryCost ?? 0);
+            const failed = failedRun as Awaited<ReturnType<typeof client.run>> | null;
+            if (failed || !synopsis) {
+                return { passed: false, summary: `Synopsis run ${failed?.aiStatus ?? 'failed'}`, refusal: failed ? refusalOf(failed) : undefined, error: failed?.error, usage, costUSD };
+            }
             if (!synopsis.ok) {
-                return { passed: false, summary: `Synopsis parser rejected the reply: ${synopsis.problem}`, usage, costUSD };
+                return { passed: false, summary: `Synopsis parser rejected the reply after ${synopsis.attempts} attempt(s): ${synopsis.problem}`, usage, costUSD };
             }
-            const rawSynopsis = (JSON.parse(extractJsonPayload(synopsisRun.content)) as { synopsis: string }).synopsis.trim();
-            const rawWords = countWords(rawSynopsis);
+            const synopsisWords = countWords(synopsis.text);
             const summaryWords = countWords(summary.text);
-            const overCap = rawWords > maxWords;
+            const retried = synopsis.attempts > 1 ? ' after one retry' : '';
             return {
-                passed: !overCap,
-                summary: overCap
-                    ? `Synopsis ran ${rawWords} words, over the ${maxWords}-word cap.`
-                    : `Summary ${summaryWords} words (target ${targetWords}); Synopsis ${rawWords} words (cap ${maxWords}); both passed the production parsers.`,
+                passed: true,
+                summary: `Summary ${summaryWords} words (target ${targetWords}); Synopsis ${synopsisWords} words (cap ${maxWords})${retried}; both passed the production parsers.`,
                 usage,
                 costUSD,
-                sample: { summary: summary.text, synopsis: rawSynopsis }
+                sample: { summary: summary.text, synopsis: synopsis.text }
             };
         }));
     }

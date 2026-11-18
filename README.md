@@ -93,6 +93,7 @@ Ongoing series on the [Radial Timeline YouTube channel](https://www.youtube.com/
 How-tos:
 
 - **Beat Manager**: [Put Your Story's Beats on Your Timeline](https://radialtimeline.com/go/readme-beat-manager-video)
+- **Pandoc setup**: [Export Your Manuscript to Word and PDF](https://radialtimeline.com/go/readme-pandoc-setup-video)
 
 Shorts:
 

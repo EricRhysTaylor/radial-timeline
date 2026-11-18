@@ -14,6 +14,8 @@ For PDF, choose a layout defining fonts, headers, chapter openers, and part divi
 
 ## Installing Pandoc and LaTeX
 
+[![Watch: Set up Word and PDF export (1:20)](https://i.ytimg.com/vi/t6O4ZYjJ5J8/maxresdefault.jpg)](https://radialtimeline.com/go/wiki-pandoc-setup-section)
+
 Install Pandoc and a LaTeX distribution:
 
 **macOS**

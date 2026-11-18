@@ -2993,11 +2993,9 @@
   font-weight: 500;
 }
 
-/* Font row: the label carries a variable-length "Missing — <font>" notice and
-   the value side carries a select plus an Install button. The shared 50% label
-   min-width wraps long font names onto a second line, which then pushes the
-   Install button below the dropdown. Let the label shrink to its content and
-   keep the two controls together on one line. */
+/* Font row: the label carries a variable-length "Missing — <font>" notice.
+   The shared 50% label min-width wraps long font names onto a second line, so
+   let the label shrink to its content and keep the menu on the same line. */
 .ert-style-wizard__field-row--font .ert-style-wizard__field-label {
   min-width: 0;
   flex: 0 1 auto;
@@ -3006,25 +3004,6 @@
 .ert-style-wizard__field-row--font .ert-style-wizard__field-value {
   flex: 0 0 auto;
   flex-wrap: nowrap;
-}
-
-.ert-style-wizard__field-row--font .ert-style-wizard__font-install {
-  white-space: nowrap;
-}
-
-.ert-style-wizard__font-install {
-  background: transparent;
-  border: 1px solid var(--text-warning, var(--text-error));
-  color: var(--text-warning, var(--text-error));
-  padding: var(--ert-gap-2xs) var(--ert-gap-sm);
-  font-size: 0.75rem;
-  border-radius: var(--radius-s, 4px);
-  cursor: pointer;
-  margin-left: var(--ert-gap-tight, 6px);
-}
-
-.ert-style-wizard__font-install:hover {
-  background: var(--background-modifier-hover);
 }
 
 /* Per-card font diagnostic on Settings > Publish layout cards. */

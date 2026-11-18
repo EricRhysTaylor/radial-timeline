@@ -6,7 +6,7 @@ export function hasProFeatureAccess(plugin: RadialTimelinePlugin): boolean {
 }
 
 /**
- * Beta features (unreleased commands, the PDF style designer and .tex import)
+ * Beta features (unreleased commands and .tex template import)
  * show only in vaults a local development build
  * was deployed to: esbuild.config.mjs writes this marker into those plugin
  * folders. Every build ships the same main.js, so Obsidian's review can

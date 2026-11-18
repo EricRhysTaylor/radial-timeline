@@ -46,6 +46,7 @@ import { ensureReferenceIdTemplateFrontmatter, ensureSceneTemplateFrontmatter } 
 import { chunkScenesIntoParts } from '../utils/splitOutput';
 import { resolveBookPages, type MatterNoteSummary } from '../utils/bookPagesResolver';
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
+import { refreshDesignedLayoutFontsForExport } from '../publishing/designedLayoutFiles';
 import { getLayoutAbbreviation, resolveTemplateAccess, TEMPLATE_ACCESS_FALLBACK_MESSAGE } from '../publishing/templateTiering';
 import { hasProFeatureAccess } from '../settings/featureGate';
 import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from '../utils/manuscriptSanitize';
@@ -779,6 +780,10 @@ export class CommandRegistrar {
                     new Notice(t('ui.commandRegistrar.installedBundledLayout', { name: layout.name }));
                 }
             }
+            // A style saved by the design wizard loads an included font from
+            // the vault by absolute path: make sure the files are there and
+            // the path matches where this vault is now.
+            await refreshDesignedLayoutFontsForExport(this.plugin, layout);
             let layoutValidation = validatePandocLayout(this.plugin, layout);
             if (!layoutValidation.valid && layout.bundled) {
                 const bundledInstall = await ensureBundledLayoutInstalledForExport(this.plugin, layout);

@@ -1379,20 +1379,19 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     //
     // The wizard is the default path; Import is the long tail.
 
-    // Designed Style Wizard entry point — opens a two-column modal that lets
-    // a Pro user author a DesignedStyleSpec from scratch (or starting from one
-    // of the four bundled archetypes). The .tex file is generated from the
-    // spec on save.
+    // Designed Style Wizard entry point — opens a two-column modal where the
+    // author starts from one of the four built-in layouts and adjusts it
+    // within tested ranges. There is no blank canvas: every style begins as a
+    // copy of a layout that is known to print. The .tex file is generated
+    // from the spec on save.
+    //
+    // Out of beta since the compile test (tests/publishing-pdf-assembly.test.ts,
+    // "Design wizard compile matrix") builds a PDF from every setting the
+    // wizard offers. Import template… below is still gated.
     layoutHeading.addButton(button => {
         button.setButtonText(t('ui.publishSection.designOwnButton'));
         withTooltip(button, t('ui.publishSection.designOwnTooltip'));
         button.buttonEl.addClass(ERT_CLASSES.PILL_BTN, ERT_CLASSES.PILL_BTN_PRO);
-        if (!plugin.betaFeatures) {
-            button.setDisabled(true);
-            withTooltip(button, t('ui.publishSection.designOwnBetaTooltip'));
-            button.onClick(() => { /* no-op: BETA release pending */ });
-            return;
-        }
         if (!isActive) {
             button.buttonEl.addClass('ert-pro-locked');
             withTooltip(button, t('ui.publishSection.proWorkflowTooltip'));

@@ -228,6 +228,54 @@ export function applyHeaderPreset(spec: DesignedStyleSpec, mode: DesignedStyleSp
     }
 }
 
+export type DesignedHeaderCornerKey =
+    | 'evenLeft' | 'evenCenter' | 'evenRight'
+    | 'oddLeft'  | 'oddCenter'  | 'oddRight';
+
+export const DESIGNED_HEADER_CORNER_KEYS: readonly DesignedHeaderCornerKey[] = [
+    'evenLeft', 'evenCenter', 'evenRight',
+    'oddLeft',  'oddCenter',  'oddRight',
+];
+
+/** What the spec's header style alone puts in a corner (undefined = nothing). */
+function getPresetHeaderField(spec: DesignedStyleSpec, corner: DesignedHeaderCornerKey): DesignedHeaderField | undefined {
+    const preset = structuredClone(spec);
+    applyHeaderPreset(preset, spec.runningHeader.mode);
+    return preset.runningHeader[corner];
+}
+
+/**
+ * What a header corner prints: the author's own choice when there is one,
+ * otherwise what the header style puts there. A spec that names only a style
+ * (every built-in layout) leaves its corners unset, so reading the corner
+ * directly would call a corner that prints the book title "empty".
+ */
+export function getEffectiveHeaderField(spec: DesignedStyleSpec, corner: DesignedHeaderCornerKey): DesignedHeaderField | undefined {
+    return spec.runningHeader[corner] ?? getPresetHeaderField(spec, corner);
+}
+
+/**
+ * Set one header corner the way the wizard's corner editor does.
+ *
+ * `undefined` means the author chose "Empty". Where the header style prints
+ * something in that corner, that has to be stored as the explicit value
+ * 'empty' — removing the field would only hand the corner back to the style,
+ * and the text would stay. Where the style prints nothing there, the field is
+ * simply removed.
+ */
+export function setHeaderCornerField(
+    spec: DesignedStyleSpec,
+    corner: DesignedHeaderCornerKey,
+    field: DesignedHeaderField | undefined,
+): void {
+    if (field !== undefined && field !== 'empty') {
+        spec.runningHeader[corner] = field;
+        return;
+    }
+    if (getPresetHeaderField(spec, corner) === undefined) delete spec.runningHeader[corner];
+    else spec.runningHeader[corner] = 'empty';
+}
+
 /**
  * Generate a .tex file string from a DesignedStyleSpec.
  *

@@ -12,7 +12,7 @@ Choose from:
 *   outline-style exports
 *   filtered or ranged exports by order and subplot
 
-Export includes compiled Markdown, Word submission export, and Pandoc PDF export with the Basic, Standard, Professional, Signature, Screenplay, and Podcast Script layouts, plus custom Pandoc metadata and a custom LaTeX preamble. The PDF style designer (**Design your own…**) and **Import template…** are in beta and not yet in release builds.
+Export includes compiled Markdown, Word submission export, and Pandoc PDF export with the Basic, Standard, Professional, Signature, Screenplay, and Podcast Script layouts, plus custom Pandoc metadata and a custom LaTeX preamble. You can also make a PDF style of your own from any of the four novel layouts: see [Design Your Own PDF Style](#design-your-own-pdf-style). **Import template…** is in beta and not yet in release builds.
 
 The panel supports ordering, selection range, output presets, and publishing-oriented layout decisions in one place.
 
@@ -62,7 +62,7 @@ Radial Timeline books use authored **Part** boundaries, resolved **Chapter** mar
 
 For a printed act division, use an authored part title such as `Part: Act II`. The analytical scene `Act` field does not create publishing boundaries. Folder and single-file manuscripts instead use their existing Markdown heading hierarchy, such as `# Act I`, `## Chapter One` and `### Scene One`; they need no scene YAML.
 
-Saved export presets retain contents mode and depth. Each split output has contents for the material included in that file. Existing custom PDF templates with custom opener commands may need regeneration in the style designer (beta) before they can place navigation correctly; export reports this rather than producing misleading links.
+Saved export presets retain contents mode and depth. Each split output has contents for the material included in that file. Existing custom PDF templates with custom opener commands may need regeneration in the style designer before they can place navigation correctly; export reports this rather than producing misleading links.
 
 ## Word (DOCX) Submission Export
 
@@ -91,6 +91,32 @@ For PDF exports, choose a novel PDF layout from the layout selector. The selecte
 The preview cards show the expected chapter, part, and body-page structure before export. Export checks report missing Pandoc, LaTeX, bundled fonts, and layout-token problems before you generate the PDF.
 
 The selected novel PDF layout is remembered per book. Narrative Mode uses that same setting for chapter and part placards on the timeline. See [Narrative Mode](Narrative-Mode#chapter-and-part-placards).
+
+## Design Your Own PDF Style
+
+**Settings → Publish → PDF style → Design your own…** opens the style designer. You start from one of the four built-in layouts (Basic, Standard, Professional, or Signature) and make it yours; there is no blank page to fill in. The pencil beside a built-in layout opens the same designer with that layout already chosen.
+
+Use the **Category** menu to move through the settings:
+
+*   **Page** — paper size (6×9 trade, US Letter, A4, or a custom size), margins, and mirrored margins for a bound book
+*   **Body** — font, size, line spacing, and paragraph indent
+*   **Headers** — the running header style and what each corner prints
+*   **Folio** — where the page number sits and its numeral style
+*   **Parts**, **Chapters**, **Scenes**, and **Epigraph** — how each division opens
+
+The preview on the left redraws as you change settings. **Save style** adds your style to the PDF style list, where you can choose it for any export. The built-in layouts stay as they are, and the pencil beside your own style opens it again for editing.
+
+Each numeric setting stays inside a range that has been printed from all four layouts: margins from 0.75 to 1.25 in, type from 10 to 13 pt, line spacing from 1.0 to 2.0, and so on. A value typed outside its range moves to the nearest end. A style you saved earlier with a value outside these ranges keeps printing as before; the designer points the value out and changes it only if you do.
+
+### Fonts
+
+The **Font** menu lists only fonts this computer can print with:
+
+*   **Included with Radial Timeline** — Sorts Mill Goudy and Source Serif 4. Saving a style that uses one copies the font files into your vault's Pandoc folder.
+*   **Included with LaTeX** — Latin Modern Roman and TeX Gyre Pagella.
+*   **On this computer** — Arial, EB Garamond, and Crimson Text when they are installed, and **Custom (system font)** for any other installed font you name.
+
+A style cannot be saved with a font that is not installed. The designer shows the same install steps as the export panel's checks.
 
 ## Review the Actual PDF
 

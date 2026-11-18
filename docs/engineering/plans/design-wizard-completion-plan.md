@@ -134,15 +134,50 @@ whichever way, note it in release notes.
 
 ## Un-gating checklist
 
-- [ ] A: font picker lists bundled + detected only; install = existing copy
+- [x] A: font picker lists bundled + detected only; install = existing copy
       path; save blocked on unresolvable font via structured diagnostic
-- [ ] B: `WIZARD_CONTROL_RANGES` table exported; sliders + matrix share it
-- [ ] C: compile matrix green at clamped ranges (archetypes × control
+- [x] B: `WIZARD_CONTROL_RANGES` table exported; sliders + matrix share it
+- [x] C: compile matrix green at clamped ranges (archetypes × control
       extremes × uncovered enum values)
-- [ ] D: flag flipped; fork-first copy; `/feature-audit` pass complete
+- [x] D: flag flipped; fork-first copy; `/feature-audit` pass complete
 - [ ] E: Standard-layout font decision made and release-noted
-- [ ] Wiki: Book-Designer page updated to describe fork-first creation
-- [ ] Release notes entry (next draft-for-release-*.md)
+      (options and a recommendation are with Eric; nothing changed)
+- [x] Wiki: `wiki/Manuscript-Export.md` describes fork-first creation
+      (publishes with the release)
+- [x] Release notes entry (`draft-for-release-8.0.5.md`)
+
+## What was built (2026-11-17)
+
+Paths, so the next reader does not have to rediscover them:
+
+- **A** — `src/publishing/wizardFontChoices.ts` (which fonts the picker
+  offers), `src/publishing/fontDiagnosticMessage.ts` (the one missing-font
+  message, shared with the export dialog), `src/publishing/designedLayoutFiles.ts`
+  (Save installs an included font and writes the vault font path; export
+  refreshes that path). The "Custom (system font)" option, added after this
+  plan (#35), stays: it is offered under "On this computer" and passes the
+  same found-or-blocked check.
+- **B** — `src/publishing/wizardControlRanges.ts`. Two deliberate differences
+  from the numbers above: line spacing is 1.0–2.0, not 1.15–2.0, because the
+  wizard's "Tight" card is 1.0 and already ships; and three controls this
+  plan did not list have ranges (custom paper 4.25–8.5 × 6.75–11.7 in,
+  paragraph indent 0–3 em). A stored value outside a range is warned about
+  and left alone until the author edits that control.
+- **C** — `src/publishing/wizardControlMatrix.ts` builds the cases;
+  `tests/publishing-pdf-assembly.test.ts` ("Design wizard compile matrix")
+  runs them through `runPandocOnContent`, the plugin's own Pandoc call. 444
+  cases, about 45 seconds with `npm run publish:pdf-assembly -- --maxConcurrency=8`.
+  First run: 4 failures, all the scene separator `⁂` (no offered font has the
+  glyph, and the exporter refuses to print an empty box). Fixed by limiting
+  the separator field to printable ASCII plus `WIZARD_SEPARATOR_MARKS`, and
+  by compiling every accepted mark with every offered font.
+- **D** — gate removed in `src/settings/sections/PublishSection.ts`;
+  "Import template…" keeps its gate.
+
+Not covered by the matrix on the machine it ran on: EB Garamond and Crimson
+Text, which were not installed. The picker does not offer them there and
+Save refuses them; where they are installed they are loaded the same way as
+Arial (`\setmainfont{Name}`), which is covered.
 
 ## Explicitly out of scope — permanently or for later
 

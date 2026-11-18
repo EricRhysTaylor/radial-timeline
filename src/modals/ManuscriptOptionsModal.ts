@@ -25,6 +25,7 @@ import { addVideoLinkToElement } from '../settings/wikiLink';
 import { resolveExportOutputFolder } from '../utils/aiOutput';
 import { clearFontAvailabilityCache, ExportFormat, ExportType, ManuscriptPreset, OutlinePreset, getAutoPdfEngineSelection, resolveTemplatePath, validatePandocLayout, getTemplateFontDiagnostics, getStructuredFontDiagnostic } from '../utils/exportFormats';
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
+import { renderFontDiagnosticMessage } from '../publishing/fontDiagnosticMessage';
 import { getActiveBook, DEFAULT_BOOK_TITLE } from '../utils/books';
 import { chunkScenesIntoParts } from '../utils/splitOutput';
 import { cleanupFormatForOutputFormat, countManuscriptComments, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, type ManuscriptCommentCounts } from '../utils/manuscriptSanitize';
@@ -3158,42 +3159,9 @@ export class ManuscriptOptionsModal extends Modal {
             // models exact required fonts vs missing bundled assets and carries
             // an install hint with a URL where applicable.
             if (structuredFontDiag.state !== 'ok') {
-                const line = content.createDiv({ cls: 'ert-pdf-output-line' });
-                if (structuredFontDiag.state === 'missing-bundled') {
-                    line.appendText(
-                        structuredFontDiag.installHint?.message
-                        || t('ui.manuscriptOptionsModal.bundledFontsMissing')
-                    );
-                } else {
-                    // Missing system font — render the required-font message,
-                    // followed by the OS-tailored install hint, an inline
-                    // download link when applicable, and short install steps.
-                    const primaryName = structuredFontDiag.primaryFontName;
-                    line.appendText(t('ui.manuscriptOptionsModal.fontNotInstalled', { font: primaryName }));
-                    const hint = structuredFontDiag.installHint;
-                    if (hint) {
-                        const hintLine = content.createDiv({ cls: 'ert-pdf-output-line' });
-                        hintLine.appendText(`${hint.message} `);
-                        if (hint.url) {
-                            const a = hintLine.createEl('a', {
-                                cls: 'ert-link-accent',
-                                text: t('ui.manuscriptOptionsModal.openGoogleFonts'),
-                            });
-                            a.setAttribute('href', hint.url);
-                            a.setAttribute('target', '_blank');
-                            a.setAttribute('rel', 'noopener');
-                        }
-                        if (hint.steps && hint.steps.length > 0) {
-                            const list = content.createEl('ul', { cls: 'ert-pdf-output-steps' });
-                            for (const step of hint.steps) {
-                                list.createEl('li', {
-                                    cls: 'ert-pdf-output-line is-status',
-                                    text: step,
-                                });
-                            }
-                        }
-                    }
-                }
+                // Shared with the PDF design wizard, which blocks Save on the
+                // same diagnostic: one rule, one message.
+                renderFontDiagnosticMessage(content, structuredFontDiag);
             } else if (useLegacyFontProbe && hasPrimaryMissing && fallbackFont && fallbackFont !== primaryRequested) {
                 // Legacy fallback path — layout has no spec, so we lean on
                 // the template-scan diagnostic for the message text.

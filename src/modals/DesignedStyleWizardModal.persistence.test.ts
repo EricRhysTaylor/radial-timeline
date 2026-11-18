@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { t } from '../i18n';
 import { normalizePath, TFile, TFolder } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import type { PandocLayoutTemplate } from '../types';
@@ -43,6 +44,27 @@ function fixture(storedPath: string, existingPath?: string) {
 }
 
 describe('designed style update persistence', () => {
+    // Save refuses a font the machine cannot load, so the font check must not
+    // depend on what the host has installed (CI Linux runners lack Arial,
+    // the Basic layout's font). Pin the catalog.
+    const priorFontCatalog = process.env.RT_FONT_CATALOG;
+    beforeAll(() => { process.env.RT_FONT_CATALOG = 'Arial'; });
+    afterAll(() => {
+        if (priorFontCatalog === undefined) delete process.env.RT_FONT_CATALOG;
+        else process.env.RT_FONT_CATALOG = priorFontCatalog;
+    });
+
+    it('refuses to save, and writes nothing, when the body font cannot be found', async () => {
+        const path = 'Radial Timeline/Pandoc/designed/qa-copy.tex';
+        const { modal, layout, contents, saveSettings } = fixture(path, path);
+        const original = structuredClone(layout);
+        modal['spec'].body.font = 'crimson';
+        await expect(modal['persistLayout']()).rejects.toThrow(t('ui.manuscriptOptionsModal.fontNotInstalled', { font: 'Crimson Text' }));
+        expect(contents.get(path)).toBe('original template');
+        expect(layout).toEqual(original);
+        expect(saveSettings).not.toHaveBeenCalled();
+    });
+
     it('saves the spec captured when Save starts even if inputs change during the read', async () => {
         const path = 'Radial Timeline/Pandoc/designed/qa-copy.tex';
         const { modal, layout, plugin } = fixture(path, path);

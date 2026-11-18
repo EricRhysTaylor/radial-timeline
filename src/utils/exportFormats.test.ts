@@ -13,9 +13,10 @@ import {
     selectPdfEngine,
     getStructuredFontDiagnostic,
     getTemplateFontDiagnostics,
-    renderFontDiagnosticLine,
 } from './exportFormats';
 import { setVaultFontDir } from './pandocBundledLayouts';
+import { getFontDiagnosticHeadline } from '../publishing/fontDiagnosticMessage';
+import { t } from '../i18n';
 import { DESIGNED_STYLE_SPEC_VERSION, type DesignedStyleSpec } from '../publishing/designedStyle';
 import type { PandocLayoutTemplate } from '../types';
 
@@ -370,41 +371,31 @@ describe('getStructuredFontDiagnostic — structured shape', () => {
     });
 });
 
-describe('renderFontDiagnosticLine', () => {
-    it('returns null for ok state (no line to render)', () => {
-        expect(renderFontDiagnosticLine({
-            state: 'ok',
-            primaryFontName: 'Latin Modern Roman',
-            resolvedFontName: 'Latin Modern Roman',
-        })).toBeNull();
-    });
-
-    it('renders the install hint for missing system fonts', () => {
-        const line = renderFontDiagnosticLine({
+// The headline every surface shows for a font that cannot be found: the
+// export dialog's checks and the design wizard's Save block.
+describe('getFontDiagnosticHeadline', () => {
+    it('names the missing font for one the author must install', () => {
+        expect(getFontDiagnosticHeadline({
             state: 'missing-system',
             primaryFontName: 'EB Garamond',
             resolvedFontName: 'EB Garamond',
+            specDriven: true,
             installHint: {
                 source: 'google-fonts',
                 url: 'https://fonts.google.com/specimen/EB+Garamond',
                 message: 'Install EB Garamond from Google Fonts.',
             },
-        });
-        expect(line).toMatch(/Install EB Garamond/);
-        expect(line).not.toMatch(/Using TeX Gyre Pagella/);
+        })).toBe(t('ui.manuscriptOptionsModal.fontNotInstalled', { font: 'EB Garamond' }));
     });
 
-    it('renders the bundled-asset install message for missing-bundled', () => {
-        const line = renderFontDiagnosticLine({
+    it('points at Install fonts for missing files of an included font', () => {
+        expect(getFontDiagnosticHeadline({
             state: 'missing-bundled',
             primaryFontName: 'Sorts Mill Goudy',
             resolvedFontName: 'Sorts Mill Goudy',
-            installHint: {
-                source: 'bundled',
-                message: 'Signature Literary requires bundled Sorts Mill Goudy files in Radial Timeline/Pandoc/fonts/sorts-mill-goudy. Click Install fonts in Settings > Publish.',
-            },
-        });
-        expect(line).toMatch(/Install fonts/i);
+            specDriven: true,
+            installHint: { source: 'bundled', message: 'Sorts Mill Goudy files are missing. Click Install fonts in Settings → Publish.' },
+        })).toMatch(/Install fonts/);
     });
 });
 

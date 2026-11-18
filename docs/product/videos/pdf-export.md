@@ -10,7 +10,7 @@
 - **Vault:** the capture copy from the Pandoc setup how-to (`Demo Vaults/Video Simulation Vaults/Plugin tutorials/pandoc setup/Working/`), Pride and Prejudice active. It already has Pandoc and LaTeX found, Book Details filled in, and an exported PDF for the opening shot. Give this video its own copy (a new scenario folder) so the two stay apart.
 - **Pro:** nothing to do. The plugin turns Pro on in every vault (an open-beta key it sets at load), so the Customize pencil works for any viewer. Nothing on screen or in the voice mentions Pro, matching the wiki (Pro left the wiki on 2026-11-10, and no copy may suggest it costs money).
 - **Pandoc and LaTeX:** found. In the "Export manuscript" dialog the checks read "Export checks · Ready".
-- **Font:** Source Serif 4. It ships with Radial Timeline (the Standard layout uses it), so no install step appears. EB Garamond and Crimson Text are system-only and need installing first.
+- **Font:** Source Serif 4. It ships with Radial Timeline (the Standard layout uses it), so no install step appears. EB Garamond and Crimson Text are system-only: the "Font" menu lists them only on a computer that has them installed.
 - **Fresh name:** delete any earlier "Trade Paperback" style, or the saved name gets a suffix ("-2").
 - **Opening shot:** the finished PDF as a two-page spread at a chapter opening, rendered once beforehand with the new style.
 - **Capture:** the background capture Obsidian and the drawn cursor (`Video/tools/capture/`), click rings and eased camera in the HyperFrames edit, as for the Pandoc setup how-to. 1920×1080, the shared theme, nothing private on screen.
@@ -111,12 +111,18 @@ The whole read, as one take (shot 6's line in brackets until Eric decides):
 
 ## Found while checking (2026-11-17)
 
-- **The wizard's "Category" menu cuts "Chapters" to "Chapte".** The menu is 80 px wide. Fix before recording if the shot shows that menu.
-- **"Design your own…" and "Import template…" are still switched off** in release builds ("BETA release pending" while beta features are off), so the pencil on a built-in layout stays the way in.
+- **The wizard's "Category" menu cut "Chapters" to "Chapte".** Fixed on main on 2026-11-17 (the menu is wider); it reaches authors with the release after 8.0.4.
+- **"Import template…" is still switched off** in release builds ("BETA release pending" while beta features are off).
 
-## When "Design your own…" ships
+## Changed on 2026-11-17: "Design your own…" is out of beta
 
-Replace shots 2 and 3: Settings → Publish → "Design your own…" → "Start from an archetype" → Professional, then name the style. Everything after stays the same.
+On main, "Design your own…" in Settings → Publish works in every vault, and reaches authors with the release after 8.0.4. The pencil on a built-in layout (shots 2 and 3 as written) still works the same way. Three things in this script to check against that build before recording:
+
+- **Shot 5, the voice line "If a font isn't installed, the wizard tells you in red."** The "Font" menu now lists only fonts this computer can print with, in groups: "Included with Radial Timeline" (Sorts Mill Goudy, Source Serif 4), "Included with LaTeX" (Latin Modern Roman, TeX Gyre Pagella) and "On this computer" (Arial and any of EB Garamond or Crimson Text that are installed, then "Custom (system font)"). A font that isn't installed is not in the menu, so a viewer won't see the red "Missing" label unless a style already uses such a font. The line needs a new second sentence, for Eric to choose.
+- **Shot 5, "Latin Modern"** is listed as "Latin Modern Roman".
+- **Shot 5, "Size (pt)"** accepts 10 to 13 in steps of 0.5, so 11.5 as scripted is fine.
+
+To open with "Design your own…" instead of the pencil, replace shots 2 and 3: Settings → Publish → "Design your own…" → "Start from a professional layout" → Professional, then name the style (it starts as "Professional Custom"). Everything after stays the same.
 
 ## Captions
 

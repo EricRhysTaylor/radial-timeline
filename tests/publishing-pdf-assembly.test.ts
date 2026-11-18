@@ -8,8 +8,14 @@ import { spawnSync } from 'node:child_process';
 import { assembleManuscript } from '../src/utils/manuscript';
 import { getManuscriptLayoutExportBehavior } from '../src/utils/manuscriptLayoutExport';
 import { sanitizeCompiledManuscriptForPdf } from '../src/utils/manuscriptSanitize';
-import { BUNDLED_FICTION_SPECS } from '../src/publishing/bundledStyleSpecs';
-import { generateDesignedStyleTex, type DesignedStyleSpec } from '../src/publishing/designedStyle';
+import { BUNDLED_FICTION_SPECS, cloneArchetypeSpec } from '../src/publishing/bundledStyleSpecs';
+import { generateDesignedStyleTex, type DesignArchetype, type DesignedStyleSpec } from '../src/publishing/designedStyle';
+import { existsSync, statSync } from 'node:fs';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { validateDesignedStyleSpec } from '../src/modals/DesignedStyleWizardModal';
+import { buildWizardMatrixCases, type WizardMatrixCase, type WizardMatrixMachine } from '../src/publishing/wizardControlMatrix';
+import { getFontDiagnosticForFontKey, runPandocOnContent } from '../src/utils/exportFormats';
 
 const runAssemblyPdf = process.env.RT_PUBLISH_PDF_ASSEMBLY === '1';
 const contemporaryLongScene = Array.from({ length: 20 }, () => (
@@ -228,4 +234,121 @@ describe.skipIf(!runAssemblyPdf)('Publish wizard completion matrix', () => {
       }
     } finally { if (!root) rmSync(dir, { recursive: true, force: true }); }
   }, 60_000);
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Design wizard compile matrix
+//
+// The evidence behind letting authors design their own PDF style: every
+// setting the wizard offers, at the ends of its range, builds a real PDF from
+// each of the four built-in layouts. The case list comes from
+// src/publishing/wizardControlMatrix.ts, which reads the same range table the
+// wizard's own controls read.
+//
+// Each case goes the way a real export goes: the manuscript is assembled with
+// the options CommandRegistrar derives for a wizard-made style, and the PDF is
+// built by runPandocOnContent — the plugin's own Pandoc call.
+//
+// A failing case is fixed by narrowing the range or fixing the LaTeX the
+// generator writes. It is never skipped.
+// ─────────────────────────────────────────────────────────────────────────
+
+const execFileAsync = promisify(execFile);
+const MATRIX_ARCHETYPES: readonly DesignArchetype[] = ['submission', 'reading-draft', 'literary', 'structured'];
+const BUNDLED_FONT_DIR = join(process.cwd(), 'src', 'assets', 'fonts');
+
+/** What this machine can print with, asked the way the wizard's font picker asks. */
+function detectMatrixMachine(): WizardMatrixMachine {
+  const customFontName = ['Georgia', 'Palatino', 'Times New Roman', 'DejaVu Serif', 'Liberation Serif']
+    .find(name => getFontDiagnosticForFontKey('custom', undefined, name).state === 'ok');
+  if (!customFontName) throw new Error('The wizard matrix needs one common system serif font for its "Custom (system font)" case.');
+  return {
+    isSystemFontFound: key => getFontDiagnosticForFontKey(key).state === 'ok',
+    customFontName,
+  };
+}
+
+// Built at collection time only when the suite will run: it probes XeLaTeX.
+const matrixMachine = runAssemblyPdf ? detectMatrixMachine() : null;
+const matrixCasesFor = (archetype: DesignArchetype): WizardMatrixCase[] =>
+  matrixMachine ? buildWizardMatrixCases(archetype, matrixMachine) : [];
+
+async function assembleMatrixManuscript(spec: DesignedStyleSpec): Promise<string> {
+  // The same derivation CommandRegistrar uses for a style saved by the wizard.
+  const behavior = getManuscriptLayoutExportBehavior({
+    id: 'designed-matrix', name: 'Matrix', path: 'designed/matrix.tex', origin: 'designed', designedSpec: spec,
+  });
+  const files = Array.from({ length: 6 }, (_, i) => makeFile(`Scenes/${i + 1} QA Scene ${i + 1}.md`));
+  const chapter = (file: TFile, title: string, n: number) => ({ sourcePath: file.path, sourceType: 'Scene' as const, title, resolvedScenePath: file.path, resolvedTimelinePosition: n });
+  const chapters = { [files[0].path]: [chapter(files[0], 'QA Chapter One', 1)], [files[3].path]: [chapter(files[3], 'QA Chapter Two', 4)] };
+  const paragraph = 'Mara follows the lantern through the garden beside the harbor. The reader can see this paragraph continue across a page while every header and footer keeps its assigned content. ';
+  const contents = Object.fromEntries(files.map((file, i) => [file.path,
+    `---\nClass: Scene\n${i === 0 || i === 3 ? 'Part: "QA Part & Crossing"\n' : ''}---\n\nQA_SCENE_${i + 1}_START\n\n${Array.from({ length: i === 0 ? 35 : 4 }, () => paragraph).join('\n\n')}\n\nQA_SCENE_${i + 1}_END`,
+  ]));
+  const assembled = await assembleManuscript(files, makeVault(contents), undefined, false, undefined, false, undefined, undefined, {
+    chapterMarkersByScenePath: behavior.suppressChapterMarkers ? {} : chapters,
+    sceneHeadingMode: behavior.defaultSceneHeadingMode,
+    sceneHeadingRenderMode: behavior.sceneHeadingRenderMode,
+    suppressMatterPageChrome: true,
+    useRtChapterMacro: behavior.useRtChapterMacro,
+    modernClassicStructure: {
+      enabled: true,
+      partEpigraphs: ['QA_PART_QUOTE_ONE', 'QA_PART_QUOTE_TWO'],
+      partEpigraphAttributions: ['QA AUTHOR ONE', 'QA AUTHOR TWO'],
+      sceneOpener: spec.scene.opener,
+      suppressPartMarkers: behavior.suppressPartMarkers,
+      resetSceneCounterOnChapter: spec.chapters.resetSceneCounter,
+      partNumberStyle: spec.parts.mode === 'off' ? undefined : spec.parts.mode,
+    },
+  });
+  return sanitizeCompiledManuscriptForPdf(assembled.text, {});
+}
+
+describe.skipIf(!runAssemblyPdf)('Design wizard compile matrix', () => {
+  it('has the tools it needs', () => {
+    for (const cmd of ['pandoc', 'xelatex', 'pdfinfo', 'pdftotext']) {
+      expect(commandExists(cmd), `${cmd} must be installed for the wizard compile matrix`).toBe(true);
+    }
+  });
+
+  for (const archetype of MATRIX_ARCHETYPES) {
+    describe.concurrent(archetype, () => {
+      it.each(matrixCasesFor(archetype))('$id', async ({ id, apply }) => {
+        const spec = cloneArchetypeSpec(archetype);
+        apply(spec);
+        // In scope: exactly the styles the wizard would let an author save.
+        expect(validateDesignedStyleSpec(spec, 'Matrix').errors).toEqual([]);
+
+        const root = process.env.RT_PUBLISH_PDF_ARTIFACT_DIR;
+        const dir = root
+          ? join(root, 'wizard-matrix', archetype, id.replace(/[^A-Za-z0-9.=()_-]+/g, '_'))
+          : mkdtempSync(join(tmpdir(), 'rt-wizard-matrix-'));
+        mkdirSync(dir, { recursive: true });
+        try {
+          const templatePath = join(dir, 'template.tex');
+          writeFileSync(templatePath, generateDesignedStyleTex(spec, { bundledLayoutId: 'designed-matrix', vaultFontDir: BUNDLED_FONT_DIR }));
+          writeFileSync(join(dir, 'spec.json'), JSON.stringify(spec, null, 2));
+          const markdown = await assembleMatrixManuscript(spec);
+          writeFileSync(join(dir, 'manuscript.md'), markdown);
+
+          const pdfPath = await runPandocOnContent(markdown, join(dir, 'manuscript.pdf'), {
+            targetFormat: 'pdf',
+            templatePath,
+            workingDir: dir,
+            metadata: { title: 'Matrix Audit', author: 'QA Author' },
+          });
+
+          expect(existsSync(pdfPath)).toBe(true);
+          expect(statSync(pdfPath).size).toBeGreaterThan(0);
+          const info = (await execFileAsync('pdfinfo', [pdfPath])).stdout;
+          expect(Number(info.match(/^Pages:\s+(\d+)/m)?.[1] ?? 0)).toBeGreaterThanOrEqual(2);
+          const text = (await execFileAsync('pdftotext', ['-layout', pdfPath, '-'], { maxBuffer: 32 * 1024 * 1024 })).stdout;
+          for (let n = 1; n <= 6; n++) {
+            expect(text, `scene ${n} start`).toContain(`QA_SCENE_${n}_START`);
+            expect(text, `scene ${n} end`).toContain(`QA_SCENE_${n}_END`);
+          }
+        } finally { if (!root) rmSync(dir, { recursive: true, force: true }); }
+      }, 180_000);
+    });
+  }
 });

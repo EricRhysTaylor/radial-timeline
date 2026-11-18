@@ -33,11 +33,21 @@ import {
     applyHeaderPreset,
     DESIGNED_STYLE_SPEC_VERSION,
     generateDesignedStyleTex,
+    getEffectiveHeaderField,
+    setHeaderCornerField,
     type DesignArchetype,
     type DesignedHeaderField,
     type DesignedStyleSpec,
 } from '../publishing/designedStyle';
-import { BUNDLED_FICTION_SPECS, type BundledFictionId } from '../publishing/bundledStyleSpecs';
+import { cloneArchetypeSpec } from '../publishing/bundledStyleSpecs';
+import {
+    clampToWizardRange,
+    findUntestedSeparatorCharacters,
+    findWizardRangeViolations,
+    keepTestedSeparatorCharacters,
+    WIZARD_CONTROL_RANGES,
+    type WizardControlRangeKey,
+} from '../publishing/wizardControlRanges';
 import { resolveExistingTemplateVaultPath } from '../publishing/starterSetup';
 import {
     getLayoutFeaturesFromSpec,
@@ -46,7 +56,10 @@ import {
     renderLayoutPictograms,
 } from '../publishing/layoutVisuals';
 import type { ManuscriptSceneHeadingMode, PandocLayoutTemplate } from '../types';
-import { clearFontAvailabilityCache, getFontDiagnosticForFontKey, getPandocFolder } from '../utils/exportFormats';
+import { clearFontAvailabilityCache, getFontDiagnosticForFontKey, getPandocFolder, type FontDiagnostic } from '../utils/exportFormats';
+import { ensureSpecFontReady, generateDesignedLayoutTex } from '../publishing/designedLayoutFiles';
+import { getFontDiagnosticHeadline, renderFontDiagnosticMessage } from '../publishing/fontDiagnosticMessage';
+import { listWizardFontChoices, type WizardFontChoice } from '../publishing/wizardFontChoices';
 import { assertNever } from '../utils/assertNever';
 import { LatexPreviewModal } from './LatexPreviewModal';
 import { slugifyToFileStem } from '../utils/slug';
@@ -204,13 +217,6 @@ export interface DesignedStyleWizardOptions {
     onSave: (result: DesignedStyleWizardResult) => Promise<void> | void;
 }
 
-const ARCHETYPE_TO_BUNDLED: Record<DesignArchetype, BundledFictionId> = {
-    'submission':    'bundled-fiction-classic-manuscript',
-    'reading-draft': 'bundled-fiction-contemporary-literary',
-    'literary':      'bundled-fiction-signature-literary',
-    'structured':    'bundled-fiction-modern-classic',
-};
-
 function getArchetypeInfo(): Record<DesignArchetype, { name: string; tagline: string }> {
     return {
         'submission':    { name: t('ui.designedStyleWizardModal.archetypeBasicName'),        tagline: t('ui.designedStyleWizardModal.archetypeBasicTagline') },
@@ -255,37 +261,55 @@ function getCategoryPublishingNotes(): Record<WizardCategory, string> {
     };
 }
 
-// Labels name the font the option actually produces. "System serif" and
-// "System sans" were opaque — and in the serif case wrong, since that option
-// resolves to TeX Gyre Pagella from the TeX distribution, not an OS font.
-// The `familyHint` column was removed: nothing ever read it, and its values
-// ('Times', 'Helvetica') had drifted from what the resolver emits.
-// Font names are proper names and stay as-is; only the custom option is translated.
-function getFontOptions(): Array<{ value: DesignedStyleSpec['body']['font']; label: string }> {
-    return [
-        { value: 'sorts-mill-goudy', label: 'Sorts Mill Goudy' },
-        { value: 'latin-modern',     label: 'Latin Modern' },
-        { value: 'source-serif',     label: 'Source Serif 4' },
-        { value: 'eb-garamond',      label: 'EB Garamond' },
-        { value: 'crimson',          label: 'Crimson Text' },
-        { value: 'system-serif',     label: 'TeX Gyre Pagella' },
-        { value: 'system-sans',      label: 'Arial' },
-        { value: 'custom',           label: t('ui.designedStyleWizardModal.fontCustomSystem') },
-    ];
+/**
+ * The body fonts the wizard offers on this machine: the ones that ship with
+ * the plugin, the ones every LaTeX installation has, and the registry's
+ * system fonts that XeLaTeX can load right now. Font names are proper names
+ * and come from FONT_REGISTRY untranslated.
+ */
+function getWizardFontChoices(): WizardFontChoice[] {
+    return listWizardFontChoices(key => getFontDiagnosticForFontKey(key).state === 'ok');
+}
+
+/**
+ * The body font's diagnostic when it stops Save, otherwise null.
+ *
+ * Only a font the author has to install themselves blocks. A font that ships
+ * with the plugin is copied into the vault by Save, so "not in the vault yet"
+ * is not a problem the author needs to solve.
+ */
+function getBlockingFontDiagnostic(spec: DesignedStyleSpec): FontDiagnostic | null {
+    const diagnostic = getFontDiagnosticForFontKey(spec.body.font, undefined, spec.body.customFontName);
+    return diagnostic.state === 'missing-system' ? diagnostic : null;
+}
+
+/**
+ * What each ranged control is called in the "outside the tested range"
+ * warning: the same label the control carries in its panel. `percent` marks
+ * the text-height fractions, which the wizard shows as percentages.
+ */
+function getRangedControlLabels(): Record<WizardControlRangeKey, { label: string; percent?: boolean }> {
+    return {
+        marginIn:                  { label: t('ui.designedStyleWizardModal.glossaryMarginsTerm') },
+        customPaperWidthIn:        { label: t('ui.designedStyleWizardModal.customWidth') },
+        customPaperHeightIn:       { label: t('ui.designedStyleWizardModal.customHeight') },
+        bodySizePt:                { label: t('ui.designedStyleWizardModal.sizeLabel') },
+        lineSpacing:               { label: t('ui.designedStyleWizardModal.customLineSpacing') },
+        paragraphIndentEm:         { label: t('ui.designedStyleWizardModal.paragraphIndentLabel') },
+        headerLetterSpacing:       { label: t('ui.designedStyleWizardModal.letterSpacingLabel') },
+        chapterTopFraction:        { label: t('ui.designedStyleWizardModal.headingTopPositionLabel'), percent: true },
+        sceneOpenerTopFraction:    { label: t('ui.designedStyleWizardModal.spaceAboveOpener'), percent: true },
+        sceneOpenerBottomFraction: { label: t('ui.designedStyleWizardModal.spaceBelowOpener'), percent: true },
+    };
 }
 
 // ──────────────────────────────────────────────────────────────────────────
 // Pure helpers (exported for unit testing)
 // ──────────────────────────────────────────────────────────────────────────
 
-/** Deep-clone (via JSON) the bundled spec for a given archetype. */
-export function cloneArchetypeSpec(archetype: DesignArchetype): DesignedStyleSpec {
-    const bundledId = ARCHETYPE_TO_BUNDLED[archetype];
-    const source = BUNDLED_FICTION_SPECS[bundledId];
-    const clone = structuredClone(source);
-    clone.specVersion = DESIGNED_STYLE_SPEC_VERSION;
-    return clone;
-}
+// cloneArchetypeSpec lives beside the built-in specs it copies; re-exported
+// here so existing imports from this module keep working.
+export { cloneArchetypeSpec } from '../publishing/bundledStyleSpecs';
 
 /** Generate a slug, suffixing -2/-3/etc. against existing layout IDs to ensure uniqueness. */
 export function generateUniqueDesignedSlug(name: string, existingIds: ReadonlySet<string>): string {
@@ -307,6 +331,12 @@ export { applyHeaderPreset } from '../publishing/designedStyle';
 export interface DesignedStyleSpecValidation {
     errors: string[];
     warnings: string[];
+    /**
+     * Set when the body font cannot be found. Its headline is also in
+     * `errors`; the wizard draws the full message (install hint, link, steps)
+     * from this, with the same renderer the export dialog uses.
+     */
+    fontDiagnostic?: FontDiagnostic;
 }
 
 /** Validate a spec + name. Errors block save; warnings allow save but display. */
@@ -334,12 +364,6 @@ export function validateDesignedStyleSpec(
         paperHeightIn = spec.paperSize.heightIn;
         if (paperWidthIn <= 0) errors.push(t('ui.designedStyleWizardModal.errCustomWidthPositive'));
         if (paperHeightIn <= 0) errors.push(t('ui.designedStyleWizardModal.errCustomHeightPositive'));
-        if (paperWidthIn > 0 && (paperWidthIn < 4 || paperWidthIn > 12)) {
-            warnings.push(t('ui.designedStyleWizardModal.warnCustomWidthRange', { width: paperWidthIn }));
-        }
-        if (paperHeightIn > 0 && (paperHeightIn < 6 || paperHeightIn > 14)) {
-            warnings.push(t('ui.designedStyleWizardModal.warnCustomHeightRange', { height: paperHeightIn }));
-        }
         // Aspect ratio sanity — most novels and trade books are taller than
         // they are wide, with H/W between ~1.3 and ~1.7. Flag extreme cases.
         if (paperWidthIn > 0 && paperHeightIn > 0) {
@@ -370,6 +394,27 @@ export function validateDesignedStyleSpec(
 
     if (spec.body.sizePt < 6 || spec.body.sizePt > 24) {
         errors.push(t('ui.designedStyleWizardModal.errBodySizeRange', { size: spec.body.sizePt }));
+    }
+
+    // A value saved before the tested ranges existed stays as it is until the
+    // author changes that control, so the style keeps printing the same way.
+    // The wizard only points it out.
+    const rangeLabels = getRangedControlLabels();
+    for (const violation of findWizardRangeViolations(spec)) {
+        const { label, percent } = rangeLabels[violation.control.range];
+        const shown = (n: number) => percent ? `${Math.round(n * 100)}%` : String(n);
+        warnings.push(t('ui.designedStyleWizardModal.warnOutsideTestedRange', {
+            control: label,
+            value: shown(violation.value),
+            min: shown(violation.range.min),
+            max: shown(violation.range.max),
+        }));
+    }
+
+    // Same policy for a separator saved before the field was limited.
+    const untestedSeparator = findUntestedSeparatorCharacters(spec.scene.separatorGlyph);
+    if (untestedSeparator.length > 0) {
+        warnings.push(t('ui.designedStyleWizardModal.warnSeparatorUntested', { characters: untestedSeparator.join(' ') }));
     }
 
     if (spec.folio.position === 'header' && spec.runningHeader.mode === 'none') {
@@ -420,19 +465,13 @@ export function validateDesignedStyleSpec(
         warnings.push(t('ui.designedStyleWizardModal.warnNameExists'));
     }
 
-    // Strict font policy (Phase 1): when the body font isn't installed (or the
-    // bundled assets are missing on disk), surface a warning in the validation
-    // banner so the user sees the issue alongside other spec problems. The
-    // wizard's font-row inline status renders the precise install affordance.
-    try {
-        const fontDiag = getFontDiagnosticForFontKey(spec.body.font, undefined, spec.body.customFontName);
-        if (fontDiag.state !== 'ok') {
-            warnings.push(t('ui.designedStyleWizardModal.warnFontNotInstalled', { font: fontDiag.primaryFontName }));
-        }
-    } catch {
-        // Probing the font catalog can fail in headless / sandboxed
-        // environments. The banner stays clean rather than fabricating an
-        // alarm; the export pipeline still hard-blocks when needed.
+    // A style can only be saved with a font this machine can print with: the
+    // same rule, and the same message, as the export dialog. The export would
+    // fail on it anyway, so the wizard stops here instead.
+    const fontDiagnostic = getBlockingFontDiagnostic(spec);
+    if (fontDiagnostic) {
+        errors.push(getFontDiagnosticHeadline(fontDiagnostic));
+        return { errors, warnings, fontDiagnostic };
     }
 
     return { errors, warnings };
@@ -774,8 +813,9 @@ export class DesignedStyleWizardModal extends Modal {
         const activeMeta = categories.find(c => c.value === this.activeCategory);
         try { setIcon(iconWrap, activeMeta?.icon ?? 'square'); } catch { /* test env */ }
 
+        // --md, not --sm: the 80px small width cut "Chapters" to "Chapte".
         const select = right.createEl('select', {
-            cls: 'ert-input ert-input--sm',
+            cls: 'ert-input ert-input--md',
         });
         categories.forEach(({ value, label }) => {
             const opt = select.createEl('option', { value, text: label });
@@ -1003,13 +1043,13 @@ export class DesignedStyleWizardModal extends Modal {
 
         if (typeof this.spec.paperSize !== 'string') {
             const widthRow = this.fieldRow(body, t('ui.designedStyleWizardModal.customWidth'));
-            this.numberInput(widthRow, this.spec.paperSize.widthIn, 0, 30, 0.1, (n) => {
+            this.numberInput(widthRow, this.spec.paperSize.widthIn, 'customPaperWidthIn', (n) => {
                 this.mutateSpec((s) => {
                     if (typeof s.paperSize !== 'string') s.paperSize.widthIn = n;
                 });
             });
             const heightRow = this.fieldRow(body, t('ui.designedStyleWizardModal.customHeight'));
-            this.numberInput(heightRow, this.spec.paperSize.heightIn, 0, 30, 0.1, (n) => {
+            this.numberInput(heightRow, this.spec.paperSize.heightIn, 'customPaperHeightIn', (n) => {
                 this.mutateSpec((s) => {
                     if (typeof s.paperSize !== 'string') s.paperSize.heightIn = n;
                 });
@@ -1316,15 +1356,8 @@ export class DesignedStyleWizardModal extends Modal {
         value: number,
         onChange: (value: number) => void,
     ): void {
-        const input = parent.createEl('input', {
-            cls: 'ert-input ert-style-wizard__margin-input',
-            attr: { type: 'number', min: '0.25', max: '2.5', step: '0.05' },
-        });
-        input.value = String(value);
-        input.addEventListener('change', () => {
-            const parsed = parseFloat(input.value);
-            if (Number.isFinite(parsed)) onChange(parsed);
-        });
+        const input = parent.createEl('input', { cls: 'ert-input ert-style-wizard__margin-input' });
+        this.bindRangedNumberInput(input, value, 'marginIn', onChange);
     }
 
     private renderBodySection(parent: HTMLElement): void {
@@ -1333,17 +1366,38 @@ export class DesignedStyleWizardModal extends Modal {
         const fontRow = this.fieldRow(body, t('ui.designedStyleWizardModal.fontLabel'));
         // The missing-font warning replaces the label text rather than
         // appending to it. "Font — Missing: EB Garamond" is long enough to
-        // wrap the label onto two lines, which in turn pushes the Install
-        // button below the dropdown; "Missing — EB Garamond" fits on one.
+        // wrap the label onto two lines; "Missing — EB Garamond" fits on one.
         const fontRowEl = fontRow.parentElement;
         fontRowEl?.addClass('ert-style-wizard__field-row--font');
         const fontLabelEl = fontRowEl?.querySelector('.ert-style-wizard__field-label') as HTMLElement | null;
         const fontSelect = fontRow.createEl('select', { cls: 'ert-input ert-input--md' });
-        const fontOptions = getFontOptions();
-        fontOptions.forEach((option) => {
-            const opt = fontSelect.createEl('option', { value: option.value, text: option.label });
-            if (option.value === this.spec.body.font) opt.selected = true;
-        });
+        // Grouped by where the font comes from. A registry font that is not on
+        // this computer is left out, unless the style already uses it: then it
+        // is listed as not found so the menu shows the truth, and Save stays
+        // blocked until the author picks another font or installs it.
+        const fontChoices = getWizardFontChoices();
+        const currentFont = this.spec.body.font;
+        const addFontGroup = (label: string, options: Array<{ value: DesignedStyleSpec['body']['font']; label: string }>) => {
+            if (options.length === 0) return;
+            const group = fontSelect.createEl('optgroup', { attr: { label } });
+            options.forEach((option) => {
+                const opt = group.createEl('option', { value: option.value, text: option.label });
+                if (option.value === currentFont) opt.selected = true;
+            });
+        };
+        const choicesFrom = (source: WizardFontChoice['source'], found: boolean) => fontChoices
+            .filter(choice => choice.source === source && choice.found === found)
+            .map(choice => ({ value: choice.key, label: choice.label }));
+        addFontGroup(t('ui.designedStyleWizardModal.fontGroupIncluded'), choicesFrom('included', true));
+        addFontGroup(t('ui.designedStyleWizardModal.fontGroupLatex'), choicesFrom('latex', true));
+        addFontGroup(t('ui.designedStyleWizardModal.fontGroupComputer'), [
+            ...choicesFrom('computer', true),
+            { value: 'custom', label: t('ui.designedStyleWizardModal.fontCustomSystem') },
+        ]);
+        addFontGroup(
+            t('ui.designedStyleWizardModal.fontGroupNotFound'),
+            choicesFrom('computer', false).filter(option => option.value === currentFont),
+        );
         /** Restore the row's resting label. */
         const setLabelDefault = () => {
             if (!fontLabelEl) return;
@@ -1360,59 +1414,14 @@ export class DesignedStyleWizardModal extends Modal {
                 text: t('ui.designedStyleWizardModal.fontMissing', { font: fontName }),
             });
         };
+        // A font that cannot be found is named here in the label; the full
+        // message (how to install it) is in the validation banner under the
+        // preview, and Save is off until it is resolved. A found font shows
+        // nothing: silence is the healthy state.
         const refreshFontStatus = () => {
-            setLabelDefault();
-            const selected = fontOptions.find(o => o.value === this.spec.body.font);
-            if (!selected) return;
-            // Strict font policy (Phase 1): per-font precise status. There is
-            // NO fallback — a missing font is a hard export blocker. We only
-            // surface the missing case; an installed font shows nothing
-            // (silence = healthy state, less visual noise).
-            try {
-                const diag = getFontDiagnosticForFontKey(this.spec.body.font, undefined, this.spec.body.customFontName);
-                if (diag.state === 'ok') {
-                    return;
-                }
-                setLabelMissing(diag.primaryFontName);
-                // Inline "Install" affordance — Phase 1 opens a Notice with
-                // platform-specific instructions and a clickable URL when one
-                // is available. Phase 2 will perform an actual download.
-                const installBtn = fontRow.createEl('button', {
-                    cls: 'ert-style-wizard__font-install ert-link-accent',
-                    text: t('ui.designedStyleWizardModal.installButton'),
-                });
-                installBtn.type = 'button';
-                installBtn.addEventListener('click', (ev) => {
-                    ev.preventDefault();
-                    const hint = diag.installHint;
-                    // Build the Notice body as a DocumentFragment with a wrapper
-                    // div — DocumentFragment itself doesn't expose Obsidian's
-                    // createDiv/createEl helpers, but its child HTMLElement does.
-                    const fragment = installBtn.ownerDocument.win.createFragment();
-                    const wrapper = fragment.createDiv();
-                    wrapper.createDiv({
-                        text: t('ui.designedStyleWizardModal.installHintLine', { font: diag.primaryFontName, message: hint?.message ?? t('ui.designedStyleWizardModal.installInstructionsUnavailable') }),
-                    });
-                    if (hint?.url) {
-                        const link = wrapper.createEl('a', { href: hint.url, text: hint.url });
-                        link.setAttribute('target', '_blank');
-                        link.setAttribute('rel', 'noopener');
-                    }
-                    if (hint?.steps?.length) {
-                        const ul = wrapper.createEl('ul');
-                        for (const step of hint.steps) ul.createEl('li', { text: step });
-                    }
-                    wrapper.createDiv({
-                        text: t('ui.designedStyleWizardModal.installReopenHint'),
-                    });
-                    new Notice(fragment, 12000);
-                });
-            } catch {
-                // Probing the font catalog can fail in sandboxed environments.
-                // Fall back to the resting label rather than claiming a font is
-                // missing on the strength of a failed probe.
-                setLabelDefault();
-            }
+            const blocking = getBlockingFontDiagnostic(this.spec);
+            if (blocking) setLabelMissing(blocking.primaryFontName);
+            else setLabelDefault();
         };
         refreshFontStatus();
         fontSelect.addEventListener('change', () => {
@@ -1439,7 +1448,6 @@ export class DesignedStyleWizardModal extends Modal {
                     if (value) s.body.customFontName = value;
                     else delete s.body.customFontName;
                 });
-                fontRow.querySelectorAll('.ert-style-wizard__font-install').forEach(el => el.remove());
                 refreshFontStatus();
             });
         }
@@ -1452,18 +1460,18 @@ export class DesignedStyleWizardModal extends Modal {
         // Custom spacing input — appears below the cards only when current is custom.
         if (deriveSpacingPreset(this.spec) === 'custom') {
             const customRow = this.fieldRow(body, t('ui.designedStyleWizardModal.customLineSpacing'));
-            this.numberInput(customRow, this.spec.body.lineSpacing, 0.8, 3, 0.05, (n) => {
+            this.numberInput(customRow, this.spec.body.lineSpacing, 'lineSpacing', (n) => {
                 this.mutateSpec((s) => { s.body.lineSpacing = n; });
             });
         }
 
         const sizeRow = this.fieldRow(body, t('ui.designedStyleWizardModal.sizeLabel'));
-        this.numberInput(sizeRow, this.spec.body.sizePt, 8, 14, 1, (n) => {
+        this.numberInput(sizeRow, this.spec.body.sizePt, 'bodySizePt', (n) => {
             this.mutateSpec((s) => { s.body.sizePt = n; });
         });
 
         const indentRow = this.fieldRow(body, t('ui.designedStyleWizardModal.paragraphIndentLabel'));
-        this.numberInput(indentRow, this.spec.body.paragraphIndentEm ?? 0, 0, 3, 0.1, (n) => {
+        this.numberInput(indentRow, this.spec.body.paragraphIndentEm ?? 0, 'paragraphIndentEm', (n) => {
             this.mutateSpec((s) => {
                 if (n === 0) delete s.body.paragraphIndentEm;
                 else s.body.paragraphIndentEm = n;
@@ -1570,18 +1578,14 @@ export class DesignedStyleWizardModal extends Modal {
                 : t('ui.designedStyleWizardModal.editingCornerRightPage', { corner: activeMeta.label }))
             : t('ui.designedStyleWizardModal.editingEmpty');
         editorLabel.setText(activeText);
+        // The menu shows what the corner prints (the header style's content
+        // when the author has not overridden it), and "Empty" really clears it.
         this.headerFieldDropdown(
             editorRow,
-            this.spec.runningHeader[this.activeCornerKey],
+            getEffectiveHeaderField(this.spec, this.activeCornerKey),
             (next) => {
                 const key = this.activeCornerKey;
-                this.mutateSpec((s) => {
-                    if (next === 'empty' || next === undefined) {
-                        delete (s.runningHeader as Record<string, unknown>)[key];
-                    } else {
-                        (s.runningHeader as Record<string, unknown>)[key] = next;
-                    }
-                });
+                this.mutateSpec((s) => setHeaderCornerField(s, key, next));
             },
         );
 
@@ -1597,7 +1601,7 @@ export class DesignedStyleWizardModal extends Modal {
         });
 
         const lsRow = this.fieldRow(body, t('ui.designedStyleWizardModal.letterSpacingLabel'));
-        this.numberInput(lsRow, this.spec.runningHeader.letterSpacing ?? 0, 0, 25, 0.5, (n) => {
+        this.numberInput(lsRow, this.spec.runningHeader.letterSpacing ?? 0, 'headerLetterSpacing', (n) => {
             this.mutateSpec((s) => {
                 if (n === 0) delete s.runningHeader.letterSpacing;
                 else s.runningHeader.letterSpacing = n;
@@ -1856,13 +1860,13 @@ export class DesignedStyleWizardModal extends Modal {
                 this.mutateSpec((s) => { s.chapters.resetSceneCounter = v; });
             });
 
-            // Heading position slider — 0% = top of page, 50% = centered (the
-            // sensible default), 100% = near bottom. When the spec hasn't set
-            // an explicit topFraction, default the slider to 50% so the user
-            // sees the centered baseline rather than a 0% snap-to-top reading.
+            // Heading position slider — how far down the page the heading
+            // starts, up to 50% (centered, the default). When the spec hasn't
+            // set an explicit topFraction, the slider opens at 50% to match
+            // what the generator prints.
             const topRow = this.fieldRow(body, t('ui.designedStyleWizardModal.headingTopPositionLabel'));
             const currentTop = this.spec.chapters.spacing?.topFraction ?? 0.5;
-            this.sliderInput(topRow, currentTop, 0, 1, 0.02, (n) => {
+            this.sliderInput(topRow, currentTop, 'chapterTopFraction', (n) => {
                 this.mutateSpec((s) => {
                     s.chapters.spacing = { ...(s.chapters.spacing ?? {}), topFraction: n };
                 });
@@ -1952,8 +1956,14 @@ export class DesignedStyleWizardModal extends Modal {
                 attr: { type: 'text' },
             });
             input.value = this.spec.scene.separatorGlyph ?? '* * *';
+            // Whether a mark prints depends on the font, and the export stops
+            // on a character the font lacks. The field keeps what the compile
+            // test prints with every offered font; anything else is dropped
+            // as it is typed.
             input.addEventListener('input', () => {
-                this.mutateSpec((s) => { s.scene.separatorGlyph = input.value; });
+                const kept = keepTestedSeparatorCharacters(input.value);
+                if (kept !== input.value) input.value = kept;
+                this.mutateSpec((s) => { s.scene.separatorGlyph = kept; });
             });
         }
 
@@ -1985,14 +1995,14 @@ export class DesignedStyleWizardModal extends Modal {
             const literaryOpener = (this.spec.scene.openerHeadingModes?.length ?? 0) > 0;
             const topRow = this.fieldRow(body, t('ui.designedStyleWizardModal.spaceAboveOpener'));
             const currentOpenerTop = this.spec.scene.openerSpacing?.topFraction ?? (literaryOpener ? 0.2 : 0.16);
-            this.sliderInput(topRow, currentOpenerTop, 0, 0.5, 0.02, (n) => {
+            this.sliderInput(topRow, currentOpenerTop, 'sceneOpenerTopFraction', (n) => {
                 this.mutateSpec((s) => {
                     s.scene.openerSpacing = { ...(s.scene.openerSpacing ?? {}), topFraction: n };
                 });
             }, (v) => `${Math.round(v * 100)}%`);
             const botRow = this.fieldRow(body, t('ui.designedStyleWizardModal.spaceBelowOpener'));
             const currentOpenerBottom = this.spec.scene.openerSpacing?.bottomFraction ?? (literaryOpener ? 0.2 : 0.12);
-            this.sliderInput(botRow, currentOpenerBottom, 0, 0.5, 0.02, (n) => {
+            this.sliderInput(botRow, currentOpenerBottom, 'sceneOpenerBottomFraction', (n) => {
                 this.mutateSpec((s) => {
                     s.scene.openerSpacing = { ...(s.scene.openerSpacing ?? {}), bottomFraction: n };
                 });
@@ -2001,6 +2011,9 @@ export class DesignedStyleWizardModal extends Modal {
 
         this.renderPanelGlossary(body, [
             { term: t('ui.designedStyleWizardModal.glossaryOpenerTerm'), definition: t('ui.designedStyleWizardModal.glossaryOpenerDef') },
+            ...(this.spec.scene.opener === 'inline-separator' ? [
+                { term: t('ui.designedStyleWizardModal.separatorGlyphLabel'), definition: t('ui.designedStyleWizardModal.glossarySeparatorDef') },
+            ] : []),
             ...(this.spec.scene.opener === 'dedicated-page' ? [
                 { term: t('ui.designedStyleWizardModal.headingModeLabel'), definition: t('ui.designedStyleWizardModal.glossaryHeadingModeDef') },
                 { term: t('ui.designedStyleWizardModal.spaceAboveOpener'), definition: t('ui.designedStyleWizardModal.glossarySpaceAboveDef') },
@@ -2213,24 +2226,39 @@ export class DesignedStyleWizardModal extends Modal {
     private numberInput(
         parent: HTMLElement,
         value: number,
-        min: number,
-        max: number,
-        step: number,
+        range: WizardControlRangeKey,
         onChange: (value: number) => void,
     ): void {
-        const input = parent.createEl('input', {
-            cls: 'ert-input ert-style-wizard__number-input',
-            attr: {
-                type: 'number',
-                min: String(min),
-                max: String(max),
-                step: String(step),
-            },
-        });
+        const input = parent.createEl('input', { cls: 'ert-input ert-style-wizard__number-input' });
+        this.bindRangedNumberInput(input, value, range, onChange);
+    }
+
+    /**
+     * Every numeric control takes its limits from WIZARD_CONTROL_RANGES — the
+     * same table the compile test builds its PDFs from — so a value an author
+     * can set here is one that has been compiled. A typed value outside the
+     * range is brought to the nearest end and shown that way. The value the
+     * style arrived with is displayed untouched, even when it is outside the
+     * range: only an edit moves it.
+     */
+    private bindRangedNumberInput(
+        input: HTMLInputElement,
+        value: number,
+        range: WizardControlRangeKey,
+        onChange: (value: number) => void,
+    ): void {
+        const { min, max, step } = WIZARD_CONTROL_RANGES[range];
+        input.type = 'number';
+        input.min = String(min);
+        input.max = String(max);
+        input.step = String(step);
         input.value = String(value);
         input.addEventListener('change', () => {
             const parsed = parseFloat(input.value);
-            if (Number.isFinite(parsed)) onChange(parsed);
+            if (!Number.isFinite(parsed)) return;
+            const clamped = clampToWizardRange(range, parsed);
+            if (clamped !== parsed) input.value = String(clamped);
+            onChange(clamped);
         });
     }
 
@@ -2244,12 +2272,11 @@ export class DesignedStyleWizardModal extends Modal {
     private sliderInput(
         parent: HTMLElement,
         value: number,
-        min: number,
-        max: number,
-        step: number,
+        range: WizardControlRangeKey,
         onChange: (value: number) => void,
         format?: (value: number) => string,
     ): void {
+        const { min, max, step } = WIZARD_CONTROL_RANGES[range];
         const wrapper = parent.createDiv({ cls: 'ert-style-wizard__slider' });
         const input = wrapper.createEl('input', {
             attr: {
@@ -2333,7 +2360,17 @@ export class DesignedStyleWizardModal extends Modal {
             const icon = banner.createSpan({ cls: 'ert-warning-icon' });
             try { setIcon(icon, 'alert-triangle'); } catch { /* test env */ }
             const list = banner.createDiv({ cls: 'ert-style-wizard__validation-list' });
+            const fontDiagnostic = validation.fontDiagnostic;
+            const fontHeadline = fontDiagnostic ? getFontDiagnosticHeadline(fontDiagnostic) : null;
             validation.errors.forEach(err => {
+                if (fontDiagnostic && err === fontHeadline) {
+                    // The export dialog's own missing-font message.
+                    renderFontDiagnosticMessage(
+                        list.createDiv({ cls: 'ert-style-wizard__validation-error' }),
+                        fontDiagnostic,
+                    );
+                    return;
+                }
                 list.createDiv({ cls: 'ert-style-wizard__validation-error', text: err });
             });
             validation.warnings.forEach(warn => {
@@ -2389,13 +2426,17 @@ export class DesignedStyleWizardModal extends Modal {
         if (plugin.isSettingsPersistenceBlocked()) throw new Error(t('ui.main.settingsSaveBlocked'));
         const layouts = plugin.settings.pandocLayouts || [];
         const trimmedName = this.styleName.trim();
+        // Capture what Save was pressed on before the first await, so an edit
+        // made while the save is in flight cannot end up half-saved.
+        const spec = structuredClone(this.spec);
+        const description = this.description.trim();
 
         if (this.isEditMode && this.layoutId) {
             // Update existing.
             const existing = layouts.find(l => l.id === this.layoutId);
             if (!existing) {
                 // Fall through to create flow if missing.
-                return this.createNewLayout(trimmedName);
+                return this.createNewLayout(trimmedName, spec, description);
             }
             const targetPath = resolveExistingTemplateVaultPath(plugin, existing.path);
             if (!targetPath) {
@@ -2403,11 +2444,12 @@ export class DesignedStyleWizardModal extends Modal {
             }
             const file = plugin.app.vault.getAbstractFileByPath(targetPath);
             if (!(file instanceof TFile)) throw new Error(t('ui.exportFormats.templateFileNotFound', { path: targetPath }));
-            const spec = structuredClone(this.spec);
-            const description = this.description.trim();
             const originalTex = await plugin.app.vault.read(file);
             const originalLayout = { name: existing.name, description: existing.description, designedSpec: existing.designedSpec, path: existing.path };
-            const tex = generateDesignedStyleTex(spec, { bundledLayoutId: existing.id });
+            // Installs a font that ships with the plugin; stops the save with
+            // the missing-font message for one that cannot be found.
+            await ensureSpecFontReady(plugin, spec);
+            const tex = generateDesignedLayoutTex(existing.id, spec);
             await plugin.app.vault.modify(file, tex);
             existing.name = trimmedName;
             existing.description = description || undefined;
@@ -2436,11 +2478,16 @@ export class DesignedStyleWizardModal extends Modal {
             };
         }
 
-        return this.createNewLayout(trimmedName);
+        return this.createNewLayout(trimmedName, spec, description);
     }
 
-    private async createNewLayout(trimmedName: string): Promise<DesignedStyleWizardResult> {
+    private async createNewLayout(
+        trimmedName: string,
+        spec: DesignedStyleSpec,
+        description: string,
+    ): Promise<DesignedStyleWizardResult> {
         const plugin = this.plugin;
+        await ensureSpecFontReady(plugin, spec);
         const layouts = plugin.settings.pandocLayouts || [];
         const existingIds = new Set(layouts.map(l => l.id));
         const pandocFolder = getPandocFolder(plugin);
@@ -2458,17 +2505,17 @@ export class DesignedStyleWizardModal extends Modal {
         const newLayout: PandocLayoutTemplate = {
             id,
             name: trimmedName,
-            description: this.description.trim() || undefined,
+            description: description || undefined,
             preset: 'novel',
             path: vaultPath,
             tier: 'pro',
             templateKind: 'custom',
             origin: 'designed',
             bundled: false,
-            designedSpec: structuredClone(this.spec),
+            designedSpec: spec,
         };
 
-        const tex = generateDesignedStyleTex(this.spec, { bundledLayoutId: id });
+        const tex = generateDesignedLayoutTex(id, spec);
         await this.ensureFolder(designedFolder);
         // Exclusive creation also protects a file added after name selection.
         const file = await plugin.app.vault.create(vaultPath, tex);
@@ -2487,8 +2534,8 @@ export class DesignedStyleWizardModal extends Modal {
 
         return {
             name: trimmedName,
-            description: this.description.trim(),
-            spec: newLayout.designedSpec!,
+            description,
+            spec,
             layoutId: id,
         };
     }

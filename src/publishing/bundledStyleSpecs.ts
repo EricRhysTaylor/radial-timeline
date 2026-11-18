@@ -14,7 +14,7 @@
  * Reference: tag `pre-spec-export-stable` (commit 8504e382) is the rollback
  * marker for the pre-cutover hand-authored bundled .tex blobs.
  */
-import { DESIGNED_STYLE_SPEC_VERSION, type DesignedStyleSpec } from './designedStyle';
+import { DESIGNED_STYLE_SPEC_VERSION, type DesignArchetype, type DesignedStyleSpec } from './designedStyle';
 
 export type BundledFictionId =
     | 'bundled-fiction-classic-manuscript'
@@ -162,6 +162,25 @@ export const BUNDLED_FICTION_SPECS: Record<BundledFictionId, DesignedStyleSpec> 
     'bundled-fiction-signature-literary':     SIGNATURE_LITERARY_SPEC,
     'bundled-fiction-modern-classic':         MODERN_CLASSIC_SPEC,
 };
+
+/** The built-in layout each design archetype starts from. */
+export const ARCHETYPE_LAYOUT_IDS: Record<DesignArchetype, BundledFictionId> = {
+    'submission':    'bundled-fiction-classic-manuscript',
+    'reading-draft': 'bundled-fiction-contemporary-literary',
+    'literary':      'bundled-fiction-signature-literary',
+    'structured':    'bundled-fiction-modern-classic',
+};
+
+/**
+ * An independent copy of the built-in layout for an archetype: the starting
+ * point of every style made in the design wizard, and of every case in its
+ * compile test.
+ */
+export function cloneArchetypeSpec(archetype: DesignArchetype): DesignedStyleSpec {
+    const clone = structuredClone(BUNDLED_FICTION_SPECS[ARCHETYPE_LAYOUT_IDS[archetype]]);
+    clone.specVersion = DESIGNED_STYLE_SPEC_VERSION;
+    return clone;
+}
 
 export function isBundledFictionId(id: string): id is BundledFictionId {
     return (BUNDLED_FICTION_IDS as readonly string[]).includes(id);

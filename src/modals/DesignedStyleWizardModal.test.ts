@@ -147,38 +147,78 @@ describe('validateDesignedStyleSpec', () => {
         expect(result.warnings).toContain(t('ui.designedStyleWizardModal.warnMultiHeadingModes'));
     });
 
-    it('warns when custom paper width is outside common print range', () => {
+    // A value saved before the tested ranges existed is left alone and
+    // pointed out; it never blocks Save and is never moved by the wizard.
+    it('warns, without blocking, when a stored value is outside the tested range', () => {
         const spec = freshSubmissionSpec();
-        spec.paperSize = { widthIn: 2, heightIn: 9 };
+        spec.paperSize = { widthIn: 10, heightIn: 9 };
+        spec.body.sizePt = 14;
         const result = validateDesignedStyleSpec(spec, 'Test');
-        expect(result.warnings).toContain(t('ui.designedStyleWizardModal.warnCustomWidthRange', { width: 2 }));
+        expect(result.errors).toEqual([]);
+        expect(result.warnings).toContain(t('ui.designedStyleWizardModal.warnOutsideTestedRange', {
+            control: t('ui.designedStyleWizardModal.customWidth'), value: '10', min: '4.25', max: '8.5',
+        }));
+        expect(result.warnings).toContain(t('ui.designedStyleWizardModal.warnOutsideTestedRange', {
+            control: t('ui.designedStyleWizardModal.sizeLabel'), value: '14', min: '10', max: '13',
+        }));
     });
 
-    // Strict font policy (Phase 1): the validation banner surfaces a warning
-    // when the body font isn't resolvable. We pick `sorts-mill-goudy` because
-    // its diagnostic only reports `ok` once the bundled files have been
-    // written into the vault font folder. In a fresh test runner none exist
-    // and it is absent from the pinned catalog, so the diagnostic returns
-    // `missing-bundled` deterministically.
-    //
-    // NOT `latin-modern`: that key now resolves from the TeX distribution and
-    // is always `ok`, because the texmf tree provides it (GH #34).
-    it('warns when the selected body font is not installed', () => {
+    it('shows text-height fractions as the percentages the sliders show', () => {
+        const spec = cloneArchetypeSpec('reading-draft');
+        spec.chapters.spacing = { topFraction: 0.9 };
+        const result = validateDesignedStyleSpec(spec, 'Test');
+        expect(result.warnings).toContain(t('ui.designedStyleWizardModal.warnOutsideTestedRange', {
+            control: t('ui.designedStyleWizardModal.headingTopPositionLabel'), value: '90%', min: '8%', max: '50%',
+        }));
+    });
+
+    // The Save rule: a font the author would have to install themselves, and
+    // has not, blocks the save with the export dialog's own message. Crimson
+    // Text is a system-only registry font absent from the pinned catalog.
+    it('blocks Save, with the export dialog message, when the body font cannot be found', () => {
+        const spec = freshSubmissionSpec();
+        spec.body.font = 'crimson';
+        const result = validateDesignedStyleSpec(spec, 'Test');
+        expect(result.errors).toEqual([t('ui.manuscriptOptionsModal.fontNotInstalled', { font: 'Crimson Text' })]);
+        expect(result.fontDiagnostic?.state).toBe('missing-system');
+        expect(result.fontDiagnostic?.installHint?.url).toBe('https://fonts.google.com/specimen/Crimson+Text');
+    });
+
+    it('blocks Save when "Custom" is chosen and no font name has been typed', () => {
+        const spec = freshSubmissionSpec();
+        spec.body.font = 'custom';
+        const result = validateDesignedStyleSpec(spec, 'Test');
+        expect(result.errors).toHaveLength(1);
+        expect(result.fontDiagnostic?.state).toBe('missing-system');
+    });
+
+    // A font that ships with the plugin is copied into the vault by Save, so
+    // "not in the vault yet" is nothing the author has to fix. In a fresh
+    // test runner no vault font folder exists and Sorts Mill Goudy is absent
+    // from the pinned catalog, so its diagnostic is `missing-bundled`.
+    it('does not block or warn for a font that ships with the plugin', () => {
         const spec = freshSubmissionSpec();
         spec.body.font = 'sorts-mill-goudy';
         const result = validateDesignedStyleSpec(spec, 'Test');
-        expect(result.warnings).toContain(t('ui.designedStyleWizardModal.warnFontNotInstalled', { font: 'Sorts Mill Goudy' }));
+        expect(result.errors).toEqual([]);
+        expect(result.warnings).toEqual([]);
     });
 
-    // Complement to the above: a TeX-distribution font must NOT warn. Before
-    // the fix, dropping the bundled lmroman files would have left Latin Modern
-    // permanently reported as missing, hard-blocking PDF export with an
-    // "Install fonts" prompt that could never resolve it.
-    it('does not warn for a font provided by the TeX distribution', () => {
+    // A TeX-distribution font resolves from the texmf tree (GH #34).
+    it('does not block or warn for a font provided by the TeX distribution', () => {
         const spec = freshSubmissionSpec();
         spec.body.font = 'latin-modern';
         const result = validateDesignedStyleSpec(spec, 'Test');
-        expect(result.warnings).not.toContain(t('ui.designedStyleWizardModal.warnFontNotInstalled', { font: 'Latin Modern Roman' }));
+        expect(result.errors).toEqual([]);
+        expect(result.warnings).toEqual([]);
+    });
+
+    it('accepts every built-in layout as it ships', () => {
+        for (const archetype of ['submission', 'reading-draft', 'literary', 'structured'] as const) {
+            const result = validateDesignedStyleSpec(cloneArchetypeSpec(archetype), 'Test');
+            expect(result.errors, archetype).toEqual([]);
+            expect(result.warnings, archetype).toEqual([]);
+        }
     });
 });
 

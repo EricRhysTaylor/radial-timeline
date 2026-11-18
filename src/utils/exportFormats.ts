@@ -1117,19 +1117,6 @@ export function getStructuredFontDiagnostic(
     return resolveFontDiagnosticForKey(spec?.body.font, overridePlatform, spec?.body.customFontName);
 }
 
-/**
- * Backward-compat string renderer for the structured diagnostic. Mirrors the
- * legacy single-line copy so existing callers can adopt the
- * structured form incrementally.
- */
-export function renderFontDiagnosticLine(diag: FontDiagnostic): string | null {
-    if (diag.state === 'ok') return null;
-    if (diag.state === 'missing-bundled') {
-        return diag.installHint?.message || t('ui.exportFormats.fontBundledAssetMissing', { font: diag.primaryFontName });
-    }
-    return diag.installHint?.message || t('ui.exportFormats.fontNotInstalled', { font: diag.primaryFontName });
-}
-
 function templateNeedsUnicodeEngine(templatePath?: string): boolean {
     const diagnostics = getTemplateFontDiagnostics(templatePath);
     return diagnostics.usesFontspec;

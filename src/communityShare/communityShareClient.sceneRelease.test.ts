@@ -36,6 +36,7 @@ import {
     takeDownSceneRelease
 } from './communityShareClient';
 import { parsePastedScene, type SceneBlock } from './sceneReleaseText';
+import { SCENE_AUTHOR_AGREEMENT_VERSION } from './sceneAgreement';
 
 const PROJECT_ID = '33333333-3333-4333-8333-333333333333';
 const RELEASE_ID = '44444444-4444-4444-8444-444444444444';
@@ -184,13 +185,14 @@ describe('scene-release-sync requests carry exactly the documented keys', () => 
         expect(h.readNote).not.toHaveBeenCalled();
     });
 
-    it('consent: no extra keys, and no text', async () => {
+    it('consent: includes the displayed agreement version, and no text', async () => {
         const h = harness();
         const request = respond({ body: { ok: true, version: '2026-11-14' } });
         await acceptSceneReleaseTerms(h.plugin as never, h.book);
         const [body] = sceneCalls(request);
-        expect(keysOf(body)).toEqual(BASE_KEYS);
+        expect(keysOf(body)).toEqual([...BASE_KEYS, 'terms_version'].sort());
         expect(body.action).toBe('consent');
+        expect(body.terms_version).toBe(SCENE_AUTHOR_AGREEMENT_VERSION);
     });
 
     it('take_down: the release id, and no text', async () => {
@@ -229,7 +231,7 @@ describe('scene-release-sync requests carry exactly the documented keys', () => 
         const h = harness();
         const request = respond({ body: statusAnswer() });
         await fetchSceneReleaseStatus(h.plugin as never, h.book);
-        respond({ body: { ok: true, version: 'v1' } });
+        respond({ body: { ok: true, version: SCENE_AUTHOR_AGREEMENT_VERSION } });
         await acceptSceneReleaseTerms(h.plugin as never, h.book);
         respond({ body: { ok: true } });
         await takeDownSceneRelease(h.plugin as never, h.book, RELEASE_ID);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { outerLabelArc, renderMonthLabelDefs } from './Months';
-import { fitChronologueLabels, renderOuterLabelTexts } from '../utils/Chronologue';
+import { buildChronologueOuterLabels, fitChronologueLabels, renderOuterLabelTexts } from '../utils/Chronologue';
 
 const parse = (d: string) => {
     const n = d.replace(/[MA]/g, ' ').trim().split(/\s+/).map(Number);
@@ -69,5 +69,23 @@ describe('perimeter label spacing', () => {
         expect(fitted[0].shortName).toBe('Start');
         expect(fitted[3].shortName).toBe('End');
         expect(fitted.slice(1, 3).filter(label => label.isMajor)).toHaveLength(1);
+    });
+});
+
+
+describe('compressed Chronologue boundary dates', () => {
+    it('puts the first and last dates on opposite sides of the seam when all scenes are dated', () => {
+        const scenes = Array.from({ length: 15 }, (_, index) => {
+            const when = new Date(1811, 0, 1 + index * 7, 9);
+            return { path: `${index}.md`, title: `${index} Scene`, itemType: 'Scene' as const, date: '', when, whenHasClock: true,
+                rawFrontmatter: { When: `${when.getFullYear()}-${String(when.getMonth()+1).padStart(2,'0')}-${String(when.getDate()).padStart(2,'0')} 09:00` } };
+        });
+        const labels = buildChronologueOuterLabels({} as never, scenes, 700, 760, true);
+        const first = labels.find(label => label.isFirst)!;
+        const last = labels.find(label => label.isLast)!;
+        expect(first.boundaryAtSeam).toBe(true);
+        expect(last.boundaryAtSeam).toBe(true);
+        expect(outerLabelArc(first).startAngle).toBeGreaterThan(-Math.PI / 2);
+        expect(outerLabelArc(last).endAngle).toBeLessThan(-Math.PI / 2);
     });
 });

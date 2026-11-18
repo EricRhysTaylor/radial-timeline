@@ -117,7 +117,7 @@ export function buildChronologueOuterLabels(
         earthDate: tick.earthDate,
         precision: tick.precision,
         labelKind: tick.labelKind,
-        boundaryAtSeam: !compressed && !!(tick.isFirst || tick.isLast)
+        boundaryAtSeam: (!compressed || compressed.undatedCount === 0) && !!(tick.isFirst || tick.isLast)
     }));
     // Reference dates live on their overlay tooltip and Timetable subrow.
     stopChronoLabels();

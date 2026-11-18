@@ -15,6 +15,8 @@ describe('compressed gap markers', () => {
         expect(markup.match(/rt-discontinuity-marker/g)).toHaveLength(2);
         expect(markup.match(/rt-compressed-gap-marker/g)).toHaveLength(1);
         expect(markup).not.toContain('stroke-dasharray');
+        // Shift and compressed symbols share the same upright orientation.
+        expect(markup).not.toContain('transform=');
     });
     it('marks compressed gaps even when only two scenes have dates', () => {
         const markup = renderChronologicalBackboneArc(scenes.slice(0, 2), 700, 760, 3, positions, undefined, undefined,

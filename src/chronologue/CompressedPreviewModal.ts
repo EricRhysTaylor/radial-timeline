@@ -101,7 +101,7 @@ export class CompressedPreviewModal extends Modal {
         }
         for (const gap of scale.segments.filter(segment => segment.compressed)) {
             const angle = (gap.startAngle + gap.endAngle) / 2;
-            const marker = element(svg.ownerDocument, 'text', { x: String(mid * Math.cos(angle)), y: String(mid * Math.sin(angle)), class: 'rt-discontinuity-marker rt-compressed-gap-marker', 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': '20', 'stroke-width': '6', 'pointer-events': 'none' });
+            const marker = element(svg.ownerDocument, 'text', { x: String((inner + (outer - inner) * 0.76) * Math.cos(angle)), y: String((inner + (outer - inner) * 0.76) * Math.sin(angle)), class: 'rt-discontinuity-marker rt-compressed-gap-marker', 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': '20', 'stroke-width': '6', 'pointer-events': 'none' });
             marker.appendChild(element(svg.ownerDocument, 'title', {})).textContent = `Compressed gap: ${formatElapsedTime(gap.endMs - gap.startMs)}`;
             marker.append('∞');
             overlay.appendChild(marker);

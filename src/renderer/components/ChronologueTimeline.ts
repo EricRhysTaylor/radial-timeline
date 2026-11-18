@@ -243,6 +243,15 @@ function renderDurationTickArcs(params: DurationTickArcParams): string | null {
  * Note: This is rarely used - the main path in ChronologueShiftController handles most cases
  */
 
+function renderDiscontinuityMarker(angle: number, radius: number, fontSize: number, compressed = false): string {
+    const x = formatNumber(radius * Math.cos(angle));
+    const y = formatNumber(radius * Math.sin(angle));
+    const strokeWidth = Math.max(2, Math.min(6, fontSize * 0.3));
+    const markerClass = compressed ? 'rt-discontinuity-marker rt-compressed-gap-marker' : 'rt-discontinuity-marker';
+    // Both variants stay upright, matching the existing Shift view.
+    return `<text x="${x}" y="${y}" class="${markerClass}" text-anchor="middle" dominant-baseline="middle" font-size="${formatNumber(fontSize)}" stroke-width="${formatNumber(strokeWidth)}">∞</text>`;
+}
+
 /**
  * Arc 1: Chronological Timeline Backbone
  * Renders discontinuity symbols "∞" at large time gaps between consecutive scenes
@@ -335,9 +344,6 @@ export function renderChronologicalBackboneArc(
         // Position the "∞" at the MIDDLE of the scene arc (both angularly and radially)
         const midAngle = (outerRingPosition.startAngle + outerRingPosition.endAngle) / 2;
         
-        const x = formatNumber(markerRadius * Math.cos(midAngle));
-        const y = formatNumber(markerRadius * Math.sin(midAngle));
-        
         // Calculate dynamic font size based on angular width of the scene slice
         const angularWidth = outerRingPosition.endAngle - outerRingPosition.startAngle;
         const arcLengthAtMarker = markerRadius * angularWidth; // Arc length in pixels
@@ -346,17 +352,11 @@ export function renderChronologicalBackboneArc(
         // Clamp between 8px (minimum readable) and 20px (maximum for large slices)
         const dynamicFontSize = Math.max(8, Math.min(20, arcLengthAtMarker * 0.6));
         
-        // Scale stroke-width proportionally: maintain stroke:font ratio of ~0.3
-        const dynamicStrokeWidth = Math.max(2, Math.min(6, dynamicFontSize * 0.3));
-        
-        // Discontinuity symbol "∞" centered in the middle of the scene arc with dynamic sizing
-        svg += `<text x="${x}" y="${y}" class="rt-discontinuity-marker" text-anchor="middle" dominant-baseline="middle" font-size="${formatNumber(dynamicFontSize)}" stroke-width="${formatNumber(dynamicStrokeWidth)}">∞</text>`;
+        svg += renderDiscontinuityMarker(midAngle, markerRadius, dynamicFontSize);
     });
     
     compressedGaps.forEach(gap => {
-        const x = formatNumber(markerRadius * Math.cos(gap.angle));
-        const y = formatNumber(markerRadius * Math.sin(gap.angle));
-        svg += `<text x="${x}" y="${y}" class="rt-discontinuity-marker rt-compressed-gap-marker" text-anchor="middle" dominant-baseline="middle" font-size="20" stroke-width="6">∞</text>`;
+        svg += renderDiscontinuityMarker(gap.angle, outerRingInnerRadius + (outerRingOuterRadius - outerRingInnerRadius) * 0.76, 20, true);
     });
 
     svg += `</g>`;

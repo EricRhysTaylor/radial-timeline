@@ -1048,6 +1048,10 @@
   margin-inline-end: var(--size-4-3);
 }
 
+.ert-timeline-time-scale-toggle {
+  margin-inline-start: calc(-1 * var(--size-2-1));
+}
+
 /* Sub-modes read as tags/annotations, not buttons: shorter than the mode
    buttons, thin dashed outline with a little padding, transparent fill. Each
    sub-mode carries its own hue via --ert-subnav-color — Shift neutral, Runtime

@@ -177,6 +177,7 @@ export class RadialTimelineView extends ItemView {
     private bookSwitcherSelect?: HTMLSelectElement;
     private modeNavButtons?: Map<string, HTMLButtonElement>;
     private chronologueSubNavEl?: HTMLElement;
+    private chronologueTimeScaleEl?: HTMLElement;
     private chronologueSubNavBtns?: { shift: HTMLButtonElement; alt: HTMLButtonElement };
     private narrativeSubNavEl?: HTMLElement;
     private narrativeRuntimeBtn?: HTMLButtonElement;
@@ -934,6 +935,7 @@ export class RadialTimelineView extends ItemView {
         // Leaving a mode: hide its sub-nav immediately (the controller
         // teardown also hides it, but the mode setter fires before re-render).
         if (this._currentMode !== 'chronologue') this.hideChronologueSubNav();
+        if (this.chronologueTimeScaleEl) this.chronologueTimeScaleEl.hidden = this._currentMode !== 'chronologue';
         if (this._currentMode !== 'narrative') this.hideNarrativeSubNav();
         this.syncAlignmentToggle();
     }
@@ -1107,7 +1109,13 @@ export class RadialTimelineView extends ItemView {
         time.setAttribute('aria-pressed', 'false');
         subNav.appendChild(shift);
         subNav.appendChild(alt);
-        subNav.appendChild(time);
+        const timeScaleGroup = doc.win.createDiv();
+        timeScaleGroup.className = 'ert-timeline-subnav ert-timeline-time-scale-toggle';
+        timeScaleGroup.hidden = this._currentMode !== 'chronologue';
+        timeScaleGroup.appendChild(time);
+        // Alignment is inserted first afterwards, leaving Time Scale directly beside it.
+        modeNav.insertBefore(timeScaleGroup, modeNav.firstChild);
+        this.chronologueTimeScaleEl = timeScaleGroup;
         this.insertSubNav(modeNav, subNav, anchorBtn);
 
         this.chronologueSubNavEl = subNav;

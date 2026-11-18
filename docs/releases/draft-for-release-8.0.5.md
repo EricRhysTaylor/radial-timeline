@@ -4,7 +4,7 @@ Social settings list every progress report in one place with saved styles, a sce
 
 ### Improvements
 
-- **Time Scale in Chronologue:** select **Time scale** to space the outer All Scenes ring by elapsed story time. Long empty gaps are shortened to leave room for busy stretches; ∞ marks a shortened gap. Scene wedges retain a minimum width, simultaneous scenes remain separate, and undated scenes have their own section. Subplot rings keep their usual layout.
+- **Time Scale in Chronologue:** select **Time scale** beside Fill to space the outer All Scenes ring by elapsed story time. Long empty gaps are shortened to leave room for busy stretches; ∞ marks a shortened gap. Scene wedges retain a minimum width, simultaneous scenes remain separate, and undated scenes have their own section. Subplot rings keep their usual layout.
 - **Clearer Chronologue dates:** perimeter labels show compact times and add the weekday, month and year when they change, without repeating them on every date. The start and end dates stay at the top; year changes are given priority when labels compete for space.
 - **Social reports in one list:** Settings → Social lists your reports: **Default** first, then any campaigns you add. They share one layout, and every setting a campaign has, Default has too. Open a report to see its preview, its share file, **Publish**, its style and its settings. Campaigns, teaser reveal, choosing a book and sending to Community no longer need Pro.
 - **Saved styles:** every report is drawn with a saved style, and the colors and fonts you had for the Default report are now the style named **Default**. Changes save as you make them and show in every report that uses that style; **Save as new** copies a style so you can change one report alone.

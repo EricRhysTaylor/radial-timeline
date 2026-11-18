@@ -132,6 +132,14 @@ describe('detectChanges', () => {
     expect(result.changeTypes.has(ChangeType.SEARCH)).toBe(true);
   });
 
+  it('redraws when a Time Reference changes', () => {
+    const snapshot = (when: string) => createSnapshot(
+      [{ path: 'scene.md', rawFrontmatter: { 'Time References': [{ Label: 'Memory', When: when }] } } as never],
+      new Set(), createSearchState(), 'chronologue', { books: [] } as never, null
+    );
+    expect(detectChanges(snapshot('2026-06-04'), snapshot('2026-06-04 14:30')).updateStrategy).toBe('full');
+  });
+
   it('forces a full render when a scene Chapter marker changes', () => {
     const base = createSnapshot(
       [{ path: 'scene.md', title: 'Scene', rawFrontmatter: {} } as never],

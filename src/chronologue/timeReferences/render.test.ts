@@ -63,7 +63,7 @@ describe('reference occurrences across actual ring layouts', () => {
         const markup = render(['1952', '2040']);
         // Earlier at the marks' base radius, Later at its small lift; neither climbs to another track and back.
         expect(markup).toContain(' A 414.4 414.4 ');
-        expect(markup).toContain(' A 420.4 420.4 ');
+        expect(markup).not.toContain(' A 420.4 420.4 ');
         expect(markup).not.toContain(' A 440.8 440.8 ');
         expect(markup.match(/class="ert-time-reference-connector ert-time-reference-break"/g)).toHaveLength(2);
         expect(markup.match(/class="ert-time-reference-connector ert-time-reference-break ert-time-reference-casing"/g)).toHaveLength(2);
@@ -82,23 +82,22 @@ describe('reference occurrences across actual ring layouts', () => {
         expect(keys.map(key => (JSON.parse(key) as unknown[])[1])).toEqual([0, 1, 2]);
         expect(markup).toMatch(/<g class="ert-time-reference-origin"[^>]*>[^]*?<circle class="ert-time-reference-hit"/);
     });
-    it('shows three same-date marks and an actionable overflow containing every remaining reference', () => {
+    it('groups same-date references into one actionable marker', () => {
         const markup = render(Array(5).fill('1952'), 400, 520);
-        expect(markup.match(/class="ert-time-reference-mark"/g)).toHaveLength(3);
-        expect(markup.match(/class="ert-time-reference"/g)).toHaveLength(4);
-        expect(markup).toContain('>+2</textPath></text>');
+        expect(markup.match(/class="ert-time-reference-mark"/g)).toHaveLength(1);
+        expect(markup.match(/class="ert-time-reference"/g)).toHaveLength(1);
         // One shared source/date route, plus its seam break, rather than five coincident paths.
         expect(markup.match(/class="ert-time-reference-connector"/g)).toHaveLength(1);
         for (let i = 0; i < 5; i++) expect(markup).toContain(`A &lt;memory&gt; ${i}`);
     });
-    it('returns labels to scene bottoms and lifts only Later slightly above the dominance corner', () => {
+    it('aligns earlier and later markers on the same baseline', () => {
         const markup = render(['1952', '2040']);
         const ends = Array.from(markup.matchAll(/<g class="ert-time-reference"[^>]*data-reference-x="([^"]+)" data-reference-y="([^"]+)"/g), m => m.slice(1).map(Number));
         expect(ends).toHaveLength(2);
         const radii = ends.map(([x, y]) => Math.hypot(x, y));
         // A size and a half off the ring's inner edge (size 9.6 in a 60-unit ring), clear of the backdrop ring.
         expect(radii[0]).toBeCloseTo(414.4);
-        expect(radii[1] - radii[0]).toBeCloseTo(6);
+        expect(radii[1]).toBeCloseTo(radii[0]);
         expect(markup).not.toContain('ert-time-reference-halo');
         expect(markup).toContain('d="M22 12h-2.48');
         // Each Earlier and Later label runs through its mark's radius, its letters centered on it.
@@ -162,20 +161,6 @@ describe('reference occurrences across actual ring layouts', () => {
         expect(layer).toBeGreaterThan(source.indexOf('svg += chronologueOverlaysHtml'));
         expect(layer).toBeGreaterThan(source.indexOf('svg += boundaryLabelsHtml'));
         expect(layer).toBeLessThan(source.indexOf('svg += synopsisHTML'));
-    });
-    it('keeps overflow text on the date baseline, away from scene titles across ring sizes', () => {
-        const items = [source('History', Array(5).fill('1952'))];
-        for (const [inner, outside] of [[200, 320], [400, 520], [700, 900]]) {
-            const local = computeChronologueLayout(inner, outside, start, end, items);
-            const markup = renderTimeReferenceMarkers(items, local.positions, local.slots, inner, outside, 0);
-            const overflow = markup.match(/<g class="ert-time-reference"[^>]*data-reference-x="([^"]+)" data-reference-y="([^"]+)" data-reference-overflow="true"/);
-            expect(overflow).not.toBeNull();
-            // The count follows the first date's inner baseline, not a fourth row.
-            expect(Math.hypot(Number(overflow![1]), Number(overflow![2]))).toBeCloseTo(inner + 15);
-            const countPath = markup.match(/<path id="[^"]+-overflow" d="[^"]* A ([^ ]+) /);
-            expect(Number(countPath![1])).toBeLessThanOrEqual(inner + (outside - inner) * .4);
-            expect(markup).toContain('>+2</textPath></text>');
-        }
     });
     it('draws every route in theme colors on a matching casing, never in the subplot color', () => {
         const markup = render(['1952', '1990-06-01', '2040'], 400, 520);

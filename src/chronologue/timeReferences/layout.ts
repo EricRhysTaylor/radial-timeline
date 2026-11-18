@@ -128,12 +128,8 @@ export function referenceSourceAnchor(innerR: number, outerR: number, source: Po
     const required = size + referenceMarkReach(size) * 1.35 + 4;
     const preferredClearance = clearance(preferred);
     if (preferredClearance >= required) return { angle: preferred, radius: base };
-    // Step out past the date marks' span, so the circle clears them radially, staying in the inner part of the
-    // source scene, below its title and beside its Question.
-    return {
-        angle: clearance(alternate) > preferredClearance ? alternate : preferred,
-        radius: Math.min(base + size * 2 + 2, innerR + (outerR - innerR) * .6)
-    };
+    // Keep the circle on the reference baseline, choosing the clearer side when space is tight.
+    return { angle: clearance(alternate) > preferredClearance ? alternate : preferred, radius: base };
 }
 
 /**
@@ -143,7 +139,7 @@ export function referenceSourceAnchor(innerR: number, outerR: number, source: Po
 export function referenceConnector(slot: ReferenceSlot, terminalRadius: number, source: { angle: number; radius: number }): { path: string; origin: { x: number; y: number }; discontinuity?: { x: number; y: number; rotation: number } } {
     const track = terminalRadius;
     const { angle: from, radius: sourceRadius } = source;
-    let path = `M ${point(sourceRadius, from)} L ${point(track, from)} `;
+    let path = `M ${point(sourceRadius, from)} `;
     const offRange = slot.extent === 'earlier' || slot.extent === 'later';
     let discontinuity: { x: number; y: number; rotation: number } | undefined;
     if (offRange) {
@@ -152,6 +148,5 @@ export function referenceConnector(slot: ReferenceSlot, terminalRadius: number, 
         path += `${arc(track, from, slot.seam - direction * halfGap)} M ${point(track, slot.seam + direction * halfGap)} ${arc(track, slot.seam + direction * halfGap, slot.angle)}`;
         discontinuity = { x: track * Math.cos(slot.seam), y: track * Math.sin(slot.seam), rotation: slot.seam * 180 / Math.PI + 90 };
     } else path += arc(track, from, slot.angle);
-    path += ` L ${point(terminalRadius, slot.angle)}`;
     return { path, origin: { x: sourceRadius * Math.cos(from), y: sourceRadius * Math.sin(from) }, discontinuity };
 }

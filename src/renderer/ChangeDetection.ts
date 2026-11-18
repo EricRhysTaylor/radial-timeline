@@ -156,6 +156,8 @@ export function createSnapshot(
                 // skips the redraw, so the badge never appears until some
                 // unrelated change forces one.
                 partMarkerSignature(s.rawFrontmatter),
+                // Time Reference edits alter the Chronologue overlay and its interactive keys.
+                JSON.stringify(s.rawFrontmatter?.['Time References'] ?? null),
                 stringifyPovForHash(s.pov),
                 // Range field (rendered in Gossamer mode)
                 s.Range || '',

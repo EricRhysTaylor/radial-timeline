@@ -56,9 +56,8 @@ describe('Chronologue reference overlays', () => {
         expect(distance(chosen.angle)).toBeGreaterThan(size + referenceMarkReach(size) * 1.35 + 4);
         expect(chosen.angle).toBeGreaterThan(source.startAngle);
         expect(chosen.angle).toBeLessThan(source.endAngle);
-        // Stepped out, the source circle (one size in radius) clears the date marks, which reach a size outward.
-        expect(chosen.radius - size).toBeGreaterThanOrEqual(base + size);
-        expect(chosen.radius).toBeLessThanOrEqual(700 + 60 * .6);
+        // Even in crowded scenes the source stays on the date marker baseline.
+        expect(chosen.radius).toBeCloseTo(base);
         // Every date from this master must leave the same visible source square.
         const origins = result.slots.map(slot => referenceConnector(slot, base, chosen).origin);
         expect(origins[0]).toEqual(origins[1]);

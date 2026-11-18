@@ -85,7 +85,7 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
     const byPath = new Map(items.map((item, i) => [item.path, { item, position: positions.get(i), index: i }]));
     const thickness = outerR - innerR;
     const textRadiusLimit = innerR + thickness * .4;
-    const { size, sourceSize, pitch, base, capacity } = referenceRingGeometry(innerR, outerR);
+    const { size, sourceSize, base } = referenceRingGeometry(innerR, outerR);
     let connectors = '', markers = '';
     // One source circle per scene, carrying every reference the scene declares across all its dates.
     const sources = new Map<string, { origin: { x: number; y: number }; radius: number; references: TimeReference[] }>();
@@ -93,11 +93,11 @@ export function renderTimeReferenceMarkers(items: TimelineItem[], positions: Map
         const refs = slot.references.filter(ref => byPath.get(ref.path)?.position);
         if (!refs.length) continue;
         const dateCount = new Set(refs.map(referenceDateIdentity)).size;
-        const mixed = dateCount > 1 || (thickness < 50 && refs.length > 1);
-        const shown = mixed ? [refs] : refs.slice(0, capacity).map(ref => [ref]);
+        // Coincident references share a selectable marker, keeping every connector on one baseline.
+        const mixed = refs.length > 1;
+        const shown = [refs];
         const attrs = (keys: TimeReference[]) => `data-reference-keys="${escapeXml(JSON.stringify(keys.map(ref => ref.key)))}" data-ring="${ring}"`;
-        // Only the Later side needs a small lift above the subplot dominance corner.
-        const terminalRadius = (index: number) => base + index * pitch + (slot.extent === 'later' ? 6 : 0);
+        const terminalRadius = (_index: number) => base;
         for (const path of new Set(refs.map(ref => ref.path))) {
             const owned = refs.filter(ref => ref.path === path), parent = byPath.get(path)!;
             const index = mixed ? 0 : Math.min(refs.findIndex(ref => ref.path === path), shown.length - 1);

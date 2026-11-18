@@ -1108,10 +1108,16 @@
    colour fill under white text would be low-contrast — intensify with theme
    neutrals instead, still clearly on vs the dashed idle. */
 .ert-timeline-subnav__btn[data-submode="shift"].is-active,
-.ert-timeline-subnav__btn[data-alignment].is-active {
+.ert-timeline-subnav__btn[data-alignment].is-active,
+.ert-timeline-subnav__btn[data-submode="time"].is-active {
   background: var(--background-modifier-hover);
   border-color: var(--text-normal);
   color: var(--text-normal);
+}
+
+/* Match the adjacent Fill/Sequence control while keeping the off state muted. */
+.ert-timeline-subnav__btn[data-submode="time"] {
+  border-style: solid;
 }
 
 /* No-data Runtime: keep the blue association but dim it to read "unavailable"
@@ -1139,15 +1145,13 @@
 
 /* Leave space between each mode symbol and its label. */
 .ert-timeline-subnav__btn[data-submode="shift"],
-.ert-timeline-subnav__btn[data-submode="alt"],
-.ert-timeline-subnav__btn[data-submode="time"] {
+.ert-timeline-subnav__btn[data-submode="alt"] {
   column-gap: var(--size-2-2);
 }
 
 /* Chronologue modes keep their distinct symbols beside their labels. */
 .ert-timeline-subnav__btn[data-submode="shift"] .ert-timeline-subnav__glyph--icon,
-.ert-timeline-subnav__btn[data-submode="alt"] .ert-timeline-subnav__glyph--icon,
-.ert-timeline-subnav__btn[data-submode="time"] .ert-timeline-subnav__glyph--icon {
+.ert-timeline-subnav__btn[data-submode="alt"] .ert-timeline-subnav__glyph--icon {
   display: inline-flex;
 }
 

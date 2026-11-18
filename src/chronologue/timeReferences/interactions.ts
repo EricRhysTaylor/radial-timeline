@@ -5,6 +5,7 @@ import { openTimeReference } from './editor';
 import { onReferenceSelection, hoverTimeReference, pinTimeReference, currentReferenceSelection, selectsReference, type ReferenceSelection } from './selection';
 import { readTimeReferences, type TimeReference } from './model';
 import { ReferencePopover, referencePopoverContent, sourcePopoverContent } from './popover';
+import { referenceSceneMatches } from './sceneMatches';
 
 export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SVGSVGElement): void {
     const references = new Map<string, TimeReference>();
@@ -31,11 +32,13 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
         const parsed: unknown = JSON.parse(group.getAttribute('data-reference-keys') ?? '[]');
         return Array.isArray(parsed) ? parsed.filter((key): key is string => typeof key === 'string') : [];
     };
-    // A marker selects its first reference; a source circle selects its whole scene.
+    // A shared date marker previews every relationship it contains.
     const selectionFor = (group: Element): ReferenceSelection | null => {
         const reference = references.get(keysOf(group)[0]);
         if (!reference) return null;
-        return isSource(group) ? { path: reference.path, key: null } : { path: reference.path, key: reference.key };
+        const keys = keysOf(group);
+        return isSource(group) ? { path: reference.path, key: null }
+            : { path: reference.path, key: reference.key, ...(keys.length > 1 ? { keys } : {}) };
     };
     const update = (): void => {
         const lens = currentTimelineLens(), coloring = currentTimelineColoring();
@@ -82,20 +85,38 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
     const applySelection = (selection: ReferenceSelection | null): void => {
         const holds = (group: Element): boolean => keysOf(group).some(key => selectsReference(selection, references.get(key)?.path, key));
         svg.classList.toggle('ert-has-reference-selection', Array.from(references.values()).some(ref => selectsReference(selection, ref.path, ref.key)));
-        svg.querySelectorAll('.ert-time-reference-origin[data-source-path]').forEach(group => {
-            group.classList.toggle('is-active', !!selection && group.getAttribute('data-source-path') === encodeURIComponent(selection.path));
+        const selectedReferences = Array.from(references.values()).filter(ref => selectsReference(selection, ref.path, ref.key));
+        const sourcePaths = new Set(selectedReferences.map(ref => ref.path));
+        const destinations = referenceSceneMatches(selectedReferences, view.sceneData);
+        const sourceEncoded = new Set([...sourcePaths].map(encodeURIComponent));
+        const destinationEncoded = new Set([...destinations].map(encodeURIComponent));
+        const numbersByScene = new Map<string, Element[]>();
+        svg.querySelectorAll('.rt-number-square[data-scene-id], .rt-number-text[data-scene-id]').forEach(el => {
+            const id = el.getAttribute('data-scene-id')!;
+            const numbers = numbersByScene.get(id) ?? [];
+            numbers.push(el); numbersByScene.set(id, numbers);
+        });
+        svg.querySelectorAll('.ert-time-reference-origin[data-source-path]').forEach(group => group.classList.toggle('is-active', holds(group)));
+        svg.querySelectorAll<SVGElement>('.rt-scene-group[data-item-type="Scene"]').forEach(group => {
+            const encoded = group.getAttribute('data-path') ?? '';
+            const source = sourceEncoded.has(encoded);
+            const destination = !source && destinationEncoded.has(encoded);
+            const targets: Element[] = [group];
+            const sceneId = group.querySelector('.rt-scene-path')?.id;
+            if (sceneId) targets.push(...(numbersByScene.get(sceneId) ?? []));
+            targets.forEach(el => {
+                el.classList.toggle('ert-reference-source-scene', source);
+                el.classList.toggle('ert-reference-destination-scene', destination);
+                el.classList.toggle('ert-reference-other-scene', selectedReferences.length > 0 && !source && !destination);
+            });
         });
         const markers = Array.from(svg.querySelectorAll<SVGElement>('.ert-time-reference'));
         // One reference lights its own marker. A whole scene (its source circle) lights every route and marker it owns.
-        const key = selection?.key;
+        const key = selection?.keys ? undefined : selection?.key;
         const selected = key ? markers.find(group => keysOf(group).includes(key)) : undefined;
         svg.querySelectorAll<SVGElement>('.ert-time-reference-connector').forEach(connector => {
             const active = holds(connector);
             connector.classList.toggle('is-active', active);
-            if (active && selected && !connector.classList.contains('ert-time-reference-break')) {
-                // Same-date stacks share a route; its last leg follows the selected passage marker.
-                connector.setAttribute('d', connector.getAttribute('d')!.replace(/ L [^L]+$/, ` L ${selected.dataset.referenceX} ${selected.dataset.referenceY}`));
-            }
         });
         markers.forEach(group => {
             group.classList.toggle('is-active', selected ? group === selected : holds(group));
@@ -114,7 +135,10 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
     // The popover: the references a marker or a source circle holds, readable, just outside the timeline.
     const doc = svg.ownerDocument;
     const popover = new ReferencePopover(doc);
-    view.renderScope.register(() => popover.hide());
+    let hideTimer: number | undefined;
+    const cancelHide = (): void => { if (hideTimer !== undefined) win.clearTimeout(hideTimer); hideTimer = undefined; };
+    const hidePreview = (): void => { if (!popover.pinned) { popover.hide(); hoverTimeReference(null); } };
+    view.renderScope.register(() => { cancelHide(); popover.hide(); });
     const choicesOf = (group: Element): TimeReference[] => keysOf(group).map(key => references.get(key)).filter((ref): ref is TimeReference => !!ref);
     const sourceTitle = (path: string): string => Array.from(svg.querySelectorAll('.ert-time-reference-origin'))
         .find(origin => origin.getAttribute('data-source-path') === encodeURIComponent(path))?.querySelector('desc')?.textContent ?? ''; // SAFE: DOM types textContent as nullable; every source circle renders its desc
@@ -129,12 +153,15 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
                 { clipped: group.hasAttribute('data-clipped'), planetCalendar });
         // The timeline's center on screen, and its reach: the drawing fills the shorter side of the SVG.
         const box = svg.getBoundingClientRect();
-        popover.show(content, group, { x: box.left + box.width / 2, y: box.top + box.height / 2 }, Math.min(box.width, box.height) / 2, choose);
+        popover.show(content, group, { x: box.left + box.width / 2, y: box.top + box.height / 2 }, Math.min(box.width, box.height) / 2, choose,
+            reference => hoverTimeReference(reference ? { path: reference.path, key: reference.key } : selectionFor(group)),
+            inside => { if (inside) cancelHide(); else hidePreview(); });
     };
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerover', (event: Event) => {
         const group = groupOf(event.target);
         // pointerover fires again for each part of a marker the pointer crosses; only entering the marker counts.
         if (!group || group.contains((event as PointerEvent).relatedTarget as Node | null)) return;
+        cancelHide();
         const selection = selectionFor(group);
         if (selection) hoverTimeReference(selection);
         if (!popover.pinned) showPopover(group);
@@ -142,8 +169,10 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'pointerout', (event: Event) => {
         const group = groupOf(event.target);
         if (!group || group.contains((event as PointerEvent).relatedTarget as Node | null)) return;
-        hoverTimeReference(null);
-        if (!popover.pinned) popover.hide();
+        if (!popover.pinned) {
+            cancelHide();
+            hideTimer = win.setTimeout(hidePreview, 250);
+        } else hoverTimeReference(null);
     });
     const activate = (group: Element): void => {
         const choices = choicesOf(group);
@@ -158,10 +187,10 @@ export function setupTimeReferenceInteractions(view: RadialTimelineView, svg: SV
         event.stopPropagation(); activate(group);
     });
     view.renderScope.registerDomEvent(doc as unknown as HTMLElement, 'pointerdown', (event: Event) => {
-        if (popover.pinned && !popover.contains(event.target) && !groupOf(event.target)) popover.hide();
+        if (popover.pinned && !popover.contains(event.target) && !groupOf(event.target)) { popover.hide(); hoverTimeReference(null); }
     });
     view.renderScope.registerDomEvent(doc as unknown as HTMLElement, 'keydown', (event: Event) => {
-        if ((event as KeyboardEvent).key === 'Escape' && popover.pinned) popover.dismiss();
+        if ((event as KeyboardEvent).key === 'Escape' && popover.pinned) { popover.dismiss(); hoverTimeReference(null); }
     });
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'wheel', () => popover.hide());
     view.renderScope.registerDomEvent(svg as unknown as HTMLElement, 'focusin', (event: Event) => {

@@ -49,6 +49,16 @@
 .ert-time-reference-origin { pointer-events: none; }
 .ert-time-reference-origin-label { opacity: 0; fill: var(--text-normal); font-size: 13px; font-weight: 600; paint-order: stroke; stroke: var(--background-primary); stroke-width: 3px; }
 .ert-time-reference-origin.is-active .ert-time-reference-origin-label { opacity: 1; }
+/* The source is distinct from scenes whose dates happen to match the reference. */
+.ert-has-reference-selection .rt-scene-group.ert-reference-other-scene,
+.ert-has-reference-selection :is(.rt-number-square, .rt-number-text).ert-reference-other-scene { opacity: .28; }
+.ert-has-reference-selection .rt-scene-group.ert-reference-source-scene .rt-scene-path {
+    stroke: var(--text-normal); stroke-width: 2.5px; vector-effect: non-scaling-stroke;
+}
+.ert-has-reference-selection .rt-scene-group.ert-reference-destination-scene .rt-scene-path {
+    stroke: var(--text-muted); stroke-width: 1.5px; stroke-dasharray: 5 3; vector-effect: non-scaling-stroke;
+}
+.ert-time-reference-origin.is-active .ert-time-reference-source-mark { stroke-width: 4px; }
 .ert-time-reference-filtered,
 .ert-time-reference.rt-non-selected { opacity: 0.08; pointer-events: none; }
 .ert-time-reference-connector.ert-time-reference-filtered,
@@ -65,7 +75,7 @@
     box-sizing: border-box; width: max-content; max-width: min(340px, calc(100vw - 16px)); max-height: min(640px, calc(100vh - 16px)); overflow-y: auto;
     padding: var(--size-4-2) 0; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m);
     background: var(--background-primary); box-shadow: var(--shadow-l); color: var(--text-normal);
-    font-size: var(--font-ui-small); line-height: 1.35; pointer-events: none;
+    font-size: var(--font-ui-small); line-height: 1.35; pointer-events: auto;
 }
 .ert-time-reference-popover.is-choosing { pointer-events: auto; }
 .ert-time-reference-popover__heading { padding: var(--size-4-1) var(--size-4-3) var(--size-4-2); color: var(--text-muted); font-size: var(--font-ui-smaller); font-weight: var(--font-semibold); letter-spacing: 0.02em; }

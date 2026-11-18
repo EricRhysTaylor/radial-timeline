@@ -2,19 +2,18 @@
  * Ephemeral shared selection; no plugin state is written into author notes. A null key selects every reference the
  * scene declares (hovering its source circle on the timeline).
  */
-export interface ReferenceSelection { path: string; key: string | null; reveal?: boolean }
+export interface ReferenceSelection { path: string; key: string | null; keys?: string[]; reveal?: boolean }
 
 /** Whether a selection covers one reference: that reference, or its whole scene. */
 export function selectsReference(selection: ReferenceSelection | null, path: string | undefined, key: string | undefined): boolean {
-    return !!selection && selection.path === path && (selection.key === null || selection.key === key);
+    return !!selection && (selection.keys ? !!key && selection.keys.includes(key) : selection.path === path && (selection.key === null || selection.key === key));
 }
 let hovered: ReferenceSelection | null = null;
 let pinned: ReferenceSelection | null = null;
 const listeners = new Set<(selection: ReferenceSelection | null) => void>();
-export const currentReferenceSelection = (): ReferenceSelection | null => pinned ?? hovered;
+export const currentReferenceSelection = (): ReferenceSelection | null => hovered ?? pinned;
 function publish(selection = currentReferenceSelection()): void { listeners.forEach(listener => listener(selection)); }
 export function hoverTimeReference(selection: ReferenceSelection | null): void {
-    if (pinned) return;
     hovered = selection; publish();
 }
 export function pinTimeReference(selection: ReferenceSelection | null): void {

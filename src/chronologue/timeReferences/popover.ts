@@ -90,7 +90,8 @@ export class ReferencePopover {
         return !!this.el && !!view && target instanceof view.Node && this.el.contains(target);
     }
 
-    show(content: ReferencePopoverContent, anchor: Element, center: { x: number; y: number }, radius: number, choose?: (reference: TimeReference) => void): void {
+    show(content: ReferencePopoverContent, anchor: Element, center: { x: number; y: number }, radius: number, choose?: (reference: TimeReference) => void,
+        preview?: (reference: TimeReference | null) => void, presence?: (inside: boolean) => void): void {
         this.hide();
         const el = this.doc.body.createDiv({ cls: 'ert-time-reference-popover' });
         el.toggleClass('is-choosing', !!choose);
@@ -103,7 +104,12 @@ export class ReferencePopover {
             row.createDiv({ cls: 'ert-time-reference-popover__meta', text: `${t(`timeReferences.kinds.${reference.kind}`)} · ${readableReferenceSpan(reference)}` });
             if (source) row.createDiv({ cls: 'ert-time-reference-popover__source', text: source });
             if (reference.passage) row.createDiv({ cls: 'ert-time-reference-popover__passage', text: `“${reference.passage}”` });
-            if (choose) row.onclick = () => { this.hide(); choose(reference); };
+            row.onpointerenter = () => preview?.(reference);
+            row.onpointerleave = () => preview?.(null);
+            if (choose) {
+                row.onfocus = () => preview?.(reference);
+                row.onclick = () => { this.hide(); choose(reference); };
+            }
         }
         for (const note of content.notes) el.createDiv({ cls: 'ert-time-reference-popover__note', text: note });
         const win = this.doc.defaultView;
@@ -111,6 +117,8 @@ export class ReferencePopover {
         const at = popoverPosition(box, center, radius, { width: el.offsetWidth, height: el.offsetHeight }, { width: win?.innerWidth ?? 0, height: win?.innerHeight ?? 0 }); // SAFE: a document without a window has no viewport to fit; the popover stays at its anchor
         el.setCssProps({ '--ert-popover-left': `${at.left}px`, '--ert-popover-top': `${at.top}px` });
         this.el = el;
+        el.onpointerenter = () => presence?.(true);
+        el.onpointerleave = () => presence?.(false);
         this.pinned = !!choose;
         this.anchor = choose && win && (anchor.instanceOf(win.SVGElement) || anchor.instanceOf(win.HTMLElement)) ? anchor : null;
         if (choose) el.querySelector<HTMLButtonElement>('button')?.focus();

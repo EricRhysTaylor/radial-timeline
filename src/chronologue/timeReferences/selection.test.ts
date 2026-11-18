@@ -4,10 +4,10 @@ import { currentReferenceSelection, hoverTimeReference, onReferenceSelection, pi
 afterEach(() => { hoverTimeReference(null); pinTimeReference(null); });
 
 describe('reference selection lifetime', () => {
-    it('holds a clicked relationship steady during other hover activity', () => {
+    it('previews a hover over a pinned relationship, then restores the pin', () => {
         pinTimeReference({ path: 'scene.md', key: 'first' });
         hoverTimeReference({ path: 'other.md', key: 'second' });
-        expect(currentReferenceSelection()).toEqual({ path: 'scene.md', key: 'first' });
+        expect(currentReferenceSelection()).toEqual({ path: 'other.md', key: 'second' });
         hoverTimeReference(null);
         expect(currentReferenceSelection()).toEqual({ path: 'scene.md', key: 'first' });
     });
@@ -27,10 +27,10 @@ describe('reference selection lifetime', () => {
         const unsubscribe = onReferenceSelection(value => reveals.push(value?.reveal === true));
         pinTimeReference({ path: 'scene.md', key: 'first' });
         hoverTimeReference({ path: 'other.md', key: 'second' });
-        expect(currentReferenceSelection()).toEqual({ path: 'scene.md', key: 'first' });
+        expect(currentReferenceSelection()).toEqual({ path: 'other.md', key: 'second' });
         hoverTimeReference(null);
         unsubscribe();
-        expect(reveals).toEqual([false, true]);
+        expect(reveals).toEqual([false, true, false, false]);
     });
 
     it('invalidates changed declarations without clearing another scene', () => {
@@ -51,6 +51,13 @@ describe('reference selection lifetime', () => {
         expect(selectsReference(scene, 'other.md', 'first')).toBe(false);
         expect(selectsReference({ path: 'scene.md', key: 'first' }, 'scene.md', 'second')).toBe(false);
         expect(selectsReference(null, 'scene.md', 'first')).toBe(false);
+    });
+
+    it('a grouped marker selects all of its references, including other sources', () => {
+        const group = { path: 'scene.md', key: 'first', keys: ['first', 'second'] };
+        expect(selectsReference(group, 'scene.md', 'first')).toBe(true);
+        expect(selectsReference(group, 'other.md', 'second')).toBe(true);
+        expect(selectsReference(group, 'other.md', 'third')).toBe(false);
     });
 
     it('keeps a whole-scene hover while the scene has references, and drops it when none remain', () => {

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { cloneArchetypeSpec } from './bundledStyleSpecs';
-import { generateDesignedStyleTex, getEffectiveHeaderField, setHeaderCornerField } from './designedStyle';
+import {
+    generateDesignedStyleTex,
+    getEffectiveHeaderField,
+    migrateDesignedStyleSpec,
+    setHeaderCornerField,
+    type DesignedStyleSpec,
+} from './designedStyle';
 
 // The wizard's corner editor. Every built-in layout names only a header
 // style and leaves its six corners unset, so the editor has to read what the
@@ -38,5 +44,61 @@ describe('header corners', () => {
         setHeaderCornerField(spec, 'evenLeft', 'author');
         setHeaderCornerField(spec, 'evenLeft', undefined);
         expect('evenLeft' in spec.runningHeader).toBe(false);
+    });
+});
+
+// The Literary header prints one centred line per page. The editor must read
+// it there, and editing that slot must change what prints.
+describe('Literary header', () => {
+    const literaryLines = (tex: string): string[] => tex.split('\n').filter(line => line.startsWith('\\fancyhead['));
+
+    it('reads the centred line in the centre slots and nothing at the sides', () => {
+        const signature = cloneArchetypeSpec('structured'); // Literary, plain caps
+        expect(getEffectiveHeaderField(signature, 'evenCenter')).toEqual({ join: ['page', 'author'] });
+        expect(getEffectiveHeaderField(signature, 'oddCenter')).toEqual({ join: ['title', 'page'] });
+        for (const corner of ['evenLeft', 'evenRight', 'oddLeft', 'oddRight'] as const) {
+            expect(getEffectiveHeaderField(signature, corner), corner).toBeUndefined();
+        }
+    });
+
+    it('prints the same line it always has, plain and with spaced caps', () => {
+        expect(literaryLines(generateDesignedStyleTex(cloneArchetypeSpec('structured')))).toEqual([
+            '\\fancyhead[CE]{\\thepage\\hspace{1em}|\\hspace{1em}\\AuthorName}',
+            '\\fancyhead[CO]{\\BookTitle\\hspace{1em}|\\hspace{1em}\\thepage}',
+        ]);
+        expect(literaryLines(generateDesignedStyleTex(cloneArchetypeSpec('literary')))).toEqual([
+            '\\fancyhead[CE]{\\raisebox{0.2ex}{\\thepage}\\hspace{1em}\\HeaderSeparator\\hspace{1em}\\KernedText{\\AuthorName}}',
+            '\\fancyhead[CO]{\\KernedText{\\BookTitle}\\hspace{1em}\\HeaderSeparator\\hspace{1em}\\raisebox{0.2ex}{\\thepage}}',
+        ]);
+    });
+
+    it('replaces the line when the author picks another field for that slot, and "Empty" clears it', () => {
+        const spec = cloneArchetypeSpec('structured');
+        setHeaderCornerField(spec, 'evenCenter', 'chapter');
+        setHeaderCornerField(spec, 'oddCenter', undefined);
+        expect(spec.runningHeader.oddCenter).toBe('empty');
+        const lines = literaryLines(generateDesignedStyleTex(spec));
+        // Emitted after the style's own lines, so these win.
+        expect(lines.slice(-2)).toEqual([
+            '\\fancyhead[CE]{\\rtChapterRunningTitle}',
+            '\\fancyhead[CO]{}',
+        ]);
+    });
+
+    it('drops the four side corners older versions stored, keeping the author\'s real choices', () => {
+        const spec = cloneArchetypeSpec('structured');
+        Object.assign(spec.runningHeader, { evenLeft: 'page', evenRight: 'author', oddLeft: 'title', oddRight: 'chapter' });
+        (spec as unknown as { specVersion: number }).specVersion = 3;
+        const migrated: DesignedStyleSpec = migrateDesignedStyleSpec(spec);
+        expect(migrated.runningHeader.evenLeft).toBeUndefined();
+        expect(migrated.runningHeader.evenRight).toBeUndefined();
+        expect(migrated.runningHeader.oddLeft).toBeUndefined();
+        expect(migrated.runningHeader.oddRight).toBe('chapter');
+    });
+
+    it('leaves side corners alone in a current style', () => {
+        const spec = cloneArchetypeSpec('structured');
+        spec.runningHeader.evenLeft = 'page';
+        expect(migrateDesignedStyleSpec(spec)).toBe(spec);
     });
 });

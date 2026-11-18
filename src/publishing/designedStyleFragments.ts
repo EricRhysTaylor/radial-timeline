@@ -31,10 +31,16 @@ const HEADER_CORNER_POSITIONS: Array<[fancyhdrPos: string, cornerKey: HeaderCorn
  * function feeds the override-emission loop that runs AFTER, so user-set
  * corners overwrite preset defaults.
  */
-function computeCornerOverrides(spec: DesignedStyleSpec): Array<[string, DesignedHeaderField | undefined]> {
-    // Clone the spec, apply the preset cleanly, compare each corner.
+/** The corners the spec's header style fills on its own, without the author's choices. */
+function presetRunningHeader(spec: DesignedStyleSpec): DesignedStyleSpec['runningHeader'] {
     const clone = JSON.parse(JSON.stringify(spec)) as DesignedStyleSpec;
     applyHeaderPreset(clone, spec.runningHeader.mode);
+    return clone.runningHeader;
+}
+
+function computeCornerOverrides(spec: DesignedStyleSpec): Array<[string, DesignedHeaderField | undefined]> {
+    // Apply the preset cleanly to a clone, then compare each corner.
+    const clone = { runningHeader: presetRunningHeader(spec) };
     const overrides: Array<[string, DesignedHeaderField | undefined]> = [];
     for (const [pos, key] of HEADER_CORNER_POSITIONS) {
         const liveField   = spec.runningHeader[key];
@@ -223,6 +229,7 @@ export function renderFontspec(spec: DesignedStyleSpec, options: RenderFontspecO
 function renderHeaderField(field: DesignedHeaderField | undefined): string {
     if (!field) return '';
     if (typeof field === 'object') {
+        // Joined fields are set piece by piece in renderFancyhdr.
         if ('literal' in field) return escapeForLatex(field.literal);
         return '';
     }
@@ -293,12 +300,26 @@ export function renderFancyhdr(spec: DesignedStyleSpec): string {
     };
     const wrapPage = (): string => useKerned ? '\\raisebox{0.2ex}{\\thepage}' : '\\thepage';
     const sep = useKerned ? '\\hspace{1em}\\HeaderSeparator\\hspace{1em}' : '\\hspace{1em}|\\hspace{1em}';
+    // What one header slot prints. A joined field ("12 | AUTHOR") sets each
+    // piece on its own, page numbers raised to sit level with spaced caps.
+    const renderCorner = (field: DesignedHeaderField | undefined): string => {
+        if (field && typeof field === 'object' && 'join' in field) {
+            return field.join
+                .map(piece => piece === 'page' ? wrapPage() : wrapText(renderHeaderField(piece)))
+                .join(sep);
+        }
+        const rendered = renderHeaderField(field);
+        return rendered ? wrapText(rendered) : '';
+    };
 
     if (rh.mode === 'centered-title') {
         lines.push(`\\fancyhead[C]{${wrapText('\\BookTitle')}}`);
     } else if (rh.mode === 'split-author-page-title-page') {
-        lines.push(`\\fancyhead[CE]{${wrapPage()}${sep}${wrapText('\\AuthorName')}}`);
-        lines.push(`\\fancyhead[CO]{${wrapText('\\BookTitle')}${sep}${wrapPage()}}`);
+        // The Literary line comes from the same centre slots the wizard's
+        // corner editor shows, so the editor and the PDF cannot disagree.
+        const preset = presetRunningHeader(spec);
+        lines.push(`\\fancyhead[CE]{${renderCorner(preset.evenCenter)}}`);
+        lines.push(`\\fancyhead[CO]{${renderCorner(preset.oddCenter)}}`);
     } else if (rh.mode === 'left-title-right-context') {
         lines.push(`\\fancyhead[LE]{${wrapText('\\BookTitle')}}`);
         lines.push(`\\fancyhead[RO]{${wrapText('\\rtSceneRunningTitle')}}`);
@@ -308,10 +329,9 @@ export function renderFancyhdr(spec: DesignedStyleSpec): string {
     // user has changed in the wizard's "Customize per corner" panel wins
     // over the preset default. Empty values clear the slot (`{}`).
     for (const [pos, field] of cornerOverrides) {
-        const rendered = renderHeaderField(field);
-        // Always emit even when rendered is empty — empty content explicitly
-        // clears the preset's content for that slot.
-        lines.push(`\\fancyhead[${pos}]{${rendered ? wrapText(rendered) : ''}}`);
+        // Always emit even when empty — empty content explicitly clears the
+        // preset's content for that slot.
+        lines.push(`\\fancyhead[${pos}]{${renderCorner(field)}}`);
     }
     lines.push('\\pagestyle{fancy}');
     return lines.join('\n');

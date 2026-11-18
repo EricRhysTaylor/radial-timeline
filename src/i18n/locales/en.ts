@@ -4006,7 +4006,7 @@ export const en = {
             warnFolioHeadersOff: 'Folio is in headers but headers are off — page numbers will not render.',
             warnPartEpigraphsOff: 'Part epigraphs are enabled but parts are off — no epigraphs will render.',
             warnMultiHeadingModes: 'Multiple scene heading modes only apply to dedicated-page openers.',
-            warnPageTwicePreset: 'Header corner {{corner}} uses "Page #" but the active header preset already emits the page number — the page number will appear twice. Select a non-page field for that corner, or change the conflicting setting.',
+            warnPageTwicePreset: 'Header corner {{corner}} shows "Page #", but another part of the header on the same page already shows the page number, so it will print twice. Choose another field for that corner.',
             warnPageTwiceFolio: 'Header corner {{corner}} uses "Page #" but the folio is shown at the bottom of the page — the page number will appear twice. Select a non-page field for that corner, or change the conflicting setting.',
             warnNameExists: 'A style with this name already exists; the saved name will be suffixed (e.g. "-2").',
             viewLatex: 'View LaTeX',

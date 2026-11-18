@@ -4191,7 +4191,6 @@ export const zh: DeepPartial<TranslationKeys> = {
             warnFolioHeadersOff: '页码设在页眉中，但页眉已关闭 — 页码将不会显示。',
             warnPartEpigraphsOff: '已启用部题记，但部已关闭 — 不会显示任何题记。',
             warnMultiHeadingModes: '多种场景标题模式仅适用于独立页面的开篇页。',
-            warnPageTwicePreset: '页眉角 {{corner}} 使用了“Page #”，但当前页眉预设已输出页码 — 页码将出现两次。请为该角选择一个非页码字段，或更改冲突的设置。',
             warnPageTwiceFolio: '页眉角 {{corner}} 使用了“Page #”，但页码已显示在页面底部 — 页码将出现两次。请为该角选择一个非页码字段，或更改冲突的设置。',
             warnNameExists: '已存在同名样式；保存的名称将添加后缀（例如“-2”）。',
             viewLatex: '查看 LaTeX',

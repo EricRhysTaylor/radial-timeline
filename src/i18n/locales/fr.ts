@@ -4196,7 +4196,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "warnFolioHeadersOff": "Folio est dans les en-têtes, mais les en-têtes sont désactivés - les numéros de page ne seront pas rendus.",
             "warnPartEpigraphsOff": "Les épigraphes de partie sont activées, mais les parties sont désactivées - aucune épigraphe ne sera rendue.",
             "warnMultiHeadingModes": "Plusieurs modes d'en-tête de scène s'appliquent uniquement aux ouvreurs de page dédiés.",
-            "warnPageTwicePreset": "Coin d'en-tête {{corner}} Utilise \"Page #\" mais le préréglage actif de l'en-tête émet déjà le numéro de page - le numéro de page apparaîtra deux fois. Sélectionnez un champ hors page pour ce coin ou modifiez le paramètre en conflit.",
             "warnPageTwiceFolio": "Coin d'en-tête {{corner}} Utilise \"Page #\" mais le folio est affiché en bas de la page - le numéro de page apparaîtra deux fois. Sélectionnez un champ hors page pour cela coin, ou modifiez le paramètre en conflit.",
             "warnNameExists": "Un style avec ce nom existe déjà ; Le nom enregistré sera suffixé (par exemple, \"-2\").",
             "viewLatex": "Voir LaTeX",

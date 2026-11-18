@@ -220,6 +220,35 @@ describe('validateDesignedStyleSpec', () => {
             expect(result.warnings, archetype).toEqual([]);
         }
     });
+
+    // The Literary line ("12 | AUTHOR") already carries the page number.
+    describe('page number printed twice', () => {
+        it('warns when the Literary line and a bottom page number both print it', () => {
+            const spec = cloneArchetypeSpec('literary');
+            spec.folio.position = 'bottom-center';
+            const result = validateDesignedStyleSpec(spec, 'Test');
+            expect(result.warnings).toEqual([
+                t('ui.designedStyleWizardModal.warnPageTwiceFolio', { corner: t('ui.designedStyleWizardModal.cornerEvenCenter') }),
+            ]);
+        });
+
+        it('warns when a corner adds a page number beside the Literary line', () => {
+            const spec = cloneArchetypeSpec('literary');
+            spec.runningHeader.oddRight = 'page';
+            const result = validateDesignedStyleSpec(spec, 'Test');
+            expect(result.warnings).toEqual([
+                t('ui.designedStyleWizardModal.warnPageTwicePreset', { corner: t('ui.designedStyleWizardModal.cornerOddRight') }),
+            ]);
+        });
+
+        it('does not warn when the page number is on left- and right-hand pages once each', () => {
+            const spec = freshSubmissionSpec();
+            spec.folio.position = 'header';
+            spec.runningHeader.evenLeft = 'page';
+            spec.runningHeader.oddRight = 'page';
+            expect(validateDesignedStyleSpec(spec, 'Test').warnings).toEqual([]);
+        });
+    });
 });
 
 describe('applyHeaderPreset', () => {
@@ -238,14 +267,16 @@ describe('applyHeaderPreset', () => {
         expect(spec.runningHeader.oddRight).toBeUndefined();
     });
 
-    it('"split-author-page-title-page" populates the four expected corners', () => {
+    it('"split-author-page-title-page" (Literary) fills the two centres it prints in', () => {
         const spec = freshSubmissionSpec();
         applyHeaderPreset(spec, 'split-author-page-title-page');
         expect(spec.runningHeader.mode).toBe('split-author-page-title-page');
-        expect(spec.runningHeader.evenLeft).toBe('page');
-        expect(spec.runningHeader.evenRight).toBe('author');
-        expect(spec.runningHeader.oddLeft).toBe('title');
-        expect(spec.runningHeader.oddRight).toBe('page');
+        expect(spec.runningHeader.evenCenter).toEqual({ join: ['page', 'author'] });
+        expect(spec.runningHeader.oddCenter).toEqual({ join: ['title', 'page'] });
+        expect(spec.runningHeader.evenLeft).toBeUndefined();
+        expect(spec.runningHeader.evenRight).toBeUndefined();
+        expect(spec.runningHeader.oddLeft).toBeUndefined();
+        expect(spec.runningHeader.oddRight).toBeUndefined();
     });
 
     it('"left-title-right-context" populates evenLeft + oddRight', () => {

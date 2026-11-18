@@ -37,14 +37,23 @@ import {
  * title alongside its numeral. Stored v2 specs are upgraded by
  * `migrateDesignedStyleSpec`, which defaults the flag to false so a layout
  * authored before titles existed keeps printing numerals only.
+ *
+ * v4 stores the Literary header where it prints: one centred line per page
+ * (`{ join: [...] }` in evenCenter / oddCenter). v3 and earlier stored it as
+ * four side corners that the PDF never printed; the migration drops those.
  */
-export const DESIGNED_STYLE_SPEC_VERSION = 3 as const;
+export const DESIGNED_STYLE_SPEC_VERSION = 4 as const;
 
 export type DesignArchetype = 'submission' | 'reading-draft' | 'literary' | 'structured';
 
+/** A single piece of header text. */
+export type DesignedHeaderTextField = 'page' | 'author' | 'title' | 'scene-context' | 'chapter';
+
 export type DesignedHeaderField =
-    | 'page' | 'author' | 'title' | 'scene-context' | 'chapter' | 'empty'
-    | { literal: string };
+    | DesignedHeaderTextField | 'empty'
+    | { literal: string }
+    /** Several pieces on one line, separated by a bar: "12 | JANE AUSTEN". */
+    | { join: DesignedHeaderTextField[] };
 
 export interface DesignedStyleSpec {
     specVersion: typeof DESIGNED_STYLE_SPEC_VERSION;
@@ -182,7 +191,28 @@ export function migrateDesignedStyleSpec(spec: DesignedStyleSpec): DesignedStyle
             // v2 and earlier predate titled parts; numerals-only preserves their output.
             title: spec.parts.title ?? false,
         },
+        runningHeader: stored.specVersion < 4
+            ? dropLegacyLiteraryCorners(spec.runningHeader)
+            : spec.runningHeader,
     };
+}
+
+/**
+ * The four side corners v3 and earlier stored for the Literary header. The PDF
+ * printed the centred line instead, so these values printed nothing; a corner
+ * the author set to anything else is a real choice and is kept.
+ */
+const LEGACY_LITERARY_CORNERS: Partial<Record<DesignedHeaderCornerKey, DesignedHeaderField>> = {
+    evenLeft: 'page', evenRight: 'author', oddLeft: 'title', oddRight: 'page',
+};
+
+function dropLegacyLiteraryCorners(rh: DesignedStyleSpec['runningHeader']): DesignedStyleSpec['runningHeader'] {
+    if (rh.mode !== 'split-author-page-title-page') return rh;
+    const next = { ...rh };
+    for (const corner of DESIGNED_HEADER_CORNER_KEYS) {
+        if (next[corner] !== undefined && next[corner] === LEGACY_LITERARY_CORNERS[corner]) delete next[corner];
+    }
+    return next;
 }
 
 /**
@@ -218,10 +248,9 @@ export function applyHeaderPreset(spec: DesignedStyleSpec, mode: DesignedStyleSp
         rh.evenCenter = 'title';
         rh.oddCenter = 'title';
     } else if (mode === 'split-author-page-title-page') {
-        rh.evenLeft = 'page';
-        rh.evenRight = 'author';
-        rh.oddLeft = 'title';
-        rh.oddRight = 'page';
+        // One centred line per page: "12 | AUTHOR" and "TITLE | 13".
+        rh.evenCenter = { join: ['page', 'author'] };
+        rh.oddCenter = { join: ['title', 'page'] };
     } else if (mode === 'left-title-right-context') {
         rh.evenLeft = 'title';
         rh.oddRight = 'scene-context';

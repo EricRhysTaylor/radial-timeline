@@ -36,6 +36,7 @@ import {
     getEffectiveHeaderField,
     setHeaderCornerField,
     type DesignArchetype,
+    type DesignedHeaderCornerKey,
     type DesignedHeaderField,
     type DesignedStyleSpec,
 } from '../publishing/designedStyle';
@@ -91,6 +92,27 @@ function getWizardCategories(): ReadonlyArray<{ value: WizardCategory; label: st
         { value: 'scenes',   label: t('ui.designedStyleWizardModal.categoryScenes'),   icon: 'clapperboard' },
         { value: 'epigraph', label: t('ui.designedStyleWizardModal.categoryEpigraph'), icon: 'quote' },
     ];
+}
+
+const EVEN_HEADER_CORNERS: readonly DesignedHeaderCornerKey[] = ['evenLeft', 'evenCenter', 'evenRight'];
+const ODD_HEADER_CORNERS: readonly DesignedHeaderCornerKey[] = ['oddLeft', 'oddCenter', 'oddRight'];
+
+function headerFieldShowsPage(field: DesignedHeaderField | undefined): boolean {
+    if (field === 'page') return true;
+    return !!field && typeof field === 'object' && 'join' in field && field.join.includes('page');
+}
+
+/** The corner card's own label ("Even L"), so a warning names what the author sees. */
+function headerCornerLabel(corner: DesignedHeaderCornerKey): string {
+    switch (corner) {
+        case 'evenLeft':   return t('ui.designedStyleWizardModal.cornerEvenLeft');
+        case 'evenCenter': return t('ui.designedStyleWizardModal.cornerEvenCenter');
+        case 'evenRight':  return t('ui.designedStyleWizardModal.cornerEvenRight');
+        case 'oddLeft':    return t('ui.designedStyleWizardModal.cornerOddLeft');
+        case 'oddCenter':  return t('ui.designedStyleWizardModal.cornerOddCenter');
+        case 'oddRight':   return t('ui.designedStyleWizardModal.cornerOddRight');
+        default:           return assertNever(corner);
+    }
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -433,32 +455,19 @@ export function validateDesignedStyleSpec(
         warnings.push(t('ui.designedStyleWizardModal.warnMultiHeadingModes'));
     }
 
-    // Header / Folio conflict detection. The page number can be emitted
-    // both by the header (when a per-corner override uses the 'page' field
-    // OR a named preset like Literary already bakes \thepage into CE/CO)
-    // AND by renderFolio (only when folio.position === 'bottom-center' —
-    // 'header' position is purely a declarative hint and emits nothing).
-    //
-    // Real-world conflict shapes:
-    //   • bottom-center folio + per-corner override using 'page'
-    //     → page # appears once in the footer AND once in the corner
-    //   • Literary preset (which bakes \thepage into CE/CO) + per-corner
-    //     override that ALSO uses 'page' in another corner
-    //     → page # appears in two header positions
-    //
-    // We catch both shapes via a single check: a corner uses 'page' AND
-    // another emission (footer OR named-mode bake-in) is also active.
-    const cornerKeys: Array<keyof DesignedStyleSpec['runningHeader']> = [
-        'evenLeft', 'evenCenter', 'evenRight',
-        'oddLeft',  'oddCenter',  'oddRight',
-    ];
-    const cornerWithPage = cornerKeys.find(k => spec.runningHeader[k] === 'page');
-    const namedModeAlreadyEmitsPage = spec.runningHeader.mode === 'split-author-page-title-page';
-    if (cornerWithPage && (spec.folio.position === 'bottom-center' || namedModeAlreadyEmitsPage)) {
-        warnings.push(namedModeAlreadyEmitsPage
-            ? t('ui.designedStyleWizardModal.warnPageTwicePreset', { corner: cornerWithPage })
-            : t('ui.designedStyleWizardModal.warnPageTwiceFolio', { corner: cornerWithPage }),
-        );
+    // The page number printed twice: by a header slot and by the bottom-of-page
+    // folio ('header' position only describes the header and prints nothing
+    // itself), or by two header slots on the same page. Reads what each slot
+    // prints, so the Literary line ("12 | AUTHOR") counts as a page number.
+    const pageCornersBySide = [EVEN_HEADER_CORNERS, ODD_HEADER_CORNERS].map(side =>
+        side.filter(corner => headerFieldShowsPage(getEffectiveHeaderField(spec, corner))),
+    );
+    const firstPageCorner = pageCornersBySide.flat()[0];
+    const crowdedSide = pageCornersBySide.find(corners => corners.length > 1);
+    if (firstPageCorner && spec.folio.position === 'bottom-center') {
+        warnings.push(t('ui.designedStyleWizardModal.warnPageTwiceFolio', { corner: headerCornerLabel(firstPageCorner) }));
+    } else if (crowdedSide) {
+        warnings.push(t('ui.designedStyleWizardModal.warnPageTwicePreset', { corner: headerCornerLabel(crowdedSide[1]) }));
     }
 
     if (options.existingDesignedNames && options.existingDesignedNames.has(name.trim().toLowerCase())) {
@@ -1632,13 +1641,26 @@ export class DesignedStyleWizardModal extends Modal {
             { value: 'chapter',       label: t('ui.designedStyleWizardModal.fieldChapter') },
             { value: '__literal__',   label: t('ui.designedStyleWizardModal.fieldCustomLiteral') },
         ];
+        // A joined line (the Literary header's "Page # | Author") is shown as
+        // its own entry, first, so the menu says what this slot prints.
+        // Picking any other entry replaces it; the Literary card restores it.
+        const joined = current && typeof current === 'object' && 'join' in current ? current : undefined;
+        if (joined) {
+            const labelByValue = new Map(options.map(o => [o.value, o.label]));
+            options.unshift({
+                value: '__join__',
+                label: joined.join.map(piece => labelByValue.get(piece) ?? piece).join(' | '),
+            });
+        }
         options.forEach((o) => select.createEl('option', { value: o.value, text: o.label }));
 
         let currentValue = 'empty';
         let literalValue = '';
         if (typeof current === 'string') {
             currentValue = current;
-        } else if (current && typeof current === 'object' && typeof current.literal === 'string') {
+        } else if (joined) {
+            currentValue = '__join__';
+        } else if (current && typeof current === 'object' && 'literal' in current) {
             currentValue = '__literal__';
             literalValue = current.literal;
         }
@@ -1659,9 +1681,12 @@ export class DesignedStyleWizardModal extends Modal {
             } else if (v === 'empty') {
                 literalInput.addClass('ert-hidden');
                 onChange(undefined);
+            } else if (v === '__join__' && joined) {
+                literalInput.addClass('ert-hidden');
+                onChange(joined);
             } else {
                 literalInput.addClass('ert-hidden');
-                onChange(v as Exclude<DesignedHeaderField, { literal: string }>);
+                onChange(v as Exclude<DesignedHeaderField, { literal: string } | { join: unknown }>);
             }
         });
         literalInput.addEventListener('input', () => {

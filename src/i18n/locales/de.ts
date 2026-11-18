@@ -4189,7 +4189,6 @@ export const de: DeepPartial<TranslationKeys> = {
             warnFolioHeadersOff: 'Die Seitenzahl steht in den Kopfzeilen, aber Kopfzeilen sind aus — Seitenzahlen werden nicht ausgegeben.',
             warnPartEpigraphsOff: 'Mottos für Teile sind aktiviert, aber Teile sind aus — es werden keine Mottos ausgegeben.',
             warnMultiHeadingModes: 'Mehrere Modi für Szenenüberschriften gelten nur für Eröffnungen auf eigener Seite.',
-            warnPageTwicePreset: 'Kopfzeilenecke {{corner}} verwendet „Seite #“, aber die aktive Kopfzeilen-Voreinstellung gibt die Seitenzahl bereits aus — die Seitenzahl erscheint doppelt. Wählen Sie für diese Ecke ein Feld ohne Seitenzahl oder ändern Sie die widersprüchliche Einstellung.',
             warnPageTwiceFolio: 'Kopfzeilenecke {{corner}} verwendet „Seite #“, aber die Seitenzahl wird unten auf der Seite angezeigt — die Seitenzahl erscheint doppelt. Wählen Sie für diese Ecke ein Feld ohne Seitenzahl oder ändern Sie die widersprüchliche Einstellung.',
             warnNameExists: 'Ein Stil mit diesem Namen existiert bereits; der gespeicherte Name erhält ein Suffix (z. B. „-2“).',
             viewLatex: 'LaTeX anzeigen',

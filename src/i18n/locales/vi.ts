@@ -4196,7 +4196,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "warnFolioHeadersOff": "Folio nằm trong tiêu đề nhưng tiêu đề bị tắt - số trang sẽ không hiển thị.",
             "warnPartEpigraphsOff": "Phần epigraph được bật nhưng các phần bị tắt - không có biểu tượng nào sẽ hiển thị.",
             "warnMultiHeadingModes": "Nhiều chế độ tiêu đề cảnh chỉ áp dụng cho những người mở trang chuyên dụng.",
-            "warnPageTwicePreset": "Góc tiêu đề {{corner}} sử dụng \"trang #\" nhưng cài đặt trước tiêu đề đang hoạt động đã phát ra số trang - số trang sẽ xuất hiện hai lần. Chọn một trường không phải trang cho góc đó, hoặc thay đổi cài đặt xung đột.",
             "warnPageTwiceFolio": "Góc tiêu đề {{corner}} Sử dụng \"trang #\" nhưng folio được hiển thị ở cuối trang - số trang sẽ xuất hiện hai lần. Chọn một trường không phải trang cho điều đó góc hoặc thay đổi cài đặt xung đột.",
             "warnNameExists": "Một phong cách với tên này đã tồn tại; Tên đã lưu sẽ được hậu tố (ví dụ: \"-2\").",
             "viewLatex": "Xem LaTeX",

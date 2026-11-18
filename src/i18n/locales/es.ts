@@ -4196,7 +4196,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "warnFolioHeadersOff": "Folio está en encabezados, pero los encabezados están desactivados; los números de página no se procesarán.",
             "warnPartEpigraphsOff": "Las epígrafes de piezas están habilitadas pero las partes están desactivadas; no se mostrarán epígrafes.",
             "warnMultiHeadingModes": "Múltiples modos de encabezado de escena solo se aplican a los abridores de páginas dedicadas.",
-            "warnPageTwicePreset": "Esquina de cabecera {{corner}} Usa \"Número de página\", pero el preset de encabezado activo ya emite el número de página: el número de página aparecerá dos veces. Seleccione un campo que no es de página para esa esquina, o cambiar la configuración conflictiva.",
             "warnPageTwiceFolio": "Esquina de cabecera {{corner}} Usa \"número de página\", pero el folio se muestra en la parte inferior de la página; el número de página aparecerá dos veces. Seleccione un campo que no sea de página para eso esquina o cambiar la configuración conflictiva.",
             "warnNameExists": "Ya existe un estilo con este nombre; El nombre guardado será sufijo (por ejemplo, \"-2\").",
             "viewLatex": "Ver LaTeX",

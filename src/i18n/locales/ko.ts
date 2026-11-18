@@ -4189,7 +4189,6 @@ export const ko: DeepPartial<TranslationKeys> = {
             warnFolioHeadersOff: '폴리오가 머리글에 배치되어 있지만 머리글이 꺼져 있습니다 — 쪽 번호가 렌더링되지 않습니다.',
             warnPartEpigraphsOff: '부 에피그래프가 활성화되어 있지만 부가 꺼져 있습니다 — 에피그래프가 렌더링되지 않습니다.',
             warnMultiHeadingModes: '여러 장면 제목 모드는 전용 페이지 시작에만 적용됩니다.',
-            warnPageTwicePreset: '머리글 모서리 {{corner}}에서 "페이지 #"를 사용하지만 활성 머리글 프리셋이 이미 쪽 번호를 출력합니다 — 쪽 번호가 두 번 표시됩니다. 해당 모서리에 쪽 번호가 아닌 필드를 선택하거나 충돌하는 설정을 변경하세요.',
             warnPageTwiceFolio: '머리글 모서리 {{corner}}에서 "페이지 #"를 사용하지만 폴리오가 페이지 하단에 표시됩니다 — 쪽 번호가 두 번 표시됩니다. 해당 모서리에 쪽 번호가 아닌 필드를 선택하거나 충돌하는 설정을 변경하세요.',
             warnNameExists: '같은 이름의 스타일이 이미 있습니다. 저장할 때 이름 뒤에 접미사가 붙습니다(예: "-2").',
             viewLatex: 'LaTeX 보기',

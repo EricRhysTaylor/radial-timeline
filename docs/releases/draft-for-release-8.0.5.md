@@ -27,3 +27,4 @@ Social settings list every progress report in one place with saved styles, a sce
 - **Scene separator in the style designer:** the separator accepts letters, digits and common marks such as * # • · — § † ‡. A symbol such as ⁂ is left out as you type, because a font without it stopped the export.
 - **Style designer Category menu:** the menu is wide enough to show "Chapters" in full.
 - **Time reference popovers:** a marker's popover opens once as the pointer arrives and stays steady while the pointer moves across the marker.
+- **Community timeline status:** after you turn on **Keep timeline updated** or change a detail readers can see, the Community timeline settings show the website's newest answer and its preview straight away.

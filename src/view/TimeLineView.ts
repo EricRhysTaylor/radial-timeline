@@ -1091,6 +1091,7 @@ export class RadialTimelineView extends ItemView {
         });
 
         const time = this.makeSubNavButton(doc, 'time', t('ui.timeLineView.subNavCompressed'), '◷', t('ui.timeLineView.subNavCompressedAria'), 'shrink');
+        applyTooltip(time, t('ui.timeLineView.subNavCompressedAria'), 'bottom');
         this.registerDomEvent(time, 'click', (evt: MouseEvent) => {
             evt.preventDefault(); evt.stopPropagation();
             if (!this.compressedTime && !compressedRingLayout(buildChronologueSceneSequence(this.sceneData), -Math.PI / 2, 3 * Math.PI / 2)) {

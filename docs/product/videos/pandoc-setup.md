@@ -63,10 +63,14 @@ Two authors got stuck here (GitHub issues #29 and #34, both fixed in 7.0.2 and 7
 - Caption: Export checks · Ready
 - Voice: "Export Check now says you're ready. Open Export manuscript, and make your Word file or PDF."
 
-**8. End card (1:10–1:18)**
-- Screen: the Radial Timeline mark; the address stays up to the last frame, at least three seconds, no fade.
-- Caption: Full guide: Publishing in the Radial Timeline wiki · Next: Design a PDF style
+**8. The guide (1:07–1:16)** (added 2026-11-17, Eric: show the Publishing section so viewers know it's there)
+- Screen: the docs site, docs.radialtimeline.com (built from the wiki; the plugin's help links open it). From its home page, "Settings" → "Publish" in the sidebar opens the "Publishing" page; its first section link, "01 Installing Pandoc and LaTeX", scrolls to the macOS and Windows steps, held about two seconds.
+- Caption: Full guide · Radial Timeline Docs / docs.radialtimeline.com → Publishing
 - Voice: "The full guide is in the wiki, under Publishing."
+
+**9. End card (1:16–1:20)**
+- Screen: the Radial Timeline mark; the address stays up to the last frame, at least three seconds, no fade.
+- Card: Full guide · Publishing · Radial Timeline Docs; radialtimeline.com. (Next: Design a PDF style, once that video exists.)
 
 ## Check before recording
 
@@ -99,7 +103,7 @@ About 110 words, roughly 45 seconds at the Beat Manager read's pace (2.7 words a
 
 - **Take:** `Radial Timeline LLC/Video/Plugin tutorials/pandoc setup/audio/pandoc-setup.aifc` (Eric recorded it in the Vol 14 project's `Audio/`; the copy here is the working source), 1:19.5, 48 kHz 24-bit. Every line matches the script; pauses between lines run about a second, so it is longer than the 45 s estimate.
 - **Cut voice:** `audio/pandoc-setup-voice-cut.wav`, 1:12.7: 58.25–64.95 s taken out (the Install all sentence, shot 6). The first word is at 2.31 s, so the film opens on 2 s of picture and music.
-- **Edit:** HyperFrames, `planning/record.mjs` (the takes) and `planning/build.py` (scenes, captions, end card, mix, subtitles `Publish/pandoc-setup.en.srt`). Music: "Careful Consideration" (Jon Bjork, Epidemic Sound). 1:14.6 in all.
+- **Edit:** HyperFrames, `planning/record.mjs` (the takes) and `planning/build.py` (scenes, captions, end card, mix, subtitles `Publish/pandoc-setup.en.srt`). Music: "Careful Consideration" (Jon Bjork, Epidemic Sound). 1:14.6 in the first cut; 1:20.2 with the docs shot (shot 8), added the same day after Eric's review.
 - **Staging that differs from "Before recording":** the vault also needed Book Details (title, author, rights, publisher) before Export Check could read Ready: without them it reads "Blocked: Add title in Publish → Book details before exporting." The "Scene field POV is now Narration" alert and the APR refresh badge were cleared in the capture copy so they don't show in the wheel's corner.
 - **Labels as they are in 8.0.4:** the status cards are "Form 01 Book Details" to "Form 04 Export Check"; Export Check's footer reads "04 Press proof · Set up tools", and "Set up tools" scrolls to "Export tools". Auto locate reports "✓ Pandoc found at … · Replaced missing path … · ✓ LaTeX found (xelatex) · Available engines …" in the row and in a notice. The Export manuscript button is labelled "Export manuscript →".
 
@@ -110,4 +114,4 @@ The caption lines above are on-screen text. Build the subtitle file from the voi
 ## Links
 
 - Add `pandoc-setup` to `WorkflowVideoKey`, its title under `ui.workflowVideos`, and the play button on the "Export tools" heading in Settings → Publish when the video is about to be recorded, not before.
-- The end card points to the `pdf-export` video once it exists; until then, to the wiki's Publishing page only.
+- The end card points to the `pdf-export` video once it exists; until then, to the Publishing page only. The description links it on the docs site (https://docs.radialtimeline.com/Publishing/#installing-pandoc-and-latex) through a counted go-link.

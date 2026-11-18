@@ -8610,11 +8610,16 @@
   padding: var(--ert-pad-sm);
 }
 
+/* Book Details reads like a title page: title, subtitle and author centred,
+   the other details in a left and a right column beside them. The panel is
+   its own query container, so the narrow layouts below follow the panel's
+   width, not the settings pane's. */
 .ert-ui.ert-scope--settings .ert-bookmeta-module--details {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--ert-gap-sm);
   background: color-mix(in srgb, var(--background-secondary) 48%, transparent);
+  container: ert-bookmeta-details / inline-size;
 }
 
 .ert-ui.ert-scope--settings .ert-bookmeta-module--matter {
@@ -9182,7 +9187,9 @@
   background-image: linear-gradient(to right, currentColor 50%, transparent 50%);
 }
 
-@container ert-settings (max-width: 980px) {
+/* Too narrow for the side columns to sit beside the author: the details move
+   below the centred title block, still in two columns. */
+@container ert-bookmeta-details (max-width: 600px) {
   .ert-ui.ert-scope--settings .ert-bookmeta-module--details .ert-bookmeta-primary,
   .ert-ui.ert-scope--settings .ert-bookmeta-module--details .ert-bookmeta-detail-grid {
     grid-row: auto;
@@ -9193,7 +9200,25 @@
   }
 }
 
-@container ert-settings (max-width: 720px) {
+/* Phone width: one left-aligned column. */
+@container ert-bookmeta-details (max-width: 420px) {
+  .ert-ui.ert-scope--settings .ert-bookmeta-module--details .ert-bookmeta-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ert-ui.ert-scope--settings .ert-bookmeta-module--details .ert-bookmeta-detail-col--right {
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .ert-ui.ert-scope--settings .ert-bookmeta-module--details .ert-bookmeta-primary-field {
+    text-align: left;
+  }
+}
+
+/* Phone-width settings pane. The usual desktop pane is about 700 px wide and
+   keeps the full Book Pages and matter layouts. */
+@container ert-settings (max-width: 520px) {
   .ert-ui.ert-scope--settings .ert-matter-preview-row {
     grid-template-columns: auto auto minmax(0, 1fr);
   }
@@ -9205,19 +9230,6 @@
 
   .ert-ui.ert-scope--settings .ert-matter-preview-badges {
     justify-content: flex-start;
-  }
-
-  .ert-ui.ert-scope--settings .ert-bookmeta-detail-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ert-ui.ert-scope--settings .ert-bookmeta-detail-col--right {
-    text-align: left;
-    align-items: flex-start;
-  }
-
-  .ert-ui.ert-scope--settings .ert-bookmeta-primary-field {
-    text-align: left;
   }
 
   .ert-ui.ert-scope--settings .ert-bookmeta-module-header,

@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const state = vi.hoisted(() => ({ rows: [] as Array<{ name: string; toggle?: { disabled: boolean; change: (value: boolean) => Promise<void> } }>, save: vi.fn(), fetch: vi.fn() }));
+const state = vi.hoisted(() => ({ rows: [] as Array<{ name: string; toggle?: { disabled: boolean; change: (value: boolean) => Promise<void> } }>, notes: [] as string[], record: { enabled: true, lastError: '' }, save: vi.fn(), fetch: vi.fn() }));
 vi.mock('../../../tests/mocks/obsidian', async (original) => ({
     ...await original<typeof import('../../../tests/mocks/obsidian')>(),
     Notice: class {},
     setIcon: vi.fn(),
     Setting: class {
         name = '';
-        descEl = { createDiv: () => ({}) };
+        descEl = { createDiv: ({ text }: { text: string }) => { state.notes.push(text); return {}; } };
         controlEl = { createEl: () => ({ createSpan: () => ({}) }) };
         setName(name: string) { this.name = name; return this; }
         setDesc() { return this; }
@@ -19,8 +19,8 @@ vi.mock('../../../tests/mocks/obsidian', async (original) => ({
     },
 }));
 vi.mock('../wikiLink', () => ({ addHeadingIcon: () => {}, applyErtHeaderLayout: () => {} }));
-vi.mock('../../communityShare/communityShareClient', () => ({ CommunityShareError: class extends Error {}, fetchTimelineShareStatus: state.fetch, setTimelineShareDetails: state.save }));
-vi.mock('../../communityShare/communityShareSettings', () => ({ normalizeCommunityShareSettings: (value: unknown) => value, canShareTimelineToCommunity: () => true, timelineShareFor: () => ({ enabled: true }) }));
+vi.mock('../../communityShare/communityShareClient', () => ({ CommunityShareError: class extends Error { constructor(_code: string, message: string) { super(message); } }, fetchTimelineShareStatus: state.fetch, setTimelineShareDetails: state.save }));
+vi.mock('../../communityShare/communityShareSettings', () => ({ normalizeCommunityShareSettings: (value: unknown) => value, canShareTimelineToCommunity: () => true, timelineShareFor: () => state.record }));
 vi.mock('../../communityShare/communityMailbox', () => ({ COMMUNITY_SITE_URL: 'https://example.test' }));
 vi.mock('../../modals/ErtConfirmModal', () => ({ confirmWithErtModal: vi.fn() }));
 
@@ -73,5 +73,24 @@ describe('timeline status wording', () => {
         expect(shareDescription(book, undefined, undefined)).toBe(t('ui.communityShareSection.timelineShareChecking'));
         expect(shareDescription(book, { enabled: false } as never, { shared: true } as never)).toBe(t('ui.communityShareSection.timelineShareOffExisting'));
         expect(shareDescription(book, { enabled: true } as never, { shared: true, share: { status: 'active' } } as never)).toBe(t('ui.communityShareSection.timelineShareLive'));
+    });
+
+    it('shows matching sync and status errors once while retaining distinct errors', async () => {
+        const { CommunityShareError } = await import('../../communityShare/communityShareClient');
+        vi.stubGlobal('window', { setTimeout: vi.fn() });
+        const node = { createDiv: () => node };
+        const plugin = { settings: { communityShare: { connection: { status: 'connected', connectionId: 'duplicate-errors' }, sharingPaused: false } } };
+        const book = { id: 'duplicate-errors-book', title: 'Book', sourceFolder: 'Book' };
+        state.record.lastError = 'Connection key missing';
+        state.fetch.mockReset().mockRejectedValue(new CommunityShareError('connection_secret_missing', 'Connection key missing'));
+        const render = () => { state.notes = []; renderCommunityTimelineBlock({ plugin: plugin as never, containerEl: node as never, book: book as never, rerender: render }); };
+        render();
+        await vi.waitFor(() => expect(state.fetch).toHaveBeenCalledTimes(1));
+        await vi.waitFor(() => expect(state.notes.filter(note => note === 'Connection key missing')).toHaveLength(1));
+        state.record.lastError = 'Earlier sync failed';
+        render();
+        expect(state.notes).toContain('Earlier sync failed');
+        expect(state.notes).toContain('Connection key missing');
+        state.record.lastError = '';
     });
 });

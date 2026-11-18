@@ -192,7 +192,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
         addNote(shareRow, t('ui.communityShareSection.timelineLastSent', { date: sentAt }), 'sent');
     }
     if (record?.lastError) addNote(shareRow, record.lastError, 'warning');
-    if (record?.enabled && cached?.error) addNote(shareRow, cached.error, 'warning');
+    if (record?.enabled && cached?.error && cached.error !== record.lastError) addNote(shareRow, cached.error, 'warning');
     if (record?.droppedReveals?.length) {
         addNote(shareRow, t('ui.communityShareSection.timelineRevealsDropped', { scenes: record.droppedReveals.join(', ') }), 'warning');
     }

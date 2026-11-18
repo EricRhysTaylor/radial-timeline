@@ -63,7 +63,7 @@ Sensitive fields, such as real scene titles or exact session timestamps, are nev
 
 ## Preview
 
-The preview under your sharing selection always reflects the current level ("Preview ready" with a timestamp). It shows the public report categories that will be sent to the website. Changing the level refreshes the preview.
+Choose **Review sharing details** under your sharing selection to expand the preview. It reflects the current level ("Preview ready" with a timestamp) and shows the public report categories that will be sent to the website. Changing the level refreshes the preview.
 
 ## Sharing And Safety Controls
 
@@ -80,9 +80,9 @@ The connection key is stored in Obsidian's private, per-device secure storage. I
 
 This is expected, not a fault. Fix it in this order:
 
-1. In the Community tab, scroll to **Sharing and safety** and click **Disconnect**. It works even though the key is missing, and it does not touch anything on the website.
+1. In the Community tab, select **Reconnect** next to the connection status.
 2. On the website, open **My Share** (sign in with the email on your author profile, not a different address) and generate a new one-time linking key.
-3. Paste the key into **Connection code**, click **Connect**, then **Begin sharing**.
+3. Paste the key into **Connection code** and click **Connect**. Review the sharing controls and resume sharing if needed.
 
 Rotating the connection secret from My Share does not repair this case. Rotation replaces the key on the website side for a plugin that still has one; a vault with no key needs a new linking key. Every device you write from needs its own connection, made the same way.
 

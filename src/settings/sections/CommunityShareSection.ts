@@ -94,6 +94,7 @@ interface WebsiteContextCache {
 }
 let websiteContextCache: WebsiteContextCache | null = null;
 let websiteContextInflight = false;
+let sharingDetailsOpen = false;
 const WEBSITE_CONTEXT_TTL_MS = 5 * 60 * 1000;
 
 function getCachedWebsiteContext(settings: CommunityShareSettings): WebsiteContextCache | null {
@@ -440,7 +441,12 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
         });
 
-    const previewFrame = sharingSection.createDiv({ cls: `${ERT_CLASSES.PREVIEW_FRAME} ${ERT_CLASSES.STACK} ert-previewFrame--flush ert-communityPreview` });
+    sharingSection.createDiv({ cls: 'ert-communityPreviewDetails__privacy', text: t('ui.communityShareSection.sceneTextPrivacySummary') });
+    const details = sharingSection.createEl('details', { cls: 'ert-communityPreviewDetails' });
+    details.open = sharingDetailsOpen;
+    details.addEventListener('toggle', () => { sharingDetailsOpen = details.open; });
+    details.createEl('summary', { text: t('ui.communityShareSection.reviewSharingDetails') });
+    const previewFrame = details.createDiv({ cls: `${ERT_CLASSES.PREVIEW_FRAME} ${ERT_CLASSES.STACK} ert-previewFrame--flush ert-communityPreview` });
     const addDivider = () => previewFrame.createDiv({ cls: `${ERT_CLASSES.DIVIDER} ert-divider--previewFrame ert-communityPreview__divider` });
     const addChip = (parent: HTMLElement, label: string, value?: string) => {
         const chip = parent.createSpan({ cls: ERT_CLASSES.CHIP });

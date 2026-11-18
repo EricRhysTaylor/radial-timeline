@@ -1698,6 +1698,23 @@
   width: 100%;
 }
 
+.ert-ui.ert-scope--settings .ert-communityPreviewDetails__privacy {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.ert-ui.ert-scope--settings .ert-communityPreviewDetails > summary {
+  color: var(--text-accent);
+  cursor: pointer;
+  font-weight: 600;
+  padding: var(--ert-gap-sm) 0;
+}
+
+.ert-ui.ert-scope--settings .ert-communityPreviewDetails > summary:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 3px;
+}
+
 .ert-ui.ert-scope--settings .ert-communityPreview {
   align-items: center;
   text-align: center;

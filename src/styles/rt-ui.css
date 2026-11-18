@@ -1825,6 +1825,11 @@
   line-height: 1.4;
 }
 
+/* A note that follows a setting's description as its own paragraph. */
+.ert-ui .ert-field-note--paragraph {
+  margin-top: 1em;
+}
+
 .ert-ui .ert-divider {
   border-bottom: 1px solid var(--background-modifier-border);
   margin: var(--ert-gap-sm) 0;

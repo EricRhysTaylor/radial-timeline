@@ -741,7 +741,11 @@ export class RadialTimelineView extends ItemView {
             this.registerDomEvent(mailboxBtn, 'click', (evt: MouseEvent) => {
                 evt.preventDefault();
                 evt.stopPropagation();
-                openMailboxMenu(mailboxBtn, mailbox.view(), () => { void mailbox.syncNow(); }, usesNativeMenus(this.app));
+                openMailboxMenu(mailboxBtn, mailbox.view(), () => { void mailbox.syncNow(); }, () => {
+                    // The tab is set again after the pane opens, which otherwise restores its last tab.
+                    this.plugin.settingsTab?.setActiveTab('community');
+                    if (openSettingsTab(this.app)) window.setTimeout(() => this.plugin.settingsTab?.setActiveTab('community'), 80);
+                }, usesNativeMenus(this.app));
             });
             // Desk Lamps — right of the mailbox: a lamp and the count of
             // friends at their desks. Shown once connected with a Desk Lamp or

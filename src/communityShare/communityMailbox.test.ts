@@ -290,10 +290,25 @@ describe('Community sync row', () => {
         });
         expect(communitySyncState(failed, NOW, true)).toEqual({ status: 'failed', error: 'Could not reach the Community website.' });
         expect(rowFor(failed)).toEqual({
-            text: "Couldn't sync with Community (Could not reach the Community website.)",
+            text: "Couldn't sync with Community",
+            detail: 'Could not reach the Community website.',
             warning: true,
             canSync: true
         });
+    });
+
+    it('asks to reconnect, not to sync again, when the connection key is missing', () => {
+        const missing = share({ bookListSyncError: 'The private connection secret is missing. Reconnect Community Share.' });
+        expect(rowFor(missing)).toEqual({
+            text: 'Reconnect Community',
+            detail: 'This vault’s connection key is missing. Click to open settings and paste a new connection code.',
+            warning: true,
+            canSync: false,
+            reconnect: true
+        });
+        const state = communitySyncState(missing, NOW, true)!;
+        expect(communitySyncTooltip(state, NOW + MIN, NOW)).toBeNull();
+        expect(communitySyncNativeText(state, NOW + MIN, NOW)).toBe('Reconnect Community · click to open settings');
     });
 
     it('stays healthy at exactly 7 days and turns red once a sync is more than 7 days old', () => {
@@ -379,7 +394,7 @@ describe('Community sync row', () => {
             expect(formatAutoSyncTime(at(15, 45), at(13, 0))).toMatch(/^3:45\sPM$/);
         });
 
-        it('says clicking syncs now and when the next automatic sync is due, reason first when it failed', () => {
+        it('says clicking syncs now and when the next automatic sync is due; a failure\'s reason is on the row', () => {
             const now = at(13, 0);
             const next = at(15, 45);
             expect(communitySyncTooltip({ status: 'healthy', syncedAt: now - 5 * MIN }, next, now))
@@ -387,7 +402,7 @@ describe('Community sync row', () => {
             expect(communitySyncTooltip({ status: 'overdue', syncedAt: null }, next, now))
                 .toMatch(/^Click to sync now\. Next automatic sync about 3:45\sPM\.$/);
             expect(communitySyncTooltip({ status: 'failed', error: 'Could not reach the Community website.' }, next, now))
-                .toMatch(/^Couldn't sync with Community \(Could not reach the Community website\.\)\. Click to sync now\. Next automatic sync about 3:45\sPM\.$/);
+                .toMatch(/^Click to sync now\. Next automatic sync about 3:45\sPM\.$/);
             expect(communitySyncTooltip({ status: 'pending' }, null, now)).toBe('Click to sync now.');
             expect(communitySyncTooltip({ status: 'syncing' }, next, now)).toBeNull();
         });
@@ -417,7 +432,7 @@ describe('Community sync row', () => {
 
             it('keeps a failure\'s reason first', () => {
                 expect(communitySyncNativeText({ status: 'failed', error: 'Could not reach the Community website.' }, next, now))
-                    .toMatch(/^Couldn't sync with Community \(Could not reach the Community website\.\) · click to sync · next about 3:45\sPM$/);
+                    .toMatch(/^Couldn't sync with Community: Could not reach the Community website\. · click to sync · next about 3:45\sPM$/);
             });
 
             it('shows counts as text, since the styled badge does not render', () => {

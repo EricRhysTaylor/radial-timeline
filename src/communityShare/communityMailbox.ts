@@ -118,10 +118,14 @@ function relativeTime(then: number, now: number): string {
 export interface CommunitySyncRow {
     /** What the row says. */
     text: string;
+    /** A failure's reason or next step, on a muted line under the text. */
+    detail?: string;
     /** Red (Obsidian's warning menu item): failed or overdue. */
     warning: boolean;
-    /** False while a Sync now is on its way. */
+    /** False while a Sync now is on its way, and when syncing cannot work. */
     canSync: boolean;
+    /** The connection key is gone: the row opens Community settings to reconnect instead of syncing. */
+    reconnect?: true;
 }
 
 export function communitySyncRow(state: CommunitySyncState, now: number): CommunitySyncRow {
@@ -129,7 +133,12 @@ export function communitySyncRow(state: CommunitySyncState, now: number): Commun
         case 'syncing':
             return { text: t('ui.communityMailbox.syncing'), warning: false, canSync: false };
         case 'failed':
-            return { text: t('ui.communityMailbox.syncFailed', { error: state.error }), warning: true, canSync: true };
+            // A sync without the connection key fails the same way every
+            // time; only a new connection code fixes it.
+            if (state.error === t('ui.communityShareClient.secretMissing')) {
+                return { text: t('ui.communityMailbox.reconnectNeeded'), detail: t('ui.communityMailbox.reconnectDetail'), warning: true, canSync: false, reconnect: true };
+            }
+            return { text: t('ui.communityMailbox.syncFailed'), detail: state.error, warning: true, canSync: true };
         case 'pending':
             return { text: t('ui.communityMailbox.notSyncedYet'), warning: false, canSync: true };
         case 'healthy':
@@ -176,30 +185,28 @@ export function formatAutoSyncTime(at: number, now: number): string {
 
 /**
  * The row's tooltip: clicking syncs now, and when the next automatic sync is
- * due (left out before the interval starts at layout-ready). A failed row
- * puts its reason first. None while a Sync now is on its way.
+ * due (left out before the interval starts at layout-ready). A failure's
+ * reason is on the row itself. None while a Sync now is on its way, or when
+ * the row opens settings to reconnect (its own line says so).
  */
 export function communitySyncTooltip(state: CommunitySyncState, nextAt: number | null, now: number): string | null {
-    if (state.status === 'syncing') return null;
-    const hint = nextAt === null
+    if (state.status === 'syncing' || communitySyncRow(state, now).reconnect) return null;
+    return nextAt === null
         ? t('ui.communityMailbox.syncTooltipNoSchedule')
         : t('ui.communityMailbox.syncTooltip', { time: formatAutoSyncTime(nextAt, now) });
-    if (state.status !== 'failed') return hint;
-    return t('ui.communityMailbox.syncTooltipWithReason', {
-        reason: t('ui.communityMailbox.syncFailed', { error: state.error }),
-        hint
-    });
 }
 
 /**
- * The row's text in a native (OS) menu, which shows no icon and no tooltip:
- * the status, then that clicking syncs and when the next automatic sync is
- * due. The status leads, so a failure keeps its reason first. While syncing
- * the status says it all.
+ * The row's text in a native (OS) menu, which shows no icon, no tooltip and
+ * no second line: the status (a failure with its reason), then that clicking
+ * syncs and when the next automatic sync is due. While syncing the status
+ * says it all; a missing connection key says clicking opens settings.
  */
 export function communitySyncNativeText(state: CommunitySyncState, nextAt: number | null, now: number): string {
-    const status = communitySyncRow(state, now).text;
-    if (state.status === 'syncing') return status;
+    const row = communitySyncRow(state, now);
+    if (state.status === 'syncing') return row.text;
+    if (row.reconnect) return t('ui.communityMailbox.reconnectNative');
+    const status = state.status === 'failed' ? t('ui.communityMailbox.syncFailedWithReason', { error: state.error }) : row.text;
     return nextAt === null
         ? t('ui.communityMailbox.syncRowNativeNoSchedule', { status })
         : t('ui.communityMailbox.syncRowNative', { status, time: formatAutoSyncTime(nextAt, now) });
@@ -355,10 +362,11 @@ export function paintMailboxButton(button: HTMLElement, badgeEl: HTMLElement, vi
 /**
  * Open the pill's menu just below it; each item opens its Community page.
  * Below them, while the vault syncs its book list, the Community sync row:
- * choosing it runs `onSyncNow`. `nativeMenus` (usesNativeMenus) moves the
- * row's action and timing from its icon and tooltip into its text.
+ * choosing it runs `onSyncNow`, or `onReconnect` when the connection key is
+ * missing. `nativeMenus` (usesNativeMenus) moves the row's action, timing and
+ * reason from its icon, tooltip and second line into its text.
  */
-export function openMailboxMenu(anchor: HTMLElement, view: MailboxView, onSyncNow: () => void, nativeMenus: boolean): void {
+export function openMailboxMenu(anchor: HTMLElement, view: MailboxView, onSyncNow: () => void, onReconnect: () => void, nativeMenus: boolean): void {
     const doc = anchor.ownerDocument;
     const menu = new Menu();
     for (const entry of mailboxMenuEntries(view.answer)) {
@@ -393,11 +401,15 @@ export function openMailboxMenu(anchor: HTMLElement, view: MailboxView, onSyncNo
             const title = doc.win.createFragment();
             const label = title.createSpan();
             label.setText(text);
+            if (!nativeMenus && row.detail) title.createDiv({ cls: 'ert-mailbox-sync-detail', text: row.detail });
             item.setTitle(title)
-                .setIcon(row.warning ? 'alert-triangle' : 'refresh-cw')
+                .setIcon(row.reconnect ? 'settings' : row.warning ? 'alert-triangle' : 'refresh-cw')
                 .setWarning(row.warning)
-                .setDisabled(!row.canSync)
-                .onClick(() => { if (row.canSync) onSyncNow(); });
+                .setDisabled(!row.canSync && !row.reconnect)
+                .onClick(() => {
+                    if (row.reconnect) onReconnect();
+                    else if (row.canSync) onSyncNow();
+                });
             // MenuItem exposes no element, so reach the row through its title
             // label. A native (OS) menu has no DOM row and shows no tooltip.
             const rowEl = label.closest('.menu-item');
@@ -469,7 +481,7 @@ export class CommunityMailbox {
         this.emit();
         new Notice(failure === null
             ? t('ui.communityMailbox.syncedJustNow')
-            : t('ui.communityMailbox.syncFailed', { error: failure }));
+            : t('ui.communityMailbox.syncFailedWithReason', { error: failure }));
     }
 
     subscribe(listener: () => void): () => void {

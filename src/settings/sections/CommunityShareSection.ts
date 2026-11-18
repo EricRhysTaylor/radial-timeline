@@ -358,7 +358,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 badgeText.setText(t('ui.communityShareSection.badgeText', { status: t(connectionHealthy ? 'ui.communityShareSection.connectionKeyAvailable' : 'ui.communityShareSection.connectionNeedsRepair') }));
                 renderState(replacementContainer.classList.contains('ert-hidden'));
                 if (!connectionHealthy) {
-                    const help = statusRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.reconnectHelp') });
+                    const help = statusRow.descEl.createDiv({ cls: [ERT_CLASSES.FIELD_NOTE, 'ert-field-note--paragraph'], text: t('ui.communityShareSection.reconnectHelp') });
                     help.createEl('a', { text: t('ui.communityShareSection.reconnectWebsite'), href: COMMUNITY_MY_SHARE_URL, attr: { target: '_blank', rel: 'noopener' } });
                 }
             });
@@ -370,7 +370,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         });
         renderConnectionCodeSetting(replacementContainer);
         if (settings.lastError && settings.lastError !== t('ui.communityShareClient.secretMissing')) {
-            statusRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: settings.lastError });
+            statusRow.descEl.createDiv({ cls: [ERT_CLASSES.FIELD_NOTE, 'ert-field-note--paragraph'], text: settings.lastError });
         }
     } else {
         const codeRow = renderConnectionCodeSetting(activationSection);

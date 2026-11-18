@@ -2626,6 +2626,17 @@
 .ert-mailbox-badge--menu {
   margin-inline-start: var(--size-4-2);
 }
+
+/* The Community sync row's reason or next step, on its own line under the
+   status, wrapped so a long reason doesn't stretch the menu. */
+.ert-mailbox-sync-detail {
+  max-width: 280px;
+  margin-top: var(--size-2-1);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+  white-space: normal;
+}
 /* Desk Lamps: an icon button right of the Mailbox, with the gold count of
    friends at their desks on its corner (.ert-mailbox-badge.is-new). Static
    like the Mailbox: no transitions or animation near the scene-hover path. */

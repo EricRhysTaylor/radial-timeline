@@ -48,11 +48,18 @@ export function fitChronologueLabels(labels: ChronologueLabel[], radius: number)
     const boundary = labels.filter(label => label.isFirst || label.isLast);
     const reserved = boundary.map(label => {
         const length = Math.min(Math.PI / 4, (Math.max(12, ...label.shortName.split('\n').map(line => [...line].length)) * 10 + 20) / radius);
+        if (label.boundaryAtSeam === false) {
+            const start = angle(label.angle);
+            return { start, end: Math.min(circle, start + length) };
+        }
         return label.isFirst ? { start: 0, end: length } : { start: circle - length, end: circle };
     });
     const major = labels.filter(label => label.isMajor && !label.isFirst && !label.isLast);
+    const ordered = [...major, ...boundary.filter(label => label.isFirst)]
+        .filter(label => label.earthDate).sort((a, b) => Date.parse(a.earthDate!) - Date.parse(b.earthDate!));
     const ranked = major.map((label, index) => {
-        const previous = index ? major[index - 1] : boundary.find(item => item.isFirst);
+        const dateIndex = ordered.indexOf(label);
+        const previous = dateIndex > 0 ? ordered[dateIndex - 1] : undefined;
         const date = label.earthDate ? new Date(label.earthDate) : null;
         const before = previous?.earthDate ? new Date(previous.earthDate) : null;
         const priority = date && before && date.getFullYear() !== before.getFullYear() ? 2 : date && before && date.getMonth() !== before.getMonth() ? 1 : 0;
@@ -121,17 +128,7 @@ export function buildChronologueOuterLabels(
     }));
     // Reference dates live on their overlay tooltip and Timetable subrow.
     stopChronoLabels();
-    // In the compressed layout the last date is not necessarily at the seam.
-    // Reserve room around its actual position before fitting intermediate labels.
-    const boundaries = compressed ? outerLabels.filter(label => label.isFirst || label.isLast) : [];
-    const spacedLabels = compressed ? outerLabels.map(label => {
-        if (!label.isMajor || label.isFirst || label.isLast) return label;
-        const overlaps = boundaries.some(boundary => {
-            const distance = Math.abs(Math.atan2(Math.sin(label.angle - boundary.angle), Math.cos(label.angle - boundary.angle)));
-            return distance < (Math.max(label.shortName.length, boundary.shortName.length, 12) * 11 + 20) / outerR;
-        });
-        return overlaps ? { ...label, name: '', shortName: '', isMajor: false, earthDate: undefined } : label;
-    }) : outerLabels;
+    const spacedLabels = outerLabels;
     // Fitting can hide a context-setting label. Reformat the surviving labels
     // and fit again until their text and selection agree.
     let fitted = fitChronologueLabels(contextualChronologueLabels(spacedLabels), outerR);

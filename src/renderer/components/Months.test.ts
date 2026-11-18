@@ -78,6 +78,14 @@ describe('perimeter label spacing', () => {
 
 
 describe('compressed Chronologue boundary dates', () => {
+    it('retains the 1813 transition in clustered scenes separated by long gaps', () => {
+        const dates = ['1811-01-01T09:00:00','1811-01-01T11:00:00','1811-01-01T14:00:00','1811-01-01T18:00:00','1811-01-02T03:00:00',
+            '1812-12-31T09:00:00','1812-12-31T11:00:00','1812-12-31T14:00:00','1812-12-31T18:00:00','1813-01-01T03:00:00',
+            '1817-12-30T09:00:00','1817-12-30T11:00:00','1817-12-30T14:00:00','1817-12-30T18:00:00','1817-12-31T03:00:00'];
+        const scenes = dates.map((text, i) => ({ path: `${i}.md`, title: `${i}`, itemType: 'Scene' as const, date: '', when: new Date(text), whenHasClock: true, rawFrontmatter: { When: text } }));
+        const labels = buildChronologueOuterLabels({} as never, scenes, 700, 760, true);
+        expect(labels.some(label => label.isMajor && label.shortName.includes('1813'))).toBe(true);
+    });
     it('puts the first and last dates on opposite sides of the seam when all scenes are dated', () => {
         const scenes = Array.from({ length: 15 }, (_, index) => {
             const when = new Date(1811, 0, 1 + index * 7, 9);

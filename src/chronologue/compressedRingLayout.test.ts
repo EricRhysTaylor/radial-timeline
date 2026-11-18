@@ -9,6 +9,19 @@ const scene = (path: string, when?: string): TimelineItem => ({
 });
 
 describe('compressed interactive ring geometry', () => {
+    it('keeps busy clusters readable when several long gaps separate them', () => {
+        const dates = ['1811-01-01T09:00:00','1811-01-01T11:00:00','1811-01-01T14:00:00','1811-01-02T03:00:00',
+            '1812-12-31T09:00:00','1812-12-31T11:00:00','1812-12-31T18:00:00','1813-01-01T03:00:00',
+            '1817-12-30T09:00:00','1817-12-30T11:00:00','1817-12-30T18:00:00'];
+        const items = dates.map((date, i) => ({ ...scene(String(i)), when: new Date(date), rawFrontmatter: { When: date } }));
+        const layout = compressedRingLayout(items, -Math.PI / 2, 3 * Math.PI / 2)!;
+        const gaps = layout.scale.segments.filter(segment => segment.compressed);
+        expect(gaps).toHaveLength(2);
+        const proportionalGap = gaps.reduce((sum, gap) => sum + gap.endAngle - gap.startAngle, 0);
+        expect(proportionalGap / (2 * Math.PI)).toBeLessThan(0.34);
+        expect(layout.positions.get(0)!.angularSize).toBeGreaterThan(0.05);
+        expect(layout.positions.get(3)!.angularSize).toBeGreaterThan(layout.positions.get(0)!.angularSize);
+    });
     it('assigns a long gap to the scene before it, not the following scene', () => {
         const dates = ['2080-09-03T14:40:00', '2085-03-31T19:00:00', '2085-03-31T21:00:00', '2085-04-01T08:00:00', '2085-04-20T08:00:00'];
         const items = dates.map((date, i) => ({ ...scene(String(i)), when: new Date(date), rawFrontmatter: { When: date } }));

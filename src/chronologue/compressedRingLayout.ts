@@ -12,11 +12,24 @@ export function compressedRingLayout(items: TimelineItem[], startAngle: number, 
     const fullSpan = endAngle - startAngle;
     const undatedSpan = undated.length ? fullSpan * Math.min(0.35, Math.max(0.08, undated.length / items.length)) : 0;
     const datedEnd = endAngle - undatedSpan;
-    const scale = buildCompressedTimeScale(ranges, {
+    let scale = buildCompressedTimeScale(ranges, {
         startAngle, endAngle: datedEnd - 1e-6,
         gapThresholdMs: PREVIEW_GAP_THRESHOLD_MS, compressedGapMs: PREVIEW_GAP_WEIGHT_MS,
     });
     if (!scale) return null;
+    // Long gaps share at most one third of the proportional time budget when
+    // there is other elapsed time to show. Keep the 14-day cap for sparse
+    // timelines where every interval is a long gap.
+    const longGaps = scale.segments.filter(segment => segment.compressed);
+    const activeTime = scale.segments.filter(segment => !segment.compressed)
+        .reduce((sum, segment) => sum + segment.endMs - segment.startMs, 0);
+    if (longGaps.length && activeTime > 0) {
+        const gapWeight = Math.min(PREVIEW_GAP_WEIGHT_MS, activeTime / (2 * longGaps.length));
+        scale = buildCompressedTimeScale(ranges, {
+            startAngle, endAngle: datedEnd - 1e-6,
+            gapThresholdMs: PREVIEW_GAP_THRESHOLD_MS, compressedGapMs: gapWeight,
+        })!;
+    }
     const positions = new Map<number, PositionInfo>();
     const sorted = scale.ranges.map(range => ({ range, angle: (range.startAngle + range.endAngle) / 2 }))
         .sort((a, b) => a.angle - b.angle);

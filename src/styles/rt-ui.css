@@ -7930,7 +7930,10 @@
 }
 
 /* Visual order of the publish section panels (DOM order differs from display order) */
-.ert-ui.ert-scope--settings .ert-publish-order--stages { order: 5; }
+.ert-ui.ert-scope--settings .ert-publish-order--stages {
+  order: 5;
+  container: ert-publish-stages / inline-size;
+}
 .ert-ui.ert-scope--settings .ert-publish-order--pandoc-intro { order: 10; }
 .ert-ui.ert-scope--settings .ert-publish-order--book-details { order: 20; }
 .ert-ui.ert-scope--settings .ert-publish-order--book-pages { order: 30; }
@@ -8150,6 +8153,35 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1.2;
+}
+
+/* The four forms stay in one row in the usual settings pane. The stages panel
+   (.ert-publish-order--stages) is the query container, so the breakpoints
+   follow the width the cards actually get. These rules come after the card
+   rules above so they win at equal specificity.
+   Narrow four-across cards: the corner mark would sit behind the title (the
+   header icon already shows it), and the "Start here" tab needs room above
+   the kicker. Every card gets the same top padding so the rows line up. */
+@container ert-publish-stages (max-width: 760px) {
+  .ert-ui.ert-scope--settings .ert-publishing-status-col {
+    padding-top: calc(var(--ert-pad-sm) + var(--ert-gap-xs));
+  }
+
+  .ert-ui.ert-scope--settings .ert-publishing-status-col-glyph {
+    display: none;
+  }
+}
+
+@container ert-publish-stages (max-width: 520px) {
+  .ert-ui.ert-scope--settings .ert-publishing-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container ert-publish-stages (max-width: 300px) {
+  .ert-ui.ert-scope--settings .ert-publishing-status-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .ert-ui.ert-scope--settings .ert-publishing-status-col-footer {
@@ -9167,10 +9199,6 @@
 }
 
 @container ert-settings (max-width: 720px) {
-  .ert-ui.ert-scope--settings .ert-publishing-status-grid {
-    grid-template-columns: 1fr;
-  }
-
   .ert-ui.ert-scope--settings .ert-matter-preview-row {
     grid-template-columns: auto auto minmax(0, 1fr);
   }

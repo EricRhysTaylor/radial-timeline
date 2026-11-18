@@ -5,6 +5,13 @@ import { generateChronologicalTicks, parseWhenField } from './date';
 afterEach(() => vi.restoreAllMocks());
 
 describe('localized Chronologue labels', () => {
+    it('shows a changed year once and omits it from subsequent dates', () => {
+        const values = ['2080-09-03', '2085-03-31', '2085-04-01', '2085-04-04', '2085-04-09', '2085-04-20'];
+        const ticks = generateChronologicalTicks(values.map(value => ({ when: parseWhenField(value)!, whenPrecision: 'day' as const }))).filter(tick => tick.isMajor).sort((a, b) => a.sceneIndex! - b.sceneIndex!);
+        expect(ticks[1].name).toContain('2085');
+        expect(ticks.slice(2, -1).every(tick => !tick.name.includes('2085'))).toBe(true);
+        expect(ticks.at(-1)!.name).toContain('2085');
+    });
     it.each(['es', 'fr', 'th', 'vi'])('formats a single date in %s using the manuscript calendar', locale => {
         vi.spyOn(obsidian, 'getLanguage').mockReturnValue(locale);
         const ticks = generateChronologicalTicks([{ when: new Date(2085, 2, 15) }]);

@@ -1046,6 +1046,7 @@ export function generateChronologicalTicks(
         }
     }
 
+    let lastLabeledSceneDate: Date | null = null;
     // Helper function to generate intelligent labels based on gap size
     const generateLabel = (sceneDate: Date, sceneIndex: number, isFirst: boolean, isLast: boolean): { name: string; shortName: string } => {
         const formatTime = (date: Date): string => {
@@ -1071,7 +1072,8 @@ export function generateChronologicalTicks(
         if (precision === 'year') return { name: year, shortName: year };
         if (precision === 'month') {
             const month = sceneDate.toLocaleDateString(getFormattingLocale(), { month: 'short', calendar: 'gregory' });
-            return { name: `${month} ${year}`, shortName: `${month} ${year}` };
+            const text = isFirst || isLast || !lastLabeledSceneDate || sceneDate.getFullYear() !== lastLabeledSceneDate.getFullYear() ? `${month} ${year}` : month;
+            return { name: text, shortName: text };
         }
 
         // Analyze gap before this scene to determine label type
@@ -1108,12 +1110,12 @@ export function generateChronologicalTicks(
         }
 
         // Intermediate scenes: Adaptive labels based on gap before this scene
-        if (datesSpanYears) {
+        if (lastLabeledSceneDate && sceneDate.getFullYear() !== lastLabeledSceneDate.getFullYear()) {
             const text = `${dateStr} ${year}${precision === 'time' && gapHours < 48 ? ` ${timeStr}` : ''}`;
             return { name: text, shortName: text };
         }
         if (precision !== 'time') return { name: dateStr, shortName: dateStr };
-        if (gapHours < 6) {
+        if (gapHours < 6 && lastLabeledSceneDate && sceneDate.toDateString() === lastLabeledSceneDate.toDateString()) {
             // Gap < 6 hours: Show TIME only
             return { name: timeStr, shortName: timeStr };
         } else if (gapHours < 48) {
@@ -1126,7 +1128,6 @@ export function generateChronologicalTicks(
     };
 
     // Generate ticks aligned to scene starts (not centers)
-    let lastLabeledSceneDate: Date | null = null; // Track the last scene that got a label
 
     for (let i = 0; i < numScenes; i++) {
         const scene = validScenes[i];
@@ -1193,7 +1194,7 @@ export function generateChronologicalTicks(
                 isMajor: true,
                 sceneIndex: scene.sortedIndex,
                 earthDate: scene.date.toISOString(), precision: scene.precision,
-                labelKind: scene.precision === 'time' ? (gapFromLastLabel < 6 * 3600000 && !datesSpanYears ? 'time' : gapFromLastLabel < 48 * 3600000 ? 'datetime' : 'day') : scene.precision
+                labelKind: scene.precision === 'time' ? (gapFromLastLabel < 6 * 3600000 && lastLabeledSceneDate?.toDateString() === scene.date.toDateString() ? 'time' : gapFromLastLabel < 48 * 3600000 ? 'datetime' : 'day') : scene.precision
             });
             lastLabeledSceneDate = scene.date; // Update last labeled scene
         } else {

@@ -9,6 +9,17 @@ const scene = (path: string, when?: string): TimelineItem => ({
 });
 
 describe('compressed interactive ring geometry', () => {
+    it('assigns a long gap to the scene before it, not the following scene', () => {
+        const dates = ['2080-09-03T14:40:00', '2085-03-31T19:00:00', '2085-03-31T21:00:00', '2085-04-01T08:00:00', '2085-04-20T08:00:00'];
+        const items = dates.map((date, i) => ({ ...scene(String(i)), when: new Date(date), rawFrontmatter: { When: date } }));
+        const layout = compressedRingLayout(items, -Math.PI / 2, 3 * Math.PI / 2)!;
+        const p = items.map((_, i) => layout.positions.get(i)!);
+        expect(p[0].angularSize).toBeGreaterThan(p[1].angularSize * 5);
+        expect(p[1].angularSize).toBeLessThan(p[2].angularSize);
+        expect(layout.angleAt(items[1].when!.getTime())).toBeCloseTo(p[1].startAngle, 5);
+        expect(layout.angleAt(items[2].when!.getTime())).toBeCloseTo(p[2].startAngle, 5);
+        p.forEach(position => expect(position.angularSize).toBeGreaterThan(0));
+    });
     it('retains all scenes, including equal dates and undated scenes', () => {
         const items = [scene('a', '2000-01-01'), scene('b', '2000-01-01'), scene('c', '2100-01-01'), scene('d')];
         const layout = compressedRingLayout(items, -Math.PI / 2, 3 * Math.PI / 2)!;

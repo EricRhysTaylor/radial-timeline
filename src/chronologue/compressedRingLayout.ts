@@ -28,7 +28,9 @@ export function compressedRingLayout(items: TimelineItem[], startAngle: number, 
     }
     // Keep each scene large enough to target. Distribute the remaining space
     // proportionally, then apply the same monotonic mapping to time overlays.
-    const boundaries = [startAngle, ...clusters.slice(1).map((c, i) => (clusters[i].angle + c.angle) / 2), datedEnd];
+    // A scene occupies the time from its own date to the next scene's date.
+    // Midpoints incorrectly assign half of a long gap to the following scene.
+    const boundaries = [startAngle, ...clusters.slice(1).map(c => c.angle), datedEnd];
     const base = clusters.map((cluster, i) => ({
         width: boundaries[i + 1] - boundaries[i],
         minimum: Math.min(fullSpan * 0.3 / Math.max(1, ranges.length), 0.025) * cluster.ids.length,

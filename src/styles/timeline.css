@@ -1144,8 +1144,9 @@
 }
 
 /* Leave space between each mode symbol and its label. */
-.ert-timeline-subnav__btn[data-submode="shift"],
-.ert-timeline-subnav__btn[data-submode="alt"] {
+.ert-timeline-subnav__btn[data-submode="alt"],
+.ert-timeline-subnav__btn[data-submode="time"],
+.ert-timeline-subnav__btn[data-submode="shift"] {
   column-gap: var(--size-2-2);
 }
 

@@ -590,6 +590,39 @@ describe('getFontDiagnosticForFontKey — vault-then-system resolver', () => {
         }
     });
 
+    // TeX Gyre Heros: the sans-serif that needs nothing installed (same TeX
+    // package as Pagella), for authors whose computer has no Arial.
+    it('always reports TeX Gyre Heros as resolvable — it comes from the TeX tree', () => {
+        const diag = getFontDiagnosticForFontKey('tex-gyre-heros');
+        expect(diag.state).toBe('ok');
+        expect(diag.primaryFontName).toBe('TeX Gyre Heros');
+        expect(diag.resolvedFrom).toBe('latex');
+    });
+
+    // Only a font found among the computer's installed fonts depends on the
+    // machine; the layout card says so for that case alone.
+    it('says where a found font came from', () => {
+        const priorFontCatalog = process.env.RT_FONT_CATALOG;
+        const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-resolved-from-'));
+        const fontDir = path.join(tempRoot, 'sorts-mill-goudy');
+        fs.mkdirSync(fontDir, { recursive: true });
+        fs.writeFileSync(path.join(fontDir, 'SortsMillGoudy-Regular.ttf'), 'FAKE');
+        fs.writeFileSync(path.join(fontDir, 'SortsMillGoudy-Italic.ttf'), 'FAKE');
+        setVaultFontDir(tempRoot);
+        try {
+            process.env.RT_FONT_CATALOG = 'Arial';
+            expect(getFontDiagnosticForFontKey('sorts-mill-goudy').resolvedFrom).toBe('vault');
+            expect(getFontDiagnosticForFontKey('latin-modern').resolvedFrom).toBe('latex');
+            expect(getFontDiagnosticForFontKey('system-sans').resolvedFrom).toBe('computer');
+            expect(getFontDiagnosticForFontKey('custom', undefined, 'Arial').resolvedFrom).toBe('computer');
+            expect(getFontDiagnosticForFontKey('crimson').resolvedFrom).toBeUndefined();
+        } finally {
+            if (priorFontCatalog === undefined) delete process.env.RT_FONT_CATALOG;
+            else process.env.RT_FONT_CATALOG = priorFontCatalog;
+            fs.rmSync(tempRoot, { recursive: true, force: true });
+        }
+    });
+
     it('marks verdicts from a real font key as specDriven, and the no-key placeholder as not', () => {
         expect(getFontDiagnosticForFontKey(undefined).specDriven).toBe(false);
         for (const key of ['latin-modern', 'source-serif', 'sorts-mill-goudy', 'eb-garamond'] as const) {

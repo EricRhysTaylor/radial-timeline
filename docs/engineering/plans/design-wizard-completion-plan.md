@@ -140,8 +140,12 @@ whichever way, note it in release notes.
 - [x] C: compile matrix green at clamped ranges (archetypes × control
       extremes × uncovered enum values)
 - [x] D: flag flipped; fork-first copy; `/feature-audit` pass complete
-- [ ] E: Standard-layout font decision made and release-noted
-      (options and a recommendation are with Eric; nothing changed)
+- [x] E: Standard-layout font decision made and release-noted.
+      Eric, 2026-11-17: keep Arial (no existing PDF changes), say so on
+      the layout's card ("Uses Arial from this computer"), and add TeX
+      Gyre Heros to the font list as a sans that needs no install. The
+      layout this plan calls "Standard Manuscript" is the one the UI
+      calls Basic.
 - [x] Wiki: `wiki/Manuscript-Export.md` describes fork-first creation
       (publishes with the release)
 - [x] Release notes entry (`draft-for-release-8.0.5.md`)

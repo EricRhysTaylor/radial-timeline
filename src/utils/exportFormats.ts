@@ -897,6 +897,13 @@ export interface FontDiagnostic {
      * panel — which is what users saw after a successful font install.
      */
     specDriven: boolean;
+    /**
+     * Where an 'ok' spec-driven font was found: the vault's copy of a font
+     * that ships with the plugin, the LaTeX installation, or this computer's
+     * installed fonts. Only the last depends on the machine, so the layout
+     * card says so (a style that prints here may not print elsewhere).
+     */
+    resolvedFrom?: 'vault' | 'latex' | 'computer';
 }
 
 const FONT_KEY_TO_DISPLAY: Record<DesignedStyleSpec['body']['font'], string> = {
@@ -907,6 +914,7 @@ const FONT_KEY_TO_DISPLAY: Record<DesignedStyleSpec['body']['font'], string> = {
     'crimson':          'Crimson Text',
     'system-serif':     'TeX Gyre Pagella',
     'system-sans':      'Arial',
+    'tex-gyre-heros':   'TeX Gyre Heros',
     // Placeholder only — 'custom' always resolves its display name from the
     // spec's own customFontName in resolveFontDiagnosticForKey, never from here.
     'custom':           'Custom font',
@@ -1032,7 +1040,7 @@ function resolveFontDiagnosticForKey(
         // until the export failed on it.
         const probed = probeFontWithXelatex(name);
         if (probed === true) {
-            return { state: 'ok', primaryFontName: name, resolvedFontName: name, specDriven: true };
+            return { state: 'ok', primaryFontName: name, resolvedFontName: name, specDriven: true, resolvedFrom: 'computer' };
         }
         const catalog = loadSystemFontCatalog();
         const canVerify = Array.isArray(catalog);
@@ -1040,7 +1048,7 @@ function resolveFontDiagnosticForKey(
             && ((canVerify && isFontInstalled(name, catalog))
                 || requiredSystemFontFileExists(name, platform));
         if (installed) {
-            return { state: 'ok', primaryFontName: name, resolvedFontName: name, specDriven: true };
+            return { state: 'ok', primaryFontName: name, resolvedFontName: name, specDriven: true, resolvedFrom: 'computer' };
         }
         return {
             state: 'missing-system',
@@ -1055,7 +1063,7 @@ function resolveFontDiagnosticForKey(
 
     // 1. Vault-bundled files present → ready (Path-based emit).
     if (vaultHasFontFiles(fontKey)) {
-        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true };
+        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true, resolvedFrom: 'vault' };
     }
 
     // 2. TeX-distribution font → ready (filename emit, resolved by kpathsea).
@@ -1063,7 +1071,7 @@ function resolveFontDiagnosticForKey(
     //    catalog, so the system check below would wrongly report them
     //    missing and hard-block export on a machine that compiles them fine.
     if (FONT_REGISTRY[fontKey]?.files.texUpright) {
-        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true };
+        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true, resolvedFrom: 'latex' };
     }
 
     // 3. System install present → ready (system-name emit).
@@ -1075,7 +1083,7 @@ function resolveFontDiagnosticForKey(
     // Only fall back to the catalog when XeLaTeX is unavailable to ask.
     const probed = probeFontWithXelatex(primaryFontName);
     if (probed === true) {
-        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true };
+        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true, resolvedFrom: 'computer' };
     }
     const catalog = loadSystemFontCatalog();
     const canVerify = Array.isArray(catalog);
@@ -1083,7 +1091,7 @@ function resolveFontDiagnosticForKey(
         && ((canVerify && isFontInstalled(primaryFontName, catalog))
             || requiredSystemFontFileExists(primaryFontName, platform));
     if (installed) {
-        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true };
+        return { state: 'ok', primaryFontName, resolvedFontName: primaryFontName, specDriven: true, resolvedFrom: 'computer' };
     }
 
     // 4. Missing. If the registry knows about bundled files for this font,

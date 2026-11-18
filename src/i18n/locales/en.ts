@@ -6574,6 +6574,7 @@ export const en = {
             notInstalled: 'Not installed',
             fontsInstallWithSetup: 'Fonts install with setup',
             needsFont: 'Needs font: {{font}}',
+            usesComputerFont: 'Uses {{font}} from this computer',
             howToInstall: 'How to install',
             installInstructionsUnavailable: 'Install instructions unavailable.',
             reopenSettingsAfterInstall: 'After installing, re-open Settings to refresh status.',

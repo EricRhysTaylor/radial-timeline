@@ -194,6 +194,7 @@ function describeFont(spec: DesignedStyleSpec): string {
         case 'crimson':          return t('ui.layoutVisuals.fontSerif', { font: 'Crimson Text' });
         case 'system-serif':     return t('ui.layoutVisuals.fontSerif', { font: 'TeX Gyre Pagella' });
         case 'system-sans':      return t('ui.layoutVisuals.fontSans', { font: 'Arial' });
+        case 'tex-gyre-heros':   return t('ui.layoutVisuals.fontSans', { font: 'TeX Gyre Heros' });
         case 'custom':           return spec.body.customFontName ? t('ui.layoutVisuals.fontCustomNamed', { font: spec.body.customFontName }) : t('ui.layoutVisuals.fontCustom');
         default:                 return t('ui.layoutVisuals.fontDefault');
     }

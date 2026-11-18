@@ -124,14 +124,14 @@ describe('wizard font choices', () => {
         expect(choices.map(c => c.key).sort()).toEqual(Object.keys(FONT_REGISTRY).sort());
         const bySource = (source: string) => choices.filter(c => c.source === source).map(c => c.key).sort();
         expect(bySource('included')).toEqual(['sorts-mill-goudy', 'source-serif']);
-        expect(bySource('latex')).toEqual(['latin-modern', 'system-serif']);
+        expect(bySource('latex')).toEqual(['latin-modern', 'system-serif', 'tex-gyre-heros']);
         expect(bySource('computer')).toEqual(['crimson', 'eb-garamond', 'system-sans']);
     });
 
     it('offers a system font only when this machine can load it', () => {
         const choices = listWizardFontChoices(key => key === 'system-sans');
         const found = choices.filter(c => c.found).map(c => c.key).sort();
-        expect(found).toEqual(['latin-modern', 'sorts-mill-goudy', 'source-serif', 'system-sans', 'system-serif']);
+        expect(found).toEqual(['latin-modern', 'sorts-mill-goudy', 'source-serif', 'system-sans', 'system-serif', 'tex-gyre-heros']);
     });
 });
 

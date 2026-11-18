@@ -118,7 +118,7 @@ The whole read, as one take (shot 6's line in brackets until Eric decides):
 
 On main, "Design your own…" in Settings → Publish works in every vault, and reaches authors with the release after 8.0.4. The pencil on a built-in layout (shots 2 and 3 as written) still works the same way. Three things in this script to check against that build before recording:
 
-- **Shot 5, the voice line "If a font isn't installed, the wizard tells you in red."** The "Font" menu now lists only fonts this computer can print with, in groups: "Included with Radial Timeline" (Sorts Mill Goudy, Source Serif 4), "Included with LaTeX" (Latin Modern Roman, TeX Gyre Pagella) and "On this computer" (Arial and any of EB Garamond or Crimson Text that are installed, then "Custom (system font)"). A font that isn't installed is not in the menu, so a viewer won't see the red "Missing" label unless a style already uses such a font. The line needs a new second sentence, for Eric to choose.
+- **Shot 5, the voice line "If a font isn't installed, the wizard tells you in red."** The "Font" menu now lists only fonts this computer can print with, in groups: "Included with Radial Timeline" (Sorts Mill Goudy, Source Serif 4), "Included with LaTeX" (Latin Modern Roman, TeX Gyre Pagella, TeX Gyre Heros) and "On this computer" (Arial and any of EB Garamond or Crimson Text that are installed, then "Custom (system font)"). A font that isn't installed is not in the menu, so a viewer won't see the red "Missing" label unless a style already uses such a font. The line needs a new second sentence, for Eric to choose.
 - **Shot 5, "Latin Modern"** is listed as "Latin Modern Roman".
 - **Shot 5, "Size (pt)"** accepts 10 to 13 in steps of 0.5, so 11.5 as scripted is fine.
 

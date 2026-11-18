@@ -120,6 +120,21 @@ export const FONT_REGISTRY: Record<string, { displayName: string; files: FontFil
         displayName: 'Arial',
         files: { slug: 'arial', upright: '' },
     },
+    'tex-gyre-heros': {
+        displayName: 'TeX Gyre Heros',
+        files: {
+            // A sans that needs nothing installed: TeX Gyre Heros is in the
+            // same TeX package as TeX Gyre Pagella, so it is resolved from
+            // the texmf tree by file name on every platform. It gives authors
+            // without Arial (most Linux installs) a sans-serif they can pick.
+            slug: 'tex-gyre-heros',
+            upright: '',
+            texUpright: 'texgyreheros-regular.otf',
+            texItalic: 'texgyreheros-italic.otf',
+            texBold: 'texgyreheros-bold.otf',
+            texBoldItalic: 'texgyreheros-bolditalic.otf',
+        },
+    },
 };
 
 export interface BuildFontspecOptions {

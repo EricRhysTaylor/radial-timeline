@@ -3016,8 +3016,10 @@
 }
 
 /* Bundled font not yet copied — a not-set-up state, kept quiet and muted so a
-   fresh vault does not read as a wall of errors. */
-.ert-layout-font-status--pending .ert-layout-font-status-badge {
+   fresh vault does not read as a wall of errors. The same quiet treatment
+   for "uses a font from this computer": information, not a problem. */
+.ert-layout-font-status--pending .ert-layout-font-status-badge,
+.ert-layout-font-status--from-computer .ert-layout-font-status-badge {
   color: var(--text-muted);
   font-weight: 400;
 }

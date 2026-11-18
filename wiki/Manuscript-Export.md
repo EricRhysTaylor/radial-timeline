@@ -113,10 +113,12 @@ Each numeric setting stays inside a range that has been printed from all four la
 The **Font** menu lists only fonts this computer can print with:
 
 *   **Included with Radial Timeline** — Sorts Mill Goudy and Source Serif 4. Saving a style that uses one copies the font files into your vault's Pandoc folder.
-*   **Included with LaTeX** — Latin Modern Roman and TeX Gyre Pagella.
+*   **Included with LaTeX** — Latin Modern Roman, TeX Gyre Pagella, and TeX Gyre Heros (a sans-serif).
 *   **On this computer** — Arial, EB Garamond, and Crimson Text when they are installed, and **Custom (system font)** for any other installed font you name.
 
 A style cannot be saved with a font that is not installed. The designer shows the same install steps as the export panel's checks.
+
+The Basic layout uses Arial, which comes with macOS and Windows but not with most Linux systems; its card in **Settings → Publish** reads "Uses Arial from this computer". To print Basic's design without Arial, start a style from Basic and choose TeX Gyre Heros.
 
 ## Review the Actual PDF
 

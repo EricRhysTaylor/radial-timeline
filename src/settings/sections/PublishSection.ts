@@ -1121,6 +1121,16 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                         });
                         new Notice(fragment, 12000);
                     });
+                } else if (fontDiag.resolvedFrom === 'computer') {
+                    // Found, but only because it is installed on this
+                    // computer: the one kind of font that neither ships with
+                    // the plugin nor comes with LaTeX. A quiet note, so an
+                    // author knows the layout depends on it elsewhere.
+                    const row = s.descEl.createDiv({ cls: 'ert-layout-font-status ert-layout-font-status--from-computer' });
+                    row.createSpan({
+                        cls: 'ert-layout-font-status-badge',
+                        text: t('ui.publishSection.usesComputerFont', { font: fontDiag.primaryFontName }),
+                    });
                 }
             }
 

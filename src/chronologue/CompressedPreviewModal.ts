@@ -12,11 +12,6 @@ function element(doc: Document, tag: string, attrs: Record<string, string>): SVG
     return result;
 }
 
-function arc(radius: number, start: number, end: number): string {
-    const point = (angle: number) => `${radius * Math.cos(angle)} ${radius * Math.sin(angle)}`;
-    return `M ${point(start)} A ${radius} ${radius} 0 ${end - start > Math.PI ? 1 : 0} 1 ${point(end)}`;
-}
-
 function sector(inner: number, outer: number, start: number, end: number): string {
     const point = (radius: number, angle: number) => `${radius * Math.cos(angle)} ${radius * Math.sin(angle)}`;
     const large = end - start > Math.PI ? 1 : 0;
@@ -57,7 +52,7 @@ export class CompressedPreviewModal extends Modal {
             content.createEl('p', { text: 'This preview needs at least two distinct dated positions or a date range.' });
             return;
         }
-        content.createEl('p', { text: `${ranges.length} dated scenes · ${excluded} undated or unsupported scenes omitted. Wedges allocate space around scene dates; they do not show scene duration. Orange dashes mark compressed gaps. Some labels may be too close together to display. Hover or focus a scene to highlight its matching subplot positions.` });
+        content.createEl('p', { text: `${ranges.length} dated scenes · ${excluded} undated or unsupported scenes omitted. Wedges allocate space around scene dates; they do not show scene duration. Infinity marks compressed gaps. Some labels may be too close together to display. Hover or focus a scene to highlight its matching subplot positions.` });
         const layout = content.createDiv({ cls: 'ert-compressed-preview__layout' });
         const host = layout.createDiv({ cls: 'radial-timeline-container ert-compressed-preview__wheel' });
         const svg = this.source.cloneNode(true) as SVGSVGElement; // SAFE: cloning a rendered SVG is confined to this read-only preview.
@@ -105,9 +100,11 @@ export class CompressedPreviewModal extends Modal {
             overlay.appendChild(group);
         }
         for (const gap of scale.segments.filter(segment => segment.compressed)) {
-            const path = element(svg.ownerDocument, 'path', { d: arc(outer - 5, gap.startAngle, gap.endAngle), class: 'ert-compressed-preview__gap' });
-            path.appendChild(element(svg.ownerDocument, 'title', {})).textContent = `Compressed gap: ${formatElapsedTime(gap.endMs - gap.startMs)}`;
-            overlay.appendChild(path);
+            const angle = (gap.startAngle + gap.endAngle) / 2;
+            const marker = element(svg.ownerDocument, 'text', { x: String(mid * Math.cos(angle)), y: String(mid * Math.sin(angle)), class: 'rt-discontinuity-marker rt-compressed-gap-marker', 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': '20', 'stroke-width': '6', 'pointer-events': 'none' });
+            marker.appendChild(element(svg.ownerDocument, 'title', {})).textContent = `Compressed gap: ${formatElapsedTime(gap.endMs - gap.startMs)}`;
+            marker.append('∞');
+            overlay.appendChild(marker);
         }
         svg.appendChild(overlay);
         host.appendChild(svg);

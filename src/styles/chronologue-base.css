@@ -82,6 +82,11 @@
   transition: opacity 0.2s ease, fill 0.2s ease;
 }
 
+.rt-compressed-gap-marker {
+  opacity: 1;
+  visibility: visible;
+}
+
 .radial-timeline-svg[data-shift-mode="active"] .rt-discontinuity-marker {
   opacity: 1;
   visibility: visible;
@@ -302,7 +307,6 @@
 
 .ert-compressed-preview__mask { fill: none; stroke: var(--background-primary); }
 .ert-compressed-preview__track { fill: none; stroke: var(--background-modifier-hover); }
-.ert-compressed-preview__gap { fill: none; stroke: var(--text-warning); stroke-width: 12; stroke-dasharray: 10 10; pointer-events: none; }
 .ert-compressed-preview__range { fill: none; stroke: var(--interactive-accent); stroke-width: 18; }
 .ert-compressed-preview__instant { stroke: var(--text-accent); stroke-width: 8; }
 .ert-compressed-preview__range.is-selected,

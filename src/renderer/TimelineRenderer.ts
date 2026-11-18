@@ -582,13 +582,6 @@ export function createTimelineSVG(
     svg += renderRings(ringRenderContext);
     if (compressedLayout) {
         const radius = ringStartRadii[NUM_RINGS - 1] + ringWidths[NUM_RINGS - 1] + 3;
-        svg += '<g class="rt-compressed-time-gaps" pointer-events="none">';
-        for (const gap of compressedLayout.scale.segments.filter(segment => segment.compressed)) {
-            const a = compressedLayout.mapAngle(gap.startAngle), b = compressedLayout.mapAngle(gap.endAngle);
-            const point = (angle: number) => `${formatNumber(radius * Math.cos(angle))} ${formatNumber(radius * Math.sin(angle))}`;
-            svg += `<path d="M ${point(a)} A ${radius} ${radius} 0 ${b - a > Math.PI ? 1 : 0} 1 ${point(b)}" fill="none" stroke="var(--text-warning)" stroke-width="5" stroke-dasharray="7 5"></path>`;
-        }
-        svg += '</g>';
         if (compressedLayout.undatedCount) {
             const angle = (compressedLayout.datedEnd + 3 * Math.PI / 2) / 2;
             const r = radius + 38;
@@ -772,7 +765,11 @@ export function createTimelineSVG(
             maxTextWidth,
             microRingLayout,
             microRingBaseRadius,
-            backdropLayout
+            backdropLayout,
+            compressedGaps: compressedLayout?.scale.segments.filter(segment => segment.compressed).map(gap => ({
+                startMs: gap.startMs, endMs: gap.endMs,
+                angle: compressedLayout.mapAngle((gap.startAngle + gap.endAngle) / 2)
+            }))
         });
     }
 

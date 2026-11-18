@@ -150,6 +150,7 @@ export type ChronologueOverlayOptions = {
     microRingLayout?: BackdropMicroRingLayout;
     microRingBaseRadius?: number;
     backdropLayout?: BackdropRingLayout;
+    compressedGaps?: Array<{ startMs: number; endMs: number; angle: number }>;
 };
 
 export function renderChronologueOverlays({
@@ -166,7 +167,8 @@ export function renderChronologueOverlays({
     maxTextWidth = 0,
     microRingLayout,
     microRingBaseRadius,
-    backdropLayout
+    backdropLayout,
+    compressedGaps
 }: ChronologueOverlayOptions): string {
     const stopChronoOverlays = startPerfSegment(plugin, 'timeline.chronologue-overlays');
     let svg = '';
@@ -218,7 +220,8 @@ export function renderChronologueOverlays({
         3,
         manuscriptOrderPositions,
         chronologueSceneEntries,
-        customThresholdMs
+        customThresholdMs,
+        compressedGaps
     );
 
     // Render the Backdrop ring using the layout precomputed above.

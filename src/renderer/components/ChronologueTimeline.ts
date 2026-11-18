@@ -263,15 +263,16 @@ export function renderChronologicalBackboneArc(
     discontinuityThreshold: number = 3,
     scenePositions?: Map<string, { startAngle: number; endAngle: number }>,
     precomputedEntries?: ChronologueSceneEntry[],
-    customThresholdMs?: number
+    customThresholdMs?: number,
+    compressedGaps: Array<{ startMs: number; endMs: number; angle: number }> = []
 ): string {
     const sceneEntries = precomputedEntries ?? collectChronologueSceneEntries(scenes);
-    if (sceneEntries.length === 0 || !scenePositions) return '';
+    if ((sceneEntries.length === 0 || !scenePositions) && !compressedGaps.length) return '';
 
     // USE THE SAME HELPER AS SETTINGS - SINGLE SOURCE OF TRUTH
     const preparedScenes = prepareScenesForDiscontinuityDetection(scenes);
     
-    if (preparedScenes.length < 3) return '';
+    if (preparedScenes.length < 3 && !compressedGaps.length) return '';
     
     // Calculate what the auto threshold would be
     const autoThreshold = calculateAutoDiscontinuityThreshold(scenes);
@@ -279,14 +280,14 @@ export function renderChronologicalBackboneArc(
     // Use custom threshold if provided, otherwise use the calculated auto threshold
     const effectiveThreshold = customThresholdMs ?? autoThreshold;
     
-    if (!effectiveThreshold || effectiveThreshold <= 0) {
+    if ((!effectiveThreshold || effectiveThreshold <= 0) && !compressedGaps.length) {
         return '';
     }
     
     // Detect discontinuities using the effective threshold
-    const discontinuityIndices = detectDiscontinuities(preparedScenes, effectiveThreshold);
+    const discontinuityIndices = effectiveThreshold ? detectDiscontinuities(preparedScenes, effectiveThreshold) : [];
     
-    if (discontinuityIndices.length === 0) {
+    if (discontinuityIndices.length === 0 && !compressedGaps.length) {
         return '';
     }
     
@@ -308,6 +309,8 @@ export function renderChronologicalBackboneArc(
         if (sceneIndex >= preparedScenes.length) return;
         
         const currScene = preparedScenes[sceneIndex];
+        const previousScene = preparedScenes[sceneIndex - 1];
+        if (previousScene && compressedGaps.some(gap => previousScene.when.getTime() <= gap.startMs && currScene.when.getTime() >= gap.endMs)) return;
         const nextScene = sceneIndex < preparedScenes.length - 1 ? preparedScenes[sceneIndex + 1] : null;
         
         // Check if adjacent scenes have very close timestamps
@@ -325,7 +328,7 @@ export function renderChronologicalBackboneArc(
         
         // Where this scene sits on the outer ring — same canonical key the
         // renderer stored it under.
-        const outerRingPosition = scenePositions.get(sceneKey(sceneEntry.scene));
+        const outerRingPosition = scenePositions?.get(sceneKey(sceneEntry.scene));
 
         if (!outerRingPosition) return;
         
@@ -350,6 +353,12 @@ export function renderChronologicalBackboneArc(
         svg += `<text x="${x}" y="${y}" class="rt-discontinuity-marker" text-anchor="middle" dominant-baseline="middle" font-size="${formatNumber(dynamicFontSize)}" stroke-width="${formatNumber(dynamicStrokeWidth)}">∞</text>`;
     });
     
+    compressedGaps.forEach(gap => {
+        const x = formatNumber(markerRadius * Math.cos(gap.angle));
+        const y = formatNumber(markerRadius * Math.sin(gap.angle));
+        svg += `<text x="${x}" y="${y}" class="rt-discontinuity-marker rt-compressed-gap-marker" text-anchor="middle" dominant-baseline="middle" font-size="20" stroke-width="6">∞</text>`;
+    });
+
     svg += `</g>`;
     
     return svg;

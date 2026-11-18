@@ -7333,7 +7333,7 @@ export const en = {
             subNavShift: 'Shift',
             subNavShiftAria: 'Shift — elapsed time comparison',
             subNavCompressed: 'Compressed time',
-            subNavCompressedAria: 'Toggle compressed time spacing for the All Scenes ring. Orange dashes mark shortened gaps; widths include minimum spacing where possible. Undated scenes appear separately.',
+            subNavCompressedAria: 'Toggle compressed time spacing for the All Scenes ring. Infinity marks shortened gaps; widths include minimum spacing where possible. Undated scenes appear separately.',
             compressedUndated: 'Undated',
             compressedUnavailable: 'Compressed time needs at least two distinct dated positions or a date range.',
             subNavAlt: 'Alt',

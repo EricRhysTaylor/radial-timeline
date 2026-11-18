@@ -160,9 +160,11 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // stop_reason end_turn, {"ok": true} via output_config.format; 222
         // input / 9 output tokens, 0 thinking tokens at effort medium.
         // Feature certification on The Tidewater Ledger, 2026-11-17: PASS 7/7,
-        // $1.49, Inquiry found 3/3 planted faults
-        // (docs/audits/feature-certification/claude-fable-5-2.md). Not yet run
-        // on the full Pride & Prejudice book.
+        // $1.49, Inquiry found 3/3 planted faults (commit b33807e6). Pride &
+        // Prejudice, 2026-11-17: 6/7, $8.92 — one Synopsis ran 31 words over
+        // the 30-word cap; Gossamer and Inquiry each paid the 1h cache-write
+        // rate on ~240k tokens (docs/audits/feature-certification/
+        // claude-fable-5-2.md).
         provider: 'anthropic',
         id: 'claude-fable-5-2',
         alias: 'claude-fable-5-2',
@@ -398,9 +400,9 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // responseSchema; 206 prompt / 21 output tokens, no thinking tokens
         // reported at maxOutputTokens 1024. Feature certification on The
         // Tidewater Ledger, 2026-11-17: PASS 7/7, $0.32, Inquiry found 2/3
-        // planted faults (missed death-month)
-        // (docs/audits/feature-certification/gemini-4-carbon.md). Not yet run
-        // on the full Pride & Prejudice book.
+        // planted faults, missed death-month (commit b33807e6). Pride &
+        // Prejudice, 2026-11-17: PASS 7/7, $1.01; Inquiry took 219 s
+        // (docs/audits/feature-certification/gemini-4-carbon.md).
         // Request-shape facts (unchanged from Argon):
         //   - Explicit caching (cachedContents) is NOT supported; implicit
         //     caching is on for prompts >= 4,096 tokens at 95% off. RT skips

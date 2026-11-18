@@ -1,188 +1,174 @@
 {
   "provider": "google",
   "modelId": "gemini-4-carbon",
-  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/radial-timeline/tests/fixtures/model-onboarding/vault",
-  "book": "The Tidewater Ledger",
-  "generatedAt": "2026-11-18T00:23:08.956Z",
+  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault AI Certification",
+  "book": "Pride & Prejudice",
+  "generatedAt": "2026-11-18T00:59:26.586Z",
   "cases": [
     {
-      "id": "pulse:4 A Number That Does Not Answer",
+      "id": "pulse:16 Wickham's Story",
       "feature": "pulse",
-      "durationMs": 11246,
+      "durationMs": 16524,
       "passed": true,
       "summary": "Parsed and validated by the production Pulse parser.",
       "usage": {
-        "inputTokens": 5570,
-        "outputTokens": 703,
-        "totalTokens": 6273
+        "inputTokens": 11438,
+        "outputTokens": 995,
+        "totalTokens": 12433
       },
-      "costUSD": 0.01817,
+      "costUSD": 0.032826,
       "sample": {
-        "previousSceneAnalysis": "- 3 Pell's buyout offer + / Directly forces Wren's desperate kitchen-table math in Scene 4\n- Rezoning council vote + / Pell's deadline gives Ada's political strategy immediate ticking-clock urgency\n- Father's heavy debt + / Financial ruin deepens Wren's isolation, driving her call to Toby\n- Jonah's Friday secret - / Suspicious death revelation goes strangely ignored during Wren's reflection",
-        "currentSceneAnalysis": "- 4 A / Acknowledge Jonah's ominous revelation briefly; cut the premature 'He didn't' ending spoiler.\n- Concrete financial stakes + / Specific numbers make Wren's impossible dilemma visceral and grounded\n- Community pier reliance + / Connects personal inheritance to town survival, raising emotional stakes\n- Ada's political pivot + / Shifts conflict from hopeless debt to an actionable council fight\n- Estranged brother outreach + / Two phone attempts beautifully show vulnerability and swallowing pride\n- Closing line spoiler - / Saying 'He didn't' slightly undercuts tension before his surprise arrival",
-        "nextSceneAnalysis": "- 5 Rejecting Pell's offer + / Executes the negotiation strategy Ada sparked in Scene 4\n- Expanded ferry schedule + / Wren immediately acts on her legal-pad survival math\n- Tobias's sudden return + / Subverts the unreturned voicemail with an earned, dramatic arrival\n- Deckhand staffing need + / Practical labor shortage neatly integrates Toby into the plot\n- Unexplained brass key ? / Mentions a pocket key never established in prior scenes",
-        "sceneGrade": "A"
-      }
-    },
-    {
-      "id": "pulse:6 Sunset Cruise",
-      "feature": "pulse",
-      "durationMs": 57113,
-      "passed": true,
-      "summary": "Parsed and validated by the production Pulse parser.",
-      "usage": {
-        "inputTokens": 5510,
-        "outputTokens": 2430,
-        "totalTokens": 7940
-      },
-      "costUSD": 0.03532,
-      "sample": {
-        "previousSceneAnalysis": "- 5 Dropped Jonah mystery - / Jonah's urgent secret meeting vanishes during the time jump.\n- Deckhand need resolved + / Tobias's arrival smoothly launches their shared ferry routine.\n- Pell's deadline pressure + / Wren's defiance directly fuels her obsessive revenue counting.\n- Unresolved funeral tension + / Skipped funeral establishes unspoken grief dominating sibling interactions.",
-        "currentSceneAnalysis": "- 6 B / Rich sibling subtext and clear stakes, but address Jonah's dropped subplot from Scene 5.\n- Concrete financial stakes + / Clear debt numbers sharpen the external plot urgency.\n- Sibling dynamic subtext + / Brief childhood memory pierces ten years of estrangement.\n- Physical backstory hints + / Subtle hints about Tobias's injury deepen character intrigue.\n- Deferred father conversation ? / Tobias delaying talk builds suspense but stalls conflict.",
-        "nextSceneAnalysis": "- 7 Shortfall hope shattered + / Wedding windfall bridges the gap before Pell strikes.\n- Deadline devastation + / Acceleration clause ruthlessly upends Wren's careful June math.\n- Hospitality payoff + / Cruise popularity naturally scales into lucrative event charters.\n- Lingering unspoken past ? / Tobias's promised talk about Dad remains unresolved.",
+        "previousSceneAnalysis": "- 15 Street Confrontation Hook + / Darcy and Wickham's tense look hooks reader curiosity immediately.\n- Dinner Invitation Setup + / Mrs. Philips's party directly establishes Scene 16's intimate setting.\n- Collins Targets Elizabeth ? / Collins's marital plan stalls while Wickham steals Elizabeth's focus.\n- Lady Catherine Seed + / Introduces the patroness Wickham later links to Darcy's family.",
+        "currentSceneAnalysis": "- 16 B / Trim Wickham's lengthy monologues and inject party interruptions to sustain subtext and pacing.\n- Confirmation Bias Trap + / Wickham masterfully weaponizes Elizabeth's prejudice, deepening central romantic conflict.\n- Heavy Backstory Dump - / Wickham's unbroken exposition slows momentum; needs sharper conversational give-and-take.\n- De Bourgh Connection + / Linking Collins's patroness to Darcy tightens the narrative web.\n- Comic Foil Contrast + / Collins's pompousness makes Wickham appear dangerously charming by comparison.",
+        "nextSceneAnalysis": "- 17 Sisters Debate Truth + / Jane's skepticism challenges Elizabeth's blind acceptance of Wickham's tale.\n- Netherfield Ball Stakes + / Upcoming ball promises explosive confrontation between Elizabeth, Wickham, Darcy.\n- Collins Reclaims Focus + / Securing first dances blocks Elizabeth's romantic plans with Wickham.\n- Rain Delays Momentum ? / Bad weather pauses Wickham's subplot to build pre-ball anticipation.",
         "sceneGrade": "B"
       }
     },
     {
-      "id": "pulse:8 Grounded",
+      "id": "pulse:30 Bingley Returns",
       "feature": "pulse",
-      "durationMs": 29928,
+      "durationMs": 48937,
       "passed": true,
       "summary": "Parsed and validated by the production Pulse parser.",
       "usage": {
-        "inputTokens": 5452,
-        "outputTokens": 2397,
-        "totalTokens": 7849
+        "inputTokens": 9738,
+        "outputTokens": 981,
+        "totalTokens": 10719
       },
-      "costUSD": 0.034874,
+      "costUSD": 0.029286,
       "sample": {
-        "previousSceneAnalysis": "- 7 Ticking clock pressure + / Ten-day acceleration notice makes grounding the ferry immediately catastrophic.\n- Antagonist retaliation + / Pell's legal strike foreshadows his covert Coast Guard sabotage.\n- Financial stakes + / Hard-won wedding revenue makes losing daily passenger fares hurt.\n- Sibling alliance + / Shared triumph and shock prime Tobias for honest confession.",
-        "currentSceneAnalysis": "- 8 A / Excellent balance of plot sabotage and emotional stakes; ensure camel overcoat callback is clear.\n- Sabotage escalation + / Grounding the ferry smartly cuts off Wren's financial lifeline.\n- Estrangement reveal + / Tobias's theft confession deepens character conflict with lean subtext.\n- Ledger motif + / Connects family emotional debts directly to the physical ledger.\n- Overcoat callback ? / Camel overcoat clue relies heavily on earlier scene memory.",
-        "nextSceneAnalysis": "- 9 Manifold subplot payoff + / Pell outbidding Dell closes the repair loophole with finality.\n- Weaponized vulnerability + / Wren cruelly uses Tobias's confession, shattering their fragile truce.\n- Thematic echo + / Tobias walking away mirrors his ten-year-old pier departure.\n- All-is-lost climax + / Financial ruin and emotional isolation converge at maximum tension.",
-        "sceneGrade": "A"
+        "previousSceneAnalysis": "- 29 Lady Catherine's Tyranny + / Establishes the oppressive social environment Elizabeth escapes outdoors.\n- Collins's Obsequiousness + / Grounds Charlotte's later domestic strategy for avoiding her husband.\n- Darcy Family Resemblance ? / Subtly primes the reader for Darcy's imminent Rosings arrival.\n- Sir William's Awe - / His departure in Scene 30 resolves minor comic deadweight.",
+        "currentSceneAnalysis": "- 30 B / Trim domestic exposition in the first half to reach Darcy's arrival faster.\n- Expository Drag - / Too much summary of daily routines slows narrative momentum.\n- The Sheltered Path + / Crucial spatial setup for future romantic confrontations and privacy.\n- Darcy's Unexpected Call + / Charlotte's subtext immediately spikes romantic tension and reader curiosity.\n- The Jane Probe + / Elizabeth's pointed question weaponizes subtext, forcing Darcy's visible discomfort.",
+        "nextSceneAnalysis": "- 31 Fitzwilliam's Charm + / Builds on his brief introduction to create romantic triangulation.\n- Rosings Power Shift + / Nephews' arrival disrupts the monotonous Rosings dinners established earlier.\n- Escalating Banter + / Moves from Scene 30's stiff silence to charged sparring.\n- Testing the Betrothal + / Payoff to Elizabeth's Scene 30 curiosity regarding Anne and Darcy.",
+        "sceneGrade": "B"
       }
     },
     {
-      "id": "summary:5 No Sale",
-      "feature": "summary",
-      "durationMs": 54405,
+      "id": "pulse:44 Invitation and Visit",
+      "feature": "pulse",
+      "durationMs": 53570,
       "passed": true,
-      "summary": "Summary 261 words (target 200); Synopsis 27 words (cap 30); both passed the production parsers.",
+      "summary": "Parsed and validated by the production Pulse parser.",
       "usage": {
-        "inputTokens": 2659,
-        "outputTokens": 4397,
-        "totalTokens": 7056
+        "inputTokens": 14613,
+        "outputTokens": 707,
+        "totalTokens": 15320
       },
-      "costUSD": 0.049288,
+      "costUSD": 0.036295999999999995,
       "sample": {
-        "summary": "At seven in the morning, Wren Halloway telephones Corwin Pell in Portland to reject his offer for Halloway Pier. When Pell warns that he is not going away and points out she lacks the money owed by the June thirtieth deadline, Wren insists she will have at least most of it by then and hangs up. Outside on the pier, deckhand Jonah Marsh overhears the call through the office window and asks how she intends to pay. Wren explains her plan to operate seven days a week through June, relying on regular crossings, sunset cruises, charters, the skiff, and the spare outboard. Because Coast Guard regulations and physical limits prevent running seven days a week with one deckhand, Wren agrees to hire additional help, and Jonah volunteers to work double shifts without extra pay until her debt is cleared. Before going down to check the boat's bilge, Jonah quietly confirms their secret meeting at the office for six o'clock the next evening, noting he has something her father gave him to hold for her and warning her not to tell anyone, including Ada. During the day, they complete four crossings while Wren sells eighteen sunset cruise tickets to a Bangor bus tour and posts a window sign advertising for a deckhand. At dusk, as Wren locks the office, her estranged brother, Tobias, arrives on the pier carrying a duffel bag after a ten-year absence. Tobias mentions her phone message, offers to work cheap as the new deckhand, and acknowledges missing their father's funeral, after which Wren unlocks the office door again.",
-        "synopsis": "Wren rejects Pell's offer, planning expanded operations to pay her debt. Jonah mentions holding something from her father, and Wren's estranged brother, Tobias, returns seeking deckhand work."
+        "previousSceneAnalysis": "- 43 Sisterly Introduction Hook + / Darcy's surprise request directly launches the Lambton visit.\n- Altered Demeanor + / Darcy's unexpected Pemberley civility grounds Elizabeth's continuing astonishment.\n- Gardiners' Shifting View + / Initial impressions prepare the Gardiners to suspect Darcy's love.\n- Wickham's True Nature + / Elizabeth's guarded reveal echoes in Lambton's local gossip.",
+        "currentSceneAnalysis": "- 44 B / Trim lengthy internal exposition at the end; show Elizabeth's shifting feelings through dialogue subtext.\n- Accelerated Arrival + / Visiting earlier than expected immediately spikes romantic tension.\n- Georgiana's Shyness + / Subverts pride rumors, relieving Elizabeth and deepening Darcy's appeal.\n- Bingley's Lingering Regard + / Subtle Netherfield callbacks smoothly reignite the Jane subplot.\n- Gardiners' Silent Realization + / Observant relatives validate Darcy's devotion, raising emotional stakes.\n- Heavy Internal Recap - / Late-night rumination slows momentum with repetitive emotional summary.",
+        "nextSceneAnalysis": "- 45 Reciprocal Pemberley Call + / The planned morning return visit drives the saloon confrontation.\n- Georgiana's True Nature + / Understanding her shyness helps Elizabeth navigate awkward group dynamics.\n- Rival Jealousy Ignited + / Bingley's lacks of interest in Georgiana fuels Miss Bingley's spite.\n- Renewed Fishing Engagement + / Mr. Gardiner's riverside plans naturally explain Darcy's delayed entrance.",
+        "sceneGrade": "B"
       }
     },
     {
-      "id": "summary:9 The Papers on the Desk",
+      "id": "summary:21 Bingleys Depart",
       "feature": "summary",
-      "durationMs": 63030,
+      "durationMs": 131785,
       "passed": true,
-      "summary": "Summary 264 words (target 200); Synopsis 29 words (cap 30); both passed the production parsers.",
+      "summary": "Summary 246 words (target 200); Synopsis 27 words (cap 30); both passed the production parsers.",
       "usage": {
-        "inputTokens": 2574,
-        "outputTokens": 3423,
-        "totalTokens": 5997
+        "inputTokens": 4382,
+        "outputTokens": 2587,
+        "totalTokens": 6969
       },
-      "costUSD": 0.039378,
+      "costUSD": 0.034634,
       "sample": {
-        "summary": "On Friday, Dell calls Wren to report that a Portland buyer paid triple to outbid him for a replacement ferry manifold outside Halifax. Wren hangs up without saying goodbye, recognizing Corwin Pell's interference. Meanwhile, the Margaret Ann remains grounded with a Coast Guard tag on her wheel, sunset cruises and two June charters are cancelled, and Wren's sixty-four thousand dollars in savings falls short of the one-hundred-and-twenty-thousand-dollar debt. That evening, a courier delivers Pell's revised offer along with a fountain pen, requiring Wren's signature before Monday's council vote in order to forgive the debt. Tobias arrives at six with groceries, sees the contract on the desk, and urges Wren not to sign. Wren argues that someone must face the numbers, noting that Pell controls suppliers, lawyers, and likely half the council, whereas signing allows her to keep the house and operate the boat debt-free from the town dock. Tobias counters that she would lack a pier, fuel, and low-tide water depth, and begins to invoke their father. Wren stands and angrily reminds him that their father secretly mortgaged the pier to Pell before dying, leaving her to clean up his mess just as she cleaned up after Tobias. Tobias quietly accepts the remark, sets down the groceries, takes his jacket, and tells Wren to sign her ledger if she wants before walking out and heading up Front Street without looking back. Alone in the office, Wren sits at the desk, uncaps Pell's pen, and holds it over the signature marker, then recaps the pen without signing and cries for the first time since March.",
-        "synopsis": "Pell blocks Wren's manifold purchase and delivers a revised buyout contract. Wren and Tobias argue over signing and their father's debt; Tobias walks out, and Wren cries without signing."
+        "summary": "After Elizabeth rejects his proposal, Mr. Collins still plans to remain at Longbourn until Saturday. The next morning, the Bennet sisters walk to Meryton, meet Mr. Wickham, and return with him and another officer to Longbourn, where Wickham is introduced to Mr. and Mrs. Bennet. Shortly after their arrival, Jane receives a letter from Caroline Bingley announcing that the entire Netherfield party has departed for London to join Charles Bingley with no intention of returning for the winter, and expressing hope that Charles will marry Georgiana Darcy. Throughout the morning, Mr. Collins treats Elizabeth with resentful silence and transfers his attentions to Charlotte Lucas, while Mrs. Bennet remains ill-humored. On the walk from Meryton, Wickham tells Elizabeth he voluntarily skipped the Netherfield ball to avoid an unpleasant encounter with Mr. Darcy, a decision Elizabeth approves. Upstairs at Longbourn, Jane reads Caroline's letter aloud and concludes that Bingley is indifferent to her. Elizabeth counters that Bingley loves Jane and that Caroline is deliberately trying to keep him in London to separate them and promote a marriage with Miss Darcy. Unwilling to believe Caroline is deceitful, Jane hopes Caroline is simply mistaken, and Elizabeth gradually convinces her that Bingley will return. Afterward, Jane and Elizabeth inform Mrs. Bennet only of the family's departure from Netherfield without mentioning Caroline's remarks about Bingley's affections. Mrs. Bennet laments the sudden trip at length, then consoles herself by assuming Bingley will soon return and planning a two-course dinner for him at Longbourn.",
+        "synopsis": "Wickham visits Longbourn while Collins snubs Elizabeth for Charlotte. Caroline Bingley's letter announces the Netherfield party left for London, though Elizabeth convinces Jane that Bingley will return."
+      }
+    },
+    {
+      "id": "summary:41 Lydia Invited to Brighton",
+      "feature": "summary",
+      "durationMs": 17927,
+      "passed": true,
+      "summary": "Summary 247 words (target 200); Synopsis 29 words (cap 30); both passed the production parsers.",
+      "usage": {
+        "inputTokens": 4819,
+        "outputTokens": 661,
+        "totalTokens": 5480
+      },
+      "costUSD": 0.016248,
+      "sample": {
+        "summary": "During the militia regiment's final week in Meryton, Mrs. Bennet, Kitty, and Lydia openly grieve the officers' impending departure. Lydia's distress ends when Colonel Forster's young wife invites her to accompany them to Brighton. While Lydia and Mrs. Bennet celebrate, Kitty complains bitterly about being excluded. Later, on the regiment's last day in town, Mr. Wickham and other officers dine at Longbourn, after which Lydia departs with Mrs. Forster to begin her trip the next morning.\n\nAppalled by Lydia's unchecked behavior, Elizabeth privately urges Mr. Bennet to forbid the Brighton trip, warning him that Lydia's wildness and lack of restraint will damage the entire family's respectability and corrupt Kitty further. Mr. Bennet dismisses her concerns, arguing that Longbourn will have no peace if Lydia stays, that Colonel Forster will keep her from real harm, and that Brighton will teach her insignificance. Disappointed, Elizabeth accepts his decision. At the farewell dinner, Elizabeth represses Wickham's renewed romantic attentions. When he asks about her time at Hunsford, she deliberately mentions spending three weeks with Mr. Darcy and Colonel Fitzwilliam, adding that Darcy's disposition is better understood upon closer acquaintance. Alarmed and agitated, Wickham attributes Darcy's good behavior to his fear of Lady Catherine and desire to marry Miss de Bourgh. Elizabeth smiles, refuses to engage further, and parts from him with polite indifference.\n\nUnaware of Elizabeth's attempt to stop the journey, Lydia leaves home in noisy excitement, encouraged by Mrs. Bennet to enjoy herself and envied by a weeping Kitty.",
+        "synopsis": "Mrs. Forster invites Lydia to Brighton. Elizabeth urges Mr. Bennet to forbid the trip, warning of family disgrace, but he refuses. Elizabeth rebuffs Wickham at dinner, and Lydia departs."
       }
     },
     {
       "id": "gossamer:momentum",
       "feature": "gossamer",
-      "durationMs": 47405,
+      "durationMs": 57642,
       "passed": true,
-      "summary": "All 15 beats scored and validated (12 scenes, 7707 words).",
+      "summary": "All 15 beats scored and validated (61 scenes, 121693 words).",
       "usage": {
-        "inputTokens": 13079,
-        "outputTokens": 1943,
-        "totalTokens": 15022
+        "inputTokens": 166592,
+        "outputTokens": 3691,
+        "totalTokens": 170283
       },
-      "costUSD": 0.045588000000000004,
+      "costUSD": 0.370094,
       "sample": [
         {
-          "beatName": "Opening Image",
+          "beatName": "[1.01] Opening Image",
           "signal": "momentum",
-          "score": 30,
-          "justification": "The opening establishes Wren's grief and static routine in the quiet ferry office with minimal forward pull."
+          "score": 50,
+          "justification": "Bingley's arrival and Mrs. Bennet's demand for a visit establish an immediate domestic objective that steadily launches the courtship plot."
         },
         {
-          "beatName": "Theme Stated",
+          "beatName": "[4.01] Theme Stated",
+          "signal": "momentum",
+          "score": 25,
+          "justification": "Post-ball reflection and extended narrator exposition on the Netherfield party's backgrounds stall active forward progression."
+        },
+        {
+          "beatName": "[8.01] Setup",
           "signal": "momentum",
           "score": 35,
-          "justification": "Ada's recollection of Elias's remark about ledgers plants a subtle thematic question without shifting immediate stakes."
-        },
-        {
-          "beatName": "Setup",
-          "signal": "momentum",
-          "score": 45,
-          "justification": "Small bookkeeping anomalies and the pressure of maintaining island crossings create mild curiosity about what Elias left behind."
+          "justification": "Parlor debates at Netherfield advance character dynamics slowly, with only Jane's worsening illness at the close providing mild forward pull."
         }
       ]
     },
     {
       "id": "inquiry:payoff-abandoned-threads",
       "feature": "inquiry",
-      "durationMs": 85242,
+      "durationMs": 218575,
       "passed": true,
-      "summary": "Inquiry returned 6 finding(s) over 12 scenes; verdict and refs passed the production result builder. Planted faults found: 2/3.",
-      "plantedFaults": [
-        {
-          "id": "box-14-key",
-          "found": true
-        },
-        {
-          "id": "jonah-vanishes",
-          "found": true
-        },
-        {
-          "id": "death-month",
-          "found": false
-        }
-      ],
+      "summary": "Inquiry returned 11 finding(s) over 61 scenes; verdict and refs passed the production result builder.",
       "usage": {
-        "inputTokens": 14719,
-        "outputTokens": 7067,
-        "totalTokens": 21786
+        "inputTokens": 170302,
+        "outputTokens": 14751,
+        "totalTokens": 185053
       },
-      "costUSD": 0.100108,
+      "costUSD": 0.48811400000000005,
       "sample": {
         "verdict": {
-          "flow": 0.72,
-          "depth": 0.58
+          "flow": 0.95,
+          "depth": 0.96
         },
-        "summary": "Early suspense pressure builds tightly around the Box 14 key and secret loan disbursements in Scene 2, Jonah's foul-play warning in Scene 3, and the urgent Friday rendezvous set in Scene 5, but the two-week compression into Scene 6 severs that ticking clock entirely. Although the pier-rescue momentum drives briskly to pay off the debt through Scene 10 and Scene 12, abandoning Jonah and the thriller hooks mid-stride leaves high-pressure setups without forward release.",
+        "summary": "While the centralcourtship arcs sustain relentless causal momentum, secondary threads—such as Colonel Fitzwilliam's flirtation, Wickham's pursuit of Mary King, and the Georgiana-Bingley matchmaking scheme—are compressed or quietly dropped the moment their immediate catalytic pressure on Elizabeth is spent. Even late-stage developments like Charlotte's pregnancy and flight to Lucas Lodge exit on brisk transitional beats rather than receiving final epilogue timing.",
         "firstFinding": {
-          "refId": "scn_tw020002",
-          "kind": "loose_end",
-          "headline": "The hidden Box 14 key and the destination of the $120,000 loan funds are introduced as central mysteries but never resolved",
+          "refId": "scn_38bbc3eb",
+          "kind": "thread",
+          "headline": "Lydia's early infatuation with Captain Carter is introduced and dropped without payoff once Wickham arrives",
           "bullets": [
-            "Wren extracts a worn brass key tagged 'Box 14' from a slit inside the ledger's back cover and explicitly vows to locate it, yet after a brief pocket tactile beat in Scene 5, neither the key nor Box 14 is ever mentioned again.",
-            "The ledger records four autumn installments from Pell Coastal Holdings totaling $120,000 against a ferry clearing only $9,000 a year, but the manuscript never reveals why Elias needed that sum or where the money went."
+            "Captain Carter is established as Lydia's primary romantic fixation in Meryton, with Lydia anticipating his return from London.",
+            "After Wickham enters the regiment, Captain Carter never reappears or receives mention again, functioning purely as an early marker of Lydia's interchangeable obsession with officers."
           ],
-          "recommendedAction": "Either cut the slit-in-the-cover key and establish a concrete operational expense for the $120,000 loan, or add a discovery beat where Box 14 reveals what Elias did with Pell's money.",
-          "subject": "Box 14 key and missing $120,000 principal",
+          "subject": "Captain Carter flirtation",
           "related": [],
           "supportingRefs": [
             {
-              "refId": "scn_tw050005",
-              "refLabel": "5 No Sale.md",
-              "refPath": "The Tidewater Ledger/5 No Sale.md",
-              "quote": "He went down to the boat to check the bilge, and she watched him go, and the brass key in her cardigan pocket felt suddenly heavier."
+              "refId": "scn_743a64b7",
+              "refLabel": "9 Mrs Bennet Visits.md",
+              "refPath": "Pride & Prejudice/9 Mrs Bennet Visits.md",
+              "quote": "by that time, most likely, Captain Carter would be at Meryton again."
             }
           ],
           "evidenceType": "mixed",
-          "lens": "both",
-          "evidenceQuote": "A paper tag was tied to it with red thread, and on the tag, in her father's leaning hand, two words: *Box 14.*"
+          "lens": "flow",
+          "role": "target",
+          "evidenceQuote": "Catherine was disconcerted, and made no answer; but Lydia, with perfect indifference, continued to express her admiration of Captain Carter, and her hope of seeing him in the course of the day, as he was going the next morning to London."
         }
       }
     }

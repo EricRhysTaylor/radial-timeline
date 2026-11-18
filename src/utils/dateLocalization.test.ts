@@ -63,15 +63,15 @@ describe('localized Chronologue labels', () => {
         expect(tick.labelKind).toBe('day');
     });
 
-    it('limits forty scenes to twenty major ticks', () => {
+    it('makes every dated scene a candidate for a visible label', () => {
         const ticks = generateChronologicalTicks(Array.from({ length: 40 }, (_, i) => ({ when: new Date(2085, 0, i + 1) })));
-        expect(ticks.filter(tick => tick.isMajor).length).toBeLessThanOrEqual(20);
+        expect(ticks.filter(tick => tick.isMajor).length).toBe(40);
     });
 
     it('promotes a year boundary even when it falls between evenly sampled scenes', () => {
         const scenes = Array.from({ length: 40 }, (_, i) => ({ when: new Date(2085, 11, i + 1) }));
         const ticks = generateChronologicalTicks(scenes);
         expect(ticks.find(tick => tick.sceneIndex === 31)?.isMajor).toBe(true);
-        expect(ticks.filter(tick => tick.isMajor).length).toBeLessThanOrEqual(20);
+        expect(ticks.filter(tick => tick.isMajor).length).toBe(40);
     });
 });

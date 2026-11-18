@@ -1,0 +1,7 @@
+# Chronologue date labels
+
+A perimeter label should add the context a reader needs at that point on the wheel, using the last **visible** dated label as its reference. Always offer every dated scene as a candidate; suppress labels only when their text collides, or when another visible label already gives the same date or exact instant. Scene marks remain visible. Prefer year and month changes when labels compete for space. Recalculate context after fitting so an omitted label cannot silently carry the only indication of a date change.
+
+Show the year when it changes, the weekday and day/month when the day changes, and the time when the author supplied one. In English, use day-month order (`Fri 1 Jan 1813`) and omit `:00` (`2 PM`); retain meaningful minutes (`2:25 PM`). Other languages use their own date and clock conventions. The start and end labels remain independent anchors. Never invent a day or a time for a less precise date; identify BCE and CE when necessary. Two scenes at the same exact instant share a time label rather than implying a different time.
+
+Keep each visible label's Earth date, precision, and label kind for planetary conversion. Planetary labels use their own calendar and precision rules. No warning color is required merely because a label is omitted: the next visible label must carry any changed context.

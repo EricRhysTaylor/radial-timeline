@@ -19,6 +19,7 @@ import { outerLabelArc } from '../components/Months';
 import { BACKDROP_RING_HEIGHT, CHRONOLOGUE_BOUNDARY_LINE_SPACING } from '../layout/LayoutConstants';
 import { whenTextNamesDay } from '../../utils/whenFormat';
 import { splitWhenEra } from '../../utils/date';
+import { contextualChronologueLabels } from '../../chronologue/chronologueLabelText';
 import {
     renderBackdropMicroRings,
     type BackdropMicroRingLayout,
@@ -59,9 +60,8 @@ export function fitChronologueLabels(labels: ChronologueLabel[], radius: number)
     }).sort((a, b) => b.priority - a.priority || a.index - b.index);
     const selected = new Set<ChronologueLabel>(boundary);
     for (const { label } of ranked) {
-        if (selected.size >= 20) break;
         const start = angle(label.angle);
-        const length = Math.min(Math.PI / 6, (Math.max(12, ...label.shortName.split('\n').map(line => [...line].length)) * 11 + 16) / radius);
+        const length = Math.min(Math.PI / 6, (Math.max(1, ...label.shortName.split('\n').map(line => [...line].length)) * 11 + 16) / radius);
         const end = start + length;
         if (end > circle || reserved.some(item => start < item.end && end > item.start)) continue;
         reserved.push({ start, end });
@@ -132,7 +132,16 @@ export function buildChronologueOuterLabels(
         });
         return overlaps ? { ...label, name: '', shortName: '', isMajor: false, earthDate: undefined } : label;
     }) : outerLabels;
-    return fitChronologueLabels(spacedLabels, outerR);
+    // Fitting can hide a context-setting label. Reformat the surviving labels
+    // and fit again until their text and selection agree.
+    let fitted = fitChronologueLabels(contextualChronologueLabels(spacedLabels), outerR);
+    for (let i = 0; i < outerLabels.length; i++) {
+        const contextual = contextualChronologueLabels(fitted);
+        const next = fitChronologueLabels(contextual, outerR);
+        if (next.filter(label => label.isMajor).length === fitted.filter(label => label.isMajor).length) return next;
+        fitted = next;
+    }
+    return contextualChronologueLabels(fitted);
 }
 
 export type ChronologueOverlayOptions = {

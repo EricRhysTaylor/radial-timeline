@@ -20,6 +20,9 @@ For UI work:
 
 Location: `docs/engineering/standards/`
 
+- **[chronologue-date-labels.md](standards/chronologue-date-labels.md)**
+  Readable, context-aware perimeter dates and collision handling.
+
 - **[ui-architecture.md](standards/ui-architecture.md)**
   Primary source of truth for settings UI, modal UI, and the live ERT architecture. Read this first before touching shared UI shell work.
 

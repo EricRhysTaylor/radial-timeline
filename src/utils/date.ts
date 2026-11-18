@@ -974,60 +974,9 @@ export function generateChronologicalTicks(
     const firstAngle = getSceneStartAngle(firstScene.sortedIndex);
     const lastAngle = getSceneStartAngle(lastScene.sortedIndex);
 
-    // Decide which scenes to promote to major/labeled ticks
-    // Use balanced distribution across the timeline
-    // Ensure step evenly divides the scene count for balanced distribution
-    const MAX_MAJOR_TICKS = 20;
-    let step = 1;
-
-    if (numScenes > MAX_MAJOR_TICKS) {
-        // Calculate step that gives us approximately MAX_MAJOR_TICKS major ticks
-        // But ensure it divides evenly into numScenes for balanced distribution
-        step = Math.ceil((numScenes - 1) / (MAX_MAJOR_TICKS - 1));
-
-        // Find a step that evenly divides numScenes (or gets close)
-        // Try to find the largest divisor <= step that gives us <= MAX_MAJOR_TICKS
-        let bestStep = step;
-
-        // Try divisors near our target step
-        for (let testStep = step; testStep >= 1; testStep--) {
-            const testMajorCount = Math.ceil((numScenes - 1) / testStep) + 1;
-            if (testMajorCount <= MAX_MAJOR_TICKS && (numScenes - 1) % testStep === 0) {
-                // Found a step that evenly divides!
-                bestStep = testStep;
-                break;
-            }
-        }
-
-        step = bestStep;
-    }
-
-    // Build promote set using sorted indices (chronological order)
-    const promoteSet = new Set<number>();
-    promoteSet.add(0); // Always promote first scene
-    promoteSet.add(numScenes - 1); // Always promote last scene
-
-    // Promote every Nth scene (except first/last) for balanced distribution
-    for (let i = step; i < numScenes - 1; i += step) {
-        promoteSet.add(i);
-    }
-
-    // Do not miss a year or month change simply because it fell between the
-    // evenly sampled scenes. Keep important changes before ordinary samples.
-    const priority = new Map<number, number>();
-    for (let i = 1; i < numScenes - 1; i++) {
-        const date = validScenes[i].date;
-        const previous = validScenes[i - 1].date;
-        const rank = date.getFullYear() !== previous.getFullYear() ? 2 : date.getMonth() !== previous.getMonth() ? 1 : 0;
-        if (rank) { priority.set(i, rank); promoteSet.add(i); }
-    }
-    if (promoteSet.size > MAX_MAJOR_TICKS) {
-        const chosen = [...promoteSet].filter(i => i !== 0 && i !== numScenes - 1)
-            .sort((a, b) => (priority.get(b) ?? 0) - (priority.get(a) ?? 0) || a - b)
-            .slice(0, MAX_MAJOR_TICKS - 2);
-        promoteSet.clear();
-        [0, numScenes - 1, ...chosen].forEach(i => promoteSet.add(i));
-    }
+    // Every dated scene is a candidate. The renderer suppresses only labels
+    // that cannot fit, preferring changes of year and month when space is tight.
+    const promoteSet = new Set(validScenes.map((_, index) => index));
 
     // Check if first and last would overlap (they're at the same or very close angles)
     // This happens when timeline wraps around a full circle

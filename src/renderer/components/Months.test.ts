@@ -58,6 +58,10 @@ describe('renderOuterLabelTexts', () => {
 });
 
 describe('perimeter label spacing', () => {
+    it('does not impose a fixed label count when all labels have room', () => {
+        const labels = Array.from({ length: 30 }, (_, i) => ({ name: `${i}`, shortName: `${i}`, angle: -Math.PI / 2 + i * 2 * Math.PI / 30, isMajor: true }));
+        expect(fitChronologueLabels(labels, 3000).filter(label => label.isMajor)).toHaveLength(30);
+    });
     it('keeps boundary labels and suppresses overlapping dates', () => {
         const labels = [
             { name: 'Start', shortName: 'Start', angle: -Math.PI / 2, isMajor: true, isFirst: true },

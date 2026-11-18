@@ -437,11 +437,18 @@ export function extractPositionToken(item: TimelineItem): string | null {
  * Sort scenes by manuscript order (prefix number, then alphanumeric)
  */
 export function sortByManuscriptOrder(a: TimelineItem, b: TimelineItem): number {
-    const aToken = extractPositionToken(a);
-    const bToken = extractPositionToken(b);
-    const tokenCmp = comparePrefixTokens(aToken, bToken);
+    return compareManuscriptTitles(a.title || '', b.title || '');
+}
+
+/**
+ * Manuscript order of two titles: prefix number first, then the full title.
+ * The one rule behind `sortByManuscriptOrder`, for lists that hold titles but
+ * not timeline items (the Release scenes dialog).
+ */
+export function compareManuscriptTitles(a: string, b: string): number {
+    const tokenCmp = comparePrefixTokens(extractPrefixToken(a), extractPrefixToken(b));
     if (tokenCmp !== 0) return tokenCmp;
 
     // If prefix tokens are equal or absent, sort by full title.
-    return (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' });
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 }

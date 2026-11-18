@@ -63,19 +63,32 @@ export class SceneReleaseListModal extends ErtModal {
 
     onOpen(): void {
         this.applyShell({ width: 'min(660px, 92vw)' });
+        // Readers are chosen on the website: coming back to Obsidian rereads the status, so the
+        // reader counts are the website's, not the ones from when the dialog opened.
+        this.contentEl.ownerDocument.win.addEventListener('focus', this.onWindowFocus);
         void this.reload();
     }
 
     onClose(): void {
         this.closed = true;
+        this.contentEl.ownerDocument.win.removeEventListener('focus', this.onWindowFocus);
         this.contentEl.empty();
     }
 
-    private async reload(): Promise<void> {
+    private readonly onWindowFocus = (): void => {
+        // Not while loading or while a take-down runs: those reread the status when they finish.
+        if (this.closed || this.busy || !this.list) return;
+        void this.reload(true);
+    };
+
+    /** `quiet`: keep the list on screen while the new status loads (a refresh, not a first load). */
+    private async reload(quiet = false): Promise<void> {
         const load = ++this.loads;
-        this.list = null;
-        this.error = null;
-        this.render();
+        if (!quiet) {
+            this.list = null;
+            this.error = null;
+            this.render();
+        }
         let list: SceneReleaseList | null = null;
         let error: string | null = null;
         try {

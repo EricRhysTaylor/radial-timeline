@@ -116,6 +116,28 @@ describe('timelineSceneNotes (which note a release may name)', () => {
         ]);
     });
 
+    it('lists the notes in manuscript order whatever order the vault hands them over', () => {
+        // The vault's file order, here the reverse of the book (seen in the 18 November test vault).
+        const notes = timelineSceneNotes([
+            item('06 Light on the Water', 'scn_00000006'),
+            item('10 Coda', 'scn_00000010'),
+            item('02 A Borrowed Key', 'scn_00000002'),
+            item('01 The Empty Hook', 'scn_00000001'),
+        ]);
+        expect(notes.map(entry => [entry.title, entry.sceneId])).toEqual([
+            ['01 The Empty Hook', 'scn_00000001'],
+            ['02 A Borrowed Key', 'scn_00000002'],
+            ['06 Light on the Water', 'scn_00000006'],
+            ['10 Coda', 'scn_00000010'],
+        ]);
+    });
+
+    it('settles a duplicated id in the timeline\'s own order, then sorts the list', () => {
+        // No last carrier is known and the ids clash, so neither note may send it; the list still sorts.
+        const notes = timelineSceneNotes([item('2 Copy', 'scn_00000001'), item('1 One', 'scn_00000001')]);
+        expect(notes.map(entry => [entry.title, entry.idProblem])).toEqual([['1 One', 'duplicate'], ['2 Copy', 'duplicate']]);
+    });
+
     it('does not guess the owner of a duplicated id', () => {
         const notes = timelineSceneNotes([item('0 Copy', 'scn_00000001'), item('1 One', 'scn_00000001')]);
         expect(notes.map(entry => [entry.sceneId, entry.idProblem])).toEqual([[undefined, 'duplicate'], [undefined, 'duplicate']]);

@@ -26,6 +26,7 @@
 
 import type { BookMeta, BookProfile, TimelineItem } from '../types';
 import { TIMELINE_DATA_EXPORT_SCHEMA_VERSION, wallClockWhen } from '../services/export/timelineExportFormat';
+import { compareManuscriptTitles } from '../utils/sceneHelpers';
 import { isOpaqueSceneId } from '../utils/sceneIds';
 import { isNarrationValue } from '../utils/pov';
 
@@ -203,7 +204,7 @@ export function sceneIdHolders(
     return holders;
 }
 
-/** One scene note of a book, in the order the timeline sends its scenes. */
+/** One scene note of a book, in manuscript order. */
 export interface TimelineSceneNote {
     path: string;
     /** The note's name, as the timeline shows it. Stays in the vault. */
@@ -235,7 +236,10 @@ export function timelineSceneNotes(items: TimelineItem[], previous: Readonly<Rec
         const ownerKnown = paths.length === 1 || paths.includes(previous[id]);
         notes.push(ownerKnown && holders[id] === item.path ? { ...note, sceneId: id } : { ...note, idProblem: 'duplicate' });
     }
-    return notes;
+    // The vault hands notes over in file order, not book order. Ids are settled above in that
+    // order, exactly as the timeline sends them; only the list is put in manuscript order, the
+    // order the website shows.
+    return notes.sort((a, b) => compareManuscriptTitles(a.title, b.title));
 }
 
 function shareItem(rows: TimelineItem[], holders: Readonly<Record<string, string>>): TimelineShareItem {

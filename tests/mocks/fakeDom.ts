@@ -19,7 +19,25 @@ interface CreateOptions {
     attr?: Record<string, string>;
 }
 
+/** The window every fake element belongs to: records listeners so a test can fire one (focus, say). */
+export class FakeWindow {
+    private listeners = new Map<string, Set<() => void>>();
+    addEventListener(type: string, listener: () => void): void {
+        const set = this.listeners.get(type) ?? new Set();
+        set.add(listener);
+        this.listeners.set(type, set);
+    }
+    removeEventListener(type: string, listener: () => void): void { this.listeners.get(type)?.delete(listener); }
+    dispatch(type: string): void { for (const listener of [...(this.listeners.get(type) ?? [])]) listener(); }
+    listening(type: string): number { return this.listeners.get(type)?.size ?? 0; }
+    reset(): void { this.listeners.clear(); }
+}
+
+export const fakeWindow = new FakeWindow();
+
 export class FakeElement {
+    /** Obsidian's `el.ownerDocument.win`. */
+    ownerDocument = { win: fakeWindow };
     children: FakeElement[] = [];
     text = '';
     cls = '';
@@ -216,4 +234,5 @@ export class FakeNotice {
 export function resetFakeDom(): void {
     notices.length = 0;
     FakeModal.opened = [];
+    fakeWindow.reset();
 }

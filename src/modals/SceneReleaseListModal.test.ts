@@ -19,7 +19,7 @@ vi.mock('../../tests/mocks/obsidian', async (original) => {
 
 import * as obsidian from 'obsidian';
 import { TFile } from 'obsidian';
-import { FakeModal, notices, resetFakeDom, type FakeElement } from '../../tests/mocks/fakeDom';
+import { FakeModal, fakeWindow, notices, resetFakeDom, type FakeElement } from '../../tests/mocks/fakeDom';
 import { buildDefaultCommunityShareSettings } from '../communityShare/communityShareSettings';
 import { parsePastedScene, sceneTextHash } from '../communityShare/sceneReleaseText';
 import { t } from '../i18n';
@@ -216,6 +216,44 @@ describe('Release scenes', () => {
         expect(h.named('3 Letter').buttons[0].disabled).toBe(true);
         // Removing text is still the author's to do.
         expect(h.named('2 Storm').buttons[0].disabled).toBe(false);
+    });
+
+    it('lists the scenes in manuscript order even when the vault hands them over reversed', async () => {
+        const h = harness();
+        const items = (await h.plugin.getSceneDataService().getSceneDataWithBookMeta()).items.slice().reverse();
+        h.plugin.getSceneDataService = () => ({ getSceneDataWithBookMeta: async () => ({ items, bookMeta: null }) });
+        website({ project_id: PROJECT_ID, consent: true, standing: null, has_timeline: true, limit: 5, releases: await releases() });
+        await opened(h);
+        expect(h.screen.settings.map(setting => setting.name).slice(0, 5)).toEqual(['1 Opening', '2 Storm', '3 Letter', '4 Trial', '5 Typed id']);
+    });
+
+    it('rereads the website when Obsidian gets focus back, so a reader added there is counted', async () => {
+        const h = harness();
+        const first = await releases();
+        const request = website({ project_id: PROJECT_ID, consent: true, standing: null, has_timeline: true, limit: 5, releases: first });
+        await opened(h);
+        expect(h.named('2 Storm').desc).toBe('Released · version 2 · 1 reader');
+
+        // The author names a second reader on the website, then comes back to Obsidian.
+        const later = first.map(release => (release.id === 'r2' ? { ...release, readers: 2 } : release));
+        request.mockImplementation((async () => ({
+            status: 200,
+            text: JSON.stringify({ project_id: PROJECT_ID, consent: true, standing: null, has_timeline: true, limit: 5, releases: later }),
+        })) as never);
+        fakeWindow.dispatch('focus');
+        await vi.waitFor(() => expect(h.named('2 Storm').desc).toBe('Released · version 2 · 2 readers'));
+        expect(sent(request).map(body => body.action)).toEqual(['status', 'status']);
+    });
+
+    it('stops listening for focus once closed', async () => {
+        const h = harness();
+        const request = website({ project_id: PROJECT_ID, consent: true, standing: null, has_timeline: true, limit: 5, releases: await releases() });
+        await opened(h);
+        expect(fakeWindow.listening('focus')).toBe(1);
+        h.modal.close();
+        expect(fakeWindow.listening('focus')).toBe(0);
+        fakeWindow.dispatch('focus');
+        expect(sent(request).map(body => body.action)).toEqual(['status']);
     });
 
     it('says why when the website can\'t be read, and offers to try again', async () => {

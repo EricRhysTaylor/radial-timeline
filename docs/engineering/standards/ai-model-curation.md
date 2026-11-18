@@ -44,6 +44,12 @@ npm run smoke-model -- --provider <anthropic|openai|google> --model <model-id>
 
 Required env vars: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `GEMINI_API_KEY`.
 
+**Which key.** Every smoke, certification and model-list run on the Mac uses the test keys, so test spend is counted on its own in the Anthropic Console and on the business expenses dashboard. For Anthropic that is the keychain item `anthropic-test-key` (Console name "RT model tests"). Never use `anthropic-api-key`, which belongs to the Community's edge functions. The OpenAI and Gemini keys (`openai-api-key`, `gemini-api-key`) are already used only by these scripts. No key is exported to the shell, so read it for the one command:
+
+```
+ANTHROPIC_API_KEY=$(security find-generic-password -s anthropic-test-key -a rt-llc -w) npm run smoke-model -- --provider anthropic --model <model-id>
+```
+
 The smoke sends a tiny Inquiry-shaped request including every parameter we use in production (temperature, top_p, thinking budget where applicable, JSON schema, system prompt, user prompt). One HTTP call. The provider's response is ground truth.
 
 ### 4. If the smoke fails, read the error and fix the profile

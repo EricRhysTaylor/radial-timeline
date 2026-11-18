@@ -158,8 +158,11 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // pricing pages on 2026-11-15. Smoke-tested against the live API on
         // 2026-11-17 (`npm run smoke-model`): PASS first call, HTTP 200,
         // stop_reason end_turn, {"ok": true} via output_config.format; 222
-        // input / 9 output tokens, 0 thinking tokens at effort medium. Not yet
-        // certified on a real corpus (`npm run certify:features`).
+        // input / 9 output tokens, 0 thinking tokens at effort medium.
+        // Feature certification on The Tidewater Ledger, 2026-11-17: PASS 7/7,
+        // $1.49, Inquiry found 3/3 planted faults
+        // (docs/audits/feature-certification/claude-fable-5-2.md). Not yet run
+        // on the full Pride & Prejudice book.
         provider: 'anthropic',
         id: 'claude-fable-5-2',
         alias: 'claude-fable-5-2',
@@ -393,8 +396,11 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // Smoke-tested against the live API on 2026-11-17 (`npm run
         // smoke-model`): PASS, HTTP 200, finishReason STOP, {"ok": true} via
         // responseSchema; 206 prompt / 21 output tokens, no thinking tokens
-        // reported at maxOutputTokens 1024. Not yet certified on a real corpus
-        // (`npm run certify:features`).
+        // reported at maxOutputTokens 1024. Feature certification on The
+        // Tidewater Ledger, 2026-11-17: PASS 7/7, $0.32, Inquiry found 2/3
+        // planted faults (missed death-month)
+        // (docs/audits/feature-certification/gemini-4-carbon.md). Not yet run
+        // on the full Pride & Prejudice book.
         // Request-shape facts (unchanged from Argon):
         //   - Explicit caching (cachedContents) is NOT supported; implicit
         //     caching is on for prompts >= 4,096 tokens at 95% off. RT skips

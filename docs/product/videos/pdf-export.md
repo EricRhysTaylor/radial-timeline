@@ -7,7 +7,7 @@
 
 ## Before recording
 
-- **Vault:** the capture copy from the Pandoc setup how-to (`Demo Vaults/Video Simulation Vaults/Plugin tutorials/pandoc setup/Working/`), Pride and Prejudice active. It already has Pandoc and LaTeX found, Book Details filled in, and an exported PDF for the opening shot. Give this video its own copy (a new scenario folder) so the two stay apart.
+- **Vault:** this video's own capture copy, `Demo Vaults/Video Simulation Vaults/Plugin tutorials/pdf export/Working/` (made 2026-11-18 from the Pandoc setup copy; see its `SCENARIO.md`), Pride and Prejudice active. It has Pandoc and LaTeX found, Book Details filled in, and chapter markers on all 61 scenes for shot 6.
 - **Pro:** nothing to do. The plugin turns Pro on in every vault (an open-beta key it sets at load), so the Customize pencil works for any viewer. Nothing on screen or in the voice mentions Pro, matching the wiki (Pro left the wiki on 2026-11-10, and no copy may suggest it costs money).
 - **Pandoc and LaTeX:** found. In the "Export manuscript" dialog the checks read "Export checks · Ready".
 - **Font:** Source Serif 4. It ships with Radial Timeline (the Standard layout uses it), so no install step appears. EB Garamond and Crimson Text are system-only: the "Font" menu lists them only on a computer that has them installed.
@@ -43,13 +43,11 @@
 - Caption: Body · font and size
 - Voice: "Pick the body font and size. The font menu lists only fonts this computer can print with."
 
-**6. Chapters (0:40–0:48): open question, see below**
-- As written: the "Category" menu → "Chapters" (it's six categories on from Page, too many arrow clicks). Of the four cards "Off", "Numbered", "Titled" and "Numbered + titled", Professional starts on "Off"; choose "Numbered". The preview adds a "Chapter 1" chapter page.
+**6. Chapters (0:40–0:48)**
+- Screen: the "Category" menu → "Chapters" (it's six categories on from Page, too many arrow clicks). Of the four cards "Off", "Numbered", "Titled" and "Numbered + titled", Professional starts on "Off"; choose "Numbered". The preview adds a "Chapter 1" chapter page.
 - Caption: Chapters · how each chapter opens
 - Voice: "Decide how each chapter opens: a number, a title, or both."
-- **Problem (2026-11-17):** Pride and Prejudice has no `Chapter:` markers. Each scene is one chapter, and its text starts with "Chapter I.", so "Numbered" changes the preview but nothing in the exported PDF. Two ways out, for Eric to choose:
-  1. **Drop the shot** (and its line). The video is shorter and shows only what the PDF shows.
-  2. **Stage chapter markers** in this video's capture copy: a `Chapter:` field on each scene, and the "Chapter I." lines taken out of the scene text so the book doesn't print both. Then "Numbered" really shows in the PDF. It's a bigger staging change, and the copy no longer matches the Story Vault authors download.
+- **Staged (2026-11-18):** each scene in the capture copy has a `Chapter:` field (the scene's own name), and the typed "Chapter I." headings are gone from the scene text, so "Numbered" shows in the exported PDF: each chapter opens on a page reading "Chapter 1", "Chapter 2" …, and the export checks say "61 Chapters configured." Professional also prints each scene's number ("I") at the top of its text; since every chapter here is one scene, consider turning that off in the "Scenes" category before the take, or keep it off camera.
 
 **7. Save (0:48–0:52)**
 - Screen: "Save style". The wizard closes, and "Trade Paperback" now sits in the "PDF style" list in Settings → Publish.
@@ -83,7 +81,7 @@
 
 ## Voice
 
-The whole read, as one take (shot 6's line in brackets until Eric decides):
+The whole read, as one take:
 
 > This is Pride and Prejudice, typeset as a 6×9 paperback, straight from Obsidian.
 >
@@ -95,7 +93,7 @@ The whole read, as one take (shot 6's line in brackets until Eric decides):
 >
 > Pick the body font and size. The font menu lists only fonts this computer can print with.
 >
-> [Decide how each chapter opens: a number, a title, or both.]
+> Decide how each chapter opens: a number, a title, or both.
 >
 > Save it, and it joins your layouts.
 >

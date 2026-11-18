@@ -1029,7 +1029,7 @@ export class RadialTimelineView extends ItemView {
     }
 
     /** One header sub-mode chip: a glyph and a label, pressed state kept in aria-pressed. */
-    private makeSubNavButton(doc: Document, submode: string, label: string, glyph: string, aria: string): HTMLButtonElement {
+    private makeSubNavButton(doc: Document, submode: string, label: string, glyph: string, aria: string, icon?: string): HTMLButtonElement {
         const btn = doc.win.createEl('button');
         btn.className = 'ert-timeline-subnav__btn';
         btn.type = 'button';
@@ -1039,7 +1039,12 @@ export class RadialTimelineView extends ItemView {
         const glyphEl = doc.win.createSpan();
         glyphEl.className = 'ert-timeline-subnav__glyph';
         glyphEl.setAttribute('aria-hidden', 'true');
-        glyphEl.textContent = glyph;
+        if (icon) {
+            glyphEl.classList.add('ert-timeline-subnav__glyph--icon');
+            setIcon(glyphEl, icon);
+        } else {
+            glyphEl.textContent = glyph;
+        }
         const labelEl = doc.win.createSpan();
         labelEl.className = 'ert-timeline-subnav__label';
         labelEl.textContent = label;
@@ -1071,8 +1076,8 @@ export class RadialTimelineView extends ItemView {
         setAccessibleLabel(subNav, t('ui.timeLineView.chronologueSubModes'));
         subNav.hidden = true;
 
-        const shift = this.makeSubNavButton(doc, 'shift', t('ui.timeLineView.subNavShift'), '⇧', t('ui.timeLineView.subNavShiftAria'));
-        const alt = this.makeSubNavButton(doc, 'alt', t('ui.timeLineView.subNavAlt'), '⌥', t('ui.timeLineView.subNavAltAria'));
+        const shift = this.makeSubNavButton(doc, 'shift', t('ui.timeLineView.subNavShift'), '⇧', t('ui.timeLineView.subNavShiftAria'), 'timer');
+        const alt = this.makeSubNavButton(doc, 'alt', t('ui.timeLineView.subNavAlt'), '⌥', t('ui.timeLineView.subNavAltAria'), 'orbit');
 
         this.registerDomEvent(shift, 'click', (evt: MouseEvent) => {
             evt.preventDefault();
@@ -1085,7 +1090,7 @@ export class RadialTimelineView extends ItemView {
             this.chronologueSubNav?.toggleAlt();
         });
 
-        const time = this.makeSubNavButton(doc, 'time', t('ui.timeLineView.subNavCompressed'), '◷', t('ui.timeLineView.subNavCompressedAria'));
+        const time = this.makeSubNavButton(doc, 'time', t('ui.timeLineView.subNavCompressed'), '◷', t('ui.timeLineView.subNavCompressedAria'), 'shrink');
         this.registerDomEvent(time, 'click', (evt: MouseEvent) => {
             evt.preventDefault(); evt.stopPropagation();
             if (!this.compressedTime && !compressedRingLayout(buildChronologueSceneSequence(this.sceneData), -Math.PI / 2, 3 * Math.PI / 2)) {

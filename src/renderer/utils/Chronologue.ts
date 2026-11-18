@@ -150,7 +150,7 @@ export type ChronologueOverlayOptions = {
     microRingLayout?: BackdropMicroRingLayout;
     microRingBaseRadius?: number;
     backdropLayout?: BackdropRingLayout;
-    compressedGaps?: Array<{ startMs: number; endMs: number; angle: number }>;
+    compressedGaps?: Array<{ startMs: number; endMs: number; angle: number; scenePath?: string }>;
 };
 
 export function renderChronologueOverlays({

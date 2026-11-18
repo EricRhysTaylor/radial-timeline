@@ -1133,6 +1133,20 @@
   line-height: 1;
 }
 
+/* Leave space between each mode symbol and its label. */
+.ert-timeline-subnav__btn[data-submode="shift"],
+.ert-timeline-subnav__btn[data-submode="alt"],
+.ert-timeline-subnav__btn[data-submode="time"] {
+  column-gap: var(--size-2-2);
+}
+
+/* Chronologue modes keep their distinct symbols beside their labels. */
+.ert-timeline-subnav__btn[data-submode="shift"] .ert-timeline-subnav__glyph--icon,
+.ert-timeline-subnav__btn[data-submode="alt"] .ert-timeline-subnav__glyph--icon,
+.ert-timeline-subnav__btn[data-submode="time"] .ert-timeline-subnav__glyph--icon {
+  display: inline-flex;
+}
+
 /* The alignment toggle's glyph is a drawn icon (a full ring for Fill, a
    dashed one for Sequence), sized to fill the chip's height. */
 .ert-timeline-subnav__glyph--icon svg {

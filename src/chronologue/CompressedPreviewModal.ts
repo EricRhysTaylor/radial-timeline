@@ -76,7 +76,8 @@ export class CompressedPreviewModal extends Modal {
             sceneShapes.forEach(shape => shape.classList.toggle('is-selected', !!path && sceneShapes.get(path) === shape));
             groups.forEach(group => group.classList.toggle('ert-compressed-preview__match', !!path && group.getAttribute('data-path') === encodeURIComponent(path)));
         };
-        for (const wedge of previewSceneSectors(scale)) {
+        const sectors = previewSceneSectors(scale);
+        for (const wedge of sectors) {
             const first = wedge.ranges[0];
             const matching = groups.find(group => Number(group.getAttribute('data-outer-r')) === outer && group.getAttribute('data-path') === encodeURIComponent(first.id));
             const color = matching?.getAttribute('data-subplot-color') || 'var(--interactive-accent)';
@@ -100,8 +101,10 @@ export class CompressedPreviewModal extends Modal {
             overlay.appendChild(group);
         }
         for (const gap of scale.segments.filter(segment => segment.compressed)) {
-            const angle = (gap.startAngle + gap.endAngle) / 2;
-            const marker = element(svg.ownerDocument, 'text', { x: String((inner + (outer - inner) * 0.76) * Math.cos(angle)), y: String((inner + (outer - inner) * 0.76) * Math.sin(angle)), class: 'rt-discontinuity-marker rt-compressed-gap-marker', 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': '20', 'stroke-width': '6', 'pointer-events': 'none' });
+            const nextRange = scale.ranges.find(range => range.startMs === gap.endMs);
+            const nextSector = sectors.find(wedge => wedge.ranges.some(range => range.id === nextRange?.id));
+            const angle = nextSector ? (nextSector.startAngle + nextSector.endAngle) / 2 : (gap.startAngle + gap.endAngle) / 2;
+            const marker = element(svg.ownerDocument, 'text', { x: String(mid * Math.cos(angle)), y: String(mid * Math.sin(angle)), class: 'rt-discontinuity-marker rt-compressed-gap-marker', 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': '20', 'stroke-width': '6', 'pointer-events': 'none' });
             marker.appendChild(element(svg.ownerDocument, 'title', {})).textContent = `Compressed gap: ${formatElapsedTime(gap.endMs - gap.startMs)}`;
             marker.append('∞');
             overlay.appendChild(marker);

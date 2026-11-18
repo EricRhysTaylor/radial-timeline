@@ -273,7 +273,7 @@ export function renderChronologicalBackboneArc(
     scenePositions?: Map<string, { startAngle: number; endAngle: number }>,
     precomputedEntries?: ChronologueSceneEntry[],
     customThresholdMs?: number,
-    compressedGaps: Array<{ startMs: number; endMs: number; angle: number }> = []
+    compressedGaps: Array<{ startMs: number; endMs: number; angle: number; scenePath?: string }> = []
 ): string {
     const sceneEntries = precomputedEntries ?? collectChronologueSceneEntries(scenes);
     if ((sceneEntries.length === 0 || !scenePositions) && !compressedGaps.length) return '';
@@ -356,7 +356,9 @@ export function renderChronologicalBackboneArc(
     });
     
     compressedGaps.forEach(gap => {
-        svg += renderDiscontinuityMarker(gap.angle, outerRingInnerRadius + (outerRingOuterRadius - outerRingInnerRadius) * 0.76, 20, true);
+        const scenePosition = gap.scenePath ? scenePositions?.get(gap.scenePath) : undefined;
+        const angle = scenePosition ? (scenePosition.startAngle + scenePosition.endAngle) / 2 : gap.angle;
+        svg += renderDiscontinuityMarker(angle, markerRadius, 20, true);
     });
 
     svg += `</g>`;

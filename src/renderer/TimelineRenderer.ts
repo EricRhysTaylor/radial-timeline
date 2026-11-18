@@ -768,6 +768,7 @@ export function createTimelineSVG(
             backdropLayout,
             compressedGaps: compressedLayout?.scale.segments.filter(segment => segment.compressed).map(gap => ({
                 startMs: gap.startMs, endMs: gap.endMs,
+                scenePath: compressedLayout.scale.ranges.find(range => range.startMs === gap.endMs)?.id,
                 angle: compressedLayout.mapAngle((gap.startAngle + gap.endAngle) / 2)
             }))
         });

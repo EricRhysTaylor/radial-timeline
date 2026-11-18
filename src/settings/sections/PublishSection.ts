@@ -242,8 +242,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     // ─────────────────────────────────────────────────────────────────────────
     const publishingStagesPanel = section.createDiv({ cls: `${ERT_CLASSES.STACK}` });
     publishingStagesPanel.addClass('ert-publish-order--stages');
-    const statusShell = publishingStagesPanel.createDiv({ cls: 'ert-publishing-status-shell' });
-    const statusGrid = statusShell.createDiv({ cls: 'ert-publishing-status-grid' });
+    const statusGrid = publishingStagesPanel.createDiv({ cls: 'ert-publishing-status-grid' });
     const setupActionRow = publishingStagesPanel.createDiv({ cls: 'ert-publishing-status-action' });
 
     const pandocIntroPanel = section.createDiv({ cls: ERT_CLASSES.STACK });

@@ -7920,11 +7920,13 @@
   margin-top: var(--ert-gap-sm);
 }
 
+/* Each form is its own card: a border, rounded corners and a gap of page
+   background between cards, so four same-status (same-colour) cards still
+   read as four. The footer rule inside a card is only an internal separator. */
 .ert-ui.ert-scope--settings .ert-publishing-status-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--ert-gap-3xs);
-  background: color-mix(in srgb, var(--background-modifier-border) 86%, transparent);
+  gap: var(--ert-gap-sm);
 }
 
 /* Visual order of the publish section panels (DOM order differs from display order) */
@@ -7936,23 +7938,10 @@
 .ert-ui.ert-scope--settings .ert-publish-order--advanced-toggle { order: 49; }
 .ert-ui.ert-scope--settings .ert-publish-order--export-check { order: 50; }
 
-.ert-ui.ert-scope--settings .ert-publishing-status-shell {
-  border: 1px solid color-mix(in srgb, var(--background-modifier-border) 92%, transparent);
-  border-radius: 12px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--background-primary) 14%, transparent), transparent 42%),
-    color-mix(in srgb, var(--background-secondary) 86%, transparent);
-  overflow: hidden;
-  margin-top: 2px;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--text-normal) 8%, transparent),
-    0 10px 28px color-mix(in srgb, var(--background-primary) 24%, transparent);
-}
-
 .ert-ui.ert-scope--settings .ert-publishing-status-col {
   --ert-stage-accent: color-mix(in srgb, var(--text-muted) 55%, var(--background-modifier-border));
-  border: none;
-  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--ert-stage-accent) 34%, var(--background-modifier-border));
+  border-radius: var(--ert-panel-radius);
   padding: var(--ert-pad-sm);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--ert-stage-accent) 7%, transparent), transparent 62%),
@@ -7967,14 +7956,11 @@
   isolation: isolate;
 }
 
-.ert-ui.ert-scope--settings .ert-publishing-status-col + .ert-publishing-status-col {
-  border-left: none;
-}
-
 .ert-ui.ert-scope--settings .ert-publishing-status-col[role="button"] {
   cursor: pointer;
   transition:
     background-color 140ms ease,
+    border-color 140ms ease,
     box-shadow 140ms ease,
     transform 140ms ease;
 }
@@ -7983,9 +7969,8 @@
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--ert-stage-accent) 11%, transparent), transparent 62%),
     color-mix(in srgb, var(--background-secondary) 78%, var(--ert-stage-accent) 6%);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--ert-stage-accent) 26%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--text-normal) 8%, transparent);
+  border-color: color-mix(in srgb, var(--ert-stage-accent) 62%, var(--background-modifier-border));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-normal) 8%, transparent);
   transform: translateY(-1px);
 }
 
@@ -7994,28 +7979,34 @@
   outline-offset: 1px;
 }
 
+/* The stage mark sits in the card's top-right corner, inset by the card's
+   padding, behind the text. On the quick-start card it drops below the
+   "Start here" tab, which owns the corner. */
 .ert-ui.ert-scope--settings .ert-publishing-status-col-glyph {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 104px;
-  height: 104px;
+  top: var(--ert-pad-sm);
+  right: var(--ert-pad-sm);
+  width: 44px;
+  height: 44px;
   color: var(--ert-stage-accent);
-  opacity: 0.08;
+  opacity: 0.16;
   pointer-events: none;
   z-index: 0;
+}
+
+.ert-ui.ert-scope--settings .ert-publishing-status-col.is-quick-start .ert-publishing-status-col-glyph {
+  top: calc(var(--ert-pad-sm) + var(--ert-pad-md));
 }
 
 .ert-ui.ert-scope--settings .ert-publishing-status-col-glyph svg {
   width: 100%;
   height: 100%;
-  stroke-width: 2.15;
+  stroke-width: 1.8;
 }
 
 .ert-ui.ert-scope--settings .ert-publishing-status-col[role="button"]:hover .ert-publishing-status-col-glyph,
 .ert-ui.ert-scope--settings .ert-publishing-status-col[role="button"]:focus-visible .ert-publishing-status-col-glyph {
-  opacity: 0.12;
+  opacity: 0.24;
 }
 
 .ert-ui.ert-scope--settings .ert-publishing-status-col[role="button"]:hover .ert-publishing-status-col-icon,
@@ -8141,7 +8132,7 @@
    ring + a "Start here" badge draw the eye here first, ahead of the optional
    cards and the calm setup card. */
 .ert-ui.ert-scope--settings .ert-publishing-status-col.is-quick-start {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ert-stage-accent) 55%, transparent);
+  border-color: color-mix(in srgb, var(--ert-stage-accent) 72%, transparent);
 }
 
 .ert-ui.ert-scope--settings .ert-publishing-status-col-quickstart {
@@ -8171,7 +8162,7 @@
   gap: var(--ert-gap-3xs) var(--ert-gap-xs);
   min-width: 0;
   padding-top: var(--ert-gap-sm);
-  border-top: 1px solid color-mix(in srgb, var(--ert-stage-accent) 30%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--ert-stage-accent) 20%, transparent);
   position: relative;
   z-index: 1;
 }
@@ -9178,11 +9169,6 @@
 @container ert-settings (max-width: 720px) {
   .ert-ui.ert-scope--settings .ert-publishing-status-grid {
     grid-template-columns: 1fr;
-  }
-
-  .ert-ui.ert-scope--settings .ert-publishing-status-col + .ert-publishing-status-col {
-    border-left: none;
-    border-top: none;
   }
 
   .ert-ui.ert-scope--settings .ert-matter-preview-row {

@@ -15,6 +15,8 @@ export function contextualChronologueLabels(labels: ChronologueLabel[]): Chronol
     const markCe = datesSpanEras(dated.map(item => item.date));
     const replacements = new Map<ChronologueLabel, ChronologueLabel>();
     let previous: { date: Date; precision: NonNullable<ChronologueLabel['precision']> } | undefined;
+    let reportedMonth: number | undefined;
+    let reportedWeekday: number | undefined;
     for (const { label, date } of dated) {
         const precision = label.precision!;
         const boundary = !!(label.isFirst || label.isLast);
@@ -41,16 +43,26 @@ export function contextualChronologueLabels(labels: ChronologueLabel[]): Chronol
             const detail = precision === 'year' ? '' : precision === 'month' ? month : day;
             text = detail ? `${year}\n${detail}` : year;
             kind = precision === 'time' ? 'day' : precision;
+            if (precision !== 'year') reportedMonth = date.getMonth();
         } else if (precision === 'year') {
-            text = year; kind = 'year';
+            text = year; kind = 'year'; reportedMonth = undefined;
         } else if (precision === 'month') {
             text = `${month}${yearChanged ? ` ${year}` : ''}`; kind = 'month';
+            reportedMonth = date.getMonth();
         } else {
             // A less precise preceding label cannot establish a particular day.
             const showDay = !sameDay || previous?.precision === 'year' || previous?.precision === 'month';
-            const dateText = showDay || precision === 'day' ? `${weekday} ${day}${yearChanged ? ` ${year}` : ''}` : '';
+            const showDate = showDay || precision === 'day';
+            const showMonth = reportedMonth !== date.getMonth() || yearChanged;
+            const showWeekday = reportedWeekday !== date.getDay();
+            const dayOnly = new Intl.DateTimeFormat(dateLocale, { day: 'numeric', calendar: 'gregory' }).format(date);
+            const dateText = showDate ? [showWeekday ? weekday : '', showMonth ? day : dayOnly, yearChanged ? year : ''].filter(Boolean).join(' ') : '';
             text = [dateText, precision === 'time' ? time : ''].filter(Boolean).join(' · ');
             kind = precision === 'time' ? (dateText ? 'datetime' : 'time') : 'day';
+            if (showDate) {
+                if (showWeekday) reportedWeekday = date.getDay();
+                if (showMonth) reportedMonth = date.getMonth();
+            }
         }
         text = escapeXml(text);
         replacements.set(label, { ...label, name: text, shortName: text, labelKind: kind });

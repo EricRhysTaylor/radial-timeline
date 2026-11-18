@@ -18,9 +18,27 @@ describe('Chronologue visible date context', () => {
         expect(out[2].name).toMatch(/1 Jan 1813/);
         expect(out[2].name).toContain('11 AM');
         expect(out[3].name).toBe('2 PM');
-        expect(out[4].name).toContain('2 Jan');
+        expect(out[4].name).toContain('2');
+        expect(out[4].name).not.toContain('Jan');
         expect(out[4].name).toContain('2:25 PM');
         expect(out[4].name).not.toContain('1813');
+    });
+    it('omits the month and weekday until the last reported values change', () => {
+        vi.spyOn(obsidian, 'getLanguage').mockReturnValue('en');
+        const labels = [label(new Date(1811, 0, 1, 9), 'time', { isFirst: true }),
+            label(new Date(1811, 0, 8, 9)), label(new Date(1811, 0, 15, 9)),
+            label(new Date(1811, 1, 5, 9)), label(new Date(1811, 1, 6, 9))];
+        const out = contextualChronologueLabels(labels);
+        expect(out[1].name).toBe('Tue 8 · 9 AM');
+        expect(out[2].name).toBe('15 · 9 AM');
+        expect(out[3].name).toBe('5 Feb · 9 AM');
+        expect(out[4].name).toBe('Wed 6 · 9 AM');
+    });
+    it('uses visible labels rather than hidden transitions to establish context', () => {
+        vi.spyOn(obsidian, 'getLanguage').mockReturnValue('en');
+        const labels = [label(new Date(1811, 0, 1, 9), 'time', { isFirst: true }),
+            label(new Date(1811, 1, 1, 9), 'time', { isMajor: false }), label(new Date(1811, 1, 2, 9))];
+        expect(contextualChronologueLabels(labels)[2].name).toBe('Sat 2 Feb · 9 AM');
     });
     it('suppresses duplicate instants without removing the scene tick', () => {
         const date = new Date(2085, 3, 1, 11);

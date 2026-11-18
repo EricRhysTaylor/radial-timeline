@@ -1090,7 +1090,6 @@ export const ko: DeepPartial<TranslationKeys> = {
         renderError: '타임라인 렌더링 오류. 자세한 내용은 콘솔을 확인하세요.',
         overdue: '기한 초과: {{date}}',
         search: {
-            unavailableSelected: "검색 모드를 변경하려면 선택을 해제하세요. 변경하기 전까지 현재 모드가 유지됩니다.",
             indexRequiresAssist: "의미 검색 인덱스를 사용하려면 로컬 LLM 지원을 켜세요.",
             indexLabel: "검색 인덱스 사용",
             indexHint: "로컬 텍스트 인덱스입니다. AI 설정에서 선택한 서버와 모델로 관련성이 높은 구절을 검토합니다. 일치하는 내용을 놓칠 수 있습니다. 모든 장면을 검토하려면 끄세요.",
@@ -1212,7 +1211,6 @@ export const ko: DeepPartial<TranslationKeys> = {
     timelineDataExportModal: {
         badge: '내보내기',
         title: '타임라인 공유 내보내기',
-        subtitle: '내보내기만으로는 아무것도 공유되지 않습니다. 파일은 커뮤니티 공유에 업로드하고 활성화할 때까지 보관함에 남아 있습니다.',
         structuralHeading: '활성화 시 공유되는 항목',
         structuralBody: '장면 번호, 막, 서브플롯 이름, 상태, 출판 단계, 책 제목, 저자.',
         revealingHeading: '장면별 공개 전까지 보류되는 항목',

@@ -1090,7 +1090,6 @@ export const de: DeepPartial<TranslationKeys> = {
         renderError: 'Fehler beim Rendern der Timeline. Details siehe Konsole.',
         overdue: 'Überfällig: {{date}}',
         search: {
-            unavailableSelected: "Deaktivieren Sie die Option, um den Suchmodus zu ändern. Der aktuelle Modus bleibt erhalten, bis Sie ihn ändern.",
             indexRequiresAssist: "Aktivieren Sie die lokale LLM-Unterstützung, um den semantischen Index zu verwenden.",
             indexLabel: "Suchindex verwenden",
             indexHint: "Lokaler Textindex. Verwendet den in den KI-Einstellungen gewählten Server und das gewählte Modell, um wahrscheinliche Textstellen zu prüfen. Kann Treffer übersehen; deaktivieren, um jede Szene zu prüfen.",
@@ -1212,7 +1211,6 @@ export const de: DeepPartial<TranslationKeys> = {
     timelineDataExportModal: {
         badge: 'Export',
         title: 'Timeline-Freigabe-Export',
-        subtitle: 'Durch das Exportieren wird nichts geteilt. Die Datei bleibt in Ihrem Vault, bis Sie sie in Ihre Community-Freigabe hochladen und aktivieren.',
         structuralHeading: 'Wird beim Aktivieren geteilt',
         structuralBody: 'Szenennummern, Akte, Namen der Nebenhandlungen, Status, Veröffentlichungsphase, Buchtitel und Autor.',
         revealingHeading: 'Zurückgehalten für die Freigabe pro Szene',

@@ -1076,7 +1076,6 @@ export const es: DeepPartial<TranslationKeys> = {
         "renderError": "Línea de tiempo de renderizado de errores. Consulte la consola para obtener más detalles.",
         "overdue": "Atrasado: {{date}}",
         "search": {
-            "unavailableSelected": "Desmarca la opción para cambiar el modo de búsqueda. El modo actual se conserva hasta que lo cambies.",
             "indexRequiresAssist": "Activa la asistencia del LLM local para usar el índice semántico.",
             "indexLabel": "Usar índice de búsqueda",
             "indexHint": "Índice de texto local. Usa el servidor y el modelo elegidos en los ajustes de IA para revisar pasajes probables. Puede omitir coincidencias; desactívalo para revisar cada escena.",
@@ -1197,7 +1196,6 @@ export const es: DeepPartial<TranslationKeys> = {
     "timelineDataExportModal": {
         "badge": "Exportar",
         "title": "Exportación de acciones en línea de tiempo",
-        "subtitle": "Nada es compartido por la exportación. El archivo permanece en su bóveda hasta que lo suba a su comunidad y lo active.",
         "structuralHeading": "compartido cuando activas",
         "structuralBody": "Números de escena, actos, nombres de subtramas, estado, etapa de publicación, título del libro y autor.",
         "revealingHeading": "Celebrado para revelación por escena",

@@ -1091,7 +1091,6 @@ export const ja: DeepPartial<TranslationKeys> = {
         renderError: 'タイムラインの描画でエラーが発生しました。詳細はコンソールを確認してください。',
         overdue: '期限超過: {{date}}',
         search: {
-            unavailableSelected: "検索モードを変更するには、チェックを外してください。変更するまで現在のモードが維持されます。",
             indexRequiresAssist: "意味検索インデックスを使うには、ローカルLLMアシストを有効にしてください。",
             indexLabel: "検索インデックスを使用",
             indexHint: "ローカルのテキストインデックスです。AI設定で選んだサーバーとモデルで関連しそうな箇所を確認します。見落とす場合があります。全シーンを確認するにはオフにしてください。",
@@ -1213,7 +1212,6 @@ export const ja: DeepPartial<TranslationKeys> = {
     timelineDataExportModal: {
         badge: 'エクスポート',
         title: 'タイムライン共有エクスポート',
-        subtitle: 'エクスポートしただけでは何も共有されません。コミュニティ共有にアップロードして有効化するまで、ファイルは保管庫内に留まります。',
         structuralHeading: '有効化すると共有される情報',
         structuralBody: 'シーン番号、幕、サブプロット名、ステータス、出版ステージ、書籍タイトル、著者。',
         revealingHeading: 'シーンごとの公開まで保留される情報',

@@ -1092,7 +1092,6 @@ export const zh: DeepPartial<TranslationKeys> = {
         renderError: '渲染时间轴时出错。请查看控制台了解详情。',
         overdue: '已逾期：{{date}}',
         search: {
-            unavailableSelected: "取消勾选即可更改搜索模式。在您更改之前，将保留当前模式。",
             indexRequiresAssist: "请启用本地 LLM 辅助以使用语义索引。",
             indexLabel: "使用搜索索引",
             indexHint: "本地文本索引。使用 AI 设置中选定的服务器和模型检查可能相关的段落。可能遗漏匹配项；关闭后检查每个场景。",
@@ -1214,7 +1213,6 @@ export const zh: DeepPartial<TranslationKeys> = {
     timelineDataExportModal: {
         badge: '导出',
         title: '时间轴分享导出',
-        subtitle: '导出本身不会分享任何内容。文件会一直保留在您的仓库中，直到您将其上传到社区分享并启用。',
         structuralHeading: '启用后分享',
         structuralBody: '场景编号、幕、副情节名称、状态、出版阶段、书名和作者。',
         revealingHeading: '保留至逐个场景揭示',

@@ -1076,7 +1076,6 @@ export const vi: DeepPartial<TranslationKeys> = {
         "renderError": "Lỗi hiển thị dòng thời gian. Kiểm tra bảng điều khiển để biết chi tiết.",
         "overdue": "Quá hạn: {{date}}",
         "search": {
-            "unavailableSelected": "Bỏ chọn để đổi chế độ tìm kiếm. Chế độ hiện tại được giữ nguyên cho đến khi bạn thay đổi.",
             "indexRequiresAssist": "Bật trợ giúp LLM cục bộ để sử dụng chỉ mục ngữ nghĩa.",
             "indexLabel": "Dùng chỉ mục tìm kiếm",
             "indexHint": "Chỉ mục văn bản cục bộ. Dùng máy chủ và mô hình đã chọn trong cài đặt AI để kiểm tra các đoạn có khả năng liên quan. Có thể bỏ sót kết quả; tắt để kiểm tra mọi cảnh.",
@@ -1197,7 +1196,6 @@ export const vi: DeepPartial<TranslationKeys> = {
     "timelineDataExportModal": {
         "badge": "Xuất",
         "title": "Xuất khẩu chia sẻ dòng thời gian",
-        "subtitle": "Không có gì được chia sẻ bằng cách xuất. Tệp vẫn ở trong kho của bạn cho đến khi bạn tải tệp lên chia sẻ cộng đồng của mình và kích hoạt tệp.",
         "structuralHeading": "được chia sẻ khi bạn kích hoạt",
         "structuralBody": "Số cảnh, hồi, tên cốt truyện phụ, trạng thái, giai đoạn xuất bản, tên sách và tác giả.",
         "revealingHeading": "được tổ chức cho tiết lộ theo từng cảnh",

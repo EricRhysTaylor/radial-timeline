@@ -329,10 +329,17 @@ export async function confirmCommunityShareActivation(
     }
 
     const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+    // A new connection starts each book's timeline record afresh too: an error from the old
+    // connection (a missing or rejected key, say) is not this one's, and the next send reports
+    // anything still wrong.
+    const timelineShares = current.timelineShares
+        ? Object.fromEntries(Object.entries(current.timelineShares).map(([bookId, record]) => [bookId, { ...record, lastError: undefined }]))
+        : undefined;
     plugin.settings.communityShare = normalizeCommunityShareSettings({
         ...current,
         enabled: true,
         sharingPaused: false,
+        timelineShares,
         connection: {
             ...current.connection,
             status: 'connected',

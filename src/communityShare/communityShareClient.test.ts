@@ -11,7 +11,7 @@ vi.mock('./communitySharePreview', async (importOriginal) => {
 });
 
 import * as obsidian from 'obsidian';
-import { buildDefaultCommunityShareSettings } from './communityShareSettings';
+import { buildDefaultCommunityShareSettings, normalizeCommunityShareSettings } from './communityShareSettings';
 import { COMMUNITY_DAILY_BACKFILL_VERSION, buildCommunitySharePreview } from './communitySharePreview';
 import type { CommunityDailyBackfillRecord } from '../types/settings';
 import {
@@ -423,6 +423,30 @@ describe('Community Share activation client', () => {
         expect(plugin.settings.communityShare.connection.projectId).toBe('project-1');
         expect(plugin.settings.communityShare.preview.status).toBe('stale');
         expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('a new connection clears each book\'s timeline error from the old one, keeping the rest of its record', async () => {
+        const { plugin } = createPluginHarness();
+        plugin.settings.communityShare = normalizeCommunityShareSettings({
+            ...plugin.settings.communityShare,
+            timelineShares: {
+                'book-1': { profileId: 'profile-1', enabled: true, lastSentAt: '2026-11-18T17:09:30Z', lastError: 'The current connection secret is not valid.' },
+            },
+        });
+        vi.clearAllMocks();
+        vi.spyOn(obsidian, 'requestUrl').mockResolvedValue({
+            status: 201,
+            text: JSON.stringify({
+                connection_id: 'conn-2', connection_secret: 'rtcs_new-secret', secret_expires_at: null,
+                profile_id: 'profile-1', project_id: 'project-1', profile_display: 'Eric', project_title: 'Book 1'
+            })
+        } as never);
+
+        await confirmCommunityShareActivation(plugin as never, 'activation-token-from-website');
+
+        expect(plugin.settings.communityShare.timelineShares?.['book-1']).toEqual({
+            profileId: 'profile-1', enabled: true, lastSentAt: '2026-11-18T17:09:30Z'
+        });
     });
 
     it('cleans up the server connection if the returned secret cannot be stored locally', async () => {

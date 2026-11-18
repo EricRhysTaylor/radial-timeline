@@ -7,6 +7,8 @@
 import { App, ButtonComponent } from 'obsidian';
 import { ErtModal } from '../ui/ErtModal';
 import { t } from '../i18n';
+import { COMMUNITY_SITE_URL } from '../communityShare/communityMailbox';
+import { SCENE_AUTHOR_AGREEMENT_VERSION } from '../communityShare/sceneAgreement';
 
 /**
  * The release terms, shown once before the first release (Amendment 2, section
@@ -50,6 +52,8 @@ class SceneReleaseConsentModal extends ErtModal {
             clause.createSpan({ cls: 'ert-release-terms__number', text: String(index + 1), attr: { 'aria-hidden': 'true' } });
             clause.createEl('p', { cls: 'ert-release-terms__text', text });
         });
+        this.contentEl.createEl('a', { text: t('ui.communityShareSection.sceneBodyTermsLink'), href: `${COMMUNITY_SITE_URL}/agreements#private-scene-sharing`, attr: { target: '_blank', rel: 'noopener' } });
+        this.contentEl.createDiv({ text: t('ui.communityShareSection.sceneBodyTermsVersion', { version: SCENE_AUTHOR_AGREEMENT_VERSION }) });
 
         const actions = this.mountActions();
         new ButtonComponent(actions)

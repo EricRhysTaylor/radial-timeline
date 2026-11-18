@@ -152,9 +152,8 @@ describe('Share scene body', () => {
 
         const sent = actions(request);
         expect(sent.map(body => body.action)).toEqual(['status', 'consent']);
-        for (const body of sent) {
-            expect(Object.keys(body).sort()).toEqual(['action', 'connection_id', 'current_secret', 'plugin_book_key']);
-        }
+        expect(Object.keys(sent[0]).sort()).toEqual(['action', 'connection_id', 'current_secret', 'plugin_book_key']);
+        expect(sent[1].terms_version).toBe('2026-11-14');
         expect(sceneBodyShareFor(h.settings(), 'book-1')).toEqual({ profileId: 'profile-1', enabled: true, projectId: PROJECT_ID });
         expect(h.shareRow().toggle!.value).toBe(true);
         expect(h.shareRow().desc).toContain(t('ui.communityShareSection.sceneBodyOffNote'));
@@ -214,7 +213,7 @@ describe('Share scene body', () => {
 
         const released = h.row(RELEASED)!;
         expect(released.desc).toBe('1 of 3 scenes released');
-        const link = h.screen.all().find(el => el.tag === 'a')!;
+        const link = h.screen.all().find(el => el.tag === 'a' && el.text === 'Choose readers on the website')!;
         expect(link.text).toBe('Choose readers on the website');
         expect(link.href).toBe(`https://community.radialtimeline.com/me/scenes/${PROJECT_ID}`);
         expect(h.screen.content).toContain(t('ui.communityShareSection.sceneBodyReadersDesc'));

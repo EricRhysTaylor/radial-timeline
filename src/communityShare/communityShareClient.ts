@@ -1,4 +1,5 @@
 import { isTimelinePreviewDocument, type TimelinePreviewDocument } from './timelinePreview';
+import { SCENE_AUTHOR_AGREEMENT_VERSION } from './sceneAgreement';
 import { apiVersion, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
@@ -1706,7 +1707,7 @@ export function isSceneReleaseResult(value: unknown): value is SceneReleaseResul
 
 function isSceneReleaseConsentAnswer(value: unknown): value is SceneReleaseConsentAnswer {
     const answer = value as Partial<SceneReleaseConsentAnswer>;
-    return answer?.ok === true && typeof answer.version === 'string';
+    return answer?.ok === true && answer.version === SCENE_AUTHOR_AGREEMENT_VERSION;
 }
 
 /** Why a scene's cleaned text can't be released, in the author's words. */
@@ -1816,7 +1817,7 @@ export async function fetchSceneReleaseStatus(plugin: RadialTimelinePlugin, book
 
 /** Record the author's agreement to the release terms, once per account. Carries no text. */
 export async function acceptSceneReleaseTerms(plugin: RadialTimelinePlugin, book: Pick<BookProfile, 'id'>): Promise<void> {
-    await postSceneRelease(plugin, book, { action: 'consent' }, isSceneReleaseConsentAnswer);
+    await postSceneRelease(plugin, book, { action: 'consent', terms_version: SCENE_AUTHOR_AGREEMENT_VERSION }, isSceneReleaseConsentAnswer);
 }
 
 /**

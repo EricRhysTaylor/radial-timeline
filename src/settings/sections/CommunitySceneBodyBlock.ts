@@ -97,6 +97,8 @@ export function renderCommunitySceneBodyBlock({ plugin, containerEl, book, reren
         .setDesc(t('ui.communityShareSection.sceneBodyDesc'));
     addHeadingIcon(heading, 'book-open-text');
     applyErtHeaderLayout(heading);
+    heading.descEl.createEl('br');
+    heading.descEl.createEl('a', { text: t('ui.communityShareSection.sceneBodyTermsLink'), href: `${COMMUNITY_SITE_URL}/agreements#private-scene-sharing`, attr: { target: '_blank', rel: 'noopener' } });
 
     const unavailable = unavailableReason(settings, book);
     const record = book ? sceneBodyShareFor(settings, book.id) : undefined;

@@ -441,7 +441,6 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
         });
 
-    sharingSection.createDiv({ cls: 'ert-communityPreviewDetails__privacy', text: t('ui.communityShareSection.sceneTextPrivacySummary') });
     const details = sharingSection.createEl('details', { cls: 'ert-communityPreviewDetails' });
     details.open = sharingDetailsOpen;
     details.addEventListener('toggle', () => { sharingDetailsOpen = details.open; });

@@ -8,6 +8,7 @@ Social settings list every progress report in one place with saved styles, a sce
 - **Saved styles:** every report is drawn with a saved style, and the colors and fonts you had for the Default report are now the style named **Default**. Changes save as you make them and show in every report that uses that style; **Save as new** copies a style so you can change one report alone.
 - **Default report schedule:** the Default report's posting mode now works like a campaign's. If you had chosen Daily, Weekly or Monthly for it, it starts publishing its image on that schedule, and a Manual report shows its refresh reminder. Set it to Manual to publish only when you choose.
 - **Timetable sort notice:** a sort set in Bases replaces the order the Timetable's mode gives it, such as Chronologue's story order and day dividers. A line beside **Mode** now says so, for example "Sorted by Words · Chronologue order paused", and **Clear sort** puts the mode's order back.
+- **Word and PDF export setup video:** **Export tools** in Settings → Publish has a play button for a short video. It shows how to install Pandoc and LaTeX on a Mac or on Windows and find them with **Auto locate**. Beside it is a link to the install steps in the docs.
 - **AI content logs start off in every vault:** this update turns off **Enable AI content logs** once, so every vault now matches the new-vault default. To keep full prompts, submitted material and responses in your vault's log files, turn it back on in **Settings → Advanced**, and it stays on.
 
 ### Fixes

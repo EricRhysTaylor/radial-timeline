@@ -7615,6 +7615,7 @@ export const en = {
             pdfExport: 'Design a PDF style and export your manuscript',
             communityShare: 'Share your progress on the Community',
             beatManager: 'Shape your story with the Beat Manager',
+            pandocSetup: 'Set up Word and PDF export',
         },
         writingSessionCompletionModal: {
             allocateScenes: "Allocate this session to scenes",

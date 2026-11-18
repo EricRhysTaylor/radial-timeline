@@ -273,6 +273,8 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         .setDesc(t('ui.publishSection.exportToolsDesc'))
         .setHeading();
     addHeadingIcon(systemConfigHeading, 'settings');
+    addWikiLink(systemConfigHeading, 'Publishing#installing-pandoc-and-latex');
+    addVideoLink(systemConfigHeading, 'pandoc-setup');
     applyErtHeaderLayout(systemConfigHeading);
 
     // Settings

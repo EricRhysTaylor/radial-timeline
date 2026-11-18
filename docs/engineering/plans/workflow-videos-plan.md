@@ -2,7 +2,7 @@
 
 **Goal:** short videos, 45–90 seconds each, that show one workflow from start to finish, opened from the setting, dialog or wiki section that explains it. Radial Timeline first; Editorialist can follow the same pattern.
 
-**Status (2026-11-17):** `beat-manager` is published (how-to `h9rJSU7p6aA`, public 2026-11-13) and its play button ships in 8.0.4. `pandoc-setup` is next: script in progress. Eric records and decides the order.
+**Status (2026-11-17):** `beat-manager` is published (how-to `h9rJSU7p6aA`, public 2026-11-13) and its play button ships in 8.0.4. `pandoc-setup` is uploaded (`t6O4ZYjJ5J8`, private until Eric's go) and its play button is wired on the "Export tools" heading; it ships in the next release. Eric records and decides the order.
 
 ## How a video reaches authors
 
@@ -54,7 +54,7 @@ The pre-release eyeball checklist asks: if a release changes a screen a publishe
 | `pdf-export` (wired) | Design a PDF style and export the manuscript | Pro workflow with the most steps | Settings → Publish, design wizard, Manuscript export, wiki Publishing |
 | `community-share` (wired) | Share your progress on the Community | Shows exactly what is and isn't shared | Settings → Community, wiki Settings-Community |
 | `beat-manager` (published: how-to 1:42, `h9rJSU7p6aA`, public 2026-11-13 with the Beats Update Short `zzlBLvrHyIo`; `rt-video-beat-manager` set; README, wiki and the Settings-Core thumbnail link it) | Shape your story with the Beat Manager | Gossamer scores against these beats; no video covers the Beat Manager yet | Settings → Core → Story beats system, wiki Settings-Core |
-| `pandoc-setup` (next: script started 2026-11-17) | Install Pandoc and fonts for export | Issues #29 and #34 were authors stuck here | Settings → Publish, wiki Publishing |
+| `pandoc-setup` (uploaded: how-to 1:20, `t6O4ZYjJ5J8`, private 2026-11-17 until Eric's go; `rt-video-pandoc-setup` set on Settings → Publish → Export tools) | Set up Word and PDF export (install Pandoc and LaTeX) | Issues #29 and #34 were authors stuck here | Settings → Publish → Export tools, wiki Publishing |
 | `story-vault` | Add a Story Vault and look around | The first thing a new author sees | Welcome screen, Story Vault dialog, wiki Sample-Vault |
 | `import-manuscript` | Bring in an existing manuscript, including from Scrivener | The biggest hurdle for new authors | Onboarding dialog, wiki Onboard-Existing-Manuscript |
 | `ai-setup` | Connect AI, including a local model | Four outside contributors asked for local models in #14 | Settings → AI → API keys, wiki Settings-AI |

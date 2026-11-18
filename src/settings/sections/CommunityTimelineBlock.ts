@@ -52,6 +52,9 @@ interface TimelineStatusCache {
 }
 let statusCache: TimelineStatusCache | null = null;
 let statusInflight = false;
+// Bumped whenever a write clears the cache, so a status read that started
+// before the write cannot cache its older answer as fresh.
+let statusEpoch = 0;
 const detailSaves = new Set<string>();
 const STATUS_TTL_MS = 60 * 1000;
 
@@ -123,8 +126,10 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
     if (stale && !statusInflight) {
         statusInflight = true;
         const requestedAt = Date.now();
-        // Share timeline turned on while this was out caches its own, newer answer.
-        const newerCached = () => statusCache?.key === key && statusCache.fetchedAt >= requestedAt;
+        const epochAtStart = statusEpoch;
+        // A send or detail save while this was out makes its answer out of date.
+        const newerCached = () => statusEpoch !== epochAtStart
+            || (statusCache?.key === key && statusCache.fetchedAt >= requestedAt);
         void fetchTimelineShareStatus(plugin, bookId)
             .then(next => {
                 if (!newerCached()) statusCache = { key, fetchedAt: Date.now(), answer: next };
@@ -174,6 +179,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
                 try {
                     const sent = await startTimelineSharing(plugin, book);
                     statusCache = null; // Re-read the website's filtered preview after the send.
+                    statusEpoch++;
                     new Notice(sent.share?.status === 'active'
                         ? t('ui.communityShareSection.timelineUpdatedNotice')
                         : t('ui.communityShareSection.timelineSentNotice'));
@@ -243,10 +249,12 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
         try {
             await setTimelineShareDetails(plugin, bookId, details);
             statusCache = null; // A detail change needs a new reader-facing preview.
+            statusEpoch++;
         } catch (error) {
             // A lost response does not prove the website rejected the change.
             // Re-read its state before another privacy choice can be made.
             if (statusCache?.key === key) statusCache = null;
+            statusEpoch++;
             new Notice(errorText(error, t('ui.communityShareSection.timelineDetailsFailed')));
         } finally {
             detailSaves.delete(key);

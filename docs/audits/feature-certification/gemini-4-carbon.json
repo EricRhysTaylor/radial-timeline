@@ -1,0 +1,190 @@
+{
+  "provider": "google",
+  "modelId": "gemini-4-carbon",
+  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/radial-timeline/tests/fixtures/model-onboarding/vault",
+  "book": "The Tidewater Ledger",
+  "generatedAt": "2026-11-18T00:23:08.956Z",
+  "cases": [
+    {
+      "id": "pulse:4 A Number That Does Not Answer",
+      "feature": "pulse",
+      "durationMs": 11246,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 5570,
+        "outputTokens": 703,
+        "totalTokens": 6273
+      },
+      "costUSD": 0.01817,
+      "sample": {
+        "previousSceneAnalysis": "- 3 Pell's buyout offer + / Directly forces Wren's desperate kitchen-table math in Scene 4\n- Rezoning council vote + / Pell's deadline gives Ada's political strategy immediate ticking-clock urgency\n- Father's heavy debt + / Financial ruin deepens Wren's isolation, driving her call to Toby\n- Jonah's Friday secret - / Suspicious death revelation goes strangely ignored during Wren's reflection",
+        "currentSceneAnalysis": "- 4 A / Acknowledge Jonah's ominous revelation briefly; cut the premature 'He didn't' ending spoiler.\n- Concrete financial stakes + / Specific numbers make Wren's impossible dilemma visceral and grounded\n- Community pier reliance + / Connects personal inheritance to town survival, raising emotional stakes\n- Ada's political pivot + / Shifts conflict from hopeless debt to an actionable council fight\n- Estranged brother outreach + / Two phone attempts beautifully show vulnerability and swallowing pride\n- Closing line spoiler - / Saying 'He didn't' slightly undercuts tension before his surprise arrival",
+        "nextSceneAnalysis": "- 5 Rejecting Pell's offer + / Executes the negotiation strategy Ada sparked in Scene 4\n- Expanded ferry schedule + / Wren immediately acts on her legal-pad survival math\n- Tobias's sudden return + / Subverts the unreturned voicemail with an earned, dramatic arrival\n- Deckhand staffing need + / Practical labor shortage neatly integrates Toby into the plot\n- Unexplained brass key ? / Mentions a pocket key never established in prior scenes",
+        "sceneGrade": "A"
+      }
+    },
+    {
+      "id": "pulse:6 Sunset Cruise",
+      "feature": "pulse",
+      "durationMs": 57113,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 5510,
+        "outputTokens": 2430,
+        "totalTokens": 7940
+      },
+      "costUSD": 0.03532,
+      "sample": {
+        "previousSceneAnalysis": "- 5 Dropped Jonah mystery - / Jonah's urgent secret meeting vanishes during the time jump.\n- Deckhand need resolved + / Tobias's arrival smoothly launches their shared ferry routine.\n- Pell's deadline pressure + / Wren's defiance directly fuels her obsessive revenue counting.\n- Unresolved funeral tension + / Skipped funeral establishes unspoken grief dominating sibling interactions.",
+        "currentSceneAnalysis": "- 6 B / Rich sibling subtext and clear stakes, but address Jonah's dropped subplot from Scene 5.\n- Concrete financial stakes + / Clear debt numbers sharpen the external plot urgency.\n- Sibling dynamic subtext + / Brief childhood memory pierces ten years of estrangement.\n- Physical backstory hints + / Subtle hints about Tobias's injury deepen character intrigue.\n- Deferred father conversation ? / Tobias delaying talk builds suspense but stalls conflict.",
+        "nextSceneAnalysis": "- 7 Shortfall hope shattered + / Wedding windfall bridges the gap before Pell strikes.\n- Deadline devastation + / Acceleration clause ruthlessly upends Wren's careful June math.\n- Hospitality payoff + / Cruise popularity naturally scales into lucrative event charters.\n- Lingering unspoken past ? / Tobias's promised talk about Dad remains unresolved.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:8 Grounded",
+      "feature": "pulse",
+      "durationMs": 29928,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 5452,
+        "outputTokens": 2397,
+        "totalTokens": 7849
+      },
+      "costUSD": 0.034874,
+      "sample": {
+        "previousSceneAnalysis": "- 7 Ticking clock pressure + / Ten-day acceleration notice makes grounding the ferry immediately catastrophic.\n- Antagonist retaliation + / Pell's legal strike foreshadows his covert Coast Guard sabotage.\n- Financial stakes + / Hard-won wedding revenue makes losing daily passenger fares hurt.\n- Sibling alliance + / Shared triumph and shock prime Tobias for honest confession.",
+        "currentSceneAnalysis": "- 8 A / Excellent balance of plot sabotage and emotional stakes; ensure camel overcoat callback is clear.\n- Sabotage escalation + / Grounding the ferry smartly cuts off Wren's financial lifeline.\n- Estrangement reveal + / Tobias's theft confession deepens character conflict with lean subtext.\n- Ledger motif + / Connects family emotional debts directly to the physical ledger.\n- Overcoat callback ? / Camel overcoat clue relies heavily on earlier scene memory.",
+        "nextSceneAnalysis": "- 9 Manifold subplot payoff + / Pell outbidding Dell closes the repair loophole with finality.\n- Weaponized vulnerability + / Wren cruelly uses Tobias's confession, shattering their fragile truce.\n- Thematic echo + / Tobias walking away mirrors his ten-year-old pier departure.\n- All-is-lost climax + / Financial ruin and emotional isolation converge at maximum tension.",
+        "sceneGrade": "A"
+      }
+    },
+    {
+      "id": "summary:5 No Sale",
+      "feature": "summary",
+      "durationMs": 54405,
+      "passed": true,
+      "summary": "Summary 261 words (target 200); Synopsis 27 words (cap 30); both passed the production parsers.",
+      "usage": {
+        "inputTokens": 2659,
+        "outputTokens": 4397,
+        "totalTokens": 7056
+      },
+      "costUSD": 0.049288,
+      "sample": {
+        "summary": "At seven in the morning, Wren Halloway telephones Corwin Pell in Portland to reject his offer for Halloway Pier. When Pell warns that he is not going away and points out she lacks the money owed by the June thirtieth deadline, Wren insists she will have at least most of it by then and hangs up. Outside on the pier, deckhand Jonah Marsh overhears the call through the office window and asks how she intends to pay. Wren explains her plan to operate seven days a week through June, relying on regular crossings, sunset cruises, charters, the skiff, and the spare outboard. Because Coast Guard regulations and physical limits prevent running seven days a week with one deckhand, Wren agrees to hire additional help, and Jonah volunteers to work double shifts without extra pay until her debt is cleared. Before going down to check the boat's bilge, Jonah quietly confirms their secret meeting at the office for six o'clock the next evening, noting he has something her father gave him to hold for her and warning her not to tell anyone, including Ada. During the day, they complete four crossings while Wren sells eighteen sunset cruise tickets to a Bangor bus tour and posts a window sign advertising for a deckhand. At dusk, as Wren locks the office, her estranged brother, Tobias, arrives on the pier carrying a duffel bag after a ten-year absence. Tobias mentions her phone message, offers to work cheap as the new deckhand, and acknowledges missing their father's funeral, after which Wren unlocks the office door again.",
+        "synopsis": "Wren rejects Pell's offer, planning expanded operations to pay her debt. Jonah mentions holding something from her father, and Wren's estranged brother, Tobias, returns seeking deckhand work."
+      }
+    },
+    {
+      "id": "summary:9 The Papers on the Desk",
+      "feature": "summary",
+      "durationMs": 63030,
+      "passed": true,
+      "summary": "Summary 264 words (target 200); Synopsis 29 words (cap 30); both passed the production parsers.",
+      "usage": {
+        "inputTokens": 2574,
+        "outputTokens": 3423,
+        "totalTokens": 5997
+      },
+      "costUSD": 0.039378,
+      "sample": {
+        "summary": "On Friday, Dell calls Wren to report that a Portland buyer paid triple to outbid him for a replacement ferry manifold outside Halifax. Wren hangs up without saying goodbye, recognizing Corwin Pell's interference. Meanwhile, the Margaret Ann remains grounded with a Coast Guard tag on her wheel, sunset cruises and two June charters are cancelled, and Wren's sixty-four thousand dollars in savings falls short of the one-hundred-and-twenty-thousand-dollar debt. That evening, a courier delivers Pell's revised offer along with a fountain pen, requiring Wren's signature before Monday's council vote in order to forgive the debt. Tobias arrives at six with groceries, sees the contract on the desk, and urges Wren not to sign. Wren argues that someone must face the numbers, noting that Pell controls suppliers, lawyers, and likely half the council, whereas signing allows her to keep the house and operate the boat debt-free from the town dock. Tobias counters that she would lack a pier, fuel, and low-tide water depth, and begins to invoke their father. Wren stands and angrily reminds him that their father secretly mortgaged the pier to Pell before dying, leaving her to clean up his mess just as she cleaned up after Tobias. Tobias quietly accepts the remark, sets down the groceries, takes his jacket, and tells Wren to sign her ledger if she wants before walking out and heading up Front Street without looking back. Alone in the office, Wren sits at the desk, uncaps Pell's pen, and holds it over the signature marker, then recaps the pen without signing and cries for the first time since March.",
+        "synopsis": "Pell blocks Wren's manifold purchase and delivers a revised buyout contract. Wren and Tobias argue over signing and their father's debt; Tobias walks out, and Wren cries without signing."
+      }
+    },
+    {
+      "id": "gossamer:momentum",
+      "feature": "gossamer",
+      "durationMs": 47405,
+      "passed": true,
+      "summary": "All 15 beats scored and validated (12 scenes, 7707 words).",
+      "usage": {
+        "inputTokens": 13079,
+        "outputTokens": 1943,
+        "totalTokens": 15022
+      },
+      "costUSD": 0.045588000000000004,
+      "sample": [
+        {
+          "beatName": "Opening Image",
+          "signal": "momentum",
+          "score": 30,
+          "justification": "The opening establishes Wren's grief and static routine in the quiet ferry office with minimal forward pull."
+        },
+        {
+          "beatName": "Theme Stated",
+          "signal": "momentum",
+          "score": 35,
+          "justification": "Ada's recollection of Elias's remark about ledgers plants a subtle thematic question without shifting immediate stakes."
+        },
+        {
+          "beatName": "Setup",
+          "signal": "momentum",
+          "score": 45,
+          "justification": "Small bookkeeping anomalies and the pressure of maintaining island crossings create mild curiosity about what Elias left behind."
+        }
+      ]
+    },
+    {
+      "id": "inquiry:payoff-abandoned-threads",
+      "feature": "inquiry",
+      "durationMs": 85242,
+      "passed": true,
+      "summary": "Inquiry returned 6 finding(s) over 12 scenes; verdict and refs passed the production result builder. Planted faults found: 2/3.",
+      "plantedFaults": [
+        {
+          "id": "box-14-key",
+          "found": true
+        },
+        {
+          "id": "jonah-vanishes",
+          "found": true
+        },
+        {
+          "id": "death-month",
+          "found": false
+        }
+      ],
+      "usage": {
+        "inputTokens": 14719,
+        "outputTokens": 7067,
+        "totalTokens": 21786
+      },
+      "costUSD": 0.100108,
+      "sample": {
+        "verdict": {
+          "flow": 0.72,
+          "depth": 0.58
+        },
+        "summary": "Early suspense pressure builds tightly around the Box 14 key and secret loan disbursements in Scene 2, Jonah's foul-play warning in Scene 3, and the urgent Friday rendezvous set in Scene 5, but the two-week compression into Scene 6 severs that ticking clock entirely. Although the pier-rescue momentum drives briskly to pay off the debt through Scene 10 and Scene 12, abandoning Jonah and the thriller hooks mid-stride leaves high-pressure setups without forward release.",
+        "firstFinding": {
+          "refId": "scn_tw020002",
+          "kind": "loose_end",
+          "headline": "The hidden Box 14 key and the destination of the $120,000 loan funds are introduced as central mysteries but never resolved",
+          "bullets": [
+            "Wren extracts a worn brass key tagged 'Box 14' from a slit inside the ledger's back cover and explicitly vows to locate it, yet after a brief pocket tactile beat in Scene 5, neither the key nor Box 14 is ever mentioned again.",
+            "The ledger records four autumn installments from Pell Coastal Holdings totaling $120,000 against a ferry clearing only $9,000 a year, but the manuscript never reveals why Elias needed that sum or where the money went."
+          ],
+          "recommendedAction": "Either cut the slit-in-the-cover key and establish a concrete operational expense for the $120,000 loan, or add a discovery beat where Box 14 reveals what Elias did with Pell's money.",
+          "subject": "Box 14 key and missing $120,000 principal",
+          "related": [],
+          "supportingRefs": [
+            {
+              "refId": "scn_tw050005",
+              "refLabel": "5 No Sale.md",
+              "refPath": "The Tidewater Ledger/5 No Sale.md",
+              "quote": "He went down to the boat to check the bilge, and she watched him go, and the brass key in her cardigan pocket felt suddenly heavier."
+            }
+          ],
+          "evidenceType": "mixed",
+          "lens": "both",
+          "evidenceQuote": "A paper tag was tied to it with red thread, and on the tag, in her father's leaning hand, two words: *Box 14.*"
+        }
+      }
+    }
+  ]
+}

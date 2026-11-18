@@ -1,32 +1,227 @@
 {
   "provider": "anthropic",
   "modelId": "claude-fable-5-2",
-  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault AI Certification",
-  "book": "Pride & Prejudice",
-  "generatedAt": "2026-11-17T01:01:07.676Z",
+  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/radial-timeline/tests/fixtures/model-onboarding/vault",
+  "book": "The Tidewater Ledger",
+  "generatedAt": "2026-11-18T00:19:53.948Z",
   "cases": [
     {
-      "id": "pulse:31 Easter at Rosings",
+      "id": "pulse:4 A Number That Does Not Answer",
       "feature": "pulse",
-      "durationMs": 13317,
+      "durationMs": 18944,
       "passed": true,
       "summary": "Parsed and validated by the production Pulse parser.",
       "usage": {
-        "inputTokens": 12180,
-        "outputTokens": 1314,
-        "totalTokens": 13494,
-        "rawInputTokens": 12180,
+        "inputTokens": 7592,
+        "outputTokens": 1978,
+        "totalTokens": 9570,
+        "rawInputTokens": 7592,
         "cacheReadInputTokens": 0,
         "cacheCreationInputTokens": 0,
         "cacheCreation5mInputTokens": 0,
         "cacheCreation1hInputTokens": 0
       },
-      "costUSD": 0.15,
+      "costUSD": 0.139856,
       "sample": {
-        "previousSceneAnalysis": "- 30 Darcy's arrival primed + / His prompt Parsonage call plants interest that 31 pays off.\n- Fitzwilliam introduced + / Easy charm established; sets up foil role at the pianoforte.\n- Jane question dropped ? / Darcy's confusion hooks, but 31 leaves the thread untouched.\n- Lady Catherine's meddling + / Her officious habits prepare the music-lecture interruptions.\n- Slow routine summary - / Long domestic exposition delays tension before the gentlemen arrive.",
-        "currentSceneAnalysis": "- 31 A / Trim the opening summary; let Elizabeth register Darcy's attention to sharpen stakes.\n- Pianoforte sparring + / Witty banter carries attraction and conflict through pure subtext.\n- Practice metaphor + / Elizabeth's fingers analogy neatly rebukes Darcy's social excuse.\n- Darcy's vulnerability + / Admitting awkwardness with strangers deepens him beyond pride.\n- Lady Catherine interrupts + / Comic rudeness breaks intimacy and embarrasses Darcy usefully.\n- Slow opening - / Invitation logistics stall momentum before the drawing-room scene.\n- Flat ending ? / Closes on forbearance and a carriage; no forward hook.",
-        "nextSceneAnalysis": "- 32 Solo visit escalates + / Darcy alone with Elizabeth raises the intimacy from 31.\n- Awkwardness proven + / His stilted silences dramatize the confession made at the piano.\n- Netherfield probe returns + / Elizabeth presses Bingley's departure; Darcy's evasions sustain the mystery.\n- Chair drawn closer + / Advance and cold retreat externalize his inner conflict.\n- Charlotte's speculation ? / Names the romantic question, but through lengthy summary.\n- Summary tail - / Closing narration of repeated visits dissipates the tête-à-tête's tension.",
-        "sceneGrade": "A"
+        "previousSceneAnalysis": "- 3 Pell's ultimatum + / Clear offer and deadline drive Wren's kitchen-table arithmetic.\n- Jonah's bombshell dropped - / Father's suspicious death vanishes from Wren's thoughts in scene 4.\n- Rezoning vote planted + / Pell's passing mention pays off in Ada's council breakdown.\n- Legacy versus debt + / \"Grandfather built it\" deepens into scene 4's piling image.\n- Timeline continuity + / Tuesday visit and \"yesterday\" align cleanly; June deadline holds.",
+        "currentSceneAnalysis": "- 4 B / Let Jonah's revelation haunt her sums; trim Ada's exposition; dramatize the choice to refuse.\n- Concrete stakes + / Sums add up; \"Sign. $0.\" makes temptation tangible.\n- Tobias phone calls + / Silent hang-up, then terse message; restrained and affecting.\n- Ada's strategy briefing ? / Useful reframing of the fight, but reads as info delivery.\n- Missing mystery thread - / No reaction to Jonah's claim undercuts scene 3's hook.\n- Closing beat + / \"He didn't.\" lands hard and sets up the reversal.",
+        "nextSceneAnalysis": "- 5 Refusal payoff ? / Satisfying defiance, but the decision itself happens off-page.\n- Tobias arrives + / Unanswered message pays off quickly; the reunion is nicely underplayed.\n- Plan into action + / Sunset cruises and doubles turn the sums into momentum.\n- Council vote dropped - / Ada's swing-vote strategy and Marguerite go unmentioned.\n- Jonah's secret escalates + / Physical evidence and \"not Ada\" add suspicion and tension.\n- Brass key ? / Not set up in scenes 3-4; confirm earlier plant.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:6 Sunset Cruise",
+      "feature": "pulse",
+      "durationMs": 11890,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 7618,
+        "outputTokens": 1247,
+        "totalTokens": 8865,
+        "rawInputTokens": 7618,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.110824,
+      "sample": {
+        "previousSceneAnalysis": "- 5 Tobias arrives + / Dusk reunion cliffhanger pays off in sibling routine.\n- Pell refusal sets clock + / June deadline and payment plan drive scene 6 arithmetic.\n- Jonah's secret meeting - / Six o'clock promise vanishes; scene 6 skips it entirely.\n- Deckhand sign + / Staffing problem solved neatly by Tobias's offer.\n- Funeral wound + / \"You missed the funeral\" seeds scene 6's unspoken questions.",
+        "currentSceneAnalysis": "- 6 B / Strong subtext, low friction; address Jonah's dropped meeting and add a present-tense complication.\n- Sibling subtext + / Counting instead of feeling; unasked questions carry real ache.\n- Tobias characterization + / Lighthouse lies and pirate grin make him vivid, likable.\n- Stakes arithmetic + / Seventy of one-twenty keeps the gap clear and pressing.\n- Summary-heavy opening ? / Montage is efficient but delays dramatized conflict.\n- Jonah thread missing - / Time jump buries the father's keepsake and brass key.\n- Deferred confession ? / \"Not tonight\" hooks, but risks feeling like withholding.",
+        "nextSceneAnalysis": "- 7 Acceleration clause reversal + / Ten-day demand shatters scene 6's slow June math.\n- Hope before the fall + / Wedding windfall lifts spirits, sharpening the drop.\n- Sibling partnership + / Champagne toast shows routine warmed into real alliance.\n- Dad conversation still deferred - / \"Soon\" promise goes unaddressed; tension may dissipate.\n- Jonah still absent - / Two scenes on, his secret remains untouched.\n- Council vote mention ? / Vote date lands as stakes without setup here.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:8 Grounded",
+      "feature": "pulse",
+      "durationMs": 12359,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 7574,
+        "outputTokens": 1326,
+        "totalTokens": 8900,
+        "rawInputTokens": 7574,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.113632,
+      "sample": {
+        "previousSceneAnalysis": "- 7 Hope before the fall + / Wedding triumph makes the grounding in 8 hit harder.\n- Ten-day clock + / Acceleration clause powers the seven-day urgency in 8.\n- Pell's proxy pattern + / Albrecht's visit primes reader to suspect the anonymous complaint.\n- Sibling warmth baseline + / Champagne toast earns the trust needed for Tobias's confession.\n- Tobias's silent exit ? / His wordless kindness hints depth; reaction to notice stays unexplored.\n- Father's shadow ? / Dad's money habits mentioned lightly; could better seed the theft.",
+        "currentSceneAnalysis": "- 8 B / Bridge the abrupt pivot from sabotage to confession; let Wren react to the theft.\n- Grounding as escalation + / Cracked manifold is concrete, plausible, and kills the income plan.\n- Villain by implication + / Camel overcoat image names Pell without stating it.\n- Tobias's confession + / Specific, restrained, and reframes his ten-year absence.\n- Drowning-line transition - / Wren's musing on the drowning feels like a convenient prompt.\n- Wren's muted response ? / She jumps to the ledger; her hurt or anger stays offstage.\n- Hands not touching + / Closing image carries the estrangement through pure subtext.",
+        "nextSceneAnalysis": "- 9 Sabotage compounds + / Outbid manifold confirms Pell's hand and closes the repair route.\n- Confession weaponized + / Wren's \"clean up after you\" turns his secret against him.\n- Fragile truce broken + / Near-touching hands in 8 make his walkout devastating.\n- Ledger motif returns + / \"It's your ledger\" sharpens the owed-and-unpaid theme from 8.\n- Summary-heavy opening ? / Cancelled charters are told quickly; efficient but emotionally distant.\n- Delayed tears + / Wren's breakdown releases the restraint held through 8.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "summary:5 No Sale",
+      "feature": "summary",
+      "durationMs": 7901,
+      "passed": true,
+      "summary": "Summary 309 words (target 200); Synopsis 29 words (cap 30); both passed the production parsers.",
+      "usage": {
+        "inputTokens": 3894,
+        "outputTokens": 641,
+        "totalTokens": 4535,
+        "rawInputTokens": 3894,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.056791999999999995,
+      "sample": {
+        "summary": "At seven in the morning, Wren Halloway telephones Corwin Pell at his Portland office and refuses his offer. Pell says he is not going away and points out that she does not have the money. Wren replies that he has until June 30 to collect, that he will get most of it and they will discuss the rest, but that he will not get the pier. She hangs up before he can answer. Outside, deckhand Jonah Marsh, who overheard the call through the office window, says her father would have done the same and asks how she will pay. Wren lays out her plan: every crossing, sunset cruises, charters, and selling the skiff and spare outboard, operating seven days a week through June.\n\nJonah says seven days cannot be run with one deckhand. Wren says she will find someone. Jonah offers to work double shifts without extra pay until she is out of debt. In a lower voice, he confirms their meeting the next day at six o'clock at the office after the last run, says he has something to show her that her father gave him to hold, and tells her not to tell anyone he is coming, including Ada. Wren agrees. Jonah goes to check the bilge, and Wren notes the brass key in her cardigan pocket.\n\nThey run four crossings that day. Wren sells eighteen sunset cruise tickets to a Bangor bus tour and posts a deckhand-wanted sign in the office window. At dusk, while locking the office, she sees her brother Tobias, thirty-one, thin and bearded, standing at the head of the pier with a duffel bag. He says she left a message and asks about the deckhand job. Wren tells him he missed the funeral. He acknowledges it and says he is here now. After a long look, Wren unlocks the office door again.",
+        "synopsis": "Wren refuses Pell's offer and vows to keep the pier. Jonah offers unpaid double shifts and arranges a secret meeting. Her estranged brother Tobias returns seeking the deckhand job."
+      }
+    },
+    {
+      "id": "summary:9 The Papers on the Desk",
+      "feature": "summary",
+      "durationMs": 7697,
+      "passed": true,
+      "summary": "Summary 316 words (target 200); Synopsis 28 words (cap 30); both passed the production parsers.",
+      "usage": {
+        "inputTokens": 3873,
+        "outputTokens": 694,
+        "totalTokens": 4567,
+        "rawInputTokens": 3873,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 0
+      },
+      "costUSD": 0.058744000000000005,
+      "sample": {
+        "summary": "Dell locates a manifold on a scrapped ferry in a yard outside Halifax on Thursday, but on Friday the yard sells it to an outfit from Portland that called an hour before him and paid triple. Dell tells Wren by phone; she understands who is responsible and hangs up without saying goodbye. The Margaret Ann remains at the end of the pier with a red Coast Guard tag on her wheel. The sunset cruises are cancelled and two June charters have withdrawn. Wren has sixty-four thousand dollars in the Saltmarsh Savings and Loan, short of the hundred and twenty thousand owed. On Friday evening a courier delivers Corwin Pell's original offer, retyped with one change: forgiveness of the debt now requires her signature before Monday's council vote. A yellow flag marks the line and a fountain pen is included.\n\nTobias arrives at six with groceries, sees the document, and objects. Wren argues that the boat is grounded, the charters are gone, and Pell controls the parts suppliers, lawyers, and probably half the council; signing would let her keep the house and boat and run from the town dock. Tobias counters that she would have no pier, no fuel, and shallow water, and invokes their father. Wren replies that their father mortgaged the pier, borrowed a hundred and twenty thousand dollars from Pell in secret, then died and left her to clean up, as she had cleaned up after Tobias. Tobias quietly says that is fair, sets down the groceries, takes his jacket, tells her to sign if she wants because it is her ledger, and leaves.\n\nWren watches him walk up Front Street without looking back, as he did ten years ago. She sits, uncaps the pen, and holds it over the flagged line for a long time. She then recaps it, lays it down beside the paper, and cries for the first time since March.",
+        "synopsis": "After Pell's allies outbid Dell for the manifold, Pell sends Wren a revised offer demanding her signature. She quarrels with Tobias, who leaves; she doesn't sign and cries."
+      }
+    },
+    {
+      "id": "gossamer:momentum",
+      "feature": "gossamer",
+      "durationMs": 23006,
+      "passed": true,
+      "summary": "All 15 beats scored and validated (12 scenes, 7707 words).",
+      "usage": {
+        "inputTokens": 18448,
+        "outputTokens": 2187,
+        "totalTokens": 20635,
+        "rawInputTokens": 249,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 18199,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 18199
+      },
+      "costUSD": 0.380656,
+      "sample": [
+        {
+          "beatName": "Opening Image",
+          "signal": "momentum",
+          "score": 30,
+          "justification": "Wren sits stalled before a blank day-book line in a static, atmospheric pre-dawn office, with only faint pull from hints of small financial irregularities."
+        },
+        {
+          "beatName": "Theme Stated",
+          "signal": "momentum",
+          "score": 38,
+          "justification": "Ada's quoted line about what a ledger never records, and her urging to 'read all of it', plant a mild forward question without advancing the plot."
+        },
+        {
+          "beatName": "Setup",
+          "signal": "momentum",
+          "score": 45,
+          "justification": "Ada's 'will you keep her running' question and Wren opening the master ledgers move things steadily toward discovery, but without urgency."
+        }
+      ]
+    },
+    {
+      "id": "inquiry:payoff-abandoned-threads",
+      "feature": "inquiry",
+      "durationMs": 75490,
+      "passed": true,
+      "summary": "Inquiry returned 9 finding(s) over 12 scenes; verdict and refs passed the production result builder. Planted faults found: 3/3.",
+      "plantedFaults": [
+        {
+          "id": "box-14-key",
+          "found": true
+        },
+        {
+          "id": "jonah-vanishes",
+          "found": true
+        },
+        {
+          "id": "death-month",
+          "found": true
+        }
+      ],
+      "usage": {
+        "inputTokens": 20785,
+        "outputTokens": 7522,
+        "totalTokens": 28307,
+        "rawInputTokens": 41,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 20744,
+        "cacheCreation5mInputTokens": 0,
+        "cacheCreation1hInputTokens": 20744
+      },
+      "costUSD": 0.6331119999999999,
+      "sample": {
+        "verdict": {
+          "flow": 0.73,
+          "depth": 0.52
+        },
+        "summary": "The debt-and-vote line compresses cleanly and escalates on a tight clock, but the mystery line stalls: Jonah's timed promise in S3 and S5 and the Box 14 key in S2 build pressure that the jump into S6 releases without a beat, and S12 closes with that charge unspent.",
+        "firstFinding": {
+          "refId": "scn_tw020002",
+          "kind": "loose_end",
+          "headline": "The Box 14 key is planted as a central mystery and never opened, located or mentioned again after S5",
+          "bullets": [
+            "The scene ends on the hidden key and Wren's explicit vow to find the box and make her father 'explain himself'.",
+            "She never tries the post office, the Savings and Loan or the boatyard, though she later visits the bank for the cheque.",
+            "The key is last felt in her pocket in S5 and then drops out of the book.",
+            "The hook-mark mystery planted in this same scene is fully paid off in S10, which makes the key's abandonment more conspicuous."
+          ],
+          "recommendedAction": "Either add a beat where Wren opens Box 14 (S10 is the natural place, with its contents feeding the receivables discovery or explaining the loan), or cut the key and let the hook marks carry the scene's mystery.",
+          "subject": "Box 14 key",
+          "span": "S2-S12",
+          "related": [],
+          "supportingRefs": [
+            {
+              "refId": "scn_tw050005",
+              "refLabel": "5 No Sale.md",
+              "refPath": "The Tidewater Ledger/5 No Sale.md",
+              "quote": "the brass key in her cardigan pocket felt suddenly heavier"
+            }
+          ],
+          "evidenceType": "mixed",
+          "lens": "both",
+          "evidenceQuote": "So whatever Box 14 held, he had wanted it kept from somebody."
+        }
       }
     }
   ]

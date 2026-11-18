@@ -8159,16 +8159,11 @@
    (.ert-publish-order--stages) is the query container, so the breakpoints
    follow the width the cards actually get. These rules come after the card
    rules above so they win at equal specificity.
-   Narrow four-across cards: the corner mark would sit behind the title (the
-   header icon already shows it), and the "Start here" tab needs room above
-   the kicker. Every card gets the same top padding so the rows line up. */
+   Narrow four-across cards: the "Start here" tab needs room above the
+   kicker. Every card gets the same top padding so the rows line up. */
 @container ert-publish-stages (max-width: 760px) {
   .ert-ui.ert-scope--settings .ert-publishing-status-col {
     padding-top: calc(var(--ert-pad-sm) + var(--ert-gap-xs));
-  }
-
-  .ert-ui.ert-scope--settings .ert-publishing-status-col-glyph {
-    display: none;
   }
 }
 

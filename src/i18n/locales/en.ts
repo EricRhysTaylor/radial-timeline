@@ -3548,7 +3548,7 @@ export const en = {
             syncedAgo: 'Last synced with Community {{time}}',
             syncedJustNow: 'Last synced with Community just now',
             reconnectDetail: 'This vault’s connection key is missing. Click to open settings and paste a new connection code.',
-            reconnectNative: 'Reconnect Community · click to open settings',
+            reconnectNative: 'Reconnect Community. This vault’s connection key is missing; open settings to paste a new code.',
             reconnectNeeded: 'Reconnect Community',
             syncFailed: 'Couldn\'t sync with Community',
             syncFailedWithReason: 'Couldn\'t sync with Community: {{error}}',

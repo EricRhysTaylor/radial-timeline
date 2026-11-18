@@ -37,7 +37,7 @@ import { setAccessibleLabel } from '../utils/domTooltip';
  * pill's gold count, like the other things that wait on you.
  */
 
-import { Menu, Notice, Platform, type App } from 'obsidian';
+import { Menu, Notice, Platform, setIcon, type App } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { getFormattingLocale, t } from '../i18n';
 import { tooltip as applyTooltip } from '../utils/tooltip';
@@ -215,12 +215,15 @@ export function communitySyncNativeText(state: CommunitySyncState, nextAt: numbe
 /**
  * Obsidian's Appearance → Native menus (desktop only). Menus then render
  * through the OS: titles as plain text, no icons, no DOM to hang a tooltip on.
+ * Never set (null) means Obsidian's platform default, which is on for macOS
+ * (App.updateUseNativeMenu).
  */
 export function usesNativeMenus(app: App): boolean {
     if (!Platform.isDesktopApp) return false;
     // SAFE: Vault.getConfig is not in Obsidian's public typings; 'nativeMenus' is the Appearance setting's config key. Absent getConfig reads as off (Obsidian's own menus).
     const vault = app.vault as unknown as { getConfig?: (key: string) => unknown };
-    return vault.getConfig?.('nativeMenus') === true;
+    const setting = vault.getConfig?.('nativeMenus');
+    return setting === true || (setting === null && Platform.isMacOS);
 }
 
 export interface MailboxView {
@@ -397,10 +400,14 @@ export function openMailboxMenu(anchor: HTMLElement, view: MailboxView, onSyncNo
         const text = nativeMenus ? communitySyncNativeText(view.sync, view.nextAutoSyncAt, now) : row.text;
         menu.addSeparator();
         menu.addItem(item => {
-            // The whole row is the Sync now control; its icon says so.
+            // The whole row is the Sync now control; its icon says so. A
+            // reconnect row jumps to settings, so it ends in a jump arrow: an
+            // icon in Obsidian's menu, a character in a native menu, which
+            // flattens the title to its text.
             const title = doc.win.createFragment();
             const label = title.createSpan();
-            label.setText(text);
+            label.setText(nativeMenus && row.reconnect ? `${text} ↗` : text);
+            if (!nativeMenus && row.reconnect) setIcon(label.createSpan({ cls: 'ert-mailbox-sync-jump' }), 'arrow-up-right');
             if (!nativeMenus && row.detail) title.createDiv({ cls: 'ert-mailbox-sync-detail', text: row.detail });
             item.setTitle(title)
                 .setIcon(row.reconnect ? 'settings' : row.warning ? 'alert-triangle' : 'refresh-cw')

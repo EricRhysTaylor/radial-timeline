@@ -2641,6 +2641,18 @@
   margin-inline-start: var(--size-4-2);
 }
 
+/* The jump arrow after a reconnect row's status: the row opens settings. */
+.ert-mailbox-sync-jump {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-inline-start: var(--size-4-1);
+}
+
+.ert-mailbox-sync-jump svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
 /* The Community sync row's reason or next step, on its own line under the
    status, wrapped so a long reason doesn't stretch the menu. */
 .ert-mailbox-sync-detail {

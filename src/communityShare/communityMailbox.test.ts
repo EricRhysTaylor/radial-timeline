@@ -308,7 +308,7 @@ describe('Community sync row', () => {
         });
         const state = communitySyncState(missing, NOW, true)!;
         expect(communitySyncTooltip(state, NOW + MIN, NOW)).toBeNull();
-        expect(communitySyncNativeText(state, NOW + MIN, NOW)).toBe('Reconnect Community · click to open settings');
+        expect(communitySyncNativeText(state, NOW + MIN, NOW)).toBe('Reconnect Community. This vault’s connection key is missing; open settings to paste a new code.');
     });
 
     it('stays healthy at exactly 7 days and turns red once a sync is more than 7 days old', () => {
@@ -441,19 +441,25 @@ describe('Community sync row', () => {
                 expect(nativeMenuEntryTitle({ label: 'Requests', icon: 'mail', url: 'u', badge: null })).toBe('Requests');
             });
 
-            it('reads Obsidian\'s Native menus setting on desktop only', () => {
+            it('reads Obsidian\'s Native menus setting on desktop only, unset meaning on for macOS', () => {
                 const app = (value: unknown) => ({ vault: { getConfig: (key: string) => (key === 'nativeMenus' ? value : undefined) } }) as never;
-                const platform = Platform as unknown as { isDesktopApp?: boolean };
-                const was = platform.isDesktopApp;
+                const platform = Platform as unknown as { isDesktopApp?: boolean; isMacOS?: boolean };
+                const was = { desktop: platform.isDesktopApp, mac: platform.isMacOS };
                 try {
                     platform.isDesktopApp = true;
+                    platform.isMacOS = false;
                     expect(usesNativeMenus(app(true))).toBe(true);
                     expect(usesNativeMenus(app(false))).toBe(false);
+                    expect(usesNativeMenus(app(null))).toBe(false);
                     expect(usesNativeMenus({ vault: {} } as never)).toBe(false);
+                    platform.isMacOS = true;
+                    expect(usesNativeMenus(app(null))).toBe(true);
+                    expect(usesNativeMenus(app(false))).toBe(false);
                     platform.isDesktopApp = false;
                     expect(usesNativeMenus(app(true))).toBe(false);
                 } finally {
-                    platform.isDesktopApp = was;
+                    platform.isDesktopApp = was.desktop;
+                    platform.isMacOS = was.mac;
                 }
             });
         });

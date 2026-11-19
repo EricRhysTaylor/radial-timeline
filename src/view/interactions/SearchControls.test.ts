@@ -9,7 +9,7 @@ function availabilityHarness(options = { timelineFields: true, body: false, llmA
     const checkbox = () => ({ disabled: false, checked: false, parentElement: Object.assign(new TooltipElement(), { classList: { toggle: vi.fn() } }) });
     const localProbe = vi.fn(async () => ({ available: true, modelId: 'model' }));
     const setSearchOptions = vi.fn((next: typeof options) => { options = next; });
-    Object.assign(panel, { statusProbeId: 0, scopeRows: [], assistCheckbox: checkbox(), indexCheckbox: checkbox(),
+    Object.assign(panel, { statusProbeId: 0, scopeRows: [], assistSection: { hidden: true }, assistCheckbox: checkbox(), indexCheckbox: checkbox(),
         assistHint: { textContent: '' }, indexHint: { textContent: '' },
         assistIndicator: { hidden: true }, indexIndicator: { hidden: true },
         host: { getLocalModelStatus: localProbe,
@@ -33,6 +33,22 @@ describe('single-server local search availability', () => {
         expect(h.options().llmAssist).toBe(false);
         expect(h.options().semanticIndex).toBe(true);
         expect(h.panel.assistCheckbox.disabled).toBe(true);
+    });
+    it('shows the local-model rows only while the model answers or Local LLM assist is on', async () => {
+        const h = availabilityHarness({ timelineFields: true, body: true, llmAssist: false, semanticIndex: true });
+        h.panel.syncAvailability();
+        expect(h.panel.assistSection.hidden).toBe(true); // not yet checked
+        h.localProbe.mockResolvedValueOnce({ available: false, reason: 'Server not detected' } as never);
+        await h.panel.refreshLocalModelStatus();
+        expect(h.panel.assistSection.hidden).toBe(true); // down, and the index does nothing without assist
+        await h.panel.refreshLocalModelStatus();
+        expect(h.panel.assistSection.hidden).toBe(false); // the model is back
+
+        const on = availabilityHarness();
+        on.localProbe.mockResolvedValueOnce({ available: false, reason: 'Server not detected' } as never);
+        await on.panel.refreshLocalModelStatus();
+        expect(on.panel.assistSection.hidden).toBe(false); // assist is on: say why it can't run and allow turning it off
+        expect(on.setSearchOptions).not.toHaveBeenCalled();
     });
     it('uses the same configured server for index availability and recovers without changing preferences', async () => {
         const h = availabilityHarness({ timelineFields: true, body: false, llmAssist: true, semanticIndex: false });

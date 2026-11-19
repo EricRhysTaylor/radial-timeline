@@ -38,6 +38,8 @@ export class SearchPanelController {
     private readonly panel: HTMLElement;
     private readonly statusEl: HTMLElement;
     private readonly scopeRows: ScopeRow[] = [];
+    /** The Local LLM assist and search index rows, shown only when they can matter. */
+    private readonly assistSection: HTMLElement;
     private readonly assistCheckbox: HTMLInputElement;
     private readonly assistHint: HTMLElement;
     private readonly assistIndicator: HTMLElement;
@@ -104,6 +106,8 @@ export class SearchPanelController {
         // --- Assist ----------------------------------------------------------
         const assistWrap = doc.win.createDiv();
         assistWrap.className = 'ert-timeline-search-panel__assist';
+        assistWrap.hidden = true;
+        this.assistSection = assistWrap;
         const assistRow = this.buildCheckRow(
             assistWrap,
             t('timeline.search.assistLabel'),
@@ -286,6 +290,11 @@ export class SearchPanelController {
 
     private syncAvailability(): void {
         const options = this.host.getSearchState().options;
+        // The local-model rows show while the model answers, or while Local LLM
+        // assist is on: a search in that mode needs the model, so the author
+        // must see why and be able to turn it off. Otherwise a down or absent
+        // server hides them (the index only applies with assist on).
+        this.assistSection.hidden = !(this.localStatus?.available === true || options.llmAssist);
         const update = (checkbox: HTMLInputElement, hint: HTMLElement, indicator: HTMLElement,
             status: LocalModelStatus | undefined, selected: boolean, text: string, dependent = false) => {
             const unavailable = status?.available === false;

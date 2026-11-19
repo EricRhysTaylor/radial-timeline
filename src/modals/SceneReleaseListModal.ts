@@ -122,6 +122,8 @@ export class SceneReleaseListModal extends ErtModal {
         }
         // A newer reload owns the dialog now.
         if (load !== this.loads) return;
+        // A failed quiet refresh keeps the list that is on screen.
+        if (quiet && !list) return;
         this.list = list;
         this.error = error;
         if (list) this.checked = keepSelectable(list.rows, this.checked, list.status);
@@ -310,14 +312,20 @@ export class SceneReleaseListModal extends ErtModal {
             return row.scene && sceneId ? [{ path: row.scene.path, title: row.scene.title, sceneId }] : [];
         });
         if (scenes.length === 0 || scenes.length > releasePlacesLeft(list.status)) return;
+        // Busy from the first press: recording the terms awaits the network, and a
+        // second press in that window would open a second batch for the same scenes.
+        this.busy = true;
         try {
-            if (!await ensureReleaseTerms(this.plugin, this.book, list.status)) return;
+            if (!await ensureReleaseTerms(this.plugin, this.book, list.status)) {
+                this.busy = false;
+                return;
+            }
         } catch (error) {
+            this.busy = false;
             new Notice(errorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
             return;
         }
         if (this.list === list) this.list = { ...list, status: { ...list.status, consent: true } };
-        this.busy = true;
         new SceneReleaseBatchModal(this.app, {
             plugin: this.plugin,
             book: this.book,

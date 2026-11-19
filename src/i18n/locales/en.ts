@@ -1008,6 +1008,8 @@ export const en = {
                 hint: 'The prose itself, highlighted when you open the scene',
             },
             assistLabel: 'Local LLM assist',
+            /** Small note while the Local LLM rows are hidden because no local model answers. */
+            assistOffNote: 'Local LLM search options are off: no local model is running.',
             /** Shown while the local-server probe is in flight. */
             assistChecking: 'Checking for a local model\u2026',
             /** Local model is usable. {{model}} is the model id. */

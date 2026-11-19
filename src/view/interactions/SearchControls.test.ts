@@ -9,7 +9,7 @@ function availabilityHarness(options = { timelineFields: true, body: false, llmA
     const checkbox = () => ({ disabled: false, checked: false, parentElement: Object.assign(new TooltipElement(), { classList: { toggle: vi.fn() } }) });
     const localProbe = vi.fn(async () => ({ available: true, modelId: 'model' }));
     const setSearchOptions = vi.fn((next: typeof options) => { options = next; });
-    Object.assign(panel, { statusProbeId: 0, scopeRows: [], assistSection: { hidden: true }, assistCheckbox: checkbox(), indexCheckbox: checkbox(),
+    Object.assign(panel, { statusProbeId: 0, scopeRows: [], assistSection: { hidden: true }, assistOffNote: Object.assign(new TooltipElement(), { hidden: true }), assistCheckbox: checkbox(), indexCheckbox: checkbox(),
         assistHint: { textContent: '' }, indexHint: { textContent: '' },
         assistIndicator: { hidden: true }, indexIndicator: { hidden: true },
         host: { getLocalModelStatus: localProbe,
@@ -38,11 +38,15 @@ describe('single-server local search availability', () => {
         const h = availabilityHarness({ timelineFields: true, body: true, llmAssist: false, semanticIndex: true });
         h.panel.syncAvailability();
         expect(h.panel.assistSection.hidden).toBe(true); // not yet checked
+        expect(h.panel.assistOffNote.hidden).toBe(true); // no note before the check answers
         h.localProbe.mockResolvedValueOnce({ available: false, reason: 'Server not detected' } as never);
         await h.panel.refreshLocalModelStatus();
         expect(h.panel.assistSection.hidden).toBe(true); // down, and the index does nothing without assist
+        expect(h.panel.assistOffNote.hidden).toBe(false);
+        expect(h.panel.assistOffNote.getAttribute('aria-label')).toBe('Server not detected');
         await h.panel.refreshLocalModelStatus();
         expect(h.panel.assistSection.hidden).toBe(false); // the model is back
+        expect(h.panel.assistOffNote.hidden).toBe(true);
 
         const on = availabilityHarness();
         on.localProbe.mockResolvedValueOnce({ available: false, reason: 'Server not detected' } as never);

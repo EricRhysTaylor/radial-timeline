@@ -2081,6 +2081,13 @@
   color: var(--text-muted);
 }
 
+/* Below the status line while the Local LLM rows are hidden: small and faint. */
+.ert-timeline-search-panel__assist-off {
+  padding-top: var(--size-2-2);
+  font-size: calc(var(--font-ui-smaller) * 0.92);
+  color: var(--text-faint);
+}
+
 .ert-timeline-search-panel__status-text {
   flex: 1 1 auto;
   min-width: 0;

@@ -40,6 +40,8 @@ export class SearchPanelController {
     private readonly scopeRows: ScopeRow[] = [];
     /** The Local LLM assist and search index rows, shown only when they can matter. */
     private readonly assistSection: HTMLElement;
+    /** A small note at the bottom while those rows are hidden because the model is down. */
+    private readonly assistOffNote: HTMLElement;
     private readonly assistCheckbox: HTMLInputElement;
     private readonly assistHint: HTMLElement;
     private readonly assistIndicator: HTMLElement;
@@ -142,6 +144,12 @@ export class SearchPanelController {
         this.statusEl.appendChild(this.cancelButton);
 
         this.panel.appendChild(this.statusEl);
+
+        this.assistOffNote = doc.win.createDiv();
+        this.assistOffNote.className = 'ert-timeline-search-panel__assist-off';
+        this.assistOffNote.textContent = t('timeline.search.assistOffNote');
+        this.assistOffNote.hidden = true;
+        this.panel.appendChild(this.assistOffNote);
 
         shell.appendChild(this.panel);
 
@@ -295,6 +303,10 @@ export class SearchPanelController {
         // must see why and be able to turn it off. Otherwise a down or absent
         // server hides them (the index only applies with assist on).
         this.assistSection.hidden = !(this.localStatus?.available === true || options.llmAssist);
+        // Say so, quietly, once the check has found the model down; its reason is in the tooltip.
+        const modelDown = this.assistSection.hidden && this.localStatus?.available === false;
+        this.assistOffNote.hidden = !modelDown;
+        setTooltip(this.assistOffNote, modelDown ? this.localStatus?.reason ?? t('ui.searchService.noLocalModel') : '');
         const update = (checkbox: HTMLInputElement, hint: HTMLElement, indicator: HTMLElement,
             status: LocalModelStatus | undefined, selected: boolean, text: string, dependent = false) => {
             const unavailable = status?.available === false;

@@ -91,6 +91,9 @@ const bodies = (request: ReturnType<typeof vi.spyOn>) =>
 const shown = (screen: FakeElement) => screen.find('ert-scene-release-preview')[0].children.map(paragraph => paragraph.textContent);
 const asShown = (blocks: SceneBlock[]) => blocks.map(block => (block.kind === 'break' ? '* * *' : sceneBlockText(block)));
 
+/** A rating pill, by its label's key. */
+const pill = (screen: FakeElement, key: 'ratingGeneral' | 'ratingMature') => screen.buttonNamed(t(`ui.sceneReleaseModal.${key}`));
+
 async function opened(h: ReturnType<typeof harness>) {
     h.modal.open();
     await vi.waitFor(() => expect(h.screen.find('ert-scene-release-preview')).toHaveLength(1));
@@ -122,14 +125,28 @@ describe('the release preview', () => {
         expect(h.screen.content).toContain('7 words');
     });
 
-    it('offers Release only once a rating is chosen, and says a release reaches nobody yet', async () => {
+    it('rates a new release General as two pills, ready to send, with the next step under it', async () => {
         const h = harness();
         accepted();
         await opened(h);
-        expect(h.screen.buttonNamed(RELEASE).disabled).toBe(true);
-        expect(h.screen.content).toContain(t('ui.sceneReleaseModal.releaseNote'));
-        await h.screen.settings[0].dropdown!.choose('general');
+        expect(h.screen.settings).toHaveLength(1);
+        expect(h.screen.settings[0].dropdown).toBeNull();
+        expect(pill(h.screen, 'ratingGeneral').buttonEl.getAttribute('aria-pressed')).toBe('true');
+        expect(pill(h.screen, 'ratingGeneral').buttonEl.classList.contains('is-active')).toBe(true);
+        expect(pill(h.screen, 'ratingMature').buttonEl.getAttribute('aria-pressed')).toBe('false');
+        expect(h.screen.settings[0].desc).toBe(`${t('ui.sceneReleaseModal.ratingGeneralDesc')} ${t('ui.sceneReleaseModal.ratingMatureDesc')}`);
         expect(h.screen.buttonNamed(RELEASE).disabled).toBe(false);
+        expect(h.screen.content).toContain(t('ui.sceneReleaseModal.releaseNote'));
+    });
+
+    it('pressing Mature moves the selection to it', async () => {
+        const h = harness();
+        accepted();
+        await opened(h);
+        await pill(h.screen, 'ratingMature').click();
+        expect(pill(h.screen, 'ratingMature').buttonEl.getAttribute('aria-pressed')).toBe('true');
+        expect(pill(h.screen, 'ratingGeneral').buttonEl.getAttribute('aria-pressed')).toBe('false');
+        expect(pill(h.screen, 'ratingGeneral').buttonEl.classList.contains('is-active')).toBe(false);
     });
 
     it('sends exactly the blocks on screen when Release is pressed', async () => {
@@ -137,7 +154,7 @@ describe('the release preview', () => {
         const request = accepted();
         await opened(h);
         const onScreen = shown(h.screen);
-        await h.screen.settings[0].dropdown!.choose('mature');
+        await pill(h.screen, 'ratingMature').click();
         await h.screen.buttonNamed(RELEASE).click();
 
         const [body] = bodies(request);
@@ -156,7 +173,6 @@ describe('the release preview', () => {
         const h = harness();
         const request = accepted();
         await opened(h);
-        await h.screen.settings[0].dropdown!.choose('general');
         const before = shown(h.screen);
 
         h.note.content = EDITED;
@@ -181,7 +197,6 @@ describe('the release preview', () => {
         const h = harness();
         const request = accepted();
         await opened(h);
-        await h.screen.settings[0].dropdown!.choose('general');
         h.plugin.app.vault.getAbstractFileByPath = () => null;
         await h.screen.buttonNamed(RELEASE).click();
         expect(request).not.toHaveBeenCalled();
@@ -213,6 +228,8 @@ describe('the release preview', () => {
         await opened(h);
         expect(h.screen.content).toContain(t('ui.sceneReleaseModal.updateNote'));
         expect(h.screen.content).not.toContain(t('ui.sceneReleaseModal.releaseNote'));
+        expect(pill(h.screen, 'ratingMature').buttonEl.getAttribute('aria-pressed')).toBe('true');
+        expect(pill(h.screen, 'ratingGeneral').buttonEl.getAttribute('aria-pressed')).toBe('false');
         await h.screen.buttonNamed(UPDATE).click();
         const [body] = bodies(request);
         expect(body).toMatchObject({ action: 'update', expected_version: 3, rating: 'mature' });
@@ -235,7 +252,6 @@ describe('the release preview', () => {
         const h = harness();
         answerWith(409, { error: { code: 'unknown_scene', message: 'Update the shared timeline first.' } });
         await opened(h);
-        await h.screen.settings[0].dropdown!.choose('general');
         await h.screen.buttonNamed(RELEASE).click();
         expect(notices).toEqual(['Update the shared timeline first.']);
         expect(h.onDone).not.toHaveBeenCalled();
@@ -247,7 +263,6 @@ describe('the release preview', () => {
         const h = harness();
         const request = accepted();
         await opened(h);
-        await h.screen.settings[0].dropdown!.choose('general');
         h.plugin.settings.communityShare.sharingPaused = true;
         await h.screen.buttonNamed(RELEASE).click();
         expect(request).not.toHaveBeenCalled();

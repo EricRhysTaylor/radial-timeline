@@ -26,4 +26,27 @@ describe('Community timeline preview', () => {
         expect(JSON.stringify(svg)).not.toContain('Scene title');
         vi.unstubAllGlobals();
     });
+    it('draws empty ring cells as etched cells styled by the theme, not a near-invisible fill', () => {
+        const create = (tag: string) => ({ tag, attributes: {} as Record<string, string>, children: [] as unknown[],
+            setAttribute(key: string, value: string) { this.attributes[key] = value; },
+            appendChild(child: unknown) { this.children.push(child); } });
+        vi.stubGlobal('document', { createElementNS: (_ns: string, tag: string) => create(tag) });
+        const parent = create('div');
+        const withVoids = { anonymized: true, book: { actCount: 1 }, scenes: [
+            { id: 'a', order: 1, act: 1, status: 'todo', subplots: ['Main Plot'] },
+            { id: 'b', order: 2, act: 1, status: 'todo', subplots: ['Second'] },
+            { id: 'c', order: 3, act: 1, status: 'todo', subplots: ['Main Plot'] },
+        ] };
+        expect(renderTimelinePreview(parent as unknown as HTMLElement, withVoids as never)).toBe(true);
+        const paths = (parent.children[0] as ReturnType<typeof create>).children as ReturnType<typeof create>[];
+        const voids = paths.filter(path => path.attributes.class === 'ert-community-wheel__void');
+        expect(voids.length).toBeGreaterThan(0);
+        for (const cell of voids) {
+            expect(cell.attributes.d).toBeTruthy();
+            // Color comes from rt-ui.css theme variables, never a fixed hex on the path.
+            expect(cell.attributes.fill).toBeUndefined();
+            expect(cell.attributes['fill-opacity']).toBeUndefined();
+        }
+        vi.unstubAllGlobals();
+    });
 });

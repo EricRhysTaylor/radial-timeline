@@ -2549,6 +2549,43 @@
     overscroll-behavior: contain;
 }
 
+/* Release scenes: one scroll area. The dialog keeps its height and never scrolls; the header,
+   count and footer stay fixed and the list takes the room that is left. */
+.ert-ui.ert-scope--modal.ert-modal--scene-release-list.modal {
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
+    overflow: hidden;
+}
+
+.ert-ui.ert-scope--modal.ert-modal--scene-release-list .ert-modal-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.ert-ui.ert-scope--modal.ert-modal--scene-release-list .ert-modal-container > * { flex: none; }
+
+.ert-ui.ert-scope--modal.ert-modal--scene-release-list .ert-scene-release-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+}
+
+.ert-ui.ert-scope--modal.ert-modal--scene-release-list .ert-modal-actions {
+    align-items: center;
+    padding-top: var(--size-4-3);
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+/* The release preview's rating: two pills, as on the website. */
+.ert-scene-release-rating {
+    display: flex;
+    gap: var(--size-4-2);
+}
+
+.ert-ui.ert-scope--modal .ert-scene-release-rating button[data-ert-toggle] { border-radius: 999px; }
+
 .ert-scene-release-preview {
     max-height: 42vh;
     overflow-y: auto;

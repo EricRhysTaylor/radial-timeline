@@ -131,6 +131,21 @@ describe('Release scenes', () => {
         expect(link.href).toBe(`https://community.radialtimeline.com/me/scenes/${PROJECT_ID}`);
     });
 
+    it('has one scroll area, the list: the header and footer sit outside it', async () => {
+        const h = harness();
+        website({ project_id: PROJECT_ID, consent: true, standing: null, has_timeline: true, limit: 5, releases: await releases() });
+        await opened(h);
+        const modalEl = (h.modal as unknown as { modalEl: FakeElement }).modalEl;
+        expect(modalEl.classList.contains('ert-modal--scene-release-list')).toBe(true);
+        const list = h.screen.find('ert-scene-release-list')[0];
+        expect(h.screen.children).toContain(list);
+        expect(list.find('ert-modal-header')).toHaveLength(0);
+        expect(list.find('ert-modal-actions')).toHaveLength(0);
+        expect(h.screen.children.map(child => child.cls).filter(cls => cls === 'ert-modal-header' || cls === 'ert-modal-actions'))
+            .toEqual(['ert-modal-header', 'ert-modal-actions']);
+        expect(list.settings).toHaveLength(6);
+    });
+
     it('opening it sends one status request with no text, and reads only released scenes', async () => {
         const h = harness();
         const request = website({ project_id: PROJECT_ID, consent: true, standing: null, has_timeline: true, limit: 5, releases: await releases() });
@@ -170,7 +185,7 @@ describe('Release scenes', () => {
         await h.named('3 Letter').buttons[0].click();
         const preview = FakeModal.opened[FakeModal.opened.length - 1].contentEl as unknown as FakeElement;
         await vi.waitFor(() => expect(preview.find('ert-scene-release-preview')).toHaveLength(1));
-        expect(preview.settings[0].dropdown!.value).toBe('mature');
+        expect(preview.buttonNamed(t('ui.sceneReleaseModal.ratingMature')).buttonEl.getAttribute('aria-pressed')).toBe('true');
         // Nothing is sent until the author presses the preview's own button.
         expect(sent(request).map(body => body.action)).toEqual(['status']);
     });

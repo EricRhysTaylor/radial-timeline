@@ -29,6 +29,8 @@ export interface SceneReleasePreviewOptions {
     onDone: () => void;
 }
 
+const RATINGS: readonly SceneReleaseRating[] = ['general', 'mature'];
+
 /** After these refusals the list on screen no longer matches the website. */
 const LIST_OUT_OF_DATE = new Set(['revision_conflict', 'already_released', 'not_found', 'scene_under_review', 'scene_limit_reached']);
 
@@ -61,12 +63,13 @@ export class SceneReleasePreviewModal extends ErtModal {
     private changed = false;
     private sending = false;
     private closed = false;
-    private rating: SceneReleaseRating | '';
+    private rating: SceneReleaseRating;
     private primary: ButtonComponent | null = null;
 
     constructor(app: App, private readonly options: SceneReleasePreviewOptions) {
         super(app);
-        this.rating = options.current ? options.current.rating : '';
+        // A new release starts at General; an update keeps the rating it was released with.
+        this.rating = options.current ? options.current.rating : 'general';
     }
 
     onOpen(): void {
@@ -120,20 +123,29 @@ export class SceneReleasePreviewModal extends ErtModal {
             return;
         }
 
-        const ratingRow = new Setting(contentEl)
-            .setName(t('ui.sceneReleaseModal.ratingName'))
-            .addDropdown(dropdown => {
-                if (!current) dropdown.addOption('', t('ui.sceneReleaseModal.ratingChoose'));
-                dropdown.addOption('general', t('ui.sceneReleaseModal.ratingGeneral'));
-                dropdown.addOption('mature', t('ui.sceneReleaseModal.ratingMature'));
-                dropdown.setValue(this.rating);
-                dropdown.onChange(value => {
-                    this.rating = value === 'general' || value === 'mature' ? value : '';
-                    this.syncPrimary();
-                });
-            });
+        // Two pills, as on the website: the rating is the author's declaration, and one is always chosen.
+        const ratingRow = new Setting(contentEl).setName(t('ui.sceneReleaseModal.ratingName'));
         ratingRow.descEl.createDiv({ text: t('ui.sceneReleaseModal.ratingGeneralDesc') });
         ratingRow.descEl.createDiv({ text: t('ui.sceneReleaseModal.ratingMatureDesc') });
+        const pills = ratingRow.controlEl.createDiv({ cls: 'ert-scene-release-rating' });
+        const choices: Array<{ rating: SceneReleaseRating; button: ButtonComponent }> = [];
+        const syncPills = () => {
+            for (const { rating, button } of choices) {
+                button.buttonEl.toggleClass('is-active', rating === this.rating);
+                button.buttonEl.setAttribute('aria-pressed', String(rating === this.rating));
+            }
+        };
+        for (const rating of RATINGS) {
+            const button = new ButtonComponent(pills)
+                .setButtonText(t(rating === 'general' ? 'ui.sceneReleaseModal.ratingGeneral' : 'ui.sceneReleaseModal.ratingMature'))
+                .onClick(() => {
+                    this.rating = rating;
+                    syncPills();
+                });
+            button.buttonEl.setAttribute('data-ert-toggle', '');
+            choices.push({ rating, button });
+        }
+        syncPills();
 
         contentEl.createDiv({
             cls: ERT_CLASSES.FIELD_NOTE,
@@ -151,9 +163,9 @@ export class SceneReleasePreviewModal extends ErtModal {
         this.syncPrimary();
     }
 
-    /** Release / Update waits for a rating, and for a send already on its way. */
+    /** Release / Update waits for a send already on its way. */
     private syncPrimary(): void {
-        this.primary?.setDisabled(!this.rating || this.sending);
+        this.primary?.setDisabled(this.sending);
     }
 
     private mountClose(): void {
@@ -166,7 +178,7 @@ export class SceneReleasePreviewModal extends ErtModal {
     private async send(previewed: SceneReleaseDraft): Promise<void> {
         const { plugin, book, scene, current } = this.options;
         const rating = this.rating;
-        if (this.sending || previewed.problem || !rating) return;
+        if (this.sending || previewed.problem) return;
         this.sending = true;
         this.syncPrimary();
         try {

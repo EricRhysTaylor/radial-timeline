@@ -45,10 +45,16 @@ export class FakeElement {
     button: FakeButton | null = null;
     setting: FakeSetting | null = null;
     style: Record<string, string> = {};
+    attributes: Record<string, string> = {};
     classList = {
         add: (...names: string[]): void => { this.cls = [this.cls, ...names].filter(Boolean).join(' '); },
-        remove: (): void => undefined,
-        toggle: (): boolean => false,
+        remove: (...names: string[]): void => { this.cls = this.cls.split(' ').filter(name => name && !names.includes(name)).join(' '); },
+        toggle: (name: string, force?: boolean): boolean => {
+            const on = force ?? !this.classList.contains(name);
+            if (on && !this.classList.contains(name)) this.classList.add(name);
+            if (!on) this.classList.remove(name);
+            return on;
+        },
         contains: (name: string): boolean => this.cls.split(' ').includes(name),
     };
 
@@ -60,6 +66,7 @@ export class FakeElement {
         if (o.cls) el.cls = o.cls;
         if (o.text) el.text = o.text;
         if (o.href) el.href = o.href;
+        if (o.attr) el.attributes = { ...o.attr };
         this.children.push(el);
         return el;
     }
@@ -71,6 +78,9 @@ export class FakeElement {
     setText(text: string): void { this.text = text; this.children = []; }
     empty(): void { this.children = []; this.text = ''; }
     addClass(...names: string[]): void { this.classList.add(...names); }
+    toggleClass(name: string, on: boolean): void { this.classList.toggle(name, on); }
+    setAttribute(name: string, value: string): void { this.attributes[name] = value; }
+    getAttribute(name: string): string | null { return this.attributes[name] ?? null; }
 
     /** Every element under this one, in document order. */
     all(): FakeElement[] {

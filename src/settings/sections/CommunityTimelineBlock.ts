@@ -70,6 +70,16 @@ function errorText(error: unknown, fallback: string): string {
     return error instanceof CommunityShareError ? error.message : fallback;
 }
 
+/**
+ * The one date format of the Community settings, "November 18, 2026 at 4:01 PM",
+ * with non-breaking spaces so a line never ends in the middle of a date.
+ */
+export function formatCommunityDate(value: string | number): string {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return String(value);
+    return parsed.toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' }).replace(/\s/g, ' ');
+}
+
 export function shareDescription(
     book: BookProfile,
     record: CommunityTimelineShareRecord | undefined,
@@ -194,8 +204,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
     else if (!canShare) addNote(shareRow, t('ui.communityShareSection.timelineLevelNote'));
     if (record?.enabled) addNote(shareRow, t('ui.communityShareSection.timelineStopNote'));
     if (record?.lastSentAt) {
-        const sentAt = new Date(record.lastSentAt).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
-        addNote(shareRow, t('ui.communityShareSection.timelineLastSent', { date: sentAt }), 'sent');
+        addNote(shareRow, t('ui.communityShareSection.timelineLastSent', { date: formatCommunityDate(record.lastSentAt) }), 'sent');
     }
     if (record?.lastError) addNote(shareRow, record.lastError, 'warning');
     if (record?.enabled && cached?.error && cached.error !== record.lastError) addNote(shareRow, cached.error, 'warning');
@@ -223,7 +232,7 @@ export function renderCommunityTimelineBlock({ plugin, containerEl, book, rerend
     text.createDiv({ text: access });
     text.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.timelineThumbnailNote') });
     text.createDiv({ text: t('ui.communityShareSection.timelineRevealCount', { revealed: share.revealed_count, total: share.scene_count }) });
-    if (cached) text.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.timelineCheckedAt', { date: new Date(cached.fetchedAt).toLocaleString() }) });
+    if (cached) text.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.timelineCheckedAt', { date: formatCommunityDate(cached.fetchedAt) }) });
     if (!answer.preview_document || !renderTimelinePreview(visual, answer.preview_document)) {
         visual.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.timelinePreviewUnavailable') });
     }

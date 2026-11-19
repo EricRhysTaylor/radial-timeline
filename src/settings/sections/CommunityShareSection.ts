@@ -29,7 +29,7 @@ import type { CommunityShareFieldKey, CommunityShareSettings } from '../../types
 import { ERT_CLASSES } from '../../ui/classes';
 import { confirmWithErtModal } from '../../modals/ErtConfirmModal';
 import { addHeadingIcon, addVideoLinkToElement, applyErtHeaderLayout } from '../wikiLink';
-import { renderCommunityTimelineBlock } from './CommunityTimelineBlock';
+import { formatCommunityDate, renderCommunityTimelineBlock } from './CommunityTimelineBlock';
 import { renderCommunitySceneBodyBlock } from './CommunitySceneBodyBlock';
 import { fitSelectToSelectedLabel } from '../selectSizing';
 import { t } from '../../i18n';
@@ -175,18 +175,154 @@ function getSelectedFieldLabels(settings: CommunityShareSettings): string[] {
         .map(key => getFieldLabels()[key]);
 }
 
-function formatConnectedAt(value?: string): string {
-    if (!value) return '';
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return value;
-    return parsed.toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
+function formatGeneratedAt(value?: string): string {
+    return value ? formatCommunityDate(value) : t('ui.communityShareSection.timeNotRecorded');
 }
 
-function formatGeneratedAt(value?: string): string {
-    if (!value) return t('ui.communityShareSection.timeNotRecorded');
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return value;
-    return parsed.toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
+const getModeShortLabels = (): Record<CommunityShareMode, string> => ({
+    private: t('ui.communityShareSection.modeShortPrivate'),
+    profile_books: t('ui.communityShareSection.modeShortProfileBooks'),
+    progress: t('ui.communityShareSection.modeShortProgress')
+});
+
+/** The row under the level picker: what the website shows now, and the one action that changes it. */
+export interface CommunitySharingState {
+    /** What the website shows, or that the chosen level is not sent yet; null before the vault connects. */
+    name: string | null;
+    desc: string;
+    action: 'begin' | 'pause' | 'resume';
+    /** Begin sharing can be pressed. */
+    canBegin: boolean;
+}
+
+/**
+ * The website's sharing level changes only when the author begins sharing:
+ * choosing a level in the picker sends nothing. So a chosen level that has not
+ * been sent says so, and names what the website shows meanwhile.
+ */
+export function describeCommunitySharingState(settings: CommunityShareSettings): CommunitySharingState {
+    const mode = deriveCommunityShareMode(settings);
+    const level = getModeShortLabels()[mode];
+    if (settings.sharingPaused) {
+        return { name: t('ui.communityShareSection.websiteLevelPausedName'), desc: t('ui.communityShareSection.pausedDesc'), action: 'resume', canBegin: false };
+    }
+    if (settings.scheduledPublishEnabled) {
+        const lastSynced = settings.connection.lastSyncedAt;
+        return {
+            name: t('ui.communityShareSection.websiteLevelName', { level }),
+            desc: lastSynced
+                ? t('ui.communityShareSection.sharingOnSynced', { date: formatCommunityDate(lastSynced) })
+                : t('ui.communityShareSection.sharingOn'),
+            action: 'pause',
+            canBegin: false
+        };
+    }
+    if (settings.connection.status !== 'connected') {
+        return { name: null, desc: t('ui.communityShareSection.nextSteps'), action: 'begin', canBegin: false };
+    }
+    if (mode === 'private') {
+        return { name: t('ui.communityShareSection.websiteLevelName', { level }), desc: t('ui.communityShareSection.privateNextStep'), action: 'begin', canBegin: false };
+    }
+    const canBegin = settings.audience === 'public'
+        && settings.tier >= 1
+        && settings.tier <= 4
+        && hasReadyPreview(settings)
+        && getSelectedFieldLabels(settings).length > 0;
+    return {
+        name: t('ui.communityShareSection.notSentName', { level }),
+        desc: t(latestReportState(settings) === 'live'
+            ? 'ui.communityShareSection.notSentLiveDesc'
+            : 'ui.communityShareSection.notSentPrivateDesc', { level }),
+        action: 'begin',
+        canBegin
+    };
+}
+
+/** Begin, pause or resume sharing, right under the level picker, with what the website shows now. */
+function renderSharingStateRow(plugin: RadialTimelinePlugin, containerEl: HTMLElement, parentEl: HTMLElement, settings: CommunityShareSettings): void {
+    const state = describeCommunitySharingState(settings);
+    const { canBegin } = state;
+    if (state.action === 'resume') {
+        const pausedRow = new Setting(parentEl);
+        if (state.name) pausedRow.setName(state.name);
+        pausedRow
+            .setDesc(state.desc)
+            .addButton(button => button
+                .setButtonText(t('ui.communityShareSection.resumeButton'))
+                .setCta()
+                .onClick(async () => {
+                    button.setDisabled(true);
+                    button.setButtonText(t('ui.communityShareSection.resumingButton'));
+                    try {
+                        await resumeCommunitySharing(plugin);
+                        new Notice(t('ui.communityShareSection.resumedNotice'));
+                        containerEl.empty();
+                        renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
+                    } catch (error) {
+                        const message = error instanceof CommunityShareError
+                            ? error.message
+                            : t('ui.communityShareSection.resumeFailed');
+                        const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+                        plugin.settings.communityShare = normalizeCommunityShareSettings({ ...current, lastError: message });
+                        void plugin.saveSettings();
+                        new Notice(message);
+                        button.setButtonText(t('ui.communityShareSection.resumeButton'));
+                        button.setDisabled(false);
+                    }
+                }));
+    } else {
+        const shareRow = new Setting(parentEl);
+        if (state.name) shareRow.setName(state.name);
+        shareRow
+            .setDesc(state.desc)
+            .addButton(button => {
+                if (state.action === 'pause') {
+                    button
+                        .setButtonText(t('ui.communityShareSection.pauseButton'))
+                        .onClick(async () => {
+                            button.setDisabled(true);
+                            await pauseCommunitySharing(plugin);
+                            new Notice(t('ui.communityShareSection.pausedNotice'));
+                            containerEl.empty();
+                            renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
+                        });
+                } else {
+                    button
+                        .setButtonText(t('ui.communityShareSection.beginButton'))
+                        .setCta()
+                        .setDisabled(!canBegin)
+                        .onClick(async () => {
+                            button.setDisabled(true);
+                            button.setButtonText(t('ui.communityShareSection.startingButton'));
+                            try {
+                                await beginCommunitySharing(plugin);
+                                new Notice(t('ui.communityShareSection.sharingOnNotice'));
+                                containerEl.empty();
+                                renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
+                            } catch (error) {
+                                const message = error instanceof CommunityShareError
+                                    ? error.message
+                                    : t('ui.communityShareSection.beginFailed');
+                                const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
+                                plugin.settings.communityShare = normalizeCommunityShareSettings({
+                                    ...current,
+                                    lastError: message
+                                });
+                                void plugin.saveSettings();
+                                new Notice(message);
+                                button.setButtonText(t('ui.communityShareSection.beginButton'));
+                                button.setDisabled(!canBegin);
+                            }
+                        });
+                }
+            });
+        if (state.action === 'pause') {
+            shareRow.descEl.createDiv({
+                cls: ERT_CLASSES.FIELD_NOTE,
+                text: t('ui.communityShareSection.pauseNote')
+            });
+        }
+    }
 }
 
 export function renderCommunityShareSection({ plugin, containerEl }: CommunityShareSectionProps): void {
@@ -232,7 +368,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     const badgeRow = hero.createDiv({ cls: ERT_CLASSES.INLINE });
     const badge = badgeRow.createSpan({ cls: ERT_CLASSES.BADGE_PILL });
     setIcon(badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_ICON }), isConnected ? 'satellite-dish' : settings.enabled ? 'shield-check' : 'shield');
-    const badgeText = badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.communityShareSection.badgeText', { status: isConnected ? t('ui.communityShareSection.connectionChecking') : formatStatus(settings) }) });
+    const badgeText = badge.createSpan({ cls: ERT_CLASSES.BADGE_PILL_TEXT, text: t('ui.communityShareSection.badgeLabel', { status: isConnected ? t('ui.communityShareSection.badgeChecking') : formatStatus(settings) }) });
     const wikiLink = withAccessibleLabel(badge.createEl('a', {
         href: docsUrl('Settings-Community'),
         cls: ERT_CLASSES.BADGE_PILL_WIKI,
@@ -273,10 +409,11 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     pricingPromise.setText(t('ui.communityShareSection.pricingPromise'));
 
     const activationSection = section.createDiv({ cls: ERT_CLASSES.STACK });
+    // Once connected, the paste-a-code instructions have done their job: the heading names the connection instead.
     const connectionHeading = new Setting(activationSection)
-        .setName(t('ui.communityShareSection.connectHeading'))
-        .setHeading()
-        .setDesc(t('ui.communityShareSection.connectDesc'));
+        .setName(t(isConnected ? 'ui.communityShareSection.connectedHeading' : 'ui.communityShareSection.connectHeading'))
+        .setHeading();
+    if (!isConnected) connectionHeading.setDesc(t('ui.communityShareSection.connectDesc'));
     addHeadingIcon(connectionHeading, 'satellite-dish');
     applyErtHeaderLayout(connectionHeading);
 
@@ -331,7 +468,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
     };
 
     if (isConnected) {
-        const connectedAt = formatConnectedAt(settings.connection.connectedAt);
+        const connectedAt = settings.connection.connectedAt ? formatCommunityDate(settings.connection.connectedAt) : '';
         const statusRow = new Setting(activationSection)
             .setDesc(connectedAt
                 ? t('ui.communityShareSection.linkedSince', { date: connectedAt })
@@ -356,7 +493,7 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
                 if (!section.isConnected) return;
                 checked = true;
                 connectionHealthy = Boolean(secret);
-                badgeText.setText(t('ui.communityShareSection.badgeText', { status: t(connectionHealthy ? 'ui.communityShareSection.connectionKeyAvailable' : 'ui.communityShareSection.connectionNeedsRepair') }));
+                badgeText.setText(t('ui.communityShareSection.badgeLabel', { status: t(connectionHealthy ? 'ui.communityShareSection.statusConnected' : 'ui.communityShareSection.badgeReconnect') }));
                 renderState(replacementContainer.classList.contains('ert-hidden'));
                 if (!connectionHealthy) {
                     const help = statusRow.descEl.createDiv({ cls: [ERT_CLASSES.FIELD_NOTE, 'ert-field-note--paragraph'], text: t('ui.communityShareSection.reconnectHelp') });
@@ -440,6 +577,8 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
             });
             fitSelectToSelectedLabel(dropdown.selectEl, { minPx: 112, maxPx: 360, extraPx: 18 });
         });
+
+    renderSharingStateRow(plugin, containerEl, sharingSection, settings);
 
     const details = sharingSection.createEl('details', { cls: 'ert-communityPreviewDetails' });
     details.open = sharingDetailsOpen;
@@ -738,102 +877,6 @@ export function renderCommunityShareSection({ plugin, containerEl }: CommunitySh
         .setDesc(t('ui.communityShareSection.safetyDesc'));
     addHeadingIcon(actionHeading, 'shield-check');
     applyErtHeaderLayout(actionHeading);
-    const isPaused = settings.sharingPaused;
-    const sharingOn = settings.scheduledPublishEnabled && !isPaused;
-    const canBegin = mode !== 'private'
-        && isConnected
-        && settings.audience === 'public'
-        && settings.tier >= 1
-        && settings.tier <= 4
-        && hasReadyPreview(settings)
-        && selectedFields.length > 0;
-    const lastSynced = settings.connection.lastSyncedAt
-        ? formatGeneratedAt(settings.connection.lastSyncedAt)
-        : null;
-
-    if (isPaused) {
-        new Setting(actionCard)
-            .setDesc(t('ui.communityShareSection.pausedDesc'))
-            .addButton(button => button
-                .setButtonText(t('ui.communityShareSection.resumeButton'))
-                .setCta()
-                .onClick(async () => {
-                    button.setDisabled(true);
-                    button.setButtonText(t('ui.communityShareSection.resumingButton'));
-                    try {
-                        await resumeCommunitySharing(plugin);
-                        new Notice(t('ui.communityShareSection.resumedNotice'));
-                        containerEl.empty();
-                        renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                    } catch (error) {
-                        const message = error instanceof CommunityShareError
-                            ? error.message
-                            : t('ui.communityShareSection.resumeFailed');
-                        const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-                        plugin.settings.communityShare = normalizeCommunityShareSettings({ ...current, lastError: message });
-                        void plugin.saveSettings();
-                        new Notice(message);
-                        button.setButtonText(t('ui.communityShareSection.resumeButton'));
-                        button.setDisabled(false);
-                    }
-                }));
-    } else {
-        const shareRow = new Setting(actionCard)
-            .setDesc(sharingOn
-                ? (lastSynced
-                    ? t('ui.communityShareSection.sharingOnSynced', { date: lastSynced })
-                    : t('ui.communityShareSection.sharingOn'))
-                : canBegin
-                    ? t('ui.communityShareSection.sharingOff')
-                    : t('ui.communityShareSection.nextSteps'))
-            .addButton(button => {
-                if (sharingOn) {
-                    button
-                        .setButtonText(t('ui.communityShareSection.pauseButton'))
-                        .onClick(async () => {
-                            button.setDisabled(true);
-                            await pauseCommunitySharing(plugin);
-                            new Notice(t('ui.communityShareSection.pausedNotice'));
-                            containerEl.empty();
-                            renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                        });
-                } else {
-                    button
-                        .setButtonText(t('ui.communityShareSection.beginButton'))
-                        .setCta()
-                        .setDisabled(!canBegin)
-                        .onClick(async () => {
-                            button.setDisabled(true);
-                            button.setButtonText(t('ui.communityShareSection.startingButton'));
-                            try {
-                                await beginCommunitySharing(plugin);
-                                new Notice(t('ui.communityShareSection.sharingOnNotice'));
-                                containerEl.empty();
-                                renderCommunityShareSection({ app: plugin.app, plugin, containerEl });
-                            } catch (error) {
-                                const message = error instanceof CommunityShareError
-                                    ? error.message
-                                    : t('ui.communityShareSection.beginFailed');
-                                const current = normalizeCommunityShareSettings(plugin.settings.communityShare);
-                                plugin.settings.communityShare = normalizeCommunityShareSettings({
-                                    ...current,
-                                    lastError: message
-                                });
-                                void plugin.saveSettings();
-                                new Notice(message);
-                                button.setButtonText(t('ui.communityShareSection.beginButton'));
-                                button.setDisabled(!canBegin);
-                            }
-                        });
-                }
-            });
-        if (sharingOn) {
-            shareRow.descEl.createDiv({
-                cls: ERT_CLASSES.FIELD_NOTE,
-                text: t('ui.communityShareSection.pauseNote')
-            });
-        }
-    }
 
     new Setting(actionCard)
         .setName(t('ui.communityShareSection.disconnectName'))

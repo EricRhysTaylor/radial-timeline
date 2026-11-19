@@ -36,7 +36,14 @@ export function renderTimelinePreview(container: HTMLElement, doc: TimelinePrevi
             svg.appendChild(path);
         };
         tree.resolved.rings.forEach(r => draw(r.dPath, communityTheme.surface, '0.55'));
-        tree.voids.forEach(v => draw(v.dPath, themes.dark.color.voidCell.fill, '0.06'));
+        // An empty cell is an etched dark cell with a hairline edge, colored by the theme in CSS
+        // (rt-ui.css), so the ring reads whole rather than bitten.
+        tree.voids.forEach(v => {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', v.dPath);
+            path.setAttribute('class', 'ert-community-wheel__void');
+            svg.appendChild(path);
+        });
         const scenes = new Map(doc.scenes.map(scene => [scene.id, scene]));
         tree.scenes.forEach(placement => {
             const scene = scenes.get(placement.sceneId);

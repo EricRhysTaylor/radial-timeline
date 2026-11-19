@@ -62,7 +62,8 @@ export class SceneReleaseListModal extends ErtModal {
     }
 
     onOpen(): void {
-        this.applyShell({ width: 'min(660px, 92vw)' });
+        // One scroll area, the list: the header, count and footer stay put in a short window.
+        this.applyShell({ width: 'min(660px, 92vw)', shellClasses: ['ert-modal--scene-release-list'] });
         // Readers are chosen on the website: coming back to Obsidian rereads the status, so the
         // reader counts are the website's, not the ones from when the dialog opened.
         this.contentEl.ownerDocument.win.addEventListener('focus', this.onWindowFocus);

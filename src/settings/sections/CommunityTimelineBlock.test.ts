@@ -66,6 +66,21 @@ describe('timeline privacy details', () => {
     });
 });
 
+describe('Community dates', () => {
+    it('writes Last sent and Website checked in one format, kept on one line', async () => {
+        const { formatCommunityDate } = await import('./CommunityTimelineBlock');
+        const at = Date.UTC(2026, 10, 18, 23, 1);
+        const fromIso = formatCommunityDate(new Date(at).toISOString());
+        const fromMs = formatCommunityDate(at);
+        expect(fromIso).toBe(fromMs);
+        expect(fromMs).toBe(new Date(at).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' }).replace(/\s/g, '\u00A0'));
+        expect(fromMs).toContain('2026');
+        expect(fromMs).not.toMatch(/[ \u202F]/);
+        expect(fromMs).not.toMatch(/:\d\d:\d\d/);
+        expect(formatCommunityDate('not a date')).toBe('not a date');
+    });
+});
+
 describe('timeline status wording', () => {
     it('does not assume a website timeline is private while its status is unknown', async () => {
         const { shareDescription } = await import('./CommunityTimelineBlock');

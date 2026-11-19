@@ -364,7 +364,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
                     const modal = new Modal(plugin.app);
                     const { modalEl, contentEl } = modal;
                     modalEl.classList.add('ert-ui', 'ert-scope--modal', 'ert-modal-shell', 'ert-modal-shell--sm');
-                    modalEl.classList.add(ERT_CLASSES.ROOT, ERT_CLASSES.SKIN_PRO);
+                    modalEl.classList.add(ERT_CLASSES.ROOT);
                     contentEl.addClass('ert-modal-container', 'ert-stack');
 
                     const header = contentEl.createDiv({ cls: 'ert-modal-header' });

@@ -1135,10 +1135,6 @@ body.rt-modal-open .radial-timeline-container * {
 
 /* Section header pattern */
 
-.ert-skin--pro .rt-section-title {
-  border-bottom-color: var(--ert-pro-border);
-}
-
 /* Icon button - consistent sizing */
 .rt-icon-btn {
   width: 34px;

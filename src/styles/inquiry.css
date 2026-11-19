@@ -3253,30 +3253,6 @@ body.rt-modal-open .ert-inquiry-svg {
   color: var(--ert-inquiry-row-icon);
 }
 
-:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-settings-inquiry-root .ert-inquiry-prompt-row.ert-reorder-row--pro,
-:is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-settings-inquiry-root .ert-inquiry-prompt-row--signature {
-  --ert-inquiry-row-pro-accent: var(--rt-pro-color, #d946ef);
-  --ert-inquiry-row-bg:
-    radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--ert-inquiry-row-pro-accent) 16%, transparent) 0%, transparent 52%),
-    radial-gradient(circle at 86% 78%, color-mix(in srgb, var(--ert-inquiry-row-pro-accent) 8%, transparent) 0%, transparent 55%),
-    linear-gradient(135deg, color-mix(in srgb, var(--ert-inquiry-row-pro-accent) 6%, transparent) 0%, color-mix(in srgb, var(--ert-inquiry-row-pro-accent) 2%, transparent) 100%),
-    color-mix(in srgb, var(--background-primary) 94%, var(--ert-inquiry-row-pro-accent) 4%);
-  --ert-inquiry-row-border: color-mix(in srgb, var(--ert-inquiry-row-pro-accent) 30%, transparent);
-  --ert-inquiry-row-text: color-mix(in srgb, var(--ert-inquiry-row-pro-accent) 34%, var(--text-normal));
-  --ert-inquiry-row-muted: color-mix(in srgb, var(--ert-inquiry-row-pro-accent) 54%, var(--text-muted));
-  --ert-inquiry-row-icon: color-mix(in srgb, var(--ert-inquiry-row-pro-accent) 76%, var(--text-normal));
-  --ert-inquiry-row-control-bg: color-mix(in srgb, var(--background-primary) 74%, var(--ert-inquiry-row-pro-accent) 26%);
-  --ert-inquiry-row-control-border: color-mix(in srgb, var(--ert-inquiry-row-pro-accent) 24%, var(--background-modifier-border));
-  --ert-inquiry-row-control-text: var(--ert-inquiry-row-text);
-  --ert-inquiry-row-chip-bg: color-mix(in srgb, var(--background-primary) 70%, var(--ert-inquiry-row-pro-accent) 30%);
-  --ert-inquiry-row-chip-border: color-mix(in srgb, var(--ert-inquiry-row-pro-accent) 28%, transparent);
-  --ert-inquiry-row-chip-text: var(--ert-inquiry-row-icon);
-  background: var(--ert-inquiry-row-bg);
-  border-color: var(--ert-inquiry-row-border);
-  color: var(--ert-inquiry-row-text);
-  box-shadow: none;
-}
-
 :is(.ert-ui.ert-scope--settings.ert-settings-root, .ert-ui.ert-scope--settings .ert-settings-root) .ert-settings-inquiry-root .ert-inquiry-prompt-row .ert-iconBtn {
   color: var(--ert-iconBtn-color);
 }
@@ -3343,8 +3319,8 @@ body.rt-modal-open .ert-inquiry-svg {
 .ert-ui.ert-scope--modal .ert-inquiry-prompt-warning {
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--ert-pro-accent-color) 32%, transparent);
-  background: color-mix(in srgb, var(--ert-pro-accent-color) 10%, var(--background-secondary));
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
   color: var(--text-normal);
   font-size: var(--font-ui-small, 13px);
 }

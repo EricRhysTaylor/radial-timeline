@@ -1082,7 +1082,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         });
 
         const runtimeSection = searchableContent.createDiv({
-            cls: `${ERT_CLASSES.ROOT} ${ERT_CLASSES.SKIN_PRO} ${ERT_CLASSES.STACK}`,
+            cls: `${ERT_CLASSES.ROOT} ${ERT_CLASSES.STACK}`,
             attr: { [ERT_DATA.SECTION]: 'runtime' }
         });
         this.renderGuarded(t('ui.settingsTab.guardRuntime'), runtimeSection, () => {

@@ -48,7 +48,6 @@ import {
     isBundledPandocLayoutInstalled,
     type BundledFontInstallResult
 } from '../../utils/pandocBundledLayouts';
-import { getPandocLayoutTier } from '../../publishing/templateTiering';
 import {
     applySpreadValidation,
     collectSpreadStatuses,
@@ -976,17 +975,10 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             const isBundled = layout.bundled === true;
             const isImported = layout.origin === 'imported';
             const installed = getLayoutInstalledState(layout);
-            const tier = getPandocLayoutTier(layout);
-            const isProLayout = tier === 'pro';
             const specialCapabilities = getLayoutSpecialCapabilities(layout);
             const showsSpecialOptions = hasLayoutSpecialOptions(layout);
             const expanded = expandedSpecialLayoutId === layout.id;
             if (expanded) row.addClass('is-special-expanded');
-            row.toggleClass(ERT_CLASSES.SKIN_PRO, isProLayout);
-            row.toggleClass('ert-layout-row--pro', isProLayout);
-            if (isProLayout) {
-                row.addClass(ERT_CLASSES.ELEMENT_BLOCK);
-            }
 
             const variant = getFictionVariantForLayout(layout);
             const useVisual = layout.preset === 'novel' && variant !== 'generic';

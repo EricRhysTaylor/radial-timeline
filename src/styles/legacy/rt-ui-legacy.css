@@ -1,21 +1,6 @@
 /* Legacy selector remnants extracted from the shared UI stylesheet during ERT migration. */
 
 
-/* Pro Target Dropdown */
-.ert-apr-pro-target .dropdown {
-  background: color-mix(in srgb, var(--ert-pro-accent-color) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ert-pro-accent-color) 30%, transparent);
-  color: var(--text-normal);
-  transition: all 0.2s ease;
-  font-weight: 500;
-}
-
-.ert-apr-pro-target .dropdown:hover,
-.ert-apr-pro-target .dropdown:focus {
-  border-color: var(--ert-pro-accent-color);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ert-pro-accent-color) 20%, transparent);
-}
-
 /* -------------------------------------------------------------------------- */
 /* MIGRATED FROM settings.css (legacy selectors)                              */
 /* -------------------------------------------------------------------------- */
@@ -139,7 +124,7 @@
 
 .ert-runtime-number {
   font-weight: 600;
-  color: var(--ert-pro-accent-color);
+  color: var(--text-accent);
 }
 
 .ert-runtime-hint {
@@ -319,7 +304,7 @@
 }
 
 .ert-runtime-accordion-header:hover {
-  color: var(--ert-pro-accent-color);
+  color: var(--text-accent);
 }
 
 .ert-runtime-accordion-icon {
@@ -350,7 +335,7 @@
 
 .ert-runtime-accordion-content {
   padding: var(--ert-pad-sm) 0 0 calc(var(--ert-pad-lg) + var(--ert-gap-sm));
-  border-top: 1px solid color-mix(in srgb, var(--ert-pro-border) 78%, transparent);
+  border-top: 1px solid var(--background-modifier-border);
   margin-top: 8px;
 }
 
@@ -379,7 +364,7 @@
   letter-spacing: 0.05em;
   margin: var(--ert-pad-sm) 0 var(--ert-gap-sm) 0;
   padding-top: 8px;
-  border-top: 1px solid color-mix(in srgb, var(--ert-pro-border) 78%, transparent);
+  border-top: 1px solid var(--background-modifier-border);
 }
 
 .ert-runtime-settings-hint {

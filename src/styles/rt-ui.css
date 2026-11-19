@@ -1060,7 +1060,8 @@
 }
 
 .ert-ui.ert-scope--settings .ert-controlGroup--inquiry-books {
-  --ert-controlGroup-columns: 5ch minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.85fr);
+  /* The first column fits its "Sequence" header on one line. */
+  --ert-controlGroup-columns: 8ch minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.85fr);
 }
 
 .ert-ui.ert-scope--settings .ert-controlGroup--inquiry-material-rules {
@@ -2277,20 +2278,6 @@
   border-radius: 2px;
 }
 
-/* The one Pro row inside Social (RT attribution) keeps the Pro accent. */
-.ert-ui.ert-scope--settings.ert-skin--social .ert-skin--pro,
-.ert-ui.ert-scope--settings .ert-skin--social .ert-skin--pro {
-  --ert-accent: var(--ert-pro-accent-color);
-  --ert-accent-rgb: var(--ert-pro-accent-rgb-base);
-  --ert-pro-border: color-mix(in srgb, var(--ert-accent) 28%, transparent);
-  --ert-pro-surface-bg: radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--ert-accent) 16%, transparent) 0%, transparent 52%),
-    radial-gradient(circle at 86% 78%, color-mix(in srgb, var(--ert-accent) 8%, transparent) 0%, transparent 55%),
-    linear-gradient(135deg, color-mix(in srgb, var(--ert-accent) 6%, transparent) 0%, color-mix(in srgb, var(--ert-accent) 2%, transparent) 100%),
-    color-mix(in srgb, var(--background-primary) 94%, var(--ert-accent) 4%);
-  --ert-pro-surface-2: color-mix(in srgb, var(--background-secondary) 88%, var(--ert-accent) 8%);
-  --ert-pro-glow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
 .ert-ui.ert-scope--settings.ert-skin--social .ert-iconBadge,
 .ert-ui.ert-scope--settings .ert-skin--social .ert-iconBadge,
 .ert-ui.ert-skin--apr .ert-iconBadge,
@@ -2380,15 +2367,13 @@
   --ert-control-width: 10ch;
 }
 
-.ert-ui.ert-scope--settings.ert-skin--social input.ert-input--error,
-.ert-ui.ert-scope--settings .ert-skin--social input.ert-input--error {
+.ert-ui input.ert-input--error {
   border-color: var(--text-error);
   background-color: color-mix(in srgb, var(--text-error) 10%, transparent);
   box-shadow: 0 0 0 calc(var(--ert-gap-xs) / 2) color-mix(in srgb, var(--text-error) 30%, transparent);
 }
 
-.ert-ui.ert-scope--settings.ert-skin--social input.ert-input--success,
-.ert-ui.ert-scope--settings .ert-skin--social input.ert-input--success {
+.ert-ui input.ert-input--success {
   border-color: var(--text-success);
   background-color: color-mix(in srgb, var(--text-success) 10%, transparent);
   box-shadow: 0 0 0 calc(var(--ert-gap-xs) / 2) color-mix(in srgb, var(--text-success) 30%, transparent);
@@ -2595,40 +2580,6 @@
   justify-content: flex-start;
   gap: var(--ert-gap-sm);
   margin-top: var(--ert-gap-md);
-}
-
-/* Pro skin overrides (visual only) */
-.ert-ui.ert-skin--pro,
-.ert-ui .ert-skin--pro {
-  --ert-accent: var(--rt-pro-color, #d946ef);
-  --ert-accent-rgb: var(--rt-pro-color-rgb, 217, 70, 239);
-  --ert-pro-surface-bg: radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--ert-accent) 16%, transparent) 0%, transparent 52%),
-    radial-gradient(circle at 86% 78%, color-mix(in srgb, var(--ert-accent) 8%, transparent) 0%, transparent 55%),
-    linear-gradient(135deg, color-mix(in srgb, var(--ert-accent) 6%, transparent) 0%, color-mix(in srgb, var(--ert-accent) 2%, transparent) 100%),
-    color-mix(in srgb, var(--background-primary) 94%, var(--ert-accent) 4%);
-  --ert-pro-border: color-mix(in srgb, var(--ert-accent) 30%, transparent);
-  --ert-pro-surface-2: color-mix(in srgb, var(--background-secondary) 88%, var(--ert-accent) 8%);
-  --ert-surface-hero: var(--ert-pro-surface-bg);
-  --ert-border-hero: color-mix(in srgb, var(--ert-accent) 30%, transparent);
-  --ert-shadow-hero: 0 4px 12px color-mix(in srgb, var(--ert-accent) 12%, transparent);
-  --ert-hero-grad: none;
-  --ert-iconBadge-bg: color-mix(in srgb, var(--ert-accent) 18%, transparent);
-  --ert-chip-bg: color-mix(in srgb, var(--ert-accent) 12%, var(--background-secondary) 78%);
-  --ert-previewFrame-bg: color-mix(in srgb, var(--background-secondary) 82%, var(--ert-accent) 8%);
-  --ert-previewFrame-border: color-mix(in srgb, var(--ert-accent) 22%, transparent);
-  --ert-panel-bg: var(--ert-pro-surface-bg);
-  --ert-panel-border: var(--ert-pro-border);
-  --ert-panel-shadow: none;
-  --ert-panel-shadow-elev: none;
-}
-
-.ert-ui.ert-skin--pro .setting-item:not(.setting-item-heading),
-.ert-ui .ert-skin--pro .setting-item:not(.setting-item-heading),
-.ert-ui.ert-skin--pro .setting-item.mod-toggle:not(.setting-item-heading),
-.ert-ui.ert-scope--settings.ert-skin--pro .setting-item.ert-settingRow:not(.setting-item-heading) {
-  background: color-mix(in srgb, var(--background-secondary) 80%, color-mix(in srgb, var(--ert-accent) 24%, transparent) 0%);
-  border: 1px solid var(--ert-pro-border);
-  box-shadow: none;
 }
 
 /* Settings row marked as "feature paused" — heavily muted so it reads as
@@ -2895,7 +2846,7 @@
   border-top: 1px solid color-mix(in srgb, var(--background-modifier-border) 75%, transparent);
   border-radius: 10px;
   background: color-mix(in srgb, var(--background-secondary) 78%, transparent);
-  padding: calc(var(--ert-gap-sm) + (var(--ert-gap-xs) / 2)) var(--ert-gap-md);
+  padding: calc(var(--ert-gap-sm) + (var(--ert-gap-xs) / 2)) var(--ert-gap-sm);
   position: relative;
   overflow: visible;
 }
@@ -2940,13 +2891,17 @@
   max-width: 100%;
   flex: 1 1 auto;
   --ert-control-width: 100%;
-  font-family: var(--font-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+  /* The interface font, left-aligned: three cards share a narrow settings
+     pane, and a monospace label like "Anthropic (No key)" did not fit. */
+  font-family: var(--font-interface);
+  text-align: start;
   white-space: nowrap;
   overflow: hidden;
   /* Prefer showing the canonical version prefix (e.g. "Gemini 3.5") and
      clipping trailing variant text (e.g. "flash") over surfacing an
      ellipsis that consumes column width while signaling nothing useful. */
   text-overflow: clip;
+  padding-left: var(--ert-gap-sm);
   padding-right: var(--ert-select-pad-end);
 }
 
@@ -3430,13 +3385,16 @@
   background: var(--ert-local-llm-tier4-accent);
 }
 
-@container ert-settings (max-width: 980px) {
+/* Breakpoints measure the settings content (ert-settings), which is about
+   550 px in Obsidian's default Settings window: columns hold down to the
+   narrow widths a resized window or a phone gives. */
+@container ert-settings (max-width: 480px) {
   .ert-ui.ert-scope--settings .ert-ai-local-llm-status-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@container ert-settings (max-width: 680px) {
+@container ert-settings (max-width: 340px) {
   .ert-ui.ert-scope--settings .ert-ai-local-llm-status-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -3845,23 +3803,8 @@
   margin-bottom: 10px;
 }
 
-@container ert-settings (max-width: 760px) {
-  .ert-ui.ert-scope--settings .ert-ai-steps-row,
-  .ert-ui.ert-scope--settings .ert-ai-step3-grid,
-  .ert-ui.ert-scope--settings .ert-ai-feature-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ert-ui.ert-scope--settings .ert-ai-capacity-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ert-ui.ert-scope--settings .ert-ai-status-row {
-    grid-template-columns: 1fr auto;
-  }
-}
-
-@container ert-settings (max-width: 600px) {
+@container ert-settings (max-width: 440px) {
+  .ert-ui.ert-scope--settings .ert-ai-capacity-grid,
   .ert-ui.ert-scope--settings .ert-ai-quick-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -6429,20 +6372,6 @@
   color: var(--text-normal);
 }
 
-.ert-ui.ert-skin--pro input.ert-input--error,
-.ert-ui .ert-skin--pro input.ert-input--error {
-  border-color: var(--text-error);
-  background-color: color-mix(in srgb, var(--text-error) 10%, transparent);
-  box-shadow: 0 0 0 calc(var(--ert-gap-xs) / 2) color-mix(in srgb, var(--text-error) 30%, transparent);
-}
-
-.ert-ui.ert-skin--pro input.ert-input--success,
-.ert-ui .ert-skin--pro input.ert-input--success {
-  border-color: var(--text-success);
-  background-color: color-mix(in srgb, var(--text-success) 10%, transparent);
-  box-shadow: 0 0 0 calc(var(--ert-gap-xs) / 2) color-mix(in srgb, var(--text-success) 30%, transparent);
-}
-
 /* Template path validation flash animations */
 @keyframes ert-flash-success {
   0%, 40% {
@@ -6478,59 +6407,6 @@
 .ert-ui input.ert-input--flash-error,
 .ert-ui .ert-input--flash-error {
   animation: ert-flash-error 1.6s ease-out forwards;
-}
-
-.ert-ui.ert-skin--pro .ert-card--hero,
-.ert-ui.ert-skin--pro .ert-section--hero,
-.ert-ui .ert-skin--pro .ert-card--hero,
-.ert-ui .ert-skin--pro .ert-section--hero {
-  background: var(--ert-pro-surface-bg);
-  border: 1px solid var(--ert-border-hero);
-  box-shadow: var(--ert-shadow-hero);
-}
-
-.ert-ui.ert-skin--pro .ert-panel,
-.ert-ui .ert-skin--pro .ert-panel,
-.ert-ui.ert-skin--pro .ert-card:not(.ert-card--hero):not(.ert-card--apr),
-.ert-ui .ert-skin--pro .ert-card:not(.ert-card--hero):not(.ert-card--apr) {
-  background: var(--ert-pro-surface-bg);
-}
-
-.ert-ui.ert-skin--pro .ert-iconBadge,
-.ert-ui .ert-skin--pro .ert-iconBadge {
-  background: var(--ert-iconBadge-bg);
-}
-
-.ert-ui.ert-scope--settings.ert-skin--pro .ert-chip,
-.ert-ui.ert-scope--settings .ert-skin--pro .ert-chip {
-  background: var(--ert-chip-bg);
-}
-
-.ert-ui.ert-scope--settings.ert-skin--pro .ert-previewFrame,
-.ert-ui.ert-scope--settings .ert-skin--pro .ert-previewFrame {
-  background: var(--ert-previewFrame-bg);
-  border-color: var(--ert-previewFrame-border);
-}
-
-.ert-ui.ert-scope--settings.ert-skin--pro .ert-elementBlock,
-.ert-ui.ert-scope--settings .ert-skin--pro .ert-elementBlock,
-.ert-ui.ert-scope--settings .ert-elementBlock.ert-skin--pro {
-  background: var(--ert-pro-surface-2);
-  border: 1px solid var(--ert-pro-border);
-  box-shadow: none;
-}
-
-.ert-ui.ert-skin--pro .ert-row--recommended,
-.ert-ui .ert-skin--pro .ert-row--recommended {
-  background: var(--ert-pro-surface-2);
-  border: 1px solid var(--ert-pro-border);
-}
-
-.ert-ui.ert-scope--settings.ert-skin--pro .ert-pillBtn--pro,
-.ert-ui.ert-scope--settings .ert-skin--pro .ert-pillBtn--pro {
-  background: color-mix(in srgb, var(--ert-accent) 18%, var(--background-secondary) 80%);
-  border: 1px solid color-mix(in srgb, var(--ert-accent) 35%, transparent);
-  box-shadow: none;
 }
 
 .ert-ui.ert-scope--settings .ert-objectRow.is-needs-refresh {
@@ -6718,7 +6594,7 @@
   border-radius: 0 0 var(--ert-control-radius) var(--ert-control-radius);
 }
 
-@container ert-settings (max-width: 680px) {
+@container ert-settings (max-width: 480px) {
   .ert-ui.ert-scope--settings .ert-apr-progressModeGrid {
     grid-template-columns: minmax(0, 1fr);
     row-gap: var(--ert-gap-sm);
@@ -6748,9 +6624,7 @@
 .ert-ui.ert-scope--settings .ert-campaign-add-row .setting-item {
   padding: var(--ert-pad-md);
   gap: var(--ert-gap-md);
-  background: var(--ert-pro-surface-2);
   border-radius: var(--ert-control-radius);
-  border: 1px solid var(--ert-pro-border);
 }
 
 .ert-ui.ert-scope--settings .ert-campaign-add-row .setting-item-info {
@@ -6789,9 +6663,7 @@
 .ert-ui.ert-scope--settings .ert-teaser__schedule {
   margin-top: var(--ert-gap-sm);
   padding: var(--ert-pad-sm) var(--ert-pad-md);
-  background: var(--ert-pro-surface-2);
   border-radius: var(--ert-control-radius);
-  border: 1px solid var(--ert-pro-border);
   box-shadow: none;
 }
 
@@ -6816,9 +6688,6 @@
   gap: var(--ert-gap-md);
   margin-top: var(--ert-gap-md);
   padding-top: var(--ert-gap-md);
-  /* Pro-styled divider: matches the Pro row borders so it reads clearly
-     against the dark surface instead of fading into the background. */
-  border-top: 1px solid var(--ert-pro-border);
 }
 
 .ert-ui.ert-scope--settings .ert-teaser__field {
@@ -7081,22 +6950,6 @@
   flex-direction: column;
 }
 
-.ert-ui.ert-scope--settings .ert-layout-row.ert-layout-row--pro.ert-skin--pro.ert-elementBlock {
-  background: var(--ert-pro-surface-bg);
-  border: 1px solid var(--ert-pro-border);
-  box-shadow: var(--ert-shadow-hero);
-}
-
-.ert-ui.ert-scope--settings .ert-layout-row.ert-layout-row--pro.ert-skin--pro.ert-elementBlock .setting-item.ert-layout-row-setting {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.ert-ui.ert-scope--settings .ert-layout-row.ert-layout-row--pro.ert-skin--pro.ert-elementBlock .ert-layout-special-panel {
-  background: color-mix(in srgb, var(--ert-accent) 7%, transparent);
-  border-color: color-mix(in srgb, var(--ert-accent) 20%, transparent);
-}
 
 .ert-ui.ert-scope--settings .ert-layout-row .setting-item.ert-layout-row-setting {
   --ert-row-pad: var(--ert-pad-sm);
@@ -7327,7 +7180,7 @@
   background: color-mix(in srgb, var(--background-primary) 88%, transparent);
 }
 
-@container ert-settings (max-width: 980px) {
+@container ert-settings (max-width: 520px) {
   .ert-ui.ert-scope--settings .ert-layout-imported {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -7349,7 +7202,6 @@
 .ert-ui.ert-scope--settings .ert-layout-special-panel {
   margin-top: var(--ert-gap-sm);
   padding: var(--ert-gap-sm) var(--ert-pad-sm) var(--ert-gap-sm);
-  border: 1px solid var(--ert-pro-border);
   border-radius: calc(var(--ert-control-radius) + 2px);
   background: color-mix(in srgb, var(--background-secondary) 80%, color-mix(in srgb, var(--ert-accent) 24%, transparent) 0%);
   display: grid;
@@ -7492,12 +7344,6 @@
   opacity: 0.6;
 }
 
-/* Pro-skin layout rows: divider picks up the Pro accent color so it reads
-   as part of the same visual system as the rest of the Pro skin chrome. */
-.ert-ui.ert-scope--settings .ert-layout-row--pro.ert-skin--pro .ert-layout-feature-divider {
-  background: var(--ert-pro-accent-border);
-  opacity: 1;
-}
 
 /* Status lines (Acts/Chapters configured, all populated, etc.) live inside
    the description column below the prose block, separated by another divider.
@@ -9337,9 +9183,7 @@
 }
 
 .ert-ui.ert-scope--settings.ert-skin--social select.ert-typography-select.ert-typography-select--warning,
-.ert-ui.ert-scope--settings .ert-skin--social select.ert-typography-select.ert-typography-select--warning,
-.ert-ui.ert-scope--settings.ert-skin--pro select.ert-typography-select.ert-typography-select--warning,
-.ert-ui.ert-scope--settings .ert-skin--pro select.ert-typography-select.ert-typography-select--warning {
+.ert-ui.ert-scope--settings .ert-skin--social select.ert-typography-select.ert-typography-select--warning {
   border-color: var(--ert-color-error);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--ert-color-error) 35%, transparent);
 }
@@ -10253,7 +10097,7 @@
   font-weight: 700;
 }
 
-@container ert-settings (max-width: 720px) {
+@container ert-settings (max-width: 480px) {
   .ert-ui.ert-scope--settings .ert-goals-stats-summary {
     align-items: flex-start;
   }

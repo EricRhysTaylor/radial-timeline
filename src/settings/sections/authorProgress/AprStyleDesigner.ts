@@ -969,7 +969,7 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
     });
 
     // Hiding the Radial Timeline mark is saved with the style.
-    const attributionRow = themeBody.createDiv({ cls: ERT_CLASSES.SKIN_PRO });
+    const attributionRow = themeBody.createDiv();
     const attributionSetting = new Setting(attributionRow)
         .setName(t('settings.authorProgress.attribution.name'))
         .setDesc(t('settings.authorProgress.attribution.desc'))

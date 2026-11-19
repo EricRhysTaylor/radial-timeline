@@ -1929,8 +1929,7 @@
   gap: var(--ert-gap-sm);
 }
 
-.ert-ui.ert-scope--modal .ert-apr-actions-target,
-.ert-ui.ert-scope--modal .ert-skin--pro .ert-apr-actions-target.setting-item {
+.ert-ui.ert-scope--modal .ert-apr-actions-target {
   background: transparent;
   border: none;
   box-shadow: none;

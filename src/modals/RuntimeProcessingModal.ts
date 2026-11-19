@@ -13,7 +13,6 @@ import { ErtModal } from '../ui/ErtModal';
 import type RadialTimelinePlugin from '../main';
 import { formatRuntimeValue, getRuntimeSettings } from '../utils/runtimeEstimator';
 import { isNonSceneItem } from '../utils/sceneHelpers';
-import { ERT_CLASSES } from '../ui/classes';
 import type { AIRunAdvancedContext } from '../ai/types';
 import { redactSensitiveValue } from '../ai/credentials/redactSensitive';
 import { CANONICAL_PROVIDER_LABELS, getCanonicalAiSettings, resolveConfiguredSelection } from '../ai/runtime/runtimeSelection';
@@ -110,7 +109,7 @@ export class RuntimeProcessingModal extends ErtModal {
         const { titleEl } = this;
         titleEl.setText('');
         this.applyShell({
-            shellClasses: ['ert-runtime-modal-shell', ERT_CLASSES.SKIN_PRO],
+            shellClasses: ['ert-runtime-modal-shell'],
             containerClasses: ['ert-runtime-modal'],
         });
 

@@ -1209,20 +1209,11 @@ export function renderInquirySection(params: SectionParams): void {
                 const slotState = getInquiryPromptSlotState(slot);
                 const canonicalQuestion = getCanonicalQuestionForSlot(slot);
                 const canRemoveSlot = slotIndex > 0;
-                const isSignatureTemplateRow = slotState === 'canonical-loaded' && canonicalQuestion?.tier === 'signature';
                 if (canonicalQuestion) {
                     canonicalRowRefs[zone].set(canonicalQuestion.id, row);
                 }
-                if (isSignatureTemplateRow) {
-                    row.addClass('ert-skin--pro', 'ert-elementBlock');
-                    row.addClass('ert-reorder-row--pro');
-                }
                 row.toggleClass('ert-inquiry-prompt-row--template', slotState === 'canonical-loaded');
                 row.toggleClass('ert-inquiry-prompt-row--customized', slotState === 'customized');
-                row.toggleClass(
-                    'ert-inquiry-prompt-row--signature',
-                    isSignatureTemplateRow
-                );
 
                 const labelCol = row.createDiv({ cls: 'ert-reorder-col ert-inquiry-prompt-col ert-inquiry-prompt-col--handle' });
                 const questionCol = row.createDiv({

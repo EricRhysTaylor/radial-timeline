@@ -201,14 +201,14 @@ export class SceneReleaseListModal extends ErtModal {
         }
 
         this.batchNoteEl = contentEl.createDiv({ cls: 'ert-scene-release-batch-note' });
+        // The batch bar: its own row above the footer, shown when anything is checked.
+        this.batchEl = contentEl.createDiv({ cls: 'ert-scene-release-batch' });
         const actions = this.mountActions();
         actions.createEl('a', {
             text: t('ui.communityShareSection.sceneBodyReadersLink'),
             href: `${COMMUNITY_SITE_URL}/me/scenes/${encodeURIComponent(status.project_id)}`,
             attr: { target: '_blank', rel: 'noopener' },
         });
-        // The batch bar: appears when anything is checked.
-        this.batchEl = actions.createDiv({ cls: 'ert-scene-release-batch' });
         this.addClose(actions);
         this.syncBatch();
     }

@@ -2574,12 +2574,13 @@
 
 .ert-ui.ert-scope--modal.ert-modal--scene-release-list .ert-modal-actions {
     align-items: center;
+    justify-content: space-between;
     padding-top: var(--size-4-3);
     border-top: 1px solid var(--background-modifier-border);
 }
 
 /* Release scenes, several at once: a checkbox at the start of each row, Select all above the
-   list, and the batch bar in the footer beside Close. */
+   list, and the batch bar on its own row above the footer. */
 .ert-scene-release-list .setting-item { gap: var(--size-4-3); }
 .ert-scene-release-check { flex: none; margin: 0; }
 .ert-scene-release-check--none { display: inline-block; width: var(--checkbox-size, 15px); visibility: hidden; }
@@ -2592,8 +2593,11 @@
 .ert-scene-release-select:empty,
 .ert-scene-release-batch:empty,
 .ert-scene-release-batch-note:empty { display: none; }
-.ert-ui.ert-scope--modal.ert-modal--scene-release-list .ert-scene-release-batch { margin-inline-start: auto; }
-
+.ert-ui.ert-scope--modal.ert-modal--scene-release-list .ert-scene-release-batch {
+    justify-content: flex-end;
+    padding-top: var(--size-4-3);
+    border-top: 1px solid var(--background-modifier-border);
+}
 .ert-scene-release-batch-list {
     max-height: 40vh;
     overflow-y: auto;

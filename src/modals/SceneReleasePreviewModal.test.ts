@@ -128,7 +128,6 @@ describe('the release preview', () => {
         await opened(h);
         expect(h.screen.buttonNamed(RELEASE).disabled).toBe(true);
         expect(h.screen.content).toContain(t('ui.sceneReleaseModal.releaseNote'));
-        expect(h.screen.content).toContain(t('ui.sceneReleaseModal.ratingNote'));
         await h.screen.settings[0].dropdown!.choose('general');
         expect(h.screen.buttonNamed(RELEASE).disabled).toBe(false);
     });

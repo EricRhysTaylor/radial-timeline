@@ -134,7 +134,6 @@ export class SceneReleasePreviewModal extends ErtModal {
             });
         ratingRow.descEl.createDiv({ text: t('ui.sceneReleaseModal.ratingGeneralDesc') });
         ratingRow.descEl.createDiv({ text: t('ui.sceneReleaseModal.ratingMatureDesc') });
-        ratingRow.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.sceneReleaseModal.ratingNote') });
 
         contentEl.createDiv({
             cls: ERT_CLASSES.FIELD_NOTE,

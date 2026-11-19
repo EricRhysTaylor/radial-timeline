@@ -16,6 +16,7 @@ interface CreateOptions {
     cls?: string;
     text?: string;
     href?: string;
+    type?: string;
     attr?: Record<string, string>;
 }
 
@@ -46,6 +47,12 @@ export class FakeElement {
     setting: FakeSetting | null = null;
     style: Record<string, string> = {};
     attributes: Record<string, string> = {};
+    id = '';
+    /** An `input`'s type, and a checkbox's state. */
+    type = '';
+    checked = false;
+    disabled = false;
+    private listeners = new Map<string, Array<() => void>>();
     classList = {
         add: (...names: string[]): void => { this.cls = [this.cls, ...names].filter(Boolean).join(' '); },
         remove: (...names: string[]): void => { this.cls = this.cls.split(' ').filter(name => name && !names.includes(name)).join(' '); },
@@ -66,6 +73,7 @@ export class FakeElement {
         if (o.cls) el.cls = o.cls;
         if (o.text) el.text = o.text;
         if (o.href) el.href = o.href;
+        if (o.type) el.type = o.type;
         if (o.attr) el.attributes = { ...o.attr };
         this.children.push(el);
         return el;
@@ -81,6 +89,25 @@ export class FakeElement {
     toggleClass(name: string, on: boolean): void { this.classList.toggle(name, on); }
     setAttribute(name: string, value: string): void { this.attributes[name] = value; }
     getAttribute(name: string): string | null { return this.attributes[name] ?? null; }
+    /** Move a child to the front, as the DOM's prepend does. */
+    prepend(child: FakeElement): void {
+        this.children = [child, ...this.children.filter(el => el !== child)];
+    }
+    addEventListener(type: string, listener: () => void): void {
+        this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
+    }
+
+    /** Click a checkbox, as the author would: a disabled one can't be clicked. */
+    toggle(): void {
+        if (this.disabled) throw new Error('The checkbox is disabled.');
+        this.checked = !this.checked;
+        for (const listener of this.listeners.get('change') ?? []) listener();
+    }
+
+    /** Every checkbox under this element, in document order. */
+    get checkboxes(): FakeElement[] {
+        return this.all().filter(el => el.tag === 'input' && el.type === 'checkbox');
+    }
 
     /** Every element under this one, in document order. */
     all(): FakeElement[] {

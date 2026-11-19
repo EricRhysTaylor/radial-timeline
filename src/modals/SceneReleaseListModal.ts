@@ -14,7 +14,18 @@ import type { BookProfile } from '../types/settings';
 import { ERT_CLASSES } from '../ui/classes';
 import { ErtModal } from '../ui/ErtModal';
 import { confirmWithErtModal } from './ErtConfirmModal';
+import { SceneReleaseBatchModal, SceneTakeDownBatchModal, type BatchReleaseScene, type BatchTakeDownScene } from './SceneReleaseBatchModal';
+import { ensureReleaseTerms } from './SceneReleaseConsentModal';
 import { SceneReleasePreviewModal } from './SceneReleasePreviewModal';
+import {
+    batchKeyOf,
+    batchSelectable,
+    batchSelection,
+    keepSelectable,
+    releasePlacesLeft,
+    selectableKeys,
+    type SceneBatchKind,
+} from './sceneReleaseSelection';
 
 function errorText(error: unknown, fallback: string): string {
     return error instanceof CommunityShareError ? error.message : fallback;
@@ -22,6 +33,11 @@ function errorText(error: unknown, fallback: string): string {
 
 function releaseFacts(key: string, release: SceneReleaseSummary): string {
     return t(key, { version: release.version, readers: tCount('reader', release.readers) });
+}
+
+/** The row's name in the list, and in a batch confirm. */
+function rowName(row: SceneReleaseRow): string {
+    return row.state === 'website' ? t('ui.sceneReleaseModal.websiteRelease', { title: row.title }) : row.title;
 }
 
 function stateText(row: SceneReleaseRow): string {
@@ -42,7 +58,8 @@ function stateText(row: SceneReleaseRow): string {
  * Release scenes: the active book's scenes in manuscript order, each with its
  * one state from the website's status. Opening it sends a status request (no
  * text) and reads the notes of released scenes only, to tell which changed.
- * Text is sent from the preview this opens, never from here.
+ * Text is sent from the preview or the batch release this opens, never from
+ * here. Rows can be checked to release, or take down, several at once.
  */
 export class SceneReleaseListModal extends ErtModal {
     private list: SceneReleaseList | null = null;
@@ -50,6 +67,12 @@ export class SceneReleaseListModal extends ErtModal {
     private busy = false;
     private closed = false;
     private loads = 0;
+    /** The checked rows, by batchKeyOf. Kept across a reload while the row is still selectable. */
+    private checked = new Set<string>();
+    private boxes = new Map<string, HTMLInputElement>();
+    private selectEl: HTMLElement | null = null;
+    private batchNoteEl: HTMLElement | null = null;
+    private batchEl: HTMLElement | null = null;
 
     constructor(
         app: App,
@@ -101,6 +124,7 @@ export class SceneReleaseListModal extends ErtModal {
         if (load !== this.loads) return;
         this.list = list;
         this.error = error;
+        if (list) this.checked = keepSelectable(list.rows, this.checked, list.status);
         this.render();
     }
 
@@ -108,6 +132,10 @@ export class SceneReleaseListModal extends ErtModal {
         if (this.closed) return;
         const { contentEl } = this;
         contentEl.empty();
+        this.boxes.clear();
+        this.selectEl = null;
+        this.batchNoteEl = null;
+        this.batchEl = null;
         this.mountHeader({
             badge: { text: t('ui.sceneReleaseModal.badge') },
             title: t('ui.sceneReleaseModal.listTitle'),
@@ -137,6 +165,9 @@ export class SceneReleaseListModal extends ErtModal {
             contentEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.communityShareSection.sceneBodyStandingNote') });
         }
 
+        // Select all, above the list so it stays put while the list scrolls.
+        this.selectEl = contentEl.createDiv({ cls: 'ert-scene-release-select' });
+
         const listEl = contentEl.createDiv({ cls: 'ert-scene-release-list' });
         if (rows.length === 0) {
             listEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.sceneReleaseModal.listEmpty') });
@@ -144,8 +175,9 @@ export class SceneReleaseListModal extends ErtModal {
         const blocked = this.busy || status.standing !== null;
         for (const row of rows) {
             const setting = new Setting(listEl)
-                .setName(row.state === 'website' ? t('ui.sceneReleaseModal.websiteRelease', { title: row.title }) : row.title)
+                .setName(rowName(row))
                 .setDesc(stateText(row));
+            this.mountCheckbox(setting, row);
             const { scene, release } = row;
             const sceneId = scene?.sceneId;
             if (row.state === 'not_released' && scene && sceneId) {
@@ -168,13 +200,154 @@ export class SceneReleaseListModal extends ErtModal {
             }
         }
 
+        this.batchNoteEl = contentEl.createDiv({ cls: 'ert-scene-release-batch-note' });
         const actions = this.mountActions();
         actions.createEl('a', {
             text: t('ui.communityShareSection.sceneBodyReadersLink'),
             href: `${COMMUNITY_SITE_URL}/me/scenes/${encodeURIComponent(status.project_id)}`,
             attr: { target: '_blank', rel: 'noopener' },
         });
+        // The batch bar: appears when anything is checked.
+        this.batchEl = actions.createDiv({ cls: 'ert-scene-release-batch' });
         this.addClose(actions);
+        this.syncBatch();
+    }
+
+    /** A checkbox at the start of the row; a spacer on a row that can't join a batch, so the titles line up. */
+    private mountCheckbox(setting: Setting, row: SceneReleaseRow): void {
+        const list = this.list;
+        const key = batchKeyOf(row);
+        if (!list || !key) {
+            setting.settingEl.prepend(setting.settingEl.createSpan({ cls: 'ert-scene-release-check ert-scene-release-check--none' }));
+            return;
+        }
+        // The checkbox is named by the row's own visible title.
+        setting.nameEl.id = `ert-scene-release-name-${key}`;
+        const box = setting.settingEl.createEl('input', {
+            type: 'checkbox',
+            cls: 'ert-scene-release-check',
+            attr: { 'aria-labelledby': setting.nameEl.id },
+        });
+        setting.settingEl.prepend(box);
+        box.checked = this.checked.has(key);
+        box.disabled = this.busy || !batchSelectable(row, list.status);
+        box.addEventListener('change', () => {
+            if (box.checked) this.checked.add(key);
+            else this.checked.delete(key);
+            this.syncBatch();
+        });
+        this.boxes.set(key, box);
+    }
+
+    /**
+     * Bring the checkboxes, Select all, the limit note and the batch bar in line
+     * with what is checked, in place: the list keeps its scroll position.
+     */
+    private syncBatch(): void {
+        const list = this.list;
+        const { selectEl, batchNoteEl, batchEl } = this;
+        if (!list || !selectEl || !batchNoteEl || !batchEl) return;
+        const { rows, status } = list;
+        for (const [key, box] of this.boxes) box.checked = this.checked.has(key);
+        const selection = batchSelection(rows, this.checked, status);
+        const left = releasePlacesLeft(status);
+        const over = selection.release.length - left;
+
+        selectEl.empty();
+        const selectAll = (kind: SceneBatchKind, label: string) => {
+            const keys = selectableKeys(rows, kind, status);
+            if (keys.length === 0) return;
+            new ButtonComponent(selectEl)
+                .setButtonText(label)
+                .setDisabled(this.busy)
+                .onClick(() => {
+                    for (const key of keys) this.checked.add(key);
+                    this.syncBatch();
+                });
+        };
+        selectAll('release', t('ui.sceneReleaseModal.selectUnreleased'));
+        selectAll('takeDown', t('ui.sceneReleaseModal.selectReleased'));
+        if (this.checked.size > 0) {
+            new ButtonComponent(selectEl)
+                .setButtonText(t('ui.sceneReleaseModal.selectNone'))
+                .setDisabled(this.busy)
+                .onClick(() => {
+                    this.checked.clear();
+                    this.syncBatch();
+                });
+        }
+
+        batchNoteEl.empty();
+        if (over > 0) {
+            batchNoteEl.createDiv({
+                cls: ERT_CLASSES.FIELD_NOTE,
+                text: t('ui.sceneReleaseModal.batchOverLimit', { left: tCount('scene', left), over: tCount('scene', over) }),
+            });
+        }
+
+        batchEl.empty();
+        if (selection.release.length > 0) {
+            new ButtonComponent(batchEl)
+                .setButtonText(t('ui.sceneReleaseModal.batchRelease', { scenes: tCount('scene', selection.release.length) }))
+                .setCta()
+                .setDisabled(this.busy || over > 0)
+                .onClick(() => this.releaseChecked());
+        }
+        if (selection.takeDown.length > 0) {
+            new ButtonComponent(batchEl)
+                .setButtonText(t('ui.sceneReleaseModal.batchTakeDown', { scenes: tCount('scene', selection.takeDown.length) }))
+                .setDisabled(this.busy)
+                .onClick(() => this.takeDownChecked());
+        }
+    }
+
+    /** Release N scenes: the release terms first if they are not on record, then one confirm for all. */
+    private async releaseChecked(): Promise<void> {
+        const list = this.list;
+        if (!list || this.busy) return;
+        const scenes: BatchReleaseScene[] = batchSelection(list.rows, this.checked, list.status).release.flatMap(row => {
+            const sceneId = row.scene?.sceneId;
+            return row.scene && sceneId ? [{ path: row.scene.path, title: row.scene.title, sceneId }] : [];
+        });
+        if (scenes.length === 0 || scenes.length > releasePlacesLeft(list.status)) return;
+        try {
+            if (!await ensureReleaseTerms(this.plugin, this.book, list.status)) return;
+        } catch (error) {
+            new Notice(errorText(error, t('ui.communityShareSection.sceneBodyStatusFailed')));
+            return;
+        }
+        if (this.list === list) this.list = { ...list, status: { ...list.status, consent: true } };
+        this.busy = true;
+        new SceneReleaseBatchModal(this.app, {
+            plugin: this.plugin,
+            book: this.book,
+            scenes,
+            onDone: ran => this.batchDone(ran),
+        }).open();
+    }
+
+    /** Take down N scenes: one confirm naming them, then each in turn. */
+    private takeDownChecked(): void {
+        const list = this.list;
+        if (!list || this.busy) return;
+        const scenes: BatchTakeDownScene[] = batchSelection(list.rows, this.checked, list.status).takeDown.flatMap(row => (
+            row.release ? [{ title: rowName(row), release: row.release }] : []
+        ));
+        if (scenes.length === 0) return;
+        this.busy = true;
+        new SceneTakeDownBatchModal(this.app, {
+            plugin: this.plugin,
+            book: this.book,
+            scenes,
+            onDone: ran => this.batchDone(ran),
+        }).open();
+    }
+
+    private batchDone(ran: boolean): void {
+        this.busy = false;
+        if (!ran) return;
+        this.checked.clear();
+        this.changed();
     }
 
     private addClose(actions: HTMLElement): void {
@@ -184,6 +357,7 @@ export class SceneReleaseListModal extends ErtModal {
     }
 
     private openPreview(scene: { path: string; title: string; sceneId: string }, current?: SceneReleaseSummary): void {
+        if (this.busy) return;
         new SceneReleasePreviewModal(this.app, {
             plugin: this.plugin,
             book: this.book,
@@ -197,7 +371,9 @@ export class SceneReleaseListModal extends ErtModal {
         const confirmed = await confirmWithErtModal(this.app, {
             title: t('ui.sceneReleaseModal.takeDownTitle', { title }),
             // Taking down a scene that is hidden after a report has a consequence on the website: say it first.
-            message: t(release.hidden ? 'ui.sceneReleaseModal.takeDownHiddenMessage' : 'ui.sceneReleaseModal.takeDownMessage'),
+            message: release.hidden
+                ? `${t('ui.sceneReleaseModal.takeDownHiddenMessage')} ${t('ui.sceneReleaseModal.takeDownHiddenConsequence')}`
+                : t('ui.sceneReleaseModal.takeDownMessage'),
             confirmText: t('ui.sceneReleaseModal.takeDown'),
         });
         if (!confirmed || this.busy) return;

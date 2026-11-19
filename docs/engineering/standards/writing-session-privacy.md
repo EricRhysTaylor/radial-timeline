@@ -203,9 +203,12 @@ doctrine it implements: the server holds only text the author pushed for an
 audience, and the website never pulls from the vault.
 
 Exit point: `communityShareClient.releaseSceneBody`, to `scene-release-sync`
-with `action: "release"` or `"update"`. It has **one caller**: the primary
-button of the preview dialog (`src/modals/SceneReleasePreviewModal.ts`). No
-sync, timer, startup hook or status check calls it, and none may be added.
+with `action: "release"` or `"update"`. It has **two callers**, each the
+primary button of a dialog the author opened: the preview dialog
+(`src/modals/SceneReleasePreviewModal.ts`), and the batch release
+(`src/modals/SceneReleaseBatchModal.ts`, added 2026-11-18 at Eric's request),
+which releases the scenes checked in the list. No sync, timer, startup hook
+or status check calls it, and none may be added.
 
 What it sends, and nothing else:
 
@@ -232,11 +235,17 @@ The rules the code keeps, each pinned by a test:
 2. **The author sees exactly what is sent.** The dialog renders the blocks
    and sends those same blocks. On the press the note is read again; if its
    cleaned text is not the text on screen, nothing is sent and the new text
-   is shown.
+   is shown. The batch release is the one exception the author chooses: it
+   lists each checked scene by title and word count (a Preview button in the
+   list shows any one in full), sends the blocks read when it opened, and on
+   the press reads each note again; a scene whose text changed since is not
+   sent and is named in the result. It releases only new scenes, never an
+   update, one request at a time.
 3. **"Changed since release" is worked out in the vault.** The website
    reports each release's SHA-256; the plugin hashes its own cleaned text the
    same way and compares. The list dialog reads only the notes of scenes
-   already released, and a preview reads the one scene it shows.
+   already released, a preview reads the one scene it shows, and a batch
+   release reads the scenes checked for it.
 4. **Nothing is kept.** No scene text and no hash of it is written to plugin
    settings or anywhere on disk, and nothing is written to scene YAML. The
    per-book record `communityShare.sceneBodyShares` holds `profileId`,
@@ -361,7 +370,11 @@ Scene text has its own tests, with the tracer
   `take_down` carry no `blocks`; a paused share sends nothing; every sync
   entry point `main.ts` schedules runs with Share scene body on and none
   reaches `scene-release-sync` or reads a scene note; and a source check
-  that `releaseSceneBody` is called only from the preview dialog's button.
+  that `releaseSceneBody` is called only from the preview dialog's button
+  and the batch release's button, each after the note is read again.
+- `src/modals/SceneReleaseListModal.test.ts`: the batch release sends nothing
+  before the press, sends the blocks it read, and skips a scene whose note
+  changed in between.
 - `src/modals/SceneReleasePreviewModal.test.ts`: the blocks sent are the
   blocks on screen, and a note that changed between the preview and the
   press sends nothing.

@@ -19,7 +19,6 @@ import { Notice, Setting } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import {
     CommunityShareError,
-    acceptSceneReleaseTerms,
     fetchSceneReleaseStatus,
     setSceneBodySharing,
     type SceneReleaseStatus,
@@ -31,7 +30,7 @@ import {
     sceneBodyShareFor,
     timelineShareFor,
 } from '../../communityShare/communityShareSettings';
-import { confirmSceneReleaseTerms } from '../../modals/SceneReleaseConsentModal';
+import { ensureReleaseTerms } from '../../modals/SceneReleaseConsentModal';
 import { SceneReleaseListModal } from '../../modals/SceneReleaseListModal';
 import { ERT_CLASSES } from '../../ui/classes';
 import type { BookProfile, CommunityShareSettings } from '../../types/settings';
@@ -74,18 +73,6 @@ function unavailableReason(settings: CommunityShareSettings, book: BookProfile |
     if (!book || !book.sourceFolder?.trim()) return t('ui.communityShareSection.timelineNoBook');
     if (!timelineShareFor(settings, book.id)?.enabled) return t('ui.communityShareSection.sceneBodyTimelineNote');
     return null;
-}
-
-/**
- * The release terms, agreed once per account. Shows the consent dialog only
- * when the website has no agreement on record, and records one only when the
- * author presses I agree.
- */
-async function ensureReleaseTerms(plugin: RadialTimelinePlugin, book: BookProfile, status: SceneReleaseStatus): Promise<boolean> {
-    if (status.consent) return true;
-    if (!await confirmSceneReleaseTerms(plugin.app)) return false;
-    await acceptSceneReleaseTerms(plugin, book);
-    return true;
 }
 
 export function renderCommunitySceneBodyBlock({ plugin, containerEl, book, rerender }: CommunitySceneBodyBlockProps): void {

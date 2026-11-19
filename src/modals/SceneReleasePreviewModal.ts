@@ -50,6 +50,42 @@ export function renderSceneBlocks(parent: HTMLElement, blocks: readonly SceneBlo
 }
 
 /**
+ * The rating row: two pills, as on the website. The rating is the author's
+ * declaration, and one is always chosen. Shared by the preview and the batch
+ * release, so both read the same.
+ */
+export function mountRatingChoice(
+    parent: HTMLElement,
+    initial: SceneReleaseRating,
+    onChoose: (rating: SceneReleaseRating) => void
+): void {
+    let chosen = initial;
+    const ratingRow = new Setting(parent).setName(t('ui.sceneReleaseModal.ratingName'));
+    ratingRow.descEl.createDiv({ text: t('ui.sceneReleaseModal.ratingGeneralDesc') });
+    ratingRow.descEl.createDiv({ text: t('ui.sceneReleaseModal.ratingMatureDesc') });
+    const pills = ratingRow.controlEl.createDiv({ cls: 'ert-scene-release-rating' });
+    const choices: Array<{ rating: SceneReleaseRating; button: ButtonComponent }> = [];
+    const syncPills = () => {
+        for (const { rating, button } of choices) {
+            button.buttonEl.toggleClass('is-active', rating === chosen);
+            button.buttonEl.setAttribute('aria-pressed', String(rating === chosen));
+        }
+    };
+    for (const rating of RATINGS) {
+        const button = new ButtonComponent(pills)
+            .setButtonText(t(rating === 'general' ? 'ui.sceneReleaseModal.ratingGeneral' : 'ui.sceneReleaseModal.ratingMature'))
+            .onClick(() => {
+                chosen = rating;
+                syncPills();
+                onChoose(rating);
+            });
+        button.buttonEl.setAttribute('data-ert-toggle', '');
+        choices.push({ rating, button });
+    }
+    syncPills();
+}
+
+/**
  * The preview before a release or an update: exactly what readers will see.
  *
  * The scene's text leaves the vault here and nowhere else, on the press of the
@@ -123,29 +159,7 @@ export class SceneReleasePreviewModal extends ErtModal {
             return;
         }
 
-        // Two pills, as on the website: the rating is the author's declaration, and one is always chosen.
-        const ratingRow = new Setting(contentEl).setName(t('ui.sceneReleaseModal.ratingName'));
-        ratingRow.descEl.createDiv({ text: t('ui.sceneReleaseModal.ratingGeneralDesc') });
-        ratingRow.descEl.createDiv({ text: t('ui.sceneReleaseModal.ratingMatureDesc') });
-        const pills = ratingRow.controlEl.createDiv({ cls: 'ert-scene-release-rating' });
-        const choices: Array<{ rating: SceneReleaseRating; button: ButtonComponent }> = [];
-        const syncPills = () => {
-            for (const { rating, button } of choices) {
-                button.buttonEl.toggleClass('is-active', rating === this.rating);
-                button.buttonEl.setAttribute('aria-pressed', String(rating === this.rating));
-            }
-        };
-        for (const rating of RATINGS) {
-            const button = new ButtonComponent(pills)
-                .setButtonText(t(rating === 'general' ? 'ui.sceneReleaseModal.ratingGeneral' : 'ui.sceneReleaseModal.ratingMature'))
-                .onClick(() => {
-                    this.rating = rating;
-                    syncPills();
-                });
-            button.buttonEl.setAttribute('data-ert-toggle', '');
-            choices.push({ rating, button });
-        }
-        syncPills();
+        mountRatingChoice(contentEl, this.rating, rating => { this.rating = rating; });
 
         contentEl.createDiv({
             cls: ERT_CLASSES.FIELD_NOTE,

@@ -20,6 +20,7 @@ vi.mock('../../tests/mocks/obsidian', async (original) => {
 import * as obsidian from 'obsidian';
 import { TFile } from 'obsidian';
 import { FakeModal, fakeWindow, notices, resetFakeDom, type FakeElement } from '../../tests/mocks/fakeDom';
+import { SCENE_AUTHOR_AGREEMENT_VERSION } from '../communityShare/sceneAgreement';
 import { buildDefaultCommunityShareSettings } from '../communityShare/communityShareSettings';
 import { parsePastedScene, sceneTextHash } from '../communityShare/sceneReleaseText';
 import { t } from '../i18n';
@@ -88,12 +89,26 @@ function harness() {
     return { modal, screen, plugin, read, onChanged, named };
 }
 
-function website(status: Record<string, unknown>) {
+/** The website: answers each action; `refuse` maps a scene id or release id to a refusal. */
+function website(status: Record<string, unknown>, refuse: Record<string, { code: string; message: string }> = {}) {
     const request = vi.spyOn(obsidian, 'requestUrl');
     request.mockReset();
     request.mockImplementation((async (options: { body: string }) => {
-        const action = (JSON.parse(options.body) as { action?: string }).action;
-        return { status: 200, text: JSON.stringify(action === 'take_down' ? { ok: true } : status) };
+        const body = JSON.parse(options.body) as { action?: string; scene_id?: string; release_id?: string; rating?: string };
+        const refusal = refuse[body.scene_id ?? body.release_id ?? ''];
+        if (refusal) return { status: 409, text: JSON.stringify({ error: refusal }) };
+        if (body.action === 'take_down') return { status: 200, text: JSON.stringify({ ok: true }) };
+        if (body.action === 'consent') return { status: 200, text: JSON.stringify({ ok: true, version: SCENE_AUTHOR_AGREEMENT_VERSION }) };
+        if (body.action === 'release') {
+            return {
+                status: 200,
+                text: JSON.stringify({ release: {
+                    id: `new-${body.scene_id}`, scene_title: 'Scene', version: 1, rating: body.rating, words: 1, hidden: false,
+                    released_at: '2026-11-18T10:00:00Z', updated_at: '2026-11-18T10:00:00Z',
+                } }),
+            };
+        }
+        return { status: 200, text: JSON.stringify(status) };
     }) as never);
     return request;
 }
@@ -283,5 +298,289 @@ describe('Release scenes', () => {
         await vi.waitFor(() => expect(h.screen.content).toContain('Sync this book to My Share first.'));
         expect(h.screen.buttons.map(button => button.text)).toEqual([t('ui.sceneReleaseModal.listRetry'), t('ui.sceneReleaseModal.close')]);
         expect(h.read).not.toHaveBeenCalled();
+    });
+});
+
+describe('Release scenes, several at once', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        resetFakeDom();
+    });
+
+    const STATUS = { project_id: PROJECT_ID, consent: true, standing: null, has_timeline: true, limit: 5 };
+    /** Released: 2 Storm and the website's own r9. Unreleased: 1 Opening, 3 Letter, 4 Trial. */
+    const twoReleased = async () => (await releases()).filter(release => release.id === 'r2' || release.id === 'r9');
+    const box = (h: ReturnType<typeof harness>, name: string) => h.named(name).settingEl.checkboxes[0];
+    const batchDialog = () => FakeModal.opened[FakeModal.opened.length - 1].contentEl as unknown as FakeElement;
+    const actions = (request: ReturnType<typeof vi.spyOn>) => sent(request).map(body => body.action);
+
+    it('puts a checkbox on each row that can join a batch, and none on a scene that has no id', async () => {
+        const h = harness();
+        website({ ...STATUS, releases: await releases() });
+        await opened(h);
+        expect(h.screen.settings.map(setting => setting.settingEl.checkboxes.length)).toEqual([1, 1, 1, 1, 0, 1]);
+        // The checkbox comes first in its row, before the title.
+        expect(h.named('2 Storm').settingEl.children[0].type).toBe('checkbox');
+        // Named by the row's own visible title.
+        expect(box(h, '2 Storm').getAttribute('aria-labelledby')).toBe(h.named('2 Storm').nameEl.id);
+        expect(h.named('2 Storm').nameEl.id).toBe('ert-scene-release-name-release:r2');
+        // Nothing checked: no batch bar.
+        expect(h.screen.find('ert-scene-release-batch')[0].children).toHaveLength(0);
+    });
+
+    it('shows one batch button for each kind checked, with its count', async () => {
+        const h = harness();
+        website({ ...STATUS, releases: await releases() });
+        await opened(h);
+        box(h, '2 Storm').toggle();
+        expect(h.screen.find('ert-scene-release-batch')[0].buttons.map(button => button.text)).toEqual(['Take down 1 scene']);
+        box(h, 'Released from the website: Website r9').toggle();
+        box(h, '1 Opening').toggle();
+        expect(h.screen.find('ert-scene-release-batch')[0].buttons.map(button => button.text))
+            .toEqual(['Release 1 scene', 'Take down 2 scenes']);
+        box(h, '2 Storm').toggle();
+        box(h, 'Released from the website: Website r9').toggle();
+        expect(h.screen.find('ert-scene-release-batch')[0].buttons.map(button => button.text)).toEqual(['Release 1 scene']);
+    });
+
+    it('Select all released and Select all unreleased check every row of their kind; Clear selection unchecks them', async () => {
+        const h = harness();
+        website({ ...STATUS, limit: 10, releases: await twoReleased() });
+        await opened(h);
+        const select = h.screen.find('ert-scene-release-select')[0];
+        expect(select.buttons.map(button => button.text)).toEqual(['Select all unreleased', 'Select all released']);
+        await select.buttonNamed('Select all released').click();
+        expect(h.screen.checkboxes.filter(el => el.checked)).toEqual([box(h, '2 Storm'), box(h, 'Released from the website: Website r9')]);
+        await select.buttonNamed('Select all unreleased').click();
+        expect(h.screen.find('ert-scene-release-batch')[0].buttons.map(button => button.text))
+            .toEqual(['Release 3 scenes', 'Take down 2 scenes']);
+        await select.buttonNamed('Clear selection').click();
+        expect(h.screen.checkboxes.filter(el => el.checked)).toEqual([]);
+        expect(select.buttons.map(button => button.text)).toEqual(['Select all unreleased', 'Select all released']);
+    });
+
+    it('at the limit, or while the website has paused the account, only released scenes can be checked', async () => {
+        const atLimit = harness();
+        website({ ...STATUS, limit: 4, releases: await releases() });
+        await opened(atLimit);
+        expect(box(atLimit, '1 Opening').disabled).toBe(true);
+        expect(box(atLimit, '2 Storm').disabled).toBe(false);
+        expect(atLimit.screen.find('ert-scene-release-select')[0].buttons.map(button => button.text)).toEqual(['Select all released']);
+
+        resetFakeDom();
+        const paused = harness();
+        website({ ...STATUS, standing: 'account_flagged', releases: await releases() });
+        await opened(paused);
+        expect(box(paused, '1 Opening').disabled).toBe(true);
+        expect(box(paused, '4 Trial').disabled).toBe(false);
+    });
+
+    it('says how many places are left when more are checked, and releases only once the count fits', async () => {
+        const h = harness();
+        website({ ...STATUS, limit: 4, releases: await twoReleased() });
+        await opened(h);
+        await h.screen.find('ert-scene-release-select')[0].buttonNamed('Select all unreleased').click();
+        expect(h.screen.find('ert-scene-release-batch-note')[0].content)
+            .toBe('2 scenes can still be released. Uncheck 1 scene to release the rest.');
+        expect(h.screen.buttonNamed('Release 3 scenes').disabled).toBe(true);
+        box(h, '4 Trial').toggle();
+        expect(h.screen.find('ert-scene-release-batch-note')[0].content).toBe('');
+        expect(h.screen.buttonNamed('Release 2 scenes').disabled).toBe(false);
+    });
+
+    it('keeps what is checked when the list rereads the website', async () => {
+        const h = harness();
+        const request = website({ ...STATUS, releases: await releases() });
+        await opened(h);
+        box(h, '2 Storm').toggle();
+        fakeWindow.dispatch('focus');
+        await vi.waitFor(() => expect(actions(request)).toEqual(['status', 'status']));
+        await vi.waitFor(() => expect(box(h, '2 Storm').checked).toBe(true));
+        expect(h.screen.buttonNamed('Take down 1 scene').disabled).toBe(false);
+    });
+
+    it('batch release: one confirm listing each scene, its word count and any problem, General by default', async () => {
+        const h = harness();
+        const request = website({ ...STATUS, releases: await twoReleased() });
+        h.read.mockImplementation(async (file: TFile) => (file.path === 'Book/4 Trial.md' ? '---\nClass: Scene\n---\n' : NOTES[file.path]));
+        await opened(h);
+        await h.screen.find('ert-scene-release-select')[0].buttonNamed('Select all unreleased').click();
+        await h.screen.buttonNamed('Release 3 scenes').click();
+        const batch = batchDialog();
+        await vi.waitFor(() => expect(batch.find('ert-scene-release-batch-list')).toHaveLength(1));
+
+        expect(batch.find('ert-modal-title')[0].text).toBe('Release 3 scenes');
+        expect(batch.find('ert-scene-release-batch-list')[0].settings.map(setting => [setting.name, setting.desc])).toEqual([
+            ['1 Opening', '1 word'],
+            ['3 Letter', '3 words'],
+            ['4 Trial', `0 words ${t('ui.communityShareClient.sceneReleaseEmpty')}`],
+        ]);
+        expect(batch.content).toContain('General: for any reader.');
+        expect(batch.content).toContain('Mature: for adult readers.');
+        expect(batch.content).toContain('Next, choose their readers on the website.');
+        expect(batch.buttonNamed('General').buttonEl.getAttribute('aria-pressed')).toBe('true');
+        // Only the scenes that can go are counted on the button.
+        expect(batch.buttons.filter(button => button.cta).map(button => button.text)).toEqual(['Release 2 scenes']);
+        // Nothing is sent before the press.
+        expect(actions(request)).toEqual(['status']);
+    });
+
+    it('batch release sends each scene in turn with the chosen rating, then says how it went and rereads the list', async () => {
+        const h = harness();
+        const request = website({ ...STATUS, releases: await twoReleased() });
+        await opened(h);
+        box(h, '1 Opening').toggle();
+        box(h, '3 Letter').toggle();
+        await h.screen.buttonNamed('Release 2 scenes').click();
+        const batch = batchDialog();
+        await vi.waitFor(() => expect(batch.find('ert-scene-release-batch-list')).toHaveLength(1));
+        await batch.buttonNamed('Mature').click();
+        await batch.buttonNamed('Release 2 scenes').click();
+
+        const releasesSent = sent(request).filter(body => body.action === 'release');
+        expect(releasesSent.map(body => [body.scene_id, body.rating])).toEqual([['scn_00000001', 'mature'], ['scn_00000003', 'mature']]);
+        expect(releasesSent[0].blocks).toEqual(parsePastedScene('UNRELEASED_ONE'));
+        expect(releasesSent.every(body => !('expected_version' in body))).toBe(true);
+        expect(batch.find('ert-scene-release-batch-result')[0].content).toBe('Released 2 of 2.');
+        expect(batch.buttons.map(button => button.text)).toEqual(['Close']);
+        await vi.waitFor(() => expect(actions(request)).toEqual(['status', 'release', 'release', 'status']));
+        expect(h.onChanged).toHaveBeenCalledTimes(1);
+        // The selection went with the batch.
+        await vi.waitFor(() => expect(h.screen.checkboxes.filter(el => el.checked)).toEqual([]));
+    });
+
+    it('batch release names each scene that did not go, and why, in plain words', async () => {
+        const h = harness();
+        const request = website({ ...STATUS, releases: await twoReleased() }, {
+            scn_00000003: { code: 'scene_under_review', message: 'This scene is being checked. Try again once the check is done.' },
+        });
+        h.read.mockImplementation(async (file: TFile) => (file.path === 'Book/4 Trial.md' ? '---\nClass: Scene\n---\n' : NOTES[file.path]));
+        await opened(h);
+        await h.screen.find('ert-scene-release-select')[0].buttonNamed('Select all unreleased').click();
+        await h.screen.buttonNamed('Release 3 scenes').click();
+        const batch = batchDialog();
+        await vi.waitFor(() => expect(batch.find('ert-scene-release-batch-list')).toHaveLength(1));
+        await batch.buttonNamed('Release 2 scenes').click();
+
+        expect(sent(request).filter(body => body.action === 'release').map(body => body.scene_id)).toEqual(['scn_00000001', 'scn_00000003']);
+        const result = batch.find('ert-scene-release-batch-result')[0].children.map(line => line.text);
+        expect(result).toEqual([
+            'Released 1 of 3.',
+            '3 Letter: This scene is being checked. Try again once the check is done.',
+            `4 Trial: ${t('ui.communityShareClient.sceneReleaseEmpty')}`,
+        ]);
+    });
+
+    it('batch release sends nothing for a scene whose note changed after the dialog opened', async () => {
+        const h = harness();
+        const request = website({ ...STATUS, releases: await twoReleased() });
+        await opened(h);
+        box(h, '1 Opening').toggle();
+        box(h, '3 Letter').toggle();
+        await h.screen.buttonNamed('Release 2 scenes').click();
+        const batch = batchDialog();
+        await vi.waitFor(() => expect(batch.find('ert-scene-release-batch-list')).toHaveLength(1));
+        h.read.mockImplementation(async (file: TFile) => (file.path === 'Book/1 Opening.md' ? '---\nClass: Scene\n---\nA new opening.' : NOTES[file.path]));
+        await batch.buttonNamed('Release 2 scenes').click();
+
+        expect(sent(request).filter(body => body.action === 'release').map(body => body.scene_id)).toEqual(['scn_00000003']);
+        expect(JSON.stringify(sent(request))).not.toContain('A new opening.');
+        expect(batch.find('ert-scene-release-batch-result')[0].children.map(line => line.text))
+            .toEqual(['Released 1 of 2.', `1 Opening: ${t('ui.sceneReleaseModal.batchChanged')}`]);
+    });
+
+    it('batch release asks for the release terms first when they are not on record', async () => {
+        const h = harness();
+        const request = website({ ...STATUS, consent: false, releases: await twoReleased() });
+        await opened(h);
+        box(h, '1 Opening').toggle();
+        const pressing = h.screen.buttonNamed('Release 1 scene').click();
+        await vi.waitFor(() => expect(FakeModal.opened).toHaveLength(2));
+        await batchDialog().buttonNamed(t('ui.sceneReleaseModal.consentAgree')).click();
+        await pressing;
+        expect(actions(request)).toEqual(['status', 'consent']);
+        expect(FakeModal.opened).toHaveLength(3);
+        await vi.waitFor(() => expect(batchDialog().find('ert-scene-release-batch-list')).toHaveLength(1));
+    });
+
+    it('batch release does nothing when the author cancels the release terms', async () => {
+        const h = harness();
+        const request = website({ ...STATUS, consent: false, releases: await twoReleased() });
+        await opened(h);
+        box(h, '1 Opening').toggle();
+        const pressing = h.screen.buttonNamed('Release 1 scene').click();
+        await vi.waitFor(() => expect(FakeModal.opened).toHaveLength(2));
+        await batchDialog().buttonNamed('Cancel').click();
+        await pressing;
+        expect(actions(request)).toEqual(['status']);
+        expect(FakeModal.opened).toHaveLength(2);
+        // Still checked, still offered.
+        expect(h.screen.buttonNamed('Release 1 scene').disabled).toBe(false);
+    });
+
+    it('batch take-down: one confirm naming the scenes, in the single take-down\'s words', async () => {
+        const h = harness();
+        const request = website({ ...STATUS, releases: await releases() });
+        await opened(h);
+        box(h, '2 Storm').toggle();
+        box(h, 'Released from the website: Website r9').toggle();
+        await h.screen.buttonNamed('Take down 2 scenes').click();
+        const confirm = batchDialog();
+        expect(confirm.find('ert-modal-title')[0].text).toBe('Take down 2 scenes?');
+        expect(confirm.find('ert-scene-release-batch-list')[0].settings.map(setting => setting.name))
+            .toEqual(['2 Storm', 'Released from the website: Website r9']);
+        expect(confirm.content).toContain(t('ui.sceneReleaseModal.takeDownMessage'));
+        expect(confirm.content).not.toContain(t('ui.sceneReleaseModal.takeDownHiddenConsequence'));
+        await confirm.buttonNamed('Cancel').click();
+        expect(actions(request)).toEqual(['status']);
+        expect(h.onChanged).not.toHaveBeenCalled();
+    });
+
+    it('batch take-down says what follows for a scene hidden after a report, once', async () => {
+        const h = harness();
+        website({ ...STATUS, releases: await releases() });
+        await opened(h);
+        await h.screen.find('ert-scene-release-select')[0].buttonNamed('Select all released').click();
+        await h.screen.buttonNamed('Take down 4 scenes').click();
+        const confirm = batchDialog();
+        const consequence = t('ui.sceneReleaseModal.takeDownHiddenConsequence');
+        expect(confirm.content).toContain('Hidden after a reader\'s report: 4 Trial.');
+        expect(confirm.content.split(consequence)).toHaveLength(2);
+    });
+
+    it('batch take-down takes each down in turn, says how it went, and rereads the list', async () => {
+        const h = harness();
+        const request = website({ ...STATUS, releases: await releases() }, {
+            r4: { code: 'not_found', message: 'This release is no longer on the website.' },
+        });
+        await opened(h);
+        box(h, '2 Storm').toggle();
+        box(h, '4 Trial').toggle();
+        await h.screen.buttonNamed('Take down 2 scenes').click();
+        const confirm = batchDialog();
+        await confirm.buttonNamed('Take down 2 scenes').click();
+
+        expect(sent(request).filter(body => body.action === 'take_down')).toEqual([
+            { connection_id: 'conn-1', current_secret: 'rtcs_current-secret', plugin_book_key: 'book-1', action: 'take_down', release_id: 'r2' },
+            { connection_id: 'conn-1', current_secret: 'rtcs_current-secret', plugin_book_key: 'book-1', action: 'take_down', release_id: 'r4' },
+        ]);
+        expect(confirm.find('ert-scene-release-batch-result')[0].children.map(line => line.text))
+            .toEqual(['Took down 1 of 2.', '4 Trial: This release is no longer on the website.']);
+        await vi.waitFor(() => expect(actions(request)).toEqual(['status', 'take_down', 'take_down', 'status']));
+        expect(h.onChanged).toHaveBeenCalledTimes(1);
+    });
+
+    it('the single take-down of a hidden scene still says the whole consequence', async () => {
+        const h = harness();
+        website({ ...STATUS, releases: await releases() });
+        await opened(h);
+        const pressing = h.named('4 Trial').buttons[0].click();
+        await vi.waitFor(() => expect(FakeModal.opened).toHaveLength(2));
+        const confirm = batchDialog();
+        expect(confirm.content).toContain(
+            'The text is deleted. You keep the feedback you received, with the short passages it quotes. This scene is hidden after a reader\'s report, so once you take it down,'
+        );
+        await confirm.buttonNamed('Cancel').click();
+        await pressing;
     });
 });

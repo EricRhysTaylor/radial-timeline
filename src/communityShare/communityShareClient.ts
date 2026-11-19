@@ -1606,7 +1606,9 @@ async function runTimelineSync(plugin: RadialTimelinePlugin): Promise<void> {
 // The only path by which scene text leaves the vault. Text is sent by
 // releaseSceneBody alone, and that is called only from the preview dialog's
 // Release / Update button (SceneReleasePreviewModal), after the author has
-// seen the very blocks that go. No sync, timer or startup hook calls it:
+// seen the very blocks that go, or from the batch release's Release button
+// (SceneReleaseBatchModal), after the author has confirmed the checked
+// scenes by title and word count. No sync, timer or startup hook calls it:
 // status, consent and take-down carry no text, and nothing here runs on its
 // own. Contract: Platform/COMMUNITY-SHARE-AMENDMENT-2-PRIVATE-SCENE-TEXT.md;
 // doctrine: docs/engineering/standards/writing-session-privacy.md.
@@ -1832,7 +1834,8 @@ export async function acceptSceneReleaseTerms(plugin: RadialTimelinePlugin, book
  * `expectedVersion` is given (the version the status answer reported).
  *
  * The one call that sends scene text. Call it only from the preview dialog's
- * Release / Update button, with the blocks that dialog rendered.
+ * Release / Update button, with the blocks that dialog rendered, or from the
+ * batch release's Release button, with the blocks read when it opened.
  */
 export async function releaseSceneBody(
     plugin: RadialTimelinePlugin,

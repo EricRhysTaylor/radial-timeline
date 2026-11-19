@@ -440,7 +440,7 @@ describe('background sync never sends scene text', () => {
     });
 });
 
-describe('the release call has one caller', () => {
+describe('the release call has two callers, each behind its own button', () => {
     const SRC = resolve(process.cwd(), 'src');
     const sources = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
         const full = join(dir, entry.name);
@@ -455,9 +455,10 @@ describe('the release call has one caller', () => {
         expect(naming("'scene-release-sync'")).toEqual(['communityShare/communityShareClient.ts']);
     });
 
-    it('releaseSceneBody is defined in the client and called only by the preview dialog', () => {
+    it('releaseSceneBody is defined in the client and called only by the preview and the batch release', () => {
         expect(naming('releaseSceneBody')).toEqual([
             'communityShare/communityShareClient.ts',
+            'modals/SceneReleaseBatchModal.ts',
             'modals/SceneReleasePreviewModal.ts'
         ]);
         const client = files.find(file => file.path === 'communityShare/communityShareClient.ts')!.text;
@@ -478,6 +479,23 @@ describe('the release call has one caller', () => {
         expect(send.indexOf('readSceneReleaseDraft(')).toBeGreaterThan(-1);
         expect(send.indexOf('now.hash !== previewed.hash')).toBeLessThan(send.indexOf('await releaseSceneBody('));
         expect(send.indexOf('readSceneReleaseDraft(')).toBeLessThan(send.indexOf('now.hash !== previewed.hash'));
+    });
+
+    it('the batch release calls it once, per scene, only after the author presses its one primary button', () => {
+        const modal = files.find(file => file.path === 'modals/SceneReleaseBatchModal.ts')!.text;
+        expect(count(modal, 'releaseSceneBody(')).toBe(1);
+        const releaseOne = modal.slice(modal.indexOf('private async releaseOne('));
+        expect(releaseOne).toContain('await releaseSceneBody(');
+        // releaseOne runs only from send(), and send() only from that button's click.
+        expect(count(modal, 'this.releaseOne(')).toBe(1);
+        const send = modal.slice(modal.indexOf('private async send('), modal.indexOf('private async releaseOne('));
+        expect(send).toContain('this.releaseOne(');
+        expect(count(modal, 'this.send(')).toBe(1);
+        expect(modal).toContain('.onClick(() => this.send());');
+        // Each note is read again, and compared with the text confirmed, before its text goes.
+        expect(releaseOne.indexOf('readSceneReleaseDraft(')).toBeGreaterThan(-1);
+        expect(releaseOne.indexOf('readSceneReleaseDraft(')).toBeLessThan(releaseOne.indexOf('now.hash !== confirmed.hash'));
+        expect(releaseOne.indexOf('now.hash !== confirmed.hash')).toBeLessThan(releaseOne.indexOf('await releaseSceneBody('));
     });
 
     it('nothing main.ts schedules knows about scene releases', () => {

@@ -5,6 +5,9 @@
  */
 
 import { App, ButtonComponent } from 'obsidian';
+import type RadialTimelinePlugin from '../main';
+import { acceptSceneReleaseTerms, type SceneReleaseStatus } from '../communityShare/communityShareClient';
+import type { BookProfile } from '../types/settings';
 import { ErtModal } from '../ui/ErtModal';
 import { t } from '../i18n';
 import { COMMUNITY_SITE_URL } from '../communityShare/communityMailbox';
@@ -86,4 +89,20 @@ export function confirmSceneReleaseTerms(app: App): Promise<boolean> {
     return new Promise(resolve => {
         new SceneReleaseConsentModal(app, resolve).open();
     });
+}
+
+/**
+ * The release terms, agreed once per account. Shows the consent dialog only
+ * when the website has no agreement on record, and records one only when the
+ * author presses I agree. Every way into a release goes through this.
+ */
+export async function ensureReleaseTerms(
+    plugin: RadialTimelinePlugin,
+    book: Pick<BookProfile, 'id'>,
+    status: Pick<SceneReleaseStatus, 'consent'>
+): Promise<boolean> {
+    if (status.consent) return true;
+    if (!await confirmSceneReleaseTerms(plugin.app)) return false;
+    await acceptSceneReleaseTerms(plugin, book);
+    return true;
 }

@@ -2681,7 +2681,7 @@
 .ert-release-terms__clause {
     display: grid;
     grid-template-columns: 2em minmax(0, 1fr);
-    column-gap: var(--size-4-3);
+    gap: 0 var(--size-4-3);
     align-items: baseline;
     margin: 0;
     padding-block: var(--size-4-5);

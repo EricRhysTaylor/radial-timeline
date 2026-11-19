@@ -73,13 +73,17 @@ export class SceneReleaseListModal extends ErtModal {
     private selectEl: HTMLElement | null = null;
     private batchNoteEl: HTMLElement | null = null;
     private batchEl: HTMLElement | null = null;
+    /** The focused scene is scrolled to once, on the first list shown; its highlight stays. */
+    private scrolledToFocus = false;
 
     constructor(
         app: App,
         private readonly plugin: RadialTimelinePlugin,
         private readonly book: BookProfile,
         /** The website's releases changed: the settings block rereads its count. */
-        private readonly onChanged: () => void
+        private readonly onChanged: () => void,
+        /** A scene to scroll to and highlight (the Release scenes link), by its scene id. */
+        private readonly focusSceneId?: string
     ) {
         super(app);
     }
@@ -175,6 +179,7 @@ export class SceneReleaseListModal extends ErtModal {
             listEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: t('ui.sceneReleaseModal.listEmpty') });
         }
         const blocked = this.busy || status.standing !== null;
+        let focusEl: HTMLElement | null = null;
         for (const row of rows) {
             const setting = new Setting(listEl)
                 .setName(rowName(row))
@@ -182,6 +187,10 @@ export class SceneReleaseListModal extends ErtModal {
             this.mountCheckbox(setting, row);
             const { scene, release } = row;
             const sceneId = scene?.sceneId;
+            if (this.focusSceneId && sceneId === this.focusSceneId) {
+                setting.settingEl.addClass('ert-scene-release-row--focus');
+                focusEl = setting.settingEl;
+            }
             if (row.state === 'not_released' && scene && sceneId) {
                 setting.addButton(button => button
                     .setButtonText(t('ui.sceneReleaseModal.previewAndRelease'))
@@ -213,6 +222,10 @@ export class SceneReleaseListModal extends ErtModal {
         });
         this.addClose(actions);
         this.syncBatch();
+        if (focusEl && !this.scrolledToFocus) {
+            this.scrolledToFocus = true;
+            focusEl.scrollIntoView({ block: 'center' });
+        }
     }
 
     /** A checkbox at the start of the row; a spacer on a row that can't join a batch, so the titles line up. */

@@ -500,6 +500,19 @@ describe('the release call has two callers, each behind its own button', () => {
 
     it('nothing main.ts schedules knows about scene releases', () => {
         const main = files.find(file => file.path === 'main.ts')!.text;
-        expect(main).not.toMatch(/sceneRelease|SceneRelease|releaseSceneBody|sceneBody/);
+        // One exception: registering the Release scenes link, which runs only when the author opens it.
+        const linkLines = main.split('\n').filter(line => line.includes('SceneReleaseLink'));
+        expect(linkLines.map(line => line.trim())).toEqual([
+            "import { registerSceneReleaseLink } from './services/SceneReleaseLinkService';",
+            'registerSceneReleaseLink(this);',
+        ]);
+        const rest = main.split('\n').filter(line => !line.includes('SceneReleaseLink')).join('\n');
+        expect(rest).not.toMatch(/sceneRelease|SceneRelease|releaseSceneBody|sceneBody/);
+    });
+
+    it('the Release scenes link registers one protocol handler and sends no text', () => {
+        const service = files.find(file => file.path === 'services/SceneReleaseLinkService.ts')!.text;
+        expect(count(service, 'registerObsidianProtocolHandler(')).toBe(1);
+        expect(service).not.toMatch(/releaseSceneBody|setSceneBodySharing|registerInterval|setInterval/);
     });
 });

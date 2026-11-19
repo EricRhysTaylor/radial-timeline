@@ -56,7 +56,7 @@ async function releases() {
     ];
 }
 
-function harness() {
+function harness(focusSceneId?: string) {
     const read = vi.fn(async (file: TFile) => NOTES[file.path]);
     const settings = buildDefaultCommunityShareSettings();
     settings.enabled = true;
@@ -83,7 +83,7 @@ function harness() {
     };
     const onChanged = vi.fn();
     const book = { id: 'book-1', title: 'The Book', sourceFolder: 'Book' };
-    const modal = new SceneReleaseListModal(app as never, plugin as never, book as never, onChanged);
+    const modal = new SceneReleaseListModal(app as never, plugin as never, book as never, onChanged, focusSceneId);
     const screen = modal.contentEl as unknown as FakeElement;
     const named = (name: string) => screen.settings.find(setting => setting.name === name)!;
     return { modal, screen, plugin, read, onChanged, named };
@@ -144,6 +144,20 @@ describe('Release scenes', () => {
         expect(h.screen.content).not.toContain(t('ui.sceneReleaseModal.listAtLimit'));
         const link = h.screen.all().find(el => el.tag === 'a')!;
         expect(link.href).toBe(`https://community.radialtimeline.com/me/scenes/${PROJECT_ID}`);
+    });
+
+    it('opened from a Release scenes link, highlights that scene and scrolls to it once', async () => {
+        const h = harness('scn_00000002');
+        const request = website({ project_id: PROJECT_ID, consent: true, standing: null, has_timeline: true, limit: 5, releases: await releases() });
+        await opened(h);
+        const storm = h.named('2 Storm').settingEl as unknown as FakeElement;
+        expect(storm.classList.contains('ert-scene-release-row--focus')).toBe(true);
+        expect(storm.scrolledIntoView).toBe(1);
+        expect(h.screen.settings.filter(setting => (setting.settingEl as unknown as FakeElement).classList.contains('ert-scene-release-row--focus')))
+            .toHaveLength(1);
+        // Its buttons are the list's own: a released scene offers Take down.
+        expect(h.named('2 Storm').buttons.map(button => button.text)).toEqual([TAKE_DOWN]);
+        expect(sent(request).map(body => body.action)).toEqual(['status']);
     });
 
     it('has one scroll area, the list: the header and footer sit outside it', async () => {

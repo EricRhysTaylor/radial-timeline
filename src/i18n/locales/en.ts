@@ -6959,6 +6959,13 @@ export const en = {
             updatedNotice: 'Scene updated for every reader.',
             revisionConflict: 'This release changed on the website, so the update was not applied. The list has been reloaded.',
         },
+        sceneReleaseLink: {
+            invalid: 'This Release scenes link is incomplete. Open it again from the Community website.',
+            connect: 'Connect this vault to Community in Settings → Radial Timeline → Community, then open the link again.',
+            otherBook: 'This vault shares a different book. Open the vault connected to that book, then open the link again.',
+            turnOnSceneBody: 'Turn on Share scene body for {{book}}, then open the link again.',
+            sceneMissing: 'That scene isn\'t in this book in this vault. Choose a scene from the list instead.',
+        },
         sceneNormalizerSection: {
             unchangedCount: '{{count}} unchanged',
             updatedScenesPart: 'Updated {{scenes}}',

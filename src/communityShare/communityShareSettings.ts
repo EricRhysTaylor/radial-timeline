@@ -240,7 +240,8 @@ function normalizeDailyBackfill(value: unknown): CommunityDailyBackfillRecord | 
     };
 }
 
-const COMMUNITY_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** A website id (project, question): only a UUID becomes part of a link. */
+export const COMMUNITY_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function normalizeDeskLamps(value: unknown): CommunityDeskLampsRecord | undefined {
     if (!value || typeof value !== 'object') return undefined;

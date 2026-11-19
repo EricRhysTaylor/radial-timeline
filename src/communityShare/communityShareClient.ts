@@ -4,7 +4,7 @@ import { apiVersion, Platform, requestUrl } from 'obsidian';
 import type RadialTimelinePlugin from '../main';
 import { t } from '../i18n';
 import { deleteSecret, getSecret, isSecretStorageAvailable, setSecret } from '../ai/credentials/secretStorage';
-import { canShareAprToCommunity, canShareTimelineToCommunity, deriveCommunityShareMode, expectsBookListSync, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, sceneBodyShareFor, timelineShareFor } from './communityShareSettings';
+import { COMMUNITY_UUID_RE, canShareAprToCommunity, canShareTimelineToCommunity, deriveCommunityShareMode, expectsBookListSync, hasActiveCommunityConnection, hasCommunityConnection, normalizeCommunityShareSettings, sceneBodyShareFor, timelineShareFor } from './communityShareSettings';
 import { buildTimelineSharePayload, hasAmbiguousSceneIdHolders, sceneIdHolders, timelinePayloadFingerprint } from './timelineSharePayload';
 import { sceneTextProblem, type SceneBlock, type SceneTextProblem } from './sceneReleaseText';
 import { isOpaqueSceneId } from '../utils/sceneIds';
@@ -701,8 +701,6 @@ export interface CommunityMailboxAnswer {
 function isCount(value: unknown): value is number {
     return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }
-
-const COMMUNITY_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function isCommunityMailboxAnswer(value: unknown): value is CommunityMailboxAnswer {
     if (!value || typeof value !== 'object') return false;

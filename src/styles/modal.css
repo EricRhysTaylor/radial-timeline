@@ -2581,6 +2581,12 @@
 /* Release scenes, several at once: a checkbox at the start of each row, Select all above the
    list, and the batch bar on its own row above the footer. */
 .ert-scene-release-list .setting-item { gap: var(--size-4-3); }
+/* The scene a Release scenes link named. */
+.ert-scene-release-list .setting-item.ert-scene-release-row--focus {
+    outline: 1px solid var(--interactive-accent);
+    outline-offset: -1px;
+    border-radius: var(--radius-s);
+}
 .ert-scene-release-check { flex: none; margin: 0; }
 .ert-scene-release-check--none { display: inline-block; width: var(--checkbox-size, 15px); visibility: hidden; }
 .ert-scene-release-select,

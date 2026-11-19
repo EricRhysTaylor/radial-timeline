@@ -91,6 +91,9 @@ export class FakeElement {
     toggleClass(name: string, on: boolean): void { this.classList.toggle(name, on); }
     setAttribute(name: string, value: string): void { this.attributes[name] = value; }
     getAttribute(name: string): string | null { return this.attributes[name] ?? null; }
+    /** How many times the element was scrolled into view. */
+    scrolledIntoView = 0;
+    scrollIntoView(): void { this.scrolledIntoView += 1; }
     /** Move a child to the front, as the DOM's prepend does. */
     prepend(child: FakeElement): void {
         this.children = [child, ...this.children.filter(el => el !== child)];

@@ -24,16 +24,13 @@ import {
     type SceneReleaseStatus,
 } from '../../communityShare/communityShareClient';
 import { COMMUNITY_SITE_URL } from '../../communityShare/communityMailbox';
-import {
-    canShareTimelineToCommunity,
-    normalizeCommunityShareSettings,
-    sceneBodyShareFor,
-    timelineShareFor,
-} from '../../communityShare/communityShareSettings';
+import { normalizeCommunityShareSettings, sceneBodyShareFor } from '../../communityShare/communityShareSettings';
+import { sceneBodyUnavailableReason } from '../../communityShare/sceneReleaseLink';
 import { ensureReleaseTerms } from '../../modals/SceneReleaseConsentModal';
 import { SceneReleaseListModal } from '../../modals/SceneReleaseListModal';
-import { ERT_CLASSES } from '../../ui/classes';
-import type { BookProfile, CommunityShareSettings } from '../../types/settings';
+import { ERT_CLASSES, ERT_DATA } from '../../ui/classes';
+import type { BookProfile } from '../../types/settings';
+import { COMMUNITY_PRIVATE_SCENES_SECTION_KEY } from '../settingsAnchors';
 import { addHeadingIcon, applyErtHeaderLayout } from '../wikiLink';
 import { t } from '../../i18n';
 
@@ -64,20 +61,10 @@ function addNote(setting: Setting, text: string): void {
     setting.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text });
 }
 
-/** Why Share scene body can't be turned on right now, in the author's words; null when it can. */
-function unavailableReason(settings: CommunityShareSettings, book: BookProfile | undefined): string | null {
-    if (settings.connection.status !== 'connected') return t('ui.communityShareSection.sceneBodyConnectNote');
-    if (settings.sharingPaused) return t('ui.communityShareSection.sceneBodyPausedNote');
-    // The same gate as the Timeline block: a scene is released onto the shared timeline.
-    if (!canShareTimelineToCommunity(settings)) return t('ui.communityShareSection.sceneBodyLevelNote');
-    if (!book || !book.sourceFolder?.trim()) return t('ui.communityShareSection.timelineNoBook');
-    if (!timelineShareFor(settings, book.id)?.enabled) return t('ui.communityShareSection.sceneBodyTimelineNote');
-    return null;
-}
-
 export function renderCommunitySceneBodyBlock({ plugin, containerEl, book, rerender }: CommunitySceneBodyBlockProps): void {
     const settings = normalizeCommunityShareSettings(plugin.settings.communityShare);
-    const block = containerEl.createDiv({ cls: ERT_CLASSES.STACK });
+    // Keyed so the Release scenes link can open Settings here.
+    const block = containerEl.createDiv({ cls: ERT_CLASSES.STACK, attr: { [ERT_DATA.SECTION]: COMMUNITY_PRIVATE_SCENES_SECTION_KEY } });
     const heading = new Setting(block)
         .setName(t('ui.communityShareSection.sceneBodyHeading'))
         .setHeading()
@@ -87,7 +74,7 @@ export function renderCommunitySceneBodyBlock({ plugin, containerEl, book, reren
     heading.descEl.createEl('br');
     heading.descEl.createEl('a', { text: t('ui.communityShareSection.sceneBodyTermsLink'), href: `${COMMUNITY_SITE_URL}/agreements#private-scene-sharing`, attr: { target: '_blank', rel: 'noopener' } });
 
-    const unavailable = unavailableReason(settings, book);
+    const unavailable = sceneBodyUnavailableReason(settings, book);
     const record = book ? sceneBodyShareFor(settings, book.id) : undefined;
     const on = record?.enabled === true;
     const key = `${settings.connection.connectionId ?? ''}:${book?.id ?? ''}`; // SAFE: before Community connects, or with no book, there is nothing to key on and nothing is fetched

@@ -121,7 +121,11 @@ External requests occur in these areas:
   **Release** or **Update** in that scene's preview, which shows exactly what
   is sent. Reading the book's released scenes, recording agreement to the
   release terms and taking a scene down use the same call and carry no scene
-  text. See below.
+  text. See below. The Release scenes link from the website,
+  `obsidian://radial-timeline-release?book=<book id>&scene=<scene id>`, runs
+  only when the author opens it: it reads the connection's book list
+  (`community-share-context`) and that book's release status, carries no text,
+  and never turns **Share scene body** on.
 - **Community mailbox** — on a connected vault only, while a timeline view
   is open: a `community-mailbox` check about once an hour and when Obsidian
   regains focus. It sends the connection id and secret (plus the plugin,

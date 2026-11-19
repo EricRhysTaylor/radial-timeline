@@ -7,12 +7,10 @@
 /**
  * What leaves the vault when a timeline is shared from Settings → Community.
  *
- * An allow-list, built field by field. The manual export writes the author's
- * whole render input to a file they then choose to upload; automatic sharing
- * has no such moment, so it sends only what the website reads: the structure
- * and the details held for reveal. Nothing else on a TimelineItem can follow,
- * including the note's path, the rest of its frontmatter, and the folders and
- * settings a renderConfig snapshot carries.
+ * An allow-list, built field by field. Sharing sends only what the website
+ * reads: the structure and the details held for reveal. Nothing else on a
+ * TimelineItem can follow, including the note's path, the rest of its
+ * frontmatter, and the plugin's folders and settings.
  *
  * Scene text is not on a TimelineItem, and this builder could not send it if it
  * were: the rule is enforced by what is listed here, not by what is left out.

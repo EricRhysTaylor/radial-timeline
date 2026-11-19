@@ -1,21 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
-    applyGenericSubplotNames,
     buildBakedStyleDeclaration,
-    buildTimelineDataExport,
-    wallClockWhen,
     ExportStyleClasses,
     generateExportId,
     isRuntimeChromeElement,
     resolveTimelineImageExportFolder,
-    snapshotRenderConfig,
     LEGACY_TIMELINE_EXPORT_FOLDER,
-    TIMELINE_COMMUNITY_EXPORT_FOLDER,
-    TIMELINE_DATA_EXPORT_SCHEMA_VERSION,
     TIMELINE_IMAGE_EXPORT_SUBFOLDER,
-    type BuildTimelineDataExportParams,
-    type TimelineDataExportDocument,
 } from './TimelineExportService';
+import { wallClockWhen } from './timelineExportFormat';
 import {
     buildFontFaceCss,
     isDataUriOnlySrc,
@@ -23,53 +16,9 @@ import {
     selectFontFacesForFamilies,
     type ExportFontFaceRule,
 } from './exportFonts';
-import type { BookMeta, RadialTimelineSettings, TimelineItem } from '../../types';
-import { RT_SYSTEM_FOLDER, systemFolderPath } from '../../utils/systemFolder';
+import { RT_SYSTEM_FOLDER } from '../../utils/systemFolder';
 import { DEFAULT_SETTINGS } from '../../settings/defaults';
 import type RadialTimelinePlugin from '../../main';
-
-/**
- * Minimal settings stub carrying only the facade-consumed fields the render
- * config snapshot reads. Cast through the full settings type — the builder only
- * touches the enumerated keys.
- */
-function makeSettings(overrides: Partial<RadialTimelineSettings> = {}): RadialTimelineSettings {
-    return {
-        publishStageColors: { Zero: '#111111', Author: '#222222', House: '#333333', Press: '#444444' },
-        subplotColors: ['#aaaaaa', '#bbbbbb'],
-        enableAiSceneAnalysis: false,
-        currentMode: 'narrative',
-        sortByWhenDate: false,
-        actCount: 3,
-        books: [],
-        activeBookId: 'book-1',
-        ...overrides,
-    } as unknown as RadialTimelineSettings;
-}
-
-function makeItems(): TimelineItem[] {
-    return [
-        { title: '1 Opening', date: '2020-01-01', path: 'Book/1 Opening.md', itemType: 'Scene', when: new Date('2020-01-01T00:00:00Z') },
-        { title: 'Copyright', date: '', path: 'Book/0.1 Copyright.md', itemType: 'Frontmatter', matterMeta: { side: 'front', role: 'copyright' } },
-        { title: 'Acknowledgments', date: '', path: 'Book/200.1 Ack.md', itemType: 'Backmatter', matterMeta: { side: 'back', role: 'acknowledgments' } },
-    ];
-}
-
-function makeParams(overrides: Partial<BuildTimelineDataExportParams> = {}): BuildTimelineDataExportParams {
-    const bookMeta: BookMeta = { title: 'Test Book', author: 'A. Writer', sourcePath: 'Book/BookMeta.md' };
-    return {
-        items: makeItems(),
-        bookMeta,
-        settings: makeSettings(),
-        pluginVersion: '6.2.6',
-        mode: 'narrative',
-        activeBookId: 'book-1',
-        bookTitle: 'Test Book',
-        now: new Date('2026-07-19T12:00:00Z'),
-        exportId: '00000000-0000-4000-8000-000000000000',
-        ...overrides,
-    };
-}
 
 describe('wallClockWhen', () => {
     // Every Date here is built from LOCAL components, the way `parseWhenField`
@@ -107,242 +56,6 @@ describe('wallClockWhen', () => {
     it('is undefined when there is no usable date', () => {
         expect(wallClockWhen({})).toBeUndefined();
         expect(wallClockWhen({ when: new Date('nonsense') })).toBeUndefined();
-    });
-});
-
-describe('buildTimelineDataExport', () => {
-    it('stamps the schema version, timestamp, generator, and plugin version', () => {
-        const doc = buildTimelineDataExport(makeParams());
-        expect(doc.schemaVersion).toBe(TIMELINE_DATA_EXPORT_SCHEMA_VERSION);
-        expect(doc.schemaVersion).toBe('1.1.0');
-        expect(doc.exportedAt).toBe('2026-07-19T12:00:00.000Z');
-        expect(doc.generator).toBe('Radial Timeline');
-        expect(doc.pluginVersion).toBe('6.2.6');
-    });
-
-    it('writes every item’s `when` as a wall clock, never a UTC instant', () => {
-        const items = [
-            { title: '1 Evening', path: 'Book/1.md', itemType: 'Scene' as const, when: new Date(2085, 2, 31, 19, 0, 0) },
-            { title: '2 Unclocked', path: 'Book/2.md', itemType: 'Scene' as const, when: new Date(1812, 8, 19, 12, 0, 0), rawFrontmatter: { When: '1812-9-19' } },
-            { title: '3 No date', path: 'Book/3.md', itemType: 'Scene' as const },
-        ];
-        const doc = buildTimelineDataExport(makeParams({ items }));
-        expect(doc.items.map((item) => item.when)).toEqual([
-            '2085-03-31T19:00:00',
-            '1812-09-19',
-            undefined,
-        ]);
-        // And it survives serialisation — the defect was JSON.stringify
-        // calling toISOString() on a Date the document still carried.
-        const roundTripped = JSON.parse(JSON.stringify(doc)) as { items: { when?: string }[] };
-        expect(roundTripped.items[0].when).toBe('2085-03-31T19:00:00');
-        expect(roundTripped.items[2]).not.toHaveProperty('when');
-    });
-
-    it('stamps the injected provenance exportId and generates one when absent', () => {
-        const doc = buildTimelineDataExport(makeParams());
-        expect(doc.exportId).toBe('00000000-0000-4000-8000-000000000000');
-        const generated = buildTimelineDataExport(makeParams({ exportId: undefined }));
-        expect(generated.exportId).toMatch(/[0-9a-f-]{8,}/i);
-        expect(generated.exportId).not.toBe(doc.exportId);
-    });
-
-    it('includes the full item array as fed to the renderer', () => {
-        const items = makeItems();
-        const doc = buildTimelineDataExport(makeParams({ items }));
-        expect(doc.items).toHaveLength(items.length);
-        expect(doc.context.itemCount).toBe(items.length);
-        expect(doc.items[0].title).toBe('1 Opening');
-    });
-
-    it('extracts front/back matter entries with their parsed matter meta', () => {
-        const doc = buildTimelineDataExport(makeParams());
-        expect(doc.matter).toHaveLength(2);
-        const roles = doc.matter.map((m) => m.matterMeta?.role).sort();
-        expect(roles).toEqual(['acknowledgments', 'copyright']);
-        expect(doc.matter.every((m) => typeof m.path === 'string')).toBe(true);
-    });
-
-    it('carries book meta through and tolerates a null book meta', () => {
-        expect(buildTimelineDataExport(makeParams()).bookMeta?.title).toBe('Test Book');
-        expect(buildTimelineDataExport(makeParams({ bookMeta: null })).bookMeta).toBeNull();
-    });
-
-    it('deep-clones input so later mutation does not leak into the document', () => {
-        const items = makeItems();
-        const doc = buildTimelineDataExport(makeParams({ items }));
-        items[0].title = 'MUTATED';
-        expect(doc.items[0].title).toBe('1 Opening');
-    });
-
-    it('contains no machine-specific absolute paths', () => {
-        const doc = buildTimelineDataExport(makeParams());
-        const serialized = JSON.stringify(doc);
-        expect(serialized).not.toContain('/Users/');
-        expect(serialized).not.toContain('/home/');
-        expect(serialized).not.toMatch(/[A-Za-z]:\\\\/); // Windows drive path
-    });
-});
-
-/**
- * Fixture modeling a multi-subplot scene the way SceneDataService actually
- * produces it: one TimelineItem per subplot, all sharing a single
- * `rawFrontmatter` object by reference (metadata.Subplot as an array).
- * Includes a single-subplot scene and a Main-Plot-default scene (no
- * `Subplot` key in its frontmatter at all) to exercise the passthrough paths.
- */
-function makeGenericNameItems(): TimelineItem[] {
-    const heistFrontmatter: Record<string, unknown> = { Class: 'Scene', Subplot: ['Heist', 'Redemption Arc'] };
-    return [
-        {
-            title: '1 Opening', date: '2020-01-01', path: 'Book/1 Opening.md', itemType: 'Scene',
-            subplot: 'Redemption Arc',
-            rawFrontmatter: { Class: 'Scene', Subplot: 'Redemption Arc' },
-        },
-        {
-            title: '2 Heist Setup', date: '2020-01-02', path: 'Book/2 Heist Setup.md', itemType: 'Scene',
-            subplot: 'Heist',
-            rawFrontmatter: heistFrontmatter,
-        },
-        {
-            title: '2 Heist Setup', date: '2020-01-02', path: 'Book/2 Heist Setup.md', itemType: 'Scene',
-            subplot: 'Redemption Arc',
-            rawFrontmatter: heistFrontmatter,
-        },
-        {
-            title: '3 Quiet Scene', date: '2020-01-03', path: 'Book/3 Quiet.md', itemType: 'Scene',
-            subplot: 'Main Plot',
-            rawFrontmatter: { Class: 'Scene' },
-        },
-    ];
-}
-
-describe('applyGenericSubplotNames (via buildTimelineDataExport genericSubplotNames option)', () => {
-    it('maps subplot names to "Subplot N" in order of first appearance across items', () => {
-        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
-        // Encounter order: 'Redemption Arc' (item 0), 'Heist' (item 1), 'Main Plot' (item 3).
-        expect(doc.items[0].subplot).toBe('Subplot 1'); // Redemption Arc
-        expect(doc.items[1].subplot).toBe('Subplot 2'); // Heist
-        expect(doc.items[2].subplot).toBe('Subplot 1'); // Redemption Arc again -> same mapping
-        expect(doc.items[3].subplot).toBe('Subplot 3'); // Main Plot
-    });
-
-    it('applies the same mapping to rawFrontmatter.Subplot, both string and array forms', () => {
-        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
-        expect(doc.items[0].rawFrontmatter?.Subplot).toBe('Subplot 1');
-        expect(doc.items[1].rawFrontmatter?.Subplot).toEqual(['Subplot 2', 'Subplot 1']);
-        // The Main-Plot scene never had a Subplot key in its frontmatter; it
-        // must not be invented by the transform.
-        expect(doc.items[3].rawFrontmatter).not.toHaveProperty('Subplot');
-    });
-
-    it('keeps sibling items of a multi-subplot scene sharing one rawFrontmatter object, mutated once', () => {
-        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
-        // Items 1 and 2 were exploded from the same scene and must still
-        // reference the identical (cloned) rawFrontmatter object post-export,
-        // so the web-engine adapter's dedup-by-reference still works.
-        expect(doc.items[1].rawFrontmatter).toBe(doc.items[2].rawFrontmatter);
-    });
-
-    it('remaps renderConfig.dominantSubplots values using the same mapping', () => {
-        const doc = buildTimelineDataExport(makeParams({
-            items: makeGenericNameItems(),
-            genericSubplotNames: true,
-            settings: makeSettings({ dominantSubplots: { 'Book/2 Heist Setup.md': 'Redemption Arc' } }),
-        }));
-        expect(doc.renderConfig.dominantSubplots).toEqual({ 'Book/2 Heist Setup.md': 'Subplot 1' });
-    });
-
-    it('leaves renderConfig.dominantSubplots absent when the settings snapshot carries none', () => {
-        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
-        expect(doc.renderConfig.dominantSubplots).toBeUndefined();
-    });
-
-    it('preserves the item count', () => {
-        const items = makeGenericNameItems();
-        const doc = buildTimelineDataExport(makeParams({ items, genericSubplotNames: true }));
-        expect(doc.items).toHaveLength(items.length);
-        expect(doc.context.itemCount).toBe(items.length);
-    });
-
-    it('never touches scene titles (a revealing field, not structural)', () => {
-        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
-        expect(doc.items[0].title).toBe('1 Opening');
-        expect(doc.items[1].title).toBe('2 Heist Setup');
-        expect(doc.items[3].title).toBe('3 Quiet Scene');
-    });
-
-    it('is deterministic: identical input produces an identical mapping on repeated calls', () => {
-        const first = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
-        const second = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true }));
-        expect(second.items.map((i) => i.subplot)).toEqual(first.items.map((i) => i.subplot));
-        expect(second.items.map((i) => i.rawFrontmatter?.Subplot)).toEqual(first.items.map((i) => i.rawFrontmatter?.Subplot));
-    });
-
-    it('OFF (default) is a passthrough: subplot names are exported verbatim', () => {
-        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems() }));
-        expect(doc.items[0].subplot).toBe('Redemption Arc');
-        expect(doc.items[1].subplot).toBe('Heist');
-        expect(doc.items[1].rawFrontmatter?.Subplot).toEqual(['Heist', 'Redemption Arc']);
-        expect(doc.items[3].subplot).toBe('Main Plot');
-    });
-
-    it('OFF (genericSubplotNames explicitly false) is also a passthrough', () => {
-        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: false }));
-        expect(doc.items[0].subplot).toBe('Redemption Arc');
-        expect(doc.items[1].rawFrontmatter?.Subplot).toEqual(['Heist', 'Redemption Arc']);
-    });
-
-    it('leaves no real subplot name anywhere in the export, book profiles included, and leaves the live settings as they were', () => {
-        const books = [
-            { id: 'book-1', title: 'Test Book', sourceFolder: 'Book', mainPlotName: 'Redemption Arc', ownSubplotColors: { schemaVersion: 1 as const, colors: { Heist: '#e93147', 'Secret Twin': '#00ff00' } } },
-            { id: 'book-2', title: 'Sequel', sourceFolder: 'Sequel', ownSubplotColors: { schemaVersion: 9, layers: { 'Hidden Heir': '#123456' } } },
-        ];
-        const settings = makeSettings({ books, dominantSubplots: { 'Book/2 Heist Setup.md': 'Heist' } });
-        const doc = buildTimelineDataExport(makeParams({ items: makeGenericNameItems(), genericSubplotNames: true, settings }));
-        const serialized = JSON.stringify(doc);
-        for (const name of ['Redemption Arc', 'Secret Twin', 'Hidden Heir']) expect(serialized).not.toContain(name);
-        // "Heist" stays only in a scene title and its path, which this option leaves alone.
-        expect(JSON.stringify({ ...doc.renderConfig, dominantSubplots: undefined })).not.toContain('Heist');
-        expect(JSON.stringify(doc.items.map(item => ({ ...item, title: undefined, path: undefined })))).not.toContain('Heist');
-        // The same subplot gets the same generic name everywhere it appears.
-        expect(doc.renderConfig.books[0].mainPlotName).toBe(doc.items[0].subplot);
-        expect(doc.renderConfig.books[0].ownSubplotColors).toEqual({ schemaVersion: 1, colors: { [doc.items[1].subplot!]: '#e93147', 'Subplot 4': '#00ff00' } });
-        expect(doc.renderConfig.books[1]).not.toHaveProperty('ownSubplotColors');
-        // A book that never renamed its main plot still names it, so ring 1 matches its "Main Plot" scenes.
-        expect(doc.renderConfig.books[1].mainPlotName).toBe(doc.items[3].subplot);
-        expect(settings.books[0].mainPlotName).toBe('Redemption Arc');
-        expect(settings.books[0].ownSubplotColors).toEqual({ schemaVersion: 1, colors: { Heist: '#e93147', 'Secret Twin': '#00ff00' } });
-    });
-
-    it('applyGenericSubplotNames tolerates a non-string entry inside a Subplot array', () => {
-        const doc: TimelineDataExportDocument = buildTimelineDataExport(makeParams({
-            items: [
-                { title: 'S', date: '2020-01-01', path: 'Book/S.md', itemType: 'Scene', subplot: 'Alpha', rawFrontmatter: { Subplot: ['Alpha', 42] } },
-            ],
-        }));
-        applyGenericSubplotNames(doc);
-        expect(doc.items[0].subplot).toBe('Subplot 1');
-        expect(doc.items[0].rawFrontmatter?.Subplot).toEqual(['Subplot 1', 42]);
-    });
-});
-
-describe('snapshotRenderConfig', () => {
-    it('captures the facade-consumed settings subset as values', () => {
-        const settings = makeSettings({ readabilityScale: 'large' as RadialTimelineSettings['readabilityScale'] });
-        const config = snapshotRenderConfig(settings);
-        expect(config.publishStageColors).toEqual(settings.publishStageColors);
-        expect(config.subplotColors).toEqual(settings.subplotColors);
-        expect(config.enableAiSceneAnalysis).toBe(false);
-        expect(config.currentMode).toBe('narrative');
-        expect(config.actCount).toBe(3);
-        expect(config.activeBookId).toBe('book-1');
-    });
-
-    it('does not carry keys outside the facade-consumed subset', () => {
-        const settings = makeSettings({ pandocPath: '/usr/local/bin/pandoc' } as Partial<RadialTimelineSettings>);
-        const config = snapshotRenderConfig(settings);
-        expect(config as Record<string, unknown>).not.toHaveProperty('pandocPath');
     });
 });
 
@@ -497,11 +210,6 @@ describe('export destinations', () => {
         return { settings: { manuscriptOutputFolder: value } } as unknown as RadialTimelinePlugin;
     }
 
-    it('writes the community share JSON beside Social in the canonical system folder', () => {
-        expect(TIMELINE_COMMUNITY_EXPORT_FOLDER).toBe(systemFolderPath('Community'));
-        expect(TIMELINE_COMMUNITY_EXPORT_FOLDER).toBe('Radial Timeline/Community');
-    });
-
     it('writes timeline images under the configured Export folder', () => {
         expect(resolveTimelineImageExportFolder(pluginWithExportFolder(undefined)))
             .toBe(`${DEFAULT_SETTINGS.manuscriptOutputFolder}/${TIMELINE_IMAGE_EXPORT_SUBFOLDER}`);
@@ -515,19 +223,13 @@ describe('export destinations', () => {
     });
 
     it('never creates a second top-level folder beside the canonical one', () => {
-        const destinations = [
-            TIMELINE_COMMUNITY_EXPORT_FOLDER,
-            resolveTimelineImageExportFolder(pluginWithExportFolder(undefined)),
-        ];
-        for (const destination of destinations) {
-            expect(destination.startsWith(`${RT_SYSTEM_FOLDER}/`)).toBe(true);
-            expect(destination.startsWith(LEGACY_TIMELINE_EXPORT_FOLDER)).toBe(false);
-        }
+        const destination = resolveTimelineImageExportFolder(pluginWithExportFolder(undefined));
+        expect(destination.startsWith(`${RT_SYSTEM_FOLDER}/`)).toBe(true);
+        expect(destination.startsWith(LEGACY_TIMELINE_EXPORT_FOLDER)).toBe(false);
     });
 
     it('keeps the legacy folder name as a read-only marker, never a destination', () => {
         expect(LEGACY_TIMELINE_EXPORT_FOLDER).toBe('Radial Timeline Exports');
-        expect(TIMELINE_COMMUNITY_EXPORT_FOLDER).not.toBe(LEGACY_TIMELINE_EXPORT_FOLDER);
     });
 });
 

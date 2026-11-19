@@ -28,14 +28,13 @@ These are the main command-palette entries.
 17. **[Author progress report (APR)](Author-Progress-Report)** ← standalone guide
 18. **[Scene pulse analysis (subplot order)](#scene-pulse-analysis-subplot-order)**
 19. **[Scene pulse analysis (manuscript order)](#scene-pulse-analysis-manuscript-order)**
-20. **[Community timeline share export](#timeline-share-export)**
-21. **[Timetable open](#timetable-open)**
-22. **[Timetable reset columns to recommended](#timetable-reset-columns-to-recommended)**
-23. **[Timetable restore a Radial Timetable view](#timetable-restore-a-radial-timetable-view)**
-24. **[Scene promote note](#scene-promote-note)**
-25. **[Canvas create subplot map](#canvas-create-subplot-map)**
-26. **[Canvas convert cards to scenes or sketches](#canvas-convert-cards-to-scenes-or-sketches)**
-27. **[Scene time assignment](Scene-Time)** ← standalone guide
+20. **[Timetable open](#timetable-open)**
+21. **[Timetable reset columns to recommended](#timetable-reset-columns-to-recommended)**
+22. **[Timetable restore a Radial Timetable view](#timetable-restore-a-radial-timetable-view)**
+23. **[Scene promote note](#scene-promote-note)**
+24. **[Canvas create subplot map](#canvas-create-subplot-map)**
+25. **[Canvas convert cards to scenes or sketches](#canvas-convert-cards-to-scenes-or-sketches)**
+26. **[Scene time assignment](Scene-Time)** ← standalone guide
 
 ## Conditional Visibility
 
@@ -239,22 +238,6 @@ Opens the pulse command panel for manuscript-order analysis.
 Run modes: process open scenes, process flagged scenes, process unprocessed scenes, or reprocess all scenes.
 
 Related: [AI Pulse Triplet Analysis](AI-Pulse-Analysis), [Summary scene refresh](#summary-refresh).
-
----
-
-<a name="timeline-share-export"></a>
-## Community timeline share export
-
-Writes a timeline file you can upload on your Community **My Share** page. To share without a file and keep the timeline updated automatically, turn on **Share timeline** in [Settings → Community](Settings-Community#share-your-timeline). Exporting shares nothing: the file is written to `Radial Timeline/Community/` in your vault and stays there until you upload it and activate the share.
-
-Before anything is written, a dialog lists what the file contains:
-
-*   **Shared when you activate:** scene numbers, acts, subplot names, status, publish stage, book title, and author.
-*   **Held for per-scene reveal:** scene titles, synopses, characters, narration, and story dates. They stay hidden on your public timeline until you reveal each scene from My Share.
-
-If your subplot names could themselves reveal plot, turn on **Generic ring names** in the dialog to export them as "Subplot 1, Subplot 2…".
-
-Related: [Settings → Community](Settings-Community).
 
 ---
 

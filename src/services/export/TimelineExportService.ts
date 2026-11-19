@@ -5,21 +5,12 @@
  *
  * TimelineExportService
  * ---------------------
- * Two user-facing export flows that also serve as the fixture corpus for the
- * greenfield web timeline engine (Stage 0):
- *
- *   1. Timeline image export (SVG / PNG) — a self-contained image of the
- *      currently rendered radial timeline. The live SVG relies on the plugin's
- *      external CSS (classes + custom properties); an exported file must render
- *      correctly OUTSIDE Obsidian, so we bake the computed presentation styles
- *      onto a detached clone before serializing.
- *
- *   2. Timeline share export (JSON) — a schema-stamped, vault-agnostic snapshot
- *      of everything the renderer consumes (TimelineItem[], book/matter meta,
- *      and a renderConfig snapshot). Reproduces the render elsewhere.
- *
- * The document builder (buildTimelineDataExport / snapshotRenderConfig) is
- * intentionally free of Obsidian imports so it is unit-testable in node.
+ * Timeline image export (SVG / PNG): a self-contained image of the currently
+ * rendered radial timeline, which also serves as fixture material for the
+ * greenfield web timeline engine. The live SVG relies on the plugin's external
+ * CSS (classes + custom properties); an exported file must render correctly
+ * OUTSIDE Obsidian, so we bake the computed presentation styles onto a
+ * detached clone before serializing.
  */
 
 import { kebabSlug } from '../../utils/slug';
@@ -27,24 +18,7 @@ import { Notice, normalizePath } from 'obsidian';
 import type RadialTimelinePlugin from '../../main';
 import type { App } from 'obsidian';
 import { resolveExportOutputFolder } from '../../utils/aiOutput';
-import { systemFolderPath } from '../../utils/systemFolder';
 import { t } from '../../i18n';
-import type {
-    BookMeta,
-    BookProfile,
-    ChronologueBackdropMicroRing,
-    MatterMeta,
-    RadialTimelineSettings,
-    ReadabilityScale,
-    RuntimeContentType,
-    SubplotAlignment,
-    TimelineItem,
-} from '../../types';
-import { isMatterNote } from '../../utils/sceneHelpers';
-import { isNarrationValue } from '../../utils/pov';
-import { OWN_SUBPLOT_COLORS_SCHEMA_VERSION, ownSubplotColorEntries } from '../../utils/ownSubplotColors';
-import { getBookMainPlotName } from '../../utils/mainPlot';
-import { TIMELINE_DATA_EXPORT_SCHEMA_VERSION, wallClockWhen } from './timelineExportFormat';
 import { rasterizeSvgToPng } from './svgToPng';
 import {
     buildFontFaceCss,
@@ -52,14 +26,6 @@ import {
     parseFontFamilyList,
     selectFontFacesForFamilies,
 } from './exportFonts';
-
-/**
- * Vault-relative folder the JSON data export (the Community share file) is
- * written into. A sibling of `Social` inside the canonical system folder: the
- * two are the plugin's outward-facing artifact domains — `Social` holds APR
- * artwork, `Community` holds the interactive-timeline share files.
- */
-export const TIMELINE_COMMUNITY_EXPORT_FOLDER = systemFolderPath('Community');
 
 /**
  * Subfolder of the author's configured Export folder that timeline images land
@@ -87,111 +53,7 @@ export function resolveTimelineImageExportFolder(plugin: RadialTimelinePlugin): 
     return normalizePath(`${resolveExportOutputFolder(plugin)}/${TIMELINE_IMAGE_EXPORT_SUBFOLDER}`);
 }
 
-export { TIMELINE_DATA_EXPORT_SCHEMA_VERSION, wallClockWhen };
-
 export type TimelineImageFormat = 'svg' | 'png';
-
-/**
- * The subset of settings the renderer actually consumes via PluginRendererFacade
- * (see src/utils/sceneHelpers.ts). Captured as values so the render can be
- * reproduced in another engine. Completeness favored over minimality — when a
- * facade field exists it is included, even if optional.
- */
-export interface TimelineExportRenderConfig {
-    publishStageColors: Record<string, string>;
-    subplotColors: string[];
-    workingPatternId?: string;
-    customWorkingPatterns?: RadialTimelineSettings['customWorkingPatterns'];
-    enableAiSceneAnalysis: boolean;
-    chronologueDurationCapSelection?: string;
-    showBackdropRing?: boolean;
-    chronologueBackdropMicroRings?: ChronologueBackdropMicroRing[];
-    dominantSubplots?: Record<string, string>;
-    discontinuityThreshold?: string;
-    showCharacterLanes?: boolean;
-    runtimeContentType?: RuntimeContentType;
-    currentMode?: string;
-    sortByWhenDate?: boolean;
-    subplotAlignment?: SubplotAlignment;
-    showChapterMarkers?: boolean;
-    timelineScope?: 'book' | 'saga';
-    /** Each book carries its own narration default (`narrationMode`); a scene's `pov` overrides it. */
-    books: BookProfile[];
-    activeBookId?: string;
-    readabilityScale?: ReadabilityScale;
-    actCount?: number;
-    timelapseYearSimulation?: RadialTimelineSettings['timelapseYearSimulation'];
-    synopsisGenerationMaxWords?: number;
-    synopsisGenerationMaxLines?: number;
-}
-
-export interface TimelineMatterEntry {
-    path?: string;
-    title?: string;
-    itemType?: TimelineItem['itemType'];
-    matterMeta?: MatterMeta;
-}
-
-/**
- * An exported item: a {@link TimelineItem} whose `when` has been reduced to the
- * author's own wall clock. See {@link wallClockWhen} for why it is not a Date.
- */
-export type TimelineExportItem = Omit<TimelineItem, 'when'> & { when?: string };
-
-export interface TimelineDataExportDocument {
-    /** Schema version of this document shape. */
-    schemaVersion: string;
-    /** ISO 8601 timestamp of when the export was produced. */
-    exportedAt: string;
-    /**
-     * Per-export provenance UUID (crypto.randomUUID). Uniquely identifies this
-     * export; the SVG image export stamps the same shape into its <metadata>.
-     */
-    exportId: string;
-    /** Name of the producing tool. */
-    generator: 'Radial Timeline';
-    /** Plugin version (from manifest) that produced the export. */
-    pluginVersion: string;
-    /** Active render context (vault-agnostic). */
-    context: {
-        activeBookId?: string;
-        bookTitle?: string;
-        mode?: string;
-        itemCount: number;
-    };
-    /** Central book metadata for the active manuscript, if a BookMeta note exists. */
-    bookMeta: BookMeta | null;
-    /** Front/back matter notes present in the render input, with parsed matter meta. */
-    matter: TimelineMatterEntry[];
-    /** Renderer configuration snapshot (the facade-consumed settings). */
-    renderConfig: TimelineExportRenderConfig;
-    /**
-     * The full item list as fed to the renderer, with each `when` reduced to
-     * the author's own wall clock (see {@link wallClockWhen}).
-     */
-    items: TimelineExportItem[];
-}
-
-export interface BuildTimelineDataExportParams {
-    items: TimelineItem[];
-    bookMeta: BookMeta | null;
-    settings: RadialTimelineSettings;
-    pluginVersion: string;
-    mode?: string;
-    activeBookId?: string;
-    bookTitle?: string;
-    /** Injectable clock for deterministic tests. Defaults to now. */
-    now?: Date;
-    /** Injectable provenance UUID for deterministic tests. Defaults to a new UUID. */
-    exportId?: string;
-    /**
-     * When true, replace every subplot name in the document with a generic
-     * label ("Subplot 1", "Subplot 2", …) via {@link applyGenericSubplotNames}.
-     * Default false (passthrough) — subplot names are structural per Amendment
-     * 1 and are exported verbatim unless the author opts into anonymizing them.
-     */
-    genericSubplotNames?: boolean;
-}
 
 /**
  * Per-export provenance identifier. Uses WebCrypto when present (Obsidian's
@@ -204,177 +66,6 @@ export function generateExportId(): string {
     }
     // SAFE: fallback id for environments without WebCrypto; provenance only, not a security token.
     return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`;
-}
-
-/**
- * Capture the renderer-consumed subset of settings as plain values. Only the
- * fields the PluginRendererFacade reads are included — no absolute paths or
- * machine-specific state — so the document stays vault-agnostic.
- */
-export function snapshotRenderConfig(settings: RadialTimelineSettings): TimelineExportRenderConfig {
-    return {
-        publishStageColors: settings.publishStageColors,
-        subplotColors: settings.subplotColors,
-        workingPatternId: settings.workingPatternId,
-        customWorkingPatterns: settings.customWorkingPatterns,
-        enableAiSceneAnalysis: settings.enableAiSceneAnalysis,
-        chronologueDurationCapSelection: settings.chronologueDurationCapSelection,
-        showBackdropRing: settings.showBackdropRing,
-        chronologueBackdropMicroRings: settings.chronologueBackdropMicroRings,
-        dominantSubplots: settings.dominantSubplots,
-        discontinuityThreshold: settings.discontinuityThreshold,
-        showCharacterLanes: settings.showCharacterLanes,
-        runtimeContentType: settings.runtimeContentType,
-        currentMode: settings.currentMode,
-        sortByWhenDate: settings.sortByWhenDate,
-        subplotAlignment: settings.subplotAlignment,
-        showChapterMarkers: settings.showChapterMarkers,
-        timelineScope: settings.timelineScope,
-        books: settings.books,
-        activeBookId: settings.activeBookId,
-        readabilityScale: settings.readabilityScale,
-        actCount: settings.actCount,
-        timelapseYearSimulation: settings.timelapseYearSimulation,
-        synopsisGenerationMaxWords: settings.synopsisGenerationMaxWords,
-        synopsisGenerationMaxLines: settings.synopsisGenerationMaxLines,
-    };
-}
-
-/**
- * Build the schema-stamped JSON export document. Pure and Obsidian-free so it
- * can be unit-tested. Deep-clones input so the document is a stable snapshot.
- */
-export function buildTimelineDataExport(params: BuildTimelineDataExportParams): TimelineDataExportDocument {
-    const now = params.now ?? new Date();
-    // `when` leaves as the author's wall clock, never as a UTC instant: see
-    // `wallClockWhen`. Done here, on the one document every consumer reads,
-    // so the file on disk and the payload sent to the website cannot disagree.
-    const items: TimelineExportItem[] = deepClone(params.items).map((item) => {
-        const when = wallClockWhen(item);
-        const next: TimelineExportItem = { ...item, when };
-        if (when === undefined) delete next.when;
-        // `pov` is the scene's narration override, which the website reads as
-        // its narration mode: never a character's name (as in the Community share).
-        if (next.pov !== undefined && !isNarrationValue(next.pov)) delete next.pov;
-        return next;
-    });
-    const matter: TimelineMatterEntry[] = items
-        .filter((item) => isMatterNote(item))
-        .map((item) => ({
-            path: item.path,
-            title: item.title,
-            itemType: item.itemType,
-            matterMeta: item.matterMeta,
-        }));
-
-    const doc: TimelineDataExportDocument = {
-        schemaVersion: TIMELINE_DATA_EXPORT_SCHEMA_VERSION,
-        exportedAt: now.toISOString(),
-        exportId: params.exportId ?? generateExportId(),
-        generator: 'Radial Timeline',
-        pluginVersion: params.pluginVersion,
-        context: {
-            activeBookId: params.activeBookId,
-            bookTitle: params.bookTitle,
-            mode: params.mode,
-            itemCount: items.length,
-        },
-        bookMeta: params.bookMeta ? deepClone(params.bookMeta) : null,
-        matter,
-        renderConfig: snapshotRenderConfig(params.settings),
-        items,
-    };
-
-    if (params.genericSubplotNames) {
-        applyGenericSubplotNames(doc);
-    }
-
-    return doc;
-}
-
-/**
- * Replace every subplot name in an export document with a generic label
- * ("Subplot 1", "Subplot 2", …), mutating `doc` in place. Mapping is
- * assigned in order of first appearance while walking `items` (manuscript /
- * author order) and applied consistently to every place a subplot name lives
- * in the document:
- *
- *  - each item's `subplot` field;
- *  - the same scene's `rawFrontmatter.Subplot` (string or string[]) — the
- *    field the web-engine adapter's dedup reads. A multi-subplot scene is
- *    exploded into one TimelineItem per subplot (SceneDataService), and all
- *    of those sibling items share one `rawFrontmatter` object by reference,
- *    so it is remapped once per unique object;
- *  - `renderConfig.dominantSubplots`, a path -> preferred-subplot-name map;
- *  - each book profile's `mainPlotName` and `ownSubplotColors` keys.
- *
- * Scene TITLES are never touched here — titles are a revealing field (reveal
- * model, server-side), not structural, and are untouched by this toggle.
- *
- * Per Amendment 1 §Data scope: "the plugin's export offers a 'generic ring
- * names' toggle (Subplot 1, Subplot 2…) for authors whose subplot names are
- * themselves spoilers."
- */
-export function applyGenericSubplotNames(doc: TimelineDataExportDocument): void {
-    const mapping = new Map<string, string>();
-    const genericNameFor = (name: string): string => {
-        let mapped = mapping.get(name);
-        if (mapped === undefined) {
-            mapped = `Subplot ${mapping.size + 1}`;
-            mapping.set(name, mapped);
-        }
-        return mapped;
-    };
-
-    const seenRawFrontmatter = new Set<Record<string, unknown>>();
-    for (const item of doc.items) {
-        if (item.subplot) {
-            item.subplot = genericNameFor(item.subplot);
-        }
-
-        const raw = item.rawFrontmatter;
-        if (raw && !seenRawFrontmatter.has(raw)) {
-            seenRawFrontmatter.add(raw);
-            const rawSubplot = raw.Subplot;
-            if (Array.isArray(rawSubplot)) {
-                raw.Subplot = rawSubplot.map((entry: unknown) =>
-                    typeof entry === 'string' ? genericNameFor(entry) : entry
-                );
-            } else if (typeof rawSubplot === 'string' && rawSubplot.length > 0) {
-                raw.Subplot = genericNameFor(rawSubplot);
-            }
-        }
-    }
-
-    if (doc.renderConfig.dominantSubplots) {
-        const remapped: Record<string, string> = {};
-        for (const [path, name] of Object.entries(doc.renderConfig.dominantSubplots)) {
-            remapped[path] = genericNameFor(name);
-        }
-        doc.renderConfig.dominantSubplots = remapped;
-    }
-
-    // Book profiles name subplots too: a renamed main plot, and the subplots
-    // that wear their own color. The snapshot shares the live settings'
-    // profiles, so each is copied, never changed in place. A color record
-    // from a newer Radial Timeline cannot be read here, so it is left out.
-    // Every book names its main plot, so ring 1 keeps matching its scenes
-    // even when the book never renamed it from "Main Plot".
-    doc.renderConfig.books = doc.renderConfig.books.map((book) => {
-        const { mainPlotName: _mainPlotName, ownSubplotColors: _ownSubplotColors, ...rest } = book;
-        const own = ownSubplotColorEntries(book);
-        return {
-            ...rest,
-            mainPlotName: genericNameFor(getBookMainPlotName(book)),
-            ...(own.length ? { ownSubplotColors: { schemaVersion: OWN_SUBPLOT_COLORS_SCHEMA_VERSION, colors: Object.fromEntries(own.map(([name, color]) => [genericNameFor(name), color])) } } : {}),
-        };
-    });
-}
-
-function deepClone<T>(value: T): T {
-    // structuredClone is available in Obsidian's Electron runtime and node 17+.
-    // TimelineItem may carry Date instances (when) — structuredClone preserves them.
-    return structuredClone(value);
 }
 
 /**
@@ -747,9 +438,9 @@ export class TimelineExportService {
     }
 
     /**
-     * Create `folderPath` on demand, walking each segment — both destinations
-     * are nested (`<system>/Community`, `<Export>/Timeline`), so a single
-     * createFolder call cannot be relied on to materialize the parent.
+     * Create `folderPath` on demand, walking each segment — the destination
+     * is nested (`<Export>/Timeline`), so a single createFolder call cannot be
+     * relied on to materialize the parent.
      */
     private async ensureExportFolder(folderPath: string): Promise<void> {
         const normalized = normalizePath(folderPath);
@@ -774,7 +465,7 @@ export class TimelineExportService {
         this.plugin.settings.timelineExportRelocationNoticed = true;
         await this.plugin.saveSettings();
         new Notice(
-            t('ui.timelineExportService.exportsRelocated', { dataFolder: TIMELINE_COMMUNITY_EXPORT_FOLDER, imageFolder: resolveTimelineImageExportFolder(this.plugin), legacyFolder: LEGACY_TIMELINE_EXPORT_FOLDER }),
+            t('ui.timelineExportService.exportsRelocated', { imageFolder: resolveTimelineImageExportFolder(this.plugin), legacyFolder: LEGACY_TIMELINE_EXPORT_FOLDER }),
             12000
         );
     }
@@ -825,41 +516,6 @@ export class TimelineExportService {
             const message = error instanceof Error ? error.message : String(error);
             new Notice(t('ui.timelineExportService.imageExportFailed', { message }));
             console.error('[TimelineExport] Image export failed:', error);
-        }
-    }
-
-    /** Export the render input pipeline as a schema-stamped JSON document. */
-    public async exportDataJson(options?: { genericSubplotNames?: boolean }): Promise<void> {
-        try {
-            // The book's metadata from the same read as its scenes (see getSceneDataWithBookMeta).
-            const { items, bookMeta } = await this.plugin.getSceneDataService().getSceneDataWithBookMeta();
-            if (!items || items.length === 0) {
-                new Notice(t('ui.timelineExportService.noDataToExport'));
-                return;
-            }
-
-            const active = this.getActiveTimelineSvg();
-            const doc = buildTimelineDataExport({
-                items,
-                bookMeta,
-                settings: this.plugin.settings,
-                pluginVersion: this.plugin.manifest.version,
-                mode: active?.mode ?? this.plugin.settings.currentMode,
-                activeBookId: this.plugin.settings.activeBookId,
-                bookTitle: this.plugin.getActiveBookTitle(),
-                genericSubplotNames: options?.genericSubplotNames,
-            });
-
-            await this.ensureExportFolder(TIMELINE_COMMUNITY_EXPORT_FOLDER);
-            const mode = doc.context.mode ?? 'timeline'; // SAFE: filename slug only; 'timeline' names an export whose document recorded no mode
-            const path = `${TIMELINE_COMMUNITY_EXPORT_FOLDER}/${this.buildFileName(mode, 'json')}`;
-            await this.app.vault.create(path, JSON.stringify(doc, null, 2));
-            new Notice(t('ui.timelineExportService.dataExported', { path }));
-            await this.noticeLegacyFolderOnce();
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            new Notice(t('ui.timelineExportService.dataExportFailed', { message }));
-            console.error('[TimelineExport] Data export failed:', error);
         }
     }
 }

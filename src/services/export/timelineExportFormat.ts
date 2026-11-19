@@ -8,7 +8,9 @@ import type { TimelineItem } from '../../types';
 import { splitWhenEra } from '../../utils/date';
 
 /**
- * Schema version for the JSON data export document. Bump on breaking changes.
+ * Schema version stamped on the Community timeline share payload
+ * (`buildTimelineSharePayload`). Bump on breaking changes. The name dates from
+ * the retired manual JSON export, whose document shape this version began on.
  * 1.1.0 (additive): adds `exportId`, a per-export provenance UUID that also
  * appears in the SVG image export's <metadata> block.
  */
@@ -29,7 +31,7 @@ const isoYear = (year: number): string => year >= 0 && year <= 9999
     : `${year < 0 ? '-' : '+'}${pad(Math.abs(year), 6)}`;
 
 /**
- * A scene's `when` as the string the export carries.
+ * A scene's `when` as the string the share payload carries.
  *
  * **A scene's time is a wall clock in the story, not an instant on Earth.**
  * `parseWhenField` turns the author's `When` frontmatter into a `Date` built

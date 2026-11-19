@@ -8,7 +8,6 @@ import { narrationModeLabel } from '../settings/sections/BookDetailsModal';
 import { t } from '../i18n';
 import { registerSampleBookProfiles } from './sampleVault';
 import { buildTimelineSharePayload } from '../communityShare/timelineSharePayload';
-import { buildTimelineDataExport } from '../services/export/TimelineExportService';
 import { readSceneNarration } from './frontmatter';
 
 const book = (id: string, extra: Partial<BookProfile> = {}): BookProfile => ({ id, title: id, sourceFolder: id, ...extra });
@@ -214,26 +213,5 @@ describe('Community share payload', () => {
     it('keeps the wire name pov for a narration value and never sends a character name', () => {
         expect(share('first').pov).toBe('first');
         expect(share('Dr. Watson')).not.toHaveProperty('pov');
-    });
-});
-
-describe('manual timeline export', () => {
-    const exported = (pov: string) => buildTimelineDataExport({
-        items: [{ path: 'a.md', title: 'A', date: '', subplot: 'Main Plot', itemType: 'Scene', pov }],
-        bookMeta: null,
-        settings: { ...DEFAULT_SETTINGS, books: [book('one', { narrationMode: 'third' })], activeBookId: 'one' },
-        pluginVersion: '0.0.0',
-        exportId: 'id',
-        now: new Date('2026-11-07T00:00:00Z'),
-    });
-
-    it('sends pov only for a narration value, which the website reads as the narration mode', () => {
-        expect(exported('omni').items[0].pov).toBe('omni');
-        expect(exported('Dr. Watson').items[0]).not.toHaveProperty('pov');
-    });
-
-    it('carries each book’s narration in the book profiles', () => {
-        expect(exported('omni').renderConfig.books[0].narrationMode).toBe('third');
-        expect(exported('omni').renderConfig).not.toHaveProperty('globalPovMode');
     });
 });

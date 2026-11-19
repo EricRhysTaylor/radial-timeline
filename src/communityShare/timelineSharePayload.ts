@@ -85,8 +85,13 @@ const MARKDOWN_LINK = /(!?)\[([^\]]*)\]\((?:<[^>]*>|(?:[^()]|\([^()]*\))*)\)/g;
 /** File types Obsidian embeds as media rather than as a note. Their embeds carry nothing a reader reads. */
 const ATTACHMENT = /\.(?:png|jpe?g|gif|bmp|svg|webp|avif|heic|tiff?|mp3|wav|m4a|ogg|3gp|flac|webm|mp4|ogv|mov|mkv|pdf)$/i;
 
-/** Stands in for a removed embed until the spaces around it close up. */
-const REMOVED = '\u0000';
+/**
+ * Stands in for a removed embed until the spaces around it close up: U+FFFC,
+ * Unicode's own placeholder for a removed embedded object. A control character
+ * here would put one in the regular expression below, which Obsidian's
+ * community review flags.
+ */
+const REMOVED = '￼';
 
 function markdownTarget(link: string): string {
     const open = link.lastIndexOf('](');
@@ -122,7 +127,7 @@ export function linkText(text: string): string {
         .replace(MARKDOWN_LINK, (match: string, embed: string, shown: string) => (
             embed && ATTACHMENT.test(markdownTarget(match)) ? REMOVED : shown.trim()
         ))
-        .replace(/[ \t]*\u0000[ \t]*/g, ' ')
+        .replace(/[ \t]*￼[ \t]*/g, ' ')
         .trim();
 }
 

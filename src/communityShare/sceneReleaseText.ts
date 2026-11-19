@@ -34,8 +34,20 @@ export const SCENE_MAX_RUNS = 400;
 export const SCENE_MAX_PARAGRAPH_CHARS = 20_000;
 export const SCENE_MAX_BYTES = 393_216;
 
-// Built from a string so the source file never holds a raw control character.
-const CONTROL = new RegExp('[\\u0000-\\u001F\\u007F\\u2028\\u2029]', 'g');
+/**
+ * Each C0 control, DEL and Unicode line or paragraph separator becomes a space:
+ * none belongs on a reader's page. Checked by character, not with a regular
+ * expression, because a control-character class is flagged by Obsidian's
+ * community review.
+ */
+function spaceControls(text: string): string {
+    let out = '';
+    for (const ch of text) {
+        const code = ch.charCodeAt(0);
+        out += code <= 0x1f || code === 0x7f || code === 0x2028 || code === 0x2029 ? ' ' : ch;
+    }
+    return out;
+}
 const BYTE_ORDER_MARK = new RegExp('^\\uFEFF');
 const NO_BREAK_SPACE = new RegExp('\\u00A0', 'g');
 const BREAK_LINE = /^(?:(?:\*\s*){3,}|(?:-\s*){3,}|(?:_\s*){3,}|#|\*|⁂|~{3,})$/;
@@ -84,7 +96,7 @@ export function parsePastedScene(input: string): SceneBlock[] {
     } while (text !== previous);
     const blocks: SceneBlock[] = [];
     for (const raw of text.split('\n')) {
-        const line = raw.replace(CONTROL, ' ').replace(NO_BREAK_SPACE, ' ').trim();
+        const line = spaceControls(raw).replace(NO_BREAK_SPACE, ' ').trim();
         if (!line) continue;
         if (BREAK_LINE.test(line)) {
             if (blocks.length && blocks[blocks.length - 1].kind !== 'break') blocks.push({ kind: 'break' });

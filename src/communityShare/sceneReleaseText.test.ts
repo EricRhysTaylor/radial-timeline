@@ -106,6 +106,11 @@ describe('parsePastedScene (mirrors the website paste parser)', () => {
         ]);
     });
 
+    it('turns NUL, DEL and Unicode line separators into spaces and keeps other characters whole', () => {
+        const [nul, del, lineSeparator] = [0, 0x7f, 0x2028].map(code => String.fromCharCode(code));
+        expect(parsePastedScene(`A${nul}B${del}C${lineSeparator}D 🌊 é`)).toEqual([p('A B C D 🌊 é')]);
+    });
+
     it('counts words across paragraphs, and none in a break', () => {
         expect(sceneWordCount([p('Hello ', { em: 'dear' }, ' world.'), BREAK, p('Second paragraph here.')])).toBe(6);
         expect(sceneWordCount([])).toBe(0);

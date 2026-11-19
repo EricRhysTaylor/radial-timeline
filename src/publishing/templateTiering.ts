@@ -1,19 +1,7 @@
-import type { PandocLayoutTemplate, TemplateKind, TemplateTier, ValidationIssue } from '../types';
+import type { PandocLayoutTemplate, TemplateKind, TemplateTier } from '../types';
 
 export const BASIC_MANUSCRIPT_LAYOUT_ID = 'bundled-fiction-classic-manuscript';
 export const CONTEMPORARY_LITERARY_LAYOUT_ID = 'bundled-fiction-contemporary-literary';
-
-export const TEMPLATE_ACCESS_FALLBACK_MESSAGE = "The saved PDF style isn't available in this vault. This export will use Basic instead.";
-export const TEMPLATE_ACCESS_LOCKED_MESSAGE = "The selected PDF style isn't available in this vault, and no fallback style is available.";
-
-export interface TemplateAccessResolution {
-    requestedLayout?: PandocLayoutTemplate;
-    effectiveLayout?: PandocLayoutTemplate;
-    fallbackLayout?: PandocLayoutTemplate;
-    tier?: TemplateTier;
-    usedFallback: boolean;
-    issues: ValidationIssue[];
-}
 
 export function getPandocLayoutTier(layout: Pick<PandocLayoutTemplate, 'id' | 'preset' | 'bundled' | 'tier' | 'origin'>): TemplateTier {
     // Designed styles are always Pro; this check wins over name/id heuristics so a generated
@@ -78,84 +66,9 @@ export function getPandocLayoutSortRank(layout: Pick<PandocLayoutTemplate, 'id' 
     return getPandocLayoutTier(layout) === 'free' ? 70 : 80;
 }
 
-export function isPandocLayoutAccessible(layout: PandocLayoutTemplate, hasProAccess: boolean): boolean {
-    return hasProAccess || getPandocLayoutTier(layout) === 'free';
-}
-
-export function findBasicManuscriptFallback(layouts: PandocLayoutTemplate[], preset: PandocLayoutTemplate['preset'] = 'novel'): PandocLayoutTemplate | undefined {
-    if (preset !== 'novel') return undefined;
-    return layouts.find(layout => layout.id === BASIC_MANUSCRIPT_LAYOUT_ID && getPandocLayoutTier(layout) === 'free')
-        || layouts.find(layout => layout.preset === 'novel' && getPandocLayoutTier(layout) === 'free');
-}
-
-function buildIssue(level: ValidationIssue['level'], code: string, message: string, field?: string): ValidationIssue {
-    return {
-        level,
-        code,
-        message,
-        scope: 'export',
-        actionable: level !== 'info',
-        ...(field ? { field } : {}),
-    };
-}
-
-export function resolveTemplateAccess(params: {
-    layouts: PandocLayoutTemplate[];
-    selectedLayoutId?: string;
-    manuscriptPreset?: PandocLayoutTemplate['preset'];
-    hasProAccess: boolean;
-}): TemplateAccessResolution {
-    const requestedLayout = params.selectedLayoutId
-        ? params.layouts.find(layout => layout.id === params.selectedLayoutId)
-        : [...params.layouts]
-            .filter(layout => layout.preset === (params.manuscriptPreset || 'novel'))
-            .sort((a, b) => getPandocLayoutSortRank(a) - getPandocLayoutSortRank(b) || a.name.localeCompare(b.name))
-            .find(layout => params.hasProAccess || getPandocLayoutTier(layout) === 'free')
-            || params.layouts.find(layout => layout.preset === (params.manuscriptPreset || 'novel'));
-    if (!requestedLayout) {
-        return { usedFallback: false, issues: [] };
-    }
-
-    const tier = getPandocLayoutTier(requestedLayout);
-    if (isPandocLayoutAccessible(requestedLayout, params.hasProAccess)) {
-        return {
-            requestedLayout,
-            effectiveLayout: requestedLayout,
-            tier,
-            usedFallback: false,
-            issues: [
-                buildIssue(
-                    'info',
-                    tier === 'free' ? 'template_access_core_included' : 'template_access_requires_pro',
-                    tier === 'free' ? 'Available in every vault.' : 'Available in this vault.',
-                    requestedLayout.id
-                ),
-            ],
-        };
-    }
-
-    const fallbackLayout = findBasicManuscriptFallback(params.layouts, requestedLayout.preset);
-    if (fallbackLayout) {
-        return {
-            requestedLayout,
-            effectiveLayout: fallbackLayout,
-            fallbackLayout,
-            tier,
-            usedFallback: true,
-            issues: [
-                buildIssue('warning', 'template_access_fallback_to_basic', TEMPLATE_ACCESS_FALLBACK_MESSAGE, requestedLayout.id),
-                buildIssue('info', 'template_access_core_included', 'Available in every vault.', fallbackLayout.id),
-            ],
-        };
-    }
-
-    return {
-        requestedLayout,
-        tier,
-        usedFallback: false,
-        issues: [
-            buildIssue('error', 'template_access_locked_no_fallback', TEMPLATE_ACCESS_LOCKED_MESSAGE, requestedLayout.id),
-            buildIssue('info', 'template_access_requires_pro', 'Not available in this vault.', requestedLayout.id),
-        ],
-    };
+/** The first PDF style for a preset in display order: the one used when none is chosen. */
+export function defaultLayoutForPreset(layouts: PandocLayoutTemplate[], preset: PandocLayoutTemplate['preset']): PandocLayoutTemplate | undefined {
+    return layouts
+        .filter(layout => layout.preset === preset)
+        .sort((a, b) => getPandocLayoutSortRank(a) - getPandocLayoutSortRank(b) || a.name.localeCompare(b.name))[0];
 }

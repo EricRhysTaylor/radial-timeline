@@ -15,7 +15,7 @@ function fixture() {
         getPublishingValidationService: () => ({ resolveBookMetaForBook: () => ({ bookMeta: { title: 'One', author: 'Writer' } }) }),
     } as unknown as RadialTimelinePlugin;
     const request: ManuscriptModalResult = { source: { kind: 'folder', path: 'Draft', paths: ['Draft/One.md'], title: 'Direct', author: 'Author' }, outputFormat: 'pdf', exportType: 'manuscript', order: 'narrative', tocMode: 'none' };
-    const receipt: ManuscriptProofReceipt = { schemaVersion: 1, generatedAt: '2026-10-11', styleName: 'Basic', notices: [], configurationKey: getManuscriptProofConfigurationKey(plugin, request), dependencies: [{ kind: 'vault', path: 'Draft/One.md', sha256: hashProofInput('Original manuscript') }], renderedPaths: ['Proof.pdf'], sourceWordCounts: {} };
+    const receipt: ManuscriptProofReceipt = { schemaVersion: 1, generatedAt: '2026-10-11', styleName: 'Basic', configurationKey: getManuscriptProofConfigurationKey(plugin, request), dependencies: [{ kind: 'vault', path: 'Draft/One.md', sha256: hashProofInput('Original manuscript') }], renderedPaths: ['Proof.pdf'], sourceWordCounts: {} };
     return { plugin, bodies, request, receipt };
 }
 

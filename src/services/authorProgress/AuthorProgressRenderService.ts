@@ -7,7 +7,6 @@ import type { TimelineItem } from '../../types/timeline';
 import { AprProgressService } from '../apr/AprProgressService';
 import { AprStyleService } from '../apr/AprStyleService';
 import { getTeaserThresholds, getTeaserRevealLevel, teaserLevelToRevealOptions } from '../../renderer/apr/AprConstants';
-import { hasProFeatureAccess } from '../../settings/featureGate';
 import { isSceneItem } from '../../utils/sceneHelpers';
 import { buildReportEmbedPath, type AprExportFormat } from '../../utils/aprPaths';
 import { resolveBookTitle, resolveProjectPath } from '../../renderer/apr/aprHelpers';
@@ -152,10 +151,7 @@ export class AuthorProgressRenderService {
         const books = this.plugin.settings.books;
         const progressState = this.aprProgressService.resolveProgress(scenes, settings);
         const renderStyle = this.aprStyleService.buildRenderStyle(this.aprStyleService.resolveStyle(report));
-        // Hiding the Radial Timeline mark is the one Pro choice left in Social.
-        const showRtAttribution = hasProFeatureAccess(this.plugin)
-            ? renderStyle.showRtAttribution !== false
-            : true;
+        const showRtAttribution = renderStyle.showRtAttribution !== false;
 
         const revealLevel = this.resolveRevealLevel(report, progressState.percent);
         const reveal = teaserLevelToRevealOptions(revealLevel);

@@ -134,10 +134,10 @@ export function getBackboneStartColors(styleSource: Element): BackboneColors {
     };
 }
 
-export function getBackboneTargetColors(isPro: boolean): BackboneColors {
-    const base = isPro ? getProAccentColor() : { r: 34, g: 255, b: 120 };
-    const bright = mixRgbColor(base, { r: 255, g: 255, b: 255 }, isPro ? 0.55 : 0.65);
-    const deep = mixRgbColor(base, { r: 0, g: 0, b: 0 }, isPro ? 0.12 : 0.08);
+export function getBackboneTargetColors(): BackboneColors {
+    const base = getProAccentColor();
+    const bright = mixRgbColor(base, { r: 255, g: 255, b: 255 }, 0.55);
+    const deep = mixRgbColor(base, { r: 0, g: 0, b: 0 }, 0.12);
     return {
         gradient: [base, bright, deep],
         shine: [
@@ -151,8 +151,7 @@ export function getBackboneTargetColors(isPro: boolean): BackboneColors {
 
 export function getBackbonePressureColors(
     styleSource: Element,
-    tone: 'normal' | 'amber' | 'red',
-    isPro: boolean
+    tone: 'normal' | 'amber' | 'red'
 ): BackboneColors {
     if (tone === 'amber') {
         return getBackboneStartColors(styleSource);
@@ -175,7 +174,7 @@ export function getBackbonePressureColors(
     }
 
     const themeBase = parseRgbColor(getComputedStyle(styleSource.ownerDocument.documentElement).getPropertyValue('--interactive-accent'))
-        ?? getBackboneTargetColors(isPro).gradient[0]
+        ?? getBackboneTargetColors().gradient[0]
         ?? { r: 87, g: 151, b: 245 };
     return {
         gradient: [
@@ -685,7 +684,6 @@ export class InquiryMinimapRenderer {
 
     startRunningAnimations(
         styleSource: Element,
-        isPro: boolean,
         isRunningFn: () => boolean,
         onFrame?: (elapsedMs: number) => void
     ): void {
@@ -695,7 +693,7 @@ export class InquiryMinimapRenderer {
         this.backboneProgressRatio = 0;
         this.cancelFadeOut();
         this.backboneStartColors = getBackboneStartColors(styleSource);
-        this.backboneTargetColors = getBackboneTargetColors(isPro);
+        this.backboneTargetColors = getBackboneTargetColors();
         this.backboneOscillationPhaseOffset = Math.PI / 2;
         this.setRunningBackboneProgress(0);
         if (this.minimapBaseline) {
@@ -753,7 +751,7 @@ export class InquiryMinimapRenderer {
     /** Show a full-width red error bar on the backbone after a failed run. */
     showErrorState(styleSource: Element): void {
         if (!this.minimapBackboneLayout || !this.minimapBackboneGlow) return;
-        const errorColors = getBackbonePressureColors(styleSource, 'red', false);
+        const errorColors = getBackbonePressureColors(styleSource, 'red');
         this.applyStopColors(errorColors.gradient, errorColors.shine);
         this.setFillProgress(1);
         this.minimapBackboneGroup?.classList.remove('is-pressure-normal', 'is-pressure-amber', 'is-pressure-red', 'is-pressure-over-budget');
@@ -1060,7 +1058,6 @@ export class InquiryMinimapRenderer {
         readinessUi: InquiryReadinessUiState,
         passPlan: PassPlanResult,
         styleSource: Element,
-        isPro: boolean,
         advancedContext: AIRunAdvancedContext | null,
         progress: InquiryRunProgressEvent | null,
         corpusTokens: number,
@@ -1087,10 +1084,10 @@ export class InquiryMinimapRenderer {
         this.minimapEndCapEnd?.style.removeProperty('fill');
 
         if (isOverCapacity) {
-            const pressureColors = getBackbonePressureColors(styleSource, overCapacityTone, isPro);
+            const pressureColors = getBackbonePressureColors(styleSource, overCapacityTone);
             this.applyStopColors(pressureColors.gradient, pressureColors.shine);
         } else {
-            const pressureColors = getBackbonePressureColors(styleSource, readinessUi.readiness.pressureTone, isPro);
+            const pressureColors = getBackbonePressureColors(styleSource, readinessUi.readiness.pressureTone);
             this.applyStopColors(pressureColors.gradient, pressureColors.shine);
         }
 

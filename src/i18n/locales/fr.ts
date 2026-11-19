@@ -592,7 +592,6 @@ export const fr: DeepPartial<TranslationKeys> = {
                 "deleteQuestion": "Supprimer la question",
                 "questionPlaceholder": "Texte de la question",
                 "customizedQuestion": "Question personnalisée",
-                "unlockProGhost": "D'autres emplacements de questions personnalisées ne sont pas disponibles dans ce coffre",
                 "chooseCanonical": "Ou choisissez une question canonique",
                 "noRemainingCanonical": "Aucune question canonique restante",
                 "addQuestion": "Ajouter une question",
@@ -662,10 +661,8 @@ export const fr: DeepPartial<TranslationKeys> = {
             "canonicalLibrary": {
                 "name": "Bibliothèque de questions canoniques",
                 "descPro": "Cadre Inquiry Sur trois zones : configuration, pression et gain. Ajoutez vos propres questions personnalisées, installez des questions organisées ligne par ligne ou chargez l'intégralité Ensemble étendu sur toutes les zones à la fois.",
-                "descFree": "Cadre Inquiry Sur trois zones : configuration, pression et gain. Ajoutez vos propres questions personnalisées, installez des questions organisées ligne par ligne ou chargez Le noyau est défini sur toutes les zones à la fois.",
                 "loadFullProSet": "Charger l'ensemble étendu complet",
                 "loadAllTooltip": "Charger toutes les questions canoniques de Inquiry",
-                "loadCoreQuestions": "Charger les questions de base"
             },
             "corpusTable": {
                 "tier": "Niveau",
@@ -1851,7 +1848,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "replaceCanonicalSubtitle": "Remplacez ce logement par \"{{label}}\".",
             "loadCanonicalSubtitleCustomized": "Chargez le {{label}}. Les questions existantes dans chaque zone seront remplacées.",
             "loadCanonicalSubtitleCurrent": "Chargez le {{label}}. Les questions actuelles dans chaque zone seront remplacées.",
-            "coreQuestionsLabel": "Questions de base",
             "fullProSetLabel": "Ensemble complet de questions",
             "collapse": "Effondrement",
             "expand": "Étendre"
@@ -5324,7 +5320,6 @@ export const fr: DeepPartial<TranslationKeys> = {
         },
         "main": {
             "adoptedBeats": "Beats \"{{name}}\" adoptés depuis votre manuscrit.",
-            "sagaIsPro": "Saga Timeline n'est pas disponible dans ce coffre.",
             "sagaNeedsTwoBooks": "Ajoutez au moins deux livres dans Book Manager pour utiliser Saga Timeline.",
             "sceneIdsAdded": "🔑 ID de scène ajoutés à {{scenes}}. Aucune action requise.",
             "settingsSaveBlocked": "Radial Timeline n'enregistre pas les paramètres cette session : son fichier de paramètres (data.json) n'a pas pu être lu. Réparer ou renommer le fichier et recharger Obsidian — Toute modification que vous apportez maintenant sera perdue.",
@@ -6702,8 +6697,6 @@ export const fr: DeepPartial<TranslationKeys> = {
             "showSpecialFeatures": "Afficher les fonctionnalités spéciales",
             "customizeBundledTooltip": "Personnaliser {{name}} — ouvre l'assistant pré-remplie avec les paramètres de ce modèle ; L'enregistrement crée une nouvelle copie modifiable.",
             "editDesignedTooltip": "Modifier le style conçu",
-            "customizeProOnly": "La personnalisation des styles PDF n'est pas disponible dans ce coffre.",
-            "editDesignedProOnly": "La modification des styles conçus n'est pas disponible dans ce coffre.",
             "layoutCopyName": "{{name}} Copie",
             "removeLayoutTooltip": "supprimer la mise en page",
             "partEpigraphsTitle": "Partie épigraphes (facultatif)",
@@ -6724,12 +6717,9 @@ export const fr: DeepPartial<TranslationKeys> = {
             "installAllNeededTooltip": "Installez les modèles PDF groupés et leurs fichiers de polices requis dans votre dossier Pandoc.",
             "installAllDoneTooltip": "Les modèles PDF et les fichiers de police requis sont installés.",
             "designOwnButton": "Concevez votre propre…",
-            "proWorkflowTooltip": "Non disponible dans ce coffre.",
-            "designOwnProOnly": "La conception de styles personnalisés n'est pas disponible dans ce coffre.",
             "importTemplateButton": "Importer un modèle…",
             "importTemplateTooltip": "Apportez un modèle .tex existant dans la publication. Pour une conception à partir de zéro avec un aperçu en direct, utilisez plutôt \"Créez votre propre…\".",
             "importTemplateBetaTooltip": "Release bêta en attente : apportez un modèle .tex existant dans la publication.",
-            "importTemplateProOnly": "L'importation de modèles personnalisés n'est pas disponible dans ce coffre.",
             "installAllInitialTooltip": "Installez les modèles PDF groupés et leurs fichiers de polices requis dans votre dossier Pandoc. N'entraine pas les détails du livre ou les pages de livres.",
             "installAllFontsFailed": "Certaines dispositions groupées ou polices requises ont échoué à installer (fonts : {{fonts}}).",
             "installAllFailed": "Certaines mises en page groupées ou polices requises n'ont pas pu être installées.",

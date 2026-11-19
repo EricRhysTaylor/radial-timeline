@@ -12,7 +12,6 @@ import type RadialTimelinePlugin from '../../main';
 import type { RuntimeContentType, RuntimeRateProfile } from '../../types';
 import { addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { t } from '../../i18n';
-import { hasProFeatureAccess } from '../featureGate';
 import { ERT_CLASSES } from '../../ui/classes';
 import { fitSelectToSelectedLabel } from '../selectSizing';
 import { runtimeRatesFromSettings } from '../../utils/runtimeEstimator';
@@ -24,7 +23,6 @@ interface SectionParams {
 }
 
 export function renderRuntimeSection({ plugin, containerEl }: SectionParams): void {
-    const hasProfessional = hasProFeatureAccess(plugin);
     const generateProfileId = () => `rtp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
     const buildProfileFromLegacy = () => ({
         id: 'default',
@@ -94,15 +92,12 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
     };
     
     // ─────────────────────────────────────────────────────────────────────────
-    // Runtime estimation remains Pro-owned. Writing/session goals are rendered
-    // separately in Core -> Sessions and may still be read by exports.
+    // Runtime estimation. Writing/session goals are rendered separately in
+    // Core -> Sessions and may still be read by exports.
     // ─────────────────────────────────────────────────────────────────────────
-    const proContainer = containerEl.createDiv({ cls: `${ERT_CLASSES.PANEL} ${ERT_CLASSES.STACK}` });
-    if (!hasProfessional) {
-        proContainer.addClass('ert-pro-locked');
-    }
+    const runtimeContainer = containerEl.createDiv({ cls: `${ERT_CLASSES.PANEL} ${ERT_CLASSES.STACK}` });
 
-    const runtimeHeader = new Setting(proContainer)
+    const runtimeHeader = new Setting(runtimeContainer)
         .setName(t('settings.runtime.header.name'))
         .setHeading()
         .setDesc(t('settings.runtime.header.desc'));
@@ -110,9 +105,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
     applyErtHeaderLayout(runtimeHeader);
 
     // Content host within runtime card — all runtime rows re-render inside this element
-    const runtimeBody = proContainer.createDiv({ cls: ERT_CLASSES.STACK });
-
-    const addProRow = (setting: Setting) => setting;
+    const runtimeBody = runtimeContainer.createDiv({ cls: ERT_CLASSES.STACK });
 
     // Flash helper for input validation
     const flash = (input: HTMLInputElement, type: 'success' | 'error') => {
@@ -170,7 +163,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
             const contentType = selectedProfile.contentType || 'novel';
 
             // Content Type Selection
-            addProRow(new Setting(ratesRow))
+            new Setting(ratesRow)
                 .setName(t('settings.runtime.contentType.name'))
                 .setDesc(t('settings.runtime.contentType.desc'))
                 .addDropdown((dropdown: DropdownComponent) => {
@@ -186,7 +179,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
 
             // Word Rates (content-type specific)
             if (contentType === 'screenplay') {
-                addProRow(new Setting(ratesRow))
+                new Setting(ratesRow)
                     .setName(t('settings.runtime.dialogueWpm.name'))
                     .setDesc(t('settings.runtime.dialogueWpm.desc'))
                     .addText((text: TextComponent) => {
@@ -206,7 +199,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
                         });
                     });
 
-                addProRow(new Setting(ratesRow))
+                new Setting(ratesRow)
                     .setName(t('settings.runtime.actionWpm.name'))
                     .setDesc(t('settings.runtime.actionWpm.desc'))
                     .addText((text: TextComponent) => {
@@ -241,7 +234,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
                 ];
 
                 for (const p of parentheticals) {
-                    addProRow(new Setting(ratesRow))
+                    new Setting(ratesRow)
                         .setName(p.label)
                         .setDesc(p.desc)
                         .addText((text: TextComponent) => {
@@ -276,7 +269,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
                 }
             } else {
                 // Novel / Audiobook mode
-                addProRow(new Setting(ratesRow))
+                new Setting(ratesRow)
                     .setName(t('settings.runtime.narrationWpm.name'))
                     .setDesc(t('settings.runtime.narrationWpm.desc'))
                     .addText((text: TextComponent) => {
@@ -324,7 +317,7 @@ export function renderRuntimeSection({ plugin, containerEl }: SectionParams): vo
             const selectedProfile = currentProfiles.find(p => p.id === selectedProfileId) || currentProfiles[0];
             const currentDefault = currentProfiles.find(p => p.id === plugin.settings.defaultRuntimeProfileId);
             const isDefault = selectedProfile && selectedProfile.id === plugin.settings.defaultRuntimeProfileId;
-            const headerSetting = addProRow(new Setting(headerContainer))
+            const headerSetting = new Setting(headerContainer)
                 .setName(t('settings.runtime.profile.name'))
                 .setDesc(t('settings.runtime.profile.desc', { current: currentDefault?.label || t('settings.runtime.profile.noneFallback') }));
 

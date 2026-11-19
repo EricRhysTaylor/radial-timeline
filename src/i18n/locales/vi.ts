@@ -592,7 +592,6 @@ export const vi: DeepPartial<TranslationKeys> = {
                 "deleteQuestion": "Xóa câu hỏi",
                 "questionPlaceholder": "Nội dung câu hỏi",
                 "customizedQuestion": "Câu hỏi tùy chỉnh",
-                "unlockProGhost": "Không thể thêm ô câu hỏi tùy chỉnh trong kho này",
                 "chooseCanonical": "Hoặc chọn câu hỏi chuẩn",
                 "noRemainingCanonical": "Không còn câu hỏi chuẩn nào",
                 "addQuestion": "Thêm câu hỏi",
@@ -662,10 +661,8 @@ export const vi: DeepPartial<TranslationKeys> = {
             "canonicalLibrary": {
                 "name": "Thư viện câu hỏi chuẩn",
                 "descPro": "Khung Inquiry Trên ba khu vực: thiết lập, áp lực và hoàn trả. Thêm các câu hỏi tùy chỉnh của riêng bạn, cài đặt các câu hỏi được sắp xếp theo từng dòng hoặc tải toàn bộ Mở rộng thiết lập trên tất cả các khu vực cùng một lúc.",
-                "descFree": "Khung Inquiry Trên ba khu vực: thiết lập, áp lực và hoàn trả. Thêm các câu hỏi tùy chỉnh của riêng bạn, cài đặt các câu hỏi được sắp xếp theo từng dòng hoặc tải Lõi đặt trên tất cả các vùng cùng một lúc.",
                 "loadFullProSet": "Tải Bộ Mở Rộng Toàn Bộ",
                 "loadAllTooltip": "Tải tất cả các câu hỏi chuẩn của Inquiry",
-                "loadCoreQuestions": "Tải Câu Hỏi Cốt Lõi"
             },
             "corpusTable": {
                 "tier": "Cấp độ",
@@ -1851,7 +1848,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "replaceCanonicalSubtitle": "Thay thế khe này bằng \"{{label}}\".",
             "loadCanonicalSubtitleCustomized": "Tải {{label}}. Các câu hỏi hiện có trong mọi khu vực sẽ được thay thế.",
             "loadCanonicalSubtitleCurrent": "Tải {{label}}. Các câu hỏi hiện tại trong mọi khu vực sẽ được thay thế.",
-            "coreQuestionsLabel": "Câu hỏi cốt lõi",
             "fullProSetLabel": "Bộ câu hỏi đầy đủ",
             "collapse": "Sự sụp đổ",
             "expand": "mở rộng"
@@ -5324,7 +5320,6 @@ export const vi: DeepPartial<TranslationKeys> = {
         },
         "main": {
             "adoptedBeats": "Đã thông qua nhịp \"{{name}}\" từ bản thảo của bạn.",
-            "sagaIsPro": "Saga Timeline không khả dụng trong kho này.",
             "sagaNeedsTwoBooks": "Thêm ít nhất hai cuốn sách trong Trình quản lý sách để sử dụng dòng thời gian Saga.",
             "sceneIdsAdded": "🔑 ID cảnh được thêm vào {{scenes}}. Không cần hành động.",
             "settingsSaveBlocked": "Radial Timeline không thể lưu cài đặt phiên này: Không thể đọc tệp cài đặt của nó (data.json). sửa chữa hoặc đổi tên tệp và tải lại Obsidian - Bất kỳ thay đổi nào bạn thực hiện bây giờ sẽ bị mất.",
@@ -6702,8 +6697,6 @@ export const vi: DeepPartial<TranslationKeys> = {
             "showSpecialFeatures": "Hiển thị các tính năng đặc biệt",
             "customizeBundledTooltip": "Tùy chỉnh {{name}} - Mở trình hướng dẫn được điền trước với cài đặt của mẫu này; Lưu tạo một bản sao có thể chỉnh sửa mới.",
             "editDesignedTooltip": "Chỉnh sửa phong cách thiết kế",
-            "customizeProOnly": "Không thể tùy chỉnh kiểu PDF trong kho này.",
-            "editDesignedProOnly": "Không thể chỉnh sửa kiểu đã thiết kế trong kho này.",
             "layoutCopyName": "{{name}} Sao chép",
             "removeLayoutTooltip": "Xóa bố cục",
             "partEpigraphsTitle": "Phần epigraph (tùy chọn)",
@@ -6724,12 +6717,9 @@ export const vi: DeepPartial<TranslationKeys> = {
             "installAllNeededTooltip": "Cài đặt các mẫu PDF đi kèm và các tệp phông chữ cần thiết của chúng vào thư mục Pandoc của bạn.",
             "installAllDoneTooltip": "0PDF mẫu và các file font bắt buộc được cài đặt.",
             "designOwnButton": "Thiết kế của riêng bạn…",
-            "proWorkflowTooltip": "Không khả dụng trong kho này.",
-            "designOwnProOnly": "Không thể thiết kế kiểu tùy chỉnh trong kho này.",
             "importTemplateButton": "Nhập mẫu…",
             "importTemplateTooltip": "Đưa một mẫu .tex hiện có vào xuất bản. Đối với thiết kế từ đầu với bản xem trước trực tiếp, hãy sử dụng \"thiết kế của riêng bạn ...\" thay thế.",
             "importTemplateBetaTooltip": "Bản phát hành beta đang chờ xử lý — Mang mẫu .tex hiện có vào xuất bản.",
-            "importTemplateProOnly": "Không thể nhập mẫu tùy chỉnh trong kho này.",
             "installAllInitialTooltip": "Cài đặt các mẫu PDF đi kèm và các tệp phông chữ cần thiết của chúng vào thư mục Pandoc của bạn. Không gieo hạt chi tiết hoặc các trang sách.",
             "installAllFontsFailed": "Một số bố cục đi kèm hoặc phông chữ bắt buộc không thể cài đặt (fonts: {{fonts}}).",
             "installAllFailed": "Một số bố cục đi kèm hoặc phông chữ bắt buộc không cài đặt được.",

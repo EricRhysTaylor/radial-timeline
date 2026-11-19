@@ -72,7 +72,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             { name: t('ui.settingsTab.search.advancedConfiguration'), tab: 'advanced', section: 'configuration' },
             { name: t('ui.settingsTab.search.authorProgress'), tab: 'social', section: 'social' },
             { name: t('ui.settingsTab.search.communitySharing'), tab: 'community', section: 'community' },
-            { name: t('ui.settingsTab.search.resources'), tab: 'pro', section: 'resources' },
+            { name: t('ui.settingsTab.search.resources'), tab: 'resources', section: 'resources' },
             ...[
                 t('ui.settingsTab.search.openAiKey'), t('ui.settingsTab.search.anthropicKey'), t('ui.settingsTab.search.geminiKey'), t('ui.settingsTab.search.ollama'),
             ].map(name => ({ name, tab: 'ai' as const, section: 'ai' })),
@@ -955,10 +955,10 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         const advancedIcon = advancedTab.createSpan({ cls: 'ert-settings-tab-icon' });
         setIcon(advancedIcon, 'pyramid');
         advancedTab.createSpan({ text: t('ui.settingsTab.tabAdvanced'), cls: 'ert-settings-tab-label' });
-        const proTab = tabBar.createDiv({ cls: 'ert-settings-tab' });
-        const proIcon = proTab.createSpan({ cls: 'ert-settings-tab-icon' });
-        setIcon(proIcon, 'library');
-        proTab.createSpan({ text: t('ui.settingsTab.tabPro'), cls: 'ert-settings-tab-label' });
+        const resourcesTab = tabBar.createDiv({ cls: 'ert-settings-tab' });
+        const resourcesIcon = resourcesTab.createSpan({ cls: 'ert-settings-tab-icon' });
+        setIcon(resourcesIcon, 'library');
+        resourcesTab.createSpan({ text: t('ui.settingsTab.tabPro'), cls: 'ert-settings-tab-label' });
 
         const coreContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-settings-core-content ert-scope--settings' });
         const socialContent = containerEl.createDiv({
@@ -975,7 +975,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         });
         const aiContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-settings-ai-content ert-scope--settings' });
         const advancedContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-settings-advanced-content ert-scope--settings' });
-        const proContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-scope--settings', attr: { [ERT_DATA.SECTION]: 'resources' } });
+        const resourcesContent = containerEl.createDiv({ cls: 'ert-settings-tab-content ert-scope--settings', attr: { [ERT_DATA.SECTION]: 'resources' } });
 
         this._tabEls = {
             core: coreTab,
@@ -985,7 +985,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             publishing: publishingTab,
             ai: aiTab,
             advanced: advancedTab,
-            pro: proTab
+            resources: resourcesTab
         };
         this._tabContentEls = {
             core: coreContent,
@@ -995,7 +995,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             publishing: publishingContent,
             ai: aiContent,
             advanced: advancedContent,
-            pro: proContent
+            resources: resourcesContent
         };
 
         // Persist tab selection so Settings reopens on the user's last tab.
@@ -1015,7 +1015,7 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
         this.plugin.registerDomEvent(publishingTab, 'click', () => persistTab('publishing'));
         this.plugin.registerDomEvent(aiTab, 'click', () => persistTab('ai'));
         this.plugin.registerDomEvent(advancedTab, 'click', () => persistTab('advanced'));
-        this.plugin.registerDomEvent(proTab, 'click', () => persistTab('pro'));
+        this.plugin.registerDomEvent(resourcesTab, 'click', () => persistTab('resources'));
         this.updateRenderedTabState();
 
         const coreStack = coreContent.createDiv({ cls: ERT_CLASSES.STACK });
@@ -1224,16 +1224,16 @@ export class RadialTimelineSettingsTab extends PluginSettingTab {
             });
         });
 
-        const proStack = proContent.createDiv({ cls: ERT_CLASSES.STACK });
-        this.renderGuarded(t('ui.settingsTab.guardBonusVaults'), proStack, () => {
+        const resourcesStack = resourcesContent.createDiv({ cls: ERT_CLASSES.STACK });
+        this.renderGuarded(t('ui.settingsTab.guardBonusVaults'), resourcesStack, () => {
             renderBonusVaultsSection({
                 app: this.app,
                 plugin: this.plugin,
-                containerEl: proStack
+                containerEl: resourcesStack
             });
         });
 
-        const resources = proStack.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.STACK}` });
+        const resources = resourcesStack.createDiv({ cls: `${ERT_CLASSES.CARD} ${ERT_CLASSES.STACK}` });
         resources.createDiv({ cls: ERT_CLASSES.SECTION_TITLE, text: t('ui.settingsTab.resourcesHelp') });
         const resourceLinks = resources.createDiv({ cls: 'ert-resource-links' });
         [

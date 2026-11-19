@@ -88,8 +88,7 @@ import { DARIAN_MARS_MONTH_NAMES, MARS_TEMPLATE_ID, matchesLegacyMarsMonthNames 
 import type { GossamerHistoricalRunOverlay, GossamerMinMaxBand, GossamerRun, GossamerRunRecord } from './utils/gossamer';
 import { coerceGossamerSignal, DEFAULT_GOSSAMER_SIGNAL, type GossamerSignalType } from './types/gossamerSignals';
 import type { GossamerCacheEntry } from './gossamer/cacheWindow';
-import { seedProEntitlement } from './settings/proEntitlementSeed';
-import { detectBetaFeatures, hasProFeatureAccess } from './settings/featureGate';
+import { detectBetaFeatures } from './settings/featureGate';
 import { DisposableRegistry } from './core/disposable';
 import { systemFolderPath } from './utils/systemFolder';
 import { syncMainPlotName, toSagaMainPlot } from './utils/mainPlot';
@@ -170,7 +169,10 @@ const FINISHED_DEPRECATION_KEYS = [
     'aiOutputFolder',
     'outlineOutputFolder',
     'beatSystem',
-    'activeCustomBeatSystemId'
+    'activeCustomBeatSystemId',
+    // Pro access ended 2026-11-19: every feature is open, nothing reads these.
+    'proLicenseKey',
+    'proAccessEnabled'
 ] as const;
 
 export default class RadialTimelinePlugin extends Plugin {
@@ -554,10 +556,6 @@ export default class RadialTimelinePlugin extends Plugin {
         if (scope === 'saga') {
             if (!isSagaScopeAvailable(this.settings)) {
                 new Notice(t('ui.main.sagaNeedsTwoBooks'));
-                return;
-            }
-            if (!hasProFeatureAccess(this)) {
-                new Notice(t('ui.main.sagaIsPro'));
                 return;
             }
             this.settings.timelineScope = 'saga';
@@ -1063,7 +1061,6 @@ export default class RadialTimelinePlugin extends Plugin {
         this.gossamerVisibleRunIds = [...normalizedGossamerRunFilter.visibleRunIds];
         this.gossamerFilterBeatSystemKey = normalizedGossamerRunFilter.beatSystemKey;
         this.gossamerSelectedSignal = coerceGossamerSignal(normalizedGossamerRunFilter.signal);
-        const proEntitlementSeeded = seedProEntitlement(this.settings);
         this.settings.aiSettings = (loadedSettings as Partial<RadialTimelineSettings>).aiSettings;
         this.settings.authorProgress = migrateAuthorProgressSettings((loadedSettings as Partial<RadialTimelineSettings>).authorProgress);
         let modeMigrated = false;
@@ -1199,7 +1196,7 @@ export default class RadialTimelinePlugin extends Plugin {
             this.settings.timelineScope = 'book';
             timelineScopeMigrated = true;
         }
-        if (this.settings.timelineScope === 'saga' && (!isSagaScopeAvailable(this.settings) || !hasProFeatureAccess(this))) {
+        if (this.settings.timelineScope === 'saga' && !isSagaScopeAvailable(this.settings)) {
             this.settings.timelineScope = 'book';
             timelineScopeMigrated = true;
         }
@@ -1431,8 +1428,13 @@ export default class RadialTimelinePlugin extends Plugin {
                 legacyKeysStripped = true;
             }
         }
+        // The settings tab that holds Resources was stored as 'pro'.
+        if (settingsAny.lastSettingsTab === 'pro') {
+            this.settings.lastSettingsTab = 'resources';
+            legacyKeysStripped = true;
+        }
 
-        if (sceneTemplatesMigrated || freshInstallSeeded || proEntitlementSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || booksMigrated || canvasSubplotMemoryMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated || narrationDefaultsMigrated || contentLoggingReset) {
+        if (sceneTemplatesMigrated || freshInstallSeeded || gossamerRunFilterMigrated || aiSettingsMigrated || exportFolderMigrated || legacyKeysStripped || backdropTemplateMigrated || beatTemplateMigrated || pandocLayoutsMigrated || bundledPandocLayoutsRegistered || publishingModelMigrated || pandocLayoutReferenceMigrated || booksMigrated || canvasSubplotMemoryMigrated || timelineScopeMigrated || planetarySelectionMigrated || modeMigrated || stageTargetsMigrated || narrationDefaultsMigrated || contentLoggingReset) {
             await this.saveSettings();
         }
     }

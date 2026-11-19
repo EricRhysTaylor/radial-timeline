@@ -9427,30 +9427,6 @@
   opacity: 0.9;
 }
 
-.ert-ui .ert-pro-locked {
-  position: relative;
-  isolation: isolate;
-  pointer-events: none;
-  user-select: none;
-  filter: grayscale(1) saturate(0.05);
-}
-
-.ert-ui .ert-pro-locked>* {
-  opacity: 0.85;
-}
-
-.ert-ui .ert-pro-locked::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.04));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--background-modifier-border) 40%, transparent);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  z-index: 2;
-}
-
 /* -------------------------------------------------------------------------- */
 /* ERT Buttons (Standard & Pro)                                               */
 /* -------------------------------------------------------------------------- */

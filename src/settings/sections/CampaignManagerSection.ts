@@ -21,7 +21,6 @@ import type {
 } from '../../types/settings';
 import { AprProgressService } from '../../services/apr/AprProgressService';
 import { AprStyleService } from '../../services/apr/AprStyleService';
-import { hasProFeatureAccess } from '../featureGate';
 import { getTeaserThresholds, getTeaserRevealLevel, teaserLevelToRevealOptions, TEASER_LEVEL_INFO } from '../../renderer/apr/AprConstants';
 import { createAprSVG } from '../../renderer/apr/AprRenderer';
 import { DEFAULT_REPORT_ID } from '../../utils/aprPaths';
@@ -912,9 +911,7 @@ async function renderTeaserStagesPreviews(
     }
 
     const resolvedStyle = styleService.resolveStyle(campaign);
-    const showRtAttribution = hasProFeatureAccess(plugin)
-        ? resolvedStyle.aprShowRtAttribution !== false
-        : true;
+    const showRtAttribution = resolvedStyle.aprShowRtAttribution !== false;
     const teaser = campaign.teaserReveal;
     const thresholds = getTeaserThresholds(teaser.preset, teaser.customThresholds);
     const disabledStages = teaser.disabledStages ?? {}; // SAFE: a teaser that never skipped a stage has none disabled

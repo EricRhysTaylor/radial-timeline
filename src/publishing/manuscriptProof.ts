@@ -3,7 +3,6 @@ import { promises as fs } from 'fs'; // SAFE: hash the local LaTeX template used
 import type RadialTimelinePlugin from '../main';
 import type { ManuscriptModalResult } from '../modals/ManuscriptOptionsModal';
 import { getActiveBook } from '../utils/books';
-import { hasProFeatureAccess } from '../settings/featureGate';
 
 export interface ManuscriptProofDependency {
     kind: 'vault' | 'file';
@@ -15,7 +14,6 @@ export interface ManuscriptProofReceipt {
     schemaVersion: 1;
     generatedAt: string;
     styleName: string;
-    notices: string[];
     configurationKey: string;
     dependencies: ManuscriptProofDependency[];
     renderedPaths: string[];
@@ -44,7 +42,6 @@ export function getManuscriptProofConfigurationKey(plugin: RadialTimelinePlugin,
         bindingGutter: plugin.settings.pdfBindingGutter,
         customMetadata: plugin.settings.customPandocMetadata,
         preamble: plugin.settings.customLatexPreamble,
-        proAccess: hasProFeatureAccess(plugin),
     }));
 }
 

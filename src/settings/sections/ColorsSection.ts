@@ -12,7 +12,6 @@ import { ERT_DATA } from '../../ui/classes';
 import { addHeadingIcon, addWikiLink, applyErtHeaderLayout } from '../wikiLink';
 import { HERO_PATTERNS, DEFAULT_WORKING_PATTERN_ID, CUSTOM_PATTERN_ID_PREFIX, getHeroPattern, type HeroPattern } from '../../renderer/components/HeroPatterns';
 import { validateSvgPattern } from '../../renderer/components/heroPatternValidator';
-import { hasProFeatureAccess } from '../featureGate';
 import { IMPACT_FULL } from '../SettingImpact';
 import { DEFAULT_MAIN_PLOT_NAME } from '../../utils/mainPlot';
 import { t } from '../../i18n';
@@ -187,13 +186,7 @@ function renderCustomPatternsCard(
     plugin: RadialTimelinePlugin,
     previewStageColor: string,
     onListChanged: () => void
-): CustomPatternsCardHandle | null {
-    // Non-Pro users never see this card. The Pro tier here covers the custom-
-    // paste tooling (parsing, validation, structured re-render) — not the
-    // patterns themselves. Hero Patterns artwork is and remains CC BY 4.0,
-    // free for anyone to use; the four built-ins are available to all users.
-    if (!hasProFeatureAccess(plugin)) return null;
-
+): CustomPatternsCardHandle {
     const card = parent.createDiv({ cls: 'ert-custom-patterns-card is-hidden' });
 
     const headerRow = card.createDiv({ cls: 'ert-custom-patterns-header' });
@@ -371,7 +364,6 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
     const getCustoms = (): readonly HeroPattern[] => (plugin.settings.customWorkingPatterns ?? []);
 
     let dropdownRef: import('obsidian').DropdownComponent | undefined;
-    const isPro = hasProFeatureAccess(plugin);
 
     const populateDropdown = (dd: import('obsidian').DropdownComponent, selectedId: string) => {
         // Clear existing options before repopulating after add/remove.
@@ -382,10 +374,10 @@ export function renderColorsSection(containerEl: HTMLElement, plugin: RadialTime
         if (customs.length > 0) {
             customs.forEach(p => { dd.addOption(p.id, `★ ${p.name}`); });
         }
-        // Pro-only: special sentinel option opens the custom-pattern editor.
-        // Picking it does not change the saved pattern — it just reveals the
+        // A special sentinel option opens the custom-pattern editor. Picking it
+        // does not change the saved pattern — it just reveals the
         // paste/validate card below.
-        if (isPro) dd.addOption(CUSTOM_EDITOR_SENTINEL_ID, t('ui.colorsSection.customOption'));
+        dd.addOption(CUSTOM_EDITOR_SENTINEL_ID, t('ui.colorsSection.customOption'));
         // Falls back to the first option when the saved id no longer exists.
         const known = HERO_PATTERNS.some(p => p.id === selectedId) || customs.some(p => p.id === selectedId);
         dd.setValue(known ? selectedId : DEFAULT_WORKING_PATTERN_ID);

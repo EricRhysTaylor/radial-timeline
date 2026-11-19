@@ -592,7 +592,6 @@ export const es: DeepPartial<TranslationKeys> = {
                 "deleteQuestion": "Eliminar pregunta",
                 "questionPlaceholder": "Texto de la pregunta",
                 "customizedQuestion": "Pregunta personalizada",
-                "unlockProGhost": "Más espacios de preguntas personalizadas no están disponibles en esta bóveda",
                 "chooseCanonical": "O elige una pregunta canónica",
                 "noRemainingCanonical": "No quedan preguntas canónicas",
                 "addQuestion": "Agregar pregunta",
@@ -662,10 +661,8 @@ export const es: DeepPartial<TranslationKeys> = {
             "canonicalLibrary": {
                 "name": "Biblioteca de preguntas canónicas",
                 "descPro": "Marco Inquiry En tres zonas: configuración, presión y pago. Agregue sus propias preguntas personalizadas, instale preguntas seleccionadas línea por línea o cargue el completo Set extendido en todas las zonas a la vez.",
-                "descFree": "Marco Inquiry En tres zonas: configuración, presión y pago. Agregue sus propias preguntas personalizadas, instale preguntas seleccionadas línea por línea o cargue el seleccionado Core establecido en todas las zonas a la vez.",
                 "loadFullProSet": "Cargar conjunto extendido completo",
                 "loadAllTooltip": "Cargar todas las preguntas canónicas de Inquiry",
-                "loadCoreQuestions": "Cargar preguntas principales"
             },
             "corpusTable": {
                 "tier": "Nivel",
@@ -1851,7 +1848,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "replaceCanonicalSubtitle": "Reemplace esta ranura con \"{{label}}\".",
             "loadCanonicalSubtitleCustomized": "Cargue el {{label}}. Las preguntas existentes en cada zona serán reemplazadas.",
             "loadCanonicalSubtitleCurrent": "Cargue el {{label}}. Las preguntas actuales en cada zona serán reemplazadas.",
-            "coreQuestionsLabel": "Preguntas fundamentales",
             "fullProSetLabel": "Conjunto completo de preguntas",
             "collapse": "Colapso",
             "expand": "Expandir"
@@ -5324,7 +5320,6 @@ export const es: DeepPartial<TranslationKeys> = {
         },
         "main": {
             "adoptedBeats": "Adoptó beats \"{{name}}\" de su manuscrito.",
-            "sagaIsPro": "Saga Timeline no está disponible en esta bóveda.",
             "sagaNeedsTwoBooks": "Agregue al menos dos libros en el Administrador de libros para usar la línea de tiempo de Saga.",
             "sceneIdsAdded": "🔑 ID de escena agregados a {{scenes}}. No se requiere ninguna acción.",
             "settingsSaveBlocked": "Radial Timeline no está guardando la configuración de esta sesión: no se pudo leer su archivo de configuración (data.json). reparar o cambiar el nombre del archivo y volver a cargar Obsidian — Cualquier cambio que hagas ahora se perderá.",
@@ -6702,8 +6697,6 @@ export const es: DeepPartial<TranslationKeys> = {
             "showSpecialFeatures": "Mostrar características especiales",
             "customizeBundledTooltip": "Personalizar {{name}} — Abre el asistente rellenado con la configuración de esta plantilla; Guardar Crea una nueva copia editable.",
             "editDesignedTooltip": "Editar estilo diseñado",
-            "customizeProOnly": "Personalizar estilos PDF no está disponible en esta bóveda.",
-            "editDesignedProOnly": "Editar estilos diseñados no está disponible en esta bóveda.",
             "layoutCopyName": "{{name}} Copiar",
             "removeLayoutTooltip": "Eliminar diseño",
             "partEpigraphsTitle": "Epígrafes parciales (opcional)",
@@ -6724,12 +6717,9 @@ export const es: DeepPartial<TranslationKeys> = {
             "installAllNeededTooltip": "Instale PDF plantillas y sus archivos de fuente necesarios en su carpeta Pandoc.",
             "installAllDoneTooltip": "Se instalan las plantillas PDF empaquetadas y los archivos de fuente necesarios.",
             "designOwnButton": "Diseña tu propia…",
-            "proWorkflowTooltip": "No disponible en esta bóveda.",
-            "designOwnProOnly": "Diseñar estilos personalizados no está disponible en esta bóveda.",
             "importTemplateButton": "Importar plantilla…",
             "importTemplateTooltip": "Lleve una plantilla .tex existente a la publicación. Para un diseño desde cero con una vista previa en vivo, use \"Diseñe el suyo propio...\" en su lugar.",
             "importTemplateBetaTooltip": "Versión beta pendiente: traiga una plantilla .tex existente a la publicación.",
-            "importTemplateProOnly": "Importar plantillas personalizadas no está disponible en esta bóveda.",
             "installAllInitialTooltip": "Instale PDF plantillas y sus archivos de fuente necesarios en su carpeta Pandoc. No sembrar detalles del libro ni páginas de libros.",
             "installAllFontsFailed": "Algunos diseños agrupados o fuentes requeridas no se instalaron (fuentes: {{fonts}}).",
             "installAllFailed": "Algunos diseños agrupados o fuentes requeridas no se pudieron instalar.",

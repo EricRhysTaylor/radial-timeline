@@ -592,7 +592,6 @@ export const th: DeepPartial<TranslationKeys> = {
                 "deleteQuestion": "ลบคำถาม",
                 "questionPlaceholder": "ข้อความคำถาม",
                 "customizedQuestion": "คำถามที่กำหนดเอง",
-                "unlockProGhost": "ไม่สามารถเพิ่มช่องคำถามที่กำหนดเองได้อีกในห้องนิรภัยนี้",
                 "chooseCanonical": "หรือเลือกคำถามบัญญัติ",
                 "noRemainingCanonical": "ไม่มีคำถามบัญญัติที่เหลืออยู่",
                 "addQuestion": "เพิ่มคำถาม",
@@ -662,10 +661,8 @@ export const th: DeepPartial<TranslationKeys> = {
             "canonicalLibrary": {
                 "name": "ห้องสมุดคำถามบัญญัติ",
                 "descPro": "กรอบ Inquiry ในสามโซน: การตั้งค่า ความกดดัน และผลตอบแทน เพิ่มคำถามของคุณเอง ติดตั้งคำถามที่คัดสรรแล้วทีละบรรทัด หรือโหลดคำถามทั้งหมด ขยายชุดในทุกโซนพร้อมกัน",
-                "descFree": "กรอบ Inquiry ในสามโซน: การตั้งค่า ความกดดัน และผลตอบแทน เพิ่มคำถามของคุณเอง ติดตั้งคำถามที่คัดสรรแล้วทีละบรรทัด หรือโหลดที่ดูแลจัดการ แกนกลางทุกโซนพร้อมกัน",
                 "loadFullProSet": "โหลดชุดขยายเต็ม",
                 "loadAllTooltip": "โหลดคำถาม Canonical ทั้งหมด Inquiry",
-                "loadCoreQuestions": "โหลดคำถามหลัก"
             },
             "corpusTable": {
                 "tier": "ชั้น",
@@ -1851,7 +1848,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "replaceCanonicalSubtitle": "แทนที่สล็อตนี้ด้วย \"{{label}}\"",
             "loadCanonicalSubtitleCustomized": "โหลด {{label}} คำถามที่มีอยู่ในทุกโซนจะถูกแทนที่",
             "loadCanonicalSubtitleCurrent": "โหลด {{label}} คำถามปัจจุบันในทุกโซนจะถูกแทนที่",
-            "coreQuestionsLabel": "คำถามหลัก",
             "fullProSetLabel": "ชุดคำถามครบชุด",
             "collapse": "พัง",
             "expand": "เพิ่ม"
@@ -5324,7 +5320,6 @@ export const th: DeepPartial<TranslationKeys> = {
         },
         "main": {
             "adoptedBeats": "ใช้บีท \"{{name}}\" จากต้นฉบับของคุณ",
-            "sagaIsPro": "Saga Timeline ไม่พร้อมใช้งานในห้องนิรภัยนี้",
             "sagaNeedsTwoBooks": "เพิ่มหนังสืออย่างน้อยสองเล่มใน Book Manager เพื่อใช้ไทม์ไลน์ของ SAGA",
             "sceneIdsAdded": "เพิ่ม ID ฉาก {{scenes}} ไม่ต้องดำเนินการใดๆ",
             "settingsSaveBlocked": "Radial Timeline ไม่ได้บันทึกการตั้งค่าเซสชันนี้: ไม่สามารถอ่านไฟล์การตั้งค่า (data.json) ซ่อมแซมหรือเปลี่ยนชื่อไฟล์และโหลดซ้ำ Obsidian — การเปลี่ยนแปลงใด ๆ ที่คุณทำตอนนี้จะหายไป",
@@ -6702,8 +6697,6 @@ export const th: DeepPartial<TranslationKeys> = {
             "showSpecialFeatures": "แสดงคุณสมบัติพิเศษ",
             "customizeBundledTooltip": "ปรับแต่ง {{name}} — เปิดตัวช่วยสร้างที่เติมด้วยการตั้งค่าของเทมเพลตนี้ การบันทึกจะสร้างสำเนาที่แก้ไขได้ใหม่",
             "editDesignedTooltip": "แก้ไขสไตล์ที่ออกแบบ",
-            "customizeProOnly": "การปรับแต่งสไตล์ PDF ไม่พร้อมใช้งานในห้องนิรภัยนี้",
-            "editDesignedProOnly": "การแก้ไขสไตล์ที่ออกแบบไว้ไม่พร้อมใช้งานในห้องนิรภัยนี้",
             "layoutCopyName": "{{name}} คัดลอก",
             "removeLayoutTooltip": "ลบเค้าโครง",
             "partEpigraphsTitle": "epigraphs ส่วนหนึ่ง (ไม่จำเป็น)",
@@ -6724,12 +6717,9 @@ export const th: DeepPartial<TranslationKeys> = {
             "installAllNeededTooltip": "ติดตั้งเทมเพลต PDF แบบรวมและไฟล์แบบอักษรที่จำเป็นลงในโฟลเดอร์ Pandoc ของคุณ",
             "installAllDoneTooltip": "มีการติดตั้งเทมเพลต PDF และไฟล์ฟอนต์ที่จำเป็น",
             "designOwnButton": "ออกแบบเอง…",
-            "proWorkflowTooltip": "ไม่พร้อมใช้งานในห้องนิรภัยนี้",
-            "designOwnProOnly": "การออกแบบสไตล์ที่กำหนดเองไม่พร้อมใช้งานในห้องนิรภัยนี้",
             "importTemplateButton": "นำเข้าแม่แบบ…",
             "importTemplateTooltip": "นำเทมเพลต .tex ที่มีอยู่ไปเผยแพร่ สำหรับการออกแบบจากรอยขีดข่วนพร้อมการแสดงตัวอย่างแบบสด ให้ใช้ \"ออกแบบของคุณเอง...\" แทน",
             "importTemplateBetaTooltip": "เบต้าที่รอการเผยแพร่—นำเทมเพลต .tex ที่มีอยู่ไปเผยแพร่",
-            "importTemplateProOnly": "การนำเข้าเทมเพลตที่กำหนดเองไม่พร้อมใช้งานในห้องนิรภัยนี้",
             "installAllInitialTooltip": "ติดตั้งเทมเพลต PDF แบบรวมและไฟล์แบบอักษรที่จำเป็นลงในโฟลเดอร์ Pandoc ของคุณ ไม่ระบุรายละเอียดหนังสือหรือหน้าหนังสือ",
             "installAllFontsFailed": "เลย์เอาต์แบบรวมหรือแบบอักษรที่จำเป็นบางแบบไม่สามารถติดตั้งได้ (แบบอักษร: {{fonts}})",
             "installAllFailed": "เลย์เอาต์แบบรวมหรือแบบอักษรที่จำเป็นบางแบบไม่สามารถติดตั้งได้",

@@ -37,7 +37,6 @@ import { getSceneTemplate, getTemplateParts } from '../utils/yamlTemplateNormali
 import { formatLocalDateKey } from '../utils/date';
 import { ensureManuscriptOutputFolder, ensureOutlineOutputFolder } from '../utils/aiOutput';
 import { BINDING_GUTTER_LATEX, buildExportFilename, buildPrecursorFilename, buildOutlineExport, getExportFormatExtension, getLayoutById, getStructuredFontDiagnostic, getTemplateFontDiagnostics, getVaultAbsolutePath, parseCustomPandocMetadata, resolveTemplatePath, runPandocOnContent, stemToReadable, validatePandocLayout } from '../utils/exportFormats';
-import { isProActive } from '../settings/proEntitlement';
 import { ensureManuscriptReferenceDocxInstalled } from '../utils/pandocBundledLayouts';
 import { getActiveBookExportContext, getReviewedManuscriptSelection } from '../utils/exportContext';
 import { slugifyToFileStem } from '../utils/slug';
@@ -47,8 +46,7 @@ import { chunkScenesIntoParts } from '../utils/splitOutput';
 import { resolveBookPages, type MatterNoteSummary } from '../utils/bookPagesResolver';
 import { ensureBundledLayoutInstalledForExport } from '../utils/pandocBundledLayouts';
 import { refreshDesignedLayoutFontsForExport } from '../publishing/designedLayoutFiles';
-import { getLayoutAbbreviation, resolveTemplateAccess, TEMPLATE_ACCESS_FALLBACK_MESSAGE } from '../publishing/templateTiering';
-import { hasProFeatureAccess } from '../settings/featureGate';
+import { defaultLayoutForPreset, getLayoutAbbreviation } from '../publishing/templateTiering';
 import { cleanupFormatForOutputFormat, getDefaultManuscriptCleanupOptions, normalizeManuscriptCleanupOptions, sanitizeCompiledManuscript, sanitizeCompiledManuscriptForPdf } from '../utils/manuscriptSanitize';
 import { convertAuthorQueriesToWordComments } from '../utils/authorQueryComments';
 import { getManuscriptLayoutExportBehavior } from '../utils/manuscriptLayoutExport';
@@ -410,16 +408,10 @@ export class CommandRegistrar {
             return { ...outcome, delivery };
         };
         try {
-            const templateAccess = result.exportType === 'manuscript' && result.outputFormat === 'pdf'
-                ? resolveTemplateAccess({
-                    layouts: this.plugin.settings.pandocLayouts || [],
-                    selectedLayoutId: result.selectedLayoutId,
-                    manuscriptPreset: result.manuscriptPreset || 'novel',
-                    hasProAccess: hasProFeatureAccess(this.plugin),
-                })
-                : undefined;
-            const selectedLayoutIdForExport = templateAccess?.effectiveLayout?.id || result.selectedLayoutId;
-            const usedTemplateFallback = templateAccess?.usedFallback === true;
+            const selectedLayoutIdForExport = result.selectedLayoutId
+                || (result.exportType === 'manuscript' && result.outputFormat === 'pdf'
+                    ? defaultLayoutForPreset(this.plugin.settings.pandocLayouts || [], result.manuscriptPreset || 'novel')?.id
+                    : undefined);
 
             const effectiveOrder = result.order;
             const effectiveSubplot = result.subplot;
@@ -529,10 +521,6 @@ export class CommandRegistrar {
             const isSplitRun = requestedParts > 1;
             const baseTitle = stemToReadable(ctx.fileStem);
             const statusMessages: string[] = [];
-            if (usedTemplateFallback) {
-                statusMessages.push(TEMPLATE_ACCESS_FALLBACK_MESSAGE);
-                new Notice(TEMPLATE_ACCESS_FALLBACK_MESSAGE);
-            }
             if (result.exportType === 'outline') {
                 const runtimeSettings = getRuntimeSettings(this.plugin.settings);
                 const baseOutputFolder = result.outputFolder ? await ensureExportDestination(this.app, result.outputFolder) : await ensureOutlineOutputFolder(this.plugin);
@@ -691,9 +679,7 @@ export class CommandRegistrar {
                     throw new Error(message);
                 }
                 const docxMetadata: Record<string, string | undefined> = {
-                    ...(isProActive(this.plugin)
-                        ? parseCustomPandocMetadata(this.plugin.settings.customPandocMetadata)
-                        : {}),
+                    ...parseCustomPandocMetadata(this.plugin.settings.customPandocMetadata),
                     title: bookMetaResolution.bookMeta?.title,
                     author: bookMetaResolution.bookMeta?.author,
                 };
@@ -824,25 +810,21 @@ export class CommandRegistrar {
             const chapterMarkersByScenePath = layoutExportBehavior.suppressChapterMarkers
                 ? {}
                 : filteredSelection.chapterMarkersByScenePath;
-            // Base metadata from BookMeta; Pro custom metadata layers on top but
+            // Base metadata from BookMeta; custom metadata layers on top but
             // never overrides title/author (BookMeta is the single source of
             // truth for those — running heads and the title page depend on it).
-            const proActive = isProActive(this.plugin);
-            const customMetadata = proActive
-                ? parseCustomPandocMetadata(this.plugin.settings.customPandocMetadata)
-                : {};
             const pandocMetadata: Record<string, string | undefined> = {
-                ...customMetadata,
+                ...parseCustomPandocMetadata(this.plugin.settings.customPandocMetadata),
                 title: bookMetaResolution.bookMeta?.title,
                 author: bookMetaResolution.bookMeta?.author,
             };
-            // Preamble injection: opt-in binding gutter (Core) + Pro custom
-            // LaTeX. User preamble comes last so its definitions win.
+            // Preamble injection: opt-in binding gutter + custom LaTeX. User
+            // preamble comes last so its definitions win.
             const headerIncludeParts: string[] = [];
             if (this.plugin.settings.pdfBindingGutter === true) {
                 headerIncludeParts.push(BINDING_GUTTER_LATEX);
             }
-            if (proActive && this.plugin.settings.customLatexPreamble?.trim()) {
+            if (this.plugin.settings.customLatexPreamble?.trim()) {
                 headerIncludeParts.push(this.plugin.settings.customLatexPreamble.trim());
             }
             const headerIncludes = headerIncludeParts.length > 0
@@ -983,7 +965,7 @@ export class CommandRegistrar {
                 }
                 const receipt: ManuscriptProofReceipt = {
                     schemaVersion: 1, generatedAt: new Date().toISOString(), configurationKey,
-                    styleName: layout.name, notices: usedTemplateFallback ? [TEMPLATE_ACCESS_FALLBACK_MESSAGE] : [],
+                    styleName: layout.name,
                     dependencies: [...dependencies.values()], renderedPaths, sourceWordCounts: proofWordCounts,
                     bookSourceFolder: bookSnapshot?.sourceFolder,
                 };

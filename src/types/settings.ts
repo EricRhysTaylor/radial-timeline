@@ -231,15 +231,6 @@ export interface PublishingValidationSnapshot {
     activeBookMetaIssues: ValidationIssue[];
     matterIssues: ValidationIssue[];
     preflightIssues: ValidationIssue[];
-    templateAccessIssues: ValidationIssue[];
-    templateAccess?: {
-        requestedTemplateName: string;
-        requestedTemplateId: string;
-        effectiveTemplateName: string;
-        effectiveTemplateId: string;
-        tier: TemplateTier;
-        usedFallback: boolean;
-    };
     templateCompatibilityIssues: ValidationIssue[];
     templateCompatibility?: {
         templateName: string;
@@ -991,7 +982,7 @@ export interface PandocLayoutTemplate {
     designedSpec?: DesignedStyleSpec;
 }
 
-export type SettingsTabId = 'core' | 'social' | 'community' | 'inquiry' | 'publishing' | 'ai' | 'advanced' | 'pro';
+export type SettingsTabId = 'core' | 'social' | 'community' | 'inquiry' | 'publishing' | 'ai' | 'advanced' | 'resources';
 
 export type CommunityShareConnectionStatus = 'disconnected' | 'pending' | 'connected' | 'paused' | 'revoked';
 export type CommunityShareAudience = 'private_draft' | 'public' | 'followers' | 'trusted_authors' | 'private_link';
@@ -1410,9 +1401,6 @@ export interface RadialTimelineSettings {
     };
     savedBeatSystems?: SavedBeatSystem[];
 
-    // Pro access
-    proLicenseKey?: string;
-    proAccessEnabled?: boolean;
     /** IDs of bonus (Website Exclusive) vaults the user has activated/installed. */
     installedBonusVaults?: string[];
 

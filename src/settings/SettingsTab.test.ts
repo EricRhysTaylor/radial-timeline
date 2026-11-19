@@ -24,9 +24,9 @@ describe('AI settings tab vocabulary', () => {
 describe('settings section navigation anchors', () => {
     it('wires Community as its own settings tab between Social and Inquiry', () => {
         const settingsSource = readFileSync(resolve(process.cwd(), 'src/settings/SettingsTab.ts'), 'utf8');
-        const anchorsSource = readFileSync(resolve(process.cwd(), 'src/settings/settingsAnchors.ts'), 'utf8');
+        const typesSource = readFileSync(resolve(process.cwd(), 'src/types/settings.ts'), 'utf8');
 
-        expect(anchorsSource.includes("'community'")).toBe(true);
+        expect(typesSource).toMatch(/export type SettingsTabId = [^;]*'community'/);
         const socialIndex = settingsSource.indexOf("socialTab.createSpan({ text: t('ui.settingsTab.tabSocial')");
         const communityIndex = settingsSource.indexOf("communityTab.createSpan({ text: t('ui.settingsTab.tabCommunity')");
         const inquiryIndex = settingsSource.indexOf("inquiryTab.createSpan({ text: t('ui.settingsTab.tabInquiry')");

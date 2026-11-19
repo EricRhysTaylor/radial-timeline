@@ -31,7 +31,7 @@ function writeTempTemplate(content: string): string {
     return filePath;
 }
 
-function createValidationPlugin(layout: PandocLayoutTemplate | PandocLayoutTemplate[], options: { pro?: boolean } = { pro: true }): RadialTimelinePlugin {
+function createValidationPlugin(layout: PandocLayoutTemplate | PandocLayoutTemplate[]): RadialTimelinePlugin {
     const layouts = Array.isArray(layout) ? layout : [layout];
     const metadataFile = makeFile('Book/000 BookMeta.md');
     const settings: RadialTimelineSettings = {
@@ -43,7 +43,6 @@ function createValidationPlugin(layout: PandocLayoutTemplate | PandocLayoutTempl
         }],
         activeBookId: 'book-1',
         pandocLayouts: layouts,
-        proLicenseKey: options.pro === false ? '' : '1234567890123456',
     };
 
     return {
@@ -370,7 +369,7 @@ describe('PublishingValidationService template compatibility', () => {
         expect(snapshot.preflightIssues.some(issue => issue.level === 'error')).toBe(false);
     });
 
-    it('reports a Standard Manuscript fallback when a non-Pro user has a saved Pro template selected', () => {
+    it('validates the saved style as chosen, never a substitute', () => {
         const basic = makeNovelLayout('$body$', {
             id: 'bundled-fiction-classic-manuscript',
             name: 'Standard Manuscript',
@@ -385,7 +384,7 @@ describe('PublishingValidationService template compatibility', () => {
             tier: 'pro',
             templateKind: 'book',
         });
-        const plugin = createValidationPlugin([signature, basic], { pro: false });
+        const plugin = createValidationPlugin([signature, basic]);
 
         const snapshot = new PublishingValidationService(plugin).collect('book-1', {
             exportType: 'manuscript',
@@ -394,47 +393,7 @@ describe('PublishingValidationService template compatibility', () => {
             selectedLayoutId: signature.id,
         });
 
-        expect(snapshot.templateAccess).toMatchObject({
-            requestedTemplateName: 'Signature Literary',
-            effectiveTemplateName: 'Standard Manuscript',
-            usedFallback: true,
-        });
-        expect(snapshot.templateAccessIssues).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                level: 'warning',
-                code: 'template_access_fallback_to_basic',
-            }),
-        ]));
-        expect(snapshot.templateCompatibility?.templateId).toBe(basic.id);
+        expect(snapshot.templateCompatibility?.templateId).toBe(signature.id);
         expect(snapshot.preflightIssues.some(issue => issue.level === 'error')).toBe(false);
-    });
-
-    it('keeps the selected Pro template for Pro users', () => {
-        const modernClassic = makeNovelLayout('$title$\n$author$\n$body$', {
-            id: 'bundled-fiction-modern-classic',
-            name: 'Modern Classic',
-            bundled: true,
-            tier: 'pro',
-            templateKind: 'book',
-        });
-        const plugin = createValidationPlugin(modernClassic, { pro: true });
-
-        const snapshot = new PublishingValidationService(plugin).collect('book-1', {
-            exportType: 'manuscript',
-            outputFormat: 'pdf',
-            manuscriptPreset: 'novel',
-            selectedLayoutId: modernClassic.id,
-        });
-
-        expect(snapshot.templateAccess).toMatchObject({
-            effectiveTemplateName: 'Modern Classic',
-            usedFallback: false,
-        });
-        expect(snapshot.templateAccessIssues).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                level: 'info',
-                code: 'template_access_requires_pro',
-            }),
-        ]));
     });
 });

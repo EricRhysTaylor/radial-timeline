@@ -129,7 +129,6 @@ import { extractSummary, getActiveFrontmatterMappings, normalizeFrontmatterKeys,
 import { getActiveBook, getSequencedBooks, getBookIdForPath } from '../utils/books';
 import type { InquirySourcesSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../settings/defaults';
-import { hasProFeatureAccess } from '../settings/featureGate';
 import { InquiryCorpusSnapshot, InquiryCorpusItem, InquirySceneItem, InquiryBookItem } from './services/InquiryCorpusResolver';
 import {
     isPathIncludedByInquiryBooks,
@@ -2451,10 +2450,7 @@ export class InquiryView extends ItemView {
         const config = this.getPromptConfig();
         const icon = zone === 'setup' ? 'help-circle' : zone === 'pressure' ? 'activity' : 'check-circle';
         const slots = config[zone] ?? []; // SAFE: zone may be absent from prompt config — no slots visible
-        const visibleSlots = hasProFeatureAccess(this.plugin)
-            ? slots
-            : slots.slice(0, 4);
-        return visibleSlots
+        return slots
             .map((slot, slotIndex) => this.buildInquiryQuestion(zone, slot, icon, slotIndex))
             .filter((question): question is InquiryQuestion => !!question);
     }
@@ -3621,13 +3617,11 @@ export class InquiryView extends ItemView {
         const basePassPlan = this.getCurrentPassPlan(readinessUi);
         const passPlan = this.getDisplayedPassPlan(basePassPlan);
         const styleSource = this.getStyleSource();
-        const isPro = hasProFeatureAccess(this.plugin);
         const advancedContext = this.getEffectiveReuseAdvancedContext();
         this.minimap.updatePressureGauge(
             readinessUi,
             passPlan,
             styleSource,
-            isPro,
             advancedContext,
             this.currentRunProgress,
             this.getRTCorpusEstimate().estimatedTokens,
@@ -5335,10 +5329,8 @@ export class InquiryView extends ItemView {
 
     private startRunningAnimations(): void {
         const styleSource: Element = this.contentEl ?? this.rootSvg ?? activeDocument.documentElement;
-        const isPro = hasProFeatureAccess(this.plugin);
         this.minimap.startRunningAnimations(
             styleSource,
-            isPro,
             () => this.state.isRunning,
             (elapsedMs) => this.updateRunningHudFrame(elapsedMs)
         );

@@ -416,19 +416,6 @@
   color: color-mix(in srgb, var(--ert-pro-accent-color) 60%, var(--text-muted));
 }
 
-.ert-ui.ert-scope--settings .ert-reorder-row--ghost {
-  border-style: dashed;
-  cursor: default;
-  pointer-events: none;
-  opacity: 0.85;
-}
-
-.ert-ui.ert-scope--settings .ert-reorder-row--locked {
-  pointer-events: none;
-  user-select: none;
-  opacity: 0.75;
-}
-
 .ert-ui.ert-scope--settings .ert-reorder-row .ert-input {
   min-width: 0;
 }
@@ -443,19 +430,6 @@
   opacity: 0.6;
   cursor: not-allowed;
   pointer-events: none;
-}
-
-.ert-ui.ert-scope--settings .ert-reorder-placeholder {
-  grid-column: 1 / -1;
-  padding: var(--ert-pad-tight) 0;
-}
-
-.ert-ui.ert-scope--settings .ert-reorder-placeholder--pro {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--ert-gap-sm);
-  color: var(--ert-pro-accent-color);
 }
 
 /* Beat base-field read-only pill summary */

@@ -670,7 +670,6 @@ export class ManuscriptOptionsModal extends Modal {
             : this.proofStaleReason ? t('ui.manuscriptOptionsModal.proofNeedsRefresh', { reason: this.proofStaleReason })
             : this.proofReceipt && this.proofPages > 0 ? t('ui.manuscriptOptionsModal.proofCurrent', { style: this.proofReceipt.styleName, pages: tCount('page', this.proofPages) })
             : t('ui.manuscriptOptionsModal.proofNone'));
-        if (this.proofReceipt?.notices.length) this.proofStatusEl?.appendText(` ${this.proofReceipt.notices.join(' ')}`);
         this.proofButton?.setButtonText(this.proofReceipt ? t('ui.manuscriptOptionsModal.refreshProof') : t('ui.manuscriptOptionsModal.generateProof'));
         this.proofButton?.setDisabled(!enabled || this.exportBlocked || !!this.destinationError || this.proofLoading || this.exportInFlight || this.sourceLoading || this.sourceSaving || !!this.sourceError || !this.sourceReviewed || !this.isSplitSelectionValid() || this.totalScenes === 0);
         this.proofOpenButton?.setDisabled(!this.proofReceipt || this.proofLoading);

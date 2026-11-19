@@ -14,7 +14,6 @@ import { isNonSceneItem } from './utils/sceneHelpers';
 import { normalizeStatus } from './utils/text';
 import type { TimelineItem } from './types';
 import { getAIClient } from './ai/runtime/aiClient';
-import { hasProFeatureAccess } from './settings/featureGate';
 import type { AIRunAdvancedContext } from './ai/types';
 import { t } from './i18n';
 import { getMainPlotName } from './utils/mainPlot';
@@ -436,16 +435,6 @@ export function registerRuntimeCommands(plugin: RadialTimelinePlugin): void {
     plugin.addCommand({
         id: 'runtime-estimator',
         name: t('sceneAnalysis.commands.runtimeEstimator'),
-        checkCallback: (checking: boolean) => {
-            // Only show command when Pro is active
-            const hasPro = hasProFeatureAccess(plugin);
-            if (!hasPro) {
-                return false;
-            }
-            if (!checking) {
-                openRuntimeEstimator(plugin);
-            }
-            return true;
-        },
+        callback: () => openRuntimeEstimator(plugin),
     });
 }

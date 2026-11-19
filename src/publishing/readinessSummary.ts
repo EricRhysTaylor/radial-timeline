@@ -69,7 +69,6 @@ function getPdfLayoutSummary(plugin: RadialTimelinePlugin, validation: Publishin
         relevantIssues.push(...(validation.profileIssues[layout.id] || []));
     });
     relevantIssues.push(...validation.preflightIssues);
-    relevantIssues.push(...validation.templateAccessIssues);
     if (layouts.length === 0) {
         relevantIssues.push({
             scope: 'profile',

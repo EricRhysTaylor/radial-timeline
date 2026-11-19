@@ -10,7 +10,6 @@ import type RadialTimelinePlugin from '../../../main';
 import { AprStyleService } from '../../../services/apr/AprStyleService';
 import type { AprStyleSettings } from '../../../types/settings';
 import { AprPaletteModal } from '../../../modals/AprPaletteModal';
-import { hasProFeatureAccess } from '../../featureGate';
 import { colorSwatch, type ColorSwatchHandle } from '../../../ui/ui';
 import { completeHexColor } from '../../../utils/colour';
 import { bindHexTextInput } from '../../../ui/hexTextInput';
@@ -969,18 +968,16 @@ export function renderAprStyleDesigner(parent: HTMLElement, { app, plugin, profi
         fitSelectToSelectedLabel(spokeModeDropdown.selectEl, { minPx: 132, maxPx: 260, extraPx: 16 });
     });
 
-    // Hiding the Radial Timeline mark is a Pro choice, saved with the style.
-    if (hasProFeatureAccess(plugin)) {
-        const attributionRow = themeBody.createDiv({ cls: ERT_CLASSES.SKIN_PRO });
-        const attributionSetting = new Setting(attributionRow)
-            .setName(t('settings.authorProgress.attribution.name'))
-            .setDesc(t('settings.authorProgress.attribution.desc'))
-            .addToggle(toggle => {
-                toggle.setValue(getActiveStyleSettings().aprShowRtAttribution !== false)
-                    .onChange(async (val) => {
-                        await setAprSetting('aprShowRtAttribution', val);
-                    });
-            });
-        attributionSetting.settingEl.addClass('ert-elementBlock', 'ert-settingRow');
-    }
+    // Hiding the Radial Timeline mark is saved with the style.
+    const attributionRow = themeBody.createDiv({ cls: ERT_CLASSES.SKIN_PRO });
+    const attributionSetting = new Setting(attributionRow)
+        .setName(t('settings.authorProgress.attribution.name'))
+        .setDesc(t('settings.authorProgress.attribution.desc'))
+        .addToggle(toggle => {
+            toggle.setValue(getActiveStyleSettings().aprShowRtAttribution !== false)
+                .onChange(async (val) => {
+                    await setAprSetting('aprShowRtAttribution', val);
+                });
+        });
+    attributionSetting.settingEl.addClass('ert-elementBlock', 'ert-settingRow');
 }

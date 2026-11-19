@@ -20,8 +20,7 @@ import { isPathInFolderScope } from '../utils/pathScope';
 import { adaptPandocLayoutsToPublishingModel } from '../utils/publishingModel';
 import { BOOK_META_BACKED_ROLES } from '../utils/manuscript';
 import { validateRttsTemplateContent } from '../publishing/rttsValidation';
-import { getPandocLayoutSortRank, getPandocLayoutTier, resolveTemplateAccess } from '../publishing/templateTiering';
-import { hasProFeatureAccess } from '../settings/featureGate';
+import { defaultLayoutForPreset } from '../publishing/templateTiering';
 import { t } from '../i18n';
 
 type ValidationScope = ValidationIssue['scope'];
@@ -372,7 +371,6 @@ export class PublishingValidationService {
             activeBookMetaIssues: [],
             matterIssues: [],
             preflightIssues: [],
-            templateAccessIssues: [],
             templateCompatibilityIssues: [],
         };
         // Plain manuscript and outline exports do not use publishing assets or metadata.
@@ -382,39 +380,10 @@ export class PublishingValidationService {
         const { assets, profiles } = adaptPandocLayoutsToPublishingModel(layouts);
         const book = context.manuscriptMetadata ? null : this.resolveBook(bookId);
         const sourceFolder = (book?.sourceFolder || '').trim();
-        let selectedProfile = this.resolveSelectedProfile(layouts, profiles, book, context);
-        let selectedLayout = selectedProfile
-            ? layouts.find(layout => layout.id === selectedProfile!.legacyLayoutId)
+        const selectedProfile = this.resolveSelectedProfile(layouts, profiles, book, context);
+        const selectedLayout = selectedProfile
+            ? layouts.find(layout => layout.id === selectedProfile.legacyLayoutId)
             : undefined;
-        if (context.exportType === 'manuscript' && context.outputFormat === 'pdf' && selectedLayout) {
-            const access = resolveTemplateAccess({
-                layouts,
-                selectedLayoutId: selectedLayout.id,
-                manuscriptPreset: context.manuscriptPreset,
-                hasProAccess: hasProFeatureAccess(this.plugin),
-            });
-            snapshot.templateAccessIssues = access.issues;
-            if (access.requestedLayout) {
-                snapshot.templateAccess = {
-                    requestedTemplateName: access.requestedLayout.name,
-                    requestedTemplateId: access.requestedLayout.id,
-                    effectiveTemplateName: access.effectiveLayout?.name || access.requestedLayout.name,
-                    effectiveTemplateId: access.effectiveLayout?.id || access.requestedLayout.id,
-                    tier: access.tier || 'pro',
-                    usedFallback: access.usedFallback,
-                };
-            }
-            const accessError = access.issues.find(issue => issue.level === 'error');
-            if (accessError) {
-                pushIssue(snapshot.preflightIssues, 'export', 'error', accessError.code, accessError.message, {
-                    actionable: true,
-                    field: accessError.field,
-                });
-            } else if (access.effectiveLayout && access.effectiveLayout.id !== selectedLayout.id) {
-                selectedLayout = access.effectiveLayout;
-                selectedProfile = profiles.find(profile => profile.legacyLayoutId === selectedLayout?.id || profile.id === selectedLayout?.id);
-            }
-        }
         const bookMetaResolution: { bookMeta: BookMeta | null; warning?: string } = context.manuscriptMetadata
             ? { bookMeta: context.manuscriptMetadata }
             : sourceFolder ? this.resolveBookMetaForBook(sourceFolder) : { bookMeta: null as BookMeta | null };
@@ -706,12 +675,7 @@ export class PublishingValidationService {
         }
 
         if (context.manuscriptPreset) {
-            const hasProAccess = hasProFeatureAccess(this.plugin);
-            const layout = layouts
-                .filter(item => item.preset === context.manuscriptPreset)
-                .sort((a, b) => getPandocLayoutSortRank(a) - getPandocLayoutSortRank(b) || a.name.localeCompare(b.name))
-                .find(item => hasProAccess || getPandocLayoutTier(item) === 'free')
-                || layouts.find(item => item.preset === context.manuscriptPreset);
+            const layout = defaultLayoutForPreset(layouts, context.manuscriptPreset);
             if (layout) return profiles.find(profile => profile.legacyLayoutId === layout.id);
         }
 

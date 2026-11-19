@@ -5,10 +5,10 @@ import { getBundledPandocLayouts } from '../utils/pandocBundledLayouts';
 import {
     BASIC_MANUSCRIPT_LAYOUT_ID,
     CONTEMPORARY_LITERARY_LAYOUT_ID,
+    defaultLayoutForPreset,
     getLayoutAbbreviation,
     getPandocLayoutKind,
     getPandocLayoutTier,
-    resolveTemplateAccess,
 } from './templateTiering';
 import type RadialTimelinePlugin from '../main';
 
@@ -72,35 +72,11 @@ describe('template tiering', () => {
         expect(getPandocLayoutKind(layout({ bundled: false }))).toBe('custom');
     });
 
-    it('falls a non-Pro novel Pro template back to Basic', () => {
-        const basic = layout({
-            id: BASIC_MANUSCRIPT_LAYOUT_ID,
-            name: 'Basic',
-            bundled: true,
-            tier: 'free',
-        });
-        const professional = layout({
-            id: 'bundled-fiction-signature-literary',
-            name: 'Professional',
-            bundled: true,
-            tier: 'pro',
-        });
-
-        const access = resolveTemplateAccess({
-            layouts: [professional, basic],
-            selectedLayoutId: professional.id,
-            manuscriptPreset: 'novel',
-            hasProAccess: false,
-        });
-
-        expect(access.usedFallback).toBe(true);
-        expect(access.effectiveLayout?.id).toBe(BASIC_MANUSCRIPT_LAYOUT_ID);
-        expect(access.issues).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                level: 'warning',
-                code: 'template_access_fallback_to_basic',
-            }),
-        ]));
+    it('picks the first style for a preset in display order when none is chosen', () => {
+        const bundled = getBundledPandocLayouts();
+        expect(defaultLayoutForPreset([...bundled].reverse(), 'novel')?.id).toBe(BASIC_MANUSCRIPT_LAYOUT_ID);
+        expect(defaultLayoutForPreset(bundled, 'screenplay')?.preset).toBe('screenplay');
+        expect(defaultLayoutForPreset([], 'novel')).toBeUndefined();
     });
 
     it('treats designed-origin layouts as Pro regardless of name/id', () => {
@@ -144,30 +120,5 @@ describe('template tiering', () => {
             expect(getLayoutAbbreviation(undefined)).toBe('CT');
             expect(getLayoutAbbreviation(null)).toBe('CT');
         });
-    });
-
-    it('keeps the selected Pro template for Pro users', () => {
-        const signatureLayout = layout({
-            id: 'bundled-fiction-modern-classic',
-            name: 'Signature',
-            bundled: true,
-            tier: 'pro',
-        });
-
-        const access = resolveTemplateAccess({
-            layouts: [signatureLayout],
-            selectedLayoutId: signatureLayout.id,
-            manuscriptPreset: 'novel',
-            hasProAccess: true,
-        });
-
-        expect(access.usedFallback).toBe(false);
-        expect(access.effectiveLayout?.id).toBe(signatureLayout.id);
-        expect(access.issues).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                level: 'info',
-                code: 'template_access_requires_pro',
-            }),
-        ]));
     });
 });

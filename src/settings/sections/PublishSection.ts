@@ -27,7 +27,6 @@ import { resolveBookPages, applyBookPageOrder, inferRoleFromFilename, ROLE_SIDE,
 import { resolveManuscriptOutputFolder } from '../../utils/aiOutput';
 import { systemFolderPath } from '../../utils/systemFolder';
 import { updateBookMetaField, type EditableBookMetaFieldKey } from '../../utils/bookMetaEditing';
-import { isProActive } from '../proEntitlement';
 import {
     buildTimelineChapterResolverItems,
     collapseTimelineChapterMarkersByResolvedBoundary,
@@ -219,7 +218,6 @@ export interface PublishSectionParams {
 }
 
 export function renderPublishSection({ app, plugin, containerEl }: PublishSectionParams): HTMLElement {
-    const isActive = isProActive(plugin);
     const section = containerEl;
 
     const rerender = () => {
@@ -234,7 +232,6 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     // ─────────────────────────────────────────────────────────────────────────
     // CONTENT STACK
     // ─────────────────────────────────────────────────────────────────────────
-    const addProRow = (setting: Setting) => setting;
     let refreshPublishingStatusCard: () => void = () => {};
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -247,7 +244,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
 
     const pandocIntroPanel = section.createDiv({ cls: ERT_CLASSES.STACK });
     pandocIntroPanel.addClass('ert-publish-order--pandoc-intro');
-    const pandocHeading = addProRow(new Setting(pandocIntroPanel))
+    const pandocHeading = new Setting(pandocIntroPanel)
         .setName(t('ui.publishSection.exportPublishingHeading'))
         .setDesc(t('ui.publishSection.exportPublishingDesc'))
         .setHeading();
@@ -267,7 +264,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         systemConfigPanel.removeClass('is-hidden');
         systemConfigPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
-    const systemConfigHeading = addProRow(new Setting(systemConfigPanel))
+    const systemConfigHeading = new Setting(systemConfigPanel)
         .setName(t('ui.publishSection.exportToolsHeading'))
         .setDesc(t('ui.publishSection.exportToolsDesc'))
         .setHeading();
@@ -279,7 +276,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     // Settings
     let pandocPathInputEl: HTMLInputElement | null = null;
     const defaultDesc = t('ui.publishSection.pandocPathDesc');
-    const pandocSetting = addProRow(new Setting(systemConfigPanel))
+    const pandocSetting = new Setting(systemConfigPanel)
         .setName(t('ui.publishSection.pandocPathName'))
         .setDesc(defaultDesc)
         .addText(text => {
@@ -384,7 +381,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         });
     };
 
-    const pandocFolderSetting = addProRow(new Setting(systemConfigPanel))
+    const pandocFolderSetting = new Setting(systemConfigPanel)
         .setName(t('ui.publishSection.pandocFolderName'))
         .setDesc(t('ui.publishSection.pandocFolderDesc'))
         .addText(text => {
@@ -431,14 +428,14 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         cls: ERT_CLASSES.STACK,
         attr: { [ERT_DATA.SECTION]: 'pandoc-advanced' }
     });
-    const advancedHeading = addProRow(new Setting(advancedPanel))
+    const advancedHeading = new Setting(advancedPanel)
         .setName(t('ui.publishSection.advancedPandocHeading'))
         .setDesc(t('ui.publishSection.advancedPandocDesc'))
         .setHeading();
     addHeadingIcon(advancedHeading, 'wrench');
     applyErtHeaderLayout(advancedHeading);
 
-    addProRow(new Setting(advancedPanel))
+    new Setting(advancedPanel)
         .setName(t('ui.publishSection.customMetadataName'))
         .setDesc(t('ui.publishSection.customMetadataDesc'))
         .addTextArea(text => {
@@ -448,7 +445,6 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             // stay lowercase, so this example is not sentence-cased UI copy.
             text.setPlaceholder(PANDOC_METADATA_PLACEHOLDER);
             text.setValue(plugin.settings.customPandocMetadata || ''); // SAFE: no custom metadata saved yet, so the textarea opens empty
-            text.setDisabled(!isActive);
             plugin.registerDomEvent(text.inputEl, 'blur', async () => {
                 const raw = text.getValue();
                 plugin.settings.customPandocMetadata = raw;
@@ -467,7 +463,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             });
         });
 
-    addProRow(new Setting(advancedPanel))
+    new Setting(advancedPanel)
         .setName(t('ui.publishSection.customPreambleName'))
         .setDesc(t('ui.publishSection.customPreambleDesc'))
         .addTextArea(text => {
@@ -475,7 +471,6 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             text.inputEl.addClass('ert-input--lg');
             text.setPlaceholder('% e.g.\n% \\usepackage{lettrine}\n% \\newcommand{\\mymacro}{...}');
             text.setValue(plugin.settings.customLatexPreamble || ''); // SAFE: no custom preamble saved yet, so the textarea opens empty
-            text.setDisabled(!isActive);
             plugin.registerDomEvent(text.inputEl, 'blur', async () => {
                 plugin.settings.customLatexPreamble = text.getValue();
                 await plugin.saveSettings();
@@ -488,7 +483,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         attr: { [ERT_DATA.SECTION]: 'pdf-style' }
     });
     layoutPanel.addClass('ert-publish-order--pdf-style');
-    const layoutHeading = addProRow(new Setting(layoutPanel))
+    const layoutHeading = new Setting(layoutPanel)
         .setName(t('ui.publishSection.pdfStyleHeading'))
         .setDesc(t('ui.publishSection.pdfStyleDesc'))
         .setHeading();
@@ -992,16 +987,13 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             if (isProLayout) {
                 row.addClass(ERT_CLASSES.ELEMENT_BLOCK);
             }
-            if (isProLayout && !isActive) {
-                row.addClass('ert-pro-locked');
-            }
 
             const variant = getFictionVariantForLayout(layout);
             const useVisual = layout.preset === 'novel' && variant !== 'generic';
 
             const isEditableLayout = !isBundled && !isImported;
 
-            const s = addProRow(new Setting(row))
+            const s = new Setting(row)
                 .setName('')
                 .setDesc('');
             s.settingEl.addClass('ert-layout-row-setting');
@@ -1206,16 +1198,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
                     withTooltip(btn, isCustomizingBundled
                         ? t('ui.publishSection.customizeBundledTooltip', { name: layout.name })
                         : t('ui.publishSection.editDesignedTooltip'));
-                    if (!isActive) {
-                        btn.extraSettingsEl.addClass('ert-pro-locked');
-                    }
                     btn.onClick(() => {
-                        if (!isActive) {
-                            new Notice(isCustomizingBundled
-                                ? t('ui.publishSection.customizeProOnly')
-                                : t('ui.publishSection.editDesignedProOnly'));
-                            return;
-                        }
                         new DesignedStyleWizardModal(app, plugin, {
                             initialSpec: layout.designedSpec!,
                             // Bundled fork: seed the name with "<Bundled> Copy"
@@ -1402,15 +1385,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         button.setButtonText(t('ui.publishSection.designOwnButton'));
         withTooltip(button, t('ui.publishSection.designOwnTooltip'));
         button.buttonEl.addClass(ERT_CLASSES.PILL_BTN, ERT_CLASSES.PILL_BTN_PRO);
-        if (!isActive) {
-            button.buttonEl.addClass('ert-pro-locked');
-            withTooltip(button, t('ui.publishSection.proWorkflowTooltip'));
-        }
         button.onClick(() => {
-            if (!isActive) {
-                new Notice(t('ui.publishSection.designOwnProOnly'));
-                return;
-            }
             new DesignedStyleWizardModal(app, plugin, {
                 onSave: async () => {
                     renderLayoutRows();
@@ -1435,15 +1410,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
             button.onClick(() => { /* no-op: BETA release pending */ });
             return;
         }
-        if (!isActive) {
-            button.buttonEl.addClass('ert-pro-locked');
-            withTooltip(button, t('ui.publishSection.proWorkflowTooltip'));
-        }
         button.onClick(() => {
-            if (!isActive) {
-                new Notice(t('ui.publishSection.importTemplateProOnly'));
-                return;
-            }
             new ImportTemplateModal(app, plugin, commitImportedTemplate).open();
         });
     });
@@ -2294,7 +2261,7 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
         attr: { [ERT_DATA.SECTION]: 'book-pages' }
     });
     publishingSetupPanel.addClass('ert-publish-order--book-pages');
-    const publishingHeading = addProRow(new Setting(publishingSetupPanel))
+    const publishingHeading = new Setting(publishingSetupPanel)
         .setName(t('ui.publishSection.bookPagesHeading'))
         .setDesc(t('ui.publishSection.bookPagesDesc'))
         .setHeading();
@@ -2863,14 +2830,14 @@ export function renderPublishSection({ app, plugin, containerEl }: PublishSectio
     // ── System Configuration: Repair tools (only when mismatches exist) ────
     const repairPlan = buildMatterRepairPlan(plugin);
     if (repairPlan.issues.length > 0) {
-        const repairHeading = addProRow(new Setting(systemConfigPanel))
+        const repairHeading = new Setting(systemConfigPanel)
             .setName(t('ui.publishSection.repairToolsHeading'))
             .setDesc(t('ui.publishSection.repairToolsDesc'))
             .setHeading();
         addHeadingIcon(repairHeading, 'wrench');
         applyErtHeaderLayout(repairHeading);
 
-        const repairSetting = addProRow(new Setting(systemConfigPanel))
+        const repairSetting = new Setting(systemConfigPanel)
             .setName(t('ui.publishSection.repairMatterName'))
             .setDesc(t('ui.publishSection.repairMatterDesc'));
         repairSetting.addButton(button => {

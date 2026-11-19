@@ -1,0 +1,183 @@
+{
+  "provider": "google",
+  "modelId": "gemini-4-hydrogen",
+  "vault": "../Test Vaults/Obsidian Vault AI Certification",
+  "book": "Pride & Prejudice",
+  "generatedAt": "2026-11-19T19:38:18.138Z",
+  "cases": [
+    {
+      "id": "pulse:16 Wickham's Story",
+      "feature": "pulse",
+      "durationMs": 10164,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 11438,
+        "outputTokens": 2161,
+        "totalTokens": 13599
+      },
+      "costUSD": 0.0333645,
+      "sample": {
+        "previousSceneAnalysis": "- 15 Silent Darcy-Wickham spark + / Street encounter creates immediate visual mystery and tension.\n- Meryton invitation hook + / Dinner setup cleanly launches next evening's private interrogation.\n- Collins shifts target ? / Switching focus to Elizabeth sidelines him for now.\n- Heavy Collins exposition - / Opening backstory slows momentum before Meryton walk begins.",
+        "currentSceneAnalysis": "- 16 B / Trim Wickham's lengthy monologue and inject active card-table interruptions to heighten subtext and pacing.\n- Darcy smear campaign + / Wickham's charm and grievance sharpen Elizabeth's emotional bias.\n- Rosings connection revealed + / Links Collins's patroness directly to Darcy's arrogant family.\n- Expository pacing drag - / Long backstory speeches stall dramatic card-table momentum.\n- Collins social contrast ? / His pompous chatter highlights Wickham's polished, dangerous allure.",
+        "nextSceneAnalysis": "- 17 Jane's rational foil + / Jane's skepticism tests Elizabeth's uncritical acceptance of Wickham.\n- Ball stakes raised + / Netherfield invitation promises direct Wickham-Darcy confrontation.\n- Collins dance trap + / Securing first dances thwarts Elizabeth's Wickham plans.\n- Weather stalls momentum - / Rainy-day isolation delays romantic payoff until the ball.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:30 Bingley Returns",
+      "feature": "pulse",
+      "durationMs": 12087,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 10439,
+        "outputTokens": 2476,
+        "totalTokens": 12915
+      },
+      "costUSD": 0.034228499999999995,
+      "sample": {
+        "previousSceneAnalysis": "- 29 Lady Catherine's dominance + / Establishes the suffocating status pressure Elizabeth resists next.\n- Darcy family resemblance + / Links Lady Catherine's arrogance to Darcy before he arrives.\n- Pianoforte invitation planted + / Lady Catherine's musical boast sets up Scene 31's confrontation.\n- Sir William's departure cue ? / Exhausts his awe, clearing space for Hunsford's quieter routine.",
+        "currentSceneAnalysis": "- 30 B / Trim routine exposition early to accelerate Darcy's arrival and the tense Jane confrontation.\n- Slow routine summary - / Two weeks of repetitive visits stall narrative momentum early.\n- Charlotte's quiet pragmatism ? / Room arrangement deepens character conflict without advancing main plot.\n- Grove escape motif + / Establishes Elizabeth's refuge before Darcy disrupts her peace.\n- Jane subtext test + / Elizabeth's sharp question exposes Darcy's guilt and hooks readers.",
+        "nextSceneAnalysis": "- 31 Fitzwilliam contrast + / Colonel's easy charm amplifies Darcy's guarded stiffness from Scene 30.\n- Anne match debunked + / Confirms Scene 30's suspicion that Darcy feels no romantic duty.\n- Drawing-room sparring + / Escalates Scene 30's brief tension into witty, public banter.\n- Class pride clash + / Lady Catherine's rudeness sharpens Darcy's shame and Elizabeth's defiance.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "pulse:44 Invitation and Visit",
+      "feature": "pulse",
+      "durationMs": 10210,
+      "passed": true,
+      "summary": "Parsed and validated by the production Pulse parser.",
+      "usage": {
+        "inputTokens": 14613,
+        "outputTokens": 2158,
+        "totalTokens": 16771
+      },
+      "costUSD": 0.0381045,
+      "sample": {
+        "previousSceneAnalysis": "- 43 Sister introduction setup + / Darcy's Pemberley request directly motivates the Lambton inn call.\n- Character softening + / Mrs. Reynolds's praise primes Elizabeth's receptiveness to Darcy's warmth.\n- Gardiner respect shift + / Darcy's unexpected civility to her relatives enables further intimacy.\n- Wickham shadow ? / Elizabeth's guarded defense leaves Wickham's reputation open for confirmation.",
+        "currentSceneAnalysis": "- 44 B / Trim internal summary of Elizabeth's reflections to sharpen pacing and heighten dramatic tension.\n- Darcy's rapid arrival + / Immediate morning visit escalates romantic stakes and alerts relatives.\n- Georgiana's shyness + / Subverting expectations of pride builds warmth and eases anxiety.\n- Bingley's Jane nostalgia + / Bingley's exact memory rekindles the secondary romantic subplot cleanly.\n- Return visit hook + / Scheduling tomorrow's call propels Elizabeth into Pemberley's social minefield.",
+        "nextSceneAnalysis": "- 45 Pemberley return visit + / Planned return visit pays off with immediate social friction.\n- Georgiana alliance + / Georgiana's established fondness shields Elizabeth against Miss Bingley's hostility.\n- Gardiners' fishing tie + / Gardiner's fishing engagement draws Darcy into the tense saloon.\n- Jealousy vs. admiration + / Darcy's visible affection fuels his defense against Miss Bingley.",
+        "sceneGrade": "B"
+      }
+    },
+    {
+      "id": "summary:21 Bingleys Depart",
+      "feature": "summary",
+      "durationMs": 20166,
+      "passed": true,
+      "summary": "Summary 247 words (target 200); Synopsis 25 words (cap 30); both passed the production parsers.",
+      "usage": {
+        "inputTokens": 4376,
+        "outputTokens": 3696,
+        "totalTokens": 8072
+      },
+      "costUSD": 0.034284,
+      "sample": {
+        "summary": "Following the end of discussions regarding Mr. Collins's proposal, Mrs. Bennet remains ill-humored and Mr. Collins treats Elizabeth with stiffness and resentful silence, shifting his attentions to Miss Lucas while maintaining his plan to stay until Saturday. The next morning, the Bennet sisters walk to Meryton to inquire about Mr. Wickham. Wickham meets them and privately admits to Elizabeth that he stayed away from the Netherfield ball to avoid an unpleasant encounter with Mr. Darcy. Elizabeth approves of his restraint. Wickham and another officer then walk back with the sisters to Longbourn, where Wickham is introduced to Mr. and Mrs. Bennet. Shortly after their return, Jane receives a letter from Caroline Bingley. Once the officers leave, Jane takes Elizabeth upstairs to read it. Caroline writes that the Netherfield party has gone to London to follow Mr. Bingley and will not return this winter, adding that Mr. Bingley admires Georgiana Darcy and expressing hope that they will marry. Jane interprets this as proof of Bingley's indifference and believes he will not come back. Elizabeth disputes this, asserting that Caroline knows Bingley loves Jane and wants to keep them apart to promote a match with Miss Darcy. Although Jane refuses to think Caroline is intentionally deceptive, Elizabeth gradually persuades her to remain hopeful of Bingley's return. The sisters agree to tell Mrs. Bennet only of the party's departure. Though initially upset, Mrs. Bennet soon consoles herself by anticipating Bingley's return for dinner and planning to serve two full courses.",
+        "synopsis": "Wickham visits Longbourn; Caroline Bingley writes that Bingley left for London and favors Miss Darcy, prompting Elizabeth to persuade a disheartened Jane to remain hopeful."
+      }
+    },
+    {
+      "id": "summary:41 Lydia Invited to Brighton",
+      "feature": "summary",
+      "durationMs": 24185,
+      "passed": true,
+      "summary": "Summary 238 words (target 200); Synopsis 26 words (cap 30); both passed the production parsers.",
+      "usage": {
+        "inputTokens": 4798,
+        "outputTokens": 4575,
+        "totalTokens": 9373
+      },
+      "costUSD": 0.0415095,
+      "sample": {
+        "summary": "As the regiment enters its final week in Meryton, Mrs. Bennet, Kitty, and Lydia lament the upcoming departure and wish to visit Brighton. Lydia soon receives an invitation from Mrs. Forster, the colonel's young wife, to accompany her there. Lydia and Mrs. Bennet celebrate, while Kitty complains about being left behind. Privately, Elizabeth asks Mr. Bennet to forbid the trip, warning that Lydia's unrestrained behavior will fix her character as a determined flirt, mislead Kitty, and damage the family's reputation. Mr. Bennet refuses, reasoning that Longbourn would have no peace if Lydia stayed, Colonel Forster will keep her from serious mischief, and Brighton will teach her her own insignificance. Elizabeth leaves disappointed, while Lydia and Mrs. Bennet remain ignorant of her intervention. On the regiment's final day, several officers dine at Longbourn. Displeased by Mr. Wickham's recent efforts to renew his attentions toward her, Elizabeth answers his questions about Hunsford by noting that Colonel Fitzwilliam and Mr. Darcy spent three weeks at Rosings. She adds that Darcy improves on acquaintance, clarifying that knowing him better allows his disposition to be better understood. Wickham looks alarmed and agitated, then suggests Darcy only behaves cautiously to please his aunt and secure a match with Miss de Bourgh. Elizabeth smiles slightly without pursuing the topic, and they part civilly. Afterward, Lydia leaves with Mrs. Forster to depart for Brighton the next morning, amid Mrs. Bennet's enthusiastic wishes and Kitty's envious tears.",
+        "synopsis": "Mr. Bennet rejects Elizabeth's plea to stop Lydia's Brighton trip. At a farewell dinner, Elizabeth unsettles Wickham by praising Darcy before Lydia departs with Mrs. Forster."
+      }
+    },
+    {
+      "id": "gossamer:momentum",
+      "feature": "gossamer",
+      "durationMs": 14939,
+      "passed": true,
+      "summary": "All 15 beats scored and validated (61 scenes, 121693 words).",
+      "usage": {
+        "inputTokens": 166592,
+        "outputTokens": 2624,
+        "totalTokens": 169216
+      },
+      "costUSD": 0.269568,
+      "sample": [
+        {
+          "beatName": "Opening Image",
+          "signal": "momentum",
+          "score": 58,
+          "justification": "The opening dialogue immediately establishes the central marriage-market premise and creates forward anticipation around whether Mr. Bennet will visit Bingley."
+        },
+        {
+          "beatName": "Theme Stated",
+          "signal": "momentum",
+          "score": 40,
+          "justification": "Chapter 4 pauses immediate action for a reflective comparison of Bingley and Darcy's temperaments and Jane's uncritical candour."
+        },
+        {
+          "beatName": "Setup",
+          "signal": "momentum",
+          "score": 55,
+          "justification": "At Netherfield, Elizabeth's sharp exchanges with Darcy and Miss Bingley build social friction while Jane's worsening illness prolongs the stay."
+        }
+      ]
+    },
+    {
+      "id": "inquiry:payoff-abandoned-threads",
+      "feature": "inquiry",
+      "durationMs": 71262,
+      "passed": true,
+      "summary": "Inquiry returned 6 finding(s) over 61 scenes; verdict and refs passed the production result builder.",
+      "usage": {
+        "inputTokens": 170302,
+        "outputTokens": 14120,
+        "totalTokens": 184422
+      },
+      "costUSD": 0.36135300000000004,
+      "sample": {
+        "verdict": {
+          "flow": 0.88,
+          "depth": 0.86
+        },
+        "summary": "Narrative momentum compresses tightly around the primary courtship and elopement arcs, leaving a handful of secondary threads—such as Colonel Fitzwilliam's prospects, Anne de Bourgh's future, and the Collinses' retreat—to drop off once their immediate plot pressure ends.",
+        "firstFinding": {
+          "refId": "scn_ac54baae",
+          "kind": "loose_end",
+          "headline": "Colonel Fitzwilliam's financial dilemma and role as witness disappear after Kent",
+          "bullets": [
+            "Chapters 31-33 invest significant page time in establishing Fitzwilliam as a charming foil to Darcy, caught between attraction to Elizabeth and his need as a younger son to marry for money.",
+            "Darcy explicitly names him as the corroborating witness for his letter's claims, yet Elizabeth never consults him, and he departs Rosings in Chapter 37 without ever reappearing—even as Georgiana's co-guardian at Pemberley or at the weddings in Chapter 61."
+          ],
+          "recommendedAction": "Add a brief line in Chapter 61 or Chapter 60 updating Colonel Fitzwilliam's marital or guardianship status and confirming his reaction to Darcy's match.",
+          "subject": "Colonel Fitzwilliam subplot",
+          "span": "S31-S61",
+          "related": [],
+          "supportingRefs": [
+            {
+              "refId": "scn_850a74de",
+              "refLabel": "35 Darcy's Letter.md",
+              "refPath": "Pride & Prejudice/35 Darcy's Letter.md",
+              "quote": "For the truth of everything here related, I can appeal more particularly to the testimony of Colonel Fitzwilliam, who, from our near relationship and constant intimacy, and still more as one of the executors of my father’s will, has been unavoidably acquainted with every particular of these transactions."
+            },
+            {
+              "refId": "scn_3c6e2e18",
+              "refLabel": "37 Lady Catherine's Rage.md",
+              "refPath": "Pride & Prejudice/37 Lady Catherine's Rage.md",
+              "quote": "The two gentlemen left Rosings the next morning; and Mr. Collins having been in waiting near the lodges, to make them his parting obeisance, was able to bring home the pleasing intelligence of their appearing in very good health, and in as tolerable spirits as could be expected, after the melancholy scene so lately gone through at Rosings."
+            }
+          ],
+          "evidenceType": "mixed",
+          "lens": "both",
+          "evidenceQuote": "“Our habits of expense make us too dependent, and there are not many in my rank of life who can afford to marry without some attention to money.”"
+        }
+      }
+    }
+  ]
+}

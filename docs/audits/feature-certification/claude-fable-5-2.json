@@ -1,9 +1,9 @@
 {
   "provider": "anthropic",
   "modelId": "claude-fable-5-2",
-  "vault": "/Users/ericrhystaylor/Documents/Radial Timeline LLC/Plugin/Test Vaults/Obsidian Vault AI Certification",
+  "vault": "../Test Vaults/Obsidian Vault AI Certification",
   "book": "Pride & Prejudice",
-  "generatedAt": "2026-11-18T00:53:00.088Z",
+  "generatedAt": "2026-11-19T19:37:48.159Z",
   "cases": [
     {
       "id": "pulse:16 Wickham's Story",
@@ -80,45 +80,45 @@
     {
       "id": "summary:21 Bingleys Depart",
       "feature": "summary",
-      "durationMs": 8363,
-      "passed": false,
-      "summary": "Synopsis ran 31 words, over the 30-word cap.",
+      "durationMs": 9941,
+      "passed": true,
+      "summary": "Summary 272 words (target 200); Synopsis 30 words (cap 30); both passed the production parsers.",
       "usage": {
-        "inputTokens": 6568,
-        "outputTokens": 728,
-        "totalTokens": 7296,
-        "rawInputTokens": 6568,
+        "inputTokens": 6555,
+        "outputTokens": 721,
+        "totalTokens": 7276,
+        "rawInputTokens": 6555,
         "cacheReadInputTokens": 0,
         "cacheCreationInputTokens": 0,
         "cacheCreation5mInputTokens": 0,
         "cacheCreation1hInputTokens": 0
       },
-      "costUSD": 0.081664,
+      "costUSD": 0.08127999999999999,
       "sample": {
-        "summary": "After Elizabeth's refusal of Mr. Collins, he treats her with stiff, resentful silence and transfers his attentions to Charlotte Lucas, who listens to him civilly. Mrs. Bennet remains ill-humoured, and Mr. Collins does not shorten his visit, still planning to stay until Saturday. The Bennet girls walk to Meryton, where Wickham joins them and tells Elizabeth that he deliberately stayed away from the Netherfield ball to avoid meeting Mr. Darcy. Elizabeth approves. Wickham and another officer walk the girls back to Longbourn, where he is introduced to her parents.\n\nA letter from Caroline Bingley arrives for Jane, whose expression changes as she reads it. Once the officers leave, Jane takes Elizabeth upstairs and reads the letter aloud. Caroline writes that the whole Netherfield party has left to follow Mr. Bingley to London, that none of them will return to Hertfordshire this winter, and that she hopes her brother will marry Georgiana Darcy. Jane concludes that Caroline is convinced of Bingley's indifference to her and is kindly warning her. Elizabeth disagrees, arguing that Caroline sees Bingley is in love with Jane, wants him to marry Miss Darcy, and is following him to town to keep him there. Jane refuses to believe Caroline capable of deliberate deceit and supposes she must be mistaken. She admits that she would accept Bingley despite his sisters' disapproval.\n\nElizabeth dismisses the idea that Bingley will not return, and Jane is gradually led to hope he will come back. The sisters agree to tell Mrs. Bennet only that the family has departed. Mrs. Bennet laments the news, then consoles herself that Bingley will soon return and dine at Longbourn, declaring she will provide two full courses.",
-        "synopsis": "Collins shifts his attentions to Charlotte Lucas. Caroline's letter tells Jane the Netherfield party has left for London and hints Bingley will marry Miss Darcy; Elizabeth persuades Jane he will return."
+        "summary": "After Elizabeth's refusal of Mr. Collins, he treats her with stiff, resentful silence and transfers his attentions to Charlotte Lucas, who listens to him civilly. Mrs. Bennet remains in ill humour, and Mr. Collins still plans to stay until Saturday. The Bennet girls walk to Meryton, where Mr. Wickham joins them and goes with them to their aunt's. He tells Elizabeth he stayed away from the Netherfield ball deliberately to avoid meeting Mr. Darcy. Wickham and another officer walk the girls back to Longbourn, where Wickham is introduced to Elizabeth's parents.\n\nA letter from Caroline Bingley arrives for Jane. After the officers leave, Jane reads it to Elizabeth in their room. Caroline writes that the whole Netherfield party has left to follow Mr. Bingley to London, that none of them will return to Hertfordshire this winter, and that she hopes her brother will marry Georgiana Darcy. Jane concludes that Caroline is convinced of Bingley's indifference and is kindly warning her. Elizabeth disagrees, saying Caroline sees that Bingley loves Jane, wants him to marry Miss Darcy, and is trying to keep him in town and persuade Jane he does not care. Jane insists Caroline is incapable of wilful deceit and may herself be deceived. Jane asks whether she could be happy marrying against his sisters' wishes, then admits she would not hesitate to accept him.\n\nElizabeth argues forcefully that Bingley will return, and Jane gradually becomes hopeful. They agree to tell Mrs. Bennet only that the family has left. Mrs. Bennet laments the departure, then consoles herself that Bingley will soon return and dine at Longbourn, declaring she will provide two full courses.",
+        "synopsis": "Collins shifts his attentions to Charlotte Lucas. Caroline's letter tells Jane the Netherfield party has left for London; Elizabeth insists Caroline is scheming and Bingley will return, reviving Jane's hope."
       }
     },
     {
       "id": "summary:41 Lydia Invited to Brighton",
       "feature": "summary",
-      "durationMs": 8194,
+      "durationMs": 9090,
       "passed": true,
-      "summary": "Summary 299 words (target 200); Synopsis 27 words (cap 30); both passed the production parsers.",
+      "summary": "Summary 296 words (target 200); Synopsis 27 words (cap 30); both passed the production parsers.",
       "usage": {
-        "inputTokens": 7288,
-        "outputTokens": 817,
-        "totalTokens": 8105,
-        "rawInputTokens": 7288,
+        "inputTokens": 7264,
+        "outputTokens": 798,
+        "totalTokens": 8062,
+        "rawInputTokens": 7264,
         "cacheReadInputTokens": 0,
         "cacheCreationInputTokens": 0,
         "cacheCreation5mInputTokens": 0,
         "cacheCreation1hInputTokens": 0
       },
-      "costUSD": 0.09098400000000001,
+      "costUSD": 0.09003199999999999,
       "sample": {
-        "summary": "In the regiment's final week at Meryton, Kitty, Lydia, and Mrs. Bennet lament the officers' departure and wish to go to Brighton, which Mr. Bennet refuses. Elizabeth feels ashamed of her family's behavior and recalls Mr. Darcy's objections. Lydia then receives an invitation from Mrs. Forster, the colonel's young wife, to accompany her to Brighton. Lydia and Mrs. Bennet are delighted, while Kitty complains that she was not invited. Elizabeth and Jane fail to console Kitty.\n\nElizabeth privately urges her father not to let Lydia go, citing Lydia's improper behavior, Mrs. Forster's unsuitability as a companion, and the greater temptations at Brighton. She warns that Lydia will become a confirmed flirt, that Kitty will follow her, and that the family's respectability will suffer. Mr. Bennet jokes that Lydia must have frightened away Elizabeth's suitors, then takes her hand and declines to intervene, saying Colonel Forster will keep Lydia out of mischief, that she is too poor to be preyed upon, and that there would be no peace at Longbourn otherwise. Elizabeth leaves disappointed but does not dwell on it. Lydia and her mother remain unaware of the conversation.\n\nOn the regiment's last day, Wickham dines at Longbourn with other officers. Elizabeth, who has been annoyed by his renewed attentions, mentions that Colonel Fitzwilliam and Mr. Darcy spent three weeks at Rosings and says Darcy improves on acquaintance, clarifying that she means his disposition is better understood. Wickham appears alarmed, falls silent, then attributes Darcy's conduct to fear of his aunt and his wish to marry Miss de Bourgh. Elizabeth only nods slightly. He makes no further effort to single her out, and they part civilly. Lydia leaves with Mrs. Forster for Meryton to depart the next morning; Kitty cries from envy, and Mrs. Bennet urges Lydia to enjoy herself.",
-        "synopsis": "Lydia is invited to Brighton by Mrs. Forster. Elizabeth urges Mr. Bennet to forbid it, but he refuses. Elizabeth unsettles Wickham by praising Darcy, and Lydia departs."
+        "summary": "In the regiment's final week at Meryton, Kitty and Lydia lament the officers' departure, and Mrs. Bennet shares their grief and wishes the family could go to Brighton. Elizabeth feels ashamed of their behavior and recalls Mr. Darcy's objections to her family. Lydia then receives an invitation from Mrs. Forster, the colonel's young wife, to accompany her to Brighton. Lydia and Mrs. Bennet are delighted, while Kitty complains that she was not invited. Elizabeth secretly advises her father not to let Lydia go, citing Lydia's improper behavior, Mrs. Forster's unsuitability as a companion, and the greater temptations at Brighton. She warns that Lydia will become a confirmed flirt, that Kitty will follow her, and that the family's respectability will suffer.\n\nMr. Bennet first jokes that Lydia has scared away Elizabeth's suitors, then takes her hand and refuses her request. He says there will be no peace at Longbourn unless Lydia goes, that Colonel Forster will keep her out of mischief, that she is too poor to be a target, and that Brighton may teach her her own insignificance. Elizabeth leaves disappointed but does not dwell on it. Lydia and her mother remain unaware of the conversation and continue rejoicing.\n\nOn the regiment's last day, Wickham dines at Longbourn with other officers. Elizabeth, displeased by his renewed attentions, mentions that Colonel Fitzwilliam and Darcy spent three weeks at Rosings. Wickham appears alarmed. She says Darcy improves on acquaintance, clarifying that she means his disposition is better understood. Wickham becomes agitated, then attributes Darcy's conduct to fear of his aunt and a wish to marry Miss de Bourgh. Elizabeth only nods. They part civilly. Lydia leaves with Mrs. Forster for Meryton to depart the next morning; Kitty cries from envy, and Mrs. Bennet urges Lydia to enjoy herself.",
+        "synopsis": "Lydia is invited to Brighton by Mrs. Forster; Elizabeth urges Mr. Bennet to forbid it, but he refuses. Elizabeth unsettles Wickham by praising Darcy, and Lydia departs."
       }
     },
     {

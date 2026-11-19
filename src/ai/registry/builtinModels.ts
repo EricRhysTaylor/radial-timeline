@@ -163,7 +163,9 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // $1.49, Inquiry found 3/3 planted faults (commit b33807e6). Pride &
         // Prejudice, 2026-11-17: 6/7, $8.92 — one Synopsis ran 31 words over
         // the 30-word cap; Gossamer and Inquiry each paid the 1h cache-write
-        // rate on ~240k tokens (docs/audits/feature-certification/
+        // rate on ~240k tokens. Summary rerun on Pride & Prejudice after the
+        // Synopsis fix (145e7662), 2026-11-19: both cases PASS (Synopsis 30
+        // and 27 words), so the book is 7/7 (docs/audits/feature-certification/
         // claude-fable-5-2.md).
         provider: 'anthropic',
         id: 'claude-fable-5-2',
@@ -460,10 +462,14 @@ export const BUILTIN_MODELS: ModelInfo[] = [
         // releasedAt keeps Hydrogen the Google latest-stable default, as 3.8
         // Flash was; Carbon stays undated. Verified against Google's model,
         // what's-new, pricing, changelog and deprecations pages on 2026-11-17.
-        // NOT yet smoke-tested or certified against the live API: run
-        // `npm run smoke-model -- --provider google --model gemini-4-hydrogen`
-        // and `RT_CERT_PROVIDER=google RT_CERT_MODEL=gemini-4-hydrogen
-        // npm run certify:features` before a release.
+        // Smoke-tested against the live API on 2026-11-19 (`npm run
+        // smoke-model`): PASS, HTTP 200, finishReason STOP; 206 prompt / 21
+        // output / 178 thinking tokens. Feature certification on The Tidewater
+        // Ledger, 2026-11-19: PASS 7/7, $0.31, Inquiry found 2/3 planted
+        // faults, missed death-month; one Summary ran 9 words against a
+        // 200-word target. Pride & Prejudice, 2026-11-19: PASS 7/7, $0.81,
+        // Summaries 238 and 247 words (docs/audits/feature-certification/
+        // gemini-4-hydrogen.md).
         provider: 'google',
         id: 'gemini-4-hydrogen',
         alias: 'gemini-4-hydrogen',

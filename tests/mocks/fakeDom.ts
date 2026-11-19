@@ -52,6 +52,8 @@ export class FakeElement {
     type = '';
     checked = false;
     disabled = false;
+    /** The DOM's `hidden`: out of view, still in the tree. */
+    hidden = false;
     private listeners = new Map<string, Array<() => void>>();
     classList = {
         add: (...names: string[]): void => { this.cls = [this.cls, ...names].filter(Boolean).join(' '); },

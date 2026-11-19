@@ -2606,6 +2606,37 @@
 
 .ert-scene-release-batch-result { display: grid; gap: var(--size-4-1); }
 
+/* The batch release's look at each scene: its opening and closing lines under the word count,
+   a passage that reads like a note called out, and the full text, shown under the row. */
+.ert-scene-release-excerpt {
+    display: grid;
+    gap: var(--size-2-1);
+    margin-top: var(--size-2-2);
+    color: var(--text-faint);
+    font-style: italic;
+    overflow-wrap: anywhere;
+}
+.ert-scene-release-note-hint {
+    margin-top: var(--size-2-2);
+    color: var(--text-warning);
+    overflow-wrap: anywhere;
+}
+.ert-scene-release-batch-attention {
+    padding: var(--size-4-2) var(--size-4-3);
+    border-left: 3px solid var(--text-warning);
+    border-radius: var(--radius-s);
+    background: var(--background-secondary);
+}
+.ert-scene-release-batch-preview { margin-bottom: var(--size-4-3); max-height: 30vh; }
+.ert-scene-release-batch-preview[hidden] { display: none; }
+.ert-scene-release-looks-right {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--size-2-2);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
 /* The release preview's rating: two pills, as on the website. */
 .ert-scene-release-rating {
     display: flex;

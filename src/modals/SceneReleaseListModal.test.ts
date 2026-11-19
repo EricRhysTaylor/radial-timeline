@@ -411,8 +411,9 @@ describe('Release scenes, several at once', () => {
 
         expect(batch.find('ert-modal-title')[0].text).toBe('Release 3 scenes');
         expect(batch.find('ert-scene-release-batch-list')[0].settings.map(setting => [setting.name, setting.desc])).toEqual([
-            ['1 Opening', '1 word'],
-            ['3 Letter', '3 words'],
+            // The word count, then the scene's opening line (one paragraph: no closing line).
+            ['1 Opening', '1 word UNRELEASED_ONE'],
+            ['3 Letter', '3 words The letter, rewritten.'],
             ['4 Trial', `0 words ${t('ui.communityShareClient.sceneReleaseEmpty')}`],
         ]);
         expect(batch.content).toContain('General: for any reader.');
@@ -423,6 +424,80 @@ describe('Release scenes, several at once', () => {
         expect(batch.buttons.filter(button => button.cta).map(button => button.text)).toEqual(['Release 2 scenes']);
         // Nothing is sent before the press.
         expect(actions(request)).toEqual(['status']);
+    });
+
+    it('batch release: each scene\'s full text is behind Show text, folded until asked for', async () => {
+        const h = harness();
+        website({ ...STATUS, releases: await twoReleased() });
+        h.read.mockImplementation(async (file: TFile) => (file.path === 'Book/3 Letter.md'
+            ? '---\nClass: Scene\n---\nDear Anna,\n\nThe middle.\n\nYours, Tom.'
+            : NOTES[file.path]));
+        await opened(h);
+        box(h, '3 Letter').toggle();
+        await h.screen.buttonNamed('Release 1 scene').click();
+        const batch = batchDialog();
+        await vi.waitFor(() => expect(batch.find('ert-scene-release-batch-list')).toHaveLength(1));
+
+        expect(batch.find('ert-scene-release-excerpt')[0].children.map(line => line.text)).toEqual(['Dear Anna,', '… Yours, Tom.']);
+        const preview = batch.find('ert-scene-release-batch-preview')[0];
+        expect(preview.hidden).toBe(true);
+        expect(preview.content).toBe('Dear Anna, The middle. Yours, Tom.');
+        expect(batch.find('ert-scene-release-batch-attention')).toHaveLength(0);
+        await batch.buttonNamed('Show text').click();
+        expect(preview.hidden).toBe(false);
+        await batch.buttonNamed('Hide text').click();
+        expect(preview.hidden).toBe(true);
+        // A clean scene needs nothing more: it goes on the one press.
+        expect(batch.buttonNamed('Release 1 scene').disabled).toBe(false);
+    });
+
+    it('batch release: a scene with text that looks like a note opens showing it, and goes only once marked Looks right', async () => {
+        const h = harness();
+        const request = website({ ...STATUS, releases: await twoReleased() });
+        h.read.mockImplementation(async (file: TFile) => (file.path === 'Book/3 Letter.md'
+            ? '---\nClass: Scene\n---\nThe letter arrived. [check the postmark date]\n\nShe read it twice.'
+            : NOTES[file.path]));
+        await opened(h);
+        box(h, '1 Opening').toggle();
+        box(h, '3 Letter').toggle();
+        await h.screen.buttonNamed('Release 2 scenes').click();
+        const batch = batchDialog();
+        await vi.waitFor(() => expect(batch.find('ert-scene-release-batch-list')).toHaveLength(1));
+
+        expect(batch.find('ert-scene-release-batch-attention')[0].text).toBe(t('ui.sceneReleaseModal.batchAttention'));
+        expect(batch.find('ert-scene-release-note-hint')[0].text)
+            .toBe('Looks like a note: “The letter arrived. [check the postmark date]”');
+        // The flagged scene's text is open; the clean one's is folded.
+        expect(batch.find('ert-scene-release-batch-preview').map(preview => preview.hidden)).toEqual([true, false]);
+        // Until it is marked, only the clean scene is counted.
+        expect(batch.buttons.filter(button => button.cta).map(button => button.text)).toEqual(['Release 1 scene']);
+        const looksRight = batch.find('ert-scene-release-looks-right')[0].checkboxes[0];
+        looksRight.toggle();
+        expect(batch.buttonNamed('Release 2 scenes').disabled).toBe(false);
+        looksRight.toggle();
+        await batch.buttonNamed('Release 1 scene').click();
+
+        expect(sent(request).filter(body => body.action === 'release').map(body => body.scene_id)).toEqual(['scn_00000001']);
+        expect(JSON.stringify(sent(request))).not.toContain('postmark');
+        expect(batch.find('ert-scene-release-batch-result')[0].children.map(line => line.text))
+            .toEqual(['Released 1 of 2.', `3 Letter: ${t('ui.sceneReleaseModal.batchLeftOut')}`]);
+    });
+
+    it('batch release: with only flagged scenes, nothing can be pressed until one is marked Looks right', async () => {
+        const h = harness();
+        const request = website({ ...STATUS, releases: await twoReleased() });
+        h.read.mockImplementation(async (file: TFile) => (file.path === 'Book/1 Opening.md'
+            ? '---\nClass: Scene\n---\nTK opening line.'
+            : NOTES[file.path]));
+        await opened(h);
+        box(h, '1 Opening').toggle();
+        await h.screen.buttonNamed('Release 1 scene').click();
+        const batch = batchDialog();
+        await vi.waitFor(() => expect(batch.find('ert-scene-release-batch-list')).toHaveLength(1));
+        expect(batch.buttonNamed('Release 0 scenes').disabled).toBe(true);
+        batch.find('ert-scene-release-looks-right')[0].checkboxes[0].toggle();
+        await batch.buttonNamed('Release 1 scene').click();
+        expect(sent(request).filter(body => body.action === 'release').map(body => body.scene_id)).toEqual(['scn_00000001']);
     });
 
     it('batch release sends each scene in turn with the chosen rating, then says how it went and rereads the list', async () => {

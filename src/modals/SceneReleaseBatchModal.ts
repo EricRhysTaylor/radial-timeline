@@ -9,9 +9,13 @@
  * the list, then each sent one at a time, then a line saying how it went.
  *
  * The batch release reads the note of each checked scene when it opens and
- * shows its title and word count. On the press each note is read again; a
- * scene whose cleaned text is not the text read when the dialog opened is not
- * sent and is named in the result. Nothing runs before the press.
+ * shows its title, word count, and opening and closing lines, with the full
+ * text a press away. A scene with a passage that reads like a note to the
+ * author (sceneReleaseReview.ts) opens with its text showing and goes only once
+ * the author ticks Looks right; the rest go on the one press. On the press each
+ * note is read again; a scene whose cleaned text is not the text read when the
+ * dialog opened is not sent and is named in the result. Nothing runs before the
+ * press.
  */
 
 import { App, ButtonComponent, Notice, Setting } from 'obsidian';
@@ -29,7 +33,8 @@ import { t, tCount } from '../i18n';
 import type { BookProfile } from '../types/settings';
 import { ERT_CLASSES } from '../ui/classes';
 import { ErtModal } from '../ui/ErtModal';
-import { mountRatingChoice } from './SceneReleasePreviewModal';
+import { mountRatingChoice, renderSceneBlocks } from './SceneReleasePreviewModal';
+import { noteLikeText, sceneExcerpt } from './sceneReleaseReview';
 
 /** One scene's result: null when it went through, else why not, in the author's words. */
 export interface SceneBatchOutcome {
@@ -81,6 +86,10 @@ interface ReleaseEntry {
     draft: SceneReleaseDraft | null;
     /** Why this scene can't be released as it is, or null. */
     problem: string | null;
+    /** A passage that reads like a note to the author, or null. */
+    note: { snippet: string; more: number } | null;
+    /** For a scene with a note: the author ticked Looks right. */
+    approved: boolean;
 }
 
 export class SceneReleaseBatchModal extends ErtModal {
@@ -90,6 +99,8 @@ export class SceneReleaseBatchModal extends ErtModal {
     private sentCount = 0;
     private outcomes: SceneBatchOutcome[] = [];
     private primary: ButtonComponent | null = null;
+    private looksRight: HTMLInputElement[] = [];
+    private sendTotal = 0;
     private closed = false;
     private settled = false;
 
@@ -121,17 +132,24 @@ export class SceneReleaseBatchModal extends ErtModal {
         for (const scene of this.options.scenes) {
             try {
                 const draft = await readSceneReleaseDraft(this.app, scene.path);
-                entries.push({ scene, draft, problem: draft.problem ? sceneTextProblemMessage(draft.problem) : null });
+                const problem = draft.problem ? sceneTextProblemMessage(draft.problem) : null;
+                entries.push({ scene, draft, problem, note: problem ? null : noteLikeText(draft.blocks), approved: false });
             } catch (error) {
-                entries.push({ scene, draft: null, problem: errorText(error, t('ui.communityShareClient.sceneNoteMissing')) });
+                entries.push({ scene, draft: null, problem: errorText(error, t('ui.communityShareClient.sceneNoteMissing')), note: null, approved: false });
             }
         }
         this.entries = entries;
         this.render();
     }
 
-    private sendable(): ReleaseEntry[] {
+    /** The scenes that can be released as they are. */
+    private reviewable(): ReleaseEntry[] {
         return (this.entries ?? []).filter(entry => entry.draft && !entry.problem);
+    }
+
+    /** The scenes the press sends: every reviewable one, less a note the author hasn't passed. */
+    private sendable(): ReleaseEntry[] {
+        return this.reviewable().filter(entry => !entry.note || entry.approved);
     }
 
     private render(): void {
@@ -139,6 +157,7 @@ export class SceneReleaseBatchModal extends ErtModal {
         const { contentEl } = this;
         contentEl.empty();
         this.primary = null;
+        this.looksRight = [];
         this.mountHeader({
             badge: { text: t('ui.sceneReleaseModal.badge') },
             title: t('ui.sceneReleaseModal.batchRelease', { scenes: tCount('scene', this.options.scenes.length) }),
@@ -151,12 +170,11 @@ export class SceneReleaseBatchModal extends ErtModal {
             return;
         }
 
-        const listEl = contentEl.createDiv({ cls: 'ert-scene-release-batch-list' });
-        for (const entry of entries) {
-            const row = new Setting(listEl).setName(entry.scene.title);
-            if (entry.draft) row.setDesc(tCount('word', entry.draft.words));
-            if (entry.problem) row.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: entry.problem });
+        if (this.phase === 'confirm' && entries.some(entry => entry.note)) {
+            contentEl.createDiv({ cls: 'ert-scene-release-batch-attention', text: t('ui.sceneReleaseModal.batchAttention') });
         }
+        const listEl = contentEl.createDiv({ cls: 'ert-scene-release-batch-list' });
+        for (const entry of entries) this.renderEntry(listEl, entry);
 
         if (this.phase === 'done') {
             renderResult(contentEl, batchResultLines('ui.sceneReleaseModal.batchReleaseResult', this.outcomes));
@@ -164,8 +182,7 @@ export class SceneReleaseBatchModal extends ErtModal {
             return;
         }
 
-        const sendable = this.sendable().length;
-        if (sendable === 0) {
+        if (this.reviewable().length === 0) {
             this.mountButton(t('ui.sceneReleaseModal.close'));
             return;
         }
@@ -177,10 +194,64 @@ export class SceneReleaseBatchModal extends ErtModal {
             .setButtonText(t('common.cancel'))
             .onClick(() => this.close());
         this.primary = new ButtonComponent(actions)
-            .setButtonText(t('ui.sceneReleaseModal.batchRelease', { scenes: tCount('scene', sendable) }))
             .setCta()
             .onClick(() => this.send());
         this.syncPrimary();
+    }
+
+    /**
+     * One scene: title and word count, its opening and closing lines, and its
+     * full text behind Show text. A scene with a note opens showing its text,
+     * the note quoted, and a Looks right box it needs before it goes.
+     */
+    private renderEntry(listEl: HTMLElement, entry: ReleaseEntry): void {
+        const row = new Setting(listEl).setName(entry.scene.title);
+        const { draft, note } = entry;
+        if (draft) row.setDesc(tCount('word', draft.words));
+        if (entry.problem) {
+            row.descEl.createDiv({ cls: ERT_CLASSES.FIELD_NOTE, text: entry.problem });
+            return;
+        }
+        // The result shows only what went: the text was read before the press.
+        if (!draft || this.phase !== 'confirm') return;
+
+        const excerpt = sceneExcerpt(draft.blocks);
+        if (excerpt) {
+            const excerptEl = row.descEl.createDiv({ cls: 'ert-scene-release-excerpt' });
+            excerptEl.createDiv({ text: excerpt.first });
+            if (excerpt.last) excerptEl.createDiv({ text: `… ${excerpt.last}` });
+        }
+        if (note) {
+            row.descEl.createDiv({
+                cls: 'ert-scene-release-note-hint',
+                text: note.more > 0
+                    ? t('ui.sceneReleaseModal.batchNoteHintMore', { snippet: note.snippet, more: note.more })
+                    : t('ui.sceneReleaseModal.batchNoteHint', { snippet: note.snippet }),
+            });
+        }
+
+        const preview = listEl.createDiv({ cls: 'ert-scene-release-preview ert-scene-release-batch-preview' });
+        renderSceneBlocks(preview, draft.blocks);
+        preview.hidden = !note;
+        const toggleLabel = () => t(preview.hidden ? 'ui.sceneReleaseModal.batchShowText' : 'ui.sceneReleaseModal.batchHideText');
+        const toggle = new ButtonComponent(row.controlEl)
+            .setButtonText(toggleLabel())
+            .onClick(() => {
+                preview.hidden = !preview.hidden;
+                toggle.setButtonText(toggleLabel());
+            });
+
+        if (note) {
+            const label = row.controlEl.createEl('label', { cls: 'ert-scene-release-looks-right' });
+            const box = label.createEl('input', { type: 'checkbox' });
+            box.checked = entry.approved;
+            label.appendText(t('ui.sceneReleaseModal.batchLooksRight'));
+            box.addEventListener('change', () => {
+                entry.approved = box.checked;
+                this.syncPrimary();
+            });
+            this.looksRight.push(box);
+        }
     }
 
     private mountButton(label: string): void {
@@ -189,12 +260,24 @@ export class SceneReleaseBatchModal extends ErtModal {
             .onClick(() => this.close());
     }
 
-    /** While sending, the button says how far it has got and can't be pressed again. */
+    /**
+     * Before the press, the button counts the scenes that will go, and waits
+     * while none will. While sending, it says how far it has got and can't be
+     * pressed again.
+     */
     private syncPrimary(): void {
-        if (!this.primary || this.phase !== 'running') return;
+        if (!this.primary) return;
+        if (this.phase === 'confirm') {
+            const sendable = this.sendable().length;
+            this.primary
+                .setDisabled(sendable === 0)
+                .setButtonText(t('ui.sceneReleaseModal.batchRelease', { scenes: tCount('scene', sendable) }));
+            return;
+        }
+        if (this.phase !== 'running') return;
         this.primary
             .setDisabled(true)
-            .setButtonText(t('ui.sceneReleaseModal.batchReleasing', { done: this.sentCount, total: this.sendable().length }));
+            .setButtonText(t('ui.sceneReleaseModal.batchReleasing', { done: this.sentCount, total: this.sendTotal }));
     }
 
     /** The primary button: each scene in turn, one request at a time. */
@@ -202,11 +285,19 @@ export class SceneReleaseBatchModal extends ErtModal {
         const entries = this.entries;
         if (this.phase !== 'confirm' || !entries) return;
         const rating = this.rating;
+        const going = new Set(this.sendable());
+        if (going.size === 0) return;
         this.phase = 'running';
+        this.sendTotal = going.size;
+        for (const box of this.looksRight) box.disabled = true;
         const outcomes: SceneBatchOutcome[] = [];
         for (const entry of entries) {
             if (!entry.draft || entry.problem) {
                 outcomes.push({ title: entry.scene.title, reason: entry.problem });
+                continue;
+            }
+            if (!going.has(entry)) {
+                outcomes.push({ title: entry.scene.title, reason: t('ui.sceneReleaseModal.batchLeftOut') });
                 continue;
             }
             this.sentCount += 1;

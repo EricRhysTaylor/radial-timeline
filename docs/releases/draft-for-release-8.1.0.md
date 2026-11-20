@@ -1,0 +1,77 @@
+## Radial Timeline 8.1.0
+
+A Time scale for Chronologue, your own PDF styles and LaTeX templates, private scenes for readers you choose, Social reports in one list, and newer AI models.
+
+### Chronologue
+
+- **Time scale:** select **Time scale** beside Fill to space the outer All Scenes ring by elapsed story time. Long empty gaps are shortened to leave room for busy stretches; ∞ marks a shortened gap. Scene wedges retain a minimum width, simultaneous scenes remain separate, and undated scenes have their own section. Subplot rings keep their usual layout.
+
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/056681744b965c03ee5d29a4786265d5d8eac079/wiki/images/release-8-1-time-scale.webp" alt="The Odyssey in Chronologue with Time scale on beside Fill: the outer All Scenes ring gives the long voyages, from Raiders, Lotus-Eaters and Cyclopes to Killing the Cows, wide stretches, packs the busy days on Ithaca into narrow wedges, and marks two shortened gaps with ∞" width="800">
+
+- **Clearer Chronologue dates:** perimeter labels show compact times and add the weekday, month and year when they change, without repeating them on every date. The start and end dates stay at the top; year changes are given priority when labels compete for space.
+- **Time reference hover:** hovering a time reference marker lights the scene it comes from and the scenes at the date it points to, and dims the rest. A marker that several references share shows them all, and its popover stays open long enough to move into it.
+
+See [Time scale](https://github.com/EricRhysTaylor/radial-timeline/wiki/Chronologue-Mode#time-scale).
+
+### PDF export
+
+- **Design your own PDF style:** **Design your own…** in Settings → Publish is out of beta. Start from one of the four built-in layouts (Basic, Standard, Professional or Signature), then change the paper, margins, type, running headers, page numbers, parts, chapters and scene openers, and save the result as a style of your own. Each numeric setting stays inside a range that has been printed from all four layouts, such as margins from 0.75 to 1.25 in and type from 10 to 13 pt. A style you saved earlier with a value outside those ranges keeps printing as before; the designer points it out and changes it only if you do.
+
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/056681744b965c03ee5d29a4786265d5d8eac079/wiki/images/release-8-1-pdf-style-designer.webp" alt="The Design your own style dialog customizing the Signature layout: a summary of its paper, margins, headers, font, parts, chapters and scenes beside page previews, and the Page settings with paper sizes, margin presets and a margin for each side" width="800">
+
+- **Fonts in your own PDF styles:** the designer's **Font** menu lists the fonts you can print with: the two that come with Radial Timeline, the three that come with LaTeX, and Arial, EB Garamond or Crimson Text when they are installed, plus **Custom (system font)** for any other installed font. A style cannot be saved with a font that is not installed, and the designer shows the same install steps as the export checks.
+- **A sans-serif that needs no install:** TeX Gyre Heros is new in the designer's **Font** menu. It comes with LaTeX, so it prints on a computer without Arial, as most Linux computers are. The Basic layout keeps Arial and prints as before; its card in Settings → Publish now reads "Uses Arial from this computer". To use Basic without Arial, start a style from Basic in the designer and choose TeX Gyre Heros.
+- **Import your own LaTeX template:** **Import template…** in Settings → Publish is out of beta. Choose a Pandoc LaTeX template (a `.tex` file) and Radial Timeline builds a test PDF with it on your computer, then saves it as a PDF style you can pick for any export. If the template needs a font or a LaTeX package that is not on your computer, the dialog names it before anything is saved; for any other stop it shows what LaTeX reported. The dialog and the style's card list what was read from your file (its document class, fonts, LaTeX packages, and the Book Details it prints) and what was measured from the test PDF (page count, page size, and a picture of a real page). Each row has an **i** icon with the full explanation, and shows where to go next: the setting where your template's own fields are filled, the template file with **Open** and **Show in folder**, and a guide to adding chapters and parts. Radial Timeline works from its own copy in your Pandoc folder and leaves your file as it was. The style is marked **Imported template** wherever you choose a layout: it is your own template, used as written, and Radial Timeline has not tested it. After you edit the copy, **Check again** builds a new test PDF before the style exports. On a second computer the style reads **Not checked here** until it builds a test PDF there.
+
+<img src="https://raw.githubusercontent.com/EricRhysTaylor/radial-timeline/056681744b965c03ee5d29a4786265d5d8eac079/wiki/images/release-8-1-import-template.webp" alt="Import template at its Check step, marked Ready: the test PDF (6 pages, 5.5 × 8.5 in), the document class, the font TeX Gyre Pagella, the LaTeX packages, the Book Details and fields the template prints, and a picture of page 4 of the test PDF" width="600">
+
+- **Word and PDF export setup video:** **Export tools** in Settings → Publish has a play button for a short video. It shows how to install Pandoc and LaTeX on a Mac or on Windows and find them with **Auto locate**. Beside it is a link to the install steps in the docs.
+
+See [Design your own PDF style](https://github.com/EricRhysTaylor/radial-timeline/wiki/Manuscript-Export#design-your-own-pdf-style) and [Import your own LaTeX template](https://github.com/EricRhysTaylor/radial-timeline/wiki/Manuscript-Export#import-your-own-latex-template).
+
+### Private scenes on the Community
+
+- **Release a scene to readers you choose.** Once your timeline is shared on the Community, **Settings → Community → Private scenes** lets you share a scene's text with named readers. Turn on **Share scene body**, agree to the release terms once, then open **Release scenes…**: your book's scenes in manuscript order, each with its state on the website. Release, update or take down one scene, or check several and do them together. You choose the readers on the website.
+- **See exactly what readers will see.** Before a scene goes, a preview shows its text as readers will read it. Comments, links, callouts and block ids are removed, so a released scene holds only your prose. A scene with a passage that reads like a note to yourself, such as a TODO, a bracketed reminder or a web address, opens with that passage showing and goes once you tick **Looks right**.
+- **Release from the website.** The Community website's release buttons open Radial Timeline straight at **Release scenes** for that book, or at the preview for one scene. A scene already released opens the list with that scene highlighted. The link names only the book and the scene.
+- **Your rating.** Each release is General, for any reader, or Mature, for adult readers. **Update** sends a new version when the scene has changed in your vault, and **Take down** removes it.
+- **Scene text leaves your vault only when you press Release or Update.** Nothing is written to your scene's properties, and a scene that changed after its preview is not sent.
+
+See [Private scenes](https://github.com/EricRhysTaylor/radial-timeline/wiki/Settings-Community#private-scenes).
+
+### Social
+
+- **Social reports in one list:** Settings → Social lists your reports: **Default** first, then any campaigns you add. They share one layout, and every setting a campaign has, Default has too. Open a report to see its preview, its share file, **Publish**, its style and its settings.
+- **Saved styles:** every report is drawn with a saved style, and the colors and fonts you had for the Default report are now the style named **Default**. Changes save as you make them and show in every report that uses that style; **Save as new** copies a style so you can change one report alone. A style's **Background** is **Transparent** or a color.
+- **Default report schedule:** the Default report's posting mode now works like a campaign's. If you had chosen Daily, Weekly or Monthly for it, it starts publishing its image on that schedule, and a Manual report shows its refresh reminder. Set it to Manual to publish only when you choose.
+
+### Improvements
+
+- **Community settings:** Settings → Community shows a preview of your shared timeline, says which sharing level the website shows, and keeps **Begin**, **Pause** and **Resume sharing** beside the level. When this vault's connection key is missing, the **Mailbox** menu offers **Reconnect Community**, which opens Community settings.
+- **Your Community timeline stays current on its own:** **Keep timeline updated** in Settings → Community sends your timeline to the website and updates it with your book sync, so the **Community timeline share export** command and its file are retired.
+- **Timetable sort notice:** a sort set in Bases replaces the order the Timetable's mode gives it, such as Chronologue's story order and day dividers. A line beside **Mode** now says so, for example "Sorted by Words · Chronologue order paused", and **Clear sort** puts the mode's order back.
+- **Newer AI models:** Claude Fable 5.2 replaces Fable 5.1, Gemini 4 Carbon replaces Gemini 4 Argon, and Gemini 4 Hydrogen replaces Gemini 3.8 Flash as the Google default. A vault set to a replaced model moves to its successor.
+- **Every feature in every vault:** Inquiry offers eight custom questions in each zone, and Settings sections no longer carry the magenta styling. A manuscript proof made with an earlier version shows as needing a refresh once.
+- **Search options:** while no local model is running, the Local LLM rows are hidden and a small line says why.
+- **An empty timeline** suggests dragging a note or a block of text onto it.
+- **AI content logs start off in every vault:** this update turns off **Enable AI content logs** once, so every vault now matches the new-vault default. To keep full prompts, submitted material and responses in your vault's log files, turn it back on in **Settings → Advanced**, and it stays on.
+
+### Fixes
+
+- **Social settings on more than one device:** update Radial Timeline on every device that shares this vault. An earlier version draws every report in the plain starting style, and can publish an extra copy of the Default report.
+- **AI Synopsis:** a reply a little over the word cap is kept as written, and one far over it is asked for once more. A synopsis is no longer cut off mid-sentence with "…".
+- **Inquiry sources:** only web (http and https) links from a provider's search become clickable; any other link shows as plain text.
+- **Shared timelines:** a web link whose address contains parentheses, such as a Wikipedia link, shares as its shown text without a stray ")".
+- **Community timeline status:** after you turn on **Keep timeline updated** or change a detail readers can see, the Community timeline settings show the website's newest answer and its preview straight away.
+- **Scene drag confirmation:** with manuscript ripple rename on, the confirmation names how many other scene files the move also renames, for example "Ripple rename: also renames 14 other scene files", before you choose Begin.
+- **Color fields:** a hex color saves once you have typed all six digits. A three-digit shorthand such as `#fff` saves when you press Enter or leave the field, and the field shows it in full.
+- **Sketch positions from earlier versions:** the one-time copy of each sketch's place into the placement file waits until Obsidian has read every note, so every sketch keeps its place.
+- **Your own PDF styles and the included fonts:** a style of your own that uses Source Serif 4 or Sorts Mill Goudy now loads the font from your vault, as the built-in layouts do. Before, it printed only on a computer that had the font installed. The style keeps working when the vault moves or syncs to another computer.
+- **Header corners in the style designer:** the corner menu shows what each corner prints, and choosing **Empty** clears a corner the header style had filled. With the **Literary** header style, which prints one centred line per page ("12 | AUTHOR", "TITLE | 13"), the menu shows that line under **Even C** and **Odd C**. Changing or emptying it there changes the printed line; before, the menu showed the page number, author and title in the side corners, and changing them left the centred line in place. Styles you saved earlier print as before.
+- **Scene separator in the style designer:** the separator accepts letters, digits and common marks such as * # • · — § † ‡. A symbol such as ⁂ is left out as you type, because a font without it stopped the export.
+- **Import template:** closing the dialog while **Save** is still building the test PDF cancels the import, and no style is saved.
+- **Style designer Category menu:** the menu is wide enough to show "Chapters" in full.
+- **Time reference popovers:** a marker's popover opens once as the pointer arrives and stays steady while the pointer moves across the marker.
+- **Runtime view:** character lane names stay out of the way when the ring key is open.
+- **Bring ideas into your book:** list rows no longer show through below the Create buttons while the dialog scrolls.
+- **Timeline menu:** the item that opens the command palette for Radial Timeline is now called **Command palette**.

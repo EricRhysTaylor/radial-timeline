@@ -53,7 +53,7 @@ In Chronologue, **time references** point from a scene to the dates it mentions,
 
 Beside the timeline, the **[Timetable](https://docs.radialtimeline.com/Timetable/)** lays the same book out in an Obsidian Bases view: as rows, as Panels with character portraits, or as an Outline next to your planning documents, where you place scenes and sketches by dragging them. Right-click a column and the timeline takes its colors at once, with a key you can search. **Canvas story maps** give each subplot its own lane on an Obsidian Canvas, running across or down the page, and the map lights up the scene you Shift-hover on the timeline. Drop text from any note onto a lane and it becomes a scene in that spot. When the manuscript moves on, the map says so and builds an updated copy that carries your own cards along. Turn a mind map on a Canvas into numbered scenes in one step.
 
-Share a book's timeline with the **[Radial Timeline Community](https://community.radialtimeline.com/go/readme-community)** from **[Settings → Community](https://docs.radialtimeline.com/Settings-Community/#share-your-timeline)**. It arrives private, you reveal scenes one by one, and a live timeline stays up to date as you write.
+Share a book's timeline with the **[Radial Timeline Community](https://community.radialtimeline.com/go/readme-community)** from **[Settings → Community](https://docs.radialtimeline.com/Settings-Community/#share-your-timeline)**. It arrives private, you reveal scenes one by one, and a live timeline stays up to date as you write. When a scene is ready, release its text to selected readers. A preview shows exactly what they will read, and you can update it or take it down at any time.
 
 ## Docs (How-to & Setup)
 
@@ -148,6 +148,7 @@ Radial Timeline may contact external services in these workflows:
 - Story Vault downloads: **Add story to this vault** downloads that story's ZIP from Radial Timeline's public storage. The request carries no vault data or identity, and the file must match a SHA-256 fingerprint shipped in the plugin before anything is added to your vault.
 - Community mailbox: on a vault connected to the Community, while a timeline is open, the plugin asks the Community about once an hour (and when Obsidian regains focus) whether you have unread replies. It sends the connection's id and secret and gets back counts. Turn it off with **Show Community mailbox** in Settings → Advanced
 - Community Share calls: once you connect, your Book Manager book titles (or public labels), loglines, and target dates sync to your private My Share list as project shells at every level; report publishing and daily-activity sync are sent only at a sharing level above Private; and, for a book where you turn on **Share timeline**, its scene order, acts, subplots, status and stage, plus titles, synopses, cast, narration and story dates, held privately until you reveal each scene, and you choose which scenes to reveal — see [Settings → Community](https://docs.radialtimeline.com/Settings-Community/)
+- Private scenes: with **Share scene body** turned on for a book (off by default), a scene's text is sent only when you press **Release** or **Update** in its preview, which shows exactly what is sent. See [Settings → Community](https://docs.radialtimeline.com/Settings-Community/)
 
 ## Known Conflicts
 
